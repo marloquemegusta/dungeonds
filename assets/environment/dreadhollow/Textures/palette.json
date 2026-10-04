@@ -1,0 +1,209 @@
+{
+  "cells": {
+    "slate": 0,
+    "slate_light": 1,
+    "slate_dark": 2,
+    "sandstone": 3,
+    "wood": 4,
+    "wood_light": 5,
+    "wood_dark": 6,
+    "copper": 7,
+    "copper_light": 8,
+    "iron": 9,
+    "iron_light": 10,
+    "teal": 11,
+    "teal_light": 12,
+    "linen": 13,
+    "red": 14,
+    "blue": 15,
+    "moss": 16,
+    "gold": 17,
+    "gem": 18,
+    "flame": 19,
+    "flame_core": 20,
+    "wax": 21,
+    "paper": 22,
+    "ink": 23,
+    "bone": 24,
+    "bone_shadow": 25,
+    "blood": 26,
+    "violet": 27,
+    "soul": 28,
+    "poison": 29,
+    "rust": 30,
+    "void": 31
+  },
+  "columns": 8,
+  "rows": 4,
+  "base_color": "sRGB color ramps; no AO or studio lighting",
+  "orm": "R=1 (no baked AO), G=roughness, B=metallic",
+  "normal": "neutral tangent-space normals; faceted shape is modeled",
+  "palette": {
+    "slate": [
+      "3f4252",
+      0,
+      0.87
+    ],
+    "slate_light": [
+      "686a7c",
+      0,
+      0.82
+    ],
+    "slate_dark": [
+      "242632",
+      0,
+      0.92
+    ],
+    "sandstone": [
+      "928a91",
+      0,
+      0.86
+    ],
+    "wood": [
+      "4e3541",
+      0,
+      0.86
+    ],
+    "wood_light": [
+      "73545d",
+      0,
+      0.8
+    ],
+    "wood_dark": [
+      "2d202b",
+      0,
+      0.91
+    ],
+    "copper": [
+      "7d6754",
+      0.65,
+      0.48
+    ],
+    "copper_light": [
+      "bfa27a",
+      0.65,
+      0.4
+    ],
+    "iron": [
+      "303442",
+      0.7,
+      0.48
+    ],
+    "iron_light": [
+      "848797",
+      0.76,
+      0.38
+    ],
+    "teal": [
+      "286659",
+      0,
+      0.66
+    ],
+    "teal_light": [
+      "8cd5af",
+      0,
+      0.45,
+      1.7
+    ],
+    "linen": [
+      "a29787",
+      0,
+      0.9
+    ],
+    "red": [
+      "812e44",
+      0,
+      0.66
+    ],
+    "blue": [
+      "535680",
+      0,
+      0.57
+    ],
+    "moss": [
+      "4b5850",
+      0,
+      0.96
+    ],
+    "gold": [
+      "c5a16e",
+      0.7,
+      0.35
+    ],
+    "gem": [
+      "a064b5",
+      0.15,
+      0.25
+    ],
+    "flame": [
+      "65ab88",
+      0,
+      0.6,
+      1.5
+    ],
+    "flame_core": [
+      "c2e6ac",
+      0,
+      0.45,
+      2
+    ],
+    "wax": [
+      "b6ab8f",
+      0,
+      0.87
+    ],
+    "paper": [
+      "a99780",
+      0,
+      0.92
+    ],
+    "ink": [
+      "191921",
+      0,
+      0.95
+    ],
+    "bone": [
+      "d0c3a5",
+      0,
+      0.84
+    ],
+    "bone_shadow": [
+      "918578",
+      0,
+      0.88
+    ],
+    "blood": [
+      "bb4155",
+      0,
+      0.38,
+      0.45
+    ],
+    "violet": [
+      "73538f",
+      0,
+      0.7
+    ],
+    "soul": [
+      "7cc8b9",
+      0,
+      0.45,
+      1.8
+    ],
+    "poison": [
+      "92b866",
+      0,
+      0.51,
+      0.7
+    ],
+    "rust": [
+      "784744",
+      0.25,
+      0.82
+    ],
+    "void": [
+      "352a47",
+      0,
+      0.73
+    ]
+  }
+}

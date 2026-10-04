@@ -1,0 +1,55 @@
+DREADHOLLOW — COMMERCIAL ASSET LICENSE
+Edition 1.0 • Licensor: Kareel Games
+
+This license governs the asset files supplied by Kareel Games to a purchaser or
+other authorized recipient. It does not restrict Kareel Games from selling or
+licensing its own pack. The included production scripts have the separate license
+described in Documentation/SCRIPT_LICENSE.txt.
+
+1. Grant
+Subject to a valid purchase or other authorization, the licensor grants you a
+perpetual, worldwide, non-exclusive license, to the extent of rights it holds,
+to use, copy, modify, and incorporate these assets into personal or commercial
+games, applications, films, rendered images, educational work, and other finished
+projects. You may use them in unlimited projects. No royalties or credit are
+required. Copyright ownership is not transferred by this buyer license.
+
+2. Team use and distribution
+You may share assets with employees and contractors working on your projects.
+They may use them only for those projects and must not distribute the standalone
+pack. You may distribute incorporated assets with finished projects, including
+editable project deliverables to a client who is licensed for that project.
+Use reasonable measures to avoid making the standalone asset library publicly
+available for extraction or reuse. Normal runtime delivery is permitted.
+
+3. Restrictions
+You may not resell, sublicense, upload, or redistribute the standalone asset pack,
+individual asset files, or substantially equivalent asset libraries, including
+modified versions intended as competing stock assets. Do not claim that you
+personally created the unmodified assets. These contractual restrictions do not
+override rights you receive independently under an applicable open-source license
+or rights that applicable law makes non-waivable.
+
+4. Production disclosure and rights scope
+The meshes and palette textures were produced with Codex-assisted procedural
+Blender authoring. Third-party reference asset files were not used. This is not a
+representation of wholly human authorship. No exclusive copyright, originality
+certificate, copyright registration, trademark clearance, or non-infringement
+guarantee is supplied. Rights in AI-assisted work may depend on human authorship
+and the law of the relevant jurisdiction. The license grants only rights the
+licensor can lawfully grant. Third-party tool licenses do not transfer rights to
+third-party assets. Production records are included for inspection.
+
+5. Warranty and liability
+Assets are supplied as-is. To the extent permitted by applicable law, the licensor
+disclaims implied warranties of merchantability, fitness for a particular purpose,
+and non-infringement. Nothing in this license excludes fraud, limits liability
+that cannot legally be limited, or waives mandatory consumer rights. Technical
+features and limitations are described in README.md and the supplied reports.
+
+6. Termination
+Material breach terminates this license if not cured within 30 days of written
+notice where cure is possible. On termination, stop distributing newly created
+products using the assets and remove unauthorized standalone copies. Rights of
+customers in previously distributed finished products are not retroactively
+revoked. Keep a copy of your purchase/authorization record and this license.

@@ -32,3 +32,8 @@ diag_frame.png
 
 # Command Code local-only state
 .commandcode/settings.json
+
+# 3D Source Environment Assets (Heavy external packs)
+assets/environment/dreadhollow/GLB/
+assets/environment/dreadhollow/Previews/
+assets/characters/monster/Walking.fbx
