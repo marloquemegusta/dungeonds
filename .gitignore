@@ -1,0 +1,34 @@
+# Precompiled runtime binaries (fetched via scripts/setup.ps1)
+runtime/bin/*.so
+runtime/bin/desmume-agent
+!runtime/bin/.gitkeep
+
+# Large Docker tarballs (downloaded or loaded on demand)
+images/*.tar
+!images/.gitkeep
+
+# Build and project artifacts
+*.nds
+artifacts/
+.worktrees/
+.ds-game-dev/build/
+**/__pycache__/
+*.pyc
+
+# Local runtime source checkouts
+runtime/source/
+runtime/build/
+
+# Local archives
+*.tar.gz
+*.zip
+
+# Temporary scratch and staging
+scratch/
+temp_sprite_frames/
+raw_sheet_b64.txt
+test_frame.png
+diag_frame.png
+
+# Command Code local-only state
+.commandcode/settings.json
