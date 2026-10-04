@@ -1,0 +1,304 @@
+DREADHOLLOW — ALL 300 MODELS
+
+282 designs excluding 18 declared variants; meters; static meshes.
+
+001_crypt_flagstone | Crypt Flagstone | Floor Tiles | 220 triangles | 2.000 × 2.000 × 0.220 m
+002_split_obsidian_slab | Split Obsidian Slab | Floor Tiles | 528 triangles | 2.000 × 2.000 × 0.220 m
+003_bone_inlay_tile | Bone Inlay Tile | Floor Tiles | 528 triangles | 2.000 × 2.000 × 0.220 m
+004_crimson_seal_tile | Crimson Seal Tile | Floor Tiles | 660 triangles | 2.000 × 2.000 × 0.220 m
+005_soul_channel_tile | Soul Channel Tile | Floor Tiles | 484 triangles | 2.000 × 2.000 × 0.220 m
+006_iron_drain_tile | Iron Drain Tile | Floor Tiles | 748 triangles | 2.000 × 2.000 × 0.220 m
+007_grave_mosaic_tile | Grave Mosaic Tile | Floor Tiles | 416 triangles | 2.000 × 2.000 × 0.220 m
+008_thorn_cross_tile | Thorn Cross Tile | Floor Tiles | 660 triangles | 2.000 × 2.000 × 0.220 m
+009_worn_cobble_tile | Worn Cobble Tile | Floor Tiles | 748 triangles | 2.000 × 2.000 × 0.220 m
+010_sunken_coffin_tile | Sunken Coffin Tile | Floor Tiles | 504 triangles | 2.000 × 2.000 × 0.220 m
+011_chain_anchor_tile | Chain Anchor Tile | Floor Tiles | 556 triangles | 2.000 × 2.000 × 0.220 m
+012_broken_edge_tile | Broken Edge Tile | Floor Tiles | 308 triangles | 2.000 × 2.000 × 0.220 m
+013_ritual_circle_tile | Ritual Circle Tile | Floor Tiles | 744 triangles | 2.000 × 2.000 × 0.220 m
+014_violet_crystal_tile | Violet Crystal Tile | Floor Tiles | 476 triangles | 2.000 × 2.000 × 0.220 m
+015_poison_grate_tile | Poison Grate Tile | Floor Tiles | 792 triangles | 2.000 × 2.000 × 0.220 m
+016_raised_spike_tile | Raised Spike Tile | Floor Tiles | 1,090 triangles | 2.000 × 2.000 × 0.550 m
+017_lowered_spike_tile | Lowered Spike Tile | Floor Tiles | 1,090 triangles | 2.000 × 2.000 × 0.220 m | variant of 016_raised_spike_tile (functional_lowered_state)
+018_ash_paver_tile | Ash Paver Tile | Floor Tiles | 440 triangles | 2.000 × 2.000 × 0.220 m
+019_shattered_rune_tile | Shattered Rune Tile | Floor Tiles | 748 triangles | 2.000 × 2.000 × 0.220 m
+020_checkered_mourning_tile | Checkered Mourning Tile | Floor Tiles | 1,144 triangles | 2.000 × 2.000 × 0.220 m
+021_crypt_wall | Crypt Wall | Walls | 616 triangles | 2.000 × 0.430 × 2.400 m
+022_buttressed_wall | Buttressed Wall | Walls | 640 triangles | 2.000 × 0.700 × 2.400 m
+023_ossuary_wall | Ossuary Wall | Walls | 2,524 triangles | 2.000 × 0.535 × 2.400 m
+024_crimson_banner_wall | Crimson Banner Wall | Walls | 852 triangles | 2.000 × 0.448 × 2.400 m
+025_soul_sconce_wall | Soul Sconce Wall | Walls | 776 triangles | 2.000 × 0.729 × 2.400 m
+026_iron_rib_wall | Iron Rib Wall | Walls | 748 triangles | 2.000 × 0.430 × 2.400 m
+027_sealed_niche_wall | Sealed Niche Wall | Walls | 1,012 triangles | 2.000 × 0.430 × 2.400 m
+028_broken_crown_wall | Broken Crown Wall | Walls | 572 triangles | 2.000 × 0.430 × 2.400 m
+029_lancet_window_wall | Lancet Window Wall | Walls | 1,056 triangles | 2.000 × 0.430 × 2.400 m
+030_twin_window_wall | Twin Window Wall | Walls | 1,408 triangles | 2.000 × 0.430 × 2.400 m
+031_rose_slit_wall | Rose Slit Wall | Walls | 1,152 triangles | 2.000 × 0.430 × 2.400 m
+032_claw_scratched_wall | Claw Scratched Wall | Walls | 748 triangles | 2.000 × 0.430 × 2.400 m
+033_thorn_lattice_wall | Thorn Lattice Wall | Walls | 880 triangles | 2.000 × 0.448 × 2.400 m
+034_chained_wall | Chained Wall | Walls | 2,092 triangles | 2.000 × 0.540 × 2.400 m
+035_half_height_wall | Half Height Wall | Walls | 308 triangles | 2.000 × 0.430 × 1.200 m
+036_low_parapet_wall | Low Parapet Wall | Walls | 176 triangles | 2.000 × 0.430 × 0.600 m
+037_prison_bar_wall | Prison Bar Wall | Walls | 880 triangles | 2.000 × 0.430 × 2.400 m
+038_ritual_relief_wall | Ritual Relief Wall | Walls | 880 triangles | 2.000 × 0.445 × 2.400 m
+039_cracked_tomb_wall | Cracked Tomb Wall | Walls | 748 triangles | 2.000 × 0.430 × 2.400 m
+040_bone_cornice_wall | Bone Cornice Wall | Walls | 2,524 triangles | 2.000 × 0.535 × 2.400 m
+041_crypt_door_closed | Crypt Door Closed | Doors and Gates | 740 triangles | 2.189 × 0.400 × 2.652 m
+042_crypt_door_open | Crypt Door Open | Doors and Gates | 740 triangles | 2.189 × 1.565 × 2.652 m | variant of 041_crypt_door_closed (functional_open_state)
+043_iron_gate_closed | Iron Gate Closed | Doors and Gates | 784 triangles | 2.189 × 0.400 × 2.652 m
+044_iron_gate_open | Iron Gate Open | Doors and Gates | 784 triangles | 2.189 × 1.561 × 2.652 m | variant of 043_iron_gate_closed (functional_open_state)
+045_bone_door_closed | Bone Door Closed | Doors and Gates | 1,376 triangles | 2.189 × 0.494 × 2.652 m
+046_bone_door_open | Bone Door Open | Doors and Gates | 1,376 triangles | 2.189 × 1.659 × 2.652 m | variant of 045_bone_door_closed (functional_open_state)
+047_sealed_ritual_door | Sealed Ritual Door | Doors and Gates | 1,004 triangles | 2.189 × 0.400 × 2.652 m
+048_shattered_ritual_door | Unsealed Ritual Door | Doors and Gates | 1,004 triangles | 2.189 × 1.565 × 2.652 m | variant of 047_sealed_ritual_door (functional_open_state)
+049_double_gate_closed | Double Gate Closed | Doors and Gates | 1,216 triangles | 2.189 × 0.400 × 2.652 m
+050_double_gate_open | Double Gate Open | Doors and Gates | 1,216 triangles | 2.189 × 1.373 × 2.652 m | variant of 049_double_gate_closed (functional_open_state)
+051_prison_door_closed | Prison Door Closed | Doors and Gates | 916 triangles | 2.189 × 0.400 × 2.652 m
+052_prison_door_open | Prison Door Open | Doors and Gates | 916 triangles | 2.189 × 1.561 × 2.652 m | variant of 051_prison_door_closed (functional_open_state)
+053_thorn_door_closed | Thorn Door Closed | Doors and Gates | 816 triangles | 2.189 × 0.400 × 2.652 m
+054_thorn_door_open | Thorn Door Open | Doors and Gates | 816 triangles | 2.189 × 1.565 × 2.652 m | variant of 053_thorn_door_closed (functional_open_state)
+055_hatch_closed | Hatch Closed | Doors and Gates | 492 triangles | 2.000 × 2.000 × 0.350 m
+056_hatch_open | Hatch Open | Doors and Gates | 492 triangles | 2.000 × 2.000 × 1.620 m | variant of 055_hatch_closed (functional_open_state)
+057_crypt_stair_wide | Crypt Stair Wide | Stairs | 440 triangles | 2.000 × 2.010 × 1.000 m
+058_crypt_stair_narrow | Crypt Stair Narrow | Stairs | 440 triangles | 1.000 × 2.010 × 1.000 m
+059_bone_edged_stair | Bone Edged Stair | Stairs | 880 triangles | 2.000 × 2.010 × 1.000 m
+060_ruined_stair | Ruined Stair | Stairs | 540 triangles | 2.000 × 2.010 × 1.000 m
+061_spiral_stair | Spiral Stair | Stairs | 156 triangles | 1.863 × 1.858 × 1.600 m
+062_thorn_ramp | Thorn Ramp | Stairs | 100 triangles | 2.021 × 2.000 × 1.079 m
+063_stair_landing | Stair Landing | Stairs | 264 triangles | 2.000 × 2.000 × 0.200 m
+064_split_stair_landing | Split Stair Landing | Stairs | 352 triangles | 2.000 × 2.000 × 0.220 m
+065_square_crypt_pillar | Square Crypt Pillar | Columns | 132 triangles | 0.650 × 0.650 × 2.400 m
+066_octagonal_crypt_pillar | Octagonal Crypt Pillar | Columns | 116 triangles | 0.650 × 0.650 × 2.400 m
+067_bone_rib_pillar | Bone Rib Pillar | Columns | 856 triangles | 0.650 × 0.652 × 2.400 m
+068_soul_lantern_pillar | Soul Lantern Pillar | Columns | 168 triangles | 0.650 × 0.708 × 2.400 m
+069_thorned_iron_pillar | Thorned Iron Pillar | Columns | 360 triangles | 0.795 × 0.650 × 2.400 m
+070_broken_pillar | Broken Pillar | Columns | 132 triangles | 0.650 × 0.650 × 1.420 m
+071_twin_skull_pillar | Twin Skull Pillar | Columns | 1,568 triangles | 0.650 × 0.653 × 2.400 m
+072_fluted_tomb_pillar | Fluted Tomb Pillar | Columns | 132 triangles | 0.650 × 0.650 × 2.400 m
+073_chained_pillar | Chained Pillar | Columns | 1,796 triangles | 0.650 × 0.650 × 2.400 m
+074_crowned_pillar | Crowned Pillar | Columns | 424 triangles | 0.795 × 0.680 × 2.400 m
+075_lancet_arch | Lancet Arch | Arches | 352 triangles | 2.190 × 0.400 × 2.720 m
+076_bone_crest_arch | Bone Crest Arch | Arches | 988 triangles | 2.190 × 0.494 × 2.720 m
+077_thorn_crown_arch | Thorn Crown Arch | Arches | 428 triangles | 2.190 × 0.400 × 2.720 m
+078_ruined_lancet_arch | Ruined Lancet Arch | Arches | 372 triangles | 2.190 × 0.476 × 2.770 m
+079_twin_lancet_arch | Twin Lancet Arch | Arches | 704 triangles | 4.090 × 0.400 × 2.720 m
+080_ritual_gateway | Ritual Gateway | Arches | 688 triangles | 2.190 × 0.540 × 2.720 m
+081_thorn_fence_straight | Thorn Fence Straight | Fences and Rails | 914 triangles | 2.000 × 0.150 × 1.431 m
+082_thorn_fence_corner | Thorn Fence Corner | Fences and Rails | 1,784 triangles | 2.020 × 2.020 × 1.431 m
+083_thorn_fence_end | Thorn Fence End | Fences and Rails | 914 triangles | 1.000 × 0.150 × 1.431 m
+084_bone_fence_straight | Bone Fence Straight | Fences and Rails | 2,186 triangles | 2.000 × 0.191 × 1.431 m
+085_bone_fence_corner | Bone Fence Corner | Fences and Rails | 3,056 triangles | 2.020 × 2.061 × 1.431 m
+086_grave_rail | Grave Rail | Fences and Rails | 958 triangles | 2.000 × 0.320 × 1.431 m
+087_chain_barrier | Chain Barrier | Fences and Rails | 1,048 triangles | 1.920 × 0.200 × 1.130 m
+088_spiked_barricade | Spiked Barricade | Fences and Rails | 240 triangles | 2.000 × 0.680 × 1.201 m
+089_broken_iron_fence | Broken Iron Fence | Fences and Rails | 914 triangles | 2.000 × 0.150 × 1.431 m
+090_prison_partition | Prison Partition | Fences and Rails | 1,222 triangles | 2.000 × 0.150 × 1.990 m
+091_crypt_roof_segment | Crypt Roof Segment | Large Structures | 272 triangles | 2.300 × 2.000 × 1.060 m
+092_pointed_roof_end | Pointed Roof End | Large Structures | 624 triangles | 2.300 × 2.000 × 1.060 m
+093_cemetery_plinth | Cemetery Plinth | Large Structures | 132 triangles | 2.500 × 2.500 × 0.480 m
+094_mausoleum_facade | Mausoleum Facade | Large Structures | 1,204 triangles | 3.300 × 1.200 × 3.760 m
+095_ossuary_alcove | Ossuary Alcove | Large Structures | 1,840 triangles | 3.300 × 1.200 × 3.760 m
+096_stone_bridge | Stone Bridge | Large Structures | 396 triangles | 2.200 × 4.000 × 0.980 m
+097_broken_stone_bridge | Broken Stone Bridge | Large Structures | 456 triangles | 2.200 × 4.000 × 0.980 m
+098_watch_belfry | Watch Belfry | Large Structures | 584 triangles | 2.100 × 1.800 × 3.720 m
+099_ritual_dais | Ritual Dais | Large Structures | 348 triangles | 2.500 × 2.500 × 0.438 m
+100_obsidian_obelisk | Obsidian Obelisk | Large Structures | 328 triangles | 0.950 × 0.950 × 2.850 m
+101_ironbound_coffin_closed | Ironbound Coffin Closed | Containers | 704 triangles | 0.847 × 1.820 × 0.643 m
+102_ironbound_coffin_open | Ironbound Coffin Open | Containers | 704 triangles | 0.902 × 1.820 × 1.241 m | variant of 101_ironbound_coffin_closed (functional_open_state)
+103_bone_casket_closed | Bone Casket Closed | Containers | 1,340 triangles | 0.847 × 1.820 × 0.831 m
+104_bone_casket_open | Bone Casket Open | Containers | 1,340 triangles | 0.915 × 1.820 × 1.241 m | variant of 103_bone_casket_closed (functional_open_state)
+105_spiked_chest_closed | Spiked Chest Closed | Containers | 668 triangles | 1.030 × 0.685 × 0.883 m
+106_spiked_chest_open | Spiked Chest Open | Containers | 668 triangles | 1.030 × 0.823 × 1.027 m | variant of 105_spiked_chest_closed (functional_open_state)
+107_ritual_coffer | Ritual Coffer | Containers | 396 triangles | 1.120 × 0.536 × 0.510 m
+108_warded_strongbox | Warded Strongbox | Containers | 812 triangles | 0.720 × 0.626 × 0.510 m
+109_ash_barrel | Ash Barrel | Containers | 808 triangles | 0.706 × 0.706 × 0.800 m
+110_broken_ash_barrel | Broken Ash Barrel | Containers | 808 triangles | 0.784 × 0.842 × 0.800 m
+111_chained_crate | Chained Crate | Containers | 1,208 triangles | 0.940 × 1.000 × 0.840 m
+112_provision_crate | Provision Crate | Containers | 440 triangles | 0.940 × 0.927 × 0.840 m
+113_ossuary_urn | Ossuary Urn | Containers | 476 triangles | 0.660 × 0.660 × 0.790 m
+114_soul_urn | Soul Urn | Containers | 520 triangles | 0.600 × 0.600 × 0.830 m
+115_cracked_urn | Cracked Urn | Containers | 256 triangles | 0.640 × 0.640 × 0.630 m
+116_funerary_jar | Funerary Jar | Containers | 256 triangles | 0.560 × 0.560 × 0.720 m
+117_alchemist_case | Alchemist Case | Containers | 360 triangles | 0.920 × 0.560 × 0.670 m
+118_relic_cage | Relic Cage | Containers | 1,384 triangles | 0.700 × 0.700 × 1.228 m
+119_bone_throne | Bone Throne | Furniture | 1,332 triangles | 1.195 × 0.625 × 2.132 m
+120_cultist_chair | Cultist Chair | Furniture | 456 triangles | 0.508 × 0.600 × 1.170 m
+121_crypt_bench | Crypt Bench | Furniture | 528 triangles | 1.788 × 0.460 × 0.490 m
+122_ritual_table | Ritual Table | Furniture | 792 triangles | 1.788 × 0.910 × 0.909 m
+123_mortuary_table | Mortuary Table | Furniture | 720 triangles | 1.788 × 0.957 × 1.000 m
+124_alchemist_desk | Alchemist Desk | Furniture | 660 triangles | 1.288 × 0.960 × 0.900 m
+125_cursed_bookshelf | Cursed Bookshelf | Furniture | 616 triangles | 1.450 × 0.430 × 1.850 m
+126_apothecary_cabinet | Apothecary Cabinet | Furniture | 2,812 triangles | 1.450 × 0.430 × 1.850 m
+127_coffin_rack | Coffin Rack | Furniture | 2,420 triangles | 1.450 × 0.439 × 1.850 m
+128_weapon_rack | Weapon Rack | Furniture | 290 triangles | 1.330 × 0.198 × 1.750 m
+129_torture_rack | Torture Rack | Furniture | 1,648 triangles | 1.330 × 0.260 × 1.750 m
+130_iron_bed | Iron Bed | Furniture | 660 triangles | 1.838 × 0.790 × 0.890 m
+131_straw_cot | Straw Cot | Furniture | 1,012 triangles | 1.838 × 0.790 × 0.890 m
+132_mourning_lectern | Mourning Lectern | Furniture | 352 triangles | 0.720 × 0.550 × 1.147 m
+133_ritual_wardrobe | Ritual Wardrobe | Furniture | 748 triangles | 1.450 × 0.492 × 1.850 m
+134_broken_stool | Broken Stool | Furniture | 352 triangles | 0.650 × 0.674 × 0.430 m
+135_corpse_cart | Corpse Cart | Furniture | 1,000 triangles | 2.624 × 1.130 × 0.670 m
+136_funeral_bier | Funeral Bier | Furniture | 1,232 triangles | 1.888 × 0.677 × 1.054 m
+137_blood_altar | Blood Altar | Ritual Props | 440 triangles | 1.600 × 1.000 × 1.055 m
+138_soul_altar | Soul Altar | Ritual Props | 512 triangles | 1.600 × 1.000 × 1.285 m
+139_bone_altar | Bone Altar | Ritual Props | 1,712 triangles | 1.600 × 1.000 × 1.055 m
+140_summoning_ring | Summoning Ring | Ritual Props | 608 triangles | 2.000 × 2.000 × 0.220 m
+141_ritual_monolith | Ritual Monolith | Ritual Props | 334 triangles | 0.920 × 0.730 × 1.940 m
+142_chained_soul_crystal | Chained Soul Crystal | Ritual Props | 1,130 triangles | 0.920 × 0.863 × 1.940 m
+143_horned_idol | Horned Idol | Ritual Props | 800 triangles | 0.650 × 0.650 × 1.531 m
+144_hooded_idol | Hooded Idol | Ritual Props | 228 triangles | 0.650 × 0.650 × 1.550 m
+145_skull_totem | Skull Totem | Ritual Props | 2,072 triangles | 0.560 × 0.500 × 1.660 m
+146_bone_effigy | Bone Effigy | Ritual Props | 812 triangles | 0.855 × 0.500 × 1.766 m
+147_sacrificial_basin | Sacrificial Basin | Ritual Props | 256 triangles | 0.882 × 0.882 × 0.930 m
+148_ritual_mirror | Ritual Mirror | Ritual Props | 340 triangles | 0.780 × 0.530 × 1.740 m
+149_spell_lectern | Spell Lectern | Ritual Props | 836 triangles | 0.720 × 0.573 × 1.329 m
+150_cursed_grimoire | Cursed Grimoire | Ritual Props | 484 triangles | 0.475 × 0.590 × 0.185 m
+151_open_grimoire | Open Grimoire | Ritual Props | 572 triangles | 0.710 × 0.470 × 0.150 m
+152_ritual_hourglass | Ritual Hourglass | Ritual Props | 276 triangles | 0.460 × 0.460 × 0.750 m
+153_ossuary_reliquary | Ossuary Reliquary | Ritual Props | 1,134 triangles | 0.880 × 0.700 × 1.240 m
+154_soul_cage | Soul Cage | Ritual Props | 458 triangles | 0.880 × 0.700 × 1.240 m
+155_thorn_chalice | Thorn Chalice | Ritual Props | 332 triangles | 0.481 × 0.357 × 0.502 m
+156_ritual_banner | Ritual Banner | Ritual Props | 450 triangles | 1.060 × 0.500 × 2.210 m
+157_soul_brazier | Soul Brazier | Lights | 606 triangles | 0.780 × 0.780 × 1.211 m
+158_crimson_brazier | Crimson Brazier | Lights | 606 triangles | 0.780 × 0.780 × 1.211 m | variant of 157_soul_brazier (material_variant)
+159_iron_lantern | Iron Lantern | Lights | 460 triangles | 0.500 × 0.460 × 0.930 m
+160_skull_lantern | Skull Lantern | Lights | 1,060 triangles | 0.500 × 0.460 × 0.930 m
+161_wall_soul_torch | Wall Soul Torch | Lights | 190 triangles | 0.280 × 0.555 × 0.851 m
+162_wall_crimson_torch | Wall Crimson Torch | Lights | 190 triangles | 0.280 × 0.555 × 0.851 m | variant of 161_wall_soul_torch (material_variant)
+163_bone_candelabra | Bone Candelabra | Lights | 1,018 triangles | 0.750 × 0.476 × 1.175 m
+164_mourning_candles | Mourning Candles | Lights | 606 triangles | 0.560 × 0.533 × 0.666 m
+165_hanging_cage_lamp | Hanging Cage Lamp | Lights | 1,036 triangles | 0.500 × 0.460 × 1.637 m
+166_crystal_lamp | Crystal Lamp | Lights | 172 triangles | 0.534 × 0.460 × 0.920 m
+167_thorn_fire_bowl | Thorn Fire Bowl | Lights | 286 triangles | 0.860 × 0.818 × 0.741 m
+168_extinguished_brazier | Extinguished Brazier | Lights | 404 triangles | 0.780 × 0.780 × 0.990 m | variant of 157_soul_brazier (functional_extinguished_state)
+169_pointed_gravestone | Pointed Gravestone | Graves | 280 triangles | 0.850 × 0.470 × 1.280 m
+170_winged_gravestone | Winged Gravestone | Graves | 304 triangles | 1.260 × 0.470 × 1.280 m
+171_skull_gravestone | Skull Gravestone | Graves | 916 triangles | 0.850 × 0.470 × 1.280 m
+172_broken_gravestone | Broken Gravestone | Graves | 300 triangles | 1.154 × 0.470 × 0.870 m
+173_stacked_grave_slabs | Stacked Grave Slabs | Graves | 352 triangles | 1.120 × 1.980 × 0.370 m
+174_sarcophagus_closed | Sarcophagus Closed | Graves | 1,384 triangles | 0.990 × 2.020 × 1.050 m
+175_sarcophagus_open | Sarcophagus Open | Graves | 1,384 triangles | 1.045 × 2.020 × 1.535 m | variant of 174_sarcophagus_closed (functional_open_state)
+176_burial_mound | Burial Mound | Graves | 168 triangles | 1.427 × 2.300 × 0.810 m
+177_ossuary_stack | Ossuary Stack | Graves | 2,800 triangles | 1.427 × 2.300 × 0.426 m
+178_grave_marker | Grave Marker | Graves | 100 triangles | 0.420 × 0.310 × 0.910 m
+179_funeral_memorial | Funeral Memorial | Graves | 788 triangles | 1.250 × 0.860 × 1.850 m
+180_bone_pile | Bone Pile | Graves | 2,196 triangles | 1.427 × 2.300 × 0.520 m
+181_dead_tree_tall | Dead Tree Tall | Corrupted Nature | 348 triangles | 1.895 × 1.158 × 2.559 m
+182_dead_tree_leaning | Dead Tree Leaning | Corrupted Nature | 348 triangles | 1.894 × 1.158 × 2.136 m
+183_dead_tree_stump | Dead Tree Stump | Corrupted Nature | 196 triangles | 1.158 × 1.158 × 0.661 m
+184_thorn_bush | Thorn Bush | Corrupted Nature | 380 triangles | 1.190 × 0.344 × 0.932 m
+185_thorn_arch_root | Thorn Arch Root | Corrupted Nature | 270 triangles | 1.794 × 0.200 × 1.810 m
+186_corrupted_root_cluster | Corrupted Root Cluster | Corrupted Nature | 1,016 triangles | 1.190 × 0.429 × 0.932 m
+187_bone_fungus_cluster | Bone Fungus Cluster | Corrupted Nature | 522 triangles | 0.743 × 0.580 × 0.627 m
+188_poison_mushroom_cluster | Poison Mushroom Cluster | Corrupted Nature | 696 triangles | 0.997 × 0.644 × 0.740 m
+189_violet_mushroom_cluster | Violet Mushroom Cluster | Corrupted Nature | 870 triangles | 1.250 × 0.707 × 0.853 m
+190_hanging_moss | Hanging Moss | Corrupted Nature | 182 triangles | 0.763 × 0.139 × 0.888 m
+191_withered_fern | Withered Fern | Corrupted Nature | 560 triangles | 0.580 × 0.579 × 0.486 m
+192_black_bramble | Black Bramble | Corrupted Nature | 532 triangles | 1.651 × 0.346 × 0.936 m
+193_soul_crystal_cluster | Soul Crystal Cluster | Corrupted Nature | 200 triangles | 0.894 × 0.766 × 0.745 m
+194_blood_crystal_cluster | Blood Crystal Cluster | Corrupted Nature | 200 triangles | 0.930 × 0.766 × 0.745 m | variant of 193_soul_crystal_cluster (material_variant)
+195_obsidian_rock_tall | Obsidian Rock Tall | Corrupted Nature | 80 triangles | 0.951 × 0.760 × 1.500 m
+196_obsidian_rock_flat | Obsidian Rock Flat | Corrupted Nature | 80 triangles | 1.522 × 0.960 × 0.500 m
+197_cracked_boulder | Cracked Boulder | Corrupted Nature | 212 triangles | 1.160 × 1.080 × 0.920 m
+198_rubble_fan | Rubble Fan | Corrupted Nature | 120 triangles | 1.561 × 0.532 × 0.260 m
+199_ash_heap | Ash Heap | Corrupted Nature | 60 triangles | 1.176 × 0.821 × 0.160 m
+200_poison_pool | Poison Pool | Corrupted Nature | 204 triangles | 1.454 × 1.366 × 0.180 m
+201_spike_trap_frame | Spike Trap Frame | Dungeon Devices | 474 triangles | 1.550 × 1.500 × 0.650 m
+202_blade_trap_frame | Blade Trap Frame | Dungeon Devices | 164 triangles | 1.550 × 1.500 × 0.950 m
+203_chain_winch | Chain Winch | Dungeon Devices | 916 triangles | 1.245 × 0.487 × 0.960 m
+204_prison_cage | Prison Cage | Dungeon Devices | 1,320 triangles | 1.180 × 1.180 × 1.580 m
+205_hanging_gibbet | Hanging Gibbet | Dungeon Devices | 1,900 triangles | 1.125 × 0.730 × 2.185 m
+206_iron_stocks | Iron Stocks | Dungeon Devices | 1,004 triangles | 1.550 × 0.338 × 1.230 m
+207_warded_lever | Warded Lever | Dungeon Devices | 352 triangles | 0.620 × 0.542 × 0.876 m
+208_pressure_plate | Pressure Plate | Dungeon Devices | 396 triangles | 1.550 × 1.500 × 0.257 m
+209_cursed_forge | Cursed Forge | Dungeon Devices | 750 triangles | 1.400 × 0.920 × 1.216 m
+210_poison_cauldron | Poison Cauldron | Dungeon Devices | 556 triangles | 1.000 × 0.800 × 0.595 m
+211_obsidian_ore | Obsidian Ore | Ores and Resources | 160 triangles | 0.799 × 0.700 × 0.560 m
+212_bloodstone_ore | Bloodstone Ore | Ores and Resources | 224 triangles | 0.799 × 0.700 × 0.618 m
+213_soulstone_ore | Soulstone Ore | Ores and Resources | 224 triangles | 0.799 × 0.700 × 0.618 m
+214_iron_ore | Iron Ore | Ores and Resources | 180 triangles | 0.941 × 0.700 × 0.560 m
+215_sulfur_ore | Sulfur Ore | Ores and Resources | 224 triangles | 0.799 × 0.700 × 0.618 m
+216_corrupted_ore | Corrupted Ore | Ores and Resources | 224 triangles | 0.799 × 0.700 × 0.618 m
+217_obsidian_ingots | Obsidian Ingots | Ores and Resources | 36 triangles | 0.520 × 0.430 × 0.130 m
+218_iron_ingots | Iron Ingots | Ores and Resources | 48 triangles | 0.710 × 0.430 × 0.130 m
+219_bone_shards | Bone Shards | Ores and Resources | 856 triangles | 0.694 × 0.442 × 0.325 m
+220_soul_geode | Soul Geode | Ores and Resources | 224 triangles | 0.856 × 0.780 × 0.575 m
+221_thorn_longsword | Thorn Longsword | Weapons | 576 triangles | 0.605 × 0.190 × 1.540 m
+222_bone_falchion | Bone Falchion | Weapons | 504 triangles | 0.605 × 0.190 × 1.390 m
+223_ritual_dagger | Ritual Dagger | Weapons | 500 triangles | 0.605 × 0.190 × 0.970 m
+224_serrated_dagger | Serrated Dagger | Weapons | 516 triangles | 0.605 × 0.190 × 1.010 m
+225_execution_greatsword | Execution Greatsword | Weapons | 576 triangles | 0.605 × 0.190 × 1.970 m
+226_soul_rapier | Soul Rapier | Weapons | 596 triangles | 0.605 × 0.190 × 1.620 m
+227_hooked_saber | Hooked Saber | Weapons | 504 triangles | 0.605 × 0.190 × 1.500 m
+228_cursed_cleaver | Cursed Cleaver | Weapons | 504 triangles | 0.605 × 0.190 × 1.220 m
+229_skull_battleaxe | Skull Battleaxe | Weapons | 1,076 triangles | 0.655 × 0.261 × 1.400 m
+230_double_thorn_axe | Double Thorn Axe | Weapons | 456 triangles | 1.120 × 0.190 × 1.400 m
+231_bone_hatchet | Bone Hatchet | Weapons | 484 triangles | 0.760 × 0.190 × 1.090 m
+232_spiked_mace | Spiked Mace | Weapons | 648 triangles | 0.681 × 0.592 × 1.030 m
+233_soul_warhammer | Soul Warhammer | Weapons | 776 triangles | 0.670 × 0.274 × 1.290 m
+234_ritual_flail | Ritual Flail | Weapons | 1,220 triangles | 0.637 × 0.300 × 0.868 m
+235_crypt_spear | Crypt Spear | Weapons | 508 triangles | 0.406 × 0.190 × 2.190 m
+236_barbed_halberd | Barbed Halberd | Weapons | 486 triangles | 0.772 × 0.190 × 2.190 m
+237_reaper_scythe | Reaper Scythe | Weapons | 554 triangles | 1.115 × 0.190 × 2.082 m
+238_necromancer_staff | Necromancer Staff | Weapons | 1,172 triangles | 0.509 × 0.284 × 2.101 m
+239_bone_wand | Bone Wand | Weapons | 536 triangles | 0.509 × 0.190 × 1.211 m
+240_thorn_crossbow | Thorn Crossbow | Weapons | 640 triangles | 1.213 × 0.870 × 1.050 m
+241_coffin_shield | Coffin Shield | Shields | 720 triangles | 0.705 × 0.314 × 1.242 m
+242_skull_kite_shield | Skull Kite Shield | Shields | 1,092 triangles | 0.705 × 0.360 × 1.242 m
+243_thorn_round_shield | Thorn Round Shield | Shields | 492 triangles | 0.770 × 0.314 × 0.798 m
+244_bone_buckler | Bone Buckler | Shields | 216 triangles | 0.770 × 0.314 × 0.770 m
+245_crimson_tower_shield | Crimson Tower Shield | Shields | 720 triangles | 0.795 × 0.314 × 1.242 m
+246_broken_crypt_shield | Broken Crypt Shield | Shields | 456 triangles | 0.793 × 0.314 × 0.780 m
+247_soul_ward_shield | Soul Ward Shield | Shields | 720 triangles | 0.795 × 0.314 × 0.782 m
+248_iron_pavise | Iron Pavise | Shields | 544 triangles | 0.795 × 0.314 × 1.242 m
+249_horned_helm | Horned Helm | Armor | 204 triangles | 0.961 × 0.492 × 0.941 m
+250_bone_mask | Bone Mask | Armor | 128 triangles | 0.533 × 0.492 × 0.640 m
+251_cultist_hood | Cultist Hood | Armor | 100 triangles | 0.533 × 0.464 × 0.640 m
+252_spiked_pauldrons | Spiked Pauldrons | Armor | 388 triangles | 1.076 × 0.480 × 0.600 m
+253_cursed_breastplate | Cursed Breastplate | Armor | 664 triangles | 0.680 × 0.358 × 0.660 m
+254_iron_gauntlets | Iron Gauntlets | Armor | 440 triangles | 0.590 × 0.435 × 0.420 m
+255_grave_boots | Grave Boots | Armor | 264 triangles | 0.630 × 0.510 × 0.480 m
+256_ritual_belt | Ritual Belt | Armor | 360 triangles | 0.580 × 0.621 × 0.200 m
+257_blood_phial | Blood Phial | Potions | 476 triangles | 0.260 × 0.268 × 0.554 m
+258_soul_phial | Soul Phial | Potions | 540 triangles | 0.326 × 0.337 × 0.589 m
+259_poison_flask | Poison Flask | Potions | 456 triangles | 0.332 × 0.343 × 0.624 m
+260_violet_draught | Violet Draught | Potions | 520 triangles | 0.229 × 0.241 × 0.659 m
+261_ash_tonic | Ash Tonic | Potions | 476 triangles | 0.296 × 0.303 × 0.554 m
+262_bone_elixir | Bone Elixir | Potions | 540 triangles | 0.365 × 0.376 × 0.589 m
+263_twin_neck_potion | Twin Neck Potion | Potions | 388 triangles | 0.360 × 0.359 × 0.595 m
+264_hexagonal_potion | Hexagonal Potion | Potions | 432 triangles | 0.260 × 0.260 × 0.659 m
+265_bulbous_potion | Bulbous Potion | Potions | 476 triangles | 0.460 × 0.468 × 0.604 m
+266_tall_ritual_bottle | Tall Ritual Bottle | Potions | 520 triangles | 0.240 × 0.251 × 0.814 m
+267_skull_stopper_potion | Skull Stopper Potion | Potions | 828 triangles | 0.296 × 0.282 × 0.733 m
+268_chained_potion | Chained Potion | Potions | 1,172 triangles | 0.292 × 0.345 × 0.659 m
+269_ritual_scroll | Ritual Scroll | Consumables | 240 triangles | 0.410 × 0.180 × 0.162 m
+270_bound_spell_scrolls | Bound Spell Scrolls | Consumables | 676 triangles | 0.445 × 0.470 × 0.282 m
+271_cursed_parchment | Cursed Parchment | Consumables | 280 triangles | 0.440 × 0.580 × 0.014 m
+272_soul_tablet | Soul Tablet | Consumables | 264 triangles | 0.390 × 0.530 × 0.066 m
+273_poison_bundle | Poison Bundle | Consumables | 436 triangles | 0.456 × 0.424 × 0.152 m
+274_dried_herbs | Dried Herbs | Consumables | 324 triangles | 0.326 × 0.424 × 0.152 m
+275_fungus_ration | Fungus Ration | Consumables | 522 triangles | 0.433 × 0.207 × 0.226 m
+276_ash_bread | Ash Bread | Consumables | 212 triangles | 0.533 × 0.320 × 0.240 m
+277_sealed_blood_jar | Sealed Blood Jar | Consumables | 284 triangles | 0.291 × 0.291 × 0.400 m
+278_bone_dust_pouch | Bone Dust Pouch | Consumables | 396 triangles | 0.420 × 0.399 × 0.430 m
+279_iron_salve_tin | Iron Salve Tin | Consumables | 288 triangles | 0.320 × 0.320 × 0.105 m
+280_funeral_incense | Funeral Incense | Consumables | 212 triangles | 0.440 × 0.180 × 0.078 m
+281_crypt_key | Crypt Key | Treasure | 228 triangles | 0.220 × 0.050 × 0.520 m
+282_bone_key | Bone Key | Treasure | 272 triangles | 0.168 × 0.050 × 0.490 m
+283_ritual_key | Ritual Key | Treasure | 504 triangles | 0.220 × 0.057 × 0.520 m
+284_cursed_crown | Cursed Crown | Treasure | 306 triangles | 0.513 × 0.566 × 0.480 m
+285_soul_amulet | Soul Amulet | Treasure | 144 triangles | 0.260 × 0.165 × 0.420 m
+286_blood_amulet | Blood Amulet | Treasure | 144 triangles | 0.260 × 0.162 × 0.420 m | variant of 285_soul_amulet (material_variant)
+287_thorn_ring | Thorn Ring | Treasure | 172 triangles | 0.275 × 0.056 × 0.302 m
+288_bone_brooch | Bone Brooch | Treasure | 220 triangles | 0.503 × 0.168 × 0.420 m
+289_obsidian_jewel | Obsidian Jewel | Treasure | 36 triangles | 0.319 × 0.320 × 0.290 m
+290_crimson_coin_stack | Crimson Coin Stack | Treasure | 544 triangles | 0.420 × 0.232 × 0.100 m
+291_relic_capsule | Relic Capsule | Treasure | 456 triangles | 0.328 × 0.319 × 0.350 m
+292_cursed_scepter | Cursed Scepter | Treasure | 776 triangles | 0.372 × 0.174 × 1.010 m
+293_loose_skull | Loose Skull | Clutter | 636 triangles | 0.361 × 0.264 × 0.380 m
+294_horned_skull | Horned Skull | Clutter | 712 triangles | 0.562 × 0.264 × 0.507 m
+295_crossed_bones | Crossed Bones | Clutter | 168 triangles | 0.698 × 0.427 × 0.100 m
+296_coiled_chain | Coiled Chain | Clutter | 960 triangles | 0.594 × 0.572 × 0.126 m
+297_iron_shackles | Iron Shackles | Clutter | 512 triangles | 0.490 × 0.070 × 0.190 m
+298_rusty_nails | Rusty Nails | Clutter | 280 triangles | 0.230 × 0.321 × 0.036 m
+299_broken_bottle | Broken Bottle | Clutter | 68 triangles | 0.260 × 0.260 × 0.320 m
+300_torn_cult_banner | Torn Cult Banner | Clutter | 458 triangles | 1.060 × 0.500 × 2.210 m
