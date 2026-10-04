@@ -1,19 +1,15 @@
-# DESIGN.md - Documento de Diseño de DungeonDS
+# DESIGN.md - Documento de Diseño
 
-## 1. Visión del Juego
-Un ARPG cenital/isométrico para Nintendo DS con mazmorras procedurales, ambientación oscura y enfoque central en la **nigromancia**:
-- El jugador controla a un nigromante que no lucha únicamente en cuerpo a cuerpo, sino levantando y comandando esbirros de los cadáveres caídos.
-- Perspectiva isométrica/cenital (60 grados dimétrica) inspirada visualmente en *Diablo* clásico.
+## 1. Visión y Alcance Confirmado
+- **Concepto:** Juego para Nintendo DS similar a Diablo (vista cenital/isométrica) procedural y centrado en la temática de nigromancia.
+- **Objetivo actual:** Diseñar el setup gráfico inicial y elegir assets estéticos para montar la demo técnica donde se puedan mover personajes en 8 direcciones.
 
-## 2. Dirección de Arte y Sprites
-- **Técnica de Renderizado:** Sprites 2D pre-renderizados a partir de modelos 3D esqueléticos (Blender headless + script `render_spritesheet.py`).
-- **Resolución de Sprites:** 64×64 o 32×32 píxeles en 8 direcciones de movimiento.
-- **Legibilidad:** Siluetas con contorno oscuro de 1px y curvas de contraste marcadas para evitar el empastado en los paneles LCD de Nintendo DS.
-- **Herramienta de calibración:** `sprite_lab.html` para auditar escalado nearest-neighbor (4x/8x), rotaciones y paletas.
+## 2. Dirección de Arte y Pipeline Confirmado
+- **Técnica:** Sprites 2D pre-renderizados a partir de modelos 3D con animaciones esqueléticas (FBX / Blender).
+- **Proyección:** Isométrica / dimétrica a 60 grados en 8 direcciones.
+- **Herramienta de tuning:** `sprite_lab.html` para auditar escalado nearest-neighbor (1x, 2x, 4x, 8x), filtros de legibilidad (contorno oscuro, contraste) y animación en el sitio (*in-place*).
 
-## 3. Esquema de Controles Previsto (NDS)
-- **D-Pad:** Movimiento del Nigromante (8 direcciones).
-- **Botón A:** Ataque básico / Proyectil de hueso / magia negra.
-- **Botón B:** Resucitar cadáver (invocar esqueleto/zombie).
-- **Botón X / Y:** Comandar esbirros (modo agresivo / seguir / defender).
-- **Pantalla Táctil:** Inventario, mapa de mazmorra procedural y selección de hechizos.
+## 3. Decisiones Abiertas / Pendientes de Definición
+- Mecánicas de juego y controles concretos: Pendiente de definición por el usuario.
+- Generador procedural de mazmorras: Pendiente de definición por el usuario.
+- Estructura y reglas del bucle de combate y nigromancia: Pendiente de definición por el usuario.
