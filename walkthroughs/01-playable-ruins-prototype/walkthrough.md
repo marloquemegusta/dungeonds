@@ -1,39 +1,38 @@
-# Walkthrough: Mazmorra Continua de Doble Pantalla con Cámara y Oclusión 3D
+# Walkthrough: Mazmorra Dimétrica Auténtica en Doble Pantalla
 
-**Hito:** `01-playable-ruins-prototype` (Revisión Final) · **ROM:** `dungeonds.nds`
+**Hito:** `01-playable-ruins-prototype` (Revisión Dimensional) · **ROM:** `dungeonds.nds`
 
-## 1. Transformación de la Arquitectura Visual
+## 1. Corrección Visual y Geométrica
 
-Se ha rediseñado completamente el pipeline gráfico para eliminar el texto plano de la pantalla superior y construir un **mundo gótico continuo a lo largo de las dos pantallas de la Nintendo DS**:
+Tras auditar visualmente los renders anteriores, se detectaron y corrigieron los fallos estructurales que rompían la ilusión de mazmorra:
 
-1. **Mazmorra Continua en Doble Pantalla (Vertical Span)**:
-   - Siguiendo la arquitectura de `towerds`:
-     - **Pantalla Inferior (Main Engine)**: Donde vive el jugador (`lcdMainOnBottom()`), renderizado con Frame Buffer directo a 15 bits en `VRAM_A` y `VRAM_B` con doble búfer por hardware.
-     - **Pantalla Superior (Sub Engine)**: La mazmorra se extiende verticalmente de forma natural hacia el norte en `VRAM_C` (Modo 5 Direct Color de 16 bits).
-2. **Cámara con Seguimiento Suave**:
-   - La cámara sigue al personaje en el espacio mundial (480×576 px). Al moverte hacia el norte, la vista se desplaza descubriendo criptas y arcos en la pantalla superior.
-3. **Perspectiva Dimétrica a 60° y Altura Vertical Real**:
-   - Los muros de osario, columnas y arcos ya no son baldosas planas aplastadas: están horneados en Blender a **32×48 píxeles** con alzado vertical real.
-4. **Sistema de Oclusión y Profundidad (Y-Sorting / Z-Order)**:
-   - Motor de profundidad isométrica: el renderizador ordena dinámicamente los elementos visibles por su línea de base ($Y$).
-   - **El personaje se oculta correctamente detrás de los pilares y muros** cuando camina por su parte trasera, y se dibuja por delante cuando pasa frente a ellos.
+1. **Corrección de Cuaterniones en Blender (`bake_dungeon_authentic.py`)**:
+   - Los modelos de Dreadhollow se importaban con `rotation_mode = 'QUATERNION'`, lo que provocaba que cualquier rotación en grados $Z$ fuera ignorada, renderizando todos los muros de frente sin perspectiva.
+   - Se forzó el modo `XYZ` con rotaciones reales de $90^\circ$ para los muros laterales y alineación precisa.
+2. **Geometría de Suelo Dimétrica 2:1 (32×16 px)**:
+   - Los suelos ya no son cuadrados aplastados: ahora respetan exactamente la relación 2:1 de la proyección dimétrica a $60^\circ$ ($\cos 60^\circ = 0.5$).
+3. **Muros y Estructuras Arquitectónicas Coherentes**:
+   - **Muros frontales (32×48 px)**: Cierran el perímetro norte y sur con alzado vertical.
+   - **Muros laterales en profundidad (32×48 px)**: Se extienden hacia el fondo creando las alas oeste y este de la gran nave.
+   - **Arcos góticos y columnas de alma**: Con oclusión dinámica real (Y-Sorting) donde el personaje pasa por detrás y por delante.
+4. **Mundo Continuo en Doble Pantalla**:
+   - El salón de la cripta se extiende verticalmente a lo largo de las dos pantallas sin interrupciones. La cámara sigue al personaje de forma suave.
 
 ---
 
-## 2. Evidencia de Ejecución Real en Nintendo DS
+## 2. Evidencia de Ejecución en DeSmuME
 
-### Secuencia de Exploración Continua en Doble Pantalla
-![Dual Screen Exploration](assets/gameplay_dual_screen_ruins.gif)
+### Animación del Gameplay en Doble Pantalla
+![Gameplay Auténtico](assets/gameplay_authentic_dungeon.gif)
 
-### Capturas del Escenario en DeSmuME
+### Capturas del Escenario
 
-| Spawn en Plaza Inferior | Caminando al Norte (Extensión Pantalla Superior) | Oclusión Tras Pilar | Caminando por Delante del Pilar |
+| Nave Principal y Suelo Dimétrico | Avance al Norte (Extensión Pantalla Superior) | Oclusión Tras Linterna de Alma | Paso por Delante del Pilar |
 | :---: | :---: | :---: | :---: |
 | ![Spawn](assets/00_bottom_spawn_center.png) | ![Walk North](assets/01_walk_north_towards_top_screen.png) | ![Occlusion](assets/02_walk_east_behind_pillar.png) | ![Front](assets/03_walk_south_in_front_of_pillar.png) |
 
 ---
 
-## 3. Métricas y Validación
-- **ROM generada**: `dungeonds.nds` (623 KB).
-- **Framerate**: 60 FPS estables con sincronización vertical `swiWaitForVBlank()` y doble búfer sin parpadeo.
-- **Escenario verificado**: `scenarios/dual_screen_ruins_test.json` superado con 6 capturas deterministas en DeSmuME headless.
+## 3. Estado de Entrega
+- **ROM NDS limpia**: `dungeonds.nds` compilada sin warnings ni errores de linker.
+- **Evidencia verificada**: `scenarios/dual_screen_ruins_test.json` ejecutado al 100% de éxito.
