@@ -1,0 +1,13 @@
+#ifndef PLAYER_SPRITE_H_GUARD
+#define PLAYER_SPRITE_H_GUARD
+
+#include <nds.h>
+
+#define PLAYER_SPRITE_W 64
+#define PLAYER_SPRITE_H 64
+#define PLAYER_NUM_DIRS 8
+#define PLAYER_NUM_FRAMES 8
+
+extern const uint16_t g_player_frames[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][PLAYER_SPRITE_W * PLAYER_SPRITE_H];
+
+#endif // PLAYER_SPRITE_H_GUARD
