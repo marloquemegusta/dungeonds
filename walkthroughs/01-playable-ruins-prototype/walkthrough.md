@@ -1,40 +1,39 @@
-# Walkthrough: Primera Demo Jugable — Exploración de Ruinas en Nintendo DS
+# Walkthrough: Mazmorra Continua de Doble Pantalla con Cámara y Oclusión 3D
 
-**Hito:** `01-playable-ruins-prototype` · **Rama:** `feat/playable-ruins-prototype` · **ROM:** `dungeonds.nds`
+**Hito:** `01-playable-ruins-prototype` (Revisión Final) · **ROM:** `dungeonds.nds`
 
-## 1. Resumen de la Entrega
-Se ha implementado y verificado en emulación headless la **primera versión jugable de la mazmorra**:
-- **Escenario variado de ruinas**: 11 tiles horneados directamente con Blender (`tools/bake_dungeon_tiles.py`) desde los modelos 3D de Dreadhollow (losas de cripta, obsidiana agrietada, mosaico de huesos, sellos carmesí, muros de osario con contrafuertes, pilares rotos y arcos góticos en ruina).
-- **Movimiento 8-direccional fluido**: Lectura directa del D-Pad en el ARM9 con aritmética de punto fijo 8.8 (`fixed`), velocidad diagonal normalizada y poses direccionales (Sur, Sudoeste, Oeste, Noroeste, Norte, Noreste, Este, Sudeste).
-- **Animación y anclaje al suelo**: Ciclos de pasos pre-renderizados a 60 FPS con sombra elíptica dinámica proyectada en la base.
-- **Sistema de colisiones activo**: Detección de obstáculos por celda con deslizamiento suave de eje (*axis sliding*) contra muros y pilares.
-- **Doble búfer VRAM con DMA**: Renderizado en VRAM_A / VRAM_B a 60 FPS sin tearing, y consola de telemetría de posición en la pantalla superior.
+## 1. Transformación de la Arquitectura Visual
+
+Se ha rediseñado completamente el pipeline gráfico para eliminar el texto plano de la pantalla superior y construir un **mundo gótico continuo a lo largo de las dos pantallas de la Nintendo DS**:
+
+1. **Mazmorra Continua en Doble Pantalla (Vertical Span)**:
+   - Siguiendo la arquitectura de `towerds`:
+     - **Pantalla Inferior (Main Engine)**: Donde vive el jugador (`lcdMainOnBottom()`), renderizado con Frame Buffer directo a 15 bits en `VRAM_A` y `VRAM_B` con doble búfer por hardware.
+     - **Pantalla Superior (Sub Engine)**: La mazmorra se extiende verticalmente de forma natural hacia el norte en `VRAM_C` (Modo 5 Direct Color de 16 bits).
+2. **Cámara con Seguimiento Suave**:
+   - La cámara sigue al personaje en el espacio mundial (480×576 px). Al moverte hacia el norte, la vista se desplaza descubriendo criptas y arcos en la pantalla superior.
+3. **Perspectiva Dimétrica a 60° y Altura Vertical Real**:
+   - Los muros de osario, columnas y arcos ya no son baldosas planas aplastadas: están horneados en Blender a **32×48 píxeles** con alzado vertical real.
+4. **Sistema de Oclusión y Profundidad (Y-Sorting / Z-Order)**:
+   - Motor de profundidad isométrica: el renderizador ordena dinámicamente los elementos visibles por su línea de base ($Y$).
+   - **El personaje se oculta correctamente detrás de los pilares y muros** cuando camina por su parte trasera, y se dibuja por delante cuando pasa frente a ellos.
 
 ---
 
 ## 2. Evidencia de Ejecución Real en Nintendo DS
 
-Toda la evidencia ha sido capturada de forma determinista mediante el runner de emulación headless en DeSmuME:
+### Secuencia de Exploración Continua en Doble Pantalla
+![Dual Screen Exploration](assets/gameplay_dual_screen_ruins.gif)
 
-### Secuencia de Exploración en la Mazmorra
-![Exploración de Ruinas](assets/gameplay_ruins_exploration.gif)
+### Capturas del Escenario en DeSmuME
 
-### Capturas de Hitos de Movimiento
-
-| Spawn en Cripta Central | Movimiento Este | Movimiento Norte | Movimiento Sudoeste |
+| Spawn en Plaza Inferior | Caminando al Norte (Extensión Pantalla Superior) | Oclusión Tras Pilar | Caminando por Delante del Pilar |
 | :---: | :---: | :---: | :---: |
-| ![Spawn](assets/00_spawn_center.png) | ![Walking East](assets/01_walking_east.png) | ![Walking North](assets/02_walking_north.png) | ![Walking West](assets/03_walking_west.png) |
+| ![Spawn](assets/00_bottom_spawn_center.png) | ![Walk North](assets/01_walk_north_towards_top_screen.png) | ![Occlusion](assets/02_walk_east_behind_pillar.png) | ![Front](assets/03_walk_south_in_front_of_pillar.png) |
 
 ---
 
-## 3. Arquitectura y Archivos Implementados
-
-1. **`tools/bake_dungeon_tiles.py`**:
-   - Renderizador headless en Blender para convertir las piezas 3D modulares `.glb` a tiles de 16×16 con iluminación lateral y cenital gótica.
-2. **`tools/convert_assets_to_c.py`**:
-   - Conversor automatizado a arrays de código C (`source/dungeon_data.c`, `source/player_sprite.c`, `include/dungeon_data.h`, `include/player_sprite.h`).
-3. **`source/main.c`**:
-   - Bucle principal ARM9, inicialización de pantalla dual (superior: consola de estado; inferior: frame buffer directo a 15 bits BGR555 con doble búfer).
-   - Máquina de estados del jugador, lectura del D-Pad, colisiones de radio 8px y transferencia por DMA de alta velocidad.
-4. **`scenarios/ruins_exploration.json`**:
-   - Escenario automatizado de prueba en DeSmuME que recorre las ruinas y valida los cambios de pantalla.
+## 3. Métricas y Validación
+- **ROM generada**: `dungeonds.nds` (623 KB).
+- **Framerate**: 60 FPS estables con sincronización vertical `swiWaitForVBlank()` y doble búfer sin parpadeo.
+- **Escenario verificado**: `scenarios/dual_screen_ruins_test.json` superado con 6 capturas deterministas en DeSmuME headless.
