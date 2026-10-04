@@ -1,0 +1,21 @@
+{
+  "name": "ruins_exploration",
+  "steps": [
+    { "frames": 30, "capture": "00_spawn_center" },
+    { "button_down": "RIGHT", "frames": 40, "capture": "01_walking_east" },
+    { "button_up": "RIGHT", "frames": 5 },
+    { "button_down": "UP", "frames": 30, "capture": "02_walking_north" },
+    { "button_up": "UP", "frames": 5 },
+    { "button_down": "LEFT", "frames": 40, "capture": "03_walking_west" },
+    { "button_up": "LEFT", "frames": 5 },
+    { "button_down": "DOWN", "frames": 40, "capture": "04_walking_south" },
+    { "button_up": "DOWN", "frames": 10, "capture": "05_idle_final" }
+  ],
+  "assertions": {
+    "screen_changed": {
+      "from": "00_spawn_center",
+      "to": "01_walking_east",
+      "min_changed_pixels": 50
+    }
+  }
+}

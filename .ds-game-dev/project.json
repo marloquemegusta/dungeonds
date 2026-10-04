@@ -1,0 +1,23 @@
+{
+    "hostTests": [],
+    "blocksdsImage": "skylyrac/blocksds:slim-latest",
+    "romUploadName": "dungeonds.nds",
+    "copy": [
+        {
+            "source": "source",
+            "destination": "arm9/source"
+        },
+        {
+            "source": "include",
+            "destination": "arm9/include"
+        },
+        {
+            "source": "assets/icon.png",
+            "destination": "icon.png"
+        }
+    ],
+    "scenarioDirectory": "scenarios",
+    "buildTemplate": "templates/blocksds-test",
+    "rom": "dungeonds.nds",
+    "outputRom": "game-blocksds.nds"
+}
