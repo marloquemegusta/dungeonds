@@ -1,0 +1,61 @@
+{
+  "scenario": "integration_showcase_walk.json",
+  "captures": {
+    "00_spawn": {
+      "sha256": "7f6e323fa05ae811dfb36504427d20a5a22e74eb967e4169836d715a641ac42d",
+      "path": "00_spawn.png"
+    },
+    "01_walking": {
+      "sha256": "1efcbaaa19b19ec3abe2f6d72d97cb2b5983a4e9a45d93a7844aca33445b327f",
+      "path": "01_walking.png"
+    },
+    "02_idle": {
+      "sha256": "08cbe65725842d0b5b6d97cd2fe10772c2b6f5b8c359b7159b01471b5545d3d3",
+      "path": "02_idle.png"
+    }
+  },
+  "events": [
+    {
+      "step": 0,
+      "action": "frame_advance",
+      "frames": 60,
+      "keypad": 0
+    },
+    {
+      "step": 1,
+      "action": "button_down",
+      "button": "RIGHT"
+    },
+    {
+      "step": 1,
+      "action": "frame_advance",
+      "frames": 60,
+      "keypad": 16
+    },
+    {
+      "step": 2,
+      "action": "button_up",
+      "button": "RIGHT"
+    },
+    {
+      "step": 2,
+      "action": "frame_advance",
+      "frames": 8,
+      "keypad": 0
+    }
+  ],
+  "assertions": {
+    "screen_changed": true,
+    "changed_pixels": 74050,
+    "min_changed_pixels": 50,
+    "screen_changes": [
+      {
+        "from": "00_spawn",
+        "to": "01_walking",
+        "changed": true,
+        "changed_pixels": 74050,
+        "min_changed_pixels": 50
+      }
+    ]
+  }
+}

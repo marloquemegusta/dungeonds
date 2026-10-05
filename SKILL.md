@@ -105,6 +105,47 @@ Do not declare the loop complete while a known visual defect remains. Explain
 what each capture proves. Use a close-up when the affected surface is too small
 to judge at native resolution.
 
+### Technical walkthroughs
+
+When a milestone changes rendering, assets, runtime behavior, or a workflow,
+write or update its canonical document under `walkthroughs/<milestone>/` and
+add it to `walkthroughs/README.md`. A walkthrough is a teaching and handoff
+document, not a short changelog. Explain enough context that another developer
+can understand the original failure, the reasoning behind the implementation,
+and how to reproduce and verify the result without relying on chat history.
+
+For a substantial technical change, include:
+
+1. A plain-language summary and the user-visible problem being solved.
+2. The relevant geometry/data flow, key dimensions and coordinate/anchor
+   conventions, then how the runtime consumes the generated data.
+3. The investigated alternatives and failed attempts, their observable
+   symptoms, root causes, and the change that resolved each one. Distinguish
+   confirmed causes from hypotheses.
+4. Durable invariants in `TECHNICAL.md`; product decisions in `DESIGN.md`,
+   workflow rules in this skill/`AGENTS.md`, and verified milestone facts in
+   `STATUS.md`. The walkthrough explains these sources rather than duplicating
+   them as competing specifications.
+5. Reproduction commands, test/build/scenario results, artifacts, current
+   limitations, and the next validation needed.
+
+Walkthroughs for a visual or graphical change must embed several relevant
+images, not merely link to an artifact directory. Prefer actual captures from
+the built ROM plus a real asset/orientation sheet or an enlarged crop where
+details are hard to judge. Store committed images next to the walkthrough and
+use relative Markdown image links. Add a short caption stating what each image
+shows and what it does *not* prove. Review every embedded image at native size
+and use close-ups for clipping, pivots, seams, and shadows. Synthetic gameplay
+screens or mockups must not be presented as game evidence; any derived crop or
+asset contact sheet must be clearly identified as such. Do not link only to
+gitignored `artifacts/` files if the walkthrough should work in a clean clone.
+
+Keep the walkthrough as verbose as the lesson requires: document measurements,
+API/version-specific pitfalls, memory/performance trade-offs, and unresolved
+risks when they materially explain the design. Never upgrade an emulator
+`PASS`, pixel difference, or screenshot hash into a stronger claim than the
+scenario actually asserted.
+
 ### Prohibition of Synthetic Offline Mockups
 All gameplay simulations, combat animations, and scene/tile mockups MUST be executed
 directly inside the real game engine by compiling the ROM (`scripts/build-project.ps1`)
