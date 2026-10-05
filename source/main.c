@@ -24,9 +24,10 @@
 #define VOID_COLOR RGB15(0, 0, 0)
 
 // Screen-space movement speed (px/frame, 8.8 fixed) and collider radius
-#define PLAYER_SPEED (TO_FIXED(1) + 128) // 1.5 px/frame
+// Synchronized to 1.502m 3D stride (16.99 px at 11.31 px/m): 181/256 px/frame over 24 ticks (ANIM_PERIOD=3)
+#define PLAYER_SPEED 181                 // ~0.71 px/frame (zero foot sliding)
 #define PLAYER_COLLIDER 96               // 0.375 tile radius
-#define ANIM_PERIOD 5
+#define ANIM_PERIOD 3                    // 24 ticks (0.40s) per 8-frame cycle
 
 // Camera vertical anchor: where the player's feet sit on the bottom screen.
 // Above centre, so the top screen is filled by the dungeon rather than the void.
