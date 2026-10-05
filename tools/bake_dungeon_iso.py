@@ -94,6 +94,21 @@ if NAME.startswith(('WR_', 'WC_')) or NAME in ('P_soul', 'AR_row', 'AR_col'):
     for o in meshes:
         o.scale.z *= factor
 
+if NAME.startswith("P_soul"):
+    for mat in bpy.data.materials:
+        tree = getattr(mat, 'node_tree', None)
+        if tree:
+            bsdf = tree.nodes.get('Principled BSDF')
+            em_tex = [n for n in tree.nodes if n.type == 'TEX_IMAGE' and 'emission' in getattr(n.image, 'name', '').lower()]
+            if em_tex and bsdf:
+                mult = tree.nodes.new('ShaderNodeVectorMath')
+                mult.operation = 'MULTIPLY'
+                mult.inputs[1].default_value = (0.05, 0.60, 1.8)
+                tree.links.new(em_tex[0].outputs['Color'], mult.inputs[0])
+                tree.links.new(mult.outputs['Vector'], bsdf.inputs['Emission Color'])
+                bsdf.inputs['Emission Strength'].default_value = 3.5
+
+
 pts = []
 for o in meshes:
     for c in o.bound_box:
