@@ -22,20 +22,13 @@
 - [x] ROMs limpias `dungeonds_e30.nds` y `dungeonds_e60.nds`; escenario headless en DeSmuME (`scenarios/dual_screen_ruins_test.json`) al 100% de éxito.
 - [x] Walkthrough con evidencia: `walkthroughs/02-isometric-renderer/walkthrough.md`.
 
-### Validación de sombras horneadas (e30)
-- [x] 40 máscaras de objetos (10 tipos × 4 orientaciones) y 8 máscaras del personaje verificadas por `tests/test_shadow_masks.py`.
-- [x] ROM `e30` compilada con BlocksDS y escenario `scenarios/integration_showcase_walk.json` ejecutado en DeSmuME headless; capturas y logs en `artifacts/baked_shadows_final/`.
-
-## Hito 2.5: Atmósfera Gótica, Outline, Colisiones y Sincronización (Completado)
-- [x] Rama `feat/dungeon-lighting-and-outline` creada y consolidada.
-- [x] Iluminación gótica chiaroscuro en `tools/ds_look.py`: luz de antorcha cálida ámbar, relleno de cripta azul pizarra tenue, rim espectral y ambiente de mundo oscuro (`0.18`).
-- [x] Fondo negro abisal (`VOID_COLOR = RGB15(0,0,0)`) y oscurecimiento de sombras al 63%.
-- [x] Outline de legibilidad de 1 px exterior para el personaje (`#101018`) por celda de 64×64.
-- [x] Sincronización exacta de zancada (1.502 m = 16.99 px): `PLAYER_SPEED = 181` y `ANIM_PERIOD = 3` (cero efecto cinta transportadora).
-- [x] Colisión sub-tile física circular en pilares (0.65 m de base en vez de bloquear 3.5 m).
-- [x] Orientación frontal de linternas de alma (rotaciones 180° y 90°) y llama azul espectral potenciada con shader de emisión saturada.
-- [x] Banner NDS corregido a `DungeonDS: Necromancer Crypt` y limpieza de ROMs obsoletas en la SD de la consola.
-- [x] Verificado en DeSmuME headless (100% PASS, 74 frames de tour) y subido por FTP a la Nintendo DS física (`dungeonds.nds`).
+### Validación y pulido de atmósfera e30
+- [x] Iluminación gótica chiaroscuro en `tools/ds_look.py`: luz de antorcha cálida ámbar, relleno frío tenue (`0.50`), ambiente oscuro (`0.18`), fondo negro abisal y sombras al 63%.
+- [x] Outline de legibilidad de 1 px exterior para el personaje (`#101018`).
+- [x] Sincronización física de paso con zancada 3D (`PLAYER_SPEED = 181`, `ANIM_PERIOD = 3`, sin efecto cinta).
+- [x] Colisión sub-tile física circular en pilares (base de 0.65 m).
+- [x] Orientación frontal de linternas de alma (rotaciones 180° y 90°) y llama azul espectral potenciada.
+- [x] Banner NDS configurado a `DungeonDS: Necromancer Crypt` y ROM probada en hardware físico vía FTP.
 - [x] Walkthrough documentado en `walkthroughs/03-dungeon-atmosphere-and-outline/walkthrough.md`.
 
 ## Siguiente Hito (Hito 3): Mecánicas de Nigromancia
