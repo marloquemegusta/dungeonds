@@ -23,7 +23,9 @@ def parse_args():
         "samples": 8,
         "in_place": True,
         "out": "spritesheet.png",
-        "temp_dir": os.path.abspath("temp_sprite_frames")
+        "temp_dir": os.path.abspath("temp_sprite_frames"),
+        "pitch": 30.0,
+        "fit": 1.35
     }
     i = 0
     while i < len(raw_args):
@@ -58,6 +60,12 @@ def parse_args():
             i += 2
         elif arg in ["--temp"]:
             cfg["temp_dir"] = os.path.abspath(val)
+            i += 2
+        elif arg in ["--pitch"]:
+            cfg["pitch"] = float(val)
+            i += 2
+        elif arg in ["--fit"]:
+            cfg["fit"] = float(val)
             i += 2
         else:
             i += 1
@@ -157,7 +165,7 @@ scene.collection.objects.link(rig)
 
 cam_data = bpy.data.cameras.new("IsoCam")
 cam_data.type = 'ORTHO'
-cam_data.ortho_scale = max_dim * 1.35
+cam_data.ortho_scale = max_dim * {cfg['fit']}
 cam_obj = bpy.data.objects.new("IsoCam", cam_data)
 scene.collection.objects.link(cam_obj)
 scene.camera = cam_obj
