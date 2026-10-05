@@ -40,24 +40,24 @@ def tile_h(preset):
 
 # --- lighting rig (identical for environment and characters) ----------------
 # Authentic gothic crypt chiaroscuro: warm torchlight/brazier Key light,
-# cold slate/blue Fill in the shadows, subtle spectral Rim for edge separation.
+# very subtle cold slate/blue Fill in the shadows, subtle spectral Rim for edge separation.
 LIGHTS = [
-    {"name": "Key",  "energy": 4.2, "angle": 12.0, "rot": (55.0, 0.0, 150.0), "shadow": True,
-     "color": (1.0, 0.84, 0.62)}, # Warm flame / torchlight
-    {"name": "Fill", "energy": 0.95, "angle": 45.0, "rot": (68.0, 0.0, -35.0), "shadow": False,
-     "color": (0.45, 0.55, 0.75)}, # Cold blue/slate ambient shadow fill
-    {"name": "Rim",  "energy": 1.15, "angle": 30.0, "rot": (72.0, 0.0, 55.0),  "shadow": False,
-     "color": (0.70, 0.85, 1.00)}, # Pale spectral edge highlight
+    {"name": "Key",  "energy": 4.5, "angle": 6.0, "rot": (55.0, 0.0, 150.0), "shadow": True,
+     "color": (1.0, 0.76, 0.46)}, # Rich amber flame / torchlight
+    {"name": "Fill", "energy": 0.50, "angle": 45.0, "rot": (68.0, 0.0, -35.0), "shadow": False,
+     "color": (0.30, 0.40, 0.65)}, # Subtle cold blue/slate stone bounce
+    {"name": "Rim",  "energy": 0.85, "angle": 30.0, "rot": (72.0, 0.0, 55.0),  "shadow": False,
+     "color": (0.60, 0.80, 1.00)}, # Subtle pale spectral edge glint
 ]
 
-# Deep subterranean ambient: prevents pitch-black void while keeping shadows atmospheric
-WORLD_COLOR = (0.04, 0.045, 0.07)
-WORLD_STRENGTH = 0.50
+# Deep subterranean catacomb ambient: almost pitch black, only lit by torches
+WORLD_COLOR = (0.015, 0.02, 0.035)
+WORLD_STRENGTH = 0.18
 
 # --- colour grade applied to every sprite -----------------------------------
-GRADE_CONTRAST = 1.14
-GRADE_BRIGHTNESS = 1.06
-GRADE_SATURATION = 1.18
+GRADE_CONTRAST = 1.24
+GRADE_BRIGHTNESS = 0.98
+GRADE_SATURATION = 1.24
 
 def blender_lights_snippet():
     out = []

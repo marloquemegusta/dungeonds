@@ -21,7 +21,7 @@
 // area above it.
 // ---------------------------------------------------------------------------
 
-#define VOID_COLOR RGB15(2, 2, 5)
+#define VOID_COLOR RGB15(0, 0, 0)
 
 // Screen-space movement speed (px/frame, 8.8 fixed) and collider radius
 #define PLAYER_SPEED (TO_FIXED(1) + 128) // 1.5 px/frame
@@ -156,7 +156,7 @@ static void blit_tile(uint16_t *buffer, const uint16_t *src, int w, int h,
 // Shadow shape/coverage is baked from the 3D asset. Runtime only composites
 // that coverage over the actual floor tile beneath it.
 static inline uint16_t apply_shadow(uint16_t color, uint8_t coverage) {
-    uint32_t keep = 255 - ((uint32_t)coverage * 112) / 255; // max ~44% darkening
+    uint32_t keep = 255 - ((uint32_t)coverage * 160) / 255; // max ~63% darkening
     uint32_t r = ((color & 0x1F) * keep) / 255;
     uint32_t g = (((color >> 5) & 0x1F) * keep) / 255;
     uint32_t b = (((color >> 10) & 0x1F) * keep) / 255;
@@ -386,8 +386,8 @@ static void player_update(uint32_t keys) {
         }
 
         // Screen space -> tile space (inverse of the dimetric projection)
-        fixed sx = (vx << FIXED_SHIFT) / TILE_HALF_W;
-        fixed sy = (vy << FIXED_SHIFT) / TILE_HALF_H;
+        fixed sx = vx / TILE_HALF_W;
+        fixed sy = vy / TILE_HALF_H;
         fixed dcol = (sx + sy) >> 1;
         fixed drow = (sy - sx) >> 1;
 

@@ -1,0 +1,21 @@
+{
+  "name": "dungeon_walk_tour",
+  "steps": [
+    { "frames": 30, "capture": "00_spawn_center" },
+    { "button_down": "UP", "frames": 60, "capture_sequence": "dungeon_walk", "capture_every": 2 },
+    { "button_up": "UP", "frames": 4 },
+    { "button_down": "RIGHT", "frames": 60, "capture_sequence": "dungeon_walk", "capture_every": 2 },
+    { "button_up": "RIGHT", "frames": 4 },
+    { "button_down": "DOWN", "frames": 60, "capture_sequence": "dungeon_walk", "capture_every": 2 },
+    { "button_up": "DOWN", "frames": 4 },
+    { "button_down": "LEFT", "frames": 50, "capture_sequence": "dungeon_walk", "capture_every": 2, "capture": "01_walking_complete" },
+    { "button_up": "LEFT", "frames": 10, "capture": "02_idle_final" }
+  ],
+  "assertions": {
+    "screen_changed": {
+      "from": "00_spawn_center",
+      "to": "01_walking_complete",
+      "min_changed_pixels": 100
+    }
+  }
+}
