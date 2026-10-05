@@ -3,20 +3,22 @@
 
 #include <nds.h>
 
+// Baked view preset: e30 (elevation 30 deg)
 #define FLOOR_TILE_W 32
 #define FLOOR_TILE_H 16
 #define NUM_FLOOR_TILES 5
 
-#define WALL_SPRITE_W 32
-#define WALL_SPRITE_H 48
-#define NUM_WALL_TYPES 8
+#define OBJ_SPRITE_W 96
+#define OBJ_SPRITE_H 96
+#define OBJ_SHADOW_W 96
+#define OBJ_SHADOW_H 96
+#define OBJ_ANCHOR_Y 48
+#define NUM_OBJ_SPRITES 40
 
-#define WORLD_COLS 16
-#define WORLD_ROWS 32
-#define WORLD_W (WORLD_COLS * FLOOR_TILE_W) // 512 px
-#define WORLD_H (WORLD_ROWS * FLOOR_TILE_H) // 512 px
+#define MAP_COLS 36
+#define MAP_ROWS 36
+#define MAP_VOID 255
 
-// Floor Tile IDs
 enum {
     FLOOR_CRYPT = 0,
     FLOOR_OBSIDIAN = 1,
@@ -25,32 +27,24 @@ enum {
     FLOOR_WORN = 4
 };
 
-// Wall / Prop IDs
 enum {
-    WALL_CRYPT_FRONT = 0,
-    WALL_BUTTRESS_FRONT = 1,
-    WALL_OSSUARY_FRONT = 2,
-    WALL_ARCH_FRONT = 3,
-    WALL_CRYPT_SIDE = 4,
-    WALL_BUTTRESS_SIDE = 5,
-    PROP_BROKEN_PILLAR = 6,
-    PROP_SOUL_PILLAR = 7
+    OBJ_WR_CRYPT = 0,
+    OBJ_WC_CRYPT = 4,
+    OBJ_WR_BUTTRESS = 8,
+    OBJ_WC_BUTTRESS = 12,
+    OBJ_WR_OSSUARY = 16,
+    OBJ_WC_OSSUARY = 20,
+    OBJ_P_SOUL = 24,
+    OBJ_P_BROKEN = 28,
+    OBJ_AR_ROW = 32,
+    OBJ_AR_COL = 36
 };
 
-typedef struct {
-    int16_t x;       // Center X
-    int16_t y;       // Baseline Y (for sorting and collision)
-    uint8_t type;    // Wall / Prop ID
-    uint8_t solid_r; // Radius of collision
-} DungeonProp;
-
-#define MAX_DUNGEON_PROPS 128
-
 extern const uint16_t g_floor_tiles[NUM_FLOOR_TILES][FLOOR_TILE_W * FLOOR_TILE_H];
-extern const uint16_t g_wall_sprites[NUM_WALL_TYPES][WALL_SPRITE_W * WALL_SPRITE_H];
-extern const uint8_t g_world_floor_map[WORLD_ROWS][WORLD_COLS];
-
-extern const int g_dungeon_prop_count;
-extern const DungeonProp g_dungeon_props[MAX_DUNGEON_PROPS];
+extern const uint16_t g_obj_sprites[NUM_OBJ_SPRITES][OBJ_SPRITE_W * OBJ_SPRITE_H];
+extern const uint8_t g_obj_shadow_masks[NUM_OBJ_SPRITES][OBJ_SHADOW_W * OBJ_SHADOW_H / 2];
+extern const uint8_t g_obj_shadow_bounds[NUM_OBJ_SPRITES][4];
+extern const uint8_t g_floor_map[MAP_ROWS][MAP_COLS];
+extern const uint8_t g_obj_map[MAP_ROWS][MAP_COLS];
 
 #endif // DUNGEON_DATA_H

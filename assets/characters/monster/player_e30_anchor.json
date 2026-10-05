@@ -1,0 +1,23 @@
+{
+  "asset": "player",
+  "preset": "e30",
+  "anchor_world_m": [
+    0.0,
+    0.0,
+    0.0
+  ],
+  "anchor_world_semantics": "armature origin in source model; XY projects to sprite anchor, Z is grounded to room floor",
+  "anchor_pixel": [
+    32,
+    32
+  ],
+  "projection": {
+    "azimuth_deg": 45.0,
+    "elevation_deg": 30.0,
+    "pixels_per_metre": 11.31370849898476
+  },
+  "grounding": "per-frame evaluated mesh minimum Z translated to floor Z=0",
+  "shadow": "separate Cycles shadow-catcher mask, one planted reference pose per facing",
+  "directions": 8,
+  "frames_per_direction": 8
+}
