@@ -39,28 +39,33 @@ def tile_h(preset):
 
 
 # --- lighting rig (identical for environment and characters) ----------------
-# A single key light defines the shadow direction; fill + rim keep the forms
-# readable. All lights are world-fixed so every sprite agrees with every other.
+# Authentic gothic crypt chiaroscuro: warm torchlight/brazier Key light,
+# cold slate/blue Fill in the shadows, subtle spectral Rim for edge separation.
 LIGHTS = [
-    {"name": "Key",  "energy": 4.0, "angle": 12.0, "rot": (55.0, 0.0, 150.0), "shadow": True},
-    {"name": "Fill", "energy": 1.7, "angle": 45.0, "rot": (68.0, 0.0, -35.0), "shadow": False},
-    {"name": "Rim",  "energy": 0.9, "angle": 30.0, "rot": (72.0, 0.0, 55.0),  "shadow": False},
+    {"name": "Key",  "energy": 4.2, "angle": 12.0, "rot": (55.0, 0.0, 150.0), "shadow": True,
+     "color": (1.0, 0.84, 0.62)}, # Warm flame / torchlight
+    {"name": "Fill", "energy": 0.95, "angle": 45.0, "rot": (68.0, 0.0, -35.0), "shadow": False,
+     "color": (0.45, 0.55, 0.75)}, # Cold blue/slate ambient shadow fill
+    {"name": "Rim",  "energy": 1.15, "angle": 30.0, "rot": (72.0, 0.0, 55.0),  "shadow": False,
+     "color": (0.70, 0.85, 1.00)}, # Pale spectral edge highlight
 ]
 
-# Soft cool ambient so shadowed faces stay readable instead of going black.
-WORLD_COLOR = (0.09, 0.10, 0.13)
-WORLD_STRENGTH = 1.0
+# Deep subterranean ambient: prevents pitch-black void while keeping shadows atmospheric
+WORLD_COLOR = (0.04, 0.045, 0.07)
+WORLD_STRENGTH = 0.50
 
 # --- colour grade applied to every sprite -----------------------------------
-GRADE_CONTRAST = 1.08
-GRADE_BRIGHTNESS = 1.10
-GRADE_SATURATION = 1.15
+GRADE_CONTRAST = 1.14
+GRADE_BRIGHTNESS = 1.06
+GRADE_SATURATION = 1.18
 
 def blender_lights_snippet():
     out = []
     for L in LIGHTS:
+        col = L.get("color", (1.0, 1.0, 1.0))
         out.append(
             f"d = bpy.data.lights.new('{L['name']}', 'SUN'); d.energy = {L['energy']}; "
+            f"d.color = ({col[0]}, {col[1]}, {col[2]}); "
             f"d.angle = math.radians({L['angle']}); d.use_shadow = {L['shadow']}\n"
             f"o = bpy.data.objects.new('{L['name']}', d)\n"
             f"o.rotation_euler = (math.radians({L['rot'][0]}), math.radians({L['rot'][1]}), "
@@ -117,3 +122,28 @@ def grade(img):
     img = ImageEnhance.Contrast(img).enhance(GRADE_CONTRAST)
     img = ImageEnhance.Color(img).enhance(GRADE_SATURATION)
     return img
+
+
+def apply_outline(im, color=(16, 16, 24), alpha_thresh=40):
+    """Apply a crisp 1px readable dark outline around non-transparent pixels."""
+    from PIL import Image, ImageChops
+    if im.mode != "RGBA":
+        im = im.convert("RGBA")
+    w, h = im.size
+    _, _, _, a = im.split()
+    solid = a.point(lambda p: 255 if p > alpha_thresh else 0, mode='L')
+    left = ImageChops.offset(solid, -1, 0)
+    right = ImageChops.offset(solid, 1, 0)
+    up = ImageChops.offset(solid, 0, -1)
+    down = ImageChops.offset(solid, 0, 1)
+    dilated = ImageChops.lighter(solid, left)
+    dilated = ImageChops.lighter(dilated, right)
+    dilated = ImageChops.lighter(dilated, up)
+    dilated = ImageChops.lighter(dilated, down)
+    outline_mask = ImageChops.subtract(dilated, solid)
+    outline_img = Image.new("RGBA", (w, h), (color[0], color[1], color[2], 255))
+    base = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+    base.paste(outline_img, (0, 0), outline_mask)
+    base.alpha_composite(im)
+    return base
+

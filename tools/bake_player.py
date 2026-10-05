@@ -259,7 +259,8 @@ def main():
         for f in range(NUM_FRAMES):
             p = os.path.join(temp, "d%02d_f%03d.png" % (d, f))
             with Image.open(p) as im:
-                sheet.paste(im, (f * CELL, d * CELL))
+                framed = look.apply_outline(im)
+                sheet.paste(framed, (f * CELL, d * CELL))
             os.remove(p)
     os.rmdir(temp)
 
