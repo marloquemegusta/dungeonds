@@ -25,11 +25,15 @@
 ### Validación de sombras horneadas (e30)
 - [x] 40 máscaras de objetos (10 tipos × 4 orientaciones) y 8 máscaras del personaje verificadas por `tests/test_shadow_masks.py`.
 - [x] ROM `e30` compilada con BlocksDS y escenario `scenarios/integration_showcase_walk.json` ejecutado en DeSmuME headless; capturas y logs en `artifacts/baked_shadows_final/`.
-- [ ] Rehornear y validar el preset `e60` con el mismo pipeline de sombras.
 
-### Decisión pendiente del usuario
-- [ ] Elegir preset de vista definitivo. La evidencia recomienda **`e30`**: a 60° los muros perimetrales se degradan a una sierra y el suelo pierde profundidad.
+## Hito 2.5: Iluminación de Mazmorra Gótica y Outline de Legibilidad (Completado)
+- [x] Rama `feat/dungeon-lighting-and-outline` creada.
+- [x] Iluminación gótica chiaroscuro en `tools/ds_look.py`: luz de antorcha cálida, relleno de sombra azul pizarra frío, rim espectral y ambiente de mundo oscuro.
+- [x] Outline de legibilidad de 1 px exterior para el personaje (`#101018`) implementado en `tools/ds_look.py` y aplicado en `tools/bake_player.py`.
+- [x] Re-bake completo de preset `e30` (45 assets de entorno y spritesheet del jugador).
+- [x] Verificación completa en DeSmuME headless (CRC `CF7A8FF2`, 100% PASS); walkthrough con capturas y gameplay GIF en `walkthroughs/03-dungeon-atmosphere-and-outline/walkthrough.md`.
 
 ## Siguiente Hito (Hito 3): Mecánicas de Nigromancia
 - [ ] Spawneo de cadáveres o invocación de esbirros esqueletos.
 - [ ] Expansión de mapa procedural manteniendo el contrato de proyección/anclaje.
+

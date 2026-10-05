@@ -234,9 +234,14 @@ def main():
                 for name, glb, kind, _ in jobs if kind != "floor"
                 for rot in (0, 90, 180, 270)]
     elif args.all_orientations:
-        jobs = [(f"{name}_r{rot:03d}", glb, kind, zrot + rot)
-                for name, glb, kind, zrot in jobs if kind != "floor"
-                for rot in (0, 90, 180, 270)]
+        expanded = []
+        for name, glb, kind, zrot in jobs:
+            if kind == "floor":
+                expanded.append((name, glb, kind, zrot))
+            else:
+                for rot in (0, 90, 180, 270):
+                    expanded.append((f"{name}_r{rot:03d}", glb, kind, zrot + rot))
+        jobs = expanded
     for name, glb, kind, zrot in jobs:
         if kind == "wall":
             if args.wall_style == "swap":
