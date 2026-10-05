@@ -158,7 +158,8 @@ def build_map(layout="dungeon"):
             obj[r][hi] = sprite(AR_ROW, 0) + 1
         for c in (9, 14, 20, 25):
             for r in (9, 14, 20, 25):
-                obj[r][c] = (P_BROKEN if (c + r) % 3 == 0 else P_SOUL) + 1
+                soul_rot = 180 if (c + r) % 2 == 0 else 90
+                obj[r][c] = (sprite(P_BROKEN, soul_rot) if (c + r) % 3 == 0 else sprite(P_SOUL, soul_rot)) + 1
     elif layout != "modular-seam":
         for c in (9, 18, 26):
             obj[lo][c] = sprite(WC_OSSUARY, 180) + 1
@@ -172,7 +173,8 @@ def build_map(layout="dungeon"):
 
         for c in (8, 14, 20, 26):
             for r in (8, 14, 20, 26):
-                obj[r][c] = (P_BROKEN if (c + r) % 3 == 0 else P_SOUL) + 1
+                soul_rot = 180 if (c + r) % 2 == 0 else 90
+                obj[r][c] = (sprite(P_BROKEN, soul_rot) if (c + r) % 3 == 0 else sprite(P_SOUL, soul_rot)) + 1
 
         for k in (7, 27):
             obj[k][cx] = sprite(AR_ROW, 180) + 1

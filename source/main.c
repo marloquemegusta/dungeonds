@@ -26,7 +26,9 @@
 // Screen-space movement speed (px/frame, 8.8 fixed) and collider radius
 // Synchronized to 1.502m 3D stride (16.99 px at 11.31 px/m): 181/256 px/frame over 24 ticks (ANIM_PERIOD=3)
 #define PLAYER_SPEED 181                 // ~0.71 px/frame (zero foot sliding)
-#define PLAYER_COLLIDER 96               // 0.375 tile radius
+#define PLAYER_COLLIDER 48               // 0.187 tile radius (~0.37m)
+#define PILLAR_COLLIDE_R 40              // 0.156 tile radius (~0.31m, matches 0.65m 3D base)
+#define PILLAR_MIN_DIST (PLAYER_COLLIDER + PILLAR_COLLIDE_R) // 88 units
 #define ANIM_PERIOD 3                    // 24 ticks (0.40s) per 8-frame cycle
 
 // Camera vertical anchor: where the player's feet sit on the bottom screen.
@@ -85,25 +87,54 @@ static inline int player_screen_y(fixed x, fixed y) {
 // Collision
 // ---------------------------------------------------------------------------
 
-static int tile_walkable(int col, int row) {
-    if (col < 0 || col >= MAP_COLS || row < 0 || row >= MAP_ROWS) return 0;
-    if (g_floor_map[row][col] == MAP_VOID) return 0;
-    uint8_t obj = g_obj_map[row][col];
-    if (obj == 0) return 1;
-    int id = obj - 1;
-    // Arches are open doorways you can walk through.
-    return (id == OBJ_AR_ROW || id == OBJ_AR_COL);
-}
-
 static int position_is_free(fixed x, fixed y) {
     int lo_c = TO_INT(x - PLAYER_COLLIDER);
     int lo_r = TO_INT(y - PLAYER_COLLIDER);
     int hi_c = TO_INT(x + PLAYER_COLLIDER);
     int hi_r = TO_INT(y + PLAYER_COLLIDER);
-    if (!tile_walkable(lo_c, lo_r)) return 0;
-    if (!tile_walkable(hi_c, lo_r)) return 0;
-    if (!tile_walkable(lo_c, hi_r)) return 0;
-    if (!tile_walkable(hi_c, hi_r)) return 0;
+
+    // 1) Void boundary and wall collisions (walls block the full tile boundary)
+    for (int r = lo_r; r <= hi_r; r++) {
+        for (int c = lo_c; c <= hi_c; c++) {
+            if (c < 0 || c >= MAP_COLS || r < 0 || r >= MAP_ROWS) return 0;
+            if (g_floor_map[r][c] == MAP_VOID) return 0;
+
+            uint8_t obj = g_obj_map[r][c];
+            if (obj == 0) continue;
+            int id = obj - 1;
+
+            // Arches are open doorways; pillars are handled below via sub-tile base
+            if (id >= OBJ_P_SOUL) continue;
+
+            // Perimeter walls block tile entry
+            return 0;
+        }
+    }
+
+    // 2) Precise circular sub-tile collision for freestanding pillars in nearby tiles
+    int pc0 = TO_INT(x) - 1;
+    int pc1 = TO_INT(x) + 1;
+    int pr0 = TO_INT(y) - 1;
+    int pr1 = TO_INT(y) + 1;
+    for (int r = pr0; r <= pr1; r++) {
+        for (int c = pc0; c <= pc1; c++) {
+            if (c < 0 || c >= MAP_COLS || r < 0 || r >= MAP_ROWS) continue;
+            uint8_t obj = g_obj_map[r][c];
+            if (obj == 0) continue;
+            int id = obj - 1;
+            if (id >= OBJ_P_SOUL && id < OBJ_AR_ROW) {
+                // Pillar base is centered at tile midpoint (c + 0.5, r + 0.5)
+                fixed cx = TO_FIXED(c) + 128;
+                fixed cy = TO_FIXED(r) + 128;
+                int dx = (int)(x - cx);
+                int dy = (int)(y - cy);
+                if (dx * dx + dy * dy < PILLAR_MIN_DIST * PILLAR_MIN_DIST) {
+                    return 0; // Colliding with pillar base
+                }
+            }
+        }
+    }
+
     return 1;
 }
 
