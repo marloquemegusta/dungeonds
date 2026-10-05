@@ -1,0 +1,15 @@
+{
+  "name": "integration_showcase_walk",
+  "steps": [
+    { "frames": 60, "capture": "00_spawn" },
+    { "button_down": "RIGHT", "frames": 60, "capture_sequence": "walk_east", "capture_every": 5, "capture": "01_walking" },
+    { "button_up": "RIGHT", "frames": 8, "capture": "02_idle" }
+  ],
+  "assertions": {
+    "screen_changed": {
+      "from": "00_spawn",
+      "to": "01_walking",
+      "min_changed_pixels": 50
+    }
+  }
+}
