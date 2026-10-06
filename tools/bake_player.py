@@ -125,20 +125,21 @@ if "skeleton" in MODEL.lower():
                 elif g.group in limb_indices and g.weight > best_w:
                     best_w = g.weight; best_type = 'limb'
 
+            # High-drama gothic chiaroscuro palette:
             if best_type == 'head':
-                col = (0.78, 0.70, 0.56, 1.0)
+                col = (0.76, 0.68, 0.54, 1.0)
             elif best_type == 'spine':
-                col = (0.26, 0.22, 0.18, 1.0)
+                col = (0.08, 0.06, 0.05, 1.0)
             elif best_type == 'pelvis':
-                col = (0.30, 0.25, 0.20, 1.0)
+                col = (0.16, 0.13, 0.10, 1.0)
             elif best_type == 'joint':
-                col = (0.28, 0.24, 0.20, 1.0)
+                col = (0.14, 0.12, 0.10, 1.0)
             else: # limb
-                col = (0.45, 0.38, 0.30, 1.0)
+                col = (0.35, 0.30, 0.24, 1.0)
             ca.data[vi].color = col
 
-    # Shader combining anatomical vertex coloring and Cycles Ambient Occlusion (cavity shadows)
-    bone_mat = bpy.data.materials.new('GothicBoneAtmosphere')
+    # Shader combining anatomical vertex coloring and high-contrast Cycles Ambient Occlusion (pitch cavity shadows)
+    bone_mat = bpy.data.materials.new('GothicBoneDramatic')
     bone_mat.use_nodes = True
     nodes = bone_mat.node_tree.nodes
     links = bone_mat.node_tree.links
@@ -148,17 +149,25 @@ if "skeleton" in MODEL.lower():
     bsdf = nodes.new('ShaderNodeBsdfPrincipled')
     vcol = nodes.new('ShaderNodeAttribute')
     vcol.attribute_name = 'BoneColor'
-    bsdf.inputs['Roughness'].default_value = 0.80
+    bsdf.inputs['Roughness'].default_value = 0.85
 
     ao = nodes.new('ShaderNodeAmbientOcclusion')
-    ao.samples = 16
-    ao.inputs['Distance'].default_value = 0.12
+    ao.samples = 24
+    ao.inputs['Distance'].default_value = 0.15
+
+    # Ramp on AO to plunge deep cavities into near-black
+    ao_ramp = nodes.new('ShaderNodeValToRGB')
+    ao_ramp.color_ramp.elements[0].position = 0.30
+    ao_ramp.color_ramp.elements[0].color = (0.05, 0.04, 0.04, 1.0)
+    ao_ramp.color_ramp.elements[1].position = 0.85
+    ao_ramp.color_ramp.elements[1].color = (1.0, 1.0, 1.0, 1.0)
+    links.new(ao.outputs['Color'], ao_ramp.inputs['Fac'])
 
     mix = nodes.new('ShaderNodeMix')
     mix.data_type = 'RGBA'
     mix.blend_type = 'MULTIPLY'
-    mix.inputs['Factor'].default_value = 0.85
-    links.new(ao.outputs['Color'], mix.inputs[6])
+    mix.inputs['Factor'].default_value = 1.0
+    links.new(ao_ramp.outputs['Color'], mix.inputs[6])
     links.new(vcol.outputs['Color'], mix.inputs[7])
 
     links.new(mix.outputs[2], bsdf.inputs['Base Color'])
