@@ -90,7 +90,7 @@ for arm in armatures:
             c.min_z = c.max_z = bone.location.z
             break
 
-# Adjust scale if character model is non-standard (e.g. skeleton)
+# Adjust scale and shading if character model is non-standard (e.g. skeleton)
 if "skeleton" in MODEL.lower():
     for arm in armatures:
         arm.scale = (0.027, 0.027, 0.027)
@@ -101,18 +101,71 @@ if "skeleton" in MODEL.lower():
         fat.strength = 0.12
         fat.mid_level = 0.0
 
-# Ensure all meshes have a material assigned (especially untextured skeleton bones)
-bone_mat = None
-for obj in [o for o in bpy.data.objects if o.type == 'MESH']:
-    if not obj.data.materials or len(obj.data.materials) == 0:
-        if bone_mat is None:
-            bone_mat = bpy.data.materials.new('BoneGothic')
-            bsdf = bone_mat.node_tree.nodes.get('Principled BSDF')
-            if bsdf:
-                # Natural bone tint: ivory-beige base with high roughness and subsurface feel to accentuate Cycles chiaroscuro shadows
-                bsdf.inputs['Base Color'].default_value = (0.86, 0.81, 0.70, 1.0)
-                if 'Roughness' in bsdf.inputs:
-                    bsdf.inputs['Roughness'].default_value = 0.65
+        # Anatomical vertex coloring: skull is ivory focal point, spine/cavities are deep charcoal, pelvis/joints in shadow
+        ca = obj.data.color_attributes.new(name='BoneColor', type='FLOAT_COLOR', domain='POINT')
+        vgs = dict((vg.name, vg.index) for vg in obj.vertex_groups)
+        head_idx = vgs.get('mixamorig:Head', -1)
+        spine_indices = [vgs[n] for n in ['mixamorig:Spine', 'mixamorig:Spine1', 'mixamorig:Spine2', 'mixamorig:Neck'] if n in vgs]
+        pelvis_idx = vgs.get('mixamorig:Hips', -1)
+        limb_indices = [vgs[n] for n in ['mixamorig:LeftArm', 'mixamorig:LeftForeArm', 'mixamorig:RightArm', 'mixamorig:RightForeArm', 'mixamorig:LeftUpLeg', 'mixamorig:LeftLeg', 'mixamorig:RightUpLeg', 'mixamorig:RightLeg'] if n in vgs]
+        joint_indices = [vgs[n] for n in ['mixamorig:LeftHand', 'mixamorig:RightHand', 'mixamorig:LeftFoot', 'mixamorig:RightFoot', 'mixamorig:LeftToeBase', 'mixamorig:RightToeBase'] if n in vgs]
+
+        for vi, vert in enumerate(obj.data.vertices):
+            best_type = 'limb'
+            best_w = 0.0
+            for g in vert.groups:
+                if g.group == head_idx and g.weight > best_w:
+                    best_w = g.weight; best_type = 'head'
+                elif g.group in spine_indices and g.weight > best_w:
+                    best_w = g.weight; best_type = 'spine'
+                elif g.group == pelvis_idx and g.weight > best_w:
+                    best_w = g.weight; best_type = 'pelvis'
+                elif g.group in joint_indices and g.weight > best_w:
+                    best_w = g.weight; best_type = 'joint'
+                elif g.group in limb_indices and g.weight > best_w:
+                    best_w = g.weight; best_type = 'limb'
+
+            if best_type == 'head':
+                col = (0.78, 0.70, 0.56, 1.0)
+            elif best_type == 'spine':
+                col = (0.26, 0.22, 0.18, 1.0)
+            elif best_type == 'pelvis':
+                col = (0.30, 0.25, 0.20, 1.0)
+            elif best_type == 'joint':
+                col = (0.28, 0.24, 0.20, 1.0)
+            else: # limb
+                col = (0.45, 0.38, 0.30, 1.0)
+            ca.data[vi].color = col
+
+    # Shader combining anatomical vertex coloring and Cycles Ambient Occlusion (cavity shadows)
+    bone_mat = bpy.data.materials.new('GothicBoneAtmosphere')
+    bone_mat.use_nodes = True
+    nodes = bone_mat.node_tree.nodes
+    links = bone_mat.node_tree.links
+    nodes.clear()
+
+    out_node = nodes.new('ShaderNodeOutputMaterial')
+    bsdf = nodes.new('ShaderNodeBsdfPrincipled')
+    vcol = nodes.new('ShaderNodeAttribute')
+    vcol.attribute_name = 'BoneColor'
+    bsdf.inputs['Roughness'].default_value = 0.80
+
+    ao = nodes.new('ShaderNodeAmbientOcclusion')
+    ao.samples = 16
+    ao.inputs['Distance'].default_value = 0.12
+
+    mix = nodes.new('ShaderNodeMix')
+    mix.data_type = 'RGBA'
+    mix.blend_type = 'MULTIPLY'
+    mix.inputs['Factor'].default_value = 0.85
+    links.new(ao.outputs['Color'], mix.inputs[6])
+    links.new(vcol.outputs['Color'], mix.inputs[7])
+
+    links.new(mix.outputs[2], bsdf.inputs['Base Color'])
+    links.new(bsdf.outputs['BSDF'], out_node.inputs['Surface'])
+
+    for obj in [o for o in bpy.data.objects if o.type == 'MESH']:
+        obj.data.materials.clear()
         obj.data.materials.append(bone_mat)
 
 bpy.context.view_layer.update()
