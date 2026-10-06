@@ -1,0 +1,18 @@
+{
+  "name": "wall_junction_closeup",
+  "steps": [
+    { "frames": 20, "capture": "00_spawn" },
+    { "button_down": "DOWN", "frames": 230, "capture": "01_south_wall" },
+    { "button_up": "DOWN", "frames": 5 },
+    { "button_down": "RIGHT", "frames": 230, "capture": "02_southeast_corner" },
+    { "button_up": "RIGHT", "frames": 5 },
+    { "frames": 20, "capture": "03_corner_idle" }
+  ],
+  "assertions": {
+    "screen_changed": {
+      "from": "00_spawn",
+      "to": "01_south_wall",
+      "min_changed_pixels": 50
+    }
+  }
+}

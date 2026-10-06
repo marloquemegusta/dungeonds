@@ -1,37 +1,53 @@
-# STATUS.md - Estado del Proyecto DungeonDS
+# STATUS.md - Historial de Entregas y Estado del Proyecto DungeonDS
 
-## Hito 0: Setup de Proyecto y Pipeline Gráfico (Completado)
-- [x] Repositorio Git inicializado y estructura de directorios (`source/`, `include/`, `scripts/`, `tools/`, `assets/`, `docs/`).
-- [x] Skill `ds-game-dev` y scripts de toolchain automatizados (`scripts/*.ps1`) configurados.
-- [x] Documentos de arquitectura y proceso (`AGENTS.md`, `DESIGN.md`, `TECHNICAL.md`, `STATUS.md`).
-- [x] Pipeline de pre-renderizado de modelos 3D a spritesheets 8-direccionales con soporte in-place.
+Este documento registra el historial cronológico de sesiones de desarrollo verificadas mediante compilación BlocksDS, escenarios deterministas en DeSmuME y validación en Nintendo DS física.
 
-## Hito 1: Primera Demo Jugable de Mazmorra (Completado)
-- [x] Biblioteca de tiles de ruinas góticas horneados desde Dreadhollow 3D.
-- [x] Motor de juego en C con movimiento 8-direccional en punto fijo 8.8 y colisiones.
-- [x] Compilación limpia de la ROM con Docker BlocksDS.
+---
 
-## Hito 2: Motor de Renderizado Dimétrico (Completado)
-- [x] Proyección dimétrica real: tiles de suelo en rombo 32×`FLOOR_TILE_H` con filas escalonadas y orden de pintado por profundidad `(col+row)`.
-- [x] Assets re-horneados con cámara ortográfica correcta (azimut 45°): suelos en rombo, muros/pilares/arcos con alfa y cara superior legible. Se corrigieron los muros negros de la demo anterior.
-- [x] `tools/ds_look.py` como fuente única del look (elevación, rig de luces key/fill/rim, ambiente, corrección de color y escala de píxeles); entorno y personaje comparten exactamente la misma iluminación.
-- [x] Contrato de anclaje único: el origen de suelo de cada sprite cae en su centro, de modo que suelo, muros, pilares y personaje se alinean con una sola regla.
-- [x] Caché de suelo del tamaño del mundo; sombras de entorno y personaje pre-renderizadas desde Cycles Shadow Catcher y compuestas sobre el suelo con máscaras empaquetadas a 4 bits.
-- [x] Personaje re-horneado a la escala real del mundo (modelo 1,83 m frente a muros de 2,40 m): humano, no gigante.
-- [x] Dos presets de vista horneables y comparables: `e30` (2:1 clásico) y `e60` (más cenital).
-- [x] ROMs limpias `dungeonds_e30.nds` y `dungeonds_e60.nds`; escenario headless en DeSmuME (`scenarios/dual_screen_ruins_test.json`) al 100% de éxito.
-- [x] Walkthrough con evidencia: `walkthroughs/02-isometric-renderer/walkthrough.md`.
+## Sesión 01: Prototipo Jugable y Pipeline de Renderizado
+- [x] Repositorio inicializado, toolchain offline con Docker BlocksDS y DeSmuME headless.
+- [x] Proyección dimétrica: tiles de suelo en rombo 32×`FLOOR_TILE_H` con ordenación por profundidad `(col+row)`.
+- [x] Pipeline de Blender para pre-renderizado de ruinas y personaje en 8 direcciones.
+- [x] Contrato de anclaje de suelo único: origen en el centro de la celda.
+- [x] Caché de suelo del mundo en EWRAM (`s_floor_cache`) con máscaras de sombra proyectada (Cycles Shadow Catcher).
+- **Evidencia:** `walkthroughs/02-isometric-renderer/walkthrough.md`.
 
-### Validación y pulido de atmósfera e30
-- [x] Iluminación gótica chiaroscuro en `tools/ds_look.py`: luz de antorcha cálida ámbar, relleno frío tenue (`0.50`), ambiente oscuro (`0.18`), fondo negro abisal y sombras al 63%.
-- [x] Outline de legibilidad de 1 px exterior para el personaje (`#101018`).
-- [x] Sincronización física de paso con zancada 3D (`PLAYER_SPEED = 181`, `ANIM_PERIOD = 3`, sin efecto cinta).
-- [x] Colisión sub-tile física circular en pilares (base de 0.65 m).
-- [x] Orientación frontal de linternas de alma (rotaciones 180° y 90°) y llama azul espectral potenciada.
-- [x] Banner NDS configurado a `DungeonDS: Necromancer Crypt` y ROM probada en hardware físico vía FTP.
-- [x] Walkthrough documentado en `walkthroughs/03-dungeon-atmosphere-and-outline/walkthrough.md`.
+---
 
-## Siguiente Hito (Hito 3): Mecánicas de Nigromancia
-- [ ] Spawneo de cadáveres o invocación de esbirros esqueletos.
-- [ ] Expansión de mapa procedural manteniendo el contrato de proyección/anclaje.
+## Sesión 02: Atmósfera Gótica Chiaroscuro y Outline de Legibilidad
+- [x] Iluminación gótica en `tools/ds_look.py`: antorcha ámbar viva, relleno frío tenue (`0.50`), ambiente (`0.18`), fondo negro abisal y sombras al 63%.
+- [x] Outline de legibilidad de 1 px exterior para silueta del personaje sobre fondos oscuros.
+- [x] Sincronización física de paso con zancada 3D (`PLAYER_SPEED = 181`, `ANIM_PERIOD = 3`, sin foot-sliding).
+- [x] Colisión sub-tile física circular en pilares de la cripta (radio de 0.65 m).
+- [x] Linternas de alma frontales con llama azul espectral potenciada.
+- [x] Banner NDS oficial: `DungeonDS: Necromancer Crypt`.
+- **Evidencia:** `walkthroughs/03-dungeon-atmosphere-and-outline/walkthrough.md`.
 
+---
+
+## Sesión 03: Enemigo Cargador (Run.fbx) y Swap Dinámico de Personaje
+- [x] Generación de spritesheets del enemigo cargador: `charger_e30.png` y `charger_e30_shadow.png` (8 dirs x 8 frames).
+- [x] Sincronización cinemática de carga: zancada de 2.00 m, `CHARGER_SPEED = 362` (1.41 px/frame, ~2x velocidad del héroe) y `ANIM_PERIOD = 2`.
+- [x] Optimización de memoria EWRAM: recorte de lienzo a 48×40 centrado en pie, ahorrando >540 KB de RAM para encajar holgadamente en el límite de 4 MB de la consola.
+- [x] Cambio de personaje interactivo en tiempo real con botones (`X`, `Y`, `A` o `SELECT`).
+- **Evidencia:** `walkthroughs/04-enemy-charger-and-character-swap/walkthrough.md`.
+
+---
+
+## Sesión 04: Arquitectura de Rendimiento 60 FPS y Corrección de Alineamiento ARM9
+- [x] Benchmarking de frames determinista con timers hardware ARM9 (`cpuStartTiming`/`cpuGetTiming`) y script `tools/measure_perf.py`.
+- [x] Reducción de tiempo de render por frame de **86.59 ms (~10-11 FPS)** a **10.62 ms (80% bloqueado a 60 FPS)**.
+- [x] Pre-baking de sombras estáticas en la caché de suelo durante startup (`draw_shadow_mask_to_cache`), eliminando el 99% del coste de sombras en tiempo de ejecución.
+- [x] Eliminación de divisiones enteras software en shaders de sombras con desplazamientos de bits.
+- [x] Double-buffering directo en VRAM con zero-copy (`MODE_FB0`/`MODE_FB1` escribiendo en `VRAM_A`/`VRAM_B`).
+- [x] Interleaving de la pantalla superior durante scroll continuo (30 Hz top / 60 Hz bot).
+- [x] **Corrección de alineamiento ARM946E-S en blitting**: reemplazo de accesos desalineados de 32 bits (`*(uint32_t*)`) por lecturas y escrituras halfword limpias de 16 bits (`uint16_t`), eliminando la rotación de 16 bits del hardware y la deslocalización visual en muros y columnas.
+- [x] Validación visual determinista contra la verdad canónica: **0 píxeles de diferencia** frente a `00_spawn_center.png`.
+- [x] Despliegue verificado en Nintendo DS física por FTP.
+- **Evidencia:** `walkthroughs/05-arm9-alignment-and-60fps/walkthrough.md`.
+
+---
+
+## Próximas Líneas de Trabajo
+- Invocación de esbirros esqueletos y mecánicas de nigromancia activa.
+- Expansión de mazmorra procedural manteniendo el contrato dimétrico y presupuestos de 60 FPS.
