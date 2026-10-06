@@ -18,16 +18,41 @@ En esta sesión se abordaron dos objetivos primordiales para la calidad arquitec
 
 2. **Integración Completa del Enemigo Skeleton (`skeleton.fbx`):**
    - **Diagnóstico del FBX:** Modelo de esqueleto con animación de marcha bípeda en 47 fotogramas (`mixamo.com|Layer0`). Se detectó que el modelo poseía mallas sin materiales asignados (`sub01`, `sub02`) y una escala métrica en el armature de $0.01\times$ ($0.516\text{ m}$ de altura real evaluada).
-   - **Pipeline de Horneado (`tools/bake_player.py`):** Se adaptó el pipeline con un material óseo gótico dedicado (`BoneGothic`, color hueso marfil con rugosidad difusa), escalado anatómico al estándar de los demás personajes ($1.39\text{ m}$ con zancada visible), fijación de root motion en caderas y renderizado Cycles en 8 direcciones y 8 fotogramas.
+   - **Engrosamiento de Malla Ósea (Displacement Modifier):** Al proyectar los huesos finos a la resolución nativa de Nintendo DS ($256\times 192$), las costillas y extremidades desaparecían o se desconectaban en píxeles huérfanos. Se implementó un modificador `DISPLACE` con `strength = 0.12` en Blender, logrando continuidad estructural sin apelotonar las articulaciones.
+   - **Material Chiaroscuro (`BoneGothic`):** Se dotó al esqueleto de un tono marfil gótico (`RGB: 0.86, 0.81, 0.70`, `Roughness: 0.65`), permitiendo que el sistema de iluminación Cycles proyecte sombras de penumbra marcadas en huecos torácicos y costillas posteriores, eliminando el blanco plano inicial.
    - **Contrato de Máscaras de Sombra (`tools/shadow_masks.py`):** El esqueleto, por su delgadez ósea, producía una sombra Cycles de menor huella superficial que no alcanzaba el umbral de percentil 0.5% anterior. Se ajustó el muestreo a percentil 0.1% (`dark_idx`), satisfaciendo el contrato estricto de contraste y permitiendo generar máscaras de 4 bits perfectamente recortadas para NDS.
    - **Generador C (`tools/convert_iso_to_c.py`):** Se expandió el soporte a 3 personajes (`CHAR_HERO`, `CHAR_CHARGER`, `CHAR_SKELETON`), exportando `g_skeleton_frames`, `g_skeleton_shadow_masks` y `g_skeleton_shadow_bounds`.
-   - **Validación en NDS:** Compilación limpia con Docker BlocksDS y ejecución headless en DeSmuME (`character_switch_test.json`), demostrando la transición cíclica completa entre el Héroe, el Cargador y el Esqueleto con control por cruceta y renderizado dual-screen impecable.
+
+3. **Corrección Global del "Outline Gap Bug":**
+   - **Causa Raíz:** En `tools/ds_look.py::apply_outline`, el borde del sprite se dilataba a partir de píxeles con $a > 40$. Sin embargo, en los bordes suavizados por el antialiasing de Cycles, los píxeles con $40 \le a < 110$ conservaban su valor semitransparente original. Al convertir a C en `tools/convert_iso_to_c.py` (`ALPHA_CUT = 110`), esos píxeles se descartaban como transparentes mientras que el outline exterior ($a = 255$) se mantenía. Esto provocaba un "halo vacío" de 1 px a través del cual se veía el suelo del fondo entre el personaje y su silueta negra (especialmente notorio en cuernos del Charger y huesos del Esqueleto).
+   - **Solución Canónica:** En `tools/ds_look.py`, los píxeles interiores que dan origen a la silueta se consolidan como 100% opacos (`opaque_a = ImageChops.lighter(a, solid)`). De este modo, no existe ningún sub-umbral que se descarte en C, pegando el outline perfectamente a la superficie del modelo.
 
 ---
 
-## 2. Evidencia de Ejecución en Nintendo DS
+## 2. Evidencia Visual y Comparativas de Antes vs Después
 
-### 2.1. Ciclo de Conmutación en Juego (Héroe -> Cargador -> Esqueleto)
+### 2.1. Comparativa Macroscópica a 6x del Outline y Engrosamiento
+
+![Comparativa 6x de Corrección de Outline y Esqueleto](assets/outline_gap_and_skeleton_comparison_6x.png)
+*Figura 2.1: Comparativa en simulación directa de renderizado C (Nintendo DS 15-bit). Arriba: cuernos del Charger antes (con franja vacía/gap) vs después (outline contiguo y sólido). Abajo: esqueleto en vistas Sur y Este antes (blanco plano, huesos rotos) vs después (volumen calibrado, chiaroscuro gótico y contorno nítido).*
+
+### 2.2. Barrido Calibrado de Grosor Óseo (Displacement Sweep a 4x)
+
+![Barrido de grosor óseo a 4x](assets/skeleton_fatten_sweep_4x.png)
+*Figura 2.2: Estudio de calibración de grosor (`strength = 0.00` a `0.22`). El valor `0.12` fue seleccionado por garantizar la conectividad de píxeles en extremidades sin perder la separación anatómica entre brazos y caja torácica.*
+
+### 2.3. Ejecución en Consola (Capturas DeSmuME a 4x)
+
+| Enemigo Cargador (Outline Sólido) | Enemigo Esqueleto (Volumen y Sombra) |
+| :---: | :---: |
+| ![Charger en juego 4x](assets/charger_in_game_4x.png) | ![Esqueleto en juego 4x](assets/skeleton_in_game_4x.png) |
+| *Charger en juego sin gaps en cuernos.* | *Esqueleto en juego con chiaroscuro y silueta legible.* |
+
+---
+
+## 3. Evidencia de Ejecución en Nintendo DS
+
+### 3.1. Ciclo de Conmutación en Juego (Héroe -> Cargador -> Esqueleto)
 
 El escenario `character_switch_test.json` recorre de forma interactiva los tres personajes en la Nintendo DS:
 

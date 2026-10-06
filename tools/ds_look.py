@@ -125,12 +125,14 @@ def grade(img):
 
 
 def apply_outline(im, color=(16, 16, 24), alpha_thresh=40):
-    """Apply a crisp 1px readable dark outline around non-transparent pixels."""
+    """Apply a crisp 1px readable dark outline around non-transparent pixels.
+    Also solidifies alpha inside the outline threshold so that no sub-cutoff
+    alpha values (< ALPHA_CUT in C) create a transparent gap between the body and outline."""
     from PIL import Image, ImageChops
     if im.mode != "RGBA":
         im = im.convert("RGBA")
     w, h = im.size
-    _, _, _, a = im.split()
+    r, g, b, a = im.split()
     solid = a.point(lambda p: 255 if p > alpha_thresh else 0, mode='L')
     left = ImageChops.offset(solid, -1, 0)
     right = ImageChops.offset(solid, 1, 0)
@@ -141,9 +143,12 @@ def apply_outline(im, color=(16, 16, 24), alpha_thresh=40):
     dilated = ImageChops.lighter(dilated, up)
     dilated = ImageChops.lighter(dilated, down)
     outline_mask = ImageChops.subtract(dilated, solid)
+    # Ensure inner body that gave rise to the outline is fully opaque:
+    opaque_a = ImageChops.lighter(a, solid)
+    opaque_im = Image.merge("RGBA", (r, g, b, opaque_a))
     outline_img = Image.new("RGBA", (w, h), (color[0], color[1], color[2], 255))
     base = Image.new("RGBA", (w, h), (0, 0, 0, 0))
     base.paste(outline_img, (0, 0), outline_mask)
-    base.alpha_composite(im)
+    base.alpha_composite(opaque_im)
     return base
 
