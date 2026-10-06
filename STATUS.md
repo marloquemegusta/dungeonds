@@ -48,6 +48,17 @@ Este documento registra el historial cronológico de sesiones de desarrollo veri
 
 ---
 
+## Sesión 06: Corrección de Colisión y Orden de Profundidad (Depth Sorting) en Pilares
+- [x] Diagnóstico de desfase vertical de 8 píxeles de pantalla entre el collider y la base proyectada de los pilares.
+- [x] Corrección del origen de colisión de pilares en `position_is_free()` pasando de `(c + 0.5, r + 0.5)` a `(c, r)` para coincidir exactamente con el anclaje del sprite.
+- [x] Corrección de la clave de profundidad de objetos en `render_screen()` a `(col + row) << 8`.
+- [x] Corrección del spawn inicial del jugador en `player_init()` para centrado perfecto en la celda inicial.
+- [x] Generación de suite de test de colisión de pilares (`scenarios/pillar_collision_test.json`) y evidencia visual side-by-side x4.
+- [x] Validación de no regresión en todos los escenarios automáticos con DeSmuME headless y compilación limpia con Docker BlocksDS.
+- **Evidencia:** `walkthroughs/06-pillar-collision-and-depth-alignment/walkthrough.md`.
+
+---
+
 ## Próximas Líneas de Trabajo
 - Invocación de esbirros esqueletos y mecánicas de nigromancia activa.
 - Expansión de mazmorra procedural manteniendo el contrato dimétrico y presupuestos de 60 FPS.
