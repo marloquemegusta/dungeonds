@@ -95,6 +95,12 @@ if "skeleton" in MODEL.lower():
     for arm in armatures:
         arm.scale = (0.027, 0.027, 0.027)
 
+    # Fatten fine skeletal geometry so bones retain continuous volume and pixel connectivity in DS ortho projection
+    for obj in [o for o in bpy.data.objects if o.type == 'MESH']:
+        fat = obj.modifiers.new('Fatten', 'DISPLACE')
+        fat.strength = 0.12
+        fat.mid_level = 0.0
+
 # Ensure all meshes have a material assigned (especially untextured skeleton bones)
 bone_mat = None
 for obj in [o for o in bpy.data.objects if o.type == 'MESH']:
@@ -103,9 +109,10 @@ for obj in [o for o in bpy.data.objects if o.type == 'MESH']:
             bone_mat = bpy.data.materials.new('BoneGothic')
             bsdf = bone_mat.node_tree.nodes.get('Principled BSDF')
             if bsdf:
-                bsdf.inputs['Base Color'].default_value = (0.92, 0.88, 0.80, 1.0)
+                # Natural bone tint: ivory-beige base with high roughness and subsurface feel to accentuate Cycles chiaroscuro shadows
+                bsdf.inputs['Base Color'].default_value = (0.86, 0.81, 0.70, 1.0)
                 if 'Roughness' in bsdf.inputs:
-                    bsdf.inputs['Roughness'].default_value = 0.45
+                    bsdf.inputs['Roughness'].default_value = 0.65
         obj.data.materials.append(bone_mat)
 
 bpy.context.view_layer.update()
