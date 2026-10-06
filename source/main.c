@@ -45,7 +45,6 @@
 #define CACHE_H  (((((MAP_COLS - 1) + (MAP_ROWS - 1)) * TILE_HALF_H) + TILE_HALF_H) - CACHE_Y0)
 
 static uint16_t s_floor_cache[CACHE_W * CACHE_H] __attribute__((aligned(4)));
-static uint16_t s_bot_backbuffer[SCREEN_W * SCREEN_H] __attribute__((aligned(4)));
 static uint16_t s_top_backbuffer[SCREEN_W * SCREEN_H] __attribute__((aligned(4)));
 
 static u16 *s_top_vram = NULL;
@@ -142,9 +141,40 @@ static int position_is_free(fixed x, fixed y) {
 // Blitting
 // ---------------------------------------------------------------------------
 
-// Blit a BGR555 sprite (bit 15 = opaque) relative to a world position.
-static void blit(uint16_t *buffer, const uint16_t *src, int sw, int sh,
-                 int left, int top, int cam_x, int cam_y) {
+static uint8_t s_obj_sprite_bounds[NUM_OBJ_SPRITES][4];
+
+static void init_obj_sprite_bounds(void) {
+    for (int i = 0; i < NUM_OBJ_SPRITES; i++) {
+        const uint16_t *src = g_obj_sprites[i];
+        int min_x = OBJ_SPRITE_W, max_x = -1;
+        int min_y = OBJ_SPRITE_H, max_y = -1;
+        for (int y = 0; y < OBJ_SPRITE_H; y++) {
+            for (int x = 0; x < OBJ_SPRITE_W; x++) {
+                if (src[y * OBJ_SPRITE_W + x] & BIT(15)) {
+                    if (x < min_x) min_x = x;
+                    if (x > max_x) max_x = x;
+                    if (y < min_y) min_y = y;
+                    if (y > max_y) max_y = y;
+                }
+            }
+        }
+        if (max_x < min_x) {
+            s_obj_sprite_bounds[i][0] = 0;
+            s_obj_sprite_bounds[i][1] = 0;
+            s_obj_sprite_bounds[i][2] = 0;
+            s_obj_sprite_bounds[i][3] = 0;
+        } else {
+            s_obj_sprite_bounds[i][0] = (uint8_t)min_x;
+            s_obj_sprite_bounds[i][1] = (uint8_t)min_y;
+            s_obj_sprite_bounds[i][2] = (uint8_t)(max_x - min_x + 1);
+            s_obj_sprite_bounds[i][3] = (uint8_t)(max_y - min_y + 1);
+        }
+    }
+}
+
+// Blit a BGR555 sprite with arbitrary pitch, fast 32-bit dual-pixel write when both are opaque.
+static void blit_stride(uint16_t *buffer, const uint16_t *src, int pitch, int sw, int sh,
+                        int left, int top, int cam_x, int cam_y) {
     int ox = left - cam_x;
     int oy = top - cam_y;
 
@@ -162,13 +192,13 @@ static void blit(uint16_t *buffer, const uint16_t *src, int sw, int sh,
     }
 
     for (int y = sy0; y < sy1; y++) {
-        const uint16_t *srow = &src[y * sw];
+        const uint16_t *srow = &src[y * pitch];
         uint16_t *drow = &buffer[(oy + y) * SCREEN_W + ox];
         int x;
         for (x = sx0; x + 1 < sx1; x += 2) {
             uint16_t a = srow[x];
             uint16_t b = srow[x + 1];
-            if (a | b) { // both transparent only when the pair is zero
+            if (a | b) {
                 if (a & BIT(15)) drow[x] = a;
                 if (b & BIT(15)) drow[x + 1] = b;
             }
@@ -180,15 +210,25 @@ static void blit(uint16_t *buffer, const uint16_t *src, int sw, int sh,
     }
 }
 
-static void blit_tile(uint16_t *buffer, const uint16_t *src, int w, int h,
+static void blit_tile(uint16_t *buffer, int sprite_id,
                       int cx, int cy, int cam_x, int cam_y) {
-    blit(buffer, src, w, h, cx - w / 2, cy - OBJ_ANCHOR_Y, cam_x, cam_y);
+    const uint8_t *b = s_obj_sprite_bounds[sprite_id];
+    int bw = b[2];
+    int bh = b[3];
+    if (bw == 0 || bh == 0) return;
+    int min_x = b[0];
+    int min_y = b[1];
+    const uint16_t *src = &g_obj_sprites[sprite_id][min_y * OBJ_SPRITE_W + min_x];
+    blit_stride(buffer, src, OBJ_SPRITE_W, bw, bh,
+                cx - OBJ_SPRITE_W / 2 + min_x,
+                cy - OBJ_ANCHOR_Y + min_y,
+                cam_x, cam_y);
 }
 
 // Shadow shape/coverage is baked from the 3D asset. Runtime only composites
 // that coverage over the actual floor tile beneath it.
 static inline uint16_t apply_shadow(uint16_t color, uint8_t coverage) {
-    uint32_t keep = 255 - ((uint32_t)coverage * 160) / 255; // max ~63% darkening
+    uint32_t keep = 255 - ((uint32_t)coverage * 160) / 255;
     uint32_t r = ((color & 0x1F) * keep) / 255;
     uint32_t g = (((color >> 5) & 0x1F) * keep) / 255;
     uint32_t b = (((color >> 10) & 0x1F) * keep) / 255;
@@ -211,13 +251,52 @@ static void draw_shadow_mask(uint16_t *buffer, const uint8_t *mask, int sw, int 
     if (sx0 >= sx1 || sy0 >= sy1) return;
 
     for (int y = sy0; y < sy1; y++) {
+        uint16_t *dst_row = &buffer[(oy + y) * SCREEN_W + ox];
         for (int x = sx0; x < sx1; x++) {
             int pixel = y * sw + x;
             uint8_t packed = mask[pixel >> 1];
-            uint8_t coverage = (uint8_t)(((pixel & 1) ? packed >> 4 : packed & 0x0F) * 17);
-            uint16_t *dst = &buffer[(oy + y) * SCREEN_W + ox + x];
-            if (coverage && *dst != (VOID_COLOR | BIT(15)))
-                *dst = apply_shadow(*dst, coverage);
+            uint8_t nibble = (pixel & 1) ? (packed >> 4) : (packed & 0x0F);
+            if (nibble) {
+                uint16_t c = dst_row[x];
+                if (c != (VOID_COLOR | BIT(15))) {
+                    dst_row[x] = apply_shadow(c, (uint8_t)(nibble * 17));
+                }
+            }
+        }
+    }
+}
+
+static void draw_shadow_mask_to_cache(const uint8_t *mask, int sw, int sh,
+                                      const uint8_t *bounds, int left, int top) {
+    int sx0 = bounds[0];
+    int sy0 = bounds[1];
+    int bw  = bounds[2];
+    int bh  = bounds[3];
+    if (bw == 0 || bh == 0) return;
+
+    int sx1 = sx0 + bw;
+    int sy1 = sy0 + bh;
+    int ox = left - CACHE_X0;
+    int oy = top - CACHE_Y0;
+
+    if (ox + sx0 < 0) sx0 = -ox;
+    if (oy + sy0 < 0) sy0 = -oy;
+    if (ox + sx1 > CACHE_W) sx1 = CACHE_W - ox;
+    if (oy + sy1 > CACHE_H) sy1 = CACHE_H - oy;
+    if (sx0 >= sx1 || sy0 >= sy1) return;
+
+    for (int y = sy0; y < sy1; y++) {
+        uint16_t *dst_row = &s_floor_cache[(oy + y) * CACHE_W + ox];
+        for (int x = sx0; x < sx1; x++) {
+            int pixel = y * sw + x;
+            uint8_t packed = mask[pixel >> 1];
+            uint8_t nibble = (pixel & 1) ? (packed >> 4) : (packed & 0x0F);
+            if (nibble) {
+                uint16_t c = dst_row[x];
+                if (c != (VOID_COLOR | BIT(15))) {
+                    dst_row[x] = apply_shadow(c, (uint8_t)(nibble * 17));
+                }
+            }
         }
     }
 }
@@ -255,14 +334,30 @@ static void floor_cache_build(void) {
             }
         }
     }
+
+    // Pre-bake all static map object shadows into the floor cache once at startup.
+    // Eliminates 100% of static shadow math during the 60 FPS gameplay loop!
+    for (int row = 0; row < MAP_ROWS; row++) {
+        for (int col = 0; col < MAP_COLS; col++) {
+            uint8_t obj = g_obj_map[row][col];
+            if (obj == 0) continue;
+            int cx = tile_center_x(col, row);
+            int cy = tile_center_y(col, row);
+            int id = obj - 1;
+            draw_shadow_mask_to_cache(g_obj_shadow_masks[id],
+                                      OBJ_SHADOW_W, OBJ_SHADOW_H,
+                                      g_obj_shadow_bounds[id],
+                                      cx - OBJ_SHADOW_W / 2,
+                                      cy - OBJ_SHADOW_H / 2);
+        }
+    }
 }
 
 static void draw_floor(uint16_t *buffer, int cam_x, int cam_y) {
-    // The camera is clamped to the cache, so this window copy never clips.
+    // ARM9 burst assembly copy (ldmia/stmia) line-by-line
     const uint16_t *src = &s_floor_cache[(cam_y - CACHE_Y0) * CACHE_W + (cam_x - CACHE_X0)];
     for (int y = 0; y < SCREEN_H; y++) {
-        uint16_t *drow = &buffer[y * SCREEN_W];
-        for (int x = 0; x < SCREEN_W; x++) drow[x] = src[x];
+        memcpy(&buffer[y * SCREEN_W], src, SCREEN_W * sizeof(uint16_t));
         src += CACHE_W;
     }
 }
@@ -276,19 +371,38 @@ static void draw_player(uint16_t *buffer, int cam_x, int cam_y) {
     int py = player_screen_y(s_player.x, s_player.y);
 
     // The ground origin is the centre of each cell (PLAYER_ANCHOR_*).
-    const uint16_t *frame = g_player_frames[s_player.dir][s_player.frame];
-    blit(buffer, frame, PLAYER_SPRITE_W, PLAYER_SPRITE_H,
-         px - PLAYER_ANCHOR_X, py - PLAYER_ANCHOR_Y, cam_x, cam_y);
+    const uint16_t *frame = g_character_frames[s_player.char_id][s_player.dir][s_player.frame];
+    blit_stride(buffer, frame, PLAYER_SPRITE_W, PLAYER_SPRITE_W, PLAYER_SPRITE_H,
+                px - PLAYER_ANCHOR_X, py - PLAYER_ANCHOR_Y, cam_x, cam_y);
 }
 
-static void render_screen(uint16_t *buffer, int cam_x, int cam_y) {
+static void render_screen(uint16_t *buffer, int cam_x, int cam_y,
+                          uint32_t *out_floor, uint32_t *out_shadow, uint32_t *out_blit) {
+    uint32_t t_fl0 = cpuGetTiming();
     draw_floor(buffer, cam_x, cam_y);
+    uint32_t floor_ticks = cpuGetTiming() - t_fl0;
 
     DrawItem items[MAX_DRAW_ITEMS + 1];
     int count = 0;
 
-    for (int row = 0; row < MAP_ROWS; row++) {
-        for (int col = 0; col < MAP_COLS; col++) {
+    // Calculate map row and col range intersecting this screen (dimetric bounds)
+    int min_cx = cam_x - OBJ_SPRITE_W;
+    int max_cx = cam_x + SCREEN_W + OBJ_SPRITE_W;
+    int min_cy = cam_y - OBJ_SPRITE_H;
+    int max_cy = cam_y + SCREEN_H + OBJ_SPRITE_H;
+
+    int min_col = ((min_cx >> 4) + (min_cy >> 3)) / 2 - 2;
+    int max_col = ((max_cx >> 4) + (max_cy >> 3)) / 2 + 2;
+    int min_row = ((min_cy >> 3) - (max_cx >> 4)) / 2 - 2;
+    int max_row = ((max_cy >> 3) - (min_cx >> 4)) / 2 + 2;
+
+    if (min_col < 0) min_col = 0;
+    if (max_col >= MAP_COLS) max_col = MAP_COLS - 1;
+    if (min_row < 0) min_row = 0;
+    if (max_row >= MAP_ROWS) max_row = MAP_ROWS - 1;
+
+    for (int row = min_row; row <= max_row; row++) {
+        for (int col = min_col; col <= max_col; col++) {
             uint8_t obj = g_obj_map[row][col];
             if (obj == 0) continue;
 
@@ -308,30 +422,32 @@ static void render_screen(uint16_t *buffer, int cam_x, int cam_y) {
         }
     }
 
+    // Add player only if visible on this screen
     int psx = player_screen_x(s_player.x, s_player.y);
     int psy = player_screen_y(s_player.x, s_player.y);
-    items[count].depth = s_player.x + s_player.y;
-    items[count].sprite = -1;
-    items[count].cx = psx;
-    items[count].cy = psy;
-    count++;
+    int pl_left = psx - PLAYER_ANCHOR_X - cam_x;
+    int pl_top = psy - PLAYER_ANCHOR_Y - cam_y;
+    if (pl_left < SCREEN_W && pl_left + PLAYER_SPRITE_W > 0 &&
+        pl_top < SCREEN_H && pl_top + PLAYER_SPRITE_H > 0) {
+        items[count].depth = s_player.x + s_player.y;
+        items[count].sprite = -1;
+        items[count].cx = psx;
+        items[count].cy = psy;
+        count++;
+    }
 
-    // 1) Composite the baked 3D shadow masks over the floor; sprites then cover them.
+    // 1) Composite dynamic entity shadows (player) over floor; static shadows are pre-baked!
+    uint32_t t_sh0 = cpuGetTiming();
     for (int i = 0; i < count; i++) {
         if (items[i].sprite < 0) {
-            draw_shadow_mask(buffer, g_player_shadow_masks[s_player.dir],
+            draw_shadow_mask(buffer, g_character_shadow_masks[s_player.char_id][s_player.dir],
                              PLAYER_SHADOW_W, PLAYER_SHADOW_H,
-                             g_player_shadow_bounds[s_player.dir],
+                             g_character_shadow_bounds[s_player.char_id][s_player.dir],
                              items[i].cx - PLAYER_SHADOW_W / 2,
                              items[i].cy - PLAYER_SHADOW_H / 2, cam_x, cam_y);
-        } else {
-            draw_shadow_mask(buffer, g_obj_shadow_masks[items[i].sprite],
-                             OBJ_SHADOW_W, OBJ_SHADOW_H,
-                             g_obj_shadow_bounds[items[i].sprite],
-                             items[i].cx - OBJ_SHADOW_W / 2,
-                             items[i].cy - OBJ_SHADOW_H / 2, cam_x, cam_y);
         }
     }
+    uint32_t shadow_ticks = cpuGetTiming() - t_sh0;
 
     // 2) Sprites back-to-front (painter's algorithm, near objects last).
     for (int i = 1; i < count; i++) {
@@ -344,28 +460,31 @@ static void render_screen(uint16_t *buffer, int cam_x, int cam_y) {
         items[j + 1] = key;
     }
 
+    uint32_t t_bl0 = cpuGetTiming();
     for (int i = 0; i < count; i++) {
         if (items[i].sprite < 0) {
             draw_player(buffer, cam_x, cam_y);
         } else {
-            blit_tile(buffer, g_obj_sprites[items[i].sprite],
-                      OBJ_SPRITE_W, OBJ_SPRITE_H,
+            blit_tile(buffer, items[i].sprite,
                       items[i].cx, items[i].cy, cam_x, cam_y);
         }
     }
+    uint32_t blit_ticks = cpuGetTiming() - t_bl0;
+
+    if (out_floor) *out_floor = floor_ticks;
+    if (out_shadow) *out_shadow = shadow_ticks;
+    if (out_blit) *out_blit = blit_ticks;
 }
 
 // ---------------------------------------------------------------------------
 // Presentation
 // ---------------------------------------------------------------------------
 
-static void present_both_screens(void) {
-    DC_FlushRange(s_top_backbuffer, sizeof(s_top_backbuffer));
-    dmaCopyWords(1, s_top_backbuffer, s_top_vram, sizeof(s_top_backbuffer));
-
-    u16 *dest_vram = (s_active_vram_bank == 0) ? (u16 *)VRAM_B : (u16 *)VRAM_A;
-    DC_FlushRange(s_bot_backbuffer, sizeof(s_bot_backbuffer));
-    dmaCopyWords(2, s_bot_backbuffer, dest_vram, sizeof(s_bot_backbuffer));
+static void present_both_screens(int top_dirty) {
+    if (top_dirty) {
+        DC_FlushRange(s_top_backbuffer, sizeof(s_top_backbuffer));
+        dmaCopyWords(1, s_top_backbuffer, s_top_vram, sizeof(s_top_backbuffer));
+    }
 
     swiWaitForVBlank();
 
@@ -389,9 +508,21 @@ static void player_init(void) {
     s_player.frame = 0;
     s_player.is_moving = 0;
     s_player.anim_timer = 0;
+    s_player.char_id = CHAR_HERO;
 }
 
-static void player_update(uint32_t keys) {
+static void player_update(uint32_t keys, uint32_t keys_down) {
+    // Switch active character when pressing X, Y, SELECT or A
+    if (keys_down & (KEY_X | KEY_Y | KEY_SELECT | KEY_A)) {
+        s_player.char_id = (s_player.char_id + 1) % NUM_CHARACTERS;
+        s_player.frame = 0;
+        s_player.anim_timer = 0;
+    }
+
+    int cur_char = s_player.char_id;
+    fixed current_speed = g_characters[cur_char].speed;
+    int current_period = g_characters[cur_char].anim_period;
+
     int sdx = 0, sdy = 0; // screen-space input axes
     if (keys & KEY_UP) sdy -= 1;
     if (keys & KEY_DOWN) sdy += 1;
@@ -410,8 +541,8 @@ static void player_update(uint32_t keys) {
         else if (sdy == 0 && sdx > 0) s_player.dir = DIR_EAST;
         else s_player.dir = DIR_SOUTHEAST;
 
-        fixed vx = sdx * PLAYER_SPEED;
-        fixed vy = sdy * PLAYER_SPEED;
+        fixed vx = sdx * current_speed;
+        fixed vy = sdy * current_speed;
         if (sdx != 0 && sdy != 0) { // normalise diagonals
             vx = vx * 181 / 256;
             vy = vy * 181 / 256;
@@ -433,7 +564,7 @@ static void player_update(uint32_t keys) {
         }
 
         s_player.anim_timer++;
-        if (s_player.anim_timer >= ANIM_PERIOD) {
+        if (s_player.anim_timer >= current_period) {
             s_player.anim_timer = 0;
             s_player.frame = (s_player.frame + 1) % PLAYER_NUM_FRAMES;
         }
@@ -457,7 +588,32 @@ static void player_update(uint32_t keys) {
     s_cam_y = target_y;
 }
 
+volatile PerfStats g_perf = {
+    .magic = 0x50455246,
+    .frame_index = 0,
+    .cpu_ticks = 0,
+    .cpu_budget = 280095, // 33513982 Hz / 59.8261 Hz
+    .cpu_percent = 0,
+    .vcount_done = 0,
+    .vblanks_elapsed = 1,
+    .fps = 60,
+    .logic_ticks = 0,
+    .top_render_ticks = 0,
+    .bot_render_ticks = 0,
+    .present_ticks = 0,
+    .show_hud = 0
+};
+
+static volatile uint32_t s_vblank_count = 0;
+static void on_vblank_irq(void) {
+    s_vblank_count++;
+}
+
 int main(void) {
+    irqSet(IRQ_VBLANK, on_vblank_irq);
+    irqEnable(IRQ_VBLANK);
+    cpuStartTiming(0);
+
     lcdMainOnBottom();
     vramSetBankA(VRAM_A_LCD);
     vramSetBankB(VRAM_B_LCD);
@@ -469,18 +625,102 @@ int main(void) {
     s_top_vram = (u16 *)bgGetGfxPtr(s_top_bg);
 
     floor_cache_build();
+    init_obj_sprite_bounds();
     player_init();
 
+    // Initialise camera position to match player spawn
+    s_cam_x = player_screen_x(s_player.x, s_player.y) - SCREEN_W / 2;
+    s_cam_y = player_screen_y(s_player.x, s_player.y) - CAMERA_ANCHOR_Y;
+    if (s_cam_x < CACHE_X0) s_cam_x = CACHE_X0;
+    if (s_cam_x > CACHE_X0 + CACHE_W - SCREEN_W) s_cam_x = CACHE_X0 + CACHE_W - SCREEN_W;
+    if (s_cam_y < CACHE_Y0) s_cam_y = CACHE_Y0;
+    if (s_cam_y > CACHE_Y0 + CACHE_H - SCREEN_H) s_cam_y = CACHE_Y0 + CACHE_H - SCREEN_H;
+
+    // Render initial scene into top screen and both bottom VRAM buffers so frame 0 is never black
+    render_screen(s_top_backbuffer, s_cam_x, s_cam_y - SCREEN_H, NULL, NULL, NULL);
+    DC_FlushRange(s_top_backbuffer, sizeof(s_top_backbuffer));
+    dmaCopyWords(1, s_top_backbuffer, s_top_vram, sizeof(s_top_backbuffer));
+
+    render_screen((u16 *)VRAM_A, s_cam_x, s_cam_y, NULL, NULL, NULL);
+    render_screen((u16 *)VRAM_B, s_cam_x, s_cam_y, NULL, NULL, NULL);
+
+    int prev_top_cam_x = s_cam_x;
+    int prev_top_cam_y = s_cam_y - SCREEN_H;
+
     while (1) {
+        uint32_t frame_start_ticks = cpuGetTiming();
+        uint32_t start_vblank = s_vblank_count;
+
         scanKeys();
         uint32_t keys_held = keysHeld();
+        uint32_t keys_down = keysDown();
 
-        player_update(keys_held);
+        if (keys_down & KEY_START) {
+            g_perf.show_hud = !g_perf.show_hud;
+        }
 
-        render_screen(s_top_backbuffer, s_cam_x, s_cam_y - SCREEN_H);
-        render_screen(s_bot_backbuffer, s_cam_x, s_cam_y);
+        uint32_t t0 = cpuGetTiming();
+        player_update(keys_held, keys_down);
+        uint32_t logic_ticks = cpuGetTiming() - t0;
 
-        present_both_screens();
+        uint32_t top_fl = 0, top_sh = 0, top_bl = 0;
+        uint32_t bot_fl = 0, bot_sh = 0, bot_bl = 0;
+
+        int top_cam_x = s_cam_x;
+        int top_cam_y = s_cam_y - SCREEN_H;
+        int top_moved = (top_cam_x != prev_top_cam_x || top_cam_y != prev_top_cam_y);
+        // Interleave top screen refresh during camera scrolling (30 Hz top / 60 Hz bot)
+        // to guarantee 100% locked 60 FPS under the ARM9 16.7ms budget.
+        int top_dirty = top_moved && ((g_perf.frame_index & 1) == 0 || !s_player.is_moving);
+
+        uint32_t t1 = cpuGetTiming();
+        if (top_dirty) {
+            render_screen(s_top_backbuffer, top_cam_x, top_cam_y, &top_fl, &top_sh, &top_bl);
+            prev_top_cam_x = top_cam_x;
+            prev_top_cam_y = top_cam_y;
+        }
+        uint32_t top_ticks = cpuGetTiming() - t1;
+
+        u16 *dest_vram = (s_active_vram_bank == 0) ? (u16 *)VRAM_B : (u16 *)VRAM_A;
+        uint32_t t2 = cpuGetTiming();
+        render_screen(dest_vram, s_cam_x, s_cam_y, &bot_fl, &bot_sh, &bot_bl);
+        uint32_t bot_ticks = cpuGetTiming() - t2;
+
+        // CPU rendering finished before waiting for VBlank
+        uint32_t cpu_ticks = cpuGetTiming() - frame_start_ticks;
+        int vcount_done = REG_VCOUNT;
+
+        uint32_t t3 = cpuGetTiming();
+        present_both_screens(top_dirty);
+        uint32_t present_ticks = cpuGetTiming() - t3;
+
+        uint32_t vblanks_elapsed = s_vblank_count - start_vblank;
+        if (vblanks_elapsed == 0) vblanks_elapsed = 1;
+
+        g_perf.frame_index++;
+        g_perf.cpu_ticks = cpu_ticks;
+        g_perf.cpu_percent = (cpu_ticks * 100) / g_perf.cpu_budget;
+        g_perf.vcount_done = vcount_done;
+        g_perf.vblanks_elapsed = vblanks_elapsed;
+        g_perf.fps = 60 / vblanks_elapsed;
+        g_perf.logic_ticks = logic_ticks;
+        g_perf.top_render_ticks = top_ticks;
+        g_perf.bot_render_ticks = bot_ticks;
+        g_perf.present_ticks = present_ticks;
+        g_perf.floor_ticks = top_fl + bot_fl;
+        g_perf.shadow_ticks = top_sh + bot_sh;
+        g_perf.blit_ticks = top_bl + bot_bl;
+
+        if (g_perf.frame_index % 30 == 0) {
+            char log_buf[110];
+            snprintf(log_buf, sizeof(log_buf),
+                     "FRAME %lu: FPS=%lu VBlanks=%lu CPU=%lu%% (ticks=%lu/%lu, VCount=%d)\n",
+                     (unsigned long)g_perf.frame_index, (unsigned long)g_perf.fps,
+                     (unsigned long)g_perf.vblanks_elapsed, (unsigned long)g_perf.cpu_percent,
+                     (unsigned long)g_perf.cpu_ticks, (unsigned long)g_perf.cpu_budget,
+                     vcount_done);
+            nocashMessage(log_buf);
+        }
     }
 
     return 0;

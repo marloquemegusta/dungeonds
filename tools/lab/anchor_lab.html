@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>DungeonDS · Anchor Lab</title>
+<style>
+  :root { --bg:#10121c; --panel:#191d2a; --line:#30384e; --ink:#e8ebf2; --muted:#9aa4bb; --accent:#73d5ff; --ok:#7ee2a8; --warn:#ffd36b; --red:#ff7385; }
+  * { box-sizing:border-box; }
+  body { margin:0; min-height:100vh; background:var(--bg); color:var(--ink); font:14px/1.4 ui-monospace,SFMono-Regular,Consolas,monospace; display:grid; grid-template-columns:350px minmax(620px,1fr); }
+  aside { background:var(--panel); border-right:1px solid var(--line); padding:22px; overflow:auto; }
+  h1 { margin:0 0 4px; font-size:20px; } h2 { margin:0 0 12px; color:var(--muted); font-size:11px; letter-spacing:.12em; text-transform:uppercase; }
+  p { color:var(--muted); margin:0 0 20px; }
+  section { border:1px solid var(--line); border-radius:10px; padding:14px; margin:12px 0; background:#141824; }
+  label { display:block; margin:9px 0 4px; color:var(--muted); font-size:12px; }
+  input, select, button { width:100%; background:#22293a; color:var(--ink); border:1px solid #3a4561; border-radius:6px; padding:8px; font:inherit; }
+  input[type=range] { padding:0; accent-color:var(--accent); }
+  button { cursor:pointer; background:#21465a; border-color:#3b8db3; font-weight:700; margin-top:10px; } button:hover { background:#2c5b72; }
+  .row { display:grid; grid-template-columns:1fr 1fr; gap:9px; } .tiny { font-size:11px; color:var(--muted); }
+  main { min-width:0; display:grid; place-items:center; padding:28px; gap:16px; }
+  .stage { position:relative; background:#151924; border:1px solid var(--line); border-radius:12px; padding:16px; box-shadow:0 18px 60px #0008; }
+  canvas { display:block; width:min(76vw,780px); height:auto; image-rendering:pixelated; background:#111422; border:1px solid #2d3447; touch-action:none; }
+  .legend { display:flex; flex-wrap:wrap; gap:14px; padding:10px 2px 0; color:var(--muted); font-size:12px; }
+  .dot { display:inline-block; width:10px; height:10px; border-radius:50%; margin-right:5px; vertical-align:middle; }
+  #status { max-width:780px; color:var(--muted); } #status strong { color:var(--ok); }
+</style>
+</head>
+<body>
+<aside>
+  <h1>Anchor Lab</h1>
+  <p>Auditoría de anclas físicas para sprites horneados. Arrastra la cruz roja; exporta metadatos, no píxeles.</p>
+  <section>
+    <h2>Asset</h2>
+    <label for="asset">Sprite real</label><select id="asset"></select>
+    <div class="row"><div><label for="rotation">Rotación</label><select id="rotation"><option value="0">r000</option><option value="90">r090</option><option value="180">r180</option><option value="270">r270</option></select></div><div><label for="zoom">Zoom</label><input id="zoom" type="range" min="3" max="7" value="5"></div></div>
+    <label for="profile">Contrato de colocación</label><select id="profile"><option value="point">Point · columna / prop / personaje</option><option value="segment">Segment · muro / arco / puerta</option><option value="surface">Surface · suelo</option></select>
+  </section>
+  <section id="playerControls">
+    <h2>Personaje</h2>
+    <label for="direction">Dirección <span id="directionValue">0</span></label><input id="direction" type="range" min="0" max="7" value="0" step="1">
+    <label for="frame">Frame <span id="frameValue">0</span></label><input id="frame" type="range" min="0" max="7" value="0" step="1">
+    <p class="tiny">La ancla estable debe representar el punto bajo el root; los pies se inspeccionan frame a frame.</p>
+  </section>
+  <section>
+    <h2>Contrato</h2>
+    <div class="row"><div><label for="anchorX">Ancla X (px)</label><input id="anchorX" type="number"></div><div><label for="anchorY">Ancla Y (px)</label><input id="anchorY" type="number"></div></div>
+    <label for="span">Tramo modular (m)</label><input id="span" type="number" value="2" step="0.1">
+    <label for="footprint">Huella (m, X × Y)</label><input id="footprint" value="0.65 × 0.65">
+    <button id="reset">Restaurar candidato</button><button id="export">Descargar asset_manifest.json</button>
+  </section>
+</aside>
+<main>
+  <div class="stage"><canvas id="canvas" width="780" height="590"></canvas><div class="legend"><span><i class="dot" style="background:var(--red)"></i>ancla editable</span><span><i class="dot" style="background:var(--ok)"></i>suelo / sockets</span><span><i class="dot" style="background:var(--warn)"></i>huella proyectada</span></div></div>
+  <div id="status"></div>
+</main>
+<script>
+const ROOT = '../../';
+const ASSETS = [
+  {id:'WR_crypt', label:'Muro Crypt', profile:'segment', w:96,h:96,anchor:[48,48],footprint:'2.00 × 0.43',span:2},
+  {id:'WR_buttress', label:'Muro Buttress', profile:'segment', w:96,h:96,anchor:[48,48],footprint:'2.00 × 0.70',span:2},
+  {id:'WR_ossuary', label:'Muro Ossuary', profile:'segment', w:96,h:96,anchor:[48,48],footprint:'2.00 × 0.535',span:2},
+  {id:'AR_row', label:'Arco Lancet', profile:'segment', w:96,h:96,anchor:[48,48],footprint:'2.19 × 0.476',span:2},
+  {id:'P_soul', label:'Columna Soul Lantern', profile:'point', w:96,h:96,anchor:[48,48],footprint:'0.65 × 0.708',span:0},
+  {id:'P_broken', label:'Columna rota', profile:'point', w:96,h:96,anchor:[48,48],footprint:'0.65 × 0.65',span:0},
+  {id:'player', label:'Personaje Walking', profile:'point', w:64,h:64,anchor:[32,32],footprint:'1.11 × 1.01',span:0, player:true}
+];
+const $ = id => document.getElementById(id), canvas=$('canvas'), ctx=canvas.getContext('2d');
+const state={asset:ASSETS[0],rotation:0,anchor:[48,48],zoom:5,dir:0,frame:0,drag:false,image:null};
+for(const a of ASSETS){const o=document.createElement('option');o.value=a.id;o.textContent=a.label;$('asset').append(o)}
+function imgPath(){const a=state.asset; return a.player ? ROOT+'assets/characters/monster/player_e30.png' : ROOT+'assets/dungeon_e30/'+a.id+'_r'+String(state.rotation).padStart(3,'0')+'.png'}
+function load(){const im=new Image();im.onload=()=>{state.image=im;draw()};im.onerror=()=>{$('status').innerHTML='<strong>Error:</strong> no se pudo cargar '+imgPath()};im.src=imgPath()}
+function isoDiamond(cx,cy,rx,ry,color,fill=false){ctx.beginPath();ctx.moveTo(cx,cy-ry);ctx.lineTo(cx+rx,cy);ctx.lineTo(cx,cy+ry);ctx.lineTo(cx-rx,cy);ctx.closePath();ctx.strokeStyle=color;if(fill){ctx.fillStyle=color;ctx.globalAlpha=.16;ctx.fill();ctx.globalAlpha=1}ctx.stroke()}
+function drawFloor(cx,cy){ctx.fillStyle='#121827';ctx.fillRect(0,0,canvas.width,canvas.height);for(let y=-4;y<5;y++)for(let x=-7;x<8;x++){const px=cx+(x-y)*80,py=cy+(x+y)*40;isoDiamond(px,py,80,40,'#2b3548',true)}}
+function px(v){return v*state.zoom} function drawCross(x,y,color){ctx.strokeStyle=color;ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(x-12,y);ctx.lineTo(x+12,y);ctx.moveTo(x,y-12);ctx.lineTo(x,y+12);ctx.stroke();ctx.beginPath();ctx.arc(x,y,5,0,Math.PI*2);ctx.stroke()}
+function draw(){const a=state.asset,z=state.zoom,cx=canvas.width/2,cy=canvas.height/2+30;drawFloor(cx,cy);if(!state.image)return;const ax=cx+(state.anchor[0]-a.w/2)*z,ay=cy+(state.anchor[1]-a.h/2)*z;
+  if($('profile').value==='point'){const parts=$('footprint').value.match(/[\d.]+/g)||[.65,.65];const fx=parseFloat(parts[0])*11.31*z*.72,fy=parseFloat(parts[1])*11.31*z*.36;isoDiamond(cx,cy,fx,fy,'#ffd36b',true)}
+  if($('profile').value==='segment'){const span=parseFloat($('span').value)||2;const r=span*11.31*z*.72;ctx.strokeStyle='#7ee2a8';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(cx-r,cy+r/2);ctx.lineTo(cx+r,cy-r/2);ctx.stroke();ctx.fillStyle='#7ee2a8';for(const p of [[cx-r,cy+r/2],[cx+r,cy-r/2]]){ctx.beginPath();ctx.arc(...p,6,0,Math.PI*2);ctx.fill()}}
+  ctx.save();ctx.imageSmoothingEnabled=false;if(a.player){const sx=state.frame*a.w,sy=state.dir*a.h;ctx.drawImage(state.image,sx,sy,a.w,a.h,cx-a.w*z/2,cy-a.h*z/2,a.w*z,a.h*z)}else ctx.drawImage(state.image,cx-a.w*z/2,cy-a.h*z/2,a.w*z,a.h*z);ctx.restore();
+  drawCross(ax,ay,'#ff7385');ctx.strokeStyle='#7ee2a8';ctx.setLineDash([5,5]);ctx.beginPath();ctx.moveTo(0,cy);ctx.lineTo(canvas.width,cy);ctx.stroke();ctx.setLineDash([]);
+  $('status').innerHTML='<strong>'+a.label+'</strong> · '+$('profile').value+' · ancla '+state.anchor[0].toFixed(1)+', '+state.anchor[1].toFixed(1)+' px · '+(a.player?'frame '+state.frame+' / dir '+state.dir:'rotación r'+String(state.rotation).padStart(3,'0'));
+}
+function selectAsset(){state.asset=ASSETS.find(a=>a.id===$('asset').value);state.anchor=[...state.asset.anchor];$('profile').value=state.asset.profile;$('span').value=state.asset.span||0;$('footprint').value=state.asset.footprint;$('anchorX').value=state.anchor[0];$('anchorY').value=state.anchor[1];$('playerControls').style.display=state.asset.player?'block':'none';load()}
+function sync(){state.rotation=+$('rotation').value;state.zoom=+$('zoom').value;state.dir=+$('direction').value;state.frame=+$('frame').value;state.anchor=[+$('anchorX').value,+$('anchorY').value];$('directionValue').textContent=state.dir;$('frameValue').textContent=state.frame;load()}
+['rotation','zoom','direction','frame','profile','span','footprint'].forEach(id=>$(id).addEventListener('input',sync));$('asset').addEventListener('change',selectAsset);$('anchorX').addEventListener('input',sync);$('anchorY').addEventListener('input',sync);
+canvas.addEventListener('pointerdown',e=>{state.drag=true;canvas.setPointerCapture(e.pointerId)});canvas.addEventListener('pointerup',()=>state.drag=false);canvas.addEventListener('pointermove',e=>{if(!state.drag)return;const r=canvas.getBoundingClientRect(),scale=canvas.width/r.width,z=state.zoom;state.anchor=[state.asset.w/2+(e.clientX-r.left)*scale/z-canvas.width/2/z,state.asset.h/2+(e.clientY-r.top)*scale/z-(canvas.height/2+30)/z];$('anchorX').value=state.anchor[0].toFixed(2);$('anchorY').value=state.anchor[1].toFixed(2);draw()});
+$('reset').addEventListener('click',()=>{state.anchor=[...state.asset.anchor];$('anchorX').value=state.anchor[0];$('anchorY').value=state.anchor[1];draw()});
+$('export').addEventListener('click',()=>{const a=state.asset,payload={asset:a.id,profile:$('profile').value,anchor_px:{x:+state.anchor[0].toFixed(2),y:+state.anchor[1].toFixed(2)},ground_anchor:'projected_ground_origin',span_m:+$('span').value||null,footprint_m:$('footprint').value,rotation:state.rotation,player:a.player?{direction:state.dir,frame:state.frame}:null};const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),link=document.createElement('a');link.href=url;link.download=a.id+'_anchor.json';link.click();URL.revokeObjectURL(url)});
+selectAsset();
+</script>
+</body>
+</html>

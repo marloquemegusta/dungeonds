@@ -195,6 +195,8 @@ def main():
     player_sheet = os.path.join(ROOT, "assets", "characters", "monster", f"player_{args.preset}.png")
     player_shadow_sheet = os.path.join(ROOT, "assets", "characters", "monster", f"player_{args.preset}_shadow.png")
     player_anchor_path = os.path.join(ROOT, "assets", "characters", "monster", f"player_{args.preset}_anchor.json")
+    charger_sheet = os.path.join(ROOT, "assets", "characters", "charger", f"charger_{args.preset}.png")
+    charger_shadow_sheet = os.path.join(ROOT, "assets", "characters", "charger", f"charger_{args.preset}_shadow.png")
     if os.path.isfile(player_anchor_path):
         with open(player_anchor_path, encoding="utf-8") as f:
             player_anchor = json.load(f)["anchor_pixel"]
@@ -304,14 +306,27 @@ extern const uint8_t g_obj_map[MAP_ROWS][MAP_COLS];
             c.write("    { " + ", ".join(f"{v:2d}" for v in obj[r]) + " },\n")
         c.write("};\n")
 
-    # --- player spritesheet ---
+    # --- character spritesheets (hero player and charger enemy) ---
     cell = look.CHAR_CANVAS
     shadow_cell = cell * 3 // 2
     n_dirs, n_frames = 8, 8
-    sheet = Image.open(player_sheet).convert("RGBA")
-    assert sheet.size == (n_frames * cell, n_dirs * cell), sheet.size
-    shadow_sheet = Image.open(player_shadow_sheet).convert("RGBA")
-    assert shadow_sheet.size == (n_dirs * shadow_cell, shadow_cell), shadow_sheet.size
+
+    player_im = Image.open(player_sheet).convert("RGBA")
+    assert player_im.size == (n_frames * cell, n_dirs * cell), player_im.size
+    player_sh = Image.open(player_shadow_sheet).convert("RGBA")
+    assert player_sh.size == (n_dirs * shadow_cell, shadow_cell), player_sh.size
+
+    charger_im = Image.open(charger_sheet).convert("RGBA")
+    assert charger_im.size == (n_frames * cell, n_dirs * cell), charger_im.size
+    charger_sh = Image.open(charger_shadow_sheet).convert("RGBA")
+    assert charger_sh.size == (n_dirs * shadow_cell, shadow_cell), charger_sh.size
+
+    char_w = 48
+    char_h = 40
+    crop_x0 = 8
+    crop_y0 = 4
+    char_anchor_x = player_anchor_x - crop_x0
+    char_anchor_y = player_anchor_y - crop_y0
 
     with open(os.path.join(ROOT, "include", "player_sprite.h"), "w", encoding="utf-8") as h:
         h.write(f"""#ifndef PLAYER_SPRITE_INCLUDED
@@ -319,38 +334,64 @@ extern const uint8_t g_obj_map[MAP_ROWS][MAP_COLS];
 
 #include <nds.h>
 
-#define PLAYER_SPRITE_W {cell}
-#define PLAYER_SPRITE_H {cell}
+#define PLAYER_SPRITE_W {char_w}
+#define PLAYER_SPRITE_H {char_h}
 #define PLAYER_SHADOW_W {shadow_cell}
 #define PLAYER_SHADOW_H {shadow_cell}
 #define PLAYER_NUM_DIRS {n_dirs}
 #define PLAYER_NUM_FRAMES {n_frames}
 
  // The ground origin is the shared lower anchor of every sprite canvas.
-#define PLAYER_ANCHOR_X {player_anchor_x}
-#define PLAYER_ANCHOR_Y {player_anchor_y}
+#define PLAYER_ANCHOR_X {char_anchor_x}
+#define PLAYER_ANCHOR_Y {char_anchor_y}
 
+#define NUM_CHARACTERS 2
+
+enum {{
+    CHAR_HERO = 0,
+    CHAR_CHARGER = 1
+}};
+
+typedef struct {{
+    const char *name;
+    int speed;        // 8.8 fixed point speed (px/frame)
+    int anim_period;  // ticks per frame
+}} CharacterConfig;
+
+extern const CharacterConfig g_characters[NUM_CHARACTERS];
+
+// Hero frames & shadows (Walking)
 extern const uint16_t g_player_frames[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][PLAYER_SPRITE_W * PLAYER_SPRITE_H];
 extern const uint8_t g_player_shadow_masks[PLAYER_NUM_DIRS][PLAYER_SHADOW_W * PLAYER_SHADOW_H / 2];
 extern const uint8_t g_player_shadow_bounds[PLAYER_NUM_DIRS][4];
 
+// Charger enemy frames & shadows (Run / Charge)
+extern const uint16_t g_charger_frames[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][PLAYER_SPRITE_W * PLAYER_SPRITE_H];
+extern const uint8_t g_charger_shadow_masks[PLAYER_NUM_DIRS][PLAYER_SHADOW_W * PLAYER_SHADOW_H / 2];
+extern const uint8_t g_charger_shadow_bounds[PLAYER_NUM_DIRS][4];
+
+// Fast indexed lookups:
+extern const uint16_t (* const g_character_frames[NUM_CHARACTERS])[PLAYER_NUM_FRAMES][PLAYER_SPRITE_W * PLAYER_SPRITE_H];
+extern const uint8_t (* const g_character_shadow_masks[NUM_CHARACTERS])[PLAYER_SHADOW_W * PLAYER_SHADOW_H / 2];
+extern const uint8_t (* const g_character_shadow_bounds[NUM_CHARACTERS])[4];
+
 #endif // PLAYER_SPRITE_INCLUDED
 """)
 
-    with open(os.path.join(ROOT, "source", "player_sprite.c"), "w", encoding="utf-8") as c:
-        c.write('#include "player_sprite.h"\n\n')
-        c.write(f"// {cell}x{cell} BGR555 player frames, {n_dirs} directions x {n_frames} frames\n")
-        c.write("const uint16_t g_player_frames[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES]"
-                "[PLAYER_SPRITE_W * PLAYER_SPRITE_H] __attribute__((aligned(4))) = {\n")
+    def write_char_arrays(c, var_prefix, label, sheet, shadow_sheet):
+        c.write(f"// {char_w}x{char_h} BGR555 {label} frames, {n_dirs} directions x {n_frames} frames\n")
+        c.write(f"const uint16_t {var_prefix}_frames[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES]"
+                f"[PLAYER_SPRITE_W * PLAYER_SPRITE_H] __attribute__((aligned(4))) = {{\n")
         for d in range(n_dirs):
             c.write(f"    // Direction {d}\n    {{\n")
             for f in range(n_frames):
-                crop = sheet.crop((f * cell, d * cell, (f + 1) * cell, (d + 1) * cell))
+                crop = sheet.crop((f * cell + crop_x0, d * cell + crop_y0,
+                                   f * cell + crop_x0 + char_w, d * cell + crop_y0 + char_h))
                 c.write(f"        // Frame {f}\n        {{\n            ")
                 data = list(crop.getdata())
                 for i, (r, g, b, a) in enumerate(data):
-                    x = i % cell
-                    y = i // cell
+                    x = i % char_w
+                    y = i // char_w
                     c.write(f"0x{px_bgr555(r, g, b, a, x, y):04X},")
                     if (i + 1) % 16 == 0:
                         c.write("\n            " if i + 1 < len(data) else "\n")
@@ -358,15 +399,15 @@ extern const uint8_t g_player_shadow_bounds[PLAYER_NUM_DIRS][4];
                         c.write(" ")
                 c.write("\n        },\n")
             c.write("    },\n")
-        c.write("};\n")
+        c.write("};\n\n")
 
-        c.write("\n// Pre-rendered player shadow coverage masks, one per facing\n")
-        c.write("const uint8_t g_player_shadow_masks[PLAYER_NUM_DIRS][PLAYER_SHADOW_W * PLAYER_SHADOW_H / 2] = {\n")
-        player_bounds = []
+        c.write(f"// Pre-rendered {label} shadow coverage masks, one per facing\n")
+        c.write(f"const uint8_t {var_prefix}_shadow_masks[PLAYER_NUM_DIRS][PLAYER_SHADOW_W * PLAYER_SHADOW_H / 2] = {{\n")
+        bounds_list = []
         for d in range(n_dirs):
             crop = shadow_sheet.crop((d * shadow_cell, 0, (d + 1) * shadow_cell, shadow_cell))
-            coverage = shadow_coverage(crop, f"player shadow direction {d}")
-            player_bounds.append(coverage_bounds(coverage, shadow_cell, shadow_cell))
+            coverage = shadow_coverage(crop, f"{label} shadow direction {d}")
+            bounds_list.append(coverage_bounds(coverage, shadow_cell, shadow_cell))
             c.write(f"    // Direction {d}\n    {{\n")
             for i in range(0, len(coverage), 2):
                 packed = (coverage[i] >> 4) | ((coverage[i + 1] >> 4) << 4)
@@ -376,14 +417,39 @@ extern const uint8_t g_player_shadow_bounds[PLAYER_NUM_DIRS][4];
                 else:
                     c.write(" ")
             c.write("\n    },\n")
-        c.write("};\n")
-        c.write("\nconst uint8_t g_player_shadow_bounds[PLAYER_NUM_DIRS][4] = {\n")
-        for bounds in player_bounds:
+        c.write("};\n\n")
+        c.write(f"const uint8_t {var_prefix}_shadow_bounds[PLAYER_NUM_DIRS][4] = {{\n")
+        for bounds in bounds_list:
             c.write("    { " + ", ".join(map(str, bounds)) + " },\n")
-        c.write("};\n")
+        c.write("};\n\n")
+
+    with open(os.path.join(ROOT, "source", "player_sprite.c"), "w", encoding="utf-8") as c:
+        c.write('#include "player_sprite.h"\n\n')
+        c.write('const CharacterConfig g_characters[NUM_CHARACTERS] = {\n')
+        c.write('    { "Hero (Monster)", 181, 3 },\n')
+        c.write('    { "Enemy Charger",  362, 2 },\n')
+        c.write('};\n\n')
+
+        write_char_arrays(c, "g_player", "hero", player_im, player_sh)
+        write_char_arrays(c, "g_charger", "charger", charger_im, charger_sh)
+
+        c.write('const uint16_t (* const g_character_frames[NUM_CHARACTERS])[PLAYER_NUM_FRAMES]'
+                '[PLAYER_SPRITE_W * PLAYER_SPRITE_H] = {\n'
+                '    g_player_frames,\n'
+                '    g_charger_frames\n'
+                '};\n\n')
+        c.write('const uint8_t (* const g_character_shadow_masks[NUM_CHARACTERS])'
+                '[PLAYER_SHADOW_W * PLAYER_SHADOW_H / 2] = {\n'
+                '    g_player_shadow_masks,\n'
+                '    g_charger_shadow_masks\n'
+                '};\n\n')
+        c.write('const uint8_t (* const g_character_shadow_bounds[NUM_CHARACTERS])[4] = {\n'
+                '    g_player_shadow_bounds,\n'
+                '    g_charger_shadow_bounds\n'
+                '};\n')
 
     print(f"[OK] preset {args.preset}: 32x{tile_h} floors, {look.OBJ_CANVAS}x{look.OBJ_CANVAS} objects, "
-          f"{cell}x{cell} player.")
+          f"{cell}x{cell} characters (hero + charger).")
 
 
 if __name__ == "__main__":

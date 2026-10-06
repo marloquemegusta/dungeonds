@@ -11,18 +11,19 @@ This skill is the complete DS development workflow. Use its bundled scripts,
 runtime, container image, templates, scenarios, and validators; do not ask the
 user to know DS toolchain commands.
 
-## Supported host and setup
+## Supported host and offline package
 
 - Supported host: Windows 10/11, PowerShell, plus Docker Desktop (normally with
   WSL2 integration) or Docker Engine and WSL2 installed separately. Docker is
-  the BlocksDS container backend; WSL2 runs the bundled DeSmuME/GDB runtime.
-- Run `scripts/setup.ps1` to automatically bootstrap the environment. It checks
-  prerequisites, downloads the headless DeSmuME runtime from GitHub Releases if
-  not present, and prepares the BlocksDS container image.
-- Run `scripts/check-toolchain.ps1` to verify whether Docker, WSL2, Python,
-  the BlocksDS image, and the DeSmuME runtime are ready.
-- If the offline BlocksDS image tar is available in `images/`, `scripts/load-blocksds-image.ps1`
-  loads it; otherwise it pulls `skylyrac/blocksds:slim-latest` from Docker Hub.
+  the offline BlocksDS container backend; WSL2 runs the bundled DeSmuME/GDB
+  runtime.
+- The package contains a pinned BlocksDS image at `images/blocksds-slim-latest.tar`,
+  a pinned headless DeSmuME runtime, its source and GDB overlay, runners, and
+  generic scenario contracts.
+- Run `scripts/check-toolchain.ps1` first. It reports whether Docker and WSL2,
+  Python, the BlocksDS image, and the DeSmuME runtime are available.
+- If the image is not loaded, use `scripts/load-blocksds-image.ps1`; do not
+  pull from the network during an offline run.
 - If Docker/WSL2 is missing, explain the host requirement and stop before making
   system changes.
 
@@ -89,6 +90,27 @@ input scenario that performs the modified gesture. Read the manifest first,
 then events, logs, and relevant captures. A `PASS`, `screen_changed`, pixel
 difference, or screenshot hash alone never proves the hypothesis.
 
+### Mandatory controller-input preflight
+
+Before using `button_down` / `button_up` as evidence for a gameplay, menu, or
+pause behavior, validate the controller path against the current ROM. The
+runner's `desmume_input_keypad_get()` only proves that the emulator frontend
+accepted a bitmask; it does **not** prove that the ROM consumed that button via
+`scanKeys()` / `keysDown()`.
+
+Create or run a small project-owned input-contract scenario whose button press
+causes a uniquely observable, asserted state change in that ROM (for example a
+dedicated input-test screen, a mode label, or a menu transition). Do not reuse
+the generic `input-contract.template.json` as proof: it is illustrative and
+may name a different ROM. Inspect the before/after captures and assert the
+specific transition. If this preflight fails, classify all button-driven
+scenario results as invalid and diagnose the runtime/input boundary before
+changing game controls or adding touch-only workarounds.
+
+Touch needs the same treatment: use a capture that proves the intended hitbox
+was activated, not merely a changed screen. Account for the DS lower-screen
+coordinate space explicitly and include a release between independent taps.
+
 ### UX evidence loop
 
 For every UI change:
@@ -107,8 +129,8 @@ to judge at native resolution.
 
 ### Technical walkthroughs
 
-When a milestone changes rendering, assets, runtime behavior, or a workflow,
-write or update its canonical document under `walkthroughs/<milestone>/` and
+When a milestone or session changes rendering, assets, runtime behavior, or a workflow,
+write or update its canonical document under `walkthroughs/<session-or-feature>/` and
 add it to `walkthroughs/README.md`. A walkthrough is a teaching and handoff
 document, not a short changelog. Explain enough context that another developer
 can understand the original failure, the reasoning behind the implementation,
@@ -155,6 +177,27 @@ or synthetic frame compositors) outside the compiled binary is strictly prohibit
 Evidence must always reflect the actual ARM9 C engine, simulation physics, particles,
 and rendering pipeline.
 
+## 60 FPS Performance Architecture & Hardware Budgets
+
+All game systems targeting the Nintendo DS must strictly adhere to its hardware budgets to guarantee 60 FPS (59.826 Hz):
+
+1. **Hardware Budget:**
+   - 1 frame = **16.71 ms** = **560,190 ARM9 CPU cycles** (@ 67.028 MHz) = **280,095 ticks** (Timer 0 @ 33.514 MHz BUS_CLOCK) or **545 ticks** with ClockDivider_1024.
+   - Total scanlines = 263 (lines 0..191 active display, lines 192..262 VBlank).
+   - CPU rendering and simulation must complete before scanline 192 (`REG_VCOUNT < 192`) to avoid dropping to 30 FPS.
+
+2. **Prohibition of Unaccelerated Full-Screen 16-bit Software Framebuffers:**
+   - The ARM9 lacks an FPU and the 16-bit EWRAM bus has severe bandwidth limits.
+   - Never rasterize full-screen 16-bit bitmaps (256×192 = 49,152 pixels) on both screens every frame via software loops without hardware delegation or dirty caching.
+
+3. **Core Rendering Rules:**
+   - **Hardware BG Layers for Backgrounds:** Delegate tilemap drawing and scrolling to the 2D hardware GPU (BG0..BG3 in Mode 0/1/2/5). Scrolling via registers (`REG_BGxHOFS`/`VOFS`) costs **0 CPU cycles**.
+   - **Hardware OAM for Sprites:** Use the 128 hardware sprite entries for dynamic characters, enemies, projectiles, and hazards. Hardware compositing and transparency cost **0 CPU cycles**.
+   - **Pre-Baking Static Shadows & World Elements:** Static object shadows (walls, pillars) must be pre-composited into the world cache once at startup (`floor_cache_build`), never evaluated in real-time loops.
+   - **Zero-Copy Double Buffering:** When using framebuffer modes (`MODE_FB0`/`MODE_FB1`), render directly into the offscreen VRAM bank (`VRAM_A` / `VRAM_B`) and flip the hardware register on VBlank. Never render to EWRAM and DMA copy the full screen when VRAM page flipping is available.
+   - **Zero Software Division in Hot Loops:** The ARM9 lacks a hardware divide instruction. Never divide (`/`) in inner rendering loops; use bit shifts (`>>`), fixed-point multiplications, or precomputed Look-Up Tables (LUTs).
+   - **32-Bit Memory Transfers & Hardware Alignment:** Use 32-bit aligned words (`uint32_t`) or `memcpy`/DMA to utilize the ARM9 `ldmia`/`stmia` burst engine. **CRITICAL:** The ARM946E-S does NOT support unaligned 32-bit memory access (an unaligned `LDR` performs a hardware rotation by 16 bits swapping halfwords; an unaligned `STR` writes to `addr & ~3` overwriting previous pixels). Always access unaligned pixel data as clean 16-bit halfwords (`uint16_t`).
+
 ## GDB and runtime diagnostics
 
 Use `scripts/validate-gdb.ps1 -RomPath <rom>` only for a concrete diagnostic hypothesis. The
@@ -185,3 +228,29 @@ that audio and physical behavior still require listening on the DS.
 - Do not use Android, ADB, melonDS, or NO$GBA unless the project explicitly
   authorizes a distinct diagnostic workflow.
 - Do not claim physical audio or DS/DSi compatibility from emulation.
+
+## High-Performance 60 FPS Architectural Contracts
+
+The Nintendo DS ARM9 CPU (67 MHz) and memory bus require strict architectural
+discipline to achieve 60 FPS. Naive PC-style rendering (per-pixel loops, 16-bit
+software framebuffers, $O(N^2)$ simulation loops, unmanaged DMA) will fail to
+exceed 10-15 FPS.
+
+Before writing simulation, rendering, or memory management code, agents MUST
+consult:
+- **`references/performance-architecture.md`**: The canonical reference for
+  hardware budgets (545 ticks @ 60 FPS), D-cache coherency rules, and rendering
+  archetypes.
+
+### Game Archetype Catalog Overview
+1. **Archetype 1: 2D High-Entity Swarms & Software Framebuffers** (e.g. Tower Defense, RTS swarms):
+   - **VRAM Double-Buffering:** Use Main Engine `MODE_FB0`/`MODE_FB1` alternating Banks A & B for zero-cost page flips.
+   - **Native 8-bit Sub-Engine:** Use Sub-Engine Mode 5 (`BgType_Bmp8`) with hardware 256-color palette (`BG_PALETTE_SUB`) to cut DMA payload to 48 KB.
+   - **Direct 32-bit Quad Blitting:** Pad sprite rows to 4-byte boundaries; skip transparent quads in 1 cycle (`qval == 0`), store 4 opaque pixels in 1 instruction (`STR`).
+   - **8x8 Deduplicated Dirty Grid:** Never clear whole screens; restore only modified 8x8 blocks via burst `memcpy` from ground cache.
+   - **Cache Coherency:** Always call `DC_FlushRange()` before triggering DMA from Main RAM to VRAM. For RAM-to-RAM copies, use CPU `memcpy()`.
+   - **Spatial Partitioning:** Use uniform spatial grids to keep entity separation and hit tests at $O(N)$ instead of $O(N^2)$.
+2. **Archetype 2: 2D Hardware Tilemaps & OAM Sprites (Platformers, RPGs):**
+   - Utilize native hardware background scrolling engines and 128 hardware OAM sprites.
+3. **Archetype 3: 3D Fixed-Function Geometry (Racers, 3D Action):**
+   - Utilize geometry engine display lists, vertex packing, and dual 3D VRAM bank allocation.

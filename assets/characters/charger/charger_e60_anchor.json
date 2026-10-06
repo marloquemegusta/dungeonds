@@ -1,0 +1,20 @@
+{
+  "asset": "charger",
+  "preset": "e60",
+  "anchor_world_m": [
+    0.0,
+    0.0,
+    0.0
+  ],
+  "anchor_pixel": [
+    32,
+    32
+  ],
+  "projection": {
+    "azimuth_deg": 45.0,
+    "elevation_deg": 60.0,
+    "pixels_per_metre": 11.31370849898476
+  },
+  "directions": 8,
+  "frames_per_direction": 8
+}

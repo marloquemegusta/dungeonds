@@ -1,16 +1,13 @@
 #!/usr/bin/env python3
 """
-bake_player.py - Bakes the animated player FBX into an 8-direction spritesheet
+bake_player.py - Bakes character FBX models into 8-direction spritesheets
 using the SAME look as the environment (tools/ds_look.py): identical lights,
 identical elevation and identical world pixel scale, plus a baked cast shadow.
 
 Usage:
-    python tools/bake_player.py --preset e30
-    python tools/bake_player.py --preset e60
-
-Outputs: player_<preset>.png (512x512, 8x8 cells of 64px) and
-         player_<preset>_shadow.png (8 facing masks, 96px cells).
-Anchor contract: the ground origin projects to the CENTRE of each 64x64 cell.
+    python tools/bake_player.py --preset e30 --character all
+    python tools/bake_player.py --preset e30 --character charger
+    python tools/bake_player.py --preset e60 --character player
 """
 
 import os
@@ -22,14 +19,26 @@ import json
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import ds_look as look
 
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BLENDER_EXE = r"C:\Program Files\Blender Foundation\Blender 5.2\blender.exe"
-MODEL = r"C:\codexlocal\dungeonds\assets\characters\monster\Walking.fbx"
-OUT_DIR = r"C:\codexlocal\dungeonds\assets\characters\monster"
 CELL = look.CHAR_CANVAS
 SHADOW_CELL = CELL * 3 // 2
 NUM_DIRS = 8
 NUM_FRAMES = 8
-SAMPLES = 48
+SAMPLES = 32
+
+CHARACTERS = {
+    "player": {
+        "model": os.path.join(ROOT, "assets", "characters", "monster", "Walking.fbx"),
+        "out_dir": os.path.join(ROOT, "assets", "characters", "monster"),
+        "prefix": "player",
+    },
+    "charger": {
+        "model": os.path.join(ROOT, "assets", "characters", "charger", "Run.fbx"),
+        "out_dir": os.path.join(ROOT, "assets", "characters", "charger"),
+        "prefix": "charger",
+    },
+}
 
 WORKER = r'''
 import bpy, math, os, mathutils
@@ -62,7 +71,7 @@ if act:
 else:
     start_f = bpy.context.scene.frame_start; end_f = bpy.context.scene.frame_end
 
-# Lock horizontal root motion so the walk cycle runs in place.
+# Lock horizontal root motion so the cycle runs in place
 bpy.context.scene.frame_set(start_f)
 for arm in armatures:
     for bone_name in ["mixamorig:Hips", "Hips", "root", "Root"]:
@@ -76,9 +85,6 @@ for arm in armatures:
             c.min_z = c.max_z = bone.location.z
             break
 
-# Use the imported armature origin as the stable world anchor. Its XY projection
-# is the point the game places on the floor; each animation frame is grounded
-# independently below so the support foot touches Z=0 throughout the cycle.
 bpy.context.view_layer.update()
 root_anchor = armatures[0].matrix_world.translation.copy() if armatures else mathutils.Vector((0.0, 0.0, 0.0))
 print("ANCHOR_WORLD=%.6f,%.6f,%.6f" % tuple(root_anchor))
@@ -94,8 +100,6 @@ scene.render.image_settings.color_mode = 'RGBA'
 scene.render.resolution_x = CELL
 scene.render.resolution_y = CELL
 
-# Ground point ends up at the centre of the cell. Keep the camera identical to
-# the environment baker: the world is projected from azimuth 45 degrees.
 target = bpy.data.objects.new('CamTarget', None)
 target.location = (root_anchor.x, root_anchor.y, 0.0)
 scene.collection.objects.link(target)
@@ -104,9 +108,6 @@ rig = bpy.data.objects.new('CameraRig', None)
 rig.location = root_anchor
 scene.collection.objects.link(rig)
 
-# Rotate the character, not the camera. The previous version rotated only the
-# camera rig, leaving the FBX outside the rig; its eight rows were therefore
-# eight viewpoints of the same pose and did not agree with the walls.
 for obj in [o for o in bpy.data.objects if o.type in {{'MESH', 'ARMATURE'}}]:
     world_matrix = obj.matrix_world.copy()
     obj.parent = rig
@@ -114,8 +115,6 @@ for obj in [o for o in bpy.data.objects if o.type in {{'MESH', 'ARMATURE'}}]:
 
 cam_data = bpy.data.cameras.new('IsoCam')
 cam_data.type = 'ORTHO'
-# Preserve the shared world density in the 64x64 character viewport. Using
-# the 32 px floor width here made the character twice as large as the floor.
 cam_data.ortho_scale = CELL / (PX_PER_M * SCALE)
 cam = bpy.data.objects.new('IsoCam', cam_data)
 scene.collection.objects.link(cam)
@@ -136,25 +135,18 @@ tt.up_axis = 'UP_Y'
 
 {lights}
 
-# Keep player and shadow in separate passes: the 3D shadow-catcher coverage is
-# stored independently so the game can composite it onto the actual floor tile.
 temp = os.path.join(OUT_DIR, "tmp_frames")
 os.makedirs(temp, exist_ok=True)
-shadow_temp = os.path.join(OUT_DIR, "tmp_player_shadows")
+shadow_temp = os.path.join(OUT_DIR, "tmp_shadows")
 os.makedirs(shadow_temp, exist_ok=True)
 total = max(1, end_f - start_f)
 frame_indices = [int(start_f + (i * total) / NUM_FRAMES) for i in range(NUM_FRAMES)]
 
 for d in range(NUM_DIRS):
-    # Mixamo's default forward axis is -Y. Offset it toward the shared camera
-    # (+X,+Y), then enumerate the eight world directions clockwise.
     rig.rotation_euler.z = math.radians(135.0 - d * 360.0 / NUM_DIRS)
     bpy.context.view_layer.update()
     for fi, fnum in enumerate(frame_indices):
         scene.frame_set(fnum)
-        # Reset to the stable root anchor, measure evaluated geometry for this
-        # pose, then lift/drop the complete rig so its lowest point meets the
-        # floor. Using one cycle-wide minimum made most frames float.
         rig.location.z = root_anchor.z
         bpy.context.view_layer.update()
         dg = bpy.context.evaluated_depsgraph_get()
@@ -168,8 +160,7 @@ for d in range(NUM_DIRS):
         scene.render.filepath = os.path.join(temp, "d%02d_f%03d.png" % (d, fi))
         bpy.ops.render.render(write_still=True)
 
-# One shadow per facing, sampled from the planted reference pose. The mask is
-# static during an in-place walk; only its true 3D silhouette changes by facing.
+# Shadow pass
 bpy.ops.mesh.primitive_plane_add(size=24.0, location=(0.0, 0.0, 0.0))
 catcher = bpy.context.object
 catcher.name = 'GroundShadowCatcher'
@@ -206,7 +197,7 @@ for d in range(NUM_DIRS):
     bpy.context.view_layer.update()
     dg = bpy.context.evaluated_depsgraph_get()
     lowest_z = 1e9
-    for obj in [o for o in bpy.data.objects if o.type == 'MESH' and o != catcher]:
+    for obj in [o for o in bpy.data.objects if o.type == 'MESH' and obj != catcher]:
         ev = obj.evaluated_get(dg)
         for corner in ev.bound_box:
             lowest_z = min(lowest_z, (ev.matrix_world @ mathutils.Vector(corner)).z)
@@ -215,35 +206,36 @@ for d in range(NUM_DIRS):
     scene.render.filepath = os.path.join(shadow_temp, "d%02d.png" % d)
     bpy.ops.render.render(write_still=True)
 
-print("PLAYER_BAKED")
-print("PLAYER_SHADOWS_BAKED")
+print("BAKE_COMPLETE")
+print("SHADOWS_COMPLETE")
 '''
 
 
-def main():
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--preset", choices=sorted(look.PRESETS), default="e30")
-    ap.add_argument("--scale", type=float, default=1.0,
-                    help="sprite scale relative to the true world pixel scale")
-    args = ap.parse_args()
+def bake_character(char_key, preset, scale=1.0):
+    char_info = CHARACTERS[char_key]
+    model_path = char_info["model"]
+    out_dir = char_info["out_dir"]
+    prefix = char_info["prefix"]
+    os.makedirs(out_dir, exist_ok=True)
 
+    print(f"[{char_key.upper()}] Baking {model_path} (preset {preset})...")
     script = WORKER.format(
-        model=MODEL, out_dir=OUT_DIR, cell=CELL, shadow_cell=SHADOW_CELL, dirs=NUM_DIRS, frames=NUM_FRAMES,
+        model=model_path, out_dir=out_dir, cell=CELL, shadow_cell=SHADOW_CELL, dirs=NUM_DIRS, frames=NUM_FRAMES,
         samples=SAMPLES, pxm=look.PIXELS_PER_METRE, tile_w=look.FLOOR_TILE_W,
-        anchor_z=look.CHAR_ANCHOR_Z, scale=args.scale,
-        elev=look.elevation(args.preset),
+        anchor_z=look.CHAR_ANCHOR_Z, scale=scale,
+        elev=look.elevation(preset),
         world=look.blender_world_snippet(),
         lights=look.blender_lights_snippet(),
     )
-    tmp_py = os.path.join(OUT_DIR, "tmp_player.py")
+    tmp_py = os.path.join(out_dir, f"tmp_{prefix}.py")
     with open(tmp_py, "w", encoding="utf-8") as f:
         f.write(script)
     try:
         p = subprocess.run([BLENDER_EXE, "-b", "-P", tmp_py],
                            capture_output=True, text=True)
-        if "PLAYER_BAKED" not in p.stdout or "PLAYER_SHADOWS_BAKED" not in p.stdout:
+        if "BAKE_COMPLETE" not in p.stdout or "SHADOWS_COMPLETE" not in p.stdout:
             print(p.stdout[-1200:]); print(p.stderr[-1200:])
-            raise RuntimeError("player bake failed")
+            raise RuntimeError(f"{char_key} bake failed")
     finally:
         if os.path.exists(tmp_py):
             os.remove(tmp_py)
@@ -251,51 +243,63 @@ def main():
     from PIL import Image
     anchor_line = next((line for line in p.stdout.splitlines() if line.startswith("ANCHOR_WORLD=")), None)
     if anchor_line is None:
-        raise RuntimeError("player bake did not report its 3D anchor")
+        raise RuntimeError(f"{char_key} bake did not report its 3D anchor")
     anchor_world = [float(v) for v in anchor_line.split("=", 1)[1].split(",")]
-    temp = os.path.join(OUT_DIR, "tmp_frames")
+
+    temp = os.path.join(out_dir, "tmp_frames")
     sheet = Image.new("RGBA", (NUM_FRAMES * CELL, NUM_DIRS * CELL), (0, 0, 0, 0))
     for d in range(NUM_DIRS):
         for f in range(NUM_FRAMES):
-            p = os.path.join(temp, "d%02d_f%03d.png" % (d, f))
-            with Image.open(p) as im:
+            frame_file = os.path.join(temp, "d%02d_f%03d.png" % (d, f))
+            with Image.open(frame_file) as im:
                 framed = look.apply_outline(im)
                 sheet.paste(framed, (f * CELL, d * CELL))
-            os.remove(p)
+            os.remove(frame_file)
     os.rmdir(temp)
 
     sheet = look.grade(sheet)
-    out = os.path.join(OUT_DIR, f"player_{args.preset}.png")
+    out = os.path.join(out_dir, f"{prefix}_{preset}.png")
     sheet.save(out)
 
     shadow_sheet = Image.new("RGBA", (NUM_DIRS * SHADOW_CELL, SHADOW_CELL), (0, 0, 0, 0))
+    shadow_temp = os.path.join(out_dir, "tmp_shadows")
     for d in range(NUM_DIRS):
-        shadow_path = os.path.join(os.path.join(OUT_DIR, "tmp_player_shadows"), "d%02d.png" % d)
+        shadow_path = os.path.join(shadow_temp, "d%02d.png" % d)
         with Image.open(shadow_path) as im:
             shadow_sheet.paste(im.convert("RGBA"), (d * SHADOW_CELL, 0))
         os.remove(shadow_path)
-    os.rmdir(os.path.join(OUT_DIR, "tmp_player_shadows"))
-    shadow_out = os.path.join(OUT_DIR, f"player_{args.preset}_shadow.png")
+    os.rmdir(shadow_temp)
+    shadow_out = os.path.join(out_dir, f"{prefix}_{preset}_shadow.png")
     shadow_sheet.save(shadow_out)
+
     anchor_meta = {
-        "asset": "player",
-        "preset": args.preset,
+        "asset": prefix,
+        "preset": preset,
         "anchor_world_m": anchor_world,
-        "anchor_world_semantics": "armature origin in source model; XY projects to sprite anchor, Z is grounded to room floor",
         "anchor_pixel": [CELL // 2, CELL // 2],
-        "projection": {"azimuth_deg": 45.0, "elevation_deg": look.elevation(args.preset), "pixels_per_metre": look.PIXELS_PER_METRE},
-        "grounding": "per-frame evaluated mesh minimum Z translated to floor Z=0",
-        "shadow": "separate Cycles shadow-catcher mask, one planted reference pose per facing",
+        "projection": {"azimuth_deg": 45.0, "elevation_deg": look.elevation(preset), "pixels_per_metre": look.PIXELS_PER_METRE},
         "directions": NUM_DIRS,
         "frames_per_direction": NUM_FRAMES,
     }
-    meta_out = os.path.join(OUT_DIR, f"player_{args.preset}_anchor.json")
+    meta_out = os.path.join(out_dir, f"{prefix}_{preset}_anchor.json")
     with open(meta_out, "w", encoding="utf-8") as f:
         json.dump(anchor_meta, f, indent=2)
         f.write("\n")
     print(f"[OK] {out} ({sheet.width}x{sheet.height})")
     print(f"[OK] {shadow_out} ({shadow_sheet.width}x{shadow_sheet.height})")
-    print(f"[OK] {meta_out}: pixel anchor={anchor_meta['anchor_pixel']} world={anchor_meta['anchor_world_m']}")
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--preset", choices=sorted(look.PRESETS), default="e30")
+    ap.add_argument("--character", choices=("player", "charger", "all"), default="all")
+    ap.add_argument("--scale", type=float, default=1.0,
+                    help="sprite scale relative to the true world pixel scale")
+    args = ap.parse_args()
+
+    targets = list(CHARACTERS.keys()) if args.character == "all" else [args.character]
+    for char_key in targets:
+        bake_character(char_key, args.preset, args.scale)
 
 
 if __name__ == "__main__":

@@ -38,6 +38,28 @@ typedef struct {
     int frame;     // 0..7
     int is_moving;
     int anim_timer;
+    int char_id;   // 0 = CHAR_HERO, 1 = CHAR_CHARGER
 } Player;
+
+typedef struct {
+    uint32_t magic;             // 0x50455246 ("PERF")
+    uint32_t frame_index;
+    uint32_t cpu_ticks;         // CPU ticks taken before present/vblank
+    uint32_t cpu_budget;        // 280095 ticks (100% of 1 frame at 60 FPS, 33.514 MHz)
+    uint32_t cpu_percent;       // cpu_ticks * 100 / cpu_budget
+    uint32_t vcount_done;       // Scanline (REG_VCOUNT) when CPU rendering completed
+    uint32_t vblanks_elapsed;   // VBlanks elapsed (1 = 60fps, 2 = 30fps)
+    uint32_t fps;               // Current FPS (60 / vblanks_elapsed)
+    uint32_t logic_ticks;       // player_update ticks
+    uint32_t top_render_ticks;  // top screen render ticks
+    uint32_t bot_render_ticks;  // bottom screen render ticks
+    uint32_t present_ticks;     // presentation + wait ticks
+    uint32_t floor_ticks;       // draw_floor ticks
+    uint32_t shadow_ticks;      // draw_shadow_mask ticks
+    uint32_t blit_ticks;        // blit tiles and player ticks
+    uint32_t show_hud;          // 0 = off, 1 = on
+} PerfStats;
+
+extern volatile PerfStats g_perf;
 
 #endif // GAME_H
