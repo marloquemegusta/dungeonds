@@ -6,7 +6,7 @@ param(
     [string]$HostName = '192.168.1.151',
     [int]$Port = 5000,
     [string]$RemoteDirectory = '/roms/nds',
-    [string]$RemoteName = 'towerdefense.nds',
+    [string]$RemoteName = 'dungeonds.nds',
     [string]$User = 'anonymous',
     [string]$Password = ''
 )
