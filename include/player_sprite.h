@@ -14,11 +14,12 @@
 #define PLAYER_ANCHOR_X 24
 #define PLAYER_ANCHOR_Y 28
 
-#define NUM_CHARACTERS 2
+#define NUM_CHARACTERS 3
 
 enum {
     CHAR_HERO = 0,
-    CHAR_CHARGER = 1
+    CHAR_CHARGER = 1,
+    CHAR_SKELETON = 2
 };
 
 typedef struct {
@@ -38,6 +39,11 @@ extern const uint8_t g_player_shadow_bounds[PLAYER_NUM_DIRS][4];
 extern const uint16_t g_charger_frames[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][PLAYER_SPRITE_W * PLAYER_SPRITE_H];
 extern const uint8_t g_charger_shadow_masks[PLAYER_NUM_DIRS][PLAYER_SHADOW_W * PLAYER_SHADOW_H / 2];
 extern const uint8_t g_charger_shadow_bounds[PLAYER_NUM_DIRS][4];
+
+// Skeleton enemy frames & shadows
+extern const uint16_t g_skeleton_frames[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][PLAYER_SPRITE_W * PLAYER_SPRITE_H];
+extern const uint8_t g_skeleton_shadow_masks[PLAYER_NUM_DIRS][PLAYER_SHADOW_W * PLAYER_SHADOW_H / 2];
+extern const uint8_t g_skeleton_shadow_bounds[PLAYER_NUM_DIRS][4];
 
 // Fast indexed lookups:
 extern const uint16_t (* const g_character_frames[NUM_CHARACTERS])[PLAYER_NUM_FRAMES][PLAYER_SPRITE_W * PLAYER_SPRITE_H];

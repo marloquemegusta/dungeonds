@@ -38,6 +38,11 @@ CHARACTERS = {
         "out_dir": os.path.join(ROOT, "assets", "characters", "charger"),
         "prefix": "charger",
     },
+    "skeleton": {
+        "model": os.path.join(ROOT, "assets", "characters", "skeleton", "skeleton.fbx"),
+        "out_dir": os.path.join(ROOT, "assets", "characters", "skeleton"),
+        "prefix": "skeleton",
+    },
 }
 
 WORKER = r'''
@@ -84,6 +89,24 @@ for arm in armatures:
             c.use_min_z = c.use_max_z = True
             c.min_z = c.max_z = bone.location.z
             break
+
+# Adjust scale if character model is non-standard (e.g. skeleton)
+if "skeleton" in MODEL.lower():
+    for arm in armatures:
+        arm.scale = (0.027, 0.027, 0.027)
+
+# Ensure all meshes have a material assigned (especially untextured skeleton bones)
+bone_mat = None
+for obj in [o for o in bpy.data.objects if o.type == 'MESH']:
+    if not obj.data.materials or len(obj.data.materials) == 0:
+        if bone_mat is None:
+            bone_mat = bpy.data.materials.new('BoneGothic')
+            bsdf = bone_mat.node_tree.nodes.get('Principled BSDF')
+            if bsdf:
+                bsdf.inputs['Base Color'].default_value = (0.92, 0.88, 0.80, 1.0)
+                if 'Roughness' in bsdf.inputs:
+                    bsdf.inputs['Roughness'].default_value = 0.45
+        obj.data.materials.append(bone_mat)
 
 bpy.context.view_layer.update()
 root_anchor = armatures[0].matrix_world.translation.copy() if armatures else mathutils.Vector((0.0, 0.0, 0.0))
@@ -292,7 +315,7 @@ def bake_character(char_key, preset, scale=1.0):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--preset", choices=sorted(look.PRESETS), default="e30")
-    ap.add_argument("--character", choices=("player", "charger", "all"), default="all")
+    ap.add_argument("--character", choices=("player", "charger", "skeleton", "all"), default="all")
     ap.add_argument("--scale", type=float, default=1.0,
                     help="sprite scale relative to the true world pixel scale")
     args = ap.parse_args()
