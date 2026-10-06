@@ -50,6 +50,25 @@ En esta sesión se abordaron dos objetivos primordiales para la calidad arquitec
 
 ---
 
+
+### 2.4. Comparativas Animadas en las 8 Direcciones (Antes vs Después)
+
+Collages interactivos de 8 direcciones sincronizados a cadencia natural (80-100 ms/frame), mostrando en paralelo la versión con erosión de contorno frente a la versión definitiva con dilatación anti-erosión y sombreado chiaroscuro:
+
+#### 1. Enemigo Cargador (Run.fbx): Cuernos y Silueta en Carrera
+![Charger 8 Dirs Antes vs Despues](assets/charger_8dir_before_vs_after.gif)
+*Figura 2.3: Comparativa animada del Cargador en las 8 direcciones. Izquierda: cuernos erosionados y corte transparente frente al outline. Derecha: cuernos sólidos contiguos y masa muscular compacta.*
+
+#### 2. Enemigo Esqueleto (skeleton.fbx): Estructura Ósea y Chiaroscuro Dramático
+![Skeleton 8 Dirs Antes vs Despues](assets/skeleton_8dir_before_vs_after.gif)
+*Figura 2.4: Comparativa animada del Esqueleto en las 8 direcciones. Izquierda: silueta blanca plana original con extremidades rotas. Derecha: huesos conectados (grosor 0.12), cavidad torácica profunda y chiaroscuro gótico dinámico al girar.*
+
+#### 3. Héroe Nigromante (Walking.fbx): Anti-Erosión Perimetral
+![Hero 8 Dirs Antes vs Despues](assets/hero_8dir_before_vs_after.gif)
+*Figura 2.5: Comparativa animada del Héroe en las 8 direcciones con borde recuperado al 100% contra el fondo abisal.*
+
+---
+
 ## 3. Evidencia de Ejecución en Nintendo DS
 
 ### 3.1. Ciclo de Conmutación en Juego (Héroe -> Cargador -> Esqueleto)
