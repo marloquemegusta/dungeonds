@@ -1,0 +1,23 @@
+{
+  "name": "pillar_collision_test",
+  "steps": [
+    { "frames": 10, "capture": "00_spawn" },
+    { "button_down": "UP", "frames": 70, "capture": "01_approach_from_south" },
+    { "button_up": "UP", "frames": 5 },
+    { "button_down": "RIGHT", "frames": 40 },
+    { "button_up": "RIGHT", "frames": 5 },
+    { "button_down": "UP", "frames": 85 },
+    { "button_up": "UP", "frames": 5 },
+    { "button_down": "LEFT", "frames": 40 },
+    { "button_up": "LEFT", "frames": 5, "capture": "02_positioned_north" },
+    { "button_down": "DOWN", "frames": 70, "capture": "03_approach_from_north" },
+    { "button_up": "DOWN", "frames": 10, "capture": "04_idle_north_collision" }
+  ],
+  "assertions": {
+    "screen_changed": {
+      "from": "00_spawn",
+      "to": "01_approach_from_south",
+      "min_changed_pixels": 50
+    }
+  }
+}

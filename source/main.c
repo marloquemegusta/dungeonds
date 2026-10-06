@@ -122,9 +122,9 @@ static int position_is_free(fixed x, fixed y) {
             if (obj == 0) continue;
             int id = obj - 1;
             if (id >= OBJ_P_SOUL && id < OBJ_AR_ROW) {
-                // Pillar base is centered at tile midpoint (c + 0.5, r + 0.5)
-                fixed cx = TO_FIXED(c) + 128;
-                fixed cy = TO_FIXED(r) + 128;
+                // Pillar base is centered at tile projection origin (c, r)
+                fixed cx = TO_FIXED(c);
+                fixed cy = TO_FIXED(r);
                 int dx = (int)(x - cx);
                 int dy = (int)(y - cy);
                 if (dx * dx + dy * dy < PILLAR_MIN_DIST * PILLAR_MIN_DIST) {
@@ -414,7 +414,7 @@ static void render_screen(uint16_t *buffer, int cam_x, int cam_y,
             if (top >= SCREEN_H || top + OBJ_SPRITE_H <= 0) continue;
             if (count >= MAX_DRAW_ITEMS) break;
 
-            items[count].depth = (col + row + 1) << 8;
+            items[count].depth = (col + row) << 8;
             items[count].sprite = obj - 1;
             items[count].cx = cx;
             items[count].cy = cy;
@@ -502,8 +502,8 @@ static void present_both_screens(int top_dirty) {
 // ---------------------------------------------------------------------------
 
 static void player_init(void) {
-    s_player.x = TO_FIXED(MAP_COLS / 2 - 1) + 128; // tile centre
-    s_player.y = TO_FIXED(MAP_ROWS / 2 - 1) + 128;
+    s_player.x = TO_FIXED(MAP_COLS / 2 - 1); // tile centre (col, row)
+    s_player.y = TO_FIXED(MAP_ROWS / 2 - 1);
     s_player.dir = DIR_SOUTH;
     s_player.frame = 0;
     s_player.is_moving = 0;
