@@ -45,7 +45,6 @@
 #define CACHE_H  (((((MAP_COLS - 1) + (MAP_ROWS - 1)) * TILE_HALF_H) + TILE_HALF_H) - CACHE_Y0)
 
 static uint16_t s_floor_cache[CACHE_W * CACHE_H] __attribute__((aligned(4)));
-static uint16_t s_top_backbuffer[SCREEN_W * SCREEN_H] __attribute__((aligned(4)));
 
 static u16 *s_top_vram = NULL;
 static int s_top_bg = 0;
@@ -54,6 +53,21 @@ static int s_active_vram_bank = 0;
 static Player s_player;
 static int s_cam_x = 0;
 static int s_cam_y = 0;
+
+#define MAX_ENEMIES 10
+typedef struct {
+    fixed x;
+    fixed y;
+    int dir;
+    int frame;
+    int anim_timer;
+    int char_id;
+    int active;
+    int step_count;
+    int step_limit;
+} Enemy;
+
+static Enemy s_enemies[MAX_ENEMIES];
 
 typedef struct {
     int depth;     // 8.8 fixed depth key (col+row in tile units)
@@ -142,6 +156,7 @@ static int position_is_free(fixed x, fixed y) {
 // ---------------------------------------------------------------------------
 
 static uint8_t s_obj_sprite_bounds[NUM_OBJ_SPRITES][4];
+static uint8_t s_char_frame_bounds[NUM_CHARACTERS][PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4];
 
 static void init_obj_sprite_bounds(void) {
     for (int i = 0; i < NUM_OBJ_SPRITES; i++) {
@@ -170,9 +185,41 @@ static void init_obj_sprite_bounds(void) {
             s_obj_sprite_bounds[i][3] = (uint8_t)(max_y - min_y + 1);
         }
     }
+
+    for (int c = 0; c < NUM_CHARACTERS; c++) {
+        for (int d = 0; d < PLAYER_NUM_DIRS; d++) {
+            for (int f = 0; f < PLAYER_NUM_FRAMES; f++) {
+                const uint16_t *src = g_character_frames[c][d][f];
+                int min_x = PLAYER_SPRITE_W, max_x = -1;
+                int min_y = PLAYER_SPRITE_H, max_y = -1;
+                for (int y = 0; y < PLAYER_SPRITE_H; y++) {
+                    for (int x = 0; x < PLAYER_SPRITE_W; x++) {
+                        if (src[y * PLAYER_SPRITE_W + x] & BIT(15)) {
+                            if (x < min_x) min_x = x;
+                            if (x > max_x) max_x = x;
+                            if (y < min_y) min_y = y;
+                            if (y > max_y) max_y = y;
+                        }
+                    }
+                }
+                if (max_x < min_x) {
+                    s_char_frame_bounds[c][d][f][0] = 0;
+                    s_char_frame_bounds[c][d][f][1] = 0;
+                    s_char_frame_bounds[c][d][f][2] = 0;
+                    s_char_frame_bounds[c][d][f][3] = 0;
+                } else {
+                    s_char_frame_bounds[c][d][f][0] = (uint8_t)min_x;
+                    s_char_frame_bounds[c][d][f][1] = (uint8_t)min_y;
+                    s_char_frame_bounds[c][d][f][2] = (uint8_t)(max_x - min_x + 1);
+                    s_char_frame_bounds[c][d][f][3] = (uint8_t)(max_y - min_y + 1);
+                }
+            }
+        }
+    }
 }
 
 // Blit a BGR555 sprite with arbitrary pitch, fast 32-bit dual-pixel write when both are opaque.
+__attribute__((target("arm"), noinline))
 static void blit_stride(uint16_t *buffer, const uint16_t *src, int pitch, int sw, int sh,
                         int left, int top, int cam_x, int cam_y) {
     int ox = left - cam_x;
@@ -194,15 +241,30 @@ static void blit_stride(uint16_t *buffer, const uint16_t *src, int pitch, int sw
     for (int y = sy0; y < sy1; y++) {
         const uint16_t *srow = &src[y * pitch];
         uint16_t *drow = &buffer[(oy + y) * SCREEN_W + ox];
-        int x;
-        for (x = sx0; x + 1 < sx1; x += 2) {
+        int x = sx0;
+
+        // Align drow + x to 32-bit (4-byte) boundary if needed
+        if (((uintptr_t)&drow[x] & 2) && x < sx1) {
+            uint16_t a = srow[x];
+            if (a & BIT(15)) drow[x] = a;
+            x++;
+        }
+
+        uint32_t *d32 = (uint32_t *)&drow[x];
+        for (; x + 1 < sx1; x += 2, d32++) {
             uint16_t a = srow[x];
             uint16_t b = srow[x + 1];
-            if (a | b) {
-                if (a & BIT(15)) drow[x] = a;
-                if (b & BIT(15)) drow[x + 1] = b;
+            uint32_t test = (a | b);
+            if (!test) continue;
+            if ((a & BIT(15)) && (b & BIT(15))) {
+                *d32 = (uint32_t)a | ((uint32_t)b << 16);
+            } else if (a & BIT(15)) {
+                drow[x] = a;
+            } else if (b & BIT(15)) {
+                drow[x + 1] = b;
             }
         }
+
         if (x < sx1) {
             uint16_t a = srow[x];
             if (a & BIT(15)) drow[x] = a;
@@ -225,8 +287,7 @@ static void blit_tile(uint16_t *buffer, int sprite_id,
                 cam_x, cam_y);
 }
 
-// Shadow shape/coverage is baked from the 3D asset. Runtime only composites
-// that coverage over the actual floor tile beneath it.
+// Shadow shape/coverage is baked from the 3D asset.
 static inline uint16_t apply_shadow(uint16_t color, uint8_t coverage) {
     uint32_t keep = 255 - ((uint32_t)coverage * 160) / 255;
     uint32_t r = ((color & 0x1F) * keep) / 255;
@@ -235,6 +296,13 @@ static inline uint16_t apply_shadow(uint16_t color, uint8_t coverage) {
     return (uint16_t)(r | (g << 5) | (b << 10) | BIT(15));
 }
 
+// Fast bitwise approximation: 50% shadow darkening using RGB channel masks in 1 cycle!
+static inline uint16_t apply_shadow_fast(uint16_t color) {
+    // (color & 0x7BDE) >> 1 darkens 15-bit RGB by exactly 50% without channel crosstalk
+    return ((color & 0x7BDE) >> 1) | BIT(15);
+}
+
+__attribute__((target("arm"), noinline))
 static void draw_shadow_mask(uint16_t *buffer, const uint8_t *mask, int sw, int sh,
                              const uint8_t *bounds, int left, int top,
                              int cam_x, int cam_y) {
@@ -252,14 +320,15 @@ static void draw_shadow_mask(uint16_t *buffer, const uint8_t *mask, int sw, int 
 
     for (int y = sy0; y < sy1; y++) {
         uint16_t *dst_row = &buffer[(oy + y) * SCREEN_W + ox];
+        int row_offset = y * sw;
         for (int x = sx0; x < sx1; x++) {
-            int pixel = y * sw + x;
+            int pixel = row_offset + x;
             uint8_t packed = mask[pixel >> 1];
             uint8_t nibble = (pixel & 1) ? (packed >> 4) : (packed & 0x0F);
-            if (nibble) {
+            if (nibble >= 4) {
                 uint16_t c = dst_row[x];
                 if (c != (VOID_COLOR | BIT(15))) {
-                    dst_row[x] = apply_shadow(c, (uint8_t)(nibble * 17));
+                    dst_row[x] = apply_shadow_fast(c);
                 }
             }
         }
@@ -353,12 +422,57 @@ static void floor_cache_build(void) {
     }
 }
 
+__attribute__((target("arm"), noinline))
+static void burst_copy_256(uint16_t *dst, const uint16_t *src) {
+    asm volatile (
+        "mov r2, #16\n\t"
+        "1:\n\t"
+        "ldmia %1!, {r3, r4, r5, r6, r7, r8, r9, r10}\n\t"
+        "stmia %0!, {r3, r4, r5, r6, r7, r8, r9, r10}\n\t"
+        "subs r2, r2, #1\n\t"
+        "bne 1b\n\t"
+        : "+r"(dst), "+r"(src)
+        :
+        : "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "memory"
+    );
+}
+
+__attribute__((target("arm"), noinline))
+static void burst_copy_254(uint16_t *dst, const uint16_t *src) {
+    asm volatile (
+        "mov r2, #15\n\t"
+        "1:\n\t"
+        "ldmia %1!, {r3, r4, r5, r6, r7, r8, r9, r10}\n\t"
+        "stmia %0!, {r3, r4, r5, r6, r7, r8, r9, r10}\n\t"
+        "subs r2, r2, #1\n\t"
+        "bne 1b\n\t"
+        "ldmia %1!, {r3, r4, r5, r6, r7, r8, r9}\n\t"
+        "stmia %0!, {r3, r4, r5, r6, r7, r8, r9}\n\t"
+        : "+r"(dst), "+r"(src)
+        :
+        : "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "memory"
+    );
+}
+
 static void draw_floor(uint16_t *buffer, int cam_x, int cam_y) {
-    // ARM9 burst assembly copy (ldmia/stmia) line-by-line
     const uint16_t *src = &s_floor_cache[(cam_y - CACHE_Y0) * CACHE_W + (cam_x - CACHE_X0)];
-    for (int y = 0; y < SCREEN_H; y++) {
-        memcpy(&buffer[y * SCREEN_W], src, SCREEN_W * sizeof(uint16_t));
-        src += CACHE_W;
+    uint16_t *dst = buffer;
+    int aligned = (((uintptr_t)src & 2) == 0);
+
+    if (aligned) {
+        for (int y = 0; y < SCREEN_H; y++) {
+            burst_copy_256(dst, src);
+            dst += SCREEN_W;
+            src += CACHE_W;
+        }
+    } else {
+        for (int y = 0; y < SCREEN_H; y++) {
+            dst[0] = src[0];
+            burst_copy_254(dst + 1, src + 1);
+            dst[SCREEN_W - 1] = src[SCREEN_W - 1];
+            dst += SCREEN_W;
+            src += CACHE_W;
+        }
     }
 }
 
@@ -370,10 +484,32 @@ static void draw_player(uint16_t *buffer, int cam_x, int cam_y) {
     int px = player_screen_x(s_player.x, s_player.y);
     int py = player_screen_y(s_player.x, s_player.y);
 
-    // The ground origin is the centre of each cell (PLAYER_ANCHOR_*).
-    const uint16_t *frame = g_character_frames[s_player.char_id][s_player.dir][s_player.frame];
-    blit_stride(buffer, frame, PLAYER_SPRITE_W, PLAYER_SPRITE_W, PLAYER_SPRITE_H,
-                px - PLAYER_ANCHOR_X, py - PLAYER_ANCHOR_Y, cam_x, cam_y);
+    const uint8_t *b = s_char_frame_bounds[s_player.char_id][s_player.dir][s_player.frame];
+    int bw = b[2];
+    int bh = b[3];
+    if (bw == 0 || bh == 0) return;
+    int min_x = b[0];
+    int min_y = b[1];
+
+    const uint16_t *frame = &g_character_frames[s_player.char_id][s_player.dir][s_player.frame][min_y * PLAYER_SPRITE_W + min_x];
+    blit_stride(buffer, frame, PLAYER_SPRITE_W, bw, bh,
+                px - PLAYER_ANCHOR_X + min_x, py - PLAYER_ANCHOR_Y + min_y, cam_x, cam_y);
+}
+
+static void draw_enemy(uint16_t *buffer, const Enemy *e, int cam_x, int cam_y) {
+    int px = player_screen_x(e->x, e->y);
+    int py = player_screen_y(e->x, e->y);
+
+    const uint8_t *b = s_char_frame_bounds[e->char_id][e->dir][e->frame];
+    int bw = b[2];
+    int bh = b[3];
+    if (bw == 0 || bh == 0) return;
+    int min_x = b[0];
+    int min_y = b[1];
+
+    const uint16_t *frame = &g_character_frames[e->char_id][e->dir][e->frame][min_y * PLAYER_SPRITE_W + min_x];
+    blit_stride(buffer, frame, PLAYER_SPRITE_W, bw, bh,
+                px - PLAYER_ANCHOR_X + min_x, py - PLAYER_ANCHOR_Y + min_y, cam_x, cam_y);
 }
 
 static void render_screen(uint16_t *buffer, int cam_x, int cam_y,
@@ -429,20 +565,49 @@ static void render_screen(uint16_t *buffer, int cam_x, int cam_y,
     int pl_top = psy - PLAYER_ANCHOR_Y - cam_y;
     if (pl_left < SCREEN_W && pl_left + PLAYER_SPRITE_W > 0 &&
         pl_top < SCREEN_H && pl_top + PLAYER_SPRITE_H > 0) {
-        items[count].depth = s_player.x + s_player.y;
-        items[count].sprite = -1;
-        items[count].cx = psx;
-        items[count].cy = psy;
-        count++;
+        if (count < MAX_DRAW_ITEMS) {
+            items[count].depth = s_player.x + s_player.y;
+            items[count].sprite = -1;
+            items[count].cx = psx;
+            items[count].cy = psy;
+            count++;
+        }
     }
 
-    // 1) Composite dynamic entity shadows (player) over floor; static shadows are pre-baked!
+    // Add enemies only if visible on this screen
+    for (int e_idx = 0; e_idx < MAX_ENEMIES; e_idx++) {
+        if (!s_enemies[e_idx].active) continue;
+        int esx = player_screen_x(s_enemies[e_idx].x, s_enemies[e_idx].y);
+        int esy = player_screen_y(s_enemies[e_idx].x, s_enemies[e_idx].y);
+        int e_left = esx - PLAYER_ANCHOR_X - cam_x;
+        int e_top = esy - PLAYER_ANCHOR_Y - cam_y;
+        if (e_left < SCREEN_W && e_left + PLAYER_SPRITE_W > 0 &&
+            e_top < SCREEN_H && e_top + PLAYER_SPRITE_H > 0) {
+            if (count < MAX_DRAW_ITEMS) {
+                items[count].depth = s_enemies[e_idx].x + s_enemies[e_idx].y;
+                items[count].sprite = -2 - e_idx; // -2 for enemy 0, -3 for enemy 1, etc.
+                items[count].cx = esx;
+                items[count].cy = esy;
+                count++;
+            }
+        }
+    }
+
+    // 1) Composite dynamic entity shadows (player & enemies) over floor; static shadows are pre-baked!
     uint32_t t_sh0 = cpuGetTiming();
     for (int i = 0; i < count; i++) {
-        if (items[i].sprite < 0) {
+        if (items[i].sprite == -1) {
             draw_shadow_mask(buffer, g_character_shadow_masks[s_player.char_id][s_player.dir],
                              PLAYER_SHADOW_W, PLAYER_SHADOW_H,
                              g_character_shadow_bounds[s_player.char_id][s_player.dir],
+                             items[i].cx - PLAYER_SHADOW_W / 2,
+                             items[i].cy - PLAYER_SHADOW_H / 2, cam_x, cam_y);
+        } else if (items[i].sprite <= -2) {
+            int e_idx = -2 - items[i].sprite;
+            const Enemy *e = &s_enemies[e_idx];
+            draw_shadow_mask(buffer, g_character_shadow_masks[e->char_id][e->dir],
+                             PLAYER_SHADOW_W, PLAYER_SHADOW_H,
+                             g_character_shadow_bounds[e->char_id][e->dir],
                              items[i].cx - PLAYER_SHADOW_W / 2,
                              items[i].cy - PLAYER_SHADOW_H / 2, cam_x, cam_y);
         }
@@ -462,11 +627,13 @@ static void render_screen(uint16_t *buffer, int cam_x, int cam_y,
 
     uint32_t t_bl0 = cpuGetTiming();
     for (int i = 0; i < count; i++) {
-        if (items[i].sprite < 0) {
+        int sp = items[i].sprite;
+        if (sp >= 0) {
+            blit_tile(buffer, sp, items[i].cx, items[i].cy, cam_x, cam_y);
+        } else if (sp == -1) {
             draw_player(buffer, cam_x, cam_y);
         } else {
-            blit_tile(buffer, items[i].sprite,
-                      items[i].cx, items[i].cy, cam_x, cam_y);
+            draw_enemy(buffer, &s_enemies[-2 - sp], cam_x, cam_y);
         }
     }
     uint32_t blit_ticks = cpuGetTiming() - t_bl0;
@@ -480,12 +647,7 @@ static void render_screen(uint16_t *buffer, int cam_x, int cam_y,
 // Presentation
 // ---------------------------------------------------------------------------
 
-static void present_both_screens(int top_dirty) {
-    if (top_dirty) {
-        DC_FlushRange(s_top_backbuffer, sizeof(s_top_backbuffer));
-        dmaCopyWords(1, s_top_backbuffer, s_top_vram, sizeof(s_top_backbuffer));
-    }
-
+static void present_both_screens(void) {
     swiWaitForVBlank();
 
     if (s_active_vram_bank == 0) {
@@ -494,6 +656,91 @@ static void present_both_screens(int top_dirty) {
     } else {
         videoSetMode(MODE_FB0);
         s_active_vram_bank = 0;
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Enemies
+// ---------------------------------------------------------------------------
+
+static void enemies_init(void) {
+    // Spawn 10 enemies in the central room around player (col 18, row 18)
+    // 5 Chargers, 5 Skeletons wandering with different initial directions
+    static const struct {
+        int dcol, drow, char_id, dir;
+    } spawn_defs[MAX_ENEMIES] = {
+        { -2, -2, CHAR_CHARGER,  DIR_SOUTHEAST },
+        {  2, -2, CHAR_SKELETON, DIR_SOUTHWEST },
+        { -3,  0, CHAR_CHARGER,  DIR_EAST },
+        {  3,  0, CHAR_SKELETON, DIR_WEST },
+        { -2,  2, CHAR_CHARGER,  DIR_NORTHEAST },
+        {  2,  2, CHAR_SKELETON, DIR_NORTHWEST },
+        {  0, -3, CHAR_CHARGER,  DIR_SOUTH },
+        {  0,  3, CHAR_SKELETON, DIR_NORTH },
+        { -1, -3, CHAR_CHARGER,  DIR_EAST },
+        {  1,  3, CHAR_SKELETON, DIR_WEST }
+    };
+
+    fixed center_col = TO_FIXED(MAP_COLS / 2 - 1);
+    fixed center_row = TO_FIXED(MAP_ROWS / 2 - 1);
+
+    for (int i = 0; i < MAX_ENEMIES; i++) {
+        s_enemies[i].x = center_col + TO_FIXED(spawn_defs[i].dcol);
+        s_enemies[i].y = center_row + TO_FIXED(spawn_defs[i].drow);
+        s_enemies[i].dir = spawn_defs[i].dir;
+        s_enemies[i].frame = (i * 3) % PLAYER_NUM_FRAMES;
+        s_enemies[i].anim_timer = 0;
+        s_enemies[i].char_id = spawn_defs[i].char_id;
+        s_enemies[i].active = 1;
+        s_enemies[i].step_count = 0;
+        s_enemies[i].step_limit = 60 + (i * 15);
+    }
+}
+
+static void enemies_update(void) {
+    // Screen-space direction vectors (sdx, sdy) for DIR_SOUTH .. DIR_SOUTHEAST
+    static const int dir_dx[8] = { 0, -1, -1, -1,  0,  1, 1, 1 };
+    static const int dir_dy[8] = { 1,  1,  0, -1, -1, -1, 0, 1 };
+
+    for (int i = 0; i < MAX_ENEMIES; i++) {
+        Enemy *e = &s_enemies[i];
+        if (!e->active) continue;
+
+        fixed spd = g_characters[e->char_id].speed;
+        int anim_period = g_characters[e->char_id].anim_period;
+
+        int sdx = dir_dx[e->dir];
+        int sdy = dir_dy[e->dir];
+        fixed vx = sdx * spd;
+        fixed vy = sdy * spd;
+        if (sdx != 0 && sdy != 0) {
+            vx = (vx * 181) >> 8;
+            vy = (vy * 181) >> 8;
+        }
+
+        fixed dcol = (vx + (vy << 1)) / (TILE_HALF_W * 2);
+        fixed drow = ((vy << 1) - vx) / (TILE_HALF_W * 2);
+
+        if (position_is_free(e->x + dcol, e->y + drow)) {
+            e->x += dcol;
+            e->y += drow;
+        } else {
+            // Pick next direction on collision
+            e->dir = (e->dir + 3) & 7;
+            e->step_count = 0;
+        }
+
+        e->step_count++;
+        if (e->step_count >= e->step_limit) {
+            e->step_count = 0;
+            e->dir = (e->dir + 1 + (i & 3)) & 7;
+        }
+
+        e->anim_timer++;
+        if (e->anim_timer >= anim_period) {
+            e->anim_timer = 0;
+            e->frame = (e->frame + 1) % PLAYER_NUM_FRAMES;
+        }
     }
 }
 
@@ -509,6 +756,8 @@ static void player_init(void) {
     s_player.is_moving = 0;
     s_player.anim_timer = 0;
     s_player.char_id = CHAR_HERO;
+
+    enemies_init();
 }
 
 static void player_update(uint32_t keys, uint32_t keys_down) {
@@ -544,15 +793,16 @@ static void player_update(uint32_t keys, uint32_t keys_down) {
         fixed vx = sdx * current_speed;
         fixed vy = sdy * current_speed;
         if (sdx != 0 && sdy != 0) { // normalise diagonals
-            vx = vx * 181 / 256;
-            vy = vy * 181 / 256;
+            vx = (vx * 181) >> 8;
+            vy = (vy * 181) >> 8;
         }
 
         // Screen space -> tile space (inverse of the dimetric projection)
-        fixed sx = vx / TILE_HALF_W;
-        fixed sy = vy / TILE_HALF_H;
-        fixed dcol = (sx + sy) >> 1;
-        fixed drow = (sy - sx) >> 1;
+        // sx = vx / TILE_HALF_W, sy = vy / TILE_HALF_H
+        // dcol = (sx + sy) / 2 = (vx + 2*vy) / 32
+        // drow = (sy - sx) / 2 = (2*vy - vx) / 32
+        fixed dcol = (vx + (vy << 1)) / (TILE_HALF_W * 2);
+        fixed drow = ((vy << 1) - vx) / (TILE_HALF_W * 2);
 
         if (position_is_free(s_player.x + dcol, s_player.y + drow)) {
             s_player.x += dcol;
@@ -637,15 +887,10 @@ int main(void) {
     if (s_cam_y > CACHE_Y0 + CACHE_H - SCREEN_H) s_cam_y = CACHE_Y0 + CACHE_H - SCREEN_H;
 
     // Render initial scene into top screen and both bottom VRAM buffers so frame 0 is never black
-    render_screen(s_top_backbuffer, s_cam_x, s_cam_y - SCREEN_H, NULL, NULL, NULL);
-    DC_FlushRange(s_top_backbuffer, sizeof(s_top_backbuffer));
-    dmaCopyWords(1, s_top_backbuffer, s_top_vram, sizeof(s_top_backbuffer));
+    render_screen(s_top_vram, s_cam_x, s_cam_y - SCREEN_H, NULL, NULL, NULL);
 
     render_screen((u16 *)VRAM_A, s_cam_x, s_cam_y, NULL, NULL, NULL);
     render_screen((u16 *)VRAM_B, s_cam_x, s_cam_y, NULL, NULL, NULL);
-
-    int prev_top_cam_x = s_cam_x;
-    int prev_top_cam_y = s_cam_y - SCREEN_H;
 
     while (1) {
         uint32_t frame_start_ticks = cpuGetTiming();
@@ -661,6 +906,7 @@ int main(void) {
 
         uint32_t t0 = cpuGetTiming();
         player_update(keys_held, keys_down);
+        enemies_update();
         uint32_t logic_ticks = cpuGetTiming() - t0;
 
         uint32_t top_fl = 0, top_sh = 0, top_bl = 0;
@@ -668,17 +914,9 @@ int main(void) {
 
         int top_cam_x = s_cam_x;
         int top_cam_y = s_cam_y - SCREEN_H;
-        int top_moved = (top_cam_x != prev_top_cam_x || top_cam_y != prev_top_cam_y);
-        // Interleave top screen refresh during camera scrolling (30 Hz top / 60 Hz bot)
-        // to guarantee 100% locked 60 FPS under the ARM9 16.7ms budget.
-        int top_dirty = top_moved && ((g_perf.frame_index & 1) == 0 || !s_player.is_moving);
 
         uint32_t t1 = cpuGetTiming();
-        if (top_dirty) {
-            render_screen(s_top_backbuffer, top_cam_x, top_cam_y, &top_fl, &top_sh, &top_bl);
-            prev_top_cam_x = top_cam_x;
-            prev_top_cam_y = top_cam_y;
-        }
+        render_screen(s_top_vram, top_cam_x, top_cam_y, &top_fl, &top_sh, &top_bl);
         uint32_t top_ticks = cpuGetTiming() - t1;
 
         u16 *dest_vram = (s_active_vram_bank == 0) ? (u16 *)VRAM_B : (u16 *)VRAM_A;
@@ -691,7 +929,7 @@ int main(void) {
         int vcount_done = REG_VCOUNT;
 
         uint32_t t3 = cpuGetTiming();
-        present_both_screens(top_dirty);
+        present_both_screens();
         uint32_t present_ticks = cpuGetTiming() - t3;
 
         uint32_t vblanks_elapsed = s_vblank_count - start_vblank;
