@@ -1,0 +1,67 @@
+{
+  "characters": {
+    "player": {
+      "name": "Nigromante (Héroe)",
+      "model": "assets/characters/monster/Walking.fbx",
+      "prefix": "player",
+      "out_dir": "assets/characters/monster",
+      "scale": 1.0,
+      "displace_strength": 0.0,
+      "normal_strength": 0.4,
+      "cavity_ao_samples": 0,
+      "cavity_ao_distance": 0.0,
+      "cavity_ao_ramp": null,
+      "vertex_color_palette": null,
+      "fill_boost": 0.0,
+      "notes": "Modelo con textura difusa y normal map completos. La escala 1.0x llena la caja de 64x64 px. Normal map moderado a 0.4 para eliminar ruido subpíxel en NDS."
+    },
+    "charger": {
+      "name": "Cargador (Maw / Bruto)",
+      "model": "assets/characters/charger/Run.fbx",
+      "prefix": "charger",
+      "out_dir": "assets/characters/charger",
+      "scale": 1.35,
+      "displace_strength": 0.0,
+      "normal_strength": 0.3,
+      "cavity_ao_samples": 0,
+      "cavity_ao_distance": 0.0,
+      "cavity_ao_ramp": null,
+      "vertex_color_palette": null,
+      "fill_boost": 0.25,
+      "pose_adjustments": {
+        "neck_pitch_deg": 20.0
+      },
+      "notes": "Escala multiplicada a 1.35x para llenar la caja de 48x40 px en EWRAM. Cuello y cabeza elevados +20 grados para proyectar cuernos hacia la cámara. Fill boost de +0.25 y normal map atenuado a 0.3."
+    },
+    "skeleton": {
+      "name": "Esqueleto (Guerrero No-Muerto)",
+      "model": "assets/characters/skeleton/skeleton.fbx",
+      "prefix": "skeleton",
+      "out_dir": "assets/characters/skeleton",
+      "scale": 0.027,
+      "displace_strength": 0.12,
+      "normal_strength": 0.0,
+      "cavity_ao_samples": 24,
+      "cavity_ao_distance": 0.15,
+      "cavity_ao_ramp": {
+        "black_stop": 0.30,
+        "black_color": [0.05, 0.04, 0.04, 1.0],
+        "white_stop": 0.85,
+        "white_color": [1.0, 1.0, 1.0, 1.0]
+      },
+      "vertex_color_palette": "bone_chiaroscuro_dramatic",
+      "fill_boost": 0.0,
+      "notes": "Malla sin texturas en origen. Requiere modificador Displace de 0.12 para garantizar continuidad de huesos a 256x192. Paleta anatómica por grupos de vértices y Ambient Occlusion con ColorRamp dramático para hendiduras torácicas."
+    }
+  },
+  "global_post_process": {
+    "contrast": 1.24,
+    "brightness": 0.98,
+    "saturation": 1.24,
+    "outline": {
+      "color": [16, 16, 24],
+      "alpha_threshold": 40,
+      "solidify_interior": true
+    }
+  }
+}

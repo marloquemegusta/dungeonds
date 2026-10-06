@@ -21,3 +21,10 @@
 - **Runtime NDS:** cobertura cuantizada a 4 bits (dos píxeles por byte) con límites `[x,y,w,h]`; se oscurece sólo el suelo subyacente válido, nunca `VOID_COLOR`. Orden por frame: suelo → sombras → sprites. No sintetizar elipses/siluetas de sombra por código.
 - **Presupuesto:** no guardar máscaras como bytes completos ni usar las dimensiones de horneado completas en C: el primer intento excedía EWRAM. El recorte y empaquetado son parte del contrato de memoria.
 - **Verificación:** `python tests/test_shadow_masks.py -v`, conversión del preset, compilación con `scripts/build-project.ps1` y escenario/capturas con `scripts/run-scenario.ps1`. La prueba actual cubre máscaras `e30`; no implica que `e60` se haya regenerado o validado.
+
+### 3.1. Estandarización de Shaders y Modelos 3D para Sprites NDS
+- **Manifiesto de perfiles:** `tools/character_profiles.json` define de forma declarativa y desacoplada las características de horneado para cada modelo.
+- **Normal Maps en NDS (Atenuación obligatoria):** A resolución nativa de $256\times 192$, relieves normales al 100% generan micro-ruido y parpadeo (*shimmering*). El estándar exige atenuar su influencia al 30%-40% (`normal_strength: 0.3 - 0.4`).
+- **Fattening / Displace Modifier:** Mallas anatómicas finas (costillas, extremidades esqueléticas < 2 px de proyección) sufren desconexión de vóxeles y píxeles huérfanos. Se compensan paramétricamente con `DISPLACE` (`strength: 0.12`).
+- **Ambient Occlusion con ColorRamp de Cavidad:** Modelos sin mapas de textura PBR emplean sombreado procedural anatómico complementado con Cycles AO agresivo (ramp con parada negra en 0.30) para sumergir cavidades y órbitas en penumbra gótica.
+- **Grading 2D unificado (PIL):** Todo sprite pasa invariablemente por el post-proceso central de `tools/ds_look.py` (Contraste 1.24, Brillo 0.98, Saturación 1.24, y outline de 1 px solidificado sin halos de transparencia sub-umbral).
