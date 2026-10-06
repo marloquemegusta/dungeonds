@@ -45,6 +45,11 @@ El repositorio cuenta con fuentes de verdad canónicas sin duplicación:
      ```powershell
      Copy-Item -Recurse -Force runtime\bin .worktrees\<nombre>\runtime\bin
      ```
+   - **Copia del grafo Graphify:** `graphify-out/` no está versionado, así que el worktree nace sin grafo (los hooks de git no lo crean). Copiarlo y refrescarlo (AST-only, sin coste de API); en llamadas MCP usar `project_path` = ruta del worktree:
+     ```powershell
+     Copy-Item -Recurse -Force graphify-out .worktrees\<nombre>\graphify-out
+     Push-Location .worktrees\<nombre>; graphify update .; Pop-Location
+     ```
    - Al concluir, verificar y fusionar a `master`, el worktree y la rama se limpian:
      ```bash
      git worktree remove .worktrees/<nombre>
@@ -62,7 +67,7 @@ This project has a knowledge graph at graphify-out/ with god nodes, community st
 When the user types `/graphify`, use the installed graphify skill or instructions before doing anything else.
 
 Rules:
-- For codebase questions, first run `graphify query "<question>"` when graphify-out/graph.json exists. Use `graphify path "<A>" "<B>"` for relationships and `graphify explain "<concept>"` for focused concepts. These return a scoped subgraph, usually much smaller than GRAPH_REPORT.md or raw grep output.
+- For codebase questions, first run `graphify query "<question>"` (CLI) or `query_graph` (MCP). When using MCP tools, pass `project_path: "<path>"` (or rely on default in `mcp_config.json`). Use `graphify path "<A>" "<B>"` / `shortest_path` for relationships and `graphify explain "<concept>"` / `get_node` for focused concepts.
 - Dirty graphify-out/ files are expected after hooks or incremental updates; dirty graph files are not a reason to skip graphify. Only skip graphify if the task is about stale or incorrect graph output, or the user explicitly says not to use it.
 - If graphify-out/wiki/index.md exists, use it for broad navigation instead of raw source browsing.
 - Read graphify-out/GRAPH_REPORT.md only for broad architecture review or when query/path/explain do not surface enough context.
