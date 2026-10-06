@@ -42,7 +42,8 @@ def shadow_coverage(image, label="image", alpha_extrema=None):
         for y in range(max(0, height - 8), height)
     ]
     lit = median(corner)
-    dark = sorted(pixels)[max(0, len(pixels) // 200)]
+    dark_idx = max(0, min(len(pixels) // 200, max(4, len(pixels) // 1000)))
+    dark = sorted(pixels)[dark_idx]
     contrast = lit - dark
     if contrast < 8:
         raise ValueError(f"{label}: shadow pass has insufficient RGB contrast ({contrast:.1f}), alpha={alpha_extrema}")

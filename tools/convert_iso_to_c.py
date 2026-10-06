@@ -30,7 +30,7 @@ from shadow_masks import coverage_bounds, read_shadow_coverage, shadow_coverage
 
 from PIL import Image
 
-ROOT = r"C:\codexlocal\dungeonds"
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 FLOOR_NAMES = ["F0_crypt", "F1_obsidian", "F2_bone", "F3_crimson", "F4_worn"]
 OBJ_BASE_NAMES = [
@@ -197,6 +197,8 @@ def main():
     player_anchor_path = os.path.join(ROOT, "assets", "characters", "monster", f"player_{args.preset}_anchor.json")
     charger_sheet = os.path.join(ROOT, "assets", "characters", "charger", f"charger_{args.preset}.png")
     charger_shadow_sheet = os.path.join(ROOT, "assets", "characters", "charger", f"charger_{args.preset}_shadow.png")
+    skeleton_sheet = os.path.join(ROOT, "assets", "characters", "skeleton", f"skeleton_{args.preset}.png")
+    skeleton_shadow_sheet = os.path.join(ROOT, "assets", "characters", "skeleton", f"skeleton_{args.preset}_shadow.png")
     if os.path.isfile(player_anchor_path):
         with open(player_anchor_path, encoding="utf-8") as f:
             player_anchor = json.load(f)["anchor_pixel"]
@@ -321,6 +323,11 @@ extern const uint8_t g_obj_map[MAP_ROWS][MAP_COLS];
     charger_sh = Image.open(charger_shadow_sheet).convert("RGBA")
     assert charger_sh.size == (n_dirs * shadow_cell, shadow_cell), charger_sh.size
 
+    skeleton_im = Image.open(skeleton_sheet).convert("RGBA")
+    assert skeleton_im.size == (n_frames * cell, n_dirs * cell), skeleton_im.size
+    skeleton_sh = Image.open(skeleton_shadow_sheet).convert("RGBA")
+    assert skeleton_sh.size == (n_dirs * shadow_cell, shadow_cell), skeleton_sh.size
+
     char_w = 48
     char_h = 40
     crop_x0 = 8
@@ -345,11 +352,12 @@ extern const uint8_t g_obj_map[MAP_ROWS][MAP_COLS];
 #define PLAYER_ANCHOR_X {char_anchor_x}
 #define PLAYER_ANCHOR_Y {char_anchor_y}
 
-#define NUM_CHARACTERS 2
+#define NUM_CHARACTERS 3
 
 enum {{
     CHAR_HERO = 0,
-    CHAR_CHARGER = 1
+    CHAR_CHARGER = 1,
+    CHAR_SKELETON = 2
 }};
 
 typedef struct {{
@@ -369,6 +377,11 @@ extern const uint8_t g_player_shadow_bounds[PLAYER_NUM_DIRS][4];
 extern const uint16_t g_charger_frames[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][PLAYER_SPRITE_W * PLAYER_SPRITE_H];
 extern const uint8_t g_charger_shadow_masks[PLAYER_NUM_DIRS][PLAYER_SHADOW_W * PLAYER_SHADOW_H / 2];
 extern const uint8_t g_charger_shadow_bounds[PLAYER_NUM_DIRS][4];
+
+// Skeleton enemy frames & shadows
+extern const uint16_t g_skeleton_frames[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][PLAYER_SPRITE_W * PLAYER_SPRITE_H];
+extern const uint8_t g_skeleton_shadow_masks[PLAYER_NUM_DIRS][PLAYER_SHADOW_W * PLAYER_SHADOW_H / 2];
+extern const uint8_t g_skeleton_shadow_bounds[PLAYER_NUM_DIRS][4];
 
 // Fast indexed lookups:
 extern const uint16_t (* const g_character_frames[NUM_CHARACTERS])[PLAYER_NUM_FRAMES][PLAYER_SPRITE_W * PLAYER_SPRITE_H];
@@ -428,28 +441,33 @@ extern const uint8_t (* const g_character_shadow_bounds[NUM_CHARACTERS])[4];
         c.write('const CharacterConfig g_characters[NUM_CHARACTERS] = {\n')
         c.write('    { "Hero (Monster)", 181, 3 },\n')
         c.write('    { "Enemy Charger",  362, 2 },\n')
+        c.write('    { "Skeleton Enemy", 216, 3 },\n')
         c.write('};\n\n')
 
         write_char_arrays(c, "g_player", "hero", player_im, player_sh)
         write_char_arrays(c, "g_charger", "charger", charger_im, charger_sh)
+        write_char_arrays(c, "g_skeleton", "skeleton", skeleton_im, skeleton_sh)
 
         c.write('const uint16_t (* const g_character_frames[NUM_CHARACTERS])[PLAYER_NUM_FRAMES]'
                 '[PLAYER_SPRITE_W * PLAYER_SPRITE_H] = {\n'
                 '    g_player_frames,\n'
-                '    g_charger_frames\n'
+                '    g_charger_frames,\n'
+                '    g_skeleton_frames\n'
                 '};\n\n')
         c.write('const uint8_t (* const g_character_shadow_masks[NUM_CHARACTERS])'
                 '[PLAYER_SHADOW_W * PLAYER_SHADOW_H / 2] = {\n'
                 '    g_player_shadow_masks,\n'
-                '    g_charger_shadow_masks\n'
+                '    g_charger_shadow_masks,\n'
+                '    g_skeleton_shadow_masks\n'
                 '};\n\n')
         c.write('const uint8_t (* const g_character_shadow_bounds[NUM_CHARACTERS])[4] = {\n'
                 '    g_player_shadow_bounds,\n'
-                '    g_charger_shadow_bounds\n'
+                '    g_charger_shadow_bounds,\n'
+                '    g_skeleton_shadow_bounds\n'
                 '};\n')
 
     print(f"[OK] preset {args.preset}: 32x{tile_h} floors, {look.OBJ_CANVAS}x{look.OBJ_CANVAS} objects, "
-          f"{cell}x{cell} characters (hero + charger).")
+          f"{cell}x{cell} characters (hero + charger + skeleton).")
 
 
 if __name__ == "__main__":

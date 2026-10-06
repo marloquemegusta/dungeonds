@@ -1,0 +1,187 @@
+{
+  "scenario": "character_switch_test.json",
+  "captures": {
+    "00_hero_spawn": {
+      "sha256": "b9c048de34d844a2381155656d249036a85a52b60cb9fd06bf1600e44d7aa3ae",
+      "path": "00_hero_spawn.png"
+    },
+    "01_hero_walking": {
+      "sha256": "511a93501e527eae9ace152a5bd844ca9096e9acddd0e051a2ccf7f9db357143",
+      "path": "01_hero_walking.png"
+    },
+    "02_switched_to_charger": {
+      "sha256": "778b48a085210617bcd8fcfff6d99b1043b3023b75e33f29ea9b7b8f6304ac61",
+      "path": "02_switched_to_charger.png"
+    },
+    "03_charger_charging": {
+      "sha256": "d1e64c0c0e5f62a93c25f0f41e2995c1e0f251eb7df24f0475aeac36771d4d34",
+      "path": "03_charger_charging.png"
+    },
+    "04_switched_to_skeleton": {
+      "sha256": "7ef41a1e451a78800587c2a5d74665056d919623dc64b1cc4b583c45656a82e9",
+      "path": "04_switched_to_skeleton.png"
+    },
+    "05_skeleton_walking": {
+      "sha256": "8066f553edd8e699e5ec8588a56e9dd314e3ba237d91b1123c77fe4c1ebd7cb8",
+      "path": "05_skeleton_walking.png"
+    },
+    "06_switched_back_to_hero": {
+      "sha256": "d5483323d36971c2569b16f66ce9288df2baecfed0f26fd91331b856d63bcc93",
+      "path": "06_switched_back_to_hero.png"
+    }
+  },
+  "events": [
+    {
+      "step": 0,
+      "action": "frame_advance",
+      "frames": 30,
+      "keypad": 0
+    },
+    {
+      "step": 1,
+      "action": "button_down",
+      "button": "UP"
+    },
+    {
+      "step": 1,
+      "action": "frame_advance",
+      "frames": 40,
+      "keypad": 64
+    },
+    {
+      "step": 2,
+      "action": "button_up",
+      "button": "UP"
+    },
+    {
+      "step": 2,
+      "action": "frame_advance",
+      "frames": 5,
+      "keypad": 0
+    },
+    {
+      "step": 3,
+      "action": "button_down",
+      "button": "X"
+    },
+    {
+      "step": 3,
+      "action": "frame_advance",
+      "frames": 2,
+      "keypad": 1024
+    },
+    {
+      "step": 4,
+      "action": "button_up",
+      "button": "X"
+    },
+    {
+      "step": 4,
+      "action": "frame_advance",
+      "frames": 10,
+      "keypad": 0
+    },
+    {
+      "step": 5,
+      "action": "button_down",
+      "button": "DOWN"
+    },
+    {
+      "step": 5,
+      "action": "frame_advance",
+      "frames": 40,
+      "keypad": 128
+    },
+    {
+      "step": 6,
+      "action": "button_up",
+      "button": "DOWN"
+    },
+    {
+      "step": 6,
+      "action": "frame_advance",
+      "frames": 5,
+      "keypad": 0
+    },
+    {
+      "step": 7,
+      "action": "button_down",
+      "button": "X"
+    },
+    {
+      "step": 7,
+      "action": "frame_advance",
+      "frames": 2,
+      "keypad": 1024
+    },
+    {
+      "step": 8,
+      "action": "button_up",
+      "button": "X"
+    },
+    {
+      "step": 8,
+      "action": "frame_advance",
+      "frames": 10,
+      "keypad": 0
+    },
+    {
+      "step": 9,
+      "action": "button_down",
+      "button": "LEFT"
+    },
+    {
+      "step": 9,
+      "action": "frame_advance",
+      "frames": 40,
+      "keypad": 32
+    },
+    {
+      "step": 10,
+      "action": "button_up",
+      "button": "LEFT"
+    },
+    {
+      "step": 10,
+      "action": "frame_advance",
+      "frames": 5,
+      "keypad": 0
+    },
+    {
+      "step": 11,
+      "action": "button_down",
+      "button": "X"
+    },
+    {
+      "step": 11,
+      "action": "frame_advance",
+      "frames": 2,
+      "keypad": 1024
+    },
+    {
+      "step": 12,
+      "action": "button_up",
+      "button": "X"
+    },
+    {
+      "step": 12,
+      "action": "frame_advance",
+      "frames": 10,
+      "keypad": 0
+    }
+  ],
+  "assertions": {
+    "screen_changed": true,
+    "changed_pixels": 33343,
+    "min_changed_pixels": 50,
+    "screen_changes": [
+      {
+        "from": "01_hero_walking",
+        "to": "02_switched_to_charger",
+        "changed": true,
+        "changed_pixels": 33343,
+        "min_changed_pixels": 50
+      }
+    ]
+  }
+}

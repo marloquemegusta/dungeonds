@@ -9,7 +9,11 @@
     { "button_down": "DOWN", "frames": 40, "capture": "03_charger_charging" },
     { "button_up": "DOWN", "frames": 5 },
     { "button_down": "X", "frames": 2 },
-    { "button_up": "X", "frames": 10, "capture": "04_switched_back_to_hero" }
+    { "button_up": "X", "frames": 10, "capture": "04_switched_to_skeleton" },
+    { "button_down": "LEFT", "frames": 40, "capture": "05_skeleton_walking" },
+    { "button_up": "LEFT", "frames": 5 },
+    { "button_down": "X", "frames": 2 },
+    { "button_up": "X", "frames": 10, "capture": "06_switched_back_to_hero" }
   ],
   "assertions": {
     "screen_changed": {
