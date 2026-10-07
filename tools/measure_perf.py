@@ -61,7 +61,7 @@ def main():
 
     rom = Path(sys.argv[1])
     lib_path = Path(sys.argv[2])
-    perf_addr = int(sys.argv[3], 16) if len(sys.argv) > 3 else 0x02174c14
+    perf_addr = int(sys.argv[3], 16) if len(sys.argv) > 3 else 0x02199224
 
     os.environ.setdefault("SDL_VIDEODRIVER", "dummy")
     os.environ.setdefault("SDL_AUDIODRIVER", "dummy")

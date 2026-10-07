@@ -15,11 +15,10 @@
 // pre-baked with the matching orthographic camera, so a sprite's centre is its
 // ground anchor point on the tile.
 //
-// Hardware Background Scrolling (Option 1):
-// The static floor, perimeter walls, and static shadows are converted into
-// 8bpp tiles streamed to the NDS 2D Background Engine. Each frame, only a 32x24
-// tilemap window is streamed to VRAM (~1.5 KB via ARM burst/DMA), reducing
-// floor rendering time from 7.2 ms down to ~0.05 ms.
+// Hardware Background Scrolling:
+// The static floor, perimeter walls, and shadows are converted into 8bpp tiles.
+// A 64x32 hardware ring map streams only newly exposed rows/columns during VBlank,
+// while fine scroll remains in the BG registers; entities render on the bitmap BG.
 // ---------------------------------------------------------------------------
 
 #define VOID_COLOR RGB15(0, 0, 0)
@@ -52,6 +51,14 @@ static u16 *s_top_map_ptr = NULL;
 static u16 *s_bot_map_ptr = NULL;
 static u16 *s_top_vram = NULL;
 static u16 *s_bot_vram = NULL;
+
+// World tile origin currently loaded into each 64x32 hardware BG ring map.
+static int s_top_map_tile_x = 0;
+static int s_top_map_tile_y = 0;
+static int s_bot_map_tile_x = 0;
+static int s_bot_map_tile_y = 0;
+static int s_top_map_ready = 0;
+static int s_bot_map_ready = 0;
 
 // Rendering buffers for top and bottom screens (cleared transparently for entities)
 static uint16_t s_top_screen_buf[SCREEN_W * SCREEN_H] __attribute__((aligned(4)));
@@ -346,45 +353,80 @@ static void draw_shadow_mask(uint16_t *buffer, const uint8_t *mask, int sw, int 
 // Hardware Background Tilemap Streaming
 // ---------------------------------------------------------------------------
 
-// Stream the 32x25 tilemap window into the 32x32 hardware text background map,
-// and configure sub-tile fine scrolling directly via hardware scroll registers.
-// Window copy size: 32 cols x 25 rows = 800 entries (1600 bytes) ~20-30 us.
+// Stream only newly exposed edges into the 64x32 BG ring map. This function
+// runs in VBlank, so neither scanout nor fine-scroll sampling sees a half-updated map.
+#define BG_RING_W 64
+#define BG_RING_H 32
+
+static int bg_ring_index(int tile, int size) {
+    int index = tile % size;
+    return index < 0 ? index + size : index;
+}
+
+// 512x256 text maps are two 32x32 screen blocks, not a linear 64-column array.
+static int bg_map_index(int col, int row) {
+    return (col >> 5) * 1024 + row * 32 + (col & 31);
+}
+
+static u16 bg_world_tile(int col, int row) {
+    if (col < 0 || col >= DUNGEON_BG_MAP_WIDTH_TILES ||
+        row < 0 || row >= DUNGEON_BG_MAP_HEIGHT_TILES) return 0;
+    return g_dungeon_bg_map[row][col];
+}
+
 static void update_screen_hardware_bg(int is_sub, u16 *map_ptr, int cam_x, int cam_y) {
     int rel_x = cam_x - CACHE_X0;
     int rel_y = cam_y - CACHE_Y0;
-
     int tile_x = rel_x >> 3;
     int tile_y = rel_y >> 3;
+    int ring_x = bg_ring_index(tile_x, BG_RING_W);
+    int ring_y = bg_ring_index(tile_y, BG_RING_H);
     int fine_x = rel_x & 7;
     int fine_y = rel_y & 7;
+    int *prev_x = is_sub ? &s_top_map_tile_x : &s_bot_map_tile_x;
+    int *prev_y = is_sub ? &s_top_map_tile_y : &s_bot_map_tile_y;
+    int *ready = is_sub ? &s_top_map_ready : &s_bot_map_ready;
 
-    if (is_sub) {
-        REG_BG1HOFS_SUB = fine_x;
-        REG_BG1VOFS_SUB = fine_y;
-    } else {
-        REG_BG1HOFS = fine_x;
-        REG_BG1VOFS = fine_y;
-    }
-
-    int rows_to_copy = 25;
-    for (int ty = 0; ty < rows_to_copy; ty++) {
-        int my = tile_y + ty;
-        u16 *dst_row = &map_ptr[ty * 32];
-        if (my >= 0 && my < DUNGEON_BG_MAP_HEIGHT_TILES) {
-            const u16 *src_map_row = g_dungeon_bg_map[my];
-            for (int tx = 0; tx < 32; tx++) {
-                int mx = tile_x + tx;
-                if (mx >= 0 && mx < DUNGEON_BG_MAP_WIDTH_TILES) {
-                    dst_row[tx] = src_map_row[mx];
-                } else {
-                    dst_row[tx] = 0;
-                }
-            }
-        } else {
-            for (int tx = 0; tx < 32; tx++) {
-                dst_row[tx] = 0;
+    if (!*ready || tile_x - *prev_x >= BG_RING_W || tile_x - *prev_x <= -BG_RING_W ||
+        tile_y - *prev_y >= BG_RING_H || tile_y - *prev_y <= -BG_RING_H) {
+        for (int my = 0; my < BG_RING_H; my++) {
+            int world_y = tile_y + bg_ring_index(my - ring_y, BG_RING_H);
+            for (int mx = 0; mx < BG_RING_W; mx++) {
+                int world_x = tile_x + bg_ring_index(mx - ring_x, BG_RING_W);
+                map_ptr[bg_map_index(mx, my)] = bg_world_tile(world_x, world_y);
             }
         }
+    } else {
+        int dx = tile_x - *prev_x;
+        int dy = tile_y - *prev_y;
+        int step = dx < 0 ? -1 : 1;
+        for (int x = dx < 0 ? *prev_x - 1 : *prev_x + 1; dx && (dx < 0 ? x >= tile_x : x <= tile_x); x += step) {
+            int mx = bg_ring_index(x, BG_RING_W);
+            for (int my = 0; my < BG_RING_H; my++) {
+                int world_y = tile_y + bg_ring_index(my - ring_y, BG_RING_H);
+                map_ptr[bg_map_index(mx, my)] = bg_world_tile(x, world_y);
+            }
+        }
+        step = dy < 0 ? -1 : 1;
+        for (int y = dy < 0 ? *prev_y - 1 : *prev_y + 1; dy && (dy < 0 ? y >= tile_y : y <= tile_y); y += step) {
+            int my = bg_ring_index(y, BG_RING_H);
+            for (int mx = 0; mx < BG_RING_W; mx++) {
+                int world_x = tile_x + bg_ring_index(mx - ring_x, BG_RING_W);
+                map_ptr[bg_map_index(mx, my)] = bg_world_tile(world_x, y);
+            }
+        }
+    }
+
+    *prev_x = tile_x;
+    *prev_y = tile_y;
+    *ready = 1;
+
+    if (is_sub) {
+        REG_BG1HOFS_SUB = (ring_x * 8 + fine_x) & 511;
+        REG_BG1VOFS_SUB = (ring_y * 8 + fine_y) & 255;
+    } else {
+        REG_BG1HOFS = (ring_x * 8 + fine_x) & 511;
+        REG_BG1VOFS = (ring_y * 8 + fine_y) & 255;
     }
 }
 
@@ -561,14 +603,16 @@ static void render_screen(uint16_t *buffer, int cam_x, int cam_y,
 // Presentation
 // ---------------------------------------------------------------------------
 
-static void present_both_screens(void) {
+static uint32_t present_both_screens(int top_cam_x, int top_cam_y,
+                                      int bot_cam_x, int bot_cam_y) {
     swiWaitForVBlank();
-
-    // Fast DMA burst during VBlank (~0.5 ms per screen, well within the 1.25 ms VBlank budget):
-    // Copies both screens directly to VRAM in perfect raster synchronization.
-    // Zero latency, zero alternating-buffer ghosting, identical rendering pipeline on both screens.
+    uint32_t bg_start = cpuGetTiming();
+    update_screen_hardware_bg(1, s_top_map_ptr, top_cam_x, top_cam_y);
+    update_screen_hardware_bg(0, s_bot_map_ptr, bot_cam_x, bot_cam_y);
+    uint32_t bg_ticks = cpuGetTiming() - bg_start;
     dmaCopyWords(3, s_top_screen_buf, s_top_vram, SCREEN_W * SCREEN_H * 2);
     dmaCopyWords(3, s_bot_screen_buf, s_bot_vram, SCREEN_W * SCREEN_H * 2);
+    return bg_ticks;
 }
 
 // ---------------------------------------------------------------------------
@@ -754,7 +798,7 @@ volatile PerfStats g_perf = {
     .magic = 0x50455246,
     .frame_index = 0,
     .cpu_ticks = 0,
-    .cpu_budget = 280095, // 33513982 Hz / 59.8261 Hz
+    .cpu_budget = 560190, // 33513982 Hz / 59.8261 Hz
     .cpu_percent = 0,
     .vcount_done = 0,
     .vblanks_elapsed = 1,
@@ -796,8 +840,8 @@ int main(void) {
     dmaCopyWords(3, g_dungeon_bg_palette, BG_PALETTE_SUB, DUNGEON_BG_PALETTE_SIZE * 2);
 
     // Initialize Main BG1 (Hardware Tiled Floor)
-    // tileBase 0 = 0x06000000 (30 KB tiles), mapBase 16 = 0x06008000 (2 KB map)
-    int bot_hw_bg = bgInit(1, BgType_Text8bpp, BgSize_T_256x256, 16, 0);
+    // tileBase 0 = 0x06000000 (28 KB tiles), mapBase 16 = 0x06008000 (4 KB map)
+    int bot_hw_bg = bgInit(1, BgType_Text8bpp, BgSize_T_512x256, 16, 0);
     bgSetPriority(bot_hw_bg, 3); // Lowest priority (drawn behind entities)
     s_bot_map_ptr = bgGetMapPtr(bot_hw_bg);
     u16 *bot_tile_ptr = bgGetGfxPtr(bot_hw_bg);
@@ -809,13 +853,13 @@ int main(void) {
 
     // Sub Engine (Top Screen): Mode 5
     // VRAM_C (128 KB) at 0x06200000 cleanly split:
-    // BG1 Text8bpp: tileBase 0 (0x06200000, 480 tiles * 64B = 30 KB), mapBase 15 (0x06207800, 2 KB)
+    // BG1 Text8bpp: tileBase 0 (28 KB), mapBase 14 (0x06207000, 4 KB)
     // BG2 Bmp16:    mapBase 2 (0x06208000, 256x192x2 = 96 KB)
     videoSetModeSub(MODE_5_2D);
     vramSetBankC(VRAM_C_SUB_BG_0x06200000); // 128 KB for Sub BG (contains both BG1 and BG2)
 
     // Initialize Sub BG1 (Hardware Tiled Floor)
-    int top_hw_bg = bgInitSub(1, BgType_Text8bpp, BgSize_T_256x256, 15, 0);
+    int top_hw_bg = bgInitSub(1, BgType_Text8bpp, BgSize_T_512x256, 14, 0);
     bgSetPriority(top_hw_bg, 3);
     s_top_map_ptr = bgGetMapPtr(top_hw_bg);
     u16 *top_tile_ptr = bgGetGfxPtr(top_hw_bg);
@@ -837,9 +881,11 @@ int main(void) {
     if (s_cam_y < CACHE_Y0) s_cam_y = CACHE_Y0;
     if (s_cam_y > CACHE_Y0 + CACHE_H - SCREEN_H) s_cam_y = CACHE_Y0 + CACHE_H - SCREEN_H;
 
-    // Initial hardware BG and entity render
+    // Initialize each hardware ring map while scanout is in VBlank.
+    swiWaitForVBlank();
     update_screen_hardware_bg(1, s_top_map_ptr, s_cam_x, s_cam_y - SCREEN_H);
     update_screen_hardware_bg(0, s_bot_map_ptr, s_cam_x, s_cam_y);
+
     render_screen(s_top_screen_buf, s_cam_x, s_cam_y - SCREEN_H, NULL, NULL, NULL);
     dmaCopyWords(3, s_top_screen_buf, s_top_vram, SCREEN_W * SCREEN_H * 2);
 
@@ -863,17 +909,11 @@ int main(void) {
         enemies_update();
         uint32_t logic_ticks = cpuGetTiming() - t0;
 
-        uint32_t top_fl = 0, top_sh = 0, top_bl = 0;
-        uint32_t bot_fl = 0, bot_sh = 0, bot_bl = 0;
+        uint32_t top_sh = 0, top_bl = 0;
+        uint32_t bot_sh = 0, bot_bl = 0;
 
         int top_cam_x = s_cam_x;
         int top_cam_y = s_cam_y - SCREEN_H;
-
-        // Stream 32x25 tilemaps and set hardware scroll registers (~25-30 us)
-        uint32_t t_bg_stream = cpuGetTiming();
-        update_screen_hardware_bg(1, s_top_map_ptr, top_cam_x, top_cam_y);
-        update_screen_hardware_bg(0, s_bot_map_ptr, s_cam_x, s_cam_y);
-        top_fl = cpuGetTiming() - t_bg_stream;
 
         // Render entities and dynamic shadows for top screen
         uint32_t t1 = cpuGetTiming();
@@ -890,15 +930,16 @@ int main(void) {
         int vcount_done = REG_VCOUNT;
 
         uint32_t t3 = cpuGetTiming();
-        present_both_screens();
+        uint32_t bg_ticks = present_both_screens(top_cam_x, top_cam_y, s_cam_x, s_cam_y);
         uint32_t present_ticks = cpuGetTiming() - t3;
 
         uint32_t vblanks_elapsed = s_vblank_count - start_vblank;
         if (vblanks_elapsed == 0) vblanks_elapsed = 1;
 
         g_perf.frame_index++;
-        g_perf.cpu_ticks = cpu_ticks;
-        g_perf.cpu_percent = (cpu_ticks * 100) / g_perf.cpu_budget;
+        uint32_t total_cpu_ticks = cpu_ticks + bg_ticks;
+        g_perf.cpu_ticks = total_cpu_ticks;
+        g_perf.cpu_percent = (total_cpu_ticks * 100) / g_perf.cpu_budget;
         g_perf.vcount_done = vcount_done;
         g_perf.vblanks_elapsed = vblanks_elapsed;
         g_perf.fps = 60 / vblanks_elapsed;
@@ -906,7 +947,7 @@ int main(void) {
         g_perf.top_render_ticks = top_ticks;
         g_perf.bot_render_ticks = bot_ticks;
         g_perf.present_ticks = present_ticks;
-        g_perf.floor_ticks = top_fl + bot_fl;
+        g_perf.floor_ticks = bg_ticks;
         g_perf.shadow_ticks = top_sh + bot_sh;
         g_perf.blit_ticks = top_bl + bot_bl;
 

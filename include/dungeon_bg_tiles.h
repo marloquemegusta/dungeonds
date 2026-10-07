@@ -4,9 +4,9 @@
 #include <nds.h>
 
 #define DUNGEON_BG_PALETTE_SIZE 256
-#define DUNGEON_BG_NUM_TILES 480
+#define DUNGEON_BG_NUM_TILES 448
 #define DUNGEON_BG_MAP_WIDTH_TILES 144
-#define DUNGEON_BG_MAP_HEIGHT_TILES 76
+#define DUNGEON_BG_MAP_HEIGHT_TILES 83
 
 extern const uint16_t g_dungeon_bg_palette[DUNGEON_BG_PALETTE_SIZE];
 extern const uint8_t g_dungeon_bg_tiles[DUNGEON_BG_NUM_TILES][64];

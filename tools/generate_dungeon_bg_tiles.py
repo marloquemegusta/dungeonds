@@ -29,7 +29,7 @@ shadow_masks = np.array([int(x, 16) for x in re.findall(r'0x[0-9a-fA-F]+', m_mas
 m_sprites = re.search(r'const uint16_t g_obj_sprites\[NUM_OBJ_SPRITES\]\[OBJ_SPRITE_W \* OBJ_SPRITE_H\][^=]*=\s*\{(.*?)\nconst', text, re.DOTALL)
 sprite_blocks = re.findall(r'\{(.*?)\}', m_sprites.group(1), re.DOTALL)
 
-CACHE_X0, CACHE_Y0, CACHE_W, CACHE_H = -576, -40, 1152, 608
+CACHE_X0, CACHE_Y0, CACHE_W, CACHE_H = -576, -96, 1152, 664
 cache = np.zeros((CACHE_H, CACHE_W), dtype=np.uint16)
 
 # 1) Composite floor diamonds
@@ -38,7 +38,7 @@ for row in range(36):
         t = floor_map[row, col]
         if t == 255: continue
         left = (col - row) * 16 - 16 - CACHE_X0
-        top = (col + row) * 8 - CACHE_Y0
+        top = (col + row) * 8 - 8 - CACHE_Y0
         src = floor_tiles[t]
         for sy in range(16):
             dy = top + sy
@@ -124,7 +124,7 @@ for ty in range(MAP_TILES_Y):
             tiles_list.append(idx_block)
         tilemap[ty, tx] = tiles_dict[idx_block]
 
-TARGET_MAX_TILES = 480
+TARGET_MAX_TILES = 448
 if len(tiles_list) > TARGET_MAX_TILES:
     def to_rgb(c):
         return np.array([(c & 0x1F), ((c >> 5) & 0x1F), ((c >> 10) & 0x1F)], dtype=np.float32)
@@ -194,7 +194,7 @@ with open(source_path, 'w', encoding='utf-8') as c:
     c.write('#include "dungeon_bg_tiles.h"\n\n')
     c.write('const uint16_t g_dungeon_bg_palette[DUNGEON_BG_PALETTE_SIZE] __attribute__((aligned(4))) = {\n')
     for i, col in enumerate(unique_colors):
-        c.write(f'0x{col:04X}, ')
+        c.write(f'0x{col:04X},' if (i + 1) % 16 == 0 else f'0x{col:04X}, ')
         if (i + 1) % 16 == 0: c.write('\n')
     c.write('};\n\n')
 
@@ -202,7 +202,7 @@ with open(source_path, 'w', encoding='utf-8') as c:
     for t_idx, t in enumerate(tiles_list):
         c.write(f'    // Tile {t_idx}\n    {{\n        ')
         for i, px in enumerate(t):
-            c.write(f'0x{px:02X}, ')
+            c.write(f'0x{px:02X},' if (i + 1) % 16 == 0 else f'0x{px:02X}, ')
             if (i + 1) % 16 == 0: c.write('\n        ' if i + 1 < 64 else '\n')
         c.write('    },\n')
     c.write('};\n\n')

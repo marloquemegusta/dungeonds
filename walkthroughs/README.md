@@ -24,4 +24,5 @@ Resúmenes acumulativos y auditables de cada entrega y avance de desarrollo en `
 | 8 | Estandarización del pipeline de shaders, normales y contraste de personajes | [`08-standardize-character-shaders/`](08-standardize-character-shaders/walkthrough.md) | Completado |
 | 9 | Rendimiento 60 FPS Dual-Screen, Corrección Diagonal y Multi-Entidad (10 Enemigos) | [`09-dual-screen-60fps-and-multi-entity/`](09-dual-screen-60fps-and-multi-entity/walkthrough.md) | Completado |
 | 10 | Hardware Background Scrolling a 60 FPS en Dual-Screen | [`10-hardware-bg-scroll-60fps/`](10-hardware-bg-scroll-60fps/walkthrough.md) | Completado |
+| 11 | Mejora de Rendimiento y Pipeline: Background Scroll Streaming, Stutter y Alineación de Pilares | [`11-perf-bg-scroll-and-rendering/`](11-perf-bg-scroll-and-rendering/walkthrough.md) | Completado |
 

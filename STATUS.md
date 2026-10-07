@@ -123,6 +123,15 @@ Este documento registra el historial cronológico de sesiones de desarrollo veri
 
 ---
 
+## Sesión 11: Streaming del Fondo, Stutter y Alineación de Pilares/Arcos
+- [x] Sustitución del repintado de 32x25 tiles por un ring map hardware BG1 de 64x32; actualiza sólo filas/columnas expuestas dentro de VBlank.
+- [x] Corrección del layout físico de BG 512x256: dos screenblocks de 32x32, scroll circular sincronizado con el origen de cámara y el fine scroll.
+- [x] Particionamiento VRAM_C: tileset de 448 tiles (28 KB), mapa de 4 KB en offset 0x7000 y framebuffer de 96 KB desde 0x8000.
+- [x] Corrección de telemetría: incluye el streaming del fondo en los ticks de CPU y usa el presupuesto de 560,190 ciclos por frame.
+- [x] Benchmark DeSmuME de 240 frames: **240/240 a 60 FPS**, carga CPU media **48.95%**, máxima **53%**, streaming de suelo **26.8 µs/frame**.
+- [x] Escenarios dual-screen (6 capturas), colisión con pilares (5 capturas) y unión muro/arco (4 capturas): todos PASS; capturas revisadas sin gaps, tiles negros ni seams.
+- **Evidencia:** `walkthroughs/11-perf-bg-scroll-and-rendering/walkthrough.md` y sus assets de validación. Sin validación en consola física.
+
 ## Próximas Líneas de Trabajo
 - Invocación de esbirros esqueletos y mecánicas de nigromancia activa.
 - Expansión de mazmorra procedural manteniendo el contrato dimétrico y presupuestos de 60 FPS.
