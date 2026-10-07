@@ -106,6 +106,23 @@ Este documento registra el historial cronológico de sesiones de desarrollo veri
 
 ---
 
+## Sesión 10: Hardware Background Scrolling a 60 FPS en Dual-Screen
+- [x] Eliminación completa de la copia por software de ventana de suelo (`Floor Window Copy`) en ambas pantallas:
+  - Descenso de tiempo de suelo de **7,232.1 µs** a **554.1 µs** (**-92.3%**).
+  - Supresión del array `s_floor_cache` en EWRAM, liberando **1.34 MB de RAM principal**.
+- [x] Integración de fondo tileado hardware (`BgType_Text8bpp`) en Modo 5 2D:
+  - Uso de capa `BG1` tanto en motor principal (pantalla inferior) como secundario (pantalla superior).
+  - Streaming eficiente del tilemap 32x25 en memoria de fondo hardware y ajuste directo de subpíxel en registros `REG_BG1HOFS`/`REG_BG1VOFS`.
+- [x] Empaquetado y particionamiento milimétrico de VRAM:
+  - Motor secundario: compresión perceptual sin pérdida perceptible a **480 tiles únicos** (30 KB), encajando en los 128 KB de `VRAM_C` junto al tilemap (2 KB) y el framebuffer Bmp16 de entidades (96 KB).
+  - Motor principal: `VRAM_A`/`VRAM_B` en double-buffering para `BG2` Bmp16 y `VRAM_D` (slot 6) para `BG1` Text8bpp.
+- [x] Resultados de rendimiento comprobados:
+  - **239 / 240 frames a 60 FPS exactos (99.6% locked 60 FPS)** en benchmark determinista.
+  - Finalización de renderizado en scanline raster promedio 117 / 262 (41 líneas antes del VBlank).
+- **Evidencia:** `walkthroughs/10-hardware-bg-scroll-60fps/walkthrough.md`.
+
+---
+
 ## Próximas Líneas de Trabajo
 - Invocación de esbirros esqueletos y mecánicas de nigromancia activa.
 - Expansión de mazmorra procedural manteniendo el contrato dimétrico y presupuestos de 60 FPS.
