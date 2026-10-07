@@ -589,20 +589,20 @@ static void present_both_screens(void) {
 
 static void enemies_init(void) {
     // Spawn 10 enemies in the central room around player (col 18, row 18)
-    // 5 Chargers, 5 Skeletons wandering with different initial directions
+    // 8 Skeletons patrolling, 2 Chargers roaming
     static const struct {
         int dcol, drow, char_id, dir;
     } spawn_defs[MAX_ENEMIES] = {
-        { -2, -2, CHAR_CHARGER,  DIR_SOUTHEAST },
-        {  2, -2, CHAR_SKELETON, DIR_SOUTHWEST },
-        { -3,  0, CHAR_CHARGER,  DIR_EAST },
+        { -2, -1, CHAR_SKELETON, DIR_SOUTHEAST },
+        {  2, -1, CHAR_SKELETON, DIR_SOUTHWEST },
+        { -1,  2, CHAR_SKELETON, DIR_NORTHWEST },
+        {  1,  2, CHAR_SKELETON, DIR_NORTHEAST },
+        { -2, -2, CHAR_CHARGER,  DIR_EAST },
+        {  2, -2, CHAR_CHARGER,  DIR_WEST },
+        { -3,  0, CHAR_SKELETON, DIR_EAST },
         {  3,  0, CHAR_SKELETON, DIR_WEST },
-        { -2,  2, CHAR_CHARGER,  DIR_NORTHEAST },
-        {  2,  2, CHAR_SKELETON, DIR_NORTHWEST },
-        {  0, -3, CHAR_CHARGER,  DIR_SOUTH },
-        {  0,  3, CHAR_SKELETON, DIR_NORTH },
-        { -1, -3, CHAR_CHARGER,  DIR_EAST },
-        {  1,  3, CHAR_SKELETON, DIR_WEST }
+        {  0, -2, CHAR_SKELETON, DIR_SOUTH },
+        {  0,  2, CHAR_SKELETON, DIR_NORTH }
     };
 
     fixed center_col = TO_FIXED(MAP_COLS / 2 - 1);
