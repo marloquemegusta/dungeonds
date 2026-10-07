@@ -489,7 +489,7 @@ class LabHandler(http.server.SimpleHTTPRequestHandler):
 def main():
     print(f"Iniciando DS Shader Lab Web en http://localhost:{PORT}")
     socketserver.TCPServer.allow_reuse_address = True
-    with socketserver.TCPServer(("", PORT), LabHandler) as httpd:
+    with socketserver.TCPServer(("127.0.0.1", PORT), LabHandler) as httpd:
         try:
             httpd.serve_forever()
         except KeyboardInterrupt:
