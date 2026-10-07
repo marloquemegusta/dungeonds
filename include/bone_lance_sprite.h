@@ -1,0 +1,13 @@
+#ifndef BONE_LANCE_SPRITE_INCLUDE_H
+#define BONE_LANCE_SPRITE_INCLUDE_H
+
+#include <stdint.h>
+
+#define BONE_LANCE_SPRITE_W 64
+#define BONE_LANCE_SPRITE_HEIGHT 64
+#define BONE_LANCE_NUM_DIRS 8
+
+extern const uint16_t g_bone_lance_frames[BONE_LANCE_NUM_DIRS]
+    [BONE_LANCE_SPRITE_W * BONE_LANCE_SPRITE_HEIGHT];
+
+#endif
