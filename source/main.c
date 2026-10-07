@@ -2,6 +2,7 @@
 #include "dungeon_data.h"
 #include "player_sprite.h"
 #include "dungeon_bg_tiles.h"
+#include "bone_lance_sprite.h"
 
 // ---------------------------------------------------------------------------
 // DungeonDS - dimetric dungeon renderer
@@ -79,9 +80,29 @@ typedef struct {
     int active;
     int step_count;
     int step_limit;
+    int hp;
+    int hit_timer;
 } Enemy;
 
 static Enemy s_enemies[MAX_ENEMIES];
+
+#define MAX_PROJECTILES 4
+#define LANCE_COOLDOWN 16
+#define LANCE_SPEED 1024  // 4 projected pixels/frame in 8.8 fixed
+#define LANCE_LIFETIME 40
+#define LANCE_DAMAGE 30
+typedef struct {
+    fixed x;
+    fixed y;
+    fixed vx;
+    fixed vy;
+    uint16_t hit_mask;
+    int dir;
+    int life;
+    int active;
+} BoneLance;
+static BoneLance s_lances[MAX_PROJECTILES];
+static int s_lance_cooldown = 0;
 
 typedef struct {
     int depth;     // 8.8 fixed depth key (col+row in tile units)
@@ -171,6 +192,7 @@ static int position_is_free(fixed x, fixed y) {
 
 static uint8_t s_obj_sprite_bounds[NUM_OBJ_SPRITES][4];
 static uint8_t s_char_frame_bounds[NUM_CHARACTERS][PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4];
+static uint8_t s_lance_frame_bounds[BONE_LANCE_NUM_DIRS][4];
 
 static void init_obj_sprite_bounds(void) {
     for (int i = 0; i < NUM_OBJ_SPRITES; i++) {
@@ -229,6 +251,26 @@ static void init_obj_sprite_bounds(void) {
                 }
             }
         }
+    }
+
+    for (int d = 0; d < BONE_LANCE_NUM_DIRS; d++) {
+        const uint16_t *src = g_bone_lance_frames[d];
+        int min_x = BONE_LANCE_SPRITE_W, max_x = -1;
+        int min_y = BONE_LANCE_SPRITE_HEIGHT, max_y = -1;
+        for (int y = 0; y < BONE_LANCE_SPRITE_HEIGHT; y++) {
+            for (int x = 0; x < BONE_LANCE_SPRITE_W; x++) {
+                if (src[y * BONE_LANCE_SPRITE_W + x] & BIT(15)) {
+                    if (x < min_x) min_x = x;
+                    if (x > max_x) max_x = x;
+                    if (y < min_y) min_y = y;
+                    if (y > max_y) max_y = y;
+                }
+            }
+        }
+        s_lance_frame_bounds[d][0] = (uint8_t)min_x;
+        s_lance_frame_bounds[d][1] = (uint8_t)min_y;
+        s_lance_frame_bounds[d][2] = (uint8_t)(max_x - min_x + 1);
+        s_lance_frame_bounds[d][3] = (uint8_t)(max_y - min_y + 1);
     }
 }
 
@@ -451,6 +493,19 @@ static void draw_player(uint16_t *buffer, int cam_x, int cam_y) {
                 px - PLAYER_ANCHOR_X + min_x, py - PLAYER_ANCHOR_Y + min_y, cam_x, cam_y);
 }
 
+static void draw_hit_spark(uint16_t *buffer, int x, int y, int cam_x, int cam_y, int phase) {
+    uint16_t cyan = RGB15(9, 25, 31) | BIT(15);
+    uint16_t ivory = RGB15(31, 28, 20) | BIT(15);
+    for (int d = -3; d <= 3; d++) {
+        int bx = x + d - cam_x, by = y - cam_y;
+        if (bx >= 0 && bx < SCREEN_W && by >= 0 && by < SCREEN_H)
+            buffer[by * SCREEN_W + bx] = ((d + phase) & 1) ? cyan : ivory;
+        bx = x - cam_x; by = y + d - cam_y;
+        if (bx >= 0 && bx < SCREEN_W && by >= 0 && by < SCREEN_H)
+            buffer[by * SCREEN_W + bx] = ((d + phase) & 1) ? ivory : cyan;
+    }
+}
+
 static void draw_enemy(uint16_t *buffer, const Enemy *e, int cam_x, int cam_y) {
     int px = player_screen_x(e->x, e->y);
     int py = player_screen_y(e->x, e->y);
@@ -465,13 +520,26 @@ static void draw_enemy(uint16_t *buffer, const Enemy *e, int cam_x, int cam_y) {
     const uint16_t *frame = &g_character_frames[e->char_id][e->dir][e->frame][min_y * PLAYER_SPRITE_W + min_x];
     blit_stride(buffer, frame, PLAYER_SPRITE_W, bw, bh,
                 px - PLAYER_ANCHOR_X + min_x, py - PLAYER_ANCHOR_Y + min_y, cam_x, cam_y);
+    if (e->hit_timer > 0)
+        draw_hit_spark(buffer, px, py - 24, cam_x, cam_y, e->hit_timer);
+}
+
+static void draw_bone_lance(uint16_t *buffer, const BoneLance *lance, int cam_x, int cam_y) {
+    const uint8_t *b = s_lance_frame_bounds[lance->dir];
+    int bw = b[2], bh = b[3], min_x = b[0], min_y = b[1];
+    int px = player_screen_x(lance->x, lance->y);
+    int py = player_screen_y(lance->x, lance->y);
+    const uint16_t *frame = &g_bone_lance_frames[lance->dir][min_y * BONE_LANCE_SPRITE_W + min_x];
+    blit_stride(buffer, frame, BONE_LANCE_SPRITE_W, bw, bh,
+                px - BONE_LANCE_SPRITE_W / 2 + min_x,
+                py - BONE_LANCE_SPRITE_HEIGHT / 2 + min_y, cam_x, cam_y);
 }
 
 static void render_screen(uint16_t *buffer, int cam_x, int cam_y,
                           uint32_t *out_floor, uint32_t *out_shadow, uint32_t *out_blit) {
     if (out_floor) *out_floor = 0; // Hardware background handles floor scrolling in ~0.03 ms!
 
-    DrawItem items[MAX_DRAW_ITEMS + 1];
+    DrawItem items[MAX_DRAW_ITEMS + MAX_ENEMIES + MAX_PROJECTILES + 1];
     int count = 0;
 
     // Only freestanding pillars (obj > 24) need depth-sorted sprite rendering.
@@ -547,6 +615,24 @@ static void render_screen(uint16_t *buffer, int cam_x, int cam_y,
         }
     }
 
+    for (int p = 0; p < MAX_PROJECTILES; p++) {
+        BoneLance *lance = &s_lances[p];
+        if (!lance->active) continue;
+        int px = player_screen_x(lance->x, lance->y);
+        int py = player_screen_y(lance->x, lance->y);
+        if (px + BONE_LANCE_SPRITE_W / 2 < cam_x ||
+            px - BONE_LANCE_SPRITE_W / 2 > cam_x + SCREEN_W ||
+            py + BONE_LANCE_SPRITE_HEIGHT / 2 < cam_y ||
+            py - BONE_LANCE_SPRITE_HEIGHT / 2 > cam_y + SCREEN_H) continue;
+        if (count < MAX_DRAW_ITEMS + MAX_ENEMIES + MAX_PROJECTILES) {
+            items[count].depth = lance->x + lance->y;
+            items[count].sprite = -2 - MAX_ENEMIES - p;
+            items[count].cx = px;
+            items[count].cy = py;
+            count++;
+        }
+    }
+
     // Clear buffer (0 = transparent pixel) so hardware BG shows underneath
     dmaFillWords(0, buffer, SCREEN_W * SCREEN_H * 2);
 
@@ -559,7 +645,8 @@ static void render_screen(uint16_t *buffer, int cam_x, int cam_y,
                              g_character_shadow_bounds[s_player.char_id][s_player.dir],
                              items[i].cx - PLAYER_SHADOW_W / 2,
                              items[i].cy - PLAYER_SHADOW_H / 2, cam_x, cam_y);
-        } else if (items[i].sprite <= -2) {
+        } else if (items[i].sprite <= -2 &&
+                   items[i].sprite > -2 - MAX_ENEMIES) {
             int e_idx = -2 - items[i].sprite;
             const Enemy *e = &s_enemies[e_idx];
             draw_shadow_mask(buffer, g_character_shadow_masks[e->char_id][e->dir],
@@ -589,6 +676,8 @@ static void render_screen(uint16_t *buffer, int cam_x, int cam_y,
             blit_tile(buffer, sp, items[i].cx, items[i].cy, cam_x, cam_y);
         } else if (sp == -1) {
             draw_player(buffer, cam_x, cam_y);
+        } else if (sp <= -2 - MAX_ENEMIES) {
+            draw_bone_lance(buffer, &s_lances[-2 - MAX_ENEMIES - sp], cam_x, cam_y);
         } else {
             draw_enemy(buffer, &s_enemies[-2 - sp], cam_x, cam_y);
         }
@@ -650,7 +739,116 @@ static void enemies_init(void) {
         s_enemies[i].active = 1;
         s_enemies[i].step_count = 0;
         s_enemies[i].step_limit = 60 + (i * 15);
+        s_enemies[i].hp = spawn_defs[i].char_id == CHAR_CHARGER ? 90 : 40;
+        s_enemies[i].hit_timer = 0;
     }
+}
+
+static int abs_int(int v) { return v < 0 ? -v : v; }
+
+static int lance_dir_from_screen(int dx, int dy) {
+    int ax = abs_int(dx), ay = abs_int(dy);
+    if (ax * 2 < ay) dx = 0;
+    else if (ay * 2 < ax) dy = 0;
+    else {
+        dx = dx < 0 ? -1 : 1;
+        dy = dy < 0 ? -1 : 1;
+    }
+    if (dx == 0) return dy >= 0 ? 0 : 4;
+    if (dy == 0) return dx < 0 ? 2 : 6;
+    if (dx < 0) return dy > 0 ? 1 : 3;
+    return dy < 0 ? 5 : 7;
+}
+
+static void lance_fire(int aim_x, int aim_y, int touch_aim) {
+    if (s_lance_cooldown > 0) return;
+    int px = player_screen_x(s_player.x, s_player.y);
+    int py = player_screen_y(s_player.x, s_player.y);
+    int dir = lance_dir_from_screen(aim_x - px, aim_y - py);
+    static const int dir_dx[8] = { 0, -1, -1, -1, 0, 1, 1, 1 };
+    static const int dir_dy[8] = { 1, 1, 0, -1, -1, -1, 0, 1 };
+    int sx = dir_dx[dir], sy = dir_dy[dir];
+    fixed vx = sx * LANCE_SPEED;
+    fixed vy = sy * LANCE_SPEED;
+    if (sx && sy) { vx = (vx * 181) >> 8; vy = (vy * 181) >> 8; }
+    fixed dcol = (vx + (vy << 1)) / (TILE_HALF_W * 2);
+    fixed drow = ((vy << 1) - vx) / (TILE_HALF_W * 2);
+
+    for (int i = 0; i < MAX_PROJECTILES; i++) {
+        BoneLance *lance = &s_lances[i];
+        if (lance->active) continue;
+        lance->x = s_player.x + dcol;
+        lance->y = s_player.y + drow;
+        lance->vx = vx;
+        lance->vy = vy;
+        lance->hit_mask = 0;
+        lance->dir = dir;
+        lance->life = LANCE_LIFETIME;
+        lance->active = 1;
+        s_lance_cooldown = LANCE_COOLDOWN;
+        s_player.dir = dir;
+        char msg[48];
+        snprintf(msg, sizeof(msg), "BONE_LANCE_FIRE touch=%d dir=%d", touch_aim, dir);
+        nocashMessage(msg);
+        break;
+    }
+}
+
+static void lances_update(void) {
+    if (s_lance_cooldown > 0) s_lance_cooldown--;
+    for (int p = 0; p < MAX_PROJECTILES; p++) {
+        BoneLance *lance = &s_lances[p];
+        if (!lance->active) continue;
+        lance->x += (lance->vx + (lance->vy << 1)) / (TILE_HALF_W * 2);
+        lance->y += ((lance->vy << 1) - lance->vx) / (TILE_HALF_W * 2);
+        lance->life--;
+        int col = TO_INT(lance->x), row = TO_INT(lance->y);
+        if (col < 0 || col >= MAP_COLS || row < 0 || row >= MAP_ROWS ||
+            g_floor_map[row][col] == MAP_VOID ||
+            (g_obj_map[row][col] != 0 && g_obj_map[row][col] <= 24) ||
+            lance->life <= 0) {
+            lance->active = 0;
+            continue;
+        }
+        int lx = player_screen_x(lance->x, lance->y);
+        int ly = player_screen_y(lance->x, lance->y);
+        for (int i = 0; i < MAX_ENEMIES; i++) {
+            Enemy *e = &s_enemies[i];
+            if (!e->active || (lance->hit_mask & (1u << i))) continue;
+            int dx = lx - player_screen_x(e->x, e->y);
+            int dy = ly - player_screen_y(e->x, e->y);
+            if (dx * dx + dy * dy > 100) continue;
+            e->hp -= LANCE_DAMAGE;
+            e->hit_timer = 8;
+            lance->hit_mask |= (uint16_t)(1u << i);
+            char msg[64];
+            if (e->hp <= 0) {
+                e->active = 0;
+                snprintf(msg, sizeof(msg), "BONE_LANCE_KILL enemy=%d", i);
+            } else {
+                snprintf(msg, sizeof(msg), "BONE_LANCE_HIT enemy=%d hp=%d", i, e->hp);
+            }
+            nocashMessage(msg);
+        }
+    }
+}
+
+static int nearest_enemy_screen(int *out_x, int *out_y) {
+    int px = player_screen_x(s_player.x, s_player.y);
+    int py = player_screen_y(s_player.x, s_player.y);
+    int nearest = -1, best = 0x7FFFFFFF;
+    for (int i = 0; i < MAX_ENEMIES; i++) {
+        if (!s_enemies[i].active) continue;
+        int ex = player_screen_x(s_enemies[i].x, s_enemies[i].y);
+        int ey = player_screen_y(s_enemies[i].x, s_enemies[i].y);
+        int distance = abs_int(ex - px) + abs_int(ey - py);
+        if (distance < best) { best = distance; nearest = i; }
+    }
+    if (nearest >= 0) {
+        *out_x = player_screen_x(s_enemies[nearest].x, s_enemies[nearest].y);
+        *out_y = player_screen_y(s_enemies[nearest].x, s_enemies[nearest].y);
+    }
+    return nearest;
 }
 
 static void enemies_update(void) {
@@ -661,6 +859,7 @@ static void enemies_update(void) {
     for (int i = 0; i < MAX_ENEMIES; i++) {
         Enemy *e = &s_enemies[i];
         if (!e->active) continue;
+        if (e->hit_timer > 0) e->hit_timer--;
 
         fixed spd = g_characters[e->char_id].speed;
         int anim_period = g_characters[e->char_id].anim_period;
@@ -716,9 +915,9 @@ static void player_init(void) {
     enemies_init();
 }
 
-static void player_update(uint32_t keys, uint32_t keys_down) {
-    // Switch active character when pressing X, Y, SELECT or A
-    if (keys_down & (KEY_X | KEY_Y | KEY_SELECT | KEY_A)) {
+static void player_update(uint32_t keys, uint32_t keys_down, int touch_x, int touch_y, int touch_down) {
+    // Keep X/Y/SELECT for the existing character preview controls; A now casts Bone Lance.
+    if (keys_down & (KEY_X | KEY_Y | KEY_SELECT)) {
         s_player.char_id = (s_player.char_id + 1) % NUM_CHARACTERS;
         s_player.frame = 0;
         s_player.anim_timer = 0;
@@ -792,6 +991,21 @@ static void player_update(uint32_t keys, uint32_t keys_down) {
 
     s_cam_x = target_x;
     s_cam_y = target_y;
+
+    int aim_x = player_screen_x(s_player.x, s_player.y);
+    int aim_y = player_screen_y(s_player.x, s_player.y) - 16;
+    if (touch_down) {
+        aim_x = touch_x + s_cam_x;
+        aim_y = touch_y + s_cam_y;
+    } else if (keys & KEY_A) {
+        if (nearest_enemy_screen(&aim_x, &aim_y) < 0) {
+            static const int aim_dx[8] = { 0, -1, -1, -1, 0, 1, 1, 1 };
+            static const int aim_dy[8] = { 1, 1, 0, -1, -1, -1, 0, 1 };
+            aim_x += aim_dx[s_player.dir] * 32;
+            aim_y += aim_dy[s_player.dir] * 32;
+        }
+    }
+    if (touch_down || (keys & KEY_A)) lance_fire(aim_x, aim_y, touch_down);
 }
 
 volatile PerfStats g_perf = {
@@ -899,14 +1113,18 @@ int main(void) {
         scanKeys();
         uint32_t keys_held = keysHeld();
         uint32_t keys_down = keysDown();
+        touchPosition touch;
+        touchRead(&touch);
+        int touch_down = (keys_held & KEY_TOUCH) && touch.px < SCREEN_W && touch.py < SCREEN_H;
 
         if (keys_down & KEY_START) {
             g_perf.show_hud = !g_perf.show_hud;
         }
 
         uint32_t t0 = cpuGetTiming();
-        player_update(keys_held, keys_down);
+        player_update(keys_held, keys_down, touch.px, touch.py, touch_down);
         enemies_update();
+        lances_update();
         uint32_t logic_ticks = cpuGetTiming() - t0;
 
         uint32_t top_sh = 0, top_bl = 0;

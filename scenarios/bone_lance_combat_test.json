@@ -1,0 +1,15 @@
+{
+  "name": "bone_lance_combat_test",
+  "steps": [
+    { "frames": 180, "capture": "00_before_combat" },
+    { "button_down": "A", "frames": 120, "capture": "01_auto_fire" },
+    { "button_up": "A", "frames": 2, "capture": "02_release" }
+  ],
+  "assertions": {
+    "screen_changed": {
+      "from": "00_before_combat",
+      "to": "01_auto_fire",
+      "min_changed_pixels": 100
+    }
+  }
+}
