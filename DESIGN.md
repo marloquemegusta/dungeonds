@@ -8,7 +8,8 @@
 - **Técnica:** Sprites 2D pre-renderizados a partir de modelos 3D con animaciones esqueléticas (FBX / Blender).
 - **Proyección:** Isométrica / dimétrica a 60 grados en 8 direcciones.
 - **Herramienta de tuning:** `sprite_lab.html` para auditar escalado nearest-neighbor (1x, 2x, 4x, 8x), filtros de legibilidad (contorno oscuro, contraste) y animación en el sitio (*in-place*).
-- **Efecto de lanza ósea:** astillas estrechas y puntiagudas dibujadas proceduralmente, sin outline, con motas espectrales irregulares en lugar de sprites idénticos horneados.
+- **Lanza ósea:** salva de cinco astillas estrechas y puntiagudas dibujadas proceduralmente, sin outline; proyectiles rápidos con motas de tonos marfil/hueso.
+- **Muerte del enemigo:** al golpe final, la silueta se rompe en pequeños fragmentos extraídos de sus propios píxeles, que salen según el impacto y caen con una parábola breve.
 
 ## 3. Decisiones Abiertas / Pendientes de Definición
 - Mecánicas de juego y controles concretos: Pendiente de definición por el usuario.
