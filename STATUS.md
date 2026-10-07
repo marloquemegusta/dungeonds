@@ -154,6 +154,14 @@ Este documento registra el historial cronológico de sesiones de desarrollo veri
 - [x] GIF de 28 capturas de DeSmuME registrado en walkthrough; ampliado nearest-neighbor para revisión visual. Sin validación en consola física.
 - **Evidencia:** [walkthroughs/14-bone-particle-lance/walkthrough.md](walkthroughs/14-bone-particle-lance/walkthrough.md).
 
+## Sesión 15: Lanza Rápida y Fragmentación de Enemigos
+- [x] Duplicada la velocidad de los proyectiles de 4 a 8 px/frame, manteniendo el abanico y el daño.
+- [x] Eliminado el cian de la lanza y las motas; paleta de hueso y marfil.
+- [x] Al morir, el enemigo se rompe en seis parches 4×4 de su sprite; preservan los colores originales, salen con impulso del disparo, describen un arco corto y se ordenan por profundidad.
+- [x] Build BlocksDS y 3 contratos host: PASS. Escenarios DeSmuME para movimiento, botón, táctil, combate y muerte: PASS; GIFs de movimiento y fragmentación guardados. Sin validación en consola física.
+- **Inspiración TowerDS:** extracción de parches de píxeles originales y física breve de fragmentos; adaptado al framebuffer BGR555 y al presupuesto de DungeonDS.
+- **Evidencia:** [walkthroughs/15-bone-projectile-revision/walkthrough.md](walkthroughs/15-bone-projectile-revision/walkthrough.md).
+
 ## Próximas Líneas de Trabajo
 - Invocación de esbirros esqueletos y mecánicas de nigromancia activa.
 - Expansión de mazmorra procedural manteniendo el contrato dimétrico y presupuestos de 60 FPS.

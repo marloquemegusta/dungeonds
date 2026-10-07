@@ -88,7 +88,7 @@ static Enemy s_enemies[MAX_ENEMIES];
 #define MAX_PROJECTILES 16
 #define LANCE_PELLETS 5
 #define LANCE_COOLDOWN 16
-#define LANCE_SPEED 1024  // 4 projected pixels/frame in 8.8 fixed
+#define LANCE_SPEED 2048  // 8 projected pixels/frame in 8.8 fixed
 #define LANCE_SPREAD 256  // max side ratio 256/1024 (~14-degree half cone)
 #define LANCE_LIFETIME 40
 #define LANCE_DAMAGE 10
@@ -118,6 +118,19 @@ typedef struct {
 } BoneParticle;
 static BoneParticle s_bone_particles[MAX_BONE_PARTICLES];
 static uint8_t s_bone_effect_tick = 0;
+
+#define MAX_DEATH_CHUNKS 48
+#define DEATH_CHUNK_SIZE 4
+typedef struct {
+    fixed x, y;       // world tile position, 8.8 fixed
+    fixed vx, vy;     // world tile velocity per frame, 8.8 fixed
+    fixed z, vz;      // screen-space height/velocity in pixels, 8.8 fixed
+    uint16_t pixels[DEATH_CHUNK_SIZE * DEATH_CHUNK_SIZE];
+    uint8_t life;
+    uint8_t active;
+} DeathChunk;
+static DeathChunk s_death_chunks[MAX_DEATH_CHUNKS];
+static uint32_t s_death_chunk_seed;
 
 typedef struct {
     int depth;     // 8.8 fixed depth key (col+row in tile units)
@@ -540,7 +553,6 @@ static void draw_bone_lance(uint16_t *buffer, const BoneLance *lance, int cam_x,
     uint16_t bone = RGB15(27, 23, 17) | BIT(15);
     uint16_t ivory = RGB15(31, 30, 25) | BIT(15);
     uint16_t warm = RGB15(30, 25, 17) | BIT(15);
-    uint16_t soul = RGB15(7, 22, 29) | BIT(15);
 
     for (int i = 0; i < length; i++) {
         int along = i - half;
@@ -567,21 +579,20 @@ static void draw_bone_lance(uint16_t *buffer, const BoneLance *lance, int cam_x,
     if (((s_bone_effect_tick + lance->seed) & 3) == 0) {
         int tx = px + ((ux * (half + 1)) >> 8);
         int ty = py + ((uy * (half + 1)) >> 8);
-        bone_effect_pixel(buffer, tx, ty, cam_x, cam_y, soul);
+        bone_effect_pixel(buffer, tx, ty, cam_x, cam_y, warm);
     }
 }
 
 static void draw_bone_particles(uint16_t *buffer, int cam_x, int cam_y) {
-    static const uint16_t tones[3] = {
-        RGB15(5, 16, 21) | BIT(15), RGB15(8, 24, 30) | BIT(15),
-        RGB15(23, 22, 17) | BIT(15)
+    static const uint16_t tones[2] = {
+        RGB15(23, 22, 17) | BIT(15), RGB15(30, 27, 21) | BIT(15)
     };
     for (int i = 0; i < MAX_BONE_PARTICLES; i++) {
         const BoneParticle *p = &s_bone_particles[i];
         if (!p->active) continue;
         int x = p->x >> 8, y = p->y >> 8;
         int fade = p->life <= 2;
-        uint16_t color = fade ? tones[0] : tones[p->tone % 3];
+        uint16_t color = fade ? tones[0] : tones[p->tone % 2];
         bone_effect_pixel(buffer, x, y, cam_x, cam_y, color);
         if (p->size > 1 && p->life > 2)
             bone_effect_pixel(buffer, x + ((i & 1) ? 1 : 0), y + ((i & 1) ? 0 : 1),
@@ -589,11 +600,33 @@ static void draw_bone_particles(uint16_t *buffer, int cam_x, int cam_y) {
     }
 }
 
+static void draw_death_chunk(uint16_t *buffer, const DeathChunk *chunk, int cam_x, int cam_y) {
+    int cx = player_screen_x(chunk->x, chunk->y);
+    int ground_y = player_screen_y(chunk->x, chunk->y);
+    bone_effect_pixel(buffer, cx, ground_y + 2, cam_x, cam_y, RGB15(2, 2, 2) | BIT(15));
+    int cy = ground_y - (chunk->z >> FIXED_SHIFT);
+    int left = cx - DEATH_CHUNK_SIZE / 2 - cam_x;
+    int top = cy - DEATH_CHUNK_SIZE / 2 - cam_y;
+    if (left >= SCREEN_W || left + DEATH_CHUNK_SIZE <= 0 ||
+        top >= SCREEN_H || top + DEATH_CHUNK_SIZE <= 0) return;
+
+    for (int y = 0; y < DEATH_CHUNK_SIZE; y++) {
+        int sy = top + y;
+        if (sy < 0 || sy >= SCREEN_H) continue;
+        for (int x = 0; x < DEATH_CHUNK_SIZE; x++) {
+            int sx = left + x;
+            uint16_t color = chunk->pixels[y * DEATH_CHUNK_SIZE + x];
+            if (sx >= 0 && sx < SCREEN_W && (color & BIT(15)))
+                buffer[sy * SCREEN_W + sx] = color;
+        }
+    }
+}
+
 static void render_screen(uint16_t *buffer, int cam_x, int cam_y,
                           uint32_t *out_floor, uint32_t *out_shadow, uint32_t *out_blit) {
     if (out_floor) *out_floor = 0; // Hardware background handles floor scrolling in ~0.03 ms!
 
-    DrawItem items[MAX_DRAW_ITEMS + MAX_ENEMIES + MAX_PROJECTILES + 1];
+    DrawItem items[MAX_DRAW_ITEMS + MAX_ENEMIES + MAX_PROJECTILES + MAX_DEATH_CHUNKS + 1];
     int count = 0;
 
     // Only freestanding pillars (obj > 24) need depth-sorted sprite rendering.
@@ -676,9 +709,25 @@ static void render_screen(uint16_t *buffer, int cam_x, int cam_y,
         int py = player_screen_y(lance->x, lance->y);
         if (px + 8 < cam_x || px - 8 > cam_x + SCREEN_W ||
             py + 8 < cam_y || py - 8 > cam_y + SCREEN_H) continue;
-        if (count < MAX_DRAW_ITEMS + MAX_ENEMIES + MAX_PROJECTILES) {
+        if (count < MAX_DRAW_ITEMS + MAX_ENEMIES + MAX_PROJECTILES + MAX_DEATH_CHUNKS) {
             items[count].depth = lance->x + lance->y;
             items[count].sprite = -2 - MAX_ENEMIES - p;
+            items[count].cx = px;
+            items[count].cy = py;
+            count++;
+        }
+    }
+
+    for (int i = 0; i < MAX_DEATH_CHUNKS; i++) {
+        DeathChunk *chunk = &s_death_chunks[i];
+        if (!chunk->active) continue;
+        int px = player_screen_x(chunk->x, chunk->y);
+        int py = player_screen_y(chunk->x, chunk->y) - (chunk->z >> FIXED_SHIFT);
+        if (px + DEATH_CHUNK_SIZE < cam_x || px - DEATH_CHUNK_SIZE > cam_x + SCREEN_W ||
+            py + DEATH_CHUNK_SIZE < cam_y || py - DEATH_CHUNK_SIZE > cam_y + SCREEN_H) continue;
+        if (count < MAX_DRAW_ITEMS + MAX_ENEMIES + MAX_PROJECTILES + MAX_DEATH_CHUNKS) {
+            items[count].depth = chunk->x + chunk->y;
+            items[count].sprite = -2 - MAX_ENEMIES - MAX_PROJECTILES - i;
             items[count].cx = px;
             items[count].cy = py;
             count++;
@@ -728,6 +777,9 @@ static void render_screen(uint16_t *buffer, int cam_x, int cam_y,
             blit_tile(buffer, sp, items[i].cx, items[i].cy, cam_x, cam_y);
         } else if (sp == -1) {
             draw_player(buffer, cam_x, cam_y);
+        } else if (sp <= -2 - MAX_ENEMIES - MAX_PROJECTILES) {
+            int chunk_idx = -2 - MAX_ENEMIES - MAX_PROJECTILES - sp;
+            draw_death_chunk(buffer, &s_death_chunks[chunk_idx], cam_x, cam_y);
         } else if (sp <= -2 - MAX_ENEMIES) {
             draw_bone_lance(buffer, &s_lances[-2 - MAX_ENEMIES - sp], cam_x, cam_y);
         } else {
@@ -881,8 +933,87 @@ static void emit_bone_particle(const BoneLance *lance, int slot) {
     p->vy = -lance->vy / 3 + (perp_y * jitter >> 8);
     p->life = (uint8_t)(4 + ((hash >> 19) & 3u));
     p->size = (uint8_t)(1 + ((hash >> 12) & 1u));
-    p->tone = (uint8_t)((hash >> 7) % 3u);
+    p->tone = (uint8_t)((hash >> 7) % 2u);
     p->active = 1;
+}
+
+static void death_chunks_spawn(const Enemy *e, fixed hit_vx, fixed hit_vy) {
+    const uint8_t *bounds = s_char_frame_bounds[e->char_id][e->dir][e->frame];
+    int min_x = bounds[0], min_y = bounds[1];
+    int width = bounds[2], height = bounds[3];
+    if (width == 0 || height == 0) return;
+    const uint16_t *frame = g_character_frames[e->char_id][e->dir][e->frame];
+
+    for (int piece = 0; piece < 6; piece++) {
+        int column = piece & 1;
+        int row = piece >> 1;
+        int sx = min_x + ((2 * column + 1) * width) / 4 - DEATH_CHUNK_SIZE / 2;
+        int sy = min_y + ((row + 1) * height) / 4 - DEATH_CHUNK_SIZE / 2;
+        int max_x = min_x + width - DEATH_CHUNK_SIZE;
+        int max_y = min_y + height - DEATH_CHUNK_SIZE;
+        if (max_x < min_x) max_x = min_x;
+        if (max_y < min_y) max_y = min_y;
+        if (max_x > PLAYER_SPRITE_W - DEATH_CHUNK_SIZE) max_x = PLAYER_SPRITE_W - DEATH_CHUNK_SIZE;
+        if (max_y > PLAYER_SPRITE_H - DEATH_CHUNK_SIZE) max_y = PLAYER_SPRITE_H - DEATH_CHUNK_SIZE;
+        if (sx < min_x) sx = min_x;
+        if (sy < min_y) sy = min_y;
+        if (sx > max_x) sx = max_x;
+        if (sy > max_y) sy = max_y;
+
+        uint32_t seed = s_death_chunk_seed++;
+        DeathChunk *chunk = &s_death_chunks[seed % MAX_DEATH_CHUNKS];
+        int opaque = 0;
+        for (int y = 0; y < DEATH_CHUNK_SIZE; y++) {
+            for (int x = 0; x < DEATH_CHUNK_SIZE; x++) {
+                uint16_t color = frame[(sy + y) * PLAYER_SPRITE_W + sx + x];
+                chunk->pixels[y * DEATH_CHUNK_SIZE + x] = color;
+                opaque |= (color & BIT(15)) != 0;
+            }
+        }
+        if (!opaque) {
+            chunk->active = 0;
+            continue;
+        }
+
+        uint32_t hash = seed * 0x45d9f3bu + (uint32_t)piece * 0x27d4eb2du;
+        hash ^= hash >> 16;
+        int offset_x = sx + DEATH_CHUNK_SIZE / 2 - PLAYER_ANCHOR_X;
+        int offset_y = sy + DEATH_CHUNK_SIZE / 2 - PLAYER_ANCHOR_Y;
+        fixed screen_x = offset_x * (1 << FIXED_SHIFT);
+        fixed screen_y = offset_y * (1 << FIXED_SHIFT);
+        chunk->x = e->x + (screen_x / TILE_HALF_W + screen_y / TILE_HALF_H) / 2;
+        chunk->y = e->y + (screen_y / TILE_HALF_H - screen_x / TILE_HALF_W) / 2;
+
+        fixed impulse_x = hit_vx / 16 + (int)(hash & 0x3ffu) - 512;
+        fixed impulse_y = hit_vy / 16 + (int)((hash >> 10) & 0x3ffu) - 512;
+        chunk->vx = (impulse_x / TILE_HALF_W + impulse_y / TILE_HALF_H) / 2;
+        chunk->vy = (impulse_y / TILE_HALF_H - impulse_x / TILE_HALF_W) / 2;
+        chunk->z = (fixed)(1 + ((hash >> 20) & 3u)) << FIXED_SHIFT;
+        chunk->vz = (fixed)(512 + ((hash >> 18) & 255u));
+        chunk->life = (uint8_t)(28 + ((hash >> 24) & 7u));
+        chunk->active = 1;
+    }
+}
+
+static void death_chunks_update(void) {
+    for (int i = 0; i < MAX_DEATH_CHUNKS; i++) {
+        DeathChunk *chunk = &s_death_chunks[i];
+        if (!chunk->active) continue;
+        chunk->x += chunk->vx;
+        chunk->y += chunk->vy;
+        if (chunk->z > 0 || chunk->vz > 0) {
+            chunk->z += chunk->vz;
+            chunk->vz -= 48;
+            if (chunk->z <= 0) {
+                chunk->z = 0;
+                chunk->vz = 0;
+            }
+        } else {
+            chunk->vx = (chunk->vx * 3) / 4;
+            chunk->vy = (chunk->vy * 3) / 4;
+        }
+        if (--chunk->life == 0) chunk->active = 0;
+    }
 }
 
 static void bone_particles_update(void) {
@@ -898,6 +1029,7 @@ static void bone_particles_update(void) {
 static void lances_update(void) {
     s_bone_effect_tick++;
     bone_particles_update();
+    death_chunks_update();
     if (s_lance_cooldown > 0) s_lance_cooldown--;
     for (int p = 0; p < MAX_PROJECTILES; p++) {
         BoneLance *lance = &s_lances[p];
@@ -929,6 +1061,7 @@ static void lances_update(void) {
             lance->hit_mask |= (uint16_t)(1u << i);
             char msg[64];
             if (e->hp <= 0) {
+                death_chunks_spawn(e, lance->vx, lance->vy);
                 e->active = 0;
                 snprintf(msg, sizeof(msg), "BONE_LANCE_KILL enemy=%d", i);
             } else {

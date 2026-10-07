@@ -31,5 +31,6 @@
 
 ### 3.2. Efectos Procedurales en Runtime
 - La lanza ósea no usa spritesheets ni outlines: rasteriza una astilla de píxeles estrecha y puntiaguda, orientada por su velocidad fija.
-- Las motas espectrales salen de un pool de 32 partículas; cada una usa posición y deriva 8.8, semilla por proyectil, tono/tamaño variables y 4–7 frames de vida.
-- El dibujado escribe directamente en el framebuffer BGR555; no instancia modelos 3D ni consume entradas OAM.
+- Las motas del proyectil salen de un pool de 32 partículas; cada una usa posición y deriva 8.8, semilla por proyectil, tonos de hueso y 4–7 frames de vida. La velocidad de la salva es 8 px/frame en punto fijo y conserva el abanico anterior.
+- Al morir un enemigo, seis parches de 4×4 copian sus colores BGR555 reales a un pool de 48 fragmentos. Posición/velocidad planar y altura usan 8.8; la gravedad frena el arco y cada parche conserva su color durante 28–35 frames.
+- Los fragmentos entran en el orden de profundidad del render y dibujan una sombra puntual en el suelo. El dibujado escribe directamente en BGR555; no instancia modelos 3D ni consume entradas OAM.
