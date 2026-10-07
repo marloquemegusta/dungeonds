@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>DungeonDS — Interactive Shader & Sprite Lab</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --panel: #161922;
+    --card: #1f2330;
+    --border: #2d3345;
+    --accent: #e84118;
+    --accent-hover: #c23616;
+    --blue: #00a8ff;
+    --text: #f5f6fa;
+    --muted: #8c92a4;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace;
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
+  }
+  #sidebar {
+    width: 380px;
+    background: var(--panel);
+    border-right: 1px solid var(--border);
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    overflow-y: auto;
+  }
+  h1 {
+    font-size: 1.15rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .tag {
+    background: #272c3d;
+    color: var(--blue);
+    font-size: 0.7rem;
+    padding: 2px 8px;
+    border-radius: 4px;
+    text-transform: uppercase;
+    font-weight: 700;
+  }
+  .group {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .group-title {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--muted);
+  }
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .field-header {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.8rem;
+    color: #dcdde1;
+  }
+  .val {
+    font-family: monospace;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  select, input[type="range"] {
+    width: 100%;
+    accent-color: var(--blue);
+  }
+  select {
+    background: #11131a;
+    color: var(--text);
+    border: 1px solid var(--border);
+    padding: 8px;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    cursor: pointer;
+  }
+  button#btnRender {
+    background: var(--accent);
+    color: white;
+    border: none;
+    padding: 12px;
+    border-radius: 6px;
+    font-weight: 700;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  button#btnRender:hover { background: var(--accent-hover); }
+  button#btnRender:disabled {
+    background: #383e52;
+    color: #718093;
+    cursor: not-allowed;
+  }
+  #main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background: #090a0f;
+    position: relative;
+    overflow: hidden;
+  }
+  #topbar {
+    height: 56px;
+    border-bottom: 1px solid var(--border);
+    background: var(--panel);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 24px;
+    font-size: 0.85rem;
+  }
+  .kinematics-badge {
+    background: #1e272e;
+    border: 1px solid var(--border);
+    padding: 6px 14px;
+    border-radius: 6px;
+    font-family: monospace;
+    font-size: 0.8rem;
+    display: flex;
+    gap: 16px;
+  }
+  .kinematics-badge span b { color: #fbc531; }
+  #previewArea {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    position: relative;
+    overflow: auto;
+  }
+  #previewImg {
+    max-width: 95%;
+    max-height: 90%;
+    border-radius: 8px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
+    border: 1px solid var(--border);
+    image-rendering: pixelated;
+  }
+  #spinner {
+    position: absolute;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    background: rgba(15, 17, 23, 0.85);
+    padding: 30px 40px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    backdrop-filter: blur(8px);
+    z-index: 10;
+  }
+  .loader {
+    border: 4px solid #2f3640;
+    border-top: 4px solid var(--accent);
+    border-radius: 50%;
+    width: 36px;
+    height: 36px;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+  .history-panel {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding: 10px 24px;
+    background: #11141c;
+    border-top: 1px solid var(--border);
+  }
+  .history-thumb {
+    width: 90px;
+    height: 60px;
+    object-fit: cover;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    cursor: pointer;
+    opacity: 0.7;
+    transition: 0.2s;
+  }
+  .history-thumb:hover, .history-thumb.active {
+    opacity: 1;
+    border-color: var(--blue);
+  }
+</style>
+</head>
+<body>
+
+<div id="sidebar">
+  <h1><span>⚔️ DS Shader Lab</span> <span class="tag">Blender Live</span></h1>
+
+  <div class="group">
+    <div class="group-title">1. Modelo y Pose</div>
+    <div class="field">
+      <div class="field-header"><span>Personaje</span></div>
+      <select id="charSelect">
+        <option value="hero">Héroe Nigromante (Walking.fbx)</option>
+        <option value="charger">Cargador / Maw (Run.fbx)</option>
+        <option value="skeleton">Esqueleto (skeleton.fbx)</option>
+      </select>
+    </div>
+    <div class="field">
+      <div class="field-header"><span>Escala Visual Relativa</span> <span class="val" id="scaleVal">1.40x</span></div>
+      <input type="range" id="scaleRange" min="1.0" max="2.4" step="0.05" value="1.40">
+    </div>
+    <div class="field">
+      <div class="field-header"><span>Elevación Cámara (Ángulo)</span> <span class="val" id="elevVal">30°</span></div>
+      <input type="range" id="elevRange" min="25" max="65" step="5" value="30">
+    </div>
+  </div>
+
+  <div class="group">
+    <div class="group-title">2. Iluminación Direccional (Antorcha)</div>
+    <div class="field">
+      <div class="field-header"><span>Energía Luz Clave (Key Sun)</span> <span class="val" id="keyVal">4.5</span></div>
+      <input type="range" id="keyRange" min="1.0" max="8.0" step="0.25" value="4.5">
+    </div>
+    <div class="field">
+      <div class="field-header"><span>Luz Relleno / Sombras (Fill)</span> <span class="val" id="fillVal">0.85</span></div>
+      <input type="range" id="fillRange" min="0.10" max="1.50" step="0.05" value="0.85">
+    </div>
+    <div class="field">
+      <div class="field-header"><span>Luz Ambiente (World)</span> <span class="val" id="worldVal">0.35</span></div>
+      <input type="range" id="worldRange" min="0.05" max="0.80" step="0.05" value="0.35">
+    </div>
+  </div>
+
+  <div class="group">
+    <div class="group-title">3. Shaders y Normal Maps</div>
+    <div class="field">
+      <div class="field-header"><span>Fuerza Normal Map</span> <span class="val" id="normVal">35%</span></div>
+      <input type="range" id="normRange" min="0.0" max="1.0" step="0.05" value="0.35">
+    </div>
+    <div class="field">
+      <div class="field-header"><span>Samples Cycles (Calidad)</span> <span class="val" id="sampleVal">12</span></div>
+      <input type="range" id="sampleRange" min="8" max="24" step="4" value="12">
+    </div>
+  </div>
+
+  <div class="group">
+    <div class="group-title">4. Post-Proceso 2D & Grading</div>
+    <div class="field">
+      <div class="field-header"><span>Contraste</span> <span class="val" id="contVal">1.15</span></div>
+      <input type="range" id="contRange" min="0.90" max="1.45" step="0.02" value="1.15">
+    </div>
+    <div class="field">
+      <div class="field-header"><span>Brillo</span> <span class="val" id="brVal">1.00</span></div>
+      <input type="range" id="brRange" min="0.85" max="1.25" step="0.02" value="1.00">
+    </div>
+    <div class="field">
+      <div class="field-header"><span>Saturación</span> <span class="val" id="satVal">1.15</span></div>
+      <input type="range" id="satRange" min="0.80" max="1.50" step="0.05" value="1.15">
+    </div>
+  </div>
+
+  <button id="btnRender">
+    <span>⚡ Renderizar con Blender</span>
+  </button>
+</div>
+
+<div id="main">
+  <div id="topbar">
+    <div id="statusText">Listo para procesar. Modifica los parámetros y pulsa renderizar.</div>
+    <div class="kinematics-badge">
+      <span>Zancada: <b id="kStride">23.8 px</b></span>
+      <span>Speed C: <b id="kSpeed">254 (8.8)</b></span>
+      <span>Periodo: <b id="kPeriod">3 ticks</b></span>
+    </div>
+  </div>
+
+  <div id="previewArea">
+    <div id="spinner">
+      <div class="loader"></div>
+      <div>Horneando 8 direcciones con Blender Cycles...</div>
+    </div>
+    <img id="previewImg" src="/runs/placeholder.gif" alt="Cargando vista previa...">
+  </div>
+
+  <div class="history-panel" id="historyBar">
+    <!-- Miniaturas de renders anteriores -->
+  </div>
+</div>
+
+<script>
+  const charSelect = document.getElementById('charSelect');
+  const scaleRange = document.getElementById('scaleRange');
+  const elevRange = document.getElementById('elevRange');
+  const keyRange = document.getElementById('keyRange');
+  const fillRange = document.getElementById('fillRange');
+  const worldRange = document.getElementById('worldRange');
+  const normRange = document.getElementById('normRange');
+  const sampleRange = document.getElementById('sampleRange');
+  const contRange = document.getElementById('contRange');
+  const brRange = document.getElementById('brRange');
+  const satRange = document.getElementById('satRange');
+
+  const scaleVal = document.getElementById('scaleVal');
+  const elevVal = document.getElementById('elevVal');
+  const keyVal = document.getElementById('keyVal');
+  const fillVal = document.getElementById('fillVal');
+  const worldVal = document.getElementById('worldVal');
+  const normVal = document.getElementById('normVal');
+  const sampleVal = document.getElementById('sampleVal');
+  const contVal = document.getElementById('contVal');
+  const brVal = document.getElementById('brVal');
+  const satVal = document.getElementById('satVal');
+
+  const btnRender = document.getElementById('btnRender');
+  const spinner = document.getElementById('spinner');
+  const previewImg = document.getElementById('previewImg');
+  const statusText = document.getElementById('statusText');
+  const historyBar = document.getElementById('historyBar');
+
+  const kStride = document.getElementById('kStride');
+  const kSpeed = document.getElementById('kSpeed');
+  const kPeriod = document.getElementById('kPeriod');
+
+  // Sincronizar sliders y labels
+  scaleRange.oninput = () => scaleVal.textContent = parseFloat(scaleRange.value).toFixed(2) + 'x';
+  elevRange.oninput = () => elevVal.textContent = elevRange.value + '°';
+  keyRange.oninput = () => keyVal.textContent = parseFloat(keyRange.value).toFixed(2);
+  fillRange.oninput = () => fillVal.textContent = parseFloat(fillRange.value).toFixed(2);
+  worldRange.oninput = () => worldVal.textContent = parseFloat(worldRange.value).toFixed(2);
+  normRange.oninput = () => normVal.textContent = Math.round(normRange.value * 100) + '%';
+  sampleRange.oninput = () => sampleVal.textContent = sampleRange.value;
+  contRange.oninput = () => contVal.textContent = parseFloat(contRange.value).toFixed(2);
+  brRange.oninput = () => brVal.textContent = parseFloat(brRange.value).toFixed(2);
+  satRange.oninput = () => satVal.textContent = parseFloat(satRange.value).toFixed(2);
+
+  charSelect.onchange = () => {
+    if (charSelect.value === 'hero') { scaleRange.value = 1.40; scaleVal.textContent = '1.40x'; }
+    else if (charSelect.value === 'charger') { scaleRange.value = 1.35; scaleVal.textContent = '1.35x'; }
+    else if (charSelect.value === 'skeleton') { scaleRange.value = 1.35; scaleVal.textContent = '1.35x'; }
+  };
+
+  async function triggerRender() {
+    btnRender.disabled = true;
+    spinner.style.display = 'flex';
+    statusText.textContent = `Renderizando ${charSelect.value} con Blender (Cycles ${sampleRange.value} samples)...`;
+
+    const payload = {
+      character: charSelect.value,
+      scale: parseFloat(scaleRange.value),
+      elevation: parseFloat(elevRange.value),
+      key_energy: parseFloat(keyRange.value),
+      fill_energy: parseFloat(fillRange.value),
+      world_strength: parseFloat(worldRange.value),
+      normal_strength: parseFloat(normRange.value),
+      samples: parseInt(sampleRange.value),
+      contrast: parseFloat(contRange.value),
+      brightness: parseFloat(brRange.value),
+      saturation: parseFloat(satRange.value),
+      outline: true
+    };
+
+    try {
+      const resp = await fetch('/api/render', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await resp.json();
+
+      if (data.error) {
+        alert("Error renderizando: " + data.error);
+        statusText.textContent = "Error en el render.";
+      } else {
+        previewImg.src = data.gif_url + '?t=' + Date.now();
+        kStride.textContent = data.stride_px + ' px';
+        kSpeed.textContent = data.speed_fixed_8_8 + ' (8.8)';
+        kPeriod.textContent = data.anim_period + ' ticks';
+        statusText.textContent = `✅ Render completado en ${data.job_id}. Acoplamiento: ${data.speed_fixed_8_8} (8.8 fixed)`;
+
+        // Añadir miniatura a la barra de historial
+        const thumb = document.createElement('img');
+        thumb.src = data.gif_url;
+        thumb.className = 'history-thumb active';
+        thumb.title = data.job_id;
+        thumb.onclick = () => {
+          document.querySelectorAll('.history-thumb').forEach(t => t.classList.remove('active'));
+          thumb.classList.add('active');
+          previewImg.src = data.gif_url;
+        };
+        historyBar.prepend(thumb);
+      }
+    } catch (err) {
+      alert("Error de red: " + err);
+      statusText.textContent = "Error de red.";
+    } finally {
+      spinner.style.display = 'none';
+      btnRender.disabled = false;
+    }
+  }
+
+  btnRender.onclick = triggerRender;
+
+  // Render inicial al arrancar
+  window.onload = () => {
+    // Si ya hay runs generados, podemos cargar el primero o esperar orden
+  };
+</script>
+
+</body>
+</html>
