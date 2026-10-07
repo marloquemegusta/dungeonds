@@ -51,6 +51,8 @@ static int s_bot_bg = 0;
 static u16 *s_top_map_ptr = NULL;
 static u16 *s_bot_map_ptr = NULL;
 static u16 *s_top_vram = NULL;
+static u16 *s_bot_vram_buf0 = NULL;
+static u16 *s_bot_vram_buf1 = NULL;
 static int s_active_vram_bank = 0;
 
 // Dual-buffered rendering buffers for top and bottom screens (cleared transparently for entities)
@@ -567,18 +569,12 @@ static void present_both_screens(void) {
 
     swiWaitForVBlank();
 
-    // Bottom screen page-flip
+    // Bottom screen page-flip: switch mapBase between 8 (VRAM_A) and 16 (VRAM_B)
     if (s_active_vram_bank == 0) {
-        // Swap to display VRAM_B (mapBase 4 = 64KB into Main BG)
-        videoBgDisable(s_bot_bg);
-        s_bot_bg = bgInit(2, BgType_Bmp16, BgSize_B16_256x256, 4, 0);
-        bgSetPriority(s_bot_bg, 0);
+        bgSetMapBase(s_bot_bg, 16); // Display VRAM_B (slot 2 = 0x06040000)
         s_active_vram_bank = 1;
     } else {
-        // Swap to display VRAM_A (mapBase 0)
-        videoBgDisable(s_bot_bg);
-        s_bot_bg = bgInit(2, BgType_Bmp16, BgSize_B16_256x256, 0, 0);
-        bgSetPriority(s_bot_bg, 0);
+        bgSetMapBase(s_bot_bg, 8);  // Display VRAM_A (slot 1 = 0x06020000)
         s_active_vram_bank = 0;
     }
 }
@@ -791,19 +787,25 @@ int main(void) {
     lcdMainOnBottom();
 
     // Main Engine (Bottom Screen): Mode 5
-    // BG2: 16-bit Bitmap for Entities & dynamic shadows (Double-buffered)
-    // BG1: Text8bpp Hardware Tiled Floor & Walls (tileBase 24, mapBase 28 in VRAM_D slot 3)
-    videoSetMode(MODE_5_2D | DISPLAY_CHAR_BASE(6) | DISPLAY_SCREEN_BASE(6));
-    vramSetBankA(VRAM_A_MAIN_BG_0x06000000); // 128 KB for BG2 Bmp16 buffer 0 (mapBase 0)
-    vramSetBankB(VRAM_B_MAIN_BG_0x06020000); // 128 KB for BG2 Bmp16 buffer 1 (mapBase 4)
-    vramSetBankD(VRAM_D_MAIN_BG_0x06060000); // 128 KB for BG1 Text8bpp (tileBase 0, mapBase 16 in slot 6)
+    // Pure standard mapping without DISPCNT offsets (zero-shift):
+    // Slot 0 (0x06000000 .. 0x06020000, 128 KB): VRAM_D for BG1 Text8bpp (tileBase 0, mapBase 16 = 0x06008000)
+    // Slot 1 (0x06020000 .. 0x06040000, 128 KB): VRAM_A for BG2 Bmp16 Buffer 0 (mapBase 8 = 0x06020000)
+    // Slot 2 (0x06040000 .. 0x06060000, 128 KB): VRAM_B for BG2 Bmp16 Buffer 1 (mapBase 16 = 0x06040000)
+    videoSetMode(MODE_5_2D);
+    vramSetBankD(VRAM_D_MAIN_BG_0x06000000); // 128 KB for BG1 Text8bpp in slot 0
+    vramSetBankA(VRAM_A_MAIN_BG_0x06020000); // 128 KB for BG2 Bmp16 buffer 0 in slot 1
+    vramSetBankB(VRAM_B_MAIN_BG_0x06040000); // 128 KB for BG2 Bmp16 buffer 1 in slot 2
+
+    // Pointers to the two double-buffered VRAM surfaces in CPU address space:
+    s_bot_vram_buf0 = (u16 *)0x06020000;
+    s_bot_vram_buf1 = (u16 *)0x06040000;
 
     // Load Background Palette to Main and Sub engines
     dmaCopyWords(3, g_dungeon_bg_palette, BG_PALETTE, DUNGEON_BG_PALETTE_SIZE * 2);
     dmaCopyWords(3, g_dungeon_bg_palette, BG_PALETTE_SUB, DUNGEON_BG_PALETTE_SIZE * 2);
 
     // Initialize Main BG1 (Hardware Tiled Floor)
-    // In slot 6 (0x06060000): tileBase 0 = 0x06060000 (31.4 KB tiles), mapBase 16 = 0x06068000 (2 KB map)
+    // tileBase 0 = 0x06000000 (30 KB tiles), mapBase 16 = 0x06008000 (2 KB map)
     int bot_hw_bg = bgInit(1, BgType_Text8bpp, BgSize_T_256x256, 16, 0);
     bgSetPriority(bot_hw_bg, 3); // Lowest priority (drawn behind entities)
     s_bot_map_ptr = bgGetMapPtr(bot_hw_bg);
@@ -811,7 +813,8 @@ int main(void) {
     dmaCopyWords(3, g_dungeon_bg_tiles, bot_tile_ptr, sizeof(g_dungeon_bg_tiles));
 
     // Initialize Main BG2 (Double-buffered 16-bit Bitmap for Entities & dynamic shadows)
-    s_bot_bg = bgInit(2, BgType_Bmp16, BgSize_B16_256x256, 0, 0); // VRAM_A
+    // Initially displays Buffer 0 (mapBase 8 = 0x06020000)
+    s_bot_bg = bgInit(2, BgType_Bmp16, BgSize_B16_256x256, 8, 0);
     bgSetPriority(s_bot_bg, 0); // High priority (drawn on top of BG1)
     s_active_vram_bank = 0;
 
@@ -851,9 +854,8 @@ int main(void) {
     render_screen(s_top_screen_buf, s_cam_x, s_cam_y - SCREEN_H, NULL, NULL, NULL);
     dmaCopyWords(3, s_top_screen_buf, s_top_vram, SCREEN_W * SCREEN_H * 2);
 
-    u16 *initial_bot_vram = (u16 *)bgGetGfxPtr(s_bot_bg);
     render_screen(s_bot_screen_buf, s_cam_x, s_cam_y, NULL, NULL, NULL);
-    dmaCopyWords(3, s_bot_screen_buf, initial_bot_vram, SCREEN_W * SCREEN_H * 2);
+    dmaCopyWords(3, s_bot_screen_buf, s_bot_vram_buf0, SCREEN_W * SCREEN_H * 2);
 
     while (1) {
         uint32_t frame_start_ticks = cpuGetTiming();
@@ -892,8 +894,8 @@ int main(void) {
         // Render entities and dynamic shadows for bottom screen
         uint32_t t2 = cpuGetTiming();
         render_screen(s_bot_screen_buf, s_cam_x, s_cam_y, NULL, &bot_sh, &bot_bl);
-        // Copy directly into back-buffer VRAM
-        u16 *back_vram = (s_active_vram_bank == 0) ? (u16 *)VRAM_B : (u16 *)VRAM_A;
+        // Copy directly into back-buffer VRAM surface (in CPU address space)
+        u16 *back_vram = (s_active_vram_bank == 0) ? s_bot_vram_buf1 : s_bot_vram_buf0;
         dmaCopyWords(3, s_bot_screen_buf, back_vram, SCREEN_W * SCREEN_H * 2);
         uint32_t bot_ticks = cpuGetTiming() - t2;
 
