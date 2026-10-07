@@ -1,0 +1,15 @@
+{
+  "name": "bone_particle_motion_preview",
+  "steps": [
+    { "frames": 180, "capture": "00_idle" },
+    { "button_down": "A", "frames": 32, "capture_sequence": "bone_motion", "capture_every": 1, "capture": "01_after_cast" },
+    { "button_up": "A", "frames": 2, "capture": "02_released" }
+  ],
+  "assertions": {
+    "screen_changed": {
+      "from": "00_idle",
+      "to": "01_after_cast",
+      "min_changed_pixels": 100
+    }
+  }
+}

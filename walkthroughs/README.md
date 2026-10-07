@@ -27,4 +27,5 @@ Resúmenes acumulativos y auditables de cada entrega y avance de desarrollo en `
 | 11 | Mejora de Rendimiento y Pipeline: Background Scroll Streaming, Stutter y Alineación de Pilares | [`11-perf-bg-scroll-and-rendering/`](11-perf-bg-scroll-and-rendering/walkthrough.md) | Completado |
 | 12 | Prototipo de combate: Lanza ósea (A y lápiz táctil) | [12-bone-lance-prototype](12-bone-lance-prototype/walkthrough.md) | Validado en emulador |
 | 13 | Escopeta de perdigones de hueso (5 astillas, <1 m) | [13-bone-shotgun-pellets](13-bone-shotgun-pellets/walkthrough.md) | Validado en emulador |
+| 14 | Lanza ósea procedural (astillas sin outline y motas espectrales) | [14-bone-particle-lance](14-bone-particle-lance/walkthrough.md) | Prototipo GIF validado en emulador |
 

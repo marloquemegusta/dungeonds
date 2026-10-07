@@ -2,7 +2,6 @@
 #include "dungeon_data.h"
 #include "player_sprite.h"
 #include "dungeon_bg_tiles.h"
-#include "bone_lance_sprite.h"
 
 // ---------------------------------------------------------------------------
 // DungeonDS - dimetric dungeon renderer
@@ -99,12 +98,26 @@ typedef struct {
     fixed vx;
     fixed vy;
     uint16_t hit_mask;
-    int dir;
     int life;
     int active;
+    uint8_t seed;
 } BoneLance;
 static BoneLance s_lances[MAX_PROJECTILES];
 static int s_lance_cooldown = 0;
+
+#define MAX_BONE_PARTICLES 32
+typedef struct {
+    fixed x;
+    fixed y;
+    fixed vx;
+    fixed vy;
+    uint8_t life;
+    uint8_t size;
+    uint8_t tone;
+    uint8_t active;
+} BoneParticle;
+static BoneParticle s_bone_particles[MAX_BONE_PARTICLES];
+static uint8_t s_bone_effect_tick = 0;
 
 typedef struct {
     int depth;     // 8.8 fixed depth key (col+row in tile units)
@@ -194,7 +207,6 @@ static int position_is_free(fixed x, fixed y) {
 
 static uint8_t s_obj_sprite_bounds[NUM_OBJ_SPRITES][4];
 static uint8_t s_char_frame_bounds[NUM_CHARACTERS][PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4];
-static uint8_t s_lance_frame_bounds[BONE_LANCE_NUM_DIRS][4];
 
 static void init_obj_sprite_bounds(void) {
     for (int i = 0; i < NUM_OBJ_SPRITES; i++) {
@@ -255,25 +267,6 @@ static void init_obj_sprite_bounds(void) {
         }
     }
 
-    for (int d = 0; d < BONE_LANCE_NUM_DIRS; d++) {
-        const uint16_t *src = g_bone_lance_frames[d];
-        int min_x = BONE_LANCE_SPRITE_W, max_x = -1;
-        int min_y = BONE_LANCE_SPRITE_HEIGHT, max_y = -1;
-        for (int y = 0; y < BONE_LANCE_SPRITE_HEIGHT; y++) {
-            for (int x = 0; x < BONE_LANCE_SPRITE_W; x++) {
-                if (src[y * BONE_LANCE_SPRITE_W + x] & BIT(15)) {
-                    if (x < min_x) min_x = x;
-                    if (x > max_x) max_x = x;
-                    if (y < min_y) min_y = y;
-                    if (y > max_y) max_y = y;
-                }
-            }
-        }
-        s_lance_frame_bounds[d][0] = (uint8_t)min_x;
-        s_lance_frame_bounds[d][1] = (uint8_t)min_y;
-        s_lance_frame_bounds[d][2] = (uint8_t)(max_x - min_x + 1);
-        s_lance_frame_bounds[d][3] = (uint8_t)(max_y - min_y + 1);
-    }
 }
 
 // Blit a BGR555 sprite with arbitrary pitch, fast 32-bit dual-pixel write when both are opaque.
@@ -526,15 +519,74 @@ static void draw_enemy(uint16_t *buffer, const Enemy *e, int cam_x, int cam_y) {
         draw_hit_spark(buffer, px, py - 24, cam_x, cam_y, e->hit_timer);
 }
 
+static void bone_effect_pixel(uint16_t *buffer, int x, int y, int cam_x, int cam_y, uint16_t color) {
+    int sx = x - cam_x, sy = y - cam_y;
+    if (sx >= 0 && sx < SCREEN_W && sy >= 0 && sy < SCREEN_H)
+        buffer[sy * SCREEN_W + sx] = color;
+}
+
 static void draw_bone_lance(uint16_t *buffer, const BoneLance *lance, int cam_x, int cam_y) {
-    const uint8_t *b = s_lance_frame_bounds[lance->dir];
-    int bw = b[2], bh = b[3], min_x = b[0], min_y = b[1];
     int px = player_screen_x(lance->x, lance->y);
     int py = player_screen_y(lance->x, lance->y);
-    const uint16_t *frame = &g_bone_lance_frames[lance->dir][min_y * BONE_LANCE_SPRITE_W + min_x];
-    blit_stride(buffer, frame, BONE_LANCE_SPRITE_W, bw, bh,
-                px - BONE_LANCE_SPRITE_W / 2 + min_x,
-                py - BONE_LANCE_SPRITE_HEIGHT / 2 + min_y, cam_x, cam_y);
+    int ax = lance->vx < 0 ? -lance->vx : lance->vx;
+    int ay = lance->vy < 0 ? -lance->vy : lance->vy;
+    int major = ax > ay ? ax : ay;
+    if (major == 0) return;
+
+    int ux = (int)(((int64_t)lance->vx * 256) / major);
+    int uy = (int)(((int64_t)lance->vy * 256) / major);
+    int length = 8 + (lance->seed & 3);
+    int half = length / 2;
+    uint16_t bone = RGB15(27, 23, 17) | BIT(15);
+    uint16_t ivory = RGB15(31, 30, 25) | BIT(15);
+    uint16_t warm = RGB15(30, 25, 17) | BIT(15);
+    uint16_t soul = RGB15(7, 22, 29) | BIT(15);
+
+    for (int i = 0; i < length; i++) {
+        int along = i - half;
+        int wobble = ((lance->seed + i * 5) % 7 == 0) ? (((lance->seed + i) & 1) ? 1 : -1) : 0;
+        int x = px + ((ux * along - uy * wobble) >> 8);
+        int y = py + ((uy * along + ux * wobble) >> 8);
+        uint16_t color = i == length - 1 ? ivory :
+                         i < 2 ? warm : ((i + lance->seed) % 4 == 0 ? ivory : bone);
+        bone_effect_pixel(buffer, x, y, cam_x, cam_y, color);
+
+        // A few broken barbs keep each splinter irregular without tracing its edge.
+        if ((i == 1 && (lance->seed & 1)) ||
+            (i == length - 3 && (lance->seed & 2))) {
+            int side = ((lance->seed + i) & 1) ? 1 : -1;
+            bone_effect_pixel(buffer, x + ((-uy * side) >> 8),
+                              y + ((ux * side) >> 8), cam_x, cam_y, warm);
+        }
+        if (i == length - 2 && (lance->seed & 1)) {
+            bone_effect_pixel(buffer, x + ((-uy) >> 8), y + (ux >> 8),
+                              cam_x, cam_y, ivory);
+        }
+    }
+
+    if (((s_bone_effect_tick + lance->seed) & 3) == 0) {
+        int tx = px + ((ux * (half + 1)) >> 8);
+        int ty = py + ((uy * (half + 1)) >> 8);
+        bone_effect_pixel(buffer, tx, ty, cam_x, cam_y, soul);
+    }
+}
+
+static void draw_bone_particles(uint16_t *buffer, int cam_x, int cam_y) {
+    static const uint16_t tones[3] = {
+        RGB15(5, 16, 21) | BIT(15), RGB15(8, 24, 30) | BIT(15),
+        RGB15(23, 22, 17) | BIT(15)
+    };
+    for (int i = 0; i < MAX_BONE_PARTICLES; i++) {
+        const BoneParticle *p = &s_bone_particles[i];
+        if (!p->active) continue;
+        int x = p->x >> 8, y = p->y >> 8;
+        int fade = p->life <= 2;
+        uint16_t color = fade ? tones[0] : tones[p->tone % 3];
+        bone_effect_pixel(buffer, x, y, cam_x, cam_y, color);
+        if (p->size > 1 && p->life > 2)
+            bone_effect_pixel(buffer, x + ((i & 1) ? 1 : 0), y + ((i & 1) ? 0 : 1),
+                              cam_x, cam_y, tones[0]);
+    }
 }
 
 static void render_screen(uint16_t *buffer, int cam_x, int cam_y,
@@ -622,10 +674,8 @@ static void render_screen(uint16_t *buffer, int cam_x, int cam_y,
         if (!lance->active) continue;
         int px = player_screen_x(lance->x, lance->y);
         int py = player_screen_y(lance->x, lance->y);
-        if (px + BONE_LANCE_SPRITE_W / 2 < cam_x ||
-            px - BONE_LANCE_SPRITE_W / 2 > cam_x + SCREEN_W ||
-            py + BONE_LANCE_SPRITE_HEIGHT / 2 < cam_y ||
-            py - BONE_LANCE_SPRITE_HEIGHT / 2 > cam_y + SCREEN_H) continue;
+        if (px + 8 < cam_x || px - 8 > cam_x + SCREEN_W ||
+            py + 8 < cam_y || py - 8 > cam_y + SCREEN_H) continue;
         if (count < MAX_DRAW_ITEMS + MAX_ENEMIES + MAX_PROJECTILES) {
             items[count].depth = lance->x + lance->y;
             items[count].sprite = -2 - MAX_ENEMIES - p;
@@ -684,6 +734,7 @@ static void render_screen(uint16_t *buffer, int cam_x, int cam_y,
             draw_enemy(buffer, &s_enemies[-2 - sp], cam_x, cam_y);
         }
     }
+    draw_bone_particles(buffer, cam_x, cam_y);
     uint32_t blit_ticks = cpuGetTiming() - t_bl0;
 
     if (out_shadow) *out_shadow = shadow_ticks;
@@ -795,7 +846,7 @@ static void lance_fire(int aim_x, int aim_y, int touch_aim) {
         lance->vx = vx;
         lance->vy = vy;
         lance->hit_mask = 0;
-        lance->dir = lance_dir_from_screen(vx, vy);
+        lance->seed = (uint8_t)(slots[pellet] * 11 + pellet * 6 + s_bone_effect_tick);
         lance->life = LANCE_LIFETIME;
         lance->active = 1;
     }
@@ -806,7 +857,47 @@ static void lance_fire(int aim_x, int aim_y, int touch_aim) {
     nocashMessage(msg);
 }
 
+static uint8_t s_bone_particle_cursor = 0;
+
+static void emit_bone_particle(const BoneLance *lance, int slot) {
+    uint32_t age = (uint32_t)(LANCE_LIFETIME - lance->life);
+    uint32_t hash = (uint32_t)(slot + 1) * 0x45d9f3bu ^ (age + lance->seed) * 0x27d4eb2du;
+    hash ^= hash >> 16;
+    int ax = lance->vx < 0 ? -lance->vx : lance->vx;
+    int ay = lance->vy < 0 ? -lance->vy : lance->vy;
+    int major = ax > ay ? ax : ay;
+    if (major == 0) return;
+
+    int jitter = (int)(hash & 0x1ffu) - 256;
+    fixed px = (fixed)player_screen_x(lance->x, lance->y) * 256;
+    fixed py = (fixed)player_screen_y(lance->x, lance->y) * 256;
+    fixed perp_x = (fixed)(((int64_t)-lance->vy * 256) / major);
+    fixed perp_y = (fixed)(((int64_t)lance->vx * 256) / major);
+    unsigned index = s_bone_particle_cursor++ & (MAX_BONE_PARTICLES - 1);
+    BoneParticle *p = &s_bone_particles[index];
+    p->x = px;
+    p->y = py;
+    p->vx = -lance->vx / 3 + (perp_x * jitter >> 8);
+    p->vy = -lance->vy / 3 + (perp_y * jitter >> 8);
+    p->life = (uint8_t)(4 + ((hash >> 19) & 3u));
+    p->size = (uint8_t)(1 + ((hash >> 12) & 1u));
+    p->tone = (uint8_t)((hash >> 7) % 3u);
+    p->active = 1;
+}
+
+static void bone_particles_update(void) {
+    for (int i = 0; i < MAX_BONE_PARTICLES; i++) {
+        BoneParticle *p = &s_bone_particles[i];
+        if (!p->active) continue;
+        p->x += p->vx;
+        p->y += p->vy;
+        if (--p->life == 0) p->active = 0;
+    }
+}
+
 static void lances_update(void) {
+    s_bone_effect_tick++;
+    bone_particles_update();
     if (s_lance_cooldown > 0) s_lance_cooldown--;
     for (int p = 0; p < MAX_PROJECTILES; p++) {
         BoneLance *lance = &s_lances[p];
@@ -822,6 +913,9 @@ static void lances_update(void) {
             lance->active = 0;
             continue;
         }
+        uint32_t particle_roll = (uint32_t)s_bone_effect_tick * (lance->seed * 2u + 11u) + (uint32_t)p * 37u;
+        particle_roll ^= particle_roll >> 3;
+        if (particle_roll % 5u < 2u) emit_bone_particle(lance, p);
         int lx = player_screen_x(lance->x, lance->y);
         int ly = player_screen_y(lance->x, lance->y);
         for (int i = 0; i < MAX_ENEMIES; i++) {

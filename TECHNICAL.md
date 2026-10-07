@@ -27,4 +27,9 @@
 - **Normal Maps en NDS (Atenuación obligatoria):** A resolución nativa de $256\times 192$, relieves normales al 100% generan micro-ruido y parpadeo (*shimmering*). El estándar exige atenuar su influencia al 30%-40% (`normal_strength: 0.3 - 0.4`).
 - **Fattening / Displace Modifier:** Mallas anatómicas finas (costillas, extremidades esqueléticas < 2 px de proyección) sufren desconexión de vóxeles y píxeles huérfanos. Se compensan paramétricamente con `DISPLACE` (`strength: 0.12`).
 - **Ambient Occlusion con ColorRamp de Cavidad:** Modelos sin mapas de textura PBR emplean sombreado procedural anatómico complementado con Cycles AO agresivo (ramp con parada negra en 0.30) para sumergir cavidades y órbitas en penumbra gótica.
-- **Grading 2D unificado (PIL):** Todo sprite pasa invariablemente por el post-proceso central de `tools/ds_look.py` (Contraste 1.24, Brillo 0.98, Saturación 1.24, y outline de 1 px solidificado sin halos de transparencia sub-umbral).
+- **Grading 2D unificado (PIL):** Los sprites horneados de personaje y entorno pasan por el post-proceso central de `tools/ds_look.py` (Contraste 1.24, Brillo 0.98, Saturación 1.24, y outline de 1 px solidificado sin halos de transparencia sub-umbral).
+
+### 3.2. Efectos Procedurales en Runtime
+- La lanza ósea no usa spritesheets ni outlines: rasteriza una astilla de píxeles estrecha y puntiaguda, orientada por su velocidad fija.
+- Las motas espectrales salen de un pool de 32 partículas; cada una usa posición y deriva 8.8, semilla por proyectil, tono/tamaño variables y 4–7 frames de vida.
+- El dibujado escribe directamente en el framebuffer BGR555; no instancia modelos 3D ni consume entradas OAM.
