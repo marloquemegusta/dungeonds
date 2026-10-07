@@ -124,7 +124,7 @@ mesh.materials.append(bone)
 mesh.materials.append(bone_light)
 root = bpy.data.objects.new("BoneLanceRoot", None)
 scene.collection.objects.link(root)
-root.scale = (2.0, 2.0, 2.0)
+root.scale = (0.44, 0.44, 0.44)  # 2.05 m shaft -> 0.90 m bone pellet
 obj = bpy.data.objects.new("BoneLance", mesh)
 scene.collection.objects.link(obj)
 obj.parent = root

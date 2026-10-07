@@ -86,11 +86,13 @@ typedef struct {
 
 static Enemy s_enemies[MAX_ENEMIES];
 
-#define MAX_PROJECTILES 4
+#define MAX_PROJECTILES 16
+#define LANCE_PELLETS 5
 #define LANCE_COOLDOWN 16
 #define LANCE_SPEED 1024  // 4 projected pixels/frame in 8.8 fixed
+#define LANCE_SPREAD 256  // max side ratio 256/1024 (~14-degree half cone)
 #define LANCE_LIFETIME 40
-#define LANCE_DAMAGE 30
+#define LANCE_DAMAGE 10
 typedef struct {
     fixed x;
     fixed y;
@@ -762,36 +764,46 @@ static int lance_dir_from_screen(int dx, int dy) {
 
 static void lance_fire(int aim_x, int aim_y, int touch_aim) {
     if (s_lance_cooldown > 0) return;
+    int slots[LANCE_PELLETS], free_count = 0;
+    for (int i = 0; i < MAX_PROJECTILES && free_count < LANCE_PELLETS; i++) {
+        if (!s_lances[i].active) slots[free_count++] = i;
+    }
+    if (free_count < LANCE_PELLETS) return;
+
     int px = player_screen_x(s_player.x, s_player.y);
     int py = player_screen_y(s_player.x, s_player.y);
     int dir = lance_dir_from_screen(aim_x - px, aim_y - py);
     static const int dir_dx[8] = { 0, -1, -1, -1, 0, 1, 1, 1 };
     static const int dir_dy[8] = { 1, 1, 0, -1, -1, -1, 0, 1 };
     int sx = dir_dx[dir], sy = dir_dy[dir];
-    fixed vx = sx * LANCE_SPEED;
-    fixed vy = sy * LANCE_SPEED;
-    if (sx && sy) { vx = (vx * 181) >> 8; vy = (vy * 181) >> 8; }
-    fixed dcol = (vx + (vy << 1)) / (TILE_HALF_W * 2);
-    fixed drow = ((vy << 1) - vx) / (TILE_HALF_W * 2);
+    fixed forward_x = sx * LANCE_SPEED;
+    fixed forward_y = sy * LANCE_SPEED;
+    if (sx && sy) {
+        forward_x = (forward_x * 181) >> 8;
+        forward_y = (forward_y * 181) >> 8;
+    }
 
-    for (int i = 0; i < MAX_PROJECTILES; i++) {
-        BoneLance *lance = &s_lances[i];
-        if (lance->active) continue;
+    for (int pellet = 0; pellet < LANCE_PELLETS; pellet++) {
+        fixed spread = (pellet - (LANCE_PELLETS / 2)) * (LANCE_SPREAD / 2);
+        fixed vx = forward_x - ((forward_y * spread) >> 10);
+        fixed vy = forward_y + ((forward_x * spread) >> 10);
+        fixed dcol = (vx + (vy << 1)) / (TILE_HALF_W * 2);
+        fixed drow = ((vy << 1) - vx) / (TILE_HALF_W * 2);
+        BoneLance *lance = &s_lances[slots[pellet]];
         lance->x = s_player.x + dcol;
         lance->y = s_player.y + drow;
         lance->vx = vx;
         lance->vy = vy;
         lance->hit_mask = 0;
-        lance->dir = dir;
+        lance->dir = lance_dir_from_screen(vx, vy);
         lance->life = LANCE_LIFETIME;
         lance->active = 1;
-        s_lance_cooldown = LANCE_COOLDOWN;
-        s_player.dir = dir;
-        char msg[48];
-        snprintf(msg, sizeof(msg), "BONE_LANCE_FIRE touch=%d dir=%d", touch_aim, dir);
-        nocashMessage(msg);
-        break;
     }
+    s_lance_cooldown = LANCE_COOLDOWN;
+    s_player.dir = dir;
+    char msg[48];
+    snprintf(msg, sizeof(msg), "BONE_SHOTGUN_FIRE pellets=%d touch=%d", LANCE_PELLETS, touch_aim);
+    nocashMessage(msg);
 }
 
 static void lances_update(void) {

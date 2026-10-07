@@ -140,6 +140,13 @@ Este documento registra el historial cronológico de sesiones de desarrollo veri
 - [x] Compilación BlocksDS limpia. Sin validación en consola física.
 - **Evidencia:** [walkthroughs/12-bone-lance-prototype/walkthrough.md](walkthroughs/12-bone-lance-prototype/walkthrough.md).
 
+## Sesión 13: Salva de Perdigones de Hueso
+- [x] Reducción del asta del proyectil a aproximadamente 0,90 m y sprite opaco máximo de 12×12 px en las ocho direcciones.
+- [x] A y lápiz disparan cinco astillas rápidas en abanico; 10 de daño por astilla y 16 frames entre salvas.
+- [x] Balance de prueba: esqueleto 40 PV y cargador 90 PV; hasta 50 de daño si impactan los cinco perdigones.
+- [x] Tres contratos host, compilación BlocksDS y escenarios DeSmuME para botón, táctil y fuego sostenido: PASS. Sin validación en consola física.
+- **Evidencia:** [walkthroughs/13-bone-shotgun-pellets/walkthrough.md](walkthroughs/13-bone-shotgun-pellets/walkthrough.md).
+
 ## Próximas Líneas de Trabajo
 - Invocación de esbirros esqueletos y mecánicas de nigromancia activa.
 - Expansión de mazmorra procedural manteniendo el contrato dimétrico y presupuestos de 60 FPS.
