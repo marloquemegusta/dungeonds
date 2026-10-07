@@ -147,6 +147,13 @@ Este documento registra el historial cronológico de sesiones de desarrollo veri
 - [x] Tres contratos host, compilación BlocksDS y escenarios DeSmuME para botón, táctil y fuego sostenido: PASS. Sin validación en consola física.
 - **Evidencia:** [walkthroughs/13-bone-shotgun-pellets/walkthrough.md](walkthroughs/13-bone-shotgun-pellets/walkthrough.md).
 
+## Sesión 14: Lanza Ósea Procedural
+- [x] Sustitución del spritesheet por astillas estrechas de 8–11 px dibujadas en runtime, con variación por semilla y sin outline.
+- [x] Añadido pool de 32 motas espectrales con movimiento fijo, tonos/tamaños variables y vida de 4–7 frames.
+- [x] Build BlocksDS, contratos host y escenarios DeSmuME para A, lápiz y fuego sostenido: PASS.
+- [x] GIF de 28 capturas de DeSmuME registrado en walkthrough; ampliado nearest-neighbor para revisión visual. Sin validación en consola física.
+- **Evidencia:** [walkthroughs/14-bone-particle-lance/walkthrough.md](walkthroughs/14-bone-particle-lance/walkthrough.md).
+
 ## Próximas Líneas de Trabajo
 - Invocación de esbirros esqueletos y mecánicas de nigromancia activa.
 - Expansión de mazmorra procedural manteniendo el contrato dimétrico y presupuestos de 60 FPS.
