@@ -132,6 +132,14 @@ Este documento registra el historial cronológico de sesiones de desarrollo veri
 - [x] Escenarios dual-screen (6 capturas), colisión con pilares (5 capturas) y unión muro/arco (4 capturas): todos PASS; capturas revisadas sin gaps, tiles negros ni seams.
 - **Evidencia:** `walkthroughs/11-perf-bg-scroll-and-rendering/walkthrough.md` y sus assets de validación. Sin validación en consola física.
 
+## Sesión 12: Prototipo de Combate con Lanza Ósea
+- [x] Horneado del proyectil en ocho direcciones con el look e30 compartido y exportación a BGR555.
+- [x] A mantenido autoapunta al enemigo activo más cercano; lápiz mantenido dispara en la dirección de la pantalla inferior y prevalece sobre A.
+- [x] Implementados daño provisional (30), vida (Esqueleto 40 / Charger 90), cadencia de 16 frames, proyectil rápido perforante y destello breve al impacto.
+- [x] Contrato host de sprites/números y escenarios DeSmuME para A, lápiz y fuego sostenido: todos PASS; el escenario de 120 frames elimina varios enemigos.
+- [x] Compilación BlocksDS limpia. Sin validación en consola física.
+- **Evidencia:** [walkthroughs/12-bone-lance-prototype/walkthrough.md](walkthroughs/12-bone-lance-prototype/walkthrough.md).
+
 ## Próximas Líneas de Trabajo
 - Invocación de esbirros esqueletos y mecánicas de nigromancia activa.
 - Expansión de mazmorra procedural manteniendo el contrato dimétrico y presupuestos de 60 FPS.

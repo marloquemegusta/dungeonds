@@ -1,0 +1,15 @@
+{
+  "name": "bone_lance_button_contract",
+  "steps": [
+    { "frames": 180, "capture": "00_idle" },
+    { "button_down": "A", "frames": 2, "capture": "01_a_cast" },
+    { "button_up": "A", "frames": 8, "capture": "02_a_release" }
+  ],
+  "assertions": {
+    "screen_changed": {
+      "from": "00_idle",
+      "to": "01_a_cast",
+      "min_changed_pixels": 50
+    }
+  }
+}

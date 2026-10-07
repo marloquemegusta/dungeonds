@@ -1,5 +1,7 @@
 {
-    "hostTests": [],
+    "hostTests": [
+        "python.exe tests/test_bone_lance_contract.py"
+    ],
     "blocksdsImage": "skylyrac/blocksds:slim-latest",
     "romUploadName": "dungeonds.nds",
     "copy": [
