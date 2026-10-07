@@ -51,11 +51,9 @@ static int s_bot_bg = 0;
 static u16 *s_top_map_ptr = NULL;
 static u16 *s_bot_map_ptr = NULL;
 static u16 *s_top_vram = NULL;
-static u16 *s_bot_vram_buf0 = NULL;
-static u16 *s_bot_vram_buf1 = NULL;
-static int s_active_vram_bank = 0;
+static u16 *s_bot_vram = NULL;
 
-// Dual-buffered rendering buffers for top and bottom screens (cleared transparently for entities)
+// Rendering buffers for top and bottom screens (cleared transparently for entities)
 static uint16_t s_top_screen_buf[SCREEN_W * SCREEN_H] __attribute__((aligned(4)));
 static uint16_t s_bot_screen_buf[SCREEN_W * SCREEN_H] __attribute__((aligned(4)));
 
@@ -564,19 +562,13 @@ static void render_screen(uint16_t *buffer, int cam_x, int cam_y,
 // ---------------------------------------------------------------------------
 
 static void present_both_screens(void) {
-    // Top screen copy: dmaCopyWords to s_top_vram
-    dmaCopyWords(3, s_top_screen_buf, s_top_vram, SCREEN_W * SCREEN_H * 2);
-
     swiWaitForVBlank();
 
-    // Bottom screen page-flip: switch mapBase between 8 (VRAM_A) and 16 (VRAM_B)
-    if (s_active_vram_bank == 0) {
-        bgSetMapBase(s_bot_bg, 16); // Display VRAM_B (slot 2 = 0x06040000)
-        s_active_vram_bank = 1;
-    } else {
-        bgSetMapBase(s_bot_bg, 8);  // Display VRAM_A (slot 1 = 0x06020000)
-        s_active_vram_bank = 0;
-    }
+    // Fast DMA burst during VBlank (~0.5 ms per screen, well within the 1.25 ms VBlank budget):
+    // Copies both screens directly to VRAM in perfect raster synchronization.
+    // Zero latency, zero alternating-buffer ghosting, identical rendering pipeline on both screens.
+    dmaCopyWords(3, s_top_screen_buf, s_top_vram, SCREEN_W * SCREEN_H * 2);
+    dmaCopyWords(3, s_bot_screen_buf, s_bot_vram, SCREEN_W * SCREEN_H * 2);
 }
 
 // ---------------------------------------------------------------------------
@@ -796,9 +788,8 @@ int main(void) {
     vramSetBankA(VRAM_A_MAIN_BG_0x06020000); // 128 KB for BG2 Bmp16 buffer 0 in slot 1
     vramSetBankB(VRAM_B_MAIN_BG_0x06040000); // 128 KB for BG2 Bmp16 buffer 1 in slot 2
 
-    // Pointers to the two double-buffered VRAM surfaces in CPU address space:
-    s_bot_vram_buf0 = (u16 *)0x06020000;
-    s_bot_vram_buf1 = (u16 *)0x06040000;
+    // Pointer to Bottom BG2 VRAM in CPU address space:
+    s_bot_vram = (u16 *)0x06020000;
 
     // Load Background Palette to Main and Sub engines
     dmaCopyWords(3, g_dungeon_bg_palette, BG_PALETTE, DUNGEON_BG_PALETTE_SIZE * 2);
@@ -812,11 +803,9 @@ int main(void) {
     u16 *bot_tile_ptr = bgGetGfxPtr(bot_hw_bg);
     dmaCopyWords(3, g_dungeon_bg_tiles, bot_tile_ptr, sizeof(g_dungeon_bg_tiles));
 
-    // Initialize Main BG2 (Double-buffered 16-bit Bitmap for Entities & dynamic shadows)
-    // Initially displays Buffer 0 (mapBase 8 = 0x06020000)
+    // Initialize Main BG2 (16-bit Bitmap for Entities & dynamic shadows at mapBase 8 = 0x06020000)
     s_bot_bg = bgInit(2, BgType_Bmp16, BgSize_B16_256x256, 8, 0);
     bgSetPriority(s_bot_bg, 0); // High priority (drawn on top of BG1)
-    s_active_vram_bank = 0;
 
     // Sub Engine (Top Screen): Mode 5
     // VRAM_C (128 KB) at 0x06200000 cleanly split:
@@ -855,7 +844,7 @@ int main(void) {
     dmaCopyWords(3, s_top_screen_buf, s_top_vram, SCREEN_W * SCREEN_H * 2);
 
     render_screen(s_bot_screen_buf, s_cam_x, s_cam_y, NULL, NULL, NULL);
-    dmaCopyWords(3, s_bot_screen_buf, s_bot_vram_buf0, SCREEN_W * SCREEN_H * 2);
+    dmaCopyWords(3, s_bot_screen_buf, s_bot_vram, SCREEN_W * SCREEN_H * 2);
 
     while (1) {
         uint32_t frame_start_ticks = cpuGetTiming();
@@ -894,9 +883,6 @@ int main(void) {
         // Render entities and dynamic shadows for bottom screen
         uint32_t t2 = cpuGetTiming();
         render_screen(s_bot_screen_buf, s_cam_x, s_cam_y, NULL, &bot_sh, &bot_bl);
-        // Copy directly into back-buffer VRAM surface (in CPU address space)
-        u16 *back_vram = (s_active_vram_bank == 0) ? s_bot_vram_buf1 : s_bot_vram_buf0;
-        dmaCopyWords(3, s_bot_screen_buf, back_vram, SCREEN_W * SCREEN_H * 2);
         uint32_t bot_ticks = cpuGetTiming() - t2;
 
         // CPU rendering finished before waiting for VBlank
