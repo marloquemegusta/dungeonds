@@ -1,0 +1,157 @@
+{
+  "scenario": "pillar_collision_test.json",
+  "captures": {
+    "00_spawn": {
+      "sha256": "b9c048de34d844a2381155656d249036a85a52b60cb9fd06bf1600e44d7aa3ae",
+      "path": "00_spawn.png"
+    },
+    "01_approach_from_south": {
+      "sha256": "ba22d63c3837347d2029ff373c5e96d9ea3136f342c99057bc31e29872084980",
+      "path": "01_approach_from_south.png"
+    },
+    "02_positioned_north": {
+      "sha256": "c839eb224eee33ca56013e65947b44d78a01e0074bab2a0eeaa65580c25bc476",
+      "path": "02_positioned_north.png"
+    },
+    "03_approach_from_north": {
+      "sha256": "3e390dc012ed7db87fb4e7b6f3b8d8ddae0353d2dd52d414765ad3254913b726",
+      "path": "03_approach_from_north.png"
+    },
+    "04_idle_north_collision": {
+      "sha256": "44ec954dcdab354e13f6e8048f7d10a294b37e7a1481a77c650a653e98001e37",
+      "path": "04_idle_north_collision.png"
+    }
+  },
+  "events": [
+    {
+      "step": 0,
+      "action": "frame_advance",
+      "frames": 10,
+      "keypad": 0
+    },
+    {
+      "step": 1,
+      "action": "button_down",
+      "button": "UP"
+    },
+    {
+      "step": 1,
+      "action": "frame_advance",
+      "frames": 70,
+      "keypad": 64
+    },
+    {
+      "step": 2,
+      "action": "button_up",
+      "button": "UP"
+    },
+    {
+      "step": 2,
+      "action": "frame_advance",
+      "frames": 5,
+      "keypad": 0
+    },
+    {
+      "step": 3,
+      "action": "button_down",
+      "button": "RIGHT"
+    },
+    {
+      "step": 3,
+      "action": "frame_advance",
+      "frames": 40,
+      "keypad": 16
+    },
+    {
+      "step": 4,
+      "action": "button_up",
+      "button": "RIGHT"
+    },
+    {
+      "step": 4,
+      "action": "frame_advance",
+      "frames": 5,
+      "keypad": 0
+    },
+    {
+      "step": 5,
+      "action": "button_down",
+      "button": "UP"
+    },
+    {
+      "step": 5,
+      "action": "frame_advance",
+      "frames": 85,
+      "keypad": 64
+    },
+    {
+      "step": 6,
+      "action": "button_up",
+      "button": "UP"
+    },
+    {
+      "step": 6,
+      "action": "frame_advance",
+      "frames": 5,
+      "keypad": 0
+    },
+    {
+      "step": 7,
+      "action": "button_down",
+      "button": "LEFT"
+    },
+    {
+      "step": 7,
+      "action": "frame_advance",
+      "frames": 40,
+      "keypad": 32
+    },
+    {
+      "step": 8,
+      "action": "button_up",
+      "button": "LEFT"
+    },
+    {
+      "step": 8,
+      "action": "frame_advance",
+      "frames": 5,
+      "keypad": 0
+    },
+    {
+      "step": 9,
+      "action": "button_down",
+      "button": "DOWN"
+    },
+    {
+      "step": 9,
+      "action": "frame_advance",
+      "frames": 70,
+      "keypad": 128
+    },
+    {
+      "step": 10,
+      "action": "button_up",
+      "button": "DOWN"
+    },
+    {
+      "step": 10,
+      "action": "frame_advance",
+      "frames": 10,
+      "keypad": 0
+    }
+  ],
+  "assertions": {
+    "screen_changed": true,
+    "changed_pixels": 74416,
+    "min_changed_pixels": 50,
+    "screen_changes": [
+      {
+        "from": "00_spawn",
+        "to": "01_approach_from_south",
+        "changed": true,
+        "changed_pixels": 74416,
+        "min_changed_pixels": 50
+      }
+    ]
+  }
+}

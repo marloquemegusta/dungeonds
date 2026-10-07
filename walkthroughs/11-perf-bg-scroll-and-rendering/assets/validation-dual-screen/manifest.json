@@ -1,0 +1,139 @@
+{
+  "scenario": "dual_screen_ruins_test.json",
+  "captures": {
+    "00_bottom_spawn_center": {
+      "sha256": "11b7ed7354a80f4a7a34cfea2848a88e4ec9bc9760432ecec4bd06924654325d",
+      "path": "00_bottom_spawn_center.png"
+    },
+    "01_walk_north_towards_top_screen": {
+      "sha256": "5c8b36af6a9297762cdc3c454a8c59b6ecc51758f25ba74ad6c4f12294998df2",
+      "path": "01_walk_north_towards_top_screen.png"
+    },
+    "02_walk_east_behind_pillar": {
+      "sha256": "1e448b0515a227b34e129c80b7a08f66dac20bf34f69fa1c378f67d36c6dc148",
+      "path": "02_walk_east_behind_pillar.png"
+    },
+    "03_walk_south_in_front_of_pillar": {
+      "sha256": "27f997acd04c08c1fdabdaf0abf330efca320432666a2eac50a636ce2074550d",
+      "path": "03_walk_south_in_front_of_pillar.png"
+    },
+    "04_walk_west": {
+      "sha256": "5788812426769e090db3587fbbeff52078c8bb0c2dfdd9e4d82dfb77d0b422a3",
+      "path": "04_walk_west.png"
+    },
+    "05_idle_final": {
+      "sha256": "2fd8c22ab83a9b32991560401a4db26957c4ac8ec82bff34b60a91b19372e03d",
+      "path": "05_idle_final.png"
+    }
+  },
+  "events": [
+    {
+      "step": 0,
+      "action": "frame_advance",
+      "frames": 30,
+      "keypad": 0
+    },
+    {
+      "step": 1,
+      "action": "button_down",
+      "button": "UP"
+    },
+    {
+      "step": 1,
+      "action": "frame_advance",
+      "frames": 50,
+      "keypad": 64
+    },
+    {
+      "step": 2,
+      "action": "button_up",
+      "button": "UP"
+    },
+    {
+      "step": 2,
+      "action": "frame_advance",
+      "frames": 5,
+      "keypad": 0
+    },
+    {
+      "step": 3,
+      "action": "button_down",
+      "button": "RIGHT"
+    },
+    {
+      "step": 3,
+      "action": "frame_advance",
+      "frames": 40,
+      "keypad": 16
+    },
+    {
+      "step": 4,
+      "action": "button_up",
+      "button": "RIGHT"
+    },
+    {
+      "step": 4,
+      "action": "frame_advance",
+      "frames": 5,
+      "keypad": 0
+    },
+    {
+      "step": 5,
+      "action": "button_down",
+      "button": "DOWN"
+    },
+    {
+      "step": 5,
+      "action": "frame_advance",
+      "frames": 50,
+      "keypad": 128
+    },
+    {
+      "step": 6,
+      "action": "button_up",
+      "button": "DOWN"
+    },
+    {
+      "step": 6,
+      "action": "frame_advance",
+      "frames": 5,
+      "keypad": 0
+    },
+    {
+      "step": 7,
+      "action": "button_down",
+      "button": "LEFT"
+    },
+    {
+      "step": 7,
+      "action": "frame_advance",
+      "frames": 30,
+      "keypad": 32
+    },
+    {
+      "step": 8,
+      "action": "button_up",
+      "button": "LEFT"
+    },
+    {
+      "step": 8,
+      "action": "frame_advance",
+      "frames": 10,
+      "keypad": 0
+    }
+  ],
+  "assertions": {
+    "screen_changed": true,
+    "changed_pixels": 55442,
+    "min_changed_pixels": 50,
+    "screen_changes": [
+      {
+        "from": "00_bottom_spawn_center",
+        "to": "01_walk_north_towards_top_screen",
+        "changed": true,
+        "changed_pixels": 55442,
+        "min_changed_pixels": 50
+      }
+    ]
+  }
+}

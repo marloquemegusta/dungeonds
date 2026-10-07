@@ -1,0 +1,10 @@
+{"step":0,"action":"frame_advance","frames":20,"keypad":0}
+{"step":1,"action":"button_down","button":"DOWN"}
+{"step":1,"action":"frame_advance","frames":230,"keypad":128}
+{"step":2,"action":"button_up","button":"DOWN"}
+{"step":2,"action":"frame_advance","frames":5,"keypad":0}
+{"step":3,"action":"button_down","button":"RIGHT"}
+{"step":3,"action":"frame_advance","frames":230,"keypad":16}
+{"step":4,"action":"button_up","button":"RIGHT"}
+{"step":4,"action":"frame_advance","frames":5,"keypad":0}
+{"step":5,"action":"frame_advance","frames":20,"keypad":0}
