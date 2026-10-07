@@ -1,0 +1,15 @@
+{
+  "name": "bone_lance_touch_contract",
+  "steps": [
+    { "frames": 180, "capture": "00_idle" },
+    { "tap": { "x": 194, "y": 80 }, "frames": 10, "capture": "01_touch_cast" },
+    { "release": true, "frames": 4, "capture": "02_touch_released" }
+  ],
+  "assertions": {
+    "screen_changed": {
+      "from": "00_idle",
+      "to": "01_touch_cast",
+      "min_changed_pixels": 50
+    }
+  }
+}
