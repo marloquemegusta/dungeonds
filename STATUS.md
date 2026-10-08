@@ -167,6 +167,13 @@ Este documento registra el historial cronológico de sesiones de desarrollo veri
 - [x] Corrección de centrado vertical de cámara isométrica en Blender Cycles (`target_z = height * 0.50`), eliminando el corte superior a escalas de 1.4x–2.2x.
 - [x] Soporte para selección abierta de cualquier FBX del repositorio y subida vía web con previsualización inmediata.
 - [x] Acoplamiento cinemático automático de zancada 3D a velocidad fija de Nintendo DS (formato 8.8) para evitar foot-sliding.
+- [x] La resolución de salida se selecciona en píxeles; la cámara ortográfica se ajusta desde los vértices animados y Blender renderiza directamente a ese tamaño. Tres FBX quedaron dentro de ±1 px del objetivo de 32 px.
+- [x] Comparados los sprites compilados de ROM con el laboratorio: tamaño visible máximo actual del héroe 18×23 px, cargador 32×36 px y esqueleto 19×22 px; el selector ahora admite 22–60 px en pasos de 1 para reproducirlos.
+- [x] Corregido el enlazado de mapas PBR FBX por nombre (base color, metallic, roughness y normal) y el entorno de reflexión neutro; el mago encapuchado ya no se interpreta como metal negro.
+- [x] El periodo en ticks controla también la duración real de cada frame de la previsualización; la inclinación se reaplica tras evaluar cada pose y detecta el eje lateral de Neck/Head (X o Z local) para evitar torsiones horizontales entre rigs.
+- [x] Cada render del laboratorio guarda salidas con ID único; el historial conserva los parámetros usados y los restaura al volver a una miniatura, evitando que renders distintos se sobrescriban por una clave incompleta.
+- [x] Pasada final Impeccable: vacío inicial y mensajes de error útiles, controles avanzados etiquetados y accesibles, historial con teclado, collage ampliado y legible a 22 px; verificación en escritorio/móvil, cero overflow horizontal y cero errores de consola.
+- [x] Render real a 22×22 px (8 muestras) con dos ajustes de luz ambiente; IDs/GIFs distintos y restauración del ajuste al seleccionar la primera miniatura. Evidencia de UI y sprite en el walkthrough.
 - [x] Validación completa de renderizado de 8 direcciones en Blender Cycles y exportación de GIF collage.
 - **Evidencia:** [walkthroughs/16-shader-lab-interactive/walkthrough.md](walkthroughs/16-shader-lab-interactive/walkthrough.md).
 

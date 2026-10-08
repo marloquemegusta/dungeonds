@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <title>DungeonDS — Interactive Shader & Sprite Lab</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='8' fill='%23191c17'/%3E%3Cpath d='M20 5 33 12.5v15L20 35 7 27.5v-15L20 5Z' fill='%23c7a66a'/%3E%3Cpath d='M20 11 28 15.5v9L20 29l-8-4.5v-9l8-4.5Z' fill='%23242920'/%3E%3Cpath d='M17 16h6v8h-6zM14 19h12v2H14z' fill='%23a9b78a'/%3E%3C/svg%3E">
 <style>
   :root {
     --bg: #0f1117;
@@ -250,15 +251,122 @@
     opacity: 1;
     border-color: var(--blue);
   }
+  :root {
+    color-scheme: dark;
+    --bg:#11130f; --panel:#191c17; --card:#20251e; --border:#3a4033;
+    --accent:#c7a66a; --accent-hover:#ddbd80; --blue:#a9b78a;
+    --text:#eee9dc; --muted:#a19f90;
+  }
+  body { min-height:100vh; height:100vh; font-family:Inter,ui-sans-serif,system-ui,-apple-system,'Segoe UI',sans-serif; }
+  #sidebar { flex:0 0 390px; width:390px; padding:24px 20px 28px; gap:14px; scrollbar-color:#485344 transparent; }
+  h1 { font-size:1.2rem; letter-spacing:-.03em; }
+  .tag { color:#e2cb97; background:#393322; border:1px solid #62553b; border-radius:999px; padding:4px 8px; font-size:.62rem; letter-spacing:.08em; }
+  .group { background:var(--card); border-color:var(--border); border-radius:11px; padding:15px; gap:14px; }
+  .group-title { color:#a9b78a; font-size:.67rem; letter-spacing:.12em; }
+  .field { gap:6px; }
+  .field-header { align-items:center; gap:10px; font-size:.79rem; line-height:1.35; }
+  .field-header > span:first-child { color:#e4dfd2; }
+  .val { min-width:48px; text-align:center; padding:3px 7px; border:1px solid #4b503e; border-radius:5px; background:#2b3027; color:#e2c88f; font-size:.74rem; }
+  .field-help { color:var(--muted); font-size:.69rem; line-height:1.45; }
+  .range-ends { display:flex; justify-content:space-between; color:#858878; font: .63rem ui-monospace,SFMono-Regular,Consolas,monospace; }
+  select,input[type="text"],input[type="number"] { background:#141711; border-color:var(--border); border-radius:7px; padding:9px 10px; }
+  select,input,button { accent-color:var(--accent); }
+  select:focus-visible,input:focus-visible,button:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+  .btn-secondary { background:#2a3027; color:#e8e2d4; border-color:#48503f; }
+  .btn-secondary:hover { background:#343d32; border-color:var(--accent); color:white; }
+  .custom-panel { background:#171b15; border-radius:8px; padding:12px; }
+  button#btnRender { background:#80683e; color:#fff8e8; border:1px solid #b0925a; border-radius:8px; padding:14px; box-shadow:0 8px 22px #0004; }
+  button#btnRender:hover { background:#967c4c; }
+  button#btnRender:disabled { background:#383e33; border-color:#454c40; }
+  #main { background:#11130f; }
+  #topbar { min-height:68px; height:auto; padding:12px 24px; background:#1a1d17; border-color:var(--border); gap:16px; }
+  #statusText { color:#d2cdbf; font-size:.82rem; }
+  .kinematics-badge { flex-wrap:wrap; justify-content:flex-end; gap:8px 14px; background:#242920; border-color:var(--border); color:var(--muted); }
+  .kinematics-badge span b { color:#dfc789; }
+  #previewArea { background:radial-gradient(ellipse at 50% 45%,#292d24 0,#1b1e18 48%,#11130f 100%); }
+  #previewImg { max-width:min(95%,900px); max-height:90%; border-radius:5px; border-color:#716548; box-shadow:0 22px 60px #0009,0 0 0 8px #ffffff06; }
+  .history-panel { padding:12px 24px; background:#191c17; border-color:var(--border); }
+  .history-thumb { height:64px; border-radius:6px; }
+  @media(max-width:900px) {
+    body { height:auto; min-height:100vh; flex-direction:column; overflow:auto; }
+    #sidebar { flex:none; width:100%; max-height:none; border-right:0; border-bottom:1px solid var(--border); display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); align-items:start; }
+    #sidebar > h1,#sidebar > #btnRender { grid-column:1 / -1; }
+    #main { min-height:75vh; overflow:visible; }
+    #topbar { flex-wrap:wrap; }
+  }
+  @media(max-width:560px) {
+    #sidebar { display:flex; padding:16px; }
+    #topbar { padding:12px 16px; }
+    .kinematics-badge { justify-content:flex-start; font-size:.68rem; }
+    #previewArea { min-height:50vh; padding:16px; }
+    .history-panel { padding:10px 16px; }
+  }
+  ::selection { background:#64583d; color:#fff9eb; }
+  :focus-visible { outline:2px solid #e2c88f; outline-offset:3px; }
+  #sidebar { gap:14px; }
+  .brand-block { display:flex; flex-direction:column; gap:8px; padding:2px 2px 4px; }
+  h1 { gap:9px; }
+  .brand-copy { max-width:34ch; }
+  .group { padding:14px; gap:13px; }
+  .group-title { letter-spacing:.09em; }
+  .btn-secondary { min-height:38px; justify-content:center; }
+  button#btnRender { min-height:48px; }
+  #statusText { max-width:60ch; line-height:1.4; }
+  #statusText.error { color:#f0a69b; }
+  #statusText.success { color:#c6d0a8; }
+  #spinner { color:#eee9dc; text-align:center; }
+  .preview-empty {
+    width:min(480px,100%); padding:30px 28px; text-align:center;
+    border:1px solid #3a4033; border-radius:10px; background:#191c17;
+    box-shadow:0 16px 40px #0005;
+  }
+  .preview-empty[hidden], #previewImg[hidden] { display:none; }
+  #previewArea { flex-direction:column; gap:8px; }
+  #previewImg { display:block; width:min(95%,900px); max-height:calc(100% - 26px); height:auto; object-fit:contain; }
+  .preview-note { color:#a19f90; font-size:.68rem; line-height:1.3; }
+  .preview-note[hidden] { display:none; }
+  .preview-grid {
+    display:grid; grid-template-columns:repeat(4,32px); gap:6px;
+    justify-content:center; margin:0 auto 18px;
+  }
+  .preview-grid span {
+    width:32px; height:28px; display:grid; place-items:center;
+    border:1px solid #4a503e; border-radius:3px; color:#a9b78a;
+    background:#22271f; font:600 .62rem ui-monospace,monospace;
+  }
+  .preview-empty strong { display:block; font-size:.96rem; color:#eee9dc; }
+  .preview-empty p { margin-top:8px; color:#a19f90; font-size:.78rem; line-height:1.5; }
+  .preview-empty .preview-meta { color:#d2c18e; font: .68rem ui-monospace,monospace; letter-spacing:.04em; }
+  .history-panel { min-height:100px; align-items:center; }
+  .history-empty { color:#a19f90; font-size:.76rem; }
+  .history-empty[hidden] { display:none; }
+  .history-thumb {
+    flex:0 0 122px; width:122px; height:82px; padding:0;
+    display:flex; flex-direction:column; overflow:hidden; text-align:left;
+    background:#20251e; color:#eee9dc; border:1px solid #3a4033;
+    cursor:pointer; opacity:.74;
+  }
+  .history-thumb:hover, .history-thumb[aria-pressed="true"] { opacity:1; border-color:#c7a66a; }
+  .history-thumb:focus-visible { outline:2px solid #e2c88f; outline-offset:2px; }
+  .history-thumb img { display:block; width:100%; height:58px; object-fit:cover; image-rendering:pixelated; }
+  .history-caption { padding:4px 6px; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; font-size:.62rem; color:#ddd4c0; }
+  @media(max-width:900px) {
+    #sidebar { gap:12px; }
+    #main { min-height:70vh; }
+  }
+  @media(max-width:560px) {
+    .preview-empty { padding:24px 18px; }
+    .history-thumb { flex-basis:112px; width:112px; }
+  }
 </style>
 </head>
 <body>
 
 <div id="sidebar">
-  <h1><span>⚔️ DS Shader Lab</span> <span class="tag">Blender Live</span></h1>
+  <div class="brand-block"><h1><span>DS Shader Lab</span> <span class="tag">Blender · FBX</span></h1><p class="field-help brand-copy">Carga un modelo, elige un clip y ajusta cómo se hornea el sprite para Nintendo DS.</p></div>
 
   <div class="group">
-    <div class="group-title">1. Modelo FBX y Geometría</div>
+    <div class="group-title">Modelo FBX y geometría</div>
     <div class="field">
       <div class="field-header"><span>Modelo / FBX Activo</span></div>
       <select id="charSelect">
@@ -289,36 +397,37 @@
     <div style="display: flex; gap: 8px; margin-top: 4px;">
       <input type="file" id="fileInputFbx" accept=".fbx" style="display: none;">
       <button type="button" class="btn-secondary" id="btnUploadFbx" style="flex: 1;">
-        📁 Subir FBX Local
+        Subir FBX local
       </button>
-      <button type="button" class="btn-secondary" id="btnToggleCustom" style="flex: 1;">
-        ⚙️ Opciones FBX...
+      <button type="button" class="btn-secondary" id="btnToggleCustom" style="flex: 1;" aria-expanded="false" aria-controls="customPanel">
+        Opciones avanzadas
       </button>
     </div>
 
     <!-- Panel desplegable de opciones avanzadas de FBX -->
     <div class="custom-panel" id="customPanel" style="display: none;">
       <div class="field">
-        <div class="field-header"><span>Ruta personalizada (absoluta o relativa)</span></div>
+        <div class="field-header"><label for="customFbxPath">Ruta personalizada (absoluta o relativa)</label></div>
         <input type="text" id="customFbxPath" placeholder="assets/characters/custom/modelo.fbx">
       </div>
       <div class="custom-panel-row">
         <div class="field">
-          <div class="field-header"><span>Armature Scale</span></div>
+            <div class="field-header"><label for="armatureScaleInput">Escala del rig</label></div>
           <input type="number" id="armatureScaleInput" step="0.001" min="0.001" value="1.0">
         </div>
         <div class="field">
-          <div class="field-header"><span>Inclinación Cuello</span></div>
-          <input type="number" id="neckPitchInput" step="1" value="0">
+            <div class="field-header"><label for="neckPitchInput">Inclinación de cuello / cabeza</label></div>
+          <input type="number" id="neckPitchInput" step="1" min="-90" max="90" value="0">
+          <p class="field-help">Inclina el cuello o la cabeza; el lab elige el eje lateral (X/Z local) del rig para evitar el giro horizontal. Usa ± para cambiar el sentido; 0 conserva la pose.</p>
         </div>
       </div>
       <div class="custom-panel-row">
         <div class="field">
-          <div class="field-header"><span>Engordar Malla (Displace)</span></div>
+            <div class="field-header"><label for="displaceInput">Engrosar malla (Displace)</label></div>
           <input type="number" id="displaceInput" step="0.01" min="0" value="0.0">
         </div>
         <div class="field">
-          <div class="field-header"><span>Shader Hueso Limpio</span></div>
+            <div class="field-header"><label for="isSkeletonSelect">Shader óseo</label></div>
           <select id="isSkeletonSelect">
             <option value="false">No (PBR Normal)</option>
             <option value="true">Sí (Shader Óseo)</option>
@@ -327,78 +436,105 @@
       </div>
       <div class="custom-panel-row">
         <div class="field">
-          <div class="field-header"><span>Zancada 3D (m)</span></div>
+            <div class="field-header"><label for="strideInput">Zancada 3D (m)</label></div>
           <input type="number" id="strideInput" step="0.05" min="0.1" value="1.50">
         </div>
         <div class="field">
-          <div class="field-header"><span>Periodo Anim (ticks)</span></div>
+            <div class="field-header"><label for="animPeriodInput">Ticks por frame</label></div>
           <input type="number" id="animPeriodInput" step="1" min="1" max="10" value="3">
+          <p class="field-help">Cuánto dura cada pose a 60 ticks/s. Más ticks = animación más lenta; recalcula la velocidad de movimiento para mantener la zancada.</p>
         </div>
       </div>
     </div>
 
     <div class="field" style="margin-top: 6px;">
-      <div class="field-header"><span>Escala Visual Relativa</span> <span class="val" id="scaleVal">1.40x</span></div>
-      <input type="range" id="scaleRange" min="1.0" max="2.4" step="0.05" value="1.40">
+      <div class="field-header"><label for="resolutionRange">Resolución del sprite</label> <output class="val" id="resolutionVal" for="resolutionRange">48 × 48 px</output></div>
+      <p class="field-help">Renderiza cada pose directamente desde el modelo 3D a esta resolución; la cámara ajusta el encuadre para incluir toda la animación.</p>
+      <input type="range" id="resolutionRange" min="22" max="60" step="1" value="48">
+      <div class="range-ends"><span>22 × 22 px · compacto</span><span>60 × 60 px · más detalle</span></div>
     </div>
     <div class="field">
-      <div class="field-header"><span>Elevación Cámara (Ángulo)</span> <span class="val" id="elevVal">30°</span></div>
-      <input type="range" id="elevRange" min="25" max="65" step="5" value="30">
-    </div>
-  </div>
-
-  <div class="group">
-    <div class="group-title">2. Iluminación Direccional (Antorcha)</div>
-    <div class="field">
-      <div class="field-header"><span>Energía Luz Clave (Key Sun)</span> <span class="val" id="keyVal">4.5</span></div>
-      <input type="range" id="keyRange" min="1.0" max="8.0" step="0.25" value="4.5">
-    </div>
-    <div class="field">
-      <div class="field-header"><span>Luz Relleno / Sombras (Fill)</span> <span class="val" id="fillVal">0.85</span></div>
-      <input type="range" id="fillRange" min="0.10" max="1.50" step="0.05" value="0.85">
-    </div>
-    <div class="field">
-      <div class="field-header"><span>Luz Ambiente (World)</span> <span class="val" id="worldVal">0.35</span></div>
-      <input type="range" id="worldRange" min="0.05" max="0.80" step="0.05" value="0.35">
+      <div class="field-header"><label for="elevRange">Ángulo de cámara</label> <output class="val" id="elevVal" for="elevRange">35°</output></div>
+      <p class="field-help">Eleva la cámara para equilibrar suelo visible y lectura del personaje.</p>
+      <input type="range" id="elevRange" min="20" max="60" step="5" value="35">
+      <div class="range-ends"><span>20° · lateral</span><span>60° · cenital</span></div>
     </div>
   </div>
 
   <div class="group">
-    <div class="group-title">3. Shaders y Normal Maps</div>
+    <div class="group-title">Iluminación direccional</div>
     <div class="field">
-      <div class="field-header"><span>Fuerza Normal Map</span> <span class="val" id="normVal">35%</span></div>
-      <input type="range" id="normRange" min="0.0" max="1.0" step="0.05" value="0.35">
+      <div class="field-header"><label for="keyRange">Luz principal</label> <output class="val" id="keyVal" for="keyRange">3.0</output></div>
+      <p class="field-help">Intensidad de la luz que define la forma y las sombras principales.</p>
+      <input type="range" id="keyRange" min="0.1" max="6.0" step="0.1" value="3.0">
+      <div class="range-ends"><span>0,1 · tenue</span><span>6 · intensa</span></div>
     </div>
     <div class="field">
-      <div class="field-header"><span>Samples Cycles (Calidad)</span> <span class="val" id="sampleVal">12</span></div>
-      <input type="range" id="sampleRange" min="8" max="24" step="4" value="12">
+      <div class="field-header"><label for="shadowRange">Dureza de sombra</label> <output class="val" id="shadowVal" for="shadowRange">2°</output></div>
+      <p class="field-help">Controla el borde de la sombra de la luz principal. Valores bajos producen sombras más duras.</p>
+      <input type="range" id="shadowRange" min="0.5" max="18" step="0.5" value="2">
+      <div class="range-ends"><span>0,5° · dura</span><span>18° · suave</span></div>
+    </div>
+    <div class="field">
+      <div class="field-header"><label for="fillRange">Luz de relleno</label> <output class="val" id="fillVal" for="fillRange">0.25</output></div>
+      <p class="field-help">Levanta las sombras sin borrar el volumen de la iluminación principal.</p>
+      <input type="range" id="fillRange" min="0" max="1.2" step="0.05" value="0.25">
+      <div class="range-ends"><span>0 · sin relleno</span><span>1.2 · sombras levantadas</span></div>
+    </div>
+    <div class="field">
+      <div class="field-header"><label for="worldRange">Luz ambiente</label> <output class="val" id="worldVal" for="worldRange">0.10</output></div>
+      <p class="field-help">Ilumina de manera uniforme las zonas que no alcanza la luz principal.</p>
+      <input type="range" id="worldRange" min="0" max="0.7" step="0.05" value="0.1">
+      <div class="range-ends"><span>0 · sin ambiente</span><span>0.7 · sombras levantadas</span></div>
     </div>
   </div>
 
   <div class="group">
-    <div class="group-title">4. Post-Proceso 2D & Grading</div>
+    <div class="group-title">Superficie y relieve</div>
     <div class="field">
-      <div class="field-header"><span>Contraste</span> <span class="val" id="contVal">1.15</span></div>
-      <input type="range" id="contRange" min="0.90" max="1.45" step="0.02" value="1.15">
+      <div class="field-header"><label for="normRange">Relieve de la superficie</label> <output class="val" id="normVal" for="normRange">35%</output></div>
+      <p class="field-help">Refuerza pequeños detalles de luz a partir del mapa normal del material.</p>
+      <input type="range" id="normRange" min="0" max="0.8" step="0.05" value="0.35">
+      <div class="range-ends"><span>0% · plano</span><span>80% · marcado</span></div>
     </div>
     <div class="field">
-      <div class="field-header"><span>Brillo</span> <span class="val" id="brVal">1.00</span></div>
-      <input type="range" id="brRange" min="0.85" max="1.25" step="0.02" value="1.00">
+      <div class="field-header"><label for="sampleRange">Calidad del render</label> <output class="val" id="sampleVal" for="sampleRange">16</output></div>
+      <p class="field-help">Más muestras reducen el ruido, a costa de tardar más en renderizar.</p>
+      <input type="range" id="sampleRange" min="8" max="32" step="8" value="16">
+      <div class="range-ends"><span>8 · rápido</span><span>32 · limpio</span></div>
+    </div>
+  </div>
+
+  <div class="group">
+    <div class="group-title">Color y postproceso</div>
+    <div class="field">
+      <div class="field-header"><label for="contRange">Contraste</label> <output class="val" id="contVal" for="contRange">1.00</output></div>
+      <p class="field-help">Separa luces y sombras después del render. 1.0 conserva el contraste base.</p>
+      <input type="range" id="contRange" min="0.85" max="1.35" step="0.05" value="1.0">
+      <div class="range-ends"><span>0.85 · suave</span><span>1.35 · marcado</span></div>
     </div>
     <div class="field">
-      <div class="field-header"><span>Saturación</span> <span class="val" id="satVal">1.15</span></div>
-      <input type="range" id="satRange" min="0.80" max="1.50" step="0.05" value="1.15">
+      <div class="field-header"><label for="brRange">Brillo</label> <output class="val" id="brVal" for="brRange">1.00</output></div>
+      <p class="field-help">Aclara u oscurece el resultado; 1.0 no aplica corrección.</p>
+      <input type="range" id="brRange" min="0.8" max="1.2" step="0.05" value="1.0">
+      <div class="range-ends"><span>0.8 · oscuro</span><span>1.2 · claro</span></div>
+    </div>
+    <div class="field">
+      <div class="field-header"><label for="satRange">Saturación</label> <output class="val" id="satVal" for="satRange">1.00</output></div>
+      <p class="field-help">Ajusta la intensidad del color; 1.0 mantiene los colores de la escena.</p>
+      <input type="range" id="satRange" min="0.7" max="1.3" step="0.05" value="1.0">
+      <div class="range-ends"><span>0.7 · apagado</span><span>1.3 · vivo</span></div>
     </div>
   </div>
 
   <button id="btnRender">
-    <span>⚡ Renderizar con Blender</span>
+    <span>Renderizar con Blender</span>
   </button>
 </div>
 
 <div id="main">
   <div id="topbar">
-    <div id="statusText">Listo para procesar. Modifica los parámetros y pulsa renderizar.</div>
+      <div id="statusText" role="status" aria-live="polite">Listo para procesar. Ajusta los parámetros y renderiza para ver las 8 direcciones.</div>
     <div class="kinematics-badge">
       <span>Zancada: <b id="kStride">23.8 px</b></span>
       <span>Speed C: <b id="kSpeed">254 (8.8)</b></span>
@@ -408,14 +544,21 @@
 
   <div id="previewArea">
     <div id="spinner">
-      <div class="loader"></div>
-      <div>Horneando 8 direcciones con Blender Cycles...</div>
+      <div class="loader" aria-hidden="true"></div>
+      <div>Renderizando las 8 direcciones con Blender Cycles…</div>
     </div>
-    <img id="previewImg" src="/runs/placeholder.gif" alt="Cargando vista previa...">
+    <div class="preview-empty" id="previewEmpty">
+      <div class="preview-grid" aria-hidden="true"><span>S</span><span>SW</span><span>W</span><span>NW</span><span>N</span><span>NE</span><span>E</span><span>SE</span></div>
+      <strong>Tu render aparecerá aquí</strong>
+      <p>Elige el modelo y los ajustes; luego renderiza para comparar las ocho orientaciones.</p>
+      <p class="preview-meta">8 DIRECCIONES · 8 POSES</p>
+    </div>
+    <img id="previewImg" alt="Collage animado del personaje en ocho direcciones" hidden>
+    <p class="preview-note" id="previewNote" hidden>Vista ampliada para inspección; los PNG mantienen la resolución elegida.</p>
   </div>
 
   <div class="history-panel" id="historyBar">
-    <!-- Miniaturas de renders anteriores -->
+    <div class="history-empty" id="historyEmpty">Los renders de esta sesión aparecerán aquí.</div>
   </div>
 </div>
 
@@ -431,6 +574,9 @@
   const btnUploadFbx = document.getElementById('btnUploadFbx');
   const btnToggleCustom = document.getElementById('btnToggleCustom');
   const customPanel = document.getElementById('customPanel');
+  const previewEmpty = document.getElementById('previewEmpty');
+  const previewNote = document.getElementById('previewNote');
+  const historyEmpty = document.getElementById('historyEmpty');
 
   const customFbxPath = document.getElementById('customFbxPath');
   const armatureScaleInput = document.getElementById('armatureScaleInput');
@@ -440,9 +586,10 @@
   const strideInput = document.getElementById('strideInput');
   const animPeriodInput = document.getElementById('animPeriodInput');
 
-  const scaleRange = document.getElementById('scaleRange');
+  const resolutionRange = document.getElementById('resolutionRange');
   const elevRange = document.getElementById('elevRange');
   const keyRange = document.getElementById('keyRange');
+  const shadowRange = document.getElementById('shadowRange');
   const fillRange = document.getElementById('fillRange');
   const worldRange = document.getElementById('worldRange');
   const normRange = document.getElementById('normRange');
@@ -451,9 +598,10 @@
   const brRange = document.getElementById('brRange');
   const satRange = document.getElementById('satRange');
 
-  const scaleVal = document.getElementById('scaleVal');
+  const resolutionVal = document.getElementById('resolutionVal');
   const elevVal = document.getElementById('elevVal');
   const keyVal = document.getElementById('keyVal');
+  const shadowVal = document.getElementById('shadowVal');
   const fillVal = document.getElementById('fillVal');
   const worldVal = document.getElementById('worldVal');
   const normVal = document.getElementById('normVal');
@@ -476,9 +624,10 @@
   let discoveredFiles = [];
 
   // Sincronizar sliders y labels
-  scaleRange.oninput = () => scaleVal.textContent = parseFloat(scaleRange.value).toFixed(2) + 'x';
+  resolutionRange.oninput = () => resolutionVal.textContent = `${resolutionRange.value} × ${resolutionRange.value} px`;
   elevRange.oninput = () => elevVal.textContent = elevRange.value + '°';
   keyRange.oninput = () => keyVal.textContent = parseFloat(keyRange.value).toFixed(2);
+  shadowRange.oninput = () => shadowVal.textContent = parseFloat(shadowRange.value).toFixed(1) + '°';
   fillRange.oninput = () => fillVal.textContent = parseFloat(fillRange.value).toFixed(2);
   worldRange.oninput = () => worldVal.textContent = parseFloat(worldRange.value).toFixed(2);
   normRange.oninput = () => normVal.textContent = Math.round(normRange.value * 100) + '%';
@@ -491,6 +640,7 @@
   btnToggleCustom.onclick = () => {
     const isHidden = customPanel.style.display === 'none';
     customPanel.style.display = isHidden ? 'flex' : 'none';
+    btnToggleCustom.setAttribute('aria-expanded', String(isHidden));
   };
 
   // Botón subir archivo local
@@ -575,8 +725,8 @@
       const p = serverPresets[val];
       fbxCurrentPath.textContent = p.fbx;
       customFbxPath.value = p.fbx;
-      scaleRange.value = p.default_scale;
-      scaleVal.textContent = p.default_scale.toFixed(2) + 'x';
+      resolutionRange.value = p.default_resolution_px || 48;
+      resolutionVal.textContent = `${resolutionRange.value} × ${resolutionRange.value} px`;
       elevRange.value = p.default_elevation;
       elevVal.textContent = p.default_elevation + '°';
       armatureScaleInput.value = p.armature_scale;
@@ -642,13 +792,67 @@
     }
   }
 
+  async function restoreRenderSettings(params) {
+    const preset = serverPresets[params.character];
+    const targetFbx = params.custom_fbx || (preset && preset.fbx) || params.character;
+    if ([...charSelect.options].some(option => option.value === params.character)) {
+      charSelect.value = params.character;
+    }
+    fbxCurrentPath.textContent = targetFbx;
+    customFbxPath.value = targetFbx;
+
+    const numberInputs = {
+      armatureScaleInput: 'armature_scale', neckPitchInput: 'neck_pitch',
+      displaceInput: 'displace', strideInput: 'stride_3d_m', animPeriodInput: 'anim_period'
+    };
+    for (const [id, key] of Object.entries(numberInputs)) {
+      if (params[key] !== undefined) document.getElementById(id).value = params[key];
+    }
+    if (params.is_skeleton !== undefined) isSkeletonSelect.value = params.is_skeleton ? 'true' : 'false';
+
+    const ranges = {
+      resolutionRange: ['resolution_px', resolutionRange.oninput],
+      elevRange: ['elevation', elevRange.oninput],
+      keyRange: ['key_energy', keyRange.oninput],
+      shadowRange: ['key_angle', shadowRange.oninput],
+      fillRange: ['fill_energy', fillRange.oninput],
+      worldRange: ['world_strength', worldRange.oninput],
+      normRange: ['normal_strength', normRange.oninput],
+      sampleRange: ['samples', sampleRange.oninput],
+      contRange: ['contrast', contRange.oninput],
+      brRange: ['brightness', brRange.oninput],
+      satRange: ['saturation', satRange.oninput]
+    };
+    for (const [id, [key, updateLabel]] of Object.entries(ranges)) {
+      if (params[key] !== undefined) {
+        document.getElementById(id).value = params[key];
+        updateLabel();
+      }
+    }
+
+    await fetchAnimationsForCurrentFbx();
+    actionSelect.value = params.action_name || '';
+  }
+
+  function describeRender(params, index) {
+    const preset = serverPresets[params.character];
+    const model = params.custom_fbx
+      ? params.custom_fbx.split(/[\\/]/).pop().replace(/\.fbx$/i, '')
+      : (preset && preset.name) || params.character;
+    return `Render ${index} · ${model} · ${params.resolution_px}px`;
+  }
+
   async function triggerRender() {
     btnRender.disabled = true;
+    btnRender.setAttribute('aria-busy', 'true');
     spinner.style.display = 'flex';
+    statusText.classList.remove('error', 'success');
 
     const selectedVal = charSelect.value;
-    const isPreset = !!serverPresets[selectedVal];
     const targetFbx = customFbxPath.value.trim() || fbxCurrentPath.textContent.trim();
+    const presetFbx = serverPresets[selectedVal]?.fbx;
+    const normalizePath = path => (path || '').replace(/\\/g, '/').toLowerCase();
+    const isPreset = !!presetFbx && normalizePath(targetFbx) === normalizePath(presetFbx);
     const chosenAction = actionSelect.value || null;
 
     statusText.textContent = `Renderizando ${targetFbx} [${chosenAction || 'animación default'}] con Blender (Cycles ${sampleRange.value} samples)...`;
@@ -657,7 +861,7 @@
       character: selectedVal,
       custom_fbx: isPreset ? null : targetFbx,
       action_name: chosenAction,
-      scale: parseFloat(scaleRange.value),
+      resolution_px: parseInt(resolutionRange.value, 10),
       elevation: parseFloat(elevRange.value),
       armature_scale: parseFloat(armatureScaleInput.value),
       neck_pitch: parseFloat(neckPitchInput.value),
@@ -666,6 +870,7 @@
       stride_3d_m: parseFloat(strideInput.value),
       anim_period: parseInt(animPeriodInput.value),
       key_energy: parseFloat(keyRange.value),
+      key_angle: parseFloat(shadowRange.value),
       fill_energy: parseFloat(fillRange.value),
       world_strength: parseFloat(worldRange.value),
       normal_strength: parseFloat(normRange.value),
@@ -685,33 +890,68 @@
       const data = await resp.json();
 
       if (data.error) {
-        alert("Error renderizando: " + data.error);
+        statusText.classList.add('error');
         statusText.textContent = "Error en el render: " + data.error;
       } else {
         previewImg.src = data.gif_url + '?t=' + Date.now();
+        previewImg.hidden = false;
+        previewEmpty.hidden = true;
+        previewNote.hidden = false;
         kStride.textContent = data.stride_px + ' px';
         kSpeed.textContent = data.speed_fixed_8_8 + ' (8.8)';
         kPeriod.textContent = data.anim_period + ' ticks';
-        statusText.textContent = `✅ Render completado en ${data.job_id}. Acoplamiento: ${data.speed_fixed_8_8} (8.8 fixed)`;
+        statusText.textContent = `Render completado en ${data.job_id}. Acoplamiento: ${data.speed_fixed_8_8} (8.8 fixed)`;
 
         // Añadir miniatura a la barra de historial
-        const thumb = document.createElement('img');
-        thumb.src = data.gif_url;
+        document.querySelectorAll('.history-thumb').forEach(t => {
+          t.classList.remove('active');
+          t.setAttribute('aria-pressed', 'false');
+        });
+        const thumb = document.createElement('button');
+        thumb.type = 'button';
         thumb.className = 'history-thumb active';
-        thumb.title = data.job_id;
-        thumb.onclick = () => {
-          document.querySelectorAll('.history-thumb').forEach(t => t.classList.remove('active'));
+        thumb.setAttribute('aria-pressed', 'true');
+        const index = historyBar.querySelectorAll('.history-thumb').length + 1;
+        const caption = describeRender(payload, index);
+        thumb.title = `${caption} · ${data.job_id}`;
+        thumb.setAttribute('aria-label', `Mostrar ${caption}`);
+        const thumbImage = document.createElement('img');
+        thumbImage.src = `${data.gif_url}?run=${encodeURIComponent(data.job_id)}`;
+        thumbImage.alt = '';
+        const thumbCaption = document.createElement('span');
+        thumbCaption.className = 'history-caption';
+        thumbCaption.textContent = caption;
+        thumb.append(thumbImage, thumbCaption);
+        thumb.renderSnapshot = { params: { ...payload }, result: data };
+        thumb.onclick = async () => {
+          document.querySelectorAll('.history-thumb').forEach(t => {
+            t.classList.remove('active');
+            t.setAttribute('aria-pressed', 'false');
+          });
           thumb.classList.add('active');
-          previewImg.src = data.gif_url;
+          thumb.setAttribute('aria-pressed', 'true');
+          previewImg.src = `${data.gif_url}?run=${encodeURIComponent(data.job_id)}`;
+          previewImg.hidden = false;
+          previewNote.hidden = false;
+          await restoreRenderSettings(thumb.renderSnapshot.params);
+          kStride.textContent = data.stride_px + ' px';
+          kSpeed.textContent = data.speed_fixed_8_8 + ' (8.8)';
+          kPeriod.textContent = data.anim_period + ' ticks';
+          statusText.classList.remove('error');
+          statusText.classList.add('success');
+          statusText.textContent = `Render ${data.job_id} seleccionado; parámetros restaurados.`;
         };
         historyBar.prepend(thumb);
+        historyEmpty.hidden = true;
+        statusText.classList.add('success');
       }
     } catch (err) {
-      alert("Error de red: " + err);
-      statusText.textContent = "Error de red.";
+      statusText.classList.add('error');
+      statusText.textContent = "No se pudo conectar con el servidor de render. Comprueba que sigue activo e inténtalo de nuevo.";
     } finally {
       spinner.style.display = 'none';
       btnRender.disabled = false;
+      btnRender.removeAttribute('aria-busy');
     }
   }
 

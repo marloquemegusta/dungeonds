@@ -16,10 +16,12 @@ import socketserver
 import urllib.parse
 import glob
 import base64
+import uuid
+import unicodedata
 from pathlib import Path
 from PIL import Image, ImageDraw, ImageEnhance, ImageChops
 
-PORT = 8088
+PORT = int(os.environ.get("SHADER_LAB_PORT", "8088"))
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 BLENDER_EXE = r"C:\Program Files\Blender Foundation\Blender 5.2\blender.exe"
 RUNS_DIR = os.path.join(ROOT, "assets", "lab_runs")
@@ -29,12 +31,14 @@ os.makedirs(CUSTOM_DIR, exist_ok=True)
 
 # Parámetros canónicos
 PIXELS_PER_METRE = 32.0 / (2.0 * math.sqrt(2.0))  # 11.3137 px/m
+RASTER_OUTLINE_MARGIN_PX = 2
 
 CHARACTERS_CONFIG = {
     "hero": {
         "name": "Héroe Nigromante",
         "fbx": os.path.join(ROOT, "assets", "characters", "monster", "Walking.fbx"),
-        "default_scale": 1.40,
+        "default_resolution_px": 48,
+        "kinematic_scale": 1.40,
         "default_elevation": 30.0,
         "armature_scale": 1.0,
         "neck_pitch": 0.0,
@@ -46,7 +50,8 @@ CHARACTERS_CONFIG = {
     "charger": {
         "name": "Cargador (Maw)",
         "fbx": os.path.join(ROOT, "assets", "characters", "charger", "Run.fbx"),
-        "default_scale": 1.35,
+        "default_resolution_px": 48,
+        "kinematic_scale": 1.35,
         "default_elevation": 30.0,
         "armature_scale": 1.0,
         "neck_pitch": 20.0,
@@ -58,7 +63,8 @@ CHARACTERS_CONFIG = {
     "skeleton": {
         "name": "Esqueleto",
         "fbx": os.path.join(ROOT, "assets", "characters", "skeleton", "skeleton.fbx"),
-        "default_scale": 1.35,
+        "default_resolution_px": 48,
+        "kinematic_scale": 1.35,
         "default_elevation": 30.0,
         "armature_scale": 0.027,
         "neck_pitch": 0.0,
@@ -135,7 +141,7 @@ def get_fbx_actions(fbx_path):
         return []
 
 BLENDER_WORKER_TEMPLATE = r'''
-import bpy, math, os, mathutils
+import bpy, math, os, mathutils, numpy as np
 
 FBX = r"{fbx}"
 OUT_DIR = r"{out_dir}"
@@ -143,8 +149,7 @@ CELL = {cell}
 NUM_DIRS = {dirs}
 NUM_FRAMES = {frames}
 SAMPLES = {samples}
-PX_PER_M = {pxm}
-SCALE = {scale}
+TARGET_PIXELS = {target_pixels}
 ELEV = {elev}
 AZIMUTH = {azimuth}
 NECK_PITCH = {neck_pitch}
@@ -158,6 +163,7 @@ KEY_ROT_Y = {key_rot_y}
 KEY_ROT_Z = {key_rot_z}
 FILL_ENERGY = {fill_energy}
 WORLD_STRENGTH = {world_strength}
+KEY_ANGLE = {key_angle}
 ACTION_NAME = {action_name}
 
 bpy.ops.wm.read_factory_settings(use_empty=True)
@@ -198,13 +204,34 @@ for arm in armatures:
             c.min_z = c.max_z = bone.location.z
             break
 
-if NECK_PITCH != 0.0:
-    for arm in armatures:
-        for b_name in ["mixamorig:Neck", "mixamorig:Head"]:
-            if b_name in arm.pose.bones:
-                b = arm.pose.bones[b_name]
-                b.rotation_mode = 'XYZ'
-                b.rotation_euler.x += math.radians(NECK_PITCH)
+_neck_targets = []
+for arm in armatures:
+    neck_bone = next((b for b in arm.pose.bones if b.name.lower().endswith('neck')), None)
+    if not neck_bone:
+        neck_bone = next((b for b in arm.pose.bones if 'neck' in b.name.lower() and 'twist' not in b.name.lower() and 'end' not in b.name.lower()), None)
+    if not neck_bone:
+        neck_bone = next((b for b in arm.pose.bones if b.name.lower().endswith('head')), None)
+    if neck_bone:
+        # Bone local X is not a reliable pitch axis across FBX rigs. Pick the
+        # local X/Z axis that aligns most closely with the armature's lateral X.
+        rest_axes = neck_bone.bone.matrix_local.to_3x3()
+        pitch_axis = max((0, 2), key=lambda i: abs(rest_axes.col[i].normalized().dot(mathutils.Vector((1.0, 0.0, 0.0)))))
+        pitch_sign = 1.0 if rest_axes.col[pitch_axis].dot(mathutils.Vector((1.0, 0.0, 0.0))) >= 0.0 else -1.0
+        neck_bone.rotation_mode = 'XYZ'
+        _neck_targets.append([neck_bone, pitch_axis, pitch_sign, 0.0])
+
+def reset_neck_pitch():
+    for state in _neck_targets:
+        if state[3]:
+            state[0].rotation_euler[state[1]] -= state[3]
+            state[3] = 0.0
+
+def apply_neck_pitch():
+    pitch = math.radians(NECK_PITCH)
+    for state in _neck_targets:
+        applied_pitch = pitch * state[2]
+        state[0].rotation_euler[state[1]] += applied_pitch
+        state[3] = applied_pitch
 
 if DISPLACE > 0.0:
     for obj in [o for o in bpy.data.objects if o.type == 'MESH']:
@@ -225,9 +252,64 @@ if IS_SKELETON:
 else:
     for mat in bpy.data.materials:
         if mat.use_nodes and mat.node_tree:
+            bsdf = next((node for node in mat.node_tree.nodes if node.type == 'BSDF_PRINCIPLED'), None)
+            if not bsdf:
+                continue
+            semantic_maps = []
             for node in mat.node_tree.nodes:
+                if node.type == 'TEX_IMAGE' and node.image:
+                    image_name = os.path.basename(node.image.filepath or node.image.name).lower()
+                    map_kind = None
+                    if 'basecolor' in image_name or 'base_color' in image_name or 'albedo' in image_name or 'diffuse' in image_name:
+                        map_kind = 'base'
+                    elif 'roughness' in image_name or 'roughness' in node.name.lower():
+                        map_kind = 'roughness'
+                    elif 'metallic' in image_name or 'metalness' in image_name:
+                        map_kind = 'metallic'
+                    elif 'normal' in image_name:
+                        map_kind = 'normal'
+                    if map_kind:
+                        semantic_maps.append((map_kind, node))
+                        if map_kind != 'base':
+                            node.image.colorspace_settings.name = 'Non-Color'
                 if node.type == 'NORMAL_MAP':
                     node.inputs['Strength'].default_value = NORMAL_STRENGTH
+
+            # Some FBX exporters put texture maps into the wrong Principled sockets.
+            # Reconnect recognizable maps by filename so metallic/roughness data is interpreted correctly.
+            map_targets = (
+                ('base', bsdf.inputs.get('Base Color')),
+                ('metallic', bsdf.inputs.get('Metallic')),
+                ('roughness', bsdf.inputs.get('Roughness')),
+            )
+            for map_kind, target_socket in map_targets:
+                selected_map = next((node for kind, node in semantic_maps if kind == map_kind), None)
+                if target_socket and selected_map:
+                    for link in list(mat.node_tree.links):
+                        if link.to_socket == target_socket:
+                            mat.node_tree.links.remove(link)
+                    mat.node_tree.links.new(selected_map.outputs['Color'], target_socket)
+            metallic_map = next((node for kind, node in semantic_maps if kind == 'metallic'), None)
+            if not metallic_map and not bsdf.inputs['Metallic'].is_linked:
+                bsdf.inputs['Metallic'].default_value = 0.0
+
+            normal_map_image = next((node for kind, node in semantic_maps if kind == 'normal'), None)
+            normal_node = next((node for node in mat.node_tree.nodes if node.type == 'NORMAL_MAP'), None)
+            if normal_map_image:
+                if not normal_node:
+                    normal_node = mat.node_tree.nodes.new('ShaderNodeNormalMap')
+                    mat.node_tree.links.new(normal_node.outputs['Normal'], bsdf.inputs['Normal'])
+                for link in list(mat.node_tree.links):
+                    if link.to_socket == normal_node.inputs['Color']:
+                        mat.node_tree.links.remove(link)
+                mat.node_tree.links.new(normal_map_image.outputs['Color'], normal_node.inputs['Color'])
+                normal_node.inputs['Strength'].default_value = NORMAL_STRENGTH
+
+            specular_socket = bsdf.inputs.get('Specular IOR Level')
+            if specular_socket:
+                for link in list(mat.node_tree.links):
+                    if link.to_socket == specular_socket and link.from_node.type == 'TEX_IMAGE':
+                        mat.node_tree.links.remove(link)
 
 bpy.context.view_layer.update()
 root_anchor = armatures[0].matrix_world.translation.copy() if armatures else mathutils.Vector((0.0, 0.0, 0.0))
@@ -237,13 +319,14 @@ scene.render.engine = 'CYCLES'
 scene.cycles.device = 'CPU'
 scene.cycles.samples = SAMPLES
 scene.cycles.use_denoising = True
+scene.render.use_persistent_data = True
 scene.render.film_transparent = True
 scene.render.image_settings.file_format = 'PNG'
 scene.render.image_settings.color_mode = 'RGBA'
 scene.render.resolution_x = CELL
 scene.render.resolution_y = CELL
 
-# Evaluate character bounding height to vertically center the camera
+# Anchor the camera target at the model's initial height; per-frame ground alignment follows below.
 dg = bpy.context.evaluated_depsgraph_get()
 _all_z = []
 for obj in [o for o in bpy.data.objects if o.type == 'MESH']:
@@ -251,7 +334,7 @@ for obj in [o for o in bpy.data.objects if o.type == 'MESH']:
     for corner in ev.bound_box:
         _all_z.append((ev.matrix_world @ mathutils.Vector(corner)).z)
 _char_height = (max(_all_z) - min(_all_z)) if _all_z else 1.835
-_target_z = _char_height * 0.50
+_target_z = root_anchor.z + _char_height * 0.50
 
 target = bpy.data.objects.new('CamTarget', None)
 target.location = (root_anchor.x, root_anchor.y, _target_z)
@@ -268,12 +351,13 @@ for obj in [o for o in bpy.data.objects if o.type in {{'MESH', 'ARMATURE'}}]:
 
 cam_data = bpy.data.cameras.new('IsoCam')
 cam_data.type = 'ORTHO'
-cam_data.ortho_scale = CELL / (PX_PER_M * SCALE)
+cam_data.ortho_scale = 1.0
 cam = bpy.data.objects.new('IsoCam', cam_data)
 scene.collection.objects.link(cam)
 scene.camera = cam
 
 _el = math.radians(ELEV)
+# Orthographic projection: this distance only keeps the camera clear of the scene; ortho_scale sets framing.
 _dist = 30.0
 _az = math.radians(AZIMUTH)
 cam.location = (root_anchor.x + _dist * math.cos(_el) * math.cos(_az),
@@ -289,7 +373,7 @@ w = bpy.data.worlds.new('DSWorld')
 w.use_nodes = True
 bg = w.node_tree.nodes.get('Background')
 if bg:
-    bg.inputs[0].default_value = (0.04, 0.05, 0.07, 1.0)
+    bg.inputs[0].default_value = (1.0, 1.0, 1.0, 1.0)
     bg.inputs[1].default_value = WORLD_STRENGTH
 scene.world = w
 
@@ -297,7 +381,7 @@ scene.world = w
 key_data = bpy.data.lights.new('Key', 'SUN')
 key_data.energy = KEY_ENERGY
 key_data.color = (1.0, 0.76, 0.46)
-key_data.angle = math.radians(6.0)
+key_data.angle = math.radians(KEY_ANGLE)
 key_data.use_shadow = True
 key_obj = bpy.data.objects.new('Key', key_data)
 key_obj.rotation_euler = (math.radians(KEY_ROT_X), math.radians(KEY_ROT_Y), math.radians(KEY_ROT_Z))
@@ -315,7 +399,7 @@ scene.collection.objects.link(fill_obj)
 
 # Rim light
 rim_data = bpy.data.lights.new('Rim', 'SUN')
-rim_data.energy = 0.85
+rim_data.energy = 0.0
 rim_data.color = (0.60, 0.80, 1.00)
 rim_data.angle = math.radians(30.0)
 rim_data.use_shadow = False
@@ -327,11 +411,70 @@ os.makedirs(OUT_DIR, exist_ok=True)
 total = max(1, end_f - start_f)
 frame_indices = [int(start_f + (i * total) / NUM_FRAMES) for i in range(NUM_FRAMES)]
 
+# Fit the orthographic camera to evaluated mesh vertices across the whole clip and all directions.
+_min_x = _min_y = float('inf')
+_max_x = _max_y = float('-inf')
+_mesh_objects = [o for o in bpy.data.objects if o.type == 'MESH']
+bpy.context.view_layer.update()
+_camera_inverse = np.array(cam.matrix_world.inverted(), dtype=np.float64)
+_camera_rotation = _camera_inverse[:3, :3]
+_camera_translation = _camera_inverse[:3, 3]
+for d in range(NUM_DIRS):
+    rig.rotation_euler.z = math.radians(135.0 - d * 360.0 / NUM_DIRS)
+    for fnum in frame_indices:
+        reset_neck_pitch()
+        scene.frame_set(fnum)
+        apply_neck_pitch()
+        rig.location.z = root_anchor.z
+        bpy.context.view_layer.update()
+        dg = bpy.context.evaluated_depsgraph_get()
+        lowest_z = 1e9
+        frame_vertices = []
+        for obj in _mesh_objects:
+            ev = obj.evaluated_get(dg)
+            mesh = ev.to_mesh()
+            try:
+                if len(mesh.vertices) == 0:
+                    continue
+                local = np.empty(len(mesh.vertices) * 3, dtype=np.float32)
+                mesh.vertices.foreach_get('co', local)
+                local = local.reshape((-1, 3)).astype(np.float64)
+                matrix_world = np.array(ev.matrix_world, dtype=np.float64)
+                world = local @ matrix_world[:3, :3].T + matrix_world[:3, 3]
+                lowest_z = min(lowest_z, float(world[:, 2].min()))
+                frame_vertices.append(world)
+            finally:
+                ev.to_mesh_clear()
+        if not frame_vertices:
+            continue
+        ground_offset = root_anchor.z - lowest_z
+        for world in frame_vertices:
+            world[:, 2] += ground_offset
+            camera_points = world @ _camera_rotation.T + _camera_translation
+            _min_x = min(_min_x, float(camera_points[:, 0].min()))
+            _max_x = max(_max_x, float(camera_points[:, 0].max()))
+            _min_y = min(_min_y, float(camera_points[:, 1].min()))
+            _max_y = max(_max_y, float(camera_points[:, 1].max()))
+if _min_x == float('inf') or _max_y <= _min_y or _max_x <= _min_x:
+    raise RuntimeError('No se pudo calcular el bounding box animado del FBX')
+_world_width = _max_x - _min_x
+_world_height = _max_y - _min_y
+_camera_extent = max(_world_width, _world_height * scene.render.resolution_x / scene.render.resolution_y)
+cam_data.ortho_scale = _camera_extent * CELL / TARGET_PIXELS
+camera_center = mathutils.Vector(((_min_x + _max_x) * 0.5, (_min_y + _max_y) * 0.5, 0.0))
+bpy.context.view_layer.update()
+world_shift = cam.matrix_world.to_3x3() @ camera_center
+cam.location += world_shift
+target.location += world_shift
+bpy.context.view_layer.update()
+
 for d in range(NUM_DIRS):
     rig.rotation_euler.z = math.radians(135.0 - d * 360.0 / NUM_DIRS)
     bpy.context.view_layer.update()
     for fi, fnum in enumerate(frame_indices):
+        reset_neck_pitch()
         scene.frame_set(fnum)
+        apply_neck_pitch()
         rig.location.z = root_anchor.z
         bpy.context.view_layer.update()
         dg = bpy.context.evaluated_depsgraph_get()
@@ -378,9 +521,15 @@ def grade_image(img, contrast, brightness, saturation):
     return img
 
 DIR_NAMES = [
-    "0: S (Sur)", "1: SW (Suroeste)", "2: W (Oeste)", "3: NW (Noroeste)",
-    "4: N (Norte)", "5: NE (Noreste)", "6: E (Este)", "7: SE (Sureste)"
+    "0 S", "1 SW", "2 W", "3 NW", "4 N", "5 NE", "6 E", "7 SE"
 ]
+
+def fit_collage_text(draw, text, max_width):
+    if draw.textbbox((0, 0), text)[2] <= max_width:
+        return text
+    while text and draw.textbbox((0, 0), text + "...")[2] > max_width:
+        text = text[:-1]
+    return text.rstrip() + "..."
 
 def build_8dir_collage(frames_dir, out_gif_path, title, subtitle, duration=100, zoom=2, cell=64):
     cols = 4
@@ -398,8 +547,9 @@ def build_8dir_collage(frames_dir, out_gif_path, title, subtitle, duration=100, 
         canvas = Image.new('RGBA', (total_w, total_h), (16, 14, 20, 255))
         draw = ImageDraw.Draw(canvas)
         draw.rectangle([0, 0, total_w, header_h], fill=(24, 21, 30, 255))
-        draw.text((pad, 8), title, fill=(245, 240, 250, 255))
-        draw.text((pad, 25), subtitle, fill=(175, 170, 195, 255))
+        label_width = total_w - 2 * pad
+        draw.text((pad, 8), fit_collage_text(draw, title, label_width), fill=(245, 240, 250, 255))
+        draw.text((pad, 25), fit_collage_text(draw, subtitle, label_width), fill=(175, 170, 195, 255))
 
         for d in range(8):
             col = d % cols
@@ -443,7 +593,8 @@ def execute_render_job(params):
         char_cfg = {
             "name": f"Personalizado ({base_name})",
             "fbx": fbx_path,
-            "default_scale": 1.40,
+            "default_resolution_px": 48,
+            "kinematic_scale": 1.40,
             "default_elevation": 30.0,
             "armature_scale": float(params.get("armature_scale", 1.0)),
             "neck_pitch": float(params.get("neck_pitch", 0.0)),
@@ -464,7 +615,8 @@ def execute_render_job(params):
             char_cfg = {
                 "name": f"FBX ({base_name})",
                 "fbx": fbx_path,
-                "default_scale": 1.40,
+                "default_resolution_px": 48,
+                "kinematic_scale": 1.40,
                 "default_elevation": 30.0,
                 "armature_scale": float(params.get("armature_scale", 1.0)),
                 "neck_pitch": float(params.get("neck_pitch", 0.0)),
@@ -492,7 +644,11 @@ def execute_render_job(params):
     if "anim_period" in params:
         char_cfg["anim_period"] = int(params["anim_period"])
 
-    scale = float(params.get("scale", char_cfg["default_scale"]))
+    requested_resolution = params.get("resolution_px", params.get("occupancy_px", char_cfg["default_resolution_px"]))
+    target_pixels = max(22, min(60, int(requested_resolution)))
+    outline_enabled = bool(params.get("outline", True))
+    # Outline dilation and resampling can extend alpha by a few pixels at the final raster size.
+    raster_target_pixels = max(8, target_pixels - (RASTER_OUTLINE_MARGIN_PX if outline_enabled else 0))
     elev = float(params.get("elevation", char_cfg["default_elevation"]))
     azimuth = float(params.get("azimuth", 45.0))
     samples = int(params.get("samples", 12))
@@ -503,17 +659,19 @@ def execute_render_job(params):
     key_rot_z = float(params.get("key_rot_z", 150.0))
     fill_energy = float(params.get("fill_energy", 0.85))
     world_strength = float(params.get("world_strength", 0.35))
+    key_angle = float(params.get("key_angle", 2.0))
     normal_strength = float(params.get("normal_strength", 0.35))
     
     contrast = float(params.get("contrast", 1.15))
     brightness = float(params.get("brightness", 1.00))
     saturation = float(params.get("saturation", 1.15))
-    outline_enabled = bool(params.get("outline", True))
     action_name = params.get("action_name")
     action_str = f"r'{action_name}'" if action_name else "None"
     
     anim_tag = f"_{abs(hash(action_name)) % 10000}" if action_name else ""
-    job_id = f"{char_tag}{anim_tag}_{int(scale*100)}_{int(elev)}_{int(key_energy*10)}_{int(fill_energy*10)}_{int(normal_strength*100)}_{int(contrast*100)}"
+    # Every render gets an immutable directory; a partial settings key used to
+    # make different parameter sets overwrite the same PNGs and GIF.
+    job_id = f"{char_tag}{anim_tag}_{target_pixels}px_{uuid.uuid4().hex[:12]}"
     job_dir = os.path.join(RUNS_DIR, job_id)
     os.makedirs(job_dir, exist_ok=True)
     
@@ -521,12 +679,11 @@ def execute_render_job(params):
     worker_script = BLENDER_WORKER_TEMPLATE.format(
         fbx=char_cfg["fbx"],
         out_dir=job_dir,
-        cell=64,
+        cell=target_pixels,
         dirs=8,
         frames=8,
         samples=samples,
-        pxm=PIXELS_PER_METRE,
-        scale=scale,
+        target_pixels=raster_target_pixels,
         elev=elev,
         azimuth=azimuth,
         neck_pitch=char_cfg["neck_pitch"],
@@ -540,6 +697,7 @@ def execute_render_job(params):
         key_rot_z=key_rot_z,
         fill_energy=fill_energy,
         world_strength=world_strength,
+        key_angle=key_angle,
         action_name=action_str
     )
     
@@ -568,20 +726,25 @@ def execute_render_job(params):
                     out_im.save(os.path.join(proc_dir, f"d{d:02d}_f{fi:03d}.png"))
                     
     # 3. Cálculo cinemático acoplado
-    stride_px = char_cfg["stride_3d_m"] * PIXELS_PER_METRE * scale
+    kinematic_scale = char_cfg["kinematic_scale"] * target_pixels / 48.0
+    stride_px = char_cfg["stride_3d_m"] * PIXELS_PER_METRE * kinematic_scale
     frames_per_cycle = 8 * char_cfg["anim_period"]
     speed_fixed_8_8 = int(round((stride_px * 256.0) / frames_per_cycle))
     speed_px_frame = speed_fixed_8_8 / 256.0
     
     # 4. GIF Collage
     gif_path = os.path.join(job_dir, "collage_8dirs.gif")
-    title = f"{char_cfg['name']} — Escala {scale:.2f}x | Elev {elev:.0f}° | Normales {int(normal_strength*100)}%"
-    subtitle = f"Zancada: {stride_px:.1f}px | Speed C: {speed_fixed_8_8} (8.8) | Fill: {fill_energy} | Contr: {contrast}"
-    build_8dir_collage(proc_dir, gif_path, title, subtitle)
+    title = f"{char_cfg['name']} | Resolucion {target_pixels}x{target_pixels}px | Elev {elev:.0f}deg"
+    subtitle = f"Zancada {stride_px:.1f}px | Speed {speed_fixed_8_8} | Relleno {fill_energy} | Contraste {contrast}"
+    title = unicodedata.normalize("NFKD", title).encode("ascii", "ignore").decode("ascii")
+    subtitle = unicodedata.normalize("NFKD", subtitle).encode("ascii", "ignore").decode("ascii")
+    frame_duration_ms = max(10, round(char_cfg["anim_period"] * 1000 / 60 / 10) * 10)
+    build_8dir_collage(proc_dir, gif_path, title, subtitle, duration=frame_duration_ms, cell=target_pixels)
     
     return {
         "job_id": job_id,
         "gif_url": f"/runs/{job_id}/collage_8dirs.gif",
+        "resolution_px": target_pixels,
         "stride_px": round(stride_px, 2),
         "speed_fixed_8_8": speed_fixed_8_8,
         "speed_px_frame": round(speed_px_frame, 3),

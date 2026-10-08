@@ -7,7 +7,7 @@
 ## 2. Dirección de Arte y Pipeline Confirmado
 - **Técnica:** Sprites 2D pre-renderizados a partir de modelos 3D con animaciones esqueléticas (FBX / Blender).
 - **Proyección:** Isométrica / dimétrica a 60 grados en 8 direcciones.
-- **Herramienta de tuning:** `sprite_lab.html` para auditar escalado nearest-neighbor (1x, 2x, 4x, 8x), filtros de legibilidad (contorno oscuro, contraste) y animación en el sitio (*in-place*).
+- **Herramienta de tuning:** `tools/lab/shader_lab_ui.html` (`tools/lab/shader_lab_server.py`) para cargar FBX, elegir clips, ajustar renderizado y revisar sprites en 8 direcciones. El antiguo `sprite_lab.html` de tuning 2D se retiró.
 - **Lanza ósea:** salva de cinco astillas estrechas y puntiagudas dibujadas proceduralmente, sin outline; proyectiles rápidos con motas de tonos marfil/hueso.
 - **Muerte del enemigo:** al golpe final, la silueta se rompe en pequeños fragmentos extraídos de sus propios píxeles, que salen según el impacto y caen con una parábola breve.
 
