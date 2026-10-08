@@ -14,6 +14,8 @@ import threading
 import http.server
 import socketserver
 import urllib.parse
+import glob
+import base64
 from pathlib import Path
 from PIL import Image, ImageDraw, ImageEnhance, ImageChops
 
@@ -21,7 +23,9 @@ PORT = 8088
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 BLENDER_EXE = r"C:\Program Files\Blender Foundation\Blender 5.2\blender.exe"
 RUNS_DIR = os.path.join(ROOT, "assets", "lab_runs")
+CUSTOM_DIR = os.path.join(ROOT, "assets", "characters", "custom")
 os.makedirs(RUNS_DIR, exist_ok=True)
+os.makedirs(CUSTOM_DIR, exist_ok=True)
 
 # Parámetros canónicos
 PIXELS_PER_METRE = 32.0 / (2.0 * math.sqrt(2.0))  # 11.3137 px/m
@@ -64,6 +68,26 @@ CHARACTERS_CONFIG = {
         "anim_period": 3
     }
 }
+
+def scan_available_fbx_files():
+    """Escanea recursivamente assets/ en busca de cualquier archivo FBX disponible."""
+    found = []
+    assets_dir = os.path.join(ROOT, "assets")
+    if not os.path.exists(assets_dir):
+        return found
+    for root, dirs, files in os.walk(assets_dir):
+        for f in files:
+            if f.lower().endswith(".fbx"):
+                full_path = os.path.join(root, f)
+                rel_path = os.path.relpath(full_path, ROOT).replace(os.sep, "/")
+                found.append({
+                    "filename": f,
+                    "rel_path": rel_path,
+                    "abs_path": full_path,
+                    "size": os.path.getsize(full_path)
+                })
+    found.sort(key=lambda x: x["rel_path"])
+    return found
 
 BLENDER_WORKER_TEMPLATE = r'''
 import bpy, math, os, mathutils
@@ -351,8 +375,72 @@ def build_8dir_collage(frames_dir, out_gif_path, title, subtitle, duration=100, 
 
 def execute_render_job(params):
     char_key = params.get("character", "hero")
-    char_cfg = CHARACTERS_CONFIG[char_key]
+    custom_fbx = params.get("custom_fbx")
     
+    # Resolver configuración base
+    if custom_fbx:
+        # Resolver ruta de FBX personalizada (absoluta o relativa a ROOT)
+        if os.path.isabs(custom_fbx):
+            fbx_path = custom_fbx
+        else:
+            fbx_path = os.path.join(ROOT, custom_fbx)
+        
+        if not os.path.exists(fbx_path):
+            raise FileNotFoundError(f"Archivo FBX no encontrado: {custom_fbx}")
+            
+        base_name = os.path.splitext(os.path.basename(fbx_path))[0]
+        char_cfg = {
+            "name": f"Personalizado ({base_name})",
+            "fbx": fbx_path,
+            "default_scale": 1.40,
+            "default_elevation": 30.0,
+            "armature_scale": float(params.get("armature_scale", 1.0)),
+            "neck_pitch": float(params.get("neck_pitch", 0.0)),
+            "displace": float(params.get("displace", 0.0)),
+            "is_skeleton": bool(params.get("is_skeleton", "skeleton" in base_name.lower())),
+            "stride_3d_m": float(params.get("stride_3d_m", 1.50)),
+            "anim_period": int(params.get("anim_period", 3))
+        }
+        char_tag = f"custom_{base_name.lower()}"
+    elif char_key in CHARACTERS_CONFIG:
+        char_cfg = dict(CHARACTERS_CONFIG[char_key])
+        char_tag = char_key
+    else:
+        # Si pasan una ruta directa en char_key
+        if os.path.exists(char_key) or os.path.exists(os.path.join(ROOT, char_key)):
+            fbx_path = char_key if os.path.isabs(char_key) else os.path.join(ROOT, char_key)
+            base_name = os.path.splitext(os.path.basename(fbx_path))[0]
+            char_cfg = {
+                "name": f"FBX ({base_name})",
+                "fbx": fbx_path,
+                "default_scale": 1.40,
+                "default_elevation": 30.0,
+                "armature_scale": float(params.get("armature_scale", 1.0)),
+                "neck_pitch": float(params.get("neck_pitch", 0.0)),
+                "displace": float(params.get("displace", 0.0)),
+                "is_skeleton": bool(params.get("is_skeleton", "skeleton" in base_name.lower())),
+                "stride_3d_m": float(params.get("stride_3d_m", 1.50)),
+                "anim_period": int(params.get("anim_period", 3))
+            }
+            char_tag = f"custom_{base_name.lower()}"
+        else:
+            char_cfg = dict(CHARACTERS_CONFIG["hero"])
+            char_tag = "hero"
+            
+    # Sobrescribir con parámetros opcionales si vienen del cliente
+    if "armature_scale" in params:
+        char_cfg["armature_scale"] = float(params["armature_scale"])
+    if "neck_pitch" in params:
+        char_cfg["neck_pitch"] = float(params["neck_pitch"])
+    if "displace" in params:
+        char_cfg["displace"] = float(params["displace"])
+    if "is_skeleton" in params:
+        char_cfg["is_skeleton"] = bool(params["is_skeleton"])
+    if "stride_3d_m" in params:
+        char_cfg["stride_3d_m"] = float(params["stride_3d_m"])
+    if "anim_period" in params:
+        char_cfg["anim_period"] = int(params["anim_period"])
+
     scale = float(params.get("scale", char_cfg["default_scale"]))
     elev = float(params.get("elevation", char_cfg["default_elevation"]))
     azimuth = float(params.get("azimuth", 45.0))
@@ -371,7 +459,7 @@ def execute_render_job(params):
     saturation = float(params.get("saturation", 1.15))
     outline_enabled = bool(params.get("outline", True))
     
-    job_id = f"{char_key}_{int(scale*100)}_{int(elev)}_{int(key_energy*10)}_{int(fill_energy*10)}_{int(normal_strength*100)}_{int(contrast*100)}"
+    job_id = f"{char_tag}_{int(scale*100)}_{int(elev)}_{int(key_energy*10)}_{int(fill_energy*10)}_{int(normal_strength*100)}_{int(contrast*100)}"
     job_dir = os.path.join(RUNS_DIR, job_id)
     os.makedirs(job_dir, exist_ok=True)
     
@@ -442,7 +530,11 @@ def execute_render_job(params):
         "stride_px": round(stride_px, 2),
         "speed_fixed_8_8": speed_fixed_8_8,
         "speed_px_frame": round(speed_px_frame, 3),
-        "anim_period": char_cfg["anim_period"]
+        "anim_period": char_cfg["anim_period"],
+        "armature_scale": char_cfg["armature_scale"],
+        "is_skeleton": char_cfg["is_skeleton"],
+        "neck_pitch": char_cfg["neck_pitch"],
+        "displace": char_cfg["displace"]
     }
 
 class LabHandler(http.server.SimpleHTTPRequestHandler):
@@ -473,7 +565,17 @@ class LabHandler(http.server.SimpleHTTPRequestHandler):
             self.send_response(200)
             self.send_header("Content-Type", "application/json")
             self.end_headers()
-            self.wfile.write(json.dumps(CHARACTERS_CONFIG).encode())
+            payload = {
+                "presets": CHARACTERS_CONFIG,
+                "discovered_fbx": scan_available_fbx_files()
+            }
+            self.wfile.write(json.dumps(payload).encode())
+            return
+        elif url.path == "/api/fbx-files":
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.end_headers()
+            self.wfile.write(json.dumps(scan_available_fbx_files()).encode())
             return
         self.send_error(404, "File not found")
 
@@ -488,6 +590,43 @@ class LabHandler(http.server.SimpleHTTPRequestHandler):
                 self.send_header("Content-Type", "application/json")
                 self.end_headers()
                 self.wfile.write(json.dumps(res).encode())
+            except Exception as e:
+                self.send_response(500)
+                self.send_header("Content-Type", "application/json")
+                self.end_headers()
+                self.wfile.write(json.dumps({"error": str(e)}).encode())
+            return
+        elif self.path == "/api/upload-fbx":
+            length = int(self.headers.get('Content-Length', 0))
+            body = self.rfile.read(length).decode('utf-8')
+            try:
+                data = json.loads(body)
+                filename = data.get("filename", "custom.fbx")
+                file_b64 = data.get("data")
+                if not file_b64:
+                    raise ValueError("No se enviaron datos de archivo (data)")
+                if "," in file_b64:
+                    file_b64 = file_b64.split(",", 1)[1]
+                content = base64.b64decode(file_b64)
+                
+                safe_name = os.path.basename(filename)
+                if not safe_name.lower().endswith(".fbx"):
+                    safe_name += ".fbx"
+                target_path = os.path.join(CUSTOM_DIR, safe_name)
+                with open(target_path, "wb") as f:
+                    f.write(content)
+                    
+                rel_path = os.path.relpath(target_path, ROOT).replace(os.sep, "/")
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json")
+                self.end_headers()
+                self.wfile.write(json.dumps({
+                    "status": "ok",
+                    "filename": safe_name,
+                    "rel_path": rel_path,
+                    "abs_path": target_path,
+                    "size": len(content)
+                }).encode())
             except Exception as e:
                 self.send_response(500)
                 self.send_header("Content-Type", "application/json")
