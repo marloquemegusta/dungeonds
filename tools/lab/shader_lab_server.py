@@ -89,6 +89,51 @@ def scan_available_fbx_files():
     found.sort(key=lambda x: x["rel_path"])
     return found
 
+_FBX_ACTIONS_CACHE = {}
+
+def get_fbx_actions(fbx_path):
+    """Inspecciona con Blender las acciones/animaciones disponibles en un FBX."""
+    if not os.path.isabs(fbx_path):
+        fbx_path = os.path.join(ROOT, fbx_path)
+    if not os.path.exists(fbx_path):
+        return []
+        
+    mtime = os.path.getmtime(fbx_path)
+    cached = _FBX_ACTIONS_CACHE.get(fbx_path)
+    if cached and cached.get("mtime") == mtime:
+        return cached.get("actions", [])
+
+    script = (
+        "import bpy, json, sys\n"
+        "fbx = sys.argv[-1]\n"
+        "bpy.ops.wm.read_factory_settings(use_empty=True)\n"
+        "try:\n"
+        "    bpy.ops.import_scene.fbx(filepath=fbx)\n"
+        "    res = [{'name': a.name, 'start_f': int(a.frame_range[0]), 'end_f': int(a.frame_range[1]), 'frames': int(a.frame_range[1] - a.frame_range[0] + 1)} for a in bpy.data.actions]\n"
+        "except Exception as e:\n"
+        "    res = []\n"
+        "print('__ACTIONS_JSON__' + json.dumps(res))\n"
+    )
+
+    try:
+        proc = subprocess.run(
+            [BLENDER_EXE, "-b", "--python-expr", script, "--", fbx_path],
+            capture_output=True,
+            text=True,
+            timeout=30
+        )
+        actions = []
+        for line in proc.stdout.splitlines():
+            if line.startswith("__ACTIONS_JSON__"):
+                raw = line[len("__ACTIONS_JSON__"):].strip()
+                actions = json.loads(raw)
+                break
+        _FBX_ACTIONS_CACHE[fbx_path] = {"mtime": mtime, "actions": actions}
+        return actions
+    except Exception as e:
+        print(f"Error extrayendo animaciones de {fbx_path}: {e}")
+        return []
+
 BLENDER_WORKER_TEMPLATE = r'''
 import bpy, math, os, mathutils
 
@@ -113,12 +158,18 @@ KEY_ROT_Y = {key_rot_y}
 KEY_ROT_Z = {key_rot_z}
 FILL_ENERGY = {fill_energy}
 WORLD_STRENGTH = {world_strength}
+ACTION_NAME = {action_name}
 
 bpy.ops.wm.read_factory_settings(use_empty=True)
 bpy.ops.import_scene.fbx(filepath=FBX)
 
 actions = list(bpy.data.actions)
-act = actions[0] if actions else None
+act = None
+if ACTION_NAME:
+    act = bpy.data.actions.get(ACTION_NAME)
+if not act and actions:
+    act = actions[0]
+
 armatures = [o for o in bpy.data.objects if o.type == 'ARMATURE']
 if act:
     for arm in armatures:
@@ -458,8 +509,11 @@ def execute_render_job(params):
     brightness = float(params.get("brightness", 1.00))
     saturation = float(params.get("saturation", 1.15))
     outline_enabled = bool(params.get("outline", True))
+    action_name = params.get("action_name")
+    action_str = f"r'{action_name}'" if action_name else "None"
     
-    job_id = f"{char_tag}_{int(scale*100)}_{int(elev)}_{int(key_energy*10)}_{int(fill_energy*10)}_{int(normal_strength*100)}_{int(contrast*100)}"
+    anim_tag = f"_{abs(hash(action_name)) % 10000}" if action_name else ""
+    job_id = f"{char_tag}{anim_tag}_{int(scale*100)}_{int(elev)}_{int(key_energy*10)}_{int(fill_energy*10)}_{int(normal_strength*100)}_{int(contrast*100)}"
     job_dir = os.path.join(RUNS_DIR, job_id)
     os.makedirs(job_dir, exist_ok=True)
     
@@ -485,7 +539,8 @@ def execute_render_job(params):
         key_rot_y=key_rot_y,
         key_rot_z=key_rot_z,
         fill_energy=fill_energy,
-        world_strength=world_strength
+        world_strength=world_strength,
+        action_name=action_str
     )
     
     tmp_py = os.path.join(job_dir, "worker.py")
@@ -576,6 +631,19 @@ class LabHandler(http.server.SimpleHTTPRequestHandler):
             self.send_header("Content-Type", "application/json")
             self.end_headers()
             self.wfile.write(json.dumps(scan_available_fbx_files()).encode())
+            return
+        elif url.path == "/api/fbx-actions":
+            query = urllib.parse.parse_qs(url.query)
+            fbx_param = query.get("fbx", [""])[0]
+            if not fbx_param and "preset" in query:
+                preset_key = query.get("preset", [""])[0]
+                if preset_key in CHARACTERS_CONFIG:
+                    fbx_param = CHARACTERS_CONFIG[preset_key]["fbx"]
+            actions = get_fbx_actions(fbx_param) if fbx_param else []
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.end_headers()
+            self.wfile.write(json.dumps({"fbx": fbx_param, "actions": actions}).encode())
             return
         self.send_error(404, "File not found")
 

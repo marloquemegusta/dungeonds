@@ -272,6 +272,17 @@
         </optgroup>
       </select>
       <div class="fbx-path-badge" id="fbxCurrentPath">assets/characters/monster/Walking.fbx</div>
+      
+      <!-- Selector de clip de animación dentro del FBX -->
+      <div class="field" style="margin-top: 6px;">
+        <div class="field-header">
+          <span>Clip / Animación</span>
+          <span class="val" id="animClipCount" style="color: var(--blue);">1 clip</span>
+        </div>
+        <select id="actionSelect">
+          <option value="">(Animación por defecto / Clip 1)</option>
+        </select>
+      </div>
     </div>
 
     <!-- Acciones de carga de FBX local -->
@@ -413,6 +424,8 @@
   const optgroupPresets = document.getElementById('optgroupPresets');
   const optgroupDiscovered = document.getElementById('optgroupDiscovered');
   const fbxCurrentPath = document.getElementById('fbxCurrentPath');
+  const actionSelect = document.getElementById('actionSelect');
+  const animClipCount = document.getElementById('animClipCount');
 
   const fileInputFbx = document.getElementById('fileInputFbx');
   const btnUploadFbx = document.getElementById('btnUploadFbx');
@@ -517,6 +530,45 @@
     reader.readAsDataURL(file);
   };
 
+  async function fetchAnimationsForCurrentFbx() {
+    actionSelect.innerHTML = '<option value="">Cargando animaciones...</option>';
+    animClipCount.textContent = '...';
+    const targetFbx = customFbxPath.value.trim() || fbxCurrentPath.textContent.trim();
+    if (!targetFbx) {
+      actionSelect.innerHTML = '<option value="">(Sin FBX)</option>';
+      animClipCount.textContent = '0 clips';
+      return;
+    }
+
+    try {
+      const resp = await fetch(`/api/fbx-actions?fbx=${encodeURIComponent(targetFbx)}`);
+      const data = await resp.json();
+      const actions = data.actions || [];
+      actionSelect.innerHTML = '';
+
+      if (actions.length === 0) {
+        const opt = document.createElement('option');
+        opt.value = '';
+        opt.textContent = '(Sin clips / animación base)';
+        actionSelect.appendChild(opt);
+        animClipCount.textContent = '0 clips';
+      } else {
+        animClipCount.textContent = `${actions.length} ${actions.length === 1 ? 'clip' : 'clips'}`;
+        actions.forEach((a, idx) => {
+          const opt = document.createElement('option');
+          opt.value = a.name;
+          opt.textContent = `${a.name} (${a.frames}f: [${a.start_f}..${a.end_f}])`;
+          if (idx === 0) opt.selected = true;
+          actionSelect.appendChild(opt);
+        });
+      }
+    } catch (e) {
+      console.warn("Error cargando animaciones de FBX:", e);
+      actionSelect.innerHTML = '<option value="">(Error leyendo clips)</option>';
+      animClipCount.textContent = 'error';
+    }
+  }
+
   function applySelectedFbx() {
     const val = charSelect.value;
     if (serverPresets[val]) {
@@ -553,13 +605,19 @@
         animPeriodInput.value = 3;
       }
     }
+    fetchAnimationsForCurrentFbx();
   }
 
   charSelect.onchange = applySelectedFbx;
 
+  let customPathTimeout = null;
   customFbxPath.oninput = () => {
     if (customFbxPath.value) {
       fbxCurrentPath.textContent = customFbxPath.value;
+      if (customPathTimeout) clearTimeout(customPathTimeout);
+      customPathTimeout = setTimeout(() => {
+        fetchAnimationsForCurrentFbx();
+      }, 400);
     }
   };
 
@@ -578,6 +636,7 @@
         opt.textContent = `${item.filename} (${item.rel_path})`;
         optgroupDiscovered.appendChild(opt);
       });
+      fetchAnimationsForCurrentFbx();
     } catch (e) {
       console.warn("No se pudo cargar /api/config:", e);
     }
@@ -590,12 +649,14 @@
     const selectedVal = charSelect.value;
     const isPreset = !!serverPresets[selectedVal];
     const targetFbx = customFbxPath.value.trim() || fbxCurrentPath.textContent.trim();
+    const chosenAction = actionSelect.value || null;
 
-    statusText.textContent = `Renderizando ${targetFbx} con Blender (Cycles ${sampleRange.value} samples)...`;
+    statusText.textContent = `Renderizando ${targetFbx} [${chosenAction || 'animación default'}] con Blender (Cycles ${sampleRange.value} samples)...`;
 
     const payload = {
       character: selectedVal,
       custom_fbx: isPreset ? null : targetFbx,
+      action_name: chosenAction,
       scale: parseFloat(scaleRange.value),
       elevation: parseFloat(elevRange.value),
       armature_scale: parseFloat(armatureScaleInput.value),
