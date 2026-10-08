@@ -48,7 +48,7 @@ El repositorio cuenta con fuentes de verdad canónicas sin duplicación:
    - **Copia del grafo Graphify:** `graphify-out/` no está versionado, así que el worktree nace sin grafo (los hooks de git no lo crean). Copiarlo y refrescarlo (AST-only, sin coste de API); en llamadas MCP usar `project_path` = ruta del worktree:
      ```powershell
      Copy-Item -Recurse -Force graphify-out .worktrees\<nombre>\graphify-out
-     Push-Location .worktrees\<nombre>; graphify update .; Pop-Location
+     Push-Location .worktrees\<nombre>; & 'C:/Users/malfonso/AppData/Local/Packages/PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0/LocalCache/local-packages/Python313/Scripts/graphify.exe' update .; Pop-Location
      ```
    - Al concluir, verificar y fusionar a `master`, el worktree y la rama se limpian:
      ```bash
@@ -71,4 +71,4 @@ Rules:
 - Dirty graphify-out/ files are expected after hooks or incremental updates; dirty graph files are not a reason to skip graphify. Only skip graphify if the task is about stale or incorrect graph output, or the user explicitly says not to use it.
 - If graphify-out/wiki/index.md exists, use it for broad navigation instead of raw source browsing.
 - Read graphify-out/GRAPH_REPORT.md only for broad architecture review or when query/path/explain do not surface enough context.
-- After modifying code, run `graphify update .` to keep the graph current (AST-only, no API cost).
+- After modifying code, run `& 'C:/Users/malfonso/AppData/Local/Packages/PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0/LocalCache/local-packages/Python313/Scripts/graphify.exe' update .` via lean-ctx `ctx_shell` to keep the graph current (AST-only, no API cost).

@@ -168,8 +168,18 @@ scene.render.image_settings.color_mode = 'RGBA'
 scene.render.resolution_x = CELL
 scene.render.resolution_y = CELL
 
+# Evaluate character bounding height to vertically center the camera
+dg = bpy.context.evaluated_depsgraph_get()
+_all_z = []
+for obj in [o for o in bpy.data.objects if o.type == 'MESH']:
+    ev = obj.evaluated_get(dg)
+    for corner in ev.bound_box:
+        _all_z.append((ev.matrix_world @ mathutils.Vector(corner)).z)
+_char_height = (max(_all_z) - min(_all_z)) if _all_z else 1.835
+_target_z = _char_height * 0.50
+
 target = bpy.data.objects.new('CamTarget', None)
-target.location = (root_anchor.x, root_anchor.y, 0.0)
+target.location = (root_anchor.x, root_anchor.y, _target_z)
 scene.collection.objects.link(target)
 
 rig = bpy.data.objects.new('CameraRig', None)
@@ -193,7 +203,7 @@ _dist = 30.0
 _az = math.radians(AZIMUTH)
 cam.location = (root_anchor.x + _dist * math.cos(_el) * math.cos(_az),
                root_anchor.y + _dist * math.cos(_el) * math.sin(_az),
-               _dist * math.sin(_el))
+               _target_z + _dist * math.sin(_el))
 tt = cam.constraints.new(type='TRACK_TO')
 tt.target = target
 tt.track_axis = 'TRACK_NEGATIVE_Z'
