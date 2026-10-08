@@ -162,6 +162,14 @@ Este documento registra el historial cronológico de sesiones de desarrollo veri
 - **Inspiración TowerDS:** extracción de parches de píxeles originales y física breve de fragmentos; adaptado al framebuffer BGR555 y al presupuesto de DungeonDS.
 - **Evidencia:** [walkthroughs/15-bone-projectile-revision/walkthrough.md](walkthroughs/15-bone-projectile-revision/walkthrough.md).
 
+## Sesión 16: DS Shader Lab Interactivo y Pipeline FBX Abierto
+- [x] Desarrollo de DS Shader Lab (`tools/lab/shader_lab_server.py` y `tools/lab/shader_lab_ui.html` en puerto `8088`).
+- [x] Corrección de centrado vertical de cámara isométrica en Blender Cycles (`target_z = height * 0.50`), eliminando el corte superior a escalas de 1.4x–2.2x.
+- [x] Soporte para selección abierta de cualquier FBX del repositorio y subida vía web con previsualización inmediata.
+- [x] Acoplamiento cinemático automático de zancada 3D a velocidad fija de Nintendo DS (formato 8.8) para evitar foot-sliding.
+- [x] Validación completa de renderizado de 8 direcciones en Blender Cycles y exportación de GIF collage.
+- **Evidencia:** [walkthroughs/16-shader-lab-interactive/walkthrough.md](walkthroughs/16-shader-lab-interactive/walkthrough.md).
+
 ## Próximas Líneas de Trabajo
 - Invocación de esbirros esqueletos y mecánicas de nigromancia activa.
 - Expansión de mazmorra procedural manteniendo el contrato dimétrico y presupuestos de 60 FPS.
