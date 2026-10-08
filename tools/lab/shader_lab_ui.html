@@ -82,18 +82,62 @@
     color: var(--blue);
     font-weight: 700;
   }
-  select, input[type="range"] {
+  select, input[type="range"], input[type="text"], input[type="number"] {
     width: 100%;
     accent-color: var(--blue);
   }
-  select {
+  select, input[type="text"], input[type="number"] {
     background: #11131a;
     color: var(--text);
     border: 1px solid var(--border);
     padding: 8px;
     border-radius: 6px;
     font-size: 0.85rem;
+  }
+  select { cursor: pointer; }
+  .btn-secondary {
+    background: #222736;
+    color: #dcdde1;
+    border: 1px solid var(--border);
+    padding: 7px 12px;
+    border-radius: 6px;
+    font-size: 0.8rem;
     cursor: pointer;
+    transition: 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .btn-secondary:hover {
+    background: #2d3448;
+    border-color: var(--blue);
+    color: white;
+  }
+  .fbx-path-badge {
+    font-family: monospace;
+    font-size: 0.72rem;
+    color: #a4b0be;
+    word-break: break-all;
+    background: #0d0f15;
+    padding: 6px 8px;
+    border-radius: 4px;
+    border: 1px solid #1e2230;
+    margin-top: 4px;
+  }
+  .custom-panel {
+    background: #0f121a;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px;
+    margin-top: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .custom-panel-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
   }
   button#btnRender {
     background: var(--accent);
@@ -214,16 +258,75 @@
   <h1><span>⚔️ DS Shader Lab</span> <span class="tag">Blender Live</span></h1>
 
   <div class="group">
-    <div class="group-title">1. Modelo y Pose</div>
+    <div class="group-title">1. Modelo FBX y Geometría</div>
     <div class="field">
-      <div class="field-header"><span>Personaje</span></div>
+      <div class="field-header"><span>Modelo / FBX Activo</span></div>
       <select id="charSelect">
-        <option value="hero">Héroe Nigromante (Walking.fbx)</option>
-        <option value="charger">Cargador / Maw (Run.fbx)</option>
-        <option value="skeleton">Esqueleto (skeleton.fbx)</option>
+        <optgroup label="Presets de Personajes" id="optgroupPresets">
+          <option value="hero">Héroe Nigromante (Walking.fbx)</option>
+          <option value="charger">Cargador / Maw (Run.fbx)</option>
+          <option value="skeleton">Esqueleto (skeleton.fbx)</option>
+        </optgroup>
+        <optgroup label="Archivos FBX en Repositorio" id="optgroupDiscovered">
+          <!-- Poblado dinámicamente vía /api/config -->
+        </optgroup>
       </select>
+      <div class="fbx-path-badge" id="fbxCurrentPath">assets/characters/monster/Walking.fbx</div>
     </div>
-    <div class="field">
+
+    <!-- Acciones de carga de FBX local -->
+    <div style="display: flex; gap: 8px; margin-top: 4px;">
+      <input type="file" id="fileInputFbx" accept=".fbx" style="display: none;">
+      <button type="button" class="btn-secondary" id="btnUploadFbx" style="flex: 1;">
+        📁 Subir FBX Local
+      </button>
+      <button type="button" class="btn-secondary" id="btnToggleCustom" style="flex: 1;">
+        ⚙️ Opciones FBX...
+      </button>
+    </div>
+
+    <!-- Panel desplegable de opciones avanzadas de FBX -->
+    <div class="custom-panel" id="customPanel" style="display: none;">
+      <div class="field">
+        <div class="field-header"><span>Ruta personalizada (absoluta o relativa)</span></div>
+        <input type="text" id="customFbxPath" placeholder="assets/characters/custom/modelo.fbx">
+      </div>
+      <div class="custom-panel-row">
+        <div class="field">
+          <div class="field-header"><span>Armature Scale</span></div>
+          <input type="number" id="armatureScaleInput" step="0.001" min="0.001" value="1.0">
+        </div>
+        <div class="field">
+          <div class="field-header"><span>Inclinación Cuello</span></div>
+          <input type="number" id="neckPitchInput" step="1" value="0">
+        </div>
+      </div>
+      <div class="custom-panel-row">
+        <div class="field">
+          <div class="field-header"><span>Engordar Malla (Displace)</span></div>
+          <input type="number" id="displaceInput" step="0.01" min="0" value="0.0">
+        </div>
+        <div class="field">
+          <div class="field-header"><span>Shader Hueso Limpio</span></div>
+          <select id="isSkeletonSelect">
+            <option value="false">No (PBR Normal)</option>
+            <option value="true">Sí (Shader Óseo)</option>
+          </select>
+        </div>
+      </div>
+      <div class="custom-panel-row">
+        <div class="field">
+          <div class="field-header"><span>Zancada 3D (m)</span></div>
+          <input type="number" id="strideInput" step="0.05" min="0.1" value="1.50">
+        </div>
+        <div class="field">
+          <div class="field-header"><span>Periodo Anim (ticks)</span></div>
+          <input type="number" id="animPeriodInput" step="1" min="1" max="10" value="3">
+        </div>
+      </div>
+    </div>
+
+    <div class="field" style="margin-top: 6px;">
       <div class="field-header"><span>Escala Visual Relativa</span> <span class="val" id="scaleVal">1.40x</span></div>
       <input type="range" id="scaleRange" min="1.0" max="2.4" step="0.05" value="1.40">
     </div>
@@ -307,6 +410,23 @@
 
 <script>
   const charSelect = document.getElementById('charSelect');
+  const optgroupPresets = document.getElementById('optgroupPresets');
+  const optgroupDiscovered = document.getElementById('optgroupDiscovered');
+  const fbxCurrentPath = document.getElementById('fbxCurrentPath');
+
+  const fileInputFbx = document.getElementById('fileInputFbx');
+  const btnUploadFbx = document.getElementById('btnUploadFbx');
+  const btnToggleCustom = document.getElementById('btnToggleCustom');
+  const customPanel = document.getElementById('customPanel');
+
+  const customFbxPath = document.getElementById('customFbxPath');
+  const armatureScaleInput = document.getElementById('armatureScaleInput');
+  const neckPitchInput = document.getElementById('neckPitchInput');
+  const displaceInput = document.getElementById('displaceInput');
+  const isSkeletonSelect = document.getElementById('isSkeletonSelect');
+  const strideInput = document.getElementById('strideInput');
+  const animPeriodInput = document.getElementById('animPeriodInput');
+
   const scaleRange = document.getElementById('scaleRange');
   const elevRange = document.getElementById('elevRange');
   const keyRange = document.getElementById('keyRange');
@@ -339,6 +459,9 @@
   const kSpeed = document.getElementById('kSpeed');
   const kPeriod = document.getElementById('kPeriod');
 
+  let serverPresets = {};
+  let discoveredFiles = [];
+
   // Sincronizar sliders y labels
   scaleRange.oninput = () => scaleVal.textContent = parseFloat(scaleRange.value).toFixed(2) + 'x';
   elevRange.oninput = () => elevVal.textContent = elevRange.value + '°';
@@ -351,21 +474,136 @@
   brRange.oninput = () => brVal.textContent = parseFloat(brRange.value).toFixed(2);
   satRange.oninput = () => satVal.textContent = parseFloat(satRange.value).toFixed(2);
 
-  charSelect.onchange = () => {
-    if (charSelect.value === 'hero') { scaleRange.value = 1.40; scaleVal.textContent = '1.40x'; }
-    else if (charSelect.value === 'charger') { scaleRange.value = 1.35; scaleVal.textContent = '1.35x'; }
-    else if (charSelect.value === 'skeleton') { scaleRange.value = 1.35; scaleVal.textContent = '1.35x'; }
+  // Toggle opciones avanzadas
+  btnToggleCustom.onclick = () => {
+    const isHidden = customPanel.style.display === 'none';
+    customPanel.style.display = isHidden ? 'flex' : 'none';
   };
+
+  // Botón subir archivo local
+  btnUploadFbx.onclick = () => fileInputFbx.click();
+
+  fileInputFbx.onchange = async () => {
+    const file = fileInputFbx.files[0];
+    if (!file) return;
+
+    statusText.textContent = `Subiendo ${file.name}...`;
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      try {
+        const base64Data = e.target.result;
+        const res = await fetch('/api/upload-fbx', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            filename: file.name,
+            data: base64Data
+          })
+        });
+        const json = await res.json();
+        if (json.status === 'ok') {
+          statusText.textContent = `✅ Archivo ${json.filename} subido correctamente a ${json.rel_path}`;
+          await loadConfig();
+          // Seleccionar el archivo subido
+          charSelect.value = json.rel_path;
+          applySelectedFbx();
+        } else {
+          alert('Error al subir: ' + (json.error || 'Desconocido'));
+        }
+      } catch (err) {
+        alert('Error en upload: ' + err);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  function applySelectedFbx() {
+    const val = charSelect.value;
+    if (serverPresets[val]) {
+      const p = serverPresets[val];
+      fbxCurrentPath.textContent = p.fbx;
+      customFbxPath.value = p.fbx;
+      scaleRange.value = p.default_scale;
+      scaleVal.textContent = p.default_scale.toFixed(2) + 'x';
+      elevRange.value = p.default_elevation;
+      elevVal.textContent = p.default_elevation + '°';
+      armatureScaleInput.value = p.armature_scale;
+      neckPitchInput.value = p.neck_pitch;
+      displaceInput.value = p.displace;
+      isSkeletonSelect.value = p.is_skeleton ? 'true' : 'false';
+      strideInput.value = p.stride_3d_m;
+      animPeriodInput.value = p.anim_period;
+    } else {
+      // Archivo descubierto o ruta directa
+      fbxCurrentPath.textContent = val;
+      customFbxPath.value = val;
+      // Valores por defecto sensatos si es esqueleto o bicho genérico
+      const lower = val.toLowerCase();
+      if (lower.includes('skeleton')) {
+        armatureScaleInput.value = 0.027;
+        displaceInput.value = 0.12;
+        isSkeletonSelect.value = 'true';
+        strideInput.value = 1.25;
+        animPeriodInput.value = 3;
+      } else {
+        armatureScaleInput.value = 1.0;
+        displaceInput.value = 0.0;
+        isSkeletonSelect.value = 'false';
+        strideInput.value = 1.50;
+        animPeriodInput.value = 3;
+      }
+    }
+  }
+
+  charSelect.onchange = applySelectedFbx;
+
+  customFbxPath.oninput = () => {
+    if (customFbxPath.value) {
+      fbxCurrentPath.textContent = customFbxPath.value;
+    }
+  };
+
+  async function loadConfig() {
+    try {
+      const resp = await fetch('/api/config');
+      const data = await resp.json();
+      serverPresets = data.presets || {};
+      discoveredFiles = data.discovered_fbx || [];
+
+      // Repoblar optgroupDiscovered
+      optgroupDiscovered.innerHTML = '';
+      discoveredFiles.forEach(item => {
+        const opt = document.createElement('option');
+        opt.value = item.rel_path;
+        opt.textContent = `${item.filename} (${item.rel_path})`;
+        optgroupDiscovered.appendChild(opt);
+      });
+    } catch (e) {
+      console.warn("No se pudo cargar /api/config:", e);
+    }
+  }
 
   async function triggerRender() {
     btnRender.disabled = true;
     spinner.style.display = 'flex';
-    statusText.textContent = `Renderizando ${charSelect.value} con Blender (Cycles ${sampleRange.value} samples)...`;
+
+    const selectedVal = charSelect.value;
+    const isPreset = !!serverPresets[selectedVal];
+    const targetFbx = customFbxPath.value.trim() || fbxCurrentPath.textContent.trim();
+
+    statusText.textContent = `Renderizando ${targetFbx} con Blender (Cycles ${sampleRange.value} samples)...`;
 
     const payload = {
-      character: charSelect.value,
+      character: selectedVal,
+      custom_fbx: isPreset ? null : targetFbx,
       scale: parseFloat(scaleRange.value),
       elevation: parseFloat(elevRange.value),
+      armature_scale: parseFloat(armatureScaleInput.value),
+      neck_pitch: parseFloat(neckPitchInput.value),
+      displace: parseFloat(displaceInput.value),
+      is_skeleton: isSkeletonSelect.value === 'true',
+      stride_3d_m: parseFloat(strideInput.value),
+      anim_period: parseInt(animPeriodInput.value),
       key_energy: parseFloat(keyRange.value),
       fill_energy: parseFloat(fillRange.value),
       world_strength: parseFloat(worldRange.value),
@@ -387,7 +625,7 @@
 
       if (data.error) {
         alert("Error renderizando: " + data.error);
-        statusText.textContent = "Error en el render.";
+        statusText.textContent = "Error en el render: " + data.error;
       } else {
         previewImg.src = data.gif_url + '?t=' + Date.now();
         kStride.textContent = data.stride_px + ' px';
@@ -418,9 +656,9 @@
 
   btnRender.onclick = triggerRender;
 
-  // Render inicial al arrancar
-  window.onload = () => {
-    // Si ya hay runs generados, podemos cargar el primero o esperar orden
+  window.onload = async () => {
+    await loadConfig();
+    applySelectedFbx();
   };
 </script>
 
