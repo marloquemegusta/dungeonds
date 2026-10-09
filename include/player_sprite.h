@@ -45,6 +45,9 @@ extern const uint16_t g_skeleton_frames[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][PLAY
 extern const uint8_t g_skeleton_shadow_masks[PLAYER_NUM_DIRS][PLAYER_SHADOW_W * PLAYER_SHADOW_H / 2];
 extern const uint8_t g_skeleton_shadow_bounds[PLAYER_NUM_DIRS][4];
 
+// Directional one-shot skeleton death collapse; last frame is the persistent pile.
+extern const uint16_t g_skeleton_death_frames[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][PLAYER_SPRITE_W * PLAYER_SPRITE_H];
+
 // Fast indexed lookups:
 extern const uint16_t (* const g_character_frames[NUM_CHARACTERS])[PLAYER_NUM_FRAMES][PLAYER_SPRITE_W * PLAYER_SPRITE_H];
 extern const uint8_t (* const g_character_shadow_masks[NUM_CHARACTERS])[PLAYER_SHADOW_W * PLAYER_SHADOW_H / 2];

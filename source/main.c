@@ -81,6 +81,8 @@ typedef struct {
     int step_limit;
     int hp;
     int hit_timer;
+    int death_frame;
+    int death_timer;
 } Enemy;
 
 static Enemy s_enemies[MAX_ENEMIES];
@@ -518,6 +520,13 @@ static void draw_enemy(uint16_t *buffer, const Enemy *e, int cam_x, int cam_y) {
     int px = player_screen_x(e->x, e->y);
     int py = player_screen_y(e->x, e->y);
 
+    if (e->char_id == CHAR_SKELETON && e->death_frame >= 0) {
+        const uint16_t *frame = g_skeleton_death_frames[e->dir][e->death_frame];
+        blit_stride(buffer, frame, PLAYER_SPRITE_W, PLAYER_SPRITE_W, PLAYER_SPRITE_H,
+                    px - PLAYER_ANCHOR_X, py - PLAYER_ANCHOR_Y, cam_x, cam_y);
+        return;
+    }
+
     const uint8_t *b = s_char_frame_bounds[e->char_id][e->dir][e->frame];
     int bw = b[2];
     int bh = b[3];
@@ -750,11 +759,12 @@ static void render_screen(uint16_t *buffer, int cam_x, int cam_y,
                    items[i].sprite > -2 - MAX_ENEMIES) {
             int e_idx = -2 - items[i].sprite;
             const Enemy *e = &s_enemies[e_idx];
-            draw_shadow_mask(buffer, g_character_shadow_masks[e->char_id][e->dir],
-                             PLAYER_SHADOW_W, PLAYER_SHADOW_H,
-                             g_character_shadow_bounds[e->char_id][e->dir],
-                             items[i].cx - PLAYER_SHADOW_W / 2,
-                             items[i].cy - PLAYER_SHADOW_H / 2, cam_x, cam_y);
+            if (e->death_frame < 0)
+                draw_shadow_mask(buffer, g_character_shadow_masks[e->char_id][e->dir],
+                                 PLAYER_SHADOW_W, PLAYER_SHADOW_H,
+                                 g_character_shadow_bounds[e->char_id][e->dir],
+                                 items[i].cx - PLAYER_SHADOW_W / 2,
+                                 items[i].cy - PLAYER_SHADOW_H / 2, cam_x, cam_y);
         }
     }
     uint32_t shadow_ticks = cpuGetTiming() - t_sh0;
@@ -783,7 +793,9 @@ static void render_screen(uint16_t *buffer, int cam_x, int cam_y,
         } else if (sp <= -2 - MAX_ENEMIES) {
             draw_bone_lance(buffer, &s_lances[-2 - MAX_ENEMIES - sp], cam_x, cam_y);
         } else {
-            draw_enemy(buffer, &s_enemies[-2 - sp], cam_x, cam_y);
+            int e_idx = -2 - sp;
+            const Enemy *e = &s_enemies[e_idx];
+            draw_enemy(buffer, e, cam_x, cam_y);
         }
     }
     draw_bone_particles(buffer, cam_x, cam_y);
@@ -846,6 +858,8 @@ static void enemies_init(void) {
         s_enemies[i].step_limit = 60 + (i * 15);
         s_enemies[i].hp = spawn_defs[i].char_id == CHAR_CHARGER ? 90 : 40;
         s_enemies[i].hit_timer = 0;
+        s_enemies[i].death_frame = -1;
+        s_enemies[i].death_timer = 0;
     }
 }
 
@@ -1052,7 +1066,7 @@ static void lances_update(void) {
         int ly = player_screen_y(lance->x, lance->y);
         for (int i = 0; i < MAX_ENEMIES; i++) {
             Enemy *e = &s_enemies[i];
-            if (!e->active || (lance->hit_mask & (1u << i))) continue;
+            if (!e->active || e->death_frame >= 0 || (lance->hit_mask & (1u << i))) continue;
             int dx = lx - player_screen_x(e->x, e->y);
             int dy = ly - player_screen_y(e->x, e->y);
             if (dx * dx + dy * dy > 100) continue;
@@ -1061,8 +1075,14 @@ static void lances_update(void) {
             lance->hit_mask |= (uint16_t)(1u << i);
             char msg[64];
             if (e->hp <= 0) {
-                death_chunks_spawn(e, lance->vx, lance->vy);
-                e->active = 0;
+                if (e->char_id == CHAR_SKELETON) {
+                    e->death_frame = 0;
+                    e->death_timer = 0;
+                    e->hp = 0;
+                } else {
+                    death_chunks_spawn(e, lance->vx, lance->vy);
+                    e->active = 0;
+                }
                 snprintf(msg, sizeof(msg), "BONE_LANCE_KILL enemy=%d", i);
             } else {
                 snprintf(msg, sizeof(msg), "BONE_LANCE_HIT enemy=%d hp=%d", i, e->hp);
@@ -1077,7 +1097,7 @@ static int nearest_enemy_screen(int *out_x, int *out_y) {
     int py = player_screen_y(s_player.x, s_player.y);
     int nearest = -1, best = 0x7FFFFFFF;
     for (int i = 0; i < MAX_ENEMIES; i++) {
-        if (!s_enemies[i].active) continue;
+        if (!s_enemies[i].active || s_enemies[i].death_frame >= 0) continue;
         int ex = player_screen_x(s_enemies[i].x, s_enemies[i].y);
         int ey = player_screen_y(s_enemies[i].x, s_enemies[i].y);
         int distance = abs_int(ex - px) + abs_int(ey - py);
@@ -1098,6 +1118,13 @@ static void enemies_update(void) {
     for (int i = 0; i < MAX_ENEMIES; i++) {
         Enemy *e = &s_enemies[i];
         if (!e->active) continue;
+        if (e->death_frame >= 0) {
+            if (++e->death_timer >= 5) {
+                e->death_timer = 0;
+                if (e->death_frame < PLAYER_NUM_FRAMES - 1) e->death_frame++;
+            }
+            continue;
+        }
         if (e->hit_timer > 0) e->hit_timer--;
 
         fixed spd = g_characters[e->char_id].speed;

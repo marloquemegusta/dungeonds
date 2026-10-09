@@ -1,0 +1,61 @@
+{
+  "scenario": "bone_dismemberment_preview.json",
+  "captures": {
+    "00_idle": {
+      "sha256": "89481e8d361f21e57ca3a3c6a3f39596554f3f4e907b00c79bf092b8de0f4747",
+      "path": "00_idle.png"
+    },
+    "01_after_kills": {
+      "sha256": "645b90082483d5e6f7cbddfb43868c4365513b3dfe980674bf76eb6797c181d9",
+      "path": "01_after_kills.png"
+    },
+    "02_released": {
+      "sha256": "d6d77512c11bbaa80a20f8d16e6b926d68cfa56af7bbf0b3d59733c8dda80d7b",
+      "path": "02_released.png"
+    }
+  },
+  "events": [
+    {
+      "step": 0,
+      "action": "frame_advance",
+      "frames": 180,
+      "keypad": 0
+    },
+    {
+      "step": 1,
+      "action": "button_down",
+      "button": "A"
+    },
+    {
+      "step": 1,
+      "action": "frame_advance",
+      "frames": 120,
+      "keypad": 1
+    },
+    {
+      "step": 2,
+      "action": "button_up",
+      "button": "A"
+    },
+    {
+      "step": 2,
+      "action": "frame_advance",
+      "frames": 2,
+      "keypad": 0
+    }
+  ],
+  "assertions": {
+    "screen_changed": true,
+    "changed_pixels": 2619,
+    "min_changed_pixels": 100,
+    "screen_changes": [
+      {
+        "from": "00_idle",
+        "to": "01_after_kills",
+        "changed": true,
+        "changed_pixels": 2619,
+        "min_changed_pixels": 100
+      }
+    ]
+  }
+}

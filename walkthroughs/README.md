@@ -13,6 +13,7 @@ Resúmenes acumulativos y auditables de cada entrega y avance de desarrollo en `
 
 | # | Hito / Sesión | Carpeta | Estado |
 | :---: | :--- | :--- | :--- |
+| 16 | Colapso del esqueleto a una pila de huesos | [`skeleton-death-fbx/`](skeleton-death-fbx/walkthrough.md) | Integrado y verificado |
 | 0 | Setup de proyecto, pipeline 3D a 2D y catálogo de ruinas | [`00-project-setup-pipeline/`](00-project-setup-pipeline/walkthrough.md) | Completado |
 | 1 | Primera demo interactiva: Ruinas y movimiento 8-dir en NDS | [`01-playable-ruins-prototype/`](01-playable-ruins-prototype/walkthrough.md) | En progreso |
 | 2 | Motor de renderizado dimétrico, look compartido y presets e30/e60 | [`02-isometric-renderer/`](02-isometric-renderer/walkthrough.md) | Completado |
@@ -29,4 +30,4 @@ Resúmenes acumulativos y auditables de cada entrega y avance de desarrollo en `
 | 13 | Escopeta de perdigones de hueso (5 astillas, <1 m) | [13-bone-shotgun-pellets](13-bone-shotgun-pellets/walkthrough.md) | Validado en emulador |
 | 14 | Lanza ósea procedural (astillas sin outline y motas espectrales) | [14-bone-particle-lance](14-bone-particle-lance/walkthrough.md) | Prototipo GIF validado en emulador |
 | 15 | Lanza más rápida sin azul y fragmentación al morir | [15-bone-projectile-revision](15-bone-projectile-revision/walkthrough.md) | Validado en DeSmuME |
-
+| 16 | Colapso coreografiado del esqueleto | [skeleton-death-fbx](skeleton-death-fbx/walkthrough.md) | FBX y vista 3D comprobados; sin integración en combate |

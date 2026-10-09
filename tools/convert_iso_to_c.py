@@ -199,6 +199,7 @@ def main():
     charger_shadow_sheet = os.path.join(ROOT, "assets", "characters", "charger", f"charger_{args.preset}_shadow.png")
     skeleton_sheet = os.path.join(ROOT, "assets", "characters", "skeleton", f"skeleton_{args.preset}.png")
     skeleton_shadow_sheet = os.path.join(ROOT, "assets", "characters", "skeleton", f"skeleton_{args.preset}_shadow.png")
+    skeleton_death_sheet = os.path.join(ROOT, "assets", "characters", "skeleton", f"skeleton_death_{args.preset}.png")
     if os.path.isfile(player_anchor_path):
         with open(player_anchor_path, encoding="utf-8") as f:
             player_anchor = json.load(f)["anchor_pixel"]
@@ -327,6 +328,8 @@ extern const uint8_t g_obj_map[MAP_ROWS][MAP_COLS];
     assert skeleton_im.size == (n_frames * cell, n_dirs * cell), skeleton_im.size
     skeleton_sh = Image.open(skeleton_shadow_sheet).convert("RGBA")
     assert skeleton_sh.size == (n_dirs * shadow_cell, shadow_cell), skeleton_sh.size
+    skeleton_death_im = Image.open(skeleton_death_sheet).convert("RGBA")
+    assert skeleton_death_im.size == (n_frames * cell, n_dirs * cell), skeleton_death_im.size
 
     char_w = 48
     char_h = 40
@@ -382,6 +385,9 @@ extern const uint8_t g_charger_shadow_bounds[PLAYER_NUM_DIRS][4];
 extern const uint16_t g_skeleton_frames[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][PLAYER_SPRITE_W * PLAYER_SPRITE_H];
 extern const uint8_t g_skeleton_shadow_masks[PLAYER_NUM_DIRS][PLAYER_SHADOW_W * PLAYER_SHADOW_H / 2];
 extern const uint8_t g_skeleton_shadow_bounds[PLAYER_NUM_DIRS][4];
+
+// Directional one-shot skeleton death collapse; last frame is the persistent pile.
+extern const uint16_t g_skeleton_death_frames[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][PLAYER_SPRITE_W * PLAYER_SPRITE_H];
 
 // Fast indexed lookups:
 extern const uint16_t (* const g_character_frames[NUM_CHARACTERS])[PLAYER_NUM_FRAMES][PLAYER_SPRITE_W * PLAYER_SPRITE_H];
@@ -447,6 +453,26 @@ extern const uint8_t (* const g_character_shadow_bounds[NUM_CHARACTERS])[4];
         write_char_arrays(c, "g_player", "hero", player_im, player_sh)
         write_char_arrays(c, "g_charger", "charger", charger_im, charger_sh)
         write_char_arrays(c, "g_skeleton", "skeleton", skeleton_im, skeleton_sh)
+
+        c.write("// Coreographed skeleton collapse and final bone pile\n")
+        c.write("const uint16_t g_skeleton_death_frames[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES]"
+                "[PLAYER_SPRITE_W * PLAYER_SPRITE_H] __attribute__((aligned(4))) = {\n")
+        for d in range(n_dirs):
+            c.write(f"    // Direction {d}\n    {{\n")
+            for f in range(n_frames):
+                crop = skeleton_death_im.crop((f * cell + crop_x0, d * cell + crop_y0,
+                                               f * cell + crop_x0 + char_w, d * cell + crop_y0 + char_h))
+                c.write(f"        // Frame {f}\n        {{\n            ")
+                for i, (r, g, b, a) in enumerate(crop.getdata()):
+                    x, y = i % char_w, i // char_w
+                    c.write(f"0x{px_bgr555(r, g, b, a, x, y):04X},")
+                    if (i + 1) % 16 == 0:
+                        c.write("\n            " if i + 1 < char_w * char_h else "\n")
+                    else:
+                        c.write(" ")
+                c.write("\n        },\n")
+            c.write("    },\n")
+        c.write("};\n\n")
 
         c.write('const uint16_t (* const g_character_frames[NUM_CHARACTERS])[PLAYER_NUM_FRAMES]'
                 '[PLAYER_SPRITE_W * PLAYER_SPRITE_H] = {\n'

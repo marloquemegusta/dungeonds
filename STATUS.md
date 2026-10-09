@@ -162,6 +162,14 @@ Este documento registra el historial cronológico de sesiones de desarrollo veri
 - **Inspiración TowerDS:** extracción de parches de píxeles originales y física breve de fragmentos; adaptado al framebuffer BGR555 y al presupuesto de DungeonDS.
 - **Evidencia:** [walkthroughs/15-bone-projectile-revision/walkthrough.md](walkthroughs/15-bone-projectile-revision/walkthrough.md).
 
+## Sesión 16: Colapso del Esqueleto a una Pila de Huesos
+- [x] Sustituida la física libre que dispersaba las piezas por una coreografía determinista de 18 segmentos hacia un montón compacto.
+- [x] Reimportado el FBX y revisado en Blender sin pixelado; baker e30 genera sprites de ocho direcciones y sombras.
+- [x] Guardada una escena `.blend` con la animación y cámara para revisión 3D.
+- [x] Integrar el colapso direccional al morir por lanza: ocho poses y montón final persistente; el cadáver deja de moverse y de atraer el autoapuntado.
+- [ ] Permitir reanimar la pila.
+- **Evidencia:** [walkthroughs/skeleton-death-fbx/walkthrough.md](walkthroughs/skeleton-death-fbx/walkthrough.md).
+
 ## Próximas Líneas de Trabajo
 - Invocación de esbirros esqueletos y mecánicas de nigromancia activa.
 - Expansión de mazmorra procedural manteniendo el contrato dimétrico y presupuestos de 60 FPS.

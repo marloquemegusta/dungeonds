@@ -43,6 +43,11 @@ CHARACTERS = {
         "out_dir": os.path.join(ROOT, "assets", "characters", "skeleton"),
         "prefix": "skeleton",
     },
+    "skeleton_death": {
+        "model": os.path.join(ROOT, "assets", "characters", "skeleton", "skeleton_death.fbx"),
+        "out_dir": os.path.join(ROOT, "assets", "characters", "skeleton"),
+        "prefix": "skeleton_death",
+    },
 }
 
 WORKER = r'''
@@ -384,7 +389,7 @@ def bake_character(char_key, preset, scale=1.0):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--preset", choices=sorted(look.PRESETS), default="e30")
-    ap.add_argument("--character", choices=("player", "charger", "skeleton", "all"), default="all")
+    ap.add_argument("--character", choices=("player", "charger", "skeleton", "skeleton_death", "all"), default="all")
     ap.add_argument("--scale", type=float, default=1.0,
                     help="sprite scale relative to the true world pixel scale")
     args = ap.parse_args()

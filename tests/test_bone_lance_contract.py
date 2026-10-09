@@ -35,6 +35,18 @@ class BoneLanceContract(unittest.TestCase):
         self.assertIn("touchRead(&touch);", MAIN)
         self.assertIn("nearest_enemy_screen(&aim_x, &aim_y)", MAIN)
 
+    def test_skeleton_death_plays_once_and_keeps_the_final_pile(self):
+        sprite_header = (ROOT / "include" / "player_sprite.h").read_text(encoding="utf-8")
+        sprite_source = (ROOT / "source" / "player_sprite.c").read_text(encoding="utf-8")
+        converter = (ROOT / "tools" / "convert_iso_to_c.py").read_text(encoding="utf-8")
+        self.assertIn("g_skeleton_death_frames", sprite_header)
+        self.assertIn("g_skeleton_death_frames", sprite_source)
+        self.assertIn("skeleton_death_{args.preset}.png", converter)
+        self.assertIn("e->death_frame = 0", MAIN)
+        self.assertIn("e->death_frame < PLAYER_NUM_FRAMES - 1", MAIN)
+        self.assertIn("if (e->death_frame >= 0)", MAIN)
+        self.assertIn("draw_enemy(buffer, e, cam_x, cam_y)", MAIN)
+
 
 if __name__ == "__main__":
     unittest.main()
