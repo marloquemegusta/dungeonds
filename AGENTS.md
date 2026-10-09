@@ -33,8 +33,8 @@ El repositorio cuenta con fuentes de verdad canónicas sin duplicación:
 
 1. **Un Chat = Una Sesión Atómica (Feature/Fix-Scoped):** Cada nueva conversación se dedica exclusivamente a una feature, fix u optimización concreta, evitando dispersión de contexto.
 2. **Estrategia y Jerarquía de Ramas:**
-   - `master`: Rama principal del repositorio y foco de entregas integradas.
-   - `feat/<nombre>` / `fix/<nombre>` / `perf/<nombre>`: Ramas de trabajo atómicas creadas en worktree para cambios aislados antes de mergear en `master`.
+   - `main`: Rama principal del repositorio y foco de entregas integradas.
+   - `feat/<nombre>` / `fix/<nombre>` / `perf/<nombre>`: Ramas de trabajo atómicas creadas en worktree para cambios aislados antes de mergear en `main`.
 3. **Uso Obligatorio de Git Worktrees para Aislamiento:**
    - En cada nueva sesión o tarea sustancial, se debe instanciar un worktree físico separado dentro del repo bajo `.worktrees/` (ignorado por git):
      ```bash
@@ -50,7 +50,7 @@ El repositorio cuenta con fuentes de verdad canónicas sin duplicación:
      Copy-Item -Recurse -Force graphify-out .worktrees\<nombre>\graphify-out
      Push-Location .worktrees\<nombre>; & 'C:/Users/malfonso/AppData/Local/Packages/PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0/LocalCache/local-packages/Python313/Scripts/graphify.exe' update .; Pop-Location
      ```
-   - Al concluir, verificar y fusionar a `master`, el worktree y la rama se limpian:
+   - Al concluir, verificar y fusionar a `main`, el worktree y la rama se limpian:
      ```bash
      git worktree remove .worktrees/<nombre>
      git branch -d feat/<nombre>

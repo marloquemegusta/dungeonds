@@ -177,7 +177,16 @@ Este documento registra el historial cronológico de sesiones de desarrollo veri
 - [x] Validación completa de renderizado de 8 direcciones en Blender Cycles y exportación de GIF collage.
 - **Evidencia:** [walkthroughs/16-shader-lab-interactive/walkthrough.md](walkthroughs/16-shader-lab-interactive/walkthrough.md).
 
+## Features Abiertas y Ramas Activas (En Pausa / Backlog)
+
+- **`feat/skeleton-collapse-fbx` — Colapso del Esqueleto a Pila de Huesos:**
+  - **Estado:** Pausado / Prototipo resguardado en rama (`d537db3`).
+  - **Objetivo:** Reemplazar la fragmentación aleatoria por una animación determinista donde el esqueleto colapsa y deja una pila de huesos estática en el suelo al morir.
+  - **Pendiente para reanudar:** Pulido visual del render/spritesheet (el montón de huesos resultante requiere mayor claridad visual en baja resolución) y posterior mecánica de reanimación nigromántica de la pila.
+  - **Evidencia guardada:** `walkthroughs/skeleton-death-fbx/walkthrough.md` (preservada en la rama).
+
 ## Próximas Líneas de Trabajo
 - Invocación de esbirros esqueletos y mecánicas de nigromancia activa.
 - Expansión de mazmorra procedural manteniendo el contrato dimétrico y presupuestos de 60 FPS.
+
 
