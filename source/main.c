@@ -4,6 +4,7 @@
 #include "dungeon_bg_tiles.h"
 #include "diablo_dungeon.h"
 #include "dungeon_occlusion.h"
+#include <string.h>
 
 // ---------------------------------------------------------------------------
 // DungeonDS - dimetric dungeon renderer
@@ -68,6 +69,7 @@ static int s_bot_map_ready = 0;
 // Rendering buffers for top and bottom screens (cleared transparently for entities)
 static uint16_t s_top_screen_buf[SCREEN_W * SCREEN_H] __attribute__((aligned(4)));
 static uint16_t s_bot_screen_buf[SCREEN_W * SCREEN_H] __attribute__((aligned(4)));
+static uint16_t s_dungeon_world_cache[WORLD_W * WORLD_H] __attribute__((aligned(4)));
 
 static Player s_player;
 static int s_cam_x = 0;
@@ -825,7 +827,7 @@ static void render_screen(uint16_t *buffer, int cam_x, int cam_y,
         if (wy < 0 || wy >= WORLD_H) {
             memset(dst, 0, SCREEN_W * sizeof(uint16_t));
         } else {
-            const uint16_t *src = &g_dungeon_world_color[wy * WORLD_W + wx];
+            const uint16_t *src = &s_dungeon_world_cache[wy * WORLD_W + wx];
             if ((uintptr_t)src & 2)
                 copy_world_row_halfword_aligned(dst, src);
             else
@@ -1530,6 +1532,7 @@ int main(void) {
     if (s_cam_y > WORLD_H - SCREEN_H) s_cam_y = WORLD_H - SCREEN_H;
 
     build_occlusion_depth_map();
+    memcpy(s_dungeon_world_cache, g_dungeon_world_color, sizeof(s_dungeon_world_cache));
     render_screen(s_top_screen_buf, s_cam_x, s_cam_y - SCREEN_H, NULL, NULL, NULL);
     dmaCopyWords(3, s_top_screen_buf, s_top_vram, SCREEN_W * SCREEN_H * 2);
 

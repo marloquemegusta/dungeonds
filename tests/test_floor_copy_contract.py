@@ -13,10 +13,12 @@ class FloorCopyContractTest(unittest.TestCase):
 
         self.assertIn('"ldmia %1!, {r3, r4, r5, r6, r7, r8, r9, r10}', aligned)
         self.assertIn("mov r2, #16", aligned)  # 16 * 8 words = 256 pixels
-        self.assertIn("ldrh r3", unaligned)
-        self.assertIn("ldrh r4", unaligned)
-        self.assertIn("mov r2, #128", unaligned)  # 128 packed pairs = 256 pixels
+        self.assertIn("ldrh r3, [%1], #2", unaligned)
+        self.assertIn("ldrh r4, [%1], #2", unaligned)
+        self.assertIn("mov r2, #128", unaligned)
         self.assertIn("if ((uintptr_t)src & 2)", source)
+        self.assertIn("s_dungeon_world_cache[wy * WORLD_W + wx]", source)
+        self.assertIn("memcpy(s_dungeon_world_cache, g_dungeon_world_color", source)
         self.assertNotIn("dmaCopyHalfWords(3, src", source)
 
 
