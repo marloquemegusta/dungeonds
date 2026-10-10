@@ -270,3 +270,11 @@ Este documento registra el historial cronológico de sesiones de desarrollo veri
 - [x] Build BlocksDS y pruebas host PASS. Escenario DeSmuME: `fps=60` en reposo y tras caminar; captura revisada.
 - [x] ROM cargada por FTP y entrada remota verificada.
 - **Evidencia:** [walkthroughs/fps-hud/walkthrough.md](walkthroughs/fps-hud/walkthrough.md).
+
+
+### Seguimiento de rendimiento físico (2026-10-10)
+
+- Usuario informa 20 FPS en Nintendo DSi tanto en reposo como al moverse; la medición previa de DeSmuME no predice la consola.
+- Añadido `C` (lógica+render, ms) y `P` (espera de VBlank+copia, ms) junto al FPS para separar coste de render y presentación.
+- Rejilla conservadora 8×8 evita el depth test por píxel cuando no puede existir oclusión. Contrato de 20.000 regiones aleatorias PASS; capturas DeSmuME pre/post con 0 píxeles distintos; blit emulado −7%.
+- Build diagnóstica `7f7f310` cargada por FTP (PASS). Pendiente recibir las lecturas `FPS/C/P` de la DSi para orientar la optimización física.
