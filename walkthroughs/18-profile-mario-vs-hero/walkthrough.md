@@ -3,9 +3,9 @@
 ## Método
 
 - Blender 5.2.1 LTS; Windows.
-- Dos renders por asset, alternados, con los mismos parámetros: 48×48 px, 12 muestras, outline, 8 direcciones × 8 frames (64 imágenes).
-- Tiempos de render e importación medidos dentro del worker Blender; tiempo total medido desde `execute_render_job`.
-- Los tiempos de la tabla son medianas de dos ejecuciones; por el tamaño de muestra sirven para localizar diferencias grandes, no para microbenchmark preciso.
+- FBX medidos: `assets/characters/custom/mario_camisa_blanca.fbx` (el mismo contenido SHA-256 que el archivo de Descargas) y `Walking.fbx`.
+- Dos renders directos por asset, con valores UI: 48×48 px, 16 muestras, outline y 8 direcciones × 8 frames (64 imágenes); métricas de etapa como medianas.
+- Después medí una llamada real a cada endpoint del servidor recién reiniciado: `/api/fbx-actions` y `/api/render`. Esas cifras son una ejecución por asset.
 
 ## Resultados
 
@@ -16,17 +16,18 @@
 | Polígonos | 6.994 | 19.390 | Mario 2,77× |
 | Huesos | 37 | 65 | Mario +76 % |
 | Imágenes/materiales | 2/1 | 6/1 | Mario +4 imágenes |
-| Importación FBX | 0,397 s | 0,575 s | +0,178 s |
-| Setup de escena y bounds animados | 0,108 s | 0,161 s | +0,053 s |
-| Render de 64 frames | 2,190 s | 2,466 s | +0,276 s |
-| Render medio por frame | 0,0342 s | 0,0385 s | +13 % |
-| Worker Blender completo | 5,743 s | 6,305 s | +0,562 s |
-| Job completo, incluido postproceso/GIF | 6,152 s | 6,608 s | +0,456 s (+7,4 %) |
+| Importación FBX | 0,310 s | 0,443 s | +0,133 s |
+| Setup de escena y bounds animados | 0,084 s | 0,124 s | +0,040 s |
+| Render de 64 frames | 1,894 s | 2,018 s | +0,124 s |
+| Job directo completo, postproceso/GIF incluido | 4,975 s | 5,214 s | +0,239 s (+4,8 %) |
+| Consulta inicial de animaciones por HTTP | 2,54 s | 2,51 s | −0,03 s |
+| Render por endpoint HTTP | 4,54 s | 4,95 s | +0,41 s (+9 %) |
+| Selección + render, suma de endpoints | 7,08 s | 7,46 s | +0,38 s (+5,4 %) |
 
-El primer frame cuesta ~0,33 s en ambos assets; los 63 restantes rondan 0,03–0,04 s. Ese primer frame no explica una diferencia grande entre los modelos.
+El servidor que atendía `localhost:8088` seguía vivo desde las **10:17**, antes de que el archivo de código cambiara a las **11:45**. Su proceso Blender importaba Mario con `bpy.ops.import_scene.fbx(filepath=fbx)`, sin `use_image_search=False`; esa versión seguía haciendo la búsqueda recursiva que ya se había quitado del código. Reinicié el servidor y medí los endpoints reales.
 
 ## Conclusión
 
-Mario sí tiene más geometría, huesos e imágenes, y cada frame cuesta alrededor de un 13 % más. En el Shader Lab actual, sin búsqueda recursiva de texturas, el job completo solo fue un 7,4 % más lento que el del héroe: **6,6 s frente a 6,2 s**. La importación FBX añade apenas **0,18 s**; el retraso de cientos de segundos que se medía antes procedía de la búsqueda recursiva de imágenes desde rutas obsoletas.
+La diferencia actual no es grande: en HTTP, Mario renderizó en **4,95 s** y el héroe en **4,54 s**; listar acciones añade ~**2,5 s** para ambos cuando no está en caché. Mario tiene 2,77× los polígonos y 76 % más huesos, pero no explica la demora extrema que veías: provenía del servidor antiguo, que continuaba usando la búsqueda recursiva.
 
-Si la interfaz aún tarda mucho más que estos ~6–7 s, la demora estaría fuera del render job medido o usando otros parámetros; conviene medir una ejecución desde la interfaz con su resolución, muestras y acción exactas.
+El servidor está reiniciado con la corrección. Si la pestaña conserva un spinner o una petición antigua, recárgala y vuelve a renderizar Mario.

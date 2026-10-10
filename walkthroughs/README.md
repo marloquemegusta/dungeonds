@@ -31,5 +31,5 @@ Resúmenes acumulativos y auditables de cada entrega y avance de desarrollo en `
 | 15 | Lanza más rápida sin azul y fragmentación al morir | [15-bone-projectile-revision](15-bone-projectile-revision/walkthrough.md) | Validado en DeSmuME |
 | 16 | DS Shader Lab interactivo, selector de FBX y tamaño de sprite en píxeles | [`16-shader-lab-interactive/`](16-shader-lab-interactive/walkthrough.md) | Completado |
 | 17 | Shader Lab importa FBX sin buscar sidecars .fbm | [`17-shader-fbx-image-search/`](17-shader-fbx-image-search/walkthrough.md) | Verificado con Blender |
-| 18 | Perfil de rendimiento de Mario frente al héroe | [`18-profile-mario-vs-hero/`](18-profile-mario-vs-hero/walkthrough.md) | Medido en Blender |
+| 18 | Diagnóstico de la carga y render lento de Mario en Shader Lab | [`18-profile-mario-vs-hero/`](18-profile-mario-vs-hero/walkthrough.md) | Medido en servidor y Blender |
 
