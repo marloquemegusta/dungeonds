@@ -177,6 +177,12 @@ Este documento registra el historial cronológico de sesiones de desarrollo veri
 - [x] Validación completa de renderizado de 8 direcciones en Blender Cycles y exportación de GIF collage.
 - **Evidencia:** [walkthroughs/16-shader-lab-interactive/walkthrough.md](walkthroughs/16-shader-lab-interactive/walkthrough.md).
 
+## Sesión 17: Búsqueda Acotada de Texturas FBX en Shader Lab
+- [x] Desactivada la búsqueda recursiva global de imágenes FBX en el inspector de acciones y el worker de render.
+- [x] Los mapas externos faltantes se buscan solo en carpetas .fbm junto al FBX; mapas empacados y rutas válidas se conservan.
+- [x] Mario importa en **0,85 s** con búsqueda acotada y su render completo (48×48, 16 muestras, 64 celdas) termina en **6,44 s**.
+- **Evidencia:** [walkthroughs/17-shader-fbx-image-search/walkthrough.md](walkthroughs/17-shader-fbx-image-search/walkthrough.md).
+
 ## Features Abiertas y Ramas Activas (En Pausa / Backlog)
 
 - **`feat/skeleton-collapse-fbx` — Colapso del Esqueleto a Pila de Huesos:**
