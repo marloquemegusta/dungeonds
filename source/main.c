@@ -69,6 +69,8 @@ static uint16_t s_bot_screen_buf[SCREEN_W * SCREEN_H] __attribute__((aligned(4))
 static Player s_player;
 static int s_cam_x = 0;
 static int s_cam_y = 0;
+static int16_t s_occlusion_depth[WORLD_W * WORLD_H] __attribute__((aligned(4)));
+static int s_draw_item_depth;
 
 typedef struct {
     int32_t x, y;                 // raw 8.8 world pixels
@@ -284,10 +286,25 @@ static void init_obj_sprite_bounds(void) {
 
 }
 
-// Blit a BGR555 sprite with arbitrary pitch, fast 32-bit dual-pixel write when both are opaque.
+static void build_occlusion_depth_map(void) {
+    memset(s_occlusion_depth, 0xFF, sizeof(s_occlusion_depth));
+    for (uint32_t i = 0; i < g_dungeon_occlusion_run_count; i++) {
+        const DungeonOcclusionRun *run = &g_dungeon_occlusion_runs[i];
+        if (run->y >= WORLD_H || run->x + run->length > WORLD_W) continue;
+        int16_t *row = &s_occlusion_depth[(uint32_t)run->y * WORLD_W + run->x];
+        for (uint32_t x = 0; x < run->length; x++) row[x] = run->depth;
+    }
+}
+
+static inline int occlusion_blocks_pixel(int x, int y, int actor_depth) {
+    if ((uint32_t)x >= WORLD_W || (uint32_t)y >= WORLD_H) return 0;
+    return s_occlusion_depth[(uint32_t)y * WORLD_W + x] > actor_depth;
+}
+
+// Blit a BGR555 sprite with arbitrary pitch, clipping opaque pixels against baked depth.
 __attribute__((target("arm"), noinline))
 static void blit_stride(uint16_t *buffer, const uint16_t *src, int pitch, int sw, int sh,
-                        int left, int top, int cam_x, int cam_y) {
+                        int left, int top, int cam_x, int cam_y, int depth) {
     int ox = left - cam_x;
     int oy = top - cam_y;
 
@@ -308,6 +325,15 @@ static void blit_stride(uint16_t *buffer, const uint16_t *src, int pitch, int sw
         const uint16_t *srow = &src[y * pitch];
         uint16_t *drow = &buffer[(oy + y) * SCREEN_W + ox];
         int x = sx0;
+        if (depth >= 0) {
+            for (; x < sx1; x++) {
+                uint16_t color = srow[x];
+                if ((color & BIT(15)) &&
+                    !occlusion_blocks_pixel(left + x, top + y, depth))
+                    drow[x] = color;
+            }
+            continue;
+        }
 
         // Align drow + x to 32-bit (4-byte) boundary if needed
         if (((uintptr_t)&drow[x] & 2) && x < sx1) {
@@ -350,7 +376,7 @@ static void blit_tile(uint16_t *buffer, int sprite_id,
     blit_stride(buffer, src, OBJ_SPRITE_W, bw, bh,
                 cx - OBJ_SPRITE_W / 2 + min_x,
                 cy - OBJ_ANCHOR_Y + min_y,
-                cam_x, cam_y);
+                cam_x, cam_y, s_draw_item_depth);
 }
 
 // Shadow shape/coverage is baked from the 3D asset.
@@ -505,7 +531,8 @@ static void draw_player(uint16_t *buffer, int cam_x, int cam_y) {
 
     const uint16_t *frame = &g_character_frames[s_player.char_id][s_player.dir][s_player.frame][min_y * PLAYER_SPRITE_W + min_x];
     blit_stride(buffer, frame, PLAYER_SPRITE_W, bw, bh,
-                px - PLAYER_ANCHOR_X + min_x, py - PLAYER_ANCHOR_Y + min_y, cam_x, cam_y);
+                px - PLAYER_ANCHOR_X + min_x, py - PLAYER_ANCHOR_Y + min_y,
+                cam_x, cam_y, s_draw_item_depth);
 }
 
 static void draw_hit_spark(uint16_t *buffer, int x, int y, int cam_x, int cam_y, int phase) {
@@ -513,10 +540,12 @@ static void draw_hit_spark(uint16_t *buffer, int x, int y, int cam_x, int cam_y,
     uint16_t ivory = RGB15(31, 28, 20) | BIT(15);
     for (int d = -3; d <= 3; d++) {
         int bx = x + d - cam_x, by = y - cam_y;
-        if (bx >= 0 && bx < SCREEN_W && by >= 0 && by < SCREEN_H)
+        if (bx >= 0 && bx < SCREEN_W && by >= 0 && by < SCREEN_H &&
+            !occlusion_blocks_pixel(x + d, y, s_draw_item_depth))
             buffer[by * SCREEN_W + bx] = ((d + phase) & 1) ? cyan : ivory;
         bx = x - cam_x; by = y + d - cam_y;
-        if (bx >= 0 && bx < SCREEN_W && by >= 0 && by < SCREEN_H)
+        if (bx >= 0 && bx < SCREEN_W && by >= 0 && by < SCREEN_H &&
+            !occlusion_blocks_pixel(x, y + d, s_draw_item_depth))
             buffer[by * SCREEN_W + bx] = ((d + phase) & 1) ? ivory : cyan;
     }
 }
@@ -534,14 +563,16 @@ static void draw_enemy(uint16_t *buffer, const Enemy *e, int cam_x, int cam_y) {
 
     const uint16_t *frame = &g_character_frames[e->char_id][e->dir][e->frame][min_y * PLAYER_SPRITE_W + min_x];
     blit_stride(buffer, frame, PLAYER_SPRITE_W, bw, bh,
-                px - PLAYER_ANCHOR_X + min_x, py - PLAYER_ANCHOR_Y + min_y, cam_x, cam_y);
+                px - PLAYER_ANCHOR_X + min_x, py - PLAYER_ANCHOR_Y + min_y,
+                cam_x, cam_y, s_draw_item_depth);
     if (e->hit_timer > 0)
         draw_hit_spark(buffer, px, py - 24, cam_x, cam_y, e->hit_timer);
 }
 
 static void bone_effect_pixel(uint16_t *buffer, int x, int y, int cam_x, int cam_y, uint16_t color) {
     int sx = x - cam_x, sy = y - cam_y;
-    if (sx >= 0 && sx < SCREEN_W && sy >= 0 && sy < SCREEN_H)
+    if (sx >= 0 && sx < SCREEN_W && sy >= 0 && sy < SCREEN_H &&
+        !occlusion_blocks_pixel(x, y, s_draw_item_depth))
         buffer[sy * SCREEN_W + sx] = color;
 }
 
@@ -619,52 +650,13 @@ static void draw_death_chunk(uint16_t *buffer, const DeathChunk *chunk, int cam_
         for (int x = 0; x < DEATH_CHUNK_SIZE; x++) {
             int sx = left + x;
             uint16_t color = chunk->pixels[y * DEATH_CHUNK_SIZE + x];
-            if (sx >= 0 && sx < SCREEN_W && (color & BIT(15)))
+            if (sx >= 0 && sx < SCREEN_W && (color & BIT(15)) &&
+                !occlusion_blocks_pixel(cx - DEATH_CHUNK_SIZE / 2 + x,
+                                        cy - DEATH_CHUNK_SIZE / 2 + y,
+                                        s_draw_item_depth))
                 buffer[sy * SCREEN_W + sx] = color;
         }
     }
-}
-
-static uint32_t occlusion_first_after(int depth) {
-    uint32_t lo = 0, hi = g_dungeon_occlusion_run_count;
-    while (lo < hi) {
-        uint32_t mid = lo + (hi - lo) / 2;
-        if (g_dungeon_occlusion_runs[mid].depth <= depth) lo = mid + 1;
-        else hi = mid;
-    }
-    return lo;
-}
-
-static uint32_t draw_occlusion_run(uint16_t *buffer, const DungeonOcclusionRun *run, int cam_x, int cam_y) {
-    int sy = (int)run->y - cam_y;
-    if (sy < 0 || sy >= SCREEN_H) return 0;
-    int x0 = run->x, x1 = x0 + run->length;
-    if (x0 < cam_x) x0 = cam_x;
-    if (x1 > cam_x + SCREEN_W) x1 = cam_x + SCREEN_W;
-    if (x0 >= x1 || run->y >= WORLD_H) return 0;
-    uint16_t *dst = &buffer[sy * SCREEN_W + (x0 - cam_x)];
-    const uint16_t *src = &g_dungeon_world_color[(uint32_t)run->y * WORLD_W + x0];
-    int length = x1 - x0;
-    // Most baked spans cover only one or two pixels; inline those copies to
-    // avoid calling memcpy for the overwhelmingly common case.
-    if (length == 1) {
-        dst[0] = src[0];
-    } else if (length == 2) {
-        dst[0] = src[0];
-        dst[1] = src[1];
-    } else if (length == 3) {
-        dst[0] = src[0];
-        dst[1] = src[1];
-        dst[2] = src[2];
-    } else if (length == 4) {
-        dst[0] = src[0];
-        dst[1] = src[1];
-        dst[2] = src[2];
-        dst[3] = src[3];
-    } else {
-        memcpy(dst, src, (size_t)length * sizeof(uint16_t));
-    }
-    return (uint32_t)length;
 }
 
 static void render_screen(uint16_t *buffer, int cam_x, int cam_y,
@@ -765,7 +757,7 @@ static void render_screen(uint16_t *buffer, int cam_x, int cam_y,
             if (wx < 0) wx = 0;
             if (wx + SCREEN_W > WORLD_W) wx = WORLD_W - SCREEN_W;
             const uint16_t *src = &g_dungeon_world_color[wy * WORLD_W + wx];
-            memcpy(&buffer[y * SCREEN_W], src, SCREEN_W * sizeof(uint16_t));
+            dmaCopyHalfWords(3, src, &buffer[y * SCREEN_W], SCREEN_W * sizeof(uint16_t));
         }
     }
 
@@ -805,49 +797,25 @@ static void render_screen(uint16_t *buffer, int cam_x, int cam_y,
     }
 
     uint32_t t_bl0 = cpuGetTiming();
-    uint32_t run_copies = 0, copied_pixels = 0;
-    uint32_t occlusion_ticks = 0;
-    if (count > 0) {
-        g_occlusion_stats.calls++;
-        uint32_t run_idx = occlusion_first_after(items[0].depth);
-        /* depth is floor-projected from upper geometry; generated runs stay within 34 px of screen Y. */
-        uint32_t run_end = occlusion_first_after(cam_y + SCREEN_H - 1 + 34);
-        for (int i = 0; i < count; i++) {
-            uint32_t occ_batch_start = cpuGetTiming();
-            while (run_idx < run_end &&
-                   g_dungeon_occlusion_runs[run_idx].depth <= items[i].depth) {
-                uint32_t copied = draw_occlusion_run(buffer, &g_dungeon_occlusion_runs[run_idx++], cam_x, cam_y);
-                if (copied) { run_copies++; copied_pixels += copied; }
-            }
-            occlusion_ticks += cpuGetTiming() - occ_batch_start;
-            int sp = items[i].sprite;
-            if (sp >= 0) {
-                blit_tile(buffer, sp, items[i].cx, items[i].cy, cam_x, cam_y);
-            } else if (sp == -1) {
-                draw_player(buffer, cam_x, cam_y);
-            } else if (sp <= -2 - MAX_ENEMIES - MAX_PROJECTILES - MAX_DEATH_CHUNKS) {
-                int particle_idx = -2 - MAX_ENEMIES - MAX_PROJECTILES - MAX_DEATH_CHUNKS - sp;
-                draw_bone_particle(buffer, &s_bone_particles[particle_idx], particle_idx, cam_x, cam_y);
-            } else if (sp <= -2 - MAX_ENEMIES - MAX_PROJECTILES) {
-                int chunk_idx = -2 - MAX_ENEMIES - MAX_PROJECTILES - sp;
-                draw_death_chunk(buffer, &s_death_chunks[chunk_idx], cam_x, cam_y);
-            } else if (sp <= -2 - MAX_ENEMIES) {
-                draw_bone_lance(buffer, &s_lances[-2 - MAX_ENEMIES - sp], cam_x, cam_y);
-            } else {
-                draw_enemy(buffer, &s_enemies[-2 - sp], cam_x, cam_y);
-            }
+    for (int i = 0; i < count; i++) {
+        s_draw_item_depth = items[i].depth;
+        int sp = items[i].sprite;
+        if (sp >= 0) {
+            blit_tile(buffer, sp, items[i].cx, items[i].cy, cam_x, cam_y);
+        } else if (sp == -1) {
+            draw_player(buffer, cam_x, cam_y);
+        } else if (sp <= -2 - MAX_ENEMIES - MAX_PROJECTILES - MAX_DEATH_CHUNKS) {
+            int particle_idx = -2 - MAX_ENEMIES - MAX_PROJECTILES - MAX_DEATH_CHUNKS - sp;
+            draw_bone_particle(buffer, &s_bone_particles[particle_idx], particle_idx, cam_x, cam_y);
+        } else if (sp <= -2 - MAX_ENEMIES - MAX_PROJECTILES) {
+            int chunk_idx = -2 - MAX_ENEMIES - MAX_PROJECTILES - sp;
+            draw_death_chunk(buffer, &s_death_chunks[chunk_idx], cam_x, cam_y);
+        } else if (sp <= -2 - MAX_ENEMIES) {
+            draw_bone_lance(buffer, &s_lances[-2 - MAX_ENEMIES - sp], cam_x, cam_y);
+        } else {
+            draw_enemy(buffer, &s_enemies[-2 - sp], cam_x, cam_y);
         }
-        uint32_t occ_batch_start = cpuGetTiming();
-        while (run_idx < run_end) {
-            uint32_t copied = draw_occlusion_run(buffer, &g_dungeon_occlusion_runs[run_idx++], cam_x, cam_y);
-            if (copied) { run_copies++; copied_pixels += copied; }
-        }
-        occlusion_ticks += cpuGetTiming() - occ_batch_start;
     }
-    g_occlusion_stats.runs += run_copies;
-    g_occlusion_stats.pixels += copied_pixels;
-    g_occlusion_stats.ticks += occlusion_ticks;
-    g_occlusion_stats.frame_index = g_perf.frame_index;
     uint32_t blit_ticks = cpuGetTiming() - t_bl0;
 
     if (out_shadow) *out_shadow = shadow_ticks;
@@ -1415,6 +1383,7 @@ int main(void) {
     if (s_cam_y < 0) s_cam_y = 0;
     if (s_cam_y > WORLD_H - SCREEN_H) s_cam_y = WORLD_H - SCREEN_H;
 
+    build_occlusion_depth_map();
     render_screen(s_top_screen_buf, s_cam_x, s_cam_y - SCREEN_H, NULL, NULL, NULL);
     dmaCopyWords(3, s_top_screen_buf, s_top_vram, SCREEN_W * SCREEN_H * 2);
 

@@ -252,3 +252,13 @@ Este documento registra el historial cronológico de sesiones de desarrollo veri
 - [x] Copia software del fondo sigue en ~10.5 ms/frame; sin cambios de física o gameplay.
 - [x] Build BlocksDS, 27 pruebas host y benchmark DeSmuME PASS. Sin validación en DS física.
 - **Evidencia:** [walkthroughs/full3d-performance-gap/walkthrough.md](walkthroughs/full3d-performance-gap/walkthrough.md).
+
+
+### Cierre de la optimizaci?n FBX (2026-10-10)
+
+- [x] Tabla de profundidad precalculada reemplaza el replay CPU de 16,908 spans; conserva el mismo depth test.
+- [x] DMA halfword para las filas de fondo.
+- [x] Benchmark DeSmuME 240 frames: 239/240 a 60 FPS; CPU medio 8.60 ms, objetos 1.45 ms, suelo 5.84 ms.
+- [x] Capturas alineadas por estado: cero diferencias de p?xel en reposo y movimiento. Build, host tests y escenario FBX pasan.
+- [ ] Pendiente medir en consola DS f?sica; hubo un frame lento en el benchmark.
+- **Evidencia:** [walkthroughs/full3d-performance-gap/walkthrough.md](walkthroughs/full3d-performance-gap/walkthrough.md).

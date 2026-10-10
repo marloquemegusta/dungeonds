@@ -36,6 +36,7 @@ Resúmenes acumulativos y auditables de cada entrega y avance de desarrollo en `
 | 23 | Reparación de puntos de colisión FBX y recorte de spans de oclusión | [`fbx-collision-perf-followup/`](fbx-collision-perf-followup/walkthrough.md) | ROM subida; validación física pendiente |
 | 24 | Diagnóstico A/B de la regresión de rendimiento FBX | [`full3d-performance-gap/`](full3d-performance-gap/walkthrough.md) | Medido en DeSmuME; optimización arquitectónica pendiente |
 
+
 - [Reparación de navegación de la mazmorra FBX](fbx-navigation-repair/walkthrough.md) — conversión y colisión para la escena FBX; incluye escenarios con estado real y límites de validación.
 - [Experimento de oclusión para la mazmorra FBX](fbx-occlusion-experiment/walkthrough.md) — prototipo de spans de profundidad; la verificación de máscara y el presupuesto de rendimiento siguen fallando.
 
