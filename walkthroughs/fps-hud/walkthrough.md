@@ -10,6 +10,8 @@ La build BlocksDS y las pruebas host pasan. El escenario FBX capturó el estado 
 
 El usuario reporta que la DSi física muestra 20 FPS en reposo y al moverse. El resultado emulado no representa el rendimiento físico; la causa de esa diferencia sigue investigándose.
 
+Como primera optimización para hardware, añadí una rejilla conservadora de máximos de profundidad en bloques de 8×8: cuando ningún píxel del tramo puede ser ocluido, el sprite usa el blit rápido sin consultas por píxel. Las 20.000 consultas aleatorias del contrato no encontraron falsos negativos y las dos capturas alineadas cambiaron 0 píxeles. DeSmuME redujo el tiempo de blit ~7%, sin cambio material en tiempo total; la mejora en DSi aún no está medida.
+
 ![Captura de la pantalla superior con el contador FPS](assets/fps-hud-top-screen.png)
 
-ROM compilada con CRC `392122B6`. La prueba fue en DeSmuME; la lectura física de la consola queda pendiente.
+Build actual: CRC `0603736D`. Las lecturas `C` y `P` en DSi son la siguiente medición necesaria.

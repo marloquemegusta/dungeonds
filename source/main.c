@@ -39,6 +39,9 @@
 
 // Upper bound on objects drawn per screen (walls + pillars in view).
 #define MAX_DRAW_ITEMS 128
+#define OCCLUSION_GRID_SHIFT 3
+#define OCCLUSION_GRID_W ((WORLD_W + (1 << OCCLUSION_GRID_SHIFT) - 1) >> OCCLUSION_GRID_SHIFT)
+#define OCCLUSION_GRID_H ((WORLD_H + (1 << OCCLUSION_GRID_SHIFT) - 1) >> OCCLUSION_GRID_SHIFT)
 
 // World-sized floor cache bounds (origin = world pixel (CACHE_X0, CACHE_Y0))
 #define CACHE_X0 (-((MAP_ROWS - 1) * TILE_HALF_W) - TILE_HALF_W)
@@ -70,6 +73,7 @@ static Player s_player;
 static int s_cam_x = 0;
 static int s_cam_y = 0;
 static int16_t s_occlusion_depth[WORLD_W * WORLD_H] __attribute__((aligned(4)));
+static int16_t s_occlusion_block_max[OCCLUSION_GRID_W * OCCLUSION_GRID_H] __attribute__((aligned(4)));
 static int s_draw_item_depth;
 
 typedef struct {
@@ -288,12 +292,36 @@ static void init_obj_sprite_bounds(void) {
 
 static void build_occlusion_depth_map(void) {
     memset(s_occlusion_depth, 0xFF, sizeof(s_occlusion_depth));
+    memset(s_occlusion_block_max, 0xFF, sizeof(s_occlusion_block_max));
     for (uint32_t i = 0; i < g_dungeon_occlusion_run_count; i++) {
         const DungeonOcclusionRun *run = &g_dungeon_occlusion_runs[i];
-        if (run->y >= WORLD_H || run->x + run->length > WORLD_W) continue;
+        if (run->length == 0 || run->y >= WORLD_H || run->x + run->length > WORLD_W) continue;
         int16_t *row = &s_occlusion_depth[(uint32_t)run->y * WORLD_W + run->x];
         for (uint32_t x = 0; x < run->length; x++) row[x] = run->depth;
+
+        uint32_t block_y = run->y >> OCCLUSION_GRID_SHIFT;
+        uint32_t block_x0 = run->x >> OCCLUSION_GRID_SHIFT;
+        uint32_t block_x1 = (run->x + run->length - 1) >> OCCLUSION_GRID_SHIFT;
+        for (uint32_t bx = block_x0; bx <= block_x1; bx++) {
+            int16_t *max_depth = &s_occlusion_block_max[block_y * OCCLUSION_GRID_W + bx];
+            if (run->depth > *max_depth) *max_depth = run->depth;
+        }
     }
+}
+
+static inline int occlusion_may_block_span(int x0, int x1, int y, int actor_depth) {
+    if ((uint32_t)y >= WORLD_H) return 0;
+    if (x0 < 0) x0 = 0;
+    if (x1 > WORLD_W) x1 = WORLD_W;
+    if (x0 >= x1) return 0;
+
+    uint32_t block_y = (uint32_t)y >> OCCLUSION_GRID_SHIFT;
+    uint32_t block_x0 = (uint32_t)x0 >> OCCLUSION_GRID_SHIFT;
+    uint32_t block_x1 = (uint32_t)(x1 - 1) >> OCCLUSION_GRID_SHIFT;
+    const int16_t *row = &s_occlusion_block_max[block_y * OCCLUSION_GRID_W];
+    for (uint32_t bx = block_x0; bx <= block_x1; bx++)
+        if (row[bx] > actor_depth) return 1;
+    return 0;
 }
 
 static inline int occlusion_blocks_pixel(int x, int y, int actor_depth) {
@@ -325,11 +353,16 @@ static void blit_stride(uint16_t *buffer, const uint16_t *src, int pitch, int sw
         const uint16_t *srow = &src[y * pitch];
         uint16_t *drow = &buffer[(oy + y) * SCREEN_W + ox];
         int x = sx0;
-        if (depth >= 0) {
+        int world_y = top + y;
+        int world_x0 = left + sx0;
+        int world_x1 = left + sx1;
+        if (depth >= 0 && occlusion_may_block_span(world_x0, world_x1, world_y, depth)) {
+            const int16_t *depth_row = &s_occlusion_depth[(uint32_t)world_y * WORLD_W];
             for (; x < sx1; x++) {
                 uint16_t color = srow[x];
+                int world_x = left + x;
                 if ((color & BIT(15)) &&
-                    !occlusion_blocks_pixel(left + x, top + y, depth))
+                    ((uint32_t)world_x >= WORLD_W || depth_row[world_x] <= depth))
                     drow[x] = color;
             }
             continue;
