@@ -114,7 +114,7 @@ def get_fbx_actions(fbx_path):
         "fbx = sys.argv[-1]\n"
         "bpy.ops.wm.read_factory_settings(use_empty=True)\n"
         "try:\n"
-        "    bpy.ops.import_scene.fbx(filepath=fbx)\n"
+        "    bpy.ops.import_scene.fbx(filepath=fbx, use_image_search=False)\n"
         "    res = [{'name': a.name, 'start_f': int(a.frame_range[0]), 'end_f': int(a.frame_range[1]), 'frames': int(a.frame_range[1] - a.frame_range[0] + 1)} for a in bpy.data.actions]\n"
         "except Exception as e:\n"
         "    res = []\n"
@@ -167,7 +167,28 @@ KEY_ANGLE = {key_angle}
 ACTION_NAME = {action_name}
 
 bpy.ops.wm.read_factory_settings(use_empty=True)
-bpy.ops.import_scene.fbx(filepath=FBX)
+bpy.ops.import_scene.fbx(filepath=FBX, use_image_search=False)
+
+# FBX image paths may point outside this checkout. Resolve only missing external
+# maps from sibling .fbm folders instead of letting Blender recurse from stale paths.
+_fbx_dir = os.path.dirname(os.path.abspath(FBX))
+_fbm_image_paths = dict()
+for _entry in os.scandir(_fbx_dir):
+    if _entry.is_dir() and _entry.name.lower().endswith('.fbm'):
+        for _directory, _subdirs, _filenames in os.walk(_entry.path):
+            for _filename in _filenames:
+                _fbm_image_paths.setdefault(_filename.casefold(), os.path.join(_directory, _filename))
+
+for _image in bpy.data.images:
+    if _image.source != 'FILE' or _image.packed_file:
+        continue
+    _current_path = bpy.path.abspath(_image.filepath)
+    if os.path.isfile(_current_path):
+        continue
+    _candidate = _fbm_image_paths.get(os.path.basename(_image.filepath).casefold())
+    if _candidate:
+        _image.filepath = _candidate
+        _image.reload()
 
 actions = list(bpy.data.actions)
 act = None
