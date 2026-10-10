@@ -691,6 +691,41 @@ static void draw_death_chunk(uint16_t *buffer, const DeathChunk *chunk, int cam_
         }
     }
 }
+__attribute__((target("arm"), noinline))
+static void copy_world_row_aligned(uint16_t *dst, const uint16_t *src) {
+    // Eight-word ARM9 bursts replace one DMA setup per scanline.
+    asm volatile (
+        "mov r2, #16\n\t"
+        "1:\n\t"
+        "ldmia %1!, {r3, r4, r5, r6, r7, r8, r9, r10}\n\t"
+        "stmia %0!, {r3, r4, r5, r6, r7, r8, r9, r10}\n\t"
+        "subs r2, r2, #1\n\t"
+        "bne 1b\n\t"
+        : "+r"(dst), "+r"(src)
+        :
+        : "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "memory"
+    );
+}
+
+__attribute__((target("arm"), noinline))
+static void copy_world_row_halfword_aligned(uint16_t *dst, const uint16_t *src) {
+    // Camera X may make src 2-byte-offset from dst. Pack safe halfword loads
+    // into aligned 32-bit destination stores; ARM946E-S rotates unaligned word loads.
+    asm volatile (
+        "mov r2, #128\n\t"
+        "1:\n\t"
+        "ldrh r3, [%1], #2\n\t"
+        "ldrh r4, [%1], #2\n\t"
+        "orr r3, r3, r4, lsl #16\n\t"
+        "str r3, [%0], #4\n\t"
+        "subs r2, r2, #1\n\t"
+        "bne 1b\n\t"
+        : "+r"(dst), "+r"(src)
+        :
+        : "r2", "r3", "r4", "memory"
+    );
+}
+
 
 static void render_screen(uint16_t *buffer, int cam_x, int cam_y,
                           uint32_t *out_floor, uint32_t *out_shadow, uint32_t *out_blit) {
@@ -779,18 +814,22 @@ static void render_screen(uint16_t *buffer, int cam_x, int cam_y,
         count++;
     }
 
-    // Blit pre-rendered 3D world background
+    // Copy pre-rendered 3D background with ARM9 bursts instead of 384 per-row DMA setups.
     uint32_t floor_start_ticks = cpuGetTiming();
+    int wx = cam_x;
+    if (wx < 0) wx = 0;
+    if (wx + SCREEN_W > WORLD_W) wx = WORLD_W - SCREEN_W;
     for (int y = 0; y < SCREEN_H; y++) {
         int wy = cam_y + y;
+        uint16_t *dst = &buffer[y * SCREEN_W];
         if (wy < 0 || wy >= WORLD_H) {
-            memset(&buffer[y * SCREEN_W], 0, SCREEN_W * sizeof(uint16_t));
+            memset(dst, 0, SCREEN_W * sizeof(uint16_t));
         } else {
-            int wx = cam_x;
-            if (wx < 0) wx = 0;
-            if (wx + SCREEN_W > WORLD_W) wx = WORLD_W - SCREEN_W;
             const uint16_t *src = &g_dungeon_world_color[wy * WORLD_W + wx];
-            dmaCopyHalfWords(3, src, &buffer[y * SCREEN_W], SCREEN_W * sizeof(uint16_t));
+            if ((uintptr_t)src & 2)
+                copy_world_row_halfword_aligned(dst, src);
+            else
+                copy_world_row_aligned(dst, src);
         }
     }
 

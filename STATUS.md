@@ -279,4 +279,7 @@ Este documento registra el historial cronológico de sesiones de desarrollo veri
 - TowerDS dibuja el framebuffer inferior directamente en buffer de VRAM con flip; esta rama compone dos buffers en RAM y copia 192 KB por frame. Es una diferencia arquitectónica observada, aún no prueba de la causa.
 - Rejilla conservadora 8×8 evita el depth test por píxel cuando no puede existir oclusión. Contrato de 20.000 regiones aleatorias PASS; capturas DeSmuME pre/post con 0 píxeles distintos; blit emulado −7%.
 - HUD ampliado: build BlocksDS, contrato de HUD y escenario DeSmuME PASS; captura `FPS:60 C:10 P:06 / F:06 S:00 B:01 L:00`.
-- Commit `086d05c`; ROM CRC `3C31A321`, SHA-256 `6C3AF12D5DE40E544564680D2FEE1711CDFE92929C35C97813E48590DF2621BF`, subida FTP verificada a `ftp://192.168.1.151:5000/roms/nds/dungeonds.nds`. Pendiente medir `F/S/B/L` en DSi.
+- Commit `086d05c`; build diagnóstica `F/S/B/L` CRC `3C31A321` subida y verificada por FTP. Usuario midió `F:38`, `S/B/L:0`; la copia del fondo es el cuello de botella físico.
+- El BG1 tileado proviene del mapa modular y su streaming está sin uso; no sustituye el fondo FBX. TowerDS cambia directamente el framebuffer inferior en VRAM, pero ese patrón no elimina el recorte/copiado del bitmap FBX por cámara y pantalla.
+- Ensayo: sustituir 384 llamadas DMA por línea/frame con ráfagas ARM9 de 8 palabras (alineado) y pares halfword seguros (desalineado). Build y escenarios pasan; recorrido da las mismas coordenadas inicial/final.
+- En el DeSmuME headless (modo intérprete), el candidato cae de 60 a 30 FPS y `F` mide 7 ms quieto / hasta 15 ms andando. Resultado físico aún no medido; candidato separado pendiente de subida para A/B en DSi.
