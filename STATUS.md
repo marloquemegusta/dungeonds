@@ -274,7 +274,8 @@ Este documento registra el historial cronológico de sesiones de desarrollo veri
 
 ### Seguimiento de rendimiento físico (2026-10-10)
 
-- Usuario informa 20 FPS en Nintendo DSi tanto en reposo como al moverse; la medición previa de DeSmuME no predice la consola.
-- Añadido `C` (lógica+render, ms) y `P` (espera de VBlank+copia, ms) junto al FPS para separar coste de render y presentación.
+- Usuario informa `FPS:20 C:40 P:10` en Nintendo DSi, en reposo y al moverse. La medición previa de DeSmuME no predice la consola.
+- `C` mide lógica+render y `P` incluye espera de VBlank+copia de presentación. La nueva segunda línea muestra `F/S/B/L`: suelo, sombras, blits y lógica.
+- TowerDS dibuja el framebuffer inferior directamente en buffer de VRAM con flip; esta rama compone dos buffers en RAM y copia 192 KB por frame. Es una diferencia arquitectónica observada, aún no prueba de la causa.
 - Rejilla conservadora 8×8 evita el depth test por píxel cuando no puede existir oclusión. Contrato de 20.000 regiones aleatorias PASS; capturas DeSmuME pre/post con 0 píxeles distintos; blit emulado −7%.
-- Build diagnóstica `7f7f310` cargada por FTP (PASS). Pendiente recibir las lecturas `FPS/C/P` de la DSi para orientar la optimización física.
+- HUD ampliado: build BlocksDS, contrato de HUD y escenario DeSmuME PASS; captura `FPS:60 C:10 P:06 / F:06 S:00 B:01 L:00`. ROM diagnóstica preparada; pendiente subirla y medir `F/S/B/L` en hardware.

@@ -855,7 +855,7 @@ static void render_screen(uint16_t *buffer, int cam_x, int cam_y,
     if (out_blit) *out_blit = blit_ticks;
 }
 
-static const char s_fps_chars[] = " FPS:C0123456789";
+static const char s_fps_chars[] = " FPS:CBL0123456789";
 static const uint8_t s_fps_font[][7] = {
     {0x00,0x00,0x00,0x00,0x00,0x00,0x00}, // space
     {0x1F,0x10,0x10,0x1E,0x10,0x10,0x10}, // F
@@ -863,6 +863,8 @@ static const uint8_t s_fps_font[][7] = {
     {0x0F,0x10,0x10,0x0E,0x01,0x01,0x1E}, // S
     {0x00,0x04,0x04,0x00,0x04,0x04,0x00}, // :
     {0x0E,0x11,0x10,0x10,0x10,0x11,0x0E}, // C
+    {0x1E,0x11,0x11,0x1E,0x11,0x11,0x1E}, // B
+    {0x10,0x10,0x10,0x10,0x10,0x10,0x1F}, // L
     {0x0E,0x11,0x13,0x15,0x19,0x11,0x0E}, // 0
     {0x04,0x0C,0x04,0x04,0x04,0x04,0x0E}, // 1
     {0x0E,0x11,0x01,0x02,0x04,0x08,0x1F}, // 2
@@ -876,17 +878,29 @@ static const uint8_t s_fps_font[][7] = {
 };
 
 static void draw_fps_hud(uint16_t *buffer) {
-    char label[24];
+    char labels[2][32];
     unsigned long cpu_ms = (unsigned long)(g_perf.cpu_ticks / 33514u);
     unsigned long present_ms = (unsigned long)(g_perf.present_ticks / 33514u);
+    unsigned long floor_ms = (unsigned long)(g_perf.floor_ticks / 33514u);
+    unsigned long shadow_ms = (unsigned long)(g_perf.shadow_ticks / 33514u);
+    unsigned long blit_ms = (unsigned long)(g_perf.blit_ticks / 33514u);
+    unsigned long logic_ms = (unsigned long)(g_perf.logic_ticks / 33514u);
     if (cpu_ms > 99) cpu_ms = 99;
     if (present_ms > 99) present_ms = 99;
-    snprintf(label, sizeof(label), "FPS:%2lu C:%02lu P:%02lu",
+    if (floor_ms > 99) floor_ms = 99;
+    if (shadow_ms > 99) shadow_ms = 99;
+    if (blit_ms > 99) blit_ms = 99;
+    if (logic_ms > 99) logic_ms = 99;
+    snprintf(labels[0], sizeof(labels[0]), "FPS:%2lu C:%02lu P:%02lu",
              (unsigned long)g_perf.fps, cpu_ms, present_ms);
-    const int left = 4, top = 4, pad = 2, char_w = 6, glyph_w = 5, glyph_h = 7;
-    int text_w = (int)strlen(label) * char_w - 1;
+    snprintf(labels[1], sizeof(labels[1]), "F:%02lu S:%02lu B:%02lu L:%02lu",
+             floor_ms, shadow_ms, blit_ms, logic_ms);
+    const int left = 4, top = 4, pad = 2, char_w = 6, glyph_w = 5, glyph_h = 7, line_gap = 2;
+    int first_w = (int)strlen(labels[0]) * char_w - 1;
+    int second_w = (int)strlen(labels[1]) * char_w - 1;
+    int text_w = first_w > second_w ? first_w : second_w;
     int box_w = text_w + pad * 2;
-    int box_h = glyph_h + pad * 2;
+    int box_h = glyph_h * 2 + line_gap + pad * 2;
     uint16_t panel = RGB15(1, 2, 1) | BIT(15);
     uint16_t border = RGB15(0, 16, 0) | BIT(15);
     uint16_t ink = RGB15(18, 31, 18) | BIT(15);
@@ -898,15 +912,18 @@ static void draw_fps_hud(uint16_t *buffer) {
         }
     }
 
-    for (int i = 0; label[i]; i++) {
-        int glyph = 0;
-        while (s_fps_chars[glyph] && s_fps_chars[glyph] != label[i]) glyph++;
-        if (!s_fps_chars[glyph]) continue;
-        const uint8_t *rows = s_fps_font[glyph];
-        for (int y = 0; y < glyph_h; y++) {
-            for (int x = 0; x < glyph_w; x++) {
-                if (rows[y] & (1u << (glyph_w - 1 - x)))
-                    buffer[(top + pad + y) * SCREEN_W + left + pad + i * char_w + x] = ink;
+    for (int line = 0; line < 2; line++) {
+        for (int i = 0; labels[line][i]; i++) {
+            int glyph = 0;
+            while (s_fps_chars[glyph] && s_fps_chars[glyph] != labels[line][i]) glyph++;
+            if (!s_fps_chars[glyph]) continue;
+            const uint8_t *rows = s_fps_font[glyph];
+            int line_y = top + pad + line * (glyph_h + line_gap);
+            for (int y = 0; y < glyph_h; y++) {
+                for (int x = 0; x < glyph_w; x++) {
+                    if (rows[y] & (1u << (glyph_w - 1 - x)))
+                        buffer[(line_y + y) * SCREEN_W + left + pad + i * char_w + x] = ink;
+                }
             }
         }
     }
