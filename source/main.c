@@ -693,42 +693,9 @@ static void draw_death_chunk(uint16_t *buffer, const DeathChunk *chunk, int cam_
         }
     }
 }
-__attribute__((target("arm"), noinline))
-static void copy_world_row_aligned(uint16_t *dst, const uint16_t *src) {
-    // Eight-word ARM9 bursts replace one DMA setup per scanline.
-    asm volatile (
-        "mov r2, #16\n\t"
-        "1:\n\t"
-        "ldmia %1!, {r3, r4, r5, r6, r7, r8, r9, r10}\n\t"
-        "stmia %0!, {r3, r4, r5, r6, r7, r8, r9, r10}\n\t"
-        "subs r2, r2, #1\n\t"
-        "bne 1b\n\t"
-        : "+r"(dst), "+r"(src)
-        :
-        : "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "memory"
-    );
+static void copy_world_row(uint16_t *dst, const uint16_t *src) {
+    dmaCopyHalfWords(3, src, dst, SCREEN_W * sizeof(uint16_t));
 }
-
-__attribute__((target("arm"), noinline))
-static void copy_world_row_halfword_aligned(uint16_t *dst, const uint16_t *src) {
-    // Camera X may make src 2-byte-offset from dst. Pack safe halfword loads
-    // into aligned 32-bit destination stores; ARM946E-S rotates unaligned word loads.
-    asm volatile (
-        "mov r2, #128\n\t"
-        "1:\n\t"
-        "ldrh r3, [%1], #2\n\t"
-        "ldrh r4, [%1], #2\n\t"
-        "orr r3, r3, r4, lsl #16\n\t"
-        "str r3, [%0], #4\n\t"
-        "subs r2, r2, #1\n\t"
-        "bne 1b\n\t"
-        : "+r"(dst), "+r"(src)
-        :
-        : "r2", "r3", "r4", "memory"
-    );
-}
-
-
 static void render_screen(uint16_t *buffer, int cam_x, int cam_y,
                           uint32_t *out_floor, uint32_t *out_shadow, uint32_t *out_blit) {
     DrawItem items[MAX_DRAW_ITEMS + MAX_ENEMIES + MAX_PROJECTILES + MAX_DEATH_CHUNKS + MAX_BONE_PARTICLES + 1];
@@ -828,10 +795,7 @@ static void render_screen(uint16_t *buffer, int cam_x, int cam_y,
             memset(dst, 0, SCREEN_W * sizeof(uint16_t));
         } else {
             const uint16_t *src = &s_dungeon_world_cache[wy * WORLD_W + wx];
-            if ((uintptr_t)src & 2)
-                copy_world_row_halfword_aligned(dst, src);
-            else
-                copy_world_row_aligned(dst, src);
+            copy_world_row(dst, src);
         }
     }
 
