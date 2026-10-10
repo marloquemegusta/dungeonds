@@ -822,6 +822,57 @@ static void render_screen(uint16_t *buffer, int cam_x, int cam_y,
     if (out_blit) *out_blit = blit_ticks;
 }
 
+static const char s_fps_chars[] = " FPS:0123456789";
+static const uint8_t s_fps_font[][7] = {
+    {0x00,0x00,0x00,0x00,0x00,0x00,0x00}, // space
+    {0x1F,0x10,0x10,0x1E,0x10,0x10,0x10}, // F
+    {0x1E,0x11,0x11,0x1E,0x10,0x10,0x10}, // P
+    {0x0F,0x10,0x10,0x0E,0x01,0x01,0x1E}, // S
+    {0x00,0x04,0x04,0x00,0x04,0x04,0x00}, // :
+    {0x0E,0x11,0x13,0x15,0x19,0x11,0x0E}, // 0
+    {0x04,0x0C,0x04,0x04,0x04,0x04,0x0E}, // 1
+    {0x0E,0x11,0x01,0x02,0x04,0x08,0x1F}, // 2
+    {0x1E,0x01,0x01,0x0E,0x01,0x01,0x1E}, // 3
+    {0x02,0x06,0x0A,0x12,0x1F,0x02,0x02}, // 4
+    {0x1F,0x10,0x10,0x1E,0x01,0x01,0x1E}, // 5
+    {0x0E,0x10,0x10,0x1E,0x11,0x11,0x0E}, // 6
+    {0x1F,0x01,0x02,0x04,0x08,0x08,0x08}, // 7
+    {0x0E,0x11,0x11,0x0E,0x11,0x11,0x0E}, // 8
+    {0x0E,0x11,0x11,0x0F,0x01,0x01,0x0E}  // 9
+};
+
+static void draw_fps_hud(uint16_t *buffer) {
+    char label[8];
+    snprintf(label, sizeof(label), "FPS:%2lu", (unsigned long)g_perf.fps);
+    const int left = 4, top = 4, pad = 2, char_w = 6, glyph_w = 5, glyph_h = 7;
+    int text_w = (int)strlen(label) * char_w - 1;
+    int box_w = text_w + pad * 2;
+    int box_h = glyph_h + pad * 2;
+    uint16_t panel = RGB15(1, 2, 1) | BIT(15);
+    uint16_t border = RGB15(0, 16, 0) | BIT(15);
+    uint16_t ink = RGB15(18, 31, 18) | BIT(15);
+
+    for (int y = 0; y < box_h; y++) {
+        for (int x = 0; x < box_w; x++) {
+            int edge = x == 0 || y == 0 || x == box_w - 1 || y == box_h - 1;
+            buffer[(top + y) * SCREEN_W + left + x] = edge ? border : panel;
+        }
+    }
+
+    for (int i = 0; label[i]; i++) {
+        int glyph = 0;
+        while (s_fps_chars[glyph] && s_fps_chars[glyph] != label[i]) glyph++;
+        if (!s_fps_chars[glyph]) continue;
+        const uint8_t *rows = s_fps_font[glyph];
+        for (int y = 0; y < glyph_h; y++) {
+            for (int x = 0; x < glyph_w; x++) {
+                if (rows[y] & (1u << (glyph_w - 1 - x)))
+                    buffer[(top + pad + y) * SCREEN_W + left + pad + i * char_w + x] = ink;
+            }
+        }
+    }
+}
+
 // ---------------------------------------------------------------------------
 // Presentation
 // ---------------------------------------------------------------------------
@@ -1420,6 +1471,7 @@ int main(void) {
         // Render entities and dynamic shadows for top screen
         uint32_t t1 = cpuGetTiming();
         render_screen(s_top_screen_buf, top_cam_x, top_cam_y, &top_floor, &top_sh, &top_bl);
+        draw_fps_hud(s_top_screen_buf);
         uint32_t top_ticks = cpuGetTiming() - t1;
 
         // Render entities and dynamic shadows for bottom screen

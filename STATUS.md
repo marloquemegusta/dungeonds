@@ -262,3 +262,11 @@ Este documento registra el historial cronológico de sesiones de desarrollo veri
 - [x] Capturas alineadas por estado: cero diferencias de p?xel en reposo y movimiento. Build, host tests y escenario FBX pasan.
 - [ ] Pendiente medir en consola DS f?sica; hubo un frame lento en el benchmark.
 - **Evidencia:** [walkthroughs/full3d-performance-gap/walkthrough.md](walkthroughs/full3d-performance-gap/walkthrough.md).
+
+
+## Sesi?n 25: Contador de FPS en HUD superior
+
+- [x] A?adido indicador persistente `FPS:NN` en la esquina superior izquierda de la pantalla superior, con el valor existente de `g_perf.fps` y estilo pixelado verde sobre panel oscuro inspirado en TowerDS.
+- [x] Build BlocksDS y pruebas host PASS. Escenario DeSmuME: `fps=60` en reposo y tras caminar; captura revisada.
+- [x] ROM cargada por FTP y entrada remota verificada.
+- **Evidencia:** [walkthroughs/fps-hud/walkthrough.md](walkthroughs/fps-hud/walkthrough.md).
