@@ -282,4 +282,5 @@ Este documento registra el historial cronológico de sesiones de desarrollo veri
 - Commit `086d05c`; build diagnóstica `F/S/B/L` CRC `3C31A321` subida y verificada por FTP. Usuario midió `F:38`, `S/B/L:0`; la copia del fondo es el cuello de botella físico.
 - El BG1 tileado proviene del mapa modular y su streaming está sin uso; no sustituye el fondo FBX. TowerDS cambia directamente el framebuffer inferior en VRAM, pero ese patrón no elimina el recorte/copiado del bitmap FBX por cámara y pantalla.
 - Ensayo: sustituir 384 llamadas DMA por línea/frame con ráfagas ARM9 de 8 palabras (alineado) y pares halfword seguros (desalineado). Build y escenarios pasan; recorrido da las mismas coordenadas inicial/final.
-- En el DeSmuME headless (modo intérprete), el candidato cae de 60 a 30 FPS y `F` mide 7 ms quieto / hasta 15 ms andando. Resultado físico aún no medido; candidato separado pendiente de subida para A/B en DSi.
+- En el DeSmuME headless (modo intérprete), el candidato cae de 60 a 30 FPS y `F` mide 7 ms quieto / hasta 15 ms andando. Resultado físico aún no medido.
+- Commit `749d44f`; ROM CRC `4A0B2288`, SHA-256 `269BFC72206230499B6D3DCC77EE4784160B88C65E12DD66FE29EF55B9868F4E`. FTP `192.168.1.151:5000` agotó el tiempo de conexión a los 10 s; transferencia no confirmada, sin reintentos.

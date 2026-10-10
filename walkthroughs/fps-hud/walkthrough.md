@@ -20,4 +20,4 @@ La build BlocksDS, los tests host y el escenario FBX pasan; la posición inicial
 
 ![Captura del HUD con desglose de tiempos por etapa](assets/fps-hud-stage-breakdown.png)
 
-Build de prueba pendiente de subir: CRC `4A0B2288`, SHA-256 `269BFC72206230499B6D3DCC77EE4784160B88C65E12DD66FE29EF55B9868F4E`.
+Build de prueba `749d44f`: CRC `4A0B2288`, SHA-256 `269BFC72206230499B6D3DCC77EE4784160B88C65E12DD66FE29EF55B9868F4E`. La subida a `ftp://192.168.1.151:5000/roms/nds/dungeonds.nds` agotó el tiempo de conexión (10 s); no se confirmó transferencia. La mejora física sigue pendiente de probar.
