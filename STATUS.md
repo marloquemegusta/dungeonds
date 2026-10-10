@@ -183,6 +183,11 @@ Este documento registra el historial cronológico de sesiones de desarrollo veri
 - [x] Mario importa en **0,85 s** y renderiza desde una carpeta sin sidecar .fbm (48×48, 16 muestras) en **7,7 s**.
 - **Evidencia:** [walkthroughs/17-shader-fbx-image-search/walkthrough.md](walkthroughs/17-shader-fbx-image-search/walkthrough.md).
 
+## Sesión 18: Perfil de rendimiento de Mario frente al héroe
+- [x] Comparación controlada: Blender 5.2.1, 48×48 px, 12 muestras, outline y 64 renders; dos ejecuciones por asset.
+- [x] Mario tarda **6,61 s** frente a **6,15 s** del héroe (+7,4 %); importar FBX añade solo **0,18 s**.
+- [x] Mario tiene 2,77× los polígonos y 76 % más huesos; perfil detallado en [walkthroughs/18-profile-mario-vs-hero/walkthrough.md](walkthroughs/18-profile-mario-vs-hero/walkthrough.md).
+
 ## Features Abiertas y Ramas Activas (En Pausa / Backlog)
 
 - **`feat/skeleton-collapse-fbx` — Colapso del Esqueleto a Pila de Huesos:**
