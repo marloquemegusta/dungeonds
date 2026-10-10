@@ -32,4 +32,11 @@ Resúmenes acumulativos y auditables de cada entrega y avance de desarrollo en `
 | 16 | DS Shader Lab interactivo, selector de FBX y tamaño de sprite en píxeles | [`16-shader-lab-interactive/`](16-shader-lab-interactive/walkthrough.md) | Completado |
 | 17 | Shader Lab importa FBX sin buscar sidecars .fbm | [`17-shader-fbx-image-search/`](17-shader-fbx-image-search/walkthrough.md) | Verificado con Blender |
 | 18 | Diagnóstico de la carga y render lento de Mario en Shader Lab | [`18-profile-mario-vs-hero/`](18-profile-mario-vs-hero/walkthrough.md) | Medido en servidor y Blender |
+| 19 | Integración Modular del Dungeon 3D (FBX) en el Motor Nintendo DS | [`19-modular-3d-scifi-dungeon/`](19-modular-3d-scifi-dungeon/walkthrough.md) | Validado en DeSmuME (GIF) |
+| 23 | Reparación de puntos de colisión FBX y recorte de spans de oclusión | [`fbx-collision-perf-followup/`](fbx-collision-perf-followup/walkthrough.md) | ROM subida; validación física pendiente |
+| 24 | Diagnóstico A/B de la regresión de rendimiento FBX | [`full3d-performance-gap/`](full3d-performance-gap/walkthrough.md) | Medido en DeSmuME; optimización arquitectónica pendiente |
 
+- [Reparación de navegación de la mazmorra FBX](fbx-navigation-repair/walkthrough.md) — conversión y colisión para la escena FBX; incluye escenarios con estado real y límites de validación.
+- [Experimento de oclusión para la mazmorra FBX](fbx-occlusion-experiment/walkthrough.md) — prototipo de spans de profundidad; la verificación de máscara y el presupuesto de rendimiento siguen fallando.
+
+- [FBX collision grid and wall-stop check](fbx-collision-fix/walkthrough.md) — host tests and state-backed DeSmuME wall-stop scenario pass; doorway connectivity remains unverified.

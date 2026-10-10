@@ -53,7 +53,67 @@ def configure(lib):
     lib.desmume_input_release_touch.argtypes = []
     lib.desmume_input_keypad_update.argtypes = [ctypes.c_uint16]
     lib.desmume_input_keypad_get.restype = ctypes.c_uint16
+    lib.desmume_memory_read_long.argtypes = [ctypes.c_uint32]
+    lib.desmume_memory_read_long.restype = ctypes.c_uint32
     lib.desmume_free.argtypes = []
+
+
+def map_symbol_address(map_path: Path, symbol: str) -> int:
+    """Resolve a linked BSS symbol from the BlocksDS GNU ld map."""
+    sections = {f".{kind}.{symbol}" for kind in ("bss", "data", "rodata")}
+    lines = map_path.read_text(encoding="utf-8", errors="replace").splitlines()
+    for index, line in enumerate(lines):
+        if line.split()[0:1] and line.split()[0] in sections:
+            fields = line.split()
+            if len(fields) >= 2 and fields[1].startswith("0x"):
+                return int(fields[1], 16)
+        if not line.split() or line.split()[0] not in sections:
+            continue
+        fields = line.split()
+        if len(fields) >= 2 and fields[1].startswith("0x"):
+            return int(fields[1], 16)
+        if index + 1 < len(lines):
+            fields = lines[index + 1].split()
+            if fields and fields[0].startswith("0x"):
+                return int(fields[0], 16)
+    raise ValueError(f"BSS symbol {symbol!r} not found in {map_path}")
+
+
+def read_state(lib, bases: dict, fields: dict, default_symbol: str) -> dict:
+    values = {}
+    for name, spec in fields.items():
+        if isinstance(spec, dict):
+            symbol, offset = spec["symbol"], spec["offset"]
+        else:
+            symbol, offset = default_symbol, spec
+        value = int(lib.desmume_memory_read_long(bases[symbol] + int(offset)))
+        values[name] = value - 0x100000000 if value & 0x80000000 else value
+    return values
+
+
+def check_state_assertion(samples: dict, assertion: dict) -> dict:
+    before = samples[assertion["from"]][assertion["field"]]
+    after = samples[assertion["to"]][assertion["field"]]
+    delta = after - before
+    if "min_abs_delta" in assertion:
+        passed = abs(delta) >= int(assertion["min_abs_delta"])
+    elif "min_delta" in assertion:
+        passed = delta >= int(assertion["min_delta"])
+    elif "max_delta" in assertion:
+        passed = delta <= int(assertion["max_delta"])
+    elif "max_abs_delta" in assertion:
+        passed = abs(delta) <= int(assertion["max_abs_delta"])
+    elif "equals" in assertion:
+        passed = after == int(assertion["equals"])
+    elif "min_value" in assertion:
+        passed = after >= int(assertion["min_value"])
+    elif "max_value" in assertion:
+        passed = after <= int(assertion["max_value"])
+    else:
+        raise ValueError(f"unsupported state assertion: {assertion}")
+    return {"from": assertion["from"], "to": assertion["to"],
+            "field": assertion["field"], "before": before, "after": after,
+            "delta": delta, "passed": passed}
 
 
 def set_button(lib, keypad: int, name: str, pressed: bool) -> int:
@@ -96,6 +156,15 @@ def main() -> int:
     events = []
     captures = {}
     capture_pixels = {}
+    state_samples = {}
+    state_config = scenario.get("state")
+    if state_config:
+        map_path = (scenario_path.parent.parent / state_config["map_path"]
+                    if "map_path" in state_config else
+                    scenario_path.parent.parent / ".ds-game-dev" / "build" / "build" / "game-blocksds.map")
+        symbols = state_config["symbols"] if "symbols" in state_config else {"state": state_config["symbol"]}
+        state_bases = {name: map_symbol_address(map_path, symbol) for name, symbol in symbols.items()}
+        default_symbol = state_config.get("default_symbol", "state")
     keypad = 0
     try:
         for index, step in enumerate(scenario["steps"]):
@@ -181,11 +250,20 @@ def main() -> int:
                 digest, _ = capture(lib, output / f"{name}.png")
                 captures[name] = {"sha256": digest, "path": f"{name}.png"}
                 capture_pixels[name] = _
+            if "state_capture" in step:
+                if not state_config:
+                    raise ValueError("state_capture requires scenario.state")
+                name = step["state_capture"]
+                state_samples[name] = read_state(lib, state_bases, state_config["fields"], default_symbol)
+                events.append({"step": index, "action": "state_capture", "name": name,
+                               "state": state_samples[name]})
     finally:
         lib.desmume_free()
 
     assertions = scenario["assertions"]
-    checks = assertions.get("screen_changes", [assertions["screen_changed"]])
+    checks = assertions.get("screen_changes")
+    if checks is None:
+        checks = [assertions["screen_changed"]] if "screen_changed" in assertions else []
     screen_results = []
     for check in checks:
         first = captures[check["from"]]
@@ -200,22 +278,30 @@ def main() -> int:
             "changed_pixels": changed_pixels, "min_changed_pixels": min_changed,
         })
     changed = all(result["changed"] for result in screen_results)
-    first_result = screen_results[0]
+    state_results = [check_state_assertion(state_samples, check)
+                     for check in assertions.get("state_changes", [])]
+    state_changed = all(result["passed"] for result in state_results)
+    first_result = screen_results[0] if screen_results else None
+    assertion_manifest = {"screen_changed": changed,
+                          "screen_changes": screen_results,
+                          "state_changed": state_changed,
+                          "state_changes": state_results,
+                          "state_samples": state_samples}
+    if first_result:
+        assertion_manifest["changed_pixels"] = first_result["changed_pixels"]
+        assertion_manifest["min_changed_pixels"] = first_result["min_changed_pixels"]
     manifest = {
         "scenario": scenario_path.name,
         "captures": captures,
         "events": events,
-        "assertions": {"screen_changed": changed,
-                        "changed_pixels": first_result["changed_pixels"],
-                        "min_changed_pixels": first_result["min_changed_pixels"],
-                        "screen_changes": screen_results},
+        "assertions": assertion_manifest,
     }
     (output / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
     with (output / "events.jsonl").open("w", encoding="utf-8") as handle:
         for event in events:
             handle.write(json.dumps(event, separators=(",", ":")) + "\n")
-    if not changed:
-        print("DSM_SCENARIO_RESULT=FAIL reason=screen_unchanged", flush=True)
+    if not changed or not state_changed:
+        print("DSM_SCENARIO_RESULT=FAIL reason=assertion_failed", flush=True)
         return 1
     print(f"DSM_SCENARIO_RESULT=PASS captures={len(captures)} events={len(events)}", flush=True)
     return 0

@@ -1,0 +1,56 @@
+=================================================================
+  DungeonDS PERFORMANCE BENCHMARK REPORT (240 frames)
+=================================================================
+Total simulated frames : 240
+Frames running at 60 FPS: 13 / 240 (5.4%)
+Frames dropped (<60 FPS): 227
+-----------------------------------------------------------------
+CPU Load Metrics (% of 60 FPS frame budget [16.71 ms / 560,190 cyc]):
+  Average CPU Load : 273.83% (45841.1 us)
+  Min CPU Load     : 0% (0.0 us)
+  Max CPU Load     : 348% (58215.6 us)
+-----------------------------------------------------------------
+Raster Scanline when CPU Rendering finished (Display: 0-191, VBlank: 192-262):
+  Average VCount   : line 150.7 / 262
+  Max VCount line  : line 262 / 262
+-----------------------------------------------------------------
+Subsystem Breakdown (Average per frame across both screens):
+  Floor Window Copy  :  10504.7 us (22.9% of frame CPU)
+  Shadow Mask Blit   :    827.7 us ( 1.8% of frame CPU)
+  Sprites / Objects  :  34046.6 us (74.3% of frame CPU)
+  DMA & Present Wait :  13962.4 us
+-----------------------------------------------------------------
+Screens Comparison (Average per frame):
+  Top Screen Render  :   7081.6 us (15.4% of frame CPU)
+  Bot Screen Render  :  38423.6 us (83.8% of frame CPU)
+-----------------------------------------------------------------
+Metrics by Gameplay Phase:
+  [Idle (Hero)                   ] FPS: DROPPED | Avg CPU: 141.3% | Peak CPU: 250%
+  [Walking NE (Hero)             ] FPS: DROPPED | Avg CPU: 285.9% | Peak CPU: 332%
+  [Press X (Switch to Charger)   ] FPS: DROPPED | Avg CPU: 299.0% | Peak CPU: 332%
+  [Post-Switch Idle (Charger)    ] FPS: DROPPED | Avg CPU: 266.0% | Peak CPU: 266%
+  [Charging SW (Charger)         ] FPS: DROPPED | Avg CPU: 306.2% | Peak CPU: 348%
+  [Press X (Switch to Hero)      ] FPS: DROPPED | Avg CPU: 348.0% | Peak CPU: 348%
+  [Post-Switch Idle (Hero)       ] FPS: DROPPED | Avg CPU: 291.4% | Peak CPU: 348%
+  [Walking South (Hero)          ] FPS: DROPPED | Avg CPU: 288.6% | Peak CPU: 293%
+=================================================================
+Microphone successfully inited.
+DeSmuME 0.9.14 git#0 dev+ x64-JIT SSE2
+SoftRasterizer: Running using 22 additional threads. (Multithreading enabled.)
+
+ROM game code: ####
+ROM crc: AE3117F4
+ROM developer: Homebrew
+
+Slot1 auto-selected device type: Retail MC+ROM
+Slot2 auto-selected device type: PassME (0x08)
+CPU mode: Interpreter
+File doesn't appear to have a secure area.
+WIFI: MAC Address = 00:09:BF:12:34:56
+WIFI: Emulation level is OFF.
+MMU9 write32 to undefined register 04FFFA14h = 02FF7910h (PC:02004A26)
+MMU9 write32 to undefined register 04FFFA14h = 02FF7910h (PC:02004A26)
+MMU9 write32 to undefined register 04FFFA14h = 02FF7910h (PC:02004A26)
+MMU9 write32 to undefined register 04FFFA14h = 02FF7910h (PC:02004A26)
+MMU9 write32 to undefined register 04FFFA14h = 02FF7910h (PC:02004A26)
+MMU9 write32 to undefined register 04FFFA14h = 02FF7910h (PC:02004A26)

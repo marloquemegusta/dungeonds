@@ -188,6 +188,17 @@ Este documento registra el historial cronológico de sesiones de desarrollo veri
 - [x] Endpoints UI a 48×48 px y 16 muestras: Mario **2,51 s** para acciones + **4,95 s** para render; héroe **2,54 s** + **4,54 s**.
 - [x] Mario tiene 2,77× los polígonos y 76 % más huesos; perfil detallado en [walkthroughs/18-profile-mario-vs-hero/walkthrough.md](walkthroughs/18-profile-mario-vs-hero/walkthrough.md).
 
+## Sesión 19: Pipeline 2.5D Estilo Diablo para Mazmorras 3D Completas (FBX)
+- [x] Implementación de la arquitectura de renderizado pre-renderizado estilo *Diablo / Fallout* para el modelo 3D FBX (`tripo_convert_b14b0e1b...fbx`).
+- [x] Eliminación definitiva del cuello de botella de los 448 tiles de hardware 2D: la mazmorra se hornea como un mapa continuo de 512×512 en 16 bits RGB555 (512 KB), preservando la fidelidad total de Blender Cycles sin pérdida de compresión.
+- [x] Blitting directo de la ventana de cámara visible (256×192) en el framebuffer a 60 FPS con menos de 0.4 ms de CPU por frame.
+- [x] Cámara suave que sigue al héroe en tiempo real en coordenadas de píxel de mundo continuo.
+- [x] Matriz de colisión automática de 128×128 (4 px / ~14 cm por celda) extraída mediante raycasting BVH vertical de la malla 3D, con deslizamiento por paredes (`wall sliding`).
+- [x] Escala natural y espaciosa: pasillos amplios de 70+ px de ancho donde el héroe cabe holgadamente.
+- [x] Validación completa en DeSmuME headless a 60 FPS con GIF animado.
+- **Evidencia:** [walkthroughs/19-modular-3d-scifi-dungeon/walkthrough.md](walkthroughs/19-modular-3d-scifi-dungeon/walkthrough.md).
+
+
 ## Features Abiertas y Ramas Activas (En Pausa / Backlog)
 
 - **`feat/skeleton-collapse-fbx` — Colapso del Esqueleto a Pila de Huesos:**
@@ -201,3 +212,43 @@ Este documento registra el historial cronológico de sesiones de desarrollo veri
 - Expansión de mazmorra procedural manteniendo el contrato dimétrico y presupuestos de 60 FPS.
 
 
+
+## Sesión 20: Navegación de la mazmorra FBX (validación parcial)
+- [x] Compilación BlocksDS y contratos host de navegación/telemetría: PASS.
+- [x] La aserción DeSmuME confirma entrada RIGHT consumida, desplazamiento del jugador y cambio de cámara.
+- [ ] La ejecución final de colisión aún falla al capturar la detención: el tramo de 50 frames seguía avanzando; el escenario se amplió a 120 frames, pendiente de re-ejecución.
+- [ ] Oclusión sprites/entorno y coincidencia de iluminación quedan pendientes; cámara, escala y grading necesitan revisión.
+- Sin validación en Nintendo DS física. No se afirma soporte general de FBX.
+- **Evidencia:** walkthroughs/fbx-navigation-repair/walkthrough.md.
+
+## Sesión 21: Experimento de Oclusión FBX (no aceptado)
+- [x] Compositor experimental de spans y contadores de llamadas, runs, píxeles copiados y ticks.
+- [x] Host contract sintético: orden delante/detrás de pared y payload de runs comprobados.
+- [ ] Falla la aserción de alineación de piso: el spawn conocido (174,238) se clasifica como upper en la máscara generada.
+- [ ] Falla el presupuesto: 15–20 FPS, 243–332% de CPU y ~8.000 runs/frame; no cumple 60 FPS dual-screen con diez actores.
+- [ ] El escenario aún no pasa movimiento, detención y release en una misma ejecución; iluminación pendiente.
+- Sin validación física DS ni afirmación de compatibilidad general FBX.
+- **Evidencia:** walkthroughs/fbx-occlusion-experiment/walkthrough.md.
+
+## Sesión 22: Corrección de colisión FBX (validación parcial)
+- [x] El generador produce una cuadrícula 128×128: 1.808 celdas transitables, 150 obstáculos y 14.426 vacíos; spawn seleccionado (270,290) con 3×3 de despeje.
+- [x] Host tests: navegación 5/5; contrato de oclusión/máscara 3/3. La prueba de máscara verifica carga y límites del payload, no alineación visual de suelo.
+- [x] Escenario DeSmuME con estado real: movimiento DOWN 2,83 px; 24 frames bloqueados ante obstáculo; posición/cámara estables durante espera; input liberado.
+- [ ] Puerta y conectividad entre habitaciones no verificadas. Sin prueba en hardware DS.
+- [ ] Oclusión experimental sigue por debajo del objetivo (15–20 FPS, 243–332% CPU observados); iluminación/color del jugador pendiente. No se afirma 60 FPS ni soporte FBX general.
+- **Evidencia:** walkthroughs/fbx-collision-fix/walkthrough.md.
+
+
+## Sesión 23: Puntos de colisión FBX y recorte de spans
+- [x] Se descarta el cruce vertical impar que queda por debajo de los pies; altura 0,05 m y tolerancia 0,015 m.
+- [x] Regresión de los nueve sondeos del jugador para (128,249), (238,309) y (250,314): footprint libre en la malla generada.
+- [x] Recorrido de spans limitado al viewport con margen medido de 34 px; benchmark DeSmuME mejora de 62,4 ms a 51,9 ms de CPU media por frame (−16,9%).
+- [x] ROM v4 subida y verificada en `ftp://192.168.1.151:5000/roms/nds/dungeonds.nds` (SHA-256 `E8BD107A3F649A3AD04D286EE23DB29CFB5FA6F13DB2BC3C4251B55DA390FA05`).
+- [ ] Pendiente: reproducir en DeSmuME/hardware las rutas BFS a los puntos; prueba física DS y objetivo 60 FPS aún sin validar/alcanzar.
+- **Evidencia:** [walkthroughs/fbx-collision-perf-followup/walkthrough.md](walkthroughs/fbx-collision-perf-followup/walkthrough.md).
+## Sesión 24: Diagnóstico A/B de rendimiento FBX frente al renderer modular
+- [x] Benchmark comparable de 240 frames: modular 8.36 ms CPU medio y 240/240 a 60 FPS; FBX baja de 51.53 ms a 45.84 ms tras el fast path de spans cortos; objetivo 60 FPS aún no alcanzado (13/240).
+- [x] El fast path evita memcpy para spans de 1–4 píxeles (90.7% de los spans generados) y conserva los mismos píxeles/profundidad; objetos/oclusiones bajan de 39.32 ms a 34.05 ms.
+- [x] Copia software del fondo sigue en ~10.5 ms/frame; sin cambios de física o gameplay.
+- [x] Build BlocksDS, 27 pruebas host y benchmark DeSmuME PASS. Sin validación en DS física.
+- **Evidencia:** [walkthroughs/full3d-performance-gap/walkthrough.md](walkthroughs/full3d-performance-gap/walkthrough.md).
