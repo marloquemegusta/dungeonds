@@ -278,4 +278,5 @@ Este documento registra el historial cronológico de sesiones de desarrollo veri
 - `C` mide lógica+render y `P` incluye espera de VBlank+copia de presentación. La nueva segunda línea muestra `F/S/B/L`: suelo, sombras, blits y lógica.
 - TowerDS dibuja el framebuffer inferior directamente en buffer de VRAM con flip; esta rama compone dos buffers en RAM y copia 192 KB por frame. Es una diferencia arquitectónica observada, aún no prueba de la causa.
 - Rejilla conservadora 8×8 evita el depth test por píxel cuando no puede existir oclusión. Contrato de 20.000 regiones aleatorias PASS; capturas DeSmuME pre/post con 0 píxeles distintos; blit emulado −7%.
-- HUD ampliado: build BlocksDS, contrato de HUD y escenario DeSmuME PASS; captura `FPS:60 C:10 P:06 / F:06 S:00 B:01 L:00`. ROM diagnóstica preparada; pendiente subirla y medir `F/S/B/L` en hardware.
+- HUD ampliado: build BlocksDS, contrato de HUD y escenario DeSmuME PASS; captura `FPS:60 C:10 P:06 / F:06 S:00 B:01 L:00`.
+- Commit `086d05c`; ROM CRC `3C31A321`, SHA-256 `6C3AF12D5DE40E544564680D2FEE1711CDFE92929C35C97813E48590DF2621BF`, subida FTP verificada a `ftp://192.168.1.151:5000/roms/nds/dungeonds.nds`. Pendiente medir `F/S/B/L` en DSi.

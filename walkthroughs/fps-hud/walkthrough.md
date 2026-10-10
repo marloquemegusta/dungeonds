@@ -14,4 +14,4 @@ En la DSi, el usuario midió `FPS:20 C:40 P:10` tanto en reposo como al moverse.
 
 ![Captura del HUD con desglose de tiempos por etapa](assets/fps-hud-stage-breakdown.png)
 
-Build diagnóstica actual: CRC `3C31A321`, SHA-256 `6C3AF12D5DE40E544564680D2FEE1711CDFE92929C35C97813E48590DF2621BF`. El resultado DSi de `F/S/B/L` sigue pendiente.
+Build diagnóstica `086d05c`: CRC `3C31A321`, SHA-256 `6C3AF12D5DE40E544564680D2FEE1711CDFE92929C35C97813E48590DF2621BF`. Subida FTP verificada a `ftp://192.168.1.151:5000/roms/nds/dungeonds.nds`; pendiente leer `F/S/B/L` en la DSi.
