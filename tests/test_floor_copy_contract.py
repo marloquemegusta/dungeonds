@@ -5,14 +5,16 @@ from pathlib import Path
 SOURCE = Path(__file__).resolve().parents[1] / "source" / "main.c"
 
 
-class FloorCopyContractTest(unittest.TestCase):
-    def test_world_floor_uses_cached_ram_and_dma_scanlines(self):
+class FloorBackgroundContractTest(unittest.TestCase):
+    def test_floor_uses_hardware_ring_map_streaming(self):
         source = SOURCE.read_text(encoding="utf-8")
-        copy_row = source[source.index("static void copy_world_row("):source.index("static void render_screen")]
 
-        self.assertIn("dmaCopyHalfWords(3, src, dst, SCREEN_W * sizeof(uint16_t))", copy_row)
-        self.assertIn("s_dungeon_world_cache[wy * WORLD_W + wx]", source)
-        self.assertIn("memcpy(s_dungeon_world_cache, g_dungeon_world_color", source)
+        self.assertIn("static void update_screen_hardware_bg", source)
+        self.assertIn("bg_world_tile(world_x, world_y)", source)
+        self.assertIn("memcpy(tile_vram + (uint32_t)slot * 64", source)
+        self.assertIn("REG_BG1HOFS =", source)
+        self.assertIn("s_cam_y > SCREEN_H ? s_cam_y - SCREEN_H : 0", source)
+        self.assertNotIn("s_dungeon_world_cache", source)
 
 
 if __name__ == "__main__":

@@ -1,0 +1,72 @@
+=================================================================
+  DungeonDS PERFORMANCE BENCHMARK REPORT (240 frames)
+=================================================================
+Total simulated frames : 240
+Frames running at 60 FPS: 240 / 240 (100.0%)
+Frames dropped (<60 FPS): 0
+-----------------------------------------------------------------
+CPU Load Metrics (% of 60 FPS frame budget [16.71 ms / 560,190 cyc]):
+  Average CPU Load : 32.35% (5480.9 us)
+  Min CPU Load     : 0% (0.0 us)
+  Max CPU Load     : 38% (6444.5 us)
+-----------------------------------------------------------------
+Raster Scanline when CPU Rendering finished (Display: 0-191, VBlank: 192-262):
+  Average VCount   : line 106.5 / 262
+  Max VCount line  : line 124 / 262
+-----------------------------------------------------------------
+Subsystem Breakdown (Average per frame across both screens):
+  Floor Window Copy  :   2906.9 us (53.0% of frame CPU)
+  Shadow Mask Blit   :    815.0 us (14.9% of frame CPU)
+  Sprites / Objects  :   1323.2 us (24.1% of frame CPU)
+  DMA & Present Wait :   7396.7 us
+-----------------------------------------------------------------
+Screens Comparison (Average per frame):
+  Top Screen Render  :      0.0 us ( 0.0% of frame CPU)
+  Bot Screen Render  :   5116.7 us (93.4% of frame CPU)
+-----------------------------------------------------------------
+Metrics by Gameplay Phase:
+  [Idle (Hero)                   ] FPS: 60 | Avg CPU: 17.6% | Peak CPU:  36%
+  [Walking NE (Hero)             ] FPS: 60 | Avg CPU: 34.6% | Peak CPU:  37%
+  [Press X (Switch to Charger)   ] FPS: 60 | Avg CPU: 36.0% | Peak CPU:  36%
+  [Post-Switch Idle (Charger)    ] FPS: 60 | Avg CPU: 36.1% | Peak CPU:  37%
+  [Charging SW (Charger)         ] FPS: 60 | Avg CPU: 35.7% | Peak CPU:  38%
+  [Press X (Switch to Hero)      ] FPS: 60 | Avg CPU: 34.5% | Peak CPU:  35%
+  [Post-Switch Idle (Hero)       ] FPS: 60 | Avg CPU: 34.1% | Peak CPU:  35%
+  [Walking South (Hero)          ] FPS: 60 | Avg CPU: 33.1% | Peak CPU:  35%
+=================================================================
+Microphone successfully inited.
+DeSmuME 0.9.14 git#0 dev+ x64-JIT SSE2
+SoftRasterizer: Running using 22 additional threads. (Multithreading enabled.)
+
+ROM game code: ####
+ROM crc: 345EB207
+ROM developer: Homebrew
+
+Slot1 auto-selected device type: Retail MC+ROM
+Slot2 auto-selected device type: PassME (0x08)
+CPU mode: Interpreter
+File doesn't appear to have a secure area.
+WIFI: MAC Address = 00:09:BF:12:34:56
+WIFI: Emulation level is OFF.
+MMU9 write32 to undefined register 04FFFA14h = 02FF7910h (PC:02004CCA)
+MMU9 write32 to undefined register 04FFFA14h = 02FF7910h (PC:02004CCA)
+MMU9 write32 to undefined register 04FFFA14h = 02FF7910h (PC:02004CCA)
+MMU9 write32 to undefined register 04FFFA14h = 02FF7910h (PC:02004CCA)
+MMU9 write32 to undefined register 04FFFA14h = 02FF7910h (PC:02004CCA)
+MMU9 write32 to undefined register 04FFFA14h = 02FF7910h (PC:02004CCA)
+MMU9 write32 to undefined register 04FFFA14h = 02FF7910h (PC:02004CCA)
+MMU9 write32 to undefined register 04FFFA14h = 02FF7910h (PC:02004CCA)
+MMU9 write32 to undefined register 04FFFA14h = 02FF7910h (PC:02004CCA)
+MMU9 write32 to undefined register 04FFFA14h = 02FF7910h (PC:02004CCA)
+MMU9 write32 to undefined register 04FFFA14h = 02FF7910h (PC:02004CCA)
+MMU9 write32 to undefined register 04FFFA14h = 02FF7910h (PC:02004CCA)
+MMU9 write32 to undefined register 04FFFA14h = 02FF7910h (PC:02004CCA)
+MMU9 write32 to undefined register 04FFFA14h = 02FF7910h (PC:02004CCA)
+MMU9 write32 to undefined register 04FFFA14h = 02FF7910h (PC:02004CCA)
+MMU9 write32 to undefined register 04FFFA14h = 02FF7910h (PC:02004CCA)
+MMU9 write32 to undefined register 04FFFA14h = 02FF7910h (PC:02004CCA)
+MMU9 write32 to undefined register 04FFFA14h = 02FF7910h (PC:02004CCA)
+MMU9 write32 to undefined register 04FFFA14h = 02FF7910h (PC:02004CCA)
+MMU9 write32 to undefined register 04FFFA14h = 02FF7910h (PC:02004CCA)
+MMU9 write32 to undefined register 04FFFA14h = 02FF7910h (PC:02004CCA)
+MMU9 write32 to undefined register 04FFFA14h = 02FF7910h (PC:02004CCA)

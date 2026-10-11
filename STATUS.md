@@ -284,3 +284,14 @@ Este documento registra el historial cronológico de sesiones de desarrollo veri
 - Ensayo: sustituir 384 llamadas DMA por línea/frame con ráfagas ARM9 de 8 palabras (alineado) y pares halfword seguros (desalineado). Build y escenarios pasan; recorrido da las mismas coordenadas inicial/final.
 - En el DeSmuME headless (modo intérprete), el candidato cae de 60 a 30 FPS y `F` mide 7 ms quieto / hasta 15 ms andando. Resultado físico aún no medido.
 - Commit `749d44f`; ROM CRC `4A0B2288`, SHA-256 `269BFC72206230499B6D3DCC77EE4784160B88C65E12DD66FE29EF55B9868F4E`. FTP `192.168.1.151:5000` agotó el tiempo de conexión a los 10 s; transferencia no confirmada, sin reintentos.
+
+
+## Sesión 26: Perfilado de rutas de render del suelo FBX
+
+- [x] El atlas de BG 8bpp pasa a ser dato estático escalable hasta IDs de tile de 16 bits; el cache VRAM permanece acotado al viewport móvil, no al ancho/alto total del mundo.
+- [x] Prototipo de mapa tileado y ring map: DeSmuME intérprete 240 frames, CPU medio 4.92 ms, `F=1.51 ms`, 239/240 a 60 FPS; escenario de paseo PASS.
+- [x] Comparado con la opción de refrescar la pantalla superior a 30 Hz: CPU medio 5.48 ms y `F=2.91 ms`, peor que ring map; 240/240 a 60 FPS.
+- [x] Opción de bitmap completo 8bpp evaluada por VRAM: 512×512 consume 256 KiB y no deja bank Sub BG disponible si los actores ocupan C; un mapa mayor requiere streaming.
+- [ ] Captura de DeSmuME deja la pantalla superior negra pese a mapa/tiles/paleta visibles en memoria; no se sube ROM ni se marca como validado.
+- [ ] La lectura física del usuario (`20 FPS`, `F≈38 ms`) aún requiere repetir medición en DSi después de corregir pantalla superior.
+- **Evidencia:** [walkthroughs/fbx-floor-render-options/walkthrough.md](walkthroughs/fbx-floor-render-options/walkthrough.md).

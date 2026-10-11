@@ -1,0 +1,71 @@
+=================================================================
+  DungeonDS PERFORMANCE BENCHMARK REPORT (240 frames)
+=================================================================
+Total simulated frames : 240
+Frames running at 60 FPS: 239 / 240 (99.6%)
+Frames dropped (<60 FPS): 1
+-----------------------------------------------------------------
+CPU Load Metrics (% of 60 FPS frame budget [16.71 ms / 560,190 cyc]):
+  Average CPU Load : 28.94% (4916.9 us)
+  Min CPU Load     : 0% (0.0 us)
+  Max CPU Load     : 35% (5861.4 us)
+-----------------------------------------------------------------
+Raster Scanline when CPU Rendering finished (Display: 0-191, VBlank: 192-262):
+  Average VCount   : line 55.3 / 262
+  Max VCount line  : line 231 / 262
+-----------------------------------------------------------------
+Subsystem Breakdown (Average per frame across both screens):
+  Floor Window Copy  :   1507.9 us (30.7% of frame CPU)
+  Shadow Mask Blit   :    795.7 us (16.2% of frame CPU)
+  Sprites / Objects  :   1340.1 us (27.3% of frame CPU)
+  DMA & Present Wait :  10594.1 us
+-----------------------------------------------------------------
+Screens Comparison (Average per frame):
+  Top Screen Render  :      0.0 us ( 0.0% of frame CPU)
+  Bot Screen Render  :   4568.4 us (92.9% of frame CPU)
+-----------------------------------------------------------------
+Metrics by Gameplay Phase:
+  [Idle (Hero)                   ] FPS: DROPPED | Avg CPU: 13.9% | Peak CPU:  33%
+  [Walking NE (Hero)             ] FPS: 60 | Avg CPU: 31.1% | Peak CPU:  34%
+  [Press X (Switch to Charger)   ] FPS: 60 | Avg CPU: 32.0% | Peak CPU:  32%
+  [Post-Switch Idle (Charger)    ] FPS: 60 | Avg CPU: 33.1% | Peak CPU:  34%
+  [Charging SW (Charger)         ] FPS: 60 | Avg CPU: 32.4% | Peak CPU:  35%
+  [Press X (Switch to Hero)      ] FPS: 60 | Avg CPU: 30.5% | Peak CPU:  31%
+  [Post-Switch Idle (Hero)       ] FPS: 60 | Avg CPU: 30.2% | Peak CPU:  31%
+  [Walking South (Hero)          ] FPS: 60 | Avg CPU: 29.8% | Peak CPU:  31%
+=================================================================
+Microphone successfully inited.
+DeSmuME 0.9.14 git#0 dev+ x64-JIT SSE2
+SoftRasterizer: Running using 22 additional threads. (Multithreading enabled.)
+
+ROM game code: ####
+ROM crc: 6A7EF7CC
+ROM developer: Homebrew
+
+Slot1 auto-selected device type: Retail MC+ROM
+Slot2 auto-selected device type: PassME (0x08)
+CPU mode: Interpreter
+File doesn't appear to have a secure area.
+WIFI: MAC Address = 00:09:BF:12:34:56
+WIFI: Emulation level is OFF.
+MMU9 write32 to undefined register 04FFFA14h = 02FF7910h (PC:02004F02)
+MMU9 write32 to undefined register 04FFFA14h = 02FF7910h (PC:02004F02)
+MMU9 write32 to undefined register 04FFFA14h = 02FF7910h (PC:02004F02)
+MMU9 write32 to undefined register 04FFFA14h = 02FF7910h (PC:02004F02)
+MMU9 write32 to undefined register 04FFFA14h = 02FF7910h (PC:02004F02)
+MMU9 write32 to undefined register 04FFFA14h = 02FF7910h (PC:02004F02)
+MMU9 write32 to undefined register 04FFFA14h = 02FF7910h (PC:02004F02)
+MMU9 write32 to undefined register 04FFFA14h = 02FF7910h (PC:02004F02)
+MMU9 write32 to undefined register 04FFFA14h = 02FF7910h (PC:02004F02)
+MMU9 write32 to undefined register 04FFFA14h = 02FF7910h (PC:02004F02)
+MMU9 write32 to undefined register 04FFFA14h = 02FF7910h (PC:02004F02)
+MMU9 write32 to undefined register 04FFFA14h = 02FF7910h (PC:02004F02)
+MMU9 write32 to undefined register 04FFFA14h = 02FF7910h (PC:02004F02)
+MMU9 write32 to undefined register 04FFFA14h = 02FF7910h (PC:02004F02)
+MMU9 write32 to undefined register 04FFFA14h = 02FF7910h (PC:02004F02)
+MMU9 write32 to undefined register 04FFFA14h = 02FF7910h (PC:02004F02)
+MMU9 write32 to undefined register 04FFFA14h = 02FF7910h (PC:02004F02)
+MMU9 write32 to undefined register 04FFFA14h = 02FF7910h (PC:02004F02)
+MMU9 write32 to undefined register 04FFFA14h = 02FF7910h (PC:02004F02)
+MMU9 write32 to undefined register 04FFFA14h = 02FF7910h (PC:02004F02)
+MMU9 write32 to undefined register 04FFFA14h = 02FF7910h (PC:02004F02)
