@@ -36,4 +36,5 @@ La pantalla superior sigue la misma cámara de suelo que la inferior y muestra e
 - ROM de la ruta tileada: CRC `3A428D6C`.
 - Refinamiento genérico del ring: DeSmuME intérprete, 240/240 a 60 FPS; CPU medio 4,919 ms, máximo 5,880 ms; `F=1,508 ms`, `S=0,818 ms`, `B=1,318 ms`. Escenario de paseo PASS.
 - ROM final CRC DeSmuME `9CA76D62`, SHA-256 `99A42DF4891390462F4F5B0C45BEB5AED68827DE46F8D1E105471CE6140A7173`. DeSmuME mantiene un perfil casi igual al ring anterior y no resuelve la discrepancia física; la validación DSi sigue pendiente.
+- Intento único de FTP tras autorización: timeout de conexión a `192.168.1.151:5000` a los 10 s; no hubo transferencia ni verificación remota. No se reintentó.
 - Perfil/capturas del refinamiento: `assets/final-profile.txt`, `assets/final-spawn.png`, `assets/final-walk.png`.

@@ -296,5 +296,5 @@ Este documento registra el historial cronológico de sesiones de desarrollo veri
 - [x] Refinamiento genérico del ring: conserva BG 512×256 y actualiza solo la ventana visible de 33×25 tiles (máximo 825 residentes); elimina la dependencia de densidad de tiles fuera de pantalla.
 - [x] Build limpia, contrato host y escenario de paseo PASS; ROM final CRC `9CA76D62`, SHA-256 `99A42DF4891390462F4F5B0C45BEB5AED68827DE46F8D1E105471CE6140A7173`.
 - [x] Perfil DeSmuME final 240/240 a 60 FPS; CPU medio 4,919 ms, `F=1,508 ms`. Prácticamente igual al ring anterior: no demuestra la mejora en DSi.
-- [ ] Subida FTP y lectura remota byte a byte; después repetir HUD en DSi (referencia anterior `20 FPS`, `F≈38 ms`).
+- [ ] Pendientes la subida FTP y lectura byte a byte, y repetir HUD DSi (`20 FPS`, `F≈38 ms` de referencia); el único intento autorizado agotó conexión a `192.168.1.151:5000` a los 10 s.
 - **Evidencia:** [walkthroughs/fbx-floor-render-options/walkthrough.md](walkthroughs/fbx-floor-render-options/walkthrough.md).
