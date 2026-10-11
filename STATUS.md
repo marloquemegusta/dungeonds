@@ -289,9 +289,9 @@ Este documento registra el historial cronológico de sesiones de desarrollo veri
 ## Sesión 26: Perfilado de rutas de render del suelo FBX
 
 - [x] El atlas de BG 8bpp pasa a ser dato estático escalable hasta IDs de tile de 16 bits; el cache VRAM permanece acotado al viewport móvil, no al ancho/alto total del mundo.
-- [x] Prototipo de mapa tileado y ring map: DeSmuME intérprete 240 frames, CPU medio 4.92 ms, `F=1.51 ms`, 239/240 a 60 FPS; escenario de paseo PASS.
-- [x] Comparado con la opción de refrescar la pantalla superior a 30 Hz: CPU medio 5.48 ms y `F=2.91 ms`, peor que ring map; 240/240 a 60 FPS.
-- [x] Opción de bitmap completo 8bpp evaluada por VRAM: 512×512 consume 256 KiB y no deja bank Sub BG disponible si los actores ocupan C; un mapa mayor requiere streaming.
-- [ ] Captura de DeSmuME deja la pantalla superior negra pese a mapa/tiles/paleta visibles en memoria; no se sube ROM ni se marca como validado.
+- [x] Bitmap 8bpp experimental: 240 frames DeSmuME, CPU medio 4.99 ms, `F=1.53 ms`, 240/240 a 60 FPS; el bitmap 512×512 ocupa 256 KiB y deja la pantalla superior sin BG.
+- [x] Prototipo FBX tileado con ring map: DeSmuME intérprete 240 frames, CPU medio 4.89 ms, `F=1.49 ms`, 239/240 a 60 FPS; escenario de paseo PASS.
+- [x] Refresco de pantalla superior a 30 Hz: CPU medio 5.48 ms y `F=2.91 ms`, peor que ring map; 240/240 a 60 FPS.
+- [x] La pantalla superior muestra el suelo tileado siguiendo la misma cámara; mantiene el render de actores/sombras/HUD completo abajo.
 - [ ] La lectura física del usuario (`20 FPS`, `F≈38 ms`) aún requiere repetir medición en DSi después de corregir pantalla superior.
 - **Evidencia:** [walkthroughs/fbx-floor-render-options/walkthrough.md](walkthroughs/fbx-floor-render-options/walkthrough.md).

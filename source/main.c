@@ -1503,7 +1503,7 @@ int main(void) {
     init_bg_tile_cache(&s_top_bg_tile_cache);
     init_bg_tile_cache(&s_bot_bg_tile_cache);
     update_screen_hardware_bg(1, s_top_map_ptr, s_cam_x,
-                              s_cam_y > SCREEN_H ? s_cam_y - SCREEN_H : 0);
+                              s_cam_y);
 
     render_screen(s_bot_screen_buf, s_cam_x, s_cam_y, NULL, NULL, NULL);
     draw_fps_hud(s_bot_screen_buf);
@@ -1535,7 +1535,7 @@ int main(void) {
         uint32_t bot_floor = 0, bot_sh = 0, bot_bl = 0;
 
         int top_cam_x = s_cam_x;
-        int top_cam_y = s_cam_y > SCREEN_H ? s_cam_y - SCREEN_H : 0;
+        int top_cam_y = s_cam_y;
 
         uint32_t top_ticks = 0;
 

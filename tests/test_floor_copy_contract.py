@@ -13,7 +13,7 @@ class FloorBackgroundContractTest(unittest.TestCase):
         self.assertIn("bg_world_tile(world_x, world_y)", source)
         self.assertIn("memcpy(tile_vram + (uint32_t)slot * 64", source)
         self.assertIn("REG_BG1HOFS =", source)
-        self.assertIn("s_cam_y > SCREEN_H ? s_cam_y - SCREEN_H : 0", source)
+        self.assertIn("int top_cam_y = s_cam_y;", source)
         self.assertNotIn("s_dungeon_world_cache", source)
 
 
