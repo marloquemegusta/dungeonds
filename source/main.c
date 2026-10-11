@@ -20,8 +20,8 @@
 //
 // Hardware Background Scrolling:
 // The static floor, perimeter walls, and shadows are converted into 8bpp tiles.
-// A 64x32 hardware ring map streams only newly exposed rows/columns during VBlank,
-// while fine scroll remains in the BG registers; entities render on the bitmap BG.
+// The 64x32 map streams only the 33x25 tiles covering the viewport and fine-scroll
+// overlap during VBlank; entities render on the bitmap BG.
 // ---------------------------------------------------------------------------
 
 #define VOID_COLOR RGB15(0, 0, 0)
@@ -45,6 +45,8 @@
 #define OCCLUSION_GRID_H ((WORLD_H + (1 << OCCLUSION_GRID_SHIFT) - 1) >> OCCLUSION_GRID_SHIFT)
 #define BG_RING_W 64
 #define BG_RING_H 32
+#define BG_VIEW_W (SCREEN_W / 8 + 1)
+#define BG_VIEW_H (SCREEN_H / 8 + 1)
 
 // World-sized floor cache bounds (origin = world pixel (CACHE_X0, CACHE_Y0))
 #define CACHE_X0 (-((MAP_ROWS - 1) * TILE_HALF_W) - TILE_HALF_W)
@@ -58,7 +60,7 @@ static u16 *s_top_map_ptr = NULL;
 static u16 *s_bot_map_ptr = NULL;
 static u16 *s_bot_vram = NULL;
 
-// World tile origin currently loaded into each 64x32 hardware BG ring map.
+// World tile origin currently loaded into each 64x32 hardware BG map.
 static int s_top_map_tile_x = 0;
 static int s_top_map_tile_y = 0;
 static int s_bot_map_tile_x = 0;
@@ -556,11 +558,14 @@ static void update_screen_hardware_bg(int is_sub, u16 *map_ptr, int cam_x, int c
 
     if (!*ready || tile_x != *prev_x || tile_y != *prev_y) {
         for (int my = 0; my < BG_RING_H; my++) {
-            int world_y = tile_y + bg_ring_index(my - ring_y, BG_RING_H);
+            int rel_y = bg_ring_index(my - ring_y, BG_RING_H);
+            int world_y = tile_y + rel_y;
             for (int mx = 0; mx < BG_RING_W; mx++) {
-                int world_x = tile_x + bg_ring_index(mx - ring_x, BG_RING_W);
+                int rel_x = bg_ring_index(mx - ring_x, BG_RING_W);
+                int world_x = tile_x + rel_x;
                 uint32_t cell = my * BG_RING_W + mx;
-                uint16_t tile_id = bg_world_tile(world_x, world_y);
+                uint16_t tile_id = (rel_x < BG_VIEW_W && rel_y < BG_VIEW_H)
+                    ? bg_world_tile(world_x, world_y) : 0;
                 if (cache->world_tile_for_cell[cell] != tile_id) {
                     release_bg_tile(cache, cache->world_tile_for_cell[cell]);
                     uint16_t slot = acquire_bg_tile(cache, tile_id, tile_vram);
@@ -1468,7 +1473,7 @@ int main(void) {
     dmaCopyWords(3, g_dungeon_bg_palette, BG_PALETTE, DUNGEON_BG_PALETTE_SIZE * 2);
     dmaCopyWords(3, g_dungeon_bg_palette, BG_PALETTE_SUB, DUNGEON_BG_PALETTE_SIZE * 2);
 
-    // BG1 ring map lives at 0x06000000; 1024 streamed tile slots start at +64 KiB.
+    // BG1 map lives at 0x06000000; 1024 streamed tile slots start at +64 KiB.
     int bot_hw_bg = bgInit(1, BgType_Text8bpp, BgSize_T_512x256, 0, 4);
     bgSetPriority(bot_hw_bg, 3); // Lowest priority (drawn behind entities)
     s_bot_map_ptr = bgGetMapPtr(bot_hw_bg);

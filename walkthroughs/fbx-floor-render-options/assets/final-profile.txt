@@ -1,0 +1,14 @@
+ROM crc (DeSmuME): 9CA76D62
+Frames: 240
+Frames at 60 FPS: 240/240 (100%)
+CPU average: 4.919 ms (28.97%)
+CPU maximum: 5.880 ms (35%)
+Floor F: 1.508 ms
+Shadow S: 0.818 ms
+Blits B: 1.318 ms
+Present/wait: 10.577 ms
+Idle phase: 60 FPS; avg CPU 14.0%; peak 33%
+Walking NE: 60 FPS; avg CPU 31.1%; peak 34%
+Walking South: 60 FPS; avg CPU 29.8%; peak 31%
+Scenario fbx_walkway_v2: PASS (3 captures, 9 events)
+Note: DeSmuME does not validate DSi physical RAM-copy performance.

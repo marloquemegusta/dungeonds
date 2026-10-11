@@ -16,7 +16,7 @@ La referencia física aportada por el usuario sigue siendo `20 FPS` con `F≈38 
 
 ## Generalidad
 
-El generador ya no exige que el atlas entero quepa en los 128 KiB de una bank VRAM: la tabla estática puede crecer hasta el límite de IDs de 16 bits. El cache de VRAM conserva las piezas que se usan en el ring y cambia las celdas al desplazar cámara. Esto admite mundos más grandes con densidad local parecida; la DSi impone un límite inevitable al número de patrones únicos residentes a la vez.
+El generador ya no exige que el atlas entero quepa en los 128 KiB de una bank VRAM: la tabla estática puede crecer hasta el límite de IDs de 16 bits. El cache de VRAM conserva las piezas visibles y cambia las celdas al desplazar cámara. El mapa hardware sigue siendo 64×32, pero solo residen las 33×25 celdas necesarias para cubrir pantalla de 256×192 y scroll subpíxel: máximo 825 tiles visibles, frente a 2.048 celdas del ring anterior. El límite de tiles del atlas sigue siendo 65.535; el consumo de cache no aumenta con el tamaño total de la mazmorra.
 
 ## Validación visual
 
@@ -34,4 +34,6 @@ La pantalla superior sigue la misma cámara de suelo que la inferior y muestra e
 
 ![Bitmap 8bpp experimental: solo conserva el suelo inferior](assets/option1-spawn.png)
 - ROM de la ruta tileada: CRC `3A428D6C`.
-- Requiere confirmar el resultado en DSi; no se volvió a intentar el FTP tras el timeout previo.
+- Refinamiento genérico del ring: DeSmuME intérprete, 240/240 a 60 FPS; CPU medio 4,919 ms, máximo 5,880 ms; `F=1,508 ms`, `S=0,818 ms`, `B=1,318 ms`. Escenario de paseo PASS.
+- ROM final CRC DeSmuME `9CA76D62`, SHA-256 `99A42DF4891390462F4F5B0C45BEB5AED68827DE46F8D1E105471CE6140A7173`. DeSmuME mantiene un perfil casi igual al ring anterior y no resuelve la discrepancia física; la validación DSi sigue pendiente.
+- Perfil/capturas del refinamiento: `assets/final-profile.txt`, `assets/final-spawn.png`, `assets/final-walk.png`.
