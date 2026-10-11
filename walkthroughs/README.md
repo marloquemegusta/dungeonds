@@ -36,7 +36,9 @@ Resúmenes acumulativos y auditables de cada entrega y avance de desarrollo en `
 | 23 | Reparación de puntos de colisión FBX y recorte de spans de oclusión | [`fbx-collision-perf-followup/`](fbx-collision-perf-followup/walkthrough.md) | ROM subida; validación física pendiente |
 | 24 | Diagnóstico A/B de la regresión de rendimiento FBX | [`full3d-performance-gap/`](full3d-performance-gap/walkthrough.md) | Medido en DeSmuME; optimización arquitectónica pendiente |
 | 25 | HUD FPS y diagnóstico de rendimiento en Nintendo DSi | [`fps-hud/`](fps-hud/walkthrough.md) | Fix ARM9 comprometido; carga FTP fallida; prueba DSi pendiente |
-| 26 | Perfilado de tres rutas para el suelo FBX | [`fbx-floor-render-options/`](fbx-floor-render-options/walkthrough.md) | Ring genérico + sync VBlank; ROM corregida pendiente de subir y medir |
+| 26 | Perfilado de tres rutas para el suelo FBX | [`fbx-floor-render-options/`](fbx-floor-render-options/walkthrough.md) | Ring genérico + sync VBlank; DSi confirmada cualitativamente |
+| 27 | Pruebas de límites y robustez del generador FBX | [`fbx-background-generator-tests/`](fbx-background-generator-tests/walkthrough.md) | 20 pruebas host + scroll X/Y PASS; límites 768² y 2048² |
+| 28 | Flujo reutilizable de optimización DS | [`ds-game-dev-performance-workflow/`](ds-game-dev-performance-workflow/walkthrough.md) | Skills local y del repositorio actualizadas; límites físicos documentados |
 
 
 - [Reparación de navegación de la mazmorra FBX](fbx-navigation-repair/walkthrough.md) — conversión y colisión para la escena FBX; incluye escenarios con estado real y límites de validación.

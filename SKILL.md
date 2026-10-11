@@ -177,6 +177,15 @@ or synthetic frame compositors) outside the compiled binary is strictly prohibit
 Evidence must always reflect the actual ARM9 C engine, simulation physics, particles,
 and rendering pipeline.
 
+## Performance optimization workflow
+
+- Establish a reproducible baseline on the target device and ROM before editing. Record ROM identity, device, scene, input sequence, FPS, and counters; use the same workload for each A/B comparison.
+- Split frame cost by stage and define exactly what each timer includes. Separate useful work from waits such as VBlank, and identify the dominant stage before changing architecture.
+- Change one rendering path at a time. Tie each experiment to a measured bottleneck, then compare both timings and gameplay state/captures for the same inputs.
+- Preserve the gameplay contract while optimizing: movement, collision, visibility, actor order, and controls must still pass their scenarios. Include camera edges, continuous two-axis scrolling, first-load work, and cache eviction where applicable.
+- For static scrolling worlds, compare full-frame copies with hardware scrolling and viewport-bounded caches. Budget total memory too: resident graphics, atlas/map data, and per-tile lookup metadata can scale differently.
+- Stress the largest supported generated world and sentinel/ID limits, then profile worst-case transfers and VBlank margin on hardware. A small current level does not establish scalability.
+- Emulator results are useful for repeatable A/B work, but remain emulator-only. Validate the exact candidate ROM on the target hardware before claiming physical frame rate.
 ## 60 FPS Performance Architecture & Hardware Budgets
 
 All game systems targeting the Nintendo DS must strictly adhere to its hardware budgets to guarantee 60 FPS (59.826 Hz):

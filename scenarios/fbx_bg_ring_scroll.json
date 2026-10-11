@@ -1,0 +1,33 @@
+{
+  "name": "fbx_bg_ring_scroll",
+  "state": {
+    "symbols": { "nav": "g_nav_state" },
+    "default_symbol": "nav",
+    "fields": {
+      "x": { "symbol": "nav", "offset": 0 },
+      "y": { "symbol": "nav", "offset": 4 },
+      "cam_x": { "symbol": "nav", "offset": 8 },
+      "cam_y": { "symbol": "nav", "offset": 12 },
+      "input": { "symbol": "nav", "offset": 16 }
+    }
+  },
+  "steps": [
+    { "frames": 140, "capture": "00_spawn", "state_capture": "spawn" },
+    { "button_down": "LEFT", "frames": 260, "capture": "01_west_scroll", "state_capture": "west" },
+    { "button_up": "LEFT", "frames": 5 },
+    { "frames": 20, "capture": "02_west_release", "state_capture": "west_release" },
+    { "button_down": "UP", "frames": 260, "capture": "03_north_scroll", "state_capture": "north" },
+    { "button_up": "UP", "frames": 5 },
+    { "frames": 20, "capture": "04_north_release", "state_capture": "north_release" }
+  ],
+  "assertions": {
+    "state_changes": [
+      { "from": "spawn", "to": "west", "field": "cam_x", "min_abs_delta": 1 },
+      { "from": "spawn", "to": "west", "field": "input", "min_delta": 32 },
+      { "from": "west", "to": "west_release", "field": "input", "max_delta": -32 },
+      { "from": "west_release", "to": "north", "field": "cam_y", "min_abs_delta": 1 },
+      { "from": "west_release", "to": "north", "field": "input", "min_delta": 16 },
+      { "from": "north", "to": "north_release", "field": "input", "max_delta": -16 }
+    ]
+  }
+}

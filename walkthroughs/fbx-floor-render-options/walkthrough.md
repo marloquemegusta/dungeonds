@@ -16,7 +16,7 @@ La referencia física aportada por el usuario sigue siendo `20 FPS` con `F≈38 
 
 ## Generalidad
 
-El generador ya no exige que el atlas entero quepa en los 128 KiB de una bank VRAM: la tabla estática puede crecer hasta el límite de IDs de 16 bits. El cache de VRAM conserva las piezas visibles y cambia las celdas al desplazar cámara. El mapa hardware sigue siendo 64×32, pero solo residen las 33×25 celdas necesarias para cubrir pantalla de 256×192 y scroll subpíxel: máximo 825 tiles visibles, frente a 2.048 celdas del ring anterior. El límite de tiles del atlas sigue siendo 65.535; el consumo de cache no aumenta con el tamaño total de la mazmorra.
+El generador ya no exige que el atlas entero quepa en los 128 KiB de una bank VRAM: la tabla estática puede crecer hasta el límite de IDs de 16 bits. El cache de VRAM conserva las piezas visibles y cambia las celdas al desplazar cámara. El mapa hardware sigue siendo 64×32, pero solo residen las 33×25 celdas necesarias para cubrir pantalla de 256×192 y scroll subpíxel: máximo 825 tiles visibles, frente a 2.048 celdas del ring anterior. El generador acepta hasta 65.535 tiles porque `0xFFFF` queda reservado como ID inválido. La residencia de tiles en VRAM está limitada a las 825 celdas visibles; la metadata `slot_for_tile` sí crece con el atlas: 4 bytes por tile único entre las dos pantallas.
 
 ### Sincronización VBlank y estrés de atlas mayor
 
@@ -42,5 +42,5 @@ La pantalla superior sigue la misma cámara de suelo que la inferior y muestra e
 - ROM de la ruta tileada: CRC `3A428D6C`.
 - Refinamiento genérico del ring: DeSmuME intérprete, 240/240 a 60 FPS; CPU medio 4,919 ms, máximo 5,880 ms; `F=1,508 ms`, `S=0,818 ms`, `B=1,318 ms`. Escenario de paseo PASS.
 - ROM con ring genérico CRC DeSmuME `9CA76D62`, SHA-256 `99A42DF4891390462F4F5B0C45BEB5AED68827DE46F8D1E105471CE6140A7173`; quedó subida y el listado remoto confirmó `dungeonds.nds` (1,85 MiB). El readback byte a byte agotó conexión.
-- Esa ROM ha sido supersedida por la build sincronizada con VBlank: CRC `65BC36B1`, SHA-256 `0970E9163B8FF432DAB09F8AD3B4AF6DE78D90F1D8A364103639859D2411F5F4`. Debe subirse antes de medir en DSi.
+- La build sincronizada con VBlank (CRC `65BC36B1`, SHA-256 `0970E9163B8FF432DAB09F8AD3B4AF6DE78D90F1D8A364103639859D2411F5F4`) se subió y verificó por readback SHA-256. El usuario confirma que en DSi va perfecto; no compartió una lectura numérica del HUD, así que la evidencia física queda registrada como cualitativa.
 - Perfil/capturas del refinamiento: `assets/final-profile.txt`, `assets/final-spawn.png`, `assets/final-walk.png`, `assets/large-world-generator.txt`, `assets/vblank-profile.txt`, `assets/vblank-spawn.png`, `assets/vblank-walk.png`.

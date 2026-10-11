@@ -288,7 +288,7 @@ Este documento registra el historial cronológico de sesiones de desarrollo veri
 
 ## Sesión 26: Perfilado de rutas de render del suelo FBX
 
-- [x] El atlas de BG 8bpp pasa a ser dato estático escalable hasta IDs de tile de 16 bits; el cache VRAM permanece acotado al viewport móvil, no al ancho/alto total del mundo.
+- [x] El atlas BG 8bpp admite hasta 65.535 tiles porque `0xFFFF` es el ID inválido reservado. La residencia VRAM queda limitada al viewport; la metadata `slot_for_tile` crece 4 bytes por tile único entre las dos pantallas.
 - [x] Bitmap 8bpp experimental: 240 frames DeSmuME, CPU medio 4.99 ms, `F=1.53 ms`, 240/240 a 60 FPS; el bitmap 512×512 ocupa 256 KiB y deja la pantalla superior sin BG.
 - [x] Prototipo FBX tileado con ring map: DeSmuME intérprete 240 frames, CPU medio 4.89 ms, `F=1.49 ms`, 239/240 a 60 FPS; escenario de paseo PASS.
 - [x] Refresco de pantalla superior a 30 Hz: CPU medio 5.48 ms y `F=2.91 ms`, peor que ring map; 240/240 a 60 FPS.
@@ -299,5 +299,21 @@ Este documento registra el historial cronológico de sesiones de desarrollo veri
 - [x] Prueba de estrés del generador con bake 768×768 y 9.217 tiles únicos (atlas 589.888 B + mapa 18.432 B); genera correctamente IDs por encima del número de tiles residentes en VRAM.
 - [x] ROM con ring genérico subida y listada por FTP (CRC `9CA76D62`); el byte a byte remoto no pudo verificarse por timeout.
 - [x] Corrección de sincronización: escrituras de BG/scroll después de entrar en VBlank; build y escenario PASS. Perfil 240/240 a 60 FPS, CPU medio 4,913 ms.
-- [ ] Subir la ROM corregida CRC `65BC36B1` (SHA-256 `0970E9163B8FF432DAB09F8AD3B4AF6DE78D90F1D8A364103639859D2411F5F4`) y medir HUD DSi (`20 FPS`, `F≈38 ms` de referencia).
+- [x] ROM corregida CRC `65BC36B1` y SHA-256 `0970E9163B8FF432DAB09F8AD3B4AF6DE78D90F1D8A364103639859D2411F5F4` subida y verificada por readback. Usuario confirma que la DSi va perfecta; no se recibió lectura numérica del HUD.
 - **Evidencia:** [walkthroughs/fbx-floor-render-options/walkthrough.md](walkthroughs/fbx-floor-render-options/walkthrough.md).
+
+
+## Sesión 27: Pruebas de límites del generador FBX
+
+- [x] Prueba de integración con fixture 768×768 y 9.216 tiles únicos; valida mapas mayores que los slots residentes de VRAM.
+- [x] Escenario DeSmuME con scroll X/Y y releases PASS (5 capturas, 16 eventos; cámara X 122→76, Y 170→150).
+- [x] Corregida la paleta escasa de Pillow; el fixture de 65.536 tiles prueba el rechazo del ID centinela; suite de 20 pruebas host PASS.
+- [x] Regeneración del atlas actual idéntica por SHA-256 al C versionado (1.007 tiles, mapa 64×64).
+- [x] Walkthrough actualiza el límite real de RAM y la validación DSi; skill `ds-game-dev` añade el protocolo de medición física.
+- **Evidencia:** [walkthroughs/fbx-background-generator-tests/walkthrough.md](walkthroughs/fbx-background-generator-tests/walkthrough.md).
+
+## Sesión 28: Flujo reutilizable de optimización DS
+
+- [x] Skill local y copia de proyecto consolidadas con baseline físico, perfil por etapa, A/B de una ruta, invariantes de gameplay y estrés de escalabilidad/VBlank.
+- [x] Walkthrough recoge la diferencia de coste DeSmuME/DSi y los límites de la evidencia física recibida.
+- **Evidencia:** [walkthroughs/ds-game-dev-performance-workflow/walkthrough.md](walkthroughs/ds-game-dev-performance-workflow/walkthrough.md).

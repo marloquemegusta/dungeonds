@@ -38,6 +38,7 @@ quantized = Image.fromarray(rgb).quantize(colors=255, method=Image.Quantize.MEDI
 indices = np.asarray(quantized, dtype=np.uint8) + 1
 indices[colors == 0] = 0  # text BG palette index 0 is transparent
 palette_rgb = quantized.getpalette()[: 255 * 3]
+palette_rgb.extend([0] * (255 * 3 - len(palette_rgb)))
 palette = [0]
 for i in range(255):
     r, g, b = (palette_rgb[i * 3 + c] >> 3 for c in range(3))
@@ -60,8 +61,9 @@ for ty in range(map_height):
 
 tile_bytes = len(tiles) * TILE * TILE
 map_bytes = tilemap.nbytes
-if len(tiles) > 0x10000:
-    raise SystemExit(f"tile map exceeds its 16-bit tile-ID limit: {len(tiles)} unique tiles")
+# 0xFFFF is reserved by the runtime cache as BG_TILE_INVALID.
+if len(tiles) > 0xFFFF:
+    raise SystemExit(f"tile map exceeds its usable 16-bit tile-ID limit: {len(tiles)} unique tiles")
 
 header = ROOT / "include/dungeon_bg_tiles.h"
 header.write_text(
