@@ -294,9 +294,10 @@ Este documento registra el historial cronológico de sesiones de desarrollo veri
 - [x] Refresco de pantalla superior a 30 Hz: CPU medio 5.48 ms y `F=2.91 ms`, peor que ring map; 240/240 a 60 FPS.
 - [x] La pantalla superior muestra el suelo tileado siguiendo la misma cámara; mantiene el render de actores/sombras/HUD completo abajo.
 - [x] Refinamiento genérico del ring: conserva BG 512×256 y actualiza solo la ventana visible de 33×25 tiles (máximo 825 residentes); elimina la dependencia de densidad de tiles fuera de pantalla.
-- [x] Build limpia, contrato host y escenario de paseo PASS; ROM final CRC `9CA76D62`, SHA-256 `99A42DF4891390462F4F5B0C45BEB5AED68827DE46F8D1E105471CE6140A7173`.
+- [x] Build limpia, contrato host y escenario de paseo PASS para la primera versión del ring; ROM CRC `9CA76D62`, SHA-256 `99A42DF4891390462F4F5B0C45BEB5AED68827DE46F8D1E105471CE6140A7173`.
 - [x] Perfil DeSmuME final 240/240 a 60 FPS; CPU medio 4,919 ms, `F=1,508 ms`. Prácticamente igual al ring anterior: no demuestra la mejora en DSi.
 - [x] Prueba de estrés del generador con bake 768×768 y 9.217 tiles únicos (atlas 589.888 B + mapa 18.432 B); genera correctamente IDs por encima del número de tiles residentes en VRAM.
-- [x] ROM final subida: FTP devolvió PASS y el listado remoto mostró `dungeonds.nds` (1,85 MiB transferidos).
-- [ ] La descarga FTP para comparación SHA-256 y un listado posterior agotaron conexión; byte a byte remoto pendiente. Medir HUD en DSi (`20 FPS`, `F≈38 ms` de referencia) al arrancar la ROM subida.
+- [x] ROM con ring genérico subida y listada por FTP (CRC `9CA76D62`); el byte a byte remoto no pudo verificarse por timeout.
+- [x] Corrección de sincronización: escrituras de BG/scroll después de entrar en VBlank; build y escenario PASS. Perfil 240/240 a 60 FPS, CPU medio 4,913 ms.
+- [ ] Subir la ROM corregida CRC `65BC36B1` (SHA-256 `0970E9163B8FF432DAB09F8AD3B4AF6DE78D90F1D8A364103639859D2411F5F4`) y medir HUD DSi (`20 FPS`, `F≈38 ms` de referencia).
 - **Evidencia:** [walkthroughs/fbx-floor-render-options/walkthrough.md](walkthroughs/fbx-floor-render-options/walkthrough.md).

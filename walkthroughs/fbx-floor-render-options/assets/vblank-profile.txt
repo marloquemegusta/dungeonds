@@ -1,0 +1,13 @@
+ROM CRC (DeSmuME): 65BC36B1
+SHA-256: 0970E9163B8FF432DAB09F8AD3B4AF6DE78D90F1D8A364103639859D2411F5F4
+Frames at 60 FPS: 240/240
+CPU average: 4.913 ms (28.94%)
+CPU maximum: 5.879 ms (35%)
+Floor F: 1.508 ms
+Shadow S: 0.818 ms
+Blits B: 1.317 ms
+DMA & present wait: 10.306 ms
+Gameplay phases: idle and all tested movement/switch phases remain at 60 FPS
+Scenario fbx_walkway_v2: PASS (3 captures, 9 events)
+VBlank map/tile/scroll writes: synchronized before bottom-screen DMA.
+Note: DeSmuME does not prove DSi performance or VBlank transfer margin.

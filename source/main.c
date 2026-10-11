@@ -966,9 +966,10 @@ static void draw_fps_hud(uint16_t *buffer) {
 
 static uint32_t present_both_screens(int top_cam_x, int top_cam_y,
                                       int bot_cam_x, int bot_cam_y) {
+    // Keep BG map/tile/scroll updates inside VBlank to avoid mid-scan tearing.
+    swiWaitForVBlank();
     update_screen_hardware_bg(1, s_top_map_ptr, top_cam_x, top_cam_y);
     update_screen_hardware_bg(0, s_bot_map_ptr, bot_cam_x, bot_cam_y);
-    swiWaitForVBlank();
     dmaCopyWords(3, s_bot_screen_buf, s_bot_vram, SCREEN_W * SCREEN_H * 2);
     return 0;
 }
