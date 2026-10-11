@@ -186,6 +186,13 @@ and rendering pipeline.
 - For static scrolling worlds, compare full-frame copies with hardware scrolling and viewport-bounded caches. Budget total memory too: resident graphics, atlas/map data, and per-tile lookup metadata can scale differently.
 - Stress the largest supported generated world and sentinel/ID limits, then profile worst-case transfers and VBlank margin on hardware. A small current level does not establish scalability.
 - Emulator results are useful for repeatable A/B work, but remain emulator-only. Validate the exact candidate ROM on the target hardware before claiming physical frame rate.
+## Performance profiling and physical hardware
+
+- Treat DeSmuME timing and FPS as emulator results. They can compare code paths and validate scenarios, but they do not certify DS/DSi timing; memory-bus and VRAM-transfer costs can differ substantially.
+- For a physical performance claim, identify the exact ROM and target DS/DSi, then repeat idle, sustained-movement, and busiest-scene workloads. Record ROM CRC/SHA-256, FPS, and stage counters.
+- Time simulation, background/tile streaming, sprite or bitmap composition, DMA/VRAM writes, and VBlank/presentation wait separately. Define each counter so busy work is not confused with waiting.
+- For scrolling static scenery, compare hardware background/tilemap scrolling and viewport-bounded streaming with per-frame full-screen copies. Include first load, camera jumps, worst-case transfers, and VBlank margin.
+- If physical hardware is unavailable, label emulator results as emulator-only and leave physical performance explicitly unverified.
 ## 60 FPS Performance Architecture & Hardware Budgets
 
 All game systems targeting the Nintendo DS must strictly adhere to its hardware budgets to guarantee 60 FPS (59.826 Hz):
