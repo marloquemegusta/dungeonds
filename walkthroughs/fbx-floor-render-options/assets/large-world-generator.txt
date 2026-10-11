@@ -1,0 +1,9 @@
+Generic bake stress profile
+Input dimensions: 768 x 768 pixels (3x the area of 512 x 512)
+Tile grid: 96 x 96 (9,216 map cells)
+Unique 8x8 tiles: 9,217 (includes transparent tile 0)
+Atlas bytes: 589,888
+Map bytes: 18,432
+Static generated data: 608,320 bytes
+Result: generator PASS; tile IDs exceed the 1,024 hardware resident tile slots; runtime residency remains bounded to the 825-cell visible viewport window.
+Scope: generator stress check only; not a 768x768 ROM build or physical DSi performance measurement.
