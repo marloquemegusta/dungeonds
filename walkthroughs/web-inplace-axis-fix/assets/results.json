@@ -1,0 +1,36 @@
+{
+  "validation": "Same embedded FBXLoader and AnimationMixer; 101 times x 8 facings; no WebGL",
+  "tolerance": 0.00001,
+  "fixtures": [
+    {
+      "file": "mario_camisa_blanca.fbx",
+      "originalDrift": 2.705293234427934,
+      "previousDrift": 2.705293129887728,
+      "correctedDrift": 8.673617379884035e-18,
+      "maxHeightError": 5.551115123125783e-16
+    },
+    {
+      "file": "Walking.fbx",
+      "originalDrift": 0.9771761115816451,
+      "previousDrift": 1.734723475976807e-18,
+      "correctedDrift": 1.3877787807814457e-17,
+      "maxHeightError": 0
+    },
+    {
+      "file": "skeleton.fbx",
+      "originalDrift": 0.17365677271025634,
+      "previousDrift": 3.469446951953614e-18,
+      "correctedDrift": 3.469446951953614e-18,
+      "maxHeightError": 0
+    },
+    {
+      "file": "Run.fbx",
+      "originalDrift": 0.029676857783230377,
+      "previousDrift": 6.992893892674703e-18,
+      "correctedDrift": 6.992893892674703e-18,
+      "maxHeightError": 0
+    }
+  ],
+  "restoration": "PASS",
+  "result": "PASS"
+}

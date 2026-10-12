@@ -334,3 +334,12 @@ Este documento registra el historial cronológico de sesiones de desarrollo veri
 - [x] Node valida la sintaxis del HTML y pruebas sintéticas cubren RootNodeL, Hips, canales por componente y restauración.
 - [ ] Revisión visual del ciclo dentro del navegador pendiente; no se afirma validación del FBX real porque la automatización de file:// está bloqueada.
 - **Evidencia:** walkthroughs/web-inplace-fix/walkthrough.md.
+
+## Sesión 31: In-place según la orientación de la armadura FBX
+
+- [x] Reproducido el fallo con mario_camisa_blanca.fbx: armadura Z-up girada −90° X; el avance está en Y local y fijar X/Z local no lo elimina.
+- [x] Bloqueo horizontal en los ejes de escena mediante la matriz del padre, conservando la oscilación vertical.
+- [x] Verificación headless con el lector/mixer del HTML: 101 muestras × 8 direcciones en Mario, Walking, Skeleton y Run; deriva horizontal <1e−5, altura conservada y restauración exacta.
+- [x] Corregida la explicación previa sobre RootNodeL y el estado de la casilla desactivada.
+- [ ] No se capturó salida WebGL; las pruebas validan transformaciones reales del FBX.
+- **Evidencia:** walkthroughs/web-inplace-axis-fix/walkthrough.md.

@@ -41,6 +41,7 @@ Resúmenes acumulativos y auditables de cada entrega y avance de desarrollo en `
 | 28 | Flujo reutilizable de optimización DS | [`ds-game-dev-performance-workflow/`](ds-game-dev-performance-workflow/walkthrough.md) | Skills local y del repositorio actualizadas; límites físicos documentados |
 | 29 | Visor FBX web offline con look DungeonDS | [`web-shader-lab-parity/`](web-shader-lab-parity/walkthrough.md) | HTML autónomo; verificación sintética y estática; prueba visual pendiente |
 | 30 | Corrección de animación in-place del visor web | [`web-inplace-fix/`](web-inplace-fix/walkthrough.md) | Corrección sintética verificada; prueba visual pendiente |
+| 31 | In-place según la orientación de armadura FBX | [`web-inplace-axis-fix/`](web-inplace-axis-fix/walkthrough.md) | Mario y otros tres FBX: 808 poses por archivo verificadas con el mixer real |
 
 
 - [Reparación de navegación de la mazmorra FBX](fbx-navigation-repair/walkthrough.md) — conversión y colisión para la escena FBX; incluye escenarios con estado real y límites de validación.
