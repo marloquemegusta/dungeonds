@@ -327,3 +327,10 @@ Este documento registra el historial cronológico de sesiones de desarrollo veri
 - [x] Scripts parseados con Node; prueba sintética Root/Hips pasa.
 - [ ] Prueba visual/headless pendiente: el navegador disponible bloquea la automatización de file://; no se afirma validación visual.
 - **Evidencia:** walkthroughs/web-shader-lab-parity/walkthrough.md.
+
+## Sesión 30: Corrección de animación in-place del visor web
+- [x] El bloqueo horizontal reconoce nodos de raíz FBX como RootNodeL además de Root/Hips.
+- [x] También fija pistas de posición escalares X/Z y conserva la componente vertical; desactivar la casilla restaura los valores originales.
+- [x] Node valida la sintaxis del HTML y pruebas sintéticas cubren RootNodeL, Hips, canales por componente y restauración.
+- [ ] Revisión visual del ciclo dentro del navegador pendiente; no se afirma validación del FBX real porque la automatización de file:// está bloqueada.
+- **Evidencia:** walkthroughs/web-inplace-fix/walkthrough.md.
