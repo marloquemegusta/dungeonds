@@ -343,3 +343,11 @@ Este documento registra el historial cronológico de sesiones de desarrollo veri
 - [x] Corregida la explicación previa sobre RootNodeL y el estado de la casilla desactivada.
 - [ ] No se capturó salida WebGL; las pruebas validan transformaciones reales del FBX.
 - **Evidencia:** walkthroughs/web-inplace-axis-fix/walkthrough.md.
+
+## Sesión 32: Paridad de iluminación del visor FBX web con Blender
+
+- [x] Preset DungeonDS alineado con Blender: key 4.5, fill 0.85, rim 0, world 0.35; colores sRGB equivalentes a los RGB lineales del worker.
+- [x] World uniforme, AgX, grading de contraste/saturación y fuerza de normal maps 0.35.
+- [x] Compensación de intensidades Three.js y adaptación de la orientación al sistema de cámara del visor.
+- [x] Headless Chromium cargó `mario_camisa_blanca.fbx` y renderizó ocho direcciones sin errores JavaScript.
+- **Evidencia:** walkthroughs/web-blender-light-parity/walkthrough.md.
