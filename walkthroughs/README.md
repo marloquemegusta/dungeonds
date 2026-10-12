@@ -42,6 +42,7 @@ Resúmenes acumulativos y auditables de cada entrega y avance de desarrollo en `
 | 29 | Visor FBX web offline con look DungeonDS | [`web-shader-lab-parity/`](web-shader-lab-parity/walkthrough.md) | HTML autónomo; verificación sintética y estática; prueba visual pendiente |
 | 30 | Corrección de animación in-place del visor web | [`web-inplace-fix/`](web-inplace-fix/walkthrough.md) | Corrección sintética verificada; prueba visual pendiente |
 | 31 | In-place según la orientación de armadura FBX | [`web-inplace-axis-fix/`](web-inplace-axis-fix/walkthrough.md) | Mario y otros tres FBX: 808 poses por archivo verificadas con el mixer real |
+| 32 | Paridad de iluminación del visor FBX web con Blender | [`web-blender-light-parity/`](web-blender-light-parity/walkthrough.md) | Mario: carga y render headless de ocho direcciones; cero errores JavaScript |
 
 
 - [Reparación de navegación de la mazmorra FBX](fbx-navigation-repair/walkthrough.md) — conversión y colisión para la escena FBX; incluye escenarios con estado real y límites de validación.
