@@ -39,6 +39,7 @@ Resúmenes acumulativos y auditables de cada entrega y avance de desarrollo en `
 | 26 | Perfilado de tres rutas para el suelo FBX | [`fbx-floor-render-options/`](fbx-floor-render-options/walkthrough.md) | Ring genérico + sync VBlank; DSi confirmada cualitativamente |
 | 27 | Pruebas de límites y robustez del generador FBX | [`fbx-background-generator-tests/`](fbx-background-generator-tests/walkthrough.md) | 20 pruebas host + scroll X/Y PASS; límites 768² y 2048² |
 | 28 | Flujo reutilizable de optimización DS | [`ds-game-dev-performance-workflow/`](ds-game-dev-performance-workflow/walkthrough.md) | Skills local y del repositorio actualizadas; límites físicos documentados |
+| 29 | Visor FBX web offline con look DungeonDS | [`web-shader-lab-parity/`](web-shader-lab-parity/walkthrough.md) | HTML autónomo; verificación sintética y estática; prueba visual pendiente |
 
 
 - [Reparación de navegación de la mazmorra FBX](fbx-navigation-repair/walkthrough.md) — conversión y colisión para la escena FBX; incluye escenarios con estado real y límites de validación.

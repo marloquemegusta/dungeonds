@@ -317,3 +317,13 @@ Este documento registra el historial cronológico de sesiones de desarrollo veri
 - [x] Skill local y copia de proyecto consolidadas con baseline físico, perfil por etapa, A/B de una ruta, invariantes de gameplay y estrés de escalabilidad/VBlank.
 - [x] Walkthrough recoge la diferencia de coste DeSmuME/DSi y los límites de la evidencia física recibida.
 - **Evidencia:** [walkthroughs/ds-game-dev-performance-workflow/walkthrough.md](walkthroughs/ds-game-dev-performance-workflow/walkthrough.md).
+
+---
+
+## Sesión 29: Visor FBX web offline con look DungeonDS
+- [x] Visor autónomo guardado en tools/lab/FBX-Web-Renderer-offline.html y copiado a Descargas; scripts, bibliotecas y estilos están embebidos.
+- [x] Presets DungeonDS/neutro/antorcha, controles de intensidad/color, sombras de key, escala visible aproximada en píxeles y encuadre con todas las poses exportadas.
+- [x] Root/Hips in-place por defecto, manteniendo Y; casilla para restaurar el movimiento original.
+- [x] Scripts parseados con Node; prueba sintética Root/Hips pasa.
+- [ ] Prueba visual/headless pendiente: el navegador disponible bloquea la automatización de file://; no se afirma validación visual.
+- **Evidencia:** walkthroughs/web-shader-lab-parity/walkthrough.md.
