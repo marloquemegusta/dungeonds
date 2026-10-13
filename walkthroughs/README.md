@@ -54,6 +54,7 @@ Resúmenes acumulativos y auditables de cada entrega y avance de desarrollo en `
 | 41 | Alineación de pies del Charger con el ancla de colisión | [`wh40k-floor-preview/`](wh40k-floor-preview/walkthrough.md) | Build, 15 contratos host y contacto Charger PASS; comprobar otros tramos y DS física |
 | 42 | Arena sintética para aislar colisión y oclusión WH40K | [`wh40k-collision-arena-test/`](wh40k-collision-arena-test/walkthrough.md) | Build y cuatro probes DeSmuME PASS; bake offline no asigna WALK a muros altos; ROM sin subir |
 | 43 | Oclusión exacta de catedral y 60 FPS bloqueados | [`wh40k-floor-preview/`](wh40k-floor-preview/walkthrough.md) | Validado en NDS física; 60 FPS locked, optimización ARM9 (9 ms CPU), oclusión exacta sin sangrado |
+| 44 | Mazmorra Completa FBX: Despeje de Puertas, Oclusión y 60 FPS | [`scifi-dungeon-tripo/`](scifi-dungeon-tripo/walkthrough.md) | Completado (60 FPS Locked, 36 tests PASS, cruce de arcos verificado en DeSmuME) |
 
 
 - [Reparación de navegación de la mazmorra FBX](fbx-navigation-repair/walkthrough.md) — conversión y colisión para la escena FBX; incluye escenarios con estado real y límites de validación.

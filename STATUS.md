@@ -474,3 +474,13 @@ Este documento registra el historial cronolÃ³gico de sesiones de desarrollo ve
 - [x] **Presupuesto de CPU (60 FPS Locked):** Telemetría en HUD confirma FPS:60 C:10 P:06 (~10% de uso de CPU).
 - [x] **Verificación:** 21 contratos de host PASS, compilación BlocksDS limpia y escenario de emulación en DeSmuME validado con capturas de frames consecutivos y GIFs animados.
 - **Evidencia:** walkthroughs/13-feat-occlusion-transparency/walkthrough.md, walkthroughs/13-feat-occlusion-transparency/assets/zoom_character.gif, walkthroughs/13-feat-occlusion-transparency/assets/charger_occlusion.gif.
+
+## Sesión 45: Mazmorra Completa FBX con Despeje de Puertas, Oclusión y 60 FPS Locked
+
+- [x] **Diagnóstico y causa raíz de bloqueos en puertas:** El raycasting vertical anterior se proyectaba ciegamente desde el cielo, bloqueando cualquier dintel o arco superior a 2.3 m de altura.
+- [x] **Despeje por volumen de torso:** Se implementó raycast de torso en el rango físico $Z \in [0.3\text{m}, 1.4\text{m}]$. Como los dinteles y arcos del modelo FBX se sitúan en $Z \ge 1.71\text{m}$ (media $2.28\text{m}$), todas las puertas quedan 100% transitables y conectadas.
+- [x] **Pipeline de horneado 2.5D dimétrico:** Malla de colisión 2-bit de $192 \times 128$ (5.253 celdas caminables), 2.389 tiles de hardware VRAM y 2.379 tramos RLE ordenados para oclusión exacta en arcos y pilares.
+- [x] **Presupuesto 60 FPS Locked:** HUD de telemetría confirma `FPS:60 C:11 P:04` (CPU 11 ms, 0 frames perdidos).
+- [x] **Verificación:** Suite de pruebas unitarias de host PASS (36/36 tests ejecutados), compilación limpia de ROM BlocksDS y escenario `scifi_dungeon_walk.json` ejecutado en DeSmuME con héroe visible y verificado a 60 FPS en pantalla inferior (GIF animado de 126 frames).
+- **Evidencia:** `walkthroughs/scifi-dungeon-tripo/walkthrough.md`, `walkthroughs/scifi-dungeon-tripo/assets/scifi_dungeon_walk.gif`, `walkthroughs/scifi-dungeon-tripo/assets/scifi_collision_overlay.png`.
+

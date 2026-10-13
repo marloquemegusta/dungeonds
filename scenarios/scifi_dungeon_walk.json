@@ -1,0 +1,31 @@
+{
+  "name": "scifi_dungeon_walk",
+  "state": {
+    "symbols": { "nav": "g_nav_state" },
+    "default_symbol": "nav",
+    "fields": {
+      "x": { "symbol": "nav", "offset": 0 },
+      "y": { "symbol": "nav", "offset": 4 },
+      "cam_x": { "symbol": "nav", "offset": 8 },
+      "cam_y": { "symbol": "nav", "offset": 12 },
+      "input": { "symbol": "nav", "offset": 16 }
+    }
+  },
+  "steps": [
+    { "frames": 20, "capture": "00_spawn", "state_capture": "spawn", "capture_sequence": "walk", "capture_every": 2 },
+    { "button_down": "DOWN", "frames": 60, "capture": "01_arch_cross_south", "state_capture": "south", "capture_sequence": "walk", "capture_every": 2 },
+    { "button_up": "DOWN", "frames": 8, "capture_sequence": "walk", "capture_every": 2 },
+    { "button_down": "LEFT", "frames": 60, "capture": "02_corridor_west", "state_capture": "west", "capture_sequence": "walk", "capture_every": 2 },
+    { "button_up": "LEFT", "frames": 8, "capture_sequence": "walk", "capture_every": 2 },
+    { "button_down": "UP", "frames": 50, "capture": "03_arch_cross_north", "state_capture": "north", "capture_sequence": "walk", "capture_every": 2 },
+    { "button_up": "UP", "frames": 8, "capture_sequence": "walk", "capture_every": 2 },
+    { "button_down": "RIGHT", "frames": 50, "capture": "04_return_east", "state_capture": "east", "capture_sequence": "walk", "capture_every": 2 },
+    { "button_up": "RIGHT", "frames": 8, "capture_sequence": "walk", "capture_every": 2 }
+  ],
+  "assertions": {
+    "state_changes": [
+      { "from": "spawn", "to": "south", "field": "y", "min_delta": 1000 },
+      { "from": "south", "to": "west", "field": "x", "max_delta": -1000 }
+    ]
+  }
+}

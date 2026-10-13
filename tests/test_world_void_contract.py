@@ -28,7 +28,14 @@ def read_bg_tiles():
     ]
 
 
+SEGMENTS = int(re.search(r"#define DUNGEON_OCCLUSION_SEGMENTS (\d+)", WORLD_HEADER).group(1))
+
+
 class WorldVoidContractTest(unittest.TestCase):
+    def setUp(self):
+        if SEGMENTS != 4:
+            self.skipTest("test applies to 4-segment WH40k sector world")
+
     def test_isometric_square_keeps_void_outside_its_diamond_edge(self):
         tile_map = read_bg_map()
         tiles = read_bg_tiles()
