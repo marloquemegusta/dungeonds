@@ -43,6 +43,17 @@ Resúmenes acumulativos y auditables de cada entrega y avance de desarrollo en `
 | 30 | Corrección de animación in-place del visor web | [`web-inplace-fix/`](web-inplace-fix/walkthrough.md) | Corrección sintética verificada; prueba visual pendiente |
 | 31 | In-place según la orientación de armadura FBX | [`web-inplace-axis-fix/`](web-inplace-axis-fix/walkthrough.md) | Mario y otros tres FBX: 808 poses por archivo verificadas con el mixer real |
 | 32 | Paridad de iluminación del visor FBX web con Blender | [`web-blender-light-parity/`](web-blender-light-parity/walkthrough.md) | Mario: carga y render headless de ocho direcciones; cero errores JavaScript |
+| 33 | Showcase del sector urbano WH40K | [`wh40k-floor-preview/`](wh40k-floor-preview/walkthrough.md) | Probado en DS; seguimiento de navegación y contorno Charger en revisión |
+| 34 | Cámara centrada, continuidad dual-screen y perímetro WH40K | [`wh40k-floor-preview/`](wh40k-floor-preview/walkthrough.md) | Revisión previa del perímetro; la foto física detectó un recorte del bake |
+| 35 | Bake WH40K de la losa completa 50×50 m | [`wh40k-floor-preview/`](wh40k-floor-preview/walkthrough.md) | La revisión redujo por error la escala visual; corregido en la sesión 32 |
+| 36 | Escala original WH40K y lienzo completo | [`wh40k-floor-preview/`](wh40k-floor-preview/walkthrough.md) | ROM subida por FTP; prueba física pendiente |
+| 37 | Recorrido WH40K de cuatro sectores | [`wh40k-floor-preview/`](wh40k-floor-preview/walkthrough.md) | El retest detectó colisiones ausentes en los edificios repetidos |
+| 38 | Colisión de edificios en sectores WH40K repetidos | [`wh40k-floor-preview/`](wh40k-floor-preview/walkthrough.md) | Build, contratos host y escenario de contacto PASS; ROM subida, prueba física pendiente |
+| 39 | Rasterización volumétrica de colisiones WH40K | [`wh40k-floor-preview/`](wh40k-floor-preview/walkthrough.md) | Build, contratos host y contacto/rodeo PASS; ROM nueva sin subir, prueba física pendiente |
+| 40 | Cobertura completa de celdas de colisión WH40K | [`wh40k-floor-preview/`](wh40k-floor-preview/walkthrough.md) | Build, contratos host y contacto/rodeo PASS; ROM sin subir, prueba física pendiente |
+| 41 | Alineación de pies del Charger con el ancla de colisión | [`wh40k-floor-preview/`](wh40k-floor-preview/walkthrough.md) | Build, 15 contratos host y contacto Charger PASS; comprobar otros tramos y DS física |
+| 42 | Arena sintética para aislar colisión y oclusión WH40K | [`wh40k-collision-arena-test/`](wh40k-collision-arena-test/walkthrough.md) | Build y cuatro probes DeSmuME PASS; bake offline no asigna WALK a muros altos; ROM sin subir |
+| 43 | Oclusión exacta de catedral y 60 FPS bloqueados | [`wh40k-floor-preview/`](wh40k-floor-preview/walkthrough.md) | Validado en NDS física; 60 FPS locked, optimización ARM9 (9 ms CPU), oclusión exacta sin sangrado |
 
 
 - [Reparación de navegación de la mazmorra FBX](fbx-navigation-repair/walkthrough.md) — conversión y colisión para la escena FBX; incluye escenarios con estado real y límites de validación.

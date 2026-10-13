@@ -26,6 +26,10 @@ El repositorio cuenta con fuentes de verdad canónicas sin duplicación:
    - Compilación limpia con Docker BlocksDS sin warnings graves.
    - Ejecución de escenarios headless o tests de host.
    - Generación de evidencia visual (capturas / GIFs) en caso de cambios gráficos.
+5. **Calibración y Validez de Escenarios de Prueba Headless**:
+   - **Precondición geométrica obligatoria:** Al escribir o modificar un escenario (`scenarios/*.json`), verificar que las coordenadas del actor crucen verdaderamente la entidad o volumen a probar (edificio, oclusión, proyectil o muro de colisión). Nunca diseñar escenarios en suelo abierto esperando probar oclusión o colisión.
+   - **Nomenclatura verídica:** Prohibido etiquetar eventos o capturas como `behind_bastion_occluded` o similar si la geometría en esas coordenadas no aplica la oclusión esperada. Los tests con nombres falsos generan falsos positivos y ocultan regresiones reales.
+   - **Aserción de presupuesto de frame (60 FPS Locked):** Todo test visual debe verificar el rendimiento de la emulación. Si una feature renderiza correctamente pero el HUD o las métricas revelan caída a 30 FPS (`cpu_ticks > 33514`), la tarea se considera bloqueada y fallida hasta optimizar la rutina crítica.
 
 ---
 

@@ -1,0 +1,24 @@
+{
+  "name": "wh40k_north_boundary_diagnostic",
+  "state": {
+    "symbols": { "nav": "g_nav_state" },
+    "default_symbol": "nav",
+    "fields": {
+      "x": { "symbol": "nav", "offset": 0 },
+      "y": { "symbol": "nav", "offset": 4 },
+      "cam_x": { "symbol": "nav", "offset": 8 },
+      "cam_y": { "symbol": "nav", "offset": 12 },
+      "input": { "symbol": "nav", "offset": 16 },
+      "moving": { "symbol": "nav", "offset": 20 },
+      "blocked_moves": { "symbol": "nav", "offset": 24 }
+    }
+  },
+  "steps": [
+    { "frames": 80, "capture": "00_spawn", "state_capture": "spawn" },
+    { "button_down": "UP", "frames": 120, "capture": "01_north_120", "state_capture": "north_120" },
+    { "button_up": "UP", "frames": 4 },
+    { "button_down": "UP", "frames": 120, "capture": "02_north_240", "state_capture": "north_240" },
+    { "button_up": "UP", "frames": 4 }
+  ],
+  "assertions": {}
+}

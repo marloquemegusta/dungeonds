@@ -1,0 +1,19 @@
+{
+  "name": "wh40k_urban_showcase",
+  "steps": [
+    { "frames": 80, "capture": "00_crossroad_spawn" },
+    { "button_down": "RIGHT", "frames": 110 },
+    { "button_up": "RIGHT", "button_down": "A", "frames": 18, "capture": "01_east_manufactorum_fire" },
+    { "button_up": "A", "button_down": "LEFT", "frames": 110 },
+    { "button_up": "LEFT", "button_down": "UP", "frames": 85, "capture": "02_north_shelter_occlusion" },
+    { "button_up": "UP", "button_down": "LEFT", "frames": 95 },
+    { "button_up": "LEFT", "button_down": "A", "frames": 18, "capture": "03_west_barricade_cover" }
+  ],
+  "assertions": {
+    "screen_changes": [
+      { "from": "00_crossroad_spawn", "to": "01_east_manufactorum_fire", "min_changed_pixels": 250 },
+      { "from": "01_east_manufactorum_fire", "to": "02_north_shelter_occlusion", "min_changed_pixels": 250 },
+      { "from": "02_north_shelter_occlusion", "to": "03_west_barricade_cover", "min_changed_pixels": 250 }
+    ]
+  }
+}

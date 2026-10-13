@@ -1,0 +1,35 @@
+{
+  "name": "wh40k_world_edge_panorama",
+  "state": {
+    "symbols": { "nav": "g_nav_state" },
+    "default_symbol": "nav",
+    "fields": {
+      "x": { "symbol": "nav", "offset": 0 },
+      "y": { "symbol": "nav", "offset": 4 },
+      "cam_x": { "symbol": "nav", "offset": 8 },
+      "cam_y": { "symbol": "nav", "offset": 12 },
+      "input": { "symbol": "nav", "offset": 16 },
+      "moving": { "symbol": "nav", "offset": 20 },
+      "blocked_moves": { "symbol": "nav", "offset": 24 }
+    }
+  },
+  "steps": [
+    { "frames": 80, "capture": "00_spawn", "state_capture": "spawn" },
+    { "button_down": "UP", "frames": 22 },
+    { "button_up": "UP", "frames": 3 },
+    { "button_down": "LEFT", "frames": 190, "capture": "01_northwest_route" },
+    { "button_up": "LEFT", "frames": 3 },
+    { "button_down": "UP", "frames": 400, "capture": "02_north_edge", "state_capture": "north_edge" },
+    { "button_up": "UP", "frames": 3 },
+    { "button_down": "LEFT", "frames": 240, "capture": "03_northwest_void", "state_capture": "northwest_void" },
+    { "button_up": "LEFT", "frames": 3 }
+  ],
+  "assertions": {
+    "state_changes": [
+      { "from": "spawn", "to": "north_edge", "field": "y", "min_abs_delta": 25000 },
+      { "from": "north_edge", "to": "northwest_void", "field": "x", "max_abs_delta": 40000 },
+      { "from": "north_edge", "to": "northwest_void", "field": "blocked_moves", "min_delta": 50 },
+      { "from": "spawn", "to": "north_edge", "field": "cam_y", "min_abs_delta": 100 }
+    ]
+  }
+}

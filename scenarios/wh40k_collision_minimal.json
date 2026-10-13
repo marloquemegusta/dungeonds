@@ -1,0 +1,34 @@
+{
+  "name": "wh40k_collision_minimal",
+  "state": {
+    "symbols": { "nav": "g_nav_state" },
+    "default_symbol": "nav",
+    "fields": {
+      "x": { "symbol": "nav", "offset": 0 },
+      "y": { "symbol": "nav", "offset": 4 },
+      "moving": { "symbol": "nav", "offset": 20 },
+      "blocked_moves": { "symbol": "nav", "offset": 24 }
+    }
+  },
+  "steps": [
+    { "frames": 80, "capture": "00_spawn", "state_capture": "spawn" },
+    { "button_down": "X", "frames": 1, "capture": "01_charger" },
+    { "button_up": "X", "frames": 4 },
+    { "button_down": "RIGHT", "frames": 120, "capture": "02_below_wall", "state_capture": "below_wall" },
+    { "button_up": "RIGHT", "frames": 4 },
+    { "button_down": "UP", "frames": 220, "capture": "03_contact", "state_capture": "contact" },
+    { "button_down": "UP", "frames": 40, "capture": "04_held", "state_capture": "held" }
+  ],
+  "assertions": {
+    "screen_changes": [
+      { "from": "00_spawn", "to": "01_charger", "min_changed_pixels": 250 }
+    ],
+    "state_changes": [
+      { "from": "spawn", "to": "below_wall", "field": "x", "min_delta": 15000 },
+      { "from": "below_wall", "to": "contact", "field": "y", "min_abs_delta": 10000 },
+      { "from": "contact", "to": "held", "field": "y", "max_delta": 0 },
+      { "from": "contact", "to": "held", "field": "blocked_moves", "min_delta": 1 },
+      { "from": "contact", "to": "held", "field": "moving", "max_delta": 0 }
+    ]
+  }
+}

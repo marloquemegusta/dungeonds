@@ -1,0 +1,176 @@
+﻿{
+    "name":  "wh40k_charger_north_occlusion_probe",
+    "state":  {
+                  "symbols":  {
+                                  "nav":  "g_nav_state",
+                                  "occdepth":  "s_occlusion_depth",
+                                  "occcamx":  "s_occlusion_cam_x",
+                                  "occcamy":  "s_occlusion_cam_y"
+                              },
+                  "default_symbol":  "nav",
+                  "fields":  {
+                                 "x":  {
+                                           "symbol":  "nav",
+                                           "offset":  0
+                                       },
+                                 "y":  {
+                                           "symbol":  "nav",
+                                           "offset":  4
+                                       },
+                                 "moving":  {
+                                                "symbol":  "nav",
+                                                "offset":  20
+                                            },
+                                 "blocked_moves":  {
+                                                       "symbol":  "nav",
+                                                       "offset":  24
+                                                   },
+                                 "occ_cam_x":  {
+                                                   "offset":  0,
+                                                   "symbol":  "occcamx"
+                                               },
+                                 "occ_cam_y":  {
+                                                   "offset":  0,
+                                                   "symbol":  "occcamy"
+                                               },
+                                 "player_y":  {
+                                                  "offset":  4,
+                                                  "symbol":  "nav"
+                                              },
+                                 "d_80_124":  {
+                                                  "offset":  10364,
+                                                  "symbol":  "occdepth"
+                                              },
+                                 "d_80_128":  {
+                                                  "offset":  10368,
+                                                  "symbol":  "occdepth"
+                                              },
+                                 "d_80_132":  {
+                                                  "offset":  10372,
+                                                  "symbol":  "occdepth"
+                                              },
+                                 "d_84_124":  {
+                                                  "offset":  10876,
+                                                  "symbol":  "occdepth"
+                                              },
+                                 "d_84_128":  {
+                                                  "offset":  10880,
+                                                  "symbol":  "occdepth"
+                                              },
+                                 "d_84_132":  {
+                                                  "offset":  10884,
+                                                  "symbol":  "occdepth"
+                                              },
+                                 "d_88_124":  {
+                                                  "offset":  11388,
+                                                  "symbol":  "occdepth"
+                                              },
+                                 "d_88_128":  {
+                                                  "offset":  11392,
+                                                  "symbol":  "occdepth"
+                                              },
+                                 "d_88_132":  {
+                                                  "offset":  11396,
+                                                  "symbol":  "occdepth"
+                                              },
+                                 "d_92_124":  {
+                                                  "offset":  11900,
+                                                  "symbol":  "occdepth"
+                                              },
+                                 "d_92_128":  {
+                                                  "offset":  11904,
+                                                  "symbol":  "occdepth"
+                                              },
+                                 "d_92_132":  {
+                                                  "offset":  11908,
+                                                  "symbol":  "occdepth"
+                                              },
+                                 "d_96_124":  {
+                                                  "offset":  12412,
+                                                  "symbol":  "occdepth"
+                                              },
+                                 "d_96_128":  {
+                                                  "offset":  12416,
+                                                  "symbol":  "occdepth"
+                                              },
+                                 "d_96_132":  {
+                                                  "offset":  12420,
+                                                  "symbol":  "occdepth"
+                                              },
+                                 "d_100_124":  {
+                                                   "offset":  12924,
+                                                   "symbol":  "occdepth"
+                                               },
+                                 "d_100_128":  {
+                                                   "offset":  12928,
+                                                   "symbol":  "occdepth"
+                                               },
+                                 "d_100_132":  {
+                                                   "offset":  12932,
+                                                   "symbol":  "occdepth"
+                                               }
+                             }
+              },
+    "steps":  [
+                  {
+                      "frames":  80,
+                      "capture":  "00_spawn",
+                      "state_capture":  "spawn"
+                  },
+                  {
+                      "button_down":  "X",
+                      "frames":  1,
+                      "capture":  "01_charger",
+                      "state_capture":  "charger"
+                  },
+                  {
+                      "button_up":  "X",
+                      "frames":  4
+                  },
+                  {
+                      "button_down":  "LEFT",
+                      "frames":  260,
+                      "capture":  "02_west",
+                      "state_capture":  "west"
+                  },
+                  {
+                      "button_up":  "LEFT",
+                      "frames":  4
+                  },
+                  {
+                      "button_down":  "UP",
+                      "frames":  300,
+                      "capture":  "03_north",
+                      "state_capture":  "north"
+                  },
+                  {
+                      "button_up":  "UP",
+                      "frames":  4
+                  },
+                  {
+                      "button_down":  "RIGHT",
+                      "frames":  380,
+                      "capture":  "04_align",
+                      "state_capture":  "aligned"
+                  },
+                  {
+                      "button_up":  "RIGHT",
+                      "frames":  4
+                  },
+                  {
+                      "button_down":  "DOWN",
+                      "frames":  260,
+                      "capture":  "05_contact",
+                      "state_capture":  "contact"
+                  },
+                  {
+                      "button_down":  "DOWN",
+                      "frames":  40,
+                      "capture":  "06_hold",
+                      "state_capture":  "held"
+                  }
+              ],
+    "assertions":  {
+
+                   }
+}

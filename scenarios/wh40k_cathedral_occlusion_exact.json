@@ -1,0 +1,19 @@
+{
+  "name": "wh40k_cathedral_occlusion_exact",
+  "steps": [
+    { "frames": 30, "capture": "00_spawn" },
+    { "button_down": "X", "frames": 1 },
+    { "button_up": "X", "frames": 4 },
+    { "button_down": "UP", "frames": 580 },
+    { "button_up": "UP", "frames": 4 },
+    { "button_down": "RIGHT", "frames": 380 },
+    { "button_up": "RIGHT", "frames": 4 },
+    { "button_down": "DOWN", "frames": 35 },
+    { "button_up": "DOWN", "frames": 4, "capture": "01_charger_behind_arch_wall" }
+  ],
+  "assertions": {
+    "screen_changes": [
+      { "from": "00_spawn", "to": "01_charger_behind_arch_wall", "min_changed_pixels": 250 }
+    ]
+  }
+}

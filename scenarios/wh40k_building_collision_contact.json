@@ -1,0 +1,38 @@
+{
+  "name": "wh40k_building_collision_contact",
+  "state": {
+    "symbols": { "nav": "g_nav_state" },
+    "default_symbol": "nav",
+    "fields": {
+      "x": { "symbol": "nav", "offset": 0 },
+      "y": { "symbol": "nav", "offset": 4 },
+      "cam_x": { "symbol": "nav", "offset": 8 },
+      "cam_y": { "symbol": "nav", "offset": 12 },
+      "moving": { "symbol": "nav", "offset": 20 },
+      "blocked_moves": { "symbol": "nav", "offset": 24 }
+    }
+  },
+  "steps": [
+    { "frames": 80, "capture": "00_spawn", "state_capture": "spawn" },
+    { "button_down": "RIGHT", "frames": 120, "capture": "01_align", "state_capture": "aligned" },
+    { "button_up": "RIGHT", "frames": 4 },
+    { "button_down": "UP", "frames": 220, "capture": "02_wall_contact", "state_capture": "wall_contact" },
+    { "button_down": "UP", "frames": 40, "capture": "03_stays_blocked", "state_capture": "stays_blocked" },
+    { "button_up": "UP", "frames": 4 },
+    { "button_down": "DOWN", "frames": 60, "capture": "04_detour", "state_capture": "detour" },
+    { "button_up": "DOWN", "frames": 4 },
+    { "button_down": "RIGHT", "frames": 200, "capture": "05_past_wall", "state_capture": "past_wall" },
+    { "button_up": "RIGHT", "frames": 4 }
+  ],
+  "assertions": {
+    "state_changes": [
+      { "from": "spawn", "to": "aligned", "field": "x", "min_delta": 15000 },
+      { "from": "aligned", "to": "wall_contact", "field": "y", "min_abs_delta": 10000 },
+      { "from": "wall_contact", "to": "stays_blocked", "field": "y", "max_delta": 0 },
+      { "from": "wall_contact", "to": "stays_blocked", "field": "blocked_moves", "min_delta": 1 },
+      { "from": "wall_contact", "to": "stays_blocked", "field": "moving", "max_delta": 0 },
+      { "from": "stays_blocked", "to": "detour", "field": "y", "min_delta": 5000 },
+      { "from": "detour", "to": "past_wall", "field": "x", "min_delta": 20000 }
+    ]
+  }
+}

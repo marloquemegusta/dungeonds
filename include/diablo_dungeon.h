@@ -3,16 +3,17 @@
 
 #include <nds.h>
 
-#define WORLD_W 512
-#define WORLD_H 512
-#define COLLISION_W 128
-#define COLLISION_H 128
+#define WORLD_W 3200
+#define WORLD_H 1920
+#define COLLISION_W 800
+#define COLLISION_H 480
 #define COLLISION_SCALE 4
+#define DUNGEON_OCCLUSION_SEGMENTS 4
+#define COLLISION_BYTES ((COLLISION_W * COLLISION_H + 3) / 4)
 
-#define SPAWN_PIXEL_X 250
-#define SPAWN_PIXEL_Y 266
+#define SPAWN_PIXEL_X 1600
+#define SPAWN_PIXEL_Y 960
 
-extern const uint16_t g_dungeon_world_color[WORLD_W * WORLD_H];
-extern const uint8_t g_dungeon_collision[COLLISION_H * COLLISION_W];
+extern const uint8_t g_dungeon_collision[COLLISION_BYTES];
 
 #endif // DIABLO_DUNGEON_H
