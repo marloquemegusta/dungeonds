@@ -1,0 +1,30 @@
+{
+  "name": "wh40k_four_sector_walk",
+  "state": {
+    "symbols": { "nav": "g_nav_state" },
+    "default_symbol": "nav",
+    "fields": {
+      "x": { "symbol": "nav", "offset": 0 },
+      "y": { "symbol": "nav", "offset": 4 },
+      "cam_x": { "symbol": "nav", "offset": 8 },
+      "cam_y": { "symbol": "nav", "offset": 12 },
+      "moving": { "symbol": "nav", "offset": 20 },
+      "blocked_moves": { "symbol": "nav", "offset": 24 }
+    }
+  },
+  "steps": [
+    { "frames": 80, "capture": "00_start", "state_capture": "start" },
+    { "button_down": "UP" },
+    { "button_down": "RIGHT", "frames": 1100, "capture": "01_walk_north", "state_capture": "walk_north" },
+    { "button_up": "UP" },
+    { "button_up": "RIGHT", "frames": 2 }
+  ],
+  "assertions": {
+    "state_changes": [
+      { "from": "start", "to": "walk_north", "field": "y", "min_abs_delta": 1000 },
+      { "from": "start", "to": "walk_north", "field": "cam_y", "min_abs_delta": 1 },
+      { "from": "start", "to": "walk_north", "field": "blocked_moves", "min_delta": 1 },
+      { "from": "start", "to": "walk_north", "field": "moving", "max_delta": 0 }
+    ]
+  }
+}

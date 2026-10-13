@@ -87,7 +87,7 @@ class FbxBackgroundGeneratorTest(unittest.TestCase):
                 source.write("const uint16_t g_dungeon_world_color[WORLD_W * WORLD_H] = {\\n")
                 for y in range(height):
                     tile_y, in_tile_y = divmod(y, 8)
-                    bit_offset = in_tile_y * 8
+                    bit_offset = (in_tile_y - 2) * 8 if 2 <= in_tile_y < 4 else 16
                     row_values = []
                     for tile_x in range(tile_columns):
                         tile_id = tile_y * tile_columns + tile_x

@@ -1,0 +1,13 @@
+{
+  "name": "wh40k_charger_side_occlusion_probe",
+  "state": {"symbols":{"nav":"g_nav_state"},"default_symbol":"nav","fields":{"x":{"symbol":"nav","offset":0},"y":{"symbol":"nav","offset":4},"moving":{"symbol":"nav","offset":20},"blocked_moves":{"symbol":"nav","offset":24}}},
+  "steps": [
+    {"frames":80,"capture":"00_spawn"},
+    {"button_down":"X","frames":1}, {"button_up":"X","frames":4},
+    {"button_down":"LEFT","frames":300,"capture":"01_west","state_capture":"west"}, {"button_up":"LEFT","frames":4},
+    {"button_down":"UP","frames":210,"capture":"02_align_y","state_capture":"align_y"}, {"button_up":"UP","frames":4},
+    {"button_down":"RIGHT","frames":500,"capture":"03_side_contact","state_capture":"side_contact"},
+    {"button_down":"RIGHT","frames":40,"capture":"04_side_hold","state_capture":"side_hold"}
+  ],
+  "assertions": {}
+}

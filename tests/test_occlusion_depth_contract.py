@@ -7,13 +7,9 @@ from PIL import Image
 import numpy as np
 
 ROOT = Path(__file__).resolve().parents[1]
-
-
-def packed_mask_pixels(path):
-    source = path.read_text(encoding="ascii")
-    body = source.split("g_dungeon_upper_mask[", 1)[1].split("= {", 1)[1].split("};", 1)[0]
-    packed = bytes(int(value, 16) for value in re.findall(r"0x([0-9A-Fa-f]{2})", body))
-    return packed
+WORLD_HEADER = (ROOT / "include/diablo_dungeon.h").read_text(encoding="utf-8")
+WORLD_W = int(re.search(r"#define WORLD_W (\d+)", WORLD_HEADER).group(1))
+WORLD_H = int(re.search(r"#define WORLD_H (\d+)", WORLD_HEADER).group(1))
 
 
 def compose_wall_actor(base, wall_depth, actor_depth, wall_color, actor_color):
@@ -54,14 +50,17 @@ class OcclusionDepthContractTest(unittest.TestCase):
         self.assertGreater(white, 1000, "upper wall/arch mask unexpectedly empty")
         self.assertLess(white, 512 * 512 // 2, "upper mask swallowed most floor pixels")
 
-    def test_generated_mask_and_depth_runs_are_nonempty_and_bounded(self):
+    def test_generated_depth_runs_are_nonempty_and_world_bounded(self):
         source = (ROOT / "source/dungeon_occlusion.c").read_text(encoding="ascii")
-        mask = packed_mask_pixels(ROOT / "source/dungeon_occlusion.c")
-        self.assertEqual(len(mask), (512 * 512 + 7) // 8)
         self.assertIn("g_dungeon_occlusion_run_count =", source)
-        run_count = int(re.search(r"g_dungeon_occlusion_run_count = (\d+);", source).group(1))
+        run_count = int(re.search(r"g_dungeon_occlusion_run_count = (\d+)u?;", source).group(1))
         self.assertGreater(run_count, 0)
-        self.assertLess(run_count, 512 * 512)
+        self.assertLess(run_count, 5000, "canonical sector mask should be instanced, not duplicated per sector")
+        self.assertIn("g_dungeon_occlusion_segments[DUNGEON_OCCLUSION_SEGMENTS]", source)
+        self.assertNotIn("g_dungeon_upper_mask", source)
+        runtime = (ROOT / "source/main.c").read_text(encoding="utf-8")
+        self.assertIn("s_occlusion_upper_mask[(SCREEN_W * SCREEN_H + 7) / 8]", runtime)
+        self.assertIn("build_occlusion_depth_map(s_cam_x, s_cam_y);", runtime)
 
 
 if __name__ == "__main__":

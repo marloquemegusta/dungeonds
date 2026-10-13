@@ -1,0 +1,14 @@
+{
+  "name": "wh40k_charger_animation",
+  "steps": [
+    { "frames": 80, "capture": "00_hero_idle" },
+    { "button_down": "X", "frames": 1, "capture": "01_charger_idle" },
+    { "button_up": "X", "frames": 4 },
+    { "button_down": "LEFT", "frames": 48, "capture_sequence": "charger_run", "capture_every": 2 }
+  ],
+  "assertions": {
+    "screen_changes": [
+      { "from": "00_hero_idle", "to": "01_charger_idle", "min_changed_pixels": 250 }
+    ]
+  }
+}

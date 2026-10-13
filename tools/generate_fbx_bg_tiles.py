@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Bake the FBX RGB15 world bitmap into a 256-color 8bpp hardware BG."""
 import re
+import sys
 from pathlib import Path
 
 import numpy as np
@@ -14,21 +15,55 @@ TILE = 8
 if WIDTH % TILE or HEIGHT % TILE:
     raise SystemExit("world dimensions must be multiples of 8 pixels")
 
-source = (ROOT / "source/diablo_dungeon.c").read_text(encoding="utf-8")
-match = re.search(
-    r"g_dungeon_world_color\[WORLD_W \* WORLD_H\].*?=\s*\{(.*?)\};",
-    source,
-    re.S,
-)
-if match is None:
-    raise SystemExit("g_dungeon_world_color not found")
-colors = np.array(
-    [int(value, 16) for value in re.findall(r"0x[0-9a-fA-F]+", match.group(1))],
-    dtype=np.uint16,
-)
+if len(sys.argv) > 1:
+    colors = np.fromfile(sys.argv[1], dtype="<u2")
+else:
+    source = (ROOT / "source/diablo_dungeon.c").read_text(encoding="utf-8")
+    match = re.search(
+        r"g_dungeon_world_color\[WORLD_W \* WORLD_H\].*?=\s*\{(.*?)\};",
+        source,
+        re.S,
+    )
+    if match is None:
+        raise SystemExit("g_dungeon_world_color not found; pass a raw BGR555 source image")
+    colors = np.array(
+        [int(value, 16) for value in re.findall(r"0x[0-9a-fA-F]+", match.group(1))],
+        dtype=np.uint16,
+    )
 if colors.size != WIDTH * HEIGHT:
     raise SystemExit(f"expected {WIDTH * HEIGHT} pixels, found {colors.size}")
 colors = colors.reshape(HEIGHT, WIDTH)
+
+# The source is a dungeon slab projected isometrically into a diamond.
+# Preserve the canvas background as transparent void outside that slab; this same
+# mask drives both the hardware floor and player collision.
+from collections import deque
+
+background_color = int(colors[0, 0])
+corners = (colors[0, -1], colors[-1, 0], colors[-1, -1])
+if any(int(color) != background_color for color in corners):
+    raise SystemExit(f"{WIDTH}x{HEIGHT} source bake must have one flat color in all four corners")
+background = colors == background_color
+outside = np.zeros((HEIGHT, WIDTH), dtype=bool)
+queue = deque()
+for x in range(WIDTH):
+    for y in (0, HEIGHT - 1):
+        if background[y, x] and not outside[y, x]:
+            outside[y, x] = True
+            queue.append((y, x))
+for y in range(HEIGHT):
+    for x in (0, WIDTH - 1):
+        if background[y, x] and not outside[y, x]:
+            outside[y, x] = True
+            queue.append((y, x))
+while queue:
+    py, px = queue.popleft()
+    for ny, nx in ((py - 1, px), (py + 1, px), (py, px - 1), (py, px + 1)):
+        if 0 <= ny < HEIGHT and 0 <= nx < WIDTH and background[ny, nx] and not outside[ny, nx]:
+            outside[ny, nx] = True
+            queue.append((ny, nx))
+colors = colors.copy()
+colors[outside] = 0
 
 rgb = np.stack(
     (((colors & 31) << 3), (((colors >> 5) & 31) << 3), (((colors >> 10) & 31) << 3)),

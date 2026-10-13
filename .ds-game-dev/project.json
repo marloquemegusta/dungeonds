@@ -1,7 +1,9 @@
 {
     "hostTests": [
         "python.exe tests/test_bone_lance_contract.py",
-        "python.exe tests/test_fbx_bg_generator.py"
+        "python.exe tests/test_fbx_bg_generator.py",
+        "python.exe tests/test_world_void_contract.py",
+        "python.exe tests/test_sprite_ground_anchor.py"
     ],
     "blocksdsImage": "skylyrac/blocksds:slim-latest",
     "romUploadName": "dungeonds.nds",

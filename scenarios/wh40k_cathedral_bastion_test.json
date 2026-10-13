@@ -1,0 +1,15 @@
+{
+  "name": "wh40k_cathedral_bastion_test",
+  "steps": [
+    { "frames": 40, "capture": "00_spawn" },
+    { "button_down": "UP", "frames": 230, "capture": "01_walking_north_past_building" },
+    { "button_up": "UP", "button_down": "RIGHT", "frames": 180, "capture": "02_walking_east_behind_wall" },
+    { "button_up": "RIGHT", "frames": 20, "capture": "03_behind_wall_standing" }
+  ],
+  "assertions": {
+    "screen_changes": [
+      { "from": "00_spawn", "to": "01_walking_north_past_building", "min_changed_pixels": 250 },
+      { "from": "01_walking_north_past_building", "to": "02_walking_east_behind_wall", "min_changed_pixels": 250 }
+    ]
+  }
+}

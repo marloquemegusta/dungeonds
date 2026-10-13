@@ -27,14 +27,23 @@ class DiabloNavigationTests(unittest.TestCase):
         import re
         source_path = Path(__file__).resolve().parents[1] / "source" / "diablo_dungeon.c"
         source = source_path.read_text(encoding="utf-8")
+        header = (Path(__file__).resolve().parents[1] / "include" / "diablo_dungeon.h").read_text(encoding="utf-8")
         payload = re.search(r"g_dungeon_collision[^=]*=\s*\{([^}]+)\}", source).group(1)
-        values = np.fromiter((int(value, 0) for value in re.findall(r"0x[0-9A-Fa-f]+|\b\d+\b", payload)), dtype=np.uint8)
-        grid = values.reshape((128, 128))
-        offsets = ((0, 0), (-4, 0), (4, 0), (0, -3), (0, 3), (-3, -2), (-3, 2), (3, -2), (3, 2))
-        for x, y in ((128, 249), (238, 309), (250, 314)):
-            with self.subTest(point=(x, y)):
-                for dx, dy in offsets:
-                    self.assertEqual(grid[(y + dy) // 4, (x + dx) // 4], 0)
+        packed = np.fromiter((int(value, 0) for value in re.findall(r"0x[0-9A-Fa-f]+|\b\d+\b", payload)), dtype=np.uint8)
+        width = int(re.search(r"#define COLLISION_W (\d+)", header).group(1))
+        height = int(re.search(r"#define COLLISION_H (\d+)", header).group(1))
+        scale = int(re.search(r"#define COLLISION_SCALE (\d+)", header).group(1))
+        spawn_x = int(re.search(r"#define SPAWN_PIXEL_X (\d+)", header).group(1))
+        spawn_y = int(re.search(r"#define SPAWN_PIXEL_Y (\d+)", header).group(1))
+        indices = np.arange(width * height, dtype=np.uint32)
+        values = (packed[indices >> 2] >> ((indices & 3) * 2)) & 3
+        grid = values.reshape((height, width))
+        offsets = ((0, 0), (-16, 0), (16, 0), (0, -12), (0, 12), (-12, -8), (-12, 8), (12, -8), (12, 8))
+        for dx, dy in offsets:
+            with self.subTest(offset=(dx, dy)):
+                cx = (spawn_x + dx) // scale
+                cy = (spawn_y + dy) // scale
+                self.assertEqual(grid[cy, cx] & 0x01, 0)
 
     def test_vertical_intervals_respect_hero_height_and_support(self):
         floor, height = 0.07301, 0.09

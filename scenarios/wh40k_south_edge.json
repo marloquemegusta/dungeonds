@@ -1,0 +1,37 @@
+{
+  "name": "wh40k_south_edge",
+  "state": {
+    "symbols": { "nav": "g_nav_state" },
+    "default_symbol": "nav",
+    "fields": {
+      "x": { "symbol": "nav", "offset": 0 },
+      "y": { "symbol": "nav", "offset": 4 },
+      "cam_x": { "symbol": "nav", "offset": 8 },
+      "cam_y": { "symbol": "nav", "offset": 12 },
+      "input": { "symbol": "nav", "offset": 16 },
+      "moving": { "symbol": "nav", "offset": 20 },
+      "blocked_moves": { "symbol": "nav", "offset": 24 }
+    }
+  },
+  "steps": [
+    { "frames": 80, "capture": "00_spawn", "state_capture": "spawn" },
+    { "button_down": "LEFT", "frames": 12 },
+    { "button_up": "LEFT", "frames": 2 },
+    { "button_down": "DOWN", "frames": 1 },
+    { "button_down": "LEFT", "frames": 136 },
+    { "button_up": "LEFT", "frames": 2 },
+    { "button_up": "DOWN", "frames": 2 },
+    { "button_down": "LEFT", "frames": 30 },
+    { "button_up": "LEFT", "frames": 2 },
+    { "button_down": "DOWN", "frames": 1 },
+    { "frames": 300, "capture": "01_south_edge", "state_capture": "south_edge" },
+    { "button_up": "DOWN", "frames": 3 }
+  ],
+  "assertions": {
+    "state_changes": [
+      { "from": "spawn", "to": "south_edge", "field": "y", "min_abs_delta": 15000 },
+      { "from": "spawn", "to": "south_edge", "field": "cam_y", "min_abs_delta": 60 },
+      { "from": "spawn", "to": "south_edge", "field": "blocked_moves", "min_delta": 1 }
+    ]
+  }
+}

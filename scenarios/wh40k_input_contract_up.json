@@ -1,0 +1,23 @@
+{
+  "name": "wh40k_input_contract_up",
+  "state": {
+    "symbols": { "nav": "g_nav_state" },
+    "default_symbol": "nav",
+    "fields": {
+      "x": { "symbol": "nav", "offset": 0 },
+      "y": { "symbol": "nav", "offset": 4 },
+      "moving": { "symbol": "nav", "offset": 20 }
+    }
+  },
+  "steps": [
+    { "frames": 80, "capture": "00_idle", "state_capture": "idle" },
+    { "button_down": "UP", "frames": 12, "capture": "01_up", "state_capture": "up" },
+    { "button_up": "UP", "frames": 2 }
+  ],
+  "assertions": {
+    "state_changes": [
+      { "from": "idle", "to": "up", "field": "y", "min_abs_delta": 1000 },
+      { "from": "idle", "to": "up", "field": "moving", "min_delta": 1 }
+    ]
+  }
+}

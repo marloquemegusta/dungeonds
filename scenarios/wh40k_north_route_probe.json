@@ -1,0 +1,7 @@
+{
+  "name":"wh40k_north_route_probe",
+  "state":{"symbols":{"nav":"g_nav_state"},"default_symbol":"nav","fields":{"x":{"symbol":"nav","offset":0},"y":{"symbol":"nav","offset":4},"cam_x":{"symbol":"nav","offset":8},"cam_y":{"symbol":"nav","offset":12},"moving":{"symbol":"nav","offset":20},"blocked_moves":{"symbol":"nav","offset":24}}},
+  "steps":[{"frames":80},{"button_down":"LEFT","frames":40,"capture":"01_left"},{"button_up":"LEFT","frames":3},{"button_down":"UP","frames":100,"capture":"02_up_left","state_capture":"up_left_100"},{"button_up":"UP","frames":3}],
+  "assertions":{}
+}
+
