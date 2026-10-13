@@ -55,6 +55,7 @@ Resúmenes acumulativos y auditables de cada entrega y avance de desarrollo en `
 | 42 | Arena sintética para aislar colisión y oclusión WH40K | [`wh40k-collision-arena-test/`](wh40k-collision-arena-test/walkthrough.md) | Build y cuatro probes DeSmuME PASS; bake offline no asigna WALK a muros altos; ROM sin subir |
 | 43 | Oclusión exacta de catedral y 60 FPS bloqueados | [`wh40k-floor-preview/`](wh40k-floor-preview/walkthrough.md) | Validado en NDS física; 60 FPS locked, optimización ARM9 (9 ms CPU), oclusión exacta sin sangrado |
 | 44 | Mazmorra Completa FBX: Despeje de Puertas, Oclusión y 60 FPS | [`scifi-dungeon-tripo/`](scifi-dungeon-tripo/walkthrough.md) | Completado (60 FPS Locked, 36 tests PASS, cruce de arcos verificado en DeSmuME) |
+| 45 | Sistema de Niebla de Guerra, Línea de Visión y 60 FPS Locked | [`fog-and-visibility/`](fog-and-visibility/walkthrough.md) | Completado (60 FPS Locked, 41 tests PASS, FOV dinámico y enemigos ocultos verificados en DeSmuME) |
 
 
 - [Reparación de navegación de la mazmorra FBX](fbx-navigation-repair/walkthrough.md) — conversión y colisión para la escena FBX; incluye escenarios con estado real y límites de validación.

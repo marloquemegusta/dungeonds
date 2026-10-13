@@ -484,3 +484,15 @@ Este documento registra el historial cronolÃ³gico de sesiones de desarrollo ve
 - [x] **Verificación:** Suite de pruebas unitarias de host PASS (36/36 tests ejecutados), compilación limpia de ROM BlocksDS y escenario `scifi_dungeon_walk.json` ejecutado en DeSmuME con héroe visible y verificado a 60 FPS en pantalla inferior (GIF animado de 126 frames).
 - **Evidencia:** `walkthroughs/scifi-dungeon-tripo/walkthrough.md`, `walkthroughs/scifi-dungeon-tripo/assets/scifi_dungeon_walk.gif`, `walkthroughs/scifi-dungeon-tripo/assets/scifi_collision_overlay.png`.
 
+## Sesión 46: Sistema de Niebla de Guerra (Fog of War), Línea de Visión y 60 FPS Locked
+
+- [x] **Arquitectura de visibilidad y memoria:** Rejillas de bits en EWRAM de 768 bytes cada una (`g_fog_explored` y `g_fog_visible`) para mapear el mundo de $96 \times 64$ tiles de $8 \times 8$ px.
+- [x] **Raycaster Bresenham sin división:** 64 rayos en radio de 24 celdas (~5 metros) con interpolación de error Bresenham pura (0 llamadas a división por software en ARM9, coste < 0.05 ms).
+- [x] **Ocultación en hardware BG:** Zonas inexploradas forzadas a `tile_id = 0` (negro abisal de VRAM) en `update_screen_hardware_bg` con 0 ms de CPU.
+- [x] **Ocultación estricta de enemigos:** Los enemigos situados detrás de esquinas, puertas cerradas o fuera del cono de visión no se dibujan ni generan sombras dinámicas. Al entrar en el haz de visión, despiertan y persiguen al jugador.
+- [x] **Trama de penumbra por palabras de 32 bits:** Zonas exploradas pero fuera de la visión activa reciben una trama checkerboard del 50% (`draw_fog_penumbra`) a alta velocidad (0.19 ms).
+- [x] **Presupuesto 60 FPS Locked:** HUD de telemetría confirma `FPS:60 C:11 P:04` (CPU 11 ms, 4 ms de espera VBlank, 0 frames caídos).
+- [x] **Verificación:** 41/41 tests unitarios de host PASS (incluyendo 5 contratos en `tests/test_fog_of_war.py`), compilación limpia BlocksDS y escenario `scifi_dungeon_walk.json` en DeSmuME con GIF animado de 126 frames (`fog_dungeon_walk.gif`).
+- **Evidencia:** `walkthroughs/fog-and-visibility/walkthrough.md`, `walkthroughs/fog-and-visibility/assets/fog_dungeon_walk.gif`, `walkthroughs/fog-and-visibility/assets/00_spawn.png`.
+
+
