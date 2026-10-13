@@ -466,3 +466,11 @@ Este documento registra el historial cronolÃ³gico de sesiones de desarrollo ve
 - [x] **Verificación:** Tests de host PASS, escenario `wh40k_cathedral_occlusion_exact.json` PASS (2 capturas, 17 eventos deterministas).
 - [x] **Subida por FTP a hardware:** ROM final de 3,32 MB subida exitosamente a `ftp://192.168.1.151:5000/roms/nds/dungeonds.nds` (`FTP_UPLOAD_RESULT=PASS`).
 - **Evidencia:** `captures/exact_occ_final/01_charger_behind_arch_wall.png`, `walkthroughs/wh40k-floor-preview/walkthrough.md`.
+
+## Sesión 44: Transparencia de Oclusión por Frames Alternados (Flicker / Temporal Dithering)
+
+- [x] **Visibilidad del personaje tras muros:** Se implementó entrelazado temporal en la rutina de blit de sprites (lit_stride) para que el personaje principal sea visible cuando pasa por detrás de paredes ocluyentes.
+- [x] **Renderizado por alternancia:** En los frames impares (s_frame_index & 1), los píxeles ocluidos del jugador se dibujan normalmente; en los frames pares, se omiten para dejar ver la pared. En una pantalla física a 60 FPS esto produce un 50% de semitransparencia óptica fluida.
+- [x] **Presupuesto de CPU (60 FPS Locked):** Telemetría en HUD confirma FPS:60 C:10 P:06 (~10% de uso de CPU).
+- [x] **Verificación:** 21 contratos de host PASS, compilación BlocksDS limpia y escenario de emulación en DeSmuME validado con capturas de frames consecutivos y GIFs animados.
+- **Evidencia:** walkthroughs/13-feat-occlusion-transparency/walkthrough.md, walkthroughs/13-feat-occlusion-transparency/assets/zoom_character.gif, walkthroughs/13-feat-occlusion-transparency/assets/charger_occlusion.gif.

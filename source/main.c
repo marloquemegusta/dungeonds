@@ -98,6 +98,8 @@ static int s_occlusion_cam_y = 0;
 static int16_t s_occlusion_depth[OCCLUSION_DEPTH_W * OCCLUSION_DEPTH_H] __attribute__((aligned(4)));
 static int16_t s_occlusion_block_max[OCCLUSION_GRID_W * OCCLUSION_GRID_H] __attribute__((aligned(4)));
 static int s_draw_item_depth;
+static int s_draw_item_is_player;
+static uint32_t s_frame_index = 0;
 
 typedef struct {
     int32_t x, y;                 // raw 8.8 world pixels
@@ -489,10 +491,15 @@ static void blit_stride(uint16_t *buffer, const uint16_t *src, int pitch, int sw
             for (; x < sx1; x++) {
                 uint16_t color = srow[x];
                 int world_x = left + x;
-                if ((color & BIT(15)) &&
-                    ((uint32_t)world_x >= WORLD_W ||
-                     depth_row[(uint32_t)(world_x - s_occlusion_cam_x) >> OCCLUSION_DEPTH_SHIFT] <= depth))
-                    drow[x] = color;
+                if (color & BIT(15)) {
+                    int occluded = ((uint32_t)world_x < WORLD_W) &&
+                        (depth_row[(uint32_t)(world_x - s_occlusion_cam_x) >> OCCLUSION_DEPTH_SHIFT] > depth);
+                    if (!occluded) {
+                        drow[x] = color;
+                    } else if (s_draw_item_is_player && (s_frame_index & 1)) {
+                        drow[x] = color;
+                    }
+                }
             }
             continue;
         }
@@ -992,6 +999,7 @@ static void render_screen(uint16_t *buffer, int cam_x, int cam_y,
     for (int i = 0; i < count; i++) {
         s_draw_item_depth = items[i].depth;
         int sp = items[i].sprite;
+        s_draw_item_is_player = (sp == -1);
         if (sp >= 0) {
             blit_tile(buffer, sp, items[i].cx, items[i].cy, cam_x, cam_y);
         } else if (sp == -1) {
@@ -1646,6 +1654,7 @@ int main(void) {
     while (1) {
         uint32_t frame_start_ticks = cpuGetTiming();
         uint32_t start_vblank = s_vblank_count;
+        s_frame_index++;
 
         scanKeys();
         uint32_t keys_held = keysHeld();
