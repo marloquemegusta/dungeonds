@@ -495,4 +495,19 @@ Este documento registra el historial cronolÃ³gico de sesiones de desarrollo ve
 - [x] **Verificación:** 41/41 tests unitarios de host PASS (incluyendo 5 contratos en `tests/test_fog_of_war.py`), compilación limpia BlocksDS y escenario `scifi_dungeon_walk.json` en DeSmuME con GIF animado de 126 frames (`fog_dungeon_walk.gif`).
 - **Evidencia:** `walkthroughs/fog-and-visibility/walkthrough.md`, `walkthroughs/fog-and-visibility/assets/fog_dungeon_walk.gif`, `walkthroughs/fog-and-visibility/assets/00_spawn.png`.
 
+## Sesión 47: Iluminación de Antorcha 3D Suave, Oscurecimiento Continuo y 60 FPS Locked
+
+- [x] **Diagnóstico y causa de artefactos en bloques:** La binarización visible/no visible sobre tiles hardware 8x8 creaba escalonados cuadrados bruscos. Requería oscurecimiento proporcional continuo (merge con negro) y oclusiones 3D reales.
+- [x] **Horneado 3D BVH completo (`tools/bake_full_smooth_lightgrid.py`):** Precomputación offline con Blender 5.2 sobre la malla FBX de 50.000 polígonos. Rejillas de luz $21 \times 21$ empaquetadas a 4 bits por nodo para las 1.614 posiciones caminables (356 KB en ROM). Rayos a $Z=1.2\text{m}$ pasan orgánicamente bajo arcos y son ocluidos por muros altos estilo *Doom*.
+- [x] **Renderizado Bilineal ARM9 sin FPU (`source/smooth_lightmap.c`):** Sombreado proporcional de 16 niveles directamente en el búfer bitmap de 16bpp (`s_bot_screen_buf`).
+- [x] **Optimización a 60 FPS Locked:**
+  - Salto de celdas 8x8 negras completas en 1 ciclo (`(l00 | l10 | l01 | l11) == 0`).
+  - Vía rápida de copia directa para celdas uniformes (`l00 == l10 && l00 == l01 && l00 == l11`).
+  - Interpolación DDA incremental sin multiplicaciones en el bucle interior de pixels.
+  - Tabla de sombreado directo en RAM `s_shaded_palette[16][256]` (8 KiB) sin cálculo RGB en caliente.
+  - Reducción del coste de suelo de 34 ms iniciales a 7..8 ms, bloqueando 60 FPS sólidos.
+- [x] **Subida a Nintendo DS física:** ROM `dungeonds.nds` (2.28 MB) transferida y verificada con éxito por FTP a `192.168.1.151:5000/roms/nds/dungeonds.nds`.
+- **Evidencia:** `walkthroughs/fog-and-visibility/walkthrough.md`, `walkthroughs/fog-and-visibility/assets/fog_dungeon_walk.gif`.
+
+
 

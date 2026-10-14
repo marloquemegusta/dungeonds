@@ -5,6 +5,7 @@
 #include "diablo_dungeon.h"
 #include "dungeon_occlusion.h"
 #include "fog_of_war.h"
+#include "smooth_lightmap.h"
 #include <string.h>
 
 // ---------------------------------------------------------------------------
@@ -44,7 +45,7 @@
 #define OCCLUSION_GRID_SHIFT 3
 #define OCCLUSION_GRID_W ((SCREEN_W + (1 << OCCLUSION_GRID_SHIFT) - 1) >> OCCLUSION_GRID_SHIFT)
 #define OCCLUSION_GRID_H ((SCREEN_H + (1 << OCCLUSION_GRID_SHIFT) - 1) >> OCCLUSION_GRID_SHIFT)
-#define OCCLUSION_DEPTH_SHIFT 1
+#define OCCLUSION_DEPTH_SHIFT 2
 #define OCCLUSION_DEPTH_PAD_CELLS 0
 #define OCCLUSION_DEPTH_W ((SCREEN_W + (1 << OCCLUSION_DEPTH_SHIFT) - 1) >> OCCLUSION_DEPTH_SHIFT)
 #define OCCLUSION_DEPTH_H ((SCREEN_H + (1 << OCCLUSION_DEPTH_SHIFT) - 1) >> OCCLUSION_DEPTH_SHIFT)
@@ -94,8 +95,8 @@ static uint8_t *s_bot_bg_tiles_vram;
 static Player s_player;
 static int s_cam_x = 0;
 static int s_cam_y = 0;
-static int s_occlusion_cam_x = 0;
-static int s_occlusion_cam_y = 0;
+static int s_occlusion_cam_x = -999999;
+static int s_occlusion_cam_y = -999999;
 static int16_t s_occlusion_depth[OCCLUSION_DEPTH_W * OCCLUSION_DEPTH_H] __attribute__((aligned(4)));
 static int16_t s_occlusion_block_max[OCCLUSION_GRID_W * OCCLUSION_GRID_H] __attribute__((aligned(4)));
 static int s_draw_item_depth;
@@ -372,13 +373,16 @@ static inline uint32_t find_first_occlusion_run(int target_y) {
     }
     return low;
 }
-
 __attribute__((target("arm"), optimize("O3"), noinline))
 static void build_occlusion_depth_map(int cam_x, int cam_y) {
+    int cdx = cam_x - s_occlusion_cam_x; if (cdx < 0) cdx = -cdx;
+    int cdy = cam_y - s_occlusion_cam_y; if (cdy < 0) cdy = -cdy;
+    if (cdx < 4 && cdy < 4 && s_frame_index > 2) return;
     s_occlusion_cam_x = cam_x;
     s_occlusion_cam_y = cam_y;
-    memset(s_occlusion_depth, 0xFF, sizeof(s_occlusion_depth));
-    memset(s_occlusion_block_max, 0xFF, sizeof(s_occlusion_block_max));
+    uint32_t fill_val = 0xFFFFFFFF;
+    swiFastCopy(&fill_val, s_occlusion_depth, COPY_MODE_FILL | (sizeof(s_occlusion_depth) >> 2));
+    swiFastCopy(&fill_val, s_occlusion_block_max, COPY_MODE_FILL | (sizeof(s_occlusion_block_max) >> 2));
     if (g_dungeon_occlusion_run_count == 0) return;
 
     for (uint32_t segment = 0; segment < DUNGEON_OCCLUSION_SEGMENTS; segment++) {
@@ -420,14 +424,22 @@ static void build_occlusion_depth_map(int cam_x, int cam_y) {
             int16_t *depth_row = &s_occlusion_depth[depth_y * OCCLUSION_DEPTH_W];
             for (uint32_t x = depth_x0; x <= depth_x1; x++)
                 if (run_depth > depth_row[x]) depth_row[x] = (int16_t)run_depth;
+        }
+    }
 
-            uint32_t block_y = (uint32_t)local_y >> OCCLUSION_GRID_SHIFT;
-            uint32_t block_x0 = (depth_x0 << OCCLUSION_DEPTH_SHIFT) >> OCCLUSION_GRID_SHIFT;
-            uint32_t block_x1 = (depth_x1 << OCCLUSION_DEPTH_SHIFT) >> OCCLUSION_GRID_SHIFT;
-            for (uint32_t bx = block_x0; bx <= block_x1; bx++) {
-                int16_t *max_depth = &s_occlusion_block_max[block_y * OCCLUSION_GRID_W + bx];
-                if (run_depth > *max_depth) *max_depth = (int16_t)run_depth;
-            }
+    // Fast 2x2 reduction pass for coarse block-level occlusion queries
+    for (int by = 0; by < OCCLUSION_GRID_H; by++) {
+        int dy = by * 2;
+        const int16_t *r0 = &s_occlusion_depth[dy * OCCLUSION_DEPTH_W];
+        const int16_t *r1 = &s_occlusion_depth[(dy + 1) * OCCLUSION_DEPTH_W];
+        int16_t *out = &s_occlusion_block_max[by * OCCLUSION_GRID_W];
+        for (int bx = 0; bx < OCCLUSION_GRID_W; bx++) {
+            int dx = bx * 2;
+            int16_t m = r0[dx];
+            if (r0[dx + 1] > m) m = r0[dx + 1];
+            if (r1[dx] > m) m = r1[dx];
+            if (r1[dx + 1] > m) m = r1[dx + 1];
+            out[bx] = m;
         }
     }
 }
@@ -702,7 +714,11 @@ static void update_screen_hardware_bg(int is_sub, u16 *map_ptr, int cam_x, int c
                 uint32_t cell = my * BG_RING_W + mx;
                 uint16_t tile_id = 0;
                 if (rel_x < BG_VIEW_W && rel_y < BG_VIEW_H) {
-                    if (fog_is_explored(world_x, world_y)) {
+                    if (is_sub) {
+                        if (fog_is_visible(world_x, world_y)) {
+                            tile_id = bg_world_tile(world_x, world_y);
+                        }
+                    } else {
                         tile_id = bg_world_tile(world_x, world_y);
                     }
                 }
@@ -964,8 +980,7 @@ static void render_screen(uint16_t *buffer, int cam_x, int cam_y,
     // The static FBX bake is now a hardware BG; keep this bitmap layer transparent
     // and render only dynamic actors, shadows, and the HUD into it.
     uint32_t floor_start_ticks = cpuGetTiming();
-    memset(buffer, 0, SCREEN_W * SCREEN_H * sizeof(uint16_t));
-    draw_fog_penumbra(buffer, cam_x, cam_y);
+    render_smooth_torch_lighting(buffer, cam_x, cam_y, player_screen_x(s_player.x, s_player.y), player_screen_y(s_player.x, s_player.y));
 
     if (out_floor) *out_floor = cpuGetTiming() - floor_start_ticks;
 
@@ -1623,6 +1638,8 @@ int main(void) {
     // BG1 map lives at 0x06000000; 1024 streamed tile slots start at +64 KiB.
     int bot_hw_bg = bgInit(1, BgType_Text8bpp, BgSize_T_512x256, 0, 4);
     bgSetPriority(bot_hw_bg, 3); // Lowest priority (drawn behind entities)
+    bgShow(bot_hw_bg);
+    BG_PALETTE[0] = RGB15(0, 0, 0);
     s_bot_map_ptr = bgGetMapPtr(bot_hw_bg);
     s_bot_bg_tiles_vram = (uint8_t *)bgGetGfxPtr(bot_hw_bg);
 
@@ -1679,9 +1696,9 @@ int main(void) {
         player_update(keys_held, keys_down, touch.px, touch.py, touch_down);
         int p_wx = player_screen_x(s_player.x, s_player.y);
         int p_wy = player_screen_y(s_player.x, s_player.y);
-        if (fog_update(p_wx, p_wy)) {
+        int newly_rev = fog_update(p_wx, p_wy);
+        if (newly_rev || s_frame_index <= 2) {
             s_top_map_ready = 0;
-            s_bot_map_ready = 0;
         }
         build_occlusion_depth_map(s_cam_x, s_cam_y);
         enemies_update();
