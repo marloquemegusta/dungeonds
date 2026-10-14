@@ -48,9 +48,24 @@
 
 ---
 
-## 4. Backlog Abierto y Siguientes Pasos
+## 4. Prioridad Inmediata y Siguientes Pasos
 
-1. **Enemigos y Combate:** Integración activa de enemigos con IA (Charger, Skeleton) y proyectiles en la mazmorra Sci-Fi.
-2. **Audio y Efectos:** Implementación de ambiente gótico y pisadas mediante Maxmod o ADPCM.
-3. **Inventario / UI Táctil:** Interfaz en pantalla táctil para selección de armas y estado del personaje.
-4. **Verificación en Hardware Físico:** Subida periódica por FTP a Nintendo DS (`ftp://192.168.1.151:5000/roms/nds/dungeonds.nds`).
+> [!IMPORTANT]
+> **DIRECTIVA DEL USUARIO — PRIORIDAD INMEDIATA Nº 1: Continuar iterando el sistema de iluminación.**
+> El usuario ha solicitado explícitamente seguir refinando el sombreado y la iluminación en la próxima sesión antes de pasar a otras áreas.
+
+### Líneas de iteración sobre iluminación:
+1. **Calibración Visual y Estética de la Antorcha:**
+   - Ajuste fino del radio, curva de caída (falloff) y radio de penumbra según el feedback visual del usuario.
+   - Parpadeo dinámico/flicker procedural de la antorcha (variación sutil del radio o modulación de los factores de escala de la paleta DTCM en tiempo real).
+   - Calibración de color/contraste: ajuste de las componentes R, G, B y penumbra fría/cálida para optimizar la legibilidad en la pantalla física de la Nintendo DS.
+2. **Iluminación en Entidades y Personaje:**
+   - Aplicar el nivel de luz de la antorcha al sprite del jugador, enemigos y armas para que no se vean desconectados del entorno oscurecido.
+3. **Fuentes de Luz Secundarias o Antorchas de Pared:**
+   - Explorar antorchas fijas en muros o fuentes de luz estáticas combinadas con la antorcha móvil.
+
+### Backlog secundario (después de cerrar la iluminación):
+- **Enemigos y Combate:** Integración activa de IA (Charger, Skeleton) y proyectiles de hueso.
+- **Audio y Efectos:** Driver Maxmod / ADPCM para ambiente de mazmorra.
+- **Inventario / UI Táctil:** Menú en pantalla táctil para selección de armas.
+- **Prueba en Consola Física:** Subida por FTP (`ftp://192.168.1.151:5000/roms/nds/dungeonds.nds`).
