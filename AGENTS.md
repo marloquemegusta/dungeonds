@@ -30,6 +30,13 @@ El repositorio cuenta con fuentes de verdad canónicas sin duplicación:
    - **Precondición geométrica obligatoria:** Al escribir o modificar un escenario (`scenarios/*.json`), verificar que las coordenadas del actor crucen verdaderamente la entidad o volumen a probar (edificio, oclusión, proyectil o muro de colisión). Nunca diseñar escenarios en suelo abierto esperando probar oclusión o colisión.
    - **Nomenclatura verídica:** Prohibido etiquetar eventos o capturas como `behind_bastion_occluded` o similar si la geometría en esas coordenadas no aplica la oclusión esperada. Los tests con nombres falsos generan falsos positivos y ocultan regresiones reales.
    - **Aserción de presupuesto de frame (60 FPS Locked):** Todo test visual debe verificar el rendimiento de la emulación. Si una feature renderiza correctamente pero el HUD o las métricas revelan caída a 30 FPS (`cpu_ticks > 33514`), la tarea se considera bloqueada y fallida hasta optimizar la rutina crítica.
+6. **Evidencia Visual y Previsualización en Chat/Artefactos (Cero "Preview Unavailable"):**
+   - **Prohibido usar rutas de workspace o esquema `file:///` para incrustar imágenes en markdown:** En el chat y en los artefactos, los enlaces tipo `![caption](file:///c:/...)` o `![caption](assets/...)` son bloqueados por el sandbox de seguridad del webview de Antigravity IDE, mostrando invariablemente el error "preview unavailable".
+   - **Ruta canónica obligatoria para previsualización:** Toda imagen o GIF que se desee mostrar al usuario debe copiarse obligatoriamente al directorio de artefactos de la sesión:
+     `<appDataDir>\brain\<conversation-id>\<nombre_archivo>`
+   - **Sintaxis de incrustación:** Usar la ruta absoluta del directorio de artefactos directamente (sin prefijo `file:///`):
+     `![caption](C:/Users/malfonso/.gemini/antigravity/brain/<conversation-id>/<nombre_archivo>)`
+   - **Artefactos interactivos:** Para comparativas o galerías ricas, crear siempre un artefacto Markdown `.md` con `ArtifactMetadata` en dicho directorio para que el IDE lo renderice en su panel nativo sin restricciones.
 
 ---
 
