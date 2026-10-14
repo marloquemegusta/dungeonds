@@ -10,13 +10,13 @@ import time
 
 def bake_lightgrid():
     start_time = time.time()
-    repo_root = Path(r"C:\codexlocal\dungeonds\.worktrees\fog-and-visibility")
-    fbx_path = r"c:\codexlocal\dungeonds\.worktrees\scifi-dungeon-tripo\assets\environment\scifi_dungeon\tripo_convert_b14b0e1b-13bd-4f17-b4a7-b50c6d251c17.fbx"
+    repo_root = Path(__file__).resolve().parent.parent
+    fbx_path = repo_root / r"assets\environment\scifi_dungeon\tripo_convert_b14b0e1b-13bd-4f17-b4a7-b50c6d251c17.fbx"
     coll_path = repo_root / r"assets\scifi_baked\scifi_coll.npy"
 
     coll = np.load(coll_path)
     bpy.ops.wm.read_factory_settings(use_empty=True)
-    bpy.ops.import_scene.fbx(filepath=fbx_path)
+    bpy.ops.import_scene.fbx(filepath=str(fbx_path))
     
     obj = bpy.context.scene.objects[0]
     bpy.ops.object.select_all(action="DESELECT")
@@ -38,7 +38,7 @@ def bake_lightgrid():
     bm.from_mesh(obj.data)
     bvh = BVHTree.FromBMesh(bm)
 
-    ortho_scale = 38.0
+    ortho_scale = 38.0 # Matched exactly to _blender_bake_scifi.py!
     world_w, world_h = 768, 512
     view_h = ortho_scale * (world_h / world_w)
 
@@ -113,7 +113,6 @@ def bake_lightgrid():
                 light_val = 0
                 if dx * dx + dy * dy <= r2_limit and 0 <= ttx < FOG_MAP_W and 0 <= tty < FOG_MAP_H:
                     t_surf = tile_centers_3d[(ttx, tty)]
-                    t_norm = tile_norms_3d[(ttx, tty)]
                     to_target = t_surf - torch_3d
                     dist_3d = to_target.length
                     
@@ -124,13 +123,15 @@ def bake_lightgrid():
                         hit, _, _, _ = bvh.ray_cast(torch_3d, dir_3d, dist_3d - 0.15)
                         if hit is None:
                             # 3D Line of Sight clear!
-                            atten = 1.0 / (1.0 + (dist_3d / 2.6)**2)
-                            dot = -dir_3d.dot(t_norm)
-                            lambert = max(0.3, dot)
-                            val = min(1.0, atten * lambert * 2.2)
-                            light_val = int(round(val * 15.0))
-                            if light_val > 15: light_val = 15
-                            if light_val < 0: light_val = 0
+                            # Smoothstep falloff across 10 tiles radius
+                            dist_tiles = math.sqrt(dx * dx + dy * dy)
+                            u = dist_tiles / 10.0
+                            if u < 1.0:
+                                t = 1.0 - u
+                                smooth = t * t * (3.0 - 2.0 * t)
+                                light_val = int(round(smooth * 15.0))
+                                if light_val > 15: light_val = 15
+                                if light_val < 0: light_val = 0
 
                 # Store 4-bit nibble into packed array
                 byte_pos = cell_idx >> 1
@@ -144,13 +145,25 @@ def bake_lightgrid():
     elapsed = time.time() - start_time
     print(f"Bake finished in {elapsed:.2f} seconds!")
 
-    # Write C source and header
+    # Write C header
     inc_file = repo_root / "include" / "smooth_lightmap.h"
     src_file = repo_root / "source" / "smooth_lightmap.c"
+
+    # Read the existing C code logic from smooth_lightmap.c (from line static uint16_t s_shaded_palette)
+    tail_code = ""
+    if src_file.exists():
+        with open(src_file, "r") as f:
+            content = f.read()
+            marker = "static uint16_t s_shaded_palette"
+            idx = content.find(marker)
+            if idx != -1:
+                tail_code = content[idx:]
 
     with open(inc_file, "w") as f:
         f.write("#ifndef SMOOTH_LIGHTMAP_H\n#define SMOOTH_LIGHTMAP_H\n\n")
         f.write("#include <nds.h>\n\n")
+        f.write("#ifndef SCREEN_W\n#define SCREEN_W 256\n#endif\n")
+        f.write("#ifndef SCREEN_H\n#define SCREEN_H 192\n#endif\n\n")
         f.write(f"#define LIGHTMAP_MAP_W {FOG_MAP_W}\n")
         f.write(f"#define LIGHTMAP_MAP_H {FOG_MAP_H}\n")
         f.write(f"#define LIGHTMAP_RADIUS {RADIUS_TILES}\n")
@@ -176,107 +189,10 @@ def bake_lightgrid():
             f.write(f"    {{ {row_bytes} }},\n")
         f.write("};\n\n")
 
-        # Fast bilinear shading routine for ARM9
-        f.write('''static inline uint16_t shade_rgb15(uint16_t c, int light) {
-    if (light <= 0) return 0;
-    if (light >= 15) return c | BIT(15);
-    uint32_t rb = (c & 0x7C1F) * light;
-    uint32_t g  = (c & 0x03E0) * light;
-    return (uint16_t)(((rb >> 4) & 0x7C1F) | ((g >> 4) & 0x03E0) | BIT(15));
-}
+        if tail_code:
+            f.write(tail_code)
 
-static inline uint16_t get_world_pixel(int wx, int wy) {
-    if ((uint32_t)wx >= (DUNGEON_BG_MAP_WIDTH_TILES * 8) || (uint32_t)wy >= (DUNGEON_BG_MAP_HEIGHT_TILES * 8)) return 0;
-    int tx = wx >> 3;
-    int ty = wy >> 3;
-    uint16_t tile_id = g_dungeon_bg_map[ty][tx];
-    int fx = wx & 7;
-    int fy = wy & 7;
-    uint8_t pal_idx = g_dungeon_bg_tiles[tile_id][fy * 8 + fx];
-    return g_dungeon_bg_palette[pal_idx];
-}
-
-__attribute__((target("arm"), optimize("O3"), noinline))
-void render_smooth_torch_lighting(uint16_t *buffer, int cam_x, int cam_y, int player_px, int player_py) {
-    int ptx = player_px >> 3;
-    int pty = player_py >> 3;
-    if ((uint32_t)ptx >= LIGHTMAP_MAP_W || (uint32_t)pty >= LIGHTMAP_MAP_H) return;
-
-    int16_t w_idx = g_lightmap_walkable_index[pty][ptx];
-    if (w_idx < 0) {
-        for (int r = 1; r <= 3; r++) {
-            if (pty - r >= 0 && g_lightmap_walkable_index[pty - r][ptx] >= 0) { w_idx = g_lightmap_walkable_index[pty - r][ptx]; pty -= r; break; }
-            if (pty + r < LIGHTMAP_MAP_H && g_lightmap_walkable_index[pty + r][ptx] >= 0) { w_idx = g_lightmap_walkable_index[pty + r][ptx]; pty += r; break; }
-            if (ptx - r >= 0 && g_lightmap_walkable_index[pty][ptx - r] >= 0) { w_idx = g_lightmap_walkable_index[pty][ptx - r]; ptx -= r; break; }
-            if (ptx + r < LIGHTMAP_MAP_W && g_lightmap_walkable_index[pty][ptx + r] >= 0) { w_idx = g_lightmap_walkable_index[pty][ptx + r]; ptx += r; break; }
-        }
-    }
-    if (w_idx < 0) return;
-
-    const uint8_t *packed = g_lightmap_data[w_idx];
-
-    // Unpack 21x21 grid into 8-bit local array
-    uint8_t grid[LIGHTMAP_GRID_DIM][LIGHTMAP_GRID_DIM];
-    int c_idx = 0;
-    for (int gy = 0; gy < LIGHTMAP_GRID_DIM; gy++) {
-        for (int gx = 0; gx < LIGHTMAP_GRID_DIM; gx++) {
-            uint8_t b = packed[c_idx >> 1];
-            grid[gy][gx] = (c_idx & 1) ? (b >> 4) : (b & 0x0F);
-            c_idx++;
-        }
-    }
-
-    // World pixel bounds for the 21x21 grid
-    int grid_world_x0 = (ptx - LIGHTMAP_RADIUS) * 8 + 4;
-    int grid_world_y0 = (pty - LIGHTMAP_RADIUS) * 8 + 4;
-
-    int screen_x0 = grid_world_x0 - cam_x;
-    int screen_y0 = grid_world_y0 - cam_y;
-
-    int min_sy = screen_y0 < 0 ? 0 : screen_y0;
-    int max_sy = (screen_y0 + (LIGHTMAP_GRID_DIM - 1) * 8) >= SCREEN_H ? (SCREEN_H - 1) : (screen_y0 + (LIGHTMAP_GRID_DIM - 1) * 8);
-
-    int min_sx = screen_x0 < 0 ? 0 : screen_x0;
-    int max_sx = (screen_x0 + (LIGHTMAP_GRID_DIM - 1) * 8) >= SCREEN_W ? (SCREEN_W - 1) : (screen_x0 + (LIGHTMAP_GRID_DIM - 1) * 8);
-
-    for (int sy = min_sy; sy <= max_sy; sy++) {
-        int wy = cam_y + sy;
-        int rel_y = sy - screen_y0;
-        int gy = rel_y >> 3;
-        int fy = rel_y & 7;
-        if ((uint32_t)gy >= (LIGHTMAP_GRID_DIM - 1)) continue;
-
-        uint16_t *dst = &buffer[sy * SCREEN_W];
-
-        for (int sx = min_sx; sx <= max_sx; sx++) {
-            int rel_x = sx - screen_x0;
-            int gx = rel_x >> 3;
-            int fx = rel_x & 7;
-            if ((uint32_t)gx >= (LIGHTMAP_GRID_DIM - 1)) continue;
-
-            int l00 = grid[gy][gx];
-            int l10 = grid[gy][gx + 1];
-            int l01 = grid[gy + 1][gx];
-            int l11 = grid[gy + 1][gx + 1];
-
-            // Bilinear interpolation across 8x8 cell
-            int w00 = (8 - fx) * (8 - fy);
-            int w10 = fx * (8 - fy);
-            int w01 = (8 - fx) * fy;
-            int w11 = fx * fy;
-
-            int light = (l00 * w00 + l10 * w10 + l01 * w01 + l11 * w11) >> 6;
-            if (light > 0) {
-                int wx = cam_x + sx;
-                uint16_t base_c = get_world_pixel(wx, wy);
-                dst[sx] = shade_rgb15(base_c, light);
-            }
-        }
-    }
-}
-''')
-
-    print(f"Wrote {inc_file} and {src_file}")
+    print(f"Successfully baked and preserved C runtime in {src_file}!")
 
 if __name__ == "__main__":
     bake_lightgrid()

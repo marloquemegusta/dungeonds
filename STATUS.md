@@ -509,5 +509,25 @@ Este documento registra el historial cronolÃ³gico de sesiones de desarrollo ve
 - [x] **Subida a Nintendo DS física:** ROM `dungeonds.nds` (2.28 MB) transferida y verificada con éxito por FTP a `192.168.1.151:5000/roms/nds/dungeonds.nds`.
 - **Evidencia:** `walkthroughs/fog-and-visibility/walkthrough.md`, `walkthroughs/fog-and-visibility/assets/fog_dungeon_walk.gif`.
 
+---
+
+## Sesión 48: Sombreado Atmosférico de Antorcha Continuo, Paleta Ámbar Perceptiva y 60 FPS Locked
+
+- [x] **Diagnóstico del Efecto Binario:**
+  1. *Desfase de escala geométrica:* `tools/bake_full_smooth_lightgrid.py` usaba `ortho_scale = 32.5` en vez de `38.0`, provocando que el raycast BVH impactara muros a destiempo e inyectara ceros en mitad de celdas transitables.
+  2. *Curva de atenuación empinada:* La fórmula cuadrática inversa $1/(1+(d/2.6)^2)$ colapsaba a menos del 20% a sólo 3 celdas (24 px) y truncaba en el nivel 4 (30% de luz) en la frontera de 10 celdas, generando un corte visual seco.
+  3. *Aplastamiento de negros en pantalla LCD DS:* La escala lineal $(c \times l)/16$ mapeaba niveles 1 a 5 a componentes RGB 0..3 (sobre 31), absolutamente indistinguibles de negro en la DS.
+- [x] **Falloff Hermite Smoothstep en Blender 5.2:**
+  - `ortho_scale` fijado a `38.0`.
+  - Falloff smoothstep $u = d/10.0, t = 1-u, \text{smooth} = t^2(3-2t)$, repartiendo de forma perfectamente homogénea los 15 niveles a lo largo de un radio de 80 píxeles ($\sim 5.3$ px por nivel de luz).
+- [x] **Paleta Perceptiva DTCM con Calidez Ámbar:**
+  - Precomputación en DTCM con corrección gamma $(l/15)^{0.7}$, canal R al 105%, G al 95%, B al 75%.
+  - Nivel 1 emite penumbra visible (`RGB15(2, 1, 1)`), eliminando el corte binario.
+  - Bounding box ampliado a `if (val > 0)` y corte a `if (left_L == 0 && right_L == 0)`.
+- [x] **Presupuesto 60 FPS Locked:**
+  - Medido en HUD de telemetría de DeSmuME: `FPS:60 C:12 P:04` (CPU 12 ms, Floor lighting 8-9 ms, Present 4 ms, > 4.6 ms de holgura VBlank).
+- [x] **Evidencia Visual:** `walkthroughs/19-smooth-torch-shading/walkthrough.md`, `walkthroughs/19-smooth-torch-shading/assets/smooth_spawn_v1_vs_v2.png`, `walkthroughs/19-smooth-torch-shading/assets/smooth_shading_v1_vs_v2_comparison.png`, `walkthroughs/19-smooth-torch-shading/assets/nds_smooth_torch_shading_v2.gif`.
+
+
 
 
