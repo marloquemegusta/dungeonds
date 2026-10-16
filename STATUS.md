@@ -536,3 +536,13 @@ Este documento registra el historial cronolÃ³gico de sesiones de desarrollo ve
 - [x] Run.fbx carga y renderiza ocho direcciones con Chromium headless; PNG 384x384 RGBA transparente; paquete ZIP de 86 entradas; cero errores de consola.
 - **Limite:** Three.js WebGL no reproduce Cycles ni promete igualdad pixel a pixel con Blender.
 - **Evidencia:** `walkthroughs/js-lab-sprite-parity/walkthrough.md`.
+
+---
+
+## Sesion 50: Un solo control de tamaño para el lab 3JS
+
+- [x] El control `Tamaño del sprite` define la celda de salida (48 × 48 px por defecto); se eliminó el slider separado de tamaño visible.
+- [x] La cámara mantiene el FOV y calcula la distancia para un llenado objetivo fijo del 96%, con escala común entre frames y direcciones.
+- [x] Chromium headless confirma que la interfaz muestra un único control de tamaño y carga sin errores de consola.
+- **Límite:** falta revisar la ocupación real de un FBX en los frames renderizados.
+- **Evidencia:** `walkthroughs/js-lab-single-size-control/walkthrough.md`.
