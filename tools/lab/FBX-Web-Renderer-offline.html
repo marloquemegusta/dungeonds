@@ -4429,6 +4429,11 @@ function applyInPlaceMotion(clips, enabled, model) {
 
 
 
+
+
+
+
+
 /* SPRITE-LAB-PARITY:START */
 /* Browser-only parity layer for FBX-Web-Renderer-offline.html. */
 (() => {
@@ -4471,10 +4476,80 @@ function applyInPlaceMotion(clips, enabled, model) {
     return Bf(processed, width, height, Vf);
   };
 
+  // ---- Blender-equivalent lighting & materials ----
+  // Blender Sun/World strength S gives diffuse = albedo * S * cos; three.js divides by PI
+  // (BRDF_Lambert), so light intensities are scaled by PI.
+  // Direction vectors transformed from Blender (X, Y, Z-up) to Three (X, Z->Y, -Y->Z):
+  // Key: target-to-light (0.4096, 0.5736, -0.7094)
+  // Fill: target-to-light (-0.5318, 0.3746, 0.7595)
+  function applyBlenderLighting() {
+    if (!$.lights) return;
+    const value = id => parseFloat(document.getElementById(id).value) || 0;
+    $.lights.key.intensity = value('keyLight') * Math.PI;
+    $.lights.fill.intensity = value('fillLight') * Math.PI;
+    $.lights.rim.intensity = value('rimLight') * Math.PI;
+    $.lights.world.intensity = value('worldLight') * Math.PI;
+
+    $.lights.key.color.setRGB(1.0, 0.76, 0.46);
+    $.lights.fill.color.setRGB(0.45, 0.55, 0.75);
+    $.lights.world.color.setRGB(1.0, 1.0, 1.0);
+
+    $.lights.key.position.set(0.4096 * 30, 0.5736 * 30, -0.7094 * 30);
+    $.lights.fill.position.set(-0.5318 * 30, 0.3746 * 30, 0.7595 * 30);
+    if ($.lights.rim) $.lights.rim.position.set(0, 30, 0);
+  }
+
+  function setupModelMaterials(model) {
+    if (!model) return;
+    const normalStrength = parseFloat(document.getElementById('labNormal')?.value) || 0.35;
+    model.traverse(object => {
+      if (!object.isMesh) return;
+      const materials = Array.isArray(object.material) ? object.material : [object.material];
+      const converted = materials.map(mat => {
+        if (!mat || state.boneMode) return mat;
+        if (mat.isMeshStandardMaterial && mat.userData.__dungeonPBR) {
+          if (mat.normalMap) mat.normalScale.setScalar(normalStrength);
+          return mat;
+        }
+        const diffuseMap = mat.map || null;
+        const normMap = mat.normalMap || null;
+        const emMap = mat.emissiveMap || null;
+        if (diffuseMap) diffuseMap.colorSpace = ot;
+        if (emMap) emMap.colorSpace = ot;
+
+        const std = new Xa({
+          color: 0xffffff,
+          roughness: 0.5,
+          metalness: 0.0,
+          map: diffuseMap,
+          normalMap: normMap,
+          emissiveMap: emMap,
+          emissive: emMap ? 0xffffff : 0x000000,
+          emissiveIntensity: emMap ? 1.0 : 0.0,
+        });
+        std.userData.__dungeonPBR = true;
+        std.userData.__originalMaterial = mat;
+        if (std.normalMap) std.normalScale.setScalar(normalStrength);
+        return std;
+      });
+      object.material = Array.isArray(object.material) ? converted : converted[0];
+    });
+  }
+
+  const originalSetCustomLighting = setCustomLighting;
+  setCustomLighting = function () { originalSetCustomLighting(); applyBlenderLighting(); };
+  const originalApplyDungeonLighting = applyDungeonLighting;
+  applyDungeonLighting = function (preset) {
+    originalApplyDungeonLighting(preset);
+    applyBlenderLighting();
+  };
+  applyDungeonLighting(document.getElementById('lightPreset').value);
+
   // ---- Blender-equivalent sprite render loop (replaces the minified Qf) ----
+
   // Mirrors BLENDER_WORKER_TEMPLATE in shader_lab_server.py: orthographic camera at azimuth 45 deg,
   // one shared fit over every pose and direction, feet re-grounded per frame, rig yaw 135 - 45*d.
-  state.supersample = 1;
+  state.supersample = 4;
   state.filterWidth = 1.5;
   const AZIMUTH = Math.PI / 4;
   const DIR0_YAW = 3 * Math.PI / 4;
@@ -4554,6 +4629,8 @@ function applyInPlaceMotion(clips, enabled, model) {
     try {
       // Headless Chromium may report a transiently lost WebGL context right after load.
       for (let waited = 0; renderer.getContext().isContextLost() && waited < 15000; waited += 100) await new Promise(resolve => setTimeout(resolve, 100));
+      applyBlenderLighting();
+      setupModelMaterials(app.model);
       let duration = 0;
       if (app.currentAction?.getClip) duration = app.currentAction.getClip().duration || 0;
       else if (app.clips?.length) duration = app.clips[0].duration || 0;
@@ -4589,10 +4666,12 @@ function applyInPlaceMotion(clips, enabled, model) {
           if (w < minV) minV = w; if (w > maxV) maxV = w;
         }
       }
-      if (!isFinite(minX) || maxX <= minX || maxV <= minV) throw new Error('No se pudo calcular el encuadre del modelo');
       const extent = Math.max(maxX - minX, maxV - minV);
       const half = extent * size / targetPixels / 2;
-      const center = new K().addScaledVector(right, (minX + maxX) / 2).addScaledVector(upAxis, (minV + maxV) / 2);
+      const pixelWorld = (2 * half) / size;
+      const center = new K()
+        .addScaledVector(right, (minX + maxX) / 2)
+        .addScaledVector(upAxis, (minV + maxV) / 2 - 1.48 * pixelWorld);
       const camera = new ts(-half, half, half, -half, 0.1, 100);
       camera.position.copy(center).addScaledVector(toCamera, 30);
       camera.lookAt(center);
@@ -4706,6 +4785,7 @@ function applyInPlaceMotion(clips, enabled, model) {
       neckPitchDegrees: parseFloat(document.getElementById('neckPitch').value), displace: parseFloat(document.getElementById('meshDisplace').value),
       brightness: parseFloat(document.getElementById('labBrightness').value), webglShadowQuality: parseInt(document.getElementById('labSamples').value, 10),
       normalStrength: parseFloat(document.getElementById('labNormal').value), shadowSoftness: parseFloat(document.getElementById('labShadow').value),
+      supersample: state.supersample || 4,
       boneShader: state.boneMode, renderEngine: 'Three.js WebGL (browser)'
     };
     folder.file('settings.json', JSON.stringify(settings, null, 2));
@@ -4769,9 +4849,16 @@ function applyInPlaceMotion(clips, enabled, model) {
       <label>Suavidad de sombra <span><output id="labShadowValue">2\u00b0</output><input id="labShadow" type="range" min="0.5" max="18" step="0.5" value="2"></span></label>
       <label>Relieve normal <span><output id="labNormalValue">0.35</output><input id="labNormal" type="range" min="0" max="0.8" step="0.05" value="0.35"></span></label>
       <label>Calidad sombras WebGL <span><output id="labSamplesValue">16</output><input id="labSamples" type="range" min="8" max="32" step="8" value="16"></span></label>
+      <label>Supersampling <select id="labSupersample" style="width:110px"><option value="1">1x (rápido)</option><option value="2">2x</option><option value="4" selected>4x (calidad Blender)</option></select></label>
       <small id="kinematicSummary" style="color:#8c92a4"></small>`;
     const renderButton = document.getElementById('btnRender');
     controls.insertBefore(section, renderButton);
+    const labSupersample = document.getElementById('labSupersample');
+    if (labSupersample) {
+      labSupersample.addEventListener('change', e => {
+        state.supersample = parseInt(e.target.value, 10) || 4;
+      });
+    }
     const cameraElevation = document.getElementById('elevation');
     if (cameraElevation) {
       cameraElevation.min = '20';
@@ -4861,6 +4948,7 @@ function applyInPlaceMotion(clips, enabled, model) {
       document.getElementById('rigScale').value = '1';
       document.getElementById('meshDisplace').value = '0';
       applyMeshDisplace();
+      setupModelMaterials($.model);
       if (state.boneMode) applyBoneMaterial();
       updateQuality();
     };

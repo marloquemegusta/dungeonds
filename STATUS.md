@@ -591,3 +591,16 @@ Este documento registra el historial cronolÃ³gico de sesiones de desarrollo ve
 - [x] Se añadió una imagen conjunta de 3JS corregido y Blender, con las ocho direcciones en celdas de 48×48 px.
 - [x] El walkthrough indica FBX, clip, resolución y normalización de la escala de pantalla.
 - **Evidencia:** `walkthroughs/lab3js-sprite-size-fit/walkthrough.md`.
+
+---
+
+## Sesion 56: Paridad Fidedigna 3JS vs Blender (FBX a Sprite)
+
+- [x] **Cámara Ortográfica y Encuadre Canónico:** Sustitución de `PerspectiveCamera` por `OrthographicCamera` azimut 45°, encuadre unificado sobre las 8 direcciones con vértices deformados y re-anclaje de pies al suelo por frame.
+- [x] **Orientación 1:1 en las 8 Direcciones:** Corrección del desfase de 45° en el yaw del rig (`135° - d * 45°`), logrando correspondencia perfecta con Blender (`best_blender_dir = [0, 1, 2, 3, 4, 5, 6, 7]`).
+- [x] **Iluminación Calibrada y Vectores de Luz:** Escalado de intensidades de luz por $\pi$ (equivalencia BRDF Lambertiana vs $W/m^2$ de Blender), colores exactos y transformación matemática de ejes Blender (Z-up) a Three (Y-up), corrigiendo inversión en Z.
+- [x] **Materiales PBR Equivalentes a Principled BSDF:** Conversión automática de materiales del FBX a `MeshStandardMaterial` blanco puro con diffuse `sRGB`, normal map 0.35, roughness 0.5, metalness 0.0 y emisión en `sRGB`.
+- [x] **Filtrado y Reducción Blackman-Harris 4×:** Implementación de supersampling con filtro Cycles Blackman-Harris (1.5 px) y control en UI (`labSupersample`).
+- [x] **Harness Automatizado de Comparación:** Script `tools/lab/compare_labs.py` con Playwright headless y backend de Blender, validando métricas objetivas (IoU de silueta sube de 0.275 a **0.809**, centroides alineados a < 0.04 px y luminancia alineada a 66.6 vs 60.3 de Blender).
+- **Evidencia:** `walkthroughs/lab3js-blender-parity/walkthrough.md`.
+
