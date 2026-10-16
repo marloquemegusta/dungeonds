@@ -9,6 +9,20 @@
   _p.resolution.value = '48';
   _p.resolution.dispatchEvent(new Event('input', { bubbles: true }));
   const originalQf = Qf;
+  // Match the Blender lab's 45-degree camera azimuth.
+  Wf = Math.PI / 4;
+
+  // Blender fits the evaluated mesh pose for every animation frame and direction.
+  // Three.js' default Box3 path uses the undeformed geometry bounds for skinned meshes,
+  // which makes the model itself much smaller than the requested sprite cell.
+  const originalSetFromObject = hr.prototype.setFromObject;
+  hr.prototype.setFromObject = function (object) {
+    object.updateWorldMatrix(true, true);
+    object.traverse(node => {
+      if (node.isSkinnedMesh && node.skeleton) node.skeleton.update();
+    });
+    return originalSetFromObject.call(this, object, true);
+  };
 
   // Keep the same graded/outlined pixel data used by GIFs, while preserving alpha for PNG exports.
   Kf = function (pixels, width, height, params) {
@@ -27,6 +41,9 @@
 
   Qf = async function (options) {
     options.params.brightness = parseFloat(document.getElementById('labBrightness').value) || 1;
+    const size = options.params.resolution;
+    const outlineMargin = options.params.outlineMode === 'none' ? 0 : 2;
+    options.params.visibleFill = 100 * (size - outlineMargin) / size;
     state.frames = [];
     state.capturing = true;
     try {

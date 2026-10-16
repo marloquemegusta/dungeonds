@@ -574,3 +574,14 @@ Este documento registra el historial cronolÃ³gico de sesiones de desarrollo ve
 - [x] El GIF lado a lado confirma que Blender muestra una silueta más grande y luminosa; cobertura alfa media 28,6% frente a 11,0% en 3JS.
 - [x] Se documentan las diferencias entre el encuadre ortográfico de Blender y el autoencuadre de 3JS, además de las diferencias entre Cycles y WebGL.
 - **Evidencia:** `walkthroughs/lab3js-vs-blender/walkthrough.md`.
+
+---
+
+## Sesion 54: Ajuste real del tamaño visible del sprite en 3JS
+
+- [x] El encuadre mide la malla deformada por la animación y aplica azimut 45°, como el lab Blender.
+- [x] El margen deriva del tamaño de celda: 2 px con outline y 0 px sin outline.
+- [x] Chromium headless renderizó 64 frames de Run.fbx: media 36.1×36.2 px a 48×48; el control 32×32 produjo 24.2×24.4 px.
+- [x] La ocupación queda próxima a Blender (34×36 px de media en la comparación anterior), frente a 21.1×21.3 px antes del arreglo.
+- **Límite:** WebGL conserva proyección perspectiva; Blender usa cámara ortográfica y Cycles.
+- **Evidencia:** `walkthroughs/lab3js-sprite-size-fit/walkthrough.md`.
