@@ -1,4 +1,4 @@
-﻿/* Browser-only parity layer for FBX-Web-Renderer-offline.html. */
+/* Browser-only parity layer for FBX-Web-Renderer-offline.html. */
 (() => {
   // The repository's headless FBX probe evaluates inline payloads without the full page.
   if (typeof Qf !== 'function' || typeof Kf !== 'function' || typeof document === 'undefined') return;
@@ -39,22 +39,175 @@
     return Bf(processed, width, height, Vf);
   };
 
-  Qf = async function (options) {
-    options.params.brightness = parseFloat(document.getElementById('labBrightness').value) || 1;
-    const size = options.params.resolution;
-    const outlineMargin = options.params.outlineMode === 'none' ? 0 : 2;
-    options.params.visibleFill = 100 * (size - outlineMargin) / size;
+  // ---- Blender-equivalent sprite render loop (replaces the minified Qf) ----
+  // Mirrors BLENDER_WORKER_TEMPLATE in shader_lab_server.py: orthographic camera at azimuth 45 deg,
+  // one shared fit over every pose and direction, feet re-grounded per frame, rig yaw 135 - 45*d.
+  state.supersample = 1;
+  state.filterWidth = 1.5;
+  const AZIMUTH = Math.PI / 4;
+  const DIR0_YAW = 3 * Math.PI / 4;
+  const DIR_STEP = Math.PI / 4;
+
+  // Posed (skinned) vertices of the model in world space, flat [x, y, z, ...].
+  function posedPoints(root) {
+    root.updateMatrixWorld(true);
+    const out = [];
+    const v = new K();
+    root.traverse(node => {
+      if (!node.isMesh || !node.visible || !node.geometry?.attributes?.position) return;
+      if (node.isSkinnedMesh && node.skeleton) node.skeleton.update();
+      const position = node.geometry.attributes.position;
+      for (let index = 0; index < position.count; index++) {
+        if (node.isSkinnedMesh) node.getVertexPosition(index, v); else v.fromBufferAttribute(position, index);
+        v.applyMatrix4(node.matrixWorld);
+        out.push(v.x, v.y, v.z);
+      }
+    });
+    return out;
+  }
+
+  // Cycles-like Blackman-Harris pixel filter: width in output pixels (support is +-width/2).
+  function blackmanHarris(distance, width) {
+    const t = distance / width + 0.5;
+    if (t < 0 || t > 1) return 0;
+    const phase = 2 * Math.PI * t;
+    return 0.35875 - 0.48829 * Math.cos(phase) + 0.14128 * Math.cos(2 * phase) - 0.01168 * Math.cos(3 * phase);
+  }
+
+  // Alpha-weighted (premultiplied) reduction of a (size*ss)^2 RGBA buffer to size^2.
+  function downsample(source, size, ss, filterWidth) {
+    if (ss === 1) return source;
+    const wide = size * ss;
+    const out = new Uint8ClampedArray(size * size * 4);
+    const radius = filterWidth / 2;
+    for (let oy = 0; oy < size; oy++) for (let ox = 0; ox < size; ox++) {
+      const cx = (ox + 0.5) * ss, cy = (oy + 0.5) * ss;
+      let r = 0, g = 0, b = 0, a = 0, weight = 0;
+      for (let sy = Math.max(0, Math.floor(cy - radius * ss)); sy <= Math.min(wide - 1, Math.ceil(cy + radius * ss)); sy++) {
+        const wy = blackmanHarris((sy + 0.5 - cy) / ss, filterWidth);
+        if (!wy) continue;
+        for (let sx = Math.max(0, Math.floor(cx - radius * ss)); sx <= Math.min(wide - 1, Math.ceil(cx + radius * ss)); sx++) {
+          const w = wy * blackmanHarris((sx + 0.5 - cx) / ss, filterWidth);
+          if (!w) continue;
+          const i = (sy * wide + sx) * 4;
+          const alpha = source[i + 3] / 255;
+          r += source[i] * alpha * w; g += source[i + 1] * alpha * w; b += source[i + 2] * alpha * w;
+          a += alpha * w; weight += w;
+        }
+      }
+      const o = (oy * size + ox) * 4;
+      if (a > 1e-6) { out[o] = r / a; out[o + 1] = g / a; out[o + 2] = b / a; }
+      out[o + 3] = weight ? Math.round(255 * a / weight) : 0;
+    }
+    return out;
+  }
+
+  Qf = async function ({ renderer, scene, controls, state: app, params, onProgress, onStatus }) {
+    params.brightness = parseFloat(document.getElementById('labBrightness').value) || 1;
+    const size = params.resolution;
+    const frameCount = params.frameCount;
+    const outline = params.outlineMode !== 'none';
+    const targetPixels = size - (outline ? 2 : 0);
+    const ss = Math.max(1, Math.round(state.supersample || 1));
+    const delay = Math.max(20, Math.round(1000 / frameCount));
+    const started = performance.now();
+    const root = app.modelRoot || null;
+    const previousYaw = root ? root.rotation.y : 0;
+    const previousY = root ? root.position.y : 0;
+    const previousSize = new G();
+    renderer.getSize(previousSize);
+    app.rendering = true;
     state.frames = [];
     state.capturing = true;
     try {
-      const result = await originalQf(options);
-      state.capturing = false;
-      result.frames = state.frames;
+      // Headless Chromium may report a transiently lost WebGL context right after load.
+      for (let waited = 0; renderer.getContext().isContextLost() && waited < 15000; waited += 100) await new Promise(resolve => setTimeout(resolve, 100));
+      let duration = 0;
+      if (app.currentAction?.getClip) duration = app.currentAction.getClip().duration || 0;
+      else if (app.clips?.length) duration = app.clips[0].duration || 0;
+      const times = duration > 0 ? Array.from({ length: frameCount }, (_, index) => duration * index / frameCount) : [0];
+
+      const elevation = Yt.degToRad(Math.max(1, params.elevation));
+      const toCamera = new K(Math.cos(elevation) * Math.cos(AZIMUTH), Math.sin(elevation), -Math.cos(elevation) * Math.sin(AZIMUTH)).normalize();
+      const right = new K().crossVectors(new K(0, 1, 0), toCamera).normalize();
+      const upAxis = new K().crossVectors(toCamera, right).normalize();
+
+      // Pass 1: posed vertices per time at yaw 0, grounded (min Y = 0), shared fit over all directions.
+      if (root) { root.rotation.y = 0; root.position.y = 0; }
+      const samples = [];
+      for (const time of times) {
+        app.mixer?.setTime(time);
+        const pts = posedPoints(root || scene);
+        let minY = Infinity;
+        for (let i = 1; i < pts.length; i += 3) minY = Math.min(minY, pts[i]);
+        samples.push({ pts, minY });
+        await new Promise(resolve => setTimeout(resolve, 0));
+      }
+      let minX = Infinity, maxX = -Infinity, minV = Infinity, maxV = -Infinity;
+      for (let direction = 0; direction < Ff.length; direction++) {
+        await new Promise(resolve => setTimeout(resolve, 0));
+        const yaw = DIR0_YAW - direction * DIR_STEP, cos = Math.cos(yaw), sin = Math.sin(yaw);
+        for (const sample of samples) for (let i = 0; i < sample.pts.length; i += 3) {
+          const px = sample.pts[i] * cos + sample.pts[i + 2] * sin;
+          const pz = -sample.pts[i] * sin + sample.pts[i + 2] * cos;
+          const py = sample.pts[i + 1] - sample.minY;
+          const u = px * right.x + py * right.y + pz * right.z;
+          const w = px * upAxis.x + py * upAxis.y + pz * upAxis.z;
+          if (u < minX) minX = u; if (u > maxX) maxX = u;
+          if (w < minV) minV = w; if (w > maxV) maxV = w;
+        }
+      }
+      if (!isFinite(minX) || maxX <= minX || maxV <= minV) throw new Error('No se pudo calcular el encuadre del modelo');
+      const extent = Math.max(maxX - minX, maxV - minV);
+      const half = extent * size / targetPixels / 2;
+      const center = new K().addScaledVector(right, (minX + maxX) / 2).addScaledVector(upAxis, (minV + maxV) / 2);
+      const camera = new ts(-half, half, half, -half, 0.1, 100);
+      camera.position.copy(center).addScaledVector(toCamera, 30);
+      camera.lookAt(center);
+      camera.updateMatrixWorld(true);
+      state.lastFit = { extent, half, center: center.toArray(), minX, maxX, minV, maxV, points: samples[0].pts.length / 3, minY0: samples[0].minY, proj: camera.projectionMatrix.elements.slice(), pos: camera.position.toArray(), isOrtho: !!camera.isOrthographicCamera, rootScale: root ? root.scale.toArray() : null, rootPos: root ? root.position.toArray() : null };
+
+      renderer.setSize(size * ss, size * ss, false);
+      const results = [], firstFrames = [];
+      for (let direction = 0; direction < Ff.length; direction++) {
+        const name = Ff[direction];
+        const gifFrames = [];
+        for (let index = 0; index < frameCount; index++) {
+          if (root) { root.rotation.y = DIR0_YAW - direction * DIR_STEP; root.position.y = -samples[index % samples.length].minY; }
+          app.mixer?.setTime(times[index % times.length]);
+          if (root) root.updateMatrixWorld(true);
+          renderer.render(scene, camera);
+          let pixels = Gf(renderer, size * ss, size * ss);
+          if (!(pixels instanceof Uint8ClampedArray)) pixels = new Uint8ClampedArray(pixels.buffer);
+          pixels = downsample(pixels, size, ss, state.filterWidth);
+          const frame = Kf(pixels, size, size, params);
+          gifFrames.push(frame);
+          if (index === 0) firstFrames.push(frame);
+          onStatus && onStatus(name, index + 1, (performance.now() - started) / 1e3);
+          onProgress && onProgress((direction * frameCount + index + 1) / (Ff.length * frameCount));
+          if (index % 2 === 1) await new Promise(resolve => setTimeout(resolve, 0));
+        }
+        const blob = qf(gifFrames, size, size, delay);
+        results.push({ name, index: direction, blob, url: URL.createObjectURL(blob), width: size, height: size });
+        await new Promise(resolve => setTimeout(resolve, 0));
+      }
+      const collage = $f(firstFrames, size);
+      const result = { results, collage, width: size, height: size, delay, frames: state.frames };
+      onStatus && onStatus('\u2713', frameCount, (performance.now() - started) / 1e3);
       return result;
     } finally {
       state.capturing = false;
+      if (root) { root.rotation.y = previousYaw; root.position.y = previousY; root.updateMatrixWorld(true); }
+      app.mixer?.setTime(0);
+      renderer.setSize(previousSize.x, previousSize.y, false);
+      app.camera.aspect = previousSize.x / previousSize.y;
+      app.camera.updateProjectionMatrix();
+      if (controls) controls.update();
+      app.rendering = false;
+      if (onProgress) onProgress(1);
     }
   };
+
 
   const encodePng = async (frame) => {
     const canvas = document.createElement('canvas');
