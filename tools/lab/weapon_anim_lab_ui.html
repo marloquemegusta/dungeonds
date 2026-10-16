@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DungeonDS · FBX Weapon & Animation Assembler Lab (Offline)</title>
+  <style>
+    :root {
+      --bg: #0d1017;
+      --panel: #151924;
+      --panel-alt: #1b2130;
+      --border: #283147;
+      --text: #e6ecff;
+      --muted: #8b96b8;
+      --accent: #4c8dff;
+      --accent-hover: #6ba1ff;
+      --amber: #f5a623;
+      --green: #2ecc71;
+      --danger: #e74c3c;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      height: 100vh;
+      overflow: hidden;
+      display: grid;
+      grid-template-columns: 330px 1fr 360px;
+      grid-template-rows: 48px 1fr;
+    }
+    header {
+      grid-column: 1 / -1;
+      background: #0a0c12;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px;
+      gap: 12px;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 700;
+      font-size: 0.95rem;
+      letter-spacing: 0.3px;
+    }
+    .badge {
+      background: rgba(76, 141, 255, 0.16);
+      color: #82b1ff;
+      border: 1px solid rgba(76, 141, 255, 0.35);
+      border-radius: 6px;
+      padding: 2px 8px;
+      font-size: 0.72rem;
+      font-weight: 600;
+    }
+    .badge.amber {
+      background: rgba(245, 166, 35, 0.16);
+      color: #ffc86b;
+      border-color: rgba(245, 166, 35, 0.35);
+    }
+    .header-status {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      font-size: 0.78rem;
+      color: var(--muted);
+    }
+    .sidebar {
+      background: var(--panel);
+      border-right: 1px solid var(--border);
+      overflow-y: auto;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .sidebar-right {
+      background: var(--panel);
+      border-left: 1px solid var(--border);
+      overflow-y: auto;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .card {
+      background: var(--panel-alt);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .card-title {
+      font-size: 0.78rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #9cb3e8;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .btn {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      padding: 8px 10px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s, transform 0.05s;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+    .btn:hover:not(:disabled) { background: var(--accent-hover); }
+    .btn:active:not(:disabled) { transform: translateY(1px); }
+    .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+    .btn.secondary {
+      background: #252e42;
+      color: var(--text);
+      border: 1px solid #34405c;
+    }
+    .btn.secondary:hover:not(:disabled) { background: #2f3b54; }
+    .btn.amber { background: #d68910; color: #fff; }
+    .btn.amber:hover:not(:disabled) { background: #e6991f; }
+    .btn.green { background: #239b56; color: #fff; }
+    .btn.green:hover:not(:disabled) { background: #28b463; }
+    .btn-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(70px, 1fr));
+      gap: 6px;
+    }
+    .dropzone {
+      border: 1.5px dashed #3a486b;
+      border-radius: 7px;
+      padding: 10px;
+      text-align: center;
+      cursor: pointer;
+      background: rgba(13, 16, 23, 0.45);
+      transition: border-color 0.15s, background 0.15s;
+    }
+    .dropzone:hover, .dropzone.dragover {
+      border-color: var(--accent);
+      background: rgba(76, 141, 255, 0.08);
+    }
+    .dropzone strong { display: block; font-size: 0.8rem; color: var(--text); }
+    .dropzone small { font-size: 0.72rem; color: var(--muted); }
+    .meta-box {
+      font-size: 0.73rem;
+      color: var(--muted);
+      background: rgba(0, 0, 0, 0.25);
+      border-radius: 5px;
+      padding: 6px 8px;
+      line-height: 1.45;
+    }
+    .meta-box b { color: var(--text); }
+    .catalog-list {
+      max-height: 210px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      padding-right: 2px;
+    }
+    .catalog-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 6px 8px;
+      border-radius: 6px;
+      background: rgba(13, 16, 23, 0.55);
+      border: 1px solid transparent;
+      cursor: pointer;
+      font-size: 0.77rem;
+    }
+    .catalog-item:hover { border-color: #364566; }
+    .catalog-item.active {
+      background: rgba(76, 141, 255, 0.18);
+      border-color: var(--accent);
+    }
+    .catalog-item-left {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      min-width: 0;
+      flex: 1;
+    }
+    .catalog-item-name {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      font-weight: 500;
+    }
+    .catalog-tag {
+      font-size: 0.66rem;
+      padding: 1px 6px;
+      border-radius: 4px;
+      background: #252e42;
+      color: #a9b9df;
+      flex-shrink: 0;
+    }
+    .control-group {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+    .control-group label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.74rem;
+      color: var(--muted);
+    }
+    .control-group label .val {
+      color: var(--text);
+      font-family: monospace;
+      font-size: 0.73rem;
+    }
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--accent);
+      height: 5px;
+      cursor: pointer;
+    }
+    select, input[type="text"] {
+      width: 100%;
+      background: #0f131d;
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      padding: 5px 8px;
+      font-size: 0.77rem;
+    }
+    .control-grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .control-grid-3 {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 6px;
+    }
+    .center-stage {
+      display: flex;
+      flex-direction: column;
+      background: #090b10;
+      position: relative;
+      overflow: hidden;
+    }
+    .viewport-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 12px;
+      background: rgba(21, 25, 36, 0.9);
+      border-bottom: 1px solid var(--border);
+      gap: 8px;
+      flex-wrap: wrap;
+      z-index: 5;
+    }
+    .tool-group {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .tool-btn {
+      background: #1d2436;
+      color: var(--muted);
+      border: 1px solid #2e3954;
+      border-radius: 5px;
+      padding: 4px 9px;
+      font-size: 0.74rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .tool-btn.active, .tool-btn:hover {
+      background: rgba(76, 141, 255, 0.22);
+      color: #fff;
+      border-color: var(--accent);
+    }
+    .canvas-wrap {
+      flex: 1;
+      position: relative;
+      min-height: 0;
+    }
+    #viewportCanvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+    .viewport-overlay-help {
+      position: absolute;
+      left: 12px;
+      bottom: 12px;
+      background: rgba(10, 12, 18, 0.78);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 6px 10px;
+      font-size: 0.72rem;
+      color: var(--muted);
+      pointer-events: none;
+      line-height: 1.4;
+    }
+    .timeline-bar {
+      background: var(--panel);
+      border-top: 1px solid var(--border);
+      padding: 8px 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .timeline-bar input[type="range"] { flex: 1; }
+    .toast {
+      position: fixed;
+      bottom: 18px;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: #1e293b;
+      color: #fff;
+      border: 1px solid var(--accent);
+      border-radius: 8px;
+      padding: 8px 16px;
+      font-size: 0.8rem;
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.2s;
+      z-index: 9999;
+    }
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+    .toast.error { border-color: var(--danger); background: #3b1818; }
+    .checkbox-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.76rem;
+      color: var(--muted);
+    }
+    .checkbox-row input[type="checkbox"] {
+      accent-color: var(--accent);
+      width: 15px;
+      height: 15px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <span>⚔️ DungeonDS · FBX Weapon &amp; Animation Assembler Lab</span>
+      <span class="badge">100% Web Offline</span>
+      <span class="badge amber">Kaydara FBX 7400 Splicer</span>
+    </div>
+    <div class="header-status">
+      <span id="statusRig">Personaje: Sin cargar</span>
+      <span>·</span>
+      <span id="statusWeapon">Arma: Ninguna</span>
+      <span>·</span>
+      <span id="statusAnim">Animación: —</span>
+    </div>
+  </header>
+
+  <!-- LEFT SIDEBAR: INGESTA Y CATÁLOGOS -->
+  <aside class="sidebar">
+    <!-- 1. Personaje -->
+    <div class="card">
+      <div class="card-title">
+        <span>1. Personaje (.FBX)</span>
+        <span class="badge" id="charBoneCountBadge">0 huesos</span>
+      </div>
+      <div class="dropzone" id="charDropzone">
+        <strong>Arrastra Personaje .FBX o haz clic</strong>
+        <small>Mixamo (65 huesos), Tripo3D (37), Meshy, etc.</small>
+        <input type="file" id="charFileInput" accept=".fbx" style="display:none">
+      </div>
+      <div class="meta-box" id="charMetaBox">
+        Carga un archivo <b>.fbx</b> con esqueleto humanoide (animado o en T-pose/A-pose). Sus pesos, UVs y texturas originales se preservarán intactos al exportar.
+      </div>
+    </div>
+
+    <!-- 2. Catálogo de Animaciones -->
+    <div class="card">
+      <div class="card-title">
+        <span>2. Librería de Animaciones</span>
+        <span class="badge" id="animCountBadge">0 clips</span>
+      </div>
+      <div class="control-grid-2">
+        <select id="animCategoryFilter" aria-label="Filtrar categoría de animación">
+          <option value="ALL">Todas las categorías</option>
+          <option value="Rifle">Rifle / Combate</option>
+          <option value="Melee">Espada / Melee</option>
+          <option value="Locomotion">Locomoción</option>
+          <option value="Combat">Combate / Muerte</option>
+          <option value="Character">Del Personaje</option>
+          <option value="Custom">Importadas Mixamo</option>
+        </select>
+        <div class="btn-row">
+          <button class="btn secondary" id="btnSelectAllAnims" title="Seleccionar visibles">☑ Todas</button>
+          <button class="btn secondary" id="btnClearAnims" title="Deseleccionar">☐ Ninguna</button>
+        </div>
+      </div>
+
+      <div class="catalog-list" id="animCatalogList"></div>
+
+      <div class="btn-row">
+        <button class="btn secondary" id="btnImportMixamoFbx">+ Añadir FBX(s) Mixamo</button>
+        <button class="btn secondary" id="btnExportAnimLibrary" title="Guardar librería en JSON">💾 Pack JSON</button>
+        <button class="btn secondary" id="btnImportAnimLibrary" title="Cargar librería JSON">📂 Cargar Pack</button>
+      </div>
+      <input type="file" id="mixamoFilesInput" accept=".fbx" multiple style="display:none">
+      <input type="file" id="animPackInput" accept=".json" style="display:none">
+    </div>
+
+    <!-- 3. Catálogo de Armas -->
+    <div class="card">
+      <div class="card-title">
+        <span>3. Arma (.GLB / .FBX)</span>
+        <span class="badge amber" id="weaponTypeBadge">Rifle 2H</span>
+      </div>
+      <div class="control-grid-2">
+        <select id="weaponHandTarget" aria-label="Mano de anclaje">
+          <option value="RightHand">Mano Derecha (Principal)</option>
+          <option value="LeftHand">Mano Izquierda</option>
+        </select>
+        <select id="weaponGripMode" aria-label="Modo de arma">
+          <option value="rifle">Rifle / Fusil (2 Manos IK)</option>
+          <option value="sword">Espada / Melee (1 Mano)</option>
+          <option value="pistol">Pistola / SMG (1 Mano)</option>
+          <option value="heavy2h">Melee Pesada (2 Manos IK)</option>
+        </select>
+      </div>
+
+      <div class="catalog-list" id="weaponCatalogList" style="max-height: 155px;"></div>
+
+      <div class="btn-row">
+        <button class="btn secondary" id="btnUploadWeapon">+ Subir Arma (.FBX / .GLB)</button>
+        <button class="btn secondary" id="btnRemoveWeapon">✕ Quitar Arma</button>
+      </div>
+      <input type="file" id="weaponFileInput" accept=".fbx,.glb,.gltf" style="display:none">
+    </div>
+  </aside>
+
+  <!-- CENTER: 3D VIEWPORT & TIMELINE -->
+  <main class="center-stage">
+    <div class="viewport-toolbar">
+      <div class="tool-group">
+        <span style="font-size:0.73rem;color:var(--muted);margin-right:4px;">Herramienta 3D:</span>
+        <button class="tool-btn active" data-gizmo="orbit" id="btnGizmoOrbit">🎥 Cámara</button>
+        <button class="tool-btn" data-gizmo="translate" id="btnGizmoMove">✥ Mover Arma [G]</button>
+        <button class="tool-btn" data-gizmo="rotate" id="btnGizmoRotate">↻ Rotar Arma [R]</button>
+        <button class="tool-btn" data-gizmo="foregrip" id="btnGizmoForegrip">🎯 Guardamanos IK [F]</button>
+      </div>
+      <div class="tool-group">
+        <button class="tool-btn active" id="btnToggleSkeleton">🦴 Esqueleto</button>
+        <button class="tool-btn active" id="btnToggleMarkers">📍 Pivotes / IK</button>
+        <select id="cameraFacingSelect" style="width:auto;" aria-label="Dirección de cámara">
+          <option value="free">Vista Libre</option>
+          <option value="0">0: S (Sur)</option>
+          <option value="1">1: SW (Suroeste)</option>
+          <option value="2">2: W (Oeste)</option>
+          <option value="3">3: NW (Noroeste)</option>
+          <option value="4">4: N (Norte)</option>
+          <option value="5">5: NE (Noreste)</option>
+          <option value="6">6: E (Este)</option>
+          <option value="7">7: SE (Sureste)</option>
+        </select>
+        <button class="tool-btn" id="btnResetCamera">Centrar Vista</button>
+      </div>
+    </div>
+
+    <div class="canvas-wrap" id="canvasWrap">
+      <canvas id="viewportCanvas"></canvas>
+      <div class="viewport-overlay-help" id="viewportHelp">
+        <b>Controles:</b> Clic Izq: Orbitar / Arrastrar Eje Gizmo · Clic Der: Pan · Rueda: Zoom<br>
+        <span id="ikDiagnostics">Esfera Naranja = Mano Der (Gatillo) · Esfera Verde = Objetivo IK Mano Izq (Guardamanos)</span>
+      </div>
+    </div>
+
+    <div class="timeline-bar">
+      <button class="btn" id="btnPlayPause" style="min-width:78px;">⏸ Pausa</button>
+      <input type="range" id="timelineScrubber" min="0" max="1" step="0.001" value="0">
+      <span id="timelineLabel" style="font-family:monospace;font-size:0.76rem;min-width:135px;text-align:right;">0.00s / 0.00s (F0)</span>
+      <select id="playbackSpeed" style="width:72px;" aria-label="Velocidad de reproducción">
+        <option value="0.25">0.25×</option>
+        <option value="0.5">0.5×</option>
+        <option value="1" selected>1.0×</option>
+      </select>
+    </div>
+  </main>
+
+  <!-- RIGHT SIDEBAR: ALINEACIÓN, IK, POSTURA Y EXPORTACIÓN -->
+  <aside class="sidebar-right">
+    <!-- A. Alineación de Arma -->
+    <div class="card">
+      <div class="card-title">
+        <span>A. Alineación de Arma (PCA + Manual)</span>
+        <button class="btn secondary" id="btnAutoAlignWeapon" style="padding:3px 8px;font-size:0.7rem;">⚡ Auto-PCA</button>
+      </div>
+      <div class="btn-row">
+        <button class="btn secondary" id="btnFlipBarrel" title="Invertir Punta / Culata 180°">⇄ Cañón 180°</button>
+        <button class="btn secondary" id="btnFlipUp" title="Invertir Arriba / Abajo 180°">⇅ Vertical 180°</button>
+        <button class="btn secondary" id="btnRoll90" title="Girar 90° sobre eje del cañón">↻ Roll 90°</button>
+        <button class="btn secondary" id="btnYaw90" title="Girar 90° en la mano">↷ Yaw 90°</button>
+      </div>
+
+      <div class="control-group">
+        <label>Escala del Arma <span class="val" id="valWeaponScale">1.00×</span></label>
+        <input type="range" id="weaponScale" min="0.20" max="2.50" step="0.02" value="1.00">
+      </div>
+
+      <div class="control-grid-3">
+        <div class="control-group">
+          <label>Pos X <span class="val" id="valWPosX">0.00</span></label>
+          <input type="range" id="weaponPosX" min="-0.50" max="0.50" step="0.005" value="0">
+        </div>
+        <div class="control-group">
+          <label>Pos Y <span class="val" id="valWPosY">0.00</span></label>
+          <input type="range" id="weaponPosY" min="-0.50" max="0.50" step="0.005" value="0">
+        </div>
+        <div class="control-group">
+          <label>Pos Z <span class="val" id="valWPosZ">0.00</span></label>
+          <input type="range" id="weaponPosZ" min="-0.50" max="0.50" step="0.005" value="0">
+        </div>
+      </div>
+
+      <div class="control-grid-3">
+        <div class="control-group">
+          <label>Rot X° <span class="val" id="valWRotX">0°</span></label>
+          <input type="range" id="weaponRotX" min="-180" max="180" step="1" value="0">
+        </div>
+        <div class="control-group">
+          <label>Rot Y° <span class="val" id="valWRotY">0°</span></label>
+          <input type="range" id="weaponRotY" min="-180" max="180" step="1" value="0">
+        </div>
+        <div class="control-group">
+          <label>Rot Z° <span class="val" id="valWRotZ">0°</span></label>
+          <input type="range" id="weaponRotZ" min="-180" max="180" step="1" value="0">
+        </div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn secondary" id="btnResetWeaponTransform">Restaurar Auto-PCA</button>
+        <button class="btn secondary" id="btnSaveWeaponPreset">💾 Guardar Preset Arma</button>
+      </div>
+    </div>
+
+    <!-- B. IK de Mano Izquierda y Dedos -->
+    <div class="card">
+      <div class="card-title">
+        <span>B. Agarre 2 Manos (IK) y Dedos</span>
+        <span class="badge" id="ikStatusBadge">IK Activo</span>
+      </div>
+      <div class="control-group">
+        <label>Peso IK Mano Soporte (Guardamanos) <span class="val" id="valLeftIk">100%</span></label>
+        <input type="range" id="leftHandIkWeight" min="0" max="1" step="0.02" value="1">
+      </div>
+      <div class="control-grid-3">
+        <div class="control-group">
+          <label>IK Avance <span class="val" id="valFgX">0.00</span></label>
+          <input type="range" id="foregripX" min="-0.40" max="0.40" step="0.01" value="0">
+        </div>
+        <div class="control-group">
+          <label>IK Altura <span class="val" id="valFgY">0.00</span></label>
+          <input type="range" id="foregripY" min="-0.30" max="0.30" step="0.01" value="0">
+        </div>
+        <div class="control-group">
+          <label>IK Lateral <span class="val" id="valFgZ">0.00</span></label>
+          <input type="range" id="foregripZ" min="-0.30" max="0.30" step="0.01" value="0">
+        </div>
+      </div>
+      <div class="control-grid-3">
+        <div class="control-group">
+          <label>Polo Codo° <span class="val" id="valElbowPole">0°</span></label>
+          <input type="range" id="elbowPoleDeg" min="-90" max="90" step="2" value="0">
+        </div>
+        <div class="control-group">
+          <label>Grip Der <span class="val" id="valRightGrip">100%</span></label>
+          <input type="range" id="rightHandGrip" min="0" max="1.2" step="0.05" value="1">
+        </div>
+        <div class="control-group">
+          <label>Grip Izq <span class="val" id="valLeftGrip">100%</span></label>
+          <input type="range" id="leftHandGrip" min="0" max="1.2" step="0.05" value="1">
+        </div>
+      </div>
+    </div>
+
+    <!-- C. Locomoción y Postura -->
+    <div class="card">
+      <div class="card-title">
+        <span>C. Retargeting, Suelo y Postura</span>
+      </div>
+      <div class="control-group">
+        <label>Bloqueo In-Place X/Z (Anti-Deriva) <span class="val" id="valInPlace">100%</span></label>
+        <input type="range" id="inPlaceLock" min="0" max="1" step="0.05" value="1">
+      </div>
+      <div class="checkbox-row">
+        <span>Plantar Pies sobre el Suelo (Z/Y = 0)</span>
+        <input type="checkbox" id="groundFeetToggle" checked>
+      </div>
+      <div class="control-grid-3">
+        <div class="control-group">
+          <label>Abrir Brazos° <span class="val" id="valArmSpread">0°</span></label>
+          <input type="range" id="armSpreadDeg" min="-20" max="45" step="1" value="0">
+        </div>
+        <div class="control-group">
+          <label>Giro Torso° <span class="val" id="valSpineTwist">0°</span></label>
+          <input type="range" id="spineTwistDeg" min="-45" max="45" step="1" value="0">
+        </div>
+        <div class="control-group">
+          <label>Inclinación° <span class="val" id="valSpinePitch">0°</span></label>
+          <input type="range" id="spinePitchDeg" min="-35" max="35" step="1" value="0">
+        </div>
+      </div>
+    </div>
+
+    <!-- D. Exportación FBX -->
+    <div class="card">
+      <div class="card-title">
+        <span>D. Exportar .FBX con Arma y Animación</span>
+      </div>
+      <div class="control-grid-2">
+        <div class="control-group">
+          <label>Muestreo Bake</label>
+          <select id="bakeFpsSelect">
+            <option value="24">24 FPS</option>
+            <option value="30" selected>30 FPS (Estándar)</option>
+            <option value="60">60 FPS</option>
+          </select>
+        </div>
+        <div class="control-group">
+          <label>Nombre Salida</label>
+          <input type="text" id="exportPrefixInput" placeholder="mario_ak47">
+        </div>
+      </div>
+      <button class="btn green" id="btnExportCurrentFbx" disabled>
+        ⬇ Exportar .FBX (Animación Activa + Arma)
+      </button>
+      <div class="btn-row">
+        <button class="btn amber" id="btnExportMultiClipFbx" disabled title="Guarda todas las animaciones seleccionadas dentro de un único .FBX">
+          📦 Exportar .FBX Multi-Clip
+        </button>
+        <button class="btn secondary" id="btnExportBatchZip" disabled title="Genera un .ZIP con un .FBX separado por cada animación marcada">
+          🗂️ Lote .ZIP (N FBXs)
+        </button>
+      </div>
+    </div>
+  </aside>
+
+  <div class="toast" id="toast"></div>
+
+  <!-- SCRIPTS PLACEHOLDER -->
+  <!-- LAB-BUNDLE-INJECT -->
+</body>
+</html>

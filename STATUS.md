@@ -604,3 +604,15 @@ Este documento registra el historial cronolÃ³gico de sesiones de desarrollo ve
 - [x] **Harness Automatizado de Comparación:** Script `tools/lab/compare_labs.py` con Playwright headless y backend de Blender, validando métricas objetivas (IoU de silueta sube de 0.275 a **0.809**, centroides alineados a < 0.04 px y luminancia alineada a 66.6 vs 60.3 de Blender).
 - **Evidencia:** `walkthroughs/lab3js-blender-parity/walkthrough.md`.
 
+---
+
+## Sesion 57: Laboratorio Web Offline de Ensamblaje de Armas, Retargeting e IK a `.FBX` Binario
+
+- [x] Construcción de `tools/lab/FBX-Weapon-Anim-Lab-offline.html` (3.21 MB, 100% Web Offline autónomo) junto a sus módulos fuente (`fbx_binary_splicer.js`, `retarget_and_ik_engine.js`, `glb_loader_minimal.js`, `seed_catalog_data.js`, `weapon_anim_lab_app.js`, `build_weapon_anim_lab.py`).
+- [x] Parser y Splicer binario **Kaydara FBX Binary 7400** sin pérdida: conserva mallas, `Deformer` (pesos de skinning) y texturas originales del personaje, inyecta el arma (`Geometry`, `Model`, `Material`, `Texture`/`Video`) emparentada al nodo `Model` del hueso de la mano, e inyecta las curvas de animación horneadas (`AnimationStack`, `AnimationLayer`, `AnimationCurveNode`, `AnimationCurve`).
+- [x] Auto-alineación geométrica de armas (`.glb` y `.fbx`) mediante PCA 3x3 (Jacobi) + heurística de polaridad cañón/culata y mira/cargador + base anatómica palmar de `RightHand`, con botones de inversión rápida 90°/180°, sliders y gizmo interactivo en viewport (`[G]`, `[R]`, `[F]`).
+- [x] Retargeting universal entre esqueletos heterogéneos (Mixamo 65 huesos, Tripo3D 37-52 huesos, Meshy) con bloqueo In-Place X/Z, plantado de pies sobre el suelo (`Y=0`), cierre procedural de dedos y **solver IK analítico de 2 huesos** (`LeftArm -> LeftForeArm -> LeftHand`) hacia el guardamanos del rifle.
+- [x] Catálogo semilla pre-empaquetado con 5 armas (`AK-47`, `M4 Carbine`, `Battle Rifle`, `Tactical SMG`, `Gothic Broadsword`) y 10 animaciones, extensible con importación por lotes de `.fbx` Mixamo y persistencia en `IndexedDB`.
+- [x] Verificación E2E headless en Chromium (Playwright) con cero errores de consola: exportación de `spacemarine_ak47_rifle_run.fbx` (22.63 MB) y renderizado exitoso de las 8 direcciones en `tools/lab/FBX-Web-Renderer-offline.html`.
+- **Evidencia:** `walkthroughs/fbx-weapon-anim-lab/walkthrough.md`.
+

@@ -65,6 +65,7 @@ Resúmenes acumulativos y auditables de cada entrega y avance de desarrollo en `
 | 52 | Tamaño visible del sprite alineado con Blender en 3JS | [`lab3js-sprite-size-fit/`](lab3js-sprite-size-fit/walkthrough.md) | Run.fbx a 48×48: caja alfa media 36×36, frente a 21×21 antes; escala proporcional validada a 32×32 |
 | 53 | Comparativa Blender visible en el walkthrough del ajuste 3JS | [`lab3js-sprite-size-fit/`](lab3js-sprite-size-fit/walkthrough.md) | Comparativa visual 3JS/Blender añadida junto a la evidencia del arreglo de encuadre |
 | 54 | Paridad fidedigna 3JS vs Blender (cámara ortográfica, PBR, luces PI y Blackman-Harris 4x) | [`lab3js-blender-parity/`](lab3js-blender-parity/walkthrough.md) | IoU de silueta pasa de 27.5% a 80.9%, direcciones 100% coincidentes, luminancia y PBR alineados con Cycles |
+| 55 | Laboratorio Web Offline de Ensamblaje de Armas, Retargeting e IK a `.FBX` Binario | [`fbx-weapon-anim-lab/`](fbx-weapon-anim-lab/walkthrough.md) | Completado (Splicer FBX 7400 lossless, Auto-PCA + IK 2 manos, 10 anims + 5 armas, verificado en Chromium headless y FBX-Web-Renderer) |
 
 
 
