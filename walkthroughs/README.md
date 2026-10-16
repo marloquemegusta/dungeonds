@@ -60,6 +60,7 @@ Resúmenes acumulativos y auditables de cada entrega y avance de desarrollo en `
 | 47 | Lab 3JS: paridad funcional de sprites | [`js-lab-sprite-parity/`](js-lab-sprite-parity/walkthrough.md) | Ocho direcciones y paquete de sprites verificados en Chromium headless; Cycles no replicado |
 | 48 | Un solo control de tamaño para el lab 3JS | [`js-lab-single-size-control/`](js-lab-single-size-control/walkthrough.md) | UI revisada en Chromium headless; ajuste con FBX pendiente |
 | 49 | Resultados de sprites por encima del visor 3D | [`js-lab-results-above-preview/`](js-lab-results-above-preview/walkthrough.md) | Orden y altura del visor revisados en Chromium headless |
+| 50 | Eliminar el slider «Escala modelo» del lab 3JS | [`remove-model-scale-control/`](remove-model-scale-control/walkthrough.md) | Control eliminado; normalización y tamaño del sprite verificados en Chromium headless |
 
 
 

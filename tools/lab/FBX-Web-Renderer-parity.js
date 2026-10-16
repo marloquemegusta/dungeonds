@@ -251,7 +251,6 @@
       const pixels = stride * (32 / (2 * Math.sqrt(2))) * state.rigScale;
       document.getElementById('kinematicSummary').textContent = `Zancada aprox. ${pixels.toFixed(1)} px | speed 8.8 = ${Math.round(pixels * 256 / (parseInt(_p.frameCount.value, 10) * ticks))}`;
     });
-    _p.modelScale.addEventListener('input', () => { if ($.modelRoot) $.modelRoot.scale.multiplyScalar(state.rigScale); });
     const originalLoad = Ap;
     Ap = async file => {
       await originalLoad(file);

@@ -556,3 +556,12 @@ Este documento registra el historial cronolÃ³gico de sesiones de desarrollo ve
 - [x] Chromium headless carga la página sin errores de consola; se revisó la estructura y la captura de página completa.
 - **Límite:** la captura de esta sesión no carga un FBX ni muestra la cuadrícula ya renderizada.
 - **Evidencia:** `walkthroughs/js-lab-results-above-preview/walkthrough.md`.
+
+---
+
+## Sesion 52: Eliminacion del slider Escala modelo del lab 3JS
+
+- [x] Se elimino el control de escala visual y sus referencias del HTML generado y el codigo de carga.
+- [x] El modelo conserva su normalizacion automatica; `Tamaño del sprite` sigue presente y el encuadre se actualiza con el modelo.
+- [x] Chromium headless confirmo que la pagina carga sin el control de escala y conserva el tamaño del sprite.
+- **Evidencia:** `walkthroughs/remove-model-scale-control/walkthrough.md`.
