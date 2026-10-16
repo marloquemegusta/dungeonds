@@ -1,0 +1,29 @@
+{
+  "renderer": "Blender 5.2 / Cycles via Shader Lab",
+  "source_fbx": "assets/characters/charger/Run.fbx",
+  "action_name": "Armature|mixamo.com|Layer0",
+  "action_range_frames": [1, 20],
+  "resolution_px": 48,
+  "frames_per_direction": 8,
+  "directions": ["S", "SW", "W", "NW", "N", "NE", "E", "SE"],
+  "camera": {
+    "projection": "orthographic",
+    "elevation_degrees": 35,
+    "azimuth_degrees": 45,
+    "animated_bounds_target_pixels": 46
+  },
+  "in_place": true,
+  "outline": true,
+  "contrast": 1.15,
+  "brightness": 1.0,
+  "saturation": 1.15,
+  "key_energy": 4.5,
+  "fill_energy": 0.85,
+  "world_strength": 0.35,
+  "key_angle_degrees": 2.0,
+  "normal_strength": 0.35,
+  "cycles_samples": 16,
+  "armature_scale": 1.0,
+  "neck_pitch_degrees": 0.0,
+  "displace": 0.0
+}

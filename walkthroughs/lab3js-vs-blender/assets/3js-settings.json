@@ -1,0 +1,40 @@
+{
+  "model": "Run.fbx",
+  "animation": "mixamo.com (0.63s)",
+  "directions": [
+    "S",
+    "SW",
+    "W",
+    "NW",
+    "N",
+    "NE",
+    "E",
+    "SE"
+  ],
+  "framesPerDirection": 8,
+  "frameSize": "48x48",
+  "spritesheet": {
+    "columns": 8,
+    "rows": 8,
+    "width": 384,
+    "height": 384,
+    "alpha": true
+  },
+  "stride3dMeters": 2,
+  "ticksPerFrame": 2,
+  "stridePixels": 22.63,
+  "speedFixed8_8": 362,
+  "inPlace": true,
+  "rigScale": 1,
+  "cameraElevationDegrees": 35,
+  "contrast": 1.15,
+  "saturation": 1.15,
+  "neckPitchDegrees": 0,
+  "displace": 0,
+  "brightness": 1,
+  "webglShadowQuality": 16,
+  "normalStrength": 0.35,
+  "shadowSoftness": 2,
+  "boneShader": false,
+  "renderEngine": "Three.js WebGL (browser)"
+}

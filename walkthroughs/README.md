@@ -61,6 +61,7 @@ Resúmenes acumulativos y auditables de cada entrega y avance de desarrollo en `
 | 48 | Un solo control de tamaño para el lab 3JS | [`js-lab-single-size-control/`](js-lab-single-size-control/walkthrough.md) | UI revisada en Chromium headless; ajuste con FBX pendiente |
 | 49 | Resultados de sprites por encima del visor 3D | [`js-lab-results-above-preview/`](js-lab-results-above-preview/walkthrough.md) | Orden y altura del visor revisados en Chromium headless |
 | 50 | Eliminar el slider «Escala modelo» del lab 3JS | [`remove-model-scale-control/`](remove-model-scale-control/walkthrough.md) | Control eliminado; normalización y tamaño del sprite verificados en Chromium headless |
+| 51 | Comparación visual del lab 3JS y Blender | [`lab3js-vs-blender/`](lab3js-vs-blender/walkthrough.md) | GIFs del mismo FBX y clip; Blender llena más la celda y resulta más legible |
 
 
 

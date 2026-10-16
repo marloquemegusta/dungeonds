@@ -565,3 +565,12 @@ Este documento registra el historial cronolÃ³gico de sesiones de desarrollo ve
 - [x] El modelo conserva su normalizacion automatica; `Tamaño del sprite` sigue presente y el encuadre se actualiza con el modelo.
 - [x] Chromium headless confirmo que la pagina carga sin el control de escala y conserva el tamaño del sprite.
 - **Evidencia:** `walkthroughs/remove-model-scale-control/walkthrough.md`.
+
+---
+
+## Sesion 53: Comparacion visual del lab 3JS y Blender
+
+- [x] Se renderizo `Run.fbx` con el clip `mixamo.com` en ambos laboratorios: 48×48 px, 8 direcciones × 8 frames, cámara a 35° y valores de luz/color alineados.
+- [x] El GIF lado a lado confirma que Blender muestra una silueta más grande y luminosa; cobertura alfa media 28,6% frente a 11,0% en 3JS.
+- [x] Se documentan las diferencias entre el encuadre ortográfico de Blender y el autoencuadre de 3JS, además de las diferencias entre Cycles y WebGL.
+- **Evidencia:** `walkthroughs/lab3js-vs-blender/walkthrough.md`.
