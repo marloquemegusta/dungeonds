@@ -64,6 +64,7 @@ Resúmenes acumulativos y auditables de cada entrega y avance de desarrollo en `
 | 51 | Comparación visual del lab 3JS y Blender | [`lab3js-vs-blender/`](lab3js-vs-blender/walkthrough.md) | GIFs del mismo FBX y clip; Blender llena más la celda y resulta más legible |
 | 52 | Tamaño visible del sprite alineado con Blender en 3JS | [`lab3js-sprite-size-fit/`](lab3js-sprite-size-fit/walkthrough.md) | Run.fbx a 48×48: caja alfa media 36×36, frente a 21×21 antes; escala proporcional validada a 32×32 |
 | 53 | Comparativa Blender visible en el walkthrough del ajuste 3JS | [`lab3js-sprite-size-fit/`](lab3js-sprite-size-fit/walkthrough.md) | Comparativa visual 3JS/Blender añadida junto a la evidencia del arreglo de encuadre |
+| 54 | Laboratorio Web Offline de Ensamblaje de Armas, Retargeting e IK a `.FBX` Binario | [`fbx-weapon-anim-lab/`](fbx-weapon-anim-lab/walkthrough.md) | Completado (Splicer FBX 7400 lossless, Auto-PCA + IK 2 manos, 10 anims + 5 armas, verificado en Chromium headless y FBX-Web-Renderer) |
 
 
 
