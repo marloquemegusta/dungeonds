@@ -26,6 +26,7 @@ El repositorio cuenta con fuentes de verdad canónicas sin duplicación:
    - Compilación limpia con Docker BlocksDS sin warnings graves.
    - Ejecución de escenarios headless o tests de host.
    - Generación de evidencia visual (capturas / GIFs) en caso de cambios gráficos.
+   - **Automatización de navegador exclusivamente headless:** toda validación con navegador usa Chromium/Playwright en modo headless explícito. Prohibido abrir el navegador en modo visible o interactivo para inspeccionar, probar o capturar el proyecto.
 5. **Calibración y Validez de Escenarios de Prueba Headless**:
    - **Precondición geométrica obligatoria:** Al escribir o modificar un escenario (`scenarios/*.json`), verificar que las coordenadas del actor crucen verdaderamente la entidad o volumen a probar (edificio, oclusión, proyectil o muro de colisión). Nunca diseñar escenarios en suelo abierto esperando probar oclusión o colisión.
    - **Nomenclatura verídica:** Prohibido etiquetar eventos o capturas como `behind_bastion_occluded` o similar si la geometría en esas coordenadas no aplica la oclusión esperada. Los tests con nombres falsos generan falsos positivos y ocultan regresiones reales.

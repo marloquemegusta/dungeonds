@@ -57,6 +57,7 @@ Resúmenes acumulativos y auditables de cada entrega y avance de desarrollo en `
 | 44 | Mazmorra Completa FBX: Despeje de Puertas, Oclusión y 60 FPS | [`scifi-dungeon-tripo/`](scifi-dungeon-tripo/walkthrough.md) | Completado (60 FPS Locked, 36 tests PASS, cruce de arcos verificado en DeSmuME) |
 | 45 | Iluminación de Antorcha 3D Dinámica Suave, Merge Continuo y 60 FPS Locked | [`fog-and-visibility/`](fog-and-visibility/walkthrough.md) | Completado (60 FPS Locked en los 5 hitos, oscurecimiento proporcional continuo en DTCM, oclusiones 3D BVH estilo Doom, cero bloques 8x8 en DeSmuME) |
 | 46 | Sombreado Atmosférico de Antorcha Continuo, Paleta Ámbar Perceptiva y 60 FPS Locked | [`19-smooth-torch-shading/`](19-smooth-torch-shading/walkthrough.md) | Completado (60 FPS Locked, 80px smoothstep falloff, paleta DTCM perceptual ámbar, eliminación del efecto binario) |
+| 47 | Lab 3JS: paridad funcional de sprites | [`js-lab-sprite-parity/`](js-lab-sprite-parity/walkthrough.md) | Ocho direcciones y paquete de sprites verificados en Chromium headless; Cycles no replicado |
 
 
 

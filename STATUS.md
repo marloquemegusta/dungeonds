@@ -528,6 +528,11 @@ Este documento registra el historial cronolÃ³gico de sesiones de desarrollo ve
   - Medido en HUD de telemetría de DeSmuME: `FPS:60 C:12 P:04` (CPU 12 ms, Floor lighting 8-9 ms, Present 4 ms, > 4.6 ms de holgura VBlank).
 - [x] **Evidencia Visual:** `walkthroughs/19-smooth-torch-shading/walkthrough.md`, `walkthroughs/19-smooth-torch-shading/assets/smooth_spawn_v1_vs_v2.png`, `walkthroughs/19-smooth-torch-shading/assets/smooth_shading_v1_vs_v2_comparison.png`, `walkthroughs/19-smooth-torch-shading/assets/nds_smooth_torch_shading_v2.gif`.
 
+## Sesion 49: Lab 3JS con exportacion de atlas y paquete de sprites
 
-
-
+- [x] El visor autonomo conserva frames RGBA y exporta spritesheet transparente, PNG por frame, GIFs direccionales, collage y ZIP con ajustes.
+- [x] Se anaden controles del flujo Shader Lab para rig, cuello, displacement, shader oseo, zancada, ticks, brillo, relieve y sombras WebGL.
+- [x] Regla permanente: las validaciones de navegador del proyecto deben ejecutarse solo en modo headless.
+- [x] Run.fbx carga y renderiza ocho direcciones con Chromium headless; PNG 384x384 RGBA transparente; paquete ZIP de 86 entradas; cero errores de consola.
+- **Limite:** Three.js WebGL no reproduce Cycles ni promete igualdad pixel a pixel con Blender.
+- **Evidencia:** `walkthroughs/js-lab-sprite-parity/walkthrough.md`.
