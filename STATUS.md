@@ -585,3 +585,9 @@ Este documento registra el historial cronolÃ³gico de sesiones de desarrollo ve
 - [x] La ocupación queda próxima a Blender (34×36 px de media en la comparación anterior), frente a 21.1×21.3 px antes del arreglo.
 - **Límite:** WebGL conserva proyección perspectiva; Blender usa cámara ortográfica y Cycles.
 - **Evidencia:** `walkthroughs/lab3js-sprite-size-fit/walkthrough.md`.
+
+## Sesion 55: Comparativa Blender visible en el walkthrough del ajuste 3JS
+
+- [x] Se añadió una imagen conjunta de 3JS corregido y Blender, con las ocho direcciones en celdas de 48×48 px.
+- [x] El walkthrough indica FBX, clip, resolución y normalización de la escala de pantalla.
+- **Evidencia:** `walkthroughs/lab3js-sprite-size-fit/walkthrough.md`.

@@ -26,3 +26,13 @@ El render sigue usando Three.js WebGL y proyección perspectiva; Blender usa cá
 ## Evidencia
 
 ![Collage 3JS a 48×48 px generado en Chromium headless](assets/run-48px-headless.png)
+
+## Comparativa Blender vs 3JS
+
+La captura anterior mostraba solo el resultado 3JS. Esta comparativa coloca las ocho direcciones de la salida corregida junto a la referencia de Blender para el mismo `Run.fbx`, el clip `mixamo.com` y celdas de 48×48 px:
+
+![3JS corregido frente a Blender en celdas de 48x48](assets/comparison-48px.png)
+
+Las capturas originales de los laboratorios usan escalas distintas en pantalla; la comparativa ajusta cada silueta a la celda final de 48 px para que la diferencia no dependa del zoom de la interfaz. Las medidas medias de las 64 muestras siguen siendo 36,1×36,2 px en 3JS y 34×36 px en Blender.
+
+Capturas de origen: [3JS](assets/run-48px-headless.png) · [Blender](../lab3js-vs-blender/assets/blender-collage.gif).
