@@ -546,3 +546,13 @@ Este documento registra el historial cronolÃ³gico de sesiones de desarrollo ve
 - [x] Chromium headless confirma que la interfaz muestra un único control de tamaño y carga sin errores de consola.
 - **Límite:** falta revisar la ocupación real de un FBX en los frames renderizados.
 - **Evidencia:** `walkthroughs/js-lab-single-size-control/walkthrough.md`.
+
+---
+
+## Sesion 51: Resultados de sprites por encima del visor 3D
+
+- [x] El orden de la página coloca los GIFs y la descarga antes del visor 3D animado.
+- [x] El visor 3D queda al final y reducido a 280 px de alto (240–320 px).
+- [x] Chromium headless carga la página sin errores de consola; se revisó la estructura y la captura de página completa.
+- **Límite:** la captura de esta sesión no carga un FBX ni muestra la cuadrícula ya renderizada.
+- **Evidencia:** `walkthroughs/js-lab-results-above-preview/walkthrough.md`.
