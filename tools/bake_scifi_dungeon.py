@@ -18,8 +18,8 @@ from PIL import Image, ImageDraw
 
 WT = Path(__file__).resolve().parents[1]
 BLENDER = r"C:\Program Files\Blender Foundation\Blender 5.2\blender.exe"
-FBX_PATH = str(WT / "assets" / "environment" / "scifi_dungeon" / "tripo_convert_b14b0e1b-13bd-4f17-b4a7-b50c6d251c17.fbx")
-OUT_DIR = WT / "assets" / "scifi_baked"
+FBX_PATH = str(WT / "assets" / "models" / "environment" / "scifi_dungeon" / "tripo_convert_b14b0e1b-13bd-4f17-b4a7-b50c6d251c17.fbx")
+OUT_DIR = WT / "assets" / "sprites" / "dungeon"
 OUT_DIR.mkdir(parents=True, exist_ok=True)
 
 WORLD_W = 768
@@ -90,19 +90,19 @@ scene.render.resolution_x = world_w
 scene.render.resolution_y = world_h
 scene.world = bpy.data.worlds.new("World")
 scene.world.use_nodes = True
-scene.world.node_tree.nodes["Background"].inputs[0].default_value = (0.28, 0.28, 0.32, 1.0)
-scene.world.node_tree.nodes["Background"].inputs[1].default_value = 1.0
+scene.world.node_tree.nodes["Background"].inputs[0].default_value = (0.04, 0.05, 0.08, 1.0)
+scene.world.node_tree.nodes["Background"].inputs[1].default_value = 0.6
 
 sun_data = bpy.data.lights.new("Sun", type="SUN")
-sun_data.energy = 3.2
-sun_data.color = (1.0, 0.95, 0.88)
+sun_data.energy = 4.2
+sun_data.color = (1.0, 0.76, 0.46)
 sun_obj = bpy.data.objects.new("Sun", sun_data)
 sun_obj.rotation_euler = (math.radians(48), math.radians(-22), math.radians(35))
 bpy.context.collection.objects.link(sun_obj)
 
 fill_data = bpy.data.lights.new("Fill", type="SUN")
-fill_data.energy = 1.6
-fill_data.color = (0.75, 0.85, 1.0)
+fill_data.energy = 1.2
+fill_data.color = (0.45, 0.55, 0.75)
 fill_obj = bpy.data.objects.new("Fill", fill_data)
 fill_obj.rotation_euler = (math.radians(-35), math.radians(40), math.radians(-120))
 bpy.context.collection.objects.link(fill_obj)
@@ -212,8 +212,12 @@ with open(bpath, "w", encoding="utf-8") as f:
 print("Running Blender render and raycasting...")
 subprocess.run([BLENDER, "-b", "-P", str(bpath)], check=True)
 
-# 7. Convert image to BGR555 raw
+# 7. Apply 1.5 contrast and convert image to BGR555 raw
+from PIL import ImageEnhance
 img = Image.open(OUT_DIR / "scifi_world.png").convert("RGB")
+img = ImageEnhance.Contrast(img).enhance(1.5)
+img.save(OUT_DIR / "scifi_world.png")
+img.save(OUT_DIR / "test_dungeon_warm_torch_c15.png")
 rgb = np.asarray(img, dtype=np.uint16)
 r5 = (rgb[:, :, 0] >> 3) & 31
 g5 = (rgb[:, :, 1] >> 3) & 31

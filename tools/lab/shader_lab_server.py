@@ -24,8 +24,8 @@ from PIL import Image, ImageDraw, ImageEnhance, ImageChops
 PORT = int(os.environ.get("SHADER_LAB_PORT", "8088"))
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 BLENDER_EXE = r"C:\Program Files\Blender Foundation\Blender 5.2\blender.exe"
-RUNS_DIR = os.path.join(ROOT, "assets", "lab_runs")
-CUSTOM_DIR = os.path.join(ROOT, "assets", "characters", "custom")
+RUNS_DIR = os.path.join(ROOT, "archive", "lab_runs")
+CUSTOM_DIR = os.path.join(ROOT, "assets", "models", "characters", "custom")
 os.makedirs(RUNS_DIR, exist_ok=True)
 os.makedirs(CUSTOM_DIR, exist_ok=True)
 
@@ -36,7 +36,7 @@ RASTER_OUTLINE_MARGIN_PX = 2
 CHARACTERS_CONFIG = {
     "hero": {
         "name": "Héroe Nigromante",
-        "fbx": os.path.join(ROOT, "assets", "characters", "monster", "Walking.fbx"),
+        "fbx": os.path.join(ROOT, "assets", "models", "characters", "monster", "Walking.fbx"),
         "default_resolution_px": 48,
         "kinematic_scale": 1.40,
         "default_elevation": 30.0,
@@ -49,7 +49,7 @@ CHARACTERS_CONFIG = {
     },
     "charger": {
         "name": "Cargador (Maw)",
-        "fbx": os.path.join(ROOT, "assets", "characters", "charger", "Run.fbx"),
+        "fbx": os.path.join(ROOT, "assets", "models", "characters", "charger", "Run.fbx"),
         "default_resolution_px": 48,
         "kinematic_scale": 1.35,
         "default_elevation": 30.0,
@@ -62,7 +62,7 @@ CHARACTERS_CONFIG = {
     },
     "skeleton": {
         "name": "Esqueleto",
-        "fbx": os.path.join(ROOT, "assets", "characters", "skeleton", "skeleton.fbx"),
+        "fbx": os.path.join(ROOT, "assets", "models", "characters", "skeleton", "skeleton.fbx"),
         "default_resolution_px": 48,
         "kinematic_scale": 1.35,
         "default_elevation": 30.0,

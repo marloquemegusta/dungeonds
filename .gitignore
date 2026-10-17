@@ -38,14 +38,20 @@ diag_frame.png
 .codex-journal/
 
 # Shader lab outputs and temporary runs
+archive/lab_runs/
 assets/lab_runs/
 
 # Custom test assets
-assets/characters/custom/
+assets/models/characters/custom/
 
 # 3D Source Environment Assets (Heavy external packs)
-assets/environment/dreadhollow/GLB/
-assets/environment/dreadhollow/Previews/
-assets/characters/monster/Walking.fbx
+assets/models/environment/dreadhollow/GLB/
+assets/models/environment/dreadhollow/Previews/
+assets/models/characters/monster/Walking.fbx
+
+# Archive directory
+archive/
+!archive/README.md
+
 graphify-out/
 

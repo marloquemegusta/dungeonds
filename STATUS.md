@@ -648,4 +648,15 @@ Este documento registra el historial cronolÃ³gico de sesiones de desarrollo ve
 - **Alcance:** worktree de `fix/weapon-anim-diagnosis`; `main` intacta. Sin afirmaciones de FPS ni validación en Nintendo DS.
 - **Evidencia:** `walkthroughs/weapon-anim-lab-fixes/walkthrough.md`.
 
+---
+
+## Sesión 60: Reorganización Integral de Assets 3D, Spritesheets y Render de Mazmorra Consistente
+
+- [x] **Reorganización Integral del Catálogo 3D:** Modelos clasificados bajo `assets/models/`: `characters/` (monster, charger, skeleton, necron, spacemarine, custom), `environment/` (scifi_dungeon, dreadhollow), `weapons/` (shotgun, sniper, sword) y `animations/` (combat, rifle).
+- [x] **Directorio Canónico de Spritesheets:** `assets/sprites/` estructurado con `characters/` (preparado con `README.md` explicativo para recepción directa de paquetes exportados desde el Shader Lab) y `dungeon/`.
+- [x] **Almacén Histórico Preservado:** Todo el contenido descartado (runs de laboratorio `lab_runs`, renders intermedios `render_runs`, spritesheets heredados `dungeon_e30`/`e60`, previews y demos anteriores de Mario) migrado a `archive/`.
+- [x] **Render de Mazmorra Consistente con Three.js:** Pre-renderizado de la mazmorra 3D de test con preset de antorcha cálida ámbar `(1.0, 0.76, 0.46)`, relleno frío `(0.45, 0.55, 0.75)` y contraste `1.50`, produciendo `test_dungeon_warm_torch_c15.png` y mallas de colisión y oclusión sincronizadas.
+- [x] **Verificación de Compilación y Suites:** Build BlocksDS (`DS_BUILD=PASS`) y 16 contratos de tests unitarios de host aprobados al 100%.
+- **Evidencia:** `walkthroughs/asset-reorganization/walkthrough.md`.
+
 

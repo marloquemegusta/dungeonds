@@ -11,8 +11,8 @@
 #define DUNGEON_OCCLUSION_SEGMENTS 1
 #define COLLISION_BYTES 6144
 
-#define SPAWN_PIXEL_X 361
-#define SPAWN_PIXEL_Y 233
+#define SPAWN_PIXEL_X 380
+#define SPAWN_PIXEL_Y 227
 
 extern const uint8_t g_dungeon_collision[COLLISION_BYTES];
 
