@@ -69,6 +69,7 @@ Resúmenes acumulativos y auditables de cada entrega y avance de desarrollo en `
 | 56 | Corrección de centrado multimodelo en Three.js (Mario, Henar, Wizard, Necron) | [`lab3js-centering-fix/`](lab3js-centering-fix/walkthrough.md) | Completado (IoU Mario sube de 12.5% a 94.2%, Wizard 94.9%, Henar 95.6%, Necron centrado en 23.5px, órbita de 15px eliminada) |
 | 57 | Correcciones de animación, retargeting e IK de armas | [`weapon-anim-lab-fixes/`](weapon-anim-lab-fixes/walkthrough.md) | 11 clips únicos; duplicado Slash/JumpHit eliminado; ambos híbridos exportados/reimportados con shotgun y sniper; 13 mapas del sniper preservados |
 | 58 | Reorganización integral de assets 3D, sprites y render de mazmorra Three.js | [`asset-reorganization/`](asset-reorganization/walkthrough.md) | Catálogo limpio en assets/models/ y assets/sprites/; archive/ para históricos; bake de mazmorra con antorcha cálida y contraste 1.50 |
+| 59 | Rediseño Integral FBX-to-Sprite Lab, Renderizador 3D de Mapas y Simulador NDS | [`fbx-sprite-map-lab/`](fbx-sprite-map-lab/walkthrough.md) | Completado (100vh zero-scroll, 8 dirs strip, visor 3D, simulador dual-screen, exportador de mapa/sprite y paridad Blender) |
 
 
 

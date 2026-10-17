@@ -659,4 +659,25 @@ Este documento registra el historial cronolÃ³gico de sesiones de desarrollo ve
 - [x] **Verificación de Compilación y Suites:** Build BlocksDS (`DS_BUILD=PASS`) y 16 contratos de tests unitarios de host aprobados al 100%.
 - **Evidencia:** `walkthroughs/asset-reorganization/walkthrough.md`.
 
+---
+
+## Sesión 61: Rediseño Integral FBX-to-Sprite Lab, Renderizador 3D de Mapas y Simulador Nintendo DS
+
+- [x] **Layout 100vh Zero-Scroll Estricto:** Reestructuración completa de la UI (`FBX-Web-Renderer-parity.js` y `FBX-Web-Renderer-offline.html`). Sidebar izquierdo modular de 360px con pestañas compactas (`Escala y Archivos`, `Luz y Cámara`, `Shader y Post`) y barra de acciones fija inferior.
+- [x] **Tira de 8 Direcciones en Tiempo Real:** 8 tarjetas (`0_S` a `7_SE`, 155px de alto) con canvases pixelados interactivos. Sincronización bidireccional inmediata con el simulador al hacer click sobre cualquier orientación.
+- [x] **Split 50/50 Inferior (Visor 3D + Simulador NDS):**
+  - **Visor 3D:** Three.js OrbitControls, cuadrícula táctica métrica, métricas de malla (vértices, caras, tamaño en metros) y conmutador `Personaje / Mapa / Ambos`.
+  - **Simulador Nintendo DS:** Canvas nativo 256×192 y modo Dual-Screen 256×384, zoom dinámico (1x, 2x, 3x, Fit), badge de métricas (`world_x/y`, celda de grid, FPS, facing), movimiento interactivo con WASD / flechas y dragging con puntero.
+- [x] **Renderizador de Mapas 3D (.FBX y .GLB) y Corrección de Escala Métrica:**
+  - Soporte integrado de `.fbx` (vía `cf` FBXLoader) y `.glb` (vía `MinimalGLBLoader` + synthetic `THREE_ENV`).
+  - Auto-leveling de suelo a `minZ = 0`, auto-escalado horizontal a span métrico (`targetSpanMeters / rawSpan`, defecto 24.0 m) evitando modelos desmedidos de 2400 m, y cálculo automático de densidad de píxeles (`px/m`).
+  - Sincronización asíncrona de texturas (`waitForModelTextures`) esperando a la carga de Blob URLs para garantizar render no negro con texturas completas en el simulador.
+  - Encuadre isométrico 3D automático en `(16, 14, 16)` con plano lejano ampliado a 1000.
+  - Renderizado dimétrico ortográfico a 45° de acimut y elevación compartida sin contornos de silueta.
+  - Exportador a ZIP del mapa: `<name>_world.png` + `<name>_map_settings.json`.
+- [x] **Pipeline Reactivo en Tiempo Real:** Sliders con previsualización inmediata (`ss=1`) en `input` vía `requestAnimationFrame` y render de máxima fidelidad (Blackman-Harris 4x) en `change`.
+- [x] **Compilador Offline Actualizado:** `tools/lab/build_offline_renderer.py` inyecta automáticamente `glb_loader_minimal.js` y `FBX-Web-Renderer-parity.js` de forma atómica.
+- [x] **Validación Headless Automatizada:** Suite Playwright headless ejecutada sin errores de consola (`0 page errors`), validando zero-scroll, navegación de pestañas, carga de mallas, reactividad de sliders, simulación NDS y guardado de capturas de evidencia.
+- **Evidencia:** `walkthroughs/fbx-sprite-map-lab/walkthrough.md`.
+
 
