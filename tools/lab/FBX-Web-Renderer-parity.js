@@ -17,6 +17,7 @@
   // which makes the model itself much smaller than the requested sprite cell.
   const originalSetFromObject = hr.prototype.setFromObject;
   hr.prototype.setFromObject = function (object) {
+    if (!object) return this;
     object.updateWorldMatrix(true, true);
     object.traverse(node => {
       if (node.isSkinnedMesh && node.skeleton) node.skeleton.update();
@@ -38,6 +39,87 @@
     if (state.capturing) state.frames.push({ pixels: new Uint8ClampedArray(processed), width, height });
     return Bf(processed, width, height, Vf);
   };
+
+  // Posed (skinned) vertices of the model in world space, flat [x, y, z, ...].
+  function posedPoints(root) {
+    root.updateMatrixWorld(true);
+    const out = [];
+    const v = new K();
+    root.traverse(node => {
+      if (!node.isMesh || !node.visible || !node.geometry?.attributes?.position) return;
+      if (node.isSkinnedMesh && node.skeleton) node.skeleton.update();
+      const position = node.geometry.attributes.position;
+      for (let index = 0; index < position.count; index++) {
+        if (node.isSkinnedMesh) node.getVertexPosition(index, v); else v.fromBufferAttribute(position, index);
+        v.applyMatrix4(node.matrixWorld);
+        out.push(v.x, v.y, v.z);
+      }
+    });
+    return out;
+  }
+
+  // Override Lf (model loader placement & wrapper creation) to avoid unskinned Box3 corruption.
+  // Rigged humanoid models pivot around their armature origin (0, 0), with feet grounded at Y = 0.
+  // Static meshes are grounded and centered horizontally at (0, 0).
+  const originalLf = typeof Lf === 'function' ? Lf : null;
+  if (originalLf) {
+    Lf = function (model, parentScene, scaleMultiplier) {
+      model.traverse(node => {
+        if (node.isMesh) {
+          node.frustumCulled = false;
+          node.castShadow = true;
+          node.receiveShadow = true;
+          if (node.material) {
+            const mats = Array.isArray(node.material) ? node.material : [node.material];
+            mats.forEach(mat => {
+              mat.side = 0;
+              if (mat.map) mat.map.colorSpace = ot;
+            });
+          }
+        }
+      });
+
+      let hasBones = false;
+      model.traverse(node => { if (node.isBone) hasBones = true; });
+
+      model.position.set(0, 0, 0);
+      model.updateMatrixWorld(true);
+
+      const pts = posedPoints(model);
+      let minX = Infinity, maxX = -Infinity;
+      let minY = Infinity, maxY = -Infinity;
+      let minZ = Infinity, maxZ = -Infinity;
+      for (let i = 0; i < pts.length; i += 3) {
+        const x = pts[i], y = pts[i + 1], z = pts[i + 2];
+        if (x < minX) minX = x; if (x > maxX) maxX = x;
+        if (y < minY) minY = y; if (y > maxY) maxY = y;
+        if (z < minZ) minZ = z; if (z > maxZ) maxZ = z;
+      }
+      if (!isFinite(minY)) { minY = 0; maxY = 1.8; minX = -0.5; maxX = 0.5; minZ = -0.5; maxZ = 0.5; }
+
+      const height = (maxY - minY) || 1.8;
+      const width = (maxX - minX) || 1.0;
+      const depth = (maxZ - minZ) || 1.0;
+
+      const wrapper = new Kn();
+      if (hasBones) {
+        model.position.set(0, -minY, 0);
+      } else {
+        model.position.set(-(minX + maxX) / 2, -minY, -(minZ + maxZ) / 2);
+      }
+      wrapper.add(model);
+
+      const scale = 1.8 / Math.max(height, width, depth);
+      wrapper.scale.setScalar(scale * (scaleMultiplier || 1));
+      parentScene.add(wrapper);
+
+      return {
+        wrapper,
+        height: height * scale,
+        radius: Math.max(width, depth) * scale / 2
+      };
+    };
+  }
 
   // ---- Blender-equivalent lighting & materials ----
   // Blender Sun/World strength S gives diffuse = albedo * S * cos; three.js divides by PI
@@ -118,23 +200,6 @@
   const DIR0_YAW = 3 * Math.PI / 4;
   const DIR_STEP = Math.PI / 4;
 
-  // Posed (skinned) vertices of the model in world space, flat [x, y, z, ...].
-  function posedPoints(root) {
-    root.updateMatrixWorld(true);
-    const out = [];
-    const v = new K();
-    root.traverse(node => {
-      if (!node.isMesh || !node.visible || !node.geometry?.attributes?.position) return;
-      if (node.isSkinnedMesh && node.skeleton) node.skeleton.update();
-      const position = node.geometry.attributes.position;
-      for (let index = 0; index < position.count; index++) {
-        if (node.isSkinnedMesh) node.getVertexPosition(index, v); else v.fromBufferAttribute(position, index);
-        v.applyMatrix4(node.matrixWorld);
-        out.push(v.x, v.y, v.z);
-      }
-    });
-    return out;
-  }
 
   // Cycles-like Blackman-Harris pixel filter: width in output pixels (support is +-width/2).
   function blackmanHarris(distance, width) {
@@ -206,6 +271,15 @@
 
       // Pass 1: posed vertices per time at yaw 0, grounded (min Y = 0), shared fit over all directions.
       if (root) { root.rotation.y = 0; root.position.y = 0; }
+      if (app.model) {
+        let hasBones = false;
+        app.model.traverse(node => { if (node.isBone) hasBones = true; });
+        if (hasBones) {
+          app.model.position.x = 0;
+          app.model.position.z = 0;
+          app.model.updateMatrixWorld(true);
+        }
+      }
       const samples = [];
       for (const time of times) {
         app.mixer?.setTime(time);
@@ -234,7 +308,7 @@
       const pixelWorld = (2 * half) / size;
       const center = new K()
         .addScaledVector(right, (minX + maxX) / 2)
-        .addScaledVector(upAxis, (minV + maxV) / 2 - 1.48 * pixelWorld);
+        .addScaledVector(upAxis, (minV + maxV) / 2);
       const camera = new ts(-half, half, half, -half, 0.1, 100);
       camera.position.copy(center).addScaledVector(toCamera, 30);
       camera.lookAt(center);
@@ -506,6 +580,16 @@
     const originalLoad = Ap;
     Ap = async file => {
       await originalLoad(file);
+      if ($.model) {
+        let hasBones = false;
+        $.model.traverse(node => { if (node.isBone) hasBones = true; });
+        if (hasBones) {
+          $.model.position.x = 0;
+          $.model.position.z = 0;
+          $.model.updateMatrixWorld(true);
+          if ($.modelRoot) $.modelRoot.updateMatrixWorld(true);
+        }
+      }
       state.rigScale = 1;
       state.displace = 0;
       document.getElementById('rigScale').value = '1';
@@ -514,6 +598,7 @@
       setupModelMaterials($.model);
       if (state.boneMode) applyBoneMaterial();
       updateQuality();
+      if (typeof refreshPreviewFit === 'function') refreshPreviewFit();
     };
   }
 

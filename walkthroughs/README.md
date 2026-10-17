@@ -66,6 +66,7 @@ Resúmenes acumulativos y auditables de cada entrega y avance de desarrollo en `
 | 53 | Comparativa Blender visible en el walkthrough del ajuste 3JS | [`lab3js-sprite-size-fit/`](lab3js-sprite-size-fit/walkthrough.md) | Comparativa visual 3JS/Blender añadida junto a la evidencia del arreglo de encuadre |
 | 54 | Paridad fidedigna 3JS vs Blender (cámara ortográfica, PBR, luces PI y Blackman-Harris 4x) | [`lab3js-blender-parity/`](lab3js-blender-parity/walkthrough.md) | IoU de silueta pasa de 27.5% a 80.9%, direcciones 100% coincidentes, luminancia y PBR alineados con Cycles |
 | 55 | Laboratorio Web Offline de Ensamblaje de Armas, Retargeting e IK a `.FBX` Binario | [`fbx-weapon-anim-lab/`](fbx-weapon-anim-lab/walkthrough.md) | Completado (Splicer FBX 7400 lossless, Auto-PCA + IK 2 manos, 10 anims + 5 armas, verificado en Chromium headless y FBX-Web-Renderer) |
+| 56 | Corrección de centrado multimodelo en Three.js (Mario, Henar, Wizard, Necron) | [`lab3js-centering-fix/`](lab3js-centering-fix/walkthrough.md) | Completado (IoU Mario sube de 12.5% a 94.2%, Wizard 94.9%, Henar 95.6%, Necron centrado en 23.5px, órbita de 15px eliminada) |
 
 
 

@@ -616,3 +616,20 @@ Este documento registra el historial cronolÃ³gico de sesiones de desarrollo ve
 - [x] Verificación E2E headless en Chromium (Playwright) con cero errores de consola: exportación de `spacemarine_ak47_rifle_run.fbx` (22.63 MB) y renderizado exitoso de las 8 direcciones en `tools/lab/FBX-Web-Renderer-offline.html`.
 - **Evidencia:** `walkthroughs/fbx-weapon-anim-lab/walkthrough.md`.
 
+---
+
+## Sesion 58: Corrección del Centrado Multimodelo (Mario, Henar, Wizard, Necron) en Three.js
+
+- [x] **Diagnóstico de Causa Raíz:** Detección de que el loader `Lf` usaba `Box3.setFromObject(e)` sin evaluar el skinning/huesos, lo que en mallas Tripo/Mixamo calculaba un desfase espurio de bind-pose (`Z ≈ -50` cm) e inyectaba `+50` cm a `model.position.z`, provocando que el rig describiera una órbita circular de 15 px de radio (`cx` entre 8.6 y 38.4 px) a lo largo de las 8 direcciones.
+- [x] **Guarda en `setFromObject`:** Añadida guarda `if (!object) return this;` en el interceptor `hr.prototype.setFromObject` de `FBX-Web-Renderer-parity.js` para blindar contra llamadas con objetos no inicializados durante cargas asíncronas.
+- [x] **Reemplazo Canónico de `Lf` y Hook `Ap`:** Para modelos con armadura/huesos, el pivote horizontal se fija estrictamente en el origen del rig `(0, 0)` (igual que Blender `CameraRig`), apoyando el vértice posado más bajo en `Y=0`. Para modelos estáticos sin huesos se centra horizontalmente en base a los vértices reales.
+- [x] **Alineación Geométrica de Cámara en `Qf`:** Eliminación del desplazamiento hardcodeado empírico `- 1.48 * pixelWorld` en `center.upAxis`, adoptando el punto medio exacto `(minV + maxV) / 2` equivalente a `((_min_y + _max_y) * 0.5)` de Cycles.
+- [x] **Validación Multimodelo con Blender (IoU):**
+  - Mario: IoU de silueta sube de **12.5%** a **94.21%**, con coincidencia 100% en las 8 direcciones (`best_dir = [0,1,2,3,4,5,6,7]`) y centroides alineados a < 0.1 px.
+  - Henar: IoU alcanza **95.58%**, centroide horizontal `cx` en 23.5 ± 0.7 px.
+  - Wizard: IoU alcanza **94.91%**, centroide horizontal `cx` en 23.5 ± 0.5 px.
+  - Necron: Centrado perfecto en 23.5 ± 0.4 px en las 8 direcciones (antes oscilaba entre 8.6 y 38.4 px).
+  - Charger: IoU sube de **80.87%** a **84.68%**.
+- **Evidencia:** `walkthroughs/lab3js-centering-fix/walkthrough.md`.
+
+
