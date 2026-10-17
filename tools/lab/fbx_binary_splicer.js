@@ -645,9 +645,18 @@
 
       const geoId = allocId();
       const weaponModelId = allocId();
-      const materialId = allocId();
-      const videoId = w.pngBytes ? allocId() : null;
-      const textureId = w.pngBytes ? allocId() : null;
+      const materials = Array.isArray(w.materials) && w.materials.length
+        ? w.materials
+        : [{ name: 'WeaponMat', color: w.color, pngBytes: w.pngBytes, mimeType: w.mimeType, fileName: w.fileName }];
+      if (!materials.length) throw new Error('Weapon must have at least one material');
+      const groups = Array.isArray(w.groups) && w.groups.length
+        ? w.groups
+        : [{ start: 0, count: w.indices && w.indices.length ? w.indices.length : Math.floor((w.positions || []).length / 3), materialIndex: 0 }];
+      const materialIds = materials.map(() => allocId());
+      const textureAssets = materials.map(material => {
+        const bytes = material.pngBytes || material.textureBytes || null;
+        return bytes ? { videoId: allocId(), textureId: allocId(), bytes } : null;
+      });
 
       // Prepare vertices
       const posArr = w.positions instanceof Float64Array
@@ -663,6 +672,24 @@
       } else if (!(indices instanceof Int32Array)) {
         indices = new Int32Array(indices);
       }
+
+      const vertexCount = posArr.length / 3;
+      if (posArr.length % 3 !== 0 || !Array.from(posArr).every(Number.isFinite)) {
+        throw new Error('Weapon positions must be finite XYZ triples');
+      }
+      if (indices.length % 3 !== 0 || Array.from(indices).some(i => !Number.isInteger(i) || i < 0 || i >= vertexCount)) {
+        throw new Error('Weapon indices must contain only complete in-range triangles');
+      }
+      let cursor = 0;
+      for (const group of groups) {
+        if (!Number.isInteger(group.start) || !Number.isInteger(group.count) || !Number.isInteger(group.materialIndex) ||
+            group.start !== cursor || group.count <= 0 || group.count % 3 !== 0 ||
+            group.start + group.count > indices.length || group.materialIndex < 0 || group.materialIndex >= materials.length) {
+          throw new Error('Weapon groups must partition triangle indices in order and reference valid materials');
+        }
+        cursor += group.count;
+      }
+      if (cursor !== indices.length) throw new Error('Weapon groups must cover every triangle index');
 
       const polyVertexIndex = new Int32Array(indices.length);
       for (let i = 0; i < indices.length; i += 3) {
@@ -736,9 +763,13 @@
         createNode('LayerElementMaterial', [createPropI(0)], [
           createNode('Version', [createPropI(101)]),
           createNode('Name', [createPropS('')]),
-          createNode('MappingInformationType', [createPropS('AllSame')]),
+          createNode('MappingInformationType', [createPropS('ByPolygon')]),
           createNode('ReferenceInformationType', [createPropS('IndexToDirect')]),
-          createNode('Materials', [createPropArrayI(new Int32Array([0]))])
+          createNode('Materials', [createPropArrayI(new Int32Array(indices.length / 3).map((_, poly) => {
+            const offset = poly * 3;
+            const group = groups.find(g => offset >= g.start && offset < g.start + g.count);
+            return group.materialIndex;
+          }))])
         ]),
         createNode('Layer', [createPropI(0)], [
           createNode('Version', [createPropI(100)]),
@@ -783,65 +814,76 @@
       ]);
       objectsNode.children.push(weaponModelNode);
 
-      // Create Material Node
-      const col = w.color || [0.8, 0.8, 0.8];
-      const matNode = createNode('Material', [
-        createPropL(materialId),
-        createPropS(formatBinaryAttrName('Material::WeaponMat', 'Material')),
-        createPropS('')
-      ], [
-        createNode('Version', [createPropI(102)]),
-        createNode('ShadingModel', [createPropS('phong')]),
-        createNode('MultiLayer', [createPropI(0)]),
-        createNode('Properties70', [], [
-          createNode('P', [createPropS('DiffuseColor'), createPropS('ColorRGB'), createPropS('Color'), createPropS(''), createPropD(col[0]), createPropD(col[1]), createPropD(col[2])]),
-          createNode('P', [createPropS('Diffuse'), createPropS('Number'), createPropS(''), createPropS('A'), createPropD(1.0)])
-        ])
-      ]);
-      objectsNode.children.push(matNode);
-
-      // Create Video and Texture if pngBytes provided
-      if (w.pngBytes) {
-        const videoNode = createNode('Video', [
-          createPropL(videoId),
-          createPropS(formatBinaryAttrName('Video::WeaponTex', 'Video')),
-          createPropS('Clip')
-        ], [
-          createNode('Type', [createPropS('Clip')]),
-          createNode('FileName', [createPropS('weapon.png')]),
-          createNode('RelativeFilename', [createPropS('weapon.png')]),
-          createNode('Content', [createPropR(w.pngBytes)])
-        ]);
-        objectsNode.children.push(videoNode);
-
-        const texNode = createNode('Texture', [
-          createPropL(textureId),
-          createPropS(formatBinaryAttrName('Texture::WeaponTex', 'Texture')),
+      // Material order matches the FBX LayerElementMaterial indices above.
+      materials.forEach((material, i) => {
+        const materialId = materialIds[i];
+        const tex = textureAssets[i];
+        const col = material.color || w.color || [0.8, 0.8, 0.8];
+        const name = material.name || `WeaponMat${i}`;
+        const matNode = createNode('Material', [
+          createPropL(materialId),
+          createPropS(formatBinaryAttrName(`Material::${name}`, 'Material')),
           createPropS('')
         ], [
-          createNode('Type', [createPropS('TextureVideoClip')]),
-          createNode('Version', [createPropI(202)]),
-          createNode('TextureName', [createPropS('Texture::WeaponTex')]),
-          createNode('FileName', [createPropS('weapon.png')]),
-          createNode('RelativeFilename', [createPropS('weapon.png')]),
-          createNode('ModelUVTranslation', [createPropD(0), createPropD(0)]),
-          createNode('ModelUVScaling', [createPropD(1), createPropD(1)]),
-          createNode('Texture_Alpha_Source', [createPropS('None')])
+          createNode('Version', [createPropI(102)]),
+          createNode('ShadingModel', [createPropS('phong')]),
+          createNode('MultiLayer', [createPropI(0)]),
+          createNode('Properties70', [], [
+            createNode('P', [createPropS('DiffuseColor'), createPropS('ColorRGB'), createPropS('Color'), createPropS(''), createPropD(col[0]), createPropD(col[1]), createPropD(col[2])]),
+            createNode('P', [createPropS('Diffuse'), createPropS('Number'), createPropS(''), createPropS('A'), createPropD(1.0)])
+          ])
         ]);
-        objectsNode.children.push(texNode);
+        objectsNode.children.push(matNode);
 
-        connectionsNode.children.push(
-          createNode('C', [createPropS('OO'), createPropL(videoId), createPropL(textureId)]),
-          createNode('C', [createPropS('OP'), createPropL(textureId), createPropL(materialId), createPropS('DiffuseColor')])
-        );
-      }
+        if (tex) {
+          const mimeType = String(material.mimeType || '').toLowerCase();
+          const bytesView = tex.bytes instanceof Uint8Array ? tex.bytes : new Uint8Array(tex.bytes);
+          const ext = mimeType.includes('jpeg') || (!mimeType && bytesView[0] === 0xff && bytesView[1] === 0xd8)
+            ? 'jpg'
+            : 'png';
+          const rawFileName = material.fileName || `${name}.${ext}`;
+          const fileName = String(rawFileName).split(/[\\/]/).pop();
+          const videoNode = createNode('Video', [
+            createPropL(tex.videoId),
+            createPropS(formatBinaryAttrName(`Video::${name}`, 'Video')),
+            createPropS('Clip')
+          ], [
+            createNode('Type', [createPropS('Clip')]),
+            createNode('FileName', [createPropS(fileName)]),
+            createNode('RelativeFilename', [createPropS(fileName)]),
+            createNode('Content', [createPropR(tex.bytes)])
+          ]);
+          objectsNode.children.push(videoNode);
+          const texNode = createNode('Texture', [
+            createPropL(tex.textureId),
+            createPropS(formatBinaryAttrName(`Texture::${name}`, 'Texture')),
+            createPropS('')
+          ], [
+            createNode('Type', [createPropS('TextureVideoClip')]),
+            createNode('Version', [createPropI(202)]),
+            createNode('TextureName', [createPropS(`Texture::${name}`)]),
+            createNode('FileName', [createPropS(fileName)]),
+            createNode('RelativeFilename', [createPropS(fileName)]),
+            createNode('ModelUVTranslation', [createPropD(0), createPropD(0)]),
+            createNode('ModelUVScaling', [createPropD(1), createPropD(1)]),
+            createNode('Texture_Alpha_Source', [createPropS('None')])
+          ]);
+          objectsNode.children.push(texNode);
+          connectionsNode.children.push(
+            createNode('C', [createPropS('OO'), createPropL(tex.videoId), createPropL(tex.textureId)]),
+            createNode('C', [createPropS('OP'), createPropL(tex.textureId), createPropL(materialId), createPropS('DiffuseColor')])
+          );
+        }
+      });
 
       // Connect Weapon Mesh, Material and Parent Bone
       connectionsNode.children.push(
         createNode('C', [createPropS('OO'), createPropL(geoId), createPropL(weaponModelId)]),
-        createNode('C', [createPropS('OO'), createPropL(materialId), createPropL(weaponModelId)]),
         createNode('C', [createPropS('OO'), createPropL(weaponModelId), createPropL(parentBoneId)])
       );
+      for (const materialId of materialIds) {
+        connectionsNode.children.push(createNode('C', [createPropS('OO'), createPropL(materialId), createPropL(weaponModelId)]));
+      }
     }
 
     // 3. Inject Baked Animation Clips

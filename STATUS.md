@@ -632,4 +632,20 @@ Este documento registra el historial cronolÃ³gico de sesiones de desarrollo ve
   - Charger: IoU sube de **80.87%** a **84.68%**.
 - **Evidencia:** `walkthroughs/lab3js-centering-fix/walkthrough.md`.
 
+---
+
+## Sesión 59: Correcciones de Animación, Retargeting e IK de Armas
+
+- [x] Corregida la discontinuidad de `rifle_idle`: salto máximo de cabeza de 0.9439588 a 0.0001027575 alturas de personaje en 186 muestras.
+- [x] Motor verificado: alineación semántica en cuatro armas, 60 contactos de palma alcanzables (error máximo 4.59677e-8 alturas) y mezcla híbrida en cuatro fases (error local máximo 4.22e-8 rad; cadera sin error).
+- [x] Extracción compatible con proxies Mesh planos animados en `skeleton_death.fbx`, con prioridad estricta para Bones humanoides reales.
+- [x] Tests unitarios del motor (5 secciones), splicer (2 materiales) y chequeo de sintaxis PASS.
+- [x] Regenerados catálogo (2.33 MB) y HTML autónomo (3.28 MB) con `rifle_walk_ready` («Caminar en ristre») y `rifle_run_ready` («Correr en ristre»); 11 clips compartidos únicos (9 fuentes base + 2 híbridos), además de clips propios de personajes cuando se cargan; E2E exportó FBX de 22.72 MB y el visor lo cargó.
+- [x] Dedupe probado: `Slash.fbx` y `JumpHit.fbx` tienen 59 muestras, las mismas 23 pistas canónicas y valores idénticos; `melee_jump_hit` se quita del catálogo. Regresión compara ambas fuentes; walk/run/crouch y los dos modos ready siguen separados.
+- [x] Matriz headless: 5 personajes × 4 armas; ambos modos `rifle_walk_ready`/`rifle_run_ready` probados con shotgun y sniper. `Death Fall` aparece en Combat, se selecciona y prepara retarget (1.233 s). Contacto máximo 1.61e-8 alturas, orientación dot ≈1, sin errores JavaScript.
+- [x] FBM: shotgun 14 mapas / 4,424,669 bytes / 14 grupos; sniper 13 / 6,641,310 bytes / 13 grupos.
+- [x] Ambos híbridos se exportaron/reimportaron en shotgun y sniper. Se conservan 14 materiales/mapas del arma de shotgun y los 13 slots, grupos y mapas del sniper; FBXLoader reimporta los nodos de geometría/materiales. Los FBX contienen 19 Texture + 19 Video + 15 Material (shotgun) y 18 Texture + 18 Video + 14 Material (sniper), incluidos materiales del personaje. Evidencia: 10 capturas y `walkthroughs/weapon-anim-lab-fixes/assets/headless-summary.json`.
+- **Alcance:** worktree de `fix/weapon-anim-diagnosis`; `main` intacta. Sin afirmaciones de FPS ni validación en Nintendo DS.
+- **Evidencia:** `walkthroughs/weapon-anim-lab-fixes/walkthrough.md`.
+
 

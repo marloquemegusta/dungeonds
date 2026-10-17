@@ -88,12 +88,11 @@ const expectedAnims = [
   { id: 'rifle_crouch_walk', cat: 'Rifle', name: 'Rifle Crouch Walk' },
   { id: 'melee_slash', cat: 'Melee', name: 'Sword Slash' },
   { id: 'melee_crouch_slash', cat: 'Melee', name: 'Crouch Slash' },
-  { id: 'melee_jump_hit', cat: 'Melee', name: 'Jump Attack' },
   { id: 'locomotion_run', cat: 'Locomotion', name: 'Heavy Run' },
   { id: 'combat_death', cat: 'Combat', name: 'Death Fall' }
 ];
 
-assert.equal(SEED_CATALOG.animations.length, 10, 'Should have exactly 10 animations');
+assert.equal(SEED_CATALOG.animations.length, 11, 'Should have nine unique base animations plus two hybrid modes');
 for (const exp of expectedAnims) {
   const a = SEED_CATALOG.getAnimation(exp.id);
   assert(a, `Animation ${exp.id} must exist`);
@@ -116,6 +115,21 @@ for (const exp of expectedAnims) {
   }
 
   console.log(`✓ Animation: ${a.id} [${a.category}] "${a.name}" - ${a.duration}s, ${a.numFrames} frames, ${a.tracks.length} tracks, Hips rest: [${a.hipsRestPosition.join(', ')}]`);
+}
+
+const expectedHybrids = [
+  { id: 'rifle_walk_ready', lower: 'rifle_walk', name: 'Caminar en ristre' },
+  { id: 'rifle_run_ready', lower: 'rifle_run', name: 'Correr en ristre' }
+];
+for (const exp of expectedHybrids) {
+  const a = SEED_CATALOG.getAnimation(exp.id);
+  assert(a, `Hybrid animation ${exp.id} must exist`);
+  assert.equal(a.name, exp.name, `${exp.id} retains its Spanish product label`);
+  assert.equal(a.category, 'Rifle');
+  assert.equal(a.hybrid.lowerAnimationId, exp.lower);
+  assert.equal(a.hybrid.upperAnimationId, 'rifle_aim');
+  assert.equal(a.hybrid.upperTimeMode, 'normalized');
+  assert(a.hybrid.upperCanonicalRoots.includes('Spine2'), `${exp.id} overlays upper-body roots`);
 }
 
 console.log('\n--- 5. Testing Three.js Integration (buildWeaponMesh & createAnimationClip) ---');
@@ -158,7 +172,8 @@ for (const exp of expectedWeapons) {
   console.log(`✓ THREE.Mesh built: ${exp.id} (geom verts: ${mesh.geometry.attributes.position.count}, tris: ${mesh.geometry.index.count / 3})`);
 }
 
-// Test createAnimationClip for all 10 animations
+// Plain clips retain the AnimationClip adapter; hybrids are evaluated and baked
+// on the selected target rig, so the adapter must reject them clearly.
 for (const exp of expectedAnims) {
   const clip = SEED_CATALOG.createAnimationClip(exp.id, threeMock, 'mixamorig');
   assert(clip, `Clip for ${exp.id} should be created`);
@@ -166,6 +181,10 @@ for (const exp of expectedAnims) {
   assert(clip.tracks.length > 0, `Clip tracks must not be empty`);
   assert(clip.tracks[0].name.startsWith('mixamorig'), `Clip track should have rigPrefix applied`);
   console.log(`✓ THREE.AnimationClip created: ${exp.id} ("${clip.name}", duration: ${clip.duration.toFixed(2)}s, tracks: ${clip.tracks.length})`);
+}
+for (const exp of expectedHybrids) {
+  assert.throws(() => SEED_CATALOG.createAnimationClip(exp.id, threeMock, 'mixamorig'), /target rig/i,
+    `Hybrid ${exp.id} must use the shared target-rig evaluator`);
 }
 
 console.log('\n========================================');

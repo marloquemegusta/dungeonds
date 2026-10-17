@@ -143,7 +143,14 @@ const options = {
     uvs,
     indices,
     color: [0.1, 0.8, 1.0],
-    pngBytes: dummyPng
+    materials: [
+      { name: 'PowerSword_Blade', color: [0.1, 0.8, 1.0], pngBytes: dummyPng, mimeType: 'image/png', fileName: 'Blade.PNG' },
+      { name: 'PowerSword_Grip', color: [0.4, 0.3, 0.2], pngBytes: dummyPng, mimeType: 'image/png', fileName: 'Grip.PNG' }
+    ],
+    groups: [
+      { start: 0, count: 3, materialIndex: 0 },
+      { start: 3, count: indices.length - 3, materialIndex: 1 }
+    ]
   },
   parentBoneId: rightHand.id,
   clips: [
@@ -155,6 +162,11 @@ const options = {
     }
   ]
 };
+
+assert.throws(() => splicer.spliceAndExportFBX(originalBuf, {
+  parentBoneId: rightHand.id,
+  weapon: { ...options.weapon, groups: [{ start: 0, count: 2, materialIndex: 0 }] }
+}), /groups/i, 'invalid material groups fail clearly instead of corrupting the FBX');
 
 const splicedBuf = splicer.spliceAndExportFBX(originalBuf, options);
 console.log(`Exported spliced FBX size: ${(splicedBuf.byteLength / (1024 * 1024)).toFixed(2)} MB`);
@@ -208,12 +220,22 @@ assert(posAttr, 'Weapon geometry has no position attribute');
 console.log(`Weapon vertices count: ${posAttr.count}`);
 assert.strictEqual(posAttr.count, indices.length, 'Weapon vertex count should match polygon vertex index');
 
-// Verify Material & Texture
+// Verify per-face materials and embedded maps survive binary FBX round-trip.
 assert(foundWeapon.material, 'Weapon has no material');
 console.log(`Weapon material type: ${foundWeapon.material.type}`);
-if (foundWeapon.material.map) {
-  console.log('Weapon texture map successfully attached!');
-}
+assert(Array.isArray(foundWeapon.material), 'Weapon exposes one material for each imported material slot');
+assert.equal(foundWeapon.material.length, 2, 'both weapon materials are imported');
+assert(foundWeapon.material.every(m => m.map), 'each weapon material retains its embedded texture map');
+assert(foundWeapon.geometry.groups.length >= 2, 'geometry retains material groups');
+assert(foundWeapon.geometry.groups.every(g => g.materialIndex >= 0 && g.materialIndex < foundWeapon.material.length),
+  'each geometry group references a valid material');
+const splicedAst = splicer.parseFBXBinary(splicedBuf);
+const exportedWeaponMats = splicedAst.nodes.find(n => n.name === 'Objects').children
+  .filter(n => n.name === 'Material' && /PowerSword_/.test(String(n.props[1]?.value || '')));
+const exportedWeaponTextures = splicedAst.nodes.find(n => n.name === 'Objects').children
+  .filter(n => n.name === 'Texture' && /PowerSword_/.test(String(n.props[1]?.value || '')));
+assert.equal(exportedWeaponMats.length, 2, 'FBX contains both named weapon material nodes');
+assert.equal(exportedWeaponTextures.length, 2, 'FBX contains both named weapon texture nodes');
 
-console.log('\n>>> ALL FBX BINARY SPLICER TESTS PASSED WITH 100% SUCCESS! <<<');
+console.log('\n>>> FBX BINARY SPLICER REGRESSIONS PASSED <<<');
 process.exit(0);

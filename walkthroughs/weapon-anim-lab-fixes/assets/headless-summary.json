@@ -1,0 +1,497 @@
+{
+  "browser": "Chromium headless",
+  "characters": [
+    {
+      "id": "spacemarine",
+      "boneCount": 52,
+      "clips": 11
+    },
+    {
+      "id": "necron",
+      "boneCount": 52,
+      "clips": 11
+    },
+    {
+      "id": "henar",
+      "boneCount": 52,
+      "clips": 12
+    },
+    {
+      "id": "mario",
+      "boneCount": 52,
+      "clips": 12
+    },
+    {
+      "id": "wizard",
+      "boneCount": 52,
+      "clips": 12
+    }
+  ],
+  "weapons": [
+    {
+      "weaponId": "ak47",
+      "name": "AK-47 Assault Rifle",
+      "vertexCount": 23881,
+      "indexCount": 78399,
+      "materialCount": 0,
+      "texturedMaterialCount": 0,
+      "loadedMapCount": 0,
+      "groups": [],
+      "rendererGroups": [],
+      "textureByteCount": 0,
+      "materialNames": []
+    },
+    {
+      "weaponId": "carbine",
+      "name": "M4 Carbine",
+      "vertexCount": 5232,
+      "indexCount": 18870,
+      "materialCount": 0,
+      "texturedMaterialCount": 0,
+      "loadedMapCount": 0,
+      "groups": [],
+      "rendererGroups": [],
+      "textureByteCount": 0,
+      "materialNames": []
+    },
+    {
+      "id": "shotgun_marine",
+      "weaponId": "custom_tripo_convert_2aafcd42_eba5_4f27_b108_1bda17598780",
+      "name": "tripo_convert_2aafcd42-eba5-4f27-b108-1bda17598780",
+      "vertexCount": 56064,
+      "indexCount": 56064,
+      "materialCount": 14,
+      "texturedMaterialCount": 14,
+      "loadedMapCount": 14,
+      "groups": [
+        {
+          "start": 0,
+          "count": 14625,
+          "materialIndex": 0
+        },
+        {
+          "start": 14625,
+          "count": 7458,
+          "materialIndex": 1
+        },
+        {
+          "start": 22083,
+          "count": 1818,
+          "materialIndex": 2
+        },
+        {
+          "start": 23901,
+          "count": 1236,
+          "materialIndex": 3
+        },
+        {
+          "start": 25137,
+          "count": 807,
+          "materialIndex": 4
+        },
+        {
+          "start": 25944,
+          "count": 588,
+          "materialIndex": 5
+        },
+        {
+          "start": 26532,
+          "count": 5601,
+          "materialIndex": 6
+        },
+        {
+          "start": 32133,
+          "count": 6996,
+          "materialIndex": 7
+        },
+        {
+          "start": 39129,
+          "count": 5253,
+          "materialIndex": 8
+        },
+        {
+          "start": 44382,
+          "count": 3777,
+          "materialIndex": 9
+        },
+        {
+          "start": 48159,
+          "count": 2922,
+          "materialIndex": 10
+        },
+        {
+          "start": 51081,
+          "count": 1872,
+          "materialIndex": 11
+        },
+        {
+          "start": 52953,
+          "count": 2046,
+          "materialIndex": 12
+        },
+        {
+          "start": 54999,
+          "count": 1065,
+          "materialIndex": 13
+        }
+      ],
+      "rendererGroups": [
+        {
+          "start": 0,
+          "count": 14625,
+          "materialIndex": 0
+        },
+        {
+          "start": 14625,
+          "count": 7458,
+          "materialIndex": 1
+        },
+        {
+          "start": 22083,
+          "count": 1818,
+          "materialIndex": 2
+        },
+        {
+          "start": 23901,
+          "count": 1236,
+          "materialIndex": 3
+        },
+        {
+          "start": 25137,
+          "count": 807,
+          "materialIndex": 4
+        },
+        {
+          "start": 25944,
+          "count": 588,
+          "materialIndex": 5
+        },
+        {
+          "start": 26532,
+          "count": 5601,
+          "materialIndex": 6
+        },
+        {
+          "start": 32133,
+          "count": 6996,
+          "materialIndex": 7
+        },
+        {
+          "start": 39129,
+          "count": 5253,
+          "materialIndex": 8
+        },
+        {
+          "start": 44382,
+          "count": 3777,
+          "materialIndex": 9
+        },
+        {
+          "start": 48159,
+          "count": 2922,
+          "materialIndex": 10
+        },
+        {
+          "start": 51081,
+          "count": 1872,
+          "materialIndex": 11
+        },
+        {
+          "start": 52953,
+          "count": 2046,
+          "materialIndex": 12
+        },
+        {
+          "start": 54999,
+          "count": 1065,
+          "materialIndex": 13
+        }
+      ],
+      "textureByteCount": 4424669,
+      "materialNames": [
+        "tripo_part_0_material",
+        "tripo_part_1_material",
+        "tripo_part_10_material",
+        "tripo_part_11_material",
+        "tripo_part_12_material",
+        "tripo_part_13_material",
+        "tripo_part_2_material",
+        "tripo_part_3_material",
+        "tripo_part_4_material",
+        "tripo_part_5_material",
+        "tripo_part_6_material",
+        "tripo_part_7_material",
+        "tripo_part_8_material",
+        "tripo_part_9_material"
+      ],
+      "sourceTextureCount": 14,
+      "exportRoundTrips": [
+        {
+          "hybridId": "rifle_walk_ready",
+          "textureNodeCount": 19,
+          "embeddedImageCount": 19,
+          "materialCount": 15
+        },
+        {
+          "hybridId": "rifle_run_ready",
+          "textureNodeCount": 19,
+          "embeddedImageCount": 19,
+          "materialCount": 15
+        }
+      ]
+    },
+    {
+      "id": "sniper_necron",
+      "weaponId": "custom_tripo_convert_b3d296b5_5313_496b_ad98_718c55e4ee5f",
+      "name": "tripo_convert_b3d296b5-5313-496b-ad98-718c55e4ee5f",
+      "vertexCount": 56850,
+      "indexCount": 56850,
+      "materialCount": 13,
+      "texturedMaterialCount": 13,
+      "loadedMapCount": 13,
+      "groups": [
+        {
+          "start": 0,
+          "count": 11178,
+          "materialIndex": 0
+        },
+        {
+          "start": 11178,
+          "count": 9363,
+          "materialIndex": 1
+        },
+        {
+          "start": 20541,
+          "count": 975,
+          "materialIndex": 2
+        },
+        {
+          "start": 21516,
+          "count": 654,
+          "materialIndex": 3
+        },
+        {
+          "start": 22170,
+          "count": 633,
+          "materialIndex": 4
+        },
+        {
+          "start": 22803,
+          "count": 6930,
+          "materialIndex": 5
+        },
+        {
+          "start": 29733,
+          "count": 4932,
+          "materialIndex": 6
+        },
+        {
+          "start": 34665,
+          "count": 4869,
+          "materialIndex": 7
+        },
+        {
+          "start": 39534,
+          "count": 4044,
+          "materialIndex": 8
+        },
+        {
+          "start": 43578,
+          "count": 4107,
+          "materialIndex": 9
+        },
+        {
+          "start": 47685,
+          "count": 3216,
+          "materialIndex": 10
+        },
+        {
+          "start": 50901,
+          "count": 2940,
+          "materialIndex": 11
+        },
+        {
+          "start": 53841,
+          "count": 3009,
+          "materialIndex": 12
+        }
+      ],
+      "rendererGroups": [
+        {
+          "start": 0,
+          "count": 11178,
+          "materialIndex": 0
+        },
+        {
+          "start": 11178,
+          "count": 9363,
+          "materialIndex": 1
+        },
+        {
+          "start": 20541,
+          "count": 975,
+          "materialIndex": 2
+        },
+        {
+          "start": 21516,
+          "count": 654,
+          "materialIndex": 3
+        },
+        {
+          "start": 22170,
+          "count": 633,
+          "materialIndex": 4
+        },
+        {
+          "start": 22803,
+          "count": 6930,
+          "materialIndex": 5
+        },
+        {
+          "start": 29733,
+          "count": 4932,
+          "materialIndex": 6
+        },
+        {
+          "start": 34665,
+          "count": 4869,
+          "materialIndex": 7
+        },
+        {
+          "start": 39534,
+          "count": 4044,
+          "materialIndex": 8
+        },
+        {
+          "start": 43578,
+          "count": 4107,
+          "materialIndex": 9
+        },
+        {
+          "start": 47685,
+          "count": 3216,
+          "materialIndex": 10
+        },
+        {
+          "start": 50901,
+          "count": 2940,
+          "materialIndex": 11
+        },
+        {
+          "start": 53841,
+          "count": 3009,
+          "materialIndex": 12
+        }
+      ],
+      "textureByteCount": 6641310,
+      "materialNames": [
+        "tripo_part_0_material",
+        "tripo_part_1_material",
+        "tripo_part_10_material",
+        "tripo_part_11_material",
+        "tripo_part_12_material",
+        "tripo_part_2_material",
+        "tripo_part_3_material",
+        "tripo_part_4_material",
+        "tripo_part_5_material",
+        "tripo_part_6_material",
+        "tripo_part_7_material",
+        "tripo_part_8_material",
+        "tripo_part_9_material"
+      ],
+      "sourceTextureCount": 13,
+      "exportRoundTrips": [
+        {
+          "hybridId": "rifle_walk_ready",
+          "textureNodeCount": 18,
+          "embeddedImageCount": 18,
+          "materialCount": 14
+        },
+        {
+          "hybridId": "rifle_run_ready",
+          "textureNodeCount": 18,
+          "embeddedImageCount": 18,
+          "materialCount": 14
+        }
+      ]
+    }
+  ],
+  "hybrids": [
+    {
+      "weapon": "shotgun_marine",
+      "id": "rifle_walk_ready",
+      "lower": "rifle_walk",
+      "upper": "rifle_aim",
+      "duration": 1.0333333015441895,
+      "groups": 14,
+      "contactError": 1.4842720423671654e-8,
+      "orientation": {
+        "forwardDot": 0.9999999999999902,
+        "palmDot": 0.9999999999999954
+      }
+    },
+    {
+      "weapon": "shotgun_marine",
+      "id": "rifle_run_ready",
+      "lower": "rifle_run",
+      "upper": "rifle_aim",
+      "duration": 0.5,
+      "groups": 14,
+      "contactError": 1.6077598967769064e-8,
+      "orientation": {
+        "forwardDot": 0.9999999999999983,
+        "palmDot": 0.9999999999999755
+      }
+    },
+    {
+      "weapon": "sniper_necron",
+      "id": "rifle_walk_ready",
+      "lower": "rifle_walk",
+      "upper": "rifle_aim",
+      "duration": 1.0333333015441895,
+      "groups": 13,
+      "contactError": 1.4842720423099746e-8,
+      "orientation": {
+        "forwardDot": 0.9999999999999902,
+        "palmDot": 0.9999999999999953
+      }
+    },
+    {
+      "weapon": "sniper_necron",
+      "id": "rifle_run_ready",
+      "lower": "rifle_run",
+      "upper": "rifle_aim",
+      "duration": 0.5,
+      "groups": 13,
+      "contactError": 1.6077599017796776e-8,
+      "orientation": {
+        "forwardDot": 0.9999999999999984,
+        "palmDot": 0.9999999999999755
+      }
+    }
+  ],
+  "screenshots": [
+    "shotgun_marine-contact.png",
+    "shotgun_marine-rifle_walk_ready.png",
+    "shotgun_marine-rifle_run_ready.png",
+    "sniper_necron-contact.png",
+    "sniper_necron-rifle_walk_ready.png",
+    "sniper_necron-rifle_run_ready.png",
+    "rifle-idle-00.png",
+    "rifle-idle-01.png",
+    "rifle-idle-02.png",
+    "rifle-idle-03.png"
+  ],
+  "deathAnimation": {
+    "name": "Death Fall",
+    "category": "Combat · 1.2s",
+    "checked": true,
+    "activeAnimId": "combat_death",
+    "selected": true,
+    "rowActive": true,
+    "rowChecked": true,
+    "duration": 1.2333333492279053,
+    "retargetReady": true,
+    "status": "Animación: Death Fall (1.23s)"
+  }
+}

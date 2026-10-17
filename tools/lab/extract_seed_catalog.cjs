@@ -4,7 +4,6 @@
  */
 const fs = require('node:fs');
 const path = require('node:path');
-const vm = require('node:vm');
 const { execFileSync } = require('node:child_process');
 const MinimalGLBLoader = require('./glb_loader_minimal.js');
 
@@ -235,36 +234,11 @@ for (const w of weaponDefinitions) {
   console.log(`  ✓ Weapon: ${w.id} (${w.name}) - ${vertCount} verts, ${triCount} tris, texture: ${textureDataUrl ? 'yes' : 'no'}`);
 }
 
-// 4. Process Animations using FBXLoader from offline bundle
-console.log('\nExtracting animations via FBXLoader...');
-const html = fs.readFileSync(path.join(LAB_DIR, 'FBX-Web-Renderer-offline.html'), 'utf8');
-const bundle = html.slice(html.lastIndexOf('<script>') + 8, html.lastIndexOf('</script>'));
-
-function imageStub() {
-  const handlers = {};
-  return {
-    addEventListener: (type, fn) => handlers[type] = fn,
-    removeEventListener() {},
-    set src(value) { if (handlers.load) handlers.load.call(this); },
-    width: 1, height: 1
-  };
-}
-
-const context = {
-  console: { log: () => {}, warn: () => {}, error: () => {} },
-  URL, Blob, TextDecoder, TextEncoder, Buffer, setTimeout, clearTimeout, performance,
-  document: {
-    createElement: () => ({ relList: { supports: () => true } }),
-    createElementNS: () => imageStub()
-  },
-  window: { URL }, self: {}, require
-};
-
-const api = vm.runInNewContext(
-  bundle.slice(0, bundle.indexOf('var tp=8')) +
-  '\n({Loader:cf,Mixer:Ts,Box:hr,Vector:K,Quaternion:Xt,Group:Kn,Scene:er,normalize:Lf});',
-  context
-);
+// 4. Process Animations with the exact offline lab Three.js + retarget engine.
+console.log('\nExtracting animations via shared engine sampler...');
+const THREE = require('./offline_three.cjs');
+const engine = require('./retarget_and_ik_engine.js');
+engine.setTHREE(THREE);
 
 const animDefinitions = [
   { id: 'rifle_idle', categoria: 'Rifle', nombre: 'Rifle Aiming Idle', file: 'assets/blender_combat_demo/weapons/Rifle_Aiming_Idle.fbx' },
@@ -274,180 +248,45 @@ const animDefinitions = [
   { id: 'rifle_crouch_walk', categoria: 'Rifle', nombre: 'Rifle Crouch Walk', file: 'assets/blender_combat_demo/weapons/walk_crouch.fbx' },
   { id: 'melee_slash', categoria: 'Melee', nombre: 'Sword Slash', file: 'assets/blender_combat_demo/Slash.fbx' },
   { id: 'melee_crouch_slash', categoria: 'Melee', nombre: 'Crouch Slash', file: 'assets/blender_combat_demo/Crouchslash.fbx' },
-  { id: 'melee_jump_hit', categoria: 'Melee', nombre: 'Jump Attack', file: 'assets/blender_combat_demo/JumpHit.fbx' },
   { id: 'locomotion_run', categoria: 'Locomotion', nombre: 'Heavy Run', file: 'assets/characters/charger/Run.fbx' },
   { id: 'combat_death', categoria: 'Combat', nombre: 'Death Fall', file: 'assets/characters/skeleton/skeleton_death.fbx' }
 ];
 
-function canonicalBoneName(rawName) {
-  return rawName
-    .replace(/^Bone_/, '')
-    .replace(/^mixamorig\d*[:_]?/, '');
-}
-
 const processedAnims = [];
-const FPS = 24;
 
 for (const a of animDefinitions) {
   const fbxPath = path.resolve(ROOT_DIR, a.file);
   const bytes = fs.readFileSync(fbxPath);
-  const model = new api.Loader().parse(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength), '');
+  const model = new THREE.FBXLoader().parse(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength), '');
   const clip = model.animations && model.animations[0];
   if (!clip) {
     console.error(`  ✕ No animation clip in ${a.file}`);
     continue;
   }
 
-  // Collect rest pose of bones
-  const bones = [];
-  const boneRestPose = {};
-  let hipsRestPosition = [0, 0, 0];
-  const tmpQ = new api.Quaternion();
-  const tmpV = new api.Vector();
+  const anim = engine.extractAnimationClip(model, clip, a.id, a.categoria, THREE);
+  anim.name = a.nombre;
+  processedAnims.push(anim);
+  console.log(`  ✓ Anim: ${a.id} [${a.categoria}] "${a.nombre}" - ${clip.duration.toFixed(2)}s, ${anim.numFrames} frames, ${anim.tracks.length} tracks`);
+}
 
-  model.updateWorldMatrix(true, true);
-
-  model.traverse(node => {
-    if (node.isBone || node.name.startsWith('Bone_') || node.name.includes('mixamo')) {
-      bones.push(node);
-      const canon = canonicalBoneName(node.name);
-      const isRootBone = canon.toLowerCase() === 'hips' || (!node.parent?.isBone && bones.length === 1);
-      if (isRootBone) {
-        node.getWorldQuaternion(tmpQ);
-        node.getWorldPosition(tmpV);
-        boneRestPose[canon] = [
-          Number(tmpQ.x.toFixed(4)),
-          Number(tmpQ.y.toFixed(4)),
-          Number(tmpQ.z.toFixed(4)),
-          Number(tmpQ.w.toFixed(4))
-        ];
-        hipsRestPosition = [
-          Number(tmpV.x.toFixed(4)),
-          Number(tmpV.y.toFixed(4)),
-          Number(tmpV.z.toFixed(4))
-        ];
-      } else {
-        boneRestPose[canon] = [
-          Number(node.quaternion.x.toFixed(4)),
-          Number(node.quaternion.y.toFixed(4)),
-          Number(node.quaternion.z.toFixed(4)),
-          Number(node.quaternion.w.toFixed(4))
-        ];
-      }
-    }
-  });
-
-  const numFrames = Math.max(2, Math.round(clip.duration * FPS));
-  const mixer = new api.Mixer(model);
-  const action = mixer.clipAction(clip);
-  action.play();
-
-  const boneTracks = {};
-  for (const b of bones) {
-    const canon = canonicalBoneName(b.name);
-    const isRootBone = canon.toLowerCase() === 'hips' || !b.parent?.isBone;
-    boneTracks[b.name] = {
-      canon,
-      rawName: b.name,
-      isRootBone,
-      rot: [],
-      pos: isRootBone ? [] : null
-    };
+for (const [id, name, lowerAnimationId] of [
+  ['rifle_walk_ready', 'Caminar en ristre', 'rifle_walk'],
+  ['rifle_run_ready', 'Correr en ristre', 'rifle_run']
+]) {
+  const lower = processedAnims.find(a => a.id === lowerAnimationId);
+  if (!lower || !processedAnims.some(a => a.id === 'rifle_aim')) {
+    throw new Error(`Missing source animation for hybrid ${id}`);
   }
-
-  for (let f = 0; f < numFrames; f++) {
-    const t = (f / (numFrames - 1)) * clip.duration;
-    mixer.setTime(t);
-    model.updateWorldMatrix(true, true);
-
-    for (const b of bones) {
-      const trk = boneTracks[b.name];
-      if (trk.isRootBone) {
-        b.getWorldQuaternion(tmpQ);
-        b.getWorldPosition(tmpV);
-        trk.rot.push(
-          Number(tmpQ.x.toFixed(4)),
-          Number(tmpQ.y.toFixed(4)),
-          Number(tmpQ.z.toFixed(4)),
-          Number(tmpQ.w.toFixed(4))
-        );
-        trk.pos.push(
-          Number(tmpV.x.toFixed(4)),
-          Number(tmpV.y.toFixed(4)),
-          Number(tmpV.z.toFixed(4))
-        );
-      } else {
-        const q = b.quaternion;
-        trk.rot.push(
-          Number(q.x.toFixed(4)),
-          Number(q.y.toFixed(4)),
-          Number(q.z.toFixed(4)),
-          Number(q.w.toFixed(4))
-        );
-      }
-    }
-  }
-
-  mixer.stopAllAction();
-  mixer.uncacheRoot(model);
-
-  const compactTracks = [];
-  for (const [rawName, tr] of Object.entries(boneTracks)) {
-    // Check if rotation varies from first frame
-    let rotVaries = false;
-    const baseRot = tr.rot.slice(0, 4);
-    for (let i = 4; i < tr.rot.length; i += 4) {
-      if (
-        Math.abs(tr.rot[i] - baseRot[0]) > 0.0005 ||
-        Math.abs(tr.rot[i + 1] - baseRot[1]) > 0.0005 ||
-        Math.abs(tr.rot[i + 2] - baseRot[2]) > 0.0005 ||
-        Math.abs(tr.rot[i + 3] - baseRot[3]) > 0.0005
-      ) {
-        rotVaries = true;
-        break;
-      }
-    }
-
-    if (rotVaries) {
-      compactTracks.push({
-        bone: tr.canon,
-        rawBone: tr.rawName,
-        type: 'quaternion',
-        values: tr.rot
-      });
-    } else {
-      // Single keyframe if static
-      compactTracks.push({
-        bone: tr.canon,
-        rawBone: tr.rawName,
-        type: 'quaternion',
-        values: baseRot
-      });
-    }
-
-    if (tr.pos) {
-      compactTracks.push({
-        bone: tr.canon,
-        rawBone: tr.rawName,
-        type: 'position',
-        values: tr.pos
-      });
-    }
-  }
-
   processedAnims.push({
-    id: a.id,
-    name: a.nombre,
-    category: a.categoria,
-    duration: Number(clip.duration.toFixed(3)),
-    fps: FPS,
-    numFrames,
-    hipsRestPosition,
-    boneRestPose,
-    tracks: compactTracks
+    id, name, category: 'Rifle', duration: lower.duration, fps: lower.fps, numFrames: lower.numFrames,
+    hybrid: {
+      lowerAnimationId, upperAnimationId: 'rifle_aim',
+      upperCanonicalRoots: ['Spine', 'Spine1', 'Spine2', 'Neck', 'Head', 'LeftShoulder', 'RightShoulder',
+        'LeftArm', 'RightArm', 'LeftForeArm', 'RightForeArm', 'LeftHand', 'RightHand'],
+      upperTimeMode: 'normalized'
+    }
   });
-
-  console.log(`  ✓ Anim: ${a.id} [${a.categoria}] "${a.nombre}" - ${clip.duration.toFixed(2)}s, ${numFrames} frames, ${compactTracks.length} tracks`);
 }
 
 // 5. Generate seed_catalog_data.js
@@ -549,6 +388,7 @@ const jsCode = `/**
       const anim = this.getAnimation(id);
       if (!anim) return null;
 
+      if (anim.hybrid) throw new Error('Hybrid animations must be prepared and baked by RetargetAndIKEngine on a target rig.');
       const tracks = [];
       const numFrames = anim.numFrames;
       const duration = anim.duration;

@@ -357,17 +357,18 @@
     let primaryColor = [0.8, 0.8, 0.8];
     let primaryImageBytes = null;
     let primaryMimeType = null;
-    let materialFound = false;
+    const materialInfoByIndex = new Map();
+    const groups = [];
 
     // Helper to extract material info
     function extractMaterialInfo(matIndex) {
-      if (matIndex === undefined || !gltf.materials || !gltf.materials[matIndex]) return;
+      if (matIndex === undefined || !gltf.materials || !gltf.materials[matIndex]) return null;
+      if (materialInfoByIndex.has(matIndex)) return materialInfoByIndex.get(matIndex);
       const mat = gltf.materials[matIndex];
       const pbr = mat.pbrMetallicRoughness;
+      let color = [0.8, 0.8, 0.8], imageBytes = null, mimeType = null;
       if (pbr) {
-        if (pbr.baseColorFactor && Array.isArray(pbr.baseColorFactor)) {
-          primaryColor = [pbr.baseColorFactor[0], pbr.baseColorFactor[1], pbr.baseColorFactor[2]];
-        }
+        if (pbr.baseColorFactor && Array.isArray(pbr.baseColorFactor)) color = pbr.baseColorFactor.slice(0, 3);
         if (pbr.baseColorTexture && gltf.textures && gltf.images) {
           const tex = gltf.textures[pbr.baseColorTexture.index];
           if (tex && tex.source !== undefined) {
@@ -377,18 +378,20 @@
               const byteOffset = bv.byteOffset || 0;
               const byteLength = bv.byteLength;
               if (bin && byteOffset + byteLength <= bin.byteLength) {
-                primaryImageBytes = new Uint8Array(
+                imageBytes = new Uint8Array(
                   bin.buffer,
                   bin.byteOffset + byteOffset,
                   byteLength
                 );
-                primaryMimeType = img.mimeType || 'image/png';
+                mimeType = img.mimeType || 'image/png';
               }
             }
           }
         }
       }
-      materialFound = true;
+      const info = { name: mat.name || ('Material ' + (matIndex + 1)), color, imageBytes, mimeType };
+      materialInfoByIndex.set(matIndex, info);
+      return info;
     }
 
     let globalVertexCount = 0;
@@ -407,9 +410,14 @@
         const prim = mesh.primitives[primIdx];
         if (prim.attributes.POSITION === undefined) continue;
 
-        if (!materialFound && prim.material !== undefined) {
-          extractMaterialInfo(prim.material);
+        const sourceMaterialIndex = prim.material === undefined ? -1 : prim.material;
+        if (!materialInfoByIndex.has(sourceMaterialIndex)) {
+          const info = sourceMaterialIndex < 0
+            ? { name: 'Default', color: [0.8, 0.8, 0.8], imageBytes: null, mimeType: null }
+            : extractMaterialInfo(sourceMaterialIndex);
+          materialInfoByIndex.set(sourceMaterialIndex, info || { name: 'Material', color: [0.8, 0.8, 0.8], imageBytes: null, mimeType: null });
         }
+        const outputMaterialIndex = [...materialInfoByIndex.keys()].indexOf(sourceMaterialIndex);
 
         const posData = getAccessorData(gltf, bin, prim.attributes.POSITION);
         if (!posData) continue;
@@ -518,6 +526,7 @@
           primUvs.set(uvData.subarray(0, vertCount * 2));
         }
 
+        groups.push({ start: allIndices.length, count: primIndices.length, materialIndex: outputMaterialIndex });
         allPositions.push(primPositions);
         allNormals.push(primNormals);
         allUvs.push(primUvs);
@@ -548,12 +557,11 @@
 
     const finalIndices = new Uint32Array(allIndices);
 
-    // If still no material texture found, check materials directly
-    if (!primaryImageBytes && gltf.materials) {
-      for (let m = 0; m < gltf.materials.length; m++) {
-        extractMaterialInfo(m);
-        if (primaryImageBytes) break;
-      }
+    const materials = [...materialInfoByIndex.values()];
+    if (materials.length) {
+      primaryColor = materials[0].color;
+      primaryImageBytes = materials[0].imageBytes;
+      primaryMimeType = materials[0].mimeType;
     }
 
     return {
@@ -561,6 +569,8 @@
       normals: finalNormals,
       uvs: finalUvs,
       indices: finalIndices,
+      groups,
+      materials,
       color: primaryColor,
       imageBytes: primaryImageBytes,
       mimeType: primaryMimeType

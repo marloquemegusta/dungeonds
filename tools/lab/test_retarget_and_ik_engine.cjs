@@ -1,6 +1,6 @@
 const assert = require('node:assert/strict');
 const path = require('node:path');
-const THREE = require('three');
+const THREE = require('./offline_three.cjs');
 
 const RetargetAndIKEngine = require('./retarget_and_ik_engine.js');
 RetargetAndIKEngine.setTHREE(THREE);
@@ -152,7 +152,7 @@ console.log('\n--- Test 2: autoAlignWeaponGeometry ---');
   assert.ok(alignResult.foregripLocalPos instanceof THREE.Vector3, 'foregripLocalPos is Vector3');
   assert.ok(alignResult.rawLength > 0.8, 'rawLength around 0.9m: ' + alignResult.rawLength);
   assert.ok(alignResult.scaleFactor > 0, 'scaleFactor is positive');
-  assert.ok(Math.abs(alignResult.length - (1.80 * 0.48)) < 0.05, 'Scaled to charHeight * 0.48: ' + alignResult.length);
+  assert.ok(Math.abs(alignResult.length - (1.80 * 0.52)) < 0.05, 'Scaled to charHeight * 0.52: ' + alignResult.length);
 
   // Verify barrel axis points along Z
   const bAxis = new THREE.Vector3(...alignResult.autoDetectedAxes.axisBarrel);
@@ -166,7 +166,7 @@ console.log('\n--- Test 2: autoAlignWeaponGeometry ---');
 
   // Test sword mode
   const swordResult = RetargetAndIKEngine.autoAlignWeaponGeometry(geom, mockRig, { type: 'sword' });
-  assert.ok(Math.abs(swordResult.length - (1.80 * 0.55)) < 0.05, 'Sword scaled to charHeight * 0.55: ' + swordResult.length);
+  assert.ok(Math.abs(swordResult.length - (1.80 * 0.62)) < 0.05, 'Sword scaled to charHeight * 0.62: ' + swordResult.length);
 
   console.log('✓ autoAlignWeaponGeometry verified successfully');
 }

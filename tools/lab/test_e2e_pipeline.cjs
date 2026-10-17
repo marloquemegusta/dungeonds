@@ -84,6 +84,18 @@ const baked = engine.bakeClipToFBXTracks(rigMap, retargetCtx, {
   rightHandGrip: 1.0,
   leftHandGrip: 1.0
 }, weaponCtx);
+assert(Math.abs(baked.times.at(-1) - baked.duration) < 1e-7, 'baked clip includes the exact terminal sample');
+assert.equal(baked.frameCount, baked.times.length, 'reported bake frame count matches time samples');
+for (const track of baked.tracksList) {
+  for (const axis of ['x', 'y', 'z']) {
+    const values = track.rotation[axis];
+    assert.equal(values.length, baked.frameCount, `${track.canonicalName}.${axis} rotation has every sample`);
+    for (let i = 1; i < values.length; i++) {
+      assert(Math.abs(values[i] - values[i - 1]) <= 180.001,
+        `${track.canonicalName}.${axis} has no wrapped Euler jump at frame ${i}`);
+    }
+  }
+}
 
 // 4. Splice & Export FBX Binary 7400
 const rightHandBone = rigMap.bones.RightHand;
@@ -119,4 +131,6 @@ let foundWeapon = null;
 reloaded.traverse(n => { if (n.isMesh && n.name.includes('AK47')) foundWeapon = n; });
 assert(foundWeapon, 'Exported FBX must contain AK47_Rifle mesh');
 assert(reloaded.animations.length === 1, 'Exported FBX must contain 1 baked animation clip');
+assert(Math.abs(reloaded.animations[0].duration - baked.duration) < 1 / 24,
+  `reimported clip retains terminal duration ${baked.duration}s (got ${reloaded.animations[0].duration}s)`);
 console.log(`E2E PASS | Exported ${(exportedAb.byteLength / 1048576).toFixed(2)} MB | Weapon parent: ${foundWeapon.parent?.name} | Clip: ${reloaded.animations[0].name} (${reloaded.animations[0].tracks.length} tracks)`);

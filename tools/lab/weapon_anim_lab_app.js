@@ -94,7 +94,11 @@
     activeWeaponData: null, // { id, name, type, positions, normals, uvs, indices, color, textureDataUrl, pngBytes }
     weaponMesh: null,
     weaponAlignResult: null,
+    weaponTextureUrls: [],
+    weaponTextureBytesByUrl: new Map(),
+    weaponMaterialRecords: [],
     weaponPresets: {},
+    legacyWeaponPresets: {},
 
     // Gizmo & Visual Helpers
     gizmoMode: 'orbit', // 'orbit' | 'translate' | 'rotate' | 'foregrip'
@@ -149,7 +153,7 @@
 
   // 3. IndexedDB Persistence for Custom Animations & Weapon Presets
   const DB_NAME = 'DungeonDS_WeaponAnimLab_DB';
-  const DB_VERSION = 1;
+  const DB_VERSION = 2;
   function openLabDB() {
     return new Promise((resolve, reject) => {
       if (typeof indexedDB === 'undefined') return resolve(null);
@@ -321,6 +325,212 @@
     );
     state.skeletonLines.renderOrder = 990;
     state.scene.add(state.skeletonLines);
+  }
+
+  function normalizeAssetRef(ref) {
+    const slashNormalized = String(ref || '').replaceAll(String.fromCharCode(92), '/');
+    return decodeURIComponent(slashNormalized).toLowerCase();
+  }
+
+  function selectedTextureRef(ref, byPath, byBase) {
+    const normalized = normalizeAssetRef(ref);
+    const exact = byPath.get(normalized);
+    if (exact) return exact;
+    const suffixMatches = [...byPath].filter(([key, value]) => value && (key.endsWith('/' + normalized) || normalized.endsWith('/' + key)));
+    if (suffixMatches.length === 1) return suffixMatches[0][1];
+    return byBase.get(normalized.split('/').pop()) || null;
+  }
+
+  async function loadWeaponFiles(fileList) {
+    const files = Array.from(fileList || []);
+    const modelFiles = files.filter(f => /\.(fbx|glb|gltf)$/i.test(f.name));
+    if (modelFiles.length > 1) {
+      showToast('La carpeta contiene varios modelos; selecciona la carpeta de una sola arma.', true);
+      return;
+    }
+    const modelFile = modelFiles[0];
+    if (!modelFile) {
+      showToast('Selecciona un FBX/GLB y sus texturas en la misma selección o carpeta.', true);
+      return;
+    }
+    const pendingUrls = [], byPath = new Map(), byBase = new Map(), pendingBytes = new Map();
+    let missingTextureCount = 0;
+    for (const file of files.filter(f => /\.(png|jpe?g|bmp)$/i.test(f.name))) {
+      const url = URL.createObjectURL(file);
+      pendingUrls.push(url);
+      const asset = { file, url, bytes: new Uint8Array(await file.arrayBuffer()), mimeType: file.type || 'image/png' };
+      pendingBytes.set(url, asset);
+      const base = normalizeAssetRef(file.name);
+      byBase.set(base, byBase.has(base) ? null : asset);
+      if (file.webkitRelativePath) byPath.set(normalizeAssetRef(file.webkitRelativePath), asset);
+    }
+
+    try {
+      const ext = modelFile.name.split('.').pop().toLowerCase();
+      const wId = 'custom_' + modelFile.name.replace(/\.[^.]+$/, '').toLowerCase().replace(/[^a-z0-9]+/g, '_');
+      let meshData;
+      if (ext === 'glb' || ext === 'gltf') {
+        meshData = glbLoader.parseGLBToMeshData(await modelFile.arrayBuffer());
+        if (meshData.materials?.length) {
+          meshData.materials = meshData.materials.map(info => {
+            const mat = new THREE.MeshStandardMaterial({
+              color: new THREE.Color(info.color?.[0] ?? 0.8, info.color?.[1] ?? 0.8, info.color?.[2] ?? 0.8),
+              roughness: 0.65, metalness: 0.2
+            });
+            const bytes = info.imageBytes ? new Uint8Array(info.imageBytes) : null;
+            if (bytes) {
+              let binary = '';
+              for (const byte of bytes) binary += String.fromCharCode(byte);
+              const textureUrl = 'data:' + (info.mimeType || 'image/png') + ';base64,' + btoa(binary);
+              const img = new Image();
+              img.onload = () => {
+                const texture = new THREE.Texture(img);
+                texture.colorSpace = ot; texture.flipY = false; texture.needsUpdate = true;
+                mat.map = texture; mat.color.setHex(0xffffff); mat.needsUpdate = true;
+              };
+              img.src = textureUrl;
+            }
+            return { ...info, material: mat, pngBytes: bytes, fileName: null };
+          });
+          state.weaponMaterialRecords = meshData.materials;
+        }
+        if (meshData.imageBytes) {
+          const bytes = new Uint8Array(meshData.imageBytes);
+          let binary = '';
+          for (const byte of bytes) binary += String.fromCharCode(byte);
+          meshData.pngBytes = bytes;
+          meshData.texture = 'data:' + (meshData.mimeType || 'image/png') + ';base64,' + btoa(binary);
+        }
+      } else {
+        const transparentPixel = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p0sAAAAASUVORK5CYII=';
+        const loader = new THREE.FBXLoader(), missingRefs = [];
+        loader.manager = new loader.manager.constructor();
+        loader.manager.setURLModifier(url => {
+          if (/^(blob:|data:)/i.test(url)) return url;
+          const asset = selectedTextureRef(url, byPath, byBase);
+          if (asset) return asset.url;
+          if (/\.(png|jpe?g|tga|bmp)(\?.*)?$/i.test(url)) missingRefs.push(url);
+          return transparentPixel;
+        });
+        let finishLoads, started = false;
+        const allTexturesLoaded = new Promise(resolve => {
+          finishLoads = resolve;
+          loader.manager.onStart = () => { started = true; };
+          loader.manager.onLoad = resolve;
+        });
+        const model = loader.parse(await modelFile.arrayBuffer(), '');
+        if (!started) finishLoads();
+        await allTexturesLoaded;
+        const embeddedSources = new Set();
+        model.traverse(node => {
+          const nodeMaterials = Array.isArray(node.material) ? node.material : [node.material];
+          for (const mat of nodeMaterials) {
+            const map = mat?.map;
+            const src = map?.image?.currentSrc || map?.image?.src || map?.source?.data?.src || '';
+            if (!src || embeddedSources.has(src) || pendingBytes.has(src) || !/^(blob:|data:)/i.test(src)) continue;
+            embeddedSources.add(src);
+            if (/^data:/i.test(src)) {
+              const match = src.match(/^data:([^;,]+)?;base64,(.*)$/i);
+              if (match) {
+                const binary = atob(match[2]);
+                pendingBytes.set(src, { bytes: Uint8Array.from(binary, c => c.charCodeAt(0)), mimeType: match[1] || 'image/png', file: null });
+              }
+            }
+          }
+        });
+        for (const src of embeddedSources) {
+          if (!/^blob:/i.test(src) || pendingBytes.has(src)) continue;
+          try {
+            const response = await fetch(src);
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            const blob = await response.blob();
+            const mimeType = blob.type || 'application/octet-stream';
+            const extension = ({ 'image/png': 'png', 'image/jpeg': 'jpg', 'image/bmp': 'bmp', 'image/webp': 'webp' })[mimeType] || 'bin';
+            const bytes = new Uint8Array(await blob.arrayBuffer());
+            pendingBytes.set(src, { bytes, mimeType, file: new File([blob], `embedded_texture_${pendingBytes.size}.${extension}`, { type: mimeType }) });
+          } catch (error) {
+            console.warn('No se pudieron recuperar los bytes de una textura incrustada:', src, error);
+          }
+        }
+        model.updateWorldMatrix(true, true);
+        const positions = [], normals = [], uvs = [], indices = [], groups = [], materials = [];
+        const materialIds = new Map();
+        let vertexOffset = 0, color = [0.75, 0.78, 0.82];
+        function addMaterial(source) {
+          const mat = source || new THREE.MeshStandardMaterial({ color: 0xbfc7d0 });
+          if (materialIds.has(mat)) return materialIds.get(mat);
+          const id = materials.length;
+          materialIds.set(mat, id);
+          const map = mat.map || null;
+          const src = map?.image?.currentSrc || map?.image?.src || map?.source?.data?.src || '';
+          let asset = pendingBytes.get(src) || selectedTextureRef(map?.name || '', byPath, byBase);
+          if (!asset && /^data:/i.test(src)) {
+            const match = src.match(/^data:([^;,]+)?;base64,(.*)$/i);
+            if (match) {
+              const binary = atob(match[2]);
+              asset = { bytes: Uint8Array.from(binary, c => c.charCodeAt(0)), mimeType: match[1] || 'image/png', file: null };
+            }
+          }
+          materials.push({
+            name: mat.name || ('Material ' + (id + 1)),
+            color: mat.color ? [mat.color.r, mat.color.g, mat.color.b] : [1, 1, 1],
+            material: mat, pngBytes: asset?.bytes || null, mimeType: asset?.mimeType || null,
+            fileName: asset?.file?.name || null
+          });
+          if (id === 0 && mat.color) color = [mat.color.r, mat.color.g, mat.color.b];
+          return id;
+        }
+        model.traverse(node => {
+          if (!node.isMesh || !node.geometry?.attributes?.position) return;
+          const geometry = node.geometry, p = geometry.attributes.position;
+          const normal = geometry.attributes.normal, uv = geometry.attributes.uv;
+          const v = new THREE.Vector3(), normalMat = new THREE.Matrix3().getNormalMatrix(node.matrixWorld);
+          for (let i = 0; i < p.count; i++) {
+            v.fromBufferAttribute(p, i).applyMatrix4(node.matrixWorld); positions.push(v.x, v.y, v.z);
+            if (normal) { v.fromBufferAttribute(normal, i).applyMatrix3(normalMat).normalize(); normals.push(v.x, v.y, v.z); }
+            else normals.push(0, 1, 0);
+            if (uv) uvs.push(uv.getX(i), uv.getY(i)); else uvs.push(0, 0);
+          }
+          const baseIndex = indices.length, sourceIndex = geometry.index;
+          if (sourceIndex) for (let i = 0; i < sourceIndex.count; i++) indices.push(vertexOffset + sourceIndex.getX(i));
+          else for (let i = 0; i < p.count; i++) indices.push(vertexOffset + i);
+          const nodeMaterials = Array.isArray(node.material) ? node.material : [node.material];
+          const sourceGroups = geometry.groups?.length ? geometry.groups
+            : [{ start: 0, count: sourceIndex ? sourceIndex.count : p.count, materialIndex: 0 }];
+          for (const group of sourceGroups) {
+            groups.push({ start: baseIndex + group.start, count: group.count,
+              materialIndex: addMaterial(nodeMaterials[group.materialIndex] || nodeMaterials[0]) });
+          }
+          vertexOffset += p.count;
+        });
+        const primary = materials[0];
+        meshData = { positions: new Float32Array(positions), normals: new Float32Array(normals), uvs: new Float32Array(uvs),
+          indices: new Uint32Array(indices), groups, materials, color,
+          texture: primary?.material?.map?.image?.src || null, pngBytes: primary?.pngBytes || null };
+        state.weaponMaterialRecords = materials;
+        missingTextureCount = new Set(missingRefs).size;
+        if (missingTextureCount) console.warn('Texturas no seleccionadas (se muestran transparentes):', [...new Set(missingRefs)]);
+      }
+      const oldUrls = state.weaponTextureUrls;
+      state.weaponTextureUrls = pendingUrls;
+      state.weaponTextureBytesByUrl = pendingBytes;
+      const newW = {
+        id: wId, name: modelFile.name.replace(/\.[^.]+$/, ''), type: state.weaponParams.gripMode === 'sword' ? 'sword' : 'rifle',
+        positions: meshData.positions, normals: meshData.normals, uvs: meshData.uvs, indices: meshData.indices,
+        groups: meshData.groups || null, materials: meshData.materials || null, color: meshData.color || [0.75, 0.78, 0.82],
+        texture: meshData.texture || null, pngBytes: meshData.pngBytes || null
+      };
+      state.weapons = state.weapons.filter(x => x.id !== wId);
+      state.weapons.unshift(newW);
+      selectWeaponById(wId);
+      oldUrls.forEach(url => URL.revokeObjectURL(url));
+      if (missingTextureCount) showToast('Arma cargada; faltan ' + missingTextureCount + ' texturas. Carga la carpeta del arma con su .fbm.', true);
+      else showToast('Arma cargada: ' + newW.name + ' · ' + (meshData.materials?.length || 1) + ' materiales');
+    } catch (err) {
+      pendingUrls.forEach(url => URL.revokeObjectURL(url));
+      console.error(err);
+      showToast('Error al cargar arma: ' + err.message, true);
+    }
   }
 
   function onResize() {
@@ -545,105 +755,33 @@
 
   // 7. Extract Compact Animation from Any Mixamo / Character FBX
   function extractCompactAnimFromLoadedModel(model, clip, id, category = 'Custom') {
-    if (!clip) return null;
-    const fps = 24;
-    const duration = Math.max(0.05, clip.duration || 1.0);
-    const numFrames = Math.max(2, Math.round(duration * fps));
+    return engine.extractAnimationClip(model, clip, id, category, THREE);
+  }
 
-    // Save current pose
-    const savedPos = new Map();
-    const savedQuat = new Map();
-    const bones = [];
-    const boneRestPose = {};
-    let hipsRestPosition = [0, 1, 0];
-    const tmpQ = new THREE.Quaternion();
-    const tmpV = new THREE.Vector3();
-
-    model.updateWorldMatrix(true, true);
-    model.traverse(node => {
-      if (node.isBone) {
-        bones.push(node);
-        savedPos.set(node, node.position.clone());
-        savedQuat.set(node, node.quaternion.clone());
-        const canon = engine.normalizeCanonicalBoneName(node.name);
-        if (!canon) return;
-        const isRoot = canon === 'Hips' || !node.parent?.isBone;
-        if (isRoot) {
-          node.getWorldQuaternion(tmpQ);
-          node.getWorldPosition(tmpV);
-          boneRestPose[canon] = [tmpQ.x, tmpQ.y, tmpQ.z, tmpQ.w];
-          hipsRestPosition = [tmpV.x, tmpV.y, tmpV.z];
-        } else {
-          boneRestPose[canon] = [node.quaternion.x, node.quaternion.y, node.quaternion.z, node.quaternion.w];
-        }
-      }
-    });
-
-    const mixer = new THREE.AnimationMixer(model);
-    const action = mixer.clipAction(clip);
-    action.play();
-
-    const boneTracks = {};
-    for (const b of bones) {
-      const canon = engine.normalizeCanonicalBoneName(b.name);
-      if (!canon) continue;
-      const isRoot = canon === 'Hips' || !b.parent?.isBone;
-      boneTracks[canon] = {
-        canon,
-        rawName: b.name,
-        isRoot,
-        rot: [],
-        pos: isRoot ? [] : null
-      };
+  function isValidStoredAnimation(anim) {
+    if (anim?.hybrid) return typeof anim.hybrid.lowerAnimationId === 'string' &&
+      typeof anim.hybrid.upperAnimationId === 'string' && Array.isArray(anim.hybrid.upperCanonicalRoots) &&
+      anim.hybrid.upperTimeMode === 'normalized';
+    if (!anim || !Array.isArray(anim.tracks) || !Number.isInteger(anim.numFrames) || anim.numFrames < 2) return false;
+    const seen = new Set();
+    for (const tr of anim.tracks) {
+      const key = `${tr.bone}:${tr.type}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      const stride = tr.type === 'quaternion' ? 4 : tr.type === 'position' ? 3 : 0;
+      if (!stride || !Array.isArray(tr.values) || ![stride, anim.numFrames * stride].includes(tr.values.length)) return false;
+      if (tr.values.some(v => !Number.isFinite(v))) return false;
     }
+    return true;
+  }
 
-    for (let f = 0; f < numFrames; f++) {
-      const t = (f / (numFrames - 1)) * duration;
-      mixer.setTime(t);
-      model.updateWorldMatrix(true, true);
-      for (const b of bones) {
-        const canon = engine.normalizeCanonicalBoneName(b.name);
-        const trk = canon ? boneTracks[canon] : null;
-        if (!trk) continue;
-        if (trk.isRoot) {
-          b.getWorldQuaternion(tmpQ);
-          b.getWorldPosition(tmpV);
-          trk.rot.push(Number(tmpQ.x.toFixed(4)), Number(tmpQ.y.toFixed(4)), Number(tmpQ.z.toFixed(4)), Number(tmpQ.w.toFixed(4)));
-          trk.pos.push(Number(tmpV.x.toFixed(4)), Number(tmpV.y.toFixed(4)), Number(tmpV.z.toFixed(4)));
-        } else {
-          const q = b.quaternion;
-          trk.rot.push(Number(q.x.toFixed(4)), Number(q.y.toFixed(4)), Number(q.z.toFixed(4)), Number(q.w.toFixed(4)));
-        }
-      }
-    }
-
-    mixer.stopAllAction();
-    mixer.uncacheRoot(model);
-
-    // Restore rest pose
-    for (const b of bones) {
-      if (savedPos.has(b)) b.position.copy(savedPos.get(b));
-      if (savedQuat.has(b)) b.quaternion.copy(savedQuat.get(b));
-    }
-    model.updateWorldMatrix(true, true);
-
-    const tracks = [];
-    for (const tr of Object.values(boneTracks)) {
-      tracks.push({ bone: tr.canon, rawBone: tr.rawName, type: 'quaternion', values: tr.rot });
-      if (tr.pos) tracks.push({ bone: tr.canon, rawBone: tr.rawName, type: 'position', values: tr.pos });
-    }
-
-    return {
-      id,
-      name: clip.name && clip.name !== 'mixamo.com' ? clip.name : id,
-      category,
-      duration: Number(duration.toFixed(3)),
-      fps,
-      numFrames,
-      hipsRestPosition,
-      boneRestPose,
-      tracks
-    };
+  function resolveAnimationForRig(anim) {
+    if (!anim?.hybrid) return anim;
+    const find = id => state.animations.find(candidate => candidate.id === id);
+    const lower = find(anim.hybrid.lowerAnimationId);
+    const upper = find(anim.hybrid.upperAnimationId);
+    if (!lower || !upper) throw new Error(`Faltan clips fuente para ${anim.name}`);
+    return { ...anim, hybrid: { ...anim.hybrid, lower, upper } };
   }
 
   // 8. Weapon Attachment, PCA Auto-Alignment & Live Update
@@ -680,6 +818,8 @@
       indices: new Uint32Array(meshData.indices),
       color: meshData.color || [0.75, 0.78, 0.82],
       textureDataUrl: meshData.texture || wEntry.texture || null,
+      materials: meshData.materials || wEntry.materials || null,
+      groups: meshData.groups || wEntry.groups || null,
       pngBytes
     };
 
@@ -716,6 +856,11 @@
     syncIkControlsUI();
   }
 
+  function getAttachedHandKey() {
+    const requested = state.weaponParams.handTarget || 'RightHand';
+    return state.charRigMap?.bones?.[requested] ? requested : 'RightHand';
+  }
+
   function attachWeaponDataToCharacter(weaponData, rebuildMesh = true) {
     state.activeWeaponData = weaponData;
     el('statusWeapon').textContent = `Arma: ${weaponData.name}`;
@@ -732,29 +877,34 @@
         geo.setAttribute('uv', new THREE.Float32BufferAttribute(weaponData.uvs, 2));
       }
       geo.setIndex(new THREE.Uint32BufferAttribute(weaponData.indices, 1));
+      if (weaponData.groups) {
+        geo.clearGroups();
+        for (const group of weaponData.groups) geo.addGroup(group.start, group.count, group.materialIndex);
+      }
       geo.computeBoundingBox();
 
-      const mat = new THREE.MeshStandardMaterial({
-        color: new THREE.Color(weaponData.color[0], weaponData.color[1], weaponData.color[2]),
-        roughness: 0.6,
-        metalness: 0.25
-      });
+      const mats = weaponData.materials?.length
+        ? weaponData.materials.map(m => m.material)
+        : [new THREE.MeshStandardMaterial({
+            color: new THREE.Color(weaponData.color[0], weaponData.color[1], weaponData.color[2]),
+            roughness: 0.6, metalness: 0.25
+          })];
 
-      if (weaponData.textureDataUrl) {
+      if (!weaponData.materials?.length && weaponData.textureDataUrl) {
         const img = new Image();
         img.onload = () => {
           const tex = new THREE.Texture(img);
           tex.colorSpace = ot;
           tex.flipY = false;
           tex.needsUpdate = true;
-          mat.map = tex;
-          mat.color.setHex(0xffffff);
-          mat.needsUpdate = true;
+          mats[0].map = tex;
+          mats[0].color.setHex(0xffffff);
+          mats[0].needsUpdate = true;
         };
         img.src = weaponData.textureDataUrl;
       }
 
-      state.weaponMesh = new THREE.Mesh(geo, mat);
+      state.weaponMesh = new THREE.Mesh(geo, mats.length === 1 ? mats[0] : mats);
       state.weaponMesh.name = weaponData.name;
       state.weaponMesh.castShadow = true;
       state.weaponMesh.receiveShadow = true;
@@ -767,8 +917,8 @@
 
   function updateWeaponAttachment() {
     if (!state.charRigMap || !state.activeWeaponData || !state.weaponMesh) return;
-    const handKey = state.weaponParams.handTarget || 'RightHand';
-    const handBone = state.charRigMap.bones[handKey] || state.charRigMap.bones.RightHand;
+    const handKey = getAttachedHandKey();
+    const handBone = state.charRigMap.bones[handKey];
     if (!handBone) return;
 
     if (state.weaponMesh.parent !== handBone) {
@@ -784,22 +934,15 @@
 
     const alignRes = engine.autoAlignWeaponGeometry(state.activeWeaponData, state.charRigMap, {
       type: state.weaponParams.gripMode === 'sword' ? 'sword' : 'rifle',
+      attachBoneName: handKey,
       scaleMultiplier: state.weaponParams.scaleMultiplier,
       flipBarrel: state.weaponParams.flipBarrel,
       flipUp: state.weaponParams.flipUp,
       roll90: state.weaponParams.roll90,
       offsetPos: state.weaponParams.offsetPos,
-      offsetRotDeg: rotDeg
+      offsetRotDeg: rotDeg,
+      foregripOffset: state.weaponParams.foregripOffset
     });
-
-    // Apply foregrip user adjustment in weapon local space
-    const fg = alignRes.foregripLocalPos.clone();
-    const rawScale = alignRes.scaleFactor || 1.0;
-    const unitScale = ((state.charRigMap.charHeight || 1.8) / 1.8) / rawScale;
-    fg.x += (state.weaponParams.foregripOffset[2] || 0) * unitScale;
-    fg.y += (state.weaponParams.foregripOffset[1] || 0) * unitScale;
-    fg.z += (state.weaponParams.foregripOffset[0] || 0) * unitScale;
-    alignRes.adjustedForegripLocalPos = fg;
 
     state.weaponAlignResult = alignRes;
 
@@ -836,7 +979,7 @@
     el('timelineScrubber').value = '0';
 
     if (state.charRigMap) {
-      state.retargetCtx = engine.prepareAnimationRetarget(state.charRigMap, anim);
+      state.retargetCtx = engine.prepareAnimationRetarget(state.charRigMap, resolveAnimationForRig(anim));
       evaluateCurrentFrame();
     }
     renderAnimCatalogUI();
@@ -846,8 +989,9 @@
     if (!state.activeWeaponData || !state.weaponAlignResult) return null;
     return {
       localMatrix4: state.weaponAlignResult.localMatrix4,
-      foregripLocalPos: state.weaponAlignResult.adjustedForegripLocalPos || state.weaponAlignResult.foregripLocalPos,
-      attachBoneName: state.weaponParams.handTarget || 'RightHand'
+      foregripLocalPos: state.weaponAlignResult.foregripLocalPos,
+      attachBoneName: getAttachedHandKey(),
+      finalLocalAxes: state.weaponAlignResult.finalLocalAxes
     };
   }
 
@@ -896,21 +1040,23 @@
     state.ikChainLine.visible = showM && state.retargetParams.leftHandIkWeight > 0.01;
 
     if (showM) {
-      const handBone = bones[state.weaponParams.handTarget || 'RightHand'] || bones.RightHand;
+        const handKey = getAttachedHandKey();
+        const handBone = bones[handKey];
       if (handBone) {
         const wMat = new THREE.Matrix4().multiplyMatrices(handBone.matrixWorld, state.weaponAlignResult.localMatrix4);
         const gripWorld = state.weaponAlignResult.gripPivotLocal.clone().applyMatrix4(wMat);
-        const fgLocal = state.weaponAlignResult.adjustedForegripLocalPos || state.weaponAlignResult.foregripLocalPos;
+        const fgLocal = state.weaponAlignResult.foregripLocalPos;
         const fgWorld = fgLocal.clone().applyMatrix4(wMat);
 
         state.gripMarker.position.copy(gripWorld);
         state.foregripMarker.position.copy(fgWorld);
 
-        if (bones.LeftArm && bones.LeftForeArm && bones.LeftHand) {
+        const support = handKey === 'LeftHand' ? 'Right' : 'Left';
+        if (bones[support + 'Arm'] && bones[support + 'ForeArm'] && bones[support + 'Hand']) {
           const p0 = new THREE.Vector3(), p1 = new THREE.Vector3(), p2 = new THREE.Vector3();
-          bones.LeftArm.getWorldPosition(p0);
-          bones.LeftForeArm.getWorldPosition(p1);
-          bones.LeftHand.getWorldPosition(p2);
+          bones[support + 'Arm'].getWorldPosition(p0);
+          bones[support + 'ForeArm'].getWorldPosition(p1);
+          bones[support + 'Hand'].getWorldPosition(p2);
           const ikArr = state.ikChainLine.geometry.attributes.position.array;
           ikArr[0] = p0.x; ikArr[1] = p0.y; ikArr[2] = p0.z;
           ikArr[3] = p1.x; ikArr[4] = p1.y; ikArr[5] = p1.z;
@@ -947,6 +1093,10 @@
       normals: normOut,
       uvs: w.uvs,
       indices: new Uint32Array(w.indices),
+      groups: (w.groups || []).map(g => ({ start: g.start, count: g.count, materialIndex: g.materialIndex })),
+      materials: (w.materials || []).map(m => ({
+        name: m.name, color: m.color, pngBytes: m.pngBytes, mimeType: m.mimeType, fileName: m.fileName
+      })),
       color: w.color,
       pngBytes: w.pngBytes
     };
@@ -962,30 +1112,26 @@
 
     // Re-capture rig map in unscaled model space for exact native unit baking
     const savedTime = state.currentTime;
-    const retargetCtx = engine.prepareAnimationRetarget(state.charRigMap, animObj);
-    const weaponCtx = buildWeaponContext();
-
-    const baked = engine.bakeClipToFBXTracks(
-      state.charRigMap,
-      retargetCtx,
-      state.retargetParams,
-      weaponCtx,
-      state.fbxBoneMetaMap
-    );
-
-    if (state.charWrapper) {
-      state.charWrapper.scale.setScalar(prevScale);
-      state.charWrapper.updateWorldMatrix(true, true);
+    try {
+      const retargetCtx = engine.prepareAnimationRetarget(state.charRigMap, resolveAnimationForRig(animObj));
+      const weaponCtx = buildWeaponContext();
+      const baked = engine.bakeClipToFBXTracks(
+        state.charRigMap, retargetCtx, state.retargetParams, weaponCtx, state.fbxBoneMetaMap
+      );
+      return {
+        name: animObj.name || animObj.id,
+        duration: baked.duration,
+        times: Array.from(baked.times),
+        tracks: baked.splicerTracks
+      };
+    } finally {
+      if (state.charWrapper) {
+        state.charWrapper.scale.setScalar(prevScale);
+        state.charWrapper.updateWorldMatrix(true, true);
+      }
+      state.currentTime = savedTime;
+      evaluateCurrentFrame();
     }
-    state.currentTime = savedTime;
-    evaluateCurrentFrame();
-
-    return {
-      name: animObj.name || animObj.id,
-      duration: baked.duration,
-      times: Array.from(baked.times),
-      tracks: baked.splicerTracks
-    };
   }
 
   function exportFbxWithAnimations(animList, downloadFileName) {
@@ -994,8 +1140,8 @@
       return null;
     }
 
-    const handKey = state.weaponParams.handTarget || 'RightHand';
-    const handBone = state.charRigMap.bones[handKey] || state.charRigMap.bones.RightHand;
+    const handKey = getAttachedHandKey();
+    const handBone = state.charRigMap.bones[handKey];
     const origHandName = state.charRigMap.canonicalToOriginalName[handKey] || handBone?.userData?.originalName || handBone?.name;
     const handMeta = state.fbxBoneMetaMap[origHandName] || {};
     const parentBoneId = handMeta.nodeId !== undefined && handMeta.nodeId !== null
@@ -1228,7 +1374,7 @@
         version: 1,
         exportedAt: new Date().toISOString(),
         animations: customAnims.length ? customAnims : state.animations,
-        weaponPresets: state.weaponPresets
+        weaponPresets: { ...state.legacyWeaponPresets, ...state.weaponPresets }
       };
       const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
@@ -1256,7 +1402,10 @@
           }
         }
         if (data.weaponPresets) {
-          Object.assign(state.weaponPresets, data.weaponPresets);
+          for (const [id, params] of Object.entries(data.weaponPresets)) {
+            if (params?.axesVersion === 2) state.weaponPresets[id] = params;
+            else state.legacyWeaponPresets[id] = params;
+          }
         }
         renderAnimCatalogUI();
         showToast('Pack de librería cargado correctamente');
@@ -1267,93 +1416,12 @@
 
     // Weapon upload (.FBX / .GLB) & removal
     const weaponInput = el('weaponFileInput');
+    const weaponFolderInput = el('weaponFolderInput');
     el('btnUploadWeapon').addEventListener('click', () => weaponInput.click());
+    el('btnUploadWeaponFolder').addEventListener('click', () => weaponFolderInput.click());
     el('btnRemoveWeapon').addEventListener('click', removeWeapon);
-
-    weaponInput.addEventListener('change', async () => {
-      const f = weaponInput.files?.[0];
-      if (!f) return;
-      try {
-        const buf = await f.arrayBuffer();
-        const ext = f.name.split('.').pop().toLowerCase();
-        const wId = 'custom_' + f.name.replace(/\.[^.]+$/, '').toLowerCase().replace(/[^a-z0-9]+/g, '_');
-        let meshData;
-        let pngBytes = null;
-        let textureDataUrl = null;
-
-        if (ext === 'glb' || ext === 'gltf') {
-          meshData = glbLoader.parseGLBToMeshData(buf);
-          if (meshData.imageBytes) {
-            pngBytes = meshData.imageBytes;
-            const b64 = btoa(String.fromCharCode(...new Uint8Array(pngBytes)));
-            textureDataUrl = `data:${meshData.mimeType || 'image/png'};base64,${b64}`;
-          }
-        } else if (ext === 'fbx') {
-          const wModel = new THREE.FBXLoader().parse(buf, '');
-          wModel.updateWorldMatrix(true, true);
-          const posArr = [], normArr = [], uvArr = [], idxArr = [];
-          let vOffset = 0;
-          let color = [0.75, 0.78, 0.82];
-          wModel.traverse(n => {
-            if (n.isMesh && n.geometry?.attributes?.position) {
-              const g = n.geometry;
-              const p = g.attributes.position;
-              const nm = g.attributes.normal;
-              const uv = g.attributes.uv;
-              const v = new THREE.Vector3();
-              const normalMat = new THREE.Matrix3().getNormalMatrix(n.matrixWorld);
-              for (let i = 0; i < p.count; i++) {
-                v.fromBufferAttribute(p, i).applyMatrix4(n.matrixWorld);
-                posArr.push(v.x, v.y, v.z);
-                if (nm) {
-                  v.fromBufferAttribute(nm, i).applyMatrix3(normalMat).normalize();
-                  normArr.push(v.x, v.y, v.z);
-                } else {
-                  normArr.push(0, 1, 0);
-                }
-                if (uv) {
-                  uvArr.push(uv.getX(i), uv.getY(i));
-                } else {
-                  uvArr.push(0, 0);
-                }
-                idxArr.push(vOffset + i);
-              }
-              vOffset += p.count;
-              const mat = Array.isArray(n.material) ? n.material[0] : n.material;
-              if (mat && mat.color) color = [mat.color.r, mat.color.g, mat.color.b];
-            }
-          });
-          meshData = {
-            positions: new Float32Array(posArr),
-            normals: new Float32Array(normArr),
-            uvs: new Float32Array(uvArr),
-            indices: new Uint32Array(idxArr),
-            color
-          };
-        }
-
-        const newW = {
-          id: wId,
-          name: f.name.replace(/\.[^.]+$/, ''),
-          type: state.weaponParams.gripMode === 'sword' ? 'sword' : 'rifle',
-          positions: meshData.positions,
-          normals: meshData.normals,
-          uvs: meshData.uvs,
-          indices: meshData.indices,
-          color: meshData.color || [0.75, 0.78, 0.82],
-          texture: textureDataUrl,
-          pngBytes
-        };
-
-        state.weapons = state.weapons.filter(x => x.id !== wId);
-        state.weapons.unshift(newW);
-        selectWeaponById(wId);
-        showToast(`Arma cargada y auto-alineada: ${newW.name}`);
-      } catch (err) {
-        console.error(err);
-        showToast(`Error al cargar arma: ${err.message}`, true);
-      }
-    });
+    weaponInput.addEventListener('change', () => loadWeaponFiles(weaponInput.files));
+    weaponFolderInput.addEventListener('change', () => loadWeaponFiles(weaponFolderInput.files));
 
     // Weapon Hand & Grip Mode
     el('weaponHandTarget').addEventListener('change', e => {
@@ -1466,7 +1534,7 @@
 
     el('btnSaveWeaponPreset').addEventListener('click', async () => {
       if (!state.activeWeaponId) return;
-      const presetCopy = JSON.parse(JSON.stringify(state.weaponParams));
+      const presetCopy = { ...JSON.parse(JSON.stringify(state.weaponParams)), axesVersion: 2 };
       state.weaponPresets[state.activeWeaponId] = presetCopy;
       await saveToDB('presets', { id: state.activeWeaponId, params: presetCopy });
       showToast(`Preset guardado para ${state.activeWeaponData?.name || state.activeWeaponId}`);
@@ -1597,16 +1665,24 @@
     // Load seed animations + custom IndexedDB animations
     state.animations = [...(catalog.animations || [])];
     const savedAnims = await loadAllFromDB('animations');
+    let rejectedAnims = 0;
     for (const a of savedAnims) {
+      if (!isValidStoredAnimation(a)) { rejectedAnims++; continue; }
       if (!state.animations.some(x => x.id === a.id)) state.animations.push(a);
     }
+    if (rejectedAnims) showToast(`${rejectedAnims} animación(es) guardadas están dañadas; vuelve a importarlas desde su FBX`, true);
     state.animations.forEach(a => state.selectedAnimIds.add(a.id));
 
     // Load seed weapons + presets
     state.weapons = [...(catalog.weapons || [])];
     const savedPresets = await loadAllFromDB('presets');
     for (const p of savedPresets) {
-      if (p.id && p.params) state.weaponPresets[p.id] = p.params;
+      if (!p.id || !p.params) continue;
+      if (p.params.axesVersion === 2) state.weaponPresets[p.id] = p.params;
+      else state.legacyWeaponPresets[p.id] = p.params;
+    }
+    if (Object.keys(state.legacyWeaponPresets).length) {
+      showToast('Hay presets antiguos conservados; guárdalos de nuevo para actualizar sus ejes.');
     }
 
     renderAnimCatalogUI();

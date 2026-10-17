@@ -445,9 +445,11 @@
 
       <div class="btn-row">
         <button class="btn secondary" id="btnUploadWeapon">+ Subir Arma (.FBX / .GLB)</button>
+        <button class="btn secondary" id="btnUploadWeaponFolder">Cargar carpeta (FBX + texturas)</button>
         <button class="btn secondary" id="btnRemoveWeapon">✕ Quitar Arma</button>
       </div>
-      <input type="file" id="weaponFileInput" accept=".fbx,.glb,.gltf" style="display:none">
+      <input type="file" id="weaponFileInput" accept=".fbx,.glb,.gltf,.png,.jpg,.jpeg,.bmp" multiple style="display:none">
+      <input type="file" id="weaponFolderInput" webkitdirectory directory multiple style="display:none">
     </div>
   </aside>
 

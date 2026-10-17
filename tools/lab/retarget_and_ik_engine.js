@@ -114,16 +114,17 @@
       const side = isLeft ? 'LeftHand' : 'RightHand';
       for (const f of FINGER_NAMES) {
         const fingerRegex = new RegExp(f === 'Pinky' ? '(pinky|little)' : f, 'i');
-        if (fingerRegex.test(lower)) {
-          for (let j = 1; j <= 3; j++) {
-            if (lower.includes(String(j)) || lower.includes(`0${j}`)) {
-              return `${side}${f}${j}`;
-            }
-          }
-          if (/distal/i.test(lower)) return `${side}${f}3`;
-          if (/intermediate|middle/i.test(lower)) return `${side}${f}2`;
-          if (/proximal/i.test(lower)) return `${side}${f}1`;
+        if (!fingerRegex.test(lower)) continue;
+
+        const terminalNumber = lower.match(/(\d+)$/);
+        if (terminalNumber) {
+          const segment = Number(terminalNumber[1]);
+          return segment >= 1 && segment <= 3 ? `${side}${f}${segment}` : null;
         }
+        if (/distal/i.test(lower)) return `${side}${f}3`;
+        if (/intermediate/i.test(lower)) return `${side}${f}2`;
+        if (/proximal/i.test(lower)) return `${side}${f}1`;
+        if (/middle/i.test(lower)) return `${side}${f}2`;
       }
     }
 
@@ -133,27 +134,120 @@
   /**
    * 1. mapHumanoidSkeleton(rootObject, optionalTHREE)
    */
+  function collectHumanoidBones(rootObject, optionalClip) {
+    const bones = {};
+    const addCandidate = (node, key) => {
+      if (bones[key] && bones[key] !== node) {
+        const existing = bones[key];
+        const nodeId = node.ID ?? node.userData?.id ?? node.userData?.transformData?.id;
+        const existingId = existing.ID ?? existing.userData?.id ?? existing.userData?.transformData?.id;
+        if (nodeId !== undefined && existingId !== undefined && String(nodeId) === String(existingId)) {
+          return; // FBXLoader identity shims repeat one model ID below the real binding node.
+        }
+        throw new Error(`Duplicate humanoid node ${key}; conflicting FBX model IDs ${existingId ?? 'unknown'} and ${nodeId ?? 'unknown'}`);
+      }
+      bones[key] = node;
+    };
+    rootObject.traverse(node => {
+      if (!node.isBone) return;
+      const key = normalizeCanonicalBoneName(node.name);
+      if (key) addCandidate(node, key);
+    });
+    if (Object.keys(bones).length) return bones;
+
+    // Some legacy Mixamo death FBXs encode each animated humanoid transform as
+    // a flat Mesh proxy. Only use proxies when the model has no mapped Bones,
+    // and only when the clip explicitly animates that node.
+    const animatedNames = new Set();
+    for (const track of optionalClip?.tracks || []) {
+      const match = String(track.name || '').match(/^(.+?)\.(position|quaternion)$/i);
+      if (match) animatedNames.add(match[1]);
+    }
+    if (!animatedNames.size) return bones;
+    rootObject.traverse(node => {
+      if (node.isBone || !animatedNames.has(node.name)) return;
+      const key = normalizeCanonicalBoneName(node.name);
+      if (key) addCandidate(node, key);
+    });
+    return bones;
+  }
+
+  // Both seed generation and user imports must sample one real bone per track.
+  function extractAnimationClip(model, clip, id, category = 'Custom', optionalTHREE) {
+    const THREE = getTHREE(optionalTHREE);
+    if (!clip) return null;
+    const bones = collectHumanoidBones(model, clip);
+    if (!bones.Hips) throw new Error('Animation has no humanoid Hips bone');
+    const fps = 24;
+    const duration = Math.max(0.05, clip.duration || 1);
+    const numFrames = Math.max(2, Math.ceil(duration * fps) + 1);
+    const saved = [];
+    model.traverse(n => saved.push([n, n.position.clone(), n.quaternion.clone(), n.scale.clone()]));
+    const boneParents = {}, boneRestPose = {}, boneRestPositions = {}, boneTracks = {};
+    const canonicalByNode = new Map(Object.entries(bones).map(([key, bone]) => [bone, key]));
+    model.updateWorldMatrix(true, true);
+    function relativeQuat(key) {
+      const q = bones[key].getWorldQuaternion(new THREE.Quaternion());
+      const parentKey = boneParents[key];
+      return parentKey ? bones[parentKey].getWorldQuaternion(new THREE.Quaternion()).invert().multiply(q).normalize() : q.normalize();
+    }
+    for (const [key, bone] of Object.entries(bones)) {
+      let parent = bone.parent;
+      while (parent && !canonicalByNode.has(parent)) parent = parent.parent;
+      boneParents[key] = key === 'Hips' ? null : (canonicalByNode.get(parent) || null);
+    }
+    for (const [key, bone] of Object.entries(bones)) {
+      boneRestPose[key] = relativeQuat(key).toArray();
+      boneRestPositions[key] = bone.getWorldPosition(new THREE.Vector3()).toArray();
+      boneTracks[key] = { bone: key, rawBone: bone.name, type: 'quaternion', values: [] };
+    }
+    const hipsRestPosition = boneRestPositions.Hips.slice();
+    const positions = [];
+    const mixer = new THREE.AnimationMixer(model);
+    try {
+      const action = mixer.clipAction(clip);
+      action.setLoop(2200, 1); // THREE.LoopOnce: retain the actual last sample, never wrap to frame 0.
+      action.clampWhenFinished = true;
+      action.play();
+      for (let f = 0; f < numFrames; f++) {
+        mixer.setTime((f / (numFrames - 1)) * duration);
+        model.updateWorldMatrix(true, true);
+        for (const key of Object.keys(bones)) {
+          const q = relativeQuat(key);
+          boneTracks[key].values.push(...q.toArray().map(v => Number(v.toFixed(6))));
+        }
+        positions.push(...bones.Hips.getWorldPosition(new THREE.Vector3()).toArray().map(v => Number(v.toFixed(6))));
+      }
+    } finally {
+      mixer.stopAllAction();
+      mixer.uncacheRoot(model);
+      for (const [n, p, q, s] of saved) { n.position.copy(p); n.quaternion.copy(q); n.scale.copy(s); }
+      model.updateWorldMatrix(true, true);
+    }
+    const tracks = Object.values(boneTracks);
+    for (const tr of tracks) {
+      const base = tr.values.slice(0, 4);
+      if (tr.values.every((v, i) => Math.abs(v - base[i % 4]) < 0.000005)) tr.values = base;
+    }
+    tracks.push({ bone: 'Hips', rawBone: bones.Hips.name, type: 'position', values: positions });
+    return { id, name: clip.name && clip.name !== 'mixamo.com' ? clip.name : id, category,
+      duration, fps, numFrames, hipsRestPosition, boneRestPose, boneRestPositions, boneParents, tracks };
+  }
+
   function mapHumanoidSkeleton(rootObject, optionalTHREE) {
     const THREE = getTHREE(optionalTHREE);
     if (!rootObject) throw new Error("mapHumanoidSkeleton: rootObject is required");
 
     rootObject.updateWorldMatrix(true, true);
 
-    const bones = {};
+    const bones = collectHumanoidBones(rootObject);
     const boneToCanonical = {};
     const canonicalToOriginalName = {};
 
-    rootObject.traverse(node => {
-      if (node.isBone || node.type === 'Bone') {
-        const canonical = normalizeCanonicalBoneName(node.name);
-        if (canonical && !bones[canonical]) {
-          bones[canonical] = node;
-          boneToCanonical[node.uuid] = canonical;
-          boneToCanonical[node.name] = canonical;
-          canonicalToOriginalName[canonical] = node.name;
-        }
-      }
-    });
+    for (const [canonical, node] of Object.entries(bones)) {
+      boneToCanonical[node.uuid] = canonical;
+      canonicalToOriginalName[canonical] = node.name;
+    }
 
     // Capture Rest Pose
     const restLocalPos = {};
@@ -383,6 +477,11 @@
 
     const weaponType = options.type || 'rifle'; // 'rifle' or 'sword'
     const scaleMultiplier = options.scaleMultiplier || 1.0;
+    const attachBoneName = options.attachBoneName || 'RightHand';
+    if (!['LeftHand', 'RightHand'].includes(attachBoneName) || !charRigMap.bones[attachBoneName]) {
+      throw new Error(`autoAlignWeaponGeometry: attachment hand ${attachBoneName} is not mapped`);
+    }
+    const attachHandKey = attachBoneName === 'RightHand' ? 'rightHandVectors' : 'leftHandVectors';
 
     // Collect all vertex positions
     let positions = [];
@@ -554,17 +653,15 @@
       maxV = -oldMinV;
     }
     axisRight.crossVectors(axisBarrel, axisUp).normalize();
+    const sourceLateral = new THREE.Vector3().crossVectors(axisUp, axisBarrel).normalize();
 
-    if (options.roll90) {
-      const angle = THREE.MathUtils.degToRad(options.roll90 * 90);
-      axisUp.applyAxisAngle(axisBarrel, angle).normalize();
-      axisRight.crossVectors(axisBarrel, axisUp).normalize();
-    }
+    // roll90 is applied as a semantic rotation below so the grip pivot stays fixed.
 
-    // Account for any world scale on RightHand bone
+    // Account for the selected attachment hand's world scale.
     let handWorldScale = 1.0;
-    if (charRigMap.restWorldMatrix && charRigMap.restWorldMatrix.RightHand) {
-      const ws = new THREE.Vector3().setFromMatrixScale(charRigMap.restWorldMatrix.RightHand);
+    const handRestMatrix = charRigMap.restWorldMatrix && charRigMap.restWorldMatrix[attachBoneName];
+    if (handRestMatrix) {
+      const ws = new THREE.Vector3().setFromMatrixScale(handRestMatrix);
       if (isFinite(ws.x) && ws.x > 1e-4) handWorldScale = ws.x;
     }
 
@@ -607,9 +704,17 @@
       .add(axisBarrel.clone().multiplyScalar(uForegrip))
       .add(axisUp.clone().multiplyScalar(vForegrip))
       .add(axisRight.clone().multiplyScalar(wForegrip));
+    const foregripOffset = options.foregripOffset;
+    if (Array.isArray(foregripOffset)) {
+      const unitScale = (charRigMap.charHeight / 1.8) / (handWorldScale * scaleFactor);
+      foregripLocalPos
+        .add(axisBarrel.clone().multiplyScalar((foregripOffset[0] || 0) * unitScale))
+        .add(axisUp.clone().multiplyScalar((foregripOffset[1] || 0) * unitScale))
+        .add(sourceLateral.clone().multiplyScalar((foregripOffset[2] || 0) * unitScale));
+    }
 
-    // Construct localMatrix4 in RightHand space
-    const handVecs = charRigMap.rightHandVectors || {
+    // Construct localMatrix4 in the selected hand's local space.
+    const handVecs = charRigMap[attachHandKey] || {
       handFwdLocal: new THREE.Vector3(0, 1, 0),
       palmInLocal: new THREE.Vector3(0, 0, -1),
       hingeAxisLocal: new THREE.Vector3(1, 0, 0)
@@ -630,47 +735,47 @@
       const baseUp = handVecs.hingeAxisLocal.clone().normalize(); // thumb/index side points UP (+Y) in aiming pose
       const baseRight = new THREE.Vector3().crossVectors(baseFwd, baseUp).normalize(); // -palmIn points RIGHT (-X)
 
+      const inwardYaw = attachBoneName === 'LeftHand' ? -14 : 14;
       targetBarrel = baseFwd.clone()
         .applyAxisAngle(baseRight, THREE.MathUtils.degToRad(-12))
-        .applyAxisAngle(baseUp, THREE.MathUtils.degToRad(14))
+        .applyAxisAngle(baseUp, THREE.MathUtils.degToRad(inwardYaw))
         .normalize();
       targetUp = baseUp.clone();
       targetRight = new THREE.Vector3().crossVectors(targetBarrel, targetUp).normalize();
       targetUp.crossVectors(targetRight, targetBarrel).normalize();
     }
 
-    // Source basis in weapon space
-    const srcRight = axisRight.clone().normalize();
-    const srcBarrel = axisBarrel.clone().normalize();
-    const srcUp = axisUp.clone().normalize();
+    // Semantic weapon basis is right-handed: X=lateral, Y=up, Z=barrel.
+    const targetLateral = new THREE.Vector3().crossVectors(targetUp, targetBarrel).normalize();
+    const mSrc = new THREE.Matrix4().makeBasis(sourceLateral, axisUp, axisBarrel);
+    const mDst = new THREE.Matrix4().makeBasis(targetLateral, targetUp, targetBarrel);
+    const autoRotQuat = new THREE.Quaternion().setFromRotationMatrix(
+      new THREE.Matrix4().multiplyMatrices(mDst, mSrc.clone().invert())
+    );
 
-    // Rotation matrix: R = M_target * M_source^T
-    const mSrc = new THREE.Matrix4().makeBasis(srcRight, srcBarrel, srcUp);
-    const mDst = new THREE.Matrix4().makeBasis(targetRight, targetBarrel, targetUp);
-    const rotMat = new THREE.Matrix4().multiplyMatrices(mDst, mSrc.clone().invert());
-
-    const rotQuat = new THREE.Quaternion().setFromRotationMatrix(rotMat);
-
-    // Apply manual rotation offset (Euler degrees)
-    if (options.offsetRotDeg && Array.isArray(options.offsetRotDeg)) {
-      const eul = new THREE.Euler(
-        THREE.MathUtils.degToRad(options.offsetRotDeg[0] || 0),
-        THREE.MathUtils.degToRad(options.offsetRotDeg[1] || 0),
-        THREE.MathUtils.degToRad(options.offsetRotDeg[2] || 0),
-        'XYZ'
-      );
-      rotQuat.multiply(new THREE.Quaternion().setFromEuler(eul));
-    }
+    // Manual XYZ means lateral/up/barrel and rotates around those axes in hand space.
+    const semanticHandQuat = new THREE.Quaternion().setFromRotationMatrix(mDst);
+    const manualEuler = new THREE.Euler(
+      THREE.MathUtils.degToRad(options.offsetRotDeg?.[0] || 0),
+      THREE.MathUtils.degToRad(options.offsetRotDeg?.[1] || 0),
+      THREE.MathUtils.degToRad((options.offsetRotDeg?.[2] || 0) + (options.roll90 || 0) * 90),
+      'XYZ'
+    );
+    const manualHandQuat = semanticHandQuat.clone()
+      .multiply(new THREE.Quaternion().setFromEuler(manualEuler))
+      .multiply(semanticHandQuat.clone().invert());
+    const rotQuat = manualHandQuat.clone().multiply(autoRotQuat);
 
     // Hand grip center in hand local space
-    const handBone = charRigMap.bones.RightHand;
-    const midKnuckle = charRigMap.bones.RightHandMiddle1;
+    const handBone = charRigMap.bones[attachBoneName];
+    const midKnuckle = charRigMap.bones[`${attachBoneName}Middle1`];
     let handGripCenterLocal;
 
     if (midKnuckle && handBone) {
       // Wrist to middle knuckle center, displaced slightly into the palm
       const wristLocal = new THREE.Vector3(0, 0, 0);
-      const midPosInHand = midKnuckle.position.clone();
+      const midPosInHand = midKnuckle.getWorldPosition(new THREE.Vector3())
+        .applyMatrix4(handBone.matrixWorld.clone().invert());
       handGripCenterLocal = wristLocal.clone().lerp(midPosInHand, 0.60)
         .add(handVecs.palmInLocal.clone().multiplyScalar(midPosInHand.length() * 0.25));
     } else {
@@ -707,11 +812,17 @@
       rawLength: Lmax,
       scaleFactor,
       bbox: { min: [minU, minV, minW], max: [maxU, maxV, maxW] },
+      attachBoneName,
       autoDetectedAxes: {
         axisBarrel: axisBarrel.toArray(),
         axisUp: axisUp.toArray(),
         axisRight: axisRight.toArray(),
         muzzleAtPositive
+      },
+      finalLocalAxes: {
+        axisBarrel: targetBarrel.clone().applyQuaternion(manualHandQuat).normalize().toArray(),
+        axisUp: targetUp.clone().applyQuaternion(manualHandQuat).normalize().toArray(),
+        axisRight: targetLateral.clone().applyQuaternion(manualHandQuat).normalize().toArray()
       }
     };
   }
@@ -769,181 +880,128 @@
    */
   function prepareAnimationRetarget(charRigMap, animClipData, optionalTHREE) {
     const THREE = getTHREE(optionalTHREE);
-    if (!charRigMap) throw new Error("prepareAnimationRetarget: charRigMap required");
-    if (!animClipData) throw new Error("prepareAnimationRetarget: animClipData required");
+    if (!charRigMap || !animClipData) throw new Error("prepareAnimationRetarget: charRigMap and animClipData required");
+    const hybrid = animClipData.hybrid || animClipData.layers;
+    if (hybrid) {
+      const lowerData = hybrid.lower || hybrid.lowerAnimation;
+      const upperData = hybrid.upper || hybrid.upperAnimation;
+      if (!lowerData || !upperData || typeof lowerData !== 'object' || typeof upperData !== 'object') throw new Error("prepareAnimationRetarget: hybrid requires resolved lower and upper animation objects");
+      if (lowerData.hybrid || lowerData.layers || upperData.hybrid || upperData.layers) throw new Error("prepareAnimationRetarget: nested hybrid layers are not supported");
+      const lower = prepareAnimationRetarget(charRigMap, lowerData, THREE);
+      const upper = prepareAnimationRetarget(charRigMap, upperData, THREE);
+      const roots = (hybrid.upperCanonicalRoots || ['Spine','Neck','Head','LeftShoulder','LeftArm','LeftForeArm','LeftHand','RightShoulder','RightArm','RightForeArm','RightHand']).map(normalizeCanonicalBoneName).filter(Boolean);
+      return { animClip:animClipData, duration:animClipData.duration || lower.duration,
+        sourceTracksByCanonical:lower.sourceTracksByCanonical, sourceLocalQuat:lower.sourceLocalQuat,
+        restSourceWorldQuat:lower.restSourceWorldQuat, alignQuat:lower.alignQuat,
+        sourceHipsRestPos:lower.sourceHipsRestPos, sourceHipsRestY:lower.sourceHipsRestY,
+        hipsScaleRatio:lower.hipsScaleRatio,
+        layers:{lower,upper,upperRoots:new Set(roots),upperTimeMode:hybrid.upperTimeMode || 'normalized'} };
+    }
 
     const tracks = animClipData.tracks || [];
-    const duration = animClipData.duration || 1.0;
+    const duration = Number.isFinite(animClipData.duration) && animClipData.duration > 0 ? animClipData.duration : 1;
+    const frameCount = Number.isInteger(animClipData.numFrames) && animClipData.numFrames > 0 ? animClipData.numFrames : null;
     const sourceTracksByCanonical = {};
-
-    tracks.forEach(track => {
-      let rawBoneName = '';
-      let prop = '';
-      if (track.name) {
-        const dotIdx = track.name.indexOf('.');
-        rawBoneName = dotIdx !== -1 ? track.name.slice(0, dotIdx) : track.name;
-        prop = dotIdx !== -1 ? track.name.slice(dotIdx + 1) : '';
-      } else if (track.bone) {
-        rawBoneName = track.bone;
-        prop = track.type || 'quaternion';
+    const quatValues = (src,label) => {
+      const out = new Float32Array(src.length);
+      for (let i=0;i<src.length;i+=4) {
+        const q=[Number(src[i]),Number(src[i+1]),Number(src[i+2]),Number(src[i+3])], len=Math.hypot(...q);
+        if (!q.every(Number.isFinite) || !Number.isFinite(len) || len<1e-8) throw new Error(`prepareAnimationRetarget: invalid quaternion in ${label} sample ${i/4}`);
+        for (let j=0;j<4;j++) out[i+j]=q[j]/len;
       }
-      const canonical = normalizeCanonicalBoneName(rawBoneName);
-      if (canonical) {
-        if (!sourceTracksByCanonical[canonical]) sourceTracksByCanonical[canonical] = {};
-        const isQuat = prop.startsWith('quaternion') || prop.startsWith('rotation');
-        const stride = isQuat ? 4 : 3;
-        let normalizedTrack = track;
-        if (!track.times && Array.isArray(track.values)) {
-          const count = Math.floor(track.values.length / stride);
-          if (count <= 1) {
-            normalizedTrack = {
-              times: new Float32Array([0, duration]),
-              values: new Float32Array([...track.values.slice(0, stride), ...track.values.slice(0, stride)])
-            };
-          } else {
-            const times = new Float32Array(count);
-            for (let i = 0; i < count; i++) times[i] = (i / (count - 1)) * duration;
-            normalizedTrack = { times, values: new Float32Array(track.values) };
-          }
-        }
-        if (isQuat) {
-          sourceTracksByCanonical[canonical].quaternion = normalizedTrack;
-        } else if (prop.startsWith('position')) {
-          sourceTracksByCanonical[canonical].position = normalizedTrack;
-        }
-      }
-    });
-
-    // Sample source rest pose (prefer explicit boneRestPose if provided, else t = 0)
-    const restSourceWorldQuat = {};
-    const sourceLocalQuat = {};
-    const sourceLocalPos = {};
-
-    if (animClipData.boneRestPose) {
-      for (const [rawKey, qArr] of Object.entries(animClipData.boneRestPose)) {
-        const canonical = normalizeCanonicalBoneName(rawKey) || rawKey;
-        if (Array.isArray(qArr) && qArr.length === 4) {
-          sourceLocalQuat[canonical] = new THREE.Quaternion(qArr[0], qArr[1], qArr[2], qArr[3]);
-        }
-      }
-    }
-
-    for (const [canonical, tr] of Object.entries(sourceTracksByCanonical)) {
-      if (tr.quaternion && !sourceLocalQuat[canonical]) {
-        sourceLocalQuat[canonical] = sampleTrack(tr.quaternion.times, tr.quaternion.values, 4, 0, true, THREE);
-      }
-      if (tr.position) {
-        sourceLocalPos[canonical] = sampleTrack(tr.position.times, tr.position.values, 3, 0, false, THREE);
-      }
-    }
-
-    // Hierarchical world rotation accumulator for source rest pose
-    const sourceParentMap = {
-      Spine: 'Hips',
-      Spine1: 'Spine',
-      Spine2: 'Spine1',
-      Neck: 'Spine2',
-      Head: 'Neck',
-      LeftShoulder: 'Spine2',
-      LeftArm: 'LeftShoulder',
-      LeftForeArm: 'LeftArm',
-      LeftHand: 'LeftForeArm',
-      RightShoulder: 'Spine2',
-      RightArm: 'RightShoulder',
-      RightForeArm: 'RightArm',
-      RightHand: 'RightForeArm',
-      LeftUpLeg: 'Hips',
-      LeftLeg: 'LeftUpLeg',
-      LeftFoot: 'LeftLeg',
-      LeftToeBase: 'LeftFoot',
-      RightUpLeg: 'Hips',
-      RightLeg: 'RightUpLeg',
-      RightFoot: 'RightLeg',
-      RightToeBase: 'RightFoot'
+      return out;
     };
-
-    function computeSourceWorldQuat(canonical) {
-      if (restSourceWorldQuat[canonical]) return restSourceWorldQuat[canonical];
-      const localQ = sourceLocalQuat[canonical] || new THREE.Quaternion();
-      const parent = sourceParentMap[canonical];
-      if (parent && (sourceLocalQuat[parent] || sourceTracksByCanonical[parent])) {
-        const parentWorldQ = computeSourceWorldQuat(parent);
-        const wq = parentWorldQ.clone().multiply(localQ);
-        restSourceWorldQuat[canonical] = wq;
-        return wq;
+    for (const track of tracks) {
+      let rawName='', prop='';
+      if (track.name) { const dot=track.name.lastIndexOf('.'); rawName=dot<0?track.name:track.name.slice(0,dot); prop=dot<0?'':track.name.slice(dot+1); }
+      else if (track.bone) { rawName=track.bone; prop=track.type || 'quaternion'; }
+      const canonical=normalizeCanonicalBoneName(rawName);
+      if (!canonical) continue;
+      if (prop.startsWith('rotation') || prop==='euler') throw new Error(`prepareAnimationRetarget: Euler rotation track ${rawName} must be converted to quaternion`);
+      const isQuat=prop.startsWith('quaternion'), isPos=prop.startsWith('position');
+      if (!isQuat && !isPos) continue;
+      const kind=isQuat?'quaternion':'position', stride=isQuat?4:3;
+      if (sourceTracksByCanonical[canonical]?.[kind]) throw new Error(`prepareAnimationRetarget: duplicate ${kind} track for ${canonical}`);
+      const rawValues=track.values;
+      if (!rawValues || typeof rawValues.length!=='number' || rawValues.length===0 || rawValues.length%stride) throw new Error(`prepareAnimationRetarget: malformed ${kind} values for ${canonical}`);
+      const n=rawValues.length/stride;
+      if (!track.times && frameCount && n!==1 && n!==frameCount) throw new Error(`prepareAnimationRetarget: ${canonical} sample count ${n} must be 1 or numFrames ${frameCount}`);
+      let times;
+      if (track.times) {
+        if (track.times.length!==n) throw new Error(`prepareAnimationRetarget: ${canonical} times/value count mismatch`);
+        times=new Float32Array(track.times);
+        for (let i=0;i<n;i++) if (!Number.isFinite(times[i]) || (i && times[i]<times[i-1])) throw new Error(`prepareAnimationRetarget: invalid times for ${canonical} ${kind}`);
+      } else if (n===1) times=new Float32Array([0,duration]);
+      else { times=new Float32Array(n); for (let i=0;i<n;i++) times[i]=i*duration/(n-1); }
+      let values=new Float32Array(rawValues);
+      if (isQuat) { if (n===1 && !track.times) values=new Float32Array([...values,...values]); values=quatValues(values,canonical); }
+      else {
+        for (const v of values) if (!Number.isFinite(v)) throw new Error(`prepareAnimationRetarget: non-finite position for ${canonical}`);
+        if (n===1 && !track.times) values=new Float32Array([...values,...values]);
       }
-      restSourceWorldQuat[canonical] = localQ.clone();
-      return restSourceWorldQuat[canonical];
+      sourceTracksByCanonical[canonical] ||= {};
+      sourceTracksByCanonical[canonical][kind]={times,values};
     }
 
-    for (const canonical of Object.keys({ ...sourceLocalQuat, ...sourceTracksByCanonical })) {
-      computeSourceWorldQuat(canonical);
-    }
-
-    // Source Hips Rest Height
-    let sourceHipsRestPos = sourceLocalPos.Hips || new THREE.Vector3(0, 1, 0);
-    if (animClipData.hipsRestPosition && Array.isArray(animClipData.hipsRestPosition)) {
-      sourceHipsRestPos = new THREE.Vector3(
-        animClipData.hipsRestPosition[0],
-        animClipData.hipsRestPosition[1],
-        animClipData.hipsRestPosition[2]
-      );
-    }
-    const sourceHipsRestY = Math.max(0.01, Math.abs(sourceHipsRestPos.y));
-    const hipsScaleRatio = charRigMap.hipsRestY / sourceHipsRestY;
-
-    // Alignment quaternions for limb bones (exact equivalent of Blender dir_m.rotation_difference(dir_s))
-    const alignQuat = {};
-    const childMap = {
-      LeftShoulder: 'LeftArm',
-      LeftArm: 'LeftForeArm',
-      LeftForeArm: 'LeftHand',
-      RightShoulder: 'RightArm',
-      RightArm: 'RightForeArm',
-      RightForeArm: 'RightHand',
-      LeftUpLeg: 'LeftLeg',
-      LeftLeg: 'LeftFoot',
-      RightUpLeg: 'RightLeg',
-      RightLeg: 'RightFoot'
-    };
-
-    for (const [canonical, bone] of Object.entries(charRigMap.bones)) {
-      if (LIMB_KEYWORDS.some(k => canonical.includes(k)) && sourceTracksByCanonical[canonical]) {
-        const childKey = childMap[canonical];
-        let dirDest = null;
-        let dirSrc = null;
-
-        if (childKey && charRigMap.restWorldPos[childKey] && charRigMap.restWorldPos[canonical]) {
-          dirDest = charRigMap.restWorldPos[childKey].clone()
-            .sub(charRigMap.restWorldPos[canonical]).normalize();
-        } else {
-          // Primary axis
-          dirDest = new THREE.Vector3(0, 1, 0).applyQuaternion(charRigMap.restWorldQuat[canonical]).normalize();
-        }
-
-        const srcWorldQ = restSourceWorldQuat[canonical];
-        if (srcWorldQ) {
-          dirSrc = new THREE.Vector3(0, 1, 0).applyQuaternion(srcWorldQ).normalize();
-          alignQuat[canonical] = new THREE.Quaternion().setFromUnitVectors(dirDest, dirSrc);
-        } else {
-          alignQuat[canonical] = new THREE.Quaternion();
-        }
-      } else {
-        alignQuat[canonical] = new THREE.Quaternion();
+    const sourceParentMap={};
+    if (animClipData.boneParents && typeof animClipData.boneParents==='object') {
+      for (const [rawChild,rawParent] of Object.entries(animClipData.boneParents)) {
+        const child=normalizeCanonicalBoneName(rawChild)||rawChild;
+        sourceParentMap[child]=rawParent==null?null:(normalizeCanonicalBoneName(rawParent)||rawParent);
+      }
+    } else {
+      Object.assign(sourceParentMap,{Spine:'Hips',Spine1:'Spine',Spine2:'Spine1',Neck:'Spine2',Head:'Neck',
+        LeftShoulder:'Spine2',LeftArm:'LeftShoulder',LeftForeArm:'LeftArm',LeftHand:'LeftForeArm',
+        RightShoulder:'Spine2',RightArm:'RightShoulder',RightForeArm:'RightArm',RightHand:'RightForeArm',
+        LeftUpLeg:'Hips',LeftLeg:'LeftUpLeg',LeftFoot:'LeftLeg',LeftToeBase:'LeftFoot',
+        RightUpLeg:'Hips',RightLeg:'RightUpLeg',RightFoot:'RightLeg',RightToeBase:'RightFoot'});
+      for (const hand of ['LeftHand','RightHand']) for (const finger of FINGER_NAMES) {
+        sourceParentMap[`${hand}${finger}1`]=hand;
+        sourceParentMap[`${hand}${finger}2`]=`${hand}${finger}1`;
+        sourceParentMap[`${hand}${finger}3`]=`${hand}${finger}2`;
       }
     }
+    const sourceLocalQuat={};
+    for (const [rawKey,values] of Object.entries(animClipData.boneRestPose || {})) {
+      const key=normalizeCanonicalBoneName(rawKey)||rawKey;
+      if (Array.isArray(values) && values.length===4) { const q=quatValues(values,`rest pose ${key}`); sourceLocalQuat[key]=new THREE.Quaternion(q[0],q[1],q[2],q[3]); }
+    }
+    for (const [key,obj] of Object.entries(sourceTracksByCanonical)) if (!sourceLocalQuat[key] && obj.quaternion) sourceLocalQuat[key]=sampleTrack(obj.quaternion.times,obj.quaternion.values,4,0,true,THREE);
+    const restSourceWorldQuat={}, resolving=new Set();
+    function sourceWorld(key) {
+      if (restSourceWorldQuat[key]) return restSourceWorldQuat[key];
+      if (resolving.has(key)) throw new Error(`prepareAnimationRetarget: cyclic boneParents at ${key}`);
+      resolving.add(key);
+      const local=sourceLocalQuat[key] || new THREE.Quaternion();
+      const parent=Object.prototype.hasOwnProperty.call(sourceParentMap,key)?sourceParentMap[key]:null;
+      const world=parent?sourceWorld(parent).clone().multiply(local).normalize():local.clone().normalize();
+      resolving.delete(key); return restSourceWorldQuat[key]=world;
+    }
+    for (const key of new Set([...Object.keys(sourceLocalQuat),...Object.keys(sourceTracksByCanonical),...Object.keys(sourceParentMap)])) sourceWorld(key);
 
-    return {
-      animClip: animClipData,
-      duration,
-      sourceTracksByCanonical,
-      sourceLocalQuat,
-      restSourceWorldQuat,
-      alignQuat,
-      sourceHipsRestPos,
-      sourceHipsRestY,
-      hipsScaleRatio
-    };
+    let sourceHipsRestPos=sourceTracksByCanonical.Hips?.position
+      ? sampleTrack(sourceTracksByCanonical.Hips.position.times,sourceTracksByCanonical.Hips.position.values,3,0,false,THREE)
+      : new THREE.Vector3(0,1,0);
+    if (Array.isArray(animClipData.hipsRestPosition) && animClipData.hipsRestPosition.length===3) sourceHipsRestPos=new THREE.Vector3(...animClipData.hipsRestPosition);
+    const sourceHipsRestY=Math.max(0.01,Math.abs(sourceHipsRestPos.y)), hipsScaleRatio=(charRigMap.hipsRestY || 1)/sourceHipsRestY;
+    const alignQuat={}, childMap={LeftShoulder:'LeftArm',LeftArm:'LeftForeArm',LeftForeArm:'LeftHand',
+      RightShoulder:'RightArm',RightArm:'RightForeArm',RightForeArm:'RightHand',
+      LeftUpLeg:'LeftLeg',LeftLeg:'LeftFoot',RightUpLeg:'RightLeg',RightLeg:'RightFoot'};
+    const sourceRestPositions=animClipData.boneRestPositions || {};
+    for (const canonical of Object.keys(charRigMap.bones || {})) {
+      const child=childMap[canonical], dest=child && charRigMap.restWorldPos[child]
+        ? charRigMap.restWorldPos[child].clone().sub(charRigMap.restWorldPos[canonical]).normalize()
+        : new THREE.Vector3(0,1,0).applyQuaternion(charRigMap.restWorldQuat[canonical]).normalize();
+      const srcChild=child && sourceRestPositions[child], srcBone=sourceRestPositions[canonical];
+      const srcDir=srcChild && srcBone
+        ? new THREE.Vector3().fromArray(srcChild).sub(new THREE.Vector3().fromArray(srcBone)).normalize()
+        : new THREE.Vector3(0,1,0).applyQuaternion(restSourceWorldQuat[canonical] || new THREE.Quaternion()).normalize();
+      alignQuat[canonical]=LIMB_KEYWORDS.some(k=>canonical.includes(k))
+        ? new THREE.Quaternion().setFromUnitVectors(dest,srcDir)
+        : new THREE.Quaternion();
+    }
+    return {animClip:animClipData,duration,sourceTracksByCanonical,sourceLocalQuat,sourceParentMap,
+      restSourceWorldQuat,alignQuat,sourceHipsRestPos,sourceHipsRestY,hipsScaleRatio,layers:null};
   }
 
   // =========================================================================
@@ -956,272 +1014,258 @@
   function evaluateRetargetFrame(charRigMap, retargetCtx, timeSec, params = {}, weaponContext = null, optionalTHREE) {
     const THREE = getTHREE(optionalTHREE);
     if (!charRigMap || !retargetCtx) throw new Error("evaluateRetargetFrame: charRigMap and retargetCtx required");
-
-    const inPlaceLock = params.inPlaceLock !== undefined ? params.inPlaceLock : 1.0;
+    const bones = charRigMap.bones;
+    const baseCtx = retargetCtx.layers ? retargetCtx.layers.lower : retargetCtx;
+    const upperCtx = retargetCtx.layers && retargetCtx.layers.upper;
+    const inPlaceLock = params.inPlaceLock !== undefined ? params.inPlaceLock : 1;
     const groundFeet = params.groundFeet !== undefined ? params.groundFeet : true;
     const armSpreadDeg = params.armSpreadDeg || 0;
     const spineTwistDeg = params.spineTwistDeg || 0;
     const spinePitchDeg = params.spinePitchDeg || 0;
-    const leftHandIkWeight = params.leftHandIkWeight !== undefined ? params.leftHandIkWeight : (weaponContext ? 1.0 : 0.0);
+    const ikWeight = params.leftHandIkWeight !== undefined ? params.leftHandIkWeight : (weaponContext ? 1 : 0);
     const elbowPoleAngleDeg = params.elbowPoleAngleDeg || 0;
-    const rightHandGrip = params.rightHandGrip !== undefined ? params.rightHandGrip : (weaponContext ? 1.0 : 0.0);
-    const leftHandGrip = params.leftHandGrip !== undefined ? params.leftHandGrip : (weaponContext ? 1.0 : 0.0);
+    const rightHandGrip = params.rightHandGrip !== undefined ? params.rightHandGrip : (weaponContext ? 1 : 0);
+    const leftHandGrip = params.leftHandGrip !== undefined ? params.leftHandGrip : (weaponContext ? 1 : 0);
+    const root = charRigMap.rootObject;
 
-    const bones = charRigMap.bones;
-    const tracks = retargetCtx.sourceTracksByCanonical;
+    // Every evaluation starts from authored target rest transforms; repeated scrubbing cannot accumulate.
+    for (const [key,bone] of Object.entries(bones)) {
+      if (charRigMap.restLocalPos[key]) bone.position.copy(charRigMap.restLocalPos[key]);
+      if (charRigMap.restLocalQuat[key]) bone.quaternion.copy(charRigMap.restLocalQuat[key]);
+    }
+    root.updateWorldMatrix(true,true);
 
-    // 1. Hips Translation (computed in Y-up World Space, then transformed into Hips.parent local space)
-    const hipsTrack = tracks.Hips ? tracks.Hips.position : null;
+    function isInUpperLayer(key,bone) {
+      if (!upperCtx) return false;
+      for (let node=bone; node; node=node.parent) {
+        const canonical=charRigMap.boneToCanonical[node.uuid];
+        if (canonical && retargetCtx.layers.upperRoots.has(canonical)) return true;
+      }
+      return false;
+    }
+    function contextFor(key,bone) {
+      return key!=='Hips' && isInUpperLayer(key,bone) ? upperCtx : baseCtx;
+    }
+    function sampleTime(ctx) {
+      if (retargetCtx.layers && ctx===upperCtx && retargetCtx.layers.upperTimeMode==='normalized') {
+        return (timeSec / Math.max(retargetCtx.duration,1e-8)) * ctx.duration;
+      }
+      return timeSec;
+    }
+    const sourceWorldCaches=new Map();
+    function sourceCurrentWorld(ctx,key,tSec) {
+      let cache=sourceWorldCaches.get(ctx);
+      if (!cache) { cache={}; sourceWorldCaches.set(ctx,cache); }
+      if (cache[key]) return cache[key];
+      const track=ctx.sourceTracksByCanonical[key]?.quaternion;
+      const local=track ? sampleTrack(track.times,track.values,4,tSec,true,THREE)
+        : (ctx.sourceLocalQuat[key]?.clone() || new THREE.Quaternion());
+      const parent=Object.prototype.hasOwnProperty.call(ctx.sourceParentMap || {},key) ? ctx.sourceParentMap[key] : null;
+      const world=parent ? sourceCurrentWorld(ctx,parent,tSec).clone().multiply(local).normalize() : local.normalize();
+      return cache[key]=world;
+    }
+
+    const hipsTrack=baseCtx.sourceTracksByCanonical.Hips?.position;
     if (hipsTrack && bones.Hips && charRigMap.restWorldPos.Hips) {
-      const curHipsPos = sampleTrack(hipsTrack.times, hipsTrack.values, 3, timeSec, false, THREE);
-      const deltaWorld = curHipsPos.clone().sub(retargetCtx.sourceHipsRestPos).multiplyScalar(retargetCtx.hipsScaleRatio);
+      const cur=sampleTrack(hipsTrack.times,hipsTrack.values,3,timeSec,false,THREE);
+      const delta=cur.clone().sub(baseCtx.sourceHipsRestPos).multiplyScalar(baseCtx.hipsScaleRatio);
+      delta.x *= 1-inPlaceLock; delta.z *= 1-inPlaceLock;
+      const target=charRigMap.restWorldPos.Hips.clone().add(delta);
+      if (charRigMap.hipsParentWorldMatrixInv) bones.Hips.position.copy(target).applyMatrix4(charRigMap.hipsParentWorldMatrixInv);
+      else bones.Hips.position.copy(charRigMap.restLocalPos.Hips).add(delta);
+    }
 
-      // In-place lock on horizontal plane X/Z
-      deltaWorld.x *= (1.0 - inPlaceLock);
-      deltaWorld.z *= (1.0 - inPlaceLock);
+    const depth=bone=>{let n=0;for(let p=bone.parent;p;p=p.parent)n++;return n;};
+    const ordered=Object.entries(bones).sort((a,b)=>depth(a[1])-depth(b[1]));
+    function contextPose(ctx) {
+      const t=sampleTime(ctx), worlds=new Map(), locals={};
+      function worldOf(node) {
+        if (!node) return new THREE.Quaternion();
+        if (worlds.has(node)) return worlds.get(node);
+        const key=charRigMap.boneToCanonical[node.uuid];
+        if (key && bones[key]===node) {
+          const sourceNow=sourceCurrentWorld(ctx,key,t);
+          const sourceRest=ctx.restSourceWorldQuat[key] || new THREE.Quaternion();
+          const delta=sourceNow.clone().multiply(sourceRest.clone().invert()).normalize();
+          const desired=delta.multiply(ctx.alignQuat[key] || new THREE.Quaternion())
+            .multiply(charRigMap.restWorldQuat[key] || new THREE.Quaternion()).normalize();
+          worlds.set(node,desired);
+          return desired;
+        }
+        if (!node.parent) {
+          const q=node.getWorldQuaternion(new THREE.Quaternion());
+          worlds.set(node,q);
+          return q;
+        }
+        const q=worldOf(node.parent).clone().multiply(node.quaternion).normalize();
+        worlds.set(node,q);
+        return q;
+      }
+      for (const [key,bone] of ordered) {
+        const now=sourceCurrentWorld(ctx,key,t), rest=ctx.restSourceWorldQuat[key] || new THREE.Quaternion();
+        const delta=now.clone().multiply(rest.clone().invert()).normalize();
+        const desired=delta.multiply(ctx.alignQuat[key] || new THREE.Quaternion())
+          .multiply(charRigMap.restWorldQuat[key] || new THREE.Quaternion()).normalize();
+        worlds.set(bone,desired);
+        locals[key]=worldOf(bone.parent).clone().invert().multiply(desired).normalize();
+      }
+      return locals;
+    }
+    const baseLocals=contextPose(baseCtx);
+    const upperLocals=upperCtx ? contextPose(upperCtx) : null;
+    for (const [key,bone] of ordered) {
+      const ctx=contextFor(key,bone);
+      const local=ctx===upperCtx ? upperLocals[key] : baseLocals[key];
+      if (local) bone.quaternion.copy(local);
+    }
+    root.updateWorldMatrix(true,true);
 
-      const targetHipsWorld = charRigMap.restWorldPos.Hips.clone().add(deltaWorld);
-      if (charRigMap.hipsParentWorldMatrixInv) {
-        bones.Hips.position.copy(targetHipsWorld).applyMatrix4(charRigMap.hipsParentWorldMatrixInv);
-      } else {
-        bones.Hips.position.copy(charRigMap.restLocalPos.Hips).add(deltaWorld);
+    if (spineTwistDeg || spinePitchDeg || armSpreadDeg) {
+      const axisQ=(axis,deg)=>new THREE.Quaternion().setFromAxisAngle(axis,THREE.MathUtils.degToRad(deg));
+      if (spineTwistDeg) {
+        const q=axisQ(new THREE.Vector3(0,1,0),spineTwistDeg*0.5);
+        if (bones.Spine1) bones.Spine1.quaternion.multiply(q);
+        if (bones.Spine2) bones.Spine2.quaternion.multiply(q);
+      }
+      if (spinePitchDeg) {
+        const q=axisQ(new THREE.Vector3(1,0,0),spinePitchDeg*0.5);
+        if (bones.Spine1) bones.Spine1.quaternion.multiply(q);
+        if (bones.Spine2) bones.Spine2.quaternion.multiply(q);
+      }
+      if (armSpreadDeg) {
+        const r=axisQ(new THREE.Vector3(0,0,-1),armSpreadDeg), l=axisQ(new THREE.Vector3(0,0,1),armSpreadDeg);
+        if (bones.RightArm) bones.RightArm.quaternion.multiply(r);
+        if (bones.LeftArm) bones.LeftArm.quaternion.multiply(l);
       }
     }
+    root.updateWorldMatrix(true,true);
 
-    // 2. FK World-Delta Rotations
-    const boneOrder = [
-      'Hips',
-      'Spine', 'Spine1', 'Spine2', 'Neck', 'Head',
-      'LeftShoulder', 'LeftArm', 'LeftForeArm', 'LeftHand',
-      'RightShoulder', 'RightArm', 'RightForeArm', 'RightHand',
-      'LeftUpLeg', 'LeftLeg', 'LeftFoot', 'LeftToeBase',
-      'RightUpLeg', 'RightLeg', 'RightFoot', 'RightToeBase'
-    ];
-
-    const currentSourceWorldQuat = {};
-    const currentTargetWorldQuat = {};
-
-    for (const bname of boneOrder) {
-      const bone = bones[bname];
-      if (!bone) continue;
-
-      const parentKey = bone.parent ? charRigMap.boneToCanonical[bone.parent.uuid] : null;
-      const trackObj = tracks[bname];
-      if (trackObj && trackObj.quaternion && retargetCtx.restSourceWorldQuat[bname]) {
-        const curSourceLocalQ = sampleTrack(trackObj.quaternion.times, trackObj.quaternion.values, 4, timeSec, true, THREE);
-        let curSourceWorldQ;
-        if (parentKey && currentSourceWorldQuat[parentKey]) {
-          curSourceWorldQ = currentSourceWorldQuat[parentKey].clone().multiply(curSourceLocalQ);
-        } else {
-          curSourceWorldQ = curSourceLocalQ.clone();
-        }
-        currentSourceWorldQuat[bname] = curSourceWorldQ;
-
-        // q_world_delta = q_S_cur * (q_S_rest)^-1
-        const worldDelta = curSourceWorldQ.clone().multiply(retargetCtx.restSourceWorldQuat[bname].clone().invert());
-
-        // q_M_target_world = worldDelta * alignQuat * q_M_rest_world
-        const alignQ = retargetCtx.alignQuat[bname] || new THREE.Quaternion();
-        const targetWorldQ = worldDelta.clone().multiply(alignQ).multiply(charRigMap.restWorldQuat[bname]);
-        currentTargetWorldQuat[bname] = targetWorldQ;
-
-        // Convert target world rotation to local rotation
-        if (parentKey && currentTargetWorldQuat[parentKey]) {
-          const parentWorldInv = currentTargetWorldQuat[parentKey].clone().invert();
-          bone.quaternion.copy(parentWorldInv.multiply(targetWorldQ));
-        } else if (charRigMap.hipsParentWorldQuatInv) {
-          bone.quaternion.copy(charRigMap.hipsParentWorldQuatInv.clone().multiply(targetWorldQ));
-        } else {
-          bone.quaternion.copy(targetWorldQ);
-        }
-      } else {
-        // Keep rest local rotation if not in track
-        bone.quaternion.copy(charRigMap.restLocalQuat[bname] || bone.quaternion);
-        const restSrcLocal = (retargetCtx.sourceLocalQuat && retargetCtx.sourceLocalQuat[bname]) || new THREE.Quaternion();
-        if (parentKey && currentSourceWorldQuat[parentKey]) {
-          currentSourceWorldQuat[bname] = currentSourceWorldQuat[parentKey].clone().multiply(restSrcLocal);
-        } else {
-          currentSourceWorldQuat[bname] = restSrcLocal.clone();
-        }
-        if (parentKey && currentTargetWorldQuat[parentKey]) {
-          currentTargetWorldQuat[bname] = currentTargetWorldQuat[parentKey].clone().multiply(bone.quaternion);
-        } else if (charRigMap.restWorldQuat[bname]) {
-          currentTargetWorldQuat[bname] = charRigMap.restWorldQuat[bname].clone();
-        } else {
-          currentTargetWorldQuat[bname] = bone.quaternion.clone();
-        }
-      }
-    }
-
-    // 3. Postural Offsets
-    if (spineTwistDeg !== 0) {
-      const halfRad = THREE.MathUtils.degToRad(spineTwistDeg * 0.5);
-      const twistQ = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), halfRad);
-      if (bones.Spine1) bones.Spine1.quaternion.multiply(twistQ);
-      if (bones.Spine2) bones.Spine2.quaternion.multiply(twistQ);
-    }
-
-    if (spinePitchDeg !== 0) {
-      const halfRad = THREE.MathUtils.degToRad(spinePitchDeg * 0.5);
-      const pitchQ = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), halfRad);
-      if (bones.Spine1) bones.Spine1.quaternion.multiply(pitchQ);
-      if (bones.Spine2) bones.Spine2.quaternion.multiply(pitchQ);
-    }
-
-    if (armSpreadDeg !== 0) {
-      const rad = THREE.MathUtils.degToRad(armSpreadDeg);
-      const spreadLeft = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), rad);
-      const spreadRight = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, -1), rad);
-      if (bones.LeftArm) bones.LeftArm.quaternion.multiply(spreadLeft);
-      if (bones.RightArm) bones.RightArm.quaternion.multiply(spreadRight);
-    }
-
-    // Update matrices after postural offsets
-    charRigMap.rootObject.updateWorldMatrix(true, true);
-
-    // 4. Procedural Finger Grips
-    function applyFingerGrip(sidePrefix, gripWeight) {
-      if (gripWeight <= 0) return;
-      const vecs = sidePrefix === 'RightHand' ? charRigMap.rightHandVectors : charRigMap.leftHandVectors;
+    function applyFingerGrip(side,weight) {
+      if (weight<=0) return;
+      const vecs=side==='RightHand'?charRigMap.rightHandVectors:charRigMap.leftHandVectors;
       if (!vecs) return;
-
-      FINGER_NAMES.forEach(finger => {
-        let maxDeg = 40.0;
-        if (sidePrefix === 'RightHand') {
-          if (finger === 'Thumb') maxDeg = 45.0;
-          else if (finger === 'Index') maxDeg = 35.0; // trigger finger
-          else maxDeg = 80.0; // middle, ring, pinky closed tight
-        } else {
-          maxDeg = finger === 'Thumb' ? 30.0 : 40.0;
+      for (const finger of FINGER_NAMES) {
+        const maxDeg=side==='RightHand'
+          ? (finger==='Thumb'?45:(finger==='Index'?35:80))
+          : (finger==='Thumb'?30:40);
+        for (let j=1;j<=3;j++) {
+          const key=`${side}${finger}${j}`, bone=bones[key];
+          if (!bone) continue;
+          const ctx=contextFor(key,bone);
+          if (ctx.sourceTracksByCanonical[key]?.quaternion) continue; // preserve authored finger motion
+          let axis=vecs.hingeAxisWorld.clone();
+          if (finger==='Thumb') axis=vecs.palmInWorld.clone().sub(vecs.handFwdWorld.clone().multiplyScalar(0.4)).normalize();
+          const restWorld=charRigMap.restWorldQuat[key] || new THREE.Quaternion();
+          axis.applyQuaternion(restWorld.clone().invert()).normalize();
+          const fraction=j===1?0.9:(j===2?0.9:0.7);
+          const curl=new THREE.Quaternion().setFromAxisAngle(axis,THREE.MathUtils.degToRad(maxDeg*fraction*weight));
+          bone.quaternion.copy(charRigMap.restLocalQuat[key] || new THREE.Quaternion()).multiply(curl);
         }
+      }
+    }
+    applyFingerGrip('RightHand',rightHandGrip);
+    applyFingerGrip('LeftHand',leftHandGrip);
+    root.updateWorldMatrix(true,true);
 
-        for (let j = 1; j <= 3; j++) {
-          const bname = `${sidePrefix}${finger}${j}`;
-          const fbone = bones[bname];
-          if (!fbone) continue;
+    // Two-bone support IK targets the hand opposite the selected weapon attachment hand.
+    const attach=weaponContext?.attachBoneName || 'RightHand';
+    const support=attach==='LeftHand'?'Right':'Left';
+    const upperKey=`${support}Arm`, lowerKey=`${support}ForeArm`, handKey=`${support}Hand`;
+    const upper=bones[upperKey], lower=bones[lowerKey], hand=bones[handKey];
+    if (ikWeight>0 && weaponContext?.localMatrix4 && weaponContext?.foregripLocalPos && bones[attach] && upper && lower && hand) {
+      const weaponWorld=bones[attach].matrixWorld.clone().multiply(weaponContext.localMatrix4);
+      const gripTarget=weaponContext.foregripLocalPos.clone().applyMatrix4(weaponWorld);
+      const posA=upper.getWorldPosition(new THREE.Vector3());
+      const posB=lower.getWorldPosition(new THREE.Vector3());
+      const posC=hand.getWorldPosition(new THREE.Vector3());
+      const L1=charRigMap.restWorldPos[lowerKey] && charRigMap.restWorldPos[upperKey]
+        ? charRigMap.restWorldPos[lowerKey].distanceTo(charRigMap.restWorldPos[upperKey]) : posB.distanceTo(posA);
+      const L2=charRigMap.restWorldPos[handKey] && charRigMap.restWorldPos[lowerKey]
+        ? charRigMap.restWorldPos[handKey].distanceTo(charRigMap.restWorldPos[lowerKey]) : posC.distanceTo(posB);
+      if (L1>1e-6 && L2>1e-6) {
+        const fkUpperLocal=upper.quaternion.clone(), fkLowerLocal=lower.quaternion.clone(), fkHandLocal=hand.quaternion.clone();
+        root.updateWorldMatrix(true,true);
+        const fkUpperWorld=upper.getWorldQuaternion(new THREE.Quaternion());
+        const fkLowerWorld=lower.getWorldQuaternion(new THREE.Quaternion());
+        const fkUpperAxis=posB.clone().sub(posA).normalize(), fkLowerAxis=posC.clone().sub(posB).normalize();
+        let wristTarget=gripTarget.clone(), ikHandWorld=null;
 
-          // Hinge axis rotation in local finger bone space
-          const restWorldQ = charRigMap.restWorldQuat[bname] || fbone.quaternion;
-          let axisWorld = vecs.hingeAxisWorld.clone();
-          if (finger === 'Thumb') {
-            axisWorld = (vecs.palmInWorld.clone().sub(vecs.handFwdWorld.clone().multiplyScalar(0.4))).normalize();
+        const axes=weaponContext.finalLocalAxes;
+        if (axes?.axisBarrel && axes?.axisUp && axes?.axisRight) {
+          const handWorld=bones[attach].matrixWorld;
+          const direction=arr=>new THREE.Vector3(...arr).transformDirection(handWorld);
+          const fwd=direction(axes.axisBarrel).normalize();
+          const palm=direction(axes.axisRight).multiplyScalar(support==='Left'?1:-1).normalize();
+          const hinge=new THREE.Vector3().crossVectors(fwd,palm).normalize();
+          const vecs=support==='Right'?charRigMap.rightHandVectors:charRigMap.leftHandVectors;
+          if (vecs) {
+            const src=new THREE.Matrix4().makeBasis(vecs.handFwdLocal,vecs.palmInLocal,vecs.hingeAxisLocal);
+            const dst=new THREE.Matrix4().makeBasis(fwd,palm,hinge);
+            ikHandWorld=new THREE.Quaternion().setFromRotationMatrix(dst.multiply(src.invert()));
+            const mid=bones[`${handKey}Middle1`];
+            if (mid) {
+              const handInv=hand.matrixWorld.clone().invert();
+              const midLocal=mid.getWorldPosition(new THREE.Vector3()).applyMatrix4(handInv);
+              const centerOffset=midLocal.clone().multiplyScalar(0.6)
+                .add(vecs.palmInLocal.clone().multiplyScalar(midLocal.length()*0.25));
+              const scale=new THREE.Vector3().setFromMatrixScale(hand.matrixWorld);
+              const offsetWorld=centerOffset.multiply(scale).applyQuaternion(ikHandWorld);
+              wristTarget.copy(gripTarget).sub(offsetWorld);
+            }
           }
-          const axisLocal = axisWorld.applyQuaternion(restWorldQ.clone().invert()).normalize();
-
-          const fraction = j === 1 ? 0.9 : (j === 2 ? 0.9 : 0.7);
-          const angleRad = THREE.MathUtils.degToRad(maxDeg * fraction * gripWeight);
-          const curlQ = new THREE.Quaternion().setFromAxisAngle(axisLocal, angleRad);
-
-          const restLocal = charRigMap.restLocalQuat[bname] || new THREE.Quaternion();
-          fbone.quaternion.copy(restLocal).multiply(curlQ);
         }
-      });
+
+        const rawTarget=wristTarget.clone().sub(posA), rawDist=rawTarget.length();
+        const targetDir=rawDist>1e-8?rawTarget.multiplyScalar(1/rawDist):new THREE.Vector3(0,1,0);
+        const minReach=Math.abs(L1-L2)+1e-5, maxReach=L1+L2-1e-5;
+        const dist=THREE.MathUtils.clamp(rawDist,minReach,maxReach);
+        const reachableWrist=posA.clone().add(targetDir.clone().multiplyScalar(dist));
+        const cosA=THREE.MathUtils.clamp((L1*L1+dist*dist-L2*L2)/(2*L1*dist),-1,1);
+        const alpha=Math.acos(cosA);
+        const chest=(bones.Spine2 || bones.Spine1 || bones.Hips)?.getWorldPosition(new THREE.Vector3()) || posA.clone();
+        const poleDir=chest.sub(posA).add(new THREE.Vector3(0,-0.4,0)).normalize();
+        if (elbowPoleAngleDeg) poleDir.applyAxisAngle(targetDir,THREE.MathUtils.degToRad(elbowPoleAngleDeg));
+        let planeNormal=new THREE.Vector3().crossVectors(targetDir,poleDir).normalize();
+        if (planeNormal.lengthSq()<1e-8) planeNormal=new THREE.Vector3(1,0,0);
+        const elbowDir=targetDir.clone().applyAxisAngle(planeNormal,alpha).normalize();
+        const elbowTarget=posA.clone().add(elbowDir.multiplyScalar(L1));
+        const upperTargetDir=elbowTarget.clone().sub(posA).normalize();
+        const lowerTargetDir=reachableWrist.clone().sub(elbowTarget).normalize();
+        const solvedUpperWorld=new THREE.Quaternion().setFromUnitVectors(fkUpperAxis,upperTargetDir).multiply(fkUpperWorld);
+
+        const parentUpperQ=upper.parent?.getWorldQuaternion(new THREE.Quaternion()) || new THREE.Quaternion();
+        upper.quaternion.copy(fkUpperLocal).slerp(parentUpperQ.invert().multiply(solvedUpperWorld),ikWeight);
+        root.updateWorldMatrix(true,true);
+
+        const parentLowerQ=lower.parent?.getWorldQuaternion(new THREE.Quaternion()) || new THREE.Quaternion();
+        const solvedLowerWorld=new THREE.Quaternion().setFromUnitVectors(fkLowerAxis,lowerTargetDir).multiply(fkLowerWorld);
+        lower.quaternion.copy(fkLowerLocal).slerp(parentLowerQ.invert().multiply(solvedLowerWorld),ikWeight);
+        root.updateWorldMatrix(true,true);
+
+        if (ikHandWorld) {
+          const parentHandQ=hand.parent?.getWorldQuaternion(new THREE.Quaternion()) || new THREE.Quaternion();
+          hand.quaternion.copy(fkHandLocal).slerp(parentHandQ.invert().multiply(ikHandWorld),ikWeight);
+          root.updateWorldMatrix(true,true);
+        }
+      }
     }
 
-    applyFingerGrip('RightHand', rightHandGrip);
-    applyFingerGrip('LeftHand', leftHandGrip);
-
-    charRigMap.rootObject.updateWorldMatrix(true, true);
-
-    // 5. Analytical 2-Bone IK Solver for Left Arm
-    if (leftHandIkWeight > 0 && weaponContext && weaponContext.localMatrix4 && weaponContext.foregripLocalPos && bones.LeftArm && bones.LeftForeArm && bones.LeftHand) {
-      // Calculate foregrip world position from right hand and weapon local matrix
-      const rightHandWorldMatrix = bones.RightHand.matrixWorld;
-      const weaponWorldMat = rightHandWorldMatrix.clone().multiply(weaponContext.localMatrix4);
-      const foregripWorldPos = weaponContext.foregripLocalPos.clone().applyMatrix4(weaponWorldMat);
-
-      // Current positions
-      const posA = bones.LeftArm.getWorldPosition(new THREE.Vector3());
-      const posB = bones.LeftForeArm.getWorldPosition(new THREE.Vector3());
-      const posC = bones.LeftHand.getWorldPosition(new THREE.Vector3());
-
-      const L1 = charRigMap.restWorldPos.LeftForeArm
-        ? charRigMap.restWorldPos.LeftForeArm.distanceTo(charRigMap.restWorldPos.LeftArm)
-        : posB.distanceTo(posA);
-      const L2 = charRigMap.restWorldPos.LeftHand
-        ? charRigMap.restWorldPos.LeftHand.distanceTo(charRigMap.restWorldPos.LeftForeArm)
-        : posC.distanceTo(posB);
-
-      const targetVec = foregripWorldPos.clone().sub(posA);
-      const dist = Math.min(Math.max(0.01, targetVec.length()), (L1 + L2) * 0.999);
-      const targetDir = targetVec.clone().normalize();
-
-      // Law of Cosines
-      const cosAlpha = THREE.MathUtils.clamp((L1 * L1 + dist * dist - L2 * L2) / (2 * L1 * dist), -1, 1);
-      const alpha = Math.acos(cosAlpha);
-
-      // Elbow pole vector (down and back)
-      let poleDir = new THREE.Vector3(0, -1, -0.4).normalize();
-      if (elbowPoleAngleDeg !== 0) {
-        poleDir.applyAxisAngle(targetDir, THREE.MathUtils.degToRad(elbowPoleAngleDeg));
-      }
-
-      // Normal to IK plane
-      let planeNormal = new THREE.Vector3().crossVectors(targetDir, poleDir).normalize();
-      if (planeNormal.lengthSq() < 1e-4) {
-        planeNormal = new THREE.Vector3(1, 0, 0);
-      }
-
-      // Upper arm direction
-      const upperArmDir = targetDir.clone().applyAxisAngle(planeNormal, alpha).normalize();
-      const elbowTargetPos = posA.clone().add(upperArmDir.clone().multiplyScalar(L1));
-      const foreArmDir = foregripWorldPos.clone().sub(elbowTargetPos).normalize();
-
-      // Parent inverses for local orientation
-      const shoulderWorldQuatInv = (bones.LeftShoulder ? bones.LeftShoulder.getWorldQuaternion(new THREE.Quaternion()) : new THREE.Quaternion()).invert();
-
-      // Desired world quaternion of LeftArm: rotate longitudinal axis to upperArmDir
-      const restArmDir = new THREE.Vector3(0, 1, 0).applyQuaternion(charRigMap.restWorldQuat.LeftArm).normalize();
-      const rotArmDelta = new THREE.Quaternion().setFromUnitVectors(restArmDir, upperArmDir);
-      const ikArmWorldQ = rotArmDelta.multiply(charRigMap.restWorldQuat.LeftArm);
-      const ikArmLocalQ = shoulderWorldQuatInv.clone().multiply(ikArmWorldQ);
-
-      // Desired world quaternion of LeftForeArm: rotate longitudinal axis to foreArmDir
-      const restForeArmDir = new THREE.Vector3(0, 1, 0).applyQuaternion(charRigMap.restWorldQuat.LeftForeArm).normalize();
-      const rotForeArmDelta = new THREE.Quaternion().setFromUnitVectors(restForeArmDir, foreArmDir);
-      const ikForeArmWorldQ = rotForeArmDelta.multiply(charRigMap.restWorldQuat.LeftForeArm);
-      const ikForeArmLocalQ = ikArmWorldQ.clone().invert().multiply(ikForeArmWorldQ);
-
-      // Slerp FK with IK
-      bones.LeftArm.quaternion.slerp(ikArmLocalQ, leftHandIkWeight);
-      bones.LeftForeArm.quaternion.slerp(ikForeArmLocalQ, leftHandIkWeight);
-
-      charRigMap.rootObject.updateWorldMatrix(true, true);
-    }
-
-    // 6. Foot Auto-Grounding (plant lowest foot/toe on Y = 0)
     if (groundFeet && bones.Hips) {
-      charRigMap.rootObject.updateWorldMatrix(true, true);
-      const footKeys = ['LeftFoot', 'RightFoot', 'LeftToeBase', 'RightToeBase'];
-      let minFootY = Infinity;
-      const v = new THREE.Vector3();
-
-      footKeys.forEach(k => {
-        if (bones[k]) {
-          bones[k].getWorldPosition(v);
-          if (v.y < minFootY) minFootY = v.y;
-        }
-      });
-
-      if (isFinite(minFootY)) {
-        const curHipsWorld = new THREE.Vector3();
-        bones.Hips.getWorldPosition(curHipsWorld);
-        curHipsWorld.y -= minFootY;
-        if (charRigMap.hipsParentWorldMatrixInv) {
-          bones.Hips.position.copy(curHipsWorld).applyMatrix4(charRigMap.hipsParentWorldMatrixInv);
-        } else {
-          bones.Hips.position.y -= minFootY;
-        }
-        charRigMap.rootObject.updateWorldMatrix(true, true);
+      root.updateWorldMatrix(true,true);
+      let minY=Infinity;
+      for (const key of ['LeftFoot','RightFoot','LeftToeBase','RightToeBase']) {
+        const bone=bones[key];
+        if (bone) minY=Math.min(minY,bone.getWorldPosition(new THREE.Vector3()).y);
+      }
+      if (Number.isFinite(minY)) {
+        const hipWorld=bones.Hips.getWorldPosition(new THREE.Vector3()); hipWorld.y-=minY;
+        if (charRigMap.hipsParentWorldMatrixInv) bones.Hips.position.copy(hipWorld).applyMatrix4(charRigMap.hipsParentWorldMatrixInv);
+        else bones.Hips.position.y-=minY;
+        root.updateWorldMatrix(true,true);
       }
     }
-
     return true;
   }
-
-  // =========================================================================
-  // 5. FBX TRACK BAKER & CONTINUOUS EULER UNWRAPPING
-  // =========================================================================
 
   function unwrapAngleDeg(current, previous) {
     let diff = current - previous;
@@ -1239,11 +1283,11 @@
 
     const fps = params.bakeFps || 30;
     const duration = retargetCtx.duration || 1.0;
-    const frameCount = Math.max(2, Math.floor(duration * fps) + 1);
+    const frameCount = Math.max(2, Math.ceil(duration * fps) + 1);
     const times = new Float32Array(frameCount);
 
     for (let i = 0; i < frameCount; i++) {
-      times[i] = Math.min(duration, i / fps);
+      times[i] = duration * i / (frameCount - 1);
     }
 
     const tracks = {};
@@ -1279,6 +1323,9 @@
     const prevRot = {};
     const euler = new THREE.Euler(0, 0, 0, 'ZYX');
 
+    // Evaluation mutates preview transforms; always restore the user's current pose.
+    const savedTransforms = Object.values(charRigMap.bones).map(bone => [bone, bone.position.clone(), bone.quaternion.clone()]);
+    try {
     // Evaluate each frame and record tracks
     for (let f = 0; f < frameCount; f++) {
       const t = times[f];
@@ -1346,6 +1393,13 @@
         track.rotation.z[f] = rz;
       }
     }
+    } finally {
+      for (const [bone,position,quaternion] of savedTransforms) {
+        bone.position.copy(position);
+        bone.quaternion.copy(quaternion);
+      }
+      charRigMap.rootObject.updateWorldMatrix(true,true);
+    }
 
     // Build splicerTracks array ready for FBXBinarySplicer.spliceAndExportFBX
     const splicerTracks = [];
@@ -1385,6 +1439,7 @@
   const api = {
     CANONICAL_BONES,
     normalizeCanonicalBoneName,
+    extractAnimationClip,
     setTHREE: function (t) { _THREE = t; },
     mapHumanoidSkeleton,
     autoAlignWeaponGeometry,

@@ -67,6 +67,7 @@ Resúmenes acumulativos y auditables de cada entrega y avance de desarrollo en `
 | 54 | Paridad fidedigna 3JS vs Blender (cámara ortográfica, PBR, luces PI y Blackman-Harris 4x) | [`lab3js-blender-parity/`](lab3js-blender-parity/walkthrough.md) | IoU de silueta pasa de 27.5% a 80.9%, direcciones 100% coincidentes, luminancia y PBR alineados con Cycles |
 | 55 | Laboratorio Web Offline de Ensamblaje de Armas, Retargeting e IK a `.FBX` Binario | [`fbx-weapon-anim-lab/`](fbx-weapon-anim-lab/walkthrough.md) | Completado (Splicer FBX 7400 lossless, Auto-PCA + IK 2 manos, 10 anims + 5 armas, verificado en Chromium headless y FBX-Web-Renderer) |
 | 56 | Corrección de centrado multimodelo en Three.js (Mario, Henar, Wizard, Necron) | [`lab3js-centering-fix/`](lab3js-centering-fix/walkthrough.md) | Completado (IoU Mario sube de 12.5% a 94.2%, Wizard 94.9%, Henar 95.6%, Necron centrado en 23.5px, órbita de 15px eliminada) |
+| 57 | Correcciones de animación, retargeting e IK de armas | [`weapon-anim-lab-fixes/`](weapon-anim-lab-fixes/walkthrough.md) | 11 clips únicos; duplicado Slash/JumpHit eliminado; ambos híbridos exportados/reimportados con shotgun y sniper; 13 mapas del sniper preservados |
 
 
 
