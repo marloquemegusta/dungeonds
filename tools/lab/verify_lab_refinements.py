@@ -176,6 +176,8 @@ def run_verification():
             const originalY = state.dsCharY;
             const moveBlocked = !state.tryMoveCharacter(state.mapWidth / 2, state.mapHeight / 2);
             const stillWalkable = state.isMapPixelWalkable(state.dsCharX, state.dsCharY);
+            state.dsCharX = originalX;
+            state.dsCharY = originalY;
             return {
                 charX: state.dsCharX,
                 charY: state.dsCharY,

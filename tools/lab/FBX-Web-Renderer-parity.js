@@ -999,9 +999,10 @@
       if (btnExportMap) btnExportMap.disabled = false;
 
       updateDsMetricsBadge();
+      const isNewMap = state.mapRenderedName !== state.map?.name;
       state.mapRenderedName = state.map?.name;
       state.mapRenderCount = (state.mapRenderCount || 0) + 1;
-      ensureCharacterOnWalkableFloor(false);
+      ensureCharacterOnWalkableFloor(isNewMap);
       drawDsSimulator();
     } finally {
       $.renderer.setClearColor(0x000000, 0);
@@ -1126,6 +1127,17 @@
             { gx: g2.mx / CELL, gy: g2.my / CELL },
             2 // 2 = BLOCKED
           );
+          if (norm.y > 0.75 && midY > 0.30 && maxY < 1.6) {
+            const s0 = worldToMapPixel(v0.x, v0.y, v0.z);
+            const s1 = worldToMapPixel(v1.x, v1.y, v1.z);
+            const s2 = worldToMapPixel(v2.x, v2.y, v2.z);
+            rasterizeTriangleToGrid(grid, gw, gh,
+              { gx: s0.mx / CELL, gy: s0.my / CELL },
+              { gx: s1.mx / CELL, gy: s1.my / CELL },
+              { gx: s2.mx / CELL, gy: s2.my / CELL },
+              2 // 2 = BLOCKED
+            );
+          }
         }
       }
     });
@@ -1177,6 +1189,8 @@
 
     // If current position is already firmly walkable with 12px clearance and not forced
     if (!force && hasClearance(state.dsCharX, state.dsCharY, 12)) {
+      state.dsPanX = Math.round(state.dsCharX - 128);
+      state.dsPanY = Math.round(state.dsCharY - (dsH / 2));
       syncCharacter3DPositionFrom2D();
       return;
     }
@@ -1184,41 +1198,21 @@
     let bestX = null;
     let bestY = null;
 
-    // Candidate open corridors in world coords
-    const candidateWorlds = [
-      { x: 0, z: 4.0 },
-      { x: 0, z: 3.5 },
-      { x: -4.0, z: -7.0 },
-      { x: 3.5, z: 2.0 },
-      { x: -3.5, z: 2.0 }
-    ];
-
-    if (state.mapProjection) {
-      for (const cand of candidateWorlds) {
-        const p = worldXZToMapPixel(cand.x, cand.z);
-        if (hasClearance(p.mx, p.my, 12)) {
-          bestX = Math.round(p.mx);
-          bestY = Math.round(p.my);
-          break;
-        }
-      }
-    }
-
-    // Radial search from center for an open floor position with clearance
-    if (bestX === null) {
-      const startX = Math.round(mapW / 2);
-      const startY = Math.round(mapH / 2);
-      const step = 8;
-      outer: for (let r = step; r < Math.max(mapW, mapH) / 2; r += step) {
-        for (let angleDeg = 0; angleDeg < 360; angleDeg += 15) {
-          const rad = (angleDeg * Math.PI) / 180;
-          const testX = Math.round(startX + r * Math.cos(rad));
-          const testY = Math.round(startY + r * Math.sin(rad));
-          if (hasClearance(testX, testY, 12)) {
-            bestX = testX;
-            bestY = testY;
-            break outer;
-          }
+    // Radial search from map center checking front-south angles first at each radius r
+    const startX = Math.round(mapW / 2);
+    const startY = Math.round(mapH / 2);
+    const step = 6;
+    const angleOffsets = [0, -15, 15, -30, 30, -45, 45, -60, 60, -75, 75, -90, 90, -105, 105, -120, 120, -135, 135, -150, 150, -165, 165, 180];
+    outer: for (let r = step; r < Math.max(mapW, mapH) / 2; r += step) {
+      for (let i = 0; i < angleOffsets.length; i++) {
+        const angleDeg = 90 + angleOffsets[i];
+        const rad = (angleDeg * Math.PI) / 180;
+        const testX = Math.round(startX + r * Math.cos(rad));
+        const testY = Math.round(startY + r * Math.sin(rad));
+        if (hasClearance(testX, testY, 8)) {
+          bestX = testX;
+          bestY = testY;
+          break outer;
         }
       }
     }
