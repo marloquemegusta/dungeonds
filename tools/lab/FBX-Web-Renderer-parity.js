@@ -296,6 +296,11 @@
   function computeCharacterFit(size, targetPixels) {
     const root = $.modelRoot || null;
     const scene = $.scene;
+    if (root) {
+      root.position.set(0, 0, 0);
+      root.rotation.y = 0;
+      root.updateMatrixWorld(true);
+    }
     const elevation = Yt.degToRad(Math.max(1, parseFloat(document.getElementById('elevation')?.value) || 30));
     const toCamera = new K(Math.cos(elevation) * Math.cos(AZIMUTH), Math.sin(elevation), -Math.cos(elevation) * Math.sin(AZIMUTH)).normalize();
     const right = new K().crossVectors(new K(0, 1, 0), toCamera).normalize();
@@ -353,7 +358,12 @@
     state.capturing = true;
 
     if (state.mapGroup) state.mapGroup.visible = false;
-    if (root) root.visible = true;
+    if (root) {
+      root.visible = true;
+      root.position.set(0, 0, 0);
+      root.rotation.y = 0;
+      root.updateMatrixWorld(true);
+    }
 
     try {
       for (let waited = 0; renderer.getContext().isContextLost() && waited < 15000; waited += 100) {
