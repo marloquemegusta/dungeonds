@@ -7,6 +7,8 @@
 #include "los.h"
 #include "smooth_lightmap.h"
 #include "gameplay.h"
+#include "enemy_ai.h"
+#include "projectiles.h"
 #include <string.h>
 
 // ---------------------------------------------------------------------------
@@ -213,7 +215,7 @@ static inline uint8_t world_collision_flags(int cx, int cy) {
     return (g_dungeon_collision[index >> 2] >> ((index & 3) * 2)) & 0x03;
 }
 
-static int position_is_free(fixed x, fixed y) {
+int position_is_free(fixed x, fixed y) {
     int wx = (int)(x >> FIXED_SHIFT);
     int wy = (int)(y >> FIXED_SHIFT);
     static const int floor_offsets[9][2] = {
@@ -248,7 +250,7 @@ static int position_is_free(fixed x, fixed y) {
     return 1;
 }
 
-static int bullet_position_is_free(fixed x, fixed y) {
+int bullet_position_is_free(fixed x, fixed y) {
     int px = (int)(x >> FIXED_SHIFT);
     int py = (int)(y >> FIXED_SHIFT);
     if (!world_point_has_floor(px, py)) return 0;
@@ -259,7 +261,7 @@ static int bullet_position_is_free(fixed x, fixed y) {
 }
 
 // Sweep in <=1px increments so a frame cannot skip a thin blocked cell.
-static int sweep_position(fixed *x, fixed *y, fixed dx, fixed dy) {
+int sweep_position(fixed *x, fixed *y, fixed dx, fixed dy) {
     fixed start_x = *x, start_y = *y;
     int ax = abs_int(dx), ay = abs_int(dy);
     int major = ax > ay ? ax : ay;
@@ -1021,6 +1023,7 @@ static void render_screen(uint16_t *buffer, int cam_x, int cam_y,
             draw_enemy(buffer, &s_enemies[-2 - sp], cam_x, cam_y);
         }
     }
+    enemy_projectiles_render(buffer, cam_x, cam_y);
     uint32_t blit_ticks = cpuGetTiming() - t_bl0;
 
     if (out_shadow) *out_shadow = shadow_ticks;
@@ -1141,6 +1144,7 @@ static uint32_t present_both_screens(int top_cam_x, int top_cam_y,
 // ---------------------------------------------------------------------------
 
 static void enemies_init(void) {
+    enemy_projectiles_init();
     // Find free pixel-space points around the player; a blocked map may yield fewer enemies.
     static const int dir_cycle[8] = { DIR_SOUTH, DIR_SOUTHWEST, DIR_WEST, DIR_NORTHWEST,
                                       DIR_NORTH, DIR_NORTHEAST, DIR_EAST, DIR_SOUTHEAST };
@@ -1160,6 +1164,12 @@ static void enemies_init(void) {
         e->state = ENEMY_STATE_IDLE;
         e->state_timer = 0;
         e->hit_timer = 0;
+        e->last_seen_x = 0;
+        e->last_seen_y = 0;
+        e->los_lost_timer = 0;
+        e->burst_shots_left = 0;
+        e->burst_interval_timer = 0;
+        e->strafe_dir = (i & 1) ? 1 : -1;
 
         int found = 0;
         for (int radius = 64; radius <= 192 && !found; radius += 32) {
@@ -1410,6 +1420,12 @@ static void lances_update(void) {
             if (e->hp <= 0) {
                 death_chunks_spawn(e, lance->vx, lance->vy);
                 e->active = 0;
+                e->state = ENEMY_STATE_DEAD;
+                if (e->type == ENEMY_TYPE_CHARGER) {
+                    pickup_spawn(PICKUP_HEALTH, e->x, e->y, 25);
+                } else if (e->type == ENEMY_TYPE_SHOOTER) {
+                    pickup_spawn(PICKUP_AMMO_SHOTGUN, e->x, e->y, 10);
+                }
                 snprintf(msg, sizeof(msg), "BONE_LANCE_KILL enemy=%d", i);
             } else {
                 snprintf(msg, sizeof(msg), "BONE_LANCE_HIT enemy=%d hp=%d", i, e->hp);
@@ -1438,61 +1454,21 @@ static int nearest_enemy_screen(int *out_x, int *out_y) {
 }
 
 static void enemies_update(void) {
-    // Screen-space direction vectors (sdx, sdy) for DIR_SOUTH .. DIR_SOUTHEAST
-    static const int dir_dx[8] = { 0, -1, -1, -1,  0,  1, 1, 1 };
-    static const int dir_dy[8] = { 1,  1,  0, -1, -1, -1, 0, 1 };
-
-    for (int i = 0; i < MAX_ENEMIES; i++) {
-        Enemy *e = &s_enemies[i];
-        if (!e->active) continue;
-        if (e->hit_timer > 0) e->hit_timer--;
-
-        fixed spd = g_characters[e->char_id].speed;
-        int anim_period = g_characters[e->char_id].anim_period;
-
-        int sdx = dir_dx[e->dir];
-        int sdy = dir_dy[e->dir];
-        fixed vx = sdx * spd;
-        fixed vy = sdy * spd;
-        if (sdx != 0 && sdy != 0) {
-            vx = (vx * 181) >> 8;
-            vy = (vy * 181) >> 8;
-        }
-
-        fixed next_x = e->x, next_y = e->y;
-
-        if (sweep_position(&next_x, &next_y, vx, vy)) {
-            e->x = next_x;
-            e->y = next_y;
-        } else {
-            // Pick next direction on collision
-            e->dir = (e->dir + 3) & 7;
-            e->step_count = 0;
-        }
-
-        e->step_count++;
-        if (e->step_count >= e->step_limit) {
-            e->step_count = 0;
-            e->dir = (e->dir + 1 + (i & 3)) & 7;
-        }
-
-        e->anim_timer++;
-        if (e->anim_timer >= anim_period) {
-            e->anim_timer = 0;
-            e->frame = (e->frame + 1) % PLAYER_NUM_FRAMES;
-        }
-
-        if (g_player_state.invuln_timer == 0 && !g_player_state.is_dead) {
-            fixed dx = e->x - s_player.x;
-            fixed dy = e->y - s_player.y;
-            if (abs_int(TO_INT(dx)) < 12 && abs_int(TO_INT(dy)) < 12) {
-                int dmg = g_enemy_tuning[e->type].contact_damage;
-                if (dmg <= 0) dmg = 10;
-                player_apply_damage(&g_player_state, dmg);
-                g_player_state.invuln_timer = 30;
-            }
-        }
+    static fixed s_prev_player_x = 0;
+    static fixed s_prev_player_y = 0;
+    static int s_first_frame = 1;
+    if (s_first_frame) {
+        s_prev_player_x = s_player.x;
+        s_prev_player_y = s_player.y;
+        s_first_frame = 0;
     }
+    fixed pvx = s_player.x - s_prev_player_x;
+    fixed pvy = s_player.y - s_prev_player_y;
+    s_prev_player_x = s_player.x;
+    s_prev_player_y = s_player.y;
+
+    enemy_ai_update(s_enemies, MAX_ENEMIES, s_player.x, s_player.y, pvx, pvy);
+    enemy_projectiles_update(s_player.x, s_player.y);
 }
 
 // ---------------------------------------------------------------------------

@@ -5,7 +5,8 @@
         "python.exe tests/test_world_void_contract.py",
         "python.exe tests/test_sprite_ground_anchor.py",
         "python.exe tests/test_los.py",
-        "python.exe tests/test_gameplay_contract.py"
+        "python.exe tests/test_gameplay_contract.py",
+        "python.exe tests/test_enemy_fsm.py"
     ],
     "blocksdsImage": "skylyrac/blocksds:slim-latest",
     "romUploadName": "dungeonds.nds",

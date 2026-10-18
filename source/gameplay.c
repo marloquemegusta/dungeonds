@@ -6,22 +6,42 @@
 // ---------------------------------------------------------------------------
 
 const EnemyTuning g_enemy_tuning[NUM_ENEMY_TYPES] = {
-    [ENEMY_TYPE_NONE] = { 0, 0, 0, 0, 0, 0 },
+    [ENEMY_TYPE_NONE] = { 0 },
     [ENEMY_TYPE_CHARGER] = {
-        .max_hp = 60,             // [TUNABLE] high HP (~3x shooter)
-        .speed = 163,             // [TUNABLE] 8.8 fixed (~90% of player speed 181)
-        .contact_damage = 15,     // [TUNABLE] moderate melee bite
-        .attack_cooldown = 30,    // [TUNABLE] frames between melee attacks
+        .max_hp = 60,             // [TUNABLE-PLACEHOLDER] high HP (~3x shooter)
+        .speed = 163,             // [TUNABLE-PLACEHOLDER] 8.8 fixed (~90% of player speed 181)
+        .contact_damage = 15,     // [TUNABLE-PLACEHOLDER] moderate melee bite
+        .attack_cooldown = 30,    // [TUNABLE-PLACEHOLDER] frames between melee attacks
         .preferred_dist_min = 0,
-        .preferred_dist_max = 16  // [TUNABLE] melee engagement range
+        .preferred_dist_max = 16, // [TUNABLE-PLACEHOLDER] melee engagement range (px)
+        .los_range = 160,         // [TUNABLE-PLACEHOLDER] LOS detection range (px)
+        .alert_duration = 20,     // [TUNABLE-PLACEHOLDER] frames in ALERT (0.33s)
+        .search_duration = 90,    // [TUNABLE-PLACEHOLDER] frames in SEARCH (1.5s)
+        .los_lost_limit = 180,    // [TUNABLE-PLACEHOLDER] frames without LOS before SEARCH (3s)
+        .position_duration = 0,
+        .aim_duration = 0,
+        .burst_count = 0,
+        .burst_interval = 0,
+        .projectile_speed = 0,
+        .projectile_damage = 0
     },
     [ENEMY_TYPE_SHOOTER] = {
-        .max_hp = 20,             // [TUNABLE] low HP
-        .speed = 120,             // [TUNABLE] slower positioning speed
-        .contact_damage = 5,      // [TUNABLE] weak contact
-        .attack_cooldown = 60,    // [TUNABLE] burst cooldown
-        .preferred_dist_min = 40, // [TUNABLE] distance band min (px)
-        .preferred_dist_max = 80  // [TUNABLE] distance band max (px)
+        .max_hp = 20,             // [TUNABLE-PLACEHOLDER] low HP
+        .speed = 120,             // [TUNABLE-PLACEHOLDER] slower positioning speed (0.47 px/f)
+        .contact_damage = 5,      // [TUNABLE-PLACEHOLDER] weak contact
+        .attack_cooldown = 60,    // [TUNABLE-PLACEHOLDER] burst cooldown (1s)
+        .preferred_dist_min = 40, // [TUNABLE-PLACEHOLDER] distance band min (px)
+        .preferred_dist_max = 80, // [TUNABLE-PLACEHOLDER] distance band max (px)
+        .los_range = 180,         // [TUNABLE-PLACEHOLDER] LOS detection range (px)
+        .alert_duration = 25,     // [TUNABLE-PLACEHOLDER] frames in ALERT (0.4s)
+        .search_duration = 90,    // [TUNABLE-PLACEHOLDER] frames in SEARCH (1.5s)
+        .los_lost_limit = 180,    // [TUNABLE-PLACEHOLDER] frames without LOS before SEARCH (3s)
+        .position_duration = 35,  // [TUNABLE-PLACEHOLDER] frames in POSITION before AIM
+        .aim_duration = 25,       // [TUNABLE-PLACEHOLDER] frames in AIM before BURST (0.4s)
+        .burst_count = 3,         // [TUNABLE-PLACEHOLDER] 3 projectiles per burst
+        .burst_interval = 10,     // [TUNABLE-PLACEHOLDER] frames between shots (0.16s)
+        .projectile_speed = 384,  // [TUNABLE-PLACEHOLDER] 8.8 fixed: 1.5 px/frame (slow)
+        .projectile_damage = 8    // [TUNABLE-PLACEHOLDER] damage per projectile
     }
 };
 

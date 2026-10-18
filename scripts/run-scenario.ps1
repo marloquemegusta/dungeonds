@@ -16,6 +16,9 @@ function WslPath([string]$path) {
     return "/mnt/$($resolved.Substring(0,1).ToLowerInvariant())$($resolved.Substring(2).Replace('\','/'))"
 }
 $log = Join-Path $OutputPath 'emulator.log'
+$prevEAP = $ErrorActionPreference
+$ErrorActionPreference = 'Continue'
 & wsl python3 -u (WslPath $runner) (WslPath $RomPath) (WslPath $ScenarioPath) (WslPath $OutputPath) (WslPath $library) 2>&1 | Tee-Object -FilePath $log
+$ErrorActionPreference = $prevEAP
 if ($LASTEXITCODE -ne 0) { throw 'El escenario DeSmuME falló.' }
 Write-Output "DS_SCENARIO_RESULT=PASS output=$OutputPath"

@@ -25,12 +25,22 @@ typedef enum {
 } WeaponType;
 
 typedef struct {
-    int max_hp;             // [TUNABLE] base health points
-    fixed speed;            // [TUNABLE] 8.8 fixed movement speed
-    int contact_damage;     // [TUNABLE] melee/contact damage dealt to player
-    int attack_cooldown;    // [TUNABLE] frames between attacks
-    int preferred_dist_min; // [TUNABLE] min distance band (world pixels)
-    int preferred_dist_max; // [TUNABLE] max distance band (world pixels)
+    int max_hp;             // [TUNABLE-PLACEHOLDER] base health points
+    fixed speed;            // [TUNABLE-PLACEHOLDER] 8.8 fixed movement speed
+    int contact_damage;     // [TUNABLE-PLACEHOLDER] melee/contact damage dealt to player
+    int attack_cooldown;    // [TUNABLE-PLACEHOLDER] frames between attacks / burst cooldown
+    int preferred_dist_min; // [TUNABLE-PLACEHOLDER] min distance band (world pixels)
+    int preferred_dist_max; // [TUNABLE-PLACEHOLDER] max distance band (world pixels)
+    int los_range;          // [TUNABLE-PLACEHOLDER] detection radius (world pixels)
+    int alert_duration;     // [TUNABLE-PLACEHOLDER] frames in ALERT before action
+    int search_duration;    // [TUNABLE-PLACEHOLDER] frames in SEARCH before IDLE
+    int los_lost_limit;     // [TUNABLE-PLACEHOLDER] frames without LOS before SEARCH (~3s = 180)
+    int position_duration;  // [TUNABLE-PLACEHOLDER] frames in POSITION before AIM
+    int aim_duration;       // [TUNABLE-PLACEHOLDER] frames in AIM before BURST
+    int burst_count;        // [TUNABLE-PLACEHOLDER] number of projectiles per burst
+    int burst_interval;     // [TUNABLE-PLACEHOLDER] frames between burst shots
+    fixed projectile_speed; // [TUNABLE-PLACEHOLDER] 8.8 fixed projectile speed
+    int projectile_damage;  // [TUNABLE-PLACEHOLDER] damage per projectile
 } EnemyTuning;
 
 typedef struct {
@@ -56,6 +66,10 @@ typedef enum {
     ENEMY_STATE_CHASE,
     ENEMY_STATE_ATTACK,
     ENEMY_STATE_SEARCH,
+    ENEMY_STATE_POSITION,
+    ENEMY_STATE_AIM,
+    ENEMY_STATE_BURST,
+    ENEMY_STATE_COOLDOWN,
     ENEMY_STATE_DEAD
 } EnemyState;
 
@@ -75,7 +89,17 @@ typedef struct {
     EnemyType type;
     EnemyState state;
     int state_timer;
+    fixed last_seen_x;
+    fixed last_seen_y;
+    int los_lost_timer;
+    int burst_shots_left;
+    int burst_interval_timer;
+    int strafe_dir;
 } Enemy;
+
+int position_is_free(fixed x, fixed y);
+int bullet_position_is_free(fixed x, fixed y);
+int sweep_position(fixed *x, fixed *y, fixed dx, fixed dy);
 
 // ---------------------------------------------------------------------------
 // 3. Player Stats & Damage Function (Doom-style 1/3 armor absorption)
