@@ -707,4 +707,29 @@ Este documento registra el historial cronolÃ³gico de sesiones de desarrollo ve
   - Suite determinista `tools/lab/verify_lab_refinements.py` aprobada al 100% (zero-scroll 100vh, proporciones 330/430/1fr, Run.fbx, blockout FBX multi-material, reactividad de luz/elevación, cero ghosting, anclaje pies Y=0, blockout GLB y Sci-Fi Dungeon).
 - **Evidencia:** `walkthroughs/fbx-sprite-map-lab/walkthrough.md`.
 
+---
+
+## Sesión 63: Grid 2D de Walkability y Motor de Colisiones Físicas para Mapas 3D en el Simulador Nintendo DS
+
+- [x] **Extracción de Grid 2D de Walkability desde Geometría 3D (`buildMapCollisionGrid`):**
+  - Rasterización de triángulos de suelo (`|norm.y| > 0.70`, `midY ≈ 0`) marcando bit `1` (FLOOR) en celda métrica de 4 px.
+  - Rasterización del footprint en el plano XZ de obstáculos, muros y coberturas bajas (`maxY > 0.30`, `minY < 1.0` o caras superiores horizontales de cobertura) marcando bit `2` (BLOCKED).
+  - Manejo robusto de triángulos degenerados/verticales (`denom < 1e-5`), eliminando falsos bloqueos rectangulares en pasillos estrechos.
+- [x] **Proyecciones Bidireccionales 2D/3D Matemáticas:**
+  - `worldXZToMapPixel(x, z)`: Proyecta coordenadas de mundo sobre la cámara ortográfica dimétrica dim_u / dim_v.
+  - `mapPixelToWorldXZ(mx, my)`: Inversión 2×2 exacta para trasladar la posición de pies del sprite 2D a coordenadas 3D del mundo.
+- [x] **Garantía de Spawn en Suelo Transitable (`ensureCharacterOnWalkableFloor`):**
+  - Verificación de margen de seguridad y clearance alrededor del personaje.
+  - Posicionamiento automático en pasillo despejado (evitando bloques de cobertura centrales como `cover_mid`) y búsqueda radial + escaneo exhaustivo más cercano al centro.
+  - Recentrado de cámara DS (`dsPanX`, `dsPanY`) sincronizado con el spawn.
+- [x] **Motor de Movimiento y Bloqueo de Colisiones en Tiempo Real (`tryMoveCharacter`):**
+  - Soporte de movimiento interactivo con WASD / cursores y arrastre de ratón.
+  - Bloqueo estricto de entrada a celdas con bit `2` o fuera de suelo transitable (`isMapPixelWalkable`).
+  - Deslizamiento sobre ejes (sliding X / Y) y bisección suave en la frontera de impacto sin penetración geométrica.
+  - Sincronización continua en el visor 3D interactivo (`syncCharacter3DPositionFrom2D`).
+- [x] **Verificación Headless con Playwright al 100%:**
+  - Suite `tools/lab/verify_lab_refinements.py` aprobada con validación de spawn transitable, colisión y bloqueo contra obstáculos centrales en Blockout FBX, Blockout GLB y Sci-Fi Dungeon FBX.
+  - Evidencia visual regenerada y sincronizada en artefactos y walkthrough.
+- **Evidencia:** `walkthroughs/fbx-sprite-map-lab/walkthrough.md`.
+
 

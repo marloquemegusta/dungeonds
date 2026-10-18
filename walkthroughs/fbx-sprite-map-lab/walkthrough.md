@@ -37,6 +37,24 @@ En esta sesión se refinó en profundidad el laboratorio web offline (`tools/lab
 - **Eliminación de Estelas (Ghosting):** `drawDsSimulator()` ejecuta un borrado explícito a negro sólido (`ctx.fillStyle = '#000000'; ctx.fillRect(0, 0, dsW, dsH);`) antes de dibujar el mapa o el fondo procedural. Los márgenes exteriores fuera de límites se mantienen rigurosamente negros `(0, 0, 0, 255)`.
 - **Desbloqueo de Iluminación:** Se retiraron los clamps hardcodeados en `renderMap()`, permitiendo que la luz principal (`keyLight`), relleno (`fillLight`) y ambiente (`worldLight`) se apliquen sin distorsión sobre el escenario.
 
+### 7. Grid 2D de Walkability y Motor de Colisiones Físicas
+- **Extracción de Malla de Navegación desde Mallas 3D (`buildMapCollisionGrid`):**
+  - Rasterización de triángulos de suelo (`|norm.y| > 0.70`, `midY ≈ 0`) marcando bit `1` (FLOOR) en celda métrica de 4 px.
+  - Rasterización del footprint en el plano XZ de obstáculos, muros y coberturas bajas (`maxY > 0.30`, `minY < 1.0` o caras superiores horizontales de cobertura) marcando bit `2` (BLOCKED).
+  - Manejo robusto de triángulos degenerados/verticales (`denom < 1e-5`), eliminando falsos bloqueos rectangulares en pasillos estrechos.
+- **Proyecciones Bidireccionales 2D/3D:**
+  - `worldXZToMapPixel(x, z)`: Proyecta coordenadas de mundo sobre la cámara ortográfica dimétrica.
+  - `mapPixelToWorldXZ(mx, my)`: Inversión 2×2 exacta para trasladar la posición de pies del sprite 2D a coordenadas 3D del mundo.
+- **Garantía de Spawn en Suelo Transitable (`ensureCharacterOnWalkableFloor`):**
+  - Verificación de margen de seguridad y clearance alrededor del personaje.
+  - Posicionamiento automático en pasillo despejado (evitando bloques de cobertura centrales como `cover_mid`) y búsqueda radial + escaneo exhaustivo más cercano al centro.
+  - Recentrado de cámara DS (`dsPanX`, `dsPanY`) sincronizado con el spawn.
+- **Motor de Movimiento y Bloqueo de Colisiones en Tiempo Real (`tryMoveCharacter`):**
+  - Soporte de movimiento interactivo con WASD / cursores y arrastre de ratón.
+  - Bloqueo estricto de entrada a celdas con bit `2` o fuera de suelo transitable (`isMapPixelWalkable`).
+  - Deslizamiento sobre ejes (sliding X / Y) y bisección suave en la frontera de impacto sin penetración geométrica.
+  - Sincronización continua en el visor 3D interactivo (`syncCharacter3DPositionFrom2D`).
+
 ---
 
 ## Verificación Automatizada Headless
@@ -50,11 +68,13 @@ Se desarrolló y ejecutó la suite determinista en Playwright headless (`tools/l
 | **Carga de Personaje FBX** | **PASS** | `Run.fbx` cargado; 8 mini-canvases en tiempo real poblados en la columna central. |
 | **Carga de Mapa Blockout FBX** | **PASS** | `isometric_shooter_blockout.fbx` cargado; mapa auto-encuadrado a 768×512 px. |
 | **Multi-Material Colores Distintos** | **PASS** | Verificados **3 colores únicos** en la geometría del blockout (muros, pilares, suelos). |
+| **Spawn en Suelo Transitable** | **PASS** | `charX: 384, charY: 194`, `isWalkable: True`, evitando muros y coberturas. |
+| **Bloqueo de Colisión Obstáculo** | **PASS** | `centerWalkable: False`, `moveBlocked: True`, detención en frontera sin penetración. |
 | **Reactividad Luz / Elevación** | **PASS** | Píxel central responde dinámicamente a cambios de elevación (30° a 45°) y atenuación de luz (4.2 a 1.0). |
 | **Cero Ghosting en Simulador DS** | **PASS** | Paneo fuera de límites evalúa a negro sólido estricto: `rgba(0, 0, 0, 255)`. |
-| **Anclaje de Pies 3D en Y=0** | **PASS** | `charMinY = 0.000` (desviación < 0.05m tras posado y `groundCharacterIn3D`). |
+| **Anclaje de Pies 3D en Y=0** | **PASS** | `charMinY = 0.001` (desviación < 0.05m tras posado y `groundCharacterIn3D`). |
 | **Carga de Mapa Multi-Material .GLB** | **PASS** | `isometric_shooter_blockout.glb` cargado con `MinimalGLBLoader`; array de materiales verificado. |
-| **Carga Escenario Sci-Fi Dungeon** | **PASS** | `tripo_convert_...fbx` cargado e interactivo con personaje y texturas PBR intactas. |
+| **Carga y Walkability Sci-Fi Dungeon** | **PASS** | `tripo_convert_...fbx` cargado; auto-spawn en suelo `(400, 212)` con `isWalkable: True`. |
 
 ---
 
