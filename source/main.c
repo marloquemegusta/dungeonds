@@ -6,6 +6,7 @@
 #include "dungeon_occlusion.h"
 #include "los.h"
 #include "smooth_lightmap.h"
+#include "gameplay.h"
 #include <string.h>
 
 // ---------------------------------------------------------------------------
@@ -117,20 +118,7 @@ typedef struct {
 } OcclusionStats;
 volatile OcclusionStats g_occlusion_stats;
 
-#define MAX_ENEMIES 10
-typedef struct {
-    fixed x;
-    fixed y;
-    int dir;
-    int frame;
-    int anim_timer;
-    int char_id;
-    int active;
-    int step_count;
-    int step_limit;
-    int hp;
-    int hit_timer;
-} Enemy;
+#define MAX_ENEMIES MAX_GAMEPLAY_ENEMIES
 
 static Enemy s_enemies[MAX_ENEMIES];
 static int abs_int(int v);
@@ -999,6 +987,8 @@ static void render_screen(uint16_t *buffer, int cam_x, int cam_y,
     }
     uint32_t shadow_ticks = cpuGetTiming() - t_sh0;
 
+    pickups_render(buffer, cam_x, cam_y);
+
     // 2) Sprites back-to-front (painter's algorithm)
     for (int i = 1; i < count; i++) {
         DrawItem key = items[i];
@@ -1037,7 +1027,7 @@ static void render_screen(uint16_t *buffer, int cam_x, int cam_y,
     if (out_blit) *out_blit = blit_ticks;
 }
 
-static const char s_fps_chars[] = " FPS:CBL0123456789";
+static const char s_fps_chars[] = " FPS:CBL0123456789HARMDE";
 static const uint8_t s_fps_font[][7] = {
     {0x00,0x00,0x00,0x00,0x00,0x00,0x00}, // space
     {0x1F,0x10,0x10,0x1E,0x10,0x10,0x10}, // F
@@ -1056,11 +1046,17 @@ static const uint8_t s_fps_font[][7] = {
     {0x0E,0x10,0x10,0x1E,0x11,0x11,0x0E}, // 6
     {0x1F,0x01,0x02,0x04,0x08,0x08,0x08}, // 7
     {0x0E,0x11,0x11,0x0E,0x11,0x11,0x0E}, // 8
-    {0x0E,0x11,0x11,0x0F,0x01,0x01,0x0E}  // 9
+    {0x0E,0x11,0x11,0x0F,0x01,0x01,0x0E}, // 9
+    {0x11,0x11,0x11,0x1F,0x11,0x11,0x11}, // H
+    {0x0E,0x11,0x11,0x1F,0x11,0x11,0x11}, // A
+    {0x1E,0x11,0x11,0x1E,0x14,0x12,0x11}, // R
+    {0x11,0x1B,0x15,0x11,0x11,0x11,0x11}, // M
+    {0x1E,0x11,0x11,0x11,0x11,0x11,0x1E}, // D
+    {0x1F,0x10,0x10,0x1E,0x10,0x10,0x1F}  // E
 };
 
 static void draw_fps_hud(uint16_t *buffer) {
-    char labels[2][32];
+    char labels[3][32];
     unsigned long cpu_ms = (unsigned long)(g_perf.cpu_ticks / 33514u);
     unsigned long present_ms = (unsigned long)(g_perf.present_ticks / 33514u);
     unsigned long floor_ms = (unsigned long)(g_perf.floor_ticks / 33514u);
@@ -1077,12 +1073,20 @@ static void draw_fps_hud(uint16_t *buffer) {
              (unsigned long)g_perf.fps, cpu_ms, present_ms);
     snprintf(labels[1], sizeof(labels[1]), "F:%02lu S:%02lu B:%02lu L:%02lu",
              floor_ms, shadow_ms, blit_ms, logic_ms);
+    if (g_player_state.is_dead) {
+        snprintf(labels[2], sizeof(labels[2]), "HP:DEAD ARM:000");
+    } else {
+        snprintf(labels[2], sizeof(labels[2]), "HP:%03d ARM:%03d",
+                 g_player_state.hp, g_player_state.armor);
+    }
     const int left = 4, top = 4, pad = 2, char_w = 6, glyph_w = 5, glyph_h = 7, line_gap = 2;
     int first_w = (int)strlen(labels[0]) * char_w - 1;
     int second_w = (int)strlen(labels[1]) * char_w - 1;
+    int third_w = (int)strlen(labels[2]) * char_w - 1;
     int text_w = first_w > second_w ? first_w : second_w;
+    if (third_w > text_w) text_w = third_w;
     int box_w = text_w + pad * 2;
-    int box_h = glyph_h * 2 + line_gap + pad * 2;
+    int box_h = glyph_h * 3 + line_gap * 2 + pad * 2;
     uint16_t panel = RGB15(1, 2, 1) | BIT(15);
     uint16_t border = RGB15(0, 16, 0) | BIT(15);
     uint16_t ink = RGB15(18, 31, 18) | BIT(15);
@@ -1094,7 +1098,7 @@ static void draw_fps_hud(uint16_t *buffer) {
         }
     }
 
-    for (int line = 0; line < 2; line++) {
+    for (int line = 0; line < 3; line++) {
         for (int i = 0; labels[line][i]; i++) {
             int glyph = 0;
             while (s_fps_chars[glyph] && s_fps_chars[glyph] != labels[line][i]) glyph++;
@@ -1148,9 +1152,13 @@ static void enemies_init(void) {
         e->frame = 0;
         e->anim_timer = 0;
         e->char_id = (i == 4 || i == 5) ? CHAR_CHARGER : CHAR_SKELETON;
+        e->type = (e->char_id == CHAR_CHARGER) ? ENEMY_TYPE_CHARGER : ENEMY_TYPE_SHOOTER;
         e->step_count = 0;
         e->step_limit = 60 + i * 15;
+        e->max_hp = e->char_id == CHAR_CHARGER ? 90 : 40;
         e->hp = e->char_id == CHAR_CHARGER ? 90 : 40;
+        e->state = ENEMY_STATE_IDLE;
+        e->state_timer = 0;
         e->hit_timer = 0;
 
         int found = 0;
@@ -1473,6 +1481,17 @@ static void enemies_update(void) {
             e->anim_timer = 0;
             e->frame = (e->frame + 1) % PLAYER_NUM_FRAMES;
         }
+
+        if (g_player_state.invuln_timer == 0 && !g_player_state.is_dead) {
+            fixed dx = e->x - s_player.x;
+            fixed dy = e->y - s_player.y;
+            if (abs_int(TO_INT(dx)) < 12 && abs_int(TO_INT(dy)) < 12) {
+                int dmg = g_enemy_tuning[e->type].contact_damage;
+                if (dmg <= 0) dmg = 10;
+                player_apply_damage(&g_player_state, dmg);
+                g_player_state.invuln_timer = 30;
+            }
+        }
     }
 }
 
@@ -1489,10 +1508,25 @@ static void player_init(void) {
     s_player.anim_timer = 0;
     s_player.char_id = CHAR_HERO;
 
+    player_state_init(&g_player_state);
+    pickups_init();
+    // Spawn initial pickups near spawn point for testing/collection
+    pickup_spawn(PICKUP_HEALTH, TO_FIXED(SPAWN_PIXEL_X + 24), TO_FIXED(SPAWN_PIXEL_Y), 25);
+    pickup_spawn(PICKUP_ARMOR, TO_FIXED(SPAWN_PIXEL_X - 24), TO_FIXED(SPAWN_PIXEL_Y), 25);
+    pickup_spawn(PICKUP_AMMO_SHOTGUN, TO_FIXED(SPAWN_PIXEL_X), TO_FIXED(SPAWN_PIXEL_Y + 24), 10);
+
     enemies_init();
 }
 
 static void player_update(uint32_t keys, uint32_t keys_down, int touch_x, int touch_y, int touch_down) {
+    if (g_player_state.invuln_timer > 0) g_player_state.invuln_timer--;
+
+    if (g_player_state.is_dead) {
+        s_player.is_moving = 0;
+        s_player.frame = 0;
+        return;
+    }
+
     // Keep X/Y/SELECT for the existing character preview controls; A now casts Bone Lance.
     if (keys_down & (KEY_X | KEY_Y | KEY_SELECT)) {
         s_player.char_id = (s_player.char_id + 1) % NUM_CHARACTERS;
@@ -1564,6 +1598,8 @@ static void player_update(uint32_t keys, uint32_t keys_down, int touch_x, int to
         s_player.frame = 0;
         s_player.anim_timer = 0;
     }
+
+    pickups_update_collection(&g_player_state, s_player.x, s_player.y);
 
     // Camera stays centered on the player; the streamed BG renders void outside the finite world.
     int target_x = player_screen_x(s_player.x, s_player.y) - SCREEN_W / 2;
