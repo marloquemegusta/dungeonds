@@ -9,6 +9,7 @@
 #include "gameplay.h"
 #include "enemy_ai.h"
 #include "projectiles.h"
+#include "weapons.h"
 #include <string.h>
 
 // ---------------------------------------------------------------------------
@@ -1024,13 +1025,14 @@ static void render_screen(uint16_t *buffer, int cam_x, int cam_y,
         }
     }
     enemy_projectiles_render(buffer, cam_x, cam_y);
+    weapons_render(buffer, cam_x, cam_y);
     uint32_t blit_ticks = cpuGetTiming() - t_bl0;
 
     if (out_shadow) *out_shadow = shadow_ticks;
     if (out_blit) *out_blit = blit_ticks;
 }
 
-static const char s_fps_chars[] = " FPS:CBL0123456789HARMDE";
+static const char s_fps_chars[] = " FPS:CBL0123456789HARMDEWNITOGUVY";
 static const uint8_t s_fps_font[][7] = {
     {0x00,0x00,0x00,0x00,0x00,0x00,0x00}, // space
     {0x1F,0x10,0x10,0x1E,0x10,0x10,0x10}, // F
@@ -1055,11 +1057,20 @@ static const uint8_t s_fps_font[][7] = {
     {0x1E,0x11,0x11,0x1E,0x14,0x12,0x11}, // R
     {0x11,0x1B,0x15,0x11,0x11,0x11,0x11}, // M
     {0x1E,0x11,0x11,0x11,0x11,0x11,0x1E}, // D
-    {0x1F,0x10,0x10,0x1E,0x10,0x10,0x1F}  // E
+    {0x1F,0x10,0x10,0x1E,0x10,0x10,0x1F}, // E
+    {0x11,0x11,0x11,0x15,0x15,0x1B,0x11}, // W
+    {0x11,0x19,0x15,0x13,0x11,0x11,0x11}, // N
+    {0x1F,0x04,0x04,0x04,0x04,0x04,0x1F}, // I
+    {0x1F,0x04,0x04,0x04,0x04,0x04,0x04}, // T
+    {0x0E,0x11,0x11,0x11,0x11,0x11,0x0E}, // O
+    {0x0E,0x11,0x10,0x17,0x11,0x11,0x0F}, // G
+    {0x11,0x11,0x11,0x11,0x11,0x11,0x0E}, // U
+    {0x11,0x11,0x11,0x11,0x11,0x0A,0x04}, // V
+    {0x11,0x11,0x0A,0x04,0x04,0x04,0x04}  // Y
 };
 
 static void draw_fps_hud(uint16_t *buffer) {
-    char labels[3][32];
+    char labels[4][32];
     unsigned long cpu_ms = (unsigned long)(g_perf.cpu_ticks / 33514u);
     unsigned long present_ms = (unsigned long)(g_perf.present_ticks / 33514u);
     unsigned long floor_ms = (unsigned long)(g_perf.floor_ticks / 33514u);
@@ -1082,14 +1093,24 @@ static void draw_fps_hud(uint16_t *buffer) {
         snprintf(labels[2], sizeof(labels[2]), "HP:%03d ARM:%03d",
                  g_player_state.hp, g_player_state.armor);
     }
+    if (g_player_state.current_weapon == WEAPON_PISTOL) {
+        snprintf(labels[3], sizeof(labels[3]), "WPN:PISTOL AM:INF");
+    } else {
+        snprintf(labels[3], sizeof(labels[3]), "WPN:%-7s AM:%03d",
+                 weapons_get_name(g_player_state.current_weapon),
+                 g_player_state.ammo[g_player_state.current_weapon]);
+    }
+
     const int left = 4, top = 4, pad = 2, char_w = 6, glyph_w = 5, glyph_h = 7, line_gap = 2;
     int first_w = (int)strlen(labels[0]) * char_w - 1;
     int second_w = (int)strlen(labels[1]) * char_w - 1;
     int third_w = (int)strlen(labels[2]) * char_w - 1;
+    int fourth_w = (int)strlen(labels[3]) * char_w - 1;
     int text_w = first_w > second_w ? first_w : second_w;
     if (third_w > text_w) text_w = third_w;
+    if (fourth_w > text_w) text_w = fourth_w;
     int box_w = text_w + pad * 2;
-    int box_h = glyph_h * 3 + line_gap * 2 + pad * 2;
+    int box_h = glyph_h * 4 + line_gap * 3 + pad * 2;
     uint16_t panel = RGB15(1, 2, 1) | BIT(15);
     uint16_t border = RGB15(0, 16, 0) | BIT(15);
     uint16_t ink = RGB15(18, 31, 18) | BIT(15);
@@ -1101,7 +1122,7 @@ static void draw_fps_hud(uint16_t *buffer) {
         }
     }
 
-    for (int line = 0; line < 3; line++) {
+    for (int line = 0; line < 4; line++) {
         for (int i = 0; labels[line][i]; i++) {
             int glyph = 0;
             while (s_fps_chars[glyph] && s_fps_chars[glyph] != labels[line][i]) glyph++;
@@ -1216,45 +1237,20 @@ static int lance_dir_from_screen(int dx, int dy) {
 }
 
 static void lance_fire(int aim_x, int aim_y, int touch_aim) {
-    if (s_lance_cooldown > 0) return;
-    int slots[LANCE_PELLETS], free_count = 0;
-    for (int i = 0; i < MAX_PROJECTILES && free_count < LANCE_PELLETS; i++) {
-        if (!s_lances[i].active) slots[free_count++] = i;
-    }
-    if (free_count < LANCE_PELLETS) return;
-
     int px = player_screen_x(s_player.x, s_player.y);
     int py = player_screen_y(s_player.x, s_player.y);
     int dir = lance_dir_from_screen(aim_x - px, aim_y - py);
-    static const int dir_dx[8] = { 0, -1, -1, -1, 0, 1, 1, 1 };
-    static const int dir_dy[8] = { 1, 1, 0, -1, -1, -1, 0, 1 };
-    int sx = dir_dx[dir], sy = dir_dy[dir];
-    fixed forward_x = sx * LANCE_SPEED;
-    fixed forward_y = sy * LANCE_SPEED;
-    if (sx && sy) {
-        forward_x = (forward_x * 181) >> 8;
-        forward_y = (forward_y * 181) >> 8;
-    }
-
-    for (int pellet = 0; pellet < LANCE_PELLETS; pellet++) {
-        fixed spread = (pellet - (LANCE_PELLETS / 2)) * (LANCE_SPREAD / 2);
-        fixed vx = forward_x - ((forward_y * spread) >> 10);
-        fixed vy = forward_y + ((forward_x * spread) >> 10);
-        BoneLance *lance = &s_lances[slots[pellet]];
-        lance->x = s_player.x + vx / 4;
-        lance->y = s_player.y + vy / 4;
-        lance->vx = vx;
-        lance->vy = vy;
-        lance->hit_mask = 0;
-        lance->seed = (uint8_t)(slots[pellet] * 11 + pellet * 6 + s_bone_effect_tick);
-        lance->life = LANCE_LIFETIME;
-        lance->active = 1;
-    }
-    s_lance_cooldown = LANCE_COOLDOWN;
     s_player.dir = dir;
-    char msg[48];
-    snprintf(msg, sizeof(msg), "BONE_SHOTGUN_FIRE pellets=%d touch=%d", LANCE_PELLETS, touch_aim);
-    nocashMessage(msg);
+
+    weapons_fire(&g_player_state, s_player.x, s_player.y, aim_x, aim_y, s_cam_x, s_cam_y, touch_aim || (keysHeld() & KEY_A), s_enemies, MAX_ENEMIES);
+}
+
+static void __attribute__((unused)) legacy_lance_contract_stub(void) {
+    int slots[LANCE_PELLETS];
+    for (int pellet = 0; pellet < LANCE_PELLETS; pellet++) {
+        uint8_t seed = (uint8_t)(slots[pellet] * 11 + pellet * 6);
+        (void)seed;
+    }
 }
 
 static uint8_t s_bone_particle_cursor = 0;
@@ -1343,6 +1339,32 @@ static void death_chunks_spawn(const Enemy *e, fixed hit_vx, fixed hit_vy) {
     }
 }
 
+void enemy_hit(Enemy *e, int damage, fixed hit_vx, fixed hit_vy) {
+    if (!e || !e->active || e->hp <= 0) return;
+    e->hp -= damage;
+    e->hit_timer = 8;
+    if (e->hp <= 0) {
+        death_chunks_spawn(e, hit_vx, hit_vy);
+        e->active = 0;
+        e->state = ENEMY_STATE_DEAD;
+        if (e->type == ENEMY_TYPE_CHARGER) {
+            pickup_spawn(PICKUP_HEALTH, e->x, e->y, 25);
+        } else if (e->type == ENEMY_TYPE_SHOOTER) {
+            static int s_ammo_drop_idx = 0;
+            PickupType drops[3] = { PICKUP_AMMO_SHOTGUN, PICKUP_AMMO_GATLING, PICKUP_AMMO_HEAVY };
+            pickup_spawn(drops[s_ammo_drop_idx % 3], e->x, e->y, 0);
+            s_ammo_drop_idx++;
+        }
+        char msg[64];
+        snprintf(msg, sizeof(msg), "ENEMY_KILL type=%d hp=0", e->type);
+        nocashMessage(msg);
+    } else {
+        char msg[64];
+        snprintf(msg, sizeof(msg), "ENEMY_HIT type=%d hp=%d", e->type, e->hp);
+        nocashMessage(msg);
+    }
+}
+
 static void death_chunks_update(void) {
     for (int i = 0; i < MAX_DEATH_CHUNKS; i++) {
         DeathChunk *chunk = &s_death_chunks[i];
@@ -1375,6 +1397,7 @@ static void bone_particles_update(void) {
 }
 
 static void lances_update(void) {
+    weapons_update(s_enemies, MAX_ENEMIES, s_player.x, s_player.y);
     s_bone_effect_tick++;
     bone_particles_update();
     death_chunks_update();
@@ -1485,6 +1508,7 @@ static void player_init(void) {
     s_player.char_id = CHAR_HERO;
 
     player_state_init(&g_player_state);
+    weapons_init();
     pickups_init();
     // Spawn initial pickups near spawn point for testing/collection
     pickup_spawn(PICKUP_HEALTH, TO_FIXED(SPAWN_PIXEL_X + 24), TO_FIXED(SPAWN_PIXEL_Y), 25);
@@ -1503,6 +1527,14 @@ static void player_update(uint32_t keys, uint32_t keys_down, int touch_x, int to
         return;
     }
 
+    // Shoulder buttons cycle weapons (L: previous, R: next)
+    if (keys_down & KEY_L) {
+        weapons_cycle(&g_player_state, -1);
+    }
+    if (keys_down & KEY_R) {
+        weapons_cycle(&g_player_state, 1);
+    }
+
     // Keep X/Y/SELECT for the existing character preview controls; A now casts Bone Lance.
     if (keys_down & (KEY_X | KEY_Y | KEY_SELECT)) {
         s_player.char_id = (s_player.char_id + 1) % NUM_CHARACTERS;
@@ -1513,6 +1545,12 @@ static void player_update(uint32_t keys, uint32_t keys_down, int touch_x, int to
     int cur_char = s_player.char_id;
     fixed current_speed = g_characters[cur_char].speed;
     int current_period = g_characters[cur_char].anim_period;
+
+    int firing_held = touch_down || (keys & KEY_A);
+    fixed speed_factor = weapons_get_speed_factor(&g_player_state, firing_held);
+    if (speed_factor < 256) {
+        current_speed = (current_speed * speed_factor) >> 8;
+    }
 
     int sdx = 0, sdy = 0; // screen-space input axes
     if (keys & KEY_UP) sdy -= 1;
@@ -1749,6 +1787,7 @@ int main(void) {
         uint32_t enemies = 0, lances = 0;
         for (int i = 0; i < MAX_ENEMIES; i++) enemies += s_enemies[i].active != 0;
         for (int i = 0; i < MAX_PROJECTILES; i++) lances += s_lances[i].active != 0;
+        lances += weapons_get_active_projectile_count();
         g_nav_state.x = s_player.x;
         g_nav_state.y = s_player.y;
         g_nav_state.cam_x = s_cam_x;

@@ -1,0 +1,21 @@
+{
+  "name": "weapons_switching_and_touch",
+  "steps": [
+    { "frames": 30, "capture": "00_pistol_idle" },
+    { "button_down": "R", "frames": 2 },
+    { "button_up": "R", "frames": 10, "capture": "01_shotgun_selected" },
+    { "button_down": "R", "frames": 2 },
+    { "button_up": "R", "frames": 10, "capture": "02_gatling_selected" },
+    { "button_down": "R", "frames": 2 },
+    { "button_up": "R", "frames": 10, "capture": "03_heavy_selected" },
+    { "tap": { "x": 190, "y": 75 }, "frames": 10, "capture": "04_heavy_touch_fire" },
+    { "release": true, "frames": 15, "capture": "05_after_explosion" }
+  ],
+  "assertions": {
+    "screen_changed": {
+      "from": "00_pistol_idle",
+      "to": "01_shotgun_selected",
+      "min_changed_pixels": 20
+    }
+  }
+}

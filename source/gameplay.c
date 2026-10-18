@@ -45,37 +45,6 @@ const EnemyTuning g_enemy_tuning[NUM_ENEMY_TYPES] = {
     }
 };
 
-const WeaponTuning g_weapon_tuning[NUM_WEAPON_TYPES] = {
-    [WEAPON_PISTOL] = {
-        .damage_per_hit = 8,      // [TUNABLE] low damage
-        .pellets = 1,
-        .fire_cooldown = 18,      // [TUNABLE] low fire rate
-        .max_ammo = 0,            // [TUNABLE] 0 = infinite fallback
-        .pickup_ammo_amount = 0
-    },
-    [WEAPON_SHOTGUN] = {
-        .damage_per_hit = 6,      // [TUNABLE] 6 dmg * 5 pellets = 30 max dmg
-        .pellets = 5,
-        .fire_cooldown = 40,      // [TUNABLE] marked recoil/pump cooldown
-        .max_ammo = 50,           // [TUNABLE] medium ammo
-        .pickup_ammo_amount = 10  // [TUNABLE] shells per box
-    },
-    [WEAPON_GATLING] = {
-        .damage_per_hit = 5,      // [TUNABLE] sustained rapid damage
-        .pellets = 1,
-        .fire_cooldown = 4,       // [TUNABLE] fast fire rate
-        .max_ammo = 200,          // [TUNABLE] high ammo capacity
-        .pickup_ammo_amount = 40  // [TUNABLE] belt per box
-    },
-    [WEAPON_HEAVY] = {
-        .damage_per_hit = 45,     // [TUNABLE] heavy punch
-        .pellets = 1,
-        .fire_cooldown = 60,      // [TUNABLE] slow reload
-        .max_ammo = 20,           // [TUNABLE] scarce ammo
-        .pickup_ammo_amount = 5   // [TUNABLE] rockets per box
-    }
-};
-
 // ---------------------------------------------------------------------------
 // 2. Deterministic Integer RNG (LCG)
 // ---------------------------------------------------------------------------

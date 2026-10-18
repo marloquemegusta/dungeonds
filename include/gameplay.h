@@ -4,9 +4,10 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include "game.h"
+#include "weapons.h"
 
 // ---------------------------------------------------------------------------
-// 1. Enemy & Weapon Types & Tuning Tables (Fixed-Point 8.8)
+// 1. Enemy Types & Tuning Tables (Fixed-Point 8.8)
 // ---------------------------------------------------------------------------
 
 typedef enum {
@@ -15,14 +16,6 @@ typedef enum {
     ENEMY_TYPE_SHOOTER,
     NUM_ENEMY_TYPES
 } EnemyType;
-
-typedef enum {
-    WEAPON_PISTOL = 0,
-    WEAPON_SHOTGUN,
-    WEAPON_GATLING,
-    WEAPON_HEAVY,
-    NUM_WEAPON_TYPES
-} WeaponType;
 
 typedef struct {
     int max_hp;             // [TUNABLE-PLACEHOLDER] base health points
@@ -43,16 +36,7 @@ typedef struct {
     int projectile_damage;  // [TUNABLE-PLACEHOLDER] damage per projectile
 } EnemyTuning;
 
-typedef struct {
-    int damage_per_hit;     // [TUNABLE] damage per projectile/pellet
-    int pellets;            // [TUNABLE] pellets per shot
-    int fire_cooldown;      // [TUNABLE] frames between shots
-    int max_ammo;           // [TUNABLE] max ammo pool capacity (0 = infinite)
-    int pickup_ammo_amount; // [TUNABLE] ammo restored by pickup
-} WeaponTuning;
-
 extern const EnemyTuning g_enemy_tuning[NUM_ENEMY_TYPES];
-extern const WeaponTuning g_weapon_tuning[NUM_WEAPON_TYPES];
 
 // ---------------------------------------------------------------------------
 // 2. Generic Enemy Pool
@@ -73,7 +57,7 @@ typedef enum {
     ENEMY_STATE_DEAD
 } EnemyState;
 
-typedef struct {
+struct Enemy {
     fixed x;
     fixed y;
     int dir;
@@ -95,7 +79,7 @@ typedef struct {
     int burst_shots_left;
     int burst_interval_timer;
     int strafe_dir;
-} Enemy;
+};
 
 int position_is_free(fixed x, fixed y);
 int bullet_position_is_free(fixed x, fixed y);
@@ -108,7 +92,7 @@ int sweep_position(fixed *x, fixed *y, fixed dx, fixed dy);
 #define PLAYER_MAX_HP 100
 #define PLAYER_MAX_ARMOR 100
 
-typedef struct {
+struct PlayerState {
     int hp;
     int max_hp;
     int armor;
@@ -117,7 +101,7 @@ typedef struct {
     WeaponType current_weapon;
     int is_dead;
     int invuln_timer;
-} PlayerState;
+};
 
 extern PlayerState g_player_state;
 
