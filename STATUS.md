@@ -677,7 +677,34 @@ Este documento registra el historial cronolÃ³gico de sesiones de desarrollo ve
   - Exportador a ZIP del mapa: `<name>_world.png` + `<name>_map_settings.json`.
 - [x] **Pipeline Reactivo en Tiempo Real:** Sliders con previsualización inmediata (`ss=1`) en `input` vía `requestAnimationFrame` y render de máxima fidelidad (Blackman-Harris 4x) en `change`.
 - [x] **Compilador Offline Actualizado:** `tools/lab/build_offline_renderer.py` inyecta automáticamente `glb_loader_minimal.js` y `FBX-Web-Renderer-parity.js` de forma atómica.
-- [x] **Validación Headless Automatizada:** Suite Playwright headless ejecutada sin errores de consola (`0 page errors`), validando zero-scroll, navegación de pestañas, carga de mallas, reactividad de sliders, simulación NDS y guardado de capturas de evidencia.
+- **Evidencia:** `walkthroughs/fbx-sprite-map-lab/walkthrough.md`.
+
+---
+
+## Sesión 62: Refinamiento de Arquitectura a 3 Columnas, Soporte Multi-Material FBX/GLB, Auto-Framing Ortográfico, Nivelación por Histograma y Anclaje 3D
+
+- [x] **Arquitectura de 3 Columnas Zero-Scroll (100vh):**
+  - Col 1 (330px): Sidebar con 3 pestañas (`Escala y Archivos`, `Luz y Cámara`, `Shader y Post`) y barra de acciones inferior fijada.
+  - Col 2 (430px): Panel vertical dedicado `#labCenterPanel` con cuadrícula de 2 cols × 4 filas para los 8 sprites/GIFs direccionales (`width: auto`, `height: calc(100% - 24px)`, aspect-ratio 1:1, rendering pixelado).
+  - Col 3 (1fr): Stage principal (>600px) con selector por pestañas entre *🎮 Pantalla Nintendo DS (256×192)* y *🧊 Visor 3D Interactivo*.
+- [x] **Soporte Multi-Material y Colores Base en .GLB y .FBX:**
+  - `glb_loader_minimal.js` actualizado para procesar `meshData.groups` y `meshData.materials`, instanciando array de materiales con factores difusos y emisivos.
+  - `FBX-Web-Renderer-parity.js` preserva colores base (`mat.color`, `mat.emissive`) cuando no hay texturas difusas.
+  - Modelo `assets/models/environment/blockout/blockout_scene.py` y exports FBX/GLB actualizados sin el plano gigante de 200×200m.
+- [x] **Auto-Encuadre Ortográfico Dimétrico y Control `#mapPixelSize`:**
+  - Eliminados sliders confusos (`#mapResolution`, `#mapMeshScale`, `#mapOrthoScale`, `#rigScale`).
+  - Auto-framing matemático proyectando los 8 vértices de la bounding box sobre los ejes `right` y `up` de la cámara ortográfica.
+  - Control `#mapPixelSize` de resolución unificada (256 a 1536 px).
+- [x] **Auto-Nivelación por Histograma Ponderado de Áreas de Suelo:**
+  - Algoritmo de detección de caras horizontales (`|norm.y| > 0.8`), cálculo de área de triángulos y binning en cubos de 5 cm. El bucket con mayor superficie acumulada se traslada exactamente a `Y = 0`.
+- [x] **Anclaje de Pies 3D a Y=0 y Sincronización Métrica:**
+  - `groundCharacterIn3D()` compensa la traslación de la raíz `$.modelRoot.position.y -= minY` para que los pies reposen sobre el plano de suelo (error < 0.05m).
+  - `sync3DRelativeScale()` escala el mapa en 3D para guardar estricta coincidencia proporcional con el sprite 2D del simulador DS.
+- [x] **Cero Ghosting en Simulador DS y Desbloqueo de Iluminación:**
+  - Borrado explícito a `#000000` en `drawDsSimulator()`, garantizando márgenes exteriores a negro sólido sin estelas.
+  - Eliminados clamps hardcodeados de luz, permitiendo iluminación compartida fidedigna.
+- [x] **Verificación Automatizada Headless con Playwright:**
+  - Suite determinista `tools/lab/verify_lab_refinements.py` aprobada al 100% (zero-scroll 100vh, proporciones 330/430/1fr, Run.fbx, blockout FBX multi-material, reactividad de luz/elevación, cero ghosting, anclaje pies Y=0, blockout GLB y Sci-Fi Dungeon).
 - **Evidencia:** `walkthroughs/fbx-sprite-map-lab/walkthrough.md`.
 
 

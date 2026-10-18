@@ -189,15 +189,19 @@
         if (diffuseMap) diffuseMap.colorSpace = ot;
         if (emMap) emMap.colorSpace = ot;
 
+        const baseColor = diffuseMap ? 0xffffff : (mat.color ? mat.color.clone() : 0xd0d0d0);
+        const emColor = emMap ? 0xffffff : (mat.emissive ? mat.emissive.clone() : 0x000000);
+        const emIntensity = emMap ? 1.0 : (mat.emissiveIntensity ?? 0.35);
+
         const std = new Xa({
-          color: 0xffffff,
-          roughness: 0.5,
-          metalness: 0.0,
+          color: baseColor,
+          roughness: mat.roughness ?? 0.85,
+          metalness: mat.metalness ?? 0.05,
           map: diffuseMap,
           normalMap: normMap,
           emissiveMap: emMap,
-          emissive: emMap ? 0xffffff : 0x000000,
-          emissiveIntensity: emMap ? 1.0 : 0.0,
+          emissive: emColor,
+          emissiveIntensity: emIntensity,
         });
         std.userData.__dungeonPBR = true;
         std.userData.__originalMaterial = mat;
@@ -315,6 +319,8 @@
       }
     }
     const extent = Math.max(maxX - minX, maxV - minV);
+    state.lastCharExtent = extent;
+    state.lastCharMinY = minY;
     const half = (extent * size / targetPixels) / 2;
     const center = new K()
       .addScaledVector(right, (minX + maxX) / 2)
@@ -409,6 +415,7 @@
       camera.updateMatrixWorld(true);
       state.lastFit = { extent, half, center: center.toArray(), minX, maxX, minV, maxV, pts: samples[0].pts, minY0: samples[0].minY, camera };
 
+      renderer.setClearColor(0x000000, 0);
       renderer.setSize(size * ss, size * ss, false);
       const results = [], firstFrames = [];
       for (let direction = 0; direction < Ff.length; direction++) {
@@ -597,6 +604,79 @@
     }
   }
 
+  function groundCharacterIn3D() {
+    if (!$.modelRoot || !$.model) return;
+
+    // Check if at (0, 0) there is geometry above Y = 0.2 (e.g. cover_mid block)
+    let obstacleAtOrigin = false;
+    if (state.map?.model) {
+      state.map.model.updateMatrixWorld(true);
+      state.map.model.traverse(node => {
+        if (!obstacleAtOrigin && node.isMesh && node.geometry?.attributes?.position) {
+          const pos = node.geometry.attributes.position;
+          const v = new K();
+          for (let i = 0; i < pos.count; i++) {
+            v.fromBufferAttribute(pos, i).applyMatrix4(node.matrixWorld);
+            if (Math.hypot(v.x, v.z) < 1.4 && v.y > 0.2) {
+              obstacleAtOrigin = true;
+              break;
+            }
+          }
+        }
+      });
+    }
+
+    if (obstacleAtOrigin) {
+      // Place character in open corridor in front of central cover block
+      $.modelRoot.position.x = 0;
+      $.modelRoot.position.z = 3.0;
+    } else {
+      $.modelRoot.position.x = 0;
+      $.modelRoot.position.z = 0;
+    }
+
+    $.modelRoot.updateMatrixWorld(true);
+    const pts = posedPoints($.model);
+    let minY = Infinity;
+    for (let i = 1; i < pts.length; i += 3) {
+      if (pts[i] < minY) minY = pts[i];
+    }
+    if (isFinite(minY)) {
+      state.lastCharMinY = minY;
+      $.modelRoot.position.y -= minY;
+      $.modelRoot.updateMatrixWorld(true);
+    }
+  }
+
+  function sync3DRelativeScale() {
+    if (!state.mapGroup || !state.map?.model) return;
+    const charPx = parseInt(document.getElementById('resolution')?.value, 10) || 48;
+    const mapW = parseInt(document.getElementById('mapPixelSize')?.value, 10) || 768;
+
+    let charExtent = 1.8;
+    if ($.model) {
+      $.model.updateMatrixWorld(true);
+      const charBox = new hr().setFromObject($.model);
+      const rawH = charBox.max.y - charBox.min.y;
+      const rootScale = ($.modelRoot && $.modelRoot.scale) ? $.modelRoot.scale.y : 1.0;
+      charExtent = (rawH > 10) ? (rawH * rootScale) : rawH;
+      if (!isFinite(charExtent) || charExtent < 0.5 || charExtent > 5.0) {
+        charExtent = 1.8;
+      }
+    }
+    state.lastCharExtent = charExtent;
+
+    const baseProjW = state.mapUnscaledProjW || 24;
+    const desiredWorldWidth = (mapW / charPx) * charExtent;
+    const scaleRatio = desiredWorldWidth / baseProjW;
+
+    state.mapGroup.scale.setScalar(scaleRatio);
+    state.mapGroup.position.set(0, 0, 0);
+    state.mapGroup.updateMatrixWorld(true);
+
+    groundCharacterIn3D();
+  }
+
   async function loadMapFile(file) {
     initMapScene();
     bp(true, `Cargando mapa 3D (${file.name})...`);
@@ -620,6 +700,39 @@
 
       if (!mapModel) throw new Error('No se pudo instanciar la geometría del mapa');
 
+      // Filter giant ground/backdrop meshes that dwarf the playable room (> 2.5x span of others)
+      const childMeshes = [];
+      mapModel.traverse(c => { if (c.isMesh) childMeshes.push(c); });
+      if (childMeshes.length > 1) {
+        const otherBox = new hr();
+        let otherCount = 0;
+        childMeshes.forEach(c => {
+          const name = (c.name || '').toLowerCase();
+          if (!name.includes('ground') && !name.includes('backdrop')) {
+            otherBox.expandByObject(c);
+            otherCount++;
+          }
+        });
+        if (otherCount > 0) {
+          const oSize = new K();
+          otherBox.getSize(oSize);
+          const oSpan = Math.max(oSize.x, oSize.z);
+          childMeshes.forEach(c => {
+            const name = (c.name || '').toLowerCase();
+            if (name.includes('ground') || name.includes('backdrop')) {
+              const cBox = new hr().setFromObject(c);
+              const cSize = new K();
+              cBox.getSize(cSize);
+              const cSpan = Math.max(cSize.x, cSize.z);
+              if (cSpan > oSpan * 2.5) {
+                c.visible = false;
+                if (c.parent) c.parent.remove(c);
+              }
+            }
+          });
+        }
+      }
+
       mapModel.position.set(0, 0, 0);
       mapModel.scale.set(1, 1, 1);
       mapModel.updateMatrixWorld(true);
@@ -637,11 +750,6 @@
 
       const rawSpan = Math.max(sizeVec.x, sizeVec.z) || 1.0;
       state.mapRawSpan = rawSpan;
-      const meshScaleInput = document.getElementById('mapMeshScale');
-      const targetSpanMeters = parseFloat(meshScaleInput?.value) || 24.0;
-      const effectiveScale = targetSpanMeters / rawSpan;
-      mapModel.scale.setScalar(effectiveScale);
-      mapModel.updateMatrixWorld(true);
 
       setupModelMaterials(mapModel);
       mapModel.traverse(node => {
@@ -654,7 +762,7 @@
               m.normalMap = null;
               if (m.roughness !== undefined) m.roughness = 0.85;
               if (m.metalness !== undefined) m.metalness = 0.05;
-              if (m.color?.setHex) m.color.setHex(0xffffff);
+              if (m.map && m.color?.setHex) m.color.setHex(0xffffff);
               if (m.map) m.map.colorSpace = ot;
             });
           }
@@ -664,29 +772,49 @@
       const autoLevel = document.getElementById('mapAutoLevel')?.checked ?? true;
       if (autoLevel) {
         const scaledBox = new hr().setFromObject(mapModel);
-        let floorY = scaledBox.min.y;
-        const floorSamples = [];
-        const v = new K();
-        const norm = new K();
+        const midY = scaledBox.min.y + (scaledBox.max.y - scaledBox.min.y) * 0.55;
+        const heightAreaMap = new Map();
+        const v0 = new K(), v1 = new K(), v2 = new K();
+        const edge1 = new K(), edge2 = new K(), cross = new K();
+
         mapModel.traverse(node => {
-          if (!node.isMesh || !node.geometry?.attributes?.position) return;
-          const posAttr = node.geometry.attributes.position;
-          const normAttr = node.geometry.attributes.normal;
-          for (let i = 0; i < posAttr.count; i++) {
-            if (normAttr) {
-              norm.fromBufferAttribute(normAttr, i);
-              norm.transformDirection(node.matrixWorld);
-              if (norm.y > 0.8) {
-                v.fromBufferAttribute(posAttr, i);
-                v.applyMatrix4(node.matrixWorld);
-                floorSamples.push(v.y);
-              }
+          if (!node.isMesh || !node.visible || !node.geometry?.attributes?.position) return;
+          const geom = node.geometry;
+          const posAttr = geom.attributes.position;
+          const index = geom.index;
+          const numTriangles = index ? Math.floor(index.count / 3) : Math.floor(posAttr.count / 3);
+
+          for (let t = 0; t < numTriangles; t++) {
+            const i0 = index ? index.getX(t * 3 + 0) : t * 3 + 0;
+            const i1 = index ? index.getX(t * 3 + 1) : t * 3 + 1;
+            const i2 = index ? index.getX(t * 3 + 2) : t * 3 + 2;
+
+            v0.fromBufferAttribute(posAttr, i0).applyMatrix4(node.matrixWorld);
+            v1.fromBufferAttribute(posAttr, i1).applyMatrix4(node.matrixWorld);
+            v2.fromBufferAttribute(posAttr, i2).applyMatrix4(node.matrixWorld);
+
+            edge1.subVectors(v1, v0);
+            edge2.subVectors(v2, v0);
+            cross.crossVectors(edge1, edge2);
+            const area = 0.5 * cross.length();
+            if (area <= 1e-6) continue;
+            cross.normalize();
+
+            const triY = (v0.y + v1.y + v2.y) / 3;
+            if (Math.abs(cross.y) > 0.8 && triY <= midY) {
+              const bucket = Math.round(triY * 20) / 20; // 5cm bin
+              heightAreaMap.set(bucket, (heightAreaMap.get(bucket) || 0) + area);
             }
           }
         });
-        if (floorSamples.length > 20) {
-          floorSamples.sort((a, b) => a - b);
-          floorY = floorSamples[Math.floor(floorSamples.length / 2)];
+
+        let floorY = scaledBox.min.y;
+        let maxArea = -1;
+        for (const [bucket, totalArea] of heightAreaMap.entries()) {
+          if (totalArea > maxArea) {
+            maxArea = totalArea;
+            floorY = bucket;
+          }
         }
         const centerVec = new K();
         scaledBox.getCenter(centerVec);
@@ -694,10 +822,31 @@
       }
       mapModel.updateMatrixWorld(true);
 
+      // Record unscaled projected width for 3D scale sync
+      const elev = Yt.degToRad(30);
+      const toCam = new K(Math.cos(elev) * Math.cos(AZIMUTH), Math.sin(elev), -Math.cos(elev) * Math.sin(AZIMUTH)).normalize();
+      const r = new K().crossVectors(new K(0, 1, 0), toCam).normalize();
+      const b = new hr().setFromObject(mapModel);
+      let minU = Infinity, maxU = -Infinity;
+      [
+        new K(b.min.x, b.min.y, b.min.z), new K(b.min.x, b.min.y, b.max.z),
+        new K(b.min.x, b.max.y, b.min.z), new K(b.min.x, b.max.y, b.max.z),
+        new K(b.max.x, b.min.y, b.min.z), new K(b.max.x, b.min.y, b.max.z),
+        new K(b.max.x, b.max.y, b.min.z), new K(b.max.x, b.max.y, b.max.z)
+      ].forEach(pt => {
+        const u = pt.dot(r);
+        if (u < minU) minU = u;
+        if (u > maxU) maxU = u;
+      });
+      state.mapUnscaledProjW = Math.max(0.1, maxU - minU);
+
       state.mapGroup.add(mapModel);
       state.map = { model: mapModel, name: file.name, loaded: true, rawSpan };
       const mapNameLabel = document.getElementById('mapFileName');
       if (mapNameLabel) mapNameLabel.textContent = file.name;
+
+      sync3DRelativeScale();
+      groundCharacterIn3D();
 
       yp(`Esperando texturas del mapa 3D...`);
       await waitForModelTextures(mapModel);
@@ -715,12 +864,58 @@
 
   async function renderMap(highQuality = false) {
     if (!state.map?.model || !$.renderer) return;
-    const resVal = document.getElementById('mapResolution')?.value || '768x512';
-    const [mapW, mapH] = resVal.split('x').map(v => parseInt(v, 10));
+
+    const elevation = Yt.degToRad(Math.max(1, parseFloat(document.getElementById('elevation')?.value) || 30));
+    const toCamera = new K(Math.cos(elevation) * Math.cos(AZIMUTH), Math.sin(elevation), -Math.cos(elevation) * Math.sin(AZIMUTH)).normalize();
+    const right = new K().crossVectors(new K(0, 1, 0), toCamera).normalize();
+    const upAxis = new K().crossVectors(toCamera, right).normalize();
+
+    // Auto-frame map geometry based on camera-space bounds
+    state.map.model.updateMatrixWorld(true);
+    const mapBox = new hr().setFromObject(state.map.model);
+    const corners = [
+      new K(mapBox.min.x, mapBox.min.y, mapBox.min.z),
+      new K(mapBox.min.x, mapBox.min.y, mapBox.max.z),
+      new K(mapBox.min.x, mapBox.max.y, mapBox.min.z),
+      new K(mapBox.min.x, mapBox.max.y, mapBox.max.z),
+      new K(mapBox.max.x, mapBox.min.y, mapBox.min.z),
+      new K(mapBox.max.x, mapBox.min.y, mapBox.max.z),
+      new K(mapBox.max.x, mapBox.max.y, mapBox.min.z),
+      new K(mapBox.max.x, mapBox.max.y, mapBox.max.z)
+    ];
+
+    let minU = Infinity, maxU = -Infinity;
+    let minV = Infinity, maxV = -Infinity;
+    for (let i = 0; i < corners.length; i++) {
+      const c = corners[i];
+      const u = c.dot(right);
+      const v = c.dot(upAxis);
+      if (u < minU) minU = u;
+      if (u > maxU) maxU = u;
+      if (v < minV) minV = v;
+      if (v > maxV) maxV = v;
+    }
+
+    const projW = Math.max(0.1, maxU - minU);
+    const projH = Math.max(0.1, maxV - minV);
+    state.lastMapProjW = projW;
+    state.lastMapProjH = projH;
+
+    const mapW = parseInt(document.getElementById('mapPixelSize')?.value, 10) || 768;
+    const mapH = Math.max(128, Math.round(mapW * (projH / projW)));
     state.mapWidth = mapW;
     state.mapHeight = mapH;
-    const orthoScale = parseFloat(document.getElementById('mapOrthoScale')?.value) || 38.0;
-    state.mapOrthoScale = orthoScale;
+
+    const midU = (minU + maxU) / 2;
+    const midV = (minV + maxV) / 2;
+    const projCenter = new K()
+      .addScaledVector(right, midU)
+      .addScaledVector(upAxis, midV);
+
+    const mapCamera = new ts(-projW / 2, projW / 2, projH / 2, -projH / 2, 0.1, 1000);
+    mapCamera.position.copy(projCenter).addScaledVector(toCamera, 300);
+    mapCamera.lookAt(projCenter);
+    mapCamera.updateMatrixWorld(true);
 
     updateMapDensityLabel();
 
@@ -733,19 +928,7 @@
 
     try {
       applyBlenderLighting();
-      if ($.lights?.key) $.lights.key.intensity = Math.max($.lights.key.intensity, 4.2 * Math.PI);
-      if ($.lights?.fill) $.lights.fill.intensity = Math.max($.lights.fill.intensity, 1.5 * Math.PI);
-      if ($.lights?.world) $.lights.world.intensity = Math.max($.lights.world.intensity, 0.6 * Math.PI);
-      const elevation = Yt.degToRad(Math.max(1, parseFloat(document.getElementById('elevation')?.value) || 30));
-      const toCamera = new K(Math.cos(elevation) * Math.cos(AZIMUTH), Math.sin(elevation), -Math.cos(elevation) * Math.sin(AZIMUTH)).normalize();
-
-      const halfW = orthoScale / 2;
-      const halfH = (orthoScale * (mapH / mapW)) / 2;
-      const mapCamera = new ts(-halfW, halfW, halfH, -halfH, 0.1, 800);
-      mapCamera.position.set(0, 0, 0).addScaledVector(toCamera, 200);
-      mapCamera.lookAt(0, 0, 0);
-      mapCamera.updateMatrixWorld(true);
-
+      $.renderer.setClearColor(0x000000, 1);
       $.renderer.setSize(mapW, mapH, false);
       $.renderer.render($.scene, mapCamera);
 
@@ -776,8 +959,10 @@
       const btnExportMap = document.getElementById('btnExportMapZip');
       if (btnExportMap) btnExportMap.disabled = false;
 
+      updateDsMetricsBadge();
       drawDsSimulator();
     } finally {
+      $.renderer.setClearColor(0x000000, 0);
       if (charRoot) charRoot.visible = prevCharVis;
       update3DViewMode();
       syncViewportRendererSize();
@@ -824,11 +1009,14 @@
 
   let livePreviewRaf = null;
 
-  function scheduleLivePreview(highQuality = false) {
+  function scheduleLivePreview(highQuality = false, updateMap = false) {
     if (livePreviewRaf) cancelAnimationFrame(livePreviewRaf);
-    livePreviewRaf = requestAnimationFrame(() => {
+    livePreviewRaf = requestAnimationFrame(async () => {
       livePreviewRaf = null;
       renderLiveFrame(highQuality);
+      if (updateMap && state.map?.loaded) {
+        await renderMap(highQuality);
+      }
     });
   }
 
@@ -857,6 +1045,7 @@
     try {
       const fit = computeCharacterFit(size, targetPixels);
       const camera = fit.camera;
+      $.renderer.setClearColor(0x000000, 0);
       $.renderer.setSize(size * ss, size * ss, false);
 
       const params = {
@@ -912,6 +1101,7 @@
       if (state.mapGroup) state.mapGroup.visible = prevMapVis;
       syncViewportRendererSize();
       update3DViewMode();
+      groundCharacterIn3D();
     }
     drawDsSimulator();
   }
@@ -930,6 +1120,10 @@
     }
     const ctx = canvas.getContext('2d');
     ctx.imageSmoothingEnabled = false;
+
+    // Always clear canvas to solid black before drawing background (eliminates ghosting)
+    ctx.fillStyle = '#000000';
+    ctx.fillRect(0, 0, dsW, dsH);
 
     // Draw background (Map or procedural dungeon grid)
     if (state.mapCanvas) {
@@ -1017,22 +1211,18 @@
     const badge = document.getElementById('dsMetricsBadge');
     if (!badge) return;
     const spriteSize = parseInt(_p.resolution?.value, 10) || 48;
-    const mapW = state.mapWidth;
-    const mapH = state.mapHeight;
-    const ortho = state.mapOrthoScale;
-    const ppm = (mapW / ortho).toFixed(1);
+    const mapW = state.mapWidth || parseInt(document.getElementById('mapPixelSize')?.value, 10) || 768;
+    const mapH = state.mapHeight || 512;
     const dsH = state.dsMode === '2' ? 384 : 192;
-    badge.textContent = `Sprite: ${spriteSize}×${spriteSize}px | Mapa: ${mapW}×${mapH}px (${ppm} px/m) | DS: 256×${dsH}px`;
+    badge.textContent = `Sprite: ${spriteSize}×${spriteSize}px | Mapa: ${mapW}×${mapH}px | DS: 256×${dsH}px`;
   }
 
   function updateMapDensityLabel() {
     const lbl = document.getElementById('mapDensityBadge');
     if (!lbl) return;
-    const resVal = document.getElementById('mapResolution')?.value || '768x512';
-    const [mapW] = resVal.split('x').map(v => parseInt(v, 10));
-    const ortho = parseFloat(document.getElementById('mapOrthoScale')?.value) || 38.0;
-    const ppm = (mapW / ortho).toFixed(2);
-    lbl.textContent = `${mapW} / ${ortho.toFixed(1)}m = ${ppm} px/m`;
+    const mapW = state.mapWidth || parseInt(document.getElementById('mapPixelSize')?.value, 10) || 768;
+    const mapH = state.mapHeight || 512;
+    lbl.textContent = `${mapW} × ${mapH} px`;
   }
 
   function vectorToDir8(dx, dy) {
@@ -1153,18 +1343,17 @@
         height: calc(100vh - 48px) !important;
         max-height: calc(100vh - 48px) !important;
         min-height: 0 !important;
-        display: flex !important;
-        flex-direction: row !important;
+        display: grid !important;
+        grid-template-columns: 330px 430px 1fr !important;
         gap: 8px !important;
         padding: 8px !important;
         overflow: hidden !important;
-        flex: 1 !important;
         box-sizing: border-box !important;
       }
       #labLeftSidebar {
-        width: 360px !important;
-        min-width: 360px !important;
-        max-width: 360px !important;
+        width: 330px !important;
+        min-width: 330px !important;
+        max-width: 330px !important;
         height: 100% !important;
         background: var(--panel) !important;
         border: 1px solid var(--border) !important;
@@ -1270,35 +1459,42 @@
         grid-template-columns: 1fr 1fr !important;
         gap: 6px !important;
       }
-      #labRightPanel {
-        flex: 1 !important;
-        min-width: 0 !important;
+
+      /* Column 2: Dedicated Full-Height 8-Directions Grid */
+      #labCenterPanel {
+        width: 430px !important;
+        min-width: 430px !important;
+        max-width: 430px !important;
         height: 100% !important;
-        display: flex !important;
-        flex-direction: column !important;
-        gap: 8px !important;
-        overflow: hidden !important;
-      }
-      #labTopRow {
-        height: 155px !important;
-        min-height: 155px !important;
-        max-height: 155px !important;
-        flex-shrink: 0 !important;
         background: var(--panel) !important;
         border: 1px solid var(--border) !important;
         border-radius: 8px !important;
-        padding: 6px !important;
-        box-sizing: border-box !important;
         display: flex !important;
         flex-direction: column !important;
+        overflow: hidden !important;
+        flex-shrink: 0 !important;
+      }
+      .lab-col2-header {
+        height: 38px !important;
+        min-height: 38px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        padding: 0 10px !important;
+        background: #0f121a !important;
+        border-bottom: 1px solid var(--border) !important;
+        flex-shrink: 0 !important;
       }
       #gifsGrid {
         display: grid !important;
-        grid-template-columns: repeat(8, 1fr) !important;
+        grid-template-columns: repeat(2, 1fr) !important;
+        grid-template-rows: repeat(4, 1fr) !important;
         gap: 6px !important;
-        width: 100% !important;
-        height: 100% !important;
+        flex: 1 !important;
+        min-height: 0 !important;
+        padding: 6px !important;
         margin: 0 !important;
+        box-sizing: border-box !important;
       }
       .dir-card {
         background: var(--card) !important;
@@ -1313,6 +1509,9 @@
         cursor: pointer !important;
         transition: all 0.15s ease !important;
         user-select: none !important;
+        min-height: 0 !important;
+        height: 100% !important;
+        box-sizing: border-box !important;
       }
       .dir-card:hover {
         background: var(--card-hover) !important;
@@ -1330,38 +1529,92 @@
         justify-content: center !important;
         width: 100% !important;
         min-height: 0 !important;
+        overflow: hidden !important;
       }
       .dir-live-canvas, .dir-gif-img {
         image-rendering: pixelated !important;
         image-rendering: crisp-edges !important;
+        width: auto !important;
+        height: calc(100% - 24px) !important;
         max-width: 100% !important;
-        max-height: 104px !important;
+        aspect-ratio: 1 / 1 !important;
         object-fit: contain !important;
       }
       .dir-card-label {
-        font-size: 0.65rem !important;
+        height: 18px !important;
+        line-height: 18px !important;
+        font-size: 0.68rem !important;
         color: var(--muted) !important;
         font-family: monospace !important;
         font-weight: 600 !important;
         text-align: center !important;
         background: rgba(0,0,0,0.6) !important;
         border-radius: 3px !important;
-        padding: 1px 4px !important;
+        padding: 0 4px !important;
         width: 90% !important;
         white-space: nowrap !important;
         overflow: hidden !important;
         text-overflow: ellipsis !important;
+        margin-top: 2px !important;
       }
       .dir-card.active .dir-card-label {
         color: var(--blue) !important;
       }
-      #labBottomRow {
+
+      /* Column 3: Full-Height Main Stage with 2 Top Tabs */
+      #labRightStage {
+        flex: 1 !important;
+        min-width: 0 !important;
+        height: 100% !important;
+        background: var(--panel) !important;
+        border: 1px solid var(--border) !important;
+        border-radius: 8px !important;
+        display: flex !important;
+        flex-direction: column !important;
+        overflow: hidden !important;
+      }
+      .stage-tabs {
+        display: flex !important;
+        height: 38px !important;
+        min-height: 38px !important;
+        border-bottom: 1px solid var(--border) !important;
+        background: #0f121a !important;
+        flex-shrink: 0 !important;
+      }
+      .stage-tab-btn {
+        flex: 1 !important;
+        padding: 0 12px !important;
+        background: transparent !important;
+        border: none !important;
+        color: var(--muted) !important;
+        font-size: 0.76rem !important;
+        font-weight: 700 !important;
+        cursor: pointer !important;
+        transition: all 0.15s ease !important;
+        text-align: center !important;
+        border-bottom: 2px solid transparent !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        gap: 6px !important;
+      }
+      .stage-tab-btn:hover {
+        color: var(--text) !important;
+      }
+      .stage-tab-btn.active {
+        color: var(--text) !important;
+        border-bottom-color: var(--blue) !important;
+        background: var(--panel) !important;
+      }
+      .stage-pane {
         flex: 1 !important;
         min-height: 0 !important;
-        display: grid !important;
-        grid-template-columns: 1fr 1fr !important;
-        gap: 8px !important;
         overflow: hidden !important;
+        display: none !important;
+        flex-direction: column !important;
+      }
+      .stage-pane.active {
+        display: flex !important;
       }
       #canvasArea {
         height: 100% !important;
@@ -1369,10 +1622,10 @@
         min-height: 0 !important;
         flex: 1 !important;
         position: relative !important;
-        border-radius: 8px !important;
+        border-radius: 0 !important;
         background: #090a0f !important;
         overflow: hidden !important;
-        border: 1px solid var(--border) !important;
+        border: none !important;
       }
       .viewer3d-toolbar {
         position: absolute !important;
@@ -1395,9 +1648,9 @@
         min-height: 0 !important;
         display: flex !important;
         flex-direction: column !important;
-        background: var(--panel) !important;
-        border: 1px solid var(--border) !important;
-        border-radius: 8px !important;
+        background: transparent !important;
+        border: none !important;
+        border-radius: 0 !important;
         overflow: hidden !important;
       }
       .ds-sim-toolbar {
@@ -1528,33 +1781,19 @@
               </div>
             </div>
           </div>
+          <div class="lab-control-group" id="group-res">
+            <label>Tamaño Personaje (px) <span class="val" id="resVal">48 × 48 px</span></label>
+          </div>
           <div class="lab-control-row">
-            <div class="lab-control-group" id="group-res">
-              <label>Sprite <span class="val" id="resVal">48 × 48 px</span></label>
-            </div>
             <div class="lab-control-group" id="group-frames">
               <label>Frames/dir <span class="val" id="framesVal">8</span></label>
             </div>
-          </div>
-          <div class="lab-control-row">
-            <div class="lab-control-group">
-              <label>Escala rig</label>
-              <input id="rigScale" type="number" min="0.001" max="5" step="0.001" value="1" style="padding:6px; font-size:0.75rem;">
-            </div>
-            <div class="lab-control-group">
-              <label>Zancada 3D (m)</label>
-              <input id="stride3d" type="number" min="0.1" step="0.05" value="1.5" style="padding:6px; font-size:0.75rem;">
-            </div>
-          </div>
-          <div class="lab-control-row">
             <div class="lab-control-group">
               <label>Ticks / frame</label>
               <input id="animTicks" type="number" min="1" max="10" step="1" value="3" style="padding:6px; font-size:0.75rem;">
             </div>
-            <div class="lab-control-group" id="group-demo-btn">
-              <label>&nbsp;</label>
-            </div>
           </div>
+          <div class="lab-control-group" id="group-demo-btn" style="margin-top:2px;"></div>
         </div>
 
         <div class="lab-section-card" id="card-map">
@@ -1564,23 +1803,9 @@
           </div>
           <input type="file" id="mapFileInput" accept=".fbx,.glb" style="display:none;">
           <button class="btn secondary" id="btnTriggerMapFile" style="width:100%; padding:8px; font-size:0.78rem;">Cargar Mapa 3D (.FBX/.GLB)</button>
-          <div class="lab-control-row">
-            <div class="lab-control-group">
-              <label>Resolución Mapa</label>
-              <select id="mapResolution" style="padding:6px; font-size:0.75rem;">
-                <option value="768x512" selected>768 × 512 (DungeonDS)</option>
-                <option value="512x512">512 × 512</option>
-                <option value="1024x768">1024 × 768</option>
-              </select>
-            </div>
-            <div class="lab-control-group">
-              <label>Tamaño Mapa (m)</label>
-              <input id="mapMeshScale" type="number" min="0.1" max="200" step="0.5" value="24.0" style="padding:6px; font-size:0.75rem;">
-            </div>
-          </div>
           <div class="lab-control-group">
-            <label>Ortho Scale <span class="val" id="mapOrthoScaleVal">38.0 m</span></label>
-            <input type="range" id="mapOrthoScale" min="10" max="80" step="0.5" value="38.0">
+            <label>Tamaño Mapa (px) <span class="val" id="mapPixelSizeVal">768 px</span></label>
+            <input type="range" id="mapPixelSize" min="256" max="1536" step="16" value="768">
           </div>
           <div class="lab-control-row" style="align-items:center;">
             <div class="lab-control-group">
@@ -1590,7 +1815,7 @@
               </label>
             </div>
             <div class="lab-control-group" style="text-align:right;">
-              <span class="val" id="mapDensityBadge" style="font-size:0.72rem; color:var(--blue);">768 / 38.0 = 20.2 px/m</span>
+              <span class="val" id="mapDensityBadge" style="font-size:0.72rem; color:var(--blue);">768 × 512 px</span>
             </div>
           </div>
         </div>
@@ -1785,13 +2010,15 @@
       actionsBar.appendChild(progressBar);
     }
 
-    // Build Right Panel
-    const rightPanel = document.createElement('div');
-    rightPanel.id = 'labRightPanel';
-
-    // Top Row: 8 Directional Strip
-    const topRow = document.createElement('div');
-    topRow.id = 'labTopRow';
+    // Column 2: Dedicated Full-Height 8-Directions Grid Panel
+    const centerPanel = document.createElement('div');
+    centerPanel.id = 'labCenterPanel';
+    centerPanel.innerHTML = `
+      <div class="lab-col2-header">
+        <span style="font-size:0.74rem; font-weight:700; color:#a4b0be; letter-spacing:0.5px;">SPRITES / GIFS 8 DIRECCIONES</span>
+        <span class="val" id="col2StatusBadge" style="font-size:0.7rem; color:var(--blue);">En vivo</span>
+      </div>
+    `;
 
     const grid = gifsGrid || document.createElement('div');
     grid.id = 'gifsGrid';
@@ -1812,13 +2039,46 @@
       card.addEventListener('click', () => selectDirection(i));
       grid.appendChild(card);
     }
-    topRow.appendChild(grid);
+    centerPanel.appendChild(grid);
 
-    // Bottom Row: 50/50 Split
-    const bottomRow = document.createElement('div');
-    bottomRow.id = 'labBottomRow';
+    // Column 3: Full-Height Main Stage Panel with 2 Top Tabs
+    const rightStage = document.createElement('div');
+    rightStage.id = 'labRightStage';
+    rightStage.innerHTML = `
+      <div class="stage-tabs">
+        <button class="stage-tab-btn active" data-stage="ds">🎮 Pantalla Nintendo DS (256×192)</button>
+        <button class="stage-tab-btn" data-stage="3d">🧊 Visor 3D Interactivo</button>
+      </div>
+      <div class="stage-pane active" id="stagePaneDs">
+        <div id="dsSimPanel">
+          <div class="ds-sim-toolbar">
+            <div style="display:flex; align-items:center; gap:6px;">
+              <span style="font-weight:700; color:#fff;">Nintendo DS:</span>
+              <select id="dsScreenMode" style="background:#10131b; border:1px solid var(--border); color:var(--text); border-radius:4px; padding:2px 6px; font-size:0.72rem;">
+                <option value="1" selected>1 Pantalla (256×192)</option>
+                <option value="2">Dual Screen (256×384)</option>
+              </select>
+              <select id="dsZoomMode" style="background:#10131b; border:1px solid var(--border); color:var(--text); border-radius:4px; padding:2px 6px; font-size:0.72rem;">
+                <option value="fit" selected>Fit</option>
+                <option value="1x">1x</option>
+                <option value="2x">2x</option>
+                <option value="3x">3x</option>
+              </select>
+            </div>
+            <div style="display:flex; align-items:center; gap:6px;">
+              <span id="dsMetricsBadge" style="color:var(--blue); font-family:monospace; font-size:0.7rem;">Sprite: 48×48px | DS: 256×192px</span>
+              <button id="btnResetDsPos" class="btn secondary" style="padding:2px 8px; font-size:0.7rem;">Centrar</button>
+            </div>
+          </div>
+          <div class="ds-sim-viewport" id="dsSimViewport" tabindex="0">
+            <canvas id="dsSimCanvas" width="256" height="192"></canvas>
+          </div>
+        </div>
+      </div>
+      <div class="stage-pane" id="stagePane3d"></div>
+    `;
 
-    // Left: 3D Viewport
+    // 3D Viewport in stagePane3d
     if (canvasArea) {
       const viewerToolbar = document.createElement('div');
       viewerToolbar.className = 'viewer3d-toolbar';
@@ -1834,44 +2094,14 @@
         <button id="btnResetCamera3d" class="btn secondary" style="padding:2px 8px; font-size:0.7rem;">Centrar 3D</button>
       `;
       canvasArea.insertBefore(viewerToolbar, canvasArea.firstChild);
-      bottomRow.appendChild(canvasArea);
+      rightStage.querySelector('#stagePane3d').appendChild(canvasArea);
     }
 
-    // Right: DS Simulator Panel
-    const dsSimPanel = document.createElement('div');
-    dsSimPanel.id = 'dsSimPanel';
-    dsSimPanel.innerHTML = `
-      <div class="ds-sim-toolbar">
-        <div style="display:flex; align-items:center; gap:6px;">
-          <span style="font-weight:700; color:#fff;">Nintendo DS:</span>
-          <select id="dsScreenMode" style="background:#10131b; border:1px solid var(--border); color:var(--text); border-radius:4px; padding:2px 6px; font-size:0.72rem;">
-            <option value="1" selected>1 Pantalla (256×192)</option>
-            <option value="2">Dual Screen (256×384)</option>
-          </select>
-          <select id="dsZoomMode" style="background:#10131b; border:1px solid var(--border); color:var(--text); border-radius:4px; padding:2px 6px; font-size:0.72rem;">
-            <option value="fit" selected>Fit</option>
-            <option value="1x">1x</option>
-            <option value="2x">2x</option>
-          </select>
-        </div>
-        <div style="display:flex; align-items:center; gap:6px;">
-          <span id="dsMetricsBadge" style="color:var(--blue); font-family:monospace; font-size:0.7rem;">Sprite: 48×48px | DS: 256×192px</span>
-          <button id="btnResetDsPos" class="btn secondary" style="padding:2px 8px; font-size:0.7rem;">Centrar</button>
-        </div>
-      </div>
-      <div class="ds-sim-viewport" id="dsSimViewport" tabindex="0">
-        <canvas id="dsSimCanvas" width="256" height="192"></canvas>
-      </div>
-    `;
-    bottomRow.appendChild(dsSimPanel);
-
-    rightPanel.appendChild(topRow);
-    rightPanel.appendChild(bottomRow);
-
-    // Clear and assemble main
+    // Assemble 3-column layout inside main
     main.innerHTML = '';
     main.appendChild(sidebar);
-    main.appendChild(rightPanel);
+    main.appendChild(centerPanel);
+    main.appendChild(rightStage);
 
     setupEventListeners();
     syncViewportRendererSize();
@@ -1880,7 +2110,7 @@
   }
 
   function setupEventListeners() {
-    // Tabs switching
+    // Left Sidebar Tabs switching
     document.querySelectorAll('.lab-tab-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         document.querySelectorAll('.lab-tab-btn').forEach(b => b.classList.remove('active'));
@@ -1890,6 +2120,32 @@
         state.activeTab = tab;
         const pane = document.getElementById(`pane-${tab}`);
         if (pane) pane.classList.add('active');
+      });
+    });
+
+    // Right Stage Tabs switching (DS Simulator vs 3D Viewport)
+    document.querySelectorAll('.stage-tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.stage-tab-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+
+        const stage = btn.dataset.stage;
+        const paneDs = document.getElementById('stagePaneDs');
+        const pane3d = document.getElementById('stagePane3d');
+
+        if (stage === 'ds') {
+          if (paneDs) paneDs.classList.add('active');
+          if (pane3d) pane3d.classList.remove('active');
+          drawDsSimulator();
+        } else if (stage === '3d') {
+          if (paneDs) paneDs.classList.remove('active');
+          if (pane3d) pane3d.classList.add('active');
+          update3DViewMode();
+          groundCharacterIn3D();
+          sync3DRelativeScale();
+          syncViewportRendererSize();
+          requestAnimationFrame(syncViewportRendererSize);
+        }
       });
     });
 
@@ -1904,8 +2160,8 @@
       };
     }
 
-    // Connect slider text labels
-    const wireSlider = (id, labelId, formatter) => {
+    // Connect slider text labels with updateMap reactivity
+    const wireSlider = (id, labelId, formatter, updateMap = false) => {
       const el = document.getElementById(id);
       if (!el) return;
       const update = () => {
@@ -1914,29 +2170,58 @@
       };
       el.addEventListener('input', () => {
         update();
-        scheduleLivePreview(false);
+        scheduleLivePreview(false, updateMap);
       });
       el.addEventListener('change', () => {
         update();
-        scheduleLivePreview(true);
+        scheduleLivePreview(true, updateMap);
       });
     };
 
-    wireSlider('resolution', 'resVal', v => `${v} × ${v} px`);
-    wireSlider('frameCount', 'framesVal', v => v);
-    wireSlider('elevation', 'elevVal', v => `${v}°`);
-    wireSlider('contrast', 'contVal', v => parseFloat(v).toFixed(2));
-    wireSlider('saturation', 'satVal', v => parseFloat(v).toFixed(2));
-    wireSlider('keyLight', 'keyLightVal', v => parseFloat(v).toFixed(1));
-    wireSlider('fillLight', 'fillLightVal', v => parseFloat(v).toFixed(2));
-    wireSlider('rimLight', 'rimLightVal', v => parseFloat(v).toFixed(2));
-    wireSlider('worldLight', 'worldLightVal', v => parseFloat(v).toFixed(2));
-    wireSlider('labShadow', 'labShadowValue', v => `${v}°`);
-    wireSlider('labNormal', 'labNormalValue', v => parseFloat(v).toFixed(2));
-    wireSlider('labBrightness', 'labBrightnessValue', v => parseFloat(v).toFixed(2));
-    wireSlider('labSamples', 'labSamplesValue', v => v);
+    wireSlider('resolution', 'resVal', v => `${v} × ${v} px`, false);
+    wireSlider('mapPixelSize', 'mapPixelSizeVal', v => `${v} px`, true);
+    wireSlider('frameCount', 'framesVal', v => v, false);
+    wireSlider('elevation', 'elevVal', v => `${v}°`, true);
+    wireSlider('contrast', 'contVal', v => parseFloat(v).toFixed(2), true);
+    wireSlider('saturation', 'satVal', v => parseFloat(v).toFixed(2), true);
+    wireSlider('keyLight', 'keyLightVal', v => parseFloat(v).toFixed(1), true);
+    wireSlider('fillLight', 'fillLightVal', v => parseFloat(v).toFixed(2), true);
+    wireSlider('rimLight', 'rimLightVal', v => parseFloat(v).toFixed(2), true);
+    wireSlider('worldLight', 'worldLightVal', v => parseFloat(v).toFixed(2), true);
+    wireSlider('labShadow', 'labShadowValue', v => `${v}°`, false);
+    wireSlider('labNormal', 'labNormalValue', v => parseFloat(v).toFixed(2), false);
+    wireSlider('labBrightness', 'labBrightnessValue', v => parseFloat(v).toFixed(2), true);
+    wireSlider('labSamples', 'labSamplesValue', v => v, false);
 
-    ['rigScale', 'stride3d', 'animTicks', 'neckPitch', 'meshDisplace'].forEach(id => {
+    const resSlider = document.getElementById('resolution');
+    if (resSlider) {
+      const onResChange = () => {
+        sync3DRelativeScale();
+        updateDsMetricsBadge();
+      };
+      resSlider.addEventListener('input', onResChange);
+      resSlider.addEventListener('change', onResChange);
+    }
+
+    const mapPxSlider = document.getElementById('mapPixelSize');
+    if (mapPxSlider) {
+      const onMapPxChange = () => {
+        sync3DRelativeScale();
+        updateDsMetricsBadge();
+        updateMapDensityLabel();
+      };
+      mapPxSlider.addEventListener('input', onMapPxChange);
+      mapPxSlider.addEventListener('change', onMapPxChange);
+    }
+
+    const mapAutoLevel = document.getElementById('mapAutoLevel');
+    if (mapAutoLevel) {
+      mapAutoLevel.addEventListener('change', () => {
+        if (state.map?.loaded) renderMap(true);
+      });
+    }
+
+    ['animTicks', 'neckPitch', 'meshDisplace'].forEach(id => {
       const el = document.getElementById(id);
       if (!el) return;
       el.addEventListener('input', () => scheduleLivePreview(false));
@@ -1948,8 +2233,11 @@
       if (el) {
         el.addEventListener('input', () => {
           applyBlenderLighting();
-          scheduleLivePreview(false);
-          if (state.map?.loaded) renderMap(false);
+          scheduleLivePreview(false, true);
+        });
+        el.addEventListener('change', () => {
+          applyBlenderLighting();
+          scheduleLivePreview(true, true);
         });
       }
     });
@@ -1959,8 +2247,7 @@
       lightPreset.addEventListener('change', e => {
         const lbl = document.getElementById('presetLabel');
         if (lbl) lbl.textContent = e.target.value;
-        scheduleLivePreview(true);
-        if (state.map?.loaded) renderMap(true);
+        scheduleLivePreview(true, true);
       });
     }
 
@@ -1987,42 +2274,6 @@
       supersample.addEventListener('change', e => {
         state.supersample = parseInt(e.target.value, 10) || 4;
         scheduleLivePreview(true);
-      });
-    }
-
-    // Map controls
-    const orthoInput = document.getElementById('mapOrthoScale');
-    if (orthoInput) {
-      orthoInput.addEventListener('input', () => {
-        const lbl = document.getElementById('mapOrthoScaleVal');
-        if (lbl) lbl.textContent = `${parseFloat(orthoInput.value).toFixed(1)} m`;
-        updateMapDensityLabel();
-        updateDsMetricsBadge();
-      });
-      orthoInput.addEventListener('change', () => {
-        if (state.map?.loaded) renderMap(true);
-      });
-    }
-
-    const resSelect = document.getElementById('mapResolution');
-    if (resSelect) {
-      resSelect.addEventListener('change', () => {
-        updateMapDensityLabel();
-        if (state.map?.loaded) renderMap(true);
-      });
-    }
-
-    const meshScaleInput = document.getElementById('mapMeshScale');
-    if (meshScaleInput) {
-      meshScaleInput.addEventListener('change', () => {
-        const targetSpanMeters = parseFloat(meshScaleInput.value) || 24.0;
-        if (state.map?.model) {
-          const rawSpan = state.mapRawSpan || state.map.rawSpan || 1.0;
-          const effectiveScale = targetSpanMeters / rawSpan;
-          state.map.model.scale.setScalar(effectiveScale);
-          state.map.model.updateMatrixWorld(true);
-          renderMap(true);
-        }
       });
     }
 
@@ -2154,6 +2405,11 @@
     } else if (state.dsZoom === '2x') {
       canvas.style.width = `${baseW * 2}px`;
       canvas.style.height = `${baseH * 2}px`;
+      canvas.style.maxWidth = 'none';
+      canvas.style.maxHeight = 'none';
+    } else if (state.dsZoom === '3x') {
+      canvas.style.width = `${baseW * 3}px`;
+      canvas.style.height = `${baseH * 3}px`;
       canvas.style.maxWidth = 'none';
       canvas.style.maxHeight = 'none';
     } else {

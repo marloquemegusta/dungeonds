@@ -367,6 +367,7 @@
       const mat = gltf.materials[matIndex];
       const pbr = mat.pbrMetallicRoughness;
       let color = [0.8, 0.8, 0.8], imageBytes = null, mimeType = null;
+      let emissive = (mat.emissiveFactor && Array.isArray(mat.emissiveFactor)) ? mat.emissiveFactor.slice(0, 3) : null;
       if (pbr) {
         if (pbr.baseColorFactor && Array.isArray(pbr.baseColorFactor)) color = pbr.baseColorFactor.slice(0, 3);
         if (pbr.baseColorTexture && gltf.textures && gltf.images) {
@@ -389,7 +390,7 @@
           }
         }
       }
-      const info = { name: mat.name || ('Material ' + (matIndex + 1)), color, imageBytes, mimeType };
+      const info = { name: mat.name || ('Material ' + (matIndex + 1)), color, emissive, imageBytes, mimeType };
       materialInfoByIndex.set(matIndex, info);
       return info;
     }
@@ -593,6 +594,56 @@
     geometry.setAttribute('uv', new THREE.BufferAttribute(meshData.uvs, 2));
     geometry.setIndex(new THREE.BufferAttribute(meshData.indices, 1));
 
+    if (meshData.groups && meshData.groups.length > 0 && meshData.materials && meshData.materials.length > 0) {
+      geometry.clearGroups();
+      for (let i = 0; i < meshData.groups.length; i++) {
+        const g = meshData.groups[i];
+        geometry.addGroup(g.start, g.count, g.materialIndex);
+      }
+
+      const materialsArray = meshData.materials.map(matInfo => {
+        if (matInfo.imageBytes && typeof URL !== 'undefined' && typeof Blob !== 'undefined') {
+          try {
+            const blob = new Blob([matInfo.imageBytes], { type: matInfo.mimeType || 'image/png' });
+            const objectUrl = URL.createObjectURL(blob);
+            const texture = new THREE.TextureLoader().load(objectUrl);
+            if (THREE.SRGBColorSpace) {
+              texture.colorSpace = THREE.SRGBColorSpace;
+            } else if (THREE.sRGBEncoding) {
+              texture.encoding = THREE.sRGBEncoding;
+            }
+            const mat = new THREE.MeshStandardMaterial({
+              map: texture,
+              color: new THREE.Color(1, 1, 1),
+              roughness: 0.85,
+              metalness: 0.05
+            });
+            if (matInfo.emissive) {
+              mat.emissive = new THREE.Color(matInfo.emissive[0], matInfo.emissive[1], matInfo.emissive[2]);
+            }
+            return mat;
+          } catch (err) {
+            // Fallback to color
+          }
+        }
+        const c = matInfo.color || [0.8, 0.8, 0.8];
+        const mat = new THREE.MeshStandardMaterial({
+          color: new THREE.Color(c[0], c[1], c[2]),
+          roughness: 0.85,
+          metalness: 0.05
+        });
+        if (matInfo.emissive) {
+          mat.emissive = new THREE.Color(matInfo.emissive[0], matInfo.emissive[1], matInfo.emissive[2]);
+        }
+        return mat;
+      });
+
+      const mesh = new THREE.Mesh(geometry, materialsArray);
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+      return mesh;
+    }
+
     let material;
     if (meshData.imageBytes && typeof URL !== 'undefined' && typeof Blob !== 'undefined') {
       try {
@@ -606,24 +657,24 @@
         }
         material = new THREE.MeshStandardMaterial({
           map: texture,
-          roughness: 0.7,
-          metalness: 0.1
+          roughness: 0.85,
+          metalness: 0.05
         });
       } catch (err) {
         // Fallback to color if texture creation fails
         const c = meshData.color || [0.8, 0.8, 0.8];
         material = new THREE.MeshStandardMaterial({
           color: new THREE.Color(c[0], c[1], c[2]),
-          roughness: 0.7,
-          metalness: 0.1
+          roughness: 0.85,
+          metalness: 0.05
         });
       }
     } else {
       const c = meshData.color || [0.8, 0.8, 0.8];
       material = new THREE.MeshStandardMaterial({
         color: new THREE.Color(c[0], c[1], c[2]),
-        roughness: 0.7,
-        metalness: 0.1
+        roughness: 0.85,
+        metalness: 0.05
       });
     }
 
