@@ -1,62 +1,73 @@
-# Sesión 61: Rediseño Integral FBX-to-Sprite Lab, Renderizador 3D de Mapas y Simulador Nintendo DS
+# Sesión 60: Refinamiento Integral a 3 Columnas del FBX-to-Sprite Lab, Carga Multi-Material FBX/GLB, Auto-Framing Ortográfico, Nivelación por Histograma y Anclaje 3D
 
 ## Resumen Ejecutivo
 
-En esta sesión se rediseñó por completo el laboratorio web offline (`tools/lab/FBX-Web-Renderer-offline.html` y su módulo modular `tools/lab/FBX-Web-Renderer-parity.js`), transformándolo en una suite unificada de producción y simulación técnica para Nintendo DS con paridad de renderizado, visor 3D interactivo y simulador de doble pantalla a 60 FPS.
+En esta sesión se refinó en profundidad el laboratorio web offline (`tools/lab/FBX-Web-Renderer-offline.html`, su módulo modular `tools/lab/FBX-Web-Renderer-parity.js` y el cargador binario `tools/lab/glb_loader_minimal.js`), implementando una reestructuración de la interfaz a **3 columnas fijas sin scroll vertical** (Zero-Scroll 100vh), soporte completo para escenarios multi-material en formato **.GLB** y **.FBX**, auto-encuadre matemático de la cámara dimétrica para mapas de cualquier dimensión, auto-nivelación robusta basada en histograma ponderado de áreas de suelo, anclaje estricto de pies del personaje a `Y = 0` y eliminación definitiva del efecto ghosting en el simulador Nintendo DS.
 
-## Arquitectura y Componentes Clave
+---
 
-1. **Layout 100vh Zero-Scroll Estricto:**
-   - **Sidebar Izquierdo (360px):** Organizado en tres pestañas compactas (`Escala y Archivos`, `Luz y Cámara`, `Shader y Post`) más barra de acciones fijada en la parte inferior (`Previsualizar`, `Exportar Sprites .ZIP`, `Exportar Mapa .ZIP`).
-   - **Tira de 8 Direcciones (Top Row, 155px de alto):** 8 tarjetas (`0_S`, `1_SW`, `2_W`, `3_NW`, `4_N`, `5_NE`, `6_E`, `7_SE`) con mini-canvases en tiempo real renderizados con interpolación `image-rendering: pixelated`. Al hacer click en una tarjeta, el simulador orienta de inmediato al personaje hacia dicha dirección.
-   - **Split 50/50 Inferior:**
-     - **Izquierda - Visor 3D:** Control de órbita (Three.js OrbitControls), cuadrícula táctica de referencia métrica, toggle de visualización `Personaje / Mapa / Ambos` y panel de métricas de malla (vértices, caras, dimensiones físicas en metros).
-     - **Derecha - Simulador Nintendo DS:** Canvas de 256×192 (o 256×384 en modo Dual-Screen), controles de zoom (1x, 2x, 3x, Fit), badge de métricas (FPS, posición `world_x/y`, celda de grid, facing actual), selector de pantalla (Top / Bottom / Dual) y movimiento interactivo con WASD/flechas y arrastre de ratón con resolución angular en 8 direcciones.
+## Refinamientos Implementados
 
-2. **Renderizador de Mapas 3D (.FBX y .GLB) y Corrección de Orientación y Escala Métrica:**
-   - Soporte dual de formatos de escenario 3D: carga nativa de `.fbx` (vía `cf` FBXLoader) y `.glb` (vía `MinimalGLBLoader` embebido).
-   - **Corrección Automática de Orientación (Z-Up a Y-Up):** Detección de mallas provenientes de Blender/Tripo donde la altura de muros está en el eje Z (`sizeVec.z < min(sizeVec.x, sizeVec.y) * 0.8`), aplicando rotación compensatoria `mapModel.rotation.x = -Math.PI / 2` para alinear el suelo con el plano horizontal X-Z de Three.js (eliminando la disposición vertical a 90° de canto).
-   - **Escalado Horizontal Métrico Objetivo:** Detección del span horizontal crudo `rawSpan = Math.max(sizeVec.x, sizeVec.z)` y cálculo del escalado efectivo `effectiveScale = targetSpanMeters / rawSpan` (control `mapMeshScale` etiquetado como `Tamaño Mapa (m)`, valor por defecto 24.0 m), evitando que modelos en centímetros importados por `FBXLoader` alcancen 2400 m.
-   - **Sincronización Asíncrona de Texturas y Limpieza de Shaders:** `waitForModelTextures` asegura la decodificación de Blob URLs antes del render. Se anula `mat.normalMap = null` y se fijan `roughness = 0.85` y `metalness = 0.05` siguiendo estrictamente `_blender_bake_scifi.py` para evitar que el normal map tangente de Tripo oscurezca las caras en WebGL.
-   - **Auto-Nivelación con Normales en Espacio Mundo:** Cálculo de normales transformadas con `norm.transformDirection(node.matrixWorld)` para filtrar polígonos horizontales (`norm.y > 0.8`) y anclar la mediana del suelo exactamente a `Y = 0`.
-   - **Encuadre Isométrico 3D Automático:** En modo `map` o `both`, la cámara 3D se ajusta a `position.set(16, 14, 16)`, `controls.target.set(0, 1.0, 0)`, `far = 1000` y `near = 0.1`, encuadrando la mazmorra al completo. En modo `char`, se restituye a primer plano `(0, 1.4, 3.2)` sobre el personaje.
-   - Cálculo automático de densidad de píxeles: `density_px_per_m = (ortho_width_px / ortho_size_world)` (ej. 20.21 px/m a 768px y 38m de ancho ortográfico).
-   - Render dimétrico ortográfico a 45° de acimut y elevación compartida sin contorno de silueta, permitiendo exportación empaquetada en ZIP (`<name>_world.png` + `<name>_map_settings.json`).
+### 1. Reestructuración de la Interfaz a 3 Columnas (100vh Zero-Scroll)
+- **Columna 1 — Controles y Ajustes (330px):** Organizada en 3 pestañas verticales compactas (`Escala y Archivos`, `Luz y Cámara`, `Shader y Post`) junto con una barra inferior fijada (`#labActionsBar`) para renderizado completo y exportación en ZIP de Spritesheet y Mapa.
+- **Columna 2 — Sprites y GIFs Direccionales (430px):** Panel vertical dedicado (`#labCenterPanel`) con cabecera fija y grid de 2 columnas × 4 filas de tarjetas cuadradas de visualización (`0_S`, `1_SW`, `2_W`, `3_NW`, `4_N`, `5_NE`, `6_E`, `7_SE`). Los mini-canvases se renderizan en tiempo real con interpolación pixelada (`image-rendering: pixelated`) y permiten orientar al personaje con un solo clic.
+- **Columna 3 — Stage Principal y Visualización (1fr):** Ocupa todo el ancho restante (>600px) con navegación por pestañas de stage:
+  - **Pestaña 1:** 🎮 *Pantalla Nintendo DS (256×192)* con controles de zoom (1x, 2x, 3x, Fit), badge métrico y canvas interactivo navegable con WASD y arrastre.
+  - **Pestaña 2:** 🧊 *Visor 3D Interactivo* con cámara orbital Three.js, visualización combinada `Personaje / Mapa / Ambos` y auto-redimensionamiento de viewport (`syncViewportRendererSize`).
 
-3. **Pipeline Reactivo en Tiempo Real:**
-   - Sliders con respuesta instantánea: evento `input` dispara pase rápido de previsualización (`ss=1`) con debounce mediante `requestAnimationFrame`, mientras que `change` ejecuta el render de alta calidad con supersampling Blackman-Harris 4x.
+### 2. Soporte Multi-Material y Colores Base en .GLB y .FBX
+- **`glb_loader_minimal.js`:** Actualizado para parsear `meshData.groups` y `meshData.materials`, instanciando un array de `MeshStandardMaterial` cuando la malla GLB contiene múltiples primitivas y materiales. Se preservan factores de color difuso (`pbrMetallicRoughness.baseColorFactor`) y factores emisivos (`emissiveFactor`).
+- **`FBX-Web-Renderer-parity.js`:** Si una malla no dispone de mapas de textura (`diffuseMap == null`), se preservan intactos los colores `mat.color` y `mat.emissive` de Three.js / FBXLoader en lugar de forzarlos a `#ffffff`.
+- **Limpieza del Modelo Blockout:** Se actualizó `assets/models/environment/blockout/blockout_scene.py` comentando el plano de suelo gigante de 200×200m y re-exportando `isometric_shooter_blockout.fbx` y `.glb` para evitar contaminación de escala.
 
-4. **Integración y Build:**
-   - `tools/lab/build_offline_renderer.py` actualizado para inyectar tanto `glb_loader_minimal.js` como `FBX-Web-Renderer-parity.js` de forma determinista entre los marcadores `/* SPRITE-LAB-PARITY:START */` y `/* SPRITE-LAB-PARITY:END */`.
+### 3. Auto-Encuadre Ortográfico Dimétrico y Parámetro Unificado de Resolución
+- Se eliminaron los sliders redundantes o confusos (`#mapResolution`, `#mapMeshScale`, `#mapOrthoScale`, `#rigScale`).
+- **Cálculo de Frustum por Bounding Box Proyectada:** `renderMap()` proyecta los 8 vértices de la caja englobante del escenario sobre los ejes `right` y `up` de la cámara ortográfica dimétrica (acimut 45°, elevación 30°/45°), calculando `projW` y `projH` exactos y centrando la cámara automáticamente.
+- **Control Unificado `#mapPixelSize`:** Permite elegir el ancho objetivo en píxeles del mapa (256 a 1536 px), calculando la altura proporcional automáticamente.
+
+### 4. Auto-Nivelación por Histograma Ponderado por Área de Suelo
+- En escenarios complejos (e.g., dungeons de Tripo o blockouts modulares con desniveles), los métodos basados en `min.y` fijaban el suelo en zócalos o sótanos invisibles.
+- Se implementó un algoritmo que itera sobre los triángulos de la malla en espacio mundo, identificando superficies horizontales (`|norm.y| > 0.8`), calculando el área del triángulo `0.5 * |cross(edge1, edge2)|` y agrupando en cubos de elevación de 5 cm. El bucket con mayor área acumulada define el nivel del suelo navegable y se traslada a `Y = 0`.
+
+### 5. Anclaje de Pies del Personaje a Y=0 y Sincronización Métrica 3D
+- **`groundCharacterIn3D()`:** En el visor 3D, evalúa los vértices posados y animados del personaje (`posedPoints`) y compensa `$.modelRoot.position.y -= minY`, asegurando que los pies reposen exactamente sobre el plano del suelo `Y = 0` (error < 0.05 m).
+- **`sync3DRelativeScale()`:** Sincroniza la escala visual relativa del mapa con respecto al personaje en 3D (`scaleRatio = (mapW / charPx) * charExtent3D / mapUnscaledProjW`), logrando coincidencia de proporciones entre el visor 3D y el simulador 2D de Nintendo DS.
+
+### 6. Cero Ghosting en Simulador Nintendo DS y Desbloqueo de Iluminación
+- **Eliminación de Estelas (Ghosting):** `drawDsSimulator()` ejecuta un borrado explícito a negro sólido (`ctx.fillStyle = '#000000'; ctx.fillRect(0, 0, dsW, dsH);`) antes de dibujar el mapa o el fondo procedural. Los márgenes exteriores fuera de límites se mantienen rigurosamente negros `(0, 0, 0, 255)`.
+- **Desbloqueo de Iluminación:** Se retiraron los clamps hardcodeados en `renderMap()`, permitiendo que la luz principal (`keyLight`), relleno (`fillLight`) y ambiente (`worldLight`) se apliquen sin distorsión sobre el escenario.
+
+---
 
 ## Verificación Automatizada Headless
 
-Se ejecutó una suite determinista completa con Playwright en modo estrictamente headless (`test_lab_playwright.cjs`), validando los siguientes hitos:
+Se desarrolló y ejecutó la suite determinista en Playwright headless (`tools/lab/verify_lab_refinements.py`), superando todos los hitos de paridad y robustez:
 
-- **Zero-Scroll:** Verificado `scrollHeight == innerHeight == 900` y `scrollWidth == innerWidth == 1440` (cero desbordamiento vertical y horizontal).
-- **Consola Limpia:** 0 errores de página (`pageerror`) y 0 fallos de JavaScript durante toda la sesión.
-- **Navegación de Pestañas:** Cambio verificado entre `pane-scale`, `pane-light` y `pane-shader`.
-- **Carga de Personaje FBX:** Carga de `Run.fbx`, renderizado de los 8 facings direccionales y verificación de mini-canvases con píxeles opacos.
-- **Carga de Mapa FBX:** Carga de `tripo_convert_b14b0e1b-13bd-4f17-b4a7-b50c6d251c17.fbx`, auto-nivelación a `minZ=0`, auto-escala métrica a 24.0 m y densidad calculada (`20.21 px/m`).
-- **Verificación de Texturas del Mapa:** Comprobación de píxeles del canvas de mapa confirmando renderizado activo no negro con **12,781 píxeles iluminados** (suelo de baldosas y muros).
-- **Encuadre Isométrico 3D y Relación de Aspecto:** Cámara 3D posicionada en `(16, 14, 16)`, target `(0, 1, 0)` y plano lejano en 1000. Relación de aspecto perfectamente sincronizada al contenedor (`602×671 px`, `aspect = 0.897`) mediante `syncViewportRendererSize()`, eliminando el estiramiento vertical de 4.9x heredado del canvas original de 1050×280 px.
-- **Reactividad de Sliders:** Modificación de `visibleSize` de 48 a 36 y de vuelta a 48 px en tiempo real.
-- **Interacción y Físicas del Simulador NDS:** Movimiento WASD a la derecha trasladando de `(384, 256)` a `(396, 256)` actualizando facing a dirección 6 (Este). Click en tarjeta direccional 4 actualizando facing a Norte.
-- **Modo Dual-Screen:** Toggle a pantalla dual verificado con canvas de 256×384 px.
+| Test / Hito | Resultado | Métrica / Evidencia |
+| :--- | :---: | :--- |
+| **Zero-Scroll 100vh** | **PASS** | `scrollHeight <= window.innerHeight` (900px), sin barra de scroll vertical. |
+| **Proporciones 3 Columnas** | **PASS** | Sidebar: `330px`, Panel Central: `430px`, Stage Derecho: `664px` (grid `330px 430px 1fr`). |
+| **Carga de Personaje FBX** | **PASS** | `Run.fbx` cargado; 8 mini-canvases en tiempo real poblados en la columna central. |
+| **Carga de Mapa Blockout FBX** | **PASS** | `isometric_shooter_blockout.fbx` cargado; mapa auto-encuadrado a 768×512 px. |
+| **Multi-Material Colores Distintos** | **PASS** | Verificados **3 colores únicos** en la geometría del blockout (muros, pilares, suelos). |
+| **Reactividad Luz / Elevación** | **PASS** | Píxel central responde dinámicamente a cambios de elevación (30° a 45°) y atenuación de luz (4.2 a 1.0). |
+| **Cero Ghosting en Simulador DS** | **PASS** | Paneo fuera de límites evalúa a negro sólido estricto: `rgba(0, 0, 0, 255)`. |
+| **Anclaje de Pies 3D en Y=0** | **PASS** | `charMinY = 0.000` (desviación < 0.05m tras posado y `groundCharacterIn3D`). |
+| **Carga de Mapa Multi-Material .GLB** | **PASS** | `isometric_shooter_blockout.glb` cargado con `MinimalGLBLoader`; array de materiales verificado. |
+| **Carga Escenario Sci-Fi Dungeon** | **PASS** | `tripo_convert_...fbx` cargado e interactivo con personaje y texturas PBR intactas. |
+
+---
 
 ## Evidencia Visual
 
-### Suite Completa del Laboratorio Rediseñado
-![Laboratorio FBX Sprite y Mapa Rediseñado](assets/fbx_sprite_map_lab_full.png)
+### 1. Simulador Nintendo DS con Escenario Blockout y Personaje Cargador
+Layout de 3 columnas completo en 1440×900: Controles a la izquierda, 8 direcciones de sprites en el centro y simulador DS a la derecha.
+![Simulador DS Blockout](assets/lab_3col_ds_blockout.png)
 
-### Tira de 8 Direcciones con Canvases Pixelados
-![Tira de 8 Direcciones](assets/strip_8dirs.png)
+### 2. Visor 3D Interactivo con Escenario Blockout y Anclaje en Y=0
+Cámara Three.js encuadrando el escenario y al personaje con pies anclados al plano del suelo.
+![Visor 3D Blockout](assets/lab_3col_3d_blockout.png)
 
-### Simulador Nintendo DS con Mapa y Personaje
-![Simulador Nintendo DS](assets/ds_simulator.png)
-
-### Simulador Nintendo DS en Modo Pantalla Dual (256x384)
-![Simulador Nintendo DS Dual Screen](assets/ds_simulator_dual.png)
-
-### Visor 3D Interactivo con Grid Métrico
-![Visor 3D Interactivo](assets/viewer_3d.png)
+### 3. Simulador Nintendo DS con Mazmorra Sci-Fi Completa
+Escenario de mazmorra importado en FBX con texturas PBR integradas e iluminación gótica compartida.
+![Simulador DS SciFi](assets/lab_3col_ds_scifi.png)
