@@ -4,7 +4,7 @@
 #include "dungeon_bg_tiles.h"
 #include "diablo_dungeon.h"
 #include "dungeon_occlusion.h"
-#include "fog_of_war.h"
+#include "los.h"
 #include "smooth_lightmap.h"
 #include <string.h>
 
@@ -714,13 +714,7 @@ static void update_screen_hardware_bg(int is_sub, u16 *map_ptr, int cam_x, int c
                 uint32_t cell = my * BG_RING_W + mx;
                 uint16_t tile_id = 0;
                 if (rel_x < BG_VIEW_W && rel_y < BG_VIEW_H) {
-                    if (is_sub) {
-                        if (fog_is_visible(world_x, world_y)) {
-                            tile_id = bg_world_tile(world_x, world_y);
-                        }
-                    } else {
-                        tile_id = bg_world_tile(world_x, world_y);
-                    }
+                    tile_id = bg_world_tile(world_x, world_y);
                 }
                 if (cache->world_tile_for_cell[cell] != tile_id) {
                     release_bg_tile(cache, cache->world_tile_for_cell[cell]);
@@ -917,7 +911,6 @@ static void render_screen(uint16_t *buffer, int cam_x, int cam_y,
         if (!s_enemies[e_idx].active) continue;
         int esx = player_screen_x(s_enemies[e_idx].x, s_enemies[e_idx].y);
         int esy = player_screen_y(s_enemies[e_idx].x, s_enemies[e_idx].y);
-        if (!fog_is_point_visible(esx, esy)) continue; // Hidden in fog/behind wall!
         int e_left = esx - PLAYER_ANCHOR_X - cam_x;
         int e_top = esy - PLAYER_ANCHOR_Y - cam_y;
         if (e_left < SCREEN_W && e_left + PLAYER_SPRITE_W > 0 &&
@@ -1659,7 +1652,6 @@ int main(void) {
 
     init_obj_sprite_bounds();
     player_init();
-    fog_init(player_screen_x(s_player.x, s_player.y), player_screen_y(s_player.x, s_player.y));
 
     // Initialise camera position to match player spawn
     s_cam_x = player_screen_x(s_player.x, s_player.y) - SCREEN_W / 2;
@@ -1694,10 +1686,7 @@ int main(void) {
 
         uint32_t t0 = cpuGetTiming();
         player_update(keys_held, keys_down, touch.px, touch.py, touch_down);
-        int p_wx = player_screen_x(s_player.x, s_player.y);
-        int p_wy = player_screen_y(s_player.x, s_player.y);
-        int newly_rev = fog_update(p_wx, p_wy);
-        if (newly_rev || s_frame_index <= 2) {
+        if (s_frame_index <= 2) {
             s_top_map_ready = 0;
         }
         build_occlusion_depth_map(s_cam_x, s_cam_y);
