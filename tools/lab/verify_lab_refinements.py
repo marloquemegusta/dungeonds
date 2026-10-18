@@ -138,9 +138,9 @@ def run_verification():
         print(f"Loading blockout map {BLOCKOUT_FBX.name} ...")
         page.set_input_files('#mapFileInput', str(BLOCKOUT_FBX))
 
-        # Wait for map to load
+        # Wait for map to load and render
         page.wait_for_function("""() => {
-            return window.__spriteLab && window.__spriteLab.map && window.__spriteLab.map.loaded && window.__spriteLab.mapCanvas;
+            return window.__spriteLab && window.__spriteLab.mapRenderedName && window.__spriteLab.mapRenderedName.includes('isometric_shooter_blockout.fbx');
         }""", timeout=30000)
         print("[PASS] Blockout FBX loaded and rendered to mapCanvas.")
 
@@ -164,7 +164,33 @@ def run_verification():
         }""")
         print(f"Blockout materials info: {map_materials_info}")
         assert len(map_materials_info['uniqueColors']) >= 3, f"Expected >= 3 distinct material colors, got {map_materials_info['uniqueColors']}"
-        print(f"✓ Distinct material colors verified: {map_materials_info['uniqueColors']}")
+        print(f"[PASS] Distinct material colors verified: {map_materials_info['uniqueColors']}")
+
+        # Verify character spawned on walkable floor and NOT on an obstacle/cover block
+        walk_info = page.evaluate("""() => {
+            const state = window.__spriteLab;
+            const isWalkable = state.isMapPixelWalkable(state.dsCharX, state.dsCharY);
+            const centerWalkable = state.isMapPixelWalkable(state.mapWidth / 2, state.mapHeight / 2);
+            // Attempt to move into center cover block
+            const originalX = state.dsCharX;
+            const originalY = state.dsCharY;
+            const moveBlocked = !state.tryMoveCharacter(state.mapWidth / 2, state.mapHeight / 2);
+            const stillWalkable = state.isMapPixelWalkable(state.dsCharX, state.dsCharY);
+            return {
+                charX: state.dsCharX,
+                charY: state.dsCharY,
+                isWalkable: isWalkable,
+                centerWalkable: centerWalkable,
+                moveBlocked: moveBlocked,
+                stillWalkable: stillWalkable
+            };
+        }""")
+        print(f"Blockout walkability & obstacle collision info: {walk_info}")
+        assert walk_info['isWalkable'] is True, f"Character spawned on unwalkable tile! {walk_info}"
+        assert walk_info['centerWalkable'] is False, "Central cover block should be marked unwalkable!"
+        assert walk_info['moveBlocked'] is True, "Movement directly into central obstacle should be blocked!"
+        assert walk_info['stillWalkable'] is True, "Character penetrated into unwalkable collision geometry!"
+        print("[PASS] Character auto-spawned on walkable floor and obstacle collision verified.")
 
         # -------------------------------------------------------------
         # 4. Shared lighting & elevation reactivity
@@ -324,7 +350,7 @@ def run_verification():
 
         page.set_input_files('#mapFileInput', str(BLOCKOUT_GLB))
         page.wait_for_function("""() => {
-            return window.__spriteLab && window.__spriteLab.map && window.__spriteLab.map.name.includes('.glb') && window.__spriteLab.map.loaded;
+            return window.__spriteLab && window.__spriteLab.mapRenderedName && window.__spriteLab.mapRenderedName.includes('.glb');
         }""", timeout=30000)
         print("[PASS] Blockout GLB loaded via MinimalGLBLoader.")
 
@@ -363,10 +389,32 @@ def run_verification():
         print(f"Loading SciFi Dungeon {SCIFI_FBX.name} ...")
         page.set_input_files('#mapFileInput', str(SCIFI_FBX))
         page.wait_for_function("""() => {
-            return window.__spriteLab && window.__spriteLab.map && window.__spriteLab.map.name.includes('tripo_convert') && window.__spriteLab.map.loaded;
-        }""", timeout=30000)
-        page.wait_for_timeout(800)
+            return window.__spriteLab && window.__spriteLab.mapRenderedName && window.__spriteLab.mapRenderedName.includes('tripo_convert');
+        }""", timeout=45000)
         print("[PASS] SciFi Dungeon FBX loaded.")
+
+        # Verify SciFi dungeon walkability
+        scifi_walk = page.evaluate("""() => {
+            const state = window.__spriteLab;
+            const cx = state.dsCharX;
+            const cy = state.dsCharY;
+            const CELL = 4;
+            const gx = Math.floor(cx / CELL);
+            const gy = Math.floor(cy / CELL);
+            const gw = state.mapWalkGridW;
+            const gh = state.mapWalkGridH;
+            const val = state.mapWalkGrid ? state.mapWalkGrid[gy * gw + gx] : -1;
+            return {
+                charX: cx,
+                charY: cy,
+                gx, gy, gw, gh, val,
+                hasFloorData: state.mapHasFloorData,
+                isWalkable: state.isMapPixelWalkable(cx, cy)
+            };
+        }""")
+        print(f"SciFi dungeon walkability: {scifi_walk}")
+        assert scifi_walk['isWalkable'] is True, f"SciFi character spawned on unwalkable tile! {scifi_walk}"
+        print("[PASS] SciFi dungeon character auto-spawned on walkable floor verified.")
 
         # Capture Screenshot 3: SciFi Dungeon in DS Simulator
         shot3 = SCREENSHOT_DIR / "lab_3col_ds_scifi.png"

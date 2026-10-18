@@ -4448,6 +4448,13 @@ function applyInPlaceMotion(clips, enabled, model) {
 
 
 
+
+
+
+
+
+
+
 /* SPRITE-LAB-PARITY:START */
 /**
  * Minimal standalone GLB (GLTF 2.0 Binary) loader.
@@ -5171,6 +5178,11 @@ function applyInPlaceMotion(clips, enabled, model) {
     mapOrthoScale: 38.0,
     mapMeshScale: 24.0,
     mapAutoLevel: true,
+    mapProjection: null,
+    mapWalkGrid: null,
+    mapWalkGridW: 0,
+    mapWalkGridH: 0,
+    mapHasFloorData: false,
     // DS Simulator state
     dsMode: '1', // '1' = 256x192, '2' = 256x384
     dsZoom: 'fit', // 'fit', '1x', '2x'
@@ -5769,32 +5781,40 @@ function applyInPlaceMotion(clips, enabled, model) {
   function groundCharacterIn3D() {
     if (!$.modelRoot || !$.model) return;
 
-    // Check if at (0, 0) there is geometry above Y = 0.2 (e.g. cover_mid block)
-    let obstacleAtOrigin = false;
-    if (state.map?.model) {
-      state.map.model.updateMatrixWorld(true);
-      state.map.model.traverse(node => {
-        if (!obstacleAtOrigin && node.isMesh && node.geometry?.attributes?.position) {
-          const pos = node.geometry.attributes.position;
-          const v = new K();
-          for (let i = 0; i < pos.count; i++) {
-            v.fromBufferAttribute(pos, i).applyMatrix4(node.matrixWorld);
-            if (Math.hypot(v.x, v.z) < 1.4 && v.y > 0.2) {
-              obstacleAtOrigin = true;
-              break;
+    if (state.mapProjection && isFinite(state.dsCharX) && isFinite(state.dsCharY)) {
+      const worldXZ = mapPixelToWorldXZ(state.dsCharX, state.dsCharY);
+      if (isFinite(worldXZ.x) && isFinite(worldXZ.z)) {
+        $.modelRoot.position.x = worldXZ.x;
+        $.modelRoot.position.z = worldXZ.z;
+      }
+    } else {
+      // Check if at (0, 0) there is geometry above Y = 0.2 (e.g. cover_mid block)
+      let obstacleAtOrigin = false;
+      if (state.map?.model) {
+        state.map.model.updateMatrixWorld(true);
+        state.map.model.traverse(node => {
+          if (!obstacleAtOrigin && node.isMesh && node.geometry?.attributes?.position) {
+            const pos = node.geometry.attributes.position;
+            const v = new K();
+            for (let i = 0; i < pos.count; i++) {
+              v.fromBufferAttribute(pos, i).applyMatrix4(node.matrixWorld);
+              if (Math.hypot(v.x, v.z) < 1.4 && v.y > 0.2) {
+                obstacleAtOrigin = true;
+                break;
+              }
             }
           }
-        }
-      });
-    }
+        });
+      }
 
-    if (obstacleAtOrigin) {
-      // Place character in open corridor in front of central cover block
-      $.modelRoot.position.x = 0;
-      $.modelRoot.position.z = 3.0;
-    } else {
-      $.modelRoot.position.x = 0;
-      $.modelRoot.position.z = 0;
+      if (obstacleAtOrigin) {
+        // Place character in open corridor in front of central cover block
+        $.modelRoot.position.x = 0;
+        $.modelRoot.position.z = 3.0;
+      } else {
+        $.modelRoot.position.x = 0;
+        $.modelRoot.position.z = 0;
+      }
     }
 
     $.modelRoot.updateMatrixWorld(true);
@@ -6081,6 +6101,22 @@ function applyInPlaceMotion(clips, enabled, model) {
 
     updateMapDensityLabel();
 
+    state.mapProjection = {
+      minU,
+      maxU,
+      minV,
+      maxV,
+      projW,
+      projH,
+      mapW,
+      mapH,
+      right: right.clone(),
+      upAxis: upAxis.clone(),
+      det: right.x * upAxis.z - right.z * upAxis.x
+    };
+    buildMapCollisionGrid();
+    ensureCharacterOnWalkableFloor(true);
+
     const previousSize = new G();
     $.renderer.getSize(previousSize);
     const charRoot = $.modelRoot;
@@ -6122,6 +6158,9 @@ function applyInPlaceMotion(clips, enabled, model) {
       if (btnExportMap) btnExportMap.disabled = false;
 
       updateDsMetricsBadge();
+      state.mapRenderedName = state.map?.name;
+      state.mapRenderCount = (state.mapRenderCount || 0) + 1;
+      ensureCharacterOnWalkableFloor(false);
       drawDsSimulator();
     } finally {
       $.renderer.setClearColor(0x000000, 0);
@@ -6129,6 +6168,344 @@ function applyInPlaceMotion(clips, enabled, model) {
       update3DViewMode();
       syncViewportRendererSize();
     }
+  }
+
+  // ---- 2D Walkability & Collision Engine derived from 3D Geometry ----
+
+  function worldToMapPixel(x, y, z) {
+    if (!state.mapProjection) return { mx: 0, my: 0 };
+    const p = state.mapProjection;
+    const u = x * p.right.x + y * p.right.y + z * p.right.z;
+    const v = x * p.upAxis.x + y * p.upAxis.y + z * p.upAxis.z;
+    const mx = ((u - p.minU) / p.projW) * p.mapW;
+    const my = ((p.maxV - v) / p.projH) * p.mapH;
+    return { mx, my };
+  }
+
+  function worldXZToMapPixel(x, z) {
+    return worldToMapPixel(x, 0, z);
+  }
+
+  function mapPixelToWorldXZ(mx, my) {
+    if (!state.mapProjection || Math.abs(state.mapProjection.det) < 1e-7) return { x: 0, z: 0 };
+    const p = state.mapProjection;
+    const u = p.minU + (mx / p.mapW) * p.projW;
+    const v = p.maxV - (my / p.mapH) * p.projH;
+    const x = (u * p.upAxis.z - p.right.z * v) / p.det;
+    const z = (p.right.x * v - u * p.upAxis.x) / p.det;
+    return { x, z };
+  }
+
+  function rasterizeTriangleToGrid(grid, gw, gh, p0, p1, p2, flag) {
+    const minX = Math.max(0, Math.floor(Math.min(p0.gx, p1.gx, p2.gx)));
+    const maxX = Math.min(gw - 1, Math.ceil(Math.max(p0.gx, p1.gx, p2.gx)));
+    const minY = Math.max(0, Math.floor(Math.min(p0.gy, p1.gy, p2.gy)));
+    const maxY = Math.min(gh - 1, Math.ceil(Math.max(p0.gy, p1.gy, p2.gy)));
+
+    const denom = (p1.gy - p2.gy) * (p0.gx - p2.gx) + (p2.gx - p1.gx) * (p0.gy - p2.gy);
+    if (Math.abs(denom) < 1e-5) return;
+
+    const invDenom = 1.0 / denom;
+    for (let y = minY; y <= maxY; y++) {
+      for (let x = minX; x <= maxX; x++) {
+        const w0 = ((p1.gy - p2.gy) * (x - p2.gx) + (p2.gx - p1.gx) * (y - p2.gy)) * invDenom;
+        const w1 = ((p2.gy - p0.gy) * (x - p2.gx) + (p0.gx - p2.gx) * (y - p2.gy)) * invDenom;
+        const w2 = 1.0 - w0 - w1;
+        if (w0 >= -0.05 && w1 >= -0.05 && w2 >= -0.05) {
+          grid[y * gw + x] |= flag;
+        }
+      }
+    }
+  }
+
+  function buildMapCollisionGrid() {
+    if (!state.map?.model || !state.mapProjection) return;
+    const p = state.mapProjection;
+    const CELL = 4;
+    const gw = Math.ceil(p.mapW / CELL);
+    const gh = Math.ceil(p.mapH / CELL);
+    const grid = new Uint8Array(gw * gh);
+    state.mapWalkGrid = grid;
+    state.mapWalkGridW = gw;
+    state.mapWalkGridH = gh;
+    state.mapHasFloorData = false;
+
+    const v0 = new K(), v1 = new K(), v2 = new K();
+    const e1 = new K(), e2 = new K(), norm = new K();
+
+    state.map.model.updateMatrixWorld(true);
+    state.map.model.traverse(node => {
+      if (!node.isMesh || !node.visible || !node.geometry?.attributes?.position) return;
+      const geom = node.geometry;
+      const posAttr = geom.attributes.position;
+      const index = geom.index;
+      const numTriangles = index ? Math.floor(index.count / 3) : Math.floor(posAttr.count / 3);
+
+      for (let t = 0; t < numTriangles; t++) {
+        const i0 = index ? index.getX(t * 3 + 0) : t * 3 + 0;
+        const i1 = index ? index.getX(t * 3 + 1) : t * 3 + 1;
+        const i2 = index ? index.getX(t * 3 + 2) : t * 3 + 2;
+
+        v0.fromBufferAttribute(posAttr, i0).applyMatrix4(node.matrixWorld);
+        v1.fromBufferAttribute(posAttr, i1).applyMatrix4(node.matrixWorld);
+        v2.fromBufferAttribute(posAttr, i2).applyMatrix4(node.matrixWorld);
+
+        e1.subVectors(v1, v0);
+        e2.subVectors(v2, v0);
+        norm.crossVectors(e1, e2);
+        const area = 0.5 * norm.length();
+        if (area <= 1e-6) continue;
+        norm.normalize();
+
+        const midY = (v0.y + v1.y + v2.y) / 3;
+        const minY = Math.min(v0.y, v1.y, v2.y);
+        const maxY = Math.max(v0.y, v1.y, v2.y);
+
+        // Floor: horizontal, normal pointing up, height near 0
+        if (Math.abs(norm.y) > 0.70 && Math.abs(midY) <= 0.28 && maxY < 0.35) {
+          state.mapHasFloorData = true;
+          const p0 = worldXZToMapPixel(v0.x, v0.z);
+          const p1 = worldXZToMapPixel(v1.x, v1.z);
+          const p2 = worldXZToMapPixel(v2.x, v2.z);
+          rasterizeTriangleToGrid(grid, gw, gh,
+            { gx: p0.mx / CELL, gy: p0.my / CELL },
+            { gx: p1.mx / CELL, gy: p1.my / CELL },
+            { gx: p2.mx / CELL, gy: p2.my / CELL },
+            1 // 1 = FLOOR
+          );
+        }
+        // Obstacle/Wall/Cover: reaches above 0.30m and touches ground or is low cover top
+        else if ((maxY > 0.30 && minY < 1.0) || (norm.y > 0.70 && midY > 0.30 && minY < 2.0)) {
+          const g0 = worldXZToMapPixel(v0.x, v0.z);
+          const g1 = worldXZToMapPixel(v1.x, v1.z);
+          const g2 = worldXZToMapPixel(v2.x, v2.z);
+          rasterizeTriangleToGrid(grid, gw, gh,
+            { gx: g0.mx / CELL, gy: g0.my / CELL },
+            { gx: g1.mx / CELL, gy: g1.my / CELL },
+            { gx: g2.mx / CELL, gy: g2.my / CELL },
+            2 // 2 = BLOCKED
+          );
+        }
+      }
+    });
+  }
+
+  function isMapPixelWalkable(mx, my) {
+    const mapW = state.mapWidth || 768;
+    const mapH = state.mapHeight || 512;
+    if (mx < 16 || mx > mapW - 16 || my < 16 || my > mapH - 16) return false;
+
+    if (!state.mapWalkGrid) return true;
+    const CELL = 4;
+    const gx = Math.floor(mx / CELL);
+    const gy = Math.floor(my / CELL);
+    const gw = state.mapWalkGridW;
+    const gh = state.mapWalkGridH;
+    if (gx < 1 || gx >= gw - 1 || gy < 1 || gy >= gh - 1) return false;
+
+    const val = state.mapWalkGrid[gy * gw + gx];
+    // Obstacle bit set -> cannot walk
+    if ((val & 2) !== 0) return false;
+
+    // If map has detected floor polygons, require floor bit
+    if (state.mapHasFloorData) {
+      return (val & 1) !== 0;
+    }
+    return true;
+  }
+
+  function ensureCharacterOnWalkableFloor(force = false) {
+    const mapW = state.mapWidth || 768;
+    const mapH = state.mapHeight || 512;
+    const isDual = state.dsMode === '2';
+    const dsH = isDual ? 384 : 192;
+
+    const hasClearance = (x, y, r = 12) => {
+      if (x < 24 || x > mapW - 24 || y < 24 || y > mapH - 24) return false;
+      if (!isMapPixelWalkable(x, y)) return false;
+      const step = 4;
+      for (let dx = -r; dx <= r; dx += step) {
+        for (let dy = -r; dy <= r; dy += step) {
+          if (dx * dx + dy * dy <= r * r) {
+            if (!isMapPixelWalkable(x + dx, y + dy)) return false;
+          }
+        }
+      }
+      return true;
+    };
+
+    // If current position is already firmly walkable with 12px clearance and not forced
+    if (!force && hasClearance(state.dsCharX, state.dsCharY, 12)) {
+      syncCharacter3DPositionFrom2D();
+      return;
+    }
+
+    let bestX = null;
+    let bestY = null;
+
+    // Candidate open corridors in world coords
+    const candidateWorlds = [
+      { x: 0, z: 4.0 },
+      { x: 0, z: 3.5 },
+      { x: -4.0, z: -7.0 },
+      { x: 3.5, z: 2.0 },
+      { x: -3.5, z: 2.0 }
+    ];
+
+    if (state.mapProjection) {
+      for (const cand of candidateWorlds) {
+        const p = worldXZToMapPixel(cand.x, cand.z);
+        if (hasClearance(p.mx, p.my, 12)) {
+          bestX = Math.round(p.mx);
+          bestY = Math.round(p.my);
+          break;
+        }
+      }
+    }
+
+    // Radial search from center for an open floor position with clearance
+    if (bestX === null) {
+      const startX = Math.round(mapW / 2);
+      const startY = Math.round(mapH / 2);
+      const step = 8;
+      outer: for (let r = step; r < Math.max(mapW, mapH) / 2; r += step) {
+        for (let angleDeg = 0; angleDeg < 360; angleDeg += 15) {
+          const rad = (angleDeg * Math.PI) / 180;
+          const testX = Math.round(startX + r * Math.cos(rad));
+          const testY = Math.round(startY + r * Math.sin(rad));
+          if (hasClearance(testX, testY, 12)) {
+            bestX = testX;
+            bestY = testY;
+            break outer;
+          }
+        }
+      }
+    }
+
+    // Fallback: search with basic walkable check
+    if (bestX === null) {
+      const startX = Math.round(mapW / 2);
+      const startY = Math.round(mapH / 2);
+      outer2: for (let r = 4; r < Math.max(mapW, mapH) / 2; r += 4) {
+        for (let angleDeg = 0; angleDeg < 360; angleDeg += 15) {
+          const rad = (angleDeg * Math.PI) / 180;
+          const testX = Math.round(startX + r * Math.cos(rad));
+          const testY = Math.round(startY + r * Math.sin(rad));
+          if (isMapPixelWalkable(testX, testY)) {
+            bestX = testX;
+            bestY = testY;
+            break outer2;
+          }
+        }
+      }
+    }
+
+    // Ultimate fallback: exhaustive scan of grid for closest walkable cell to center
+    if (bestX === null && state.mapWalkGrid) {
+      const gw = state.mapWalkGridW;
+      const gh = state.mapWalkGridH;
+      const cGx = Math.floor(mapW / (2 * 4));
+      const cGy = Math.floor(mapH / (2 * 4));
+      let minDistSq = Infinity;
+      for (let gy = 1; gy < gh - 1; gy++) {
+        for (let gx = 1; gx < gw - 1; gx++) {
+          const px = gx * 4 + 2;
+          const py = gy * 4 + 2;
+          if (isMapPixelWalkable(px, py)) {
+            const dSq = (gx - cGx) * (gx - cGx) + (gy - cGy) * (gy - cGy);
+            if (dSq < minDistSq) {
+              minDistSq = dSq;
+              bestX = px;
+              bestY = py;
+            }
+          }
+        }
+      }
+    }
+
+    if (bestX !== null && bestY !== null) {
+      state.dsCharX = bestX;
+      state.dsCharY = bestY;
+      state.dsPanX = Math.round(state.dsCharX - 128);
+      state.dsPanY = Math.round(state.dsCharY - (dsH / 2));
+      syncCharacter3DPositionFrom2D();
+    }
+  }
+
+  function syncCharacter3DPositionFrom2D() {
+    if (!$.modelRoot || !state.mapProjection) return;
+    const worldXZ = mapPixelToWorldXZ(state.dsCharX, state.dsCharY);
+    if (isFinite(worldXZ.x) && isFinite(worldXZ.z)) {
+      $.modelRoot.position.x = worldXZ.x;
+      $.modelRoot.position.z = worldXZ.z;
+      $.modelRoot.updateMatrixWorld(true);
+      const pts = posedPoints($.model);
+      let minY = Infinity;
+      for (let i = 1; i < pts.length; i += 3) {
+        if (pts[i] < minY) minY = pts[i];
+      }
+      if (isFinite(minY)) {
+        state.lastCharMinY = minY;
+        $.modelRoot.position.y -= minY;
+        $.modelRoot.updateMatrixWorld(true);
+      }
+    }
+  }
+
+  function tryMoveCharacter(targetX, targetY) {
+    const curX = state.dsCharX;
+    const curY = state.dsCharY;
+
+    if (!state.map?.loaded || !state.mapWalkGrid) {
+      state.dsCharX = targetX;
+      state.dsCharY = targetY;
+      return true;
+    }
+
+    // Direct movement if target is walkable
+    if (isMapPixelWalkable(targetX, targetY)) {
+      state.dsCharX = targetX;
+      state.dsCharY = targetY;
+      syncCharacter3DPositionFrom2D();
+      return true;
+    }
+
+    // Target is obstructed/unwalkable!
+    // Try sliding along axes or stopping at obstacle boundary
+    let moved = false;
+    if (isMapPixelWalkable(targetX, curY)) {
+      state.dsCharX = targetX;
+      moved = true;
+    } else if (isMapPixelWalkable(curX, targetY)) {
+      state.dsCharY = targetY;
+      moved = true;
+    } else {
+      // Bisection along movement vector to stop right outside wall
+      let low = 0.0;
+      let high = 1.0;
+      for (let i = 0; i < 6; i++) {
+        const mid = (low + high) / 2;
+        const testX = curX + (targetX - curX) * mid;
+        const testY = curY + (targetY - curY) * mid;
+        if (isMapPixelWalkable(testX, testY)) {
+          low = mid;
+        } else {
+          high = mid;
+        }
+      }
+      if (low > 0.05) {
+        state.dsCharX = curX + (targetX - curX) * low;
+        state.dsCharY = curY + (targetY - curY) * low;
+        moved = true;
+      }
+    }
+
+    if (moved) {
+      syncCharacter3DPositionFrom2D();
+    }
+
+    // Target itself was blocked/unwalkable, so return false
+    return false;
   }
 
   async function exportMapPackage() {
@@ -7509,10 +7886,8 @@ function applyInPlaceMotion(clips, enabled, model) {
     const btnResetDs = document.getElementById('btnResetDsPos');
     if (btnResetDs) {
       btnResetDs.onclick = () => {
-        state.dsCharX = state.mapWidth ? state.mapWidth / 2 : 128;
-        state.dsCharY = state.mapHeight ? state.mapHeight / 2 : 96;
-        state.dsPanX = state.dsCharX - 128;
-        state.dsPanY = state.dsCharY - (state.dsMode === '2' ? 192 : 96);
+        ensureCharacterOnWalkableFloor();
+        groundCharacterIn3D();
         drawDsSimulator();
       };
     }
@@ -7636,12 +8011,15 @@ function applyInPlaceMotion(clips, enabled, model) {
       if (isDraggingChar) {
         const moveX = dx * scaleX;
         const moveY = dy * scaleY;
-        state.dsCharX += moveX;
-        state.dsCharY += moveY;
-        const newDir = vectorToDir8(moveX, moveY);
-        selectDirection(newDir);
-        state.charAnimFrame = (state.charAnimFrame + 1) % 16;
-        drawDsSimulator();
+        const targetX = state.dsCharX + moveX;
+        const targetY = state.dsCharY + moveY;
+        const moved = tryMoveCharacter(targetX, targetY);
+        if (moved) {
+          const newDir = vectorToDir8(moveX, moveY);
+          selectDirection(newDir);
+          state.charAnimFrame = (state.charAnimFrame + 1) % 16;
+          drawDsSimulator();
+        }
       } else if (isPanningMap) {
         state.dsPanX -= dx * scaleX;
         state.dsPanY -= dy * scaleY;
@@ -7664,12 +8042,15 @@ function applyInPlaceMotion(clips, enabled, model) {
 
       if (moveX !== 0 || moveY !== 0) {
         e.preventDefault();
-        state.dsCharX += moveX;
-        state.dsCharY += moveY;
-        const newDir = vectorToDir8(moveX, moveY);
-        selectDirection(newDir);
-        state.charAnimFrame = (state.charAnimFrame + 1) % 16;
-        drawDsSimulator();
+        const targetX = state.dsCharX + moveX;
+        const targetY = state.dsCharY + moveY;
+        const moved = tryMoveCharacter(targetX, targetY);
+        if (moved) {
+          const newDir = vectorToDir8(moveX, moveY);
+          selectDirection(newDir);
+          state.charAnimFrame = (state.charAnimFrame + 1) % 16;
+          drawDsSimulator();
+        }
       }
     });
   }
@@ -7701,6 +8082,16 @@ function applyInPlaceMotion(clips, enabled, model) {
       scheduleLivePreview(true);
     };
   }
+
+  // Expose walkability & collision API
+  state.isMapPixelWalkable = isMapPixelWalkable;
+  state.worldToMapPixel = worldToMapPixel;
+  state.worldXZToMapPixel = worldXZToMapPixel;
+  state.mapPixelToWorldXZ = mapPixelToWorldXZ;
+  state.ensureCharacterOnWalkableFloor = ensureCharacterOnWalkableFloor;
+  state.tryMoveCharacter = tryMoveCharacter;
+  state.syncCharacter3DPositionFrom2D = syncCharacter3DPositionFrom2D;
+  state.buildMapCollisionGrid = buildMapCollisionGrid;
 
   // Initialize
   restructureLayout();

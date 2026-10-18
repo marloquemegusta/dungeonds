@@ -71,6 +71,7 @@ Resúmenes acumulativos y auditables de cada entrega y avance de desarrollo en `
 | 58 | Reorganización integral de assets 3D, sprites y render de mazmorra Three.js | [`asset-reorganization/`](asset-reorganization/walkthrough.md) | Catálogo limpio en assets/models/ y assets/sprites/; archive/ para históricos; bake de mazmorra con antorcha cálida y contraste 1.50 |
 | 59 | Rediseño Integral FBX-to-Sprite Lab, Renderizador 3D de Mapas y Simulador NDS | [`fbx-sprite-map-lab/`](fbx-sprite-map-lab/walkthrough.md) | Completado (100vh zero-scroll, 8 dirs strip, visor 3D, simulador dual-screen, exportador de mapa/sprite y paridad Blender) |
 | 60 | Refinamiento a 3 Columnas, Soporte Multi-Material FBX/GLB, Auto-Framing y Grounding | [`fbx-sprite-map-lab/`](fbx-sprite-map-lab/walkthrough.md) | Completado (Layout 3 columnas 330/430/1fr, GLB loader multi-material, auto-framing mapa, nivelación por histograma de suelo, anclaje Y=0, paridad de luz, cero ghosting, verificado en Playwright headless) |
+| 61 | Grid 2D de Walkability y Motor de Colisiones Físicas para Mapas 3D en Simulador NDS | [`fbx-sprite-map-lab/`](fbx-sprite-map-lab/walkthrough.md) | Completado (Extracción de grid 2D desde mallas 3D, proyecciones exactas 2D/3D, auto-spawn en suelo transitable sin muros, colisión y sliding en tiempo real con WASD/drag, verificado en Playwright headless) |
 
 
 
