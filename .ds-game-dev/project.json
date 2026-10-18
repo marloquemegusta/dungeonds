@@ -7,7 +7,8 @@
         "python.exe tests/test_los.py",
         "python.exe tests/test_gameplay_contract.py",
         "python.exe tests/test_enemy_fsm.py",
-        "python.exe tests/test_weapons_contract.py"
+        "python.exe tests/test_weapons_contract.py",
+        "python.exe tests/test_encounters_contract.py"
     ],
     "blocksdsImage": "skylyrac/blocksds:slim-latest",
     "romUploadName": "dungeonds.nds",

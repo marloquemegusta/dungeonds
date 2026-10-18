@@ -4,8 +4,10 @@
 #include "player_sprite.h"
 #include <string.h>
 
+static uint32_t s_ai_tick = 0;
+
 void enemy_ai_init(void) {
-    // Subsystem init if needed
+    s_ai_tick = 0;
 }
 
 static inline uint32_t int_sqrt(uint32_t n) {
@@ -123,7 +125,12 @@ static void update_charger(Enemy *e, Enemy *enemies, int num_enemies, int idx,
     int px = TO_INT(player_x);
     int py = TO_INT(player_y);
 
-    int has_los = !player_dead && los_has_line_of_sight(wx, wy, px, py, tuning->los_range);
+    if (player_dead) {
+        e->has_los = 0;
+    } else if (e->hit_timer > 0 || e->state == ENEMY_STATE_ALERT || ((s_ai_tick + idx) & 1) == 0) {
+        e->has_los = los_has_line_of_sight(wx, wy, px, py, tuning->los_range);
+    }
+    int has_los = e->has_los;
 
     if (e->hit_timer > 0) {
         if (e->state == ENEMY_STATE_IDLE || e->state == ENEMY_STATE_SEARCH) {
@@ -271,7 +278,12 @@ static void update_shooter(Enemy *e, Enemy *enemies, int num_enemies, int idx,
     int px = TO_INT(player_x);
     int py = TO_INT(player_y);
 
-    int has_los = !player_dead && los_has_line_of_sight(wx, wy, px, py, tuning->los_range);
+    if (player_dead) {
+        e->has_los = 0;
+    } else if (e->hit_timer > 0 || e->state == ENEMY_STATE_ALERT || e->state == ENEMY_STATE_AIM || ((s_ai_tick + idx) & 1) == 0) {
+        e->has_los = los_has_line_of_sight(wx, wy, px, py, tuning->los_range);
+    }
+    int has_los = e->has_los;
 
     if (e->hit_timer > 0) {
         if (e->state == ENEMY_STATE_IDLE || e->state == ENEMY_STATE_SEARCH) {
@@ -480,6 +492,8 @@ static void update_shooter(Enemy *e, Enemy *enemies, int num_enemies, int idx,
 
 void enemy_ai_update(Enemy *enemies, int num_enemies, fixed player_x, fixed player_y, fixed player_vx, fixed player_vy) {
     if (!enemies || num_enemies <= 0) return;
+
+    s_ai_tick++;
 
     for (int i = 0; i < num_enemies; i++) {
         Enemy *e = &enemies[i];

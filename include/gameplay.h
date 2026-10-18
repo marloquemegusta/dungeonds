@@ -79,8 +79,11 @@ struct Enemy {
     int burst_shots_left;
     int burst_interval_timer;
     int strafe_dir;
+    int has_los;
+    int stagger_slot;
 };
 
+int world_point_has_floor(int px, int py);
 int position_is_free(fixed x, fixed y);
 int bullet_position_is_free(fixed x, fixed y);
 int sweep_position(fixed *x, fixed *y, fixed dx, fixed dy);

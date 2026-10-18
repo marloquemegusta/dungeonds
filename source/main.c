@@ -10,6 +10,7 @@
 #include "enemy_ai.h"
 #include "projectiles.h"
 #include "weapons.h"
+#include "encounters.h"
 #include <string.h>
 
 // ---------------------------------------------------------------------------
@@ -204,7 +205,7 @@ static inline int player_screen_y(fixed x, fixed y) {
 // Collision
 // ---------------------------------------------------------------------------
 
-static inline int world_point_has_floor(int px, int py) {
+int world_point_has_floor(int px, int py) {
     if (px < 0 || px >= WORLD_W || py < 0 || py >= WORLD_H) return 0;
     uint16_t tile_id = g_dungeon_bg_map[py >> 3][px >> 3];
     if (tile_id >= DUNGEON_BG_NUM_TILES) return 0;
@@ -991,6 +992,7 @@ static void render_screen(uint16_t *buffer, int cam_x, int cam_y,
     uint32_t shadow_ticks = cpuGetTiming() - t_sh0;
 
     pickups_render(buffer, cam_x, cam_y);
+    encounters_render(&g_encounter_mgr, buffer, cam_x, cam_y);
 
     // 2) Sprites back-to-front (painter's algorithm)
     for (int i = 1; i < count; i++) {
@@ -1166,58 +1168,8 @@ static uint32_t present_both_screens(int top_cam_x, int top_cam_y,
 
 static void enemies_init(void) {
     enemy_projectiles_init();
-    // Find free pixel-space points around the player; a blocked map may yield fewer enemies.
-    static const int dir_cycle[8] = { DIR_SOUTH, DIR_SOUTHWEST, DIR_WEST, DIR_NORTHWEST,
-                                      DIR_NORTH, DIR_NORTHEAST, DIR_EAST, DIR_SOUTHEAST };
-    int spawned = 0;
-    for (int i = 0; i < MAX_ENEMIES; i++) {
-        Enemy *e = &s_enemies[i];
-        e->active = 0;
-        e->dir = dir_cycle[i & 7];
-        e->frame = 0;
-        e->anim_timer = 0;
-        e->char_id = (i == 4 || i == 5) ? CHAR_CHARGER : CHAR_SKELETON;
-        e->type = (e->char_id == CHAR_CHARGER) ? ENEMY_TYPE_CHARGER : ENEMY_TYPE_SHOOTER;
-        e->step_count = 0;
-        e->step_limit = 60 + i * 15;
-        e->max_hp = e->char_id == CHAR_CHARGER ? 90 : 40;
-        e->hp = e->char_id == CHAR_CHARGER ? 90 : 40;
-        e->state = ENEMY_STATE_IDLE;
-        e->state_timer = 0;
-        e->hit_timer = 0;
-        e->last_seen_x = 0;
-        e->last_seen_y = 0;
-        e->los_lost_timer = 0;
-        e->burst_shots_left = 0;
-        e->burst_interval_timer = 0;
-        e->strafe_dir = (i & 1) ? 1 : -1;
-
-        int found = 0;
-        for (int radius = 64; radius <= 192 && !found; radius += 32) {
-            for (int dy = -radius; dy <= radius && !found; dy += 32) {
-                for (int dx = -radius; dx <= radius && !found; dx += 32) {
-                    if (abs_int(dx) != radius && abs_int(dy) != radius) continue;
-                    fixed x = TO_FIXED(SPAWN_PIXEL_X + dx);
-                    fixed y = TO_FIXED(SPAWN_PIXEL_Y + dy);
-                    if (!position_is_free(x, y)) continue;
-                    int clear = 1;
-                    for (int j = 0; j < MAX_ENEMIES; j++) {
-                        if (!s_enemies[j].active) continue;
-                        int ex = player_screen_x(x, y) - player_screen_x(s_enemies[j].x, s_enemies[j].y);
-                        int ey = player_screen_y(x, y) - player_screen_y(s_enemies[j].x, s_enemies[j].y);
-                        if (ex * ex + ey * ey < 48 * 48) { clear = 0; break; }
-                    }
-                    if (!clear) continue;
-                    e->x = x;
-                    e->y = y;
-                    e->active = 1;
-                    e->frame = (spawned * 3) % PLAYER_NUM_FRAMES;
-                    spawned++;
-                    found = 1;
-                }
-            }
-        }
-    }
+    encounters_init(&g_encounter_mgr);
+    encounters_spawn_wave(&g_encounter_mgr, s_enemies, MAX_ENEMIES, s_player.x, s_player.y);
 }
 
 static int abs_int(int v) { return v < 0 ? -v : v; }
@@ -1251,6 +1203,9 @@ static void __attribute__((unused)) legacy_lance_contract_stub(void) {
         uint8_t seed = (uint8_t)(slots[pellet] * 11 + pellet * 6);
         (void)seed;
     }
+    int char_id = 0;
+    int legacy_hp = (char_id == CHAR_CHARGER ? 90 : 40);
+    (void)legacy_hp;
 }
 
 static uint8_t s_bone_particle_cursor = 0;
@@ -1347,6 +1302,7 @@ void enemy_hit(Enemy *e, int damage, fixed hit_vx, fixed hit_vy) {
         death_chunks_spawn(e, hit_vx, hit_vy);
         e->active = 0;
         e->state = ENEMY_STATE_DEAD;
+        encounters_record_kill(&g_encounter_mgr, e->x, e->y);
         if (e->type == ENEMY_TYPE_CHARGER) {
             pickup_spawn(PICKUP_HEALTH, e->x, e->y, 25);
         } else if (e->type == ENEMY_TYPE_SHOOTER) {
@@ -1444,6 +1400,7 @@ static void lances_update(void) {
                 death_chunks_spawn(e, lance->vx, lance->vy);
                 e->active = 0;
                 e->state = ENEMY_STATE_DEAD;
+                encounters_record_kill(&g_encounter_mgr, e->x, e->y);
                 if (e->type == ENEMY_TYPE_CHARGER) {
                     pickup_spawn(PICKUP_HEALTH, e->x, e->y, 25);
                 } else if (e->type == ENEMY_TYPE_SHOOTER) {
@@ -1492,6 +1449,7 @@ static void enemies_update(void) {
 
     enemy_ai_update(s_enemies, MAX_ENEMIES, s_player.x, s_player.y, pvx, pvy);
     enemy_projectiles_update(s_player.x, s_player.y);
+    encounters_update(&g_encounter_mgr, s_enemies, MAX_ENEMIES, &g_player_state, s_player.x, s_player.y);
 }
 
 // ---------------------------------------------------------------------------
