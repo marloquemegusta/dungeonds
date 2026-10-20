@@ -4461,6 +4461,9 @@ function applyInPlaceMotion(clips, enabled, model) {
 
 
 
+
+
+
 /* SPRITE-LAB-PARITY:START */
 /**
  * Minimal standalone GLB (GLTF 2.0 Binary) loader.
@@ -5176,6 +5179,11 @@ function applyInPlaceMotion(clips, enabled, model) {
     displace: 0,
     supersample: 4,
     filterWidth: 1.5,
+    // Anchor & Shadow state
+    anchorData: null,
+    shadowCanvas: null,
+    shadowMasks4Bit: null,
+    shadowBounds: null,
     // Map state
     map: null,
     mapCanvas: null,
@@ -5848,6 +5856,8 @@ function applyInPlaceMotion(clips, enabled, model) {
       onStatus && onStatus('\u2713', frameCount, (performance.now() - started) / 1e3);
 
       updateTopStripGifs(results);
+      computeAnchorData();
+      generateCharacterShadows();
       drawDsSimulator();
       return result;
     } finally {
@@ -5876,6 +5886,345 @@ function applyInPlaceMotion(clips, enabled, model) {
 
   function getFrames() { return state.frames || []; }
 
+  // ---- Automatic Anchor Calculation & Ground Scanning ----
+  function computeAnchorData() {
+    const size = parseInt(_p.resolution?.value, 10) || 48;
+    const outline = _p.outlineMode?.value !== 'none';
+    const targetPixels = size - (outline ? 2 : 0);
+    const frameCount = parseInt(_p.frameCount?.value, 10) || 8;
+    const frames = getFrames();
+
+    // 1. 3D -> 2D theoretical projection of (0, 0, 0)
+    let projAnchorX = Math.round(size / 2);
+    let projAnchorY = Math.round(size * 0.85);
+    const fit = state.lastFit || ($.model ? computeCharacterFit(size, targetPixels) : null);
+    if (fit && fit.camera) {
+      const v = new K(0, 0, 0);
+      v.project(fit.camera);
+      const px = (v.x * 0.5 + 0.5) * size;
+      const py = (-v.y * 0.5 + 0.5) * size;
+      if (isFinite(px) && isFinite(py)) {
+        projAnchorX = Math.max(0, Math.min(size - 1, Math.round(px)));
+        projAnchorY = Math.max(0, Math.min(size - 1, Math.round(py)));
+      }
+    }
+
+    // 2. Scan rendered frames per direction
+    const dirGroundAnchors = new Array(8).fill(projAnchorY);
+    const dirBounds = new Array(8);
+    for (let d = 0; d < 8; d++) {
+      dirBounds[d] = [0, 0, size, size];
+    }
+
+    const hasFullFrames = frames.length === 8 * frameCount;
+    const hasLiveFrames = state.liveDirCanvases && state.liveDirCanvases.length === 8;
+
+    let totalGroundY = 0;
+    let countGroundY = 0;
+
+    for (let d = 0; d < 8; d++) {
+      let dMinX = size, dMaxX = -1, dMinY = size, dMaxY = -1;
+      let dGroundAnchor = -1;
+
+      const framesToScan = [];
+      if (hasFullFrames) {
+        for (let f = 0; f < frameCount; f++) {
+          framesToScan.push(frames[d * frameCount + f]);
+        }
+      } else if (hasLiveFrames && state.liveDirCanvases[d]) {
+        framesToScan.push(state.liveDirCanvases[d]);
+      }
+
+      for (const frame of framesToScan) {
+        if (!frame || !frame.pixels) continue;
+        const pix = frame.pixels;
+        const w = frame.width || size;
+        const h = frame.height || size;
+        let fMinX = w, fMaxX = -1, fMinY = h, fMaxY = -1;
+
+        for (let y = 0; y < h; y++) {
+          for (let x = 0; x < w; x++) {
+            const a = pix[(y * w + x) * 4 + 3];
+            if (a >= 25) {
+              if (x < fMinX) fMinX = x;
+              if (x > fMaxX) fMaxX = x;
+              if (y < fMinY) fMinY = y;
+              if (y > fMaxY) fMaxY = y;
+            }
+          }
+        }
+
+        if (fMaxX >= fMinX && fMaxY >= fMinY) {
+          if (fMinX < dMinX) dMinX = fMinX;
+          if (fMaxX > dMaxX) dMaxX = fMaxX;
+          if (fMinY < dMinY) dMinY = fMinY;
+          if (fMaxY > dMaxY) dMaxY = fMaxY;
+          if (fMaxY > dGroundAnchor) dGroundAnchor = fMaxY;
+        }
+      }
+
+      if (dMaxX >= dMinX && dMaxY >= dMinY) {
+        dirBounds[d] = [dMinX, dMinY, dMaxX - dMinX + 1, dMaxY - dMinY + 1];
+        dirGroundAnchors[d] = dGroundAnchor >= 0 ? dGroundAnchor : dMaxY;
+        totalGroundY += dirGroundAnchors[d];
+        countGroundY++;
+      } else {
+        dirBounds[d] = [0, 0, size, size];
+        dirGroundAnchors[d] = projAnchorY;
+      }
+    }
+
+    const avgGroundY = countGroundY > 0 ? Math.round(totalGroundY / countGroundY) : projAnchorY;
+    const globalAnchor = [Math.round(size / 2), avgGroundY];
+
+    state.anchorData = {
+      anchor: globalAnchor,
+      dirGroundAnchors,
+      dirBounds,
+      projAnchor: [projAnchorX, projAnchorY]
+    };
+
+    return state.anchorData;
+  }
+
+  // ---- Character Projected Shadow Generator (8 Directions, 96x96 NDS Masks) ----
+  function generateCharacterShadows() {
+    const model = $.model;
+    const size = parseInt(_p.resolution?.value, 10) || 48;
+    const outline = _p.outlineMode?.value !== 'none';
+    const targetPixels = size - (outline ? 2 : 0);
+
+    const fit = state.lastFit || (model ? computeCharacterFit(size, targetPixels) : null);
+    const elevation = Yt.degToRad(Math.max(1, parseFloat(document.getElementById('elevation')?.value) || 30));
+    const toCamera = new K(Math.cos(elevation) * Math.cos(AZIMUTH), Math.sin(elevation), -Math.cos(elevation) * Math.sin(AZIMUTH)).normalize();
+
+    let pxPerMeter = 24.0;
+    if (fit && fit.half) {
+      pxPerMeter = (size / 2) / fit.half;
+    } else if (state.lastCharExtent && state.lastCharExtent > 0) {
+      pxPerMeter = targetPixels / state.lastCharExtent;
+    }
+    if (!isFinite(pxPerMeter) || pxPerMeter <= 0) pxPerMeter = 24.0;
+
+    const shadowFrustumHalf = (96 / pxPerMeter) / 2;
+    const shadowCamera = new ts(-shadowFrustumHalf, shadowFrustumHalf, shadowFrustumHalf, -shadowFrustumHalf, 0.1, 100);
+    shadowCamera.position.set(0, 0, 0).addScaledVector(toCamera, 30);
+    shadowCamera.lookAt(0, 0, 0);
+    shadowCamera.updateMatrixWorld(true);
+
+    const Lx = -0.4096, Ly = -0.5736, Lz = 0.7094;
+
+    const atlasCanvas = document.createElement('canvas');
+    atlasCanvas.width = 768;
+    atlasCanvas.height = 96;
+    const atlasCtx = atlasCanvas.getContext('2d');
+    atlasCtx.clearRect(0, 0, 768, 96);
+
+    state.shadowMasks4Bit = [];
+    state.shadowBounds = [];
+
+    const tempV = new K();
+    const vProjected = new K();
+
+    const modelMeshes = [];
+    if (model) {
+      model.traverse(node => {
+        if (node.isMesh && node.visible && node.geometry?.attributes?.position) {
+          modelMeshes.push(node);
+        }
+      });
+    }
+
+    let minY = state.lastCharMinY;
+    if (!isFinite(minY) && model) {
+      const pts = posedPoints(model);
+      minY = Infinity;
+      for (let i = 1; i < pts.length; i += 3) {
+        if (pts[i] < minY) minY = pts[i];
+      }
+    }
+    if (!isFinite(minY)) minY = 0;
+
+    for (let dir = 0; dir < 8; dir++) {
+      const yaw = DIR0_YAW - dir * DIR_STEP;
+      const cosYaw = Math.cos(yaw), sinYaw = Math.sin(yaw);
+
+      const hardCanvas = document.createElement('canvas');
+      hardCanvas.width = 96;
+      hardCanvas.height = 96;
+      const hardCtx = hardCanvas.getContext('2d');
+      hardCtx.fillStyle = '#000000';
+
+      let triangleCount = 0;
+
+      if (modelMeshes.length > 0) {
+        hardCtx.beginPath();
+        for (const mesh of modelMeshes) {
+          if (mesh.isSkinnedMesh && mesh.skeleton) mesh.skeleton.update();
+          const pos = mesh.geometry.attributes.position;
+          const index = mesh.geometry.index;
+          const numTris = index ? Math.floor(index.count / 3) : Math.floor(pos.count / 3);
+
+          const vCache = new Array(pos.count);
+          for (let i = 0; i < pos.count; i++) {
+            if (mesh.isSkinnedMesh) mesh.getVertexPosition(i, tempV);
+            else tempV.fromBufferAttribute(pos, i);
+            tempV.applyMatrix4(mesh.matrixWorld);
+
+            const rx = tempV.x * cosYaw + tempV.z * sinYaw;
+            const rz = -tempV.x * sinYaw + tempV.z * cosYaw;
+            const ry = Math.max(0, tempV.y - minY);
+
+            const t = ry / 0.5736;
+            const gx = rx + t * Lx;
+            const gz = rz + t * Lz;
+
+            vProjected.set(gx, 0, gz).project(shadowCamera);
+            vCache[i] = {
+              px: (vProjected.x * 0.5 + 0.5) * 96,
+              py: (-vProjected.y * 0.5 + 0.5) * 96
+            };
+          }
+
+          for (let t = 0; t < numTris; t++) {
+            const i0 = index ? index.getX(t * 3 + 0) : t * 3 + 0;
+            const i1 = index ? index.getX(t * 3 + 1) : t * 3 + 1;
+            const i2 = index ? index.getX(t * 3 + 2) : t * 3 + 2;
+            const p0 = vCache[i0], p1 = vCache[i1], p2 = vCache[i2];
+            if (!p0 || !p1 || !p2) continue;
+
+            hardCtx.moveTo(p0.px, p0.py);
+            hardCtx.lineTo(p1.px, p1.py);
+            hardCtx.lineTo(p2.px, p2.py);
+            triangleCount++;
+          }
+        }
+        hardCtx.fill();
+      }
+
+      if (triangleCount === 0) {
+        hardCtx.beginPath();
+        const ellW = 18;
+        const ellH = 11;
+        hardCtx.ellipse(48 - 3, 48 + 3, ellW, ellH, Math.PI / 6, 0, Math.PI * 2);
+        hardCtx.fill();
+      }
+
+      const cellCanvas = document.createElement('canvas');
+      cellCanvas.width = 96;
+      cellCanvas.height = 96;
+      const cellCtx = cellCanvas.getContext('2d');
+      cellCtx.clearRect(0, 0, 96, 96);
+
+      cellCtx.save();
+      cellCtx.filter = 'blur(2.0px)';
+      cellCtx.globalAlpha = 0.55;
+      cellCtx.drawImage(hardCanvas, 0, 0);
+      cellCtx.restore();
+
+      cellCtx.save();
+      cellCtx.filter = 'blur(0.8px)';
+      cellCtx.globalAlpha = 0.70;
+      cellCtx.drawImage(hardCanvas, 0, 0);
+      cellCtx.restore();
+
+      atlasCtx.drawImage(cellCanvas, dir * 96, 0);
+
+      const imgData = cellCtx.getImageData(0, 0, 96, 96);
+      const pix = imgData.data;
+      const coverage = new Uint8Array(96 * 96);
+      let minX = 96, maxX = -1, minYpx = 96, maxYpx = -1;
+
+      for (let y = 0; y < 96; y++) {
+        for (let x = 0; x < 96; x++) {
+          const idx = y * 96 + x;
+          const a = pix[idx * 4 + 3];
+          const val4 = Math.min(15, Math.round((a / 255) * 15));
+          coverage[idx] = val4;
+          if (val4 >= 1) {
+            if (x < minX) minX = x;
+            if (x > maxX) maxX = x;
+            if (y < minYpx) minYpx = y;
+            if (y > maxYpx) maxYpx = y;
+          }
+        }
+      }
+
+      if (maxX >= minX && maxYpx >= minYpx) {
+        state.shadowBounds[dir] = [minX, minYpx, maxX - minX + 1, maxYpx - minYpx + 1];
+      } else {
+        state.shadowBounds[dir] = [36, 33, 16, 17];
+      }
+
+      const packedMask = new Uint8Array(4608);
+      for (let i = 0; i < 96 * 96; i += 2) {
+        const lo = coverage[i];
+        const hi = coverage[i + 1];
+        packedMask[i / 2] = ((hi & 0x0F) << 4) | (lo & 0x0F);
+      }
+      state.shadowMasks4Bit[dir] = packedMask;
+    }
+
+    state.shadowCanvas = atlasCanvas;
+    return state.shadowCanvas;
+  }
+
+  function generateCShadowAnchorHeader(name, anchorData, shadowBounds, shadowMasks) {
+    const cleanName = name.replace(/[^a-zA-Z0-9_]/g, '_');
+    const guard = `${cleanName.toUpperCase()}_NDS_SHADOW_ANCHOR_H`;
+    const anchorX = anchorData?.anchor ? anchorData.anchor[0] : 24;
+    const anchorY = anchorData?.anchor ? anchorData.anchor[1] : 42;
+
+    let c = `/* Auto-generated by DungeonDS FBX Web Renderer Lab */\n`;
+    c += `#ifndef ${guard}\n#define ${guard}\n\n`;
+    c += `#include <stdint.h>\n\n`;
+    c += `#define ${cleanName.toUpperCase()}_ANCHOR_X ${anchorX}\n`;
+    c += `#define ${cleanName.toUpperCase()}_ANCHOR_Y ${anchorY}\n`;
+    c += `#define ${cleanName.toUpperCase()}_SHADOW_W 96\n`;
+    c += `#define ${cleanName.toUpperCase()}_SHADOW_H 96\n`;
+    c += `#define ${cleanName.toUpperCase()}_NUM_DIRS 8\n\n`;
+
+    const gAnchors = anchorData?.dirGroundAnchors || [anchorY, anchorY, anchorY, anchorY, anchorY, anchorY, anchorY, anchorY];
+    c += `// Ground anchor Y per direction (lowest opaque pixel in sprite canvas)\n`;
+    c += `static const uint8_t g_${cleanName}_ground_anchors[8] = {\n`;
+    c += `    ` + gAnchors.map(v => `${v}`).join(', ') + `\n`;
+    c += `};\n\n`;
+
+    c += `// Sprite bounding boxes [min_x, min_y, w, h] per direction\n`;
+    c += `static const uint8_t g_${cleanName}_sprite_bounds[8][4] = {\n`;
+    for (let d = 0; d < 8; d++) {
+      const b = (anchorData?.dirBounds && anchorData.dirBounds[d]) || [0, 0, 48, 48];
+      c += `    { ${b[0]}, ${b[1]}, ${b[2]}, ${b[3]} },\n`;
+    }
+    c += `};\n\n`;
+
+    c += `// Shadow bounding boxes [sx0, sy0, w, h] per direction in 96x96 shadow canvas\n`;
+    c += `static const uint8_t g_${cleanName}_shadow_bounds[8][4] = {\n`;
+    for (let d = 0; d < 8; d++) {
+      const b = (shadowBounds && shadowBounds[d]) || [36, 33, 16, 17];
+      c += `    { ${b[0]}, ${b[1]}, ${b[2]}, ${b[3]} },\n`;
+    }
+    c += `};\n\n`;
+
+    c += `// 4-bit packed shadow coverage masks (96x96 / 2 = 4608 bytes per direction)\n`;
+    c += `static const uint8_t g_${cleanName}_shadow_masks[8][4608] __attribute__((aligned(4))) = {\n`;
+    for (let d = 0; d < 8; d++) {
+      c += `    // Direction ${d} (${Ff[d] || d})\n    {\n`;
+      const mask = (shadowMasks && shadowMasks[d]) || new Uint8Array(4608);
+      for (let i = 0; i < 4608; i += 16) {
+        c += `        `;
+        for (let j = 0; j < 16 && i + j < 4608; j++) {
+          c += `0x${mask[i + j].toString(16).padStart(2, '0').toUpperCase()}, `;
+        }
+        c += `\n`;
+      }
+      c += `    },\n`;
+    }
+    c += `};\n\n`;
+    c += `#endif /* ${guard} */\n`;
+    return c;
+  }
+
   async function makeAtlas() {
     const frames = getFrames();
     const columns = parseInt(_p.frameCount.value, 10);
@@ -5895,17 +6244,49 @@ function applyInPlaceMotion(clips, enabled, model) {
   }
 
   async function exportPackage() {
-    if (!$.results?.length || getFrames().length === 0) throw new Error('Renderiza el modelo antes de exportar');
+    const results = ($.results && $.results.length > 0) ? $.results : state.results;
+    if (!results?.length || getFrames().length === 0) throw new Error('Renderiza el modelo antes de exportar');
     const name = (cp.textContent || 'modelo').replace(/\.fbx$/i, '').replace(/[^a-z0-9_-]+/gi, '_');
     const zip = new Nf.default();
     const folder = zip.folder(name);
     const framesFolder = folder.folder('frames');
+    const shadowsFolder = folder.folder('shadows');
     const atlas = await makeAtlas();
     folder.file(`${name}_spritesheet.png`, atlas.blob);
-    folder.file(`${name}_collage.gif`, $.collage.blob);
+    const collageBlob = ($.collage || state.collage)?.blob || results[0]?.blob;
+    if (collageBlob) folder.file(`${name}_collage.gif`, collageBlob);
     const frameCount = parseInt(_p.frameCount.value, 10);
     const size = parseInt(_p.resolution.value, 10);
-    for (const direction of $.results) {
+
+    // Ensure anchorData and shadows are up-to-date
+    if (!state.anchorData) computeAnchorData();
+    if (!state.shadowCanvas || !state.shadowMasks4Bit) generateCharacterShadows();
+
+    // Export shadow atlas 768x96
+    if (state.shadowCanvas) {
+      const shadowBlob = await new Promise(resolve => state.shadowCanvas.toBlob(resolve, 'image/png'));
+      if (shadowBlob) folder.file(`${name}_shadow.png`, shadowBlob);
+
+      // Export individual 96x96 shadows per direction
+      const indShadowCanvas = document.createElement('canvas');
+      indShadowCanvas.width = 96;
+      indShadowCanvas.height = 96;
+      const indCtx = indShadowCanvas.getContext('2d');
+      for (let d = 0; d < Ff.length; d++) {
+        indCtx.clearRect(0, 0, 96, 96);
+        indCtx.drawImage(state.shadowCanvas, d * 96, 0, 96, 96, 0, 0, 96, 96);
+        const indBlob = await new Promise(resolve => indShadowCanvas.toBlob(resolve, 'image/png'));
+        if (indBlob) {
+          shadowsFolder.file(`${String(d).padStart(2, '0')}_${Ff[d]}_shadow.png`, indBlob);
+        }
+      }
+    }
+
+    // Export auto-generated NDS C header
+    const ndsCHeader = generateCShadowAnchorHeader(name, state.anchorData, state.shadowBounds, state.shadowMasks4Bit);
+    folder.file(`${name}_nds_shadow_anchor.h`, ndsCHeader);
+
+    for (const direction of results) {
       folder.file(`${name}_${String(direction.index).padStart(2, '0')}_${direction.name}.gif`, direction.blob);
     }
     for (let index = 0; index < getFrames().length; index++) {
@@ -5928,6 +6309,11 @@ function applyInPlaceMotion(clips, enabled, model) {
       framesPerDirection: frameCount,
       frameSize: `${size}x${size}`,
       spritesheet: { columns: frameCount, rows: Ff.length, width: atlas.width, height: atlas.height, alpha: true },
+      anchor: state.anchorData ? state.anchorData.anchor : [Math.round(size / 2), size - 4],
+      dirGroundAnchors: state.anchorData ? state.anchorData.dirGroundAnchors : new Array(8).fill(size - 4),
+      dirBounds: state.anchorData ? state.anchorData.dirBounds : new Array(8).fill([0, 0, size, size]),
+      shadowSize: [96, 96],
+      shadowBounds: state.shadowBounds || new Array(8).fill([36, 33, 16, 17]),
       stride3dMeters: Number(stride.toFixed(3)),
       strideRatio: Number((state.strideRatio || 0.833).toFixed(3)),
       ticksPerFrame: ticks,
@@ -5949,7 +6335,7 @@ function applyInPlaceMotion(clips, enabled, model) {
       renderEngine: 'Three.js WebGL (browser)'
     };
     folder.file('settings.json', JSON.stringify(settings, null, 2));
-    folder.file('README.md', `# ${name}\n\nSpritesheet PNG: ${frameCount} columnas (frames), ${Ff.length} filas (direcciones), ${size}x${size}px por celda, RGBA transparente.\n\nIncluye GIF por direccion, collage GIF, PNG por frame y settings.json. Orden: ${Ff.join(', ')}.\n`);
+    folder.file('README.md', `# ${name}\n\nSpritesheet PNG: ${frameCount} columnas (frames), ${Ff.length} filas (direcciones), ${size}x${size}px por celda, RGBA transparente.\n\nIncluye atlas de sombras NDS (768x96 px), mascaras 4-bit, bounds de sombra por direccion, codigo C listo para Nintendo DS (${name}_nds_shadow_anchor.h), GIF por direccion, collage GIF, PNG por frame y settings.json. Orden: ${Ff.join(', ')}.\n`);
     return zip.generateAsync({ type: 'blob' });
   }
 
@@ -6730,6 +7116,128 @@ function applyInPlaceMotion(clips, enabled, model) {
     return false;
   }
 
+  // ---- 3D Map Collision & Occlusion Export Utilities ----
+
+  function clipTriangleY(v0, v1, v2, thresholdY = 0.65) {
+    const poly = [v0, v1, v2];
+    const out = [];
+    for (let i = 0; i < poly.length; i++) {
+      const cur = poly[i];
+      const prev = poly[(i + poly.length - 1) % poly.length];
+      const curIn = cur.y >= thresholdY;
+      const prevIn = prev.y >= thresholdY;
+      if (curIn) {
+        if (!prevIn) {
+          const t = (thresholdY - prev.y) / (cur.y - prev.y);
+          out.push(new K(
+            prev.x + t * (cur.x - prev.x),
+            thresholdY,
+            prev.z + t * (cur.z - prev.z)
+          ));
+        }
+        out.push(cur);
+      } else if (prevIn) {
+        const t = (thresholdY - prev.y) / (cur.y - prev.y);
+        out.push(new K(
+          prev.x + t * (cur.x - prev.x),
+          thresholdY,
+          prev.z + t * (cur.z - prev.z)
+        ));
+      }
+    }
+    return out;
+  }
+
+  function generateMapOcclusionCanvas() {
+    const mapW = state.mapWidth || 768;
+    const mapH = state.mapHeight || 512;
+    const canvas = document.createElement('canvas');
+    canvas.width = mapW;
+    canvas.height = mapH;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#000000';
+    ctx.fillRect(0, 0, mapW, mapH);
+
+    if (!state.map?.model || !state.mapProjection) return canvas;
+
+    ctx.fillStyle = '#ffffff';
+
+    const v0 = new K(), v1 = new K(), v2 = new K();
+    state.map.model.updateMatrixWorld(true);
+
+    state.map.model.traverse(node => {
+      if (!node.isMesh || !node.visible || !node.geometry?.attributes?.position) return;
+      const geom = node.geometry;
+      const posAttr = geom.attributes.position;
+      const index = geom.index;
+      const numTriangles = index ? Math.floor(index.count / 3) : Math.floor(posAttr.count / 3);
+
+      for (let t = 0; t < numTriangles; t++) {
+        const i0 = index ? index.getX(t * 3 + 0) : t * 3 + 0;
+        const i1 = index ? index.getX(t * 3 + 1) : t * 3 + 1;
+        const i2 = index ? index.getX(t * 3 + 2) : t * 3 + 2;
+
+        v0.fromBufferAttribute(posAttr, i0).applyMatrix4(node.matrixWorld);
+        v1.fromBufferAttribute(posAttr, i1).applyMatrix4(node.matrixWorld);
+        v2.fromBufferAttribute(posAttr, i2).applyMatrix4(node.matrixWorld);
+
+        const maxY = Math.max(v0.y, v1.y, v2.y);
+        if (maxY <= 0.65) continue;
+
+        const poly = clipTriangleY(v0, v1, v2, 0.65);
+        if (poly.length >= 3) {
+          ctx.beginPath();
+          const p0 = worldToMapPixel(poly[0].x, poly[0].y, poly[0].z);
+          ctx.moveTo(p0.mx, p0.my);
+          for (let i = 1; i < poly.length; i++) {
+            const pi = worldToMapPixel(poly[i].x, poly[i].y, poly[i].z);
+            ctx.lineTo(pi.mx, pi.my);
+          }
+          ctx.closePath();
+          ctx.fill();
+        }
+      }
+    });
+
+    return canvas;
+  }
+
+  function generateMapCollisionCanvas() {
+    const mapW = state.mapWidth || 768;
+    const mapH = state.mapHeight || 512;
+    const canvas = document.createElement('canvas');
+    canvas.width = mapW;
+    canvas.height = mapH;
+    const ctx = canvas.getContext('2d');
+
+    if (!state.mapWalkGrid || !state.mapWalkGridW || !state.mapWalkGridH) {
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, mapW, mapH);
+      return canvas;
+    }
+
+    const CELL = 4;
+    const gw = state.mapWalkGridW;
+    const gh = state.mapWalkGridH;
+
+    ctx.fillStyle = '#000000';
+    ctx.fillRect(0, 0, mapW, mapH);
+
+    ctx.fillStyle = '#ffffff';
+    for (let gy = 0; gy < gh; gy++) {
+      for (let gx = 0; gx < gw; gx++) {
+        const val = state.mapWalkGrid[gy * gw + gx];
+        const isObstacle = (val & 2) !== 0;
+        const isFloor = !state.mapHasFloorData || (val & 1) !== 0;
+        if (!isObstacle && isFloor) {
+          ctx.fillRect(gx * CELL, gy * CELL, CELL, CELL);
+        }
+      }
+    }
+
+    return canvas;
+  }
+
   async function exportMapPackage() {
     if (!state.mapCanvas) throw new Error('Renderiza el mapa antes de exportar');
     const name = (state.map?.name || 'mapa_dungeon').replace(/\.[^/.]+$/, '').replace(/[^a-z0-9_-]+/gi, '_');
@@ -6743,6 +7251,45 @@ function applyInPlaceMotion(clips, enabled, model) {
     const mapW = state.mapWidth;
     const mapH = state.mapHeight;
     const orthoScale = state.mapOrthoScale;
+
+    // Ensure collision grid is calculated
+    if (!state.mapWalkGrid) buildMapCollisionGrid();
+
+    // Export collision JSON
+    const colData = {
+      mapName: name,
+      mapWidth: mapW,
+      mapHeight: mapH,
+      gridWidth: state.mapWalkGridW || Math.ceil(mapW / 4),
+      gridHeight: state.mapWalkGridH || Math.ceil(mapH / 4),
+      cellSize: 4,
+      hasFloorData: state.mapHasFloorData,
+      walkableGrid: []
+    };
+    const gw = colData.gridWidth;
+    const gh = colData.gridHeight;
+    for (let gy = 0; gy < gh; gy++) {
+      const row = [];
+      for (let gx = 0; gx < gw; gx++) {
+        const val = state.mapWalkGrid ? state.mapWalkGrid[gy * gw + gx] : 1;
+        const isObstacle = (val & 2) !== 0;
+        const isFloor = !state.mapHasFloorData || (val & 1) !== 0;
+        row.push(!isObstacle && isFloor ? 1 : 0);
+      }
+      colData.walkableGrid.push(row);
+    }
+    zip.file(`${name}_collision.json`, JSON.stringify(colData, null, 2));
+
+    // Export collision PNG (black = walls, white = walkable)
+    const colCanvas = generateMapCollisionCanvas();
+    const colBlob = await new Promise(resolve => colCanvas.toBlob(resolve, 'image/png'));
+    if (colBlob) zip.file(`${name}_collision.png`, colBlob);
+
+    // Export occlusion PNG (white = world height > 0.65m, black = ground/floor)
+    const occCanvas = generateMapOcclusionCanvas();
+    const occBlob = await new Promise(resolve => occCanvas.toBlob(resolve, 'image/png'));
+    if (occBlob) zip.file(`${name}_occlusion.png`, occBlob);
+
     const settings = {
       mapName: name,
       width: mapW,
@@ -6863,6 +7410,8 @@ function applyInPlaceMotion(clips, enabled, model) {
       syncViewportRendererSize();
       update3DViewMode();
       groundCharacterIn3D();
+      computeAnchorData();
+      generateCharacterShadows();
     }
     drawDsSimulator();
   }
@@ -6918,15 +7467,31 @@ function applyInPlaceMotion(clips, enabled, model) {
     const spriteSize = parseInt(_p.resolution?.value, 10) || 48;
     const screenX = state.dsCharX - state.dsPanX;
     const screenY = state.dsCharY - state.dsPanY;
+    const curDir = state.dsCharDir || 0;
 
-    // Shadow ellipse under character
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
-    ctx.beginPath();
-    ctx.ellipse(screenX, screenY - 2, spriteSize * 0.22, spriteSize * 0.11, 0, 0, Math.PI * 2);
-    ctx.fill();
+    // Anchor & Ground Anchor calculation
+    const anchorData = state.anchorData || computeAnchorData();
+    const anchorX = anchorData?.anchor ? anchorData.anchor[0] : Math.round(spriteSize / 2);
+    const dirGroundAnchorY = (anchorData?.dirGroundAnchors && anchorData.dirGroundAnchors[curDir] !== undefined)
+      ? anchorData.dirGroundAnchors[curDir]
+      : (anchorData?.anchor ? anchorData.anchor[1] : (spriteSize - 4));
+
+    // Shadow under character: real projected 3D shadow canvas or fallback ellipse
+    if (state.shadowCanvas) {
+      const shadowW = 96, shadowH = 96;
+      ctx.drawImage(
+        state.shadowCanvas,
+        curDir * shadowW, 0, shadowW, shadowH,
+        Math.round(screenX - 48), Math.round(screenY - 48), shadowW, shadowH
+      );
+    } else {
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
+      ctx.beginPath();
+      ctx.ellipse(screenX, screenY - 2, spriteSize * 0.22, spriteSize * 0.11, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
 
     // Sprite drawing
-    const curDir = state.dsCharDir || 0;
     const frameCount = parseInt(_p.frameCount?.value, 10) || 8;
     const frames = getFrames();
 
@@ -6938,7 +7503,7 @@ function applyInPlaceMotion(clips, enabled, model) {
         state.tempSpriteCanvas.width = frame.width;
         state.tempSpriteCanvas.height = frame.height;
         state.tempSpriteCanvas.getContext('2d').putImageData(new ImageData(frame.pixels, frame.width, frame.height), 0, 0);
-        ctx.drawImage(state.tempSpriteCanvas, Math.round(screenX - frame.width / 2), Math.round(screenY - frame.height + 4));
+        ctx.drawImage(state.tempSpriteCanvas, Math.round(screenX - anchorX), Math.round(screenY - dirGroundAnchorY));
       }
     } else {
       const liveData = state.liveDirCanvases[curDir];
@@ -6947,7 +7512,7 @@ function applyInPlaceMotion(clips, enabled, model) {
         state.tempSpriteCanvas.width = liveData.width;
         state.tempSpriteCanvas.height = liveData.height;
         state.tempSpriteCanvas.getContext('2d').putImageData(new ImageData(liveData.pixels, liveData.width, liveData.height), 0, 0);
-        ctx.drawImage(state.tempSpriteCanvas, Math.round(screenX - liveData.width / 2), Math.round(screenY - liveData.height + 4));
+        ctx.drawImage(state.tempSpriteCanvas, Math.round(screenX - anchorX), Math.round(screenY - dirGroundAnchorY));
       } else {
         ctx.fillStyle = '#00a8ff';
         ctx.beginPath();
@@ -6978,7 +7543,8 @@ function applyInPlaceMotion(clips, enabled, model) {
     const strideM = (state.autoStride3D || 1.5).toFixed(2);
     const ratio = (state.strideRatio || 0.833).toFixed(2);
     const stridePx = Math.round(getEffectiveStridePx());
-    badge.textContent = `Sprite: ${spriteSize}×${spriteSize}px | Mapa: ${mapW}×${mapH}px | DS: 256×${dsH}px | Zancada: ${strideM}m (${stridePx}px, r=${ratio})`;
+    const anchorText = state.anchorData ? ` | Anchor: (${state.anchorData.anchor[0]}, ${state.anchorData.anchor[1]})` : '';
+    badge.textContent = `Sprite: ${spriteSize}×${spriteSize}px | Mapa: ${mapW}×${mapH}px | DS: 256×${dsH}px | Zancada: ${strideM}m (${stridePx}px, r=${ratio})${anchorText}`;
   }
 
   function updateMapDensityLabel() {
@@ -8391,11 +8957,20 @@ function applyInPlaceMotion(clips, enabled, model) {
   state.getEffectiveStridePx = getEffectiveStridePx;
   state.getExportFrameCount = getExportFrameCount;
   state.updateCharacterStrideMetrics = updateCharacterStrideMetrics;
+  state.computeAnchorData = computeAnchorData;
+  state.generateCharacterShadows = generateCharacterShadows;
+  state.generateCShadowAnchorHeader = generateCShadowAnchorHeader;
+  state.generateMapOcclusionCanvas = generateMapOcclusionCanvas;
+  state.generateMapCollisionCanvas = generateMapCollisionCanvas;
+  state.exportPackage = exportPackage;
+  state.exportMapPackage = exportMapPackage;
 
   // Initialize
   restructureLayout();
   applyBlenderLighting();
   updateCharacterStrideMetrics();
+  computeAnchorData();
+  generateCharacterShadows();
   drawDsSimulator();
 })();
 
