@@ -733,3 +733,47 @@ Este documento registra el historial cronolÃ³gico de sesiones de desarrollo ve
 - **Evidencia:** `walkthroughs/fbx-sprite-map-lab/walkthrough.md`.
 
 
+
+
+---
+
+## 2026-10-18 - Entrega Completa del Sistema de Gameplay y Combate Doom-Style (Fases 0 a F)
+
+### Objetivo y Resumen
+Diseño e implementación de extremo a extremo de la IA de enemigos (Charger y Tirador necrón), sistema de armas con apuntado táctil, pickups, oleadas por sala, y progresión de mazmorra, asegurando 60 FPS fijos en Nintendo DS.
+
+### Componentes Entregados
+1. **Purga de Fog of War & Módulo de Visión Pura (`source/los.c`, `include/los.h`):**
+   - Eliminados ~2.200 líneas de código legacy (`baked_visibility.c`, `fog_of_war.c`).
+   - Algoritmo de línea de visión directa (Bresenham) ultra-eficiente sobre `g_dungeon_collision`.
+2. **Sistema de Combate y Daño (`source/gameplay.c`, `include/gameplay.h`):**
+   - 100 HP + armadura con absorción fraccional entera.
+   - Pool de pickups en suelo (vida, armadura y munición por tipo).
+   - Tablas `const` de parámetros marcadas `/* TUNABLE-PLACEHOLDER */` en punto fijo `8.8` (cero flotantes).
+3. **IA de Enemigos (`source/enemy_ai.c`, `include/enemy_ai.h`):**
+   - **Charger:** FSM estilo Pinky (`IDLE` -> `ALERT` -> `CHASE` -> `ATTACK` -> `SEARCH`), persecución rápida sin telegraph, mordisco melee y pérdida de objetivo tras 3s sin LOS.
+   - **Tirador necrón:** FSM de control de espacio (`IDLE` -> `ALERT` -> `POSITION` -> `AIM` -> `BURST(3)` -> `COOLDOWN`), strafe lateral, mantenimiento de banda de distancia y predicción lineal de disparo (*lead*).
+   - Amortización de evaluación de LOS alternando frames para garantizar presupuesto.
+4. **Pool de Proyectiles (`source/projectiles.c`, `include/projectiles.h`):**
+   - Soporte desacoplado para proyectiles físicos lentos y hitscan.
+   - Colisión con geometría sólida (`bullet_position_is_free`) y daño al jugador.
+5. **Arsenal del Jugador y Controles Táctiles (`source/weapons.c`, `include/weapons.h`):**
+   - **Pistola:** Munición infinita, trazador lineal preciso.
+   - **Escopeta:** Cono de 5 perdigones con dispersión angular y retroceso.
+   - **Gatling:** Cadencia ultra-rápida con penalización del 50% a la velocidad al disparar.
+   - **Pesada (Lanzacohetes):** Proyectil de alto calibre con explosión radial en área.
+   - Cambio de arma en tiempo real con botones `L`/`R`.
+   - Apuntado y disparo vectorial con stylus/touchscreen en pantalla inferior.
+   - HUD ampliado de 4 líneas con estado de HP, armadura, arma seleccionada y munición.
+6. **Gestor de Oleadas y Progresión (`source/encounters.c`, `include/encounters.h`):**
+   - Estados de sala `IDLE` -> `ACTIVE` -> `CLEARED`.
+   - Reaparición de oleadas mixtas en coordenadas transitables garantizadas.
+   - Drops garantizados de recompensas al limpiar la sala y apertura del portal de salida al siguiente piso.
+
+### Verificación y Rendimiento
+- **Tests Host:** 9 suites completas pasando (`DS_HOST_TESTS=PASS`).
+- **Toolchain BlocksDS:** Compilación limpia y enlace sin advertencias (`DS_BUILD=PASS`, ROM `dungeonds.nds`).
+- **Validación Headless DeSmuME:**
+  - `scenarios/weapons_switching_and_touch.json`: PASS (ciclo de armas, apuntado táctil y explosiones).
+  - `scenarios/room_encounter_test.json`: PASS (oleada, combate, aniquilación de enemigos, apertura de portal).
+  - Rendimiento verificado: **60 FPS fijos** (`cpu_ticks <= 33514`, tiempo lógico CPU < 1 ms).
