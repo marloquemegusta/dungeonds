@@ -3,6 +3,29 @@
   // The repository's headless FBX probe evaluates inline payloads without the full page.
   if (typeof Qf !== 'function' || typeof Kf !== 'function' || typeof document === 'undefined') return;
 
+  // DOM ID alias resolution for renderBtn/btnRender and downloadPackageBtn/btnExportZip
+  const origGetElementById = document.getElementById.bind(document);
+  document.getElementById = function (id) {
+    if (id === 'downloadPackageBtn' || id === 'btnExportZip') {
+      return origGetElementById('downloadPackageBtn') || origGetElementById('btnExportZip');
+    }
+    if (id === 'renderBtn' || id === 'btnRender') {
+      return origGetElementById('renderBtn') || origGetElementById('btnRender');
+    }
+    return origGetElementById(id);
+  };
+
+  const origQuerySelector = document.querySelector.bind(document);
+  document.querySelector = function (selector) {
+    if (selector === '#downloadPackageBtn' || selector === '#btnExportZip') {
+      return origQuerySelector('#downloadPackageBtn') || origQuerySelector('#btnExportZip');
+    }
+    if (selector === '#renderBtn' || selector === '#btnRender') {
+      return origQuerySelector('#renderBtn') || origQuerySelector('#btnRender');
+    }
+    return origQuerySelector(selector);
+  };
+
   const state = window.__spriteLab = {
     frames: [],
     captures: [],
@@ -41,6 +64,7 @@
     charWalkDistAccum: 0,
     charHeight3D: 1.8,
     autoStride3D: 1.5,
+    autoAnimTicks: 3,
     strideRatio: 0.833,
     spriteVisibleHeightPx: 42,
     liveDirCanvases: [],
@@ -458,10 +482,26 @@
 
     const strideInput = document.getElementById('stride3d');
     const strideOverride = strideInput ? parseFloat(strideInput.value) : NaN;
-    if (!isNaN(strideOverride) && strideOverride > 0) {
+    if (!isNaN(strideOverride) && strideOverride > 0 && strideInput?.dataset.userEdited === 'true') {
       state.strideRatio = strideOverride / (charHeight || 1.8);
     } else {
       state.strideRatio = stride3D / (charHeight || 1.8);
+      if (strideInput && strideInput.dataset.userEdited !== 'true') {
+        strideInput.value = '';
+      }
+    }
+
+    // Auto AnimTicks calculation from clip duration
+    const clipDuration = (clip && typeof clip.duration === 'number' && clip.duration > 0) ? clip.duration : 0;
+    const frameCount = getExportFrameCount();
+    const autoTicks = clipDuration > 0
+      ? Math.max(1, Math.min(30, Math.round((clipDuration * 60) / frameCount)))
+      : 3;
+    state.autoAnimTicks = autoTicks;
+
+    const animTicksInput = document.getElementById('animTicks');
+    if (animTicksInput && animTicksInput.dataset.userEdited !== 'true') {
+      animTicksInput.value = autoTicks;
     }
 
     updateStrideUI();
@@ -472,6 +512,9 @@
     const strideVal = document.getElementById('stride3dVal');
     const ratioBadge = document.getElementById('strideRatioBadge');
     const details = document.getElementById('strideDetails');
+    const animTicksInput = document.getElementById('animTicks');
+    const animTicksVal = document.getElementById('animTicksVal');
+    const hintEl = document.getElementById('strideMetricsHint');
 
     const autoM = state.autoStride3D || 1.5;
     const ratio = state.strideRatio || 0.833;
@@ -490,6 +533,18 @@
     }
     if (details) {
       details.textContent = `${Math.round(effPx)}px/ciclo (${pxPerFrame}px/frame)`;
+    }
+
+    const ticks = parseInt(animTicksInput?.value || state.autoAnimTicks || 3, 10);
+    const speedFixed88 = Math.round((effPx * 256) / Math.max(1, frameCount * ticks));
+
+    if (animTicksVal) {
+      const isEdited = animTicksInput?.dataset.userEdited === 'true';
+      animTicksVal.textContent = `${ticks}t (${isEdited ? 'override' : 'auto'})`;
+    }
+
+    if (hintEl) {
+      hintEl.textContent = `${ticks}t/f @60Hz -> speed8.8=${speedFixed88} (${(effPx / Math.max(1, frameCount * ticks)).toFixed(2)}px/tick)`;
     }
 
     updateDsMetricsBadge();
@@ -691,6 +746,14 @@
       computeAnchorData();
       generateCharacterShadows();
       drawDsSimulator();
+
+      const zipBtn = document.getElementById('downloadPackageBtn') || document.getElementById('btnExportZip');
+      if (zipBtn) {
+        zipBtn.hidden = false;
+        zipBtn.disabled = false;
+        zipBtn.style.display = 'inline-flex';
+      }
+
       return result;
     } finally {
       state.capturing = false;
@@ -705,6 +768,13 @@
       app.rendering = false;
       update3DViewMode();
       if (onProgress) onProgress(1);
+
+      const zipBtn = document.getElementById('downloadPackageBtn') || document.getElementById('btnExportZip');
+      if (zipBtn && state.frames && state.frames.length > 0) {
+        zipBtn.hidden = false;
+        zipBtn.disabled = false;
+        zipBtn.style.display = 'inline-flex';
+      }
     }
   };
 
@@ -2375,8 +2445,11 @@
     const strideM = (state.autoStride3D || 1.5).toFixed(2);
     const ratio = (state.strideRatio || 0.833).toFixed(2);
     const stridePx = Math.round(getEffectiveStridePx());
+    const frameCount = getExportFrameCount();
+    const ticks = parseInt(document.getElementById('animTicks')?.value || state.autoAnimTicks || 3, 10);
+    const speedFixed88 = Math.round((stridePx * 256) / Math.max(1, frameCount * ticks));
     const anchorText = state.anchorData ? ` | Anchor: (${state.anchorData.anchor[0]}, ${state.anchorData.anchor[1]})` : '';
-    badge.textContent = `Sprite: ${spriteSize}×${spriteSize}px | Mapa: ${mapW}×${mapH}px | DS: 256×${dsH}px | Zancada: ${strideM}m (${stridePx}px, r=${ratio})${anchorText}`;
+    badge.textContent = `Sprite: ${spriteSize}×${spriteSize}px | Mapa: ${mapW}×${mapH}px | DS: 256×${dsH}px | Zancada: ${strideM}m (${stridePx}px, r=${ratio}) | ${ticks}t/f -> speed8.8=${speedFixed88}${anchorText}`;
   }
 
   function updateMapDensityLabel() {
@@ -2620,6 +2693,12 @@
         display: grid !important;
         grid-template-columns: 1fr 1fr !important;
         gap: 6px !important;
+      }
+      #downloadPackageBtn, #btnExportZip {
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        visibility: visible !important;
       }
 
       /* Column 2: Dedicated Full-Height 8-Directions Grid */
@@ -2888,8 +2967,8 @@
     const saturation = document.getElementById('saturation');
     const satVal = document.getElementById('satVal');
     const outlineMode = document.getElementById('outlineMode');
-    const btnRender = document.getElementById('btnRender');
-    const btnExportZip = document.getElementById('btnExportZip');
+    const btnRender = document.getElementById('renderBtn') || document.getElementById('btnRender');
+    const btnExportZip = document.getElementById('downloadPackageBtn') || document.getElementById('btnExportZip');
     const btnLoadDemo = document.getElementById('btnLoadDemo');
     const progressBar = document.getElementById('progressBar');
     const canvasArea = document.getElementById('canvasArea');
@@ -2951,8 +3030,8 @@
               <label>Frames/dir <span class="val" id="framesVal">8</span></label>
             </div>
             <div class="lab-control-group">
-              <label>Ticks / frame</label>
-              <input id="animTicks" type="number" min="1" max="10" step="1" value="3" style="padding:6px; font-size:0.75rem;">
+              <label>Ticks / frame <span class="val" id="animTicksVal">3t (auto)</span></label>
+              <input id="animTicks" type="number" min="1" max="30" step="1" value="3" style="padding:6px; font-size:0.75rem;">
             </div>
           </div>
           <div class="lab-control-row">
@@ -2965,6 +3044,7 @@
               <div id="strideDetails" style="font-size:0.7rem; color:var(--muted); line-height:28px;">Calculando...</div>
             </div>
           </div>
+          <div id="strideMetricsHint" style="font-size:0.7rem; color:var(--muted); margin-top:2px; line-height:20px;"></div>
           <div class="lab-control-group" id="group-demo-btn" style="margin-top:2px;"></div>
         </div>
 
@@ -3159,6 +3239,7 @@
 
     const actionsBar = sidebar.querySelector('#labActionsBar');
     if (btnRender) {
+      btnRender.id = 'renderBtn';
       btnRender.style.cssText = 'padding:10px; font-size:0.85rem; width:100%;';
       btnRender.textContent = 'Renderizar Animación Completa (GIFs)';
       actionsBar.insertBefore(btnRender, actionsBar.firstChild);
@@ -3166,9 +3247,21 @@
 
     const charExportsRow = sidebar.querySelector('#row-char-exports');
     if (btnExportZip) {
-      btnExportZip.style.cssText = 'padding:8px 6px; font-size:0.74rem;';
+      btnExportZip.id = 'downloadPackageBtn';
+      btnExportZip.style.cssText = 'padding:8px 6px; font-size:0.74rem; display:inline-flex;';
       btnExportZip.textContent = 'Exportar Personaje (.ZIP)';
+      btnExportZip.hidden = false;
+      btnExportZip.disabled = false;
       charExportsRow.appendChild(btnExportZip);
+
+      const guardVisibility = () => {
+        if (btnExportZip.hidden) btnExportZip.hidden = false;
+        if (btnExportZip.style.display === 'none') {
+          btnExportZip.style.display = 'inline-flex';
+        }
+      };
+      const obs = new MutationObserver(guardVisibility);
+      obs.observe(btnExportZip, { attributes: true, attributeFilter: ['style', 'hidden'] });
     }
     const btnExportAtlas = document.createElement('button');
     btnExportAtlas.className = 'btn secondary';
@@ -3384,8 +3477,10 @@
       const onStrideInput = () => {
         const val = parseFloat(strideInput.value);
         if (!isNaN(val) && val > 0) {
+          strideInput.dataset.userEdited = 'true';
           state.strideRatio = val / (state.charHeight3D || 1.8);
         } else {
+          delete strideInput.dataset.userEdited;
           state.strideRatio = (state.autoStride3D || 1.5) / (state.charHeight3D || 1.8);
         }
         updateStrideUI();
@@ -3395,9 +3490,39 @@
       strideInput.addEventListener('change', onStrideInput);
     }
 
+    const animTicksInput = document.getElementById('animTicks');
+    if (animTicksInput) {
+      const onAnimTicksInput = () => {
+        const raw = String(animTicksInput.value || '').trim();
+        const val = parseInt(raw, 10);
+        if (raw === '' || isNaN(val) || val <= 0 || val === state.autoAnimTicks) {
+          delete animTicksInput.dataset.userEdited;
+          if (raw === '' || isNaN(val) || val <= 0) {
+            animTicksInput.value = state.autoAnimTicks || 3;
+          }
+        } else {
+          animTicksInput.dataset.userEdited = 'true';
+        }
+        updateStrideUI();
+        drawDsSimulator();
+      };
+      animTicksInput.addEventListener('input', () => {
+        onAnimTicksInput();
+        scheduleLivePreview(false);
+      });
+      animTicksInput.addEventListener('change', () => {
+        onAnimTicksInput();
+        scheduleLivePreview(true);
+      });
+    }
+
     const animSelectEl = document.getElementById('animSelect');
     if (animSelectEl) {
       animSelectEl.addEventListener('change', () => {
+        const at = document.getElementById('animTicks');
+        if (at) delete at.dataset.userEdited;
+        const st = document.getElementById('stride3d');
+        if (st) delete st.dataset.userEdited;
         updateCharacterStrideMetrics();
       });
     }
@@ -3427,7 +3552,7 @@
       });
     }
 
-    ['animTicks', 'neckPitch', 'meshDisplace'].forEach(id => {
+    ['neckPitch', 'meshDisplace'].forEach(id => {
       const el = document.getElementById(id);
       if (!el) return;
       el.addEventListener('input', () => scheduleLivePreview(false));
@@ -3574,7 +3699,7 @@
       };
     }
 
-    const btnZip = document.getElementById('btnExportZip');
+    const btnZip = document.getElementById('downloadPackageBtn') || document.getElementById('btnExportZip');
     if (btnZip) {
       btnZip.onclick = async () => {
         bp(true, 'Empaquetando GIFs, spritesheet y PNGs...');
@@ -3697,6 +3822,7 @@
             state.charWalkDistAccum -= pxPerFrame;
             state.charAnimFrame = (state.charAnimFrame + 1) % frameCount;
           }
+          updateStrideUI();
           drawDsSimulator();
         }
       } else if (isPanningMap) {
@@ -3741,6 +3867,7 @@
             state.charWalkDistAccum -= pxPerFrame;
             state.charAnimFrame = (state.charAnimFrame + 1) % frameCount;
           }
+          updateStrideUI();
           drawDsSimulator();
         }
       }
@@ -3751,6 +3878,10 @@
   const originalAp = typeof Ap === 'function' ? Ap : null;
   if (originalAp) {
     Ap = async file => {
+      const at = document.getElementById('animTicks');
+      if (at) delete at.dataset.userEdited;
+      const st = document.getElementById('stride3d');
+      if (st) delete st.dataset.userEdited;
       await originalAp(file);
       const nameBadge = document.getElementById('fileNameBadge');
       if (nameBadge) nameBadge.textContent = file.name;
@@ -3766,7 +3897,22 @@
   if (sp) {
     const origDemoClick = sp.onclick;
     sp.onclick = async (...args) => {
+      const at = document.getElementById('animTicks');
+      if (at) delete at.dataset.userEdited;
+      const st = document.getElementById('stride3d');
+      if (st) delete st.dataset.userEdited;
       await origDemoClick(...args);
+      if ($.clips && $.clips.length && $.modelRoot) {
+        for (const clip of $.clips) {
+          if (clip.name === 'demo_walk' && clip.tracks) {
+            clip.tracks.forEach(track => {
+              if (track.name.includes('.children[4]')) {
+                track.name = track.name.replace('.children[4]', '.children[3]');
+              }
+            });
+          }
+        }
+      }
       const nameBadge = document.getElementById('fileNameBadge');
       if (nameBadge) nameBadge.textContent = 'demo_procedural';
       const fn = document.getElementById('fileName');
