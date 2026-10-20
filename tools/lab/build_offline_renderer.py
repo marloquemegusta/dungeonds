@@ -26,7 +26,7 @@ def main() -> None:
         raise SystemExit("Expected a closing inline script")
     insertion = html.rfind("</script>")
     html = html[:insertion] + block + "\n" + html[insertion:]
-    HTML.write_text(html, encoding="utf-8")
+    HTML.write_text(html, encoding="utf-8", newline="\n")
     print(f"Embedded {GLB_LOADER.name} and {EXTENSION.name} into {HTML.name}")
 
 

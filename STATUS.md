@@ -838,3 +838,17 @@ Eliminación integral del patinaje sobre hielo (*foot sliding*) en el simulador 
 - [x] **Sincronización Offline:** Actualizado `FBX-Web-Renderer-offline.html` mediante `build_offline_renderer.py`.
 - [x] **Verificación Automatizada Headless:** Test Playwright `tools/lab/test_autoticks_and_zip_btn_headless.cjs` superado al 100% con cero errores de consola y capturas antes/después del renderizado.
 - **Evidencia Visual:** `walkthroughs/fix-lab-autoticks-and-zip-btn/walkthrough.md`.
+
+---
+
+## Sesión 65: Nombres Cortos de Exportación ZIP (Anti MAX_PATH) y Reactividad de Inclinación de Cuello / Cabeza
+- [x] **Nombres Cortos de Exportación en UI (`#exportCharName` y `#exportMapName`):** Añadidos campos limpios de texto editables junto a los botones de exportación, con valores por defecto cortos (`hero`, `dungeon`, o deducidos del archivo), sanitización automática a `a-z0-9_` y límite estricto de 20 caracteres.
+- [x] **Estructura Interna de ZIP Inmune a `MAX_PATH` de Windows:** Rediseñadas las rutas internas en `exportPackage()` y `exportMapPackage()` eliminando carpetas redundantes y prefijos concatenados kilométricos. Cada ruta interna mide $\le 19$ caracteres (estrictamente $< 35$ caracteres): `spritesheet.png`, `shadow.png`, `collage.gif`, `dirs/0_S.gif`, `frames/0_S/0.png`, `shadows/0_S.png`, `nds_shadow_anchor.h`, `settings.json`, `README.md` (y para mapas: `world.png`, `collision.png`, `collision.json`, `occlusion.png`, `map_settings.json`). El archivo descargado se nombra `${name}.zip`.
+- [x] **Neutralización de Handlers Antiguos:** Garantizado que `#downloadPackageBtn` / `#btnExportZip` y `#btnDownloadAll` ejecuten exclusivamente el exportador limpio de `FBX-Web-Renderer-parity.js`.
+- [x] **Detección Automática de Huesos de Cuello y Cabeza:** Búsqueda flexible e insensible a mayúsculas/minúsculas para rigs Mixamo (`mixamorig:Neck`, `mixamorig:Head`), Blender (`Neck`, `Head`), Bip01 y detección geométrica del cubo superior de cabeza en el modelo demo procedimental.
+- [x] **Cálculo Anatómico del Eje de Inclinación (Pitch) en Three.js:** Determinación dinámica del eje local del hueso más alineado con el eje lateral del modelo en espacio raíz $(1, 0, 0)$ y corrección de signo para cabeceo coherente con Blender / Cycles.
+- [x] **Hook en `Three.js AnimationMixer` (`update` y `setTime`):** Inyección del offset de inclinación inmediatamente después de evaluar cada pose de animación, impidiendo que el mixer sobreescriba la inclinación de la cabeza.
+- [x] **Sincronización Bidireccional de Controles (`#neckPitch` y `#neckTilt`):** Integración de slider continuo y campo numérico sincronizados con indicador angular en vivo (`0°`), reflejando cambios al instante en la vista 3D, los 8 paneles direccionales y el canvas del simulador Nintendo DS.
+- [x] **Sincronización Offline:** `build_offline_renderer.py` integró la capa de paridad en `FBX-Web-Renderer-offline.html`.
+- [x] **Verificación Automatizada Headless:** Test Playwright `tools/lab/test_zip_names_and_neck_tilt_headless.cjs` superado al 100% con 0 errores de consola, comprobación estricta de rutas de ZIP $< 35$ caracteres, delta de rotación de mundo tras `mixer.update` y divergencia de píxeles renderizados.
+- **Evidencia Visual:** `walkthroughs/fix-lab-zip-names-and-neck-tilt/walkthrough.md`.
