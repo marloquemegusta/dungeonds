@@ -330,9 +330,9 @@ if (fs.existsSync(ARTIFACT_DIR)) {
       return {
         blobSize: zipBlob.size,
         fileCount: files.length,
-        hasSpritesheet: files.some(f => f.endsWith('_spritesheet.png')),
-        hasShadowAtlas: files.some(f => f.endsWith('_shadow.png')),
-        hasHeader: files.some(f => f.endsWith('_nds_shadow_anchor.h')),
+        hasSpritesheet: files.some(f => f.endsWith('spritesheet.png') || f.endsWith('_sheet.png')),
+        hasShadowAtlas: files.some(f => f.endsWith('shadow.png')),
+        hasHeader: files.some(f => f.endsWith('nds_shadow_anchor.h')),
         ticksPerFrame: settings.ticksPerFrame,
         speedFixed8_8: settings.speedFixed8_8,
         stride3dMeters: settings.stride3dMeters

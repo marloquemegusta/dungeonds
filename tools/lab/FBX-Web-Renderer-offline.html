@@ -4468,6 +4468,9 @@ function applyInPlaceMotion(clips, enabled, model) {
 
 
 
+
+
+
 /* SPRITE-LAB-PARITY:START */
 /**
  * Minimal standalone GLB (GLTF 2.0 Binary) loader.
@@ -5184,6 +5187,9 @@ function applyInPlaceMotion(clips, enabled, model) {
     if (id === 'renderBtn' || id === 'btnRender') {
       return origGetElementById('renderBtn') || origGetElementById('btnRender');
     }
+    if (id === 'neckTilt' || id === 'neckPitch') {
+      return origGetElementById('neckPitch') || origGetElementById('neckTilt');
+    }
     return origGetElementById(id);
   };
 
@@ -5194,6 +5200,9 @@ function applyInPlaceMotion(clips, enabled, model) {
     }
     if (selector === '#renderBtn' || selector === '#btnRender') {
       return origQuerySelector('#renderBtn') || origQuerySelector('#btnRender');
+    }
+    if (selector === '#neckTilt' || selector === '#neckPitch') {
+      return origQuerySelector('#neckPitch') || origQuerySelector('#neckTilt');
     }
     return origQuerySelector(selector);
   };
@@ -5256,6 +5265,193 @@ function applyInPlaceMotion(clips, enabled, model) {
     });
     return originalSetFromObject.call(this, object, true);
   };
+
+  function sanitizeExportName(raw, fallback = 'asset') {
+    if (!raw || typeof raw !== 'string') return fallback;
+    let s = raw.replace(/\.[^/.]+$/, '');
+    s = s.replace(/[^a-zA-Z0-9_]+/g, '_').toLowerCase();
+    s = s.replace(/_+/g, '_');
+    s = s.replace(/^_+|_+$/g, '');
+    if (!s) s = fallback;
+    if (s.length > 20) s = s.slice(0, 20).replace(/_+$/, '');
+    return s || fallback;
+  }
+
+  function getSanitizedCharName() {
+    const input = document.getElementById('exportCharName');
+    const val = input ? input.value.trim() : '';
+    if (val) return sanitizeExportName(val, 'hero');
+    const rawModelName = (typeof cp !== 'undefined' && cp?.textContent) || 'hero';
+    return sanitizeExportName(rawModelName, 'hero');
+  }
+
+  function getSanitizedMapName() {
+    const input = document.getElementById('exportMapName');
+    const val = input ? input.value.trim() : '';
+    if (val) return sanitizeExportName(val, 'dungeon');
+    const rawMapName = state.map?.name || 'dungeon';
+    return sanitizeExportName(rawMapName, 'dungeon');
+  }
+
+  function getNeckTiltTargets(model) {
+    if (!model) return [];
+    const targets = [];
+    let neck = null;
+    let head = null;
+
+    const clean = s => (s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+
+    model.traverse(node => {
+      if (!node.isBone && !node.isMesh && !node.isObject3D) return;
+      const n = clean(node.name);
+
+      if (!neck) {
+        if (n.endsWith('neck') || n.endsWith('neck1') || n.endsWith('neck01') || n === 'neck') {
+          neck = node;
+        } else if (n.includes('neck') && !n.includes('twist') && !n.includes('cloth')) {
+          neck = node;
+        }
+      }
+
+      if (!head) {
+        if (n.endsWith('head') || n.endsWith('head1') || n.endsWith('head01') || n === 'head') {
+          head = node;
+        } else if (n.includes('head') && !n.includes('twist') && !n.includes('cloth') && !n.includes('hair') && !n.includes('eye')) {
+          head = node;
+        }
+      }
+    });
+
+    // Fallback for procedural demo model or simple geometries
+    if (!neck && !head) {
+      let highest = null;
+      let maxY = -Infinity;
+      model.traverse(node => {
+        if (node !== model && (node.isMesh || node.isBone) && node.position && node.position.y > maxY) {
+          maxY = node.position.y;
+          highest = node;
+        }
+      });
+      if (highest) {
+        head = highest;
+        if (!head.name) head.name = 'Head';
+      }
+    }
+
+    if (neck) {
+      targets.push(neck);
+      if (head) {
+        let isDescendant = false;
+        let curr = head.parent;
+        while (curr) {
+          if (curr === neck) { isDescendant = true; break; }
+          curr = curr.parent;
+        }
+        if (!isDescendant) targets.push(head);
+      }
+    } else if (head) {
+      targets.push(head);
+    }
+
+    return targets;
+  }
+
+  function applyNeckPitch(pitchDegOverride) {
+    const model = $.model;
+    if (!model) return;
+
+    let pitchDeg = pitchDegOverride;
+    if (pitchDeg === undefined || pitchDeg === null || isNaN(pitchDeg)) {
+      const pitchInput = document.getElementById('neckPitch');
+      const tiltInput = document.getElementById('neckTilt');
+      const raw = (pitchInput ? pitchInput.value : null) ?? (tiltInput ? tiltInput.value : '0');
+      pitchDeg = parseFloat(raw) || 0;
+    }
+
+    const pitchRad = (pitchDeg * Math.PI) / 180.0;
+    const targets = getNeckTiltTargets(model);
+    if (!targets.length) return;
+
+    for (const bone of targets) {
+      if (!bone._baseQuaternion) {
+        bone._baseQuaternion = bone.quaternion.clone();
+      }
+
+      const clip = $.currentAction?._clip || ($.clips && $.clips[0]);
+      const hasTrack = clip?.tracks?.some(t => t.name.startsWith(bone.name + '.') || t.name.includes(bone.name));
+
+      if (!hasTrack) {
+        bone.quaternion.copy(bone._baseQuaternion);
+      }
+
+      if (Math.abs(pitchRad) > 1e-5) {
+        if (!bone._pitchAxis) {
+          bone.updateMatrixWorld(true);
+          const QuatClass = bone.quaternion.constructor;
+          const boneWorldQ = new QuatClass();
+          bone.getWorldQuaternion(boneWorldQ);
+          const modelWorldQ = new QuatClass();
+          model.getWorldQuaternion(modelWorldQ);
+          const relQ = modelWorldQ.clone().invert().multiply(boneWorldQ);
+
+          const vX = new K(1, 0, 0).applyQuaternion(relQ);
+          const vY = new K(0, 1, 0).applyQuaternion(relQ);
+          const vZ = new K(0, 0, 1).applyQuaternion(relQ);
+
+          const dotX = vX.x;
+          const dotZ = vZ.x;
+          const dotY = vY.x;
+
+          const axis = new K(1, 0, 0);
+          let sign = 1.0;
+
+          if (Math.abs(dotX) >= Math.abs(dotZ) && Math.abs(dotX) >= Math.abs(dotY)) {
+            axis.set(1, 0, 0);
+            sign = dotX >= 0 ? 1.0 : -1.0;
+          } else if (Math.abs(dotZ) >= Math.abs(dotY)) {
+            axis.set(0, 0, 1);
+            sign = dotZ >= 0 ? 1.0 : -1.0;
+          } else {
+            axis.set(0, 1, 0);
+            sign = dotY >= 0 ? 1.0 : -1.0;
+          }
+
+          bone._pitchAxis = axis;
+          bone._pitchSign = sign;
+        }
+
+        const QuatClass = bone.quaternion.constructor;
+        const qPitch = new QuatClass();
+        qPitch.setFromAxisAngle(bone._pitchAxis, pitchRad * bone._pitchSign);
+        bone.quaternion.multiply(qPitch);
+      }
+
+      bone.updateMatrix();
+      bone.updateMatrixWorld(true);
+    }
+
+    model.traverse(node => {
+      if (node.isSkinnedMesh && node.skeleton) {
+        node.skeleton.update();
+      }
+    });
+  }
+
+  // Hook Three.js AnimationMixer prototype to ensure neck tilt is applied after mixer updates
+  if (typeof Ts !== 'undefined' && Ts.prototype) {
+    const origMixerUpdate = Ts.prototype.update;
+    Ts.prototype.update = function (delta) {
+      const res = origMixerUpdate.call(this, delta);
+      applyNeckPitch();
+      return res;
+    };
+    const origMixerSetTime = Ts.prototype.setTime;
+    Ts.prototype.setTime = function (time) {
+      const res = origMixerSetTime.call(this, time);
+      applyNeckPitch();
+      return res;
+    };
+  }
 
   // Keep the same graded/outlined pixel data used by GIFs, while preserving alpha for PNG exports.
   Kf = function (pixels, width, height, params) {
@@ -5851,6 +6047,7 @@ function applyInPlaceMotion(clips, enabled, model) {
       const samples = [];
       for (const time of times) {
         app.mixer?.setTime(time);
+        applyNeckPitch();
         const pts = posedPoints(root || scene);
         let minY = Infinity;
         for (let i = 1; i < pts.length; i += 3) minY = Math.min(minY, pts[i]);
@@ -5894,6 +6091,7 @@ function applyInPlaceMotion(clips, enabled, model) {
             root.position.y = -samples[index % samples.length].minY;
           }
           app.mixer?.setTime(times[index % times.length]);
+          applyNeckPitch();
           if (root) root.updateMatrixWorld(true);
           renderer.render(scene, camera);
           let pixels = Gf(renderer, size * ss, size * ss);
@@ -6320,15 +6518,12 @@ function applyInPlaceMotion(clips, enabled, model) {
   async function exportPackage() {
     const results = ($.results && $.results.length > 0) ? $.results : state.results;
     if (!results?.length || getFrames().length === 0) throw new Error('Renderiza el modelo antes de exportar');
-    const name = (cp.textContent || 'modelo').replace(/\.fbx$/i, '').replace(/[^a-z0-9_-]+/gi, '_');
+    const name = getSanitizedCharName();
     const zip = new Nf.default();
-    const folder = zip.folder(name);
-    const framesFolder = folder.folder('frames');
-    const shadowsFolder = folder.folder('shadows');
     const atlas = await makeAtlas();
-    folder.file(`${name}_spritesheet.png`, atlas.blob);
+    zip.file('spritesheet.png', atlas.blob);
     const collageBlob = ($.collage || state.collage)?.blob || results[0]?.blob;
-    if (collageBlob) folder.file(`${name}_collage.gif`, collageBlob);
+    if (collageBlob) zip.file('collage.gif', collageBlob);
     const frameCount = parseInt(_p.frameCount.value, 10);
     const size = parseInt(_p.resolution.value, 10);
 
@@ -6339,9 +6534,9 @@ function applyInPlaceMotion(clips, enabled, model) {
     // Export shadow atlas 768x96
     if (state.shadowCanvas) {
       const shadowBlob = await new Promise(resolve => state.shadowCanvas.toBlob(resolve, 'image/png'));
-      if (shadowBlob) folder.file(`${name}_shadow.png`, shadowBlob);
+      if (shadowBlob) zip.file('shadow.png', shadowBlob);
 
-      // Export individual 96x96 shadows per direction
+      // Export individual 96x96 shadows per direction: shadows/0_S.png, etc.
       const indShadowCanvas = document.createElement('canvas');
       indShadowCanvas.width = 96;
       indShadowCanvas.height = 96;
@@ -6351,24 +6546,25 @@ function applyInPlaceMotion(clips, enabled, model) {
         indCtx.drawImage(state.shadowCanvas, d * 96, 0, 96, 96, 0, 0, 96, 96);
         const indBlob = await new Promise(resolve => indShadowCanvas.toBlob(resolve, 'image/png'));
         if (indBlob) {
-          shadowsFolder.file(`${String(d).padStart(2, '0')}_${Ff[d]}_shadow.png`, indBlob);
+          zip.file(`shadows/${d}_${Ff[d]}.png`, indBlob);
         }
       }
     }
 
     // Export auto-generated NDS C header
     const ndsCHeader = generateCShadowAnchorHeader(name, state.anchorData, state.shadowBounds, state.shadowMasks4Bit);
-    folder.file(`${name}_nds_shadow_anchor.h`, ndsCHeader);
+    zip.file('nds_shadow_anchor.h', ndsCHeader);
 
     for (const direction of results) {
-      folder.file(`${name}_${String(direction.index).padStart(2, '0')}_${direction.name}.gif`, direction.blob);
+      zip.file(`dirs/${direction.index}_${direction.name}.gif`, direction.blob);
     }
-    for (let index = 0; index < getFrames().length; index++) {
+    const framesList = getFrames();
+    for (let index = 0; index < framesList.length; index++) {
       const directionIndex = Math.floor(index / frameCount);
       const frameIndex = index % frameCount;
-      const frame = getFrames()[index];
+      const frame = framesList[index];
       const blob = await encodePng(frame);
-      framesFolder.file(`${String(directionIndex).padStart(2, '0')}_${Ff[directionIndex]}/${String(frameIndex).padStart(3, '0')}.png`, blob);
+      zip.file(`frames/${directionIndex}_${Ff[directionIndex]}/${frameIndex}.png`, blob);
     }
     const strideOverride = parseFloat(document.getElementById('stride3d')?.value);
     const stride = (!isNaN(strideOverride) && strideOverride > 0) ? strideOverride : (state.autoStride3D || 1.5);
@@ -6377,6 +6573,7 @@ function applyInPlaceMotion(clips, enabled, model) {
     const speedFixed88 = Math.round((stridePx * 256) / Math.max(1, frameCount * ticks));
     const cameraElevation = document.getElementById('elevation');
     const settings = {
+      name,
       model: cp.textContent,
       animation: _p.animSelect.selectedOptions[0]?.textContent || 'Pose estática',
       directions: Ff,
@@ -6398,7 +6595,7 @@ function applyInPlaceMotion(clips, enabled, model) {
       cameraElevationDegrees: cameraElevation ? parseFloat(cameraElevation.value) : null,
       contrast: parseFloat(_p.contrast.value),
       saturation: parseFloat(_p.saturation.value),
-      neckPitchDegrees: parseFloat(document.getElementById('neckPitch')?.value || 0),
+      neckPitchDegrees: parseFloat(document.getElementById('neckPitch')?.value ?? document.getElementById('neckTilt')?.value ?? 0),
       displace: parseFloat(document.getElementById('meshDisplace')?.value || 0),
       brightness: parseFloat(document.getElementById('labBrightness')?.value || 1.0),
       webglShadowQuality: parseInt(document.getElementById('labSamples')?.value || 16, 10),
@@ -6408,8 +6605,8 @@ function applyInPlaceMotion(clips, enabled, model) {
       boneShader: state.boneMode,
       renderEngine: 'Three.js WebGL (browser)'
     };
-    folder.file('settings.json', JSON.stringify(settings, null, 2));
-    folder.file('README.md', `# ${name}\n\nSpritesheet PNG: ${frameCount} columnas (frames), ${Ff.length} filas (direcciones), ${size}x${size}px por celda, RGBA transparente.\n\nIncluye atlas de sombras NDS (768x96 px), mascaras 4-bit, bounds de sombra por direccion, codigo C listo para Nintendo DS (${name}_nds_shadow_anchor.h), GIF por direccion, collage GIF, PNG por frame y settings.json. Orden: ${Ff.join(', ')}.\n`);
+    zip.file('settings.json', JSON.stringify(settings, null, 2));
+    zip.file('README.md', `# ${name}\n\nSpritesheet PNG: ${frameCount} columnas (frames), ${Ff.length} filas (direcciones), ${size}x${size}px por celda, RGBA transparente.\n\nIncluye atlas de sombras NDS (768x96 px), mascaras 4-bit, bounds de sombra por direccion, codigo C listo para Nintendo DS (nds_shadow_anchor.h), GIF por direccion, collage GIF, PNG por frame y settings.json. Orden: ${Ff.join(', ')}.\n`);
     return zip.generateAsync({ type: 'blob' });
   }
 
@@ -6714,6 +6911,8 @@ function applyInPlaceMotion(clips, enabled, model) {
       state.map = { model: mapModel, name: file.name, loaded: true, rawSpan };
       const mapNameLabel = document.getElementById('mapFileName');
       if (mapNameLabel) mapNameLabel.textContent = file.name;
+      const exportMapNameEl = document.getElementById('exportMapName');
+      if (exportMapNameEl) exportMapNameEl.value = sanitizeExportName(file.name, 'dungeon');
 
       sync3DRelativeScale();
       groundCharacterIn3D();
@@ -7314,13 +7513,13 @@ function applyInPlaceMotion(clips, enabled, model) {
 
   async function exportMapPackage() {
     if (!state.mapCanvas) throw new Error('Renderiza el mapa antes de exportar');
-    const name = (state.map?.name || 'mapa_dungeon').replace(/\.[^/.]+$/, '').replace(/[^a-z0-9_-]+/gi, '_');
+    const name = getSanitizedMapName();
     const zip = new Nf.default();
 
     const pngBlob = await new Promise((resolve, reject) => {
       state.mapCanvas.toBlob(b => b ? resolve(b) : reject(new Error('Fallo al crear PNG de mapa')), 'image/png');
     });
-    zip.file(`${name}_world.png`, pngBlob);
+    zip.file('world.png', pngBlob);
 
     const mapW = state.mapWidth;
     const mapH = state.mapHeight;
@@ -7352,17 +7551,17 @@ function applyInPlaceMotion(clips, enabled, model) {
       }
       colData.walkableGrid.push(row);
     }
-    zip.file(`${name}_collision.json`, JSON.stringify(colData, null, 2));
+    zip.file('collision.json', JSON.stringify(colData, null, 2));
 
     // Export collision PNG (black = walls, white = walkable)
     const colCanvas = generateMapCollisionCanvas();
     const colBlob = await new Promise(resolve => colCanvas.toBlob(resolve, 'image/png'));
-    if (colBlob) zip.file(`${name}_collision.png`, colBlob);
+    if (colBlob) zip.file('collision.png', colBlob);
 
     // Export occlusion PNG (white = world height > 0.65m, black = ground/floor)
     const occCanvas = generateMapOcclusionCanvas();
     const occBlob = await new Promise(resolve => occCanvas.toBlob(resolve, 'image/png'));
-    if (occBlob) zip.file(`${name}_occlusion.png`, occBlob);
+    if (occBlob) zip.file('occlusion.png', occBlob);
 
     const settings = {
       mapName: name,
@@ -7383,7 +7582,7 @@ function applyInPlaceMotion(clips, enabled, model) {
         world: parseFloat(document.getElementById('worldLight')?.value || 0.35)
       }
     };
-    zip.file(`${name}_map_settings.json`, JSON.stringify(settings, null, 2));
+    zip.file('map_settings.json', JSON.stringify(settings, null, 2));
     return zip.generateAsync({ type: 'blob' });
   }
 
@@ -7423,6 +7622,7 @@ function applyInPlaceMotion(clips, enabled, model) {
 
     applyBlenderLighting();
     setupModelMaterials($.model);
+    applyNeckPitch();
 
     try {
       const fit = computeCharacterFit(size, targetPixels);
@@ -8307,11 +8507,17 @@ function applyInPlaceMotion(clips, enabled, model) {
             </div>
           </div>
           <div class="lab-control-row">
-            <div class="lab-control-group">
-              <label>Inclinación cuello (°)</label>
-              <input id="neckPitch" type="number" min="-90" max="90" step="1" value="0" style="padding:6px; font-size:0.75rem;">
+            <div class="lab-control-group" style="flex:1;">
+              <div style="display:flex; justify-content:space-between; align-items:center;">
+                <label for="neckPitch">Inclinación cuello (°)</label>
+                <span class="val" id="neckPitchValue">0°</span>
+              </div>
+              <div style="display:flex; align-items:center; gap:6px;">
+                <input id="neckPitch" type="range" min="-90" max="90" step="1" value="0" style="flex:1;">
+                <input id="neckTilt" type="number" min="-90" max="90" step="1" value="0" style="width:52px; padding:4px 6px; font-size:0.75rem; text-align:center;">
+              </div>
             </div>
-            <div class="lab-control-group">
+            <div class="lab-control-group" style="width:110px;">
               <label>Engrosar malla</label>
               <input id="meshDisplace" type="number" min="0" max="0.5" step="0.01" value="0" style="padding:6px; font-size:0.75rem;">
             </div>
@@ -8340,10 +8546,22 @@ function applyInPlaceMotion(clips, enabled, model) {
       </div>
 
       <div class="lab-actions-bar" id="labActionsBar">
-        <div class="lab-btn-row" id="row-char-exports"></div>
-        <div class="lab-btn-row">
-          <button class="btn secondary" id="btnRenderMap" style="padding:8px 6px; font-size:0.74rem; background:#1b2336; border-color:#00a8ff;">Renderizar Mapa</button>
-          <button class="btn secondary" id="btnExportMapZip" style="padding:8px 6px; font-size:0.74rem;">Exportar Mapa (.ZIP)</button>
+        <div style="display:flex; flex-direction:column; gap:4px; margin-bottom:4px;">
+          <div style="display:flex; align-items:center; gap:6px;">
+            <label for="exportCharName" style="font-size:0.72rem; color:var(--muted); min-width:52px;">Nombre:</label>
+            <input id="exportCharName" type="text" maxlength="20" placeholder="hero" value="hero" style="flex:1; padding:4px 6px; font-size:0.75rem; background:#10131b; border:1px solid var(--border); color:var(--text); border-radius:4px;">
+          </div>
+          <div class="lab-btn-row" id="row-char-exports"></div>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:4px; margin-top:4px;">
+          <div style="display:flex; align-items:center; gap:6px;">
+            <label for="exportMapName" style="font-size:0.72rem; color:var(--muted); min-width:52px;">Mapa:</label>
+            <input id="exportMapName" type="text" maxlength="20" placeholder="dungeon" value="dungeon" style="flex:1; padding:4px 6px; font-size:0.75rem; background:#10131b; border:1px solid var(--border); color:var(--text); border-radius:4px;">
+          </div>
+          <div class="lab-btn-row">
+            <button class="btn secondary" id="btnRenderMap" style="padding:8px 6px; font-size:0.74rem; background:#1b2336; border-color:#00a8ff;">Renderizar Mapa</button>
+            <button class="btn secondary" id="btnExportMapZip" style="padding:8px 6px; font-size:0.74rem;">Exportar Mapa (.ZIP)</button>
+          </div>
         </div>
       </div>
       <div style="display:none;">
@@ -8724,12 +8942,57 @@ function applyInPlaceMotion(clips, enabled, model) {
       });
     }
 
-    ['neckPitch', 'meshDisplace'].forEach(id => {
-      const el = document.getElementById(id);
-      if (!el) return;
-      el.addEventListener('input', () => scheduleLivePreview(false));
-      el.addEventListener('change', () => scheduleLivePreview(true));
-    });
+    const neckPitchEl = document.getElementById('neckPitch');
+    const neckTiltEl = document.getElementById('neckTilt');
+    const neckValSpan = document.getElementById('neckPitchValue');
+
+    function syncNeckTilt(val, isFinal = false) {
+      const num = Math.max(-90, Math.min(90, parseInt(val, 10) || 0));
+      if (neckPitchEl && neckPitchEl.value !== String(num)) neckPitchEl.value = String(num);
+      if (neckTiltEl && neckTiltEl.value !== String(num)) neckTiltEl.value = String(num);
+      if (neckValSpan) neckValSpan.textContent = `${num}°`;
+
+      applyNeckPitch(num);
+
+      if ($.mixer && $.currentAction && !$.rendering) {
+        $.mixer.setTime($.mixer.time || 0);
+      }
+      if ($.renderer && $.scene && $.camera && !$.rendering) {
+        $.renderer.render($.scene, $.camera);
+      }
+      scheduleLivePreview(isFinal);
+      drawDsSimulator();
+    }
+    state.syncNeckTilt = syncNeckTilt;
+
+    if (neckPitchEl) {
+      neckPitchEl.addEventListener('input', e => syncNeckTilt(e.target.value, false));
+      neckPitchEl.addEventListener('change', e => syncNeckTilt(e.target.value, true));
+    }
+    if (neckTiltEl) {
+      neckTiltEl.addEventListener('input', e => syncNeckTilt(e.target.value, false));
+      neckTiltEl.addEventListener('change', e => syncNeckTilt(e.target.value, true));
+    }
+
+    const meshDisplace = document.getElementById('meshDisplace');
+    if (meshDisplace) {
+      meshDisplace.addEventListener('input', () => scheduleLivePreview(false));
+      meshDisplace.addEventListener('change', () => scheduleLivePreview(true));
+    }
+
+    const exportCharNameEl = document.getElementById('exportCharName');
+    if (exportCharNameEl) {
+      exportCharNameEl.addEventListener('change', () => {
+        exportCharNameEl.value = sanitizeExportName(exportCharNameEl.value, 'hero');
+      });
+    }
+
+    const exportMapNameEl = document.getElementById('exportMapName');
+    if (exportMapNameEl) {
+      exportMapNameEl.addEventListener('change', () => {
+        exportMapNameEl.value = sanitizeExportName(exportMapNameEl.value, 'dungeon');
+      });
+    }
 
     ['keyColor', 'fillColor', 'rimColor'].forEach(id => {
       const el = document.getElementById(id);
@@ -8801,13 +9064,14 @@ function applyInPlaceMotion(clips, enabled, model) {
 
     const btnExportMap = document.getElementById('btnExportMapZip');
     if (btnExportMap) {
-      btnExportMap.onclick = async () => {
+      btnExportMap.onclick = async (ev) => {
+        if (ev && ev.preventDefault) { ev.preventDefault(); ev.stopImmediatePropagation(); }
         bp(true, 'Exportando paquete de mapa...');
         try {
+          const name = getSanitizedMapName();
           const blob = await exportMapPackage();
-          const name = (state.map?.name || 'mapa_dungeon').replace(/\.[^/.]+$/, '');
-          Fp(blob, `${name}_dungeon_lab.zip`);
-          yp('Paquete de mapa descargado');
+          Fp(blob, `${name}.zip`);
+          yp(`Paquete de mapa ${name}.zip descargado`);
         } catch (e) {
           yp(`Error al exportar mapa: ${e.message}`, true);
         } finally {
@@ -8862,8 +9126,8 @@ function applyInPlaceMotion(clips, enabled, model) {
       btnAtlas.onclick = async () => {
         try {
           const atlas = await makeAtlas();
-          const name = (cp.textContent || 'modelo').replace(/\.fbx$/i, '');
-          Fp(atlas.blob, `${name}_spritesheet.png`);
+          const name = getSanitizedCharName();
+          Fp(atlas.blob, `${name}_sheet.png`);
           yp(`Spritesheet PNG ${atlas.width}x${atlas.height} descargado`);
         } catch (e) {
           yp(e.message, true);
@@ -8873,18 +9137,24 @@ function applyInPlaceMotion(clips, enabled, model) {
 
     const btnZip = document.getElementById('downloadPackageBtn') || document.getElementById('btnExportZip');
     if (btnZip) {
-      btnZip.onclick = async () => {
+      btnZip.onclick = async (ev) => {
+        if (ev && ev.preventDefault) { ev.preventDefault(); ev.stopImmediatePropagation(); }
         bp(true, 'Empaquetando GIFs, spritesheet y PNGs...');
         try {
-          const name = (cp.textContent || 'modelo').replace(/\.fbx$/i, '');
-          Fp(await exportPackage(), `${name}_sprite_lab.zip`);
-          yp('Paquete completo de personaje descargado');
+          const name = getSanitizedCharName();
+          Fp(await exportPackage(), `${name}.zip`);
+          yp(`Paquete ${name}.zip descargado`);
         } catch (e) {
           yp(`Error al crear paquete: ${e.message}`, true);
         } finally {
           bp(false);
         }
       };
+    }
+
+    const btnDownloadAll = document.getElementById('btnDownloadAll');
+    if (btnDownloadAll && btnZip) {
+      btnDownloadAll.onclick = btnZip.onclick;
     }
 
     setupDsSimulatorInteractivity();
@@ -9059,8 +9329,11 @@ function applyInPlaceMotion(clips, enabled, model) {
       if (nameBadge) nameBadge.textContent = file.name;
       const fn = document.getElementById('fileName');
       if (fn) fn.textContent = file.name;
+      const exportCharNameEl = document.getElementById('exportCharName');
+      if (exportCharNameEl) exportCharNameEl.value = sanitizeExportName(file.name, 'hero');
       setupModelMaterials($.model);
       updateCharacterStrideMetrics();
+      applyNeckPitch();
       scheduleLivePreview(true);
     };
   }
@@ -9085,12 +9358,18 @@ function applyInPlaceMotion(clips, enabled, model) {
           }
         }
       }
+      if ($.model) {
+        getNeckTiltTargets($.model);
+      }
       const nameBadge = document.getElementById('fileNameBadge');
       if (nameBadge) nameBadge.textContent = 'demo_procedural';
       const fn = document.getElementById('fileName');
       if (fn) fn.textContent = 'demo_procedural';
+      const exportCharNameEl = document.getElementById('exportCharName');
+      if (exportCharNameEl) exportCharNameEl.value = 'demo_procedural';
       setupModelMaterials($.model);
       updateCharacterStrideMetrics();
+      applyNeckPitch();
       scheduleLivePreview(true);
     };
   }
@@ -9114,6 +9393,12 @@ function applyInPlaceMotion(clips, enabled, model) {
   state.generateMapCollisionCanvas = generateMapCollisionCanvas;
   state.exportPackage = exportPackage;
   state.exportMapPackage = exportMapPackage;
+  state.applyNeckPitch = applyNeckPitch;
+  state.getNeckTiltTargets = getNeckTiltTargets;
+  state.getSanitizedCharName = getSanitizedCharName;
+  state.getSanitizedMapName = getSanitizedMapName;
+  state.sanitizeExportName = sanitizeExportName;
+  state.JSZip = Nf.default;
 
   // Initialize
   restructureLayout();
