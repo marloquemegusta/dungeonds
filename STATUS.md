@@ -814,3 +814,16 @@ Eliminación integral del patinaje sobre hielo (*foot sliding*) en el simulador 
   - Input `#stride3d`: verificación de recálculo dinámico de ratio y píxeles en canvas.
   - Modelo real FBX (`spacemarine.fbx`): verificación de métricas y renderizado de sprite en simulador.
 - **Evidencia Visual:** `walkthroughs/fix-lab-stride-preview/walkthrough.md`.
+
+---
+
+## Sesión 63: Exportación Completa de Sombras, Anchor y Datos de Mapa (Colisión/Oclusión)
+- [x] **Cálculo y Exportación Automática del Anchor:** Proyección 3D $\rightarrow$ 2D del contacto de suelo `(0, 0, 0)` bajo cámara ortográfica y escaneo de los píxeles opacos de los frames renderizados para obtener `dirGroundAnchors[8]`, `dirBounds[8]` y el anclaje global `anchor: [anchorX, anchorY]`.
+- [x] **Alineación Milimétrica en Simulador DS:** Sustituido el offset hardcodeado por `screenX - anchorX`, `screenY - dirGroundAnchorY`, eliminando flotabilidad o hundimiento y sincronizando los pies del sprite con el centro de la sombra.
+- [x] **Generación de Sombras Proyectadas (`generateCharacterShadows`):** Proyección planar 3D de los vértices/triángulos del personaje sobre $Y=0$ siguiendo el vector de luz principal (Key light). Generación de atlas de sombras NDS de `768x96` px (8 direcciones de `96x96` px centradas en `(48, 48)`).
+- [x] **Máscaras NDS de 4 Bits y Bounds:** Empaquetado de nibbles `(hi << 4) | lo` con niveles 0..15 ($96 \times 96 / 2 = 4608$ bytes por dirección) y bounding boxes de sombra (`shadowBounds`).
+- [x] **Exportación Completa de Personaje (`exportPackage`):** Inclusión de `${name}_shadow.png`, carpeta `shadows/` con 8 sombras individuales, archivo C auto-generado `${name}_nds_shadow_anchor.h` y metadatos en `settings.json`.
+- [x] **Exportación Completa de Mapa (`exportMapPackage`):** Inclusión de `${name}_world.png`, `${name}_map_settings.json`, `${name}_collision.json` (grilla celda a celda $4 \times 4$), `${name}_collision.png` (b/w) y `${name}_occlusion.png` (máscara de oclusión de geometría con altura $3D > 0.65$ m).
+- [x] **Sincronización Offline:** `build_offline_renderer.py` integró la capa de paridad en `FBX-Web-Renderer-offline.html`.
+- [x] **Verificación Headless:** Test Playwright `tools/lab/test_shadow_anchor_export_headless.cjs` con cero errores fatales de consola y aserciones de exportación y métricas superadas al 100%.
+- **Evidencia Visual:** `walkthroughs/feat-lab-shadow-anchor-export/walkthrough.md`.

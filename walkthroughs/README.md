@@ -73,6 +73,7 @@ Resúmenes acumulativos y auditables de cada entrega y avance de desarrollo en `
 | 60 | Refinamiento a 3 Columnas, Soporte Multi-Material FBX/GLB, Auto-Framing y Grounding | [`fbx-sprite-map-lab/`](fbx-sprite-map-lab/walkthrough.md) | Completado (Layout 3 columnas 330/430/1fr, GLB loader multi-material, auto-framing mapa, nivelación por histograma de suelo, anclaje Y=0, paridad de luz, cero ghosting, verificado en Playwright headless) |
 | 61 | Grid 2D de Walkability y Motor de Colisiones Físicas para Mapas 3D en Simulador NDS | [`fbx-sprite-map-lab/`](fbx-sprite-map-lab/walkthrough.md) | Completado (Extracción de grid 2D desde mallas 3D, proyecciones exactas 2D/3D, auto-spawn en suelo transitable sin muros, colisión y sliding en tiempo real con WASD/drag, verificado en Playwright headless) |
 | 62 | Sincronización Automática de Zancada (Stride Preview) y Eliminación de Foot Sliding en Simulador NDS | [`fix-lab-stride-preview/`](fix-lab-stride-preview/walkthrough.md) | Completado (Extracción de zancada 3D vía root motion / foot bones / fallback invariante, sincronización milimétrica drag/teclado en NDS canvas, override #stride3d, test Playwright headless) |
+| 63 | Exportación Completa de Sombras, Anchor y Datos de Mapa (Colisión/Oclusión) | [`feat-lab-shadow-anchor-export/`](feat-lab-shadow-anchor-export/walkthrough.md) | Completado (Anchor global y dirGroundAnchors/dirBounds 8 dirs, atlas de sombras 768x96 y máscaras NDS 4-bit 4608 bytes, header C NDS, colisión/oclusión >0.65m en exportMapPackage, verificado en Playwright headless) |
 
 
 
