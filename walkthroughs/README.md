@@ -72,6 +72,7 @@ Resúmenes acumulativos y auditables de cada entrega y avance de desarrollo en `
 | 59 | Rediseño Integral FBX-to-Sprite Lab, Renderizador 3D de Mapas y Simulador NDS | [`fbx-sprite-map-lab/`](fbx-sprite-map-lab/walkthrough.md) | Completado (100vh zero-scroll, 8 dirs strip, visor 3D, simulador dual-screen, exportador de mapa/sprite y paridad Blender) |
 | 60 | Refinamiento a 3 Columnas, Soporte Multi-Material FBX/GLB, Auto-Framing y Grounding | [`fbx-sprite-map-lab/`](fbx-sprite-map-lab/walkthrough.md) | Completado (Layout 3 columnas 330/430/1fr, GLB loader multi-material, auto-framing mapa, nivelación por histograma de suelo, anclaje Y=0, paridad de luz, cero ghosting, verificado en Playwright headless) |
 | 61 | Grid 2D de Walkability y Motor de Colisiones Físicas para Mapas 3D en Simulador NDS | [`fbx-sprite-map-lab/`](fbx-sprite-map-lab/walkthrough.md) | Completado (Extracción de grid 2D desde mallas 3D, proyecciones exactas 2D/3D, auto-spawn en suelo transitable sin muros, colisión y sliding en tiempo real con WASD/drag, verificado en Playwright headless) |
+| 62 | Sincronización Automática de Zancada (Stride Preview) y Eliminación de Foot Sliding en Simulador NDS | [`fix-lab-stride-preview/`](fix-lab-stride-preview/walkthrough.md) | Completado (Extracción de zancada 3D vía root motion / foot bones / fallback invariante, sincronización milimétrica drag/teclado en NDS canvas, override #stride3d, test Playwright headless) |
 
 
 

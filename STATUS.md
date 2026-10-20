@@ -777,3 +777,40 @@ Diseño e implementación de extremo a extremo de la IA de enemigos (Charger y T
   - `scenarios/weapons_switching_and_touch.json`: PASS (ciclo de armas, apuntado táctil y explosiones).
   - `scenarios/room_encounter_test.json`: PASS (oleada, combate, aniquilación de enemigos, apertura de portal).
   - Rendimiento verificado: **60 FPS fijos** (`cpu_ticks <= 33514`, tiempo lógico CPU < 1 ms).
+
+
+
+
+---
+
+## 2026-10-20 - Sesión 62: Sincronización Automática de Zancada (Stride Preview) y Eliminación de Foot Sliding en Simulador NDS
+
+### Objetivo y Resumen
+Eliminación integral del patinaje sobre hielo (*foot sliding*) en el simulador interactivo de Nintendo DS de `FBX-Web-Renderer`. Extracción automática de la zancada 3D del modelo mediante tres estrategias (root motion, muestreo de huesos de pies o fallback antropomórfico invariante), cálculo de la zancada efectiva en píxeles sobre la pantalla DS, sincronización de frames acumulativa y acoplamiento con la velocidad fija (`speedFixed8_8`) exportada en `settings.json`.
+
+### Componentes Entregados
+1. **Extracción Automática de Zancada 3D (`stride3D`) y Ratio Invariante (`FBX-Web-Renderer-parity.js`):**
+   - Detección de desplazamiento del hueso raíz horizontal ($\Delta X, \Delta Z$) antes de fijar in-place.
+   - Muestreo a 16 puntos de animación de separación máxima de huesos de pies (`LeftFoot`/`RightFoot`, `LeftToeBase`/`RightToeBase`, Mixamo/rig) para clips in-place ($D_{3D} = 2 \times \max_t \text{dist}_{XZ}(t)$).
+   - Fallback invariante seguro $\text{strideRatio} = 0.833$ ($1.50$ m para $1.8$ m).
+2. **Cálculo de Zancada Efectiva en Canvas DS (`getEffectiveStridePx`):**
+   - Proyección 1:1 sobre la altura visual real del sprite en la pantalla DS (`spriteVisibleHeightPx * strideRatio`).
+3. **Sincronización Acumulativa de Movimiento en Simulador NDS:**
+   - Acumulador `state.charWalkDistAccum` en arrastre con ratón (`isDraggingChar`) y teclado (WASD/flechas).
+   - Avance estricto de frames: `while (charWalkDistAccum >= pxPerFrame) { charAnimFrame = (charAnimFrame + 1) % frameCount; }`.
+   - Eliminado el hardcoded `% 16` y el avance incondicional por evento de ratón.
+4. **UI de Laboratorio y Exportador de Sprites:**
+   - Control interactivo `#stride3d` con auto-detección y override manual.
+   - Badges de métricas en barra lateral y HUD del simulador DS (`Zancada: 1.42m (38px, r=0.83)`).
+   - Exportación de `stride3dMeters`, `strideRatio`, `ticksPerFrame`, `stridePixels` y `speedFixed8_8` en `settings.json`.
+5. **Autonomía Offline:**
+   - Regenerado `FBX-Web-Renderer-offline.html` con paridad integrada.
+
+### Verificación Automatizada
+- **Test Headless Playwright (`tools/lab/test_stride_preview_headless.cjs`):**
+  - Carga de laboratorio autónomo con cero errores de consola (`errors.length === 0`).
+  - Arrastre de 30 micro-eventos sumando 1 zancada: exactamente 7-8 transiciones de frame (1 ciclo completo de 8 frames), validando la eliminación del patinaje sobre hielo.
+  - Micro-arrastre de 1 frame: exactamente 1 transición de frame.
+  - Input `#stride3d`: verificación de recálculo dinámico de ratio y píxeles en canvas.
+  - Modelo real FBX (`spacemarine.fbx`): verificación de métricas y renderizado de sprite en simulador.
+- **Evidencia Visual:** `walkthroughs/fix-lab-stride-preview/walkthrough.md`.

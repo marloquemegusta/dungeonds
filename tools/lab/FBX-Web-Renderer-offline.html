@@ -4459,6 +4459,8 @@ function applyInPlaceMotion(clips, enabled, model) {
 
 
 
+
+
 /* SPRITE-LAB-PARITY:START */
 /**
  * Minimal standalone GLB (GLTF 2.0 Binary) loader.
@@ -5196,6 +5198,11 @@ function applyInPlaceMotion(clips, enabled, model) {
     dsPanX: 384 - 128,
     dsPanY: 256 - 96,
     charAnimFrame: 0,
+    charWalkDistAccum: 0,
+    charHeight3D: 1.8,
+    autoStride3D: 1.5,
+    strideRatio: 0.833,
+    spriteVisibleHeightPx: 42,
     liveDirCanvases: [],
     activeTab: 'scale'
   };
@@ -5460,6 +5467,212 @@ function applyInPlaceMotion(clips, enabled, model) {
     return out;
   }
 
+  // Stride extraction & metrics
+  function getExportFrameCount() {
+    return parseInt(_p.frameCount?.value, 10) || 8;
+  }
+
+  function getEffectiveStridePx() {
+    const size = parseInt(_p.resolution?.value, 10) || 48;
+    const outline = _p.outlineMode?.value !== 'none';
+    const targetPixels = size - (outline ? 2 : 0);
+    const spriteVisibleHeight = state.spriteVisibleHeightPx || (targetPixels * (state.rigScale || 1));
+    const ratio = state.strideRatio || 0.833;
+    return Math.max(2, spriteVisibleHeight * ratio);
+  }
+
+  function findFootBones(model) {
+    if (!model) return null;
+    let leftFoot = null, rightFoot = null;
+    let leftToe = null, rightToe = null;
+
+    const normalize = name => (name || '').replace(/[^a-z0-9]/gi, '').toLowerCase();
+
+    model.traverse(node => {
+      const name = normalize(node.name);
+      if (/^(mixamorig)?(lefttoebase|toel|ltoe|lefttoe)$/.test(name)) leftToe = node;
+      else if (/^(mixamorig)?(righttoebase|toer|rtoe|righttoe)$/.test(name)) rightToe = node;
+      else if (/^(mixamorig)?(leftfoot|footl|lfoot|leftankle|anklel|lankle)$/.test(name)) leftFoot = node;
+      else if (/^(mixamorig)?(rightfoot|footr|rfoot|rightankle|ankler|rankle)$/.test(name)) rightFoot = node;
+    });
+
+    const left = leftFoot || leftToe;
+    const right = rightFoot || rightToe;
+    if (left && right) return { left, right };
+    return null;
+  }
+
+  function detectRootMotionStride(clip, model) {
+    if (!clip || !clip.tracks) return 0;
+    if (clip.userData?.rootMotionStride) return clip.userData.rootMotionStride;
+    let maxDist = 0;
+    for (const track of clip.tracks) {
+      if (typeof isHorizontalRootPosition === 'function' && !isHorizontalRootPosition(track)) continue;
+      if (!track.values || !track.times || track.times.length < 2) continue;
+      const vals = track.__dungeonOriginalValues || track.values;
+      const size = track.values.length / track.times.length;
+      if (size === 3) {
+        const v0 = new K(vals[0], vals[1], vals[2]);
+        const vEnd = new K(vals[vals.length - 3], vals[vals.length - 2], vals[vals.length - 1]);
+        let matrix = null;
+        try {
+          if (typeof Ss !== 'undefined' && track.name && !track.name.startsWith('.')) {
+            const parsed = Ss.parseTrackName(track.name);
+            let node = (model && parsed && parsed.nodeName) ? Ss.findNode(model, parsed.nodeName) : null;
+            if (node && parsed.objectName === "bones") node = node.skeleton && node.skeleton.getBoneByName(parsed.objectIndex);
+            matrix = node && node.parent ? node.parent.matrixWorld : (model ? model.matrixWorld : null);
+          }
+        } catch (e) {}
+        if (!matrix && model) matrix = model.matrixWorld;
+        if (matrix) {
+          v0.applyMatrix4(matrix);
+          vEnd.applyMatrix4(matrix);
+        }
+        const d = Math.hypot(vEnd.x - v0.x, vEnd.z - v0.z);
+        if (d > maxDist) maxDist = d;
+      }
+    }
+    if (maxDist > 0.05) {
+      clip.userData = clip.userData || {};
+      clip.userData.rootMotionStride = maxDist;
+      return maxDist;
+    }
+    return 0;
+  }
+
+  function detectFootStride(clip, model, root) {
+    const feet = findFootBones(model || root);
+    if (!feet || !clip || !clip.duration || !$.mixer) return 0;
+
+    const duration = clip.duration;
+    if (duration <= 0) return 0;
+
+    const savedTime = $.mixer.time || 0;
+    const samples = 16;
+    let maxFootDist = 0;
+    const pLeft = new K();
+    const pRight = new K();
+
+    for (let i = 0; i < samples; i++) {
+      const t = (i / samples) * duration;
+      $.mixer.setTime(t);
+      if (root) root.updateMatrixWorld(true);
+      else if (model) model.updateMatrixWorld(true);
+
+      feet.left.getWorldPosition(pLeft);
+      feet.right.getWorldPosition(pRight);
+      const distXZ = Math.hypot(pLeft.x - pRight.x, pLeft.z - pRight.z);
+      if (distXZ > maxFootDist) maxFootDist = distXZ;
+    }
+
+    $.mixer.setTime(savedTime);
+    if (root) root.updateMatrixWorld(true);
+    else if (model) model.updateMatrixWorld(true);
+
+    if (maxFootDist > 0.05) {
+      return 2.0 * maxFootDist;
+    }
+    return 0;
+  }
+
+  function measureCharacterHeight3D() {
+    const root = $.modelRoot || null;
+    const scene = $.scene;
+    if (!root && !scene) return $.modelHeight || 1.8;
+
+    const pts = posedPoints(root || scene);
+    let minY = Infinity, maxY = -Infinity;
+    for (let i = 1; i < pts.length; i += 3) {
+      const y = pts[i];
+      if (y < minY) minY = y;
+      if (y > maxY) maxY = y;
+    }
+    const h = maxY - minY;
+    if (isFinite(h) && h > 0.05) return h;
+    return $.modelHeight || 1.8;
+  }
+
+  function updateCharacterStrideMetrics() {
+    const clip = ($.currentAction?.getClip && $.currentAction.getClip()) ||
+                 ($.clips && $.clips[parseInt(_p.animSelect?.value, 10)]) ||
+                 ($.clips && $.clips[0]) || null;
+    const model = $.model || null;
+    const root = $.modelRoot || null;
+
+    let charHeight = state.charHeight3D;
+    if (!charHeight || charHeight <= 0.05) {
+      charHeight = measureCharacterHeight3D();
+      state.charHeight3D = charHeight;
+    }
+
+    let stride3D = 0;
+    stride3D = detectRootMotionStride(clip, model);
+    if (stride3D <= 0.05) {
+      stride3D = detectFootStride(clip, model, root);
+    }
+    if (stride3D <= 0.05) {
+      stride3D = 0.833 * charHeight;
+    }
+
+    state.autoStride3D = stride3D;
+
+    const strideInput = document.getElementById('stride3d');
+    const strideOverride = strideInput ? parseFloat(strideInput.value) : NaN;
+    if (!isNaN(strideOverride) && strideOverride > 0) {
+      state.strideRatio = strideOverride / (charHeight || 1.8);
+    } else {
+      state.strideRatio = stride3D / (charHeight || 1.8);
+    }
+
+    updateStrideUI();
+  }
+
+  function updateStrideUI() {
+    const strideInput = document.getElementById('stride3d');
+    const strideVal = document.getElementById('stride3dVal');
+    const ratioBadge = document.getElementById('strideRatioBadge');
+    const details = document.getElementById('strideDetails');
+
+    const autoM = state.autoStride3D || 1.5;
+    const ratio = state.strideRatio || 0.833;
+    const effPx = getEffectiveStridePx();
+    const frameCount = getExportFrameCount();
+    const pxPerFrame = (effPx / frameCount).toFixed(1);
+
+    if (strideInput && (!strideInput.value || parseFloat(strideInput.value) <= 0)) {
+      if (strideVal) strideVal.textContent = `${autoM.toFixed(2)} m (auto)`;
+    } else if (strideVal && strideInput) {
+      strideVal.textContent = `${parseFloat(strideInput.value).toFixed(2)} m (override)`;
+    }
+
+    if (ratioBadge) {
+      ratioBadge.textContent = `r=${ratio.toFixed(2)} | ${Math.round(effPx)}px`;
+    }
+    if (details) {
+      details.textContent = `${Math.round(effPx)}px/ciclo (${pxPerFrame}px/frame)`;
+    }
+
+    updateDsMetricsBadge();
+  }
+
+  // Hook applyInPlaceMotion to preserve original root motion stride before fixing root
+  const origApplyInPlaceMotion = typeof applyInPlaceMotion === 'function' ? applyInPlaceMotion : null;
+  if (origApplyInPlaceMotion) {
+    applyInPlaceMotion = function (clips, enabled, model) {
+      if (clips && clips.length) {
+        for (const clip of clips) {
+          if (!clip.userData) clip.userData = {};
+          detectRootMotionStride(clip, model);
+        }
+      }
+      const res = origApplyInPlaceMotion(clips, enabled, model);
+      if (typeof updateCharacterStrideMetrics === 'function') {
+        updateCharacterStrideMetrics();
+      }
+      return res;
+    };
+  }
+
   // Compute camera fit for character
   function computeCharacterFit(size, targetPixels) {
     const root = $.modelRoot || null;
@@ -5475,8 +5688,11 @@ function applyInPlaceMotion(clips, enabled, model) {
     const upAxis = new K().crossVectors(toCamera, right).normalize();
 
     const pts = posedPoints(root || scene);
-    let minY = Infinity;
-    for (let i = 1; i < pts.length; i += 3) minY = Math.min(minY, pts[i]);
+    let minY = Infinity, maxY = -Infinity;
+    for (let i = 1; i < pts.length; i += 3) {
+      if (pts[i] < minY) minY = pts[i];
+      if (pts[i] > maxY) maxY = pts[i];
+    }
 
     let minX = Infinity, maxX = -Infinity, minV = Infinity, maxV = -Infinity;
     for (let direction = 0; direction < Ff.length; direction++) {
@@ -5494,6 +5710,12 @@ function applyInPlaceMotion(clips, enabled, model) {
     const extent = Math.max(maxX - minX, maxV - minV);
     state.lastCharExtent = extent;
     state.lastCharMinY = minY;
+    const charH = (maxY - minY) > 0.05 ? (maxY - minY) : ($.modelHeight || 1.8);
+    state.charHeight3D = charH;
+    const projH = maxV - minV;
+    state.spriteVisibleHeightPx = extent > 0 ? (projH * (targetPixels / extent)) : targetPixels;
+    updateCharacterStrideMetrics();
+
     const half = (extent * size / targetPixels) / 2;
     const center = new K()
       .addScaledVector(right, (minX + maxX) / 2)
@@ -5693,9 +5915,10 @@ function applyInPlaceMotion(clips, enabled, model) {
       const blob = await encodePng(frame);
       framesFolder.file(`${String(directionIndex).padStart(2, '0')}_${Ff[directionIndex]}/${String(frameIndex).padStart(3, '0')}.png`, blob);
     }
-    const stride = parseFloat(document.getElementById('stride3d')?.value || 1.5);
+    const strideOverride = parseFloat(document.getElementById('stride3d')?.value);
+    const stride = (!isNaN(strideOverride) && strideOverride > 0) ? strideOverride : (state.autoStride3D || 1.5);
     const ticks = parseInt(document.getElementById('animTicks')?.value || 3, 10);
-    const stridePx = stride * (32 / (2 * Math.sqrt(2))) * state.rigScale;
+    const stridePx = getEffectiveStridePx();
     const speedFixed88 = Math.round((stridePx * 256) / Math.max(1, frameCount * ticks));
     const cameraElevation = document.getElementById('elevation');
     const settings = {
@@ -5705,7 +5928,8 @@ function applyInPlaceMotion(clips, enabled, model) {
       framesPerDirection: frameCount,
       frameSize: `${size}x${size}`,
       spritesheet: { columns: frameCount, rows: Ff.length, width: atlas.width, height: atlas.height, alpha: true },
-      stride3dMeters: stride,
+      stride3dMeters: Number(stride.toFixed(3)),
+      strideRatio: Number((state.strideRatio || 0.833).toFixed(3)),
       ticksPerFrame: ticks,
       stridePixels: Number(stridePx.toFixed(2)),
       speedFixed8_8: speedFixed88,
@@ -6751,7 +6975,10 @@ function applyInPlaceMotion(clips, enabled, model) {
     const mapW = state.mapWidth || parseInt(document.getElementById('mapPixelSize')?.value, 10) || 768;
     const mapH = state.mapHeight || 512;
     const dsH = state.dsMode === '2' ? 384 : 192;
-    badge.textContent = `Sprite: ${spriteSize}×${spriteSize}px | Mapa: ${mapW}×${mapH}px | DS: 256×${dsH}px`;
+    const strideM = (state.autoStride3D || 1.5).toFixed(2);
+    const ratio = (state.strideRatio || 0.833).toFixed(2);
+    const stridePx = Math.round(getEffectiveStridePx());
+    badge.textContent = `Sprite: ${spriteSize}×${spriteSize}px | Mapa: ${mapW}×${mapH}px | DS: 256×${dsH}px | Zancada: ${strideM}m (${stridePx}px, r=${ratio})`;
   }
 
   function updateMapDensityLabel() {
@@ -7330,6 +7557,16 @@ function applyInPlaceMotion(clips, enabled, model) {
               <input id="animTicks" type="number" min="1" max="10" step="1" value="3" style="padding:6px; font-size:0.75rem;">
             </div>
           </div>
+          <div class="lab-control-row">
+            <div class="lab-control-group">
+              <label>Zancada 3D (m) <span class="val" id="stride3dVal">1.50 m (auto)</span></label>
+              <input id="stride3d" type="number" min="0.1" max="10.0" step="0.05" placeholder="Auto" style="padding:6px; font-size:0.75rem;">
+            </div>
+            <div class="lab-control-group">
+              <label>Ratio / Px <span class="val" id="strideRatioBadge" style="font-size:0.72rem; color:var(--blue);">--</span></label>
+              <div id="strideDetails" style="font-size:0.7rem; color:var(--muted); line-height:28px;">Calculando...</div>
+            </div>
+          </div>
           <div class="lab-control-group" id="group-demo-btn" style="margin-top:2px;"></div>
         </div>
 
@@ -7717,7 +7954,10 @@ function applyInPlaceMotion(clips, enabled, model) {
 
     wireSlider('resolution', 'resVal', v => `${v} × ${v} px`, false);
     wireSlider('mapPixelSize', 'mapPixelSizeVal', v => `${v} px`, true);
-    wireSlider('frameCount', 'framesVal', v => v, false);
+    wireSlider('frameCount', 'framesVal', v => {
+      updateCharacterStrideMetrics();
+      return v;
+    }, false);
     wireSlider('elevation', 'elevVal', v => `${v}°`, true);
     wireSlider('contrast', 'contVal', v => parseFloat(v).toFixed(2), true);
     wireSlider('saturation', 'satVal', v => parseFloat(v).toFixed(2), true);
@@ -7734,10 +7974,41 @@ function applyInPlaceMotion(clips, enabled, model) {
     if (resSlider) {
       const onResChange = () => {
         sync3DRelativeScale();
+        updateCharacterStrideMetrics();
         updateDsMetricsBadge();
       };
       resSlider.addEventListener('input', onResChange);
       resSlider.addEventListener('change', onResChange);
+    }
+
+    const strideInput = document.getElementById('stride3d');
+    if (strideInput) {
+      const onStrideInput = () => {
+        const val = parseFloat(strideInput.value);
+        if (!isNaN(val) && val > 0) {
+          state.strideRatio = val / (state.charHeight3D || 1.8);
+        } else {
+          state.strideRatio = (state.autoStride3D || 1.5) / (state.charHeight3D || 1.8);
+        }
+        updateStrideUI();
+        drawDsSimulator();
+      };
+      strideInput.addEventListener('input', onStrideInput);
+      strideInput.addEventListener('change', onStrideInput);
+    }
+
+    const animSelectEl = document.getElementById('animSelect');
+    if (animSelectEl) {
+      animSelectEl.addEventListener('change', () => {
+        updateCharacterStrideMetrics();
+      });
+    }
+
+    const inPlaceToggleEl = document.getElementById('inPlaceMotion');
+    if (inPlaceToggleEl) {
+      inPlaceToggleEl.addEventListener('change', () => {
+        updateCharacterStrideMetrics();
+      });
     }
 
     const mapPxSlider = document.getElementById('mapPixelSize');
@@ -8009,13 +8280,25 @@ function applyInPlaceMotion(clips, enabled, model) {
       if (isDraggingChar) {
         const moveX = dx * scaleX;
         const moveY = dy * scaleY;
-        const targetX = state.dsCharX + moveX;
-        const targetY = state.dsCharY + moveY;
-        const moved = tryMoveCharacter(targetX, targetY);
-        if (moved) {
-          const newDir = vectorToDir8(moveX, moveY);
+        const prevX = state.dsCharX;
+        const prevY = state.dsCharY;
+        const targetX = prevX + moveX;
+        const targetY = prevY + moveY;
+        tryMoveCharacter(targetX, targetY);
+        const actualDx = state.dsCharX - prevX;
+        const actualDy = state.dsCharY - prevY;
+        const distMoved = Math.hypot(actualDx, actualDy);
+        if (distMoved > 0.001) {
+          const newDir = vectorToDir8(actualDx, actualDy);
           selectDirection(newDir);
-          state.charAnimFrame = (state.charAnimFrame + 1) % 16;
+          state.charWalkDistAccum = (state.charWalkDistAccum || 0) + distMoved;
+          const frameCount = getExportFrameCount();
+          const stridePx = getEffectiveStridePx();
+          const pxPerFrame = Math.max(0.5, stridePx / frameCount);
+          while (state.charWalkDistAccum >= pxPerFrame) {
+            state.charWalkDistAccum -= pxPerFrame;
+            state.charAnimFrame = (state.charAnimFrame + 1) % frameCount;
+          }
           drawDsSimulator();
         }
       } else if (isPanningMap) {
@@ -8032,7 +8315,11 @@ function applyInPlaceMotion(clips, enabled, model) {
 
     viewport.addEventListener('keydown', e => {
       let moveX = 0, moveY = 0;
-      const step = e.shiftKey ? 8 : 4;
+      const frameCount = getExportFrameCount();
+      const stridePx = getEffectiveStridePx();
+      const pxPerFrame = Math.max(0.5, stridePx / frameCount);
+      const step = e.shiftKey ? Math.max(6, Math.round(pxPerFrame * 2)) : Math.max(3, Math.round(pxPerFrame));
+
       if (e.key === 'w' || e.key === 'W' || e.key === 'ArrowUp') moveY -= step;
       if (e.key === 's' || e.key === 'S' || e.key === 'ArrowDown') moveY += step;
       if (e.key === 'a' || e.key === 'A' || e.key === 'ArrowLeft') moveX -= step;
@@ -8040,13 +8327,22 @@ function applyInPlaceMotion(clips, enabled, model) {
 
       if (moveX !== 0 || moveY !== 0) {
         e.preventDefault();
-        const targetX = state.dsCharX + moveX;
-        const targetY = state.dsCharY + moveY;
-        const moved = tryMoveCharacter(targetX, targetY);
-        if (moved) {
-          const newDir = vectorToDir8(moveX, moveY);
+        const prevX = state.dsCharX;
+        const prevY = state.dsCharY;
+        const targetX = prevX + moveX;
+        const targetY = prevY + moveY;
+        tryMoveCharacter(targetX, targetY);
+        const actualDx = state.dsCharX - prevX;
+        const actualDy = state.dsCharY - prevY;
+        const distMoved = Math.hypot(actualDx, actualDy);
+        if (distMoved > 0.001) {
+          const newDir = vectorToDir8(actualDx, actualDy);
           selectDirection(newDir);
-          state.charAnimFrame = (state.charAnimFrame + 1) % 16;
+          state.charWalkDistAccum = (state.charWalkDistAccum || 0) + distMoved;
+          while (state.charWalkDistAccum >= pxPerFrame) {
+            state.charWalkDistAccum -= pxPerFrame;
+            state.charAnimFrame = (state.charAnimFrame + 1) % frameCount;
+          }
           drawDsSimulator();
         }
       }
@@ -8063,6 +8359,7 @@ function applyInPlaceMotion(clips, enabled, model) {
       const fn = document.getElementById('fileName');
       if (fn) fn.textContent = file.name;
       setupModelMaterials($.model);
+      updateCharacterStrideMetrics();
       scheduleLivePreview(true);
     };
   }
@@ -8077,6 +8374,7 @@ function applyInPlaceMotion(clips, enabled, model) {
       const fn = document.getElementById('fileName');
       if (fn) fn.textContent = 'demo_procedural';
       setupModelMaterials($.model);
+      updateCharacterStrideMetrics();
       scheduleLivePreview(true);
     };
   }
@@ -8090,10 +8388,14 @@ function applyInPlaceMotion(clips, enabled, model) {
   state.tryMoveCharacter = tryMoveCharacter;
   state.syncCharacter3DPositionFrom2D = syncCharacter3DPositionFrom2D;
   state.buildMapCollisionGrid = buildMapCollisionGrid;
+  state.getEffectiveStridePx = getEffectiveStridePx;
+  state.getExportFrameCount = getExportFrameCount;
+  state.updateCharacterStrideMetrics = updateCharacterStrideMetrics;
 
   // Initialize
   restructureLayout();
   applyBlenderLighting();
+  updateCharacterStrideMetrics();
   drawDsSimulator();
 })();
 
