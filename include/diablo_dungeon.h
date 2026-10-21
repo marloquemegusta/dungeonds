@@ -3,16 +3,16 @@
 
 #include <nds.h>
 
-#define WORLD_W 768
-#define WORLD_H 512
-#define COLLISION_W 192
-#define COLLISION_H 128
+#define WORLD_W 1536
+#define WORLD_H 864
+#define COLLISION_W 384
+#define COLLISION_H 216
 #define COLLISION_SCALE 4
 #define DUNGEON_OCCLUSION_SEGMENTS 1
-#define COLLISION_BYTES 6144
+#define COLLISION_BYTES 20736
 
-#define SPAWN_PIXEL_X 380
-#define SPAWN_PIXEL_Y 227
+#define SPAWN_PIXEL_X 754
+#define SPAWN_PIXEL_Y 466
 
 extern const uint8_t g_dungeon_collision[COLLISION_BYTES];
 

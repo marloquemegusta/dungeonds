@@ -1,7 +1,7 @@
 #ifndef DUNGEON_OCCLUSION_H
 #define DUNGEON_OCCLUSION_H
 
-#include <stdint.h>
+#include <nds.h>
 #include "diablo_dungeon.h"
 
 typedef struct {
@@ -20,4 +20,4 @@ extern const DungeonOcclusionRun g_dungeon_occlusion_runs[];
 extern const uint32_t g_dungeon_occlusion_run_count;
 extern const DungeonOcclusionSegmentOffset g_dungeon_occlusion_segments[DUNGEON_OCCLUSION_SEGMENTS];
 
-#endif
+#endif // DUNGEON_OCCLUSION_H
