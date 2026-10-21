@@ -869,3 +869,60 @@ Eliminación integral del patinaje sobre hielo (*foot sliding*) en el simulador 
 - [x] **Sincronización Offline:** `build_offline_renderer.py` integró la capa de paridad en `FBX-Web-Renderer-offline.html`.
 - [x] **Verificación Automatizada Headless:** Test Playwright `tools/lab/test_neck_pitch_axis_and_input_headless.cjs` superado al 100% con 0 errores de consola, comprobación estricta de separación DOM, reactividad de entrada por teclado, cero roll lateral y cabeceo visual en spacemarine, skeleton y demo.
 - **Evidencia Visual:** `walkthroughs/fix-neck-pitch-axis-and-input/walkthrough.md`.
+
+
+---
+
+## 2026-10-21 - Integración de Sprites Definitivos (Marine, Charger y Necrón) y Limpieza de Assets
+
+### Objetivo y Resumen
+Integración completa de los nuevos modelos y spritesheets en 8 direcciones provenientes del Shader Lab (`assets/inbox/`), sustitución y purga de personajes legacy (esqueletos), conversión a arrays BGR555 optimizados para NDS, y guardado de los archivos fuente de mapa `isometric_shooter_bl`.
+
+### Componentes Actualizados
+1. **Modelos 3D FBX Canónicos (`assets/models/characters/`):**
+   - Incorporado `assets/models/characters/spacemarine/spacemarine_running.fbx` (Space Marine con arma).
+   - Incorporado `assets/models/characters/necron/necron_running_rifle.fbx` (Tirador Necrón con rifle).
+   - Mantenido `assets/models/characters/charger/Run.fbx` (Charger knocker).
+   - Purgados modelos viejos de esqueleto (`skeleton.fbx`, `skeleton_death.fbx`).
+2. **Spritesheets 2D 48×48 en 8 Direcciones (`assets/sprites/characters/`):**
+   - `assets/sprites/characters/marine/`: Spritesheet, máscaras de sombra de 96×96 y cabeceras de anclaje.
+   - `assets/sprites/characters/charger/`: Spritesheet, máscaras de sombra y anclajes.
+   - `assets/sprites/characters/necron/`: Spritesheet, máscaras de sombra y anclajes.
+3. **Conversión a Memoria NDS (`source/player_sprite.c`, `include/player_sprite.h`):**
+   - Generados arrays BGR555 nativos para las 3 clases (`g_player_frames`, `g_charger_frames`, `g_necron_frames`).
+   - Dimensiones de celda actualizadas a 48×48 manteniendo compatibilidad de anclaje y colisión.
+   - Enumeración actualizada con alias retrocompatible `CHAR_NECRON = 2` y `CHAR_SKELETON = CHAR_NECRON`.
+4. **Archivos Fuente del Mapa (`assets/sprites/dungeon/isometric_shooter_bl/`):**
+   - Extraídos e incorporados los archivos `world.png`, `collision.png`, `occlusion.png`, `collision.json` y `map_settings.json` listos para el pipeline de horneado a tiles hardware.
+
+### Verificación y Rendimiento
+- **Tests Host:** 9 suites completas pasando (`DS_HOST_TESTS=PASS`, 35 tests OK).
+- **Toolchain BlocksDS:** Compilación limpia sin advertencias (`DS_BUILD=PASS`, ROM `dungeonds.nds`).
+- **Validación Headless DeSmuME:** `scenarios/weapons_switching_and_touch.json` verificado con captura del nuevo Marine en combate (`captures_headless/new_sprites_test`).
+
+
+---
+
+## 2026-10-21 - Horneado e Integración del Mapa Real `isometric_shooter_bl` en la ROM
+
+### Resumen
+Se ha completado el horneado integral del mapa `isometric_shooter_bl` desde sus fuentes PNG/JSON a los subsistemas de hardware de Nintendo DS:
+- **Atlas de tiles y Tilemap:** Cuantización y empaquetado a 3.808 tiles 8bpp de hardware en `dungeon_bg_tiles.c` / `.h` con dimensiones de mundo `1536 × 864`.
+- **Malla de colisión 2-bit:** `384 × 216` celdas a escala 4px (20.736 bytes empaquetados) en `diablo_dungeon.c` / `.h`.
+- **Oclusión RLE:** 5.402 tramos calculados de muros y columnas en `dungeon_occlusion.c` / `.h`.
+- **Punto de spawn:** Actualizado a `(754, 466)` en el centro del área transitable del blockout.
+- **Validación:** 35/35 host tests pasando, build BlocksDS limpia (`dungeonds.nds`), y escenario DeSmuME verificado con el nuevo Marine en la nueva mazmorra a 60 FPS estables.
+
+---
+
+## 2026-10-21 - Corrección de Fondo en Pantalla Inferior y Purga de Código Legacy
+
+### Resumen
+Se solucionó el problema por el cual la pantalla táctil inferior se mostraba negra sobre el fondo de la mazmorra:
+- **Causa raíz:** `smooth_lightmap.c` intentaba indexar una tabla de antorcha dimensionada para el mapa viejo de 768×512. Al exceder los límites, ejecutaba un volcado de negro opaco (`RGB15(0, 0, 0) | BIT(15)`) en la capa bitmap frontal (BG2), ocultando las baldosas del fondo hardware (BG1).
+- **Corrección:** Se eliminó la llamada a `render_smooth_torch_lighting()` y se sustituyó por una inicialización transparente (`0x0000`, bit 15 desactivado) mediante BIOS `swiFastCopy` (`COPY_MODE_FILL`). Esto deja ver nítidamente las baldosas y muros de `isometric_shooter_bl` en ambas pantallas simultáneamente.
+- **Purga de assets y código legacy:** Se eliminaron `source/smooth_lightmap.c` e `include/smooth_lightmap.h` (-2.011 líneas), reduciendo la ROM de 2,66 MB a 2,20 MB.
+- **Validación:**
+  - 35/35 host tests pasando (`DS_HOST_TESTS=PASS`).
+  - Escenario DeSmuME `weapons_switching_and_touch.json` verificado: 673 colores únicos en la pantalla inferior (baldosas, paredes, sombras proyectadas y HUD a 60 FPS fijos).
+  - ROM `dungeonds.nds` lista en la raíz para despliegue por FTP.
