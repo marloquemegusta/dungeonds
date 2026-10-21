@@ -1,0 +1,19 @@
+{
+  "mapName": "isometric_shooter_bl",
+  "width": 1536,
+  "height": 857,
+  "orthoScaleMeters": 38,
+  "pixelsPerMeter": 40.42,
+  "meshScale": 24,
+  "cameraElevationDegrees": 30,
+  "contrast": 1.15,
+  "saturation": 1.5,
+  "brightness": 1,
+  "lighting": {
+    "preset": "warm",
+    "key": 4.5,
+    "fill": 0.85,
+    "rim": 0,
+    "world": 0.35
+  }
+}
