@@ -1,0 +1,161 @@
+{
+  "name": "necron_running_rifle",
+  "model": "necron_running_rifle.fbx",
+  "animation": "Rifle Run Forward (0.50s)",
+  "directions": [
+    "S",
+    "SW",
+    "W",
+    "NW",
+    "N",
+    "NE",
+    "E",
+    "SE"
+  ],
+  "framesPerDirection": 8,
+  "frameSize": "48x48",
+  "spritesheet": {
+    "columns": 8,
+    "rows": 8,
+    "width": 384,
+    "height": 384,
+    "alpha": true
+  },
+  "anchor": [
+    24,
+    44
+  ],
+  "dirGroundAnchors": [
+    47,
+    45,
+    41,
+    43,
+    45,
+    45,
+    42,
+    44
+  ],
+  "dirBounds": [
+    [
+      13,
+      9,
+      16,
+      39
+    ],
+    [
+      6,
+      7,
+      29,
+      39
+    ],
+    [
+      0,
+      4,
+      39,
+      38
+    ],
+    [
+      7,
+      3,
+      30,
+      41
+    ],
+    [
+      19,
+      1,
+      16,
+      45
+    ],
+    [
+      13,
+      4,
+      29,
+      42
+    ],
+    [
+      9,
+      8,
+      39,
+      35
+    ],
+    [
+      11,
+      10,
+      30,
+      35
+    ]
+  ],
+  "shadowSize": [
+    96,
+    96
+  ],
+  "shadowBounds": [
+    [
+      25,
+      22,
+      30,
+      33
+    ],
+    [
+      17,
+      20,
+      39,
+      35
+    ],
+    [
+      11,
+      18,
+      47,
+      35
+    ],
+    [
+      18,
+      15,
+      38,
+      38
+    ],
+    [
+      31,
+      13,
+      23,
+      42
+    ],
+    [
+      33,
+      16,
+      25,
+      38
+    ],
+    [
+      32,
+      21,
+      31,
+      32
+    ],
+    [
+      28,
+      23,
+      31,
+      30
+    ]
+  ],
+  "stride3dMeters": 1.603,
+  "strideRatio": 1.267,
+  "ticksPerFrame": 4,
+  "stridePixels": 57.66,
+  "speedFixed8_8": 461,
+  "inPlace": true,
+  "rigScale": 1,
+  "cameraElevationDegrees": 30,
+  "contrast": 1.2,
+  "saturation": 1.5,
+  "neckPitchDegrees": -25,
+  "displace": 0,
+  "brightness": 1,
+  "webglShadowQuality": 16,
+  "normalStrength": 0.5,
+  "shadowSoftness": 2,
+  "supersample": 4,
+  "boneShader": false,
+  "renderEngine": "Three.js WebGL (browser)"
+}

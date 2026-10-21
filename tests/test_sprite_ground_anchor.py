@@ -7,7 +7,7 @@ MAIN = (ROOT / "source" / "main.c").read_text(encoding="utf-8")
 SPRITES = (ROOT / "source" / "player_sprite.c").read_text(encoding="utf-8")
 ANCHOR_Y = 28
 WIDTH = 48
-HEIGHT = 40
+HEIGHT = 48
 
 
 def pixel_values(symbol):

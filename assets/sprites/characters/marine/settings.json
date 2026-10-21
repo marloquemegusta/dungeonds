@@ -1,0 +1,161 @@
+{
+  "name": "space_marine_running",
+  "model": "space_marine_running_weapon.fbx",
+  "animation": "Rifle Run Forward (0.50s)",
+  "directions": [
+    "S",
+    "SW",
+    "W",
+    "NW",
+    "N",
+    "NE",
+    "E",
+    "SE"
+  ],
+  "framesPerDirection": 8,
+  "frameSize": "48x48",
+  "spritesheet": {
+    "columns": 8,
+    "rows": 8,
+    "width": 384,
+    "height": 384,
+    "alpha": true
+  },
+  "anchor": [
+    24,
+    43
+  ],
+  "dirGroundAnchors": [
+    47,
+    45,
+    40,
+    41,
+    42,
+    43,
+    42,
+    44
+  ],
+  "dirBounds": [
+    [
+      13,
+      7,
+      18,
+      41
+    ],
+    [
+      6,
+      6,
+      27,
+      40
+    ],
+    [
+      0,
+      5,
+      37,
+      36
+    ],
+    [
+      7,
+      3,
+      27,
+      39
+    ],
+    [
+      17,
+      1,
+      18,
+      42
+    ],
+    [
+      15,
+      4,
+      27,
+      40
+    ],
+    [
+      11,
+      8,
+      37,
+      35
+    ],
+    [
+      13,
+      8,
+      28,
+      37
+    ]
+  ],
+  "shadowSize": [
+    96,
+    96
+  ],
+  "shadowBounds": [
+    [
+      25,
+      21,
+      30,
+      38
+    ],
+    [
+      17,
+      19,
+      37,
+      38
+    ],
+    [
+      11,
+      18,
+      48,
+      35
+    ],
+    [
+      18,
+      16,
+      41,
+      36
+    ],
+    [
+      29,
+      13,
+      26,
+      41
+    ],
+    [
+      31,
+      17,
+      31,
+      37
+    ],
+    [
+      30,
+      20,
+      36,
+      32
+    ],
+    [
+      27,
+      21,
+      35,
+      35
+    ]
+  ],
+  "stride3dMeters": 1.465,
+  "strideRatio": 1.126,
+  "ticksPerFrame": 4,
+  "stridePixels": 50.81,
+  "speedFixed8_8": 406,
+  "inPlace": true,
+  "rigScale": 1,
+  "cameraElevationDegrees": 30,
+  "contrast": 1.2,
+  "saturation": 1.5,
+  "neckPitchDegrees": -35,
+  "displace": 0,
+  "brightness": 1,
+  "webglShadowQuality": 16,
+  "normalStrength": 0.5,
+  "shadowSoftness": 2,
+  "supersample": 4,
+  "boneShader": false,
+  "renderEngine": "Three.js WebGL (browser)"
+}
