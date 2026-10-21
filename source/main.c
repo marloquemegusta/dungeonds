@@ -5,7 +5,6 @@
 #include "diablo_dungeon.h"
 #include "dungeon_occlusion.h"
 #include "los.h"
-#include "smooth_lightmap.h"
 #include "gameplay.h"
 #include "enemy_ai.h"
 #include "projectiles.h"
@@ -963,9 +962,11 @@ static void render_screen(uint16_t *buffer, int cam_x, int cam_y,
     }
 
     // The static FBX bake is now a hardware BG; keep this bitmap layer transparent
-    // and render only dynamic actors, shadows, and the HUD into it.
+    // (0x0000 = transparent in 16-bit direct bitmap mode) and render only dynamic
+    // actors, shadows, particles, and the HUD into it.
     uint32_t floor_start_ticks = cpuGetTiming();
-    render_smooth_torch_lighting(buffer, cam_x, cam_y, player_screen_x(s_player.x, s_player.y), player_screen_y(s_player.x, s_player.y));
+    uint32_t clear_zero = 0;
+    swiFastCopy(&clear_zero, buffer, COPY_MODE_FILL | ((SCREEN_W * SCREEN_H * sizeof(uint16_t)) >> 2));
 
     if (out_floor) *out_floor = cpuGetTiming() - floor_start_ticks;
 
