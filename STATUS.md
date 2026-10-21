@@ -852,3 +852,20 @@ Eliminación integral del patinaje sobre hielo (*foot sliding*) en el simulador 
 - [x] **Sincronización Offline:** `build_offline_renderer.py` integró la capa de paridad en `FBX-Web-Renderer-offline.html`.
 - [x] **Verificación Automatizada Headless:** Test Playwright `tools/lab/test_zip_names_and_neck_tilt_headless.cjs` superado al 100% con 0 errores de consola, comprobación estricta de rutas de ZIP $< 35$ caracteres, delta de rotación de mundo tras `mixer.update` y divergencia de píxeles renderizados.
 - **Evidencia Visual:** `walkthroughs/fix-lab-zip-names-and-neck-tilt/walkthrough.md`.
+
+---
+
+## Sesión 66: Corrección Anatómica del Eje de Inclinación de Cuello y Sincronización Total del Input Numérico
+- [x] **Diagnóstico y Corrección de Input Numérico Ignorado (`#neckTilt`):**
+  - Identificada la causa raíz: un interceptor erróneo en `document.getElementById('neckTilt')` y `document.querySelector('#neckTilt')` forzaba el retorno del slider `#neckPitch`, privando al `<input type="number">` de cualquier listener de eventos.
+  - Eliminado el alias incorrecto del DOM.
+  - Sincronización bidireccional completa en `syncNeckTilt()` respondiendo a eventos `input`, `change` y `blur`, actualizando instantáneamente `#neckPitch`, `#neckPitchValue`, `state.neckPitch`, la vista previa 3D y el simulador DS sin requerir arrastrar el slider.
+- [x] **Cálculo Anatómico del Eje de Inclinación de Cabeza / Cuello (Pitch Sagital):**
+  - Eliminado el algoritmo anterior de aproximación a ejes cardinales locales (`(1,0,0)`, `(0,0,1)`), el cual introducía torsión lateral (roll) hacia los hombros en modelos Mixamo/FBX con orientación ósea no estándar (`spacemarine.fbx` presentaba un error lateral $\Delta X = 0.0374$).
+  - Extraído el eje lateral universal que une ambos hombros en tiempo real ($\vec{u}_{\text{lateral}} = \text{normalize}(\mathbf{p}_{\text{LeftShoulder}} - \mathbf{p}_{\text{RightShoulder}})$ con proyección horizontal $Y=0$), con fallback a caderas/piernas y eje lateral del modelo en espacio mundo.
+  - Proyección del eje al espacio padre del hueso en la pose actual y premultiplicación del cuaternión (`bone.quaternion.premultiply(qPitch)`).
+  - Verificación matemática de idempotencia y reversibilidad absoluta (error de reversibilidad $1.56 \times 10^{-17}$), neutralizando acumulaciones en ticks sucesivos del mixer.
+  - **Error lateral $\Delta X$ reducido a $0.000000$ (0 roll)** en `spacemarine.fbx` con desplazamiento sagital puro ($\Delta Y = 0.0373$, $\Delta Z = 0.0560$). En `skeleton.fbx`, $\Delta X = 0.000048$ y $\Delta Y = 0.0954$.
+- [x] **Sincronización Offline:** `build_offline_renderer.py` integró la capa de paridad en `FBX-Web-Renderer-offline.html`.
+- [x] **Verificación Automatizada Headless:** Test Playwright `tools/lab/test_neck_pitch_axis_and_input_headless.cjs` superado al 100% con 0 errores de consola, comprobación estricta de separación DOM, reactividad de entrada por teclado, cero roll lateral y cabeceo visual en spacemarine, skeleton y demo.
+- **Evidencia Visual:** `walkthroughs/fix-neck-pitch-axis-and-input/walkthrough.md`.

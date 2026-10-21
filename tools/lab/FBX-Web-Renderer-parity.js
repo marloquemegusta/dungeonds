@@ -12,9 +12,6 @@
     if (id === 'renderBtn' || id === 'btnRender') {
       return origGetElementById('renderBtn') || origGetElementById('btnRender');
     }
-    if (id === 'neckTilt' || id === 'neckPitch') {
-      return origGetElementById('neckPitch') || origGetElementById('neckTilt');
-    }
     return origGetElementById(id);
   };
 
@@ -25,9 +22,6 @@
     }
     if (selector === '#renderBtn' || selector === '#btnRender') {
       return origQuerySelector('#renderBtn') || origQuerySelector('#btnRender');
-    }
-    if (selector === '#neckTilt' || selector === '#neckPitch') {
-      return origQuerySelector('#neckPitch') || origQuerySelector('#neckTilt');
     }
     return origQuerySelector(selector);
   };
@@ -40,6 +34,7 @@
     displace: 0,
     supersample: 4,
     filterWidth: 1.5,
+    neckPitch: 0,
     // Anchor & Shadow state
     anchorData: null,
     shadowCanvas: null,
@@ -181,74 +176,117 @@
     return targets;
   }
 
+  function getNeckPitchDegrees() {
+    if (typeof state.neckPitch === 'number' && !isNaN(state.neckPitch)) {
+      return state.neckPitch;
+    }
+    const pitchInput = document.getElementById('neckPitch');
+    const tiltInput = document.getElementById('neckTilt');
+    const raw = (pitchInput ? pitchInput.value : null) ?? (tiltInput ? tiltInput.value : '0');
+    const val = parseFloat(raw) || 0;
+    state.neckPitch = val;
+    return val;
+  }
+
+  function getCharacterLateralAxis(model, QuatClass, VecClass) {
+    if (!model) return new VecClass(1, 0, 0);
+    let left = null, right = null;
+    const clean = s => (s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+
+    model.traverse(node => {
+      if (!node.isBone) return;
+      const n = clean(node.name);
+      if (!left) {
+        if (n.includes('leftshoulder') || n.includes('shoulderl') || n.includes('leftarm') || n.includes('arml') || n.includes('leftupperarm')) {
+          left = node;
+        }
+      }
+      if (!right) {
+        if (n.includes('rightshoulder') || n.includes('shoulderr') || n.includes('rightarm') || n.includes('armr') || n.includes('rightupperarm')) {
+          right = node;
+        }
+      }
+    });
+
+    if (!left || !right) {
+      model.traverse(node => {
+        if (!node.isBone) return;
+        const n = clean(node.name);
+        if (!left && (n.includes('leftupleg') || n.includes('thighl') || n.includes('leftleg'))) left = node;
+        if (!right && (n.includes('rightupleg') || n.includes('thighr') || n.includes('rightleg'))) right = node;
+      });
+    }
+
+    const lateralWorld = new VecClass(1, 0, 0);
+    if (left && right) {
+      left.updateMatrixWorld(true);
+      right.updateMatrixWorld(true);
+      const pL = new VecClass();
+      const pR = new VecClass();
+      left.getWorldPosition(pL);
+      right.getWorldPosition(pR);
+      lateralWorld.subVectors(pL, pR);
+      lateralWorld.y = 0; // Purely horizontal in world space -> pure sagittal pitch, 0 lateral roll
+      if (lateralWorld.lengthSq() > 1e-6) {
+        lateralWorld.normalize();
+        return lateralWorld;
+      }
+    }
+
+    // Fallback: model's lateral axis in world space
+    model.updateMatrixWorld(true);
+    const qModel = new QuatClass();
+    model.getWorldQuaternion(qModel);
+    lateralWorld.set(1, 0, 0).applyQuaternion(qModel);
+    lateralWorld.y = 0;
+    if (lateralWorld.lengthSq() > 1e-6) {
+      lateralWorld.normalize();
+    } else {
+      lateralWorld.set(1, 0, 0);
+    }
+    return lateralWorld;
+  }
+
   function applyNeckPitch(pitchDegOverride) {
     const model = $.model;
     if (!model) return;
 
     let pitchDeg = pitchDegOverride;
     if (pitchDeg === undefined || pitchDeg === null || isNaN(pitchDeg)) {
-      const pitchInput = document.getElementById('neckPitch');
-      const tiltInput = document.getElementById('neckTilt');
-      const raw = (pitchInput ? pitchInput.value : null) ?? (tiltInput ? tiltInput.value : '0');
-      pitchDeg = parseFloat(raw) || 0;
+      pitchDeg = getNeckPitchDegrees();
+    } else {
+      state.neckPitch = pitchDeg;
     }
 
-    const pitchRad = (pitchDeg * Math.PI) / 180.0;
     const targets = getNeckTiltTargets(model);
     if (!targets.length) return;
 
+    const pitchRad = (pitchDeg * Math.PI) / 180.0;
+    const QuatClass = targets[0].quaternion.constructor;
+    const VecClass = targets[0].position.constructor;
+
+    const lateralWorld = getCharacterLateralAxis(model, QuatClass, VecClass);
+
     for (const bone of targets) {
-      if (!bone._baseQuaternion) {
-        bone._baseQuaternion = bone.quaternion.clone();
-      }
-
-      const clip = $.currentAction?._clip || ($.clips && $.clips[0]);
-      const hasTrack = clip?.tracks?.some(t => t.name.startsWith(bone.name + '.') || t.name.includes(bone.name));
-
-      if (!hasTrack) {
-        bone.quaternion.copy(bone._baseQuaternion);
+      // Revert previous pitch quaternion if any
+      if (bone._currentPitchQuat) {
+        bone.quaternion.premultiply(bone._currentPitchQuat.clone().invert());
+        bone._currentPitchQuat = null;
       }
 
       if (Math.abs(pitchRad) > 1e-5) {
-        if (!bone._pitchAxis) {
-          bone.updateMatrixWorld(true);
-          const QuatClass = bone.quaternion.constructor;
-          const boneWorldQ = new QuatClass();
-          bone.getWorldQuaternion(boneWorldQ);
-          const modelWorldQ = new QuatClass();
-          model.getWorldQuaternion(modelWorldQ);
-          const relQ = modelWorldQ.clone().invert().multiply(boneWorldQ);
-
-          const vX = new K(1, 0, 0).applyQuaternion(relQ);
-          const vY = new K(0, 1, 0).applyQuaternion(relQ);
-          const vZ = new K(0, 0, 1).applyQuaternion(relQ);
-
-          const dotX = vX.x;
-          const dotZ = vZ.x;
-          const dotY = vY.x;
-
-          const axis = new K(1, 0, 0);
-          let sign = 1.0;
-
-          if (Math.abs(dotX) >= Math.abs(dotZ) && Math.abs(dotX) >= Math.abs(dotY)) {
-            axis.set(1, 0, 0);
-            sign = dotX >= 0 ? 1.0 : -1.0;
-          } else if (Math.abs(dotZ) >= Math.abs(dotY)) {
-            axis.set(0, 0, 1);
-            sign = dotZ >= 0 ? 1.0 : -1.0;
-          } else {
-            axis.set(0, 1, 0);
-            sign = dotY >= 0 ? 1.0 : -1.0;
-          }
-
-          bone._pitchAxis = axis;
-          bone._pitchSign = sign;
+        // Transform the anatomical lateral axis (right shoulder -> left shoulder) into bone parent space
+        const parentWorldQ = new QuatClass();
+        if (bone.parent) {
+          bone.parent.updateMatrixWorld(true);
+          bone.parent.getWorldQuaternion(parentWorldQ);
         }
+        const lateralParent = lateralWorld.clone().applyQuaternion(parentWorldQ.clone().invert()).normalize();
 
-        const QuatClass = bone.quaternion.constructor;
         const qPitch = new QuatClass();
-        qPitch.setFromAxisAngle(bone._pitchAxis, pitchRad * bone._pitchSign);
-        bone.quaternion.multiply(qPitch);
+        qPitch.setFromAxisAngle(lateralParent, pitchRad);
+        bone.quaternion.premultiply(qPitch);
+        bone._currentPitchQuat = qPitch.clone();
       }
 
       bone.updateMatrix();
@@ -266,16 +304,26 @@
   if (typeof Ts !== 'undefined' && Ts.prototype) {
     const origMixerUpdate = Ts.prototype.update;
     Ts.prototype.update = function (delta) {
+      if ($.model) {
+        const targets = getNeckTiltTargets($.model);
+        for (const t of targets) t._currentPitchQuat = null;
+      }
       const res = origMixerUpdate.call(this, delta);
       applyNeckPitch();
       return res;
     };
     const origMixerSetTime = Ts.prototype.setTime;
-    Ts.prototype.setTime = function (time) {
-      const res = origMixerSetTime.call(this, time);
-      applyNeckPitch();
-      return res;
-    };
+    if (origMixerSetTime) {
+      Ts.prototype.setTime = function (time) {
+        if ($.model) {
+          const targets = getNeckTiltTargets($.model);
+          for (const t of targets) t._currentPitchQuat = null;
+        }
+        const res = origMixerSetTime.call(this, time);
+        applyNeckPitch();
+        return res;
+      };
+    }
   }
 
   // Keep the same graded/outlined pixel data used by GIFs, while preserving alpha for PNG exports.
@@ -3772,7 +3820,12 @@
     const neckValSpan = document.getElementById('neckPitchValue');
 
     function syncNeckTilt(val, isFinal = false) {
-      const num = Math.max(-90, Math.min(90, parseInt(val, 10) || 0));
+      if (val === '' || val === null || val === undefined) return;
+      const parsed = parseInt(val, 10);
+      if (isNaN(parsed)) return;
+      const num = Math.max(-90, Math.min(90, parsed));
+      state.neckPitch = num;
+
       if (neckPitchEl && neckPitchEl.value !== String(num)) neckPitchEl.value = String(num);
       if (neckTiltEl && neckTiltEl.value !== String(num)) neckTiltEl.value = String(num);
       if (neckValSpan) neckValSpan.textContent = `${num}°`;
@@ -3797,6 +3850,11 @@
     if (neckTiltEl) {
       neckTiltEl.addEventListener('input', e => syncNeckTilt(e.target.value, false));
       neckTiltEl.addEventListener('change', e => syncNeckTilt(e.target.value, true));
+      neckTiltEl.addEventListener('blur', () => {
+        if (!neckTiltEl.value || isNaN(parseInt(neckTiltEl.value, 10))) {
+          neckTiltEl.value = String(state.neckPitch || 0);
+        }
+      });
     }
 
     const meshDisplace = document.getElementById('meshDisplace');
@@ -4219,6 +4277,8 @@
   state.exportPackage = exportPackage;
   state.exportMapPackage = exportMapPackage;
   state.applyNeckPitch = applyNeckPitch;
+  state.getNeckPitchDegrees = getNeckPitchDegrees;
+  state.getCharacterLateralAxis = getCharacterLateralAxis;
   state.getNeckTiltTargets = getNeckTiltTargets;
   state.getSanitizedCharName = getSanitizedCharName;
   state.getSanitizedMapName = getSanitizedMapName;
