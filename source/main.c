@@ -316,7 +316,6 @@ static void init_obj_sprite_bounds(void) {
 
     for (int c = 0; c < NUM_CHARACTERS; c++) {
         for (int d = 0; d < PLAYER_NUM_DIRS; d++) {
-            int ground_anchor = PLAYER_ANCHOR_Y;
             for (int f = 0; f < PLAYER_NUM_FRAMES; f++) {
                 const uint16_t *src = g_character_frames[c][d][f];
                 int min_x = PLAYER_SPRITE_W, max_x = -1;
@@ -341,10 +340,9 @@ static void init_obj_sprite_bounds(void) {
                     s_char_frame_bounds[c][d][f][1] = (uint8_t)min_y;
                     s_char_frame_bounds[c][d][f][2] = (uint8_t)(max_x - min_x + 1);
                     s_char_frame_bounds[c][d][f][3] = (uint8_t)(max_y - min_y + 1);
-                    if (max_y > ground_anchor) ground_anchor = max_y;
                 }
             }
-            s_char_ground_anchor[c][d] = (uint8_t)ground_anchor;
+            s_char_ground_anchor[c][d] = g_character_ground_anchors[c][d];
         }
     }
 
@@ -579,7 +577,7 @@ static inline uint16_t world_floor_color(int x, int y) {
 __attribute__((target("arm"), noinline))
 static void draw_shadow_mask(uint16_t *buffer, const uint8_t *mask, int sw, int sh,
                              const uint8_t *bounds, int left, int top,
-                             int cam_x, int cam_y) {
+                             int cam_x, int cam_y, int depth) {
     int ox = left - cam_x;
     int oy = top - cam_y;
     int sx0 = bounds[0];
@@ -599,7 +597,7 @@ static void draw_shadow_mask(uint16_t *buffer, const uint8_t *mask, int sw, int 
             int pixel = row_offset + x;
             uint8_t packed = mask[pixel >> 1];
             uint8_t nibble = (pixel & 1) ? (packed >> 4) : (packed & 0x0F);
-            if (nibble >= 4) {
+            if (nibble > 0) {
                 int world_x = left + x, world_y = top + y;
                 if (world_x < 0 || world_x >= WORLD_W || world_y < 0 || world_y >= WORLD_H) continue;
                 int local_x = world_x - s_occlusion_cam_x;
@@ -607,11 +605,11 @@ static void draw_shadow_mask(uint16_t *buffer, const uint8_t *mask, int sw, int 
                 if ((uint32_t)local_x < SCREEN_W && (uint32_t)local_y < SCREEN_H) {
                     uint32_t depth_x = (uint32_t)local_x >> OCCLUSION_DEPTH_SHIFT;
                     uint32_t depth_y = (uint32_t)local_y >> OCCLUSION_DEPTH_SHIFT;
-                    if (s_occlusion_depth[depth_y * OCCLUSION_DEPTH_W + depth_x] >= 0) continue;
+                    if (s_occlusion_depth[depth_y * OCCLUSION_DEPTH_W + depth_x] > depth) continue;
                 }
                 uint16_t c = dst_row[x] ? dst_row[x] : world_floor_color(world_x, world_y);
                 if (c != (VOID_COLOR | BIT(15))) {
-                    dst_row[x] = apply_shadow(c, 92);
+                    dst_row[x] = apply_shadow_fast(c);
                 }
             }
         }
@@ -970,24 +968,24 @@ static void render_screen(uint16_t *buffer, int cam_x, int cam_y,
 
     if (out_floor) *out_floor = cpuGetTiming() - floor_start_ticks;
 
-    // 1) Composite dynamic entity shadows (player & enemies)
+    // 1) Composite dynamic entity shadows (player & enemies, animated per frame)
     uint32_t t_sh0 = cpuGetTiming();
     for (int i = 0; i < count; i++) {
         if (items[i].sprite == -1) {
-            draw_shadow_mask(buffer, g_character_shadow_masks[s_player.char_id][s_player.dir],
+            draw_shadow_mask(buffer, g_character_shadow_masks[s_player.char_id][s_player.dir][s_player.frame],
                              PLAYER_SHADOW_W, PLAYER_SHADOW_H,
-                             g_character_shadow_bounds[s_player.char_id][s_player.dir],
+                             g_character_shadow_bounds[s_player.char_id][s_player.dir][s_player.frame],
                              items[i].cx - PLAYER_SHADOW_W / 2,
-                              items[i].cy - PLAYER_SHADOW_H / 2, cam_x, cam_y);
+                             items[i].cy - PLAYER_SHADOW_H / 2, cam_x, cam_y, items[i].depth);
         } else if (items[i].sprite <= -2 &&
                    items[i].sprite > -2 - MAX_ENEMIES) {
             int e_idx = -2 - items[i].sprite;
             const Enemy *e = &s_enemies[e_idx];
-            draw_shadow_mask(buffer, g_character_shadow_masks[e->char_id][e->dir],
+            draw_shadow_mask(buffer, g_character_shadow_masks[e->char_id][e->dir][e->frame],
                              PLAYER_SHADOW_W, PLAYER_SHADOW_H,
-                             g_character_shadow_bounds[e->char_id][e->dir],
+                             g_character_shadow_bounds[e->char_id][e->dir][e->frame],
                              items[i].cx - PLAYER_SHADOW_W / 2,
-                              items[i].cy - PLAYER_SHADOW_H / 2, cam_x, cam_y);
+                             items[i].cy - PLAYER_SHADOW_H / 2, cam_x, cam_y, items[i].depth);
         }
     }
     uint32_t shadow_ticks = cpuGetTiming() - t_sh0;
@@ -1695,9 +1693,6 @@ int main(void) {
 
         uint32_t t0 = cpuGetTiming();
         player_update(keys_held, keys_down, touch.px, touch.py, touch_down);
-        if (s_frame_index <= 2) {
-            s_top_map_ready = 0;
-        }
         build_occlusion_depth_map(s_cam_x, s_cam_y);
         enemies_update();
         lances_update();

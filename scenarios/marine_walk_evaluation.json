@@ -1,0 +1,19 @@
+{
+  "name": "marine_walk_evaluation",
+  "steps": [
+    { "frames": 30, "buttons": [] },
+    { "button_down": "RIGHT", "frames": 24, "capture_sequence": "marine_walk", "capture_every": 1 },
+    { "button_up": "RIGHT", "frames": 4 },
+    { "button_down": "RIGHT", "frames": 1 },
+    { "button_down": "DOWN", "frames": 24, "capture_sequence": "marine_walk", "capture_every": 1 },
+    { "button_up": "RIGHT", "frames": 1 },
+    { "button_up": "DOWN", "frames": 4 },
+    { "button_down": "DOWN", "frames": 24, "capture_sequence": "marine_walk", "capture_every": 1 },
+    { "button_up": "DOWN", "frames": 4 },
+    { "button_down": "UP", "frames": 1 },
+    { "button_down": "LEFT", "frames": 24, "capture_sequence": "marine_walk", "capture_every": 1 },
+    { "button_up": "UP", "frames": 1 },
+    { "button_up": "LEFT", "frames": 4 }
+  ],
+  "assertions": {}
+}

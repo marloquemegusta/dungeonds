@@ -1110,8 +1110,8 @@
 
       if (dMaxX >= dMinX && dMaxY >= dMinY) {
         dirBounds[d] = [dMinX, dMinY, dMaxX - dMinX + 1, dMaxY - dMinY + 1];
-        dirGroundAnchors[d] = dGroundAnchor >= 0 ? dGroundAnchor : dMaxY;
-        totalGroundY += dirGroundAnchors[d];
+        dirGroundAnchors[d] = projAnchorY;
+        totalGroundY += projAnchorY;
         countGroundY++;
       } else {
         dirBounds[d] = [0, 0, size, size];
@@ -1119,8 +1119,7 @@
       }
     }
 
-    const avgGroundY = countGroundY > 0 ? Math.round(totalGroundY / countGroundY) : projAnchorY;
-    const globalAnchor = [Math.round(size / 2), avgGroundY];
+    const globalAnchor = [projAnchorX, projAnchorY];
 
     state.anchorData = {
       anchor: globalAnchor,
@@ -1132,14 +1131,34 @@
     return state.anchorData;
   }
 
-  // ---- Character Projected Shadow Generator (8 Directions, 96x96 NDS Masks) ----
+  // ---- Character Projected Shadow Generator (8 Directions x 8 Frames, Crisp Pixel-Art NDS Masks) ----
   function generateCharacterShadows() {
     const model = $.model;
-    const size = parseInt(_p.resolution?.value, 10) || 48;
+    const root = $.modelRoot || model;
+    const size = parseInt(_p.resolution?.value, 10) || 40;
+    const frameCount = parseInt(_p.frameCount?.value, 10) || 8;
     const outline = _p.outlineMode?.value !== 'none';
     const targetPixels = size - (outline ? 2 : 0);
+    const shadowSize = size * 2;
+    const halfShadow = shadowSize / 2;
+    const maskBytes = (shadowSize * shadowSize) / 2;
+
+    const prevRotY = root ? root.rotation.y : 0;
+    const prevPosX = root ? root.position.x : 0;
+    const prevPosY = root ? root.position.y : 0;
+    const prevPosZ = root ? root.position.z : 0;
+
+    if (root) {
+      root.position.set(0, 0, 0);
+      root.rotation.y = 0;
+      root.updateMatrixWorld(true);
+    }
 
     const fit = state.lastFit || (model ? computeCharacterFit(size, targetPixels) : null);
+    if (!state.anchorData) computeAnchorData();
+    const anchorX = state.anchorData?.anchor ? state.anchorData.anchor[0] : Math.round(size / 2);
+    const anchorY = state.anchorData?.anchor ? state.anchorData.anchor[1] : Math.round(size * 0.85);
+
     const elevation = Yt.degToRad(Math.max(1, parseFloat(document.getElementById('elevation')?.value) || 30));
     const toCamera = new K(Math.cos(elevation) * Math.cos(AZIMUTH), Math.sin(elevation), -Math.cos(elevation) * Math.sin(AZIMUTH)).normalize();
 
@@ -1151,7 +1170,7 @@
     }
     if (!isFinite(pxPerMeter) || pxPerMeter <= 0) pxPerMeter = 24.0;
 
-    const shadowFrustumHalf = (96 / pxPerMeter) / 2;
+    const shadowFrustumHalf = (shadowSize / pxPerMeter) / 2;
     const shadowCamera = new ts(-shadowFrustumHalf, shadowFrustumHalf, shadowFrustumHalf, -shadowFrustumHalf, 0.1, 100);
     shadowCamera.position.set(0, 0, 0).addScaledVector(toCamera, 30);
     shadowCamera.lookAt(0, 0, 0);
@@ -1160,13 +1179,14 @@
     const Lx = -0.4096, Ly = -0.5736, Lz = 0.7094;
 
     const atlasCanvas = document.createElement('canvas');
-    atlasCanvas.width = 768;
-    atlasCanvas.height = 96;
+    atlasCanvas.width = frameCount * shadowSize;
+    atlasCanvas.height = 8 * shadowSize;
     const atlasCtx = atlasCanvas.getContext('2d');
-    atlasCtx.clearRect(0, 0, 768, 96);
+    atlasCtx.clearRect(0, 0, atlasCanvas.width, atlasCanvas.height);
 
-    state.shadowMasks4Bit = [];
-    state.shadowBounds = [];
+    state.shadowSize = shadowSize;
+    state.shadowMasks4Bit = Array.from({ length: 8 }, () => new Array(frameCount));
+    state.shadowBounds = Array.from({ length: 8 }, () => new Array(frameCount));
 
     const tempV = new K();
     const vProjected = new K();
@@ -1180,134 +1200,176 @@
       });
     }
 
-    let minY = state.lastCharMinY;
-    if (!isFinite(minY) && model) {
-      const pts = posedPoints(model);
-      minY = Infinity;
-      for (let i = 1; i < pts.length; i += 3) {
-        if (pts[i] < minY) minY = pts[i];
+    let duration = 0;
+    if ($.currentAction?.getClip) duration = $.currentAction.getClip().duration || 0;
+    else if ($.clips?.length) duration = $.clips[0].duration || 0;
+    const times = duration > 0 ? Array.from({ length: frameCount }, (_, index) => duration * index / frameCount) : new Array(frameCount).fill(0);
+
+    for (let f = 0; f < frameCount; f++) {
+      if ($.mixer && duration > 0) {
+        $.mixer.setTime(times[f]);
+      }
+      applyNeckPitch();
+      if (model) {
+        let hasBones = false;
+        model.traverse(node => { if (node.isBone) hasBones = true; });
+        if (hasBones) {
+          model.position.x = 0;
+          model.position.z = 0;
+          model.updateMatrixWorld(true);
+        }
+      }
+      if (root) {
+        root.position.set(0, 0, 0);
+        root.rotation.y = 0;
+        root.updateMatrixWorld(true);
+      }
+
+      const meshWorldVerts = [];
+      let frameMinY = Infinity;
+      for (const mesh of modelMeshes) {
+        if (mesh.isSkinnedMesh && mesh.skeleton) mesh.skeleton.update();
+        const pos = mesh.geometry.attributes.position;
+        const count = pos.count;
+        const coords = new Float32Array(count * 3);
+        for (let i = 0; i < count; i++) {
+          if (mesh.isSkinnedMesh) mesh.getVertexPosition(i, tempV);
+          else tempV.fromBufferAttribute(pos, i);
+          tempV.applyMatrix4(mesh.matrixWorld);
+          coords[i * 3 + 0] = tempV.x;
+          coords[i * 3 + 1] = tempV.y;
+          coords[i * 3 + 2] = tempV.z;
+          if (tempV.y < frameMinY) frameMinY = tempV.y;
+        }
+        meshWorldVerts.push({ mesh, coords, count });
+      }
+      if (!isFinite(frameMinY)) frameMinY = state.lastCharMinY || 0;
+
+      const projCam = (fit && fit.camera) ? fit.camera : shadowCamera;
+      const useFitCam = !!(fit && fit.camera);
+
+      for (let dir = 0; dir < 8; dir++) {
+        const yaw = DIR0_YAW - dir * DIR_STEP;
+        const cosYaw = Math.cos(yaw), sinYaw = Math.sin(yaw);
+
+        const hardCanvas = document.createElement('canvas');
+        hardCanvas.width = shadowSize;
+        hardCanvas.height = shadowSize;
+        const hardCtx = hardCanvas.getContext('2d');
+        hardCtx.fillStyle = '#000000';
+        hardCtx.strokeStyle = '#000000';
+        hardCtx.lineWidth = 0.65;
+        hardCtx.lineJoin = 'round';
+
+        let triangleCount = 0;
+
+        if (meshWorldVerts.length > 0) {
+          hardCtx.beginPath();
+          for (const { mesh, coords, count } of meshWorldVerts) {
+            const index = mesh.geometry.index;
+            const numTris = index ? Math.floor(index.count / 3) : Math.floor(count / 3);
+
+            const pxArr = new Float32Array(count);
+            const pyArr = new Float32Array(count);
+            for (let i = 0; i < count; i++) {
+              const wx = coords[i * 3 + 0];
+              const wy = coords[i * 3 + 1];
+              const wz = coords[i * 3 + 2];
+
+              const rx = wx * cosYaw + wz * sinYaw;
+              const rz = -wx * sinYaw + wz * cosYaw;
+              const ry = Math.max(0, wy - frameMinY);
+
+              const t = ry / 0.5736;
+              const gx = rx + t * Lx;
+              const gz = rz + t * Lz;
+
+              vProjected.set(gx, 0, gz).project(projCam);
+              if (useFitCam) {
+                pxArr[i] = (vProjected.x * 0.5 + 0.5) * size - anchorX + halfShadow;
+                pyArr[i] = (-vProjected.y * 0.5 + 0.5) * size - anchorY + halfShadow;
+              } else {
+                pxArr[i] = (vProjected.x * 0.5 + 0.5) * shadowSize;
+                pyArr[i] = (-vProjected.y * 0.5 + 0.5) * shadowSize;
+              }
+            }
+
+            for (let t = 0; t < numTris; t++) {
+              const i0 = index ? index.getX(t * 3 + 0) : t * 3 + 0;
+              const i1 = index ? index.getX(t * 3 + 1) : t * 3 + 1;
+              const i2 = index ? index.getX(t * 3 + 2) : t * 3 + 2;
+
+              hardCtx.moveTo(pxArr[i0], pyArr[i0]);
+              hardCtx.lineTo(pxArr[i1], pyArr[i1]);
+              hardCtx.lineTo(pxArr[i2], pyArr[i2]);
+              hardCtx.closePath();
+              triangleCount++;
+            }
+          }
+          hardCtx.fill();
+          hardCtx.stroke();
+        }
+
+        if (triangleCount === 0) {
+          hardCtx.beginPath();
+          hardCtx.ellipse(halfShadow - 2, halfShadow + 2, 14, 9, Math.PI / 6, 0, Math.PI * 2);
+          hardCtx.fill();
+        }
+
+        const hardData = hardCtx.getImageData(0, 0, shadowSize, shadowSize).data;
+        const cellCanvas = document.createElement('canvas');
+        cellCanvas.width = shadowSize;
+        cellCanvas.height = shadowSize;
+        const cellCtx = cellCanvas.getContext('2d');
+        const outImg = cellCtx.createImageData(shadowSize, shadowSize);
+        const outPix = outImg.data;
+
+        const coverage = new Uint8Array(shadowSize * shadowSize);
+        let minX = shadowSize, maxX = -1, minYpx = shadowSize, maxYpx = -1;
+
+        for (let y = 0; y < shadowSize; y++) {
+          for (let x = 0; x < shadowSize; x++) {
+            const idx = y * shadowSize + x;
+            const a = hardData[idx * 4 + 3];
+            if (a >= 96) {
+              coverage[idx] = 15;
+              outPix[idx * 4 + 0] = 0;
+              outPix[idx * 4 + 1] = 0;
+              outPix[idx * 4 + 2] = 0;
+              outPix[idx * 4 + 3] = 192;
+              if (x < minX) minX = x;
+              if (x > maxX) maxX = x;
+              if (y < minYpx) minYpx = y;
+              if (y > maxYpx) maxYpx = y;
+            }
+          }
+        }
+        cellCtx.putImageData(outImg, 0, 0);
+        atlasCtx.drawImage(cellCanvas, f * shadowSize, dir * shadowSize);
+
+        if (maxX >= minX && maxYpx >= minYpx) {
+          state.shadowBounds[dir][f] = [minX, minYpx, maxX - minX + 1, maxYpx - minYpx + 1];
+        } else {
+          state.shadowBounds[dir][f] = [halfShadow - 8, halfShadow - 8, 16, 16];
+        }
+
+        const packedMask = new Uint8Array(maskBytes);
+        for (let i = 0; i < shadowSize * shadowSize; i += 2) {
+          const lo = coverage[i];
+          const hi = coverage[i + 1];
+          packedMask[i / 2] = ((hi & 0x0F) << 4) | (lo & 0x0F);
+        }
+        state.shadowMasks4Bit[dir][f] = packedMask;
       }
     }
-    if (!isFinite(minY)) minY = 0;
 
-    for (let dir = 0; dir < 8; dir++) {
-      const yaw = DIR0_YAW - dir * DIR_STEP;
-      const cosYaw = Math.cos(yaw), sinYaw = Math.sin(yaw);
-
-      const hardCanvas = document.createElement('canvas');
-      hardCanvas.width = 96;
-      hardCanvas.height = 96;
-      const hardCtx = hardCanvas.getContext('2d');
-      hardCtx.fillStyle = '#000000';
-
-      let triangleCount = 0;
-
-      if (modelMeshes.length > 0) {
-        hardCtx.beginPath();
-        for (const mesh of modelMeshes) {
-          if (mesh.isSkinnedMesh && mesh.skeleton) mesh.skeleton.update();
-          const pos = mesh.geometry.attributes.position;
-          const index = mesh.geometry.index;
-          const numTris = index ? Math.floor(index.count / 3) : Math.floor(pos.count / 3);
-
-          const vCache = new Array(pos.count);
-          for (let i = 0; i < pos.count; i++) {
-            if (mesh.isSkinnedMesh) mesh.getVertexPosition(i, tempV);
-            else tempV.fromBufferAttribute(pos, i);
-            tempV.applyMatrix4(mesh.matrixWorld);
-
-            const rx = tempV.x * cosYaw + tempV.z * sinYaw;
-            const rz = -tempV.x * sinYaw + tempV.z * cosYaw;
-            const ry = Math.max(0, tempV.y - minY);
-
-            const t = ry / 0.5736;
-            const gx = rx + t * Lx;
-            const gz = rz + t * Lz;
-
-            vProjected.set(gx, 0, gz).project(shadowCamera);
-            vCache[i] = {
-              px: (vProjected.x * 0.5 + 0.5) * 96,
-              py: (-vProjected.y * 0.5 + 0.5) * 96
-            };
-          }
-
-          for (let t = 0; t < numTris; t++) {
-            const i0 = index ? index.getX(t * 3 + 0) : t * 3 + 0;
-            const i1 = index ? index.getX(t * 3 + 1) : t * 3 + 1;
-            const i2 = index ? index.getX(t * 3 + 2) : t * 3 + 2;
-            const p0 = vCache[i0], p1 = vCache[i1], p2 = vCache[i2];
-            if (!p0 || !p1 || !p2) continue;
-
-            hardCtx.moveTo(p0.px, p0.py);
-            hardCtx.lineTo(p1.px, p1.py);
-            hardCtx.lineTo(p2.px, p2.py);
-            triangleCount++;
-          }
-        }
-        hardCtx.fill();
-      }
-
-      if (triangleCount === 0) {
-        hardCtx.beginPath();
-        const ellW = 18;
-        const ellH = 11;
-        hardCtx.ellipse(48 - 3, 48 + 3, ellW, ellH, Math.PI / 6, 0, Math.PI * 2);
-        hardCtx.fill();
-      }
-
-      const cellCanvas = document.createElement('canvas');
-      cellCanvas.width = 96;
-      cellCanvas.height = 96;
-      const cellCtx = cellCanvas.getContext('2d');
-      cellCtx.clearRect(0, 0, 96, 96);
-
-      cellCtx.save();
-      cellCtx.filter = 'blur(2.0px)';
-      cellCtx.globalAlpha = 0.55;
-      cellCtx.drawImage(hardCanvas, 0, 0);
-      cellCtx.restore();
-
-      cellCtx.save();
-      cellCtx.filter = 'blur(0.8px)';
-      cellCtx.globalAlpha = 0.70;
-      cellCtx.drawImage(hardCanvas, 0, 0);
-      cellCtx.restore();
-
-      atlasCtx.drawImage(cellCanvas, dir * 96, 0);
-
-      const imgData = cellCtx.getImageData(0, 0, 96, 96);
-      const pix = imgData.data;
-      const coverage = new Uint8Array(96 * 96);
-      let minX = 96, maxX = -1, minYpx = 96, maxYpx = -1;
-
-      for (let y = 0; y < 96; y++) {
-        for (let x = 0; x < 96; x++) {
-          const idx = y * 96 + x;
-          const a = pix[idx * 4 + 3];
-          const val4 = Math.min(15, Math.round((a / 255) * 15));
-          coverage[idx] = val4;
-          if (val4 >= 1) {
-            if (x < minX) minX = x;
-            if (x > maxX) maxX = x;
-            if (y < minYpx) minYpx = y;
-            if (y > maxYpx) maxYpx = y;
-          }
-        }
-      }
-
-      if (maxX >= minX && maxYpx >= minYpx) {
-        state.shadowBounds[dir] = [minX, minYpx, maxX - minX + 1, maxYpx - minYpx + 1];
-      } else {
-        state.shadowBounds[dir] = [36, 33, 16, 17];
-      }
-
-      const packedMask = new Uint8Array(4608);
-      for (let i = 0; i < 96 * 96; i += 2) {
-        const lo = coverage[i];
-        const hi = coverage[i + 1];
-        packedMask[i / 2] = ((hi & 0x0F) << 4) | (lo & 0x0F);
-      }
-      state.shadowMasks4Bit[dir] = packedMask;
+    if ($.mixer && duration > 0) {
+      $.mixer.setTime(0);
+    }
+    if (root) {
+      root.position.set(prevPosX, prevPosY, prevPosZ);
+      root.rotation.y = prevRotY;
+      root.updateMatrixWorld(true);
     }
 
     state.shadowCanvas = atlasCanvas;
@@ -1317,20 +1379,25 @@
   function generateCShadowAnchorHeader(name, anchorData, shadowBounds, shadowMasks) {
     const cleanName = name.replace(/[^a-zA-Z0-9_]/g, '_');
     const guard = `${cleanName.toUpperCase()}_NDS_SHADOW_ANCHOR_H`;
-    const anchorX = anchorData?.anchor ? anchorData.anchor[0] : 24;
-    const anchorY = anchorData?.anchor ? anchorData.anchor[1] : 42;
+    const size = parseInt(_p.resolution?.value, 10) || 40;
+    const frameCount = parseInt(_p.frameCount?.value, 10) || 8;
+    const shadowSize = state.shadowSize || (size * 2);
+    const maskBytes = (shadowSize * shadowSize) / 2;
+    const anchorX = anchorData?.anchor ? anchorData.anchor[0] : Math.round(size / 2);
+    const anchorY = anchorData?.anchor ? anchorData.anchor[1] : Math.round(size * 0.85);
 
     let c = `/* Auto-generated by DungeonDS FBX Web Renderer Lab */\n`;
     c += `#ifndef ${guard}\n#define ${guard}\n\n`;
     c += `#include <stdint.h>\n\n`;
     c += `#define ${cleanName.toUpperCase()}_ANCHOR_X ${anchorX}\n`;
     c += `#define ${cleanName.toUpperCase()}_ANCHOR_Y ${anchorY}\n`;
-    c += `#define ${cleanName.toUpperCase()}_SHADOW_W 96\n`;
-    c += `#define ${cleanName.toUpperCase()}_SHADOW_H 96\n`;
-    c += `#define ${cleanName.toUpperCase()}_NUM_DIRS 8\n\n`;
+    c += `#define ${cleanName.toUpperCase()}_SHADOW_W ${shadowSize}\n`;
+    c += `#define ${cleanName.toUpperCase()}_SHADOW_H ${shadowSize}\n`;
+    c += `#define ${cleanName.toUpperCase()}_NUM_DIRS 8\n`;
+    c += `#define ${cleanName.toUpperCase()}_NUM_FRAMES ${frameCount}\n\n`;
 
-    const gAnchors = anchorData?.dirGroundAnchors || [anchorY, anchorY, anchorY, anchorY, anchorY, anchorY, anchorY, anchorY];
-    c += `// Ground anchor Y per direction (lowest opaque pixel in sprite canvas)\n`;
+    const gAnchors = anchorData?.dirGroundAnchors || new Array(8).fill(anchorY);
+    c += `// Ground anchor Y per direction (3D ground origin projected in sprite canvas)\n`;
     c += `static const uint8_t g_${cleanName}_ground_anchors[8] = {\n`;
     c += `    ` + gAnchors.map(v => `${v}`).join(', ') + `\n`;
     c += `};\n\n`;
@@ -1338,30 +1405,38 @@
     c += `// Sprite bounding boxes [min_x, min_y, w, h] per direction\n`;
     c += `static const uint8_t g_${cleanName}_sprite_bounds[8][4] = {\n`;
     for (let d = 0; d < 8; d++) {
-      const b = (anchorData?.dirBounds && anchorData.dirBounds[d]) || [0, 0, 48, 48];
+      const b = (anchorData?.dirBounds && anchorData.dirBounds[d]) || [0, 0, size, size];
       c += `    { ${b[0]}, ${b[1]}, ${b[2]}, ${b[3]} },\n`;
     }
     c += `};\n\n`;
 
-    c += `// Shadow bounding boxes [sx0, sy0, w, h] per direction in 96x96 shadow canvas\n`;
-    c += `static const uint8_t g_${cleanName}_shadow_bounds[8][4] = {\n`;
+    c += `// Shadow bounding boxes [sx0, sy0, w, h] per direction and frame in ${shadowSize}x${shadowSize} shadow canvas\n`;
+    c += `static const uint8_t g_${cleanName}_shadow_bounds[8][${frameCount}][4] = {\n`;
     for (let d = 0; d < 8; d++) {
-      const b = (shadowBounds && shadowBounds[d]) || [36, 33, 16, 17];
-      c += `    { ${b[0]}, ${b[1]}, ${b[2]}, ${b[3]} },\n`;
+      c += `    {\n`;
+      for (let f = 0; f < frameCount; f++) {
+        const b = (shadowBounds && shadowBounds[d] && shadowBounds[d][f]) || [24, 24, 16, 16];
+        c += `        { ${b[0]}, ${b[1]}, ${b[2]}, ${b[3]} },\n`;
+      }
+      c += `    },\n`;
     }
     c += `};\n\n`;
 
-    c += `// 4-bit packed shadow coverage masks (96x96 / 2 = 4608 bytes per direction)\n`;
-    c += `static const uint8_t g_${cleanName}_shadow_masks[8][4608] __attribute__((aligned(4))) = {\n`;
+    c += `// 4-bit packed shadow coverage masks (${shadowSize}x${shadowSize} / 2 = ${maskBytes} bytes per frame)\n`;
+    c += `static const uint8_t g_${cleanName}_shadow_masks[8][${frameCount}][${maskBytes}] __attribute__((aligned(4))) = {\n`;
     for (let d = 0; d < 8; d++) {
       c += `    // Direction ${d} (${Ff[d] || d})\n    {\n`;
-      const mask = (shadowMasks && shadowMasks[d]) || new Uint8Array(4608);
-      for (let i = 0; i < 4608; i += 16) {
-        c += `        `;
-        for (let j = 0; j < 16 && i + j < 4608; j++) {
-          c += `0x${mask[i + j].toString(16).padStart(2, '0').toUpperCase()}, `;
+      for (let f = 0; f < frameCount; f++) {
+        c += `        // Frame ${f}\n        {\n`;
+        const mask = (shadowMasks && shadowMasks[d] && shadowMasks[d][f]) || new Uint8Array(maskBytes);
+        for (let i = 0; i < maskBytes; i += 16) {
+          c += `            `;
+          for (let j = 0; j < 16 && i + j < maskBytes; j++) {
+            c += `0x${mask[i + j].toString(16).padStart(2, '0').toUpperCase()}, `;
+          }
+          c += `\n`;
         }
-        c += `\n`;
+        c += `        },\n`;
       }
       c += `    },\n`;
     }
@@ -1403,20 +1478,21 @@
     // Ensure anchorData and shadows are up-to-date
     if (!state.anchorData) computeAnchorData();
     if (!state.shadowCanvas || !state.shadowMasks4Bit) generateCharacterShadows();
+    const shadowSize = state.shadowSize || (size * 2);
 
-    // Export shadow atlas 768x96
+    // Export shadow atlas (frameCount * shadowSize) x (8 * shadowSize)
     if (state.shadowCanvas) {
       const shadowBlob = await new Promise(resolve => state.shadowCanvas.toBlob(resolve, 'image/png'));
       if (shadowBlob) zip.file('shadow.png', shadowBlob);
 
-      // Export individual 96x96 shadows per direction: shadows/0_S.png, etc.
+      // Export individual shadow strips per direction: shadows/0_S.png, etc.
       const indShadowCanvas = document.createElement('canvas');
-      indShadowCanvas.width = 96;
-      indShadowCanvas.height = 96;
+      indShadowCanvas.width = shadowSize;
+      indShadowCanvas.height = shadowSize;
       const indCtx = indShadowCanvas.getContext('2d');
       for (let d = 0; d < Ff.length; d++) {
-        indCtx.clearRect(0, 0, 96, 96);
-        indCtx.drawImage(state.shadowCanvas, d * 96, 0, 96, 96, 0, 0, 96, 96);
+        indCtx.clearRect(0, 0, shadowSize, shadowSize);
+        indCtx.drawImage(state.shadowCanvas, 0, d * shadowSize, shadowSize, shadowSize, 0, 0, shadowSize, shadowSize);
         const indBlob = await new Promise(resolve => indShadowCanvas.toBlob(resolve, 'image/png'));
         if (indBlob) {
           zip.file(`shadows/${d}_${Ff[d]}.png`, indBlob);
@@ -1456,8 +1532,8 @@
       anchor: state.anchorData ? state.anchorData.anchor : [Math.round(size / 2), size - 4],
       dirGroundAnchors: state.anchorData ? state.anchorData.dirGroundAnchors : new Array(8).fill(size - 4),
       dirBounds: state.anchorData ? state.anchorData.dirBounds : new Array(8).fill([0, 0, size, size]),
-      shadowSize: [96, 96],
-      shadowBounds: state.shadowBounds || new Array(8).fill([36, 33, 16, 17]),
+      shadowSize: [shadowSize, shadowSize],
+      shadowBounds: state.shadowBounds || new Array(8).fill([24, 24, 16, 16]),
       stride3dMeters: Number(stride.toFixed(3)),
       strideRatio: Number((state.strideRatio || 0.833).toFixed(3)),
       ticksPerFrame: ticks,
@@ -2558,7 +2634,7 @@
       update3DViewMode();
       groundCharacterIn3D();
       computeAnchorData();
-      generateCharacterShadows();
+      if (highQuality || !state.shadowCanvas) generateCharacterShadows();
     }
     drawDsSimulator();
   }
@@ -2624,12 +2700,14 @@
       : (anchorData?.anchor ? anchorData.anchor[1] : (spriteSize - 4));
 
     // Shadow under character: real projected 3D shadow canvas or fallback ellipse
+    const frameCount = parseInt(_p.frameCount?.value, 10) || 8;
+    const animF = (state.charAnimFrame || 0) % frameCount;
     if (state.shadowCanvas) {
-      const shadowW = 96, shadowH = 96;
+      const shadowW = state.shadowSize || (spriteSize * 2), shadowH = shadowW;
       ctx.drawImage(
         state.shadowCanvas,
-        curDir * shadowW, 0, shadowW, shadowH,
-        Math.round(screenX - 48), Math.round(screenY - 48), shadowW, shadowH
+        animF * shadowW, curDir * shadowH, shadowW, shadowH,
+        Math.round(screenX - shadowW / 2), Math.round(screenY - shadowH / 2), shadowW, shadowH
       );
     } else {
       ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
@@ -2639,7 +2717,6 @@
     }
 
     // Sprite drawing
-    const frameCount = parseInt(_p.frameCount?.value, 10) || 8;
     const frames = getFrames();
 
     if (frames.length === Ff.length * frameCount) {

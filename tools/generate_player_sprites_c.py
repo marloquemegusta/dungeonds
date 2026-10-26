@@ -1,24 +1,28 @@
 import os, re, json
 from PIL import Image
 
-WT = '.worktrees/asset-refresh'
+WT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+SPRITE_W = 40
+SPRITE_H = 40
+SHADOW_W = 80
+SHADOW_H = 80
+MASK_BYTES = (SHADOW_W * SHADOW_H) // 2
 
 def parse_header(h_path):
-    with open(h_path) as f:
+    with open(h_path, 'r', encoding='utf-8') as f:
         text = f.read()
     m_anc = re.search(r'g_\w+_ground_anchors\[8\]\s*=\s*\{([^}]+)\};', text)
     anchors = [int(x.strip()) for x in m_anc.group(1).split(',') if x.strip()]
     m_sb = re.search(r'g_\w+_sprite_bounds\[8\]\[4\]\s*=\s*\{([^;]+)\};', text)
     sb_rows = re.findall(r'\{\s*(\d+),\s*(\d+),\s*(\d+),\s*(\d+)\s*\}', m_sb.group(1))
     sprite_bounds = [[int(x) for x in r] for r in sb_rows]
-    m_shb = re.search(r'g_\w+_shadow_bounds\[8\]\[4\]\s*=\s*\{([^;]+)\};', text)
-    shb_rows = re.findall(r'\{\s*(\d+),\s*(\d+),\s*(\d+),\s*(\d+)\s*\}', m_shb.group(1))
-    shadow_bounds = [[int(x) for x in r] for r in shb_rows]
-    m_mask = re.search(r'g_\w+_shadow_masks\[8\]\[4608\][^{]+\{([\s\S]+?)\n\};', text)
+    m_shb = re.search(r'g_\w+_shadow_bounds\[8\]\[8\]\[4\]\s*=\s*\{([\s\S]+?)\n\};', text)
+    shb_body = m_shb.group(1)
+    m_mask = re.search(rf'g_\w+_shadow_masks\[8\]\[8\]\[{MASK_BYTES}\][^{{]+\{{([\s\S]+?)\n\}};', text)
     mask_body = m_mask.group(1)
-    return anchors, sprite_bounds, shadow_bounds, mask_body
+    return anchors, sprite_bounds, shb_body, mask_body
 
-def convert_sheet(png_path, w=48, h=48):
+def convert_sheet(png_path, w=SPRITE_W, h=SPRITE_H):
     im = Image.open(png_path).convert('RGBA')
     lines = []
     lines.append('{\n')
@@ -47,60 +51,73 @@ def convert_sheet(png_path, w=48, h=48):
     lines.append('};\n')
     return ''.join(lines)
 
-# Characters config: (var_name, folder, disp_name, spd, ticks)
-chars = [
-    ('player', 'marine', 'Space Marine Hero', 406, 4),
-    ('charger', 'charger', 'Enemy Charger (Knocker)', 373, 5),
-    ('necron', 'necron', 'Necron Shooter Enemy', 461, 4),
+chars_meta = [
+    ('player', 'marine', 'Space Marine Hero', 340, 4),
+    ('charger', 'charger', 'Enemy Charger (Knocker)', 310, 5),
+    ('necron', 'necron', 'Necron Shooter Enemy', 385, 4),
 ]
 
 out_lines = []
 out_lines.append('#include "player_sprite.h"\n\n')
+
+char_configs = []
+all_anchors = []
+for var_name, folder, disp_name, def_spd, def_ticks in chars_meta:
+    char_dir = os.path.join(WT, 'assets/sprites/characters', folder)
+    settings_path = os.path.join(char_dir, 'settings.json')
+    spd, ticks = def_spd, def_ticks
+    if os.path.exists(settings_path):
+        with open(settings_path, 'r', encoding='utf-8') as sf:
+            sdata = json.load(sf)
+            spd = int(sdata.get('speedFixed8_8', def_spd))
+            ticks = int(sdata.get('ticksPerFrame', def_ticks))
+    char_configs.append((var_name, folder, disp_name, spd, ticks))
+
 out_lines.append('const CharacterConfig g_characters[NUM_CHARACTERS] = {\n')
-for var_name, folder, disp_name, spd, ticks in chars:
+for var_name, folder, disp_name, spd, ticks in char_configs:
     out_lines.append(f'    {{ "{disp_name}", {spd}, {ticks} }},\n')
 out_lines.append('};\n\n')
 
-# Convert each character
-for var_name, folder, disp_name, spd, ticks in chars:
+for var_name, folder, disp_name, spd, ticks in char_configs:
     char_dir = os.path.join(WT, 'assets/sprites/characters', folder)
     png_path = os.path.join(char_dir, 'spritesheet.png')
     h_path = os.path.join(char_dir, 'nds_shadow_anchor.h')
-    
-    anchors, sb, shb, mask_body = parse_header(h_path)
-    
-    # Frames
-    out_lines.append(f'// 48x48 BGR555 frames for {disp_name}, 8 directions x 8 frames\n')
+
+    anchors, sb, shb_body, mask_body = parse_header(h_path)
+    all_anchors.append(anchors)
+
+    out_lines.append(f'// {SPRITE_W}x{SPRITE_H} BGR555 frames for {disp_name}, 8 directions x 8 frames\n')
     out_lines.append(f'const uint16_t g_{var_name}_frames[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][PLAYER_SPRITE_W * PLAYER_SPRITE_H] __attribute__((aligned(4))) = ')
-    out_lines.append(convert_sheet(png_path, 48, 48))
+    out_lines.append(convert_sheet(png_path, SPRITE_W, SPRITE_H))
     out_lines.append('\n')
-    
-    # Shadows
-    out_lines.append(f'// 4-bit packed shadow masks for {disp_name}\n')
-    out_lines.append(f'const uint8_t g_{var_name}_shadow_masks[PLAYER_NUM_DIRS][PLAYER_SHADOW_W * PLAYER_SHADOW_H / 2] __attribute__((aligned(4))) = {{\n')
+
+    out_lines.append(f'// 4-bit packed animated crisp 3D shadow masks for {disp_name} (8 dirs x 8 frames)\n')
+    out_lines.append(f'const uint8_t g_{var_name}_shadow_masks[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][PLAYER_SHADOW_W * PLAYER_SHADOW_H / 2] __attribute__((aligned(4))) = {{\n')
     out_lines.append(mask_body)
     out_lines.append('\n};\n\n')
-    
-    # Shadow bounds
-    out_lines.append(f'const uint8_t g_{var_name}_shadow_bounds[PLAYER_NUM_DIRS][4] = {{\n')
-    for row in shb:
-        out_lines.append(f'    {{ {row[0]}, {row[1]}, {row[2]}, {row[3]} }},\n')
-    out_lines.append('};\n\n')
 
-# Arrays table
+    out_lines.append(f'const uint8_t g_{var_name}_shadow_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4] = {{\n')
+    out_lines.append(shb_body)
+    out_lines.append('\n};\n\n')
+
+out_lines.append('const uint8_t g_character_ground_anchors[NUM_CHARACTERS][PLAYER_NUM_DIRS] = {\n')
+for anc in all_anchors:
+    out_lines.append('    { ' + ', '.join(str(x) for x in anc) + ' },\n')
+out_lines.append('};\n\n')
+
 out_lines.append('const uint16_t (* const g_character_frames[NUM_CHARACTERS])[PLAYER_NUM_FRAMES][PLAYER_SPRITE_W * PLAYER_SPRITE_H] = {\n')
 out_lines.append('    g_player_frames,\n')
 out_lines.append('    g_charger_frames,\n')
 out_lines.append('    g_necron_frames\n')
 out_lines.append('};\n\n')
 
-out_lines.append('const uint8_t (* const g_character_shadow_masks[NUM_CHARACTERS])[PLAYER_SHADOW_W * PLAYER_SHADOW_H / 2] = {\n')
+out_lines.append('const uint8_t (* const g_character_shadow_masks[NUM_CHARACTERS])[PLAYER_NUM_FRAMES][PLAYER_SHADOW_W * PLAYER_SHADOW_H / 2] = {\n')
 out_lines.append('    g_player_shadow_masks,\n')
 out_lines.append('    g_charger_shadow_masks,\n')
 out_lines.append('    g_necron_shadow_masks\n')
 out_lines.append('};\n\n')
 
-out_lines.append('const uint8_t (* const g_character_shadow_bounds[NUM_CHARACTERS])[4] = {\n')
+out_lines.append('const uint8_t (* const g_character_shadow_bounds[NUM_CHARACTERS])[PLAYER_NUM_FRAMES][4] = {\n')
 out_lines.append('    g_player_shadow_bounds,\n')
 out_lines.append('    g_charger_shadow_bounds,\n')
 out_lines.append('    g_necron_shadow_bounds\n')

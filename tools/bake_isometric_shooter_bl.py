@@ -28,8 +28,8 @@ COLLISION_W = WORLD_W // COLLISION_SCALE # 384
 COLLISION_H = WORLD_H // COLLISION_SCALE # 216
 COLLISION_BYTES = (COLLISION_W * COLLISION_H * 2 + 7) // 8 # 20736 bytes
 
-SPAWN_PIXEL_X = 754
-SPAWN_PIXEL_Y = 466
+SPAWN_PIXEL_X = 705
+SPAWN_PIXEL_Y = 515
 
 print(f"=== BAKING ISOMETRIC SHOOTER BL MAP ===")
 print(f"World: {WORLD_W}x{WORLD_H} (padded from {ORIG_W}x{ORIG_H})")
@@ -201,21 +201,29 @@ print("diablo_dungeon.c and .h written!")
 # ---------------------------------------------------------------------------
 # 3. BAKE OCCLUSION (dungeon_occlusion.h / .c)
 # ---------------------------------------------------------------------------
-is_black_pixel = (arr_rgb[:,:,0] < 5) & (arr_rgb[:,:,1] < 5) & (arr_rgb[:,:,2] < 5)
-is_wall = (padded_c < 128) & (~is_black_pixel)
+occ_png = os.path.join(MAP_DIR, 'occlusion.png')
+if os.path.exists(occ_png):
+    im_occ = Image.open(occ_png).convert('L')
+    arr_occ = np.zeros((WORLD_H, WORLD_W), dtype=np.uint8)
+    arr_occ[:ORIG_H, :ORIG_W] = np.array(im_occ)
+    is_wall = arr_occ >= 128
+else:
+    is_black_pixel = (arr_rgb[:,:,0] < 5) & (arr_rgb[:,:,1] < 5) & (arr_rgb[:,:,2] < 5)
+    is_wall = (padded_c < 128) & (~is_black_pixel)
 
 foot_y = np.full((WORLD_H, WORLD_W), -1, dtype=np.int16)
 for x in range(WORLD_W):
-    walk_indices = np.where(padded_c[:, x] >= 128)[0]
-    if len(walk_indices) == 0:
-        continue
-    for y in range(WORLD_H):
-        if is_wall[y, x]:
-            below = walk_indices[walk_indices > y]
-            if len(below) > 0:
-                foot_y[y, x] = below[0]
-            else:
-                foot_y[y, x] = walk_indices[-1]
+    col_wall = is_wall[:, x]
+    y = 0
+    while y < WORLD_H:
+        if not col_wall[y]:
+            y += 1
+            continue
+        y0 = y
+        while y < WORLD_H and col_wall[y]:
+            y += 1
+        # The base of this contiguous vertical wall span is y - 1
+        foot_y[y0:y, x] = y - 1
 
 runs = []
 for y in range(WORLD_H):
@@ -229,7 +237,7 @@ for y in range(WORLD_H):
         max_d = foot_y[y, x]
         while x < WORLD_W and foot_y[y, x] >= 0:
             d = foot_y[y, x]
-            if max(max_d, d) - min(min_d, d) > 16:
+            if max(max_d, d) - min(min_d, d) > 4:
                 break
             min_d = min(min_d, d)
             max_d = max(max_d, d)
