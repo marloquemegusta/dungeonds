@@ -6,8 +6,11 @@ ROOT = Path(__file__).resolve().parents[1]
 MAIN = (ROOT / "source" / "main.c").read_text(encoding="utf-8")
 SPRITES = (ROOT / "source" / "player_sprite.c").read_text(encoding="utf-8")
 ANCHOR_Y = 28
-WIDTH = 48
-HEIGHT = 48
+WIDTH = 40
+HEIGHT = 40
+SHADOW_W = 80
+SHADOW_H = 80
+MASK_BYTES = (SHADOW_W * SHADOW_H) // 2
 
 
 def pixel_values(symbol):
@@ -45,6 +48,16 @@ class SpriteGroundAnchorTests(unittest.TestCase):
             body = MAIN[start:end]
             self.assertIn("py - s_char_ground_anchor[", body)
             self.assertNotIn("sprite_max_y", body)
+
+    def test_shadow_masks_and_bounds_dimensions(self):
+        for prefix in ("g_player", "g_charger", "g_necron"):
+            mask_decl = f"const uint8_t {prefix}_shadow_masks[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][PLAYER_SHADOW_W * PLAYER_SHADOW_H / 2]"
+            self.assertIn(mask_decl, SPRITES)
+            bounds_decl = f"const uint8_t {prefix}_shadow_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4]"
+            self.assertIn(bounds_decl, SPRITES)
+
+        anchor_decl = "const uint8_t g_character_ground_anchors[NUM_CHARACTERS][PLAYER_NUM_DIRS]"
+        self.assertIn(anchor_decl, SPRITES)
 
 
 if __name__ == "__main__":

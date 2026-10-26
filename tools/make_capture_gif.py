@@ -13,10 +13,14 @@ def main():
     parser.add_argument("--prefix", required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--duration-ms", type=int, default=80)
-    parser.add_argument("--crop", nargs=4, type=int, metavar=("LEFT", "TOP", "RIGHT", "BOTTOM"))
+    parser.add_argument("--fps", type=float, default=None)
+    parser.add_argument("--crop", nargs="+", type=str, metavar="CROP")
     parser.add_argument("--scale", type=int, default=1)
     parser.add_argument("--skip-initial", type=int, default=0)
     args = parser.parse_args()
+
+    if args.fps:
+        args.duration_ms = round(1000 / args.fps)
 
     frames = sorted(args.input_dir.glob(f"{args.prefix}_*.png"))
     if args.skip_initial < 0:
@@ -28,7 +32,15 @@ def main():
         parser.error("--scale must be at least 1")
     rgb_images = [Image.open(path).convert("RGB") for path in frames]
     if args.crop:
-        box = tuple(args.crop)
+        if len(args.crop) == 1 and "," in args.crop[0]:
+            box = tuple(int(x.strip()) for x in args.crop[0].split(","))
+        else:
+            box = tuple(int(x) for x in args.crop)
+        if len(box) != 4:
+            parser.error("--crop requires 4 integers (LEFT TOP RIGHT BOTTOM or X,Y,W,H)")
+        # If coordinates are (x, y, w, h) where right <= left or bottom <= top, convert to (left, top, right, bottom)
+        if box[2] <= box[0] or box[3] <= box[1]:
+            box = (box[0], box[1], box[0] + box[2], box[1] + box[3])
         width, height = rgb_images[0].size
         if box[0] < 0 or box[1] < 0 or box[2] > width or box[3] > height or box[0] >= box[2] or box[1] >= box[3]:
             parser.error(f"--crop must fit within captured frame size {width}x{height}")
