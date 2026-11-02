@@ -50,7 +50,6 @@
 #define OCCLUSION_GRID_W ((SCREEN_W + (1 << OCCLUSION_GRID_SHIFT) - 1) >> OCCLUSION_GRID_SHIFT)
 #define OCCLUSION_GRID_H ((SCREEN_H + (1 << OCCLUSION_GRID_SHIFT) - 1) >> OCCLUSION_GRID_SHIFT)
 #define OCCLUSION_DEPTH_SHIFT 2
-#define OCCLUSION_DEPTH_PAD_CELLS 0
 #define OCCLUSION_DEPTH_W ((SCREEN_W + (1 << OCCLUSION_DEPTH_SHIFT) - 1) >> OCCLUSION_DEPTH_SHIFT)
 #define OCCLUSION_DEPTH_H ((SCREEN_H + (1 << OCCLUSION_DEPTH_SHIFT) - 1) >> OCCLUSION_DEPTH_SHIFT)
 #define BG_RING_W 64
@@ -202,14 +201,11 @@ static inline int player_screen_y(fixed x, fixed y) {
 
 // ---------------------------------------------------------------------------
 // Collision
+//
+// The baked grid is the only walkability source: the lab exports floor that is
+// reachable and free of any geometry inside the body slab, so dark render
+// pixels never act as invisible walls.
 // ---------------------------------------------------------------------------
-
-int world_point_has_floor(int px, int py) {
-    if (px < 0 || px >= WORLD_W || py < 0 || py >= WORLD_H) return 0;
-    uint16_t tile_id = g_dungeon_bg_map[py >> 3][px >> 3];
-    if (tile_id >= DUNGEON_BG_NUM_TILES) return 0;
-    return g_dungeon_bg_tiles[tile_id][(py & 7) * 8 + (px & 7)] != 0;
-}
 
 static inline uint8_t world_collision_flags(int cx, int cy) {
     uint32_t index = (uint32_t)cy * COLLISION_W + (uint32_t)cx;
@@ -219,16 +215,8 @@ static inline uint8_t world_collision_flags(int cx, int cy) {
 int position_is_free(fixed x, fixed y) {
     int wx = (int)(x >> FIXED_SHIFT);
     int wy = (int)(y >> FIXED_SHIFT);
-    static const int floor_offsets[9][2] = {
-        {0, 0}, {-6, 0}, {6, 0}, {0, -6}, {0, 6},
-        {-4, -4}, {-4, 4}, {4, -4}, {4, 4}
-    };
     const int radius = 6;
-    for (int i = 0; i < 9; i++) {
-        int px = wx + floor_offsets[i][0];
-        int py = wy + floor_offsets[i][1];
-        if (!world_point_has_floor(px, py)) return 0;
-    }
+    if (wx - radius < 0 || wy - radius < 0) return 0;
 
     int cell_x0 = (wx - radius) / COLLISION_SCALE;
     int cell_x1 = (wx + radius) / COLLISION_SCALE;
@@ -254,7 +242,7 @@ int position_is_free(fixed x, fixed y) {
 int bullet_position_is_free(fixed x, fixed y) {
     int px = (int)(x >> FIXED_SHIFT);
     int py = (int)(y >> FIXED_SHIFT);
-    if (!world_point_has_floor(px, py)) return 0;
+    if (px < 0 || py < 0) return 0;
     int cx = px / COLLISION_SCALE;
     int cy = py / COLLISION_SCALE;
     if (cx < 0 || cx >= COLLISION_W || cy < 0 || cy >= COLLISION_H) return 0;
@@ -348,13 +336,15 @@ static void init_obj_sprite_bounds(void) {
 
 }
 
-static inline uint32_t find_first_occlusion_run(int target_y) {
-    if (target_y <= 0) return 0;
-    uint32_t low = 0;
-    uint32_t high = g_dungeon_occlusion_run_count;
+// Runs of one world row are sorted by x; find the first that may reach cam_x.
+// Runs never overlap, so the one ending past cam_x starts at or before any later one.
+static inline uint32_t find_first_occlusion_run_in_row(int row, int cam_x) {
+    uint32_t low = g_dungeon_occlusion_row_start[row];
+    uint32_t high = g_dungeon_occlusion_row_start[row + 1];
     while (low < high) {
         uint32_t mid = (low + high) >> 1;
-        if ((int)g_dungeon_occlusion_runs[mid].y < target_y) {
+        const DungeonOcclusionRun *run = &g_dungeon_occlusion_runs[mid];
+        if ((int)run->x + (int)run->length <= cam_x) {
             low = mid + 1;
         } else {
             high = mid;
@@ -372,45 +362,25 @@ static void build_occlusion_depth_map(int cam_x, int cam_y) {
     uint32_t fill_val = 0xFFFFFFFF;
     swiFastCopy(&fill_val, s_occlusion_depth, COPY_MODE_FILL | (sizeof(s_occlusion_depth) >> 2));
     swiFastCopy(&fill_val, s_occlusion_block_max, COPY_MODE_FILL | (sizeof(s_occlusion_block_max) >> 2));
-    if (g_dungeon_occlusion_run_count == 0) return;
+    int row_y0 = cam_y > 0 ? cam_y : 0;
+    int row_y1 = cam_y + SCREEN_H < WORLD_H ? cam_y + SCREEN_H : WORLD_H;
+    for (int run_y = row_y0; run_y < row_y1; run_y++) {
+        uint32_t i = find_first_occlusion_run_in_row(run_y, cam_x);
+        uint32_t row_end = g_dungeon_occlusion_row_start[run_y + 1];
+        int16_t *depth_row = &s_occlusion_depth[
+            ((uint32_t)(run_y - cam_y) >> OCCLUSION_DEPTH_SHIFT) * OCCLUSION_DEPTH_W];
 
-    for (uint32_t segment = 0; segment < DUNGEON_OCCLUSION_SEGMENTS; segment++) {
-        int segment_x = g_dungeon_occlusion_segments[segment].x;
-        int segment_y = g_dungeon_occlusion_segments[segment].y;
-
-        int seg_min_y = (int)g_dungeon_occlusion_runs[0].y + segment_y;
-        int seg_max_y = (int)g_dungeon_occlusion_runs[g_dungeon_occlusion_run_count - 1].y + segment_y;
-        if (seg_max_y < cam_y || seg_min_y >= cam_y + SCREEN_H) continue;
-
-        int target_y = cam_y - segment_y;
-        uint32_t start_i = find_first_occlusion_run(target_y);
-
-        for (uint32_t i = start_i; i < g_dungeon_occlusion_run_count; i++) {
+        for (; i < row_end; i++) {
             const DungeonOcclusionRun *run = &g_dungeon_occlusion_runs[i];
-            int run_y = (int)run->y + segment_y;
-            if (run_y >= cam_y + SCREEN_H) break;
-
-            int run_x = (int)run->x + segment_x;
-            int run_depth = (int)run->depth + segment_y;
-            if (run->length == 0 || run_y < 0 || run_y >= WORLD_H ||
-                run_x + (int)run->length <= 0 || run_x >= WORLD_W) continue;
-            int local_y = run_y - cam_y;
+            int run_x = (int)run->x;
+            if (run_x >= cam_x + SCREEN_W) break;
+            int run_depth = (int)run->depth;
             int world_x0 = run_x > cam_x ? run_x : cam_x;
             int run_x1 = run_x + run->length;
             int world_x1 = run_x1 < cam_x + SCREEN_W ? run_x1 : cam_x + SCREEN_W;
             if (world_x0 >= world_x1) continue;
-            uint32_t local_x0 = (uint32_t)(world_x0 - cam_x);
-            uint32_t local_x1 = (uint32_t)(world_x1 - cam_x);
-            uint32_t depth_y = (uint32_t)local_y >> OCCLUSION_DEPTH_SHIFT;
-            uint32_t depth_x0 = local_x0 >> OCCLUSION_DEPTH_SHIFT;
-            uint32_t depth_x1 = (local_x1 - 1) >> OCCLUSION_DEPTH_SHIFT;
-#if OCCLUSION_DEPTH_PAD_CELLS > 0
-            depth_x0 = depth_x0 > OCCLUSION_DEPTH_PAD_CELLS ?
-                depth_x0 - OCCLUSION_DEPTH_PAD_CELLS : 0;
-            depth_x1 += OCCLUSION_DEPTH_PAD_CELLS;
-#endif
-            if (depth_x1 >= OCCLUSION_DEPTH_W) depth_x1 = OCCLUSION_DEPTH_W - 1;
-            int16_t *depth_row = &s_occlusion_depth[depth_y * OCCLUSION_DEPTH_W];
+            uint32_t depth_x0 = (uint32_t)(world_x0 - cam_x) >> OCCLUSION_DEPTH_SHIFT;
+            uint32_t depth_x1 = (uint32_t)(world_x1 - cam_x - 1) >> OCCLUSION_DEPTH_SHIFT;
             for (uint32_t x = depth_x0; x <= depth_x1; x++)
                 if (run_depth > depth_row[x]) depth_row[x] = (int16_t)run_depth;
         }
@@ -1482,6 +1452,11 @@ static void player_update(uint32_t keys, uint32_t keys_down, int touch_x, int to
         s_player.is_moving = 0;
         s_player.frame = 0;
         return;
+    }
+
+    // Debug god mode for headless walk scenarios: hold L+R and press B.
+    if ((keys & (KEY_L | KEY_R)) == (KEY_L | KEY_R) && (keys_down & KEY_B)) {
+        g_player_state.god_mode = !g_player_state.god_mode;
     }
 
     // Shoulder buttons cycle weapons (L: previous, R: next)

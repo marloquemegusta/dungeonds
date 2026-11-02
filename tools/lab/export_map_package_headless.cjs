@@ -1,0 +1,75 @@
+// Headless map export: loads a map model into the offline lab with the render
+// settings stored in an existing map_settings.json and writes the lab's map
+// package (world.png, collision.png/json, occlusion.png, occlusion_depth.png).
+//
+// usage: node export_map_package_headless.cjs <model.glb|fbx> <settings.json> <out_dir>
+const fs = require('node:fs');
+const path = require('node:path');
+
+let chromium;
+for (const p of ['playwright',
+  'C:/Users/malfonso/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright']) {
+  try { chromium = require(p).chromium; if (chromium) break; } catch (e) {}
+}
+if (!chromium) { console.error('Playwright not found'); process.exit(1); }
+
+const [model, settingsPath, outDir] = process.argv.slice(2).map(p => p && path.resolve(p));
+if (!model || !settingsPath || !outDir) {
+  console.error('usage: node export_map_package_headless.cjs <model> <map_settings.json> <out_dir>');
+  process.exit(2);
+}
+const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
+const HTML = path.join(__dirname, 'FBX-Web-Renderer-offline.html');
+
+(async () => {
+  const browser = await chromium.launch({ headless: true, args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--disable-dev-shm-usage'] });
+  const errors = [];
+  try {
+    const page = await browser.newPage({ viewport: { width: 1680, height: 1050 }, deviceScaleFactor: 1 });
+    page.on('pageerror', e => errors.push(e.stack || e.message));
+    await page.goto(`file:///${HTML.replace(/\\/g, '/')}`, { waitUntil: 'load' });
+    await page.waitForFunction(() => !!window.__spriteLab, { timeout: 30000 });
+
+    await page.evaluate(s => {
+      const set = (id, value) => {
+        const el = document.getElementById(id);
+        if (!el || value === undefined) return;
+        el.value = String(value);
+        el.dispatchEvent(new Event('input', { bubbles: true }));
+        el.dispatchEvent(new Event('change', { bubbles: true }));
+      };
+      set('mapPixelSize', s.width);
+      set('elevation', s.cameraElevationDegrees);
+      set('contrast', s.contrast);
+      set('saturation', s.saturation);
+      set('labBrightness', s.brightness);
+      set('lightPreset', s.lighting?.preset);
+      set('keyLight', s.lighting?.key);
+      set('fillLight', s.lighting?.fill);
+      set('rimLight', s.lighting?.rim);
+      set('worldLight', s.lighting?.world);
+      if (s.orthoScaleMeters) window.__spriteLab.mapOrthoScale = s.orthoScaleMeters;
+    }, settings);
+
+    const before = await page.evaluate(() => window.__spriteLab.mapRenderCount || 0);
+    await page.locator('#mapFileInput').setInputFiles(model);
+    await page.waitForFunction(n => (window.__spriteLab.mapRenderCount || 0) > n && window.__spriteLab.mapGroundDepth,
+      before, { timeout: 180000 });
+
+    // Loading the model triggers renderMap with the settings applied above.
+    const files = await page.evaluate(async () => {
+      const lab = window.__spriteLab;
+      const blob = await lab.exportMapPackage();
+      const zip = await Nf.default.loadAsync(blob);
+      const out = {};
+      for (const name of Object.keys(zip.files)) out[name] = await zip.files[name].async('base64');
+      return { out, w: lab.mapWidth, h: lab.mapHeight };
+    });
+    fs.mkdirSync(outDir, { recursive: true });
+    for (const [name, b64] of Object.entries(files.out)) fs.writeFileSync(path.join(outDir, name), Buffer.from(b64, 'base64'));
+    console.log(`exported ${Object.keys(files.out).join(', ')} at ${files.w}x${files.h} -> ${outDir}`);
+    if (errors.length) console.error('page errors:\n' + errors.join('\n'));
+  } finally {
+    await browser.close();
+  }
+})().catch(e => { console.error(e); process.exit(1); });

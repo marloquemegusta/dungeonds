@@ -12,8 +12,10 @@ SCREEN_W = 256
 SCREEN_H = 192
 GRID_W = (SCREEN_W + BLOCK - 1) // BLOCK
 GRID_H = (SCREEN_H + BLOCK - 1) // BLOCK
-DEPTH_W = (SCREEN_W + 1) // 2
-DEPTH_H = (SCREEN_H + 1) // 2
+MAIN_SOURCE = (ROOT / "source/main.c").read_text(encoding="utf-8")
+DEPTH_CELL = 1 << int(re.search(r"#define OCCLUSION_DEPTH_SHIFT (\d+)", MAIN_SOURCE).group(1))
+DEPTH_W = (SCREEN_W + DEPTH_CELL - 1) // DEPTH_CELL
+DEPTH_H = (SCREEN_H + DEPTH_CELL - 1) // DEPTH_CELL
 
 
 def load_maps(cam_x, cam_y):
@@ -31,9 +33,9 @@ def load_maps(cam_x, cam_y):
         for world_x in range(x0, x1):
             px = world_x - cam_x
             depth[local_y][px] = value
-            coarse = depth_coarse[local_y // 2]
-            if value > coarse[px // 2]:
-                coarse[px // 2] = value
+            coarse = depth_coarse[local_y // DEPTH_CELL]
+            if value > coarse[px // DEPTH_CELL]:
+                coarse[px // DEPTH_CELL] = value
         for bx in range((x0 - cam_x) // BLOCK, (x1 - 1 - cam_x) // BLOCK + 1):
             if x0 < x1:
                 block_max[local_y // BLOCK][bx] = max(block_max[local_y // BLOCK][bx], value)
@@ -73,19 +75,18 @@ class OcclusionGridContractTest(unittest.TestCase):
             elif not may_block(self.block_max, x0, x1, y, actor_depth):
                 continue
 
-    def test_two_by_two_depth_cells_never_drop_frontmost_occlusion(self):
+    def test_coarse_depth_cells_never_drop_frontmost_occlusion(self):
         rng = random.Random(0x2D)
         for _ in range(20000):
             x = rng.randrange(SCREEN_W)
             y = rng.randrange(SCREEN_H)
             actor_depth = rng.randrange(-1, max(WORLD_W, WORLD_H) + 1)
             if self.depth[y][x] > actor_depth:
-                self.assertGreater(self.depth_coarse[y // 2][x // 2], actor_depth)
+                self.assertGreater(self.depth_coarse[y // DEPTH_CELL][x // DEPTH_CELL], actor_depth)
 
     def test_runtime_uses_conservative_gate_before_exact_depth_blit(self):
         source = (ROOT / "source/main.c").read_text(encoding="utf-8")
         self.assertIn("OCCLUSION_GRID_SHIFT 3", source)
-        self.assertIn("OCCLUSION_DEPTH_SHIFT 1", source)
         self.assertIn("OCCLUSION_GRID_W ((SCREEN_W", source)
         self.assertIn("int local_y = y - s_occlusion_cam_y;", source)
         self.assertIn("occlusion_may_block_span(world_x0, world_x1, world_y, depth)", source)
