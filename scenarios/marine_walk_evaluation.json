@@ -1,7 +1,7 @@
 {
   "name": "marine_walk_evaluation",
   "steps": [
-    { "frames": 30, "buttons": [] },
+    { "frames": 30 },
     { "button_down": "RIGHT", "frames": 24, "capture_sequence": "marine_walk", "capture_every": 1 },
     { "button_up": "RIGHT", "frames": 4 },
     { "button_down": "RIGHT", "frames": 1 },
