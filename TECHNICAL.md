@@ -42,3 +42,39 @@
 - **Índice por Fila y Búsqueda Binaria en X:** Los tramos (`g_dungeon_occlusion_runs`) se ordenan por (y, x) y `g_dungeon_occlusion_row_start[WORLD_H + 1]` delimita los de cada fila. `build_occlusion_depth_map()` recorre sólo las filas visibles y busca en binario el primer tramo que alcanza la cámara (`find_first_occlusion_run_in_row()`). Recorrer todos los tramos de las filas visibles costaba ~370k ticks por reconstrucción y bajaba a 30 FPS.
 - **Prohibición de Paddings Fantasma:** Prohibido aplicar márgenes de celda arbitrarios a las máscaras. Todo padding artificial crea volúmenes invisibles que recortan al personaje en el aire antes de tocar las siluetas arquitectónicas reales.
 - **Contrato de Datos del Mapa (lab → baker → runtime):** `world.png`, `collision.png` y `occlusion_depth.png` se exportan del mismo modelo y la misma cámara (`tools/lab/export_map_package_headless.cjs`). `occlusion_depth.png` guarda por píxel la Y de mapa del punto de suelo bajo la superficie visible (R,G big endian) y B=255 si la superficie supera 0,25 m; el runtime oculta un píxel de actor si esa Y es mayor que la Y de sus pies. La colisión es la huella sobre el suelo de la geometría en la franja 0,30–1,20 m y es la única fuente de "suelo caminable". Verificación: `python tests/test_map_export_coherence.py`.
+
+## 4. Deuda Técnica Pendiente (auditoría 2026-11-02)
+
+Origen: `walkthroughs/audit-saneamiento-2d3d/`. Lo ya resuelto (colisión/oclusión coherentes con el render) está en `walkthroughs/map-export-coherence/`. Se referencian funciones, no líneas, porque se desplazan. Al cerrar un punto, borrarlo de aquí y registrarlo en `STATUS.md`.
+
+### 4.1. Proyección y render 2.5D (prioridad alta)
+- **Movimiento y colisión en espacio de pantalla.** `player_update` usa la misma velocidad en X e Y de pantalla y normaliza diagonales con `*181>>8`; `position_is_free` usa un círculo de 6 px de pantalla. En 2:1 eso es una elipse en el suelo y moverse en vertical recorre el doble de suelo. Pasar actores a coordenadas de suelo y proyectar sólo al dibujar (afecta a jugador, enemigos, proyectiles y `sweep_position`).
+- **Escala personaje/mapa.** El mapa está a 40,42 px/m (`map_settings.json`) y los sprites miden ~30 px: el personaje equivale a ~0,75 m y queda oculto tras obstáculos de 1 m. Fijar una única escala px/m para mapa y sprites, con test.
+- **Ancla de suelo triplicada.** `PLAYER_ANCHOR_Y` = 35 (`include/player_sprite.h`), anclas reales 32/33 (`g_character_ground_anchors`) y 28 en `tests/test_sprite_ground_anchor.py`; el culling de `render_screen` usa la constante. Una sola fuente generada por el exportador.
+- **Parpadeo del jugador ocluido.** `blit_stride` dibuja los píxeles ocultos del jugador en frames impares. Sustituir por silueta o dither estable.
+- **Resolución de oclusión 4×4.** `OCCLUSION_DEPTH_SHIFT 2` con reducción `max` recorta en escalón hasta 16 px por un píxel de muro. Evaluar 2×2 o por píxel dentro del presupuesto de 60 FPS.
+- **Histéresis de reconstrucción.** `build_occlusion_depth_map` sólo se reconstruye si la cámara se mueve ≥4 px, dejando hasta 3 px de borde sin oclusores.
+- **Pantalla superior sin actores.** Sólo la inferior dibuja actores; enemigos por encima de la cámara no se ven. `CAMERA_ANCHOR_Y` está definido y sin uso.
+
+### 4.2. Gameplay
+- Lead del tirador anulado: `(player_vx * travel_frames) >> 8` en `enemy_ai.c` divide la predicción entre 256 (quitar el `>> 8`).
+- Fallback de spawn de `encounters_spawn_wave` con coordenadas del mapa antiguo (380,227) y centinela `anchor == (0,0)`.
+- `invuln_timer` se decrementa pero nunca se asigna ni se consulta en `player_apply_damage`: sin i-frames.
+- Pool de pickups (`MAX_PICKUPS` 16) sin expiración; `pickup_spawn` devuelve NULL en silencio y se pierden drops.
+- LOS (`los.c`) bloquea con `flags == 3` y las balas con bit `0x02`; el melee del charger no comprueba muros.
+- Diseño no implementado: navegación BFS/campo de distancias (los enemigos se atascan en esquinas) y detección por ruido.
+
+### 4.3. Código muerto y acoplamiento
+- `dungeon_data.c`/`.h` (cripta 36×36, 40 sprites 96×96) enlazado sólo por `init_obj_sprite_bounds`/`blit_tile`: ~737 KB de ROM y un escaneo al arrancar. También `tile_center_x/y`, `CACHE_*` y el comentario de cabecera de `main.c`.
+- Sistema de lanzas óseas legacy en `main.c` (`s_lances`, `draw_bone_lance`, bucle de `lances_update`, `emit_bone_particle`, `legacy_lance_contract_stub` con lectura no inicializada); muerte/drops duplicados con `enemy_hit`.
+- Sin cablear: `enemy_ai_init`, `enemy_projectile_spawn_hitscan`/`PROJ_HITSCAN_TRACER`, campos `step_count`/`step_limit`/`stagger_slot`.
+- `weapons.c` llama a `enemy_hit` definido en `main.c` (dependencia invertida que impide tests de host aislados).
+- Tracers truncados a 160/120 pasos (`weapons.c`, `projectiles.c`) con alcance de pistola 180.
+- `sweep_position` usa división int64 (software en ARM9) por paso.
+
+### 4.4. Tests, escenarios, docs y repo
+- `tests/test_shadow_masks.py` exige `assets/dungeon_e30/` (inexistente); `test_sprite_ground_anchor.py` valida el ancla 28.
+- `tools/lab/test_shadow_anchor_export_headless.cjs` falla en el atlas de sombras (768 ≠ 96) antes de llegar al mapa.
+- ~20 escenarios con geometría o personajes que ya no existen (`wh40k_*`, `ruins_*`, `character_switch_test` con skeleton); `wh40k_charger_north_occlusion_probe.json` lleva BOM. Incumplen la regla 5 de AGENTS.
+- Docs desfasadas: `HANDOFF.md` (smooth_lightmap, niebla, mapa 768×512), `DESIGN.md` (niebla en 4.5), mojibake en `STATUS.md`, secciones 3–3.1 de este documento (pipeline Blender/`ds_look.py` que ya no genera el mapa).
+- Repo: ROMs viejas `dungeonds_e30.nds`/`dungeonds_e60.nds` en la raíz; generadores obsoletos en `tools/` (`bake_dungeon_*.py`, `convert_*_to_c.py`, `assemble_wh40k_full_sector.py`, `generate_fbx_bg_tiles.py`; `bake_full_smooth_lightgrid.py` todavía escribe `include/dungeon_bg_tiles.h` y podría pisar el mapa actual).
