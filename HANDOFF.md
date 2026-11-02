@@ -42,7 +42,7 @@
 ## 3. Reglas Críticas de Desarrollo (AGENTS.md)
 
 1. **Nintendo DS es plataforma sin FPU:** Prohibido usar `float` o `double` en código de runtime. Toda la física y movimiento se realiza en punto fijo (`int32_t` con precisión `8.8` o `12.12`).
-2. **Sin comandos interactivos:** Todo el flujo se ejecuta mediante scripts PowerShell en `scripts/` (`build-project.ps1`, `run-scenario.ps1`).
+2. **Sin comandos interactivos:** Todo el flujo se ejecuta mediante scripts PowerShell de la skill compartida `ds-game-dev` (`C:\codexlocal\skills\agentic-ds-dev\scripts\`: `build-project.ps1`, `run-scenario.ps1`).
 3. **Protocolo de Worktrees:** Toda nueva feature se debe desarrollar en un worktree aislado (`git worktree add .worktrees/<nombre> -b feat/<nombre>`) y fusionarse a `main` al terminar.
 4. **Evidencia Visual sin "Preview Unavailable" (Regla 6):** Prohibido usar rutas de workspace o esquema `file:///` para incrustar imágenes en markdown. Copiar siempre los archivos al directorio de artefactos (`<appDataDir>/brain/<conversation-id>/`) y referenciarlos con su ruta absoluta sin prefijo de protocolo.
 

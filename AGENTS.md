@@ -10,13 +10,13 @@ El repositorio cuenta con fuentes de verdad canónicas sin duplicación:
 | `TECHNICAL.md` | Arquitectura C / NDS | Toolchain (BlocksDS), punto fijo, VRAM/OAM budgets, pipeline de renderizado y generador procedural. |
 | `AGENTS.md` | Proceso y Reglas | Protocolo de trabajo, workflow de desarrollo para Nintendo DS y verificación de cambios. |
 | `STATUS.md` | Registro de Sesiones | Estado actual, historial auditable de entregas y siguientes pasos. |
-| `SKILL.md` | Skill `ds-game-dev` | Flujo genérico y automatizado del toolchain NDS con Docker y DeSmuME. |
+| Skill compartida `ds-game-dev` | `C:\codexlocal\skills\agentic-ds-dev` | Flujo genérico del toolchain NDS (Docker + DeSmuME). Vive fuera del repo y no se debe copiar aquí. |
 
 ---
 
 ## Reglas del Toolchain y Ejecución
 
-1. **Sin comandos interactivos del toolchain al usuario**: Todo el flujo de compilación, tests y emulación headless se ejecuta con los scripts de `scripts/` (`scripts/build-project.ps1`, `scripts/check-toolchain.ps1`, `scripts/run-scenario.ps1`).
+1. **Sin comandos interactivos del toolchain al usuario**: Todo el flujo de compilación, tests y emulación headless se ejecuta con los scripts de la skill compartida (`C:\codexlocal\skills\agentic-ds-dev\scripts\build-project.ps1`, `check-toolchain.ps1`, `run-scenario.ps1`), invocados desde esa ruta con `-ProjectPath C:\codexlocal\dungeonds`. Los arreglos o mejoras genéricos del toolchain se hacen en el repo de la skill, nunca parcheados aquí.
 2. **Nintendo DS es plataforma sin FPU**: Prohibido usar `float` o `double` en código de simulación o juego en tiempo de ejecución. Toda la física y movimiento se realiza en punto fijo (`int32_t` con precisión `8.8` o `12.12`).
 3. **Presupuesto estricto de memoria**:
    - VRAM OAM: 128 entradas de sprites hardware máximo.
@@ -53,10 +53,6 @@ El repositorio cuenta con fuentes de verdad canónicas sin duplicación:
      git worktree add .worktrees/<nombre> -b feat/<nombre>
      ```
    - Todo el trabajo de la sesión se desarrolla dentro de dicho worktree.
-   - **Copia del runtime local:** Al ser un checkout limpio, copiar el runtime de emulación si se requiere ejecutar escenarios locales:
-     ```powershell
-     Copy-Item -Recurse -Force runtime\bin .worktrees\<nombre>\runtime\bin
-     ```
    - **Copia del grafo Graphify:** `graphify-out/` no está versionado, así que el worktree nace sin grafo (los hooks de git no lo crean). Copiarlo y refrescarlo (AST-only, sin coste de API); en llamadas MCP usar `project_path` = ruta del worktree:
      ```powershell
      Copy-Item -Recurse -Force graphify-out .worktrees\<nombre>\graphify-out

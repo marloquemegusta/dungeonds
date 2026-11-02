@@ -10,11 +10,12 @@ param(
 #   2. bake the player spritesheet (Blender)
 #   3. convert sprites + map to C
 #   4. compile the ROM
-# Usage:  scripts\build-view.ps1 -Preset e30
-#         scripts\build-view.ps1 -Preset e60 -SkipBake
+# Usage:  tools\build-view.ps1 -Preset e30
+#         tools\build-view.ps1 -Preset e60 -SkipBake
 
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
+$skill = if ($env:DS_GAME_DEV_HOME) { $env:DS_GAME_DEV_HOME } else { 'C:\codexlocal\skills\agentic-ds-dev' }
 
 if (-not $SkipBake) {
     & python (Join-Path $root 'tools\bake_dungeon_iso.py') --preset $Preset
@@ -26,7 +27,7 @@ if (-not $SkipBake) {
 & python (Join-Path $root 'tools\convert_iso_to_c.py') --preset $Preset
 if ($LASTEXITCODE -ne 0) { throw "conversion failed ($Preset)" }
 
-& (Join-Path $PSScriptRoot 'build-project.ps1') -ProjectPath $root
+& (Join-Path $skill 'scripts\build-project.ps1') -ProjectPath $root
 if ($LASTEXITCODE -ne 0) { throw "build failed ($Preset)" }
 
 $rom = Join-Path $root "dungeonds.nds"

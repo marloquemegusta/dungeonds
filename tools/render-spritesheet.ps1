@@ -14,7 +14,7 @@
 .PARAMETER Resolution
     Resolucion en pixeles por celda (ej. 32, 48, 64). Por defecto: 64.
 .EXAMPLE
-    .\scripts\render-spritesheet.ps1 -ModelPath assets\thirdparty\RobotExpressive.glb -OutputPath assets\spritesheets\robot_walk_8dir.png -Animation "Walking"
+    .\tools\render-spritesheet.ps1 -ModelPath assets\thirdparty\RobotExpressive.glb -OutputPath assets\spritesheets\robot_walk_8dir.png -Animation "Walking"
 #>
 param (
     [Parameter(Mandatory = $true)]
