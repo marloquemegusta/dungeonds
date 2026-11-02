@@ -1,0 +1,23 @@
+{
+  "name": "necron_walk_evaluation",
+  "steps": [
+    { "frames": 10 },
+    { "button_down": "X", "frames": 2 },
+    { "button_up": "X", "frames": 4 },
+    { "button_down": "X", "frames": 2 },
+    { "button_up": "X", "frames": 10 },
+    { "button_down": "DOWN", "frames": 24, "capture_sequence": "necron_walk", "capture_every": 1 },
+    { "button_up": "DOWN", "frames": 4 },
+    { "button_down": "DOWN", "frames": 1 },
+    { "button_down": "RIGHT", "frames": 24, "capture_sequence": "necron_walk", "capture_every": 1 },
+    { "button_up": "DOWN", "frames": 1 },
+    { "button_up": "RIGHT", "frames": 4 },
+    { "button_down": "RIGHT", "frames": 24, "capture_sequence": "necron_walk", "capture_every": 1 },
+    { "button_up": "RIGHT", "frames": 4 },
+    { "button_down": "DOWN", "frames": 1 },
+    { "button_down": "LEFT", "frames": 24, "capture_sequence": "necron_walk", "capture_every": 1 },
+    { "button_up": "DOWN", "frames": 1 },
+    { "button_up": "LEFT", "frames": 4 }
+  ],
+  "assertions": {}
+}
