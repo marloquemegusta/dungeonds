@@ -175,7 +175,6 @@ header_diablo = f"""#ifndef DIABLO_DUNGEON_H
 #define COLLISION_W {COLLISION_W}
 #define COLLISION_H {COLLISION_H}
 #define COLLISION_SCALE {COLLISION_SCALE}
-#define DUNGEON_OCCLUSION_SEGMENTS 1
 #define COLLISION_BYTES {COLLISION_BYTES}
 
 #define SPAWN_PIXEL_X {SPAWN_PIXEL_X}
@@ -201,52 +200,49 @@ print("diablo_dungeon.c and .h written!")
 # ---------------------------------------------------------------------------
 # 3. BAKE OCCLUSION (dungeon_occlusion.h / .c)
 # ---------------------------------------------------------------------------
-occ_png = os.path.join(MAP_DIR, 'occlusion.png')
-if os.path.exists(occ_png):
-    im_occ = Image.open(occ_png).convert('L')
-    arr_occ = np.zeros((WORLD_H, WORLD_W), dtype=np.uint8)
-    arr_occ[:ORIG_H, :ORIG_W] = np.array(im_occ)
-    is_wall = arr_occ >= 128
-else:
-    is_black_pixel = (arr_rgb[:,:,0] < 5) & (arr_rgb[:,:,1] < 5) & (arr_rgb[:,:,2] < 5)
-    is_wall = (padded_c < 128) & (~is_black_pixel)
+# occlusion_depth.png comes from the lab's ground-depth pass over the same render
+# as world.png: R,G = map Y of the floor point under the visible surface (big
+# endian), B = 255 where that surface is tall enough to hide actors. The runtime
+# hides an actor pixel when the occluder's ground Y is below the actor's feet.
+OCC_DEPTH_TOLERANCE = 1  # px of ground-Y spread merged into one run
 
-foot_y = np.full((WORLD_H, WORLD_W), -1, dtype=np.int16)
-for x in range(WORLD_W):
-    col_wall = is_wall[:, x]
-    y = 0
-    while y < WORLD_H:
-        if not col_wall[y]:
-            y += 1
-            continue
-        y0 = y
-        while y < WORLD_H and col_wall[y]:
-            y += 1
-        # The base of this contiguous vertical wall span is y - 1
-        foot_y[y0:y, x] = y - 1
+occ_depth_png = os.path.join(MAP_DIR, 'occlusion_depth.png')
+if not os.path.exists(occ_depth_png):
+    sys.exit("occlusion_depth.png missing: re-export the map with tools/lab/export_map_package_headless.cjs")
+occ_rgb = np.array(Image.open(occ_depth_png).convert('RGB'), dtype=np.int32)
+ground_y = np.full((WORLD_H, WORLD_W), -1, dtype=np.int32)
+occluder = occ_rgb[:, :, 2] >= 128
+ground_y[:ORIG_H, :ORIG_W] = np.where(occluder, occ_rgb[:, :, 0] * 256 + occ_rgb[:, :, 1], -1)
 
 runs = []
 for y in range(WORLD_H):
+    row = ground_y[y]
     x = 0
     while x < WORLD_W:
-        if foot_y[y, x] < 0:
+        if row[x] < 0:
             x += 1
             continue
         x0 = x
-        min_d = foot_y[y, x]
-        max_d = foot_y[y, x]
-        while x < WORLD_W and foot_y[y, x] >= 0:
-            d = foot_y[y, x]
-            if max(max_d, d) - min(min_d, d) > 4:
+        min_d = max_d = row[x]
+        while x < WORLD_W and row[x] >= 0:
+            d = row[x]
+            if max(max_d, d) - min(min_d, d) > OCC_DEPTH_TOLERANCE:
                 break
             min_d = min(min_d, d)
             max_d = max(max_d, d)
             x += 1
-        if x - x0 >= 2:
-            runs.append((x0, y, x - x0, int(max_d)))
+        runs.append((x0, y, x - x0, int(max_d)))
 
 num_runs = len(runs)
 print(f"Generated {num_runs} occlusion runs!")
+
+# Runs are sorted by (y, x); row_start[y] .. row_start[y + 1] are the runs of
+# world row y, so the runtime only touches runs inside the camera rectangle.
+row_start = [0] * (WORLD_H + 1)
+for _, y, _, _ in runs:
+    row_start[y + 1] += 1
+for y in range(WORLD_H):
+    row_start[y + 1] += row_start[y]
 
 header_occ = f"""#ifndef DUNGEON_OCCLUSION_H
 #define DUNGEON_OCCLUSION_H
@@ -254,6 +250,8 @@ header_occ = f"""#ifndef DUNGEON_OCCLUSION_H
 #include <nds.h>
 #include "diablo_dungeon.h"
 
+// Horizontal run of occluding pixels; depth is the world Y of the floor point
+// under the visible surface (an actor whose feet are above it is hidden).
 typedef struct {{
     uint16_t x;
     uint16_t y;
@@ -261,14 +259,9 @@ typedef struct {{
     int16_t depth;
 }} DungeonOcclusionRun;
 
-typedef struct {{
-    int16_t x;
-    int16_t y;
-}} DungeonOcclusionSegmentOffset;
-
 extern const DungeonOcclusionRun g_dungeon_occlusion_runs[];
 extern const uint32_t g_dungeon_occlusion_run_count;
-extern const DungeonOcclusionSegmentOffset g_dungeon_occlusion_segments[DUNGEON_OCCLUSION_SEGMENTS];
+extern const uint32_t g_dungeon_occlusion_row_start[WORLD_H + 1];
 
 #endif // DUNGEON_OCCLUSION_H
 """
@@ -284,8 +277,9 @@ with open(os.path.join(WT, 'source', 'dungeon_occlusion.c'), 'w', encoding='utf-
         f.write("    {0, 0, 0, -1},\n")
     f.write('};\n\n')
     f.write(f'const uint32_t g_dungeon_occlusion_run_count = {num_runs}u;\n\n')
-    f.write('const DungeonOcclusionSegmentOffset g_dungeon_occlusion_segments[DUNGEON_OCCLUSION_SEGMENTS] = {\n')
-    f.write('    {0, 0},\n')
+    f.write('const uint32_t g_dungeon_occlusion_row_start[WORLD_H + 1] __attribute__((aligned(4))) = {\n')
+    for start in range(0, len(row_start), 16):
+        f.write("    " + ", ".join(str(v) for v in row_start[start:start + 16]) + ",\n")
     f.write('};\n')
 
 print(f"dungeon_occlusion.c and .h written!")

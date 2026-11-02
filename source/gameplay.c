@@ -87,7 +87,7 @@ void player_state_init(PlayerState *player) {
 }
 
 void player_apply_damage(PlayerState *player, int damage) {
-    if (!player || player->is_dead || damage <= 0) return;
+    if (!player || player->is_dead || player->god_mode || damage <= 0) return;
 
     int absorbed = 0;
     if (player->armor > 0) {

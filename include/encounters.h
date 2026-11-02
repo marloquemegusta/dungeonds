@@ -56,7 +56,7 @@ extern EncounterManager g_encounter_mgr;
 void encounters_init(EncounterManager *mgr);
 
 /**
- * Spawns a wave of enemies on valid walkable coordinates using world_point_has_floor
+ * Spawns a wave of enemies on valid walkable coordinates using position_is_free
  * and position_is_free, according to the current floor's difficulty tuning.
  */
 int encounters_spawn_wave(EncounterManager *mgr, Enemy *enemies, int max_enemies,

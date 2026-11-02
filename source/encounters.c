@@ -137,7 +137,6 @@ int encounters_spawn_wave(EncounterManager *mgr, Enemy *enemies, int max_enemies
                     int cand_px = anchor_px + dx;
                     int cand_py = anchor_py + dy;
 
-                    if (!world_point_has_floor(cand_px, cand_py)) continue;
                     fixed fx = TO_FIXED(cand_px);
                     fixed fy = TO_FIXED(cand_py);
                     if (!position_is_free(fx, fy)) continue;

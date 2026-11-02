@@ -926,3 +926,14 @@ Se solucionó el problema por el cual la pantalla táctil inferior se mostraba n
   - 35/35 host tests pasando (`DS_HOST_TESTS=PASS`).
   - Escenario DeSmuME `weapons_switching_and_touch.json` verificado: 673 colores únicos en la pantalla inferior (baldosas, paredes, sombras proyectadas y HUD a 60 FPS fijos).
   - ROM `dungeonds.nds` lista en la raíz para despliegue por FTP.
+
+---
+
+## 2026-11-02 - Colisión y Oclusión Coherentes con el Render del Mapa
+
+### Resumen
+- Auditoría completa del juego en `walkthroughs/audit-saneamiento-2d3d/`: el 65 % de la oclusión caía sobre vacío y la colisión creaba muros invisibles tras las coberturas.
+- El lab exporta `occlusion_depth.png` (Y de contacto con el suelo por píxel, mismo pase que `world.png`) y una colisión por huella en la franja corporal 0,30–1,20 m.
+- Baker con profundidad exacta e índice de runs por fila; runtime recorre sólo runs visibles (sin caídas a 30 FPS) y usa la rejilla como única fuente de suelo.
+- **Validación:** build limpia; escenario `map_occlusion_collision_coherence.json` PASS; `test_map_export_coherence.py` OK. Detalle: `walkthroughs/map-export-coherence/walkthrough.md`.
+

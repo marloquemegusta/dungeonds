@@ -84,3 +84,5 @@ Resúmenes acumulativos y auditables de cada entrega y avance de desarrollo en `
 - [Experimento de oclusión para la mazmorra FBX](fbx-occlusion-experiment/walkthrough.md) — prototipo de spans de profundidad; la verificación de máscara y el presupuesto de rendimiento siguen fallando.
 
 - [FBX collision grid and wall-stop check](fbx-collision-fix/walkthrough.md) — host tests and state-backed DeSmuME wall-stop scenario pass; doorway connectivity remains unverified.
+| — | Auditoría de saneamiento 2D/3D (colisión, oclusión, legacy) | [audit-saneamiento-2d3d](audit-saneamiento-2d3d/walkthrough.md) | Análisis |
+| — | Colisión y oclusión coherentes con el render del mapa | [map-export-coherence](map-export-coherence/walkthrough.md) | Validado en emulador |

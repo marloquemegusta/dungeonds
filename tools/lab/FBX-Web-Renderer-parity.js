@@ -1982,6 +1982,10 @@
         }
       }
 
+      // Occlusion must describe exactly the surfaces visible in world.png, so it
+      // is rendered from the same camera and faces right after the colour pass.
+      state.mapGroundDepth = renderMapGroundDepth(mapCamera, mapW, mapH);
+
       if (!state.mapCanvas) {
         state.mapCanvas = document.createElement('canvas');
       }
@@ -2033,6 +2037,150 @@
     return { x, z };
   }
 
+  // ---- Ground-contact depth pass (shared contract with the NDS occlusion runs) ----
+  // For every map pixel, the visible surface point is dropped to the floor plane
+  // and its map Y is stored. An actor whose feet are above that Y on screen stands
+  // behind the surface. Only surfaces higher than MAP_OCCLUDER_MIN_HEIGHT occlude.
+  const MAP_OCCLUDER_MIN_HEIGHT = 0.25;
+  const MAP_GROUND_DEPTH_NONE = 0xFFFF;
+
+  const GROUND_DEPTH_VERTEX = `
+    varying vec3 vWorldPos;
+    void main() {
+      vec4 world = modelMatrix * vec4(position, 1.0);
+      vWorldPos = world.xyz;
+      gl_Position = projectionMatrix * viewMatrix * world;
+    }`;
+  const GROUND_DEPTH_FRAGMENT = `
+    uniform vec3 uUpAxis;
+    uniform float uMaxV;
+    uniform float uPixelsPerUnitV;
+    uniform float uMinHeight;
+    varying vec3 vWorldPos;
+    void main() {
+      float groundV = vWorldPos.x * uUpAxis.x + vWorldPos.z * uUpAxis.z;
+      float my = floor((uMaxV - groundV) * uPixelsPerUnitV + 0.5);
+      my = clamp(my, 0.0, 65534.0);
+      float hi = floor(my / 256.0);
+      float lo = my - hi * 256.0;
+      float occluder = vWorldPos.y > uMinHeight ? 1.0 : 0.0;
+      gl_FragColor = vec4(hi / 255.0, lo / 255.0, occluder, 1.0);
+    }`;
+
+  function renderMapGroundDepth(mapCamera, mapW, mapH) {
+    const p = state.mapProjection;
+    if (!p || !state.map?.model) return null;
+    const uniforms = {
+      uUpAxis: { value: p.upAxis.clone() },
+      uMaxV: { value: p.maxV },
+      uPixelsPerUnitV: { value: p.mapH / p.projH },
+      uMinHeight: { value: MAP_OCCLUDER_MIN_HEIGHT }
+    };
+    const materialFor = new Map();
+    const depthMaterial = source => {
+      const side = source?.side ?? 0;
+      if (!materialFor.has(side)) {
+        materialFor.set(side, new Ja({
+          uniforms,
+          vertexShader: GROUND_DEPTH_VERTEX,
+          fragmentShader: GROUND_DEPTH_FRAGMENT,
+          side
+        }));
+      }
+      return materialFor.get(side);
+    };
+
+    // Only the map is drawn, with each mesh's own face culling, so hidden and
+    // back-facing geometry cannot leak into the occlusion data.
+    const swapped = [];
+    state.map.model.traverse(node => {
+      if (!node.isMesh) return;
+      swapped.push([node, node.material]);
+      node.material = Array.isArray(node.material) ? node.material.map(depthMaterial) : depthMaterial(node.material);
+    });
+
+    // A non-multisampled target keeps the packed depth exact at silhouette edges.
+    const target = new gn(mapW, mapH);
+    const prevTarget = $.renderer.getRenderTarget();
+    const raw = new Uint8Array(mapW * mapH * 4);
+    try {
+      $.renderer.setRenderTarget(target);
+      $.renderer.setClearColor(0x000000, 0);
+      $.renderer.clear();
+      $.renderer.render(state.map.model, mapCamera);
+      $.renderer.readRenderTargetPixels(target, 0, 0, mapW, mapH, raw);
+    } finally {
+      $.renderer.setRenderTarget(prevTarget);
+      for (const [node, material] of swapped) node.material = material;
+      for (const material of materialFor.values()) material.dispose();
+      target.dispose();
+    }
+
+    const depth = new Uint16Array(mapW * mapH).fill(MAP_GROUND_DEPTH_NONE);
+    for (let y = 0; y < mapH; y++) {
+      const srcRow = (mapH - 1 - y) * mapW;
+      for (let x = 0; x < mapW; x++) {
+        const i = (srcRow + x) * 4;
+        if (raw[i + 3] === 0 || raw[i + 2] < 128) continue;
+        depth[y * mapW + x] = raw[i] * 256 + raw[i + 1];
+      }
+    }
+    return depth;
+  }
+
+  // Conservative cell coverage: a cell is marked if the triangle covers its
+  // centre, plus every cell crossed by its edges (vertical walls collapse to
+  // edges once dropped to the floor plane, so edges carry the footprint).
+  function markGridCell(grid, gw, gh, x, y, flag) {
+    if (x >= 0 && x < gw && y >= 0 && y < gh) grid[y * gw + x] |= flag;
+  }
+
+  function rasterizeSegmentToGrid(grid, gw, gh, a, b, flag) {
+    const steps = Math.max(1, Math.ceil(Math.max(Math.abs(b.gx - a.gx), Math.abs(b.gy - a.gy)) * 2));
+    for (let s = 0; s <= steps; s++) {
+      const t = s / steps;
+      markGridCell(grid, gw, gh, Math.floor(a.gx + (b.gx - a.gx) * t), Math.floor(a.gy + (b.gy - a.gy) * t), flag);
+    }
+  }
+
+  function rasterizePolygonFootprint(grid, gw, gh, pts, flag) {
+    for (let i = 0; i < pts.length; i++) rasterizeSegmentToGrid(grid, gw, gh, pts[i], pts[(i + 1) % pts.length], flag);
+    for (let i = 1; i + 1 < pts.length; i++) {
+      const p0 = pts[0], p1 = pts[i], p2 = pts[i + 1];
+      const denom = (p1.gy - p2.gy) * (p0.gx - p2.gx) + (p2.gx - p1.gx) * (p0.gy - p2.gy);
+      if (Math.abs(denom) < 1e-6) continue;
+      const minX = Math.max(0, Math.floor(Math.min(p0.gx, p1.gx, p2.gx)));
+      const maxX = Math.min(gw - 1, Math.floor(Math.max(p0.gx, p1.gx, p2.gx)));
+      const minY = Math.max(0, Math.floor(Math.min(p0.gy, p1.gy, p2.gy)));
+      const maxY = Math.min(gh - 1, Math.floor(Math.max(p0.gy, p1.gy, p2.gy)));
+      for (let y = minY; y <= maxY; y++) {
+        const cy = y + 0.5;
+        for (let x = minX; x <= maxX; x++) {
+          const cx = x + 0.5;
+          const w0 = ((p1.gy - p2.gy) * (cx - p2.gx) + (p2.gx - p1.gx) * (cy - p2.gy)) / denom;
+          const w1 = ((p2.gy - p0.gy) * (cx - p2.gx) + (p0.gx - p2.gx) * (cy - p2.gy)) / denom;
+          if (w0 >= 0 && w1 >= 0 && 1 - w0 - w1 >= 0) grid[y * gw + x] |= flag;
+        }
+      }
+    }
+  }
+
+  function clipPolygonY(poly, limit, keepAbove) {
+    const out = [];
+    for (let i = 0; i < poly.length; i++) {
+      const cur = poly[i];
+      const prev = poly[(i + poly.length - 1) % poly.length];
+      const curIn = keepAbove ? cur.y >= limit : cur.y <= limit;
+      const prevIn = keepAbove ? prev.y >= limit : prev.y <= limit;
+      if (curIn !== prevIn) {
+        const t = (limit - prev.y) / (cur.y - prev.y);
+        out.push(new K(prev.x + t * (cur.x - prev.x), limit, prev.z + t * (cur.z - prev.z)));
+      }
+      if (curIn) out.push(cur.clone());
+    }
+    return out;
+  }
+
   function rasterizeTriangleToGrid(grid, gw, gh, p0, p1, p2, flag) {
     const minX = Math.max(0, Math.floor(Math.min(p0.gx, p1.gx, p2.gx)));
     const maxX = Math.min(gw - 1, Math.ceil(Math.max(p0.gx, p1.gx, p2.gx)));
@@ -2045,15 +2193,22 @@
     const invDenom = 1.0 / denom;
     for (let y = minY; y <= maxY; y++) {
       for (let x = minX; x <= maxX; x++) {
-        const w0 = ((p1.gy - p2.gy) * (x - p2.gx) + (p2.gx - p1.gx) * (y - p2.gy)) * invDenom;
-        const w1 = ((p2.gy - p0.gy) * (x - p2.gx) + (p0.gx - p2.gx) * (y - p2.gy)) * invDenom;
+        // Sample the cell centre so the grid is not biased half a cell up-left.
+        const cx = x + 0.5, cy = y + 0.5;
+        const w0 = ((p1.gy - p2.gy) * (cx - p2.gx) + (p2.gx - p1.gx) * (cy - p2.gy)) * invDenom;
+        const w1 = ((p2.gy - p0.gy) * (cx - p2.gx) + (p0.gx - p2.gx) * (cy - p2.gy)) * invDenom;
         const w2 = 1.0 - w0 - w1;
-        if (w0 >= -0.05 && w1 >= -0.05 && w2 >= -0.05) {
+        if (w0 >= -1e-4 && w1 >= -1e-4 && w2 >= -1e-4) {
           grid[y * gw + x] |= flag;
         }
       }
     }
   }
+
+  // Body slab used for collision (metres): floor decals and curbs below the
+  // knee are walkable; anything reaching into the torso blocks.
+  const MAP_BODY_SLAB_MIN = 0.30;
+  const MAP_BODY_SLAB_MAX = 1.20;
 
   function buildMapCollisionGrid() {
     if (!state.map?.model || !state.mapProjection) return;
@@ -2111,31 +2266,57 @@
             1 // 1 = FLOOR
           );
         }
-        // Obstacle/Wall/Cover: reaches above 0.30m and touches ground or is low cover top
-        else if ((maxY > 0.30 && minY < 1.0) || (norm.y > 0.70 && midY > 0.30 && minY < 2.0)) {
-          const g0 = worldXZToMapPixel(v0.x, v0.z);
-          const g1 = worldXZToMapPixel(v1.x, v1.z);
-          const g2 = worldXZToMapPixel(v2.x, v2.z);
-          rasterizeTriangleToGrid(grid, gw, gh,
-            { gx: g0.mx / CELL, gy: g0.my / CELL },
-            { gx: g1.mx / CELL, gy: g1.my / CELL },
-            { gx: g2.mx / CELL, gy: g2.my / CELL },
-            2 // 2 = BLOCKED
-          );
-          if (norm.y > 0.75 && midY > 0.30 && maxY < 1.6) {
-            const s0 = worldToMapPixel(v0.x, v0.y, v0.z);
-            const s1 = worldToMapPixel(v1.x, v1.y, v1.z);
-            const s2 = worldToMapPixel(v2.x, v2.y, v2.z);
-            rasterizeTriangleToGrid(grid, gw, gh,
-              { gx: s0.mx / CELL, gy: s0.my / CELL },
-              { gx: s1.mx / CELL, gy: s1.my / CELL },
-              { gx: s2.mx / CELL, gy: s2.my / CELL },
-              2 // 2 = BLOCKED
-            );
+        // Obstacle: whatever part of the triangle lies inside the body slab is
+        // dropped to the floor plane. Geometry fully above the slab (lintels,
+        // overhangs) never blocks, and cover tops are never re-projected at
+        // their own height (that would fence off the floor behind them).
+        else if (maxY > MAP_BODY_SLAB_MIN && minY < MAP_BODY_SLAB_MAX) {
+          let poly = clipPolygonY([v0, v1, v2], MAP_BODY_SLAB_MIN, true);
+          if (poly.length >= 3) poly = clipPolygonY(poly, MAP_BODY_SLAB_MAX, false);
+          if (poly.length >= 2) {
+            const pts = poly.map(v => {
+              const m = worldXZToMapPixel(v.x, v.z);
+              return { gx: m.mx / CELL, gy: m.my / CELL };
+            });
+            rasterizePolygonFootprint(grid, gw, gh, pts, 2); // 2 = BLOCKED
           }
         }
       }
     });
+
+    keepLargestWalkableRegion(grid, gw, gh);
+  }
+
+  // Unreachable floor (inside hollow props, sealed pockets) is folded into the
+  // obstacle bit so the runtime never needs a second "is floor" heuristic.
+  function keepLargestWalkableRegion(grid, gw, gh) {
+    if (!state.mapHasFloorData) return;
+    const label = new Int32Array(gw * gh).fill(-1);
+    const stack = new Int32Array(gw * gh);
+    let bestLabel = -1, bestSize = 0, next = 0;
+    for (let start = 0; start < gw * gh; start++) {
+      if (label[start] !== -1 || grid[start] !== 1) continue;
+      let top = 0, size = 0;
+      stack[top++] = start;
+      label[start] = next;
+      while (top > 0) {
+        const i = stack[--top];
+        size++;
+        const x = i % gw, y = (i / gw) | 0;
+        const neighbours = [x > 0 ? i - 1 : -1, x + 1 < gw ? i + 1 : -1, y > 0 ? i - gw : -1, y + 1 < gh ? i + gw : -1];
+        for (const n of neighbours) {
+          if (n >= 0 && label[n] === -1 && grid[n] === 1) {
+            label[n] = next;
+            stack[top++] = n;
+          }
+        }
+      }
+      if (size > bestSize) { bestSize = size; bestLabel = next; }
+      next++;
+    }
+    for (let i = 0; i < gw * gh; i++) {
+      if (grid[i] === 1 && label[i] !== bestLabel) grid[i] |= 2;
+    }
   }
 
   function isMapPixelWalkable(mx, my) {
@@ -2340,36 +2521,8 @@
 
   // ---- 3D Map Collision & Occlusion Export Utilities ----
 
-  function clipTriangleY(v0, v1, v2, thresholdY = 0.65) {
-    const poly = [v0, v1, v2];
-    const out = [];
-    for (let i = 0; i < poly.length; i++) {
-      const cur = poly[i];
-      const prev = poly[(i + poly.length - 1) % poly.length];
-      const curIn = cur.y >= thresholdY;
-      const prevIn = prev.y >= thresholdY;
-      if (curIn) {
-        if (!prevIn) {
-          const t = (thresholdY - prev.y) / (cur.y - prev.y);
-          out.push(new K(
-            prev.x + t * (cur.x - prev.x),
-            thresholdY,
-            prev.z + t * (cur.z - prev.z)
-          ));
-        }
-        out.push(cur);
-      } else if (prevIn) {
-        const t = (thresholdY - prev.y) / (cur.y - prev.y);
-        out.push(new K(
-          prev.x + t * (cur.x - prev.x),
-          thresholdY,
-          prev.z + t * (cur.z - prev.z)
-        ));
-      }
-    }
-    return out;
-  }
-
+  // Binary view of the ground-depth pass (white = visible surface above the
+  // occluder height). Kept for previews and older tooling.
   function generateMapOcclusionCanvas() {
     const mapW = state.mapWidth || 768;
     const mapH = state.mapHeight || 512;
@@ -2377,50 +2530,37 @@
     canvas.width = mapW;
     canvas.height = mapH;
     const ctx = canvas.getContext('2d');
-    ctx.fillStyle = '#000000';
-    ctx.fillRect(0, 0, mapW, mapH);
+    const img = ctx.createImageData(mapW, mapH);
+    const depth = state.mapGroundDepth;
+    for (let i = 0; i < mapW * mapH; i++) {
+      const v = depth && depth[i] !== MAP_GROUND_DEPTH_NONE ? 255 : 0;
+      img.data[i * 4] = img.data[i * 4 + 1] = img.data[i * 4 + 2] = v;
+      img.data[i * 4 + 3] = 255;
+    }
+    ctx.putImageData(img, 0, 0);
+    return canvas;
+  }
 
-    if (!state.map?.model || !state.mapProjection) return canvas;
-
-    ctx.fillStyle = '#ffffff';
-
-    const v0 = new K(), v1 = new K(), v2 = new K();
-    state.map.model.updateMatrixWorld(true);
-
-    state.map.model.traverse(node => {
-      if (!node.isMesh || !node.visible || !node.geometry?.attributes?.position) return;
-      const geom = node.geometry;
-      const posAttr = geom.attributes.position;
-      const index = geom.index;
-      const numTriangles = index ? Math.floor(index.count / 3) : Math.floor(posAttr.count / 3);
-
-      for (let t = 0; t < numTriangles; t++) {
-        const i0 = index ? index.getX(t * 3 + 0) : t * 3 + 0;
-        const i1 = index ? index.getX(t * 3 + 1) : t * 3 + 1;
-        const i2 = index ? index.getX(t * 3 + 2) : t * 3 + 2;
-
-        v0.fromBufferAttribute(posAttr, i0).applyMatrix4(node.matrixWorld);
-        v1.fromBufferAttribute(posAttr, i1).applyMatrix4(node.matrixWorld);
-        v2.fromBufferAttribute(posAttr, i2).applyMatrix4(node.matrixWorld);
-
-        const maxY = Math.max(v0.y, v1.y, v2.y);
-        if (maxY <= 0.65) continue;
-
-        const poly = clipTriangleY(v0, v1, v2, 0.65);
-        if (poly.length >= 3) {
-          ctx.beginPath();
-          const p0 = worldToMapPixel(poly[0].x, poly[0].y, poly[0].z);
-          ctx.moveTo(p0.mx, p0.my);
-          for (let i = 1; i < poly.length; i++) {
-            const pi = worldToMapPixel(poly[i].x, poly[i].y, poly[i].z);
-            ctx.lineTo(pi.mx, pi.my);
-          }
-          ctx.closePath();
-          ctx.fill();
-        }
-      }
-    });
-
+  // Exact occlusion contract: R,G = ground-contact map Y (big endian),
+  // B = 255 where the pixel occludes actors whose feet are above that Y.
+  function generateMapOcclusionDepthCanvas() {
+    const mapW = state.mapWidth || 768;
+    const mapH = state.mapHeight || 512;
+    const canvas = document.createElement('canvas');
+    canvas.width = mapW;
+    canvas.height = mapH;
+    const ctx = canvas.getContext('2d');
+    const img = ctx.createImageData(mapW, mapH);
+    const depth = state.mapGroundDepth;
+    for (let i = 0; i < mapW * mapH; i++) {
+      const d = depth ? depth[i] : MAP_GROUND_DEPTH_NONE;
+      const occluder = d !== MAP_GROUND_DEPTH_NONE;
+      img.data[i * 4] = occluder ? d >> 8 : 0;
+      img.data[i * 4 + 1] = occluder ? d & 255 : 0;
+      img.data[i * 4 + 2] = occluder ? 255 : 0;
+      img.data[i * 4 + 3] = 255;
+    }
+    ctx.putImageData(img, 0, 0);
     return canvas;
   }
 
@@ -2507,10 +2647,13 @@
     const colBlob = await new Promise(resolve => colCanvas.toBlob(resolve, 'image/png'));
     if (colBlob) zip.file('collision.png', colBlob);
 
-    // Export occlusion PNG (white = world height > 0.65m, black = ground/floor)
+    // Export occlusion PNGs from the ground-depth pass of the same render.
     const occCanvas = generateMapOcclusionCanvas();
     const occBlob = await new Promise(resolve => occCanvas.toBlob(resolve, 'image/png'));
     if (occBlob) zip.file('occlusion.png', occBlob);
+    const occDepthCanvas = generateMapOcclusionDepthCanvas();
+    const occDepthBlob = await new Promise(resolve => occDepthCanvas.toBlob(resolve, 'image/png'));
+    if (occDepthBlob) zip.file('occlusion_depth.png', occDepthBlob);
 
     const settings = {
       mapName: name,
@@ -4350,6 +4493,7 @@
   state.generateCharacterShadows = generateCharacterShadows;
   state.generateCShadowAnchorHeader = generateCShadowAnchorHeader;
   state.generateMapOcclusionCanvas = generateMapOcclusionCanvas;
+  state.generateMapOcclusionDepthCanvas = generateMapOcclusionDepthCanvas;
   state.generateMapCollisionCanvas = generateMapCollisionCanvas;
   state.exportPackage = exportPackage;
   state.exportMapPackage = exportMapPackage;

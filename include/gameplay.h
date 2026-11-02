@@ -83,7 +83,6 @@ struct Enemy {
     int stagger_slot;
 };
 
-int world_point_has_floor(int px, int py);
 int position_is_free(fixed x, fixed y);
 int bullet_position_is_free(fixed x, fixed y);
 int sweep_position(fixed *x, fixed *y, fixed dx, fixed dy);
@@ -104,6 +103,7 @@ struct PlayerState {
     WeaponType current_weapon;
     int is_dead;
     int invuln_timer;
+    int god_mode;      // debug: L+R+B toggles; damage is ignored (headless scenarios)
 };
 
 extern PlayerState g_player_state;
