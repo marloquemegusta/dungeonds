@@ -16,10 +16,10 @@
 // Stage ids. Entries below PP_RANKED are ranked in the HUD.
 enum {
     PP_PLAYER = 0,   // player_update
-    PP_OCCL,         // build_occlusion_depth_map
+    PP_OCCL,         // unused (occlusion map removed): always 0
     PP_ENEMIES,      // enemies_update
     PP_WEAPONS,      // weapons_and_effects_update
-    PP_CLEAR,        // swiFastCopy clear of the bitmap buffer
+    PP_CLEAR,        // 'dclr': clear of the dirty spans of the back VRAM page
     PP_SHADOW,       // draw_shadow_mask loop
     PP_WALLBASE,     // draw_hidden_wall_base
     PP_SORT,         // insertion sort of draw items
@@ -27,7 +27,7 @@ enum {
     PP_PROJ,         // enemy_projectiles_render + weapons_render
     PP_PICKUPS,      // pickups_render + encounters_render
     PP_HUD,          // draw_fps_hud
-    PP_PCOPY,        // DC_FlushRange + dmaCopyWords in present_both_screens
+    PP_PCOPY,        // unused (page copy removed): always 0
     PP_BGSUB,        // update_screen_hardware_bg (top screen)
     PP_BGBOT,        // update_screen_hardware_bg (bottom screen)
     PP_RANKED,

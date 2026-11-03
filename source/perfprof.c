@@ -17,7 +17,7 @@ extern int crashlog_sd_ready(void);
 uint32_t g_pp_cur[PP_COUNT];
 
 static const char *const s_names[PP_COUNT] = {
-    "pl", "occ", "en", "wp", "clr", "sh", "wb", "sort", "blit", "proj",
+    "pl", "occ", "en", "wp", "dclr", "sh", "wb", "sort", "blit", "proj",
     "pick", "hud", "pcopy", "bgsub", "bgbot", "vwait", "cpu", "frame"
 };
 // Two-letter HUD tags (only glyphs present in the HUD font).

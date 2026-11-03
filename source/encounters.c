@@ -371,6 +371,7 @@ void encounters_render(const EncounterManager *mgr, uint16_t *buffer, int cam_x,
                     else if (d2 >= 16) col = portal_outer;
                     else col = portal_core;
                     buffer[py * SCREEN_W + px] = col;
+                    dirty_row(py, px, px + 1);
                 }
             }
         }

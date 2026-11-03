@@ -311,6 +311,7 @@ void pickups_render(uint16_t *buffer, int cam_x, int cam_y) {
                 uint16_t col = icon[iy * 8 + ix];
                 if (col != 0) {
                     buffer[dy * SCREEN_W + dx] = col;
+                    dirty_row(dy, dx, dx + 1);
                 }
             }
         }
