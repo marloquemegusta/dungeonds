@@ -10,6 +10,7 @@
 #include "weapons.h"
 #include "encounters.h"
 #include "crashlog.h"
+#include "perfprof.h"
 #include <string.h>
 
 // ---------------------------------------------------------------------------
@@ -754,11 +755,13 @@ static void render_screen(uint16_t *buffer, int cam_x, int cam_y,
     // The static FBX bake is now a hardware BG; keep this bitmap layer transparent
     // (0x0000 = transparent in 16-bit direct bitmap mode) and render only dynamic
     // actors, shadows, particles, and the HUD into it.
+    PP_T0(pp_clear);
     uint32_t floor_start_ticks = cpuGetTiming();
     uint32_t clear_zero = 0;
     swiFastCopy(&clear_zero, buffer, COPY_MODE_FILL | ((SCREEN_W * SCREEN_H * sizeof(uint16_t)) >> 2));
 
     if (out_floor) *out_floor = cpuGetTiming() - floor_start_ticks;
+    PP_ADD(PP_CLEAR, pp_clear);
 
     // 1) Composite dynamic entity shadows (player & enemies, animated per frame)
     s_player_see_through = 0;
@@ -772,6 +775,7 @@ static void render_screen(uint16_t *buffer, int cam_x, int cam_y,
     }
 
     uint32_t t_sh0 = cpuGetTiming();
+    PP_T0(pp_shadow);
     for (int i = 0; i < count; i++) {
         s_draw_item_is_player = (items[i].ref == -1);
         if (items[i].ref == -1) {
@@ -791,17 +795,23 @@ static void render_screen(uint16_t *buffer, int cam_x, int cam_y,
                              items[i].cy - PLAYER_SHADOW_H / 2, cam_x, cam_y, items[i].depth);
         }
     }
+    PP_ADD(PP_SHADOW, pp_shadow);
     if (s_player_see_through) {
+        PP_T0(pp_wall);
         for (int i = 0; i < count; i++)
             if (items[i].ref == -1)
                 draw_hidden_wall_base(buffer, cam_x, cam_y, items[i].cx, items[i].cy);
+        PP_ADD(PP_WALLBASE, pp_wall);
     }
     uint32_t shadow_ticks = cpuGetTiming() - t_sh0;
 
+    PP_T0(pp_pick);
     pickups_render(buffer, cam_x, cam_y);
     encounters_render(&g_encounter_mgr, buffer, cam_x, cam_y);
+    PP_ADD(PP_PICKUPS, pp_pick);
 
     // 2) Sprites back-to-front (painter's algorithm)
+    PP_T0(pp_sort);
     for (int i = 1; i < count; i++) {
         DrawItem key = items[i];
         int j = i - 1;
@@ -812,7 +822,9 @@ static void render_screen(uint16_t *buffer, int cam_x, int cam_y,
         items[j + 1] = key;
     }
 
+    PP_ADD(PP_SORT, pp_sort);
     uint32_t t_bl0 = cpuGetTiming();
+    PP_T0(pp_blit);
     for (int i = 0; i < count; i++) {
         s_draw_item_depth = items[i].depth;
         int sp = items[i].ref;
@@ -827,15 +839,18 @@ static void render_screen(uint16_t *buffer, int cam_x, int cam_y,
             draw_enemy(buffer, &s_enemies[-2 - sp], cam_x, cam_y);
         }
     }
+    PP_ADD(PP_BLIT, pp_blit);
+    PP_T0(pp_proj);
     enemy_projectiles_render(buffer, cam_x, cam_y);
     weapons_render(buffer, cam_x, cam_y);
+    PP_ADD(PP_PROJ, pp_proj);
     uint32_t blit_ticks = cpuGetTiming() - t_bl0;
 
     if (out_shadow) *out_shadow = shadow_ticks;
     if (out_blit) *out_blit = blit_ticks;
 }
 
-static const char s_fps_chars[] = " FPS:CBL0123456789HARMDEWNITOGUVY";
+static const char s_fps_chars[] = " FPS:CBL0123456789HARMDEWNITOGUVY.";
 static const uint8_t s_fps_font[][7] = {
     {0x00,0x00,0x00,0x00,0x00,0x00,0x00}, // space
     {0x1F,0x10,0x10,0x1E,0x10,0x10,0x10}, // F
@@ -869,11 +884,14 @@ static const uint8_t s_fps_font[][7] = {
     {0x0E,0x11,0x10,0x17,0x11,0x11,0x0F}, // G
     {0x11,0x11,0x11,0x11,0x11,0x11,0x0E}, // U
     {0x11,0x11,0x11,0x11,0x11,0x0A,0x04}, // V
-    {0x11,0x11,0x0A,0x04,0x04,0x04,0x04}  // Y
+    {0x11,0x11,0x0A,0x04,0x04,0x04,0x04}, // Y
+    {0x00,0x00,0x00,0x00,0x00,0x0C,0x0C}  // .
 };
 
+#define HUD_LINES 4 // PERF_PROFILE reuses lines 1-2 (top stages) to keep the HUD as cheap as the original
+
 static void draw_fps_hud(uint16_t *buffer) {
-    char labels[4][32];
+    char labels[HUD_LINES][32];
     unsigned long cpu_ms = (unsigned long)(g_perf.cpu_ticks / 33514u);
     unsigned long present_ms = (unsigned long)(g_perf.present_ticks / 33514u);
     unsigned long floor_ms = (unsigned long)(g_perf.floor_ticks / 33514u);
@@ -886,10 +904,20 @@ static void draw_fps_hud(uint16_t *buffer) {
     if (shadow_ms > 99) shadow_ms = 99;
     if (blit_ms > 99) blit_ms = 99;
     if (logic_ms > 99) logic_ms = 99;
+#if PERF_PROFILE
+    snprintf(labels[0], sizeof(labels[0]), "FPS:%lu.%lu C:%02lu P:%02lu",
+             (unsigned long)(perfprof_fps10() / 10), (unsigned long)(perfprof_fps10() % 10), cpu_ms, present_ms);
+    perfprof_hud_line(0, labels[1], sizeof(labels[1]));
+#else
     snprintf(labels[0], sizeof(labels[0]), "FPS:%2lu C:%02lu P:%02lu",
              (unsigned long)g_perf.fps, cpu_ms, present_ms);
+#endif
+#if PERF_PROFILE
+    (void)floor_ms; (void)shadow_ms; (void)blit_ms; (void)logic_ms;
+#else
     snprintf(labels[1], sizeof(labels[1]), "F:%02lu S:%02lu B:%02lu L:%02lu",
              floor_ms, shadow_ms, blit_ms, logic_ms);
+#endif
     if (g_player_state.is_dead) {
         snprintf(labels[2], sizeof(labels[2]), "HP:DEAD ARM:000");
     } else {
@@ -913,7 +941,7 @@ static void draw_fps_hud(uint16_t *buffer) {
     if (third_w > text_w) text_w = third_w;
     if (fourth_w > text_w) text_w = fourth_w;
     int box_w = text_w + pad * 2;
-    int box_h = glyph_h * 4 + line_gap * 3 + pad * 2;
+    int box_h = glyph_h * HUD_LINES + line_gap * (HUD_LINES - 1) + pad * 2;
     uint16_t panel = RGB15(1, 2, 1) | BIT(15);
     uint16_t border = RGB15(0, 16, 0) | BIT(15);
     uint16_t ink = RGB15(18, 31, 18) | BIT(15);
@@ -925,7 +953,7 @@ static void draw_fps_hud(uint16_t *buffer) {
         }
     }
 
-    for (int line = 0; line < 4; line++) {
+    for (int line = 0; line < HUD_LINES; line++) {
         for (int i = 0; labels[line][i]; i++) {
             int glyph = 0;
             while (s_fps_chars[glyph] && s_fps_chars[glyph] != labels[line][i]) glyph++;
@@ -950,12 +978,20 @@ static uint32_t present_both_screens(int top_cam_x, int top_cam_y,
                                       int bot_cam_x, int bot_cam_y) {
     // Fill the hidden bitmap page while the current page is scanned out.
     s_bot_vram = (u16 *)(0x06000000 + (s_bot_back_page * 0x4000));
+    PP_T0(pp_pc);
     DC_FlushRange(s_bot_screen_buf, sizeof(s_bot_screen_buf));
     dmaCopyWords(3, s_bot_screen_buf, s_bot_vram, SCREEN_W * SCREEN_H * 2);
+    PP_ADD(PP_PCOPY, pp_pc);
 
+    PP_T0(pp_vw);
     swiWaitForVBlank();
+    PP_ADD(PP_VWAIT, pp_vw);
+    PP_T0(pp_bs);
     update_screen_hardware_bg(1, s_top_map_ptr, top_cam_x, top_cam_y);
+    PP_ADD(PP_BGSUB, pp_bs);
+    PP_T0(pp_bb);
     update_screen_hardware_bg(0, s_bot_map_ptr, bot_cam_x, bot_cam_y);
+    PP_ADD(PP_BGBOT, pp_bb);
     bgSetMapBase(s_bot_bg, s_bot_back_page);
     int old_page = s_bot_active_page;
     s_bot_active_page = s_bot_back_page;
@@ -1340,6 +1376,7 @@ int main(void) {
 
     init_char_sprite_data();
     CRASH_INIT();
+    PP_INIT();
     enemy_set_death_hook(on_enemy_death);
     player_init();
 
@@ -1376,14 +1413,21 @@ int main(void) {
 
         uint32_t t0 = cpuGetTiming();
         player_update(keys_held, keys_down, touch.px, touch.py, touch_down);
+        PP_ADD(PP_PLAYER, t0);
         CRASH_FRAME(s_frame_index);
         CRASH_MARK(CL_FRAME_START, s_frame_index, 0);
         CRASH_POLL();
+        PP_T0(pp_oc);
         build_occlusion_depth_map(s_cam_x, s_cam_y);
+        PP_ADD(PP_OCCL, pp_oc);
         CRASH_MARK(CL_OCCLUSION_DONE, 0, 0);
+        PP_T0(pp_en);
         enemies_update();
+        PP_ADD(PP_ENEMIES, pp_en);
         CRASH_MARK(CL_ENEMIES_DONE, 0, 0);
+        PP_T0(pp_wp);
         weapons_and_effects_update();
+        PP_ADD(PP_WEAPONS, pp_wp);
         CRASH_MARK(CL_WEAPONS_DONE, 0, 0);
         uint32_t logic_ticks = cpuGetTiming() - t0;
 
@@ -1400,11 +1444,14 @@ int main(void) {
         CRASH_MARK(CL_RENDER_START, 0, 0);
         render_screen(s_bot_screen_buf, s_cam_x, s_cam_y, &bot_floor, &bot_sh, &bot_bl);
         CRASH_MARK(CL_RENDER_DONE, 0, 0);
+        PP_T0(pp_hud);
         draw_fps_hud(s_bot_screen_buf);
+        PP_ADD(PP_HUD, pp_hud);
         uint32_t bot_ticks = cpuGetTiming() - t2;
 
         // CPU rendering finished before waiting for VBlank
         uint32_t cpu_ticks = cpuGetTiming() - frame_start_ticks;
+        PP_SET(PP_CPU, cpu_ticks);
         int vcount_done = REG_VCOUNT;
 
         uint32_t t3 = cpuGetTiming();
@@ -1413,6 +1460,10 @@ int main(void) {
 
         uint32_t vblanks_elapsed = s_vblank_count - start_vblank;
         if (vblanks_elapsed == 0) vblanks_elapsed = 1;
+#if PERF_PROFILE
+        PP_SET(PP_FRAME, cpuGetTiming() - frame_start_ticks);
+        perfprof_frame_end(s_frame_index, vblanks_elapsed, s_vblank_count, s_bot_active_page, s_player_see_through);
+#endif
 
         g_perf.frame_index++;
         uint32_t total_cpu_ticks = cpu_ticks + bg_ticks;
