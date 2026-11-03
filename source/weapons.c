@@ -233,9 +233,11 @@ static void spawn_explosion(fixed x, fixed y, int radius, int damage,
         }
     }
 
+#ifdef DEBUG
     char msg[64];
     snprintf(msg, sizeof(msg), "ROCKET_EXPLOSION r=%d dmg=%d", radius, damage);
     nocashMessage(msg);
+#endif
 }
 
 int weapons_fire(PlayerState *player, fixed player_x, fixed player_y,
@@ -381,10 +383,12 @@ int weapons_fire(PlayerState *player, fixed player_x, fixed player_y,
         }
     }
 
+#ifdef DEBUG
     char msg[64];
     snprintf(msg, sizeof(msg), "WEAPON_FIRE weapon=%s ammo=%d",
              tuning->name, player->ammo[player->current_weapon]);
     nocashMessage(msg);
+#endif
     return 1;
 }
 

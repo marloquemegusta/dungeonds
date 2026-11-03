@@ -1421,7 +1421,9 @@ int main(void) {
         render_screen(bot_page_ptr(s_bot_back_page), s_cam_x, s_cam_y, &bot_floor, &bot_sh, &bot_bl);
         CRASH_MARK(CL_RENDER_DONE, 0, 0);
         PP_T0(pp_hud);
-        draw_fps_hud(bot_page_ptr(s_bot_back_page));
+        if (g_perf.show_hud != 0) {
+            draw_fps_hud(bot_page_ptr(s_bot_back_page));
+        }
         PP_ADD(PP_HUD, pp_hud);
         uint32_t bot_ticks = cpuGetTiming() - t2;
 
@@ -1469,6 +1471,7 @@ int main(void) {
         g_nav_state.active_enemies = enemies;
         g_nav_state.active_projectiles = projectiles;
         g_nav_state.frame_index = g_perf.frame_index;
+#ifdef DEBUG
         if ((g_perf.frame_index % 15) == 0) {
             char nav_buf[120];
             snprintf(nav_buf, sizeof(nav_buf), "NAV frame=%lu x=%ld y=%ld cam=%lu,%lu in=%lu move=%lu blocked=%lu enemies=%lu projectiles=%lu\\n",
@@ -1490,6 +1493,7 @@ int main(void) {
                      vcount_done);
             nocashMessage(log_buf);
         }
+#endif
     }
 
     return 0;
