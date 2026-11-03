@@ -3,8 +3,6 @@
 
 #include "gameplay.h"
 
-void enemy_ai_init(void);
-
 // Updates AI state machines for all active enemies:
 // - Charger FSM: IDLE -> ALERT -> CHASE -> ATTACK -> CHASE (with SEARCH on lost LOS after ~3s)
 // - Shooter FSM: IDLE -> ALERT -> POSITION -> AIM -> BURST -> COOLDOWN -> POSITION (with SEARCH on lost LOS after ~3s)

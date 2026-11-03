@@ -12,22 +12,32 @@
 - **Resolución nativa:** 256×192 píxeles por pantalla.
 
 ## 3. Pipeline de Assets
-- **Fuente de verdad visual:** `tools/ds_look.py` define elevación, escala de píxel, cámaras y anclas compartidas por entorno y personaje.
-- **Horneado:** `tools/bake_dungeon_iso.py` crea suelo y objetos en cuatro rotaciones; `tools/bake_player.py` crea animaciones en ocho direcciones. Blender es sólo tiempo de edición: no forma parte del runtime.
-- **Orientación:** cada segmento de pared/arco/columna usa el sprite horneado para su dirección de mundo. Se hornean las cuatro rotaciones explícitamente.
-- **Ancla:** el origen de suelo `(0,0,0)` se proyecta al centro de la celda del canvas. El personaje comparte el ancla de suelo; se planta midiendo la geometría evaluada, no suponiendo que el origen FBX coincide con la suela.
-- **Sombras horneadas:** cada orientación de objeto tiene un pase Cycles Shadow Catcher de 128×128; el conversor toma el recorte central 96×96. El jugador tiene una celda 96×96 por dirección, muestreada desde una pose plantada de referencia. El pase se guarda como RGB de luminancia: alfa no codifica cobertura.
-- **Máscara:** `tools/shadow_masks.py` estima el nivel iluminado a partir de las esquinas y convierte la reducción de luminancia a cobertura. El conversor debe rechazar pases sin contraste/fondo identificables.
-- **Runtime NDS:** cobertura cuantizada a 4 bits (dos píxeles por byte) con límites `[x,y,w,h]`; se oscurece sólo el suelo subyacente válido, nunca `VOID_COLOR`. Orden por frame: suelo → sombras → sprites. No sintetizar elipses/siluetas de sombra por código.
-- **Presupuesto:** no guardar máscaras como bytes completos ni usar las dimensiones de horneado completas en C: el primer intento excedía EWRAM. El recorte y empaquetado son parte del contrato de memoria.
-- **Verificación:** `python tests/test_shadow_masks.py -v`, conversión del preset, compilación con `C:\codexlocal\skills\agentic-ds-dev\scripts\build-project.ps1` y escenario/capturas con `C:\codexlocal\skills\agentic-ds-dev\scripts\run-scenario.ps1`. La prueba actual cubre máscaras `e30`; no implica que `e60` se haya regenerado o validado.
+- **Fuente de verdad visual:** el Shader Lab de Three.js (`tools/lab/FBX-Web-Renderer-offline.html`, generado desde `tools/lab/FBX-Web-Renderer-parity.js`) renderiza mapa y personajes con la misma cámara y la misma iluminación. Blender y `tools/ds_look.py` no forman parte del flujo activo.
+- **Legado:** `tools/ds_look.py`, `tools/bake_player.py`, `tools/bake_dungeon_*.py`, `tools/convert_*_to_c.py` y `tools/character_profiles.json` pertenecen al pipeline Blender anterior y no generan el mapa ni los sprites de personaje vigentes. Único rastro en el runtime: un comentario en `source/main.c` que cita `ds_look.py` como origen de `FLOOR_TILE_H`.
+- **Runtime NDS:** fondo en capas BG de tiles, oclusión por profundidad y actores en OAM. Blender no forma parte del runtime.
 
-### 3.1. Estandarización de Shaders y Modelos 3D para Sprites NDS
-- **Manifiesto de perfiles:** `tools/character_profiles.json` define de forma declarativa y desacoplada las características de horneado para cada modelo.
-- **Normal Maps en NDS (Atenuación obligatoria):** A resolución nativa de $256\times 192$, relieves normales al 100% generan micro-ruido y parpadeo (*shimmering*). El estándar exige atenuar su influencia al 30%-40% (`normal_strength: 0.3 - 0.4`).
-- **Fattening / Displace Modifier:** Mallas anatómicas finas (costillas, extremidades esqueléticas < 2 px de proyección) sufren desconexión de vóxeles y píxeles huérfanos. Se compensan paramétricamente con `DISPLACE` (`strength: 0.12`).
-- **Ambient Occlusion con ColorRamp de Cavidad:** Modelos sin mapas de textura PBR emplean sombreado procedural anatómico complementado con Cycles AO agresivo (ramp con parada negra en 0.30) para sumergir cavidades y órbitas en penumbra gótica.
-- **Grading 2D unificado (PIL):** Los sprites horneados de personaje y entorno pasan por el post-proceso central de `tools/ds_look.py` (Contraste 1.24, Brillo 0.98, Saturación 1.24, y outline de 1 px solidificado sin halos de transparencia sub-umbral).
+### Mapa: lab → baker → runtime
+- **Entrada:** modelo FBX/GLB de la mazmorra y `assets/sprites/dungeon/isometric_shooter_bl/map_settings.json` (1536×857 px, 40,42 px/m, ortho 38 m, elevación 30°, preset de luz cálido).
+- **Export:** `node tools/lab/export_map_package_headless.cjs <modelo> <map_settings.json> <salida>` abre el lab en Chromium headless (SwiftShader), aplica los ajustes y escribe `world.png`, `collision.png` + `collision.json`, `occlusion.png` (vista binaria) y `occlusion_depth.png` (profundidad), todos de 1536×857 y de la misma cámara.
+- **Bake:** `python tools/bake_isometric_shooter_bl.py` rellena a 1536×864 (múltiplo de 8) y genera:
+  - `include/dungeon_bg_tiles.h` y `source/dungeon_bg_tiles.c`: fondo cuantizado a 255 colores en tiles de 8×8 y tilemap.
+  - `include/diablo_dungeon.h` y `source/diablo_dungeon.c`: colisión de 2 bits por celda de 4 px (384×216).
+  - `include/dungeon_occlusion.h` y `source/dungeon_occlusion.c`: runs de oclusión ordenados por (y, x), con `g_dungeon_occlusion_row_start`. La profundidad sale de `occlusion_depth.png`.
+- **Runtime:** `source/main.c` dibuja el fondo, aplica la oclusión con `s_occlusion_depth` y dibuja los actores en OAM. La rejilla de colisión es la única fuente de suelo caminable.
+- **Contrato de datos:** ver §3.3.
+- **Verificación:** `python tests/test_map_export_coherence.py` y el escenario `scenarios/map_occlusion_collision_coherence.json` con `run-scenario.ps1`.
+
+### Personajes: lab → generador → runtime
+- **Export:** en el lab, renderizar 8 direcciones y pulsar "Exportar paquete completo". El paquete va a `assets/sprites/characters/<nombre>/` con `spritesheet.png` (8×8 celdas de 40×40: 8 direcciones × 8 frames), `shadow.png`, `settings.json` (direcciones, ancla, bounds por dirección) y `nds_shadow_anchor.h`. Modelos fuente en `assets/models/characters/`.
+- **Generación:** `python tools/generate_player_sprites_c.py` convierte cada spritesheet a BGR555 y cada máscara de sombra a 4 bits, y escribe `source/player_sprite.c`. Personajes: héroe (space marine), charger y necron (`NUM_CHARACTERS 3` en `include/player_sprite.h`).
+- **Sombra:** la máscara `shadow.png` se convierte a cobertura de 4 bits (dos píxeles por byte). El runtime la aplica con límites `[x,y,w,h]` y sólo oscurece el suelo subyacente válido, nunca `VOID_COLOR`. Orden por frame: suelo → sombras → sprites. No sintetizar elipses ni siluetas de sombra por código.
+- **Presupuesto:** no guardar máscaras como bytes completos ni usar dimensiones de horneado completas en C. El recorte y empaquetado son parte del contrato de memoria.
+- **Verificación:** compilación con `C:\codexlocal\skills\agentic-ds-dev\scripts\build-project.ps1` y escenario con capturas vía `run-scenario.ps1`. `tests/test_shadow_masks.py` está roto (ver §4.4).
+
+### 3.1. Render de Sprites de Personaje (Shader Lab)
+- **Perfil de render:** los ajustes de cada personaje viven en su `settings.json`. Referencia de contraste del lab: 1,50 (`assets/sprites/characters/README.md`).
+- **Relieves y grading:** las directrices del pipeline Blender (normal maps atenuados al 30–40%, `DISPLACE` para mallas finas, ramp de cavidad en AO y grading PIL de `ds_look.py`) no están implementadas en el lab. No aplicarlas sin validar el resultado en el lab y en Nintendo DS.
+- **Normal maps en NDS:** a resolución nativa de 256×192, relieves al 100% producen parpadeo (*shimmering*). Mantener el criterio de atenuación al validar cualquier sprite nuevo.
 
 ### 3.2. Efectos Procedurales en Runtime
 - La lanza ósea no usa spritesheets ni outlines: rasteriza una astilla de píxeles estrecha y puntiaguda, orientada por su velocidad fija.
@@ -36,7 +46,7 @@
 - Los fragmentos entran en el orden de profundidad del render y dibujan una sombra puntual en el suelo. El dibujado escribe directamente en BGR555; no instancia modelos 3D ni consume entradas OAM.
 
 ### 3.3. Pipeline de Oclusión 2.5D y Presupuesto de Rendimiento en ARM9
-- **Arquitectura de Profundidad Continua vs Capas Hardware:** En perspectiva dimétrica/isométrica con estructuras altas continuas (muros, contrafuertes góticos), las capas de fondo fijas de hardware (BG0/BG1) son insuficientes: el personaje debe ocluirse al norte del muro pero mostrarse por delante al pisar el sur de su base. El motor utiliza un búfer de profundidad horizontal por tramos (`s_occlusion_depth`, resolución 128×96 celdas, 16 bits con signo).
+- **Arquitectura de Profundidad Continua vs Capas Hardware:** En perspectiva dimétrica/isométrica con estructuras altas continuas (muros, contrafuertes góticos), las capas de fondo fijas de hardware (BG0/BG1) son insuficientes: el personaje debe ocluirse al norte del muro pero mostrarse por delante al pisar el sur de su base. El motor utiliza un búfer de profundidad horizontal por tramos (`s_occlusion_depth`, 64×48 celdas de 4×4 px sobre la pantalla (`OCCLUSION_DEPTH_SHIFT 2`), 16 bits con signo).
 - **Regla Crítica de EWRAM (Prohibición de loops bit a bit):** La memoria principal EWRAM (4 MB) en Nintendo DS tiene bus estrecho y latencia de acceso con wait states. Prohibido terminantemente ejecutar bucles horizontales que realicen operaciones bit a bit no alineadas (`|= (1u << (index & 7))`) por píxel individual: un bitmask de pantalla completa bajo este patrón consume 12–15 ms por frame. Toda máscara debe procesarse por palabras alineadas (32 bits) o inferirse directamente del mapa de profundidad (`s_occlusion_depth >= 0`).
 - **Compilación Obligatoria en Modo ARM 32-bit:** Por defecto BlocksDS compila código ARM9 en Thumb-1 (16-bit). Las funciones críticas de manipulación de memoria y rasterizado (`build_occlusion_depth_map`, `blit_stride`, `draw_shadow_mask`) deben declararse explícitamente con `__attribute__((target("arm"), optimize("O3"), noinline))` para aprovechar instrucciones nativas de 32 bits (`LDRH`/`STRH`, `STMIA`) y evitar el estrangulamiento de registros.
 - **Índice por Fila y Búsqueda Binaria en X:** Los tramos (`g_dungeon_occlusion_runs`) se ordenan por (y, x) y `g_dungeon_occlusion_row_start[WORLD_H + 1]` delimita los de cada fila. `build_occlusion_depth_map()` recorre sólo las filas visibles y busca en binario el primer tramo que alcanza la cámara (`find_first_occlusion_run_in_row()`). Recorrer todos los tramos de las filas visibles costaba ~370k ticks por reconstrucción y bajaba a 30 FPS.
@@ -47,16 +57,13 @@
 
 Origen: `walkthroughs/audit-saneamiento-2d3d/`. Lo ya resuelto (colisión/oclusión coherentes con el render) está en `walkthroughs/map-export-coherence/`. Se referencian funciones, no líneas, porque se desplazan. Al cerrar un punto, borrarlo de aquí y registrarlo en `STATUS.md`.
 
-### 4.1. Proyección y render 2.5D (prioridad alta)
-- **Movimiento y colisión en espacio de pantalla.** `player_update` usa la misma velocidad en X e Y de pantalla y normaliza diagonales con `*181>>8`; `position_is_free` usa un círculo de 6 px de pantalla. En 2:1 eso es una elipse en el suelo y moverse en vertical recorre el doble de suelo. Pasar actores a coordenadas de suelo y proyectar sólo al dibujar (afecta a jugador, enemigos, proyectiles y `sweep_position`).
-- **Escala personaje/mapa.** El mapa está a 40,42 px/m (`map_settings.json`) y los sprites miden ~30 px: el personaje equivale a ~0,75 m y queda oculto tras obstáculos de 1 m. Fijar una única escala px/m para mapa y sprites, con test.
-- **Ancla de suelo triplicada.** `PLAYER_ANCHOR_Y` = 35 (`include/player_sprite.h`), anclas reales 32/33 (`g_character_ground_anchors`) y 28 en `tests/test_sprite_ground_anchor.py`; el culling de `render_screen` usa la constante. Una sola fuente generada por el exportador.
-- **Parpadeo del jugador ocluido.** `blit_stride` dibuja los píxeles ocultos del jugador en frames impares. Sustituir por silueta o dither estable.
-- **Resolución de oclusión 4×4.** `OCCLUSION_DEPTH_SHIFT 2` con reducción `max` recorta en escalón hasta 16 px por un píxel de muro. Evaluar 2×2 o por píxel dentro del presupuesto de 60 FPS.
-- **Histéresis de reconstrucción.** `build_occlusion_depth_map` sólo se reconstruye si la cámara se mueve ≥4 px, dejando hasta 3 px de borde sin oclusores.
-- **Pantalla superior sin actores.** Sólo la inferior dibuja actores; enemigos por encima de la cámara no se ven. `CAMERA_ANCHOR_Y` está definido y sin uso.
+### 4.1. Proyección y render 2.5D
+- **Escala personaje/mapa.** El mapa está a 40,42 px/m (`map_settings.json`) y los sprites miden ~30 px: el personaje equivale a ~0,75 m y queda oculto tras obstáculos de 1 m. Requiere re-renderizar los tres personajes (8 dir × 8 frames) a ~2× y ampliar el canvas de 40×40, con impacto en RAM/ROM; fijar entonces una única escala px/m con test.
+- **Pantalla superior sin actores.** Sólo la inferior dibuja actores; enemigos por encima de la cámara no se ven. Exige un segundo pase de render por frame (vigilar el presupuesto de 60 FPS).
+- **Parpadeo del jugador ocluido (`blit_stride`, frames impares):** es diseño intencional, no es deuda.
+- Resuelto en esta sesión (ver `STATUS.md`): movimiento/colisión isotrópicos en suelo (`GROUND_DY2`, elipse 6×3), ancla única exportada, oclusión 4×4 reconstruida con cada movimiento de cámara (sin histéresis); 2×2 cuesta frames a 60 FPS.
 
-### 4.2. Gameplay
+### 4.2. Gameplay (preliminar, diferido)
 - Lead del tirador anulado: `(player_vx * travel_frames) >> 8` en `enemy_ai.c` divide la predicción entre 256 (quitar el `>> 8`).
 - Fallback de spawn de `encounters_spawn_wave` con coordenadas del mapa antiguo (380,227) y centinela `anchor == (0,0)`.
 - `invuln_timer` se decrementa pero nunca se asigna ni se consulta en `player_apply_damage`: sin i-frames.
@@ -65,16 +72,12 @@ Origen: `walkthroughs/audit-saneamiento-2d3d/`. Lo ya resuelto (colisión/oclusi
 - Diseño no implementado: navegación BFS/campo de distancias (los enemigos se atascan en esquinas) y detección por ruido.
 
 ### 4.3. Código muerto y acoplamiento
-- `dungeon_data.c`/`.h` (cripta 36×36, 40 sprites 96×96) enlazado sólo por `init_obj_sprite_bounds`/`blit_tile`: ~737 KB de ROM y un escaneo al arrancar. También `tile_center_x/y`, `CACHE_*` y el comentario de cabecera de `main.c`.
-- Sistema de lanzas óseas legacy en `main.c` (`s_lances`, `draw_bone_lance`, bucle de `lances_update`, `emit_bone_particle`, `legacy_lance_contract_stub` con lectura no inicializada); muerte/drops duplicados con `enemy_hit`.
-- Sin cablear: `enemy_ai_init`, `enemy_projectile_spawn_hitscan`/`PROJ_HITSCAN_TRACER`, campos `step_count`/`step_limit`/`stagger_slot`.
-- `weapons.c` llama a `enemy_hit` definido en `main.c` (dependencia invertida que impide tests de host aislados).
-- Tracers truncados a 160/120 pasos (`weapons.c`, `projectiles.c`) con alcance de pistola 180.
-- `sweep_position` usa división int64 (software en ARM9) por paso.
+- `tools/convert_iso_to_c.py` (invocado por `tools/build-view.ps1`) todavía emite `dungeon_data`; ejecutarlo volvería a meter ~737 KB en la ROM. Separar su salida de `player_sprite`.
 
 ### 4.4. Tests, escenarios, docs y repo
-- `tests/test_shadow_masks.py` exige `assets/dungeon_e30/` (inexistente); `test_sprite_ground_anchor.py` valida el ancla 28.
-- `tools/lab/test_shadow_anchor_export_headless.cjs` falla en el atlas de sombras (768 ≠ 96) antes de llegar al mapa.
-- ~20 escenarios con geometría o personajes que ya no existen (`wh40k_*`, `ruins_*`, `character_switch_test` con skeleton); `wh40k_charger_north_occlusion_probe.json` lleva BOM. Incumplen la regla 5 de AGENTS.
-- Docs desfasadas: `HANDOFF.md` (smooth_lightmap, niebla, mapa 768×512), `DESIGN.md` (niebla en 4.5), mojibake en `STATUS.md`, secciones 3–3.1 de este documento (pipeline Blender/`ds_look.py` que ya no genera el mapa).
-- Repo: ROMs viejas `dungeonds_e30.nds`/`dungeonds_e60.nds` en la raíz; generadores obsoletos en `tools/` (`bake_dungeon_*.py`, `convert_*_to_c.py`, `assemble_wh40k_full_sector.py`, `generate_fbx_bg_tiles.py`; `bake_full_smooth_lightgrid.py` todavía escribe `include/dungeon_bg_tiles.h` y podría pisar el mapa actual).
+- Los tests `test_diablo_navigation.py`, `test_los.py` y `test_map_export_coherence.py` requieren `numpy` y no corren en este entorno.
+- Los escenarios `dungeon_walk_tour`, `fbx_bg_ring_scroll`, `integration_showcase_walk` y `wall_junction_closeup` no están validados contra el mapa actual (regla 5 de `AGENTS.md`).
+- `tools/gen_exact_scenario.py` y `tools/character_profiles.json` aún referencian `wh40k` y `skeleton`.
+- ROMs viejas `dungeonds_e30.nds`/`dungeonds_e60.nds` en la raíz del repo principal (ignoradas por git): borrar a mano.
+- `.ds-game-dev/project.json` lista `tests/test_world_void_contract.py`, que no existe.
+- **Data abort en hardware, sin causa conocida.** Tras unos minutos jugando (dar vueltas y matar enemigos) la DS mostró una pantalla roja "data abort" con la ROM de esta sesión; no se reproduce en DeSmuME (soak de 23.000 frames) ni se pudo atribuir a un cambio concreto. Con la ROM de depuración no volvió a aparecer, y se detectan "cosas raras" por revisar. Herramienta: `include/crashlog.h` + `source/crashlog.c` (poner `CRASHLOG_ENABLED 1`): migas en un anillo, log vivo `/dungeonds_live.log` cada segundo, informe en ambas pantallas y `/dungeonds_crash.log` con registros; L+R+START muestra el informe, L+R+SELECT provoca una excepción real. El handler real no se pudo validar en DeSmuME. Resolver el PC contra `.ds-game-dev/build/build/game-blocksds.map`.

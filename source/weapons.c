@@ -290,7 +290,7 @@ int weapons_fire(PlayerState *player, fixed player_x, fixed player_y,
     int py = TO_INT(player_y);
     int dx = aim_screen_x - px;
     int dy = aim_screen_y - py;
-    uint32_t len = int_sqrt((uint32_t)(dx * dx + dy * dy));
+    uint32_t len = int_sqrt((uint32_t)(dx * dx + GROUND_DY2(dy)));
     if (len == 0) len = 1;
     fixed dir_x = (fixed)(((int64_t)dx << 8) / (int32_t)len);
     fixed dir_y = (fixed)(((int64_t)dy << 8) / (int32_t)len);
@@ -501,7 +501,9 @@ void weapons_render(uint16_t *buffer, int cam_x, int cam_y) {
         int err = (adx > ady ? adx : -ady) / 2;
 
         int cur_x = x0, cur_y = y0;
-        for (int step = 0; step < 160; step++) {
+        // Bresenham needs max(|dx|,|dy|) + 1 pixels: always covers the whole tracer.
+        int line_steps = adx > ady ? adx : ady;
+        for (int step = 0; step <= line_steps; step++) {
             if (cur_x >= 0 && cur_x < SCREEN_W && cur_y >= 0 && cur_y < SCREEN_H) {
                 buffer[cur_y * SCREEN_W + cur_x] = color;
             }

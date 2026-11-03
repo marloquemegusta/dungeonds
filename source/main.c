@@ -1,5 +1,4 @@
 #include "game.h"
-#include "dungeon_data.h"
 #include "player_sprite.h"
 #include "dungeon_bg_tiles.h"
 #include "diablo_dungeon.h"
@@ -10,19 +9,16 @@
 #include "projectiles.h"
 #include "weapons.h"
 #include "encounters.h"
+#include "crashlog.h"
 #include <string.h>
 
 // ---------------------------------------------------------------------------
 // DungeonDS - dimetric dungeon renderer
 //
-// The world is a MAP_COLS x MAP_ROWS tile grid. A tile (col,row) centre maps to
-// world pixel coordinates:
-//      sx = (col - row) * (FLOOR_TILE_W / 2)
-//      sy = (col + row) * (FLOOR_TILE_H / 2)
-// FLOOR_TILE_H comes from the baked view preset (tools/ds_look.py): it is
-// 16 px at 30 deg elevation (classic 2:1) and 28 px at 60 deg. Sprites are
+// World space is the baked FBX dungeon: world pixel coordinates are the
+// projected 2:1 dimetric image (see include/diablo_dungeon.h). Sprites are
 // pre-baked with the matching orthographic camera, so a sprite's centre is its
-// ground anchor point on the tile.
+// ground anchor point on the floor.
 //
 // Hardware Background Scrolling:
 // The static floor, perimeter walls, and shadows are converted into 8bpp tiles.
@@ -42,7 +38,6 @@
 
 // Camera vertical anchor: where the player's feet sit on the bottom screen.
 // Above centre, so the top screen is filled by the dungeon rather than the void.
-#define CAMERA_ANCHOR_Y 88
 
 // Upper bound on objects drawn per screen (walls + pillars in view).
 #define MAX_DRAW_ITEMS 128
@@ -56,12 +51,6 @@
 #define BG_RING_H 32
 #define BG_VIEW_W (SCREEN_W / 8 + 1)
 #define BG_VIEW_H (SCREEN_H / 8 + 1)
-
-// World-sized floor cache bounds (origin = world pixel (CACHE_X0, CACHE_Y0))
-#define CACHE_X0 (-((MAP_ROWS - 1) * TILE_HALF_W) - TILE_HALF_W)
-#define CACHE_Y0 (-OBJ_SPRITE_H)
-#define CACHE_W  ((((MAP_COLS - 1) * TILE_HALF_W) + TILE_HALF_W) - CACHE_X0)
-#define CACHE_H  (((((MAP_COLS - 1) + (MAP_ROWS - 1)) * TILE_HALF_H) + TILE_HALF_H) - CACHE_Y0)
 
 // Hardware BG IDs and pointers
 static int s_bot_bg = 0;
@@ -110,7 +99,7 @@ typedef struct {
     int32_t x, y;                 // raw 8.8 world pixels
     int32_t cam_x, cam_y;         // integer world pixels
     uint32_t input, moving, blocked_moves;
-    uint32_t active_enemies, active_lances, frame_index;
+    uint32_t active_enemies, active_projectiles, frame_index;
 } NavigationState;
 volatile NavigationState g_nav_state;
 static uint32_t s_blocked_moves = 0;
@@ -124,40 +113,6 @@ volatile OcclusionStats g_occlusion_stats;
 
 static Enemy s_enemies[MAX_ENEMIES];
 static int abs_int(int v);
-
-#define MAX_PROJECTILES 16
-#define LANCE_PELLETS 5
-#define LANCE_COOLDOWN 16
-#define LANCE_SPEED 2048  // 8 projected pixels/frame in 8.8 fixed
-#define LANCE_SPREAD 256  // max side ratio 256/1024 (~14-degree half cone)
-#define LANCE_LIFETIME 40
-#define LANCE_DAMAGE 10
-typedef struct {
-    fixed x;
-    fixed y;
-    fixed vx;
-    fixed vy;
-    uint16_t hit_mask;
-    int life;
-    int active;
-    uint8_t seed;
-} BoneLance;
-static BoneLance s_lances[MAX_PROJECTILES];
-static int s_lance_cooldown = 0;
-
-#define MAX_BONE_PARTICLES 32
-typedef struct {
-    fixed x;
-    fixed y;
-    fixed vx;
-    fixed vy;
-    uint8_t life;
-    uint8_t size;
-    uint8_t tone;
-    uint8_t active;
-} BoneParticle;
-static BoneParticle s_bone_particles[MAX_BONE_PARTICLES];
-static uint8_t s_bone_effect_tick = 0;
 
 #define MAX_DEATH_CHUNKS 48
 #define DEATH_CHUNK_SIZE 4
@@ -174,7 +129,7 @@ static uint32_t s_death_chunk_seed;
 
 typedef struct {
     int depth;     // ground world Y in pixels
-    int sprite;    // object id, -1 = player
+    int ref;       // -1 = player, -2 - i = enemy i, -2 - MAX_ENEMIES - i = death chunk i
     int cx;        // world pixel centre X
     int cy;        // world pixel centre Y (ground point)
 } DrawItem;
@@ -182,14 +137,6 @@ typedef struct {
 // ---------------------------------------------------------------------------
 // Projection helpers
 // ---------------------------------------------------------------------------
-
-static inline int tile_center_x(int col, int row) {
-    return (col - row) * TILE_HALF_W;
-}
-
-static inline int tile_center_y(int col, int row) {
-    return (col + row) * TILE_HALF_H;
-}
 
 static inline int player_screen_x(fixed x, fixed y) {
     return (int)(x >> FIXED_SHIFT);
@@ -200,108 +147,13 @@ static inline int player_screen_y(fixed x, fixed y) {
 }
 
 // ---------------------------------------------------------------------------
-// Collision
-//
-// The baked grid is the only walkability source: the lab exports floor that is
-// reachable and free of any geometry inside the body slab, so dark render
-// pixels never act as invisible walls.
-// ---------------------------------------------------------------------------
-
-static inline uint8_t world_collision_flags(int cx, int cy) {
-    uint32_t index = (uint32_t)cy * COLLISION_W + (uint32_t)cx;
-    return (g_dungeon_collision[index >> 2] >> ((index & 3) * 2)) & 0x03;
-}
-
-int position_is_free(fixed x, fixed y) {
-    int wx = (int)(x >> FIXED_SHIFT);
-    int wy = (int)(y >> FIXED_SHIFT);
-    const int radius = 6;
-    if (wx - radius < 0 || wy - radius < 0) return 0;
-
-    int cell_x0 = (wx - radius) / COLLISION_SCALE;
-    int cell_x1 = (wx + radius) / COLLISION_SCALE;
-    int cell_y0 = (wy - radius) / COLLISION_SCALE;
-    int cell_y1 = (wy + radius) / COLLISION_SCALE;
-    const int radius_sq = radius * radius;
-    for (int cy = cell_y0; cy <= cell_y1; cy++) {
-        for (int cx = cell_x0; cx <= cell_x1; cx++) {
-            if (cx < 0 || cx >= COLLISION_W || cy < 0 || cy >= COLLISION_H) return 0;
-            if ((world_collision_flags(cx, cy) & 0x01) == 0) continue;
-            int left = cx * COLLISION_SCALE;
-            int top = cy * COLLISION_SCALE;
-            int nearest_x = wx < left ? left : (wx > left + COLLISION_SCALE - 1 ? left + COLLISION_SCALE - 1 : wx);
-            int nearest_y = wy < top ? top : (wy > top + COLLISION_SCALE - 1 ? top + COLLISION_SCALE - 1 : wy);
-            int dx = wx - nearest_x;
-            int dy = wy - nearest_y;
-            if (dx * dx + dy * dy <= radius_sq) return 0;
-        }
-    }
-    return 1;
-}
-
-int bullet_position_is_free(fixed x, fixed y) {
-    int px = (int)(x >> FIXED_SHIFT);
-    int py = (int)(y >> FIXED_SHIFT);
-    if (px < 0 || py < 0) return 0;
-    int cx = px / COLLISION_SCALE;
-    int cy = py / COLLISION_SCALE;
-    if (cx < 0 || cx >= COLLISION_W || cy < 0 || cy >= COLLISION_H) return 0;
-    return (world_collision_flags(cx, cy) & 0x02) == 0;
-}
-
-// Sweep in <=1px increments so a frame cannot skip a thin blocked cell.
-int sweep_position(fixed *x, fixed *y, fixed dx, fixed dy) {
-    fixed start_x = *x, start_y = *y;
-    int ax = abs_int(dx), ay = abs_int(dy);
-    int major = ax > ay ? ax : ay;
-    int steps = (major + 255) / 256;
-    if (steps < 1) steps = 1;
-    for (int step = 1; step <= steps; step++) {
-        fixed next_x = start_x + (fixed)(((int64_t)dx * step) / steps);
-        fixed next_y = start_y + (fixed)(((int64_t)dy * step) / steps);
-        if (!position_is_free(next_x, next_y)) return 0;
-    }
-    *x = start_x + dx;
-    *y = start_y + dy;
-    return 1;
-}
-
-// ---------------------------------------------------------------------------
 // Blitting
 // ---------------------------------------------------------------------------
 
-static uint8_t s_obj_sprite_bounds[NUM_OBJ_SPRITES][4];
 static uint8_t s_char_frame_bounds[NUM_CHARACTERS][PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4];
 static uint8_t s_char_ground_anchor[NUM_CHARACTERS][PLAYER_NUM_DIRS];
 
-static void init_obj_sprite_bounds(void) {
-    for (int i = 0; i < NUM_OBJ_SPRITES; i++) {
-        const uint16_t *src = g_obj_sprites[i];
-        int min_x = OBJ_SPRITE_W, max_x = -1;
-        int min_y = OBJ_SPRITE_H, max_y = -1;
-        for (int y = 0; y < OBJ_SPRITE_H; y++) {
-            for (int x = 0; x < OBJ_SPRITE_W; x++) {
-                if (src[y * OBJ_SPRITE_W + x] & BIT(15)) {
-                    if (x < min_x) min_x = x;
-                    if (x > max_x) max_x = x;
-                    if (y < min_y) min_y = y;
-                    if (y > max_y) max_y = y;
-                }
-            }
-        }
-        if (max_x < min_x) {
-            s_obj_sprite_bounds[i][0] = 0;
-            s_obj_sprite_bounds[i][1] = 0;
-            s_obj_sprite_bounds[i][2] = 0;
-            s_obj_sprite_bounds[i][3] = 0;
-        } else {
-            s_obj_sprite_bounds[i][0] = (uint8_t)min_x;
-            s_obj_sprite_bounds[i][1] = (uint8_t)min_y;
-            s_obj_sprite_bounds[i][2] = (uint8_t)(max_x - min_x + 1);
-            s_obj_sprite_bounds[i][3] = (uint8_t)(max_y - min_y + 1);
-        }
-    }
-
+static void init_char_sprite_data(void) {
     for (int c = 0; c < NUM_CHARACTERS; c++) {
         for (int d = 0; d < PLAYER_NUM_DIRS; d++) {
             for (int f = 0; f < PLAYER_NUM_FRAMES; f++) {
@@ -356,7 +208,7 @@ __attribute__((target("arm"), optimize("O3"), noinline))
 static void build_occlusion_depth_map(int cam_x, int cam_y) {
     int cdx = cam_x - s_occlusion_cam_x; if (cdx < 0) cdx = -cdx;
     int cdy = cam_y - s_occlusion_cam_y; if (cdy < 0) cdy = -cdy;
-    if (cdx < 4 && cdy < 4 && s_frame_index > 2) return;
+    if (cdx == 0 && cdy == 0 && s_frame_index > 2) return;
     s_occlusion_cam_x = cam_x;
     s_occlusion_cam_y = cam_y;
     uint32_t fill_val = 0xFFFFFFFF;
@@ -386,18 +238,22 @@ static void build_occlusion_depth_map(int cam_x, int cam_y) {
         }
     }
 
-    // Fast 2x2 reduction pass for coarse block-level occlusion queries
+    // Max-reduce each depth cell group into one coarse block for span queries.
+    enum { REDUCE = 1 << (OCCLUSION_GRID_SHIFT - OCCLUSION_DEPTH_SHIFT) };
     for (int by = 0; by < OCCLUSION_GRID_H; by++) {
-        int dy = by * 2;
-        const int16_t *r0 = &s_occlusion_depth[dy * OCCLUSION_DEPTH_W];
-        const int16_t *r1 = &s_occlusion_depth[(dy + 1) * OCCLUSION_DEPTH_W];
         int16_t *out = &s_occlusion_block_max[by * OCCLUSION_GRID_W];
         for (int bx = 0; bx < OCCLUSION_GRID_W; bx++) {
-            int dx = bx * 2;
-            int16_t m = r0[dx];
-            if (r0[dx + 1] > m) m = r0[dx + 1];
-            if (r1[dx] > m) m = r1[dx];
-            if (r1[dx + 1] > m) m = r1[dx + 1];
+            int16_t m = -1;
+            for (int ry = 0; ry < REDUCE; ry++) {
+                int dy = by * REDUCE + ry;
+                if (dy >= OCCLUSION_DEPTH_H) break;
+                const int16_t *row = &s_occlusion_depth[dy * OCCLUSION_DEPTH_W];
+                for (int rx = 0; rx < REDUCE; rx++) {
+                    int dx = bx * REDUCE + rx;
+                    if (dx >= OCCLUSION_DEPTH_W) break;
+                    if (row[dx] > m) m = row[dx];
+                }
+            }
             out[bx] = m;
         }
     }
@@ -503,21 +359,6 @@ static void blit_stride(uint16_t *buffer, const uint16_t *src, int pitch, int sw
             if (a & BIT(15)) drow[x] = a;
         }
     }
-}
-
-static void blit_tile(uint16_t *buffer, int sprite_id,
-                      int cx, int cy, int cam_x, int cam_y) {
-    const uint8_t *b = s_obj_sprite_bounds[sprite_id];
-    int bw = b[2];
-    int bh = b[3];
-    if (bw == 0 || bh == 0) return;
-    int min_x = b[0];
-    int min_y = b[1];
-    const uint16_t *src = &g_obj_sprites[sprite_id][min_y * OBJ_SPRITE_W + min_x];
-    blit_stride(buffer, src, OBJ_SPRITE_W, bw, bh,
-                cx - OBJ_SPRITE_W / 2 + min_x,
-                cy - OBJ_ANCHOR_Y + min_y,
-                cam_x, cam_y, s_draw_item_depth);
 }
 
 // Shadow shape/coverage is baked from the 3D asset.
@@ -760,64 +601,6 @@ static void bone_effect_pixel(uint16_t *buffer, int x, int y, int cam_x, int cam
         buffer[sy * SCREEN_W + sx] = color;
 }
 
-static void draw_bone_lance(uint16_t *buffer, const BoneLance *lance, int cam_x, int cam_y) {
-    int px = player_screen_x(lance->x, lance->y);
-    int py = player_screen_y(lance->x, lance->y);
-    int ax = lance->vx < 0 ? -lance->vx : lance->vx;
-    int ay = lance->vy < 0 ? -lance->vy : lance->vy;
-    int major = ax > ay ? ax : ay;
-    if (major == 0) return;
-
-    int ux = (int)(((int64_t)lance->vx * 256) / major);
-    int uy = (int)(((int64_t)lance->vy * 256) / major);
-    int length = 8 + (lance->seed & 3);
-    int half = length / 2;
-    uint16_t bone = RGB15(27, 23, 17) | BIT(15);
-    uint16_t ivory = RGB15(31, 30, 25) | BIT(15);
-    uint16_t warm = RGB15(30, 25, 17) | BIT(15);
-
-    for (int i = 0; i < length; i++) {
-        int along = i - half;
-        int wobble = ((lance->seed + i * 5) % 7 == 0) ? (((lance->seed + i) & 1) ? 1 : -1) : 0;
-        int x = px + ((ux * along - uy * wobble) >> 8);
-        int y = py + ((uy * along + ux * wobble) >> 8);
-        uint16_t color = i == length - 1 ? ivory :
-                         i < 2 ? warm : ((i + lance->seed) % 4 == 0 ? ivory : bone);
-        bone_effect_pixel(buffer, x, y, cam_x, cam_y, color);
-
-        // A few broken barbs keep each splinter irregular without tracing its edge.
-        if ((i == 1 && (lance->seed & 1)) ||
-            (i == length - 3 && (lance->seed & 2))) {
-            int side = ((lance->seed + i) & 1) ? 1 : -1;
-            bone_effect_pixel(buffer, x + ((-uy * side) >> 8),
-                              y + ((ux * side) >> 8), cam_x, cam_y, warm);
-        }
-        if (i == length - 2 && (lance->seed & 1)) {
-            bone_effect_pixel(buffer, x + ((-uy) >> 8), y + (ux >> 8),
-                              cam_x, cam_y, ivory);
-        }
-    }
-
-    if (((s_bone_effect_tick + lance->seed) & 3) == 0) {
-        int tx = px + ((ux * (half + 1)) >> 8);
-        int ty = py + ((uy * (half + 1)) >> 8);
-        bone_effect_pixel(buffer, tx, ty, cam_x, cam_y, warm);
-    }
-}
-
-static void draw_bone_particle(uint16_t *buffer, const BoneParticle *p, int index, int cam_x, int cam_y) {
-    static const uint16_t tones[2] = {
-        RGB15(23, 22, 17) | BIT(15), RGB15(30, 27, 21) | BIT(15)
-    };
-    int x = p->x >> 8, y = p->y >> 8;
-    int fade = p->life <= 2;
-    uint16_t color = fade ? tones[0] : tones[p->tone % 2];
-    bone_effect_pixel(buffer, x, y, cam_x, cam_y, color);
-    if (p->size > 1 && p->life > 2)
-        bone_effect_pixel(buffer, x + ((index & 1) ? 1 : 0), y + ((index & 1) ? 0 : 1),
-                          cam_x, cam_y, tones[0]);
-}
-
 static void draw_death_chunk(uint16_t *buffer, const DeathChunk *chunk, int cam_x, int cam_y) {
     int cx = player_screen_x(chunk->x, chunk->y);
     int ground_y = player_screen_y(chunk->x, chunk->y);
@@ -844,7 +627,7 @@ static void draw_death_chunk(uint16_t *buffer, const DeathChunk *chunk, int cam_
 }
 static void render_screen(uint16_t *buffer, int cam_x, int cam_y,
                           uint32_t *out_floor, uint32_t *out_shadow, uint32_t *out_blit) {
-    DrawItem items[MAX_DRAW_ITEMS + MAX_ENEMIES + MAX_PROJECTILES + MAX_DEATH_CHUNKS + MAX_BONE_PARTICLES + 1];
+    DrawItem items[MAX_DRAW_ITEMS + MAX_ENEMIES + MAX_DEATH_CHUNKS + 1];
     int count = 0;
 
     // The static floor is in BG1; this buffer contains only dynamic layers.
@@ -853,12 +636,14 @@ static void render_screen(uint16_t *buffer, int cam_x, int cam_y,
     int psx = player_screen_x(s_player.x, s_player.y);
     int psy = player_screen_y(s_player.x, s_player.y);
     int pl_left = psx - PLAYER_ANCHOR_X - cam_x;
-    int pl_top = psy - PLAYER_ANCHOR_Y - cam_y;
+    // Cull on the feet row: the exported ground anchor varies per character
+    // and direction, so the sprite top lies within one canvas height above it.
+    int pl_feet = psy - cam_y;
     if (pl_left < SCREEN_W && pl_left + PLAYER_SPRITE_W > 0 &&
-        pl_top < SCREEN_H && pl_top + PLAYER_SPRITE_H > 0) {
+        pl_feet - PLAYER_SPRITE_H < SCREEN_H && pl_feet + PLAYER_SPRITE_H > 0) {
         if (count < MAX_DRAW_ITEMS) {
             items[count].depth = psy;
-            items[count].sprite = -1;
+            items[count].ref = -1;
             items[count].cx = psx;
             items[count].cy = psy;
             count++;
@@ -871,32 +656,16 @@ static void render_screen(uint16_t *buffer, int cam_x, int cam_y,
         int esx = player_screen_x(s_enemies[e_idx].x, s_enemies[e_idx].y);
         int esy = player_screen_y(s_enemies[e_idx].x, s_enemies[e_idx].y);
         int e_left = esx - PLAYER_ANCHOR_X - cam_x;
-        int e_top = esy - PLAYER_ANCHOR_Y - cam_y;
+        int e_feet = esy - cam_y;
         if (e_left < SCREEN_W && e_left + PLAYER_SPRITE_W > 0 &&
-            e_top < SCREEN_H && e_top + PLAYER_SPRITE_H > 0) {
+            e_feet - PLAYER_SPRITE_H < SCREEN_H && e_feet + PLAYER_SPRITE_H > 0) {
             if (count < MAX_DRAW_ITEMS) {
                 items[count].depth = esy;
-                items[count].sprite = -2 - e_idx;
+                items[count].ref = -2 - e_idx;
                 items[count].cx = esx;
                 items[count].cy = esy;
                 count++;
             }
-        }
-    }
-
-    for (int p = 0; p < MAX_PROJECTILES; p++) {
-        BoneLance *lance = &s_lances[p];
-        if (!lance->active) continue;
-        int px = player_screen_x(lance->x, lance->y);
-        int py = player_screen_y(lance->x, lance->y);
-        if (px + 8 < cam_x || px - 8 > cam_x + SCREEN_W ||
-            py + 8 < cam_y || py - 8 > cam_y + SCREEN_H) continue;
-        if (count < MAX_DRAW_ITEMS + MAX_ENEMIES + MAX_PROJECTILES + MAX_DEATH_CHUNKS) {
-            items[count].depth = py;
-            items[count].sprite = -2 - MAX_ENEMIES - p;
-            items[count].cx = px;
-            items[count].cy = py;
-            count++;
         }
     }
 
@@ -907,26 +676,13 @@ static void render_screen(uint16_t *buffer, int cam_x, int cam_y,
         int py = player_screen_y(chunk->x, chunk->y) - (chunk->z >> FIXED_SHIFT);
         if (px + DEATH_CHUNK_SIZE < cam_x || px - DEATH_CHUNK_SIZE > cam_x + SCREEN_W ||
             py + DEATH_CHUNK_SIZE < cam_y || py - DEATH_CHUNK_SIZE > cam_y + SCREEN_H) continue;
-        if (count < MAX_DRAW_ITEMS + MAX_ENEMIES + MAX_PROJECTILES + MAX_DEATH_CHUNKS) {
+        if (count < MAX_DRAW_ITEMS + MAX_ENEMIES + MAX_DEATH_CHUNKS) {
             items[count].depth = player_screen_y(chunk->x, chunk->y);
-            items[count].sprite = -2 - MAX_ENEMIES - MAX_PROJECTILES - i;
+            items[count].ref = -2 - MAX_ENEMIES - i;
             items[count].cx = px;
             items[count].cy = py;
             count++;
         }
-    }
-
-    for (int p = 0; p < MAX_BONE_PARTICLES; p++) {
-        BoneParticle *particle = &s_bone_particles[p];
-        if (!particle->active) continue;
-        int px = player_screen_x(particle->x, particle->y);
-        int py = player_screen_y(particle->x, particle->y);
-        if (px < cam_x || px >= cam_x + SCREEN_W || py < cam_y || py >= cam_y + SCREEN_H) continue;
-        items[count].depth = py;
-        items[count].sprite = -2 - MAX_ENEMIES - MAX_PROJECTILES - MAX_DEATH_CHUNKS - p;
-        items[count].cx = px;
-        items[count].cy = py;
-        count++;
     }
 
     // The static FBX bake is now a hardware BG; keep this bitmap layer transparent
@@ -941,15 +697,15 @@ static void render_screen(uint16_t *buffer, int cam_x, int cam_y,
     // 1) Composite dynamic entity shadows (player & enemies, animated per frame)
     uint32_t t_sh0 = cpuGetTiming();
     for (int i = 0; i < count; i++) {
-        if (items[i].sprite == -1) {
+        if (items[i].ref == -1) {
             draw_shadow_mask(buffer, g_character_shadow_masks[s_player.char_id][s_player.dir][s_player.frame],
                              PLAYER_SHADOW_W, PLAYER_SHADOW_H,
                              g_character_shadow_bounds[s_player.char_id][s_player.dir][s_player.frame],
                              items[i].cx - PLAYER_SHADOW_W / 2,
                              items[i].cy - PLAYER_SHADOW_H / 2, cam_x, cam_y, items[i].depth);
-        } else if (items[i].sprite <= -2 &&
-                   items[i].sprite > -2 - MAX_ENEMIES) {
-            int e_idx = -2 - items[i].sprite;
+        } else if (items[i].ref <= -2 &&
+                   items[i].ref > -2 - MAX_ENEMIES) {
+            int e_idx = -2 - items[i].ref;
             const Enemy *e = &s_enemies[e_idx];
             draw_shadow_mask(buffer, g_character_shadow_masks[e->char_id][e->dir][e->frame],
                              PLAYER_SHADOW_W, PLAYER_SHADOW_H,
@@ -977,20 +733,14 @@ static void render_screen(uint16_t *buffer, int cam_x, int cam_y,
     uint32_t t_bl0 = cpuGetTiming();
     for (int i = 0; i < count; i++) {
         s_draw_item_depth = items[i].depth;
-        int sp = items[i].sprite;
+        int sp = items[i].ref;
+        CRASH_MARK(CL_DRAW_ITEM, sp, items[i].depth);
         s_draw_item_is_player = (sp == -1);
-        if (sp >= 0) {
-            blit_tile(buffer, sp, items[i].cx, items[i].cy, cam_x, cam_y);
-        } else if (sp == -1) {
+        if (sp == -1) {
             draw_player(buffer, cam_x, cam_y);
-        } else if (sp <= -2 - MAX_ENEMIES - MAX_PROJECTILES - MAX_DEATH_CHUNKS) {
-            int particle_idx = -2 - MAX_ENEMIES - MAX_PROJECTILES - MAX_DEATH_CHUNKS - sp;
-            draw_bone_particle(buffer, &s_bone_particles[particle_idx], particle_idx, cam_x, cam_y);
-        } else if (sp <= -2 - MAX_ENEMIES - MAX_PROJECTILES) {
-            int chunk_idx = -2 - MAX_ENEMIES - MAX_PROJECTILES - sp;
-            draw_death_chunk(buffer, &s_death_chunks[chunk_idx], cam_x, cam_y);
         } else if (sp <= -2 - MAX_ENEMIES) {
-            draw_bone_lance(buffer, &s_lances[-2 - MAX_ENEMIES - sp], cam_x, cam_y);
+            int chunk_idx = -2 - MAX_ENEMIES - sp;
+            draw_death_chunk(buffer, &s_death_chunks[chunk_idx], cam_x, cam_y);
         } else {
             draw_enemy(buffer, &s_enemies[-2 - sp], cam_x, cam_y);
         }
@@ -1143,7 +893,7 @@ static void enemies_init(void) {
 
 static int abs_int(int v) { return v < 0 ? -v : v; }
 
-static int lance_dir_from_screen(int dx, int dy) {
+static int aim_dir_from_screen(int dx, int dy) {
     int ax = abs_int(dx), ay = abs_int(dy);
     if (ax * 2 < ay) dx = 0;
     else if (ay * 2 < ax) dy = 0;
@@ -1157,52 +907,13 @@ static int lance_dir_from_screen(int dx, int dy) {
     return dy < 0 ? 5 : 7;
 }
 
-static void lance_fire(int aim_x, int aim_y, int touch_aim) {
+static void player_fire(int aim_x, int aim_y, int touch_aim) {
     int px = player_screen_x(s_player.x, s_player.y);
     int py = player_screen_y(s_player.x, s_player.y);
-    int dir = lance_dir_from_screen(aim_x - px, aim_y - py);
+    int dir = aim_dir_from_screen(aim_x - px, aim_y - py);
     s_player.dir = dir;
 
     weapons_fire(&g_player_state, s_player.x, s_player.y, aim_x, aim_y, s_cam_x, s_cam_y, touch_aim || (keysHeld() & KEY_A), s_enemies, MAX_ENEMIES);
-}
-
-static void __attribute__((unused)) legacy_lance_contract_stub(void) {
-    int slots[LANCE_PELLETS];
-    for (int pellet = 0; pellet < LANCE_PELLETS; pellet++) {
-        uint8_t seed = (uint8_t)(slots[pellet] * 11 + pellet * 6);
-        (void)seed;
-    }
-    int char_id = 0;
-    int legacy_hp = (char_id == CHAR_CHARGER ? 90 : 40);
-    (void)legacy_hp;
-}
-
-static uint8_t s_bone_particle_cursor = 0;
-
-static void emit_bone_particle(const BoneLance *lance, int slot) {
-    uint32_t age = (uint32_t)(LANCE_LIFETIME - lance->life);
-    uint32_t hash = (uint32_t)(slot + 1) * 0x45d9f3bu ^ (age + lance->seed) * 0x27d4eb2du;
-    hash ^= hash >> 16;
-    int ax = lance->vx < 0 ? -lance->vx : lance->vx;
-    int ay = lance->vy < 0 ? -lance->vy : lance->vy;
-    int major = ax > ay ? ax : ay;
-    if (major == 0) return;
-
-    int jitter = (int)(hash & 0x1ffu) - 256;
-    fixed px = (fixed)player_screen_x(lance->x, lance->y) * 256;
-    fixed py = (fixed)player_screen_y(lance->x, lance->y) * 256;
-    fixed perp_x = (fixed)(((int64_t)-lance->vy * 256) / major);
-    fixed perp_y = (fixed)(((int64_t)lance->vx * 256) / major);
-    unsigned index = s_bone_particle_cursor++ & (MAX_BONE_PARTICLES - 1);
-    BoneParticle *p = &s_bone_particles[index];
-    p->x = px;
-    p->y = py;
-    p->vx = -lance->vx / 3 + (perp_x * jitter >> 8);
-    p->vy = -lance->vy / 3 + (perp_y * jitter >> 8);
-    p->life = (uint8_t)(4 + ((hash >> 19) & 3u));
-    p->size = (uint8_t)(1 + ((hash >> 12) & 1u));
-    p->tone = (uint8_t)((hash >> 7) % 2u);
-    p->active = 1;
 }
 
 static void death_chunks_spawn(const Enemy *e, fixed hit_vx, fixed hit_vy) {
@@ -1246,7 +957,7 @@ static void death_chunks_spawn(const Enemy *e, fixed hit_vx, fixed hit_vy) {
         uint32_t hash = seed * 0x45d9f3bu + (uint32_t)piece * 0x27d4eb2du;
         hash ^= hash >> 16;
         int offset_x = sx + DEATH_CHUNK_SIZE / 2 - PLAYER_ANCHOR_X;
-        int offset_y = sy + DEATH_CHUNK_SIZE / 2 - PLAYER_ANCHOR_Y;
+        int offset_y = sy + DEATH_CHUNK_SIZE / 2 - s_char_ground_anchor[e->char_id][e->dir];
         fixed screen_x = offset_x * (1 << FIXED_SHIFT);
         fixed screen_y = offset_y * (1 << FIXED_SHIFT);
         chunk->x = e->x + screen_x;
@@ -1263,31 +974,11 @@ static void death_chunks_spawn(const Enemy *e, fixed hit_vx, fixed hit_vy) {
     }
 }
 
-void enemy_hit(Enemy *e, int damage, fixed hit_vx, fixed hit_vy) {
-    if (!e || !e->active || e->hp <= 0) return;
-    e->hp -= damage;
-    e->hit_timer = 8;
-    if (e->hp <= 0) {
-        death_chunks_spawn(e, hit_vx, hit_vy);
-        e->active = 0;
-        e->state = ENEMY_STATE_DEAD;
-        encounters_record_kill(&g_encounter_mgr, e->x, e->y);
-        if (e->type == ENEMY_TYPE_CHARGER) {
-            pickup_spawn(PICKUP_HEALTH, e->x, e->y, 25);
-        } else if (e->type == ENEMY_TYPE_SHOOTER) {
-            static int s_ammo_drop_idx = 0;
-            PickupType drops[3] = { PICKUP_AMMO_SHOTGUN, PICKUP_AMMO_GATLING, PICKUP_AMMO_HEAVY };
-            pickup_spawn(drops[s_ammo_drop_idx % 3], e->x, e->y, 0);
-            s_ammo_drop_idx++;
-        }
-        char msg[64];
-        snprintf(msg, sizeof(msg), "ENEMY_KILL type=%d hp=0", e->type);
-        nocashMessage(msg);
-    } else {
-        char msg[64];
-        snprintf(msg, sizeof(msg), "ENEMY_HIT type=%d hp=%d", e->type, e->hp);
-        nocashMessage(msg);
-    }
+// Registered with enemy_set_death_hook(); enemy_hit() (gameplay.c) calls it on a kill.
+static void on_enemy_death(const Enemy *e, fixed hit_vx, fixed hit_vy) {
+    CRASH_MARK(CL_DEATH_CHUNKS, e->char_id, e->dir);
+    death_chunks_spawn(e, hit_vx, hit_vy);
+    CRASH_MARK(CL_DEATH_HOOK_DONE, 0, 0);
 }
 
 static void death_chunks_update(void) {
@@ -1311,77 +1002,9 @@ static void death_chunks_update(void) {
     }
 }
 
-static void bone_particles_update(void) {
-    for (int i = 0; i < MAX_BONE_PARTICLES; i++) {
-        BoneParticle *p = &s_bone_particles[i];
-        if (!p->active) continue;
-        p->x += p->vx;
-        p->y += p->vy;
-        if (--p->life == 0) p->active = 0;
-    }
-}
-
-static void lances_update(void) {
+static void weapons_and_effects_update(void) {
     weapons_update(s_enemies, MAX_ENEMIES, s_player.x, s_player.y);
-    s_bone_effect_tick++;
-    bone_particles_update();
     death_chunks_update();
-    if (s_lance_cooldown > 0) s_lance_cooldown--;
-    for (int p = 0; p < MAX_PROJECTILES; p++) {
-        BoneLance *lance = &s_lances[p];
-        if (!lance->active) continue;
-        fixed start_x = lance->x, start_y = lance->y;
-        int major = abs_int(lance->vx) > abs_int(lance->vy) ? abs_int(lance->vx) : abs_int(lance->vy);
-        int steps = (major + 511) / 512; // sample every 2 px to prevent crossing a 4 px wall cell
-        if (steps < 1) steps = 1;
-        int blocked = 0;
-        for (int step = 1; step <= steps; step++) {
-            fixed next_x = start_x + (fixed)(((int64_t)lance->vx * step) / steps);
-            fixed next_y = start_y + (fixed)(((int64_t)lance->vy * step) / steps);
-            if (!bullet_position_is_free(next_x, next_y)) {
-                blocked = 1;
-                break;
-            }
-            lance->x = next_x;
-            lance->y = next_y;
-        }
-        lance->life--;
-        if (blocked || lance->life <= 0) {
-            lance->active = 0;
-            continue;
-        }
-        uint32_t particle_roll = (uint32_t)s_bone_effect_tick * (lance->seed * 2u + 11u) + (uint32_t)p * 37u;
-        particle_roll ^= particle_roll >> 3;
-        if (particle_roll % 5u < 2u) emit_bone_particle(lance, p);
-        int lx = player_screen_x(lance->x, lance->y);
-        int ly = player_screen_y(lance->x, lance->y);
-        for (int i = 0; i < MAX_ENEMIES; i++) {
-            Enemy *e = &s_enemies[i];
-            if (!e->active || (lance->hit_mask & (1u << i))) continue;
-            int dx = lx - player_screen_x(e->x, e->y);
-            int dy = ly - player_screen_y(e->x, e->y);
-            if (dx * dx + dy * dy > 100) continue;
-            e->hp -= LANCE_DAMAGE;
-            e->hit_timer = 8;
-            lance->hit_mask |= (uint16_t)(1u << i);
-            char msg[64];
-            if (e->hp <= 0) {
-                death_chunks_spawn(e, lance->vx, lance->vy);
-                e->active = 0;
-                e->state = ENEMY_STATE_DEAD;
-                encounters_record_kill(&g_encounter_mgr, e->x, e->y);
-                if (e->type == ENEMY_TYPE_CHARGER) {
-                    pickup_spawn(PICKUP_HEALTH, e->x, e->y, 25);
-                } else if (e->type == ENEMY_TYPE_SHOOTER) {
-                    pickup_spawn(PICKUP_AMMO_SHOTGUN, e->x, e->y, 10);
-                }
-                snprintf(msg, sizeof(msg), "BONE_LANCE_KILL enemy=%d", i);
-            } else {
-                snprintf(msg, sizeof(msg), "BONE_LANCE_HIT enemy=%d hp=%d", i, e->hp);
-            }
-            nocashMessage(msg);
-        }
-    }
 }
 
 static int nearest_enemy_screen(int *out_x, int *out_y) {
@@ -1467,7 +1090,7 @@ static void player_update(uint32_t keys, uint32_t keys_down, int touch_x, int to
         weapons_cycle(&g_player_state, 1);
     }
 
-    // Keep X/Y/SELECT for the existing character preview controls; A now casts Bone Lance.
+    // Keep X/Y/SELECT for the existing character preview controls; A fires the current weapon.
     if (keys_down & (KEY_X | KEY_Y | KEY_SELECT)) {
         s_player.char_id = (s_player.char_id + 1) % NUM_CHARACTERS;
         s_player.frame = 0;
@@ -1502,10 +1125,11 @@ static void player_update(uint32_t keys, uint32_t keys_down, int touch_x, int to
 
         fixed vx = sdx * current_speed;
         fixed vy = sdy * current_speed;
-        if (sdx != 0 && sdy != 0) { // normalise diagonals
+        if (sdx != 0 && sdy != 0) { // normalise diagonals on the ground plane
             vx = (vx * 181) >> 8;
             vy = (vy * 181) >> 8;
         }
+        vy >>= GROUND_Y_SHIFT; // equal ground speed on both axes under 2:1
 
         int moved = 0;
         fixed next_x = s_player.x, next_y = s_player.y;
@@ -1567,7 +1191,7 @@ static void player_update(uint32_t keys, uint32_t keys_down, int touch_x, int to
             aim_y += aim_dy[s_player.dir] * 32;
         }
     }
-    if (touch_down || (keys & KEY_A)) lance_fire(aim_x, aim_y, touch_down);
+    if (touch_down || (keys & KEY_A)) player_fire(aim_x, aim_y, touch_down);
 }
 
 volatile PerfStats g_perf = {
@@ -1632,7 +1256,9 @@ int main(void) {
     s_top_map_ptr = bgGetMapPtr(top_hw_bg);
     s_top_bg_tiles_vram = (uint8_t *)bgGetGfxPtr(top_hw_bg);
 
-    init_obj_sprite_bounds();
+    init_char_sprite_data();
+    CRASH_INIT();
+    enemy_set_death_hook(on_enemy_death);
     player_init();
 
     // Initialise camera position to match player spawn
@@ -1668,9 +1294,15 @@ int main(void) {
 
         uint32_t t0 = cpuGetTiming();
         player_update(keys_held, keys_down, touch.px, touch.py, touch_down);
+        CRASH_FRAME(s_frame_index);
+        CRASH_MARK(CL_FRAME_START, s_frame_index, 0);
+        CRASH_POLL();
         build_occlusion_depth_map(s_cam_x, s_cam_y);
+        CRASH_MARK(CL_OCCLUSION_DONE, 0, 0);
         enemies_update();
-        lances_update();
+        CRASH_MARK(CL_ENEMIES_DONE, 0, 0);
+        weapons_and_effects_update();
+        CRASH_MARK(CL_WEAPONS_DONE, 0, 0);
         uint32_t logic_ticks = cpuGetTiming() - t0;
 
         uint32_t top_floor = 0, top_sh = 0, top_bl = 0;
@@ -1683,7 +1315,9 @@ int main(void) {
 
         // The lower screen keeps the full actor, shadow, and HUD layers.
         uint32_t t2 = cpuGetTiming();
+        CRASH_MARK(CL_RENDER_START, 0, 0);
         render_screen(s_bot_screen_buf, s_cam_x, s_cam_y, &bot_floor, &bot_sh, &bot_bl);
+        CRASH_MARK(CL_RENDER_DONE, 0, 0);
         draw_fps_hud(s_bot_screen_buf);
         uint32_t bot_ticks = cpuGetTiming() - t2;
 
@@ -1713,10 +1347,9 @@ int main(void) {
         g_perf.shadow_ticks = top_sh + bot_sh;
         g_perf.blit_ticks = top_bl + bot_bl;
 
-        uint32_t enemies = 0, lances = 0;
+        uint32_t enemies = 0, projectiles = 0;
         for (int i = 0; i < MAX_ENEMIES; i++) enemies += s_enemies[i].active != 0;
-        for (int i = 0; i < MAX_PROJECTILES; i++) lances += s_lances[i].active != 0;
-        lances += weapons_get_active_projectile_count();
+        projectiles += weapons_get_active_projectile_count();
         g_nav_state.x = s_player.x;
         g_nav_state.y = s_player.y;
         g_nav_state.cam_x = s_cam_x;
@@ -1725,16 +1358,16 @@ int main(void) {
         g_nav_state.moving = s_player.is_moving;
         g_nav_state.blocked_moves = s_blocked_moves;
         g_nav_state.active_enemies = enemies;
-        g_nav_state.active_lances = lances;
+        g_nav_state.active_projectiles = projectiles;
         g_nav_state.frame_index = g_perf.frame_index;
         if ((g_perf.frame_index % 15) == 0) {
             char nav_buf[120];
-            snprintf(nav_buf, sizeof(nav_buf), "NAV frame=%lu x=%ld y=%ld cam=%lu,%lu in=%lu move=%lu blocked=%lu enemies=%lu lances=%lu\\n",
+            snprintf(nav_buf, sizeof(nav_buf), "NAV frame=%lu x=%ld y=%ld cam=%lu,%lu in=%lu move=%lu blocked=%lu enemies=%lu projectiles=%lu\\n",
                      (unsigned long)g_nav_state.frame_index, (long)g_nav_state.x, (long)g_nav_state.y,
                      (unsigned long)g_nav_state.cam_x, (unsigned long)g_nav_state.cam_y,
                      (unsigned long)g_nav_state.input, (unsigned long)g_nav_state.moving,
                      (unsigned long)g_nav_state.blocked_moves, (unsigned long)g_nav_state.active_enemies,
-                     (unsigned long)g_nav_state.active_lances);
+                     (unsigned long)g_nav_state.active_projectiles);
             nocashMessage(nav_buf);
         }
 

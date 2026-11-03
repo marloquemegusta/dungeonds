@@ -99,7 +99,4 @@ fixed weapons_get_speed_factor(const PlayerState *player, int is_firing_held);
 const char *weapons_get_name(WeaponType type);
 int weapons_get_active_projectile_count(void);
 
-// Callback to damage enemy with impulse and death chunk spawning
-void enemy_hit(Enemy *e, int damage, fixed hit_vx, fixed hit_vy);
-
 #endif // WEAPONS_H

@@ -1,5 +1,5 @@
 {
-  "name": "bone_lance_button_contract",
+  "name": "fire_button_contract",
   "steps": [
     { "frames": 180, "capture": "00_idle" },
     { "button_down": "A", "frames": 2, "capture": "01_a_cast" },

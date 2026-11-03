@@ -6,10 +6,6 @@
 
 static uint32_t s_ai_tick = 0;
 
-void enemy_ai_init(void) {
-    s_ai_tick = 0;
-}
-
 static inline uint32_t int_sqrt(uint32_t n) {
     uint32_t root = 0;
     uint32_t bit = 1u << 30;
@@ -207,7 +203,7 @@ static void update_charger(Enemy *e, Enemy *enemies, int num_enemies, int idx,
 
             int32_t t_dx = TO_INT(target_x - e->x);
             int32_t t_dy = TO_INT(target_y - e->y);
-            uint32_t t_dist = int_sqrt((uint32_t)(t_dx * t_dx + t_dy * t_dy));
+            uint32_t t_dist = int_sqrt((uint32_t)(t_dx * t_dx + GROUND_DY2(t_dy)));
 
             fixed vx = 0, vy = 0;
             if (t_dist > 0) {
@@ -245,7 +241,7 @@ static void update_charger(Enemy *e, Enemy *enemies, int num_enemies, int idx,
 
             int32_t s_dx = TO_INT(e->last_seen_x - e->x);
             int32_t s_dy = TO_INT(e->last_seen_y - e->y);
-            uint32_t s_dist = int_sqrt((uint32_t)(s_dx * s_dx + s_dy * s_dy));
+            uint32_t s_dist = int_sqrt((uint32_t)(s_dx * s_dx + GROUND_DY2(s_dy)));
 
             e->state_timer--;
             if (s_dist <= 8 || e->state_timer <= 0) {
@@ -362,7 +358,7 @@ static void update_shooter(Enemy *e, Enemy *enemies, int num_enemies, int idx,
                 move_dy =  p_dx * e->strafe_dir;
             }
 
-            uint32_t m_dist = int_sqrt((uint32_t)(move_dx * move_dx + move_dy * move_dy));
+            uint32_t m_dist = int_sqrt((uint32_t)(move_dx * move_dx + GROUND_DY2(move_dy)));
             fixed vx = 0, vy = 0;
             if (m_dist > 0) {
                 vx = (fixed)((move_dx * (int32_t)tuning->speed) / (int32_t)m_dist);
@@ -421,7 +417,7 @@ static void update_shooter(Enemy *e, Enemy *enemies, int num_enemies, int idx,
 
                 int32_t t_dx = TO_INT(target_px - e->x);
                 int32_t t_dy = TO_INT(target_py - e->y);
-                uint32_t t_dist = int_sqrt((uint32_t)(t_dx * t_dx + t_dy * t_dy));
+                uint32_t t_dist = int_sqrt((uint32_t)(t_dx * t_dx + GROUND_DY2(t_dy)));
 
                 if (t_dist > 0) {
                     fixed pvx = (fixed)((t_dx * (int32_t)proj_spd) / (int32_t)t_dist);
@@ -467,7 +463,7 @@ static void update_shooter(Enemy *e, Enemy *enemies, int num_enemies, int idx,
 
             int32_t s_dx = TO_INT(e->last_seen_x - e->x);
             int32_t s_dy = TO_INT(e->last_seen_y - e->y);
-            uint32_t s_dist = int_sqrt((uint32_t)(s_dx * s_dx + s_dy * s_dy));
+            uint32_t s_dist = int_sqrt((uint32_t)(s_dx * s_dx + GROUND_DY2(s_dy)));
 
             e->state_timer--;
             if (s_dist <= 8 || e->state_timer <= 0) {
