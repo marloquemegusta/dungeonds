@@ -10,6 +10,7 @@
 #include "weapons.h"
 #include "encounters.h"
 #include "crashlog.h"
+#include "perfprof.h"
 #include <string.h>
 
 // ---------------------------------------------------------------------------
@@ -41,12 +42,6 @@
 
 // Upper bound on objects drawn per screen (walls + pillars in view).
 #define MAX_DRAW_ITEMS 128
-#define OCCLUSION_GRID_SHIFT 3
-#define OCCLUSION_GRID_W ((SCREEN_W + (1 << OCCLUSION_GRID_SHIFT) - 1) >> OCCLUSION_GRID_SHIFT)
-#define OCCLUSION_GRID_H ((SCREEN_H + (1 << OCCLUSION_GRID_SHIFT) - 1) >> OCCLUSION_GRID_SHIFT)
-#define OCCLUSION_DEPTH_SHIFT 2
-#define OCCLUSION_DEPTH_W ((SCREEN_W + (1 << OCCLUSION_DEPTH_SHIFT) - 1) >> OCCLUSION_DEPTH_SHIFT)
-#define OCCLUSION_DEPTH_H ((SCREEN_H + (1 << OCCLUSION_DEPTH_SHIFT) - 1) >> OCCLUSION_DEPTH_SHIFT)
 #define BG_RING_W 64
 #define BG_RING_H 32
 #define BG_VIEW_W (SCREEN_W / 8 + 1)
@@ -56,7 +51,6 @@
 static int s_bot_bg = 0;
 static u16 *s_top_map_ptr = NULL;
 static u16 *s_bot_map_ptr = NULL;
-static u16 *s_bot_vram = NULL;
 static int s_bot_active_page = 8;
 static int s_bot_back_page = 24;
 
@@ -68,8 +62,16 @@ static int s_bot_map_tile_y = 0;
 static int s_top_map_ready = 0;
 static int s_bot_map_ready = 0;
 
-// Rendering buffers for top and bottom screens (cleared transparently for entities)
-static uint16_t s_bot_screen_buf[SCREEN_W * SCREEN_H] __attribute__((aligned(32)));
+// Actors, shadows and the HUD are painted straight into the hidden VRAM page of
+// the BG2 bitmap (0x0000 = transparent). Each page remembers, per row, the span
+// that was painted into it so reusing it only clears what was drawn two frames ago.
+#define DIRTY_VERIFY 0 // 1 = after the span clear scan the whole page and count leftovers in g_perf.dirty_leaks
+static DirtySpan s_dirty[2][SCREEN_H];
+DirtySpan *g_dirty_cur = s_dirty[0];
+
+static inline uint16_t *bot_page_ptr(int page) {
+    return (uint16_t *)(0x06000000 + (uintptr_t)page * 0x4000);
+}
 
 #define BG_TILE_CACHE_CAPACITY 1024
 #define BG_TILE_INVALID 0xFFFF
@@ -87,10 +89,7 @@ static uint8_t *s_bot_bg_tiles_vram;
 static Player s_player;
 static int s_cam_x = 0;
 static int s_cam_y = 0;
-static int s_occlusion_cam_x = -999999;
-static int s_occlusion_cam_y = -999999;
-static int16_t s_occlusion_depth[OCCLUSION_DEPTH_W * OCCLUSION_DEPTH_H] __attribute__((aligned(4)));
-static int16_t s_occlusion_block_max[OCCLUSION_GRID_W * OCCLUSION_GRID_H] __attribute__((aligned(4)));
+static int s_player_see_through;
 static int s_draw_item_depth;
 static int s_draw_item_is_player;
 static uint32_t s_frame_index = 0;
@@ -204,86 +203,39 @@ static inline uint32_t find_first_occlusion_run_in_row(int row, int cam_x) {
     }
     return low;
 }
-__attribute__((target("arm"), optimize("O3"), noinline))
-static void build_occlusion_depth_map(int cam_x, int cam_y) {
-    int cdx = cam_x - s_occlusion_cam_x; if (cdx < 0) cdx = -cdx;
-    int cdy = cam_y - s_occlusion_cam_y; if (cdy < 0) cdy = -cdy;
-    if (cdx == 0 && cdy == 0 && s_frame_index > 2) return;
-    s_occlusion_cam_x = cam_x;
-    s_occlusion_cam_y = cam_y;
-    uint32_t fill_val = 0xFFFFFFFF;
-    swiFastCopy(&fill_val, s_occlusion_depth, COPY_MODE_FILL | (sizeof(s_occlusion_depth) >> 2));
-    swiFastCopy(&fill_val, s_occlusion_block_max, COPY_MODE_FILL | (sizeof(s_occlusion_block_max) >> 2));
-    int row_y0 = cam_y > 0 ? cam_y : 0;
-    int row_y1 = cam_y + SCREEN_H < WORLD_H ? cam_y + SCREEN_H : WORLD_H;
-    for (int run_y = row_y0; run_y < row_y1; run_y++) {
-        uint32_t i = find_first_occlusion_run_in_row(run_y, cam_x);
-        uint32_t row_end = g_dungeon_occlusion_row_start[run_y + 1];
-        int16_t *depth_row = &s_occlusion_depth[
-            ((uint32_t)(run_y - cam_y) >> OCCLUSION_DEPTH_SHIFT) * OCCLUSION_DEPTH_W];
-
-        for (; i < row_end; i++) {
-            const DungeonOcclusionRun *run = &g_dungeon_occlusion_runs[i];
-            int run_x = (int)run->x;
-            if (run_x >= cam_x + SCREEN_W) break;
-            int run_depth = (int)run->depth;
-            int world_x0 = run_x > cam_x ? run_x : cam_x;
-            int run_x1 = run_x + run->length;
-            int world_x1 = run_x1 < cam_x + SCREEN_W ? run_x1 : cam_x + SCREEN_W;
-            if (world_x0 >= world_x1) continue;
-            uint32_t depth_x0 = (uint32_t)(world_x0 - cam_x) >> OCCLUSION_DEPTH_SHIFT;
-            uint32_t depth_x1 = (uint32_t)(world_x1 - cam_x - 1) >> OCCLUSION_DEPTH_SHIFT;
-            for (uint32_t x = depth_x0; x <= depth_x1; x++)
-                if (run_depth > depth_row[x]) depth_row[x] = (int16_t)run_depth;
-        }
-    }
-
-    // Max-reduce each depth cell group into one coarse block for span queries.
-    enum { REDUCE = 1 << (OCCLUSION_GRID_SHIFT - OCCLUSION_DEPTH_SHIFT) };
-    for (int by = 0; by < OCCLUSION_GRID_H; by++) {
-        int16_t *out = &s_occlusion_block_max[by * OCCLUSION_GRID_W];
-        for (int bx = 0; bx < OCCLUSION_GRID_W; bx++) {
-            int16_t m = -1;
-            for (int ry = 0; ry < REDUCE; ry++) {
-                int dy = by * REDUCE + ry;
-                if (dy >= OCCLUSION_DEPTH_H) break;
-                const int16_t *row = &s_occlusion_depth[dy * OCCLUSION_DEPTH_W];
-                for (int rx = 0; rx < REDUCE; rx++) {
-                    int dx = bx * REDUCE + rx;
-                    if (dx >= OCCLUSION_DEPTH_W) break;
-                    if (row[dx] > m) m = row[dx];
-                }
-            }
-            out[bx] = m;
-        }
-    }
+static inline uint8_t world_collision_flags_rt(int cx, int cy) {
+    uint32_t index = (uint32_t)cy * COLLISION_W + (uint32_t)cx;
+    return (g_dungeon_collision[index >> 2] >> ((index & 3) * 2)) & 0x03;
 }
 
-static inline int occlusion_may_block_span(int x0, int x1, int y, int actor_depth) {
-    int local_y = y - s_occlusion_cam_y;
-    if ((uint32_t)local_y >= SCREEN_H) return 0;
-    x0 -= s_occlusion_cam_x;
-    x1 -= s_occlusion_cam_x;
-    if (x0 < 0) x0 = 0;
-    if (x1 > SCREEN_W) x1 = SCREEN_W;
-    if (x0 >= x1) return 0;
-
-    uint32_t block_y = (uint32_t)local_y >> OCCLUSION_GRID_SHIFT;
-    uint32_t block_x0 = (uint32_t)x0 >> OCCLUSION_GRID_SHIFT;
-    uint32_t block_x1 = (uint32_t)(x1 - 1) >> OCCLUSION_GRID_SHIFT;
-    const int16_t *row = &s_occlusion_block_max[block_y * OCCLUSION_GRID_W];
-    for (uint32_t bx = block_x0; bx <= block_x1; bx++)
-        if (row[bx] > actor_depth) return 1;
-    return 0;
-}
-
+// Occlusion queries read the static baked runs directly (sorted by y then x, never
+// overlapping inside a row, pixel exact). A run hides an actor whose depth is lower.
 static inline int occlusion_blocks_pixel(int x, int y, int actor_depth) {
-    int local_x = x - s_occlusion_cam_x;
-    int local_y = y - s_occlusion_cam_y;
-    if ((uint32_t)local_x >= SCREEN_W || (uint32_t)local_y >= SCREEN_H) return 0;
-    uint32_t depth_x = (uint32_t)local_x >> OCCLUSION_DEPTH_SHIFT;
-    uint32_t depth_y = (uint32_t)local_y >> OCCLUSION_DEPTH_SHIFT;
-    return s_occlusion_depth[depth_y * OCCLUSION_DEPTH_W + depth_x] > actor_depth;
+    if ((uint32_t)y >= WORLD_H) return 0;
+    uint32_t i = find_first_occlusion_run_in_row(y, x);
+    if (i >= g_dungeon_occlusion_row_start[y + 1]) return 0;
+    const DungeonOcclusionRun *r = &g_dungeon_occlusion_runs[i];
+    return (int)r->x <= x && (int)r->depth > actor_depth;
+}
+
+// First run of world row y reaching x0 whose x < x1 and depth > actor_depth.
+// Returns row_end when nothing in [x0, x1) can hide the actor.
+static inline uint32_t find_hiding_run(int y, int x0, int x1, int actor_depth, uint32_t *row_end) {
+    uint32_t re = g_dungeon_occlusion_row_start[y + 1];
+    *row_end = re;
+    for (uint32_t k = find_first_occlusion_run_in_row(y, x0); k < re; k++) {
+        const DungeonOcclusionRun *r = &g_dungeon_occlusion_runs[k];
+        if ((int)r->x >= x1) break;
+        if ((int)r->depth > actor_depth) return k;
+    }
+    return re;
+}
+
+static inline void blit_px_range(uint16_t *drow, const uint16_t *srow, int a, int b) {
+    for (; a < b; a++) {
+        uint16_t c = srow[a];
+        if (c & BIT(15)) drow[a] = c;
+    }
 }
 
 // Blit a BGR555 sprite with arbitrary pitch, clipping opaque pixels against baked depth.
@@ -306,6 +258,7 @@ static void blit_stride(uint16_t *buffer, const uint16_t *src, int pitch, int sw
         if (sx0 >= sx1) return;
     }
 
+    int see_through = (s_draw_item_is_player || s_player_see_through) && (s_frame_index & 1);
     for (int y = sy0; y < sy1; y++) {
         const uint16_t *srow = &src[y * pitch];
         uint16_t *drow = &buffer[(oy + y) * SCREEN_W + ox];
@@ -313,23 +266,26 @@ static void blit_stride(uint16_t *buffer, const uint16_t *src, int pitch, int sw
         int world_y = top + y;
         int world_x0 = left + sx0;
         int world_x1 = left + sx1;
-        if (depth >= 0 && occlusion_may_block_span(world_x0, world_x1, world_y, depth)) {
-            const int16_t *depth_row = &s_occlusion_depth[
-                ((uint32_t)(world_y - s_occlusion_cam_y) >> OCCLUSION_DEPTH_SHIFT) * OCCLUSION_DEPTH_W];
-            for (; x < sx1; x++) {
-                uint16_t color = srow[x];
-                int world_x = left + x;
-                if (color & BIT(15)) {
-                    int occluded = ((uint32_t)world_x < WORLD_W) &&
-                        (depth_row[(uint32_t)(world_x - s_occlusion_cam_x) >> OCCLUSION_DEPTH_SHIFT] > depth);
-                    if (!occluded) {
-                        drow[x] = color;
-                    } else if (s_draw_item_is_player && (s_frame_index & 1)) {
-                        drow[x] = color;
-                    }
+        dirty_row(oy + y, ox + sx0, ox + sx1);
+        if (depth >= 0 && !see_through && (uint32_t)world_y < WORLD_H) {
+            uint32_t re;
+            uint32_t k = find_hiding_run(world_y, world_x0, world_x1, depth, &re);
+            if (k < re) {
+                // Paint the stretches between hiding runs; pixels inside them stay hidden.
+                int cur = sx0;
+                for (; k < re; k++) {
+                    const DungeonOcclusionRun *r = &g_dungeon_occlusion_runs[k];
+                    int rx0 = (int)r->x - left;
+                    if (rx0 >= sx1) break;
+                    if ((int)r->depth <= depth) continue;
+                    if (rx0 > cur) blit_px_range(drow, srow, cur, rx0);
+                    int rx1 = rx0 + (int)r->length;
+                    if (rx1 > cur) cur = rx1;
+                    if (cur >= sx1) break;
                 }
+                if (cur < sx1) blit_px_range(drow, srow, cur, sx1);
+                continue;
             }
-            continue;
         }
 
         // Align drow + x to 32-bit (4-byte) boundary if needed
@@ -404,19 +360,27 @@ static void draw_shadow_mask(uint16_t *buffer, const uint8_t *mask, int sw, int 
     for (int y = sy0; y < sy1; y++) {
         uint16_t *dst_row = &buffer[(oy + y) * SCREEN_W + ox];
         int row_offset = y * sw;
+        int world_y = top + y;
+        dirty_row(oy + y, ox + sx0, ox + sx1);
+        // rn walks the runs of this row left to right; null when nothing can hide the shadow.
+        const DungeonOcclusionRun *rn = NULL, *rend = NULL;
+        if (!(s_draw_item_is_player && s_player_see_through) && (uint32_t)world_y < WORLD_H) {
+            uint32_t re;
+            if (find_hiding_run(world_y, left + sx0, left + sx1, depth, &re) < re) {
+                rn = &g_dungeon_occlusion_runs[find_first_occlusion_run_in_row(world_y, left + sx0)];
+                rend = &g_dungeon_occlusion_runs[re];
+            }
+        }
         for (int x = sx0; x < sx1; x++) {
             int pixel = row_offset + x;
             uint8_t packed = mask[pixel >> 1];
             uint8_t nibble = (pixel & 1) ? (packed >> 4) : (packed & 0x0F);
             if (nibble > 0) {
-                int world_x = left + x, world_y = top + y;
+                int world_x = left + x;
                 if (world_x < 0 || world_x >= WORLD_W || world_y < 0 || world_y >= WORLD_H) continue;
-                int local_x = world_x - s_occlusion_cam_x;
-                int local_y = world_y - s_occlusion_cam_y;
-                if ((uint32_t)local_x < SCREEN_W && (uint32_t)local_y < SCREEN_H) {
-                    uint32_t depth_x = (uint32_t)local_x >> OCCLUSION_DEPTH_SHIFT;
-                    uint32_t depth_y = (uint32_t)local_y >> OCCLUSION_DEPTH_SHIFT;
-                    if (s_occlusion_depth[depth_y * OCCLUSION_DEPTH_W + depth_x] > depth) continue;
+                if (rn) {
+                    while (rn < rend && (int)rn->x + (int)rn->length <= world_x) rn++;
+                    if (rn < rend && (int)rn->x <= world_x && (int)rn->depth > depth) continue;
                 }
                 uint16_t c = dst_row[x] ? dst_row[x] : world_floor_color(world_x, world_y);
                 if (c != (VOID_COLOR | BIT(15))) {
@@ -543,6 +507,68 @@ static void update_screen_hardware_bg(int is_sub, u16 *map_ptr, int cam_x, int c
 // Composition
 // ---------------------------------------------------------------------------
 
+// While the player is see-through, mark where hidden wall footprints meet the
+// floor: the collision grid edge, drawn only over occluder surfaces (floor already shows it).
+#define WALL_BASE_COLOR (RGB15(3, 3, 6) | BIT(15))
+// A wall-base pixel is drawn only where some occluder run covers it (depth -1 hides nothing less).
+static inline void wall_base_px(uint16_t *buffer, int cam_x, int cam_y, int wx, int wy) {
+    int sx = wx - cam_x, sy = wy - cam_y;
+    if ((uint32_t)sx >= SCREEN_W || (uint32_t)sy >= SCREEN_H) return;
+    if (!occlusion_blocks_pixel(wx, wy, -1)) return;
+    buffer[sy * SCREEN_W + sx] = WALL_BASE_COLOR;
+    dirty_row(sy, sx, sx + 1);
+}
+
+// Four consecutive pixels of one world row with a single run lookup.
+static inline void wall_base_hrow(uint16_t *buffer, int cam_x, int cam_y, int wx, int wy) {
+    int sy = wy - cam_y;
+    if ((uint32_t)wy >= WORLD_H || (uint32_t)sy >= SCREEN_H) return;
+    uint32_t i = find_first_occlusion_run_in_row(wy, wx);
+    uint32_t re = g_dungeon_occlusion_row_start[wy + 1];
+    for (int k = 0; k < COLLISION_SCALE; k++) {
+        int x = wx + k;
+        int sx = x - cam_x;
+        while (i < re && (int)g_dungeon_occlusion_runs[i].x + (int)g_dungeon_occlusion_runs[i].length <= x) i++;
+        if (i >= re) break;
+        if ((int)g_dungeon_occlusion_runs[i].x > x || (uint32_t)sx >= SCREEN_W) continue;
+        buffer[sy * SCREEN_W + sx] = WALL_BASE_COLOR;
+        dirty_row(sy, sx, sx + 1);
+    }
+}
+__attribute__((target("arm"), optimize("O3"), noinline))
+static void draw_hidden_wall_base(uint16_t *buffer, int cam_x, int cam_y, int psx, int psy) {
+    enum { BOX_CELLS_W = 14, BOX_CELLS_H = 10 };
+    int cx0 = (psx - 28) / COLLISION_SCALE;
+    int cy0 = (psy - 20) / COLLISION_SCALE;
+    if (cx0 < 1) cx0 = 1;
+    if (cy0 < 1) cy0 = 1;
+    if (cx0 + BOX_CELLS_W > COLLISION_W - 1) cx0 = COLLISION_W - 1 - BOX_CELLS_W;
+    if (cy0 + BOX_CELLS_H > COLLISION_H - 1) cy0 = COLLISION_H - 1 - BOX_CELLS_H;
+
+    // Blocked bit of the three rows around the current one, read once per row.
+    uint8_t rows[3][BOX_CELLS_W + 2];
+    for (int r = 0; r < 3; r++)
+        for (int c = 0; c < BOX_CELLS_W + 2; c++)
+            rows[r][c] = world_collision_flags_rt(cx0 - 1 + c, cy0 - 1 + r) & 0x01;
+
+    for (int j = 0; j < BOX_CELLS_H; j++) {
+        for (int i = 0; i < BOX_CELLS_W; i++) {
+            if (!rows[1][i + 1]) continue;
+            int wx = (cx0 + i) * COLLISION_SCALE, wy = (cy0 + j) * COLLISION_SCALE;
+            int lx = wx - cam_x, ly = wy - cam_y;
+            if ((uint32_t)lx >= SCREEN_W || (uint32_t)ly >= SCREEN_H) continue;
+            int up = !rows[0][i + 1], dn = !rows[2][i + 1];
+            int lf = !rows[1][i], rt = !rows[1][i + 2];
+            if (up) wall_base_hrow(buffer, cam_x, cam_y, wx, wy);
+            if (dn) wall_base_hrow(buffer, cam_x, cam_y, wx, wy + 3);
+            for (int k = 0; k < COLLISION_SCALE; k++) {
+                if (lf) wall_base_px(buffer, cam_x, cam_y, wx, wy + k);
+                if (rt) wall_base_px(buffer, cam_x, cam_y, wx + 3, wy + k);
+            }
+        }
+    }
+}
+
 static void draw_player(uint16_t *buffer, int cam_x, int cam_y) {
     int px = player_screen_x(s_player.x, s_player.y);
     int py = player_screen_y(s_player.x, s_player.y);
@@ -567,11 +593,11 @@ static void draw_hit_spark(uint16_t *buffer, int x, int y, int cam_x, int cam_y,
         int bx = x + d - cam_x, by = y - cam_y;
         if (bx >= 0 && bx < SCREEN_W && by >= 0 && by < SCREEN_H &&
             !occlusion_blocks_pixel(x + d, y, s_draw_item_depth))
-            buffer[by * SCREEN_W + bx] = ((d + phase) & 1) ? cyan : ivory;
+        { buffer[by * SCREEN_W + bx] = ((d + phase) & 1) ? cyan : ivory; dirty_row(by, bx, bx + 1); }
         bx = x - cam_x; by = y + d - cam_y;
         if (bx >= 0 && bx < SCREEN_W && by >= 0 && by < SCREEN_H &&
             !occlusion_blocks_pixel(x, y + d, s_draw_item_depth))
-            buffer[by * SCREEN_W + bx] = ((d + phase) & 1) ? ivory : cyan;
+        { buffer[by * SCREEN_W + bx] = ((d + phase) & 1) ? ivory : cyan; dirty_row(by, bx, bx + 1); }
     }
 }
 
@@ -598,7 +624,7 @@ static void bone_effect_pixel(uint16_t *buffer, int x, int y, int cam_x, int cam
     int sx = x - cam_x, sy = y - cam_y;
     if (sx >= 0 && sx < SCREEN_W && sy >= 0 && sy < SCREEN_H &&
         !occlusion_blocks_pixel(x, y, s_draw_item_depth))
-        buffer[sy * SCREEN_W + sx] = color;
+        { buffer[sy * SCREEN_W + sx] = color; dirty_row(sy, sx, sx + 1); }
 }
 
 static void draw_death_chunk(uint16_t *buffer, const DeathChunk *chunk, int cam_x, int cam_y) {
@@ -621,10 +647,35 @@ static void draw_death_chunk(uint16_t *buffer, const DeathChunk *chunk, int cam_
                 !occlusion_blocks_pixel(cx - DEATH_CHUNK_SIZE / 2 + x,
                                         cy - DEATH_CHUNK_SIZE / 2 + y,
                                         s_draw_item_depth))
-                buffer[sy * SCREEN_W + sx] = color;
+                { buffer[sy * SCREEN_W + sx] = color; dirty_row(sy, sx, sx + 1); }
         }
     }
 }
+// Zero the rows' painted spans (32-bit stores: VRAM ignores 8-bit writes) and forget them.
+// Spans widen to even pixels; pixels outside a span are already zero.
+__attribute__((target("arm"), optimize("O3,no-tree-loop-distribute-patterns"), noinline))
+static void clear_dirty_spans(uint16_t *page, DirtySpan *spans) {
+    for (int y = 0; y < SCREEN_H; y++) {
+        int x0 = spans[y].x0, x1 = spans[y].x1;
+        if (x0 >= x1) continue;
+        spans[y].x0 = SCREEN_W;
+        spans[y].x1 = 0;
+        x0 &= ~1;
+        x1 = (x1 + 1) & ~1;
+        volatile uint32_t *p = (volatile uint32_t *)&page[y * SCREEN_W + x0];
+        for (int n = (x1 - x0) >> 1; n > 0; n--) *p++ = 0;
+    }
+#if DIRTY_VERIFY
+    const uint32_t *w = (const uint32_t *)page;
+    uint32_t leaks = 0;
+    for (int i = 0; i < SCREEN_W * SCREEN_H / 2; i++) {
+        uint32_t v = w[i];
+        leaks += ((v & 0xFFFFu) != 0) + ((v >> 16) != 0);
+    }
+    g_perf.dirty_leaks += leaks;
+#endif
+}
+
 static void render_screen(uint16_t *buffer, int cam_x, int cam_y,
                           uint32_t *out_floor, uint32_t *out_shadow, uint32_t *out_blit) {
     DrawItem items[MAX_DRAW_ITEMS + MAX_ENEMIES + MAX_DEATH_CHUNKS + 1];
@@ -688,15 +739,29 @@ static void render_screen(uint16_t *buffer, int cam_x, int cam_y,
     // The static FBX bake is now a hardware BG; keep this bitmap layer transparent
     // (0x0000 = transparent in 16-bit direct bitmap mode) and render only dynamic
     // actors, shadows, particles, and the HUD into it.
+    int page_idx = ((uintptr_t)buffer >= 0x06060000u) ? 1 : 0;
+    PP_T0(pp_clear);
     uint32_t floor_start_ticks = cpuGetTiming();
-    uint32_t clear_zero = 0;
-    swiFastCopy(&clear_zero, buffer, COPY_MODE_FILL | ((SCREEN_W * SCREEN_H * sizeof(uint16_t)) >> 2));
-
+    clear_dirty_spans(buffer, s_dirty[page_idx]);
+    g_dirty_cur = s_dirty[page_idx];
     if (out_floor) *out_floor = cpuGetTiming() - floor_start_ticks;
+    PP_ADD(PP_CLEAR, pp_clear);
 
     // 1) Composite dynamic entity shadows (player & enemies, animated per frame)
+    s_player_see_through = 0;
+    for (int i = 0; i < count && !s_player_see_through; i++) {
+        if (items[i].ref != -1) continue;
+        for (int k = 8; k <= 24; k += 8)
+            if (occlusion_blocks_pixel(items[i].cx, items[i].cy - k, items[i].depth)) {
+                s_player_see_through = 1;
+                break;
+            }
+    }
+
     uint32_t t_sh0 = cpuGetTiming();
+    PP_T0(pp_shadow);
     for (int i = 0; i < count; i++) {
+        s_draw_item_is_player = (items[i].ref == -1);
         if (items[i].ref == -1) {
             draw_shadow_mask(buffer, g_character_shadow_masks[s_player.char_id][s_player.dir][s_player.frame],
                              PLAYER_SHADOW_W, PLAYER_SHADOW_H,
@@ -714,12 +779,23 @@ static void render_screen(uint16_t *buffer, int cam_x, int cam_y,
                              items[i].cy - PLAYER_SHADOW_H / 2, cam_x, cam_y, items[i].depth);
         }
     }
+    PP_ADD(PP_SHADOW, pp_shadow);
+    if (s_player_see_through) {
+        PP_T0(pp_wall);
+        for (int i = 0; i < count; i++)
+            if (items[i].ref == -1)
+                draw_hidden_wall_base(buffer, cam_x, cam_y, items[i].cx, items[i].cy);
+        PP_ADD(PP_WALLBASE, pp_wall);
+    }
     uint32_t shadow_ticks = cpuGetTiming() - t_sh0;
 
+    PP_T0(pp_pick);
     pickups_render(buffer, cam_x, cam_y);
     encounters_render(&g_encounter_mgr, buffer, cam_x, cam_y);
+    PP_ADD(PP_PICKUPS, pp_pick);
 
     // 2) Sprites back-to-front (painter's algorithm)
+    PP_T0(pp_sort);
     for (int i = 1; i < count; i++) {
         DrawItem key = items[i];
         int j = i - 1;
@@ -730,7 +806,9 @@ static void render_screen(uint16_t *buffer, int cam_x, int cam_y,
         items[j + 1] = key;
     }
 
+    PP_ADD(PP_SORT, pp_sort);
     uint32_t t_bl0 = cpuGetTiming();
+    PP_T0(pp_blit);
     for (int i = 0; i < count; i++) {
         s_draw_item_depth = items[i].depth;
         int sp = items[i].ref;
@@ -745,15 +823,18 @@ static void render_screen(uint16_t *buffer, int cam_x, int cam_y,
             draw_enemy(buffer, &s_enemies[-2 - sp], cam_x, cam_y);
         }
     }
+    PP_ADD(PP_BLIT, pp_blit);
+    PP_T0(pp_proj);
     enemy_projectiles_render(buffer, cam_x, cam_y);
     weapons_render(buffer, cam_x, cam_y);
+    PP_ADD(PP_PROJ, pp_proj);
     uint32_t blit_ticks = cpuGetTiming() - t_bl0;
 
     if (out_shadow) *out_shadow = shadow_ticks;
     if (out_blit) *out_blit = blit_ticks;
 }
 
-static const char s_fps_chars[] = " FPS:CBL0123456789HARMDEWNITOGUVY";
+static const char s_fps_chars[] = " FPS:CBL0123456789HARMDEWNITOGUVY.";
 static const uint8_t s_fps_font[][7] = {
     {0x00,0x00,0x00,0x00,0x00,0x00,0x00}, // space
     {0x1F,0x10,0x10,0x1E,0x10,0x10,0x10}, // F
@@ -787,11 +868,14 @@ static const uint8_t s_fps_font[][7] = {
     {0x0E,0x11,0x10,0x17,0x11,0x11,0x0F}, // G
     {0x11,0x11,0x11,0x11,0x11,0x11,0x0E}, // U
     {0x11,0x11,0x11,0x11,0x11,0x0A,0x04}, // V
-    {0x11,0x11,0x0A,0x04,0x04,0x04,0x04}  // Y
+    {0x11,0x11,0x0A,0x04,0x04,0x04,0x04}, // Y
+    {0x00,0x00,0x00,0x00,0x00,0x0C,0x0C}  // .
 };
 
+#define HUD_LINES 4 // PERF_PROFILE reuses lines 1-2 (top stages) to keep the HUD as cheap as the original
+
 static void draw_fps_hud(uint16_t *buffer) {
-    char labels[4][32];
+    char labels[HUD_LINES][32];
     unsigned long cpu_ms = (unsigned long)(g_perf.cpu_ticks / 33514u);
     unsigned long present_ms = (unsigned long)(g_perf.present_ticks / 33514u);
     unsigned long floor_ms = (unsigned long)(g_perf.floor_ticks / 33514u);
@@ -804,10 +888,20 @@ static void draw_fps_hud(uint16_t *buffer) {
     if (shadow_ms > 99) shadow_ms = 99;
     if (blit_ms > 99) blit_ms = 99;
     if (logic_ms > 99) logic_ms = 99;
+#if PERF_PROFILE
+    snprintf(labels[0], sizeof(labels[0]), "FPS:%lu.%lu C:%02lu P:%02lu",
+             (unsigned long)(perfprof_fps10() / 10), (unsigned long)(perfprof_fps10() % 10), cpu_ms, present_ms);
+    perfprof_hud_line(0, labels[1], sizeof(labels[1]));
+#else
     snprintf(labels[0], sizeof(labels[0]), "FPS:%2lu C:%02lu P:%02lu",
              (unsigned long)g_perf.fps, cpu_ms, present_ms);
+#endif
+#if PERF_PROFILE
+    (void)floor_ms; (void)shadow_ms; (void)blit_ms; (void)logic_ms;
+#else
     snprintf(labels[1], sizeof(labels[1]), "F:%02lu S:%02lu B:%02lu L:%02lu",
              floor_ms, shadow_ms, blit_ms, logic_ms);
+#endif
     if (g_player_state.is_dead) {
         snprintf(labels[2], sizeof(labels[2]), "HP:DEAD ARM:000");
     } else {
@@ -831,19 +925,20 @@ static void draw_fps_hud(uint16_t *buffer) {
     if (third_w > text_w) text_w = third_w;
     if (fourth_w > text_w) text_w = fourth_w;
     int box_w = text_w + pad * 2;
-    int box_h = glyph_h * 4 + line_gap * 3 + pad * 2;
+    int box_h = glyph_h * HUD_LINES + line_gap * (HUD_LINES - 1) + pad * 2;
     uint16_t panel = RGB15(1, 2, 1) | BIT(15);
     uint16_t border = RGB15(0, 16, 0) | BIT(15);
     uint16_t ink = RGB15(18, 31, 18) | BIT(15);
 
     for (int y = 0; y < box_h; y++) {
+        dirty_row(top + y, left, left + box_w);
         for (int x = 0; x < box_w; x++) {
             int edge = x == 0 || y == 0 || x == box_w - 1 || y == box_h - 1;
             buffer[(top + y) * SCREEN_W + left + x] = edge ? border : panel;
         }
     }
 
-    for (int line = 0; line < 4; line++) {
+    for (int line = 0; line < HUD_LINES; line++) {
         for (int i = 0; labels[line][i]; i++) {
             int glyph = 0;
             while (s_fps_chars[glyph] && s_fps_chars[glyph] != labels[line][i]) glyph++;
@@ -866,14 +961,15 @@ static void draw_fps_hud(uint16_t *buffer) {
 
 static uint32_t present_both_screens(int top_cam_x, int top_cam_y,
                                       int bot_cam_x, int bot_cam_y) {
-    // Fill the hidden bitmap page while the current page is scanned out.
-    s_bot_vram = (u16 *)(0x06000000 + (s_bot_back_page * 0x4000));
-    DC_FlushRange(s_bot_screen_buf, sizeof(s_bot_screen_buf));
-    dmaCopyWords(3, s_bot_screen_buf, s_bot_vram, SCREEN_W * SCREEN_H * 2);
-
+    PP_T0(pp_vw);
     swiWaitForVBlank();
+    PP_ADD(PP_VWAIT, pp_vw);
+    PP_T0(pp_bs);
     update_screen_hardware_bg(1, s_top_map_ptr, top_cam_x, top_cam_y);
+    PP_ADD(PP_BGSUB, pp_bs);
+    PP_T0(pp_bb);
     update_screen_hardware_bg(0, s_bot_map_ptr, bot_cam_x, bot_cam_y);
+    PP_ADD(PP_BGBOT, pp_bb);
     bgSetMapBase(s_bot_bg, s_bot_back_page);
     int old_page = s_bot_active_page;
     s_bot_active_page = s_bot_back_page;
@@ -1207,7 +1303,8 @@ volatile PerfStats g_perf = {
     .top_render_ticks = 0,
     .bot_render_ticks = 0,
     .present_ticks = 0,
-    .show_hud = 0
+    .show_hud = 0,
+    .dirty_leaks = 0
 };
 
 static volatile uint32_t s_vblank_count = 0;
@@ -1228,8 +1325,6 @@ int main(void) {
     vramSetBankA(VRAM_A_MAIN_BG_0x06020000);
     vramSetBankB(VRAM_B_MAIN_BG_0x06060000);
 
-    s_bot_vram = (u16 *)0x06020000;
-
     // Load Background Palette to Main and Sub engines
     dmaCopyWords(3, g_dungeon_bg_palette, BG_PALETTE, DUNGEON_BG_PALETTE_SIZE * 2);
     dmaCopyWords(3, g_dungeon_bg_palette, BG_PALETTE_SUB, DUNGEON_BG_PALETTE_SIZE * 2);
@@ -1243,6 +1338,11 @@ int main(void) {
     s_bot_bg_tiles_vram = (uint8_t *)bgGetGfxPtr(bot_hw_bg);
 
     // Initialize Main BG2 (16-bit Bitmap for Entities & dynamic shadows at mapBase 8 = 0x06020000)
+    {
+        uint32_t zero = 0;
+        swiFastCopy(&zero, bot_page_ptr(8), COPY_MODE_FILL | (SCREEN_W * SCREEN_H * 2 / 4));
+        swiFastCopy(&zero, bot_page_ptr(24), COPY_MODE_FILL | (SCREEN_W * SCREEN_H * 2 / 4));
+    }
     s_bot_bg = bgInit(2, BgType_Bmp16, BgSize_B16_256x256, 8, 0);
     bgSetPriority(s_bot_bg, 0); // High priority (drawn on top of BG1)
 
@@ -1258,6 +1358,7 @@ int main(void) {
 
     init_char_sprite_data();
     CRASH_INIT();
+    PP_INIT();
     enemy_set_death_hook(on_enemy_death);
     player_init();
 
@@ -1265,16 +1366,13 @@ int main(void) {
     s_cam_x = player_screen_x(s_player.x, s_player.y) - SCREEN_W / 2;
     s_cam_y = player_screen_y(s_player.x, s_player.y) - SCREEN_H / 2;
 
-    build_occlusion_depth_map(s_cam_x, s_cam_y);
     init_bg_tile_cache(&s_top_bg_tile_cache);
     init_bg_tile_cache(&s_bot_bg_tile_cache);
     update_screen_hardware_bg(1, s_top_map_ptr, s_cam_x, s_cam_y - SCREEN_H);
 
-    render_screen(s_bot_screen_buf, s_cam_x, s_cam_y, NULL, NULL, NULL);
-    draw_fps_hud(s_bot_screen_buf);
+    render_screen(bot_page_ptr(s_bot_active_page), s_cam_x, s_cam_y, NULL, NULL, NULL);
+    draw_fps_hud(bot_page_ptr(s_bot_active_page));
     update_screen_hardware_bg(0, s_bot_map_ptr, s_cam_x, s_cam_y);
-    DC_FlushRange(s_bot_screen_buf, sizeof(s_bot_screen_buf));
-    dmaCopyWords(3, s_bot_screen_buf, s_bot_vram, SCREEN_W * SCREEN_H * 2);
 
     while (1) {
         uint32_t frame_start_ticks = cpuGetTiming();
@@ -1294,14 +1392,18 @@ int main(void) {
 
         uint32_t t0 = cpuGetTiming();
         player_update(keys_held, keys_down, touch.px, touch.py, touch_down);
+        PP_ADD(PP_PLAYER, t0);
         CRASH_FRAME(s_frame_index);
         CRASH_MARK(CL_FRAME_START, s_frame_index, 0);
         CRASH_POLL();
-        build_occlusion_depth_map(s_cam_x, s_cam_y);
         CRASH_MARK(CL_OCCLUSION_DONE, 0, 0);
+        PP_T0(pp_en);
         enemies_update();
+        PP_ADD(PP_ENEMIES, pp_en);
         CRASH_MARK(CL_ENEMIES_DONE, 0, 0);
+        PP_T0(pp_wp);
         weapons_and_effects_update();
+        PP_ADD(PP_WEAPONS, pp_wp);
         CRASH_MARK(CL_WEAPONS_DONE, 0, 0);
         uint32_t logic_ticks = cpuGetTiming() - t0;
 
@@ -1316,13 +1418,18 @@ int main(void) {
         // The lower screen keeps the full actor, shadow, and HUD layers.
         uint32_t t2 = cpuGetTiming();
         CRASH_MARK(CL_RENDER_START, 0, 0);
-        render_screen(s_bot_screen_buf, s_cam_x, s_cam_y, &bot_floor, &bot_sh, &bot_bl);
+        render_screen(bot_page_ptr(s_bot_back_page), s_cam_x, s_cam_y, &bot_floor, &bot_sh, &bot_bl);
         CRASH_MARK(CL_RENDER_DONE, 0, 0);
-        draw_fps_hud(s_bot_screen_buf);
+        PP_T0(pp_hud);
+        if (g_perf.show_hud != 0) {
+            draw_fps_hud(bot_page_ptr(s_bot_back_page));
+        }
+        PP_ADD(PP_HUD, pp_hud);
         uint32_t bot_ticks = cpuGetTiming() - t2;
 
         // CPU rendering finished before waiting for VBlank
         uint32_t cpu_ticks = cpuGetTiming() - frame_start_ticks;
+        PP_SET(PP_CPU, cpu_ticks);
         int vcount_done = REG_VCOUNT;
 
         uint32_t t3 = cpuGetTiming();
@@ -1331,6 +1438,10 @@ int main(void) {
 
         uint32_t vblanks_elapsed = s_vblank_count - start_vblank;
         if (vblanks_elapsed == 0) vblanks_elapsed = 1;
+#if PERF_PROFILE
+        PP_SET(PP_FRAME, cpuGetTiming() - frame_start_ticks);
+        perfprof_frame_end(s_frame_index, vblanks_elapsed, s_vblank_count, s_bot_active_page, s_player_see_through);
+#endif
 
         g_perf.frame_index++;
         uint32_t total_cpu_ticks = cpu_ticks + bg_ticks;
@@ -1360,6 +1471,7 @@ int main(void) {
         g_nav_state.active_enemies = enemies;
         g_nav_state.active_projectiles = projectiles;
         g_nav_state.frame_index = g_perf.frame_index;
+#ifdef DEBUG
         if ((g_perf.frame_index % 15) == 0) {
             char nav_buf[120];
             snprintf(nav_buf, sizeof(nav_buf), "NAV frame=%lu x=%ld y=%ld cam=%lu,%lu in=%lu move=%lu blocked=%lu enemies=%lu projectiles=%lu\\n",
@@ -1381,6 +1493,7 @@ int main(void) {
                      vcount_done);
             nocashMessage(log_buf);
         }
+#endif
     }
 
     return 0;

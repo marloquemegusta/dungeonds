@@ -94,6 +94,7 @@ void enemy_projectiles_render(uint16_t *buffer, int cam_x, int cam_y) {
                 buffer[(sy + 1) * SCREEN_W + sx] = halo_color;
                 buffer[sy * SCREEN_W + (sx - 1)] = halo_color;
                 buffer[sy * SCREEN_W + (sx + 1)] = halo_color;
+                dirty_rect(sx - 1, sy - 1, sx + 2, sy + 2);
             }
         }
     }

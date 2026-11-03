@@ -233,9 +233,11 @@ static void spawn_explosion(fixed x, fixed y, int radius, int damage,
         }
     }
 
+#ifdef DEBUG
     char msg[64];
     snprintf(msg, sizeof(msg), "ROCKET_EXPLOSION r=%d dmg=%d", radius, damage);
     nocashMessage(msg);
+#endif
 }
 
 int weapons_fire(PlayerState *player, fixed player_x, fixed player_y,
@@ -381,10 +383,12 @@ int weapons_fire(PlayerState *player, fixed player_x, fixed player_y,
         }
     }
 
+#ifdef DEBUG
     char msg[64];
     snprintf(msg, sizeof(msg), "WEAPON_FIRE weapon=%s ammo=%d",
              tuning->name, player->ammo[player->current_weapon]);
     nocashMessage(msg);
+#endif
     return 1;
 }
 
@@ -506,6 +510,7 @@ void weapons_render(uint16_t *buffer, int cam_x, int cam_y) {
         for (int step = 0; step <= line_steps; step++) {
             if (cur_x >= 0 && cur_x < SCREEN_W && cur_y >= 0 && cur_y < SCREEN_H) {
                 buffer[cur_y * SCREEN_W + cur_x] = color;
+                dirty_row(cur_y, cur_x, cur_x + 1);
             }
             if (cur_x == x1 && cur_y == y1) break;
             int e2 = err;
@@ -521,6 +526,7 @@ void weapons_render(uint16_t *buffer, int cam_x, int cam_y) {
             buffer[(y1 + 1) * SCREEN_W + x1] = color;
             buffer[y1 * SCREEN_W + x1 - 1] = color;
             buffer[y1 * SCREEN_W + x1 + 1] = color;
+            dirty_rect(x1 - 1, y1 - 1, x1 + 2, y1 + 2);
         }
     }
 
@@ -540,6 +546,7 @@ void weapons_render(uint16_t *buffer, int cam_x, int cam_y) {
             buffer[sy * SCREEN_W + sx] = pellet;
             buffer[sy * SCREEN_W + sx + 1] = edge;
             buffer[(sy + 1) * SCREEN_W + sx] = edge;
+            dirty_rect(sx, sy, sx + 2, sy + 2);
         } else if (p->weapon_type == WEAPON_HEAVY) {
             uint16_t tip = (RGB15(31, 31, 10) | BIT(15));
             uint16_t body = (RGB15(31, 6, 2) | BIT(15));
@@ -550,6 +557,7 @@ void weapons_render(uint16_t *buffer, int cam_x, int cam_y) {
             buffer[(sy + 1) * SCREEN_W + sx] = body;
             buffer[sy * SCREEN_W + sx - 1] = fin;
             buffer[sy * SCREEN_W + sx + 1] = fin;
+            dirty_rect(sx - 1, sy - 1, sx + 2, sy + 2);
         }
     }
 
@@ -573,13 +581,13 @@ void weapons_render(uint16_t *buffer, int cam_x, int cam_y) {
             int span = cur_r - abs_int(dy);
             int px1 = ex - span;
             int px2 = ex + span;
-            if (px1 >= 0 && px1 < SCREEN_W) buffer[py * SCREEN_W + px1] = blast_outer;
-            if (px2 >= 0 && px2 < SCREEN_W) buffer[py * SCREEN_W + px2] = blast_outer;
+            if (px1 >= 0 && px1 < SCREEN_W) { buffer[py * SCREEN_W + px1] = blast_outer; dirty_row(py, px1, px1 + 1); }
+            if (px2 >= 0 && px2 < SCREEN_W) { buffer[py * SCREEN_W + px2] = blast_outer; dirty_row(py, px2, px2 + 1); }
             if (span > 2) {
                 int px_in1 = ex - span / 2;
                 int px_in2 = ex + span / 2;
-                if (px_in1 >= 0 && px_in1 < SCREEN_W) buffer[py * SCREEN_W + px_in1] = blast_inner;
-                if (px_in2 >= 0 && px_in2 < SCREEN_W) buffer[py * SCREEN_W + px_in2] = blast_inner;
+                if (px_in1 >= 0 && px_in1 < SCREEN_W) { buffer[py * SCREEN_W + px_in1] = blast_inner; dirty_row(py, px_in1, px_in1 + 1); }
+                if (px_in2 >= 0 && px_in2 < SCREEN_W) { buffer[py * SCREEN_W + px_in2] = blast_inner; dirty_row(py, px_in2, px_in2 + 1); }
             }
         }
     }
@@ -593,6 +601,7 @@ void weapons_render(uint16_t *buffer, int cam_x, int cam_y) {
             buffer[sy * SCREEN_W + sx] = s_sparks[i].color;
             buffer[(sy - 1) * SCREEN_W + sx] = s_sparks[i].color;
             buffer[sy * SCREEN_W + sx + 1] = s_sparks[i].color;
+            dirty_rect(sx - 1, sy - 1, sx + 2, sy + 2);
         }
     }
 }

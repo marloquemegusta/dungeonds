@@ -14,7 +14,9 @@ class FloorBackgroundContractTest(unittest.TestCase):
         self.assertIn("memcpy(tile_vram + (uint32_t)slot * 64", source)
         self.assertIn("REG_BG1HOFS =", source)
         self.assertIn("int top_cam_y = s_cam_y - SCREEN_H;", source)
-        self.assertIn("DC_FlushRange(s_bot_screen_buf, sizeof(s_bot_screen_buf));", source)
+        self.assertIn("clear_dirty_spans(buffer, s_dirty[page_idx]);", source)
+        self.assertNotIn("dmaCopyWords(3, s_bot_screen_buf", source)
+        self.assertNotIn("build_occlusion_depth_map", source)
         self.assertNotIn("s_dungeon_world_cache", source)
 
 

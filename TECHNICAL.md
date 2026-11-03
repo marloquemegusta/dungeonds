@@ -23,7 +23,7 @@
   - `include/dungeon_bg_tiles.h` y `source/dungeon_bg_tiles.c`: fondo cuantizado a 255 colores en tiles de 8×8 y tilemap.
   - `include/diablo_dungeon.h` y `source/diablo_dungeon.c`: colisión de 2 bits por celda de 4 px (384×216).
   - `include/dungeon_occlusion.h` y `source/dungeon_occlusion.c`: runs de oclusión ordenados por (y, x), con `g_dungeon_occlusion_row_start`. La profundidad sale de `occlusion_depth.png`.
-- **Runtime:** `source/main.c` dibuja el fondo, aplica la oclusión con `s_occlusion_depth` y dibuja los actores en OAM. La rejilla de colisión es la única fuente de suelo caminable.
+- **Runtime:** `source/main.c` dibuja el fondo, consulta la oclusión directamente sobre los tramos y dibuja los actores en el framebuffer de VRAM (§3.3). La rejilla de colisión es la única fuente de suelo caminable.
 - **Contrato de datos:** ver §3.3.
 - **Verificación:** `python tests/test_map_export_coherence.py` y el escenario `scenarios/map_occlusion_collision_coherence.json` con `run-scenario.ps1`.
 
@@ -46,10 +46,10 @@
 - Los fragmentos entran en el orden de profundidad del render y dibujan una sombra puntual en el suelo. El dibujado escribe directamente en BGR555; no instancia modelos 3D ni consume entradas OAM.
 
 ### 3.3. Pipeline de Oclusión 2.5D y Presupuesto de Rendimiento en ARM9
-- **Arquitectura de Profundidad Continua vs Capas Hardware:** En perspectiva dimétrica/isométrica con estructuras altas continuas (muros, contrafuertes góticos), las capas de fondo fijas de hardware (BG0/BG1) son insuficientes: el personaje debe ocluirse al norte del muro pero mostrarse por delante al pisar el sur de su base. El motor utiliza un búfer de profundidad horizontal por tramos (`s_occlusion_depth`, 64×48 celdas de 4×4 px sobre la pantalla (`OCCLUSION_DEPTH_SHIFT 2`), 16 bits con signo).
-- **Regla Crítica de EWRAM (Prohibición de loops bit a bit):** La memoria principal EWRAM (4 MB) en Nintendo DS tiene bus estrecho y latencia de acceso con wait states. Prohibido terminantemente ejecutar bucles horizontales que realicen operaciones bit a bit no alineadas (`|= (1u << (index & 7))`) por píxel individual: un bitmask de pantalla completa bajo este patrón consume 12–15 ms por frame. Toda máscara debe procesarse por palabras alineadas (32 bits) o inferirse directamente del mapa de profundidad (`s_occlusion_depth >= 0`).
-- **Compilación Obligatoria en Modo ARM 32-bit:** Por defecto BlocksDS compila código ARM9 en Thumb-1 (16-bit). Las funciones críticas de manipulación de memoria y rasterizado (`build_occlusion_depth_map`, `blit_stride`, `draw_shadow_mask`) deben declararse explícitamente con `__attribute__((target("arm"), optimize("O3"), noinline))` para aprovechar instrucciones nativas de 32 bits (`LDRH`/`STRH`, `STMIA`) y evitar el estrangulamiento de registros.
-- **Índice por Fila y Búsqueda Binaria en X:** Los tramos (`g_dungeon_occlusion_runs`) se ordenan por (y, x) y `g_dungeon_occlusion_row_start[WORLD_H + 1]` delimita los de cada fila. `build_occlusion_depth_map()` recorre sólo las filas visibles y busca en binario el primer tramo que alcanza la cámara (`find_first_occlusion_run_in_row()`). Recorrer todos los tramos de las filas visibles costaba ~370k ticks por reconstrucción y bajaba a 30 FPS.
+- **Arquitectura de Profundidad Continua vs Capas Hardware:** Con estructuras altas continuas (muros, contrafuertes góticos) las capas de fondo fijas de hardware son insuficientes: el personaje debe ocluirse al norte del muro y mostrarse por delante al pisar el sur de su base. El motor dibuja actores directamente en la página trasera del framebuffer de VRAM (sin framebuffer en EWRAM ni DMA de pantalla completa) y limpia solo los spans sucios (`DirtySpan`, `dirty_row`/`dirty_rect` en `game.h`; `clear_dirty_spans` en `main.c`; el modo `DIRTY_VERIFY` comprueba fugas en `dirty_leaks`). La oclusión se consulta directamente sobre `g_dungeon_occlusion_runs` por fila (`find_hiding_run`, `occlusion_blocks_pixel`), exacta al píxel y sin mapa intermedio.
+- **Regla Crítica de EWRAM (Prohibición de loops bit a bit):** La memoria principal EWRAM (4 MB) en Nintendo DS tiene bus estrecho y latencia de acceso con wait states. Prohibido terminantemente ejecutar bucles horizontales que realicen operaciones bit a bit no alineadas (`|= (1u << (index & 7))`) por píxel individual: un bitmask de pantalla completa bajo este patrón consume 12–15 ms por frame. Toda máscara debe procesarse por palabras alineadas (32 bits) o resolverse por consulta de tramos.
+- **Compilación Obligatoria en Modo ARM 32-bit:** Por defecto BlocksDS compila código ARM9 en Thumb-1 (16-bit). Las funciones críticas de manipulación de memoria y rasterizado (`find_first_occlusion_run_in_row`, `blit_stride`, `draw_shadow_mask`) deben declararse explícitamente con `__attribute__((target("arm"), optimize("O3"), noinline))` para aprovechar instrucciones nativas de 32 bits (`LDRH`/`STRH`, `STMIA`) y evitar el estrangulamiento de registros.
+- **Índice por Fila y Búsqueda Binaria en X:** Los tramos (`g_dungeon_occlusion_runs`) se ordenan por (y, x) y `g_dungeon_occlusion_row_start[WORLD_H + 1]` delimita los de cada fila. `find_first_occlusion_run_in_row()` busca en binario el primer tramo que alcanza la X consultada; recorrer todos los tramos de la fila es demasiado caro.
 - **Prohibición de Paddings Fantasma:** Prohibido aplicar márgenes de celda arbitrarios a las máscaras. Todo padding artificial crea volúmenes invisibles que recortan al personaje en el aire antes de tocar las siluetas arquitectónicas reales.
 - **Contrato de Datos del Mapa (lab → baker → runtime):** `world.png`, `collision.png` y `occlusion_depth.png` se exportan del mismo modelo y la misma cámara (`tools/lab/export_map_package_headless.cjs`). `occlusion_depth.png` guarda por píxel la Y de mapa del punto de suelo bajo la superficie visible (R,G big endian) y B=255 si la superficie supera 0,25 m; el runtime oculta un píxel de actor si esa Y es mayor que la Y de sus pies. La colisión es la huella sobre el suelo de la geometría en la franja 0,30–1,20 m y es la única fuente de "suelo caminable". Verificación: `python tests/test_map_export_coherence.py`.
 
@@ -60,8 +60,8 @@ Origen: `walkthroughs/audit-saneamiento-2d3d/`. Lo ya resuelto (colisión/oclusi
 ### 4.1. Proyección y render 2.5D
 - **Escala personaje/mapa.** El mapa está a 40,42 px/m (`map_settings.json`) y los sprites miden ~30 px: el personaje equivale a ~0,75 m y queda oculto tras obstáculos de 1 m. Requiere re-renderizar los tres personajes (8 dir × 8 frames) a ~2× y ampliar el canvas de 40×40, con impacto en RAM/ROM; fijar entonces una única escala px/m con test.
 - **Pantalla superior sin actores.** Sólo la inferior dibuja actores; enemigos por encima de la cámara no se ven. Exige un segundo pase de render por frame (vigilar el presupuesto de 60 FPS).
-- **Parpadeo del jugador ocluido (`blit_stride`, frames impares):** es diseño intencional, no es deuda.
-- Resuelto en esta sesión (ver `STATUS.md`): movimiento/colisión isotrópicos en suelo (`GROUND_DY2`, elipse 6×3), ancla única exportada, oclusión 4×4 reconstruida con cada movimiento de cámara (sin histéresis); 2×2 cuesta frames a 60 FPS.
+- **Transparencias tras paredes:** diseño sin decidir; ver §4.6.
+- Resuelto (ver `STATUS.md`): movimiento/colisión isotrópicos en suelo (`GROUND_DY2`, elipse 6×3), ancla única exportada, oclusión exacta por consulta directa de tramos (sin mapa 4×4 ni reconstrucción por cámara).
 
 ### 4.2. Gameplay (preliminar, diferido)
 - Lead del tirador anulado: `(player_vx * travel_frames) >> 8` en `enemy_ai.c` divide la predicción entre 256 (quitar el `>> 8`).
@@ -81,3 +81,26 @@ Origen: `walkthroughs/audit-saneamiento-2d3d/`. Lo ya resuelto (colisión/oclusi
 - ROMs viejas `dungeonds_e30.nds`/`dungeonds_e60.nds` en la raíz del repo principal (ignoradas por git): borrar a mano.
 - `.ds-game-dev/project.json` lista `tests/test_world_void_contract.py`, que no existe.
 - **Data abort en hardware, sin causa conocida.** Tras unos minutos jugando (dar vueltas y matar enemigos) la DS mostró una pantalla roja "data abort" con la ROM de esta sesión; no se reproduce en DeSmuME (soak de 23.000 frames) ni se pudo atribuir a un cambio concreto. Con la ROM de depuración no volvió a aparecer, y se detectan "cosas raras" por revisar. Herramienta: `include/crashlog.h` + `source/crashlog.c` (poner `CRASHLOG_ENABLED 1`): migas en un anillo, log vivo `/dungeonds_live.log` cada segundo, informe en ambas pantallas y `/dungeonds_crash.log` con registros; L+R+START muestra el informe, L+R+SELECT provoca una excepción real. El handler real no se pudo validar en DeSmuME. Resolver el PC contra `.ds-game-dev/build/build/game-blocksds.map`.
+
+### 4.5. Motor 2D/3D (auditoría 2026-11-03)
+Origen: `walkthroughs/audit-motor-2d3d/`. Resueltos en el prototipo A (compositor directo en VRAM, spans sucios, oclusión por consulta, HUD con START, logs bajo `DEBUG`); lo siguiente sigue pendiente.
+- **Métricas.** `cpu_percent` excluye DMA y anillo BG; comentario obsoleto de presupuesto (280095) en `game.h`. Presupuesto real: 560190 ticks/frame. El rendimiento solo se valida en DS con `PERF_PROFILE` (`/dungeonds_perf.log`), no en DeSmuME. El Makefile no define `DEBUG` y `encounters.c` conserva 3 `nocashMessage`.
+- **Timestep por frame presentado.** A 30 FPS el juego va a media velocidad; usar delta de tiempo o paso fijo con acumulador.
+- **Transparencias:** ver §4.6.
+- **Anillo de BG:** reescanea 2048 celdas por pantalla en cada cambio de tile (~0,1 ms de media, picos ~2 ms). Baja prioridad.
+- **Assets:** sprites BGR555 crudos (614 KB) y máscaras de sombra 4 bpp 80×80 (614 KB) sin paleta ni compresión ni NitroFS; ~2,0 MiB de 3,5 MiB de EWRAM; ITCM/DTCM sin uso.
+- **Pipeline:** `tools/rebuild-assets.ps1` llama a `tools/build_assets.py` inexistente; `generate_player_sprites_c.py` copia texto del `.h` del lab en vez de convertir `shadow.png`; tamaño del mundo duplicado en 4 sitios; `SPAWN` hardcodeado en el baker; `.c` generados sin hash de origen; ~40 scripts muertos en `tools/`.
+- **Acoplamiento:** coordenadas de mundo = píxeles de pantalla; impactos con círculo en pantalla frente a movimiento con métrica de suelo; estado global en `main.c`; `on_enemy_death` copia píxeles.
+- **Escenarios:** sensibles a frames perdidos del emulador; deberían basarse en frames de lógica, no en vblanks.
+
+### 4.6. Transparencias y lectura tras paredes: DISEÑO POR DECIDIR
+No hay decisión de diseño tomada sobre cómo mostrar lo que queda detrás de una pared. Lo que hay en el código es provisional y no debe tomarse como referencia ni ampliarse:
+- **Personaje:** parpadeo temporal (`blit_stride`, `s_frame_index & 1`): los píxeles ocluidos se pintan en frames alternos. Solo se lee como transparencia a 60 FPS estables.
+- **Enemigos:** usan el mismo parpadeo solo mientras el jugador está ocluido (`s_player_see_through`); si no, quedan ocultos del todo.
+- **Pie de la pared / suelo oculto:** mientras el jugador está ocluido se dibuja su sombra sobre la pared y una línea del borde de la huella de colisión (`draw_hidden_wall_base`) en una caja de 64×48 px. Esa línea no coincide con la base visible de la pared y en hardware no funciona bien.
+
+Preguntas abiertas a resolver en una sesión de diseño (`DESIGN.md`) antes de tocar código:
+1. ¿Qué se ve del personaje tras una pared (parpadeo, trama espacial fija, silueta de color, contorno, alfa por hardware)?
+2. ¿Qué se ve de los enemigos y bajo qué condición (nunca, solo cuando el jugador también está detrás, siempre como silueta)?
+3. ¿Cómo se comunica dónde está el suelo caminable y la base de la pared en la zona oculta (ocultación ambiental en el render del mapa, recorte/transparencia de la pared cerca del jugador, otra técnica)?
+4. ¿Encaja con el compositor por software actual o pide OAM/motor 3D (alfa por hardware, ventanas de OBJ, Z-buffer)?

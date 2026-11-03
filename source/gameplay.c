@@ -311,6 +311,7 @@ void pickups_render(uint16_t *buffer, int cam_x, int cam_y) {
                 uint16_t col = icon[iy * 8 + ix];
                 if (col != 0) {
                     buffer[dy * SCREEN_W + dx] = col;
+                    dirty_row(dy, dx, dx + 1);
                 }
             }
         }
@@ -432,12 +433,16 @@ void enemy_hit(Enemy *e, int damage, fixed hit_vx, fixed hit_vy) {
             pickup_spawn(drops[s_ammo_drop_idx % 3], e->x, e->y, 0);
             s_ammo_drop_idx++;
         }
+#ifdef DEBUG
         char msg[64];
         snprintf(msg, sizeof(msg), "ENEMY_KILL type=%d hp=0", e->type);
         nocashMessage(msg);
+#endif
     } else {
+#ifdef DEBUG
         char msg[64];
         snprintf(msg, sizeof(msg), "ENEMY_HIT type=%d hp=%d", e->type, e->hp);
         nocashMessage(msg);
+#endif
     }
 }

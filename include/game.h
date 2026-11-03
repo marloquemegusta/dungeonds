@@ -58,8 +58,33 @@ typedef struct {
     uint32_t shadow_ticks;      // draw_shadow_mask ticks
     uint32_t blit_ticks;        // blit tiles and player ticks
     uint32_t show_hud;          // 0 = off, 1 = on
+    uint32_t dirty_leaks;       // DIRTY_VERIFY: non-zero pixels left after the span clear (accumulated)
 } PerfStats;
 
 extern volatile PerfStats g_perf;
+
+// Painted-span tracking for the bitmap BG page being drawn. Every painter calls
+// dirty_row() for the pixels it writes so the next use of that page only has to
+// clear those spans (x1 exclusive, empty when x0 >= x1).
+typedef struct {
+    uint16_t x0, x1;
+} DirtySpan;
+extern DirtySpan *g_dirty_cur;
+
+static inline void dirty_row(int y, int x0, int x1) {
+    if ((unsigned)y >= SCREEN_H) return;
+    if (x0 < 0) x0 = 0;
+    if (x1 > SCREEN_W) x1 = SCREEN_W;
+    if (x0 >= x1) return;
+    DirtySpan *s = &g_dirty_cur[y];
+    if (x0 < (int)s->x0) s->x0 = (uint16_t)x0;
+    if (x1 > (int)s->x1) s->x1 = (uint16_t)x1;
+}
+
+static inline void dirty_rect(int x0, int y0, int x1, int y1) {
+    if (y0 < 0) y0 = 0;
+    if (y1 > SCREEN_H) y1 = SCREEN_H;
+    for (int y = y0; y < y1; y++) dirty_row(y, x0, x1);
+}
 
 #endif // GAME_H

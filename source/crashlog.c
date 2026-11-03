@@ -141,6 +141,8 @@ void crashlog_poll_test_trigger(void) {
     }
 }
 
+int crashlog_sd_ready(void) { return s_sd_ok; }
+
 void crashlog_init(void) {
     s_sd_ok = fatInitDefault();
     if (s_sd_ok) s_live = fopen("/dungeonds_live.log", "wb");
