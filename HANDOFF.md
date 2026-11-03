@@ -1,71 +1,40 @@
 # HANDOFF.md - Estado Canónico del Proyecto DungeonDS
 
-**Fecha:** 2026-10-14  
-**Propósito:** Proporcionar al siguiente agente LLM el estado completo, arquitectura y directrices operativas sin depender del historial de chat.
+**Fecha:** 2026-11-02
+**Propósito:** estado mínimo para retomar el trabajo sin depender del chat. Cada tema se detalla en su documento: `AGENTS.md` (reglas), `DESIGN.md` (juego), `TECHNICAL.md` (arquitectura y deuda técnica), `STATUS.md` (historial de sesiones).
 
 ---
 
-## 1. Estado Actual del Repositorio
+## 1. Estado del Repositorio
 
-- **Rama activa:** `main` (única rama local; todas las ramas de features han sido consolidadas y eliminadas).
-- **Worktrees:** 0 worktrees adicionales (el directorio `.worktrees/` está limpio y eliminado).
-- **ROM NDS:** `dungeonds.nds` (2.28 MB), compilada limpia con BlocksDS Docker sin advertencias ni errores.
-- **Rendimiento:** **60 FPS Locked** garantizados en DeSmuME y Nintendo DS física (`FPS:60 C:12 P:04`).
-  - CPU total: **12 ms** (presupuesto: $< 16.6$ ms / $< 33514$ ticks).
-  - Suelo con sombreado dinámico: **8–9 ms**.
-  - Presentación BG2: **4 ms**.
-  - Margen VBlank: $> 4.6$ ms de holgura por fotograma.
+- **Rama base:** `main`. La última entrega integrada es la coherencia de colisión y oclusión con el render del mapa (`walkthroughs/map-export-coherence/walkthrough.md`, registrada en `STATUS.md`).
+- **Trabajo en curso:** saneamiento de la deuda de la auditoría `walkthroughs/audit-saneamiento-2d3d/`. La lista pendiente está en `TECHNICAL.md` §4.
+- **Build:** BlocksDS en Docker mediante `C:\codexlocal\skills\agentic-ds-dev\scripts\build-project.ps1`.
+- **Tests de host:** `tests/`. Fallos conocidos según el walkthrough de coherencia: `test_shadow_masks.py` (faltan assets `e30`) y `test_scenario_state_assertions.py` (import de `run_scenario`).
+- **Rendimiento:** objetivo de 60 FPS con `cpu_ticks` ≤ 33514 (AGENTS.md, regla 5). La reconstrucción de oclusión sin índice por fila bajaba a 30 FPS; hoy el runtime busca en binario la primera fila de runs visibles.
 
----
+## 2. Arquitectura Vigente
 
-## 2. Arquitectura del Motor y Features Implementadas
+- **Mapa:** `isometric_shooter_bl`, 1536×857 px (horneado a 1536×864 con tiles de 8 px), 40,42 px/m. Fuente en `assets/sprites/dungeon/isometric_shooter_bl/`.
+- **Pipeline del mapa:** lab Three.js (`tools/lab/export_map_package_headless.cjs`) → `world.png`, `collision.png` y `occlusion_depth.png` → `tools/bake_isometric_shooter_bl.py` → C en `source/` e `include/` → runtime (`source/main.c`). Detalle en `TECHNICAL.md` §3.
+- **Oclusión:** profundidad por píxel de la superficie visible, generada en el mismo render que el color. El runtime la compara con la Y de los pies del actor en celdas de 4×4 px.
+- **Colisión:** huella sobre el suelo de la geometría en la franja corporal 0,30–1,20 m. Es la única fuente de suelo caminable.
+- **Iluminación:** el color del fondo ya incluye la luz del lab (preset cálido en `map_settings.json`). El runtime no tiene iluminación dinámica ni antorcha: `smooth_lightmap.c` se eliminó el 2026-10-21.
+- **Niebla de guerra:** no existe en el código.
+- **Personajes:** héroe (space marine), charger y necron. Spritesheets de 8 direcciones exportados por el Shader Lab a `assets/sprites/characters/<nombre>/`, convertidos a C por `tools/generate_player_sprites_c.py` en `source/player_sprite.c`.
+- **Diseño de juego:** shooter isométrico por salas, descrito en `DESIGN.md` §4. El estado real de cada sistema (enemigos, armas, pickups) está en `TECHNICAL.md` §4.2.
 
-### A. Escena Sci-Fi Dungeon 3D (FBX 50.000 polys)
-- Escena modelada en Blender, horneada a $768 \times 512$ px y dividida en $96 \times 64$ tiles de $8 \times 8$ px.
-- Proyección dimétrica isométrica exacta a `ortho_scale = 38.0`.
-- Despeje de puertas y dinteles mediante detección volumétrica de torso ($Z \in [0.3, 1.4]$ m), eliminando falsos bloqueos y permitiendo navegación continua por toda la mazmorra.
-- Oclusión 3D exacta de arcos y pilares sobre el personaje mediante tramos RLE ordenados.
+## 3. Reglas Críticas (AGENTS.md)
 
-### B. Sistema de Visibilidad y Niebla de Guerra (Fog of War)
-- Rejillas de bits en EWRAM de 768 bytes cada una (`g_fog_explored` y `g_fog_visible`).
-- Raycaster Bresenham de 64 rayos sin división por software (< 0.05 ms de coste ARM9).
-- Ocultación de entidades fuera de la línea de visión (enemigos inactivos y ocultos tras esquinas).
+1. Sin `float` ni `double` en runtime: física y movimiento en punto fijo (`int32_t` con 8.8 o 12.12).
+2. Sin comandos interactivos: compilación y emulación con los scripts de la skill `ds-game-dev`.
+3. Cada tarea sustancial se desarrolla en un worktree bajo `.worktrees/` (`git worktree add .worktrees/<nombre> -b feat/<nombre>`).
+4. Evidencia visual copiada al directorio de artefactos de la sesión y referenciada con su ruta absoluta, sin prefijo `file:///`.
+5. Escenarios con geometría verificada: el actor debe cruzar de verdad la entidad que se quiere probar.
 
-### C. Iluminación Dinámica de Antorcha 3D (No Binaria)
-- **Horneado 3D BVH (`tools/bake_full_smooth_lightgrid.py`):** Rejilla de $21 \times 21$ celdas precalculadas a 4 bits para las 1.614 posiciones caminables (356 KB en ROM).
-- **Falloff Hermite Smoothstep:** Atenuación $t^2 (3 - 2t)$ a lo largo de un radio de 80 píxeles ($\sim 5.3$ px por nivel de luz), eliminando cortes duros.
-- **Paleta Perceptiva DTCM con Calidez Ámbar (`source/smooth_lightmap.c`):** Corrección gamma $(l/15)^{0.7}$, R 105%, G 95%, B 75%. El nivel 1 emite penumbra visible (`RGB15(2, 1, 1)`).
-- **Interpolación Bilineal ARM9 sin FPU:** Bucle interior DDA sin divisiones que interpola colores de la paleta DTCM directamente sobre el búfer bitmap de 16bpp (`s_bot_screen_buf`).
+## 4. Siguientes Pasos
 
----
-
-## 3. Reglas Críticas de Desarrollo (AGENTS.md)
-
-1. **Nintendo DS es plataforma sin FPU:** Prohibido usar `float` o `double` en código de runtime. Toda la física y movimiento se realiza en punto fijo (`int32_t` con precisión `8.8` o `12.12`).
-2. **Sin comandos interactivos:** Todo el flujo se ejecuta mediante scripts PowerShell de la skill compartida `ds-game-dev` (`C:\codexlocal\skills\agentic-ds-dev\scripts\`: `build-project.ps1`, `run-scenario.ps1`).
-3. **Protocolo de Worktrees:** Toda nueva feature se debe desarrollar en un worktree aislado (`git worktree add .worktrees/<nombre> -b feat/<nombre>`) y fusionarse a `main` al terminar.
-4. **Evidencia Visual sin "Preview Unavailable" (Regla 6):** Prohibido usar rutas de workspace o esquema `file:///` para incrustar imágenes en markdown. Copiar siempre los archivos al directorio de artefactos (`<appDataDir>/brain/<conversation-id>/`) y referenciarlos con su ruta absoluta sin prefijo de protocolo.
-
----
-
-## 4. Prioridad Inmediata y Siguientes Pasos
-
-> [!IMPORTANT]
-> **DIRECTIVA DEL USUARIO — PRIORIDAD INMEDIATA Nº 1: Continuar iterando el sistema de iluminación.**
-> El usuario ha solicitado explícitamente seguir refinando el sombreado y la iluminación en la próxima sesión antes de pasar a otras áreas.
-
-### Líneas de iteración sobre iluminación:
-1. **Calibración Visual y Estética de la Antorcha:**
-   - Ajuste fino del radio, curva de caída (falloff) y radio de penumbra según el feedback visual del usuario.
-   - Parpadeo dinámico/flicker procedural de la antorcha (variación sutil del radio o modulación de los factores de escala de la paleta DTCM en tiempo real).
-   - Calibración de color/contraste: ajuste de las componentes R, G, B y penumbra fría/cálida para optimizar la legibilidad en la pantalla física de la Nintendo DS.
-2. **Iluminación en Entidades y Personaje:**
-   - Aplicar el nivel de luz de la antorcha al sprite del jugador, enemigos y armas para que no se vean desconectados del entorno oscurecido.
-3. **Fuentes de Luz Secundarias o Antorchas de Pared:**
-   - Explorar antorchas fijas en muros o fuentes de luz estáticas combinadas con la antorcha móvil.
-
-### Backlog secundario (después de cerrar la iluminación):
-- **Enemigos y Combate:** Integración activa de IA (Charger, Skeleton) y proyectiles de hueso.
-- **Audio y Efectos:** Driver Maxmod / ADPCM para ambiente de mazmorra.
-- **Inventario / UI Táctil:** Menú en pantalla táctil para selección de armas.
-- **Prueba en Consola Física:** Subida por FTP (`ftp://192.168.1.151:5000/roms/nds/dungeonds.nds`).
+1. **Deuda prioritaria (`TECHNICAL.md` §4.1):** movimiento y colisión en coordenadas de suelo; escala única entre personaje y mapa (los sprites miden ~0,75 m frente al mapa a 40,42 px/m); anclas de suelo triplicadas.
+2. **Resto de la deuda:** gameplay (§4.2), código muerto (§4.3), tests y repo (§4.4).
+3. **Plan de juego:** fases A–F de `DESIGN.md` §4.7.
+4. **Hardware físico:** subida a la DS sólo con confirmación explícita, mediante la skill `ds-game-dev`.

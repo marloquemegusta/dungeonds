@@ -1,6 +1,6 @@
 {
  "name": "map_occlusion_collision_coherence",
- "comment": "Routes pre-simulated with the runtime's position_is_free/sweep rules (marine speed 326) against the baked collision grid. Each capture's feet position is asserted (+-4 px: the emulator occasionally drops a frame) so the geometric precondition holds: 01 stopped by the central block's front footprint (unoccluded), 02 north-west corner behind the block (almost fully hidden: the block is taller than the sprite at map scale), 03/04 behind the south wall corner (partially/fully hidden).",
+ "comment": "Routes pre-simulated with the runtime's position_is_free/sweep rules (marine speed 326, halved on screen Y by the 2:1 ground projection) against the baked collision grid. Each capture's feet position is asserted (+-4 px: the emulator occasionally drops a frame) so the geometric precondition holds: 01 stopped by the central block's front footprint (unoccluded), 02 north-west corner behind the block (almost fully hidden: the block is taller than the sprite at map scale), 03/04 behind the south wall corner (partially/fully hidden).",
  "state": {
   "symbols": {
    "nav": "g_nav_state",
@@ -72,7 +72,7 @@
   },
   {
    "button_down": "UP",
-   "frames": 200
+   "frames": 400
   },
   {
    "button_up": "UP",
@@ -82,7 +82,7 @@
   },
   {
    "button_down": "DOWN",
-   "frames": 51
+   "frames": 102
   },
   {
    "button_up": "DOWN",
@@ -100,7 +100,7 @@
   },
   {
    "button_down": "UP",
-   "frames": 98
+   "frames": 196
   },
   {
    "button_up": "UP",
@@ -109,7 +109,7 @@
   },
   {
    "button_down": "RIGHT",
-   "frames": 34
+   "frames": 15
   },
   {
    "button_up": "RIGHT",
@@ -128,7 +128,7 @@
   },
   {
    "button_down": "DOWN",
-   "frames": 95
+   "frames": 190
   },
   {
    "button_up": "DOWN",
@@ -146,7 +146,7 @@
   },
   {
    "button_down": "DOWN",
-   "frames": 85
+   "frames": 170
   },
   {
    "button_up": "DOWN",
@@ -156,7 +156,7 @@
   },
   {
    "button_down": "DOWN",
-   "frames": 22
+   "frames": 44
   },
   {
    "button_up": "DOWN",
@@ -194,26 +194,26 @@
    {
     "at": "03_south_wall_partial",
     "field": "x",
-    "min_value": 179456,
-    "max_value": 181504
+    "min_value": 179130,
+    "max_value": 181178
    },
    {
     "at": "03_south_wall_partial",
     "field": "y",
-    "min_value": 157548,
-    "max_value": 159596
+    "min_value": 156244,
+    "max_value": 158292
    },
    {
     "at": "04_south_wall_hidden",
     "field": "x",
-    "min_value": 179456,
-    "max_value": 181504
+    "min_value": 179130,
+    "max_value": 181178
    },
    {
     "at": "04_south_wall_hidden",
     "field": "y",
-    "min_value": 164720,
-    "max_value": 166768
+    "min_value": 163416,
+    "max_value": 165464
    }
   ],
   "screen_changes": [

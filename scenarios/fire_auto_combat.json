@@ -1,5 +1,5 @@
 {
-  "name": "bone_lance_combat_test",
+  "name": "fire_auto_combat",
   "steps": [
     { "frames": 180, "capture": "00_before_combat" },
     { "button_down": "A", "frames": 120, "capture": "01_auto_fire" },

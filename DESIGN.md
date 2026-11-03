@@ -59,7 +59,7 @@ Valores numéricos finales (daño, cadencia, dispersión) quedan por definir en 
 - **FSM:** `IDLE → ALERT → POSITION (mantener banda/strafe) → AIM → BURST(3) → COOLDOWN → POSITION`; `POSITION → SEARCH`; `* → DEAD`.
 
 ### 4.5 Percepción y Navegación (compartido)
-- **Detección:** línea de visión pura (Bresenham sobre `g_dungeon_collision`, sin fog explorado/visible ni máscaras baked) **o** radio de ruido al disparar (la gatling y la pesada tienen radio mayor). El fog de guerra actual se purga (Fase 0).
+- **Detección:** línea de visión pura (Bresenham sobre `g_dungeon_collision`, sin máscaras baked) **o** radio de ruido al disparar (la gatling y la pesada tienen radio mayor). No hay niebla de guerra en el código actual: no existen fog explorado ni visible.
 - **Pérdida:** tras ~3 s sin ver al jugador pasan a `SEARCH` hacia la última posición conocida y luego a `IDLE`.
 - **Navegación:** sin FPU, punto fijo. Persecución directa si hay LOS; si no, seguir campo de distancias (BFS por tiles desde el jugador, recalculado cada N frames y amortizado entre enemigos).
 - **Separación:** repulsión simple entre enemigos para evitar apilamiento.

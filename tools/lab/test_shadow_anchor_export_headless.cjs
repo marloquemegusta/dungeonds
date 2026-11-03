@@ -97,22 +97,29 @@ if (fs.existsSync(ARTIFACT_DIR)) {
         boundsCount: bounds ? bounds.length : 0,
         bounds: bounds,
         masksCount: masks ? masks.length : 0,
-        maskLengths: masks ? masks.map(m => m.length) : []
+        frameCounts: bounds ? bounds.map(b => b.length) : [],
+        masksCount: masks ? masks.length : 0,
+        maskFrameCounts: masks ? masks.map(m => m.length) : [],
+        maskLengths: masks ? masks.map(m => m.map(f => f.length)) : []
       };
     });
 
-    console.log('Shadow Metrics:', JSON.stringify(shadowMetrics));
-    assert.equal(shadowMetrics.canvasWidth, 768, 'Shadow atlas width must be 768');
-    assert.equal(shadowMetrics.canvasHeight, 96, 'Shadow atlas height must be 96');
+    console.log('Shadow Metrics:', JSON.stringify({ ...shadowMetrics, bounds: undefined }));
+    assert.equal(shadowMetrics.canvasWidth, 768, 'Shadow atlas width must be 768 (8 frames x 96)');
+    assert.equal(shadowMetrics.canvasHeight, 768, 'Shadow atlas height must be 768 (8 directions x 96)');
     assert.equal(shadowMetrics.boundsCount, 8, 'Shadow bounds must have 8 directions');
     assert.equal(shadowMetrics.masksCount, 8, 'Shadow masks must have 8 directions');
     for (let d = 0; d < 8; d++) {
-      const b = shadowMetrics.bounds[d];
-      assert(Array.isArray(b) && b.length === 4, `Shadow bounds ${d} must be [sx0, sy0, w, h]`);
-      assert(b[2] > 0 && b[3] > 0, `Shadow bounds ${d} must have width & height > 0`);
-      assert.equal(shadowMetrics.maskLengths[d], 4608, `Shadow mask ${d} must be 4608 bytes`);
+      assert.equal(shadowMetrics.frameCounts[d], 8, `Shadow bounds ${d} must have 8 frames`);
+      assert.equal(shadowMetrics.maskFrameCounts[d], 8, `Shadow masks ${d} must have 8 frames`);
+      for (let f = 0; f < 8; f++) {
+        const b = shadowMetrics.bounds[d][f];
+        assert(Array.isArray(b) && b.length === 4, `Shadow bounds ${d}/${f} must be [sx0, sy0, w, h]`);
+        assert(b[2] > 0 && b[3] > 0, `Shadow bounds ${d}/${f} must have width & height > 0`);
+        assert.equal(shadowMetrics.maskLengths[d][f], 4608, `Shadow mask ${d}/${f} must be 4608 bytes`);
+      }
     }
-    console.log('[PASS] Shadow generation verified: 768x96 atlas, 8 directions x 4608 bytes 4-bit masks');
+    console.log('[PASS] Shadow generation verified: 768x768 atlas, 8 directions x 8 frames x 4608 bytes 4-bit masks');
 
     // 3. Verify NDS C Header generation
     const cHeader = await page.evaluate(() => {
@@ -124,8 +131,8 @@ if (fs.existsSync(ARTIFACT_DIR)) {
     assert(cHeader.includes('HERO_ANCHOR_Y'), 'Header must define HERO_ANCHOR_Y');
     assert(cHeader.includes('HERO_SHADOW_W 96'), 'Header must define HERO_SHADOW_W 96');
     assert(cHeader.includes('g_hero_ground_anchors[8]'), 'Header must declare g_hero_ground_anchors');
-    assert(cHeader.includes('g_hero_shadow_bounds[8][4]'), 'Header must declare g_hero_shadow_bounds');
-    assert(cHeader.includes('g_hero_shadow_masks[8][4608]'), 'Header must declare g_hero_shadow_masks');
+    assert(cHeader.includes('g_hero_shadow_bounds[8][8][4]'), 'Header must declare g_hero_shadow_bounds');
+    assert(cHeader.includes('g_hero_shadow_masks[8][8][4608]'), 'Header must declare g_hero_shadow_masks');
     console.log('[PASS] NDS C Header code generation verified');
 
     // 4. Verify Map Collision & Occlusion generation
@@ -176,9 +183,9 @@ if (fs.existsSync(ARTIFACT_DIR)) {
       return {
         fileCount: files.length,
         files: files,
-        hasShadowPng: files.some(f => f.endsWith('_shadow.png')),
+        hasShadowPng: files.some(f => f === 'shadow.png'),
         hasIndShadows: files.some(f => f.includes('shadows/')),
-        hasNdsHeader: files.some(f => f.endsWith('_nds_shadow_anchor.h')),
+        hasNdsHeader: files.some(f => f === 'nds_shadow_anchor.h'),
         settings: {
           hasAnchor: Array.isArray(settings.anchor),
           hasDirGroundAnchors: Array.isArray(settings.dirGroundAnchors),
@@ -211,14 +218,14 @@ if (fs.existsSync(ARTIFACT_DIR)) {
       const zipBlob = await lab.exportMapPackage();
       const zip = await new Nf.default().loadAsync(zipBlob);
       const files = Object.keys(zip.files);
-      const colJson = await zip.file(files.find(f => f.endsWith('_collision.json'))).async('string');
+      const colJson = await zip.file(files.find(f => f === 'collision.json')).async('string');
       return {
         files: files,
-        hasWorldPng: files.some(f => f.endsWith('_world.png')),
-        hasCollisionJson: files.some(f => f.endsWith('_collision.json')),
-        hasCollisionPng: files.some(f => f.endsWith('_collision.png')),
-        hasOcclusionPng: files.some(f => f.endsWith('_occlusion.png')),
-        hasMapSettings: files.some(f => f.endsWith('_map_settings.json')),
+        hasWorldPng: files.some(f => f === 'world.png'),
+        hasCollisionJson: files.some(f => f === 'collision.json'),
+        hasCollisionPng: files.some(f => f === 'collision.png'),
+        hasOcclusionPng: files.some(f => f === 'occlusion.png'),
+        hasMapSettings: files.some(f => f === 'map_settings.json'),
         colJsonParsed: JSON.parse(colJson)
       };
     });

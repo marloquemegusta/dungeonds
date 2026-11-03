@@ -5,12 +5,19 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 MAIN = (ROOT / "source" / "main.c").read_text(encoding="utf-8")
 SPRITES = (ROOT / "source" / "player_sprite.c").read_text(encoding="utf-8")
-ANCHOR_Y = 28
 WIDTH = 40
 HEIGHT = 40
 SHADOW_W = 80
 SHADOW_H = 80
 MASK_BYTES = (SHADOW_W * SHADOW_H) // 2
+
+
+def exported_anchors():
+    """Single source of truth: the per-character, per-direction anchors exported with the sprites."""
+    start = SPRITES.index("const uint8_t g_character_ground_anchors[")
+    end = SPRITES.index("};", start)
+    rows = re.findall(r"\{([^{}]+)\}", SPRITES[SPRITES.index("=", start):end])
+    return [[int(v) for v in row.split(",")] for row in rows]
 
 
 def pixel_values(symbol):
@@ -39,7 +46,8 @@ class SpriteGroundAnchorTests(unittest.TestCase):
                            if any(pixel & 0x8000 for pixel in frame[y * WIDTH:(y + 1) * WIDTH])]
             self.assertTrue(opaque_rows)
             lowest = max(lowest, max(opaque_rows))
-        self.assertGreaterEqual(lowest - ANCHOR_Y, 4)
+        anchor = max(exported_anchors()[1])
+        self.assertGreaterEqual(lowest - anchor, 0)
 
     def test_player_and_enemy_frames_use_exported_ground_anchor(self):
         for function in ("draw_player", "draw_enemy"):
@@ -48,6 +56,14 @@ class SpriteGroundAnchorTests(unittest.TestCase):
             body = MAIN[start:end]
             self.assertIn("py - s_char_ground_anchor[", body)
             self.assertNotIn("sprite_max_y", body)
+
+    def test_no_hardcoded_anchor_constant(self):
+        header = (ROOT / "include" / "player_sprite.h").read_text(encoding="utf-8")
+        self.assertNotIn("PLAYER_ANCHOR_Y", header)
+        self.assertNotIn("PLAYER_ANCHOR_Y", MAIN)
+        anchors = exported_anchors()
+        self.assertEqual(len(anchors), 3)
+        self.assertTrue(all(len(row) == 8 for row in anchors))
 
     def test_shadow_masks_and_bounds_dimensions(self):
         for prefix in ("g_player", "g_charger", "g_necron"):

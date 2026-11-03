@@ -65,8 +65,6 @@ struct Enemy {
     int anim_timer;
     int char_id;
     int active;
-    int step_count;
-    int step_limit;
     int hp;
     int max_hp;
     int hit_timer;
@@ -80,12 +78,27 @@ struct Enemy {
     int burst_interval_timer;
     int strafe_dir;
     int has_los;
-    int stagger_slot;
 };
+
+// The map is a 2:1 dimetric projection (30 deg elevation): one ground unit along
+// screen Y covers half the pixels of one along X. Simulation distances and speeds
+// are isotropic on the ground; GROUND_DY2(dy) is (2*dy)^2, the screen dy squared
+// in ground units.
+#define GROUND_Y_SHIFT 1
+#define GROUND_DY2(dy) ((dy) * (dy) * 4)
 
 int position_is_free(fixed x, fixed y);
 int bullet_position_is_free(fixed x, fixed y);
 int sweep_position(fixed *x, fixed *y, fixed dx, fixed dy);
+
+// Applies damage to an enemy. On a kill it marks the enemy dead, records the kill
+// with the encounter manager, spawns the drop pickup and notifies the death hook.
+void enemy_hit(Enemy *e, int damage, fixed hit_vx, fixed hit_vy);
+
+// Presentation hook called by enemy_hit() when an enemy dies (e.g. death chunks).
+// The renderer owns the visuals; gameplay code never depends on it directly.
+typedef void (*EnemyDeathHook)(const Enemy *e, fixed hit_vx, fixed hit_vy);
+void enemy_set_death_hook(EnemyDeathHook hook);
 
 // ---------------------------------------------------------------------------
 // 3. Player Stats & Damage Function (Doom-style 1/3 armor absorption)

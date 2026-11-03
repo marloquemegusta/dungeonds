@@ -188,10 +188,7 @@ int encounters_spawn_wave(EncounterManager *mgr, Enemy *enemies, int max_enemies
         e->burst_shots_left = 0;
         e->burst_interval_timer = 0;
         e->strafe_dir = (spawned & 1) ? 1 : -1;
-        e->step_count = 0;
-        e->step_limit = 60 + spawned * 15;
         e->has_los = 0;
-        e->stagger_slot = spawned % 2;
         spawned++;
     }
 

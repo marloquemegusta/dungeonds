@@ -10,9 +10,8 @@
 #define PLAYER_NUM_DIRS 8
 #define PLAYER_NUM_FRAMES 8
 
-// The ground origin is the shared lower anchor of every sprite canvas.
+// The ground origin row varies per character/direction: see g_character_ground_anchors.
 #define PLAYER_ANCHOR_X 20
-#define PLAYER_ANCHOR_Y 35
 
 #define NUM_CHARACTERS 3
 

@@ -7,6 +7,7 @@ ENCOUNTERS_H = (ROOT / "include" / "encounters.h").read_text(encoding="utf-8")
 ENCOUNTERS_C = (ROOT / "source" / "encounters.c").read_text(encoding="utf-8")
 MAIN_C = (ROOT / "source" / "main.c").read_text(encoding="utf-8")
 GAMEPLAY_H = (ROOT / "include" / "gameplay.h").read_text(encoding="utf-8")
+GAMEPLAY_C = (ROOT / "source" / "gameplay.c").read_text(encoding="utf-8")
 
 # Constants mirroring C definitions
 MAX_FLOOR_LEVELS = 5
@@ -284,7 +285,8 @@ class TestEncountersContract(unittest.TestCase):
         self.assertIn("encounters_spawn_wave(&g_encounter_mgr", MAIN_C)
         self.assertIn("encounters_update(&g_encounter_mgr", MAIN_C)
         self.assertIn("encounters_render(&g_encounter_mgr", MAIN_C)
-        self.assertIn("encounters_record_kill(&g_encounter_mgr", MAIN_C)
+        # Kills are recorded by enemy_hit(), which lives on the gameplay side.
+        self.assertIn("encounters_record_kill(&g_encounter_mgr", GAMEPLAY_C)
 
 
 if __name__ == "__main__":
