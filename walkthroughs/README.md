@@ -88,3 +88,4 @@ Resúmenes acumulativos y auditables de cada entrega y avance de desarrollo en `
 | — | Colisión y oclusión coherentes con el render del mapa | [map-export-coherence](map-export-coherence/walkthrough.md) | Validado en emulador |
 | 29 | Saneamiento 2D/3D: suelo isotrópico, código muerto y repo | [`saneamiento-2d3d/`](saneamiento-2d3d/walkthrough.md) | Validado en DeSmuME |
 | 30 | Oclusión exacta, transparencia compartida y base de pared oculta | [`fix-oclusion-siluetas/`](fix-oclusion-siluetas/walkthrough.md) | Validado en DeSmuME (sin captura de enemigo) |
+| 31 | Auditoría del motor 2D/3D y prototipo A (compositor directo en VRAM) | [`audit-motor-2d3d/`](audit-motor-2d3d/walkthrough.md) | Validado en DS (rendimiento) |
