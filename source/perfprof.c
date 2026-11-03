@@ -63,10 +63,12 @@ void perfprof_init(void) {
     sd_ok = fatInitDefault();
 #endif
     if (sd_ok) {
+        // libnds FAT only commits the file size on fclose, so every write
+        // reopens and closes the file; fflush alone leaves a 0-byte log.
         s_file = fopen("/dungeonds_perf.log", "ab");
         if (s_file) {
             fputs("BOOT perf_log=1 window=60 ticks_per_ms=33514 budget=560190\n", s_file);
-            fflush(s_file);
+            fclose(s_file);
         }
     }
     reset_window();
@@ -92,8 +94,11 @@ static void write_window(uint32_t frame_index) {
     s_line[len] = 0;
     if (s_file) {
         uint32_t t0 = cpuGetTiming();
-        fwrite(s_line, 1, len, s_file);
-        fflush(s_file);
+        FILE *f = fopen("/dungeonds_perf.log", "ab");
+        if (f) {
+            fwrite(s_line, 1, len, f);
+            fclose(f);
+        }
         s_sd_prev_ticks = cpuGetTiming() - t0;
         s_sd_prev_len = (uint32_t)len;
     }
