@@ -1,30 +1,28 @@
 # DESIGN.md - Documento de Diseño
 
-## 1. Visión y Alcance Confirmado
-- **Concepto:** Juego para Nintendo DS similar a Diablo (vista cenital/isométrica) procedural y centrado en la temática de nigromancia.
-- **Objetivo actual:** Diseñar el setup gráfico inicial y elegir assets estéticos para montar la demo técnica donde se puedan mover personajes en 8 direcciones.
+## 1. Visión y Alcance
+- **Concepto:** shooter isométrico para Nintendo DS en mazmorras procedurales por salas, con tono gótico/grimdark (space marine contra necrones y bestias).
+- **Pilar:** kiting y posicionamiento. Armas ruidosas y contundentes, enemigos legibles por silueta y velocidad.
+- **Bucle:** salas con grupos mixtos de enemigos → salida al final → siguiente piso con más densidad. Las armas se recogen en el mapa.
+- **Historia de la dirección:** el proyecto nació como un Diablo de nigromancia con esbirros. Se descartó en una sesión de diseño (`/grill-me`) a favor del shooter descrito aquí. La lanza ósea y la muerte por fragmentos quedan como FX reutilizables, no como pilar de juego.
 
-## 2. Dirección de Arte y Pipeline Confirmado
-- **Técnica:** Sprites 2D pre-renderizados a partir de modelos 3D con animaciones esqueléticas (FBX / Blender).
-- **Proyección:** Isométrica / dimétrica a 60 grados en 8 direcciones.
-- **Herramienta de tuning:** `tools/lab/shader_lab_ui.html` (`tools/lab/shader_lab_server.py`) para cargar FBX, elegir clips, ajustar renderizado y revisar sprites en 8 direcciones. El antiguo `sprite_lab.html` de tuning 2D se retiró.
-- **Lanza ósea:** salva de cinco astillas estrechas y puntiagudas dibujadas proceduralmente, sin outline; proyectiles rápidos con motas de tonos marfil/hueso.
-- **Muerte del enemigo:** al golpe final, la silueta se rompe en pequeños fragmentos extraídos de sus propios píxeles, que salen según el impacto y caen con una parábola breve.
+## 2. Dirección de Arte y Pipeline
+- **Técnica:** sprites 2D pre-renderizados a partir de modelos 3D con animación esquelética (FBX/GLB).
+- **Proyección:** isométrica/dimétrica en 8 direcciones; mapa y personajes con la misma cámara e iluminación.
+- **Herramienta de render:** el lab Three.js (`tools/lab/`), fuente de verdad visual para mapa y personajes. Detalle del pipeline en `TECHNICAL.md` §3.
+- **Personajes actuales:** héroe (space marine), charger y necron.
+- **FX reutilizables:**
+  - Lanza ósea: salva de cinco astillas estrechas y puntiagudas dibujadas proceduralmente, sin outline, con motas en tonos marfil/hueso.
+  - Muerte del enemigo: la silueta se rompe en fragmentos extraídos de sus propios píxeles que salen según el impacto y caen con una parábola breve.
 
-## 3. Decisiones Abiertas / Pendientes de Definición
-- Mecánicas de juego y controles concretos: Pendiente de definición por el usuario.
-- Generador procedural de mazmorras: Pendiente de definición por el usuario.
-- Estructura y reglas del bucle de combate y nigromancia: Pendiente de definición por el usuario.
+## 3. Decisiones Abiertas
+- **Lectura tras paredes (transparencias):** qué se ve del personaje y de los enemigos detrás de una pared y cómo se marca la base de la pared. Sin decidir; preguntas en `TECHNICAL.md` §4.6. No se toca código hasta decidirlo aquí.
+- **Generador procedural de mazmorras:** sin definir (hoy hay un único mapa horneado, `isometric_shooter_bl`).
+- **Tuning de combate:** ver §4.8.
 
 ---
 
-## 4. Giro de Dirección: Shooter Isométrico tipo Doom (Decidido en /grill-me)
-
-> Reemplaza el enfoque de nigromancia/esbirros de la sección 1 y 3. La "lanza ósea" y la "muerte por fragmentos" de la sección 2 quedan como assets/FX reutilizables, no como pilar de juego.
-
-- **Pilar:** Kiting y posicionamiento. Shooter isométrico "Doom" en mazmorras procedurales por salas.
-- **Bucle:** salas con grupos mixtos de enemigos → salida al final → siguiente piso con más densidad. Armas se recogen en el mapa.
-- **Tono:** Armas ruidosas y contundentes, enemigos legibles por silueta y velocidad.
+## 4. Diseño de Juego: Shooter Isométrico
 
 ### 4.1 Jugador
 | Aspecto | Decisión |
@@ -76,7 +74,7 @@ Valores numéricos finales (daño, cadencia, dispersión) quedan por definir en 
 3. **Fase C:** Tirador con banda de distancia, ráfagas y proyectiles enemigos.
 4. **Fase D:** Armas: pistola, escopeta, gatling, pesada con munición independiente y control táctil.
 5. **Fase E:** Encuentros por sala sobre el generador procedural y progresión por piso.
-6. **Fase F:** Tuning y verificación de 60 FPS (`cpu_ticks` ≤ 33514) con mezcla máxima de enemigos.
+6. **Fase F:** Tuning y verificación de 60 FPS en la DS con mezcla máxima de enemigos (presupuesto y método: `AGENTS.md` regla 6).
 
 ### 4.8 Decisiones Abiertas
 - Valores exactos de velocidad, HP y daño (tuning en juego).

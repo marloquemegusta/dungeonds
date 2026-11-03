@@ -8,6 +8,7 @@ Resúmenes acumulativos y auditables de cada entrega y avance de desarrollo en `
 - Dentro, el resumen `walkthrough.md` y sus evidencias visuales (GIFs, capturas) en `walkthroughs/<nombre-sesion>/assets/`.
 - Los assets se enlazan con rutas relativas al propio `.md` (por ejemplo `assets/foo.png` o `assets/foo.gif`).
 - Estos archivos se versionan en Git para mantener el historial vivo de evolución del proyecto.
+- Cada entrega añade una fila al final con el siguiente número libre y un enlace a una carpeta que exista. Muchas filas antiguas describen sistemas ya eliminados; el estado vigente está en `STATUS.md`.
 
 ## Índice de sesiones
 
@@ -27,13 +28,17 @@ Resúmenes acumulativos y auditables de cada entrega y avance de desarrollo en `
 | 11 | Mejora de Rendimiento y Pipeline: Background Scroll Streaming, Stutter y Alineación de Pilares | [`11-perf-bg-scroll-and-rendering/`](11-perf-bg-scroll-and-rendering/walkthrough.md) | Completado |
 | 12 | Prototipo de combate: Lanza ósea (A y lápiz táctil) | [12-bone-lance-prototype](12-bone-lance-prototype/walkthrough.md) | Validado en emulador |
 | 13 | Escopeta de perdigones de hueso (5 astillas, <1 m) | [13-bone-shotgun-pellets](13-bone-shotgun-pellets/walkthrough.md) | Validado en emulador |
+| 13b | Transparencia de oclusión por frames alternados (flicker) | [`13-feat-occlusion-transparency/`](13-feat-occlusion-transparency/walkthrough.md) | Provisional; ver `TECHNICAL.md` §4.6 |
 | 14 | Lanza ósea procedural (astillas sin outline y motas espectrales) | [14-bone-particle-lance](14-bone-particle-lance/walkthrough.md) | Prototipo GIF validado en emulador |
 | 15 | Lanza más rápida sin azul y fragmentación al morir | [15-bone-projectile-revision](15-bone-projectile-revision/walkthrough.md) | Validado en DeSmuME |
 | 16 | DS Shader Lab interactivo, selector de FBX y tamaño de sprite en píxeles | [`16-shader-lab-interactive/`](16-shader-lab-interactive/walkthrough.md) | Completado |
 | 17 | Shader Lab importa FBX sin buscar sidecars .fbm | [`17-shader-fbx-image-search/`](17-shader-fbx-image-search/walkthrough.md) | Verificado con Blender |
 | 18 | Diagnóstico de la carga y render lento de Mario en Shader Lab | [`18-profile-mario-vs-hero/`](18-profile-mario-vs-hero/walkthrough.md) | Medido en servidor y Blender |
-| 19 | Integración Modular del Dungeon 3D (FBX) en el Motor Nintendo DS | [`19-modular-3d-scifi-dungeon/`](19-modular-3d-scifi-dungeon/walkthrough.md) | Validado en DeSmuME (GIF) |
-| 23 | Reparación de puntos de colisión FBX y recorte de spans de oclusión | [`fbx-collision-perf-followup/`](fbx-collision-perf-followup/walkthrough.md) | ROM subida; validación física pendiente |
+| 19 | Integración Modular del Dungeon 3D (FBX) en el Motor Nintendo DS | (walkthrough no conservado en `main`) | Validado en DeSmuME (GIF) |
+| 20 | Navegación de la mazmorra FBX | (walkthrough no conservado en `main`) | Validación parcial |
+| 21 | Experimento de oclusión para la mazmorra FBX | (walkthrough no conservado en `main`) | No aceptado |
+| 22 | Rejilla de colisión FBX y parada en muro | (walkthrough no conservado en `main`) | Validación parcial |
+| 23 | Reparación de puntos de colisión FBX y recorte de spans de oclusión | (walkthrough no conservado en `main`) | ROM subida; validación física pendiente |
 | 24 | Diagnóstico A/B de la regresión de rendimiento FBX | [`full3d-performance-gap/`](full3d-performance-gap/walkthrough.md) | Medido en DeSmuME; optimización arquitectónica pendiente |
 | 25 | HUD FPS y diagnóstico de rendimiento en Nintendo DSi | [`fps-hud/`](fps-hud/walkthrough.md) | Fix ARM9 comprometido; carga FTP fallida; prueba DSi pendiente |
 | 26 | Perfilado de tres rutas para el suelo FBX | [`fbx-floor-render-options/`](fbx-floor-render-options/walkthrough.md) | Ring genérico + sync VBlank; DSi confirmada cualitativamente |
@@ -77,15 +82,8 @@ Resúmenes acumulativos y auditables de cada entrega y avance de desarrollo en `
 | 64 | Cálculo Automático de Ticks/Frame (AnimTicks) y Persistencia del Botón de Descarga ZIP | [`fix-lab-autoticks-and-zip-btn/`](fix-lab-autoticks-and-zip-btn/walkthrough.md) | Completado (Persistencia garantizada de `#downloadPackageBtn` antes, durante y después del render con `#renderBtn`, cálculo automático de `animTicks` a 60 Hz desde `clip.duration`, override manual `userEdited`, telemetría `#strideMetricsHint` con `speed8.8`, verificado en Playwright headless) |
 | 65 | Nombres Cortos de Exportación ZIP (Anti MAX_PATH) y Reactividad de Inclinación de Cuello / Cabeza | [`fix-lab-zip-names-and-neck-tilt/`](fix-lab-zip-names-and-neck-tilt/walkthrough.md) | Completado (Campos editables #exportCharName / #exportMapName <= 20 chars, rutas internas en ZIP <= 19 chars < 35 chars, inclinación de cuello reactiva en Three.js AnimationMixer y renderizado de frames, verificado en Playwright headless) |
 | 66 | Corrección Anatómica del Eje de Inclinación de Cuello y Sincronización Total del Input Numérico | [`fix-neck-pitch-axis-and-input/`](fix-neck-pitch-axis-and-input/walkthrough.md) | Completado (Eliminación del alias erróneo DOM, sincronización bidireccional inmediata del input numérico y slider, rotación por eje hombro-a-hombro proyectado con deltaX = 0 roll, verificado en Playwright headless en spacemarine, skeleton y demo) |
-
-
-
-- [Reparación de navegación de la mazmorra FBX](fbx-navigation-repair/walkthrough.md) — conversión y colisión para la escena FBX; incluye escenarios con estado real y límites de validación.
-- [Experimento de oclusión para la mazmorra FBX](fbx-occlusion-experiment/walkthrough.md) — prototipo de spans de profundidad; la verificación de máscara y el presupuesto de rendimiento siguen fallando.
-
-- [FBX collision grid and wall-stop check](fbx-collision-fix/walkthrough.md) — host tests and state-backed DeSmuME wall-stop scenario pass; doorway connectivity remains unverified.
-| — | Auditoría de saneamiento 2D/3D (colisión, oclusión, legacy) | [audit-saneamiento-2d3d](audit-saneamiento-2d3d/walkthrough.md) | Análisis |
-| — | Colisión y oclusión coherentes con el render del mapa | [map-export-coherence](map-export-coherence/walkthrough.md) | Validado en emulador |
-| 29 | Saneamiento 2D/3D: suelo isotrópico, código muerto y repo | [`saneamiento-2d3d/`](saneamiento-2d3d/walkthrough.md) | Validado en DeSmuME |
-| 30 | Oclusión exacta, transparencia compartida y base de pared oculta | [`fix-oclusion-siluetas/`](fix-oclusion-siluetas/walkthrough.md) | Validado en DeSmuME (sin captura de enemigo) |
-| 31 | Auditoría del motor 2D/3D y prototipo A (compositor directo en VRAM) | [`audit-motor-2d3d/`](audit-motor-2d3d/walkthrough.md) | Validado en DS (rendimiento) |
+| 67 | Auditoría de saneamiento 2D/3D (colisión, oclusión, legacy) | [audit-saneamiento-2d3d](audit-saneamiento-2d3d/walkthrough.md) | Análisis |
+| 68 | Colisión y oclusión coherentes con el render del mapa | [map-export-coherence](map-export-coherence/walkthrough.md) | Validado en emulador |
+| 69 | Saneamiento 2D/3D: suelo isotrópico, código muerto y repo | [`saneamiento-2d3d/`](saneamiento-2d3d/walkthrough.md) | Validado en DeSmuME |
+| 70 | Oclusión exacta, transparencia compartida y base de pared oculta | [`fix-oclusion-siluetas/`](fix-oclusion-siluetas/walkthrough.md) | Validado en DeSmuME (sin captura de enemigo) |
+| 71 | Auditoría del motor 2D/3D y prototipo A (compositor directo en VRAM) | [`audit-motor-2d3d/`](audit-motor-2d3d/walkthrough.md) | Validado en DS (rendimiento) |
