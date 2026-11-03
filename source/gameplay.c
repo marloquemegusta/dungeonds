@@ -13,28 +13,20 @@ const EnemyTuning g_enemy_tuning[NUM_ENEMY_TYPES] = {
     [ENEMY_TYPE_CHARGER] = {
         .max_hp = 60,             // [TUNABLE-PLACEHOLDER] 2 sniper hits (30 each)
         .speed = 293,             // [TUNABLE-PLACEHOLDER] 8.8 fixed: ~90% of the hero's 326 (g_characters)
-        .contact_damage = 1,      // one hit (the player has PLAYER_MAX_HP hits)
         .attack_cooldown = 30,    // [TUNABLE-PLACEHOLDER] frames between bites
-        .preferred_dist_min = 0,
         .preferred_dist_max = 16, // [TUNABLE-PLACEHOLDER] melee range (ground px)
     },
     [ENEMY_TYPE_SHOOTER] = {
-        .max_hp = 20,             // [TUNABLE-PLACEHOLDER] low HP
-        .speed = 120,             // [TUNABLE-PLACEHOLDER] slower positioning speed (0.47 px/f)
-        .contact_damage = 5,      // [TUNABLE-PLACEHOLDER] weak contact
-        .attack_cooldown = 60,    // [TUNABLE-PLACEHOLDER] burst cooldown (1s)
-        .preferred_dist_min = 40, // [TUNABLE-PLACEHOLDER] distance band min (px)
-        .preferred_dist_max = 80, // [TUNABLE-PLACEHOLDER] distance band max (px)
-        .los_range = 180,         // [TUNABLE-PLACEHOLDER] LOS detection range (px)
-        .alert_duration = 25,     // [TUNABLE-PLACEHOLDER] frames in ALERT (0.4s)
-        .search_duration = 90,    // [TUNABLE-PLACEHOLDER] frames in SEARCH (1.5s)
-        .los_lost_limit = 180,    // [TUNABLE-PLACEHOLDER] frames without LOS before SEARCH (3s)
-        .position_duration = 35,  // [TUNABLE-PLACEHOLDER] frames in POSITION before AIM
-        .aim_duration = 25,       // [TUNABLE-PLACEHOLDER] frames in AIM before BURST (0.4s)
+        .max_hp = 20,             // [TUNABLE-PLACEHOLDER] 1 sniper hit (30)
+        .speed = 180,             // [TUNABLE-PLACEHOLDER] 8.8 fixed: ~55% of the hero, enough to back off
+        .attack_cooldown = 70,    // [TUNABLE-PLACEHOLDER] pause between bursts (~1.2 s), it keeps moving
+        .preferred_dist_min = 56, // [TUNABLE-PLACEHOLDER] band: backs off closer than this (ground px)
+        .preferred_dist_max = 104,// [TUNABLE-PLACEHOLDER] closes in beyond this (ground px)
+        .position_duration = 30,  // [TUNABLE-PLACEHOLDER] frames settling before it telegraphs
+        .telegraph_duration = 18, // [TUNABLE-PLACEHOLDER] weapon flash before a burst (0.3 s)
         .burst_count = 3,         // [TUNABLE-PLACEHOLDER] 3 projectiles per burst
-        .burst_interval = 10,     // [TUNABLE-PLACEHOLDER] frames between shots (0.16s)
-        .projectile_speed = 384,  // [TUNABLE-PLACEHOLDER] 8.8 fixed: 1.5 px/frame (slow)
-        .projectile_damage = 8    // [TUNABLE-PLACEHOLDER] damage per projectile
+        .burst_interval = 10,     // [TUNABLE-PLACEHOLDER] frames between burst shots
+        .projectile_speed = 384   // [TUNABLE-PLACEHOLDER] 8.8 fixed: 1.5 px/frame (slow, dodgeable)
     }
 };
 

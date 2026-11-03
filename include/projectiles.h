@@ -10,7 +10,7 @@ typedef enum {
     PROJ_LINEAR_SLOW
 } ProjectileType;
 
-#define MAX_ENEMY_PROJECTILES 16
+#define MAX_ENEMY_PROJECTILES 32   // 10 enemies x bursts of 3 with ~150 frames of flight
 
 typedef struct {
     int active;
@@ -21,7 +21,7 @@ typedef struct {
     fixed vy;         // 8.8 fixed world velocity Y
     int life;         // remaining lifetime in frames
     int max_life;     // total lifetime
-    int damage;       // damage dealt on hit
+    int height;       // px above the ground at which it flies (the muzzle height)
 } EnemyProjectile;
 
 extern EnemyProjectile g_enemy_projectiles[MAX_ENEMY_PROJECTILES];
@@ -29,7 +29,7 @@ extern EnemyProjectile g_enemy_projectiles[MAX_ENEMY_PROJECTILES];
 void enemy_projectiles_init(void);
 
 // Spawns a slow linear projectile moving with velocity (vx, vy)
-EnemyProjectile *enemy_projectile_spawn_linear(fixed x, fixed y, fixed vx, fixed vy, int damage, int life);
+EnemyProjectile *enemy_projectile_spawn_linear(fixed x, fixed y, fixed vx, fixed vy, int height, int life);
 
 // Updates all enemy projectiles: movement, wall collision, player collision, lifetime.
 void enemy_projectiles_update(fixed player_x, fixed player_y);

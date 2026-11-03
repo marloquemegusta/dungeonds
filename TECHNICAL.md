@@ -68,13 +68,10 @@ Origen: `walkthroughs/audit-saneamiento-2d3d/`. Lo ya resuelto (colisión/oclusi
 - **Transparencias tras paredes:** diseño sin decidir; ver §4.6.
 - Resuelto (ver `STATUS.md`): movimiento/colisión isotrópicos en suelo (`GROUND_DY2`, elipse 6×3), ancla única exportada, oclusión exacta por consulta directa de tramos (sin mapa 4×4 ni reconstrucción por cámara).
 
-### 4.2. Gameplay (preliminar, diferido)
-- Lead del tirador anulado: `(player_vx * travel_frames) >> 8` en `enemy_ai.c` divide la predicción entre 256 (quitar el `>> 8`).
-- Fallback de spawn de `encounters_spawn_wave` con coordenadas del mapa antiguo (380,227) y centinela `anchor == (0,0)`.
-- `invuln_timer` se decrementa pero nunca se asigna ni se consulta en `player_apply_damage`: sin i-frames.
-- Pool de pickups (`MAX_PICKUPS` 16) sin expiración; `pickup_spawn` devuelve NULL en silencio y se pierden drops. Los pickups quedan fuera de la prueba de diversión (`DESIGN.md` §4).
-- LOS (`los.c`) bloquea con `flags == 3` y las balas con bit `0x02`; el melee del charger no comprueba muros.
-- Diseño no implementado: navegación BFS/campo de distancias (los enemigos se atascan en esquinas; requisito de la prueba, `DESIGN.md` §4.6).
+### 4.2. Gameplay
+- Fallback de spawn de `encounters_spawn_wave` con coordenadas del mapa antiguo (380,227) y centinela `anchor == (0,0)`; el generador de oleadas por "plantas" se sustituye por arenas en la Fase D.
+- `los.c` bloquea la visión con `flags == 3`, las balas con el bit `0x02` y los cuerpos con el `0x01`. Para decidir si un enemigo puede disparar o morder usa `bullet_line_is_free` y `line_is_walkable` (`collision.c`), no solo la visión.
+- Resuelto (ver `STATUS.md`, v0.1): lead del tirador, i-frames, pickups, navegación BFS (`navfield.c`), mordisco a través de muros.
 
 ### 4.3. Código muerto y acoplamiento
 - `tools/convert_iso_to_c.py` (invocado por `tools/build-view.ps1`) todavía emite `dungeon_data`; ejecutarlo volvería a meter ~737 KB en la ROM. Separar su salida de `player_sprite`.

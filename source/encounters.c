@@ -176,9 +176,6 @@ int encounters_spawn_wave(EncounterManager *mgr, Enemy *enemies, int max_enemies
         e->knock_vx = 0;
         e->knock_vy = 0;
         e->stun_timer = 0;
-        e->last_seen_x = 0;
-        e->last_seen_y = 0;
-        e->los_lost_timer = 0;
         e->burst_shots_left = 0;
         e->burst_interval_timer = 0;
         e->strafe_dir = (spawned & 1) ? 1 : -1;

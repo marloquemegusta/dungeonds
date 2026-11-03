@@ -627,6 +627,31 @@ static void draw_hit_spark(uint16_t *buffer, int x, int y, int cam_x, int cam_y,
     }
 }
 
+// Shooter telegraph (DESIGN.md 4.5): the weapon glows at its muzzle before a burst, pulsing
+// faster and bigger as the shot gets closer. Same muzzle table as the player.
+static void bone_effect_pixel(uint16_t *buffer, int x, int y, int cam_x, int cam_y, uint16_t color);
+static void draw_telegraph_flash(uint16_t *buffer, const Enemy *e, int cam_x, int cam_y) {
+    const int8_t *m = g_character_muzzle[e->char_id][e->dir][e->frame];
+    int x = TO_INT(e->x) + m[0];
+    int y = TO_INT(e->y) + m[1] - m[2];
+    int left = e->state_timer;                      // frames until the burst
+    int big = left < 8;
+    uint16_t core = RGB15(24, 31, 20) | BIT(15);
+    uint16_t glow = RGB15(2, 29, 6) | BIT(15);
+    if ((left & (big ? 1 : 2)) == 0) return;        // blink
+    bone_effect_pixel(buffer, x, y, cam_x, cam_y, core);
+    bone_effect_pixel(buffer, x - 1, y, cam_x, cam_y, glow);
+    bone_effect_pixel(buffer, x + 1, y, cam_x, cam_y, glow);
+    bone_effect_pixel(buffer, x, y - 1, cam_x, cam_y, glow);
+    bone_effect_pixel(buffer, x, y + 1, cam_x, cam_y, glow);
+    if (big) {
+        bone_effect_pixel(buffer, x - 2, y, cam_x, cam_y, glow);
+        bone_effect_pixel(buffer, x + 2, y, cam_x, cam_y, glow);
+        bone_effect_pixel(buffer, x, y - 2, cam_x, cam_y, glow);
+        bone_effect_pixel(buffer, x, y + 2, cam_x, cam_y, glow);
+    }
+}
+
 static void draw_enemy(uint16_t *buffer, const Enemy *e, int cam_x, int cam_y) {
     int px = player_screen_x(e->x, e->y);
     int py = player_screen_y(e->x, e->y);
@@ -644,6 +669,8 @@ static void draw_enemy(uint16_t *buffer, const Enemy *e, int cam_x, int cam_y) {
                 cam_x, cam_y, s_draw_item_depth);
     if (e->hit_timer > 0)
         draw_hit_spark(buffer, px, py - 24, cam_x, cam_y, e->hit_timer);
+    if (e->state == ENEMY_STATE_TELEGRAPH)
+        draw_telegraph_flash(buffer, e, cam_x, cam_y);
 }
 
 static void bone_effect_pixel(uint16_t *buffer, int x, int y, int cam_x, int cam_y, uint16_t color) {

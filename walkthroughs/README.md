@@ -90,3 +90,4 @@ Resúmenes acumulativos y auditables de cada entrega y avance de desarrollo en `
 | 72 | Diseño de gameplay mínimo (prueba de diversión) | [`diseno-gameplay-minimo/`](diseno-gameplay-minimo/walkthrough.md) | Diseño (sin código) |
 | 73 | v0.1 Fase A: armas, disparo desde el arma y pantalla superior igual a la inferior | [`v0.1/`](v0.1/walkthrough.md) | Validado en DS (rendimiento) |
 | 74 | v0.1 Fase B: cargador con navegación BFS | [`v0.1/`](v0.1/walkthrough.md) | Validado en DeSmuME y host (pendiente DS) |
+| 75 | v0.1 Fase C: tirador necrón (banda, telegraph, ráfaga de 3) | [`v0.1/`](v0.1/walkthrough.md) | Validado en DeSmuME (pendiente DS) |

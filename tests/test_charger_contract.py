@@ -11,7 +11,7 @@ MAIN_C = (ROOT / "source" / "main.c").read_text(encoding="utf-8")
 
 
 def charger_function():
-    return AI_C.split("static void update_charger")[1].split("static void update_shooter")[0]
+    return AI_C.split("static void update_charger")[1].split("// Necron shooter")[0]
 
 
 class ChargerContractTest(unittest.TestCase):

@@ -21,20 +21,14 @@ typedef enum {
 typedef struct {
     int max_hp;             // [TUNABLE-PLACEHOLDER] base health points
     fixed speed;            // [TUNABLE-PLACEHOLDER] 8.8 fixed movement speed
-    int contact_damage;     // [TUNABLE-PLACEHOLDER] melee/contact damage dealt to player
-    int attack_cooldown;    // [TUNABLE-PLACEHOLDER] frames between attacks / burst cooldown
-    int preferred_dist_min; // [TUNABLE-PLACEHOLDER] min distance band (world pixels)
-    int preferred_dist_max; // [TUNABLE-PLACEHOLDER] max distance band (world pixels)
-    int los_range;          // [TUNABLE-PLACEHOLDER] detection radius (world pixels)
-    int alert_duration;     // [TUNABLE-PLACEHOLDER] frames in ALERT before action
-    int search_duration;    // [TUNABLE-PLACEHOLDER] frames in SEARCH before IDLE
-    int los_lost_limit;     // [TUNABLE-PLACEHOLDER] frames without LOS before SEARCH (~3s = 180)
-    int position_duration;  // [TUNABLE-PLACEHOLDER] frames in POSITION before AIM
-    int aim_duration;       // [TUNABLE-PLACEHOLDER] frames in AIM before BURST
-    int burst_count;        // [TUNABLE-PLACEHOLDER] number of projectiles per burst
-    int burst_interval;     // [TUNABLE-PLACEHOLDER] frames between burst shots
-    fixed projectile_speed; // [TUNABLE-PLACEHOLDER] 8.8 fixed projectile speed
-    int projectile_damage;  // [TUNABLE-PLACEHOLDER] damage per projectile
+    int attack_cooldown;    // [TUNABLE-PLACEHOLDER] frames between bites (charger) / bursts (shooter)
+    int preferred_dist_min; // [TUNABLE-PLACEHOLDER] min distance band (ground px); charger: 0
+    int preferred_dist_max; // [TUNABLE-PLACEHOLDER] max distance band (ground px); charger: melee range
+    int position_duration;  // [TUNABLE-PLACEHOLDER] shooter: frames settling before it telegraphs
+    int telegraph_duration; // [TUNABLE-PLACEHOLDER] shooter: frames of weapon flash before a burst
+    int burst_count;        // [TUNABLE-PLACEHOLDER] shooter: projectiles per burst
+    int burst_interval;     // [TUNABLE-PLACEHOLDER] shooter: frames between burst shots
+    fixed projectile_speed; // [TUNABLE-PLACEHOLDER] shooter: 8.8 fixed projectile speed
 } EnemyTuning;
 
 extern const EnemyTuning g_enemy_tuning[NUM_ENEMY_TYPES];
@@ -45,14 +39,12 @@ extern const EnemyTuning g_enemy_tuning[NUM_ENEMY_TYPES];
 
 #define MAX_GAMEPLAY_ENEMIES 10
 
+// Charger: CHASE <-> ATTACK. Shooter: POSITION -> TELEGRAPH -> BURST -> COOLDOWN -> POSITION.
 typedef enum {
-    ENEMY_STATE_IDLE = 0,
-    ENEMY_STATE_ALERT,
-    ENEMY_STATE_CHASE,
+    ENEMY_STATE_CHASE = 0,
     ENEMY_STATE_ATTACK,
-    ENEMY_STATE_SEARCH,
     ENEMY_STATE_POSITION,
-    ENEMY_STATE_AIM,
+    ENEMY_STATE_TELEGRAPH,
     ENEMY_STATE_BURST,
     ENEMY_STATE_COOLDOWN,
     ENEMY_STATE_DEAD
@@ -72,13 +64,10 @@ struct Enemy {
     EnemyType type;
     EnemyState state;
     int state_timer;
-    fixed last_seen_x;
-    fixed last_seen_y;
-    int los_lost_timer;
     int burst_shots_left;
     int burst_interval_timer;
     int strafe_dir;
-    int has_los;
+    int has_los;        // cached view of the player (bit flags, refreshed every few frames)
     fixed knock_vx;     // 8.8 shove velocity applied while stunned
     fixed knock_vy;
     int stun_timer;     // frames the enemy stays staggered after a shotgun hit

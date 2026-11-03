@@ -53,3 +53,24 @@ El segundo pase de render cuesta ~5.000 ticks de media y no añade pérdidas de 
 
 ### Revisión de código (Sonnet)
 Sin fallos de memoria ni carreras. Corregidos: casilla propia con centro bloqueado (el cargador dejaba de seguir el campo), objetivo elegido por orden de vecinos en vez de por cercanía, mordisco y aproximación directa a través de muros bajos, comentario del presupuesto (~10 frames, no ~4). Pendiente de medir en la DS: coste de `nav_update` (estimado ~6 % del frame, Fase E).
+
+## Fase C - Tirador necrón (DESIGN.md 4.5)
+
+### Qué cambia
+- **FSM:** `POSITION -> TELEGRAPH -> BURST(3) -> COOLDOWN -> POSITION` (fuera `IDLE`, `ALERT`, `SEARCH`, `AIM` y los campos de detección). `ENEMY_STATE_CHASE` pasa a valer 0.
+- **Banda de distancia** `[56, 104]` px de suelo: retrocede si el jugador está más cerca, se acerca si está más lejos o sin tiro limpio (recto si el cuerpo puede caminarlo, si no por el campo de navegación) y hace strafe entre medias (perpendicular en el suelo 2:1; invierte si choca). Durante la pausa entre ráfagas sigue moviéndose.
+- **Telegraph:** 18 frames (0,3 s) quieto, con un destello verde que parpadea más rápido y más grande en la punta del arma (misma tabla de bocas que el jugador).
+- **Ráfaga:** 3 proyectiles lentos (1,5 px/frame) que salen de la boca a su altura, apuntados con lead de la mitad del desplazamiento previsto del jugador. El lead anterior se dividía entre 256 (no existía). Solo telegrafía con línea de bala limpia (`bullet_line_is_free`).
+- **Proyectiles:** cabeza, cuerpo verde y cola corta, dibujados a la altura de la boca; golpean con una elipse en métrica de suelo; un golpe resta un punto de vida. Pool de 32.
+- Un empujón de la escopeta cancela un telegraph o una ráfaga en curso (contrajuego).
+
+### Evidencia (DeSmuME)
+- [Telegraph y ráfaga](assets/faseC_tirador_telegraph_rafaga.png): destello en la punta del rifle y tres proyectiles en línea hacia el jugador (`shooter_telegraph_burst`). Con una captura cada 4 frames, la cabeza de proyectil pasa de 2 a 4 y 6 píxeles (1, 2, 3 proyectiles) y el ciclo se repite cada ~140 frames = posición 30 + telegraph 18 + ráfaga ~20 + pausa 70.
+- [Mantiene la distancia](assets/faseC_tirador_mantiene_distancia.png): con el jugador avanzando hacia ellos durante 240 frames (`shooter_keeps_distance`, modo dios) los tiradores dan vueltas por los flancos sin dejarse pisar.
+- `tests/test_shooter_contract.py` (11 pruebas sobre el C real) sustituye al test espejo `test_enemy_fsm.py`, que modelaba una FSM que ya no existe.
+
+### Revisión de código (Sonnet)
+Sin fallos graves. Corregidos: pool de proyectiles (16 -> 32), disparo que nace dentro de un muro (arranca en los pies), empujón que cancela el telegraph, parpadeo de frame al empezar el destello. Sin tocar: tirador que sigue disparando si el jugador se esconde durante la ráfaga (las balas mueren en el muro) y un posible vaivén en la banda si existieran celdas que bloquean balas pero no cuerpos (no hay en este mapa; se comprobará con las arenas).
+
+### Pendiente
+- Tuning de banda, velocidad y cadencia en la DS (Fase E).

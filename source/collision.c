@@ -99,3 +99,14 @@ int line_is_walkable(int x0, int y0, int x1, int y1) {
     }
     return 1;
 }
+
+int bullet_line_is_free(int x0, int y0, int x1, int y1) {
+    int dx = x1 - x0, dy = y1 - y0;
+    int adx = dx < 0 ? -dx : dx;
+    int ady = dy < 0 ? -dy : dy;
+    int steps = ((adx > ady ? adx : ady) >> 2) + 1;           // a sample every ~4 px
+    for (int i = 1; i < steps; i++) {
+        if (!bullet_position_is_free(TO_FIXED(x0 + dx * i / steps), TO_FIXED(y0 + dy * i / steps))) return 0;
+    }
+    return 1;
+}

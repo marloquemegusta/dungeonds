@@ -21,4 +21,7 @@ int sweep_position(fixed *x, fixed *y, fixed dx, fixed dy);
 // footprint every few px (endpoints excluded). Line of sight alone misses low walls.
 int line_is_walkable(int x0, int y0, int x1, int y1);
 
+// True when nothing that stops bullets lies on the straight line (endpoints excluded).
+int bullet_line_is_free(int x0, int y0, int x1, int y1);
+
 #endif // COLLISION_MODULE_H

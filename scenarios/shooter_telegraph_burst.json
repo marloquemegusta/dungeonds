@@ -1,0 +1,54 @@
+{
+  "name": "shooter_telegraph_burst",
+  "steps": [
+    {
+      "frames": 10
+    },
+    {
+      "button_down": "L",
+      "frames": 1
+    },
+    {
+      "button_down": "R",
+      "frames": 1
+    },
+    {
+      "button_down": "B",
+      "frames": 2
+    },
+    {
+      "button_up": "B",
+      "frames": 1
+    },
+    {
+      "button_up": "R",
+      "frames": 1
+    },
+    {
+      "frames": 1,
+      "capture": "start"
+    },
+    {
+      "button_up": "L",
+      "frames": 1
+    },
+    {
+      "frames": 300,
+      "capture_sequence": "s",
+      "capture_every": 4
+    },
+    {
+      "frames": 1,
+      "capture": "end"
+    }
+  ],
+  "assertions": {
+    "screen_changes": [
+      {
+        "from": "start",
+        "to": "end",
+        "min_changed_pixels": 100
+      }
+    ]
+  }
+}
