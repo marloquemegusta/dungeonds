@@ -340,12 +340,17 @@ static void blit_stride(uint16_t *buffer, const uint16_t *src, int pitch, int sw
         if (depth >= 0 && occlusion_may_block_span(world_x0, world_x1, world_y, depth)) {
             int local_y = world_y - s_occlusion_cam_y;
             int see_through = (s_draw_item_is_player || s_player_see_through) && (s_frame_index & 1);
+            uint32_t cell_row = ((uint32_t)local_y >> OCCLUSION_DEPTH_SHIFT) * OCCLUSION_DEPTH_W;
+            const int16_t *depth_row = &s_occlusion_depth[cell_row];
+            const uint16_t *cover_row = &s_occlusion_cover[cell_row];
+            int row_shift = (local_y & 3) << 2;
             for (; x < sx1; x++) {
                 uint16_t color = srow[x];
-                int world_x = left + x;
                 if (color & BIT(15)) {
-                    int occluded = ((uint32_t)world_x < WORLD_W) &&
-                        occlusion_pixel_hidden(world_x - s_occlusion_cam_x, local_y, depth);
+                    int local_x = left + x - s_occlusion_cam_x;
+                    uint32_t cell = (uint32_t)local_x >> OCCLUSION_DEPTH_SHIFT;
+                    int occluded = depth_row[cell] > depth &&
+                        ((cover_row[cell] >> (row_shift + (local_x & 3))) & 1);
                     if (!occluded || see_through) drow[x] = color;
                 }
             }
@@ -424,6 +429,8 @@ static void draw_shadow_mask(uint16_t *buffer, const uint8_t *mask, int sw, int 
     for (int y = sy0; y < sy1; y++) {
         uint16_t *dst_row = &buffer[(oy + y) * SCREEN_W + ox];
         int row_offset = y * sw;
+        int check_hidden = !(s_draw_item_is_player && s_player_see_through) &&
+            occlusion_may_block_span(left + sx0, left + sx1, top + y, depth);
         for (int x = sx0; x < sx1; x++) {
             int pixel = row_offset + x;
             uint8_t packed = mask[pixel >> 1];
@@ -431,7 +438,7 @@ static void draw_shadow_mask(uint16_t *buffer, const uint8_t *mask, int sw, int 
             if (nibble > 0) {
                 int world_x = left + x, world_y = top + y;
                 if (world_x < 0 || world_x >= WORLD_W || world_y < 0 || world_y >= WORLD_H) continue;
-                if (!(s_draw_item_is_player && s_player_see_through) &&
+                if (check_hidden &&
                     occlusion_pixel_hidden(world_x - s_occlusion_cam_x, world_y - s_occlusion_cam_y, depth)) continue;
                 uint16_t c = dst_row[x] ? dst_row[x] : world_floor_color(world_x, world_y);
                 if (c != (VOID_COLOR | BIT(15))) {
@@ -561,33 +568,42 @@ static void update_screen_hardware_bg(int is_sub, u16 *map_ptr, int cam_x, int c
 // While the player is see-through, mark where hidden wall footprints meet the
 // floor: the collision grid edge, drawn only over occluder surfaces (floor already shows it).
 #define WALL_BASE_COLOR (RGB15(3, 3, 6) | BIT(15))
+__attribute__((target("arm"), optimize("O3"), noinline))
 static void draw_hidden_wall_base(uint16_t *buffer, int cam_x, int cam_y, int psx, int psy) {
-    int cx0 = (psx - 32) / COLLISION_SCALE, cx1 = (psx + 32) / COLLISION_SCALE;
-    int cy0 = (psy - 24) / COLLISION_SCALE, cy1 = (psy + 24) / COLLISION_SCALE;
+    enum { BOX_CELLS_W = 14, BOX_CELLS_H = 10 };
+    int cx0 = (psx - 28) / COLLISION_SCALE;
+    int cy0 = (psy - 20) / COLLISION_SCALE;
     if (cx0 < 1) cx0 = 1;
     if (cy0 < 1) cy0 = 1;
-    if (cx1 > COLLISION_W - 2) cx1 = COLLISION_W - 2;
-    if (cy1 > COLLISION_H - 2) cy1 = COLLISION_H - 2;
-    for (int cy = cy0; cy <= cy1; cy++) {
-        for (int cx = cx0; cx <= cx1; cx++) {
-            if (!(world_collision_flags_rt(cx, cy) & 0x01)) continue;
-            int wx = cx * COLLISION_SCALE, wy = cy * COLLISION_SCALE;
-            int up = !(world_collision_flags_rt(cx, cy - 1) & 0x01);
-            int dn = !(world_collision_flags_rt(cx, cy + 1) & 0x01);
-            int lf = !(world_collision_flags_rt(cx - 1, cy) & 0x01);
-            int rt = !(world_collision_flags_rt(cx + 1, cy) & 0x01);
-            if (!(up | dn | lf | rt)) continue;
+    if (cx0 + BOX_CELLS_W > COLLISION_W - 1) cx0 = COLLISION_W - 1 - BOX_CELLS_W;
+    if (cy0 + BOX_CELLS_H > COLLISION_H - 1) cy0 = COLLISION_H - 1 - BOX_CELLS_H;
+
+    // Blocked bit of the three rows around the current one, read once per row.
+    uint8_t rows[3][BOX_CELLS_W + 2];
+    for (int r = 0; r < 3; r++)
+        for (int c = 0; c < BOX_CELLS_W + 2; c++)
+            rows[r][c] = world_collision_flags_rt(cx0 - 1 + c, cy0 - 1 + r) & 0x01;
+
+    for (int j = 0; j < BOX_CELLS_H; j++) {
+        for (int i = 0; i < BOX_CELLS_W; i++) {
+            if (!rows[1][i + 1]) continue;
+            int wx = (cx0 + i) * COLLISION_SCALE, wy = (cy0 + j) * COLLISION_SCALE;
+            // Cheap reject: the cell must touch an occluder at all.
+            int lx = wx - s_occlusion_cam_x, ly = wy - s_occlusion_cam_y;
+            if ((uint32_t)lx >= SCREEN_W || (uint32_t)ly >= SCREEN_H) continue;
+            if (s_occlusion_depth[(ly >> OCCLUSION_DEPTH_SHIFT) * OCCLUSION_DEPTH_W + (lx >> OCCLUSION_DEPTH_SHIFT)] < 0 &&
+                s_occlusion_depth[(ly >> OCCLUSION_DEPTH_SHIFT) * OCCLUSION_DEPTH_W + ((lx + 3) >> OCCLUSION_DEPTH_SHIFT)] < 0) continue;
+            int up = !rows[0][i + 1], dn = !rows[2][i + 1];
+            int lf = !rows[1][i], rt = !rows[1][i + 2];
             for (int k = 0; k < COLLISION_SCALE; k++) {
-                int px[4] = { wx + k, wx + k, wx, wx + COLLISION_SCALE - 1 };
-                int py[4] = { wy, wy + COLLISION_SCALE - 1, wy + k, wy + k };
-                int on[4] = { up, dn, lf, rt };
-                for (int e = 0; e < 4; e++) {
-                    if (!on[e]) continue;
-                    int sx = px[e] - cam_x, sy = py[e] - cam_y;
-                    if ((uint32_t)sx >= SCREEN_W || (uint32_t)sy >= SCREEN_H) continue;
-                    if (occlusion_pixel_hidden(sx - (s_occlusion_cam_x - cam_x), sy - (s_occlusion_cam_y - cam_y), -1))
-                        buffer[sy * SCREEN_W + sx] = WALL_BASE_COLOR;
-                }
+                if (up && occlusion_pixel_hidden(lx + k, ly, -1))
+                    buffer[(wy - cam_y) * SCREEN_W + (wx + k - cam_x)] = WALL_BASE_COLOR;
+                if (dn && occlusion_pixel_hidden(lx + k, ly + 3, -1))
+                    buffer[(wy + 3 - cam_y) * SCREEN_W + (wx + k - cam_x)] = WALL_BASE_COLOR;
+                if (lf && occlusion_pixel_hidden(lx, ly + k, -1))
+                    buffer[(wy + k - cam_y) * SCREEN_W + (wx - cam_x)] = WALL_BASE_COLOR;
+                if (rt && occlusion_pixel_hidden(lx + 3, ly + k, -1))
+                    buffer[(wy + k - cam_y) * SCREEN_W + (wx + 3 - cam_x)] = WALL_BASE_COLOR;
             }
         }
     }
