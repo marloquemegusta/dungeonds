@@ -5,7 +5,7 @@ Primero el estado necesario para retomar el trabajo sin depender del chat; despu
 ## Estado actual (2026-11-03)
 
 - **Rama base:** `main`. Última entrega integrada: auditoría del motor 2D/3D y prototipo A del compositor (`walkthroughs/audit-motor-2d3d/`).
-- **Juego:** shooter isométrico por salas (`DESIGN.md` §4). Gameplay preliminar; su deuda (`TECHNICAL.md` §4.2) está diferida a propósito.
+- **Juego:** prueba de diversión mínima en arenas cerradas (`DESIGN.md` §4): escopeta + francotirador, cargador + tirador. Su deuda de código está en `TECHNICAL.md` §4.2.
 - **Mapa:** `isometric_shooter_bl`, 1536×857 px (horneado a 1536×864), 40,42 px/m. Pipeline lab Three.js → baker → C, descrito en `TECHNICAL.md` §3.
 - **Render:** actores dibujados directamente en la página trasera del framebuffer de VRAM, limpieza por spans sucios y oclusión exacta al píxel por consulta de tramos (`TECHNICAL.md` §3.3). Medido en DS: CPU 1,58 ms de media y 12 de 2520 frames con más de un vblank.
 - **Personajes:** héroe (space marine), charger y necron, exportados por el lab a `assets/sprites/characters/<nombre>/`.
@@ -17,7 +17,7 @@ Primero el estado necesario para retomar el trabajo sin depender del chat; despu
 2. **Deuda del motor** (`TECHNICAL.md` §4.5): timestep, assets (paleta/compresión/NitroFS), pipeline de assets, acoplamiento.
 3. **Render 2.5D** (`TECHNICAL.md` §4.1): escala personaje/mapa y actores en la pantalla superior.
 4. **Data abort** intermitente en hardware sin causa conocida (`TECHNICAL.md` §4.4).
-5. **Gameplay:** fases de `DESIGN.md` §4.7 cuando el motor esté saneado.
+5. **Gameplay:** fases de `DESIGN.md` §4.8; antes, decidir la forma de los 3–4 mapas de arena (`DESIGN.md` §3).
 
 ---
 
@@ -58,3 +58,10 @@ Primero el estado necesario para retomar el trabajo sin depender del chat; despu
 - [x] Regla 5 de `AGENTS.md` corregida (umbral 560190 ticks / vblanks, no 33514).
 - [ ] Pendiente: rediseño de transparencias (parpadeo temporal), timestep, assets, pipeline y acoplamiento (`TECHNICAL.md` §4.5); validación visual en la DS por el usuario.
 - **Evidencia:** `walkthroughs/audit-motor-2d3d/walkthrough.md`.
+
+---
+
+## Sesión: Diseño de gameplay mínimo (2026-11-03)
+- [x] Entrevista de diseño: `DESIGN.md` §1 y §4 reescritos como prueba de diversión mínima (2 armas, 2 enemigos, 3–4 arenas cerradas, sin loot/munición/pickups/generador).
+- [ ] Pendiente: forma de los mapas de arena y sonido (`DESIGN.md` §3); implementación por fases (§4.8).
+- **Evidencia:** `walkthroughs/diseno-gameplay-minimo/walkthrough.md`.

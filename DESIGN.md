@@ -1,10 +1,11 @@
 # DESIGN.md - Documento de Diseño
 
 ## 1. Visión y Alcance
-- **Concepto:** shooter isométrico para Nintendo DS en mazmorras procedurales por salas, con tono gótico/grimdark (space marine contra necrones y bestias).
-- **Pilar:** kiting y posicionamiento. Armas ruidosas y contundentes, enemigos legibles por silueta y velocidad.
-- **Bucle:** salas con grupos mixtos de enemigos → salida al final → siguiente piso con más densidad. Las armas se recogen en el mapa.
-- **Historia de la dirección:** el proyecto nació como un Diablo de nigromancia con esbirros. Se descartó en una sesión de diseño (`/grill-me`) a favor del shooter descrito aquí. La lanza ósea y la muerte por fragmentos quedan como FX reutilizables, no como pilar de juego.
+- **Concepto:** shooter isométrico para Nintendo DS por salas-arena, con tono gótico/grimdark (space marine contra necrones y bestias).
+- **Pilar:** combate de Doom en isométrico: pocas armas contundentes con mucho *feel* (la escopeta como referencia), esquivar con strafe y salas como pequeño puzzle de prioridades (a quién matar primero y desde dónde), con el control preciso y el frenetismo de Hotline Miami.
+- **Bucle de la prueba de diversión (vigente):** arena cerrada → todos los enemigos se activan → al matarlos se abre la salida → siguiente arena, más difícil. 3–4 arenas hechas a mano.
+- **Fuera de la prueba, a propósito:** loot y progresión RPG (Diablo), mejoras entre salas (Vampire Survivors), generador procedural, enemigo grande. Se añaden solo si el combate pelado engancha; las armas se definen por parámetros para que una capa de mejoras pueda tocarlos sin rehacerlas.
+- **Historia de la dirección:** el proyecto nació como un Diablo de nigromancia con esbirros. Se descartó en una sesión de diseño (`/grill-me`) a favor del shooter. El 2026-11-03 una entrevista de diseño recortó el shooter a la prueba mínima de §4. La lanza ósea y la muerte por fragmentos quedan como FX reutilizables, no como pilar de juego.
 
 ## 2. Dirección de Arte y Pipeline
 - **Técnica:** sprites 2D pre-renderizados a partir de modelos 3D con animación esquelética (FBX/GLB).
@@ -17,66 +18,80 @@
 
 ## 3. Decisiones Abiertas
 - **Lectura tras paredes (transparencias):** qué se ve del personaje y de los enemigos detrás de una pared y cómo se marca la base de la pared. Sin decidir; preguntas en `TECHNICAL.md` §4.6. No se toca código hasta decidirlo aquí.
-- **Generador procedural de mazmorras:** sin definir (hoy hay un único mapa horneado, `isometric_shooter_bl`).
-- **Tuning de combate:** ver §4.8.
+- **Mapas de las arenas:** el mapa actual (`isometric_shooter_bl`) se sustituye por 3–4 mapas sencillos hechos a mano. Falta decidir su forma (tamaño, coberturas, pasillos) y cómo se encadenan.
+- **Sonido:** si entra en la prueba o después. Sin decidir.
+- **Tuning de combate:** números concretos; ver §4.7.
 
 ---
 
-## 4. Diseño de Juego: Shooter Isométrico
+## 4. Diseño de Juego: Prueba de Diversión Mínima
 
-### 4.1 Jugador
-| Aspecto | Decisión |
+Alcance de la prueba: 1 jugador, 2 armas, 2 enemigos, 3–4 arenas a mano. Sin loot, armadura, munición, pickups ni generador. Lo que no está en esta sección no se implementa para la prueba.
+
+### 4.1 Controles
+| Input | Acción |
 | :--- | :--- |
-| Movimiento | D-pad, 8 direcciones. |
-| Apuntado/disparo | Touchscreen (toque/stylus = dirección de disparo). Cambio de arma con L/R. |
-| Salud | 100 HP + armadura estilo Doom. Pickups de vida/armadura/munición en sala y como drop de enemigos. |
-| Munición | Separada por arma. Pistola base con munición infinita. |
+| D-pad | Mover en 8 direcciones. |
+| Stylus | Apuntar y disparar. La dirección es el vector del personaje al punto tocado (no un cursor): se puede disparar hacia enemigos fuera de la pantalla táctil. |
+| L | Cambiar entre las dos armas. |
 
-### 4.2 Armas (pistola base + 3)
-| Arma | Rol | Munición | Contra |
-| :--- | :--- | :--- | :--- |
-| Pistola | Cadencia baja, daño bajo, fallback infinito | ∞ | Tirador a distancia (precisión) |
-| Escopeta | Corto alcance, ráfaga de perdigones con dispersión, retroceso/recarga marcados | Media | Charger al acercarse |
-| Gatling | Fuego sostenido; arranque (spin-up) y ralentiza al jugador mientras dispara | Alta (gasta rápido) | Grupos; castiga al estático |
-| Pesada (sniper/cohete) | Muy lento, largo alcance, daño alto (cohete con explosión de área) | Escasa | Tirador lejano, priority targets |
+Solo L es accesible sin dejar de apuntar; ninguna mecánica de la prueba usa otro botón.
 
-Valores numéricos finales (daño, cadencia, dispersión) quedan por definir en `TECHNICAL.md` con tablas en punto fijo 8.8.
+### 4.2 Jugador
+- **Salud:** 4–5 golpes. Tras cada golpe, i-frames breves con destello rojo.
+- **Muerte:** reinicio instantáneo de la arena actual. Vida completa al empezar cada arena.
+- **Esquiva:** solo con movimiento (strafe). Sin dash.
 
-### 4.3 Enemigo: Charger (melee, estilo Pinky)
+### 4.3 Armas
+Ambas con munición infinita; las limita su ritmo y su coste de uso.
+
+| | Escopeta | Francotirador (cañón) |
+| :--- | :--- | :--- |
+| Disparo | Al tocar. Un disparo por toque: mantener el stylus no repite; hay que levantar y volver a tocar. | Al tocar, el personaje se para y aparece una línea de mira. Dispara al **levantar**. |
+| Ritmo | Bombeo marcado entre disparos. | Apuntado mínimo ~0,4 s; si se levanta antes no dispara. La línea cambia de color al estar lista. |
+| Proyectil | Ráfaga de perdigones con dispersión; letal de cerca, floja de lejos. | Atraviesa a todos los enemigos en línea. |
+| Efecto | Retroceso leve del jugador; empuja y frena un momento al enemigo. | — |
+| Cancelar | — | Arrastrar el stylus sobre el personaje o pulsar L. |
+| Rol | Respuesta al cargador. | Respuesta al tirador y a filas de enemigos en pasillos. |
+
+**Golpes para matar (objetivo de tuning):**
+
+| | Tirador | Cargador |
+| :--- | :--- | :--- |
+| Escopeta a quemarropa | 1 | 2–3 (cada uno lo empuja) |
+| Francotirador | 1 | 2 |
+
+### 4.4 Enemigo: Cargador (melee, estilo Pinky)
 - **Rol:** presión constante; castiga quedarse parado o acorralado.
-- **Comportamiento:** persecución continua y rápida, **sin telegraph**; muerde con cooldown corto al llegar a rango melee.
-- **Velocidad (supuesto recomendado, pendiente de tuning):** ~90% de la del jugador en recto con aceleración; alcanza si el jugador se acorrala o dispara parado. El jugador lo esquiva por velocidad y geometría.
-- **Stats (propuesta):** HP alto (≈ 3× el del tirador), daño melee moderado, sin drop garantizado salvo vida.
-- **FSM:** `IDLE → ALERT → CHASE → ATTACK(cooldown) → CHASE`; `CHASE → SEARCH` (pierde al jugador); `* → DEAD`.
+- **Comportamiento:** persigue rápido y sin pausa, sin telegraph; muerde con cooldown corto al llegar a rango melee. El empujón de la escopeta es su contra.
+- **Velocidad:** ~90 % de la del jugador (punto de partida de tuning).
+- **Requisito:** debe encontrar al jugador en toda la arena. La persecución en línea recta actual se atasca; hace falta navegación (campo de distancias BFS, §4.6). Sin ella la prueba no sirve.
+- **FSM:** `CHASE → ATTACK(cooldown) → CHASE`; `* → DEAD`.
 
-### 4.4 Enemigo: Tirador Necrón (a distancia)
-- **Rol:** control de espacio y presión a media distancia; obliga a moverse en vez de solo disparar.
-- **Comportamiento:** mantiene distancia media (banda `[d_min, d_max]`): retrocede si el jugador se acerca, avanza si se aleja, hace strafe lateral entre ráfagas.
-- **Ataque:** ráfaga de 3 proyectiles lentos esquivables, pausa entre ráfagas; apunta a la posición del jugador con ligero *lead* (predicción lineal con velocidad actual).
-- **Stats (propuesta):** HP bajo, daño por proyectil bajo-medio, drop de munición probable.
-- **FSM:** `IDLE → ALERT → POSITION (mantener banda/strafe) → AIM → BURST(3) → COOLDOWN → POSITION`; `POSITION → SEARCH`; `* → DEAD`.
+### 4.5 Enemigo: Tirador Necrón (a distancia, estilo Imp)
+- **Rol:** control de espacio; obliga a moverse en vez de solo disparar.
+- **Comportamiento:** mantiene una banda de distancia `[d_min, d_max]` (retrocede si el jugador se acerca, avanza si se aleja) y hace strafe lateral entre ráfagas.
+- **Ataque:** destello del arma ~0,3 s antes de cada ráfaga; ráfaga de 3 proyectiles lentos y esquivables, apuntados con ligero *lead* sobre la velocidad del jugador; pausa entre ráfagas.
+- **FSM:** `POSITION → TELEGRAPH → BURST(3) → COOLDOWN → POSITION`; `* → DEAD`.
 
-### 4.5 Percepción y Navegación (compartido)
-- **Detección:** línea de visión pura (Bresenham sobre `g_dungeon_collision`, sin máscaras baked) **o** radio de ruido al disparar (la gatling y la pesada tienen radio mayor). No hay niebla de guerra en el código actual: no existen fog explorado ni visible.
-- **Pérdida:** tras ~3 s sin ver al jugador pasan a `SEARCH` hacia la última posición conocida y luego a `IDLE`.
-- **Navegación:** sin FPU, punto fijo. Persecución directa si hay LOS; si no, seguir campo de distancias (BFS por tiles desde el jugador, recalculado cada N frames y amortizado entre enemigos).
+### 4.6 Arenas, Activación y Navegación
+- **Arena cerrada:** al entrar, la salida se cierra y todos los enemigos de la arena se activan a la vez. Sin detección por visión ni por ruido en la prueba (no hay estados `IDLE`/`ALERT`/`SEARCH`).
+- **Encuentros:** 3–4 arenas de dificultad creciente; orientativo: solo cargadores → solo tiradores → mezcla (tiradores lejos + un cargador) → mezcla densa.
+- **Navegación:** campo de distancias por BFS sobre la rejilla de colisión desde el jugador, recalculado cada N frames y amortizado; los enemigos bajan por el gradiente. Persecución directa si hay línea de visión.
 - **Separación:** repulsión simple entre enemigos para evitar apilamiento.
-- **Presupuesto:** IA amortizada (cada enemigo piensa 1 de cada N frames); 60 FPS bloqueado.
+- **Presupuesto:** IA amortizada; 60 FPS certificados en la DS (`AGENTS.md` regla 6).
 
-### 4.6 Sinergia de Encuentros
-- Charger empuja a mover; tirador penaliza el movimiento predecible. Mezclados obligan a elegir prioridad de objetivo.
-- Armas contrastan: escopeta para charger, pesada/pistola para tirador, gatling para grupos.
-- Progresión por piso: más densidad y proporción mixta, mismos dos arquetipos en esta fase.
+### 4.7 Game Feel
+- **Al impactar:** hitstop de 2–4 frames, destello blanco del enemigo, empujón (escopeta).
+- **Al disparar:** temblor de pantalla proporcional al arma; retroceso leve del jugador con la escopeta.
+- **Muerte:** fragmentos (FX existente, §2).
+- **Al recibir daño:** destello rojo e i-frames.
+- **Tuning pendiente:** velocidades, daño, dispersión, cadencias, bandas de distancia y nº máximo de enemigos en pantalla, en punto fijo, ajustados jugando en la DS.
 
-### 4.7 Plan por Fases
-1. **Fase A:** Sistema de entidades enemigas + HP/daño del jugador + pickups (punto fijo).
-2. **Fase B:** Charger con FSM, detección y persecución (escenario headless con muros reales).
-3. **Fase C:** Tirador con banda de distancia, ráfagas y proyectiles enemigos.
-4. **Fase D:** Armas: pistola, escopeta, gatling, pesada con munición independiente y control táctil.
-5. **Fase E:** Encuentros por sala sobre el generador procedural y progresión por piso.
-6. **Fase F:** Tuning y verificación de 60 FPS en la DS con mezcla máxima de enemigos (presupuesto y método: `AGENTS.md` regla 6).
-
-### 4.8 Decisiones Abiertas
-- Valores exactos de velocidad, HP y daño (tuning en juego).
-- Alcance y feedback de la pesada (sniper vs. cohete).
-- Número de enemigos simultáneos máximo en pantalla según presupuesto OAM/CPU.
+### 4.8 Plan por Fases
+1. **Fase A — Jugador y armas:** controles de §4.1, salud y reinicio de §4.2, escopeta y francotirador de §4.3 con el feel de §4.7.
+2. **Fase B — Cargador:** navegación BFS, persecución, mordisco, empujón.
+3. **Fase C — Tirador:** banda de distancia, telegraph y ráfagas.
+4. **Fase D — Arenas:** 3–4 mapas sencillos (tras decidir su forma, §3), cierre/apertura y encadenado.
+5. **Fase E — Tuning y 60 FPS en la DS** con la arena más densa.
+6. **Después, solo si engancha:** mejoras entre arenas, loot, enemigo grande, generador procedural.

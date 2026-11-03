@@ -87,3 +87,4 @@ Resúmenes acumulativos y auditables de cada entrega y avance de desarrollo en `
 | 69 | Saneamiento 2D/3D: suelo isotrópico, código muerto y repo | [`saneamiento-2d3d/`](saneamiento-2d3d/walkthrough.md) | Validado en DeSmuME |
 | 70 | Oclusión exacta, transparencia compartida y base de pared oculta | [`fix-oclusion-siluetas/`](fix-oclusion-siluetas/walkthrough.md) | Validado en DeSmuME (sin captura de enemigo) |
 | 71 | Auditoría del motor 2D/3D y prototipo A (compositor directo en VRAM) | [`audit-motor-2d3d/`](audit-motor-2d3d/walkthrough.md) | Validado en DS (rendimiento) |
+| 72 | Diseño de gameplay mínimo (prueba de diversión) | [`diseno-gameplay-minimo/`](diseno-gameplay-minimo/walkthrough.md) | Diseño (sin código) |

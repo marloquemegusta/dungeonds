@@ -68,9 +68,9 @@ Origen: `walkthroughs/audit-saneamiento-2d3d/`. Lo ya resuelto (colisión/oclusi
 - Lead del tirador anulado: `(player_vx * travel_frames) >> 8` en `enemy_ai.c` divide la predicción entre 256 (quitar el `>> 8`).
 - Fallback de spawn de `encounters_spawn_wave` con coordenadas del mapa antiguo (380,227) y centinela `anchor == (0,0)`.
 - `invuln_timer` se decrementa pero nunca se asigna ni se consulta en `player_apply_damage`: sin i-frames.
-- Pool de pickups (`MAX_PICKUPS` 16) sin expiración; `pickup_spawn` devuelve NULL en silencio y se pierden drops.
+- Pool de pickups (`MAX_PICKUPS` 16) sin expiración; `pickup_spawn` devuelve NULL en silencio y se pierden drops. Los pickups quedan fuera de la prueba de diversión (`DESIGN.md` §4).
 - LOS (`los.c`) bloquea con `flags == 3` y las balas con bit `0x02`; el melee del charger no comprueba muros.
-- Diseño no implementado: navegación BFS/campo de distancias (los enemigos se atascan en esquinas) y detección por ruido.
+- Diseño no implementado: navegación BFS/campo de distancias (los enemigos se atascan en esquinas; requisito de la prueba, `DESIGN.md` §4.6).
 
 ### 4.3. Código muerto y acoplamiento
 - `tools/convert_iso_to_c.py` (invocado por `tools/build-view.ps1`) todavía emite `dungeon_data`; ejecutarlo volvería a meter ~737 KB en la ROM. Separar su salida de `player_sprite`.
