@@ -948,3 +948,12 @@ Se solucionó el problema por el cual la pantalla táctil inferior se mostraba n
 - Pendiente: escala personaje/mapa, actores en pantalla superior, §4.2 gameplay (diferido).
 
 - Pendiente: un data abort intermitente en hardware sin causa identificada y otras anomalías por revisar; herramienta de diagnóstico `crashlog` disponible (desactivada por defecto, ver `TECHNICAL.md` §4.4).
+
+---
+
+## Sesión: Fix de oclusión de actores (2026-11-03)
+- [x] Máscara de oclusión exacta al píxel (`s_occlusion_cover`), sin bloques de suelo en siluetas.
+- [x] La transparencia del jugador tras una pared también muestra a los enemigos ocluidos.
+- [x] Sombra y borde de huella de colisión visibles mientras dura la transparencia.
+- [ ] Pendiente: escenario con enemigo tras la pared y medida de frame en hardware.
+- **Evidencia:** `walkthroughs/fix-oclusion-siluetas/walkthrough.md`.

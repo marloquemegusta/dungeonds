@@ -91,6 +91,10 @@ static int s_occlusion_cam_x = -999999;
 static int s_occlusion_cam_y = -999999;
 static int16_t s_occlusion_depth[OCCLUSION_DEPTH_W * OCCLUSION_DEPTH_H] __attribute__((aligned(4)));
 static int16_t s_occlusion_block_max[OCCLUSION_GRID_W * OCCLUSION_GRID_H] __attribute__((aligned(4)));
+// One bit per pixel of each 4x4 depth cell: bit (ly & 3) * 4 + (lx & 3) is set
+// where a run actually covers the pixel, so cell edges cut at pixel precision.
+static uint16_t s_occlusion_cover[OCCLUSION_DEPTH_W * OCCLUSION_DEPTH_H] __attribute__((aligned(4)));
+static int s_player_see_through;
 static int s_draw_item_depth;
 static int s_draw_item_is_player;
 static uint32_t s_frame_index = 0;
@@ -214,13 +218,17 @@ static void build_occlusion_depth_map(int cam_x, int cam_y) {
     uint32_t fill_val = 0xFFFFFFFF;
     swiFastCopy(&fill_val, s_occlusion_depth, COPY_MODE_FILL | (sizeof(s_occlusion_depth) >> 2));
     swiFastCopy(&fill_val, s_occlusion_block_max, COPY_MODE_FILL | (sizeof(s_occlusion_block_max) >> 2));
+    uint32_t zero_val = 0;
+    swiFastCopy(&zero_val, s_occlusion_cover, COPY_MODE_FILL | (sizeof(s_occlusion_cover) >> 2));
     int row_y0 = cam_y > 0 ? cam_y : 0;
     int row_y1 = cam_y + SCREEN_H < WORLD_H ? cam_y + SCREEN_H : WORLD_H;
     for (int run_y = row_y0; run_y < row_y1; run_y++) {
         uint32_t i = find_first_occlusion_run_in_row(run_y, cam_x);
         uint32_t row_end = g_dungeon_occlusion_row_start[run_y + 1];
-        int16_t *depth_row = &s_occlusion_depth[
-            ((uint32_t)(run_y - cam_y) >> OCCLUSION_DEPTH_SHIFT) * OCCLUSION_DEPTH_W];
+        uint32_t cell_row = (uint32_t)(run_y - cam_y) >> OCCLUSION_DEPTH_SHIFT;
+        int16_t *depth_row = &s_occlusion_depth[cell_row * OCCLUSION_DEPTH_W];
+        uint16_t *cover_row = &s_occlusion_cover[cell_row * OCCLUSION_DEPTH_W];
+        int row_shift = ((run_y - cam_y) & 3) * 4;
 
         for (; i < row_end; i++) {
             const DungeonOcclusionRun *run = &g_dungeon_occlusion_runs[i];
@@ -233,8 +241,15 @@ static void build_occlusion_depth_map(int cam_x, int cam_y) {
             if (world_x0 >= world_x1) continue;
             uint32_t depth_x0 = (uint32_t)(world_x0 - cam_x) >> OCCLUSION_DEPTH_SHIFT;
             uint32_t depth_x1 = (uint32_t)(world_x1 - cam_x - 1) >> OCCLUSION_DEPTH_SHIFT;
-            for (uint32_t x = depth_x0; x <= depth_x1; x++)
+            uint32_t first_bits = 0xF & (0xF << ((world_x0 - cam_x) & 3));
+            uint32_t last_bits = 0xF >> (3 - ((world_x1 - 1 - cam_x) & 3));
+            for (uint32_t x = depth_x0; x <= depth_x1; x++) {
+                uint32_t bits = 0xF;
+                if (x == depth_x0) bits &= first_bits;
+                if (x == depth_x1) bits &= last_bits;
+                cover_row[x] |= (uint16_t)(bits << row_shift);
                 if (run_depth > depth_row[x]) depth_row[x] = (int16_t)run_depth;
+            }
         }
     }
 
@@ -277,13 +292,22 @@ static inline int occlusion_may_block_span(int x0, int x1, int y, int actor_dept
     return 0;
 }
 
-static inline int occlusion_blocks_pixel(int x, int y, int actor_depth) {
-    int local_x = x - s_occlusion_cam_x;
-    int local_y = y - s_occlusion_cam_y;
+static inline uint8_t world_collision_flags_rt(int cx, int cy) {
+    uint32_t index = (uint32_t)cy * COLLISION_W + (uint32_t)cx;
+    return (g_dungeon_collision[index >> 2] >> ((index & 3) * 2)) & 0x03;
+}
+
+// Pixel-exact: the cell's depth must exceed the actor's and a run must cover this very pixel.
+static inline int occlusion_pixel_hidden(int local_x, int local_y, int actor_depth) {
     if ((uint32_t)local_x >= SCREEN_W || (uint32_t)local_y >= SCREEN_H) return 0;
-    uint32_t depth_x = (uint32_t)local_x >> OCCLUSION_DEPTH_SHIFT;
-    uint32_t depth_y = (uint32_t)local_y >> OCCLUSION_DEPTH_SHIFT;
-    return s_occlusion_depth[depth_y * OCCLUSION_DEPTH_W + depth_x] > actor_depth;
+    uint32_t cell = ((uint32_t)local_y >> OCCLUSION_DEPTH_SHIFT) * OCCLUSION_DEPTH_W +
+                    ((uint32_t)local_x >> OCCLUSION_DEPTH_SHIFT);
+    return s_occlusion_depth[cell] > actor_depth &&
+           ((s_occlusion_cover[cell] >> (((local_y & 3) << 2) + (local_x & 3))) & 1);
+}
+
+static inline int occlusion_blocks_pixel(int x, int y, int actor_depth) {
+    return occlusion_pixel_hidden(x - s_occlusion_cam_x, y - s_occlusion_cam_y, actor_depth);
 }
 
 // Blit a BGR555 sprite with arbitrary pitch, clipping opaque pixels against baked depth.
@@ -314,19 +338,15 @@ static void blit_stride(uint16_t *buffer, const uint16_t *src, int pitch, int sw
         int world_x0 = left + sx0;
         int world_x1 = left + sx1;
         if (depth >= 0 && occlusion_may_block_span(world_x0, world_x1, world_y, depth)) {
-            const int16_t *depth_row = &s_occlusion_depth[
-                ((uint32_t)(world_y - s_occlusion_cam_y) >> OCCLUSION_DEPTH_SHIFT) * OCCLUSION_DEPTH_W];
+            int local_y = world_y - s_occlusion_cam_y;
+            int see_through = (s_draw_item_is_player || s_player_see_through) && (s_frame_index & 1);
             for (; x < sx1; x++) {
                 uint16_t color = srow[x];
                 int world_x = left + x;
                 if (color & BIT(15)) {
                     int occluded = ((uint32_t)world_x < WORLD_W) &&
-                        (depth_row[(uint32_t)(world_x - s_occlusion_cam_x) >> OCCLUSION_DEPTH_SHIFT] > depth);
-                    if (!occluded) {
-                        drow[x] = color;
-                    } else if (s_draw_item_is_player && (s_frame_index & 1)) {
-                        drow[x] = color;
-                    }
+                        occlusion_pixel_hidden(world_x - s_occlusion_cam_x, local_y, depth);
+                    if (!occluded || see_through) drow[x] = color;
                 }
             }
             continue;
@@ -411,13 +431,8 @@ static void draw_shadow_mask(uint16_t *buffer, const uint8_t *mask, int sw, int 
             if (nibble > 0) {
                 int world_x = left + x, world_y = top + y;
                 if (world_x < 0 || world_x >= WORLD_W || world_y < 0 || world_y >= WORLD_H) continue;
-                int local_x = world_x - s_occlusion_cam_x;
-                int local_y = world_y - s_occlusion_cam_y;
-                if ((uint32_t)local_x < SCREEN_W && (uint32_t)local_y < SCREEN_H) {
-                    uint32_t depth_x = (uint32_t)local_x >> OCCLUSION_DEPTH_SHIFT;
-                    uint32_t depth_y = (uint32_t)local_y >> OCCLUSION_DEPTH_SHIFT;
-                    if (s_occlusion_depth[depth_y * OCCLUSION_DEPTH_W + depth_x] > depth) continue;
-                }
+                if (!(s_draw_item_is_player && s_player_see_through) &&
+                    occlusion_pixel_hidden(world_x - s_occlusion_cam_x, world_y - s_occlusion_cam_y, depth)) continue;
                 uint16_t c = dst_row[x] ? dst_row[x] : world_floor_color(world_x, world_y);
                 if (c != (VOID_COLOR | BIT(15))) {
                     dst_row[x] = apply_shadow_fast(c);
@@ -542,6 +557,41 @@ static void update_screen_hardware_bg(int is_sub, u16 *map_ptr, int cam_x, int c
 // ---------------------------------------------------------------------------
 // Composition
 // ---------------------------------------------------------------------------
+
+// While the player is see-through, mark where hidden wall footprints meet the
+// floor: the collision grid edge, drawn only over occluder surfaces (floor already shows it).
+#define WALL_BASE_COLOR (RGB15(3, 3, 6) | BIT(15))
+static void draw_hidden_wall_base(uint16_t *buffer, int cam_x, int cam_y, int psx, int psy) {
+    int cx0 = (psx - 32) / COLLISION_SCALE, cx1 = (psx + 32) / COLLISION_SCALE;
+    int cy0 = (psy - 24) / COLLISION_SCALE, cy1 = (psy + 24) / COLLISION_SCALE;
+    if (cx0 < 1) cx0 = 1;
+    if (cy0 < 1) cy0 = 1;
+    if (cx1 > COLLISION_W - 2) cx1 = COLLISION_W - 2;
+    if (cy1 > COLLISION_H - 2) cy1 = COLLISION_H - 2;
+    for (int cy = cy0; cy <= cy1; cy++) {
+        for (int cx = cx0; cx <= cx1; cx++) {
+            if (!(world_collision_flags_rt(cx, cy) & 0x01)) continue;
+            int wx = cx * COLLISION_SCALE, wy = cy * COLLISION_SCALE;
+            int up = !(world_collision_flags_rt(cx, cy - 1) & 0x01);
+            int dn = !(world_collision_flags_rt(cx, cy + 1) & 0x01);
+            int lf = !(world_collision_flags_rt(cx - 1, cy) & 0x01);
+            int rt = !(world_collision_flags_rt(cx + 1, cy) & 0x01);
+            if (!(up | dn | lf | rt)) continue;
+            for (int k = 0; k < COLLISION_SCALE; k++) {
+                int px[4] = { wx + k, wx + k, wx, wx + COLLISION_SCALE - 1 };
+                int py[4] = { wy, wy + COLLISION_SCALE - 1, wy + k, wy + k };
+                int on[4] = { up, dn, lf, rt };
+                for (int e = 0; e < 4; e++) {
+                    if (!on[e]) continue;
+                    int sx = px[e] - cam_x, sy = py[e] - cam_y;
+                    if ((uint32_t)sx >= SCREEN_W || (uint32_t)sy >= SCREEN_H) continue;
+                    if (occlusion_pixel_hidden(sx - (s_occlusion_cam_x - cam_x), sy - (s_occlusion_cam_y - cam_y), -1))
+                        buffer[sy * SCREEN_W + sx] = WALL_BASE_COLOR;
+                }
+            }
+        }
+    }
+}
 
 static void draw_player(uint16_t *buffer, int cam_x, int cam_y) {
     int px = player_screen_x(s_player.x, s_player.y);
@@ -695,8 +745,19 @@ static void render_screen(uint16_t *buffer, int cam_x, int cam_y,
     if (out_floor) *out_floor = cpuGetTiming() - floor_start_ticks;
 
     // 1) Composite dynamic entity shadows (player & enemies, animated per frame)
+    s_player_see_through = 0;
+    for (int i = 0; i < count && !s_player_see_through; i++) {
+        if (items[i].ref != -1) continue;
+        for (int k = 8; k <= 24; k += 8)
+            if (occlusion_blocks_pixel(items[i].cx, items[i].cy - k, items[i].depth)) {
+                s_player_see_through = 1;
+                break;
+            }
+    }
+
     uint32_t t_sh0 = cpuGetTiming();
     for (int i = 0; i < count; i++) {
+        s_draw_item_is_player = (items[i].ref == -1);
         if (items[i].ref == -1) {
             draw_shadow_mask(buffer, g_character_shadow_masks[s_player.char_id][s_player.dir][s_player.frame],
                              PLAYER_SHADOW_W, PLAYER_SHADOW_H,
@@ -713,6 +774,11 @@ static void render_screen(uint16_t *buffer, int cam_x, int cam_y,
                              items[i].cx - PLAYER_SHADOW_W / 2,
                              items[i].cy - PLAYER_SHADOW_H / 2, cam_x, cam_y, items[i].depth);
         }
+    }
+    if (s_player_see_through) {
+        for (int i = 0; i < count; i++)
+            if (items[i].ref == -1)
+                draw_hidden_wall_base(buffer, cam_x, cam_y, items[i].cx, items[i].cy);
     }
     uint32_t shadow_ticks = cpuGetTiming() - t_sh0;
 

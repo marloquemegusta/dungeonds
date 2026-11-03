@@ -87,3 +87,4 @@ Resúmenes acumulativos y auditables de cada entrega y avance de desarrollo en `
 | — | Auditoría de saneamiento 2D/3D (colisión, oclusión, legacy) | [audit-saneamiento-2d3d](audit-saneamiento-2d3d/walkthrough.md) | Análisis |
 | — | Colisión y oclusión coherentes con el render del mapa | [map-export-coherence](map-export-coherence/walkthrough.md) | Validado en emulador |
 | 29 | Saneamiento 2D/3D: suelo isotrópico, código muerto y repo | [`saneamiento-2d3d/`](saneamiento-2d3d/walkthrough.md) | Validado en DeSmuME |
+| 30 | Oclusión exacta, transparencia compartida y base de pared oculta | [`fix-oclusion-siluetas/`](fix-oclusion-siluetas/walkthrough.md) | Validado en DeSmuME (sin captura de enemigo) |
