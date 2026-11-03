@@ -18,8 +18,9 @@
 
 ## 3. Decisiones Abiertas
 - **Lectura tras paredes (transparencias):** qué se ve del personaje y de los enemigos detrás de una pared y cómo se marca la base de la pared. Sin decidir; preguntas en `TECHNICAL.md` §4.6. No se toca código hasta decidirlo aquí.
-- **Mapas de las arenas:** el mapa actual (`isometric_shooter_bl`) se sustituye por 3–4 mapas sencillos hechos a mano. Falta decidir su forma (tamaño, coberturas, pasillos) y cómo se encadenan.
-- **Sonido:** si entra en la prueba o después. Sin decidir.
+- **Mapas de las arenas:** el mapa actual (`isometric_shooter_bl`) se sustituye por 3–4 mapas sencillos hechos a mano. Decidido (2026-11-03): mapas pequeños (~1–2 pantallas, orientativo 512×384) horneados en C con el pipeline lab → baker, sin NitroFS. Falta decidir la forma de cada uno (coberturas, pasillos, entrada y salida) y cómo se encadenan; se fija con el usuario al empezar la Fase D, antes de modelar.
+- **Sonido:** fuera de la v0.1 (decidido 2026-11-03).
+- **Transparencias tras paredes:** también fuera de la v0.1; el comportamiento provisional actual no se amplía.
 - **Tuning de combate:** números concretos; ver §4.7.
 
 ---
@@ -84,6 +85,8 @@ Ambas con munición infinita; las limita su ritmo y su coste de uso.
 ### 4.7 Game Feel
 - **Al impactar:** hitstop de 2–4 frames, destello blanco del enemigo, empujón (escopeta).
 - **Al disparar:** temblor de pantalla proporcional al arma; retroceso leve del jugador con la escopeta.
+- **Origen del disparo:** proyectiles, fogonazo y línea de mira salen de la boca del arma, no de los pies del personaje. El punto de boca por dirección lo exporta el lab junto al spritesheet; el runtime no usa offsets escritos a mano.
+- **Aspecto del disparo (decidido 2026-11-03):** procedural, en la línea de la lanza ósea. Perdigones como trazos cortos con estela que se desvanece; fogonazo de 2–3 frames en la boca; chispas de impacto como líneas que salen según la normal y se apagan; el francotirador, un trazo largo y brillante que se desvanece en pocos frames. Sustituye a los cuadrados y cruces de píxeles actuales.
 - **Muerte:** fragmentos (FX existente, §2).
 - **Al recibir daño:** destello rojo e i-frames.
 - **Tuning pendiente:** velocidades, daño, dispersión, cadencias, bandas de distancia y nº máximo de enemigos en pantalla, en punto fijo, ajustados jugando en la DS.
