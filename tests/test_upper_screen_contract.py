@@ -6,8 +6,6 @@ import numpy as np
 
 ROOT = Path(__file__).resolve().parents[1]
 MAIN_C = (ROOT / "source" / "main.c").read_text(encoding="utf-8")
-TILES_C = (ROOT / "source" / "dungeon_bg_tiles.c").read_text(encoding="utf-8")
-TILES_H = (ROOT / "include" / "dungeon_bg_tiles.h").read_text(encoding="utf-8")
 
 SUB_VRAM_BYTES = 128 * 1024          # bank C
 PAGE_BYTES = 256 * 192 * 2           # one 16 bpp actor page
@@ -18,12 +16,17 @@ def define(text, name):
     return int(re.search(rf"#define {name} (\d+)", text).group(1))
 
 
-def world_tile_map():
-    width = define(TILES_H, "DUNGEON_BG_MAP_WIDTH_TILES")
-    height = define(TILES_H, "DUNGEON_BG_MAP_HEIGHT_TILES")
-    body = TILES_C[TILES_C.index("g_dungeon_bg_map"):]
-    values = [int(v, 0) for v in re.findall(r"0x[0-9A-Fa-f]+|\b\d+\b", body[body.index("{"):])]
-    return np.array(values[:width * height], dtype=np.int32).reshape(height, width)
+def arena_tile_maps():
+    """(name, tile map as a numpy array) for every baked arena (source/arena_*.c)."""
+    maps = []
+    for path in sorted((ROOT / "source").glob("arena_*.c")):
+        text = path.read_text(encoding="utf-8")
+        width = int(re.search(r"\.map_w = (\d+)", text).group(1))
+        height = int(re.search(r"\.map_h = (\d+)", text).group(1))
+        body = text.split("s_map[")[1].split("{", 1)[1].split("};")[0]
+        values = [int(v) for v in re.findall(r"\d+", body)]
+        maps.append((path.name, np.array(values[:width * height], dtype=np.int32).reshape(height, width)))
+    return maps
 
 
 class UpperScreenContractTest(unittest.TestCase):
@@ -46,16 +49,22 @@ class UpperScreenContractTest(unittest.TestCase):
         self.assertLessEqual(map_base + 4096, page_base)      # the 512x256 map (4 KiB) ends before the page
         self.assertLessEqual(page_base + PAGE_BYTES, SUB_VRAM_BYTES)
 
-    def test_every_screen_window_fits_the_upper_tile_slots(self):
+    def test_every_screen_window_of_every_arena_fits_the_upper_tile_slots(self):
         capacity = define(MAIN_C, "TOP_TILE_CACHE_CAPACITY")
-        tile_map = world_tile_map()
-        worst = 0
-        for y in range(0, tile_map.shape[0] - VIEW_H + 1):
-            for x in range(0, tile_map.shape[1] - VIEW_W + 1):
-                worst = max(worst, len(np.unique(tile_map[y:y + VIEW_H, x:x + VIEW_W])))
-        # Slot 0 is the blank tile; a few slots of slack cover the ring while it scrolls.
-        self.assertLessEqual(worst, capacity - 8, f"worst window needs {worst} tiles")
+        maps = arena_tile_maps()
+        self.assertTrue(maps, "no baked arenas")
+        for name, tile_map in maps:
+            worst = 0
+            for y in range(0, max(1, tile_map.shape[0] - VIEW_H + 1)):
+                for x in range(0, max(1, tile_map.shape[1] - VIEW_W + 1)):
+                    worst = max(worst, len(np.unique(tile_map[y:y + VIEW_H, x:x + VIEW_W])))
+            # Slot 0 is the blank tile; a few slots of slack cover the ring while it scrolls.
+            self.assertLessEqual(worst, capacity - 8, f"{name}: worst window needs {worst} tiles")
 
+    def test_the_tile_cache_arrays_hold_every_arena(self):
+        most = max(int(re.search(r"\.num_tiles = (\d+)", p.read_text(encoding="utf-8")).group(1))
+                   for p in (ROOT / "source").glob("arena_*.c"))
+        self.assertLessEqual(most, define(MAIN_C, "BG_MAX_TILES"))
 
 if __name__ == "__main__":
     unittest.main()

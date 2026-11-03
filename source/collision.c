@@ -1,5 +1,5 @@
 #include "collision.h"
-#include "diablo_dungeon.h"
+#include "arena.h"
 
 // ---------------------------------------------------------------------------
 // World Collision
@@ -10,8 +10,8 @@
 // ---------------------------------------------------------------------------
 
 static inline uint8_t world_collision_flags(int cx, int cy) {
-    uint32_t index = (uint32_t)cy * COLLISION_W + (uint32_t)cx;
-    return (g_dungeon_collision[index >> 2] >> ((index & 3) * 2)) & 0x03;
+    uint32_t index = (uint32_t)cy * g_arena->collision_w + (uint32_t)cx;
+    return (g_arena->collision[index >> 2] >> ((index & 3) * 2)) & 0x03;
 }
 
 // The body footprint is a circle on the ground (radius 6), which the 2:1
@@ -30,7 +30,7 @@ int position_is_free(fixed x, fixed y) {
     const int radius_sq = radius * radius;
     for (int cy = cell_y0; cy <= cell_y1; cy++) {
         for (int cx = cell_x0; cx <= cell_x1; cx++) {
-            if (cx < 0 || cx >= COLLISION_W || cy < 0 || cy >= COLLISION_H) return 0;
+            if (cx < 0 || cx >= g_arena->collision_w || cy < 0 || cy >= g_arena->collision_h) return 0;
             if ((world_collision_flags(cx, cy) & 0x01) == 0) continue;
             int left = cx * COLLISION_SCALE;
             int top = cy * COLLISION_SCALE;
@@ -50,7 +50,7 @@ int bullet_position_is_free(fixed x, fixed y) {
     if (px < 0 || py < 0) return 0;
     int cx = px / COLLISION_SCALE;
     int cy = py / COLLISION_SCALE;
-    if (cx < 0 || cx >= COLLISION_W || cy < 0 || cy >= COLLISION_H) return 0;
+    if (cx < 0 || cx >= g_arena->collision_w || cy < 0 || cy >= g_arena->collision_h) return 0;
     return (world_collision_flags(cx, cy) & 0x02) == 0;
 }
 

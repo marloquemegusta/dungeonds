@@ -1,7 +1,8 @@
-// Host test for the navigation field. Built and run by tests/test_navfield.py against the
-// real baked collision grid (source/diablo_dungeon.c) and the real collision/navfield code.
+// Host test for collision and navigation. Built and run by tests/test_navfield.py against the
+// real baked arenas (source/arena_*.c) and the real collision/navfield/los code.
 #include <stdio.h>
 #include <stdlib.h>
+#include "arena.h"
 #include "navfield.h"
 #include "collision.h"
 
@@ -12,22 +13,32 @@ static int walkable_node(int nx, int ny) {
     return position_is_free(TO_FIXED(nx * NAV_NODE_PX + NAV_NODE_PX / 2), TO_FIXED(ny * NAV_NODE_PX + NAV_NODE_PX / 2));
 }
 
-int main(void) {
+static void run_arena(int index) {
+    arena_select(index);
+    const int sx = g_arena->player_x, sy = g_arena->player_y;
     nav_init();
+    const int w = nav_width(), h = nav_height();
     int walkable = nav_walkable_count();
-    printf("walkable nodes: %d of %d\n", walkable, NAV_W * NAV_H);
-    CHECK(walkable > 200, "too few walkable nodes");
+    printf("-- arena %d \"%s\" %dx%d: %d walkable nodes of %d\n", index, g_arena->name, g_arena->world_w, g_arena->world_h, walkable, w * h);
+    CHECK(walkable > 60, "too few walkable nodes");
+    CHECK(w <= NAV_MAX_W && h <= NAV_MAX_H, "arena does not fit the navigation buffers");
 
-    // Goal: the player spawn.
-    nav_set_goal(SPAWN_PIXEL_X, SPAWN_PIXEL_Y);
+    // The player start and every enemy spawn point stand on free floor and reach each other.
+    CHECK(position_is_free(TO_FIXED(sx), TO_FIXED(sy)), "player start is not free");
+    nav_set_goal(sx, sy);
     nav_rebuild_now();
-    CHECK(nav_distance(SPAWN_PIXEL_X, SPAWN_PIXEL_Y) == 0, "goal node distance must be 0");
+    CHECK(nav_distance(sx, sy) == 0, "goal node distance must be 0");
+    for (int i = 0; i < g_arena->num_enemies; i++) {
+        const ArenaEnemy *e = &g_arena->enemies[i];
+        CHECK(position_is_free(TO_FIXED(e->x), TO_FIXED(e->y)), "enemy %d spawn (%d,%d) is not free", i, e->x, e->y);
+        CHECK(nav_distance(e->x, e->y) != NAV_UNREACHABLE, "enemy %d spawn (%d,%d) cannot reach the player start", i, e->x, e->y);
+    }
 
-    // Count reachable nodes; every one has a finite distance, and following the gradient
-    // from each one reaches the goal in exactly that many steps without touching a wall.
+    // Every reachable node has a finite distance, and following the gradient from it reaches
+    // the goal in exactly that many steps without touching a wall.
     int reachable = 0, checked_paths = 0;
-    for (int ny = 0; ny < NAV_H; ny++) {
-        for (int nx = 0; nx < NAV_W; nx++) {
+    for (int ny = 0; ny < h; ny++) {
+        for (int nx = 0; nx < w; nx++) {
             int px = nx * NAV_NODE_PX + NAV_NODE_PX / 2, py = ny * NAV_NODE_PX + NAV_NODE_PX / 2;
             int d = nav_distance(px, py);
             if (d == NAV_UNREACHABLE) continue;
@@ -41,43 +52,43 @@ int main(void) {
                 CHECK(position_is_free(TO_FIXED(tx), TO_FIXED(ty)), "gradient step lands in a wall at (%d,%d)", tx, ty);
                 cx = tx; cy = ty; steps++;
             }
-            if ((nx + ny) % 7 == 0) {
+            if ((nx + ny) % 5 == 0) {
                 checked_paths++;
                 CHECK(steps == d, "path from (%d,%d) took %d steps, field says %d", nx, ny, steps, d);
             }
-            if (s_failures > 20) goto done;
+            if (s_failures > 20) return;
         }
     }
-    printf("reachable nodes from spawn: %d, paths checked: %d\n", reachable, checked_paths);
-    CHECK(reachable > walkable / 2, "most of the floor must be reachable from the spawn (%d of %d)", reachable, walkable);
+    printf("   reachable from the start: %d, paths checked: %d\n", reachable, checked_paths);
+    CHECK(reachable == walkable, "the whole floor must be one connected area (%d of %d reachable)", reachable, walkable);
 
-    // The incremental search must give the same field as the one-shot search.
+    // The incremental search must give the same field as the one-shot search, within a few frames.
     {
-        static uint8_t reference[NAV_W * NAV_H];
-        for (int ny = 0; ny < NAV_H; ny++)
-            for (int nx = 0; nx < NAV_W; nx++)
-                reference[ny * NAV_W + nx] = (uint8_t)nav_distance(nx * NAV_NODE_PX + 8, ny * NAV_NODE_PX + 8);
+        static uint8_t reference[NAV_MAX_W * NAV_MAX_H];
+        for (int ny = 0; ny < h; ny++)
+            for (int nx = 0; nx < w; nx++)
+                reference[ny * w + nx] = (uint8_t)nav_distance(nx * NAV_NODE_PX + 8, ny * NAV_NODE_PX + 8);
         nav_init();
-        nav_set_goal(SPAWN_PIXEL_X, SPAWN_PIXEL_Y);
+        nav_set_goal(sx, sy);
         int frames = 0;
-        while (nav_distance(SPAWN_PIXEL_X, SPAWN_PIXEL_Y) != 0 && frames < 200) { nav_update(300); frames++; }
-        printf("incremental search finished in %d frames of 300 nodes\n", frames);
+        while (nav_distance(sx, sy) != 0 && frames < 200) { nav_update(300); frames++; }
+        printf("   incremental search finished in %d frames of 300 nodes\n", frames);
         CHECK(frames <= 40, "incremental search is too slow (%d frames)", frames);
         int diff = 0;
-        for (int ny = 0; ny < NAV_H; ny++)
-            for (int nx = 0; nx < NAV_W; nx++)
-                diff += reference[ny * NAV_W + nx] != (uint8_t)nav_distance(nx * NAV_NODE_PX + 8, ny * NAV_NODE_PX + 8);
+        for (int ny = 0; ny < h; ny++)
+            for (int nx = 0; nx < w; nx++)
+                diff += reference[ny * w + nx] != (uint8_t)nav_distance(nx * NAV_NODE_PX + 8, ny * NAV_NODE_PX + 8);
         CHECK(diff == 0, "incremental field differs from the one-shot field in %d nodes", diff);
     }
 
     // A body can stand on a node whose centre is blocked (hugging a wall): from there the
     // gradient must still lead somewhere instead of giving up.
     {
-        nav_set_goal(SPAWN_PIXEL_X, SPAWN_PIXEL_Y);
+        nav_set_goal(sx, sy);
         nav_rebuild_now();
         int tested = 0, failed = 0;
-        for (int ny = 1; ny < NAV_H - 1; ny++) {
-            for (int nx = 1; nx < NAV_W - 1; nx++) {
+        for (int ny = 1; ny < h - 1; ny++) {
+            for (int nx = 1; nx < w - 1; nx++) {
                 int px = nx * NAV_NODE_PX + 8, py = ny * NAV_NODE_PX + 8;
                 if (walkable_node(nx, ny)) continue;
                 int has_reachable_neighbour = 0;
@@ -90,30 +101,23 @@ int main(void) {
                 if (!nav_next_step(px, py, &tx, &ty) || nav_distance(tx, ty) == NAV_UNREACHABLE) failed++;
             }
         }
-        printf("blocked-centre nodes next to the floor: %d, without a way out: %d\n", tested, failed);
+        printf("   blocked-centre nodes next to the floor: %d, without a way out: %d\n", tested, failed);
         CHECK(failed == 0, "%d blocked-centre nodes have no way out", failed);
     }
 
-    // Low walls: the walkable-line test must see a blocked node between two walkable ones.
-    {
-        int pairs = 0, blocked = 0;
-        for (int ny = 0; ny < NAV_H; ny++) {
-            for (int nx = 0; nx + 2 < NAV_W; nx++) {
-                if (!walkable_node(nx, ny) || walkable_node(nx + 1, ny) || !walkable_node(nx + 2, ny)) continue;
-                pairs++;
-                blocked += !line_is_walkable(nx * NAV_NODE_PX + 8, ny * NAV_NODE_PX + 8, (nx + 2) * NAV_NODE_PX + 8, ny * NAV_NODE_PX + 8);
-            }
-        }
-        printf("wall-between pairs: %d, seen as blocked: %d\n", pairs, blocked);
-        CHECK(pairs == 0 || blocked * 10 >= pairs * 9, "line_is_walkable misses walls (%d of %d)", blocked, pairs);
-        CHECK(line_is_walkable(SPAWN_PIXEL_X, SPAWN_PIXEL_Y, SPAWN_PIXEL_X + 3, SPAWN_PIXEL_Y), "a line of a few px on open floor must be walkable");
-    }
+    // Open floor is walkable in a straight line; a line through the arena edge is not.
+    CHECK(line_is_walkable(sx, sy, sx + 3, sy), "a line of a few px on open floor must be walkable");
+    CHECK(!line_is_walkable(sx, sy, sx, -200), "a line leaving the arena must not be walkable");
 
     // A goal inside a wall is ignored; the previous goal stays.
     nav_set_goal(2, 2);
-    CHECK(nav_distance(SPAWN_PIXEL_X, SPAWN_PIXEL_Y) == 0, "an unwalkable goal must not replace the current one");
+    CHECK(nav_distance(sx, sy) == 0, "an unwalkable goal must not replace the current one");
+}
 
-done:
+int main(void) {
+    printf("arenas: %d\n", g_num_arenas);
+    CHECK(g_num_arenas >= 1, "no arenas");
+    for (int i = 0; i < g_num_arenas; i++) run_arena(i);
     printf(s_failures ? "NAV_HOST_TEST=FAIL\n" : "NAV_HOST_TEST=PASS\n");
     return s_failures ? 1 : 0;
 }

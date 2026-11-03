@@ -1,8 +1,6 @@
 #include "game.h"
 #include "player_sprite.h"
-#include "dungeon_bg_tiles.h"
-#include "diablo_dungeon.h"
-#include "dungeon_occlusion.h"
+#include "arena.h"
 #include "los.h"
 #include "gameplay.h"
 #include "enemy_ai.h"
@@ -18,7 +16,7 @@
 // DungeonDS - dimetric dungeon renderer
 //
 // World space is the baked FBX dungeon: world pixel coordinates are the
-// projected 2:1 dimetric image (see include/diablo_dungeon.h). Sprites are
+// projected 2:1 dimetric image (see include/arena.h). Sprites are
 // pre-baked with the matching orthographic camera, so a sprite's centre is its
 // ground anchor point on the floor.
 //
@@ -79,8 +77,9 @@ static inline uint16_t *bot_page_ptr(int page) {
 #define BG_TILE_CACHE_CAPACITY 1024     // lower screen: 64 KiB of tile slots in bank D
 #define TOP_TILE_CACHE_CAPACITY 448     // upper screen: 28 KiB in bank C (the baker keeps every window within it)
 #define BG_TILE_INVALID 0xFFFF
+#define BG_MAX_TILES 512                // most distinct tiles of any arena (checked by tests/test_upper_screen_contract.py)
 typedef struct {
-    uint16_t slot_for_tile[DUNGEON_BG_NUM_TILES];
+    uint16_t slot_for_tile[BG_MAX_TILES];
     uint16_t slot_refs[BG_TILE_CACHE_CAPACITY];
     uint16_t world_tile_for_cell[BG_RING_W * BG_RING_H];
     uint16_t capacity;
@@ -196,11 +195,11 @@ static void init_char_sprite_data(void) {
 // Runs of one world row are sorted by x; find the first that may reach cam_x.
 // Runs never overlap, so the one ending past cam_x starts at or before any later one.
 static inline uint32_t find_first_occlusion_run_in_row(int row, int cam_x) {
-    uint32_t low = g_dungeon_occlusion_row_start[row];
-    uint32_t high = g_dungeon_occlusion_row_start[row + 1];
+    uint32_t low = g_arena->occlusion_row_start[row];
+    uint32_t high = g_arena->occlusion_row_start[row + 1];
     while (low < high) {
         uint32_t mid = (low + high) >> 1;
-        const DungeonOcclusionRun *run = &g_dungeon_occlusion_runs[mid];
+        const DungeonOcclusionRun *run = &g_arena->occlusion_runs[mid];
         if ((int)run->x + (int)run->length <= cam_x) {
             low = mid + 1;
         } else {
@@ -210,27 +209,27 @@ static inline uint32_t find_first_occlusion_run_in_row(int row, int cam_x) {
     return low;
 }
 static inline uint8_t world_collision_flags_rt(int cx, int cy) {
-    uint32_t index = (uint32_t)cy * COLLISION_W + (uint32_t)cx;
-    return (g_dungeon_collision[index >> 2] >> ((index & 3) * 2)) & 0x03;
+    uint32_t index = (uint32_t)cy * g_arena->collision_w + (uint32_t)cx;
+    return (g_arena->collision[index >> 2] >> ((index & 3) * 2)) & 0x03;
 }
 
 // Occlusion queries read the static baked runs directly (sorted by y then x, never
 // overlapping inside a row, pixel exact). A run hides an actor whose depth is lower.
 static inline int occlusion_blocks_pixel(int x, int y, int actor_depth) {
-    if ((uint32_t)y >= WORLD_H) return 0;
+    if ((uint32_t)y >= g_arena->world_h) return 0;
     uint32_t i = find_first_occlusion_run_in_row(y, x);
-    if (i >= g_dungeon_occlusion_row_start[y + 1]) return 0;
-    const DungeonOcclusionRun *r = &g_dungeon_occlusion_runs[i];
+    if (i >= g_arena->occlusion_row_start[y + 1]) return 0;
+    const DungeonOcclusionRun *r = &g_arena->occlusion_runs[i];
     return (int)r->x <= x && (int)r->depth > actor_depth;
 }
 
 // First run of world row y reaching x0 whose x < x1 and depth > actor_depth.
 // Returns row_end when nothing in [x0, x1) can hide the actor.
 static inline uint32_t find_hiding_run(int y, int x0, int x1, int actor_depth, uint32_t *row_end) {
-    uint32_t re = g_dungeon_occlusion_row_start[y + 1];
+    uint32_t re = g_arena->occlusion_row_start[y + 1];
     *row_end = re;
     for (uint32_t k = find_first_occlusion_run_in_row(y, x0); k < re; k++) {
-        const DungeonOcclusionRun *r = &g_dungeon_occlusion_runs[k];
+        const DungeonOcclusionRun *r = &g_arena->occlusion_runs[k];
         if ((int)r->x >= x1) break;
         if ((int)r->depth > actor_depth) return k;
     }
@@ -273,14 +272,14 @@ static void blit_stride(uint16_t *buffer, const uint16_t *src, int pitch, int sw
         int world_x0 = left + sx0;
         int world_x1 = left + sx1;
         dirty_row(oy + y, ox + sx0, ox + sx1);
-        if (depth >= 0 && !see_through && (uint32_t)world_y < WORLD_H) {
+        if (depth >= 0 && !see_through && (uint32_t)world_y < g_arena->world_h) {
             uint32_t re;
             uint32_t k = find_hiding_run(world_y, world_x0, world_x1, depth, &re);
             if (k < re) {
                 // Paint the stretches between hiding runs; pixels inside them stay hidden.
                 int cur = sx0;
                 for (; k < re; k++) {
-                    const DungeonOcclusionRun *r = &g_dungeon_occlusion_runs[k];
+                    const DungeonOcclusionRun *r = &g_arena->occlusion_runs[k];
                     int rx0 = (int)r->x - left;
                     if (rx0 >= sx1) break;
                     if ((int)r->depth <= depth) continue;
@@ -339,12 +338,12 @@ static inline uint16_t apply_shadow_fast(uint16_t color) {
 }
 
 static inline uint16_t world_floor_color(int x, int y) {
-    if ((uint32_t)x >= WORLD_W || (uint32_t)y >= WORLD_H) return VOID_COLOR | BIT(15);
-    uint16_t tile_id = g_dungeon_bg_map[y >> 3][x >> 3];
-    if (tile_id >= DUNGEON_BG_NUM_TILES) return VOID_COLOR | BIT(15);
-    uint8_t palette_index = g_dungeon_bg_tiles[tile_id][(y & 7) * 8 + (x & 7)];
+    if ((uint32_t)x >= g_arena->world_w || (uint32_t)y >= g_arena->world_h) return VOID_COLOR | BIT(15);
+    uint16_t tile_id = g_arena->map[(y >> 3) * g_arena->map_w + (x >> 3)];
+    if (tile_id >= g_arena->num_tiles) return VOID_COLOR | BIT(15);
+    uint8_t palette_index = g_arena->tiles[tile_id][(y & 7) * 8 + (x & 7)];
     if (palette_index == 0) return VOID_COLOR | BIT(15);
-    return g_dungeon_bg_palette[palette_index];
+    return g_arena->palette[palette_index];
 }
 
 __attribute__((target("arm"), noinline))
@@ -370,11 +369,11 @@ static void draw_shadow_mask(uint16_t *buffer, const uint8_t *mask, int sw, int 
         dirty_row(oy + y, ox + sx0, ox + sx1);
         // rn walks the runs of this row left to right; null when nothing can hide the shadow.
         const DungeonOcclusionRun *rn = NULL, *rend = NULL;
-        if (!(s_draw_item_is_player && s_player_see_through) && (uint32_t)world_y < WORLD_H) {
+        if (!(s_draw_item_is_player && s_player_see_through) && (uint32_t)world_y < g_arena->world_h) {
             uint32_t re;
             if (find_hiding_run(world_y, left + sx0, left + sx1, depth, &re) < re) {
-                rn = &g_dungeon_occlusion_runs[find_first_occlusion_run_in_row(world_y, left + sx0)];
-                rend = &g_dungeon_occlusion_runs[re];
+                rn = &g_arena->occlusion_runs[find_first_occlusion_run_in_row(world_y, left + sx0)];
+                rend = &g_arena->occlusion_runs[re];
             }
         }
         for (int x = sx0; x < sx1; x++) {
@@ -383,7 +382,7 @@ static void draw_shadow_mask(uint16_t *buffer, const uint8_t *mask, int sw, int 
             uint8_t nibble = (pixel & 1) ? (packed >> 4) : (packed & 0x0F);
             if (nibble > 0) {
                 int world_x = left + x;
-                if (world_x < 0 || world_x >= WORLD_W || world_y < 0 || world_y >= WORLD_H) continue;
+                if (world_x < 0 || world_x >= g_arena->world_w || world_y < 0 || world_y >= g_arena->world_h) continue;
                 if (rn) {
                     while (rn < rend && (int)rn->x + (int)rn->length <= world_x) rn++;
                     if (rn < rend && (int)rn->x <= world_x && (int)rn->depth > depth) continue;
@@ -414,15 +413,14 @@ static int bg_map_index(int col, int row) {
 }
 
 static u16 bg_world_tile(int col, int row) {
-    if (col < 0 || col >= DUNGEON_BG_MAP_WIDTH_TILES ||
-        row < 0 || row >= DUNGEON_BG_MAP_HEIGHT_TILES) return 0;
-    return g_dungeon_bg_map[row][col];
+    if (col < 0 || col >= g_arena->map_w || row < 0 || row >= g_arena->map_h) return 0;
+    return g_arena->map[row * g_arena->map_w + col];
 }
 
 static void init_bg_tile_cache(BgTileCache *cache, uint16_t capacity, uint8_t *tile_vram) {
     cache->capacity = capacity;
     memset(tile_vram, 0, 64);              // slot 0 is the blank tile
-    for (uint32_t i = 0; i < DUNGEON_BG_NUM_TILES; i++) cache->slot_for_tile[i] = BG_TILE_INVALID;
+    for (uint32_t i = 0; i < BG_MAX_TILES; i++) cache->slot_for_tile[i] = BG_TILE_INVALID;
     for (uint32_t i = 0; i < BG_RING_W * BG_RING_H; i++) cache->world_tile_for_cell[i] = BG_TILE_INVALID;
     memset(cache->slot_refs, 0, sizeof(cache->slot_refs));
     cache->slot_for_tile[0] = 0;
@@ -432,7 +430,7 @@ static void init_bg_tile_cache(BgTileCache *cache, uint16_t capacity, uint8_t *t
 
 static uint16_t acquire_bg_tile(BgTileCache *cache, uint16_t tile_id, uint8_t *tile_vram) {
     if (tile_id == 0) return 0;
-    if (tile_id >= DUNGEON_BG_NUM_TILES) {
+    if (tile_id >= g_arena->num_tiles) {
         cache->overflow = 1;
         return 0;
     }
@@ -448,17 +446,23 @@ static uint16_t acquire_bg_tile(BgTileCache *cache, uint16_t tile_id, uint8_t *t
         cache->overflow = 1;
         return 0;
     }
-    memcpy(tile_vram + (uint32_t)slot * 64, g_dungeon_bg_tiles[tile_id], 64);
+    memcpy(tile_vram + (uint32_t)slot * 64, g_arena->tiles[tile_id], 64);
     cache->slot_for_tile[tile_id] = slot;
     cache->slot_refs[slot] = 1;
     return slot;
 }
 
 static void release_bg_tile(BgTileCache *cache, uint16_t tile_id) {
-    if (tile_id == 0 || tile_id == BG_TILE_INVALID || tile_id >= DUNGEON_BG_NUM_TILES) return;
+    if (tile_id == 0 || tile_id == BG_TILE_INVALID || tile_id >= BG_MAX_TILES) return;
     uint16_t slot = cache->slot_for_tile[tile_id];
     if (slot == BG_TILE_INVALID || slot == 0) return;
     if (--cache->slot_refs[slot] == 0) cache->slot_for_tile[tile_id] = BG_TILE_INVALID;
+}
+
+// Palette of the active arena into both engines (each arena has its own 255 colours).
+static void apply_arena_palette(void) {
+    dmaCopyWords(3, g_arena->palette, BG_PALETTE, 256 * 2);
+    dmaCopyWords(3, g_arena->palette, BG_PALETTE_SUB, 256 * 2);
 }
 
 static void update_screen_hardware_bg(int is_sub, u16 *map_ptr, int cam_x, int cam_y) {
@@ -530,15 +534,15 @@ static inline void wall_base_px(uint16_t *buffer, int cam_x, int cam_y, int wx, 
 // Four consecutive pixels of one world row with a single run lookup.
 static inline void wall_base_hrow(uint16_t *buffer, int cam_x, int cam_y, int wx, int wy) {
     int sy = wy - cam_y;
-    if ((uint32_t)wy >= WORLD_H || (uint32_t)sy >= SCREEN_H) return;
+    if ((uint32_t)wy >= g_arena->world_h || (uint32_t)sy >= SCREEN_H) return;
     uint32_t i = find_first_occlusion_run_in_row(wy, wx);
-    uint32_t re = g_dungeon_occlusion_row_start[wy + 1];
+    uint32_t re = g_arena->occlusion_row_start[wy + 1];
     for (int k = 0; k < COLLISION_SCALE; k++) {
         int x = wx + k;
         int sx = x - cam_x;
-        while (i < re && (int)g_dungeon_occlusion_runs[i].x + (int)g_dungeon_occlusion_runs[i].length <= x) i++;
+        while (i < re && (int)g_arena->occlusion_runs[i].x + (int)g_arena->occlusion_runs[i].length <= x) i++;
         if (i >= re) break;
-        if ((int)g_dungeon_occlusion_runs[i].x > x || (uint32_t)sx >= SCREEN_W) continue;
+        if ((int)g_arena->occlusion_runs[i].x > x || (uint32_t)sx >= SCREEN_W) continue;
         buffer[sy * SCREEN_W + sx] = WALL_BASE_COLOR;
         dirty_row(sy, sx, sx + 1);
     }
@@ -550,8 +554,8 @@ static void draw_hidden_wall_base(uint16_t *buffer, int cam_x, int cam_y, int ps
     int cy0 = (psy - 20) / COLLISION_SCALE;
     if (cx0 < 1) cx0 = 1;
     if (cy0 < 1) cy0 = 1;
-    if (cx0 + BOX_CELLS_W > COLLISION_W - 1) cx0 = COLLISION_W - 1 - BOX_CELLS_W;
-    if (cy0 + BOX_CELLS_H > COLLISION_H - 1) cy0 = COLLISION_H - 1 - BOX_CELLS_H;
+    if (cx0 + BOX_CELLS_W > g_arena->collision_w - 1) cx0 = g_arena->collision_w - 1 - BOX_CELLS_W;
+    if (cy0 + BOX_CELLS_H > g_arena->collision_h - 1) cy0 = g_arena->collision_h - 1 - BOX_CELLS_H;
 
     // Blocked bit of the three rows around the current one, read once per row.
     uint8_t rows[3][BOX_CELLS_W + 2];
@@ -845,10 +849,6 @@ static void render_screen(uint16_t *buffer, DirtySpan *spans, int cam_x, int cam
     }
     uint32_t shadow_ticks = cpuGetTiming() - t_sh0;
 
-    PP_T0(pp_pick);
-    encounters_render(&g_encounter_mgr, buffer, cam_x, cam_y);
-    PP_ADD(PP_PICKUPS, pp_pick);
-
     // 2) Sprites back-to-front (painter's algorithm)
     PP_T0(pp_sort);
     for (int i = 1; i < count; i++) {
@@ -1034,7 +1034,7 @@ static uint32_t present_both_screens(int top_cam_x, int top_cam_y,
 static void enemies_init(void) {
     enemy_projectiles_init();
     encounters_init(&g_encounter_mgr);
-    encounters_spawn_wave(&g_encounter_mgr, s_enemies, MAX_ENEMIES, s_player.x, s_player.y);
+    encounters_spawn(&g_encounter_mgr, s_enemies, MAX_ENEMIES);
 }
 
 static int abs_int(int v) { return v < 0 ? -v : v; }
@@ -1165,7 +1165,7 @@ static void enemies_update(void) {
     nav_update(NAV_BUDGET_PER_FRAME);
     enemy_ai_update(s_enemies, MAX_ENEMIES, s_player.x, s_player.y, pvx, pvy);
     enemy_projectiles_update(s_player.x, s_player.y);
-    encounters_update(&g_encounter_mgr, s_enemies, MAX_ENEMIES, &g_player_state, s_player.x, s_player.y);
+    encounters_update(&g_encounter_mgr, s_enemies, MAX_ENEMIES);
 }
 
 // ---------------------------------------------------------------------------
@@ -1173,8 +1173,8 @@ static void enemies_update(void) {
 // ---------------------------------------------------------------------------
 
 static void player_init(void) {
-    s_player.x = TO_FIXED(SPAWN_PIXEL_X);
-    s_player.y = TO_FIXED(SPAWN_PIXEL_Y);
+    s_player.x = TO_FIXED(g_arena->player_x);
+    s_player.y = TO_FIXED(g_arena->player_y);
     s_player.dir = DIR_SOUTH;
     s_player.frame = 0;
     s_player.is_moving = 0;
@@ -1217,6 +1217,24 @@ static void player_muzzle(fixed *mx, fixed *my, int *mh) {
     *mh = m[2];
 }
 
+// The camera follows the player but stays inside the arena: horizontally the view never leaves
+// the floor image, and vertically the player stays on the touch screen (the upper screen shows
+// the strip above it) with at most half a screen of void beyond the arena edge.
+static void update_camera(void) {
+    int x = player_screen_x(s_player.x, s_player.y) - SCREEN_W / 2;
+    int y = player_screen_y(s_player.x, s_player.y) - SCREEN_H / 2;
+    int max_x = g_arena->world_w - SCREEN_W;
+    if (max_x <= 0) x = max_x / 2;
+    else if (x < 0) x = 0;
+    else if (x > max_x) x = max_x;
+    int min_y = SCREEN_H / 2;
+    int max_y = g_arena->world_h - SCREEN_H / 2;
+    if (y < min_y) y = min_y;
+    if (y > max_y) y = max_y;
+    s_cam_x = x;
+    s_cam_y = y;
+}
+
 static void player_update(uint32_t keys, uint32_t keys_down) {
     if (g_player_state.invuln_timer > 0) g_player_state.invuln_timer--;
 
@@ -1229,6 +1247,14 @@ static void player_update(uint32_t keys, uint32_t keys_down) {
     // Debug god mode for headless walk scenarios: hold L+R and press B.
     if ((keys & (KEY_L | KEY_R)) == (KEY_L | KEY_R) && (keys_down & KEY_B)) {
         g_player_state.god_mode = !g_player_state.god_mode;
+    }
+
+    // Debug for headless scenarios: hold L+R and press X to clear the arena (all enemies vanish).
+    if ((keys & (KEY_L | KEY_R)) == (KEY_L | KEY_R) && (keys_down & KEY_X)) {
+        for (int i = 0; i < MAX_ENEMIES; i++) {
+            s_enemies[i].active = 0;
+            s_enemies[i].hp = 0;
+        }
     }
 
     // L is the only button of the test: it switches weapon (and cancels a sniper aim).
@@ -1321,9 +1347,7 @@ static void player_update(uint32_t keys, uint32_t keys_down) {
         s_player.anim_timer = 0;
     }
 
-    // Camera stays centered on the player; the streamed BG renders void outside the finite world.
-    s_cam_x = player_screen_x(s_player.x, s_player.y) - SCREEN_W / 2;
-    s_cam_y = player_screen_y(s_player.x, s_player.y) - SCREEN_H / 2;
+    update_camera();
 
     // Stylus: aim and fire. The character turns towards the touched point first so the
     // muzzle used for the shot belongs to the direction it is facing.
@@ -1363,8 +1387,8 @@ static void player_update(uint32_t keys, uint32_t keys_down) {
 // Death restarts the current arena at once: full health, the wave respawned.
 static void arena_restart(void) {
     int god = g_player_state.god_mode;
-    s_player.x = TO_FIXED(SPAWN_PIXEL_X);
-    s_player.y = TO_FIXED(SPAWN_PIXEL_Y);
+    s_player.x = TO_FIXED(g_arena->player_x);
+    s_player.y = TO_FIXED(g_arena->player_y);
     s_player.dir = DIR_SOUTH;
     s_player.frame = 0;
     s_player.is_moving = 0;
@@ -1372,15 +1396,59 @@ static void arena_restart(void) {
     player_state_init(&g_player_state);
     g_player_state.god_mode = god;
     weapons_init();
-    nav_set_goal(SPAWN_PIXEL_X, SPAWN_PIXEL_Y);
+    nav_set_goal(g_arena->player_x, g_arena->player_y);
     nav_rebuild_now();
     s_rooted = 0;
     s_first_frame = 1;
     s_latch_pressed = 0;
     s_latch_released = 0;
+    s_keys_down_latch = 0;
+    update_camera();                 // the fade-in shows the new arena before the player moves
     g_hitstop_frames = 0;
     memset(s_death_chunks, 0, sizeof(s_death_chunks));
-    encounters_spawn_wave(&g_encounter_mgr, s_enemies, MAX_ENEMIES, s_player.x, s_player.y);
+    encounters_spawn(&g_encounter_mgr, s_enemies, MAX_ENEMIES);
+}
+
+// Switches to another arena: its palette, floor tiles and navigation field, then starts it.
+static void arena_enter(int index) {
+    arena_select(index);
+    g_encounter_mgr.arena = ((index % g_num_arenas) + g_num_arenas) % g_num_arenas;
+    apply_arena_palette();
+    init_bg_tile_cache(&s_top_bg_tile_cache, TOP_TILE_CACHE_CAPACITY, s_top_bg_tiles_vram);
+    init_bg_tile_cache(&s_bot_bg_tile_cache, BG_TILE_CACHE_CAPACITY, s_bot_bg_tiles_vram);
+    s_top_map_ready = 0;
+    s_bot_map_ready = 0;
+    nav_init();
+    arena_restart();
+}
+
+// Fade to black, load the next arena at full black, fade back in (the simulation is frozen).
+enum { TRANSITION_NONE = 0, TRANSITION_OUT, TRANSITION_IN };
+#define FADE_STEP 2                     // brightness levels per frame (16 = black): 8 frames each way
+static int s_transition = TRANSITION_NONE;
+static int s_fade_level = 0;
+
+static void transition_update(void) {
+    if (s_transition == TRANSITION_NONE) {
+        if (g_encounter_mgr.advance) s_transition = TRANSITION_OUT;
+        return;
+    }
+    if (s_transition == TRANSITION_OUT) {
+        s_fade_level += FADE_STEP;
+        if (s_fade_level >= 16) {
+            s_fade_level = 16;
+            setBrightness(3, -16);           // fully black before the palette and tiles change
+            arena_enter(encounters_next_arena(&g_encounter_mgr));
+            s_transition = TRANSITION_IN;
+        }
+    } else {
+        s_fade_level -= FADE_STEP;
+        if (s_fade_level <= 0) {
+            s_fade_level = 0;
+            s_transition = TRANSITION_NONE;
+        }
+    }
+    setBrightness(3, -s_fade_level);
 }
 
 volatile PerfStats g_perf = {
@@ -1419,8 +1487,8 @@ int main(void) {
     vramSetBankB(VRAM_B_MAIN_BG_0x06060000);
 
     // Load Background Palette to Main and Sub engines
-    dmaCopyWords(3, g_dungeon_bg_palette, BG_PALETTE, DUNGEON_BG_PALETTE_SIZE * 2);
-    dmaCopyWords(3, g_dungeon_bg_palette, BG_PALETTE_SUB, DUNGEON_BG_PALETTE_SIZE * 2);
+    arena_select(0);
+    apply_arena_palette();
 
     // BG1 map lives at 0x06000000; 1024 streamed tile slots start at +64 KiB.
     int bot_hw_bg = bgInit(1, BgType_Text8bpp, BgSize_T_512x256, 0, 4);
@@ -1465,7 +1533,7 @@ int main(void) {
     PP_INIT();
     enemy_set_death_hook(on_enemy_death);
     nav_init();
-    nav_set_goal(SPAWN_PIXEL_X, SPAWN_PIXEL_Y);
+    nav_set_goal(g_arena->player_x, g_arena->player_y);
     nav_rebuild_now();
     player_init();
 
@@ -1502,7 +1570,8 @@ int main(void) {
         uint32_t t0 = cpuGetTiming();
         touch_track(touch_down, touch.px, touch.py);
         s_keys_down_latch |= keys_down;
-        int simulate = g_hitstop_frames <= 0;
+        transition_update();
+        int simulate = g_hitstop_frames <= 0 && s_transition == TRANSITION_NONE;
         if (!simulate) g_hitstop_frames--;
         if (simulate) {
             player_update(keys_held, s_keys_down_latch);

@@ -44,7 +44,7 @@ class PlayerRulesTest(unittest.TestCase):
         self.assertIn("if (g_player_state.is_dead) arena_restart();", MAIN_C)
         restart = MAIN_C.split("static void arena_restart(void)")[1].split("\n}")[0]
         self.assertIn("player_state_init(&g_player_state);", restart)
-        self.assertIn("encounters_spawn_wave(", restart)
+        self.assertIn("encounters_spawn(", restart)
 
     def test_player_flashes_red_during_i_frames(self):
         self.assertIn("g_player_state.invuln_timer > 0", MAIN_C.split("static void draw_player")[1].split("static void draw_hit_spark")[0])

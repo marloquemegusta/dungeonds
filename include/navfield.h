@@ -2,7 +2,7 @@
 #define NAVFIELD_H
 
 #include "game.h"
-#include "diablo_dungeon.h"
+#include "arena.h"
 
 // Distance field over the walkable floor, from the player outwards (DESIGN.md 4.6).
 // Enemies read it to walk around walls: from where they stand they step to the
@@ -13,12 +13,16 @@
 // complete, so enemies always read a finished field and the cost stays amortized.
 
 #define NAV_NODE_PX 16                       // world px per node (4 collision cells)
-#define NAV_W (WORLD_W / NAV_NODE_PX)
-#define NAV_H (WORLD_H / NAV_NODE_PX)
+#define NAV_MAX_W 32                         // largest arena (px / NAV_NODE_PX) the buffers hold
+#define NAV_MAX_H 32
 #define NAV_UNREACHABLE 255
 
-// Builds the walkable-node grid from the collision map. Call once per arena.
+// Builds the walkable-node grid from the active arena. Call whenever the arena changes.
 void nav_init(void);
+
+// Grid size of the active arena, in nodes.
+int nav_width(void);
+int nav_height(void);
 
 // Sets the goal (world px) used when the next search starts. Cheap; call every frame.
 void nav_set_goal(int goal_px, int goal_py);

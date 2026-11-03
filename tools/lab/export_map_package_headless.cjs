@@ -49,6 +49,12 @@ const HTML = path.join(__dirname, 'FBX-Web-Renderer-offline.html');
       set('rimLight', s.lighting?.rim);
       set('worldLight', s.lighting?.world);
       if (s.orthoScaleMeters) window.__spriteLab.mapOrthoScale = s.orthoScaleMeters;
+      // Optional: s.shadows === false turns the key-light shadow map off (the old
+      // package settings do not carry the key, so their behaviour is unchanged).
+      if (s.shadows === false) {
+        const sh = document.getElementById('shadowToggle');
+        if (sh) { sh.checked = false; sh.dispatchEvent(new Event('change', { bubbles: true })); }
+      }
     }, settings);
 
     const before = await page.evaluate(() => window.__spriteLab.mapRenderCount || 0);

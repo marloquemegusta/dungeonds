@@ -1,9 +1,10 @@
 #include "navfield.h"
 #include "collision.h"
-#include "diablo_dungeon.h"
+#include "arena.h"
 
-#define NAV_NODES (NAV_W * NAV_H)
+#define NAV_NODES (NAV_MAX_W * NAV_MAX_H)
 
+static int s_w = 0, s_h = 0;               // grid of the active arena
 static uint8_t s_walkable[NAV_NODES];
 static uint8_t s_dist[2][NAV_NODES];       // [read, build] swapped when a search completes
 static int s_read = 0;
@@ -17,29 +18,34 @@ static const int8_t s_dy[8] = { 0, 0, 1, -1, 1, -1, 1, -1 };
 
 static inline int node_of(int px, int py) {
     int nx = px / NAV_NODE_PX, ny = py / NAV_NODE_PX;
-    if (px < 0 || py < 0 || nx >= NAV_W || ny >= NAV_H) return -1;
-    return ny * NAV_W + nx;
+    if (px < 0 || py < 0 || nx >= s_w || ny >= s_h) return -1;
+    return ny * s_w + nx;
 }
 
 // A diagonal step may not cut the corner of a blocked node.
 static inline int step_allowed(int nx, int ny, int k) {
     int tx = nx + s_dx[k], ty = ny + s_dy[k];
-    if ((unsigned)tx >= NAV_W || (unsigned)ty >= NAV_H) return 0;
-    if (!s_walkable[ty * NAV_W + tx]) return 0;
+    if ((unsigned)tx >= s_w || (unsigned)ty >= s_h) return 0;
+    if (!s_walkable[ty * s_w + tx]) return 0;
     if (s_dx[k] != 0 && s_dy[k] != 0) {
-        if (!s_walkable[ny * NAV_W + tx] || !s_walkable[ty * NAV_W + nx]) return 0;
+        if (!s_walkable[ny * s_w + tx] || !s_walkable[ty * s_w + nx]) return 0;
     }
     return 1;
 }
 
+int nav_width(void) { return s_w; }
+int nav_height(void) { return s_h; }
+
 void nav_init(void) {
+    s_w = g_arena->world_w / NAV_NODE_PX;
+    s_h = g_arena->world_h / NAV_NODE_PX;
     s_walkable_count = 0;
-    for (int ny = 0; ny < NAV_H; ny++) {
-        for (int nx = 0; nx < NAV_W; nx++) {
+    for (int ny = 0; ny < s_h; ny++) {
+        for (int nx = 0; nx < s_w; nx++) {
             fixed cx = TO_FIXED(nx * NAV_NODE_PX + NAV_NODE_PX / 2);
             fixed cy = TO_FIXED(ny * NAV_NODE_PX + NAV_NODE_PX / 2);
             int ok = position_is_free(cx, cy);
-            s_walkable[ny * NAV_W + nx] = (uint8_t)ok;
+            s_walkable[ny * s_w + nx] = (uint8_t)ok;
             s_walkable_count += ok;
         }
     }
@@ -61,17 +67,17 @@ int nav_walkable_count(void) {
 static int resolve_goal(int node, int px, int py) {
     if (node < 0) return -1;
     if (s_walkable[node]) return node;
-    int nx = node % NAV_W, ny = node / NAV_W;
+    int nx = node % s_w, ny = node / s_w;
     int best = -1, best_d2 = 0x7FFFFFFF;
     for (int k = 0; k < 8; k++) {
         int tx = nx + s_dx[k], ty = ny + s_dy[k];
-        if ((unsigned)tx >= NAV_W || (unsigned)ty >= NAV_H || !s_walkable[ty * NAV_W + tx]) continue;
+        if ((unsigned)tx >= s_w || (unsigned)ty >= s_h || !s_walkable[ty * s_w + tx]) continue;
         int cx = tx * NAV_NODE_PX + NAV_NODE_PX / 2 - px;
         int cy = ty * NAV_NODE_PX + NAV_NODE_PX / 2 - py;
         int d2 = cx * cx + GROUND_DY2(cy);
         if (d2 < best_d2) {
             best_d2 = d2;
-            best = ty * NAV_W + tx;
+            best = ty * s_w + tx;
         }
     }
     return best;
@@ -84,7 +90,7 @@ void nav_set_goal(int goal_px, int goal_py) {
 
 static void start_search(void) {
     uint8_t *dist = s_dist[1 - s_read];
-    for (int i = 0; i < NAV_NODES; i++) dist[i] = NAV_UNREACHABLE;
+    for (int i = 0; i < s_w * s_h; i++) dist[i] = NAV_UNREACHABLE;
     s_head = 0;
     s_tail = 0;
     dist[s_goal_node] = 0;
@@ -99,12 +105,12 @@ void nav_update(int budget) {
     uint8_t *dist = s_dist[1 - s_read];
     while (budget-- > 0 && s_head < s_tail) {
         int node = s_queue[s_head++];
-        int nx = node % NAV_W, ny = node / NAV_W;
+        int nx = node % s_w, ny = node / s_w;
         int next = dist[node] + 1;
         if (next >= NAV_UNREACHABLE) continue;
         for (int k = 0; k < 8; k++) {
             if (!step_allowed(nx, ny, k)) continue;
-            int target = (ny + s_dy[k]) * NAV_W + (nx + s_dx[k]);
+            int target = (ny + s_dy[k]) * s_w + (nx + s_dx[k]);
             if (dist[target] != NAV_UNREACHABLE) continue;
             dist[target] = (uint8_t)next;
             s_queue[s_tail++] = (uint16_t)target;
@@ -135,18 +141,18 @@ int nav_next_step(int px, int py, int *target_px, int *target_py) {
     const uint8_t *dist = s_dist[s_read];
     int here = dist[node];
     if (here == 0) return 0;
-    int nx = node % NAV_W, ny = node / NAV_W;
+    int nx = node % s_w, ny = node / s_w;
     int best = here, best_k = -1;
     for (int k = 0; k < 8; k++) {
         // A body can stand where its node's centre is blocked (hugging a wall); then no
         // corner rule applies from this node, any reachable neighbour is a way out.
         if (here == NAV_UNREACHABLE) {
             int tx = nx + s_dx[k], ty = ny + s_dy[k];
-            if ((unsigned)tx >= NAV_W || (unsigned)ty >= NAV_H || !s_walkable[ty * NAV_W + tx]) continue;
+            if ((unsigned)tx >= s_w || (unsigned)ty >= s_h || !s_walkable[ty * s_w + tx]) continue;
         } else if (!step_allowed(nx, ny, k)) {
             continue;
         }
-        int d = dist[(ny + s_dy[k]) * NAV_W + (nx + s_dx[k])];
+        int d = dist[(ny + s_dy[k]) * s_w + (nx + s_dx[k])];
         if (d < best) {
             best = d;
             best_k = k;

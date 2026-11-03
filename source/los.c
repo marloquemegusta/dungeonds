@@ -1,10 +1,10 @@
 #include "los.h"
-#include "diablo_dungeon.h"
+#include "arena.h"
 
 static inline uint8_t get_collision_flags(int cx, int cy) {
-    if ((uint32_t)cx >= COLLISION_W || (uint32_t)cy >= COLLISION_H) return 3;
-    uint32_t index = (uint32_t)cy * COLLISION_W + (uint32_t)cx;
-    return (g_dungeon_collision[index >> 2] >> ((index & 3) * 2)) & 0x03;
+    if ((uint32_t)cx >= g_arena->collision_w || (uint32_t)cy >= g_arena->collision_h) return 3;
+    uint32_t index = (uint32_t)cy * g_arena->collision_w + (uint32_t)cx;
+    return (g_arena->collision[index >> 2] >> ((index & 3) * 2)) & 0x03;
 }
 
 int los_has_line_of_sight(int px0, int py0, int px1, int py1, int max_radius_px) {

@@ -18,7 +18,7 @@
 
 ## 3. Decisiones Abiertas
 - **Lectura tras paredes (transparencias):** qué se ve del personaje y de los enemigos detrás de una pared y cómo se marca la base de la pared. Sin decidir; preguntas en `TECHNICAL.md` §4.6. No se toca código hasta decidirlo aquí.
-- **Mapas de las arenas:** el mapa actual (`isometric_shooter_bl`) se sustituye por 3–4 mapas sencillos hechos a mano. Decidido (2026-11-03): mapas pequeños (~1–2 pantallas, orientativo 512×384) horneados en C con el pipeline lab → baker, sin NitroFS. Falta decidir la forma de cada uno (coberturas, pasillos, entrada y salida) y cómo se encadenan; se fija con el usuario al empezar la Fase D, antes de modelar.
+- **Mapas de las arenas:** decididos el 2026-11-03, ver §4.6. Se sustituye el mapa grande `isometric_shooter_bl` por 4 arenas pequeñas horneadas en C con el pipeline lab → baker, sin NitroFS.
 - **Sonido:** fuera de la v0.1 (decidido 2026-11-03).
 - **Transparencias tras paredes:** también fuera de la v0.1; el comportamiento provisional actual no se amplía.
 - **Tuning de combate:** números concretos; ver §4.7.
@@ -81,6 +81,16 @@ Ambas con munición infinita; las limita su ritmo y su coste de uso.
 - **Navegación:** campo de distancias por BFS sobre la rejilla de colisión desde el jugador, recalculado cada N frames y amortizado; los enemigos bajan por el gradiente. Persecución directa si hay línea de visión.
 - **Separación:** repulsión simple entre enemigos para evitar apilamiento.
 - **Presupuesto:** IA amortizada; 60 FPS certificados en la DS (`AGENTS.md` regla 6).
+
+**Arenas (decidido 2026-11-03).** Datos en `assets/arenas/arenas.json` (fuente única de geometría, inicio del jugador y enemigos).
+- **Tamaño:** cada arena es una imagen de 384×384 px: dos pantallas de alto (la cámara no se mueve en vertical y las dos pantallas muestran la arena entera) y 1,5 de ancho (scroll horizontal; la cámara se queda dentro de la arena).
+- **Forma, una distinta por arena:**
+  1. Sala abierta con 2 pilares: aprender strafe contra cargadores.
+  2. Muros bajos repartidos: cobertura para tiradores.
+  3. Dos pasillos paralelos separados por un muro: filas para el francotirador.
+  4. Sala grande con 4 pilares y un pasillo central.
+- **Enemigos (todos activos a la vez):** A1 3 cargadores; A2 3 tiradores; A3 3 tiradores lejos + 1 cargador; A4 3 cargadores + 4 tiradores.
+- **Encadenado:** automático. Al morir el último enemigo hay una pausa de medio segundo (30 frames) y se pasa a la siguiente arena con vida completa, sin puerta ni camino a pie. Tras la cuarta se vuelve a la primera. Morir reinicia la arena actual.
 
 ### 4.7 Game Feel
 - **Al impactar:** hitstop de 2–4 frames, destello blanco del enemigo, empujón (escopeta).

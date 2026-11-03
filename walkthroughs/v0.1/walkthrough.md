@@ -74,3 +74,28 @@ Sin fallos graves. Corregidos: pool de proyectiles (16 -> 32), disparo que nace 
 
 ### Pendiente
 - Tuning de banda, velocidad y cadencia en la DS (Fase E).
+
+## Fase D - Arenas (DESIGN.md 4.6)
+
+### Decisiones (sesión de diseño con el usuario, 2026-11-03)
+Arenas de 384×384 px (dos pantallas de alto, 1,5 de ancho), una forma distinta cada una (sala con 2 pilares, muros bajos, dos pasillos, sala grande con pasillo central), composición de DESIGN (3 cargadores / 3 tiradores / 3 tiradores lejos + 1 cargador / 3 cargadores + 4 tiradores) y paso automático con pausa de medio segundo. Detalle en `DESIGN.md` §4.6 y `assets/arenas/arenas.json`.
+
+### Qué cambia
+- **Assets:** `tools/make_arena_glb.py` (escritor GLB propio, sin Blender), `tools/export_arenas.py` (lab headless, recorte 384×384 de un render de 896×541 porque el lab encuadra por la caja envolvente del modelo girado), paquetes en `assets/sprites/arenas/`. El export mide <= 1 px de error contra la especificación y la rejilla de colisión coincide con suelo menos bloques.
+- **Baker** `tools/bake_arena.py` (sustituye a `bake_isometric_shooter_bl.py`): un `source/arena_0N.c` por arena (paleta propia, tiles con presupuesto, colisión, oclusión, inicio y enemigos) y `source/arenas.c`. Cada arena usa 49-72 tiles (la peor ventana, 26-49) y ~60 KB de fuente; la ROM baja de 1,9 MB a 1,4 MB.
+- **Runtime:** `include/arena.h` + `g_arena`; colisión, visión, oclusión, fondo, navegación (32×32 casillas máx.) y cámara leen de la arena activa. Encuentros por arena (`encounters.c` reescrito, sin plantas, drops ni portal de salida), reinicio de la arena al morir y paso a la siguiente con fundido a negro.
+- **Cámara:** sin salir de la arena en horizontal; el jugador siempre en la pantalla táctil (puede apuntar hacia arriba), con a lo sumo media pantalla de vacío fuera.
+- **Depuración:** L+R+X limpia la arena (para escenarios).
+- **Retirado:** el mapa `isometric_shooter_bl` del build, sus tablas generadas (`diablo_dungeon`, `dungeon_bg_tiles`, `dungeon_occlusion`) y los 5 escenarios atados a él.
+
+### Evidencia (DeSmuME)
+- [Render de las 4 arenas en el lab, con inicio y spawns](assets/faseD_arenas_render_lab.png).
+- [Cadena 1 -> 2 -> 3 -> 4 -> 1](assets/faseD_cadena_4_arenas.png) (`arena_chain`, con L+R+X): cada arena con su forma y su composición. La caída de brillo entre arenas se midió en la captura (de 147 a 24 y de vuelta).
+- [Oclusión tras un pilar y cargadores rodeándolo](assets/faseD_oclusion_pilar.png) (`arena_pillar_occlusion`).
+- 17 tests de host, entre ellos `test_arena_export` (geometría), `test_arena_data` (inicio y spawns libres, composición) y `test_navfield` (compilado con gcc sobre las 4 arenas: spawns alcanzables, suelo conexo).
+
+### Limitaciones conocidas
+- Las arenas son un blockout liso (suelo y cajas grises, sin decoración); sirven para la prueba de diversión, no como arte final.
+- El suelo no tiene muro frontal ni los adornos del mapa viejo (rayas rosas, conos).
+- El primer plano de cada caja (~9 px inferiores) no cuenta como oclusor porque el lab solo cuenta superficies de más de 0,25 m.
+- Pendiente de la DS: rendimiento de arenas densas (A4, 7 enemigos) y de `nav_update` con el campo recalculándose continuamente.

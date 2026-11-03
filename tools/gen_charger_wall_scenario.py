@@ -20,8 +20,9 @@ with tempfile.TemporaryDirectory() as tmp:
     exe = Path(tmp) / "nav_path.exe"
     subprocess.run(["gcc", "-std=gnu11", "-O1", "-I", str(ROOT / "tests/host/stubs"), "-I", str(ROOT / "include"),
                     str(ROOT / "tests/host/nav_path_tool.c"), str(ROOT / "source/collision.c"),
-                    str(ROOT / "source/navfield.c"), str(ROOT / "source/diablo_dungeon.c"),
-                    str(ROOT / "source/los.c"), "-o", str(exe), "-lm"], check=True)
+                    str(ROOT / "source/navfield.c"), str(ROOT / "source/los.c"), str(ROOT / "source/arena.c"),
+                    str(ROOT / "source/arenas.c"), *map(str, sorted((ROOT / "source").glob("arena_*.c"))),
+                    "-o", str(exe), "-lm"], check=True)
     out = subprocess.run([str(exe), "60"], capture_output=True, text=True, check=True).stdout.splitlines()
 
 target = out[0].split()

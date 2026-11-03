@@ -6,83 +6,41 @@
 #include "game.h"
 #include "gameplay.h"
 
-// ---------------------------------------------------------------------------
-// 1. Encounter States & Tuning Tables
-// ---------------------------------------------------------------------------
+// One encounter per arena (DESIGN.md 4.6): when the arena starts all its enemies spawn at the
+// points listed in the arena data and act at once. When the last one dies there is a short
+// pause and then the game moves to the next arena (the first one again after the last).
 
-#define MAX_FLOOR_LEVELS 5
+#define ENCOUNTER_CLEAR_PAUSE_FRAMES 30     // half a second between the last kill and the next arena
 
 typedef enum {
-    ENCOUNTER_STATE_IDLE = 0,
-    ENCOUNTER_STATE_ACTIVE,
+    ENCOUNTER_STATE_ACTIVE = 0,
     ENCOUNTER_STATE_CLEARED
 } EncounterState;
 
-/* TUNABLE-PLACEHOLDER: Floor Progression Scaling Struct */
 typedef struct {
-    int floor_index;              /* TUNABLE-PLACEHOLDER: 0-based floor level */
-    int enemy_count;              /* TUNABLE-PLACEHOLDER: total enemies spawned in wave */
-    int charger_ratio;            /* TUNABLE-PLACEHOLDER: ratio / percent of chargers (0..100) */
-} FloorDifficultyTuning;
-
-extern const FloorDifficultyTuning g_floor_tuning[MAX_FLOOR_LEVELS];
-
-// ---------------------------------------------------------------------------
-// 2. Encounter Manager
-// ---------------------------------------------------------------------------
-
-typedef struct {
-    int current_floor;            // 0-based floor difficulty level (0..MAX_FLOOR_LEVELS-1)
-    int total_cleared_floors;     // Cumulative number of completed floors
-    EncounterState wave_state;    // IDLE, ACTIVE, CLEARED
-    int wave_index;               // Wave index
-    int enemies_total;            // Total enemies spawned in this wave
-    int enemies_remaining;        // Active alive enemies remaining
-    int exit_open;                // 1 if exit transition is active/unlocked
-    fixed exit_x;                 // Exit tile world coordinate (8.8 fixed)
-    fixed exit_y;                 // Exit tile world coordinate (8.8 fixed)
-    int exit_radius;              // Player activation distance to exit tile (px)
-    fixed last_kill_x;            // Coordinate of last defeated enemy
-    fixed last_kill_y;
+    int arena;                    // index of the arena being played (into g_arenas)
+    int total_cleared;            // arenas cleared since the game started
+    EncounterState state;
+    int enemies_total;            // enemies spawned in this arena
+    int enemies_remaining;        // alive enemies
+    int clear_timer;              // frames left in the pause after the last kill
+    int advance;                  // 1 when the pause is over: main loads the next arena
 } EncounterManager;
 
 extern EncounterManager g_encounter_mgr;
 
-/**
- * Initializes the encounter manager.
- */
 void encounters_init(EncounterManager *mgr);
 
-/**
- * Spawns a wave of enemies on valid walkable coordinates using position_is_free
- * and position_is_free, according to the current floor's difficulty tuning.
- */
-int encounters_spawn_wave(EncounterManager *mgr, Enemy *enemies, int max_enemies,
-                          fixed anchor_x, fixed anchor_y);
+// Spawns the enemies of the active arena (g_arena) and starts the encounter.
+int encounters_spawn(EncounterManager *mgr, Enemy *enemies, int max_enemies);
 
-/**
- * Main per-frame update for encounters.
- * - Tracks alive enemies in current wave.
- * - Triggers wave clear on all enemies defeated and opens the exit transition tile.
- * - Advances to next floor when player steps on the active exit tile.
- */
-void encounters_update(EncounterManager *mgr, Enemy *enemies, int max_enemies,
-                       PlayerState *player, fixed player_x, fixed player_y);
+// Counts the living enemies; on the last kill starts the pause, and raises `advance` when it ends.
+void encounters_update(EncounterManager *mgr, Enemy *enemies, int max_enemies);
 
-/**
- * Advances difficulty to next floor level and spawns the next wave.
- */
-int encounters_advance_floor(EncounterManager *mgr, Enemy *enemies, int max_enemies,
-                             fixed player_x, fixed player_y);
+// Index of the arena that follows the current one.
+int encounters_next_arena(const EncounterManager *mgr);
 
-/**
- * Records enemy death position for drop placement.
- */
+// Records where an enemy died (kept for effects).
 void encounters_record_kill(EncounterManager *mgr, fixed x, fixed y);
-
-/**
- * Renders the exit portal / marker onto the screen buffer if the encounter is cleared.
- */
-void encounters_render(const EncounterManager *mgr, uint16_t *buffer, int cam_x, int cam_y);
 
 #endif // ENCOUNTERS_H

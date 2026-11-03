@@ -1,0 +1,75 @@
+{
+  "comment": "Source of truth for the v0.1 arenas (DESIGN.md 4.6). All positions are in pixels of the final 384x384 arena image (the lab render), screen aligned: x to the right, y down. Footprints are the ground projection, so a 32x16 footprint is a 32x32 ground-pixel square (the floor is compressed 2:1 on screen). Heights are in metres. 40.42 px per metre.",
+  "image": [384, 384],
+  "pixels_per_metre": 40.42,
+  "camera_elevation_degrees": 30,
+  "floor": { "rect": [16, 120, 368, 368] },
+  "boundary_wall_height_m": 2.4,
+  "arenas": [
+    {
+      "name": "arena_01",
+      "title": "Sala abierta con 2 pilares",
+      "blocks": [
+        { "rect": [104, 216, 136, 232], "height_m": 2.0 },
+        { "rect": [248, 216, 280, 232], "height_m": 2.0 }
+      ],
+      "player_start": [192, 336],
+      "enemies": [
+        { "type": "charger", "at": [64, 160] },
+        { "type": "charger", "at": [192, 148] },
+        { "type": "charger", "at": [320, 160] }
+      ]
+    },
+    {
+      "name": "arena_02",
+      "title": "Muros bajos",
+      "blocks": [
+        { "rect": [72, 188, 168, 200], "height_m": 1.6 },
+        { "rect": [216, 188, 312, 200], "height_m": 1.6 },
+        { "rect": [144, 272, 240, 284], "height_m": 1.6 }
+      ],
+      "player_start": [192, 340],
+      "enemies": [
+        { "type": "shooter", "at": [60, 150] },
+        { "type": "shooter", "at": [192, 140] },
+        { "type": "shooter", "at": [324, 150] }
+      ]
+    },
+    {
+      "name": "arena_03",
+      "title": "Dos pasillos",
+      "blocks": [
+        { "rect": [180, 132, 204, 292], "height_m": 2.0 }
+      ],
+      "player_start": [192, 344],
+      "enemies": [
+        { "type": "shooter", "at": [96, 144] },
+        { "type": "shooter", "at": [290, 144] },
+        { "type": "shooter", "at": [60, 176] },
+        { "type": "charger", "at": [320, 190] }
+      ]
+    },
+    {
+      "name": "arena_04",
+      "title": "Sala grande con pasillo central",
+      "blocks": [
+        { "rect": [64, 196, 96, 212], "height_m": 2.0 },
+        { "rect": [288, 196, 320, 212], "height_m": 2.0 },
+        { "rect": [64, 288, 96, 304], "height_m": 2.0 },
+        { "rect": [288, 288, 320, 304], "height_m": 2.0 },
+        { "rect": [160, 220, 172, 300], "height_m": 1.8 },
+        { "rect": [212, 220, 224, 300], "height_m": 1.8 }
+      ],
+      "player_start": [192, 344],
+      "enemies": [
+        { "type": "charger", "at": [60, 150] },
+        { "type": "charger", "at": [192, 148] },
+        { "type": "charger", "at": [324, 150] },
+        { "type": "shooter", "at": [100, 140] },
+        { "type": "shooter", "at": [284, 140] },
+        { "type": "shooter", "at": [44, 250] },
+        { "type": "shooter", "at": [340, 250] }
+      ]
+    }
+  ]
+}
