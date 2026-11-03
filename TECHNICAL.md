@@ -60,7 +60,7 @@ Origen: `walkthroughs/audit-saneamiento-2d3d/`. Lo ya resuelto (colisión/oclusi
 ### 4.1. Proyección y render 2.5D
 - **Escala personaje/mapa.** El mapa está a 40,42 px/m (`map_settings.json`) y los sprites miden ~30 px: el personaje equivale a ~0,75 m y queda oculto tras obstáculos de 1 m. Requiere re-renderizar los tres personajes (8 dir × 8 frames) a ~2× y ampliar el canvas de 40×40, con impacto en RAM/ROM; fijar entonces una única escala px/m con test.
 - **Pantalla superior sin actores.** Sólo la inferior dibuja actores; enemigos por encima de la cámara no se ven. Exige un segundo pase de render por frame (vigilar el presupuesto de 60 FPS).
-- **Parpadeo del ocluido (`blit_stride`, frames impares):** diseño intencional; desde 2026-11-03 también aplica a los enemigos mientras el jugador esté tras una pared (`s_player_see_through`).
+- **Transparencias tras paredes:** diseño sin decidir; ver §4.6.
 - Resuelto (ver `STATUS.md`): movimiento/colisión isotrópicos en suelo (`GROUND_DY2`, elipse 6×3), ancla única exportada, oclusión exacta por consulta directa de tramos (sin mapa 4×4 ni reconstrucción por cámara).
 
 ### 4.2. Gameplay (preliminar, diferido)
@@ -86,9 +86,21 @@ Origen: `walkthroughs/audit-saneamiento-2d3d/`. Lo ya resuelto (colisión/oclusi
 Origen: `walkthroughs/audit-motor-2d3d/`. Resueltos en el prototipo A (compositor directo en VRAM, spans sucios, oclusión por consulta, HUD con START, logs bajo `DEBUG`); lo siguiente sigue pendiente.
 - **Métricas.** `cpu_percent` excluye DMA y anillo BG; comentario obsoleto de presupuesto (280095) en `game.h`. Presupuesto real: 560190 ticks/frame. El rendimiento solo se valida en DS con `PERF_PROFILE` (`/dungeonds_perf.log`), no en DeSmuME. El Makefile no define `DEBUG` y `encounters.c` conserva 3 `nocashMessage`.
 - **Timestep por frame presentado.** A 30 FPS el juego va a media velocidad; usar delta de tiempo o paso fijo con acumulador.
-- **Transparencia por parpadeo temporal** (`s_frame_index & 1`): solo válida a 60 FPS estables; la base de pared depende de ella y sale de la rejilla de colisión. Rediseñar con patrón espacial estable o alfa por hardware.
+- **Transparencias:** ver §4.6.
 - **Anillo de BG:** reescanea 2048 celdas por pantalla en cada cambio de tile (~0,1 ms de media, picos ~2 ms). Baja prioridad.
 - **Assets:** sprites BGR555 crudos (614 KB) y máscaras de sombra 4 bpp 80×80 (614 KB) sin paleta ni compresión ni NitroFS; ~2,0 MiB de 3,5 MiB de EWRAM; ITCM/DTCM sin uso.
 - **Pipeline:** `tools/rebuild-assets.ps1` llama a `tools/build_assets.py` inexistente; `generate_player_sprites_c.py` copia texto del `.h` del lab en vez de convertir `shadow.png`; tamaño del mundo duplicado en 4 sitios; `SPAWN` hardcodeado en el baker; `.c` generados sin hash de origen; ~40 scripts muertos en `tools/`.
 - **Acoplamiento:** coordenadas de mundo = píxeles de pantalla; impactos con círculo en pantalla frente a movimiento con métrica de suelo; estado global en `main.c`; `on_enemy_death` copia píxeles.
 - **Escenarios:** sensibles a frames perdidos del emulador; deberían basarse en frames de lógica, no en vblanks.
+
+### 4.6. Transparencias y lectura tras paredes: DISEÑO POR DECIDIR
+No hay decisión de diseño tomada sobre cómo mostrar lo que queda detrás de una pared. Lo que hay en el código es provisional y no debe tomarse como referencia ni ampliarse:
+- **Personaje:** parpadeo temporal (`blit_stride`, `s_frame_index & 1`): los píxeles ocluidos se pintan en frames alternos. Solo se lee como transparencia a 60 FPS estables.
+- **Enemigos:** usan el mismo parpadeo solo mientras el jugador está ocluido (`s_player_see_through`); si no, quedan ocultos del todo.
+- **Pie de la pared / suelo oculto:** mientras el jugador está ocluido se dibuja su sombra sobre la pared y una línea del borde de la huella de colisión (`draw_hidden_wall_base`) en una caja de 64×48 px. Esa línea no coincide con la base visible de la pared y en hardware no funciona bien.
+
+Preguntas abiertas a resolver en una sesión de diseño (`DESIGN.md`) antes de tocar código:
+1. ¿Qué se ve del personaje tras una pared (parpadeo, trama espacial fija, silueta de color, contorno, alfa por hardware)?
+2. ¿Qué se ve de los enemigos y bajo qué condición (nunca, solo cuando el jugador también está detrás, siempre como silueta)?
+3. ¿Cómo se comunica dónde está el suelo caminable y la base de la pared en la zona oculta (ocultación ambiental en el render del mapa, recorte/transparencia de la pared cerca del jugador, otra técnica)?
+4. ¿Encaja con el compositor por software actual o pide OAM/motor 3D (alfa por hardware, ventanas de OBJ, Z-buffer)?

@@ -10,7 +10,7 @@
 // stages in ms. It is independent of CRASHLOG_ENABLED. Set to 0 to compile
 // every call away (zero overhead, original HUD).
 #ifndef PERF_PROFILE
-#define PERF_PROFILE 1
+#define PERF_PROFILE 0
 #endif
 
 // Stage ids. Entries below PP_RANKED are ranked in the HUD.
