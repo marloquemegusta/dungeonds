@@ -1,189 +1,71 @@
+import re
 import unittest
+from pathlib import Path
 
-# Mirror of C fixed point and tuning constants
-FIXED_SHIFT = 8
-
-
-def to_fixed(v):
-    return int(v) << FIXED_SHIFT
-
-
-def to_int(v):
-    return int(v) >> FIXED_SHIFT
+ROOT = Path(__file__).resolve().parents[1]
+GAMEPLAY_H = (ROOT / "include" / "gameplay.h").read_text(encoding="utf-8")
+GAMEPLAY_C = (ROOT / "source" / "gameplay.c").read_text(encoding="utf-8")
+AI_C = (ROOT / "source" / "enemy_ai.c").read_text(encoding="utf-8")
+PROJECTILES_C = (ROOT / "source" / "projectiles.c").read_text(encoding="utf-8")
+MAIN_C = (ROOT / "source" / "main.c").read_text(encoding="utf-8")
 
 
-PLAYER_MAX_HP = 100
-PLAYER_MAX_ARMOR = 100
-
-ENEMY_CHARGER_HP = 60
-ENEMY_SHOOTER_HP = 20
-
-WEAPON_MAX_AMMO = {
-    "pistol": 0,
-    "shotgun": 50,
-    "gatling": 200,
-    "heavy": 20,
-}
-
-WEAPON_PICKUP_AMMO = {
-    "pistol": 0,
-    "shotgun": 10,
-    "gatling": 40,
-    "heavy": 5,
-}
+def define(name):
+    return int(re.search(rf"#define {name} (\d+)", GAMEPLAY_H).group(1))
 
 
-class LcgRng:
-    def __init__(self, seed: int = 123456789):
-        self.state = seed if seed != 0 else 1
+class PlayerRulesTest(unittest.TestCase):
+    """DESIGN.md 4.2: a few hits, i-frames after each one, restart on death."""
 
-    def next(self) -> int:
-        self.state = (self.state * 1664525 + 1013904223) & 0xFFFFFFFF
-        return self.state
+    def test_health_is_four_to_five_hits(self):
+        self.assertIn(define("PLAYER_MAX_HP"), (4, 5))
 
-    def range(self, min_val: int, max_val: int) -> int:
-        if min_val >= max_val:
-            return min_val
-        r = self.next()
-        return min_val + (r % (max_val - min_val + 1))
+    def test_i_frames_are_brief(self):
+        self.assertTrue(30 <= define("PLAYER_IFRAMES") <= 90)
 
+    def test_no_armor_pickups_or_ammo(self):
+        for removed in ("armor", "ammo", "PICKUP", "pickup", "apply_damage"):
+            self.assertNotIn(removed, GAMEPLAY_H, removed)
+            self.assertNotIn(removed, GAMEPLAY_C, removed)
 
-class PlayerState:
-    def __init__(self):
-        self.hp = PLAYER_MAX_HP
-        self.max_hp = PLAYER_MAX_HP
-        self.armor = 0
-        self.max_armor = PLAYER_MAX_ARMOR
-        self.is_dead = False
-        self.ammo = {
-            "pistol": 0,
-            "shotgun": 12,
-            "gatling": 50,
-            "heavy": 5,
-        }
+    def test_hit_respects_i_frames_god_mode_and_death(self):
+        body = GAMEPLAY_C.split("int player_take_hit")[1].split("\n}")[0]
+        self.assertIn("player->invuln_timer > 0) return 0", body)
+        self.assertIn("player->god_mode", body)
+        self.assertIn("player->hp--;", body)
+        self.assertIn("player->invuln_timer = PLAYER_IFRAMES;", body)
+        self.assertIn("player->is_dead = 1;", body)
 
-    def apply_damage(self, damage: int):
-        if self.is_dead or damage <= 0:
-            return
+    def test_every_enemy_attack_is_one_hit(self):
+        self.assertIn("player_take_hit(&g_player_state);", AI_C)
+        self.assertIn("player_take_hit(&g_player_state);", PROJECTILES_C)
 
-        absorbed = 0
-        if self.armor > 0:
-            absorbed = damage // 3
-            if absorbed > self.armor:
-                absorbed = self.armor
-            self.armor -= absorbed
+    def test_death_restarts_the_arena_with_full_health(self):
+        self.assertIn("if (g_player_state.is_dead) arena_restart();", MAIN_C)
+        restart = MAIN_C.split("static void arena_restart(void)")[1].split("\n}")[0]
+        self.assertIn("player_state_init(&g_player_state);", restart)
+        self.assertIn("encounters_spawn_wave(", restart)
 
-        hp_damage = damage - absorbed
-        self.hp -= hp_damage
-        if self.hp <= 0:
-            self.hp = 0
-            self.is_dead = True
+    def test_player_flashes_red_during_i_frames(self):
+        self.assertIn("g_player_state.invuln_timer > 0", MAIN_C.split("static void draw_player")[1].split("static void draw_hit_spark")[0])
 
-    def collect_pickup(self, ptype: str, amount: int = 0) -> bool:
-        if self.is_dead:
-            return False
+    def test_enemy_hit_raises_hitstop_and_has_no_drops(self):
+        body = GAMEPLAY_C.split("void enemy_hit")[1]
+        self.assertIn("g_hitstop_frames", body)
+        self.assertNotIn("pickup", body)
 
-        if ptype == "health":
-            if self.hp >= self.max_hp:
-                return False
-            gain = amount if amount > 0 else 25
-            self.hp = min(self.max_hp, self.hp + gain)
-            return True
+    def test_lcg_rng_is_deterministic(self):
+        # Same LCG as gameplay.c; a seeded sequence must repeat.
+        def seq(seed):
+            state = seed
+            out = []
+            for _ in range(10):
+                state = (state * 1664525 + 1013904223) & 0xFFFFFFFF
+                out.append(state)
+            return out
 
-        if ptype == "armor":
-            if self.armor >= self.max_armor:
-                return False
-            gain = amount if amount > 0 else 25
-            self.armor = min(self.max_armor, self.armor + gain)
-            return True
-
-        if ptype in WEAPON_MAX_AMMO:
-            max_cap = WEAPON_MAX_AMMO[ptype]
-            if max_cap == 0 or self.ammo[ptype] >= max_cap:
-                return False
-            gain = amount if amount > 0 else WEAPON_PICKUP_AMMO[ptype]
-            self.ammo[ptype] = min(max_cap, self.ammo[ptype] + gain)
-            return True
-
-        return False
-
-
-class TestGameplayContract(unittest.TestCase):
-    def test_initial_player_state(self):
-        player = PlayerState()
-        self.assertEqual(player.hp, 100)
-        self.assertEqual(player.armor, 0)
-        self.assertFalse(player.is_dead)
-
-    def test_unarmored_damage(self):
-        player = PlayerState()
-        player.apply_damage(30)
-        self.assertEqual(player.hp, 70)
-        self.assertEqual(player.armor, 0)
-        self.assertFalse(player.is_dead)
-
-    def test_armored_damage_doom_absorption(self):
-        player = PlayerState()
-        player.armor = 60
-        # 30 damage: absorbed = 30 // 3 = 10. Armor becomes 50. HP damage = 20. HP becomes 80.
-        player.apply_damage(30)
-        self.assertEqual(player.armor, 50)
-        self.assertEqual(player.hp, 80)
-
-    def test_armor_clamp_absorption(self):
-        player = PlayerState()
-        player.armor = 5
-        # 30 damage: absorbed = 10, but armor only has 5.
-        # absorbed is clamped to 5. Armor becomes 0. HP damage = 30 - 5 = 25. HP becomes 75.
-        player.apply_damage(30)
-        self.assertEqual(player.armor, 0)
-        self.assertEqual(player.hp, 75)
-
-    def test_death_transition(self):
-        player = PlayerState()
-        player.apply_damage(150)
-        self.assertEqual(player.hp, 0)
-        self.assertTrue(player.is_dead)
-        # Post-death damage is ignored
-        player.apply_damage(50)
-        self.assertEqual(player.hp, 0)
-
-    def test_health_pickup(self):
-        player = PlayerState()
-        # Cannot pick up at 100 HP
-        self.assertFalse(player.collect_pickup("health", 25))
-        # Damaged to 70 HP
-        player.hp = 70
-        self.assertTrue(player.collect_pickup("health", 25))
-        self.assertEqual(player.hp, 95)
-        # Cap at max HP
-        self.assertTrue(player.collect_pickup("health", 25))
-        self.assertEqual(player.hp, 100)
-
-    def test_armor_pickup(self):
-        player = PlayerState()
-        self.assertEqual(player.armor, 0)
-        self.assertTrue(player.collect_pickup("armor", 50))
-        self.assertEqual(player.armor, 50)
-        self.assertTrue(player.collect_pickup("armor", 60))
-        self.assertEqual(player.armor, 100)  # clamped at max 100
-        self.assertFalse(player.collect_pickup("armor", 10))  # rejected when full
-
-    def test_ammo_pickup(self):
-        player = PlayerState()
-        self.assertEqual(player.ammo["shotgun"], 12)
-        self.assertTrue(player.collect_pickup("shotgun", 10))
-        self.assertEqual(player.ammo["shotgun"], 22)
-        # Fill up to max
-        player.ammo["shotgun"] = 50
-        self.assertFalse(player.collect_pickup("shotgun", 10))
-
-    def test_lcg_rng_deterministic(self):
-        rng1 = LcgRng(42)
-        seq1 = [rng1.range(1, 100) for _ in range(10)]
-        rng2 = LcgRng(42)
-        seq2 = [rng2.range(1, 100) for _ in range(10)]
-        self.assertEqual(seq1, seq2)
+        self.assertIn("1664525", GAMEPLAY_C)
+        self.assertEqual(seq(42), seq(42))
 
 
 if __name__ == "__main__":

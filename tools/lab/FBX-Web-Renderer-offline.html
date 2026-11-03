@@ -4474,6 +4474,8 @@ function applyInPlaceMotion(clips, enabled, model) {
 
 
 
+
+
 /* SPRITE-LAB-PARITY:START */
 /**
  * Minimal standalone GLB (GLTF 2.0 Binary) loader.
@@ -6042,6 +6044,78 @@ function applyInPlaceMotion(clips, enabled, model) {
     return { camera, minY, center, toCamera, half };
   }
 
+  // ---- Weapon muzzle detection (unposed geometry) ----
+  // Finds the weapon mesh, its barrel axis (longest bbox axis) and the vertex
+  // cluster at the muzzle end (the narrower end of the barrel axis).
+  function findMuzzleSetup(root) {
+    if (!root) return null;
+    const re = /weapon|rifle|gun/i;
+    let best = null, bestScore = -1;
+    root.traverse(node => {
+      if (!node.isMesh || !node.geometry?.attributes?.position) return;
+      const names = `${node.name || ''} ${node.geometry.name || ''}`;
+      if (!re.test(names)) return;
+      const score = /^WeaponGeo$/i.test(node.name || '') ? 2 : 1;
+      if (score > bestScore) { best = node; bestScore = score; }
+    });
+    if (!best) return null;
+    const pos = best.geometry.attributes.position;
+    const n = pos.count;
+    if (n < 4) return null;
+    const lo = [Infinity, Infinity, Infinity], hi = [-Infinity, -Infinity, -Infinity];
+    const get = (i, a) => (a === 0 ? pos.getX(i) : a === 1 ? pos.getY(i) : pos.getZ(i));
+    for (let i = 0; i < n; i++) for (let a = 0; a < 3; a++) {
+      const c = get(i, a);
+      if (c < lo[a]) lo[a] = c;
+      if (c > hi[a]) hi[a] = c;
+    }
+    let axis = 0;
+    for (let a = 1; a < 3; a++) if (hi[a] - lo[a] > hi[axis] - lo[axis]) axis = a;
+    const len = hi[axis] - lo[axis];
+    if (!(len > 0)) return null;
+    const o1 = (axis + 1) % 3, o2 = (axis + 2) % 3;
+    const spread = (sign) => {
+      // spread of the other two coordinates among vertices in the outer 10% at that end
+      let a1 = Infinity, b1 = -Infinity, a2 = Infinity, b2 = -Infinity, count = 0;
+      for (let i = 0; i < n; i++) {
+        const t = (get(i, axis) - lo[axis]) / len;
+        if (sign > 0 ? t < 0.9 : t > 0.1) continue;
+        const c1 = get(i, o1), c2 = get(i, o2);
+        if (c1 < a1) a1 = c1; if (c1 > b1) b1 = c1;
+        if (c2 < a2) a2 = c2; if (c2 > b2) b2 = c2;
+        count++;
+      }
+      return count ? (b1 - a1) + (b2 - a2) : Infinity;
+    };
+    const sign = spread(1) <= spread(-1) ? 1 : -1;
+    const tip = [];
+    for (let i = 0; i < n; i++) {
+      const t = (get(i, axis) - lo[axis]) / len;
+      if (sign > 0 ? t >= 0.97 : t <= 0.03) tip.push(i);
+    }
+    if (!tip.length) return null;
+    return { mesh: best, tip, axis, sign };
+  }
+
+  function projectMuzzleFrame(setup, camera, size, anchorX, anchorY) {
+    const mesh = setup.mesh;
+    if (mesh.isSkinnedMesh && mesh.skeleton) mesh.skeleton.update();
+    const pos = mesh.geometry.attributes.position;
+    const v = new K(), m = new K();
+    for (const i of setup.tip) {
+      if (mesh.isSkinnedMesh) mesh.getVertexPosition(i, v);
+      else v.fromBufferAttribute(pos, i);
+      v.applyMatrix4(mesh.matrixWorld);
+      m.add(v);
+    }
+    m.multiplyScalar(1 / setup.tip.length);
+    const a = m.clone().project(camera);
+    const g = new K(m.x, 0, m.z).project(camera);
+    const px = (a.x * 0.5 + 0.5) * size, py = (-a.y * 0.5 + 0.5) * size;
+    const gpx = (g.x * 0.5 + 0.5) * size, gpy = (-g.y * 0.5 + 0.5) * size;
+    return [Math.round(gpx - anchorX), Math.round(gpy - anchorY), Math.round(gpy - py)];
+  }
+
   // Full animation render loop
   Qf = async function ({ renderer, scene, controls, state: app, params, onProgress, onStatus }) {
     params.brightness = parseFloat(document.getElementById('labBrightness')?.value) || 1;
@@ -6132,6 +6206,20 @@ function applyInPlaceMotion(clips, enabled, model) {
 
       renderer.setClearColor(0x000000, 0);
       renderer.setSize(size * ss, size * ss, false);
+      // Muzzle capture: [direction][frame] = [gx, gy, h] relative to the rounded ground anchor
+      const muzzleSetup = findMuzzleSetup(root || app.model);
+      state.muzzleCapture = muzzleSetup
+        ? Array.from({ length: Ff.length }, () => Array.from({ length: frameCount }, () => [0, 0, 0]))
+        : null;
+      let muzzleAnchorX = Math.round(size / 2), muzzleAnchorY = Math.round(size * 0.85);
+      {
+        const o = new K(0, 0, 0).project(camera);
+        const ox = (o.x * 0.5 + 0.5) * size, oy = (-o.y * 0.5 + 0.5) * size;
+        if (isFinite(ox) && isFinite(oy)) {
+          muzzleAnchorX = Math.max(0, Math.min(size - 1, Math.round(ox)));
+          muzzleAnchorY = Math.max(0, Math.min(size - 1, Math.round(oy)));
+        }
+      }
       const results = [], firstFrames = [];
       for (let direction = 0; direction < Ff.length; direction++) {
         const name = Ff[direction];
@@ -6144,6 +6232,9 @@ function applyInPlaceMotion(clips, enabled, model) {
           app.mixer?.setTime(times[index % times.length]);
           applyNeckPitch();
           if (root) root.updateMatrixWorld(true);
+          if (muzzleSetup && state.muzzleCapture) {
+            state.muzzleCapture[direction][index] = projectMuzzleFrame(muzzleSetup, camera, size, muzzleAnchorX, muzzleAnchorY);
+          }
           renderer.render(scene, camera);
           let pixels = Gf(renderer, size * ss, size * ss);
           if (!(pixels instanceof Uint8ClampedArray)) pixels = new Uint8ClampedArray(pixels.buffer);
@@ -6303,6 +6394,7 @@ function applyInPlaceMotion(clips, enabled, model) {
       anchor: globalAnchor,
       dirGroundAnchors,
       dirBounds,
+      dirMuzzle: state.muzzleCapture || null,
       projAnchor: [projAnchorX, projAnchorY]
     };
 
@@ -6311,6 +6403,8 @@ function applyInPlaceMotion(clips, enabled, model) {
 
   // ---- Character Projected Shadow Generator (8 Directions x 8 Frames, Crisp Pixel-Art NDS Masks) ----
   function generateCharacterShadows() {
+    // Headless exporters that only need sprites/anchors/muzzles skip the (slow) shadow atlas.
+    if (state.skipShadowGeneration) return;
     const model = $.model;
     const root = $.modelRoot || model;
     const size = parseInt(_p.resolution?.value, 10) || 40;
@@ -6710,6 +6804,7 @@ function applyInPlaceMotion(clips, enabled, model) {
       anchor: state.anchorData ? state.anchorData.anchor : [Math.round(size / 2), size - 4],
       dirGroundAnchors: state.anchorData ? state.anchorData.dirGroundAnchors : new Array(8).fill(size - 4),
       dirBounds: state.anchorData ? state.anchorData.dirBounds : new Array(8).fill([0, 0, size, size]),
+      ...(state.anchorData?.dirMuzzle ? { dirMuzzle: state.anchorData.dirMuzzle } : {}),
       shadowSize: [shadowSize, shadowSize],
       shadowBounds: state.shadowBounds || new Array(8).fill([24, 24, 16, 16]),
       stride3dMeters: Number(stride.toFixed(3)),

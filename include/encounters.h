@@ -23,8 +23,6 @@ typedef struct {
     int floor_index;              /* TUNABLE-PLACEHOLDER: 0-based floor level */
     int enemy_count;              /* TUNABLE-PLACEHOLDER: total enemies spawned in wave */
     int charger_ratio;            /* TUNABLE-PLACEHOLDER: ratio / percent of chargers (0..100) */
-    int guaranteed_health_drops;  /* TUNABLE-PLACEHOLDER: guaranteed health packs on wave clear */
-    int guaranteed_ammo_drops;    /* TUNABLE-PLACEHOLDER: guaranteed ammo packs on wave clear */
 } FloorDifficultyTuning;
 
 extern const FloorDifficultyTuning g_floor_tuning[MAX_FLOOR_LEVELS];
@@ -65,8 +63,7 @@ int encounters_spawn_wave(EncounterManager *mgr, Enemy *enemies, int max_enemies
 /**
  * Main per-frame update for encounters.
  * - Tracks alive enemies in current wave.
- * - Triggers wave clear on all enemies defeated: drops guaranteed health/ammo pickups,
- *   opens the exit transition tile.
+ * - Triggers wave clear on all enemies defeated and opens the exit transition tile.
  * - Advances to next floor when player steps on the active exit tile.
  */
 void encounters_update(EncounterManager *mgr, Enemy *enemies, int max_enemies,

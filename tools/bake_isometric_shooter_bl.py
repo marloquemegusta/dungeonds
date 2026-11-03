@@ -84,6 +84,74 @@ for ty in range(map_h_tiles):
             tiles.append(t_bytes)
         tilemap[ty, tx] = tile_ids[t_bytes]
 
+# ---------------------------------------------------------------------------
+# Tile budget. The upper screen has 128 KiB of VRAM: a 16 bpp actor page (96 KiB) leaves
+# 28 KiB of tile slots, i.e. 448 tiles including the blank one. The ring map only ever holds
+# the 33x25 tiles of one screen window, so what must fit is the number of DISTINCT tiles
+# in any such window. Near-identical tiles are merged (lossy) until every window fits.
+# ---------------------------------------------------------------------------
+TILE_SLOTS = 448
+WINDOW_BUDGET = TILE_SLOTS - 8       # slot 0 is the blank tile; keep some slack for the ring
+VIEW_W, VIEW_H = 33, 25
+
+
+def max_window_distinct(tmap):
+    best = 0
+    for y in range(0, tmap.shape[0] - VIEW_H + 1):
+        for x in range(0, tmap.shape[1] - VIEW_W + 1):
+            n = len(np.unique(tmap[y:y + VIEW_H, x:x + VIEW_W]))
+            if n > best:
+                best = n
+    return best
+
+
+def merge_tiles(tiles_list, tmap, threshold, max_pixel_error):
+    """Greedy merge by usage: a tile joins the nearest kept tile when it is close enough."""
+    rgb_table = np.zeros((256, 3), dtype=np.float32)
+    for i in range(255):
+        rgb_table[i + 1] = pal_raw[i * 3:i * 3 + 3]
+    arr = np.array([np.frombuffer(t, dtype=np.uint8) for t in tiles_list])
+    rgb = rgb_table[arr].reshape(len(tiles_list), -1)
+    void = (arr == 0)
+    counts = np.bincount(tmap.flatten(), minlength=len(tiles_list))
+    order = np.argsort(-counts, kind='stable')
+    order = [0] + [int(t) for t in order if t != 0]       # the blank tile stays tile 0
+    kept = []
+    kept_rgb = np.zeros((len(tiles_list), rgb.shape[1]), dtype=np.float32)
+    kept_void = np.zeros((len(tiles_list), arr.shape[1]), dtype=bool)
+    remap = np.zeros(len(tiles_list), dtype=np.int64)
+    for t in order:
+        k = len(kept)
+        if k:
+            diff = np.abs(kept_rgb[:k] - rgb[t])
+            mean = diff.mean(axis=1)
+            ok = (mean <= threshold) & (diff.max(axis=1) <= max_pixel_error) &                  (kept_void[:k] == void[t]).all(axis=1)
+            if ok.any():
+                best = int(np.argmin(np.where(ok, mean, 1e9)))
+                remap[t] = best
+                continue
+        kept_rgb[k] = rgb[t]
+        kept_void[k] = void[t]
+        remap[t] = k
+        kept.append(t)
+    return remap, kept
+
+
+worst = max_window_distinct(tilemap)
+print(f"Distinct tiles in the worst 33x25 window: {worst} (budget {WINDOW_BUDGET})")
+if worst > WINDOW_BUDGET:
+    for threshold in (1.0, 2.0, 3.0, 4.0, 6.0, 8.0, 12.0, 16.0):
+        remap, kept = merge_tiles(tiles, tilemap, threshold, max_pixel_error=96)
+        new_map = remap[tilemap]
+        worst = max_window_distinct(new_map)
+        print(f"  merge threshold {threshold:4.1f}: {len(kept)} tiles, worst window {worst}")
+        if worst <= WINDOW_BUDGET:
+            tiles = [tiles[t] for t in kept]
+            tilemap = new_map.astype(np.uint16)
+            break
+    else:
+        raise SystemExit("Could not fit the floor into the upper screen tile budget")
+
 num_tiles = len(tiles)
 print(f"Tiles generated: {num_tiles} unique 8x8 tiles (Atlas size: {num_tiles * 64} bytes)")
 

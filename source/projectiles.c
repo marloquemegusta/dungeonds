@@ -63,7 +63,7 @@ void enemy_projectiles_update(fixed player_x, fixed player_y) {
                 int dx = TO_INT(p->x - player_x);
                 int dy = TO_INT(p->y - player_y);
                 if (dx * dx + dy * dy <= 8 * 8) {
-                    player_apply_damage(&g_player_state, p->damage);
+                    player_take_hit(&g_player_state);
                     p->active = 0;
                     continue;
                 }

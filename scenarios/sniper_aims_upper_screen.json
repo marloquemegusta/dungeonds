@@ -1,0 +1,48 @@
+{
+  "name": "sniper_aims_upper_screen",
+  "steps": [
+    {
+      "frames": 20,
+      "capture": "00_idle"
+    },
+    {
+      "button_down": "L",
+      "frames": 2
+    },
+    {
+      "button_up": "L",
+      "frames": 10,
+      "capture": "01_sniper_selected"
+    },
+    {
+      "tap": {
+        "x": 30,
+        "y": 4
+      },
+      "frames": 8,
+      "capture": "02_aiming_up"
+    },
+    {
+      "frames": 40,
+      "capture": "03_armed_up"
+    },
+    {
+      "release": true,
+      "frames": 5,
+      "capture": "04_shot_up"
+    },
+    {
+      "frames": 30,
+      "capture": "05_after_shot"
+    }
+  ],
+  "assertions": {
+    "screen_changes": [
+      {
+        "from": "01_sniper_selected",
+        "to": "03_armed_up",
+        "min_changed_pixels": 30
+      }
+    ]
+  }
+}

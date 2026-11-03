@@ -21,37 +21,27 @@ ENEMY_TYPE_NONE = 0
 ENEMY_TYPE_CHARGER = 1
 ENEMY_TYPE_SHOOTER = 2
 
-PICKUP_HEALTH = 1
-PICKUP_ARMOR = 2
-PICKUP_AMMO_SHOTGUN = 3
-PICKUP_AMMO_GATLING = 4
-PICKUP_AMMO_HEAVY = 5
-
 
 class FloorDifficultyTuning:
-    def __init__(self, floor_index, enemy_count, charger_ratio, health_drops, ammo_drops):
+    def __init__(self, floor_index, enemy_count, charger_ratio):
         self.floor_index = floor_index
         self.enemy_count = enemy_count
         self.charger_ratio = charger_ratio
-        self.health_drops = health_drops
-        self.ammo_drops = ammo_drops
 
 
 def parse_floor_tuning():
     pattern = re.compile(
-        r"\[(\d+)\]\s*=\s*\{[^}]*?\.floor_index\s*=\s*(\d+)[^}]*?\.enemy_count\s*=\s*(\d+)[^}]*?\.charger_ratio\s*=\s*(\d+)[^}]*?\.guaranteed_health_drops\s*=\s*(\d+)[^}]*?\.guaranteed_ammo_drops\s*=\s*(\d+)",
+        r"\[(\d+)\]\s*=\s*\{[^}]*?\.floor_index\s*=\s*(\d+)[^}]*?\.enemy_count\s*=\s*(\d+)[^}]*?\.charger_ratio\s*=\s*(\d+)",
         re.DOTALL
     )
     matches = pattern.findall(ENCOUNTERS_C)
     tuning = {}
-    for idx_str, f_idx, count, ratio, hp_d, am_d in matches:
+    for idx_str, f_idx, count, ratio in matches:
         idx = int(idx_str)
         tuning[idx] = FloorDifficultyTuning(
             floor_index=int(f_idx),
             enemy_count=int(count),
-            charger_ratio=int(ratio),
-            health_drops=int(hp_d),
-            ammo_drops=int(am_d)
+            charger_ratio=int(ratio)
         )
     return tuning
 
@@ -72,7 +62,6 @@ class MockEncounterManager:
         self.last_kill_x = 0
         self.last_kill_y = 0
         self.enemies = []
-        self.spawned_pickups = []
 
     def spawn_wave(self, anchor_x=380 << 8, anchor_y=227 << 8):
         tuning = self.tuning_table[self.current_floor]
@@ -114,14 +103,6 @@ class MockEncounterManager:
             if alive_count == 0:
                 self.wave_state = ENCOUNTER_STATE_CLEARED
                 self.exit_open = 1
-                tuning = self.tuning_table[self.current_floor]
-                # Drop guaranteed health pickups
-                for _ in range(tuning.health_drops):
-                    self.spawned_pickups.append({"type": PICKUP_HEALTH, "amount": 25})
-                # Drop guaranteed ammo pickups
-                ammo_cycle = [PICKUP_AMMO_SHOTGUN, PICKUP_AMMO_GATLING, PICKUP_AMMO_HEAVY]
-                for a in range(tuning.ammo_drops):
-                    self.spawned_pickups.append({"type": ammo_cycle[a % 3], "amount": 10})
         elif self.wave_state == ENCOUNTER_STATE_CLEARED and self.exit_open:
             pdx = (player_x - self.exit_x) >> 8
             pdy = (player_y - self.exit_y) >> 8
@@ -175,8 +156,6 @@ class TestEncountersContract(unittest.TestCase):
             self.assertLessEqual(t.enemy_count, MAX_GAMEPLAY_ENEMIES, "Wave enemy count must fit in pool (<= 10)")
             self.assertGreaterEqual(t.enemy_count, prev_count, "Enemy count must scale monotonically")
             self.assertGreaterEqual(t.charger_ratio, prev_ratio, "Charger ratio must scale or remain high")
-            self.assertGreaterEqual(t.health_drops, 1, "Must drop at least 1 guaranteed health pickup")
-            self.assertGreaterEqual(t.ammo_drops, 1, "Must drop at least 1 guaranteed ammo pickup")
             prev_count = t.enemy_count
             prev_ratio = t.charger_ratio
 
@@ -209,8 +188,8 @@ class TestEncountersContract(unittest.TestCase):
             self.assertEqual(chargers, exp_chargers)
             self.assertEqual(shooters, exp_shooters)
 
-    def test_wave_clear_trigger_and_reward_drops(self):
-        """Verifies wave clear triggers when all enemies are defeated, dropping guaranteed rewards."""
+    def test_wave_clear_trigger_opens_exit(self):
+        """Verifies wave clear triggers when all enemies are defeated and opens the exit."""
         tuning = parse_floor_tuning()
         mgr = MockEncounterManager(tuning)
         mgr.current_floor = 0
@@ -220,7 +199,6 @@ class TestEncountersContract(unittest.TestCase):
         mgr.update(380 << 8, 227 << 8)
         self.assertEqual(mgr.wave_state, ENCOUNTER_STATE_ACTIVE)
         self.assertEqual(mgr.exit_open, 0)
-        self.assertEqual(len(mgr.spawned_pickups), 0)
 
         # Defeat 2 out of 3 enemies -> still ACTIVE
         mgr.enemies[0]["hp"] = 0
@@ -232,19 +210,13 @@ class TestEncountersContract(unittest.TestCase):
         self.assertEqual(mgr.enemies_remaining, 1)
         self.assertEqual(mgr.exit_open, 0)
 
-        # Defeat final enemy -> CLEARED, exit opens, guaranteed pickups drop
+        # Defeat final enemy -> CLEARED, exit opens
         mgr.enemies[2]["hp"] = 0
         mgr.enemies[2]["active"] = 0
         mgr.update(380 << 8, 227 << 8)
         self.assertEqual(mgr.wave_state, ENCOUNTER_STATE_CLEARED)
         self.assertEqual(mgr.enemies_remaining, 0)
         self.assertEqual(mgr.exit_open, 1)
-
-        # Check guaranteed drops on Floor 1 (1 health, 2 ammo)
-        health_drops = sum(1 for p in mgr.spawned_pickups if p["type"] == PICKUP_HEALTH)
-        ammo_drops = sum(1 for p in mgr.spawned_pickups if p["type"] in (PICKUP_AMMO_SHOTGUN, PICKUP_AMMO_GATLING, PICKUP_AMMO_HEAVY))
-        self.assertEqual(health_drops, tuning[0].health_drops)
-        self.assertEqual(ammo_drops, tuning[0].ammo_drops)
 
     def test_floor_progression_exit_transition(self):
         """Verifies stepping on the exit tile advances floor and starts next scaled wave."""

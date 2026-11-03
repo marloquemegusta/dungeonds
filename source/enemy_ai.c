@@ -189,7 +189,7 @@ static void update_charger(Enemy *e, Enemy *enemies, int num_enemies, int idx,
 
             int melee_range = tuning->preferred_dist_max > 0 ? tuning->preferred_dist_max : 16;
             if (p_dist_sq <= melee_range * melee_range) {
-                player_apply_damage(&g_player_state, tuning->contact_damage);
+                player_take_hit(&g_player_state);
                 e->state = ENEMY_STATE_ATTACK;
                 e->state_timer = tuning->attack_cooldown;
                 e->dir = dir_from_vector(player_x - e->x, player_y - e->y);
@@ -496,6 +496,15 @@ void enemy_ai_update(Enemy *enemies, int num_enemies, fixed player_x, fixed play
         if (!e->active) continue;
 
         if (e->hit_timer > 0) e->hit_timer--;
+
+        // Staggered by a shotgun hit: shoved along the blast, no AI until it recovers.
+        if (e->stun_timer > 0) {
+            e->stun_timer--;
+            move_with_slide(&e->x, &e->y, e->knock_vx, e->knock_vy);
+            e->knock_vx = (e->knock_vx * 224) >> 8;
+            e->knock_vy = (e->knock_vy * 224) >> 8;
+            continue;
+        }
 
         if (e->type == ENEMY_TYPE_CHARGER) {
             update_charger(e, enemies, num_enemies, i, player_x, player_y);

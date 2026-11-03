@@ -17,36 +17,26 @@ const FloorDifficultyTuning g_floor_tuning[MAX_FLOOR_LEVELS] = {
         .floor_index = 0,
         .enemy_count = 3,              /* TUNABLE-PLACEHOLDER: Floor 1 intro wave (3 enemies) */
         .charger_ratio = 33,           /* TUNABLE-PLACEHOLDER: 33% chargers (1 Charger, 2 Shooters) */
-        .guaranteed_health_drops = 1,  /* TUNABLE-PLACEHOLDER: 1 guaranteed health pack */
-        .guaranteed_ammo_drops = 2     /* TUNABLE-PLACEHOLDER: 2 guaranteed ammo packs */
     },
     [1] = {
         .floor_index = 1,
         .enemy_count = 5,              /* TUNABLE-PLACEHOLDER: Floor 2 wave (5 enemies) */
         .charger_ratio = 40,           /* TUNABLE-PLACEHOLDER: 40% chargers (2 Chargers, 3 Shooters) */
-        .guaranteed_health_drops = 1,  /* TUNABLE-PLACEHOLDER: 1 guaranteed health pack */
-        .guaranteed_ammo_drops = 2     /* TUNABLE-PLACEHOLDER: 2 guaranteed ammo packs */
     },
     [2] = {
         .floor_index = 2,
         .enemy_count = 7,              /* TUNABLE-PLACEHOLDER: Floor 3 wave (7 enemies) */
         .charger_ratio = 43,           /* TUNABLE-PLACEHOLDER: 43% chargers (3 Chargers, 4 Shooters) */
-        .guaranteed_health_drops = 2,  /* TUNABLE-PLACEHOLDER: 2 guaranteed health packs */
-        .guaranteed_ammo_drops = 3     /* TUNABLE-PLACEHOLDER: 3 guaranteed ammo packs */
     },
     [3] = {
         .floor_index = 3,
         .enemy_count = 8,              /* TUNABLE-PLACEHOLDER: Floor 4 wave (8 enemies) */
         .charger_ratio = 50,           /* TUNABLE-PLACEHOLDER: 50% chargers (4 Chargers, 4 Shooters) */
-        .guaranteed_health_drops = 2,  /* TUNABLE-PLACEHOLDER: 2 guaranteed health packs */
-        .guaranteed_ammo_drops = 3     /* TUNABLE-PLACEHOLDER: 3 guaranteed ammo packs */
     },
     [4] = {
         .floor_index = 4,
         .enemy_count = 10,             /* TUNABLE-PLACEHOLDER: Floor 5 max stress wave (10 enemies) */
         .charger_ratio = 60,           /* TUNABLE-PLACEHOLDER: 60% chargers (6 Chargers, 4 Shooters) */
-        .guaranteed_health_drops = 2,  /* TUNABLE-PLACEHOLDER: 2 guaranteed health packs */
-        .guaranteed_ammo_drops = 4     /* TUNABLE-PLACEHOLDER: 4 guaranteed ammo packs */
     }
 };
 
@@ -182,6 +172,9 @@ int encounters_spawn_wave(EncounterManager *mgr, Enemy *enemies, int max_enemies
         e->state = ENEMY_STATE_IDLE;
         e->state_timer = 0;
         e->hit_timer = 0;
+        e->knock_vx = 0;
+        e->knock_vy = 0;
+        e->stun_timer = 0;
         e->last_seen_x = 0;
         e->last_seen_y = 0;
         e->los_lost_timer = 0;
@@ -207,61 +200,8 @@ int encounters_spawn_wave(EncounterManager *mgr, Enemy *enemies, int max_enemies
 }
 
 // ---------------------------------------------------------------------------
-// 4. Rewards & Floor Progression
+// 4. Floor Progression
 // ---------------------------------------------------------------------------
-
-static void drop_encounter_rewards(const EncounterManager *mgr) {
-    int floor_idx = mgr->current_floor;
-    if (floor_idx < 0) floor_idx = 0;
-    if (floor_idx >= MAX_FLOOR_LEVELS) floor_idx = MAX_FLOOR_LEVELS - 1;
-
-    const FloorDifficultyTuning *tuning = &g_floor_tuning[floor_idx];
-
-    fixed base_x = mgr->last_kill_x ? mgr->last_kill_x : TO_FIXED(SPAWN_PIXEL_X);
-    fixed base_y = mgr->last_kill_y ? mgr->last_kill_y : TO_FIXED(SPAWN_PIXEL_Y);
-
-    static const int drop_offsets[8][2] = {
-        { -16, 0 }, { 16, 0 }, { 0, -16 }, { 0, 16 },
-        { -16, -16 }, { 16, -16 }, { -16, 16 }, { 16, 16 }
-    };
-    int offset_idx = 0;
-
-    // Guaranteed health drops
-    for (int h = 0; h < tuning->guaranteed_health_drops; h++) {
-        fixed dx = TO_FIXED(drop_offsets[offset_idx % 8][0]);
-        fixed dy = TO_FIXED(drop_offsets[offset_idx % 8][1]);
-        offset_idx++;
-        fixed drop_x = base_x + dx;
-        fixed drop_y = base_y + dy;
-        if (!position_is_free(drop_x, drop_y)) {
-            drop_x = base_x;
-            drop_y = base_y;
-        }
-        pickup_spawn(PICKUP_HEALTH, drop_x, drop_y, PICKUP_HEALTH_AMOUNT);
-    }
-
-    // Guaranteed ammo drops
-    static const PickupType ammo_types[3] = {
-        PICKUP_AMMO_SHOTGUN,
-        PICKUP_AMMO_GATLING,
-        PICKUP_AMMO_HEAVY
-    };
-    for (int a = 0; a < tuning->guaranteed_ammo_drops; a++) {
-        fixed dx = TO_FIXED(drop_offsets[offset_idx % 8][0]);
-        fixed dy = TO_FIXED(drop_offsets[offset_idx % 8][1]);
-        offset_idx++;
-        fixed drop_x = base_x + dx;
-        fixed drop_y = base_y + dy;
-        if (!position_is_free(drop_x, drop_y)) {
-            drop_x = base_x;
-            drop_y = base_y;
-        }
-        PickupType type = ammo_types[a % 3];
-        int amount = (type == PICKUP_AMMO_SHOTGUN) ? 10 :
-                     (type == PICKUP_AMMO_GATLING) ? 40 : 5;
-        pickup_spawn(type, drop_x, drop_y, amount);
-    }
-}
 
 void encounters_record_kill(EncounterManager *mgr, fixed x, fixed y) {
     if (!mgr) return;
@@ -322,8 +262,6 @@ void encounters_update(EncounterManager *mgr, Enemy *enemies, int max_enemies,
             mgr->exit_x = exit_x;
             mgr->exit_y = exit_y;
             mgr->exit_radius = 24;
-
-            drop_encounter_rewards(mgr);
 
             char msg[128];
             snprintf(msg, sizeof(msg), "ENCOUNTER_CLEARED floor=%d exit=%d,%d",

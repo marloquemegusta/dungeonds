@@ -62,6 +62,7 @@ out_lines.append('#include "player_sprite.h"\n\n')
 
 char_configs = []
 all_anchors = []
+all_muzzles = []
 for var_name, folder, disp_name, def_spd, def_ticks in chars_meta:
     char_dir = os.path.join(WT, 'assets/sprites/characters', folder)
     settings_path = os.path.join(char_dir, 'settings.json')
@@ -85,6 +86,14 @@ for var_name, folder, disp_name, spd, ticks in char_configs:
 
     anchors, sb, shb_body, mask_body = parse_header(h_path)
     all_anchors.append(anchors)
+    muzzle = [[[0, 0, 0] for _ in range(8)] for _ in range(8)]
+    settings_path = os.path.join(char_dir, 'settings.json')
+    if os.path.exists(settings_path):
+        with open(settings_path, 'r', encoding='utf-8') as sf:
+            dm = json.load(sf).get('dirMuzzle')
+        if dm:
+            muzzle = [[[int(v) for v in dm[d][f]] for f in range(8)] for d in range(8)]
+    all_muzzles.append(muzzle)
 
     out_lines.append(f'// {SPRITE_W}x{SPRITE_H} BGR555 frames for {disp_name}, 8 directions x 8 frames\n')
     out_lines.append(f'const uint16_t g_{var_name}_frames[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][PLAYER_SPRITE_W * PLAYER_SPRITE_H] __attribute__((aligned(4))) = ')
@@ -103,6 +112,15 @@ for var_name, folder, disp_name, spd, ticks in char_configs:
 out_lines.append('const uint8_t g_character_ground_anchors[NUM_CHARACTERS][PLAYER_NUM_DIRS] = {\n')
 for anc in all_anchors:
     out_lines.append('    { ' + ', '.join(str(x) for x in anc) + ' },\n')
+out_lines.append('};\n\n')
+
+out_lines.append('// Weapon muzzle per character/direction/frame: gx, gy, h in sprite pixels relative to the ground anchor (zeros = no weapon)\n')
+out_lines.append('const int8_t g_character_muzzle[NUM_CHARACTERS][PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][3] = {\n')
+for muzzle in all_muzzles:
+    out_lines.append('    {\n')
+    for d in range(8):
+        out_lines.append('        { ' + ', '.join('{ %d, %d, %d }' % tuple(muzzle[d][f]) for f in range(8)) + ' },\n')
+    out_lines.append('    },\n')
 out_lines.append('};\n\n')
 
 out_lines.append('const uint16_t (* const g_character_frames[NUM_CHARACTERS])[PLAYER_NUM_FRAMES][PLAYER_SPRITE_W * PLAYER_SPRITE_H] = {\n')

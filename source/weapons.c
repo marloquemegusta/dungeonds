@@ -1,97 +1,83 @@
 #include "weapons.h"
 #include "gameplay.h"
-#include "los.h"
-#include <stdio.h>
-#include <string.h>
 
-/* TUNABLE-PLACEHOLDER: Player Weapons Tuning Table (Fixed-Point 8.8) */
+/* TUNABLE-PLACEHOLDER: Player Weapons Tuning Table (Fixed-Point 8.8).
+ * Goal hits to kill (DESIGN.md 4.3): shotgun point blank 1 shooter / 2-3 charger,
+ * sniper 1 shooter / 2 charger. */
 const WeaponTuning g_weapon_tuning[NUM_WEAPON_TYPES] = {
-    [WEAPON_PISTOL] = {
-        .name = "PISTOL",
-        .fire_mode = FIRE_MODE_HITSCAN,
-        .damage_per_hit = 15,          /* TUNABLE-PLACEHOLDER: base precision hitscan damage */
-        .pellets = 1,                  /* TUNABLE-PLACEHOLDER: single precise tracer */
-        .fire_cooldown = 18,           /* TUNABLE-PLACEHOLDER: low rate of fire (0.3s) */
-        .max_ammo = 0,                 /* TUNABLE-PLACEHOLDER: 0 = infinite ammo fallback */
-        .pickup_ammo_amount = 0,       /* TUNABLE-PLACEHOLDER: no pickups needed */
-        .ammo_cost = 0,                /* TUNABLE-PLACEHOLDER: infinite fallback costs 0 */
-        .projectile_speed = 0,         /* TUNABLE-PLACEHOLDER: instant hitscan */
-        .projectile_range = 180,       /* TUNABLE-PLACEHOLDER: tracer range (world px) */
-        .spread_angle = 0,             /* TUNABLE-PLACEHOLDER: pinpoint precision */
-        .spinup_delay = 0,             /* TUNABLE-PLACEHOLDER: immediate response */
-        .speed_penalty = 256,          /* TUNABLE-PLACEHOLDER: 1.0 (no movement penalty) */
-        .explosion_radius = 0,         /* TUNABLE-PLACEHOLDER */
-        .explosion_damage = 0          /* TUNABLE-PLACEHOLDER */
-    },
     [WEAPON_SHOTGUN] = {
         .name = "SHOTGUN",
-        .fire_mode = FIRE_MODE_PROJECTILE,
-        .damage_per_hit = 8,           /* TUNABLE-PLACEHOLDER: 8 dmg * 5 pellets = 40 max */
-        .pellets = 5,                  /* TUNABLE-PLACEHOLDER: 5 pellets spread */
-        .fire_cooldown = 36,           /* TUNABLE-PLACEHOLDER: marked recoil & pump */
-        .max_ammo = 50,                /* TUNABLE-PLACEHOLDER: medium capacity */
-        .pickup_ammo_amount = 10,      /* TUNABLE-PLACEHOLDER: shells per box */
-        .ammo_cost = 1,                /* TUNABLE-PLACEHOLDER: 1 shell per blast */
-        .projectile_speed = 1536,      /* TUNABLE-PLACEHOLDER: 8.8 fixed: 6.0 px/frame */
-        .projectile_range = 22,        /* TUNABLE-PLACEHOLDER: short range (~132 px max) */
-        .spread_angle = 120,           /* TUNABLE-PLACEHOLDER: wide cone dispersion */
-        .spinup_delay = 0,             /* TUNABLE-PLACEHOLDER: immediate blast */
-        .speed_penalty = 256,          /* TUNABLE-PLACEHOLDER: 1.0 (no slowdown) */
-        .explosion_radius = 0,         /* TUNABLE-PLACEHOLDER */
-        .explosion_damage = 0          /* TUNABLE-PLACEHOLDER */
+        .damage_per_hit = 8,        /* 8 dmg * 5 pellets = 40 point blank */
+        .pellets = 5,
+        .fire_cooldown = 36,        /* marked pump between shots */
+        .projectile_speed = 1536,   /* 6.0 px/frame */
+        .projectile_range = 22,     /* ~132 px: lethal close, weak far */
+        .spread_angle = 120,
+        .aim_min_frames = 0,
+        .knockback = 640,           /* 2.5 px/frame shove */
+        .stun_frames = 10,
+        .recoil = 512,              /* 2 px kick back */
+        .shake_amp = 2,
+        .shake_frames = 6
     },
-    [WEAPON_GATLING] = {
-        .name = "GATLING",
-        .fire_mode = FIRE_MODE_HITSCAN,
-        .damage_per_hit = 5,           /* TUNABLE-PLACEHOLDER: fast sustained damage */
-        .pellets = 1,                  /* TUNABLE-PLACEHOLDER: continuous stream */
-        .fire_cooldown = 4,            /* TUNABLE-PLACEHOLDER: rapid fire rate */
-        .max_ammo = 200,               /* TUNABLE-PLACEHOLDER: high ammo capacity */
-        .pickup_ammo_amount = 40,      /* TUNABLE-PLACEHOLDER: bullets per box */
-        .ammo_cost = 1,                /* TUNABLE-PLACEHOLDER: 1 bullet per shot */
-        .projectile_speed = 0,         /* TUNABLE-PLACEHOLDER: hitscan tracers */
-        .projectile_range = 160,       /* TUNABLE-PLACEHOLDER: medium-long range */
-        .spread_angle = 24,            /* TUNABLE-PLACEHOLDER: slight jitter/spread */
-        .spinup_delay = 10,            /* TUNABLE-PLACEHOLDER: spin-up delay frames */
-        .speed_penalty = 128,          /* TUNABLE-PLACEHOLDER: 8.8 fixed: 0.5 (50% speed) */
-        .explosion_radius = 0,         /* TUNABLE-PLACEHOLDER */
-        .explosion_damage = 0          /* TUNABLE-PLACEHOLDER */
-    },
-    [WEAPON_HEAVY] = {
-        .name = "HEAVY",
-        .fire_mode = FIRE_MODE_PROJECTILE,
-        .damage_per_hit = 25,          /* TUNABLE-PLACEHOLDER: direct impact damage */
-        .pellets = 1,                  /* TUNABLE-PLACEHOLDER: single rocket */
-        .fire_cooldown = 55,           /* TUNABLE-PLACEHOLDER: slow reload */
-        .max_ammo = 20,                /* TUNABLE-PLACEHOLDER: scarce heavy ammo */
-        .pickup_ammo_amount = 5,       /* TUNABLE-PLACEHOLDER: rockets per box */
-        .ammo_cost = 1,                /* TUNABLE-PLACEHOLDER: 1 rocket per shot */
-        .projectile_speed = 1024,      /* TUNABLE-PLACEHOLDER: 8.8 fixed: 4.0 px/frame */
-        .projectile_range = 60,        /* TUNABLE-PLACEHOLDER: long travel range */
-        .spread_angle = 0,             /* TUNABLE-PLACEHOLDER: direct flight */
-        .spinup_delay = 0,             /* TUNABLE-PLACEHOLDER: immediate launch */
-        .speed_penalty = 256,          /* TUNABLE-PLACEHOLDER: 1.0 (no slowdown) */
-        .explosion_radius = 32,        /* TUNABLE-PLACEHOLDER: 32px blast radius */
-        .explosion_damage = 45         /* TUNABLE-PLACEHOLDER: area splash damage */
+    [WEAPON_SNIPER] = {
+        .name = "SNIPER",
+        .damage_per_hit = 30,       /* shooter 20 hp: 1 hit, charger 60 hp: 2 hits */
+        .pellets = 1,
+        .fire_cooldown = 40,
+        .projectile_speed = 0,
+        .projectile_range = 320,    /* ray length in ground px */
+        .spread_angle = 0,
+        .aim_min_frames = 24,       /* ~0.4 s before the shot is armed */
+        .knockback = 0,
+        .stun_frames = 0,
+        .recoil = 0,
+        .shake_amp = 3,
+        .shake_frames = 8
     }
 };
 
-static PlayerProjectile s_player_projectiles[MAX_PLAYER_PROJECTILES];
-#define MAX_SPARKS 24
+#define ENEMY_HIT_RADIUS 11          // ground px
+#define SNIPER_CANCEL_RADIUS 12      // screen px around the player's body
+#define MIN_AIM_DISTANCE 4           // ground px; closer than this there is no direction
+
+#define MAX_SPARKS 40
+#define SPARK_LIFE_MIN 6
+
 typedef struct {
     int active;
-    fixed x, y;
+    fixed x, y;           // 8.8 screen-space world position (height already applied)
     fixed vx, vy;
-    int life;
-    uint16_t color;
+    int life, max_life;
 } WeaponSpark;
 
-static WeaponTracer s_tracers[MAX_TRACERS];
-static WeaponExplosion s_explosions[MAX_EXPLOSIONS];
+typedef struct {
+    int life;
+    int x, y;             // muzzle in world px (height applied)
+    int dir_x, dir_y;     // 8.8 screen direction of the shot
+} MuzzleFlash;
+
+typedef struct {
+    int life;
+    int x0, y0, x1, y1;   // world px, height applied
+} SniperTrail;
+
+enum { AIM_IDLE = 0, AIM_AIMING, AIM_READY, AIM_CANCELLED };
+
+static PlayerProjectile s_player_projectiles[MAX_PLAYER_PROJECTILES];
 static WeaponSpark s_sparks[MAX_SPARKS];
+static MuzzleFlash s_flash;
+static SniperTrail s_trail;
 static int s_weapon_cooldown = 0;
-static int s_gatling_spinup = 0;
-static uint32_t s_weapon_tick = 0;
+static int s_aim_state = AIM_IDLE;
+static int s_aim_timer = 0;
+static fixed s_aim_dir_x = 0, s_aim_dir_y = 256;
+static fixed s_aim_muzzle_x = 0, s_aim_muzzle_y = 0;
+static int s_aim_muzzle_h = 0;
+static int s_aim_len = 0;         // ground px the laser reaches before a wall
+static fixed s_last_dir_x = 0, s_last_dir_y = 0;
+static int s_shake_timer = 0, s_shake_frames = 1, s_shake_amp = 0;
+static uint32_t s_shake_tick = 0;
 
 static inline int abs_int(int v) {
     return v < 0 ? -v : v;
@@ -116,49 +102,26 @@ static uint32_t int_sqrt(uint32_t n) {
 
 void weapons_init(void) {
     s_weapon_cooldown = 0;
-    s_gatling_spinup = 0;
-    s_weapon_tick = 0;
-    for (int i = 0; i < MAX_PLAYER_PROJECTILES; i++) {
-        s_player_projectiles[i].active = 0;
-    }
-    for (int i = 0; i < MAX_TRACERS; i++) {
-        s_tracers[i].active = 0;
-    }
-    for (int i = 0; i < MAX_EXPLOSIONS; i++) {
-        s_explosions[i].active = 0;
-    }
-    for (int i = 0; i < MAX_SPARKS; i++) {
-        s_sparks[i].active = 0;
-    }
+    s_aim_state = AIM_IDLE;
+    s_aim_timer = 0;
+    s_last_dir_x = s_last_dir_y = 0;
+    s_shake_timer = 0;
+    s_flash.life = 0;
+    s_trail.life = 0;
+    s_aim_len = 0;
+    for (int i = 0; i < MAX_PLAYER_PROJECTILES; i++) s_player_projectiles[i].active = 0;
+    for (int i = 0; i < MAX_SPARKS; i++) s_sparks[i].active = 0;
 }
 
-void weapons_cycle(PlayerState *player, int delta) {
+void weapons_cycle(PlayerState *player) {
     if (!player) return;
-    int next_w = (int)player->current_weapon + delta;
-    if (next_w < 0) next_w = NUM_WEAPON_TYPES - 1;
-    if (next_w >= NUM_WEAPON_TYPES) next_w = 0;
-    player->current_weapon = (WeaponType)next_w;
-    s_weapon_cooldown = 0;
-    s_gatling_spinup = 0;
-}
-
-int weapons_can_fire(const PlayerState *player) {
-    (void)player;
-    return s_weapon_cooldown <= 0;
-}
-
-fixed weapons_get_speed_factor(const PlayerState *player, int is_firing_held) {
-    if (!player) return 256;
-    if (is_firing_held && player->current_weapon == WEAPON_GATLING) {
-        return g_weapon_tuning[WEAPON_GATLING].speed_penalty;
-    }
-    return 256;
+    player->current_weapon = (WeaponType)((player->current_weapon + 1) % NUM_WEAPON_TYPES);
+    s_aim_state = AIM_IDLE;
+    s_aim_timer = 0;
 }
 
 const char *weapons_get_name(WeaponType type) {
-    if (type >= 0 && type < NUM_WEAPON_TYPES) {
-        return g_weapon_tuning[type].name;
-    }
+    if (type >= 0 && type < NUM_WEAPON_TYPES) return g_weapon_tuning[type].name;
     return "UNKNOWN";
 }
 
@@ -170,268 +133,286 @@ int weapons_get_active_projectile_count(void) {
     return count;
 }
 
-static void spawn_sparks(fixed x, fixed y, uint16_t color) {
-    static const int dirs[6][2] = {
-        { 256, 128 }, { -256, 128 }, { 128, -256 }, { -128, -256 },
-        { 0, 300 }, { 0, -300 }
-    };
-    for (int k = 0; k < 6; k++) {
+void weapons_last_shot_dir(fixed *dir_x, fixed *dir_y) {
+    *dir_x = s_last_dir_x;
+    *dir_y = s_last_dir_y;
+}
+
+void weapons_shake_offset(int *dx, int *dy) {
+    *dx = 0;
+    *dy = 0;
+    if (s_shake_timer <= 0) return;
+    int amp = (s_shake_amp * s_shake_timer) / s_shake_frames;
+    if (amp < 1) amp = 1;
+    // Deterministic zig-zag so scenarios stay reproducible.
+    *dx = (s_shake_tick & 1) ? amp : -amp;
+    *dy = (s_shake_tick & 2) ? (amp + 1) / 2 : -((amp + 1) / 2);
+}
+
+// ---------------------------------------------------------------------------
+// Effects: procedural strokes, no sprites (DESIGN.md 4.7)
+// ---------------------------------------------------------------------------
+
+// Sparks leave the impact point opposite to the shot, with a sideways spread.
+static void spawn_impact(int x, int y, fixed back_x, fixed back_y, int count) {
+    for (int k = 0; k < count; k++) {
         for (int i = 0; i < MAX_SPARKS; i++) {
-            if (!s_sparks[i].active) {
-                s_sparks[i].active = 1;
-                s_sparks[i].x = x;
-                s_sparks[i].y = y;
-                s_sparks[i].vx = (fixed)dirs[k][0];
-                s_sparks[i].vy = (fixed)dirs[k][1];
-                s_sparks[i].life = 14;
-                s_sparks[i].color = color;
-                break;
-            }
-        }
-    }
-}
-
-static void spawn_tracer(fixed start_x, fixed start_y, fixed end_x, fixed end_y, WeaponType weapon) {
-    for (int i = 0; i < MAX_TRACERS; i++) {
-        if (!s_tracers[i].active) {
-            s_tracers[i].active = 1;
-            s_tracers[i].weapon_type = weapon;
-            s_tracers[i].start_x = start_x;
-            s_tracers[i].start_y = start_y;
-            s_tracers[i].end_x = end_x;
-            s_tracers[i].end_y = end_y;
-            s_tracers[i].life = (weapon == WEAPON_PISTOL) ? 4 : 2;
-            return;
-        }
-    }
-}
-
-static void spawn_explosion(fixed x, fixed y, int radius, int damage,
-                            Enemy *enemies, int max_enemies) {
-    for (int i = 0; i < MAX_EXPLOSIONS; i++) {
-        if (!s_explosions[i].active) {
-            s_explosions[i].active = 1;
-            s_explosions[i].x = x;
-            s_explosions[i].y = y;
-            s_explosions[i].radius = radius;
-            s_explosions[i].life = 8;
-            s_explosions[i].max_life = 8;
+            if (s_sparks[i].active) continue;
+            int speed = 320 + (int)(rng_next() % 400u);                  // 1.25..2.8 px/frame
+            int side = (int)(rng_next() % 641u) - 320;                   // +-1.25 px/frame
+            s_sparks[i].active = 1;
+            s_sparks[i].x = TO_FIXED(x);
+            s_sparks[i].y = TO_FIXED(y);
+            s_sparks[i].vx = ((back_x * speed) >> 8) + ((-back_y * side) >> 8);
+            s_sparks[i].vy = ((back_y * speed) >> 8) + ((back_x * side) >> 8) - 64;
+            s_sparks[i].max_life = SPARK_LIFE_MIN + (int)(rng_next() % 5u);
+            s_sparks[i].life = s_sparks[i].max_life;
             break;
         }
     }
-
-    int r2 = radius * radius;
-    for (int i = 0; i < max_enemies; i++) {
-        Enemy *e = &enemies[i];
-        if (!e->active || e->hp <= 0) continue;
-        int dx = TO_INT(e->x - x);
-        int dy = TO_INT(e->y - y);
-        if (dx * dx + dy * dy <= r2) {
-            fixed push_x = (fixed)(dx << 8);
-            fixed push_y = (fixed)(dy << 8);
-            enemy_hit(e, damage, push_x, push_y);
-        }
-    }
-
-#ifdef DEBUG
-    char msg[64];
-    snprintf(msg, sizeof(msg), "ROCKET_EXPLOSION r=%d dmg=%d", radius, damage);
-    nocashMessage(msg);
-#endif
 }
 
-int weapons_fire(PlayerState *player, fixed player_x, fixed player_y,
-                 int aim_screen_x, int aim_screen_y, int cam_x, int cam_y,
-                 int is_firing_held, Enemy *enemies, int max_enemies) {
-    (void)cam_x;
-    (void)cam_y;
-    if (!player || player->is_dead) return 0;
+static void spawn_flash(const WeaponInput *in, fixed dir_x, fixed dir_y) {
+    s_flash.life = 3;
+    s_flash.x = TO_INT(in->muzzle_x);
+    s_flash.y = TO_INT(in->muzzle_y) - in->muzzle_h;
+    s_flash.dir_x = dir_x;
+    s_flash.dir_y = dir_y;
+}
 
-    const WeaponTuning *tuning = &g_weapon_tuning[player->current_weapon];
+static void request_shake(const WeaponTuning *tuning) {
+    s_shake_amp = tuning->shake_amp;
+    s_shake_frames = tuning->shake_frames > 0 ? tuning->shake_frames : 1;
+    s_shake_timer = s_shake_frames;
+}
 
-    // Gatling spinup handling
-    if (player->current_weapon == WEAPON_GATLING) {
-        if (is_firing_held) {
-            s_gatling_spinup++;
-            if (s_gatling_spinup < tuning->spinup_delay) {
-                return 0; // Still spinning up
-            }
-        } else {
-            s_gatling_spinup = 0;
-            return 0;
-        }
-    } else {
-        s_gatling_spinup = 0;
-    }
+// ---------------------------------------------------------------------------
+// Aiming
+// ---------------------------------------------------------------------------
 
-    if (s_weapon_cooldown > 0) return 0;
-
-    // Ammo check & infinite pistol fallback
-    if (tuning->ammo_cost > 0) {
-        if (player->ammo[player->current_weapon] < tuning->ammo_cost) {
-            player->current_weapon = WEAPON_PISTOL;
-            tuning = &g_weapon_tuning[WEAPON_PISTOL];
-            s_gatling_spinup = 0;
-        }
-    }
-
-    // Deduct ammo
-    if (tuning->ammo_cost > 0) {
-        player->ammo[player->current_weapon] -= tuning->ammo_cost;
-        if (player->ammo[player->current_weapon] <= 0) {
-            player->ammo[player->current_weapon] = 0;
-            player->current_weapon = WEAPON_PISTOL; // Fallback when exhausted
-        }
-    }
-
-    s_weapon_cooldown = tuning->fire_cooldown;
-    s_weapon_tick++;
-
-    // Calculate normalized 8.8 aim vector
-    int px = TO_INT(player_x);
-    int py = TO_INT(player_y);
-    int dx = aim_screen_x - px;
-    int dy = aim_screen_y - py;
-    uint32_t len = int_sqrt((uint32_t)(dx * dx + GROUND_DY2(dy)));
-    if (len == 0) len = 1;
-    fixed dir_x = (fixed)(((int64_t)dx << 8) / (int32_t)len);
-    fixed dir_y = (fixed)(((int64_t)dy << 8) / (int32_t)len);
-    fixed perp_x = -dir_y;
-    fixed perp_y = dir_x;
-
-    if (tuning->fire_mode == FIRE_MODE_HITSCAN) {
-        // Hitscan trace
-        fixed cur_dir_x = dir_x;
-        fixed cur_dir_y = dir_y;
-        if (tuning->spread_angle > 0) {
-            int jitter = (int)(rng_next() % 51u) - 25; // -25..+25
-            fixed offset = (fixed)(jitter * tuning->spread_angle) >> 5;
-            cur_dir_x += (perp_x * offset) >> 8;
-            cur_dir_y += (perp_y * offset) >> 8;
-        }
-
-        fixed cur_x = player_x;
-        fixed cur_y = player_y;
-        fixed step_x = (cur_dir_x * 2);
-        fixed step_y = (cur_dir_y * 2);
-
-        for (int d = 0; d < tuning->projectile_range; d += 2) {
-            cur_x += step_x;
-            cur_y += step_y;
-
-            if (!bullet_position_is_free(cur_x, cur_y)) {
-                break;
-            }
-
-            int hit_enemy = -1;
-            for (int i = 0; i < max_enemies; i++) {
-                Enemy *e = &enemies[i];
-                if (!e->active || e->hp <= 0) continue;
-                int edx = TO_INT(cur_x - e->x);
-                int edy = TO_INT(cur_y - e->y);
-                if (edx * edx + edy * edy <= 12 * 12) {
-                    hit_enemy = i;
-                    break;
-                }
-            }
-
-            if (hit_enemy >= 0) {
-                enemy_hit(&enemies[hit_enemy], tuning->damage_per_hit, cur_dir_x * 4, cur_dir_y * 4);
-                break;
-            }
-        }
-
-        spawn_tracer(player_x, player_y, cur_x, cur_y, player->current_weapon);
-        uint16_t spark_col = (player->current_weapon == WEAPON_PISTOL) ?
-            (RGB15(15, 31, 31) | BIT(15)) : (RGB15(31, 28, 8) | BIT(15));
-        spawn_sparks(cur_x, cur_y, spark_col);
-        spawn_sparks(player_x + ((cur_dir_x * 8) >> 8), player_y + ((cur_dir_y * 8) >> 8), spark_col);
-    } else {
-        // Projectile fire mode
-        int pellets = tuning->pellets > 0 ? tuning->pellets : 1;
-        for (int p_idx = 0; p_idx < pellets; p_idx++) {
-            // Find free projectile slot
-            int slot = -1;
-            for (int s = 0; s < MAX_PLAYER_PROJECTILES; s++) {
-                if (!s_player_projectiles[s].active) {
-                    slot = s;
-                    break;
-                }
-            }
-            if (slot < 0) break;
-
-            int spread_idx = (pellets > 1) ? (p_idx - (pellets / 2)) : 0;
-            fixed spread_offset = (spread_idx * tuning->spread_angle) / 2;
-            fixed vx = ((dir_x * tuning->projectile_speed) >> 8) + ((perp_x * spread_offset) >> 8);
-            fixed vy = ((dir_y * tuning->projectile_speed) >> 8) + ((perp_y * spread_offset) >> 8);
-
-            PlayerProjectile *proj = &s_player_projectiles[slot];
-            proj->active = 1;
-            proj->weapon_type = player->current_weapon;
-            proj->x = player_x + (vx / 4);
-            proj->y = player_y + (vy / 4);
-            proj->vx = vx;
-            proj->vy = vy;
-            proj->life = tuning->projectile_range;
-            proj->max_life = tuning->projectile_range;
-            proj->damage = tuning->damage_per_hit;
-            proj->is_explosive = (tuning->explosion_radius > 0);
-            proj->explosion_radius = tuning->explosion_radius;
-            proj->explosion_damage = tuning->explosion_damage;
-            proj->hit_mask = 0;
-            proj->seed = (uint8_t)(slot * 11 + p_idx * 7 + s_weapon_tick);
-        }
-    }
-
-#ifdef DEBUG
-    char msg[64];
-    snprintf(msg, sizeof(msg), "WEAPON_FIRE weapon=%s ammo=%d",
-             tuning->name, player->ammo[player->current_weapon]);
-    nocashMessage(msg);
-#endif
+// The stylus touches a pixel of the screen. Shots fly at muzzle height, so the
+// touched pixel is read as a point at that height: its ground point lies
+// `muzzle_h` pixels below it. Returns 0 when the touch is on top of the muzzle.
+static int compute_aim(const WeaponInput *in, fixed *dir_x, fixed *dir_y) {
+    int ax = in->touch_x - TO_INT(in->muzzle_x);
+    int ay = (in->touch_y + in->muzzle_h) - TO_INT(in->muzzle_y);
+    uint32_t len = int_sqrt((uint32_t)(ax * ax + GROUND_DY2(ay)));
+    if ((int)len < MIN_AIM_DISTANCE) return 0;
+    *dir_x = (fixed)((ax * 256) / (int)len);
+    *dir_y = (fixed)((ay * 256) / (int)len);
     return 1;
 }
 
-void weapons_update(Enemy *enemies, int max_enemies, fixed player_x, fixed player_y) {
-    (void)player_x;
-    (void)player_y;
+// ---------------------------------------------------------------------------
+// Firing
+// ---------------------------------------------------------------------------
+
+static void shove_enemy(Enemy *e, const WeaponTuning *tuning, fixed dir_x, fixed dir_y) {
+    if (!e->active || e->hp <= 0 || tuning->knockback <= 0) return;
+    e->knock_vx = (dir_x * tuning->knockback) >> 8;
+    e->knock_vy = (dir_y * tuning->knockback) >> 8;
+    e->stun_timer = tuning->stun_frames;
+}
+
+// The muzzle hangs off the feet; against a wall it can land inside the bullet-blocking
+// cells. Then the shot starts at the player's ground point (the flash stays at the muzzle).
+static void shot_origin(const WeaponInput *in, fixed *x, fixed *y) {
+    if (bullet_position_is_free(in->muzzle_x, in->muzzle_y)) {
+        *x = in->muzzle_x;
+        *y = in->muzzle_y;
+    } else {
+        *x = in->player_x;
+        *y = in->player_y;
+    }
+}
+
+// Length in ground px a straight shot from the muzzle travels before a wall (0..range).
+static int ray_length(const WeaponInput *in, fixed dir_x, fixed dir_y, int range) {
+    fixed x, y;
+    shot_origin(in, &x, &y);
+    int d = 0;
+    for (; d < range; d += 2) {
+        x += dir_x * 2;
+        y += dir_y * 2;
+        if (!bullet_position_is_free(x, y)) break;
+    }
+    return d;
+}
+
+static void fire_shotgun(const WeaponTuning *tuning, const WeaponInput *in, fixed dir_x, fixed dir_y) {
+    fixed origin_x, origin_y;
+    shot_origin(in, &origin_x, &origin_y);
+    fixed perp_x = -dir_y;
+    fixed perp_y = dir_x;
+    int pellets = tuning->pellets > 0 ? tuning->pellets : 1;
+    for (int p_idx = 0; p_idx < pellets; p_idx++) {
+        int slot = -1;
+        for (int s = 0; s < MAX_PLAYER_PROJECTILES; s++) {
+            if (!s_player_projectiles[s].active) { slot = s; break; }
+        }
+        if (slot < 0) break;
+
+        int spread_idx = (pellets > 1) ? (p_idx - (pellets / 2)) : 0;
+        fixed jitter = (fixed)rng_range(-(int)tuning->spread_angle / 4, (int)tuning->spread_angle / 4);
+        fixed spread_offset = (spread_idx * tuning->spread_angle) / 2 + jitter;
+        PlayerProjectile *proj = &s_player_projectiles[slot];
+        proj->active = 1;
+        proj->weapon_type = WEAPON_SHOTGUN;
+        proj->x = origin_x;
+        proj->y = origin_y;
+        proj->vx = ((dir_x * tuning->projectile_speed) >> 8) + ((perp_x * spread_offset) >> 8);
+        proj->vy = ((dir_y * tuning->projectile_speed) >> 8) + ((perp_y * spread_offset) >> 8);
+        proj->height = in->muzzle_h;
+        proj->life = tuning->projectile_range;
+        proj->max_life = tuning->projectile_range;
+        proj->damage = tuning->damage_per_hit;
+    }
+}
+
+// Piercing ray: damages every enemy on the line once and stops at the first wall.
+static void fire_sniper(const WeaponTuning *tuning, const WeaponInput *in, fixed dir_x, fixed dir_y,
+                        Enemy *enemies, int max_enemies) {
+    fixed cur_x, cur_y;
+    shot_origin(in, &cur_x, &cur_y);
+    fixed step_x = dir_x * 2;
+    fixed step_y = dir_y * 2;
+    uint32_t hit_mask = 0;
+    int end_blocked = 0;
+
+    for (int d = 0; d < tuning->projectile_range; d += 2) {
+        fixed nx = cur_x + step_x;
+        fixed ny = cur_y + step_y;
+        if (!bullet_position_is_free(nx, ny)) { end_blocked = 1; break; }
+        cur_x = nx;
+        cur_y = ny;
+
+        for (int i = 0; i < max_enemies; i++) {
+            Enemy *e = &enemies[i];
+            if (!e->active || e->hp <= 0 || (hit_mask & (1u << i))) continue;
+            int edx = TO_INT(cur_x - e->x);
+            int edy = TO_INT(cur_y - e->y);
+            if (edx * edx + GROUND_DY2(edy) <= ENEMY_HIT_RADIUS * ENEMY_HIT_RADIUS) {
+                hit_mask |= 1u << i;
+                spawn_impact(TO_INT(cur_x), TO_INT(cur_y) - in->muzzle_h, -dir_x, -dir_y, 4);
+                enemy_hit(e, tuning->damage_per_hit, dir_x * 4, dir_y * 4);
+                shove_enemy(e, tuning, dir_x, dir_y);
+            }
+        }
+    }
+
+    s_trail.life = 6;
+    s_trail.x0 = TO_INT(in->muzzle_x);
+    s_trail.y0 = TO_INT(in->muzzle_y) - in->muzzle_h;
+    s_trail.x1 = TO_INT(cur_x);
+    s_trail.y1 = TO_INT(cur_y) - in->muzzle_h;
+    if (end_blocked) {
+        spawn_impact(s_trail.x1, s_trail.y1, -dir_x, -dir_y, 6);
+    }
+}
+
+static int fire_weapon(PlayerState *player, const WeaponInput *in, fixed dir_x, fixed dir_y,
+                       Enemy *enemies, int max_enemies) {
+    const WeaponTuning *tuning = &g_weapon_tuning[player->current_weapon];
+    s_weapon_cooldown = tuning->fire_cooldown;
+    s_last_dir_x = dir_x;
+    s_last_dir_y = dir_y;
+    if (player->current_weapon == WEAPON_SHOTGUN) {
+        fire_shotgun(tuning, in, dir_x, dir_y);
+    } else {
+        fire_sniper(tuning, in, dir_x, dir_y, enemies, max_enemies);
+    }
+    spawn_flash(in, dir_x, dir_y);
+    request_shake(tuning);
+    return WEAPON_RESULT_FIRED;
+}
+
+int weapons_can_start_aim(const PlayerState *player) {
+    return player->current_weapon == WEAPON_SNIPER && s_weapon_cooldown <= 0 && s_aim_state == AIM_IDLE;
+}
+
+int weapons_input(PlayerState *player, const WeaponInput *in, Enemy *enemies, int max_enemies) {
+    if (!player || !in || player->is_dead) {
+        s_aim_state = AIM_IDLE;
+        return 0;
+    }
+
+    fixed dir_x = 0, dir_y = 0;
+    int has_aim = in->touch_down ? compute_aim(in, &dir_x, &dir_y) : 0;
+
+    if (player->current_weapon == WEAPON_SHOTGUN) {
+        // One shot per touch: holding the stylus does not repeat.
+        if (in->touch_pressed && has_aim && s_weapon_cooldown <= 0) {
+            return fire_weapon(player, in, dir_x, dir_y, enemies, max_enemies);
+        }
+        return 0;
+    }
+
+    // Sniper: touch to aim (the player stops), release to fire once armed.
+    int result = 0;
+    if (s_aim_state == AIM_IDLE) {
+        if (in->touch_pressed && s_weapon_cooldown <= 0) {
+            s_aim_state = AIM_AIMING;
+            s_aim_timer = 0;
+        }
+    }
+    if (s_aim_state == AIM_IDLE) return 0;
+
+    if (!in->touch_down) {
+        if (s_aim_state == AIM_READY) {
+            result = fire_weapon(player, in, s_aim_dir_x, s_aim_dir_y, enemies, max_enemies);
+        }
+        s_aim_state = AIM_IDLE;
+        return result;
+    }
+
+    if (s_aim_state == AIM_CANCELLED) return 0;
+
+    // Dragging the stylus back onto the character cancels the shot.
+    int bx = in->touch_x - TO_INT(in->player_x);
+    int by = in->touch_y - (TO_INT(in->player_y) - in->muzzle_h);
+    if (bx * bx + by * by <= SNIPER_CANCEL_RADIUS * SNIPER_CANCEL_RADIUS) {
+        s_aim_state = AIM_CANCELLED;
+        return 0;
+    }
+
+    if (has_aim) {
+        s_aim_dir_x = dir_x;
+        s_aim_dir_y = dir_y;
+    }
+    s_aim_muzzle_x = in->muzzle_x;
+    s_aim_muzzle_y = in->muzzle_y;
+    s_aim_muzzle_h = in->muzzle_h;
+    s_aim_len = ray_length(in, s_aim_dir_x, s_aim_dir_y, g_weapon_tuning[WEAPON_SNIPER].projectile_range);
+    s_aim_timer++;
+    if (s_aim_timer >= g_weapon_tuning[WEAPON_SNIPER].aim_min_frames) s_aim_state = AIM_READY;
+    return WEAPON_RESULT_ROOTED;
+}
+
+// ---------------------------------------------------------------------------
+// Simulation
+// ---------------------------------------------------------------------------
+
+void weapons_update(Enemy *enemies, int max_enemies) {
     if (s_weapon_cooldown > 0) s_weapon_cooldown--;
-
-    for (int i = 0; i < MAX_TRACERS; i++) {
-        if (!s_tracers[i].active) continue;
-        s_tracers[i].life--;
-        if (s_tracers[i].life <= 0) {
-            s_tracers[i].active = 0;
-        }
-    }
-
-    for (int i = 0; i < MAX_EXPLOSIONS; i++) {
-        if (!s_explosions[i].active) continue;
-        s_explosions[i].life--;
-        if (s_explosions[i].life <= 0) {
-            s_explosions[i].active = 0;
-        }
-    }
+    if (s_flash.life > 0) s_flash.life--;
+    if (s_trail.life > 0) s_trail.life--;
+    if (s_shake_timer > 0) { s_shake_timer--; s_shake_tick++; }
 
     for (int i = 0; i < MAX_SPARKS; i++) {
-        if (!s_sparks[i].active) continue;
-        s_sparks[i].x += s_sparks[i].vx;
-        s_sparks[i].y += s_sparks[i].vy;
-        s_sparks[i].life--;
-        if (s_sparks[i].life <= 0) {
-            s_sparks[i].active = 0;
-        }
+        WeaponSpark *s = &s_sparks[i];
+        if (!s->active) continue;
+        s->x += s->vx;
+        s->y += s->vy;
+        s->vy += 32;                      // light gravity
+        if (--s->life <= 0) s->active = 0;
     }
 
+    const WeaponTuning *shotgun = &g_weapon_tuning[WEAPON_SHOTGUN];
     for (int i = 0; i < MAX_PLAYER_PROJECTILES; i++) {
         PlayerProjectile *p = &s_player_projectiles[i];
         if (!p->active) continue;
 
-        p->life--;
-        if (p->life <= 0) {
-            if (p->is_explosive) {
-                spawn_explosion(p->x, p->y, p->explosion_radius, p->explosion_damage, enemies, max_enemies);
-            }
+        if (--p->life <= 0) {
             p->active = 0;
             continue;
         }
@@ -440,168 +421,159 @@ void weapons_update(Enemy *enemies, int max_enemies, fixed player_x, fixed playe
         int steps = (major + 511) / 512;
         if (steps < 1) steps = 1;
         int blocked = 0;
-
         for (int s = 1; s <= steps; s++) {
             fixed nx = p->x + (p->vx / steps);
             fixed ny = p->y + (p->vy / steps);
-            if (!bullet_position_is_free(nx, ny)) {
-                blocked = 1;
-                break;
-            }
+            if (!bullet_position_is_free(nx, ny)) { blocked = 1; break; }
             p->x = nx;
             p->y = ny;
         }
-
         if (blocked) {
-            if (p->is_explosive) {
-                spawn_explosion(p->x, p->y, p->explosion_radius, p->explosion_damage, enemies, max_enemies);
-            }
+            spawn_impact(TO_INT(p->x), TO_INT(p->y) - p->height, -p->vx / 8, -p->vy / 8, 3);
             p->active = 0;
             continue;
         }
 
         for (int e_idx = 0; e_idx < max_enemies; e_idx++) {
             Enemy *e = &enemies[e_idx];
-            if (!e->active || e->hp <= 0 || (p->hit_mask & (1u << e_idx))) continue;
+            if (!e->active || e->hp <= 0) continue;
             int dx = TO_INT(p->x - e->x);
             int dy = TO_INT(p->y - e->y);
-            if (dx * dx + dy * dy <= 12 * 12) {
-                if (p->is_explosive) {
-                    spawn_explosion(p->x, p->y, p->explosion_radius, p->explosion_damage, enemies, max_enemies);
-                } else {
-                    enemy_hit(e, p->damage, p->vx, p->vy);
-                    p->hit_mask |= (uint16_t)(1u << e_idx);
-                }
-                p->active = 0;
-                break;
-            }
+            if (dx * dx + GROUND_DY2(dy) > ENEMY_HIT_RADIUS * ENEMY_HIT_RADIUS) continue;
+
+            // Damage falls off from 100% at the muzzle to 25% at the end of the range.
+            int damage = (p->damage * (64 + (192 * p->life) / p->max_life)) >> 8;
+            if (damage < 1) damage = 1;
+            spawn_impact(TO_INT(p->x), TO_INT(p->y) - p->height, -p->vx / 8, -p->vy / 8, 3);
+            enemy_hit(e, damage, p->vx, p->vy);
+            fixed len_dir_x = p->vx * 256 / shotgun->projectile_speed;
+            fixed len_dir_y = p->vy * 256 / shotgun->projectile_speed;
+            shove_enemy(e, shotgun, len_dir_x, len_dir_y);
+            p->active = 0;
+            break;
         }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Rendering: procedural strokes. render_screen() calls weapons_render() once per screen,
+// so the aim laser, pellets, trail, flash and sparks show on both of them.
+// ---------------------------------------------------------------------------
+
+enum {
+    FX_CORE = 0, FX_HOT, FX_COOL,                  // muzzle flash
+    FX_AIM, FX_AIM_READY,                          // sniper laser
+    FX_TRAIL_A, FX_TRAIL_B, FX_TRAIL_C,            // sniper trail, bright to dim
+    FX_PELLET_HEAD,
+    FX_SPARK_A, FX_SPARK_B, FX_SPARK_C,            // impact sparks, hot to cold
+    FX_NUM_COLORS
+};
+
+static const uint16_t s_fx_rgb[FX_NUM_COLORS] = {
+    RGB15(31, 31, 24), RGB15(31, 24, 6), RGB15(28, 12, 2),
+    RGB15(31, 8, 6), RGB15(20, 31, 31),
+    RGB15(31, 31, 31), RGB15(18, 28, 31), RGB15(8, 16, 26),
+    RGB15(31, 30, 20),
+    RGB15(31, 30, 18), RGB15(31, 18, 3), RGB15(20, 5, 2)
+};
+
+typedef struct {
+    uint16_t *p16;        // screen page (BGR555 with the alpha bit)
+} FxTarget;
+
+static inline void put_px(const FxTarget *t, int x, int y, int color) {
+    if (x < 0 || x >= SCREEN_W || y < 0 || y >= SCREEN_H) return;
+    t->p16[y * SCREEN_W + x] = s_fx_rgb[color] | BIT(15);
+    dirty_row(y, x, x + 1);
+}
+
+// Draws a one-pixel Bresenham line in screen space.
+static void draw_line(const FxTarget *t, int x0, int y0, int x1, int y1, int color) {
+    // Nothing of the line can reach this screen: skip the walk.
+    if ((x0 < 0 && x1 < 0) || (x0 >= SCREEN_W && x1 >= SCREEN_W) ||
+        (y0 < 0 && y1 < 0) || (y0 >= SCREEN_H && y1 >= SCREEN_H)) return;
+    int dx = abs_int(x1 - x0), dy = abs_int(y1 - y0);
+    int sx = x0 < x1 ? 1 : -1, sy = y0 < y1 ? 1 : -1;
+    int err = (dx > dy ? dx : -dy) / 2;
+    for (;;) {
+        put_px(t, x0, y0, color);
+        if (x0 == x1 && y0 == y1) break;
+        int e2 = err;
+        if (e2 > -dx) { err -= dy; x0 += sx; }
+        if (e2 < dy) { err += dx; y0 += sy; }
+    }
+}
+
+static void render_aim_line(const FxTarget *t, int cam_x, int cam_y) {
+    if (s_aim_state != AIM_AIMING && s_aim_state != AIM_READY) return;
+    int ready = s_aim_state == AIM_READY;
+    int color = ready ? FX_AIM_READY : FX_AIM;
+    int last_x = TO_INT(s_aim_muzzle_x) - cam_x;
+    int last_y = TO_INT(s_aim_muzzle_y) - s_aim_muzzle_h - cam_y;
+    for (int d = 2; d <= s_aim_len; d += 2) {
+        int px = TO_INT(s_aim_muzzle_x + s_aim_dir_x * d) - cam_x;
+        int py = TO_INT(s_aim_muzzle_y + s_aim_dir_y * d) - s_aim_muzzle_h - cam_y;
+        // Dashed while aiming, solid once the shot is armed.
+        if (ready || (((d - 2) >> 2) & 1) == 0) draw_line(t, last_x, last_y, px, py, color);
+        last_x = px;
+        last_y = py;
+    }
+}
+
+static void render_flash(const FxTarget *t, int cam_x, int cam_y) {
+    if (s_flash.life <= 0) return;
+    int x = s_flash.x - cam_x, y = s_flash.y - cam_y;
+    int reach = 2 + s_flash.life * 2;                 // 8, 6, 4 px as it fades
+    for (int k = 1; k <= reach; k++) {
+        int px = x + ((s_flash.dir_x * k) >> 8);
+        int py = y + ((s_flash.dir_y * k) >> 8);
+        put_px(t, px, py, k * 2 > reach ? FX_COOL : FX_HOT);
+    }
+    put_px(t, x, y, FX_CORE);
+    put_px(t, x - 1, y, FX_HOT);
+    put_px(t, x + 1, y, FX_HOT);
+    put_px(t, x, y - 1, FX_HOT);
+    put_px(t, x, y + 1, FX_HOT);
+}
+
+static void render_fx(const FxTarget *t, int cam_x, int cam_y) {
+    render_aim_line(t, cam_x, cam_y);
+
+    // Sniper trail: a long bright stroke that fades in a few frames.
+    if (s_trail.life > 0) {
+        int color = s_trail.life > 4 ? FX_TRAIL_A : s_trail.life > 2 ? FX_TRAIL_B : FX_TRAIL_C;
+        draw_line(t, s_trail.x0 - cam_x, s_trail.y0 - cam_y,
+                  s_trail.x1 - cam_x, s_trail.y1 - cam_y, color);
+    }
+
+    // Pellets: short streak behind a bright head.
+    for (int i = 0; i < MAX_PLAYER_PROJECTILES; i++) {
+        PlayerProjectile *p = &s_player_projectiles[i];
+        if (!p->active) continue;
+        int hx = TO_INT(p->x) - cam_x;
+        int hy = TO_INT(p->y) - p->height - cam_y;
+        int tx = hx - (p->vx >> 8) * 2 / 3;
+        int ty = hy - (p->vy >> 8) * 2 / 3;
+        draw_line(t, tx, ty, hx, hy, FX_COOL);
+        put_px(t, hx, hy, FX_PELLET_HEAD);
+    }
+
+    render_flash(t, cam_x, cam_y);
+
+    // Impact sparks: two-pixel strokes along their velocity, cooling as they die.
+    for (int i = 0; i < MAX_SPARKS; i++) {
+        WeaponSpark *s = &s_sparks[i];
+        if (!s->active) continue;
+        int age = (s->life * 3) / s->max_life;        // 2 young .. 0 old
+        int color = age >= 2 ? FX_SPARK_A : age == 1 ? FX_SPARK_B : FX_SPARK_C;
+        int hx = TO_INT(s->x) - cam_x, hy = TO_INT(s->y) - cam_y;
+        put_px(t, hx, hy, color);
+        put_px(t, hx - (s->vx > 96) + (s->vx < -96), hy - (s->vy > 96) + (s->vy < -96), color);
     }
 }
 
 void weapons_render(uint16_t *buffer, int cam_x, int cam_y) {
     if (!buffer) return;
-
-    // 1. Tracers
-    for (int i = 0; i < MAX_TRACERS; i++) {
-        WeaponTracer *t = &s_tracers[i];
-        if (!t->active) continue;
-
-        int x0 = TO_INT(t->start_x) - cam_x;
-        int y0 = TO_INT(t->start_y) - cam_y;
-        int x1 = TO_INT(t->end_x) - cam_x;
-        int y1 = TO_INT(t->end_y) - cam_y;
-
-        uint16_t color = (t->weapon_type == WEAPON_PISTOL) ?
-            (RGB15(8, 28, 31) | BIT(15)) :  // Cyan tracer for pistol
-            (RGB15(31, 28, 6) | BIT(15));   // Gold-yellow tracer for gatling
-
-        int dx = x1 - x0;
-        int dy = y1 - y0;
-        int adx = abs_int(dx);
-        int ady = abs_int(dy);
-        int sx = dx < 0 ? -1 : 1;
-        int sy = dy < 0 ? -1 : 1;
-        int err = (adx > ady ? adx : -ady) / 2;
-
-        int cur_x = x0, cur_y = y0;
-        // Bresenham needs max(|dx|,|dy|) + 1 pixels: always covers the whole tracer.
-        int line_steps = adx > ady ? adx : ady;
-        for (int step = 0; step <= line_steps; step++) {
-            if (cur_x >= 0 && cur_x < SCREEN_W && cur_y >= 0 && cur_y < SCREEN_H) {
-                buffer[cur_y * SCREEN_W + cur_x] = color;
-                dirty_row(cur_y, cur_x, cur_x + 1);
-            }
-            if (cur_x == x1 && cur_y == y1) break;
-            int e2 = err;
-            if (e2 > -adx) { err -= ady; cur_x += sx; }
-            if (e2 < ady)  { err += adx; cur_y += sy; }
-        }
-
-        // Impact spark at end
-        if (x1 >= 1 && x1 < SCREEN_W - 1 && y1 >= 1 && y1 < SCREEN_H - 1) {
-            uint16_t spark = (RGB15(31, 31, 31) | BIT(15));
-            buffer[y1 * SCREEN_W + x1] = spark;
-            buffer[(y1 - 1) * SCREEN_W + x1] = color;
-            buffer[(y1 + 1) * SCREEN_W + x1] = color;
-            buffer[y1 * SCREEN_W + x1 - 1] = color;
-            buffer[y1 * SCREEN_W + x1 + 1] = color;
-            dirty_rect(x1 - 1, y1 - 1, x1 + 2, y1 + 2);
-        }
-    }
-
-    // 2. Projectiles
-    for (int i = 0; i < MAX_PLAYER_PROJECTILES; i++) {
-        PlayerProjectile *p = &s_player_projectiles[i];
-        if (!p->active) continue;
-
-        int sx = TO_INT(p->x) - cam_x;
-        int sy = TO_INT(p->y) - cam_y;
-
-        if (sx < 1 || sx >= SCREEN_W - 2 || sy < 1 || sy >= SCREEN_H - 2) continue;
-
-        if (p->weapon_type == WEAPON_SHOTGUN) {
-            uint16_t pellet = (RGB15(31, 26, 12) | BIT(15));
-            uint16_t edge = (RGB15(24, 16, 4) | BIT(15));
-            buffer[sy * SCREEN_W + sx] = pellet;
-            buffer[sy * SCREEN_W + sx + 1] = edge;
-            buffer[(sy + 1) * SCREEN_W + sx] = edge;
-            dirty_rect(sx, sy, sx + 2, sy + 2);
-        } else if (p->weapon_type == WEAPON_HEAVY) {
-            uint16_t tip = (RGB15(31, 31, 10) | BIT(15));
-            uint16_t body = (RGB15(31, 6, 2) | BIT(15));
-            uint16_t fin = (RGB15(16, 4, 1) | BIT(15));
-
-            buffer[sy * SCREEN_W + sx] = tip;
-            buffer[(sy - 1) * SCREEN_W + sx] = body;
-            buffer[(sy + 1) * SCREEN_W + sx] = body;
-            buffer[sy * SCREEN_W + sx - 1] = fin;
-            buffer[sy * SCREEN_W + sx + 1] = fin;
-            dirty_rect(sx - 1, sy - 1, sx + 2, sy + 2);
-        }
-    }
-
-    // 3. Explosions
-    for (int i = 0; i < MAX_EXPLOSIONS; i++) {
-        WeaponExplosion *e = &s_explosions[i];
-        if (!e->active) continue;
-
-        int ex = TO_INT(e->x) - cam_x;
-        int ey = TO_INT(e->y) - cam_y;
-        int progress = e->max_life - e->life;
-        int cur_r = (e->radius * progress) / e->max_life;
-        if (cur_r < 2) cur_r = 2;
-
-        uint16_t blast_outer = (RGB15(31, 28, 4) | BIT(15));
-        uint16_t blast_inner = (RGB15(31, 10, 0) | BIT(15));
-
-        for (int dy = -cur_r; dy <= cur_r; dy += 2) {
-            int py = ey + dy;
-            if (py < 0 || py >= SCREEN_H) continue;
-            int span = cur_r - abs_int(dy);
-            int px1 = ex - span;
-            int px2 = ex + span;
-            if (px1 >= 0 && px1 < SCREEN_W) { buffer[py * SCREEN_W + px1] = blast_outer; dirty_row(py, px1, px1 + 1); }
-            if (px2 >= 0 && px2 < SCREEN_W) { buffer[py * SCREEN_W + px2] = blast_outer; dirty_row(py, px2, px2 + 1); }
-            if (span > 2) {
-                int px_in1 = ex - span / 2;
-                int px_in2 = ex + span / 2;
-                if (px_in1 >= 0 && px_in1 < SCREEN_W) { buffer[py * SCREEN_W + px_in1] = blast_inner; dirty_row(py, px_in1, px_in1 + 1); }
-                if (px_in2 >= 0 && px_in2 < SCREEN_W) { buffer[py * SCREEN_W + px_in2] = blast_inner; dirty_row(py, px_in2, px_in2 + 1); }
-            }
-        }
-    }
-
-    // 4. Sparks
-    for (int i = 0; i < MAX_SPARKS; i++) {
-        if (!s_sparks[i].active) continue;
-        int sx = TO_INT(s_sparks[i].x) - cam_x;
-        int sy = TO_INT(s_sparks[i].y) - cam_y;
-        if (sx >= 1 && sx < SCREEN_W - 1 && sy >= 1 && sy < SCREEN_H - 1) {
-            buffer[sy * SCREEN_W + sx] = s_sparks[i].color;
-            buffer[(sy - 1) * SCREEN_W + sx] = s_sparks[i].color;
-            buffer[sy * SCREEN_W + sx + 1] = s_sparks[i].color;
-            dirty_rect(sx - 1, sy - 1, sx + 2, sy + 2);
-        }
-    }
+    FxTarget target = { buffer };
+    render_fx(&target, cam_x, cam_y);
 }

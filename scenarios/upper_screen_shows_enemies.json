@@ -1,0 +1,29 @@
+{
+  "name": "upper_screen_shows_enemies",
+  "steps": [
+    {
+      "frames": 20,
+      "capture": "00_start"
+    },
+    {
+      "button_down": "DOWN",
+      "frames": 240,
+      "capture_sequence": "walk_down",
+      "capture_every": 60
+    },
+    {
+      "button_up": "DOWN",
+      "frames": 4,
+      "capture": "01_enemies_above"
+    }
+  ],
+  "assertions": {
+    "screen_changes": [
+      {
+        "from": "00_start",
+        "to": "01_enemies_above",
+        "min_changed_pixels": 200
+      }
+    ]
+  }
+}

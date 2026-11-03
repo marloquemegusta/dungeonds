@@ -78,6 +78,9 @@ struct Enemy {
     int burst_interval_timer;
     int strafe_dir;
     int has_los;
+    fixed knock_vx;     // 8.8 shove velocity applied while stunned
+    fixed knock_vy;
+    int stun_timer;     // frames the enemy stays staggered after a shotgun hit
 };
 
 // The map is a 2:1 dimetric projection (30 deg elevation): one ground unit along
@@ -92,7 +95,7 @@ int bullet_position_is_free(fixed x, fixed y);
 int sweep_position(fixed *x, fixed *y, fixed dx, fixed dy);
 
 // Applies damage to an enemy. On a kill it marks the enemy dead, records the kill
-// with the encounter manager, spawns the drop pickup and notifies the death hook.
+// with the encounter manager and notifies the death hook.
 void enemy_hit(Enemy *e, int damage, fixed hit_vx, fixed hit_vy);
 
 // Presentation hook called by enemy_hit() when an enemy dies (e.g. death chunks).
@@ -101,18 +104,15 @@ typedef void (*EnemyDeathHook)(const Enemy *e, fixed hit_vx, fixed hit_vy);
 void enemy_set_death_hook(EnemyDeathHook hook);
 
 // ---------------------------------------------------------------------------
-// 3. Player Stats & Damage Function (Doom-style 1/3 armor absorption)
+// 3. Player Stats (DESIGN.md 4.2: a handful of hits)
 // ---------------------------------------------------------------------------
 
-#define PLAYER_MAX_HP 100
-#define PLAYER_MAX_ARMOR 100
+#define PLAYER_MAX_HP 5              // hits the player can take
+#define PLAYER_IFRAMES 60            // invulnerability frames after a hit
 
 struct PlayerState {
     int hp;
     int max_hp;
-    int armor;
-    int max_armor;
-    int ammo[NUM_WEAPON_TYPES];
     WeaponType current_weapon;
     int is_dead;
     int invuln_timer;
@@ -121,60 +121,24 @@ struct PlayerState {
 
 extern PlayerState g_player_state;
 
-/**
- * Applies damage to player with Doom-style armor absorption:
- * Rule:
- * - If armor > 0, armor absorbs 1/3 of the incoming damage (absorbed = damage / 3).
- * - absorbed is clamped to available armor.
- * - Remaining damage (damage - absorbed) is deducted from player HP.
- * - Player armor is reduced by absorbed.
- * - If HP drops to <= 0, player HP is clamped to 0 and is_dead is set to 1.
- */
-void player_apply_damage(PlayerState *player, int damage);
+// Frames the whole simulation freezes after an impact (hitstop). The main loop
+// consumes it; enemy_hit() raises it.
+extern int g_hitstop_frames;
 
 /**
- * Initializes player stats (HP=100, Armor=0, default ammo, pistol selected).
+ * A hit from an enemy: removes one hit point, starts the i-frames and kills the
+ * player at zero. Returns 1 when the hit landed (0 during i-frames, in god mode
+ * or when already dead).
+ */
+int player_take_hit(PlayerState *player);
+
+/**
+ * Initializes the player for a new arena: full health, shotgun, no i-frames.
  */
 void player_state_init(PlayerState *player);
 
 // ---------------------------------------------------------------------------
-// 4. Pickup Pool & Collection System
-// ---------------------------------------------------------------------------
-
-typedef enum {
-    PICKUP_NONE = 0,
-    PICKUP_HEALTH,
-    PICKUP_ARMOR,
-    PICKUP_AMMO_SHOTGUN,
-    PICKUP_AMMO_GATLING,
-    PICKUP_AMMO_HEAVY,
-    NUM_PICKUP_TYPES
-} PickupType;
-
-#define MAX_PICKUPS 16
-#define PICKUP_COLLECT_RADIUS_PX 12
-
-#define PICKUP_HEALTH_AMOUNT 25
-#define PICKUP_ARMOR_AMOUNT 25
-
-typedef struct {
-    int active;
-    PickupType type;
-    fixed x; // 8.8 fixed world x
-    fixed y; // 8.8 fixed world y
-    int amount;
-} Pickup;
-
-extern Pickup g_pickups[MAX_PICKUPS];
-
-void pickups_init(void);
-Pickup *pickup_spawn(PickupType type, fixed x, fixed y, int amount);
-int player_collect_pickup(PlayerState *player, Pickup *pickup);
-int pickups_update_collection(PlayerState *player, fixed player_x, fixed player_y);
-void pickups_render(uint16_t *buffer, int cam_x, int cam_y);
-
-// ---------------------------------------------------------------------------
-// 5. Deterministic Integer RNG (LCG)
+// 4. Deterministic Integer RNG (LCG)
 // ---------------------------------------------------------------------------
 
 void rng_seed(uint32_t seed);

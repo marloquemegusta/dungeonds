@@ -50,6 +50,7 @@
 // Hardware BG IDs and pointers
 static int s_bot_bg = 0;
 static u16 *s_top_map_ptr = NULL;
+static uint16_t *s_top_page = NULL;    // upper-screen 16 bpp actor page (single buffered)
 static u16 *s_bot_map_ptr = NULL;
 static int s_bot_active_page = 8;
 static int s_bot_back_page = 24;
@@ -67,18 +68,21 @@ static int s_bot_map_ready = 0;
 // that was painted into it so reusing it only clears what was drawn two frames ago.
 #define DIRTY_VERIFY 0 // 1 = after the span clear scan the whole page and count leftovers in g_perf.dirty_leaks
 static DirtySpan s_dirty[2][SCREEN_H];
+static DirtySpan s_dirty_top[SCREEN_H];
 DirtySpan *g_dirty_cur = s_dirty[0];
 
 static inline uint16_t *bot_page_ptr(int page) {
     return (uint16_t *)(0x06000000 + (uintptr_t)page * 0x4000);
 }
 
-#define BG_TILE_CACHE_CAPACITY 1024
+#define BG_TILE_CACHE_CAPACITY 1024     // lower screen: 64 KiB of tile slots in bank D
+#define TOP_TILE_CACHE_CAPACITY 448     // upper screen: 28 KiB in bank C (the baker keeps every window within it)
 #define BG_TILE_INVALID 0xFFFF
 typedef struct {
     uint16_t slot_for_tile[DUNGEON_BG_NUM_TILES];
     uint16_t slot_refs[BG_TILE_CACHE_CAPACITY];
     uint16_t world_tile_for_cell[BG_RING_W * BG_RING_H];
+    uint16_t capacity;
     uint8_t overflow;
 } BgTileCache;
 static BgTileCache s_top_bg_tile_cache;
@@ -102,6 +106,7 @@ typedef struct {
 } NavigationState;
 volatile NavigationState g_nav_state;
 static uint32_t s_blocked_moves = 0;
+static uint32_t s_keys_down_latch = 0;
 
 typedef struct {
     uint32_t calls, runs, pixels, ticks, frame_index;
@@ -413,7 +418,9 @@ static u16 bg_world_tile(int col, int row) {
     return g_dungeon_bg_map[row][col];
 }
 
-static void init_bg_tile_cache(BgTileCache *cache) {
+static void init_bg_tile_cache(BgTileCache *cache, uint16_t capacity, uint8_t *tile_vram) {
+    cache->capacity = capacity;
+    memset(tile_vram, 0, 64);              // slot 0 is the blank tile
     for (uint32_t i = 0; i < DUNGEON_BG_NUM_TILES; i++) cache->slot_for_tile[i] = BG_TILE_INVALID;
     for (uint32_t i = 0; i < BG_RING_W * BG_RING_H; i++) cache->world_tile_for_cell[i] = BG_TILE_INVALID;
     memset(cache->slot_refs, 0, sizeof(cache->slot_refs));
@@ -433,10 +440,10 @@ static uint16_t acquire_bg_tile(BgTileCache *cache, uint16_t tile_id, uint8_t *t
         cache->slot_refs[slot]++;
         return slot;
     }
-    for (slot = 1; slot < BG_TILE_CACHE_CAPACITY; slot++) {
+    for (slot = 1; slot < cache->capacity; slot++) {
         if (cache->slot_refs[slot] == 0) break;
     }
-    if (slot == BG_TILE_CACHE_CAPACITY) {
+    if (slot == cache->capacity) {
         cache->overflow = 1;
         return 0;
     }
@@ -581,7 +588,25 @@ static void draw_player(uint16_t *buffer, int cam_x, int cam_y) {
     int min_y = b[1];
 
     const uint16_t *frame = &g_character_frames[s_player.char_id][s_player.dir][s_player.frame][min_y * PLAYER_SPRITE_W + min_x];
-    blit_stride(buffer, frame, PLAYER_SPRITE_W, bw, bh,
+    int pitch = PLAYER_SPRITE_W;
+    if (g_player_state.invuln_timer > 0 && ((g_player_state.invuln_timer >> 2) & 1)) {
+        // Hit feedback: red flash while the i-frames run.
+        static uint16_t s_tint[PLAYER_SPRITE_W * PLAYER_SPRITE_H];
+        for (int y = 0; y < bh; y++) {
+            for (int x = 0; x < bw; x++) {
+                uint16_t c = frame[y * PLAYER_SPRITE_W + x];
+                if (c & BIT(15)) {
+                    int red = (c & 31) + 14, green = ((c >> 5) & 31) >> 1, blue = ((c >> 10) & 31) >> 1;
+                    if (red > 31) red = 31;
+                    c = (uint16_t)(red | (green << 5) | (blue << 10) | BIT(15));
+                }
+                s_tint[y * bw + x] = c;
+            }
+        }
+        frame = s_tint;
+        pitch = bw;
+    }
+    blit_stride(buffer, frame, pitch, bw, bh,
                 px - PLAYER_ANCHOR_X + min_x, py - s_char_ground_anchor[s_player.char_id][s_player.dir] + min_y,
                 cam_x, cam_y, s_draw_item_depth);
 }
@@ -676,7 +701,21 @@ static void clear_dirty_spans(uint16_t *page, DirtySpan *spans) {
 #endif
 }
 
-static void render_screen(uint16_t *buffer, int cam_x, int cam_y,
+// Whether the player stands behind a wall (the actors are then drawn see-through, on both
+// screens). Computed once per frame from the player alone.
+static void update_player_see_through(void) {
+    int cx = player_screen_x(s_player.x, s_player.y);
+    int cy = player_screen_y(s_player.x, s_player.y);
+    s_player_see_through = 0;
+    for (int k = 8; k <= 24; k += 8) {
+        if (occlusion_blocks_pixel(cx, cy - k, cy)) {
+            s_player_see_through = 1;
+            break;
+        }
+    }
+}
+
+static void render_screen(uint16_t *buffer, DirtySpan *spans, int cam_x, int cam_y,
                           uint32_t *out_floor, uint32_t *out_shadow, uint32_t *out_blit) {
     DrawItem items[MAX_DRAW_ITEMS + MAX_ENEMIES + MAX_DEATH_CHUNKS + 1];
     int count = 0;
@@ -739,25 +778,14 @@ static void render_screen(uint16_t *buffer, int cam_x, int cam_y,
     // The static FBX bake is now a hardware BG; keep this bitmap layer transparent
     // (0x0000 = transparent in 16-bit direct bitmap mode) and render only dynamic
     // actors, shadows, particles, and the HUD into it.
-    int page_idx = ((uintptr_t)buffer >= 0x06060000u) ? 1 : 0;
     PP_T0(pp_clear);
     uint32_t floor_start_ticks = cpuGetTiming();
-    clear_dirty_spans(buffer, s_dirty[page_idx]);
-    g_dirty_cur = s_dirty[page_idx];
+    clear_dirty_spans(buffer, spans);
+    g_dirty_cur = spans;
     if (out_floor) *out_floor = cpuGetTiming() - floor_start_ticks;
     PP_ADD(PP_CLEAR, pp_clear);
 
     // 1) Composite dynamic entity shadows (player & enemies, animated per frame)
-    s_player_see_through = 0;
-    for (int i = 0; i < count && !s_player_see_through; i++) {
-        if (items[i].ref != -1) continue;
-        for (int k = 8; k <= 24; k += 8)
-            if (occlusion_blocks_pixel(items[i].cx, items[i].cy - k, items[i].depth)) {
-                s_player_see_through = 1;
-                break;
-            }
-    }
-
     uint32_t t_sh0 = cpuGetTiming();
     PP_T0(pp_shadow);
     for (int i = 0; i < count; i++) {
@@ -790,7 +818,6 @@ static void render_screen(uint16_t *buffer, int cam_x, int cam_y,
     uint32_t shadow_ticks = cpuGetTiming() - t_sh0;
 
     PP_T0(pp_pick);
-    pickups_render(buffer, cam_x, cam_y);
     encounters_render(&g_encounter_mgr, buffer, cam_x, cam_y);
     PP_ADD(PP_PICKUPS, pp_pick);
 
@@ -903,18 +930,13 @@ static void draw_fps_hud(uint16_t *buffer) {
              floor_ms, shadow_ms, blit_ms, logic_ms);
 #endif
     if (g_player_state.is_dead) {
-        snprintf(labels[2], sizeof(labels[2]), "HP:DEAD ARM:000");
+        snprintf(labels[2], sizeof(labels[2]), "HP:DEAD");
     } else {
-        snprintf(labels[2], sizeof(labels[2]), "HP:%03d ARM:%03d",
-                 g_player_state.hp, g_player_state.armor);
+        snprintf(labels[2], sizeof(labels[2]), "HP:%d",
+                 g_player_state.hp);
     }
-    if (g_player_state.current_weapon == WEAPON_PISTOL) {
-        snprintf(labels[3], sizeof(labels[3]), "WPN:PISTOL AM:INF");
-    } else {
-        snprintf(labels[3], sizeof(labels[3]), "WPN:%-7s AM:%03d",
-                 weapons_get_name(g_player_state.current_weapon),
-                 g_player_state.ammo[g_player_state.current_weapon]);
-    }
+    snprintf(labels[3], sizeof(labels[3]), "WPN:%s",
+             weapons_get_name(g_player_state.current_weapon));
 
     const int left = 4, top = 4, pad = 2, char_w = 6, glyph_w = 5, glyph_h = 7, line_gap = 2;
     int first_w = (int)strlen(labels[0]) * char_w - 1;
@@ -1001,15 +1023,6 @@ static int aim_dir_from_screen(int dx, int dy) {
     if (dy == 0) return dx < 0 ? 2 : 6;
     if (dx < 0) return dy > 0 ? 1 : 3;
     return dy < 0 ? 5 : 7;
-}
-
-static void player_fire(int aim_x, int aim_y, int touch_aim) {
-    int px = player_screen_x(s_player.x, s_player.y);
-    int py = player_screen_y(s_player.x, s_player.y);
-    int dir = aim_dir_from_screen(aim_x - px, aim_y - py);
-    s_player.dir = dir;
-
-    weapons_fire(&g_player_state, s_player.x, s_player.y, aim_x, aim_y, s_cam_x, s_cam_y, touch_aim || (keysHeld() & KEY_A), s_enemies, MAX_ENEMIES);
 }
 
 static void death_chunks_spawn(const Enemy *e, fixed hit_vx, fixed hit_vy) {
@@ -1099,32 +1112,15 @@ static void death_chunks_update(void) {
 }
 
 static void weapons_and_effects_update(void) {
-    weapons_update(s_enemies, MAX_ENEMIES, s_player.x, s_player.y);
+    weapons_update(s_enemies, MAX_ENEMIES);
     death_chunks_update();
 }
 
-static int nearest_enemy_screen(int *out_x, int *out_y) {
-    int px = player_screen_x(s_player.x, s_player.y);
-    int py = player_screen_y(s_player.x, s_player.y);
-    int nearest = -1, best = 0x7FFFFFFF;
-    for (int i = 0; i < MAX_ENEMIES; i++) {
-        if (!s_enemies[i].active) continue;
-        int ex = player_screen_x(s_enemies[i].x, s_enemies[i].y);
-        int ey = player_screen_y(s_enemies[i].x, s_enemies[i].y);
-        int distance = abs_int(ex - px) + abs_int(ey - py);
-        if (distance < best) { best = distance; nearest = i; }
-    }
-    if (nearest >= 0) {
-        *out_x = player_screen_x(s_enemies[nearest].x, s_enemies[nearest].y);
-        *out_y = player_screen_y(s_enemies[nearest].x, s_enemies[nearest].y);
-    }
-    return nearest;
-}
+static fixed s_prev_player_x = 0;
+static fixed s_prev_player_y = 0;
+static int s_first_frame = 1;     // set again by arena_restart so the lead does not see a teleport
 
 static void enemies_update(void) {
-    static fixed s_prev_player_x = 0;
-    static fixed s_prev_player_y = 0;
-    static int s_first_frame = 1;
     if (s_first_frame) {
         s_prev_player_x = s_player.x;
         s_prev_player_y = s_player.y;
@@ -1155,16 +1151,41 @@ static void player_init(void) {
 
     player_state_init(&g_player_state);
     weapons_init();
-    pickups_init();
-    // Spawn initial pickups near spawn point for testing/collection
-    pickup_spawn(PICKUP_HEALTH, TO_FIXED(SPAWN_PIXEL_X + 24), TO_FIXED(SPAWN_PIXEL_Y), 25);
-    pickup_spawn(PICKUP_ARMOR, TO_FIXED(SPAWN_PIXEL_X - 24), TO_FIXED(SPAWN_PIXEL_Y), 25);
-    pickup_spawn(PICKUP_AMMO_SHOTGUN, TO_FIXED(SPAWN_PIXEL_X), TO_FIXED(SPAWN_PIXEL_Y + 24), 10);
 
     enemies_init();
 }
 
-static void player_update(uint32_t keys, uint32_t keys_down, int touch_x, int touch_y, int touch_down) {
+// Stylus edges are tracked every presented frame (hitstop included) and latched
+// until the simulation consumes them, so a short tap is never lost.
+static int s_prev_touch_down = 0;
+static int s_latch_pressed = 0;
+static int s_latch_released = 0;
+static int s_last_touch_x = 0;
+static int s_last_touch_y = 0;
+static int s_rooted = 0;          // the sniper is aiming: the player stands still
+
+#define AIM_CHEST_H 16            // height used to pick the facing direction from the stylus
+
+static void touch_track(int touch_down, int touch_x, int touch_y) {
+    if (touch_down && !s_prev_touch_down) s_latch_pressed = 1;
+    if (!touch_down && s_prev_touch_down) s_latch_released = 1;
+    s_prev_touch_down = touch_down;
+    if (touch_down) {
+        s_last_touch_x = touch_x;
+        s_last_touch_y = touch_y;
+    }
+}
+
+// Muzzle of the weapon for the current direction and frame: the lab exports it as
+// an offset from the ground anchor plus a height above the ground.
+static void player_muzzle(fixed *mx, fixed *my, int *mh) {
+    const int8_t *m = g_character_muzzle[s_player.char_id][s_player.dir][s_player.frame];
+    *mx = s_player.x + TO_FIXED(m[0]);
+    *my = s_player.y + TO_FIXED(m[1]);
+    *mh = m[2];
+}
+
+static void player_update(uint32_t keys, uint32_t keys_down) {
     if (g_player_state.invuln_timer > 0) g_player_state.invuln_timer--;
 
     if (g_player_state.is_dead) {
@@ -1178,46 +1199,49 @@ static void player_update(uint32_t keys, uint32_t keys_down, int touch_x, int to
         g_player_state.god_mode = !g_player_state.god_mode;
     }
 
-    // Shoulder buttons cycle weapons (L: previous, R: next)
+    // L is the only button of the test: it switches weapon (and cancels a sniper aim).
     if (keys_down & KEY_L) {
-        weapons_cycle(&g_player_state, -1);
-    }
-    if (keys_down & KEY_R) {
-        weapons_cycle(&g_player_state, 1);
+        weapons_cycle(&g_player_state);
     }
 
-    // Keep X/Y/SELECT for the existing character preview controls; A fires the current weapon.
-    if (keys_down & (KEY_X | KEY_Y | KEY_SELECT)) {
-        s_player.char_id = (s_player.char_id + 1) % NUM_CHARACTERS;
-        s_player.frame = 0;
-        s_player.anim_timer = 0;
+    int pressed = s_latch_pressed;
+    int released = s_latch_released;
+    int touch_down = s_prev_touch_down;
+    s_latch_pressed = 0;
+    if (pressed && released) {
+        // Tap shorter than the hitstop: deliver the press now and the release next frame.
+        released = 0;
+        touch_down = 1;
+    } else {
+        s_latch_released = 0;
     }
 
     int cur_char = s_player.char_id;
     fixed current_speed = g_characters[cur_char].speed;
     int current_period = g_characters[cur_char].anim_period;
 
-    int firing_held = touch_down || (keys & KEY_A);
-    fixed speed_factor = weapons_get_speed_factor(&g_player_state, firing_held);
-    if (speed_factor < 256) {
-        current_speed = (current_speed * speed_factor) >> 8;
-    }
+    if (pressed && weapons_can_start_aim(&g_player_state)) s_rooted = 1;
 
     int sdx = 0, sdy = 0; // screen-space input axes
-    if (keys & KEY_UP) sdy -= 1;
-    if (keys & KEY_DOWN) sdy += 1;
-    if (keys & KEY_LEFT) sdx -= 1;
-    if (keys & KEY_RIGHT) sdx += 1;
+    if (!s_rooted) {
+        if (keys & KEY_UP) sdy -= 1;
+        if (keys & KEY_DOWN) sdy += 1;
+        if (keys & KEY_LEFT) sdx -= 1;
+        if (keys & KEY_RIGHT) sdx += 1;
+    }
 
     if (sdx != 0 || sdy != 0) {
-        if (sdy > 0 && sdx == 0) s_player.dir = DIR_SOUTH;
-        else if (sdy > 0 && sdx < 0) s_player.dir = DIR_SOUTHWEST;
-        else if (sdy == 0 && sdx < 0) s_player.dir = DIR_WEST;
-        else if (sdy < 0 && sdx < 0) s_player.dir = DIR_NORTHWEST;
-        else if (sdy < 0 && sdx == 0) s_player.dir = DIR_NORTH;
-        else if (sdy < 0 && sdx > 0) s_player.dir = DIR_NORTHEAST;
-        else if (sdy == 0 && sdx > 0) s_player.dir = DIR_EAST;
-        else s_player.dir = DIR_SOUTHEAST;
+        // While the stylus aims, the character faces the target and strafes.
+        if (!touch_down) {
+            if (sdy > 0 && sdx == 0) s_player.dir = DIR_SOUTH;
+            else if (sdy > 0 && sdx < 0) s_player.dir = DIR_SOUTHWEST;
+            else if (sdy == 0 && sdx < 0) s_player.dir = DIR_WEST;
+            else if (sdy < 0 && sdx < 0) s_player.dir = DIR_NORTHWEST;
+            else if (sdy < 0 && sdx == 0) s_player.dir = DIR_NORTH;
+            else if (sdy < 0 && sdx > 0) s_player.dir = DIR_NORTHEAST;
+            else if (sdy == 0 && sdx > 0) s_player.dir = DIR_EAST;
+            else s_player.dir = DIR_SOUTHEAST;
+        }
 
         fixed vx = sdx * current_speed;
         fixed vy = sdy * current_speed;
@@ -1265,29 +1289,64 @@ static void player_update(uint32_t keys, uint32_t keys_down, int touch_x, int to
         s_player.anim_timer = 0;
     }
 
-    pickups_update_collection(&g_player_state, s_player.x, s_player.y);
-
     // Camera stays centered on the player; the streamed BG renders void outside the finite world.
-    int target_x = player_screen_x(s_player.x, s_player.y) - SCREEN_W / 2;
-    int target_y = player_screen_y(s_player.x, s_player.y) - SCREEN_H / 2;
+    s_cam_x = player_screen_x(s_player.x, s_player.y) - SCREEN_W / 2;
+    s_cam_y = player_screen_y(s_player.x, s_player.y) - SCREEN_H / 2;
 
-    s_cam_x = target_x;
-    s_cam_y = target_y;
-
-    int aim_x = player_screen_x(s_player.x, s_player.y);
-    int aim_y = player_screen_y(s_player.x, s_player.y) - 16;
+    // Stylus: aim and fire. The character turns towards the touched point first so the
+    // muzzle used for the shot belongs to the direction it is facing.
+    WeaponInput in;
+    in.touch_down = touch_down;
+    in.touch_pressed = pressed;
+    in.touch_released = released;
+    // The frame on screen is drawn shifted by the shake: map the touch onto what is shown.
+    int shake_x, shake_y;
+    weapons_shake_offset(&shake_x, &shake_y);
+    in.touch_x = s_last_touch_x + s_cam_x + shake_x;
+    in.touch_y = s_last_touch_y + s_cam_y + shake_y;
+    in.player_x = s_player.x;
+    in.player_y = s_player.y;
     if (touch_down) {
-        aim_x = touch_x + s_cam_x;
-        aim_y = touch_y + s_cam_y;
-    } else if (keys & KEY_A) {
-        if (nearest_enemy_screen(&aim_x, &aim_y) < 0) {
-            static const int aim_dx[8] = { 0, -1, -1, -1, 0, 1, 1, 1 };
-            static const int aim_dy[8] = { 1, 1, 0, -1, -1, -1, 0, 1 };
-            aim_x += aim_dx[s_player.dir] * 32;
-            aim_y += aim_dy[s_player.dir] * 32;
+        s_player.dir = aim_dir_from_screen(in.touch_x - player_screen_x(s_player.x, s_player.y),
+                                           in.touch_y - (player_screen_y(s_player.x, s_player.y) - AIM_CHEST_H));
+    }
+    player_muzzle(&in.muzzle_x, &in.muzzle_y, &in.muzzle_h);
+
+    int result = weapons_input(&g_player_state, &in, s_enemies, MAX_ENEMIES);
+    s_rooted = (result & WEAPON_RESULT_ROOTED) != 0;
+    if (result & WEAPON_RESULT_FIRED) {
+        // Recoil: a short kick opposite to the shot.
+        fixed dir_x, dir_y;
+        weapons_last_shot_dir(&dir_x, &dir_y);
+        const WeaponTuning *tuning = &g_weapon_tuning[g_player_state.current_weapon];
+        fixed kx = s_player.x - ((dir_x * tuning->recoil) >> 8);
+        fixed ky = s_player.y - ((dir_y * tuning->recoil) >> 8);
+        if (position_is_free(kx, ky)) {
+            s_player.x = kx;
+            s_player.y = ky;
         }
     }
-    if (touch_down || (keys & KEY_A)) player_fire(aim_x, aim_y, touch_down);
+}
+
+// Death restarts the current arena at once: full health, the wave respawned.
+static void arena_restart(void) {
+    int god = g_player_state.god_mode;
+    s_player.x = TO_FIXED(SPAWN_PIXEL_X);
+    s_player.y = TO_FIXED(SPAWN_PIXEL_Y);
+    s_player.dir = DIR_SOUTH;
+    s_player.frame = 0;
+    s_player.is_moving = 0;
+    s_player.anim_timer = 0;
+    player_state_init(&g_player_state);
+    g_player_state.god_mode = god;
+    weapons_init();
+    s_rooted = 0;
+    s_first_frame = 1;
+    s_latch_pressed = 0;
+    s_latch_released = 0;
+    g_hitstop_frames = 0;
+    memset(s_death_chunks, 0, sizeof(s_death_chunks));
+    encounters_spawn_wave(&g_encounter_mgr, s_enemies, MAX_ENEMIES, s_player.x, s_player.y);
 }
 
 volatile PerfStats g_perf = {
@@ -1346,15 +1405,26 @@ int main(void) {
     s_bot_bg = bgInit(2, BgType_Bmp16, BgSize_B16_256x256, 8, 0);
     bgSetPriority(s_bot_bg, 0); // High priority (drawn on top of BG1)
 
-    // Sub engine: the upper floor viewport uses bank C; actors stay on the main screen.
-    videoSetModeSub(MODE_0_2D);
+    // Sub engine: same layers as the main one (floor tiles + a 16 bpp actor bitmap), so both
+    // screens draw the same things. Bank C (128 KiB): tile slots 0-28 KiB, floor map 28-32 KiB,
+    // actor page 32-128 KiB (256x192 at 16 bpp = 96 KiB).
+    videoSetModeSub(MODE_5_2D);
     vramSetBankC(VRAM_C_SUB_BG_0x06200000); // 128 KB for the upper floor tiles and map
 
-    int top_hw_bg = bgInitSub(0, BgType_Text8bpp, BgSize_T_512x256, 0, 4);
-    bgSetPriority(top_hw_bg, 0);
+    int top_hw_bg = bgInitSub(0, BgType_Text8bpp, BgSize_T_512x256, 14, 0);
+    bgSetPriority(top_hw_bg, 1);
     bgShow(top_hw_bg);
     s_top_map_ptr = bgGetMapPtr(top_hw_bg);
     s_top_bg_tiles_vram = (uint8_t *)bgGetGfxPtr(top_hw_bg);
+
+    int top_bmp_bg = bgInitSub(2, BgType_Bmp16, BgSize_B16_256x256, 2, 0);
+    bgSetPriority(top_bmp_bg, 0);
+    s_top_page = (uint16_t *)bgGetGfxPtr(top_bmp_bg);
+    {
+        uint32_t zero = 0;
+        swiFastCopy(&zero, s_top_page, COPY_MODE_FILL | (SCREEN_W * SCREEN_H * 2 / 4));
+    }
+
 
     init_char_sprite_data();
     CRASH_INIT();
@@ -1366,11 +1436,13 @@ int main(void) {
     s_cam_x = player_screen_x(s_player.x, s_player.y) - SCREEN_W / 2;
     s_cam_y = player_screen_y(s_player.x, s_player.y) - SCREEN_H / 2;
 
-    init_bg_tile_cache(&s_top_bg_tile_cache);
-    init_bg_tile_cache(&s_bot_bg_tile_cache);
+    init_bg_tile_cache(&s_top_bg_tile_cache, TOP_TILE_CACHE_CAPACITY, s_top_bg_tiles_vram);
+    init_bg_tile_cache(&s_bot_bg_tile_cache, BG_TILE_CACHE_CAPACITY, s_bot_bg_tiles_vram);
     update_screen_hardware_bg(1, s_top_map_ptr, s_cam_x, s_cam_y - SCREEN_H);
 
-    render_screen(bot_page_ptr(s_bot_active_page), s_cam_x, s_cam_y, NULL, NULL, NULL);
+    update_player_see_through();
+    render_screen(s_top_page, s_dirty_top, s_cam_x, s_cam_y - SCREEN_H, NULL, NULL, NULL);
+    render_screen(bot_page_ptr(s_bot_active_page), s_dirty[s_bot_active_page == 24], s_cam_x, s_cam_y, NULL, NULL, NULL);
     draw_fps_hud(bot_page_ptr(s_bot_active_page));
     update_screen_hardware_bg(0, s_bot_map_ptr, s_cam_x, s_cam_y);
 
@@ -1391,18 +1463,26 @@ int main(void) {
         }
 
         uint32_t t0 = cpuGetTiming();
-        player_update(keys_held, keys_down, touch.px, touch.py, touch_down);
+        touch_track(touch_down, touch.px, touch.py);
+        s_keys_down_latch |= keys_down;
+        int simulate = g_hitstop_frames <= 0;
+        if (!simulate) g_hitstop_frames--;
+        if (simulate) {
+            player_update(keys_held, s_keys_down_latch);
+            s_keys_down_latch = 0;
+        }
         PP_ADD(PP_PLAYER, t0);
         CRASH_FRAME(s_frame_index);
         CRASH_MARK(CL_FRAME_START, s_frame_index, 0);
         CRASH_POLL();
         CRASH_MARK(CL_OCCLUSION_DONE, 0, 0);
         PP_T0(pp_en);
-        enemies_update();
+        if (simulate) enemies_update();
         PP_ADD(PP_ENEMIES, pp_en);
         CRASH_MARK(CL_ENEMIES_DONE, 0, 0);
         PP_T0(pp_wp);
-        weapons_and_effects_update();
+        if (simulate) weapons_and_effects_update();
+        if (g_player_state.is_dead) arena_restart();
         PP_ADD(PP_WEAPONS, pp_wp);
         CRASH_MARK(CL_WEAPONS_DONE, 0, 0);
         uint32_t logic_ticks = cpuGetTiming() - t0;
@@ -1410,15 +1490,25 @@ int main(void) {
         uint32_t top_floor = 0, top_sh = 0, top_bl = 0;
         uint32_t bot_floor = 0, bot_sh = 0, bot_bl = 0;
 
-        int top_cam_x = s_cam_x;
-        int top_cam_y = s_cam_y - SCREEN_H;
+        int shake_x, shake_y;
+        weapons_shake_offset(&shake_x, &shake_y);
+        int view_x = s_cam_x + shake_x;
+        int view_y = s_cam_y + shake_y;
+        int top_cam_x = view_x;
+        int top_cam_y = view_y - SCREEN_H;
 
         uint32_t top_ticks = 0;
+        // Both screens draw the same layers. The upper page is single buffered: it is drawn
+        // first, right after the logic, while the frame is still in or near VBlank.
+        update_player_see_through();
+        uint32_t t_top = cpuGetTiming();
+        render_screen(s_top_page, s_dirty_top, view_x, view_y - SCREEN_H, &top_floor, &top_sh, &top_bl);
+        top_ticks = cpuGetTiming() - t_top;
 
-        // The lower screen keeps the full actor, shadow, and HUD layers.
+        // The lower screen adds the HUD on top of the same layers.
         uint32_t t2 = cpuGetTiming();
         CRASH_MARK(CL_RENDER_START, 0, 0);
-        render_screen(bot_page_ptr(s_bot_back_page), s_cam_x, s_cam_y, &bot_floor, &bot_sh, &bot_bl);
+        render_screen(bot_page_ptr(s_bot_back_page), s_dirty[s_bot_back_page == 24], view_x, view_y, &bot_floor, &bot_sh, &bot_bl);
         CRASH_MARK(CL_RENDER_DONE, 0, 0);
         PP_T0(pp_hud);
         if (g_perf.show_hud != 0) {
@@ -1433,7 +1523,7 @@ int main(void) {
         int vcount_done = REG_VCOUNT;
 
         uint32_t t3 = cpuGetTiming();
-        uint32_t bg_ticks = present_both_screens(top_cam_x, top_cam_y, s_cam_x, s_cam_y);
+        uint32_t bg_ticks = present_both_screens(top_cam_x, top_cam_y, view_x, view_y);
         uint32_t present_ticks = cpuGetTiming() - t3;
 
         uint32_t vblanks_elapsed = s_vblank_count - start_vblank;

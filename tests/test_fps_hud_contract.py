@@ -11,7 +11,7 @@ class FpsHudContractTest(unittest.TestCase):
         source = SOURCE.read_text(encoding="utf-8")
         chars = re.search(r's_fps_chars\[\]\s*=\s*"([^"]+)"', source).group(1)
         font = re.search(r's_fps_font\[\]\[7\]\s*=\s*\{(.*?)\n\};', source, re.S).group(1)
-        glyphs = re.findall(r"//\s*(space|[A-Z]|:|[0-9])\s*$", font, re.M)
+        glyphs = re.findall(r"//\s*(space|[A-Z]|:|.|[0-9])\s*$", font, re.M)
         hud = source[source.index("static void draw_fps_hud"):source.index("// Presentation")]
 
         self.assertEqual(len(chars), len(glyphs))
