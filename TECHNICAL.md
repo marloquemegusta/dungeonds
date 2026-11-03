@@ -4,7 +4,8 @@
 - **Consola:** Nintendo DS (ARM946E-S @ 67 MHz para lógica/render, ARM7TDMI @ 33 MHz para audio/input).
 - **Aritmética:** Sin FPU hardware. Todo cálculo físico o posicional se realiza en punto fijo entero (`int32_t`, 8.8 o 12.12).
 - **Toolchain:** BlocksDS (`skylyrac/blocksds:slim-latest`) vía Docker (skill `ds-game-dev`: `C:\codexlocal\skills\agentic-ds-dev\scripts\build-project.ps1`).
-- **Emulación determinista:** DeSmuME headless sobre WSL2 (skill: `C:\codexlocal\skills\agentic-ds-dev\scripts\run-scenario.ps1`).
+- **Emulación determinista:** DeSmuME headless sobre WSL2 (skill: `C:\codexlocal\skills\agentic-ds-dev\scripts\run-scenario.ps1`). Sirve para comportamiento y comparaciones A/B, no para certificar FPS (ver `AGENTS.md` regla 6).
+- **Dependencias de host:** Python 3.13 de Windows (`python.exe`) con `numpy` y Pillow para tests y bakers; Node con Playwright/Chromium para el export headless del lab. Los tests se ejecutan con `python.exe tests/<test>.py`.
 
 ## 2. Presupuestos Hardware de Nintendo DS
 - **RAM Principal:** 4 MB.
@@ -32,7 +33,7 @@
 - **Generación:** `python tools/generate_player_sprites_c.py` convierte cada spritesheet a BGR555 y cada máscara de sombra a 4 bits, y escribe `source/player_sprite.c`. Personajes: héroe (space marine), charger y necron (`NUM_CHARACTERS 3` en `include/player_sprite.h`).
 - **Sombra:** la máscara `shadow.png` se convierte a cobertura de 4 bits (dos píxeles por byte). El runtime la aplica con límites `[x,y,w,h]` y sólo oscurece el suelo subyacente válido, nunca `VOID_COLOR`. Orden por frame: suelo → sombras → sprites. No sintetizar elipses ni siluetas de sombra por código.
 - **Presupuesto:** no guardar máscaras como bytes completos ni usar dimensiones de horneado completas en C. El recorte y empaquetado son parte del contrato de memoria.
-- **Verificación:** compilación con `C:\codexlocal\skills\agentic-ds-dev\scripts\build-project.ps1` y escenario con capturas vía `run-scenario.ps1`. `tests/test_shadow_masks.py` está roto (ver §4.4).
+- **Verificación:** compilación con `C:\codexlocal\skills\agentic-ds-dev\scripts\build-project.ps1` y escenario con capturas vía `run-scenario.ps1`.
 
 ### 3.1. Render de Sprites de Personaje (Shader Lab)
 - **Perfil de render:** los ajustes de cada personaje viven en su `settings.json`. Referencia de contraste del lab: 1,50 (`assets/sprites/characters/README.md`).
@@ -75,11 +76,9 @@ Origen: `walkthroughs/audit-saneamiento-2d3d/`. Lo ya resuelto (colisión/oclusi
 - `tools/convert_iso_to_c.py` (invocado por `tools/build-view.ps1`) todavía emite `dungeon_data`; ejecutarlo volvería a meter ~737 KB en la ROM. Separar su salida de `player_sprite`.
 
 ### 4.4. Tests, escenarios, docs y repo
-- Los tests `test_diablo_navigation.py`, `test_los.py` y `test_map_export_coherence.py` requieren `numpy` y no corren en este entorno.
 - Los escenarios `dungeon_walk_tour`, `fbx_bg_ring_scroll`, `integration_showcase_walk` y `wall_junction_closeup` no están validados contra el mapa actual (regla 5 de `AGENTS.md`).
 - `tools/gen_exact_scenario.py` y `tools/character_profiles.json` aún referencian `wh40k` y `skeleton`.
 - ROMs viejas `dungeonds_e30.nds`/`dungeonds_e60.nds` en la raíz del repo principal (ignoradas por git): borrar a mano.
-- `.ds-game-dev/project.json` lista `tests/test_world_void_contract.py`, que no existe.
 - **Data abort en hardware, sin causa conocida.** Tras unos minutos jugando (dar vueltas y matar enemigos) la DS mostró una pantalla roja "data abort" con la ROM de esta sesión; no se reproduce en DeSmuME (soak de 23.000 frames) ni se pudo atribuir a un cambio concreto. Con la ROM de depuración no volvió a aparecer, y se detectan "cosas raras" por revisar. Herramienta: `include/crashlog.h` + `source/crashlog.c` (poner `CRASHLOG_ENABLED 1`): migas en un anillo, log vivo `/dungeonds_live.log` cada segundo, informe en ambas pantallas y `/dungeonds_crash.log` con registros; L+R+START muestra el informe, L+R+SELECT provoca una excepción real. El handler real no se pudo validar en DeSmuME. Resolver el PC contra `.ds-game-dev/build/build/game-blocksds.map`.
 
 ### 4.5. Motor 2D/3D (auditoría 2026-11-03)
