@@ -5,6 +5,7 @@
 #include <stdbool.h>
 #include "game.h"
 #include "weapons.h"
+#include "collision.h"
 
 // ---------------------------------------------------------------------------
 // 1. Enemy Types & Tuning Tables (Fixed-Point 8.8)
@@ -82,17 +83,6 @@ struct Enemy {
     fixed knock_vy;
     int stun_timer;     // frames the enemy stays staggered after a shotgun hit
 };
-
-// The map is a 2:1 dimetric projection (30 deg elevation): one ground unit along
-// screen Y covers half the pixels of one along X. Simulation distances and speeds
-// are isotropic on the ground; GROUND_DY2(dy) is (2*dy)^2, the screen dy squared
-// in ground units.
-#define GROUND_Y_SHIFT 1
-#define GROUND_DY2(dy) ((dy) * (dy) * 4)
-
-int position_is_free(fixed x, fixed y);
-int bullet_position_is_free(fixed x, fixed y);
-int sweep_position(fixed *x, fixed *y, fixed dx, fixed dy);
 
 // Applies damage to an enemy. On a kill it marks the enemy dead, records the kill
 // with the encounter manager and notifies the death hook.

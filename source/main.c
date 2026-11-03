@@ -6,6 +6,7 @@
 #include "los.h"
 #include "gameplay.h"
 #include "enemy_ai.h"
+#include "navfield.h"
 #include "projectiles.h"
 #include "weapons.h"
 #include "encounters.h"
@@ -1116,6 +1117,8 @@ static void weapons_and_effects_update(void) {
     death_chunks_update();
 }
 
+#define NAV_BUDGET_PER_FRAME 300   // BFS node expansions per frame (a full field takes ~10 frames; measure with PERF_PROFILE)
+
 static fixed s_prev_player_x = 0;
 static fixed s_prev_player_y = 0;
 static int s_first_frame = 1;     // set again by arena_restart so the lead does not see a teleport
@@ -1131,6 +1134,8 @@ static void enemies_update(void) {
     s_prev_player_x = s_player.x;
     s_prev_player_y = s_player.y;
 
+    nav_set_goal(TO_INT(s_player.x), TO_INT(s_player.y));
+    nav_update(NAV_BUDGET_PER_FRAME);
     enemy_ai_update(s_enemies, MAX_ENEMIES, s_player.x, s_player.y, pvx, pvy);
     enemy_projectiles_update(s_player.x, s_player.y);
     encounters_update(&g_encounter_mgr, s_enemies, MAX_ENEMIES, &g_player_state, s_player.x, s_player.y);
@@ -1340,6 +1345,8 @@ static void arena_restart(void) {
     player_state_init(&g_player_state);
     g_player_state.god_mode = god;
     weapons_init();
+    nav_set_goal(SPAWN_PIXEL_X, SPAWN_PIXEL_Y);
+    nav_rebuild_now();
     s_rooted = 0;
     s_first_frame = 1;
     s_latch_pressed = 0;
@@ -1430,6 +1437,9 @@ int main(void) {
     CRASH_INIT();
     PP_INIT();
     enemy_set_death_hook(on_enemy_death);
+    nav_init();
+    nav_set_goal(SPAWN_PIXEL_X, SPAWN_PIXEL_Y);
+    nav_rebuild_now();
     player_init();
 
     // Initialise camera position to match player spawn

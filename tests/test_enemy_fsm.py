@@ -11,19 +11,6 @@ def to_int(v):
     return int(v) >> FIXED_SHIFT
 
 # Enemy tuning constants (mirrors C gameplay.c / gameplay.h)
-CHARGER_TUNING = {
-    "max_hp": 60,
-    "speed": 163,             # 8.8 fixed (~90% player speed 181)
-    "contact_damage": 15,
-    "attack_cooldown": 30,
-    "preferred_dist_min": 0,
-    "preferred_dist_max": 16,
-    "los_range": 160,
-    "alert_duration": 20,
-    "search_duration": 90,
-    "los_lost_limit": 180,
-}
-
 SHOOTER_TUNING = {
     "max_hp": 20,
     "speed": 120,
@@ -68,93 +55,6 @@ class MockPlayer:
         if self.hp <= 0:
             self.hp = 0
             self.is_dead = True
-
-
-class MockChargerFSM:
-    def __init__(self, x, y):
-        self.x = to_fixed(x)
-        self.y = to_fixed(y)
-        self.state = "IDLE"
-        self.state_timer = 0
-        self.last_seen_x = 0
-        self.last_seen_y = 0
-        self.los_lost_timer = 0
-        self.tuning = CHARGER_TUNING
-
-    def update(self, player, has_los):
-        wx = to_int(self.x)
-        wy = to_int(self.y)
-        px = to_int(player.x)
-        py = to_int(player.y)
-
-        dx = px - wx
-        dy = py - wy
-        dist_sq = dx * dx + dy * dy
-
-        if self.state == "IDLE":
-            if has_los and not player.is_dead:
-                self.state = "ALERT"
-                self.state_timer = self.tuning["alert_duration"]
-                self.last_seen_x = player.x
-                self.last_seen_y = player.y
-                self.los_lost_timer = 0
-
-        elif self.state == "ALERT":
-            self.state_timer -= 1
-            if self.state_timer <= 0:
-                self.state = "CHASE"
-
-        elif self.state == "CHASE":
-            if player.is_dead:
-                self.state = "IDLE"
-                return
-
-            if has_los:
-                self.last_seen_x = player.x
-                self.last_seen_y = player.y
-                self.los_lost_timer = 0
-            else:
-                self.los_lost_timer += 1
-                if self.los_lost_timer >= self.tuning["los_lost_limit"]:
-                    self.state = "SEARCH"
-                    self.state_timer = self.tuning["search_duration"]
-                    return
-
-            melee_r = self.tuning["preferred_dist_max"]
-            if dist_sq <= melee_r * melee_r:
-                player.apply_damage(self.tuning["contact_damage"])
-                self.state = "ATTACK"
-                self.state_timer = self.tuning["attack_cooldown"]
-            else:
-                dist = math.isqrt(dist_sq) if dist_sq > 0 else 1
-                spd = self.tuning["speed"]
-                self.x += (dx * spd) // dist
-                self.y += (dy * spd) // dist
-
-        elif self.state == "ATTACK":
-            self.state_timer -= 1
-            if self.state_timer <= 0:
-                self.state = "CHASE"
-
-        elif self.state == "SEARCH":
-            if has_los and not player.is_dead:
-                self.state = "ALERT"
-                self.state_timer = self.tuning["alert_duration"] // 2
-                self.last_seen_x = player.x
-                self.last_seen_y = player.y
-                self.los_lost_timer = 0
-                return
-
-            sx = to_int(self.last_seen_x - self.x)
-            sy = to_int(self.last_seen_y - self.y)
-            s_dist = math.isqrt(sx * sx + sy * sy)
-            self.state_timer -= 1
-            if s_dist <= 8 or self.state_timer <= 0:
-                self.state = "IDLE"
-            else:
-                spd = self.tuning["speed"]
-                self.x += (sx * spd) // s_dist
-                self.y += (sy * spd) // s_dist
 
 
 class MockShooterFSM:
@@ -303,76 +203,6 @@ class MockShooterFSM:
 
 
 class TestEnemyFSMContract(unittest.TestCase):
-    def test_charger_idle_to_alert_on_los(self):
-        player = MockPlayer(100, 100)
-        charger = MockChargerFSM(150, 100)
-
-        # Without LOS -> stays IDLE
-        charger.update(player, has_los=False)
-        self.assertEqual(charger.state, "IDLE")
-
-        # With LOS -> transitions to ALERT
-        charger.update(player, has_los=True)
-        self.assertEqual(charger.state, "ALERT")
-        self.assertEqual(charger.state_timer, CHARGER_TUNING["alert_duration"])
-        self.assertEqual(charger.last_seen_x, player.x)
-        self.assertEqual(charger.last_seen_y, player.y)
-
-    def test_charger_alert_to_chase(self):
-        player = MockPlayer(100, 100)
-        charger = MockChargerFSM(150, 100)
-        charger.state = "ALERT"
-        charger.state_timer = 2
-
-        charger.update(player, has_los=True)
-        self.assertEqual(charger.state, "ALERT")
-        self.assertEqual(charger.state_timer, 1)
-
-        charger.update(player, has_los=True)
-        self.assertEqual(charger.state, "CHASE")
-
-    def test_charger_chase_and_melee_attack(self):
-        player = MockPlayer(100, 100)
-        charger = MockChargerFSM(110, 100) # within 16px melee range
-        charger.state = "CHASE"
-
-        initial_hp = player.hp
-        charger.update(player, has_los=True)
-        self.assertEqual(charger.state, "ATTACK")
-        self.assertEqual(charger.state_timer, CHARGER_TUNING["attack_cooldown"])
-        self.assertEqual(player.hp, initial_hp - CHARGER_TUNING["contact_damage"])
-
-    def test_charger_attack_cooldown_to_chase(self):
-        player = MockPlayer(100, 100)
-        charger = MockChargerFSM(110, 100)
-        charger.state = "ATTACK"
-        charger.state_timer = 1
-
-        charger.update(player, has_los=True)
-        self.assertEqual(charger.state, "CHASE")
-
-    def test_charger_los_lost_to_search_and_idle(self):
-        player = MockPlayer(100, 100)
-        charger = MockChargerFSM(200, 200)
-        charger.state = "CHASE"
-        charger.last_seen_x = to_fixed(150)
-        charger.last_seen_y = to_fixed(150)
-
-        # 179 frames of lost LOS -> remains in CHASE
-        for _ in range(179):
-            charger.update(player, has_los=False)
-            self.assertEqual(charger.state, "CHASE")
-
-        # 180th frame -> switches to SEARCH
-        charger.update(player, has_los=False)
-        self.assertEqual(charger.state, "SEARCH")
-        self.assertEqual(charger.state_timer, CHARGER_TUNING["search_duration"])
-
-        # When search timer expires -> transitions to IDLE
-        charger.state_timer = 1
-        charger.update(player, has_los=False)
-        self.assertEqual(charger.state, "IDLE")
-
     def test_shooter_distance_maintenance(self):
         player = MockPlayer(100, 100)
         shooter = MockShooterFSM(100, 100)

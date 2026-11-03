@@ -37,3 +37,19 @@ El segundo pase de render cuesta ~5.000 ticks de media y no añade pérdidas de 
 ### Pendiente de la fase
 - Tuning (dispersión de perdigones, longitud del láser) en la Fase E.
 - La ROM de la DS lleva el HUD de depuración activable con START; el parpadeo de la pantalla superior (un solo búfer) no se ha podido medir con el log.
+
+## Fase B - Cargador con navegación (DESIGN.md 4.4, 4.6)
+
+### Qué cambia
+- **Colisión separada:** `source/collision.c` (`position_is_free`, `bullet_position_is_free`, `sweep_position`, `line_is_walkable`) sale de `gameplay.c`; así la navegación se prueba en el host con la colisión real.
+- **Campo de distancias** (`source/navfield.c`): rejilla de 16 px por casilla (96x54) sobre la colisión; BFS incremental con doble búfer (300 expansiones por frame, el campo completo tarda ~10 frames y los enemigos siempre leen uno terminado). Un enemigo baja al vecino de menor distancia; sin esquinas cortadas en diagonal; si su casilla tiene el centro bloqueado (pegado a un muro) sale hacia el vecino alcanzable.
+- **Cargador:** `CHASE -> ATTACK(cooldown) -> CHASE`, sin telegraph ni estados de detección. Persecución directa a menos de 48 px con visión y línea transitable; si no, baja por el campo. Muerde a 16 px de suelo solo con línea libre para el cuerpo (los muros bajos no bloquean la visión). Velocidad 293 (90 % de los 326 del héroe). Todos los enemigos actúan desde el spawn.
+- **Empujón:** a bocajarro el cargador retrocede ~14 px de suelo y se aturde 10 frames.
+
+### Evidencia (DeSmuME)
+- [El cargador rodea la esquina del muro](assets/faseB_cargador_rodea_muro.png): `charger_walks_around_wall` lleva al jugador, con el recorrido calculado por el propio BFS (`tools/gen_charger_wall_scenario.py`), a una casilla que el spawn no ve; el cargador llega y muerde. Este mapa solo tiene un rodeo de 41 px.
+- [Empujón de la escopeta](assets/faseB_empujon_escopeta.png): `charger_shotgun_shove`; el cargador pasa de y=60,5 a y=53 (≈ 7 px de pantalla, 14 de suelo) y retoma la persecución.
+- Test de host (`tests/test_navfield.py`, gcc sobre el mapa real): 1041 casillas caminables todas alcanzables, el gradiente lleva al objetivo en exactamente `d` pasos sin pisar muros, el campo incremental iguala al de una pasada y las 389 casillas de centro bloqueado junto al suelo tienen salida.
+
+### Revisión de código (Sonnet)
+Sin fallos de memoria ni carreras. Corregidos: casilla propia con centro bloqueado (el cargador dejaba de seguir el campo), objetivo elegido por orden de vecinos en vez de por cercanía, mordisco y aproximación directa a través de muros bajos, comentario del presupuesto (~10 frames, no ~4). Pendiente de medir en la DS: coste de `nav_update` (estimado ~6 % del frame, Fase E).

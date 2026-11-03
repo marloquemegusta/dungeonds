@@ -1,0 +1,32 @@
+{
+  "name": "charger_shotgun_shove",
+  "steps": [
+    {
+      "frames": 100,
+      "capture": "00_charger_approaching"
+    },
+    {
+      "tap": {
+        "x": 108,
+        "y": 46
+      },
+      "frames": 22,
+      "capture_sequence": "seq",
+      "capture_every": 1
+    },
+    {
+      "release": true,
+      "frames": 2,
+      "capture": "09_released"
+    }
+  ],
+  "assertions": {
+    "screen_changes": [
+      {
+        "from": "00_charger_approaching",
+        "to": "09_released",
+        "min_changed_pixels": 30
+      }
+    ]
+  }
+}

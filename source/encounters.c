@@ -169,7 +169,8 @@ int encounters_spawn_wave(EncounterManager *mgr, Enemy *enemies, int max_enemies
         e->dir = (spawned * 2) % 8;
         e->frame = (spawned * 3) % PLAYER_NUM_FRAMES;
         e->anim_timer = 0;
-        e->state = ENEMY_STATE_IDLE;
+        // The arena is closed: every enemy is active from the start (DESIGN.md 4.6).
+        e->state = (type == ENEMY_TYPE_CHARGER) ? ENEMY_STATE_CHASE : ENEMY_STATE_POSITION;
         e->state_timer = 0;
         e->hit_timer = 0;
         e->knock_vx = 0;

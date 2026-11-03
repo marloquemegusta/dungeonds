@@ -1,5 +1,6 @@
 #include "enemy_ai.h"
 #include "los.h"
+#include "navfield.h"
 #include "projectiles.h"
 #include "player_sprite.h"
 #include <string.h>
@@ -111,84 +112,43 @@ static void update_animation(Enemy *e, int moved) {
     }
 }
 
+// Charger (DESIGN.md 4.4): relentless melee pressure, no telegraph. FSM:
+// CHASE -> ATTACK(cooldown) -> CHASE; * -> DEAD. Always active; no detection states.
+#define CHARGER_DIRECT_RANGE 48     // ground px: closer than this (with a clear view) it runs straight at the player
+
 static void update_charger(Enemy *e, Enemy *enemies, int num_enemies, int idx,
                            fixed player_x, fixed player_y) {
     const EnemyTuning *tuning = &g_enemy_tuning[ENEMY_TYPE_CHARGER];
-    int player_dead = g_player_state.is_dead;
+
+    if (g_player_state.is_dead) {
+        update_animation(e, 0);
+        return;
+    }
 
     int wx = TO_INT(e->x);
     int wy = TO_INT(e->y);
     int px = TO_INT(player_x);
     int py = TO_INT(player_y);
-
-    if (player_dead) {
-        e->has_los = 0;
-    } else if (e->hit_timer > 0 || e->state == ENEMY_STATE_ALERT || ((s_ai_tick + idx) & 1) == 0) {
-        e->has_los = los_has_line_of_sight(wx, wy, px, py, tuning->los_range);
-    }
-    int has_los = e->has_los;
-
-    if (e->hit_timer > 0) {
-        if (e->state == ENEMY_STATE_IDLE || e->state == ENEMY_STATE_SEARCH) {
-            e->state = ENEMY_STATE_ALERT;
-            e->state_timer = tuning->alert_duration;
-            e->last_seen_x = player_x;
-            e->last_seen_y = player_y;
-            e->los_lost_timer = 0;
-        }
-    }
+    int dx = px - wx;
+    int dy = py - wy;
+    int ground_dist_sq = dx * dx + GROUND_DY2(dy);
 
     switch (e->state) {
-        case ENEMY_STATE_IDLE: {
-            if (has_los) {
-                e->state = ENEMY_STATE_ALERT;
-                e->state_timer = tuning->alert_duration;
-                e->last_seen_x = player_x;
-                e->last_seen_y = player_y;
-                e->los_lost_timer = 0;
-            }
-            update_animation(e, 0);
-            break;
-        }
-
-        case ENEMY_STATE_ALERT: {
+        case ENEMY_STATE_ATTACK: {
             e->dir = dir_from_vector(player_x - e->x, player_y - e->y);
-            e->state_timer--;
-            if (e->state_timer <= 0) {
-                e->state = ENEMY_STATE_CHASE;
-            }
+            if (--e->state_timer <= 0) e->state = ENEMY_STATE_CHASE;
             update_animation(e, 0);
             break;
         }
 
-        case ENEMY_STATE_CHASE: {
-            if (player_dead) {
-                e->state = ENEMY_STATE_IDLE;
-                update_animation(e, 0);
-                break;
-            }
+        case ENEMY_STATE_CHASE:
+        default: {
+            e->state = ENEMY_STATE_CHASE;
 
-            if (has_los) {
-                e->last_seen_x = player_x;
-                e->last_seen_y = player_y;
-                e->los_lost_timer = 0;
-            } else {
-                e->los_lost_timer++;
-                if (e->los_lost_timer >= tuning->los_lost_limit) {
-                    e->state = ENEMY_STATE_SEARCH;
-                    e->state_timer = tuning->search_duration;
-                    update_animation(e, 0);
-                    break;
-                }
-            }
-
-            // Check melee contact range to player
-            int32_t p_dx = px - wx;
-            int32_t p_dy = py - wy;
-            int32_t p_dist_sq = p_dx * p_dx + p_dy * p_dy;
-
-            int melee_range = tuning->preferred_dist_max > 0 ? tuning->preferred_dist_max : 16;
-            if (p_dist_sq <= melee_range * melee_range) {
+            // Bite when in melee range and nothing solid is in between.
+            int melee_range = tuning->preferred_dist_max;
+            if (ground_dist_sq <= melee_range * melee_range &&
+                los_has_line_of_sight(wx, wy, px, py, 0) && line_is_walkable(wx, wy, px, py)) {
                 player_take_hit(&g_player_state);
                 e->state = ENEMY_STATE_ATTACK;
                 e->state_timer = tuning->attack_cooldown;
@@ -197,14 +157,26 @@ static void update_charger(Enemy *e, Enemy *enemies, int num_enemies, int idx,
                 break;
             }
 
-            // Move towards player (or last seen pos if no LOS)
-            fixed target_x = has_los ? player_x : e->last_seen_x;
-            fixed target_y = has_los ? player_y : e->last_seen_y;
+            // Straight at the player when close and in view, otherwise down the distance field
+            // (it walks around walls); with no field value at all, straight at the player.
+            int target_x = px, target_y = py;
+            // Cached for a few frames: line of sight plus a walkable line for the body.
+            if (((s_ai_tick + idx) & 3) == 0) {
+                e->has_los = ground_dist_sq <= CHARGER_DIRECT_RANGE * CHARGER_DIRECT_RANGE &&
+                             los_has_line_of_sight(wx, wy, px, py, 0) && line_is_walkable(wx, wy, px, py);
+            }
+            int direct = e->has_los && ground_dist_sq <= CHARGER_DIRECT_RANGE * CHARGER_DIRECT_RANGE;
+            if (!direct) {
+                int step_x, step_y;
+                if (nav_next_step(wx, wy, &step_x, &step_y)) {
+                    target_x = step_x;
+                    target_y = step_y;
+                }
+            }
 
-            int32_t t_dx = TO_INT(target_x - e->x);
-            int32_t t_dy = TO_INT(target_y - e->y);
+            int t_dx = target_x - wx;
+            int t_dy = target_y - wy;
             uint32_t t_dist = int_sqrt((uint32_t)(t_dx * t_dx + GROUND_DY2(t_dy)));
-
             fixed vx = 0, vy = 0;
             if (t_dist > 0) {
                 vx = (fixed)((t_dx * (int32_t)tuning->speed) / (int32_t)t_dist);
@@ -217,50 +189,6 @@ static void update_charger(Enemy *e, Enemy *enemies, int num_enemies, int idx,
             update_animation(e, moved);
             break;
         }
-
-        case ENEMY_STATE_ATTACK: {
-            e->dir = dir_from_vector(player_x - e->x, player_y - e->y);
-            e->state_timer--;
-            if (e->state_timer <= 0) {
-                e->state = ENEMY_STATE_CHASE;
-            }
-            update_animation(e, 0);
-            break;
-        }
-
-        case ENEMY_STATE_SEARCH: {
-            if (has_los) {
-                e->state = ENEMY_STATE_ALERT;
-                e->state_timer = tuning->alert_duration / 2;
-                e->last_seen_x = player_x;
-                e->last_seen_y = player_y;
-                e->los_lost_timer = 0;
-                update_animation(e, 0);
-                break;
-            }
-
-            int32_t s_dx = TO_INT(e->last_seen_x - e->x);
-            int32_t s_dy = TO_INT(e->last_seen_y - e->y);
-            uint32_t s_dist = int_sqrt((uint32_t)(s_dx * s_dx + GROUND_DY2(s_dy)));
-
-            e->state_timer--;
-            if (s_dist <= 8 || e->state_timer <= 0) {
-                e->state = ENEMY_STATE_IDLE;
-                update_animation(e, 0);
-                break;
-            }
-
-            fixed vx = (fixed)((s_dx * (int32_t)tuning->speed) / (int32_t)s_dist);
-            fixed vy = (fixed)((s_dy * (int32_t)tuning->speed) / (int32_t)s_dist);
-            apply_separation(enemies, num_enemies, idx, &vx, &vy);
-            int moved = move_with_slide(&e->x, &e->y, vx, vy);
-            e->dir = dir_from_vector(vx, vy);
-            update_animation(e, moved);
-            break;
-        }
-
-        default:
-            break;
     }
 }
 
