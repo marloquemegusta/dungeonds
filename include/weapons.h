@@ -8,95 +8,86 @@
 typedef struct Enemy Enemy;
 typedef struct PlayerState PlayerState;
 
+// DESIGN.md 4.3: two weapons with infinite ammo, limited by rate and cost of use.
 typedef enum {
-    WEAPON_PISTOL = 0,
-    WEAPON_SHOTGUN,
-    WEAPON_GATLING,
-    WEAPON_HEAVY,
+    WEAPON_SHOTGUN = 0,
+    WEAPON_SNIPER,
     NUM_WEAPON_TYPES
 } WeaponType;
 
-typedef enum {
-    FIRE_MODE_HITSCAN = 0,
-    FIRE_MODE_PROJECTILE
-} WeaponFireMode;
-
+// Weapons are defined by parameters so a future upgrade layer can tune them
+// without rewriting the weapon code (DESIGN.md 1).
 typedef struct {
-    const char *name;              // [TUNABLE-PLACEHOLDER] Weapon display name
-    WeaponFireMode fire_mode;      // [TUNABLE-PLACEHOLDER] HITSCAN vs PROJECTILE
-    int damage_per_hit;            // [TUNABLE-PLACEHOLDER] Damage per projectile/tracer
-    int pellets;                   // [TUNABLE-PLACEHOLDER] Pellets/projectiles per shot
-    int fire_cooldown;             // [TUNABLE-PLACEHOLDER] Frames between shots
-    int max_ammo;                  // [TUNABLE-PLACEHOLDER] Max ammo pool capacity (0 = infinite)
-    int pickup_ammo_amount;        // [TUNABLE-PLACEHOLDER] Ammo restored by pickup
-    int ammo_cost;                 // [TUNABLE-PLACEHOLDER] Ammo consumed per fire (0 = infinite)
-    fixed projectile_speed;        // [TUNABLE-PLACEHOLDER] 8.8 fixed speed
-    int projectile_range;          // [TUNABLE-PLACEHOLDER] Lifetime frames (short range for shotgun)
-    fixed spread_angle;            // [TUNABLE-PLACEHOLDER] 8.8 spread dispersion factor
-    int spinup_delay;              // [TUNABLE-PLACEHOLDER] Frames to spin up (Gatling)
-    fixed speed_penalty;           // [TUNABLE-PLACEHOLDER] 8.8 movement speed factor during firing
-    int explosion_radius;          // [TUNABLE-PLACEHOLDER] Splash radius (Heavy rocket)
-    int explosion_damage;          // [TUNABLE-PLACEHOLDER] Splash damage (Heavy rocket)
+    const char *name;
+    int damage_per_hit;         // damage per pellet / per piercing hit
+    int pellets;                // projectiles per shot
+    int fire_cooldown;          // frames before the next shot can start
+    fixed projectile_speed;     // 8.8 ground px/frame (shotgun pellets)
+    int projectile_range;       // lifetime frames (shotgun) or ray length in px (sniper)
+    fixed spread_angle;         // 8.8 side spread between neighbouring pellets
+    int aim_min_frames;         // sniper: minimum aim time before the shot is armed
+    fixed knockback;            // 8.8 px/frame impulse given to a hit enemy
+    int stun_frames;            // frames a hit enemy stays staggered
+    fixed recoil;               // 8.8 px the player is pushed back on firing
+    int shake_amp;              // screen shake amplitude (px)
+    int shake_frames;           // screen shake duration
 } WeaponTuning;
 
 extern const WeaponTuning g_weapon_tuning[NUM_WEAPON_TYPES];
 
-// Projectile entity for player shots (pellets, rockets)
+// Pellet in flight. x/y live on the ground plane; the shot is drawn `height`
+// pixels above it (the muzzle height) so it leaves the weapon, not the feet.
 #define MAX_PLAYER_PROJECTILES 32
 
 typedef struct {
     int active;
     WeaponType weapon_type;
-    fixed x;             // 8.8 world position X
-    fixed y;             // 8.8 world position Y
+    fixed x;             // 8.8 ground position X
+    fixed y;             // 8.8 ground position Y
     fixed vx;            // 8.8 velocity X
     fixed vy;            // 8.8 velocity Y
+    int height;          // pixels above the ground at which the shot is drawn
     int life;            // remaining frames
     int max_life;        // total frames
-    int damage;          // damage on hit
-    int is_explosive;    // 1 if explodes on impact (HEAVY)
-    int explosion_radius;// radius in world pixels
-    int explosion_damage;// splash damage
-    uint16_t hit_mask;   // bitmask of enemy IDs already hit
-    uint8_t seed;        // seed for visual rendering jitter
+    int damage;          // damage at the muzzle (falls off with distance)
+    int pierce;          // further enemies the pellet can go through (modifier)
+    uint32_t hit_mask;   // enemies already hit by this pellet
 } PlayerProjectile;
 
-// Tracer entity for hitscans (pistol, gatling)
-#define MAX_TRACERS 8
-
+// One frame of touch / button state for the weapon system.
 typedef struct {
-    int active;
-    WeaponType weapon_type;
-    fixed start_x;       // 8.8 world pos
-    fixed start_y;
-    fixed end_x;         // 8.8 world pos
-    fixed end_y;
-    int life;            // frames to display
-} WeaponTracer;
+    int touch_down;      // stylus currently on the screen
+    int touch_pressed;   // stylus went down this frame
+    int touch_released;  // stylus went up this frame
+    int touch_x;         // world pixel under the stylus
+    int touch_y;
+    fixed player_x;      // player ground position
+    fixed player_y;
+    fixed muzzle_x;      // ground position of the weapon muzzle
+    fixed muzzle_y;
+    int muzzle_h;        // height of the muzzle above the ground (px)
+} WeaponInput;
 
-// Area of effect explosion entity (heavy rocket)
-#define MAX_EXPLOSIONS 4
+// Result of one weapons_input() call.
+#define WEAPON_RESULT_FIRED  1
+#define WEAPON_RESULT_ROOTED 2   // the player must stand still (sniper aiming)
 
-typedef struct {
-    int active;
-    fixed x;             // 8.8 world pos
-    fixed y;
-    int radius;          // max radius in pixels
-    int life;            // remaining frames
-    int max_life;        // total frames
-} WeaponExplosion;
-
-// System management
 void weapons_init(void);
-void weapons_cycle(PlayerState *player, int delta); // delta: -1 for L, +1 for R
-int weapons_can_fire(const PlayerState *player);
-int weapons_fire(PlayerState *player, fixed player_x, fixed player_y,
-                 int aim_screen_x, int aim_screen_y, int cam_x, int cam_y,
-                 int is_firing_held, Enemy *enemies, int max_enemies);
-void weapons_update(Enemy *enemies, int max_enemies, fixed player_x, fixed player_y);
+void weapons_cycle(PlayerState *player);
+// True when a stylus press would start a sniper aim (the player must stop that frame).
+int weapons_can_start_aim(const PlayerState *player);
+int weapons_input(PlayerState *player, const WeaponInput *in, Enemy *enemies, int max_enemies);
+void weapons_update(Enemy *enemies, int max_enemies);
+// An enemy died: the "sed de sangre" modifier readies the shotgun at once.
+void weapons_notify_kill(void);
 void weapons_render(uint16_t *buffer, int cam_x, int cam_y);
-fixed weapons_get_speed_factor(const PlayerState *player, int is_firing_held);
 const char *weapons_get_name(WeaponType type);
 int weapons_get_active_projectile_count(void);
+
+// Direction (8.8, ground metric) of the last shot, for the player's recoil.
+void weapons_last_shot_dir(fixed *dir_x, fixed *dir_y);
+
+// Screen shake currently requested by the weapons (offset to add to the camera).
+void weapons_shake_offset(int *dx, int *dy);
 
 #endif // WEAPONS_H

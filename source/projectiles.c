@@ -1,23 +1,15 @@
 #include "projectiles.h"
 #include <string.h>
 
+#define PROJECTILE_HIT_RADIUS 8      // ground px around the player's centre
+
 EnemyProjectile g_enemy_projectiles[MAX_ENEMY_PROJECTILES];
 
 void enemy_projectiles_init(void) {
-    for (int i = 0; i < MAX_ENEMY_PROJECTILES; i++) {
-        g_enemy_projectiles[i].active = 0;
-        g_enemy_projectiles[i].type = PROJ_NONE;
-        g_enemy_projectiles[i].x = 0;
-        g_enemy_projectiles[i].y = 0;
-        g_enemy_projectiles[i].vx = 0;
-        g_enemy_projectiles[i].vy = 0;
-        g_enemy_projectiles[i].life = 0;
-        g_enemy_projectiles[i].max_life = 0;
-        g_enemy_projectiles[i].damage = 0;
-    }
+    memset(g_enemy_projectiles, 0, sizeof(g_enemy_projectiles));
 }
 
-EnemyProjectile *enemy_projectile_spawn_linear(fixed x, fixed y, fixed vx, fixed vy, int damage, int life) {
+EnemyProjectile *enemy_projectile_spawn_linear(fixed x, fixed y, fixed vx, fixed vy, int height, int life) {
     for (int i = 0; i < MAX_ENEMY_PROJECTILES; i++) {
         EnemyProjectile *p = &g_enemy_projectiles[i];
         if (!p->active) {
@@ -27,7 +19,7 @@ EnemyProjectile *enemy_projectile_spawn_linear(fixed x, fixed y, fixed vx, fixed
             p->y = y;
             p->vx = vx;
             p->vy = vy;
-            p->damage = damage;
+            p->height = height;
             p->life = life > 0 ? life : 120;
             p->max_life = p->life;
             return p;
@@ -59,11 +51,12 @@ void enemy_projectiles_update(fixed player_x, fixed player_y) {
             p->x = next_x;
             p->y = next_y;
 
+            // One hit per shot (DESIGN.md 4.2); i-frames are handled by player_take_hit.
             if (!g_player_state.is_dead) {
                 int dx = TO_INT(p->x - player_x);
                 int dy = TO_INT(p->y - player_y);
-                if (dx * dx + dy * dy <= 8 * 8) {
-                    player_apply_damage(&g_player_state, p->damage);
+                if (dx * dx + GROUND_DY2(dy) <= PROJECTILE_HIT_RADIUS * PROJECTILE_HIT_RADIUS) {
+                    player_take_hit(&g_player_state);
                     p->active = 0;
                     continue;
                 }
@@ -72,30 +65,40 @@ void enemy_projectiles_update(fixed player_x, fixed player_y) {
     }
 }
 
+// `cam_x/cam_y` and `depth` (the bolt's ground y) let walls hide the bolt like they hide actors.
+static inline void shot_px(uint16_t *buffer, int x, int y, uint16_t color, int cam_x, int cam_y, int depth) {
+    if (x < 0 || x >= SCREEN_W || y < 0 || y >= SCREEN_H) return;
+    if (world_pixel_hidden(x + cam_x, y + cam_y, depth)) return;
+    buffer[y * SCREEN_W + x] = color;
+    dirty_row(y, x, x + 1);
+}
+
+// Necrotic bolt: bright head, green body and a short fading tail. The shot flies at the
+// height of the weapon muzzle, so it is drawn `height` pixels above its ground position.
 void enemy_projectiles_render(uint16_t *buffer, int cam_x, int cam_y) {
     if (!buffer) return;
+
+    const uint16_t head = RGB15(31, 31, 12) | BIT(15);
+    const uint16_t body = RGB15(2, 28, 6) | BIT(15);
+    const uint16_t tail = RGB15(0, 17, 3) | BIT(15);
 
     for (int i = 0; i < MAX_ENEMY_PROJECTILES; i++) {
         EnemyProjectile *p = &g_enemy_projectiles[i];
         if (!p->active) continue;
 
-        if (p->type == PROJ_LINEAR_SLOW) {
-            int px = TO_INT(p->x);
-            int py = TO_INT(p->y);
-            int sx = px - cam_x;
-            int sy = py - cam_y;
+        int depth = TO_INT(p->y);
+        int sx = TO_INT(p->x) - cam_x;
+        int sy = TO_INT(p->y) - p->height - cam_y;
+        // Tail points back along the velocity (about 2 frames of flight).
+        int tx = -(p->vx >> 7);
+        int ty = -(p->vy >> 7);
 
-            if (sx >= 1 && sx < SCREEN_W - 1 && sy >= 1 && sy < SCREEN_H - 1) {
-                uint16_t core_color = (RGB15(31, 31, 10) | BIT(15));  // bright yellow-white spark
-                uint16_t halo_color = (RGB15(0, 28, 4) | BIT(15));    // necrotic green halo
-
-                buffer[sy * SCREEN_W + sx] = core_color;
-                buffer[(sy - 1) * SCREEN_W + sx] = halo_color;
-                buffer[(sy + 1) * SCREEN_W + sx] = halo_color;
-                buffer[sy * SCREEN_W + (sx - 1)] = halo_color;
-                buffer[sy * SCREEN_W + (sx + 1)] = halo_color;
-                dirty_rect(sx - 1, sy - 1, sx + 2, sy + 2);
-            }
-        }
+        shot_px(buffer, sx + 2 * tx, sy + 2 * ty, tail, cam_x, cam_y, depth);
+        shot_px(buffer, sx + tx, sy + ty, body, cam_x, cam_y, depth);
+        shot_px(buffer, sx, sy, head, cam_x, cam_y, depth);
+        shot_px(buffer, sx + 1, sy, body, cam_x, cam_y, depth);
+        shot_px(buffer, sx - 1, sy, body, cam_x, cam_y, depth);
+        shot_px(buffer, sx, sy + 1, body, cam_x, cam_y, depth);
+        shot_px(buffer, sx, sy - 1, body, cam_x, cam_y, depth);
     }
 }

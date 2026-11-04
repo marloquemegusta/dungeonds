@@ -88,3 +88,8 @@ Resúmenes acumulativos y auditables de cada entrega y avance de desarrollo en `
 | 70 | Oclusión exacta, transparencia compartida y base de pared oculta | [`fix-oclusion-siluetas/`](fix-oclusion-siluetas/walkthrough.md) | Validado en DeSmuME (sin captura de enemigo) |
 | 71 | Auditoría del motor 2D/3D y prototipo A (compositor directo en VRAM) | [`audit-motor-2d3d/`](audit-motor-2d3d/walkthrough.md) | Validado en DS (rendimiento) |
 | 72 | Diseño de gameplay mínimo (prueba de diversión) | [`diseno-gameplay-minimo/`](diseno-gameplay-minimo/walkthrough.md) | Diseño (sin código) |
+| 73 | v0.1 Fase A: armas, disparo desde el arma y pantalla superior igual a la inferior | [`v0.1/`](v0.1/walkthrough.md) | Validado en DS (rendimiento) |
+| 74 | v0.1 Fase B: cargador con navegación BFS | [`v0.1/`](v0.1/walkthrough.md) | Validado en DeSmuME y host (pendiente DS) |
+| 75 | v0.1 Fase C: tirador necrón (banda, telegraph, ráfaga de 3) | [`v0.1/`](v0.1/walkthrough.md) | Validado en DeSmuME (pendiente DS) |
+| 76 | v0.1 Fase D: 4 arenas, runtime multi-arena y encuentros | [`v0.1/`](v0.1/walkthrough.md) | Validado en DeSmuME y host (pendiente DS) |
+| 77 | v0.2: mazmorra de manadas, modificadores y HUD de run | [`v0.2/`](v0.2/walkthrough.md) | Validado en DeSmuME y host (pendiente DS) |

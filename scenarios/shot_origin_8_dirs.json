@@ -1,0 +1,130 @@
+{
+  "name": "shot_origin_8_dirs",
+  "steps": [
+    {
+      "frames": 20,
+      "capture": "00_base"
+    },
+    {
+      "tap": {
+        "x": 128,
+        "y": 170
+      },
+      "frames": 6,
+      "capture_sequence": "shot_S",
+      "capture_every": 1
+    },
+    {
+      "release": true,
+      "frames": 45,
+      "capture": "after_S"
+    },
+    {
+      "tap": {
+        "x": 66,
+        "y": 115
+      },
+      "frames": 6,
+      "capture_sequence": "shot_SW",
+      "capture_every": 1
+    },
+    {
+      "release": true,
+      "frames": 45,
+      "capture": "after_SW"
+    },
+    {
+      "tap": {
+        "x": 56,
+        "y": 80
+      },
+      "frames": 6,
+      "capture_sequence": "shot_W",
+      "capture_every": 1
+    },
+    {
+      "release": true,
+      "frames": 45,
+      "capture": "after_W"
+    },
+    {
+      "tap": {
+        "x": 66,
+        "y": 45
+      },
+      "frames": 6,
+      "capture_sequence": "shot_NW",
+      "capture_every": 1
+    },
+    {
+      "release": true,
+      "frames": 45,
+      "capture": "after_NW"
+    },
+    {
+      "tap": {
+        "x": 128,
+        "y": 20
+      },
+      "frames": 6,
+      "capture_sequence": "shot_N",
+      "capture_every": 1
+    },
+    {
+      "release": true,
+      "frames": 45,
+      "capture": "after_N"
+    },
+    {
+      "tap": {
+        "x": 190,
+        "y": 45
+      },
+      "frames": 6,
+      "capture_sequence": "shot_NE",
+      "capture_every": 1
+    },
+    {
+      "release": true,
+      "frames": 45,
+      "capture": "after_NE"
+    },
+    {
+      "tap": {
+        "x": 200,
+        "y": 80
+      },
+      "frames": 6,
+      "capture_sequence": "shot_E",
+      "capture_every": 1
+    },
+    {
+      "release": true,
+      "frames": 45,
+      "capture": "after_E"
+    },
+    {
+      "tap": {
+        "x": 190,
+        "y": 115
+      },
+      "frames": 6,
+      "capture_sequence": "shot_SE",
+      "capture_every": 1
+    },
+    {
+      "release": true,
+      "frames": 45,
+      "capture": "after_SE"
+    }
+  ],
+  "assertions": {
+    "screen_changes": [
+      {
+        "from": "00_base",
+        "to": "after_E",
+        "min_changed_pixels": 20
+      }
+    ]
+  }
+}

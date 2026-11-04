@@ -1,5 +1,6 @@
 #include "enemy_ai.h"
 #include "los.h"
+#include "navfield.h"
 #include "projectiles.h"
 #include "player_sprite.h"
 #include <string.h>
@@ -111,85 +112,44 @@ static void update_animation(Enemy *e, int moved) {
     }
 }
 
+// Charger (DESIGN.md 4.4): relentless melee pressure, no telegraph. FSM:
+// CHASE -> ATTACK(cooldown) -> CHASE; * -> DEAD. Always active; no detection states.
+#define CHARGER_DIRECT_RANGE 48     // ground px: closer than this (with a clear view) it runs straight at the player
+
 static void update_charger(Enemy *e, Enemy *enemies, int num_enemies, int idx,
                            fixed player_x, fixed player_y) {
     const EnemyTuning *tuning = &g_enemy_tuning[ENEMY_TYPE_CHARGER];
-    int player_dead = g_player_state.is_dead;
+
+    if (g_player_state.is_dead) {
+        update_animation(e, 0);
+        return;
+    }
 
     int wx = TO_INT(e->x);
     int wy = TO_INT(e->y);
     int px = TO_INT(player_x);
     int py = TO_INT(player_y);
-
-    if (player_dead) {
-        e->has_los = 0;
-    } else if (e->hit_timer > 0 || e->state == ENEMY_STATE_ALERT || ((s_ai_tick + idx) & 1) == 0) {
-        e->has_los = los_has_line_of_sight(wx, wy, px, py, tuning->los_range);
-    }
-    int has_los = e->has_los;
-
-    if (e->hit_timer > 0) {
-        if (e->state == ENEMY_STATE_IDLE || e->state == ENEMY_STATE_SEARCH) {
-            e->state = ENEMY_STATE_ALERT;
-            e->state_timer = tuning->alert_duration;
-            e->last_seen_x = player_x;
-            e->last_seen_y = player_y;
-            e->los_lost_timer = 0;
-        }
-    }
+    int dx = px - wx;
+    int dy = py - wy;
+    int ground_dist_sq = dx * dx + GROUND_DY2(dy);
 
     switch (e->state) {
-        case ENEMY_STATE_IDLE: {
-            if (has_los) {
-                e->state = ENEMY_STATE_ALERT;
-                e->state_timer = tuning->alert_duration;
-                e->last_seen_x = player_x;
-                e->last_seen_y = player_y;
-                e->los_lost_timer = 0;
-            }
-            update_animation(e, 0);
-            break;
-        }
-
-        case ENEMY_STATE_ALERT: {
+        case ENEMY_STATE_ATTACK: {
             e->dir = dir_from_vector(player_x - e->x, player_y - e->y);
-            e->state_timer--;
-            if (e->state_timer <= 0) {
-                e->state = ENEMY_STATE_CHASE;
-            }
+            if (--e->state_timer <= 0) e->state = ENEMY_STATE_CHASE;
             update_animation(e, 0);
             break;
         }
 
-        case ENEMY_STATE_CHASE: {
-            if (player_dead) {
-                e->state = ENEMY_STATE_IDLE;
-                update_animation(e, 0);
-                break;
-            }
+        case ENEMY_STATE_CHASE:
+        default: {
+            e->state = ENEMY_STATE_CHASE;
 
-            if (has_los) {
-                e->last_seen_x = player_x;
-                e->last_seen_y = player_y;
-                e->los_lost_timer = 0;
-            } else {
-                e->los_lost_timer++;
-                if (e->los_lost_timer >= tuning->los_lost_limit) {
-                    e->state = ENEMY_STATE_SEARCH;
-                    e->state_timer = tuning->search_duration;
-                    update_animation(e, 0);
-                    break;
-                }
-            }
-
-            // Check melee contact range to player
-            int32_t p_dx = px - wx;
-            int32_t p_dy = py - wy;
-            int32_t p_dist_sq = p_dx * p_dx + p_dy * p_dy;
-
-            int melee_range = tuning->preferred_dist_max > 0 ? tuning->preferred_dist_max : 16;
-            if (p_dist_sq <= melee_range * melee_range) {
-                player_apply_damage(&g_player_state, tuning->contact_damage);
+            // Bite when in melee range and nothing solid is in between.
+            int melee_range = tuning->preferred_dist_max;
+            if (ground_dist_sq <= melee_range * melee_range &&
+                los_has_line_of_sight(wx, wy, px, py, 0) && line_is_walkable(wx, wy, px, py)) {
+                player_take_hit(&g_player_state);
                 e->state = ENEMY_STATE_ATTACK;
                 e->state_timer = tuning->attack_cooldown;
                 e->dir = dir_from_vector(player_x - e->x, player_y - e->y);
@@ -197,14 +157,26 @@ static void update_charger(Enemy *e, Enemy *enemies, int num_enemies, int idx,
                 break;
             }
 
-            // Move towards player (or last seen pos if no LOS)
-            fixed target_x = has_los ? player_x : e->last_seen_x;
-            fixed target_y = has_los ? player_y : e->last_seen_y;
+            // Straight at the player when close and in view, otherwise down the distance field
+            // (it walks around walls); with no field value at all, straight at the player.
+            int target_x = px, target_y = py;
+            // Cached for a few frames: line of sight plus a walkable line for the body.
+            if (((s_ai_tick + idx) & 3) == 0) {
+                e->has_los = ground_dist_sq <= CHARGER_DIRECT_RANGE * CHARGER_DIRECT_RANGE &&
+                             los_has_line_of_sight(wx, wy, px, py, 0) && line_is_walkable(wx, wy, px, py);
+            }
+            int direct = e->has_los && ground_dist_sq <= CHARGER_DIRECT_RANGE * CHARGER_DIRECT_RANGE;
+            if (!direct) {
+                int step_x, step_y;
+                if (nav_next_step(wx, wy, &step_x, &step_y)) {
+                    target_x = step_x;
+                    target_y = step_y;
+                }
+            }
 
-            int32_t t_dx = TO_INT(target_x - e->x);
-            int32_t t_dy = TO_INT(target_y - e->y);
+            int t_dx = target_x - wx;
+            int t_dy = target_y - wy;
             uint32_t t_dist = int_sqrt((uint32_t)(t_dx * t_dx + GROUND_DY2(t_dy)));
-
             fixed vx = 0, vy = 0;
             if (t_dist > 0) {
                 vx = (fixed)((t_dx * (int32_t)tuning->speed) / (int32_t)t_dist);
@@ -213,183 +185,140 @@ static void update_charger(Enemy *e, Enemy *enemies, int num_enemies, int idx,
 
             apply_separation(enemies, num_enemies, idx, &vx, &vy);
             int moved = move_with_slide(&e->x, &e->y, vx, vy);
-            e->dir = dir_from_vector(vx, vy);
+            e->dir = dir_from_vector(TO_FIXED(t_dx), TO_FIXED(t_dy));   // velocity is sub-pixel: use the step vector
             update_animation(e, moved);
             break;
         }
-
-        case ENEMY_STATE_ATTACK: {
-            e->dir = dir_from_vector(player_x - e->x, player_y - e->y);
-            e->state_timer--;
-            if (e->state_timer <= 0) {
-                e->state = ENEMY_STATE_CHASE;
-            }
-            update_animation(e, 0);
-            break;
-        }
-
-        case ENEMY_STATE_SEARCH: {
-            if (has_los) {
-                e->state = ENEMY_STATE_ALERT;
-                e->state_timer = tuning->alert_duration / 2;
-                e->last_seen_x = player_x;
-                e->last_seen_y = player_y;
-                e->los_lost_timer = 0;
-                update_animation(e, 0);
-                break;
-            }
-
-            int32_t s_dx = TO_INT(e->last_seen_x - e->x);
-            int32_t s_dy = TO_INT(e->last_seen_y - e->y);
-            uint32_t s_dist = int_sqrt((uint32_t)(s_dx * s_dx + GROUND_DY2(s_dy)));
-
-            e->state_timer--;
-            if (s_dist <= 8 || e->state_timer <= 0) {
-                e->state = ENEMY_STATE_IDLE;
-                update_animation(e, 0);
-                break;
-            }
-
-            fixed vx = (fixed)((s_dx * (int32_t)tuning->speed) / (int32_t)s_dist);
-            fixed vy = (fixed)((s_dy * (int32_t)tuning->speed) / (int32_t)s_dist);
-            apply_separation(enemies, num_enemies, idx, &vx, &vy);
-            int moved = move_with_slide(&e->x, &e->y, vx, vy);
-            e->dir = dir_from_vector(vx, vy);
-            update_animation(e, moved);
-            break;
-        }
-
-        default:
-            break;
     }
+}
+
+// ---------------------------------------------------------------------------
+// Necron shooter (DESIGN.md 4.5): zone control, it makes the player move. FSM
+// POSITION -> TELEGRAPH -> BURST(3) -> COOLDOWN -> POSITION; * -> DEAD.
+// ---------------------------------------------------------------------------
+
+#define SHOOTER_FIRE_MARGIN 24        // ground px beyond the band's far edge from which it already shoots
+#define SHOOTER_LEAD_SHIFT 1          // lead = half of the player's predicted displacement ("ligero lead")
+#define SHOOTER_MAX_LEAD_FRAMES 20
+#define SHOOTER_PROJECTILE_LIFE 150
+#define VIEW_BULLET 1                 // e->has_los bits: a bullet can fly from here to the player
+#define VIEW_WALKABLE 2               //                  a body can walk it
+
+static void enemy_muzzle(const Enemy *e, fixed *mx, fixed *my, int *mh) {
+    const int8_t *m = g_character_muzzle[e->char_id][e->dir][e->frame];
+    *mx = e->x + TO_FIXED(m[0]);
+    *my = e->y + TO_FIXED(m[1]);
+    *mh = m[2];
+}
+
+// Walks the distance band: back off when the player is too close, close in (straight if the
+// body can walk it, else down the navigation field) when too far or out of view, and strafe
+// sideways in between. Used while positioning and while cooling down.
+static void shooter_reposition(Enemy *e, Enemy *enemies, int num_enemies, int idx,
+                               int px, int py, int ground_dist) {
+    const EnemyTuning *tuning = &g_enemy_tuning[ENEMY_TYPE_SHOOTER];
+    int wx = TO_INT(e->x);
+    int wy = TO_INT(e->y);
+    int dx = px - wx;
+    int dy = py - wy;
+    int move_x, move_y;
+    int strafing = 0;
+
+    if (ground_dist < tuning->preferred_dist_min) {
+        move_x = -dx;
+        move_y = -dy;
+    } else if (ground_dist > tuning->preferred_dist_max || !(e->has_los & VIEW_BULLET)) {
+        move_x = dx;
+        move_y = dy;
+        if (!(e->has_los & VIEW_WALKABLE)) {
+            int step_x, step_y;
+            if (nav_next_step(wx, wy, &step_x, &step_y)) {
+                move_x = step_x - wx;
+                move_y = step_y - wy;
+            }
+        }
+    } else {
+        // Sideways on the ground: perpendicular to (dx, 2*dy), which is (-2*dy, dx/2) on screen.
+        if (e->strafe_dir == 0) e->strafe_dir = 1;
+        move_x = -2 * dy * e->strafe_dir;
+        move_y = (dx * e->strafe_dir) / 2;
+        strafing = 1;
+    }
+
+    uint32_t m_dist = int_sqrt((uint32_t)(move_x * move_x + GROUND_DY2(move_y)));
+    fixed vx = 0, vy = 0;
+    if (m_dist > 0) {
+        vx = (fixed)((move_x * (int32_t)tuning->speed) / (int32_t)m_dist);
+        vy = (fixed)((move_y * (int32_t)tuning->speed) / (int32_t)m_dist);
+    }
+    apply_separation(enemies, num_enemies, idx, &vx, &vy);
+    int moved = move_with_slide(&e->x, &e->y, vx, vy);
+    if (strafing && !moved) e->strafe_dir = -e->strafe_dir;
+
+    // Face the player while aiming-ready (backing off or strafing); face the way it walks when
+    // it is closing in or going around a wall, so it does not slide sideways looking at the player.
+    if (moved && !strafing && ground_dist >= tuning->preferred_dist_min)
+        e->dir = dir_from_vector(TO_FIXED(move_x), TO_FIXED(move_y));
+    else
+        e->dir = dir_from_vector(px - e->x, py - e->y);
+    update_animation(e, moved);
+}
+
+static void shooter_fire(Enemy *e, fixed player_x, fixed player_y, fixed player_vx, fixed player_vy,
+                         int ground_dist) {
+    const EnemyTuning *tuning = &g_enemy_tuning[ENEMY_TYPE_SHOOTER];
+    fixed mx, my;
+    int mh;
+    enemy_muzzle(e, &mx, &my, &mh);
+    if (!bullet_position_is_free(mx, my)) {     // hugging a wall: the bolt would die at birth
+        mx = e->x;
+        my = e->y;
+    }
+
+    // Aim at where the player will be when the (slow) shot arrives, only half of the way.
+    int travel_frames = (ground_dist * 256) / (int)tuning->projectile_speed;
+    if (travel_frames > SHOOTER_MAX_LEAD_FRAMES) travel_frames = SHOOTER_MAX_LEAD_FRAMES;
+    fixed target_x = player_x + ((player_vx * travel_frames) >> SHOOTER_LEAD_SHIFT);
+    fixed target_y = player_y + ((player_vy * travel_frames) >> SHOOTER_LEAD_SHIFT);
+
+    int t_dx = TO_INT(target_x - mx);
+    int t_dy = TO_INT(target_y - my);
+    uint32_t t_dist = int_sqrt((uint32_t)(t_dx * t_dx + GROUND_DY2(t_dy)));
+    if (t_dist == 0) return;
+    fixed vx = (fixed)((t_dx * (int32_t)tuning->projectile_speed) / (int32_t)t_dist);
+    fixed vy = (fixed)((t_dy * (int32_t)tuning->projectile_speed) / (int32_t)t_dist);
+    enemy_projectile_spawn_linear(mx, my, vx, vy, mh, SHOOTER_PROJECTILE_LIFE);
 }
 
 static void update_shooter(Enemy *e, Enemy *enemies, int num_enemies, int idx,
                            fixed player_x, fixed player_y, fixed player_vx, fixed player_vy) {
     const EnemyTuning *tuning = &g_enemy_tuning[ENEMY_TYPE_SHOOTER];
-    int player_dead = g_player_state.is_dead;
+
+    if (g_player_state.is_dead) {
+        update_animation(e, 0);
+        return;
+    }
 
     int wx = TO_INT(e->x);
     int wy = TO_INT(e->y);
     int px = TO_INT(player_x);
     int py = TO_INT(player_y);
+    int dx = px - wx;
+    int dy = py - wy;
+    int ground_dist = (int)int_sqrt((uint32_t)(dx * dx + GROUND_DY2(dy)));
 
-    if (player_dead) {
-        e->has_los = 0;
-    } else if (e->hit_timer > 0 || e->state == ENEMY_STATE_ALERT || e->state == ENEMY_STATE_AIM || ((s_ai_tick + idx) & 1) == 0) {
-        e->has_los = los_has_line_of_sight(wx, wy, px, py, tuning->los_range);
-    }
-    int has_los = e->has_los;
-
-    if (e->hit_timer > 0) {
-        if (e->state == ENEMY_STATE_IDLE || e->state == ENEMY_STATE_SEARCH) {
-            e->state = ENEMY_STATE_ALERT;
-            e->state_timer = tuning->alert_duration;
-            e->last_seen_x = player_x;
-            e->last_seen_y = player_y;
-            e->los_lost_timer = 0;
-        }
+    // What the shooter can do from here, refreshed every few frames.
+    if (((s_ai_tick + idx) & 3) == 0) {
+        e->has_los = (bullet_line_is_free(wx, wy, px, py) ? VIEW_BULLET : 0) |
+                     (line_is_walkable(wx, wy, px, py) ? VIEW_WALKABLE : 0);
     }
 
     switch (e->state) {
-        case ENEMY_STATE_IDLE: {
-            if (has_los) {
-                e->state = ENEMY_STATE_ALERT;
-                e->state_timer = tuning->alert_duration;
-                e->last_seen_x = player_x;
-                e->last_seen_y = player_y;
-                e->los_lost_timer = 0;
-            }
-            update_animation(e, 0);
-            break;
-        }
-
-        case ENEMY_STATE_ALERT: {
-            e->dir = dir_from_vector(player_x - e->x, player_y - e->y);
-            e->state_timer--;
-            if (e->state_timer <= 0) {
-                e->state = ENEMY_STATE_POSITION;
-                e->state_timer = tuning->position_duration;
-            }
-            update_animation(e, 0);
-            break;
-        }
-
-        case ENEMY_STATE_POSITION: {
-            if (player_dead) {
-                e->state = ENEMY_STATE_IDLE;
-                update_animation(e, 0);
-                break;
-            }
-
-            if (has_los) {
-                e->last_seen_x = player_x;
-                e->last_seen_y = player_y;
-                e->los_lost_timer = 0;
-            } else {
-                e->los_lost_timer++;
-                if (e->los_lost_timer >= tuning->los_lost_limit) {
-                    e->state = ENEMY_STATE_SEARCH;
-                    e->state_timer = tuning->search_duration;
-                    update_animation(e, 0);
-                    break;
-                }
-            }
-
-            int32_t p_dx = px - wx;
-            int32_t p_dy = py - wy;
-            uint32_t p_dist = int_sqrt((uint32_t)(p_dx * p_dx + p_dy * p_dy));
-
-            fixed move_dx = 0;
-            fixed move_dy = 0;
-
-            if (p_dist < (uint32_t)tuning->preferred_dist_min) {
-                // Too close: retreat away from player
-                move_dx = -p_dx;
-                move_dy = -p_dy;
-            } else if (p_dist > (uint32_t)tuning->preferred_dist_max) {
-                // Too far: advance towards player
-                move_dx = p_dx;
-                move_dy = p_dy;
-            } else {
-                // In distance band: strafe laterally
-                if (e->strafe_dir == 0) e->strafe_dir = 1;
-                move_dx = -p_dy * e->strafe_dir;
-                move_dy =  p_dx * e->strafe_dir;
-            }
-
-            uint32_t m_dist = int_sqrt((uint32_t)(move_dx * move_dx + GROUND_DY2(move_dy)));
-            fixed vx = 0, vy = 0;
-            if (m_dist > 0) {
-                vx = (fixed)((move_dx * (int32_t)tuning->speed) / (int32_t)m_dist);
-                vy = (fixed)((move_dy * (int32_t)tuning->speed) / (int32_t)m_dist);
-            }
-
-            apply_separation(enemies, num_enemies, idx, &vx, &vy);
-            int moved = move_with_slide(&e->x, &e->y, vx, vy);
-            if (!moved && p_dist >= (uint32_t)tuning->preferred_dist_min && p_dist <= (uint32_t)tuning->preferred_dist_max) {
-                // If strafe hit a wall, reverse strafe direction
-                e->strafe_dir = -e->strafe_dir;
-            }
-
-            // Shooter continuously faces player while positioning
-            e->dir = dir_from_vector(player_x - e->x, player_y - e->y);
-            update_animation(e, moved);
-
-            e->state_timer--;
-            if (e->state_timer <= 0 && e->los_lost_timer == 0) {
-                e->state = ENEMY_STATE_AIM;
-                e->state_timer = tuning->aim_duration;
-            }
-            break;
-        }
-
-        case ENEMY_STATE_AIM: {
+        case ENEMY_STATE_TELEGRAPH: {
+            // The weapon flashes (drawn by the renderer) while the shooter stands still.
             e->dir = dir_from_vector(player_x - e->x, player_y - e->y);
             update_animation(e, 0);
-
-            e->state_timer--;
-            if (e->state_timer <= 0) {
+            if (--e->state_timer <= 0) {
                 e->state = ENEMY_STATE_BURST;
                 e->burst_shots_left = tuning->burst_count;
                 e->burst_interval_timer = 0;
@@ -400,37 +329,13 @@ static void update_shooter(Enemy *e, Enemy *enemies, int num_enemies, int idx,
         case ENEMY_STATE_BURST: {
             e->dir = dir_from_vector(player_x - e->x, player_y - e->y);
             update_animation(e, 0);
-
-            if (e->burst_interval_timer <= 0 && e->burst_shots_left > 0) {
-                // Predict target position with lead
-                int32_t p_dx = px - wx;
-                int32_t p_dy = py - wy;
-                uint32_t p_dist = int_sqrt((uint32_t)(p_dx * p_dx + p_dy * p_dy));
-
-                fixed proj_spd = tuning->projectile_speed > 0 ? tuning->projectile_speed : 384;
-                int32_t travel_frames = (int32_t)((p_dist * 256) / (uint32_t)proj_spd);
-                if (travel_frames > 20) travel_frames = 20;
-                if (travel_frames < 0) travel_frames = 0;
-
-                fixed target_px = player_x + ((player_vx * travel_frames) >> 8);
-                fixed target_py = player_y + ((player_vy * travel_frames) >> 8);
-
-                int32_t t_dx = TO_INT(target_px - e->x);
-                int32_t t_dy = TO_INT(target_py - e->y);
-                uint32_t t_dist = int_sqrt((uint32_t)(t_dx * t_dx + GROUND_DY2(t_dy)));
-
-                if (t_dist > 0) {
-                    fixed pvx = (fixed)((t_dx * (int32_t)proj_spd) / (int32_t)t_dist);
-                    fixed pvy = (fixed)((t_dy * (int32_t)proj_spd) / (int32_t)t_dist);
-                    enemy_projectile_spawn_linear(e->x, e->y, pvx, pvy, tuning->projectile_damage, 120);
-                }
-
+            if (e->burst_interval_timer <= 0) {
+                shooter_fire(e, player_x, player_y, player_vx, player_vy, ground_dist);
                 e->burst_shots_left--;
                 e->burst_interval_timer = tuning->burst_interval;
             } else {
                 e->burst_interval_timer--;
             }
-
             if (e->burst_shots_left <= 0) {
                 e->state = ENEMY_STATE_COOLDOWN;
                 e->state_timer = tuning->attack_cooldown;
@@ -439,50 +344,29 @@ static void update_shooter(Enemy *e, Enemy *enemies, int num_enemies, int idx,
         }
 
         case ENEMY_STATE_COOLDOWN: {
-            e->dir = dir_from_vector(player_x - e->x, player_y - e->y);
-            update_animation(e, 0);
-
-            e->state_timer--;
-            if (e->state_timer <= 0) {
+            shooter_reposition(e, enemies, num_enemies, idx, px, py, ground_dist);
+            if (--e->state_timer <= 0) {
                 e->state = ENEMY_STATE_POSITION;
-                e->state_timer = tuning->position_duration;
+                e->state_timer = 0;
             }
             break;
         }
 
-        case ENEMY_STATE_SEARCH: {
-            if (has_los) {
-                e->state = ENEMY_STATE_ALERT;
-                e->state_timer = tuning->alert_duration / 2;
-                e->last_seen_x = player_x;
-                e->last_seen_y = player_y;
-                e->los_lost_timer = 0;
-                update_animation(e, 0);
-                break;
+        case ENEMY_STATE_POSITION:
+        default: {
+            e->state = ENEMY_STATE_POSITION;
+            shooter_reposition(e, enemies, num_enemies, idx, px, py, ground_dist);
+            e->state_timer++;
+            // Telegraph once it has settled, has a shot and is not out of reach.
+            if (e->state_timer >= tuning->position_duration && (e->has_los & VIEW_BULLET) &&
+                ground_dist <= tuning->preferred_dist_max + SHOOTER_FIRE_MARGIN) {
+                e->state = ENEMY_STATE_TELEGRAPH;
+                e->state_timer = tuning->telegraph_duration;
+                e->frame = 0;                        // standing pose, so the flash sits on the muzzle
+                e->anim_timer = 0;
             }
-
-            int32_t s_dx = TO_INT(e->last_seen_x - e->x);
-            int32_t s_dy = TO_INT(e->last_seen_y - e->y);
-            uint32_t s_dist = int_sqrt((uint32_t)(s_dx * s_dx + GROUND_DY2(s_dy)));
-
-            e->state_timer--;
-            if (s_dist <= 8 || e->state_timer <= 0) {
-                e->state = ENEMY_STATE_IDLE;
-                update_animation(e, 0);
-                break;
-            }
-
-            fixed vx = (fixed)((s_dx * (int32_t)tuning->speed) / (int32_t)s_dist);
-            fixed vy = (fixed)((s_dy * (int32_t)tuning->speed) / (int32_t)s_dist);
-            apply_separation(enemies, num_enemies, idx, &vx, &vy);
-            int moved = move_with_slide(&e->x, &e->y, vx, vy);
-            e->dir = dir_from_vector(vx, vy);
-            update_animation(e, moved);
             break;
         }
-
-        default:
-            break;
     }
 }
 
@@ -496,6 +380,22 @@ void enemy_ai_update(Enemy *enemies, int num_enemies, fixed player_x, fixed play
         if (!e->active) continue;
 
         if (e->hit_timer > 0) e->hit_timer--;
+
+        // Staggered by a shotgun hit: shoved along the blast, no AI until it recovers.
+        if (e->stun_timer > 0) {
+            if (e->type == ENEMY_TYPE_SHOOTER &&
+                (e->state == ENEMY_STATE_TELEGRAPH || e->state == ENEMY_STATE_BURST)) {
+                e->state = ENEMY_STATE_POSITION;     // a shove spoils the shot
+                e->state_timer = 0;
+            }
+            e->stun_timer--;
+            move_with_slide(&e->x, &e->y, e->knock_vx, e->knock_vy);
+            e->knock_vx = (e->knock_vx * 224) >> 8;
+            e->knock_vy = (e->knock_vy * 224) >> 8;
+            continue;
+        }
+
+        if (e->state == ENEMY_STATE_DORMANT) continue;     // asleep: encounters.c wakes the whole pack
 
         if (e->type == ENEMY_TYPE_CHARGER) {
             update_charger(e, enemies, num_enemies, i, player_x, player_y);

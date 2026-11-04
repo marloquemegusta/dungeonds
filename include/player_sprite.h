@@ -30,6 +30,9 @@ typedef struct {
 
 extern const CharacterConfig g_characters[NUM_CHARACTERS];
 extern const uint8_t g_character_ground_anchors[NUM_CHARACTERS][PLAYER_NUM_DIRS];
+// Weapon muzzle per [character][direction][frame] = { gx, gy, h }: sprite pixels relative to the
+// ground anchor; a shot is drawn at feet + (gx, gy - h). All zeros for characters without weapon.
+extern const int8_t g_character_muzzle[NUM_CHARACTERS][PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][3];
 
 // Space Marine frames & animated crisp 3D shadows (8 dirs x 8 frames)
 extern const uint16_t g_player_frames[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][PLAYER_SPRITE_W * PLAYER_SPRITE_H];

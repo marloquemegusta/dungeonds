@@ -1,0 +1,33 @@
+{
+  "name": "dungeon_pack_reward_pedestals",
+  "steps": [
+    { "frames": 10 },
+    { "button_down": "L", "frames": 1 },
+    { "button_down": "R", "frames": 1 },
+    { "button_down": "B", "frames": 3 },
+    { "button_up": "B", "frames": 2 },
+    { "button_up": "L", "frames": 1 },
+    { "button_up": "R", "frames": 1 },
+    { "button_down": "RIGHT", "frames": 150 },
+    { "button_up": "RIGHT", "button_down": "UP", "frames": 50, "capture": "00_before_the_kill" },
+    { "button_up": "UP", "frames": 4 },
+    { "button_down": "L", "frames": 1 },
+    { "button_down": "R", "frames": 1 },
+    { "button_down": "X", "frames": 3 },
+    { "button_up": "X", "frames": 1 },
+    { "button_up": "L", "frames": 1 },
+    { "button_up": "R", "frames": 100, "capture": "01_pedestals_appear" },
+    { "button_down": "UP", "frames": 40 },
+    { "button_up": "UP", "button_down": "RIGHT", "frames": 30, "capture_sequence": "02_approach", "capture_every": 15 },
+    { "button_up": "RIGHT", "frames": 20, "capture": "03_after_taking_one" }
+  ],
+  "assertions": {
+    "screen_changes": [
+      {
+        "from": "00_before_the_kill",
+        "to": "01_pedestals_appear",
+        "min_changed_pixels": 100
+      }
+    ]
+  }
+}

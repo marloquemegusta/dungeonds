@@ -13,74 +13,82 @@ import numpy as np
 from PIL import Image
 
 ROOT = Path(__file__).resolve().parents[1]
-MAP_DIR = ROOT / "assets/sprites/dungeon/isometric_shooter_bl"
-WORLD_HEADER = (ROOT / "include/diablo_dungeon.h").read_text(encoding="utf-8")
-WORLD_W = int(re.search(r"#define WORLD_W (\d+)", WORLD_HEADER).group(1))
-WORLD_H = int(re.search(r"#define WORLD_H (\d+)", WORLD_HEADER).group(1))
-SPAWN = (int(re.search(r"#define SPAWN_PIXEL_X (\d+)", WORLD_HEADER).group(1)),
-         int(re.search(r"#define SPAWN_PIXEL_Y (\d+)", WORLD_HEADER).group(1)))
+LEGACY_DIR = ROOT / "assets/sprites/dungeon/isometric_shooter_bl"
 
 
-def load_rgb(name):
-    return np.array(Image.open(MAP_DIR / name).convert("RGB"), dtype=np.int32)
+def package_dir(stem):
+    """Lab package of a baked arena: source/arena_<stem>.c <- assets/sprites/arenas/<stem>/."""
+    if stem == "legacy":
+        return LEGACY_DIR
+    return ROOT / "assets/sprites/arenas" / stem
 
 
-def load_runs():
-    source = (ROOT / "source/dungeon_occlusion.c").read_text(encoding="ascii")
-    body = source.split("g_dungeon_occlusion_runs[]", 1)[1].split("= {", 1)[1].split("};", 1)[0]
+def baked_arenas():
+    return [p.stem[len("arena_"):] for p in sorted((ROOT / "source").glob("arena_*.c"))]
+
+
+def load_rgb(directory, name):
+    return np.array(Image.open(directory / name).convert("RGB"), dtype=np.int32)
+
+
+def load_arena_source(stem):
+    source = (ROOT / "source" / f"arena_{stem}.c").read_text(encoding="utf-8")
+    field = lambda name: int(re.search(rf"\.{name} = (\d+)", source).group(1))
+    body = source.split("s_occlusion_runs[]", 1)[1].split("= {", 1)[1].split("};", 1)[0]
     runs = [tuple(map(int, m)) for m in re.findall(r"\{(\d+), (\d+), (\d+), (-?\d+)\}", body)]
-    rows = source.split("g_dungeon_occlusion_row_start", 1)[1].split("= {", 1)[1].split("};", 1)[0]
+    rows = source.split("s_occlusion_row_start", 1)[1].split("= {", 1)[1].split("};", 1)[0]
     row_start = [int(v) for v in re.findall(r"\d+", rows)]
-    return runs, row_start
+    return field("world_w"), field("world_h"), (field("player_x"), field("player_y")), runs, row_start
 
 
 class MapExportCoherenceTest(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls):
-        world = load_rgb("world.png")
-        occ = load_rgb("occlusion_depth.png")
-        cls.void = world.max(axis=2) < 5
-        cls.occluder = occ[:, :, 2] >= 128
-        cls.ground_y = np.where(cls.occluder, occ[:, :, 0] * 256 + occ[:, :, 1], -1)
-        cls.walkable = np.array(Image.open(MAP_DIR / "collision.png").convert("L")) >= 128
-        cls.runs, cls.row_start = load_runs()
+    def check_arena(self, stem):
+        directory = package_dir(stem)
+        world_w, world_h, spawn, runs, row_start = load_arena_source(stem)
+        world = load_rgb(directory, "world.png")
+        occ = load_rgb(directory, "occlusion_depth.png")
+        void = world.max(axis=2) < 5
+        occluder = occ[:, :, 2] >= 128
+        ground_y = np.where(occluder, occ[:, :, 0] * 256 + occ[:, :, 1], -1)
+        walkable = np.array(Image.open(directory / "collision.png").convert("L")) >= 128
 
-    def test_masks_share_the_render_resolution(self):
-        self.assertEqual(self.void.shape, self.occluder.shape)
-        self.assertEqual(self.void.shape, self.walkable.shape)
-
-    def test_no_occluder_over_void(self):
-        self.assertEqual(int((self.occluder & self.void).sum()), 0,
-                         "occlusion must come from surfaces visible in world.png")
-
-    def test_ground_contact_is_never_above_the_pixel(self):
-        ys = np.arange(self.ground_y.shape[0])[:, None]
-        self.assertEqual(int((self.occluder & (self.ground_y < ys)).sum()), 0)
-
-    def test_walkable_floor_is_visible_and_contains_spawn(self):
-        self.assertTrue(self.walkable[SPAWN[1], SPAWN[0]])
-        # Cell-aligned grid edges may graze up to a few void pixels, never areas.
-        self.assertLess(int((self.walkable & self.void).sum()), 64)
-
-    def test_runs_encode_occlusion_depth_within_tolerance(self):
-        rebuilt = np.full((WORLD_H, WORLD_W), -1, dtype=np.int32)
-        for x, y, length, depth in self.runs:
+        # The masks share the render resolution.
+        self.assertEqual(void.shape, occluder.shape)
+        self.assertEqual(void.shape, walkable.shape)
+        # Occlusion must come from surfaces visible in world.png.
+        self.assertEqual(int((occluder & void).sum()), 0)
+        # Ground contact is never above the pixel itself.
+        ys = np.arange(ground_y.shape[0])[:, None]
+        self.assertEqual(int((occluder & (ground_y < ys)).sum()), 0)
+        # The walkable floor is visible and contains the start; grid edges may graze a few void pixels.
+        self.assertTrue(walkable[spawn[1], spawn[0]])
+        self.assertLess(int((walkable & void).sum()), 64)
+        # The baked runs encode occlusion_depth.png within tolerance and never overlap.
+        rebuilt = np.full((world_h, world_w), -1, dtype=np.int32)
+        for x, y, length, depth in runs:
             self.assertTrue(np.all(rebuilt[y, x:x + length] == -1), "runs must not overlap")
             rebuilt[y, x:x + length] = depth
-        h, w = self.ground_y.shape
+        h, w = ground_y.shape
         covered = rebuilt[:h, :w] >= 0
-        self.assertTrue(np.array_equal(covered, self.occluder))
-        err = rebuilt[:h, :w][covered] - self.ground_y[covered]
-        self.assertGreaterEqual(int(err.min()), 0, "runs store the deepest ground Y of the run")
-        self.assertLessEqual(int(err.max()), 1)
-
-    def test_row_index_matches_sorted_runs(self):
-        self.assertEqual(len(self.row_start), WORLD_H + 1)
-        self.assertEqual(self.row_start[-1], len(self.runs))
-        for y in range(WORLD_H):
-            row = self.runs[self.row_start[y]:self.row_start[y + 1]]
+        self.assertTrue(np.array_equal(covered, occluder))
+        if covered.any():
+            err = rebuilt[:h, :w][covered] - ground_y[covered]
+            self.assertGreaterEqual(int(err.min()), 0, "runs store the deepest ground Y of the run")
+            self.assertLessEqual(int(err.max()), 1)
+        # The row index matches the sorted runs.
+        self.assertEqual(len(row_start), world_h + 1)
+        self.assertEqual(row_start[-1], len(runs))
+        for y in range(world_h):
+            row = runs[row_start[y]:row_start[y + 1]]
             self.assertTrue(all(r[1] == y for r in row))
             self.assertEqual([r[0] for r in row], sorted(r[0] for r in row))
+
+    def test_every_baked_arena_is_coherent_with_its_lab_package(self):
+        stems = baked_arenas()
+        self.assertTrue(stems, "no baked arenas")
+        for stem in stems:
+            with self.subTest(arena=stem):
+                self.check_arena(stem)
 
 
 if __name__ == "__main__":
