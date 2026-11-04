@@ -92,3 +92,4 @@ Resúmenes acumulativos y auditables de cada entrega y avance de desarrollo en `
 | 74 | v0.1 Fase B: cargador con navegación BFS | [`v0.1/`](v0.1/walkthrough.md) | Validado en DeSmuME y host (pendiente DS) |
 | 75 | v0.1 Fase C: tirador necrón (banda, telegraph, ráfaga de 3) | [`v0.1/`](v0.1/walkthrough.md) | Validado en DeSmuME (pendiente DS) |
 | 76 | v0.1 Fase D: 4 arenas, runtime multi-arena y encuentros | [`v0.1/`](v0.1/walkthrough.md) | Validado en DeSmuME y host (pendiente DS) |
+| 77 | v0.2: mazmorra de manadas, modificadores y HUD de run | [`v0.2/`](v0.2/walkthrough.md) | Validado en DeSmuME y host (pendiente DS) |

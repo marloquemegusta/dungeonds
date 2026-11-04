@@ -2,6 +2,7 @@
 #include "crashlog.h"
 #include "encounters.h"
 #include "collision.h"
+#include "modifiers.h"
 #include <string.h>
 
 // ---------------------------------------------------------------------------
@@ -60,8 +61,8 @@ int g_hitstop_frames = 0;
 
 void player_state_init(PlayerState *player) {
     if (!player) return;
-    player->max_hp = PLAYER_MAX_HP;
-    player->hp = PLAYER_MAX_HP;
+    player->max_hp = PLAYER_MAX_HP + g_mods.max_hp;
+    player->hp = player->max_hp;
     player->current_weapon = WEAPON_SHOTGUN;
     player->is_dead = 0;
     player->invuln_timer = 0;
@@ -70,7 +71,7 @@ void player_state_init(PlayerState *player) {
 int player_take_hit(PlayerState *player) {
     if (!player || player->is_dead || player->god_mode || player->invuln_timer > 0) return 0;
     player->hp--;
-    player->invuln_timer = PLAYER_IFRAMES;
+    player->invuln_timer = PLAYER_IFRAMES + g_mods.iframes;
     if (player->hp <= 0) {
         player->hp = 0;
         player->is_dead = 1;
@@ -99,7 +100,7 @@ void enemy_hit(Enemy *e, int damage, fixed hit_vx, fixed hit_vy) {
         if (s_enemy_death_hook) s_enemy_death_hook(e, hit_vx, hit_vy);
         e->active = 0;
         e->state = ENEMY_STATE_DEAD;
-        encounters_record_kill(&g_encounter_mgr, e->x, e->y);
+        encounters_record_kill(&g_encounter_mgr, e->pack, e->x, e->y);
 #ifdef DEBUG
         char msg[64];
         snprintf(msg, sizeof(msg), "ENEMY_KILL type=%d hp=0", e->type);

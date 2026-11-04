@@ -38,6 +38,9 @@ const HTML = path.join(__dirname, 'FBX-Web-Renderer-offline.html');
         el.dispatchEvent(new Event('input', { bubbles: true }));
         el.dispatchEvent(new Event('change', { bubbles: true }));
       };
+      // The lab slider stops at 1536 px; a rotated 768 px dungeon needs a wider render.
+      const sizeInput = document.getElementById('mapPixelSize');
+      if (sizeInput && s.width > Number(sizeInput.max)) sizeInput.max = String(s.width);
       set('mapPixelSize', s.width);
       set('elevation', s.cameraElevationDegrees);
       set('contrast', s.contrast);
@@ -51,6 +54,17 @@ const HTML = path.join(__dirname, 'FBX-Web-Renderer-offline.html');
       if (s.orthoScaleMeters) window.__spriteLab.mapOrthoScale = s.orthoScaleMeters;
       // Optional: s.shadows === false turns the key-light shadow map off (the old
       // package settings do not carry the key, so their behaviour is unchanged).
+      // s.shadows === true (large maps): the key light's shadow camera defaults to +-5 m, which
+      // covers only the middle of a 768 px dungeon. Widen it to the whole model.
+      if (s.shadows === true && typeof $ !== 'undefined' && $.lights && $.lights.key) {
+        const key = $.lights.key;
+        key.shadow.mapSize.set(4096, 4096);
+        const c = key.shadow.camera;
+        c.left = -45; c.right = 45; c.top = 45; c.bottom = -45; c.near = 0.5; c.far = 150;
+        c.updateProjectionMatrix();
+        key.shadow.bias = -0.0004;
+        if (key.shadow.map) { key.shadow.map.dispose(); key.shadow.map = null; }
+      }
       if (s.shadows === false) {
         const sh = document.getElementById('shadowToggle');
         if (sh) { sh.checked = false; sh.dispatchEvent(new Event('change', { bubbles: true })); }

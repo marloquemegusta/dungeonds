@@ -1,5 +1,6 @@
 #include "weapons.h"
 #include "gameplay.h"
+#include "modifiers.h"
 
 /* TUNABLE-PLACEHOLDER: Player Weapons Tuning Table (Fixed-Point 8.8).
  * Goal hits to kill (DESIGN.md 4.3): shotgun point blank 1 shooter / 2-3 charger,
@@ -209,9 +210,10 @@ static int compute_aim(const WeaponInput *in, fixed *dir_x, fixed *dir_y) {
 
 static void shove_enemy(Enemy *e, const WeaponTuning *tuning, fixed dir_x, fixed dir_y) {
     if (!e->active || e->hp <= 0 || tuning->knockback <= 0) return;
-    e->knock_vx = (dir_x * tuning->knockback) >> 8;
-    e->knock_vy = (dir_y * tuning->knockback) >> 8;
-    e->stun_timer = tuning->stun_frames;
+    fixed knock = tuning->knockback * g_mods.knock_pct / 100;
+    e->knock_vx = (dir_x * knock) >> 8;
+    e->knock_vy = (dir_y * knock) >> 8;
+    e->stun_timer = tuning->stun_frames * g_mods.knock_pct / 100;
 }
 
 // The muzzle hangs off the feet; against a wall it can land inside the bullet-blocking
@@ -244,7 +246,9 @@ static void fire_shotgun(const WeaponTuning *tuning, const WeaponInput *in, fixe
     shot_origin(in, &origin_x, &origin_y);
     fixed perp_x = -dir_y;
     fixed perp_y = dir_x;
-    int pellets = tuning->pellets > 0 ? tuning->pellets : 1;
+    int pellets = (tuning->pellets > 0 ? tuning->pellets : 1) + g_mods.shotgun_pellets;
+    int pellet_damage = tuning->damage_per_hit * g_mods.shotgun_damage_pct / 100;
+    if (pellet_damage < 1) pellet_damage = 1;
     for (int p_idx = 0; p_idx < pellets; p_idx++) {
         int slot = -1;
         for (int s = 0; s < MAX_PLAYER_PROJECTILES; s++) {
@@ -265,7 +269,9 @@ static void fire_shotgun(const WeaponTuning *tuning, const WeaponInput *in, fixe
         proj->height = in->muzzle_h;
         proj->life = tuning->projectile_range;
         proj->max_life = tuning->projectile_range;
-        proj->damage = tuning->damage_per_hit;
+        proj->damage = pellet_damage;
+        proj->pierce = g_mods.shotgun_pierce;
+        proj->hit_mask = 0;
     }
 }
 
@@ -294,7 +300,8 @@ static void fire_sniper(const WeaponTuning *tuning, const WeaponInput *in, fixed
             if (edx * edx + GROUND_DY2(edy) <= ENEMY_HIT_RADIUS * ENEMY_HIT_RADIUS) {
                 hit_mask |= 1u << i;
                 spawn_impact(TO_INT(cur_x), TO_INT(cur_y) - in->muzzle_h, -dir_x, -dir_y, 4);
-                enemy_hit(e, tuning->damage_per_hit, dir_x * 4, dir_y * 4);
+                int sniper_damage = tuning->damage_per_hit * g_mods.sniper_damage_pct / 100;
+                enemy_hit(e, sniper_damage < 1 ? 1 : sniper_damage, dir_x * 4, dir_y * 4);
                 shove_enemy(e, tuning, dir_x, dir_y);
             }
         }
@@ -313,7 +320,7 @@ static void fire_sniper(const WeaponTuning *tuning, const WeaponInput *in, fixed
 static int fire_weapon(PlayerState *player, const WeaponInput *in, fixed dir_x, fixed dir_y,
                        Enemy *enemies, int max_enemies) {
     const WeaponTuning *tuning = &g_weapon_tuning[player->current_weapon];
-    s_weapon_cooldown = tuning->fire_cooldown;
+    s_weapon_cooldown = tuning->fire_cooldown + (player->current_weapon == WEAPON_SHOTGUN ? g_mods.shotgun_cooldown : 0);
     s_last_dir_x = dir_x;
     s_last_dir_y = dir_y;
     if (player->current_weapon == WEAPON_SHOTGUN) {
@@ -384,13 +391,19 @@ int weapons_input(PlayerState *player, const WeaponInput *in, Enemy *enemies, in
     s_aim_muzzle_h = in->muzzle_h;
     s_aim_len = ray_length(in, s_aim_dir_x, s_aim_dir_y, g_weapon_tuning[WEAPON_SNIPER].projectile_range);
     s_aim_timer++;
-    if (s_aim_timer >= g_weapon_tuning[WEAPON_SNIPER].aim_min_frames) s_aim_state = AIM_READY;
+    int aim_frames = g_weapon_tuning[WEAPON_SNIPER].aim_min_frames + g_mods.sniper_aim;
+    if (aim_frames < 6) aim_frames = 6;
+    if (s_aim_timer >= aim_frames) s_aim_state = AIM_READY;
     return WEAPON_RESULT_ROOTED;
 }
 
 // ---------------------------------------------------------------------------
 // Simulation
 // ---------------------------------------------------------------------------
+
+void weapons_notify_kill(void) {
+    if (g_mods.kill_resets_shotgun) s_weapon_cooldown = 0;
+}
 
 void weapons_update(Enemy *enemies, int max_enemies) {
     if (s_weapon_cooldown > 0) s_weapon_cooldown--;
@@ -436,7 +449,7 @@ void weapons_update(Enemy *enemies, int max_enemies) {
 
         for (int e_idx = 0; e_idx < max_enemies; e_idx++) {
             Enemy *e = &enemies[e_idx];
-            if (!e->active || e->hp <= 0) continue;
+            if (!e->active || e->hp <= 0 || (p->hit_mask & (1u << e_idx))) continue;
             int dx = TO_INT(p->x - e->x);
             int dy = TO_INT(p->y - e->y);
             if (dx * dx + GROUND_DY2(dy) > ENEMY_HIT_RADIUS * ENEMY_HIT_RADIUS) continue;
@@ -449,6 +462,11 @@ void weapons_update(Enemy *enemies, int max_enemies) {
             fixed len_dir_x = p->vx * 256 / shotgun->projectile_speed;
             fixed len_dir_y = p->vy * 256 / shotgun->projectile_speed;
             shove_enemy(e, shotgun, len_dir_x, len_dir_y);
+            if (p->pierce > 0) {            // "perforantes": the pellet goes on through
+                p->pierce--;
+                p->hit_mask |= 1u << e_idx;
+                continue;
+            }
             p->active = 0;
             break;
         }

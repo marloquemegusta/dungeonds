@@ -185,7 +185,7 @@ static void update_charger(Enemy *e, Enemy *enemies, int num_enemies, int idx,
 
             apply_separation(enemies, num_enemies, idx, &vx, &vy);
             int moved = move_with_slide(&e->x, &e->y, vx, vy);
-            e->dir = dir_from_vector(vx, vy);
+            e->dir = dir_from_vector(TO_FIXED(t_dx), TO_FIXED(t_dy));   // velocity is sub-pixel: use the step vector
             update_animation(e, moved);
             break;
         }
@@ -255,7 +255,12 @@ static void shooter_reposition(Enemy *e, Enemy *enemies, int num_enemies, int id
     int moved = move_with_slide(&e->x, &e->y, vx, vy);
     if (strafing && !moved) e->strafe_dir = -e->strafe_dir;
 
-    e->dir = dir_from_vector(px - e->x, py - e->y);
+    // Face the player while aiming-ready (backing off or strafing); face the way it walks when
+    // it is closing in or going around a wall, so it does not slide sideways looking at the player.
+    if (moved && !strafing && ground_dist >= tuning->preferred_dist_min)
+        e->dir = dir_from_vector(TO_FIXED(move_x), TO_FIXED(move_y));
+    else
+        e->dir = dir_from_vector(px - e->x, py - e->y);
     update_animation(e, moved);
 }
 
@@ -389,6 +394,8 @@ void enemy_ai_update(Enemy *enemies, int num_enemies, fixed player_x, fixed play
             e->knock_vy = (e->knock_vy * 224) >> 8;
             continue;
         }
+
+        if (e->state == ENEMY_STATE_DORMANT) continue;     // asleep: encounters.c wakes the whole pack
 
         if (e->type == ENEMY_TYPE_CHARGER) {
             update_charger(e, enemies, num_enemies, i, player_x, player_y);

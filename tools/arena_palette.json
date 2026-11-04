@@ -1,0 +1,398 @@
+{
+ "grout": {
+  "base": [
+   7,
+   34,
+   64
+  ],
+  "emissive": null
+ },
+ "plinth": {
+  "base": [
+   36,
+   53,
+   89
+  ],
+  "emissive": null
+ },
+ "body": {
+  "base": [
+   16,
+   34,
+   66
+  ],
+  "emissive": null
+ },
+ "cornice": {
+  "base": [
+   48,
+   67,
+   109
+  ],
+  "emissive": null
+ },
+ "top": {
+  "base": [
+   57,
+   79,
+   123
+  ],
+  "emissive": null
+ },
+ "side": {
+  "base": [
+   1,
+   1,
+   1
+  ],
+  "emissive": null
+ },
+ "slab": {
+  "base": [
+   13,
+   31,
+   61
+  ],
+  "emissive": null
+ },
+ "pillar": {
+  "base": [
+   35,
+   52,
+   89
+  ],
+  "emissive": null
+ },
+ "pillar_top": {
+  "base": [
+   27,
+   48,
+   84
+  ],
+  "emissive": null
+ },
+ "neon_cyan": {
+  "base": [
+   1,
+   139,
+   243
+  ],
+  "emissive": [
+   0,
+   248,
+   243
+  ]
+ },
+ "dneon_cyan": {
+  "base": [
+   1,
+   145,
+   247
+  ],
+  "emissive": [
+   0,
+   250,
+   247
+  ]
+ },
+ "glow_cyan": {
+  "base": [
+   1,
+   145,
+   247
+  ],
+  "emissive": [
+   0,
+   250,
+   247
+  ]
+ },
+ "trim_cyan": {
+  "base": [
+   21,
+   77,
+   109
+  ],
+  "emissive": null
+ },
+ "frame_cyan": {
+  "base": [
+   24,
+   105,
+   147
+  ],
+  "emissive": null
+ },
+ "thresh_cyan": {
+  "base": [
+   31,
+   81,
+   115
+  ],
+  "emissive": null
+ },
+ "neon_magenta": {
+  "base": [
+   76,
+   1,
+   58
+  ],
+  "emissive": [
+   255,
+   1,
+   192
+  ]
+ },
+ "dneon_magenta": {
+  "base": [
+   76,
+   1,
+   58
+  ],
+  "emissive": [
+   255,
+   1,
+   191
+  ]
+ },
+ "glow_magenta": {
+  "base": [
+   76,
+   1,
+   58
+  ],
+  "emissive": [
+   255,
+   1,
+   191
+  ]
+ },
+ "trim_magenta": {
+  "base": [
+   57,
+   31,
+   88
+  ],
+  "emissive": null
+ },
+ "frame_magenta": {
+  "base": [
+   78,
+   34,
+   113
+  ],
+  "emissive": null
+ },
+ "thresh_magenta": {
+  "base": [
+   70,
+   1,
+   82
+  ],
+  "emissive": null
+ },
+ "neon_amber": {
+  "base": [
+   118,
+   51,
+   1
+  ],
+  "emissive": [
+   249,
+   170,
+   1
+  ]
+ },
+ "dneon_amber": {
+  "base": [
+   122,
+   52,
+   1
+  ],
+  "emissive": [
+   252,
+   172,
+   1
+  ]
+ },
+ "glow_amber": {
+  "base": [
+   122,
+   52,
+   1
+  ],
+  "emissive": [
+   252,
+   172,
+   1
+  ]
+ },
+ "trim_amber": {
+  "base": [
+   62,
+   66,
+   64
+  ],
+  "emissive": null
+ },
+ "frame_amber": {
+  "base": [
+   87,
+   86,
+   60
+  ],
+  "emissive": null
+ },
+ "thresh_amber": {
+  "base": [
+   84,
+   66,
+   1
+  ],
+  "emissive": null
+ },
+ "floor_nw_0": {
+  "base": [
+   30,
+   56,
+   92
+  ],
+  "emissive": null
+ },
+ "floor_nw_1": {
+  "base": [
+   38,
+   64,
+   103
+  ],
+  "emissive": null
+ },
+ "floor_nw_2": {
+  "base": [
+   42,
+   52,
+   72
+  ],
+  "emissive": null
+ },
+ "floor_n_0": {
+  "base": [
+   42,
+   48,
+   92
+  ],
+  "emissive": null
+ },
+ "floor_n_1": {
+  "base": [
+   49,
+   55,
+   102
+  ],
+  "emissive": null
+ },
+ "floor_n_2": {
+  "base": [
+   35,
+   44,
+   84
+  ],
+  "emissive": null
+ },
+ "floor_ne_0": {
+  "base": [
+   46,
+   56,
+   75
+  ],
+  "emissive": null
+ },
+ "floor_ne_1": {
+  "base": [
+   62,
+   65,
+   81
+  ],
+  "emissive": null
+ },
+ "floor_ne_2": {
+  "base": [
+   38,
+   50,
+   68
+  ],
+  "emissive": null
+ },
+ "floor_sw_0": {
+  "base": [
+   38,
+   50,
+   68
+  ],
+  "emissive": null
+ },
+ "floor_sw_1": {
+  "base": [
+   45,
+   56,
+   74
+  ],
+  "emissive": null
+ },
+ "floor_sw_2": {
+  "base": [
+   31,
+   44,
+   63
+  ],
+  "emissive": null
+ },
+ "floor_s_0": {
+  "base": [
+   21,
+   49,
+   82
+  ],
+  "emissive": null
+ },
+ "floor_s_1": {
+  "base": [
+   30,
+   56,
+   90
+  ],
+  "emissive": null
+ },
+ "floor_s_2": {
+  "base": [
+   17,
+   45,
+   77
+  ],
+  "emissive": null
+ },
+ "floor_se_0": {
+  "base": [
+   34,
+   43,
+   83
+  ],
+  "emissive": null
+ },
+ "floor_se_1": {
+  "base": [
+   41,
+   48,
+   91
+  ],
+  "emissive": null
+ },
+ "floor_se_2": {
+  "base": [
+   49,
+   36,
+   61
+  ],
+  "emissive": null
+ }
+}

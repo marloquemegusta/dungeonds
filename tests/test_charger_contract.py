@@ -48,9 +48,9 @@ class ChargerContractTest(unittest.TestCase):
         self.assertIn("nav_update(NAV_BUDGET_PER_FRAME);", MAIN_C)
         self.assertIn("nav_set_goal(TO_INT(s_player.x), TO_INT(s_player.y));", MAIN_C)
 
-    def test_enemies_are_active_from_the_start(self):
-        # Closed arena (DESIGN.md 4.6): no detection, all enemies act as soon as the wave spawns.
-        self.assertIn("e->state = (type == ENEMY_TYPE_CHARGER) ? ENEMY_STATE_CHASE", ENCOUNTERS_C)
+    def test_a_woken_pack_chases_at_once(self):
+        # DESIGN.md 5: no detection states; a woken pack goes straight to CHASE.
+        self.assertIn("e->state = (e->type == ENEMY_TYPE_CHARGER) ? ENEMY_STATE_CHASE", ENCOUNTERS_C)
 
 
 if __name__ == "__main__":

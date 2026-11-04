@@ -65,8 +65,10 @@ void enemy_projectiles_update(fixed player_x, fixed player_y) {
     }
 }
 
-static inline void shot_px(uint16_t *buffer, int x, int y, uint16_t color) {
+// `cam_x/cam_y` and `depth` (the bolt's ground y) let walls hide the bolt like they hide actors.
+static inline void shot_px(uint16_t *buffer, int x, int y, uint16_t color, int cam_x, int cam_y, int depth) {
     if (x < 0 || x >= SCREEN_W || y < 0 || y >= SCREEN_H) return;
+    if (world_pixel_hidden(x + cam_x, y + cam_y, depth)) return;
     buffer[y * SCREEN_W + x] = color;
     dirty_row(y, x, x + 1);
 }
@@ -84,18 +86,19 @@ void enemy_projectiles_render(uint16_t *buffer, int cam_x, int cam_y) {
         EnemyProjectile *p = &g_enemy_projectiles[i];
         if (!p->active) continue;
 
+        int depth = TO_INT(p->y);
         int sx = TO_INT(p->x) - cam_x;
         int sy = TO_INT(p->y) - p->height - cam_y;
         // Tail points back along the velocity (about 2 frames of flight).
         int tx = -(p->vx >> 7);
         int ty = -(p->vy >> 7);
 
-        shot_px(buffer, sx + 2 * tx, sy + 2 * ty, tail);
-        shot_px(buffer, sx + tx, sy + ty, body);
-        shot_px(buffer, sx, sy, head);
-        shot_px(buffer, sx + 1, sy, body);
-        shot_px(buffer, sx - 1, sy, body);
-        shot_px(buffer, sx, sy + 1, body);
-        shot_px(buffer, sx, sy - 1, body);
+        shot_px(buffer, sx + 2 * tx, sy + 2 * ty, tail, cam_x, cam_y, depth);
+        shot_px(buffer, sx + tx, sy + ty, body, cam_x, cam_y, depth);
+        shot_px(buffer, sx, sy, head, cam_x, cam_y, depth);
+        shot_px(buffer, sx + 1, sy, body, cam_x, cam_y, depth);
+        shot_px(buffer, sx - 1, sy, body, cam_x, cam_y, depth);
+        shot_px(buffer, sx, sy + 1, body, cam_x, cam_y, depth);
+        shot_px(buffer, sx, sy - 1, body, cam_x, cam_y, depth);
     }
 }

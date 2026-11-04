@@ -37,7 +37,7 @@ extern const EnemyTuning g_enemy_tuning[NUM_ENEMY_TYPES];
 // 2. Generic Enemy Pool
 // ---------------------------------------------------------------------------
 
-#define MAX_GAMEPLAY_ENEMIES 10
+#define MAX_GAMEPLAY_ENEMIES 24     // every enemy of the dungeon exists from the start (dormant until woken)
 
 // Charger: CHASE <-> ATTACK. Shooter: POSITION -> TELEGRAPH -> BURST -> COOLDOWN -> POSITION.
 typedef enum {
@@ -47,7 +47,8 @@ typedef enum {
     ENEMY_STATE_TELEGRAPH,
     ENEMY_STATE_BURST,
     ENEMY_STATE_COOLDOWN,
-    ENEMY_STATE_DEAD
+    ENEMY_STATE_DEAD,
+    ENEMY_STATE_DORMANT       // v0.2: standing still in its pack until the pack wakes (DESIGN.md 5)
 } EnemyState;
 
 struct Enemy {
@@ -71,6 +72,7 @@ struct Enemy {
     fixed knock_vx;     // 8.8 shove velocity applied while stunned
     fixed knock_vy;
     int stun_timer;     // frames the enemy stays staggered after a shotgun hit
+    int pack;           // pack index from the arena data (woken, healed and rewarded together)
 };
 
 // Applies damage to an enemy. On a kill it marks the enemy dead, records the kill

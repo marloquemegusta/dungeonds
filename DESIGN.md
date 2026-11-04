@@ -3,8 +3,8 @@
 ## 1. Visión y Alcance
 - **Concepto:** shooter isométrico para Nintendo DS por salas-arena, con tono gótico/grimdark (space marine contra necrones y bestias).
 - **Pilar:** combate de Doom en isométrico: pocas armas contundentes con mucho *feel* (la escopeta como referencia), esquivar con strafe y salas como pequeño puzzle de prioridades (a quién matar primero y desde dónde), con el control preciso y el frenetismo de Hotline Miami.
-- **Bucle de la prueba de diversión (vigente):** arena cerrada → todos los enemigos se activan → al matarlos se abre la salida → siguiente arena, más difícil. 3–4 arenas hechas a mano.
-- **Fuera de la prueba, a propósito:** loot y progresión RPG (Diablo), mejoras entre salas (Vampire Survivors), generador procedural, enemigo grande. Se añaden solo si el combate pelado engancha; las armas se definen por parámetros para que una capa de mejoras pueda tocarlos sin rehacerlas.
+- **Bucle vigente (v0.2, decidido 2026-11-04):** una mazmorra grande de manadas dormidas, estilo Diablo; limpiar una manada ofrece un modificador estilo Isaac; completar la mazmorra gana la run y morir la reinicia de cero (§5). El bucle de arenas cerradas de la v0.1 (§4.6) queda como historia: lo probó el usuario en la DS y era fácil y poco divertido.
+- **Fuera de la prueba, a propósito:** loot infinito de estadísticas, generador procedural, jefes y enemigo grande (v0.3+). Se añaden solo si el combate pelado engancha; las armas se definen por parámetros para que una capa de mejoras pueda tocarlos sin rehacerlas.
 - **Historia de la dirección:** el proyecto nació como un Diablo de nigromancia con esbirros. Se descartó en una sesión de diseño (`/grill-me`) a favor del shooter. El 2026-11-03 una entrevista de diseño recortó el shooter a la prueba mínima de §4. La lanza ósea y la muerte por fragmentos quedan como FX reutilizables, no como pilar de juego.
 
 ## 2. Dirección de Arte y Pipeline
@@ -21,7 +21,9 @@
 - **Mapas de las arenas:** decididos el 2026-11-03, ver §4.6. Se sustituye el mapa grande `isometric_shooter_bl` por 4 arenas pequeñas horneadas en C con el pipeline lab → baker, sin NitroFS.
 - **Sonido:** fuera de la v0.1 (decidido 2026-11-03).
 - **Transparencias tras paredes:** también fuera de la v0.1; el comportamiento provisional actual no se amplía.
-- **Tuning de combate:** números concretos; ver §4.7.
+- **Tuning de combate y stats:** daño de las armas, daño que reciben el jugador y los enemigos, vida y velocidades; ver §4.7 y la sesión de tuning pendiente en §5.
+- **Mazmorra v0.3:** más grande y con salas más diferenciadas, posiblemente con puertas; ver §5 (Feedback de la v0.2).
+- **Claridad de los modificadores:** qué hace cada uno y cómo se presentan los pedestales y la UI; ver §5.
 
 ---
 
@@ -109,3 +111,57 @@ Ambas con munición infinita; las limita su ritmo y su coste de uso.
 4. **Fase D — Arenas:** 3–4 mapas sencillos (tras decidir su forma, §3), cierre/apertura y encadenado.
 5. **Fase E — Tuning y 60 FPS en la DS** con la arena más densa.
 6. **Después, solo si engancha:** mejoras entre arenas, loot, enemigo grande, generador procedural.
+
+---
+
+## 5. v0.2: Mazmorra de Manadas (decidido 2026-11-04)
+
+**Por qué.** La v0.1 se jugó en la DS: el feel del francotirador funciona, el de la escopeta menos, y el conjunto "se juega bien pero no es divertido" y se siente fácil. Con 3–7 enemigos cerrados en una sala no hay fantasía de segar ni progresión. Se descarta rediseñar cada encuentro a mano (estilo Hotline Miami) por coste de diseño. Dirección elegida: **limpiar una mazmorra de manadas** (Diablo) con **compromisos y modificadores que invitan a repetir** (Isaac/Hades). El objetivo único de esta versión es que matar sea divertido.
+
+**Bucle de la run (sesión de ~5 min).** Una mazmorra grande, hecha a mano y fija. Dentro hay manadas dormidas. Se despiertan, se limpian, cada limpieza da un modificador. Se completa al matar todas las manadas. Morir reinicia la mazmorra completa (manadas y jugador) y **se pierden los modificadores** (como Hades/Isaac). Sin guardado entre runs.
+
+**Mazmorra.**
+- Un único mapa de 768×768 px (dos pantallas de alto ya no la cubren: la cámara sigue al jugador en ambos ejes, con la pantalla superior mostrando lo que queda sobre la inferior). Datos en `assets/arenas/arenas.json`.
+- Seis salas: una sala inferior grande con pilares, tres salas superiores separadas por muros con puertas, y comunicación por pasos de 64 px.
+- Estética: oscura, de mazmorra con toques cyberpunk (neones de acento por sala, losas con juntas, franjas en muros). Generada con el mismo pipeline lab → baker, sin Blender, sin transparencias.
+
+**Manadas.**
+- Cada enemigo del mapa pertenece a una manada (`pack`). Manadas: seis, de 3–4 enemigos, mezclando cargadores y tiradores (la mayoría de manadas, mixtas; ninguna cerca del inicio).
+- **Estado `DORMANT`:** el enemigo está quieto en su punto, dibujado, sin IA. Se despierta **toda la manada a la vez** cuando el jugador queda a menos de ~220 px de suelo de cualquiera de sus miembros **o** cuando recibe daño un miembro (el francotirador puede abrir la pelea de lejos).
+- Una manada despierta se comporta como en la v0.1 (cargador `CHASE`, tirador `POSITION`).
+- Máximo de enemigos despiertos a la vez: el de la manada más grande más una vecina; el resto sigue dormido. El tope técnico lo fija el presupuesto de 60 FPS (§4.7).
+
+**Modificadores (estilo Isaac: compromiso, no solo números).**
+- Al matar al último enemigo de una manada aparecen **dos pedestales** donde murió. Se coge uno pisándolo; el otro desaparece. Cada pedestal muestra un icono de color y, al acercarse, el nombre del modificador (texto corto en la pantalla inferior).
+- La limpieza de cada manada además **cura 1 golpe**.
+- Un modificador se ofrece a lo sumo una vez por run. Son de una tabla de datos; los primeros son cambios de parámetros, algunos con condición:
+
+| Nombre | Efecto | Coste |
+| :--- | :--- | :--- |
+| Perdigones perforantes | Los perdigones atraviesan 1 enemigo. | −25 % daño de la escopeta. |
+| Recámara doble | +3 perdigones. | +12 frames de bombeo. |
+| Gatillo ligero | Francotirador: −8 frames de apuntado. | −25 % daño del francotirador. |
+| Cañón largo | Francotirador: +50 % daño. | +10 frames de apuntado. |
+| Sed de sangre | Cada muerte reinicia el bombeo de la escopeta. | −1 golpe de vida máxima. |
+| Coraza ósea | +2 golpes de vida máxima (y cura 2). | −12 % velocidad. |
+| Pies ligeros | +15 % velocidad. | −20 frames de invulnerabilidad. |
+| Retroceso brutal | Escopeta: ×2 empuje y aturdimiento. | ×2 retroceso propio. |
+
+**HUD de la run (siempre visible, solo pantalla inferior).** Golpes de vida como cuadrados rojos arriba a la derecha, un cuadrado de color por modificador cogido debajo, `MANADAS n DE m` abajo a la izquierda, el nombre del modificador del pedestal cercano (o del último cogido) abajo en el centro. Sustituye a que la vida solo se viera con el HUD de depuración (START).
+
+**Final de la run.** Al limpiar todas las manadas: texto "MAZMORRA COMPLETADA" durante unos 3 s y vuelta a una run nueva sin modificadores. Los jefes se añaden después.
+
+**Dificultad.** La v0.1 se sentía fácil. La presión sube por cantidad y mezcla de enemigos, no por vida ni daño, y la curva de la mazmorra por manadas. El jugador sigue con 5 golpes y 60 frames de invulnerabilidad; se ajusta jugando.
+
+**Fuera de la v0.2.** Jefes, sonido, transparencias, tercer tipo de enemigo, mazmorras aleatorias, botín de estadísticas. Se evalúa tras probarlo en la DS.
+
+**Plan.** (1) Mapa y datos (agente + baker). (2) Manadas durmientes, despertar, NAV 48×48 y run completa. (3) Modificadores. (4) Pruebas, tuning y 60 FPS en la DS (`PERF_PROFILE`). La v0.1 no se mergea aparte: v0.2 parte de su rama.
+
+### Feedback de la primera prueba de la v0.2 en la DS (2026-11-04)
+- **Más divertida que la v0.1**, sin duda: la dirección de manadas dormidas + modificadores se confirma.
+- **Gráficos:** bien y legibles; las sombras del lab encajan con los personajes.
+- **Tuning pendiente (prioridad):** los números del daño de las armas, del daño que hacen los enemigos al jugador y, en general, las stats de todo (vida, velocidades, cadencias). Hoy siguen siendo los placeholders de la v0.1. Sesión de tuning propia, jugando en la DS.
+- **Modificadores:** se sienten "random" y no queda claro qué hace cada uno. Falta presentación: icono y descripción corta del efecto y del coste antes de cogerlos, y que el nombre no sea lo único que se ve. Los pedestales y la UI son provisionales y "cutres" (diamante de color y texto con la fuente de depuración); rediseño pendiente.
+- **Mazmorra:** debe ser bastante más grande y con salas más diferenciadas entre sí (tal vez con puertas). Sin decidir cuántas salas, tamaño ni si las puertas bloquean hasta limpiar. Decisión de diseño antes de modelar (`AGENTS.md` regla 9).
+- **Rendimiento:** la ROM con `PERF_PROFILE` midió CPU media 35,5 %, el 0,89 % de frames con más de un vblank y tramos de 300–411 k ticks con varias manadas despiertas. No certifica 60 FPS. Detalle en `walkthroughs/v0.2/walkthrough.md`.
+

@@ -23,6 +23,7 @@ typedef struct {
 
 typedef struct {
     uint8_t type;                // ARENA_ENEMY_*
+    uint8_t pack;                // group the enemy belongs to (0..5), see DESIGN.md
     uint16_t x;                  // spawn point, world px (feet)
     uint16_t y;
 } ArenaEnemy;

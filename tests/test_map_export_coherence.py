@@ -17,10 +17,10 @@ LEGACY_DIR = ROOT / "assets/sprites/dungeon/isometric_shooter_bl"
 
 
 def package_dir(stem):
-    """Lab package of a baked arena: source/arena_<stem>.c <- assets/sprites/arenas/arena_<stem>/."""
+    """Lab package of a baked arena: source/arena_<stem>.c <- assets/sprites/arenas/<stem>/."""
     if stem == "legacy":
         return LEGACY_DIR
-    return ROOT / "assets/sprites/arenas" / f"arena_{stem}"
+    return ROOT / "assets/sprites/arenas" / stem
 
 
 def baked_arenas():

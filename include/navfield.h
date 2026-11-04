@@ -13,8 +13,8 @@
 // complete, so enemies always read a finished field and the cost stays amortized.
 
 #define NAV_NODE_PX 16                       // world px per node (4 collision cells)
-#define NAV_MAX_W 32                         // largest arena (px / NAV_NODE_PX) the buffers hold
-#define NAV_MAX_H 32
+#define NAV_MAX_W 48                         // largest arena (px / NAV_NODE_PX) the buffers hold
+#define NAV_MAX_H 48
 #define NAV_UNREACHABLE 255
 
 // Builds the walkable-node grid from the active arena. Call whenever the arena changes.

@@ -8,6 +8,7 @@
 #include "projectiles.h"
 #include "weapons.h"
 #include "encounters.h"
+#include "modifiers.h"
 #include "crashlog.h"
 #include "perfprof.h"
 #include <string.h>
@@ -77,7 +78,7 @@ static inline uint16_t *bot_page_ptr(int page) {
 #define BG_TILE_CACHE_CAPACITY 1024     // lower screen: 64 KiB of tile slots in bank D
 #define TOP_TILE_CACHE_CAPACITY 448     // upper screen: 28 KiB in bank C (the baker keeps every window within it)
 #define BG_TILE_INVALID 0xFFFF
-#define BG_MAX_TILES 512                // most distinct tiles of any arena (checked by tests/test_upper_screen_contract.py)
+#define BG_MAX_TILES 1024               // most distinct tiles of any arena (checked by tests/test_upper_screen_contract.py)
 typedef struct {
     uint16_t slot_for_tile[BG_MAX_TILES];
     uint16_t slot_refs[BG_TILE_CACHE_CAPACITY];
@@ -221,6 +222,11 @@ static inline int occlusion_blocks_pixel(int x, int y, int actor_depth) {
     if (i >= g_arena->occlusion_row_start[y + 1]) return 0;
     const DungeonOcclusionRun *r = &g_arena->occlusion_runs[i];
     return (int)r->x <= x && (int)r->depth > actor_depth;
+}
+
+// Used by the enemy bolts (projectiles.c) so walls hide them like they hide actors.
+int world_pixel_hidden(int x, int y, int depth) {
+    return occlusion_blocks_pixel(x, y, depth);
 }
 
 // First run of world row y reaching x0 whose x < x1 and depth > actor_depth.
@@ -882,6 +888,7 @@ static void render_screen(uint16_t *buffer, DirtySpan *spans, int cam_x, int cam
     PP_T0(pp_proj);
     enemy_projectiles_render(buffer, cam_x, cam_y);
     weapons_render(buffer, cam_x, cam_y);
+    mods_render(buffer, cam_x, cam_y);
     PP_ADD(PP_PROJ, pp_proj);
     uint32_t blit_ticks = cpuGetTiming() - t_bl0;
 
@@ -889,7 +896,7 @@ static void render_screen(uint16_t *buffer, DirtySpan *spans, int cam_x, int cam
     if (out_blit) *out_blit = blit_ticks;
 }
 
-static const char s_fps_chars[] = " FPS:CBL0123456789HARMDEWNITOGUVY.";
+static const char s_fps_chars[] = " FPS:CBL0123456789HARMDEWNITOGUVY.ZJ";
 static const uint8_t s_fps_font[][7] = {
     {0x00,0x00,0x00,0x00,0x00,0x00,0x00}, // space
     {0x1F,0x10,0x10,0x1E,0x10,0x10,0x10}, // F
@@ -924,7 +931,9 @@ static const uint8_t s_fps_font[][7] = {
     {0x11,0x11,0x11,0x11,0x11,0x11,0x0E}, // U
     {0x11,0x11,0x11,0x11,0x11,0x0A,0x04}, // V
     {0x11,0x11,0x0A,0x04,0x04,0x04,0x04}, // Y
-    {0x00,0x00,0x00,0x00,0x00,0x0C,0x0C}  // .
+    {0x00,0x00,0x00,0x00,0x00,0x0C,0x0C}, // .
+    {0x1F,0x01,0x02,0x04,0x08,0x10,0x1F}, // Z
+    {0x07,0x02,0x02,0x02,0x02,0x12,0x0C}  // J
 };
 
 #define HUD_LINES 4 // PERF_PROFILE reuses lines 1-2 (top stages) to keep the HUD as cheap as the original
@@ -1002,6 +1011,84 @@ static void draw_fps_hud(uint16_t *buffer) {
                 }
             }
         }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Run HUD (DESIGN.md 5): always on, bottom screen only. Hit points, modifiers taken, packs
+// cleared, the name of the modifier under the player and the "dungeon completed" banner.
+// ---------------------------------------------------------------------------
+
+static int hud_glyph_index(char c) {
+    for (int i = 0; s_fps_chars[i]; i++)
+        if (s_fps_chars[i] == c) return i;
+    return -1;
+}
+
+static int hud_text_width(const char *s) { return (int)strlen(s) * 6 - 1; }
+
+static void hud_px(uint16_t *buffer, int x, int y, uint16_t c) {
+    if (x < 0 || x >= SCREEN_W || y < 0 || y >= SCREEN_H) return;
+    buffer[y * SCREEN_W + x] = c;
+}
+
+static void hud_text(uint16_t *buffer, int x, int y, const char *s, uint16_t ink) {
+    const uint16_t shadow = RGB15(1, 1, 2) | BIT(15);
+    int w = hud_text_width(s);
+    for (int row = 0; row < 9; row++) dirty_row(y + row, x, x + w + 2);
+    for (int i = 0; s[i]; i++) {
+        int g = hud_glyph_index(s[i]);
+        if (g < 0 || s[i] == ' ') continue;
+        const uint8_t *rows = s_fps_font[g];
+        for (int gy = 0; gy < 7; gy++)
+            for (int gx = 0; gx < 5; gx++)
+                if (rows[gy] & (1u << (4 - gx))) {
+                    hud_px(buffer, x + i * 6 + gx + 1, y + gy + 1, shadow);
+                    hud_px(buffer, x + i * 6 + gx, y + gy, ink);
+                }
+    }
+}
+
+static void hud_square(uint16_t *buffer, int x, int y, int size, uint16_t fill, uint16_t edge) {
+    for (int dy = 0; dy < size; dy++) {
+        dirty_row(y + dy, x, x + size);
+        for (int dx = 0; dx < size; dx++)
+            hud_px(buffer, x + dx, y + dy, (dx == 0 || dy == 0 || dx == size - 1 || dy == size - 1) ? edge : fill);
+    }
+}
+
+static void draw_run_hud(uint16_t *buffer) {
+    const uint16_t ink = RGB15(31, 31, 31) | BIT(15);
+    const uint16_t dark = RGB15(5, 1, 1) | BIT(15);
+    const uint16_t red = RGB15(31, 5, 6) | BIT(15);
+    const uint16_t edge = RGB15(31, 24, 24) | BIT(15);
+
+    // Hit points, right-aligned at the top.
+    int max_hp = g_player_state.max_hp;
+    int x0 = SCREEN_W - 6 - max_hp * 8;
+    for (int i = 0; i < max_hp; i++)
+        hud_square(buffer, x0 + i * 8, 6, 7, i < g_player_state.hp ? red : dark, edge);
+
+    // Modifiers taken, one coloured square each, under the hit points.
+    int mask = mods_owned_mask(), n = 0;
+    for (int id = 0; id < MOD_COUNT; id++) {
+        if (!(mask & (1 << id))) continue;
+        hud_square(buffer, SCREEN_W - 6 - 6 - n * 8, 17, 6, mods_color(id), RGB15(2, 2, 3) | BIT(15));
+        n++;
+    }
+
+    // Packs cleared, bottom left.
+    char line[24];
+    snprintf(line, sizeof(line), "MANADAS %d DE %d", g_encounter_mgr.packs_cleared, g_encounter_mgr.packs_total);
+    hud_text(buffer, 6, SCREEN_H - 14, line, ink);
+
+    // Modifier name: the pedestal the player is near, or the one just taken.
+    const char *name = mods_hud_text();
+    if (name) hud_text(buffer, (SCREEN_W - hud_text_width(name)) / 2, SCREEN_H - 32, name, RGB15(31, 28, 8) | BIT(15));
+
+    if (g_encounter_mgr.state == ENCOUNTER_STATE_CLEARED) {
+        const char *msg = "MAZMORRA COMPLETADA";
+        hud_text(buffer, (SCREEN_W - hud_text_width(msg)) / 2, 84, msg, RGB15(31, 28, 8) | BIT(15));
     }
 }
 
@@ -1115,6 +1202,7 @@ static void death_chunks_spawn(const Enemy *e, fixed hit_vx, fixed hit_vy) {
 static void on_enemy_death(const Enemy *e, fixed hit_vx, fixed hit_vy) {
     CRASH_MARK(CL_DEATH_CHUNKS, e->char_id, e->dir);
     death_chunks_spawn(e, hit_vx, hit_vy);
+    weapons_notify_kill();
     CRASH_MARK(CL_DEATH_HOOK_DONE, 0, 0);
 }
 
@@ -1165,7 +1253,8 @@ static void enemies_update(void) {
     nav_update(NAV_BUDGET_PER_FRAME);
     enemy_ai_update(s_enemies, MAX_ENEMIES, s_player.x, s_player.y, pvx, pvy);
     enemy_projectiles_update(s_player.x, s_player.y);
-    encounters_update(&g_encounter_mgr, s_enemies, MAX_ENEMIES);
+    encounters_update(&g_encounter_mgr, s_enemies, MAX_ENEMIES, s_player.x, s_player.y);
+    mods_update(s_player.x, s_player.y);
 }
 
 // ---------------------------------------------------------------------------
@@ -1181,6 +1270,7 @@ static void player_init(void) {
     s_player.anim_timer = 0;
     s_player.char_id = CHAR_HERO;
 
+    mods_reset();
     player_state_init(&g_player_state);
     weapons_init();
 
@@ -1249,11 +1339,21 @@ static void player_update(uint32_t keys, uint32_t keys_down) {
         g_player_state.god_mode = !g_player_state.god_mode;
     }
 
-    // Debug for headless scenarios: hold L+R and press X to clear the arena (all enemies vanish).
+    // Debug for headless scenarios: hold L+R and press X to kill the pack nearest to the player
+    // (through enemy_hit, so death effects, the pack reward and the run end all run for real).
     if ((keys & (KEY_L | KEY_R)) == (KEY_L | KEY_R) && (keys_down & KEY_X)) {
+        int best = -1, best_d2 = 0x7fffffff;
         for (int i = 0; i < MAX_ENEMIES; i++) {
-            s_enemies[i].active = 0;
-            s_enemies[i].hp = 0;
+            if (!s_enemies[i].active || s_enemies[i].hp <= 0) continue;
+            int dx = TO_INT(s_enemies[i].x - s_player.x), dy = TO_INT(s_enemies[i].y - s_player.y);
+            int d2 = dx * dx + GROUND_DY2(dy);
+            if (d2 < best_d2) { best_d2 = d2; best = i; }
+        }
+        if (best >= 0) {
+            int pack = s_enemies[best].pack;
+            for (int i = 0; i < MAX_ENEMIES; i++)
+                if (s_enemies[i].active && s_enemies[i].hp > 0 && s_enemies[i].pack == pack)
+                    enemy_hit(&s_enemies[i], 9999, 0, 0);
         }
     }
 
@@ -1275,7 +1375,7 @@ static void player_update(uint32_t keys, uint32_t keys_down) {
     }
 
     int cur_char = s_player.char_id;
-    fixed current_speed = g_characters[cur_char].speed;
+    fixed current_speed = g_characters[cur_char].speed * g_mods.speed_pct / 100;
     int current_period = g_characters[cur_char].anim_period;
 
     if (pressed && weapons_can_start_aim(&g_player_state)) s_rooted = 1;
@@ -1375,8 +1475,9 @@ static void player_update(uint32_t keys, uint32_t keys_down) {
         fixed dir_x, dir_y;
         weapons_last_shot_dir(&dir_x, &dir_y);
         const WeaponTuning *tuning = &g_weapon_tuning[g_player_state.current_weapon];
-        fixed kx = s_player.x - ((dir_x * tuning->recoil) >> 8);
-        fixed ky = s_player.y - ((dir_y * tuning->recoil) >> 8);
+        fixed recoil = tuning->recoil * g_mods.recoil_pct / 100;
+        fixed kx = s_player.x - ((dir_x * recoil) >> 8);
+        fixed ky = s_player.y - ((dir_y * recoil) >> 8);
         if (position_is_free(kx, ky)) {
             s_player.x = kx;
             s_player.y = ky;
@@ -1393,6 +1494,7 @@ static void arena_restart(void) {
     s_player.frame = 0;
     s_player.is_moving = 0;
     s_player.anim_timer = 0;
+    mods_reset();                    // a new run: modifiers are lost (DESIGN.md 5)
     player_state_init(&g_player_state);
     g_player_state.god_mode = god;
     weapons_init();
@@ -1548,6 +1650,7 @@ int main(void) {
     update_player_see_through();
     render_screen(s_top_page, s_dirty_top, s_cam_x, s_cam_y - SCREEN_H, NULL, NULL, NULL);
     render_screen(bot_page_ptr(s_bot_active_page), s_dirty[s_bot_active_page == 24], s_cam_x, s_cam_y, NULL, NULL, NULL);
+    draw_run_hud(bot_page_ptr(s_bot_active_page));
     draw_fps_hud(bot_page_ptr(s_bot_active_page));
     update_screen_hardware_bg(0, s_bot_map_ptr, s_cam_x, s_cam_y);
 
@@ -1617,6 +1720,7 @@ int main(void) {
         render_screen(bot_page_ptr(s_bot_back_page), s_dirty[s_bot_back_page == 24], view_x, view_y, &bot_floor, &bot_sh, &bot_bl);
         CRASH_MARK(CL_RENDER_DONE, 0, 0);
         PP_T0(pp_hud);
+        draw_run_hud(bot_page_ptr(s_bot_back_page));
         if (g_perf.show_hud != 0) {
             draw_fps_hud(bot_page_ptr(s_bot_back_page));
         }

@@ -37,4 +37,7 @@ void enemy_projectiles_update(fixed player_x, fixed player_y);
 // Renders enemy projectiles (dots/sparks) onto the screen buffer
 void enemy_projectiles_render(uint16_t *buffer, int cam_x, int cam_y);
 
+// Implemented in main.c: 1 when a wall surface in front of ground depth `depth` hides world pixel (x, y).
+int world_pixel_hidden(int x, int y, int depth);
+
 #endif // PROJECTILES_H

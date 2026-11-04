@@ -50,6 +50,8 @@ typedef struct {
     int life;            // remaining frames
     int max_life;        // total frames
     int damage;          // damage at the muzzle (falls off with distance)
+    int pierce;          // further enemies the pellet can go through (modifier)
+    uint32_t hit_mask;   // enemies already hit by this pellet
 } PlayerProjectile;
 
 // One frame of touch / button state for the weapon system.
@@ -76,6 +78,8 @@ void weapons_cycle(PlayerState *player);
 int weapons_can_start_aim(const PlayerState *player);
 int weapons_input(PlayerState *player, const WeaponInput *in, Enemy *enemies, int max_enemies);
 void weapons_update(Enemy *enemies, int max_enemies);
+// An enemy died: the "sed de sangre" modifier readies the shotgun at once.
+void weapons_notify_kill(void);
 void weapons_render(uint16_t *buffer, int cam_x, int cam_y);
 const char *weapons_get_name(WeaponType type);
 int weapons_get_active_projectile_count(void);

@@ -1,0 +1,27 @@
+{
+  "mapName": "dungeon_01",
+  "width": 768,
+  "height": 768,
+  "orthoScaleMeters": 19.0004948045522,
+  "pixelsPerMeter": 40.42,
+  "meshScale": 24,
+  "cameraElevationDegrees": 30,
+  "contrast": 1.15,
+  "saturation": 1.5,
+  "brightness": 1,
+  "lighting": {
+    "preset": "warm",
+    "key": 1.7,
+    "fill": 1.0,
+    "rim": 0,
+    "world": 0.4
+  },
+  "shadows": true,
+  "labRender": {
+    "width": 2048,
+    "height": 1117,
+    "cropX": 640,
+    "cropY": 164,
+    "note": "rendered by the lab at pixelsPerMeter, then cropped to the arena"
+  }
+}

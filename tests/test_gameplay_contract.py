@@ -33,7 +33,7 @@ class PlayerRulesTest(unittest.TestCase):
         self.assertIn("player->invuln_timer > 0) return 0", body)
         self.assertIn("player->god_mode", body)
         self.assertIn("player->hp--;", body)
-        self.assertIn("player->invuln_timer = PLAYER_IFRAMES;", body)
+        self.assertIn("player->invuln_timer = PLAYER_IFRAMES + g_mods.iframes;", body)
         self.assertIn("player->is_dead = 1;", body)
 
     def test_every_enemy_attack_is_one_hit(self):

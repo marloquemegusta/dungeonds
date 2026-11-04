@@ -1,0 +1,38 @@
+{
+  "name": "dungeon_pack_wakes_near_player",
+  "steps": [
+    {
+      "frames": 20,
+      "capture": "00_start_everyone_asleep"
+    },
+    {
+      "button_down": "RIGHT",
+      "frames": 40
+    },
+    {
+      "button_up": "RIGHT",
+      "button_down": "UP",
+      "frames": 150,
+      "capture": "01_walking_towards_the_central_pack"
+    },
+    {
+      "frames": 120,
+      "capture_sequence": "02_pack_wakes",
+      "capture_every": 40
+    },
+    {
+      "button_up": "UP",
+      "frames": 4,
+      "capture": "03_after"
+    }
+  ],
+  "assertions": {
+    "screen_changes": [
+      {
+        "from": "00_start_everyone_asleep",
+        "to": "01_walking_towards_the_central_pack",
+        "min_changed_pixels": 500
+      }
+    ]
+  }
+}

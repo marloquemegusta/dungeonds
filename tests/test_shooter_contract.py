@@ -21,7 +21,7 @@ class ShooterContractTest(unittest.TestCase):
     def test_state_machine_has_exactly_the_designed_states(self):
         enum = GAMEPLAY_H.split("typedef enum {\n    ENEMY_STATE_CHASE")[1].split("} EnemyState;")[0]
         states = re.findall(r"ENEMY_STATE_(\w+)", enum)
-        self.assertEqual(states, ["ATTACK", "POSITION", "TELEGRAPH", "BURST", "COOLDOWN", "DEAD"])
+        self.assertEqual(states, ["ATTACK", "POSITION", "TELEGRAPH", "BURST", "COOLDOWN", "DEAD", "DORMANT"])
         shooter = AI_C.split("static void update_shooter")[1].split("void enemy_ai_update")[0]
         for removed in ("IDLE", "ALERT", "SEARCH", "AIM", "last_seen", "los_lost"):
             self.assertNotIn(removed, shooter, removed)
