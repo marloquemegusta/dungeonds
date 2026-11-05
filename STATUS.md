@@ -95,3 +95,10 @@ Primero el estado necesario para retomar el trabajo sin depender del chat; despu
 - **Sin uso en el repo:** `assets/sprites/dungeon/isometric_shooter_bl` y `blockout` (mapa viejo, se dejan como referencia por decisión del usuario).
 - **No leído:** el log de rendimiento de la última ROM (luz nueva) no se pudo descargar al estar cerrado `ftpd.nds`.
 
+---
+
+## 2026-11-05 - Lab: carga y cambios de ajustes sin cuelgues
+
+- Desde `f2af500` el lab regeneraba el atlas de sombras 8×8 al cargar y en cada cambio de la interfaz, con un `closePath()` por triángulo en una sola ruta de canvas: ~325 s al cargar el marine y la ventana colgada al cambiar un preset.
+- `generateCharacterShadows` cierra los triángulos con `lineTo` (extremos redondeados) y `renderLiveFrame` solo regenera las sombras si cambia la geometría, pose o cámara (no la luz ni el grading).
+- **Validación:** carga del marine en 5,6 s con GPU headless; atlas de sombras del cargador igual al anterior salvo 619 de 39.048 píxeles de borde.

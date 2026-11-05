@@ -1352,6 +1352,7 @@
         hardCtx.strokeStyle = '#000000';
         hardCtx.lineWidth = 0.65;
         hardCtx.lineJoin = 'round';
+        hardCtx.lineCap = 'round'; // triangles are closed with lineTo: round caps match the round join closePath gave
 
         let triangleCount = 0;
 
@@ -1394,7 +1395,9 @@
               hardCtx.moveTo(pxArr[i0], pyArr[i0]);
               hardCtx.lineTo(pxArr[i1], pyArr[i1]);
               hardCtx.lineTo(pxArr[i2], pyArr[i2]);
-              hardCtx.closePath();
+              // Close with lineTo, not closePath(): one closePath per triangle on a
+              // single huge path costs minutes in Chromium's 2D canvas.
+              hardCtx.lineTo(pxArr[i0], pyArr[i0]);
               triangleCount++;
             }
           }
@@ -2870,7 +2873,18 @@
       update3DViewMode();
       groundCharacterIn3D();
       computeAnchorData();
-      if (highQuality || !state.shadowCanvas) generateCharacterShadows();
+      // The shadow atlas depends only on geometry/pose/camera, not on lighting or grade:
+      // regenerate it only when one of those inputs changed.
+      const shadowKey = [
+        _p.resolution?.value, _p.frameCount?.value, _p.outlineMode?.value,
+        document.getElementById('elevation')?.value, document.getElementById('neckPitch')?.value,
+        document.getElementById('animSelect')?.value, document.getElementById('labShadow')?.value,
+        JSON.stringify(state.anchorData?.anchor || null), state.lastCharExtent, $.model?.uuid
+      ].join('|');
+      if (!state.shadowCanvas || state.shadowKey !== shadowKey) {
+        generateCharacterShadows();
+        state.shadowKey = shadowKey;
+      }
     }
     drawDsSimulator();
   }
