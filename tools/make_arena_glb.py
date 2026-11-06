@@ -72,40 +72,38 @@ def scale(rgb, k):
 # GLB are not these: tools/calibrate_arena_palette.py measures the render and stores the
 # colours to feed the lab in tools/arena_palette.json (material -> base / emissive).
 PALETTE_JSON = ROOT / "tools/arena_palette.json"
-# neon as the lab can show it (emission washes out towards white), and the deeper hue trims/frames scale
-ACCENTS = {"cyan": (132, 230, 240), "magenta": (255, 104, 210), "amber": (254, 174, 66)}
-DEEP = {"cyan": (60, 235, 255), "magenta": (255, 70, 210), "amber": (255, 175, 40)}
-# three floor tones per accent family
-FLOOR_TONES = {
-    "cyan": [(46, 58, 80), (54, 68, 92), (42, 52, 72)],
-    "magenta": [(66, 48, 82), (76, 56, 94), (58, 42, 72)],
-    "amber": [(72, 56, 50), (84, 66, 56), (62, 48, 42)],
-}
-GROUT = (34, 30, 46)
-THRESHOLDS = {"cyan": (40, 92, 104), "magenta": (104, 46, 92), "amber": (110, 76, 54)}
+# One uniform warm accent (DESIGN.md 6): dim amber trims, no per-room colours. Dark dungeon: the
+# palette targets keep the floor around luminance 35-50/255 (calibrate_arena_palette.py never has
+# to push brightness up, see its docstring).
+ACCENTS = {"amber": (150, 100, 44)}
+DEEP = {"amber": (255, 175, 40)}
+GROUT = (26, 27, 36)
+THRESHOLDS = {"amber": (70, 52, 38)}
 WALL = {
-    "plinth": (52, 58, 80), "body": (30, 30, 50), "cornice": (70, 78, 104),
-    "top": (80, 88, 112), "side": (30, 30, 50), "slab": (30, 26, 40),
-    "pillar": (50, 56, 82), "pillar_top": (44, 48, 70),
+    "plinth": (36, 38, 50), "body": (24, 25, 36), "cornice": (50, 54, 70),
+    "top": (20, 22, 30), "side": (24, 25, 36), "slab": (20, 19, 28),
+    "pillar": (38, 42, 58), "pillar_top": (34, 37, 50),
 }
 # materials seen as an emissive colour (target is the colour on screen)
 EMISSIVE_PREFIXES = ("neon_", "dneon_", "glow_")
+DEFAULT_STYLES = {"plain": {"tones": [[44, 47, 58], [38, 41, 52], [41, 44, 55]], "shade": 1.0}}
 
 
-def target_materials(zones):
+def target_materials(zones, styles=None):
     """material name -> target sRGB as seen in the render (insertion order is stable)."""
+    styles = styles or DEFAULT_STYLES
     t = {"grout": GROUT}
     t.update(WALL)
     for acc, rgb in ACCENTS.items():
         t[f"neon_{acc}"] = rgb
         t[f"dneon_{acc}"] = rgb
         t[f"glow_{acc}"] = rgb
-        t[f"trim_{acc}"] = scale(DEEP[acc], 0.40)
-        t[f"frame_{acc}"] = scale(DEEP[acc], 0.55)
+        t[f"trim_{acc}"] = scale(DEEP[acc], 0.22)
+        t[f"frame_{acc}"] = scale(DEEP[acc], 0.30)
         t[f"thresh_{acc}"] = THRESHOLDS[acc]
-    for z in zones:
-        for k, tone in enumerate(FLOOR_TONES[z["accent"]]):
-            t[f"floor_{z['name']}_{k}"] = scale(tone, z.get("shade", 1.0))
+    for name, st in styles.items():
+        for k, tone in enumerate(st["tones"]):
+            t[f"floor_{name}_{k}"] = scale(tuple(tone), st.get("shade", 1.0))
     return t
 
 
@@ -113,11 +111,11 @@ def is_emissive(name):
     return name.startswith(EMISSIVE_PREFIXES)
 
 
-def material_inputs(zones):
+def material_inputs(zones, styles=None):
     """material name -> (base sRGB, emissive sRGB or None) fed to the lab."""
     stored = json.loads(PALETTE_JSON.read_text(encoding="utf-8")) if PALETTE_JSON.exists() else {}
     out = {}
-    for name, target in target_materials(zones).items():
+    for name, target in target_materials(zones, styles).items():
         if name in stored:
             e = stored[name]
             out[name] = (tuple(e["base"]), tuple(e["emissive"]) if e.get("emissive") else None)
@@ -128,10 +126,10 @@ def material_inputs(zones):
     return out
 
 
-def build_materials(zones):
+def build_materials(zones, styles=None):
     """name -> (linear base colour, linear emissive or None)."""
     mats = {"frame": ((0.0, 0.0, 0.0), None)}
-    for name, (base, emis) in material_inputs(zones).items():
+    for name, (base, emis) in material_inputs(zones, styles).items():
         mats[name] = (srgb(*base), srgb(*emis) if emis else None)
     return mats
 
@@ -242,7 +240,11 @@ def solve_frame(room_pts, floor_uv, ppm, size, floor_xy):
 
     The helper's top is raised until the model height is a whole number of image
     pixels, which makes the vertical scale exactly ppm too (otherwise the lab
-    rounds the render height and the scale drifts by up to 0.5 px per render)."""
+    rounds the render height and the scale drifts by up to 0.5 px per render).
+
+    The conditions on (cx, cy) are monotone: lo <= hi splits into bounds that depend on cx only,
+    on cy only, and one joint condition that grows with both, so the smallest admissible cx and
+    cy (multiples of 4) decide each candidate map_w in O(1)."""
     iw, ih = size
     fx0, fy0 = floor_xy
     xs, ys, zs = zip(*room_pts)
@@ -250,34 +252,79 @@ def solve_frame(room_pts, floor_uv, ppm, size, floor_xy):
     y1r = y0r + math.ceil((y1r - y0r) * C_E * ppm - 1e-6) / (C_E * ppm)
     u_f, v_f = floor_uv  # floor rect top-left corner in lab uv
     dy = y1r - y0r
+
+    def a_of(cx, proj_w):
+        return -(u_f - (fx0 + cx) / ppm + proj_w) / S
+
+    def b_of(cx):
+        return -(u_f - (fx0 + cx) / ppm) / S
+
+    def c_of(cy, pv):
+        return (v_f + (fy0 + cy) / pv - C_E * y1r) / (S * S_E)
+
     best = None
-    for map_w in range(max(448, (iw + 15) // 16 * 16), 4097, 16):
+    for map_w in range(max(448, (iw + 15) // 16 * 16), 16385, 16):
         proj_w = map_w / ppm
         proj_h = S_E * proj_w + C_E * dy
         map_h = round(map_w * proj_h / proj_w)
         if map_h < ih:
             continue
         pv = map_h / proj_h
-        for cx in range(0, map_w - iw + 1, 4):
-            min_u = u_f - (fx0 + cx) / ppm
-            max_u = min_u + proj_w
-            a_, b_ = -max_u / S, -min_u / S
-            for cy in range(0, map_h - ih + 1, 4):
-                max_v = v_f + (fy0 + cy) / pv
-                c_ = (max_v - C_E * y1r) / (S * S_E)
-                lo = max(a_ - z0r, z1r - c_)
-                hi = min(x0r, b_ - c_ - x1r)
-                if lo <= hi:
-                    key = (map_w * map_h, cx + cy)
-                    if best is None or key < best[0]:
-                        t = (lo + hi) / 2
-                        best = (key, dict(map_w=map_w, map_h=map_h, cx=cx, cy=cy,
-                                          p_min=(t, y0r, a_ - t), p_max=(b_ - c_ - t, y1r, c_ + t)))
-        if best:
+        # cx: b_ >= z1r + x1r needs a large enough cx, a_ <= x0r + z0r a small enough one
+        cx = 0
+        while cx <= map_w - iw and b_of(cx) < z1r + x1r:
+            cx += 4
+        if cx > map_w - iw or a_of(cx, proj_w) - z0r > x0r:
+            continue
+        cy = 0
+        while cy <= map_h - ih and z1r - c_of(cy, pv) > x0r:
+            cy += 4
+        if cy > map_h - ih:
+            continue
+        a_, b_, c_ = a_of(cx, proj_w), b_of(cx), c_of(cy, pv)
+        lo = max(a_ - z0r, z1r - c_)
+        hi = min(x0r, b_ - c_ - x1r)
+        if lo <= hi:
+            t = (lo + hi) / 2
+            best = dict(map_w=map_w, map_h=map_h, cx=cx, cy=cy,
+                        p_min=(t, y0r, a_ - t), p_max=(b_ - c_ - t, y1r, c_ + t))
             break
     if best is None:
         raise SystemExit("no frame solution")
-    return best[1]
+    return best
+
+
+def normalize_blocks(blocks):
+    """Splits blocks so that each side is either fully against one neighbour or fully free:
+    a block side that touches several neighbours (or part neighbour, part floor) is cut at the
+    neighbours' edges. side_extent can then treat every piece side as a unit (no slits between
+    adjacent solid pieces)."""
+    pieces = [dict(b) for b in blocks]
+    while True:
+        out, changed = [], False
+        for b in pieces:
+            x0, y0, x1, y1 = b["rect"]
+            cx, cy = {x0, x1}, {y0, y1}
+            for o in pieces:
+                if o is b:
+                    continue
+                ox0, oy0, ox1, oy1 = o["rect"]
+                if (oy1 == y0 or oy0 == y1) and ox0 < x1 and ox1 > x0:
+                    cx |= {ox0, ox1}
+                if (ox1 == x0 or ox0 == x1) and oy0 < y1 and oy1 > y0:
+                    cy |= {oy0, oy1}
+            xs = sorted(c for c in cx if x0 <= c <= x1)
+            ys = sorted(c for c in cy if y0 <= c <= y1)
+            if len(xs) > 2 or len(ys) > 2:
+                changed = True
+            for ya, yb in zip(ys, ys[1:]):
+                for xa, xb in zip(xs, xs[1:]):
+                    nb = dict(b)
+                    nb["rect"] = [xa, ya, xb, yb]
+                    out.append(nb)
+        pieces = out
+        if not changed:
+            return pieces
 
 
 class Builder:
@@ -289,7 +336,8 @@ class Builder:
         self.wall_h = spec["boundary_wall_height_m"]
         self.zones = arena["zones"]
         self.doors = arena.get("doors", [])
-        self.blocks = arena["blocks"]
+        self.blocks = normalize_blocks(arena["blocks"])
+        self.styles = spec.get("floor_styles")
         self.pxv = C_E * self.ppm            # image px per metre of height
         self.e = INSET_PX / self.ppm         # horizontal inset in metres
         self.eg = INSET_PX / (S_E * self.ppm)
@@ -378,8 +426,9 @@ class Builder:
                     y0, y1 = max(zy0, j * TILE_H), min(zy1, (j + 1) * TILE_H)
                     if x1 - x0 < 2 or y1 - y0 < 2:
                         continue
-                    k = tone_index(z["pattern"], i, j)
-                    m.top(f"floor_{z['name']}_{k}", self.u(x0), self.w(y0),
+                    st = (self.styles or {}).get(z.get("style"), {})
+                    k = tone_index(st.get("pattern", z.get("pattern", "checker")), i, j)
+                    m.top(f"floor_{z['style']}_{k}", self.u(x0), self.w(y0),
                           self.u(x1 - 1), self.w(y1 - 1), FLOOR_LIFT)
         for d in self.doors:
             x0, y0, x1, y1 = d
@@ -391,38 +440,18 @@ class Builder:
 
     # ---- block geometry -------------------------------------------------------------
     def side_extent(self, b, side):
-        """Image px coordinate of one side of a block: inset, or pushed into a
-        neighbour/boundary that covers the whole side."""
+        """Image px coordinate of one side of a block: inset by 0.1 px (against the floor and
+        against neighbouring solid pieces alike: all borders sit on integer pixels, so the 0.2 px
+        crack between two pieces never holds a pixel centre), or pushed into the boundary wall."""
         x0, y0, x1, y1 = b["rect"]
         fx0, fy0, fx1, fy1 = self.floor
-        others = [o["rect"] for o in self.blocks if o is not b]
         if side == "l":
-            if x0 == fx0:
-                return -WALL_T * self.ppm + fx0 + 2
-            for o in others:
-                if o[2] == x0 and o[1] <= y0 and o[3] >= y1:
-                    return x0 - OVERLAP_PX
-            return x0 + INSET_PX
+            return -WALL_T * self.ppm + fx0 + 2 if x0 == fx0 else x0 + INSET_PX
         if side == "r":
-            if x1 == fx1:
-                return fx1 + WALL_T * self.ppm - 2
-            for o in others:
-                if o[0] == x1 and o[1] <= y0 and o[3] >= y1:
-                    return x1 + OVERLAP_PX
-            return x1 - INSET_PX
+            return fx1 + WALL_T * self.ppm - 2 if x1 == fx1 else x1 - INSET_PX
         if side == "t":
-            if y0 == fy0:
-                return fy0 - WALL_T * S_E * self.ppm + 2
-            for o in others:
-                if o[3] == y0 and o[0] <= x0 and o[2] >= x1:
-                    return y0 - OVERLAP_PX
-            return y0 + INSET_PX
-        if y1 == fy1:
-            return y1
-        for o in others:
-            if o[1] == y1 and o[0] <= x0 and o[2] >= x1:
-                return y1 + OVERLAP_PX
-        return y1 - INSET_PX
+            return fy0 - WALL_T * S_E * self.ppm + 2 if y0 == fy0 else y0 + INSET_PX
+        return y1 if y1 == fy1 else y1 - INSET_PX
 
     def frame_columns(self, b):
         """Image-x ranges of the front face that are door frame."""
@@ -446,8 +475,15 @@ class Builder:
         W, D = self.u(fx1), self.w(fy1)
         e, eg = self.e, self.eg
         wall_px = round(self.wall_h * self.pxv)
-        wall_bands = [(0, 6, "plinth"), (6, 30, "body"), (30, 34, "neon"), (34, wall_px - 14, "body"),
-                      (wall_px - 14, wall_px - 10, "trim"), (wall_px - 10, wall_px, "cornice")]
+        def bands_for(hpx):
+            if hpx < 44:
+                return [(0, 5, "plinth"), (5, hpx - 6, "body"), (hpx - 6, hpx, "cornice")]
+            bands = [(0, 6, "plinth"), (6, hpx - 14, "body"),
+                     (hpx - 14, hpx - 10, "trim"), (hpx - 10, hpx, "cornice")]
+            if hpx >= 60:                      # one dim amber strip near the top
+                bands[1:2] = [(6, hpx - 32, "body"), (hpx - 32, hpx - 28, "neon"), (hpx - 28, hpx - 14, "body")]
+            return bands
+        wall_bands = bands_for(wall_px)
         pillar_bands_for = lambda hpx: [(0, 6, "plinth"), (6, hpx - 24, "pillar"), (hpx - 24, hpx - 20, "neon"),
                                         (hpx - 20, hpx - 8, "pillar"), (hpx - 8, hpx, "cornice")]
         self.floor_tiles()
@@ -481,8 +517,7 @@ class Builder:
                 m.top(f"glow_{acc}", self.u(x0 + 6), self.w(y0 + 3), self.u(x1 - 6), self.w(y1 - 3),
                       h + 0.01)
             else:
-                bands = [(a, c, k) for a, c, k in wall_bands]
-                bands[-1] = (bands[-1][0], hpx, bands[-1][2])
+                bands = bands_for(hpx)
                 cells = self.facade(xa, xb, h, bands, accent_at, self.frame_columns(b))
                 self.box(u0, w0, u1, w1, 0.0, h, "top", cells)
         pts = [p for name in m.prims for p in m.prims[name][0]]
@@ -516,7 +551,7 @@ def main():
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     for arena in spec["arenas"]:
         mesh, frame = build(arena, spec)
-        write_glb(OUT_DIR / f"{arena['name']}.glb", mesh, build_materials(arena["zones"]))
+        write_glb(OUT_DIR / f"{arena['name']}.glb", mesh, build_materials(arena["zones"], spec.get("floor_styles")))
         with open(OUT_DIR / f"{arena['name']}.frame.json", "w", encoding="utf-8", newline="\n") as fh:
             json.dump(frame, fh, indent=2)
             fh.write("\n")

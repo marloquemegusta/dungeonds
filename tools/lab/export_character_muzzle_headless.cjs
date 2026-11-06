@@ -5,6 +5,7 @@
 // equal the stored ones (so the committed sprites stay valid). Never writes sprite files.
 //
 // usage: node export_character_muzzle_headless.cjs <model.fbx> <settings.json> [--dry]
+const { labGlArgs } = require('./chromium_gl_args.cjs');
 const fs = require('node:fs');
 const path = require('node:path');
 
@@ -27,7 +28,7 @@ const settings = JSON.parse(settingsText);
 const HTML = path.join(__dirname, 'FBX-Web-Renderer-offline.html');
 
 (async () => {
-  const browser = await chromium.launch({ headless: true, args: ['--enable-webgl', '--use-gl=swiftshader', '--disable-dev-shm-usage', '--no-sandbox'] });
+  const browser = await chromium.launch({ headless: true, args: labGlArgs() });
   const errors = [];
   try {
     const page = await browser.newPage({ viewport: { width: 1280, height: 800 }, deviceScaleFactor: 1 });

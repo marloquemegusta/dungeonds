@@ -37,7 +37,7 @@ extern const EnemyTuning g_enemy_tuning[NUM_ENEMY_TYPES];
 // 2. Generic Enemy Pool
 // ---------------------------------------------------------------------------
 
-#define MAX_GAMEPLAY_ENEMIES 24     // every enemy of the dungeon exists from the start (dormant until woken)
+#define MAX_GAMEPLAY_ENEMIES 40     // every enemy of the dungeon exists from the start (dormant until woken)
 
 // Charger: CHASE <-> ATTACK. Shooter: POSITION -> TELEGRAPH -> BURST -> COOLDOWN -> POSITION.
 typedef enum {

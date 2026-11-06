@@ -1,4 +1,4 @@
-// Host test for collision and navigation. Built and run by tests/test_navfield.py against the
+// Host test for collision and navigation. Built (with NAV_MAX_DEPTH huge, so connectivity is checked over the whole map) and run by tests/test_navfield.py against the
 // real baked arenas (source/arena_*.c) and the real collision/navfield/los code.
 #include <stdio.h>
 #include <stdlib.h>
@@ -45,7 +45,7 @@ static void run_arena(int index) {
             reachable++;
             CHECK(walkable_node(nx, ny), "reachable node (%d,%d) is not walkable", nx, ny);
             int steps = 0, cx = px, cy = py;
-            while (nav_distance(cx, cy) != 0 && steps < 300) {
+            while (nav_distance(cx, cy) != 0 && steps < 2000) {
                 int tx, ty;
                 if (!nav_next_step(cx, cy, &tx, &ty)) break;
                 CHECK(nav_distance(tx, ty) == nav_distance(cx, cy) - 1, "gradient step does not lower the distance at (%d,%d)", cx, cy);
@@ -60,24 +60,29 @@ static void run_arena(int index) {
         }
     }
     printf("   reachable from the start: %d, paths checked: %d\n", reachable, checked_paths);
+    if (reachable != walkable)
+        for (int ny = 0; ny < h; ny++)
+            for (int nx = 0; nx < w; nx++)
+                if (walkable_node(nx, ny) && nav_distance(nx * NAV_NODE_PX + 8, ny * NAV_NODE_PX + 8) == NAV_UNREACHABLE)
+                    printf("   isolated walkable node (%d,%d) = px (%d,%d)\n", nx, ny, nx * NAV_NODE_PX + 8, ny * NAV_NODE_PX + 8);
     CHECK(reachable == walkable, "the whole floor must be one connected area (%d of %d reachable)", reachable, walkable);
 
     // The incremental search must give the same field as the one-shot search, within a few frames.
     {
-        static uint8_t reference[NAV_MAX_W * NAV_MAX_H];
+        static uint16_t reference[NAV_MAX_W * NAV_MAX_H];
         for (int ny = 0; ny < h; ny++)
             for (int nx = 0; nx < w; nx++)
-                reference[ny * w + nx] = (uint8_t)nav_distance(nx * NAV_NODE_PX + 8, ny * NAV_NODE_PX + 8);
+                reference[ny * w + nx] = (uint16_t)nav_distance(nx * NAV_NODE_PX + 8, ny * NAV_NODE_PX + 8);
         nav_init();
         nav_set_goal(sx, sy);
         int frames = 0;
-        while (nav_distance(sx, sy) != 0 && frames < 200) { nav_update(300); frames++; }
+        while (nav_distance(sx, sy) != 0 && frames < 400) { nav_update(300); frames++; }
         printf("   incremental search finished in %d frames of 300 nodes\n", frames);
         CHECK(frames <= 40, "incremental search is too slow (%d frames)", frames);
         int diff = 0;
         for (int ny = 0; ny < h; ny++)
             for (int nx = 0; nx < w; nx++)
-                diff += reference[ny * w + nx] != (uint8_t)nav_distance(nx * NAV_NODE_PX + 8, ny * NAV_NODE_PX + 8);
+                diff += reference[ny * w + nx] != (uint16_t)nav_distance(nx * NAV_NODE_PX + 8, ny * NAV_NODE_PX + 8);
         CHECK(diff == 0, "incremental field differs from the one-shot field in %d nodes", diff);
     }
 

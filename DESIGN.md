@@ -9,7 +9,7 @@
 
 ## 2. Dirección de Arte y Pipeline
 - **Técnica:** sprites 2D pre-renderizados a partir de modelos 3D con animación esquelética (FBX/GLB).
-- **Proyección:** isométrica/dimétrica en 8 direcciones; mapa y personajes con la misma cámara e iluminación.
+- **Proyección:** isométrica/dimétrica en 8 direcciones; mapa y personajes con la misma cámara e iluminación (desde la v0.3 sin excepción para el mapa; la luz vigente está en §6).
 - **Herramienta de render:** el lab Three.js (`tools/lab/`), fuente de verdad visual para mapa y personajes. Detalle del pipeline en `TECHNICAL.md` §3.
 - **Personajes actuales:** héroe (space marine), charger y necron.
 - **FX reutilizables:**
@@ -22,7 +22,7 @@
 - **Sonido:** fuera de la v0.1 (decidido 2026-11-03).
 - **Transparencias tras paredes:** también fuera de la v0.1; el comportamiento provisional actual no se amplía.
 - **Tuning de combate y stats:** daño de las armas, daño que reciben el jugador y los enemigos, vida y velocidades; ver §4.7 y la sesión de tuning pendiente en §5.
-- **Mazmorra v0.3:** más grande y con salas más diferenciadas, posiblemente con puertas; ver §5 (Feedback de la v0.2).
+- **Mazmorra v0.3:** decidida el 2026-11-04, ver §6.
 - **Claridad de los modificadores:** qué hace cada uno y cómo se presentan los pedestales y la UI; ver §5.
 
 ---
@@ -165,3 +165,22 @@ Ambas con munición infinita; las limita su ritmo y su coste de uso.
 - **Mazmorra:** debe ser bastante más grande y con salas más diferenciadas entre sí (tal vez con puertas). Sin decidir cuántas salas, tamaño ni si las puertas bloquean hasta limpiar. Decisión de diseño antes de modelar (`AGENTS.md` regla 9).
 - **Rendimiento:** la ROM con `PERF_PROFILE` midió CPU media 35,5 %, el 0,89 % de frames con más de un vblank y tramos de 300–411 k ticks con varias manadas despiertas. No certifica 60 FPS. Detalle en `walkthroughs/v0.2/walkthrough.md`.
 
+---
+
+## 6. v0.3: Mazmorra Grande y Luz de Mazmorra (decidido 2026-11-04)
+
+**Por qué.** Feedback de la v0.2 en la DS (§5): la mazmorra se queda pequeña y sus salas se parecen. Además se quiere un tono más oscuro, de mazmorra de verdad, con una luz común para mapa y personajes.
+
+**Mazmorra.**
+- Un único mapa hecho a mano de **1280×1280 px** (unas 2,8 veces el área de la v0.2), en `assets/arenas/arenas.json`, con el mismo pipeline lab → baker.
+- **~10 salas** separadas por **pasillos largos** (de 2 a 4 pantallas de recorrido) de 64 px de ancho como mínimo. Sin puertas que bloqueen: los pasillos separan las manadas y dan líneas para el francotirador.
+- **Cada sala se distingue por su forma y tamaño** (cripta con pilares, sala alargada, cruce, sala con nichos, galería, etc.), **por la altura de sus muros y coberturas** (unas con muros bajos de cobertura, otras abiertas con pilares altos) **y por la composición de su manada** (nido de cargadores, galería de tiradores, mezcla). No se diferencian por color de acento.
+- **Manadas:** una por sala salvo la de inicio (≈9 manadas, 3–5 enemigos). Ninguna cerca del inicio. La curva sube con la distancia al inicio. Lo demás (despertar, modificadores, HUD, final de run) sigue como en §5.
+
+**Luz de mazmorra (mapa y personajes con los mismos parámetros).**
+- Ambiente muy bajo y frío; luz principal (key) cálida tipo antorcha; relleno frío y débil.
+- **Luz de contorno (rim)** que recorta a los personajes sobre el suelo oscuro para que se lean en la pantalla de la DS. Es la misma luz en el render del mapa.
+- Se acaba la excepción de iluminación del mapa (`TECHNICAL.md` §3): mapa y los tres personajes (héroe, cargador, necrón) se re-renderizan con la misma luz.
+- **Legibilidad, criterio de aceptación:** en capturas de la ROM los personajes y enemigos se distinguen del suelo a primera vista en las dos pantallas; el suelo no es negro puro (se ven juntas y bordes de muro). Si en la DS no se lee, se sube el rim antes que el ambiente.
+
+**Fuera de la v0.3.** Puertas que bloquean, colores de acento por sala, luz dinámica en runtime, niebla de guerra, tuning de stats y rediseño de modificadores (siguen pendientes de §5).

@@ -6,9 +6,10 @@
 
 static int s_w = 0, s_h = 0;               // grid of the active arena
 static uint8_t s_walkable[NAV_NODES];
-static uint8_t s_dist[2][NAV_NODES];       // [read, build] swapped when a search completes
+static uint16_t s_dist[2][NAV_NODES];       // [read, build] swapped when a search completes
 static int s_read = 0;
 static uint16_t s_queue[NAV_NODES];
+static uint8_t s_qx[NAV_NODES], s_qy[NAV_NODES];   // node coordinates, so the search never divides
 static int s_head = 0, s_tail = 0;         // search in progress when head < tail
 static int s_goal_node = -1;               // node the next search starts from
 static int s_walkable_count = 0;
@@ -16,9 +17,20 @@ static int s_walkable_count = 0;
 static const int8_t s_dx[8] = { 1, -1, 0, 0, 1, 1, -1, -1 };
 static const int8_t s_dy[8] = { 0, 0, 1, -1, 1, -1, 1, -1 };
 
+#define NAV_NODE_SHIFT 4                      // log2(NAV_NODE_PX)
+_Static_assert(NAV_NODE_PX == (1 << NAV_NODE_SHIFT), "NAV_NODE_PX must be 1 << NAV_NODE_SHIFT");
+
+// Node coordinates of a world point; 0 when outside the grid.
+static inline int node_xy(int px, int py, int *nx, int *ny) {
+    if (px < 0 || py < 0) return 0;
+    *nx = px >> NAV_NODE_SHIFT;
+    *ny = py >> NAV_NODE_SHIFT;
+    return *nx < s_w && *ny < s_h;
+}
+
 static inline int node_of(int px, int py) {
-    int nx = px / NAV_NODE_PX, ny = py / NAV_NODE_PX;
-    if (px < 0 || py < 0 || nx >= s_w || ny >= s_h) return -1;
+    int nx, ny;
+    if (!node_xy(px, py, &nx, &ny)) return -1;
     return ny * s_w + nx;
 }
 
@@ -67,7 +79,8 @@ int nav_walkable_count(void) {
 static int resolve_goal(int node, int px, int py) {
     if (node < 0) return -1;
     if (s_walkable[node]) return node;
-    int nx = node % s_w, ny = node / s_w;
+    int nx, ny;
+    node_xy(px, py, &nx, &ny);
     int best = -1, best_d2 = 0x7FFFFFFF;
     for (int k = 0; k < 8; k++) {
         int tx = nx + s_dx[k], ty = ny + s_dy[k];
@@ -89,12 +102,15 @@ void nav_set_goal(int goal_px, int goal_py) {
 }
 
 static void start_search(void) {
-    uint8_t *dist = s_dist[1 - s_read];
+    uint16_t *dist = s_dist[1 - s_read];
     for (int i = 0; i < s_w * s_h; i++) dist[i] = NAV_UNREACHABLE;
     s_head = 0;
     s_tail = 0;
     dist[s_goal_node] = 0;
-    s_queue[s_tail++] = (uint16_t)s_goal_node;
+    s_queue[s_tail] = (uint16_t)s_goal_node;
+    s_qx[s_tail] = (uint8_t)(s_goal_node % s_w);       // once per search
+    s_qy[s_tail] = (uint8_t)(s_goal_node / s_w);
+    s_tail++;
 }
 
 void nav_update(int budget) {
@@ -102,18 +118,22 @@ void nav_update(int budget) {
         if (s_goal_node < 0) return;
         start_search();
     }
-    uint8_t *dist = s_dist[1 - s_read];
+    uint16_t *dist = s_dist[1 - s_read];
     while (budget-- > 0 && s_head < s_tail) {
-        int node = s_queue[s_head++];
-        int nx = node % s_w, ny = node / s_w;
+        int node = s_queue[s_head];
+        int nx = s_qx[s_head], ny = s_qy[s_head];
+        s_head++;
         int next = dist[node] + 1;
-        if (next >= NAV_UNREACHABLE) continue;
+        if (next > NAV_MAX_DEPTH) continue;
         for (int k = 0; k < 8; k++) {
             if (!step_allowed(nx, ny, k)) continue;
             int target = (ny + s_dy[k]) * s_w + (nx + s_dx[k]);
             if (dist[target] != NAV_UNREACHABLE) continue;
-            dist[target] = (uint8_t)next;
-            s_queue[s_tail++] = (uint16_t)target;
+            dist[target] = (uint16_t)next;
+            s_queue[s_tail] = (uint16_t)target;
+            s_qx[s_tail] = (uint8_t)(nx + s_dx[k]);
+            s_qy[s_tail] = (uint8_t)(ny + s_dy[k]);
+            s_tail++;
         }
     }
     if (s_head >= s_tail) {
@@ -136,12 +156,11 @@ int nav_distance(int px, int py) {
 }
 
 int nav_next_step(int px, int py, int *target_px, int *target_py) {
-    int node = node_of(px, py);
-    if (node < 0) return 0;
-    const uint8_t *dist = s_dist[s_read];
-    int here = dist[node];
+    int nx, ny;
+    if (!node_xy(px, py, &nx, &ny)) return 0;
+    const uint16_t *dist = s_dist[s_read];
+    int here = dist[ny * s_w + nx];
     if (here == 0) return 0;
-    int nx = node % s_w, ny = node / s_w;
     int best = here, best_k = -1;
     for (int k = 0; k < 8; k++) {
         // A body can stand where its node's centre is blocked (hugging a wall); then no

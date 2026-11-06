@@ -10,7 +10,7 @@
 // comes close to any of its members (or when one of them is hurt); clearing a pack heals one
 // hit and offers two modifiers; clearing every pack completes the run.
 
-#define MAX_PACKS 8
+#define MAX_PACKS 12
 #define PACK_WAKE_RADIUS 220            // ground px (metric dx^2 + 4 dy^2) from any dormant member
 #define RUN_COMPLETE_FRAMES 180         // "dungeon completed" banner before the next run
 

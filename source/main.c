@@ -78,7 +78,7 @@ static inline uint16_t *bot_page_ptr(int page) {
 #define BG_TILE_CACHE_CAPACITY 1024     // lower screen: 64 KiB of tile slots in bank D
 #define TOP_TILE_CACHE_CAPACITY 448     // upper screen: 28 KiB in bank C (the baker keeps every window within it)
 #define BG_TILE_INVALID 0xFFFF
-#define BG_MAX_TILES 1024               // most distinct tiles of any arena (checked by tests/test_upper_screen_contract.py)
+#define BG_MAX_TILES 4096               // most distinct tiles of any arena (checked by tests/test_upper_screen_contract.py)
 typedef struct {
     uint16_t slot_for_tile[BG_MAX_TILES];
     uint16_t slot_refs[BG_TILE_CACHE_CAPACITY];

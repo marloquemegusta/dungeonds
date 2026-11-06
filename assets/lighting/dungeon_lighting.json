@@ -1,0 +1,38 @@
+{
+  "name": "dungeon_lighting",
+  "version": 1,
+  "note": "Shared dark-dungeon lighting for map and characters (DESIGN.md 6). Intensities are lab slider units (x PI in three.js). Angles are relative to the fixed isometric camera: azimuthFromCamera 0 = at the camera, 180 = behind the subject; elevation in degrees above the horizon. rim = a directional back light plus rim.edge, a view-dependent silhouette glow added in the lab materials (a directional light barely reaches a 40 px silhouette); up-facing surfaces are masked so the floor is not lifted. Tuning notes: raise rim.edge.intensity before ambient.",
+  "ambient": {
+    "color": "#6f86b8",
+    "intensity": 0.04
+  },
+  "key": {
+    "color": "#ffb869",
+    "intensity": 0.7,
+    "azimuthFromCamera": 15,
+    "elevation": 24
+  },
+  "fill": {
+    "color": "#7d95c8",
+    "intensity": 0.1,
+    "azimuthFromCamera": -90,
+    "elevation": 20
+  },
+  "rim": {
+    "color": "#d8ecff",
+    "intensity": 1.2,
+    "azimuthFromCamera": 150,
+    "elevation": 10,
+    "edge": {
+      "intensity": 2.5,
+      "power": 3
+    }
+  },
+  "toneMapping": "AgX",
+  "exposure": 1.0,
+  "grade": {
+    "contrast": 1.0,
+    "saturation": 1.15,
+    "brightness": 1.0
+  }
+}

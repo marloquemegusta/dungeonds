@@ -3,6 +3,13 @@
 // package (world.png, collision.png/json, occlusion.png, occlusion_depth.png).
 //
 // usage: node export_map_package_headless.cjs <model.glb|fbx> <settings.json> <out_dir>
+//
+// Lighting: by default the shared dungeon profile assets/lighting/dungeon_lighting.json is applied
+// (DESIGN.md 6) and the settings' own lighting/contrast/saturation/brightness are ignored. Optional
+// settings keys: "lightingProfile": false (legacy lab lighting from the settings), or a path to
+// another profile; "shadowExtent" (metres, half-size of the key light shadow camera, default 45) and
+// "shadowMapSize" (px, default 4096), both used when "shadows" is true.
+const { labGlArgs } = require('./chromium_gl_args.cjs');
 const fs = require('node:fs');
 const path = require('node:path');
 
@@ -19,10 +26,17 @@ if (!model || !settingsPath || !outDir) {
   process.exit(2);
 }
 const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
+let profile = null;
+if (settings.lightingProfile !== false) {
+  const profilePath = path.resolve(typeof settings.lightingProfile === 'string'
+    ? settings.lightingProfile : path.join(__dirname, '../../assets/lighting/dungeon_lighting.json'));
+  profile = JSON.parse(fs.readFileSync(profilePath, 'utf8'));
+  console.log(`lighting profile: ${profilePath}`);
+}
 const HTML = path.join(__dirname, 'FBX-Web-Renderer-offline.html');
 
 (async () => {
-  const browser = await chromium.launch({ headless: true, args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--disable-dev-shm-usage'] });
+  const browser = await chromium.launch({ headless: true, args: labGlArgs() });
   const errors = [];
   try {
     const page = await browser.newPage({ viewport: { width: 1680, height: 1050 }, deviceScaleFactor: 1 });
@@ -30,7 +44,8 @@ const HTML = path.join(__dirname, 'FBX-Web-Renderer-offline.html');
     await page.goto(`file:///${HTML.replace(/\\/g, '/')}`, { waitUntil: 'load' });
     await page.waitForFunction(() => !!window.__spriteLab, { timeout: 30000 });
 
-    await page.evaluate(s => {
+    await page.evaluate(({ s, profile }) => {
+      if (profile) window.__spriteLab.setLightingProfile(profile);
       const set = (id, value) => {
         const el = document.getElementById(id);
         if (!el || value === undefined) return;
@@ -43,14 +58,16 @@ const HTML = path.join(__dirname, 'FBX-Web-Renderer-offline.html');
       if (sizeInput && s.width > Number(sizeInput.max)) sizeInput.max = String(s.width);
       set('mapPixelSize', s.width);
       set('elevation', s.cameraElevationDegrees);
-      set('contrast', s.contrast);
-      set('saturation', s.saturation);
-      set('labBrightness', s.brightness);
-      set('lightPreset', s.lighting?.preset);
-      set('keyLight', s.lighting?.key);
-      set('fillLight', s.lighting?.fill);
-      set('rimLight', s.lighting?.rim);
-      set('worldLight', s.lighting?.world);
+      if (!profile) {
+        set('contrast', s.contrast);
+        set('saturation', s.saturation);
+        set('labBrightness', s.brightness);
+        set('lightPreset', s.lighting?.preset);
+        set('keyLight', s.lighting?.key);
+        set('fillLight', s.lighting?.fill);
+        set('rimLight', s.lighting?.rim);
+        set('worldLight', s.lighting?.world);
+      }
       if (s.orthoScaleMeters) window.__spriteLab.mapOrthoScale = s.orthoScaleMeters;
       // Optional: s.shadows === false turns the key-light shadow map off (the old
       // package settings do not carry the key, so their behaviour is unchanged).
@@ -58,9 +75,10 @@ const HTML = path.join(__dirname, 'FBX-Web-Renderer-offline.html');
       // covers only the middle of a 768 px dungeon. Widen it to the whole model.
       if (s.shadows === true && typeof $ !== 'undefined' && $.lights && $.lights.key) {
         const key = $.lights.key;
-        key.shadow.mapSize.set(4096, 4096);
+        const mapSize = s.shadowMapSize || 4096, extent = s.shadowExtent || 45;
+        key.shadow.mapSize.set(mapSize, mapSize);
         const c = key.shadow.camera;
-        c.left = -45; c.right = 45; c.top = 45; c.bottom = -45; c.near = 0.5; c.far = 150;
+        c.left = -extent; c.right = extent; c.top = extent; c.bottom = -extent; c.near = 0.5; c.far = 150 + Math.max(0, extent - 45) * 2;
         c.updateProjectionMatrix();
         key.shadow.bias = -0.0004;
         if (key.shadow.map) { key.shadow.map.dispose(); key.shadow.map = null; }
@@ -69,7 +87,7 @@ const HTML = path.join(__dirname, 'FBX-Web-Renderer-offline.html');
         const sh = document.getElementById('shadowToggle');
         if (sh) { sh.checked = false; sh.dispatchEvent(new Event('change', { bubbles: true })); }
       }
-    }, settings);
+    }, { s: settings, profile });
 
     const before = await page.evaluate(() => window.__spriteLab.mapRenderCount || 0);
     await page.locator('#mapFileInput').setInputFiles(model);

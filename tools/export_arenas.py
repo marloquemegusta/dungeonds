@@ -46,9 +46,9 @@ def crop_png(src, dst, box, mode=None):
     img.crop(box).save(dst)
 
 
-ACCENT_RGB = {"cyan": (60, 220, 255), "magenta": (255, 60, 200), "amber": (255, 170, 40)}
+ACCENT_RGB = {"amber": (255, 170, 40)}      # one uniform warm accent (DESIGN.md 6)
 SHADOW_TINT = (0.60, 0.62, 0.74)       # multiplies the floor colour inside a baked shadow
-GLOW_BANDS = ((0, 8, 0.14), (8, 16, 0.08))   # (from, to, strength) south of a wall's shadow
+GLOW_BANDS = ((0, 8, 0.06), (8, 16, 0.03))   # (from, to, strength) south of a wall's shadow
 
 
 def bake_light(world_png, occlusion_png, arena, spec, size_w, size_h):
@@ -84,7 +84,7 @@ def bake_light(world_png, occlusion_png, arena, spec, size_w, size_h):
 
     glow = np.zeros(floor.shape + (4,))                # rgb of the accent + strength
     for b in arena["blocks"]:
-        if b.get("kind") != "wall":
+        if b.get("kind") != "wall" or b["height_m"] < 1.5:
             continue
         x0, y0, x1, y1 = b["rect"]
         if (x1 - x0) < (y1 - y0):
@@ -114,9 +114,11 @@ def export_arena(name, spec):
     cx, cy, big_w, big_h = frame["cx"], frame["cy"], frame["map_w"], frame["map_h"]
     ppm = spec["pixels_per_metre"]
     old = json.loads(OLD_SETTINGS.read_text(encoding="utf-8"))
-    old = dict(old, lighting=dict(old["lighting"], **spec.get("lighting", {})))   # arenas.json may retune the lab lighting
+    # No lighting override here: the lab applies the shared profile assets/lighting/dungeon_lighting.json
+    # (DESIGN.md 6); the legacy values of the old settings are ignored by it.
+    shadow_cfg = {k: spec[k] for k in ("shadowExtent", "shadowMapSize") if k in spec}
     lab_settings = dict(old, mapName=name, width=big_w, height=big_h,
-                        orthoScaleMeters=big_w / ppm, pixelsPerMeter=ppm, shadows=bool(spec.get("shadows", False)))
+                        orthoScaleMeters=big_w / ppm, pixelsPerMeter=ppm, shadows=bool(spec.get("shadows", False)), **shadow_cfg)
     with tempfile.TemporaryDirectory() as tmp:
         tmp = Path(tmp)
         write_json(tmp / "lab_settings.json", lab_settings)
@@ -126,7 +128,17 @@ def export_arena(name, spec):
         out = OUT / name
         out.mkdir(parents=True, exist_ok=True)
         box = (cx, cy, cx + size_w, cy + size_h)
-        crop_png(raw / "world.png", out / "world.png", box, "RGB")
+        # Pure black is the baker's "void" (bake_arena.py, tests). A dark pixel that belongs to the model
+        # (a dark wall top inside a cast shadow, say) is lifted to (6, 6, 6). The lab's background is opaque
+        # black, so "belongs to the model" is the floor rect plus the wall band above it.
+        rgba = np.array(Image.open(raw / "world.png").convert("RGBA").crop(box))
+        fx0, fy0, fx1, fy1 = spec["floor"]["rect"]
+        wall_px = int(spec["boundary_wall_height_m"] * 0.866 * ppm) - 6
+        inside = np.zeros(rgba.shape[:2], dtype=bool)
+        inside[fy0 - wall_px - 4:fy1, fx0 - 8:fx1 + 8] = True
+        dark = inside & (rgba[:, :, :3].max(axis=2) < 6)
+        rgba[dark, :3] = 6
+        Image.fromarray(rgba[:, :, :3], "RGB").save(out / "world.png")
         crop_png(raw / "collision.png", out / "collision.png", box, "L")
         crop_png(raw / "occlusion.png", out / "occlusion.png", box, "L")
         if spec.get("baked_shadows") or spec.get("baked_glow"):
@@ -155,6 +167,7 @@ def export_arena(name, spec):
             "meshScale": old["meshScale"], "cameraElevationDegrees": 30,
             "contrast": old["contrast"], "saturation": old["saturation"],
             "brightness": old["brightness"], "lighting": old["lighting"], "shadows": bool(spec.get("shadows", False)),
+            **shadow_cfg,
             "labRender": {"width": big_w, "height": big_h, "cropX": cx, "cropY": cy,
                           "note": "rendered by the lab at pixelsPerMeter, then cropped to the arena"},
         }

@@ -13,9 +13,14 @@
 // complete, so enemies always read a finished field and the cost stays amortized.
 
 #define NAV_NODE_PX 16                       // world px per node (4 collision cells)
-#define NAV_MAX_W 48                         // largest arena (px / NAV_NODE_PX) the buffers hold
-#define NAV_MAX_H 48
-#define NAV_UNREACHABLE 255
+#define NAV_MAX_W 80                         // largest arena (px / NAV_NODE_PX) the buffers hold (1280 px dungeon)
+#define NAV_MAX_H 80
+#define NAV_UNREACHABLE 0xFFFF               // distances are uint16: corridors are long
+// The search stops this many steps from the player: farther nodes stay unreachable, which keeps
+// the per-frame cost bounded on the 80x80 grid (enemies that far away are dormant or out of the fight).
+#ifndef NAV_MAX_DEPTH            // the host test builds with a huge value to check connectivity
+#define NAV_MAX_DEPTH 96
+#endif
 
 // Builds the walkable-node grid from the active arena. Call whenever the arena changes.
 void nav_init(void);

@@ -9,9 +9,9 @@ ROOT = Path(__file__).resolve().parents[1]
 SPEC = json.loads((ROOT / "assets" / "arenas" / "arenas.json").read_text(encoding="utf-8"))
 FOOTPRINT = ((0, 0), (-16, 0), (16, 0), (0, -12), (0, 12), (-12, -8), (-12, 8), (12, -8), (12, 8))
 ENEMY_CODE = {"charger": 1, "shooter": 2}
-NUM_PACKS = 6
+NUM_PACKS = 9
 MAX_PACK_SIZE = 10           # MAX_GAMEPLAY_ENEMIES: a pack is spawned at once
-PACK_RADIUS = 60             # px, members stay this close to the pack centre
+PACK_RADIUS = 180            # px, members stay this close to the pack centre (a pack lives in one room)
 PACK_MIN_START_DISTANCE = 300  # ground metric sqrt(dx^2 + 4 dy^2) from the player start
 
 
@@ -77,7 +77,7 @@ class ArenaDataTest(unittest.TestCase):
         self.assertEqual(sorted(packs), list(range(NUM_PACKS)))
         composition = {p: tuple(sum(1 for e in members if e["type"] == t) for t in ("charger", "shooter"))
                        for p, members in packs.items()}
-        self.assertEqual(composition, {0: (3, 0), 1: (1, 2), 2: (4, 0), 3: (1, 3), 4: (2, 2), 5: (2, 2)})
+        self.assertEqual(composition, {0: (1, 2), 1: (2, 1), 2: (3, 0), 3: (2, 2), 4: (1, 3), 5: (4, 0), 6: (2, 3), 7: (3, 2), 8: (1, 4)})
         for p, members in packs.items():
             with self.subTest(pack=p):
                 self.assertLessEqual(len(members), MAX_PACK_SIZE)

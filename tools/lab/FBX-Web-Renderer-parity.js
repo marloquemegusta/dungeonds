@@ -424,8 +424,94 @@
   }
 
   // ---- Blender-equivalent lighting & materials ----
+  // Shared dungeon lighting profile (assets/lighting/dungeon_lighting.json, DESIGN.md 6).
+  // build_offline_renderer.py replaces the null below with the file's content; the headless
+  // scripts also push the file through state.setLightingProfile(), so tuning needs no rebuild.
+  // Angles are relative to the fixed isometric camera: 0 = at the camera, 180 = behind the subject.
+  const TONE_MAPPING_IDS = { None: 0, Linear: 1, Reinhard: 2, Cineon: 3, ACES: 4, AgX: 6, Neutral: 7 };
+  const EMBEDDED_LIGHTING_PROFILE = /*LIGHTING_PROFILE:START*/null/*LIGHTING_PROFILE:END*/;
+
+  // Rim light, edge term: directional lights barely touch a 40 px silhouette (every visible surface
+  // faces the camera), so the profile's rim also carries a view-dependent edge glow added to the
+  // emissive term of every MeshStandardMaterial (map and characters alike). It is strongest where the
+  // normal is perpendicular to the view (silhouette), weighted towards screen-up, and ~0 on walls
+  // that face the camera. Up-facing surfaces (floor, wall tops) are masked out so the floor is not lifted.
+  const RIM_EDGE = { uRimColor: { value: [1, 1, 1] }, uRimIntensity: { value: 0 }, uRimPower: { value: 3 } };
+  function srgbToLinear(hex) {
+    const n = parseInt(String(hex).replace('#', ''), 16);
+    return [(n >> 16) & 255, (n >> 8) & 255, n & 255].map(v => Math.pow(v / 255, 2.2));
+  }
+  Xa.prototype.onBeforeCompile = function (shader) {
+    Object.assign(shader.uniforms, RIM_EDGE);
+    shader.fragmentShader = 'uniform vec3 uRimColor;\nuniform float uRimIntensity;\nuniform float uRimPower;\n' +
+      shader.fragmentShader.replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
+      {
+        float rimEdge = pow(1.0 - clamp(normal.z, 0.0, 1.0), uRimPower);
+        // up-facing surfaces (floor, wall tops: view-space normal.y = cos(30 deg) = 0.866) get no edge glow
+        rimEdge *= 1.0 - smoothstep(0.78, 0.84, normal.y);
+        totalEmissiveRadiance += uRimColor * uRimIntensity * rimEdge * (0.4 + 0.6 * clamp(normal.y * 0.5 + 0.5, 0.0, 1.0));
+      }`);
+  };
+  Xa.prototype.customProgramCacheKey = function () { return 'rimEdge1'; };
+
+  function profileLightPosition(light, distance = 30) {
+    const az = AZIMUTH + Yt.degToRad(light.azimuthFromCamera || 0);
+    const el = Yt.degToRad(light.elevation == null ? 45 : light.elevation);
+    return [Math.cos(el) * Math.cos(az) * distance, Math.sin(el) * distance, -Math.cos(el) * Math.sin(az) * distance];
+  }
+
+  function applyProfileLighting(profile) {
+    const L = $.lights;
+    const ambient = profile.ambient || {};
+    L.world.intensity = (ambient.intensity || 0) * Math.PI;
+    if (L.world.color?.set) L.world.color.set(ambient.color || '#ffffff');
+    for (const name of ['key', 'fill', 'rim']) {
+      const cfg = profile[name] || { intensity: 0 };
+      L[name].intensity = (cfg.intensity || 0) * Math.PI;
+      if (L[name].color?.set) L[name].color.set(cfg.color || '#ffffff');
+      L[name].position.set(...profileLightPosition(cfg));
+    }
+    const edge = (profile.rim && profile.rim.edge) || { intensity: 0 };
+    RIM_EDGE.uRimColor.value = srgbToLinear((profile.rim && profile.rim.color) || '#ffffff');
+    RIM_EDGE.uRimIntensity.value = edge.intensity || 0;
+    RIM_EDGE.uRimPower.value = edge.power || 3;
+    if ($.renderer) {
+      const mapped = TONE_MAPPING_IDS[profile.toneMapping ?? 'AgX'];
+      $.renderer.toneMapping = mapped === undefined ? 6 : mapped;
+      $.renderer.toneMappingExposure = profile.exposure == null ? 1 : profile.exposure;
+    }
+  }
+
+  function setLightingProfile(profile) {
+    state.lightingProfile = profile || null;
+    if (profile) {
+      // Mirror the profile into the sliders so exported settings (map_settings.json) record it.
+      const put = (id, value) => {
+        const el = document.getElementById(id);
+        if (!el || value == null) return;
+        if (el.type === 'range') { el.min = '0'; el.max = String(Math.max(Number(el.max), value * 2, 1)); el.step = 'any'; }
+        el.value = String(value);
+      };
+      put('keyLight', profile.key?.intensity);
+      put('fillLight', profile.fill?.intensity);
+      put('rimLight', profile.rim?.intensity);
+      put('worldLight', profile.ambient?.intensity);
+      const g = profile.grade || {};
+      for (const id of ['contrast', 'saturation', 'labBrightness']) {
+        const el = document.getElementById(id);
+        if (el?.type === 'range') { el.min = '0.1'; el.max = '3'; el.step = 'any'; }
+      }
+      put('contrast', g.contrast);
+      put('saturation', g.saturation);
+      put('labBrightness', g.brightness);
+    }
+    applyBlenderLighting();
+  }
+  state.setLightingProfile = setLightingProfile;
+
   function applyBlenderLighting() {
     if (!$.lights) return;
+    if (state.lightingProfile) { applyProfileLighting(state.lightingProfile); return; }
     const value = id => parseFloat(document.getElementById(id)?.value) || 0;
     const keyIntensity = value('keyLight') * Math.PI;
     const fillIntensity = value('fillLight') * Math.PI;
@@ -1352,6 +1438,7 @@
         hardCtx.strokeStyle = '#000000';
         hardCtx.lineWidth = 0.65;
         hardCtx.lineJoin = 'round';
+        hardCtx.lineCap = 'round'; // triangles are closed with lineTo: round caps match the round join closePath gave
 
         let triangleCount = 0;
 
@@ -1394,7 +1481,9 @@
               hardCtx.moveTo(pxArr[i0], pyArr[i0]);
               hardCtx.lineTo(pxArr[i1], pyArr[i1]);
               hardCtx.lineTo(pxArr[i2], pyArr[i2]);
-              hardCtx.closePath();
+              // Close with lineTo, not closePath(): one closePath per triangle on a
+              // single huge path costs minutes in Chromium's 2D canvas.
+              hardCtx.lineTo(pxArr[i0], pyArr[i0]);
               triangleCount++;
             }
           }
@@ -1637,6 +1726,7 @@
       cameraElevationDegrees: cameraElevation ? parseFloat(cameraElevation.value) : null,
       contrast: parseFloat(_p.contrast.value),
       saturation: parseFloat(_p.saturation.value),
+      ...(state.lightingProfile ? { lightingProfile: state.lightingProfile.name || 'dungeon_lighting' } : {}),
       neckPitchDegrees: parseFloat(document.getElementById('neckPitch')?.value ?? document.getElementById('neckTilt')?.value ?? 0),
       displace: parseFloat(document.getElementById('meshDisplace')?.value || 0),
       brightness: parseFloat(document.getElementById('labBrightness')?.value || 1.0),
@@ -2760,6 +2850,7 @@
       saturation: parseFloat(_p.saturation?.value) || 1.15,
       brightness: parseFloat(document.getElementById('labBrightness')?.value) || 1.0,
       lighting: {
+        profile: state.lightingProfile ? (state.lightingProfile.name || 'dungeon_lighting') : null,
         preset: document.getElementById('lightPreset')?.value || 'warm',
         key: parseFloat(document.getElementById('keyLight')?.value || 4.2),
         fill: parseFloat(document.getElementById('fillLight')?.value || 1.2),
@@ -2870,7 +2961,18 @@
       update3DViewMode();
       groundCharacterIn3D();
       computeAnchorData();
-      if (highQuality || !state.shadowCanvas) generateCharacterShadows();
+      // The shadow atlas depends only on geometry/pose/camera, not on lighting or grade:
+      // regenerate it only when one of those inputs changed.
+      const shadowKey = [
+        _p.resolution?.value, _p.frameCount?.value, _p.outlineMode?.value,
+        document.getElementById('elevation')?.value, document.getElementById('neckPitch')?.value,
+        document.getElementById('animSelect')?.value, document.getElementById('labShadow')?.value,
+        JSON.stringify(state.anchorData?.anchor || null), state.lastCharExtent, $.model?.uuid
+      ].join('|');
+      if (!state.shadowCanvas || state.shadowKey !== shadowKey) {
+        generateCharacterShadows();
+        state.shadowKey = shadowKey;
+      }
     }
     drawDsSimulator();
   }
@@ -4601,6 +4703,7 @@
 
   // Initialize
   restructureLayout();
+  if (EMBEDDED_LIGHTING_PROFILE) setLightingProfile(EMBEDDED_LIGHTING_PROFILE);
   applyBlenderLighting();
   updateCharacterStrideMetrics();
   computeAnchorData();

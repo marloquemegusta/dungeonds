@@ -9,7 +9,13 @@ faces, and nudges the colour fed to the lab until the render matches the target.
     python.exe tools/calibrate_arena_palette.py [iterations]
 
 Run it again after changing a TARGET colour or the lab lighting. The result is data
-(tools/arena_palette.json), the arena build stays deterministic without it.
+(tools/arena_palette.json), the arena build stays deterministic without it: with an empty
+palette file the targets are fed to the lab as they are (OPTIONAL step).
+
+v0.3: the targets in make_arena_glb.py are dark on purpose (floor luminance ~35-50/255), so the
+calibration only has to match the shared lighting profile (assets/lighting/dungeon_lighting.json)
+to a dark look; if a profile makes the render darker than the targets it would raise the base
+colours, so the gain is capped (MAX_GAIN) and the floor never goes above the target.
 """
 import json
 import subprocess
@@ -22,6 +28,9 @@ from PIL import Image
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import make_arena_glb as g  # noqa: E402
+
+
+MAX_GAIN = 1.25      # per-iteration cap on raising a colour: the dungeon must stay dark
 
 
 def measure(arena, spec, frame):
@@ -43,7 +52,7 @@ def measure(arena, spec, frame):
                 px.append(world[y, x])
         if px:
             seen[name] = np.median(np.array(px), axis=0)
-    seen["grout"] = world[150, 63].astype(float)   # last pixel of a nw tile row: grout
+    seen["grout"] = np.median(world[1199, 520:760:8], axis=0)   # last pixel row of a tile row in the start room: grout
     return seen
 
 
@@ -51,12 +60,9 @@ def main():
     iterations = int(sys.argv[1]) if len(sys.argv) > 1 else 5
     spec = json.loads(g.SPEC.read_text(encoding="utf-8"))
     arena = spec["arenas"][0]
-    targets = g.target_materials(arena["zones"])
-    if g.PALETTE_JSON.exists():
-        current = json.loads(g.PALETTE_JSON.read_text(encoding="utf-8"))
-    else:
-        current = {n: {"base": list(b), "emissive": list(e) if e else None}
-                   for n, (b, e) in g.material_inputs(arena["zones"]).items()}
+    targets = g.target_materials(arena["zones"], spec.get("floor_styles"))
+    current = {n: {"base": list(b), "emissive": list(e) if e else None}
+               for n, (b, e) in g.material_inputs(arena["zones"], spec.get("floor_styles")).items()}
     for it in range(iterations):
         g.PALETTE_JSON.write_text(json.dumps(current, indent=1) + "\n", encoding="utf-8", newline="\n")
         subprocess.run([sys.executable, str(ROOT / "tools/export_arenas.py")], check=True, capture_output=True)
@@ -71,7 +77,7 @@ def main():
             err = np.abs(seen[name] - np.array(target)).max()
             worst = max(worst, err)
             ratio = (np.array(target, dtype=float) + 4) / (seen[name] + 4)
-            factor = np.clip(ratio, 0.6, 1.6) ** 0.6
+            factor = np.clip(ratio, 0.6, MAX_GAIN) ** 0.6
             entry = current[name]
             entry["base"] = [int(round(min(255, max(1, v)))) for v in np.array(entry["base"]) * factor]
             if entry.get("emissive"):

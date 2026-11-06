@@ -25,7 +25,7 @@ class NavFieldHostTest(unittest.TestCase):
             ]
             build = subprocess.run(
                 ["gcc", "-std=gnu11", "-O1", "-Wall", "-Werror", "-I", str(ROOT / "tests" / "host" / "stubs"),
-                 "-I", str(ROOT / "include"), *map(str, sources), "-o", str(exe)],
+                 "-DNAV_MAX_DEPTH=60000", "-I", str(ROOT / "include"), *map(str, sources), "-o", str(exe)],
                 capture_output=True, text=True)
             self.assertEqual(build.returncode, 0, build.stderr)
             run = subprocess.run([str(exe)], capture_output=True, text=True)

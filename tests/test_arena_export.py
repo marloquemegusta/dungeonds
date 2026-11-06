@@ -88,8 +88,8 @@ class ArenaExportTest(unittest.TestCase):
 
     def test_spec_lists_the_dungeon(self):
         self.assertEqual([a["name"] for a in SPEC["arenas"]], ["dungeon_01"])
-        self.assertEqual((SIZE_W, SIZE_H), (768, 768))
-        self.assertEqual(FLOOR, [16, 120, 752, 752])
+        self.assertEqual((SIZE_W, SIZE_H), (1280, 1280))
+        self.assertEqual(FLOOR, [16, 112, 1264, 1264])
 
     def test_image_sizes_and_settings(self):
         for arena, world, occ, col_img, col_json in self.arenas():
