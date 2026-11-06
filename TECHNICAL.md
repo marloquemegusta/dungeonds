@@ -59,6 +59,15 @@
 - **Prohibición de Paddings Fantasma:** Prohibido aplicar márgenes de celda arbitrarios a las máscaras. Todo padding artificial crea volúmenes invisibles que recortan al personaje en el aire antes de tocar las siluetas arquitectónicas reales.
 - **Contrato de Datos del Mapa (lab → baker → runtime):** `world.png`, `collision.png` y `occlusion_depth.png` se exportan del mismo modelo y la misma cámara (`tools/lab/export_map_package_headless.cjs`). `occlusion_depth.png` guarda por píxel la Y de mapa del punto de suelo bajo la superficie visible (R,G big endian) y B=255 si la superficie supera 0,25 m; el runtime oculta un píxel de actor si esa Y es mayor que la Y de sus pies. La colisión es la huella sobre el suelo de la geometría en la franja 0,30–1,20 m y es la única fuente de "suelo caminable". Verificación: `python tests/test_map_export_coherence.py`.
 
+### 3.4. Efectos de armas, pase de suelo/luz y sandbox (2026-11-06, rama `proto/weapon-previews`)
+
+- **Dos pases de suelo y luz:** `weapons_render_floor` se pinta antes de sombras y sprites (elipses 2:1 de `groundfx`, mitad trasera del aura que debe tapar el cuerpo) y `weapons_render_light` tras los sprites (columna de luz de la granada C). `weapons_render` pinta lo que tiene volumen encima. Se llaman una vez por pantalla con su cámara.
+- **`groundfx`:** `gfx_ground_ring/arc/disc` y `gfx_light_column` trabajan en coordenadas de mundo con la métrica del suelo (dist² = dx² + 4·dy²). Oclusión por muros con `world_span_hidden` (por filas) y `world_pixel_hidden` solo si el tramo está parcialmente oculto; ese fue el arreglo que devolvió la granada C a 60 frames en el emulador.
+- **Aura del francotirador:** pools de tamaño fijo (rayos K/C, chispas V), PRNG congruencial propio, seno y coseno por tabla de enteros, todo bucle de líneas con tope de pasos (un bucle sin tope en Bresenham congeló el juego una vez). Los rayos se regeneran cada 2-3 frames.
+- **Sandbox:** buzón `g_sandbox` en RAM (offsets fijados por contrato en `include/sandbox.h` y `tests/test_sandbox_contract.py`), variantes de build `sandbox`, `playground` y `playground-perf` en `.ds-game-dev/project.json`. Un escenario escribe el buzón (`poke` por nombre de campo), espera el `ack` y captura. Patrón genérico en la skill `ds-game-dev` (`references/sandbox-pattern.md`).
+- **Selectores de depuración:** `SELECT` (estilo A/B/C) e `Y` (aura K/C/V). Se retiran cuando se elijan las variantes definitivas.
+
+
 ## 4. Deuda Técnica Pendiente (auditoría 2026-11-02)
 
 Origen: `walkthroughs/audit-saneamiento-2d3d/`. Lo ya resuelto (colisión/oclusión coherentes con el render) está en `walkthroughs/map-export-coherence/`. Se referencian funciones, no líneas, porque se desplazan. Al cerrar un punto, borrarlo de aquí y registrarlo en `STATUS.md`.

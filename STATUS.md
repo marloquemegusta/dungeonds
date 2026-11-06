@@ -82,6 +82,10 @@ Primero el estado necesario para retomar el trabajo sin depender del chat; despu
 - [ ] Fase E: tuning en la DS y certificación de 60 FPS; medir `nav_update` y el segundo pase de render con `PERF_PROFILE`.
 - **Evidencia:** `walkthroughs/v0.1/walkthrough.md`.
 
+## 2026-11-06 - Granada, variantes de armas y aura de carga (rama `proto/weapon-previews`, sin mergear)
+
+Granada como tercera arma (`L`), variantes de efectos A/B/C de escopeta, francotirador y granada (`SELECT`), aura de carga del francotirador K/C/V (`Y`), regla de perspectiva del suelo 2:1 (`groundfx`), sandbox con ROM `playground` para comparar en la consola. Decisiones en `DESIGN.md` §4.9. Validado en DeSmuME y tests de host; rendimiento probado en la DS con `playground-perf` (el usuario reporta que va bien). Detalle y GIFs: [walkthrough](walkthroughs/weapon-previews/walkthrough.md).
+
 ## 2026-11-04 - v0.2: Mazmorra de Manadas con Modificadores
 
 ### Resumen
