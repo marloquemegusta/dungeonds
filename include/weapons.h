@@ -12,6 +12,7 @@ typedef struct PlayerState PlayerState;
 typedef enum {
     WEAPON_SHOTGUN = 0,
     WEAPON_SNIPER,
+    WEAPON_GRENADE,             // DESIGN.md 4.9
     NUM_WEAPON_TYPES
 } WeaponType;
 
@@ -34,6 +35,19 @@ typedef struct {
 } WeaponTuning;
 
 extern const WeaponTuning g_weapon_tuning[NUM_WEAPON_TYPES];
+
+// DESIGN.md 4.9: debug-only global effects style (0 = A, 1 = B, 2 = C) used to compare
+// the weapon-effect variants on the console. SELECT cycles it; removed once one is chosen.
+#define FX_STYLE_COUNT 3
+extern int g_fx_style;
+char weapons_fx_style_letter(void);
+
+// DESIGN.md 4.9 (debug): sniper charge aura look: K (lightning rays, default), C (bolt crown) or
+// V (vertical sparks). KEY_Y cycles them; the sandbox sets it from its flags.
+#define AURA_STYLE_COUNT 3
+enum { AURA_STYLE_K = 0, AURA_STYLE_C = 1, AURA_STYLE_V = 2 };
+extern int g_aura_style;
+char weapons_aura_style_letter(void);
 
 // Pellet in flight. x/y live on the ground plane; the shot is drawn `height`
 // pixels above it (the muzzle height) so it leaves the weapon, not the feet.
@@ -81,6 +95,9 @@ void weapons_update(Enemy *enemies, int max_enemies);
 // An enemy died: the "sed de sangre" modifier readies the shotgun at once.
 void weapons_notify_kill(void);
 void weapons_render(uint16_t *buffer, int cam_x, int cam_y);
+// Ground decals (under shadows and sprites) and the light pass (over the sprites); see groundfx.h.
+void weapons_render_floor(uint16_t *buffer, int cam_x, int cam_y);
+void weapons_render_light(uint16_t *buffer, int cam_x, int cam_y);
 const char *weapons_get_name(WeaponType type);
 int weapons_get_active_projectile_count(void);
 
@@ -89,5 +106,7 @@ void weapons_last_shot_dir(fixed *dir_x, fixed *dir_y);
 
 // Screen shake currently requested by the weapons (offset to add to the camera).
 void weapons_shake_offset(int *dx, int *dy);
+// Asks for a screen shake (used by weapons that live in their own file, e.g. the grenade).
+void weapons_request_shake(int amp, int frames);
 
 #endif // WEAPONS_H
