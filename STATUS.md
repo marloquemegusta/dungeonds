@@ -2,10 +2,11 @@
 
 Primero el estado necesario para retomar el trabajo sin depender del chat; después, las entregas recientes verificadas (más nueva al final). El historial hasta 2026-10-21 está en `STATUS-ARCHIVE.md`.
 
-## Estado actual (2026-11-04)
+## Estado actual (2026-11-06)
 
+- **Dirección vigente (v0.3, decidida 2026-11-06, sin código todavía):** survivors de frente vertical con apuntado manual. Un nivel de ~8 min en una franja vertical que se sube mientras una marea avanza desde abajo, horda continua, gemas → nivel → elegir 1 de 3 mejoras, élites, minijefe y jefe, y clase = arma (francotirador/láser y escopeta). Diseño en `DESIGN.md` §6; requisitos técnicos en `TECHNICAL.md` §4.7. Sesión: `walkthroughs/survivors-direction/`.
 - **Rama base:** `main`, con v0.1 (`walkthroughs/v0.1/`) y v0.2 (`walkthroughs/v0.2/`) integradas. La v0.2 se integró con la deuda de rendimiento anotada abajo.
-- **Juego (v0.2, integrada en `main`):** una mazmorra de 768×768 con 6 manadas dormidas (22 enemigos), 8 modificadores estilo Isaac con coste, curación de 1 golpe por manada, HUD de run, reinicio total al morir (`DESIGN.md` §5). Pendiente: probar en la DS (sensación, rendimiento con hasta 24 enemigos y dos pantallas).
+- **Juego (v0.2, en `main`, sustituida en diseño por la v0.3):** una mazmorra de 768×768 con 6 manadas dormidas (22 enemigos), 8 modificadores estilo Isaac con coste, curación de 1 golpe por manada, HUD de run, reinicio total al morir (`DESIGN.md` §5). Pendiente: probar en la DS (sensación, rendimiento con hasta 24 enemigos y dos pantallas).
 - **Juego (v0.1, base de la v0.2; sustituida por la mazmorra):** prueba de diversión en 4 arenas cerradas de 384×384 px encadenadas (`DESIGN.md` §4): escopeta + francotirador, cargador (con navegación BFS) + tirador (telegraph y ráfagas de 3). Pendiente la Fase E: tuning y 60 FPS certificados en la DS.
 - **Arenas:** datos en `assets/arenas/arenas.json`; generador de modelos, export con el lab y baker (`tools/make_arena_glb.py`, `tools/export_arenas.py`, `tools/bake_arena.py`) descritos en `TECHNICAL.md` §3. El mapa grande `isometric_shooter_bl` ya no se usa.
 - **Render:** actores dibujados directamente en la página trasera del framebuffer de VRAM, limpieza por spans sucios y oclusión exacta al píxel por consulta de tramos (`TECHNICAL.md` §3.3). Medido en DS: CPU 1,58 ms de media y 12 de 2520 frames con más de un vblank.
@@ -14,16 +15,12 @@ Primero el estado necesario para retomar el trabajo sin depender del chat; despu
 - **Herramientas de diagnóstico en DS:** `PERF_PROFILE` (`include/perfprof.h`, log `/dungeonds_perf.log`) y `crashlog` (`CRASHLOG_ENABLED`, logs `/dungeonds_crash.log` y `/dungeonds_live.log`). Ambas apagadas por defecto; se leen con `fetch-device-log.ps1` de la skill.
 
 ### Siguientes pasos
-1. **Sesión de diseño de transparencias** (lectura tras paredes): preguntas en `TECHNICAL.md` §4.6; la decisión va a `DESIGN.md` §3 antes de tocar código.
-2. **Deuda del motor** (`TECHNICAL.md` §4.5): timestep, assets (paleta/compresión/NitroFS), pipeline de assets, acoplamiento.
-3. **Render 2.5D** (`TECHNICAL.md` §4.1): escala personaje/mapa.
-4. **Data abort** intermitente en hardware sin causa conocida (`TECHNICAL.md` §4.4).
-5. **v0.2, cierre de la prueba (orden propuesto):**
-   1. **Rendimiento (deuda abierta, regla 6):** bajar el coste de enemigos (`en`) y sprites (`blit`) con varias manadas despiertas (tramos de 300–411 k ticks) y explicar los picos aislados; volver a medir con `PERF_PROFILE` y certificar 60 FPS en la DS.
-   2. **Sesión de tuning:** daño de las armas, daño de los enemigos al jugador y stats generales (`DESIGN.md` §5, Feedback).
-   3. **Modificadores y UI:** que se entienda qué hace cada uno (icono, descripción de efecto y coste) y rediseñar pedestales y HUD, hoy provisionales.
-   4. **Mazmorra v0.3:** más grande, salas más diferenciadas, posiblemente con puertas; decisión de diseño primero.
-   5. Después: tercer tipo de enemigo, jefes, sonido, transparencias (`DESIGN.md` §3 y §5).
+Plan completo y agentes de cada paso en `DESIGN.md` §6.9. Los dos primeros no dependen entre sí:
+1. **Prueba de horda en la DS** (técnica): pool, IA por niveles de detalle, separación por rejilla y blit más barato. Criterio: 60 FPS certificados con 32 enemigos visibles y 48 activos (`TECHNICAL.md` §4.7). Absorbe la deuda de rendimiento de la v0.2 (`en` y `blit`).
+2. **Sesión de diseño de contenido:** árbol de mejoras de las dos clases, enjambre, élite, minijefe, jefe, tramos, biomas y marea (`DESIGN.md` §6.9).
+3. **Franja vertical**, 4. **bucle jugable**, 5. **enemigos nuevos y jefes**, 6. **tuning y 60 FPS en la DS**.
+
+Siguen abiertos, sin prioridad frente a la v0.3: timestep y deuda del motor (`TECHNICAL.md` §4.5, el timestep conviene antes del tuning), escala personaje/mapa (§4.1), data abort intermitente (§4.4) y transparencias (§4.6, fuera de la v0.3). Los pasos de cierre de la v0.2 (modificadores, pedestales, mazmorra más grande) se descartan.
 
 ---
 
@@ -114,3 +111,10 @@ El láser de apuntado se colima durante la carga (ancho, difuso y rojo a 1 px ve
 ## 2026-11-06 - Francotirador: volumen de impacto del rayo (`fix/sniper-hit-side`)
 
 - El rayo acertaba solo en 22-39 % del sprite (elipse de suelo sin altura); ahora usa una elipse de cuerpo en pantalla (88-98 %, `include/hitvolume.h`). Escenarios `sniper_hit_sweep_west/east` fallan con la fórmula vieja y pasan con la nueva. Escopeta con la misma limitación, anotada en `TECHNICAL.md` §3.4. Pendiente validar en la DS. Detalle: [`walkthroughs/sniper-hit-side/`](walkthroughs/sniper-hit-side/walkthrough.md).
+
+---
+
+## 2026-11-06 - Dirección v0.3: survivors de frente vertical (`docs/survivors-direction`)
+- Sesión de diseño, sin código. La v0.2 divertía un par de minutos pero no tenía un "y luego qué". Se eligió un survivors con apuntado manual adaptado a la DS: franja vertical, marea que sube desde abajo, pantalla superior como vanguardia a la que se dispara, clase = arma y economía de gemas → nivel → 1 de 3 mejoras.
+- `DESIGN.md` §1, §3 y §6 nuevos (v0.1 y v0.2 marcadas como historia); `TECHNICAL.md` §4.7 con cómo maneja hoy el motor los enemigos y el criterio de la prueba de horda.
+- Detalle y opciones descartadas: `walkthroughs/survivors-direction/walkthrough.md`.

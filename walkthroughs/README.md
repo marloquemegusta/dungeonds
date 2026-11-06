@@ -96,3 +96,4 @@ Resúmenes acumulativos y auditables de cada entrega y avance de desarrollo en `
 | 78 | Granada, variantes de efectos de armas, aura de carga del francotirador y ROM playground | [`weapon-previews/`](weapon-previews/walkthrough.md) | Validado en DeSmuME y host (pendiente DS) |
 | 79 | Colimado del láser del francotirador (estilos A/B/C) | [`sniper-collimation/`](sniper-collimation/walkthrough.md) | Validado en DeSmuME y host (pendiente DS) |
 | 80 | Francotirador: volumen de impacto del rayo en todo el sprite | [`sniper-hit-side/`](sniper-hit-side/walkthrough.md) | Validado en DeSmuME y host (pendiente DS) |
+| 81 | Dirección v0.3: survivors de frente vertical | [`survivors-direction/`](survivors-direction/walkthrough.md) | Diseño (sin código) |

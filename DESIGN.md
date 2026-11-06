@@ -1,11 +1,12 @@
 # DESIGN.md - Documento de Diseño
 
 ## 1. Visión y Alcance
-- **Concepto:** shooter isométrico para Nintendo DS por salas-arena, con tono gótico/grimdark (space marine contra necrones y bestias).
-- **Pilar:** combate de Doom en isométrico: pocas armas contundentes con mucho *feel* (la escopeta como referencia), esquivar con strafe y salas como pequeño puzzle de prioridades (a quién matar primero y desde dónde), con el control preciso y el frenetismo de Hotline Miami.
-- **Bucle vigente (v0.2, decidido 2026-11-04):** una mazmorra grande de manadas dormidas, estilo Diablo; limpiar una manada ofrece un modificador estilo Isaac; completar la mazmorra gana la run y morir la reinicia de cero (§5). El bucle de arenas cerradas de la v0.1 (§4.6) queda como historia: lo probó el usuario en la DS y era fácil y poco divertido.
-- **Fuera de la prueba, a propósito:** loot infinito de estadísticas, generador procedural, jefes y enemigo grande (v0.3+). Se añaden solo si el combate pelado engancha; las armas se definen por parámetros para que una capa de mejoras pueda tocarlos sin rehacerlas.
-- **Historia de la dirección:** el proyecto nació como un Diablo de nigromancia con esbirros. Se descartó en una sesión de diseño (`/grill-me`) a favor del shooter. El 2026-11-03 una entrevista de diseño recortó el shooter a la prueba mínima de §4. La lanza ósea y la muerte por fragmentos quedan como FX reutilizables, no como pilar de juego.
+- **Concepto:** survivors de frente vertical para Nintendo DS, con apuntado manual y tono gótico/grimdark (space marine contra necrones y bestias). Referencias: Halls of Torment y Vampire Survivors por el bucle; Diablo y Warhammer 40K: Inquisitor por lo que engancha al usuario (ir a la siguiente misión y mejorar); Isaac por la dificultad (lo normal es morir pronto hasta conocer las mejoras).
+- **Pilar:** combate de Doom en isométrico (pocas armas contundentes con mucho *feel*, esquivar con strafe), contra una horda que viene de arriba y por un pasillo que hay que abrirse a tiros. Las dos pantallas forman un campo vertical: la superior es la vanguardia que se ve llegar y a la que se puede disparar.
+- **Bucle vigente (v0.3, decidido 2026-11-06):** un nivel vertical de ~8 min con una marea que sube desde abajo, horda continua, gemas → nivel → elegir 1 de 3 mejoras, élites, un minijefe a mitad y un jefe arriba. Clase = arma. Detalle en §6.
+- **Fantasía:** sin lore, pero clara y con entorno cambiante: ascender (o descender) por un pozo o una aguja infestada, cambiando de bioma por el camino. Los personajes, enemigos y mapas actuales son placeholders con la estética buena; el sistema debe aguantar cambiarlos.
+- **Fuera de la prueba de la v0.3, a propósito:** progresión entre runs (equipo, desbloqueos), más de dos clases, sonido, más de dos biomas. La capa de equipo es el gancho a largo plazo (Diablo) y se diseña tras validar que una run divierte.
+- **Historia de la dirección:** el proyecto nació como un Diablo de nigromancia con esbirros, descartado a favor del shooter. La v0.1 (4 arenas cerradas, §4) era fácil y poco divertida en la DS. La v0.2 (mazmorra de manadas con modificadores estilo Isaac, §5) fue más divertida pero se agotaba en un par de minutos: sin variedad entre runs ni motivo para volver. El 2026-11-06 se eligió el survivors vertical (§6) frente a un Isaac de salas (más barato pero menos del gusto del usuario) y a una campaña lineal tipo Diablo (demasiado contenido a mano). La lanza ósea y la muerte por fragmentos quedan como FX reutilizables.
 
 ## 2. Dirección de Arte y Pipeline
 - **Técnica:** sprites 2D pre-renderizados a partir de modelos 3D con animación esquelética (FBX/GLB).
@@ -18,16 +19,17 @@
 
 ## 3. Decisiones Abiertas
 - **Lectura tras paredes (transparencias):** qué se ve del personaje y de los enemigos detrás de una pared y cómo se marca la base de la pared. Sin decidir; preguntas en `TECHNICAL.md` §4.6. No se toca código hasta decidirlo aquí.
-- **Mapas de las arenas:** decididos el 2026-11-03, ver §4.6. Se sustituye el mapa grande `isometric_shooter_bl` por 4 arenas pequeñas horneadas en C con el pipeline lab → baker, sin NitroFS.
-- **Sonido:** fuera de la v0.1 (decidido 2026-11-03).
-- **Transparencias tras paredes:** también fuera de la v0.1; el comportamiento provisional actual no se amplía.
-- **Tuning de combate y stats:** daño de las armas, daño que reciben el jugador y los enemigos, vida y velocidades; ver §4.7 y la sesión de tuning pendiente en §5.
-- **Mazmorra v0.3:** más grande y con salas más diferenciadas, posiblemente con puertas; ver §5 (Feedback de la v0.2).
-- **Claridad de los modificadores:** qué hace cada uno y cómo se presentan los pedestales y la UI; ver §5.
+- **Sonido:** fuera de la v0.3.
+- **Transparencias tras paredes:** fuera de la v0.3; el comportamiento provisional actual no se amplía. Con muros sobre todo laterales en la franja vertical (§6.2) pesa menos que en la mazmorra.
+- **v0.3, pendiente de su propia sesión de diseño (§6.9):** árbol de mejoras de cada clase, enemigo de enjambre, élites, minijefe y jefe, reglas de los tramos del mapa, tema concreto de los dos biomas y forma de la marea.
+- **Tuning de combate y stats:** se hace jugando en la DS, sobre los valores de partida de §6.
+- **Ya no aplican (v0.2):** mazmorra más grande con puertas y rediseño de pedestales; los sustituye la v0.3.
 
 ---
 
 ## 4. Diseño de Juego: Prueba de Diversión Mínima
+
+> **Historia (v0.1).** El bucle de arenas (§4.2 muerte, §4.6, §4.8) está sustituido por §6. Siguen vigentes las armas (§4.3), la IA de cargador y tirador (§4.4, §4.5), el game feel (§4.7) y los efectos (§4.9). Los controles de §4.1 cambian en la v0.3 (§6.5).
 
 Alcance de la prueba: 1 jugador, 2 armas, 2 enemigos, 3–4 arenas a mano. Sin loot, armadura, munición, pickups ni generador. Lo que no está en esta sección no se implementa para la prueba.
 
@@ -145,6 +147,8 @@ Tras ver las previsualizaciones (`walkthroughs/weapon-previews/`), se implementa
 
 ## 5. v0.2: Mazmorra de Manadas (decidido 2026-11-04)
 
+> **Historia.** Sustituida por la v0.3 (§6) el 2026-11-06. La tabla de modificadores se recicla como punto de partida de las mejoras (§6.4); el resto queda en el historial de git.
+
 **Por qué.** La v0.1 se jugó en la DS: el feel del francotirador funciona, el de la escopeta menos, y el conjunto "se juega bien pero no es divertido" y se siente fácil. Con 3–7 enemigos cerrados en una sala no hay fantasía de segar ni progresión. Se descarta rediseñar cada encuentro a mano (estilo Hotline Miami) por coste de diseño. Dirección elegida: **limpiar una mazmorra de manadas** (Diablo) con **compromisos y modificadores que invitan a repetir** (Isaac/Hades). El objetivo único de esta versión es que matar sea divertido.
 
 **Bucle de la run (sesión de ~5 min).** Una mazmorra grande, hecha a mano y fija. Dentro hay manadas dormidas. Se despiertan, se limpian, cada limpieza da un modificador. Se completa al matar todas las manadas. Morir reinicia la mazmorra completa (manadas y jugador) y **se pierden los modificadores** (como Hades/Isaac). Sin guardado entre runs.
@@ -194,3 +198,75 @@ Tras ver las previsualizaciones (`walkthroughs/weapon-previews/`), se implementa
 - **Mazmorra:** debe ser bastante más grande y con salas más diferenciadas entre sí (tal vez con puertas). Sin decidir cuántas salas, tamaño ni si las puertas bloquean hasta limpiar. Decisión de diseño antes de modelar (`AGENTS.md` regla 9).
 - **Rendimiento:** la ROM con `PERF_PROFILE` midió CPU media 35,5 %, el 0,89 % de frames con más de un vblank y tramos de 300–411 k ticks con varias manadas despiertas. No certifica 60 FPS. Detalle en `walkthroughs/v0.2/walkthrough.md`.
 
+
+---
+
+## 6. v0.3: Frente Vertical (decidido 2026-11-06)
+
+**Por qué.** La v0.2 divierte un par de minutos, pero después no hay nada que hacer: el mapa y las manadas son fijos, los modificadores son números y morir no deja nada. Faltaban una run que cambie y una meta. El usuario quiere la dificultad de Isaac (morir mucho hasta dominar las mejoras), el gancho de Diablo (siguiente misión, mejor equipo) y una fantasía clara con entorno cambiante. El bucle de Halls of Torment y Vampire Survivors junta las tres cosas, y el giro vertical lo adapta a la DS. Objetivo de esta versión: que una run de ~8 min entretenga de verdad y apetezca jugar otra.
+
+### 6.1 Bucle de la run (prueba)
+- Un solo nivel. Se empieza abajo del todo y se sube abriéndose paso entre la horda mientras una **marea** sube detrás (§6.4).
+- A mitad, al cambiar de bioma, hay un **minijefe**. Arriba, en una sala final, espera el **jefe**. Matar al jefe gana la run.
+- Duración objetivo: unos 8 min hasta el jefe. La fija la velocidad de la marea.
+- Morir reinicia la run de cero. Sin progresión entre runs en esta prueba (§1).
+
+### 6.2 Mapa: franja vertical por tramos
+- Una franja de 1 a 1,5 pantallas de ancho (256–384 px de mundo) y muchas de alto. No hay sitio para huir en círculos como en un survivors abierto: hay que abrirse paso, y eso da valor al apuntado, al empujón de la escopeta y al láser que atraviesa filas.
+- Se monta con **tramos** hechos a mano de una pantalla de alto, encadenados por reglas que el usuario pule (por ejemplo: abierto, estrechamiento, sala lateral con cofre o élite, coberturas bajas). Las reglas y el catálogo de tramos se deciden en la sesión de contenido (§6.9).
+- **Dos biomas** en la prueba, uno en cada mitad, para comprobar que el cambio de entorno se nota. El tema de cada bioma está por decidir.
+- Muros altos solo en los laterales. En el centro, coberturas bajas, para que la lectura no dependa de las transparencias (§3).
+- La longitud es la que dé ~8 min a la velocidad de la marea; se ajusta jugando.
+
+### 6.3 Cámara y pantallas
+- El jugador va **centrado en la pantalla inferior**, porque solo ahí se toca. Quedan ~96 px de vista detrás de él y ~288 delante.
+- **La pantalla superior es la vanguardia, no un menú:** muestra la horda que llega, los puntos de aparición y los avisos de élite, minijefe y jefe. Se le puede disparar con el apuntado por vector de §4.1. Premia a las clases de largo alcance.
+- Los menús, como la elección al subir de nivel, van en la pantalla inferior.
+
+### 6.4 Marea y aparición de enemigos
+- **Marea:** sube desde el borde inferior a velocidad constante en la prueba (sin adaptarse al jugador). Dentro de ella el jugador recibe daño continuo y va más lento, pero no muere al instante. Los enemigos y gemas que alcanza desaparecen sin dar recompensa. Se para durante el minijefe y el jefe. El aspecto (fuego, plaga u oscuridad) está por decidir.
+- **Aparición:** la mayoría de los enemigos nacen arriba, fuera de la vista o en puntos visibles en la pantalla superior. Algunos salen de las salas laterales. Desde abajo vienen pocos y siempre con aviso en el borde inferior (emboscadas). La densidad sube con el tiempo.
+- **Totales frente a simultáneos:** cientos de enemigos a lo largo de la run, unas pocas decenas a la vez entre las dos pantallas. Los que quedan muy atrás se reciclan. Cifras técnicas en `TECHNICAL.md` §4.7.
+
+### 6.5 Clases y controles
+- **Clase = arma principal.** Dos clases separadas: **francotirador/láser** (la que más aprovecha la pantalla superior; se prueba primero) y **escopeta**. Se elige al empezar la run.
+- **Controles:**
+  - D-pad: mover.
+  - Stylus: apuntar por vector, como en §4.1. Mantener pulsado dispara solo al ritmo del arma, para no tener que tocar cientos de veces por run. En la escopeta repite cada bombeo. En el francotirador sigue siendo cargar y soltar: la carga es su gracia. Si cansa en la DS, se revisa.
+  - L: **habilidad activa con enfriamiento**, común a las dos clases. En la prueba es la granada de §4.9.
+- **Vida:** golpes más i-frames, como ahora (5 golpes de partida). De vez en cuando cae un pickup que cura 1 golpe.
+
+### 6.6 Economía y mejoras
+- **Gemas:** cada muerte suelta una gema cuyo valor depende del tipo de enemigo. Se recoge pisándola, con un imán corto que se puede mejorar. Las que se traga la marea se pierden, así que hay que decidir si se vuelve a por ellas.
+- **Subir de nivel:** al llenar la barra se pausa el juego y se elige **1 de 3 mejoras** tocando la pantalla inferior. Unos 15–20 niveles por run. Sin reroll en la prueba.
+- **Mejoras:** la mitad son del arma y cambian su comportamiento, no solo un número (perforar, rebotar, explotar al matar, más proyectiles...). La otra mitad son del personaje (vida máxima, velocidad, imán, i-frames). La tabla de modificadores de §5 sirve de semilla.
+- **Presentación:** cada mejora se muestra con icono, nombre y su efecto en una línea. Es la lección de la v0.2, donde los modificadores parecían aleatorios porque solo se veía el nombre.
+- **Cofres:** los sueltan élites y minijefe. Dan una mejora extra.
+
+### 6.7 Enemigos por escalones
+| Escalón | Qué es | Estado |
+| :--- | :--- | :--- |
+| Enjambre | Débil y abundante: muere de un tiro y viene en grupos. Da la sensación de horda. | Nuevo; modelo nuevo en el lab |
+| Cargador | §4.4 | Existe |
+| Tirador | §4.5 | Existe |
+| Élite | Versión mayor o tintada de los anteriores, con más vida. Aparece cada cierto tiempo y suelta un cofre. | Nuevo (reutiliza modelos) |
+| Minijefe | A mitad de la run, al cambiar de bioma. | Nuevo |
+| Jefe | Arriba, con 2–3 patrones. | Nuevo |
+
+### 6.8 Qué se reutiliza y qué se sustituye
+- **Se reutiliza:** armas y game feel (§4.3, §4.7), efectos (§4.9), IA de cargador y tirador, navegación por campo de distancias (adaptada a la franja), pipeline lab → baker, sandbox y escenarios.
+- **Se sustituye:** las manadas dormidas por un generador de oleadas; los pedestales por la elección al subir de nivel; la mazmorra por la franja; el HUD de la run por uno de vida, experiencia, nivel y tiempo.
+
+### 6.9 Plan
+| # | Paso | Tipo | Agentes |
+| :---: | :--- | :--- | :--- |
+| 1 | **Prueba de horda en la DS:** pool de enemigos, IA por niveles de detalle, separación por rejilla y blit más barato, medidos con `PERF_PROFILE`. Criterio en `TECHNICAL.md` §4.7. Decide si el motor actual basta. | Técnica, primero | Sonnet implementa; la medición la juega el usuario |
+| 2 | **Sesión de diseño de contenido:** árbol de mejoras de las dos clases, enjambre, élite, minijefe, jefe, catálogo y reglas de tramos, biomas y aspecto de la marea. Todo por escrito aquí antes de código (regla 9). | Diseño | Conversación; Haiku para buscar referencias |
+| 3 | **Franja vertical:** tramos en el lab, encadenado por reglas, baker y navegación para mapas altos. | Técnica | Sonnet |
+| 4 | **Bucle jugable:** marea, oleadas, gemas, nivel y elección, cofres y HUD. | Juego | Sonnet; Haiku para escenarios y logs |
+| 5 | **Enemigos nuevos y jefes.** | Juego y arte | Sonnet; arte en el lab con el usuario |
+| 6 | **Tuning y 60 FPS en la DS.** | Validación | Usuario en la DS; Haiku lee los logs |
+
+Los pasos 1 y 2 no dependen entre sí y pueden ir en paralelo.
+
+**Criterio de éxito de la prueba:** el usuario juega varias runs seguidas en la DS, muere pronto en las primeras y aun así quiere otra porque sabe qué elegiría distinto.
