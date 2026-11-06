@@ -115,3 +115,27 @@ Preguntas abiertas a resolver en una sesión de diseño (`DESIGN.md`) antes de t
 2. ¿Qué se ve de los enemigos y bajo qué condición (nunca, solo cuando el jugador también está detrás, siempre como silueta)?
 3. ¿Cómo se comunica dónde está el suelo caminable y la base de la pared en la zona oculta (ocultación ambiental en el render del mapa, recorte/transparencia de la pared cerca del jugador, otra técnica)?
 4. ¿Encaja con el compositor por software actual o pide OAM/motor 3D (alfa por hardware, ventanas de OBJ, Z-buffer)?
+
+### 4.7. Requisitos técnicos de la v0.3: horda y franja vertical (2026-11-06)
+Diseño en `DESIGN.md` §6. Esto es lo que el motor actual no cubre y cómo se mide.
+
+**Cómo maneja hoy los enemigos (revisado 2026-11-06):**
+- **Total:** array fijo de `MAX_GAMEPLAY_ENEMIES` = 24 (`gameplay.h`). En la v0.2 todos existen desde el principio y los `DORMANT` no ejecutan IA.
+- **Lógica:** `enemy_ai_update` ejecuta IA, movimiento y colisión de todos los despiertos, estén o no en pantalla. `apply_separation` compara cada enemigo con todos (O(n²)). El cargador comprueba la línea de visión (`los_has_line_of_sight` y `line_is_walkable`) cada frame.
+- **Dibujo:** `render_screen` solo añade los enemigos visibles en esa pantalla. Cada uno es un blit 40×40 a 16 bpp con sombra y oclusión por píxel.
+- **Navegación:** `navfield` cubre 48×48 nodos de 16 px, es decir, un mapa de 768×768 como máximo.
+- **Coste medido en la DS (v0.2, unos 8–12 despiertos):** `en` 55–60 k ticks y `blit` 63–74 k ticks por frame, con el frame total en 300–411 k de 560190 (`walkthroughs/v0.2/`). Extrapolado a lo bruto, unos 35 enemigos se pasan del presupuesto con el motor tal cual.
+
+**Cambios previstos para la horda:**
+- **Pool:** unas 48 plazas que se reciclan. Los enemigos nacen fuera de la vista y se liberan al morir, al quedar muy atrás o al tragárselos la marea. El total de la run no ocupa memoria.
+- **IA por niveles de detalle:** los enemigos lejanos o fuera de pantalla se actualizan cada 2–4 frames, sin comprobar la línea de visión y bajando por el campo de distancias.
+- **Separación con rejilla espacial:** cada enemigo solo mira a sus vecinos de celda.
+- **Blit más barato:** sprites con paleta de 8 bpp en lugar de 16 bpp, y oclusión saltada cuando el sprite no toca ningún tramo de oclusión (en la franja, casi siempre).
+- **Gemas y pickups en OAM:** sprites hardware de 8×8 o 16×16, sin coste de CPU. Hay 128 entradas y el HUD también usa algunas.
+
+**Criterio de la prueba de horda (paso 1 de `DESIGN.md` §6.9):** 60 FPS certificados en la DS (`AGENTS.md` regla 6) con **32 enemigos visibles entre las dos pantallas y 48 activos**, disparando sin parar y con los efectos de armas activos, durante al menos 2 minutos de log. Si no se llega optimizando el compositor actual, se evalúa dibujar el enjambre con OAM o con el motor 3D (quads con textura y orden de profundidad por hardware) antes de seguir.
+
+**Franja vertical:**
+- `navfield` necesita cubrir mapas altos: o un campo por ventana que sigue al jugador (la horda solo necesita navegar cerca de él) o una rejilla de 24 nodos de ancho y N de alto. Se decide al implementar.
+- El baker ya cumple el presupuesto de tiles por ventana (§3.3), que no depende del tamaño total. Los tramos repetidos comparten tiles. ROM orientativa: la mazmorra de 768×768 ocupa unos 83 KB; una franja de 384×6000 px debería quedarse en pocos cientos de KB.
+- **Timestep (§4.5):** con horda, una caída a 30 FPS pone el juego a media velocidad. Conviene resolverlo antes del tuning.
