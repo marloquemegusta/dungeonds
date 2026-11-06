@@ -94,3 +94,4 @@ Resúmenes acumulativos y auditables de cada entrega y avance de desarrollo en `
 | 76 | v0.1 Fase D: 4 arenas, runtime multi-arena y encuentros | [`v0.1/`](v0.1/walkthrough.md) | Validado en DeSmuME y host (pendiente DS) |
 | 77 | v0.2: mazmorra de manadas, modificadores y HUD de run | [`v0.2/`](v0.2/walkthrough.md) | Validado en DeSmuME y host (pendiente DS) |
 | 78 | Granada, variantes de efectos de armas, aura de carga del francotirador y ROM playground | [`weapon-previews/`](weapon-previews/walkthrough.md) | Validado en DeSmuME y host (pendiente DS) |
+| 79 | Francotirador: volumen de impacto del rayo en todo el sprite | [`sniper-hit-side/`](sniper-hit-side/walkthrough.md) | Validado en DeSmuME y host (pendiente DS) |

@@ -106,3 +106,7 @@ Granada como tercera arma (`L`), variantes de efectos A/B/C de escopeta, francot
 - Desde `f2af500` el lab regeneraba el atlas de sombras 8×8 al cargar y en cada cambio de la interfaz, con un `closePath()` por triángulo en una sola ruta de canvas: ~325 s al cargar el marine y la ventana colgada al cambiar un preset.
 - `generateCharacterShadows` cierra los triángulos con `lineTo` (extremos redondeados) y `renderLiveFrame` solo regenera las sombras si cambia la geometría, pose o cámara (no la luz ni el grading).
 - **Validación:** carga del marine en 5,6 s con GPU headless; atlas de sombras del cargador igual al anterior salvo 619 de 39.048 píxeles de borde.
+
+## 2026-11-06 - Francotirador: volumen de impacto del rayo (`fix/sniper-hit-side`)
+
+- El rayo acertaba solo en 22-39 % del sprite (elipse de suelo sin altura); ahora usa una elipse de cuerpo en pantalla (88-98 %, `include/hitvolume.h`). Escenarios `sniper_hit_sweep_west/east` fallan con la fórmula vieja y pasan con la nueva. Escopeta con la misma limitación, anotada en `TECHNICAL.md` §3.4. Pendiente validar en la DS. Detalle: [`walkthroughs/sniper-hit-side/`](walkthroughs/sniper-hit-side/walkthrough.md).

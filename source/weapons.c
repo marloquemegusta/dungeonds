@@ -3,6 +3,7 @@
 #include "modifiers.h"
 #include "grenade.h"
 #include "groundfx.h"
+#include "hitvolume.h"
 
 /* TUNABLE-PLACEHOLDER: Player Weapons Tuning Table (Fixed-Point 8.8).
  * Goal hits to kill (DESIGN.md 4.3): shotgun point blank 1 shooter / 2-3 charger,
@@ -68,7 +69,7 @@ char weapons_aura_style_letter(void) {
     return letters[g_aura_style % AURA_STYLE_COUNT];
 }
 
-#define ENEMY_HIT_RADIUS 11          // ground px
+#define ENEMY_HIT_RADIUS 11          // ground px (pellets); the sniper ray uses body_hit_test
 #define SNIPER_CANCEL_RADIUS 12      // screen px around the player's body
 #define MIN_AIM_DISTANCE 4           // ground px; closer than this there is no direction
 
@@ -504,7 +505,7 @@ static void update_aim_target(Enemy *enemies, int max_enemies) {
             if (!e->active || e->hp <= 0) continue;
             int edx = TO_INT(px - e->x);
             int edy = TO_INT(py - e->y);
-            if (edx * edx + GROUND_DY2(edy) <= ENEMY_HIT_RADIUS * ENEMY_HIT_RADIUS) {
+            if (body_hit_test(edx, edy, s_aim_muzzle_h)) {
                 s_aim_target_d = d;
                 return;
             }
@@ -690,7 +691,7 @@ static void fire_sniper(const WeaponTuning *tuning, const WeaponInput *in, fixed
             if (!e->active || e->hp <= 0 || (hit_mask & (1u << i))) continue;
             int edx = TO_INT(cur_x - e->x);
             int edy = TO_INT(cur_y - e->y);
-            if (edx * edx + GROUND_DY2(edy) <= ENEMY_HIT_RADIUS * ENEMY_HIT_RADIUS) {
+            if (body_hit_test(edx, edy, in->muzzle_h)) {
                 hit_mask |= 1u << i;
                 spawn_impact(TO_INT(cur_x), TO_INT(cur_y) - in->muzzle_h, -dir_x, -dir_y, 4);
                 int sniper_damage = tuning->damage_per_hit * g_mods.sniper_damage_pct / 100;

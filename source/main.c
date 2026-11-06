@@ -118,7 +118,7 @@ volatile OcclusionStats g_occlusion_stats;
 
 #define MAX_ENEMIES MAX_GAMEPLAY_ENEMIES
 
-static Enemy s_enemies[MAX_ENEMIES];
+Enemy g_enemies[MAX_ENEMIES];     // not static: headless scenarios read it by symbol (the arena data also has an s_enemies)
 static int abs_int(int v);
 
 #define MAX_DEATH_CHUNKS 48
@@ -790,9 +790,9 @@ static void render_screen(uint16_t *buffer, DirtySpan *spans, int cam_x, int cam
 
     // Add enemies only if visible on this screen
     for (int e_idx = 0; e_idx < MAX_ENEMIES; e_idx++) {
-        if (!s_enemies[e_idx].active) continue;
-        int esx = player_screen_x(s_enemies[e_idx].x, s_enemies[e_idx].y);
-        int esy = player_screen_y(s_enemies[e_idx].x, s_enemies[e_idx].y);
+        if (!g_enemies[e_idx].active) continue;
+        int esx = player_screen_x(g_enemies[e_idx].x, g_enemies[e_idx].y);
+        int esy = player_screen_y(g_enemies[e_idx].x, g_enemies[e_idx].y);
         int e_left = esx - PLAYER_ANCHOR_X - cam_x;
         int e_feet = esy - cam_y;
         if (e_left < SCREEN_W && e_left + PLAYER_SPRITE_W > 0 &&
@@ -850,7 +850,7 @@ static void render_screen(uint16_t *buffer, DirtySpan *spans, int cam_x, int cam
         } else if (items[i].ref <= -2 &&
                    items[i].ref > -2 - MAX_ENEMIES) {
             int e_idx = -2 - items[i].ref;
-            const Enemy *e = &s_enemies[e_idx];
+            const Enemy *e = &g_enemies[e_idx];
             draw_shadow_mask(buffer, g_character_shadow_masks[e->char_id][e->dir][e->frame],
                              PLAYER_SHADOW_W, PLAYER_SHADOW_H,
                              g_character_shadow_bounds[e->char_id][e->dir][e->frame],
@@ -894,7 +894,7 @@ static void render_screen(uint16_t *buffer, DirtySpan *spans, int cam_x, int cam
             int chunk_idx = -2 - MAX_ENEMIES - sp;
             draw_death_chunk(buffer, &s_death_chunks[chunk_idx], cam_x, cam_y);
         } else {
-            draw_enemy(buffer, &s_enemies[-2 - sp], cam_x, cam_y);
+            draw_enemy(buffer, &g_enemies[-2 - sp], cam_x, cam_y);
         }
     }
     PP_ADD(PP_BLIT, pp_blit);
@@ -1136,7 +1136,7 @@ static uint32_t present_both_screens(int top_cam_x, int top_cam_y,
 static void enemies_init(void) {
     enemy_projectiles_init();
     encounters_init(&g_encounter_mgr);
-    encounters_spawn(&g_encounter_mgr, s_enemies, MAX_ENEMIES);
+    encounters_spawn(&g_encounter_mgr, g_enemies, MAX_ENEMIES);
 }
 
 static int abs_int(int v) { return v < 0 ? -v : v; }
@@ -1244,7 +1244,7 @@ static void death_chunks_update(void) {
 
 static void weapons_and_effects_update(void) {
     grenade_set_player_pos(s_player.x, s_player.y);
-    weapons_update(s_enemies, MAX_ENEMIES);
+    weapons_update(g_enemies, MAX_ENEMIES);
     death_chunks_update();
 }
 
@@ -1267,9 +1267,9 @@ static void enemies_update(void) {
 
     nav_set_goal(TO_INT(s_player.x), TO_INT(s_player.y));
     nav_update(NAV_BUDGET_PER_FRAME);
-    enemy_ai_update(s_enemies, MAX_ENEMIES, s_player.x, s_player.y, pvx, pvy);
+    enemy_ai_update(g_enemies, MAX_ENEMIES, s_player.x, s_player.y, pvx, pvy);
     enemy_projectiles_update(s_player.x, s_player.y);
-    encounters_update(&g_encounter_mgr, s_enemies, MAX_ENEMIES, s_player.x, s_player.y);
+    encounters_update(&g_encounter_mgr, g_enemies, MAX_ENEMIES, s_player.x, s_player.y);
     mods_update(s_player.x, s_player.y);
 }
 
@@ -1360,16 +1360,16 @@ static void player_update(uint32_t keys, uint32_t keys_down) {
     if ((keys & (KEY_L | KEY_R)) == (KEY_L | KEY_R) && (keys_down & KEY_X)) {
         int best = -1, best_d2 = 0x7fffffff;
         for (int i = 0; i < MAX_ENEMIES; i++) {
-            if (!s_enemies[i].active || s_enemies[i].hp <= 0) continue;
-            int dx = TO_INT(s_enemies[i].x - s_player.x), dy = TO_INT(s_enemies[i].y - s_player.y);
+            if (!g_enemies[i].active || g_enemies[i].hp <= 0) continue;
+            int dx = TO_INT(g_enemies[i].x - s_player.x), dy = TO_INT(g_enemies[i].y - s_player.y);
             int d2 = dx * dx + GROUND_DY2(dy);
             if (d2 < best_d2) { best_d2 = d2; best = i; }
         }
         if (best >= 0) {
-            int pack = s_enemies[best].pack;
+            int pack = g_enemies[best].pack;
             for (int i = 0; i < MAX_ENEMIES; i++)
-                if (s_enemies[i].active && s_enemies[i].hp > 0 && s_enemies[i].pack == pack)
-                    enemy_hit(&s_enemies[i], 9999, 0, 0);
+                if (g_enemies[i].active && g_enemies[i].hp > 0 && g_enemies[i].pack == pack)
+                    enemy_hit(&g_enemies[i], 9999, 0, 0);
         }
     }
 
@@ -1494,7 +1494,7 @@ static void player_update(uint32_t keys, uint32_t keys_down) {
     }
     player_muzzle(&in.muzzle_x, &in.muzzle_y, &in.muzzle_h);
 
-    int result = weapons_input(&g_player_state, &in, s_enemies, MAX_ENEMIES);
+    int result = weapons_input(&g_player_state, &in, g_enemies, MAX_ENEMIES);
     s_rooted = (result & WEAPON_RESULT_ROOTED) != 0;
     if (result & WEAPON_RESULT_FIRED) {
         // Recoil: a short kick opposite to the shot.
@@ -1534,7 +1534,7 @@ static void arena_restart(void) {
     update_camera();                 // the fade-in shows the new arena before the player moves
     g_hitstop_frames = 0;
     memset(s_death_chunks, 0, sizeof(s_death_chunks));
-    encounters_spawn(&g_encounter_mgr, s_enemies, MAX_ENEMIES);
+    encounters_spawn(&g_encounter_mgr, g_enemies, MAX_ENEMIES);
 }
 
 // Switches to another arena: its palette, floor tiles and navigation field, then starts it.
@@ -1703,7 +1703,7 @@ int main(void) {
         int simulate = g_hitstop_frames <= 0 && s_transition == TRANSITION_NONE;
         if (!simulate) g_hitstop_frames--;
         if (simulate) {
-            sandbox_update(s_enemies, MAX_ENEMIES, &s_player.x, &s_player.y);
+            sandbox_update(g_enemies, MAX_ENEMIES, &s_player.x, &s_player.y);
             player_update(keys_held, s_keys_down_latch);
             s_keys_down_latch = 0;
         }
@@ -1786,7 +1786,7 @@ int main(void) {
         g_perf.blit_ticks = top_bl + bot_bl;
 
         uint32_t enemies = 0, projectiles = 0;
-        for (int i = 0; i < MAX_ENEMIES; i++) enemies += s_enemies[i].active != 0;
+        for (int i = 0; i < MAX_ENEMIES; i++) enemies += g_enemies[i].active != 0;
         projectiles += weapons_get_active_projectile_count();
         g_nav_state.x = s_player.x;
         g_nav_state.y = s_player.y;

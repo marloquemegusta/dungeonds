@@ -66,7 +66,7 @@ def touch_at(player, wx, wy, height=0):
     return {"x": sx, "y": sy}
 
 
-def setup_steps(player, weapon, style, enemies, flags=FLAG_CLEAR | FLAG_FREEZE_AI | FLAG_GOD):
+def setup_steps(player, weapon, style, enemies, flags=FLAG_CLEAR | FLAG_FREEZE_AI | FLAG_GOD, seq=1, boot=30):
     """One `poke` list (single frame), ending with seq, then wait for the game's ack."""
     pokes = [
         {"field": "player_x", "value": player[0]},
@@ -81,14 +81,15 @@ def setup_steps(player, weapon, style, enemies, flags=FLAG_CLEAR | FLAG_FREEZE_A
                   {"field": f"e{i}_flags", "value": 0},
                   {"field": f"e{i}_x", "value": x},
                   {"field": f"e{i}_y", "value": y}]
-    pokes.append({"field": "seq", "value": 1})        # last: the game applies the request next frame
-    return [
+    pokes.append({"field": "seq", "value": seq})      # last: the game applies the request next frame
+    steps = [
         # Let the game finish booting first: crt0 zeroes .bss, which would erase pokes made at frame 0.
-        {"frames": 30},
+        {"frames": boot},
         {"poke": pokes, "frames": 1},
-        {"wait_until": {"field": "ack", "equals": 1, "timeout_frames": 30}},
-        {"frames": 20, "capture": "00_staged"},
+        {"wait_until": {"field": "ack", "equals": seq, "timeout_frames": 30}},
+        {"frames": 20, "capture": f"00_staged_{seq}" if seq > 1 else "00_staged"},
     ]
+    return steps if boot else steps[1:]
 
 
 def scenario(name, steps):
@@ -153,6 +154,42 @@ def sniper_scene(style):
     return scenario(f"sandbox_sniper_{STYLE[style]}", steps)
 
 
+# Sniper hit sweep (fix/sniper-hit-side). One parked shooter facing south (sandbox ordinal 0 = DIR_SOUTH,
+# 20 hp, one sniper hit kills it) at ENEMY, the hero 70 px to its west or east. The stylus touches the
+# enemy's column at SWEEP_UP px above its feet, so the beam crosses the sprite at that screen height
+# (the touch is read at muzzle height). Ground-plane hit test (old): only up 13..23 hit; body volume
+# (new, include/hitvolume.h): every row of the sprite, up -4..32.
+ENEMY = (110, 724)
+SWEEP_UP = (-14, 0, 4, 8, 12, 16, 20, 24, 28, 32, 46)
+HIT_ROWS = (4, 8, 12, 16, 20, 24, 28)          # clearly on the sprite: must kill
+MISS_ROWS = (-14, 46)                          # clearly off the sprite: must not hurt
+ENEMY_HP_OFFSET = 28                           # offsetof(Enemy, hp) in g_enemies[0]
+
+
+def sniper_sweep_scene(side):
+    player = {"west": (40, 724), "east": (180, 724)}[side]
+    steps, assertions = [], []
+    for n, up in enumerate(SWEEP_UP, start=1):
+        steps += setup_steps(player, "sniper", 0, [(SHOOTER, *ENEMY)], seq=n, boot=30 if n == 1 else 0)
+        steps += [
+            {"tap": touch_at(player, ENEMY[0], ENEMY[1], up), "frames": 34},
+            {"release": True, "frames": 12, "state_capture": f"up{up}"},
+            {"frames": 50},                    # sniper cooldown before the next staging
+        ]
+        if up in HIT_ROWS:
+            assertions.append({"at": f"up{up}", "field": "e0_hp", "max_value": 0})
+        elif up in MISS_ROWS:
+            assertions.append({"at": f"up{up}", "field": "e0_hp", "min_value": 20})
+    fields = {k: dict(v) for k, v in FIELDS.items()}
+    fields["e0_hp"] = {"symbol": "enemies", "offset": ENEMY_HP_OFFSET, "type": "s32"}
+    return {
+        "name": f"sniper_hit_sweep_{side}",
+        "state": {"symbols": {"sb": "g_sandbox", "enemies": "g_enemies"}, "default_symbol": "sb", "fields": fields},
+        "steps": steps,
+        "assertions": {"state_changes": assertions},
+    }
+
+
 def sniper_aura_scene(look):
     """Sniper charge aura look K (lightning rays, default), C (bolt crown) or V (vertical sparks).
 
@@ -177,6 +214,7 @@ def main():
     out.mkdir(exist_ok=True)
     builds = [(style, build) for style in range(3) for build in (grenade_scene, shotgun_scene, sniper_scene)]
     builds += [(look, sniper_aura_scene) for look in ("K", "C", "V")]
+    builds += [(side, sniper_sweep_scene) for side in ("west", "east")]
     for arg, build in builds:
         sc = build(arg)
         path = out / f"{sc['name']}.json"

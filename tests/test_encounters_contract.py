@@ -46,7 +46,7 @@ class EncountersContractTest(unittest.TestCase):
         self.assertEqual(int(re.search(r"#define RUN_COMPLETE_FRAMES (\d+)", ENCOUNTERS_H).group(1)), 180)
 
     def test_main_updates_packs_and_modifiers_each_simulated_frame(self):
-        self.assertIn("encounters_update(&g_encounter_mgr, s_enemies, MAX_ENEMIES, s_player.x, s_player.y);", MAIN_C)
+        self.assertIn("encounters_update(&g_encounter_mgr, g_enemies, MAX_ENEMIES, s_player.x, s_player.y);", MAIN_C)
         self.assertIn("mods_update(s_player.x, s_player.y);", MAIN_C)
         self.assertIn("int simulate = g_hitstop_frames <= 0 && s_transition == TRANSITION_NONE;", MAIN_C)
 
@@ -54,7 +54,7 @@ class EncountersContractTest(unittest.TestCase):
         restart = MAIN_C.split("static void arena_restart(void)")[1].split("\n}")[0]
         self.assertIn("mods_reset();", restart)
         self.assertLess(restart.index("mods_reset();"), restart.index("player_state_init"))
-        self.assertIn("encounters_spawn(&g_encounter_mgr, s_enemies, MAX_ENEMIES);", restart)
+        self.assertIn("encounters_spawn(&g_encounter_mgr, g_enemies, MAX_ENEMIES);", restart)
 
     def test_death_restarts_the_whole_run_not_just_a_room(self):
         self.assertIn("if (g_player_state.is_dead) arena_restart();", MAIN_C)
