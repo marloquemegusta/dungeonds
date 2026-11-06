@@ -1,0 +1,85 @@
+{
+  "name": "playground_smoke",
+  "steps": [
+    {
+      "frames": 60,
+      "capture": "00_boot"
+    },
+    {
+      "tap": {
+        "x": 200,
+        "y": 96
+      },
+      "frames": 14,
+      "capture": "01_shotgun_east"
+    },
+    {
+      "release": true,
+      "frames": 60,
+      "capture": "02_after_shot"
+    },
+    {
+      "button_down": "SELECT",
+      "frames": 2
+    },
+    {
+      "button_up": "SELECT",
+      "frames": 2
+    },
+    {
+      "tap": {
+        "x": 200,
+        "y": 96
+      },
+      "frames": 14,
+      "capture": "03_shotgun_style_B"
+    },
+    {
+      "release": true,
+      "frames": 60
+    },
+    {
+      "button_down": "L",
+      "frames": 2
+    },
+    {
+      "button_up": "L",
+      "frames": 2
+    },
+    {
+      "tap": {
+        "x": 200,
+        "y": 96
+      },
+      "frames": 50,
+      "capture": "04_sniper_B_aim"
+    },
+    {
+      "release": true,
+      "frames": 12,
+      "capture": "05_sniper_B_shot"
+    },
+    {
+      "frames": 120,
+      "capture": "06_auto_respawn_window"
+    },
+    {
+      "button_down": "R",
+      "frames": 2
+    },
+    {
+      "button_up": "R",
+      "frames": 10,
+      "capture": "07_after_R"
+    }
+  ],
+  "assertions": {
+    "screen_changes": [
+      {
+        "from": "00_boot",
+        "to": "02_after_shot",
+        "min_changed_pixels": 20
+      }
+    ]
+  }
+}
