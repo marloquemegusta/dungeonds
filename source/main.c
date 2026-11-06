@@ -7,6 +7,8 @@
 #include "navfield.h"
 #include "projectiles.h"
 #include "weapons.h"
+#include "grenade.h"
+#include "sandbox.h"
 #include "encounters.h"
 #include "modifiers.h"
 #include "crashlog.h"
@@ -240,6 +242,14 @@ static inline uint32_t find_hiding_run(int y, int x0, int x1, int actor_depth, u
         if ((int)r->depth > actor_depth) return k;
     }
     return re;
+}
+
+// Used by the ground decals (groundfx.c): non-zero when some wall run hides any pixel of world row y
+// in [x0, x1) from an object of this depth. One lookup per span instead of one per pixel.
+int world_span_hidden(int y, int x0, int x1, int depth) {
+    if ((uint32_t)y >= g_arena->world_h) return 0;
+    uint32_t row_end;
+    return find_hiding_run(y, x0, x1, depth, &row_end) < row_end;
 }
 
 static inline void blit_px_range(uint16_t *drow, const uint16_t *srow, int a, int b) {
@@ -823,6 +833,9 @@ static void render_screen(uint16_t *buffer, DirtySpan *spans, int cam_x, int cam
     if (out_floor) *out_floor = cpuGetTiming() - floor_start_ticks;
     PP_ADD(PP_CLEAR, pp_clear);
 
+    // 0) Ground decals of the weapons (aim marker, warning zones, shock rings): under everything.
+    weapons_render_floor(buffer, cam_x, cam_y);
+
     // 1) Composite dynamic entity shadows (player & enemies, animated per frame)
     uint32_t t_sh0 = cpuGetTiming();
     PP_T0(pp_shadow);
@@ -885,6 +898,7 @@ static void render_screen(uint16_t *buffer, DirtySpan *spans, int cam_x, int cam
         }
     }
     PP_ADD(PP_BLIT, pp_blit);
+    weapons_render_light(buffer, cam_x, cam_y);     // beams light the sprites drawn above
     PP_T0(pp_proj);
     enemy_projectiles_render(buffer, cam_x, cam_y);
     weapons_render(buffer, cam_x, cam_y);
@@ -972,8 +986,9 @@ static void draw_fps_hud(uint16_t *buffer) {
         snprintf(labels[2], sizeof(labels[2]), "HP:%d",
                  g_player_state.hp);
     }
-    snprintf(labels[3], sizeof(labels[3]), "WPN:%s",
-             weapons_get_name(g_player_state.current_weapon));
+    snprintf(labels[3], sizeof(labels[3]), "WPN:%s FX:%c%c",
+             weapons_get_name(g_player_state.current_weapon), weapons_fx_style_letter(),
+             weapons_aura_style_letter());
 
     const int left = 4, top = 4, pad = 2, char_w = 6, glyph_w = 5, glyph_h = 7, line_gap = 2;
     int first_w = (int)strlen(labels[0]) * char_w - 1;
@@ -1228,6 +1243,7 @@ static void death_chunks_update(void) {
 }
 
 static void weapons_and_effects_update(void) {
+    grenade_set_player_pos(s_player.x, s_player.y);
     weapons_update(s_enemies, MAX_ENEMIES);
     death_chunks_update();
 }
@@ -1360,6 +1376,16 @@ static void player_update(uint32_t keys, uint32_t keys_down) {
     // L is the only button of the test: it switches weapon (and cancels a sniper aim).
     if (keys_down & KEY_L) {
         weapons_cycle(&g_player_state);
+    }
+    // Playground ROM: R puts the parked dummies back (no-op in every other build).
+    if (keys_down & KEY_R) sandbox_respawn();
+    // DESIGN.md 4.9 (debug): SELECT cycles the weapon-effects style A/B/C for the comparison.
+    if (keys_down & KEY_SELECT) {
+        g_fx_style = (g_fx_style + 1) % FX_STYLE_COUNT;
+    }
+    // DESIGN.md 4.9 (debug): Y cycles the sniper charge aura look K -> C -> V for the comparison.
+    if (keys_down & KEY_Y) {
+        g_aura_style = (g_aura_style + 1) % AURA_STYLE_COUNT;
     }
 
     int pressed = s_latch_pressed;
@@ -1566,7 +1592,7 @@ volatile PerfStats g_perf = {
     .top_render_ticks = 0,
     .bot_render_ticks = 0,
     .present_ticks = 0,
-    .show_hud = 0,
+    .show_hud = PLAYGROUND,       // the playground ROM shows the weapon / style label from the start
     .dirty_leaks = 0
 };
 
@@ -1677,6 +1703,7 @@ int main(void) {
         int simulate = g_hitstop_frames <= 0 && s_transition == TRANSITION_NONE;
         if (!simulate) g_hitstop_frames--;
         if (simulate) {
+            sandbox_update(s_enemies, MAX_ENEMIES, &s_player.x, &s_player.y);
             player_update(keys_held, s_keys_down_latch);
             s_keys_down_latch = 0;
         }

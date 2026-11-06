@@ -3,6 +3,7 @@
 #include "navfield.h"
 #include "projectiles.h"
 #include "player_sprite.h"
+#include "sandbox.h"
 #include <string.h>
 
 static uint32_t s_ai_tick = 0;
@@ -394,6 +395,8 @@ void enemy_ai_update(Enemy *enemies, int num_enemies, fixed player_x, fixed play
             e->knock_vy = (e->knock_vy * 224) >> 8;
             continue;
         }
+
+        if (g_sandbox_freeze_ai) continue;                 // sandbox: stand still, no move and no attack
 
         if (e->state == ENEMY_STATE_DORMANT) continue;     // asleep: encounters.c wakes the whole pack
 

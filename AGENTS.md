@@ -49,6 +49,17 @@ Si una regla o cifra aparece en dos documentos, uno de ellos sobra: dejarla en s
 
 ---
 
+## Flujo de VFX (como se hicieron los efectos de armas, 2026-11)
+
+1. **Decisión antes de código** (regla 9): la dirección artística se escribe en `DESIGN.md` con referencias (imágenes del usuario) y reglas comunes, por ejemplo la perspectiva 2:1 del suelo y la oclusión por el cuerpo.
+2. **Mockups baratos primero**, solo para elegir: GIFs o hojas de píxeles con 3 alternativas por efecto. No valen como evidencia de juego (regla 8).
+3. **Implementación real en la ROM**, con un selector de depuración para comparar variantes en vivo. El agente implementa (Haiku por defecto) y quien dirige el arte revisa; cada agente lleva un brief con archivos, tope de coste por frame y criterio de aceptación.
+4. **Sandbox y capturas**: escenas con enemigos parados y héroe invulnerable (`tools/sandbox_scenes.py`), geometría exacta (regla 5), GIFs de la ROM real a ~50-60 ms por frame, y hojas de contacto ampliadas (4x NEAREST sobre el héroe) que se miran de verdad antes de dar nada por bueno.
+5. **Iterar con referencias**: cada ronda ajusta una cosa (por ejemplo, de hélice a rayos angulosos y luego a trazo fino) y se descartan variantes en el walkthrough.
+6. **Cierre**: tests de host (contratos de texto: topes, sin `float`, orden de pases), 0 warnings, escenarios PASS, y medición en la DS con la variante `playground-perf` (regla 6) antes de mergear.
+
+Lecciones: un bucle sin tope congela el juego; el coste de la oclusión por píxel se come el frame, mejor por tramos; un agente que se atasca se reanuda con un mensaje corto; los pokes en el frame 0 los borra crt0.
+
 ## Subagentes y Modelos
 
 - Todo plan que lance subagentes indica el modelo de cada uno. Por defecto: **Haiku** para búsquedas, listados, verificar que algo sigue presente o leer logs; **Sonnet** para análisis de código, revisiones y auditorías por área; **Opus** solo para decisiones de arquitectura o diseño que no se puedan partir.
