@@ -192,6 +192,7 @@ static int s_aim_target_d = 0;      // sniper C: distance along the aim ray wher
 static int s_weapon_cooldown = 0;
 static int s_aim_state = AIM_IDLE;
 static int s_aim_timer = 0;
+static int s_aim_prog = 0;          // collimation 0..256 (256 = armed), set once per frame in weapons_input
 static fixed s_aim_dir_x = 0, s_aim_dir_y = 256;
 static fixed s_aim_muzzle_x = 0, s_aim_muzzle_y = 0;
 static int s_aim_muzzle_h = 0;
@@ -225,6 +226,7 @@ void weapons_init(void) {
     s_weapon_cooldown = 0;
     s_aim_state = AIM_IDLE;
     s_aim_timer = 0;
+    s_aim_prog = 0;
     s_last_dir_x = s_last_dir_y = 0;
     s_shake_timer = 0;
     s_flash.life = 0;
@@ -243,6 +245,7 @@ void weapons_cycle(PlayerState *player) {
     player->current_weapon = (WeaponType)((player->current_weapon + 1) % NUM_WEAPON_TYPES);
     s_aim_state = AIM_IDLE;
     s_aim_timer = 0;
+    s_aim_prog = 0;
     aura_reset();
     grenade_cancel();
 }
@@ -965,6 +968,7 @@ int weapons_input(PlayerState *player, const WeaponInput *in, Enemy *enemies, in
         if (in->touch_pressed && s_weapon_cooldown <= 0) {
             s_aim_state = AIM_AIMING;
             s_aim_timer = 0;
+            s_aim_prog = 0;
         }
     }
     if (s_aim_state == AIM_IDLE) return 0;
@@ -998,6 +1002,9 @@ int weapons_input(PlayerState *player, const WeaponInput *in, Enemy *enemies, in
     s_aim_timer++;
     int aim_frames = g_weapon_tuning[WEAPON_SNIPER].aim_min_frames + g_mods.sniper_aim;
     if (aim_frames < 6) aim_frames = 6;
+    // Collimation progress: the only divide of the aim laser, once per frame. READY gives 256.
+    s_aim_prog = (s_aim_timer << 8) / aim_frames;
+    if (s_aim_prog > 256) s_aim_prog = 256;
     s_aura_x = TO_INT(in->player_x);
     s_aura_y = TO_INT(in->player_y);
     s_aura_frames = aim_frames;
@@ -1108,6 +1115,7 @@ enum {
     FX_DUST_A, FX_DUST_B,                          // dust, light to dark
     FX_MARK,                                       // scorch on the wall
     FX_BLUE_LIGHT,                                 // sniper aura K/C: light blue pixels
+    FX_AIM_DIM,                                    // sniper collimation: dark red dither
     FX_NUM_COLORS
 };
 
@@ -1124,7 +1132,8 @@ static const uint16_t s_fx_rgb[FX_NUM_COLORS] = {
     RGB15(17, 17, 18), RGB15(11, 11, 12), RGB15(6, 6, 7),
     RGB15(22, 20, 16), RGB15(13, 12, 10),
     RGB15(5, 3, 3),                                // FX_MARK
-    RGB15(12, 22, 31)                              // FX_BLUE_LIGHT
+    RGB15(12, 22, 31),                             // FX_BLUE_LIGHT
+    RGB15(15, 4, 5)                                // FX_AIM_DIM
 };
 
 typedef struct {
@@ -1197,26 +1206,81 @@ static void draw_cone(const FxTarget *t, int ox, int oy, fixed dir_x, fixed dir_
     }
 }
 
+// Collimation band: at each ray point paint offsets -w..w across the aim. The centre takes
+// `color`, inner offsets dark red, and the rim (|o| == w) only on a checkerboard.
+static void aim_band(const FxTarget *t, int px, int py, int w, int color) {
+    for (int o = -w; o <= w; o++) {
+        int x = px + ((s_aim_dir_y * o) >> 8);
+        int y = py - ((s_aim_dir_x * o) >> 8);
+        if (o == 0) put_px(t, x, y, color);
+        else if (o == w || o == -w) {
+            if (((x + y) & 1) == 0) put_px(t, x, y, FX_AIM_DIM);
+        } else put_px(t, x, y, FX_AIM_DIM);
+    }
+}
+
+// Halo for sniper C: checkered offsets -hw..hw around the ray point, centre left to the line.
+static void aim_halo(const FxTarget *t, int px, int py, int hw) {
+    for (int o = -hw; o <= hw; o++) {
+        if (o == 0) continue;
+        int x = px + ((s_aim_dir_y * o) >> 8);
+        int y = py - ((s_aim_dir_x * o) >> 8);
+        if (((x + y) & 1) == 0) put_px(t, x, y, FX_AIM_DIM);
+    }
+}
+
+// Aim laser while charging (DESIGN 4.9): the beam collimates from wide and red to 1 px green.
+// w = lateral half-width in px (6 at 0 %, 0 when armed); s_aim_prog is set once per frame.
 static void render_aim_line(const FxTarget *t, int cam_x, int cam_y) {
     if (s_aim_state != AIM_AIMING && s_aim_state != AIM_READY) return;
     int ready = s_aim_state == AIM_READY;
-    int color = ready ? FX_AIM_READY : FX_AIM;
+    int w = (6 * (256 - s_aim_prog)) >> 8;
+    int color = ready || s_aim_prog >= 180 ? FX_AIM_READY : FX_AIM;
     int last_x, last_y;
     aim_point(0, cam_x, cam_y, &last_x, &last_y);
 
     if (g_fx_style == 1) {
-        // B: dotted red line; once armed it is green and blinks.
-        if (ready && ((s_aim_timer >> 1) & 1)) return;
-        for (int d = 3; d <= s_aim_len; d += 3) {
+        // B: dotted line (every 3 px, 2 when armed) and a hashed dust cloud around it.
+        int step = ready ? 2 : 3;
+        for (int d = step; d <= s_aim_len; d += step) {
             int px, py;
             aim_point(d, cam_x, cam_y, &px, &py);
             put_px(t, px, py, color);
+        }
+        // Cloud size shrinks with progress: about 0.9 * len * (256 - prog) / 256, capped at 128.
+        int n = (((s_aim_len * (256 - s_aim_prog)) >> 8) * 230) >> 8;
+        if (n > 128) n = 128;
+        // Deterministic LCG per point: no rng state, no divide.
+        uint32_t seed = (uint32_t)(s_aim_timer >> 1) * 2654435761u;
+        for (int i = 0; i < n; i++) {
+            uint32_t h = (seed + (uint32_t)i * 2246822519u) * 1664525u + 1013904223u;
+            int d = 1 + (int)(((h >> 16) * (uint32_t)s_aim_len) >> 16);
+            int o = (int)(((h & 0xFFFFu) * (uint32_t)(2 * w + 1)) >> 16) - w;
+            int px, py;
+            aim_point(d, cam_x, cam_y, &px, &py);
+            int x = px + ((s_aim_dir_y * o) >> 8);
+            int y = py - ((s_aim_dir_x * o) >> 8);
+            put_px(t, x, y, ((h >> 8) & 3) ? FX_AIM_DIM : color);
         }
         return;
     }
 
     if (g_fx_style == 2) {
-        // C: solid line and a reticle over the first target; the brackets close when armed.
+        // C: halo narrowing toward the reticle (60 % less at the target), solid line, reticle.
+        if (w > 0) {
+            // k = d / len in 8.8, tracked incrementally so the loop has no divide.
+            int len = s_aim_len > 0 ? s_aim_len : 1;
+            int k = 0, kacc = 0;
+            for (int d = 1; d <= s_aim_len; d++) {
+                kacc += 256;
+                while (kacc >= len && k < 256) { kacc -= len; k++; }
+                int hw = (w * (100 - ((60 * k) >> 8)) * 164) >> 14;     // w * (100 - 60k) / 100
+                if (hw <= 0) continue;
+                int px, py;
+                aim_point(d, cam_x, cam_y, &px, &py);
+                aim_halo(t, px, py, hw);
+            }
+        }
         int ex, ey, cx, cy;
         aim_point(s_aim_len, cam_x, cam_y, &ex, &ey);
         draw_line(t, last_x, last_y, ex, ey, color);
@@ -1241,13 +1305,11 @@ static void render_aim_line(const FxTarget *t, int cam_x, int cam_y) {
         return;
     }
 
-    // A: thin line, dashed while aiming, solid once the shot is armed.
-    for (int d = 2; d <= s_aim_len; d += 2) {
+    // A: 1 px line at the end, a checkered dark band around it while charging.
+    for (int d = 1; d <= s_aim_len; d++) {
         int px, py;
         aim_point(d, cam_x, cam_y, &px, &py);
-        if (ready || (((d - 2) >> 2) & 1) == 0) draw_line(t, last_x, last_y, px, py, color);
-        last_x = px;
-        last_y = py;
+        aim_band(t, px, py, w, color);
     }
 }
 

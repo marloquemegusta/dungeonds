@@ -25,12 +25,13 @@ SCENARIOS = ROOT / "scenarios"
 CAPTURES = ROOT / "test_output"
 ASSETS = ROOT / "walkthroughs" / "weapon-previews" / "assets"
 
+COLLIM_ASSETS = ROOT / "walkthroughs" / "sniper-collimation" / "assets"
 CROP = (0, 192, 256, 384)      # lower screen of a 256x384 capture
 SCALE = 2
 STATIC_MS = 600
 LAST_MS = 900
 MIN_FRAME_MS = 20
-FRAME_RE = re.compile(r"^sandbox_(grenade|shotgun|sniper)_([ABC])$")
+FRAME_RE = re.compile(r"^sandbox_(grenade|shotgun|sniper)_((?:collim_)?[ABC])$")
 WEAPON_LABEL = {"grenade": "GRANADA", "shotgun": "ESCOPETA", "sniper": "FRANCOTIRADOR"}
 
 
@@ -110,14 +111,16 @@ def build(path, max_kb):
     if not items:
         raise ValueError("sin fotogramas")
 
-    label_text = f"{WEAPON_LABEL[weapon]} {style}"
+    label_text = f"{WEAPON_LABEL[weapon]} {style.replace('collim_', '')} COLIMADO"
     font = load_font()
     frames = [load_frame(png, label_text, font) for png, _ in items]
     durations = [ms for _, ms in items]
     durations[-1] = LAST_MS
 
     ASSETS.mkdir(parents=True, exist_ok=True)
-    out = ASSETS / f"sbx_{weapon}_{style}.gif"
+    out_dir = COLLIM_ASSETS if style.startswith("collim_") else ASSETS
+    out_dir.mkdir(parents=True, exist_ok=True)
+    out = out_dir / f"sbx_{weapon}_{style}.gif"
     colors, size = save_gif(frames, durations, out, max_kb * 1024)
     if size > max_kb * 1024:
         print(f"  aviso {out.name}: sigue superando {max_kb} KB con 64 colores", file=sys.stderr)
@@ -136,7 +139,7 @@ def main(argv=None):
     args = parser.parse_args(argv)
 
     if args.all:
-        paths = sorted(p for p in SCENARIOS.glob("sandbox_*.json") if "_aura_" not in p.name)
+        paths = sorted(p for p in SCENARIOS.glob("sandbox_*.json") if "_aura_" not in p.name and "_collim_" not in p.name)
     else:
         paths = []
         for arg in args.scenarios:

@@ -366,5 +366,39 @@ class SniperAuraContractTest(unittest.TestCase):
         self.assertIn("s_aura_y = TO_INT(in->player_y);", WEAPONS_C)
 
 
+class SniperCollimationContractTest(unittest.TestCase):
+    AIM = WEAPONS_C.split("// Collimation band: at each ray point")[1].split("// Parts with volume")[0]
+
+    def test_progress_is_set_once_per_frame_and_reset(self):
+        self.assertIn("static int s_aim_prog = 0;", WEAPONS_C)
+        self.assertIn("s_aim_prog = (s_aim_timer << 8) / aim_frames;", WEAPONS_C)
+        self.assertIn("if (s_aim_prog > 256) s_aim_prog = 256;", WEAPONS_C)
+        self.assertEqual(WEAPONS_C.count("/ aim_frames;"), 1)
+        init = WEAPONS_C.split("void weapons_init(void) {")[1].split("\n}\n")[0]
+        self.assertIn("s_aim_prog = 0;", init)
+        cycle = WEAPONS_C.split("void weapons_cycle")[1].split("}\n")[0]
+        self.assertIn("s_aim_prog = 0;", cycle)
+        self.assertIn("s_aim_timer = 0;\n            s_aim_prog = 0;", WEAPONS_C)
+
+    def test_collimation_uses_no_floating_point_or_divide(self):
+        code = re.sub(r"//[^\n]*", "", self.AIM)
+        for banned in (r"\bfloat\b", r"\bdouble\b"):
+            self.assertIsNone(re.search(banned, code), banned)
+        self.assertNotIn("/", code)
+        self.assertNotIn("%", code)
+
+    def test_cloud_is_capped_at_128_points_and_has_no_blink(self):
+        self.assertIn("if (n > 128) n = 128;", self.AIM)
+        self.assertIn("uint32_t seed", self.AIM)
+        self.assertNotIn("((s_aim_timer >> 1) & 1)", self.AIM)
+        self.assertNotIn("rng_range", self.AIM)
+
+    def test_dim_colour_and_green_threshold(self):
+        self.assertIn("FX_AIM_DIM,", WEAPONS_C)
+        self.assertIn("RGB15(15, 4, 5)                                // FX_AIM_DIM", WEAPONS_C)
+        self.assertIn("s_aim_prog >= 180", self.AIM)
+        self.assertIn("int w = (6 * (256 - s_aim_prog)) >> 8;", self.AIM)
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -153,6 +153,23 @@ def sniper_scene(style):
     return scenario(f"sandbox_sniper_{STYLE[style]}", steps)
 
 
+def sniper_collimation_scene(style):
+    """Sniper laser collimation (DESIGN.md 4.9): same stage as sniper_scene, one capture per game frame.
+
+    The touch is held 50 frames (charge, then READY hold: aim_min_frames is 24), then released for the shot.
+    """
+    player = (40, 724)
+    enemies = [(SHOOTER, 110, 724), (CHARGER, 170, 724), (SHOOTER, 230, 724)]
+    steps = setup_steps(player, "sniper", style, enemies)
+    steps += [
+        {"tap": touch_at(player, 110, 724 + MUZZLE_DY, MUZZLE_H), "frames": 50, "capture_sequence": "charge", "capture_every": 1},
+        {"frames": 1, "capture": "aim"},
+        {"release": True, "frames": 14, "capture_sequence": "shot", "capture_every": 1},
+        {"frames": 30, "capture": "after"},
+    ]
+    return scenario(f"sandbox_sniper_collim_{STYLE[style]}", steps)
+
+
 def sniper_aura_scene(look):
     """Sniper charge aura look K (lightning rays, default), C (bolt crown) or V (vertical sparks).
 
@@ -177,6 +194,7 @@ def main():
     out.mkdir(exist_ok=True)
     builds = [(style, build) for style in range(3) for build in (grenade_scene, shotgun_scene, sniper_scene)]
     builds += [(look, sniper_aura_scene) for look in ("K", "C", "V")]
+    builds += [(style, sniper_collimation_scene) for style in range(3)]
     for arg, build in builds:
         sc = build(arg)
         path = out / f"{sc['name']}.json"

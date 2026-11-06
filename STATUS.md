@@ -86,6 +86,10 @@ Primero el estado necesario para retomar el trabajo sin depender del chat; despu
 
 Granada como tercera arma (`L`), variantes de efectos A/B/C de escopeta, francotirador y granada (`SELECT`), aura de carga del francotirador K/C/V (`Y`), regla de perspectiva del suelo 2:1 (`groundfx`), sandbox con ROM `playground` para comparar en la consola. Decisiones en `DESIGN.md` §4.9. Validado en DeSmuME y tests de host; rendimiento probado en la DS con `playground-perf` (el usuario reporta que va bien). Detalle y GIFs: [walkthrough](walkthroughs/weapon-previews/walkthrough.md).
 
+## 2026-11-06 - Colimado del láser del francotirador (rama `feat/sniper-collimation`, sin mergear)
+
+El láser de apuntado se colima durante la carga (ancho, difuso y rojo a 1 px verde estable) en los estilos A/B/C; decisión en `DESIGN.md` §4.9. Tests de host y escenarios del sandbox OK, 0 warnings; **pendiente certificar 60 FPS en la DS** con `playground-perf`. Detalle y GIFs: [walkthrough](walkthroughs/sniper-collimation/walkthrough.md).
+
 ## 2026-11-04 - v0.2: Mazmorra de Manadas con Modificadores
 
 ### Resumen
