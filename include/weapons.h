@@ -87,6 +87,7 @@ typedef struct {
 #define WEAPON_RESULT_ROOTED 2   // the player must stand still (sniper aiming)
 
 void weapons_init(void);
+void weapons_shift_y(int dy_px);
 void weapons_cycle(PlayerState *player);
 // True when a stylus press would start a sniper aim (the player must stop that frame).
 int weapons_can_start_aim(const PlayerState *player);

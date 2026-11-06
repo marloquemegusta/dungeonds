@@ -1,4 +1,5 @@
 #include "enemy_ai.h"
+#include "horde.h"
 #include "los.h"
 #include "navfield.h"
 #include "projectiles.h"
@@ -7,6 +8,9 @@
 #include <string.h>
 
 static uint32_t s_ai_tick = 0;
+static int s_strip_mode;
+
+void enemy_ai_set_strip_mode(int enabled) { s_strip_mode = enabled != 0; }
 
 static inline uint32_t int_sqrt(uint32_t n) {
     uint32_t root = 0;
@@ -307,11 +311,15 @@ static void update_shooter(Enemy *e, Enemy *enemies, int num_enemies, int idx,
     int dx = px - wx;
     int dy = py - wy;
     int ground_dist = (int)int_sqrt((uint32_t)(dx * dx + GROUND_DY2(dy)));
-
-    // What the shooter can do from here, refreshed every few frames.
     if (((s_ai_tick + idx) & 3) == 0) {
         e->has_los = (bullet_line_is_free(wx, wy, px, py) ? VIEW_BULLET : 0) |
                      (line_is_walkable(wx, wy, px, py) ? VIEW_WALKABLE : 0);
+    }
+    if (s_strip_mode && wy < py - HORDE_SHOOTER_TOP_LIMIT_PX) {
+        e->state = ENEMY_STATE_POSITION;
+        e->state_timer = 0;
+        shooter_reposition(e, enemies, num_enemies, idx, px, py, ground_dist);
+        return;
     }
 
     switch (e->state) {

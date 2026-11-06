@@ -6,6 +6,9 @@
         "playground": {
             "defines": ["SANDBOX=1", "PLAYGROUND=1"]
         },
+        "perf": {
+            "defines": ["PERF_PROFILE=1"]
+        },
         "playground-perf": {
             "defines": ["SANDBOX=1", "PLAYGROUND=1", "PERF_PROFILE=1"]
         }

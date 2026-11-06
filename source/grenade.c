@@ -355,6 +355,18 @@ void grenade_init(void) {
     }
 }
 
+void grenade_shift_y(int dy_px) {
+    fixed shift = TO_FIXED(dy_px);
+    for (int i = 0; i < GRENADE_MAX_ACTIVE; i++)
+        if (s_gren[i].active) { s_gren[i].cur_y += shift; s_gren[i].ty += shift; }
+    for (int i = 0; i < GR_BLAST_SLOTS; i++)
+        if (s_blast[i].active) s_blast[i].cy += shift;
+    for (int i = 0; i < GR_GFX_MAX; i++)
+        if (s_fx[i].kind != PK_NONE) s_fx[i].cy += shift;
+    if (s_aim_valid) s_aim_y += shift;
+    s_player_y += shift;
+}
+
 void grenade_set_player_pos(fixed x, fixed y) {
     s_player_x = x;
     s_player_y = y;

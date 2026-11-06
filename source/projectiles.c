@@ -9,6 +9,12 @@ void enemy_projectiles_init(void) {
     memset(g_enemy_projectiles, 0, sizeof(g_enemy_projectiles));
 }
 
+void enemy_projectiles_shift_y(int dy_px) {
+    fixed shift = TO_FIXED(dy_px);
+    for (int i = 0; i < MAX_ENEMY_PROJECTILES; i++)
+        if (g_enemy_projectiles[i].active) g_enemy_projectiles[i].y += shift;
+}
+
 EnemyProjectile *enemy_projectile_spawn_linear(fixed x, fixed y, fixed vx, fixed vy, int height, int life) {
     for (int i = 0; i < MAX_ENEMY_PROJECTILES; i++) {
         EnemyProjectile *p = &g_enemy_projectiles[i];

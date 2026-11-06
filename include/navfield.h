@@ -13,12 +13,17 @@
 // complete, so enemies always read a finished field and the cost stays amortized.
 
 #define NAV_NODE_PX 16                       // world px per node (4 collision cells)
-#define NAV_MAX_W 48                         // largest arena (px / NAV_NODE_PX) the buffers hold
-#define NAV_MAX_H 48
+#define NAV_MAX_W 48                         // keeps the widest v0.2 arena supported
+#define NAV_MAX_H 128                        // 2048 px window / 16 px per node
 #define NAV_UNREACHABLE 255
 
 // Builds the walkable-node grid from the active arena. Call whenever the arena changes.
 void nav_init(void);
+
+// Rebuilds the walkable grid incrementally after the active arena data shifts.
+// nav_update spends its node budget on this grid first, then on the distance search.
+void nav_refresh_begin(int goal_px, int goal_py);
+void nav_shift_down(int rows, int goal_px, int goal_py);
 
 // Grid size of the active arena, in nodes.
 int nav_width(void);

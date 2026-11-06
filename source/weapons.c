@@ -241,6 +241,25 @@ void weapons_init(void) {
     grenade_init();
 }
 
+void weapons_shift_y(int dy_px) {
+    fixed fdy = TO_FIXED(dy_px);
+    for (int i = 0; i < MAX_PLAYER_PROJECTILES; i++)
+        if (s_player_projectiles[i].active) s_player_projectiles[i].y += fdy;
+    for (int i = 0; i < MAX_SPARKS; i++)
+        if (s_sparks[i].active) s_sparks[i].y += fdy;
+    for (int i = 0; i < MAX_FX_PARTS; i++)
+        if (s_fx[i].kind != FXP_NONE) s_fx[i].y += fdy;
+    if (s_flash.life > 0) s_flash.y += dy_px;
+    if (s_trail.life > 0) { s_trail.y0 += dy_px; s_trail.y1 += dy_px; }
+    if (s_aim_state != AIM_IDLE && s_aim_state != AIM_CANCELLED) s_aim_muzzle_y += fdy;
+    for (int i = 0; i < AURA_MAX_BOLTS; i++)
+        if (s_aura_bolts[i].active)
+            for (int p = 0; p < s_aura_bolts[i].n; p++) s_aura_bolts[i].py[p] += dy_px;
+    for (int i = 0; i < AURA_MAX_STREAKS; i++)
+        if (s_aura_streaks[i].active) s_aura_streaks[i].y += dy_px;
+    s_aura_y += dy_px;
+}
+
 void weapons_cycle(PlayerState *player) {
     if (!player) return;
     player->current_weapon = (WeaponType)((player->current_weapon + 1) % NUM_WEAPON_TYPES);

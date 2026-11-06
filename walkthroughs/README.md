@@ -97,3 +97,4 @@ Resúmenes acumulativos y auditables de cada entrega y avance de desarrollo en `
 | 79 | Colimado del láser del francotirador (estilos A/B/C) | [`sniper-collimation/`](sniper-collimation/walkthrough.md) | Validado en DeSmuME y host (pendiente DS) |
 | 80 | Francotirador: volumen de impacto del rayo en todo el sprite | [`sniper-hit-side/`](sniper-hit-side/walkthrough.md) | Validado en DeSmuME y host (pendiente DS) |
 | 81 | Dirección v0.3: survivors de frente vertical | [`survivors-direction/`](survivors-direction/walkthrough.md) | Diseño (sin código) |
+| 82 | v0.3 mínima: franja vertical infinita, horda desde arriba, marea y curas | [`v03-minima/`](v03-minima/walkthrough.md) | Validado en DeSmuME, host y DS (60 FPS) |
