@@ -22,6 +22,12 @@ Plan completo y agentes de cada paso en `DESIGN.md` §6.9. Los dos primeros no d
 
 Siguen abiertos, sin prioridad frente a la v0.3: timestep y deuda del motor (`TECHNICAL.md` §4.5, el timestep conviene antes del tuning), escala personaje/mapa (§4.1), data abort intermitente (§4.4) y transparencias (§4.6, fuera de la v0.3). Los pasos de cierre de la v0.2 (modificadores, pedestales, mazmorra más grande) se descartan.
 
+### Ramas aparcadas (se borran si caducan)
+- **`feat/v03-mazmorra`** (commit `1e4973d`, sin worktree). Trabajo de la sesión del 2026-11-04/05 (mazmorra de 1280×1280 y luz oscura), guardado como WIP. Nunca se probó en la DS ni se revisó, y la dirección cambió a la v0.3 survivors. **No es una base: como mucho, una cantera.**
+  - **Quizá útil en el paso 3 (franja vertical):** `navfield` a 80×80 con distancias `uint16`, sin `/` ni `%` por nodo y con límite de profundidad (`NAV_MAX_DEPTH`); `BG_MAX_TILES` 4096; `solve_frame` analítico y `normalize_blocks` (bloques sin costuras) en `tools/make_arena_glb.py`; `export_arenas.py`, que aclara los píxeles negros del suelo para que el baker no los tome por vacío; y `tools/gen_dungeon_layout.py` como idea para el generador de tramos (está pensado para salas, no para tramos). Hay que revisar y medir todo antes de traerlo.
+  - **No rescatar:** el mapa de 1280 y sus manadas; los sprites re-renderizados, cuya luz no se aprobó (el brillo de contorno parecía escarcha); y su `DESIGN.md` §6, que contradice el vigente. El lab y la luz se están rehaciendo en otro worktree, así que no se toman de aquí.
+  - **Caducidad:** borrar la rama (`git branch -D feat/v03-mazmorra`) en cuanto el paso 3 rehaga esas piezas por otro lado o, en todo caso, si el **2026-12-06** no se ha usado nada de ella.
+
 ---
 
 ## 2026-11-02 - Colisión y Oclusión Coherentes con el Render del Mapa
