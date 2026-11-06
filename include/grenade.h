@@ -15,6 +15,7 @@
 #define GRENADE_MAX_ACTIVE 2
 
 void grenade_init(void);
+void grenade_shift_y(int dy_px);
 // Weapon switched or the arena restarted: drop any aim in progress (thrown grenades keep ticking).
 void grenade_cancel(void);
 // Player ground position, refreshed every simulated frame (the blast hits the player's real position).

@@ -4,7 +4,8 @@ Primero el estado necesario para retomar el trabajo sin depender del chat; despu
 
 ## Estado actual (2026-11-06)
 
-- **Dirección vigente (v0.3, decidida 2026-11-06, sin código todavía):** survivors de frente vertical con apuntado manual. Un nivel de ~8 min en una franja vertical que se sube mientras una marea avanza desde abajo, horda continua, gemas → nivel → elegir 1 de 3 mejoras, élites, minijefe y jefe, y clase = arma (francotirador/láser y escopeta). Diseño en `DESIGN.md` §6; requisitos técnicos en `TECHNICAL.md` §4.7. Sesión: `walkthroughs/survivors-direction/`.
+- **v0.3 mínima jugable (2026-11-06, `walkthroughs/v03-minima/`):** la ROM principal arranca en la franja vertical infinita con horda desde arriba, marea, curas y HUD de altura (`DESIGN.md` §6.0). 60 FPS en la DS con el pool de 24. Lo siguiente es ajustar cifras y assets jugando; el resto de §6 (gemas, mejoras, élites, jefes) sigue sin código.
+- **Dirección vigente (v0.3, decidida 2026-11-06):** survivors de frente vertical con apuntado manual. Un nivel de ~8 min en una franja vertical que se sube mientras una marea avanza desde abajo, horda continua, gemas → nivel → elegir 1 de 3 mejoras, élites, minijefe y jefe, y clase = arma (francotirador/láser y escopeta). Diseño en `DESIGN.md` §6; requisitos técnicos en `TECHNICAL.md` §4.7. Sesión: `walkthroughs/survivors-direction/`.
 - **Rama base:** `main`, con v0.1 (`walkthroughs/v0.1/`) y v0.2 (`walkthroughs/v0.2/`) integradas. La v0.2 se integró con la deuda de rendimiento anotada abajo.
 - **Juego (v0.2, en `main`, sustituida en diseño por la v0.3):** una mazmorra de 768×768 con 6 manadas dormidas (22 enemigos), 8 modificadores estilo Isaac con coste, curación de 1 golpe por manada, HUD de run, reinicio total al morir (`DESIGN.md` §5). Pendiente: probar en la DS (sensación, rendimiento con hasta 24 enemigos y dos pantallas).
 - **Juego (v0.1, base de la v0.2; sustituida por la mazmorra):** prueba de diversión en 4 arenas cerradas de 384×384 px encadenadas (`DESIGN.md` §4): escopeta + francotirador, cargador (con navegación BFS) + tirador (telegraph y ráfagas de 3). Pendiente la Fase E: tuning y 60 FPS certificados en la DS.
@@ -124,3 +125,10 @@ El láser de apuntado se colima durante la carga (ancho, difuso y rojo a 1 px ve
 - Sesión de diseño, sin código. La v0.2 divertía un par de minutos pero no tenía un "y luego qué". Se eligió un survivors con apuntado manual adaptado a la DS: franja vertical, marea que sube desde abajo, pantalla superior como vanguardia a la que se dispara, clase = arma y economía de gemas → nivel → 1 de 3 mejoras.
 - `DESIGN.md` §1, §3 y §6 nuevos (v0.1 y v0.2 marcadas como historia); `TECHNICAL.md` §4.7 con cómo maneja hoy el motor los enemigos y el criterio de la prueba de horda.
 - Detalle y opciones descartadas: `walkthroughs/survivors-direction/walkthrough.md`.
+
+---
+
+## 2026-11-06 - v0.3 mínima: franja vertical infinita (`feat/v03-minima`)
+- La ROM principal arranca en modo franja (`DESIGN.md` §6.0): mapa infinito de 512 px de ancho generado por bandas con el kit cian de la mazmorra, horda que baja desde arriba, marea de oscuridad por hardware, curas y HUD de altura y tiempo. Sandbox y playground siguen con sus arenas.
+- Validación: build sin warnings, 154 tests de host, escenarios `strip_climb_smoke` y `strip_horde_tide` PASS. En la DS, CPU media del 39 % y máxima del 87 %, sin frames perdidos salvo la escritura del log. El usuario la juega y "se siente como un juego real".
+- Detalle: [`walkthroughs/v03-minima/`](walkthroughs/v03-minima/walkthrough.md).

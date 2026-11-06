@@ -130,7 +130,7 @@ def export_arena(name, spec):
         crop_png(raw / "collision.png", out / "collision.png", box, "L")
         crop_png(raw / "occlusion.png", out / "occlusion.png", box, "L")
         if spec.get("baked_shadows") or spec.get("baked_glow"):
-            arena = next(a for a in spec["arenas"] if a["name"] == name)
+            arena = next(a for a in spec["arenas"] + spec.get("kits", []) if a["name"] == name)
             bake_light(out / "world.png", out / "occlusion.png", arena, spec, size_w, size_h)
 
         occ = np.array(Image.open(raw / "occlusion_depth.png").convert("RGB"), dtype=np.int32)
@@ -168,7 +168,7 @@ def main():
     wanted = set(sys.argv[1:])
     if OUT.exists() and not wanted:
         shutil.rmtree(OUT)
-    for arena in spec["arenas"]:
+    for arena in spec["arenas"] + spec.get("kits", []):
         if not wanted or arena["name"] in wanted:
             export_arena(arena["name"], spec)
 

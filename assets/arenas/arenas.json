@@ -9,6 +9,10 @@
   "baked_shadows": false,
   "baked_glow": true,
   "lighting": {"key": 1.7, "fill": 1.0, "world": 0.4},
+  "strip_kit": {
+    "floor_h_tiles": 8,
+    "stamp_crop_padding": [8, 32, 8, 8]
+  },
   "arenas": [{
     "name": "dungeon_01",
     "title": "Mazmorra",
@@ -63,5 +67,22 @@
       {"pack": 5, "type": "charger", "at": [370, 495]},
       {"pack": 5, "type": "charger", "at": [398, 495]}
     ]
+  }],
+  "kits": [{
+    "name": "strip_kit",
+    "title": "Franja vertical",
+    "image": [512, 768],
+    "floor": {"rect": [16, 0, 496, 768]},
+    "boundaries": ["left", "right"],
+    "zones": [
+      {"name": "cyan", "rect": [16, 0, 496, 768], "accent": "cyan", "pattern": "rows", "shade": 1.0}
+    ],
+    "blocks": [
+      {"kind": "pillar", "rect": [72, 256, 104, 272], "height_m": 0.5, "strip_stamp": "wide"},
+      {"kind": "pillar", "rect": [224, 384, 240, 400], "height_m": 0.5, "strip_stamp": "narrow"},
+      {"kind": "pillar", "rect": [384, 512, 416, 544], "height_m": 0.5, "strip_stamp": "square"}
+    ],
+    "player_start": [256, 720],
+    "enemies": []
   }]
 }

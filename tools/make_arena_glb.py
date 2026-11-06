@@ -451,17 +451,21 @@ class Builder:
         pillar_bands_for = lambda hpx: [(0, 6, "plinth"), (6, hpx - 24, "pillar"), (hpx - 24, hpx - 20, "neon"),
                                         (hpx - 20, hpx - 8, "pillar"), (hpx - 8, hpx, "cornice")]
         self.floor_tiles()
-        # boundary walls: back (neon colour follows the zone in front of it), left and right
-        accent_back = lambda x: self.zone_at(x, fy0 + 2)["accent"]
-        back_x0, back_x1 = fx0 - WALL_T * self.ppm, fx1 + WALL_T * self.ppm
-        self.box(-WALL_T, -WALL_T, W + WALL_T, -eg, -SLAB_T, self.wall_h, "top",
-                 self.facade(back_x0, back_x1, self.wall_h, wall_bands, accent_back))
+        # Boundary walls default to the arena behavior; strip kits keep only the sides.
+        boundaries = set(self.arena.get("boundaries", ("back", "left", "right")))
+        if "back" in boundaries:
+            accent_back = lambda x: self.zone_at(x, fy0 + 2)["accent"]
+            back_x0, back_x1 = fx0 - WALL_T * self.ppm, fx1 + WALL_T * self.ppm
+            self.box(-WALL_T, -WALL_T, W + WALL_T, -eg, -SLAB_T, self.wall_h, "top",
+                     self.facade(back_x0, back_x1, self.wall_h, wall_bands, accent_back))
         # only the south end of the side walls faces the camera
         accent_south = lambda x: self.zone_at(x, fy1 - 2)["accent"]
-        self.box(-WALL_T, -eg, -e, D, -SLAB_T, self.wall_h, "top",
-                 self.facade(fx0 - WALL_T * self.ppm, fx0 - INSET_PX, self.wall_h, wall_bands, accent_south))
-        self.box(W + e, -eg, W + WALL_T, D, -SLAB_T, self.wall_h, "top",
-                 self.facade(fx1 + INSET_PX, fx1 + WALL_T * self.ppm, self.wall_h, wall_bands, accent_south))
+        if "left" in boundaries:
+            self.box(-WALL_T, -eg, -e, D, -SLAB_T, self.wall_h, "top",
+                     self.facade(fx0 - WALL_T * self.ppm, fx0 - INSET_PX, self.wall_h, wall_bands, accent_south))
+        if "right" in boundaries:
+            self.box(W + e, -eg, W + WALL_T, D, -SLAB_T, self.wall_h, "top",
+                     self.facade(fx1 + INSET_PX, fx1 + WALL_T * self.ppm, self.wall_h, wall_bands, accent_south))
         first_pillar = True
         for b in self.blocks:
             x0, y0, x1, y1 = b["rect"]
@@ -514,7 +518,7 @@ def build(arena, spec):
 def main():
     spec = json.loads(SPEC.read_text(encoding="utf-8"))
     OUT_DIR.mkdir(parents=True, exist_ok=True)
-    for arena in spec["arenas"]:
+    for arena in spec["arenas"] + spec.get("kits", []):
         mesh, frame = build(arena, spec)
         write_glb(OUT_DIR / f"{arena['name']}.glb", mesh, build_materials(arena["zones"]))
         with open(OUT_DIR / f"{arena['name']}.frame.json", "w", encoding="utf-8", newline="\n") as fh:

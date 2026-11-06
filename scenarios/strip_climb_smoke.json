@@ -1,0 +1,30 @@
+{
+  "name": "strip_climb_smoke",
+  "description": "God mode on, hold UP for 4500 frames: the strip must rebase at least twice (accumulated shift >= 1024 px) and the climbed height must grow.",
+  "state": {
+    "symbols": { "strip": "g_strip_debug" },
+    "default_symbol": "strip",
+    "fields": { "height_px": 0, "shift_px": 4, "alive": 8, "hp": 12 }
+  },
+  "steps": [
+    { "frames": 30, "capture": "00_strip_start", "state_capture": "start" },
+    { "button_down": "L", "frames": 1 },
+    { "button_down": "R", "frames": 1 },
+    { "button_down": "B", "frames": 3 },
+    { "button_up": "B", "frames": 2 },
+    { "button_up": "L", "frames": 1 },
+    { "button_up": "R", "frames": 1 },
+    { "button_down": "UP", "frames": 4500, "capture": "01_after_two_rebases", "state_capture": "climbed" },
+    { "button_up": "UP", "frames": 2 }
+  ],
+  "assertions": {
+    "screen_changes": [
+      { "from": "00_strip_start", "to": "01_after_two_rebases", "min_changed_pixels": 100 }
+    ],
+    "state_changes": [
+      { "at": "start", "field": "shift_px", "equals": 0 },
+      { "at": "climbed", "field": "shift_px", "min_value": 1024 },
+      { "from": "start", "to": "climbed", "field": "height_px", "min_delta": 1024 }
+    ]
+  }
+}

@@ -13,7 +13,13 @@
 #include "modifiers.h"
 #include "crashlog.h"
 #include "perfprof.h"
+#include "strip.h"
+#include "strip_kit.h"
+#include "horde.h"
+#include "tide.h"
+#include "pickups.h"
 #include <string.h>
+#include <time.h>
 
 // ---------------------------------------------------------------------------
 // DungeonDS - dimetric dungeon renderer
@@ -96,6 +102,11 @@ static uint8_t *s_bot_bg_tiles_vram;
 static Player s_player;
 static int s_cam_x = 0;
 static int s_cam_y = 0;
+#if SANDBOX || PLAYGROUND
+static const int s_strip_mode = 0;
+#else
+static const int s_strip_mode = 1;
+#endif
 static int s_player_see_through;
 static int s_draw_item_depth;
 static int s_draw_item_is_player;
@@ -119,6 +130,11 @@ volatile OcclusionStats g_occlusion_stats;
 #define MAX_ENEMIES MAX_GAMEPLAY_ENEMIES
 
 Enemy g_enemies[MAX_ENEMIES];     // not static: headless scenarios read it by symbol (the arena data also has an s_enemies)
+volatile int32_t g_strip_debug[4]; // height px, accumulated shift, alive enemies, player hp
+static int s_best_height_m;
+static int s_death_screen_frames;
+static int s_death_restart_armed;
+static int s_death_prev_touch_down;
 static int abs_int(int v);
 
 #define MAX_DEATH_CHUNKS 48
@@ -1078,6 +1094,25 @@ static void draw_run_hud(uint16_t *buffer) {
     const uint16_t red = RGB15(31, 5, 6) | BIT(15);
     const uint16_t edge = RGB15(31, 24, 24) | BIT(15);
 
+    if (s_strip_mode) {
+        char line[24];
+        uint32_t seconds = horde_run_frames() / 60u;
+        if (g_player_state.is_dead) {
+            snprintf(line, sizeof(line), "ALTURA %dM", strip_height_m(TO_INT(s_player.y)));
+            hud_text(buffer, (SCREEN_W - hud_text_width(line)) / 2, 70, line, ink);
+            snprintf(line, sizeof(line), "TIEMPO %lu:%02lu", (unsigned long)(seconds / 60u), (unsigned long)(seconds % 60u));
+            hud_text(buffer, (SCREEN_W - hud_text_width(line)) / 2, 92, line, ink);
+            snprintf(line, sizeof(line), "MEJOR %dM", s_best_height_m);
+            hud_text(buffer, (SCREEN_W - hud_text_width(line)) / 2, 114, line, ink);
+            return;
+        }
+        snprintf(line, sizeof(line), "ALTURA %dM", strip_height_m(TO_INT(s_player.y)));
+        hud_text(buffer, 6, SCREEN_H - 32, line, ink);
+        snprintf(line, sizeof(line), "TIEMPO %lu:%02lu", (unsigned long)(seconds / 60u), (unsigned long)(seconds % 60u));
+        hud_text(buffer, 6, SCREEN_H - 16, line, ink);
+        return;
+    }
+
     // Hit points, right-aligned at the top.
     int max_hp = g_player_state.max_hp;
     int x0 = SCREEN_W - 6 - max_hp * 8;
@@ -1136,7 +1171,8 @@ static uint32_t present_both_screens(int top_cam_x, int top_cam_y,
 static void enemies_init(void) {
     enemy_projectiles_init();
     encounters_init(&g_encounter_mgr);
-    encounters_spawn(&g_encounter_mgr, g_enemies, MAX_ENEMIES);
+    memset(g_enemies, 0, sizeof(g_enemies));
+    if (!s_strip_mode) encounters_spawn(&g_encounter_mgr, g_enemies, MAX_ENEMIES);
 }
 
 static int abs_int(int v) { return v < 0 ? -v : v; }
@@ -1218,6 +1254,7 @@ static void on_enemy_death(const Enemy *e, fixed hit_vx, fixed hit_vy) {
     CRASH_MARK(CL_DEATH_CHUNKS, e->char_id, e->dir);
     death_chunks_spawn(e, hit_vx, hit_vy);
     weapons_notify_kill();
+    if (s_strip_mode) pickups_enemy_killed(e);
     CRASH_MARK(CL_DEATH_HOOK_DONE, 0, 0);
 }
 
@@ -1248,11 +1285,34 @@ static void weapons_and_effects_update(void) {
     death_chunks_update();
 }
 
-#define NAV_BUDGET_PER_FRAME 300   // BFS node expansions per frame (a full field takes ~10 frames; measure with PERF_PROFILE)
-
 static fixed s_prev_player_x = 0;
 static fixed s_prev_player_y = 0;
 static int s_first_frame = 1;     // set again by arena_restart so the lead does not see a teleport
+
+static void strip_shift_world_y(int dy_px) {
+    fixed shift = TO_FIXED(dy_px);
+    s_player.y += shift;
+    for (int i = 0; i < MAX_ENEMIES; i++)
+        if (g_enemies[i].active) g_enemies[i].y += shift;
+    for (int i = 0; i < MAX_DEATH_CHUNKS; i++)
+        if (s_death_chunks[i].active) s_death_chunks[i].y += shift;
+    s_prev_player_y += shift;
+    s_cam_y += dy_px;
+    enemy_projectiles_shift_y(dy_px);
+    grenade_shift_y(dy_px);
+    weapons_shift_y(dy_px);
+    tide_shift_y(dy_px);
+    pickups_shift_y(dy_px);
+
+    init_bg_tile_cache(&s_top_bg_tile_cache, TOP_TILE_CACHE_CAPACITY, s_top_bg_tiles_vram);
+    init_bg_tile_cache(&s_bot_bg_tile_cache, BG_TILE_CACHE_CAPACITY, s_bot_bg_tiles_vram);
+    s_top_map_ready = 0;
+    s_bot_map_ready = 0;
+    // Dirty spans are screen-space and remain valid because the camera and every
+    // world-space effect move by the same amount; the next pass clears them.
+}
+
+#define NAV_BUDGET_PER_FRAME 300   // BFS node expansions per frame (a full field takes ~10 frames; measure with PERF_PROFILE)
 
 static void enemies_update(void) {
     if (s_first_frame) {
@@ -1271,6 +1331,27 @@ static void enemies_update(void) {
     enemy_projectiles_update(s_player.x, s_player.y);
     encounters_update(&g_encounter_mgr, g_enemies, MAX_ENEMIES, s_player.x, s_player.y);
     mods_update(s_player.x, s_player.y);
+}
+
+// Strip mode (DESIGN.md 6.0): the horde from above replaces the v0.2 packs and modifiers.
+// Runs in the enemies slot of the frame so PERF_PROFILE charges it to `en`.
+static void strip_enemies_update(void) {
+    if (s_first_frame) {
+        s_prev_player_x = s_player.x;
+        s_prev_player_y = s_player.y;
+        s_first_frame = 0;
+    }
+    fixed pvx = s_player.x - s_prev_player_x;
+    fixed pvy = s_player.y - s_prev_player_y;
+    s_prev_player_x = s_player.x;
+    s_prev_player_y = s_player.y;
+
+    nav_set_goal(TO_INT(s_player.x), TO_INT(s_player.y));
+    nav_update(NAV_BUDGET_PER_FRAME);
+    horde_update(g_enemies, MAX_ENEMIES, s_player.y, s_cam_y - SCREEN_H, tide_y());
+    enemy_ai_update(g_enemies, MAX_ENEMIES, s_player.x, s_player.y, pvx, pvy);
+    enemy_projectiles_update(s_player.x, s_player.y);
+    pickups_update(s_player.x, s_player.y, tide_y(), &g_player_state);
 }
 
 // ---------------------------------------------------------------------------
@@ -1402,6 +1483,7 @@ static void player_update(uint32_t keys, uint32_t keys_down) {
 
     int cur_char = s_player.char_id;
     fixed current_speed = g_characters[cur_char].speed * g_mods.speed_pct / 100;
+    if (s_strip_mode && tide_player_slowed(s_player.y)) current_speed >>= 1;
     int current_period = g_characters[cur_char].anim_period;
 
     if (pressed && weapons_can_start_aim(&g_player_state)) s_rooted = 1;
@@ -1514,8 +1596,27 @@ static void player_update(uint32_t keys, uint32_t keys_down) {
 // Death restarts the current arena at once: full health, the wave respawned.
 static void arena_restart(void) {
     int god = g_player_state.god_mode;
+    if (s_strip_mode) {
+        uint32_t seed = s_frame_index ^ (uint32_t)cpuGetTiming() ^ (uint32_t)strip_shift_total_px();
+        strip_start(seed);
+        horde_init(seed ^ 0x684f5244u);
+        pickups_init(seed ^ 0x5049434bu);
+        enemy_projectiles_init();
+        apply_arena_palette();
+        init_bg_tile_cache(&s_top_bg_tile_cache, TOP_TILE_CACHE_CAPACITY, s_top_bg_tiles_vram);
+        init_bg_tile_cache(&s_bot_bg_tile_cache, BG_TILE_CACHE_CAPACITY, s_bot_bg_tiles_vram);
+        s_top_map_ready = 0;
+        s_bot_map_ready = 0;
+        nav_refresh_begin(g_arena->player_x, g_arena->player_y);
+    }
     s_player.x = TO_FIXED(g_arena->player_x);
     s_player.y = TO_FIXED(g_arena->player_y);
+    if (s_strip_mode) {
+        tide_init(s_player.y);
+        s_death_screen_frames = 0;
+        s_death_restart_armed = 0;
+        s_death_prev_touch_down = 0;
+    }
     s_player.dir = DIR_SOUTH;
     s_player.frame = 0;
     s_player.is_moving = 0;
@@ -1525,7 +1626,7 @@ static void arena_restart(void) {
     g_player_state.god_mode = god;
     weapons_init();
     nav_set_goal(g_arena->player_x, g_arena->player_y);
-    nav_rebuild_now();
+    if (!s_strip_mode) nav_rebuild_now();
     s_rooted = 0;
     s_first_frame = 1;
     s_latch_pressed = 0;
@@ -1534,7 +1635,8 @@ static void arena_restart(void) {
     update_camera();                 // the fade-in shows the new arena before the player moves
     g_hitstop_frames = 0;
     memset(s_death_chunks, 0, sizeof(s_death_chunks));
-    encounters_spawn(&g_encounter_mgr, g_enemies, MAX_ENEMIES);
+    if (s_strip_mode) memset(g_enemies, 0, sizeof(g_enemies));
+    else encounters_spawn(&g_encounter_mgr, g_enemies, MAX_ENEMIES);
 }
 
 // Switches to another arena: its palette, floor tiles and navigation field, then starts it.
@@ -1557,6 +1659,7 @@ static int s_transition = TRANSITION_NONE;
 static int s_fade_level = 0;
 
 static void transition_update(void) {
+    if (s_strip_mode) return;
     if (s_transition == TRANSITION_NONE) {
         if (g_encounter_mgr.advance) s_transition = TRANSITION_OUT;
         return;
@@ -1615,7 +1718,10 @@ int main(void) {
     vramSetBankB(VRAM_B_MAIN_BG_0x06060000);
 
     // Load Background Palette to Main and Sub engines
-    arena_select(0);
+    // First run: the DS real-time clock varies between boots (the frame counter and the
+    // timer right after cpuStartTiming do not), so the first map is not always the same.
+    if (s_strip_mode) strip_start((uint32_t)time(NULL) * 0x9e3779b9u ^ (uint32_t)cpuGetTiming());
+    else arena_select(0);
     apply_arena_palette();
 
     // BG1 map lives at 0x06000000; 1024 streamed tile slots start at +64 KiB.
@@ -1660,10 +1766,17 @@ int main(void) {
     CRASH_INIT();
     PP_INIT();
     enemy_set_death_hook(on_enemy_death);
+    enemy_ai_set_strip_mode(s_strip_mode);
     nav_init();
     nav_set_goal(g_arena->player_x, g_arena->player_y);
-    nav_rebuild_now();
+    nav_rebuild_now();                  // at boot a full search costs nothing visible
     player_init();
+    if (s_strip_mode) {
+        uint32_t seed = (uint32_t)time(NULL) ^ (uint32_t)cpuGetTiming() ^ 0xa5a5a5a5u;
+        horde_init(seed ^ 0x684f5244u);
+        pickups_init(seed ^ 0x5049434bu);
+        tide_init(s_player.y);
+    }
 
     // Initialise camera position to match player spawn
     s_cam_x = player_screen_x(s_player.x, s_player.y) - SCREEN_W / 2;
@@ -1700,11 +1813,22 @@ int main(void) {
         touch_track(touch_down, touch.px, touch.py);
         s_keys_down_latch |= keys_down;
         transition_update();
-        int simulate = g_hitstop_frames <= 0 && s_transition == TRANSITION_NONE;
+        int simulate = g_hitstop_frames <= 0 && s_transition == TRANSITION_NONE &&
+                       (!s_strip_mode || !g_player_state.is_dead);
         if (!simulate) g_hitstop_frames--;
         if (simulate) {
             sandbox_update(g_enemies, MAX_ENEMIES, &s_player.x, &s_player.y);
             player_update(keys_held, s_keys_down_latch);
+            if (s_strip_mode) {
+                int shifted = strip_rebase_if_needed(TO_INT(s_player.y));
+                if (shifted) {
+                    strip_shift_world_y(shifted);
+                    nav_shift_down(STRIP_SHIFT_PX / NAV_NODE_PX,
+                                   TO_INT(s_player.x), TO_INT(s_player.y));
+                }
+                tide_update();
+                tide_damage_player(&g_player_state, s_player.y);
+            }
             s_keys_down_latch = 0;
         }
         PP_ADD(PP_PLAYER, t0);
@@ -1713,12 +1837,15 @@ int main(void) {
         CRASH_POLL();
         CRASH_MARK(CL_OCCLUSION_DONE, 0, 0);
         PP_T0(pp_en);
-        if (simulate) enemies_update();
+        if (simulate) {
+            if (s_strip_mode) strip_enemies_update();
+            else enemies_update();
+        }
         PP_ADD(PP_ENEMIES, pp_en);
         CRASH_MARK(CL_ENEMIES_DONE, 0, 0);
         PP_T0(pp_wp);
         if (simulate) weapons_and_effects_update();
-        if (g_player_state.is_dead) arena_restart();
+        if (g_player_state.is_dead && !s_strip_mode) arena_restart();
         PP_ADD(PP_WEAPONS, pp_wp);
         CRASH_MARK(CL_WEAPONS_DONE, 0, 0);
         uint32_t logic_ticks = cpuGetTiming() - t0;
@@ -1739,12 +1866,22 @@ int main(void) {
         update_player_see_through();
         uint32_t t_top = cpuGetTiming();
         render_screen(s_top_page, s_dirty_top, view_x, view_y - SCREEN_H, &top_floor, &top_sh, &top_bl);
+        if (s_strip_mode) {
+            g_dirty_cur = s_dirty_top;
+            pickups_render(s_top_page, view_x, view_y - SCREEN_H);
+            tide_render_border(s_top_page, view_y - SCREEN_H);
+        }
         top_ticks = cpuGetTiming() - t_top;
 
         // The lower screen adds the HUD on top of the same layers.
         uint32_t t2 = cpuGetTiming();
         CRASH_MARK(CL_RENDER_START, 0, 0);
         render_screen(bot_page_ptr(s_bot_back_page), s_dirty[s_bot_back_page == 24], view_x, view_y, &bot_floor, &bot_sh, &bot_bl);
+        if (s_strip_mode) {
+            g_dirty_cur = s_dirty[s_bot_back_page == 24];
+            pickups_render(bot_page_ptr(s_bot_back_page), view_x, view_y);
+            tide_render_border(bot_page_ptr(s_bot_back_page), view_y);
+        }
         CRASH_MARK(CL_RENDER_DONE, 0, 0);
         PP_T0(pp_hud);
         draw_run_hud(bot_page_ptr(s_bot_back_page));
@@ -1758,6 +1895,11 @@ int main(void) {
         uint32_t cpu_ticks = cpuGetTiming() - frame_start_ticks;
         PP_SET(PP_CPU, cpu_ticks);
         int vcount_done = REG_VCOUNT;
+        if (s_strip_mode) {
+            tide_render_window(1, top_cam_y);
+            // The death summary is drawn on the lower screen: keep it out of the darkening.
+            tide_render_window(0, g_player_state.is_dead ? TO_INT(tide_y()) - SCREEN_H : view_y);
+        }
 
         uint32_t t3 = cpuGetTiming();
         uint32_t bg_ticks = present_both_screens(top_cam_x, top_cam_y, view_x, view_y);
@@ -1798,6 +1940,28 @@ int main(void) {
         g_nav_state.active_enemies = enemies;
         g_nav_state.active_projectiles = projectiles;
         g_nav_state.frame_index = g_perf.frame_index;
+        if (s_strip_mode) {
+            int height_px = strip_start_y() + strip_shift_total_px() - TO_INT(s_player.y);
+            g_strip_debug[0] = height_px > 0 ? height_px : 0;
+            g_strip_debug[1] = strip_shift_total_px();
+            g_strip_debug[2] = (int32_t)enemies;
+            g_strip_debug[3] = g_player_state.hp;
+            if (!g_player_state.is_dead) {
+                int height_m = strip_height_m(TO_INT(s_player.y));
+                if (height_m > s_best_height_m) s_best_height_m = height_m;
+            } else {
+                if (s_death_screen_frames < STRIP_DEATH_SCREEN_FRAMES) s_death_screen_frames++;
+                const uint32_t restart_keys = KEY_A | KEY_B | KEY_START | KEY_X | KEY_Y | KEY_L | KEY_R |
+                                              KEY_UP | KEY_DOWN | KEY_LEFT | KEY_RIGHT;
+                int touch_pressed = touch_down && !s_death_prev_touch_down;
+                if (!(keys_held & restart_keys) && !touch_down) s_death_restart_armed = 1;
+                if (s_death_screen_frames >= STRIP_DEATH_SCREEN_FRAMES && s_death_restart_armed &&
+                    ((keys_down & restart_keys) || touch_pressed)) {
+                    arena_restart();
+                }
+                s_death_prev_touch_down = touch_down;
+            }
+        }
 #ifdef DEBUG
         if ((g_perf.frame_index % 15) == 0) {
             char nav_buf[120];

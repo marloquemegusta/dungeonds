@@ -10,5 +10,6 @@
 // Handles obstacle navigation with sweep_position / sliding.
 // Handles burst shooting with linear lead prediction on player velocity.
 void enemy_ai_update(Enemy *enemies, int num_enemies, fixed player_x, fixed player_y, fixed player_vx, fixed player_vy);
+void enemy_ai_set_strip_mode(int enabled);
 
 #endif // ENEMY_AI_H

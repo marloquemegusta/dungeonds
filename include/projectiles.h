@@ -27,6 +27,7 @@ typedef struct {
 extern EnemyProjectile g_enemy_projectiles[MAX_ENEMY_PROJECTILES];
 
 void enemy_projectiles_init(void);
+void enemy_projectiles_shift_y(int dy_px);
 
 // Spawns a slow linear projectile moving with velocity (vx, vy)
 EnemyProjectile *enemy_projectile_spawn_linear(fixed x, fixed y, fixed vx, fixed vy, int height, int life);

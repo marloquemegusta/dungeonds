@@ -41,7 +41,7 @@ class PlayerRulesTest(unittest.TestCase):
         self.assertIn("player_take_hit(&g_player_state);", PROJECTILES_C)
 
     def test_death_restarts_the_arena_with_full_health(self):
-        self.assertIn("if (g_player_state.is_dead) arena_restart();", MAIN_C)
+        self.assertIn("if (g_player_state.is_dead && !s_strip_mode) arena_restart();", MAIN_C)
         restart = MAIN_C.split("static void arena_restart(void)")[1].split("\n}")[0]
         self.assertIn("player_state_init(&g_player_state);", restart)
         self.assertIn("encounters_spawn(", restart)

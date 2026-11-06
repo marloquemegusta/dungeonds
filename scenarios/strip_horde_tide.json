@@ -1,0 +1,21 @@
+{
+  "name": "strip_horde_tide",
+  "description": "Player stands still at the strip start without god mode. The horde must come down from above, and the tide (born 300 px below, ~0.35 px/frame) must reach the player's row by frame ~860, so at frame 1000 the player is inside it and has lost health.",
+  "state": {
+    "symbols": { "strip": "g_strip_debug" },
+    "default_symbol": "strip",
+    "fields": { "height_px": 0, "shift_px": 4, "alive": 8, "hp": 12 }
+  },
+  "steps": [
+    { "frames": 30, "capture": "00_start", "state_capture": "start" },
+    { "frames": 570, "capture": "01_horde_arrives", "state_capture": "horde" },
+    { "frames": 400, "capture": "02_tide_over_player", "state_capture": "tide" }
+  ],
+  "assertions": {
+    "state_changes": [
+      { "at": "start", "field": "hp", "equals": 5 },
+      { "at": "horde", "field": "alive", "min_value": 1 },
+      { "from": "start", "to": "tide", "field": "hp", "max_delta": -1 }
+    ]
+  }
+}
