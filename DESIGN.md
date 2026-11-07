@@ -21,8 +21,8 @@
 - **Lectura tras paredes (transparencias):** qué se ve del personaje y de los enemigos detrás de una pared y cómo se marca la base de la pared. Sin decidir; preguntas en `TECHNICAL.md` §4.6. No se toca código hasta decidirlo aquí.
 - **Sonido:** fuera de la v0.3.
 - **Transparencias tras paredes:** fuera de la v0.3; el comportamiento provisional actual no se amplía. Con muros sobre todo laterales en la franja vertical (§6.2) pesa menos que en la mazmorra.
-- **v0.3, pendiente de su propia sesión de diseño (§6.9):** árbol de mejoras de cada clase, enemigo de enjambre, élites, minijefe y jefe, reglas de los tramos del mapa, tema concreto de los dos biomas y forma de la marea.
-- **Tuning de combate y stats:** se hace jugando en la DS, sobre los valores de partida de §6.
+- **Por decidir antes de cada versión (§6.9):** árbol de mejoras de las dos clases y su presentación (antes de la 0.4); enjambre, élites, cofres y emboscadas (antes de la 0.5); catálogo y reglas de tramos, tema de los dos biomas, minijefe, jefe y aspecto final de la marea (antes de la 0.6).
+- **Tuning de combate y stats:** se hace jugando en la DS en la 0.3.1 (§6.9.1), sobre los valores de partida de §6.
 - **Ya no aplican (v0.2):** mazmorra más grande con puertas y rediseño de pedestales; los sustituye la v0.3.
 
 ---
@@ -205,7 +205,7 @@ Tras ver las previsualizaciones (`walkthroughs/weapon-previews/`), se implementa
 
 **Por qué.** La v0.2 divierte un par de minutos, pero después no hay nada que hacer: el mapa y las manadas son fijos, los modificadores son números y morir no deja nada. Faltaban una run que cambie y una meta. El usuario quiere la dificultad de Isaac (morir mucho hasta dominar las mejoras), el gancho de Diablo (siguiente misión, mejor equipo) y una fantasía clara con entorno cambiante. El bucle de Halls of Torment y Vampire Survivors junta las tres cosas, y el giro vertical lo adapta a la DS. Objetivo de esta versión: que una run de ~8 min entretenga de verdad y apetezca jugar otra.
 
-### 6.0 Hito 0.3 mínima (decidido 2026-11-06)
+### 6.0 Hito 0.3 mínima (decidido 2026-11-06, cerrado el mismo día; siguiente versión en §6.9)
 Primer paso jugable hacia §6.1–6.8: el juego actual (armas, cargador, tirador, vida e i-frames) en un escenario vertical, sin mejoras, gemas, élites ni jefes. Donde contradice a §6.1–6.8, manda esto **solo para este hito**.
 - **Mapa:** arena abierta de **2 pantallas de ancho (512 px de mundo)** e **infinita hacia arriba**, generada en tiempo de ejecución con una semilla por run. Suelo de un solo acento neón de la mazmorra de la v0.2 (**cian**) con su patrón; muros altos solo en los dos laterales.
 - **Obstáculos:** solo **columnas bajas** (~0,5 m) con las piezas de la mazmorra. Bloquean el paso pero no las balas, y no ocluyen: los actores se dibujan siempre por encima. Se colocan por franjas de 128 px, entre 0 y 3 por franja, y siempre queda un carril libre de lado a lado del recorrido.
@@ -223,7 +223,7 @@ Primer paso jugable hacia §6.1–6.8: el juego actual (armas, cargador, tirador
 - Morir reinicia la run de cero. Sin progresión entre runs en esta prueba (§1).
 
 ### 6.2 Mapa: franja vertical por tramos
-- Una franja de 1 a 1,5 pantallas de ancho (256–384 px de mundo) y muchas de alto. No hay sitio para huir en círculos como en un survivors abierto: hay que abrirse paso, y eso da valor al apuntado, al empujón de la escopeta y al láser que atraviesa filas.
+- Una franja de **2 pantallas de ancho (512 px de mundo)** y muchas de alto. Se propuso de 1 a 1,5 pantallas (256–384 px), pero tras jugar la 0.3 mínima el usuario prefiere 512 (decidido 2026-11-07). No hay sitio para huir en círculos como en un survivors abierto: hay que abrirse paso, y eso da valor al apuntado, al empujón de la escopeta y al láser que atraviesa filas.
 - Se monta con **tramos** hechos a mano de una pantalla de alto, encadenados por reglas que el usuario pule (por ejemplo: abierto, estrechamiento, sala lateral con cofre o élite, coberturas bajas). Las reglas y el catálogo de tramos se deciden en la sesión de contenido (§6.9).
 - **Dos biomas** en la prueba, uno en cada mitad, para comprobar que el cambio de entorno se nota. El tema de cada bioma está por decidir.
 - Muros altos solo en los laterales. En el centro, coberturas bajas, para que la lectura no dependa de las transparencias (§3).
@@ -268,16 +268,104 @@ Primer paso jugable hacia §6.1–6.8: el juego actual (armas, cargador, tirador
 - **Se reutiliza:** armas y game feel (§4.3, §4.7), efectos (§4.9), IA de cargador y tirador, navegación por campo de distancias (adaptada a la franja), pipeline lab → baker, sandbox y escenarios.
 - **Se sustituye:** las manadas dormidas por un generador de oleadas; los pedestales por la elección al subir de nivel; la mazmorra por la franja; el HUD de la run por uno de vida, experiencia, nivel y tiempo.
 
-### 6.9 Plan
-| # | Paso | Tipo | Agentes |
-| :---: | :--- | :--- | :--- |
-| 1 | **Prueba de horda en la DS:** pool de enemigos, IA por niveles de detalle, separación por rejilla y blit más barato, medidos con `PERF_PROFILE`. Criterio en `TECHNICAL.md` §4.7. Decide si el motor actual basta. | Técnica, primero | Sonnet implementa; la medición la juega el usuario |
-| 2 | **Sesión de diseño de contenido:** árbol de mejoras de las dos clases, enjambre, élite, minijefe, jefe, catálogo y reglas de tramos, biomas y aspecto de la marea. Todo por escrito aquí antes de código (regla 9). | Diseño | Conversación; Haiku para buscar referencias |
-| 3 | **Franja vertical:** tramos en el lab, encadenado por reglas, baker y navegación para mapas altos. | Técnica | Sonnet |
-| 4 | **Bucle jugable:** marea, oleadas, gemas, nivel y elección, cofres y HUD. | Juego | Sonnet; Haiku para escenarios y logs |
-| 5 | **Enemigos nuevos y jefes.** | Juego y arte | Sonnet; arte en el lab con el usuario |
-| 6 | **Tuning y 60 FPS en la DS.** | Validación | Usuario en la DS; Haiku lee los logs |
+### 6.9 Hoja de ruta por versiones (revisada 2026-11-07)
+La prueba de §6.1–6.8 se construye en versiones jugables pequeñas, cada una en su sesión y su rama. Una versión se cierra con build sin warnings, tests de host, escenarios y 60 FPS medidos en la DS (`AGENTS.md` reglas 4 y 6), y se fusiona en `main` antes de empezar la siguiente. Las que traen comportamiento nuevo empiezan con una sesión de diseño que lo deja escrito aquí (regla 9). Tras cada versión el usuario la juega en la DS y su feedback entra en la siguiente.
 
-Los pasos 1 y 2 no dependen entre sí y pueden ir en paralelo.
+| Versión | Contenido | Antes de empezar | Estado |
+| :--- | :--- | :--- | :--- |
+| **0.3 mínima** | Franja infinita de 512 px, horda desde arriba, marea, curas y HUD de altura (§6.0). | — | Cerrada 2026-11-06 (`walkthroughs/v03-minima/`) |
+| **0.3.1** | Tuning y pulido de la 0.3 mínima, sin mecánicas nuevas (§6.9.1). | Nada | **Siguiente** |
+| **0.4** | Progresión dentro de la run: gemas con imán corto, experiencia, subir de nivel con pausa y elegir 1 de 3 mejoras con icono y una línea de efecto (§6.6), HUD de vida, experiencia, nivel y tiempo, elección de clase al empezar y controles de §6.5 que falten. | Sesión de diseño de mejoras y clases | Pendiente de diseño |
+| **0.5** | Enemigos y recompensas: enjambre, élites que sueltan cofre, emboscadas desde abajo con aviso. Pool de 48 y criterio de horda de `TECHNICAL.md` §4.7 (IA por niveles de detalle, separación por rejilla, blit más barato). | Sesión de diseño de enemigos | Pendiente de diseño |
+| **0.6** | Estructura de la run: tramos hechos a mano encadenados por reglas (§6.2), dos biomas, minijefe a mitad y jefe arriba, marea que se para en los combates. Cierra la prueba completa de §6.1 (~8 min, ganar matando al jefe). | Sesión de diseño de tramos, biomas y jefes | Pendiente de diseño |
+
+**Correspondencia con el plan anterior por pasos:**
+- La prueba de horda está medida con 24 enemigos (CPU media del 39 %, sin frames perdidos). El techo se mide en la 0.3.1 y el criterio de 48 activos se cumple en la 0.5.
+- La sesión de diseño de contenido se reparte entre las versiones que la necesitan, en lugar de hacerse toda al principio.
+- La franja procedural por bandas está hecha. Los tramos a mano llegan en la 0.6.
+- Del bucle jugable, la marea, las oleadas y el HUD están hechos. Las gemas, el nivel y la elección llegan en la 0.4 y los cofres en la 0.5.
+- El tuning se hace en cada versión y, a fondo, en la 0.3.1.
+
+#### 6.9.1 Versión 0.3.1: tuning y pulido
+**Objetivo:** que la 0.3 mínima se juegue bien varios minutos seguidos y deje unas cifras base estables antes de que las mejoras de la 0.4 las multipliquen.
+
+**Dentro:**
+1. **Tuning jugando en la DS.** Se ajustan las cifras marcadas `[TUNABLE-PLACEHOLDER]`:
+   - horda (`include/horde.h`): intervalo, tope, rampas, grupos y mezcla de cargadores y tiradores;
+   - marea (`include/tide.h`): distancia inicial, velocidad, ritmo de golpes y oscuridad;
+   - curas (`include/pickups.h`);
+   - stats de enemigos (`include/gameplay.h`);
+   - daño y cadencia de las armas;
+   - vida e i-frames del jugador.
+
+   Los valores finales se escriben en esta sección como "valores de la 0.3.1".
+2. **Fallos y molestias** que el usuario anote jugando, hasta dejar la run limpia.
+3. **Techo de la horda:** subir el pool de 24 a 32 (y a 48 si cabe) y medir con `PERF_PROFILE`, vigilando `proj` (pico de 106.000 ticks en la 0.3 mínima). Si no cabe sin optimizar, la 0.3.1 se queda en lo que quepa a 60 FPS y la optimización pasa a la 0.5.
+4. **Pulido de assets sin modelos nuevos:** contraste y lectura del suelo cian y de las columnas, lectura del borde de la marea y de la cruz de cura, y legibilidad del HUD.
+5. **Limpieza:**
+   - borrar los escenarios `dungeon_pack_*`, que pasan sin probar nada desde que la ROM principal es la franja, o pasarlos a una variante de la mazmorra;
+   - borrar `/dungeonds_perf.log` de la DS antes de medir.
+
+**Fuera:** gemas, mejoras, clases, enemigos o modelos nuevos, biomas, tramos a mano y sonido. Si el tuning muestra que algo de esto hace falta, se apunta para su versión y no se adelanta.
+
+**Condición:** si al medir aparecen caídas a 30 FPS, el juego va a media velocidad y las cifras no valen. En ese caso se resuelve antes el timestep (`TECHNICAL.md` §4.5) o se baja la carga.
+
+> **Versiones 0.4 a 0.6: borrador.** Recogen lo que se espera hoy de cada una según §6.1–6.8. Se revisan con el feedback de la versión anterior y en su sesión de diseño, que decide los detalles y puede mover piezas de una versión a otra.
+
+#### 6.9.2 Versión 0.4: progresión dentro de la run (borrador)
+**Objetivo:** que cada run tenga decisiones que cambien cómo se juega y que morir enseñe qué elegir la próxima vez. Es el criterio de éxito de la prueba (abajo).
+
+**Dentro:**
+- **Gemas** al matar, con valor según el tipo de enemigo. Se recogen pisándolas, con un imán corto, y la marea se las traga (§6.6). Se dibujan en OAM (`TECHNICAL.md` §4.7).
+- **Experiencia y nivel.** Al llenar la barra se pausa el juego y se elige **1 de 3 mejoras** tocando la pantalla inferior. Unos 15–20 niveles por run, sin reroll.
+- **Mejoras:** la mitad del arma, que cambian su comportamiento (perforar, rebotar, explotar al matar, más proyectiles…); la otra mitad del personaje (vida máxima, velocidad, imán, i-frames). Cada una con icono, nombre y una línea de efecto. La tabla de modificadores de §5 sirve de semilla.
+- **Clases:** se elige francotirador/láser o escopeta al empezar (§6.5), cada una con su árbol de mejoras.
+- **Controles de §6.5 que falten:** mantener pulsado para disparar al ritmo del arma y la granada en L con enfriamiento.
+- **HUD:** vida, barra de experiencia, nivel y tiempo; se mantiene la altura.
+
+**Antes de empezar (sesión de diseño):**
+- lista de mejoras de cada clase, con sus cifras de partida y cómo se combinan;
+- curva de experiencia;
+- iconos y presentación de la elección;
+- si las curas de la 0.3 conviven con la mejora de vida o se ajustan.
+
+**Fuera:** cofres, élites y enemigos nuevos (0.5); progresión entre runs (§1).
+
+#### 6.9.3 Versión 0.5: horda con escalones y recompensas (borrador)
+**Objetivo:** que la horda tenga ritmo y picos (masas fáciles, amenazas puntuales) y que haya algo que perseguir además de subir.
+
+**Dentro:**
+- **Enjambre:** enemigo débil y abundante, que muere de un tiro y llega en grupos. Necesita un modelo nuevo en el lab (§6.7).
+- **Élites:** versiones mayores o tintadas del cargador y del tirador, con más vida. Aparecen cada cierto tiempo y sueltan un **cofre** con una mejora extra.
+- **Emboscadas desde abajo:** pocas y siempre con aviso en el borde inferior (§6.4).
+- **Motor de horda:** pool de 48 con IA por niveles de detalle, separación por rejilla y blit más barato, hasta cumplir el criterio de `TECHNICAL.md` §4.7 (32 visibles, 48 activos, 60 FPS en la DS).
+- Ritmo de aparición por oleadas o picos en lugar de la rampa lineal de la 0.3.
+
+**Antes de empezar (sesión de diseño):**
+- aspecto y comportamiento del enjambre;
+- cómo se reconoce un élite;
+- frecuencia de élites y emboscadas;
+- contenido de los cofres.
+
+**Fuera:** minijefe, jefe, biomas y tramos (0.6).
+
+#### 6.9.4 Versión 0.6: estructura de la run completa (borrador)
+**Objetivo:** la prueba completa de §6.1. Una run de unos 8 min con principio, mitad y final, que se gana matando al jefe.
+
+**Dentro:**
+- **Mapa por tramos** hechos a mano de una pantalla de alto, encadenados por reglas (abierto, estrechamiento, sala lateral con cofre o élite, coberturas bajas), en lugar de las bandas procedurales de la 0.3 (§6.2). Pipeline lab → baker para los tramos.
+- **Dos biomas,** uno en cada mitad, con su paleta y su kit.
+- **Minijefe** al cambiar de bioma y **jefe** en una sala final, con 2–3 patrones. La marea se para durante los dos combates (§6.4).
+- **Final de run:** pantalla de victoria; la de muerte se mantiene.
+- Longitud total ajustada para que dure ~8 min a la velocidad de la marea.
+
+**Antes de empezar (sesión de diseño):**
+- catálogo y reglas de los tramos;
+- tema de los biomas;
+- diseño del minijefe y del jefe;
+- aspecto final de la marea (fuego, plaga u oscuridad);
+- si la run sigue siendo infinita después del jefe o termina ahí.
+
+**Fuera:** progresión entre runs, más clases, sonido y más biomas (§1). Se deciden después de comprobar que la prueba divierte.
 
 **Criterio de éxito de la prueba:** el usuario juega varias runs seguidas en la DS, muere pronto en las primeras y aun así quiere otra porque sabe qué elegiría distinto.
