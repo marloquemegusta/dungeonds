@@ -2,12 +2,12 @@
 
 Primero el estado necesario para retomar el trabajo sin depender del chat; después, las entregas recientes verificadas (más nueva al final). El historial hasta 2026-10-21 está en `STATUS-ARCHIVE.md`.
 
-## Estado actual (2026-11-06)
+## Estado actual (2026-11-07)
 
-- **v0.3 mínima jugable (2026-11-06, `walkthroughs/v03-minima/`):** la ROM principal arranca en la franja vertical infinita con horda desde arriba, marea, curas y HUD de altura (`DESIGN.md` §6.0). 60 FPS en la DS con el pool de 24. Lo siguiente es ajustar cifras y assets jugando; el resto de §6 (gemas, mejoras, élites, jefes) sigue sin código.
+- **v0.3 mínima jugable (2026-11-06, `walkthroughs/v03-minima/`):** la ROM principal arranca en la franja vertical infinita con horda desde arriba, marea, curas y HUD de altura (`DESIGN.md` §6.0). 60 FPS en la DS con el pool de 24. **Cerrada.** El resto de §6 (gemas, mejoras, élites, jefes) sigue sin código y está repartido por versiones en `DESIGN.md` §6.9.
 - **Dirección vigente (v0.3, decidida 2026-11-06):** survivors de frente vertical con apuntado manual. Un nivel de ~8 min en una franja vertical que se sube mientras una marea avanza desde abajo, horda continua, gemas → nivel → elegir 1 de 3 mejoras, élites, minijefe y jefe, y clase = arma (francotirador/láser y escopeta). Diseño en `DESIGN.md` §6; requisitos técnicos en `TECHNICAL.md` §4.7. Sesión: `walkthroughs/survivors-direction/`.
 - **Rama base:** `main`, con v0.1 (`walkthroughs/v0.1/`) y v0.2 (`walkthroughs/v0.2/`) integradas. La v0.2 se integró con la deuda de rendimiento anotada abajo.
-- **Juego (v0.2, en `main`, sustituida en diseño por la v0.3):** una mazmorra de 768×768 con 6 manadas dormidas (22 enemigos), 8 modificadores estilo Isaac con coste, curación de 1 golpe por manada, HUD de run, reinicio total al morir (`DESIGN.md` §5). Pendiente: probar en la DS (sensación, rendimiento con hasta 24 enemigos y dos pantallas).
+- **Juego (v0.2, en `main`, sustituida en diseño por la v0.3):** una mazmorra de 768×768 con 6 manadas dormidas (22 enemigos), 8 modificadores estilo Isaac con coste, curación de 1 golpe por manada, HUD de run, reinicio total al morir (`DESIGN.md` §5). Jugada en la DS: más divertida que la v0.1 pero se agota en un par de minutos. El código sigue en `main`, pero la ROM principal ya no la arranca.
 - **Juego (v0.1, base de la v0.2; sustituida por la mazmorra):** prueba de diversión en 4 arenas cerradas de 384×384 px encadenadas (`DESIGN.md` §4): escopeta + francotirador, cargador (con navegación BFS) + tirador (telegraph y ráfagas de 3). Pendiente la Fase E: tuning y 60 FPS certificados en la DS.
 - **Arenas:** datos en `assets/arenas/arenas.json`; generador de modelos, export con el lab y baker (`tools/make_arena_glb.py`, `tools/export_arenas.py`, `tools/bake_arena.py`) descritos en `TECHNICAL.md` §3. El mapa grande `isometric_shooter_bl` ya no se usa.
 - **Render:** actores dibujados directamente en la página trasera del framebuffer de VRAM, limpieza por spans sucios y oclusión exacta al píxel por consulta de tramos (`TECHNICAL.md` §3.3). Medido en DS: CPU 1,58 ms de media y 12 de 2520 frames con más de un vblank.
@@ -16,12 +16,24 @@ Primero el estado necesario para retomar el trabajo sin depender del chat; despu
 - **Herramientas de diagnóstico en DS:** `PERF_PROFILE` (`include/perfprof.h`, log `/dungeonds_perf.log`) y `crashlog` (`CRASHLOG_ENABLED`, logs `/dungeonds_crash.log` y `/dungeonds_live.log`). Ambas apagadas por defecto; se leen con `fetch-device-log.ps1` de la skill.
 
 ### Siguientes pasos
-Plan completo y agentes de cada paso en `DESIGN.md` §6.9. Los dos primeros no dependen entre sí:
-1. **Prueba de horda en la DS** (técnica): pool, IA por niveles de detalle, separación por rejilla y blit más barato. Criterio: 60 FPS certificados con 32 enemigos visibles y 48 activos (`TECHNICAL.md` §4.7). Absorbe la deuda de rendimiento de la v0.2 (`en` y `blit`).
-2. **Sesión de diseño de contenido:** árbol de mejoras de las dos clases, enjambre, élite, minijefe, jefe, tramos, biomas y marea (`DESIGN.md` §6.9).
-3. **Franja vertical**, 4. **bucle jugable**, 5. **enemigos nuevos y jefes**, 6. **tuning y 60 FPS en la DS**.
+Hoja de ruta por versiones en `DESIGN.md` §6.9; cada versión es una sesión y una rama.
+1. **0.3.1, tuning y pulido** (`DESIGN.md` §6.9.1), sin mecánicas nuevas:
+   - cifras `[TUNABLE-PLACEHOLDER]` ajustadas jugando en la DS;
+   - fallos que anote el usuario;
+   - techo de la horda (pool de 24 → 32/48, medido);
+   - pulido de assets sin modelos nuevos;
+   - limpieza de los escenarios `dungeon_pack_*` y del log de la DS.
+2. **0.4, progresión:** gemas, nivel, 1 de 3 mejoras y clases. Antes, una sesión de diseño de mejoras.
+3. **0.5:** enjambre, élites, cofres y emboscadas, con pool de 48 (`TECHNICAL.md` §4.7).
+4. **0.6:** tramos a mano, biomas, minijefe y jefe. Cierra la prueba de §6.1.
 
-Siguen abiertos, sin prioridad frente a la v0.3: timestep y deuda del motor (`TECHNICAL.md` §4.5, el timestep conviene antes del tuning), escala personaje/mapa (§4.1), data abort intermitente (§4.4) y transparencias (§4.6, fuera de la v0.3). Los pasos de cierre de la v0.2 (modificadores, pedestales, mazmorra más grande) se descartan.
+Siguen abiertos, sin prioridad frente a la hoja de ruta:
+- Timestep y deuda del motor (`TECHNICAL.md` §4.5). El timestep se adelanta si la 0.3.1 mide caídas a 30 FPS.
+- Escala personaje/mapa (§4.1).
+- Data abort intermitente (§4.4).
+- Transparencias (§4.6), fuera de la v0.3.
+
+Los pasos de cierre de la v0.2 (modificadores, pedestales, mazmorra más grande) se descartan.
 
 ### Ramas aparcadas (se borran si caducan)
 - **`feat/v03-mazmorra`** (commit `1e4973d`, sin worktree). Trabajo de la sesión del 2026-11-04/05 (mazmorra de 1280×1280 y luz oscura), guardado como WIP. Nunca se probó en la DS ni se revisó, y la dirección cambió a la v0.3 survivors. **No es una base: como mucho, una cantera.**
@@ -132,3 +144,15 @@ El láser de apuntado se colima durante la carga (ancho, difuso y rojo a 1 px ve
 - La ROM principal arranca en modo franja (`DESIGN.md` §6.0): mapa infinito de 512 px de ancho generado por bandas con el kit cian de la mazmorra, horda que baja desde arriba, marea de oscuridad por hardware, curas y HUD de altura y tiempo. Sandbox y playground siguen con sus arenas.
 - Validación: build sin warnings, 154 tests de host, escenarios `strip_climb_smoke` y `strip_horde_tide` PASS. En la DS, CPU media del 39 % y máxima del 87 %, sin frames perdidos salvo la escritura del log. El usuario la juega y "se siente como un juego real".
 - Detalle: [`walkthroughs/v03-minima/`](walkthroughs/v03-minima/walkthrough.md).
+
+---
+
+## 2026-11-07 - Hoja de ruta por versiones: 0.3.1 → 0.6 (`docs/roadmap-v031`)
+- La 0.3 mínima se da por cerrada. `DESIGN.md` §6.9 sustituye el plan por pasos por versiones jugables:
+  - **0.3.1:** tuning y pulido;
+  - **0.4:** gemas, nivel, mejoras y clases;
+  - **0.5:** enjambre, élites, cofres y pool de 48;
+  - **0.6:** tramos, biomas y jefes.
+- Cada versión con diseño previo empieza por su sesión de diseño (regla 9). Alcance detallado de la 0.3.1 en §6.9.1.
+- `TECHNICAL.md` §4.7 recoge lo que ya implementó la 0.3 mínima (franja en ventana con rebase, navegación de 48×128, pool de 24 medido). El ancho de la franja se fija en 512 px (`DESIGN.md` §6.2).
+- Detalle: [`walkthroughs/roadmap-v031/`](walkthroughs/roadmap-v031/walkthrough.md).

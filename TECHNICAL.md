@@ -119,11 +119,11 @@ Preguntas abiertas a resolver en una sesión de diseño (`DESIGN.md`) antes de t
 ### 4.7. Requisitos técnicos de la v0.3: horda y franja vertical (2026-11-06)
 Diseño en `DESIGN.md` §6. Esto es lo que el motor actual no cubre y cómo se mide.
 
-**Cómo maneja hoy los enemigos (revisado 2026-11-06):**
+**Cómo manejaba los enemigos la v0.2 (revisado 2026-11-06):**
 - **Total:** array fijo de `MAX_GAMEPLAY_ENEMIES` = 24 (`gameplay.h`). En la v0.2 todos existen desde el principio y los `DORMANT` no ejecutan IA.
 - **Lógica:** `enemy_ai_update` ejecuta IA, movimiento y colisión de todos los despiertos, estén o no en pantalla. `apply_separation` compara cada enemigo con todos (O(n²)). El cargador comprueba la línea de visión (`los_has_line_of_sight` y `line_is_walkable`) cada frame.
 - **Dibujo:** `render_screen` solo añade los enemigos visibles en esa pantalla. Cada uno es un blit 40×40 a 16 bpp con sombra y oclusión por píxel.
-- **Navegación:** `navfield` cubre 48×48 nodos de 16 px, es decir, un mapa de 768×768 como máximo.
+- **Navegación:** `navfield` cubría 48×48 nodos de 16 px (mapa de 768×768 como máximo). En la 0.3 mínima pasó a 48×128 (abajo).
 - **Coste medido en la DS (v0.2, unos 8–12 despiertos):** `en` 55–60 k ticks y `blit` 63–74 k ticks por frame, con el frame total en 300–411 k de 560190 (`walkthroughs/v0.2/`). Extrapolado a lo bruto, unos 35 enemigos se pasan del presupuesto con el motor tal cual.
 
 **Cambios previstos para la horda:**
@@ -133,9 +133,17 @@ Diseño en `DESIGN.md` §6. Esto es lo que el motor actual no cubre y cómo se m
 - **Blit más barato:** sprites con paleta de 8 bpp en lugar de 16 bpp, y oclusión saltada cuando el sprite no toca ningún tramo de oclusión (en la franja, casi siempre).
 - **Gemas y pickups en OAM:** sprites hardware de 8×8 o 16×16, sin coste de CPU. Hay 128 entradas y el HUD también usa algunas.
 
-**Criterio de la prueba de horda (paso 1 de `DESIGN.md` §6.9):** 60 FPS certificados en la DS (`AGENTS.md` regla 6) con **32 enemigos visibles entre las dos pantallas y 48 activos**, disparando sin parar y con los efectos de armas activos, durante al menos 2 minutos de log. Si no se llega optimizando el compositor actual, se evalúa dibujar el enjambre con OAM o con el motor 3D (quads con textura y orden de profundidad por hardware) antes de seguir.
+**Criterio de la prueba de horda (se mide en la 0.3.1 y se cumple en la 0.5, `DESIGN.md` §6.9):** 60 FPS certificados en la DS (`AGENTS.md` regla 6) con **32 enemigos visibles entre las dos pantallas y 48 activos**, disparando sin parar y con los efectos de armas activos, durante al menos 2 minutos de log. Si no se llega optimizando el compositor actual, se evalúa dibujar el enjambre con OAM o con el motor 3D (quads con textura y orden de profundidad por hardware) antes de seguir.
 
-**Franja vertical:**
-- `navfield` necesita cubrir mapas altos: o un campo por ventana que sigue al jugador (la horda solo necesita navegar cerca de él) o una rejilla de 24 nodos de ancho y N de alto. Se decide al implementar.
+**Lo que implementó la 0.3 mínima (2026-11-06, `walkthroughs/v03-minima/`):**
+- **Franja en ventana:** `g_arena` es una ventana en RAM de 512×2048 px de una franja infinita (`source/strip.c`). Las bandas de 128 px salen de un hash de (semilla, banda) con el kit horneado de `source/strip_kit.c`. Cuando el jugador pasa de y=768, la ventana baja 512 px (rebase) y `strip_shift_world_y` desplaza toda Y viva: jugador, enemigos, proyectiles, armas, granada, horda, marea, curas y navegación.
+- **Navegación:** `navfield` de 48×128 nodos de 16 px. En el rebase se desplaza el campo (`nav_shift_down`) en vez de rehacerlo.
+- **Horda** (`source/horde.c`) sobre el pool de 24 (`MAX_GAMEPLAY_ENEMIES`), con reciclaje sin recompensa. La IA de siempre, con un flag de modo franja.
+- **Marea** (`source/tide.c`): WIN0 con fundido a negro por hardware (`REG_BLDCNT` modo 3, `BLDY`), sin coste de CPU por píxel.
+- **Medido en la DS:** CPU media de 219.000 ticks (39 %) y máxima de 489.882 (87 %). Picos de `en` 115.000 y `proj` 106.000. Sin frames perdidos salvo la escritura del log. Aún no aplica nada de los "cambios previstos" de arriba (pool de 48, IA por niveles de detalle, rejilla, 8 bpp).
+- **Escenarios:** `strip_climb_smoke` y `strip_horde_tide` leen `g_strip_debug[4]` = {altura en px, rebase acumulado, enemigos vivos, vida}.
+
+**Franja vertical (pendiente):**
+- Los tramos hechos a mano de la 0.6 sustituirán a las bandas procedurales; la ventana con rebase se mantiene.
 - El baker ya cumple el presupuesto de tiles por ventana (§3.3), que no depende del tamaño total. Los tramos repetidos comparten tiles. ROM orientativa: la mazmorra de 768×768 ocupa unos 83 KB; una franja de 384×6000 px debería quedarse en pocos cientos de KB.
 - **Timestep (§4.5):** con horda, una caída a 30 FPS pone el juego a media velocidad. Conviene resolverlo antes del tuning.
