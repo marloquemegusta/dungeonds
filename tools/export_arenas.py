@@ -114,7 +114,10 @@ def export_arena(name, spec):
     cx, cy, big_w, big_h = frame["cx"], frame["cy"], frame["map_w"], frame["map_h"]
     ppm = spec["pixels_per_metre"]
     old = json.loads(OLD_SETTINGS.read_text(encoding="utf-8"))
-    old = dict(old, lighting=dict(old["lighting"], **spec.get("lighting", {})))   # arenas.json may retune the lab lighting
+    arena = next(a for a in spec["arenas"] + spec.get("kits", []) if a["name"] == name)
+    # arenas.json may retune the lab lighting, globally or per arena/kit (the strip kit is lit apart)
+    light = dict(spec.get("lighting", {}), **arena.get("lighting", {}))
+    old = dict(old, lighting=dict(old["lighting"], **light))
     lab_settings = dict(old, mapName=name, width=big_w, height=big_h,
                         orthoScaleMeters=big_w / ppm, pixelsPerMeter=ppm, shadows=bool(spec.get("shadows", False)))
     with tempfile.TemporaryDirectory() as tmp:

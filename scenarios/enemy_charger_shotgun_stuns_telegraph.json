@@ -1,0 +1,258 @@
+{
+  "name": "enemy_charger_shotgun_stuns_telegraph",
+  "description": "Charger 60 px east of the player on open floor starts its telegraph; a shotgun blast into it must leave it STUNNED (not CHARGE) and alive with less than 300 hp.",
+  "tags": [
+    "enemy-tiers"
+  ],
+  "state": {
+    "symbols": {
+      "sb": "g_sandbox",
+      "enemies": "g_enemies",
+      "player": "g_player_state"
+    },
+    "default_symbol": "sb",
+    "fields": {
+      "seq": {
+        "offset": 0,
+        "type": "u32"
+      },
+      "ack": {
+        "offset": 4,
+        "type": "u32"
+      },
+      "player_x": {
+        "offset": 8,
+        "type": "s16"
+      },
+      "player_y": {
+        "offset": 10,
+        "type": "s16"
+      },
+      "weapon": {
+        "offset": 12,
+        "type": "u8"
+      },
+      "style": {
+        "offset": 13,
+        "type": "u8"
+      },
+      "enemy_count": {
+        "offset": 14,
+        "type": "u8"
+      },
+      "flags": {
+        "offset": 15,
+        "type": "u8"
+      },
+      "e0_type": {
+        "offset": 16,
+        "type": "u8"
+      },
+      "e0_flags": {
+        "offset": 17,
+        "type": "u8"
+      },
+      "e0_x": {
+        "offset": 18,
+        "type": "s16"
+      },
+      "e0_y": {
+        "offset": 20,
+        "type": "s16"
+      },
+      "e1_type": {
+        "offset": 22,
+        "type": "u8"
+      },
+      "e1_flags": {
+        "offset": 23,
+        "type": "u8"
+      },
+      "e1_x": {
+        "offset": 24,
+        "type": "s16"
+      },
+      "e1_y": {
+        "offset": 26,
+        "type": "s16"
+      },
+      "e2_type": {
+        "offset": 28,
+        "type": "u8"
+      },
+      "e2_flags": {
+        "offset": 29,
+        "type": "u8"
+      },
+      "e2_x": {
+        "offset": 30,
+        "type": "s16"
+      },
+      "e2_y": {
+        "offset": 32,
+        "type": "s16"
+      },
+      "en0_x": {
+        "symbol": "enemies",
+        "offset": 0,
+        "type": "s32"
+      },
+      "en0_y": {
+        "symbol": "enemies",
+        "offset": 4,
+        "type": "s32"
+      },
+      "en0_active": {
+        "symbol": "enemies",
+        "offset": 24,
+        "type": "s32"
+      },
+      "en0_hp": {
+        "symbol": "enemies",
+        "offset": 28,
+        "type": "s32"
+      },
+      "en0_type": {
+        "symbol": "enemies",
+        "offset": 40,
+        "type": "u8"
+      },
+      "en0_state": {
+        "symbol": "enemies",
+        "offset": 41,
+        "type": "u8"
+      },
+      "en0_timer": {
+        "symbol": "enemies",
+        "offset": 44,
+        "type": "s32"
+      },
+      "player_hp": {
+        "symbol": "player",
+        "offset": 0,
+        "type": "s32"
+      },
+      "player_iframes": {
+        "symbol": "player",
+        "offset": 16,
+        "type": "s32"
+      }
+    }
+  },
+  "steps": [
+    {
+      "frames": 30
+    },
+    {
+      "poke": [
+        {
+          "field": "player_x",
+          "value": 60
+        },
+        {
+          "field": "player_y",
+          "value": 724
+        },
+        {
+          "field": "weapon",
+          "value": 0
+        },
+        {
+          "field": "style",
+          "value": 0
+        },
+        {
+          "field": "flags",
+          "value": 5
+        },
+        {
+          "field": "enemy_count",
+          "value": 1
+        },
+        {
+          "field": "e0_type",
+          "value": 1
+        },
+        {
+          "field": "e0_flags",
+          "value": 0
+        },
+        {
+          "field": "e0_x",
+          "value": 120
+        },
+        {
+          "field": "e0_y",
+          "value": 724
+        },
+        {
+          "field": "seq",
+          "value": 1
+        }
+      ],
+      "frames": 1
+    },
+    {
+      "wait_until": {
+        "field": "ack",
+        "equals": 1,
+        "timeout_frames": 30
+      }
+    },
+    {
+      "wait_until": {
+        "field": "en0_state",
+        "equals": 3,
+        "timeout_frames": 30
+      },
+      "state_capture": "telegraph"
+    },
+    {
+      "tap": {
+        "x": 120,
+        "y": 79
+      },
+      "frames": 14,
+      "capture": "01_shot",
+      "state_capture": "hit"
+    },
+    {
+      "release": true,
+      "frames": 6,
+      "state_capture": "stunned"
+    },
+    {
+      "frames": 40,
+      "state_capture": "later"
+    }
+  ],
+  "assertions": {
+    "state_changes": [
+      {
+        "at": "telegraph",
+        "field": "en0_hp",
+        "equals": 300
+      },
+      {
+        "at": "hit",
+        "field": "en0_hp",
+        "max_value": 299
+      },
+      {
+        "at": "stunned",
+        "field": "en0_state",
+        "equals": 6
+      },
+      {
+        "at": "stunned",
+        "field": "en0_hp",
+        "min_value": 1
+      },
+      {
+        "at": "later",
+        "field": "en0_state",
+        "equals": 6
+      }
+    ]
+  }
+}

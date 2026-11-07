@@ -19,7 +19,9 @@
 #define HORDE_SPAWN_X_MIN 20 // [TUNABLE-PLACEHOLDER] left safe spawn coordinate in strip
 #define HORDE_SPAWN_X_MAX 492 // [TUNABLE-PLACEHOLDER] right safe spawn coordinate in strip
 #define STRIP_DEATH_SCREEN_FRAMES 60 // [TUNABLE-PLACEHOLDER] minimum death summary duration
-#define HORDE_CHARGER_PERCENT 75 // [TUNABLE-PLACEHOLDER] share of charger spawns
+#define HORDE_SKELETON_PERCENT 60 // [TUNABLE-PLACEHOLDER] share of skeleton spawns (the rest: chargers, then shooters)
+#define HORDE_CHARGER_PERCENT 15 // [TUNABLE-PLACEHOLDER] share of charger spawns; shooters take the remaining 25%
+#define HORDE_CHARGER_MAX_ALIVE 3 // [TUNABLE-PLACEHOLDER] chargers alive at once; a charger roll over it spawns a skeleton
 #define HORDE_RAMP_STEP_FRAMES 257 // [TUNABLE-PLACEHOLDER] interval tuning cadence (~18,000 frames total)
 #define HORDE_SPAWN_ATTEMPTS 24 // [TUNABLE-PLACEHOLDER] free-cell probes per spawned enemy
 #define HORDE_SHOOTER_TOP_LIMIT_PX 288 // [TUNABLE-PLACEHOLDER] visible world height above player across both screens

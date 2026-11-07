@@ -89,7 +89,7 @@ Resúmenes acumulativos y auditables de cada entrega y avance de desarrollo en `
 | 71 | Auditoría del motor 2D/3D y prototipo A (compositor directo en VRAM) | [`audit-motor-2d3d/`](audit-motor-2d3d/walkthrough.md) | Validado en DS (rendimiento) |
 | 72 | Diseño de gameplay mínimo (prueba de diversión) | [`diseno-gameplay-minimo/`](diseno-gameplay-minimo/walkthrough.md) | Diseño (sin código) |
 | 73 | v0.1 Fase A: armas, disparo desde el arma y pantalla superior igual a la inferior | [`v0.1/`](v0.1/walkthrough.md) | Validado en DS (rendimiento) |
-| 74 | v0.1 Fase B: cargador con navegación BFS | [`v0.1/`](v0.1/walkthrough.md) | Validado en DeSmuME y host (pendiente DS) |
+| 74 | v0.1 Fase B: cargador con navegación BFS | [`v0.1/`](v0.1/walkthrough.md) | Cerrada: validado en DeSmuME y host, jugado en la DS (sin log de `PERF_PROFILE`) |
 | 75 | v0.1 Fase C: tirador necrón (banda, telegraph, ráfaga de 3) | [`v0.1/`](v0.1/walkthrough.md) | Validado en DeSmuME (pendiente DS) |
 | 76 | v0.1 Fase D: 4 arenas, runtime multi-arena y encuentros | [`v0.1/`](v0.1/walkthrough.md) | Validado en DeSmuME y host (pendiente DS) |
 | 77 | v0.2: mazmorra de manadas, modificadores y HUD de run | [`v0.2/`](v0.2/walkthrough.md) | Validado en DeSmuME y host (pendiente DS) |
@@ -99,3 +99,4 @@ Resúmenes acumulativos y auditables de cada entrega y avance de desarrollo en `
 | 81 | Dirección v0.3: survivors de frente vertical | [`survivors-direction/`](survivors-direction/walkthrough.md) | Diseño (sin código) |
 | 82 | v0.3 mínima: franja vertical infinita, horda desde arriba, marea y curas | [`v03-minima/`](v03-minima/walkthrough.md) | Validado en DeSmuME, host y DS (60 FPS) |
 | 83 | Hoja de ruta por versiones: 0.3.1 (tuning) → 0.6 | [`roadmap-v031/`](roadmap-v031/walkthrough.md) | Diseño (sin código) |
+| 84 | v0.3.1: tres tiers de enemigos (esqueleto, cargador que carga, tirador láser), escala 100 = 1,0 y pulido | [`v031-tuning/`](v031-tuning/walkthrough.md) | Validado en DeSmuME y host (pendiente DS) |

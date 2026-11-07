@@ -28,6 +28,7 @@ def parse_enemy_hp():
     return {
         "charger": int(re.search(r"ENEMY_TYPE_CHARGER\] = \{\s*\.max_hp = (\d+)", GAMEPLAY_C).group(1)),
         "shooter": int(re.search(r"ENEMY_TYPE_SHOOTER\] = \{\s*\.max_hp = (\d+)", GAMEPLAY_C).group(1)),
+        "skeleton": int(re.search(r"ENEMY_TYPE_SKELETON\] = \{\s*\.max_hp = (\d+)", GAMEPLAY_C).group(1)),
     }
 
 
@@ -50,17 +51,27 @@ class WeaponsContractTest(unittest.TestCase):
         table = parse_weapon_table()
         hp = parse_enemy_hp()
         sniper = table["WEAPON_SNIPER"]
-        self.assertEqual(hits_to_kill(hp["shooter"], sniper["damage_per_hit"]), 1)
+        self.assertEqual(sniper["damage_per_hit"], 150)   # scale 100 = 1.0
+        self.assertEqual(hits_to_kill(hp["shooter"], sniper["damage_per_hit"]), 2)
         self.assertEqual(hits_to_kill(hp["charger"], sniper["damage_per_hit"]), 2)
+
+    def test_enemy_health_scale_is_hundredths(self):
+        self.assertEqual(parse_enemy_hp(), {"charger": 300, "shooter": 200, "skeleton": 100})
+
+    def test_sniper_one_shots_the_skeleton(self):
+        sniper = parse_weapon_table()["WEAPON_SNIPER"]
+        self.assertEqual(hits_to_kill(parse_enemy_hp()["skeleton"], sniper["damage_per_hit"]), 1)
 
     def test_shotgun_point_blank_hits_to_kill(self):
         table = parse_weapon_table()
         hp = parse_enemy_hp()
         shotgun = table["WEAPON_SHOTGUN"]
         full_blast = shotgun["damage_per_hit"] * shotgun["pellets"]
+        self.assertEqual(shotgun["damage_per_hit"], 40)    # scale 100 = 1.0
         self.assertGreaterEqual(full_blast, hp["shooter"])
         shots = hits_to_kill(hp["charger"], full_blast)
-        self.assertIn(shots, (2, 3))
+        self.assertEqual(shots, 2)                                # DESIGN.md 6.9.1: charger in 2 point-blank shots
+        self.assertEqual(hits_to_kill(hp["skeleton"], full_blast), 1)
 
     def test_sniper_needs_minimum_aim_time(self):
         sniper = parse_weapon_table()["WEAPON_SNIPER"]
@@ -122,16 +133,16 @@ class WeaponsContractTest(unittest.TestCase):
         self.assertIn("render_screen(s_top_page, s_dirty_top, view_x, view_y - SCREEN_H", MAIN_C)
 
     def test_grenade_contract(self):
-        # DESIGN.md 4.9: 1.5 s fuse, 56 px radius, 60 at the centre falling to 15 at the rim.
+        # DESIGN.md 4.9: 1.5 s fuse, 56 px radius, 300 at the centre falling to 75 at the rim (scale 100 = 1.0).
         grenade = parse_weapon_table()["WEAPON_GRENADE"]
         hp = parse_enemy_hp()
         self.assertIn("#define GRENADE_FUSE_FRAMES 90", GRENADE_H)
         self.assertIn("#define GRENADE_RADIUS 56", GRENADE_H)
-        self.assertIn("#define GRENADE_DAMAGE_RIM 15", GRENADE_H)
+        self.assertIn("#define GRENADE_DAMAGE_RIM 75", GRENADE_H)
         self.assertIn("#define GRENADE_MAX_ACTIVE 2", GRENADE_H)
-        self.assertEqual(grenade["damage_per_hit"], 60)
+        self.assertEqual(grenade["damage_per_hit"], 300)
         self.assertGreaterEqual(grenade["damage_per_hit"], hp["charger"])   # centre kills a charger
-        self.assertGreaterEqual(15, 1)
+        self.assertGreaterEqual(75, 1)
         self.assertEqual(grenade["projectile_range"], 150)
         self.assertEqual(grenade["recoil"], 0)
 

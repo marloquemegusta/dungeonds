@@ -274,7 +274,9 @@ La prueba de §6.1–6.8 se construye en versiones jugables pequeñas, cada una 
 | Versión | Contenido | Antes de empezar | Estado |
 | :--- | :--- | :--- | :--- |
 | **0.3 mínima** | Franja infinita de 512 px, horda desde arriba, marea, curas y HUD de altura (§6.0). | — | Cerrada 2026-11-06 (`walkthroughs/v03-minima/`) |
-| **0.3.1** | Tuning y pulido de la 0.3 mínima, sin mecánicas nuevas (§6.9.1). | Nada | **Siguiente** |
+| **0.3.1** | Tuning y pulido de la 0.3 mínima, con tres tiers de enemigos (esqueleto, cargador que carga, tirador láser) y escala de cifras 100 = 1,0 (§6.9.1). | Nada | Cerrada 2026-11-07 (`walkthroughs/v031-tuning/`) |
+| **0.3.2** | Escenario del primer nivel: estilo, ambientación y piezas del entorno (§6.9.1b). | Sesión de dirección de arte | **Siguiente** (pendiente de diseño) |
+| **0.3.3** | Personajes: reevaluar los sprites, ajustar tamaño y pasar al estilo definido en la 0.3.2 (§6.9.1b). | 0.3.2 cerrada | Pendiente de diseño |
 | **0.4** | Progresión dentro de la run: gemas con imán corto, experiencia, subir de nivel con pausa y elegir 1 de 3 mejoras con icono y una línea de efecto (§6.6), HUD de vida, experiencia, nivel y tiempo, elección de clase al empezar y controles de §6.5 que falten. | Sesión de diseño de mejoras y clases | Pendiente de diseño |
 | **0.5** | Enemigos y recompensas: enjambre, élites que sueltan cofre, emboscadas desde abajo con aviso. Pool de 48 y criterio de horda de `TECHNICAL.md` §4.7 (IA por niveles de detalle, separación por rejilla, blit más barato). | Sesión de diseño de enemigos | Pendiente de diseño |
 | **0.6** | Estructura de la run: tramos hechos a mano encadenados por reglas (§6.2), dos biomas, minijefe a mitad y jefe arriba, marea que se para en los combates. Cierra la prueba completa de §6.1 (~8 min, ganar matando al jefe). | Sesión de diseño de tramos, biomas y jefes | Pendiente de diseño |
@@ -303,12 +305,85 @@ La prueba de §6.1–6.8 se construye en versiones jugables pequeñas, cada una 
 3. **Techo de la horda:** subir el pool de 24 a 32 (y a 48 si cabe) y medir con `PERF_PROFILE`, vigilando `proj` (pico de 106.000 ticks en la 0.3 mínima). Si no cabe sin optimizar, la 0.3.1 se queda en lo que quepa a 60 FPS y la optimización pasa a la 0.5.
 4. **Pulido de assets sin modelos nuevos:** contraste y lectura del suelo cian y de las columnas, lectura del borde de la marea y de la cruz de cura, y legibilidad del HUD.
 5. **Limpieza:**
-   - borrar los escenarios `dungeon_pack_*`, que pasan sin probar nada desde que la ROM principal es la franja, o pasarlos a una variante de la mazmorra;
+   - los escenarios `dungeon_pack_*` pasaban sin probar nada desde que la ROM principal es la franja. **Decidido 2026-11-07: no se borran.** Se movieron a `scenarios_legacy/dungeon_v02/` (fuera de `scenarioDirectory`, con su README) hasta que exista una variante de la ROM que arranque la mazmorra;
    - borrar `/dungeonds_perf.log` de la DS antes de medir.
 
-**Fuera:** gemas, mejoras, clases, enemigos o modelos nuevos, biomas, tramos a mano y sonido. Si el tuning muestra que algo de esto hace falta, se apunta para su versión y no se adelanta.
+6. **Tres tiers de enemigos y escala de cifras (decidido 2026-11-07, tras jugar la 0.3 en la DS).** Sustituye al reparto cargador/tirador de la 0.3 mínima y adelanta el "enjambre" de §6.7, que usa el modelo del esqueleto. Detalle en "Enemigos de la 0.3.1" abajo.
+
+**Fuera:** gemas, mejoras, clases, biomas, tramos a mano y sonido. El único modelo nuevo es el esqueleto. Si el tuning muestra que algo más hace falta, se apunta para su versión y no se adelanta.
+
+**Valores de la 0.3.1 (cerrada 2026-11-07).** El usuario jugó la ROM en la DS (`dungeonds.nds`, rama `feat/v031-tuning`, `PERF_PROFILE 0`) y dio por buenas las cifras: el rendimiento le pareció bien y el juego "se siente mucho mejor". Se quedan los valores de partida de "Enemigos de la 0.3.1" como definitivos de esta versión. Todo sigue marcado `[TUNABLE-PLACEHOLDER]` en código y se puede retocar en las siguientes.
+
+| Cifra | Antes (0.3 mínima) | Valor de la 0.3.1 |
+| :--- | :--- | :--- |
+| Escala de vida y daño | enteros pequeños | centésimas, 100 = 1,0 |
+| Vida del cargador | 60 | 300 |
+| Vida del tirador | 20 | 200 |
+| Vida del esqueleto | no existía | 100 |
+| Velocidad del cargador | 90 % de la del héroe | 150 al acercarse, 650 al cargar |
+| Velocidad del esqueleto / tirador | — | 130 / 180 |
+| Reparto de la horda (esqueleto / cargador / tirador) | 0 / 75 / 25 % | 60 / 15 / 25 % |
+| Cargadores vivos a la vez | sin tope | 3 |
+| Láseres de tirador cargando a la vez | — (ráfagas de proyectiles) | 2 |
+| Francotirador, daño | 30 | 150 |
+| Escopeta, daño por perdigón | 8 | 40 |
+| Granada, centro / borde | 60 / 15 | 300 / 75 |
+| Borde de la marea | 2 px, tapado por el fundido | 3 px con degradado, fuera del fundido |
+| Pool de enemigos | 24 | 24 (sin cambio) |
+
+**Lo que no entró en la 0.3.1** y pasa a la lista de pendientes:
+- **Techo de la horda 32/48:** no se subió el pool ni se midió el coste de los láseres con `PERF_PROFILE`. La percepción del usuario con el pool de 24 es de 60 FPS sin problemas, pero no hay log. Se mide en la 0.5, que es cuando se necesita el pool de 48, o antes si se ven caídas.
+- **Marca visual del aturdimiento del cargador:** hoy no se ve cuándo está aturdido. Decisión de diseño pendiente; se resuelve junto al estilo de la 0.3.3.
+- **Cruz de cura y vida en el HUD de la franja:** la vida no se dibuja en modo franja. Entra en el HUD de la 0.4.
+- **Láser tras muros altos:** el rayo del tirador no se oculta tras ellos.
+- **Divisiones `/` por frame** en persecución, apuntado y dibujo del láser: pasar a `div32` si una medición futura las señala.
+
+**Enemigos de la 0.3.1 (decidido 2026-11-07).** Motivo: en la DS el cargador (60 de vida, 90 % de la velocidad del héroe, 75 % de la horda) se acumulaba y sobrepasaba en 10–15 s, y el tirador (proyectiles lentos, frágil) no amenazaba. Los números son `[TUNABLE-PLACEHOLDER]`.
+
+- **Escala de vida y daño: enteros en centésimas, 100 = 1,0.** Sin `float` (`AGENTS.md` regla 2). Las mejoras multiplican en porcentaje (+20 % = 100 → 120), como `modifiers.h`. Todo el daño de armas pasa a ×5 (francotirador 30 → 150, borde de granada 15 → 75, perdigones ×5), con las proporciones de antes. La vida del jugador no cambia (5 golpes).
+
+| Tier | Papel | Vida | Velocidad | Peso en la horda |
+| :--- | :--- | :--- | :--- | :--- |
+| Esqueleto (modelo nuevo) | Masa lenta que muere de un toque. Persigue y muerde como el cargador de la 0.3. | 100 | 130 (≈40 % del héroe, que va a 326) | 60 % |
+| Cargador | Amenaza rara y rápida (FSM nueva). | 300 | 150 al acercarse, 650 al cargar | 15 %, máx. 3 vivos |
+| Tirador | Amenaza a distancia con láser (FSM nueva). | 200 | 180 | 25 %, máx. 2 cargando a la vez |
+
+- **Armas contra esa escala:** el francotirador mata esqueletos de 1 disparo (150 ≥ 100) y tiradores y cargadores de 2 (200 y 300). La escopeta a quemarropa debe matar a un esqueleto de 1 disparo y a un cargador en 2; con la distancia pierde daño, como hoy.
+- **Cargador (cargar y esquivar):**
+  1. *Acercamiento* lento por el campo de distancias hasta tener línea de visión a menos de ~160 px.
+  2. *Telegrafía* ~30 frames: parpadeo del sprite y se queda quieto. Fija ahí la dirección hacia el jugador.
+  3. *Carga* en línea recta con la dirección fijada, a 650 y hasta ~160 px. Daña al tocar al jugador (1 golpe, respeta los i-frames).
+  4. *Recuperación* ~60 frames quieto y sin dañar, vulnerable. Luego vuelve al acercamiento.
+  - Si choca contra un muro o columna durante la carga, queda **aturdido** ~90 frames.
+  - **Aturdir con la escopeta y la granada (decidido 2026-11-07):** un golpe de escopeta o una explosión de granada durante la telegrafía o la carga lo interrumpe y lo deja aturdido ~60 frames. El francotirador no aturde: se le apunta desde lejos mientras sube.
+- **Tirador con láser verde (esquivar la carga):** sustituye a los proyectiles.
+  1. *Posicionarse* hasta su banda de distancia (como hoy).
+  2. *Carga* ~60 frames: una línea fina verde sale de él y **sigue al jugador**.
+  3. *Fijar* los últimos ~20 frames: la línea ya no gira y se ensancha; se esquiva saliendo de ella.
+  4. *Disparo* ~8 frames: el rayo hace 1 golpe si el jugador está en la línea (respeta los i-frames).
+  5. *Enfriamiento* ~90 frames.
+  - El rayo **no se detiene en columnas** (igual que las balas, §6.0). Se dibuja con el mismo efecto que el láser del jugador, en verde.
+  - Tope de 2 láseres cargando a la vez; el siguiente tirador espera en su banda. Motivo: coste de dibujar la línea y legibilidad.
+- **Escenarios:** los tres tiers se prueban con sandbox (enemigos parados, héroe invulnerable salvo en la prueba de golpe) con geometría real (`AGENTS.md` regla 5).
 
 **Condición:** si al medir aparecen caídas a 30 FPS, el juego va a media velocidad y las cifras no valen. En ese caso se resuelve antes el timestep (`TECHNICAL.md` §4.5) o se baja la carga.
+
+#### 6.9.1b Versiones 0.3.2 y 0.3.3: dirección de arte (decidido 2026-11-07, detalle por decidir en sus sesiones)
+Tras cerrar la 0.3.1, el usuario quiere dedicar dos versiones al aspecto antes de seguir con la progresión (0.4). No traen mecánicas nuevas.
+
+**Dirección de estilo para las dos:** pasar el aspecto a algo del tipo **Trench Crusade o Warhammer 40k, pero más sucio y sombrío ("chungo")**: guerra de trincheras, metal oxidado y gastado, fe fanática, reliquias, suciedad y desgaste. Hoy el juego tiene suelo azul pizarra con acento cian y un space marine limpio; la nueva dirección reemplaza esa lectura. El estilo exacto, la paleta y la ambientación definitiva del primer nivel se deciden en la 0.3.2, con referencias del usuario (regla 9: nada se implementa sin decisión escrita aquí).
+
+**0.3.2: escenario del primer nivel.**
+- Objetivo: un escenario que de verdad guste al usuario, que fije estilo y ambientación del primer nivel.
+- Flujo previsto: **generar imágenes** de las piezas (suelo, columnas, muros, atrezo) → pasarlas por **2D→3D** para obtener mallas 3D muy trabajadas → **pre-renderizarlas** con el lab como hoy (`TECHNICAL.md` §3).
+- Se decide aquí: estilo, ambientación, paleta, lectura del suelo, las columnas y el borde de la marea con el nuevo aspecto, y presupuesto de tiles (hoy 90 de 400).
+- Cierre: el escenario se ve bien en la ROM real (capturas) y 60 FPS en la DS (regla 6).
+
+**0.3.3: personajes.**
+- **Reevaluar** si los sprites actuales (héroe, cargador, tirador, esqueleto) valen con el nuevo estilo.
+- **Ajustar ligeramente su tamaño** (`TECHNICAL.md` §4.1, escala personaje/mapa) y mantener anclas, muzzle y sombras.
+- Mejorar el estilo pasando de nuevo el flujo imagen → 2D→3D → pre-render, incluida la **marca visual del aturdimiento** del cargador (pendiente de la 0.3.1).
+- Cierre: contactos de las 8 direcciones revisados de verdad, build sin warnings, tests de sprites y 60 FPS en la DS.
 
 > **Versiones 0.4 a 0.6: borrador.** Recogen lo que se espera hoy de cada una según §6.1–6.8. Se revisan con el feedback de la versión anterior y en su sesión de diseño, que decide los detalles y puede mover piezas de una versión a otra.
 

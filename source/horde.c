@@ -10,6 +10,7 @@ static int s_interval_ramp;
 static int s_cap;
 static int s_cap_ramp;
 static int s_cap_ramp_timer;
+static int s_chargers_alive;      // recounted every update, bumped on each charger spawn
 
 static uint32_t horde_random(void) {
     s_rng = s_rng * 1664525u + 1013904223u;
@@ -56,18 +57,22 @@ static int spawn_enemy(Enemy *e, int upper_screen_y, int clustered, int center_x
     memset(e, 0, sizeof(*e));
     e->x = TO_FIXED(x);
     e->y = TO_FIXED(y);
-    e->type = (horde_random() % 100u) < HORDE_CHARGER_PERCENT ? ENEMY_TYPE_CHARGER : ENEMY_TYPE_SHOOTER;
-    e->char_id = e->type == ENEMY_TYPE_CHARGER ? CHAR_CHARGER : CHAR_NECRON;
+    uint32_t roll = horde_random() % 100u;
+    if (roll < HORDE_SKELETON_PERCENT) e->type = ENEMY_TYPE_SKELETON;
+    else if (roll < HORDE_SKELETON_PERCENT + HORDE_CHARGER_PERCENT)
+        e->type = s_chargers_alive < HORDE_CHARGER_MAX_ALIVE ? ENEMY_TYPE_CHARGER : ENEMY_TYPE_SKELETON;
+    else e->type = ENEMY_TYPE_SHOOTER;
+    if (e->type == ENEMY_TYPE_CHARGER) s_chargers_alive++;
+    e->char_id = enemy_type_char_id(e->type);
     e->hp = g_enemy_tuning[e->type].max_hp;
     e->max_hp = e->hp;
     e->dir = DIR_SOUTH;
     e->frame = 0;
     e->anim_timer = 0;
     e->active = 1;
-    e->state = e->type == ENEMY_TYPE_CHARGER ? ENEMY_STATE_CHASE : ENEMY_STATE_POSITION;
+    e->state = ENEMY_INITIAL_STATE(e->type);
     e->state_timer = 0;
-    e->burst_shots_left = 0;
-    e->burst_interval_timer = 0;
+    e->charge_hit = 0;
     e->hit_timer = 0;
     e->stun_timer = 0;
     e->knock_vx = 0;
@@ -92,11 +97,15 @@ void horde_update(Enemy *enemies, int count, fixed player_y,
     }
 
     int alive = 0;
+    s_chargers_alive = 0;
     for (int i = 0; i < count; i++) {
         Enemy *e = &enemies[i];
         if (!e->active) continue;
         if (e->y > player_y + TO_FIXED(HORDE_RECYCLE_BEHIND_PX) || e->y >= tide_y) e->active = 0;
-        else alive++;
+        else {
+            alive++;
+            if (e->type == ENEMY_TYPE_CHARGER) s_chargers_alive++;
+        }
     }
 
     if (--s_spawn_timer > 0 || alive >= s_cap) return;

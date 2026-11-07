@@ -37,6 +37,7 @@
 #define SANDBOX_ENEMY_NONE    0
 #define SANDBOX_ENEMY_CHARGER 1
 #define SANDBOX_ENEMY_SHOOTER 2
+#define SANDBOX_ENEMY_SKELETON 3
 #define SANDBOX_ENEMY_FLAG_ASLEEP 1   // spawn dormant instead of awake
 
 typedef struct {

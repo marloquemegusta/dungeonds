@@ -11,7 +11,7 @@
 const WeaponTuning g_weapon_tuning[NUM_WEAPON_TYPES] = {
     [WEAPON_SHOTGUN] = {
         .name = "SHOTGUN",
-        .damage_per_hit = 8,        /* 8 dmg * 5 pellets = 40 point blank */
+        .damage_per_hit = 40,       /* 40 dmg * 5 pellets = 200 point blank (scale 100 = 1.0) */
         .pellets = 5,
         .fire_cooldown = 36,        /* marked pump between shots */
         .projectile_speed = 1536,   /* 6.0 px/frame */
@@ -26,7 +26,7 @@ const WeaponTuning g_weapon_tuning[NUM_WEAPON_TYPES] = {
     },
     [WEAPON_SNIPER] = {
         .name = "SNIPER",
-        .damage_per_hit = 30,       /* shooter 20 hp: 1 hit, charger 60 hp: 2 hits */
+        .damage_per_hit = 150,      /* skeleton 100 hp: 1 hit, shooter 200: 2, charger 300: 2 (scale 100 = 1.0) */
         .pellets = 1,
         .fire_cooldown = 40,
         .projectile_speed = 0,
@@ -41,7 +41,7 @@ const WeaponTuning g_weapon_tuning[NUM_WEAPON_TYPES] = {
     },
     [WEAPON_GRENADE] = {
         .name = "GRENADE",
-        .damage_per_hit = 60,       /* damage at the blast centre; falls to 15 at the rim */
+        .damage_per_hit = 300,      /* damage at the blast centre; falls to 75 at the rim */
         .pellets = 1,
         .fire_cooldown = 60,
         .projectile_speed = 0,

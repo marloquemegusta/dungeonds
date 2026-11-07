@@ -1,0 +1,281 @@
+{
+  "name": "enemy_charger_charge_into_column_stuns",
+  "description": "Charger at (368,444) charges south at a god-mode player at (368,484). The pillar x352-383,y520-535 lies on the same line 73 px further on (146 of the 160 ground px of the charge): it must stop against it and be STUNNED, with y just north of the pillar.",
+  "tags": [
+    "enemy-tiers"
+  ],
+  "state": {
+    "symbols": {
+      "sb": "g_sandbox",
+      "enemies": "g_enemies",
+      "player": "g_player_state"
+    },
+    "default_symbol": "sb",
+    "fields": {
+      "seq": {
+        "offset": 0,
+        "type": "u32"
+      },
+      "ack": {
+        "offset": 4,
+        "type": "u32"
+      },
+      "player_x": {
+        "offset": 8,
+        "type": "s16"
+      },
+      "player_y": {
+        "offset": 10,
+        "type": "s16"
+      },
+      "weapon": {
+        "offset": 12,
+        "type": "u8"
+      },
+      "style": {
+        "offset": 13,
+        "type": "u8"
+      },
+      "enemy_count": {
+        "offset": 14,
+        "type": "u8"
+      },
+      "flags": {
+        "offset": 15,
+        "type": "u8"
+      },
+      "e0_type": {
+        "offset": 16,
+        "type": "u8"
+      },
+      "e0_flags": {
+        "offset": 17,
+        "type": "u8"
+      },
+      "e0_x": {
+        "offset": 18,
+        "type": "s16"
+      },
+      "e0_y": {
+        "offset": 20,
+        "type": "s16"
+      },
+      "e1_type": {
+        "offset": 22,
+        "type": "u8"
+      },
+      "e1_flags": {
+        "offset": 23,
+        "type": "u8"
+      },
+      "e1_x": {
+        "offset": 24,
+        "type": "s16"
+      },
+      "e1_y": {
+        "offset": 26,
+        "type": "s16"
+      },
+      "e2_type": {
+        "offset": 28,
+        "type": "u8"
+      },
+      "e2_flags": {
+        "offset": 29,
+        "type": "u8"
+      },
+      "e2_x": {
+        "offset": 30,
+        "type": "s16"
+      },
+      "e2_y": {
+        "offset": 32,
+        "type": "s16"
+      },
+      "en0_x": {
+        "symbol": "enemies",
+        "offset": 0,
+        "type": "s32"
+      },
+      "en0_y": {
+        "symbol": "enemies",
+        "offset": 4,
+        "type": "s32"
+      },
+      "en0_active": {
+        "symbol": "enemies",
+        "offset": 24,
+        "type": "s32"
+      },
+      "en0_hp": {
+        "symbol": "enemies",
+        "offset": 28,
+        "type": "s32"
+      },
+      "en0_type": {
+        "symbol": "enemies",
+        "offset": 40,
+        "type": "u8"
+      },
+      "en0_state": {
+        "symbol": "enemies",
+        "offset": 41,
+        "type": "u8"
+      },
+      "en0_timer": {
+        "symbol": "enemies",
+        "offset": 44,
+        "type": "s32"
+      },
+      "player_hp": {
+        "symbol": "player",
+        "offset": 0,
+        "type": "s32"
+      },
+      "player_iframes": {
+        "symbol": "player",
+        "offset": 16,
+        "type": "s32"
+      }
+    }
+  },
+  "steps": [
+    {
+      "frames": 30
+    },
+    {
+      "poke": [
+        {
+          "field": "player_x",
+          "value": 368
+        },
+        {
+          "field": "player_y",
+          "value": 484
+        },
+        {
+          "field": "weapon",
+          "value": 1
+        },
+        {
+          "field": "style",
+          "value": 0
+        },
+        {
+          "field": "flags",
+          "value": 5
+        },
+        {
+          "field": "enemy_count",
+          "value": 1
+        },
+        {
+          "field": "e0_type",
+          "value": 1
+        },
+        {
+          "field": "e0_flags",
+          "value": 0
+        },
+        {
+          "field": "e0_x",
+          "value": 368
+        },
+        {
+          "field": "e0_y",
+          "value": 444
+        },
+        {
+          "field": "seq",
+          "value": 1
+        }
+      ],
+      "frames": 1
+    },
+    {
+      "wait_until": {
+        "field": "ack",
+        "equals": 1,
+        "timeout_frames": 30
+      }
+    },
+    {
+      "wait_until": {
+        "field": "en0_state",
+        "equals": 3,
+        "timeout_frames": 30
+      },
+      "state_capture": "telegraph"
+    },
+    {
+      "wait_until": {
+        "field": "en0_state",
+        "equals": 4,
+        "timeout_frames": 60
+      },
+      "capture": "01_charge",
+      "state_capture": "charge_start"
+    },
+    {
+      "wait_until": {
+        "field": "en0_state",
+        "equals": 6,
+        "timeout_frames": 90
+      },
+      "capture": "02_crash",
+      "state_capture": "crash"
+    },
+    {
+      "frames": 40,
+      "capture": "03_stunned",
+      "state_capture": "stunned"
+    }
+  ],
+  "assertions": {
+    "screen_changes": [
+      {
+        "from": "01_charge",
+        "to": "02_crash",
+        "min_changed_pixels": 20
+      }
+    ],
+    "state_changes": [
+      {
+        "at": "telegraph",
+        "field": "en0_y",
+        "max_value": 115200
+      },
+      {
+        "at": "crash",
+        "field": "en0_state",
+        "equals": 6
+      },
+      {
+        "at": "crash",
+        "field": "en0_y",
+        "min_value": 128000
+      },
+      {
+        "at": "crash",
+        "field": "en0_y",
+        "max_value": 133120
+      },
+      {
+        "at": "crash",
+        "field": "en0_timer",
+        "min_value": 80
+      },
+      {
+        "at": "stunned",
+        "field": "en0_state",
+        "equals": 6
+      },
+      {
+        "from": "crash",
+        "to": "stunned",
+        "field": "en0_y",
+        "max_abs_delta": 0
+      }
+    ]
+  }
+}

@@ -11,7 +11,7 @@
 #define GRENADE_FUSE_FRAMES 90      // explodes this long after the throw
 #define GRENADE_FLIGHT_FRAMES 30    // arc from the muzzle to the target point
 #define GRENADE_RADIUS 56           // ground px (2:1 ellipse on screen)
-#define GRENADE_DAMAGE_RIM 15       // damage at the rim; the centre uses WeaponTuning.damage_per_hit
+#define GRENADE_DAMAGE_RIM 75       // damage at the rim; the centre uses WeaponTuning.damage_per_hit
 #define GRENADE_MAX_ACTIVE 2
 
 void grenade_init(void);

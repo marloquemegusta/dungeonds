@@ -7,7 +7,7 @@
 #define TIDE_SPEED_FIXED 90 // [TUNABLE-PLACEHOLDER] 8.8 fixed px/frame (~0.35 px/frame)
 #define TIDE_HIT_FRAMES 75 // [TUNABLE-PLACEHOLDER] submerged frames between damage attempts
 #define TIDE_BRIGHTNESS 10 // [TUNABLE-PLACEHOLDER] hardware fade to black (0..16)
-#define TIDE_BORDER_PX 2 // [TUNABLE-PLACEHOLDER] visible dark red edge width
+#define TIDE_BORDER_PX 3 // [TUNABLE-PLACEHOLDER] visible red edge band width (3 rows: bright to dark)
 
 void tide_init(fixed player_y);
 void tide_update(void);

@@ -55,6 +55,7 @@ chars_meta = [
     ('player', 'marine', 'Space Marine Hero', 340, 4),
     ('charger', 'charger', 'Enemy Charger (Knocker)', 310, 5),
     ('necron', 'necron', 'Necron Shooter Enemy', 385, 4),
+    ('skeleton', 'skeleton', 'Skeleton Walker Enemy', 39, 22),
 ]
 
 out_lines = []
@@ -126,19 +127,19 @@ out_lines.append('};\n\n')
 out_lines.append('const uint16_t (* const g_character_frames[NUM_CHARACTERS])[PLAYER_NUM_FRAMES][PLAYER_SPRITE_W * PLAYER_SPRITE_H] = {\n')
 out_lines.append('    g_player_frames,\n')
 out_lines.append('    g_charger_frames,\n')
-out_lines.append('    g_necron_frames\n')
+out_lines.append('    g_necron_frames,\n    g_skeleton_frames\n')
 out_lines.append('};\n\n')
 
 out_lines.append('const uint8_t (* const g_character_shadow_masks[NUM_CHARACTERS])[PLAYER_NUM_FRAMES][PLAYER_SHADOW_W * PLAYER_SHADOW_H / 2] = {\n')
 out_lines.append('    g_player_shadow_masks,\n')
 out_lines.append('    g_charger_shadow_masks,\n')
-out_lines.append('    g_necron_shadow_masks\n')
+out_lines.append('    g_necron_shadow_masks,\n    g_skeleton_shadow_masks\n')
 out_lines.append('};\n\n')
 
 out_lines.append('const uint8_t (* const g_character_shadow_bounds[NUM_CHARACTERS])[PLAYER_NUM_FRAMES][4] = {\n')
 out_lines.append('    g_player_shadow_bounds,\n')
 out_lines.append('    g_charger_shadow_bounds,\n')
-out_lines.append('    g_necron_shadow_bounds\n')
+out_lines.append('    g_necron_shadow_bounds,\n    g_skeleton_shadow_bounds\n')
 out_lines.append('};\n')
 
 out_path = os.path.join(WT, 'source/player_sprite.c')

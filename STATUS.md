@@ -4,6 +4,8 @@ Primero el estado necesario para retomar el trabajo sin depender del chat; despu
 
 ## Estado actual (2026-11-07)
 
+- **v0.3.1 cerrada (2026-11-07, `walkthroughs/v031-tuning/`):** tres tiers de enemigos (esqueleto, cargador que carga, tirador láser), escala de cifras 100 = 1,0 y pulido de suelo y marea. Jugada en la DS: rendimiento bien y el juego se siente mucho mejor. Pool de 24; el techo 32/48 y el log de `PERF_PROFILE` no se hicieron (`DESIGN.md` §6.9.1, "Valores de la 0.3.1").
+- **Siguiente: 0.3.2 y 0.3.3, dirección de arte** (`DESIGN.md` §6.9.1b). Estilo objetivo: Trench Crusade / Warhammer 40k pero más sucio y sombrío. 0.3.2 = escenario del primer nivel (imágenes → 2D→3D → pre-render); 0.3.3 = sprites (reevaluar, ajustar tamaño, mismo flujo). Cada una en su sesión, con sesión de dirección de arte previa.
 - **v0.3 mínima jugable (2026-11-06, `walkthroughs/v03-minima/`):** la ROM principal arranca en la franja vertical infinita con horda desde arriba, marea, curas y HUD de altura (`DESIGN.md` §6.0). 60 FPS en la DS con el pool de 24. **Cerrada.** El resto de §6 (gemas, mejoras, élites, jefes) sigue sin código y está repartido por versiones en `DESIGN.md` §6.9.
 - **Dirección vigente (v0.3, decidida 2026-11-06):** survivors de frente vertical con apuntado manual. Un nivel de ~8 min en una franja vertical que se sube mientras una marea avanza desde abajo, horda continua, gemas → nivel → elegir 1 de 3 mejoras, élites, minijefe y jefe, y clase = arma (francotirador/láser y escopeta). Diseño en `DESIGN.md` §6; requisitos técnicos en `TECHNICAL.md` §4.7. Sesión: `walkthroughs/survivors-direction/`.
 - **Rama base:** `main`, con v0.1 (`walkthroughs/v0.1/`) y v0.2 (`walkthroughs/v0.2/`) integradas. La v0.2 se integró con la deuda de rendimiento anotada abajo.
@@ -17,13 +19,9 @@ Primero el estado necesario para retomar el trabajo sin depender del chat; despu
 
 ### Siguientes pasos
 Hoja de ruta por versiones en `DESIGN.md` §6.9; cada versión es una sesión y una rama.
-1. **0.3.1, tuning y pulido** (`DESIGN.md` §6.9.1), sin mecánicas nuevas:
-   - cifras `[TUNABLE-PLACEHOLDER]` ajustadas jugando en la DS;
-   - fallos que anote el usuario;
-   - techo de la horda (pool de 24 → 32/48, medido);
-   - pulido de assets sin modelos nuevos;
-   - limpieza de los escenarios `dungeon_pack_*` y del log de la DS.
-2. **0.4, progresión:** gemas, nivel, 1 de 3 mejoras y clases. Antes, una sesión de diseño de mejoras.
+1. **0.3.1, tuning y pulido:** cerrada (arriba). Quedan pendientes, anotados en `DESIGN.md` §6.9.1: techo de la horda 32/48, marca visual del aturdimiento, cruz de cura, vida en el HUD de la franja y láser tras muros altos.
+   - **0.3.2, escenario del primer nivel** y **0.3.3, personajes** (`DESIGN.md` §6.9.1b), antes de la 0.4.
+2. **0.4, progresión (tras la 0.3.3):** gemas, nivel, 1 de 3 mejoras y clases. Antes, una sesión de diseño de mejoras.
 3. **0.5:** enjambre, élites, cofres y emboscadas, con pool de 48 (`TECHNICAL.md` §4.7).
 4. **0.6:** tramos a mano, biomas, minijefe y jefe. Cierra la prueba de §6.1.
 
@@ -156,3 +154,12 @@ El láser de apuntado se colima durante la carga (ancho, difuso y rojo a 1 px ve
 - Cada versión con diseño previo empieza por su sesión de diseño (regla 9). Alcance detallado de la 0.3.1 en §6.9.1.
 - `TECHNICAL.md` §4.7 recoge lo que ya implementó la 0.3 mínima (franja en ventana con rebase, navegación de 48×128, pool de 24 medido). El ancho de la franja se fija en 512 px (`DESIGN.md` §6.2).
 - Detalle: [`walkthroughs/roadmap-v031/`](walkthroughs/roadmap-v031/walkthrough.md).
+
+---
+
+## 2026-11-07 - v0.3.1: tres tiers de enemigos, escala de cifras y pulido (rama `feat/v031-tuning`, fusionada en `main`)
+
+### Resumen
+- Vida y daño en centésimas (100 = 1,0); armas ×5. Tres tiers: esqueleto (100 de vida, velocidad 130, 60 % de la horda, modelo nuevo desde el FBX del inbox), cargador con telegrafía, carga recta y aturdimiento (por choque, escopeta o granada) y tirador con láser verde (carga, fijado, disparo). Decisión en `DESIGN.md` §6.9.1.
+- Pulido: luz neutra del kit de la franja (suelo ya no marrón) y borde de la marea de 3 px fuera del fundido. Los `dungeon_pack_*` se movieron a `scenarios_legacy/dungeon_v02/` (no se borraron).
+- **Validación:** build 0 warnings, 172 tests de host y escenarios `strip_*` y `enemy_*` en PASS. **Subida a la DS y jugada por el usuario:** rendimiento bien, sensación mucho mejor. **Sin hacer:** log de `PERF_PROFILE`, techo de la horda 32/48, cruz de cura, vida en el HUD y marca visual del aturdimiento (anotados en `DESIGN.md` §6.9.1). Siguen 0.3.2 (escenario) y 0.3.3 (sprites), estilo Trench Crusade / Warhammer 40k sombrío (§6.9.1b). Detalle: `walkthroughs/v031-tuning/walkthrough.md`.

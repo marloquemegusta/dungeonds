@@ -334,7 +334,7 @@
         },
         {
           "field": "e0_type",
-          "value": 2
+          "value": 3
         },
         {
           "field": "e0_flags",
@@ -409,7 +409,7 @@
         },
         {
           "field": "e0_type",
-          "value": 2
+          "value": 3
         },
         {
           "field": "e0_flags",
@@ -484,7 +484,7 @@
         },
         {
           "field": "e0_type",
-          "value": 2
+          "value": 3
         },
         {
           "field": "e0_flags",
@@ -559,7 +559,7 @@
         },
         {
           "field": "e0_type",
-          "value": 2
+          "value": 3
         },
         {
           "field": "e0_flags",
@@ -634,7 +634,7 @@
         },
         {
           "field": "e0_type",
-          "value": 2
+          "value": 3
         },
         {
           "field": "e0_flags",
@@ -709,7 +709,7 @@
         },
         {
           "field": "e0_type",
-          "value": 2
+          "value": 3
         },
         {
           "field": "e0_flags",
@@ -784,7 +784,7 @@
         },
         {
           "field": "e0_type",
-          "value": 2
+          "value": 3
         },
         {
           "field": "e0_flags",
@@ -859,7 +859,7 @@
         },
         {
           "field": "e0_type",
-          "value": 2
+          "value": 3
         },
         {
           "field": "e0_flags",
@@ -934,7 +934,7 @@
         },
         {
           "field": "e0_type",
-          "value": 2
+          "value": 3
         },
         {
           "field": "e0_flags",
@@ -1009,7 +1009,7 @@
         },
         {
           "field": "e0_type",
-          "value": 2
+          "value": 3
         },
         {
           "field": "e0_flags",
@@ -1084,7 +1084,7 @@
         },
         {
           "field": "e0_type",
-          "value": 2
+          "value": 3
         },
         {
           "field": "e0_flags",
@@ -1137,7 +1137,7 @@
       {
         "at": "up-14",
         "field": "e0_hp",
-        "min_value": 20
+        "min_value": 100
       },
       {
         "at": "up4",
@@ -1177,7 +1177,7 @@
       {
         "at": "up46",
         "field": "e0_hp",
-        "min_value": 20
+        "min_value": 100
       }
     ]
   }
