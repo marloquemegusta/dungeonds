@@ -6,7 +6,6 @@ ROOT = Path(__file__).resolve().parents[1]
 GAMEPLAY_H = (ROOT / "include" / "gameplay.h").read_text(encoding="utf-8")
 GAMEPLAY_C = (ROOT / "source" / "gameplay.c").read_text(encoding="utf-8")
 AI_C = (ROOT / "source" / "enemy_ai.c").read_text(encoding="utf-8")
-PROJECTILES_C = (ROOT / "source" / "projectiles.c").read_text(encoding="utf-8")
 MAIN_C = (ROOT / "source" / "main.c").read_text(encoding="utf-8")
 
 
@@ -38,7 +37,8 @@ class PlayerRulesTest(unittest.TestCase):
 
     def test_every_enemy_attack_is_one_hit(self):
         self.assertIn("player_take_hit(&g_player_state);", AI_C)
-        self.assertIn("player_take_hit(&g_player_state);", PROJECTILES_C)
+        # skeleton bite, charger charge and shooter laser: one player_take_hit each, i-frames inside it
+        self.assertGreaterEqual(AI_C.count("player_take_hit(&g_player_state);"), 3)
 
     def test_death_restarts_the_arena_with_full_health(self):
         self.assertIn("if (g_player_state.is_dead && !s_strip_mode) arena_restart();", MAIN_C)

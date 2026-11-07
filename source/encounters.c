@@ -1,7 +1,6 @@
 #include "encounters.h"
 #include "arena.h"
 #include "gameplay.h"
-#include "projectiles.h"
 #include "modifiers.h"
 #include "player_sprite.h"
 #include <string.h>
@@ -29,7 +28,6 @@ int encounters_spawn(EncounterManager *mgr, Enemy *enemies, int max_enemies) {
         enemies[i].max_hp = 0;
         enemies[i].pack = -1;
     }
-    enemy_projectiles_init();
     memset(mgr->pack_alive, 0, sizeof(mgr->pack_alive));
     memset(mgr->pack_awake, 0, sizeof(mgr->pack_awake));
     memset(mgr->kill_x, 0, sizeof(mgr->kill_x));
@@ -45,7 +43,7 @@ int encounters_spawn(EncounterManager *mgr, Enemy *enemies, int max_enemies) {
         e->active = 1;
         e->type = type;
         e->pack = spec->pack < MAX_PACKS ? spec->pack : MAX_PACKS - 1;
-        e->char_id = (type == ENEMY_TYPE_CHARGER) ? CHAR_CHARGER : CHAR_SKELETON;
+        e->char_id = enemy_type_char_id(type);
         e->max_hp = g_enemy_tuning[type].max_hp;
         e->hp = e->max_hp;
         e->dir = (spawned * 2) % 8;
@@ -57,8 +55,7 @@ int encounters_spawn(EncounterManager *mgr, Enemy *enemies, int max_enemies) {
         e->knock_vx = 0;
         e->knock_vy = 0;
         e->stun_timer = 0;
-        e->burst_shots_left = 0;
-        e->burst_interval_timer = 0;
+        e->charge_hit = 0;
         e->strafe_dir = (spawned & 1) ? 1 : -1;
         e->has_los = 0;
         mgr->pack_alive[e->pack]++;
@@ -80,7 +77,7 @@ static void wake_pack(Enemy *enemies, int max_enemies, int pack) {
     for (int i = 0; i < max_enemies; i++) {
         Enemy *e = &enemies[i];
         if (!e->active || e->pack != pack || e->state != ENEMY_STATE_DORMANT) continue;
-        e->state = (e->type == ENEMY_TYPE_CHARGER) ? ENEMY_STATE_CHASE : ENEMY_STATE_POSITION;
+        e->state = ENEMY_INITIAL_STATE(e->type);
         e->state_timer = 0;
     }
 }

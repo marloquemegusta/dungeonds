@@ -3,9 +3,10 @@
 #include "arena.h"
 #include "los.h"
 #include "gameplay.h"
+#include <stddef.h>
 #include "enemy_ai.h"
 #include "navfield.h"
-#include "projectiles.h"
+#include "enemy_laser.h"
 #include "weapons.h"
 #include "grenade.h"
 #include "sandbox.h"
@@ -130,6 +131,13 @@ volatile OcclusionStats g_occlusion_stats;
 #define MAX_ENEMIES MAX_GAMEPLAY_ENEMIES
 
 Enemy g_enemies[MAX_ENEMIES];     // not static: headless scenarios read it by symbol (the arena data also has an s_enemies)
+// Headless scenarios read g_enemies / g_player_state by byte offset (scenarios/enemy_*.json); a moved field breaks the build.
+// ARM EABI enums are 1 byte here (type and state are u8 in the scenarios).
+_Static_assert(sizeof(Enemy) == 84 && offsetof(Enemy, hp) == 28 && offsetof(Enemy, type) == 40 &&
+               offsetof(Enemy, state) == 41 && offsetof(Enemy, state_timer) == 44 && offsetof(Enemy, stun_timer) == 76,
+               "Enemy layout used by the scenarios changed");
+_Static_assert(sizeof(PlayerState) == 24 && offsetof(PlayerState, hp) == 0 && offsetof(PlayerState, invuln_timer) == 16,
+               "PlayerState layout used by the scenarios changed");
 volatile int32_t g_strip_debug[4]; // height px, accumulated shift, alive enemies, player hp
 static int s_best_height_m;
 static int s_death_screen_frames;
@@ -663,32 +671,9 @@ static void draw_hit_spark(uint16_t *buffer, int x, int y, int cam_x, int cam_y,
     }
 }
 
-// Shooter telegraph (DESIGN.md 4.5): the weapon glows at its muzzle before a burst, pulsing
-// faster and bigger as the shot gets closer. Same muzzle table as the player.
-static void bone_effect_pixel(uint16_t *buffer, int x, int y, int cam_x, int cam_y, uint16_t color);
-static void draw_telegraph_flash(uint16_t *buffer, const Enemy *e, int cam_x, int cam_y) {
-    const int8_t *m = g_character_muzzle[e->char_id][e->dir][e->frame];
-    int x = TO_INT(e->x) + m[0];
-    int y = TO_INT(e->y) + m[1] - m[2];
-    int left = e->state_timer;                      // frames until the burst
-    int big = left < 8;
-    uint16_t core = RGB15(24, 31, 20) | BIT(15);
-    uint16_t glow = RGB15(2, 29, 6) | BIT(15);
-    if ((left & (big ? 1 : 2)) == 0) return;        // blink
-    bone_effect_pixel(buffer, x, y, cam_x, cam_y, core);
-    bone_effect_pixel(buffer, x - 1, y, cam_x, cam_y, glow);
-    bone_effect_pixel(buffer, x + 1, y, cam_x, cam_y, glow);
-    bone_effect_pixel(buffer, x, y - 1, cam_x, cam_y, glow);
-    bone_effect_pixel(buffer, x, y + 1, cam_x, cam_y, glow);
-    if (big) {
-        bone_effect_pixel(buffer, x - 2, y, cam_x, cam_y, glow);
-        bone_effect_pixel(buffer, x + 2, y, cam_x, cam_y, glow);
-        bone_effect_pixel(buffer, x, y - 2, cam_x, cam_y, glow);
-        bone_effect_pixel(buffer, x, y + 2, cam_x, cam_y, glow);
-    }
-}
-
 static void draw_enemy(uint16_t *buffer, const Enemy *e, int cam_x, int cam_y) {
+    // Charger telegraph (DESIGN.md 6.9.1): the sprite blinks (hidden 4 frames out of 8) while it stands still.
+    if (e->state == ENEMY_STATE_TELEGRAPH && ((e->state_timer >> 2) & 1)) return;
     int px = player_screen_x(e->x, e->y);
     int py = player_screen_y(e->x, e->y);
 
@@ -705,8 +690,6 @@ static void draw_enemy(uint16_t *buffer, const Enemy *e, int cam_x, int cam_y) {
                 cam_x, cam_y, s_draw_item_depth);
     if (e->hit_timer > 0)
         draw_hit_spark(buffer, px, py - 24, cam_x, cam_y, e->hit_timer);
-    if (e->state == ENEMY_STATE_TELEGRAPH)
-        draw_telegraph_flash(buffer, e, cam_x, cam_y);
 }
 
 static void bone_effect_pixel(uint16_t *buffer, int x, int y, int cam_x, int cam_y, uint16_t color) {
@@ -916,7 +899,7 @@ static void render_screen(uint16_t *buffer, DirtySpan *spans, int cam_x, int cam
     PP_ADD(PP_BLIT, pp_blit);
     weapons_render_light(buffer, cam_x, cam_y);     // beams light the sprites drawn above
     PP_T0(pp_proj);
-    enemy_projectiles_render(buffer, cam_x, cam_y);
+    enemy_lasers_render(buffer, g_enemies, MAX_ENEMIES, cam_x, cam_y);
     weapons_render(buffer, cam_x, cam_y);
     mods_render(buffer, cam_x, cam_y);
     PP_ADD(PP_PROJ, pp_proj);
@@ -1169,7 +1152,6 @@ static uint32_t present_both_screens(int top_cam_x, int top_cam_y,
 // ---------------------------------------------------------------------------
 
 static void enemies_init(void) {
-    enemy_projectiles_init();
     encounters_init(&g_encounter_mgr);
     memset(g_enemies, 0, sizeof(g_enemies));
     if (!s_strip_mode) encounters_spawn(&g_encounter_mgr, g_enemies, MAX_ENEMIES);
@@ -1285,10 +1267,6 @@ static void weapons_and_effects_update(void) {
     death_chunks_update();
 }
 
-static fixed s_prev_player_x = 0;
-static fixed s_prev_player_y = 0;
-static int s_first_frame = 1;     // set again by arena_restart so the lead does not see a teleport
-
 static void strip_shift_world_y(int dy_px) {
     fixed shift = TO_FIXED(dy_px);
     s_player.y += shift;
@@ -1296,9 +1274,7 @@ static void strip_shift_world_y(int dy_px) {
         if (g_enemies[i].active) g_enemies[i].y += shift;
     for (int i = 0; i < MAX_DEATH_CHUNKS; i++)
         if (s_death_chunks[i].active) s_death_chunks[i].y += shift;
-    s_prev_player_y += shift;
     s_cam_y += dy_px;
-    enemy_projectiles_shift_y(dy_px);
     grenade_shift_y(dy_px);
     weapons_shift_y(dy_px);
     tide_shift_y(dy_px);
@@ -1315,20 +1291,9 @@ static void strip_shift_world_y(int dy_px) {
 #define NAV_BUDGET_PER_FRAME 300   // BFS node expansions per frame (a full field takes ~10 frames; measure with PERF_PROFILE)
 
 static void enemies_update(void) {
-    if (s_first_frame) {
-        s_prev_player_x = s_player.x;
-        s_prev_player_y = s_player.y;
-        s_first_frame = 0;
-    }
-    fixed pvx = s_player.x - s_prev_player_x;
-    fixed pvy = s_player.y - s_prev_player_y;
-    s_prev_player_x = s_player.x;
-    s_prev_player_y = s_player.y;
-
     nav_set_goal(TO_INT(s_player.x), TO_INT(s_player.y));
     nav_update(NAV_BUDGET_PER_FRAME);
-    enemy_ai_update(g_enemies, MAX_ENEMIES, s_player.x, s_player.y, pvx, pvy);
-    enemy_projectiles_update(s_player.x, s_player.y);
+    enemy_ai_update(g_enemies, MAX_ENEMIES, s_player.x, s_player.y);
     encounters_update(&g_encounter_mgr, g_enemies, MAX_ENEMIES, s_player.x, s_player.y);
     mods_update(s_player.x, s_player.y);
 }
@@ -1336,21 +1301,10 @@ static void enemies_update(void) {
 // Strip mode (DESIGN.md 6.0): the horde from above replaces the v0.2 packs and modifiers.
 // Runs in the enemies slot of the frame so PERF_PROFILE charges it to `en`.
 static void strip_enemies_update(void) {
-    if (s_first_frame) {
-        s_prev_player_x = s_player.x;
-        s_prev_player_y = s_player.y;
-        s_first_frame = 0;
-    }
-    fixed pvx = s_player.x - s_prev_player_x;
-    fixed pvy = s_player.y - s_prev_player_y;
-    s_prev_player_x = s_player.x;
-    s_prev_player_y = s_player.y;
-
     nav_set_goal(TO_INT(s_player.x), TO_INT(s_player.y));
     nav_update(NAV_BUDGET_PER_FRAME);
     horde_update(g_enemies, MAX_ENEMIES, s_player.y, s_cam_y - SCREEN_H, tide_y());
-    enemy_ai_update(g_enemies, MAX_ENEMIES, s_player.x, s_player.y, pvx, pvy);
-    enemy_projectiles_update(s_player.x, s_player.y);
+    enemy_ai_update(g_enemies, MAX_ENEMIES, s_player.x, s_player.y);
     pickups_update(s_player.x, s_player.y, tide_y(), &g_player_state);
 }
 
@@ -1601,7 +1555,6 @@ static void arena_restart(void) {
         strip_start(seed);
         horde_init(seed ^ 0x684f5244u);
         pickups_init(seed ^ 0x5049434bu);
-        enemy_projectiles_init();
         apply_arena_palette();
         init_bg_tile_cache(&s_top_bg_tile_cache, TOP_TILE_CACHE_CAPACITY, s_top_bg_tiles_vram);
         init_bg_tile_cache(&s_bot_bg_tile_cache, BG_TILE_CACHE_CAPACITY, s_bot_bg_tiles_vram);
@@ -1628,7 +1581,6 @@ static void arena_restart(void) {
     nav_set_goal(g_arena->player_x, g_arena->player_y);
     if (!s_strip_mode) nav_rebuild_now();
     s_rooted = 0;
-    s_first_frame = 1;
     s_latch_pressed = 0;
     s_latch_released = 0;
     s_keys_down_latch = 0;

@@ -12,23 +12,25 @@
 const EnemyTuning g_enemy_tuning[NUM_ENEMY_TYPES] = {
     [ENEMY_TYPE_NONE] = { 0 },
     [ENEMY_TYPE_CHARGER] = {
-        .max_hp = 60,             // [TUNABLE-PLACEHOLDER] 2 sniper hits (30 each)
-        .speed = 293,             // [TUNABLE-PLACEHOLDER] 8.8 fixed: ~90% of the hero's 326 (g_characters)
+        .max_hp = 300,            // [TUNABLE-PLACEHOLDER] scale 100 = 1.0 (was 60): 2 sniper hits (150 each)
+        .speed = 150,             // [TUNABLE-PLACEHOLDER] 8.8 fixed: slow approach (the 0.3 charger ran at 293)
+        .telegraph_duration = 30, // [TUNABLE-PLACEHOLDER] frames standing still and blinking before the lunge
+        .charge_speed = 650,      // [TUNABLE-PLACEHOLDER] 8.8 fixed: ~2 x the hero (326), straight line
+    },
+    [ENEMY_TYPE_SHOOTER] = {
+        .max_hp = 200,            // [TUNABLE-PLACEHOLDER] scale 100 = 1.0 (was 20)
+        .speed = 180,             // [TUNABLE-PLACEHOLDER] 8.8 fixed: ~55% of the hero, enough to back off
+        .attack_cooldown = 90,    // [TUNABLE-PLACEHOLDER] frames of cooldown after the laser fires (was 70 between bursts)
+        .preferred_dist_min = 56, // [TUNABLE-PLACEHOLDER] band: backs off closer than this (ground px)
+        .preferred_dist_max = 104,// [TUNABLE-PLACEHOLDER] closes in beyond this (ground px)
+        .position_duration = 30,  // [TUNABLE-PLACEHOLDER] frames settling before it starts a laser
+    },
+    [ENEMY_TYPE_SKELETON] = {
+        .max_hp = 100,            // [TUNABLE-PLACEHOLDER] scale 100 = 1.0: dies to one sniper hit or a point-blank shotgun
+        .speed = 130,             // [TUNABLE-PLACEHOLDER] 8.8 fixed: ~40% of the hero's 326
         .attack_cooldown = 30,    // [TUNABLE-PLACEHOLDER] frames between bites
         .preferred_dist_max = 16, // [TUNABLE-PLACEHOLDER] melee range (ground px)
     },
-    [ENEMY_TYPE_SHOOTER] = {
-        .max_hp = 20,             // [TUNABLE-PLACEHOLDER] 1 sniper hit (30)
-        .speed = 180,             // [TUNABLE-PLACEHOLDER] 8.8 fixed: ~55% of the hero, enough to back off
-        .attack_cooldown = 70,    // [TUNABLE-PLACEHOLDER] pause between bursts (~1.2 s), it keeps moving
-        .preferred_dist_min = 56, // [TUNABLE-PLACEHOLDER] band: backs off closer than this (ground px)
-        .preferred_dist_max = 104,// [TUNABLE-PLACEHOLDER] closes in beyond this (ground px)
-        .position_duration = 30,  // [TUNABLE-PLACEHOLDER] frames settling before it telegraphs
-        .telegraph_duration = 18, // [TUNABLE-PLACEHOLDER] weapon flash before a burst (0.3 s)
-        .burst_count = 3,         // [TUNABLE-PLACEHOLDER] 3 projectiles per burst
-        .burst_interval = 10,     // [TUNABLE-PLACEHOLDER] frames between burst shots
-        .projectile_speed = 384   // [TUNABLE-PLACEHOLDER] 8.8 fixed: 1.5 px/frame (slow, dodgeable)
-    }
 };
 
 // ---------------------------------------------------------------------------

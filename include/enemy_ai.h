@@ -4,12 +4,15 @@
 #include "gameplay.h"
 
 // Updates AI state machines for all active enemies:
-// - Charger FSM: IDLE -> ALERT -> CHASE -> ATTACK -> CHASE (with SEARCH on lost LOS after ~3s)
-// - Shooter FSM: IDLE -> ALERT -> POSITION -> AIM -> BURST -> COOLDOWN -> POSITION (with SEARCH on lost LOS after ~3s)
+// - Skeleton FSM: CHASE <-> ATTACK
+// - Charger FSM: CHASE -> TELEGRAPH -> CHARGE -> RECOVER -> CHASE (STUNNED by a wall or a shotgun hit)
+// - Shooter FSM: POSITION -> LASER_AIM -> LASER_FIX -> LASER_FIRE -> COOLDOWN -> POSITION
 // Handles separation repulsion between enemies.
 // Handles obstacle navigation with sweep_position / sliding.
-// Handles burst shooting with linear lead prediction on player velocity.
-void enemy_ai_update(Enemy *enemies, int num_enemies, fixed player_x, fixed player_y, fixed player_vx, fixed player_vy);
+void enemy_ai_update(Enemy *enemies, int num_enemies, fixed player_x, fixed player_y);
+
+// World position of the enemy's muzzle and its height above the ground (px); the shooter's laser leaves from it.
+void enemy_muzzle(const Enemy *e, fixed *mx, fixed *my, int *mh);
 void enemy_ai_set_strip_mode(int enabled);
 
 #endif // ENEMY_AI_H

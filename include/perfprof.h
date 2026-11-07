@@ -24,7 +24,7 @@ enum {
     PP_WALLBASE,     // draw_hidden_wall_base
     PP_SORT,         // insertion sort of draw items
     PP_BLIT,         // actor blits (player/enemies/death chunks)
-    PP_PROJ,         // enemy_projectiles_render + weapons_render
+    PP_PROJ,         // enemy_lasers_render + weapons_render
     PP_PICKUPS,      // pickups_render + encounters_render
     PP_HUD,          // draw_fps_hud
     PP_PCOPY,        // unused (page copy removed): always 0

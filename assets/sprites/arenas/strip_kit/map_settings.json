@@ -10,11 +10,11 @@
   "saturation": 1.5,
   "brightness": 1,
   "lighting": {
-    "preset": "warm",
-    "key": 1.7,
+    "preset": "neutral",
+    "key": 1.4,
     "fill": 1.0,
     "rim": 0,
-    "world": 0.4
+    "world": 0.5
   },
   "shadows": true,
   "labRender": {

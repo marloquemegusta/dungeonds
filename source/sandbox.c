@@ -10,7 +10,6 @@ typedef int sandbox_translation_unit_not_empty;
 #include "encounters.h"
 #include "gameplay.h"
 #include "weapons.h"
-#include "projectiles.h"
 #include "player_sprite.h"
 
 SandboxMailbox g_sandbox;
@@ -82,7 +81,6 @@ static void sandbox_clear(Enemy *enemies, int max_enemies) {
         enemies[i].max_hp = 0;
         enemies[i].pack = -1;
     }
-    enemy_projectiles_init();
     weapons_init();
 
     EncounterManager *mgr = &g_encounter_mgr;
@@ -105,21 +103,20 @@ static void sandbox_place(Enemy *e, EnemyType type, int x, int y, int ordinal, i
     e->active = 1;
     e->type = type;
     e->pack = MAX_PACKS - 1;
-    e->char_id = (type == ENEMY_TYPE_CHARGER) ? CHAR_CHARGER : CHAR_SKELETON;
+    e->char_id = enemy_type_char_id(type);
     e->max_hp = g_enemy_tuning[type].max_hp;
     e->hp = e->max_hp;
     e->dir = (ordinal * 2) % 8;
     e->frame = 0;
     e->anim_timer = 0;
     if (asleep) e->state = ENEMY_STATE_DORMANT;
-    else e->state = (type == ENEMY_TYPE_CHARGER) ? ENEMY_STATE_CHASE : ENEMY_STATE_POSITION;
+    else e->state = ENEMY_INITIAL_STATE(type);
     e->state_timer = 0;
     e->hit_timer = 0;
     e->knock_vx = 0;
     e->knock_vy = 0;
     e->stun_timer = 0;
-    e->burst_shots_left = 0;
-    e->burst_interval_timer = 0;
+    e->charge_hit = 0;
     e->strafe_dir = (ordinal & 1) ? 1 : -1;
     e->has_los = 0;
     g_encounter_mgr.pack_alive[e->pack]++;
@@ -142,6 +139,7 @@ static void sandbox_spawn(Enemy *enemies, int max_enemies) {
         EnemyType type;
         if (spec->type == SANDBOX_ENEMY_CHARGER) type = ENEMY_TYPE_CHARGER;
         else if (spec->type == SANDBOX_ENEMY_SHOOTER) type = ENEMY_TYPE_SHOOTER;
+        else if (spec->type == SANDBOX_ENEMY_SKELETON) type = ENEMY_TYPE_SKELETON;
         else continue;
 
         int slot = -1;
