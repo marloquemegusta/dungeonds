@@ -1,0 +1,20 @@
+{
+  "piece": "lapida_caballero2_h",
+  "size_px": [
+    72,
+    32
+  ],
+  "content_px": [
+    72,
+    26
+  ],
+  "target_width": 72,
+  "scale_factor": 0.1422924901185771,
+  "source_render_px": [
+    506,
+    185
+  ],
+  "yaw": 45,
+  "tiles_8x8_nonempty": 36,
+  "tiles_8x8_unique": 36
+}

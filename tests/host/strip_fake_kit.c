@@ -8,8 +8,8 @@ static uint8_t s_floor_collision[STRIP_W_CELLS * 8 / 4];
 static const uint16_t s_stamp_tiles_a[4] = {3, 3, 3, 3};
 static const uint16_t s_stamp_tiles_b[4] = {2, 3, 3, 2};
 static const StripStamp s_stamps[2] = {
-    {2, 2, 0, 0, 0, 2, 2, 1, s_stamp_tiles_a},
-    {2, 2, 2, 0, 0, 2, 2, 1, s_stamp_tiles_b}
+    {2, 2, 0, 0, 0, 0, 2, 2, 1, s_stamp_tiles_a, 0, 0},
+    {2, 2, 0, 2, 0, 0, 2, 2, 1, s_stamp_tiles_b, 0, 0}
 };
 
 const StripKit g_strip_kit = {

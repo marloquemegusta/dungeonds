@@ -1,0 +1,25 @@
+{
+  "piece": "lapida3d_cruz2_h",
+  "kind": "composicion",
+  "size_px": [
+    128,
+    96
+  ],
+  "content_px": [
+    128,
+    96
+  ],
+  "paste_offset_px": [
+    0,
+    16
+  ],
+  "sink_m": 0.06,
+  "lapida_footprint_m": [
+    3.9725,
+    3.9461
+  ],
+  "joint_m": 0.026,
+  "tiles_8x8_nonempty": 192,
+  "tiles_8x8_unique": 192,
+  "note": "hueco cortado (difference) y lapida colocada despues; borde = damero real"
+}

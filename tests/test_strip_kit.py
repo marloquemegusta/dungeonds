@@ -45,40 +45,40 @@ class StripKitTest(unittest.TestCase):
         num_tiles = int(tile_match.group(1))
         self.assertIn(period, (2, 4, 8, 16))
         self.assertEqual(16 % period, 0)
-        self.assertLessEqual(num_tiles, 400)
+        self.assertLessEqual(num_tiles, 1024)  # real BG1 cap: bank D, 1024 tile slots
 
         floor_map = values(source, "s_floor_map")
         self.assertEqual(len(floor_map), 64 * period)
-        self.assertTrue(all(0 <= tile < num_tiles for tile in floor_map))
+        self.assertTrue(all(0 <= (tile & 0x3FF) < num_tiles for tile in floor_map))  # bits 10/11 are H/V flips
         collision = values(source, "s_floor_collision")
         unpacked = [((byte >> shift) & 3) for byte in collision for shift in (0, 2, 4, 6)]
         rows = period * 2
         self.assertEqual(len(unpacked), 128 * rows)
         for y in range(rows):
             row = unpacked[y * 128:(y + 1) * 128]
-            self.assertEqual(row[:4], [3] * 4)
-            self.assertEqual(row[-4:], [3] * 4)
-            self.assertTrue(all(value == 0 for value in row[4:-4]))
+            self.assertEqual(row[:12], [3] * 12)   # side walls: 6 tiles = 12 cells
+            self.assertEqual(row[-12:], [3] * 12)
+            self.assertTrue(all(value == 0 for value in row[12:-12]))
 
         stamp_rows = re.findall(
             r"\{\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,"
-            r"\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,"
-            r"\s*s_stamp_\d+_tiles\s*\}", source)
+            r"\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,"
+            r"\s*s_stamp_\d+_tiles\s*,\s*\d+\s*,\s*[\w]+\s*\}", source)
         self.assertGreaterEqual(len(stamp_rows), 2)
-        self.assertLessEqual(len(stamp_rows), 4)
         self.assertEqual(len(re.findall(r"\.num_stamps\s*=\s*\d+", source)), 1)
-        for w, h, phase, foot_x, foot_y, foot_w, foot_h, foot_value in stamp_rows:
+        for w, h, phase_col, phase_row, foot_x, foot_y, foot_w, foot_h, foot_value in stamp_rows:
             w, h, foot_x, foot_y, foot_w, foot_h, foot_value = map(
                 int, (w, h, foot_x, foot_y, foot_w, foot_h, foot_value))
-            phase = int(phase)
-            self.assertLessEqual(phase, period - 1)
-            self.assertEqual(foot_value, 1)
-            self.assertGreater(foot_w, 0)
-            self.assertGreater(foot_h, 0)
+            self.assertLessEqual(int(phase_col), 15)
+            self.assertLessEqual(int(phase_row), 15)
+            self.assertIn(foot_value, (0, 1, 3))
+            if foot_value:
+                self.assertGreater(foot_w, 0)
+                self.assertGreater(foot_h, 0)
             self.assertLessEqual(foot_x + foot_w, w * 2)
             self.assertLessEqual(foot_y + foot_h, h * 2)
         for name in re.findall(r"s_stamp_\d+_tiles", source):
-            self.assertTrue(all(tile < num_tiles for tile in values(source, name)))
+            self.assertTrue(all((tile & 0x3FF) < num_tiles for tile in values(source, name)))
 
 
 if __name__ == "__main__":

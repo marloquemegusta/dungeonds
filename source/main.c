@@ -379,9 +379,12 @@ static inline uint16_t apply_shadow_fast(uint16_t color) {
 
 static inline uint16_t world_floor_color(int x, int y) {
     if ((uint32_t)x >= g_arena->world_w || (uint32_t)y >= g_arena->world_h) return VOID_COLOR | BIT(15);
-    uint16_t tile_id = g_arena->map[(y >> 3) * g_arena->map_w + (x >> 3)];
+    uint16_t entry = g_arena->map[(y >> 3) * g_arena->map_w + (x >> 3)];
+    uint16_t tile_id = entry & 0x03ffu;
     if (tile_id >= g_arena->num_tiles) return VOID_COLOR | BIT(15);
-    uint8_t palette_index = g_arena->tiles[tile_id][(y & 7) * 8 + (x & 7)];
+    int px = (entry & 0x0400u) ? 7 - (x & 7) : (x & 7);
+    int py = (entry & 0x0800u) ? 7 - (y & 7) : (y & 7);
+    uint8_t palette_index = g_arena->tiles[tile_id][py * 8 + px];
     if (palette_index == 0) return VOID_COLOR | BIT(15);
     return g_arena->palette[palette_index];
 }
@@ -493,6 +496,8 @@ static uint16_t acquire_bg_tile(BgTileCache *cache, uint16_t tile_id, uint8_t *t
 }
 
 static void release_bg_tile(BgTileCache *cache, uint16_t tile_id) {
+    if (tile_id == BG_TILE_INVALID) return;
+    tile_id &= 0x03ffu;
     if (tile_id == 0 || tile_id == BG_TILE_INVALID || tile_id >= BG_MAX_TILES) return;
     uint16_t slot = cache->slot_for_tile[tile_id];
     if (slot == BG_TILE_INVALID || slot == 0) return;
@@ -528,15 +533,16 @@ static void update_screen_hardware_bg(int is_sub, u16 *map_ptr, int cam_x, int c
                 int rel_x = bg_ring_index(mx - ring_x, BG_RING_W);
                 int world_x = tile_x + rel_x;
                 uint32_t cell = my * BG_RING_W + mx;
-                uint16_t tile_id = 0;
+                uint16_t tile_entry = 0;
                 if (rel_x < BG_VIEW_W && rel_y < BG_VIEW_H) {
-                    tile_id = bg_world_tile(world_x, world_y);
+                    tile_entry = bg_world_tile(world_x, world_y);
                 }
-                if (cache->world_tile_for_cell[cell] != tile_id) {
+                if (cache->world_tile_for_cell[cell] != tile_entry) {
                     release_bg_tile(cache, cache->world_tile_for_cell[cell]);
+                    uint16_t tile_id = tile_entry & 0x03ffu;
                     uint16_t slot = acquire_bg_tile(cache, tile_id, tile_vram);
-                    cache->world_tile_for_cell[cell] = tile_id;
-                    map_ptr[bg_map_index(mx, my)] = slot;
+                    cache->world_tile_for_cell[cell] = tile_entry;
+                    map_ptr[bg_map_index(mx, my)] = slot | (tile_entry & 0x0c00u);
                 }
             }
         }
@@ -1301,6 +1307,11 @@ static void enemies_update(void) {
 // Strip mode (DESIGN.md 6.0): the horde from above replaces the v0.2 packs and modifiers.
 // Runs in the enemies slot of the frame so PERF_PROFILE charges it to `en`.
 static void strip_enemies_update(void) {
+#if LAPIDA_DEBUG
+    // "lapidas" variant: a static look scene with no horde.
+    for (int i = 0; i < MAX_ENEMIES; i++) g_enemies[i].active = 0;
+    return;
+#endif
     nav_set_goal(TO_INT(s_player.x), TO_INT(s_player.y));
     nav_update(NAV_BUDGET_PER_FRAME);
     horde_update(g_enemies, MAX_ENEMIES, s_player.y, s_cam_y - SCREEN_H, tide_y());
@@ -1770,6 +1781,14 @@ int main(void) {
         if (!simulate) g_hitstop_frames--;
         if (simulate) {
             sandbox_update(g_enemies, MAX_ENEMIES, &s_player.x, &s_player.y);
+#if LAPIDA_DEBUG
+            // "lapidas" variant: pin the marine where the scenario pokes it and keep it invulnerable.
+            if (g_strip_debug_pos[0] >= 0 && g_strip_debug_pos[1] >= 0) {
+                s_player.x = TO_FIXED(g_strip_debug_pos[0]);
+                s_player.y = TO_FIXED(g_strip_debug_pos[1]);
+            }
+            g_player_state.god_mode = 1;
+#endif
             player_update(keys_held, s_keys_down_latch);
             if (s_strip_mode) {
                 int shifted = strip_rebase_if_needed(TO_INT(s_player.y));

@@ -1,7 +1,11 @@
-import os, re, json
+import os, re, json, argparse
 from PIL import Image
 
 WT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+parser = argparse.ArgumentParser()
+parser.add_argument('--src', default=os.path.join(WT, 'assets/sprites/characters'))
+ARGS = parser.parse_args()
+SRC_ROOT = os.path.abspath(ARGS.src)
 SPRITE_W = 40
 SPRITE_H = 40
 SHADOW_W = 80
@@ -65,7 +69,7 @@ char_configs = []
 all_anchors = []
 all_muzzles = []
 for var_name, folder, disp_name, def_spd, def_ticks in chars_meta:
-    char_dir = os.path.join(WT, 'assets/sprites/characters', folder)
+    char_dir = os.path.join(SRC_ROOT, folder)
     settings_path = os.path.join(char_dir, 'settings.json')
     spd, ticks = def_spd, def_ticks
     if os.path.exists(settings_path):
@@ -81,7 +85,7 @@ for var_name, folder, disp_name, spd, ticks in char_configs:
 out_lines.append('};\n\n')
 
 for var_name, folder, disp_name, spd, ticks in char_configs:
-    char_dir = os.path.join(WT, 'assets/sprites/characters', folder)
+    char_dir = os.path.join(SRC_ROOT, folder)
     png_path = os.path.join(char_dir, 'spritesheet.png')
     h_path = os.path.join(char_dir, 'nds_shadow_anchor.h')
 

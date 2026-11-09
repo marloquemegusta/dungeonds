@@ -1,0 +1,118 @@
+{
+  "variant": "rombos_tripo_b",
+  "tiles_unicos": 114,
+  "tope_tiles": 120,
+  "colores": 15,
+  "tope_colores": 32,
+  "delta_lstar_objetivo_textura": 16.0,
+  "lstar_medio_render_A_B": [
+    44.5,
+    28.75
+  ],
+  "delta_lstar_medido_render": 15.75,
+  "costura_exacta": true,
+  "discontinuidad_costura_media_8bit": 1.896,
+  "reconstruccion_exacta": true,
+  "px_m_horizontal": 17.9,
+  "px_m_profundidad": 8.95,
+  "rombo_ancho_px": 32,
+  "rombo_alto_px": 16,
+  "seed": 20261108,
+  "losas": [
+    {
+      "losa": "losa_a",
+      "zip_id": "d9f88a50",
+      "rol": "lisa",
+      "celdas_bloque_central": 62,
+      "lstar_A_textura": 19.48,
+      "lstar_B_textura": 3.48,
+      "k_B": 0.1324,
+      "caras_fbx_a_decimate": [
+        19224,
+        1200
+      ],
+      "dims_fbx_m_xyz": [
+        1.0,
+        0.9977,
+        0.1194
+      ]
+    },
+    {
+      "losa": "losa_grieta",
+      "zip_id": "ea230fcd",
+      "rol": "especial",
+      "celdas_bloque_central": 0,
+      "lstar_A_textura": 20.72,
+      "lstar_B_textura": 4.72,
+      "k_B": 0.1604,
+      "caras_fbx_a_decimate": [
+        19046,
+        1200
+      ],
+      "dims_fbx_m_xyz": [
+        1.0,
+        0.9969,
+        0.1278
+      ]
+    },
+    {
+      "losa": "losa_rota",
+      "zip_id": "3f00608c",
+      "rol": "especial",
+      "celdas_bloque_central": 1,
+      "lstar_A_textura": 20.8,
+      "lstar_B_textura": 4.8,
+      "k_B": 0.1629,
+      "caras_fbx_a_decimate": [
+        19320,
+        1200
+      ],
+      "dims_fbx_m_xyz": [
+        1.0,
+        0.9979,
+        0.1359
+      ]
+    },
+    {
+      "losa": "losa_cera",
+      "zip_id": "799f9815",
+      "rol": "especial",
+      "celdas_bloque_central": 1,
+      "lstar_A_textura": 21.16,
+      "lstar_B_textura": 5.16,
+      "k_B": 0.1529,
+      "caras_fbx_a_decimate": [
+        18191,
+        1199
+      ],
+      "dims_fbx_m_xyz": [
+        1.0,
+        0.9647,
+        0.1995
+      ]
+    },
+    {
+      "losa": "losa_sangre",
+      "zip_id": "d2e57143",
+      "rol": "especial",
+      "celdas_bloque_central": 0,
+      "lstar_A_textura": 25.41,
+      "lstar_B_textura": 9.41,
+      "k_B": 0.229,
+      "caras_fbx_a_decimate": [
+        19920,
+        1200
+      ],
+      "dims_fbx_m_xyz": [
+        1.0,
+        0.9406,
+        0.1288
+      ]
+    }
+  ],
+  "mean_rgb_reconstruido": [
+    85.3,
+    82.1,
+    75.5
+  ]
+}

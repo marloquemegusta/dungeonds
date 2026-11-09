@@ -1,0 +1,43 @@
+{
+  "variant": "b",
+  "unique_tiles": 43,
+  "palette_colors_used": 12,
+  "period_tiles": [
+    16,
+    16
+  ],
+  "pieces_per_block": {
+    "2x1": 5,
+    "2x2": 5,
+    "1x1": 2
+  },
+  "slab_variants_used": {
+    "1x1": 2,
+    "2x1": 3,
+    "2x2": 3
+  },
+  "period_seam_max_mismatch_pct": 0.277,
+  "period_seam_exact": false,
+  "period_seam_note": "interior pixels (outer ring excluded) of the 8 neighbours vs the centre block",
+  "json_reconstruction_pixel_exact": true,
+  "joint_cols_block128": [
+    63,
+    127
+  ],
+  "joint_rows_block128": [
+    0,
+    32,
+    80,
+    96
+  ],
+  "joints_on_unit_grid_32x16": true,
+  "px_per_m_measured_horizontal": null,
+  "px_per_m_measured_depth": null,
+  "px_per_m_measured_note": "autocorrelation of the joint pattern; only valid for the regular 1x1 layout",
+  "px_per_m_expected": [
+    17.9,
+    8.95
+  ],
+  "render_samples": 64,
+  "render_seed": 7
+}

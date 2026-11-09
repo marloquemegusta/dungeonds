@@ -4478,6 +4478,7 @@ function applyInPlaceMotion(clips, enabled, model) {
 
 
 
+
 /* SPRITE-LAB-PARITY:START */
 /**
  * Minimal standalone GLB (GLTF 2.0 Binary) loader.
@@ -5088,6 +5089,11 @@ function applyInPlaceMotion(clips, enabled, model) {
             const blob = new Blob([matInfo.imageBytes], { type: matInfo.mimeType || 'image/png' });
             const objectUrl = URL.createObjectURL(blob);
             const texture = new THREE.TextureLoader().load(objectUrl);
+            // glTF default sampler wrap is REPEAT; three's default is clamp, which smears UVs outside [0,1].
+            texture.wrapS = THREE.RepeatWrapping;
+            texture.wrapT = THREE.RepeatWrapping;
+            // glTF UVs have their origin at the top-left: three's TextureLoader defaults to flipY=true.
+            texture.flipY = false;
             if (THREE.SRGBColorSpace) {
               texture.colorSpace = THREE.SRGBColorSpace;
             } else if (THREE.sRGBEncoding) {
@@ -5606,6 +5612,9 @@ function applyInPlaceMotion(clips, enabled, model) {
   }
 
   // ---- Blender-equivalent lighting & materials ----
+  // Key light that actually lights the exported bodies (characters and pieces): elevation/azimuth in
+  // dungeonLightPosition's convention. Single source for the light rig and the baked shadow direction.
+  const SPRITE_KEY_ROT = [55, 30];
   function applyBlenderLighting() {
     if (!$.lights) return;
     const value = id => parseFloat(document.getElementById(id)?.value) || 0;
@@ -5628,7 +5637,7 @@ function applyInPlaceMotion(clips, enabled, model) {
     if ($.lights.rim?.color?.set) $.lights.rim.color.set(rimColorHex);
     if ($.lights.world?.color?.setRGB) $.lights.world.color.setRGB(1.0, 1.0, 1.0);
 
-    $.lights.key.position.set(0.4096 * 30, 0.5736 * 30, -0.7094 * 30);
+    $.lights.key.position.copy(dungeonLightPosition(SPRITE_KEY_ROT[0], SPRITE_KEY_ROT[1]).multiplyScalar(3));
     $.lights.fill.position.set(-0.5318 * 30, 0.3746 * 30, 0.7595 * 30);
     if ($.lights.rim) $.lights.rim.position.set(0, 30, 0);
   }
@@ -6450,7 +6459,10 @@ function applyInPlaceMotion(clips, enabled, model) {
     shadowCamera.lookAt(0, 0, 0);
     shadowCamera.updateMatrixWorld(true);
 
-    const Lx = -0.4096, Ly = -0.5736, Lz = 0.7094;
+    // Same key light as applyBlenderLighting: the shadow must fall away from the light that shades the body.
+    const keyLight = dungeonLightPosition(SPRITE_KEY_ROT[0], SPRITE_KEY_ROT[1]).normalize();
+    const Lx = -keyLight.x, Lz = -keyLight.z;
+    const LHeight = keyLight.y;
 
     const atlasCanvas = document.createElement('canvas');
     atlasCanvas.width = frameCount * shadowSize;
@@ -6555,7 +6567,7 @@ function applyInPlaceMotion(clips, enabled, model) {
               const rz = -wx * sinYaw + wz * cosYaw;
               const ry = Math.max(0, wy - frameMinY);
 
-              const t = ry / 0.5736;
+              const t = ry / LHeight;
               const gx = rx + t * Lx;
               const gz = rz + t * Lz;
 

@@ -607,6 +607,11 @@
             const blob = new Blob([matInfo.imageBytes], { type: matInfo.mimeType || 'image/png' });
             const objectUrl = URL.createObjectURL(blob);
             const texture = new THREE.TextureLoader().load(objectUrl);
+            // glTF default sampler wrap is REPEAT; three's default is clamp, which smears UVs outside [0,1].
+            texture.wrapS = THREE.RepeatWrapping;
+            texture.wrapT = THREE.RepeatWrapping;
+            // glTF UVs have their origin at the top-left: three's TextureLoader defaults to flipY=true.
+            texture.flipY = false;
             if (THREE.SRGBColorSpace) {
               texture.colorSpace = THREE.SRGBColorSpace;
             } else if (THREE.sRGBEncoding) {

@@ -2,6 +2,7 @@
 #include "strip_kit.h"
 
 #include <string.h>
+#include <stdlib.h>
 
 #define STRIP_MAP_H_TILES (STRIP_WIN_H_PX / 8)
 #define STRIP_COLLISION_W (STRIP_W_CELLS)
@@ -12,13 +13,18 @@
 #define STRIP_COLLISION_SHIFT_ROWS (STRIP_SHIFT_PX / COLLISION_SCALE)
 #define STRIP_MAP_ROW_BYTES (STRIP_W_TILES * sizeof(uint16_t))
 #define STRIP_COLLISION_ROW_BYTES (STRIP_COLLISION_W / 4)
-#define STRIP_MAX_STAMPS_PER_BAND 3
+#define STRIP_MAX_STAMPS_PER_BAND 4
+#define STRIP_WALL_TILES 6
+#define STRIP_WALL_CELLS (STRIP_WALL_TILES * 2)
+#define STRIP_OCCLUSION_CAPACITY 32768
 #define STRIP_START_CLEAR_BANDS 3
 #define STRIP_LANE_HALF_WIDTH_PX 32
 
 static uint16_t s_map[STRIP_W_TILES * STRIP_MAP_H_TILES];
 static uint8_t s_collision[(STRIP_COLLISION_W * STRIP_COLLISION_H) / 4];
 static uint32_t s_occlusion_row_start[STRIP_WIN_H_PX + 1];
+static DungeonOcclusionRun s_occlusion_runs[STRIP_OCCLUSION_CAPACITY];
+static uint32_t s_occlusion_count;
 static const uint16_t s_fallback_palette[256];
 static const uint8_t s_fallback_tile[1][64];
 static int32_t s_next_band;
@@ -26,6 +32,10 @@ static int32_t s_shift_total_px;
 static uint32_t s_seed;
 static int s_kit_valid;
 #define STRIP_INITIAL_BANDS (STRIP_MAP_H_TILES / STRIP_BAND_TILES)
+
+#if LAPIDA_DEBUG
+int32_t g_strip_debug_pos[2] = { -1, -1 };
+#endif
 
 static Arena s_arena = {
     .name = "vertical strip",
@@ -43,7 +53,7 @@ static Arena s_arena = {
     .palette = 0,
     .tiles = 0,
     .map = s_map,
-    .occlusion_runs = 0,
+    .occlusion_runs = s_occlusion_runs,
     .occlusion_row_start = s_occlusion_row_start,
     .enemies = 0
 };
@@ -85,8 +95,7 @@ static int rects_overlap(int ax, int ay, int aw, int ah,
     return ax < bx + bw && bx < ax + aw && ay < by + bh && by < ay + ah;
 }
 
-static int stamp_overlaps_lane(const StripStamp *stamp, int x_tile, int y_tile,
-                               int lane_x) {
+static int stamp_overlaps_lane(const StripStamp *stamp, int x_tile, int lane_x) {
     int left = x_tile * 8;
     int right = left + (int)stamp->w_tiles * 8;
     int lane_left = lane_x - STRIP_LANE_HALF_WIDTH_PX;
@@ -106,12 +115,13 @@ static int stamp_can_be_placed(const StripStamp *stamp, int x_tile, int y_tile,
                                int placed_count) {
     int w = stamp->w_tiles;
     int h = stamp->h_tiles;
-    if (w == 0 || h == 0 || x_tile < 1 || x_tile + w >= STRIP_W_TILES - 1 ||
+    if (w == 0 || h == 0 || x_tile < STRIP_WALL_TILES || x_tile + w > STRIP_W_TILES - STRIP_WALL_TILES ||
         y_tile < 0 || y_tile + h > STRIP_BAND_TILES) return 0;
-    if (stamp->foot_w == 0 || stamp->foot_h == 0 || stamp->foot_value > 3 ||
+    if (stamp->foot_value > 3 ||
+        (stamp->foot_value != 0 && (stamp->foot_w == 0 || stamp->foot_h == 0)) ||
         (unsigned)stamp->foot_x + stamp->foot_w > (unsigned)w * 2u ||
         (unsigned)stamp->foot_y + stamp->foot_h > (unsigned)h * 2u) return 0;
-    if (stamp_overlaps_lane(stamp, x_tile, y_tile, lane_x)) return 0;
+    if (stamp_overlaps_lane(stamp, x_tile, lane_x)) return 0;
     for (int i = 0; i < placed_count; i++) {
         if (rects_overlap(x_tile, y_tile, w, h,
                           placed_x[i], placed_y[i],
@@ -121,6 +131,10 @@ static int stamp_can_be_placed(const StripStamp *stamp, int x_tile, int y_tile,
 }
 
 static void stamp_band(int32_t band, int map_row, int collision_row) {
+#if LAPIDA_DEBUG
+    // "lapidas" variant: bands 11..15 host the forced showcase lapidas (see strip_debug_lapidas).
+    if (band >= 11 && band <= 15) return;
+#endif
     if ((band >= STRIP_INITIAL_BANDS - STRIP_START_CLEAR_BANDS && band < STRIP_INITIAL_BANDS) ||
         g_strip_kit.num_stamps == 0 ||
         g_strip_kit.stamps == 0 || g_strip_kit.floor_h_tiles == 0) return;
@@ -130,21 +144,25 @@ static void stamp_band(int32_t band, int map_row, int collision_row) {
     int placed_y[STRIP_MAX_STAMPS_PER_BAND];
     const StripStamp *placed[STRIP_MAX_STAMPS_PER_BAND];
     int placed_count = 0;
-    unsigned wanted = band_hash(band, 0x68bc21ebu) & 3u;
+    unsigned wanted = (band_hash(band, 0x68bc21ebu) & 3u) + 1u;
 
     for (unsigned n = 0; n < wanted; n++) {
         uint32_t random = band_hash(band, 0x02e5be93u + n * 0x9e3779b9u);
         const StripStamp *stamp = &g_strip_kit.stamps[random % g_strip_kit.num_stamps];
-        int period = g_strip_kit.floor_h_tiles;
+        int period = 16;
         int first_y = stamp->phase_row;
-        if (first_y >= period) continue;
         int y_slots = ((int)STRIP_BAND_TILES - (int)stamp->h_tiles - first_y) / period + 1;
-        int x_slots = (int)STRIP_W_TILES - (int)stamp->w_tiles - 2;
-        if (y_slots <= 0 || x_slots <= 0) continue;
+        int first_x = stamp->phase_col;
+        while (first_x < STRIP_WALL_TILES) first_x += period;
+        if (first_x + stamp->w_tiles > STRIP_W_TILES - STRIP_WALL_TILES) continue;
+        int x_slots = (STRIP_W_TILES - STRIP_WALL_TILES - (int)stamp->w_tiles - first_x) / period + 1;
+        if (first_y >= period || first_y + stamp->h_tiles > STRIP_BAND_TILES ||
+            y_slots <= 0 || x_slots <= 0) continue;
+        if (s_occlusion_count + stamp->num_depth_runs > STRIP_OCCLUSION_CAPACITY) continue;
 
         for (int attempt = 0; attempt < 16; attempt++) {
             uint32_t probe = hash32(random + (uint32_t)attempt * 0x85ebca6bu);
-            int x_tile = 1 + (int)(probe % (unsigned)x_slots);
+            int x_tile = first_x + (int)(probe % (unsigned)x_slots) * period;
             int y_tile = first_y + (int)((probe >> 16) % (unsigned)y_slots) * period;
             if (!stamp_can_be_placed(stamp, x_tile, y_tile, lane_x,
                                      placed_x, placed_y, placed, placed_count)) continue;
@@ -167,6 +185,17 @@ static void stamp_band(int32_t band, int map_row, int collision_row) {
                                              stamp->foot_value);
                     }
                 }
+            }
+            for (unsigned ri = 0; ri < stamp->num_depth_runs; ri++) {
+                const StripDepthRun *run = &stamp->depth_runs[ri];
+                unsigned ry = (unsigned)(map_row * 8 + y_tile * 8 + run->y_px);
+                unsigned rx = (unsigned)(x_tile * 8 + run->x_px);
+                if (ry >= STRIP_WIN_H_PX || rx >= STRIP_W_PX || !run->length) continue;
+                DungeonOcclusionRun *dst = &s_occlusion_runs[s_occlusion_count++];
+                dst->x = (uint16_t)rx;
+                dst->y = (uint16_t)ry;
+                dst->length = (uint16_t)((rx + run->length > STRIP_W_PX) ? STRIP_W_PX - rx : run->length);
+                dst->depth = (int16_t)(map_row * 8 + y_tile * 8 + stamp->h_tiles * 8 + run->depth_delta);
             }
             placed_x[placed_count] = x_tile;
             placed_y[placed_count] = y_tile;
@@ -205,18 +234,59 @@ static void generate_band(int32_t band, int map_row, int collision_row) {
 static void enforce_hard_edges(void) {
     for (unsigned row = 0; row < STRIP_COLLISION_H; row++) {
         unsigned base = row * STRIP_COLLISION_W;
-        packed_collision_set(s_collision, base, 3);
-        packed_collision_set(s_collision, base + STRIP_COLLISION_W - 1u, 3);
+        for (unsigned x = 0; x < STRIP_WALL_CELLS; x++) {
+            packed_collision_set(s_collision, base + x, 3);
+            packed_collision_set(s_collision, base + STRIP_COLLISION_W - STRIP_WALL_CELLS + x, 3);
+        }
     }
     unsigned bottom = (STRIP_COLLISION_H - 1u) * STRIP_COLLISION_W;
     for (unsigned x = 0; x < STRIP_COLLISION_W; x++)
         packed_collision_set(s_collision, bottom + x, 3);
 }
 
+static int occlusion_compare(const void *a, const void *b) {
+    const DungeonOcclusionRun *ra = (const DungeonOcclusionRun *)a;
+    const DungeonOcclusionRun *rb = (const DungeonOcclusionRun *)b;
+    if (ra->y != rb->y) return (int)ra->y - (int)rb->y;
+    return (int)ra->x - (int)rb->x;
+}
+
+static void rebuild_occlusion_index(void) {
+    qsort(s_occlusion_runs, s_occlusion_count, sizeof(s_occlusion_runs[0]), occlusion_compare);
+    uint32_t i = 0;
+    for (unsigned y = 0; y <= STRIP_WIN_H_PX; y++) {
+        while (i < s_occlusion_count && s_occlusion_runs[i].y < y) i++;
+        s_occlusion_row_start[y] = i;
+    }
+}
+
+#if LAPIDA_DEBUG
+// Debug-only showcase ("lapidas" build variant): each lapida is painted at a fixed band so all five
+// are on screen deterministically. The default build still picks them by hash.
+#define STRIP_LAPIDA_FIRST 24   // keep in sync with the s_stamps order in source/strip_kit.c (last five)
+static void strip_debug_blit_lapida(int band, int stamp_index) {
+    const StripStamp *stamp = &g_strip_kit.stamps[stamp_index];
+    int x_tile = 16;                          // floor phase 0 in x
+    int y_tile = band * STRIP_BAND_TILES;     // floor phase 0 in y
+    int w = (int)stamp->w_tiles;
+    int h = (int)stamp->h_tiles;
+    for (int sy = 0; sy < h; sy++) {
+        for (int sx = 0; sx < w; sx++) {
+            uint16_t tile = stamp->tiles[sy * w + sx];
+            if (tile) s_map[(unsigned)(y_tile + sy) * STRIP_W_TILES + x_tile + sx] = tile;
+        }
+    }
+}
+static void strip_debug_lapidas(void) {
+    for (int k = 0; k < 5; k++) strip_debug_blit_lapida(11 + k, STRIP_LAPIDA_FIRST + k);
+}
+#endif
+
 void strip_start(uint32_t seed) {
     s_seed = seed;
     s_next_band = 0;
     s_shift_total_px = 0;
+    s_occlusion_count = 0;
     g_arena = &s_arena;
     s_kit_valid = 0;
     if (g_strip_kit.floor_h_tiles == 0 || g_strip_kit.floor_h_tiles > STRIP_BAND_TILES ||
@@ -225,6 +295,7 @@ void strip_start(uint32_t seed) {
         memset(s_map, 0, sizeof(s_map));
         memset(s_collision, 0, sizeof(s_collision));
         memset(s_occlusion_row_start, 0, sizeof(s_occlusion_row_start));
+        s_arena.occlusion_runs = 0;
         s_arena.num_tiles = 1;
         s_arena.palette = s_fallback_palette;
         s_arena.tiles = s_fallback_tile;
@@ -237,6 +308,11 @@ void strip_start(uint32_t seed) {
         generate_band(band, band * STRIP_BAND_TILES, band * STRIP_BAND_CELLS);
         s_next_band = band + 1;
     }
+#if LAPIDA_DEBUG
+    strip_debug_lapidas();
+#endif
+    rebuild_occlusion_index();
+    s_arena.occlusion_runs = s_occlusion_runs;
     enforce_hard_edges();
     s_arena.num_tiles = g_strip_kit.num_tiles;
     s_arena.palette = g_strip_kit.palette;
@@ -252,10 +328,20 @@ int strip_rebase_if_needed(int player_y_px) {
     memmove(s_collision + STRIP_COLLISION_SHIFT_ROWS * STRIP_COLLISION_ROW_BYTES,
             s_collision,
             (STRIP_COLLISION_H - STRIP_COLLISION_SHIFT_ROWS) * STRIP_COLLISION_ROW_BYTES);
+    uint32_t kept_runs = 0;
+    for (uint32_t i = 0; i < s_occlusion_count; i++) {
+        unsigned shifted_y = (unsigned)s_occlusion_runs[i].y + STRIP_SHIFT_PX;
+        if (shifted_y >= STRIP_WIN_H_PX) continue;
+        s_occlusion_runs[i].y = (uint16_t)shifted_y;
+        s_occlusion_runs[i].depth += STRIP_SHIFT_PX;
+        s_occlusion_runs[kept_runs++] = s_occlusion_runs[i];
+    }
+    s_occlusion_count = kept_runs;
     for (int band = 0; band < STRIP_SHIFT_PX / STRIP_BAND_PX; band++) {
         generate_band(s_next_band, band * STRIP_BAND_TILES, band * STRIP_BAND_CELLS);
         s_next_band++;
     }
+    rebuild_occlusion_index();
     enforce_hard_edges();
     s_shift_total_px += STRIP_SHIFT_PX;
     return STRIP_SHIFT_PX;

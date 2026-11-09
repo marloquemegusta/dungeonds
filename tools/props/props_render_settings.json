@@ -1,0 +1,3 @@
+{"width": 768, "cameraElevationDegrees": 30, "contrast": 1.2, "saturation": 1.0, "brightness": 1,
+ "lighting": {"preset": "neutral"},
+ "waitTextures": true, "waitTexturesMs": 4000}

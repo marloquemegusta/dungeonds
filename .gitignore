@@ -42,3 +42,18 @@ archive/
 
 graphify-out/
 
+
+# Zips originales de Tripo (el FBX ya está en assets/environment/cathedral/props/)
+assets/models/environment/cathedral/tripo/
+
+# v0.3.2: intermedios regenerables (GLB de prep_props.py, variantes de losas, iteraciones del suelo, scratch y sets de personajes de prueba)
+assets/environment/cathedral/props/glb/
+assets/environment/cathedral/floor_tiles/*
+!assets/environment/cathedral/floor_tiles/losa_a.fbx
+!assets/environment/cathedral/floor_tiles/losa_a.fbm/
+assets/models/environment/floor_proc/
+assets/models/environment/floor_proto/
+.scratch_*/
+assets/sprites/characters_neutral/
+assets/sprites/characters_neutral2/
+assets/environment/cathedral/props/*.fbx

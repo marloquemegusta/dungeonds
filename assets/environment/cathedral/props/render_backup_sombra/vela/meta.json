@@ -1,0 +1,28 @@
+{
+  "piece": "vela",
+  "size_px": [
+    32,
+    24
+  ],
+  "content_px": [
+    25,
+    21
+  ],
+  "target_width": 25,
+  "scale_factor": 0.04325259515570934,
+  "source_render_px": [
+    578,
+    490
+  ],
+  "yaw": 0,
+  "tiles_8x8_nonempty": 10,
+  "tiles_8x8_unique": 10,
+  "shadow_offset_px": [
+    0,
+    0
+  ],
+  "shadow_canvas_px": [
+    40,
+    32
+  ]
+}

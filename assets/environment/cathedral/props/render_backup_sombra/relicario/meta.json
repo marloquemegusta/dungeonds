@@ -1,0 +1,28 @@
+{
+  "piece": "relicario",
+  "size_px": [
+    32,
+    40
+  ],
+  "content_px": [
+    32,
+    38
+  ],
+  "target_width": 32,
+  "scale_factor": 0.06286836935166994,
+  "source_render_px": [
+    509,
+    609
+  ],
+  "yaw": -45,
+  "tiles_8x8_nonempty": 20,
+  "tiles_8x8_unique": 20,
+  "shadow_offset_px": [
+    0,
+    0
+  ],
+  "shadow_canvas_px": [
+    64,
+    48
+  ]
+}
