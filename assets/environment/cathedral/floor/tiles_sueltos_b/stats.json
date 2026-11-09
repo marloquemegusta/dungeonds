@@ -1,0 +1,22 @@
+{
+  "variante": "tiles_sueltos_b",
+  "semilla": 24301,
+  "disenio_tiles": 24,
+  "tiles_unicos_totales": 24,
+  "peor_ventana_33x25_tiles_distintos": 24,
+  "colores_paleta": 7,
+  "colores_usados": 7,
+  "costura_periodo": {
+    "columna_diff_costura": 8.37,
+    "columna_diff_media_interna": 2.88,
+    "fila_diff_costura": 13.01,
+    "fila_diff_media_interna": 3.51
+  },
+  "reconstruccion_igual_a_textura": true,
+  "celdas_por_rol": {
+    "T": 96,
+    "L": 32,
+    "C": 32,
+    "F": 96
+  }
+}

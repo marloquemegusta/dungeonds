@@ -1,0 +1,28 @@
+{
+  "piece": "banco_roto",
+  "size_px": [
+    72,
+    40
+  ],
+  "content_px": [
+    72,
+    36
+  ],
+  "target_width": 72,
+  "scale_factor": 0.11900826446280992,
+  "source_render_px": [
+    605,
+    305
+  ],
+  "yaw": 45,
+  "tiles_8x8_nonempty": 34,
+  "tiles_8x8_unique": 34,
+  "shadow_offset_px": [
+    -16,
+    0
+  ],
+  "shadow_canvas_px": [
+    88,
+    48
+  ]
+}

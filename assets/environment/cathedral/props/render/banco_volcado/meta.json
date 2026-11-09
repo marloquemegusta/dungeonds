@@ -1,0 +1,28 @@
+{
+  "piece": "banco_volcado",
+  "size_px": [
+    72,
+    32
+  ],
+  "content_px": [
+    72,
+    32
+  ],
+  "target_width": 72,
+  "scale_factor": 0.14035087719298245,
+  "source_render_px": [
+    513,
+    231
+  ],
+  "yaw": 45,
+  "tiles_8x8_nonempty": 23,
+  "tiles_8x8_unique": 23,
+  "shadow_offset_px": [
+    -8,
+    0
+  ],
+  "shadow_canvas_px": [
+    80,
+    40
+  ]
+}

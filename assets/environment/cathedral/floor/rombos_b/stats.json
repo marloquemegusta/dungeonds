@@ -1,0 +1,27 @@
+{
+  "variant": "rombos_b",
+  "tiles_unicos": 51,
+  "objetivo_tiles": 60,
+  "colores": 20,
+  "tope_colores": 32,
+  "costura_exacta": true,
+  "reconstruccion_exacta": true,
+  "px_m_horizontal": 17.9,
+  "px_m_profundidad": 8.95,
+  "px_m_esperado": [
+    17.9,
+    8.95
+  ],
+  "error_escala_horizontal_pct": 0.0,
+  "error_escala_profundidad_pct": 0.0,
+  "rombo_ancho_px": 32,
+  "rombo_alto_px": 16,
+  "rombos_por_bloque": 64,
+  "vertices_alineados_rejilla_8x8": true,
+  "discontinuidad_costura_media_8bit": 0.836,
+  "mean_rgb_reconstruido": [
+    85.5,
+    81.2,
+    81.0
+  ]
+}

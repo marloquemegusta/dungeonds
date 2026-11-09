@@ -74,7 +74,7 @@
 Origen: `walkthroughs/audit-saneamiento-2d3d/`. Lo ya resuelto (colisión/oclusión coherentes con el render) está en `walkthroughs/map-export-coherence/`. Se referencian funciones, no líneas, porque se desplazan. Al cerrar un punto, borrarlo de aquí y registrarlo en `STATUS.md`.
 
 ### 4.1. Proyección y render 2.5D
-- **Escala personaje/mapa.** El mapa está a 40,42 px/m (`map_settings.json`) y los sprites miden ~30 px: el personaje equivale a ~0,75 m y queda oculto tras obstáculos de 1 m. Requiere re-renderizar los tres personajes (8 dir × 8 frames) a ~2× y ampliar el canvas de 40×40, con impacto en RAM/ROM; fijar entonces una única escala px/m con test.
+- **Escala personaje/mapa (decidido 2026-11-07, `DESIGN.md` §6.9.1b).** Hasta la 0.3.1 el mapa estaba a 40,42 px/m con sprites de ~30 px, es decir, un personaje de ~0,75 m. Decisión: el marine mide 2 m (31 px de alto), así que **el mapa pasa a ~17,9 px/m** y los sprites no cambian de tamaño; la escena se renderiza con ese factor al construir el suelo. Hay que adaptar los exportadores del lab (que fijan la escala por la caja del modelo, no por los ajustes: medir y re-renderizar hasta clavar el px/m) y el kit de la franja.
 - Resuelto (ver `STATUS.md`): la pantalla superior ya dibuja actores, sombras, proyectiles y FX con el mismo compositor que la inferior (`render_screen` se ejecuta una vez por pantalla, §3.3).
 - **Transparencias tras paredes:** diseño sin decidir; ver §4.6.
 - Resuelto (ver `STATUS.md`): movimiento/colisión isotrópicos en suelo (`GROUND_DY2`, elipse 6×3), ancla única exportada, oclusión exacta por consulta directa de tramos (sin mapa 4×4 ni reconstrucción por cámara).

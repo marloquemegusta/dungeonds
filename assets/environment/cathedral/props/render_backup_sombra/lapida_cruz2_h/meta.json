@@ -1,0 +1,20 @@
+{
+  "piece": "lapida_cruz2_h",
+  "size_px": [
+    72,
+    24
+  ],
+  "content_px": [
+    72,
+    24
+  ],
+  "target_width": 72,
+  "scale_factor": 0.1469387755102041,
+  "source_render_px": [
+    490,
+    166
+  ],
+  "yaw": 45,
+  "tiles_8x8_nonempty": 27,
+  "tiles_8x8_unique": 27
+}

@@ -1,0 +1,19 @@
+{
+  "variant": "losas_3d",
+  "unique_tiles": 37,
+  "palette_colors_used": 11,
+  "period_tiles": [
+    16,
+    16
+  ],
+  "period_seam_exact": false,
+  "json_reconstruction_pixel_exact": true,
+  "px_per_m_measured_horizontal": 17.9,
+  "px_per_m_measured_depth": 8.95,
+  "px_per_m_expected": [
+    17.9,
+    8.95
+  ],
+  "joint_period_px_horizontal": 32,
+  "joint_period_px_depth": 16
+}

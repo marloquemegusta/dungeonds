@@ -19,4 +19,9 @@ int strip_height_m(int player_y_px);
 int strip_lane_center_px(int32_t band);
 const Arena *strip_arena(void);
 
+#if LAPIDA_DEBUG
+// Debug-only ("lapidas" build variant): scenario-poked marine world position (x, y); -1 = off.
+extern int32_t g_strip_debug_pos[2];
+#endif
+
 #endif // STRIP_H

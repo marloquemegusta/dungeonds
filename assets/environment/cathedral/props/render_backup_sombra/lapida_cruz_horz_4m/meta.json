@@ -1,0 +1,20 @@
+{
+  "piece": "lapida_cruz_horz_4m",
+  "size_px": [
+    72,
+    32
+  ],
+  "content_px": [
+    72,
+    25
+  ],
+  "target_width": 72,
+  "scale_factor": 0.1422924901185771,
+  "source_render_px": [
+    506,
+    174
+  ],
+  "yaw": 45,
+  "tiles_8x8_nonempty": 36,
+  "tiles_8x8_unique": 36
+}

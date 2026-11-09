@@ -21,6 +21,8 @@ if (!model || !settingsPath || !outDir) {
 const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
 const HTML = path.join(__dirname, 'FBX-Web-Renderer-offline.html');
 
+function s_waitTextures(s) { return s.waitTextures === true; }
+
 (async () => {
   const browser = await chromium.launch({ headless: true, args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--disable-dev-shm-usage'] });
   const errors = [];
@@ -41,6 +43,7 @@ const HTML = path.join(__dirname, 'FBX-Web-Renderer-offline.html');
       // The lab slider stops at 1536 px; a rotated 768 px dungeon needs a wider render.
       const sizeInput = document.getElementById('mapPixelSize');
       if (sizeInput && s.width > Number(sizeInput.max)) sizeInput.max = String(s.width);
+      if (sizeInput && s.width < Number(sizeInput.min)) sizeInput.min = String(s.width); // small tile renders
       set('mapPixelSize', s.width);
       set('elevation', s.cameraElevationDegrees);
       set('contrast', s.contrast);
@@ -75,6 +78,20 @@ const HTML = path.join(__dirname, 'FBX-Web-Renderer-offline.html');
     await page.locator('#mapFileInput').setInputFiles(model);
     await page.waitForFunction(n => (window.__spriteLab.mapRenderCount || 0) > n && window.__spriteLab.mapGroundDepth,
       before, { timeout: 180000 });
+
+    // Optional (s.waitTextures): the lab's GLB loader creates textures with the async
+    // TextureLoader, so the first render can run before they decode. Wait, then force
+    // one more render by re-sending the brightness input and wait for it to finish.
+    if (s_waitTextures(settings)) {
+      await page.waitForTimeout(Number(settings.waitTexturesMs) || 2500);
+      const n2 = await page.evaluate(() => window.__spriteLab.mapRenderCount || 0);
+      await page.evaluate(v => {
+        const el = document.getElementById('labBrightness');
+        el.value = String(v); el.dispatchEvent(new Event('input', { bubbles: true }));
+        el.dispatchEvent(new Event('change', { bubbles: true }));
+      }, settings.brightness ?? 1);
+      await page.waitForFunction(n => (window.__spriteLab.mapRenderCount || 0) > n, n2, { timeout: 180000 });
+    }
 
     // Loading the model triggers renderMap with the settings applied above.
     const files = await page.evaluate(async () => {

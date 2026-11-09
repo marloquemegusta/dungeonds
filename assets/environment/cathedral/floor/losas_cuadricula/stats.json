@@ -1,0 +1,12 @@
+{
+  "unique_tiles": 70,
+  "worst_window_33x25_unique_tiles": 70,
+  "palette_colors_used": 8,
+  "period_seam_exact": true,
+  "json_reconstruction_pixel_exact": true,
+  "period_tiles": [
+    16,
+    16
+  ],
+  "slab_variants": 10
+}

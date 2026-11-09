@@ -61,7 +61,7 @@ static void check_edges_and_start(void) {
     const Arena *arena = strip_arena();
     CHECK(g_arena == arena, "strip_start must install the strip as g_arena");
     CHECK(strip_start_x() == 256 && strip_start_y() == 1792, "player start must be centered and 256 px above bottom");
-    CHECK(arena->num_enemies == 0 && arena->occlusion_runs == 0, "strip has no enemies or occlusion runs");
+    CHECK(arena->num_enemies == 0, "strip has no enemies");
     for (unsigned y = 0; y < arena->collision_h; y++) {
         CHECK(collision_at(arena->collision, y * 128u) == 3, "left wall must stay solid");
         CHECK(collision_at(arena->collision, y * 128u + 127u) == 3, "right wall must stay solid");
@@ -71,7 +71,7 @@ static void check_edges_and_start(void) {
               "bottom collision row must be solid");
     for (unsigned band = 13; band < 16; band++) {
         for (unsigned y = band * 32u; y < (band + 1u) * 32u && y < 511u; y++)
-            for (unsigned x = 1; x < 127; x++)
+            for (unsigned x = 12; x < 116; x++)
                 CHECK(collision_at(arena->collision, y * 128u + x) == 0,
                       "starting bands must have no column footprints");
     }

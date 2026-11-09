@@ -5,7 +5,8 @@
 // Chromium runs HEADLESS (AGENTS.md rule 4).
 //
 // usage: node export_character_headless.cjs <model.fbx> <outDir> [--template settings.json]
-//          [--anim "<clip name>"] [--rigScale N] [--list]
+//          [--anim "<clip name>"] [--rigScale N] [--light <preset>] [--outline <pixel|sobel|none>]
+//          [--saturation N] [--list]
 //   --list  prints the animation clips and exits without rendering.
 const fs = require('node:fs');
 const path = require('node:path');
@@ -19,13 +20,13 @@ if (!chromium) { console.error('Playwright not found'); process.exit(1); }
 
 const argv = process.argv.slice(2);
 const opt = (n) => { const i = argv.indexOf(n); return i >= 0 ? argv[i + 1] : undefined; };
-const flagVals = new Set(['--template', '--anim', '--rigScale']);
+const flagVals = new Set(['--template', '--anim', '--rigScale', '--light', '--outline', '--saturation']);
 const pos = argv.filter((a, i) => !a.startsWith('--') && !(i > 0 && flagVals.has(argv[i - 1])));
 const listOnly = argv.includes('--list');
 const model = pos[0] && path.resolve(pos[0]);
 const outDir = pos[1] && path.resolve(pos[1]);
 if (!model || (!outDir && !listOnly)) {
-  console.error('usage: node export_character_headless.cjs <model.fbx> <outDir> [--template settings.json] [--anim name] [--rigScale N] [--list]');
+  console.error('usage: node export_character_headless.cjs <model.fbx> <outDir> [--template settings.json] [--anim name] [--rigScale N] [--light preset] [--outline mode] [--saturation N] [--list]');
   process.exit(2);
 }
 const templatePath = path.resolve(opt('--template') ||
@@ -54,7 +55,11 @@ const HTML = path.join(__dirname, 'FBX-Web-Renderer-offline.html');
 
     const anim = opt('--anim') || anims[0];
     const rigScale = opt('--rigScale') !== undefined ? parseFloat(opt('--rigScale')) : s.rigScale;
-    const setup = await page.evaluate(async ({ s, anim, rigScale }) => {
+    const lightPreset = opt('--light') || s.lightPreset || (s.lighting && s.lighting.preset);
+    const outlineMode = opt('--outline') || s.outlineMode;
+    const saturation = opt('--saturation') !== undefined ? parseFloat(opt('--saturation')) : s.saturation;
+
+    const setup = await page.evaluate(async ({ s, anim, rigScale, lightPreset, outlineMode, saturation }) => {
       const set = (id, v) => {
         const el = document.getElementById(id);
         if (!el || v === undefined || v === null) return;
@@ -65,8 +70,6 @@ const HTML = path.join(__dirname, 'FBX-Web-Renderer-offline.html');
       set('resolution', parseInt(String(s.frameSize).split('x')[0], 10));
       set('frameCount', s.framesPerDirection);
       set('elevation', s.cameraElevationDegrees);
-      set('contrast', s.contrast);
-      set('saturation', s.saturation);
       set('labBrightness', s.brightness);
       set('neckPitch', s.neckPitchDegrees);
       set('animTicks', s.ticksPerFrame);
@@ -75,6 +78,20 @@ const HTML = path.join(__dirname, 'FBX-Web-Renderer-offline.html');
       set('labSamples', s.webglShadowQuality);
       set('labSupersample', s.supersample);
       set('meshDisplace', s.displace);
+
+      if (lightPreset !== undefined && lightPreset !== null) {
+        set('lightPreset', lightPreset);
+        if (typeof window.applyDungeonLighting === 'function') {
+          window.applyDungeonLighting(lightPreset);
+        }
+      }
+      if (outlineMode !== undefined && outlineMode !== null) {
+        set('outlineMode', outlineMode);
+      }
+
+      set('contrast', s.contrast);
+      set('saturation', saturation !== undefined && saturation !== null ? saturation : s.saturation);
+
       const inPlace = document.getElementById('inPlaceMotion');
       if (inPlace) { inPlace.checked = !!s.inPlace; inPlace.dispatchEvent(new Event('change', { bubbles: true })); }
       const lab = window.__spriteLab;
@@ -84,9 +101,19 @@ const HTML = path.join(__dirname, 'FBX-Web-Renderer-offline.html');
       const idx = Array.from(sel.options).findIndex(o => o.textContent === anim);
       if (idx < 0) return { ok: false };
       sel.selectedIndex = idx; sel.dispatchEvent(new Event('change', { bubbles: true }));
-      return { ok: true, rigScale: lab.rigScale };
-    }, { s, anim, rigScale });
+      return {
+        ok: true,
+        rigScale: lab.rigScale,
+        lightPreset: document.getElementById('lightPreset')?.value,
+        outlineMode: document.getElementById('outlineMode')?.value,
+        contrast: document.getElementById('contrast')?.value,
+        saturation: document.getElementById('saturation')?.value,
+        keyLight: document.getElementById('keyLight')?.value,
+        keyColor: document.getElementById('keyColor')?.value
+      };
+    }, { s, anim, rigScale, lightPreset, outlineMode, saturation });
     if (!setup.ok) { console.error(`animation "${anim}" not found`); process.exitCode = 1; return; }
+    console.log('Setup applied: ' + JSON.stringify(setup));
     await page.waitForTimeout(1000);
 
     const b64 = await page.evaluate(async () => {
@@ -104,11 +131,24 @@ const HTML = path.join(__dirname, 'FBX-Web-Renderer-offline.html');
       return btoa(bin);
     });
     if (errors.length) console.error('page errors:\n' + errors.join('\n'));
-    const zipPath = path.join(require('node:os').tmpdir(), 'dungeonds_char_export.zip');
+    const zipPath = path.join(require('node:os').tmpdir(), `dungeonds_char_export_${Date.now()}_${process.pid}.zip`);
     fs.writeFileSync(zipPath, Buffer.from(b64, 'base64'));
     fs.mkdirSync(outDir, { recursive: true });
     require('node:child_process').execFileSync(process.platform === 'win32' ? 'C:/Windows/System32/tar.exe' : 'tar', ['-xf', zipPath, '-C', outDir]);
     fs.unlinkSync(zipPath);
+
+    const outSettings = path.join(outDir, 'settings.json');
+    if (fs.existsSync(outSettings)) {
+      try {
+        const outData = JSON.parse(fs.readFileSync(outSettings, 'utf8'));
+        if (lightPreset) outData.lightPreset = lightPreset;
+        if (outlineMode) outData.outlineMode = outlineMode;
+        fs.writeFileSync(outSettings, JSON.stringify(outData, null, 2) + '\n');
+      } catch (e) {
+        console.warn('Could not update exported settings.json with light/outline:', e.message);
+      }
+    }
+
     console.log('package written to ' + outDir);
   } finally {
     await browser.close();
