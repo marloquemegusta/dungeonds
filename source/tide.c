@@ -2,20 +2,46 @@
 #include "game.h"
 
 static fixed s_tide_y;
+#if !defined(GODRAYS_PROTO) || !GODRAYS_PROTO
 static int s_hit_timer;
+#endif
 
 void tide_init(fixed player_y) {
     s_tide_y = player_y + TO_FIXED(TIDE_START_BELOW_PLAYER_PX);
+#if !defined(GODRAYS_PROTO) || !GODRAYS_PROTO
     s_hit_timer = TIDE_HIT_FRAMES;
+#endif
 }
 
-void tide_update(void) { s_tide_y -= TIDE_SPEED_FIXED; }
-void tide_shift_y(int dy_px) { s_tide_y += TO_FIXED(dy_px); }
+void tide_update(void) {
+#if !defined(GODRAYS_PROTO) || !GODRAYS_PROTO
+    s_tide_y -= TIDE_SPEED_FIXED;
+#endif
+}
+void tide_shift_y(int dy_px) {
+#if !defined(GODRAYS_PROTO) || !GODRAYS_PROTO
+    s_tide_y += TO_FIXED(dy_px);
+#else
+    (void)dy_px;
+#endif
+}
 fixed tide_y(void) { return s_tide_y; }
-int tide_player_submerged(fixed player_y) { return player_y >= s_tide_y; }
+int tide_player_submerged(fixed player_y) {
+#if defined(GODRAYS_PROTO) && GODRAYS_PROTO
+    (void)player_y;
+    return 0;
+#else
+    return player_y >= s_tide_y;
+#endif
+}
 int tide_player_slowed(fixed player_y) { return tide_player_submerged(player_y); }
 
 void tide_damage_player(PlayerState *player, fixed player_y) {
+#if defined(GODRAYS_PROTO) && GODRAYS_PROTO
+    (void)player;
+    (void)player_y;
+    return;
+#else
     if (!player || player->god_mode) {
         s_hit_timer = TIDE_HIT_FRAMES;
         return;
@@ -29,12 +55,14 @@ void tide_damage_player(PlayerState *player, fixed player_y) {
         if (player_take_hit(player)) s_hit_timer = TIDE_HIT_FRAMES;
         else s_hit_timer = 0;
     }
+#endif
 }
 
 // Darkens the floor and actors below the tide line on one screen (DESIGN.md 6.0) with the
 // hardware window + brightness-decrease blend, so it costs no CPU. Mode 3 in BLDCNT bits 6-7
 // is "fade to black" (2 would fade to white). Without a visible tide the blend is switched off:
 // with WIN0 disabled the blend would otherwise cover the whole screen.
+#if !defined(GODRAYS_PROTO) || !GODRAYS_PROTO
 static void tide_window_regs(vu16 *bldcnt, vu16 *bldy, vu16 *win0h, vu16 *win0v,
                              vu16 *winin, vu16 *winout, vu32 *dispcnt, int line) {
     if (line >= SCREEN_H) {
@@ -54,8 +82,13 @@ static void tide_window_regs(vu16 *bldcnt, vu16 *bldy, vu16 *win0h, vu16 *win0v,
     *winout = 0x001f;                // outside: every layer, no effect
     *dispcnt |= DISPLAY_WIN0_ON;
 }
+#endif
 
 void tide_render_window(int sub_screen, int camera_y) {
+#if defined(GODRAYS_PROTO) && GODRAYS_PROTO
+    (void)sub_screen;
+    (void)camera_y;
+#else
     int line = TO_INT(s_tide_y) - camera_y;
     if (sub_screen) {
         tide_window_regs(&REG_BLDCNT_SUB, &REG_BLDY_SUB, &REG_WIN0H_SUB, &REG_WIN0V_SUB,
@@ -64,9 +97,26 @@ void tide_render_window(int sub_screen, int camera_y) {
         tide_window_regs(&REG_BLDCNT, &REG_BLDY, &REG_WIN0H, &REG_WIN0V,
                          &REG_WININ, &REG_WINOUT, &REG_DISPCNT, line);
     }
+#endif
+}
+
+int tide_visible_on_screen(int camera_y) {
+#if defined(GODRAYS_PROTO) && GODRAYS_PROTO
+    (void)camera_y;
+    return 0;
+#else
+    int line = TO_INT(s_tide_y) - camera_y;
+    // A line above the viewport shades the full screen, so it still conflicts.
+    return line < SCREEN_H;
+#endif
 }
 
 void tide_render_border(uint16_t *buffer, int camera_y) {
+#if defined(GODRAYS_PROTO) && GODRAYS_PROTO
+    (void)buffer;
+    (void)camera_y;
+    return;
+#else
     int line = TO_INT(s_tide_y) - camera_y;
     if (line < 0 || line >= SCREEN_H) return;
     // Bright red at the edge, fading to dark red inside the band (the fade-to-black starts below it).
@@ -77,4 +127,5 @@ void tide_render_border(uint16_t *buffer, int camera_y) {
         dirty_row(line + dy, 0, SCREEN_W);
         for (int x = 0; x < SCREEN_W; x++) buffer[(line + dy) * SCREEN_W + x] = edge[dy];
     }
+#endif
 }

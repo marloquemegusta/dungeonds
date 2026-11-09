@@ -11,6 +11,9 @@
         },
         "playground-perf": {
             "defines": ["SANDBOX=1", "PLAYGROUND=1", "PERF_PROFILE=1"]
+        },
+        "godrays": {
+            "defines": ["GODRAYS_PROTO=1"]
         }
     },
     "hostTests": [

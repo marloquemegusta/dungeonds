@@ -17,6 +17,7 @@ int tide_player_submerged(fixed player_y);
 int tide_player_slowed(fixed player_y);
 void tide_damage_player(PlayerState *player, fixed player_y);
 void tide_render_window(int sub_screen, int camera_y);
+int tide_visible_on_screen(int camera_y);
 void tide_render_border(uint16_t *buffer, int camera_y);
 
 #endif

@@ -18,6 +18,7 @@
 #include "strip_kit.h"
 #include "horde.h"
 #include "tide.h"
+#include "godrays.h"
 #include "pickups.h"
 #include <string.h>
 #include <time.h>
@@ -1133,6 +1134,9 @@ static uint32_t present_both_screens(int top_cam_x, int top_cam_y,
                                       int bot_cam_x, int bot_cam_y) {
     PP_T0(pp_vw);
     swiWaitForVBlank();
+#if defined(GODRAYS_PROTO) && GODRAYS_PROTO
+    godrays_present();
+#endif
     PP_ADD(PP_VWAIT, pp_vw);
     PP_T0(pp_bs);
     update_screen_hardware_bg(1, s_top_map_ptr, top_cam_x, top_cam_y);
@@ -1713,6 +1717,10 @@ int main(void) {
         swiFastCopy(&zero, s_top_page, COPY_MODE_FILL | (SCREEN_W * SCREEN_H * 2 / 4));
     }
 
+#if defined(GODRAYS_PROTO) && GODRAYS_PROTO
+    godrays_init();
+#endif
+
 
     init_char_sprite_data();
     CRASH_INIT();
@@ -1852,6 +1860,9 @@ int main(void) {
             // The death summary is drawn on the lower screen: keep it out of the darkening.
             tide_render_window(0, g_player_state.is_dead ? TO_INT(tide_y()) - SCREEN_H : view_y);
         }
+#if defined(GODRAYS_PROTO) && GODRAYS_PROTO
+        godrays_update(view_x, top_cam_y, view_y);
+#endif
 
         uint32_t t3 = cpuGetTiming();
         uint32_t bg_ticks = present_both_screens(top_cam_x, top_cam_y, view_x, view_y);

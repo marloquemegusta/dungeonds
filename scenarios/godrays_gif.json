@@ -1,0 +1,467 @@
+{
+ "name": "godrays_gif",
+ "description": "GIF frames (prefix gcross): god mode, climb 150 frames so the lower-screen rose beam's floor patch is level with the marine, walk left onto the patch (frames 0-24), stand inside the beam (25-69: dust and breathing), walk on out of it (70-99). Path checked on captures with the rose ray at world period 256.",
+ "steps": [
+  {
+   "frames": 30,
+   "capture": "g_start"
+  },
+  {
+   "button_down": "L",
+   "frames": 1
+  },
+  {
+   "button_down": "R",
+   "frames": 1
+  },
+  {
+   "button_down": "B",
+   "frames": 3
+  },
+  {
+   "button_up": "B",
+   "frames": 2
+  },
+  {
+   "button_up": "L",
+   "frames": 1
+  },
+  {
+   "button_up": "R",
+   "frames": 1
+  },
+  {
+   "button_down": "UP",
+   "frames": 150
+  },
+  {
+   "button_up": "UP",
+   "frames": 0
+  },
+  {
+   "button_down": "LEFT",
+   "frames": 0
+  },
+  {
+   "frames": 3,
+   "capture": "gcross_000"
+  },
+  {
+   "frames": 3,
+   "capture": "gcross_001"
+  },
+  {
+   "frames": 3,
+   "capture": "gcross_002"
+  },
+  {
+   "frames": 3,
+   "capture": "gcross_003"
+  },
+  {
+   "frames": 3,
+   "capture": "gcross_004"
+  },
+  {
+   "frames": 3,
+   "capture": "gcross_005"
+  },
+  {
+   "frames": 3,
+   "capture": "gcross_006"
+  },
+  {
+   "frames": 3,
+   "capture": "gcross_007"
+  },
+  {
+   "frames": 3,
+   "capture": "gcross_008"
+  },
+  {
+   "frames": 3,
+   "capture": "gcross_009"
+  },
+  {
+   "frames": 3,
+   "capture": "gcross_010"
+  },
+  {
+   "frames": 3,
+   "capture": "gcross_011"
+  },
+  {
+   "frames": 3,
+   "capture": "gcross_012"
+  },
+  {
+   "frames": 3,
+   "capture": "gcross_013"
+  },
+  {
+   "frames": 3,
+   "capture": "gcross_014"
+  },
+  {
+   "frames": 3,
+   "capture": "gcross_015"
+  },
+  {
+   "frames": 3,
+   "capture": "gcross_016"
+  },
+  {
+   "frames": 3,
+   "capture": "gcross_017"
+  },
+  {
+   "frames": 3,
+   "capture": "gcross_018"
+  },
+  {
+   "frames": 3,
+   "capture": "gcross_019"
+  },
+  {
+   "frames": 3,
+   "capture": "gcross_020"
+  },
+  {
+   "frames": 3,
+   "capture": "gcross_021"
+  },
+  {
+   "frames": 3,
+   "capture": "gcross_022"
+  },
+  {
+   "frames": 3,
+   "capture": "gcross_023"
+  },
+  {
+   "frames": 3,
+   "capture": "gcross_024"
+  },
+  {
+   "button_up": "LEFT",
+   "frames": 0
+  },
+  {
+   "frames": 3,
+   "capture": "gcross_025"
+  },
+  {
+   "frames": 3,
+   "capture": "gcross_026"
+  },
+  {
+   "frames": 3,
+   "capture": "gcross_027"
+  },
+  {
+   "frames": 3,
+   "capture": "gcross_028"
+  },
+  {
+   "frames": 3,
+   "capture": "gcross_029"
+  },
+  {
+   "frames": 3,
+   "capture": "gcross_030"
+  },
+  {
+   "frames": 3,
+   "capture": "gcross_031"
+  },
+  {
+   "frames": 3,
+   "capture": "gcross_032"
+  },
+  {
+   "frames": 3,
+   "capture": "gcross_033"
+  },
+  {
+   "frames": 3,
+   "capture": "gcross_034"
+  },
+  {
+   "frames": 3,
+   "capture": "gcross_035"
+  },
+  {
+   "frames": 3,
+   "capture": "gcross_036"
+  },
+  {
+   "frames": 3,
+   "capture": "gcross_037"
+  },
+  {
+   "frames": 3,
+   "capture": "gcross_038"
+  },
+  {
+   "frames": 3,
+   "capture": "gcross_039"
+  },
+  {
+   "frames": 3,
+   "capture": "gcross_040"
+  },
+  {
+   "frames": 3,
+   "capture": "gcross_041"
+  },
+  {
+   "frames": 3,
+   "capture": "gcross_042"
+  },
+  {
+   "frames": 3,
+   "capture": "gcross_043"
+  },
+  {
+   "frames": 3,
+   "capture": "gcross_044"
+  },
+  {
+   "frames": 3,
+   "capture": "gcross_045"
+  },
+  {
+   "frames": 3,
+   "capture": "gcross_046"
+  },
+  {
+   "frames": 3,
+   "capture": "gcross_047"
+  },
+  {
+   "frames": 3,
+   "capture": "gcross_048"
+  },
+  {
+   "frames": 3,
+   "capture": "gcross_049"
+  },
+  {
+   "frames": 3,
+   "capture": "gcross_050"
+  },
+  {
+   "frames": 3,
+   "capture": "gcross_051"
+  },
+  {
+   "frames": 3,
+   "capture": "gcross_052"
+  },
+  {
+   "frames": 3,
+   "capture": "gcross_053"
+  },
+  {
+   "frames": 3,
+   "capture": "gcross_054"
+  },
+  {
+   "frames": 3,
+   "capture": "gcross_055"
+  },
+  {
+   "frames": 3,
+   "capture": "gcross_056"
+  },
+  {
+   "frames": 3,
+   "capture": "gcross_057"
+  },
+  {
+   "frames": 3,
+   "capture": "gcross_058"
+  },
+  {
+   "frames": 3,
+   "capture": "gcross_059"
+  },
+  {
+   "frames": 3,
+   "capture": "gcross_060"
+  },
+  {
+   "frames": 3,
+   "capture": "gcross_061"
+  },
+  {
+   "frames": 3,
+   "capture": "gcross_062"
+  },
+  {
+   "frames": 3,
+   "capture": "gcross_063"
+  },
+  {
+   "frames": 3,
+   "capture": "gcross_064"
+  },
+  {
+   "frames": 3,
+   "capture": "gcross_065"
+  },
+  {
+   "frames": 3,
+   "capture": "gcross_066"
+  },
+  {
+   "frames": 3,
+   "capture": "gcross_067"
+  },
+  {
+   "frames": 3,
+   "capture": "gcross_068"
+  },
+  {
+   "frames": 3,
+   "capture": "gcross_069"
+  },
+  {
+   "button_down": "LEFT",
+   "frames": 0
+  },
+  {
+   "frames": 3,
+   "capture": "gcross_070"
+  },
+  {
+   "frames": 3,
+   "capture": "gcross_071"
+  },
+  {
+   "frames": 3,
+   "capture": "gcross_072"
+  },
+  {
+   "frames": 3,
+   "capture": "gcross_073"
+  },
+  {
+   "frames": 3,
+   "capture": "gcross_074"
+  },
+  {
+   "frames": 3,
+   "capture": "gcross_075"
+  },
+  {
+   "frames": 3,
+   "capture": "gcross_076"
+  },
+  {
+   "frames": 3,
+   "capture": "gcross_077"
+  },
+  {
+   "frames": 3,
+   "capture": "gcross_078"
+  },
+  {
+   "frames": 3,
+   "capture": "gcross_079"
+  },
+  {
+   "frames": 3,
+   "capture": "gcross_080"
+  },
+  {
+   "frames": 3,
+   "capture": "gcross_081"
+  },
+  {
+   "frames": 3,
+   "capture": "gcross_082"
+  },
+  {
+   "frames": 3,
+   "capture": "gcross_083"
+  },
+  {
+   "frames": 3,
+   "capture": "gcross_084"
+  },
+  {
+   "frames": 3,
+   "capture": "gcross_085"
+  },
+  {
+   "frames": 3,
+   "capture": "gcross_086"
+  },
+  {
+   "frames": 3,
+   "capture": "gcross_087"
+  },
+  {
+   "frames": 3,
+   "capture": "gcross_088"
+  },
+  {
+   "frames": 3,
+   "capture": "gcross_089"
+  },
+  {
+   "frames": 3,
+   "capture": "gcross_090"
+  },
+  {
+   "frames": 3,
+   "capture": "gcross_091"
+  },
+  {
+   "frames": 3,
+   "capture": "gcross_092"
+  },
+  {
+   "frames": 3,
+   "capture": "gcross_093"
+  },
+  {
+   "frames": 3,
+   "capture": "gcross_094"
+  },
+  {
+   "frames": 3,
+   "capture": "gcross_095"
+  },
+  {
+   "frames": 3,
+   "capture": "gcross_096"
+  },
+  {
+   "frames": 3,
+   "capture": "gcross_097"
+  },
+  {
+   "frames": 3,
+   "capture": "gcross_098"
+  },
+  {
+   "frames": 3,
+   "capture": "gcross_099"
+  },
+  {
+   "button_up": "LEFT",
+   "frames": 1
+  }
+ ],
+ "assertions": {
+  "screen_changes": [
+   {
+    "from": "gcross_000",
+    "to": "gcross_099",
+    "min_changed_pixels": 100
+   }
+  ]
+ }
+}
