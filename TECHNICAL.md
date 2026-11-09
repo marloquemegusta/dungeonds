@@ -70,7 +70,7 @@
 
 
 ### 3.5. Rayos de luz (godrays): prototipo funcional, solo variante (2026-11-09, rama `proto/godrays`)
-- **Estado:** funciona (jugado por el usuario) y está fusionado en `main` como variante de compilación `godrays` (`GODRAYS_PROTO=1`, `.ds-game-dev/project.json`); la build por defecto no lo incluye. Solo actúa en la franja vertical y desactiva la marea durante la variante.
+- **Estado:** según el usuario funcionaba (sin medir en la DS) y está fusionado en `main` como variante de compilación `godrays` (`GODRAYS_PROTO=1`, `.ds-game-dev/project.json`); la build por defecto no lo incluye. Solo actúa en la franja vertical y desactiva la marea durante la variante.
 - **Cómo:** `source/godrays.c` y `source/godrays_gfx.c` (cabeceras `include/godrays*.h`) dibujan rayos con OBJ semitransparentes anclados cada 256 px absolutos de la franja, alternando paredes, compensando los rebases con `strip_shift_total_px()`. Sprites en `assets/sprites/godrays/` y notas en `tools/godrays/README.md`.
 - **Límites conocidos:** con la línea de marea visible se ocultan todos los rayos (la semitransparencia OBJ se vuelve opaca en la ventana de la marea); los rayos usan sprites placeholder y ámbar/vitral sin decisión de arte en `DESIGN.md`.
 - **Pendiente:** certificar 60 FPS en la DS con `PERF_PROFILE` antes de activarlo en la build por defecto (regla 6) y escribir la decisión de arte (regla 9).
