@@ -31,7 +31,7 @@ from prop_shadows import read_glb, camera_basis  # noqa: E402
 
 ROOT = R.ROOT
 BLENDER_SCRIPT = HERE / "lapida3d_proto_blender.py"
-LAPIDA_GLB = ROOT / "assets/environment/cathedral/props/glb/lapida_cruz2_h.glb"
+LAPIDA_GLB = ROOT / "assets/environment/cathedral/props/glb/lapida_cruz_v2.glb"
 PROP_RENDER = ROOT / "assets/environment/cathedral/props/render"
 FLOOR_PNG = ROOT / "assets/environment/cathedral/floor/rombos_tripo/floor_512x256.png"
 OUT_SHEET = ROOT / "walkthroughs/v032-escenario/assets/lapida3d_proto.png"
@@ -143,7 +143,7 @@ def main():
     losa = next(e for e in entries if e["name"] == "losa_a")
     aimg = np.array(Image.open(losa["a_png"]).convert("RGB")).astype(np.float32)
     Image.fromarray(np.clip(aimg * 1.02, 0, 255).astype(np.uint8)).save(a.scratch / "plate_lighter.png")
-    plate_png = a.scratch / "plate_lighter.png"
+    plate_png = (a.scratch / "plate_lighter.png").resolve()
 
     floor_img = Image.open(FLOOR_PNG).convert("RGBA")
     floor_rgb = np.array(floor_img.convert("RGB"))

@@ -100,5 +100,5 @@ Resúmenes acumulativos y auditables de cada entrega y avance de desarrollo en `
 | 82 | v0.3 mínima: franja vertical infinita, horda desde arriba, marea y curas | [`v03-minima/`](v03-minima/walkthrough.md) | Validado en DeSmuME, host y DS (60 FPS) |
 | 83 | Hoja de ruta por versiones: 0.3.1 (tuning) → 0.6 | [`roadmap-v031/`](roadmap-v031/walkthrough.md) | Diseño (sin código) |
 | 84 | v0.3.1: tres tiers de enemigos (esqueleto, cargador que carga, tirador láser), escala 100 = 1,0 y pulido | [`v031-tuning/`](v031-tuning/walkthrough.md) | Validado en DeSmuME y host (pendiente DS) |
-| 85 | Escenario 0.3.2: suelo Tripo A, luz alineada, personajes sin contorno y lápidas (catálogo de opciones) | [`v032-escenario/`](v032-escenario/walkthrough.md) | Fusionada 2026-11-09; hundida vs a ras, ahorro de tiles y DS sin decidir |
+| 85 | Escenario 0.3.2: suelo Tripo A, luz alineada, personajes sin contorno y lápidas 3D unificadas en Shader Lab | [`v032-escenario/`](v032-escenario/walkthrough.md) | Pipeline Three.js Lab unificado y lápidas v2 con relieve 12 cm validadas |
 | 86 | Rayos de luz (godrays) como variante de compilación | [`proto-godrays/`](proto-godrays/walkthrough.md) | Prototipo fusionado; sin medir en la DS (estado en `TECHNICAL.md` §3.5) |
