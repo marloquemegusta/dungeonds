@@ -57,3 +57,14 @@ No se ha medido en la DS (solo emulador); antes de elegir en firme falta la prue
 - **Ahorro de tiles (sin elegir):** menos fases de las piezas, quitar relicario o banco_volcado, suelo más simple, solo lápidas v2.
 - **Reorden de `assets/`:** plan en `REORDEN_ASSETS.md`, nada movido. Limpieza manual del inbox pendiente (7 zips duplicados; mover lápidas v2 y losas Tripo a `assets/models/environment/cathedral/tripo/`).
 - **Sin hacer:** medición en la DS con `PERF_PROFILE`.
+
+## 7. Solución Definitiva de Lápidas — Pipeline Unificado Shader Lab (2026-11-09)
+Se resuelve el diseño y pipeline de integración de lápidas en el suelo de la catedral:
+- **Pipeline 100% unificado en Three.js Shader Lab (`tools/lab/export_map_package_headless.cjs`)**: se eliminó el renderizado aislado de Cycles; Blender actúa exclusivamente como ensamblador 3D exportando a GLB (`build_lapidas_lab_blender.py`).
+- **La lápida ES la losa**: sustitución exacta de teselas completas en el damero con junta de mortero oficial (`JOINT = 0.026 m`). CERO outlines 2D y CERO cajeados oscuros.
+- **Modelos Tripo v2 con relieve realzado (12 cm)**: la geometría 3D completa de la armadura, espada y cruz capta la luz y sombras de contacto de forma nítida.
+- **Cuantización nativa BGR555**: 15 bits de precisión de color Nintendo DS sin aplastar el rango dinámico.
+- **Evidencia visual**: lámina maestra [`cat_lapidas_lab_unified.png`](assets/cat_lapidas_lab_unified.png) comparando:
+  * Vía A ($3 \times 2$ teselas = $80 \times 40\text{ px}$): Cruz y Caballero yacente a 45°.
+  * Vía B ($3 \times 3$ teselas = $96 \times 48\text{ px}$): Cruz y Caballero horizontales en pantalla inscritos en rombo.
+

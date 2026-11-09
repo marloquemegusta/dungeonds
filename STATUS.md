@@ -170,3 +170,13 @@ El láser de apuntado se colima durante la carga (ancho, difuso y rojo a 1 px ve
 - **Probado, sin decidir:** lápida hundida vs a ras (la 3D hundida de 192 tiles no quedó bien; en la ROM va cluster + junta de 1 px), ahorros de tiles, reorden de `assets/` (`REORDEN_ASSETS.md`).
 - **Sin hacer:** medición en la DS (`PERF_PROFILE`), limpieza manual del inbox, soporte de `lapida3d_*` en el baker.
 - Detalle: [`walkthroughs/v032-escenario/`](walkthroughs/v032-escenario/walkthrough.md).
+
+---
+
+## 2026-11-09 - v0.3.2 (continuación): Solución Unificada de Lápidas en Shader Lab
+- **Diseño geométrico resuelto:** la lápida **es** la losa. Se eliminaron los stickers 2D y los cajeados oscuros con corte booleano. La pieza sustituye exactamente un bloque de teselas completas con la junta de mortero estándar de la catedral (`JOINT = 0.026 m`).
+- **Pipeline 100% unificado en Three.js Shader Lab (`tools/lab/export_map_package_headless.cjs`)**: todo el renderizado visual pasa por la misma cámara (30° elevación, 45° azimuth) y la misma luz neutra que los personajes y el suelo. Blender actúa exclusivamente como ensamblador geométrico exportando a GLB (`tools/floor/build_lapidas_lab_blender.py`).
+- **Modelos Tripo v2 con relieve escultórico realzado (12 cm)**: tanto el caballero yacente como la cruz con espada empotrada mantienen su volumen tridimensional completo sin aplastamiento, proyectando sombras de contacto y brillos marmóreos bajo la luz canónica.
+- **Color nativo BGR555**: preserva los 15 bits de precisión de hardware de la Nintendo DS sin comprimir los tonos en la paleta oscura del suelo.
+- **Lámina comparativa maestra:** [`cat_lapidas_lab_unified.png`](walkthroughs/v032-escenario/assets/cat_lapidas_lab_unified.png) comparando Vía A (3×2 teselas = 80×40 px) y Vía B (3×3 teselas = 96×48 px) con macro 4x y mapas de costura.
+- **Siguiente paso para otra sesión:** hornear las variantes definitivas en `tools/bake_cathedral_kit.py`, actualizar el strip kit y validar 60 FPS en la Nintendo DS física con `PERF_PROFILE`.

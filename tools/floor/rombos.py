@@ -30,7 +30,7 @@ BLENDER_SCRIPT = Path(__file__).with_name("rombos_blender.py")
 LAB_SCRIPT = ROOT / "tools/lab/export_map_package_headless.cjs"
 PROPS_SETTINGS = ROOT / "tools/props/props_render_settings.json"
 OUT_ROOT = ROOT / "assets/environment/cathedral/floor"
-MARINE_PATH = ROOT / "assets/sprites/characters_neutral/marine/spritesheet.png"
+MARINE_PATH = ROOT / "assets/sprites/characters/marine/spritesheet.png"
 BANCO_PATH = ROOT / "assets/environment/cathedral/props/render/banco_roto/color.png"
 SANTO_PATH = ROOT / "assets/environment/cathedral/props/render/santo/color.png"
 

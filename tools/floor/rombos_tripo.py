@@ -118,7 +118,7 @@ def prepare_textures(work, delta):
         entries.append({
             "name": name, "zip_id": zip_id, "rol": rol,
             "fbx": str(FBM_ROOT / f"{name}.fbx"), "color_src": str(src),
-            "a_png": str(a_path), "b_png": str(b_path),
+            "a_png": str(a_path.resolve()), "b_png": str(b_path.resolve()),
             "lstar_A": round(lA, 2), "lstar_B": round(lstar_mean(b8), 2), "k_B": round(k, 4),
         })
     manifest = work / "manifest.json"

@@ -13,7 +13,7 @@
 - **Resolución nativa:** 256×192 píxeles por pantalla.
 
 ## 3. Pipeline de Assets
-- **Fuente de verdad visual:** el Shader Lab de Three.js (`tools/lab/FBX-Web-Renderer-offline.html`, generado desde `tools/lab/FBX-Web-Renderer-parity.js`) renderiza mapa y personajes con la misma cámara y la misma iluminación. Blender y `tools/ds_look.py` no forman parte del flujo activo.
+- **Fuente de verdad visual:** el Shader Lab de Three.js (`tools/lab/FBX-Web-Renderer-offline.html`, generado desde `tools/lab/FBX-Web-Renderer-parity.js`) renderiza mapa, suelo, piezas y personajes con la misma cámara y la misma iluminación neutra. Blender se utiliza exclusivamente como herramienta de modelado/composición de geometría para exportar mallas a GLB; ningún render final de juego se realiza con Cycles ni Eevee.
 - **Legado:** `tools/ds_look.py`, `tools/bake_player.py`, `tools/bake_dungeon_*.py`, `tools/convert_*_to_c.py` y `tools/character_profiles.json` pertenecen al pipeline Blender anterior y no generan el mapa ni los sprites de personaje vigentes. Único rastro en el runtime: un comentario en `source/main.c` que cita `ds_look.py` como origen de `FLOOR_TILE_H`.
 - **Runtime NDS:** fondo en capas BG de tiles, oclusión por profundidad y actores en OAM. Blender no forma parte del runtime.
 
