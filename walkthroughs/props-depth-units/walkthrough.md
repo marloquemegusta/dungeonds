@@ -2,7 +2,7 @@
 
 **Fecha:** 2026-11-10
 **Rama:** `feat/muros-catedral`
-**Estado:** corregido y validado en DeSmuME; pendiente de comprobar en la DS.
+**Estado:** cerrado. Validado en DeSmuME, dado por bueno por el usuario en la DS y medido con `PERF_PROFILE`.
 
 ## Causa
 
@@ -69,4 +69,11 @@ Verificación final: build `cathedral-playground-perf` PASS con 0 warnings, 9 te
 - `banco_volcado` no tiene escenario propio: su huella nueva puede quedar algo generosa por el sur.
 - Las lápidas planas conservan su `depth.png` antiguo; no lo usan, porque no ocluyen.
 - Lo ideal sería que el lab exportara la profundidad también por debajo de 0,25 m. Requiere los `.glb` de los props, que no están en el repo.
-- Probar en la DS con `PERF_PROFILE` (regla 6).
+
+## Medición en la DS (regla 6)
+
+Log `/dungeonds_perf.log`, última sesión de arranque de `cathedral-playground-perf`: 40.440 frames (≈11 min).
+
+- **CPU:** media de 116.277 ticks y máximo de 396.970, frente a un presupuesto de 560.190.
+- **Frames de más de un vblank:** 363, como máximo uno por ventana de 60 frames. Coinciden con la escritura del propio log en la SD: `sdw_ticks` 1,0–1,6 M, unos 30–47 ms por escritura. Sin el registrador no hay caídas.
+- **Contador `occ`:** marca 0 porque esta build no lo alimenta. El coste de la oclusión está dentro de `blit` y `sh`, con máximos de 70.434 y 198.451 ticks.

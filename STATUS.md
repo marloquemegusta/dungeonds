@@ -208,5 +208,5 @@ El láser de apuntado se colima durante la carga (ancho, difuso y rojo a 1 px ve
   - huella de los bancos a partir de su planta, con envolvente convexa (decisión en `DESIGN.md` §6.9.1b);
   - escenario nuevo `cathedral_bench_collision`;
   - la peor ventana de oclusión baja de 14.838 a 4.117 runs.
-- **Verificación:** build sin warnings, 9 tests de host y 3 escenarios de catedral PASS. ROM `cathedral-playground-perf` subida y dada por buena por el usuario en la DS.
+- **Verificación:** build sin warnings, 9 tests de host y 3 escenarios de catedral PASS. ROM `cathedral-playground-perf` subida y dada por buena por el usuario en la DS. Log `PERF_PROFILE` de unos 11 minutos: CPU con media de 116.277 ticks y máximo de 396.970, de un presupuesto de 560.190. Los únicos frames de más de un vblank los causa la escritura del propio log en la SD.
 - **Detalle:** [`walkthroughs/props-depth-units/`](walkthroughs/props-depth-units/walkthrough.md). Siguientes pasos y briefs: [`walkthroughs/catedral-siguientes-pasos/`](walkthroughs/catedral-siguientes-pasos/walkthrough.md).
