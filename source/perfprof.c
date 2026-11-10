@@ -17,23 +17,19 @@ extern int crashlog_sd_ready(void);
 uint32_t g_pp_cur[PP_COUNT];
 
 static const char *const s_names[PP_COUNT] = {
-    "pl", "occ", "en", "wp", "dclr", "sh", "wb", "sort", "blit", "proj",
+    "pl", "occ", "en", "wp", "dclr", "sh", "sort", "blit", "proj",
     "pick", "hud", "pcopy", "bgsub", "bgbot", "vwait", "cpu", "frame"
 };
 // Two-letter HUD tags (only glyphs present in the HUD font).
 static const char *const s_tags[PP_COUNT] = {
-    "PL", "OC", "EN", "WE", "CL", "SH", "WB", "SO", "BL", "PR",
+    "PL", "OC", "EN", "WE", "CL", "SH", "SO", "BL", "PR",
     "PI", "HU", "PC", "BS", "BB", "VW", "CP", "FR"
 };
 
 static uint32_t s_min[PP_COUNT], s_max[PP_COUNT];
 static uint64_t s_sum[PP_COUNT];
 static uint32_t s_n;
-static uint32_t s_vb_sum, s_vb_multi, s_see;
-static uint32_t s_fi_same, s_pg_same, s_vbp_same;
-static int s_have_prev;
-static uint32_t s_prev_fi_par, s_prev_vb_par;
-static int s_prev_page;
+static uint32_t s_vb_sum, s_vb_multi;
 static uint32_t s_window_no;
 static uint32_t s_sd_prev_ticks, s_sd_prev_len;
 
@@ -51,8 +47,7 @@ static void reset_window(void) {
         s_max[i] = 0;
         s_sum[i] = 0;
     }
-    s_n = s_vb_sum = s_vb_multi = s_see = 0;
-    s_fi_same = s_pg_same = s_vbp_same = 0;
+    s_n = s_vb_sum = s_vb_multi = 0;
 }
 
 void perfprof_init(void) {
@@ -78,11 +73,10 @@ uint32_t perfprof_fps10(void) { return s_hud_fps10; }
 
 static void write_window(uint32_t frame_index) {
     int len = snprintf(s_line, sizeof(s_line),
-                       "PERF win=%lu f=%lu n=%lu vb=%lu vb2=%lu see=%lu fi_same=%lu pg_same=%lu vbp_same=%lu "
+                       "PERF win=%lu f=%lu n=%lu vb=%lu vb2=%lu "
                        "sdw_ticks=%lu sdw_len=%lu",
                        (unsigned long)s_window_no, (unsigned long)frame_index, (unsigned long)s_n,
-                       (unsigned long)s_vb_sum, (unsigned long)s_vb_multi, (unsigned long)s_see,
-                       (unsigned long)s_fi_same, (unsigned long)s_pg_same, (unsigned long)s_vbp_same,
+                       (unsigned long)s_vb_sum, (unsigned long)s_vb_multi,
                        (unsigned long)s_sd_prev_ticks, (unsigned long)s_sd_prev_len);
     for (int i = 0; i < PP_COUNT && len < (int)sizeof(s_line) - 64; i++) {
         uint32_t avg = (uint32_t)(s_sum[i] / s_n);
@@ -104,8 +98,7 @@ static void write_window(uint32_t frame_index) {
     }
 }
 
-void perfprof_frame_end(uint32_t frame_index, uint32_t vblanks, uint32_t vblank_count,
-                        int active_page, int see_through) {
+void perfprof_frame_end(uint32_t frame_index, uint32_t vblanks) {
     for (int i = 0; i < PP_COUNT; i++) {
         uint32_t v = g_pp_cur[i];
         if (v < s_min[i]) s_min[i] = v;
@@ -116,20 +109,6 @@ void perfprof_frame_end(uint32_t frame_index, uint32_t vblanks, uint32_t vblank_
     s_n++;
     s_vb_sum += vblanks;
     if (vblanks > 1) s_vb_multi++;
-    if (see_through) s_see++;
-    // Does the blink phase (frame_index & 1), the displayed page and the real
-    // vblank parity alternate on every presented frame? "same" counts failures.
-    uint32_t fp = frame_index & 1, vp = vblank_count & 1;
-    if (s_have_prev) {
-        if (fp == s_prev_fi_par) s_fi_same++;
-        if (active_page == s_prev_page) s_pg_same++;
-        if (vp == s_prev_vb_par) s_vbp_same++;
-    }
-    s_have_prev = 1;
-    s_prev_fi_par = fp;
-    s_prev_vb_par = vp;
-    s_prev_page = active_page;
-
     if (s_n >= WINDOW_FRAMES) {
         for (int i = 0; i < PP_COUNT; i++) s_hud_avg[i] = (uint32_t)(s_sum[i] / s_n);
         // fps*10 = n frames / (vblanks / 59.83 Hz) * 10

@@ -28,7 +28,7 @@ Resúmenes acumulativos y auditables de cada entrega y avance de desarrollo en `
 | 11 | Mejora de Rendimiento y Pipeline: Background Scroll Streaming, Stutter y Alineación de Pilares | [`11-perf-bg-scroll-and-rendering/`](11-perf-bg-scroll-and-rendering/walkthrough.md) | Completado |
 | 12 | Prototipo de combate: Lanza ósea (A y lápiz táctil) | [12-bone-lance-prototype](12-bone-lance-prototype/walkthrough.md) | Validado en emulador |
 | 13 | Escopeta de perdigones de hueso (5 astillas, <1 m) | [13-bone-shotgun-pellets](13-bone-shotgun-pellets/walkthrough.md) | Validado en emulador |
-| 13b | Transparencia de oclusión por frames alternados (flicker) | [`13-feat-occlusion-transparency/`](13-feat-occlusion-transparency/walkthrough.md) | Provisional; ver `TECHNICAL.md` §4.6 |
+| 13b | Transparencia de oclusión por frames alternados (flicker) | [`13-feat-occlusion-transparency/`](13-feat-occlusion-transparency/walkthrough.md) | Histórico; retirado en la sesión 90 |
 | 14 | Lanza ósea procedural (astillas sin outline y motas espectrales) | [14-bone-particle-lance](14-bone-particle-lance/walkthrough.md) | Prototipo GIF validado en emulador |
 | 15 | Lanza más rápida sin azul y fragmentación al morir | [15-bone-projectile-revision](15-bone-projectile-revision/walkthrough.md) | Validado en DeSmuME |
 | 16 | DS Shader Lab interactivo, selector de FBX y tamaño de sprite en píxeles | [`16-shader-lab-interactive/`](16-shader-lab-interactive/walkthrough.md) | Completado |
@@ -85,7 +85,7 @@ Resúmenes acumulativos y auditables de cada entrega y avance de desarrollo en `
 | 67 | Auditoría de saneamiento 2D/3D (colisión, oclusión, legacy) | [audit-saneamiento-2d3d](audit-saneamiento-2d3d/walkthrough.md) | Análisis |
 | 68 | Colisión y oclusión coherentes con el render del mapa | [map-export-coherence](map-export-coherence/walkthrough.md) | Validado en emulador |
 | 69 | Saneamiento 2D/3D: suelo isotrópico, código muerto y repo | [`saneamiento-2d3d/`](saneamiento-2d3d/walkthrough.md) | Validado en DeSmuME |
-| 70 | Oclusión exacta, transparencia compartida y base de pared oculta | [`fix-oclusion-siluetas/`](fix-oclusion-siluetas/walkthrough.md) | Validado en DeSmuME (sin captura de enemigo) |
+| 70 | Oclusión exacta, transparencia compartida y base de pared oculta | [`fix-oclusion-siluetas/`](fix-oclusion-siluetas/walkthrough.md) | Histórico; efectos retirados en la sesión 90 |
 | 71 | Auditoría del motor 2D/3D y prototipo A (compositor directo en VRAM) | [`audit-motor-2d3d/`](audit-motor-2d3d/walkthrough.md) | Validado en DS (rendimiento) |
 | 72 | Diseño de gameplay mínimo (prueba de diversión) | [`diseno-gameplay-minimo/`](diseno-gameplay-minimo/walkthrough.md) | Diseño (sin código) |
 | 73 | v0.1 Fase A: armas, disparo desde el arma y pantalla superior igual a la inferior | [`v0.1/`](v0.1/walkthrough.md) | Validado en DS (rendimiento) |
@@ -102,3 +102,8 @@ Resúmenes acumulativos y auditables de cada entrega y avance de desarrollo en `
 | 84 | v0.3.1: tres tiers de enemigos (esqueleto, cargador que carga, tirador láser), escala 100 = 1,0 y pulido | [`v031-tuning/`](v031-tuning/walkthrough.md) | Validado en DeSmuME y host (pendiente DS) |
 | 85 | Escenario 0.3.2: suelo Tripo A, luz alineada, personajes sin contorno y lápidas 3D unificadas en Shader Lab | [`v032-escenario/`](v032-escenario/walkthrough.md) | Pipeline Three.js Lab unificado y lápidas v2 con relieve 12 cm validadas |
 | 86 | Rayos de luz (godrays) como variante de compilación | [`proto-godrays/`](proto-godrays/walkthrough.md) | Prototipo fusionado; sin medir en la DS (estado en `TECHNICAL.md` §3.5) |
+| 87 | 0.3.2: composición espacial y layout de la catedral | [`layout-catedral/`](layout-catedral/walkthrough.md) | Primera propuesta en ROM; distribución de bancos y estatuas pendiente de rehacer |
+| 88 | 0.3.2: muros laterales, arcadas y vanos de la catedral | [`muros-catedral/`](muros-catedral/walkthrough.md) | Primera ROM y escenario headless PASS; pendiente revisión visual y certificación en DS |
+| 89 | Primera implementación de oclusión y colisión de props | [`cathedral-props-occlusion/`](cathedral-props-occlusion/walkthrough.md) | Pruebas iniciales PASS, pero revisión DS posterior encontró fallos; abierta |
+| 90 | Retirada del parpadeo y de la línea negra tras muros | [`remove-wall-through-effects/`](remove-wall-through-effects/walkthrough.md) | Eliminación, recompilación y subida a DS; revisión de props continúa abierta |
+| 91 | Cierre de revisión de la primera ROM de catedral | [`catedral-cierre/`](catedral-cierre/walkthrough.md) | Godrays integrados; estética general aceptable; redistribución de props y arquitectura de colisión/oclusión pendientes |

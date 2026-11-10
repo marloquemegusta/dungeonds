@@ -1,0 +1,5 @@
+wsl: Processing /etc/fstab with mount -a failed.
+Microphone successfully inited.
+DeSmuME 0.9.14 git#0 dev+ x64-JIT SSE2
+SoftRasterizer: Running using 22 additional threads. (Multithreading enabled.)
+DSM_SCENARIO_RESULT=PASS name=strip_cathedral_look frames=4783 wall_ms=86144

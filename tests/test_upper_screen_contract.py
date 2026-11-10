@@ -6,6 +6,7 @@ import numpy as np
 
 ROOT = Path(__file__).resolve().parents[1]
 MAIN_C = (ROOT / "source" / "main.c").read_text(encoding="utf-8")
+PERFPROF_H = (ROOT / "include" / "perfprof.h").read_text(encoding="utf-8")
 
 SUB_VRAM_BYTES = 128 * 1024          # bank C
 PAGE_BYTES = 256 * 192 * 2           # one 16 bpp actor page
@@ -35,10 +36,14 @@ class UpperScreenContractTest(unittest.TestCase):
     def test_both_screens_run_the_same_compositor(self):
         self.assertIn("render_screen(s_top_page, s_dirty_top, view_x, view_y - SCREEN_H", MAIN_C)
         self.assertIn("render_screen(bot_page_ptr(s_bot_back_page), s_dirty[s_bot_back_page == 24], view_x, view_y", MAIN_C)
-        self.assertIn("update_player_see_through();", MAIN_C)
-        # The see-through state belongs to the player, not to whichever screen is drawn.
-        render = MAIN_C.split("static void render_screen")[1].split("static const char s_fps_chars")[0]
-        self.assertNotIn("s_player_see_through = 0;", render)
+
+    def test_occluded_actors_are_hidden_without_through_wall_effects(self):
+        blit = MAIN_C.split("static void blit_stride", 1)[1].split("// Shadow shape", 1)[0]
+        self.assertIn("find_hiding_run(world_y, world_x0, world_x1, depth", blit)
+        self.assertNotIn("see_through", MAIN_C)
+        self.assertNotIn("draw_hidden_wall_base", MAIN_C)
+        self.assertNotIn("wall_base_px", MAIN_C)
+        self.assertNotIn("PP_WALLBASE", PERFPROF_H)
 
     def test_sub_vram_layout_fits_bank_c(self):
         capacity = define(MAIN_C, "TOP_TILE_CACHE_CAPACITY")

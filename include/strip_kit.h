@@ -21,12 +21,17 @@ typedef struct {
 } StripDepthRun;
 
 typedef struct {
+    uint8_t x_cell, y_cell, length_cells; // blocked 4x4 ground cells relative to the stamp
+} StripFootprintRun;
+
+typedef struct {
     uint8_t w_tiles, h_tiles;     // size of the tile block
     uint8_t phase_col, phase_row; // top-left tile coordinate modulo the 16x16 floor period
-    uint8_t foot_x, foot_y;       // collision footprint, in cells relative to the block's top-left
-    uint8_t foot_w, foot_h;
+    uint8_t foot_anchor_y_px;     // local world Y of the footprint's lowest cell
     uint8_t foot_value;           // 0: decoration, 1: blocks bodies, 3: blocks bodies and bullets
     const uint16_t *tiles;        // row-major tilemap entries; bits 10/11 are H/V flips, 0 keeps floor
+    uint16_t num_foot_runs;
+    const StripFootprintRun *foot_runs; // 4x4 ground-plane collision spans, one or more per row
     uint16_t num_depth_runs;
     const StripDepthRun *depth_runs; // relative runs; depth is added to the piece base world Y
 } StripStamp;
@@ -35,8 +40,9 @@ typedef struct {
     const uint16_t *palette;      // 256 BGR555 entries, shared by floor and stamps
     const uint8_t (*tiles)[64];   // 8bpp tiles; id 0 is the blank tile
     uint16_t num_tiles;
+    uint16_t map_h_tiles;         // vertical visual-map period, in tiles
     uint16_t floor_h_tiles;       // vertical period of the floor pattern, in tiles (divides 16)
-    const uint16_t *floor_map;    // STRIP_W_TILES * floor_h_tiles entries, including DS H/V flip bits
+    const uint16_t *floor_map;    // STRIP_W_TILES * map_h_tiles entries, including DS H/V flip bits
     const uint8_t *floor_collision; // STRIP_W_CELLS * (floor_h_tiles * 2) cells, packed like
                                     // Arena.collision (4 cells per byte, low bits first)
     uint8_t num_stamps;

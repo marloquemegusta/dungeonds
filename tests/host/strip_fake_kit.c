@@ -7,15 +7,18 @@ static uint16_t s_floor_map[STRIP_W_TILES * 4];
 static uint8_t s_floor_collision[STRIP_W_CELLS * 8 / 4];
 static const uint16_t s_stamp_tiles_a[4] = {3, 3, 3, 3};
 static const uint16_t s_stamp_tiles_b[4] = {2, 3, 3, 2};
+static const StripFootprintRun s_stamp_foot_a[2] = {{0, 0, 4}, {0, 1, 4}};
+static const StripFootprintRun s_stamp_foot_b[2] = {{0, 0, 4}, {0, 1, 4}};
 static const StripStamp s_stamps[2] = {
-    {2, 2, 0, 0, 0, 0, 2, 2, 1, s_stamp_tiles_a, 0, 0},
-    {2, 2, 0, 2, 0, 0, 2, 2, 1, s_stamp_tiles_b, 0, 0}
+    {2, 2, 0, 0, 4, 1, s_stamp_tiles_a, 2, s_stamp_foot_a, 0, 0},
+    {2, 2, 0, 2, 4, 1, s_stamp_tiles_b, 2, s_stamp_foot_b, 0, 0}
 };
 
 const StripKit g_strip_kit = {
     .palette = s_palette,
     .tiles = s_tiles,
     .num_tiles = 4,
+    .map_h_tiles = 4,
     .floor_h_tiles = 4,
     .floor_map = s_floor_map,
     .floor_collision = s_floor_collision,

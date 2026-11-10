@@ -2,11 +2,14 @@
 
 Primero el estado necesario para retomar el trabajo sin depender del chat; después, las entregas recientes verificadas (más nueva al final). El historial hasta 2026-10-21 está en `STATUS-ARCHIVE.md`.
 
-## Estado actual (2026-11-07)
+## Estado actual (2026-11-10)
 
 - **v0.3.1 cerrada (2026-11-07, `walkthroughs/v031-tuning/`):** tres tiers de enemigos (esqueleto, cargador que carga, tirador láser), escala de cifras 100 = 1,0 y pulido de suelo y marea. Jugada en la DS: rendimiento bien y el juego se siente mucho mejor. Pool de 24; el techo 32/48 y el log de `PERF_PROFILE` no se hicieron (`DESIGN.md` §6.9.1, "Valores de la 0.3.1").
-- **0.3.2 (escenario) cerrada a falta de decisiones (2026-11-09, `walkthroughs/v032-escenario/`):** suelo Tripo A, personajes sin contorno, luz 55°/30° y lápidas de suelo decididos; lápida hundida vs a ras, ahorro de tiles y medición en la DS siguen abiertos (ver entrada de 2026-11-09 abajo).
-- **Siguiente: 0.3.3 (sprites) y lo abierto de la 0.3.2, dirección de arte** (`DESIGN.md` §6.9.1b). Estilo objetivo: Trench Crusade / Warhammer 40k pero más sucio y sombrío. 0.3.2 = escenario del primer nivel (imágenes → 2D→3D → pre-render); 0.3.3 = sprites (reevaluar, ajustar tamaño, mismo flujo). Cada una en su sesión, con sesión de dirección de arte previa.
+- **Props en revisión reabierta:** existe una implementación de huellas 2D y profundidad horneada, pero el usuario confirma en DS que colisión y oclusión siguen fallando. La prueba previa de contacto no basta para cerrar todos los props ni ángulos; `banco_volcado` conserva además una máscara vacía con fallback conservador. Diagnóstico: `walkthroughs/catedral-cierre/`.
+- **Lectura tras muros:** retirados el parpadeo alterno, la transparencia condicionada de enemigos, la sombra del jugador sobre el muro y la línea negra de borde de colisión. `cathedral-playground-perf` se subió como `dungeonds.nds` (2.009.088 bytes, rama `feat/muros-catedral`, commit base `2def813`) y el usuario la jugó. Las capturas de una columna solo acreditan ese caso. Detalle: `walkthroughs/remove-wall-through-effects/`.
+- **0.3.2 (escenario de catedral) abierta:** la primera pasada de muros, lancetas, crucero y godrays está en ROM. El usuario considera buenos el rendimiento y la estética general, pero no aprueba la distribución de bancos y estatuas. Diagnóstico y pendientes: `walkthroughs/catedral-cierre/`.
+- **Godrays:** integrados en las variantes `cathedral-playground` y `cathedral-playground-perf`; el usuario los considera prácticamente resueltos. Falta la certificación final de rendimiento con log en DS según `DESIGN.md` §6.9.1b.
+- **Siguiente sesión de catedral:** rehacer la distribución de bancos y estatuas; revisar la fuente común de geometría, dibujo, profundidad y colisión; validar contactos con coordenadas verificadas en ROM; después, medir la build final en DS. La 0.3.3 de sprites sigue tras cerrar el escenario.
 - **v0.3 mínima jugable (2026-11-06, `walkthroughs/v03-minima/`):** la ROM principal arranca en la franja vertical infinita con horda desde arriba, marea, curas y HUD de altura (`DESIGN.md` §6.0). 60 FPS en la DS con el pool de 24. **Cerrada.** El resto de §6 (gemas, mejoras, élites, jefes) sigue sin código y está repartido por versiones en `DESIGN.md` §6.9.
 - **Dirección vigente (v0.3, decidida 2026-11-06):** survivors de frente vertical con apuntado manual. Un nivel de ~8 min en una franja vertical que se sube mientras una marea avanza desde abajo, horda continua, gemas → nivel → elegir 1 de 3 mejoras, élites, minijefe y jefe, y clase = arma (francotirador/láser y escopeta). Diseño en `DESIGN.md` §6; requisitos técnicos en `TECHNICAL.md` §4.7. Sesión: `walkthroughs/survivors-direction/`.
 - **Rama base:** `main`, con v0.1 (`walkthroughs/v0.1/`) y v0.2 (`walkthroughs/v0.2/`) integradas. La v0.2 se integró con la deuda de rendimiento anotada abajo.
@@ -180,3 +183,20 @@ El láser de apuntado se colima durante la carga (ancho, difuso y rojo a 1 px ve
 - **Color nativo BGR555**: preserva los 15 bits de precisión de hardware de la Nintendo DS sin comprimir los tonos en la paleta oscura del suelo.
 - **Lámina comparativa maestra:** [`cat_lapidas_lab_unified.png`](walkthroughs/v032-escenario/assets/cat_lapidas_lab_unified.png) comparando Vía A (3×2 teselas = 80×40 px) y Vía B (3×3 teselas = 96×48 px) con macro 4x y mapas de costura.
 - **Siguiente paso para otra sesión:** hornear las variantes definitivas en `tools/bake_cathedral_kit.py`, actualizar el strip kit y validar 60 FPS en la Nintendo DS física con `PERF_PROFILE`.
+
+## 2026-11-09 - 0.3.2: composición espacial y layout de la catedral (`docs/layout-catedral`)
+- **Propuesta:** recorrido, altura lógica, familias de composición y reglas de distribución, en `DESIGN.md` §6.9.1b.
+- **Walkthrough:** [`walkthroughs/layout-catedral/walkthrough.md`](walkthroughs/layout-catedral/walkthrough.md) muestra 12 pantallas, ocho con posiciones concretas y las cuentas de pasillos/huella.
+- **Estado:** el usuario dio paso a la sesión 2 con este layout como base; la validación visual en ROM se hará con el kit integrado.
+- **Siguiente:** sesión 2, muros laterales, arcadas y vanos de vidrieras/rosetones.
+
+## 2026-11-09 - 0.3.2: muros laterales, arcadas y vanos de la catedral (`docs/layout-catedral`)
+- **Propuesta técnica:** bandas laterales de 48 px cerradas, pilastras moduladas, lancetas alternas alineadas con los rayos ya existentes y rosetón frontal en el arco del crucero.
+- **Compatibilidad:** el origen de cada lanceta se expresa en las coordenadas actuales de `source/godrays.c`; la sesión 3 debe dejar de colocar la variante de rosetón en una pared lateral y anclarla al arco frontal.
+- **Pendiente del usuario:** escoger referencias de tracería y color del vidrio, generar modelos de lanceta/rosetón/contrafuerte y aprobar los prerenders.
+- **Detalle y briefs:** [`walkthroughs/muros-catedral/walkthrough.md`](walkthroughs/muros-catedral/walkthrough.md).
+
+## 2026-11-10 - 0.3.2: cierre de revisión de la primera ROM de catedral (`feat/muros-catedral`)
+- **Conseguido:** primera pasada del escenario compilada y jugada; rendimiento y estética general aceptables para el usuario. Godrays integrados en las variantes de catedral. Retiradas las ayudas de lectura a través del muro; ROM `cathedral-playground-perf` subida como `dungeonds.nds`.
+- **Abierto:** el usuario no aprueba la distribución de bancos y estatuas. Las colisiones y oclusiones de los props siguen fallando. El escenario de ocho direcciones creado durante el diagnóstico no demostró contacto con la estatua, se retiró y no cuenta como evidencia.
+- **Siguiente:** rehacer composición y fuente común de geometría/dibujo/huella/profundidad; validar cada coordenada y contacto antes de interpretar capturas. Certificar rendimiento después de resolverlo. Detalle: [`walkthroughs/catedral-cierre/`](walkthroughs/catedral-cierre/walkthrough.md).

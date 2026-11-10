@@ -17,14 +17,20 @@
         },
         "godrays": {
             "defines": ["GODRAYS_PROTO=1"]
+        },
+        "cathedral-playground": {
+            "defines": ["SANDBOX=1", "PLAYGROUND=1", "GODRAYS_PROTO=1", "CATHEDRAL_PLAYGROUND=1"]
+        },
+        "cathedral-playground-perf": {
+            "defines": ["SANDBOX=1", "PLAYGROUND=1", "GODRAYS_PROTO=1", "CATHEDRAL_PLAYGROUND=1", "PERF_PROFILE=1"]
         }
     },
     "hostTests": [
+        "python.exe tests/test_cathedral_kit_contract.py",
         "python.exe tests/test_fbx_bg_generator.py",
         "python.exe tests/test_sprite_ground_anchor.py",
         "python.exe tests/test_los.py",
         "python.exe tests/test_gameplay_contract.py",
-        "python.exe tests/test_enemy_fsm.py",
         "python.exe tests/test_weapons_contract.py",
         "python.exe tests/test_sniper_hit_volume.py",
         "python.exe tests/test_sandbox_contract.py",

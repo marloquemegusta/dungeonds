@@ -49,7 +49,7 @@
 
 ### 3.3. Pipeline de Oclusión 2.5D y Presupuesto de Rendimiento en ARM9
 - **Arquitectura de Profundidad Continua vs Capas Hardware:** Con estructuras altas continuas (muros, contrafuertes góticos) las capas de fondo fijas de hardware son insuficientes: el personaje debe ocluirse al norte del muro y mostrarse por delante al pisar el sur de su base. El motor dibuja actores directamente en la página trasera del framebuffer de VRAM (sin framebuffer en EWRAM ni DMA de pantalla completa) y limpia solo los spans sucios (`DirtySpan`, `dirty_row`/`dirty_rect` en `game.h`; `clear_dirty_spans` en `main.c`; el modo `DIRTY_VERIFY` comprueba fugas en `dirty_leaks`). La oclusión se consulta directamente sobre `g_arena->occlusion_runs` por fila (`find_hiding_run`, `occlusion_blocks_pixel`), exacta al píxel y sin mapa intermedio.
-- **Las dos pantallas usan el mismo compositor.** `render_screen(buffer, spans, cam_x, cam_y)` se llama una vez por pantalla; la superior usa la cámara de la inferior desplazada `SCREEN_H` hacia arriba. El estado "jugador tras una pared" (`update_player_see_through`) se calcula una vez por frame a partir del jugador y vale para ambas.
+- **Las dos pantallas usan el mismo compositor.** `render_screen(buffer, spans, cam_x, cam_y)` se llama una vez por pantalla; la superior usa la cámara de la inferior desplazada `SCREEN_H` hacia arriba. Cada actor y su sombra se recortan con la profundidad horneada. No hay pase de transparencia alterna ni línea auxiliar para revelar la base oculta.
   - **Inferior (motor principal):** suelo en BG1 (banco D, 1024 slots de tile) y páginas 16 bpp de actores en BG2 (bancos A y B), con doble búfer.
   - **Superior (motor secundario, banco C de 128 KiB):** tiles 0–28 KiB (448 slots, `TOP_TILE_CACHE_CAPACITY`), mapa del suelo en 28–32 KiB y una única página 16 bpp de actores en 32–128 KiB. No hay hueco para una segunda página, así que se dibuja justo después de la lógica, dentro del VBlank, y puede parpadear si el frame se alarga.
   - **Presupuesto de tiles:** cualquier ventana de pantalla (33×25 tiles) debe necesitar menos de 440 tiles distintos. El baker (`tools/bake_arena.py`) fusiona con pérdida los tiles casi idénticos hasta cumplirlo (umbral medio de color 1,0: 3804 → 1123 tiles, peor ventana 576 → 252). Lo comprueba `tests/test_upper_screen_contract.py`.
@@ -73,6 +73,8 @@
 - **Estado:** según el usuario funcionaba (sin medir en la DS) y está fusionado en `main` como variante de compilación `godrays` (`GODRAYS_PROTO=1`, `.ds-game-dev/project.json`); la build por defecto no lo incluye. Solo actúa en la franja vertical y desactiva la marea durante la variante.
 - **Cómo:** `source/godrays.c` y `source/godrays_gfx.c` (cabeceras `include/godrays*.h`) dibujan rayos con OBJ semitransparentes anclados cada 256 px absolutos de la franja, alternando paredes, compensando los rebases con `strip_shift_total_px()`. Sprites en `assets/sprites/godrays/` y notas en `tools/godrays/README.md`.
 - **Límites conocidos:** con la línea de marea visible se ocultan todos los rayos (la semitransparencia OBJ se vuelve opaca en la ventana de la marea); los rayos usan sprites placeholder y ámbar/vitral sin decisión de arte en `DESIGN.md`.
+- **Desajuste de origen:** la variante de rosetón también se coloca en los anclajes periódicos de los muros laterales. El layout de catedral reserva el rosetón para el arco frontal del crucero; separar ese emisor es trabajo de la Sesión 3 (`DESIGN.md` §6.9.1b).
+- **Prioridad en crucero:** la Sesión 3 debe suspender los haces laterales durante la pantalla del rosetón; `BLDALPHA` comparte la intensidad por pantalla y dos haces solapados no se suman (`walkthroughs/v032-escenario/BIBLIA.md` §7).
 - **Pendiente:** certificar 60 FPS en la DS con `PERF_PROFILE` antes de activarlo en la build por defecto (regla 6) y escribir la decisión de arte (regla 9).
 
 ## 4. Deuda Técnica Pendiente (auditoría 2026-11-02)
@@ -82,7 +84,7 @@ Origen: `walkthroughs/audit-saneamiento-2d3d/`. Lo ya resuelto (colisión/oclusi
 ### 4.1. Proyección y render 2.5D
 - **Escala personaje/mapa (decidido 2026-11-07, `DESIGN.md` §6.9.1b).** Hasta la 0.3.1 el mapa estaba a 40,42 px/m con sprites de ~30 px, es decir, un personaje de ~0,75 m. Decisión: el marine mide 2 m (31 px de alto), así que **el mapa pasa a ~17,9 px/m** y los sprites no cambian de tamaño; la escena se renderiza con ese factor al construir el suelo. Hay que adaptar los exportadores del lab (que fijan la escala por la caja del modelo, no por los ajustes: medir y re-renderizar hasta clavar el px/m) y el kit de la franja.
 - Resuelto (ver `STATUS.md`): la pantalla superior ya dibuja actores, sombras, proyectiles y FX con el mismo compositor que la inferior (`render_screen` se ejecuta una vez por pantalla, §3.3).
-- **Transparencias tras paredes:** diseño sin decidir; ver §4.6.
+- Resuelto: actores detrás de una superficie oclusora quedan ocultos por profundidad, sin parpadeo temporal ni línea negra auxiliar; decisión en `DESIGN.md` §3.
 - Resuelto (ver `STATUS.md`): movimiento/colisión isotrópicos en suelo (`GROUND_DY2`, elipse 6×3), ancla única exportada, oclusión exacta por consulta directa de tramos (sin mapa 4×4 ni reconstrucción por cámara).
 
 ### 4.2. Gameplay
@@ -103,24 +105,15 @@ Origen: `walkthroughs/audit-saneamiento-2d3d/`. Lo ya resuelto (colisión/oclusi
 Origen: `walkthroughs/audit-motor-2d3d/`. Resueltos en el prototipo A (compositor directo en VRAM, spans sucios, oclusión por consulta, HUD con START, logs bajo `DEBUG`); lo siguiente sigue pendiente.
 - **Métricas.** `cpu_percent` excluye DMA y anillo BG; comentario obsoleto de presupuesto (280095) en `game.h`. Presupuesto real: 560190 ticks/frame. El rendimiento solo se valida en DS con `PERF_PROFILE` (`/dungeonds_perf.log`), no en DeSmuME. El Makefile no define `DEBUG` y `encounters.c` conserva 3 `nocashMessage`.
 - **Timestep por frame presentado.** A 30 FPS el juego va a media velocidad; usar delta de tiempo o paso fijo con acumulador.
-- **Transparencias:** ver §4.6.
+- **Oclusión tras muros:** transparencia alterna y línea de base eliminadas en 2026-11-10; ver §4.6.
 - **Anillo de BG:** reescanea 2048 celdas por pantalla en cada cambio de tile (~0,1 ms de media, picos ~2 ms). Baja prioridad.
 - **Assets:** sprites BGR555 crudos (614 KB) y máscaras de sombra 4 bpp 80×80 (614 KB) sin paleta ni compresión ni NitroFS; ~2,0 MiB de 3,5 MiB de EWRAM; ITCM/DTCM sin uso.
 - **Pipeline:** `tools/rebuild-assets.ps1` llama a `tools/build_assets.py` inexistente; `generate_player_sprites_c.py` copia texto del `.h` del lab en vez de convertir `shadow.png`; tamaño del mundo duplicado en 4 sitios; `SPAWN` hardcodeado en el baker; `.c` generados sin hash de origen; ~40 scripts muertos en `tools/`.
 - **Acoplamiento:** coordenadas de mundo = píxeles de pantalla; impactos con círculo en pantalla frente a movimiento con métrica de suelo; estado global en `main.c`; `on_enemy_death` copia píxeles.
 - **Escenarios:** sensibles a frames perdidos del emulador; deberían basarse en frames de lógica, no en vblanks.
 
-### 4.6. Transparencias y lectura tras paredes: DISEÑO POR DECIDIR
-No hay decisión de diseño tomada sobre cómo mostrar lo que queda detrás de una pared. Lo que hay en el código es provisional y no debe tomarse como referencia ni ampliarse:
-- **Personaje:** parpadeo temporal (`blit_stride`, `s_frame_index & 1`): los píxeles ocluidos se pintan en frames alternos. Solo se lee como transparencia a 60 FPS estables.
-- **Enemigos:** usan el mismo parpadeo solo mientras el jugador está ocluido (`s_player_see_through`); si no, quedan ocultos del todo.
-- **Pie de la pared / suelo oculto:** mientras el jugador está ocluido se dibuja su sombra sobre la pared y una línea del borde de la huella de colisión (`draw_hidden_wall_base`) en una caja de 64×48 px. Esa línea no coincide con la base visible de la pared y en hardware no funciona bien.
-
-Preguntas abiertas a resolver en una sesión de diseño (`DESIGN.md`) antes de tocar código:
-1. ¿Qué se ve del personaje tras una pared (parpadeo, trama espacial fija, silueta de color, contorno, alfa por hardware)?
-2. ¿Qué se ve de los enemigos y bajo qué condición (nunca, solo cuando el jugador también está detrás, siempre como silueta)?
-3. ¿Cómo se comunica dónde está el suelo caminable y la base de la pared en la zona oculta (ocultación ambiental en el render del mapa, recorte/transparencia de la pared cerca del jugador, otra técnica)?
-4. ¿Encaja con el compositor por software actual o pide OAM/motor 3D (alfa por hardware, ventanas de OBJ, Z-buffer)?
+### 4.6. Oclusión de actores tras muros
+Decisión 2026-11-10 (`DESIGN.md` §3): los píxeles de personaje y enemigos que quedan detrás de una superficie se omiten con la profundidad horneada. Se eliminaron el parpadeo por frames alternos, la transparencia condicionada de enemigos, el dibujo de la sombra del jugador sobre el muro y la línea negra que reconstruía el borde de colisión (`draw_hidden_wall_base`). No se muestran guías de colisión en la pared.
 
 ### 4.7. Requisitos técnicos de la v0.3: horda y franja vertical (2026-11-06)
 Diseño en `DESIGN.md` §6. Esto es lo que el motor actual no cubre y cómo se mide.
@@ -143,6 +136,10 @@ Diseño en `DESIGN.md` §6. Esto es lo que el motor actual no cubre y cómo se m
 
 **Lo que implementó la 0.3 mínima (2026-11-06, `walkthroughs/v03-minima/`):**
 - **Franja en ventana:** `g_arena` es una ventana en RAM de 512×2048 px de una franja infinita (`source/strip.c`). Las bandas de 128 px salen de un hash de (semilla, banda) con el kit horneado de `source/strip_kit.c`. Cuando el jugador pasa de y=768, la ventana baja 512 px (rebase) y `strip_shift_world_y` desplaza toda Y viva: jugador, enemigos, proyectiles, armas, granada, horda, marea, curas y navegación.
+- **Bordes laterales duros:** el carril tiene 64 columnas de tiles; `source/strip.c` reserva seis tiles (48 px) a cada lado, los marca sólidos para cuerpos y proyectiles y limita las estampas a las 52 columnas centrales (416 px). La sesión 2 añade el arte de pared a esas columnas exteriores; la colisión de borde ya está resuelta.
+- **Composición reproducible pendiente:** el runtime elige estampas por hash en bandas de 128 px y `main.c` arranca con una semilla de hora/timing; no hay secuencia determinista de familias lógicas de 192 px ni el runner de escenarios acepta una semilla de franja. Para validar en ROM el layout de `DESIGN.md` §6.9.1b, hará falta un fixture de composición fijo o el generador final con semilla reproducible; cambiar solo la semilla no garantiza las pantallas de la propuesta.
+- **Mapa visual del primer pase de catedral:** BG1 usa un único tilemap opaco; el baker compone suelo, paños laterales, lancetas y un umbral con rosetón en una tabla de 64×128 tiles (1.024 px de ciclo arquitectónico). La alternancia de lancetas se repite cada 512 px; el umbral del crucero alarga el ciclo completo a 1.024 px. La tabla ocupa 16 KiB, +14 KiB frente al mapa de suelo de 64×16 tiles; `s_map` conserva sus 64×256 tiles (32 KiB). `StripKit`/`generate_band()` mantienen períodos independientes: `map_h_tiles=128` para arte y `floor_h_tiles=16` para colisión de 128 px. El kit usa 1.024 tiles en total y la ventana de 33×25 usa 224. Los paños actuales son pixel art de primer pase basado en la forma geminada; el modelo Blender está en `assets/models/environment/cathedral/lancet_pair.blend` y `lancet_pair.glb`, pendiente de ajustar al encuadre del lab antes de sustituir ese arte. Los muros son planos decorativos en los bordes ya sólidos; no añaden spans de oclusión ni colisión. La ROM/capturas de revisión están en `walkthroughs/muros-catedral/`.
+- **Estado del contrato de props de la franja (no validado):** el baker transforma `footprint.png` en runs de colisión de 4×4 px y `depth.png` en spans de oclusión; el color se cuantiza aparte al tilemap. Aunque comparten dimensiones y el runtime aplica el mismo desplazamiento al estamparlos, eso no prueba que los canales provengan de la misma geometría, cámara y origen. El usuario confirmó en DS que colisión y oclusión siguen fallando; no tratar el escenario de contacto previo como certificación general. `banco_volcado` además llega con máscara negra y cae al rectángulo conservador. Revisar si los canales deben volver a exportarse desde una escena GLB común. Diagnóstico: `walkthroughs/catedral-cierre/`.
 - **Navegación:** `navfield` de 48×128 nodos de 16 px. En el rebase se desplaza el campo (`nav_shift_down`) en vez de rehacerlo.
 - **Horda** (`source/horde.c`) sobre el pool de 24 (`MAX_GAMEPLAY_ENEMIES`), con reciclaje sin recompensa. La IA de siempre, con un flag de modo franja.
 - **Marea** (`source/tide.c`): WIN0 con fundido a negro por hardware (`REG_BLDCNT` modo 3, `BLDY`), sin coste de CPU por píxel.

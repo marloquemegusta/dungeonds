@@ -100,13 +100,7 @@ static int stamp_overlaps_lane(const StripStamp *stamp, int x_tile, int lane_x) 
     int right = left + (int)stamp->w_tiles * 8;
     int lane_left = lane_x - STRIP_LANE_HALF_WIDTH_PX;
     int lane_right = lane_x + STRIP_LANE_HALF_WIDTH_PX;
-    if (left < lane_right && lane_left < right) return 1;
-
-    int foot_left = (x_tile * 2) + stamp->foot_x;
-    int foot_right = foot_left + stamp->foot_w;
-    int lane_cell_left = (lane_left + COLLISION_SCALE - 1) / COLLISION_SCALE;
-    int lane_cell_right = lane_right / COLLISION_SCALE;
-    return foot_left < lane_cell_right && lane_cell_left < foot_right;
+    return left < lane_right && lane_left < right;
 }
 
 static int stamp_can_be_placed(const StripStamp *stamp, int x_tile, int y_tile,
@@ -116,11 +110,14 @@ static int stamp_can_be_placed(const StripStamp *stamp, int x_tile, int y_tile,
     int w = stamp->w_tiles;
     int h = stamp->h_tiles;
     if (w == 0 || h == 0 || x_tile < STRIP_WALL_TILES || x_tile + w > STRIP_W_TILES - STRIP_WALL_TILES ||
-        y_tile < 0 || y_tile + h > STRIP_BAND_TILES) return 0;
+        y_tile < 0 || y_tile + h > STRIP_BAND_TILES || stamp->foot_anchor_y_px > h * 8u) return 0;
     if (stamp->foot_value > 3 ||
-        (stamp->foot_value != 0 && (stamp->foot_w == 0 || stamp->foot_h == 0)) ||
-        (unsigned)stamp->foot_x + stamp->foot_w > (unsigned)w * 2u ||
-        (unsigned)stamp->foot_y + stamp->foot_h > (unsigned)h * 2u) return 0;
+        (stamp->foot_value != 0 && (!stamp->num_foot_runs || !stamp->foot_runs))) return 0;
+    for (unsigned i = 0; i < stamp->num_foot_runs; i++) {
+        const StripFootprintRun *run = &stamp->foot_runs[i];
+        if (!run->length_cells || (unsigned)run->x_cell + run->length_cells > (unsigned)w * 2u ||
+            run->y_cell >= (unsigned)h * 2u) return 0;
+    }
     if (stamp_overlaps_lane(stamp, x_tile, lane_x)) return 0;
     for (int i = 0; i < placed_count; i++) {
         if (rects_overlap(x_tile, y_tile, w, h,
@@ -175,12 +172,14 @@ static void stamp_band(int32_t band, int map_row, int collision_row) {
                     if (tile != 0) s_map[dst + sx] = tile;
                 }
             }
-            for (unsigned cy = 0; cy < stamp->foot_h; cy++) {
-                for (unsigned cx = 0; cx < stamp->foot_w; cx++) {
-                    unsigned cell_x = (unsigned)x_tile * 2u + stamp->foot_x + cx;
-                    unsigned cell_y = (unsigned)collision_row + (unsigned)y_tile * 2u + stamp->foot_y + cy;
-                    if (cell_x > 0 && cell_x < STRIP_COLLISION_W - 1u &&
-                        cell_y < STRIP_COLLISION_H - 1u) {
+            for (unsigned ri = 0; ri < stamp->num_foot_runs; ri++) {
+                const StripFootprintRun *run = &stamp->foot_runs[ri];
+                unsigned cell_y = (unsigned)collision_row + (unsigned)y_tile * 2u + run->y_cell;
+                if (cell_y >= STRIP_COLLISION_H - 1u) continue;
+                unsigned first_x = (unsigned)x_tile * 2u + run->x_cell;
+                for (unsigned cx = 0; cx < run->length_cells; cx++) {
+                    unsigned cell_x = first_x + cx;
+                    if (cell_x > 0 && cell_x < STRIP_COLLISION_W - 1u) {
                         packed_collision_set(s_collision, cell_y * STRIP_COLLISION_W + cell_x,
                                              stamp->foot_value);
                     }
@@ -195,7 +194,7 @@ static void stamp_band(int32_t band, int map_row, int collision_row) {
                 dst->x = (uint16_t)rx;
                 dst->y = (uint16_t)ry;
                 dst->length = (uint16_t)((rx + run->length > STRIP_W_PX) ? STRIP_W_PX - rx : run->length);
-                dst->depth = (int16_t)(map_row * 8 + y_tile * 8 + stamp->h_tiles * 8 + run->depth_delta);
+                dst->depth = (int16_t)(map_row * 8 + y_tile * 8 + stamp->foot_anchor_y_px + run->depth_delta);
             }
             placed_x[placed_count] = x_tile;
             placed_y[placed_count] = y_tile;
@@ -207,18 +206,17 @@ static void stamp_band(int32_t band, int map_row, int collision_row) {
 }
 
 static void generate_band(int32_t band, int map_row, int collision_row) {
-    const unsigned floor_period = g_strip_kit.floor_h_tiles;
-    const unsigned collision_period = floor_period * 2u;
-    // Window and band origins are period aligned (floor_h_tiles divides 16).
-    unsigned map_phase = 0;
-    unsigned collision_phase = 0;
+    const unsigned map_period = g_strip_kit.map_h_tiles;
+    const unsigned collision_period = (unsigned)g_strip_kit.floor_h_tiles * 2u;
+    unsigned map_phase = (unsigned)((uint32_t)band * STRIP_BAND_TILES) % map_period;
+    unsigned collision_phase = (unsigned)((uint32_t)band * STRIP_BAND_CELLS) % collision_period;
 
     for (unsigned row = 0; row < STRIP_BAND_TILES; row++) {
         const uint16_t *src = g_strip_kit.floor_map + map_phase * STRIP_W_TILES;
         uint16_t *dst = s_map + (unsigned)(map_row + (int)row) * STRIP_W_TILES;
         memcpy(dst, src, STRIP_MAP_ROW_BYTES);
         map_phase++;
-        if (map_phase == floor_period) map_phase = 0;
+        if (map_phase == map_period) map_phase = 0;
     }
     for (unsigned row = 0; row < STRIP_BAND_CELLS; row++) {
         const uint8_t *src = g_strip_kit.floor_collision + collision_phase * STRIP_COLLISION_ROW_BYTES;
@@ -289,7 +287,10 @@ void strip_start(uint32_t seed) {
     s_occlusion_count = 0;
     g_arena = &s_arena;
     s_kit_valid = 0;
-    if (g_strip_kit.floor_h_tiles == 0 || g_strip_kit.floor_h_tiles > STRIP_BAND_TILES ||
+    if (g_strip_kit.map_h_tiles == 0 || g_strip_kit.map_h_tiles > STRIP_MAP_H_TILES ||
+        ((STRIP_BAND_TILES % g_strip_kit.map_h_tiles) != 0 &&
+         (g_strip_kit.map_h_tiles % STRIP_BAND_TILES) != 0) ||
+        g_strip_kit.floor_h_tiles == 0 || g_strip_kit.floor_h_tiles > STRIP_BAND_TILES ||
         !g_strip_kit.floor_map || !g_strip_kit.floor_collision || !g_strip_kit.palette ||
         !g_strip_kit.tiles) {
         memset(s_map, 0, sizeof(s_map));

@@ -1,0 +1,104 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="840" height="1740" viewBox="0 0 840 1740" role="img" aria-labelledby="title desc">
+  <title id="title">Planta de muros de la catedral en ocho pantallas</title>
+  <desc id="desc">Esquema a escala de la franja de 512 píxeles de ancho por 1536 de alto. Muestra muros laterales de 48 píxeles, pasillos libres, lancetas alternas y el rosetón frontal del crucero. No es una captura de juego.</desc>
+  <defs>
+    <pattern id="stone" width="16" height="16" patternUnits="userSpaceOnUse">
+      <rect width="16" height="16" fill="#3b3a38"/>
+      <path d="M0 0H16M0 8H8M12 8H16M4 0V8M12 8V16" fill="none" stroke="#55514c" stroke-width="1" opacity=".6"/>
+    </pattern>
+    <pattern id="blind" width="16" height="16" patternUnits="userSpaceOnUse">
+      <rect width="16" height="16" fill="#343331"/>
+      <path d="M0 0H16M0 8H8M12 8H16M4 0V8M12 8V16" fill="none" stroke="#4b4843" stroke-width="1" opacity=".55"/>
+    </pattern>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+      <path d="M0 0L10 5L0 10Z" fill="#d9b66f"/>
+    </marker>
+  </defs>
+  <rect width="840" height="1740" fill="#171716"/>
+  <text x="44" y="42" fill="#f0e8d8" font-family="Segoe UI, Arial, sans-serif" font-size="22" font-weight="700">Catedral — planta de muros y vanos</text>
+  <text x="44" y="68" fill="#aaa59c" font-family="Segoe UI, Arial, sans-serif" font-size="13">Esquema a escala del ejemplo de ocho pantallas · ancho 512 px · Y asciende hacia arriba · no es captura de ROM</text>
+
+  <!-- Eight logical screens: 512 x 1536 world px, drawn 1:1. -->
+  <g transform="translate(44 1640) scale(1 -1)">
+    <rect x="0" y="0" width="512" height="1536" fill="#292825" stroke="#8f897e" stroke-width="2"/>
+    <!-- Walkable floor and side-wall bands. -->
+    <rect x="0" y="0" width="48" height="1536" fill="url(#stone)"/>
+    <rect x="464" y="0" width="48" height="1536" fill="url(#stone)"/>
+    <rect x="48" y="0" width="416" height="1536" fill="#292825"/>
+    <!-- Screen seams every 192 px. -->
+    <g stroke="#777168" stroke-width="1" stroke-dasharray="5 5" opacity=".65">
+      <path d="M0 192H512M0 384H512M0 576H512M0 768H512M0 960H512M0 1152H512M0 1344H512"/>
+    </g>
+    <!-- Three continuous safe corridors from the accepted layout. -->
+    <g fill="none" stroke="#d8d1c2" stroke-width="2" stroke-dasharray="7 7" opacity=".46">
+      <path d="M80 0V1536M128 0V1536M224 0V1536M288 0V1536M384 0V1536M432 0V1536"/>
+    </g>
+    <!-- Pilasters every 128 px, contained in the 48 px wall bands. -->
+    <g fill="#716a5e" stroke="#b3a58d" stroke-width="1">
+      <path d="M0 0H48V12H0ZM0 128H48V140H0ZM0 256H48V268H0ZM0 384H48V396H0ZM0 512H48V524H0ZM0 640H48V652H0ZM0 768H48V780H0ZM0 896H48V908H0ZM0 1024H48V1036H0ZM0 1152H48V1164H0ZM0 1280H48V1292H0ZM0 1408H48V1420H0Z"/>
+      <path d="M464 0H512V12H464ZM464 128H512V140H464ZM464 256H512V268H464ZM464 384H512V396H464ZM464 512H512V524H464ZM464 640H512V652H464ZM464 768H512V780H464ZM464 896H512V908H464ZM464 1024H512V1036H464ZM464 1152H512V1164H464ZM464 1280H512V1292H464ZM464 1408H512V1420H464Z"/>
+    </g>
+    <!-- Lancet footprints: left at periods 0,2,4; right at 1,3,5. -->
+    <g fill="#765c75" stroke="#e1bf7c" stroke-width="2">
+      <rect x="0" y="80" width="32" height="48" rx="5"/>
+      <rect x="480" y="336" width="32" height="48" rx="5"/>
+      <rect x="0" y="592" width="32" height="48" rx="5"/>
+      <rect x="480" y="848" width="32" height="48" rx="5"/>
+      <rect x="0" y="1104" width="32" height="48" rx="5" fill="#494542" stroke="#817c73"/>
+      <rect x="480" y="1360" width="32" height="48" rx="5"/>
+    </g>
+    <!-- Beam direction; omitted at the crucero period while the rose beam is active. -->
+    <g fill="none" stroke="#d9b66f" stroke-width="2" marker-end="url(#arrow)" opacity=".8">
+      <path d="M24 104L160 104M488 360L352 360M24 616L160 616M488 872L352 872M488 1384L352 1384"/>
+    </g>
+    <!-- Low barricades from the eight-screen example. -->
+    <g fill="#6b4a32" stroke="#bb8b58" stroke-width="1">
+      <rect x="144" y="240" width="64" height="24"/><rect x="144" y="264" width="64" height="24"/>
+      <rect x="304" y="304" width="64" height="24"/><rect x="304" y="328" width="64" height="24"/>
+      <rect x="304" y="624" width="64" height="24"/><rect x="304" y="648" width="64" height="24"/>
+      <rect x="144" y="688" width="64" height="24"/><rect x="144" y="712" width="64" height="24"/>
+    </g>
+    <!-- Transept arch footprint at the north edge of logical screen 6. -->
+    <rect x="48" y="1056" width="416" height="96" fill="#514b42" stroke="#d0b98e" stroke-width="2" opacity=".2"/>
+    <path d="M48 1056H464M48 1152H464" stroke="#d0b98e" stroke-width="3"/>
+    <circle cx="256" cy="1152" r="32" fill="#3f344a" stroke="#e1bf7c" stroke-width="3"/>
+    <circle cx="256" cy="1152" r="18" fill="none" stroke="#c1a7ca" stroke-width="2"/>
+    <path d="M256 1120V1184M224 1152H288M233 1129L279 1175M279 1129L233 1175" stroke="#c1a7ca" stroke-width="1.5"/>
+    <!-- Optional chapel bay in screen 8; entry from the right aisle, main corridor remains. -->
+    <rect x="304" y="1392" width="80" height="96" fill="#443d34" stroke="#c2a56e" stroke-width="2"/>
+    <path d="M384 1416V1464" stroke="#292825" stroke-width="5"/>
+    <rect x="328" y="1424" width="32" height="32" fill="#806943" stroke="#e0c98f" stroke-width="1.5"/>
+    <!-- Screen numbers. -->
+  </g>
+
+  <g fill="#eee6d6" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="700" text-anchor="middle">
+    <text x="18" y="1544">1</text><text x="18" y="1352">2</text>
+    <text x="18" y="1160">3</text><text x="18" y="968">4</text>
+    <text x="18" y="776">5</text><text x="18" y="584">6</text>
+    <text x="18" y="392">7</text><text x="18" y="200">8</text>
+  </g>
+
+  <!-- Legend and exact anchors. -->
+  <g transform="translate(590 116)" font-family="Segoe UI, Arial, sans-serif">
+    <text x="0" y="0" fill="#f0e8d8" font-size="16" font-weight="700">Leyenda</text>
+    <rect x="0" y="18" width="18" height="18" fill="url(#stone)" stroke="#8f897e"/><text x="28" y="32" fill="#ddd5c5" font-size="12">Muro, franja 48 px</text>
+    <rect x="0" y="46" width="18" height="18" fill="#292825" stroke="#8f897e"/><text x="28" y="60" fill="#ddd5c5" font-size="12">Nave transitable</text>
+    <rect x="0" y="74" width="18" height="18" fill="#765c75" stroke="#e1bf7c"/><text x="28" y="88" fill="#ddd5c5" font-size="12">Vano lanceta</text>
+    <rect x="0" y="102" width="18" height="18" fill="#494542" stroke="#817c73"/><text x="28" y="116" fill="#ddd5c5" font-size="12">Vano sin haz en crucero</text>
+    <rect x="0" y="130" width="18" height="18" fill="#6b4a32" stroke="#bb8b58"/><text x="28" y="144" fill="#ddd5c5" font-size="12">Banco (sesión 1)</text>
+    <circle cx="9" cy="169" r="9" fill="#3f344a" stroke="#e1bf7c"/><text x="28" y="173" fill="#ddd5c5" font-size="12">Rosetón frontal</text>
+    <path d="M0 199H22" stroke="#d9b66f" stroke-width="2" marker-end="url(#arrow)"/><text x="28" y="203" fill="#ddd5c5" font-size="12">Dirección del haz</text>
+    <text x="0" y="248" fill="#cfc6b6" font-size="13" font-weight="700">Anchors del prototipo</text>
+    <text x="0" y="272" fill="#aaa59c" font-size="12">Periodo: 256 px</text>
+    <text x="0" y="292" fill="#aaa59c" font-size="12">Lanceta: Y = 256n + 80..128</text>
+    <text x="0" y="312" fill="#aaa59c" font-size="12">Lado: alterna cada periodo</text>
+    <text x="0" y="358" fill="#cfc6b6" font-size="13" font-weight="700">Ruta del ejemplo</text>
+    <text x="0" y="382" fill="#aaa59c" font-size="12">1 nave despejada</text>
+    <text x="0" y="402" fill="#aaa59c" font-size="12">2 y 4 barricadas</text>
+    <text x="0" y="422" fill="#aaa59c" font-size="12">5 transición</text>
+    <text x="0" y="442" fill="#aaa59c" font-size="12">6 crucero + rosetón</text>
+    <text x="0" y="462" fill="#aaa59c" font-size="12">8 capilla opcional</text>
+    <text x="0" y="520" fill="#d9b66f" font-size="12" font-weight="700">Propuesta geométrica;</text>
+    <text x="0" y="538" fill="#d9b66f" font-size="12" font-weight="700">no es arte final ni captura.</text>
+  </g>
+</svg>
