@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
-"""Bake a repeating cathedral floor and its six props into the strip kit."""
+"""Bake the cathedral floor, wall cycle, lancets and props into the strip kit."""
 import argparse
 import json
+import math
 import os
 from pathlib import Path
 
@@ -151,14 +152,18 @@ def quantize_props(im, prop_lab):
     return result.reshape(rgb.shape[:2])
 
 
-def piece_depth_runs(depth, rgba):
+def piece_depth_runs(depth, rgba, foot_anchor_y_px):
+    """depth.png holds, per surface pixel, the sprite-local Y of the ground under it (the same
+    contract as a map's occlusion_depth.png, in this sprite's pixels). Runs store it relative to
+    the footprint anchor, which strip.c adds back to the stamp's world Y."""
     d = np.asarray(depth.convert("RGB"), dtype=np.int32)
     alpha = np.asarray(rgba)[:, :, 3] >= 128
     valid = (d[:, :, 2] >= 128) & alpha
     value = d[:, :, 0] * 256 + d[:, :, 1]
-    tail = value[max(0, len(value) - 8):][valid[max(0, len(value) - 8):]]
-    if not len(tail): raise ValueError("depth.png has no valid depth in the base rows")
-    baseline = int(np.median(tail))
+    if not valid.any(): raise ValueError("depth.png has no valid depth")
+    if value[valid].min() < 0 or value[valid].max() > len(valid):
+        raise ValueError("depth.png values are not sprite-local Y; re-run tools/props/prerender_props.py")
+    baseline = foot_anchor_y_px
     runs = []
     for y in range(len(valid)):
         x = 0
@@ -174,12 +179,29 @@ def piece_depth_runs(depth, rgba):
     return runs
 
 
-def footprint_base(im):
+def footprint_runs(im):
+    """Read white as solid, at 4x4 floor cells. An empty mask is an error, never a full rectangle."""
     a = np.asarray(im.convert("L"))
-    occ = a[max(0, a.shape[0] - 4):] < 128
-    xs = [x for x in range(a.shape[1] // 4) if occ[:, x * 4:(x + 1) * 4].mean() > .40]
-    if not xs: raise ValueError("footprint has no occupied cells in bottom 4px")
-    return xs[0], (a.shape[0] - 4) // 4, xs[-1] - xs[0] + 1, 1
+    grid_h, grid_w = a.shape[0] // 4, a.shape[1] // 4
+    cells = np.zeros((grid_h, grid_w), dtype=bool)
+    for cy in range(grid_h):
+        for cx in range(grid_w):
+            cell = a[cy * 4:cy * 4 + 4, cx * 4:cx * 4 + 4]
+            cells[cy, cx] = np.mean(cell >= 128) > .40
+    if not cells.any():
+        raise ValueError("footprint.png has no solid cell; re-run tools/props/prerender_props.py")
+    runs = []
+    for cy, row in enumerate(cells):
+        cx = 0
+        while cx < grid_w:
+            if not row[cx]:
+                cx += 1
+                continue
+            x0 = cx
+            while cx < grid_w and row[cx]:
+                cx += 1
+            runs.append((x0, cy, cx - x0))
+    return runs
 
 
 def shadow_color(c):
@@ -275,7 +297,7 @@ def lapida_stamps(lay, phases, floor_pixels, floor_palette, floor_grid, prop_lab
                                                       pc * 8 + gx, pr * 8 + gy)
                 stamp_tiles[ty, tx] = tiles.add(pix.tobytes())
         result.append({"name": name, "w": W // 8, "h": H // 8, "phase_col": pc, "phase_row": pr,
-                       "foot_x": 0, "foot_y": 0, "foot_w": 0, "foot_h": 0, "foot_value": 0,
+                       "foot_runs": [], "foot_anchor_y_px": 0, "foot_value": 0,
                        "tiles": stamp_tiles, "depth_runs": []})
     return result
 
@@ -295,9 +317,14 @@ def piece_layout(name):
     rgba = np.asarray(color)
     if not np.isin(rgba[:, :, 3], [0, 255]).all(): raise ValueError(f"{name}: alpha must be binary")
     value = 0 if name.startswith("lapida_") else (3 if name in ("columna", "santo") else 1)
-    fx, fy, fw, fh = (0, 0, 0, 0) if value == 0 else footprint_base(foot)
-    depth_runs = piece_depth_runs(depth, rgba) if value == 3 else []
-    layout = {"name": name, "value": value, "foot": (fx, fy, fw, fh), "depth_runs": depth_runs,
+    try:
+        foot_runs = [] if value == 0 else footprint_runs(foot)
+    except ValueError as e:
+        raise ValueError(f"{name}: {e}") from None
+    foot_anchor_y_px = max((y * 4 + 4 for _, y, _ in foot_runs), default=0)
+    depth_runs = piece_depth_runs(depth, rgba, foot_anchor_y_px) if value != 0 else []
+    layout = {"name": name, "value": value, "foot_runs": foot_runs,
+              "foot_anchor_y_px": foot_anchor_y_px, "depth_runs": depth_runs,
               "rgba": rgba, "shadow": None, "ox": 0, "oy": 0, "w": w, "h": h}
     shadow_path = folder / "shadow.png"
     if shadow_path.exists():
@@ -313,7 +340,8 @@ def piece_layout(name):
         full[oy:oy + h, ox:ox + w] = rgba
         layout.update(rgba=full, shadow=shadow_img & (full[:, :, 3] < 128), ox=ox, oy=oy, w=sw, h=sh)
         # los datos de colision y profundidad se calculan en el encuadre de color.png y se desplazan
-        layout["foot"] = (fx + ox // 4, fy + oy // 4, fw, fh)
+        layout["foot_runs"] = [(x + ox // 4, y + oy // 4, n) for x, y, n in foot_runs]
+        layout["foot_anchor_y_px"] += oy
         layout["depth_runs"] = [(x + ox, y + oy, n, d) for x, y, n, d in depth_runs]
     return layout
 
@@ -356,7 +384,7 @@ def load_pieces(names, phases, floor_pixels, floor_grid, floor_palette, prop_col
                                         prop_lab, floor_count, tone_index, joint_index, tiles))
             continue
         q = quantize_props(Image.fromarray(rgba), prop_lab)
-        fx, fy, fw, fh = lay["foot"]
+        foot_runs = lay["foot_runs"]
         for pc, pr in piece_phases(name, phases):
             stamp_tiles = np.zeros((h // 8, w // 8), dtype=np.uint16)
             for ty in range(h // 8):
@@ -379,7 +407,8 @@ def load_pieces(names, phases, floor_pixels, floor_grid, floor_palette, prop_col
                                     pix[py, px] = fi
                     stamp_tiles[ty, tx] = tiles.add(pix.tobytes())
             result.append({"name": name, "w": w//8, "h": h//8, "phase_col": pc, "phase_row": pr,
-                           "foot_x": fx, "foot_y": fy, "foot_w": fw, "foot_h": fh,
+                           "foot_runs": foot_runs,
+                           "foot_anchor_y_px": lay["foot_anchor_y_px"],
                            "foot_value": value, "tiles": stamp_tiles,
                            "depth_runs": lay["depth_runs"]})
     return result, shadow_colors, decor_colors
@@ -416,11 +445,6 @@ def placements(stamps, seed, band, occupied):
             p = hash32((rh + attempt * 0x85ebca6b) & 0xffffffff)
             x, y = first_x + (p % xs) * 16, s["phase_row"] + ((p >> 16) % ys) * 16
             if x * 8 < lane + 32 and lane - 32 < (x + s["w"]) * 8: continue
-            foot_left = x * 2 + s["foot_x"]
-            foot_right = foot_left + s["foot_w"]
-            lane_left_cell = (lane - 32 + 3) // 4
-            lane_right_cell = (lane + 32) // 4
-            if foot_left < lane_right_cell and lane_left_cell < foot_right: continue
             if any(x < ox+ow and ox < x+s["w"] and y < oy+oh and oy < y+s["h"] for ox, oy, ow, oh in occupied): continue
             occupied.append((x, y, s["w"], s["h"]))
             yield idx, x, y
@@ -429,7 +453,7 @@ def placements(stamps, seed, band, occupied):
 
 def preview_and_budget(floor_map, stamps, tiles, seed=0xC0DE1234):
     tile_pixels = [np.frombuffer(t, np.uint8).reshape(8, 8) for t in tiles.data]
-    tilemap = np.tile(np.asarray(floor_map, dtype=np.uint16), (64, 1))
+    tilemap = np.tile(np.asarray(floor_map, dtype=np.uint16), (max(1, 1024 // len(floor_map)), 1))
     chosen = []
     for band in range(64):
         occupied = []
@@ -461,11 +485,113 @@ def preview_and_budget(floor_map, stamps, tiles, seed=0xC0DE1234):
     return worst, worst_occlusion, world, chosen
 
 
+def make_cathedral_map(floor_map, tiles, palette):
+    """Compose a 1024 px cathedral scene cycle over the 128 px floor cycle."""
+    def color_index(rgb):
+        value = bgr555(rgb)
+        if value not in palette:
+            palette.append(value)
+        return palette.index(value)
+
+    stone = color_index((88, 81, 70))
+    stone_light = color_index((118, 108, 91))
+    stone_dark = color_index((54, 49, 45))
+    lead = color_index((26, 22, 30))
+    burgundy = color_index((111, 32, 52))
+    violet = color_index((47, 47, 111))
+    blue = color_index((45, 74, 106))
+    gold = color_index((161, 106, 43))
+
+    period = np.zeros((128, 512), dtype=np.uint8)
+    source_tiles = [np.frombuffer(t, np.uint8).reshape(8, 8) for t in tiles.data]
+    for ty, row in enumerate(floor_map):
+        for tx, entry in enumerate(row):
+            entry = int(entry)
+            tile = source_tiles[entry & 0x3ff]
+            if entry & 0x400: tile = tile[:, ::-1]
+            if entry & 0x800: tile = tile[::-1, :]
+            period[ty*8:ty*8+8, tx*8:tx*8+8] = tile
+    period = np.tile(period, (8, 1))
+
+    for y in range(1024):
+        side_cycle = y // 128
+        for x in list(range(48)) + list(range(464, 512)):
+            lx = x if x < 48 else 511 - x
+            # Warm-gray ashlar with a readable plinth, pilaster and quiet mortar joints.
+            c = stone if ((lx // 8 + y // 24) & 1) else stone_dark
+            if 39 <= lx < 46: c = stone_light
+            if lx < 4: c = stone_dark
+            if y % 128 in (0, 1, 126, 127): c = stone_dark
+            if y % 128 in (2, 3, 124, 125) and lx < 47: c = stone_light
+            period[y, x] = c
+
+    def paint_pair(base_y, right=False):
+        for py in range(48):
+            for px in range(32):
+                xx = 31-px if right else px
+                x = 480 + xx if right else xx
+                y = base_y + py
+                # Twin lancets: pointed crowns, warm stone archivolt, lead and jewel tones.
+                for cx in (8, 24):
+                    dy = py - 3
+                    half = max(1, min(6, (dy * 3) // 14))
+                    dx = abs(px - cx)
+                    if dy < 0 or dy > 42 or dx > half:
+                        continue
+                    edge = dx == half or dy >= 40
+                    if edge:
+                        c = stone_light
+                    elif dx == 0 or py in (16, 30):
+                        c = lead
+                    elif (px + py // 5) % 7 == 0:
+                        c = gold
+                    elif (cx == 8) ^ (py >= 24) ^ ((px // 3) & 1):
+                        c = burgundy
+                    elif (py // 5) & 1:
+                        c = violet
+                    else:
+                        c = blue
+                    period[y, x] = c
+        # Central mullion and outer stone casing survive the 8x8 tile reduction.
+        for py in range(5, 47):
+            for lx in (15, 16):
+                x = (480 + (31-lx if right else lx)) if right else lx
+                period[base_y+py, x] = stone_light
+
+    # Emitter contract: side alternates every 256 px; the scene repeats after 1024 px.
+    for base_y, right in ((80, False), (336, True), (592, False), (848, True)):
+        paint_pair(base_y, right)
+
+    # A non-blocking crossing threshold with a rose inlay; at world Y=1056 each cycle.
+    for y in range(32, 56):
+        for x in range(48, 464):
+            period[y, x] = stone_light if y in (32, 33, 54, 55) else stone
+    for y in range(16, 72):
+        for x in range(228, 284):
+            dx, dy = x - 256, y - 44
+            radius = dx * dx + dy * dy
+            if radius <= 26*26:
+                if radius >= 22*22 or abs(dx) <= 1 or abs(dy) <= 1:
+                    period[y, x] = gold if (radius // 36) & 1 else lead
+                else:
+                    sector = ((math.atan2(dy, dx) + math.pi) * 6 / math.pi) % 6
+                    period[y, x] = (burgundy, violet, blue, gold, violet, burgundy)[int(sector)]
+
+    result = []
+    for ty in range(period.shape[0] // 8):
+        row = []
+        for tx in range(64):
+            tile = period[ty*8:ty*8+8, tx*8:tx*8+8]
+            row.append(tiles.add(tile.tobytes()))
+        result.append(row)
+    return result
+
+
 def emit(output, palette, tiles, floor_map, stamps, packed, floor_source, worst,
          worst_occlusion, floor_n, props_n):
     floor_path = str(floor_source).replace("\\", "/")
     out = [f"// Generated by tools/bake_cathedral_kit.py from floor {floor_path} and assets/environment/cathedral/props/render; floor={floor_n}, props={props_n}, shared={len(palette)}, tiles={len(tiles.data)}, worst_window={worst}, worst_occlusion_window={worst_occlusion}. Do not edit.\n",
-           '#include "strip_kit.h"\n\n', '// provisional, arte de muro pendiente\n',
+           '#include "strip_kit.h"\n\n', '// first-pass cathedral walls and alternating paired lancets\n',
            f"static const uint16_t s_palette[256] __attribute__((aligned(4))) = {{\n"]
     palette = palette + [0] * (256-len(palette))
     for i in range(0, 256, 16): out.append("    " + ", ".join(f"0x{c:04X}" for c in palette[i:i+16]) + ",\n")
@@ -481,16 +607,22 @@ def emit(output, palette, tiles, floor_map, stamps, packed, floor_source, worst,
         out.append(f"static const uint16_t s_stamp_{i}_tiles[{len(flat)}] = {{\n")
         for j in range(0, len(flat), 16): out.append("    " + ", ".join(str(int(x)) for x in flat[j:j+16]) + ",\n")
         out.append("};\n")
+        if s["foot_runs"]:
+            out.append(f"static const StripFootprintRun s_stamp_{i}_foot[{len(s['foot_runs'])}] = {{\n")
+            for x, y, n in s["foot_runs"]: out.append(f"    {{ {x}, {y}, {n} }},\n")
+            out.append("};\n")
         if s["depth_runs"]:
             out.append(f"static const StripDepthRun s_stamp_{i}_depth[{len(s['depth_runs'])}] = {{\n")
             for x, y, n, d in s["depth_runs"]: out.append(f"    {{ {x}, {y}, {n}, {d} }},\n")
             out.append("};\n")
     out.append("\nstatic const StripStamp s_stamps[] = {\n")
     for i, s in enumerate(stamps):
+        fr = f"{len(s['foot_runs'])}, s_stamp_{i}_foot" if s["foot_runs"] else "0, 0"
         dr = f"{len(s['depth_runs'])}, s_stamp_{i}_depth" if s["depth_runs"] else "0, 0"
-        out.append(f"    {{ {s['w']}, {s['h']}, {s['phase_col']}, {s['phase_row']}, {s['foot_x']}, {s['foot_y']}, {s['foot_w']}, {s['foot_h']}, {s['foot_value']}, s_stamp_{i}_tiles, {dr} }}, // {s['name']}\n")
+        out.append(f"    {{ {s['w']}, {s['h']}, {s['phase_col']}, {s['phase_row']}, {s['foot_anchor_y_px']}, {s['foot_value']}, s_stamp_{i}_tiles, {fr}, {dr} }}, // {s['name']}\n")
     out += ["};\n\n", "const StripKit g_strip_kit = {\n", "    .palette = s_palette,\n", "    .tiles = s_tiles,\n",
-            f"    .num_tiles = {len(tiles.data)},\n", "    .floor_h_tiles = 16,\n", "    .floor_map = s_floor_map,\n",
+            f"    .num_tiles = {len(tiles.data)},\n", f"    .map_h_tiles = {len(floor_map)},\n",
+            "    .floor_h_tiles = 16,\n", "    .floor_map = s_floor_map,\n",
             "    .floor_collision = s_floor_collision,\n", f"    .num_stamps = {len(stamps)},\n", "    .stamps = s_stamps,\n", "};\n"]
     with output.open("w", encoding="utf-8", newline="") as f: f.write("".join(out))
 
@@ -548,19 +680,7 @@ def build(floor_dir, phases=4, output=OUTPUT, preview=None, prop_names=DEFAULT_P
     floor_map = [[remap_entry(v) for v in row] for row in floor_map]
     for st in stamps:
         st["tiles"] = np.vectorize(remap_entry, otypes=[np.uint16])(st["tiles"])
-    # los bordes del suelo no cambian por las sombras: sus colores no entran en la eleccion
-    shadow_only = set(shadow_colors) - set(props)
-    decor_only = set(decor_colors)
-    edge_pool = [c for c in palette[1:] if c not in shadow_only and c not in decor_only]
-    dark = min(edge_pool, key=lambda c: int(np.dot(rgb555(c), [.2126, .7152, .0722])))
-    luminance = lambda c: float(np.dot(rgb555(c), [.2126, .7152, .0722]))
-    light = next((c for c in sorted(set(edge_pool), key=luminance) if luminance(c) > luminance(dark)), dark)
-    left = np.full((8, 8), palette.index(dark), np.uint8); left[:, 7] = palette.index(light)
-    right = np.full((8, 8), palette.index(dark), np.uint8); right[:, 0] = palette.index(light)
-    l_id, r_id = tiles.add(left.tobytes()), tiles.add(right.tobytes())
-    for row in floor_map:
-        row[:6] = [l_id] * 6
-        row[58:] = [r_id] * 6
+    map_map = make_cathedral_map(floor_map, tiles, palette)
     if len(palette) > 256: raise ValueError(f"shared palette requires {len(palette)} entries including transparent")
     collision = np.zeros((32, 128), np.uint8)
     collision[:, :12] = 3; collision[:, 116:] = 3
@@ -568,17 +688,17 @@ def build(floor_dir, phases=4, output=OUTPUT, preview=None, prop_names=DEFAULT_P
     packed = (flat[0::4] | (flat[1::4] << 2) | (flat[2::4] << 4) | (flat[3::4] << 6)).astype(np.uint8)
     # Compactar: tras el remapeo de colores los tiles previos de las piezas quedan sin referencia; no se emiten.
     used = {0}
-    for row in floor_map: used |= {int(v) & 0x3ff for v in row}
+    for row in map_map: used |= {int(v) & 0x3ff for v in row}
     for st in stamps: used |= {int(v) & 0x3ff for v in st["tiles"].flat if int(v)}
     order = sorted(used); new_id = {o: n for n, o in enumerate(order)}
     def renum(v):
         v = int(v); return v if not v else (new_id[v & 0x3ff] | (v & 0xc00))
-    floor_map = [[renum(v) if int(v) else 0 for v in row] for row in floor_map]
+    map_map = [[renum(v) if int(v) else 0 for v in row] for row in map_map]
     for st in stamps: st["tiles"] = np.vectorize(renum, otypes=[np.uint16])(st["tiles"])
     tiles.data = [tiles.data[o] for o in order]
     tiles.index = {t: i for i, t in enumerate(tiles.data)}
     if len(tiles.data) > 1024: raise ValueError(f"total tile count {len(tiles.data)} exceeds 1024")
-    worst, worst_occlusion, sample, chosen = preview_and_budget(floor_map, stamps, tiles)
+    worst, worst_occlusion, sample, chosen = preview_and_budget(map_map, stamps, tiles)
     if worst >= 440: raise ValueError(f"worst 33x25 window has {worst} tiles; must be < 440")
     if worst_occlusion >= OCCLUSION_CAPACITY:
         raise ValueError(f"worst 16-band occlusion window has {worst_occlusion} runs; capacity is {OCCLUSION_CAPACITY}")
@@ -588,8 +708,8 @@ def build(floor_dir, phases=4, output=OUTPUT, preview=None, prop_names=DEFAULT_P
         im = Image.fromarray(sample, "P"); im.putpalette(rgb_palette)
         preview.parent.mkdir(parents=True, exist_ok=True); im.convert("RGB").save(preview)
     floor_n = len(set(floor_colors)); props_n = len(set(props))
-    emit(output, palette, tiles, floor_map, stamps, packed, floor_dir, worst, worst_occlusion, floor_n, props_n)
-    print(f"palette entries: floor={floor_n}, props={props_n}, shadow={len(shadow_colors)} new, lapida={len(decor_colors)} new, wall=0 new, shared={len(palette)}/256")
+    emit(output, palette, tiles, map_map, stamps, packed, floor_dir, worst, worst_occlusion, floor_n, props_n)
+    print(f"palette entries: floor={floor_n}, props={props_n}, shadow={len(shadow_colors)} new, lapida={len(decor_colors)} new, wall_palette=8, shared={len(palette)}/256")
     print(f"tiles: {len(tiles.data)}/1024; worst window: {worst}/<440; selected pieces in 64 bands: {len(chosen)}")
     print(f"worst 16-band occlusion runs: {worst_occlusion}/{OCCLUSION_CAPACITY}")
     if preview: print(f"preview: {preview}")

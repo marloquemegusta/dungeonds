@@ -15,6 +15,9 @@
 #ifndef PLAYGROUND
 #define PLAYGROUND 0
 #endif
+#ifndef CATHEDRAL_PLAYGROUND
+#define CATHEDRAL_PLAYGROUND 0
+#endif
 
 // Scenario sandbox (build variant "sandbox", -DSANDBOX=1; never in the shipping ROM).
 // A headless scenario fills g_sandbox with `poke` steps and finally increments `seq`; the game

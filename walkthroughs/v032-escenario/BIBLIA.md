@@ -42,7 +42,7 @@ Antecedentes: [INFORME_INTENTOS.md](INFORME_INTENTOS.md) (por qué fallaron los 
 | Rejilla de colocación | 8 px (tiles). Baldosa Wang 32×16; baldosa de transición 16×16. |
 | Escala de juego | Las piezas pueden ir un 30-50 % por encima de su tamaño real si lo necesitan para leerse. Se decide por pieza mirando el marine al lado. |
 
-**Por decidir:** la altura del tramo. Puede ser 1 banda (128), 2 bandas (256) o pasar el kit a bandas de 192 (una pantalla). Hoy el motor solo sabe de bandas de 128 px.
+La altura y las reglas de composición del tramo lógico están en `DESIGN.md` §6.9.1b, Sesión 1. El usuario dio paso a la sesión 2 usando esa composición como base.
 
 ## 3. Presupuestos
 

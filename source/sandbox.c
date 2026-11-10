@@ -31,8 +31,13 @@ _Static_assert(sizeof(SandboxMailbox) == 112, "sandbox layout: SandboxMailbox is
 #if PLAYGROUND
 // Built-in playground layout: the player stands in the south hall and dummies are parked around
 // it. Dummies that die come back by themselves after PG_RESPAWN_FRAMES simulated frames of calm.
+#if CATHEDRAL_PLAYGROUND
+#define PG_PLAYER_X 256
+#define PG_PLAYER_Y 1792
+#else
 #define PG_PLAYER_X 384
 #define PG_PLAYER_Y 700
+#endif
 #define PG_RESPAWN_FRAMES 90     // by then the death chunks (life 28..35 frames) are gone
 #define PG_DUMMY_COUNT 13
 _Static_assert(PG_DUMMY_COUNT <= SANDBOX_MAX_ENEMIES, "playground: every dummy fits in the mailbox");
@@ -44,6 +49,21 @@ typedef struct {
 } PlaygroundDummy;
 
 static const PlaygroundDummy s_dummies[PG_DUMMY_COUNT] = {
+#if CATHEDRAL_PLAYGROUND
+    { SANDBOX_ENEMY_CHARGER, 192, 1680 },
+    { SANDBOX_ENEMY_SHOOTER, 224, 1680 },
+    { SANDBOX_ENEMY_CHARGER, 288, 1680 },
+    { SANDBOX_ENEMY_SHOOTER, 320, 1680 },
+    { SANDBOX_ENEMY_SHOOTER, 176, 1760 },
+    { SANDBOX_ENEMY_CHARGER, 208, 1760 },
+    { SANDBOX_ENEMY_CHARGER, 304, 1760 },
+    { SANDBOX_ENEMY_SHOOTER, 336, 1760 },
+    { SANDBOX_ENEMY_CHARGER, 192, 1840 },
+    { SANDBOX_ENEMY_SHOOTER, 224, 1840 },
+    { SANDBOX_ENEMY_SHOOTER, 288, 1840 },
+    { SANDBOX_ENEMY_CHARGER, 320, 1840 },
+    { SANDBOX_ENEMY_CHARGER, 256, 1720 },
+#else
     /* east row, y = 700 */
     { SANDBOX_ENEMY_CHARGER, 470, 700 },
     { SANDBOX_ENEMY_SHOOTER, 530, 700 },
@@ -61,6 +81,7 @@ static const PlaygroundDummy s_dummies[PG_DUMMY_COUNT] = {
     /* close to the player and to the south wall */
     { SANDBOX_ENEMY_CHARGER, 424, 716 },
     { SANDBOX_ENEMY_SHOOTER, 380, 745 },
+#endif
 };
 
 static int s_playground_ready;                  // the built-in layout was considered at the first update

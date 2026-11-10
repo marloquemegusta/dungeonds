@@ -104,14 +104,12 @@ static uint8_t *s_bot_bg_tiles_vram;
 static Player s_player;
 static int s_cam_x = 0;
 static int s_cam_y = 0;
-#if SANDBOX || PLAYGROUND
+#if (SANDBOX || PLAYGROUND) && !CATHEDRAL_PLAYGROUND
 static const int s_strip_mode = 0;
 #else
 static const int s_strip_mode = 1;
 #endif
-static int s_player_see_through;
 static int s_draw_item_depth;
-static int s_draw_item_is_player;
 static uint32_t s_frame_index = 0;
 
 typedef struct {
@@ -236,11 +234,6 @@ static inline uint32_t find_first_occlusion_run_in_row(int row, int cam_x) {
     }
     return low;
 }
-static inline uint8_t world_collision_flags_rt(int cx, int cy) {
-    uint32_t index = (uint32_t)cy * g_arena->collision_w + (uint32_t)cx;
-    return (g_arena->collision[index >> 2] >> ((index & 3) * 2)) & 0x03;
-}
-
 // Occlusion queries read the static baked runs directly (sorted by y then x, never
 // overlapping inside a row, pixel exact). A run hides an actor whose depth is lower.
 static inline int occlusion_blocks_pixel(int x, int y, int actor_depth) {
@@ -304,7 +297,6 @@ static void blit_stride(uint16_t *buffer, const uint16_t *src, int pitch, int sw
         if (sx0 >= sx1) return;
     }
 
-    int see_through = (s_draw_item_is_player || s_player_see_through) && (s_frame_index & 1);
     for (int y = sy0; y < sy1; y++) {
         const uint16_t *srow = &src[y * pitch];
         uint16_t *drow = &buffer[(oy + y) * SCREEN_W + ox];
@@ -313,7 +305,7 @@ static void blit_stride(uint16_t *buffer, const uint16_t *src, int pitch, int sw
         int world_x0 = left + sx0;
         int world_x1 = left + sx1;
         dirty_row(oy + y, ox + sx0, ox + sx1);
-        if (depth >= 0 && !see_through && (uint32_t)world_y < g_arena->world_h) {
+        if (depth >= 0 && (uint32_t)world_y < g_arena->world_h) {
             uint32_t re;
             uint32_t k = find_hiding_run(world_y, world_x0, world_x1, depth, &re);
             if (k < re) {
@@ -413,7 +405,7 @@ static void draw_shadow_mask(uint16_t *buffer, const uint8_t *mask, int sw, int 
         dirty_row(oy + y, ox + sx0, ox + sx1);
         // rn walks the runs of this row left to right; null when nothing can hide the shadow.
         const DungeonOcclusionRun *rn = NULL, *rend = NULL;
-        if (!(s_draw_item_is_player && s_player_see_through) && (uint32_t)world_y < g_arena->world_h) {
+        if ((uint32_t)world_y < g_arena->world_h) {
             uint32_t re;
             if (find_hiding_run(world_y, left + sx0, left + sx1, depth, &re) < re) {
                 rn = &g_arena->occlusion_runs[find_first_occlusion_run_in_row(world_y, left + sx0)];
@@ -566,68 +558,6 @@ static void update_screen_hardware_bg(int is_sub, u16 *map_ptr, int cam_x, int c
 // Composition
 // ---------------------------------------------------------------------------
 
-// While the player is see-through, mark where hidden wall footprints meet the
-// floor: the collision grid edge, drawn only over occluder surfaces (floor already shows it).
-#define WALL_BASE_COLOR (RGB15(3, 3, 6) | BIT(15))
-// A wall-base pixel is drawn only where some occluder run covers it (depth -1 hides nothing less).
-static inline void wall_base_px(uint16_t *buffer, int cam_x, int cam_y, int wx, int wy) {
-    int sx = wx - cam_x, sy = wy - cam_y;
-    if ((uint32_t)sx >= SCREEN_W || (uint32_t)sy >= SCREEN_H) return;
-    if (!occlusion_blocks_pixel(wx, wy, -1)) return;
-    buffer[sy * SCREEN_W + sx] = WALL_BASE_COLOR;
-    dirty_row(sy, sx, sx + 1);
-}
-
-// Four consecutive pixels of one world row with a single run lookup.
-static inline void wall_base_hrow(uint16_t *buffer, int cam_x, int cam_y, int wx, int wy) {
-    int sy = wy - cam_y;
-    if ((uint32_t)wy >= g_arena->world_h || (uint32_t)sy >= SCREEN_H) return;
-    uint32_t i = find_first_occlusion_run_in_row(wy, wx);
-    uint32_t re = g_arena->occlusion_row_start[wy + 1];
-    for (int k = 0; k < COLLISION_SCALE; k++) {
-        int x = wx + k;
-        int sx = x - cam_x;
-        while (i < re && (int)g_arena->occlusion_runs[i].x + (int)g_arena->occlusion_runs[i].length <= x) i++;
-        if (i >= re) break;
-        if ((int)g_arena->occlusion_runs[i].x > x || (uint32_t)sx >= SCREEN_W) continue;
-        buffer[sy * SCREEN_W + sx] = WALL_BASE_COLOR;
-        dirty_row(sy, sx, sx + 1);
-    }
-}
-__attribute__((target("arm"), optimize("O3"), noinline))
-static void draw_hidden_wall_base(uint16_t *buffer, int cam_x, int cam_y, int psx, int psy) {
-    enum { BOX_CELLS_W = 14, BOX_CELLS_H = 10 };
-    int cx0 = (psx - 28) / COLLISION_SCALE;
-    int cy0 = (psy - 20) / COLLISION_SCALE;
-    if (cx0 < 1) cx0 = 1;
-    if (cy0 < 1) cy0 = 1;
-    if (cx0 + BOX_CELLS_W > g_arena->collision_w - 1) cx0 = g_arena->collision_w - 1 - BOX_CELLS_W;
-    if (cy0 + BOX_CELLS_H > g_arena->collision_h - 1) cy0 = g_arena->collision_h - 1 - BOX_CELLS_H;
-
-    // Blocked bit of the three rows around the current one, read once per row.
-    uint8_t rows[3][BOX_CELLS_W + 2];
-    for (int r = 0; r < 3; r++)
-        for (int c = 0; c < BOX_CELLS_W + 2; c++)
-            rows[r][c] = world_collision_flags_rt(cx0 - 1 + c, cy0 - 1 + r) & 0x01;
-
-    for (int j = 0; j < BOX_CELLS_H; j++) {
-        for (int i = 0; i < BOX_CELLS_W; i++) {
-            if (!rows[1][i + 1]) continue;
-            int wx = (cx0 + i) * COLLISION_SCALE, wy = (cy0 + j) * COLLISION_SCALE;
-            int lx = wx - cam_x, ly = wy - cam_y;
-            if ((uint32_t)lx >= SCREEN_W || (uint32_t)ly >= SCREEN_H) continue;
-            int up = !rows[0][i + 1], dn = !rows[2][i + 1];
-            int lf = !rows[1][i], rt = !rows[1][i + 2];
-            if (up) wall_base_hrow(buffer, cam_x, cam_y, wx, wy);
-            if (dn) wall_base_hrow(buffer, cam_x, cam_y, wx, wy + 3);
-            for (int k = 0; k < COLLISION_SCALE; k++) {
-                if (lf) wall_base_px(buffer, cam_x, cam_y, wx, wy + k);
-                if (rt) wall_base_px(buffer, cam_x, cam_y, wx + 3, wy + k);
-            }
-        }
-    }
-}
-
 static void draw_player(uint16_t *buffer, int cam_x, int cam_y) {
     int px = player_screen_x(s_player.x, s_player.y);
     int py = player_screen_y(s_player.x, s_player.y);
@@ -755,20 +685,6 @@ static void clear_dirty_spans(uint16_t *page, DirtySpan *spans) {
 #endif
 }
 
-// Whether the player stands behind a wall (the actors are then drawn see-through, on both
-// screens). Computed once per frame from the player alone.
-static void update_player_see_through(void) {
-    int cx = player_screen_x(s_player.x, s_player.y);
-    int cy = player_screen_y(s_player.x, s_player.y);
-    s_player_see_through = 0;
-    for (int k = 8; k <= 24; k += 8) {
-        if (occlusion_blocks_pixel(cx, cy - k, cy)) {
-            s_player_see_through = 1;
-            break;
-        }
-    }
-}
-
 static void render_screen(uint16_t *buffer, DirtySpan *spans, int cam_x, int cam_y,
                           uint32_t *out_floor, uint32_t *out_shadow, uint32_t *out_blit) {
     DrawItem items[MAX_DRAW_ITEMS + MAX_ENEMIES + MAX_DEATH_CHUNKS + 1];
@@ -846,7 +762,6 @@ static void render_screen(uint16_t *buffer, DirtySpan *spans, int cam_x, int cam
     uint32_t t_sh0 = cpuGetTiming();
     PP_T0(pp_shadow);
     for (int i = 0; i < count; i++) {
-        s_draw_item_is_player = (items[i].ref == -1);
         if (items[i].ref == -1) {
             draw_shadow_mask(buffer, g_character_shadow_masks[s_player.char_id][s_player.dir][s_player.frame],
                              PLAYER_SHADOW_W, PLAYER_SHADOW_H,
@@ -865,13 +780,6 @@ static void render_screen(uint16_t *buffer, DirtySpan *spans, int cam_x, int cam
         }
     }
     PP_ADD(PP_SHADOW, pp_shadow);
-    if (s_player_see_through) {
-        PP_T0(pp_wall);
-        for (int i = 0; i < count; i++)
-            if (items[i].ref == -1)
-                draw_hidden_wall_base(buffer, cam_x, cam_y, items[i].cx, items[i].cy);
-        PP_ADD(PP_WALLBASE, pp_wall);
-    }
     uint32_t shadow_ticks = cpuGetTiming() - t_sh0;
 
     // 2) Sprites back-to-front (painter's algorithm)
@@ -893,7 +801,6 @@ static void render_screen(uint16_t *buffer, DirtySpan *spans, int cam_x, int cam
         s_draw_item_depth = items[i].depth;
         int sp = items[i].ref;
         CRASH_MARK(CL_DRAW_ITEM, sp, items[i].depth);
-        s_draw_item_is_player = (sp == -1);
         if (sp == -1) {
             draw_player(buffer, cam_x, cam_y);
         } else if (sp <= -2 - MAX_ENEMIES) {
@@ -1311,6 +1218,10 @@ static void enemies_update(void) {
 // Strip mode (DESIGN.md 6.0): the horde from above replaces the v0.2 packs and modifiers.
 // Runs in the enemies slot of the frame so PERF_PROFILE charges it to `en`.
 static void strip_enemies_update(void) {
+#if CATHEDRAL_PLAYGROUND
+    // Fixed sandbox dummies replace the procedural horde in the review ROM.
+    return;
+#endif
 #if LAPIDA_DEBUG
     // "lapidas" variant: a static look scene with no horde.
     for (int i = 0; i < MAX_ENEMIES; i++) g_enemies[i].active = 0;
@@ -1687,8 +1598,13 @@ int main(void) {
     // Load Background Palette to Main and Sub engines
     // First run: the DS real-time clock varies between boots (the frame counter and the
     // timer right after cpuStartTiming do not), so the first map is not always the same.
-    if (s_strip_mode) strip_start((uint32_t)time(NULL) * 0x9e3779b9u ^ (uint32_t)cpuGetTiming());
-    else arena_select(0);
+    if (s_strip_mode) {
+        uint32_t seed = (uint32_t)time(NULL) * 0x9e3779b9u ^ (uint32_t)cpuGetTiming();
+#if CATHEDRAL_PLAYGROUND
+        seed = 0xC0DE1234u; // stable review layout for repeatable prop collision/occlusion checks
+#endif
+        strip_start(seed);
+    } else arena_select(0);
     apply_arena_palette();
 
     // BG1 map lives at 0x06000000; 1024 streamed tile slots start at +64 KiB.
@@ -1757,7 +1673,6 @@ int main(void) {
     init_bg_tile_cache(&s_bot_bg_tile_cache, BG_TILE_CACHE_CAPACITY, s_bot_bg_tiles_vram);
     update_screen_hardware_bg(1, s_top_map_ptr, s_cam_x, s_cam_y - SCREEN_H);
 
-    update_player_see_through();
     render_screen(s_top_page, s_dirty_top, s_cam_x, s_cam_y - SCREEN_H, NULL, NULL, NULL);
     render_screen(bot_page_ptr(s_bot_active_page), s_dirty[s_bot_active_page == 24], s_cam_x, s_cam_y, NULL, NULL, NULL);
     draw_run_hud(bot_page_ptr(s_bot_active_page));
@@ -1842,7 +1757,6 @@ int main(void) {
         uint32_t top_ticks = 0;
         // Both screens draw the same layers. The upper page is single buffered: it is drawn
         // first, right after the logic, while the frame is still in or near VBlank.
-        update_player_see_through();
         uint32_t t_top = cpuGetTiming();
         render_screen(s_top_page, s_dirty_top, view_x, view_y - SCREEN_H, &top_floor, &top_sh, &top_bl);
         if (s_strip_mode) {
@@ -1891,7 +1805,7 @@ int main(void) {
         if (vblanks_elapsed == 0) vblanks_elapsed = 1;
 #if PERF_PROFILE
         PP_SET(PP_FRAME, cpuGetTiming() - frame_start_ticks);
-        perfprof_frame_end(s_frame_index, vblanks_elapsed, s_vblank_count, s_bot_active_page, s_player_see_through);
+        perfprof_frame_end(s_frame_index, vblanks_elapsed);
 #endif
 
         g_perf.frame_index++;

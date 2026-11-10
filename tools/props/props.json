@@ -1,6 +1,6 @@
 {
-  "banco_roto":    {"fbx": "banco_roto.fbx",    "yaw": 45,  "target_width": 72},
-  "banco_volcado": {"fbx": "banco_volcado.fbx", "yaw": 45,  "target_width": 72},
+  "banco_roto":    {"fbx": "banco_roto.fbx",    "yaw": 45,  "target_width": 72, "footprint_from": "depth"},
+  "banco_volcado": {"fbx": "banco_volcado.fbx", "yaw": 45,  "target_width": 72, "footprint_from": "depth"},
   "columna":       {"fbx": "columna.fbx",       "yaw": 0,   "target_width": 40},
   "relicario":     {"fbx": "relicario.fbx",     "yaw": -45,   "target_width": 32},
   "santo":         {"fbx": "santo.fbx",         "yaw": 180, "target_width": 32},

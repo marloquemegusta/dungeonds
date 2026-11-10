@@ -1,0 +1,159 @@
+{
+  "name": "cathedral_props_depth_collision",
+  "description": "With the deterministic cathedral seed, push into a real column footprint from the north (actor hidden behind it) and from the south (actor drawn in front), checking collision stops movement both ways. Pokes below y=768 trigger a 512 px rebase: the first poke (528) lands at ~1040 after it, so the column sits at y~1056-1077 and the south approach starts at 1100 in that same frame.",
+  "state": {
+    "elf": "../.ds-game-dev/build/out/dungeonds-cathedral-playground-perf.elf",
+    "symbols": {
+      "sandbox": "g_sandbox",
+      "nav": "g_nav_state"
+    },
+    "default_symbol": "nav",
+    "fields": {
+      "x": {
+        "offset": 0,
+        "type": "s32"
+      },
+      "y": {
+        "offset": 4,
+        "type": "s32"
+      },
+      "seq": {
+        "symbol": "sandbox",
+        "offset": 0,
+        "type": "u32"
+      },
+      "ack": {
+        "symbol": "sandbox",
+        "offset": 4,
+        "type": "u32"
+      },
+      "player_x": {
+        "symbol": "sandbox",
+        "offset": 8,
+        "type": "s16"
+      },
+      "player_y": {
+        "symbol": "sandbox",
+        "offset": 10,
+        "type": "s16"
+      }
+    }
+  },
+  "steps": [
+    {
+      "frames": 1000
+    },
+    {
+      "poke": [
+        {
+          "field": "player_x",
+          "value": 342
+        },
+        {
+          "field": "player_y",
+          "value": 528
+        },
+        {
+          "field": "seq",
+          "value": 100
+        }
+      ],
+      "frames": 150,
+      "button_down": "DOWN",
+      "capture": "00_at_column_footprint",
+      "state_capture": "edge"
+    },
+    {
+      "frames": 150,
+      "capture": "01_held_against_column",
+      "state_capture": "blocked"
+    },
+    {
+      "button_up": "DOWN",
+      "frames": 2
+    },
+    {
+      "button_down": "UP",
+      "frames": 30,
+      "capture": "02_moved_away",
+      "state_capture": "away"
+    },
+    {
+      "button_up": "UP",
+      "frames": 2
+    },
+    {
+      "poke": [
+        {
+          "field": "player_x",
+          "value": 342
+        },
+        {
+          "field": "player_y",
+          "value": 1100
+        },
+        {
+          "field": "seq",
+          "value": 101
+        }
+      ],
+      "frames": 150,
+      "button_down": "UP",
+      "capture": "03_front_of_column",
+      "state_capture": "front_edge"
+    },
+    {
+      "frames": 60,
+      "capture": "04_held_in_front",
+      "state_capture": "front_blocked"
+    },
+    {
+      "button_up": "UP",
+      "frames": 2
+    }
+  ],
+  "assertions": {
+    "state_changes": [
+      {
+        "field": "ack",
+        "at": "edge",
+        "equals": 100
+      },
+      {
+        "field": "y",
+        "from": "edge",
+        "to": "blocked",
+        "max_abs_delta": 2000
+      },
+      {
+        "field": "y",
+        "from": "away",
+        "to": "blocked",
+        "min_delta": 500
+      },
+      {
+        "field": "ack",
+        "at": "front_edge",
+        "equals": 101
+      },
+      {
+        "field": "y",
+        "from": "front_edge",
+        "to": "front_blocked",
+        "max_abs_delta": 2000
+      }
+    ],
+    "screen_changes": [
+      {
+        "from": "00_at_column_footprint",
+        "to": "01_held_against_column",
+        "min_changed_pixels": 10
+      },
+      {
+        "from": "01_held_against_column",
+        "to": "02_moved_away",
+        "min_changed_pixels": 20
+      }
+    ]
+  }
+}

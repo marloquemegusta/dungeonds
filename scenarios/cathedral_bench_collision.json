@@ -1,0 +1,168 @@
+{
+  "name": "cathedral_bench_collision",
+  "description": "Deterministic cathedral seed. The first poke (528) triggers the 512 px rebase; in that frame banco_roto has its top-left at world (320,896) and its footprint (from the depth plan) covers y 916-935 across x 336-408. At x=350 the old footprint (a single 28x4 px strip at x 376-404) let the actor walk through. Push in from the south (actor in front) and from the north (actor behind the backrest).",
+  "state": {
+    "elf": "../.ds-game-dev/build/out/dungeonds-cathedral-playground-perf.elf",
+    "symbols": {
+      "sandbox": "g_sandbox",
+      "nav": "g_nav_state"
+    },
+    "default_symbol": "nav",
+    "fields": {
+      "x": {
+        "offset": 0,
+        "type": "s32"
+      },
+      "y": {
+        "offset": 4,
+        "type": "s32"
+      },
+      "seq": {
+        "symbol": "sandbox",
+        "offset": 0,
+        "type": "u32"
+      },
+      "ack": {
+        "symbol": "sandbox",
+        "offset": 4,
+        "type": "u32"
+      },
+      "player_x": {
+        "symbol": "sandbox",
+        "offset": 8,
+        "type": "s16"
+      },
+      "player_y": {
+        "symbol": "sandbox",
+        "offset": 10,
+        "type": "s16"
+      }
+    }
+  },
+  "steps": [
+    {
+      "frames": 1000
+    },
+    {
+      "poke": [
+        {
+          "field": "player_x",
+          "value": 342
+        },
+        {
+          "field": "player_y",
+          "value": 528
+        },
+        {
+          "field": "seq",
+          "value": 100
+        }
+      ],
+      "frames": 60
+    },
+    {
+      "poke": [
+        {
+          "field": "player_x",
+          "value": 350
+        },
+        {
+          "field": "player_y",
+          "value": 965
+        },
+        {
+          "field": "seq",
+          "value": 101
+        }
+      ],
+      "frames": 10,
+      "state_capture": "south_start"
+    },
+    {
+      "button_down": "UP",
+      "frames": 120,
+      "capture": "00_south_contact",
+      "state_capture": "south_edge"
+    },
+    {
+      "frames": 60,
+      "capture": "01_south_held",
+      "state_capture": "south_blocked"
+    },
+    {
+      "button_up": "UP",
+      "frames": 2
+    },
+    {
+      "poke": [
+        {
+          "field": "player_x",
+          "value": 390
+        },
+        {
+          "field": "player_y",
+          "value": 880
+        },
+        {
+          "field": "seq",
+          "value": 102
+        }
+      ],
+      "frames": 10,
+      "state_capture": "north_start"
+    },
+    {
+      "button_down": "DOWN",
+      "frames": 120,
+      "capture": "02_north_contact",
+      "state_capture": "north_edge"
+    },
+    {
+      "frames": 60,
+      "capture": "03_north_held",
+      "state_capture": "north_blocked"
+    },
+    {
+      "button_up": "DOWN",
+      "frames": 2
+    }
+  ],
+  "assertions": {
+    "state_changes": [
+      {
+        "field": "ack",
+        "at": "south_start",
+        "equals": 101
+      },
+      {
+        "field": "y",
+        "from": "south_start",
+        "to": "south_edge",
+        "max_abs_delta": 11520
+      },
+      {
+        "field": "y",
+        "from": "south_edge",
+        "to": "south_blocked",
+        "max_abs_delta": 2000
+      },
+      {
+        "field": "ack",
+        "at": "north_start",
+        "equals": 102
+      },
+      {
+        "field": "y",
+        "from": "north_start",
+        "to": "north_edge",
+        "max_abs_delta": 11520
+      },
+      {
+        "field": "y",
+        "from": "north_edge",
+        "to": "north_blocked",
+        "max_abs_delta": 2000
+      }
+    ]
+  }
+}

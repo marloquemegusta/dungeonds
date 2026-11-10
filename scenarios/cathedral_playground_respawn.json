@@ -1,0 +1,49 @@
+{
+  "name": "cathedral_playground_respawn",
+  "description": "Cathedral review ROM keeps its fixed playground enemies still and respawns a downed dummy automatically.",
+  "state": {
+    "elf": "../.ds-game-dev/build/out/dungeonds-cathedral-playground-perf.elf",
+    "symbols": {
+      "enemies": "g_enemies",
+      "sandbox_ai": "g_sandbox_freeze_ai",
+      "sandbox": "g_sandbox",
+      "nav": "g_nav_state",
+      "pg_calm": "s_dummy_calm",
+      "pg_slot": "s_dummy_slot",
+      "pg_managed": "s_pg_managed"
+    },
+    "default_symbol": "enemies",
+    "fields": {
+      "e0_x": { "offset": 0, "type": "s32" },
+      "e0_y": { "offset": 4, "type": "s32" },
+      "e0_active": { "offset": 24, "type": "s32" },
+      "e0_hp": { "offset": 28, "type": "s32" },
+      "frozen": { "symbol": "sandbox_ai", "offset": 0, "type": "s32" },
+      "seq": { "symbol": "sandbox", "offset": 0, "type": "u32" },
+      "ack": { "symbol": "sandbox", "offset": 4, "type": "u32" },
+      "flags": { "symbol": "sandbox", "offset": 15, "type": "u8" },
+      "enemy_count": { "symbol": "sandbox", "offset": 14, "type": "u8" },
+      "loop_frame": { "symbol": "nav", "offset": 32, "type": "u32" },
+      "nav_enemies": { "symbol": "nav", "offset": 28, "type": "u32" },
+      "calm0": { "symbol": "pg_calm", "offset": 0, "type": "s32" },
+      "slot0": { "symbol": "pg_slot", "offset": 0, "type": "s32" },
+      "managed": { "symbol": "pg_managed", "offset": 0, "type": "s32" }
+    }
+  },
+  "steps": [
+    { "frames": 1000, "capture": "00_cathedral_dummies_still", "state_capture": "parked" },
+    { "poke": [{ "field": "e0_hp", "value": 0 }], "frames": 30, "capture": "01_dummy_down", "state_capture": "gone" },
+    { "frames": 150, "capture": "02_dummy_respawned", "state_capture": "respawned" }
+  ],
+  "assertions": {
+    "state_changes": [
+      { "field": "frozen", "at": "parked", "equals": 1 },
+      { "field": "e0_active", "at": "parked", "equals": 1 },
+      { "field": "e0_hp", "at": "gone", "equals": 0 },
+      { "field": "e0_hp", "at": "respawned", "min_value": 1 },
+      { "field": "e0_active", "at": "respawned", "equals": 1 },
+      { "field": "e0_x", "from": "parked", "to": "respawned", "max_abs_delta": 0 },
+      { "field": "e0_y", "from": "parked", "to": "respawned", "max_abs_delta": 0 }
+    ]
+  }
+}

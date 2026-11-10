@@ -18,9 +18,8 @@
   - Muerte del enemigo: la silueta se rompe en fragmentos extraídos de sus propios píxeles que salen según el impacto y caen con una parábola breve.
 
 ## 3. Decisiones Abiertas
-- **Lectura tras paredes (transparencias):** qué se ve del personaje y de los enemigos detrás de una pared y cómo se marca la base de la pared. Sin decidir; preguntas en `TECHNICAL.md` §4.6. No se toca código hasta decidirlo aquí.
+- **Actores detrás de muros (decidido 2026-11-10):** personaje y enemigos se ocultan según la profundidad horneada; no parpadean ni reciben transparencias, siluetas o marcas negras auxiliares cuando quedan detrás. La base caminable no se dibuja sobre el muro.
 - **Sonido:** fuera de la v0.3.
-- **Transparencias tras paredes:** fuera de la v0.3; el comportamiento provisional actual no se amplía. Con muros sobre todo laterales en la franja vertical (§6.2) pesa menos que en la mazmorra.
 - **Por decidir antes de cada versión (§6.9):** árbol de mejoras de las dos clases y su presentación (antes de la 0.4); enjambre, élites, cofres y emboscadas (antes de la 0.5); catálogo y reglas de tramos, tema de los dos biomas, minijefe, jefe y aspecto final de la marea (antes de la 0.6).
 - **Tuning de combate y stats:** se hace jugando en la DS en la 0.3.1 (§6.9.1), sobre los valores de partida de §6.
 - **Ya no aplican (v0.2):** mazmorra más grande con puertas y rediseño de pedestales; los sustituye la v0.3.
@@ -396,19 +395,34 @@ Tras cerrar la 0.3.1, el usuario quiere dedicar dos versiones al aspecto antes d
 
   - **Hoja de ruta para cerrar el escenario de la catedral (Sesiones atómicas):**
     Para que la catedral tenga forma y se sienta como un templo gótico completo y jugable antes de dar por cerrada la 0.3.2, el trabajo restante se divide en 5 sesiones atómicas:
-    1. **Sesión 1: Composición espacial y distribución del mapa (Layout de catedral)**.
-       - Definir la estructura arquitectónica de la planta: nave central de avance vertical, naves laterales, crucero y capillas.
-       - Reglas de composición y densidad de elementos: colocación de bancos (bloques cortos con 3 pasillos libres $\ge 48\text{ px}$), altares, columnas, cirios/velas y distribución de las lápidas (Vía A y B) sin obstaculizar el combate.
-       - Generador de tramos/bandas con ritmo arquitectónico (nave despejada → nave en barricada → crucero abierto).
-    2. **Sesión 2: Muros laterales, arcadas y vanos de vidrieras/rosetones**.
-       - Delimitar los bordes de la franja ($X=0$ y $X=512$, ancho útil 416 px) con muros góticos, pilares y contrafuertes en lugar de suelo infinito.
-       - Modelar e integrar los vanos de las vidrieras y rosetones en la pared, punto de origen físico visible de los haces de luz.
-    3. **Sesión 3: Integración definitiva de Rayos de Luz (Godrays)**.
-       - Trasladar el prototipo `proto/godrays` a la build principal de la catedral.
-       - Resolver la convivencia de hardware entre los sprites aditivos de mezcla (`REG_BLDCNT` / `REG_BLDALPHA`) y la marea de oscuridad (activación de haces en la pantalla superior por encima de la marea).
-       - Corregir el arte de Blender (eliminar la línea vertical de fuga de luz y afinar la sección de la lanceta).
-    4. **Sesión 4: Horneado final del Kit de Catedral y límite VRAM ($\le 1024$ tiles)**.
-       - Integrar en `tools/bake_cathedral_kit.py` el suelo de rombos, las lápidas (Vía A / B), muros y props seleccionados.
+    1. **Sesión 1: Composición espacial y distribución del mapa (primera propuesta; distribución visual pendiente de revisión).**
+       - **Unidad de composición:** tramo lógico de 192 px de alto (una pantalla). El motor puede seguir generando bandas técnicas de 128 px; sus cortes no deben leerse como cortes arquitectónicos.
+       - **Eje y circulación:** nave central continua hacia arriba, con respiros laterales. Se conservan tres corredores longitudinales de suelo libre, cada uno de al menos 48 px; el corredor central apunta a 64 px. Los muros de 48 px por lado y el suelo útil de 416 px siguen siendo la medida del carril.
+       - **Familias de composición, no ciclo fijo:** nave despejada, nave con barricadas cortas y crucero abierto. Cada aparición cambia el lado, la posición y la variante de sus piezas; no se repite la misma planta consecutivamente. La secuencia puede variar, pero no pierde el eje central ni los tres corredores.
+       - **Cadencia objetivo:** un crucero cada 4–6 pantallas. Capilla lateral opcional cada 8–12 pantallas, como desvío corto de fondo ciego que se abre a un solo lado y no interrumpe la ruta principal; alternar el lado cuando vuelva a aparecer. No emparejar capilla y crucero en el mismo tramo.
+       - **Elementos:** bancos en bloques de 2–3 filas, huella total ≤15 % del suelo útil y colocados fuera de los tres corredores; las barricadas se alternan entre ambos lados. Lápida Vía A como acento longitudinal ocasional de nave; Vía B como hito infrecuente en cruceros. Cirios y altares quedan en márgenes o capillas, sin estrechar los corredores.
+       - **Ritmo de recorrido:** iniciar con nave despejada, introducir una barricada tras uno o dos tramos y abrir el primer crucero tras varias pantallas. Después alternar naves de distinta densidad, transiciones y capillas infrecuentes; los cruceros son hitos espaciados. No se impone una secuencia repetible.
+       - Ejemplo de recorrido y reglas de colocación: `walkthroughs/layout-catedral/walkthrough.md`. Incluye ocho pantallas con coordenadas y comprobación geométrica. La primera propuesta ya se llevó a ROM; el usuario no está satisfecho con la distribución de bancos y estatuas. Conservar los requisitos de circulación, pero rehacer la composición y validarla en una ROM reproducible.
+       - **Pendiente de decisión del usuario:** qué falla en la distribución actual. Hoy el generador coloca de 1 a 4 piezas sueltas por banda de 128 px, elegidas por hash y sin bloques de bancos de 2–3 filas. La sesión que lo rehaga empieza enseñando alternativas y no programa nada hasta que el usuario elija (regla 9). Orden y briefs: `walkthroughs/catedral-siguientes-pasos/`.
+    2. **Sesión 2: Muros laterales, arcadas y vanos de vidrieras/rosetones (primera pasada autorizada 2026-11-09; revisión visual del usuario pendiente).**
+       - **Base de planta:** muros continuos dentro de las franjas laterales $X=0..48$ y $X=464..512$; el suelo jugable sigue siendo $X=48..464$ (416 px). Pilastras y contrafuertes quedan dentro de esas franjas y no estrechan los corredores de la Sesión 1.
+       - **Ritmo lateral:** módulos de pared repetibles; cada tramo de 128 px forma un arco apuntado poco profundo entre pilastras. Una bahía de luz cada 256 px alterna el muro izquierdo y el derecho según los anclajes del prototipo (`GODRAY_PERIOD=256`, `GODRAY_ANCHOR=64`); los arcos sin vidrio quedan ciegos. La alternancia de las dos paredes se repite cada 512 px; el primer ciclo de escena es de 1.024 px para incluir un hito de crucero cada 4–6 pantallas (`TECHNICAL.md` §4.7).
+       - **Vanos:** lanceta geminada con parteluz en muro lateral. En coordenadas actuales del prototipo, la apertura ocupa $X=0..32$, $Y=256n+80..128$ en el muro izquierdo para $n$ par; en el derecho se refleja en $X=480..512$ para $n$ impar. La misma abertura conserva posición y marco en estados 2-3; cambia el vidrio (primera pasada multicolor de burgundy, azul-violeta y oro apagado; estado 2 entero agrietado → estado 3 roto). El haz queda separado del prerender.
+       - **Arte provisional autorizado:** piedra caliza gris cálida de bajo contraste; tracería de plomo oscura, vidrio multicolor profundo y formas grandes legibles a escala DS. Altura inicial de muro 4 m junto al marine de 2 m; se revisa tras ver la ROM y no congela el arte final.
+       - **Rosetón:** pieza independiente, centrada en $X=256$ y mirando hacia el jugador, en el arco transversal del crucero; diámetro objetivo 64 px con 12 sectores radiales. No se coloca como una ventana lateral periódica. La Sesión 3 debe anclar su haz a ese rosetón frontal, porque el prototipo actual coloca todas sus variantes en los muros laterales.
+       - **Prioridad de luz en crucero:** en la pantalla que muestre el rosetón no se dibuja a la vez un haz lateral; la mezcla de hardware tiene una intensidad global y dos haces solapados no se suman. La sesión 3 aplica esta prioridad y mantiene visible el vano lateral sin su haz mientras domina el rosetón.
+       - **Arco transversal:** conservar la pieza de 416 × 64–96 px del catálogo, en el borde norte del crucero y con el rosetón centrado. La huella de suelo queda transitable; la profundidad de oclusión sale del mismo render (`TECHNICAL.md` §3.3).
+       - **Presupuesto y render:** repetir el atlas de piedra y reutilizar pilastras/paños; no prerenderizar cada pantalla de muro como una imagen única. Exportar color, huella y profundidad con la cámara y luz neutra canónicas. Primer bake: 1.024 tiles totales, 224 en la ventana de 33×25; la sesión 4 optimiza el margen del kit antes de sumar las piezas finales.
+       - **Revisión pendiente del usuario:** corregir estilo, altura, color y silueta después de probar esta primera ROM. El modelo emparejado de vidriera se compone en Blender; el primer kit usa una traducción pixelada de esa silueta, más muros laterales y un inlay de rosetón. La primera ROM y sus límites están en `walkthroughs/muros-catedral/walkthrough.md`.
+    3. **Sesión 3: Integración de Rayos de Luz (Godrays) — prototipo integrado, cierre técnico pendiente.**
+       - Los godrays ya están integrados en las variantes de catedral y el usuario los considera prácticamente resueltos.
+       - Sigue pendiente asociar cada haz a su emisor correcto (lancetas laterales y rosetón frontal), confirmar la convivencia con la marea y certificar rendimiento en DS con `PERF_PROFILE`.
+       - Walkthrough del prototipo: `walkthroughs/proto-godrays/`; revisión actual: `walkthroughs/catedral-cierre/`.
+    4. **Sesión 4: Cierre del Kit de Catedral y presupuesto VRAM ($\le 1024$ tiles)**.
+       - Integrar/optimizar en `tools/bake_cathedral_kit.py` el suelo de rombos, las lápidas (Vía A / B), muros y props seleccionados; el primer pase del mapa visual ya está integrado. La distribución de bancos y estatuas debe rehacerse tras la revisión del usuario.
+       - **Coherencia de color, colisión y profundidad de props: resuelta (2026-11-10, validada por el usuario en la DS).** La causa era de unidades: la profundidad de los props seguía en píxeles del render fuente. Detalle técnico: `TECHNICAL.md` §3.3; walkthrough: `walkthroughs/props-depth-units/`.
+       - **Decisión (2026-11-10): un prop físico bloquea toda su planta sobre el suelo.** Los bancos, que son bajos, toman la envolvente convexa de su planta, de pata a pata, así que no se puede pasar por debajo del asiento ni entre las patas. Columnas, estatuas, relicarios y velas usan la huella del lab (geometría entre 0,30 y 1,20 m). Los props físicos ocluyen por profundidad como los muros; las lápidas siguen sin colisión ni oclusión.
+       - **Presupuesto actual:** el kit está en 1.024 de 1.024 tiles. No cabe ninguna pieza nueva sin liberar tiles antes.
        - Cumplir estrictamente el presupuesto de VRAM: $\le 1024$ tiles totales y $< 440$ tiles en la peor ventana visible de 512 px para scroll sin fallos.
     5. **Sesión 5: Certificación de Rendimiento a 60 FPS en Hardware Nintendo DS**.
        - Compilar la ROM final con `PERF_PROFILE 1`, subir por FTP (`upload-rom.ps1`) y registrar `/dungeonds_perf.log`.

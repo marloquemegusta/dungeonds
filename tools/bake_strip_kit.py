@@ -191,7 +191,8 @@ def build(package=DEFAULT_PACKAGE, output=OUTPUT):
                      f"1, s_stamp_{i}_tiles }}, // {stamp['name']}\n")
     lines += ["};\n\n", "const StripKit g_strip_kit = {\n",
               "    .palette = s_palette,\n", "    .tiles = s_tiles,\n",
-              f"    .num_tiles = {len(tiles)},\n", f"    .floor_h_tiles = {floor_h_tiles},\n",
+              f"    .num_tiles = {len(tiles)},\n", f"    .map_h_tiles = {floor_h_tiles},\n",
+              f"    .floor_h_tiles = {floor_h_tiles},\n",
               "    .floor_map = s_floor_map,\n", "    .floor_collision = s_floor_collision,\n",
               f"    .num_stamps = {len(stamps)},\n", "    .stamps = s_stamps,\n", "};\n"]
     output = Path(output)

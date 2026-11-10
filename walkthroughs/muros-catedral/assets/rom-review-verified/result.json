@@ -1,0 +1,27 @@
+{
+  "name": "strip_cathedral_look",
+  "scenario": "strip_cathedral_look.json",
+  "status": "PASS",
+  "failed": [],
+  "error": null,
+  "warnings": [],
+  "frames": 4783,
+  "wall_ms": 86144,
+  "captures": [
+    "00_strip_start",
+    "01_left_wall",
+    "02_climb_900",
+    "03_mid_climb",
+    "04_after_two_rebases"
+  ],
+  "map": {
+    "source": "explicit",
+    "elf": null,
+    "map": "/mnt/c/codexlocal/dungeonds/.worktrees/layout-catedral/.ds-game-dev/build/out/dungeonds-godrays.map"
+  },
+  "debug_capture": true,
+  "skip_render": false,
+  "symbol_addresses": {
+    "strip": "0x021cc83c"
+  }
+}

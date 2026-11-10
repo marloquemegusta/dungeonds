@@ -24,5 +24,6 @@
   "shadow_canvas_px": [
     80,
     40
-  ]
+  ],
+  "depth_units": "sprite_px"
 }

@@ -14,14 +14,18 @@
     { "button_up": "B", "frames": 2 },
     { "button_up": "L", "frames": 1 },
     { "button_up": "R", "frames": 1 },
-    { "button_down": "UP", "frames": 900, "capture": "01_climb_900" },
-    { "button_down": "UP", "frames": 1300, "capture": "02_mid_climb" },
-    { "button_down": "UP", "frames": 2300, "capture": "03_after_two_rebases", "state_capture": "climbed" },
+    { "button_down": "LEFT", "frames": 120, "capture": "01_left_wall" },
+    { "button_up": "LEFT", "frames": 1 },
+    { "button_down": "RIGHT", "frames": 120 },
+    { "button_up": "RIGHT", "frames": 1 },
+    { "button_down": "UP", "frames": 900, "capture": "02_climb_900" },
+    { "button_down": "UP", "frames": 1300, "capture": "03_mid_climb" },
+    { "button_down": "UP", "frames": 2300, "capture": "04_after_two_rebases", "state_capture": "climbed" },
     { "button_up": "UP", "frames": 2 }
   ],
   "assertions": {
     "screen_changes": [
-      { "from": "00_strip_start", "to": "03_after_two_rebases", "min_changed_pixels": 100 }
+      { "from": "00_strip_start", "to": "04_after_two_rebases", "min_changed_pixels": 100 }
     ],
     "state_changes": [
       { "at": "start", "field": "shift_px", "equals": 0 },

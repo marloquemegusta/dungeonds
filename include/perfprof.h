@@ -21,7 +21,6 @@ enum {
     PP_WEAPONS,      // weapons_and_effects_update
     PP_CLEAR,        // 'dclr': clear of the dirty spans of the back VRAM page
     PP_SHADOW,       // draw_shadow_mask loop
-    PP_WALLBASE,     // draw_hidden_wall_base
     PP_SORT,         // insertion sort of draw items
     PP_BLIT,         // actor blits (player/enemies/death chunks)
     PP_PROJ,         // enemy_lasers_render + weapons_render
@@ -48,8 +47,7 @@ extern uint32_t g_pp_cur[PP_COUNT];
 
 void perfprof_init(void);
 // Called once per presented frame, after all stages of that frame are in g_pp_cur.
-void perfprof_frame_end(uint32_t frame_index, uint32_t vblanks, uint32_t vblank_count,
-                        int active_page, int see_through);
+void perfprof_frame_end(uint32_t frame_index, uint32_t vblanks);
 // HUD text for line n (0..PERFPROF_HUD_LINES-1): two most expensive stages each, in ms.
 #define PERFPROF_HUD_LINES 2
 void perfprof_hud_line(int n, char *out, int out_size);
