@@ -153,19 +153,17 @@ def quantize_props(im, prop_lab):
 
 
 def piece_depth_runs(depth, rgba, foot_anchor_y_px):
+    """depth.png holds, per surface pixel, the sprite-local Y of the ground under it (the same
+    contract as a map's occlusion_depth.png, in this sprite's pixels). Runs store it relative to
+    the footprint anchor, which strip.c adds back to the stamp's world Y."""
     d = np.asarray(depth.convert("RGB"), dtype=np.int32)
     alpha = np.asarray(rgba)[:, :, 3] >= 128
     valid = (d[:, :, 2] >= 128) & alpha
     value = d[:, :, 0] * 256 + d[:, :, 1]
-    valid_rows = np.flatnonzero(valid.any(axis=1))
-    valid_rows = valid_rows[valid_rows <= foot_anchor_y_px]
-    if not len(valid_rows): raise ValueError("depth.png has no valid depth at or behind the footprint")
-    last_y = int(valid_rows[-1])
-    tail_rows = np.arange(len(valid))
-    tail = value[valid & (tail_rows[:, None] >= max(0, last_y - 7)) &
-                 (tail_rows[:, None] <= last_y)]
-    if not len(tail): raise ValueError("depth.png has no valid depth in the base rows")
-    baseline = int(np.median(tail))
+    if not valid.any(): raise ValueError("depth.png has no valid depth")
+    if value[valid].min() < 0 or value[valid].max() > len(valid):
+        raise ValueError("depth.png values are not sprite-local Y; re-run tools/props/prerender_props.py")
+    baseline = foot_anchor_y_px
     runs = []
     for y in range(len(valid)):
         x = 0
@@ -182,7 +180,7 @@ def piece_depth_runs(depth, rgba, foot_anchor_y_px):
 
 
 def footprint_runs(im):
-    """Read white as solid, at 4x4 floor cells; all-black masks mean full-footprint solid."""
+    """Read white as solid, at 4x4 floor cells. An empty mask is an error, never a full rectangle."""
     a = np.asarray(im.convert("L"))
     grid_h, grid_w = a.shape[0] // 4, a.shape[1] // 4
     cells = np.zeros((grid_h, grid_w), dtype=bool)
@@ -190,9 +188,8 @@ def footprint_runs(im):
         for cx in range(grid_w):
             cell = a[cy * 4:cy * 4 + 4, cx * 4:cx * 4 + 4]
             cells[cy, cx] = np.mean(cell >= 128) > .40
-    # banco_volcado intentionally ships as a solid mask; preserve it as a 2D footprint.
     if not cells.any():
-        cells[:, :] = True
+        raise ValueError("footprint.png has no solid cell; re-run tools/props/prerender_props.py")
     runs = []
     for cy, row in enumerate(cells):
         cx = 0
@@ -320,7 +317,10 @@ def piece_layout(name):
     rgba = np.asarray(color)
     if not np.isin(rgba[:, :, 3], [0, 255]).all(): raise ValueError(f"{name}: alpha must be binary")
     value = 0 if name.startswith("lapida_") else (3 if name in ("columna", "santo") else 1)
-    foot_runs = [] if value == 0 else footprint_runs(foot)
+    try:
+        foot_runs = [] if value == 0 else footprint_runs(foot)
+    except ValueError as e:
+        raise ValueError(f"{name}: {e}") from None
     foot_anchor_y_px = max((y * 4 + 4 for _, y, _ in foot_runs), default=0)
     depth_runs = piece_depth_runs(depth, rgba, foot_anchor_y_px) if value != 0 else []
     layout = {"name": name, "value": value, "foot_runs": foot_runs,

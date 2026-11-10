@@ -6,7 +6,7 @@ occlusion.png (white = geometry) united with any non-black world pixel.
 import argparse, hashlib, json, os, subprocess, sys, tempfile
 from concurrent.futures import ThreadPoolExecutor
 import numpy as np
-from PIL import Image
+from PIL import Image, ImageDraw, ImageFilter
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 PROPS = os.path.join(ROOT, "assets/environment/cathedral/props")
@@ -26,6 +26,70 @@ def silhouette(d):
     world = np.array(Image.open(os.path.join(d, "world.png")).convert("RGB"))
     occ = np.array(Image.open(os.path.join(d, "occlusion.png")).convert("L")) > 127
     return occ | (world.sum(2) > 0)
+
+def sprite_depth(depth, y0, scale_y, oy):
+    """The lab encodes the ground Y under each surface in raw-render pixels. Resizing the image
+    does not touch those values, so convert them to this sprite's local Y (R,G big endian,
+    B>=128 marks a surface): the runtime compares them with actor feet in world pixels."""
+    d = np.array(depth).astype(np.int32)
+    valid = d[..., 2] >= 128
+    raw = d[..., 0] * 256 + d[..., 1]
+    local = np.clip(np.rint((raw - int(y0)) * scale_y + oy), 0, 65535).astype(np.int32)
+    out = np.zeros_like(d)
+    out[..., 0] = np.where(valid, local >> 8, 0)
+    out[..., 1] = np.where(valid, local & 255, 0)
+    out[..., 2] = np.where(valid, 255, 0)
+    return Image.fromarray(out.astype(np.uint8), "RGB")
+
+def convex_hull(pts):
+    """Monotone chain over integer (x, y) points; returns the hull polygon."""
+    pts = sorted(set(map(tuple, pts)))
+    if len(pts) < 3: return pts
+    def half(seq):
+        h = []
+        for q in seq:
+            while len(h) >= 2 and (h[-1][0]-h[-2][0])*(q[1]-h[-2][1]) - (h[-1][1]-h[-2][1])*(q[0]-h[-2][0]) <= 0:
+                h.pop()
+            h.append(q)
+        return h
+    lo, up = half(pts), half(pts[::-1])
+    return lo[:-1] + up[:-1]
+
+def footprint_from_depth(d, x0, x1, y0, y1, nw, nh, close_px=9, min_cover=0.35):
+    """Plan of the piece on the floor, derived from the depth pass instead of collision.png (which
+    only marks the 0.30-1.20 m slab and misses seats and low pieces). Two point sets, both at
+    raw resolution:
+      * occluder pixels (B>=128, surfaces above 0.25 m): (x, ground Y stored in R,G) is a point
+        of the real plan (backrest, posts, tall parts);
+      * low pixels (silhouette but not occluder, below 0.25 m: legs, seat boards, fallen planks):
+        the lab drops their depth, but they sit on the floor, so they are projected straight
+        down (ground Y = own Y; error under 0.25 m of height).
+    Small holes are closed, the convex hull is filled (no filler rectangle) and the result is reduced with a box filter
+    (area coverage >= min_cover) to the sprite content size, not NEAREST."""
+    dep = np.array(Image.open(os.path.join(d, "occlusion_depth.png")).convert("RGB")).astype(np.int32)
+    valid = dep[..., 2] >= 128
+    low = silhouette(d) & ~valid
+    m = np.zeros(valid.shape, np.uint8)
+    ys, xs = np.nonzero(valid)
+    gy = np.clip(dep[..., 0] * 256 + dep[..., 1], int(y0), int(y1) - 1)[valid]
+    m[gy, xs] = 255
+    # Silhouette-only pixels above the farthest ground point are edge/antialias leftovers of tall
+    # parts (finials), not low parts on the floor.
+    if len(gy): low[:int(gy.min())] = False
+    m[low] = 255
+    pad = close_px
+    sub = np.pad(m[int(y0):int(y1), int(x0):int(x1)], pad)
+    im = Image.fromarray(sub).filter(ImageFilter.MaxFilter(close_px | 1)).filter(ImageFilter.MinFilter(close_px | 1))
+    sub = np.array(im)[pad:-pad, pad:-pad] > 127
+    # A bench plan is convex: the front edge runs leg to leg. Fill the convex hull.
+    py, px = np.nonzero(sub)
+    hull = convex_hull(zip(px.tolist(), py.tolist()))
+    if len(hull) >= 3:
+        hm = Image.new("L", (sub.shape[1], sub.shape[0]), 0)
+        ImageDraw.Draw(hm).polygon(hull, fill=255)
+        sub = sub | (np.array(hm) > 127)
+    cover = np.array(Image.fromarray(sub.astype(np.float32), mode="F").resize((nw, nh), Image.BOX))
+    return Image.fromarray(((cover >= min_cover) * 255).astype(np.uint8), "L")
 
 def process(name, cfg, d, out_root):
     mask = silhouette(d)
@@ -62,8 +126,12 @@ def process(name, cfg, d, out_root):
         im = Image.open(os.path.join(d, fn)).convert(mode).crop((int(x0), int(y0), int(x1), int(y1)))
         im = im.resize((nw, nh), Image.NEAREST)
         out = Image.new(mode, (cw, ch)); out.paste(im, (ox, oy)); return out
-    foot = nearest("collision.png", "L").point(lambda v: 255 if v > 127 else 0)
-    depth = nearest("occlusion_depth.png", "RGB")
+    if cfg.get("footprint_from") == "depth":
+        fi = footprint_from_depth(d, x0, x1, y0, y1, nw, nh)
+        foot = Image.new("L", (cw, ch)); foot.paste(fi, (ox, oy))
+    else:
+        foot = nearest("collision.png", "L").point(lambda v: 255 if v > 127 else 0)
+    depth = sprite_depth(nearest("occlusion_depth.png", "RGB"), y0, nh / bh, oy)
 
     od = os.path.join(out_root, name); os.makedirs(od, exist_ok=True)
     color.save(os.path.join(od, "color.png")); foot.save(os.path.join(od, "footprint.png"))
@@ -76,8 +144,14 @@ def process(name, cfg, d, out_root):
                 tiles += 1; uniq.add(hashlib.md5(t.tobytes()).hexdigest())
     meta = {"piece": name, "size_px": [cw, ch], "content_px": [nw, nh], "target_width": tw,
             "scale_factor": sc, "source_render_px": [int(bw), int(bh)], "yaw": cfg["yaw"],
+            "depth_units": "sprite_px",
             "tiles_8x8_nonempty": tiles, "tiles_8x8_unique": len(uniq)}
-    json.dump(meta, open(os.path.join(od, "meta.json"), "w", newline=""), indent=2)
+    meta_path = os.path.join(od, "meta.json")
+    if os.path.exists(meta_path):   # keep keys written by later tools (prop_shadows.py)
+        meta = {**json.load(open(meta_path, encoding="utf-8")), **meta}
+    with open(meta_path, "w", newline="") as f:
+        json.dump(meta, f, indent=2)
+        f.write("\n")
     return meta
 
 def main():
