@@ -499,3 +499,18 @@ Tras cerrar la 0.3.1, el usuario quiere dedicar dos versiones al aspecto antes d
 **Fuera:** progresión entre runs, más clases, sonido y más biomas (§1). Se deciden después de comprobar que la prueba divierte.
 
 **Criterio de éxito de la prueba:** el usuario juega varias runs seguidas en la DS, muere pronto en las primeras y aun así quiere otra porque sabe qué elegiría distinto.
+
+### 6.10 Reparto de la demo (sesión de concepto, 2026-11-11)
+Conceptos para la demo de la catedral. Solo cambia el aspecto y se añaden élites y jefe; las mecánicas base son las de "Enemigos de la 0.3.1" (§6.9.1). Nada de esto se programa hasta que su detalle esté escrito aquí (regla 9).
+
+- **Personaje (clase láser): se continúa con El Corazón Abierto** (el usuario ya generó modelo y animación de carga); El Lector y La Custodia quedan en reserva. Prompts y pendientes: `walkthroughs/concepto-demo-personajes/`. Mecánica sin cambios: cargar, soltar, rayo que atraviesa filas. Las imágenes para 3D se generan en **T-pose, con las manos vacías**, y el arma en una imagen aparte; se ensamblan después.
+  El rayo no es un arma sino un milagro que consume el cuerpo: sale del propio personaje, que va quemado por usarlo y sigue vivo por fe (tono Trench Crusade). A 31 px el origen del rayo debe ser un punto de luz claro y la carga una pose que cambie la silueta. Descartados (2026-11-11, genéricos): Portaluz, Hermana del Cirio y Penitente tirador.
+  1. **El Lector:** monje con un libro encadenado a la muñeca; al cargar alza libro y cabeza recitando y el rayo sale de boca y ojos. Cara quemada hasta el hueso, capucha chamuscada.
+  2. **El Corazón Abierto:** pecho abierto con grapas de hierro y un sagrado corazón en llamas dentro; carga con los brazos en cruz y el rayo sale del pecho. Ropa quemada en círculo alrededor.
+  3. **La Custodia:** sacerdote con una custodia soldada en lugar de cabeza; carga echando la cabeza atrás mientras crecen sus rayos y dispara desde la hostia. Cuello de carne fundida con el metal.
+- **Enemigos base (aspecto nuevo, misma FSM):** masa lenta = **fieles huecos** (feligreses muertos, sustituye al esqueleto); cargador = **flagelante** gigante que embiste con una cruz; tirador = **farolero**, cuya linterna verde sigue al jugador y luego dispara (el láser verde actual).
+- **Élites, se prueban dos** (sueltan cofre; modelo nuevo cada una):
+  - **Portaestandarte:** lento y con mucha vida; los enemigos cercanos van más rápido y brillan. Pide priorizarlo entre la masa con el rayo que atraviesa.
+  - **Exorcista hueco:** se queda atrás e invoca fieles huecos en círculos marcados en el suelo (elipse 2:1, §4.9); si no se le mata pronto, la masa crece.
+- **Jefe: paso procesional.** Un paso de Semana Santa cargado por costaleros muertos que avanza por la nave hacia el altar. Patrones: embestida en línea, santos del paso que disparan rayos verdes que siguen al jugador, y suelta de costaleros (masa). Matar costaleros lo ralentiza.
+- **Pendiente:** aspecto del rayo y del aura de carga del Corazón Abierto (hoy los de §4.9) y si la quemadura crece con las mejoras; cifras, fases y telegrafías de élites y jefe; tamaño del paso en pantalla (sprites grandes o capa de fondo, `TECHNICAL.md`); si hay minijefe en la demo.

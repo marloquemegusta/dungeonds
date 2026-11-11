@@ -2,8 +2,9 @@
 
 Primero el estado necesario para retomar el trabajo sin depender del chat; después, las entregas recientes verificadas (más nueva al final). El historial hasta 2026-10-21 está en `STATUS-ARCHIVE.md`.
 
-## Estado actual (2026-11-10)
+## Estado actual (2026-11-11)
 
+- **Concepto de la demo (2026-11-11, solo diseño):** personaje láser, enemigos con aspecto nuevo, dos élites a probar y jefe (paso procesional) en `DESIGN.md` §6.10. Se sigue con **El Corazón Abierto**: el usuario tiene modelo y animación de carga y su consolidación (lab, animaciones, efectos) es la siguiente sesión. Prompts y pendientes: `walkthroughs/concepto-demo-personajes/`.
 - **v0.3.1 cerrada (2026-11-07, `walkthroughs/v031-tuning/`):** tres tiers de enemigos (esqueleto, cargador que carga, tirador láser), escala de cifras 100 = 1,0 y pulido de suelo y marea. Jugada en la DS: rendimiento bien y el juego se siente mucho mejor. Pool de 24; el techo 32/48 y el log de `PERF_PROFILE` no se hicieron (`DESIGN.md` §6.9.1, "Valores de la 0.3.1").
 - **Props: oclusión y colisión resueltas (2026-11-10).** La profundidad de los props estaba en píxeles del render fuente, no en píxeles de mundo. Además, los bancos toman ahora como huella toda su planta. El usuario lo probó en la DS y lo dio por bueno. Detalle: `walkthroughs/props-depth-units/`.
 - **Lectura tras muros:** retirados el parpadeo alterno, la transparencia condicionada de enemigos, la sombra del jugador sobre el muro y la línea negra de borde de colisión. `cathedral-playground-perf` se subió como `dungeonds.nds` (2.009.088 bytes, rama `feat/muros-catedral`, commit base `2def813`) y el usuario la jugó. Las capturas de una columna solo acreditan ese caso. Detalle: `walkthroughs/remove-wall-through-effects/`.
@@ -210,3 +211,7 @@ El láser de apuntado se colima durante la carga (ancho, difuso y rojo a 1 px ve
   - la peor ventana de oclusión baja de 14.838 a 4.117 runs.
 - **Verificación:** build sin warnings, 9 tests de host y 3 escenarios de catedral PASS. ROM `cathedral-playground-perf` subida y dada por buena por el usuario en la DS. Log `PERF_PROFILE` de unos 11 minutos: CPU con media de 116.277 ticks y máximo de 396.970, de un presupuesto de 560.190. Los únicos frames de más de un vblank los causa la escritura del propio log en la SD.
 - **Detalle:** [`walkthroughs/props-depth-units/`](walkthroughs/props-depth-units/walkthrough.md). Siguientes pasos y briefs: [`walkthroughs/catedral-siguientes-pasos/`](walkthroughs/catedral-siguientes-pasos/walkthrough.md).
+
+## 2026-11-11 - Concepto de personaje, enemigos, élites y jefe de la demo (`main`, solo documentación)
+- **Decidido:** el rayo del personaje es un milagro que le quema el cuerpo; se continúa con El Corazón Abierto (El Lector y La Custodia en reserva). Enemigos base con aspecto nuevo y misma FSM, élites Portaestandarte y Exorcista hueco, jefe paso procesional (`DESIGN.md` §6.10).
+- **Detalle y prompts de Gemini:** [`walkthroughs/concepto-demo-personajes/`](walkthroughs/concepto-demo-personajes/walkthrough.md).
