@@ -9,9 +9,12 @@ static const uint16_t s_stamp_tiles_a[4] = {3, 3, 3, 3};
 static const uint16_t s_stamp_tiles_b[4] = {2, 3, 3, 2};
 static const StripFootprintRun s_stamp_foot_a[2] = {{0, 0, 4}, {0, 1, 4}};
 static const StripFootprintRun s_stamp_foot_b[2] = {{0, 0, 4}, {0, 1, 4}};
+// Synthetic stamps tagged as the two left-hand colonnade variants, on the phases the composer
+// asks for. They sit at x_tile 8 (px 64..80), far from the x=256 center lane the nav test walks,
+// and their per-band state depends on the seed, so the seed-difference assertions still hold.
 static const StripStamp s_stamps[2] = {
-    {2, 2, 0, 0, 4, 1, s_stamp_tiles_a, 2, s_stamp_foot_a, 0, 0},
-    {2, 2, 0, 2, 4, 1, s_stamp_tiles_b, 2, s_stamp_foot_b, 0, 0}
+    {2, 2, 8, 0, 4, 1, STRIP_PIECE_COLUMNA_ENTERA, s_stamp_tiles_a, 2, s_stamp_foot_a, 0, 0},
+    {2, 2, 8, 8, 4, 1, STRIP_PIECE_COLUMNA, s_stamp_tiles_b, 2, s_stamp_foot_b, 0, 0}
 };
 
 const StripKit g_strip_kit = {

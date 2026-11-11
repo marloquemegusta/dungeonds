@@ -1,6 +1,6 @@
 {
   "name": "cathedral_props_depth_collision",
-  "description": "With the deterministic cathedral seed, push into a real column footprint from the north (actor hidden behind it) and from the south (actor drawn in front), checking collision stops movement both ways. Pokes below y=768 trigger a 512 px rebase: the first poke (528) lands at ~1040 after it, so the column sits at y~1056-1077 and the south approach starts at 1100 in that same frame.",
+  "description": "Deterministic cathedral seed 0xC0DE1234. The left columnata column of band 9 is a columna_entera placed at x_tile=8 (phase_col=8); from --dump-plan plus its foot_runs its baked base footprint is world x 76..107, y 1256..1271 (only the base, ~16 px tall). Poking x=92,y=1226 leaves the actor north of that base (the base depth is y=1272, so it is drawn behind the column); holding DOWN drives it into the footprint and it stops. A second poke to x=92,y=1300 leaves it south of the base (in front, depth > 1272) and holding UP stops against the same footprint. Every poke stays above y=768, so no 512 px rebase shifts the world.",
   "state": {
     "elf": "../.ds-game-dev/build/out/dungeonds-cathedral-playground-perf.elf",
     "symbols": {
@@ -47,26 +47,26 @@
       "poke": [
         {
           "field": "player_x",
-          "value": 342
+          "value": 92
         },
         {
           "field": "player_y",
-          "value": 528
+          "value": 1226
         },
         {
           "field": "seq",
           "value": 100
         }
       ],
-      "frames": 150,
+      "frames": 33,
       "button_down": "DOWN",
-      "capture": "00_at_column_footprint",
-      "state_capture": "edge"
+      "capture": "00_behind_column_approach",
+      "state_capture": "north_edge"
     },
     {
       "frames": 150,
-      "capture": "01_held_against_column",
-      "state_capture": "blocked"
+      "capture": "01_behind_column_blocked",
+      "state_capture": "north_blocked"
     },
     {
       "button_up": "DOWN",
@@ -76,7 +76,7 @@
       "button_down": "UP",
       "frames": 30,
       "capture": "02_moved_away",
-      "state_capture": "away"
+      "state_capture": "north_away"
     },
     {
       "button_up": "UP",
@@ -86,26 +86,26 @@
       "poke": [
         {
           "field": "player_x",
-          "value": 342
+          "value": 92
         },
         {
           "field": "player_y",
-          "value": 1100
+          "value": 1300
         },
         {
           "field": "seq",
           "value": 101
         }
       ],
-      "frames": 150,
+      "frames": 31,
       "button_down": "UP",
-      "capture": "03_front_of_column",
-      "state_capture": "front_edge"
+      "capture": "03_front_of_column_approach",
+      "state_capture": "south_edge"
     },
     {
-      "frames": 60,
-      "capture": "04_held_in_front",
-      "state_capture": "front_blocked"
+      "frames": 150,
+      "capture": "04_front_of_column_blocked",
+      "state_capture": "south_blocked"
     },
     {
       "button_up": "UP",
@@ -116,41 +116,41 @@
     "state_changes": [
       {
         "field": "ack",
-        "at": "edge",
+        "at": "north_edge",
         "equals": 100
       },
       {
         "field": "y",
-        "from": "edge",
-        "to": "blocked",
+        "from": "north_edge",
+        "to": "north_blocked",
         "max_abs_delta": 2000
       },
       {
         "field": "y",
-        "from": "away",
-        "to": "blocked",
+        "from": "north_away",
+        "to": "north_blocked",
         "min_delta": 500
       },
       {
         "field": "ack",
-        "at": "front_edge",
+        "at": "south_edge",
         "equals": 101
       },
       {
         "field": "y",
-        "from": "front_edge",
-        "to": "front_blocked",
+        "from": "south_edge",
+        "to": "south_blocked",
         "max_abs_delta": 2000
       }
     ],
     "screen_changes": [
       {
-        "from": "00_at_column_footprint",
-        "to": "01_held_against_column",
+        "from": "00_behind_column_approach",
+        "to": "01_behind_column_blocked",
         "min_changed_pixels": 10
       },
       {
-        "from": "01_held_against_column",
+        "from": "01_behind_column_blocked",
         "to": "02_moved_away",
         "min_changed_pixels": 20
       }

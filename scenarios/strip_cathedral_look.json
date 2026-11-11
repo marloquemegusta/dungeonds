@@ -2,6 +2,7 @@
   "name": "strip_cathedral_look",
   "description": "God mode on; climb the strip and capture the start plus three points during the ascent to review the cathedral props and side walls.",
   "state": {
+    "elf": "../.ds-game-dev/build/out/dungeonds-cathedral-playground.elf",
     "symbols": { "strip": "g_strip_debug" },
     "default_symbol": "strip",
     "fields": { "height_px": 0, "shift_px": 4, "alive": 8, "hp": 12 }
@@ -16,7 +17,7 @@
     { "button_up": "R", "frames": 1 },
     { "button_down": "LEFT", "frames": 120, "capture": "01_left_wall" },
     { "button_up": "LEFT", "frames": 1 },
-    { "button_down": "RIGHT", "frames": 120 },
+    { "button_down": "RIGHT", "frames": 800 },
     { "button_up": "RIGHT", "frames": 1 },
     { "button_down": "UP", "frames": 900, "capture": "02_climb_900" },
     { "button_down": "UP", "frames": 1300, "capture": "03_mid_climb" },

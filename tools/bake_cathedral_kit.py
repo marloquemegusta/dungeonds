@@ -2,7 +2,6 @@
 """Bake the cathedral floor, wall cycle, lancets and props into the strip kit."""
 import argparse
 import json
-import math
 import os
 from pathlib import Path
 
@@ -15,9 +14,22 @@ PROP_PALETTE = ROOT / "assets/environment/cathedral/palette/palette.json"
 OUTPUT = ROOT / "source/strip_kit.c"
 DEFAULT_PROPS = ("banco_roto", "banco_volcado", "columna", "relicario", "santo", "vela",
                  "lapida_cruz_h", "lapida_cruz_v", "lapida_caballero_h", "lapida_caballero_v",
-                 "lapida_cruz2_h", "lapida_cruz2_v", "lapida_caballero2_h", "lapida_caballero2_v")
+                 "lapida_cruz2_h", "lapida_cruz2_v", "lapida_caballero2_h", "lapida_caballero2_v",
+                 "banco_entero", "sacos", "columna_entera")
 # Piezas que solo llevan una fase (lapidas: sin colision ni sombra y el presupuesto de tiles no da para 4).
 SINGLE_PHASE_PREFIXES = ("lapida_",)
+# Piece ids emitted in StripStamp.piece_id; must match enum STRIP_PIECE_* in include/strip_kit.h.
+PIECE_IDS = {
+    "banco_entero": 1, "banco_roto": 2, "banco_volcado": 3, "columna": 4,
+    "columna_entera": 5, "relicario": 6, "santo": 7, "vela": 8, "sacos": 9,
+    "lapida_cruz_h": 10, "lapida_cruz_v": 11, "lapida_caballero_h": 12,
+    "lapida_caballero_v": 13, "lapida_cruz2_h": 14, "lapida_cruz2_v": 15,
+    "lapida_caballero2_h": 16, "lapida_caballero2_v": 17,
+}
+
+
+def piece_id(name):
+    return PIECE_IDS.get(name, 0)
 # Lapidas de suelo: cluster de rombos de un solo tono bajo la pieza y junta oscura alrededor,
 # igual que el prototipo aprobado tools/catalogo/cat_lapidas_cluster.py (variante V1).
 LAPIDA_PREFIX = "lapida_"
@@ -296,7 +308,8 @@ def lapida_stamps(lay, phases, floor_pixels, floor_palette, floor_grid, prop_lab
                             pix[py, px] = floor_color(floor_pixels, floor_palette, floor_grid,
                                                       pc * 8 + gx, pr * 8 + gy)
                 stamp_tiles[ty, tx] = tiles.add(pix.tobytes())
-        result.append({"name": name, "w": W // 8, "h": H // 8, "phase_col": pc, "phase_row": pr,
+        result.append({"name": name, "piece_id": piece_id(name), "w": W // 8, "h": H // 8,
+                       "phase_col": pc, "phase_row": pr,
                        "foot_runs": [], "foot_anchor_y_px": 0, "foot_value": 0,
                        "tiles": stamp_tiles, "depth_runs": []})
     return result
@@ -316,7 +329,7 @@ def piece_layout(name):
         raise ValueError(f"{name}: color, depth and footprint dimensions must match")
     rgba = np.asarray(color)
     if not np.isin(rgba[:, :, 3], [0, 255]).all(): raise ValueError(f"{name}: alpha must be binary")
-    value = 0 if name.startswith("lapida_") else (3 if name in ("columna", "santo") else 1)
+    value = 0 if name.startswith("lapida_") else (3 if name in ("columna", "columna_entera", "santo") else 1)
     try:
         foot_runs = [] if value == 0 else footprint_runs(foot)
     except ValueError as e:
@@ -346,18 +359,86 @@ def piece_layout(name):
     return layout
 
 
+def crop_shadow_layout(lay, margin_px=8):
+    """Crop a layout to body + margin on each side so wide shadow canvases stop blocking
+    neighbouring reticle slots. Kept in memory for pieces that also ship in `--mode actual`."""
+    if lay["shadow"] is None or margin_px < 0:
+        return lay
+    sw, sh = lay["w"], lay["h"]
+    ox, oy = lay["ox"], lay["oy"]
+    opaque = lay["rgba"][:, :, 3] >= 128
+    ys, xs = np.nonzero(opaque)
+    if not len(xs):
+        return lay
+    bx0, bx1 = int(xs.min()), int(xs.max()) + 1
+    by0, by1 = int(ys.min()), int(ys.max()) + 1
+    x0 = max(0, (bx0 - margin_px) // 8 * 8)
+    x1 = min(sw, ((bx1 + margin_px + 7) // 8) * 8)
+    y0 = max(0, (by0 - margin_px) // 8 * 8)
+    y1 = min(sh, ((by1 + margin_px + 7) // 8) * 8)
+    if (x0, y0, x1, y1) == (0, 0, sw, sh):
+        return lay
+    new = dict(lay)
+    new["rgba"] = lay["rgba"][y0:y1, x0:x1]
+    new["shadow"] = lay["shadow"][y0:y1, x0:x1]
+    new["ox"] = ox - x0
+    new["oy"] = oy - y0
+    new["w"] = x1 - x0
+    new["h"] = y1 - y0
+    new["foot_runs"] = [(x - x0 // 4, y - y0 // 4, n) for x, y, n in lay["foot_runs"]]
+    new["foot_anchor_y_px"] = lay["foot_anchor_y_px"] - y0
+    new["depth_runs"] = [(x - x0, y - y0, n, d) for x, y, n, d in lay["depth_runs"]]
+    return new
+
+
+def crop_bench_canvas(lay, target_h_px=None):
+    """Clamp a bench stamp to a 32 px (4-tile) canvas anchored at the footprint base so two
+    benches 32 px apart never share a tile row. banco_entero only loses its empty bottom row;
+    banco_roto loses its 8 px top row (back-post tips), keeping the footprint row and base."""
+    if target_h_px is None:
+        target_h_px = BENCH_CANVAS_H_PX
+    sh = lay["h"]
+    if sh <= target_h_px:
+        return lay
+    anchor = lay["foot_anchor_y_px"]
+    y0 = max(0, min(sh - target_h_px, anchor - target_h_px))
+    y1 = y0 + target_h_px
+    new = dict(lay)
+    new["rgba"] = lay["rgba"][y0:y1, :]
+    new["shadow"] = lay["shadow"][y0:y1, :] if lay["shadow"] is not None else None
+    new["oy"] = lay["oy"] - y0
+    new["h"] = y1 - y0
+    new["foot_runs"] = [(x, y - y0 // 4, n) for x, y, n in lay["foot_runs"]]
+    new["foot_anchor_y_px"] = anchor - y0
+    new["depth_runs"] = [(x, y - y0, n, d) for x, y, n, d in lay["depth_runs"]]
+    return new
+
+
 def piece_phases(name, phases):
     return phases[:1] if name.startswith(SINGLE_PHASE_PREFIXES) else phases
 
 
-def load_pieces(names, phases, floor_pixels, floor_grid, floor_palette, prop_colors, prop_lab, tiles):
-    layouts = [piece_layout(name) for name in names]
-    # Entradas nuevas de paleta: suelo oscurecido bajo la sombra de cada pieza, en las 4 fases.
+def load_pieces(names, phases, floor_pixels, floor_grid, floor_palette, prop_colors, prop_lab, tiles,
+                phase_map=None, shadow_crop=(), bench_crop=()):
+    def build_layout(name):
+        lay = piece_layout(name)
+        if name in shadow_crop:
+            lay = crop_shadow_layout(lay)
+        if name in bench_crop:
+            lay = crop_bench_canvas(lay)
+        return lay
+
+    layouts = [build_layout(name) for name in names]
+
+    def phases_for(name):
+        return phase_map.get(name, phases) if phase_map else phases
+
+    # Entradas nuevas de paleta: suelo oscurecido bajo la sombra de cada pieza, en sus fases usadas.
     shadow_colors = []
     for lay in layouts:
         if lay["shadow"] is None: continue
         ys, xs = np.nonzero(lay["shadow"])
-        for pc, pr in piece_phases(lay["name"], phases):
+        for pc, pr in piece_phases(lay["name"], phases_for(lay["name"])):
             for y, x in zip(ys, xs):
                 c = shadow_color(floor_palette[floor_color(floor_pixels, floor_palette, floor_grid, pc * 8 + int(x), pr * 8 + int(y))])
                 if c not in floor_palette and c not in shadow_colors: shadow_colors.append(c)
@@ -380,12 +461,12 @@ def load_pieces(names, phases, floor_pixels, floor_grid, floor_palette, prop_col
         name, w, h, rgba, shadow = lay["name"], lay["w"], lay["h"], lay["rgba"], lay["shadow"]
         value = lay["value"]
         if name.startswith(LAPIDA_PREFIX):
-            result.extend(lapida_stamps(lay, phases, floor_pixels, floor_palette, floor_grid,
+            result.extend(lapida_stamps(lay, phases_for(name), floor_pixels, floor_palette, floor_grid,
                                         prop_lab, floor_count, tone_index, joint_index, tiles))
             continue
         q = quantize_props(Image.fromarray(rgba), prop_lab)
         foot_runs = lay["foot_runs"]
-        for pc, pr in piece_phases(name, phases):
+        for pc, pr in piece_phases(name, phases_for(name)):
             stamp_tiles = np.zeros((h // 8, w // 8), dtype=np.uint16)
             for ty in range(h // 8):
                 for tx in range(w // 8):
@@ -406,7 +487,8 @@ def load_pieces(names, phases, floor_pixels, floor_grid, floor_palette, prop_col
                                 else:
                                     pix[py, px] = fi
                     stamp_tiles[ty, tx] = tiles.add(pix.tobytes())
-            result.append({"name": name, "w": w//8, "h": h//8, "phase_col": pc, "phase_row": pr,
+            result.append({"name": name, "piece_id": piece_id(name), "w": w//8, "h": h//8,
+                           "phase_col": pc, "phase_row": pr,
                            "foot_runs": foot_runs,
                            "foot_anchor_y_px": lay["foot_anchor_y_px"],
                            "foot_value": value, "tiles": stamp_tiles,
@@ -451,21 +533,316 @@ def placements(stamps, seed, band, occupied):
             break
 
 
-def preview_and_budget(floor_map, stamps, tiles, seed=0xC0DE1234):
+CATEDRAL_COLUMNS = (8, 48)   # columna_entera (6-tile canvas): bodies px 72..112 and 392..432
+# Zona inicial sin piezas. C manda (source/strip.c): las ultimas STRIP_START_CLEAR_BANDS bandas de
+# las STRIP_INITIAL_BANDS iniciales. En la variante de debug `lapidas` (LAPIDA_DEBUG) C ademas salta
+# las bandas 11..15; esa variante no se modela en la vista previa.
+STRIP_INITIAL_BANDS = 16     # STRIP_BAND_TILES = 128/8 = 16; 2048 px / 128 px = 16 bandas
+STRIP_START_CLEAR_BANDS = 3
+CATEDRAL_CLEAR_BANDS = range(STRIP_INITIAL_BANDS - STRIP_START_CLEAR_BANDS, STRIP_INITIAL_BANDS)
+S_COL_L, S_COL_R = 0x1a2b3c4d, 0x5e6f7a8b
+S_BANK_TYPE = 0x2f9e1b77     # banco_entero / banco_roto por banco (banda, fila, slot)
+S_BANK_LEN = 0x9be2f431      # tamano del grupo (4/5/6) por fila y tramo
+S_BANK_START = 0x5bd1e995    # posicion de inicio del grupo dentro de los 8 slots del tramo
+S_BARRICADE, S_DECOR = 0x73c1d0a5, 0x41c64e6d
+FLOOR_LEFT_PX, FLOOR_RIGHT_PX = 48, 464
+# Inner faces of the two columna_entera rows (x=8 -> px 72..112, x=48 -> px 392..432).
+CENTRAL_LEFT_PX, CENTRAL_RIGHT_PX = 112, 392
+CROSS_SANTOS = (16, 40)      # santo (6-tile canvas, ox=2): body centres px 160 and 352
+BENCH_ROWS = (19, 35)        # carriles centrados en x=256: cuerpos px 160..224 y 288..352
+BENCH_STEP_TILES = 4         # bancos pegados: una fila cada 32 px (4 tiles), y_local 0/4/8/12
+BENCH_CANVAS_H_PX = 32       # alto del lienzo de un banco: caben 4 filas sin solapar tiles
+BENCH_SLOTS = 8              # 8 posiciones de 32 px por fila y tramo (4 por banda)
+BENCH_GROUP_LENS = (4, 5, 6)  # tamano del grupo: 25 % / 50 % / 25 %
+SACOS_LINE = (16, 24, 32)    # staggered in y so adjacent stamps share no 2-D tile
+TOMB_X = 16                  # lapida_cruz_h canvas is 18 tiles: fits between the columns
+VELA_XS = (8, 24, 32, 48)
+RELIC_XS = (8, 48)
+
+
+def catedral_phase_map():
+    """(piece -> list of (phase_col, phase_row)) that the composer can use. Baking only these
+    keeps the kit within the tile budget; every position the rules allow is included."""
+    def add(xs, ys):
+        return sorted({(x & 15, y) for x in xs for y in ys})
+    return {
+        "columna_entera": add(CATEDRAL_COLUMNS, (0,)),
+        "columna": add(CATEDRAL_COLUMNS, (8,)),
+        "banco_entero": add(BENCH_ROWS, (0, 4, 8, 12)),
+        "banco_roto": add(BENCH_ROWS, (0, 4, 8, 12)),
+        "banco_volcado": add((16,), (8,)),
+        "sacos": add((16, 24, 32, 40), (0, 8)),
+        "santo": add(CROSS_SANTOS, (0,)),
+        "vela": add(VELA_XS, (0, 8)),
+        "relicario": add(RELIC_XS, (8,)),
+        "lapida_cruz_h": add((TOMB_X,), (0,)),
+    }
+
+
+def _stamp_for(stamps, name, x, y):
+    """Return the stamp index whose baked floor phase matches world tile (x, y)."""
+    pc, pr = x & 15, y & 15
+    for i, s in enumerate(stamps):
+        if s["name"] == name and s["phase_col"] == pc and s["phase_row"] == pr:
+            return i
+    return None
+
+
+def _overlaps(occupied, x, y, w, h):
+    return any(x < ox + ow and ox < x + w and y < oy + oh and oy < y + h
+               for ox, oy, ow, oh in occupied)
+
+
+def bench_groups(seed, tramo):
+    """One glued group of 4-6 benches per bench row and tramo (8 slots of 32 px = 2 bands x 4).
+
+    Length is hashed per (tramo, row) with a 25/50/25 split for 4/5/6; the start is hashed inside
+    [0, 8 - length], so a group never crosses the tramo border and there are no holes inside it.
+    Both rows use distinct hash keys; if the two groups would land on exactly the same slots, the
+    right row moves one valid start so the rows stagger. Deterministic and stateless.
+    """
+    groups = []
+    for row_i, row_x in enumerate(BENCH_ROWS):
+        row_key = (tramo << 1) + row_i
+        r = band_hash(seed, row_key, S_BANK_LEN) % 100
+        length = (BENCH_GROUP_LENS[0] if r < 25 else
+                  BENCH_GROUP_LENS[2] if r >= 75 else BENCH_GROUP_LENS[1])
+        start = band_hash(seed, row_key, S_BANK_START) % (BENCH_SLOTS - length + 1)
+        groups.append([row_x, length, start])
+    if groups[0][1] == groups[1][1] and groups[0][2] == groups[1][2]:
+        length = groups[1][1]
+        groups[1][2] = (groups[1][2] + 1) % (BENCH_SLOTS - length + 1)
+    return groups
+
+
+def _column_state(seed, band, salt):
+    r = band_hash(seed, band, salt) % 100
+    if r < 55:
+        return "entera"
+    if r < 85:
+        return "rota"
+    return "caida"
+
+
+def _effective_column_state(seed, band, salt):
+    """55/30/15 split, but a raw hole right after another raw hole becomes a broken stump:
+    two holes never sit back to back on the same row."""
+    state = _column_state(seed, band, salt)
+    if state == "caida" and _column_state(seed, band - 1, salt) == "caida":
+        return "rota"
+    return state
+
+
+def _stamp_nz(stamp):
+    """Tiles the stamp actually writes (tile != 0). Empty shadow-canvas margins stay free."""
+    tiles = stamp.get("tiles")
+    if tiles is None:
+        return np.ones((stamp["h"], stamp["w"]), dtype=bool)
+    return np.array([[int(v) & 0x3ff != 0 for v in row] for row in tiles], dtype=bool)
+
+
+def _masks_overlap(ax, ay, am, bx, by, bm):
+    x0, y0 = max(ax, bx), max(ay, by)
+    x1 = min(ax + am.shape[1], bx + bm.shape[1])
+    y1 = min(ay + am.shape[0], by + bm.shape[0])
+    if x0 >= x1 or y0 >= y1:
+        return False
+    return bool(np.any(am[y0 - ay:y1 - ay, x0 - ax:x1 - ax] & bm[y0 - by:y1 - by, x0 - bx:x1 - bx]))
+
+
+def catedral_plan(stamps, seed=0xC0DE1234, n_bands=64):
+    """Deterministic cathedral floor plan, identical in Python and in C (source/strip.c).
+
+    The band number decides what goes where; hashes only pick variants. Every stamp keeps its
+    baked floor phase (x_tile = phase_col + 16k, y_tile = phase_row + 16k) and never crosses a
+    band border. `tramo = band >> 1`, `pos = tramo & 3`: 0/1 bancadas, 2 barricada, 3 crucero.
+    """
+    left_x, right_x = CATEDRAL_COLUMNS
+    entries, occupied = [], {}
+
+    def place(name, x, y_local, band, kind):
+        idx = _stamp_for(stamps, name, x, band * 16 + y_local)
+        if idx is None:
+            return False
+        s = stamps[idx]
+        if x < 6 or x + s["w"] > 58:
+            return False
+        if y_local < 0 or y_local + s["h"] > 16:
+            return False
+        occ = occupied.setdefault(band, [])
+        nz = _stamp_nz(s)
+        if any(_masks_overlap(x, y_local, nz, ox, oy, om) for ox, oy, om in occ):
+            return False
+        occ.append((x, y_local, nz))
+        entries.append({"kind": kind, "name": name, "idx": idx, "x": x,
+                        "y": band * 16 + y_local, "band": band})
+        return True
+
+    for band in range(n_bands):
+        if band in CATEDRAL_CLEAR_BANDS:
+            continue
+        tramo = band >> 1
+        pos = tramo & 3
+        ciclo = tramo >> 2
+        left_state = _effective_column_state(seed, band, S_COL_L)
+        right_state = _effective_column_state(seed, band, S_COL_R)
+
+        # Columnata: one stamp per row and band, except in the crossing (pos 3).
+        if pos != 3:
+            for side, state, x in (("L", left_state, left_x), ("R", right_state, right_x)):
+                if state == "entera":
+                    place("columna_entera", x, 0, band, "entera")
+                elif state == "rota":
+                    place("columna", x, 8, band, "rota")   # base aligned with the full column
+                else:
+                    entries.append({"kind": "caida", "name": None, "idx": None,
+                                    "x": x, "y": band * 16, "band": band, "side": side})
+
+        if pos in (0, 1):
+            # One glued group of 4-6 benches per row and tramo (bench_groups). Each band places
+            # only the slots that fall inside it; type 75/25 per bench by (band, row, slot).
+            sub = band & 1
+            for row_i, (_row_x, length, start) in enumerate(bench_groups(seed, tramo)):
+                for slot in range(start, start + length):
+                    if (slot >> 2) != sub:
+                        continue
+                    y_local = (slot & 3) * BENCH_STEP_TILES
+                    r = band_hash(seed, band, (S_BANK_TYPE ^ ((row_i * 0x9e3779b9)
+                                                              ^ (slot * 0x85ebca6b)) & 0xffffffff)) % 100
+                    name = "banco_roto" if r < 25 else "banco_entero"
+                    place(name, BENCH_ROWS[row_i], y_local, band, "banco")
+        elif pos == 2:
+            if band_hash(seed, ciclo, S_BARRICADE) % 3 == 0:
+                # Cleared tramo: 0-2 candles / a flat tomb (no collision) in the open nave.
+                h = band_hash(seed, band, S_DECOR)
+                count = h % 3
+                if count >= 1:
+                    if (h >> 4) & 1:
+                        place("lapida_cruz_h", TOMB_X, 0, band, "lapida")
+                    else:
+                        place("vela", 40, 0, band, "vela")
+                if count >= 2:
+                    place("vela", 40, 8, band, "vela")
+            else:
+                # Barricade: three sacks staggered in y (adjacent x shares no 2-D tile) plus
+                # a fallen bench on the second band. On odd cycles the line leans to the right
+                # side when the right column is down, which alternates the open side.
+                shift = 8 if ((ciclo & 1) and right_state == "caida") else 0
+                xs = tuple(x + shift for x in SACOS_LINE)
+                if band & 1:
+                    place("sacos", xs[1], 0, band, "sacos")
+                    place("sacos", xs[2], 8, band, "sacos")
+                    place("banco_volcado", 16, 8, band, "barricada")
+                else:
+                    place("sacos", xs[0], 0, band, "sacos")
+                    place("sacos", xs[1], 8, band, "sacos")
+                    place("sacos", xs[2], 0, band, "sacos")
+        else:
+            # Crucero: open arena. Symmetric saints, candles and one lateral reliquary.
+            for x in CROSS_SANTOS:
+                place("santo", x, 0, band, "santo")
+            place("vela", 8, 0, band, "vela")
+            place("vela", 24, 0, band, "vela")
+            place("vela", 32, 8, band, "vela")
+            place("vela", 48, 0, band, "vela")
+            place("relicario", 48 if ciclo & 1 else 8, 8, band, "relicario")
+    return entries
+
+
+def _band_corridors(entries, stamps, band):
+    """`central`: widest free run inside the colonnade; `lateral`: widest free opening that is
+    not the axis aisle (run containing px 256). Both at the worst cell row of the band."""
+    width_cells = (FLOOR_RIGHT_PX - FLOOR_LEFT_PX) // 4
+    mask = [[False] * width_cells for _ in range(128 // 4)]
+    for e in entries:
+        if e["band"] != band or e["idx"] is None:
+            continue
+        for fx, fy, n in stamps[e["idx"]]["foot_runs"]:
+            x0 = (e["x"] * 8 + fx * 4 - FLOOR_LEFT_PX) // 4
+            y0 = (e["y"] * 8 + fy * 4 - band * 128) // 4
+            if 0 <= y0 < len(mask):
+                for xx in range(max(0, x0), min(width_cells, x0 + n)):
+                    mask[y0][xx] = True
+    central_cols = range((CENTRAL_LEFT_PX - FLOOR_LEFT_PX) // 4,
+                         (CENTRAL_RIGHT_PX - FLOOR_LEFT_PX) // 4)
+    axis = (256 - FLOOR_LEFT_PX) // 4
+    worst_central, worst_lateral = 10 ** 9, 10 ** 9
+    for row in mask:
+        best = run = 0
+        for c in central_cols:
+            if row[c]:
+                best, run = max(best, run), 0
+            else:
+                run += 1
+        worst_central = min(worst_central, max(best, run) * 4)
+        runs, start = [], None
+        for c in range(width_cells):
+            if not row[c]:
+                if start is None:
+                    start = c
+            elif start is not None:
+                runs.append((start, c)); start = None
+        if start is not None:
+            runs.append((start, width_cells))
+        axis_run = next(((a, b) for a, b in runs if a <= axis < b), None)
+        if axis_run and (axis_run[1] - axis_run[0]) * 4 >= 96:
+            # Wide open hall: the axis run itself is a valid passage.
+            lateral = max(((b - a) * 4 for a, b in runs), default=0)
+        else:
+            lateral = max(((b - a) * 4 for a, b in runs if (a, b) != axis_run), default=0)
+        worst_lateral = min(worst_lateral, lateral)
+    return {"central": worst_central, "lateral": worst_lateral}
+
+
+def catedral_metrics(entries, stamps, bands=64, window=12):
+    """Footprint share and corridor minimums per 12-band (1536 px = 8 screens of 192 px) window."""
+    rows = []
+    for b0 in range(0, bands, window):
+        b1 = min(bands, b0 + window)
+        area = sum(n * 16 for e in entries if b0 <= e["band"] < b1 and e["idx"] is not None
+                   for _, _, n in stamps[e["idx"]]["foot_runs"])
+        pct = 100.0 * area / (416 * (b1 - b0) * 128) if b1 > b0 else 0.0
+        worst_central, worst_lateral = (10 ** 9, None), (10 ** 9, None)
+        for b in range(b0, b1):
+            cor = _band_corridors(entries, stamps, b)
+            if cor["central"] < worst_central[0]:
+                worst_central = (cor["central"], b)
+            lateral = cor["lateral"]
+            if lateral < worst_lateral[0]:
+                worst_lateral = (lateral, b)
+        rows.append({"window": f"bandas {b0}-{b1 - 1} ({b1 - b0})", "footprint_pct": pct,
+                     "central": worst_central[0], "central_band": worst_central[1],
+                     "lateral": worst_lateral[0], "lateral_band": worst_lateral[1]})
+    return rows
+
+
+def preview_and_budget(floor_map, stamps, tiles, seed=0xC0DE1234, mode="actual"):
     tile_pixels = [np.frombuffer(t, np.uint8).reshape(8, 8) for t in tiles.data]
     tilemap = np.tile(np.asarray(floor_map, dtype=np.uint16), (max(1, 1024 // len(floor_map)), 1))
-    chosen = []
-    for band in range(64):
-        occupied = []
-        if 13 <= band < 16:
-            continue
-        for idx, x, y in placements(stamps, seed, band, occupied):
-            s = stamps[idx]; chosen.append((band, idx, x, y))
+    chosen, plan = [], None
+    if mode == "catedral":
+        plan = catedral_plan(stamps, seed, tilemap.shape[0] // 16)
+        chosen = [(e["band"], e["idx"], e["x"], e["y"] - e["band"] * 16)
+                  for e in plan if e["idx"] is not None]
+        for band, idx, x, y in chosen:
+            s = stamps[idx]
             for sy in range(s["h"]):
                 for sx in range(s["w"]):
                     e = int(s["tiles"][sy, sx])
-                    if not e: continue
-                    tilemap[band*16+y+sy, x+sx] = e
+                    if e:
+                        tilemap[band * 16 + y + sy, x + sx] = e
+    else:
+        for band in range(64):
+            occupied = []
+            if band in CATEDRAL_CLEAR_BANDS:
+                continue
+            for idx, x, y in placements(stamps, seed, band, occupied):
+                s = stamps[idx]; chosen.append((band, idx, x, y))
+                for sy in range(s["h"]):
+                    for sx in range(s["w"]):
+                        e = int(s["tiles"][sy, sx])
+                        if not e: continue
+                        tilemap[band*16+y+sy, x+sx] = e
     worst = 0
     for y in range(tilemap.shape[0] - 24):
         for x in range(64 - 32):
@@ -482,7 +859,7 @@ def preview_and_budget(floor_map, stamps, tiles, seed=0xC0DE1234):
             if e & 0x400: t = t[:, ::-1]
             if e & 0x800: t = t[::-1, :]
             world[y*8:y*8+8, x*8:x*8+8] = t
-    return worst, worst_occlusion, world, chosen
+    return worst, worst_occlusion, world, chosen, plan
 
 
 def make_cathedral_map(floor_map, tiles, palette):
@@ -562,21 +939,6 @@ def make_cathedral_map(floor_map, tiles, palette):
     for base_y, right in ((80, False), (336, True), (592, False), (848, True)):
         paint_pair(base_y, right)
 
-    # A non-blocking crossing threshold with a rose inlay; at world Y=1056 each cycle.
-    for y in range(32, 56):
-        for x in range(48, 464):
-            period[y, x] = stone_light if y in (32, 33, 54, 55) else stone
-    for y in range(16, 72):
-        for x in range(228, 284):
-            dx, dy = x - 256, y - 44
-            radius = dx * dx + dy * dy
-            if radius <= 26*26:
-                if radius >= 22*22 or abs(dx) <= 1 or abs(dy) <= 1:
-                    period[y, x] = gold if (radius // 36) & 1 else lead
-                else:
-                    sector = ((math.atan2(dy, dx) + math.pi) * 6 / math.pi) % 6
-                    period[y, x] = (burgundy, violet, blue, gold, violet, burgundy)[int(sector)]
-
     result = []
     for ty in range(period.shape[0] // 8):
         row = []
@@ -588,7 +950,7 @@ def make_cathedral_map(floor_map, tiles, palette):
 
 
 def emit(output, palette, tiles, floor_map, stamps, packed, floor_source, worst,
-         worst_occlusion, floor_n, props_n):
+         worst_occlusion, floor_n, props_n, mode="actual"):
     floor_path = str(floor_source).replace("\\", "/")
     out = [f"// Generated by tools/bake_cathedral_kit.py from floor {floor_path} and assets/environment/cathedral/props/render; floor={floor_n}, props={props_n}, shared={len(palette)}, tiles={len(tiles.data)}, worst_window={worst}, worst_occlusion_window={worst_occlusion}. Do not edit.\n",
            '#include "strip_kit.h"\n\n', '// first-pass cathedral walls and alternating paired lancets\n',
@@ -619,7 +981,8 @@ def emit(output, palette, tiles, floor_map, stamps, packed, floor_source, worst,
     for i, s in enumerate(stamps):
         fr = f"{len(s['foot_runs'])}, s_stamp_{i}_foot" if s["foot_runs"] else "0, 0"
         dr = f"{len(s['depth_runs'])}, s_stamp_{i}_depth" if s["depth_runs"] else "0, 0"
-        out.append(f"    {{ {s['w']}, {s['h']}, {s['phase_col']}, {s['phase_row']}, {s['foot_anchor_y_px']}, {s['foot_value']}, s_stamp_{i}_tiles, {fr}, {dr} }}, // {s['name']}\n")
+        pid = s["piece_id"] if mode == "catedral" else 0
+        out.append(f"    {{ {s['w']}, {s['h']}, {s['phase_col']}, {s['phase_row']}, {s['foot_anchor_y_px']}, {s['foot_value']}, {pid}, s_stamp_{i}_tiles, {fr}, {dr} }}, // {s['name']}\n")
     out += ["};\n\n", "const StripKit g_strip_kit = {\n", "    .palette = s_palette,\n", "    .tiles = s_tiles,\n",
             f"    .num_tiles = {len(tiles.data)},\n", f"    .map_h_tiles = {len(floor_map)},\n",
             "    .floor_h_tiles = 16,\n", "    .floor_map = s_floor_map,\n",
@@ -627,7 +990,41 @@ def emit(output, palette, tiles, floor_map, stamps, packed, floor_source, worst,
     with output.open("w", encoding="utf-8", newline="") as f: f.write("".join(out))
 
 
-def build(floor_dir, phases=4, output=OUTPUT, preview=None, prop_names=DEFAULT_PROPS):
+def format_metrics(entries, stamps, label="catedral", bands=64, worst=0, worst_occlusion=0):
+    from collections import Counter
+    rows = catedral_metrics(entries, stamps, bands)
+    lines = ["| modo | ventana (bandas) | huella % suelo util | pasillo central min | paso lateral min |",
+             "| :--- | :--- | ---: | :---: | :---: |"]
+    for r in rows:
+        lines.append(f"| {label} | {r['window']} | {r['footprint_pct']:.2f} | "
+                     f"{r['central']} px (banda {r['central_band']}) | "
+                     f"{r['lateral']} px (banda {r['lateral_band']}) |")
+    states, names = Counter(), Counter()
+    for e in entries:
+        if e["kind"] in ("entera", "rota", "caida"):
+            states[e["kind"]] += 1
+        elif e["idx"] is not None:
+            names[e["name"]] += 1
+    benches = names.get("banco_entero", 0) + names.get("banco_roto", 0)
+    total_foot = sum(n * 16 for e in entries if e["idx"] is not None
+                     for _, _, n in stamps[e["idx"]]["foot_runs"])
+    lines += ["",
+              f"- Huella total ({bands} bandas): {100.0 * total_foot / (416 * bands * 128):.2f} % del suelo util.",
+              f"- Peor ventana de 33x25 tiles: **{worst}** (< 440).",
+              f"- Peor oclusion de 16 bandas: **{worst_occlusion}** runs (< {OCCLUSION_CAPACITY})."]
+    if sum(states.values()):
+        lines.append("- Columnas por estado: entera={} (`columna_entera`), rota={} (`columna`), "
+                     "caida={} (hueco).".format(states["entera"], states["rota"], states["caida"]))
+    if benches:
+        lines.append("- Bancos: entero={} ({:.1f} %), roto={} ({:.1f} %).".format(
+            names.get("banco_entero", 0), 100.0 * names.get("banco_entero", 0) / benches,
+            names.get("banco_roto", 0), 100.0 * names.get("banco_roto", 0) / benches))
+    lines.append("- Piezas por tipo: " + ", ".join(f"{k}={v}" for k, v in sorted(names.items())) + ".")
+    return "\n".join(lines)
+
+
+def build(floor_dir, phases=4, output=OUTPUT, preview=None, prop_names=DEFAULT_PROPS,
+          mode="actual", metrics=None, dump_plan=None):
     if phases != 4: raise ValueError("--phases supports the four specified offsets: 4")
     if isinstance(prop_names, str):
         prop_names = tuple(part.strip() for part in prop_names.split(",") if part.strip())
@@ -642,12 +1039,30 @@ def build(floor_dir, phases=4, output=OUTPUT, preview=None, prop_names=DEFAULT_P
         print(f"warning: prop {name!r} has no render/color.png; skipped")
     prop_names = tuple(name for name in prop_names if name not in missing)
     if not prop_names: raise ValueError("no prop has render/color.png")
+    all_phases = [(0, 0), (8, 0), (0, 8), (8, 8)]
+    if mode == "catedral":
+        # Bake only (piece, phase) pairs the deterministic composer can use, and only the
+        # pieces it places. `actual` keeps the full 4-phase kit and its old behaviour.
+        phase_map = catedral_phase_map()
+        prop_names = tuple(name for name in prop_names if name in phase_map)
+        shadow_crop = ("banco_roto",)
+        bench_crop = ("banco_entero", "banco_roto")
+        print(f"catedral kit: {len(prop_names)} pieces, {sum(len(v) for v in phase_map.values())} (piece, phase) stamps")
+    else:
+        phase_map, shadow_crop, bench_crop = None, (), ()
     floor_colors, raw_floor, grid = read_floor(floor_dir)
     tiles = Tiles()
     palette, floor_pixels, floor_map = make_floor_tiles(floor_colors, raw_floor, grid, tiles)
     props, prop_lab = read_prop_palette()
-    stamps, shadow_colors, decor_colors = load_pieces(prop_names, [(0, 0), (8, 0), (0, 8), (8, 8)],
-                                                     floor_pixels, grid, palette, props, prop_lab, tiles)
+    stamps, shadow_colors, decor_colors = load_pieces(prop_names, all_phases,
+                                                     floor_pixels, grid, palette, props, prop_lab, tiles,
+                                                     phase_map=phase_map, shadow_crop=shadow_crop,
+                                                     bench_crop=bench_crop)
+    # Hard budget: the 10-bit tile format cannot address more than 1024 unique tiles. Fail here,
+    # before any image or source is written, instead of wrapping indices with & 0x3ff.
+    if len(tiles.data) > 1024:
+        raise ValueError(f"tile budget exceeded: {len(tiles.data)} baked unique tiles > 1024 "
+                         f"(mode={mode}, {len(prop_names)} pieces); free tiles before baking")
     prop_remap = {}
     prop_temp_base = len(palette)
     for i, c in enumerate(props):
@@ -681,6 +1096,9 @@ def build(floor_dir, phases=4, output=OUTPUT, preview=None, prop_names=DEFAULT_P
     for st in stamps:
         st["tiles"] = np.vectorize(remap_entry, otypes=[np.uint16])(st["tiles"])
     map_map = make_cathedral_map(floor_map, tiles, palette)
+    if mode == "catedral" and len(tiles.data) > 1024:
+        raise ValueError(f"tile budget exceeded: {len(tiles.data)} unique tiles including the wall "
+                         f"map > 1024 (mode=catedral); free tiles before baking")
     if len(palette) > 256: raise ValueError(f"shared palette requires {len(palette)} entries including transparent")
     collision = np.zeros((32, 128), np.uint8)
     collision[:, :12] = 3; collision[:, 116:] = 3
@@ -691,6 +1109,9 @@ def build(floor_dir, phases=4, output=OUTPUT, preview=None, prop_names=DEFAULT_P
     for row in map_map: used |= {int(v) & 0x3ff for v in row}
     for st in stamps: used |= {int(v) & 0x3ff for v in st["tiles"].flat if int(v)}
     order = sorted(used); new_id = {o: n for n, o in enumerate(order)}
+    if len(order) > 1024:
+        raise ValueError(f"tile budget exceeded: {len(order)} referenced unique tiles > 1024 "
+                         f"(mode={mode}); free tiles before baking")
     def renum(v):
         v = int(v); return v if not v else (new_id[v & 0x3ff] | (v & 0xc00))
     map_map = [[renum(v) if int(v) else 0 for v in row] for row in map_map]
@@ -698,7 +1119,8 @@ def build(floor_dir, phases=4, output=OUTPUT, preview=None, prop_names=DEFAULT_P
     tiles.data = [tiles.data[o] for o in order]
     tiles.index = {t: i for i, t in enumerate(tiles.data)}
     if len(tiles.data) > 1024: raise ValueError(f"total tile count {len(tiles.data)} exceeds 1024")
-    worst, worst_occlusion, sample, chosen = preview_and_budget(map_map, stamps, tiles)
+    worst, worst_occlusion, sample, chosen, plan = preview_and_budget(
+        map_map, stamps, tiles, mode=mode)
     if worst >= 440: raise ValueError(f"worst 33x25 window has {worst} tiles; must be < 440")
     if worst_occlusion >= OCCLUSION_CAPACITY:
         raise ValueError(f"worst 16-band occlusion window has {worst_occlusion} runs; capacity is {OCCLUSION_CAPACITY}")
@@ -708,10 +1130,33 @@ def build(floor_dir, phases=4, output=OUTPUT, preview=None, prop_names=DEFAULT_P
         im = Image.fromarray(sample, "P"); im.putpalette(rgb_palette)
         preview.parent.mkdir(parents=True, exist_ok=True); im.convert("RGB").save(preview)
     floor_n = len(set(floor_colors)); props_n = len(set(props))
-    emit(output, palette, tiles, map_map, stamps, packed, floor_dir, worst, worst_occlusion, floor_n, props_n)
+    emit(output, palette, tiles, map_map, stamps, packed, floor_dir, worst, worst_occlusion, floor_n, props_n, mode)
+    if dump_plan is not None and mode == "catedral":
+        dumped = [{"band": e["band"], "piece_id": stamps[e["idx"]]["piece_id"],
+                   "phase_col": stamps[e["idx"]]["phase_col"],
+                   "phase_row": stamps[e["idx"]]["phase_row"],
+                   "x": e["x"], "y": e["y"]} for e in plan if e["idx"] is not None]
+        dump_plan.parent.mkdir(parents=True, exist_ok=True)
+        dump_plan.write_text(json.dumps(dumped), encoding="utf-8")
+        print(f"plan: {dump_plan} ({len(dumped)} stamps)")
     print(f"palette entries: floor={floor_n}, props={props_n}, shadow={len(shadow_colors)} new, lapida={len(decor_colors)} new, wall_palette=8, shared={len(palette)}/256")
     print(f"tiles: {len(tiles.data)}/1024; worst window: {worst}/<440; selected pieces in 64 bands: {len(chosen)}")
     print(f"worst 16-band occlusion runs: {worst_occlusion}/{OCCLUSION_CAPACITY}")
+    if mode == "catedral" or metrics:
+        if mode == "catedral":
+            entries, label = plan, "catedral"
+        else:
+            entries = [{"kind": "piece", "name": stamps[i]["name"], "idx": i, "x": x,
+                        "y": band * 16 + y, "band": band} for band, i, x, y in chosen]
+            label = "actual"
+        text = format_metrics(entries, stamps, label, worst=worst,
+                              worst_occlusion=worst_occlusion)
+        print(text)
+        if metrics:
+            metrics.parent.mkdir(parents=True, exist_ok=True)
+            metrics.write_text("# Metricas de distribucion (vista previa Python)\n\n" + text + "\n",
+                               encoding="utf-8")
+            print(f"metrics: {metrics}")
     if preview: print(f"preview: {preview}")
     return len(tiles.data), worst
 
@@ -724,8 +1169,14 @@ def main():
                    help="comma-separated props (default: " + ",".join(DEFAULT_PROPS) + ")")
     p.add_argument("--output", type=Path, default=OUTPUT)
     p.add_argument("--preview", type=Path, default=Path(os.environ.get("TEMP", "/tmp")) / "cathedral_strip_preview.png")
+    p.add_argument("--mode", choices=("actual", "catedral"), default="actual",
+                   help="actual: random 1-4 pieces per band (default); catedral: deterministic 4-tramo composer")
+    p.add_argument("--metrics", type=Path, default=None,
+                   help="write the catedral metrics Markdown table here")
+    p.add_argument("--dump-plan", type=Path, default=None,
+                   help="write the deterministic cathedral plan as JSON (parity test)")
     a = p.parse_args()
-    build(a.floor, a.phases, a.output, a.preview, a.props)
+    build(a.floor, a.phases, a.output, a.preview, a.props, a.mode, a.metrics, a.dump_plan)
 
 
 if __name__ == "__main__": main()

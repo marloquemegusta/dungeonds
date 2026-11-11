@@ -1,6 +1,6 @@
 {
   "name": "cathedral_bench_collision",
-  "description": "Deterministic cathedral seed. The first poke (528) triggers the 512 px rebase; in that frame banco_roto has its top-left at world (320,896) and its footprint (from the depth plan) covers y 916-935 across x 336-408. At x=350 the old footprint (a single 28x4 px strip at x 376-404) let the actor walk through. Push in from the south (actor in front) and from the north (actor behind the backrest).",
+  "description": "Deterministic cathedral seed 0xC0DE1234. Band 10 (tramo 5, bancada) holds a real group from the plan: --dump-plan plus foot_runs give a banco_entero at x_tile=19,y_tile=168 with body x 160..224 and a banco_entero at x_tile=35,y_tile=168 with body x 288..352, both 16 px deep (y 1360..1376). The 64 px central aisle is x 224..288 (centre 256). The marine is poked at the aisle centre (x=256, y=1368), inside the y band of the two benches. Holding LEFT crosses the aisle into the left bench footprint and it stops with its right side at x=224; holding RIGHT crosses into the right bench footprint and it stops with its left side at x=288. No poke goes below y=768, so no 512 px rebase shifts the world.",
   "state": {
     "elf": "../.ds-game-dev/build/out/dungeonds-cathedral-playground-perf.elf",
     "symbols": {
@@ -47,28 +47,11 @@
       "poke": [
         {
           "field": "player_x",
-          "value": 342
+          "value": 256
         },
         {
           "field": "player_y",
-          "value": 528
-        },
-        {
-          "field": "seq",
-          "value": 100
-        }
-      ],
-      "frames": 60
-    },
-    {
-      "poke": [
-        {
-          "field": "player_x",
-          "value": 350
-        },
-        {
-          "field": "player_y",
-          "value": 965
+          "value": 1368
         },
         {
           "field": "seq",
@@ -76,32 +59,32 @@
         }
       ],
       "frames": 10,
-      "state_capture": "south_start"
+      "state_capture": "left_start"
     },
     {
-      "button_down": "UP",
-      "frames": 120,
-      "capture": "00_south_contact",
-      "state_capture": "south_edge"
-    },
-    {
+      "button_down": "LEFT",
       "frames": 60,
-      "capture": "01_south_held",
-      "state_capture": "south_blocked"
+      "capture": "00_left_contact",
+      "state_capture": "left_edge"
     },
     {
-      "button_up": "UP",
+      "frames": 120,
+      "capture": "01_left_held",
+      "state_capture": "left_blocked"
+    },
+    {
+      "button_up": "LEFT",
       "frames": 2
     },
     {
       "poke": [
         {
           "field": "player_x",
-          "value": 390
+          "value": 256
         },
         {
           "field": "player_y",
-          "value": 880
+          "value": 1368
         },
         {
           "field": "seq",
@@ -109,21 +92,21 @@
         }
       ],
       "frames": 10,
-      "state_capture": "north_start"
+      "state_capture": "right_start"
     },
     {
-      "button_down": "DOWN",
-      "frames": 120,
-      "capture": "02_north_contact",
-      "state_capture": "north_edge"
-    },
-    {
+      "button_down": "RIGHT",
       "frames": 60,
-      "capture": "03_north_held",
-      "state_capture": "north_blocked"
+      "capture": "02_right_contact",
+      "state_capture": "right_edge"
     },
     {
-      "button_up": "DOWN",
+      "frames": 120,
+      "capture": "03_right_held",
+      "state_capture": "right_blocked"
+    },
+    {
+      "button_up": "RIGHT",
       "frames": 2
     }
   ],
@@ -131,37 +114,37 @@
     "state_changes": [
       {
         "field": "ack",
-        "at": "south_start",
+        "at": "left_start",
         "equals": 101
       },
       {
-        "field": "y",
-        "from": "south_start",
-        "to": "south_edge",
-        "max_abs_delta": 11520
+        "field": "x",
+        "from": "left_start",
+        "to": "left_edge",
+        "max_delta": -4000
       },
       {
-        "field": "y",
-        "from": "south_edge",
-        "to": "south_blocked",
-        "max_abs_delta": 2000
+        "field": "x",
+        "from": "left_edge",
+        "to": "left_blocked",
+        "max_abs_delta": 512
       },
       {
         "field": "ack",
-        "at": "north_start",
+        "at": "right_start",
         "equals": 102
       },
       {
-        "field": "y",
-        "from": "north_start",
-        "to": "north_edge",
-        "max_abs_delta": 11520
+        "field": "x",
+        "from": "right_start",
+        "to": "right_edge",
+        "min_delta": 4000
       },
       {
-        "field": "y",
-        "from": "north_edge",
-        "to": "north_blocked",
-        "max_abs_delta": 2000
+        "field": "x",
+        "from": "right_edge",
+        "to": "right_blocked",
+        "max_abs_delta": 512
       }
     ]
   }

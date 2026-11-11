@@ -1,0 +1,40 @@
+{
+  "name": "catedral_ciclo_capturas",
+  "description": "Deterministic cathedral seed 0xC0DE1234. The marine is teleported up the strip one band at a time (bottom-screen centre = band*128+64) and 8 consecutive screens are captured: the clear start, one barricade and four bancada bands, ending in the open crucero. Every capture is named for the band family the composer really places there. No poke goes below y=768, so no 512 px rebase happens and the world coordinates stay as written.",
+  "state": {
+    "elf": "../.ds-game-dev/build/out/dungeonds-cathedral-playground.elf",
+    "symbols": { "sandbox": "g_sandbox" },
+    "default_symbol": "sandbox",
+    "fields": {
+      "seq": { "offset": 0, "type": "u32" },
+      "ack": { "offset": 4, "type": "u32" },
+      "player_x": { "offset": 8, "type": "s16" },
+      "player_y": { "offset": 10, "type": "s16" },
+      "enemy_count": { "offset": 14, "type": "u8" }
+    }
+  },
+  "steps": [
+    { "frames": 60 },
+    { "button_down": "START", "frames": 2 },
+    { "button_up": "START", "frames": 2 },
+    { "poke": [{ "field": "player_x", "value": 232 }, { "field": "player_y", "value": 1856 }, { "field": "seq", "value": 100 }, { "field": "enemy_count", "value": 0 }], "frames": 20, "capture": "01_nave_inicio", "state_capture": "s1" },
+    { "poke": [{ "field": "player_x", "value": 232 }, { "field": "player_y", "value": 1728 }, { "field": "seq", "value": 101 }, { "field": "enemy_count", "value": 0 }], "frames": 20, "capture": "02_nave_inicio_alta", "state_capture": "s2" },
+    { "poke": [{ "field": "player_x", "value": 232 }, { "field": "player_y", "value": 1600 }, { "field": "seq", "value": 102 }, { "field": "enemy_count", "value": 0 }], "frames": 20, "capture": "03_barricada", "state_capture": "s3" },
+    { "poke": [{ "field": "player_x", "value": 232 }, { "field": "player_y", "value": 1472 }, { "field": "seq", "value": 103 }, { "field": "enemy_count", "value": 0 }], "frames": 20, "capture": "04_bancadas_a", "state_capture": "s4" },
+    { "poke": [{ "field": "player_x", "value": 232 }, { "field": "player_y", "value": 1344 }, { "field": "seq", "value": 104 }, { "field": "enemy_count", "value": 0 }], "frames": 20, "capture": "05_bancadas_b", "state_capture": "s5" },
+    { "poke": [{ "field": "player_x", "value": 232 }, { "field": "player_y", "value": 1216 }, { "field": "seq", "value": 105 }, { "field": "enemy_count", "value": 0 }], "frames": 20, "capture": "06_bancadas_c", "state_capture": "s6" },
+    { "poke": [{ "field": "player_x", "value": 232 }, { "field": "player_y", "value": 1088 }, { "field": "seq", "value": 106 }, { "field": "enemy_count", "value": 0 }], "frames": 20, "capture": "07_bancadas_d", "state_capture": "s7" },
+    { "poke": [{ "field": "player_x", "value": 232 }, { "field": "player_y", "value": 960 }, { "field": "seq", "value": 107 }, { "field": "enemy_count", "value": 0 }], "frames": 20, "capture": "08_crucero", "state_capture": "s8" }
+  ],
+  "assertions": {
+    "state_changes": [
+      { "at": "s1", "field": "ack", "equals": 100 },
+      { "at": "s8", "field": "ack", "equals": 107 },
+      { "at": "s8", "field": "player_y", "equals": 960 }
+    ],
+    "screen_changes": [
+      { "from": "01_nave_inicio", "to": "08_crucero", "min_changed_pixels": 100 },
+      { "from": "01_nave_inicio", "to": "03_barricada", "min_changed_pixels": 40 }
+    ]
+  }
+}

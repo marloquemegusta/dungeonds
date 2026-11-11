@@ -13,12 +13,22 @@
 #define STRIP_COLLISION_SHIFT_ROWS (STRIP_SHIFT_PX / COLLISION_SCALE)
 #define STRIP_MAP_ROW_BYTES (STRIP_W_TILES * sizeof(uint16_t))
 #define STRIP_COLLISION_ROW_BYTES (STRIP_COLLISION_W / 4)
-#define STRIP_MAX_STAMPS_PER_BAND 4
+#define STRIP_COMPOSE_MAX_STAMPS 12
 #define STRIP_WALL_TILES 6
 #define STRIP_WALL_CELLS (STRIP_WALL_TILES * 2)
 #define STRIP_OCCLUSION_CAPACITY 32768
 #define STRIP_START_CLEAR_BANDS 3
-#define STRIP_LANE_HALF_WIDTH_PX 32
+// Deterministic cathedral composer salts (keep in sync with tools/bake_cathedral_kit.py).
+#define S_COL_L 0x1a2b3c4du
+#define S_COL_R 0x5e6f7a8bu
+#define S_BANK_TYPE 0x2f9e1b77u
+#define S_BANK_LEN 0x9be2f431u
+#define S_BANK_START 0x5bd1e995u
+#define S_BARRICADE 0x73c1d0a5u
+#define S_DECOR 0x41c64e6du
+#define COL_ENTERA 0
+#define COL_ROTA 1
+#define COL_CAIDA 2
 
 static uint16_t s_map[STRIP_W_TILES * STRIP_MAP_H_TILES];
 static uint8_t s_collision[(STRIP_COLLISION_W * STRIP_COLLISION_H) / 4];
@@ -35,6 +45,12 @@ static int s_kit_valid;
 
 #if LAPIDA_DEBUG
 int32_t g_strip_debug_pos[2] = { -1, -1 };
+#endif
+
+#if STRIP_LAYOUT_DUMP
+// Host-only parity hook (tests/test_strip_layout_parity.py): called for every placement.
+void (*g_strip_layout_dump)(int32_t band, int piece_id, int phase_col, int phase_row,
+                            int x_tile, int y_tile);
 #endif
 
 static Arena s_arena = {
@@ -90,41 +106,228 @@ static void packed_collision_set(uint8_t *data, unsigned index, unsigned value) 
     data[index >> 2] = (uint8_t)((data[index >> 2] & (uint8_t)~mask) | ((value & 3u) << shift));
 }
 
-static int rects_overlap(int ax, int ay, int aw, int ah,
-                         int bx, int by, int bw, int bh) {
-    return ax < bx + bw && bx < ax + aw && ay < by + bh && by < ay + ah;
+// Copy the stamp's non-empty tiles, write its footprint into the collision map and append its
+// occlusion runs. Returns nothing: the caller decides whether it fits (see compose_place).
+static void stamp_place(const StripStamp *stamp, int x_tile, int y_tile,
+                        int map_row, int collision_row) {
+    for (unsigned sy = 0; sy < stamp->h_tiles; sy++) {
+        unsigned dst = (unsigned)(map_row + y_tile + (int)sy) * STRIP_W_TILES + (unsigned)x_tile;
+        unsigned src = sy * stamp->w_tiles;
+        for (unsigned sx = 0; sx < stamp->w_tiles; sx++) {
+            uint16_t tile = stamp->tiles[src + sx];
+            if (tile != 0) s_map[dst + sx] = tile;
+        }
+    }
+    for (unsigned ri = 0; ri < stamp->num_foot_runs; ri++) {
+        const StripFootprintRun *run = &stamp->foot_runs[ri];
+        unsigned cell_y = (unsigned)collision_row + (unsigned)y_tile * 2u + run->y_cell;
+        if (cell_y >= STRIP_COLLISION_H - 1u) continue;
+        unsigned first_cell = (unsigned)x_tile * 2u + run->x_cell;
+        for (unsigned cx = 0; cx < run->length_cells; cx++) {
+            unsigned cell_x = first_cell + cx;
+            if (cell_x > 0 && cell_x < STRIP_COLLISION_W - 1u) {
+                packed_collision_set(s_collision, cell_y * STRIP_COLLISION_W + cell_x,
+                                     stamp->foot_value);
+            }
+        }
+    }
+    for (unsigned ri = 0; ri < stamp->num_depth_runs; ri++) {
+        const StripDepthRun *run = &stamp->depth_runs[ri];
+        unsigned ry = (unsigned)(map_row * 8 + y_tile * 8 + run->y_px);
+        unsigned rx = (unsigned)(x_tile * 8 + run->x_px);
+        if (ry >= STRIP_WIN_H_PX || rx >= STRIP_W_PX || !run->length) continue;
+        DungeonOcclusionRun *dst = &s_occlusion_runs[s_occlusion_count++];
+        dst->x = (uint16_t)rx;
+        dst->y = (uint16_t)ry;
+        dst->length = (uint16_t)((rx + run->length > STRIP_W_PX) ? STRIP_W_PX - rx : run->length);
+        dst->depth = (int16_t)(map_row * 8 + y_tile * 8 + stamp->foot_anchor_y_px + run->depth_delta);
+    }
 }
 
-static int stamp_overlaps_lane(const StripStamp *stamp, int x_tile, int lane_x) {
-    int left = x_tile * 8;
-    int right = left + (int)stamp->w_tiles * 8;
-    int lane_left = lane_x - STRIP_LANE_HALF_WIDTH_PX;
-    int lane_right = lane_x + STRIP_LANE_HALF_WIDTH_PX;
-    return left < lane_right && lane_left < right;
+// Overlap test on the tiles a stamp actually writes (tile != 0), exactly like the Python plan:
+// empty shadow-canvas margins stay free and may overlap a neighbour.
+static int stamp_tiles_overlap(const StripStamp *a, int ax, int ay,
+                               const StripStamp *b, int bx, int by) {
+    int x0 = ax > bx ? ax : bx;
+    int y0 = ay > by ? ay : by;
+    int ax1 = ax + (int)a->w_tiles, bx1 = bx + (int)b->w_tiles;
+    int ay1 = ay + (int)a->h_tiles, by1 = by + (int)b->h_tiles;
+    int x1 = ax1 < bx1 ? ax1 : bx1;
+    int y1 = ay1 < by1 ? ay1 : by1;
+    for (int y = y0; y < y1; y++) {
+        for (int x = x0; x < x1; x++) {
+            uint16_t ta = a->tiles[(y - ay) * (int)a->w_tiles + (x - ax)];
+            uint16_t tb = b->tiles[(y - by) * (int)b->w_tiles + (x - bx)];
+            if ((ta & 0x3ffu) != 0u && (tb & 0x3ffu) != 0u) return 1;
+        }
+    }
+    return 0;
 }
 
-static int stamp_can_be_placed(const StripStamp *stamp, int x_tile, int y_tile,
-                               int lane_x, const int placed_x[],
-                               const int placed_y[], const StripStamp *placed[],
-                               int placed_count) {
-    int w = stamp->w_tiles;
-    int h = stamp->h_tiles;
-    if (w == 0 || h == 0 || x_tile < STRIP_WALL_TILES || x_tile + w > STRIP_W_TILES - STRIP_WALL_TILES ||
-        y_tile < 0 || y_tile + h > STRIP_BAND_TILES || stamp->foot_anchor_y_px > h * 8u) return 0;
-    if (stamp->foot_value > 3 ||
-        (stamp->foot_value != 0 && (!stamp->num_foot_runs || !stamp->foot_runs))) return 0;
-    for (unsigned i = 0; i < stamp->num_foot_runs; i++) {
-        const StripFootprintRun *run = &stamp->foot_runs[i];
-        if (!run->length_cells || (unsigned)run->x_cell + run->length_cells > (unsigned)w * 2u ||
-            run->y_cell >= (unsigned)h * 2u) return 0;
+// The composer asks for a (piece, phase_col, phase_row) triple derived from its tile position,
+// never for a raw index, so the kit can be rebaked without renumbering anything here.
+static const StripStamp *find_stamp(uint8_t piece_id, int x_tile, int y_tile) {
+    uint8_t pc = (uint8_t)(x_tile & 15);
+    uint8_t pr = (uint8_t)(y_tile & 15);
+    for (int i = 0; i < (int)g_strip_kit.num_stamps; i++) {
+        const StripStamp *stamp = &g_strip_kit.stamps[i];
+        if (stamp->piece_id == piece_id && stamp->phase_col == pc && stamp->phase_row == pr)
+            return stamp;
     }
-    if (stamp_overlaps_lane(stamp, x_tile, lane_x)) return 0;
-    for (int i = 0; i < placed_count; i++) {
-        if (rects_overlap(x_tile, y_tile, w, h,
-                          placed_x[i], placed_y[i],
-                          placed[i]->w_tiles, placed[i]->h_tiles)) return 0;
+    return 0;
+}
+
+static int column_state(int32_t band, uint32_t salt) {
+    uint32_t r = band_hash(band, salt) % 100u;
+    if (r < 55u) return COL_ENTERA;
+    if (r < 85u) return COL_ROTA;
+    return COL_CAIDA;
+}
+
+// A raw hole right after another raw hole becomes a broken stump: two holes never sit back to
+// back on the same row (same rule as _effective_column_state in the Python spec).
+static int effective_column_state(int32_t band, uint32_t salt) {
+    int state = column_state(band, salt);
+    if (state == COL_CAIDA && column_state(band - 1, salt) == COL_CAIDA) return COL_ROTA;
+    return state;
+}
+
+static int compose_place(int32_t band, int map_row, int collision_row,
+                         uint8_t piece_id, int x_tile, int y_local,
+                         int placed_x[], int placed_y[], const StripStamp *placed[],
+                         int *placed_count) {
+    int y_tile = (int32_t)band * STRIP_BAND_TILES + y_local;
+    const StripStamp *stamp = find_stamp(piece_id, x_tile, y_tile);
+    if (!stamp) return 0;
+    if (x_tile < STRIP_WALL_TILES ||
+        x_tile + (int)stamp->w_tiles > STRIP_W_TILES - STRIP_WALL_TILES) return 0;
+    if (y_local < 0 || y_local + (int)stamp->h_tiles > STRIP_BAND_TILES) return 0;
+    for (int i = 0; i < *placed_count; i++) {
+        if (stamp_tiles_overlap(stamp, x_tile, y_local,
+                                placed[i], placed_x[i], placed_y[i])) return 0;
     }
+    if (s_occlusion_count + stamp->num_depth_runs > STRIP_OCCLUSION_CAPACITY) return 0;
+    stamp_place(stamp, x_tile, y_local, map_row, collision_row);
+    placed_x[*placed_count] = x_tile;
+    placed_y[*placed_count] = y_local;
+    placed[*placed_count] = stamp;
+    (*placed_count)++;
+#if STRIP_LAYOUT_DUMP
+    if (g_strip_layout_dump)
+        g_strip_layout_dump(band, piece_id, stamp->phase_col, stamp->phase_row, x_tile, y_tile);
+#endif
     return 1;
+}
+
+// Deterministic cathedral floor plan (DESIGN.md, "Compositor de la catedral"). The band number
+// decides what goes where; hashes only pick variants. No state between bands: identical to
+// catedral_plan() in tools/bake_cathedral_kit.py, including placement order.
+static void catedral_band(int32_t band, int map_row, int collision_row) {
+    int placed_x[STRIP_COMPOSE_MAX_STAMPS];
+    int placed_y[STRIP_COMPOSE_MAX_STAMPS];
+    const StripStamp *placed[STRIP_COMPOSE_MAX_STAMPS];
+    int placed_count = 0;
+    int tramo = band >> 1;
+    int pos = tramo & 3;
+    int ciclo = tramo >> 2;
+    int left_state = effective_column_state(band, S_COL_L);
+    int right_state = effective_column_state(band, S_COL_R);
+
+    if (pos != 3) {
+        const int xs[2] = { 8, 48 };   // inner faces of the two columna_entera rows
+        const int states[2] = { left_state, right_state };
+        for (int side = 0; side < 2; side++) {
+            if (states[side] == COL_ENTERA)
+                compose_place(band, map_row, collision_row, STRIP_PIECE_COLUMNA_ENTERA,
+                              xs[side], 0, placed_x, placed_y, placed, &placed_count);
+            else if (states[side] == COL_ROTA)
+                compose_place(band, map_row, collision_row, STRIP_PIECE_COLUMNA,
+                              xs[side], 8, placed_x, placed_y, placed, &placed_count);
+        }
+    }
+
+    if (pos == 0 || pos == 1) {
+        // One glued group of 4-6 benches per row and tramo (8 slots of 32 px = 2 bands x 4).
+        // Length is hashed per (tramo, row) 25/50/25 for 4/5/6 and the start inside
+        // [0, 8 - length]; when both rows land on exactly the same slots the right row moves one
+        // valid start so the rows stagger. Same rule as bench_groups() in the baker.
+        static const int bench_x[2] = { 19, 35 };
+        int len[2], start[2];
+        for (int row_i = 0; row_i < 2; row_i++) {
+            int row_key = (tramo << 1) + row_i;
+            uint32_t r = band_hash(row_key, S_BANK_LEN) % 100u;
+            len[row_i] = r < 25u ? 4 : (r >= 75u ? 6 : 5);
+            start[row_i] = (int)(band_hash(row_key, S_BANK_START)
+                                 % (uint32_t)(8 - len[row_i] + 1));
+        }
+        if (len[0] == len[1] && start[0] == start[1])
+            start[1] = (start[1] + 1) % (8 - len[1] + 1);
+        int sub = band & 1;
+        for (int row_i = 0; row_i < 2; row_i++) {
+            for (int slot = start[row_i]; slot < start[row_i] + len[row_i]; slot++) {
+                if ((slot >> 2) != sub) continue;
+                uint32_t salt = S_BANK_TYPE ^ (((uint32_t)row_i * 0x9e3779b9u)
+                                               ^ ((uint32_t)slot * 0x85ebca6bu));
+                uint8_t pid = (band_hash(band, salt) % 100u < 25u)
+                                  ? STRIP_PIECE_BANCO_ROTO : STRIP_PIECE_BANCO_ENTERO;
+                compose_place(band, map_row, collision_row, pid, bench_x[row_i],
+                              (slot & 3) * 4, placed_x, placed_y, placed, &placed_count);
+            }
+        }
+    } else if (pos == 2) {
+        if (band_hash(ciclo, S_BARRICADE) % 3u == 0u) {
+            // Cleared tramo: 0-2 candles / a flat tomb (no collision) in the open nave.
+            uint32_t h = band_hash(band, S_DECOR);
+            uint32_t count = h % 3u;
+            if (count >= 1u) {
+                if ((h >> 4) & 1u)
+                    compose_place(band, map_row, collision_row, STRIP_PIECE_LAPIDA_CRUZ_H,
+                                  16, 0, placed_x, placed_y, placed, &placed_count);
+                else
+                    compose_place(band, map_row, collision_row, STRIP_PIECE_VELA,
+                                  40, 0, placed_x, placed_y, placed, &placed_count);
+            }
+            if (count >= 2u)
+                compose_place(band, map_row, collision_row, STRIP_PIECE_VELA,
+                              40, 8, placed_x, placed_y, placed, &placed_count);
+        } else {
+            // Barricade: sacks staggered in y; on odd cycles the line leans right when the right
+            // column is down, which alternates the open side.
+            int shift = ((ciclo & 1) && right_state == COL_CAIDA) ? 8 : 0;
+            const int xs[3] = { 16 + shift, 24 + shift, 32 + shift };
+            if (band & 1) {
+                compose_place(band, map_row, collision_row, STRIP_PIECE_SACOS,
+                              xs[1], 0, placed_x, placed_y, placed, &placed_count);
+                compose_place(band, map_row, collision_row, STRIP_PIECE_SACOS,
+                              xs[2], 8, placed_x, placed_y, placed, &placed_count);
+                compose_place(band, map_row, collision_row, STRIP_PIECE_BANCO_VOLCADO,
+                              16, 8, placed_x, placed_y, placed, &placed_count);
+            } else {
+                compose_place(band, map_row, collision_row, STRIP_PIECE_SACOS,
+                              xs[0], 0, placed_x, placed_y, placed, &placed_count);
+                compose_place(band, map_row, collision_row, STRIP_PIECE_SACOS,
+                              xs[1], 8, placed_x, placed_y, placed, &placed_count);
+                compose_place(band, map_row, collision_row, STRIP_PIECE_SACOS,
+                              xs[2], 0, placed_x, placed_y, placed, &placed_count);
+            }
+        }
+    } else {
+        // Crucero: open arena. Symmetric saints, candles and one lateral reliquary.
+        compose_place(band, map_row, collision_row, STRIP_PIECE_SANTO, 16, 0,
+                      placed_x, placed_y, placed, &placed_count);
+        compose_place(band, map_row, collision_row, STRIP_PIECE_SANTO, 40, 0,
+                      placed_x, placed_y, placed, &placed_count);
+        compose_place(band, map_row, collision_row, STRIP_PIECE_VELA, 8, 0,
+                      placed_x, placed_y, placed, &placed_count);
+        compose_place(band, map_row, collision_row, STRIP_PIECE_VELA, 24, 0,
+                      placed_x, placed_y, placed, &placed_count);
+        compose_place(band, map_row, collision_row, STRIP_PIECE_VELA, 32, 8,
+                      placed_x, placed_y, placed, &placed_count);
+        compose_place(band, map_row, collision_row, STRIP_PIECE_VELA, 48, 0,
+                      placed_x, placed_y, placed, &placed_count);
+        compose_place(band, map_row, collision_row, STRIP_PIECE_RELICARIO,
+                      (ciclo & 1) ? 48 : 8, 8, placed_x, placed_y, placed, &placed_count);
+    }
 }
 
 static void stamp_band(int32_t band, int map_row, int collision_row) {
@@ -132,78 +335,27 @@ static void stamp_band(int32_t band, int map_row, int collision_row) {
     // "lapidas" variant: bands 11..15 host the forced showcase lapidas (see strip_debug_lapidas).
     if (band >= 11 && band <= 15) return;
 #endif
+#if defined(PROPS_SHOWCASE) && PROPS_SHOWCASE
+    // Showcase build: strip_start() places one fixed exemplar of each physical prop instead.
+    return;
+#endif
     if ((band >= STRIP_INITIAL_BANDS - STRIP_START_CLEAR_BANDS && band < STRIP_INITIAL_BANDS) ||
         g_strip_kit.num_stamps == 0 ||
         g_strip_kit.stamps == 0 || g_strip_kit.floor_h_tiles == 0) return;
+    catedral_band(band, map_row, collision_row);
+}
 
-    int lane_x = strip_lane_center_px(band);
-    int placed_x[STRIP_MAX_STAMPS_PER_BAND];
-    int placed_y[STRIP_MAX_STAMPS_PER_BAND];
-    const StripStamp *placed[STRIP_MAX_STAMPS_PER_BAND];
-    int placed_count = 0;
-    unsigned wanted = (band_hash(band, 0x68bc21ebu) & 3u) + 1u;
-
-    for (unsigned n = 0; n < wanted; n++) {
-        uint32_t random = band_hash(band, 0x02e5be93u + n * 0x9e3779b9u);
-        const StripStamp *stamp = &g_strip_kit.stamps[random % g_strip_kit.num_stamps];
-        int period = 16;
-        int first_y = stamp->phase_row;
-        int y_slots = ((int)STRIP_BAND_TILES - (int)stamp->h_tiles - first_y) / period + 1;
-        int first_x = stamp->phase_col;
-        while (first_x < STRIP_WALL_TILES) first_x += period;
-        if (first_x + stamp->w_tiles > STRIP_W_TILES - STRIP_WALL_TILES) continue;
-        int x_slots = (STRIP_W_TILES - STRIP_WALL_TILES - (int)stamp->w_tiles - first_x) / period + 1;
-        if (first_y >= period || first_y + stamp->h_tiles > STRIP_BAND_TILES ||
-            y_slots <= 0 || x_slots <= 0) continue;
-        if (s_occlusion_count + stamp->num_depth_runs > STRIP_OCCLUSION_CAPACITY) continue;
-
-        for (int attempt = 0; attempt < 16; attempt++) {
-            uint32_t probe = hash32(random + (uint32_t)attempt * 0x85ebca6bu);
-            int x_tile = first_x + (int)(probe % (unsigned)x_slots) * period;
-            int y_tile = first_y + (int)((probe >> 16) % (unsigned)y_slots) * period;
-            if (!stamp_can_be_placed(stamp, x_tile, y_tile, lane_x,
-                                     placed_x, placed_y, placed, placed_count)) continue;
-
-            for (unsigned sy = 0; sy < stamp->h_tiles; sy++) {
-                unsigned dst = (unsigned)(map_row + y_tile + (int)sy) * STRIP_W_TILES + (unsigned)x_tile;
-                unsigned src = sy * stamp->w_tiles;
-                for (unsigned sx = 0; sx < stamp->w_tiles; sx++) {
-                    uint16_t tile = stamp->tiles[src + sx];
-                    if (tile != 0) s_map[dst + sx] = tile;
-                }
-            }
-            for (unsigned ri = 0; ri < stamp->num_foot_runs; ri++) {
-                const StripFootprintRun *run = &stamp->foot_runs[ri];
-                unsigned cell_y = (unsigned)collision_row + (unsigned)y_tile * 2u + run->y_cell;
-                if (cell_y >= STRIP_COLLISION_H - 1u) continue;
-                unsigned first_x = (unsigned)x_tile * 2u + run->x_cell;
-                for (unsigned cx = 0; cx < run->length_cells; cx++) {
-                    unsigned cell_x = first_x + cx;
-                    if (cell_x > 0 && cell_x < STRIP_COLLISION_W - 1u) {
-                        packed_collision_set(s_collision, cell_y * STRIP_COLLISION_W + cell_x,
-                                             stamp->foot_value);
-                    }
-                }
-            }
-            for (unsigned ri = 0; ri < stamp->num_depth_runs; ri++) {
-                const StripDepthRun *run = &stamp->depth_runs[ri];
-                unsigned ry = (unsigned)(map_row * 8 + y_tile * 8 + run->y_px);
-                unsigned rx = (unsigned)(x_tile * 8 + run->x_px);
-                if (ry >= STRIP_WIN_H_PX || rx >= STRIP_W_PX || !run->length) continue;
-                DungeonOcclusionRun *dst = &s_occlusion_runs[s_occlusion_count++];
-                dst->x = (uint16_t)rx;
-                dst->y = (uint16_t)ry;
-                dst->length = (uint16_t)((rx + run->length > STRIP_W_PX) ? STRIP_W_PX - rx : run->length);
-                dst->depth = (int16_t)(map_row * 8 + y_tile * 8 + stamp->foot_anchor_y_px + run->depth_delta);
-            }
-            placed_x[placed_count] = x_tile;
-            placed_y[placed_count] = y_tile;
-            placed[placed_count] = stamp;
-            placed_count++;
-            break;
-        }
+#if STRIP_LAYOUT_DUMP
+// Host-only parity harness hook: walk `num_bands` bands like strip_start() would, dumping every
+// successful placement. s_occlusion_count resets per band because the plan has no cross-band state.
+void strip_layout_dump_bands(uint32_t seed, int num_bands) {
+    s_seed = seed;
+    for (int band = 0; band < num_bands; band++) {
+        s_occlusion_count = 0;
+        stamp_band(band, 0, 0);
     }
 }
+#endif
 
 static void generate_band(int32_t band, int map_row, int collision_row) {
     const unsigned map_period = g_strip_kit.map_h_tiles;
@@ -259,9 +411,10 @@ static void rebuild_occlusion_index(void) {
 }
 
 #if LAPIDA_DEBUG
-// Debug-only showcase ("lapidas" build variant): each lapida is painted at a fixed band so all five
-// are on screen deterministically. The default build still picks them by hash.
-#define STRIP_LAPIDA_FIRST 24   // keep in sync with the s_stamps order in source/strip_kit.c (last five)
+// Debug-only showcase ("lapidas" build variant): every lapida stamp in the kit is painted at a
+// fixed band so it is on screen deterministically. The catedral kit bakes only one gravestone
+// variant (lapida_cruz_h), so this variant shows that single piece; the other lapida stamps only
+// exist in the old `--mode actual` kit.
 static void strip_debug_blit_lapida(int band, int stamp_index) {
     const StripStamp *stamp = &g_strip_kit.stamps[stamp_index];
     int x_tile = 16;                          // floor phase 0 in x
@@ -276,7 +429,13 @@ static void strip_debug_blit_lapida(int band, int stamp_index) {
     }
 }
 static void strip_debug_lapidas(void) {
-    for (int k = 0; k < 5; k++) strip_debug_blit_lapida(11 + k, STRIP_LAPIDA_FIRST + k);
+    int band = 11;
+    for (int i = 0; i < (int)g_strip_kit.num_stamps && band <= 15; i++) {
+        uint8_t id = g_strip_kit.stamps[i].piece_id;
+        if (id < STRIP_PIECE_LAPIDA_CRUZ_H || id >= STRIP_PIECE_COUNT) continue;
+        strip_debug_blit_lapida(band, i);
+        band++;
+    }
 }
 #endif
 

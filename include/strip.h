@@ -24,4 +24,13 @@ const Arena *strip_arena(void);
 extern int32_t g_strip_debug_pos[2];
 #endif
 
+#if STRIP_LAYOUT_DUMP
+// Host-only parity harness (tests/test_strip_layout_parity.py). The sink is called for every
+// successful placement; strip_layout_dump_bands() walks bands like strip_start() would, without
+// installing the arena or touching the occlusion budget across bands.
+extern void (*g_strip_layout_dump)(int32_t band, int piece_id, int phase_col, int phase_row,
+                                   int x_tile, int y_tile);
+void strip_layout_dump_bands(uint32_t seed, int num_bands);
+#endif
+
 #endif // STRIP_H
