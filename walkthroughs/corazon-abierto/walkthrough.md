@@ -36,11 +36,12 @@ Rama `feat/corazon-abierto`. Consolida el personaje elegido en `walkthroughs/con
 ## Verificación
 
 - Compilación normal y sandbox sin warnings; tests de contrato (`tests/test_hero_shot_clip_contract.py`, `test_weapons_contract.py`, `test_sandbox_contract.py`) y escenarios `sandbox_sniper_fire*`, `sniper_hit_sweep_*`, `sandbox_hero_walk_*` en PASS antes del merge con `main`.
-- ROM subida a la DS el 2026-11-12 (sin `PERF_PROFILE`) para verla y jugarla.
+- Tras traer `main` (catedral v2 y Cireneo): 4 variantes sin warnings, 222 tests de Python, 10 de host y 14 escenarios PASS.
+- **DS:** el usuario jugó la ROM normal (commit `13a4b18`) con la catedral v2 y la dio por buena. No hay log de `PERF_PROFILE`; se mergeó a `main` con su visto bueno.
 
 ## Pendiente
 
-- **Medir 60 FPS en la DS con `PERF_PROFILE`** (regla 6) con el haz y cada aura, antes de mergear a `main`.
+- Log de `PERF_PROFILE` con el haz y cada aura si se ven caídas (el usuario no las vio).
 - Elegir aura y borrar las descartadas y el selector `Y`.
 - Las cruces cian de impacto son la chispa genérica de `main.c` (compartida con escopeta y granada); decidir si el rayo lleva una propia.
 - El ciclo de piernas va al doble de velocidad que el clip original y el paso del juego es un ~24 % más largo que el del lab: juzgar en la DS si resbala.

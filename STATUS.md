@@ -4,7 +4,7 @@ Primero el estado necesario para retomar el trabajo sin depender del chat; despu
 
 ## Estado actual (2026-11-12)
 
-- **El Corazón Abierto, héroe (2026-11-12, rama `feat/corazon-abierto`, sin mergear a `main`):** sustituye al marine. Andar de Mixamo, carga/disparo con brazos en cruz, rayo desde el pecho, haz «fuego» y cuatro auras de carga en comparación (`Y`: llamas, resplandor, espinas, ceniza). Integrada la catedral v2 de `main`. Bloquean el merge: medir 60 FPS en la DS con `PERF_PROFILE` y elegir aura. Detalle: `walkthroughs/corazon-abierto/`; diseño en `DESIGN.md` §6.10.
+- **El Corazón Abierto, héroe (2026-11-12, en `main`):** sustituye al marine. Andar de Mixamo, carga/disparo con brazos en cruz, rayo desde el pecho, haz «fuego» y cuatro auras de carga en comparación (`Y`: llamas, resplandor, espinas, ceniza). Jugado en la DS por el usuario con la catedral v2: va bien (sin log de `PERF_PROFILE`). Pendiente: elegir aura y quitar el selector `Y`. Detalle: `walkthroughs/corazon-abierto/`; diseño en `DESIGN.md` §6.10.
 - **v0.3.1 cerrada (2026-11-07, `walkthroughs/v031-tuning/`):** tres tiers de enemigos (esqueleto, cargador que carga, tirador láser), escala de cifras 100 = 1,0 y pulido de suelo y marea. Jugada en la DS: rendimiento bien y el juego se siente mucho mejor. Pool de 24; el techo 32/48 y el log de `PERF_PROFILE` no se hicieron (`DESIGN.md` §6.9.1, "Valores de la 0.3.1").
 - **Props: oclusión y colisión resueltas (2026-11-10).** La profundidad de los props estaba en píxeles del render fuente, no en píxeles de mundo. Además, los bancos toman ahora como huella toda su planta. El usuario lo probó en la DS y lo dio por bueno. Detalle: `walkthroughs/props-depth-units/`.
 - **Lectura tras muros:** retirados el parpadeo alterno, la transparencia condicionada de enemigos, la sombra del jugador sobre el muro y la línea negra de borde de colisión. `cathedral-playground-perf` se subió como `dungeonds.nds` (2.009.088 bytes, rama `feat/muros-catedral`, commit base `2def813`) y el usuario la jugó. Las capturas de una columna solo acreditan ese caso. Detalle: `walkthroughs/remove-wall-through-effects/`.
@@ -18,7 +18,7 @@ Primero el estado necesario para retomar el trabajo sin depender del chat; despu
 - **Juego (v0.1, base de la v0.2; sustituida por la mazmorra):** prueba de diversión en 4 arenas cerradas de 384×384 px encadenadas (`DESIGN.md` §4): escopeta + francotirador, cargador (con navegación BFS) + tirador (telegraph y ráfagas de 3). Pendiente la Fase E: tuning y 60 FPS certificados en la DS.
 - **Arenas:** datos en `assets/arenas/arenas.json`; generador de modelos, export con el lab y baker (`tools/make_arena_glb.py`, `tools/export_arenas.py`, `tools/bake_arena.py`) descritos en `TECHNICAL.md` §3. El mapa grande `isometric_shooter_bl` ya no se usa.
 - **Render:** actores dibujados directamente en la página trasera del framebuffer de VRAM, limpieza por spans sucios y oclusión exacta al píxel por consulta de tramos (`TECHNICAL.md` §3.3). Medido en DS: CPU 1,58 ms de media y 12 de 2520 frames con más de un vblank.
-- **Personajes:** héroe (Corazón Abierto en `feat/corazon-abierto`; space marine en `main`), charger y necron, exportados por el lab a `assets/sprites/characters/<nombre>/`. El lab puede tomar el `muzzle` de un hueso (`--muzzleBone`).
+- **Personajes:** héroe (Corazón Abierto; el space marine queda sin uso), charger y necron, exportados por el lab a `assets/sprites/characters/<nombre>/`. El lab puede tomar el `muzzle` de un hueso (`--muzzleBone`).
 - **Sin existir en código:** iluminación dinámica, niebla de guerra.
 - **Herramientas de diagnóstico en DS:** `PERF_PROFILE` (`include/perfprof.h`, log `/dungeonds_perf.log`) y `crashlog` (`CRASHLOG_ENABLED`, logs `/dungeonds_crash.log` y `/dungeonds_live.log`). Ambas apagadas por defecto; se leen con `fetch-device-log.ps1` de la skill.
 
@@ -247,6 +247,6 @@ El láser de apuntado se colima durante la carga (ancho, difuso y rojo a 1 px ve
 
 ## 2026-11-12 - El Corazón Abierto como héroe (`feat/corazon-abierto`)
 - **Entrega:** héroe nuevo con andar de Mixamo adaptado (cadera en el sitio), clip de disparo que al revés hace de carga, `muzzle` en el pecho desde el hueso `Spine2`, haz «fuego» del francotirador y cuatro auras de carga para comparar (`Y`). Rama al día con `main` (catedral v2 y Cireneo).
-- **Verificación:** 4 variantes sin warnings; 222 tests de Python y 10 de host; 14 escenarios PASS (héroe y catedral). ROM subida a la DS sin `PERF_PROFILE` para jugarla.
-- **Pendiente:** medición en la DS (regla 6), elección de aura, chispa de impacto propia del rayo.
+- **Verificación:** 4 variantes sin warnings; 222 tests de Python y 10 de host; 14 escenarios PASS (héroe y catedral). ROM (commit `13a4b18`) jugada en la DS por el usuario: va bien; no hay log de `PERF_PROFILE`.
+- **Pendiente:** elección de aura, chispa de impacto propia del rayo y, si se ven caídas, log de `PERF_PROFILE`.
 - **Detalle:** [`walkthroughs/corazon-abierto/`](walkthroughs/corazon-abierto/walkthrough.md).
