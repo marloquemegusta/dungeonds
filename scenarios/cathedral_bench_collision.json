@@ -1,6 +1,6 @@
 {
   "name": "cathedral_bench_collision",
-  "description": "Deterministic cathedral seed 0xC0DE1234. Band 10 (tramo 5, bancada) holds a real group from the plan: --dump-plan plus foot_runs give a banco_entero at x_tile=19,y_tile=168 with body x 160..224 and a banco_entero at x_tile=35,y_tile=168 with body x 288..352, both 16 px deep (y 1360..1376). The 64 px central aisle is x 224..288 (centre 256). The marine is poked at the aisle centre (x=256, y=1368), inside the y band of the two benches. Holding LEFT crosses the aisle into the left bench footprint and it stops with its right side at x=224; holding RIGHT crosses into the right bench footprint and it stops with its left side at x=288. No poke goes below y=768, so no 512 px rebase shifts the world.",
+  "description": "Seed 0xC0DE1234, bloque 2 pantalla 0 (ROM -perf). banco_grupo4 en x_tile 16, y_tile 8 (origen mundo 128,832): cuatro bancos de 16 px de fondo con paso de 24 px, cubren x 136..200 e y 848..935. Huecos horizontales de 8 px en y 864..871, 888..895 y 912..919. Cuerpo del marine: radio 6 px en x y 3 px en y (position_is_free). Prueba 1: desde (168,955) con UP se choca con la cara inferior del banco en y 939. Prueba 2: desde (100,867) con RIGHT atraviesa el canal de 8 px entre los bancos (y 867 esta dentro del hueco) y sale por x mayor de 200. Ningun poke baja de y 768: no hay rebase.",
   "state": {
     "elf": "../.ds-game-dev/build/out/dungeonds-cathedral-playground-perf.elf",
     "symbols": {
@@ -47,11 +47,11 @@
       "poke": [
         {
           "field": "player_x",
-          "value": 256
+          "value": 168
         },
         {
           "field": "player_y",
-          "value": 1368
+          "value": 955
         },
         {
           "field": "seq",
@@ -59,32 +59,27 @@
         }
       ],
       "frames": 10,
-      "state_capture": "left_start"
+      "state_capture": "choque_start"
     },
     {
-      "button_down": "LEFT",
-      "frames": 60,
-      "capture": "00_left_contact",
-      "state_capture": "left_edge"
-    },
-    {
+      "button_down": "UP",
       "frames": 120,
-      "capture": "01_left_held",
-      "state_capture": "left_blocked"
+      "capture": "01_banco_choque_arriba",
+      "state_capture": "choque_bloqueado"
     },
     {
-      "button_up": "LEFT",
+      "button_up": "UP",
       "frames": 2
     },
     {
       "poke": [
         {
           "field": "player_x",
-          "value": 256
+          "value": 100
         },
         {
           "field": "player_y",
-          "value": 1368
+          "value": 867
         },
         {
           "field": "seq",
@@ -92,18 +87,13 @@
         }
       ],
       "frames": 10,
-      "state_capture": "right_start"
+      "state_capture": "canal_start"
     },
     {
       "button_down": "RIGHT",
-      "frames": 60,
-      "capture": "02_right_contact",
-      "state_capture": "right_edge"
-    },
-    {
-      "frames": 120,
-      "capture": "03_right_held",
-      "state_capture": "right_blocked"
+      "frames": 200,
+      "capture": "02_paso_entre_bancos",
+      "state_capture": "canal_fin"
     },
     {
       "button_up": "RIGHT",
@@ -114,37 +104,36 @@
     "state_changes": [
       {
         "field": "ack",
-        "at": "left_start",
+        "at": "choque_start",
         "equals": 101
       },
       {
-        "field": "x",
-        "from": "left_start",
-        "to": "left_edge",
-        "max_delta": -4000
+        "field": "y",
+        "from": "choque_start",
+        "to": "choque_bloqueado",
+        "max_delta": -10
       },
       {
-        "field": "x",
-        "from": "left_edge",
-        "to": "left_blocked",
-        "max_abs_delta": 512
+        "field": "y",
+        "at": "choque_bloqueado",
+        "min_value": 939
       },
       {
         "field": "ack",
-        "at": "right_start",
+        "at": "canal_start",
         "equals": 102
       },
       {
         "field": "x",
-        "from": "right_start",
-        "to": "right_edge",
-        "min_delta": 4000
+        "from": "canal_start",
+        "to": "canal_fin",
+        "min_delta": 120
       },
       {
-        "field": "x",
-        "from": "right_edge",
-        "to": "right_blocked",
-        "max_abs_delta": 512
+        "field": "y",
+        "from": "canal_start",
+        "to": "canal_fin",
+        "max_abs_delta": 1
       }
     ]
   }

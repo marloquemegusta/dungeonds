@@ -1197,10 +1197,20 @@ static void strip_shift_world_y(int dy_px) {
     tide_shift_y(dy_px);
     pickups_shift_y(dy_px);
 
-    init_bg_tile_cache(&s_top_bg_tile_cache, TOP_TILE_CACHE_CAPACITY, s_top_bg_tiles_vram);
-    init_bg_tile_cache(&s_bot_bg_tile_cache, BG_TILE_CACHE_CAPACITY, s_bot_bg_tiles_vram);
-    s_top_map_ready = 0;
-    s_bot_map_ready = 0;
+    // The rebase moves the world and the camera by the same rows, so what is on screen does not
+    // change and the BG tile caches stay valid. Shifting the streaming reference by those rows
+    // keeps the map ring in place: a shift that is a multiple of BG_RING_H rows (96 % 32 == 0)
+    // rewrites nothing. Any other shift falls back to a full reset of the caches.
+    int tile_shift = dy_px >> 3;
+    if ((dy_px & 7) == 0 && tile_shift % BG_RING_H == 0) {
+        s_top_map_tile_y += tile_shift;
+        s_bot_map_tile_y += tile_shift;
+    } else {
+        init_bg_tile_cache(&s_top_bg_tile_cache, TOP_TILE_CACHE_CAPACITY, s_top_bg_tiles_vram);
+        init_bg_tile_cache(&s_bot_bg_tile_cache, BG_TILE_CACHE_CAPACITY, s_bot_bg_tiles_vram);
+        s_top_map_ready = 0;
+        s_bot_map_ready = 0;
+    }
     // Dirty spans are screen-space and remain valid because the camera and every
     // world-space effect move by the same amount; the next pass clears them.
 }
@@ -1220,11 +1230,6 @@ static void enemies_update(void) {
 static void strip_enemies_update(void) {
 #if CATHEDRAL_PLAYGROUND
     // Fixed sandbox dummies replace the procedural horde in the review ROM.
-    return;
-#endif
-#if LAPIDA_DEBUG
-    // "lapidas" variant: a static look scene with no horde.
-    for (int i = 0; i < MAX_ENEMIES; i++) g_enemies[i].active = 0;
     return;
 #endif
     nav_set_goal(TO_INT(s_player.x), TO_INT(s_player.y));
@@ -1704,16 +1709,9 @@ int main(void) {
         if (!simulate) g_hitstop_frames--;
         if (simulate) {
             sandbox_update(g_enemies, MAX_ENEMIES, &s_player.x, &s_player.y);
-#if LAPIDA_DEBUG
-            // "lapidas" variant: pin the marine where the scenario pokes it and keep it invulnerable.
-            if (g_strip_debug_pos[0] >= 0 && g_strip_debug_pos[1] >= 0) {
-                s_player.x = TO_FIXED(g_strip_debug_pos[0]);
-                s_player.y = TO_FIXED(g_strip_debug_pos[1]);
-            }
-            g_player_state.god_mode = 1;
-#endif
             player_update(keys_held, s_keys_down_latch);
             if (s_strip_mode) {
+                strip_prepare_step(TO_INT(s_player.y));
                 int shifted = strip_rebase_if_needed(TO_INT(s_player.y));
                 if (shifted) {
                     strip_shift_world_y(shifted);

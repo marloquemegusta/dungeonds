@@ -86,11 +86,11 @@ static void check_rebase_continuity(void) {
     CHECK(strip_shift_total_px() == STRIP_SHIFT_PX, "shift total must accumulate the rebase");
     memcpy(s_map_b, arena->map, MAP_BYTES);
     memcpy(s_collision_b, arena->collision, COLLISION_BYTES);
-    CHECK(memcmp(s_map_a, s_map_b + 64u * 64u, (256u - 64u) * 64u * sizeof(uint16_t)) == 0,
+    CHECK(memcmp(s_map_a, s_map_b + 96u * 64u, (256u - 96u) * 64u * sizeof(uint16_t)) == 0,
           "map rows in the overlap must remain identical after rebase");
     // The bottom boundary is reasserted solid after the shift; all preceding
     // collision rows in the overlap are copied byte-for-byte.
-    CHECK(memcmp(s_collision_a, s_collision_b + 128u * 32u, (512u - 128u - 1u) * 32u) == 0,
+    CHECK(memcmp(s_collision_a, s_collision_b + 192u * 32u, (512u - 192u - 1u) * 32u) == 0,
           "collision rows in the overlap must remain identical except the solid bottom boundary");
     for (int band = 1; band < 500; band++) {
         int delta = strip_lane_center_px(band) - strip_lane_center_px(band - 1);
@@ -118,7 +118,7 @@ int main(void) {
     for (int band = 0; band < 500; band += 4) {
         CHECK(has_bottom_to_top_path(strip_arena()->collision), "3x3-cell actor must cross the current window");
         CHECK(strip_rebase_if_needed(STRIP_REBASE_TOP_PX - 1) == STRIP_SHIFT_PX,
-              "forced rebase should generate four more bands");
+              "forced rebase should generate six more bands");
     }
     printf(s_failures == 0 ? "STRIP_HOST_TEST=PASS\n" : "STRIP_HOST_TEST=FAIL\n");
     return s_failures == 0 ? 0 : 1;

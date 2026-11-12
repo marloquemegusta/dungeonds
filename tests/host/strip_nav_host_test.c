@@ -15,9 +15,11 @@ int main(void) {
     nav_set_goal(strip_start_x(), player_y);
     nav_rebuild_now();
 
-    // Move 1600 world pixels up the guaranteed center lane. Each rebase moves
+    // Climb far enough to cross two rebases: the first fires when the actor reaches
+    // STRIP_REBASE_TOP_PX, the second one STRIP_SHIFT_PX later, plus a margin. Each rebase moves
     // the live actor down with the window while preserving the logical height.
-    for (int climbed = 0; climbed < 1600; climbed++) {
+    enum { CLIMB_PX = STRIP_WIN_H_PX - 256 - STRIP_REBASE_TOP_PX + STRIP_SHIFT_PX + 128 };
+    for (int climbed = 0; climbed < CLIMB_PX; climbed++) {
         player_y--;
         int shift = strip_rebase_if_needed(player_y);
         if (shift) {
@@ -40,7 +42,8 @@ int main(void) {
         puts("FAIL: climb did not cross two rebases");
         return 1;
     }
-    if (strip_height_m(player_y) != 39) {
+    // Logical height is the full climb in px (start + shift - player_y), converted like strip.c.
+    if (strip_height_m(player_y) != (CLIMB_PX * 100) / STRIP_PIXELS_PER_METER_100X) {
         puts("FAIL: absolute height should include distance climbed across rebases");
         return 1;
     }

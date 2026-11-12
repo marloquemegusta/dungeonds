@@ -2,14 +2,14 @@
 
 Primero el estado necesario para retomar el trabajo sin depender del chat; después, las entregas recientes verificadas (más nueva al final). El historial hasta 2026-10-21 está en `STATUS-ARCHIVE.md`.
 
-## Estado actual (2026-11-10)
+## Estado actual (2026-11-12)
 
 - **v0.3.1 cerrada (2026-11-07, `walkthroughs/v031-tuning/`):** tres tiers de enemigos (esqueleto, cargador que carga, tirador láser), escala de cifras 100 = 1,0 y pulido de suelo y marea. Jugada en la DS: rendimiento bien y el juego se siente mucho mejor. Pool de 24; el techo 32/48 y el log de `PERF_PROFILE` no se hicieron (`DESIGN.md` §6.9.1, "Valores de la 0.3.1").
 - **Props: oclusión y colisión resueltas (2026-11-10).** La profundidad de los props estaba en píxeles del render fuente, no en píxeles de mundo. Además, los bancos toman ahora como huella toda su planta. El usuario lo probó en la DS y lo dio por bueno. Detalle: `walkthroughs/props-depth-units/`.
 - **Lectura tras muros:** retirados el parpadeo alterno, la transparencia condicionada de enemigos, la sombra del jugador sobre el muro y la línea negra de borde de colisión. `cathedral-playground-perf` se subió como `dungeonds.nds` (2.009.088 bytes, rama `feat/muros-catedral`, commit base `2def813`) y el usuario la jugó. Las capturas de una columna solo acreditan ese caso. Detalle: `walkthroughs/remove-wall-through-effects/`.
 - **0.3.2 (escenario de catedral) abierta:** la primera pasada de muros, lancetas, crucero y godrays está en ROM. El usuario considera buenos el rendimiento y la estética general, pero no aprueba la distribución de bancos y estatuas. Diagnóstico y pendientes: `walkthroughs/catedral-cierre/`. Actualización 2026-11-11: la distribución de bancos y estatuas se rehizo como compositor determinista; pendiente de aprobación visual del usuario y medición en DS.
 - **Godrays:** integrados en las variantes `cathedral-playground` y `cathedral-playground-perf`; el usuario los considera prácticamente resueltos. Falta la certificación final de rendimiento con log en DS según `DESIGN.md` §6.9.1b.
-- **Siguiente sesión de catedral (2026-11-11):** el compositor de la nave está hecho en la rama `feat/distribucion-catedral` (sin commit): columnata, bancadas en grupos, barricada y crucero (`walkthroughs/distribucion-catedral/`). Lo que falta para terminar el escenario (medir en DS, muros laterales con módulo 3D, vela, sombras, lápidas, arco y rosetón del crucero, escala, godrays) está en `walkthroughs/distribucion-catedral/BRIEFING-SIGUIENTE.md`. El brief 02 de `catedral-siguientes-pasos` queda sustituido.
+- **Catedral 0.3.2 v2 (2026-11-12, `walkthroughs/catedral-v2-salon/`):** planta de salón con el muro 3D del usuario, lápidas v5 encajadas en el damero, compositor por pantalla (columnas con velas, bancadas o relicario, lápidas) y godrays desde la cara del muro. Rebase preparado por trozos: medido en la DS, peor frame al 72 % y sin parpadeo. Herramienta de diseño: `tools/catedral_editor/editor.html`. Pendientes: escala de piezas, caballero más legible y variedad de tramos. `walkthroughs/distribucion-catedral/BRIEFING-SIGUIENTE.md` queda sustituido.
 - **v0.3 mínima jugable (2026-11-06, `walkthroughs/v03-minima/`):** la ROM principal arranca en la franja vertical infinita con horda desde arriba, marea, curas y HUD de altura (`DESIGN.md` §6.0). 60 FPS en la DS con el pool de 24. **Cerrada.** El resto de §6 (gemas, mejoras, élites, jefes) sigue sin código y está repartido por versiones en `DESIGN.md` §6.9.
 - **Dirección vigente (v0.3, decidida 2026-11-06):** survivors de frente vertical con apuntado manual. Un nivel de ~8 min en una franja vertical que se sube mientras una marea avanza desde abajo, horda continua, gemas → nivel → elegir 1 de 3 mejoras, élites, minijefe y jefe, y clase = arma (francotirador/láser y escopeta). Diseño en `DESIGN.md` §6; requisitos técnicos en `TECHNICAL.md` §4.7. Sesión: `walkthroughs/survivors-direction/`.
 - **Rama base:** `main`, con v0.1 (`walkthroughs/v0.1/`) y v0.2 (`walkthroughs/v0.2/`) integradas. La v0.2 se integró con la deuda de rendimiento anotada abajo.
@@ -216,3 +216,21 @@ El láser de apuntado se colima durante la carga (ancho, difuso y rojo a 1 px ve
 - **Qué:** el reparto aleatorio de piezas se sustituye por un compositor determinista (tramo de 256 px, ciclo de 4 tramos, columnata junto a los muros, bancadas en grupos de 4–6 bancos pegados y centrados, barricada de sacos y crucero). Piezas nuevas: `banco_entero`, `sacos` y `columna_entera`. Se retira el rosetón pintado en el suelo y se arregla la sombra cortada de la columna entera. Reglas en `DESIGN.md` §6.9.1b.
 - **Verificación:** kit 851/1.024 tiles, ventana 351, oclusión 15.624 (antes 4.117); build sin warnings; paridad C == Python; 5 escenarios de catedral PASS; el único test de host que falla (`test_strip_kit`) ya fallaba en `main`. **No medido en la DS:** la oclusión sube 3,8 veces y hay que certificar los 60 FPS antes de merge (`AGENTS.md`, regla 6).
 - **Detalle y pendientes:** [`walkthroughs/distribucion-catedral/`](walkthroughs/distribucion-catedral/walkthrough.md) y [`BRIEFING-SIGUIENTE.md`](walkthroughs/distribucion-catedral/BRIEFING-SIGUIENTE.md).
+
+### Catedral 0.3.2 v2: planta de salón y rebase sin tirones (2026-11-12)
+
+- **Qué:**
+  - Planta de salón con el muro 3D `gothic_arch` del usuario y luz que entra desde la cara del muro.
+  - Lápidas v5: la piedra sustituye bloques de 3×2 o 2×1 losas, a ras del suelo, con los surcos oscurecidos y dos estampas por color del damero.
+  - Compositor v2 por pantalla, en bloques de 2 pantallas: columnas con velas, bancadas en grupos de 4 o relicario, y lápidas sueltas o en escalera.
+  - Editor de planta `tools/catedral_editor/`.
+  - Rebase de 768 px preparado por trozos, sin `qsort` y sin vaciar la caché de tiles.
+  - Limpieza de 372 assets viejos.
+  - Reglas en `DESIGN.md` §6.9.1b.
+- **Verificación:**
+  - 13 tests de host, incluida la equivalencia bit a bit del rebase.
+  - 4 variantes compiladas sin warnings.
+  - 8 escenarios PASS.
+  - Kit de 857 de 1.024 tiles y peor ventana de 379.
+  - **DS:** peor frame 406.000 de 560.190 ticks (72 %) y media del 26 %. Ningún frame perdido por el juego: los perdidos coinciden con la escritura del log en la SD. El usuario confirma que no parpadea.
+- **Detalle:** [`walkthroughs/catedral-v2-salon/`](walkthroughs/catedral-v2-salon/walkthrough.md).

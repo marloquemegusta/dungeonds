@@ -1,40 +1,303 @@
 {
   "name": "catedral_ciclo_capturas",
-  "description": "Deterministic cathedral seed 0xC0DE1234. The marine is teleported up the strip one band at a time (bottom-screen centre = band*128+64) and 8 consecutive screens are captured: the clear start, one barricade and four bancada bands, ending in the open crucero. Every capture is named for the band family the composer really places there. No poke goes below y=768, so no 512 px rebase happens and the world coordinates stay as written.",
+  "description": "Seed 0xC0DE1234, ROM cathedral-playground. El strip mode ya esta activo en esta ROM (s_strip_mode = 1); L+R+B solo alterna god mode y cada poke reaplica sus flags. Pokes con x e y juntas: 01 nave libre, 02 nave alta, 03 y 04 bancadas del bloque 3, 05 y 06 bancadas del bloque 2. 07 relicario desde el sur: poke a (160, 800) y UP 60 frames, cruza el rebase de 768 px. 08 relicario desde el norte: poke a (200, 1300). x 160 evita la base del relicario (x 232..264), que impide pasar de y 768 en x 256.",
   "state": {
     "elf": "../.ds-game-dev/build/out/dungeonds-cathedral-playground.elf",
-    "symbols": { "sandbox": "g_sandbox" },
+    "symbols": {
+      "sandbox": "g_sandbox",
+      "strip": "g_strip_debug"
+    },
     "default_symbol": "sandbox",
     "fields": {
-      "seq": { "offset": 0, "type": "u32" },
-      "ack": { "offset": 4, "type": "u32" },
-      "player_x": { "offset": 8, "type": "s16" },
-      "player_y": { "offset": 10, "type": "s16" },
-      "enemy_count": { "offset": 14, "type": "u8" }
+      "seq": {
+        "offset": 0,
+        "type": "u32"
+      },
+      "ack": {
+        "offset": 4,
+        "type": "u32"
+      },
+      "player_x": {
+        "offset": 8,
+        "type": "s16"
+      },
+      "player_y": {
+        "offset": 10,
+        "type": "s16"
+      },
+      "enemy_count": {
+        "offset": 14,
+        "type": "u8"
+      },
+      "shift_px": {
+        "symbol": "strip",
+        "offset": 4,
+        "type": "s32"
+      }
     }
   },
   "steps": [
-    { "frames": 60 },
-    { "button_down": "START", "frames": 2 },
-    { "button_up": "START", "frames": 2 },
-    { "poke": [{ "field": "player_x", "value": 232 }, { "field": "player_y", "value": 1856 }, { "field": "seq", "value": 100 }, { "field": "enemy_count", "value": 0 }], "frames": 20, "capture": "01_nave_inicio", "state_capture": "s1" },
-    { "poke": [{ "field": "player_x", "value": 232 }, { "field": "player_y", "value": 1728 }, { "field": "seq", "value": 101 }, { "field": "enemy_count", "value": 0 }], "frames": 20, "capture": "02_nave_inicio_alta", "state_capture": "s2" },
-    { "poke": [{ "field": "player_x", "value": 232 }, { "field": "player_y", "value": 1600 }, { "field": "seq", "value": 102 }, { "field": "enemy_count", "value": 0 }], "frames": 20, "capture": "03_barricada", "state_capture": "s3" },
-    { "poke": [{ "field": "player_x", "value": 232 }, { "field": "player_y", "value": 1472 }, { "field": "seq", "value": 103 }, { "field": "enemy_count", "value": 0 }], "frames": 20, "capture": "04_bancadas_a", "state_capture": "s4" },
-    { "poke": [{ "field": "player_x", "value": 232 }, { "field": "player_y", "value": 1344 }, { "field": "seq", "value": 104 }, { "field": "enemy_count", "value": 0 }], "frames": 20, "capture": "05_bancadas_b", "state_capture": "s5" },
-    { "poke": [{ "field": "player_x", "value": 232 }, { "field": "player_y", "value": 1216 }, { "field": "seq", "value": 105 }, { "field": "enemy_count", "value": 0 }], "frames": 20, "capture": "06_bancadas_c", "state_capture": "s6" },
-    { "poke": [{ "field": "player_x", "value": 232 }, { "field": "player_y", "value": 1088 }, { "field": "seq", "value": 106 }, { "field": "enemy_count", "value": 0 }], "frames": 20, "capture": "07_bancadas_d", "state_capture": "s7" },
-    { "poke": [{ "field": "player_x", "value": 232 }, { "field": "player_y", "value": 960 }, { "field": "seq", "value": 107 }, { "field": "enemy_count", "value": 0 }], "frames": 20, "capture": "08_crucero", "state_capture": "s8" }
+    {
+      "frames": 60
+    },
+    {
+      "button_down": "L",
+      "frames": 1
+    },
+    {
+      "button_down": "R",
+      "frames": 1
+    },
+    {
+      "button_down": "B",
+      "frames": 3
+    },
+    {
+      "button_up": "B",
+      "frames": 2
+    },
+    {
+      "button_up": "L",
+      "frames": 1
+    },
+    {
+      "button_up": "R",
+      "frames": 1
+    },
+    {
+      "poke": [
+        {
+          "field": "player_x",
+          "value": 256
+        },
+        {
+          "field": "player_y",
+          "value": 1856
+        },
+        {
+          "field": "seq",
+          "value": 100
+        },
+        {
+          "field": "enemy_count",
+          "value": 0
+        }
+      ],
+      "frames": 20,
+      "capture": "01_nave_libre",
+      "state_capture": "s1"
+    },
+    {
+      "poke": [
+        {
+          "field": "player_x",
+          "value": 256
+        },
+        {
+          "field": "player_y",
+          "value": 1728
+        },
+        {
+          "field": "seq",
+          "value": 101
+        },
+        {
+          "field": "enemy_count",
+          "value": 0
+        }
+      ],
+      "frames": 20,
+      "capture": "02_nave_libre_alta",
+      "state_capture": "s2"
+    },
+    {
+      "poke": [
+        {
+          "field": "player_x",
+          "value": 256
+        },
+        {
+          "field": "player_y",
+          "value": 1420
+        },
+        {
+          "field": "seq",
+          "value": 102
+        },
+        {
+          "field": "enemy_count",
+          "value": 0
+        }
+      ],
+      "frames": 20,
+      "capture": "03_bancadas_bloque3_pantalla1",
+      "state_capture": "s3"
+    },
+    {
+      "poke": [
+        {
+          "field": "player_x",
+          "value": 256
+        },
+        {
+          "field": "player_y",
+          "value": 1280
+        },
+        {
+          "field": "seq",
+          "value": 103
+        },
+        {
+          "field": "enemy_count",
+          "value": 0
+        }
+      ],
+      "frames": 20,
+      "capture": "04_bancadas_bloque3_pantalla0",
+      "state_capture": "s4"
+    },
+    {
+      "poke": [
+        {
+          "field": "player_x",
+          "value": 256
+        },
+        {
+          "field": "player_y",
+          "value": 1100
+        },
+        {
+          "field": "seq",
+          "value": 104
+        },
+        {
+          "field": "enemy_count",
+          "value": 0
+        }
+      ],
+      "frames": 20,
+      "capture": "05_bancadas_bloque2_pantalla1",
+      "state_capture": "s5"
+    },
+    {
+      "poke": [
+        {
+          "field": "player_x",
+          "value": 256
+        },
+        {
+          "field": "player_y",
+          "value": 900
+        },
+        {
+          "field": "seq",
+          "value": 105
+        },
+        {
+          "field": "enemy_count",
+          "value": 0
+        }
+      ],
+      "frames": 20,
+      "capture": "06_bancadas_bloque2_pantalla0",
+      "state_capture": "s6"
+    },
+    {
+      "poke": [
+        {
+          "field": "player_x",
+          "value": 160
+        },
+        {
+          "field": "player_y",
+          "value": 800
+        },
+        {
+          "field": "seq",
+          "value": 106
+        },
+        {
+          "field": "enemy_count",
+          "value": 0
+        }
+      ],
+      "frames": 150,
+      "button_down": "UP",
+      "capture": "07_tras_primer_rebase",
+      "state_capture": "s7"
+    },
+    {
+      "button_up": "UP",
+      "frames": 2
+    },
+    {
+      "poke": [
+        {
+          "field": "player_x",
+          "value": 200
+        },
+        {
+          "field": "player_y",
+          "value": 1300
+        },
+        {
+          "field": "seq",
+          "value": 107
+        },
+        {
+          "field": "enemy_count",
+          "value": 0
+        }
+      ],
+      "frames": 20,
+      "capture": "08_relicario_norte_x200",
+      "state_capture": "s8"
+    }
   ],
   "assertions": {
     "state_changes": [
-      { "at": "s1", "field": "ack", "equals": 100 },
-      { "at": "s8", "field": "ack", "equals": 107 },
-      { "at": "s8", "field": "player_y", "equals": 960 }
+      {
+        "at": "s1",
+        "field": "ack",
+        "equals": 100
+      },
+      {
+        "at": "s7",
+        "field": "ack",
+        "equals": 106
+      },
+      {
+        "at": "s7",
+        "field": "shift_px",
+        "min_value": 768
+      },
+      {
+        "at": "s8",
+        "field": "ack",
+        "equals": 107
+      },
+      {
+        "at": "s8",
+        "field": "player_y",
+        "equals": 1300
+      }
     ],
     "screen_changes": [
-      { "from": "01_nave_inicio", "to": "08_crucero", "min_changed_pixels": 100 },
-      { "from": "01_nave_inicio", "to": "03_barricada", "min_changed_pixels": 40 }
+      {
+        "from": "01_nave_libre",
+        "to": "08_relicario_norte_x200",
+        "min_changed_pixels": 100
+      },
+      {
+        "from": "01_nave_libre",
+        "to": "03_bancadas_bloque3_pantalla1",
+        "min_changed_pixels": 40
+      },
+      {
+        "from": "06_bancadas_bloque2_pantalla0",
+        "to": "07_tras_primer_rebase",
+        "min_changed_pixels": 40
+      }
     ]
   }
 }

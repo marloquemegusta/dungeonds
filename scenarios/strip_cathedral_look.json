@@ -1,37 +1,174 @@
 {
   "name": "strip_cathedral_look",
-  "description": "God mode on; climb the strip and capture the start plus three points during the ascent to review the cathedral props and side walls.",
+  "description": "Revision de aspecto, ROM cathedral-playground. Cada posicion la fija un poke con x e y juntas. 01 muro izquierdo (x 100, y 1792). 02 pantalla de bancadas del bloque 3 (x 256, y 1420). 03 pantalla del relicario desde el sur (x 160, y 800; el relicario queda a la derecha, x 232..264). 04 tras el primer rebase de 768 px: UP 60 frames desde (160, 800). Aserciones: shift >= 768 tras el rebase, ack de cada poke y cambios de pantalla entre capturas.",
   "state": {
     "elf": "../.ds-game-dev/build/out/dungeonds-cathedral-playground.elf",
-    "symbols": { "strip": "g_strip_debug" },
+    "symbols": {
+      "strip": "g_strip_debug",
+      "sandbox": "g_sandbox"
+    },
     "default_symbol": "strip",
-    "fields": { "height_px": 0, "shift_px": 4, "alive": 8, "hp": 12 }
+    "fields": {
+      "height_px": 0,
+      "shift_px": 4,
+      "alive": 8,
+      "hp": 12,
+      "seq": {
+        "symbol": "sandbox",
+        "offset": 0,
+        "type": "u32"
+      },
+      "ack": {
+        "symbol": "sandbox",
+        "offset": 4,
+        "type": "u32"
+      },
+      "player_x": {
+        "symbol": "sandbox",
+        "offset": 8,
+        "type": "s16"
+      },
+      "player_y": {
+        "symbol": "sandbox",
+        "offset": 10,
+        "type": "s16"
+      },
+      "enemy_count": {
+        "symbol": "sandbox",
+        "offset": 14,
+        "type": "u8"
+      }
+    }
   },
   "steps": [
-    { "frames": 30, "capture": "00_strip_start", "state_capture": "start" },
-    { "button_down": "L", "frames": 1 },
-    { "button_down": "R", "frames": 1 },
-    { "button_down": "B", "frames": 3 },
-    { "button_up": "B", "frames": 2 },
-    { "button_up": "L", "frames": 1 },
-    { "button_up": "R", "frames": 1 },
-    { "button_down": "LEFT", "frames": 120, "capture": "01_left_wall" },
-    { "button_up": "LEFT", "frames": 1 },
-    { "button_down": "RIGHT", "frames": 800 },
-    { "button_up": "RIGHT", "frames": 1 },
-    { "button_down": "UP", "frames": 900, "capture": "02_climb_900" },
-    { "button_down": "UP", "frames": 1300, "capture": "03_mid_climb" },
-    { "button_down": "UP", "frames": 2300, "capture": "04_after_two_rebases", "state_capture": "climbed" },
-    { "button_up": "UP", "frames": 2 }
+    {
+      "frames": 30,
+      "capture": "00_strip_start",
+      "state_capture": "start"
+    },
+    {
+      "poke": [
+        {
+          "field": "player_x",
+          "value": 100
+        },
+        {
+          "field": "player_y",
+          "value": 1792
+        },
+        {
+          "field": "seq",
+          "value": 100
+        },
+        {
+          "field": "enemy_count",
+          "value": 0
+        }
+      ],
+      "frames": 60,
+      "capture": "01_muro_izquierdo"
+    },
+    {
+      "poke": [
+        {
+          "field": "player_x",
+          "value": 256
+        },
+        {
+          "field": "player_y",
+          "value": 1420
+        },
+        {
+          "field": "seq",
+          "value": 101
+        },
+        {
+          "field": "enemy_count",
+          "value": 0
+        }
+      ],
+      "frames": 20,
+      "capture": "02_bancadas_bloque3",
+      "state_capture": "bancadas"
+    },
+    {
+      "poke": [
+        {
+          "field": "player_x",
+          "value": 160
+        },
+        {
+          "field": "player_y",
+          "value": 800
+        },
+        {
+          "field": "seq",
+          "value": 102
+        },
+        {
+          "field": "enemy_count",
+          "value": 0
+        }
+      ],
+      "frames": 20,
+      "capture": "03_relicario_desde_el_sur",
+      "state_capture": "relicario"
+    },
+    {
+      "button_down": "UP",
+      "frames": 150,
+      "capture": "04_tras_primer_rebase",
+      "state_capture": "rebase"
+    },
+    {
+      "button_up": "UP",
+      "frames": 2
+    }
   ],
   "assertions": {
-    "screen_changes": [
-      { "from": "00_strip_start", "to": "04_after_two_rebases", "min_changed_pixels": 100 }
-    ],
     "state_changes": [
-      { "at": "start", "field": "shift_px", "equals": 0 },
-      { "at": "climbed", "field": "shift_px", "min_value": 1024 },
-      { "from": "start", "to": "climbed", "field": "height_px", "min_delta": 1024 }
+      {
+        "field": "shift_px",
+        "at": "start",
+        "equals": 0
+      },
+      {
+        "field": "ack",
+        "at": "bancadas",
+        "equals": 101
+      },
+      {
+        "field": "ack",
+        "at": "relicario",
+        "equals": 102
+      },
+      {
+        "field": "shift_px",
+        "at": "rebase",
+        "min_value": 768
+      }
+    ],
+    "screen_changes": [
+      {
+        "from": "01_muro_izquierdo",
+        "to": "02_bancadas_bloque3",
+        "min_changed_pixels": 40
+      },
+      {
+        "from": "02_bancadas_bloque3",
+        "to": "03_relicario_desde_el_sur",
+        "min_changed_pixels": 40
+      },
+      {
+        "from": "03_relicario_desde_el_sur",
+        "to": "04_tras_primer_rebase",
+        "min_changed_pixels": 40
+      },
+      {
+        "from": "00_strip_start",
+        "to": "04_tras_primer_rebase",
+        "min_changed_pixels": 100
+      }
     ]
   }
 }

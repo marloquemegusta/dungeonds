@@ -60,23 +60,35 @@ class StripKitTest(unittest.TestCase):
             self.assertEqual(row[-12:], [3] * 12)
             self.assertTrue(all(value == 0 for value in row[12:-12]))
 
+        # StripStamp rows as baked: { w, h, phase_col, phase_row, foot_anchor_y_px, foot_value,
+        # piece_id, s_stamp_N_tiles, num_foot_runs, s_stamp_N_foot, num_depth_runs, s_stamp_N_depth }
         stamp_rows = re.findall(
             r"\{\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,"
-            r"\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,"
-            r"\s*s_stamp_\d+_tiles\s*,\s*\d+\s*,\s*[\w]+\s*\}", source)
+            r"\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,"
+            r"\s*s_stamp_(\d+)_tiles\s*,\s*(\d+)\s*,\s*(?:s_stamp_\d+_foot|0)\s*,\s*(\d+)\s*,\s*(?:s_stamp_\d+_depth|0)\s*\}",
+            source)
         self.assertGreaterEqual(len(stamp_rows), 2)
         self.assertEqual(len(re.findall(r"\.num_stamps\s*=\s*\d+", source)), 1)
-        for w, h, phase_col, phase_row, foot_x, foot_y, foot_w, foot_h, foot_value in stamp_rows:
-            w, h, foot_x, foot_y, foot_w, foot_h, foot_value = map(
-                int, (w, h, foot_x, foot_y, foot_w, foot_h, foot_value))
+        self.assertEqual(int(re.search(r"\.num_stamps\s*=\s*(\d+)", source).group(1)), len(stamp_rows))
+        for w, h, phase_col, phase_row, _anchor_y, foot_value, _piece, idx, num_foot, _num_depth in stamp_rows:
+            w, h, foot_value, num_foot = int(w), int(h), int(foot_value), int(num_foot)
             self.assertLessEqual(int(phase_col), 15)
             self.assertLessEqual(int(phase_row), 15)
             self.assertIn(foot_value, (0, 1, 3))
             if foot_value:
-                self.assertGreater(foot_w, 0)
-                self.assertGreater(foot_h, 0)
-            self.assertLessEqual(foot_x + foot_w, w * 2)
-            self.assertLessEqual(foot_y + foot_h, h * 2)
+                self.assertGreater(num_foot, 0)
+            # Footprint runs are { x_cell, y_cell, length_cells } on the 4 px collision grid,
+            # so a block of w x h tiles spans w * 2 cells by h * 2 cells.
+            runs = []
+            if num_foot:
+                foot_body = re.search(rf"s_stamp_{idx}_foot\[\d+\][^=]*=\s*\{{(.*?)\}};", source, re.S)
+                self.assertIsNotNone(foot_body)
+                runs = [tuple(map(int, run)) for run in re.findall(r"\{\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\}", foot_body.group(1))]
+            self.assertEqual(len(runs), num_foot)
+            for x_cell, y_cell, length_cells in runs:
+                self.assertGreater(length_cells, 0)
+                self.assertLessEqual(x_cell + length_cells, w * 2)
+                self.assertLess(y_cell, h * 2)
         for name in re.findall(r"s_stamp_\d+_tiles", source):
             self.assertTrue(all((tile & 0x3FF) < num_tiles for tile in values(source, name)))
 

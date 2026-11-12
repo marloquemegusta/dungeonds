@@ -392,6 +392,37 @@ Tras cerrar la 0.3.1, el usuario quiere dedicar dos versiones al aspecto antes d
     1. **Vía A ($3 \times 2$ teselas = $80 \times 40\text{ px}$, diagonal a 45°):** sigue los ejes de las juntas del suelo. Muy natural para pasillos y tramos longitudinales de la nave.
     2. **Vía B ($3 \times 3$ teselas = $96 \times 48\text{ px}$, rombo con figura horizontal):** rombo de 9 losas con la figura tallada horizontalmente respecto a la pantalla. Gran presencia como hito central o focal.
     Evidencia maestra: `walkthroughs/v032-escenario/assets/cat_lapidas_lab_unified.png`.
+    - **Sustituido el 2026-11-11 (lápidas v5).** La piedra tallada **ocupa el bloque entero de losas**: su borde es la junta del damero. Va a ras del suelo, con los surcos oscurecidos (oclusión ambiental horneada) y la cabeza o el travesaño al fondo de la pantalla (se lee desde los pies). Hay dos tamaños, **3×2 y 2×1 losas**, en cruz y caballero. La **Vía B se descarta**: una figura rectangular no puede llenar un rombo y se lee pegada encima. Retícula real del damero: juntas en `x + 2y ≡ 22,5` y `x − 2y ≡ 16,5` (mod 32). Proceso y lecciones: `tools/catedral_editor/gen/README.md`.
+
+  - **Planta, muros y luz (decidido 2026-11-11, sustituye a lo que contradiga más abajo).**
+    - **Planta de salón:** muros laterales continuos y rectos a los dos lados, sin entrantes ni capillas por ahora. Las columnas van en una línea paralela a cada muro. Crucero, capillas, coro y ábside quedan para más adelante.
+    - **Regla de perspectiva:** todo se ve con la cámara del juego (ortográfica, 30°, mirando a lo largo de la nave). Nada de alzados frontales pintados en los muros.
+    - **Muros:** el módulo 3D `gothic_arch` del usuario (zip `f450c095`), renderizado con el lab y repetido cada 128 px. Ocupa la franja entera de 48 px, como está. Con esta cámara se ve su remate superior: la cara con los arcos queda de canto.
+    - **Corte en el techo:** muros y columnas suben hasta un techo que no se dibuja.
+    - **Vidrieras y rosetones:** no se dibujan; se ven por su luz. El haz entra horizontal desde la cara interior del muro (x = 48 a la izquierda, x = 464 a la derecha). En `source/godrays.c` hoy sale de x = 16 y 240, que es un resto del muro antiguo de 16 px y hay que corregirlo.
+    - **El muro y las lancetas pintadas de `make_cathedral_map()` se retiran.**
+    - **Herramienta de diseño:** `tools/catedral_editor/editor.html`, para componer secciones a mano estampando las piezas reales. De sus diseños se sacarán las reglas del compositor.
+  - **Compositor v2: la pantalla como unidad (decidido 2026-11-11 a partir del diseño del usuario en el editor; sustituye al ciclo de 4 tramos de 256 px).**
+    - **Unidad:** una pantalla de 192 px. El número de pantalla decide el tipo y el azar (hash estable) solo las variantes, igual que antes: mismo cálculo en Python y en C, con test de paridad.
+    - **Columnata:** una `columna_entera` por pantalla y lado, a la misma altura en las dos hileras (sprite en x = 64 y x = 416; la base cae en el borde inferior de la pantalla). Periodo de 192 px. Todas enteras: la columna rota y la caída salen de la demo.
+    - **Tipos de pantalla, alternados al azar:**
+      - **Bancadas:** dos grupos de 4 `banco_entero`, uno a cada lado del eje, con un paso vertical de 24 px. El marine (elipse de 12×6 px) cabe justo entre dos bancos: quedan 8–10 px libres entre huellas. Fila derecha en x = 288; fila izquierda en x = 136–160, por azar. El pasillo central mide entre 64 y 88 px.
+      - **Relicario:** un `relicario` en el eje de la nave con 3–5 `vela` a su alrededor.
+    - **Velas junto a las columnas:** 1–2 por columna con desplazamiento aleatorio, a veces parcialmente detrás de la columna (la oclusión es buscada).
+    - **Luz:** un haz por pantalla, en el muro izquierdo o el derecho por azar (no simétrico) y a una altura variable dentro de la pantalla.
+    - **Lápidas v5:** sueltas al azar (0–2 por pantalla) y, de vez en cuando, en grupos de 4–8 en escalera siguiendo la diagonal del damero. Nunca bajo un banco ni un relicario.
+    - **Fuera de la demo:** `banco_roto`, `banco_volcado`, `columna` rota, columna caída, la barricada de `sacos` y el crucero del ciclo anterior. Los sacos se conservan como asset: el usuario los quiere usar más adelante.
+    - **Implicaciones técnicas:**
+      - El paso de bancos de 24 px (3 tiles) y la pantalla de 192 px (3 × 64) obligan a revisar las fases del baker, que hoy coloca piezas en múltiplos de 64 px más fases de 32 px.
+      - Los godrays pasan de un periodo fijo de 256 px a uno por pantalla con lado aleatorio.
+      - Hay que recontar el presupuesto de tiles con las lápidas v5 y el muro nuevo.
+    - Diseño de referencia: el JSON del editor del usuario, guardado en `walkthroughs/distribucion-catedral/assets/diseno_usuario_v1.json`.
+    - **Implementado (2026-11-11), con estos ajustes técnicos:**
+      - **Bloques de 2 pantallas.** El compositor trabaja en bloques de 384 px (2 pantallas = 3 bandas) y la tira se desplaza 768 px por rebase, antes 512.
+      - **Bancos como grupo.** Los 4 bancos de cada fila se hornean como una sola pieza, `banco_grupo4`, porque a 24 px se solapan en tiles. El grupo arranca en la fila 0 u 8 de su pantalla; el diseño del usuario arrancaba 6 filas más abajo.
+      - **Velas en sitios fijos.** Las velas eligen entre un juego cerrado de posiciones (`VELA_PHASES`), porque cada posición cuesta tiles. Alrededor del relicario salen 3–4, no 3–5.
+      - **Lápidas en dos fases.** Cada lápida tiene dos estampas, (0,2) y (2,3) en tiles, una por cada color del damero. Así encaja en cualquier posición de las juntas sin invertir el color del borde.
+      - **Presupuesto:** 857 de 1.024 tiles, peor ventana de 379 de 440 y 2.416 KB de RAM de 4.096.
 
   - **Hoja de ruta para cerrar el escenario de la catedral (Sesiones atómicas):**
     Para que la catedral tenga forma y se sienta como un templo gótico completo y jugable antes de dar por cerrada la 0.3.2, el trabajo restante se divide en 5 sesiones atómicas:
