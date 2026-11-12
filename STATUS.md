@@ -215,3 +215,8 @@ El láser de apuntado se colima durante la carga (ancho, difuso y rojo a 1 px ve
 ## 2026-11-11 - Concepto de personaje, enemigos, élites y jefe de la demo (`main`, solo documentación)
 - **Decidido:** el rayo del personaje es un milagro que le quema el cuerpo; se continúa con El Corazón Abierto (El Lector y La Custodia en reserva). Enemigos base con aspecto nuevo y misma FSM, élites Portaestandarte y Exorcista hueco, jefe paso procesional (`DESIGN.md` §6.10).
 - **Detalle y prompts de Gemini:** [`walkthroughs/concepto-demo-personajes/`](walkthroughs/concepto-demo-personajes/walkthrough.md).
+
+## 2026-11-12 - Animaciones del Cireneo con la cruz (`feat/anim-cireneo`)
+- **Hecho:** script de Blender `tools/characters/build_cireneo.py` que pega la cruz al hueso `Spine2`, fija los brazos sobre el travesaño y genera andar, carga, telegrafía y atascado a partir del modelo de Tripo. Los FBX resultantes no se versionan (se regeneran en ~5 s).
+- **Verificación:** hojas de contacto en Blender y export del lab en las 8 direcciones a 40 px, con luz `neutral`; la cruz se lee bien. Sin integrar en el juego ni medir en DS.
+- **Detalle:** [`walkthroughs/anim-cireneo/`](walkthroughs/anim-cireneo/walkthrough.md).
