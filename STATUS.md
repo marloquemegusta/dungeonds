@@ -250,3 +250,8 @@ El láser de apuntado se colima durante la carga (ancho, difuso y rojo a 1 px ve
 - **Verificación:** 4 variantes sin warnings; 222 tests de Python y 10 de host; 14 escenarios PASS (héroe y catedral). ROM (commit `13a4b18`) jugada en la DS por el usuario: va bien; no hay log de `PERF_PROFILE`.
 - **Pendiente:** elección de aura, chispa de impacto propia del rayo y, si se ven caídas, log de `PERF_PROFILE`.
 - **Detalle:** [`walkthroughs/corazon-abierto/`](walkthroughs/corazon-abierto/walkthrough.md).
+
+## 2026-11-12 - Cireneo v2 con acentos negro y rojo (`feat/cireneo-v2`)
+- **Decidido:** todos los personajes llevan acentos negros y rojos (`DESIGN.md` §6.10).
+- **Hecho:** el nuevo Cireneo y su cruz carbonizada reutilizan las animaciones de la v1, transfiriendo rotaciones en espacio de mundo (`tools/characters/build_cireneo_v2.py`). Hojas de contacto y lab a 40 px revisadas. Sin integrar en el juego.
+- **Detalle:** [`walkthroughs/cireneo-v2/`](walkthroughs/cireneo-v2/walkthrough.md).
