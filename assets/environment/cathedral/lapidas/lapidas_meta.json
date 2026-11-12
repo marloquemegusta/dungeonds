@@ -1,0 +1,62 @@
+{
+ "lapida_3x2_cruz": {
+  "label": "Lápida cruz 3×2",
+  "size_px": [
+   128,
+   96
+  ],
+  "floor_origin_px": [
+   0,
+   16
+  ],
+  "losas": [
+   3,
+   2
+  ]
+ },
+ "lapida_3x2_cab": {
+  "label": "Lápida caballero 3×2",
+  "size_px": [
+   128,
+   96
+  ],
+  "floor_origin_px": [
+   0,
+   16
+  ],
+  "losas": [
+   3,
+   2
+  ]
+ },
+ "lapida_2x1_cruz": {
+  "label": "Lápida cruz 2×1",
+  "size_px": [
+   128,
+   96
+  ],
+  "floor_origin_px": [
+   0,
+   16
+  ],
+  "losas": [
+   2,
+   1
+  ]
+ },
+ "lapida_2x1_cab": {
+  "label": "Lápida caballero 2×1",
+  "size_px": [
+   128,
+   96
+  ],
+  "floor_origin_px": [
+   0,
+   16
+  ],
+  "losas": [
+   2,
+   1
+  ]
+ }
+}

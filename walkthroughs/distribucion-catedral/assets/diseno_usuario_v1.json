@@ -1,0 +1,494 @@
+{
+  "version": 1,
+  "width": 512,
+  "height": 1920,
+  "screens": 10,
+  "items": [
+    {
+      "piece": "columna_entera",
+      "x": 64,
+      "y": 1800,
+      "flip": false
+    },
+    {
+      "piece": "columna_entera",
+      "x": 64,
+      "y": 1608,
+      "flip": false
+    },
+    {
+      "piece": "columna_entera",
+      "x": 64,
+      "y": 1416,
+      "flip": false
+    },
+    {
+      "piece": "columna_entera",
+      "x": 64,
+      "y": 1224,
+      "flip": false
+    },
+    {
+      "piece": "columna_entera",
+      "x": 64,
+      "y": 1032,
+      "flip": false
+    },
+    {
+      "piece": "columna_entera",
+      "x": 64,
+      "y": 840,
+      "flip": false
+    },
+    {
+      "piece": "columna_entera",
+      "x": 64,
+      "y": 648,
+      "flip": false
+    },
+    {
+      "piece": "columna_entera",
+      "x": 64,
+      "y": 456,
+      "flip": false
+    },
+    {
+      "piece": "columna_entera",
+      "x": 64,
+      "y": 264,
+      "flip": false
+    },
+    {
+      "piece": "columna_entera",
+      "x": 64,
+      "y": 72,
+      "flip": false
+    },
+    {
+      "piece": "columna_entera",
+      "x": 64,
+      "y": -120,
+      "flip": false
+    },
+    {
+      "piece": "columna_entera",
+      "x": 416,
+      "y": 1800,
+      "flip": false
+    },
+    {
+      "piece": "columna_entera",
+      "x": 416,
+      "y": 1608,
+      "flip": false
+    },
+    {
+      "piece": "columna_entera",
+      "x": 416,
+      "y": 1416,
+      "flip": false
+    },
+    {
+      "piece": "columna_entera",
+      "x": 416,
+      "y": 1224,
+      "flip": false
+    },
+    {
+      "piece": "columna_entera",
+      "x": 416,
+      "y": 1032,
+      "flip": false
+    },
+    {
+      "piece": "columna_entera",
+      "x": 416,
+      "y": 840,
+      "flip": false
+    },
+    {
+      "piece": "columna_entera",
+      "x": 416,
+      "y": 648,
+      "flip": false
+    },
+    {
+      "piece": "columna_entera",
+      "x": 416,
+      "y": 456,
+      "flip": false
+    },
+    {
+      "piece": "columna_entera",
+      "x": 416,
+      "y": 264,
+      "flip": false
+    },
+    {
+      "piece": "columna_entera",
+      "x": 416,
+      "y": 72,
+      "flip": false
+    },
+    {
+      "piece": "columna_entera",
+      "x": 416,
+      "y": -120,
+      "flip": false
+    },
+    {
+      "piece": "banco_entero",
+      "x": 160,
+      "y": 1848,
+      "flip": false
+    },
+    {
+      "piece": "banco_entero",
+      "x": 160,
+      "y": 1824,
+      "flip": false
+    },
+    {
+      "piece": "banco_entero",
+      "x": 160,
+      "y": 1800,
+      "flip": false
+    },
+    {
+      "piece": "banco_entero",
+      "x": 160,
+      "y": 1776,
+      "flip": false
+    },
+    {
+      "piece": "banco_entero",
+      "x": 288,
+      "y": 1848,
+      "flip": false
+    },
+    {
+      "piece": "banco_entero",
+      "x": 288,
+      "y": 1824,
+      "flip": false
+    },
+    {
+      "piece": "banco_entero",
+      "x": 288,
+      "y": 1800,
+      "flip": false
+    },
+    {
+      "piece": "banco_entero",
+      "x": 288,
+      "y": 1776,
+      "flip": false
+    },
+    {
+      "piece": "relicario",
+      "x": 232,
+      "y": 1608,
+      "flip": false
+    },
+    {
+      "piece": "vela",
+      "x": 88,
+      "y": 1872,
+      "flip": false
+    },
+    {
+      "piece": "vela",
+      "x": 400,
+      "y": 1880,
+      "flip": false
+    },
+    {
+      "piece": "lapida_3x2_cab",
+      "x": 112,
+      "y": 776,
+      "flip": false
+    },
+    {
+      "piece": "lapida_3x2_cab",
+      "x": 224,
+      "y": 688,
+      "flip": false
+    },
+    {
+      "piece": "vela",
+      "x": 80,
+      "y": 712,
+      "flip": false
+    },
+    {
+      "piece": "vela",
+      "x": 408,
+      "y": 688,
+      "flip": false
+    },
+    {
+      "piece": "vela",
+      "x": 80,
+      "y": 568,
+      "flip": false
+    },
+    {
+      "piece": "vela",
+      "x": 440,
+      "y": 560,
+      "flip": false
+    },
+    {
+      "piece": "vela",
+      "x": 408,
+      "y": 520,
+      "flip": false
+    },
+    {
+      "piece": "lapida_3x2_cab",
+      "x": 112,
+      "y": 584,
+      "flip": false
+    },
+    {
+      "piece": "lapida_3x2_cab",
+      "x": 176,
+      "y": 584,
+      "flip": false
+    },
+    {
+      "piece": "haz_roseton",
+      "x": 0,
+      "y": 1808,
+      "side": "L"
+    },
+    {
+      "piece": "haz_roseton",
+      "x": 0,
+      "y": 1680,
+      "side": "R"
+    },
+    {
+      "piece": "lapida_2x1_cab",
+      "x": 128,
+      "y": 1776,
+      "flip": false
+    },
+    {
+      "piece": "lapida_2x1_cruz",
+      "x": 256,
+      "y": 1728,
+      "flip": false
+    },
+    {
+      "piece": "lapida_2x1_cruz",
+      "x": 64,
+      "y": 1632,
+      "flip": false
+    },
+    {
+      "piece": "lapida_3x2_cab",
+      "x": 304,
+      "y": 1528,
+      "flip": false
+    },
+    {
+      "piece": "lapida_2x1_cruz",
+      "x": 80,
+      "y": 1400,
+      "flip": false
+    },
+    {
+      "piece": "lapida_2x1_cruz",
+      "x": 96,
+      "y": 1392,
+      "flip": false
+    },
+    {
+      "piece": "lapida_2x1_cruz",
+      "x": 112,
+      "y": 1384,
+      "flip": false
+    },
+    {
+      "piece": "lapida_2x1_cruz",
+      "x": 128,
+      "y": 1376,
+      "flip": false
+    },
+    {
+      "piece": "lapida_2x1_cruz",
+      "x": 112,
+      "y": 1416,
+      "flip": false
+    },
+    {
+      "piece": "lapida_2x1_cruz",
+      "x": 128,
+      "y": 1408,
+      "flip": false
+    },
+    {
+      "piece": "lapida_2x1_cruz",
+      "x": 144,
+      "y": 1400,
+      "flip": false
+    },
+    {
+      "piece": "lapida_2x1_cruz",
+      "x": 160,
+      "y": 1392,
+      "flip": false
+    },
+    {
+      "piece": "lapida_2x1_cab",
+      "x": 288,
+      "y": 1248,
+      "flip": false
+    },
+    {
+      "piece": "lapida_2x1_cab",
+      "x": 304,
+      "y": 1240,
+      "flip": false
+    },
+    {
+      "piece": "lapida_2x1_cab",
+      "x": 272,
+      "y": 1224,
+      "flip": false
+    },
+    {
+      "piece": "lapida_2x1_cab",
+      "x": 256,
+      "y": 1232,
+      "flip": false
+    },
+    {
+      "piece": "vela",
+      "x": 80,
+      "y": 1672,
+      "flip": false
+    },
+    {
+      "piece": "vela",
+      "x": 392,
+      "y": 1696,
+      "flip": false
+    },
+    {
+      "piece": "vela",
+      "x": 264,
+      "y": 1632,
+      "flip": false
+    },
+    {
+      "piece": "vela",
+      "x": 208,
+      "y": 1640,
+      "flip": false
+    },
+    {
+      "piece": "vela",
+      "x": 216,
+      "y": 1608,
+      "flip": false
+    },
+    {
+      "piece": "vela",
+      "x": 400,
+      "y": 1480,
+      "flip": false
+    },
+    {
+      "piece": "vela",
+      "x": 392,
+      "y": 1504,
+      "flip": false
+    },
+    {
+      "piece": "vela",
+      "x": 96,
+      "y": 1520,
+      "flip": false
+    },
+    {
+      "piece": "vela",
+      "x": 96,
+      "y": 1480,
+      "flip": false
+    },
+    {
+      "piece": "vela",
+      "x": 88,
+      "y": 1296,
+      "flip": false
+    },
+    {
+      "piece": "vela",
+      "x": 96,
+      "y": 1328,
+      "flip": false
+    },
+    {
+      "piece": "vela",
+      "x": 400,
+      "y": 1296,
+      "flip": false
+    },
+    {
+      "piece": "vela",
+      "x": 408,
+      "y": 1336,
+      "flip": false
+    },
+    {
+      "piece": "banco_entero",
+      "x": 136,
+      "y": 1480,
+      "flip": false
+    },
+    {
+      "piece": "banco_entero",
+      "x": 136,
+      "y": 1456,
+      "flip": false
+    },
+    {
+      "piece": "banco_entero",
+      "x": 136,
+      "y": 1432,
+      "flip": false
+    },
+    {
+      "piece": "banco_entero",
+      "x": 136,
+      "y": 1408,
+      "flip": false
+    },
+    {
+      "piece": "banco_entero",
+      "x": 288,
+      "y": 1480,
+      "flip": false
+    },
+    {
+      "piece": "banco_entero",
+      "x": 288,
+      "y": 1456,
+      "flip": false
+    },
+    {
+      "piece": "banco_entero",
+      "x": 288,
+      "y": 1432,
+      "flip": false
+    },
+    {
+      "piece": "banco_entero",
+      "x": 288,
+      "y": 1408,
+      "flip": false
+    }
+  ]
+}

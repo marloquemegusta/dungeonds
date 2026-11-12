@@ -1,0 +1,165 @@
+{
+ "name": "strip_rebase_sin_congelar",
+ "description": "ROM cathedral-playground. Regresion del congelado del rebase (2026-11-11: el qsort de los runs de oclusion degeneraba y paraba el juego ~150 frames). Poke a (200, 800) y UP: el marine cruza y=768, la tira se desplaza 768 px y el marine sigue subiendo sin pararse. py es s_player.y en 8.8.",
+ "state": {
+  "elf": "../.ds-game-dev/build/out/dungeonds-cathedral-playground.elf",
+  "symbols": {
+   "sandbox": "g_sandbox",
+   "nav": "g_nav_state",
+   "strip": "g_strip_debug",
+   "col": "s_collision",
+   "pl": "s_player",
+   "bm": "s_blocked_moves",
+   "ro": "s_rooted",
+   "sh": "s_shift_total_px",
+   "nb": "s_next_band"
+  },
+  "default_symbol": "nav",
+  "fields": {
+   "y": {
+    "offset": 4,
+    "type": "s32"
+   },
+   "x": {
+    "offset": 0,
+    "type": "s32"
+   },
+   "blocked": {
+    "offset": 28,
+    "type": "s32"
+   },
+   "shift": {
+    "symbol": "strip",
+    "offset": 4,
+    "type": "s32"
+   },
+   "ack": {
+    "symbol": "sandbox",
+    "offset": 4,
+    "type": "u32"
+   },
+   "seq": {
+    "symbol": "sandbox",
+    "offset": 0,
+    "type": "u32"
+   },
+   "player_x": {
+    "symbol": "sandbox",
+    "offset": 8,
+    "type": "s16"
+   },
+   "player_y": {
+    "symbol": "sandbox",
+    "offset": 10,
+    "type": "s16"
+   },
+   "enemy_count": {
+    "symbol": "sandbox",
+    "offset": 14,
+    "type": "u8"
+   },
+   "py": {
+    "symbol": "pl",
+    "offset": 4,
+    "type": "s32"
+   },
+   "mov": {
+    "symbol": "pl",
+    "offset": 16,
+    "type": "s32"
+   },
+   "blk": {
+    "symbol": "bm",
+    "offset": 0,
+    "type": "u32"
+   },
+   "root": {
+    "symbol": "ro",
+    "offset": 0,
+    "type": "s32"
+   },
+   "sht": {
+    "symbol": "sh",
+    "offset": 0,
+    "type": "s32"
+   },
+   "nb": {
+    "symbol": "nb",
+    "offset": 0,
+    "type": "s32"
+   }
+  }
+ },
+ "steps": [
+  {
+   "frames": 30,
+   "state_capture": "ini"
+  },
+  {
+   "poke": [
+    {
+     "field": "player_x",
+     "value": 200
+    },
+    {
+     "field": "player_y",
+     "value": 800
+    },
+    {
+     "field": "seq",
+     "value": 100
+    },
+    {
+     "field": "enemy_count",
+     "value": 0
+    }
+   ],
+   "frames": 20
+  },
+  {
+   "button_down": "UP",
+   "frames": 1
+  },
+  {
+   "frames": 20,
+   "state_capture": "antes"
+  },
+  {
+   "frames": 25,
+   "state_capture": "cruce"
+  },
+  {
+   "frames": 25,
+   "state_capture": "despues1"
+  },
+  {
+   "frames": 25,
+   "state_capture": "despues2",
+   "capture": "tras_rebase"
+  },
+  {
+   "button_up": "UP",
+   "frames": 2
+  }
+ ],
+ "assertions": {
+  "state_changes": [
+   {
+    "at": "antes",
+    "field": "sht",
+    "equals": 0
+   },
+   {
+    "at": "despues1",
+    "field": "sht",
+    "min_value": 768
+   },
+   {
+    "from": "despues1",
+    "to": "despues2",
+    "field": "py",
+    "max_delta": -1024
+   }
+  ]
+ }
+}

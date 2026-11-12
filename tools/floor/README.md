@@ -5,3 +5,9 @@ El parser lee `TEXCOORD_0`, crea `TextureLoader` y asigna `map` a `MeshStandardM
 Por eso el prototipo usa albedo PNG incrustado en GLB, UVs y material PBR, sin vertex colors.
 El albedo se repite por recortes de UV de una fuente tileable; la altura desplaza una rejilla de geometría densa.
 Los bordes de cada tile se fuerzan a Y=0 mediante una rampa de 4.5% del ancho, para unirlos sin saltos al repetir.
+
+## Scripts que quedan
+
+- `rombos_tripo.py` + `rombos_tripo_blender.py`: suelo vigente (`assets/environment/cathedral/floor/rombos_tripo`).
+- `rombos.py` + `rombos_blender.py`: pipeline base que importa `rombos_tripo.py`.
+- `build_lapidas_lab.py` + `build_lapidas_lab_blender.py`: lab de lapidas.

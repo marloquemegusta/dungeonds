@@ -12,9 +12,6 @@
         "playground-perf": {
             "defines": ["SANDBOX=1", "PLAYGROUND=1", "PERF_PROFILE=1"]
         },
-        "lapidas": {
-            "defines": ["LAPIDA_DEBUG=1"]
-        },
         "godrays": {
             "defines": ["GODRAYS_PROTO=1"]
         },
@@ -34,7 +31,8 @@
         "python.exe tests/test_weapons_contract.py",
         "python.exe tests/test_sniper_hit_volume.py",
         "python.exe tests/test_sandbox_contract.py",
-        "python.exe tests/test_encounters_contract.py"
+        "python.exe tests/test_encounters_contract.py",
+        "python.exe tests/test_strip_layout_parity.py"
     ],
     "blocksdsImage": "skylyrac/blocksds:slim-latest",
     "romUploadName": "dungeonds.nds",

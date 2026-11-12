@@ -1,34 +1,163 @@
 {
   "name": "godrays_demo",
-  "description": "God mode on; capture the lower-screen ray crossing, then climb through the fixed world-space beams and capture after strip rebases.",
+  "description": "ROM cathedral-playground (lleva GODRAYS_PROTO). Haces de luz: captura en la nave, otra tras subir y otra tras un desplazamiento de la tira, que no debe mover los haces de su sitio en el mundo. Posicion con poke (x e y juntas), subida con UP. Antes subia con la horda y no llegaba al rebase.",
   "state": {
-    "symbols": { "strip": "g_strip_debug" },
-    "default_symbol": "strip",
-    "fields": { "height_px": 0, "shift_px": 4, "alive": 8, "hp": 12 }
+    "elf": "../.ds-game-dev/build/out/dungeonds-cathedral-playground.elf",
+    "symbols": {
+      "sandbox": "g_sandbox",
+      "nav": "g_nav_state",
+      "strip": "g_strip_debug",
+      "col": "s_collision",
+      "pl": "s_player",
+      "bm": "s_blocked_moves",
+      "ro": "s_rooted",
+      "sh": "s_shift_total_px",
+      "nb": "s_next_band"
+    },
+    "default_symbol": "nav",
+    "fields": {
+      "y": {
+        "offset": 4,
+        "type": "s32"
+      },
+      "x": {
+        "offset": 0,
+        "type": "s32"
+      },
+      "blocked": {
+        "offset": 28,
+        "type": "s32"
+      },
+      "shift": {
+        "symbol": "strip",
+        "offset": 4,
+        "type": "s32"
+      },
+      "ack": {
+        "symbol": "sandbox",
+        "offset": 4,
+        "type": "u32"
+      },
+      "seq": {
+        "symbol": "sandbox",
+        "offset": 0,
+        "type": "u32"
+      },
+      "player_x": {
+        "symbol": "sandbox",
+        "offset": 8,
+        "type": "s16"
+      },
+      "player_y": {
+        "symbol": "sandbox",
+        "offset": 10,
+        "type": "s16"
+      },
+      "enemy_count": {
+        "symbol": "sandbox",
+        "offset": 14,
+        "type": "u8"
+      },
+      "py": {
+        "symbol": "pl",
+        "offset": 4,
+        "type": "s32"
+      },
+      "mov": {
+        "symbol": "pl",
+        "offset": 16,
+        "type": "s32"
+      },
+      "blk": {
+        "symbol": "bm",
+        "offset": 0,
+        "type": "u32"
+      },
+      "root": {
+        "symbol": "ro",
+        "offset": 0,
+        "type": "s32"
+      },
+      "sht": {
+        "symbol": "sh",
+        "offset": 0,
+        "type": "s32"
+      },
+      "nb": {
+        "symbol": "nb",
+        "offset": 0,
+        "type": "s32"
+      }
+    }
   },
   "steps": [
-    { "frames": 30, "capture": "00_strip_start", "state_capture": "start" },
-    { "button_down": "L", "frames": 1 },
-    { "button_down": "R", "frames": 1 },
-    { "button_down": "B", "frames": 3 },
-    { "button_up": "B", "frames": 2 },
-    { "button_up": "L", "frames": 1 },
-    { "button_up": "R", "frames": 1 },
-    { "button_down": "UP", "frames": 160, "capture": "01_ray_crossing", "state_capture": "crossing" },
-    { "button_down": "UP", "frames": 120, "capture": "02_after_crossing", "state_capture": "past_crossing" },
-    { "button_down": "UP", "frames": 4220, "capture": "03_after_strip_rebases", "state_capture": "climbed" },
-    { "button_up": "UP", "frames": 2 }
+    {
+      "frames": 30,
+      "capture": "00_nave",
+      "state_capture": "start"
+    },
+    {
+      "poke": [
+        {
+          "field": "player_x",
+          "value": 200
+        },
+        {
+          "field": "player_y",
+          "value": 800
+        },
+        {
+          "field": "seq",
+          "value": 100
+        },
+        {
+          "field": "enemy_count",
+          "value": 0
+        }
+      ],
+      "frames": 20,
+      "capture": "01_antes_del_rebase"
+    },
+    {
+      "button_down": "UP",
+      "frames": 150,
+      "capture": "02_tras_rebase",
+      "state_capture": "climbed"
+    },
+    {
+      "button_down": "UP",
+      "frames": 120,
+      "capture": "03_subiendo"
+    },
+    {
+      "button_up": "UP",
+      "frames": 2
+    }
   ],
   "assertions": {
     "screen_changes": [
-      { "from": "00_strip_start", "to": "01_ray_crossing", "min_changed_pixels": 100 },
-      { "from": "01_ray_crossing", "to": "02_after_crossing", "min_changed_pixels": 100 },
-      { "from": "02_after_crossing", "to": "03_after_strip_rebases", "min_changed_pixels": 100 }
+      {
+        "from": "00_nave",
+        "to": "01_antes_del_rebase",
+        "min_changed_pixels": 100
+      },
+      {
+        "from": "02_tras_rebase",
+        "to": "03_subiendo",
+        "min_changed_pixels": 100
+      }
     ],
     "state_changes": [
-      { "at": "start", "field": "shift_px", "equals": 0 },
-      { "at": "climbed", "field": "shift_px", "min_value": 1024 },
-      { "from": "start", "to": "climbed", "field": "height_px", "min_delta": 1024 }
+      {
+        "at": "start",
+        "field": "sht",
+        "equals": 0
+      },
+      {
+        "at": "climbed",
+        "field": "sht",
+        "min_value": 768
+      }
     ]
   }
 }

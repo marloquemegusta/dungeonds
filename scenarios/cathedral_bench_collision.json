@@ -1,6 +1,6 @@
 {
   "name": "cathedral_bench_collision",
-  "description": "Deterministic cathedral seed. The first poke (528) triggers the 512 px rebase; in that frame banco_roto has its top-left at world (320,896) and its footprint (from the depth plan) covers y 916-935 across x 336-408. At x=350 the old footprint (a single 28x4 px strip at x 376-404) let the actor walk through. Push in from the south (actor in front) and from the north (actor behind the backrest).",
+  "description": "Seed 0xC0DE1234, bloque 2 pantalla 0 (ROM -perf). banco_grupo4 en x_tile 16, y_tile 8 (origen mundo 128,832): cuatro bancos de 16 px de fondo con paso de 24 px, cubren x 136..200 e y 848..935. Huecos horizontales de 8 px en y 864..871, 888..895 y 912..919. Cuerpo del marine: radio 6 px en x y 3 px en y (position_is_free). Prueba 1: desde (168,955) con UP se choca con la cara inferior del banco en y 939. Prueba 2: desde (100,867) con RIGHT atraviesa el canal de 8 px entre los bancos (y 867 esta dentro del hueco) y sale por x mayor de 200. Ningun poke baja de y 768: no hay rebase.",
   "state": {
     "elf": "../.ds-game-dev/build/out/dungeonds-cathedral-playground-perf.elf",
     "symbols": {
@@ -47,28 +47,11 @@
       "poke": [
         {
           "field": "player_x",
-          "value": 342
+          "value": 168
         },
         {
           "field": "player_y",
-          "value": 528
-        },
-        {
-          "field": "seq",
-          "value": 100
-        }
-      ],
-      "frames": 60
-    },
-    {
-      "poke": [
-        {
-          "field": "player_x",
-          "value": 350
-        },
-        {
-          "field": "player_y",
-          "value": 965
+          "value": 955
         },
         {
           "field": "seq",
@@ -76,18 +59,13 @@
         }
       ],
       "frames": 10,
-      "state_capture": "south_start"
+      "state_capture": "choque_start"
     },
     {
       "button_down": "UP",
       "frames": 120,
-      "capture": "00_south_contact",
-      "state_capture": "south_edge"
-    },
-    {
-      "frames": 60,
-      "capture": "01_south_held",
-      "state_capture": "south_blocked"
+      "capture": "01_banco_choque_arriba",
+      "state_capture": "choque_bloqueado"
     },
     {
       "button_up": "UP",
@@ -97,11 +75,11 @@
       "poke": [
         {
           "field": "player_x",
-          "value": 390
+          "value": 100
         },
         {
           "field": "player_y",
-          "value": 880
+          "value": 867
         },
         {
           "field": "seq",
@@ -109,21 +87,16 @@
         }
       ],
       "frames": 10,
-      "state_capture": "north_start"
+      "state_capture": "canal_start"
     },
     {
-      "button_down": "DOWN",
-      "frames": 120,
-      "capture": "02_north_contact",
-      "state_capture": "north_edge"
+      "button_down": "RIGHT",
+      "frames": 200,
+      "capture": "02_paso_entre_bancos",
+      "state_capture": "canal_fin"
     },
     {
-      "frames": 60,
-      "capture": "03_north_held",
-      "state_capture": "north_blocked"
-    },
-    {
-      "button_up": "DOWN",
+      "button_up": "RIGHT",
       "frames": 2
     }
   ],
@@ -131,37 +104,36 @@
     "state_changes": [
       {
         "field": "ack",
-        "at": "south_start",
+        "at": "choque_start",
         "equals": 101
       },
       {
         "field": "y",
-        "from": "south_start",
-        "to": "south_edge",
-        "max_abs_delta": 11520
+        "from": "choque_start",
+        "to": "choque_bloqueado",
+        "max_delta": -10
       },
       {
         "field": "y",
-        "from": "south_edge",
-        "to": "south_blocked",
-        "max_abs_delta": 2000
+        "at": "choque_bloqueado",
+        "min_value": 939
       },
       {
         "field": "ack",
-        "at": "north_start",
+        "at": "canal_start",
         "equals": 102
       },
       {
-        "field": "y",
-        "from": "north_start",
-        "to": "north_edge",
-        "max_abs_delta": 11520
+        "field": "x",
+        "from": "canal_start",
+        "to": "canal_fin",
+        "min_delta": 120
       },
       {
         "field": "y",
-        "from": "north_edge",
-        "to": "north_blocked",
-        "max_abs_delta": 2000
+        "from": "canal_start",
+        "to": "canal_fin",
+        "max_abs_delta": 1
       }
     ]
   }

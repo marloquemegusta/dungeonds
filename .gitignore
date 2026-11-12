@@ -60,3 +60,4 @@ assets/environment/cathedral/props/*.fbx
 
 # Cireneo: FBX animados derivados; se regeneran con tools/characters/build_cireneo.py
 assets/models/characters/cireneo/cireneo_*.fbx
+assets/environment/cathedral/props/*.fbm/
