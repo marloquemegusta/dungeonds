@@ -73,7 +73,8 @@ class SniperHitVolumeTests(unittest.TestCase):
             self.assertGreaterEqual(hits, 24, f"column {px}: {hits}/31 rows hit")
 
     def test_ray_uses_body_volume_and_no_float(self):
-        self.assertGreaterEqual(WEAPONS_C.count("body_hit_test("), 2)
+        # The sniper ray (fire_sniper) is the only caller since the C reticle (DESIGN.md 6.10) went away.
+        self.assertGreaterEqual(WEAPONS_C.count("body_hit_test("), 1)
         self.assertNotIn("float", HIT_H)
         self.assertNotIn("double", HIT_H)
 

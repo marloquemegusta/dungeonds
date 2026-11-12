@@ -878,7 +878,17 @@
       const score = /^WeaponGeo$/i.test(node.name || '') ? 2 : 1;
       if (score > bestScore) { best = node; bestScore = score; }
     });
-    if (!best) return null;
+    if (!best) {
+      // No weapon: optional chest muzzle from a bone (state.muzzleBone), offset forward by a fraction of the model height.
+      if (!state.muzzleBone) return null;
+      let bone = null;
+      // three.js sanitizes node names (drops ':' etc.), so compare with the same normalization on both sides.
+      const norm = n => String(n).replace(/[\s\[\]\.:\/]/g, '');
+      root.traverse(node => { if (!bone && node.isBone && norm(node.name) === norm(state.muzzleBone)) bone = node; });
+      if (!bone) return null;
+      const box = new hr().setFromObject(root);
+      return { bone, root, forward: state.muzzleForward ?? 0.05, height: Math.max(1e-6, box.max.y - box.min.y) };
+    }
     const pos = best.geometry.attributes.position;
     const n = pos.count;
     if (n < 4) return null;
@@ -918,6 +928,18 @@
   }
 
   function projectMuzzleFrame(setup, camera, size, anchorX, anchorY) {
+    if (setup.bone) {
+      // Bone muzzle: bone world position pushed along the model's front (+Z local) by forward * height.
+      const m = new K();
+      setup.bone.getWorldPosition(m);
+      const fwd = new K(0, 0, 1).transformDirection(setup.root.matrixWorld);
+      m.addScaledVector(fwd, setup.forward * setup.height);
+      const a = m.clone().project(camera);
+      const g = new K(m.x, 0, m.z).project(camera);
+      const px = (a.x * 0.5 + 0.5) * size, py = (-a.y * 0.5 + 0.5) * size;
+      const gpx = (g.x * 0.5 + 0.5) * size, gpy = (-g.y * 0.5 + 0.5) * size;
+      return [Math.round(gpx - anchorX), Math.round(gpy - anchorY), Math.round(gpy - py)];
+    }
     const mesh = setup.mesh;
     if (mesh.isSkinnedMesh && mesh.skeleton) mesh.skeleton.update();
     const pos = mesh.geometry.attributes.position;
@@ -1014,7 +1036,8 @@
         }
       }
       const extent = Math.max(maxX - minX, maxV - minV);
-      const half = extent * size / targetPixels / 2;
+      // state.fitZoom < 1 zooms the camera out (smaller sprite inside the same cell), used to match the hero's apparent size.
+      const half = extent * size / targetPixels / 2 / (state.fitZoom || 1);
       const center = new K()
         .addScaledVector(right, (minX + maxX) / 2)
         .addScaledVector(upAxis, (minV + maxV) / 2);

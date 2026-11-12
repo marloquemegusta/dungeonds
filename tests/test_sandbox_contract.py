@@ -93,10 +93,11 @@ class SandboxIntegrationTest(unittest.TestCase):
         self.assertLess(stun, freeze)
         self.assertLess(freeze, dormant)
 
-    def test_sandbox_picks_the_aura_look_from_its_flags(self):
-        self.assertRegex(SANDBOX_H, r"#define SANDBOX_FLAG_AURA_SHIFT\s+3\b")
-        self.assertRegex(SANDBOX_H, r"#define SANDBOX_FLAG_AURA_MASK\s+\(3 << SANDBOX_FLAG_AURA_SHIFT\)")
-        self.assertIn("g_aura_style = ((flags & SANDBOX_FLAG_AURA_MASK) >> SANDBOX_FLAG_AURA_SHIFT) % AURA_STYLE_COUNT;", SANDBOX_C)
+    def test_sandbox_reads_the_aura_look_from_flag_bits_3_4(self):
+        self.assertIn("#define SANDBOX_FLAG_AURA_SHIFT 3", SANDBOX_H)
+        self.assertIn("g_fx_style = g_sandbox.style % FX_STYLE_COUNT;", SANDBOX_C)
+        self.assertIn("g_aura_style = ((flags & SANDBOX_FLAG_AURA_MASK) >> SANDBOX_FLAG_AURA_SHIFT) % AURA_STYLE_COUNT;",
+                      SANDBOX_C)
 
     def test_project_declares_sandbox_variant(self):
         self.assertIn("SANDBOX=1", PROJECT["variants"]["sandbox"]["defines"])

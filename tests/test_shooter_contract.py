@@ -86,7 +86,7 @@ class ShooterLaserContractTest(unittest.TestCase):
 
     def test_band_and_speed(self):
         self.assertLess(tuning("preferred_dist_min"), tuning("preferred_dist_max"))
-        hero = int(re.search(r'\{ "Space Marine Hero", (\d+),', (ROOT / "source" / "player_sprite.c").read_text(encoding="utf-8")).group(1))
+        hero = int(re.search(r'\{ "Corazon Abierto Hero", (\d+),', (ROOT / "source" / "player_sprite.c").read_text(encoding="utf-8")).group(1))
         self.assertLess(tuning("speed"), hero)                    # the player can close the gap
 
     def test_it_backs_off_closes_in_and_strafes(self):

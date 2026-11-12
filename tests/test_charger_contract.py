@@ -29,7 +29,7 @@ def define(name):
 
 
 def hero_speed():
-    return int(re.search(r'\{ "Space Marine Hero", (\d+),', SPRITE_C).group(1))
+    return int(re.search(r'\{ "Corazon Abierto Hero", (\d+),', SPRITE_C).group(1))
 
 
 class SkeletonContractTest(unittest.TestCase):

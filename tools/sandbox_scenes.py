@@ -34,20 +34,20 @@ for _i in range(MAX_ENEMIES):
     FIELDS[f"e{_i}_y"] = {"offset": _base + 4, "type": "s16"}
 
 FLAG_CLEAR, FLAG_FREEZE_AI, FLAG_GOD = 1, 2, 4
-# Sniper aura look (g_aura_style) lives in flag bits 3-4 (include/sandbox.h): K = 0 (default), C = 1, V = 2.
-AURA_SHIFT = 3
-AURA_CODE = {"K": 0, "C": 1, "V": 2}
-CHARGER, SHOOTER = 1, 2
+# Sniper charge aura look in flag bits 3-4 (include/sandbox.h, g_aura_style): 0 = L (flames), 1 = G, 2 = E, 3 = H.
+AURA_LOOKS = ("L", "G", "E", "H")
+FLAG_AURA_SHIFT = 3
+CHARGER, SHOOTER, SKELETON = 1, 2, 3          # SANDBOX_ENEMY_* (include/sandbox.h)
 WEAPON = {"shotgun": 0, "sniper": 1, "grenade": 2}
 STYLE = "ABC"
 
 WORLD_W, WORLD_H = 768, 768
 SCREEN_W, SCREEN_H = 256, 192
-# Hero facing east (g_character_muzzle[CHAR_HERO][DIR_EAST][0]): the muzzle is 16 px ahead of and 1 px below
-# the feet and 18 px above the ground. Shots fly at that height, so a stylus touch is read as a point at
-# MUZZLE_H: to aim the muzzle straight at ground point (x, y), touch (x, y + MUZZLE_DY) shifted up MUZZLE_H.
-MUZZLE_DY = 1
-MUZZLE_H = 18
+# Hero facing east (g_character_muzzle[CHAR_HERO][DIR_EAST][0] = {2, 0, 21}): the muzzle sits on the chest,
+# 2 px from the feet (gx) and 21 px above the ground. Shots fly at that height, so a stylus touch is read as a
+# point at MUZZLE_H: to aim the muzzle at ground point (x, y), touch (x, y + MUZZLE_DY) shifted up MUZZLE_H.
+MUZZLE_DY = 0
+MUZZLE_H = 21
 
 
 def camera(player_x, player_y):
@@ -64,6 +64,17 @@ def touch_at(player, wx, wy, height=0):
     if not (0 <= sx < SCREEN_W and 0 <= sy < SCREEN_H):
         raise ValueError(f"touch ({sx},{sy}) for world ({wx},{wy}) is outside the lower screen")
     return {"x": sx, "y": sy}
+
+
+def check_beam(player, aim_x, enemies):
+    """Rule 5 guard for the sniper: the beam leaves the muzzle (over the feet, facing east) as a horizontal line
+    at MUZZLE_H along the touched row. Every enemy must stand on that row, east of the muzzle and not past the
+    aim point, so the beam really crosses it. Raises if a scene would aim at open floor."""
+    muzzle_x, row = player[0], player[1] + MUZZLE_DY
+    for _kind, x, y in enemies:
+        if y != row or not muzzle_x < x:
+            raise ValueError(f"enemy at ({x},{y}) is off the beam (row y={row}, east of muzzle x={muzzle_x})")
+    return enemies
 
 
 def setup_steps(player, weapon, style, enemies, flags=FLAG_CLEAR | FLAG_FREEZE_AI | FLAG_GOD, seq=1, boot=30):
@@ -126,9 +137,9 @@ def grenade_scene(style):
 
 def shotgun_scene(style):
     # The player stands near the west wall (x < 128 clamps the camera, so the hero is off-centre and
-    # more than 190 px of floor shows to the east). The muzzle is 16 px ahead of the feet.
+    # more than 190 px of floor shows to the east). The muzzle is over the feet (gx 0).
     player = (60, 724)
-    # Charger 60 px from the muzzle (full blast), shooter ~100 px (falloff), charger ~150 px (weak).
+    # Muzzle at x 60: charger 60 px away (full blast), shooter 110 px (falloff), charger 165 px (weak).
     enemies = [(CHARGER, 120, 724), (SHOOTER, 170, 716), (CHARGER, 225, 730)]
     steps = setup_steps(player, "shotgun", style, enemies)
     steps += [
@@ -140,39 +151,8 @@ def shotgun_scene(style):
     return sc
 
 
-def sniper_scene(style):
-    player = (40, 724)
-    # Three enemies on one line east of the player, all on screen: the beam must pierce all of them.
-    enemies = [(SHOOTER, 110, 724), (CHARGER, 170, 724), (SHOOTER, 230, 724)]
-    steps = setup_steps(player, "sniper", style, enemies)
-    steps += [
-        {"tap": touch_at(player, 110, 724 + MUZZLE_DY, MUZZLE_H), "frames": 40, "capture_sequence": "aimline", "capture_every": 2},
-        {"frames": 1, "capture": "aim"},
-        {"release": True, "frames": 44, "capture_sequence": "shot", "capture_every": 1},
-        {"frames": 30, "capture": "after"},
-    ]
-    return scenario(f"sandbox_sniper_{STYLE[style]}", steps)
-
-
-def sniper_collimation_scene(style):
-    """Sniper laser collimation (DESIGN.md 4.9): same stage as sniper_scene, one capture per game frame.
-
-    The touch is held 50 frames (charge, then READY hold: aim_min_frames is 24), then released for the shot.
-    """
-    player = (40, 724)
-    enemies = [(SHOOTER, 110, 724), (CHARGER, 170, 724), (SHOOTER, 230, 724)]
-    steps = setup_steps(player, "sniper", style, enemies)
-    steps += [
-        {"tap": touch_at(player, 110, 724 + MUZZLE_DY, MUZZLE_H), "frames": 50, "capture_sequence": "charge", "capture_every": 1},
-        {"frames": 1, "capture": "aim"},
-        {"release": True, "frames": 14, "capture_sequence": "shot", "capture_every": 1},
-        {"frames": 30, "capture": "after"},
-    ]
-    return scenario(f"sandbox_sniper_collim_{STYLE[style]}", steps)
-
-
-# Sniper hit sweep (fix/sniper-hit-side). One parked shooter facing south (sandbox ordinal 0 = DIR_SOUTH,
-# 20 hp, one sniper hit kills it) at ENEMY, the hero 70 px to its west or east. The stylus touches the
+# Sniper hit sweep (fix/sniper-hit-side). One parked skeleton (SKELETON) facing south (sandbox ordinal 0 = DIR_SOUTH,
+# 100 hp, one sniper hit (150) kills it) at ENEMY, the hero 70 px to its west or east. The stylus touches the
 # enemy's column at SWEEP_UP px above its feet, so the beam crosses the sprite at that screen height
 # (the touch is read at muzzle height). Ground-plane hit test (old): only up 13..23 hit; body volume
 # (new, include/hitvolume.h): every row of the sprite, up -4..32.
@@ -181,13 +161,14 @@ SWEEP_UP = (-14, 0, 4, 8, 12, 16, 20, 24, 28, 32, 46)
 HIT_ROWS = (4, 8, 12, 16, 20, 24, 28)          # clearly on the sprite: must kill
 MISS_ROWS = (-14, 46)                          # clearly off the sprite: must not hurt
 ENEMY_HP_OFFSET = 28                           # offsetof(Enemy, hp) in g_enemies[0]
+ENEMY_FULL_HP = 100                            # skeleton hp (weapons.c: the sniper hit, 150, kills it)
 
 
 def sniper_sweep_scene(side):
     player = {"west": (40, 724), "east": (180, 724)}[side]
     steps, assertions = [], []
     for n, up in enumerate(SWEEP_UP, start=1):
-        steps += setup_steps(player, "sniper", 0, [(SHOOTER, *ENEMY)], seq=n, boot=30 if n == 1 else 0)
+        steps += setup_steps(player, "sniper", 0, [(SKELETON, *ENEMY)], seq=n, boot=30 if n == 1 else 0)
         steps += [
             {"tap": touch_at(player, ENEMY[0], ENEMY[1], up), "frames": 34},
             {"release": True, "frames": 12, "state_capture": f"up{up}"},
@@ -196,7 +177,7 @@ def sniper_sweep_scene(side):
         if up in HIT_ROWS:
             assertions.append({"at": f"up{up}", "field": "e0_hp", "max_value": 0})
         elif up in MISS_ROWS:
-            assertions.append({"at": f"up{up}", "field": "e0_hp", "min_value": 20})
+            assertions.append({"at": f"up{up}", "field": "e0_hp", "min_value": ENEMY_FULL_HP})
     fields = {k: dict(v) for k, v in FIELDS.items()}
     fields["e0_hp"] = {"symbol": "enemies", "offset": ENEMY_HP_OFFSET, "type": "s32"}
     return {
@@ -207,34 +188,59 @@ def sniper_sweep_scene(side):
     }
 
 
-def sniper_aura_scene(look):
-    """Sniper charge aura look K (lightning rays, default), C (bolt crown) or V (vertical sparks).
-
-    Same stage as sniper_scene, but the touch is held ~70 frames (every frame captured) so the GIF shows
-    the whole charge, the READY state and the hold, then the shot.
-    """
+def sniper_fire_scene(look=None):
+    """Sniper fire (DESIGN.md 6.10: fuego, flames aura): the touch is held 70 frames (every frame captured) so
+    the GIF shows the whole charge, the READY state and the hold. The stylus is then released and the shot is
+    captured frame by frame after the release. Same stage as the sniper sweep: three enemies on the beam row,
+    all on screen, so the beam must pierce all of them. READY comes after aim_min_frames (24) aim frames.
+    With `look` ("L", "G", "E" or "H") the scene is sandbox_sniper_fire_aura_<look>: the same stage with the aura
+    look set in the flag bits; without it the flags stay as before (look L)."""
     player = (40, 724)
-    enemies = [(SHOOTER, 110, 724), (CHARGER, 170, 724), (SHOOTER, 230, 724)]
-    flags = FLAG_CLEAR | FLAG_FREEZE_AI | FLAG_GOD | (AURA_CODE[look] << AURA_SHIFT)
-    steps = setup_steps(player, "sniper", 0, enemies, flags=flags)
+    enemies = check_beam(player, 110, [(SHOOTER, 110, 724), (CHARGER, 170, 724), (SHOOTER, 230, 724)])
+    aura = AURA_LOOKS.index(look) if look else 0
+    flags = FLAG_CLEAR | FLAG_FREEZE_AI | FLAG_GOD | (aura << FLAG_AURA_SHIFT)
+    steps = setup_steps(player, "sniper", 2, enemies, flags=flags)     # the sniper always draws fuego (C)
     steps += [
         {"tap": touch_at(player, 110, 724 + MUZZLE_DY, MUZZLE_H), "frames": 70, "capture_sequence": "charge", "capture_every": 1},
         {"frames": 1, "capture": "aim"},
         {"release": True, "frames": 14, "capture_sequence": "shot", "capture_every": 1},
         {"frames": 30, "capture": "after"},
     ]
-    return scenario(f"sandbox_sniper_aura_{look}", steps)
+    return scenario(f"sandbox_sniper_fire_aura_{look}" if look else "sandbox_sniper_fire", steps)
+
+
+# Walk cycles over open floor (no enemies, god mode): start point and key per facing. Each run is 40 frames,
+# long enough for two full 8-frame cycles at ticksPerFrame 2, and far from the arena edges.
+HERO_WALKS = {
+    "east": ((40, 724), "RIGHT"),
+    "west": ((180, 724), "LEFT"),
+    "south": ((120, 400), "DOWN"),
+    "north": ((120, 400), "UP"),
+}
+
+
+def hero_walk_scene(direction="east"):
+    """The hero walking over open floor in one direction (no enemies, god mode): the walk animation."""
+    player, key = HERO_WALKS[direction]
+    steps = setup_steps(player, "sniper", 0, [], flags=FLAG_CLEAR | FLAG_FREEZE_AI | FLAG_GOD)
+    steps += [
+        {"button_down": key, "frames": 40, "capture_sequence": "walk", "capture_every": 1},
+        {"button_up": key, "frames": 4},
+    ]
+    sc = scenario(f"sandbox_hero_walk_{direction}", steps)
+    sc["assertions"] = {}   # no aim capture here: the GIF is the check
+    return sc
 
 
 def main():
     out = ROOT / "scenarios"
     out.mkdir(exist_ok=True)
-    builds = [(style, build) for style in range(3) for build in (grenade_scene, shotgun_scene, sniper_scene)]
-    builds += [(look, sniper_aura_scene) for look in ("K", "C", "V")]
-    builds += [(style, sniper_collimation_scene) for style in range(3)]
-    builds += [(side, sniper_sweep_scene) for side in ("west", "east")]
-    for arg, build in builds:
-        sc = build(arg)
+    scenes = [build(style) for style in range(3) for build in (grenade_scene, shotgun_scene)]
+    scenes.append(sniper_fire_scene())
+    scenes += [sniper_fire_scene(look) for look in AURA_LOOKS]
+    scenes += [sniper_sweep_scene(side) for side in ("west", "east")]
+    scenes += [hero_walk_scene(d) for d in HERO_WALKS]
+    for sc in scenes:
         path = out / f"{sc['name']}.json"
         path.write_text(json.dumps(sc, indent=2) + "\n", encoding="utf-8")
         print(path.relative_to(ROOT))

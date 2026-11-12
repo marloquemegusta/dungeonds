@@ -26,7 +26,7 @@ def parse_header(h_path):
     mask_body = m_mask.group(1)
     return anchors, sprite_bounds, shb_body, mask_body
 
-def convert_sheet(png_path, w=SPRITE_W, h=SPRITE_H):
+def convert_sheet(png_path, w=SPRITE_W, h=SPRITE_H, dir_shift=None):
     im = Image.open(png_path).convert('RGBA')
     lines = []
     lines.append('{\n')
@@ -35,10 +35,15 @@ def convert_sheet(png_path, w=SPRITE_W, h=SPRITE_H):
         for f in range(8):
             lines.append(f'        // Frame {f}\n        {{\n')
             cell = im.crop((f * w, d * h, (f + 1) * w, (d + 1) * h))
+            shift = dir_shift[d] if dir_shift else 0
             row_data = []
             for y in range(h):
+                sy = y - shift      # content moves by `shift` rows: new row y shows old row y - shift
                 for x in range(w):
-                    r, g, b, a = cell.getpixel((x, y))
+                    if sy < 0 or sy >= h:
+                        r, g, b, a = 0, 0, 0, 0
+                    else:
+                        r, g, b, a = cell.getpixel((x, sy))
                     if a < 40:
                         val = 0
                     else:
@@ -56,7 +61,7 @@ def convert_sheet(png_path, w=SPRITE_W, h=SPRITE_H):
     return ''.join(lines)
 
 chars_meta = [
-    ('player', 'marine', 'Space Marine Hero', 340, 4),
+    ('player', 'corazon', 'Corazon Abierto Hero', 340, 4),
     ('charger', 'charger', 'Enemy Charger (Knocker)', 310, 5),
     ('necron', 'necron', 'Necron Shooter Enemy', 385, 4),
     ('skeleton', 'skeleton', 'Skeleton Walker Enemy', 39, 22),
@@ -113,6 +118,39 @@ for var_name, folder, disp_name, spd, ticks in char_configs:
     out_lines.append(f'const uint8_t g_{var_name}_shadow_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4] = {{\n')
     out_lines.append(shb_body)
     out_lines.append('\n};\n\n')
+
+# Hero shot clip (Corazon Abierto, DESIGN.md "Carga y disparo"): a second set for CHAR_HERO only.
+# It is the clip rendered by the lab with the walk's settings. Its ground line was 1 px lower
+# (anchor 34 vs 33 in the walk), so each direction is shifted up by walk_anchor - shot_anchor rows:
+# the feet then sit on the same row as in the walk and the walk's ground anchor table serves both.
+SHOT_DIR = os.path.join(SRC_ROOT, 'corazon_disparo')
+walk_anchors, _, _, _ = parse_header(os.path.join(SRC_ROOT, 'corazon', 'nds_shadow_anchor.h'))
+shot_anchors, _, shot_shb_body, shot_mask_body = parse_header(os.path.join(SHOT_DIR, 'nds_shadow_anchor.h'))
+shot_shift = [walk_anchors[d] - shot_anchors[d] for d in range(8)]
+print('hero shot anchors: walk', walk_anchors, 'shot', shot_anchors, 'shift', shot_shift)
+with open(os.path.join(SHOT_DIR, 'settings.json'), 'r', encoding='utf-8') as sf:
+    shot_dm = json.load(sf)['dirMuzzle']
+shot_muzzle = [[[int(v) for v in shot_dm[d][f]] for f in range(8)] for d in range(8)]
+
+out_lines.append('// 40x40 BGR555 shot clip of the hero (CHAR_HERO only), 8 directions x 8 frames: f0 arms crossed, f7 collapsed\n')
+out_lines.append('const uint16_t g_player_shot_frames[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][PLAYER_SPRITE_W * PLAYER_SPRITE_H] __attribute__((aligned(4))) = ')
+out_lines.append(convert_sheet(os.path.join(SHOT_DIR, 'spritesheet.png'), SPRITE_W, SPRITE_H, shot_shift))
+out_lines.append('\n')
+
+out_lines.append('// 4-bit packed shadow masks of the hero shot clip (8 dirs x 8 frames)\n')
+out_lines.append('const uint8_t g_player_shot_shadow_masks[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][PLAYER_SHADOW_W * PLAYER_SHADOW_H / 2] __attribute__((aligned(4))) = {\n')
+out_lines.append(shot_mask_body)
+out_lines.append('\n};\n\n')
+
+out_lines.append('const uint8_t g_player_shot_shadow_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4] = {\n')
+out_lines.append(shot_shb_body)
+out_lines.append('\n};\n\n')
+
+out_lines.append('// Hero shot clip muzzle per direction/frame: gx, gy, h (same meaning as g_character_muzzle)\n')
+out_lines.append('const int8_t g_hero_shot_muzzle[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][3] = {\n')
+for d in range(8):
+    out_lines.append('    { ' + ', '.join('{ %d, %d, %d }' % tuple(shot_muzzle[d][f]) for f in range(8)) + ' },\n')
+out_lines.append('};\n\n')
 
 out_lines.append('const uint8_t g_character_ground_anchors[NUM_CHARACTERS][PLAYER_NUM_DIRS] = {\n')
 for anc in all_anchors:

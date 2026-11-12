@@ -62,10 +62,10 @@ char weapons_fx_style_letter(void) {
     return (char)('A' + (g_fx_style % FX_STYLE_COUNT));
 }
 
-int g_aura_style = 0;
+int g_aura_style = 0;                     // sniper aura look (weapons.h): 0 = L, 1 = G, 2 = E, 3 = H
 
 char weapons_aura_style_letter(void) {
-    static const char letters[AURA_STYLE_COUNT] = {'K', 'C', 'V'};
+    static const char letters[AURA_STYLE_COUNT] = {'L', 'G', 'E', 'H'};
     return letters[g_aura_style % AURA_STYLE_COUNT];
 }
 
@@ -81,6 +81,7 @@ typedef struct {
     fixed x, y;           // 8.8 screen-space world position (height already applied)
     fixed vx, vy;
     int life, max_life;
+    int sniper;           // sniper impact: fire palette, gold, orange, ash (DESIGN.md 6.10)
 } WeaponSpark;
 
 typedef struct {
@@ -111,10 +112,8 @@ enum {
     FXP_SHELL,      // spent casing: gravity and two bounces (B); aux = bounces
     FXP_DUST,       // dust cloud of dots (impacts in B, recoil in C); size = spread
     FXP_ARC,        // shock arc on the ground (C), floor pass; aux = centre index (0..31)
-    FXP_RING,       // 2:1 ground ring (sniper B), floor pass; x,y = ground point, h unused
-    FXP_CROSS,      // cross flash (sniper A wall, sniper C muzzle and hits); size = arm
-    FXP_MARK,       // dark scorch on the wall (sniper B); size = radius
-    FXP_FRAG        // fragment with gravity (C impacts, B sniper kills)
+    FXP_CROSS,      // sniper cross flash, muzzle and hits (fire palette); size = arm
+    FXP_FRAG        // fragment with gravity (C shotgun and sniper impacts)
 };
 
 typedef struct {
@@ -129,29 +128,51 @@ typedef struct {
 
 static FxPart s_fx[MAX_FX_PARTS];
 
-// Sniper charge aura (DESIGN.md 4.9). Three looks, chosen with KEY_Y (g_aura_style, debug only):
-//   K (0, default): thin lightning rays (1 px: white core, light blue on every other pixel) born on
-//      the feet ellipse at mixed heights, running round the body upwards in tangent.
-//   C (1): a crown of 8 bolts from the ground ring, up and outwards (2 px at the base, the first 2
-//      steps: white core, light blue edge; then 1 px as K), plus 2 thin rays wrapping at mid height.
-//   V (2): vertical sparks. Thin streaks rise from the feet ellipse, white -> yellow -> orange.
-// A bolt is a polyline with a 3 px step: each step turns by a random entry of a table of integer
-// turns and every point gets lateral jitter, so it looks angular. Bolts are rebuilt every 2-3 frames
-// (every 2 at READY) so they crackle; the anchors turn slowly round the body. A bolt whose anchor is in
-// the back half of the ellipse (sin < 0) is drawn on the floor pass, under the sprite; the others on the
-// pass after it. Walls hide pixels as for the other actor FX. Fixed pools and hard caps: K draws at most
-// 6 bolts of 6 steps, C at most 8 crown bolts of 5 steps and 2 thin of 6; forks (depth 1) share 8 steps.
+// Palette of the effects (DESIGN.md 4.9, 6.10): enum and RGB15 table, same order. Declared before the aura
+// looks, which use the colours.
+enum {
+    FX_CORE = 0, FX_HOT, FX_COOL,                  // muzzle flash
+    FX_PELLET_HEAD,
+    FX_SPARK_A, FX_SPARK_B, FX_SPARK_C,            // impact sparks, hot to cold
+    FX_TAIL,                                       // pellet tail, dim blue
+    FX_WHITE, FX_YELLOW, FX_ORANGE,                // shotgun cone, white to orange
+    FX_CYAN, FX_CYAN_DIM,                          // shotgun shock arcs (C), fade out
+    FX_BRASS,                                      // spent casing
+    FX_SMOKE_A, FX_SMOKE_B, FX_SMOKE_C,            // grey smoke, light to dark
+    FX_DUST_A, FX_DUST_B,                          // dust, light to dark
+    FX_GOLD, FX_BLOOD, FX_RED, FX_ASH,             // fire palette (DESIGN.md 6.10): gold, blood red, ember, ash
+    FX_BLACK,                                      // thorn spikes (aura E)
+    FX_NUM_COLORS
+};
+
+static const uint16_t s_fx_rgb[FX_NUM_COLORS] = {
+    RGB15(31, 31, 24), RGB15(31, 24, 6), RGB15(28, 12, 2),
+    RGB15(31, 30, 20),
+    RGB15(31, 30, 18), RGB15(31, 18, 3), RGB15(20, 5, 2),
+    RGB15(10, 14, 20),                             // FX_TAIL
+    RGB15(31, 31, 31), RGB15(31, 28, 8), RGB15(31, 15, 3),
+    RGB15(16, 28, 31), RGB15(8, 16, 24),
+    RGB15(28, 22, 8),                              // FX_BRASS
+    RGB15(17, 17, 18), RGB15(11, 11, 12), RGB15(6, 6, 7),
+    RGB15(22, 20, 16), RGB15(13, 12, 10),
+    RGB15(31, 21, 4),                              // FX_GOLD
+    RGB15(15, 2, 2),                               // FX_BLOOD
+    RGB15(28, 5, 2),                               // FX_RED
+    RGB15(9, 8, 8),                                // FX_ASH
+    RGB15(2, 1, 1)                                 // FX_BLACK
+};
+
+// Sniper charge aura (DESIGN.md 4.9, 6.10). Look L (default, F2): flame tongues, 6..8 short wavy flames
+// from the feet ellipse, yellow at the base, orange and red at the tip, with dithered edges. A flame is a
+// polyline with a 3 px step; each step takes a zig-zag heading plus one LCG jitter, so it looks angular.
+// The flames rebuild every 2-3 frames (every 2 at READY) so they crackle; the anchors turn slowly round the
+// body. A flame whose anchor is in the back half of the ellipse (sin < 0) is drawn on the floor pass, under
+// the sprite; the others on the pass after it. Walls hide pixels as for the other actor FX. Fixed pool and
+// hard caps: 8 flames of 5 steps.
 #define AURA_STEP 3                      // px per bolt step
-#define AURA_BOLT_PTS 7                  // a bolt has up to 6 steps
-#define AURA_MAIN_K 6                    // K: main bolts (slots 0..5)
-#define AURA_MAIN_C 8                    // C: crown bolts (slots 0..7), then the thin wrapping ones (8, 9)
-#define AURA_FORK_BASE 10                // slots from here on hold the forks
-#define AURA_MAX_BOLTS 14
-#define AURA_FORK_STEPS 8                // steps a rebuild may spend on forks
-#define AURA_BOLT_LIFE 3                 // frames a built bolt lives (a rebuild comes every 2-3 frames)
-#define AURA_TURN_KINDS 6
-#define AURA_MAX_STREAKS 24
-#define AURA_BURST_STREAKS 12            // READY burst of long streaks (look V)
+#define AURA_BOLT_PTS 6                  // a flame has up to 5 steps
+#define AURA_MAX_BOLTS 8                 // flame tongues in the pool (slots 0..7)
+#define AURA_BOLT_LIFE 3                 // frames a built flame lives (a rebuild comes every 2-3 frames)
 #define AURA_FLASH_FRAMES 3
 #define AURA_SEG_MAX_STEPS 48            // hard cap on every line walk
 typedef struct {
@@ -160,35 +181,50 @@ typedef struct {
     int px[AURA_BOLT_PTS], py[AURA_BOLT_PTS];   // world px; point 0 on the feet ellipse
     int back;             // anchor in the back half: floor pass
     int occl;             // a wall may hide some of it (tested when built)
-    int thick;            // 1: thin, 1 px (K, wrapping); 2: crown, 2 px at its first 2 steps, then 1 px
     int age, life;        // frames
 } AuraBolt;
-typedef struct {
-    int active;
-    int x, y;             // world px of the lowest pixel at spawn (on the feet ellipse)
-    int len;              // length at spawn, px
-    int rise;             // px per frame
-    int age, life;        // frames
-    int behind;
-} AuraStreak;
 static AuraBolt s_aura_bolts[AURA_MAX_BOLTS];
-static AuraStreak s_aura_streaks[AURA_MAX_STREAKS];
-static const int s_aura_turn[AURA_TURN_KINDS] = {-4, -3, -2, 2, 3, 4};   // heading turn per bolt step
 static uint32_t s_aura_seed = 1;         // shape and jitter source (LCG): no division, no rng_range per point
 static int s_aura_rot = 0;               // anchor rotation, 32 = one turn; +1 per rebuild
 static int s_aura_regen = 0;             // frames until the next rebuild (0 = rebuild now)
-static int s_aura_fork_steps = 0;        // fork steps left in this rebuild
 static int s_aura_x = 0, s_aura_y = 0;     // player's feet (world px), set while aiming
 static int s_aura_frames = 1;              // aim frames until READY (charge = timer / this)
 static int s_aura_flash = 0;               // READY flash frames left
 
+// Looks G, E and H (DESIGN.md, segunda ronda de auras). Integer only; fixed pools and hard caps:
+//   G glow:   12 rays x 14 px from the chest, floor pass (the body covers them).
+//   E thorns: 16 spikes x 3 px on the feet ellipse (contract cap 24) + 16 drops, floor pass.
+//   H ash:    6 smoke volutes (cap 6) + 16 embers (cap 16), front pass (over the body).
+#define GLOW_RAYS 12
+#define GLOW_MAX_LEN 14
+#define THORN_SPIKES 16
+#define THORN_LEN 3
+#define THORN_DROPS 16
+#define ASH_VOLUTES 6
+#define ASH_EMBERS 16
+#define AURA_FADE_FRAMES 3               // G/E/H keep drawing this many frames after the release (the shot)
+typedef struct { int active, x, y, life, color; } AuraMote;          // one-px mote: thorn drop, ember
+typedef struct { int active, ax, ay, age, life, ph; } AshVolute;     // smoke column from a shoulder
+static int s_aura_cx = 0, s_aura_cy = 0;   // chest (world px): the muzzle point at its height
+static int s_aura_prog_live = 0;           // charge of the last charging frame (G/E/H draw with it)
+static int s_aura_fade = 0;                // frames left to draw G/E/H after the release
+static int s_aura_was_ready = 0;
+static int s_aura_tick = 0;                // frame counter: glow turn and spawn rates
+static int s_glow_rot = 0;                 // ray rotation, 32 = one turn; one step every 4 frames
+static AuraMote s_drops[THORN_DROPS];
+static AuraMote s_embers[ASH_EMBERS];
+static AshVolute s_volutes[ASH_VOLUTES];
+
 static void aura_reset(void) {
     for (int i = 0; i < AURA_MAX_BOLTS; i++) s_aura_bolts[i].active = 0;
-    for (int i = 0; i < AURA_MAX_STREAKS; i++) s_aura_streaks[i].active = 0;
+    for (int i = 0; i < THORN_DROPS; i++) s_drops[i].active = 0;
+    for (int i = 0; i < ASH_EMBERS; i++) s_embers[i].active = 0;
+    for (int i = 0; i < ASH_VOLUTES; i++) s_volutes[i].active = 0;
     s_aura_flash = 0;
     s_aura_regen = 0;
+    s_aura_fade = 0;
+    s_aura_was_ready = 0;
 }
-static int s_aim_target_d = 0;      // sniper C: distance along the aim ray where the reticle closes
 
 static int s_weapon_cooldown = 0;
 static int s_aim_state = AIM_IDLE;
@@ -237,7 +273,6 @@ void weapons_init(void) {
     for (int i = 0; i < MAX_SPARKS; i++) s_sparks[i].active = 0;
     aura_reset();
     for (int i = 0; i < MAX_FX_PARTS; i++) s_fx[i].kind = FXP_NONE;
-    s_aim_target_d = 0;
     grenade_init();
 }
 
@@ -255,9 +290,14 @@ void weapons_shift_y(int dy_px) {
     for (int i = 0; i < AURA_MAX_BOLTS; i++)
         if (s_aura_bolts[i].active)
             for (int p = 0; p < s_aura_bolts[i].n; p++) s_aura_bolts[i].py[p] += dy_px;
-    for (int i = 0; i < AURA_MAX_STREAKS; i++)
-        if (s_aura_streaks[i].active) s_aura_streaks[i].y += dy_px;
     s_aura_y += dy_px;
+    s_aura_cy += dy_px;
+    for (int i = 0; i < THORN_DROPS; i++)
+        if (s_drops[i].active) s_drops[i].y += dy_px;
+    for (int i = 0; i < ASH_EMBERS; i++)
+        if (s_embers[i].active) s_embers[i].y += dy_px;
+    for (int i = 0; i < ASH_VOLUTES; i++)
+        if (s_volutes[i].active) s_volutes[i].ay += dy_px;
 }
 
 void weapons_cycle(PlayerState *player) {
@@ -368,11 +408,13 @@ static void spawn_dust(fixed x, fixed y, int size, int life) {
 }
 
 // Sparks leave the impact point opposite to the shot, with a sideways spread.
-// B adds a dust cloud; C adds a bigger spark burst and a fragment (other styles unchanged).
-static void spawn_impact(int x, int y, fixed back_x, fixed back_y, int count) {
+// Shotgun pellets follow g_fx_style: B adds a dust cloud; C adds a bigger spark burst and a fragment.
+// Sniper impacts always take style C and its palette (gold, orange, ash) in render_fx.
+static void spawn_impact(int x, int y, fixed back_x, fixed back_y, int count, int sniper) {
+    int style = sniper ? 2 : g_fx_style;
     int n = count;
-    if (g_fx_style == 1) n = count > 1 ? count - 1 : 1;
-    else if (g_fx_style == 2) n = count + 2;
+    if (style == 1) n = count > 1 ? count - 1 : 1;
+    else if (style == 2) n = count + 2;
     for (int k = 0; k < n; k++) {
         for (int i = 0; i < MAX_SPARKS; i++) {
             if (s_sparks[i].active) continue;
@@ -385,12 +427,13 @@ static void spawn_impact(int x, int y, fixed back_x, fixed back_y, int count) {
             s_sparks[i].vy = ((back_y * speed) >> 8) + ((back_x * side) >> 8) - 64;
             s_sparks[i].max_life = SPARK_LIFE_MIN + (int)(rng_next() % 5u);
             s_sparks[i].life = s_sparks[i].max_life;
+            s_sparks[i].sniper = sniper;
             break;
         }
     }
-    if (g_fx_style == 1) {
+    if (style == 1) {
         spawn_dust(TO_FIXED(x), TO_FIXED(y), 1, 10);
-    } else if (g_fx_style == 2) {
+    } else if (style == 2) {
         spawn_frag(x, y, back_x, back_y);
     }
 }
@@ -462,76 +505,28 @@ static void spawn_shotgun_fx(const WeaponInput *in, fixed dir_x, fixed dir_y) {
     }
 }
 
-// Sniper shot: a ring on the ground at the muzzle (B), a cross at the muzzle (C), and at the
-// wall end a small flash (A) or a dark scorch (B) or a cross (C). Hits: sniper_hit_fx.
+// Sniper shot (fire palette, DESIGN.md 6.10): a cross at the muzzle and, when the shot ends at a wall,
+// another one there. Hits: sniper_hit_fx.
 static void sniper_shot_fx(const WeaponInput *in, fixed end_x, fixed end_y, int end_blocked) {
-    if (g_fx_style == 1) {
-        fx_spawn(FXP_RING, 8, in->muzzle_x, in->muzzle_y);     // muzzle ground point
-    } else if (g_fx_style == 2) {
-        FxPart *p = fx_spawn(FXP_CROSS, 4, in->muzzle_x, in->muzzle_y);
-        if (p) {
-            p->h = TO_FIXED(in->muzzle_h);
-            p->size = 6;
-        }
+    FxPart *p = fx_spawn(FXP_CROSS, 4, in->muzzle_x, in->muzzle_y);
+    if (p) {
+        p->h = TO_FIXED(in->muzzle_h);
+        p->size = 6;
     }
     if (!end_blocked) return;
-    if (g_fx_style == 0) {
-        FxPart *p = fx_spawn(FXP_CROSS, 3, end_x, end_y);
-        if (p) {
-            p->h = TO_FIXED(in->muzzle_h);
-            p->size = 2;
-        }
-    } else if (g_fx_style == 1) {
-        FxPart *p = fx_spawn(FXP_MARK, 8, end_x, end_y);
-        if (p) {
-            p->h = TO_FIXED(in->muzzle_h);
-            p->size = 2;
-        }
-    } else {
-        FxPart *p = fx_spawn(FXP_CROSS, 4, end_x, end_y);
-        if (p) {
-            p->h = TO_FIXED(in->muzzle_h);
-            p->size = 5;
-        }
+    p = fx_spawn(FXP_CROSS, 4, end_x, end_y);
+    if (p) {
+        p->h = TO_FIXED(in->muzzle_h);
+        p->size = 5;
     }
 }
 
-// Sniper hit on an enemy along the ray: ground ring (B) with fragments if it dies, cross (C).
-static void sniper_hit_fx(const WeaponInput *in, fixed x, fixed y, int killed, fixed dir_x, fixed dir_y) {
-    if (g_fx_style == 1) {
-        fx_spawn(FXP_RING, 8, x, y);                           // ground point under the enemy
-        if (killed) {
-            for (int k = 0; k < 4; k++) {
-                spawn_frag(TO_INT(x), TO_INT(y) - in->muzzle_h, -dir_x, -dir_y);
-            }
-        }
-    } else if (g_fx_style == 2) {
-        FxPart *p = fx_spawn(FXP_CROSS, 4, x, y);
-        if (p) {
-            p->h = TO_FIXED(in->muzzle_h);
-            p->size = 5;
-        }
-    }
-}
-
-// C: the reticle closes on the first enemy the armed shot will reach (else the wall end).
-// Runs in weapons_update so the render pass stays read-only.
-static void update_aim_target(Enemy *enemies, int max_enemies) {
-    s_aim_target_d = s_aim_len;
-    if (g_fx_style != 2 || s_aim_state == AIM_IDLE || s_aim_state == AIM_CANCELLED) return;
-    for (int d = 4; d <= s_aim_len; d += 4) {
-        fixed px = s_aim_muzzle_x + s_aim_dir_x * d;
-        fixed py = s_aim_muzzle_y + s_aim_dir_y * d;
-        for (int i = 0; i < max_enemies; i++) {
-            Enemy *e = &enemies[i];
-            if (!e->active || e->hp <= 0) continue;
-            int edx = TO_INT(px - e->x);
-            int edy = TO_INT(py - e->y);
-            if (body_hit_test(edx, edy, s_aim_muzzle_h)) {
-                s_aim_target_d = d;
-                return;
-            }
-        }
+// Sniper hit on an enemy along the ray: a cross (fire palette).
+static void sniper_hit_fx(const WeaponInput *in, fixed x, fixed y) {
+    FxPart *p = fx_spawn(FXP_CROSS, 4, x, y);
+    if (p) {
+        p->h = TO_FIXED(in->muzzle_h);
+        p->size = 5;
     }
 }
 
@@ -715,11 +710,11 @@ static void fire_sniper(const WeaponTuning *tuning, const WeaponInput *in, fixed
             int edy = TO_INT(cur_y - e->y);
             if (body_hit_test(edx, edy, in->muzzle_h)) {
                 hit_mask |= 1u << i;
-                spawn_impact(TO_INT(cur_x), TO_INT(cur_y) - in->muzzle_h, -dir_x, -dir_y, 4);
+                spawn_impact(TO_INT(cur_x), TO_INT(cur_y) - in->muzzle_h, -dir_x, -dir_y, 4, 1);
                 int sniper_damage = tuning->damage_per_hit * g_mods.sniper_damage_pct / 100;
                 enemy_hit(e, sniper_damage < 1 ? 1 : sniper_damage, dir_x * 4, dir_y * 4);
                 shove_enemy(e, tuning, dir_x, dir_y);
-                sniper_hit_fx(in, cur_x, cur_y, e->hp <= 0, dir_x, dir_y);
+                sniper_hit_fx(in, cur_x, cur_y);
             }
         }
     }
@@ -730,7 +725,7 @@ static void fire_sniper(const WeaponTuning *tuning, const WeaponInput *in, fixed
     s_trail.x1 = TO_INT(cur_x);
     s_trail.y1 = TO_INT(cur_y) - in->muzzle_h;
     if (end_blocked) {
-        spawn_impact(s_trail.x1, s_trail.y1, -dir_x, -dir_y, 6);
+        spawn_impact(s_trail.x1, s_trail.y1, -dir_x, -dir_y, 6, 1);
     }
     sniper_shot_fx(in, cur_x, cur_y, end_blocked);
 }
@@ -752,7 +747,7 @@ static int fire_weapon(PlayerState *player, const WeaponInput *in, fixed dir_x, 
 }
 
 // The aura runs while the sniper charges (AIM_AIMING..AIM_READY) and only then rebuilds. Releasing,
-// cancelling, switching weapon or dying stops the rebuilds at once; live bolts and streaks are cut to a
+// cancelling, switching weapon or dying stops the rebuilds at once; live flames are cut to a
 // few frames more.
 static int aura_charging(void) {
     return (s_aim_state == AIM_AIMING || s_aim_state == AIM_READY) &&
@@ -785,134 +780,46 @@ static int aura_points_hidden(const int *px, const int *py, int n) {
     return 0;
 }
 
-// Heading that runs round the body and climbs: the ellipse tangent at step a whose screen y goes up.
-static int aura_climb_heading(int a) {
-    int t = (a + 8) & 31;
-    return s_ell_sin[t] < 0 ? t : (a + 24) & 31;
-}
-
-static void aura_bolt_walk(AuraBolt *b, int x8, int y8, int heading, int nseg, int fork_ok);
-
-// Depth-1 fork: a child bolt of 2 or 3 steps from the point (x8, y8), turned 5..7 steps off the
-// heading. It takes a fork slot; with no slot or no budget left it is skipped.
-static void aura_fork(const AuraBolt *parent, int x8, int y8, int heading) {
-    AuraBolt *c = 0;
-    for (int i = AURA_FORK_BASE; i < AURA_MAX_BOLTS && !c; i++) {
-        if (!s_aura_bolts[i].active) c = &s_aura_bolts[i];
-    }
-    if (!c) return;
-    int nseg = 2 + (aura_rand8() & 1);
-    if (nseg > s_aura_fork_steps) nseg = s_aura_fork_steps;
-    if (nseg < 2) return;
-    s_aura_fork_steps -= nseg;
-    int turn = 5 + ((aura_rand8() * 3) >> 8);                 // 5..7
-    int hc = (heading + ((aura_rand8() & 1) ? turn : -turn)) & 31;
-    c->active = 1;
-    c->back = parent->back;
-    c->thick = parent->thick;
-    c->age = 0;
-    c->life = AURA_BOLT_LIFE;
-    aura_bolt_walk(c, x8, y8, hc, nseg, 0);
-}
-
-// Walks nseg steps of 3 px from (x8, y8) (8.8 world px) on heading `heading` (one of the 32 entries of
-// the unit circle table), turning by a random table entry at each step. Positions stay 8.8, so a step is
-// cos * 3 with no division. At step 2 or 3 a fork may leave when fork_ok is set.
-static void aura_bolt_walk(AuraBolt *b, int x8, int y8, int heading, int nseg, int fork_ok) {
+// One flame tongue: anchor on the feet ellipse (step a, radius rx, lifted h px), then nseg steps of 3 px
+// that lean outwards and waver: the heading swings two table steps either side of straight up (24), with
+// one LCG jitter step. No forks. Depth follows the anchor.
+static void aura_flame_make(AuraBolt *b, int a, int rx, int h, int nseg) {
+    int ax = s_aura_x + ((s_ell_cos[a] * rx) >> 8);
+    int ay = s_aura_y + ((s_ell_sin[a] * rx) >> 9) - h;
+    int side = s_ell_cos[a] >= 0 ? 1 : -1;
+    int base = (24 + side) & 31;
+    int x8 = ax * 256, y8 = ay * 256;
+    b->active = 1;
+    b->back = s_ell_sin[a] < 0;
+    b->age = 0;
+    b->life = AURA_BOLT_LIFE;
     b->n = nseg + 1;
-    b->px[0] = x8 >> 8;
-    b->py[0] = y8 >> 8;
-    int fork_at = 2 + (aura_rand8() & 1);
+    b->px[0] = ax;
+    b->py[0] = ay;
     for (int k = 1; k <= nseg; k++) {
-        heading = (heading + s_aura_turn[(aura_rand8() * AURA_TURN_KINDS) >> 8]) & 31;
-        // Crown bolts (thick 2) rise: a heading that points down is turned back towards the top.
-        if (b->thick == 2 && s_ell_sin[heading] > -128) heading = (heading + (s_ell_cos[heading] >= 0 ? -3 : 3)) & 31;
+        int zig = (k & 1) ? 2 : -2;
+        int heading = (base + zig + aura_jitter(1)) & 31;
         x8 += s_ell_cos[heading] * AURA_STEP;
         y8 += s_ell_sin[heading] * AURA_STEP;
-        b->px[k] = (x8 >> 8) + aura_jitter(1);
-        b->py[k] = (y8 >> 8) + aura_jitter(1);
-        if (fork_ok && k == fork_at && nseg - k >= 2 && aura_rand8() < 110) {
-            aura_fork(b, x8, y8, heading);
-        }
+        b->px[k] = x8 >> 8;
+        b->py[k] = y8 >> 8;
     }
     b->occl = aura_points_hidden(b->px, b->py, b->n);
 }
 
-// A main bolt: its anchor is ellipse step a at radius rx (ground px), lifted h px. Its depth follows
-// the anchor (back half = floor pass).
-static void aura_bolt_make(AuraBolt *b, int a, int rx, int h, int heading, int nseg, int thick) {
-    int ax = s_aura_x + ((s_ell_cos[a] * rx) >> 8);
-    int ay = s_aura_y + ((s_ell_sin[a] * rx) >> 9) - h;
-    b->active = 1;
-    b->back = s_ell_sin[a] < 0;
-    b->thick = thick;
-    b->age = 0;
-    b->life = AURA_BOLT_LIFE;
-    aura_bolt_walk(b, ax * 256, ay * 256, heading, nseg, 1);
-}
-
-// Rebuilds every bolt for the current charge. K: 2..6 bolts. C: 3..8 crown bolts from the ground ring
-// and 0..2 thin wrapping ones. Count, length and height grow with prog (0..256); READY is prog 256 (all
-// bolts, longest and highest). Every slot is cleared first, so a rebuild never keeps a shape.
+// Rebuilds every flame for the current charge: 6..8 flames from the feet ellipse. Count, length and height
+// grow with prog (0..256); READY is prog 256 (all flames, longest and highest). Every slot is cleared first,
+// so a rebuild never keeps a shape.
 static void aura_regenerate(int prog) {
     for (int i = 0; i < AURA_MAX_BOLTS; i++) s_aura_bolts[i].active = 0;
-    s_aura_fork_steps = AURA_FORK_STEPS;
     s_aura_rot = (s_aura_rot + 1) & 31;
-    if (g_aura_style == AURA_STYLE_K) {
-        int count = 2 + ((prog * 4) >> 8);            // 2..6
-        int nseg = 4 + ((prog * 2) >> 8);             // 4..6 steps: 12..18 px
-        int hmax = 4 + ((prog * 22) >> 8);            // anchors 4..26 px high
-        for (int i = 0; i < count; i++) {
-            int a = (s_aura_rot + i * 11) & 31;
-            int h = (aura_rand8() * hmax) >> 8;
-            int heading = (aura_climb_heading(a) + ((aura_rand8() * 5) >> 8) - 2) & 31;
-            aura_bolt_make(&s_aura_bolts[i], a, 10, h, heading, nseg, 1);
-        }
-        return;
-    }
-    int crowns = 3 + ((prog * 5) >> 8);               // 3..8
-    int crown_steps = 3 + ((prog * 2) >> 8);          // 3..5 steps: 9..15 px
-    for (int i = 0; i < crowns; i++) {
-        int a = (s_aura_rot + i * 13) & 31;
-        int side = s_ell_cos[a] >= 0 ? 1 : -1;
-        int heading = (24 + side * (1 + ((aura_rand8() * 4) >> 8))) & 31;   // up, leaning outwards
-        aura_bolt_make(&s_aura_bolts[i], a, 9, 0, heading, crown_steps, 2);
-    }
-    int wraps = prog >> 7;                            // 0, 1 or 2
-    int wrap_steps = 4 + ((prog * 2) >> 8);           // 4..6 steps
-    for (int w = 0; w < wraps; w++) {
-        int a = (s_aura_rot + w * 16) & 31;           // the two wraps on opposite sides
-        int h = 8 + ((aura_rand8() * 10) >> 8);       // mid height: 8..17 px
-        int heading = (aura_climb_heading(a) + ((aura_rand8() * 3) >> 8) - 1) & 31;
-        aura_bolt_make(&s_aura_bolts[AURA_MAIN_C + w], a, 11, h, heading, wrap_steps, 1);
-    }
-}
-
-// Look V: a streak starting on the feet ellipse (half-width 6..10). Its lowest pixel rises `rise`
-// px per frame and the streak shortens as it fades.
-static void aura_streak_spawn(int len_lo, int len_hi, int rise) {
-    AuraStreak *s = 0;
-    for (int i = 0; i < AURA_MAX_STREAKS && !s; i++) {
-        if (!s_aura_streaks[i].active) s = &s_aura_streaks[i];
-    }
-    if (!s) return;
-    int idx = rng_range(0, 31);
-    int rx = rng_range(6, 10);
-    s->x = s_aura_x + ((s_ell_cos[idx] * rx) >> 8);
-    s->y = s_aura_y + ((s_ell_sin[idx] * rx) >> 9);
-    s->len = rng_range(len_lo, len_hi);
-    s->rise = rise;
-    s->age = 0;
-    s->life = rng_range(14, 20);
-    s->behind = s_ell_sin[idx] < 0;
-    s->active = 1;
-}
-
-// Reaching AIM_READY: a 3-frame flash; look V also bursts long streaks.
-static void aura_on_ready(void) {
-    s_aura_flash = AURA_FLASH_FRAMES;
-    if (g_aura_style == AURA_STYLE_V) {
-        for (int i = 0; i < AURA_BURST_STREAKS; i++) aura_streak_spawn(12, 14, 2);
+    int count = 6 + ((prog * 2) >> 8);            // 6..8
+    int nseg = 3 + ((prog * 2) >> 8);             // 3..5 steps: 9..15 px
+    int hmax = 2 + ((prog * 6) >> 8);             // bases 2..8 px high
+    for (int i = 0; i < count; i++) {
+        int a = (s_aura_rot + i * 4) & 31;        // eight tongues spread round the ellipse
+        int h = (aura_rand8() * hmax) >> 8;
+        aura_flame_make(&s_aura_bolts[i], a, 9, h, nseg);
     }
 }
 
@@ -921,6 +828,133 @@ static int aura_age(int *age, int *life, int charging, int keep) {
     if (!charging && *life - *age > keep) *life = *age + keep;
     *age += 1;
     return *age < *life;
+}
+
+// Free slot of a mote pool, or -1 when full.
+static int mote_free(AuraMote *pool, int n) {
+    for (int i = 0; i < n; i++)
+        if (!pool[i].active) return i;
+    return -1;
+}
+
+static void mote_set(AuraMote *m, int x, int y, int life, int color) {
+    m->active = 1;
+    m->x = x;
+    m->y = y;
+    m->life = life;
+    m->color = color;
+}
+
+static void ember_spawn(int x, int y, int life, int color) {
+    int slot = mote_free(s_embers, ASH_EMBERS);
+    if (slot >= 0) mote_set(&s_embers[slot], x, y, life, color);
+}
+
+// Floor point of ellipse step a (0..31) at radius r px: 2:1, as the flame anchors.
+static void aura_floor_point(int a, int r, int *x, int *y) {
+    *x = s_aura_x + ((s_ell_cos[a] * r) >> 8);
+    *y = s_aura_y + ((s_ell_sin[a] * r) >> 9);
+}
+
+// Thorn crown radius: 12 px open at charge 0, 6 px closed at READY (the spikes reach THORN_LEN beyond).
+static int thorn_radius(int prog) {
+    return 12 - ((prog * 6) >> 8);
+}
+
+// Glow ray length: 4 px at charge 0, GLOW_MAX_LEN at READY.
+static int glow_len(int prog) {
+    return 4 + ((prog * (GLOW_MAX_LEN - 4)) >> 8);
+}
+
+// E: drops fall one px a frame from a random spike tip, one every 4 frames while charging.
+static void thorn_update(int charging, int prog) {
+    for (int i = 0; i < THORN_DROPS; i++) {
+        AuraMote *d = &s_drops[i];
+        if (!d->active) continue;
+        d->y += 1;
+        if (--d->life <= 0) d->active = 0;
+    }
+    if (charging && (s_aura_tick & 3) == 0) {
+        int slot = mote_free(s_drops, THORN_DROPS);
+        if (slot >= 0) {
+            int a = (2 * (aura_rand8() & 15)) & 31;       // 16 spikes, two table steps apart
+            int x, y;
+            aura_floor_point(a, thorn_radius(prog) + THORN_LEN, &x, &y);
+            mote_set(&s_drops[slot], x, y, 5, FX_RED);
+        }
+    }
+}
+
+static void volute_spawn(void) {
+    for (int i = 0; i < ASH_VOLUTES; i++) {
+        AshVolute *v = &s_volutes[i];
+        if (v->active) continue;
+        v->active = 1;
+        v->ax = s_aura_cx + ((aura_rand8() & 1) ? -4 : 4);   // from either shoulder
+        v->ay = s_aura_cy - 2;
+        v->age = 0;
+        v->life = 16;
+        v->ph = aura_rand8() & 31;
+        return;
+    }
+}
+
+// H: volutes rise one px a frame from the shoulders (3..6 alive, more with the charge); embers come from the
+// chest, every 2 frames at high charge and every 4 otherwise; READY throws one burst of 12 gold embers.
+static void ash_update(int charging, int ready, int prog) {
+    for (int i = 0; i < ASH_VOLUTES; i++) {
+        AshVolute *v = &s_volutes[i];
+        if (v->active && ++v->age >= v->life) v->active = 0;
+    }
+    for (int i = 0; i < ASH_EMBERS; i++) {
+        AuraMote *e = &s_embers[i];
+        if (!e->active) continue;
+        e->y -= 1;
+        if (--e->life <= 0) e->active = 0;
+    }
+    if (charging) {
+        int target = 3 + ((prog * 3) >> 8);
+        int live = 0;
+        for (int i = 0; i < ASH_VOLUTES; i++) live += s_volutes[i].active;
+        if ((s_aura_tick & 3) == 0 && live < target) volute_spawn();
+        int dense = prog >= 180;
+        if ((s_aura_tick & (dense ? 1 : 3)) == 0)
+            ember_spawn(s_aura_cx + (aura_rand8() & 15) - 8, s_aura_cy - 2, 8, dense ? FX_RED : FX_ORANGE);
+    }
+    if (ready && !s_aura_was_ready) {
+        for (int k = 0; k < 12; k++)
+            ember_spawn(s_aura_cx + (aura_rand8() & 31) - 16, s_aura_cy - (aura_rand8() & 7), 12, FX_GOLD);
+    }
+}
+
+// Per-frame state of G, E and H. Each look clears the pools it does not use, so a style switch never shows
+// the motes of the previous one. The glow only turns (no pool).
+static void aura_fx_update(int charging, int ready, int prog) {
+    s_aura_tick++;
+    if (charging) {
+        s_aura_prog_live = prog;
+        s_aura_fade = AURA_FADE_FRAMES;
+    } else if (s_aura_fade > 0) {
+        s_aura_fade--;
+    }
+    if ((s_aura_tick & 3) == 0) s_glow_rot = (s_glow_rot + 1) & 31;
+    if (g_aura_style == AURA_STYLE_E) {
+        thorn_update(charging, prog);
+    } else {
+        for (int i = 0; i < THORN_DROPS; i++) s_drops[i].active = 0;
+    }
+    if (g_aura_style == AURA_STYLE_H) {
+        ash_update(charging, ready, prog);
+    } else {
+        for (int i = 0; i < ASH_EMBERS; i++) s_embers[i].active = 0;
+        for (int i = 0; i < ASH_VOLUTES; i++) s_volutes[i].active = 0;
+    }
+    s_aura_was_ready = ready;
+}
+
+// True while G/E/H should be drawn: the charge runs, or the shot is still in its few frames.
+static int aura_fx_live(void) {
+    return aura_charging() || s_aura_fade > 0;
 }
 
 static void aura_update(void) {
@@ -932,12 +966,19 @@ static void aura_update(void) {
         prog = (s_aim_timer << 8) / s_aura_frames;     // one divide per frame
         if (prog > 256) prog = 256;
     }
+    aura_fx_update(charging, ready, prog);
+    if (g_aura_style != AURA_STYLE_L) {
+        // G, E and H draw their own state: the flames are cut at once, so none is left when switching back.
+        for (int i = 0; i < AURA_MAX_BOLTS; i++) s_aura_bolts[i].active = 0;
+        s_aura_regen = 0;
+        return;
+    }
     for (int i = 0; i < AURA_MAX_BOLTS; i++) {
         AuraBolt *b = &s_aura_bolts[i];
         if (b->active && !aura_age(&b->age, &b->life, charging, 2)) b->active = 0;
     }
-    // K and C rebuild their bolts every 2-3 frames (every 2 at READY); the rebuilds stop with the charge.
-    if (charging && g_aura_style != AURA_STYLE_V) {
+    // The flames rebuild every 2-3 frames (every 2 at READY); the rebuilds stop with the charge.
+    if (charging) {
         if (--s_aura_regen <= 0) {
             s_aura_regen = ready ? 2 : 2 + (aura_rand8() & 1);
             aura_regenerate(prog);
@@ -945,14 +986,15 @@ static void aura_update(void) {
     } else {
         s_aura_regen = 0;
     }
-    // Look V: streaks come more often and rise faster with charge.
-    if (charging && g_aura_style == AURA_STYLE_V && rng_range(0, 255) < 70 + (prog >> 1)) {
-        aura_streak_spawn(6, 14, rng_range(1, 1 + (prog >> 7)));
-    }
-    for (int i = 0; i < AURA_MAX_STREAKS; i++) {
-        AuraStreak *s = &s_aura_streaks[i];
-        if (s->active && !aura_age(&s->age, &s->life, charging, 3)) s->active = 0;
-    }
+}
+
+// Sniper charge state for the hero's animation: charging = AIM_AIMING or AIM_READY; progress 0..256.
+int weapons_aim_charging(void) {
+    return s_aim_state == AIM_AIMING || s_aim_state == AIM_READY;
+}
+
+int weapons_aim_progress(void) {
+    return s_aim_prog;
 }
 
 int weapons_can_start_aim(const PlayerState *player) {
@@ -1027,10 +1069,12 @@ int weapons_input(PlayerState *player, const WeaponInput *in, Enemy *enemies, in
     if (s_aim_prog > 256) s_aim_prog = 256;
     s_aura_x = TO_INT(in->player_x);
     s_aura_y = TO_INT(in->player_y);
+    s_aura_cx = TO_INT(in->muzzle_x);                 // chest: the muzzle point, at its height
+    s_aura_cy = TO_INT(in->muzzle_y) - in->muzzle_h;
     s_aura_frames = aim_frames;
     if (s_aim_timer >= aim_frames && s_aim_state == AIM_AIMING) {
         s_aim_state = AIM_READY;
-        aura_on_ready();
+        s_aura_flash = AURA_FLASH_FRAMES;
     }
     return WEAPON_RESULT_ROOTED;
 }
@@ -1061,7 +1105,6 @@ void weapons_update(Enemy *enemies, int max_enemies) {
 
     fx_update();
     aura_update();
-    update_aim_target(enemies, max_enemies);
 
     const WeaponTuning *shotgun = &g_weapon_tuning[WEAPON_SHOTGUN];
     for (int i = 0; i < MAX_PLAYER_PROJECTILES; i++) {
@@ -1085,7 +1128,7 @@ void weapons_update(Enemy *enemies, int max_enemies) {
             p->y = ny;
         }
         if (blocked) {
-            spawn_impact(TO_INT(p->x), TO_INT(p->y) - p->height, -p->vx / 8, -p->vy / 8, 3);
+            spawn_impact(TO_INT(p->x), TO_INT(p->y) - p->height, -p->vx / 8, -p->vy / 8, 3, 0);
             p->active = 0;
             continue;
         }
@@ -1100,7 +1143,7 @@ void weapons_update(Enemy *enemies, int max_enemies) {
             // Damage falls off from 100% at the muzzle to 25% at the end of the range.
             int damage = (p->damage * (64 + (192 * p->life) / p->max_life)) >> 8;
             if (damage < 1) damage = 1;
-            spawn_impact(TO_INT(p->x), TO_INT(p->y) - p->height, -p->vx / 8, -p->vy / 8, 3);
+            spawn_impact(TO_INT(p->x), TO_INT(p->y) - p->height, -p->vx / 8, -p->vy / 8, 3, 0);
             enemy_hit(e, damage, p->vx, p->vy);
             fixed len_dir_x = p->vx * 256 / shotgun->projectile_speed;
             fixed len_dir_y = p->vy * 256 / shotgun->projectile_speed;
@@ -1120,41 +1163,6 @@ void weapons_update(Enemy *enemies, int max_enemies) {
 // Rendering: procedural strokes. render_screen() calls weapons_render() once per screen,
 // so the aim laser, pellets, trail, flash and sparks show on both of them.
 // ---------------------------------------------------------------------------
-
-enum {
-    FX_CORE = 0, FX_HOT, FX_COOL,                  // muzzle flash
-    FX_AIM, FX_AIM_READY,                          // sniper laser
-    FX_TRAIL_A, FX_TRAIL_B, FX_TRAIL_C,            // sniper trail, bright to dim
-    FX_PELLET_HEAD,
-    FX_SPARK_A, FX_SPARK_B, FX_SPARK_C,            // impact sparks, hot to cold
-    FX_TAIL,                                       // pellet tail, dim blue
-    FX_WHITE, FX_YELLOW, FX_ORANGE,                // shotgun cone, white to orange
-    FX_CYAN, FX_CYAN_DIM, FX_DARK,                 // rings, arcs, crosses, fade out
-    FX_BRASS,                                      // spent casing
-    FX_SMOKE_A, FX_SMOKE_B, FX_SMOKE_C,            // grey smoke, light to dark
-    FX_DUST_A, FX_DUST_B,                          // dust, light to dark
-    FX_MARK,                                       // scorch on the wall
-    FX_BLUE_LIGHT,                                 // sniper aura K/C: light blue pixels
-    FX_AIM_DIM,                                    // sniper collimation: dark red dither
-    FX_NUM_COLORS
-};
-
-static const uint16_t s_fx_rgb[FX_NUM_COLORS] = {
-    RGB15(31, 31, 24), RGB15(31, 24, 6), RGB15(28, 12, 2),
-    RGB15(31, 8, 6), RGB15(12, 31, 12),            // aim: red, green when armed
-    RGB15(31, 31, 31), RGB15(18, 28, 31), RGB15(8, 16, 26),
-    RGB15(31, 30, 20),
-    RGB15(31, 30, 18), RGB15(31, 18, 3), RGB15(20, 5, 2),
-    RGB15(10, 14, 20),                             // FX_TAIL
-    RGB15(31, 31, 31), RGB15(31, 28, 8), RGB15(31, 15, 3),
-    RGB15(16, 28, 31), RGB15(8, 16, 24), RGB15(4, 6, 9),
-    RGB15(28, 22, 8),                              // FX_BRASS
-    RGB15(17, 17, 18), RGB15(11, 11, 12), RGB15(6, 6, 7),
-    RGB15(22, 20, 16), RGB15(13, 12, 10),
-    RGB15(5, 3, 3),                                // FX_MARK
-    RGB15(12, 22, 31),                             // FX_BLUE_LIGHT
-    RGB15(15, 4, 5)                                // FX_AIM_DIM
-};
 
 typedef struct {
     uint16_t *p16;        // screen page (BGR555 with the alpha bit)
@@ -1226,115 +1234,62 @@ static void draw_cone(const FxTarget *t, int ox, int oy, fixed dir_x, fixed dir_
     }
 }
 
-// Collimation band: at each ray point paint offsets -w..w across the aim. The centre takes
-// `color`, inner offsets dark red, and the rim (|o| == w) only on a checkerboard.
-static void aim_band(const FxTarget *t, int px, int py, int w, int color) {
+// Collimation band: at each ray point paint offsets -w..w across the aim. The centre takes `centre`,
+// the inner offsets `inner`, and the rim (|o| == w) only on a checkerboard of `rim`.
+static void aim_band(const FxTarget *t, int px, int py, int w, int centre, int inner, int rim) {
     for (int o = -w; o <= w; o++) {
         int x = px + ((s_aim_dir_y * o) >> 8);
         int y = py - ((s_aim_dir_x * o) >> 8);
-        if (o == 0) put_px(t, x, y, color);
+        if (o == 0) put_px(t, x, y, centre);
         else if (o == w || o == -w) {
-            if (((x + y) & 1) == 0) put_px(t, x, y, FX_AIM_DIM);
-        } else put_px(t, x, y, FX_AIM_DIM);
+            if (((x + y) & 1) == 0) put_px(t, x, y, rim);
+        } else put_px(t, x, y, inner);
     }
 }
 
-// Halo for sniper C: checkered offsets -hw..hw around the ray point, centre left to the line.
-static void aim_halo(const FxTarget *t, int px, int py, int hw) {
-    for (int o = -hw; o <= hw; o++) {
-        if (o == 0) continue;
-        int x = px + ((s_aim_dir_y * o) >> 8);
-        int y = py - ((s_aim_dir_x * o) >> 8);
-        if (((x + y) & 1) == 0) put_px(t, x, y, FX_AIM_DIM);
-    }
-}
-
-// Aim laser while charging (DESIGN 4.9): the beam collimates from wide and red to 1 px green.
-// w = lateral half-width in px (6 at 0 %, 0 when armed); s_aim_prog is set once per frame.
+// Sniper fuego (DESIGN.md 6.10, the only look): the collimated band starts from the A1 band: blood red inside,
+// a dithered orange rim, the centre red and orange past 70 %. Armed, the line is 1 px and flickers white and
+// yellow. While charging it also throws embers off the rim: 8..24 per frame (cap 32), each rising 1 px a frame
+// for 7 frames. No division: a hash per ember gives its distance along the ray, the lifecycle comes from the
+// frame counter.
 static void render_aim_line(const FxTarget *t, int cam_x, int cam_y) {
     if (s_aim_state != AIM_AIMING && s_aim_state != AIM_READY) return;
     int ready = s_aim_state == AIM_READY;
-    int w = (6 * (256 - s_aim_prog)) >> 8;
-    int color = ready || s_aim_prog >= 180 ? FX_AIM_READY : FX_AIM;
-    int last_x, last_y;
-    aim_point(0, cam_x, cam_y, &last_x, &last_y);
+    int w = (6 * (256 - s_aim_prog)) >> 8;          // lateral half-width in px (6 at 0 %, 0 when armed)
 
-    if (g_fx_style == 1) {
-        // B: dotted line (every 3 px, 2 when armed) and a hashed dust cloud around it.
-        int step = ready ? 2 : 3;
-        for (int d = step; d <= s_aim_len; d += step) {
+    if (ready) {
+        for (int d = 1; d <= s_aim_len; d++) {
             int px, py;
             aim_point(d, cam_x, cam_y, &px, &py);
-            put_px(t, px, py, color);
-        }
-        // Cloud size shrinks with progress: about 0.9 * len * (256 - prog) / 256, capped at 128.
-        int n = (((s_aim_len * (256 - s_aim_prog)) >> 8) * 230) >> 8;
-        if (n > 128) n = 128;
-        // Deterministic LCG per point: no rng state, no divide.
-        uint32_t seed = (uint32_t)(s_aim_timer >> 1) * 2654435761u;
-        for (int i = 0; i < n; i++) {
-            uint32_t h = (seed + (uint32_t)i * 2246822519u) * 1664525u + 1013904223u;
-            int d = 1 + (int)(((h >> 16) * (uint32_t)s_aim_len) >> 16);
-            int o = (int)(((h & 0xFFFFu) * (uint32_t)(2 * w + 1)) >> 16) - w;
-            int px, py;
-            aim_point(d, cam_x, cam_y, &px, &py);
-            int x = px + ((s_aim_dir_y * o) >> 8);
-            int y = py - ((s_aim_dir_x * o) >> 8);
-            put_px(t, x, y, ((h >> 8) & 3) ? FX_AIM_DIM : color);
+            put_px(t, px, py, ((s_aim_timer >> 1) & 1) ? FX_WHITE : FX_YELLOW);
         }
         return;
     }
-
-    if (g_fx_style == 2) {
-        // C: halo narrowing toward the reticle (60 % less at the target), solid line, reticle.
-        if (w > 0) {
-            // k = d / len in 8.8, tracked incrementally so the loop has no divide.
-            int len = s_aim_len > 0 ? s_aim_len : 1;
-            int k = 0, kacc = 0;
-            for (int d = 1; d <= s_aim_len; d++) {
-                kacc += 256;
-                while (kacc >= len && k < 256) { kacc -= len; k++; }
-                int hw = (w * (100 - ((60 * k) >> 8)) * 164) >> 14;     // w * (100 - 60k) / 100
-                if (hw <= 0) continue;
-                int px, py;
-                aim_point(d, cam_x, cam_y, &px, &py);
-                aim_halo(t, px, py, hw);
-            }
-        }
-        int ex, ey, cx, cy;
-        aim_point(s_aim_len, cam_x, cam_y, &ex, &ey);
-        draw_line(t, last_x, last_y, ex, ey, color);
-        aim_point(s_aim_target_d, cam_x, cam_y, &cx, &cy);
-        if (!ready) {
-            int r = 11 - (s_aim_timer >> 2);
-            if (r < 5) r = 5;
-            for (int sx = -1; sx <= 1; sx += 2) {
-                for (int sy = -1; sy <= 1; sy += 2) {
-                    int x = cx + sx * r, y = cy + sy * r;
-                    draw_line(t, x, y, x - sx * 3, y, color);
-                    draw_line(t, x, y, x, y - sy * 3, color);
-                }
-            }
-        } else {
-            draw_line(t, cx - 5, cy - 5, cx + 5, cy - 5, color);
-            draw_line(t, cx + 5, cy - 5, cx + 5, cy + 5, color);
-            draw_line(t, cx + 5, cy + 5, cx - 5, cy + 5, color);
-            draw_line(t, cx - 5, cy + 5, cx - 5, cy - 5, color);
-        }
-        put_px(t, cx, cy, color);
-        return;
-    }
-
-    // A: 1 px line at the end, a checkered dark band around it while charging.
+    int centre = s_aim_prog >= 180 ? FX_ORANGE : FX_RED;
     for (int d = 1; d <= s_aim_len; d++) {
         int px, py;
         aim_point(d, cam_x, cam_y, &px, &py);
-        aim_band(t, px, py, w, color);
+        aim_band(t, px, py, w, centre, FX_BLOOD, FX_ORANGE);
+    }
+    if (s_aim_len <= 0 || w <= 0) return;
+    int n = 8 + ((s_aim_prog * 16) >> 8);             // 8..24, under the cap of 32
+    for (int i = 0; i < n; i++) {
+        int tt = s_aim_timer + i * 5;                  // embers are staggered by 5 frames
+        int age = tt & 7;                              // frames alive: it rises 1 px each
+        if (age == 7) continue;                        // gone
+        uint32_t h = ((uint32_t)(tt >> 3) * 2654435761u + (uint32_t)i * 2246822519u) * 1664525u + 1013904223u;
+        int d = 1 + (int)(((h >> 16) * (uint32_t)s_aim_len) >> 16);      // 1..len along the ray
+        int o = (h & 1) ? w : -w;                      // off the rim of the band
+        int px, py;
+        aim_point(d, cam_x, cam_y, &px, &py);
+        int x = px + ((s_aim_dir_y * o) >> 8);
+        int y = py - ((s_aim_dir_x * o) >> 8) - age;
+        put_px(t, x, y, age < 3 ? FX_GOLD : age < 6 ? FX_ORANGE : FX_RED);
     }
 }
 
-// Parts with volume, drawn over the sprites: cones, smoke, shells, dust, crosses, scorches,
-// fragments. FXP_RING and FXP_ARC lie on the floor and are drawn by render_fx_ground.
+// Parts with volume, drawn over the sprites: cones, smoke, shells, dust, crosses,
+// fragments. FXP_ARC lies on the floor and are drawn by render_fx_ground.
 // age = frames since spawn (1 on the first frame drawn).
 static void render_fx_parts(const FxTarget *t, int cam_x, int cam_y) {
     for (int i = 0; i < MAX_FX_PARTS; i++) {
@@ -1372,13 +1327,10 @@ static void render_fx_parts(const FxTarget *t, int cam_x, int cam_y) {
         case FXP_CROSS: {
             int arm = p->size - (age - 1);
             if (arm < 1) arm = 1;
-            int col = age == 1 ? FX_WHITE : age == 2 ? FX_CYAN : FX_CYAN_DIM;
+            int col = age == 1 ? FX_WHITE : age == 2 ? FX_GOLD : FX_ORANGE;
             draw_cross(t, sx, sy, arm, col);
             break;
         }
-        case FXP_MARK:
-            draw_disc(t, sx, sy, p->size, FX_MARK, 0);
-            break;
         case FXP_FRAG:
             put_px(t, sx, sy, age <= 4 ? FX_SPARK_A : age <= 8 ? FX_SPARK_B : FX_SPARK_C);
             break;
@@ -1388,33 +1340,30 @@ static void render_fx_parts(const FxTarget *t, int cam_x, int cam_y) {
     }
 }
 
-// Sniper trail: A three-pixel white stroke cooling to dim blue; B one thin line;
-// C a two-tone stroke (white core, cyan edge) with a fixed 1-2 px zigzag.
+// Sniper trail (DESIGN.md 6.10, fuego): 5 px, white core, yellow then orange on each side, cooling; in its
+// last two frames red embers stay along the line (16 points at most).
 static void render_trail(const FxTarget *t, int cam_x, int cam_y) {
     int x0 = s_trail.x0 - cam_x, y0 = s_trail.y0 - cam_y;
     int x1 = s_trail.x1 - cam_x, y1 = s_trail.y1 - cam_y;
     int life = s_trail.life;
-    int col = life > 4 ? FX_TRAIL_A : life > 2 ? FX_TRAIL_B : FX_TRAIL_C;
-    if (g_fx_style == 0) {
-        draw_line(t, x0, y0 - 1, x1, y1 - 1, col);
-        draw_line(t, x0, y0, x1, y1, col);
-        draw_line(t, x0, y0 + 1, x1, y1 + 1, col);
-    } else if (g_fx_style == 1) {
-        draw_line(t, x0, y0, x1, y1, col);
-    } else {
-        static const int zig[9] = {0, 2, -1, 1, -2, 1, -1, 2, 0};
-        int px[9], py[9];
+    int core = life >= 4 ? FX_WHITE : life >= 2 ? FX_YELLOW : FX_ORANGE;
+    int side = life >= 4 ? FX_YELLOW : FX_ORANGE;
+    if (life >= 4) {
+        draw_line(t, x0, y0 - 2, x1, y1 - 2, FX_ORANGE);
+        draw_line(t, x0, y0 + 2, x1, y1 + 2, FX_ORANGE);
+    }
+    if (life >= 2) {
+        draw_line(t, x0, y0 - 1, x1, y1 - 1, side);
+        draw_line(t, x0, y0 + 1, x1, y1 + 1, side);
+    }
+    draw_line(t, x0, y0, x1, y1, core);
+    if (life <= 2) {
         int dx = x1 - x0, dy = y1 - y0;
-        for (int i = 0; i < 9; i++) {
-            px[i] = x0 + ((dx * i) >> 3);
-            py[i] = y0 + ((dy * i) >> 3) + zig[i];
-        }
-        int core = life > 3 ? FX_WHITE : FX_CYAN;
-        int edge = life > 3 ? FX_CYAN : FX_CYAN_DIM;
-        for (int i = 0; i < 8; i++) {
-            draw_line(t, px[i], py[i] - 1, px[i + 1], py[i + 1] - 1, edge);
-            draw_line(t, px[i], py[i] + 1, px[i + 1], py[i + 1] + 1, edge);
-            draw_line(t, px[i], py[i], px[i + 1], py[i + 1], core);
+        for (int i = 0; i < 16; i++) {
+            if (((i + life) & 1) != 0) continue;
+            int px = x0 + ((dx * i) >> 4);
+            int py = y0 + ((dy * i) >> 4);
+            put_px(t, px, py - ((i >> 2) & 1), FX_RED);
         }
     }
 }
@@ -1478,7 +1427,8 @@ static void render_fx(const FxTarget *t, int cam_x, int cam_y) {
         WeaponSpark *s = &s_sparks[i];
         if (!s->active) continue;
         int age = (s->life * 3) / s->max_life;        // 2 young .. 0 old
-        int color = age >= 2 ? FX_SPARK_A : age == 1 ? FX_SPARK_B : FX_SPARK_C;
+        int color = s->sniper ? (age >= 2 ? FX_GOLD : age == 1 ? FX_ORANGE : FX_ASH)
+                              : (age >= 2 ? FX_SPARK_A : age == 1 ? FX_SPARK_B : FX_SPARK_C);
         int hx = TO_INT(s->x) - cam_x, hy = TO_INT(s->y) - cam_y;
         put_px(t, hx, hy, color);
         put_px(t, hx - (s->vx > 96) + (s->vx < -96), hy - (s->vy > 96) + (s->vy < -96), color);
@@ -1491,34 +1441,23 @@ static void render_fx(const FxTarget *t, int cam_x, int cam_y) {
 static void render_fx_ground(const GroundTarget *g) {
     for (int i = 0; i < MAX_FX_PARTS; i++) {
         const FxPart *p = &s_fx[i];
-        if (p->kind != FXP_RING && p->kind != FXP_ARC) continue;
+        if (p->kind != FXP_ARC) continue;
         int age = p->max_life - p->life;
         int wx = TO_INT(p->x);
         int wy = TO_INT(p->y);
-        if (p->kind == FXP_RING) {
-            int r = 2 + 2 * age;
-            uint16_t col = s_fx_rgb[age == 1 ? FX_WHITE : age <= 3 ? FX_CYAN : age <= 5 ? FX_CYAN_DIM : FX_DARK];
-            gfx_ground_ring(g, wx, wy, r, col, 0);
+        int r = 4 + 4 * age;
+        uint16_t col = s_fx_rgb[age <= 2 ? FX_WHITE : age <= 4 ? FX_CYAN : FX_CYAN_DIM];
+        // 9 steps of the 32-step table centred on the shot direction. The window is split
+        // in two when it wraps past step 32, so no call gets a1 > 32.
+        int a0 = (p->aux - 4) & 31;
+        int a1 = a0 + 9;
+        if (a1 <= 32) {
+            gfx_ground_arc(g, wx, wy, r, a0, a1, col, 1);
         } else {
-            int r = 4 + 4 * age;
-            uint16_t col = s_fx_rgb[age <= 2 ? FX_WHITE : age <= 4 ? FX_CYAN : FX_CYAN_DIM];
-            // 9 steps of the 32-step table centred on the shot direction. The window is split
-            // in two when it wraps past step 32, so no call gets a1 > 32.
-            int a0 = (p->aux - 4) & 31;
-            int a1 = a0 + 9;
-            if (a1 <= 32) {
-                gfx_ground_arc(g, wx, wy, r, a0, a1, col, 1);
-            } else {
-                gfx_ground_arc(g, wx, wy, r, a0, 32, col, 1);
-                gfx_ground_arc(g, wx, wy, r, 0, a1 - 32, col, 1);
-            }
+            gfx_ground_arc(g, wx, wy, r, a0, 32, col, 1);
+            gfx_ground_arc(g, wx, wy, r, 0, a1 - 32, col, 1);
         }
     }
-}
-
-// Extreme tone of look V, following the style palette: A orange, B red, C cyan.
-static int aura_top_color(void) {
-    return g_fx_style == 1 ? FX_AIM : g_fx_style == 2 ? FX_CYAN : FX_ORANGE;
 }
 
 // One aura pixel at world px (wx, wy). Off-screen pixels are skipped; with `occl` so are the
@@ -1531,7 +1470,7 @@ static void aura_px(const FxTarget *t, int wx, int wy, int cam_x, int cam_y, int
 }
 
 // One-pixel Bresenham segment between two world points (no division, hard step cap). With alt >= 0
-// every other pixel of the segment takes the colour alt (K and C: white with light blue alternate).
+// every other pixel of the segment takes the colour alt (flames: yellow with orange).
 static void aura_seg(const FxTarget *t, int x0, int y0, int x1, int y1, int cam_x, int cam_y,
                      int color, int alt, int occl) {
     int dx = abs_int(x1 - x0), dy = abs_int(y1 - y0);
@@ -1548,51 +1487,91 @@ static void aura_seg(const FxTarget *t, int x0, int y0, int x1, int y1, int cam_
     }
 }
 
-// One bolt, segment by segment. A 1 px stroke: white, with light blue on every other pixel. The crown
-// base (thick 2, first 2 steps) is 2 px: a light blue edge one px to one side, the white core on top.
-static void aura_bolt_draw(const FxTarget *t, const AuraBolt *b, int cam_x, int cam_y) {
+// One F2 flame. Steps 0-1 are the base, 2 px wide (a parallel orange line one px to one side, the yellow
+// core on top); steps 2-3 are orange with a red dither; the tip is red with an orange dither.
+static void aura_flame_draw(const FxTarget *t, const AuraBolt *b, int cam_x, int cam_y) {
     for (int k = 0; k + 1 < b->n; k++) {
         int x0 = b->px[k], y0 = b->py[k], x1 = b->px[k + 1], y1 = b->py[k + 1];
-        if (b->thick == 2 && k < 2) {
+        if (k < 2) {
             int steep = abs_int(y1 - y0) > abs_int(x1 - x0);
             int ox = steep, oy = !steep;              // one px across the stroke
-            aura_seg(t, x0 + ox, y0 + oy, x1 + ox, y1 + oy, cam_x, cam_y, FX_BLUE_LIGHT, -1, b->occl);
-            aura_seg(t, x0, y0, x1, y1, cam_x, cam_y, FX_WHITE, -1, b->occl);
+            aura_seg(t, x0 + ox, y0 + oy, x1 + ox, y1 + oy, cam_x, cam_y, FX_ORANGE, -1, b->occl);
+            aura_seg(t, x0, y0, x1, y1, cam_x, cam_y, FX_YELLOW, FX_ORANGE, b->occl);
+        } else if (k < 4) {
+            aura_seg(t, x0, y0, x1, y1, cam_x, cam_y, FX_ORANGE, FX_RED, b->occl);
         } else {
-            aura_seg(t, x0, y0, x1, y1, cam_x, cam_y, FX_WHITE, FX_BLUE_LIGHT, b->occl);
+            aura_seg(t, x0, y0, x1, y1, cam_x, cam_y, FX_RED, FX_ORANGE, b->occl);
         }
     }
 }
 
-// Look V: each pixel takes its colour from its height above the feet: white below 5 px, yellow
-// below 10 px, the tone above.
-static void aura_draw_streaks(const FxTarget *t, int cam_x, int cam_y, int behind) {
-    int top = aura_top_color();
-    for (int i = 0; i < AURA_MAX_STREAKS; i++) {
-        const AuraStreak *s = &s_aura_streaks[i];
-        if (!s->active || s->behind != behind) continue;
-        int len = s->len - (s->age >> 1);
-        if (len < 1) len = 1;
-        int bottom = s->y - s->age * s->rise;
-        for (int dy = 0; dy < len; dy++) {
-            int y = bottom - dy;
-            int above = s_aura_y - y;
-            int color = above < 5 ? FX_WHITE : above < 10 ? FX_YELLOW : top;
-            aura_px(t, s->x, y, cam_x, cam_y, color, 1);
-        }
-    }
-}
-
-// Draws the aura parts of one depth: behind = 1 for the floor pass (under the sprites), 0 for the
-// front pass (over them).
+// Draws the flames of one depth: behind = 1 for the floor pass (under the sprites), 0 for the front pass
+// (over them).
 static void aura_draw_pass(const FxTarget *t, int cam_x, int cam_y, int behind) {
-    if (g_aura_style == AURA_STYLE_V) {
-        aura_draw_streaks(t, cam_x, cam_y, behind);
-        return;
-    }
     for (int i = 0; i < AURA_MAX_BOLTS; i++) {
         const AuraBolt *b = &s_aura_bolts[i];
-        if (b->active && b->back == behind) aura_bolt_draw(t, b, cam_x, cam_y);
+        if (!b->active || b->back != behind) continue;
+        aura_flame_draw(t, b, cam_x, cam_y);
+    }
+}
+
+// G, glow: 12 rays from the chest, alternately long and short (2/3), tips white. At READY the rays are at
+// full length and blink white every 2 frames. Floor pass: the body covers them.
+static void glow_draw(const FxTarget *t, int cam_x, int cam_y, int prog) {
+    static const uint8_t step[GLOW_RAYS] = { 0, 3, 5, 8, 11, 13, 16, 19, 21, 24, 27, 29 };   // 12 of 32 steps
+    int len = glow_len(prog);
+    int shortl = (len * 171) >> 8;
+    int blink = s_aim_state == AIM_READY && ((s_aim_timer >> 1) & 1);
+    for (int i = 0; i < GLOW_RAYS; i++) {
+        int a = (s_glow_rot + step[i]) & 31;
+        int l = (i & 1) ? shortl : len;
+        int ex = s_aura_cx + ((s_ell_cos[a] * l) >> 8);
+        int ey = s_aura_cy + ((s_ell_sin[a] * l) >> 8);     // upright: no 2:1 squash
+        aura_seg(t, s_aura_cx, s_aura_cy, ex, ey, cam_x, cam_y, blink ? FX_WHITE : FX_GOLD, -1, 1);
+        aura_px(t, ex, ey, cam_x, cam_y, FX_WHITE, 1);
+    }
+}
+
+// E, thorn crown: 16 spikes of 3 px, outwards from the closing ellipse, black with dark red; the drops fall
+// red from the tips. Floor pass.
+static void thorn_draw(const FxTarget *t, int cam_x, int cam_y, int prog) {
+    int r = thorn_radius(prog);
+    for (int i = 0; i < THORN_SPIKES; i++) {
+        int a = (2 * i) & 31;
+        int x0, y0, x1, y1;
+        aura_floor_point(a, r, &x0, &y0);
+        aura_floor_point(a, r + THORN_LEN, &x1, &y1);
+        aura_seg(t, x0, y0, x1, y1, cam_x, cam_y, FX_BLACK, FX_BLOOD, 1);
+    }
+    for (int i = 0; i < THORN_DROPS; i++) {
+        const AuraMote *d = &s_drops[i];
+        if (d->active) aura_px(t, d->x, d->y, cam_x, cam_y, d->color, 1);
+    }
+}
+
+// H, ash: grey volutes 2..4 px wide that widen as they rise, with a dithered edge; embers over them.
+// Front pass: they are drawn over the body (no back half).
+static void ash_draw(const FxTarget *t, int cam_x, int cam_y, int prog) {
+    int core_col = prog >= 180 ? FX_SMOKE_C : FX_SMOKE_B;
+    for (int i = 0; i < ASH_VOLUTES; i++) {
+        const AshVolute *v = &s_volutes[i];
+        if (!v->active) continue;
+        int x = v->ax + (((s_ell_sin[(v->ph + v->age) & 31]) * 3) >> 8);   // sway +-3 px
+        int y = v->ay - v->age;
+        int w = 2 + (v->age >> 3);
+        if (w > 4) w = 4;
+        int core = v->age < 3 ? FX_SMOKE_A : core_col;
+        for (int r = 0; r < 2; r++) {
+            for (int k = 0; k < w; k++) {
+                int edge = (k == 0 || k == w - 1);
+                int col = (edge && ((k + r) & 1)) ? FX_SMOKE_A : core;
+                aura_px(t, x + k, y - r, cam_x, cam_y, col, 1);
+            }
+        }
+    }
+    for (int i = 0; i < ASH_EMBERS; i++) {
+        const AuraMote *e = &s_embers[i];
+        if (e->active) aura_px(t, e->x, e->y, cam_x, cam_y, e->color, 1);
     }
 }
 
@@ -1601,12 +1580,20 @@ void weapons_render_floor(uint16_t *buffer, int cam_x, int cam_y) {
     GroundTarget ground = { buffer, cam_x, cam_y };
     grenade_render_floor(&ground);
     render_fx_ground(&ground);
-    // READY flash: a 2:1 ring on the floor around the feet, under the actors.
+    // READY flash: a 2:1 ring on the floor around the feet, under the actors. White on the first frame, then gold.
     if (s_aura_flash > 0 && s_aim_state == AIM_READY) {
-        gfx_ground_ring(&ground, s_aura_x, s_aura_y, 12, s_fx_rgb[FX_WHITE], 0);
+        int ring = s_aura_flash == AURA_FLASH_FRAMES ? FX_WHITE : FX_GOLD;
+        gfx_ground_ring(&ground, s_aura_x, s_aura_y, 12, s_fx_rgb[ring], 0);
     }
+    // Look E at READY: a thin red ring round the closed crown.
+    if (s_aim_state == AIM_READY && g_aura_style == AURA_STYLE_E)
+        gfx_ground_ring(&ground, s_aura_x, s_aura_y, 7, s_fx_rgb[FX_RED], 0);
     FxTarget target = { buffer };
-    aura_draw_pass(&target, cam_x, cam_y, 1);         // arcs behind the body
+    aura_draw_pass(&target, cam_x, cam_y, 1);         // style L: arcs behind the body
+    if (aura_fx_live()) {
+        if (g_aura_style == AURA_STYLE_G) glow_draw(&target, cam_x, cam_y, s_aura_prog_live);
+        if (g_aura_style == AURA_STYLE_E) thorn_draw(&target, cam_x, cam_y, s_aura_prog_live);
+    }
 }
 
 void weapons_render_light(uint16_t *buffer, int cam_x, int cam_y) {
@@ -1619,6 +1606,7 @@ void weapons_render(uint16_t *buffer, int cam_x, int cam_y) {
     if (!buffer) return;
     FxTarget target = { buffer };
     render_fx(&target, cam_x, cam_y);
-    aura_draw_pass(&target, cam_x, cam_y, 0);         // arcs in front of the body
+    aura_draw_pass(&target, cam_x, cam_y, 0);         // style L: arcs in front of the body
+    if (aura_fx_live() && g_aura_style == AURA_STYLE_H) ash_draw(&target, cam_x, cam_y, s_aura_prog_live);
     grenade_render(buffer, cam_x, cam_y);
 }
