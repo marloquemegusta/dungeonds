@@ -18,11 +18,9 @@ hero's world X=256. The scenario's crossing capture is named for this geometry.
 Generate and build from the worktree root:
 
 ```powershell
-python tools/godrays/make_placeholder_ray.py
-python tools/godrays/convert_rays.py assets/sprites/godrays/placeholder/ray_placeholder.png -o source/godrays_gfx.c
+python tools/godrays/convert_rays.py assets/sprites/godrays/ray_rose_vitral.png -o source/godrays_gfx.c
 & 'C:\codexlocal\skills\agentic-ds-dev\scripts\build-project.ps1' -ProjectPath 'C:\codexlocal\dungeonds\.worktrees\proto-godrays' -Variant godrays
 ```
 
-Replace the placeholder input with `assets/sprites/godrays/ray_*.png` when the
-art images are ready. The converter omits fully transparent 64x64 blocks and
+The placeholder generator was removed; use `assets/sprites/godrays/ray_*.png`. The converter omits fully transparent 64x64 blocks and
 checks the complete tileset against bank I's 16 KiB capacity.

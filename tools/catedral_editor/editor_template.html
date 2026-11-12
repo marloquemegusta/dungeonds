@@ -1,0 +1,2154 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Editor de Planta de la Catedral (NDS)</title>
+  <style>
+    :root {
+      --bg-dark: #121114;
+      --bg-panel: #1b191f;
+      --bg-panel-alt: #25222b;
+      --border-color: #383442;
+      --border-focus: #5b536b;
+      --accent: #e5a93b;
+      --accent-hover: #f7bd4f;
+      --accent-blue: #3b82f6;
+      --text-main: #e2dfeb;
+      --text-muted: #958f9e;
+      --danger: #ef4444;
+      --success: #10b981;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg-dark);
+      color: var(--text-main);
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* BARRA SUPERIOR */
+    header {
+      background: var(--bg-panel);
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 6px 14px;
+      height: 48px;
+      flex-shrink: 0;
+      z-index: 10;
+    }
+
+    .app-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--accent);
+      letter-spacing: 0.5px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-right: 6px;
+    }
+
+    .toolbar-group {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      background: var(--bg-panel-alt);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      padding: 3px 6px;
+    }
+
+    .toolbar-label {
+      font-size: 11px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      font-weight: 600;
+      margin-right: 4px;
+    }
+
+    button, select, input {
+      font-family: inherit;
+      font-size: 12px;
+      color: var(--text-main);
+      background: var(--bg-panel-alt);
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      padding: 4px 8px;
+      cursor: pointer;
+      outline: none;
+      transition: all 0.15s ease;
+    }
+
+    button:hover:not(:disabled) {
+      background: #322e3b;
+      border-color: var(--border-focus);
+    }
+
+    button:active:not(:disabled) {
+      background: #3c3747;
+    }
+
+    button.active {
+      background: var(--accent);
+      color: #121114;
+      font-weight: 700;
+      border-color: var(--accent-hover);
+    }
+
+    button:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .btn-action {
+      background: #2a2632;
+    }
+
+    .btn-accent {
+      background: #3e3321;
+      border-color: #7a5f25;
+      color: var(--accent);
+      font-weight: 600;
+    }
+    .btn-accent:hover:not(:disabled) {
+      background: #544428;
+      border-color: var(--accent);
+    }
+
+    .spacer {
+      flex: 1;
+    }
+
+    /* INSPECTOR DE SELECCIÓN FLOTANTE / SECUNDARIO */
+    #selection-bar {
+      background: #1e1b24;
+      border-bottom: 1px solid var(--border-color);
+      padding: 4px 14px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 12px;
+      flex-shrink: 0;
+    }
+
+    #selection-bar.hidden {
+      display: none;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 2px 6px;
+      border-radius: 4px;
+      background: #322c3e;
+      color: var(--accent);
+      font-weight: 600;
+      font-size: 11px;
+    }
+
+    /* CONTENEDOR PRINCIPAL */
+    main {
+      flex: 1;
+      display: flex;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* BARRA LATERAL (PALETA) */
+    aside {
+      width: 280px;
+      background: var(--bg-panel);
+      border-right: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+    }
+
+    .palette-search {
+      padding: 8px 10px;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .palette-search input {
+      width: 100%;
+      user-select: text;
+    }
+
+    .palette-tabs {
+      display: flex;
+      border-bottom: 1px solid var(--border-color);
+      background: var(--bg-dark);
+    }
+
+    .palette-tab-btn {
+      flex: 1;
+      border: none;
+      border-radius: 0;
+      background: transparent;
+      padding: 6px 2px;
+      font-size: 11px;
+      color: var(--text-muted);
+      border-bottom: 2px solid transparent;
+      text-align: center;
+    }
+
+    .palette-tab-btn.active {
+      color: var(--accent);
+      border-bottom: 2px solid var(--accent);
+      background: var(--bg-panel);
+      font-weight: 600;
+    }
+
+    .palette-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .palette-grid-lapidas {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 6px;
+    }
+
+    .palette-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 8px;
+      background: var(--bg-panel-alt);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .palette-item:hover {
+      border-color: var(--border-focus);
+      background: #2e2a36;
+    }
+
+    .palette-item.active {
+      border-color: var(--accent);
+      background: #352c1e;
+      box-shadow: 0 0 0 1px var(--accent);
+    }
+
+    .palette-preview-box {
+      width: 44px;
+      height: 44px;
+      background: #110f14;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      overflow: hidden;
+      border: 1px solid #282430;
+    }
+
+    .palette-preview-box img {
+      max-width: 40px;
+      max-height: 40px;
+      image-rendering: pixelated;
+    }
+
+    .palette-item-info {
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .palette-item-name {
+      font-size: 11px;
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .palette-item-meta {
+      font-size: 10px;
+      color: var(--text-muted);
+    }
+
+    /* Marine preview box */
+    .marine-thumb {
+      width: 16px;
+      height: 31px;
+      background: #2563eb;
+      border: 1px solid #93c5fd;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 9px;
+      font-weight: bold;
+      color: white;
+    }
+
+    /* ÁREA DEL LIENZO */
+    #viewport {
+      flex: 1;
+      background: #0d0c0f;
+      overflow: auto;
+      position: relative;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 30px;
+    }
+
+    #canvas-wrapper {
+      position: relative;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.85);
+      border: 1px solid #302b38;
+      background: #121017;
+    }
+
+    #main-canvas {
+      display: block;
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+      cursor: crosshair;
+    }
+
+    /* BARRA INFERIOR / ESTADO */
+    footer {
+      background: var(--bg-panel);
+      border-top: 1px solid var(--border-color);
+      height: 26px;
+      padding: 0 14px;
+      display: flex;
+      align-items: center;
+      font-size: 11px;
+      color: var(--text-muted);
+      gap: 16px;
+      flex-shrink: 0;
+    }
+
+    .footer-stat {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .footer-stat strong {
+      color: var(--text-main);
+    }
+
+    /* Scrollbars oscuros */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #121114;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #2d2936;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #423d4e;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- HEADER -->
+  <header>
+    <div class="app-title">
+      <span>🏛️</span>
+      <span>Editor Catedral NDS</span>
+    </div>
+
+    <!-- Herramienta -->
+    <div class="toolbar-group">
+      <button id="btn-tool-select" class="active" title="Herramienta Seleccionar (V o Esc)">
+        <span>↖ Seleccionar (V)</span>
+      </button>
+      <span id="active-tool-badge" class="badge" style="display:none;"></span>
+    </div>
+
+    <!-- Zoom -->
+    <div class="toolbar-group">
+      <span class="toolbar-label">Zoom</span>
+      <button class="btn-zoom" data-zoom="1">1×</button>
+      <button class="btn-zoom active" data-zoom="2">2×</button>
+      <button class="btn-zoom" data-zoom="3">3×</button>
+    </div>
+
+    <!-- Rejilla -->
+    <div class="toolbar-group">
+      <span class="toolbar-label">Rejilla</span>
+      <select id="grid-select">
+        <option value="1">1 px</option>
+        <option value="8" selected>8 px</option>
+        <option value="16">16 px</option>
+        <option value="32">32 px</option>
+        <option value="64">64 px</option>
+      </select>
+      <label style="display:flex; align-items:center; gap:4px; font-size:11px; margin-left:4px; cursor:pointer;">
+        <input type="checkbox" id="show-grid-check" checked> Ver
+      </label>
+      <label style="display:flex; align-items:center; gap:4px; font-size:11px; margin-left:8px; cursor:pointer;">
+        <input type="checkbox" id="show-lights-check" checked> Ver luces
+      </label>
+    </div>
+
+    <!-- Pantallas (alto) -->
+    <div class="toolbar-group">
+      <span class="toolbar-label">Carril</span>
+      <button id="btn-screen-sub" title="Quitar 1 pantalla por arriba (−192 px)">−1 pant.</button>
+      <span id="screens-label" class="badge">10 pant. (1920 px)</span>
+      <button id="btn-screen-add" title="Añadir 1 pantalla por arriba (+192 px)">+1 pant.</button>
+    </div>
+
+    <div class="spacer"></div>
+
+    <!-- Historial y Archivo -->
+    <div class="toolbar-group">
+      <button id="btn-undo" class="btn-action" title="Deshacer (Ctrl+Z)">↶</button>
+      <button id="btn-redo" class="btn-action" title="Rehacer (Ctrl+Y)">↷</button>
+      <button id="btn-new" class="btn-action" title="Vaciar carril">Nuevo</button>
+      <button id="btn-load-json" class="btn-action" title="Abrir archivo JSON">Cargar JSON</button>
+      <button id="btn-save-json" class="btn-accent" title="Descargar catedral_seccion.json">Guardar JSON</button>
+      <button id="btn-export-png" class="btn-accent" title="Descargar imagen PNG completa a 1×">Exportar PNG</button>
+      <input type="file" id="file-input-json" accept=".json" style="display: none;">
+    </div>
+  </header>
+
+  <!-- BARRA DE SELECCIÓN (aparece cuando hay elementos seleccionados) -->
+  <div id="selection-bar" class="hidden">
+    <span>Selección: <strong id="sel-count">0</strong> pieza(s)</span>
+    <span class="badge" id="sel-pos">X: -, Y: -</span>
+    <button id="btn-flip" title="Voltear en horizontal / cambiar lado (F)">⇄ Voltear / Lado (F)</button>
+    <div style="display:flex; align-items:center; gap:4px; margin-left: 10px;">
+      <span style="font-size:11px; color:var(--text-muted);">Repetir vertical: cada</span>
+      <input type="number" id="repeat-step" value="128" min="1" max="1000" style="width: 55px; text-align: center;">
+      <span style="font-size:11px; color:var(--text-muted);">px</span>
+      <button id="btn-repeat-up" class="btn-accent" title="Repetir hacia arriba hasta el final del carril">Repetir hasta arriba</button>
+    </div>
+    <div class="spacer"></div>
+    <button id="btn-duplicate" title="Duplicar 8 px más arriba (Ctrl+D)">Duplicar (Ctrl+D)</button>
+    <button id="btn-delete" style="background:#451a1a; border-color:#7f2222; color:#fca5a5;" title="Borrar selección (Supr)">Borrar (Supr)</button>
+  </div>
+
+  <!-- CUERPO PRINCIPAL -->
+  <main>
+    <!-- PALETA LATERAL -->
+    <aside>
+      <div class="palette-search">
+        <input type="text" id="palette-search-input" placeholder="🔍 Buscar pieza...">
+      </div>
+      <div class="palette-tabs">
+        <button class="palette-tab-btn active" data-cat="todas">Todas</button>
+        <button class="palette-tab-btn" data-cat="columnas">Columnas</button>
+        <button class="palette-tab-btn" data-cat="bancos">Bancos</button>
+        <button class="palette-tab-btn" data-cat="atrezo">Atrezo</button>
+        <button class="palette-tab-btn" data-cat="luz">Luz</button>
+        <button class="palette-tab-btn" data-cat="especial">Especial</button>
+        <button class="palette-tab-btn" data-cat="lapidas">Lápidas</button>
+      </div>
+      <div class="palette-list" id="palette-container">
+        <!-- Renderizado dinámicamente -->
+      </div>
+    </aside>
+
+    <!-- LIENZO Y VISTA -->
+    <div id="viewport">
+      <div id="canvas-wrapper">
+        <canvas id="main-canvas" width="512" height="1920"></canvas>
+      </div>
+    </div>
+  </main>
+
+  <!-- BARRA INFERIOR / ESTADO -->
+  <footer>
+    <div class="footer-stat">
+      <span>Cursor:</span>
+      <strong id="stat-coords">X: - | Y: -</strong>
+    </div>
+    <div class="footer-stat">
+      <span>Pantalla:</span>
+      <strong id="stat-screen">-</strong>
+    </div>
+    <div class="footer-stat">
+      <span>Total piezas:</span>
+      <strong id="stat-total">0</strong>
+    </div>
+    <div class="footer-stat">
+      <span id="stat-breakdown">Columnas: 0 | Bancos: 0 | Atrezo: 0 | Lápidas: 0</span>
+    </div>
+    <div class="spacer"></div>
+    <div class="footer-stat">
+      <span id="stat-autosave" style="color:var(--text-muted);">Autoguardado: -</span>
+    </div>
+  </footer>
+
+  <script>
+    /* Inyección de assets en base64 desde build_editor.cjs */
+    /*__ASSETS_DATA__*/
+
+    // Estado de la aplicación
+    const state = {
+      version: 1,
+      width: 512,
+      screens: 10,
+      gridSize: 8,
+      showGrid: true,
+      showLights: true,
+      zoom: 2,
+      tool: 'select', // 'select' | 'stamp' | 'paste'
+      stampPiece: null,
+      stampFlip: false,
+      items: [], // [{ id, piece, x, y, flip, side }]
+      selectedIds: new Set(),
+      clipboard: []
+    };
+
+    let nextItemId = 1;
+    const history = [];
+    let historyIndex = -1;
+    const MAX_HISTORY = 120;
+
+    // Cache de imágenes
+    const imageCache = {};
+    let floorImage = null;
+    let wallImage = null;
+
+    const VALID_LAPIDAS = new Set(
+      (typeof ASSETS !== 'undefined' && ASSETS.lapidasMeta)
+        ? Object.keys(ASSETS.lapidasMeta)
+        : (typeof ASSETS !== 'undefined' && ASSETS.props)
+          ? Object.values(ASSETS.props).filter(p => p.category === 'lapidas').map(p => p.piece)
+          : []
+    );
+
+    function isLightPiece(piece) {
+      return piece === 'haz_vidriera' || piece === 'haz_roseton';
+    }
+
+    function isLapida(piece) {
+      return VALID_LAPIDAS.has(piece);
+    }
+
+    // Encaje obligatorio con las juntas del suelo para lápidas
+    // Con origen (ox, oy), dy = Y - oy es múltiplo de 8 y, con k = dy / 8, X - ox ≡ 16·k (mod 32)
+    function snapLapida(x, y, piece) {
+      let ox = 0;
+      let oy = 62;
+      const meta = typeof piece === 'string'
+        ? getPieceMeta(piece)
+        : (piece && piece.floor_origin_px ? piece : (piece && piece.piece ? getPieceMeta(piece.piece) : null));
+      if (meta && Array.isArray(meta.floor_origin_px) && meta.floor_origin_px.length >= 2) {
+        ox = meta.floor_origin_px[0];
+        oy = meta.floor_origin_px[1];
+      }
+      const k = Math.round((y - oy) / 8);
+      const ySnap = oy + 8 * k;
+      const targetRem = ((16 * k) % 32 + 32) % 32;
+      const xSnap = ox + targetRem + Math.round((x - ox - targetRem) / 32) * 32;
+      return { x: xSnap, y: ySnap };
+    }
+
+    function getItemBounds(it) {
+      if (isLightPiece(it.piece)) {
+        const lx = (it.side === 'R') ? 208 : 48;
+        return { x: lx, y: it.y, w: 256, h: 128 };
+      }
+      const meta = getPieceMeta(it.piece);
+      return {
+        x: it.x,
+        y: it.y,
+        w: meta ? meta.w : 32,
+        h: meta ? meta.h : 32
+      };
+    }
+
+    function initAssets() {
+      if (typeof ASSETS === 'undefined') return Promise.resolve();
+      const promises = [];
+
+      if (ASSETS.floor) {
+        floorImage = new Image();
+        promises.push(new Promise((resolve) => {
+          floorImage.onload = () => {
+            render();
+            resolve();
+          };
+          floorImage.onerror = () => resolve();
+        }));
+        floorImage.src = ASSETS.floor;
+      }
+
+      if (ASSETS.wall) {
+        wallImage = new Image();
+        promises.push(new Promise((resolve) => {
+          wallImage.onload = () => {
+            render();
+            resolve();
+          };
+          wallImage.onerror = () => resolve();
+        }));
+        wallImage.src = ASSETS.wall;
+      }
+
+      for (const pieceKey in ASSETS.props) {
+        const p = ASSETS.props[pieceKey];
+        imageCache[pieceKey] = {
+          color: null,
+          shadow: null
+        };
+
+        if (p.color) {
+          const img = new Image();
+          promises.push(new Promise((resolve) => {
+            img.onload = () => {
+              render();
+              resolve();
+            };
+            img.onerror = () => resolve();
+          }));
+          img.src = p.color;
+          imageCache[pieceKey].color = img;
+        }
+
+        if (p.shadow && p.shadow.data) {
+          const rawShadow = new Image();
+          promises.push(new Promise((resolve) => {
+            rawShadow.onload = () => {
+              try {
+                // Convertir máscara en modo L (255 = sombra, 0 = nada)
+                // en RGBA negro con alfa = 0.5 (128) donde máscara > 127
+                const offCanvas = document.createElement('canvas');
+                offCanvas.width = p.shadow.w;
+                offCanvas.height = p.shadow.h;
+                const offCtx = offCanvas.getContext('2d');
+                offCtx.drawImage(rawShadow, 0, 0);
+
+                const imgData = offCtx.getImageData(0, 0, p.shadow.w, p.shadow.h);
+                const d = imgData.data;
+                for (let i = 0; i < d.length; i += 4) {
+                  if (d[i] > 127) {
+                    d[i] = 0;     // R
+                    d[i + 1] = 0; // G
+                    d[i + 2] = 0; // B
+                    d[i + 3] = 128; // Alfa 50%
+                  } else {
+                    d[i] = 0;
+                    d[i + 1] = 0;
+                    d[i + 2] = 0;
+                    d[i + 3] = 0; // Transparente
+                  }
+                }
+                offCtx.putImageData(imgData, 0, 0);
+                imageCache[pieceKey].shadow = offCanvas;
+                render();
+              } catch (e) {
+                console.warn('Error procesando sombra para', pieceKey, e);
+              }
+              resolve();
+            };
+            rawShadow.onerror = () => resolve();
+          }));
+          rawShadow.src = p.shadow.data;
+        }
+      }
+
+      return Promise.all(promises);
+    }
+
+    // Elementos del DOM
+    const viewport = document.getElementById('viewport');
+    const canvasWrapper = document.getElementById('canvas-wrapper');
+    const canvas = document.getElementById('main-canvas');
+    const ctx = canvas.getContext('2d');
+
+    const btnToolSelect = document.getElementById('btn-tool-select');
+    const activeToolBadge = document.getElementById('active-tool-badge');
+    const gridSelect = document.getElementById('grid-select');
+    const showGridCheck = document.getElementById('show-grid-check');
+    const showLightsCheck = document.getElementById('show-lights-check');
+    const btnScreenSub = document.getElementById('btn-screen-sub');
+    const btnScreenAdd = document.getElementById('btn-screen-add');
+    const screensLabel = document.getElementById('screens-label');
+
+    const btnUndo = document.getElementById('btn-undo');
+    const btnRedo = document.getElementById('btn-redo');
+    const btnNew = document.getElementById('btn-new');
+    const btnLoadJson = document.getElementById('btn-load-json');
+    const btnSaveJson = document.getElementById('btn-save-json');
+    const btnExportPng = document.getElementById('btn-export-png');
+    const fileInputJson = document.getElementById('file-input-json');
+
+    const selectionBar = document.getElementById('selection-bar');
+    const selCountEl = document.getElementById('sel-count');
+    const selPosEl = document.getElementById('sel-pos');
+    const btnFlip = document.getElementById('btn-flip');
+    const repeatStepInput = document.getElementById('repeat-step');
+    const btnRepeatUp = document.getElementById('btn-repeat-up');
+    const btnDuplicate = document.getElementById('btn-duplicate');
+    const btnDelete = document.getElementById('btn-delete');
+
+    const paletteContainer = document.getElementById('palette-container');
+    const paletteSearchInput = document.getElementById('palette-search-input');
+    const paletteTabBtns = document.querySelectorAll('.palette-tab-btn');
+
+    const statCoords = document.getElementById('stat-coords');
+    const statScreen = document.getElementById('stat-screen');
+    const statTotal = document.getElementById('stat-total');
+    const statBreakdown = document.getElementById('stat-breakdown');
+    const statAutosave = document.getElementById('stat-autosave');
+
+    // Funciones matemáticas
+    function snap(v, g) {
+      return Math.round(v / g) * g;
+    }
+
+    function getPieceMeta(pieceName) {
+      return (ASSETS && ASSETS.props) ? ASSETS.props[pieceName] : null;
+    }
+
+    // Historial y Deshacer/Rehacer
+    function pushHistory() {
+      // Truncar futuro
+      if (historyIndex < history.length - 1) {
+        history.splice(historyIndex + 1);
+      }
+      // Guardar clon
+      const snapshot = {
+        screens: state.screens,
+        items: JSON.parse(JSON.stringify(state.items))
+      };
+      history.push(snapshot);
+      if (history.length > MAX_HISTORY) {
+        history.shift();
+      }
+      historyIndex = history.length - 1;
+      updateUndoRedoButtons();
+      saveToLocalStorage();
+      updateCounters();
+    }
+
+    function undo() {
+      if (historyIndex > 0) {
+        historyIndex--;
+        restoreSnapshot(history[historyIndex]);
+      }
+    }
+
+    function redo() {
+      if (historyIndex < history.length - 1) {
+        historyIndex++;
+        restoreSnapshot(history[historyIndex]);
+      }
+    }
+
+    function restoreSnapshot(snapshot) {
+      state.screens = snapshot.screens;
+      state.items = JSON.parse(JSON.stringify(snapshot.items));
+      // Re-vincular IDs para que nextItemId sea mayor
+      state.items.forEach(it => {
+        if (it.id >= nextItemId) nextItemId = it.id + 1;
+      });
+      // Filtrar selección de elementos que ya no existan
+      const existing = new Set(state.items.map(it => it.id));
+      for (const id of state.selectedIds) {
+        if (!existing.has(id)) state.selectedIds.delete(id);
+      }
+      resizeCanvas();
+      updateUndoRedoButtons();
+      updateSelectionBar();
+      updateCounters();
+      render();
+    }
+
+    function updateUndoRedoButtons() {
+      btnUndo.disabled = historyIndex <= 0;
+      btnRedo.disabled = historyIndex >= history.length - 1;
+    }
+
+    // Autoguardado en LocalStorage
+    const AUTOSAVE_KEY = 'dungeonds_catedral_editor_autosave';
+    function saveToLocalStorage() {
+      try {
+        const payload = {
+          version: state.version,
+          width: state.width,
+          height: state.screens * 192,
+          screens: state.screens,
+          items: state.items.map(it => {
+            if (isLightPiece(it.piece)) {
+              return {
+                piece: it.piece,
+                x: 0,
+                y: it.y,
+                side: it.side || 'L'
+              };
+            }
+            return {
+              piece: it.piece,
+              x: it.x,
+              y: it.y,
+              flip: !!it.flip
+            };
+          })
+        };
+        localStorage.setItem(AUTOSAVE_KEY, JSON.stringify(payload));
+        const now = new Date();
+        const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        statAutosave.textContent = `Autoguardado: ${timeStr}`;
+      } catch (err) {
+        console.warn('Error en autoguardado:', err);
+      }
+    }
+
+    function loadFromLocalStorage() {
+      try {
+        const raw = localStorage.getItem(AUTOSAVE_KEY);
+        if (!raw) return false;
+        const data = JSON.parse(raw);
+        if (data && Array.isArray(data.items)) {
+          state.screens = data.screens || Math.round((data.height || 1920) / 192) || 10;
+          const validItems = [];
+          for (const it of data.items) {
+            if (!it || !it.piece) continue;
+            let piece = it.piece;
+            if (piece === 'via_a_3x2_cruz') piece = 'lapida_3x2_cruz';
+            else if (piece === 'via_a_3x2_cab') piece = 'lapida_3x2_cab';
+
+            // Descartar lápidas viejas o desconocidas del autoguardado previo
+            if (!VALID_LAPIDAS.has(piece) && (piece.startsWith('via_') || piece.startsWith('3d_lapida') || piece.startsWith('lapida'))) {
+              continue;
+            }
+            it.piece = piece;
+            validItems.push(it);
+          }
+          state.items = validItems.map((it, idx) => {
+            if (isLightPiece(it.piece)) {
+              return {
+                id: idx + 1,
+                piece: it.piece,
+                x: 0,
+                y: it.y,
+                side: (it.side === 'R') ? 'R' : 'L',
+                flip: false
+              };
+            }
+            return {
+              id: idx + 1,
+              piece: it.piece,
+              x: it.x,
+              y: it.y,
+              flip: !!it.flip
+            };
+          });
+          nextItemId = state.items.length + 1;
+          return true;
+        }
+      } catch (e) {
+        console.warn('No se pudo cargar autoguardado previo:', e);
+      }
+      return false;
+    }
+
+    // Redimensionar Canvas
+    function resizeCanvas() {
+      const h = state.screens * 192;
+      canvas.width = state.width;
+      canvas.height = h;
+      applyZoom();
+      screensLabel.textContent = `${state.screens} pant. (${h} px)`;
+    }
+
+    function applyZoom() {
+      const z = state.zoom;
+      canvas.style.width = `${state.width * z}px`;
+      canvas.style.height = `${canvas.height * z}px`;
+    }
+
+    // Dibujo individual de haz de luz
+    function drawLightRay(targetCtx, pieceKey, side, y) {
+      const cached = imageCache[pieceKey];
+      if (!cached || !cached.color || !cached.color.complete) return;
+      const img = cached.color;
+
+      targetCtx.save();
+      const canvasH = targetCtx.canvas ? targetCtx.canvas.height : (state.screens * 192);
+      targetCtx.beginPath();
+      targetCtx.rect(48, 0, 464 - 48, canvasH);
+      targetCtx.clip();
+
+      if (side === 'L') {
+        targetCtx.drawImage(img, 48, y);
+      } else {
+        // PNG volteado en horizontal, con su borde derecho en x = 464, es decir, esquina superior izquierda en (208, y)
+        targetCtx.translate(208 + 256, y);
+        targetCtx.scale(-1, 1);
+        targetCtx.drawImage(img, 0, 0);
+      }
+      targetCtx.restore();
+    }
+
+    // Renderizado
+    function render(targetCtx = ctx, isExport = false) {
+      const w = state.width;
+      const h = state.screens * 192;
+
+      // 1. Suelo
+      if (floorImage && floorImage.complete) {
+        for (let fy = 0; fy < h; fy += 256) {
+          targetCtx.drawImage(floorImage, 0, fy);
+        }
+      } else {
+        targetCtx.fillStyle = '#2d2733';
+        targetCtx.fillRect(0, 0, w, h);
+      }
+
+      // 2. Muros laterales continuos (x: 0..48 y 464..512)
+      // Fondo base oscuro
+      targetCtx.fillStyle = '#1c1920';
+      targetCtx.fillRect(0, 0, 48, h);
+      targetCtx.fillRect(464, 0, 48, h);
+
+      if (wallImage && wallImage.complete) {
+        // Muro izquierdo (x = 0..48)
+        for (let wy = 0; wy < h; wy += 128) {
+          targetCtx.drawImage(wallImage, 0, wy);
+        }
+        // Muro derecho (x = 464..512, volteado en horizontal)
+        targetCtx.save();
+        targetCtx.translate(512, 0);
+        targetCtx.scale(-1, 1);
+        for (let wy = 0; wy < h; wy += 128) {
+          targetCtx.drawImage(wallImage, 0, wy);
+        }
+        targetCtx.restore();
+      }
+
+      // 3. Separación de piezas: Lápidas (suelo), Props con volumen y Luces
+      const lapidas = [];
+      const props = [];
+      const lights = [];
+
+      for (const item of state.items) {
+        if (isLightPiece(item.piece)) {
+          lights.push(item);
+        } else if (isLapida(item.piece)) {
+          lapidas.push(item);
+        } else {
+          props.push(item);
+        }
+      }
+
+      // 3a. Dibujar lápidas (planas, nivel suelo)
+      lapidas.sort((a, b) => a.y - b.y);
+      for (const it of lapidas) {
+        drawPieceColor(targetCtx, it);
+      }
+
+      // 3b. Dibujar sombras de todos los props con volumen
+      for (const it of props) {
+        drawPieceShadow(targetCtx, it);
+      }
+
+      // 3c. Dibujar props con volumen ordenados por borde inferior (y + alto) ascendente
+      props.sort((a, b) => {
+        const metaA = getPieceMeta(a.piece);
+        const metaB = getPieceMeta(b.piece);
+        const bottomA = a.y + (metaA ? metaA.h : 32);
+        const bottomB = b.y + (metaB ? metaB.h : 32);
+        if (bottomA !== bottomB) return bottomA - bottomB;
+        return a.y - b.y;
+      });
+
+      for (const it of props) {
+        drawPieceColor(targetCtx, it);
+      }
+
+      // 3d. Dibujar luces (godrays) con mezcla aditiva por encima de todo
+      if (state.showLights) {
+        targetCtx.save();
+        targetCtx.globalCompositeOperation = 'lighter';
+        targetCtx.globalAlpha = 0.6;
+        for (const it of lights) {
+          drawLightRay(targetCtx, it.piece, it.side || 'L', it.y);
+        }
+        targetCtx.restore();
+      }
+
+      // Si es exportación a PNG, no dibujar rejilla, marcas de pantalla ni selección
+      if (isExport) return;
+
+      // 4. Rejilla visible
+      if (state.showGrid && state.gridSize > 1) {
+        targetCtx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+        targetCtx.lineWidth = 1;
+        targetCtx.beginPath();
+        const g = state.gridSize;
+        // Líneas verticales (solo área jugable y límites)
+        for (let x = 48; x <= 464; x += g) {
+          targetCtx.moveTo(x + 0.5, 0);
+          targetCtx.lineTo(x + 0.5, h);
+        }
+        // Líneas horizontales
+        for (let y = 0; y <= h; y += g) {
+          targetCtx.moveTo(48, y + 0.5);
+          targetCtx.lineTo(464, y + 0.5);
+        }
+        targetCtx.stroke();
+      }
+
+      // 5. Líneas de división de pantallas de la DS (cada 192 px)
+      for (let s = 1; s <= state.screens; s++) {
+        // La pantalla 1 está abajo del todo
+        const screenTopY = h - s * 192;
+
+        // Línea divisoria
+        targetCtx.strokeStyle = '#e6ad35';
+        targetCtx.lineWidth = 1;
+        targetCtx.setLineDash([4, 4]);
+        targetCtx.beginPath();
+        targetCtx.moveTo(0, screenTopY + 0.5);
+        targetCtx.lineTo(w, screenTopY + 0.5);
+        targetCtx.stroke();
+        targetCtx.setLineDash([]);
+
+        // Cartela de pantalla en los muros
+        const badgeY = screenTopY + 4;
+        // Izquierda
+        targetCtx.fillStyle = 'rgba(24, 21, 28, 0.85)';
+        targetCtx.fillRect(4, badgeY, 40, 16);
+        targetCtx.strokeStyle = '#e6ad35';
+        targetCtx.strokeRect(4.5, badgeY + 0.5, 39, 15);
+        targetCtx.fillStyle = '#f5c842';
+        targetCtx.font = 'bold 10px monospace';
+        targetCtx.textAlign = 'center';
+        targetCtx.textBaseline = 'middle';
+        targetCtx.fillText(`P${s}`, 24, badgeY + 8);
+
+        // Derecha
+        targetCtx.fillStyle = 'rgba(24, 21, 28, 0.85)';
+        targetCtx.fillRect(468, badgeY, 40, 16);
+        targetCtx.strokeStyle = '#e6ad35';
+        targetCtx.strokeRect(468.5, badgeY + 0.5, 39, 15);
+        targetCtx.fillStyle = '#f5c842';
+        targetCtx.fillText(`P${s}`, 488, badgeY + 8);
+      }
+
+      // 6. Selección activa (contornos y datos)
+      if (state.selectedIds.size > 0) {
+        targetCtx.lineWidth = 1;
+        for (const it of state.items) {
+          if (!state.selectedIds.has(it.id)) continue;
+          const b = getItemBounds(it);
+
+          targetCtx.strokeStyle = '#38bdf8';
+          targetCtx.strokeRect(b.x - 0.5, b.y - 0.5, b.w + 1, b.h + 1);
+
+          // Puntos en esquinas
+          targetCtx.fillStyle = '#38bdf8';
+          targetCtx.fillRect(b.x - 2, b.y - 2, 4, 4);
+          targetCtx.fillRect(b.x + b.w - 2, b.y - 2, 4, 4);
+          targetCtx.fillRect(b.x - 2, b.y + b.h - 2, 4, 4);
+          targetCtx.fillRect(b.x + b.w - 2, b.y + b.h - 2, 4, 4);
+        }
+      }
+
+      // 7. Rectángulo de selección por arrastre (marquee)
+      if (marqueeState.active) {
+        const mx = Math.min(marqueeState.startX, marqueeState.currentX);
+        const my = Math.min(marqueeState.startY, marqueeState.currentY);
+        const mw = Math.abs(marqueeState.currentX - marqueeState.startX);
+        const mh = Math.abs(marqueeState.currentY - marqueeState.startY);
+
+        targetCtx.fillStyle = 'rgba(56, 189, 248, 0.15)';
+        targetCtx.fillRect(mx, my, mw, mh);
+        targetCtx.strokeStyle = '#38bdf8';
+        targetCtx.lineWidth = 1;
+        targetCtx.setLineDash([3, 3]);
+        targetCtx.strokeRect(mx + 0.5, my + 0.5, mw, mh);
+        targetCtx.setLineDash([]);
+      }
+
+      // 8. Previsualización de estampar o pegar (fantasma)
+      if (cursorState.inside) {
+        if (state.tool === 'stamp' && state.stampPiece) {
+          if (isLightPiece(state.stampPiece)) {
+            if (state.showLights) {
+              targetCtx.save();
+              targetCtx.globalCompositeOperation = 'lighter';
+              targetCtx.globalAlpha = 0.6;
+              const side = cursorState.x < 256 ? 'L' : 'R';
+              const gy = snap(cursorState.y, state.gridSize);
+              drawLightRay(targetCtx, state.stampPiece, side, gy);
+              targetCtx.restore();
+            }
+          } else if (isLapida(state.stampPiece)) {
+            targetCtx.save();
+            targetCtx.globalAlpha = 0.6;
+            const pos = snapLapida(cursorState.x, cursorState.y, state.stampPiece);
+            const ghostItem = {
+              piece: state.stampPiece,
+              x: pos.x,
+              y: pos.y,
+              flip: false
+            };
+            drawPieceColor(targetCtx, ghostItem);
+            targetCtx.restore();
+          } else {
+            targetCtx.save();
+            targetCtx.globalAlpha = 0.6;
+            const ghostItem = {
+              piece: state.stampPiece,
+              x: snap(cursorState.x, state.gridSize),
+              y: snap(cursorState.y, state.gridSize),
+              flip: state.stampFlip
+            };
+            drawPieceShadow(targetCtx, ghostItem);
+            drawPieceColor(targetCtx, ghostItem);
+            targetCtx.restore();
+          }
+        } else if (state.tool === 'paste' && state.clipboard.length > 0) {
+          targetCtx.save();
+          targetCtx.globalAlpha = 0.6;
+          const baseX = snap(cursorState.x, state.gridSize);
+          const baseY = snap(cursorState.y, state.gridSize);
+          for (const clip of state.clipboard) {
+            if (isLightPiece(clip.piece)) {
+              drawLightRay(targetCtx, clip.piece, clip.side || (baseX < 256 ? 'L' : 'R'), baseY + clip.ry);
+            } else if (isLapida(clip.piece)) {
+              const pos = snapLapida(baseX + clip.rx, baseY + clip.ry, clip.piece);
+              drawPieceColor(targetCtx, { piece: clip.piece, x: pos.x, y: pos.y, flip: false });
+            } else {
+              const ghost = {
+                piece: clip.piece,
+                x: baseX + clip.rx,
+                y: baseY + clip.ry,
+                flip: clip.flip
+              };
+              drawPieceShadow(targetCtx, ghost);
+              drawPieceColor(targetCtx, ghost);
+            }
+          }
+          targetCtx.restore();
+        }
+      }
+    }
+
+    // Dibujo individual de sombra
+    function drawPieceShadow(targetCtx, item) {
+      const meta = getPieceMeta(item.piece);
+      if (!meta || !meta.shadow) return;
+      const sh = meta.shadow;
+      const cached = imageCache[item.piece];
+      if (!cached || !cached.shadow) return;
+
+      if (!item.flip) {
+        const sx = item.x + sh.dx;
+        const sy = item.y + sh.dy;
+        targetCtx.drawImage(cached.shadow, sx, sy);
+      } else {
+        // dx' = W - Ws - dx
+        const dxPrime = meta.w - sh.w - sh.dx;
+        const sx = item.x + dxPrime;
+        const sy = item.y + sh.dy;
+        targetCtx.save();
+        targetCtx.translate(sx + sh.w, sy);
+        targetCtx.scale(-1, 1);
+        targetCtx.drawImage(cached.shadow, 0, 0);
+        targetCtx.restore();
+      }
+    }
+
+    // Dibujo individual de color/cuerpo
+    function drawPieceColor(targetCtx, item) {
+      if (item.piece === 'marine') {
+        // Rectángulo azul de 16×31 px con la etiqueta 'M'
+        targetCtx.save();
+        targetCtx.fillStyle = '#1d4ed8';
+        targetCtx.fillRect(item.x, item.y, 16, 31);
+        targetCtx.strokeStyle = '#93c5fd';
+        targetCtx.lineWidth = 1;
+        targetCtx.strokeRect(item.x + 0.5, item.y + 0.5, 15, 30);
+        targetCtx.fillStyle = '#ffffff';
+        targetCtx.font = 'bold 11px sans-serif';
+        targetCtx.textAlign = 'center';
+        targetCtx.textBaseline = 'middle';
+        targetCtx.fillText('M', item.x + 8, item.y + 15);
+        if (item.flip) {
+          // Indicador de orientación
+          targetCtx.fillStyle = '#fbbf24';
+          targetCtx.fillRect(item.x + 2, item.y + 3, 3, 3);
+        }
+        targetCtx.restore();
+        return;
+      }
+
+      const meta = getPieceMeta(item.piece);
+      if (!meta) return;
+      const cached = imageCache[item.piece];
+      if (!cached || !cached.color || !cached.color.complete) return;
+
+      if (!item.flip) {
+        targetCtx.drawImage(cached.color, item.x, item.y);
+      } else {
+        targetCtx.save();
+        targetCtx.translate(item.x + meta.w, item.y);
+        targetCtx.scale(-1, 1);
+        targetCtx.drawImage(cached.color, 0, 0);
+        targetCtx.restore();
+      }
+    }
+
+    // Interacción con Ratón y Teclado
+    const cursorState = {
+      x: 0,
+      y: 0,
+      inside: false
+    };
+
+    const marqueeState = {
+      active: false,
+      startX: 0,
+      startY: 0,
+      currentX: 0,
+      currentY: 0
+    };
+
+    const dragMoveState = {
+      active: false,
+      startX: 0,
+      startY: 0,
+      hasMoved: false,
+      initialPositions: new Map() // id -> { x, y }
+    };
+
+    function getCanvasCoords(e) {
+      const rect = canvas.getBoundingClientRect();
+      const z = state.zoom;
+      return {
+        x: Math.floor((e.clientX - rect.left) / z),
+        y: Math.floor((e.clientY - rect.top) / z)
+      };
+    }
+
+    function hitTest(x, y) {
+      // Búsqueda inversa: Luces primero (arriba del todo), luego props, luego lápidas
+      const lights = [];
+      const props = [];
+      const lapidas = [];
+      for (const it of state.items) {
+        if (isLightPiece(it.piece)) lights.push(it);
+        else if (isLapida(it.piece)) lapidas.push(it);
+        else props.push(it);
+      }
+      lights.sort((a, b) => b.y - a.y);
+      props.sort((a, b) => {
+        const mA = getPieceMeta(a.piece);
+        const mB = getPieceMeta(b.piece);
+        const bA = a.y + (mA ? mA.h : 32);
+        const bB = b.y + (mB ? mB.h : 32);
+        return bB - bA;
+      });
+      lapidas.sort((a, b) => b.y - a.y);
+
+      const checkList = [...lights, ...props, ...lapidas];
+      for (const it of checkList) {
+        const b = getItemBounds(it);
+        if (x >= b.x && x < b.x + b.w && y >= b.y && y < b.y + b.h) {
+          return it;
+        }
+      }
+      return null;
+    }
+
+    canvas.addEventListener('pointerenter', () => {
+      cursorState.inside = true;
+    });
+
+    canvas.addEventListener('pointerleave', () => {
+      cursorState.inside = false;
+      statCoords.textContent = 'X: - | Y: -';
+      statScreen.textContent = '-';
+      render();
+    });
+
+    canvas.addEventListener('pointermove', (e) => {
+      const coords = getCanvasCoords(e);
+      cursorState.x = coords.x;
+      cursorState.y = coords.y;
+
+      // Calcular pantalla actual (P1 abajo)
+      const h = state.screens * 192;
+      const screenNum = Math.max(1, Math.min(state.screens, Math.floor((h - coords.y) / 192) + 1));
+      statCoords.textContent = `X: ${coords.x} | Y: ${coords.y}`;
+      statScreen.textContent = `${screenNum} (de ${state.screens})`;
+
+      if (dragMoveState.active) {
+        const rawDx = coords.x - dragMoveState.startX;
+        const rawDy = coords.y - dragMoveState.startY;
+        let hasMoved = false;
+
+        for (const [id, initPos] of dragMoveState.initialPositions) {
+          const it = state.items.find(i => i.id === id);
+          if (!it) continue;
+          if (isLightPiece(it.piece)) {
+            // Luces: movibles SOLO en vertical
+            const dy = snap(rawDy, state.gridSize);
+            if (dy !== 0) hasMoved = true;
+            it.y = initPos.y + dy;
+            it.x = 0;
+          } else if (isLapida(it.piece)) {
+            // Lápidas: encaje forzado con juntas del suelo
+            const pos = snapLapida(initPos.x + rawDx, initPos.y + rawDy, it.piece);
+            if (pos.x !== it.x || pos.y !== it.y) hasMoved = true;
+            it.x = pos.x;
+            it.y = pos.y;
+          } else {
+            const dx = snap(rawDx, state.gridSize);
+            const dy = snap(rawDy, state.gridSize);
+            if (dx !== 0 || dy !== 0) hasMoved = true;
+            it.x = initPos.x + dx;
+            it.y = initPos.y + dy;
+          }
+        }
+        if (hasMoved) dragMoveState.hasMoved = true;
+        updateSelectionBar();
+        render();
+        return;
+      }
+
+      if (marqueeState.active) {
+        marqueeState.currentX = coords.x;
+        marqueeState.currentY = coords.y;
+        render();
+        return;
+      }
+
+      if (state.tool === 'stamp' || state.tool === 'paste') {
+        render();
+      }
+    });
+
+    canvas.addEventListener('pointerdown', (e) => {
+      if (e.button !== 0) return; // Solo clic izquierdo
+      canvas.setPointerCapture(e.pointerId);
+      const coords = getCanvasCoords(e);
+
+      // MODO ESTAMPAR
+      if (state.tool === 'stamp' && state.stampPiece) {
+        let newItem;
+        if (isLightPiece(state.stampPiece)) {
+          // El lado se decide por la mitad del carril: x < 256 -> L, x >= 256 -> R
+          const side = coords.x < 256 ? 'L' : 'R';
+          const gy = snap(coords.y, state.gridSize);
+          newItem = {
+            id: nextItemId++,
+            piece: state.stampPiece,
+            x: 0,
+            y: gy,
+            side: side,
+            flip: false
+          };
+        } else if (isLapida(state.stampPiece)) {
+          const pos = snapLapida(coords.x, coords.y, state.stampPiece);
+          newItem = {
+            id: nextItemId++,
+            piece: state.stampPiece,
+            x: pos.x,
+            y: pos.y,
+            flip: false
+          };
+        } else {
+          const gx = snap(coords.x, state.gridSize);
+          const gy = snap(coords.y, state.gridSize);
+          newItem = {
+            id: nextItemId++,
+            piece: state.stampPiece,
+            x: gx,
+            y: gy,
+            flip: state.stampFlip
+          };
+        }
+        state.items.push(newItem);
+        state.selectedIds.clear();
+        state.selectedIds.add(newItem.id);
+        pushHistory();
+        updateSelectionBar();
+        render();
+        return;
+      }
+
+      // MODO PEGAR
+      if (state.tool === 'paste' && state.clipboard.length > 0) {
+        const baseX = snap(coords.x, state.gridSize);
+        const baseY = snap(coords.y, state.gridSize);
+        const newIds = new Set();
+        for (const clip of state.clipboard) {
+          let item;
+          if (isLightPiece(clip.piece)) {
+            item = {
+              id: nextItemId++,
+              piece: clip.piece,
+              x: 0,
+              y: baseY + clip.ry,
+              side: clip.side || (baseX < 256 ? 'L' : 'R'),
+              flip: false
+            };
+          } else if (isLapida(clip.piece)) {
+            const pos = snapLapida(baseX + clip.rx, baseY + clip.ry, clip.piece);
+            item = {
+              id: nextItemId++,
+              piece: clip.piece,
+              x: pos.x,
+              y: pos.y,
+              flip: false
+            };
+          } else {
+            item = {
+              id: nextItemId++,
+              piece: clip.piece,
+              x: baseX + clip.rx,
+              y: baseY + clip.ry,
+              flip: clip.flip
+            };
+          }
+          state.items.push(item);
+          newIds.add(item.id);
+        }
+        state.selectedIds = newIds;
+        setTool('select');
+        pushHistory();
+        updateSelectionBar();
+        render();
+        return;
+      }
+
+      // MODO SELECCIONAR
+      const hit = hitTest(coords.x, coords.y);
+      if (hit) {
+        if (e.shiftKey) {
+          if (state.selectedIds.has(hit.id)) {
+            state.selectedIds.delete(hit.id);
+          } else {
+            state.selectedIds.add(hit.id);
+          }
+        } else {
+          if (!state.selectedIds.has(hit.id)) {
+            state.selectedIds.clear();
+            state.selectedIds.add(hit.id);
+          }
+        }
+
+        // Iniciar arrastre de piezas seleccionadas
+        dragMoveState.active = true;
+        dragMoveState.startX = coords.x;
+        dragMoveState.startY = coords.y;
+        dragMoveState.hasMoved = false;
+        dragMoveState.initialPositions.clear();
+        for (const id of state.selectedIds) {
+          const it = state.items.find(i => i.id === id);
+          if (it) {
+            dragMoveState.initialPositions.set(id, { x: it.x, y: it.y });
+          }
+        }
+        updateSelectionBar();
+        render();
+      } else {
+        // Clic en vacío: iniciar selección por marco
+        if (!e.shiftKey) {
+          state.selectedIds.clear();
+        }
+        marqueeState.active = true;
+        marqueeState.startX = coords.x;
+        marqueeState.startY = coords.y;
+        marqueeState.currentX = coords.x;
+        marqueeState.currentY = coords.y;
+        updateSelectionBar();
+        render();
+      }
+    });
+
+    canvas.addEventListener('pointerup', (e) => {
+      try {
+        canvas.releasePointerCapture(e.pointerId);
+      } catch (err) {}
+
+      if (dragMoveState.active) {
+        if (dragMoveState.hasMoved) {
+          pushHistory();
+        }
+        dragMoveState.active = false;
+        dragMoveState.initialPositions.clear();
+        render();
+      }
+
+      if (marqueeState.active) {
+        const mx = Math.min(marqueeState.startX, marqueeState.currentX);
+        const my = Math.min(marqueeState.startY, marqueeState.currentY);
+        const mw = Math.abs(marqueeState.currentX - marqueeState.startX);
+        const mh = Math.abs(marqueeState.currentY - marqueeState.startY);
+
+        // Si el marco tuvo un tamaño significativo, seleccionar elementos que cruce
+        if (mw > 2 || mh > 2) {
+          for (const it of state.items) {
+            const b = getItemBounds(it);
+            // Intersección AABB
+            if (b.x < mx + mw && b.x + b.w > mx && b.y < my + mh && b.y + b.h > my) {
+              state.selectedIds.add(it.id);
+            }
+          }
+        }
+        marqueeState.active = false;
+        updateSelectionBar();
+        render();
+      }
+    });
+
+    // Menú contextual en el canvas prevenido
+    canvas.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+      if (state.tool !== 'select') {
+        setTool('select');
+      } else if (state.selectedIds.size > 0) {
+        state.selectedIds.clear();
+        updateSelectionBar();
+        render();
+      }
+    });
+
+    // Herramientas y Modos
+    function setTool(toolName, piece = null) {
+      state.tool = toolName;
+      state.stampPiece = piece;
+      if (toolName === 'select') {
+        btnToolSelect.classList.add('active');
+        activeToolBadge.style.display = 'none';
+        document.querySelectorAll('.palette-item').forEach(el => el.classList.remove('active'));
+      } else if (toolName === 'stamp') {
+        btnToolSelect.classList.remove('active');
+        activeToolBadge.style.display = 'inline-block';
+        const meta = getPieceMeta(piece);
+        activeToolBadge.textContent = `Estampando: ${meta ? meta.name : piece}`;
+      } else if (toolName === 'paste') {
+        btnToolSelect.classList.remove('active');
+        activeToolBadge.style.display = 'inline-block';
+        activeToolBadge.textContent = `Pegando (${state.clipboard.length} piezas)`;
+      }
+      render();
+    }
+
+    btnToolSelect.addEventListener('click', () => setTool('select'));
+
+    // Actualizar barra de selección
+    function updateSelectionBar() {
+      const count = state.selectedIds.size;
+      if (count === 0) {
+        selectionBar.classList.add('hidden');
+        return;
+      }
+      selectionBar.classList.remove('hidden');
+      selCountEl.textContent = count;
+
+      if (count === 1) {
+        const id = Array.from(state.selectedIds)[0];
+        const it = state.items.find(i => i.id === id);
+        if (it) {
+          const meta = getPieceMeta(it.piece);
+          const pieceTitle = meta ? meta.name : it.piece;
+          if (isLightPiece(it.piece)) {
+            const sideLabel = (it.side === 'R') ? 'Derecha (x=208)' : 'Izquierda (x=48)';
+            selPosEl.textContent = `${pieceTitle} | Lado: ${sideLabel}, Y: ${it.y}`;
+          } else {
+            selPosEl.textContent = `${pieceTitle} | X: ${it.x}, Y: ${it.y}${it.flip ? ' (volteado)' : ''}`;
+          }
+        }
+      } else {
+        selPosEl.textContent = `${count} elementos`;
+      }
+    }
+
+    // Acciones sobre selección
+    function deleteSelection() {
+      if (state.selectedIds.size === 0) return;
+      state.items = state.items.filter(it => !state.selectedIds.has(it.id));
+      state.selectedIds.clear();
+      pushHistory();
+      updateSelectionBar();
+      render();
+    }
+
+    function flipSelection() {
+      if (state.selectedIds.size === 0) {
+        if (state.tool === 'stamp') {
+          state.stampFlip = !state.stampFlip;
+          render();
+        }
+        return;
+      }
+      for (const id of state.selectedIds) {
+        const it = state.items.find(i => i.id === id);
+        if (it) {
+          if (isLightPiece(it.piece)) {
+            // 'F' cambia de lado (L <-> R)
+            it.side = (it.side === 'R') ? 'L' : 'R';
+          } else {
+            it.flip = !it.flip;
+          }
+        }
+      }
+      pushHistory();
+      updateSelectionBar();
+      render();
+    }
+
+    function duplicateSelection() {
+      if (state.selectedIds.size === 0) return;
+      const newIds = new Set();
+      for (const id of Array.from(state.selectedIds)) {
+        const orig = state.items.find(i => i.id === id);
+        if (!orig) continue;
+        let copy;
+        if (isLightPiece(orig.piece)) {
+          copy = {
+            id: nextItemId++,
+            piece: orig.piece,
+            x: 0,
+            y: orig.y - 8,
+            side: orig.side || 'L',
+            flip: false
+          };
+        } else if (isLapida(orig.piece)) {
+          const pos = snapLapida(orig.x, orig.y - 8, orig.piece);
+          copy = {
+            id: nextItemId++,
+            piece: orig.piece,
+            x: pos.x,
+            y: pos.y,
+            flip: false
+          };
+        } else {
+          copy = {
+            id: nextItemId++,
+            piece: orig.piece,
+            x: orig.x,
+            y: orig.y - 8,
+            flip: orig.flip
+          };
+        }
+        state.items.push(copy);
+        newIds.add(copy.id);
+      }
+      state.selectedIds = newIds;
+      pushHistory();
+      updateSelectionBar();
+      render();
+    }
+
+    function repeatSelectionUpwards() {
+      if (state.selectedIds.size === 0) return;
+      const step = parseInt(repeatStepInput.value, 10) || 128;
+      if (step <= 0) return;
+
+      const newIds = new Set(state.selectedIds);
+      const toRepeat = state.items.filter(it => state.selectedIds.has(it.id));
+
+      for (const orig of toRepeat) {
+        const b = getItemBounds(orig);
+        let curY = orig.y - step;
+        while (curY + b.h >= 0) {
+          let clone;
+          if (isLightPiece(orig.piece)) {
+            clone = {
+              id: nextItemId++,
+              piece: orig.piece,
+              x: 0,
+              y: curY,
+              side: orig.side || 'L',
+              flip: false
+            };
+          } else if (isLapida(orig.piece)) {
+            const pos = snapLapida(orig.x, curY, orig.piece);
+            clone = {
+              id: nextItemId++,
+              piece: orig.piece,
+              x: pos.x,
+              y: pos.y,
+              flip: false
+            };
+          } else {
+            clone = {
+              id: nextItemId++,
+              piece: orig.piece,
+              x: orig.x,
+              y: curY,
+              flip: orig.flip
+            };
+          }
+          state.items.push(clone);
+          newIds.add(clone.id);
+          curY -= step;
+        }
+      }
+
+      state.selectedIds = newIds;
+      pushHistory();
+      updateSelectionBar();
+      render();
+    }
+
+    function copySelection() {
+      if (state.selectedIds.size === 0) return;
+      const selectedItems = state.items.filter(it => state.selectedIds.has(it.id));
+      if (selectedItems.length === 0) return;
+
+      // Calcular caja envolvente para posiciones relativas
+      let minX = Infinity;
+      let minY = Infinity;
+      for (const it of selectedItems) {
+        const b = getItemBounds(it);
+        if (b.x < minX) minX = b.x;
+        if (b.y < minY) minY = b.y;
+      }
+
+      state.clipboard = selectedItems.map(it => {
+        const b = getItemBounds(it);
+        return {
+          piece: it.piece,
+          rx: b.x - minX,
+          ry: b.y - minY,
+          flip: it.flip,
+          side: it.side || 'L'
+        };
+      });
+    }
+
+    function pasteClipboard() {
+      if (!state.clipboard || state.clipboard.length === 0) return;
+      setTool('paste');
+    }
+
+    // Botones de acción en selección
+    btnFlip.addEventListener('click', flipSelection);
+    btnDelete.addEventListener('click', deleteSelection);
+    btnDuplicate.addEventListener('click', duplicateSelection);
+    btnRepeatUp.addEventListener('click', repeatSelectionUpwards);
+
+    // Ajuste de pantallas
+    btnScreenAdd.addEventListener('click', () => {
+      state.screens += 1;
+      // Mover piezas hacia abajo para mantener la entrada en P1 abajo
+      for (const it of state.items) {
+        it.y += 192;
+      }
+      resizeCanvas();
+      viewport.scrollTop += 192 * state.zoom;
+      pushHistory();
+      render();
+    });
+
+    btnScreenSub.addEventListener('click', () => {
+      if (state.screens <= 1) return;
+      state.screens -= 1;
+      for (const it of state.items) {
+        it.y -= 192;
+      }
+      resizeCanvas();
+      viewport.scrollTop = Math.max(0, viewport.scrollTop - 192 * state.zoom);
+      pushHistory();
+      render();
+    });
+
+    // Control de Zoom
+    document.querySelectorAll('.btn-zoom').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.btn-zoom').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        state.zoom = parseInt(btn.dataset.zoom, 10);
+        applyZoom();
+        render();
+      });
+    });
+
+    // Control de Rejilla
+    gridSelect.addEventListener('change', () => {
+      state.gridSize = parseInt(gridSelect.value, 10) || 8;
+      render();
+    });
+
+    showGridCheck.addEventListener('change', () => {
+      state.showGrid = showGridCheck.checked;
+      render();
+    });
+
+    showLightsCheck.addEventListener('change', () => {
+      state.showLights = showLightsCheck.checked;
+      render();
+    });
+
+    // Deshacer / Rehacer botones
+    btnUndo.addEventListener('click', undo);
+    btnRedo.addEventListener('click', redo);
+
+    // Vaciar / Nuevo
+    btnNew.addEventListener('click', () => {
+      if (confirm('¿Vaciar todo el carril y comenzar una nueva sección?')) {
+        state.items = [];
+        state.screens = 10;
+        state.selectedIds.clear();
+        resizeCanvas();
+        pushHistory();
+        updateSelectionBar();
+        render();
+      }
+    });
+
+    // Exportar JSON
+    btnSaveJson.addEventListener('click', () => {
+      const payload = {
+        version: state.version,
+        width: state.width,
+        height: state.screens * 192,
+        screens: state.screens,
+        items: state.items.map(it => {
+          if (isLightPiece(it.piece)) {
+            return {
+              piece: it.piece,
+              x: 0,
+              y: it.y,
+              side: it.side || 'L'
+            };
+          }
+          return {
+            piece: it.piece,
+            x: it.x,
+            y: it.y,
+            flip: !!it.flip
+          };
+        })
+      };
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'catedral_seccion.json';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    });
+
+    // Cargar JSON
+    btnLoadJson.addEventListener('click', () => {
+      fileInputJson.click();
+    });
+
+    fileInputJson.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        try {
+          const data = JSON.parse(event.target.result);
+          if (!data || !Array.isArray(data.items)) {
+            alert('El archivo JSON no tiene un formato válido.');
+            return;
+          }
+          let ignoredOldLapidas = 0;
+          const validItems = [];
+          for (const it of data.items) {
+            if (!it || !it.piece) continue;
+            let piece = it.piece;
+            if (piece === 'via_a_3x2_cruz') piece = 'lapida_3x2_cruz';
+            else if (piece === 'via_a_3x2_cab') piece = 'lapida_3x2_cab';
+
+            // Las via_b_* y cualquier otra lápida desconocida se ignoran con el aviso que ya existe
+            if (!VALID_LAPIDAS.has(piece) && (piece.startsWith('via_') || piece.startsWith('3d_lapida') || piece.startsWith('lapida'))) {
+              ignoredOldLapidas++;
+              continue;
+            }
+            it.piece = piece;
+            validItems.push(it);
+          }
+
+          state.screens = data.screens || Math.round((data.height || 1920) / 192) || 10;
+          state.items = validItems.map((it, idx) => {
+            if (isLightPiece(it.piece)) {
+              return {
+                id: idx + 1,
+                piece: it.piece,
+                x: 0,
+                y: it.y,
+                side: (it.side === 'R') ? 'R' : 'L',
+                flip: false
+              };
+            }
+            return {
+              id: idx + 1,
+              piece: it.piece,
+              x: it.x,
+              y: it.y,
+              flip: !!it.flip
+            };
+          });
+          nextItemId = state.items.length + 1;
+          state.selectedIds.clear();
+          resizeCanvas();
+          pushHistory();
+          updateSelectionBar();
+          render();
+
+          if (ignoredOldLapidas > 0) {
+            alert(`${ignoredOldLapidas} lápidas antiguas ignoradas`);
+          }
+        } catch (err) {
+          alert('Error al leer el archivo JSON: ' + err.message);
+        }
+      };
+      reader.readAsText(file);
+      fileInputJson.value = '';
+    });
+
+    // Exportar PNG completo a 1×
+    btnExportPng.addEventListener('click', () => {
+      const exportCanvas = document.createElement('canvas');
+      exportCanvas.width = state.width;
+      exportCanvas.height = state.screens * 192;
+      const expCtx = exportCanvas.getContext('2d');
+      // Render limpio sin rejilla ni cartelas
+      render(expCtx, true);
+
+      try {
+        const dataUrl = exportCanvas.toDataURL('image/png');
+        const a = document.createElement('a');
+        a.href = dataUrl;
+        a.download = 'catedral_seccion.png';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      } catch (err) {
+        alert('No se pudo exportar el PNG: ' + err.message);
+      }
+    });
+
+    // Teclado global
+    window.addEventListener('keydown', (e) => {
+      // Ignorar si el foco está en un input
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') {
+        return;
+      }
+
+      const ctrlOrCmd = e.ctrlKey || e.metaKey;
+
+      if (ctrlOrCmd && e.key.toLowerCase() === 'z') {
+        e.preventDefault();
+        if (e.shiftKey) redo();
+        else undo();
+        return;
+      }
+
+      if (ctrlOrCmd && e.key.toLowerCase() === 'y') {
+        e.preventDefault();
+        redo();
+        return;
+      }
+
+      if (ctrlOrCmd && e.key.toLowerCase() === 'd') {
+        e.preventDefault();
+        duplicateSelection();
+        return;
+      }
+
+      if (ctrlOrCmd && e.key.toLowerCase() === 'c') {
+        e.preventDefault();
+        copySelection();
+        return;
+      }
+
+      if (ctrlOrCmd && e.key.toLowerCase() === 'v') {
+        e.preventDefault();
+        pasteClipboard();
+        return;
+      }
+
+      if (e.key === 'Delete' || e.key === 'Backspace') {
+        e.preventDefault();
+        deleteSelection();
+        return;
+      }
+
+      if (e.key.toLowerCase() === 'f') {
+        e.preventDefault();
+        flipSelection();
+        return;
+      }
+
+      if (e.key.toLowerCase() === 'v') {
+        e.preventDefault();
+        setTool('select');
+        return;
+      }
+
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        if (state.tool !== 'select') {
+          setTool('select');
+        } else {
+          state.selectedIds.clear();
+          updateSelectionBar();
+          render();
+        }
+      }
+    });
+
+    // Actualizar contadores
+    function updateCounters() {
+      statTotal.textContent = state.items.length;
+      let col = 0, ban = 0, atr = 0, luz = 0, lap = 0;
+      for (const it of state.items) {
+        if (it.piece === 'columna' || it.piece === 'columna_entera') col++;
+        else if (it.piece.startsWith('banco')) ban++;
+        else if (isLightPiece(it.piece)) luz++;
+        else if (isLapida(it.piece)) lap++;
+        else atr++;
+      }
+      statBreakdown.textContent = `Columnas: ${col} | Bancos: ${ban} | Atrezo: ${atr} | Luces: ${luz} | Lápidas: ${lap}`;
+    }
+
+    // Render de la Paleta
+    let currentCategory = 'todas';
+    const categoryOrder = {
+      columnas: 1,
+      bancos: 2,
+      atrezo: 3,
+      luz: 4,
+      especial: 5,
+      lapidas: 6,
+      otros: 7
+    };
+
+    function renderPalette() {
+      paletteContainer.innerHTML = '';
+      if (!ASSETS || !ASSETS.props) return;
+
+      const query = paletteSearchInput.value.toLowerCase().trim();
+      const entries = Object.values(ASSETS.props);
+
+      const filtered = entries.filter(p => {
+        if (currentCategory !== 'todas' && p.category !== currentCategory) return false;
+        if (query) {
+          const matchName = p.name.toLowerCase().includes(query);
+          const matchPiece = p.piece.toLowerCase().includes(query);
+          return matchName || matchPiece;
+        }
+        return true;
+      });
+
+      // Ordenar: Columnas, Bancos, Atrezo, Luz, Especial (marine) y, al final, Lápidas
+      filtered.sort((a, b) => {
+        const orderA = categoryOrder[a.category] || 99;
+        const orderB = categoryOrder[b.category] || 99;
+        if (orderA !== orderB) return orderA - orderB;
+        return a.name.localeCompare(b.name, 'es');
+      });
+
+      const isLapidasGrid = (currentCategory === 'lapidas');
+      paletteContainer.className = isLapidasGrid ? 'palette-list palette-grid-lapidas' : 'palette-list';
+
+      for (const prop of filtered) {
+        const itemEl = document.createElement('div');
+        itemEl.className = 'palette-item';
+        if (state.tool === 'stamp' && state.stampPiece === prop.piece) {
+          itemEl.classList.add('active');
+        }
+
+        const previewBox = document.createElement('div');
+        previewBox.className = 'palette-preview-box';
+
+        if (prop.piece === 'marine') {
+          const marineThumb = document.createElement('div');
+          marineThumb.className = 'marine-thumb';
+          marineThumb.textContent = 'M';
+          previewBox.appendChild(marineThumb);
+        } else if (prop.color) {
+          const img = document.createElement('img');
+          img.src = prop.color;
+          previewBox.appendChild(img);
+        }
+
+        const info = document.createElement('div');
+        info.className = 'palette-item-info';
+
+        const nameEl = document.createElement('div');
+        nameEl.className = 'palette-item-name';
+        nameEl.textContent = prop.name;
+        nameEl.title = prop.name;
+
+        const metaEl = document.createElement('div');
+        metaEl.className = 'palette-item-meta';
+        metaEl.textContent = `${prop.w}×${prop.h} px`;
+
+        info.appendChild(nameEl);
+        info.appendChild(metaEl);
+
+        itemEl.appendChild(previewBox);
+        itemEl.appendChild(info);
+
+        itemEl.addEventListener('click', () => {
+          document.querySelectorAll('.palette-item').forEach(el => el.classList.remove('active'));
+          itemEl.classList.add('active');
+          setTool('stamp', prop.piece);
+        });
+
+        paletteContainer.appendChild(itemEl);
+      }
+    }
+
+    paletteTabBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        paletteTabBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentCategory = btn.dataset.cat;
+        renderPalette();
+      });
+    });
+
+    paletteSearchInput.addEventListener('input', () => {
+      renderPalette();
+    });
+
+    // Inicialización al cargar la página
+    window.addEventListener('DOMContentLoaded', () => {
+      initAssets().then(() => {
+        render();
+      });
+      const loaded = loadFromLocalStorage();
+      resizeCanvas();
+      pushHistory();
+      renderPalette();
+      render();
+
+      // Empezar mostrando la parte inferior (Pantalla 1)
+      setTimeout(() => {
+        viewport.scrollTop = viewport.scrollHeight;
+      }, 50);
+    });
+  </script>
+</body>
+</html>

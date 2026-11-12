@@ -28,6 +28,23 @@ class StripHostTest(unittest.TestCase):
             self.assertEqual(run.returncode, 0, run.stdout + run.stderr)
             self.assertIn("STRIP_HOST_TEST=PASS", run.stdout)
 
+    def test_rebase_preparation_matches_reference(self):
+        # Four variants (reference, prepared, slow path, half prepared) must hash equal over 20
+        # rebases; the harness also fails on a stage overflow or a rebase that does not shift.
+        with tempfile.TemporaryDirectory() as tmp:
+            exe = Path(tmp) / "strip_rebase_equiv.exe"
+            sources = [ROOT / "tests" / "host" / "strip_rebase_equiv.c",
+                       ROOT / "tests" / "host" / "strip_rebase_ref.c",
+                       ROOT / "source" / "strip_kit.c"]
+            build = subprocess.run(
+                ["gcc", "-std=gnu11", "-O1", "-Wall", "-Werror",
+                 "-I", str(ROOT / "include"), *map(str, sources), "-o", str(exe)],
+                capture_output=True, text=True)
+            self.assertEqual(build.returncode, 0, build.stderr)
+            run = subprocess.run([str(exe)], capture_output=True, text=True)
+            self.assertEqual(run.returncode, 0, run.stdout + run.stderr)
+            self.assertIn("STRIP_REBASE_EQUIV=PASS", run.stdout)
+
     def test_navigation_survives_strip_rebases(self):
         with tempfile.TemporaryDirectory() as tmp:
             exe = Path(tmp) / "strip_nav_host_test.exe"

@@ -27,14 +27,17 @@ def silhouette(d):
     occ = np.array(Image.open(os.path.join(d, "occlusion.png")).convert("L")) > 127
     return occ | (world.sum(2) > 0)
 
-def sprite_depth(depth, y0, scale_y, oy):
+def sprite_depth(depth, y0, scale_y, oy, max_y):
     """The lab encodes the ground Y under each surface in raw-render pixels. Resizing the image
     does not touch those values, so convert them to this sprite's local Y (R,G big endian,
-    B>=128 marks a surface): the runtime compares them with actor feet in world pixels."""
+    B>=128 marks a surface): the runtime compares them with actor feet in world pixels.
+    A floor that projects below the stamp (the front edge of a wide base, sub-pixel) is clamped
+    to the stamp height: bigger than any sprite row means "in front of the piece", which is what
+    the runtime needs, and the baker rejects values outside the sprite."""
     d = np.array(depth).astype(np.int32)
     valid = d[..., 2] >= 128
     raw = d[..., 0] * 256 + d[..., 1]
-    local = np.clip(np.rint((raw - int(y0)) * scale_y + oy), 0, 65535).astype(np.int32)
+    local = np.clip(np.rint((raw - int(y0)) * scale_y + oy), 0, max_y).astype(np.int32)
     out = np.zeros_like(d)
     out[..., 0] = np.where(valid, local >> 8, 0)
     out[..., 1] = np.where(valid, local & 255, 0)
@@ -131,7 +134,7 @@ def process(name, cfg, d, out_root):
         foot = Image.new("L", (cw, ch)); foot.paste(fi, (ox, oy))
     else:
         foot = nearest("collision.png", "L").point(lambda v: 255 if v > 127 else 0)
-    depth = sprite_depth(nearest("occlusion_depth.png", "RGB"), y0, nh / bh, oy)
+    depth = sprite_depth(nearest("occlusion_depth.png", "RGB"), y0, nh / bh, oy, ch)
 
     od = os.path.join(out_root, name); os.makedirs(od, exist_ok=True)
     color.save(os.path.join(od, "color.png")); foot.save(os.path.join(od, "footprint.png"))

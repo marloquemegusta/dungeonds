@@ -2,15 +2,15 @@
 
 Primero el estado necesario para retomar el trabajo sin depender del chat; después, las entregas recientes verificadas (más nueva al final). El historial hasta 2026-10-21 está en `STATUS-ARCHIVE.md`.
 
-## Estado actual (2026-11-11)
+## Estado actual (2026-11-12)
 
-- **Concepto de la demo (2026-11-11, solo diseño):** personaje láser, enemigos con aspecto nuevo, dos élites a probar y jefe (paso procesional) en `DESIGN.md` §6.10. Se sigue con **El Corazón Abierto**: el usuario tiene modelo y animación de carga y su consolidación (lab, animaciones, efectos) es la siguiente sesión. Prompts y pendientes: `walkthroughs/concepto-demo-personajes/`.
+- **El Corazón Abierto, héroe (2026-11-12, rama `feat/corazon-abierto`, sin mergear a `main`):** sustituye al marine. Andar de Mixamo, carga/disparo con brazos en cruz, rayo desde el pecho, haz «fuego» y cuatro auras de carga en comparación (`Y`: llamas, resplandor, espinas, ceniza). Integrada la catedral v2 de `main`. Bloquean el merge: medir 60 FPS en la DS con `PERF_PROFILE` y elegir aura. Detalle: `walkthroughs/corazon-abierto/`; diseño en `DESIGN.md` §6.10.
 - **v0.3.1 cerrada (2026-11-07, `walkthroughs/v031-tuning/`):** tres tiers de enemigos (esqueleto, cargador que carga, tirador láser), escala de cifras 100 = 1,0 y pulido de suelo y marea. Jugada en la DS: rendimiento bien y el juego se siente mucho mejor. Pool de 24; el techo 32/48 y el log de `PERF_PROFILE` no se hicieron (`DESIGN.md` §6.9.1, "Valores de la 0.3.1").
 - **Props: oclusión y colisión resueltas (2026-11-10).** La profundidad de los props estaba en píxeles del render fuente, no en píxeles de mundo. Además, los bancos toman ahora como huella toda su planta. El usuario lo probó en la DS y lo dio por bueno. Detalle: `walkthroughs/props-depth-units/`.
 - **Lectura tras muros:** retirados el parpadeo alterno, la transparencia condicionada de enemigos, la sombra del jugador sobre el muro y la línea negra de borde de colisión. `cathedral-playground-perf` se subió como `dungeonds.nds` (2.009.088 bytes, rama `feat/muros-catedral`, commit base `2def813`) y el usuario la jugó. Las capturas de una columna solo acreditan ese caso. Detalle: `walkthroughs/remove-wall-through-effects/`.
-- **0.3.2 (escenario de catedral) abierta:** la primera pasada de muros, lancetas, crucero y godrays está en ROM. El usuario considera buenos el rendimiento y la estética general, pero no aprueba la distribución de bancos y estatuas. Diagnóstico y pendientes: `walkthroughs/catedral-cierre/`.
+- **0.3.2 (escenario de catedral) abierta:** la primera pasada de muros, lancetas, crucero y godrays está en ROM. El usuario considera buenos el rendimiento y la estética general, pero no aprueba la distribución de bancos y estatuas. Diagnóstico y pendientes: `walkthroughs/catedral-cierre/`. Actualización 2026-11-11: la distribución de bancos y estatuas se rehizo como compositor determinista; pendiente de aprobación visual del usuario y medición en DS.
 - **Godrays:** integrados en las variantes `cathedral-playground` y `cathedral-playground-perf`; el usuario los considera prácticamente resueltos. Falta la certificación final de rendimiento con log en DS según `DESIGN.md` §6.9.1b.
-- **Siguiente sesión de catedral:** los pasos restantes, uno por sesión y con un brief para Luna cada uno, están en `walkthroughs/catedral-siguientes-pasos/`: banco de pruebas de props, redistribución de bancos y estatuas (necesita antes la decisión del usuario), emisores de godrays, presupuesto del kit (hoy 1.024 de 1.024 tiles) y certificación final en la DS. La 0.3.3 de sprites va después.
+- **Catedral 0.3.2 v2 (2026-11-12, `walkthroughs/catedral-v2-salon/`):** planta de salón con el muro 3D del usuario, lápidas v5 encajadas en el damero, compositor por pantalla (columnas con velas, bancadas o relicario, lápidas) y godrays desde la cara del muro. Rebase preparado por trozos: medido en la DS, peor frame al 72 % y sin parpadeo. Herramienta de diseño: `tools/catedral_editor/editor.html`. Pendientes: escala de piezas, caballero más legible y variedad de tramos. `walkthroughs/distribucion-catedral/BRIEFING-SIGUIENTE.md` queda sustituido.
 - **v0.3 mínima jugable (2026-11-06, `walkthroughs/v03-minima/`):** la ROM principal arranca en la franja vertical infinita con horda desde arriba, marea, curas y HUD de altura (`DESIGN.md` §6.0). 60 FPS en la DS con el pool de 24. **Cerrada.** El resto de §6 (gemas, mejoras, élites, jefes) sigue sin código y está repartido por versiones en `DESIGN.md` §6.9.
 - **Dirección vigente (v0.3, decidida 2026-11-06):** survivors de frente vertical con apuntado manual. Un nivel de ~8 min en una franja vertical que se sube mientras una marea avanza desde abajo, horda continua, gemas → nivel → elegir 1 de 3 mejoras, élites, minijefe y jefe, y clase = arma (francotirador/láser y escopeta). Diseño en `DESIGN.md` §6; requisitos técnicos en `TECHNICAL.md` §4.7. Sesión: `walkthroughs/survivors-direction/`.
 - **Rama base:** `main`, con v0.1 (`walkthroughs/v0.1/`) y v0.2 (`walkthroughs/v0.2/`) integradas. La v0.2 se integró con la deuda de rendimiento anotada abajo.
@@ -18,7 +18,7 @@ Primero el estado necesario para retomar el trabajo sin depender del chat; despu
 - **Juego (v0.1, base de la v0.2; sustituida por la mazmorra):** prueba de diversión en 4 arenas cerradas de 384×384 px encadenadas (`DESIGN.md` §4): escopeta + francotirador, cargador (con navegación BFS) + tirador (telegraph y ráfagas de 3). Pendiente la Fase E: tuning y 60 FPS certificados en la DS.
 - **Arenas:** datos en `assets/arenas/arenas.json`; generador de modelos, export con el lab y baker (`tools/make_arena_glb.py`, `tools/export_arenas.py`, `tools/bake_arena.py`) descritos en `TECHNICAL.md` §3. El mapa grande `isometric_shooter_bl` ya no se usa.
 - **Render:** actores dibujados directamente en la página trasera del framebuffer de VRAM, limpieza por spans sucios y oclusión exacta al píxel por consulta de tramos (`TECHNICAL.md` §3.3). Medido en DS: CPU 1,58 ms de media y 12 de 2520 frames con más de un vblank.
-- **Personajes:** héroe (space marine), charger y necron, exportados por el lab a `assets/sprites/characters/<nombre>/`.
+- **Personajes:** héroe (Corazón Abierto en `feat/corazon-abierto`; space marine en `main`), charger y necron, exportados por el lab a `assets/sprites/characters/<nombre>/`. El lab puede tomar el `muzzle` de un hueso (`--muzzleBone`).
 - **Sin existir en código:** iluminación dinámica, niebla de guerra.
 - **Herramientas de diagnóstico en DS:** `PERF_PROFILE` (`include/perfprof.h`, log `/dungeonds_perf.log`) y `crashlog` (`CRASHLOG_ENABLED`, logs `/dungeonds_crash.log` y `/dungeonds_live.log`). Ambas apagadas por defecto; se leen con `fetch-device-log.ps1` de la skill.
 
@@ -215,3 +215,38 @@ El láser de apuntado se colima durante la carga (ancho, difuso y rojo a 1 px ve
 ## 2026-11-11 - Concepto de personaje, enemigos, élites y jefe de la demo (`main`, solo documentación)
 - **Decidido:** el rayo del personaje es un milagro que le quema el cuerpo; se continúa con El Corazón Abierto (El Lector y La Custodia en reserva). Enemigos base con aspecto nuevo y misma FSM, élites Portaestandarte y Exorcista hueco, jefe paso procesional (`DESIGN.md` §6.10).
 - **Detalle y prompts de Gemini:** [`walkthroughs/concepto-demo-personajes/`](walkthroughs/concepto-demo-personajes/walkthrough.md).
+
+## 2026-11-12 - Animaciones del Cireneo con la cruz (`feat/anim-cireneo`)
+- **Hecho:** script de Blender `tools/characters/build_cireneo.py` que pega la cruz al hueso `Spine2`, fija los brazos sobre el travesaño y genera andar, carga, telegrafía y atascado a partir del modelo de Tripo. Los FBX resultantes no se versionan (se regeneran en ~5 s).
+- **Verificación:** hojas de contacto en Blender y export del lab en las 8 direcciones a 40 px, con luz `neutral`; la cruz se lee bien. Sin integrar en el juego ni medir en DS.
+- **Detalle:** [`walkthroughs/anim-cireneo/`](walkthroughs/anim-cireneo/walkthrough.md).
+
+### Catedral 0.3.2: compositor de la nave (2026-11-11)
+
+- **Qué:** el reparto aleatorio de piezas se sustituye por un compositor determinista (tramo de 256 px, ciclo de 4 tramos, columnata junto a los muros, bancadas en grupos de 4–6 bancos pegados y centrados, barricada de sacos y crucero). Piezas nuevas: `banco_entero`, `sacos` y `columna_entera`. Se retira el rosetón pintado en el suelo y se arregla la sombra cortada de la columna entera. Reglas en `DESIGN.md` §6.9.1b.
+- **Verificación:** kit 851/1.024 tiles, ventana 351, oclusión 15.624 (antes 4.117); build sin warnings; paridad C == Python; 5 escenarios de catedral PASS; el único test de host que falla (`test_strip_kit`) ya fallaba en `main`. **No medido en la DS:** la oclusión sube 3,8 veces y hay que certificar los 60 FPS antes de merge (`AGENTS.md`, regla 6).
+- **Detalle y pendientes:** [`walkthroughs/distribucion-catedral/`](walkthroughs/distribucion-catedral/walkthrough.md) y [`BRIEFING-SIGUIENTE.md`](walkthroughs/distribucion-catedral/BRIEFING-SIGUIENTE.md).
+
+### Catedral 0.3.2 v2: planta de salón y rebase sin tirones (2026-11-12)
+
+- **Qué:**
+  - Planta de salón con el muro 3D `gothic_arch` del usuario y luz que entra desde la cara del muro.
+  - Lápidas v5: la piedra sustituye bloques de 3×2 o 2×1 losas, a ras del suelo, con los surcos oscurecidos y dos estampas por color del damero.
+  - Compositor v2 por pantalla, en bloques de 2 pantallas: columnas con velas, bancadas en grupos de 4 o relicario, y lápidas sueltas o en escalera.
+  - Editor de planta `tools/catedral_editor/`.
+  - Rebase de 768 px preparado por trozos, sin `qsort` y sin vaciar la caché de tiles.
+  - Limpieza de 372 assets viejos.
+  - Reglas en `DESIGN.md` §6.9.1b.
+- **Verificación:**
+  - 13 tests de host, incluida la equivalencia bit a bit del rebase.
+  - 4 variantes compiladas sin warnings.
+  - 8 escenarios PASS.
+  - Kit de 857 de 1.024 tiles y peor ventana de 379.
+  - **DS:** peor frame 406.000 de 560.190 ticks (72 %) y media del 26 %. Ningún frame perdido por el juego: los perdidos coinciden con la escritura del log en la SD. El usuario confirma que no parpadea.
+- **Detalle:** [`walkthroughs/catedral-v2-salon/`](walkthroughs/catedral-v2-salon/walkthrough.md).
+
+## 2026-11-12 - El Corazón Abierto como héroe (`feat/corazon-abierto`)
+- **Entrega:** héroe nuevo con andar de Mixamo adaptado (cadera en el sitio), clip de disparo que al revés hace de carga, `muzzle` en el pecho desde el hueso `Spine2`, haz «fuego» del francotirador y cuatro auras de carga para comparar (`Y`). Rama al día con `main` (catedral v2 y Cireneo).
+- **Verificación:** 4 variantes sin warnings; 222 tests de Python y 10 de host; 14 escenarios PASS (héroe y catedral). ROM subida a la DS sin `PERF_PROFILE` para jugarla.
+- **Pendiente:** medición en la DS (regla 6), elección de aura, chispa de impacto propia del rayo.
+- **Detalle:** [`walkthroughs/corazon-abierto/`](walkthroughs/corazon-abierto/walkthrough.md).

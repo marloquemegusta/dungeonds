@@ -9,8 +9,7 @@
 
 #define GODRAY_OAM_LIMIT 128
 #define GODRAY_PIECE_LIMIT 96
-#define GODRAY_PERIOD 256
-#define GODRAY_ANCHOR 64
+#define GODRAY_SCREEN 192
 #define GODRAY_SLOT_COUNT 3
 
 static uint32_t s_frame;
@@ -84,25 +83,37 @@ static void hide_remaining(OamState *oam, int first) {
         oam->oamMemory[id].attribute[0] = ATTR0_DISABLED;
 }
 
+// Integer hash of a screen index: stable side, height and ray per screen.
+static uint32_t screen_hash(int screen) {
+    uint32_t x = (uint32_t)screen;
+    uint32_t h = x * 0x9E3779B1u;
+    h ^= h >> 15;
+    return h;
+}
+
 static int render_screen(OamState *oam, uint8_t *gfx_base, int camera_x,
                          int camera_y, int sub, int tide_visible) {
     int id = 0;
-    int abs_camera_y = camera_y + strip_shift_total_px();
-    int first_period = floor_div(abs_camera_y - GODRAY_ANCHOR - 128, GODRAY_PERIOD);
+    // Physical world line A = camera_y - shift is invariant under a rebase
+    // (shift and camera_y move together), so a ray at world y W is drawn at
+    // ray_y = W - A = screen*GODRAY_SCREEN + off + shift - camera_y.
+    int shift = (int)strip_shift_total_px();
+    int A = camera_y - shift;
+    int first_screen = floor_div(A, GODRAY_SCREEN) - 1;
     int dust_x[GODRAY_SLOT_COUNT];
     int dust_y[GODRAY_SLOT_COUNT];
     int dust_palette[GODRAY_SLOT_COUNT];
     int dust_count = 0;
 
     for (int slot = 0; slot < GODRAY_SLOT_COUNT && id < GODRAY_PIECE_LIMIT; slot++) {
-        int period = first_period + slot;
-        int abs_y = period * GODRAY_PERIOD + GODRAY_ANCHOR;
-        int ray_y = abs_y - strip_shift_total_px() - camera_y;
+        int screen = first_screen + slot;
+        uint32_t h = screen_hash(screen);
+        int hflip = (int)(h & 1u);
+        int off = (int)((h >> 8) % 96u);
+        int ray_y = screen * GODRAY_SCREEN + off + shift - camera_y;
         if (ray_y > 192 || ray_y < -128) continue;
-        int ray = period % GODRAY_RAY_COUNT;
-        if (ray < 0) ray += GODRAY_RAY_COUNT;
-        int hflip = (period & 1) != 0;
-        int ray_x = hflip ? 240 : 16;
+        int ray = (int)((h >> 4) % (uint32_t)GODRAY_RAY_COUNT);
+        int ray_x = hflip ? 208 : 48;
         const GodrayRange range = g_godray_ranges[ray];
         int visible_piece = 0;
         for (unsigned p = 0; p < range.piece_count && id < GODRAY_PIECE_LIMIT; p++) {

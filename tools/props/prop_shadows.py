@@ -44,6 +44,10 @@ CAM_AZIMUTH = 135.0           # en el marco del GLB; ver la calibracion en la ca
 CAM_ELEVATION = 30.0          # props_render_settings.json, cameraElevationDegrees
 KEY_ELEVATION = 55.0          # applyBlenderLighting del lab (SPRITE_KEY_ROT[0]), key de los cuerpos
 KEY_AZIMUTH = 30.0            # applyBlenderLighting del lab (SPRITE_KEY_ROT[1])
+# Una pieza alta proyecta una sombra mas larga que el lienzo que puede ocupar (el borde izquierdo de
+# la estampa no puede salir de su retícula). `shadow_elevation` en props.json sube el sol SOLO para
+# esa pieza: menos desplazamiento horizontal y la sombra cabe entera en el lienzo sin cortarse recta.
+# Es el angulo respecto a la vertical (como dungeonLightPosition): menor = sol mas alto = sombra mas corta.
 SUPERSAMPLE = 4
 COMP = {5120: "b", 5121: "B", 5122: "h", 5123: "H", 5125: "I", 5126: "f"}
 NCOMP = {"SCALAR": 1, "VEC2": 2, "VEC3": 3, "VEC4": 4}
@@ -118,7 +122,14 @@ def raster(xy, tris, size, ss=SUPERSAMPLE):
     return cov >= 127.5
 
 
-LIGHT = key_light_direction(KEY_ELEVATION, KEY_AZIMUTH)
+def project_shadow(verts, tris, right, up, canvas, elevation):
+    """Cada vertice cae a lo largo de la luz sobre el plano del suelo; devuelve los triangulos ya
+    en coordenadas de lienzo."""
+    light = key_light_direction(elevation, KEY_AZIMUTH)
+    ground = verts[:, 1].min()
+    lift = (verts[:, 1] - ground) / light[1]
+    on_ground = verts - lift[:, None] * light[None, :]
+    return canvas(np.stack([on_ground @ right, on_ground @ up], 1))
 
 
 def process(name, dry_run=False):
@@ -127,6 +138,8 @@ def process(name, dry_run=False):
     folder = os.path.join(RENDER, name)
     meta_path = os.path.join(folder, "meta.json")
     meta = json.load(open(meta_path, encoding="utf-8"))
+    cfg = json.load(open(PROPS_JSON, encoding="utf-8")).get(name, {})
+    elevation = cfg.get("shadow_elevation", KEY_ELEVATION)
     color = Image.open(os.path.join(folder, "color.png")).convert("RGBA")
     cw, ch = color.size
     if meta["size_px"] != [cw, ch]:
@@ -151,15 +164,17 @@ def process(name, dry_run=False):
     obj = raster(canvas(scr), tris, (cw, ch))
     iou = float((obj & alpha).sum() / max((obj | alpha).sum(), 1))
 
-    # Sombra: cada vertice cae a lo largo de la direccion de la luz sobre el plano del suelo (y = min y).
-    light = LIGHT
-    ground = verts[:, 1].min()
-    lift = (verts[:, 1] - ground) / light[1]
-    on_ground = verts - lift[:, None] * light[None, :]
-    shadow_xy = canvas(np.stack([on_ground @ right, on_ground @ up], 1))
+    shadow_xy = project_shadow(verts, tris, right, up, canvas, elevation)
 
     x_min, y_min = shadow_xy.min(0)
     x_max, y_max = shadow_xy.max(0)
+    # El lienzo no puede crecer mas alla de un margen de 8 px a la izquierda del cuerpo: la estampa
+    # se coloca en x_tile 8/48 y su borde izquierdo no puede salir de la retícula. Si la sombra no
+    # cabe, no se trunca en silencio: se aborta pidiendo subir el sol (`shadow_elevation`).
+    if x_min < -7.5:
+        raise ValueError(
+            f"{name}: la sombra llega a x={x_min:.2f} px y no cabe en el margen de 8 px del lienzo "
+            f"(elevacion {elevation}); sube `shadow_elevation` en tools/props/props.json")
     x0 = floor8(min(0, math.floor(x_min)))
     y0 = floor8(min(0, math.floor(y_min)))
     x1 = ceil8(max(cw, math.ceil(x_max)))
