@@ -36,16 +36,16 @@ typedef struct {
 
 extern const WeaponTuning g_weapon_tuning[NUM_WEAPON_TYPES];
 
-// DESIGN.md 4.9: debug-only global effects style (0 = A, 1 = B, 2 = C) used to compare
-// the weapon-effect variants on the console. SELECT cycles it; removed once one is chosen.
+// DESIGN.md 4.9: debug-only effects style (0 = A, 1 = B, 2 = C) for the shotgun and the grenade, to
+// compare their variants on the console. SELECT cycles it. The sniper always uses C (fuego, DESIGN.md 6.10).
 #define FX_STYLE_COUNT 3
 extern int g_fx_style;
 char weapons_fx_style_letter(void);
 
-// DESIGN.md 4.9 (debug): sniper charge aura look: K (lightning rays, default), C (bolt crown) or
-// V (vertical sparks). KEY_Y cycles them; the sandbox sets it from its flags.
-#define AURA_STYLE_COUNT 3
-enum { AURA_STYLE_K = 0, AURA_STYLE_C = 1, AURA_STYLE_V = 2 };
+// DESIGN.md 4.9 (debug): sniper charge aura look. 0 = L (flames, F2, default), 1 = G (glow from the chest),
+// 2 = E (thorn crown on the floor), 3 = H (ash). KEY_Y cycles them; the sandbox sets it from flag bits 3-4.
+#define AURA_STYLE_COUNT 4
+enum { AURA_STYLE_L = 0, AURA_STYLE_G = 1, AURA_STYLE_E = 2, AURA_STYLE_H = 3 };
 extern int g_aura_style;
 char weapons_aura_style_letter(void);
 
@@ -91,6 +91,9 @@ void weapons_shift_y(int dy_px);
 void weapons_cycle(PlayerState *player);
 // True when a stylus press would start a sniper aim (the player must stop that frame).
 int weapons_can_start_aim(const PlayerState *player);
+// Sniper charge for the hero's animation: 1 while AIMING or READY, and the collimation progress 0..256.
+int weapons_aim_charging(void);
+int weapons_aim_progress(void);
 int weapons_input(PlayerState *player, const WeaponInput *in, Enemy *enemies, int max_enemies);
 void weapons_update(Enemy *enemies, int max_enemies);
 // An enemy died: the "sed de sangre" modifier readies the shotgun at once.

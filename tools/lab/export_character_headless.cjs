@@ -6,7 +6,10 @@
 //
 // usage: node export_character_headless.cjs <model.fbx> <outDir> [--template settings.json]
 //          [--anim "<clip name>"] [--rigScale N] [--light <preset>] [--outline <pixel|sobel|none>]
-//          [--saturation N] [--list]
+//          [--saturation N] [--muzzleBone <bone name>] [--muzzleForward F] [--fitZoom Z] [--list]
+//   --muzzleBone  no weapon: the muzzle (projected into dirMuzzle) is taken from this bone, pushed F model
+//                 heights along the model front (+Z). Without it the muzzle is the weapon tip (or none).
+//   --fitZoom Z   camera zoom-out factor: 1 fills the cell with the model extent; < 1 shrinks the sprite.
 //   --list  prints the animation clips and exits without rendering.
 const fs = require('node:fs');
 const path = require('node:path');
@@ -20,7 +23,7 @@ if (!chromium) { console.error('Playwright not found'); process.exit(1); }
 
 const argv = process.argv.slice(2);
 const opt = (n) => { const i = argv.indexOf(n); return i >= 0 ? argv[i + 1] : undefined; };
-const flagVals = new Set(['--template', '--anim', '--rigScale', '--light', '--outline', '--saturation']);
+const flagVals = new Set(['--template', '--anim', '--rigScale', '--light', '--outline', '--saturation', '--muzzleBone', '--muzzleForward', '--fitZoom']);
 const pos = argv.filter((a, i) => !a.startsWith('--') && !(i > 0 && flagVals.has(argv[i - 1])));
 const listOnly = argv.includes('--list');
 const model = pos[0] && path.resolve(pos[0]);
@@ -58,8 +61,11 @@ const HTML = path.join(__dirname, 'FBX-Web-Renderer-offline.html');
     const lightPreset = opt('--light') || s.lightPreset || (s.lighting && s.lighting.preset);
     const outlineMode = opt('--outline') || s.outlineMode;
     const saturation = opt('--saturation') !== undefined ? parseFloat(opt('--saturation')) : s.saturation;
+    const muzzleBone = opt('--muzzleBone');
+    const muzzleForward = opt('--muzzleForward') !== undefined ? parseFloat(opt('--muzzleForward')) : undefined;
+    const fitZoom = opt('--fitZoom') !== undefined ? parseFloat(opt('--fitZoom')) : undefined;
 
-    const setup = await page.evaluate(async ({ s, anim, rigScale, lightPreset, outlineMode, saturation }) => {
+    const setup = await page.evaluate(async ({ s, anim, rigScale, lightPreset, outlineMode, saturation, muzzleBone, muzzleForward, fitZoom }) => {
       const set = (id, v) => {
         const el = document.getElementById(id);
         if (!el || v === undefined || v === null) return;
@@ -97,6 +103,9 @@ const HTML = path.join(__dirname, 'FBX-Web-Renderer-offline.html');
       const lab = window.__spriteLab;
       lab.supersample = s.supersample || lab.supersample;
       if (typeof rigScale === 'number') lab.rigScale = rigScale;
+      lab.muzzleBone = muzzleBone || null;
+      if (typeof muzzleForward === 'number') lab.muzzleForward = muzzleForward;
+      lab.fitZoom = typeof fitZoom === 'number' ? fitZoom : 1;
       const sel = document.getElementById('animSelect');
       const idx = Array.from(sel.options).findIndex(o => o.textContent === anim);
       if (idx < 0) return { ok: false };
@@ -111,7 +120,7 @@ const HTML = path.join(__dirname, 'FBX-Web-Renderer-offline.html');
         keyLight: document.getElementById('keyLight')?.value,
         keyColor: document.getElementById('keyColor')?.value
       };
-    }, { s, anim, rigScale, lightPreset, outlineMode, saturation });
+    }, { s, anim, rigScale, lightPreset, outlineMode, saturation, muzzleBone, muzzleForward, fitZoom });
     if (!setup.ok) { console.error(`animation "${anim}" not found`); process.exitCode = 1; return; }
     console.log('Setup applied: ' + JSON.stringify(setup));
     await page.waitForTimeout(1000);
@@ -143,6 +152,8 @@ const HTML = path.join(__dirname, 'FBX-Web-Renderer-offline.html');
         const outData = JSON.parse(fs.readFileSync(outSettings, 'utf8'));
         if (lightPreset) outData.lightPreset = lightPreset;
         if (outlineMode) outData.outlineMode = outlineMode;
+        if (muzzleBone) outData.muzzleSource = { bone: muzzleBone, forward: muzzleForward ?? 0.05 };
+        if (fitZoom !== undefined) outData.fitZoom = fitZoom;
         fs.writeFileSync(outSettings, JSON.stringify(outData, null, 2) + '\n');
       } catch (e) {
         console.warn('Could not update exported settings.json with light/outline:', e.message);

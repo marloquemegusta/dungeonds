@@ -182,40 +182,90 @@ static inline int player_screen_y(fixed x, fixed y) {
 
 static uint8_t s_char_frame_bounds[NUM_CHARACTERS][PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4];
 static uint8_t s_char_ground_anchor[NUM_CHARACTERS][PLAYER_NUM_DIRS];
+static uint8_t s_hero_shot_frame_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4];
+
+// Bounds [min_x, min_y, w, h] of the opaque pixels of one 40x40 frame.
+static void measure_frame_bounds(const uint16_t *src, uint8_t *out) {
+    int min_x = PLAYER_SPRITE_W, max_x = -1;
+    int min_y = PLAYER_SPRITE_H, max_y = -1;
+    for (int y = 0; y < PLAYER_SPRITE_H; y++) {
+        for (int x = 0; x < PLAYER_SPRITE_W; x++) {
+            if (src[y * PLAYER_SPRITE_W + x] & BIT(15)) {
+                if (x < min_x) min_x = x;
+                if (x > max_x) max_x = x;
+                if (y < min_y) min_y = y;
+                if (y > max_y) max_y = y;
+            }
+        }
+    }
+    if (max_x < min_x) {
+        out[0] = 0;
+        out[1] = 0;
+        out[2] = 0;
+        out[3] = 0;
+    } else {
+        out[0] = (uint8_t)min_x;
+        out[1] = (uint8_t)min_y;
+        out[2] = (uint8_t)(max_x - min_x + 1);
+        out[3] = (uint8_t)(max_y - min_y + 1);
+    }
+}
 
 static void init_char_sprite_data(void) {
     for (int c = 0; c < NUM_CHARACTERS; c++) {
         for (int d = 0; d < PLAYER_NUM_DIRS; d++) {
-            for (int f = 0; f < PLAYER_NUM_FRAMES; f++) {
-                const uint16_t *src = g_character_frames[c][d][f];
-                int min_x = PLAYER_SPRITE_W, max_x = -1;
-                int min_y = PLAYER_SPRITE_H, max_y = -1;
-                for (int y = 0; y < PLAYER_SPRITE_H; y++) {
-                    for (int x = 0; x < PLAYER_SPRITE_W; x++) {
-                        if (src[y * PLAYER_SPRITE_W + x] & BIT(15)) {
-                            if (x < min_x) min_x = x;
-                            if (x > max_x) max_x = x;
-                            if (y < min_y) min_y = y;
-                            if (y > max_y) max_y = y;
-                        }
-                    }
-                }
-                if (max_x < min_x) {
-                    s_char_frame_bounds[c][d][f][0] = 0;
-                    s_char_frame_bounds[c][d][f][1] = 0;
-                    s_char_frame_bounds[c][d][f][2] = 0;
-                    s_char_frame_bounds[c][d][f][3] = 0;
-                } else {
-                    s_char_frame_bounds[c][d][f][0] = (uint8_t)min_x;
-                    s_char_frame_bounds[c][d][f][1] = (uint8_t)min_y;
-                    s_char_frame_bounds[c][d][f][2] = (uint8_t)(max_x - min_x + 1);
-                    s_char_frame_bounds[c][d][f][3] = (uint8_t)(max_y - min_y + 1);
-                }
-            }
+            for (int f = 0; f < PLAYER_NUM_FRAMES; f++)
+                measure_frame_bounds(g_character_frames[c][d][f], s_char_frame_bounds[c][d][f]);
             s_char_ground_anchor[c][d] = g_character_ground_anchors[c][d];
         }
     }
+    for (int d = 0; d < PLAYER_NUM_DIRS; d++)
+        for (int f = 0; f < PLAYER_NUM_FRAMES; f++)
+            measure_frame_bounds(g_player_shot_frames[d][f], s_hero_shot_frame_bounds[d][f]);
+}
 
+// ---------------------------------------------------------------------------
+// Hero shot clip (DESIGN.md "Carga y disparo"): charging plays the clip backwards from the
+// progress; a shot plays f0 -> f7 at SHOT_FRAME_TICKS game frames per clip frame.
+// ---------------------------------------------------------------------------
+
+#define SHOT_FRAME_TICKS 3
+#define SHOT_LAST_FRAME (PLAYER_NUM_FRAMES - 1)
+
+static int s_hero_clip_frame = -1;  // clip frame drawn and used for the muzzle; -1 = walk or rest pose
+static int s_shot_active = 0;       // the recovery after a sniper shot is playing
+static int s_shot_frame = 0;
+static int s_shot_sub = 0;          // game frames spent on s_shot_frame
+
+// Recovery counter, once per game frame.
+static void shot_clip_step(void) {
+    if (!s_shot_active) return;
+    if (++s_shot_sub < SHOT_FRAME_TICKS) return;
+    s_shot_sub = 0;
+    if (++s_shot_frame > SHOT_LAST_FRAME) s_shot_active = 0;
+}
+
+// Charge: frame = 7 - ((prog * 7) >> 8). Progress 0 shows f7 (collapsed), READY (256) shows f0.
+static int hero_charge_frame(void) {
+    if (!weapons_aim_charging()) return -1;
+    int prog = weapons_aim_progress();
+    if (prog < 0) prog = 0;
+    if (prog > 256) prog = 256;
+    return SHOT_LAST_FRAME - ((prog * SHOT_LAST_FRAME) >> 8);
+}
+
+// Clip frame for this game frame, or -1 for the walk / rest pose. A charge wins over a recovery.
+static int hero_clip_frame(void) {
+    if (s_player.char_id != CHAR_HERO || g_player_state.is_dead) {
+        s_shot_active = 0;
+        return -1;
+    }
+    int charge = hero_charge_frame();
+    if (charge >= 0) {
+        s_shot_active = 0;
+        return charge;
+    }
+    return s_shot_active ? s_shot_frame : -1;
 }
 
 // Runs of one world row are sorted by x; find the first that may reach cam_x.
@@ -562,14 +612,18 @@ static void draw_player(uint16_t *buffer, int cam_x, int cam_y) {
     int px = player_screen_x(s_player.x, s_player.y);
     int py = player_screen_y(s_player.x, s_player.y);
 
-    const uint8_t *b = s_char_frame_bounds[s_player.char_id][s_player.dir][s_player.frame];
+    const int clip = s_hero_clip_frame;
+    const uint8_t *b = clip >= 0 ? s_hero_shot_frame_bounds[s_player.dir][clip]
+                                 : s_char_frame_bounds[s_player.char_id][s_player.dir][s_player.frame];
     int bw = b[2];
     int bh = b[3];
     if (bw == 0 || bh == 0) return;
     int min_x = b[0];
     int min_y = b[1];
 
-    const uint16_t *frame = &g_character_frames[s_player.char_id][s_player.dir][s_player.frame][min_y * PLAYER_SPRITE_W + min_x];
+    const uint16_t *frame = clip >= 0
+        ? &g_player_shot_frames[s_player.dir][clip][min_y * PLAYER_SPRITE_W + min_x]
+        : &g_character_frames[s_player.char_id][s_player.dir][s_player.frame][min_y * PLAYER_SPRITE_W + min_x];
     int pitch = PLAYER_SPRITE_W;
     if (g_player_state.invuln_timer > 0 && ((g_player_state.invuln_timer >> 2) & 1)) {
         // Hit feedback: red flash while the i-frames run.
@@ -763,9 +817,14 @@ static void render_screen(uint16_t *buffer, DirtySpan *spans, int cam_x, int cam
     PP_T0(pp_shadow);
     for (int i = 0; i < count; i++) {
         if (items[i].ref == -1) {
-            draw_shadow_mask(buffer, g_character_shadow_masks[s_player.char_id][s_player.dir][s_player.frame],
+            const int clip = s_hero_clip_frame;
+            const uint8_t *shadow_mask = clip >= 0 ? g_player_shot_shadow_masks[s_player.dir][clip]
+                : g_character_shadow_masks[s_player.char_id][s_player.dir][s_player.frame];
+            const uint8_t *shadow_bounds = clip >= 0 ? g_player_shot_shadow_bounds[s_player.dir][clip]
+                : g_character_shadow_bounds[s_player.char_id][s_player.dir][s_player.frame];
+            draw_shadow_mask(buffer, shadow_mask,
                              PLAYER_SHADOW_W, PLAYER_SHADOW_H,
-                             g_character_shadow_bounds[s_player.char_id][s_player.dir][s_player.frame],
+                             shadow_bounds,
                              items[i].cx - PLAYER_SHADOW_W / 2,
                              items[i].cy - PLAYER_SHADOW_H / 2, cam_x, cam_y, items[i].depth);
         } else if (items[i].ref <= -2 &&
@@ -1278,7 +1337,9 @@ static void touch_track(int touch_down, int touch_x, int touch_y) {
 // Muzzle of the weapon for the current direction and frame: the lab exports it as
 // an offset from the ground anchor plus a height above the ground.
 static void player_muzzle(fixed *mx, fixed *my, int *mh) {
-    const int8_t *m = g_character_muzzle[s_player.char_id][s_player.dir][s_player.frame];
+    const int8_t *m = s_hero_clip_frame >= 0
+        ? g_hero_shot_muzzle[s_player.dir][s_hero_clip_frame]
+        : g_character_muzzle[s_player.char_id][s_player.dir][s_player.frame];
     *mx = s_player.x + TO_FIXED(m[0]);
     *my = s_player.y + TO_FIXED(m[1]);
     *mh = m[2];
@@ -1308,8 +1369,11 @@ static void player_update(uint32_t keys, uint32_t keys_down) {
     if (g_player_state.is_dead) {
         s_player.is_moving = 0;
         s_player.frame = 0;
+        s_shot_active = 0;
+        s_hero_clip_frame = -1;
         return;
     }
+    shot_clip_step();
 
     // Debug god mode for headless walk scenarios: hold L+R and press B.
     if ((keys & (KEY_L | KEY_R)) == (KEY_L | KEY_R) && (keys_down & KEY_B)) {
@@ -1340,11 +1404,11 @@ static void player_update(uint32_t keys, uint32_t keys_down) {
     }
     // Playground ROM: R puts the parked dummies back (no-op in every other build).
     if (keys_down & KEY_R) sandbox_respawn();
-    // DESIGN.md 4.9 (debug): SELECT cycles the weapon-effects style A/B/C for the comparison.
+    // DESIGN.md 4.9 (debug): SELECT cycles the shotgun and grenade effects style A/B/C (the sniper is always C).
     if (keys_down & KEY_SELECT) {
         g_fx_style = (g_fx_style + 1) % FX_STYLE_COUNT;
     }
-    // DESIGN.md 4.9 (debug): Y cycles the sniper charge aura look K -> C -> V for the comparison.
+    // DESIGN.md 4.9 (debug): Y cycles the sniper charge aura look L -> G -> E -> H for the comparison.
     if (keys_down & KEY_Y) {
         g_aura_style = (g_aura_style + 1) % AURA_STYLE_COUNT;
     }
@@ -1420,6 +1484,7 @@ static void player_update(uint32_t keys, uint32_t keys_down) {
         s_player.is_moving = moved;
         if (!moved) s_blocked_moves++;
         if (moved) {
+            s_shot_active = 0;      // walking during the recovery cuts the shot clip
             s_player.anim_timer++;
             if (s_player.anim_timer >= current_period) {
                 s_player.anim_timer = 0;
@@ -1454,10 +1519,18 @@ static void player_update(uint32_t keys, uint32_t keys_down) {
         s_player.dir = aim_dir_from_screen(in.touch_x - player_screen_x(s_player.x, s_player.y),
                                            in.touch_y - (player_screen_y(s_player.x, s_player.y) - AIM_CHEST_H));
     }
+    s_hero_clip_frame = hero_clip_frame();
     player_muzzle(&in.muzzle_x, &in.muzzle_y, &in.muzzle_h);
 
     int result = weapons_input(&g_player_state, &in, g_enemies, MAX_ENEMIES);
     s_rooted = (result & WEAPON_RESULT_ROOTED) != 0;
+    if ((result & WEAPON_RESULT_FIRED) && g_player_state.current_weapon == WEAPON_SNIPER) {
+        // The shot: the recovery plays the clip from f0 (arms crossed) to f7 (collapsed).
+        s_shot_active = 1;
+        s_shot_frame = 0;
+        s_shot_sub = 0;
+        s_hero_clip_frame = 0;
+    }
     if (result & WEAPON_RESULT_FIRED) {
         // Recoil: a short kick opposite to the shot.
         fixed dir_x, dir_y;

@@ -8,8 +8,8 @@ SPRITES = (ROOT / "source" / "player_sprite.c").read_text(encoding="utf-8")
 HEADER = (ROOT / "include" / "player_sprite.h").read_text(encoding="utf-8")
 CHAR_DIR = ROOT / "assets" / "sprites" / "characters"
 # Order of the C tables (NUM_CHARACTERS): hero, charger, necron, skeleton.
-CHARACTERS = ["marine", "charger", "necron", "skeleton"]
-ARMED = ["marine", "necron"]
+CHARACTERS = ["corazon", "charger", "necron", "skeleton"]
+ARMED = ["corazon", "necron"]
 TOLERANCE = 2
 
 

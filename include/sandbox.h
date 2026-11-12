@@ -33,7 +33,7 @@
 #define SANDBOX_FLAG_FREEZE_AI 2   // enemies keep their place (hits still hurt, shove and kill)
 #define SANDBOX_FLAG_GOD       4   // the player ignores damage
 // Sniper charge aura look (g_aura_style, AURA_STYLE_*) in flag bits 3-4: 8 = bit 0, 16 = bit 1.
-// 0 = K (default), 1 = C, 2 = V.
+// 0 = L (flames, default), 1 = G, 2 = E, 3 = H.
 #define SANDBOX_FLAG_AURA_SHIFT 3
 #define SANDBOX_FLAG_AURA_MASK  (3 << SANDBOX_FLAG_AURA_SHIFT)
 
