@@ -244,3 +244,8 @@ El láser de apuntado se colima durante la carga (ancho, difuso y rojo a 1 px ve
   - Kit de 857 de 1.024 tiles y peor ventana de 379.
   - **DS:** peor frame 406.000 de 560.190 ticks (72 %) y media del 26 %. Ningún frame perdido por el juego: los perdidos coinciden con la escritura del log en la SD. El usuario confirma que no parpadea.
 - **Detalle:** [`walkthroughs/catedral-v2-salon/`](walkthroughs/catedral-v2-salon/walkthrough.md).
+
+## 2026-11-12 - Cireneo v2 con acentos negro y rojo (`feat/cireneo-v2`)
+- **Decidido:** todos los personajes llevan acentos negros y rojos (`DESIGN.md` §6.10).
+- **Hecho:** el nuevo Cireneo y su cruz carbonizada reutilizan las animaciones de la v1, transfiriendo rotaciones en espacio de mundo (`tools/characters/build_cireneo_v2.py`). Hojas de contacto y lab a 40 px revisadas. Sin integrar en el juego.
+- **Detalle:** [`walkthroughs/cireneo-v2/`](walkthroughs/cireneo-v2/walkthrough.md).

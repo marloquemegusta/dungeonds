@@ -113,3 +113,4 @@ Resúmenes acumulativos y auditables de cada entrega y avance de desarrollo en `
 | 95 | Animaciones del Cireneo con la cruz (andar, carga, telegrafía, atascado) | [`anim-cireneo/`](anim-cireneo/walkthrough.md) | FBX generados por script y vistos en el lab; falta integrarlo en el juego |
 | 96 | Catedral 0.3.2: compositor de la nave (columnata, bancadas en grupos, barricada y crucero) | [`distribucion-catedral/`](distribucion-catedral/walkthrough.md) | Sustituido por la v2 (fila 97); su briefing de pendientes queda superado |
 | 97 | Catedral 0.3.2 v2: planta de salón, muro nuevo, lápidas v5, compositor por pantalla y rebase sin tirones | [`catedral-v2-salon/`](catedral-v2-salon/walkthrough.md) | Medido en DS: 60 FPS (peor frame 72 %); sin parpadeo. Pendientes en el walkthrough |
+| 96 | Cireneo v2 con acentos negro y rojo y las mismas animaciones | [`cireneo-v2/`](cireneo-v2/walkthrough.md) | FBX regenerados y vistos en el lab; sin integrar en el juego |
