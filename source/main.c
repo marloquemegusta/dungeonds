@@ -1136,25 +1136,27 @@ static void draw_run_hud(uint16_t *buffer) {
 // Presentation
 // ---------------------------------------------------------------------------
 
-static uint32_t present_both_screens(int top_cam_x, int top_cam_y,
-                                      int bot_cam_x, int bot_cam_y) {
+static void present_vblank_begin(void) {
     PP_T0(pp_vw);
     swiWaitForVBlank();
 #if defined(GODRAYS_PROTO) && GODRAYS_PROTO
     godrays_present();
 #endif
     PP_ADD(PP_VWAIT, pp_vw);
+    bgSetMapBase(s_bot_bg, s_bot_back_page);
+    int old_page = s_bot_active_page;
+    s_bot_active_page = s_bot_back_page;
+    s_bot_back_page = old_page;
+}
+
+static void present_hardware_bgs(int top_cam_x, int top_cam_y,
+                                 int bot_cam_x, int bot_cam_y) {
     PP_T0(pp_bs);
     update_screen_hardware_bg(1, s_top_map_ptr, top_cam_x, top_cam_y);
     PP_ADD(PP_BGSUB, pp_bs);
     PP_T0(pp_bb);
     update_screen_hardware_bg(0, s_bot_map_ptr, bot_cam_x, bot_cam_y);
     PP_ADD(PP_BGBOT, pp_bb);
-    bgSetMapBase(s_bot_bg, s_bot_back_page);
-    int old_page = s_bot_active_page;
-    s_bot_active_page = s_bot_back_page;
-    s_bot_back_page = old_page;
-    return 0;
 }
 
 // ---------------------------------------------------------------------------
@@ -1863,19 +1865,7 @@ int main(void) {
         int top_cam_x = view_x;
         int top_cam_y = view_y - SCREEN_H;
 
-        uint32_t top_ticks = 0;
-        // Both screens draw the same layers. The upper page is single buffered: it is drawn
-        // first, right after the logic, while the frame is still in or near VBlank.
-        uint32_t t_top = cpuGetTiming();
-        render_screen(s_top_page, s_dirty_top, view_x, view_y - SCREEN_H, &top_floor, &top_sh, &top_bl);
-        if (s_strip_mode) {
-            g_dirty_cur = s_dirty_top;
-            pickups_render(s_top_page, view_x, view_y - SCREEN_H);
-            tide_render_border(s_top_page, view_y - SCREEN_H);
-        }
-        top_ticks = cpuGetTiming() - t_top;
-
-        // The lower screen adds the HUD on top of the same layers.
+        // The lower screen is double buffered, so render it first during active display.
         uint32_t t2 = cpuGetTiming();
         CRASH_MARK(CL_RENDER_START, 0, 0);
         render_screen(bot_page_ptr(s_bot_back_page), s_dirty[s_bot_back_page == 24], view_x, view_y, &bot_floor, &bot_sh, &bot_bl);
@@ -1893,22 +1883,35 @@ int main(void) {
         PP_ADD(PP_HUD, pp_hud);
         uint32_t bot_ticks = cpuGetTiming() - t2;
 
-        // CPU rendering finished before waiting for VBlank
-        uint32_t cpu_ticks = cpuGetTiming() - frame_start_ticks;
-        PP_SET(PP_CPU, cpu_ticks);
+#if defined(GODRAYS_PROTO) && GODRAYS_PROTO
+        godrays_update(view_x, top_cam_y, view_y);
+#endif
+        uint32_t pre_vwait_cpu = cpuGetTiming() - frame_start_ticks;
         int vcount_done = REG_VCOUNT;
+
+        // Wait for VBlank, then immediately flip the bottom page and draw the single-buffered
+        // upper page at the very start of VBlank so it finishes before active scanout.
+        uint32_t t3 = cpuGetTiming();
+        present_vblank_begin();
+        uint32_t post_vwait_start = cpuGetTiming();
         if (s_strip_mode) {
             tide_render_window(1, top_cam_y);
             // The death summary is drawn on the lower screen: keep it out of the darkening.
             tide_render_window(0, g_player_state.is_dead ? TO_INT(tide_y()) - SCREEN_H : view_y);
         }
-#if defined(GODRAYS_PROTO) && GODRAYS_PROTO
-        godrays_update(view_x, top_cam_y, view_y);
-#endif
-
-        uint32_t t3 = cpuGetTiming();
-        uint32_t bg_ticks = present_both_screens(top_cam_x, top_cam_y, view_x, view_y);
+        uint32_t t_top = cpuGetTiming();
+        render_screen(s_top_page, s_dirty_top, view_x, view_y - SCREEN_H, &top_floor, &top_sh, &top_bl);
+        if (s_strip_mode) {
+            g_dirty_cur = s_dirty_top;
+            pickups_render(s_top_page, view_x, view_y - SCREEN_H);
+            tide_render_border(s_top_page, view_y - SCREEN_H);
+        }
+        uint32_t top_ticks = cpuGetTiming() - t_top;
+        present_hardware_bgs(top_cam_x, top_cam_y, view_x, view_y);
+        uint32_t post_vwait_cpu = cpuGetTiming() - post_vwait_start;
         uint32_t present_ticks = cpuGetTiming() - t3;
+        uint32_t cpu_ticks = pre_vwait_cpu + post_vwait_cpu;
+        PP_SET(PP_CPU, cpu_ticks);
 
         uint32_t vblanks_elapsed = s_vblank_count - start_vblank;
         if (vblanks_elapsed == 0) vblanks_elapsed = 1;
@@ -1918,7 +1921,7 @@ int main(void) {
 #endif
 
         g_perf.frame_index++;
-        uint32_t total_cpu_ticks = cpu_ticks + bg_ticks;
+        uint32_t total_cpu_ticks = cpu_ticks;
         g_perf.cpu_ticks = total_cpu_ticks;
         g_perf.cpu_percent = (total_cpu_ticks * 100) / g_perf.cpu_budget;
         g_perf.vcount_done = vcount_done;
