@@ -755,7 +755,7 @@ static int fire_weapon(PlayerState *player, const WeaponInput *in, fixed dir_x, 
         fire_shotgun(tuning, in, dir_x, dir_y);
     } else {
         sfx_stop_charge();
-        sfx_play(SFX_HEART_FIRE, TO_INT(in->player_x));
+        sfx_play(SND_HEART_FIRE, TO_INT(in->player_x));
         fire_sniper(tuning, in, dir_x, dir_y, enemies, max_enemies);
     }
     spawn_flash(in, dir_x, dir_y);

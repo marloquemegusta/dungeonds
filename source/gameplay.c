@@ -80,7 +80,7 @@ int player_take_hit(PlayerState *player) {
         player->is_dead = 1;
         sfx_stop_charge();
     }
-    sfx_play(SFX_PLAYER_HURT, -1);
+    sfx_play(SND_PLAYER_HURT, -1);
     return 1;
 }
 
@@ -102,7 +102,7 @@ void enemy_hit(Enemy *e, int damage, fixed hit_vx, fixed hit_vy) {
     if (g_hitstop_frames < hitstop) g_hitstop_frames = hitstop;
     CRASH_MARK(e->hp <= 0 ? CL_ENEMY_KILL : CL_ENEMY_HIT, e->type, e->hp <= 0 ? e->char_id : e->hp);
     if (e->hp <= 0) {
-        sfx_play(SFX_ENEMY_DEATH, TO_INT(e->x));
+        sfx_play(SND_ENEMY_DEATH, TO_INT(e->x));
         if (s_enemy_death_hook) s_enemy_death_hook(e, hit_vx, hit_vy);
         e->active = 0;
         e->state = ENEMY_STATE_DEAD;
@@ -113,7 +113,7 @@ void enemy_hit(Enemy *e, int damage, fixed hit_vx, fixed hit_vy) {
         nocashMessage(msg);
 #endif
     } else {
-        sfx_play(SFX_ENEMY_HIT, TO_INT(e->x));
+        sfx_play(SND_ENEMY_HIT, TO_INT(e->x));
 #ifdef DEBUG
         char msg[64];
         snprintf(msg, sizeof(msg), "ENEMY_HIT type=%d hp=%d", e->type, e->hp);

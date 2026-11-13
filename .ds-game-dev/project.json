@@ -48,6 +48,14 @@
         {
             "source": "assets/icon.png",
             "destination": "icon.png"
+        },
+        {
+            "source": "nitrofiles",
+            "destination": "nitrofiles"
+        },
+        {
+            "source": "assets/sfx/baked",
+            "destination": "audio"
         }
     ],
     "scenarioDirectory": "scenarios",
