@@ -13,9 +13,20 @@ void tide_init(fixed player_y) {
 #endif
 }
 
-void tide_update(void) {
+fixed tide_speed_for_distance(int dist_px) {
+    if (dist_px <= TIDE_SPRING_NEAR_PX) return TIDE_SPEED_MIN_FIXED;
+    if (dist_px >= TIDE_SPRING_FAR_PX) return TIDE_SPEED_MAX_FIXED;
+    int delta = dist_px - TIDE_SPRING_NEAR_PX;
+    int range = TIDE_SPEED_MAX_FIXED - TIDE_SPEED_MIN_FIXED;
+    return TIDE_SPEED_MIN_FIXED + ((delta * range) >> TIDE_SPRING_SPAN_SHIFT);
+}
+
+void tide_update(fixed player_y) {
 #if !defined(GODRAYS_PROTO) || !GODRAYS_PROTO
-    s_tide_y -= TIDE_SPEED_FIXED;
+    int dist_px = TO_INT(s_tide_y - player_y);
+    s_tide_y -= tide_speed_for_distance(dist_px);
+#else
+    (void)player_y;
 #endif
 }
 void tide_shift_y(int dy_px) {

@@ -1462,7 +1462,7 @@ static void player_update(uint32_t keys, uint32_t keys_down) {
 
     int cur_char = s_player.char_id;
     fixed current_speed = g_characters[cur_char].speed * g_mods.speed_pct / 100;
-    if (s_strip_mode && tide_player_slowed(s_player.y)) current_speed >>= 1;
+    if (s_strip_mode && tide_player_slowed(s_player.y)) current_speed = (current_speed * 3) >> 2;
     int current_period = g_characters[cur_char].anim_period;
 
     if (pressed && weapons_can_start_aim(&g_player_state)) s_rooted = 1;
@@ -1821,7 +1821,7 @@ int main(void) {
                     nav_shift_down(STRIP_SHIFT_PX / NAV_NODE_PX,
                                    TO_INT(s_player.x), TO_INT(s_player.y));
                 }
-                tide_update();
+                tide_update(s_player.y);
                 tide_damage_player(&g_player_state, s_player.y);
             }
             s_keys_down_latch = 0;

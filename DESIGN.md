@@ -234,7 +234,11 @@ Primer paso jugable hacia §6.1–6.8: el juego actual (armas, cargador, tirador
 - Los menús, como la elección al subir de nivel, van en la pantalla inferior.
 
 ### 6.4 Marea y aparición de enemigos
-- **Marea:** sube desde el borde inferior a velocidad constante en la prueba (sin adaptarse al jugador). Dentro de ella el jugador recibe daño continuo y va más lento, pero no muere al instante. Los enemigos y gemas que alcanza desaparecen sin dar recompensa. Se para durante el minijefe y el jefe. El aspecto (fuego, plaga u oscuridad) está por decidir.
+- **Marea (revisada 2026-11-13, muelle elástico):** sube desde el borde inferior con velocidad elástica en función de la distancia al jugador (`dist = tide_y - player_y`):
+  - **Cerca (`dist <= 80 px`):** frena a velocidad mínima (`40` en 8.8, ~0,16 px/frame), ~4,5× más lenta que el héroe (`181`), dando margen para retroceder un momento o escapar si te roza.
+  - **Tramo elástico (`80 < dist < 336 px`):** sube linealmente con la distancia hasta alcanzar equilibrio con el jugador en torno a ~320 px.
+  - **Lejos (`dist >= 336 px`):** velocidad máxima (`190` en 8.8, ~0,74 px/frame), algo superior al héroe para recortar distancia si avanza sin parar.
+  - **Dentro de ella:** el jugador recibe daño continuo y su velocidad se reduce un 25 % (`* 3 / 4`, ~135 en 8.8 frente a 40 de la marea), así que siempre puede salir corriendo hacia arriba. Los enemigos y gemas que alcanza desaparecen sin dar recompensa. Se para durante el minijefe y el jefe. El aspecto (fuego, plaga u oscuridad) está por decidir.
 - **Aparición:** la mayoría de los enemigos nacen arriba, fuera de la vista o en puntos visibles en la pantalla superior. Algunos salen de las salas laterales. Desde abajo vienen pocos y siempre con aviso en el borde inferior (emboscadas). La densidad sube con el tiempo.
 - **Totales frente a simultáneos:** cientos de enemigos a lo largo de la run, unas pocas decenas a la vez entre las dos pantallas. Los que quedan muy atrás se reciclan. Cifras técnicas en `TECHNICAL.md` §4.7.
 
