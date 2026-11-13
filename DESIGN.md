@@ -1,9 +1,9 @@
 # DESIGN.md - Documento de Diseño
 
 ## 1. Visión y Alcance
-- **Concepto:** survivors de frente vertical para Nintendo DS, con apuntado manual y tono gótico/grimdark (space marine contra necrones y bestias). Referencias: Halls of Torment y Vampire Survivors por el bucle; Diablo y Warhammer 40K: Inquisitor por lo que engancha al usuario (ir a la siguiente misión y mejorar); Isaac por la dificultad (lo normal es morir pronto hasta conocer las mejoras).
-- **Pilar:** combate de Doom en isométrico (pocas armas contundentes con mucho *feel*, esquivar con strafe), contra una horda que viene de arriba y por un pasillo que hay que abrirse a tiros. Las dos pantallas forman un campo vertical: la superior es la vanguardia que se ve llegar y a la que se puede disparar.
-- **Bucle vigente (v0.3, decidido 2026-11-06):** un nivel vertical de ~8 min con una marea que sube desde abajo, horda continua, gemas → nivel → elegir 1 de 3 mejoras, élites, un minijefe a mitad y un jefe arriba. Clase = arma. Detalle en §6.
+- **Concepto:** survivors de frente vertical para Nintendo DS, con apuntado manual y tono gótico/grimdark (el Corazón Abierto y otros futuros personajes contra los caídos de la Cruzada). Referencias: Halls of Torment y Vampire Survivors por el bucle; Diablo y Warhammer 40K: Inquisitor por lo que engancha al usuario (ir a la siguiente misión y mejorar); Isaac por la dificultad (lo normal es morir pronto hasta conocer las mejoras).
+- **Pilar:** combate de Doom en isométrico (cada personaje con un arma contundente y mucho *feel*, esquivar con strafe), contra una horda que viene de arriba y por un pasillo que hay que abrirse a tiros. Las dos pantallas forman un campo vertical: la superior es la vanguardia que se ve llegar y a la que se puede disparar.
+- **Bucle vigente (v0.3, decidido 2026-11-06):** un nivel vertical de ~8 min con una marea que sube desde abajo, horda continua, gemas → nivel → elegir 1 de 3 mejoras, élites, un minijefe a mitad y un jefe arriba. Personaje = arma única (no hay cambio de armas en partida). Detalle en §6.
 - **Fantasía:** sin lore, pero clara y con entorno cambiante: ascender (o descender) por un pozo o una aguja infestada, cambiando de bioma por el camino. Los personajes, enemigos y mapas actuales son placeholders con la estética buena; el sistema debe aguantar cambiarlos.
 - **Fuera de la prueba de la v0.3, a propósito:** progresión entre runs (equipo, desbloqueos), más de dos clases, sonido, más de dos biomas. La capa de equipo es el gancho a largo plazo (Diablo) y se diseña tras validar que una run divierte.
 - **Historia de la dirección:** el proyecto nació como un Diablo de nigromancia con esbirros, descartado a favor del shooter. La v0.1 (4 arenas cerradas, §4) era fácil y poco divertida en la DS. La v0.2 (mazmorra de manadas con modificadores estilo Isaac, §5) fue más divertida pero se agotaba en un par de minutos: sin variedad entre runs ni motivo para volver. El 2026-11-06 se eligió el survivors vertical (§6) frente a un Isaac de salas (más barato pero menos del gusto del usuario) y a una campaña lineal tipo Diablo (demasiado contenido a mano). La lanza ósea y la muerte por fragmentos quedan como FX reutilizables.
@@ -12,7 +12,7 @@
 - **Técnica:** sprites 2D pre-renderizados a partir de modelos 3D con animación esquelética (FBX/GLB).
 - **Proyección:** isométrica/dimétrica en 8 direcciones; mapa y personajes con la misma cámara e iluminación.
 - **Herramienta de render:** el lab Three.js (`tools/lab/`), fuente de verdad visual para mapa y personajes. Detalle del pipeline en `TECHNICAL.md` §3.
-- **Personajes actuales:** héroe (space marine), charger y necron.
+- **Personajes actuales:** héroe (El Corazón Abierto), cargador (El Cireneo v2), esqueleto y tirador (necron, pendiente de sustituir por El Ojo del Tribunal).
 - **FX reutilizables:**
   - Lanza ósea: salva de cinco astillas estrechas y puntiagudas dibujadas proceduralmente, sin outline, con motas en tonos marfil/hueso.
   - Muerte del enemigo: la silueta se rompe en fragmentos extraídos de sus propios píxeles que salen según el impacto y caen con una parábola breve.
@@ -243,11 +243,12 @@ Primer paso jugable hacia §6.1–6.8: el juego actual (armas, cargador, tirador
 - **Totales frente a simultáneos:** cientos de enemigos a lo largo de la run, unas pocas decenas a la vez entre las dos pantallas. Los que quedan muy atrás se reciclan. Cifras técnicas en `TECHNICAL.md` §4.7.
 
 ### 6.5 Clases y controles
-- **Clase = arma principal.** Dos clases separadas: **francotirador/láser** (la que más aprovecha la pantalla superior; se prueba primero) y **escopeta**. Se elige al empezar la run.
+- **Personaje = arma única.** En el juego actual ya no hay múltiples armas por personaje ni cambio de armas en partida: cada personaje tiene su única arma fija (por ejemplo, El Corazón Abierto con su rayo de fuego sagrado; la clase de escopeta será otro personaje). Se elige personaje al empezar la run.
 - **Controles:**
   - D-pad: mover.
-  - Stylus: apuntar por vector, como en §4.1. Mantener pulsado dispara solo al ritmo del arma, para no tener que tocar cientos de veces por run. En la escopeta repite cada bombeo. En el francotirador sigue siendo cargar y soltar: la carga es su gracia. Si cansa en la DS, se revisa.
-  - L: **habilidad activa con enfriamiento**, común a las dos clases. En la prueba es la granada de §4.9.
+  - Stylus: apuntar por vector, como en §4.1. Mantener pulsado dispara solo al ritmo del arma, para no tener que tocar cientos de veces por run. En la escopeta repite cada bombeo. En el francotirador/láser sigue siendo cargar y soltar: la carga es su gracia. Si cansa en la DS, se revisa.
+  - L (futuro): **habilidad activa con enfriamiento**, común a los personajes (como la granada de §4.9).
+- **Controles de depuración en la ROM actual (solo debug, no son del juego):** `L` (ciclo de armas escopeta/francotirador/granada heredado de la v0.1), `SELECT` (estilo de efectos A/B/C) e `Y` (aura de carga L/G/E/H), así como cualquier cambio de animaciones en vivo, existen únicamente para depurar y probar en la DS.
 - **Vida:** golpes más i-frames, como ahora (5 golpes de partida). De vez en cuando cae un pickup que cura 1 golpe.
 
 ### 6.6 Economía y mejoras
@@ -278,8 +279,8 @@ La prueba de §6.1–6.8 se construye en versiones jugables pequeñas, cada una 
 | :--- | :--- | :--- | :--- |
 | **0.3 mínima** | Franja infinita de 512 px, horda desde arriba, marea, curas y HUD de altura (§6.0). | — | Cerrada 2026-11-06 (`walkthroughs/v03-minima/`) |
 | **0.3.1** | Tuning y pulido de la 0.3 mínima, con tres tiers de enemigos (esqueleto, cargador que carga, tirador láser) y escala de cifras 100 = 1,0 (§6.9.1). | Nada | Cerrada 2026-11-07 (`walkthroughs/v031-tuning/`) |
-| **0.3.2** | Escenario del primer nivel: estilo, ambientación y piezas del entorno (§6.9.1b). | Sesión de dirección de arte | **Siguiente** (pendiente de diseño) |
-| **0.3.3** | Personajes: reevaluar los sprites, ajustar tamaño y pasar al estilo definido en la 0.3.2 (§6.9.1b). | 0.3.2 cerrada | Pendiente de diseño |
+| **0.3.2** | Escenario del primer nivel: estilo, ambientación y piezas del entorno (§6.9.1b). | Sesión de dirección de arte | **En curso** (v2 en `main`, `walkthroughs/catedral-v2-salon/`, pendiente de ajustes de escala y variedad) |
+| **0.3.3** | Personajes: reevaluar los sprites, ajustar tamaño y pasar al estilo definido en la 0.3.2 (§6.9.1b). | 0.3.2 cerrada | **En curso** (Corazón Abierto, Cireneo v2, telegrafía y SFX base en `main`; faltan Exvotos, Ojo del Tribunal y elegir aura) |
 | **0.4** | Progresión dentro de la run: gemas con imán corto, experiencia, subir de nivel con pausa y elegir 1 de 3 mejoras con icono y una línea de efecto (§6.6), HUD de vida, experiencia, nivel y tiempo, elección de clase al empezar y controles de §6.5 que falten. | Sesión de diseño de mejoras y clases | Pendiente de diseño |
 | **0.5** | Enemigos y recompensas: enjambre, élites que sueltan cofre, emboscadas desde abajo con aviso. Pool de 48 y criterio de horda de `TECHNICAL.md` §4.7 (IA por niveles de detalle, separación por rejilla, blit más barato). | Sesión de diseño de enemigos | Pendiente de diseño |
 | **0.6** | Estructura de la run: tramos hechos a mano encadenados por reglas (§6.2), dos biomas, minijefe a mitad y jefe arriba, marea que se para en los combates. Cierra la prueba completa de §6.1 (~8 min, ganar matando al jefe). | Sesión de diseño de tramos, biomas y jefes | Pendiente de diseño |
@@ -571,7 +572,7 @@ Conceptos para la demo de la catedral. Solo cambia el aspecto y se añaden élit
   - **Carga y disparo:** un solo clip de 8 frames por dirección, el de disparo (f0 = brazos en cruz, f7 = derrumbado con los brazos delante). **Cargar** lo recorre **al revés** (f7 → f0) según el progreso de carga (`prog` 0..256 de §4.9), no según el tiempo, y se queda en f0 (cruz) desde `AIM_READY` hasta soltar. **Soltar** dispara en f0 y reproduce f0 → f7 a 3 frames de juego por frame (~0,4 s); después vuelve al andar. **Cancelar** vuelve al andar al instante y moverse durante la recuperación la corta. Mientras carga, el personaje está parado. Se acepta el salto de la pose de andar a la encorvada al empezar a cargar.
   - **Origen:** el rayo (`muzzle`) sale del **centro del pecho** del frame que se muestra (hueso `Spine2` en el lab).
   - **Estilo «fuego sagrado»:** sin verde en el jugador (el verde es del láser enemigo). Rampa común: rojo sangre → naranja brasa → oro → blanco. Chispas de impacto del rayo: oro → naranja → ceniza.
-  - **Haz del francotirador (elegido 2026-11-12 entre tres variantes; capturas en `walkthroughs/corazon-abierto/assets/contacto_haz.png`): «fuego».** Banda tramada rojo sangre/naranja que se cierra a 1 px (el colimado A1 de §4.9 recoloreado) y suelta brasas por el borde (≤ 32). Listo: línea amarilla de 1 px. Disparo: núcleo blanco con amarillo y naranja por fuera, que deja brasas rojas al apagarse. Sustituye al colimado A/B/C del francotirador de §4.9; `SELECT` solo cambia escopeta y granada.
+  - **Haz del francotirador (elegido 2026-11-12 entre tres variantes; capturas en `walkthroughs/corazon-abierto/assets/contacto_haz.png`): «fuego».** Banda tramada rojo sangre/naranja que se cierra a 1 px (el colimado A1 de §4.9 recoloreado) y suelta brasas por el borde (≤ 32). Listo: línea amarilla de 1 px. Disparo: núcleo blanco con amarillo y naranja por fuera, que deja brasas rojas al apagarse. Sustituye al colimado A/B/C del francotirador de §4.9; `SELECT` (solo depuración) solo cambia escopeta y granada.
   - **Aura de carga, en comparación (selector `Y`, solo depuración; la primera ronda K/F1/F3 se descartó, `contacto_aura.png`).** Reglas comunes: crecen con `prog`, flash de listo de 3 frames, límites fijos de segmentos/puntos, sin `float`, deterministas por LCG, y lo que queda detrás del cuerpo se pinta antes del sprite.
     - **L, llamas:** 6-8 lenguas cortas onduladas desde la elipse de los pies, amarillo en la base, naranja y rojo en la punta, con borde tramado; anillo 2:1 dorado en listo.
     - **G, resplandor (gloria):** 10-12 rayos rectos de 1 px desde el **pecho**, alternando largos y cortos, oro con la punta blanca; crecen de 4 a 14 px y giran despacio. Detrás del sprite, como un halo.
