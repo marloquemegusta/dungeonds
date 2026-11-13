@@ -7,7 +7,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "tests"))
-from test_sprite_ground_anchor import exported_anchors, pixel_values  # noqa: E402
+from test_sprite_ground_anchor import exported_anchors, frame_bounds, frame_offsets, pixel_values  # noqa: E402
 
 WEAPONS_C = (ROOT / "source" / "weapons.c").read_text(encoding="utf-8")
 HIT_H = (ROOT / "include" / "hitvolume.h").read_text(encoding="utf-8")
@@ -30,19 +30,24 @@ def hit_grid(height, large=0):
 
 def opaque_pixels(symbol, char_id, w=40, h=40):
     """{direction: set of (dx, up) opaque offsets from the feet anchor, over the 8 frames}."""
+    base = symbol[:-len("_frames")]
     values = pixel_values(symbol)
+    offsets = frame_offsets(base + "_frame_offsets")
+    bounds = frame_bounds(base + "_frame_bounds")
     anchors = exported_anchors()[char_id]
-    stride = w * h
     anchor_x = w // 2
     result = {}
     for d in range(8):
         pts = set()
         for f in range(8):
-            frame = values[(d * 8 + f) * stride:(d * 8 + f + 1) * stride]
-            for y in range(h):
-                for x in range(w):
-                    if frame[y * w + x] & 0x8000:
-                        pts.add((x - anchor_x, anchors[d] - y))
+            idx = d * 8 + f
+            off = offsets[idx]
+            bx, by, bw, bh = bounds[idx]
+            frame = values[off:off + bw * bh]
+            for y in range(bh):
+                for x in range(bw):
+                    if frame[y * bw + x] & 0x8000:
+                        pts.add((bx + x - anchor_x, anchors[d] - (by + y)))
         result[d] = pts
     return result
 

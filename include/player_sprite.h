@@ -44,55 +44,76 @@ extern const uint8_t g_character_ground_anchors[NUM_CHARACTERS][PLAYER_NUM_DIRS]
 // ground anchor; a shot is drawn at feet + (gx, gy - h). All zeros for characters without weapon.
 extern const int8_t g_character_muzzle[NUM_CHARACTERS][PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][3];
 
-// Space Marine frames & animated crisp 3D shadows (8 dirs x 8 frames)
-extern const uint16_t g_player_frames[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][PLAYER_SPRITE_W * PLAYER_SPRITE_H];
-extern const uint8_t g_player_shadow_masks[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][PLAYER_SHADOW_W * PLAYER_SHADOW_H / 2];
+// Space Marine / Hero frames & animated crisp 3D shadows (8 dirs x 8 frames, cropped to bounds)
+extern const uint16_t g_player_frames[];
+extern const uint32_t g_player_frame_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES];
+extern const uint8_t g_player_frame_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4];
+extern const uint8_t g_player_shadow_masks[];
+extern const uint32_t g_player_shadow_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES];
 extern const uint8_t g_player_shadow_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4];
 
 // Hero shot clip (CHAR_HERO only, DESIGN.md "Carga y disparo"): 8 dirs x 8 frames, f0 arms crossed,
 // f7 collapsed. Drawn while the sniper charges (frame from the progress, backwards) and after a shot.
-extern const uint16_t g_player_shot_frames[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][PLAYER_SPRITE_W * PLAYER_SPRITE_H];
-extern const uint8_t g_player_shot_shadow_masks[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][PLAYER_SHADOW_W * PLAYER_SHADOW_H / 2];
+extern const uint16_t g_player_shot_frames[];
+extern const uint32_t g_player_shot_frame_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES];
+extern const uint8_t g_player_shot_frame_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4];
+extern const uint8_t g_player_shot_shadow_masks[];
+extern const uint32_t g_player_shot_shadow_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES];
 extern const uint8_t g_player_shot_shadow_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4];
 // Muzzle of the hero shot clip per [direction][frame] = { gx, gy, h }, same meaning as g_character_muzzle.
 extern const int8_t g_hero_shot_muzzle[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][3];
 
-// Charger enemy frames & animated crisp 3D shadows (8 dirs x 8 frames, 60x60, shadow 80x80)
-extern const uint16_t g_charger_frames[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][CHARGER_SPRITE_W * CHARGER_SPRITE_H];
-extern const uint8_t g_charger_shadow_masks[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][CHARGER_SHADOW_W * CHARGER_SHADOW_H / 2];
+// Charger enemy frames & animated crisp 3D shadows (8 dirs x 8 frames, 60x60, shadow 80x80, cropped)
+extern const uint16_t g_charger_frames[];
+extern const uint32_t g_charger_frame_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES];
+extern const uint8_t g_charger_frame_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4];
+extern const uint8_t g_charger_shadow_masks[];
+extern const uint32_t g_charger_shadow_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES];
 extern const uint8_t g_charger_shadow_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4];
 
-// Charger charge clip (Cireneo bent nearly parallel to the ground): 8 dirs x 4 frames at 60x60
-extern const uint16_t g_charger_charge_frames[PLAYER_NUM_DIRS][CHARGER_CHARGE_NUM_FRAMES][CHARGER_SPRITE_W * CHARGER_SPRITE_H];
-extern const uint8_t g_charger_charge_shadow_masks[PLAYER_NUM_DIRS][CHARGER_CHARGE_NUM_FRAMES][CHARGER_SHADOW_W * CHARGER_SHADOW_H / 2];
+// Charger charge clip (Cireneo bent nearly parallel to the ground): 8 dirs x 4 frames at 60x60, cropped
+extern const uint16_t g_charger_charge_frames[];
+extern const uint32_t g_charger_charge_frame_offsets[PLAYER_NUM_DIRS][CHARGER_CHARGE_NUM_FRAMES];
+extern const uint8_t g_charger_charge_frame_bounds[PLAYER_NUM_DIRS][CHARGER_CHARGE_NUM_FRAMES][4];
+extern const uint8_t g_charger_charge_shadow_masks[];
+extern const uint32_t g_charger_charge_shadow_offsets[PLAYER_NUM_DIRS][CHARGER_CHARGE_NUM_FRAMES];
 extern const uint8_t g_charger_charge_shadow_bounds[PLAYER_NUM_DIRS][CHARGER_CHARGE_NUM_FRAMES][4];
 
-// Charger telegraph keyframe (Cireneo crouched with feet planted, bridging walk[0] -> charge[0]): 8 dirs x 1 frame at 60x60
-extern const uint16_t g_charger_telegraph_frames[PLAYER_NUM_DIRS][CHARGER_TELEGRAPH_NUM_FRAMES][CHARGER_SPRITE_W * CHARGER_SPRITE_H];
+// Charger telegraph keyframe (Cireneo crouched with feet planted, bridging walk[0] -> charge[0]): 8 dirs x 1 frame at 60x60, cropped
+extern const uint16_t g_charger_telegraph_frames[];
+extern const uint32_t g_charger_telegraph_frame_offsets[PLAYER_NUM_DIRS][CHARGER_TELEGRAPH_NUM_FRAMES];
+extern const uint8_t g_charger_telegraph_frame_bounds[PLAYER_NUM_DIRS][CHARGER_TELEGRAPH_NUM_FRAMES][4];
 
-// Necron enemy frames & animated crisp 3D shadows (8 dirs x 8 frames)
-extern const uint16_t g_necron_frames[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][PLAYER_SPRITE_W * PLAYER_SPRITE_H];
-extern const uint8_t g_necron_shadow_masks[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][PLAYER_SHADOW_W * PLAYER_SHADOW_H / 2];
+// Necron enemy frames & animated crisp 3D shadows (8 dirs x 8 frames, cropped)
+extern const uint16_t g_necron_frames[];
+extern const uint32_t g_necron_frame_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES];
+extern const uint8_t g_necron_frame_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4];
+extern const uint8_t g_necron_shadow_masks[];
+extern const uint32_t g_necron_shadow_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES];
 extern const uint8_t g_necron_shadow_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4];
 
-// Skeleton enemy frames & animated crisp 3D shadows (8 dirs x 8 frames)
-extern const uint16_t g_skeleton_frames[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][PLAYER_SPRITE_W * PLAYER_SPRITE_H];
-extern const uint8_t g_skeleton_shadow_masks[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][PLAYER_SHADOW_W * PLAYER_SHADOW_H / 2];
+// Skeleton enemy frames & animated crisp 3D shadows (8 dirs x 8 frames, cropped)
+extern const uint16_t g_skeleton_frames[];
+extern const uint32_t g_skeleton_frame_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES];
+extern const uint8_t g_skeleton_frame_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4];
+extern const uint8_t g_skeleton_shadow_masks[];
+extern const uint32_t g_skeleton_shadow_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES];
 extern const uint8_t g_skeleton_shadow_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4];
 
 // Fast indexed lookups:
 extern const uint16_t * const g_character_frames[NUM_CHARACTERS];
+extern const uint32_t (* const g_character_frame_offsets[NUM_CHARACTERS])[PLAYER_NUM_FRAMES];
+extern const uint8_t (* const g_character_frame_bounds[NUM_CHARACTERS])[PLAYER_NUM_FRAMES][4];
 extern const uint8_t * const g_character_shadow_masks[NUM_CHARACTERS];
+extern const uint32_t (* const g_character_shadow_offsets[NUM_CHARACTERS])[PLAYER_NUM_FRAMES];
 extern const uint8_t (* const g_character_shadow_bounds[NUM_CHARACTERS])[PLAYER_NUM_FRAMES][4];
 
 static inline const uint16_t *character_frame_ptr(int char_id, int dir, int frame) {
-    int stride = (int)g_characters[char_id].sprite_w * (int)g_characters[char_id].sprite_h;
-    return g_character_frames[char_id] + (dir * PLAYER_NUM_FRAMES + frame) * stride;
+    return g_character_frames[char_id] + g_character_frame_offsets[char_id][dir][frame];
 }
 
 static inline const uint8_t *character_shadow_mask_ptr(int char_id, int dir, int frame) {
-    int stride = ((int)g_characters[char_id].shadow_w * (int)g_characters[char_id].shadow_h) / 2;
-    return g_character_shadow_masks[char_id] + (dir * PLAYER_NUM_FRAMES + frame) * stride;
+    return g_character_shadow_masks[char_id] + g_character_shadow_offsets[char_id][dir][frame];
 }
 
 #endif // PLAYER_SPRITE_INCLUDED

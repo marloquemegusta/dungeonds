@@ -4,6 +4,8 @@ Primero el estado necesario para retomar el trabajo sin depender del chat; despu
 
 ## Estado actual (2026-11-13)
 
+- **Recorte de sprites y sombras (`perf/crop-sprites-shadows`, `walkthroughs/crop-sprites-shadows/`):** `tools/generate_player_sprites_c.py` recorta sprites BGR555 y máscaras de sombra 4 bpp a su bounding box con tablas de offsets/bounds; `dungeonds.nds` baja de **2,74 MiB a 1,00 MiB (-63,5 %)** sin pérdida visual. Validado en tests de host (41/41), DeSmuME y Nintendo DS física.
+
 - **Marea elástica (`feat/tide-spring`, integrada en `main`, SIN PROBAR):** velocidad adaptativa según la distancia al jugador (`DESIGN.md` §6.4: frena cerca, acelera lejos y reduce la velocidad del jugador un 25 % dentro de ella). Compilación pendiente de verificar en DeSmuME y en la Nintendo DS física.
 - **Telegrafía sobria del Cireneo (`feat/cireneo-telegraph`, integrada en `main`):** retirado el parpadeo en `ENEMY_STATE_TELEGRAPH`; agachado progresivo en 3 fases con keyframe `cireneo_telegraph` (`60×60`), pulso único de brasa tras la cruz y temblor de 1 px. Validado en DeSmuME y tests de host (`walkthroughs/cireneo-telegraph/`); pendiente de probar en la DS.
 - **SFX base del Corazón Abierto (2026-11-13, `walkthroughs/sfx-core/`):** 5 sonidos base (carga, fuego sagrado, hit enemigo con jitter ±12%, muerte por combustión y daño al jugador con quejido) horneados con `tools/bake_sfx.py` a 16.384 Hz mono 8-bit (23,1 KB en RAM) y reproducidos por hardware ARM7 (`source/sfx.c`) con panning por cámara y cooldowns anti-spam. Validado en DS por el usuario. Pendiente: granada, telegrafías enemigas (láser/embestida), muro, pickups y música.
