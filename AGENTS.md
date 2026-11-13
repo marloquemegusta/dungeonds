@@ -49,7 +49,7 @@ Si una regla o cifra aparece en dos documentos, uno de ellos sobra: dejarla en s
    - Mostrar todo el ciclo pedido (andar + telegrafía + disparo, o avance real si es un efecto en movimiento), a **≥15 fps** (`duration <= 65 ms`) y **4x NEAREST**.
    - Antes de responder, comprobar visualmente cada punto que pidió el usuario (encuadre, partes no cortadas, velocidad).
 9. **Decisiones de diseño antes de código**: ningún comportamiento visual o de juego nuevo (transparencias, siluetas, feedback, FSM, armas) sin una decisión escrita en `DESIGN.md`. Si falta la decisión, proponer opciones al usuario y parar; no inventar un "provisional" en código. Lo que hoy es provisional está marcado así en `TECHNICAL.md` §4.6 y no se amplía.
-10. **Comunicación con el usuario**: explicar opciones y resultados en lenguaje de juego/producto (concreto, sin jerga interna de git ni abstracciones). Cuando falte una decisión del usuario, hacer **una sola pregunta por turno** con recomendación clara; nunca bloques de varias preguntas a la vez.
+10. **Comunicación con el usuario**: el usuario es ingeniero y arquitecto del juego, no programador de DS/C. Explicar causas, opciones y resultados en lenguaje de producto/arquitectura y *tradeoffs* (impacto en juego, riesgo, esfuerzo), sin jerga técnica de bajo nivel (git, BlocksDS, registros, funciones C o detalles internos de hardware DS). Cuando falte una decisión, hacer **una sola pregunta por turno** con recomendación clara; nunca bloques de varias preguntas a la vez.
 11. **2 fallos → diagnóstico mínimo**: si un render, animación, física de Blender o encaje de mapa falla visualmente 2 veces seguidas, **parar los renders completos** y ejecutar primero una prueba mínima (1 solo modelo, 1 frame o impresión numérica de coordenadas/bounding box) antes de relanzar el proceso completo.
 
 ---
@@ -111,6 +111,9 @@ Lecciones: un bucle sin tope congela el juego; el coste de la oclusión por píx
    - Cada entrega genera `walkthroughs/<nombre-sesion>/walkthrough.md` con sus imágenes en `walkthroughs/<nombre-sesion>/assets/`.
    - Se añade una fila a `walkthroughs/README.md` cuyo enlace apunte a una carpeta que exista.
    - `STATUS.md` recibe la entrega (resumen corto + enlace) y se actualiza su sección "Estado actual" si cambia lo que hay que saber para retomar.
+7. **Etiqueta de estado del chat (Antigravity):**
+   - Al iniciar una sesión en Antigravity (en cuanto exista título en `C:\Users\malfonso\.gemini\antigravity\annotations\<conversation-id>.pbtxt`), añadir el prefijo `[EN CURSO] ` al título si no tiene ya un tag de estado (`[EN CURSO]`, `[MERGEADO]` o `[ABANDONADO]`).
+   - Al acabar la sesión (al mergear a `main` o descartar el trabajo), actualizar el prefijo a `[MERGEADO] ` o `[ABANDONADO] ` según corresponda, tanto en `annotations\<conversation-id>.pbtxt` como en la columna `title` de `conversation_summaries.db`.
 
 ## graphify
 
