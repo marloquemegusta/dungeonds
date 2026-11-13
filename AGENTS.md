@@ -115,3 +115,24 @@ Rules:
 - If graphify-out/wiki/index.md exists, use it for broad navigation instead of raw source browsing.
 - Read graphify-out/GRAPH_REPORT.md only for broad architecture review or when query/path/explain do not surface enough context.
 - After modifying code, run `graphify update .` (AST-only, no API cost) with the executable and shell syntax given in the worktree section above.
+
+---
+
+## Audio / SFX (ElevenLabs CLI)
+
+Cualquier agente (Antigravity, Claude Code, Codex, CommandCode) puede generar SFX desde terminal con el CLI global `@elevenlabs/cli` (`elevenlabs`):
+
+- **Autenticación:** requiere `ELEVENLABS_API_KEY` en el entorno del usuario o sesión iniciada con `elevenlabs auth login`. No guardar ni commitear API keys en el repo.
+- **Generar un SFX:**
+  ```bash
+  elevenlabs text-to-sound-effects convert \
+    --text "<prompt en inglés, dry, no reverb, isolated>" \
+    --duration-seconds 0.5 \
+    --output-format wav_16000 \
+    -o assets/sfx/raw/<nombre>.wav
+  ```
+  *(Si la suscripción no permite `wav_16000`, usar `--output-format mp3_44100_128 -o assets/sfx/raw/<nombre>.mp3` y convertir a WAV con `ffmpeg`).*
+- **Convenciones:**
+  - Pasar siempre `--duration-seconds` con la duración mínima necesaria (mínimo `0.5` s); no omitirlo ni dejarlo en automático para no gastar créditos de más.
+  - Los audios fuente van en `assets/sfx/raw/` y los recortados/normalizados para Nintendo DS (16.384 Hz mono, 8-bit) en `assets/sfx/baked/`.
+  - Todo SFX generado con IA debe recortar el silencio inicial y ajustar la cola antes de integrarse en la ROM.
