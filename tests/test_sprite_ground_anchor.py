@@ -37,13 +37,14 @@ def pixel_values(symbol):
 
 class SpriteGroundAnchorTests(unittest.TestCase):
     def test_charger_frames_extend_below_shared_anchor(self):
+        cw, ch = 60, 60
         values = pixel_values("g_charger_frames")
-        self.assertEqual(len(values), 8 * 8 * WIDTH * HEIGHT)
+        self.assertEqual(len(values), 8 * 8 * cw * ch)
         lowest = 0
         for frame_index in range(8 * 8):
-            frame = values[frame_index * WIDTH * HEIGHT:(frame_index + 1) * WIDTH * HEIGHT]
-            opaque_rows = [y for y in range(HEIGHT)
-                           if any(pixel & 0x8000 for pixel in frame[y * WIDTH:(y + 1) * WIDTH])]
+            frame = values[frame_index * cw * ch:(frame_index + 1) * cw * ch]
+            opaque_rows = [y for y in range(ch)
+                           if any(pixel & 0x8000 for pixel in frame[y * cw:(y + 1) * cw])]
             self.assertTrue(opaque_rows)
             lowest = max(lowest, max(opaque_rows))
         anchor = max(exported_anchors()[1])
@@ -66,8 +67,14 @@ class SpriteGroundAnchorTests(unittest.TestCase):
         self.assertTrue(all(len(row) == 8 for row in anchors))
 
     def test_shadow_masks_and_bounds_dimensions(self):
-        for prefix in ("g_player", "g_charger", "g_necron", "g_skeleton"):
-            mask_decl = f"const uint8_t {prefix}_shadow_masks[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][PLAYER_SHADOW_W * PLAYER_SHADOW_H / 2]"
+        dims = {
+            "g_player": "80 * 80 / 2",
+            "g_charger": "80 * 80 / 2",
+            "g_necron": "80 * 80 / 2",
+            "g_skeleton": "80 * 80 / 2",
+        }
+        for prefix, mask_expr in dims.items():
+            mask_decl = f"const uint8_t {prefix}_shadow_masks[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][{mask_expr}]"
             self.assertIn(mask_decl, SPRITES)
             bounds_decl = f"const uint8_t {prefix}_shadow_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4]"
             self.assertIn(bounds_decl, SPRITES)

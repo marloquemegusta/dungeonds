@@ -18,7 +18,7 @@ Primero el estado necesario para retomar el trabajo sin depender del chat; despu
 - **Juego (v0.1, base de la v0.2; sustituida por la mazmorra):** prueba de diversión en 4 arenas cerradas de 384×384 px encadenadas (`DESIGN.md` §4): escopeta + francotirador, cargador (con navegación BFS) + tirador (telegraph y ráfagas de 3). Pendiente la Fase E: tuning y 60 FPS certificados en la DS.
 - **Arenas:** datos en `assets/arenas/arenas.json`; generador de modelos, export con el lab y baker (`tools/make_arena_glb.py`, `tools/export_arenas.py`, `tools/bake_arena.py`) descritos en `TECHNICAL.md` §3. El mapa grande `isometric_shooter_bl` ya no se usa.
 - **Render:** actores dibujados directamente en la página trasera del framebuffer de VRAM, limpieza por spans sucios y oclusión exacta al píxel por consulta de tramos (`TECHNICAL.md` §3.3). Medido en DS: CPU 1,58 ms de media y 12 de 2520 frames con más de un vblank.
-- **Personajes:** héroe (Corazón Abierto; el space marine queda sin uso), charger y necron, exportados por el lab a `assets/sprites/characters/<nombre>/`. El lab puede tomar el `muzzle` de un hueso (`--muzzleBone`).
+- **Personajes:** héroe (Corazón Abierto; el space marine queda sin uso), charger (Cireneo v2 a 60×60 con clip de carga agachado) y necron, exportados por el lab a `assets/sprites/characters/<nombre>/`. El lab puede tomar el `muzzle` de un hueso (`--muzzleBone`).
 - **Sin existir en código:** iluminación dinámica, niebla de guerra.
 - **Herramientas de diagnóstico en DS:** `PERF_PROFILE` (`include/perfprof.h`, log `/dungeonds_perf.log`) y `crashlog` (`CRASHLOG_ENABLED`, logs `/dungeonds_crash.log` y `/dungeonds_live.log`). Ambas apagadas por defecto; se leen con `fetch-device-log.ps1` de la skill.
 
@@ -255,3 +255,7 @@ El láser de apuntado se colima durante la carga (ancho, difuso y rojo a 1 px ve
 - **Decidido:** todos los personajes llevan acentos negros y rojos (`DESIGN.md` §6.10).
 - **Hecho:** el nuevo Cireneo y su cruz carbonizada reutilizan las animaciones de la v1, transfiriendo rotaciones en espacio de mundo (`tools/characters/build_cireneo_v2.py`). Hojas de contacto y lab a 40 px revisadas. Sin integrar en el juego.
 - **Detalle:** [`walkthroughs/cireneo-v2/`](walkthroughs/cireneo-v2/walkthrough.md).
+
+## 2026-11-13 - Cireneo v2 integrado en ROM (`feat/cireneo-rom`)
+- **Entrega:** Cireneo v2 integrado como `CHAR_CHARGER` a `60×60` px (sombra recortada a `80×80`, `CharacterConfig` con dimensiones por personaje y hit volume de francotirador escalado 1,5×), poste inferior de la cruz alargado (`CRUZ_LOWER_K = 0.70`), ritmo de pasos ajustado en `CHASE` (`anim_period = 8`) y clip dedicado de carga agachado (~77,4°, 4 frames a 4 ticks/frame en `CHARGE`). Limpieza de `assets/inbox/`.
+- **Detalle:** [`walkthroughs/cireneo-rom/`](walkthroughs/cireneo-rom/walkthrough.md).

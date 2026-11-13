@@ -11,16 +11,16 @@ from test_sprite_ground_anchor import exported_anchors, pixel_values  # noqa: E4
 
 WEAPONS_C = (ROOT / "source" / "weapons.c").read_text(encoding="utf-8")
 HIT_H = (ROOT / "include" / "hitvolume.h").read_text(encoding="utf-8")
-CHARACTERS = {"charger": ("g_charger_frames", 1), "shooter": ("g_necron_frames", 2)}
+CHARACTERS = {"charger": ("g_charger_frames", 1, 60, 60, 1), "shooter": ("g_necron_frames", 2, 40, 40, 0)}
 MUZZLE_HEIGHTS = (14, 18, 22)
 
 
-def hit_grid(height):
+def hit_grid(height, large=0):
     with tempfile.TemporaryDirectory() as tmp:
         exe = Path(tmp) / "grid.exe"
         subprocess.run(["gcc", "-O1", "-Wall", "-Werror", "-I", str(ROOT / "include"),
                         str(ROOT / "tests" / "host" / "hitvolume_grid.c"), "-o", str(exe)], check=True)
-        out = subprocess.run([str(exe), str(height)], check=True, capture_output=True, text=True).stdout
+        out = subprocess.run([str(exe), str(height), str(large)], check=True, capture_output=True, text=True).stdout
     grid = {}
     for line in out.splitlines():
         px, up, old, new, _ = map(int, line.split())
@@ -28,19 +28,21 @@ def hit_grid(height):
     return grid
 
 
-def opaque_pixels(symbol, char_id):
+def opaque_pixels(symbol, char_id, w=40, h=40):
     """{direction: set of (dx, up) opaque offsets from the feet anchor, over the 8 frames}."""
     values = pixel_values(symbol)
     anchors = exported_anchors()[char_id]
+    stride = w * h
+    anchor_x = w // 2
     result = {}
     for d in range(8):
         pts = set()
         for f in range(8):
-            frame = values[(d * 8 + f) * 1600:(d * 8 + f + 1) * 1600]
-            for y in range(40):
-                for x in range(40):
-                    if frame[y * 40 + x] & 0x8000:
-                        pts.add((x - 20, anchors[d] - y))
+            frame = values[(d * 8 + f) * stride:(d * 8 + f + 1) * stride]
+            for y in range(h):
+                for x in range(w):
+                    if frame[y * w + x] & 0x8000:
+                        pts.add((x - anchor_x, anchors[d] - y))
         result[d] = pts
     return result
 
@@ -52,12 +54,13 @@ def coverage(grid, pts, which):
 
 class SniperHitVolumeTests(unittest.TestCase):
     def test_new_volume_covers_the_sprite_old_one_did_not(self):
-        for h in MUZZLE_HEIGHTS:
-            grid = hit_grid(h)
-            for name, (symbol, cid) in CHARACTERS.items():
-                for d, pts in opaque_pixels(symbol, cid).items():
+        for name, (symbol, cid, w, h, large) in CHARACTERS.items():
+            pts_by_dir = opaque_pixels(symbol, cid, w, h)
+            for mh in MUZZLE_HEIGHTS:
+                grid = hit_grid(mh, large)
+                for d, pts in pts_by_dir.items():
                     old, new = coverage(grid, pts, 0), coverage(grid, pts, 1)
-                    self.assertGreaterEqual(new, 0.80, f"{name} dir{d} h{h}: new {new:.2f}")
+                    self.assertGreaterEqual(new, 0.80, f"{name} dir{d} h{mh}: new {new:.2f}")
                     self.assertGreater(new, old + 0.4, f"{name} dir{d} h{h}: old {old:.2f} new {new:.2f}")
 
     def test_volume_does_not_swallow_far_misses(self):

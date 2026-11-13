@@ -708,7 +708,10 @@ static void fire_sniper(const WeaponTuning *tuning, const WeaponInput *in, fixed
             if (!e->active || e->hp <= 0 || (hit_mask & (1u << i))) continue;
             int edx = TO_INT(cur_x - e->x);
             int edy = TO_INT(cur_y - e->y);
-            if (body_hit_test(edx, edy, in->muzzle_h)) {
+            int hit = (e->char_id == CHAR_CHARGER)
+                ? body_hit_test_ex(edx, edy, in->muzzle_h, CHARGER_BODY_HIT_CY, CHARGER_BODY_HIT_RX, CHARGER_BODY_HIT_RY)
+                : body_hit_test(edx, edy, in->muzzle_h);
+            if (hit) {
                 hit_mask |= 1u << i;
                 spawn_impact(TO_INT(cur_x), TO_INT(cur_y) - in->muzzle_h, -dir_x, -dir_y, 4, 1);
                 int sniper_damage = tuning->damage_per_hit * g_mods.sniper_damage_pct / 100;

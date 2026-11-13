@@ -183,14 +183,15 @@ static inline int player_screen_y(fixed x, fixed y) {
 static uint8_t s_char_frame_bounds[NUM_CHARACTERS][PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4];
 static uint8_t s_char_ground_anchor[NUM_CHARACTERS][PLAYER_NUM_DIRS];
 static uint8_t s_hero_shot_frame_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4];
+static uint8_t s_charger_charge_frame_bounds[PLAYER_NUM_DIRS][CHARGER_CHARGE_NUM_FRAMES][4];
 
-// Bounds [min_x, min_y, w, h] of the opaque pixels of one 40x40 frame.
-static void measure_frame_bounds(const uint16_t *src, uint8_t *out) {
-    int min_x = PLAYER_SPRITE_W, max_x = -1;
-    int min_y = PLAYER_SPRITE_H, max_y = -1;
-    for (int y = 0; y < PLAYER_SPRITE_H; y++) {
-        for (int x = 0; x < PLAYER_SPRITE_W; x++) {
-            if (src[y * PLAYER_SPRITE_W + x] & BIT(15)) {
+// Bounds [min_x, min_y, w, h] of the opaque pixels of one w x h frame.
+static void measure_frame_bounds(const uint16_t *src, int w, int h, uint8_t *out) {
+    int min_x = w, max_x = -1;
+    int min_y = h, max_y = -1;
+    for (int y = 0; y < h; y++) {
+        for (int x = 0; x < w; x++) {
+            if (src[y * w + x] & BIT(15)) {
                 if (x < min_x) min_x = x;
                 if (x > max_x) max_x = x;
                 if (y < min_y) min_y = y;
@@ -213,15 +214,20 @@ static void measure_frame_bounds(const uint16_t *src, uint8_t *out) {
 
 static void init_char_sprite_data(void) {
     for (int c = 0; c < NUM_CHARACTERS; c++) {
+        int sw = g_characters[c].sprite_w;
+        int sh = g_characters[c].sprite_h;
         for (int d = 0; d < PLAYER_NUM_DIRS; d++) {
             for (int f = 0; f < PLAYER_NUM_FRAMES; f++)
-                measure_frame_bounds(g_character_frames[c][d][f], s_char_frame_bounds[c][d][f]);
+                measure_frame_bounds(character_frame_ptr(c, d, f), sw, sh, s_char_frame_bounds[c][d][f]);
             s_char_ground_anchor[c][d] = g_character_ground_anchors[c][d];
         }
     }
     for (int d = 0; d < PLAYER_NUM_DIRS; d++)
         for (int f = 0; f < PLAYER_NUM_FRAMES; f++)
-            measure_frame_bounds(g_player_shot_frames[d][f], s_hero_shot_frame_bounds[d][f]);
+            measure_frame_bounds(g_player_shot_frames[d][f], PLAYER_SPRITE_W, PLAYER_SPRITE_H, s_hero_shot_frame_bounds[d][f]);
+    for (int d = 0; d < PLAYER_NUM_DIRS; d++)
+        for (int f = 0; f < CHARGER_CHARGE_NUM_FRAMES; f++)
+            measure_frame_bounds(g_charger_charge_frames[d][f], CHARGER_SPRITE_W, CHARGER_SPRITE_H, s_charger_charge_frame_bounds[d][f]);
 }
 
 // ---------------------------------------------------------------------------
@@ -621,16 +627,17 @@ static void draw_player(uint16_t *buffer, int cam_x, int cam_y) {
     int min_x = b[0];
     int min_y = b[1];
 
+    int sw = clip >= 0 ? PLAYER_SPRITE_W : g_characters[s_player.char_id].sprite_w;
     const uint16_t *frame = clip >= 0
-        ? &g_player_shot_frames[s_player.dir][clip][min_y * PLAYER_SPRITE_W + min_x]
-        : &g_character_frames[s_player.char_id][s_player.dir][s_player.frame][min_y * PLAYER_SPRITE_W + min_x];
-    int pitch = PLAYER_SPRITE_W;
+        ? &g_player_shot_frames[s_player.dir][clip][min_y * sw + min_x]
+        : character_frame_ptr(s_player.char_id, s_player.dir, s_player.frame) + min_y * sw + min_x;
+    int pitch = sw;
     if (g_player_state.invuln_timer > 0 && ((g_player_state.invuln_timer >> 2) & 1)) {
         // Hit feedback: red flash while the i-frames run.
         static uint16_t s_tint[PLAYER_SPRITE_W * PLAYER_SPRITE_H];
         for (int y = 0; y < bh; y++) {
             for (int x = 0; x < bw; x++) {
-                uint16_t c = frame[y * PLAYER_SPRITE_W + x];
+                uint16_t c = frame[y * sw + x];
                 if (c & BIT(15)) {
                     int red = (c & 31) + 14, green = ((c >> 5) & 31) >> 1, blue = ((c >> 10) & 31) >> 1;
                     if (red > 31) red = 31;
@@ -643,7 +650,7 @@ static void draw_player(uint16_t *buffer, int cam_x, int cam_y) {
         pitch = bw;
     }
     blit_stride(buffer, frame, pitch, bw, bh,
-                px - PLAYER_ANCHOR_X + min_x, py - s_char_ground_anchor[s_player.char_id][s_player.dir] + min_y,
+                px - sw / 2 + min_x, py - s_char_ground_anchor[s_player.char_id][s_player.dir] + min_y,
                 cam_x, cam_y, s_draw_item_depth);
 }
 
@@ -668,19 +675,27 @@ static void draw_enemy(uint16_t *buffer, const Enemy *e, int cam_x, int cam_y) {
     int px = player_screen_x(e->x, e->y);
     int py = player_screen_y(e->x, e->y);
 
-    const uint8_t *b = s_char_frame_bounds[e->char_id][e->dir][e->frame];
+    int is_charge = (e->char_id == CHAR_CHARGER &&
+                     (e->state == ENEMY_STATE_CHARGE || e->state == ENEMY_STATE_TELEGRAPH));
+    int cf = e->frame & (CHARGER_CHARGE_NUM_FRAMES - 1);
+    const uint8_t *b = is_charge ? s_charger_charge_frame_bounds[e->dir][cf]
+                                 : s_char_frame_bounds[e->char_id][e->dir][e->frame];
     int bw = b[2];
     int bh = b[3];
     if (bw == 0 || bh == 0) return;
     int min_x = b[0];
     int min_y = b[1];
 
-    const uint16_t *frame = &g_character_frames[e->char_id][e->dir][e->frame][min_y * PLAYER_SPRITE_W + min_x];
-    blit_stride(buffer, frame, PLAYER_SPRITE_W, bw, bh,
-                px - PLAYER_ANCHOR_X + min_x, py - s_char_ground_anchor[e->char_id][e->dir] + min_y,
+    int sw = g_characters[e->char_id].sprite_w;
+    int sh = g_characters[e->char_id].sprite_h;
+    const uint16_t *frame = is_charge
+        ? &g_charger_charge_frames[e->dir][cf][min_y * sw + min_x]
+        : character_frame_ptr(e->char_id, e->dir, e->frame) + min_y * sw + min_x;
+    blit_stride(buffer, frame, sw, bw, bh,
+                px - sw / 2 + min_x, py - s_char_ground_anchor[e->char_id][e->dir] + min_y,
                 cam_x, cam_y, s_draw_item_depth);
     if (e->hit_timer > 0)
-        draw_hit_spark(buffer, px, py - 24, cam_x, cam_y, e->hit_timer);
+        draw_hit_spark(buffer, px, py - (sh * 3) / 5, cam_x, cam_y, e->hit_timer);
 }
 
 static void bone_effect_pixel(uint16_t *buffer, int x, int y, int cam_x, int cam_y, uint16_t color) {
@@ -767,12 +782,14 @@ static void render_screen(uint16_t *buffer, DirtySpan *spans, int cam_x, int cam
     // Add enemies only if visible on this screen
     for (int e_idx = 0; e_idx < MAX_ENEMIES; e_idx++) {
         if (!g_enemies[e_idx].active) continue;
+        int sw = g_characters[g_enemies[e_idx].char_id].sprite_w;
+        int sh = g_characters[g_enemies[e_idx].char_id].sprite_h;
         int esx = player_screen_x(g_enemies[e_idx].x, g_enemies[e_idx].y);
         int esy = player_screen_y(g_enemies[e_idx].x, g_enemies[e_idx].y);
-        int e_left = esx - PLAYER_ANCHOR_X - cam_x;
+        int e_left = esx - sw / 2 - cam_x;
         int e_feet = esy - cam_y;
-        if (e_left < SCREEN_W && e_left + PLAYER_SPRITE_W > 0 &&
-            e_feet - PLAYER_SPRITE_H < SCREEN_H && e_feet + PLAYER_SPRITE_H > 0) {
+        if (e_left < SCREEN_W && e_left + sw > 0 &&
+            e_feet - sh < SCREEN_H && e_feet + sh > 0) {
             if (count < MAX_DRAW_ITEMS) {
                 items[count].depth = esy;
                 items[count].ref = -2 - e_idx;
@@ -818,24 +835,35 @@ static void render_screen(uint16_t *buffer, DirtySpan *spans, int cam_x, int cam
     for (int i = 0; i < count; i++) {
         if (items[i].ref == -1) {
             const int clip = s_hero_clip_frame;
+            int shw = clip >= 0 ? PLAYER_SHADOW_W : g_characters[s_player.char_id].shadow_w;
+            int shh = clip >= 0 ? PLAYER_SHADOW_H : g_characters[s_player.char_id].shadow_h;
             const uint8_t *shadow_mask = clip >= 0 ? g_player_shot_shadow_masks[s_player.dir][clip]
-                : g_character_shadow_masks[s_player.char_id][s_player.dir][s_player.frame];
+                : character_shadow_mask_ptr(s_player.char_id, s_player.dir, s_player.frame);
             const uint8_t *shadow_bounds = clip >= 0 ? g_player_shot_shadow_bounds[s_player.dir][clip]
                 : g_character_shadow_bounds[s_player.char_id][s_player.dir][s_player.frame];
             draw_shadow_mask(buffer, shadow_mask,
-                             PLAYER_SHADOW_W, PLAYER_SHADOW_H,
+                             shw, shh,
                              shadow_bounds,
-                             items[i].cx - PLAYER_SHADOW_W / 2,
-                             items[i].cy - PLAYER_SHADOW_H / 2, cam_x, cam_y, items[i].depth);
+                             items[i].cx - shw / 2,
+                             items[i].cy - shh / 2, cam_x, cam_y, items[i].depth);
         } else if (items[i].ref <= -2 &&
                    items[i].ref > -2 - MAX_ENEMIES) {
             int e_idx = -2 - items[i].ref;
             const Enemy *e = &g_enemies[e_idx];
-            draw_shadow_mask(buffer, g_character_shadow_masks[e->char_id][e->dir][e->frame],
-                             PLAYER_SHADOW_W, PLAYER_SHADOW_H,
-                             g_character_shadow_bounds[e->char_id][e->dir][e->frame],
-                             items[i].cx - PLAYER_SHADOW_W / 2,
-                             items[i].cy - PLAYER_SHADOW_H / 2, cam_x, cam_y, items[i].depth);
+            int shw = g_characters[e->char_id].shadow_w;
+            int shh = g_characters[e->char_id].shadow_h;
+            int is_charge = (e->char_id == CHAR_CHARGER &&
+                             (e->state == ENEMY_STATE_CHARGE || e->state == ENEMY_STATE_TELEGRAPH));
+            int cf = e->frame & (CHARGER_CHARGE_NUM_FRAMES - 1);
+            const uint8_t *sh_mask = is_charge ? g_charger_charge_shadow_masks[e->dir][cf]
+                                               : character_shadow_mask_ptr(e->char_id, e->dir, e->frame);
+            const uint8_t *sh_bounds = is_charge ? g_charger_charge_shadow_bounds[e->dir][cf]
+                                                 : g_character_shadow_bounds[e->char_id][e->dir][e->frame];
+            draw_shadow_mask(buffer, sh_mask,
+                             shw, shh,
+                             sh_bounds,
+                             items[i].cx - shw / 2,
+                             items[i].cy - shh / 2, cam_x, cam_y, items[i].depth);
         }
     }
     PP_ADD(PP_SHADOW, pp_shadow);
@@ -1154,7 +1182,9 @@ static void death_chunks_spawn(const Enemy *e, fixed hit_vx, fixed hit_vy) {
     int min_x = bounds[0], min_y = bounds[1];
     int width = bounds[2], height = bounds[3];
     if (width == 0 || height == 0) return;
-    const uint16_t *frame = g_character_frames[e->char_id][e->dir][e->frame];
+    int sw = g_characters[e->char_id].sprite_w;
+    int sh = g_characters[e->char_id].sprite_h;
+    const uint16_t *frame = character_frame_ptr(e->char_id, e->dir, e->frame);
 
     for (int piece = 0; piece < 6; piece++) {
         int column = piece & 1;
@@ -1165,8 +1195,8 @@ static void death_chunks_spawn(const Enemy *e, fixed hit_vx, fixed hit_vy) {
         int max_y = min_y + height - DEATH_CHUNK_SIZE;
         if (max_x < min_x) max_x = min_x;
         if (max_y < min_y) max_y = min_y;
-        if (max_x > PLAYER_SPRITE_W - DEATH_CHUNK_SIZE) max_x = PLAYER_SPRITE_W - DEATH_CHUNK_SIZE;
-        if (max_y > PLAYER_SPRITE_H - DEATH_CHUNK_SIZE) max_y = PLAYER_SPRITE_H - DEATH_CHUNK_SIZE;
+        if (max_x > sw - DEATH_CHUNK_SIZE) max_x = sw - DEATH_CHUNK_SIZE;
+        if (max_y > sh - DEATH_CHUNK_SIZE) max_y = sh - DEATH_CHUNK_SIZE;
         if (sx < min_x) sx = min_x;
         if (sy < min_y) sy = min_y;
         if (sx > max_x) sx = max_x;
@@ -1177,7 +1207,7 @@ static void death_chunks_spawn(const Enemy *e, fixed hit_vx, fixed hit_vy) {
         int opaque = 0;
         for (int y = 0; y < DEATH_CHUNK_SIZE; y++) {
             for (int x = 0; x < DEATH_CHUNK_SIZE; x++) {
-                uint16_t color = frame[(sy + y) * PLAYER_SPRITE_W + sx + x];
+                uint16_t color = frame[(sy + y) * sw + sx + x];
                 chunk->pixels[y * DEATH_CHUNK_SIZE + x] = color;
                 opaque |= (color & BIT(15)) != 0;
             }
@@ -1189,7 +1219,7 @@ static void death_chunks_spawn(const Enemy *e, fixed hit_vx, fixed hit_vy) {
 
         uint32_t hash = seed * 0x45d9f3bu + (uint32_t)piece * 0x27d4eb2du;
         hash ^= hash >> 16;
-        int offset_x = sx + DEATH_CHUNK_SIZE / 2 - PLAYER_ANCHOR_X;
+        int offset_x = sx + DEATH_CHUNK_SIZE / 2 - sw / 2;
         int offset_y = sy + DEATH_CHUNK_SIZE / 2 - s_char_ground_anchor[e->char_id][e->dir];
         fixed screen_x = offset_x * (1 << FIXED_SHIFT);
         fixed screen_y = offset_y * (1 << FIXED_SHIFT);

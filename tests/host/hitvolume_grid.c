@@ -8,12 +8,17 @@
 
 int main(int argc, char **argv) {
     int h = argc > 1 ? atoi(argv[1]) : 18;
+    int large = argc > 2 ? atoi(argv[2]) : 0;
+    int max_x = large ? 32 : 24;
+    int max_up = large ? 56 : 40;
     // Stylus at screen offset (px, up) from the feet: it aims at ground (px, -up + h).
-    for (int up = -8; up <= 40; up++) {
-        for (int px = -24; px <= 24; px++) {
+    for (int up = -8; up <= max_up; up++) {
+        for (int px = -max_x; px <= max_x; px++) {
             int dy = -up + h;
             int old_hit = px * px + GROUND_DY2(dy) <= ENEMY_HIT_RADIUS * ENEMY_HIT_RADIUS;
-            int new_hit = body_hit_test(px, dy, h);
+            int new_hit = large
+                ? body_hit_test_ex(px, dy, h, CHARGER_BODY_HIT_CY, CHARGER_BODY_HIT_RX, CHARGER_BODY_HIT_RY)
+                : body_hit_test(px, dy, h);
             printf("%d %d %d %d %d\n", px, up, old_hit, new_hit, 0);
         }
     }

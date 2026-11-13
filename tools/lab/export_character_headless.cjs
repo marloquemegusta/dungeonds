@@ -6,10 +6,11 @@
 //
 // usage: node export_character_headless.cjs <model.fbx> <outDir> [--template settings.json]
 //          [--anim "<clip name>"] [--rigScale N] [--light <preset>] [--outline <pixel|sobel|none>]
-//          [--saturation N] [--muzzleBone <bone name>] [--muzzleForward F] [--fitZoom Z] [--list]
+//          [--saturation N] [--muzzleBone <bone name>] [--muzzleForward F] [--fitZoom Z] [--resolution N] [--list]
 //   --muzzleBone  no weapon: the muzzle (projected into dirMuzzle) is taken from this bone, pushed F model
 //                 heights along the model front (+Z). Without it the muzzle is the weapon tip (or none).
 //   --fitZoom Z   camera zoom-out factor: 1 fills the cell with the model extent; < 1 shrinks the sprite.
+//   --resolution N override frameSize (e.g. 60 for 60x60).
 //   --list  prints the animation clips and exits without rendering.
 const fs = require('node:fs');
 const path = require('node:path');
@@ -23,7 +24,7 @@ if (!chromium) { console.error('Playwright not found'); process.exit(1); }
 
 const argv = process.argv.slice(2);
 const opt = (n) => { const i = argv.indexOf(n); return i >= 0 ? argv[i + 1] : undefined; };
-const flagVals = new Set(['--template', '--anim', '--rigScale', '--light', '--outline', '--saturation', '--muzzleBone', '--muzzleForward', '--fitZoom']);
+const flagVals = new Set(['--template', '--anim', '--rigScale', '--light', '--outline', '--saturation', '--muzzleBone', '--muzzleForward', '--fitZoom', '--resolution']);
 const pos = argv.filter((a, i) => !a.startsWith('--') && !(i > 0 && flagVals.has(argv[i - 1])));
 const listOnly = argv.includes('--list');
 const model = pos[0] && path.resolve(pos[0]);
@@ -64,8 +65,9 @@ const HTML = path.join(__dirname, 'FBX-Web-Renderer-offline.html');
     const muzzleBone = opt('--muzzleBone');
     const muzzleForward = opt('--muzzleForward') !== undefined ? parseFloat(opt('--muzzleForward')) : undefined;
     const fitZoom = opt('--fitZoom') !== undefined ? parseFloat(opt('--fitZoom')) : undefined;
+    const resolution = opt('--resolution') !== undefined ? parseInt(opt('--resolution'), 10) : undefined;
 
-    const setup = await page.evaluate(async ({ s, anim, rigScale, lightPreset, outlineMode, saturation, muzzleBone, muzzleForward, fitZoom }) => {
+    const setup = await page.evaluate(async ({ s, anim, rigScale, lightPreset, outlineMode, saturation, muzzleBone, muzzleForward, fitZoom, resolution }) => {
       const set = (id, v) => {
         const el = document.getElementById(id);
         if (!el || v === undefined || v === null) return;
@@ -73,7 +75,7 @@ const HTML = path.join(__dirname, 'FBX-Web-Renderer-offline.html');
         el.dispatchEvent(new Event('input', { bubbles: true }));
         el.dispatchEvent(new Event('change', { bubbles: true }));
       };
-      set('resolution', parseInt(String(s.frameSize).split('x')[0], 10));
+      set('resolution', resolution !== undefined ? resolution : parseInt(String(s.frameSize).split('x')[0], 10));
       set('frameCount', s.framesPerDirection);
       set('elevation', s.cameraElevationDegrees);
       set('labBrightness', s.brightness);
@@ -120,7 +122,7 @@ const HTML = path.join(__dirname, 'FBX-Web-Renderer-offline.html');
         keyLight: document.getElementById('keyLight')?.value,
         keyColor: document.getElementById('keyColor')?.value
       };
-    }, { s, anim, rigScale, lightPreset, outlineMode, saturation, muzzleBone, muzzleForward, fitZoom });
+    }, { s, anim, rigScale, lightPreset, outlineMode, saturation, muzzleBone, muzzleForward, fitZoom, resolution });
     if (!setup.ok) { console.error(`animation "${anim}" not found`); process.exitCode = 1; return; }
     console.log('Setup applied: ' + JSON.stringify(setup));
     await page.waitForTimeout(1000);

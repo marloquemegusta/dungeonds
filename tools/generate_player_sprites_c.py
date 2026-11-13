@@ -12,7 +12,7 @@ SHADOW_W = 80
 SHADOW_H = 80
 MASK_BYTES = (SHADOW_W * SHADOW_H) // 2
 
-def parse_header(h_path):
+def parse_header(h_path, mask_bytes=MASK_BYTES):
     with open(h_path, 'r', encoding='utf-8') as f:
         text = f.read()
     m_anc = re.search(r'g_\w+_ground_anchors\[8\]\s*=\s*\{([^}]+)\};', text)
@@ -22,17 +22,56 @@ def parse_header(h_path):
     sprite_bounds = [[int(x) for x in r] for r in sb_rows]
     m_shb = re.search(r'g_\w+_shadow_bounds\[8\]\[8\]\[4\]\s*=\s*\{([\s\S]+?)\n\};', text)
     shb_body = m_shb.group(1)
-    m_mask = re.search(rf'g_\w+_shadow_masks\[8\]\[8\]\[{MASK_BYTES}\][^{{]+\{{([\s\S]+?)\n\}};', text)
+    m_mask = re.search(rf'g_\w+_shadow_masks\[8\]\[8\]\[{mask_bytes}\][^{{]+\{{([\s\S]+?)\n\}};', text)
     mask_body = m_mask.group(1)
     return anchors, sprite_bounds, shb_body, mask_body
 
-def convert_sheet(png_path, w=SPRITE_W, h=SPRITE_H, dir_shift=None):
+
+def crop_shadow_120_to_80(shb_body, mask_body, frame_indices=None):
+    """Crop 120x120 shadow bounds and 4-bit packed masks to 80x80 centered at (60, 60)."""
+    if frame_indices is None:
+        frame_indices = list(range(8))
+    rows = re.findall(r'\{\s*(\d+),\s*(\d+),\s*(\d+),\s*(\d+)\s*\}', shb_body)
+    assert len(rows) == 64, f'Expected 64 shadow_bounds, got {len(rows)}'
+    shb_out = []
+    for d in range(8):
+        shb_out.append('    {\n')
+        for f in frame_indices:
+            x, y, w, h = [int(v) for v in rows[d * 8 + f]]
+            nx = max(0, x - 20)
+            ny = max(0, y - 20)
+            shb_out.append(f'        {{ {nx}, {ny}, {w}, {h} }},\n')
+        shb_out.append('    },\n')
+
+    hex_bytes = [int(b, 16) for b in re.findall(r'0x[0-9A-Fa-f]{2}', mask_body)]
+    frame_bytes = (120 * 120) // 2
+    assert len(hex_bytes) == 64 * frame_bytes, f'Expected {64 * frame_bytes} mask bytes, got {len(hex_bytes)}'
+    mask_out = []
+    for d in range(8):
+        mask_out.append('    {\n')
+        for f in frame_indices:
+            src = hex_bytes[(d * 8 + f) * frame_bytes:(d * 8 + f + 1) * frame_bytes]
+            cropped = []
+            for y in range(20, 100):
+                row_off = y * 60
+                cropped.extend(src[row_off + 10:row_off + 50])
+            mask_out.append('        {\n')
+            for i in range(0, len(cropped), 16):
+                chunk = ', '.join(f'0x{b:02X}' for b in cropped[i:i + 16])
+                mask_out.append(f'            {chunk},\n')
+            mask_out.append('        },\n')
+        mask_out.append('    },\n')
+    return ''.join(shb_out).rstrip('\n'), ''.join(mask_out).rstrip('\n')
+
+def convert_sheet(png_path, w=SPRITE_W, h=SPRITE_H, dir_shift=None, frame_indices=None):
     im = Image.open(png_path).convert('RGBA')
+    if frame_indices is None:
+        frame_indices = list(range(8))
     lines = []
     lines.append('{\n')
     for d in range(8):
         lines.append(f'    // Direction {d}\n    {{\n')
-        for f in range(8):
+        for f in frame_indices:
             lines.append(f'        // Frame {f}\n        {{\n')
             cell = im.crop((f * w, d * h, (f + 1) * w, (d + 1) * h))
             shift = dir_shift[d] if dir_shift else 0
@@ -62,7 +101,7 @@ def convert_sheet(png_path, w=SPRITE_W, h=SPRITE_H, dir_shift=None):
 
 chars_meta = [
     ('player', 'corazon', 'Corazon Abierto Hero', 340, 4),
-    ('charger', 'charger', 'Enemy Charger (Knocker)', 310, 5),
+    ('charger', 'cireneo', 'Enemy Charger (Knocker)', 310, 5),
     ('necron', 'necron', 'Necron Shooter Enemy', 385, 4),
     ('skeleton', 'skeleton', 'Skeleton Walker Enemy', 39, 22),
 ]
@@ -77,24 +116,38 @@ for var_name, folder, disp_name, def_spd, def_ticks in chars_meta:
     char_dir = os.path.join(SRC_ROOT, folder)
     settings_path = os.path.join(char_dir, 'settings.json')
     spd, ticks = def_spd, def_ticks
+    sw, sh = SPRITE_W, SPRITE_H
+    shw, shh = SHADOW_W, SHADOW_H
     if os.path.exists(settings_path):
         with open(settings_path, 'r', encoding='utf-8') as sf:
             sdata = json.load(sf)
             spd = int(sdata.get('speedFixed8_8', def_spd))
             ticks = int(sdata.get('ticksPerFrame', def_ticks))
-    char_configs.append((var_name, folder, disp_name, spd, ticks))
+            if 'frameSize' in sdata:
+                parts = str(sdata['frameSize']).split('x')
+                sw, sh = int(parts[0]), int(parts[1])
+            if 'shadowSize' in sdata:
+                shw, shh = int(sdata['shadowSize'][0]), int(sdata['shadowSize'][1])
+    if var_name == 'charger':
+        ticks = 8  # match 37.86 px stride at ENEMY_CHARGER_APPROACH_SPEED (150)
+    out_shw = SHADOW_W if shw == 120 else shw
+    out_shh = SHADOW_H if shh == 120 else shh
+    char_configs.append((var_name, folder, disp_name, spd, ticks, sw, sh, shw, shh, out_shw, out_shh))
 
 out_lines.append('const CharacterConfig g_characters[NUM_CHARACTERS] = {\n')
-for var_name, folder, disp_name, spd, ticks in char_configs:
-    out_lines.append(f'    {{ "{disp_name}", {spd}, {ticks} }},\n')
+for var_name, folder, disp_name, spd, ticks, sw, sh, shw, shh, out_shw, out_shh in char_configs:
+    out_lines.append(f'    {{ "{disp_name}", {spd}, {ticks}, {sw}, {sh}, {out_shw}, {out_shh} }},\n')
 out_lines.append('};\n\n')
 
-for var_name, folder, disp_name, spd, ticks in char_configs:
+for var_name, folder, disp_name, spd, ticks, sw, sh, shw, shh, out_shw, out_shh in char_configs:
     char_dir = os.path.join(SRC_ROOT, folder)
     png_path = os.path.join(char_dir, 'spritesheet.png')
     h_path = os.path.join(char_dir, 'nds_shadow_anchor.h')
 
-    anchors, sb, shb_body, mask_body = parse_header(h_path)
+    mask_bytes = (shw * shh) // 2
+    anchors, sb, shb_body, mask_body = parse_header(h_path, mask_bytes)
+    if shw == 120:
+        shb_body, mask_body = crop_shadow_120_to_80(shb_body, mask_body)
     all_anchors.append(anchors)
     muzzle = [[[0, 0, 0] for _ in range(8)] for _ in range(8)]
     settings_path = os.path.join(char_dir, 'settings.json')
@@ -105,19 +158,42 @@ for var_name, folder, disp_name, spd, ticks in char_configs:
             muzzle = [[[int(v) for v in dm[d][f]] for f in range(8)] for d in range(8)]
     all_muzzles.append(muzzle)
 
-    out_lines.append(f'// {SPRITE_W}x{SPRITE_H} BGR555 frames for {disp_name}, 8 directions x 8 frames\n')
-    out_lines.append(f'const uint16_t g_{var_name}_frames[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][PLAYER_SPRITE_W * PLAYER_SPRITE_H] __attribute__((aligned(4))) = ')
-    out_lines.append(convert_sheet(png_path, SPRITE_W, SPRITE_H))
+    out_lines.append(f'// {sw}x{sh} BGR555 frames for {disp_name}, 8 directions x 8 frames\n')
+    out_lines.append(f'const uint16_t g_{var_name}_frames[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][{sw} * {sh}] __attribute__((aligned(4))) = ')
+    out_lines.append(convert_sheet(png_path, sw, sh))
     out_lines.append('\n')
 
     out_lines.append(f'// 4-bit packed animated crisp 3D shadow masks for {disp_name} (8 dirs x 8 frames)\n')
-    out_lines.append(f'const uint8_t g_{var_name}_shadow_masks[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][PLAYER_SHADOW_W * PLAYER_SHADOW_H / 2] __attribute__((aligned(4))) = {{\n')
+    out_lines.append(f'const uint8_t g_{var_name}_shadow_masks[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][{out_shw} * {out_shh} / 2] __attribute__((aligned(4))) = {{\n')
     out_lines.append(mask_body)
     out_lines.append('\n};\n\n')
 
     out_lines.append(f'const uint8_t g_{var_name}_shadow_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4] = {{\n')
     out_lines.append(shb_body)
     out_lines.append('\n};\n\n')
+
+# Charger charge clip (Cireneo bent nearly parallel to the ground): 4 frames (0, 2, 4, 6) at 60x60.
+CHARGE_DIR = os.path.join(SRC_ROOT, 'cireneo_charge')
+walk_c_anchors, _, _, _ = parse_header(os.path.join(SRC_ROOT, 'cireneo', 'nds_shadow_anchor.h'), (120 * 120) // 2)
+chg_anchors, _, chg_shb_body, chg_mask_body = parse_header(os.path.join(CHARGE_DIR, 'nds_shadow_anchor.h'), (120 * 120) // 2)
+chg_shift = [walk_c_anchors[d] - chg_anchors[d] for d in range(8)]
+chg_frames = [0, 2, 4, 6]
+chg_shb_body, chg_mask_body = crop_shadow_120_to_80(chg_shb_body, chg_mask_body, chg_frames)
+print('charger charge anchors: walk', walk_c_anchors, 'charge', chg_anchors, 'shift', chg_shift)
+
+out_lines.append('// 60x60 BGR555 charge clip of the charger (CHAR_CHARGER), 8 directions x 4 frames\n')
+out_lines.append('const uint16_t g_charger_charge_frames[PLAYER_NUM_DIRS][CHARGER_CHARGE_NUM_FRAMES][CHARGER_SPRITE_W * CHARGER_SPRITE_H] __attribute__((aligned(4))) = ')
+out_lines.append(convert_sheet(os.path.join(CHARGE_DIR, 'spritesheet.png'), 60, 60, chg_shift, chg_frames))
+out_lines.append('\n')
+
+out_lines.append('// 4-bit packed shadow masks of the charger charge clip (8 dirs x 4 frames, 80x80)\n')
+out_lines.append('const uint8_t g_charger_charge_shadow_masks[PLAYER_NUM_DIRS][CHARGER_CHARGE_NUM_FRAMES][CHARGER_SHADOW_W * CHARGER_SHADOW_H / 2] __attribute__((aligned(4))) = {\n')
+out_lines.append(chg_mask_body)
+out_lines.append('\n};\n\n')
+
+out_lines.append('const uint8_t g_charger_charge_shadow_bounds[PLAYER_NUM_DIRS][CHARGER_CHARGE_NUM_FRAMES][4] = {\n')
+out_lines.append(chg_shb_body)
+out_lines.append('\n};\n\n')
 
 # Hero shot clip (Corazon Abierto, DESIGN.md "Carga y disparo"): a second set for CHAR_HERO only.
 # It is the clip rendered by the lab with the walk's settings. Its ground line was 1 px lower
@@ -166,16 +242,16 @@ for muzzle in all_muzzles:
     out_lines.append('    },\n')
 out_lines.append('};\n\n')
 
-out_lines.append('const uint16_t (* const g_character_frames[NUM_CHARACTERS])[PLAYER_NUM_FRAMES][PLAYER_SPRITE_W * PLAYER_SPRITE_H] = {\n')
-out_lines.append('    g_player_frames,\n')
-out_lines.append('    g_charger_frames,\n')
-out_lines.append('    g_necron_frames,\n    g_skeleton_frames\n')
+out_lines.append('const uint16_t * const g_character_frames[NUM_CHARACTERS] = {\n')
+out_lines.append('    &g_player_frames[0][0][0],\n')
+out_lines.append('    &g_charger_frames[0][0][0],\n')
+out_lines.append('    &g_necron_frames[0][0][0],\n    &g_skeleton_frames[0][0][0]\n')
 out_lines.append('};\n\n')
 
-out_lines.append('const uint8_t (* const g_character_shadow_masks[NUM_CHARACTERS])[PLAYER_NUM_FRAMES][PLAYER_SHADOW_W * PLAYER_SHADOW_H / 2] = {\n')
-out_lines.append('    g_player_shadow_masks,\n')
-out_lines.append('    g_charger_shadow_masks,\n')
-out_lines.append('    g_necron_shadow_masks,\n    g_skeleton_shadow_masks\n')
+out_lines.append('const uint8_t * const g_character_shadow_masks[NUM_CHARACTERS] = {\n')
+out_lines.append('    &g_player_shadow_masks[0][0][0],\n')
+out_lines.append('    &g_charger_shadow_masks[0][0][0],\n')
+out_lines.append('    &g_necron_shadow_masks[0][0][0],\n    &g_skeleton_shadow_masks[0][0][0]\n')
 out_lines.append('};\n\n')
 
 out_lines.append('const uint8_t (* const g_character_shadow_bounds[NUM_CHARACTERS])[PLAYER_NUM_FRAMES][4] = {\n')
