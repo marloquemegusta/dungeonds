@@ -4,6 +4,7 @@
 #include "grenade.h"
 #include "groundfx.h"
 #include "hitvolume.h"
+#include "sfx.h"
 
 /* TUNABLE-PLACEHOLDER: Player Weapons Tuning Table (Fixed-Point 8.8).
  * Goal hits to kill (DESIGN.md 4.3): shotgun point blank 1 shooter / 2-3 charger,
@@ -753,6 +754,8 @@ static int fire_weapon(PlayerState *player, const WeaponInput *in, fixed dir_x, 
     if (player->current_weapon == WEAPON_SHOTGUN) {
         fire_shotgun(tuning, in, dir_x, dir_y);
     } else {
+        sfx_stop_charge();
+        sfx_play(SFX_HEART_FIRE, TO_INT(in->player_x));
         fire_sniper(tuning, in, dir_x, dir_y, enemies, max_enemies);
     }
     spawn_flash(in, dir_x, dir_y);
@@ -1017,6 +1020,7 @@ int weapons_can_start_aim(const PlayerState *player) {
 
 int weapons_input(PlayerState *player, const WeaponInput *in, Enemy *enemies, int max_enemies) {
     if (!player || !in || player->is_dead) {
+        if (s_aim_state == AIM_AIMING || s_aim_state == AIM_READY) sfx_stop_charge();
         s_aim_state = AIM_IDLE;
         grenade_cancel();
         return 0;
@@ -1045,6 +1049,7 @@ int weapons_input(PlayerState *player, const WeaponInput *in, Enemy *enemies, in
             s_aim_state = AIM_AIMING;
             s_aim_timer = 0;
             s_aim_prog = 0;
+            sfx_start_charge();
         }
     }
     if (s_aim_state == AIM_IDLE) return 0;
@@ -1052,6 +1057,8 @@ int weapons_input(PlayerState *player, const WeaponInput *in, Enemy *enemies, in
     if (!in->touch_down) {
         if (s_aim_state == AIM_READY) {
             result = fire_weapon(player, in, s_aim_dir_x, s_aim_dir_y, enemies, max_enemies);
+        } else {
+            sfx_stop_charge();
         }
         s_aim_state = AIM_IDLE;
         return result;
@@ -1063,6 +1070,7 @@ int weapons_input(PlayerState *player, const WeaponInput *in, Enemy *enemies, in
     int bx = in->touch_x - TO_INT(in->player_x);
     int by = in->touch_y - (TO_INT(in->player_y) - in->muzzle_h);
     if (bx * bx + by * by <= SNIPER_CANCEL_RADIUS * SNIPER_CANCEL_RADIUS) {
+        sfx_stop_charge();
         s_aim_state = AIM_CANCELLED;
         return 0;
     }

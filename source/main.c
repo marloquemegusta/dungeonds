@@ -20,6 +20,7 @@
 #include "tide.h"
 #include "godrays.h"
 #include "pickups.h"
+#include "sfx.h"
 #include <string.h>
 #include <time.h>
 
@@ -1758,6 +1759,7 @@ int main(void) {
 
 
     init_char_sprite_data();
+    sfx_init();
     CRASH_INIT();
     PP_INIT();
     enemy_set_death_hook(on_enemy_death);
@@ -1804,6 +1806,7 @@ int main(void) {
         }
 
         uint32_t t0 = cpuGetTiming();
+        sfx_frame_begin(s_cam_x);
         touch_track(touch_down, touch.px, touch.py);
         s_keys_down_latch |= keys_down;
         transition_update();

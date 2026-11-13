@@ -4,6 +4,7 @@ Primero el estado necesario para retomar el trabajo sin depender del chat; despu
 
 ## Estado actual (2026-11-13)
 
+- **SFX base del Corazón Abierto (2026-11-13, `walkthroughs/sfx-core/`):** 5 sonidos base (carga, fuego sagrado, hit enemigo con jitter ±12%, muerte por combustión y daño al jugador con quejido) horneados con `tools/bake_sfx.py` a 16.384 Hz mono 8-bit (23,1 KB en RAM) y reproducidos por hardware ARM7 (`source/sfx.c`) con panning por cámara y cooldowns anti-spam. Validado en DS por el usuario. Pendiente: granada, telegrafías enemigas (láser/embestida), muro, pickups y música.
 - **VFX del Corazón Abierto (2026-11-13, `walkthroughs/corazon-vfx-paleta/`):** paleta `FX_SH_*` desaturada y cálida (marfil, oro antiguo, ámbar, terracota, carmesí, sangre seca y ceniza cálida) + bordes tramados/atenuados en láser de carga/disparo, chispas y las cuatro auras (`L`, `G`, `E`, `H`), junto con anillos de suelo discontinuos. Validado en DS por el usuario. Pendiente: elegir aura definitiva y quitar el selector `Y`.
 - **El Corazón Abierto, héroe (2026-11-12, en `main`):** sustituye al marine. Andar de Mixamo, carga/disparo con brazos en cruz, rayo desde el pecho, haz «fuego» y cuatro auras de carga en comparación (`Y`: llamas, resplandor, espinas, ceniza). Jugado en la DS por el usuario con la catedral v2: va bien (sin log de `PERF_PROFILE`). Pendiente: elegir aura y quitar el selector `Y`. Detalle: `walkthroughs/corazon-abierto/`; diseño en `DESIGN.md` §6.10.
 - **v0.3.1 cerrada (2026-11-07, `walkthroughs/v031-tuning/`):** tres tiers de enemigos (esqueleto, cargador que carga, tirador láser), escala de cifras 100 = 1,0 y pulido de suelo y marea. Jugada en la DS: rendimiento bien y el juego se siente mucho mejor. Pool de 24; el techo 32/48 y el log de `PERF_PROFILE` no se hicieron (`DESIGN.md` §6.9.1, "Valores de la 0.3.1").
@@ -260,3 +261,8 @@ El láser de apuntado se colima durante la carga (ancho, difuso y rojo a 1 px ve
 ## 2026-11-13 - Cireneo v2 integrado en ROM (`feat/cireneo-rom`)
 - **Entrega:** Cireneo v2 integrado como `CHAR_CHARGER` a `60×60` px (sombra recortada a `80×80`, `CharacterConfig` con dimensiones por personaje y hit volume de francotirador escalado 1,5×), poste inferior de la cruz alargado (`CRUZ_LOWER_K = 0.70`), ritmo de pasos ajustado en `CHASE` (`anim_period = 8`) y clip dedicado de carga agachado (~77,4°, 4 frames a 4 ticks/frame en `CHARGE`). Limpieza de `assets/inbox/`.
 - **Detalle:** [`walkthroughs/cireneo-rom/`](walkthroughs/cireneo-rom/walkthrough.md).
+
+## 2026-11-13 - SFX base del Corazón Abierto (`feat/sfx-core`)
+- **Entrega:** 5 SFX generados vía `@elevenlabs/cli`, horneados con `tools/bake_sfx.py` (`assets/sfx/raw/` → `assets/sfx/baked/` → `source/sfx_bank.c`, 23,1 KB en 8-bit) e integrados en `source/sfx.c` (`libnds` hardware, panning por X, cooldowns 2–3 frames y jitter ±12% en hit). Reglas de CLI añadidas a `AGENTS.md` y diseño a `DESIGN.md`.
+- **Verificación:** `build-project.ps1` (`0 warnings`), tests de host (`9` + `58` OK) y prueba en DS real aprobada por el usuario.
+- **Detalle:** [`walkthroughs/sfx-core/`](walkthroughs/sfx-core/walkthrough.md).
