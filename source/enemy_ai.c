@@ -269,7 +269,11 @@ static void update_charger(Enemy *e, Enemy *enemies, int num_enemies, int idx,
                 update_animation(e, 0);
                 break;
             }
-            update_animation(e, 1);
+            // 4-frame charge clip at 4 ticks/frame (16 frames/stride -> ~40 px at charge_speed 650)
+            if (++e->anim_timer >= 4) {
+                e->anim_timer = 0;
+                e->frame = (e->frame + 1) & 3;
+            }
             if (!e->charge_hit) {
                 int hx = TO_INT(player_x - e->x);
                 int hy = TO_INT(player_y - e->y);

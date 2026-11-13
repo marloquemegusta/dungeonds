@@ -21,7 +21,7 @@ CRUZ_FBX = os.path.join(SRC, 'cruz/tripo_convert_ed8f6d13-db47-4c2d-be6b-24996b3
 WALK_FBX = os.path.join(SRC, 'anim/Walking.fbx')   # andar Mixamo (32 frames, root motion)
 # ---- parametros de la cruz (unidades locales del armature = cm) ----
 CRUZ_SCALE = 1.15       # escala uniforme respecto a la cruz original
-CRUZ_LOWER_K = 0.40     # compresion del palo por debajo del travesaño
+CRUZ_LOWER_K = 0.70     # compresion del palo por debajo del travesaño
 CRUZ_BAR_Z = 58.07      # altura del travesaño = altura de los brazos (hueso LeftArm)
 CRUZ_CX = 0.195         # eje X del torso
 CRUZ_ARM_EMBED = 2.5    # cm que la cara frontal del travesa�o se mete en la parte trasera de los brazos
@@ -459,7 +459,7 @@ def write_action(name, poses, fps):
 
 
 # --- generar
-LEAN_CHARGE = (10, 11, 11, 11, -16, -14)
+LEAN_CHARGE = (25, 22, 22, 18, -28, -20)
 LEAN_WALK = (5, 6, 6, 6, 0, 0)       # andar: encorvado bajo la cruz (Hips, Spine, Spine1, Spine2, Neck, Head)
 WALK_FRAMES = 40                     # 32 frames de Mixamo repartidos en 40 (pasos mas lentos)
 

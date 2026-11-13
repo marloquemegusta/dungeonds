@@ -10,11 +10,19 @@
 #define BODY_HIT_RX 15     // half width, px
 #define BODY_HIT_RY 18     // half height, px
 
+#define CHARGER_BODY_HIT_CY 21  // 1.5x for 60x60 charger sprite
+#define CHARGER_BODY_HIT_RX 23
+#define CHARGER_BODY_HIT_RY 27
+
 // dx = ray x - enemy x; dy = ray ground y - enemy y; h = height of the ray over the ground.
+static inline int body_hit_test_ex(int dx, int dy, int h, int cy, int rx, int ry) {
+    int sy = dy - h + cy;               // ray point on screen, relative to the ellipse centre
+    return dx * dx * (ry * ry) + sy * sy * (rx * rx)
+        <= (rx * rx) * (ry * ry);
+}
+
 static inline int body_hit_test(int dx, int dy, int h) {
-    int sy = dy - h + BODY_HIT_CY;      // ray point on screen, relative to the ellipse centre
-    return dx * dx * (BODY_HIT_RY * BODY_HIT_RY) + sy * sy * (BODY_HIT_RX * BODY_HIT_RX)
-        <= (BODY_HIT_RX * BODY_HIT_RX) * (BODY_HIT_RY * BODY_HIT_RY);
+    return body_hit_test_ex(dx, dy, h, BODY_HIT_CY, BODY_HIT_RX, BODY_HIT_RY);
 }
 
 #endif
