@@ -2,8 +2,9 @@
 
 Primero el estado necesario para retomar el trabajo sin depender del chat; después, las entregas recientes verificadas (más nueva al final). El historial hasta 2026-10-21 está en `STATUS-ARCHIVE.md`.
 
-## Estado actual (2026-11-12)
+## Estado actual (2026-11-13)
 
+- **VFX del Corazón Abierto (2026-11-13, `walkthroughs/corazon-vfx-paleta/`):** paleta `FX_SH_*` desaturada y cálida (marfil, oro antiguo, ámbar, terracota, carmesí, sangre seca y ceniza cálida) + bordes tramados/atenuados en láser de carga/disparo, chispas y las cuatro auras (`L`, `G`, `E`, `H`), junto con anillos de suelo discontinuos. Validado en DS por el usuario. Pendiente: elegir aura definitiva y quitar el selector `Y`.
 - **El Corazón Abierto, héroe (2026-11-12, en `main`):** sustituye al marine. Andar de Mixamo, carga/disparo con brazos en cruz, rayo desde el pecho, haz «fuego» y cuatro auras de carga en comparación (`Y`: llamas, resplandor, espinas, ceniza). Jugado en la DS por el usuario con la catedral v2: va bien (sin log de `PERF_PROFILE`). Pendiente: elegir aura y quitar el selector `Y`. Detalle: `walkthroughs/corazon-abierto/`; diseño en `DESIGN.md` §6.10.
 - **v0.3.1 cerrada (2026-11-07, `walkthroughs/v031-tuning/`):** tres tiers de enemigos (esqueleto, cargador que carga, tirador láser), escala de cifras 100 = 1,0 y pulido de suelo y marea. Jugada en la DS: rendimiento bien y el juego se siente mucho mejor. Pool de 24; el techo 32/48 y el log de `PERF_PROFILE` no se hicieron (`DESIGN.md` §6.9.1, "Valores de la 0.3.1").
 - **Props: oclusión y colisión resueltas (2026-11-10).** La profundidad de los props estaba en píxeles del render fuente, no en píxeles de mundo. Además, los bancos toman ahora como huella toda su planta. El usuario lo probó en la DS y lo dio por bueno. Detalle: `walkthroughs/props-depth-units/`.

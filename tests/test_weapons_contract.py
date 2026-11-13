@@ -164,8 +164,8 @@ class SniperFuegoContractTest(unittest.TestCase):
     # DESIGN.md 6.10 (chosen 2026-11-12): the sniper always draws fuego (C), whatever g_fx_style says.
     SNIPER = WEAPONS_C.split("// Sniper shot (fire palette, DESIGN.md 6.10)")[1].split("// Moves and ages")[0]
     IMPACT = WEAPONS_C.split("static void spawn_impact(")[1].split("static void spawn_flash(")[0]
-    AIM = WEAPONS_C.split("// Sniper fuego (DESIGN.md 6.10, the only look)")[1].split("// Parts with volume")[0]
-    TRAIL = WEAPONS_C.split("// Sniper trail (DESIGN.md 6.10, fuego)")[1].split("// Pellets: A short streak")[0]
+    AIM = WEAPONS_C.split("// Sniper fuego (DESIGN.md 6.10):")[1].split("// Parts with volume")[0]
+    TRAIL = WEAPONS_C.split("// Sniper trail (DESIGN.md 6.10, fuego):")[1].split("// Pellets: A short streak")[0]
 
     def test_sniper_effects_ignore_the_style_selector(self):
         for code in (self.SNIPER, self.AIM, self.TRAIL):
@@ -177,13 +177,13 @@ class SniperFuegoContractTest(unittest.TestCase):
         for gone in ("FX_AIM", "FX_TRAIL_A", "FX_TRAIL_B", "FX_TRAIL_C", "FX_MARK", "FX_BLUE_LIGHT",
                      "FX_DARK", "FX_AIM_DIM", "FXP_RING", "FXP_MARK", "AIM_EMBERS", "render_fire_beam"):
             self.assertNotIn(gone, WEAPONS_C, gone)
-        self.assertIn("put_px(t, px, py, ((s_aim_timer >> 1) & 1) ? FX_WHITE : FX_YELLOW);", self.AIM)
+        self.assertIn("put_px(t, px, py, ((s_aim_timer >> 1) & 1) ? FX_SH_IVORY : FX_SH_GOLD);", self.AIM)
         self.assertIn("FXP_CROSS, 4, in->muzzle_x, in->muzzle_y", self.SNIPER)
         cross = WEAPONS_C.split("case FXP_CROSS: {")[1].split("case FXP_FRAG")[0]
-        self.assertIn("FX_GOLD : FX_ORANGE", cross)                  # the cross is gold then orange, no cyan
+        self.assertIn("FX_SH_GOLD : FX_SH_EMBER", cross)
 
     def test_shot_trail_and_embers_keep_the_fuego_numbers(self):
-        self.assertIn("int core = life >= 4 ? FX_WHITE : life >= 2 ? FX_YELLOW : FX_ORANGE;", self.TRAIL)
+        self.assertIn("int core = life >= 4 ? FX_SH_IVORY : life >= 2 ? FX_SH_GOLD : FX_SH_EMBER;", self.TRAIL)
         self.assertIn("for (int i = 0; i < 16; i++) {", self.TRAIL)
         self.assertIn("int w = (6 * (256 - s_aim_prog)) >> 8;", self.AIM)
         self.assertIn("int n = 8 + ((s_aim_prog * 16) >> 8);", self.AIM)     # 8..24 embers a frame
@@ -284,8 +284,8 @@ class SniperAuraContractTest(unittest.TestCase):
         self.assertIn("(alt >= 0 && (n & 1)) ? alt : color", seg)
         flame = self.body("static void aura_flame_draw(", self.AURA)
         self.assertIn("if (k < 2) {", flame)                                  # base: 2 px
-        self.assertIn("aura_seg(t, x0, y0, x1, y1, cam_x, cam_y, FX_YELLOW, FX_ORANGE, b->occl);", flame)
-        self.assertIn("aura_seg(t, x0, y0, x1, y1, cam_x, cam_y, FX_RED, FX_ORANGE, b->occl);", flame)  # tip
+        self.assertIn("aura_seg(t, x0, y0, x1, y1, cam_x, cam_y, FX_SH_IVORY, FX_SH_GOLD, b->occl);", flame)
+        self.assertIn("aura_seg(t, x0, y0, x1, y1, cam_x, cam_y, FX_SH_CRIMSON, FX_SH_DEEP, b->occl);", flame)  # tip
         for gone in ("aura_bolt_draw", "aura_streak"):
             self.assertNotIn(gone, WEAPONS_C, gone)
 
@@ -332,8 +332,8 @@ class SniperAuraContractTest(unittest.TestCase):
 
     def test_ready_flash_ring_on_floor(self):
         self.assertIn("#define AURA_FLASH_FRAMES 3", WEAPONS_C)
-        self.assertIn("int ring = s_aura_flash == AURA_FLASH_FRAMES ? FX_WHITE : FX_GOLD;", self.FLOOR)
-        self.assertIn("gfx_ground_ring(&ground, s_aura_x, s_aura_y, 12, s_fx_rgb[ring], 0);", self.FLOOR)
+        self.assertIn("int ring = s_aura_flash == AURA_FLASH_FRAMES ? FX_SH_IVORY : FX_SH_GOLD;", self.FLOOR)
+        self.assertIn("gfx_ground_ring(&ground, s_aura_x, s_aura_y, 12, s_fx_rgb[ring], 2);", self.FLOOR)
         self.assertIn("s_aim_state == AIM_READY", self.FLOOR)
         self.assertNotIn("gfx_ground_ring", self.LIGHT)
         self.assertIn("s_aura_flash = AURA_FLASH_FRAMES;", WEAPONS_C)
@@ -363,7 +363,7 @@ class AuraLooksContractTest(unittest.TestCase):
     """Second round of sniper auras (DESIGN.md, segunda ronda de auras): selector and looks G, E and H."""
     # The new state, helpers and aura_update (aura_update keeps the flame divide, so it is cut out of the scan).
     SRC = WEAPONS_C.split("// Free slot of a mote pool")[1].split("static void aura_update(void) {")[0]
-    DRAWS = "// G, glow:" + WEAPONS_C.split("// G, glow:")[1].split("void weapons_render_floor(")[0]
+    DRAWS = "// Tapered ray walk for G (glow):" + WEAPONS_C.split("// Tapered ray walk for G (glow):")[1].split("void weapons_render_floor(")[0]
     FLOOR = WEAPONS_C.split("void weapons_render_floor(")[1].split("void weapons_render_light(")[0]
     RENDER = WEAPONS_C.split("void weapons_render(")[1]
     NEW = SRC + DRAWS
@@ -417,7 +417,7 @@ class AuraLooksContractTest(unittest.TestCase):
         # Pool sizes and macros; "n" is the pool size argument of mote_free; "w" is the volute width (clamped to 4);
         # "12" and "2" are the burst count and the two rows of a volute.
         allowed = {"GLOW_RAYS", "THORN_SPIKES", "THORN_DROPS", "ASH_VOLUTES", "ASH_EMBERS", "AURA_MAX_BOLTS",
-                   "n", "w", "12", "2"}
+                   "AURA_SEG_MAX_STEPS", "n", "w", "12", "2"}
         code = self.code(self.NEW)
         bounds = re.findall(r"for \(int \w+ = 0; \w+ < (\w+|\d+); \w+\+\+\)", code)
         self.assertTrue(bounds)
@@ -430,7 +430,7 @@ class AuraLooksContractTest(unittest.TestCase):
         self.assertIn("int shortl = (len * 171) >> 8;", self.NEW)                    # alternate long and short
         self.assertIn("int l = (i & 1) ? shortl : len;", self.NEW)
         self.assertIn("if ((s_aura_tick & 3) == 0) s_glow_rot = (s_glow_rot + 1) & 31;", self.NEW)  # 1 step / 4 frames
-        self.assertIn("aura_px(t, ex, ey, cam_x, cam_y, FX_WHITE, 1);", self.DRAWS)   # white tip
+        self.assertIn("FX_SH_IVORY : FX_SH_GOLD", self.DRAWS)
 
     def test_glow_is_centred_on_the_chest_muzzle(self):
         self.assertIn("s_aura_cx = TO_INT(in->muzzle_x);", WEAPONS_C)
@@ -440,7 +440,7 @@ class AuraLooksContractTest(unittest.TestCase):
     def test_thorn_and_ash_geometry(self):
         self.assertIn("return 12 - ((prog * 6) >> 8);", self.NEW)                   # closes 12 -> 6 px
         self.assertIn("int a = (2 * (aura_rand8() & 15)) & 31;", self.NEW)          # 16 spikes, 2 steps apart
-        self.assertIn("aura_seg(t, x0, y0, x1, y1, cam_x, cam_y, FX_BLACK, FX_BLOOD, 1);", self.DRAWS)
+        self.assertIn("aura_seg(t, x0, y0, x1, y1, cam_x, cam_y, FX_BLACK, FX_SH_DEEP, 1);", self.DRAWS)
         self.assertIn("int target = 3 + ((prog * 3) >> 8);", self.NEW)              # 3..6 volutes
         self.assertIn("int w = 2 + (v->age >> 3);", self.DRAWS)
 
@@ -448,7 +448,7 @@ class AuraLooksContractTest(unittest.TestCase):
         enum_body = WEAPONS_C.split("enum {\n    FX_CORE = 0")[1].split("FX_NUM_COLORS")[0]
         self.assertIn("FX_BLACK,", enum_body)
         table = WEAPONS_C.split("static const uint16_t s_fx_rgb[FX_NUM_COLORS] = {")[1].split("};")[0]
-        self.assertIn("RGB15(2, 1, 1)", table)
+        self.assertIn("FX_SH_IVORY", table)
 
     def test_no_float_and_no_divide_in_the_new_looks(self):
         code = self.code(self.NEW)
@@ -466,7 +466,7 @@ class AuraLooksContractTest(unittest.TestCase):
 
     def test_thorn_ring_only_at_ready_in_the_floor_pass(self):
         self.assertIn("if (s_aim_state == AIM_READY && g_aura_style == AURA_STYLE_E)", self.FLOOR)
-        self.assertIn("gfx_ground_ring(&ground, s_aura_x, s_aura_y, 7, s_fx_rgb[FX_RED], 0);", self.FLOOR)
+        self.assertIn("gfx_ground_ring(&ground, s_aura_x, s_aura_y, 7, s_fx_rgb[FX_SH_CRIMSON], 2);", self.FLOOR)
 
     def test_the_new_looks_stop_with_the_charge_after_a_few_frames(self):
         self.assertIn("#define AURA_FADE_FRAMES 3", WEAPONS_C)
@@ -476,7 +476,7 @@ class AuraLooksContractTest(unittest.TestCase):
 
 
 class SniperCollimationContractTest(unittest.TestCase):
-    AIM = WEAPONS_C.split("// Collimation band: at each ray point")[1].split("// Parts with volume")[0]
+    AIM = WEAPONS_C.split("// Collimation band:")[1].split("// Parts with volume")[0]
 
     def test_progress_is_set_once_per_frame_and_reset(self):
         self.assertIn("static int s_aim_prog = 0;", WEAPONS_C)
@@ -498,12 +498,12 @@ class SniperCollimationContractTest(unittest.TestCase):
 
     def test_aim_band_is_the_only_collimation_shape(self):
         self.assertIn("static void aim_band(", WEAPONS_C)
-        self.assertIn("aim_band(t, px, py, w, centre, FX_BLOOD, FX_ORANGE);", self.AIM)
+        self.assertIn("aim_band(t, px, py, w, centre, FX_SH_CRIMSON, FX_SH_DEEP);", self.AIM)
         self.assertNotIn("aim_halo", WEAPONS_C)
 
     def test_dim_colour_and_ready_threshold(self):
         self.assertIsNone(re.search(r"\bFX_AIM_DIM\b", WEAPONS_C))
-        self.assertIsNotNone(re.search(r"RGB15\(31, 21, 4\),\s+// FX_GOLD", WEAPONS_C))
+        self.assertIsNotNone(re.search(r"RGB15\(27, 20, 11\),\s+// FX_SH_GOLD", WEAPONS_C))
         self.assertIn("s_aim_prog >= 180", self.AIM)
         self.assertIn("int w = (6 * (256 - s_aim_prog)) >> 8;", self.AIM)
 
