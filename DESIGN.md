@@ -9,9 +9,10 @@
 - **Historia de la dirección:** el proyecto nació como un Diablo de nigromancia con esbirros, descartado a favor del shooter. La v0.1 (4 arenas cerradas, §4) era fácil y poco divertida en la DS. La v0.2 (mazmorra de manadas con modificadores estilo Isaac, §5) fue más divertida pero se agotaba en un par de minutos: sin variedad entre runs ni motivo para volver. El 2026-11-06 se eligió el survivors vertical (§6) frente a un Isaac de salas (más barato pero menos del gusto del usuario) y a una campaña lineal tipo Diablo (demasiado contenido a mano). La lanza ósea y la muerte por fragmentos quedan como FX reutilizables.
 
 ## 2. Dirección de Arte y Pipeline
-- **Técnica:** sprites 2D pre-renderizados a partir de modelos 3D con animación esquelética (FBX/GLB).
+- **Técnica:** sprites 2D pre-renderizados a partir de modelos 3D con animación esquelética (FBX/GLB), **sin outline** en personajes, enemigos ni piezas de escenario.
 - **Proyección:** isométrica/dimétrica en 8 direcciones; mapa y personajes con la misma cámara e iluminación.
-- **Herramienta de render:** el lab Three.js (`tools/lab/`), fuente de verdad visual para mapa y personajes. Detalle del pipeline en `TECHNICAL.md` §3.
+- **Herramienta de render única:** el lab Three.js (`tools/lab/`), fuente de verdad visual para mapa y personajes; no abrir vías de render paralelas en Blender/Python salvo prototipos temporales marcados como tal. Detalle del pipeline en `TECHNICAL.md` §3.
+- **Regla de personaje:** **1 personaje = 1 arma**; cualquier selector de armas, auras o animaciones en la ROM actual es solo herramienta de depuración.
 - **Personajes actuales:** héroe (El Corazón Abierto), cargador (El Cireneo v2), esqueleto y tirador (necron, pendiente de sustituir por El Ojo del Tribunal).
 - **FX reutilizables:**
   - Lanza ósea: salva de cinco astillas estrechas y puntiagudas dibujadas proceduralmente, sin outline, con motas en tonos marfil/hueso.
