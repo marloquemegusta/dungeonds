@@ -115,3 +115,4 @@ Resúmenes acumulativos y auditables de cada entrega y avance de desarrollo en `
 | 97 | Catedral 0.3.2 v2: planta de salón, muro nuevo, lápidas v5, compositor por pantalla y rebase sin tirones | [`catedral-v2-salon/`](catedral-v2-salon/walkthrough.md) | Medido en DS: 60 FPS (peor frame 72 %); sin parpadeo. Pendientes en el walkthrough |
 | 98 | El Corazón Abierto como héroe: andar, carga/disparo, rayo desde el pecho, haz «fuego» y auras | [`corazon-abierto/`](corazon-abierto/walkthrough.md) | Jugado en DS: va bien (sin log de perf); falta elegir aura |
 | 99 | Cireneo v2 con acentos negro y rojo y las mismas animaciones | [`cireneo-v2/`](cireneo-v2/walkthrough.md) | FBX regenerados y vistos en el lab; sin integrar en el juego |
+| 100 | Rediseño de paleta y suavizado de VFX del Corazón Abierto (láser y auras L/G/E/H) | [`corazon-vfx-paleta/`](corazon-vfx-paleta/walkthrough.md) | Validado en DeSmuME (GIFs A/B) y host; pendiente revisión visual |

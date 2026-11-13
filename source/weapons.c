@@ -140,8 +140,12 @@ enum {
     FX_BRASS,                                      // spent casing
     FX_SMOKE_A, FX_SMOKE_B, FX_SMOKE_C,            // grey smoke, light to dark
     FX_DUST_A, FX_DUST_B,                          // dust, light to dark
-    FX_GOLD, FX_BLOOD, FX_RED, FX_ASH,             // fire palette (DESIGN.md 6.10): gold, blood red, ember, ash
+    FX_GOLD, FX_BLOOD, FX_RED, FX_ASH,             // legacy fire palette
     FX_BLACK,                                      // thorn spikes (aura E)
+    // Sacred Heart desaturated/prerendered palette (DESIGN.md 6.10)
+    FX_SH_IVORY, FX_SH_GOLD, FX_SH_AMBER,          // warm ivory core, antique gold, amber glow
+    FX_SH_EMBER, FX_SH_CRIMSON, FX_SH_DEEP,        // terracotta ember, sacred crimson, deep blood
+    FX_SH_ASH_A, FX_SH_ASH_B, FX_SH_ASH_C,         // warm umber ash, light to dark
     FX_NUM_COLORS
 };
 
@@ -159,7 +163,14 @@ static const uint16_t s_fx_rgb[FX_NUM_COLORS] = {
     RGB15(15, 2, 2),                               // FX_BLOOD
     RGB15(28, 5, 2),                               // FX_RED
     RGB15(9, 8, 8),                                // FX_ASH
-    RGB15(2, 1, 1)                                 // FX_BLACK
+    RGB15(4, 3, 3),                                // FX_BLACK (warm iron)
+    RGB15(29, 25, 19),                             // FX_SH_IVORY
+    RGB15(27, 20, 11),                             // FX_SH_GOLD
+    RGB15(24, 15, 7),                              // FX_SH_AMBER
+    RGB15(20, 9, 5),                               // FX_SH_EMBER
+    RGB15(15, 5, 4),                               // FX_SH_CRIMSON
+    RGB15(9, 3, 3),                                // FX_SH_DEEP
+    RGB15(15, 13, 12), RGB15(10, 9, 8), RGB15(6, 5, 5) // FX_SH_ASH_A..C
 };
 
 // Sniper charge aura (DESIGN.md 4.9, 6.10). Look L (default, F2): flame tongues, 6..8 short wavy flames
@@ -880,7 +891,7 @@ static void thorn_update(int charging, int prog) {
             int a = (2 * (aura_rand8() & 15)) & 31;       // 16 spikes, two table steps apart
             int x, y;
             aura_floor_point(a, thorn_radius(prog) + THORN_LEN, &x, &y);
-            mote_set(&s_drops[slot], x, y, 5, FX_RED);
+            mote_set(&s_drops[slot], x, y, 5, FX_SH_CRIMSON);
         }
     }
 }
@@ -919,11 +930,11 @@ static void ash_update(int charging, int ready, int prog) {
         if ((s_aura_tick & 3) == 0 && live < target) volute_spawn();
         int dense = prog >= 180;
         if ((s_aura_tick & (dense ? 1 : 3)) == 0)
-            ember_spawn(s_aura_cx + (aura_rand8() & 15) - 8, s_aura_cy - 2, 8, dense ? FX_RED : FX_ORANGE);
+            ember_spawn(s_aura_cx + (aura_rand8() & 15) - 8, s_aura_cy - 2, 8, dense ? FX_SH_CRIMSON : FX_SH_EMBER);
     }
     if (ready && !s_aura_was_ready) {
         for (int k = 0; k < 12; k++)
-            ember_spawn(s_aura_cx + (aura_rand8() & 31) - 16, s_aura_cy - (aura_rand8() & 7), 12, FX_GOLD);
+            ember_spawn(s_aura_cx + (aura_rand8() & 31) - 16, s_aura_cy - (aura_rand8() & 7), 12, FX_SH_GOLD);
     }
 }
 
@@ -1234,24 +1245,27 @@ static void draw_cone(const FxTarget *t, int ox, int oy, fixed dir_x, fixed dir_
     }
 }
 
-// Collimation band: at each ray point paint offsets -w..w across the aim. The centre takes `centre`,
-// the inner offsets `inner`, and the rim (|o| == w) only on a checkerboard of `rim`.
+// Collimation band: volumetric falloff across -w..w. Core takes `centre`, inner glow takes `inner`,
+// and the outer edge feathers out with an organic spatial+temporal dither of `rim`.
 static void aim_band(const FxTarget *t, int px, int py, int w, int centre, int inner, int rim) {
     for (int o = -w; o <= w; o++) {
         int x = px + ((s_aim_dir_y * o) >> 8);
         int y = py - ((s_aim_dir_x * o) >> 8);
-        if (o == 0) put_px(t, x, y, centre);
-        else if (o == w || o == -w) {
-            if (((x + y) & 1) == 0) put_px(t, x, y, rim);
-        } else put_px(t, x, y, inner);
+        int ao = o < 0 ? -o : o;
+        if (o == 0) {
+            put_px(t, x, y, centre);
+        } else if (ao == w) {
+            if (((x * 3 + y * 5 + s_aim_timer) & 3) == 0) put_px(t, x, y, rim);
+        } else if (ao * 2 >= w) {
+            if (((x + y + s_aim_timer) & 1) == 0) put_px(t, x, y, inner);
+        } else {
+            put_px(t, x, y, inner);
+        }
     }
 }
 
-// Sniper fuego (DESIGN.md 6.10, the only look): the collimated band starts from the A1 band: blood red inside,
-// a dithered orange rim, the centre red and orange past 70 %. Armed, the line is 1 px and flickers white and
-// yellow. While charging it also throws embers off the rim: 8..24 per frame (cap 32), each rising 1 px a frame
-// for 7 frames. No division: a hash per ember gives its distance along the ray, the lifecycle comes from the
-// frame counter.
+// Sniper fuego (DESIGN.md 6.10): desaturated sacred-fire collimated band (deep crimson/terracotta glow
+// narrowing to a warm ivory/gold filament when armed), with rising ember motes.
 static void render_aim_line(const FxTarget *t, int cam_x, int cam_y) {
     if (s_aim_state != AIM_AIMING && s_aim_state != AIM_READY) return;
     int ready = s_aim_state == AIM_READY;
@@ -1261,15 +1275,15 @@ static void render_aim_line(const FxTarget *t, int cam_x, int cam_y) {
         for (int d = 1; d <= s_aim_len; d++) {
             int px, py;
             aim_point(d, cam_x, cam_y, &px, &py);
-            put_px(t, px, py, ((s_aim_timer >> 1) & 1) ? FX_WHITE : FX_YELLOW);
+            put_px(t, px, py, ((s_aim_timer >> 1) & 1) ? FX_SH_IVORY : FX_SH_GOLD);
         }
         return;
     }
-    int centre = s_aim_prog >= 180 ? FX_ORANGE : FX_RED;
+    int centre = s_aim_prog >= 180 ? FX_SH_GOLD : FX_SH_EMBER;
     for (int d = 1; d <= s_aim_len; d++) {
         int px, py;
         aim_point(d, cam_x, cam_y, &px, &py);
-        aim_band(t, px, py, w, centre, FX_BLOOD, FX_ORANGE);
+        aim_band(t, px, py, w, centre, FX_SH_CRIMSON, FX_SH_DEEP);
     }
     if (s_aim_len <= 0 || w <= 0) return;
     int n = 8 + ((s_aim_prog * 16) >> 8);             // 8..24, under the cap of 32
@@ -1284,7 +1298,7 @@ static void render_aim_line(const FxTarget *t, int cam_x, int cam_y) {
         aim_point(d, cam_x, cam_y, &px, &py);
         int x = px + ((s_aim_dir_y * o) >> 8);
         int y = py - ((s_aim_dir_x * o) >> 8) - age;
-        put_px(t, x, y, age < 3 ? FX_GOLD : age < 6 ? FX_ORANGE : FX_RED);
+        put_px(t, x, y, age < 3 ? FX_SH_GOLD : age < 6 ? FX_SH_EMBER : FX_SH_CRIMSON);
     }
 }
 
@@ -1327,7 +1341,7 @@ static void render_fx_parts(const FxTarget *t, int cam_x, int cam_y) {
         case FXP_CROSS: {
             int arm = p->size - (age - 1);
             if (arm < 1) arm = 1;
-            int col = age == 1 ? FX_WHITE : age == 2 ? FX_GOLD : FX_ORANGE;
+            int col = age == 1 ? FX_SH_IVORY : age == 2 ? FX_SH_GOLD : FX_SH_EMBER;
             draw_cross(t, sx, sy, arm, col);
             break;
         }
@@ -1340,21 +1354,43 @@ static void render_fx_parts(const FxTarget *t, int cam_x, int cam_y) {
     }
 }
 
-// Sniper trail (DESIGN.md 6.10, fuego): 5 px, white core, yellow then orange on each side, cooling; in its
-// last two frames red embers stay along the line (16 points at most).
+static void draw_line_dither(const FxTarget *t, int x0, int y0, int x1, int y1, int color, int phase) {
+    if ((x0 < 0 && x1 < 0) || (x0 >= SCREEN_W && x1 >= SCREEN_W) ||
+        (y0 < 0 && y1 < 0) || (y0 >= SCREEN_H && y1 >= SCREEN_H)) return;
+    int dx = abs_int(x1 - x0), dy = abs_int(y1 - y0);
+    int sx = x0 < x1 ? 1 : -1, sy = y0 < y1 ? 1 : -1;
+    int err = (dx > dy ? dx : -dy) / 2;
+    int step = 0;
+    for (;;) {
+        if (((step + phase) & 1) == 0) put_px(t, x0, y0, color);
+        step++;
+        if (x0 == x1 && y0 == y1) break;
+        int e2 = err;
+        if (e2 > -dx) { err -= dy; x0 += sx; }
+        if (e2 < dy) { err += dx; y0 += sy; }
+    }
+}
+
+// Sniper trail (DESIGN.md 6.10, fuego): warm ivory core, antique gold inner glow, dithered terracotta/crimson
+// outer halo so the edges feather instead of reading as flat stripes; cooling embers along the line.
 static void render_trail(const FxTarget *t, int cam_x, int cam_y) {
     int x0 = s_trail.x0 - cam_x, y0 = s_trail.y0 - cam_y;
     int x1 = s_trail.x1 - cam_x, y1 = s_trail.y1 - cam_y;
     int life = s_trail.life;
-    int core = life >= 4 ? FX_WHITE : life >= 2 ? FX_YELLOW : FX_ORANGE;
-    int side = life >= 4 ? FX_YELLOW : FX_ORANGE;
+    int core = life >= 4 ? FX_SH_IVORY : life >= 2 ? FX_SH_GOLD : FX_SH_EMBER;
+    int side = life >= 4 ? FX_SH_GOLD : FX_SH_AMBER;
     if (life >= 4) {
-        draw_line(t, x0, y0 - 2, x1, y1 - 2, FX_ORANGE);
-        draw_line(t, x0, y0 + 2, x1, y1 + 2, FX_ORANGE);
+        draw_line_dither(t, x0, y0 - 2, x1, y1 - 2, FX_SH_EMBER, life);
+        draw_line_dither(t, x0, y0 + 2, x1, y1 + 2, FX_SH_EMBER, life + 1);
     }
     if (life >= 2) {
-        draw_line(t, x0, y0 - 1, x1, y1 - 1, side);
-        draw_line(t, x0, y0 + 1, x1, y1 + 1, side);
+        if (life >= 3) {
+            draw_line(t, x0, y0 - 1, x1, y1 - 1, side);
+            draw_line(t, x0, y0 + 1, x1, y1 + 1, side);
+        } else {
+            draw_line_dither(t, x0, y0 - 1, x1, y1 - 1, side, life);
+            draw_line_dither(t, x0, y0 + 1, x1, y1 + 1, side, life + 1);
+        }
     }
     draw_line(t, x0, y0, x1, y1, core);
     if (life <= 2) {
@@ -1363,7 +1399,7 @@ static void render_trail(const FxTarget *t, int cam_x, int cam_y) {
             if (((i + life) & 1) != 0) continue;
             int px = x0 + ((dx * i) >> 4);
             int py = y0 + ((dy * i) >> 4);
-            put_px(t, px, py - ((i >> 2) & 1), FX_RED);
+            put_px(t, px, py - ((i >> 2) & 1), FX_SH_CRIMSON);
         }
     }
 }
@@ -1427,7 +1463,7 @@ static void render_fx(const FxTarget *t, int cam_x, int cam_y) {
         WeaponSpark *s = &s_sparks[i];
         if (!s->active) continue;
         int age = (s->life * 3) / s->max_life;        // 2 young .. 0 old
-        int color = s->sniper ? (age >= 2 ? FX_GOLD : age == 1 ? FX_ORANGE : FX_ASH)
+        int color = s->sniper ? (age >= 2 ? FX_SH_GOLD : age == 1 ? FX_SH_EMBER : FX_SH_ASH_B)
                               : (age >= 2 ? FX_SPARK_A : age == 1 ? FX_SPARK_B : FX_SPARK_C);
         int hx = TO_INT(s->x) - cam_x, hy = TO_INT(s->y) - cam_y;
         put_px(t, hx, hy, color);
@@ -1487,20 +1523,20 @@ static void aura_seg(const FxTarget *t, int x0, int y0, int x1, int y1, int cam_
     }
 }
 
-// One F2 flame. Steps 0-1 are the base, 2 px wide (a parallel orange line one px to one side, the yellow
-// core on top); steps 2-3 are orange with a red dither; the tip is red with an orange dither.
+// One F2 flame (desaturated sacred fire): warm ivory/gold core at the base, amber/ember in the middle,
+// crimson/deep blood at the tip so it blends with the prerendered heart.
 static void aura_flame_draw(const FxTarget *t, const AuraBolt *b, int cam_x, int cam_y) {
     for (int k = 0; k + 1 < b->n; k++) {
         int x0 = b->px[k], y0 = b->py[k], x1 = b->px[k + 1], y1 = b->py[k + 1];
         if (k < 2) {
             int steep = abs_int(y1 - y0) > abs_int(x1 - x0);
             int ox = steep, oy = !steep;              // one px across the stroke
-            aura_seg(t, x0 + ox, y0 + oy, x1 + ox, y1 + oy, cam_x, cam_y, FX_ORANGE, -1, b->occl);
-            aura_seg(t, x0, y0, x1, y1, cam_x, cam_y, FX_YELLOW, FX_ORANGE, b->occl);
+            aura_seg(t, x0 + ox, y0 + oy, x1 + ox, y1 + oy, cam_x, cam_y, FX_SH_AMBER, FX_SH_EMBER, b->occl);
+            aura_seg(t, x0, y0, x1, y1, cam_x, cam_y, FX_SH_IVORY, FX_SH_GOLD, b->occl);
         } else if (k < 4) {
-            aura_seg(t, x0, y0, x1, y1, cam_x, cam_y, FX_ORANGE, FX_RED, b->occl);
+            aura_seg(t, x0, y0, x1, y1, cam_x, cam_y, FX_SH_EMBER, FX_SH_CRIMSON, b->occl);
         } else {
-            aura_seg(t, x0, y0, x1, y1, cam_x, cam_y, FX_RED, FX_ORANGE, b->occl);
+            aura_seg(t, x0, y0, x1, y1, cam_x, cam_y, FX_SH_CRIMSON, FX_SH_DEEP, b->occl);
         }
     }
 }
@@ -1515,8 +1551,31 @@ static void aura_draw_pass(const FxTarget *t, int cam_x, int cam_y, int behind) 
     }
 }
 
-// G, glow: 12 rays from the chest, alternately long and short (2/3), tips white. At READY the rays are at
-// full length and blink white every 2 frames. Floor pass: the body covers them.
+// Tapered ray walk for G (glow): fades from core -> mid -> dithered outer tip with no hard dot.
+static void glow_ray(const FxTarget *t, int x0, int y0, int x1, int y1, int cam_x, int cam_y,
+                     int len, int blink) {
+    int dx = abs_int(x1 - x0), dy = abs_int(y1 - y0);
+    int sx = x0 < x1 ? 1 : -1, sy = y0 < y1 ? 1 : -1;
+    int err = dx > dy ? dx >> 1 : -(dy >> 1);
+    int c1 = len >> 1;
+    int c2 = (len * 3) >> 2;
+    for (int n = 0; n < AURA_SEG_MAX_STEPS; n++) {
+        if (n < c1) {
+            aura_px(t, x0, y0, cam_x, cam_y, blink ? FX_SH_IVORY : FX_SH_GOLD, 1);
+        } else if (n < c2) {
+            aura_px(t, x0, y0, cam_x, cam_y, blink ? FX_SH_GOLD : FX_SH_AMBER, 1);
+        } else if ((n & 1) == 0) {
+            aura_px(t, x0, y0, cam_x, cam_y, FX_SH_EMBER, 1);
+        }
+        if (x0 == x1 && y0 == y1) break;
+        int e2 = err;
+        if (e2 > -dx) { err -= dy; x0 += sx; }
+        if (e2 < dy) { err += dx; y0 += sy; }
+    }
+}
+
+// G, glow: 12 tapered rays from the chest, alternately long and short (2/3), fading out at the tips.
+// Floor pass: the body covers them.
 static void glow_draw(const FxTarget *t, int cam_x, int cam_y, int prog) {
     static const uint8_t step[GLOW_RAYS] = { 0, 3, 5, 8, 11, 13, 16, 19, 21, 24, 27, 29 };   // 12 of 32 steps
     int len = glow_len(prog);
@@ -1527,13 +1586,12 @@ static void glow_draw(const FxTarget *t, int cam_x, int cam_y, int prog) {
         int l = (i & 1) ? shortl : len;
         int ex = s_aura_cx + ((s_ell_cos[a] * l) >> 8);
         int ey = s_aura_cy + ((s_ell_sin[a] * l) >> 8);     // upright: no 2:1 squash
-        aura_seg(t, s_aura_cx, s_aura_cy, ex, ey, cam_x, cam_y, blink ? FX_WHITE : FX_GOLD, -1, 1);
-        aura_px(t, ex, ey, cam_x, cam_y, FX_WHITE, 1);
+        glow_ray(t, s_aura_cx, s_aura_cy, ex, ey, cam_x, cam_y, l, blink);
     }
 }
 
-// E, thorn crown: 16 spikes of 3 px, outwards from the closing ellipse, black with dark red; the drops fall
-// red from the tips. Floor pass.
+// E, thorn crown: 16 spikes of 3 px, outwards from the closing ellipse, warm iron with deep blood and
+// muted crimson tip catchlights; drops fall from the tips. Floor pass.
 static void thorn_draw(const FxTarget *t, int cam_x, int cam_y, int prog) {
     int r = thorn_radius(prog);
     for (int i = 0; i < THORN_SPIKES; i++) {
@@ -1541,7 +1599,8 @@ static void thorn_draw(const FxTarget *t, int cam_x, int cam_y, int prog) {
         int x0, y0, x1, y1;
         aura_floor_point(a, r, &x0, &y0);
         aura_floor_point(a, r + THORN_LEN, &x1, &y1);
-        aura_seg(t, x0, y0, x1, y1, cam_x, cam_y, FX_BLACK, FX_BLOOD, 1);
+        aura_seg(t, x0, y0, x1, y1, cam_x, cam_y, FX_BLACK, FX_SH_DEEP, 1);
+        aura_px(t, x1, y1, cam_x, cam_y, FX_SH_CRIMSON, 1);
     }
     for (int i = 0; i < THORN_DROPS; i++) {
         const AuraMote *d = &s_drops[i];
@@ -1549,10 +1608,10 @@ static void thorn_draw(const FxTarget *t, int cam_x, int cam_y, int prog) {
     }
 }
 
-// H, ash: grey volutes 2..4 px wide that widen as they rise, with a dithered edge; embers over them.
-// Front pass: they are drawn over the body (no back half).
+// H, ash: warm umber-ash volutes 2..4 px wide that widen as they rise with rounded/dithered edges;
+// warm embers over them. Front pass: drawn over the body.
 static void ash_draw(const FxTarget *t, int cam_x, int cam_y, int prog) {
-    int core_col = prog >= 180 ? FX_SMOKE_C : FX_SMOKE_B;
+    int core_col = prog >= 180 ? FX_SH_ASH_C : FX_SH_ASH_B;
     for (int i = 0; i < ASH_VOLUTES; i++) {
         const AshVolute *v = &s_volutes[i];
         if (!v->active) continue;
@@ -1560,11 +1619,12 @@ static void ash_draw(const FxTarget *t, int cam_x, int cam_y, int prog) {
         int y = v->ay - v->age;
         int w = 2 + (v->age >> 3);
         if (w > 4) w = 4;
-        int core = v->age < 3 ? FX_SMOKE_A : core_col;
+        int core = v->age < 3 ? FX_SH_ASH_A : core_col;
         for (int r = 0; r < 2; r++) {
             for (int k = 0; k < w; k++) {
                 int edge = (k == 0 || k == w - 1);
-                int col = (edge && ((k + r) & 1)) ? FX_SMOKE_A : core;
+                if (edge && ((k + r + v->age) & 1)) continue;
+                int col = edge ? FX_SH_ASH_A : core;
                 aura_px(t, x + k, y - r, cam_x, cam_y, col, 1);
             }
         }
@@ -1580,14 +1640,14 @@ void weapons_render_floor(uint16_t *buffer, int cam_x, int cam_y) {
     GroundTarget ground = { buffer, cam_x, cam_y };
     grenade_render_floor(&ground);
     render_fx_ground(&ground);
-    // READY flash: a 2:1 ring on the floor around the feet, under the actors. White on the first frame, then gold.
+    // READY flash: a dashed 2:1 warm glow ring on the floor around the feet, under the actors.
     if (s_aura_flash > 0 && s_aim_state == AIM_READY) {
-        int ring = s_aura_flash == AURA_FLASH_FRAMES ? FX_WHITE : FX_GOLD;
-        gfx_ground_ring(&ground, s_aura_x, s_aura_y, 12, s_fx_rgb[ring], 0);
+        int ring = s_aura_flash == AURA_FLASH_FRAMES ? FX_SH_IVORY : FX_SH_GOLD;
+        gfx_ground_ring(&ground, s_aura_x, s_aura_y, 12, s_fx_rgb[ring], 2);
     }
-    // Look E at READY: a thin red ring round the closed crown.
+    // Look E at READY: a dashed muted crimson ring round the closed crown.
     if (s_aim_state == AIM_READY && g_aura_style == AURA_STYLE_E)
-        gfx_ground_ring(&ground, s_aura_x, s_aura_y, 7, s_fx_rgb[FX_RED], 0);
+        gfx_ground_ring(&ground, s_aura_x, s_aura_y, 7, s_fx_rgb[FX_SH_CRIMSON], 2);
     FxTarget target = { buffer };
     aura_draw_pass(&target, cam_x, cam_y, 1);         // style L: arcs behind the body
     if (aura_fx_live()) {
