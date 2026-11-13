@@ -122,3 +122,4 @@ Resúmenes acumulativos y auditables de cada entrega y avance de desarrollo en `
 | 104 | BSO de combate en streaming por NitroFS + Maxmod (Loop A en juego, Loop B reservado para jefes) | [`bgm-loop/`](bgm-loop/walkthrough.md) | Integrado en ROM, tests host OK y validado en DS |
 | 105 | Recorte de sprites BGR555 y máscaras de sombra al bounding box (-63,5 % de ROM, 2,74 → 1,00 MiB) | [`crop-sprites-shadows/`](crop-sprites-shadows/walkthrough.md) | Integrado en ROM, tests host OK, DeSmuME PASS y validado en DS |
 | 106 | Fix de parpadeo de enemigos en la pantalla superior (pintado en inicio de VBlank) | [`top-flicker-fix/`](top-flicker-fix/walkthrough.md) | Integrado en ROM, tests host OK y validado en DS |
+| 107 | Profiling de estrés de enemigos en DS física (20→72 enemigos, sombras y VBlank) | [`stress-enemies-profiling/`](stress-enemies-profiling/walkthrough.md) | Medido en DS; hallazgos documentados para futura sesión de rendimiento |

@@ -4,6 +4,8 @@ Primero el estado necesario para retomar el trabajo sin depender del chat; despu
 
 ## Estado actual (2026-11-13)
 
+- **Profiling de estrés de enemigos (`perf/stress-enemies`, `walkthroughs/stress-enemies-profiling/`):** medido en Nintendo DS física con `PERF_PROFILE=1`. Con sombras suaves actuales, 48–72 enemigos caen a **20 FPS** (`34,3–36,5 ms`, de los cuales **15,8 ms** son solo sombras por lectura píxel a píxel del suelo). Sin sombras: **30–38 FPS** (`17,3–21,1 ms`). Con sombras negras alternadas (30 Hz): techo de **60 FPS** en **18–20 enemigos** (`8,8–11,7 ms` de media, pico `13,9 ms`), aunque el parpadeo de las sombras a 30 Hz se nota en pantalla real. Queda pendiente una sesión específica de rendimiento (sombras, picos de rebase/proyectiles y logger `PERF_PROFILE` con NitroFS).
+
 - **Fix de parpadeo en pantalla superior (`fix/top-flicker`, `walkthroughs/top-flicker-fix/`):** reordenado el bucle principal en `source/main.c` para renderizar la pantalla inferior (doble búfer) antes de `swiWaitForVBlank()` y pintar `s_top_page` (búfer único) nada más empezar el VBlank. Validado en tests de host (`5/5` + `58/58`) y en Nintendo DS física por el usuario.
 
 - **Recorte de sprites y sombras (`perf/crop-sprites-shadows`, `walkthroughs/crop-sprites-shadows/`):** `tools/generate_player_sprites_c.py` recorta sprites BGR555 y máscaras de sombra 4 bpp a su bounding box con tablas de offsets/bounds; `dungeonds.nds` baja de **2,74 MiB a 1,00 MiB (-63,5 %)** sin pérdida visual. Validado en tests de host (41/41), DeSmuME y Nintendo DS física.
