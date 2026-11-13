@@ -573,3 +573,12 @@ Conceptos para la demo de la catedral. Solo cambia el aspecto y se añaden élit
     - **G, resplandor (gloria):** 10-12 rayos rectos de 1 px desde el **pecho**, alternando largos y cortos, oro con la punta blanca; crecen de 4 a 14 px y giran despacio. Detrás del sprite, como un halo.
     - **E, corona de espinas:** elipse 2:1 de espinas en el suelo que se cierra hacia los pies, con gotas rojas. Pase de suelo. En la primera captura las espinas negras no se leen sobre el suelo oscuro.
     - **H, ceniza:** volutas de humo tramado y brasas que suben desde hombros y pecho; bocanada de chispas oro en listo. En la primera captura el humo se lee como motas sueltas.
+
+- **SFX base del Corazón Abierto (decidido 2026-11-13, rama `feat/sfx-core`):**
+  - **Catálogo (5 SFX, 16.384 Hz mono 8-bit PCM, ~23,1 KB en total):**
+    1. `heart_charge` (400 ms): ignición creciente al pulsar para cargar; se corta de inmediato si se dispara, cancela o muere.
+    2. `heart_fire` (280 ms): descarga de fuego sagrado al soltar en `AIM_READY`. Sin timbre en `AIM_READY` (silencio limpio al llegar a cruz).
+    3. `enemy_hit` (95 ms): impacto seco en hueso/chispazo, con variación de pitch ±12% y cooldown de 2 frames.
+    4. `enemy_death` (250 ms): combustión súbita al fragmentarse un enemigo, con cooldown de 3 frames.
+    5. `player_hurt` (420 ms): golpe en coraza + quejido de penitente, prioridad máxima al recibir daño.
+  - **Mezcla y espacialidad:** panning estéreo horizontal (16..112) según la posición X del evento respecto a la cámara. Música fuera de esta entrega.
