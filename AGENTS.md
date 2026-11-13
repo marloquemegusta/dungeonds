@@ -20,7 +20,7 @@ Si una regla o cifra aparece en dos documentos, uno de ellos sobra: dejarla en s
 
 ## Reglas del Toolchain y Ejecución
 
-1. **Sin comandos interactivos del toolchain al usuario**: compilación, tests, emulación headless y subida a la DS se ejecutan con los scripts de la skill (`build-project.ps1`, `check-toolchain.ps1`, `run-scenario.ps1`, `upload-rom.ps1`, `fetch-device-log.ps1`), invocados desde `C:\codexlocal\skills\agentic-ds-dev\scripts\` con `-ProjectPath <ruta del worktree>`. Si Docker Desktop no está arrancado, arrancarlo y esperar con una condición (no con `sleep` fijo). Los arreglos genéricos del toolchain se hacen en el repo de la skill, en su propia rama, nunca parcheados aquí.
+1. **Sin comandos interactivos del toolchain al usuario**: compilación, tests, emulación headless y subida a la DS se ejecutan con los scripts de la skill (`build-project.ps1`, `check-toolchain.ps1`, `run-scenario.ps1`, `upload-rom.ps1`, `fetch-device-log.ps1`), invocados desde `C:\codexlocal\skills\agentic-ds-dev\scripts\` con `powershell -NonInteractive -ExecutionPolicy Bypass -File ...` y `-ProjectPath <ruta del worktree>` (así ningún parámetro faltante deja el proceso colgado esperando teclado). Si Docker Desktop no está arrancado, arrancarlo y esperar con una condición (no con `sleep` fijo). Los arreglos genéricos del toolchain se hacen en el repo de la skill, en su propia rama, nunca parcheados aquí.
 2. **Nintendo DS es plataforma sin FPU**: prohibido `float` o `double` en código de simulación o juego en tiempo de ejecución (existen por software, pero son lentísimos). Física y movimiento en punto fijo (`int32_t` con 8.8 o 12.12). La ARM9 sí tiene divisor y raíz cuadrada por hardware (`div32`, `sqrt32`); evitar `/` y `%` de C en bucles calientes.
 3. **Presupuesto estricto de memoria**:
    - OAM: 128 entradas de sprites hardware.
@@ -41,11 +41,16 @@ Si una regla o cifra aparece en dos documentos, uno de ellos sobra: dejarla en s
    - Si la feature se ve bien pero la DS baja de 60 FPS, la tarea está bloqueada hasta optimizar.
 7. **Subida a la DS (FTP)**:
    - Solo con confirmación explícita del usuario, que vale para esa subida.
-   - La ROM se sube con el nombre de `romUploadName` en `.ds-game-dev/project.json` (`dungeonds.nds`); el script lo lee solo. No pasar `-RemoteName` salvo que el usuario lo pida.
+   - Ejecutar siempre en modo no interactivo: `powershell -NonInteractive -ExecutionPolicy Bypass -File C:\codexlocal\skills\agentic-ds-dev\scripts\upload-rom.ps1 -ProjectPath <worktree> -ConfirmUpload` (el script lee `rom` y `romUploadName` de `.ds-game-dev/project.json`; no pasar `-RemoteName` salvo que el usuario lo pida).
    - Subir la ROM del worktree en el que se ha trabajado y recién compilada. Tras subir, decir al usuario rama, commit, nombre remoto y tamaño verificado, y qué debe mirar en la consola para reconocer la versión nueva.
    - Si el FTP no responde, la DS no tiene `ftpd.nds` abierto: pedir al usuario que lo abra; no reintentar a ciegas.
-8. **Evidencia visual en el chat**: las imágenes que se quieran mostrar al usuario van en `walkthroughs/<sesión>/assets/` (o en el scratchpad mientras se trabaja) y se enlazan con rutas relativas o se envían como archivo. Nunca generar mockups fuera de la ROM como evidencia de juego.
+8. **Evidencia visual en el chat**: las imágenes que se quieran mostrar al usuario van en `walkthroughs/<sesión>/assets/` (o en el scratchpad mientras se trabaja), se enlazan con rutas relativas verificadas (comprobar que el archivo existe) y nunca se usan mockups fuera de la ROM como evidencia de juego. Para GIFs de animación:
+   - Probar y aprobar primero en **1 unidad** antes de componer multitudes o escenas completas.
+   - Mostrar todo el ciclo pedido (andar + telegrafía + disparo, o avance real si es un efecto en movimiento), a **≥15 fps** (`duration <= 65 ms`) y **4x NEAREST**.
+   - Antes de responder, comprobar visualmente cada punto que pidió el usuario (encuadre, partes no cortadas, velocidad).
 9. **Decisiones de diseño antes de código**: ningún comportamiento visual o de juego nuevo (transparencias, siluetas, feedback, FSM, armas) sin una decisión escrita en `DESIGN.md`. Si falta la decisión, proponer opciones al usuario y parar; no inventar un "provisional" en código. Lo que hoy es provisional está marcado así en `TECHNICAL.md` §4.6 y no se amplía.
+10. **Comunicación con el usuario**: explicar opciones y resultados en lenguaje de juego/producto (concreto, sin jerga interna de git ni abstracciones). Cuando falte una decisión del usuario, hacer **una sola pregunta por turno** con recomendación clara; nunca bloques de varias preguntas a la vez.
+11. **2 fallos → diagnóstico mínimo**: si un render, animación, física de Blender o encaje de mapa falla visualmente 2 veces seguidas, **parar los renders completos** y ejecutar primero una prueba mínima (1 solo modelo, 1 frame o impresión numérica de coordenadas/bounding box) antes de relanzar el proceso completo.
 
 ---
 
@@ -92,7 +97,11 @@ Lecciones: un bucle sin tope congela el juego; el coste de la oclusión por píx
 4. **Commits:**
    - Añadir archivos por ruta (`git add <rutas>`); nunca `git add -A`, `git add .` ni `git commit -a`. Revisar `git status --short` antes de cada commit.
    - Commit, merge y push solo cuando el usuario lo pida o lo apruebe para esa entrega.
-5. **Cierre:** al terminar, fusionar a `main` y limpiar. En Windows, salir antes del worktree (`cd` a la raíz del repo) y cerrar procesos que lo usen; si no, `worktree remove` falla con "Permission denied".
+5. **Cierre:** al terminar, fusionar a `main` y limpiar:
+   - Mover los archivos ya usados de `assets/inbox/` a `assets/inbox/processed/` en el repo principal y confirmar que no quedan zips/fbx procesados huérfanos en `inbox/`.
+   - Si el usuario pidió cerrar o consolidar la sesión, commitear también `DESIGN.md`, `STATUS.md`, `TECHNICAL.md` y `walkthroughs/` sin pedir una segunda confirmación.
+   - Comprobar `git worktree list` para no dejar ramas terminadas sin mergear.
+   - En Windows, salir antes del worktree (`cd` a la raíz del repo) y cerrar procesos que lo usen; si no, `worktree remove` falla con "Permission denied".
    ```bash
    cd /c/codexlocal/dungeonds
    git worktree remove .worktrees/<nombre>
