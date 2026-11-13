@@ -195,6 +195,19 @@ out_lines.append('const uint8_t g_charger_charge_shadow_bounds[PLAYER_NUM_DIRS][
 out_lines.append(chg_shb_body)
 out_lines.append('\n};\n\n')
 
+# Charger telegraph keyframe (Cireneo crouched with feet planted, frame 6): 1 frame at 60x60.
+# Shadow reuses g_charger_charge_shadow_masks[d][0] to stay within the 3.5 MiB EWRAM budget.
+TELE_DIR = os.path.join(SRC_ROOT, 'cireneo_telegraph')
+tg_anchors, _, _, _ = parse_header(os.path.join(TELE_DIR, 'nds_shadow_anchor.h'), (120 * 120) // 2)
+tg_shift = [walk_c_anchors[d] - tg_anchors[d] for d in range(8)]
+tg_frames = [6]
+print('charger telegraph anchors: walk', walk_c_anchors, 'telegraph', tg_anchors, 'shift', tg_shift)
+
+out_lines.append('// 60x60 BGR555 telegraph keyframe of the charger (CHAR_CHARGER), 8 directions x 1 frame\n')
+out_lines.append('const uint16_t g_charger_telegraph_frames[PLAYER_NUM_DIRS][CHARGER_TELEGRAPH_NUM_FRAMES][CHARGER_SPRITE_W * CHARGER_SPRITE_H] __attribute__((aligned(4))) = ')
+out_lines.append(convert_sheet(os.path.join(TELE_DIR, 'spritesheet.png'), 60, 60, tg_shift, tg_frames))
+out_lines.append('\n')
+
 # Hero shot clip (Corazon Abierto, DESIGN.md "Carga y disparo"): a second set for CHAR_HERO only.
 # It is the clip rendered by the lab with the walk's settings. Its ground line was 1 px lower
 # (anchor 34 vs 33 in the walk), so each direction is shifted up by walk_anchor - shot_anchor rows:

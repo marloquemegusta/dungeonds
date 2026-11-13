@@ -248,13 +248,16 @@ static void update_charger(Enemy *e, Enemy *enemies, int num_enemies, int idx,
 
     switch (e->state) {
         case ENEMY_STATE_TELEGRAPH: {
-            // Standing still; the renderer blinks the sprite. The direction was locked on entry.
+            // 3-stage progressive crouch (walk[0] -> telegraph -> charge[0]) without blinking.
             e->dir = dir_from_vector(TO_FIXED(e->aim_dir_x), TO_FIXED(e->aim_dir_y));
-            update_animation(e, 0);
+            int elapsed = tuning->telegraph_duration - e->state_timer;
+            e->frame = (elapsed < 6) ? 0 : (elapsed < 20) ? 1 : 2;
             if (--e->state_timer <= 0) {
                 e->state = ENEMY_STATE_CHARGE;
                 e->state_timer = CHARGER_CHARGE_FRAMES;
                 e->charge_hit = 0;
+                e->frame = 0;
+                e->anim_timer = 0;
             }
             break;
         }
@@ -305,7 +308,8 @@ static void update_charger(Enemy *e, Enemy *enemies, int num_enemies, int idx,
                 e->state = ENEMY_STATE_TELEGRAPH;
                 e->state_timer = tuning->telegraph_duration;
                 e->dir = dir_from_vector(TO_FIXED(e->aim_dir_x), TO_FIXED(e->aim_dir_y));
-                update_animation(e, 0);
+                e->frame = 0;
+                e->anim_timer = 0;
                 break;
             }
             chase_step(e, enemies, num_enemies, idx, tuning->speed, wx, wy, px, py, ground_dist_sq);

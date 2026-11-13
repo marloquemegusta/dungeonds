@@ -118,3 +118,4 @@ Resúmenes acumulativos y auditables de cada entrega y avance de desarrollo en `
 | 100 | Cireneo v2 en la ROM: 60×60 px, carga casi paralela al suelo y ritmo de pasos | [`cireneo-rom/`](cireneo-rom/walkthrough.md) | Integrado en ROM y validado en DeSmuME; pendiente prueba final en DS y restaurar `horde.h` |
 | 101 | Rediseño de paleta y suavizado de VFX del Corazón Abierto (láser y auras L/G/E/H) | [`corazon-vfx-paleta/`](corazon-vfx-paleta/walkthrough.md) | Validado en DeSmuME (GIFs A/B), host y DS |
 | 102 | SFX base del Corazón Abierto (pipeline ElevenLabs CLI + bake 8-bit + mixer hardware DS) | [`sfx-core/`](sfx-core/walkthrough.md) | Integrado en ROM, tests host OK y validado en DS |
+| 103 | Telegrafía sobria del Cireneo (agachado progresivo en 3 fases, pulso de brasa y temblor sin parpadeo) | [`cireneo-telegraph/`](cireneo-telegraph/walkthrough.md) | Integrado en ROM, tests host OK y escenarios headless PASS |

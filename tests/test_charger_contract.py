@@ -106,7 +106,7 @@ class ChargerContractTest(unittest.TestCase):
         self.assertIn("aim_vector(wx, wy, px, py, &e->aim_dir_x, &e->aim_dir_y)", chase)
         telegraph = body.split("case ENEMY_STATE_TELEGRAPH:")[1].split("case ENEMY_STATE_CHARGE:")[0]
         self.assertNotIn("aim_vector", telegraph)                # it does not follow the player
-        self.assertIn("if (e->state == ENEMY_STATE_TELEGRAPH &&", MAIN_C)   # the sprite blinks
+        self.assertIn("g_charger_telegraph_frames", MAIN_C)       # uses dedicated telegraph clip without blinking
 
     def test_telegraph_needs_a_clear_walkable_view_within_range(self):
         refresh = AI_C.split("static void refresh_view")[1].split("// Skeleton")[0]

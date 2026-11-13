@@ -12,6 +12,7 @@
 #define CHARGER_SHADOW_W 80
 #define CHARGER_SHADOW_H 80
 #define CHARGER_CHARGE_NUM_FRAMES 4
+#define CHARGER_TELEGRAPH_NUM_FRAMES 1
 #define PLAYER_NUM_DIRS 8
 #define PLAYER_NUM_FRAMES 8
 
@@ -65,6 +66,9 @@ extern const uint8_t g_charger_shadow_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES]
 extern const uint16_t g_charger_charge_frames[PLAYER_NUM_DIRS][CHARGER_CHARGE_NUM_FRAMES][CHARGER_SPRITE_W * CHARGER_SPRITE_H];
 extern const uint8_t g_charger_charge_shadow_masks[PLAYER_NUM_DIRS][CHARGER_CHARGE_NUM_FRAMES][CHARGER_SHADOW_W * CHARGER_SHADOW_H / 2];
 extern const uint8_t g_charger_charge_shadow_bounds[PLAYER_NUM_DIRS][CHARGER_CHARGE_NUM_FRAMES][4];
+
+// Charger telegraph keyframe (Cireneo crouched with feet planted, bridging walk[0] -> charge[0]): 8 dirs x 1 frame at 60x60
+extern const uint16_t g_charger_telegraph_frames[PLAYER_NUM_DIRS][CHARGER_TELEGRAPH_NUM_FRAMES][CHARGER_SPRITE_W * CHARGER_SPRITE_H];
 
 // Necron enemy frames & animated crisp 3D shadows (8 dirs x 8 frames)
 extern const uint16_t g_necron_frames[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][PLAYER_SPRITE_W * PLAYER_SPRITE_H];

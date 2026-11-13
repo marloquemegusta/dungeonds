@@ -266,3 +266,8 @@ El láser de apuntado se colima durante la carga (ancho, difuso y rojo a 1 px ve
 - **Entrega:** 5 SFX generados vía `@elevenlabs/cli`, horneados con `tools/bake_sfx.py` (`assets/sfx/raw/` → `assets/sfx/baked/` → `source/sfx_bank.c`, 23,1 KB en 8-bit) e integrados en `source/sfx.c` (`libnds` hardware, panning por X, cooldowns 2–3 frames y jitter ±12% en hit). Reglas de CLI añadidas a `AGENTS.md` y diseño a `DESIGN.md`.
 - **Verificación:** `build-project.ps1` (`0 warnings`), tests de host (`9` + `58` OK) y prueba en DS real aprobada por el usuario.
 - **Detalle:** [`walkthroughs/sfx-core/`](walkthroughs/sfx-core/walkthrough.md).
+
+## 2026-11-13 - Telegrafía sobria del Cireneo (`feat/cireneo-telegraph`)
+- **Entrega:** retirado el parpadeo arcade de `ENEMY_STATE_TELEGRAPH`; integrado keyframe `cireneo_telegraph` (`60×60`, 56,25 KiB) en secuencia progresiva de 3 fases (`walk[0] → telegraph → charge[0]`), pulso único de brasa tras la cruz (`draw_telegraph_pulse`) y temblor de tensión de 1 px en los últimos 10 frames.
+- **Verificación:** `build-project.ps1` (`default` y `sandbox`, `0 warnings`), `test_charger_contract.py` (`16` tests OK) y 3 escenarios `enemy_charger_*` PASS.
+- **Detalle:** [`walkthroughs/cireneo-telegraph/`](walkthroughs/cireneo-telegraph/walkthrough.md).

@@ -185,6 +185,7 @@ static uint8_t s_char_frame_bounds[NUM_CHARACTERS][PLAYER_NUM_DIRS][PLAYER_NUM_F
 static uint8_t s_char_ground_anchor[NUM_CHARACTERS][PLAYER_NUM_DIRS];
 static uint8_t s_hero_shot_frame_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4];
 static uint8_t s_charger_charge_frame_bounds[PLAYER_NUM_DIRS][CHARGER_CHARGE_NUM_FRAMES][4];
+static uint8_t s_charger_telegraph_frame_bounds[PLAYER_NUM_DIRS][CHARGER_TELEGRAPH_NUM_FRAMES][4];
 
 // Bounds [min_x, min_y, w, h] of the opaque pixels of one w x h frame.
 static void measure_frame_bounds(const uint16_t *src, int w, int h, uint8_t *out) {
@@ -229,6 +230,9 @@ static void init_char_sprite_data(void) {
     for (int d = 0; d < PLAYER_NUM_DIRS; d++)
         for (int f = 0; f < CHARGER_CHARGE_NUM_FRAMES; f++)
             measure_frame_bounds(g_charger_charge_frames[d][f], CHARGER_SPRITE_W, CHARGER_SPRITE_H, s_charger_charge_frame_bounds[d][f]);
+    for (int d = 0; d < PLAYER_NUM_DIRS; d++)
+        for (int f = 0; f < CHARGER_TELEGRAPH_NUM_FRAMES; f++)
+            measure_frame_bounds(g_charger_telegraph_frames[d][f], CHARGER_SPRITE_W, CHARGER_SPRITE_H, s_charger_telegraph_frame_bounds[d][f]);
 }
 
 // ---------------------------------------------------------------------------
@@ -670,17 +674,53 @@ static void draw_hit_spark(uint16_t *buffer, int x, int y, int cam_x, int cam_y,
     }
 }
 
+// Single sober ember pulse behind the Cireneo cross when locking the charge direction (DESIGN.md 6.9.1).
+static void draw_telegraph_pulse(uint16_t *buffer, int cx, int cy, int state_timer, int cam_x, int cam_y) {
+    if (state_timer < 10 || state_timer > 24) return;
+    static const int8_t dirs[8][2] = {
+        { 1, 0 }, { 1, 1 }, { 0, 1 }, { -1, 1 },
+        { -1, 0 }, { -1, -1 }, { 0, -1 }, { 1, -1 }
+    };
+    int age = 24 - state_timer;               // 0..14
+    int r_start = 6 + (age >> 1);             // 6..13 px
+    uint16_t col = (age < 7) ? RGB15(20, 11, 6) : RGB15(13, 6, 3);
+    for (int d = 0; d < 8; d++) {
+        int dx = dirs[d][0];
+        int dy = dirs[d][1];
+        // Diagonal rays use ~7/10 scale so the ring reads circular.
+        int scale = (dx != 0 && dy != 0) ? 7 : 10;
+        for (int step = 0; step < 3; step++) {
+            int r = r_start + step;
+            int px = cx + (dx * r * scale) / 10;
+            int py = cy + (dy * r * scale) / 10;
+            int sx = px - cam_x;
+            int sy = py - cam_y;
+            if (sx >= 0 && sx < SCREEN_W && sy >= 0 && sy < SCREEN_H &&
+                !occlusion_blocks_pixel(px, py, s_draw_item_depth)) {
+                buffer[sy * SCREEN_W + sx] = col;
+                dirty_row(sy, sx, sx + 1);
+            }
+        }
+    }
+}
+
 static void draw_enemy(uint16_t *buffer, const Enemy *e, int cam_x, int cam_y) {
-    // Charger telegraph (DESIGN.md 6.9.1): the sprite blinks (hidden 4 frames out of 8) while it stands still.
-    if (e->state == ENEMY_STATE_TELEGRAPH && ((e->state_timer >> 2) & 1)) return;
     int px = player_screen_x(e->x, e->y);
     int py = player_screen_y(e->x, e->y);
 
-    int is_charge = (e->char_id == CHAR_CHARGER &&
-                     (e->state == ENEMY_STATE_CHARGE || e->state == ENEMY_STATE_TELEGRAPH));
+    int is_telegraph = (e->char_id == CHAR_CHARGER && e->state == ENEMY_STATE_TELEGRAPH);
+    int is_charge = (e->char_id == CHAR_CHARGER && e->state == ENEMY_STATE_CHARGE);
+    if (is_telegraph) {
+        draw_telegraph_pulse(buffer, px, py - 18, e->state_timer, cam_x, cam_y);
+        if (e->state_timer <= 10 && (e->state_timer & 2)) px += 1;
+    }
+
+    int tf = (e->frame == 1);
     int cf = e->frame & (CHARGER_CHARGE_NUM_FRAMES - 1);
-    const uint8_t *b = is_charge ? s_charger_charge_frame_bounds[e->dir][cf]
-                                 : s_char_frame_bounds[e->char_id][e->dir][e->frame];
+    const uint8_t *b = (is_telegraph && e->frame == 0) ? s_char_frame_bounds[CHAR_CHARGER][e->dir][0]
+                     : (is_telegraph && tf)           ? s_charger_telegraph_frame_bounds[e->dir][0]
+                     : (is_telegraph || is_charge)    ? s_charger_charge_frame_bounds[e->dir][is_telegraph ? 0 : cf]
+                                                      : s_char_frame_bounds[e->char_id][e->dir][e->frame];
     int bw = b[2];
     int bh = b[3];
     if (bw == 0 || bh == 0) return;
@@ -689,8 +729,12 @@ static void draw_enemy(uint16_t *buffer, const Enemy *e, int cam_x, int cam_y) {
 
     int sw = g_characters[e->char_id].sprite_w;
     int sh = g_characters[e->char_id].sprite_h;
-    const uint16_t *frame = is_charge
-        ? &g_charger_charge_frames[e->dir][cf][min_y * sw + min_x]
+    const uint16_t *frame = (is_telegraph && e->frame == 0)
+        ? character_frame_ptr(CHAR_CHARGER, e->dir, 0) + min_y * sw + min_x
+        : (is_telegraph && tf)
+        ? &g_charger_telegraph_frames[e->dir][0][min_y * sw + min_x]
+        : (is_telegraph || is_charge)
+        ? &g_charger_charge_frames[e->dir][is_telegraph ? 0 : cf][min_y * sw + min_x]
         : character_frame_ptr(e->char_id, e->dir, e->frame) + min_y * sw + min_x;
     blit_stride(buffer, frame, sw, bw, bh,
                 px - sw / 2 + min_x, py - s_char_ground_anchor[e->char_id][e->dir] + min_y,
@@ -853,13 +897,15 @@ static void render_screen(uint16_t *buffer, DirtySpan *spans, int cam_x, int cam
             const Enemy *e = &g_enemies[e_idx];
             int shw = g_characters[e->char_id].shadow_w;
             int shh = g_characters[e->char_id].shadow_h;
-            int is_charge = (e->char_id == CHAR_CHARGER &&
-                             (e->state == ENEMY_STATE_CHARGE || e->state == ENEMY_STATE_TELEGRAPH));
+            int is_telegraph = (e->char_id == CHAR_CHARGER && e->state == ENEMY_STATE_TELEGRAPH);
+            int is_charge = (e->char_id == CHAR_CHARGER && e->state == ENEMY_STATE_CHARGE);
             int cf = e->frame & (CHARGER_CHARGE_NUM_FRAMES - 1);
-            const uint8_t *sh_mask = is_charge ? g_charger_charge_shadow_masks[e->dir][cf]
-                                               : character_shadow_mask_ptr(e->char_id, e->dir, e->frame);
-            const uint8_t *sh_bounds = is_charge ? g_charger_charge_shadow_bounds[e->dir][cf]
-                                                 : g_character_shadow_bounds[e->char_id][e->dir][e->frame];
+            const uint8_t *sh_mask = (is_telegraph && e->frame == 0) ? character_shadow_mask_ptr(CHAR_CHARGER, e->dir, 0)
+                                   : (is_telegraph || is_charge)     ? g_charger_charge_shadow_masks[e->dir][is_telegraph ? 0 : cf]
+                                                                     : character_shadow_mask_ptr(e->char_id, e->dir, e->frame);
+            const uint8_t *sh_bounds = (is_telegraph && e->frame == 0) ? g_character_shadow_bounds[CHAR_CHARGER][e->dir][0]
+                                     : (is_telegraph || is_charge)     ? g_charger_charge_shadow_bounds[e->dir][is_telegraph ? 0 : cf]
+                                                                       : g_character_shadow_bounds[e->char_id][e->dir][e->frame];
             draw_shadow_mask(buffer, sh_mask,
                              shw, shh,
                              sh_bounds,

@@ -350,7 +350,7 @@ La prueba de §6.1–6.8 se construye en versiones jugables pequeñas, cada una 
 - **Armas contra esa escala:** el francotirador mata esqueletos de 1 disparo (150 ≥ 100) y tiradores y cargadores de 2 (200 y 300). La escopeta a quemarropa debe matar a un esqueleto de 1 disparo y a un cargador en 2; con la distancia pierde daño, como hoy.
 - **Cargador (cargar y esquivar):**
   1. *Acercamiento* lento por el campo de distancias hasta tener línea de visión a menos de ~160 px.
-  2. *Telegrafía* ~30 frames: parpadeo del sprite y se queda quieto. Fija ahí la dirección hacia el jugador.
+  2. *Telegrafía* ~30 frames (decidido 2026-11-13, rama `feat/cireneo-telegraph`): sin parpadeo del sprite. Reproduce el clip `cireneo_telegraph` (agachado progresivo con los pies abiertos) con un temblor de tensión de 1 px en los últimos frames y un pulso único de brasa tras la cruz al fijar la dirección hacia el jugador.
   3. *Carga* en línea recta con la dirección fijada, a 650 y hasta ~160 px. Daña al tocar al jugador (1 golpe, respeta los i-frames).
   4. *Recuperación* ~60 frames quieto y sin dañar, vulnerable. Luego vuelve al acercamiento.
   - Si choca contra un muro o columna durante la carga, queda **aturdido** ~90 frames.
