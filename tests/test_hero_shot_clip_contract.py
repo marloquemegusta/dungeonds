@@ -43,8 +43,11 @@ def shot_muzzle_table():
 
 class HeroShotClipContractTests(unittest.TestCase):
     def test_header_declares_shot_clip(self):
-        self.assertIn("extern const uint16_t g_player_shot_frames[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][PLAYER_SPRITE_W * PLAYER_SPRITE_H];", HEADER)
-        self.assertIn("extern const uint8_t g_player_shot_shadow_masks[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][PLAYER_SHADOW_W * PLAYER_SHADOW_H / 2];", HEADER)
+        self.assertIn("extern const uint16_t g_player_shot_frames[];", HEADER)
+        self.assertIn("extern const uint32_t g_player_shot_frame_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES];", HEADER)
+        self.assertIn("extern const uint8_t g_player_shot_frame_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4];", HEADER)
+        self.assertIn("extern const uint8_t g_player_shot_shadow_masks[];", HEADER)
+        self.assertIn("extern const uint32_t g_player_shot_shadow_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES];", HEADER)
         self.assertIn("extern const uint8_t g_player_shot_shadow_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4];", HEADER)
         self.assertIn("extern const int8_t g_hero_shot_muzzle[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][3];", HEADER)
 
@@ -84,10 +87,10 @@ class HeroShotClipContractTests(unittest.TestCase):
         self.assertIn("int weapons_aim_progress(void);", WEAPONS_H)
 
     def test_draw_and_shadow_use_the_clip_when_shown(self):
-        self.assertIn("&g_player_shot_frames[s_player.dir][clip][", MAIN)
-        self.assertIn("g_player_shot_shadow_masks[s_player.dir][clip]", MAIN)
+        self.assertIn("&g_player_shot_frames[g_player_shot_frame_offsets[s_player.dir][clip]]", MAIN)
+        self.assertIn("&g_player_shot_shadow_masks[g_player_shot_shadow_offsets[s_player.dir][clip]]", MAIN)
         self.assertIn("g_player_shot_shadow_bounds[s_player.dir][clip]", MAIN)
-        self.assertIn("s_hero_shot_frame_bounds[s_player.dir][clip]", MAIN)
+        self.assertIn("g_player_shot_frame_bounds[s_player.dir][clip]", MAIN)
 
     def test_muzzle_follows_the_shown_clip_frame(self):
         body = function_body(MAIN, "static void player_muzzle(fixed *mx, fixed *my, int *mh)")

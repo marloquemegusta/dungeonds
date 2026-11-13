@@ -181,58 +181,14 @@ static inline int player_screen_y(fixed x, fixed y) {
 // Blitting
 // ---------------------------------------------------------------------------
 
-static uint8_t s_char_frame_bounds[NUM_CHARACTERS][PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4];
 static uint8_t s_char_ground_anchor[NUM_CHARACTERS][PLAYER_NUM_DIRS];
-static uint8_t s_hero_shot_frame_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4];
-static uint8_t s_charger_charge_frame_bounds[PLAYER_NUM_DIRS][CHARGER_CHARGE_NUM_FRAMES][4];
-static uint8_t s_charger_telegraph_frame_bounds[PLAYER_NUM_DIRS][CHARGER_TELEGRAPH_NUM_FRAMES][4];
-
-// Bounds [min_x, min_y, w, h] of the opaque pixels of one w x h frame.
-static void measure_frame_bounds(const uint16_t *src, int w, int h, uint8_t *out) {
-    int min_x = w, max_x = -1;
-    int min_y = h, max_y = -1;
-    for (int y = 0; y < h; y++) {
-        for (int x = 0; x < w; x++) {
-            if (src[y * w + x] & BIT(15)) {
-                if (x < min_x) min_x = x;
-                if (x > max_x) max_x = x;
-                if (y < min_y) min_y = y;
-                if (y > max_y) max_y = y;
-            }
-        }
-    }
-    if (max_x < min_x) {
-        out[0] = 0;
-        out[1] = 0;
-        out[2] = 0;
-        out[3] = 0;
-    } else {
-        out[0] = (uint8_t)min_x;
-        out[1] = (uint8_t)min_y;
-        out[2] = (uint8_t)(max_x - min_x + 1);
-        out[3] = (uint8_t)(max_y - min_y + 1);
-    }
-}
 
 static void init_char_sprite_data(void) {
     for (int c = 0; c < NUM_CHARACTERS; c++) {
-        int sw = g_characters[c].sprite_w;
-        int sh = g_characters[c].sprite_h;
         for (int d = 0; d < PLAYER_NUM_DIRS; d++) {
-            for (int f = 0; f < PLAYER_NUM_FRAMES; f++)
-                measure_frame_bounds(character_frame_ptr(c, d, f), sw, sh, s_char_frame_bounds[c][d][f]);
             s_char_ground_anchor[c][d] = g_character_ground_anchors[c][d];
         }
     }
-    for (int d = 0; d < PLAYER_NUM_DIRS; d++)
-        for (int f = 0; f < PLAYER_NUM_FRAMES; f++)
-            measure_frame_bounds(g_player_shot_frames[d][f], PLAYER_SPRITE_W, PLAYER_SPRITE_H, s_hero_shot_frame_bounds[d][f]);
-    for (int d = 0; d < PLAYER_NUM_DIRS; d++)
-        for (int f = 0; f < CHARGER_CHARGE_NUM_FRAMES; f++)
-            measure_frame_bounds(g_charger_charge_frames[d][f], CHARGER_SPRITE_W, CHARGER_SPRITE_H, s_charger_charge_frame_bounds[d][f]);
-    for (int d = 0; d < PLAYER_NUM_DIRS; d++)
-        for (int f = 0; f < CHARGER_TELEGRAPH_NUM_FRAMES; f++)
-            measure_frame_bounds(g_charger_telegraph_frames[d][f], CHARGER_SPRITE_W, CHARGER_SPRITE_H, s_charger_telegraph_frame_bounds[d][f]);
 }
 
 // ---------------------------------------------------------------------------
@@ -444,15 +400,19 @@ static inline uint16_t world_floor_color(int x, int y) {
 }
 
 __attribute__((target("arm"), noinline))
-static void draw_shadow_mask(uint16_t *buffer, const uint8_t *mask, int sw, int sh,
+static void draw_shadow_mask(uint16_t *buffer, const uint8_t *mask,
                              const uint8_t *bounds, int left, int top,
                              int cam_x, int cam_y, int depth) {
     int ox = left - cam_x;
     int oy = top - cam_y;
-    int sx0 = bounds[0];
-    int sy0 = bounds[1];
-    int sx1 = sx0 + bounds[2];
-    int sy1 = sy0 + bounds[3];
+    int bx = bounds[0];
+    int by = bounds[1];
+    int bw = bounds[2];
+    int bh = bounds[3];
+    int sx0 = bx;
+    int sy0 = by;
+    int sx1 = bx + bw;
+    int sy1 = by + bh;
     if (ox + sx0 < 0) sx0 = -ox;
     if (oy + sy0 < 0) sy0 = -oy;
     if (ox + sx1 > SCREEN_W) sx1 = SCREEN_W - ox;
@@ -461,7 +421,7 @@ static void draw_shadow_mask(uint16_t *buffer, const uint8_t *mask, int sw, int 
 
     for (int y = sy0; y < sy1; y++) {
         uint16_t *dst_row = &buffer[(oy + y) * SCREEN_W + ox];
-        int row_offset = y * sw;
+        int row_offset = (y - by) * bw;
         int world_y = top + y;
         dirty_row(oy + y, ox + sx0, ox + sx1);
         // rn walks the runs of this row left to right; null when nothing can hide the shadow.
@@ -474,7 +434,7 @@ static void draw_shadow_mask(uint16_t *buffer, const uint8_t *mask, int sw, int 
             }
         }
         for (int x = sx0; x < sx1; x++) {
-            int pixel = row_offset + x;
+            int pixel = row_offset + (x - bx);
             uint8_t packed = mask[pixel >> 1];
             uint8_t nibble = (pixel & 1) ? (packed >> 4) : (packed & 0x0F);
             if (nibble > 0) {
@@ -624,8 +584,8 @@ static void draw_player(uint16_t *buffer, int cam_x, int cam_y) {
     int py = player_screen_y(s_player.x, s_player.y);
 
     const int clip = s_hero_clip_frame;
-    const uint8_t *b = clip >= 0 ? s_hero_shot_frame_bounds[s_player.dir][clip]
-                                 : s_char_frame_bounds[s_player.char_id][s_player.dir][s_player.frame];
+    const uint8_t *b = clip >= 0 ? g_player_shot_frame_bounds[s_player.dir][clip]
+                                 : g_character_frame_bounds[s_player.char_id][s_player.dir][s_player.frame];
     int bw = b[2];
     int bh = b[3];
     if (bw == 0 || bh == 0) return;
@@ -634,15 +594,15 @@ static void draw_player(uint16_t *buffer, int cam_x, int cam_y) {
 
     int sw = clip >= 0 ? PLAYER_SPRITE_W : g_characters[s_player.char_id].sprite_w;
     const uint16_t *frame = clip >= 0
-        ? &g_player_shot_frames[s_player.dir][clip][min_y * sw + min_x]
-        : character_frame_ptr(s_player.char_id, s_player.dir, s_player.frame) + min_y * sw + min_x;
-    int pitch = sw;
+        ? &g_player_shot_frames[g_player_shot_frame_offsets[s_player.dir][clip]]
+        : character_frame_ptr(s_player.char_id, s_player.dir, s_player.frame);
+    int pitch = bw;
     if (g_player_state.invuln_timer > 0 && ((g_player_state.invuln_timer >> 2) & 1)) {
         // Hit feedback: red flash while the i-frames run.
         static uint16_t s_tint[PLAYER_SPRITE_W * PLAYER_SPRITE_H];
         for (int y = 0; y < bh; y++) {
             for (int x = 0; x < bw; x++) {
-                uint16_t c = frame[y * sw + x];
+                uint16_t c = frame[y * bw + x];
                 if (c & BIT(15)) {
                     int red = (c & 31) + 14, green = ((c >> 5) & 31) >> 1, blue = ((c >> 10) & 31) >> 1;
                     if (red > 31) red = 31;
@@ -717,10 +677,10 @@ static void draw_enemy(uint16_t *buffer, const Enemy *e, int cam_x, int cam_y) {
 
     int tf = (e->frame == 1);
     int cf = e->frame & (CHARGER_CHARGE_NUM_FRAMES - 1);
-    const uint8_t *b = (is_telegraph && e->frame == 0) ? s_char_frame_bounds[CHAR_CHARGER][e->dir][0]
-                     : (is_telegraph && tf)           ? s_charger_telegraph_frame_bounds[e->dir][0]
-                     : (is_telegraph || is_charge)    ? s_charger_charge_frame_bounds[e->dir][is_telegraph ? 0 : cf]
-                                                      : s_char_frame_bounds[e->char_id][e->dir][e->frame];
+    const uint8_t *b = (is_telegraph && e->frame == 0) ? g_character_frame_bounds[CHAR_CHARGER][e->dir][0]
+                     : (is_telegraph && tf)           ? g_charger_telegraph_frame_bounds[e->dir][0]
+                     : (is_telegraph || is_charge)    ? g_charger_charge_frame_bounds[e->dir][is_telegraph ? 0 : cf]
+                                                      : g_character_frame_bounds[e->char_id][e->dir][e->frame];
     int bw = b[2];
     int bh = b[3];
     if (bw == 0 || bh == 0) return;
@@ -730,13 +690,13 @@ static void draw_enemy(uint16_t *buffer, const Enemy *e, int cam_x, int cam_y) {
     int sw = g_characters[e->char_id].sprite_w;
     int sh = g_characters[e->char_id].sprite_h;
     const uint16_t *frame = (is_telegraph && e->frame == 0)
-        ? character_frame_ptr(CHAR_CHARGER, e->dir, 0) + min_y * sw + min_x
+        ? character_frame_ptr(CHAR_CHARGER, e->dir, 0)
         : (is_telegraph && tf)
-        ? &g_charger_telegraph_frames[e->dir][0][min_y * sw + min_x]
+        ? &g_charger_telegraph_frames[g_charger_telegraph_frame_offsets[e->dir][0]]
         : (is_telegraph || is_charge)
-        ? &g_charger_charge_frames[e->dir][is_telegraph ? 0 : cf][min_y * sw + min_x]
-        : character_frame_ptr(e->char_id, e->dir, e->frame) + min_y * sw + min_x;
-    blit_stride(buffer, frame, sw, bw, bh,
+        ? &g_charger_charge_frames[g_charger_charge_frame_offsets[e->dir][is_telegraph ? 0 : cf]]
+        : character_frame_ptr(e->char_id, e->dir, e->frame);
+    blit_stride(buffer, frame, bw, bw, bh,
                 px - sw / 2 + min_x, py - s_char_ground_anchor[e->char_id][e->dir] + min_y,
                 cam_x, cam_y, s_draw_item_depth);
     if (e->hit_timer > 0)
@@ -882,12 +842,12 @@ static void render_screen(uint16_t *buffer, DirtySpan *spans, int cam_x, int cam
             const int clip = s_hero_clip_frame;
             int shw = clip >= 0 ? PLAYER_SHADOW_W : g_characters[s_player.char_id].shadow_w;
             int shh = clip >= 0 ? PLAYER_SHADOW_H : g_characters[s_player.char_id].shadow_h;
-            const uint8_t *shadow_mask = clip >= 0 ? g_player_shot_shadow_masks[s_player.dir][clip]
+            const uint8_t *shadow_mask = clip >= 0
+                ? &g_player_shot_shadow_masks[g_player_shot_shadow_offsets[s_player.dir][clip]]
                 : character_shadow_mask_ptr(s_player.char_id, s_player.dir, s_player.frame);
             const uint8_t *shadow_bounds = clip >= 0 ? g_player_shot_shadow_bounds[s_player.dir][clip]
                 : g_character_shadow_bounds[s_player.char_id][s_player.dir][s_player.frame];
             draw_shadow_mask(buffer, shadow_mask,
-                             shw, shh,
                              shadow_bounds,
                              items[i].cx - shw / 2,
                              items[i].cy - shh / 2, cam_x, cam_y, items[i].depth);
@@ -901,13 +861,12 @@ static void render_screen(uint16_t *buffer, DirtySpan *spans, int cam_x, int cam
             int is_charge = (e->char_id == CHAR_CHARGER && e->state == ENEMY_STATE_CHARGE);
             int cf = e->frame & (CHARGER_CHARGE_NUM_FRAMES - 1);
             const uint8_t *sh_mask = (is_telegraph && e->frame == 0) ? character_shadow_mask_ptr(CHAR_CHARGER, e->dir, 0)
-                                   : (is_telegraph || is_charge)     ? g_charger_charge_shadow_masks[e->dir][is_telegraph ? 0 : cf]
+                                   : (is_telegraph || is_charge)     ? &g_charger_charge_shadow_masks[g_charger_charge_shadow_offsets[e->dir][is_telegraph ? 0 : cf]]
                                                                      : character_shadow_mask_ptr(e->char_id, e->dir, e->frame);
             const uint8_t *sh_bounds = (is_telegraph && e->frame == 0) ? g_character_shadow_bounds[CHAR_CHARGER][e->dir][0]
                                      : (is_telegraph || is_charge)     ? g_charger_charge_shadow_bounds[e->dir][is_telegraph ? 0 : cf]
                                                                        : g_character_shadow_bounds[e->char_id][e->dir][e->frame];
             draw_shadow_mask(buffer, sh_mask,
-                             shw, shh,
                              sh_bounds,
                              items[i].cx - shw / 2,
                              items[i].cy - shh / 2, cam_x, cam_y, items[i].depth);
@@ -1225,36 +1184,36 @@ static int aim_dir_from_screen(int dx, int dy) {
 }
 
 static void death_chunks_spawn(const Enemy *e, fixed hit_vx, fixed hit_vy) {
-    const uint8_t *bounds = s_char_frame_bounds[e->char_id][e->dir][e->frame];
+    const uint8_t *bounds = g_character_frame_bounds[e->char_id][e->dir][e->frame];
     int min_x = bounds[0], min_y = bounds[1];
     int width = bounds[2], height = bounds[3];
     if (width == 0 || height == 0) return;
     int sw = g_characters[e->char_id].sprite_w;
-    int sh = g_characters[e->char_id].sprite_h;
     const uint16_t *frame = character_frame_ptr(e->char_id, e->dir, e->frame);
 
     for (int piece = 0; piece < 6; piece++) {
         int column = piece & 1;
         int row = piece >> 1;
-        int sx = min_x + ((2 * column + 1) * width) / 4 - DEATH_CHUNK_SIZE / 2;
-        int sy = min_y + ((row + 1) * height) / 4 - DEATH_CHUNK_SIZE / 2;
-        int max_x = min_x + width - DEATH_CHUNK_SIZE;
-        int max_y = min_y + height - DEATH_CHUNK_SIZE;
-        if (max_x < min_x) max_x = min_x;
-        if (max_y < min_y) max_y = min_y;
-        if (max_x > sw - DEATH_CHUNK_SIZE) max_x = sw - DEATH_CHUNK_SIZE;
-        if (max_y > sh - DEATH_CHUNK_SIZE) max_y = sh - DEATH_CHUNK_SIZE;
-        if (sx < min_x) sx = min_x;
-        if (sy < min_y) sy = min_y;
-        if (sx > max_x) sx = max_x;
-        if (sy > max_y) sy = max_y;
+        int lx = ((2 * column + 1) * width) / 4 - DEATH_CHUNK_SIZE / 2;
+        int ly = ((row + 1) * height) / 4 - DEATH_CHUNK_SIZE / 2;
+        int max_lx = width - DEATH_CHUNK_SIZE;
+        int max_ly = height - DEATH_CHUNK_SIZE;
+        if (max_lx < 0) max_lx = 0;
+        if (max_ly < 0) max_ly = 0;
+        if (lx < 0) lx = 0;
+        if (ly < 0) ly = 0;
+        if (lx > max_lx) lx = max_lx;
+        if (ly > max_ly) ly = max_ly;
+        int sx = min_x + lx;
+        int sy = min_y + ly;
 
         uint32_t seed = s_death_chunk_seed++;
         DeathChunk *chunk = &s_death_chunks[seed % MAX_DEATH_CHUNKS];
         int opaque = 0;
         for (int y = 0; y < DEATH_CHUNK_SIZE; y++) {
             for (int x = 0; x < DEATH_CHUNK_SIZE; x++) {
-                uint16_t color = frame[(sy + y) * sw + sx + x];
+                uint16_t color = (lx + x < width && ly + y < height)
+                    ? frame[(ly + y) * width + lx + x] : 0;
                 chunk->pixels[y * DEATH_CHUNK_SIZE + x] = color;
                 opaque |= (color & BIT(15)) != 0;
             }

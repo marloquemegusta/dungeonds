@@ -20,9 +20,8 @@ def exported_anchors():
     return [[int(v) for v in row.split(",")] for row in rows]
 
 
-def pixel_values(symbol):
-    marker = f"const uint16_t {symbol}["
-    start = SPRITES.index(marker)
+def _brace_block(symbol_decl):
+    start = SPRITES.index(symbol_decl)
     opening = SPRITES.index("{", SPRITES.index("=", start))
     depth = 0
     for end in range(opening, len(SPRITES)):
@@ -31,20 +30,37 @@ def pixel_values(symbol):
         elif SPRITES[end] == "}":
             depth -= 1
             if depth == 0:
-                break
-    return [int(value, 16) for value in re.findall(r"0x([0-9A-Fa-f]{4})", SPRITES[opening:end + 1])]
+                return SPRITES[opening:end + 1]
+    raise AssertionError("unterminated " + symbol_decl)
+
+
+def pixel_values(symbol):
+    return [int(value, 16) for value in re.findall(r"0x([0-9A-Fa-f]{4})", _brace_block(f"const uint16_t {symbol}["))]
+
+
+def frame_offsets(symbol):
+    return [int(v) for v in re.findall(r"\d+", _brace_block(f"const uint32_t {symbol}["))]
+
+
+def frame_bounds(symbol):
+    rows = re.findall(r"\{\s*(\d+),\s*(\d+),\s*(\d+),\s*(\d+)\s*\}", _brace_block(f"const uint8_t {symbol}["))
+    return [tuple(int(x) for x in r) for r in rows]
 
 
 class SpriteGroundAnchorTests(unittest.TestCase):
     def test_charger_frames_extend_below_shared_anchor(self):
-        cw, ch = 60, 60
         values = pixel_values("g_charger_frames")
-        self.assertEqual(len(values), 8 * 8 * cw * ch)
+        offsets = frame_offsets("g_charger_frame_offsets")
+        bounds = frame_bounds("g_charger_frame_bounds")
+        self.assertEqual(len(offsets), 8 * 8)
+        self.assertEqual(len(bounds), 8 * 8)
         lowest = 0
         for frame_index in range(8 * 8):
-            frame = values[frame_index * cw * ch:(frame_index + 1) * cw * ch]
-            opaque_rows = [y for y in range(ch)
-                           if any(pixel & 0x8000 for pixel in frame[y * cw:(y + 1) * cw])]
+            off = offsets[frame_index]
+            _bx, by, bw, bh = bounds[frame_index]
+            frame = values[off:off + bw * bh]
+            opaque_rows = [by + y for y in range(bh)
+                           if any(pixel & 0x8000 for pixel in frame[y * bw:(y + 1) * bw])]
             self.assertTrue(opaque_rows)
             lowest = max(lowest, max(opaque_rows))
         anchor = max(exported_anchors()[1])
@@ -67,15 +83,12 @@ class SpriteGroundAnchorTests(unittest.TestCase):
         self.assertTrue(all(len(row) == 8 for row in anchors))
 
     def test_shadow_masks_and_bounds_dimensions(self):
-        dims = {
-            "g_player": "80 * 80 / 2",
-            "g_charger": "80 * 80 / 2",
-            "g_necron": "80 * 80 / 2",
-            "g_skeleton": "80 * 80 / 2",
-        }
-        for prefix, mask_expr in dims.items():
-            mask_decl = f"const uint8_t {prefix}_shadow_masks[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][{mask_expr}]"
+        prefixes = ("g_player", "g_charger", "g_necron", "g_skeleton")
+        for prefix in prefixes:
+            mask_decl = f"const uint8_t {prefix}_shadow_masks[]"
             self.assertIn(mask_decl, SPRITES)
+            off_decl = f"const uint32_t {prefix}_shadow_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES]"
+            self.assertIn(off_decl, SPRITES)
             bounds_decl = f"const uint8_t {prefix}_shadow_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4]"
             self.assertIn(bounds_decl, SPRITES)
 

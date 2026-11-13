@@ -4,6 +4,8 @@ Primero el estado necesario para retomar el trabajo sin depender del chat; despu
 
 ## Estado actual (2026-11-13)
 
+- **Recorte de sprites y sombras (`perf/crop-sprites-shadows`, `walkthroughs/crop-sprites-shadows/`):** `tools/generate_player_sprites_c.py` recorta sprites BGR555 y máscaras de sombra 4 bpp a su bounding box con tablas de offsets/bounds; `dungeonds.nds` baja de **2,74 MiB a 1,00 MiB (-63,5 %)** sin pérdida visual. Validado en tests de host (41/41), DeSmuME y Nintendo DS física.
+
 - **Marea elástica (`feat/tide-spring`, integrada en `main`, SIN PROBAR):** velocidad adaptativa según la distancia al jugador (`DESIGN.md` §6.4: frena cerca, acelera lejos y reduce la velocidad del jugador un 25 % dentro de ella). Compilación pendiente de verificar en DeSmuME y en la Nintendo DS física.
 - **Telegrafía sobria del Cireneo (`feat/cireneo-telegraph`, integrada en `main`):** retirado el parpadeo en `ENEMY_STATE_TELEGRAPH`; agachado progresivo en 3 fases con keyframe `cireneo_telegraph` (`60×60`), pulso único de brasa tras la cruz y temblor de 1 px. Validado en DeSmuME y tests de host (`walkthroughs/cireneo-telegraph/`); pendiente de probar en la DS.
 - **BSO de combate en streaming (`feat/bgm-loop`, 2026-11-13, `walkthroughs/bgm-loop/`):** música tecno/gregoriana (`cathedral_battle_loop`, 21,6 s @ 11.025 Hz) en streaming por NitroFS (`nitro:/bgm.raw`) + Maxmod (`mmStreamOpen`, buffer 2 KB), y los 5 SFX migrados a `soundbank.bin` en NitroFS. Validado en DS por el usuario. Reservado `assets/music/boss_climax_loop.wav` (28,8 s) para jefes.
