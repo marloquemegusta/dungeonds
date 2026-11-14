@@ -14,6 +14,7 @@ typedef enum {
 typedef enum {
     MENU_ACT_NONE = 0,
     MENU_ACT_START_NEW,
+    MENU_ACT_START_INTRO, /* NUEVA PARTIDA desde el titulo: tarjetas de introduccion y partida */
     MENU_ACT_RESUME
 } MenuAction;
 
