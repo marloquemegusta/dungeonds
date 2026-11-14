@@ -2,6 +2,17 @@
   "name": "weapons_switching_and_touch",
   "steps": [
     {
+      "frames": 30
+    },
+    {
+      "tap": { "x": 128, "y": 66 },
+      "frames": 4
+    },
+    {
+      "release": true,
+      "frames": 10
+    },
+    {
       "frames": 20,
       "capture": "00_sniper_idle"
     },
