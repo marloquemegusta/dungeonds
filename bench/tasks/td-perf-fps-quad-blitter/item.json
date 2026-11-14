@@ -1,0 +1,56 @@
+{
+  "id": "td-perf-fps-quad-blitter",
+  "titulo": "Optimizar transferencias de píxeles y restauración de bloques",
+  "tipo": "micro",
+  "parent": "td-perf-fps-root-cause",
+  "clase": "perf-hw",
+  "repo": "towerds",
+  "base_commit": "5a2a853fac83f5df9773958583b7740a17f5f2f1",
+  "solution_commits": [
+    "de7c85b6e8d6ce8c8cc2e58a7d9fdf289cb3e7aa"
+  ],
+  "solucion_resumen": "El cambio incorpora transferencias de quads de 32 bits y ajustes de paleta en memoria rápida.\nTambién modifica la restauración por bloques del terreno.\nEl objetivo es reducir coste de transferencia y escritura frente al camino anterior.\nEl diff por sí solo no acredita cuánto mejora el frame completo: se debe medir con el mismo estrés y revisar la imagen.",
+  "ficheros_solucion": [
+    "source/renderer.c",
+    "source/tiles.c",
+    "include/game.h",
+    "include/tiles.h"
+  ],
+  "evaluacion": {
+    "tipo": "mixta",
+    "puertas": [
+      {
+        "nivel": "G1 build",
+        "como": "C:\\codexlocal\\skills\\agentic-ds-dev\\scripts\\build-project.ps1 -ProjectPath C:\\codexlocal\\towerds",
+        "criterio": "Build PASS.",
+        "fuente": "base_commit"
+      },
+      {
+        "nivel": "G3 escenario",
+        "como": "Ejecutar estrés móvil y regresión de combate.",
+        "criterio": "PASS; capturas completas sin píxeles perdidos o trails.",
+        "fuente": "solution_commit (overlay: escenarios/capturas)"
+      },
+      {
+        "nivel": "G4 metrica",
+        "como": "Comparar ticks de blit/restauración y frame total en la misma carga.",
+        "criterio": "Reportar mejora medida; si el frame no baja, no atribuir aceleración efectiva al cambio.",
+        "fuente": "solution_commit (overlay: profiler)"
+      }
+    ],
+    "rubrica": [],
+    "trampas": [
+      "Acelerar el blit con una ruta que recorta sprites y deja huecos.",
+      "Medir un perfil fijo y declarar ganancia en el estrés móvil."
+    ]
+  },
+  "dificultad": 4,
+  "historia": "El commit del 19 sep 01:05 optimiza transferencias de quads, tabla de paleta y restauración. No consta una cifra aislada en los documentos consultados.",
+  "reproducible": "parcial",
+  "motivo_reproducible": "Los cambios se pueden compilar; el perfilador y las capturas son necesarios para verificar ganancia y calidad.",
+  "coste_ejecucion_estimado": "alto (+ build, estrés y análisis visual)",
+  "_fuente": "b2",
+  "_validado": true,
+  "_avisos": [],
+  "calibrado": false
+}

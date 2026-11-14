@@ -1,0 +1,49 @@
+{
+  "id": "dd-map-export-coherencia",
+  "titulo": "Derivar suelo, colisión y oclusión del mismo render",
+  "tipo": "micro",
+  "parent": "dd-map-coherencia-geometrica",
+  "clase": "bug-acotado",
+  "repo": "dungeonds",
+  "base_commit": "b359192e2a90d7aed169edde100fcc197e25d445",
+  "solution_commits": [
+    "b53af2aecf6e874771a36884ece4c7e59f0f20be"
+  ],
+  "solucion_resumen": "Se añade un pase de profundidad desde la misma cámara y culling del render de color.\nEl paquete exporta profundidad por píxel y vista binaria de oclusores.\nLa colisión recorta geometría a la franja corporal y conserva aristas.\nEl suelo se toma del centro de celda y las zonas inaccesibles se bloquean.\nLa suite compara las capas y verifica ausencia de oclusores sobre vacío.",
+  "ficheros_solucion": [
+    "tools/lab/FBX-Web-Renderer-parity.js",
+    "tools/lab/export_map_package_headless.cjs",
+    "tests/test_map_export_coherence.py"
+  ],
+  "evaluacion": {
+    "tipo": "mixta",
+    "puertas": [
+      {
+        "nivel": "G2 tests",
+        "como": "Ejecutar `test_map_export_coherence.py`.",
+        "criterio": "6 pruebas OK; cero píxeles oclusores sobre vacío y ninguna base de oclusor por encima de su propio píxel.",
+        "fuente": "solution_commit"
+      },
+      {
+        "nivel": "G5 rubrica",
+        "como": "Inspeccionar el overlay world/colisión/oclusión del paquete exportado.",
+        "criterio": "Cada obstáculo visible coincide con su huella de colisión y profundidad.",
+        "fuente": "solution_commit"
+      }
+    ],
+    "rubrica": [],
+    "trampas": [
+      "Pasar los tests con capas derivadas de geometrías o cámaras distintas.",
+      "Usar Chromium no headless en la validación."
+    ]
+  },
+  "dificultad": 4,
+  "historia": "Incluido en el commit de coherencia del 2 de noviembre; la referencia registra 65,3 % de oclusores sobre vacío antes y 0 % después.",
+  "reproducible": "parcial",
+  "motivo_reproducible": "La suite y exportación están automatizadas, pero dependen del entorno headless del lab.",
+  "coste_ejecucion_estimado": "medio (+ Chromium headless, export y suite)",
+  "_fuente": "b5",
+  "_validado": true,
+  "_avisos": [],
+  "calibrado": false
+}

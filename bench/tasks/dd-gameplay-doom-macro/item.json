@@ -1,0 +1,83 @@
+{
+  "id": "dd-gameplay-doom-macro",
+  "titulo": "Completar el ciclo de combate y progresión Doom-style",
+  "tipo": "macro",
+  "parent": null,
+  "clase": "feature",
+  "repo": "dungeonds",
+  "base_commit": "3e18cd38eb5358b23ab1140dbbd4d40f8aab4d19",
+  "solution_commits": [
+    "19f4250be8c8e923be8e588f912fbb813d4b0ac2",
+    "479ca9932b8b8849649accd8fe0f5b7e39360c50",
+    "3379786811b2de52ce8688b0555a5221577eb3ea",
+    "95cced8bb14d5e48e37f92442716d4e6be4a85ed",
+    "4ba13ff58d04f7a25d3e37544dbd440aa2cfd715"
+  ],
+  "solucion_resumen": "Se retiró el sistema de niebla y se aisló la línea de visión para el combate.\nSe añadió estado de salud, absorción de daño por armadura y pickups.\nSe implementaron máquinas de estado para el cargador y el tirador necrón.\nSe incorporó un pool de proyectiles con colisión y daño.\nSe añadieron armas con cambio en tiempo real y apuntado por pantalla táctil.\nSe implementaron oleadas, recompensas y progresión entre pisos.\nLas pruebas de contrato y dos escenarios cubren los sistemas principales.",
+  "ficheros_solucion": [
+    "DESIGN.md",
+    "include/los.h",
+    "source/los.c",
+    "include/gameplay.h",
+    "source/gameplay.c",
+    "include/enemy_ai.h",
+    "source/enemy_ai.c",
+    "include/projectiles.h",
+    "source/projectiles.c",
+    "include/weapons.h",
+    "source/weapons.c",
+    "include/encounters.h",
+    "source/encounters.c",
+    "source/main.c"
+  ],
+  "evaluacion": {
+    "tipo": "mixta",
+    "puertas": [
+      {
+        "nivel": "G1 build",
+        "como": "& 'C:\\codexlocal\\skills\\agentic-ds-dev\\scripts\\build-project.ps1' -ProjectPath $P",
+        "criterio": "DS_BUILD=PASS; cero warnings nuevos.",
+        "fuente": "base_commit"
+      },
+      {
+        "nivel": "G2 tests",
+        "como": "& 'C:\\codexlocal\\skills\\agentic-ds-dev\\scripts\\run-host-tests.ps1' -ProjectPath $P",
+        "criterio": "DS_HOST_TESTS=PASS; pasan los contratos de LOS, gameplay, IA, armas y encuentros.",
+        "fuente": "solution_commit (overlay: tests/test_los.py, tests/test_gameplay_contract.py, tests/test_enemy_fsm.py, tests/test_weapons_contract.py, tests/test_encounters_contract.py)"
+      },
+      {
+        "nivel": "G3 escenario",
+        "como": "& 'C:\\codexlocal\\skills\\agentic-ds-dev\\scripts\\run-scenario.ps1' -ProjectPath $P -ScenarioPath \"$P\\scenarios\\weapons_switching_and_touch.json\"; repetir con \"$P\\scenarios\\room_encounter_test.json\"",
+        "criterio": "Ambos escenarios PASS con aserciones de cambio de arma/apuntado y limpieza de oleada/apertura del portal.",
+        "fuente": "solution_commit (overlay: scenarios/weapons_switching_and_touch.json, scenarios/room_encounter_test.json)"
+      },
+      {
+        "nivel": "G4 metrica",
+        "como": "Medir en hardware Nintendo DS con PERF_PROFILE=1 y leer /dungeonds_perf.log mediante fetch-device-log.ps1.",
+        "criterio": "Cada frame <= 560190 cpuGetTiming() ticks; sin frames que excedan un vblank.",
+        "fuente": "por escribir"
+      },
+      {
+        "nivel": "G6 humano",
+        "como": "Revisar en DS el combate, el apuntado táctil y la transición entre salas.",
+        "criterio": "Las acciones se reconocen en pantalla y la progresión puede completarse.",
+        "fuente": "solution_commit"
+      }
+    ],
+    "rubrica": [],
+    "trampas": [
+      "Pasar contratos de texto sin que el escenario active realmente los ataques, el apuntado táctil y la progresión.",
+      "Usar DeSmuME para afirmar que se cumple el presupuesto de rendimiento de hardware.",
+      "Implementar simulación con float o double."
+    ]
+  },
+  "dificultad": 5,
+  "historia": "Cinco commits de implementación consecutivos entre el 18 de octubre; el registro agrupa la entrega en fases 0 y A-F. STATUS documenta pruebas host, build y escenarios PASS. La afirmación de 60 FPS del registro no sustituye una medición en DS.",
+  "reproducible": "parcial",
+  "motivo_reproducible": "Los tests y escenarios están versionados como overlays. La puerta de rendimiento requiere una DS física y una lectura de telemetría.",
+  "coste_ejecucion_estimado": "alto (+ varios sistemas de juego, build, suite host, dos escenarios y validación de rendimiento en hardware)",
+  "_fuente": "b4",
+  "_validado": true,
+  "_avisos": [],
+  "calibrado": false
+}

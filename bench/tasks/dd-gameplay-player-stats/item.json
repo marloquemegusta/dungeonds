@@ -1,0 +1,49 @@
+{
+  "id": "dd-gameplay-player-stats",
+  "titulo": "Añadir salud, armadura y pickups",
+  "tipo": "micro",
+  "parent": "dd-gameplay-doom-macro",
+  "clase": "feature",
+  "repo": "dungeonds",
+  "base_commit": "19f4250be8c8e923be8e588f912fbb813d4b0ac2",
+  "solution_commits": [
+    "479ca9932b8b8849649accd8fe0f5b7e39360c50"
+  ],
+  "solucion_resumen": "Se creó un módulo de estado de juego para salud y armadura.\nEl daño aplica absorción fraccional mediante aritmética entera.\nSe añadió un pool de pickups con tipos de vida, armadura y munición.\nLos parámetros ajustables quedaron en tablas const en punto fijo 8.8.\nSe conectó el estado al bucle principal.\nLa suite de contrato cubre las reglas del módulo.",
+  "ficheros_solucion": [
+    "include/gameplay.h",
+    "source/gameplay.c",
+    "source/main.c"
+  ],
+  "evaluacion": {
+    "tipo": "mixta",
+    "puertas": [
+      {
+        "nivel": "G1 build",
+        "como": "& 'C:\\codexlocal\\skills\\agentic-ds-dev\\scripts\\build-project.ps1' -ProjectPath $P",
+        "criterio": "DS_BUILD=PASS; cero warnings nuevos.",
+        "fuente": "base_commit"
+      },
+      {
+        "nivel": "G2 tests",
+        "como": "& 'C:\\codexlocal\\skills\\agentic-ds-dev\\scripts\\run-host-tests.ps1' -ProjectPath $P -Filter test_gameplay_contract",
+        "criterio": "DS_HOST_TESTS=PASS; reglas de salud, armadura y pickups cubiertas.",
+        "fuente": "solution_commit (overlay: tests/test_gameplay_contract.py)"
+      }
+    ],
+    "rubrica": [],
+    "trampas": [
+      "Probar únicamente los valores iniciales sin verificar aplicación de daño y recogida.",
+      "Usar float/double para las fracciones de absorción."
+    ]
+  },
+  "dificultad": 3,
+  "historia": "Un commit de implementación; se añadió un test de contrato para el módulo.",
+  "reproducible": "si",
+  "motivo_reproducible": "La suite host y build están versionadas o cubiertas por la skill.",
+  "coste_ejecucion_estimado": "bajo (+ módulo acotado, build y suite host)",
+  "_fuente": "b4",
+  "_validado": true,
+  "_avisos": [],
+  "calibrado": false
+}

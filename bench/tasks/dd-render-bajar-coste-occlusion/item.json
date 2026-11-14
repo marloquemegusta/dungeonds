@@ -1,0 +1,53 @@
+{
+  "id": "dd-render-bajar-coste-occlusion",
+  "titulo": "Reducir el coste del pase de oclusión y blit",
+  "tipo": "micro",
+  "parent": "dd-render-compuesto-rendimiento",
+  "clase": "perf-hw",
+  "repo": "dungeonds",
+  "base_commit": "7ea9dff9adb90055ae93ee695b319a2d45505818",
+  "solution_commits": [
+    "361e751101466bce2c9396b895d7d77e8ac2d2a2"
+  ],
+  "solucion_resumen": "Se ajusta el recorrido de oclusión y las operaciones de sombras.\nSe reduce trabajo de base de pared y blit en los casos visibles.\nSe conserva la oclusión exacta y la transparencia compartida.\nLa comparación debe conservar capturas de las mismas posiciones y medir en hardware.",
+  "ficheros_solucion": [
+    "source/main.c"
+  ],
+  "evaluacion": {
+    "tipo": "mixta",
+    "puertas": [
+      {
+        "nivel": "G1 build",
+        "como": "Build con `build-project.ps1`.",
+        "criterio": "Build limpia y sin warnings nuevos.",
+        "fuente": "solution_commit"
+      },
+      {
+        "nivel": "G4 metrica",
+        "como": "A/B en DS física con el mismo escenario y PERF_PROFILE.",
+        "criterio": "No supera 560190 ticks/frame y no aumenta frames de más de un vblank.",
+        "fuente": "por escribir"
+      },
+      {
+        "nivel": "G5 rubrica",
+        "como": "Comparar capturas A/B de oclusión, sombras y base de pared.",
+        "criterio": "No hay cambios visuales que rompan la oclusión o hagan ilegible el suelo oculto.",
+        "fuente": "base_commit"
+      }
+    ],
+    "rubrica": [],
+    "trampas": [
+      "Reducir el trabajo saltándose actores o casos de transparencia.",
+      "Usar una escena distinta en A y B."
+    ]
+  },
+  "dificultad": 3,
+  "historia": "Un commit de optimización tras la corrección de oclusión exacta; la auditoría posterior recoge resultados globales del compositor, pero no un perfil aislado de este cambio.",
+  "reproducible": "parcial",
+  "motivo_reproducible": "La comparación A/B se repite, pero el criterio absoluto requiere hardware.",
+  "coste_ejecucion_estimado": "medio (+ A/B visual y medición en DS)",
+  "_fuente": "b5",
+  "_validado": true,
+  "_avisos": [],
+  "calibrado": false
+}

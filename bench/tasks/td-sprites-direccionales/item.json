@@ -1,0 +1,65 @@
+{
+  "id": "td-sprites-direccionales",
+  "titulo": "Soportar sprites enemigos direccionales",
+  "tipo": "macro",
+  "parent": null,
+  "clase": "arte-impl",
+  "repo": "towerds",
+  "base_commit": "bda3e4ae2f4c213f183344cbc23ceaa594403df1",
+  "solution_commits": [
+    "726ef253230aef6e836997928bd8fb6fb88b3021",
+    "6de474a075cbead8418a4f53a9d5a6d680294954"
+  ],
+  "solucion_resumen": "Se prepara una tabla de marcha direccional para el Hydralisk y se exportan assets por orientación.\nEl runtime selecciona dirección y frame según el movimiento del enemigo.\nEl contador de animación pasa a acumular distancia recorrida, en vez de avanzar solo por tiempo.\nEsto mantiene la cadencia visual proporcional a la velocidad del enemigo.\nLa corrección de orientación del frente se aborda en un commit posterior independiente.",
+  "ficheros_solucion": [
+    "tools/export_enemy_gifs.py",
+    "tools/prepare_zerg_hydralisk.py",
+    "include/game.h",
+    "scripts/build_assets.py",
+    "source/enemy_data.c",
+    "source/simulation.c"
+  ],
+  "evaluacion": {
+    "tipo": "mixta",
+    "puertas": [
+      {
+        "nivel": "G1 build",
+        "como": "C:\\codexlocal\\skills\\agentic-ds-dev\\scripts\\build-project.ps1 -ProjectPath <checkout>",
+        "criterio": "Build PASS",
+        "fuente": "solution_commit"
+      },
+      {
+        "nivel": "G3 escenario",
+        "como": "C:\\codexlocal\\skills\\agentic-ds-dev\\scripts\\run-scenario.ps1 -RomPath <rom> -ScenarioPath scenarios\\swarm_walk_test.json -OutputPath <dir>",
+        "criterio": "PASS; observar direcciones y marcha en las capturas",
+        "fuente": "solution_commit"
+      },
+      {
+        "nivel": "G5 rubrica",
+        "como": "Comparar capturas al cambiar rumbo con referencia de 8 orientaciones",
+        "criterio": "Orientación visible corresponde al rumbo y ciclo avanza con desplazamiento",
+        "fuente": "solution_commit"
+      }
+    ],
+    "rubrica": [
+      {
+        "criterio": "Correspondencia entre movimiento, orientación y animación",
+        "peso": 1,
+        "anclas": "0=orientación o ciclo incorrectos; 1=funciona en algunos rumbos; 2=orientación y ciclo coherentes en los rumbos probados"
+      }
+    ],
+    "trampas": [
+      "La aserción de screen_changed del escenario no detecta dirección equivocada.",
+      "La hoja normalizada debe incluirse en el checkout evaluado."
+    ]
+  },
+  "dificultad": 4,
+  "historia": "Se prototipó el ciclo, luego se ajustaron la hoja y la tabla direccional; los commits posteriores sincronizaron animación y movimiento. La orientación frontal del Hydralisk requirió un arreglo aparte.",
+  "reproducible": "parcial",
+  "motivo_reproducible": "Hay escenario de enjambre, pero la validación de orientación depende de inspección visual.",
+  "coste_ejecucion_estimado": "medio (+ build, escenario y revisión de capturas)",
+  "_fuente": "b1",
+  "_validado": true,
+  "_avisos": [],
+  "calibrado": false
+}

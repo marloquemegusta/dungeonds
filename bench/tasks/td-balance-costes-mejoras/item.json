@@ -1,0 +1,46 @@
+{
+  "id": "td-balance-costes-mejoras",
+  "titulo": "Leer costes de mejoras desde el balance",
+  "tipo": "micro",
+  "parent": "td-balance-externalizado",
+  "clase": "bug-acotado",
+  "repo": "towerds",
+  "base_commit": "d053ff969b639eba2d02540fa4ede9d1f3eecfcd",
+  "solution_commits": [
+    "09ab67c53790f29ac1b06c994cf8018d86c062ae"
+  ],
+  "solucion_resumen": "Se modifica la compra de mejoras para consultar los datos de tuning.\nEl cambio cubre la lectura de costes configurados en vez de depender exclusivamente de valores locales.\nLa referencia es un parche acotado de simulación.\nLa comprobación debe incluir un coste alterado y observar el saldo tras comprar.\nNo consta en el historial un escenario dedicado a esta regresión.",
+  "ficheros_solucion": [
+    "source/simulation.c"
+  ],
+  "evaluacion": {
+    "tipo": "mixta",
+    "puertas": [
+      {
+        "nivel": "G1 build",
+        "como": "C:\\codexlocal\\skills\\agentic-ds-dev\\scripts\\build-project.ps1 -ProjectPath <checkout>",
+        "criterio": "Build PASS",
+        "fuente": "solution_commit"
+      },
+      {
+        "nivel": "G3 escenario",
+        "como": "C:\\codexlocal\\skills\\agentic-ds-dev\\scripts\\run-scenario.ps1 -RomPath <rom> -ScenarioPath scenarios\\test_full_upgrade_progression.json -OutputPath <dir>",
+        "criterio": "Escenario PASS; añadir overlay para comprobar un coste distinto del predeterminado y saldo suficiente/insuficiente",
+        "fuente": "solution_commit (overlay: escenario de compra con coste alterado por escribir)"
+      }
+    ],
+    "rubrica": [],
+    "trampas": [
+      "El escenario de progresión por sí solo podría usar costes por defecto y no detectar que se ignora el archivo de tuning."
+    ]
+  },
+  "dificultad": 2,
+  "historia": "Un parche de 12 líneas conectó costes con datos de balance; no consta prueba de regresión en el commit.",
+  "reproducible": "parcial",
+  "motivo_reproducible": "Requiere un escenario overlay que fuerce un coste configurable.",
+  "coste_ejecucion_estimado": "bajo (+ build y un escenario corto)",
+  "_fuente": "b1",
+  "_validado": true,
+  "_avisos": [],
+  "calibrado": false
+}

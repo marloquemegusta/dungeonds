@@ -1,0 +1,67 @@
+{
+  "id": "td-city-defense-slice",
+  "titulo": "Migrar el bucle jugable a City Defense Incremental",
+  "tipo": "macro",
+  "parent": null,
+  "clase": "feature",
+  "repo": "towerds",
+  "base_commit": "c4a5d905341704e56d61bcb8d5a6bd85c9ef56f4",
+  "solution_commits": [
+    "919aff71f0434b4a86a1fe29ced696a71ca316bc",
+    "66bf37e6f1e703210d4e9f547ce6a14c26736760",
+    "84de1e4e6fab4db13736ef3ce60f91d206fa31d1"
+  ],
+  "solucion_resumen": "Reemplaza el avance por oleadas por un stream continuo regulado por diales.\nConsolida la defensa como una entidad lógica con cuatro cúpulas visuales.\nIntroduce Generador de siete tiers y automatizaciones comprables.\nAñade A1/A2, pantalla de fin de demo y calibración adaptada.\nActualiza render y simulación para el ciclo nuevo.\nLos commits posteriores añaden iluminación diegética y limpian el HUD.",
+  "ficheros_solucion": [
+    "source/simulation.c",
+    "source/renderer.c",
+    "source/wall_data.c",
+    "include/game.h",
+    "scenarios/city_defense_demo.json",
+    "scenarios/phase1_vertical_slice.json"
+  ],
+  "evaluacion": {
+    "tipo": "mixta",
+    "puertas": [
+      {
+        "nivel": "G1 build",
+        "como": "C:\\codexlocal\\skills\\agentic-ds-dev\\scripts\\build-project.ps1 -ProjectPath <workspace>",
+        "criterio": "DS_BUILD=PASS",
+        "fuente": "solution_commit (overlay: escenarios)"
+      },
+      {
+        "nivel": "G3 escenario",
+        "como": "C:\\codexlocal\\skills\\agentic-ds-dev\\scripts\\run-scenario.ps1 -RomPath <workspace>\\game.nds -ScenarioPath <workspace>\\scenarios\\phase1_vertical_slice.json -OutputPath <out>",
+        "criterio": "DSM_SCENARIO_RESULT=PASS; comprobar compra A1/A2, tiers y fin de demo",
+        "fuente": "solution_commit (overlay: scenarios/phase1_vertical_slice.json)"
+      },
+      {
+        "nivel": "G5 rubrica",
+        "como": "Inspección de capturas del escenario para flujo continuo, generador y HUD",
+        "criterio": "Cada estado clave aparece y corresponde a la mecánica disparada",
+        "fuente": "solution_commit (overlay: escenario)"
+      }
+    ],
+    "rubrica": [
+      {
+        "criterio": "El stream y la defensa progresan sin depender de oleadas",
+        "peso": 3,
+        "anclas": "0=oleadas o bucle roto; 1=stream parcial; 2=stream continuo con defensa funcional"
+      }
+    ],
+    "trampas": [
+      "Una captura estática puede parecer correcta sin demostrar compras ni progreso.",
+      "Un escenario que solo valida la pantalla inicial no prueba el ciclo."
+    ]
+  },
+  "dificultad": 5,
+  "historia": "Tres commits funcionales en la secuencia principal: primer slice, cierre de fase y consolidación visual. Se añadió escenario determinista; no consta una secuencia de intentos fallidos.",
+  "reproducible": "si",
+  "motivo_reproducible": "El escenario de fase cubre los estados del slice en DeSmuME; requiere toolchain BlocksDS y runtime headless.",
+  "coste_ejecucion_estimado": "alto (+ compilación ARM9 y escenario visual con múltiples estados)",
+  "_fuente": "b3",
+  "_validado": true,
+  "_avisos": [],
+  "calibrado": false,
+  "calibracion": "2026-11-07: base REJECTED, solucion ACCEPTED, PERO el oraculo es debil: phase1_vertical_slice solo asserta cambio de pixeles entre capturas y la ejecucion de luna:high (sin tienda ni pantalla de fin de demo) tambien lo supera (falso positivo, verificado mirando las capturas). Ademas el enunciado no menciona la tienda A1/A2 ni la pantalla de fin de demo que el escenario recorre, asi que el escenario mide una interfaz no especificada. Pendiente: ampliar el enunciado con el contrato de interfaz y anadir oraculo agnostico (p. ej. panel de tienda y pantalla final detectados en captura) o juez LLM con rubrica."
+}

@@ -1,0 +1,53 @@
+{
+  "id": "td-purge-legacy-turrets",
+  "titulo": "Eliminar el sistema inerte de torretas antiguas",
+  "tipo": "macro",
+  "parent": null,
+  "clase": "refactor",
+  "repo": "towerds",
+  "base_commit": "5c45ec9acaac84ad3a14f1895a195d9ee7fd2949",
+  "solution_commits": [
+    "3bf091e6b9a21f029c9a2f24173006e1005d559b"
+  ],
+  "solucion_resumen": "Retira structs, arrays, lógica de actualización, puntería, disparo y colisión del sistema legacy.\nElimina su render, tiles y datos generados.\nQuita el paso de generación de assets que buscaba masters archivados.\nLimpia knobs inertes del sandbox y renombra un escenario con semántica obsoleta.\nConserva intactas la muralla y sus proyectiles activos.",
+  "ficheros_solucion": [
+    "include/game.h",
+    "include/tiles.h",
+    "source/main.c",
+    "source/renderer.c",
+    "source/simulation.c",
+    "source/tiles.c",
+    "scripts/build_assets.py",
+    "scenarios/pause_and_wave_ui_test.json"
+  ],
+  "evaluacion": {
+    "tipo": "comando",
+    "puertas": [
+      {
+        "nivel": "G1 build",
+        "como": "C:\\codexlocal\\skills\\agentic-ds-dev\\scripts\\build-project.ps1 -ProjectPath <workspace>",
+        "criterio": "DS_BUILD=PASS y 0 warnings",
+        "fuente": "solution_commit"
+      },
+      {
+        "nivel": "G3 escenario",
+        "como": "Ejecutar city_defense_demo, session1_wall_ballistics, combat_and_kill_test, targeting_and_sprites_test y master_table_tier_check",
+        "criterio": "DSM_SCENARIO_RESULT=PASS en cada escenario",
+        "fuente": "solution_commit"
+      }
+    ],
+    "rubrica": [],
+    "trampas": [
+      "Eliminar símbolos por nombre puede borrar referencias de la muralla que conservan nomenclatura turret_*."
+    ]
+  },
+  "dificultad": 3,
+  "historia": "Un commit de refactor borró más de nueve mil líneas generadas y pasó build y regresión de cinco escenarios.",
+  "reproducible": "si",
+  "motivo_reproducible": "El build y los escenarios de regresión están versionados y sus resultados constan en el walkthrough.",
+  "coste_ejecucion_estimado": "medio (+ build y regresión de varios escenarios)",
+  "_fuente": "b3",
+  "_validado": true,
+  "_avisos": [],
+  "calibrado": false
+}

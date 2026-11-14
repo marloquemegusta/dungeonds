@@ -1,0 +1,51 @@
+{
+  "id": "td-city-defense-phase1",
+  "titulo": "Cerrar las compras y la progresión de la fase uno",
+  "tipo": "micro",
+  "parent": "td-city-defense-slice",
+  "clase": "feature",
+  "repo": "towerds",
+  "base_commit": "919aff71f0434b4a86a1fe29ced696a71ca316bc",
+  "solution_commits": [
+    "66bf37e6f1e703210d4e9f547ce6a14c26736760"
+  ],
+  "solucion_resumen": "Añade la progresión de compras A1/A2 y la condición de final de demo.\nRecablea las páginas de calibración para el sistema continuo.\nActualiza simulación y render para estados de tienda y victoria.\nIncluye un escenario que recorre la fase y captura estados relevantes.",
+  "ficheros_solucion": [
+    "source/main.c",
+    "source/renderer.c",
+    "source/simulation.c",
+    "source/wall_data.c",
+    "include/game.h",
+    "scenarios/phase1_vertical_slice.json"
+  ],
+  "evaluacion": {
+    "tipo": "mixta",
+    "puertas": [
+      {
+        "nivel": "G1 build",
+        "como": "C:\\codexlocal\\skills\\agentic-ds-dev\\scripts\\build-project.ps1 -ProjectPath <workspace>",
+        "criterio": "DS_BUILD=PASS",
+        "fuente": "solution_commit (overlay: scenarios/phase1_vertical_slice.json)"
+      },
+      {
+        "nivel": "G3 escenario",
+        "como": "C:\\codexlocal\\skills\\agentic-ds-dev\\scripts\\run-scenario.ps1 -RomPath <workspace>\\game.nds -ScenarioPath <workspace>\\scenarios\\phase1_vertical_slice.json -OutputPath <out>",
+        "criterio": "DSM_SCENARIO_RESULT=PASS; A1/A2 y fin de demo visibles",
+        "fuente": "solution_commit (overlay: scenarios/phase1_vertical_slice.json)"
+      }
+    ],
+    "rubrica": [],
+    "trampas": [
+      "La captura de victoria sin validar compras anteriores puede ocultar una transición incorrecta."
+    ]
+  },
+  "dificultad": 4,
+  "historia": "Un commit para cerrar el slice sobre la primera implementación; el escenario de fase aportó la validación determinista.",
+  "reproducible": "si",
+  "motivo_reproducible": "El escenario versionado ejecuta la progresión completa.",
+  "coste_ejecucion_estimado": "medio (+ build y escenario de varios estados)",
+  "_fuente": "b3",
+  "_validado": true,
+  "_avisos": [],
+  "calibrado": false
+}

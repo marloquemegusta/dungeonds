@@ -1,0 +1,52 @@
+{
+  "id": "dd-v01-cargador-bfs",
+  "titulo": "Hacer que el cargador rodee obstáculos",
+  "tipo": "micro",
+  "parent": "dd-v01-prueba-diversion",
+  "clase": "feature",
+  "repo": "dungeonds",
+  "base_commit": "f0a25c711e89d552607d1b7bb45bd8f332e48f73",
+  "solution_commits": [
+    "3881f76ea108d18bba35bf7a3e862f0f10e785c4"
+  ],
+  "solucion_resumen": "Se extrae colisión a un módulo que puede probarse en host.\nSe añade un campo de distancias BFS incremental con doble búfer.\nCada frame limita el trabajo a 300 expansiones.\nEl enemigo sigue el gradiente evitando cortar esquinas.\nUna celda con centro bloqueado puede salir hacia un vecino alcanzable.\nEl escenario y los tests usan el mapa y la colisión reales.",
+  "ficheros_solucion": [
+    "source/collision.c",
+    "source/navfield.c",
+    "source/enemy_ai.c",
+    "source/gameplay.c",
+    "tests/test_navfield.py",
+    "scenarios/charger_walks_around_wall.json"
+  ],
+  "evaluacion": {
+    "tipo": "mixta",
+    "puertas": [
+      {
+        "nivel": "G2 tests",
+        "como": "Suite `test_navfield` compilada con gcc sobre el mapa real.",
+        "criterio": "Todas las celdas caminables alcanzables; gradiente llega en d pasos sin muros; BFS incremental coincide con una pasada.",
+        "fuente": "solution_commit"
+      },
+      {
+        "nivel": "G3 escenario",
+        "como": "Ejecutar `charger_walks_around_wall` con la skill.",
+        "criterio": "La ruta cruza el muro y el cargador llega a morder al jugador.",
+        "fuente": "solution_commit"
+      }
+    ],
+    "rubrica": [],
+    "trampas": [
+      "Usar una escena sin muro o una ruta que no obligue al enemigo a rodearlo.",
+      "Marcar el escenario PASS aunque el enemigo deje de seguir el gradiente al quedar junto a un muro."
+    ]
+  },
+  "dificultad": 4,
+  "historia": "Una fase principal. La revisión encontró y corrigió una celda propia bloqueada que detenía la persecución, selección de vecino por orden en vez de cercanía y mordisco a través de muros bajos. La medición de coste en DS quedó pendiente.",
+  "reproducible": "parcial",
+  "motivo_reproducible": "Los tests host y escenario son repetibles; el coste de navegación requiere medición en DS.",
+  "coste_ejecucion_estimado": "medio (+ tests host y escenario headless)",
+  "_fuente": "b5",
+  "_validado": true,
+  "_avisos": [],
+  "calibrado": false
+}

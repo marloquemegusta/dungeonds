@@ -1,0 +1,46 @@
+{
+  "id": "skill-runner-map-bom",
+  "titulo": "Resolver el mapa junto a la ROM y codificar scripts PowerShell",
+  "tipo": "micro",
+  "parent": null,
+  "clase": "bug-acotado",
+  "repo": "skill",
+  "base_commit": "62021524fe4a9620153836e3902e3ebb9040afa4",
+  "solution_commits": [
+    "33a3337cdd2daf4ec2c6f6964999df8c6f0b0265"
+  ],
+  "solucion_resumen": "Busca el mapa junto a la ROM antes de recurrir a la ruta histórica relativa al escenario.\nMantiene prioridad de ruta explícita y variables de entorno.\nAñade BOM UTF-8 a los scripts PowerShell con cadenas no ASCII.\nEl historial registra pruebas de escenario con y sin estado y fallo de aserción imposible.",
+  "ficheros_solucion": [
+    "runtime/run_scenario.py",
+    "scripts/build-project.ps1",
+    "scripts/build-runtime.ps1",
+    "scripts/run-host-tests.ps1",
+    "scripts/run-scenario.ps1",
+    "scripts/upload-rom.ps1",
+    "scripts/validate-gdb.ps1"
+  ],
+  "evaluacion": {
+    "tipo": "mixta",
+    "puertas": [
+      {
+        "nivel": "G5 rubrica",
+        "como": "Ejecutar escenario con state sin -MapPath y con escenario fuera de scenarios/, además de revisar acentos en PowerShell 5.1",
+        "criterio": "Resuelve el map junto a la ROM; escenario PASS; acentos legibles",
+        "fuente": "solution_commit (overlay: fixtures de runner por escribir)"
+      }
+    ],
+    "rubrica": [],
+    "trampas": [
+      "Pasar siempre -MapPath evita probar la búsqueda por defecto."
+    ]
+  },
+  "dificultad": 2,
+  "historia": "Un commit añadió fallback del mapa y BOM; validación documentada en DeSmuME con casos PASS y aserción imposible FAIL.",
+  "reproducible": "parcial",
+  "motivo_reproducible": "La validación reportada depende de ROM y escenario de prueba; fixtures compartibles no constan en el commit.",
+  "coste_ejecucion_estimado": "medio (+ runner, ROM y entorno PowerShell 5.1)",
+  "_fuente": "b3",
+  "_validado": true,
+  "_avisos": [],
+  "calibrado": false
+}

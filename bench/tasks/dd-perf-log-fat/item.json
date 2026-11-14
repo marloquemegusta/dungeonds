@@ -1,0 +1,47 @@
+{
+  "id": "dd-perf-log-fat",
+  "titulo": "Persistir el tamaño del log de rendimiento en SD",
+  "tipo": "micro",
+  "parent": "dd-render-compuesto-rendimiento",
+  "clase": "bug-acotado",
+  "repo": "dungeonds",
+  "base_commit": "361e751101466bce2c9396b895d7d77e8ac2d2a2",
+  "solution_commits": [
+    "57dbed324ac06462e8fee0c556d6a1f735b1dd58"
+  ],
+  "solucion_resumen": "Se cierra el archivo de log después de cada escritura.\nLa biblioteca FAT actualiza el tamaño persistido al cerrar.\nEsto permite recuperar el tamaño real del log desde la SD.\nEl cambio se limita al perfilador y no altera el modo normal del juego.",
+  "ficheros_solucion": [
+    "source/perfprof.c"
+  ],
+  "evaluacion": {
+    "tipo": "mixta",
+    "puertas": [
+      {
+        "nivel": "G1 build",
+        "como": "Build con `build-project.ps1`.",
+        "criterio": "Build limpia y PERF_PROFILE apagado por defecto.",
+        "fuente": "solution_commit"
+      },
+      {
+        "nivel": "G4 metrica",
+        "como": "Con perfilado activo, escribir una ventana, leer el archivo desde SD y verificar su longitud antes de terminar la ROM.",
+        "criterio": "El tamaño y las líneas escritas son visibles y completos tras cada cierre.",
+        "fuente": "por escribir"
+      }
+    ],
+    "rubrica": [],
+    "trampas": [
+      "Validar el buffer en RAM sin comprobar el archivo de la SD.",
+      "Dejar PERF_PROFILE activo por defecto."
+    ]
+  },
+  "dificultad": 2,
+  "historia": "Un commit correctivo después de la ROM de perfilado por etapas. El walkthrough explica que libnds FAT solo actualiza el tamaño al cerrar.",
+  "reproducible": "parcial",
+  "motivo_reproducible": "Build repetible; verificación completa depende de SD y hardware.",
+  "coste_ejecucion_estimado": "medio (+ build y comprobación de log en DS)",
+  "_fuente": "b5",
+  "_validado": true,
+  "_avisos": [],
+  "calibrado": false
+}

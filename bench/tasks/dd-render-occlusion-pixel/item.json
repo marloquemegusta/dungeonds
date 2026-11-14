@@ -1,0 +1,49 @@
+{
+  "id": "dd-render-occlusion-pixel",
+  "titulo": "Corregir oclusión de actores al borde de paredes",
+  "tipo": "micro",
+  "parent": "dd-render-compuesto-rendimiento",
+  "clase": "bug-acotado",
+  "repo": "dungeonds",
+  "base_commit": "c8e015587ccdbc87b678df156b61f0a9023f7482",
+  "solution_commits": [
+    "7ea9dff9adb90055ae93ee695b319a2d45505818"
+  ],
+  "solucion_resumen": "Se añade una máscara de cobertura por píxel sobre la profundidad de oclusión.\nLa consulta exige profundidad y cobertura, reduciendo errores de las celdas gruesas.\nJugador y enemigos comparten la regla de transparencia cuando corresponde.\nAl ocultarse el jugador, se dibuja sombra y límite de huella sobre la superficie.\nLa solución llena por tramos y celdas para evitar un bucle general por píxel.",
+  "ficheros_solucion": [
+    "source/main.c",
+    "walkthroughs/fix-oclusion-siluetas/walkthrough.md",
+    "scenarios/map_occlusion_collision_coherence.json"
+  ],
+  "evaluacion": {
+    "tipo": "mixta",
+    "puertas": [
+      {
+        "nivel": "G3 escenario",
+        "como": "Ejecutar `map_occlusion_collision_coherence` y comparar capturas detrás del bloque y del muro sur.",
+        "criterio": "PASS visual; un vblank por captura y los píxeles ocultos coinciden con la cobertura del oclusor.",
+        "fuente": "solution_commit (overlay: scenarios/map_occlusion_collision_coherence.json)"
+      },
+      {
+        "nivel": "G4 metrica",
+        "como": "Comparar la misma escena antes/después y medir luego en DS.",
+        "criterio": "No introduce frames sobre presupuesto en hardware; la evidencia histórica es solo de emulador y no certifica rendimiento DS.",
+        "fuente": "por escribir"
+      }
+    ],
+    "rubrica": [],
+    "trampas": [
+      "Probar solo un actor completamente delante o detrás, sin cruzar el borde del oclusor.",
+      "Aceptar los ticks del emulador como certificación de hardware."
+    ]
+  },
+  "dificultad": 3,
+  "historia": "Un commit correctivo con walkthrough visual. El escenario confirmó el caso de jugador tras bloque y muro; el caso de enemigo oculto detrás de pared no tuvo captura propia. La medición en DS quedó pendiente.",
+  "reproducible": "parcial",
+  "motivo_reproducible": "El escenario repite la geometría, pero la aceptación visual y rendimiento final requieren revisión/hardware.",
+  "coste_ejecucion_estimado": "medio (+ build y escena visual; hardware para FPS)",
+  "_fuente": "b5",
+  "_validado": true,
+  "_avisos": [],
+  "calibrado": false
+}

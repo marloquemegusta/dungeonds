@@ -1,0 +1,60 @@
+{
+  "id": "dd-gameplay-enemy-ai-projectiles",
+  "titulo": "Implementar IA diferenciada y pool de proyectiles",
+  "tipo": "micro",
+  "parent": "dd-gameplay-doom-macro",
+  "clase": "feature",
+  "repo": "dungeonds",
+  "base_commit": "479ca9932b8b8849649accd8fe0f5b7e39360c50",
+  "solution_commits": [
+    "3379786811b2de52ce8688b0555a5221577eb3ea"
+  ],
+  "solucion_resumen": "Se añadieron máquinas de estado separadas para cargador y tirador.\nEl cargador alerta, persigue, ataca y busca tras perder visión.\nEl tirador se reposiciona, apunta y dispara ráfagas con enfriamiento.\nLa evaluación de línea de visión se amortiza alternando frames.\nSe añadió un pool compartido para proyectiles físicos y hitscan.\nLos proyectiles respetan geometría sólida y pueden dañar al jugador.\nLa suite de FSM verifica contratos y transiciones.",
+  "ficheros_solucion": [
+    "include/enemy_ai.h",
+    "source/enemy_ai.c",
+    "include/projectiles.h",
+    "source/projectiles.c",
+    "include/gameplay.h",
+    "source/gameplay.c",
+    "source/main.c"
+  ],
+  "evaluacion": {
+    "tipo": "mixta",
+    "puertas": [
+      {
+        "nivel": "G1 build",
+        "como": "& 'C:\\codexlocal\\skills\\agentic-ds-dev\\scripts\\build-project.ps1' -ProjectPath $P",
+        "criterio": "DS_BUILD=PASS; cero warnings nuevos.",
+        "fuente": "base_commit"
+      },
+      {
+        "nivel": "G2 tests",
+        "como": "& 'C:\\codexlocal\\skills\\agentic-ds-dev\\scripts\\run-host-tests.ps1' -ProjectPath $P -Filter test_enemy_fsm",
+        "criterio": "DS_HOST_TESTS=PASS; transiciones de IA y contratos del pool correctos.",
+        "fuente": "solution_commit (overlay: tests/test_enemy_fsm.py)"
+      },
+      {
+        "nivel": "G4 metrica",
+        "como": "Perfilar en DS una escena con enemigos activos y proyectiles.",
+        "criterio": "Cada frame <= 560190 cpuGetTiming() ticks.",
+        "fuente": "por escribir"
+      }
+    ],
+    "rubrica": [],
+    "trampas": [
+      "Hacer pasar pruebas de estado sin que los proyectiles colisionen con paredes.",
+      "Evaluar LOS cada frame para todos los enemigos sin medir el coste.",
+      "Usar operaciones de coma flotante en la simulación."
+    ]
+  },
+  "dificultad": 4,
+  "historia": "Un commit de implementación; se añadió una suite de 450 líneas para contratos y transiciones de IA. El siguiente commit integró las armas.",
+  "reproducible": "parcial",
+  "motivo_reproducible": "La lógica puede verificarse en host; el límite de frame necesita una medición de hardware.",
+  "coste_ejecucion_estimado": "medio (+ IA, pool, build, suite host y perfilado de escena)",
+  "_fuente": "b4",
+  "_validado": true,
+  "_avisos": [],
+  "calibrado": false
+}

@@ -1,0 +1,61 @@
+{
+  "id": "td-perf-fps-palettized-enemies",
+  "titulo": "Reducir el coste de dibujar enemigos sin perder sus siluetas",
+  "tipo": "micro",
+  "parent": "td-perf-fps-root-cause",
+  "clase": "perf-hw",
+  "repo": "towerds",
+  "base_commit": "f3ba0a24193b53c23d6b32b7a31bd7f7a56e56b2",
+  "solution_commits": [
+    "6e7939291750d7e44dc5b871e51a1df5566aeb4c"
+  ],
+  "solucion_resumen": "Los sprites de enemigos pasan a índices de 8 bits con paleta, reduciendo a la mitad el ancho de píxel frente al formato de 16 bits.\nSe conservan las cinco direcciones sur relevantes y se eliminan orientaciones innecesarias para este flujo.\nSe recortan márgenes transparentes para procesar menos píxeles por sprite.\nLa hoja de ruta estima el render previo de 384 enemigos en ~1837 ticks y fija objetivo de 600–750 para la etapa de enemigos.\nEsa cifra es estimación documentada, no resultado medido de este commit aislado.",
+  "ficheros_solucion": [
+    "source/enemy_data.c",
+    "include/enemy_data.h",
+    "docs/performance-roadmap.md"
+  ],
+  "evaluacion": {
+    "tipo": "mixta",
+    "puertas": [
+      {
+        "nivel": "G1 build",
+        "como": "C:\\codexlocal\\skills\\agentic-ds-dev\\scripts\\build-project.ps1 -ProjectPath C:\\codexlocal\\towerds",
+        "criterio": "Build PASS.",
+        "fuente": "base_commit"
+      },
+      {
+        "nivel": "G3 escenario",
+        "como": "Ejecutar estrés móvil con 384 enemigos y regresión de combate.",
+        "criterio": "Escenario PASS con población y combate correctos.",
+        "fuente": "solution_commit (overlay: escenarios de estrés/regresión)"
+      },
+      {
+        "nivel": "G4 metrica",
+        "como": "Medir ticks de sprites enemigos antes/después con el mismo workload.",
+        "criterio": "La ruta paletizada se usa en render y no aumenta el coste; publicar ticks comparables. No tomar la estimación de roadmap como resultado observado.",
+        "fuente": "solution_commit (overlay: profiler)"
+      },
+      {
+        "nivel": "G5 rubrica",
+        "como": "Comparar captura completa de stress.",
+        "criterio": "No faltan píxeles opacos, orientaciones ni enemigos; sin trail.",
+        "fuente": "solution_commit (overlay: captura)"
+      }
+    ],
+    "rubrica": [],
+    "trampas": [
+      "Reducir el coste omitiendo enemigos o direcciones que sí aparecen en el escenario.",
+      "El informe histórico registra un fast path de span que perdió partes visibles de sprites; build y escenarios pasaban, pero la imagen fallaba."
+    ]
+  },
+  "dificultad": 4,
+  "historia": "La hoja de ruta prioriza reducir píxeles de sprite y paletizar. El commit cambia los datos a sprites indexados y recortados. No consta una medición aislada que atribuya un multiplicador de FPS a este commit.",
+  "reproducible": "parcial",
+  "motivo_reproducible": "Build y escenarios son repetibles; medición por etapa y oráculo visual requieren overlay.",
+  "coste_ejecucion_estimado": "alto (+ build, carga máxima y revisión de capturas)",
+  "_fuente": "b2",
+  "_validado": true,
+  "_avisos": [],
+  "calibrado": false
+}

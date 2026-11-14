@@ -1,0 +1,58 @@
+{
+  "id": "td-perf-fps-native-8bit-top",
+  "titulo": "Reducir el coste de render superior y blit directo",
+  "tipo": "micro",
+  "parent": "td-perf-fps-root-cause",
+  "clase": "perf-hw",
+  "repo": "towerds",
+  "base_commit": "de7c85b6e8d6ce8c8cc2e58a7d9fdf289cb3e7aa",
+  "solution_commits": [
+    "7bfcd6575fe854361623d860b41e44d2a830b422"
+  ],
+  "solucion_resumen": "El cambio introduce un pipeline superior nativo de 8 bits y un blitter directo de quads.\nIncluye cambios asociados a carga de sprites, terreno y renderer.\nEl commit siguiente corrigió pantalla superior negra al arranque y trails inferiores, por lo que la primera implementación no basta como referencia final.\nLa validación debe incluir arranque y secuencia de partículas, además de estrés.",
+  "ficheros_solucion": [
+    "source/renderer.c",
+    "source/tiles.c",
+    "source/enemy_data.c",
+    "include/game.h",
+    "include/tiles.h",
+    "include/enemy_data.h"
+  ],
+  "evaluacion": {
+    "tipo": "mixta",
+    "puertas": [
+      {
+        "nivel": "G1 build",
+        "como": "C:\\codexlocal\\skills\\agentic-ds-dev\\scripts\\build-project.ps1 -ProjectPath C:\\codexlocal\\towerds",
+        "criterio": "Build PASS.",
+        "fuente": "base_commit"
+      },
+      {
+        "nivel": "G3 escenario",
+        "como": "Ejecutar escenario de arranque, estrés y partículas.",
+        "criterio": "Sin pantalla superior negra, trails, frames vacíos ni pérdida de sprites.",
+        "fuente": "solution_commit (overlay: escenarios/capturas de arranque y partículas)"
+      },
+      {
+        "nivel": "G4 metrica",
+        "como": "Medir coste por etapa y ticks completos antes/después.",
+        "criterio": "Reportar ticks observados bajo carga; la secuencia de commits demuestra cambio de arquitectura, no por sí sola el multiplicador de FPS.",
+        "fuente": "solution_commit (overlay: profiler)"
+      }
+    ],
+    "rubrica": [],
+    "trampas": [
+      "El commit de pipeline 8-bit introdujo regresiones que se corrigieron en el commit 7bfcd65; evaluar el commit corregido.",
+      "No validar solo capturas de gameplay: añadir boot en frío y partículas."
+    ]
+  },
+  "dificultad": 4,
+  "historia": "El 19 sep 01:17 se añadió pipeline 8-bit superior y blitter directo. A las 01:23 un commit corregía arranque superior negro y trails inferiores. Esos fallos hacen de la secuencia una regresión visual explícita, no una optimización aceptable por métrica sola.",
+  "reproducible": "parcial",
+  "motivo_reproducible": "Hashes y cambios verificados; los documentos consultados no incluyen un oráculo automatizado específico para el arranque negro y los trails de esa secuencia.",
+  "coste_ejecucion_estimado": "alto (+ build, estrés, arranque y revisión de secuencia visual)",
+  "_fuente": "b2",
+  "_validado": true,
+  "_avisos": [],
+  "calibrado": false
+}

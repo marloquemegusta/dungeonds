@@ -1,0 +1,52 @@
+{
+  "id": "dd-v03-kit-bake",
+  "titulo": "Hornear un kit de tiles para la franja",
+  "tipo": "micro",
+  "parent": "dd-v03-franja-infinita",
+  "clase": "tooling",
+  "repo": "dungeonds",
+  "base_commit": "915b3b4d772115ae153fe39958b11d02cee9d5cb",
+  "solution_commits": [
+    "2d3dcfe6b9924f47eb5f50066cf114d533ddbadd"
+  ],
+  "solucion_resumen": "Añade una especificación de kit a los datos de arenas.\nEl baker transforma las piezas fuente en atlas y datos de colisión/oclusión del kit.\nEl runtime consume un conjunto compacto de 89 tiles.\nLas columnas bajas detienen personajes, pero dejan pasar balas y no ocluyen.\nTests de contrato comprueban metadatos y geometría exportada.\nLa ROM puede generar bandas sin almacenar un mapa infinito horneado.",
+  "ficheros_solucion": [
+    "tools/bake_strip_kit.py",
+    "source/strip_kit.c",
+    "include/strip_kit.h",
+    "assets/arenas/arenas.json",
+    "tests/test_strip_kit.py",
+    "tests/host/strip_fake_kit.c"
+  ],
+  "evaluacion": {
+    "tipo": "mixta",
+    "puertas": [
+      {
+        "nivel": "G2 tests",
+        "como": "Ejecutar tests/test_strip_kit.py y el test host del kit.",
+        "criterio": "PASS; 89 tiles y semántica de colisión/oclusión coherente.",
+        "fuente": "solution_commit (overlay: tests/test_strip_kit.py y tests/host/strip_fake_kit.c)"
+      },
+      {
+        "nivel": "G3 escenario",
+        "como": "Ejecutar strip_climb_smoke con el kit real horneado.",
+        "criterio": "Bandas transitables y carril libre durante varios rebases.",
+        "fuente": "solution_commit (overlay: scenarios/strip_climb_smoke.json)"
+      }
+    ],
+    "rubrica": [],
+    "trampas": [
+      "Aprobar usando el kit falso de tests sin probar el arte horneado real.",
+      "Marcar columnas como oclusoras aunque el diseño requiere que no ocluyan."
+    ]
+  },
+  "dificultad": 3,
+  "historia": "Un commit de entrega. La especificación, el baker, el runtime y los tests host se incluyeron juntos.",
+  "reproducible": "si",
+  "motivo_reproducible": "Los contratos verifican exportación y uso del kit; el escenario cubre integración con el runtime.",
+  "coste_ejecucion_estimado": "medio (+ tests, baker y escenario)",
+  "_fuente": "b6",
+  "_validado": true,
+  "_avisos": [],
+  "calibrado": false
+}

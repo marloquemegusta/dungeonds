@@ -1,0 +1,66 @@
+{
+  "id": "dd-map-coherencia-geometrica",
+  "titulo": "Hacer coherentes render, colisión y oclusión del mapa",
+  "tipo": "macro",
+  "parent": null,
+  "clase": "bug-acotado",
+  "repo": "dungeonds",
+  "base_commit": "b359192e2a90d7aed169edde100fcc197e25d445",
+  "solution_commits": [
+    "b53af2aecf6e874771a36884ece4c7e59f0f20be"
+  ],
+  "solucion_resumen": "El lab calcula profundidad del suelo y oclusores desde el mismo pase de render que el color.\nLa colisión representa la huella de obstáculos en la franja corporal.\nEl baker consume profundidad exacta y crea un índice de runs por fila.\nEl runtime usa la rejilla como única fuente de suelo.\nLa consulta de oclusión evita escanear runs que no alcanzan la cámara.\nTests host y escenario validan exportación, colisión y posiciones de oclusión.",
+  "ficheros_solucion": [
+    "tools/lab/FBX-Web-Renderer-parity.js",
+    "tools/bake_isometric_shooter_bl.py",
+    "source/diablo_dungeon.c",
+    "source/dungeon_occlusion.c",
+    "source/main.c",
+    "tests/test_map_export_coherence.py",
+    "scenarios/map_occlusion_collision_coherence.json"
+  ],
+  "evaluacion": {
+    "tipo": "mixta",
+    "puertas": [
+      {
+        "nivel": "G1 build",
+        "como": "Build con `build-project.ps1`.",
+        "criterio": "Build limpia y sin warnings nuevos.",
+        "fuente": "solution_commit"
+      },
+      {
+        "nivel": "G2 tests",
+        "como": "Ejecutar `test_map_export_coherence.py` y contratos de profundidad/índice de runs.",
+        "criterio": "6 pruebas OK; cero píxeles oclusores sobre vacío y cero bases por encima de su píxel.",
+        "fuente": "solution_commit"
+      },
+      {
+        "nivel": "G3 escenario",
+        "como": "Ejecutar `map_occlusion_collision_coherence`.",
+        "criterio": "PASS; delante del bloque el actor permanece visible, detrás de esquina queda casi oculto y detrás del muro sur se oculta según profundidad.",
+        "fuente": "solution_commit (overlay: scenarios/map_occlusion_collision_coherence.json)"
+      },
+      {
+        "nivel": "G4 metrica",
+        "como": "Comparar captura y ritmo de frames de la misma escena antes/después.",
+        "criterio": "Referencia: 901 frames lógicos/922 vblanks después; el escenario no debe degradarse frente a base.",
+        "fuente": "solution_commit"
+      }
+    ],
+    "rubrica": [],
+    "trampas": [
+      "Validar superposición de máscaras en píxeles sin comprobar posición de suelo/profundidad.",
+      "Usar coordenadas que no crucen bloques o muros.",
+      "Nombrar como oclusión un estado que deja al actor en suelo abierto."
+    ]
+  },
+  "dificultad": 4,
+  "historia": "Un commit integral del 2 de noviembre. El walkthrough documenta antes/después: 65,3 % de píxeles oclusores sobre vacío bajó a 0 %, y los runs aumentaron de 32962 a 43545 con índice por fila. Se verificaron build, seis pruebas nuevas y escenario de 922 frames.",
+  "reproducible": "parcial",
+  "motivo_reproducible": "El paquete host y el escenario se pueden repetir; exportación headless requiere Chromium/Playwright y la herramienta del lab.",
+  "coste_ejecucion_estimado": "alto (+ build, exportación headless, tests y escenario)",
+  "_fuente": "b5",
+  "_validado": true,
+  "_avisos": [],
+  "calibrado": false
+}

@@ -1,0 +1,40 @@
+{
+  "id": "td-calibracion-tabs",
+  "titulo": "Verificar navegación entre pestañas temáticas",
+  "tipo": "micro",
+  "parent": "td-calibracion-editor",
+  "clase": "revision",
+  "repo": "towerds",
+  "base_commit": "23d01314239a3787c53b72cb832fe208b6283de7",
+  "solution_commits": [
+    "5908c97687fb2e4f630d6f06122069be2241a4dd"
+  ],
+  "solucion_resumen": "Se añade un escenario JSON de navegación por pestañas.\nEl escenario captura cada página tras pulsar Y y regresar con X.\nLas aserciones comprueban cambios de pantalla con un mínimo de píxeles.\nEsto verifica navegación visual básica, no el contenido de cada valor.\nLa prueba debe complementarse con revisión de capturas si se evalúa legibilidad.",
+  "ficheros_solucion": [
+    "scenarios/calibration_tabs_test.json"
+  ],
+  "evaluacion": {
+    "tipo": "comando",
+    "puertas": [
+      {
+        "nivel": "G3 escenario",
+        "como": "C:\\codexlocal\\skills\\agentic-ds-dev\\scripts\\run-scenario.ps1 -RomPath <rom> -ScenarioPath scenarios\\calibration_tabs_test.json -OutputPath <dir>",
+        "criterio": "PASS; todas las transiciones superan min_changed_pixels=100",
+        "fuente": "solution_commit"
+      }
+    ],
+    "rubrica": [],
+    "trampas": [
+      "Las aserciones detectan cambios de pantalla, pero no garantizan que cada pestaña muestre la categoría correcta."
+    ]
+  },
+  "dificultad": 1,
+  "historia": "Un commit añadió el escenario de pestañas; el diff registra una prueba explícita de navegación.",
+  "reproducible": "si",
+  "motivo_reproducible": "El escenario y sus aserciones están versionados.",
+  "coste_ejecucion_estimado": "bajo (+ un escenario headless)",
+  "_fuente": "b1",
+  "_validado": true,
+  "_avisos": [],
+  "calibrado": false
+}

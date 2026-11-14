@@ -1,0 +1,60 @@
+{
+  "id": "td-calibracion-editor",
+  "titulo": "Añadir editor paginado de calibración",
+  "tipo": "macro",
+  "parent": null,
+  "clase": "feature",
+  "repo": "towerds",
+  "base_commit": "d053ff969b639eba2d02540fa4ede9d1f3eecfcd",
+  "solution_commits": [
+    "09ab67c53790f29ac1b06c994cf8018d86c062ae"
+  ],
+  "solucion_resumen": "Se incorpora un editor de calibración global y de mejoras con páginas.\nSe limpian los límites de edición y el renderer presenta los campos disponibles.\nLa interacción permite recorrer parámetros sin exceder los límites del menú.\nEl cambio se apoya en datos de balance centralizados.\nLa evidencia visual del recorrido completo debe comprobarse mediante escenarios.",
+  "ficheros_solucion": [
+    "include/game.h",
+    "source/renderer.c",
+    "source/simulation.c"
+  ],
+  "evaluacion": {
+    "tipo": "mixta",
+    "puertas": [
+      {
+        "nivel": "G1 build",
+        "como": "C:\\codexlocal\\skills\\agentic-ds-dev\\scripts\\build-project.ps1 -ProjectPath <checkout>",
+        "criterio": "Build PASS sin warnings nuevos",
+        "fuente": "solution_commit"
+      },
+      {
+        "nivel": "G3 escenario",
+        "como": "C:\\codexlocal\\skills\\agentic-ds-dev\\scripts\\run-scenario.ps1 -RomPath <rom> -ScenarioPath scenarios\\calibration_live_test.json -OutputPath <dir>",
+        "criterio": "PASS y los campos editados son visibles en sus páginas",
+        "fuente": "solution_commit (overlay: ninguno)"
+      },
+      {
+        "nivel": "G5 rubrica",
+        "como": "Revisar capturas por página",
+        "criterio": "Campos legibles, navegación no sale de límites y modificación visible",
+        "fuente": "solution_commit"
+      }
+    ],
+    "rubrica": [
+      {
+        "criterio": "Legibilidad y navegación de campos de tuning",
+        "peso": 1,
+        "anclas": "0=campos ilegibles o navegación rota; 1=parcial; 2=campos visibles y navegación coherente"
+      }
+    ],
+    "trampas": [
+      "La pantalla puede cambiar aunque los campos estén truncados o no sean editables."
+    ]
+  },
+  "dificultad": 3,
+  "historia": "El historial muestra un commit de editor paginado seguido por arreglos de límites; se expusieron más campos de oleadas, enemigos y mejoras en commits cercanos.",
+  "reproducible": "parcial",
+  "motivo_reproducible": "Existe escenario de calibración, pero no se ejecutó aquí ni demuestra por sí solo todos los campos editables.",
+  "coste_ejecucion_estimado": "medio (+ build y revisión de navegación en DeSmuME)",
+  "_fuente": "b1",
+  "_validado": true,
+  "_avisos": [],
+  "calibrado": false
+}

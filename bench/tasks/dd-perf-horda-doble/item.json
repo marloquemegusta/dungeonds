@@ -1,0 +1,138 @@
+{
+  "id": "dd-perf-horda-doble",
+  "titulo": "Duplicar la horda (24 -> 48) a 60 FPS en la DS sin cambiar el juego",
+  "tipo": "macro",
+  "parent": null,
+  "clase": "perf-hw",
+  "repo": "dungeonds",
+  "base_commit": "6de29d96939e045ae04046e661f68fb6ae552bcf",
+  "solution_commits": [
+    "ef44461bafd10126c63aa45177540e6ea27ef009"
+  ],
+  "solucion_resumen": "Primero se leyó el profiling por etapas en DS: las sombras por software eran ~43 % del frame (15,8 ms), seguidas de blit, IA y limpieza.\nA: sombras con la ventana OBJ y oscurecer por hardware (BLDCNT modo 3 solo sobre el suelo); máscaras 4bpp convertidas a tiles con caché LRU; IRQ de VCOUNT para convivir con la marea.\nD: IA con rejilla de separación, tabla de direcciones sin sqrt ni división, LOD fuera de pantalla y línea de visión solo en rango; BFS y nav_next_step cacheados.\nB: blit por tramos opacos precalculados por fila en el generador de sprites.\nC/E: limpieza a 8 palabras por iteración (stmia) y camino caliente en ITCM.\nF: picos troceados (suelo del rebase en doble búfer preparado en 10 trozos, navegación preparada por adelantado, láser con un dirty_row por fila, tope de 2 muertes con fragmentos por frame).\nCada paso se midió A/B en DeSmuME con un banco determinista y al final se certificó en la DS física.",
+  "ficheros_solucion": [
+    "source/hwshadow.c",
+    "include/hwshadow.h",
+    "source/main.c",
+    "source/enemy_ai.c",
+    "source/navfield.c",
+    "source/collision.c",
+    "source/strip.c",
+    "source/enemy_laser.c",
+    "source/tide.c",
+    "source/horde.c",
+    "source/perfprof.c",
+    "tools/generate_player_sprites_c.py",
+    "source/player_sprite.c",
+    "include/gameplay.h",
+    "include/horde.h",
+    ".ds-game-dev/project.json",
+    "scenarios/perf_stress_bench.json",
+    "scenarios/perf_stress_climb.json",
+    "scenarios/strip_hw_shadows_stress.json",
+    "tools/perf_bench_summary.py",
+    "DESIGN.md",
+    "TECHNICAL.md"
+  ],
+  "evaluacion": {
+    "tipo": "mixta",
+    "puertas": [
+      {
+        "nivel": "G1 build",
+        "como": "build-project.ps1 -ProjectPath <copia>, default y una variante con STRESS_TEST=1 PERF_PROFILE=1",
+        "criterio": "PASS, 0 warnings nuevos, sin float/double en runtime.",
+        "fuente": "base_commit"
+      },
+      {
+        "nivel": "G2 tests",
+        "como": "run-host-tests.ps1 con los tests de la base",
+        "criterio": "Todos PASS. La referencia ajusta test_sniper_hit_volume y test_upper_screen_contract; comprobar que el modelo no los debilita.",
+        "fuente": "base_commit"
+      },
+      {
+        "nivel": "G3 escenario",
+        "como": "El escenario perf_stress_bench.json ya esta en el commit base; lo ejecuta oraculo_perf sobre la ROM stress-perf",
+        "criterio": "DSM_SCENARIO_RESULT=PASS con >=15 enemigos vivos en w10. perf_stress_climb (picos de rebase) queda fuera del overlay: necesita la ROM de estres y el runner generico usa la default.",
+        "fuente": "base_commit"
+      },
+      {
+        "nivel": "G4 metrica",
+        "como": "Automatico: oraculo_perf (run_item.py) compila stress-perf, corre perf_stress_bench y python tools/perf_bench_summary.py <salida> --max-cpu-ms 17",
+        "criterio": "PERF_ORACLE=PASS (CPU media <= 17 ms en el emulador). Calibrado: base 30,3 FAIL, ref 15,3 PASS.",
+        "fuente": "solution_commit"
+      },
+      {
+        "nivel": "G5 rubrica",
+        "como": "Juez de otra familia con el diff del modelo, el diff de referencia, capturas HW/SW y DESIGN.md",
+        "criterio": "Ver rúbrica.",
+        "fuente": "solution_commit"
+      },
+      {
+        "nivel": "G6 humano",
+        "como": "upload-rom.ps1 de la variante stress-perf; el usuario juega 1 min con la horda llena; fetch-device-log.ps1 -RemoteFile /dungeonds_perf.log",
+        "criterio": "Con ~48 enemigos, media por ventana de 1 s <= 15,5 ms y como mucho unos pocos frames perdidos por segundo (referencia: 14,3-15,1 ms, peor frame 17-18,5 ms). El usuario ve 60 FPS casi constantes.",
+        "fuente": "humano"
+      }
+    ],
+    "rubrica": [
+      {
+        "criterio": "Mide antes de optimizar y ataca primero el coste dominante (sombras).",
+        "peso": 30,
+        "anclas": "0=micro-optimizaciones a ciegas; 1=mide pero prioriza mal; 2=desglose por etapa, banco A/B reproducible y prioridad justificada por el dato."
+      },
+      {
+        "criterio": "Rendimiento real con 48 enemigos.",
+        "peso": 35,
+        "anclas": "0=sigue a 20-30 FPS en DS; 1=mejora pero no sostiene 60; 2=60 FPS casi constantes en DS con la horda llena y picos acotados."
+      },
+      {
+        "criterio": "Fidelidad de juego y arte.",
+        "peso": 35,
+        "anclas": "0=quita sombras, separación o enemigos, o los hace parpadear o alternar; 1=diferencias visibles no decididas en DESIGN.md; 2=solo diferencias decididas y documentadas (p. ej. sombras solapadas fundidas)."
+      }
+    ],
+    "trampas": [
+      "Quitar las sombras, alternarlas a 30 Hz (parpadean en la DS real) o pintarlas negras sin leer el suelo: se probó y se descartó.",
+      "Bajar la horda, el pool o la vida de los enemigos en la build normal para que el banco pase.",
+      "Quitar la separación entre enemigos sin decisión escrita (era el plan B del usuario, no el objetivo).",
+      "Certificar con DeSmuME: un frame barato en el emulador puede costar el doble en la DS (aquí, sombras ~1 ms en el emulador frente a hasta 3 ms en la DS).",
+      "Medir con la variante de estrés y las sombras viejas activadas por error (L+R+A), o con el log de PERF_PROFILE que no escribe (ruta relativa con NitroFS).",
+      "Informar solo la media y esconder los picos de rebase de la franja (16 ms en un solo frame en la base)."
+    ]
+  },
+  "dificultad": 5,
+  "historia": "2026-11-13: profiling en DS física (commit base 8248595, walkthroughs/stress-enemies-profiling). Según el usuario, un intento previo con otro modelo no llegó a resolverlo: se quedó en experimentos (sin sombras, sombras negras alternadas a 30 Hz que parpadean), con techo de 60 FPS en 18-20 enemigos y nada mergeado. 2026-11-13/14: Claude Opus 5.5 como coordinador, con la implementación delegada en subagentes, hizo la fase 1 A-F en perf/hw-shadows con banco A/B en DeSmuME (34,1 -> ~15,5 ms). El usuario lo certificó en la DS: 48 enemigos a 14,3-15,1 ms de media. La primera prueba en DS dio 30 FPS porque el usuario activó sin querer las sombras viejas, y además el log no se escribía (ruta relativa con NitroFS); ambos quedan como trampas.",
+  "reproducible": "parcial",
+  "motivo_reproducible": "Rama bench/dd-perf-horda-doble: el commit base es 8248595 + solo el arnes de medida (variantes stress/stress-perf, banco perf_stress_bench, perf_bench_summary --max-cpu-ms, log fat:/). El commit ref encima es exactamente la solucion. Oraculo automatico en emulador (G4); la certificacion final sigue necesitando la DS y al usuario (G6). Los tests de contrato de la referencia NO van en el overlay porque estan atados a su implementacion concreta.",
+  "coste_ejecucion_estimado": "muy alto (sesión larga multiagente, ~6 pasos con builds y bancos de 20 muestras, más prueba en DS)",
+  "_fuente": "sesion 2026-11-14",
+  "_validado": true,
+  "_avisos": [],
+  "calibrado": true,
+  "prior_historico": "Según el usuario, un intento previo con otro modelo falló; se resolvió con Claude Opus 5.5 y subagentes. Hipótesis a contrastar: ¿llega un modelo barato por sí solo a la idea de las sombras por hardware?",
+  "commit_historico": {
+    "antes": "82485957b21c51efd1380968962e21cbf46ce1ee",
+    "solucion": "aa7d2f19c295ed3693adae9beb0795fd93ef7344",
+    "merge": "beaf33ba083ea33de596822383d6a821d0e9875e"
+  },
+  "ramas": {
+    "rama": "bench/dd-perf-horda-doble",
+    "tag_base": "bench/dd-perf-horda-doble/base",
+    "tag_ref": "bench/dd-perf-horda-doble/ref"
+  },
+  "overlay": [],
+  "oraculo_perf": {
+    "variant": "stress-perf",
+    "scenario": "scenarios/perf_stress_bench.json",
+    "summary": "tools/perf_bench_summary.py",
+    "max_cpu_ms": 17.0
+  },
+  "calibracion": {
+    "fecha": "2026-11-14",
+    "emulador": "DeSmuME headless, perf_stress_bench, 9-20 ventanas de 60 frames, ~27-35 enemigos vivos",
+    "base": "FAIL cpu 30,32 ms (sombras 12,4, IA 6,8, blit 3,9, limpieza 2,4)",
+    "ref": "PASS cpu 15,32 ms",
+    "umbral": "17 ms: la referencia tiene ~1,7 ms de margen; quitar las sombras de la base daria ~18 ms y suspende por poco, por eso esa trampa la vigila tambien la rubrica (G5) y el humano (G6)",
+    "ds": "referencia medida en DS: 14,3-15,1 ms con ~48 enemigos"
+  }
+}

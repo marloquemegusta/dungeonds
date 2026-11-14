@@ -1,0 +1,56 @@
+{
+  "id": "td-perf-fps-double-buffer-vram",
+  "titulo": "Evitar la copia completa del framebuffer al presentar",
+  "tipo": "micro",
+  "parent": "td-perf-fps-root-cause",
+  "clase": "perf-hw",
+  "repo": "towerds",
+  "base_commit": "6e7939291750d7e44dc5b871e51a1df5566aeb4c",
+  "solution_commits": [
+    "5a2a853fac83f5df9773958583b7740a17f5f2f1"
+  ],
+  "solucion_resumen": "Se alternan bancos VRAM como framebuffers del display inferior.\nEl renderer escribe en el banco no visible y cambia el banco mostrado durante VBlank.\nEsto evita la copia de presentación que motivó la optimización.\nLa hoja de ruta proyecta que P pase de ~192 ticks a cero, pero esa es una meta de etapa, no una medición validada aquí.",
+  "ficheros_solucion": [
+    "source/renderer.c",
+    "source/tiles.c",
+    "include/game.h",
+    "include/tiles.h"
+  ],
+  "evaluacion": {
+    "tipo": "mixta",
+    "puertas": [
+      {
+        "nivel": "G1 build",
+        "como": "C:\\codexlocal\\skills\\agentic-ds-dev\\scripts\\build-project.ps1 -ProjectPath C:\\codexlocal\\towerds",
+        "criterio": "Build PASS.",
+        "fuente": "base_commit"
+      },
+      {
+        "nivel": "G3 escenario",
+        "como": "Ejecutar estrés sostenido y regresión visual con presentación por VBlank.",
+        "criterio": "PASS sin frame negro, tearing, trails ni pérdida del dibujo del terreno.",
+        "fuente": "solution_commit (overlay: escenarios/capturas)"
+      },
+      {
+        "nivel": "G4 metrica",
+        "como": "Medir etapa P antes/después en la misma carga.",
+        "criterio": "Reportar reducción observada de P; no dar por probado P=0 usando solo el objetivo de roadmap.",
+        "fuente": "solution_commit (overlay: profiler)"
+      }
+    ],
+    "rubrica": [],
+    "trampas": [
+      "Una captura estática puede no detectar parpadeo o tearing entre buffers; revisar una secuencia.",
+      "Confundir el objetivo de ~192 a 0 ticks con un resultado ya medido."
+    ]
+  },
+  "dificultad": 4,
+  "historia": "El informe previo observaba coste estructural en presentación framebuffer. El commit de doble buffer sigue a la etapa de assets; la hoja de ruta estima ~192 ticks de copia y plantea eliminarlos. No consta aquí un resultado aislado de FPS para el cambio.",
+  "reproducible": "parcial",
+  "motivo_reproducible": "Build y emulación están versionados, pero el tearing requiere una secuencia de capturas y la cifra de presentación debe medirse.",
+  "coste_ejecucion_estimado": "alto (+ escenario largo, secuencia visual y medición)",
+  "_fuente": "b2",
+  "_validado": true,
+  "_avisos": [],
+  "calibrado": false
+}

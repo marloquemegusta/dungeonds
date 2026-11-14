@@ -1,0 +1,56 @@
+{
+  "id": "td-touch-hitbox-union-aim",
+  "titulo": "Anclar el tap al sprite y conservar el rumbo de la cúpula",
+  "tipo": "micro",
+  "parent": "td-touch-hitbox-adaptive",
+  "clase": "bug-acotado",
+  "repo": "towerds",
+  "base_commit": "882edec7d6fdf40cbb307d1b65a952a7a52e553f",
+  "solution_commits": [
+    "a2a30a88f9d6de83955fa034b5c0ebfe0f935ec7"
+  ],
+  "solucion_resumen": "Calcula límites del frame dibujado con offsets y altura de vuelo.\nLa región seleccionable es la unión de la caja inflada y un círculo de gracia de 24 px.\nSi hay varios candidatos, prioriza el centro más cercano.\nGuarda el último ángulo disparado como orientación de reposo.\nUnifica la orientación inicial con la tabla de sockets.",
+  "ficheros_solucion": [
+    "source/simulation.c",
+    "include/game.h",
+    "include/enemy_data.h",
+    "source/enemy_data.c",
+    "tools/hitbox_geometry.py"
+  ],
+  "evaluacion": {
+    "tipo": "mixta",
+    "puertas": [
+      {
+        "nivel": "G1 build",
+        "como": "C:\\codexlocal\\skills\\agentic-ds-dev\\scripts\\build-project.ps1 -ProjectPath <workspace>",
+        "criterio": "DS_BUILD=PASS",
+        "fuente": "solution_commit"
+      },
+      {
+        "nivel": "G4 metrica",
+        "como": "Auditar las ocho variantes con tools/hitbox_geometry.py",
+        "criterio": "La nueva región nunca es más estricta que el círculo previo; 8/8 variantes incluyen píxeles antes excluidos",
+        "fuente": "solution_commit"
+      },
+      {
+        "nivel": "G4 metrica",
+        "como": "tools/ab_frame_diff.py pair sobre el par de ROMs y escenario de disparo",
+        "criterio": "Frame de disparo idéntico; al final, referencia 0 px de diferencia en reposo y solución conserva el cambio de rumbo (771 px reportados)",
+        "fuente": "solution_commit (overlay: escenario A/B del walkthrough)"
+      }
+    ],
+    "rubrica": [],
+    "trampas": [
+      "Comparar capturas sin igualar el estado inicial puede confundir cambios de RNG con apuntado."
+    ]
+  },
+  "dificultad": 3,
+  "historia": "Un commit agrupó hitbox, persistencia de puntería, documentación y herramientas A/B. El A/B controló el frame del disparo para descartar diferencias de RNG.",
+  "reproducible": "parcial",
+  "motivo_reproducible": "La comparación visual está documentada, pero la validación final de stylus se reservó para DS física.",
+  "coste_ejecucion_estimado": "medio (+ dos ROMs y comparación de capturas)",
+  "_fuente": "b3",
+  "_validado": true,
+  "_avisos": [],
+  "calibrado": false
+}
