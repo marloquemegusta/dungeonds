@@ -2258,7 +2258,21 @@ int main(void) {
 #if HW_SHADOWS
             hwshadow_regs_off();
 #endif
+            REG_BLDCNT = 0;
+            REG_BLDY = 0;
+            REG_BLDCNT_SUB = 0;
+            REG_BLDY_SUB = 0;
+            bgHide(top_hw_bg);
+            bgHide(bot_hw_bg);
+            oamDisable(&oamMain);
+            oamDisable(&oamSub);
             bestiary_run(s_top_page, bot_page_ptr(8), bot_page_ptr(24), &s_bot_active_page, present_vblank_begin);
+            bgShow(top_hw_bg);
+            bgShow(bot_hw_bg);
+#if HW_SHADOWS || (defined(GODRAYS_PROTO) && GODRAYS_PROTO)
+            oamEnable(&oamMain);
+            oamEnable(&oamSub);
+#endif
             s_top_map_ready = 0;
             s_bot_map_ready = 0;
             memset(s_dirty, 0, sizeof(s_dirty));
@@ -2276,7 +2290,21 @@ int main(void) {
 #if HW_SHADOWS
                 hwshadow_regs_off();
 #endif
+                REG_BLDCNT = 0;
+                REG_BLDY = 0;
+                REG_BLDCNT_SUB = 0;
+                REG_BLDY_SUB = 0;
+                bgHide(top_hw_bg);
+                bgHide(bot_hw_bg);
+                oamDisable(&oamMain);
+                oamDisable(&oamSub);
                 bestiary_run(s_top_page, bot_page_ptr(8), bot_page_ptr(24), &s_bot_active_page, present_vblank_begin);
+                bgShow(top_hw_bg);
+                bgShow(bot_hw_bg);
+#if HW_SHADOWS || (defined(GODRAYS_PROTO) && GODRAYS_PROTO)
+                oamEnable(&oamMain);
+                oamEnable(&oamSub);
+#endif
                 menu_update(KEY_B, 0, 0, 0);
                 s_top_map_ready = 0;
                 s_bot_map_ready = 0;

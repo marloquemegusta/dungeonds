@@ -98,13 +98,13 @@ static const uint8_t *font_glyph(char c) {
 static int get_buttons(MenuState state, const MenuButton **out_btns) {
     static const MenuButton title_btns[] = {
         { BTN_X0, 56 + 0 * BTN_PITCH, BTN_W, BTN_H, "NUEVA PARTIDA" },
-        { BTN_X0, 56 + 1 * BTN_PITCH, BTN_W, BTN_H, "BESTIARIO"     },
+        { BTN_X0, 56 + 1 * BTN_PITCH, BTN_W, BTN_H, "CODICE"        },
         { BTN_X0, 56 + 2 * BTN_PITCH, BTN_W, BTN_H, "CONTROLES"     },
     };
     static const MenuButton pause_btns[] = {
         { BTN_X0, 42 + 0 * BTN_PITCH, BTN_W, BTN_H, "CONTINUAR" },
         { BTN_X0, 42 + 1 * BTN_PITCH, BTN_W, BTN_H, "REINICIAR" },
-        { BTN_X0, 42 + 2 * BTN_PITCH, BTN_W, BTN_H, "BESTIARIO" },
+        { BTN_X0, 42 + 2 * BTN_PITCH, BTN_W, BTN_H, "CODICE"    },
         { BTN_X0, 42 + 3 * BTN_PITCH, BTN_W, BTN_H, "CONTROLES" },
     };
     static const MenuButton bestiary_btns[] = {
@@ -316,7 +316,7 @@ void menu_render_bottom(uint16_t *buf) {
 
     if (s_state == MENU_BESTIARY) {
         draw_box(buf, 38, 36, 180, 72, MENU_COL_INA_FILL, MENU_COL_INA_BDR);
-        draw_text_centered(buf, SCREEN_W / 2, 48, "BESTIARIO", MENU_COL_HEADER);
+        draw_text_centered(buf, SCREEN_W / 2, 48, "CODICE", MENU_COL_HEADER);
         draw_text_centered(buf, SCREEN_W / 2, 76, "PROXIMAMENTE", MENU_COL_BODY);
     } else if (s_state == MENU_CONTROLS) {
         static const char *const lines[4] = {

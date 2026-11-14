@@ -24,7 +24,6 @@ volatile BestiaryDebugState g_bestiary_debug = {0, 0, 0, 0};
 typedef struct {
     const char *id;
     const char *name;
-    const char *role;
     const char *behavior;
     const char *lore;
     const char *quote;
@@ -34,7 +33,6 @@ static const BestiaryEntry s_entries[4] = {
     {
         .id = "corazon",
         .name = "El Corazón Abierto",
-        .role = "(Héroe)",
         .behavior = "Carga su fe en cruz y desata un haz que atraviesa filas.",
         .lore = "Último capellán de la columna. Pidió un arma cuando faltó la pólvora y Dios le abrió el pecho; cada milagro le consume un poco más, pero la fe no le deja morir.",
         .quote = "«No es mi corazón. Solo lo llevo.»"
@@ -42,7 +40,6 @@ static const BestiaryEntry s_entries[4] = {
     {
         .id = "exvoto",
         .name = "El Exvoto",
-        .role = "(Masa)",
         .behavior = "Avanza en masa sin descanso; cae al primer impacto.",
         .lore = "Fieles que rezaron hasta volverse figuras de cera. Siguen en procesión con las manos en rezo; la cera no resiste la luz.",
         .quote = "«Pidieron no estar solos. Les fue concedido.»"
@@ -50,7 +47,6 @@ static const BestiaryEntry s_entries[4] = {
     {
         .id = "cireneo",
         .name = "El Cireneo",
-        .role = "(Cargador)",
         .behavior = "Se agacha antes de embestir en línea recta; no puede girar.",
         .lore = "Desertó y pidió que le clavaran la cruz a la espalda para no volver a huir. Si choca contra una columna, queda crucificado contra la piedra.",
         .quote = "«Ayudó a cargar una cruz. Ahora la cruz le carga a él.»"
@@ -58,7 +54,6 @@ static const BestiaryEntry s_entries[4] = {
     {
         .id = "ojo",
         .name = "El Ojo del Tribunal",
-        .role = "(Tirador)",
         .behavior = "Vigila con su farol, fija la línea de juicio y sentencia desde la boca.",
         .lore = "Inquisidores que cambiaron sus ojos por una linterna del juicio. Su mirada verde te examina; cuando se queda quieta, ya ha dictado sentencia.",
         .quote = "«La linterna no ve culpables. Los fabrica.»"
@@ -354,10 +349,8 @@ static void draw_bottom_card(uint16_t *fb, int entry_idx) {
 
     const BestiaryEntry *e = &s_entries[entry_idx];
 
-    /* Header: Name, Role, Page indicator */
+    /* Header: Name, Page indicator */
     bestiary_font_draw_utf8(fb, 12, 10, e->name, COLOR_IVORY);
-    int nw = bestiary_font_measure_utf8(e->name);
-    bestiary_font_draw_utf8(fb, 12 + nw + 6, 10, e->role, COLOR_WARM_GRAY);
 
     char pbuf[8];
     snprintf(pbuf, sizeof(pbuf), "%d/4", entry_idx + 1);
@@ -410,8 +403,10 @@ static int compute_anim_frame(int entry_idx, uint32_t anim_tick) {
         /* Cireneo (8 frames hunched walk loop, ~50% slower) */
         return (int)((anim_tick / 8) % 8);
     } else if (entry_idx == 3) {
-        /* Ojo del Tribunal (8 frames walking & turning lantern-head searching for victim) */
-        return (int)((anim_tick / 8) % 8);
+        /* Ojo del Tribunal (16 frames: 2 walk cycles per 1 slow lantern sweep) */
+        int nf = (s_portrait_valid && s_portrait_loaded_entry == 3 && s_portrait_hdr.num_frames > 0)
+            ? (int)s_portrait_hdr.num_frames : 8;
+        return (int)((anim_tick / 8) % (uint32_t)nf);
     }
     return 0;
 }

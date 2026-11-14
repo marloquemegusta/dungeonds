@@ -148,5 +148,45 @@ class TestBestiaryContract(unittest.TestCase):
         self.assertIn("bestiary", variants, "variant 'bestiary' must be defined in project.json")
         self.assertIn("BESTIARY_START=1", variants["bestiary"].get("defines", []))
 
+    def test_no_dark_edge_pixels_mapped_to_bright_palette_entry(self):
+        import struct
+        import numpy as np
+        from PIL import Image
+        from tools.gen_bestiary_portraits import CHARACTERS, SPRITES_BASE, CANVAS_W, CANVAS_H, ALPHA_THRESHOLD
+
+        for char_info in CHARACTERS:
+            cid = char_info['id']
+            clip_name = char_info['clips'][0][0]
+            sheet_path = os.path.join(SPRITES_BASE, clip_name, 'spritesheet.png')
+            bin_path = os.path.join(WT_ROOT, 'nitrofiles', 'bestiary', f'{cid}.bin')
+
+            with Image.open(sheet_path) as sheet:
+                frame0 = np.array(sheet.crop((0, 0, CANVAS_W, CANVAS_H)))
+            with open(bin_path, 'rb') as f:
+                data = f.read()
+
+            pal = struct.unpack_from('<256H', data, 8)
+            nframes = data[3]
+            doffs = struct.unpack_from('<8I', data, 520)
+            d0_off = doffs[0]
+            bx, by, bw, bh, f0_off = struct.unpack_from('<4BI', data, d0_off + 4)
+            pool_off = d0_off + 4 + 8 * nframes
+            px = np.frombuffer(data, dtype=np.uint8, count=bw * bh, offset=pool_off + f0_off).reshape((bh, bw))
+
+            # Every dark source pixel (L1 RGB sum < 60 in 8-bit) that is opaque in the portrait
+            # must map to a dark BGR555 palette color (L1 RGB555 sum <= 12), never a bright white dot.
+            sub_rgba = frame0[by:by+bh, bx:bx+bw]
+            premul = (sub_rgba[:, :, :3].astype(np.uint16) * sub_rgba[:, :, 3:4].astype(np.uint16) // 255)
+            dark_opaque = (sub_rgba[:, :, 3] >= ALPHA_THRESHOLD) & (premul.sum(axis=2) < 60)
+            mapped_indices = px[dark_opaque]
+            for idx in np.unique(mapped_indices):
+                self.assertNotEqual(idx, 0, f"{cid}: opaque pixel mapped to transparent 0")
+                col = pal[int(idx)]
+                r, g, b = col & 0x1F, (col >> 5) & 0x1F, (col >> 10) & 0x1F
+                self.assertLessEqual(
+                    r + g + b, 15,
+                    f"{cid}: dark edge pixel mapped to bright palette index {idx} RGB15=({r},{g},{b})"
+                )
+
 if __name__ == '__main__':
     unittest.main()

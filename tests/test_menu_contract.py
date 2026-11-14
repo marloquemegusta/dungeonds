@@ -29,7 +29,7 @@ class MenuContractTest(unittest.TestCase):
             "NUEVA PARTIDA",
             "CONTINUAR",
             "REINICIAR",
-            "BESTIARIO",
+            "CODICE",
             "CONTROLES",
             "PROXIMAMENTE",
             "VOLVER",

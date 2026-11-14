@@ -19,11 +19,16 @@ from mathutils import Vector, Matrix
 
 ROOT = sys.argv[sys.argv.index('--') + 1]
 OUT = os.path.join(ROOT, 'assets/models/characters/ojo')
-CHAR_FBX = glob.glob(os.path.join(OUT, 'source/tripo_convert_ed4d249d-*.fbx'))[0]
-HEAD_DIR = os.path.join(OUT, 'source/cabeza')
 WALK_FBX = os.path.join(ROOT, 'assets/models/animations/walk/walk_normal.fbx')
 if not os.path.exists(WALK_FBX):
     WALK_FBX = 'C:/codexlocal/dungeonds/assets/models/animations/walk/walk_normal.fbx'
+
+MAIN_OUT = 'C:/codexlocal/dungeonds/assets/models/characters/ojo'
+char_candidates = glob.glob(os.path.join(OUT, 'source/tripo_convert_ed4d249d-*.fbx')) or glob.glob(os.path.join(MAIN_OUT, 'source/tripo_convert_ed4d249d-*.fbx'))
+CHAR_FBX = char_candidates[0]
+HEAD_DIR = os.path.join(OUT, 'source/cabeza')
+if not os.path.isdir(HEAD_DIR):
+    HEAD_DIR = os.path.join(MAIN_OUT, 'source/cabeza')
 
 # ---- ajustes del cuerpo gordo (andar) ----
 WALK_FRAMES = 40        # 32 frames de Mixamo repartidos en 40 (paso algo mas pesado), +1 de cierre
@@ -32,6 +37,8 @@ FOREARM_OPEN_DEG = 4.0
 LEG_OPEN_DEG = 5.0      # separacion de piernas para que los pies no se crucen
 BOB_K = 0.8             # fraccion del rebote vertical de cadera
 WADDLE_DEG = 3.0        # balanceo de cadera (roll) por ciclo, contrarrestado en la columna
+LANTERN_YAW_DEG = 38.0  # giro de busqueda izquierda/derecha del farol sobre los hombros al caminar
+LANTERN_NECK_DEG = 8.0  # acompañamiento leve del cuello en el giro de busqueda
 
 # ---- brazo derecho extendido (comun a los tres clips) ----
 ARM_FWD_DEG = 84.0      # giro del brazo derecho sobre la vertical: 90 = justo hacia delante; algo menos = un pelin hacia fuera
@@ -85,6 +92,24 @@ def update():
     bpy.context.view_layer.update()
 
 
+# El autorigger de Tripo reparte ~34 % del peso del farol superior en los huesos de hombros y brazos.
+# Lo pasamos a Head en toda la jaula del farol (z >= 0,775 m y |x| <= 0,065 m) para que gire limpia.
+for m in meshes:
+    vg_names = {i: g.name for i, g in enumerate(m.vertex_groups)}
+    head_vg = m.vertex_groups.get(P + 'Head') or m.vertex_groups.new(name=P + 'Head')
+    neck_vg = m.vertex_groups.get(P + 'Neck')
+    for v in m.data.vertices:
+        p_w = m.matrix_world @ v.co
+        if p_w.z >= 0.775 and abs(p_w.x) <= 0.068 and -0.055 <= p_w.y <= 0.085:
+            t = min(1.0, max(0.0, (p_w.z - 0.775) / 0.020))
+            for g in list(v.groups):
+                m.vertex_groups[g.group].remove([v.index])
+            head_vg.add([v.index], t, 'REPLACE')
+            if neck_vg and (1.0 - t) > 0.001:
+                neck_vg.add([v.index], 1.0 - t, 'REPLACE')
+update()
+
+
 def world_z(o, n):
     update()
     return (o.matrix_world @ o.data.bones[P + n].head_local).z
@@ -103,14 +128,15 @@ RIGHT_ARM_CHAIN = set(b.name[len(P):] for b in arm.data.bones['mixamorig:RightAr
 UPPER = set(b.name[len(P):] for b in arm.data.bones['mixamorig:Spine1'].children_recursive)   # torso (sin Spine1)
 
 
-def sample(x, bob_m=0.0, spine_deg=0.0, lift_deg=0.0, walk_bob=True):
+def sample(x, bob_m=0.0, spine_deg=0.0, lift_deg=0.0, walk_bob=True, lantern_ph=None):
     """Pose del andar en el frame (fraccional) x con el brazo derecho extendido hacia delante;
     devuelve {hueso: (loc, rotq, scale)}. bob_m: subida extra de cadera; spine_deg: cabeceo del torso (+ = hacia
-    delante); lift_deg: elevacion extra del brazo derecho."""
+    delante); lift_deg: elevacion extra del brazo derecho; lantern_ph: fase del giro de busqueda del farol."""
     fi = int(math.floor(x)); sub = x - fi
     scene.frame_set(fi, subframe=sub)
     update()
     ph = (x - f0) / (f1 - f0) * 2 * math.pi      # fase del ciclo 0..2pi
+    l_ph = ph if lantern_ph is None else lantern_ph
     for pb in PB:
         pb.location = (0, 0, 0); pb.rotation_quaternion = (1, 0, 0, 0); pb.scale = (1, 1, 1)
     update()
@@ -145,6 +171,10 @@ def sample(x, bob_m=0.0, spine_deg=0.0, lift_deg=0.0, walk_bob=True):
                 R_des = Matrix.Rotation(math.radians(WADDLE_DEG) * math.sin(ph), 3, 'Y') @ R_des
             elif n == 'Spine1':
                 R_des = Matrix.Rotation(-math.radians(WADDLE_DEG) * math.sin(ph), 3, 'Y') @ R_des
+            elif n == 'Neck' and walk_bob:
+                R_des = Matrix.Rotation(math.radians(LANTERN_NECK_DEG) * math.sin(l_ph), 3, 'Z') @ R_des
+            elif n == 'Head' and walk_bob:
+                R_des = Matrix.Rotation(math.radians(LANTERN_YAW_DEG) * math.sin(l_ph), 3, 'Z') @ R_des
         if n in UPPER or n in ('Spine1',):
             R_des = E_up @ R_des
         if n == 'Hips':
@@ -253,10 +283,19 @@ def foot_gap(x):
     return math.hypot(l.x - r.x, l.y - r.y)    # distancia horizontal en mundo (Z arriba)
 
 
-# 1) andar
+# 1) andar: 1 ciclo para el juego (ojo_walk.fbx) y 2 ciclos de pasos por 1 de giro de farol para el bestiario (ojo_walk_bestiary.fbx)
 poses = [sample(f0 + i * (f1 - f0) / WALK_FRAMES) for i in range(WALK_FRAMES + 1)]
 poses[-1] = poses[0]            # cierre exacto del ciclo
 export_clip('ojo_walk', poses)
+
+BESTIARY_WALK_FRAMES = WALK_FRAMES * 2
+poses_bestiary = [
+    sample(f0 + ((i % WALK_FRAMES) / WALK_FRAMES) * (f1 - f0),
+           lantern_ph=2 * math.pi * i / BESTIARY_WALK_FRAMES)
+    for i in range(BESTIARY_WALK_FRAMES + 1)
+]
+poses_bestiary[-1] = poses_bestiary[0]
+export_clip('ojo_walk_bestiary', poses_bestiary)
 
 # 2) pose de pies juntos (cruce de piernas del andar) como base de look y sentence
 cands = [f0 + i * (f1 - f0) / 64.0 for i in range(64)]

@@ -29,7 +29,7 @@ if (!chromium) { console.error('Playwright not found'); process.exit(1); }
 
 const argv = process.argv.slice(2);
 const opt = (n) => { const i = argv.indexOf(n); return i >= 0 ? argv[i + 1] : undefined; };
-const flagVals = new Set(['--template', '--anim', '--rigScale', '--light', '--outline', '--saturation', '--muzzleBone', '--muzzleForward', '--fitZoom', '--resolution', '--tone', '--supersample', '--contrast', '--legibility']);
+const flagVals = new Set(['--template', '--anim', '--rigScale', '--light', '--outline', '--saturation', '--muzzleBone', '--muzzleForward', '--fitZoom', '--resolution', '--tone', '--supersample', '--contrast', '--legibility', '--frames']);
 const pos = argv.filter((a, i) => !a.startsWith('--') && !(i > 0 && flagVals.has(argv[i - 1])));
 const listOnly = argv.includes('--list');
 const model = pos[0] && path.resolve(pos[0]);
@@ -71,6 +71,8 @@ const HTML = path.join(__dirname, 'FBX-Web-Renderer-offline.html');
     const muzzleForward = opt('--muzzleForward') !== undefined ? parseFloat(opt('--muzzleForward')) : (s.muzzleSource && s.muzzleSource.forward !== undefined ? s.muzzleSource.forward : undefined);
     const fitZoom = opt('--fitZoom') !== undefined ? parseFloat(opt('--fitZoom')) : (s.fitZoom !== undefined ? s.fitZoom : 1);
     const resolution = opt('--resolution') !== undefined ? parseInt(opt('--resolution'), 10) : undefined;
+    const framesOpt = opt('--frames') !== undefined ? parseInt(opt('--frames'), 10) : undefined;
+    if (framesOpt !== undefined) s.framesPerDirection = framesOpt;
     const legibility = opt('--legibility') || 'anterior';
     if (!['anterior', 'c2'].includes(legibility)) { console.error('--legibility must be anterior or c2'); process.exit(2); }
     const toneOpt = opt('--tone');

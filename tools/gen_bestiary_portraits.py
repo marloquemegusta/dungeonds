@@ -45,7 +45,7 @@ CHARACTERS = [
     {
         'id': 'ojo',
         'clips': [
-            ('ojo_walk', list(range(8)))
+            ('ojo_walk', list(range(16)))
         ]
     }
 ]
@@ -97,22 +97,18 @@ def build_portrait_binary(char_info):
     quantized = flat_img.quantize(colors=255, method=Image.Quantize.MEDIANCUT)
     raw_pal = quantized.getpalette()[:255 * 3]
 
-    # Palette table for Pillow mapping: index 0 = (0,0,0) (transparent), 1..255 = colors
-    pal_256_rgb = [0, 0, 0] + raw_pal
-    while len(pal_256_rgb) < 256 * 3:
-        pal_256_rgb.extend([0, 0, 0])
-
-    # Convert 1..255 to NDS BGR555 | 0x8000
+    # Convert 1..255 to NDS BGR555 | 0x8000 (index 0 = transparent, 1..255 = raw_pal[0..254])
     nds_palette = [0] * 256
     nds_palette[0] = 0x0000  # Transparent
     for i in range(1, 256):
-        r = pal_256_rgb[i * 3] >> 3
-        g = pal_256_rgb[i * 3 + 1] >> 3
-        b = pal_256_rgb[i * 3 + 2] >> 3
+        c_idx = (i - 1) * 3
+        if c_idx + 2 < len(raw_pal):
+            r = raw_pal[c_idx] >> 3
+            g = raw_pal[c_idx + 1] >> 3
+            b = raw_pal[c_idx + 2] >> 3
+        else:
+            r, g, b = 0, 0, 0
         nds_palette[i] = (r & 0x1F) | ((g & 0x1F) << 5) | ((b & 0x1F) << 10) | 0x8000
-
-    pal_img = Image.new('P', (1, 1))
-    pal_img.putpalette(pal_256_rgb)
 
     # 4. Map frames to 8-bit palette and crop
     dir_data_blocks = []
@@ -132,13 +128,13 @@ def build_portrait_binary(char_info):
             # Composite over pure black using alpha so edge pixels never pop as bright white dots
             premul_rgb = (arr[:, :, :3].astype(np.uint16) * arr[:, :, 3:4].astype(np.uint16) // 255).astype(np.uint8)
             rgb_frame = Image.fromarray(premul_rgb, 'RGB')
-            mapped = rgb_frame.quantize(palette=pal_img, dither=Image.Dither.NONE)
-            mapped_arr = np.array(mapped, dtype=np.uint8)
+            # Map opaque pixels directly against the 255-color palette (indices 0..254 -> 1..255)
+            # so dark edge pixels never match the black dummy slot 0 and get remapped to bright index 1.
+            mapped = rgb_frame.quantize(palette=quantized, dither=Image.Dither.NONE)
+            mapped_arr = np.array(mapped, dtype=np.uint8) + 1
 
             # Mask out transparent pixels
             mapped_arr[~alpha_mask] = 0
-            # Ensure opaque pixels do not use index 0
-            mapped_arr[alpha_mask & (mapped_arr == 0)] = 1
 
             if np.any(alpha_mask):
                 y_idx, x_idx = np.where(alpha_mask)
