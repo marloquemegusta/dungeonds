@@ -128,7 +128,7 @@ static MenuAction activate_button(int idx) {
     case MENU_TITLE:
         if (idx == 0) {
             s_state = MENU_NONE;
-            return MENU_ACT_START_NEW;
+            return MENU_ACT_START_INTRO;
         }
         if (idx == 1) {
             s_parent = MENU_TITLE;

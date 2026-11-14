@@ -10,6 +10,11 @@ static HealPickup s_pickups[HEAL_PICKUP_MAX_ACTIVE];
 static uint32_t s_rng = 1;
 static uint32_t s_anim_tick = 0;
 
+#if SANDBOX
+// Scenario hook (never in the shipping ROM): non-zero forces the next enemy death to drop a heart.
+uint8_t g_pickup_force_drop = 0;
+#endif
+
 void pickups_init(uint32_t seed) {
     for (int i = 0; i < HEAL_PICKUP_MAX_ACTIVE; i++) s_pickups[i].active = 0;
     s_rng = seed ? seed : 1u;
@@ -25,6 +30,9 @@ void pickups_shift_y(int dy_px) {
 void pickups_enemy_killed(const Enemy *enemy) {
     if (!enemy) return;
     int force = (enemy->type == ENEMY_TYPE_ABANDERADO);
+#if SANDBOX
+    if (g_pickup_force_drop) { force = 1; g_pickup_force_drop = 0; }
+#endif
     if (!force) {
         s_rng = s_rng * 1664525u + 1013904223u;
         if ((s_rng % HEAL_PICKUP_CHANCE_DENOMINATOR) != 0) return;

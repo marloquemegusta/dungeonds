@@ -1,0 +1,109 @@
+{
+  "name": "intro_tarjetas",
+  "description": "Recorre las 4 tarjetas de introduccion con sus bucles de video (capturas dobles por tarjeta) y entra en partida.",
+  "steps": [
+    {
+      "frames": 60
+    },
+    {
+      "tap": {
+        "x": 128,
+        "y": 66
+      },
+      "frames": 6
+    },
+    {
+      "release": true,
+      "frames": 20
+    },
+    {
+      "frames": 50,
+      "capture": "01_catedral_a"
+    },
+    {
+      "frames": 13,
+      "capture": "01_catedral_b"
+    },
+    {
+      "frames": 37,
+      "capture_sequence": "v1",
+      "capture_every": 2
+    },
+    {
+      "button_down": "A",
+      "frames": 4
+    },
+    {
+      "button_up": "A",
+      "frames": 10
+    },
+    {
+      "frames": 50,
+      "capture": "02_apuntar_a"
+    },
+    {
+      "frames": 13,
+      "capture": "02_apuntar_b"
+    },
+    {
+      "frames": 37,
+      "capture_sequence": "v2",
+      "capture_every": 2
+    },
+    {
+      "button_down": "A",
+      "frames": 4
+    },
+    {
+      "button_up": "A",
+      "frames": 10
+    },
+    {
+      "frames": 50,
+      "capture": "03_marea_a"
+    },
+    {
+      "frames": 13,
+      "capture": "03_marea_b"
+    },
+    {
+      "frames": 37,
+      "capture_sequence": "v3",
+      "capture_every": 2
+    },
+    {
+      "button_down": "A",
+      "frames": 4
+    },
+    {
+      "button_up": "A",
+      "frames": 10
+    },
+    {
+      "frames": 50,
+      "capture": "04_corazon_a"
+    },
+    {
+      "frames": 13,
+      "capture": "04_corazon_b"
+    },
+    {
+      "frames": 37,
+      "capture_sequence": "v4",
+      "capture_every": 2
+    },
+    {
+      "button_down": "A",
+      "frames": 4
+    },
+    {
+      "button_up": "A",
+      "frames": 10
+    },
+    {
+      "frames": 30,
+      "capture": "05_en_partida"
+    }
+  ],
+  "evidence_only": true
+}
