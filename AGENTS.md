@@ -101,6 +101,7 @@ Lecciones: un bucle sin tope congela el juego; el coste de la oclusión por píx
 5. **Cierre:** al terminar, fusionar a `main` y limpiar:
    - Mover los archivos ya usados de `assets/inbox/` a `assets/inbox/processed/` en el repo principal y confirmar que no quedan zips/fbx procesados huérfanos en `inbox/`.
    - Si el usuario pidió cerrar o consolidar la sesión, commitear también `DESIGN.md`, `STATUS.md`, `TECHNICAL.md` y `walkthroughs/` sin pedir una segunda confirmación.
+   - **Rescatar los assets no versionados antes de borrar el worktree:** todo archivo sin trackear o ignorado de `assets/` (modelos 3D, FBX derivados, texturas, fuentes) debe existir, idéntico, en la carpeta principal del repo aunque no se versione. Copiar los que falten sin sobrescribir; si alguno existe con contenido distinto, preguntar al usuario. Comprobar archivo a archivo, comparando el contenido, antes de `worktree remove`. Sin esa comprobación no se borra el worktree.
    - Comprobar `git worktree list` para no dejar ramas terminadas sin mergear.
    - En Windows, salir antes del worktree (`cd` a la raíz del repo) y cerrar procesos que lo usen; si no, `worktree remove` falla con "Permission denied".
    ```bash
