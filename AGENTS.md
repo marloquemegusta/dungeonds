@@ -154,3 +154,13 @@ Cualquier agente (Antigravity, Claude Code, Codex, CommandCode) puede generar SF
   - Pasar siempre `--duration-seconds` con la duración mínima necesaria (mínimo `0.5` s); no omitirlo ni dejarlo en automático para no gastar créditos de más.
   - Los audios fuente van en `assets/sfx/raw/` y los recortados/normalizados para Nintendo DS (16.384 Hz mono, 8-bit) en `assets/sfx/baked/`.
   - Todo SFX generado con IA debe recortar el silencio inicial y ajustar la cola antes de integrarse en la ROM.
+
+---
+
+## Vídeos de Redes y Códice Lore (`assets/videos/`)
+
+Los vídeos verticales generados con la skill `codice-lore-video` (TikTok, Reels, YouTube Shorts) se centralizan en la carpeta `assets/videos/` del repositorio:
+
+- **Destino canónico:** `assets/videos/<nombre_video>.mp4` (ej. `assets/videos/codice_03_cireneo.mp4`, `assets/videos/codice_04_ojo.mp4`).
+- **Pipeline:** script de la skill (`.agents/skills/codice-lore-video/scripts/render_codice_video.py`), que realiza la locución con ElevenLabs CLI, el montaje con FFmpeg y la copia automática a `assets/videos/`.
+- **Walkthroughs:** cada sesión documenta el proceso y guarda sus fotogramas y tira de control en `walkthroughs/<sesion>/assets/`, pero la copia final del MP4 se conserva siempre centralizada en `assets/videos/`.
