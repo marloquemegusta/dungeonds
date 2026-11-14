@@ -29,7 +29,9 @@ typedef struct {
     const char *quote;
 } BestiaryEntry;
 
-static const BestiaryEntry s_entries[4] = {
+#define BESTIARY_NUM_ENTRIES 5
+
+static const BestiaryEntry s_entries[BESTIARY_NUM_ENTRIES] = {
     {
         .id = "corazon",
         .name = "El Corazón Abierto",
@@ -57,6 +59,13 @@ static const BestiaryEntry s_entries[4] = {
         .behavior = "Vigila con su farol, fija la línea de juicio y sentencia desde la boca.",
         .lore = "Inquisidores que cambiaron sus ojos por una linterna del juicio. Su mirada verde te examina; cuando se queda quieta, ya ha dictado sentencia.",
         .quote = "«La linterna no ve culpables. Los fabrica.»"
+    },
+    {
+        .id = "abanderado",
+        .name = "El Abanderado",
+        .behavior = "Patrulla con el asta; al divisarte te apunta e invoca exvotos de jóvenes suplicantes.",
+        .lore = "Juró que el estandarte jamás tocaría el suelo. Apoyado en él vaga reuniendo a los caídos; de los charcos que señala brotan exvotos de jóvenes suplicantes que aún marchan tras su bandera.",
+        .quote = "«Mientras el asta siga en pie, nadie se retira.»"
     }
 };
 
@@ -114,7 +123,7 @@ static void draw_border_rect(uint16_t *fb, uint16_t color) {
 }
 
 static int load_portrait_direction(int entry_idx, int dir) {
-    if (entry_idx < 0 || entry_idx >= 4) return 0;
+    if (entry_idx < 0 || entry_idx >= BESTIARY_NUM_ENTRIES) return 0;
     dir &= 7;
 
     char path[64];
@@ -277,6 +286,11 @@ static void draw_fallback_sprite_2x(uint16_t *fb, int entry_idx, uint32_t anim_t
             const uint16_t *src = &g_ojo_sentence_frames[g_ojo_sentence_frame_offsets[0][sf]];
             draw_sprite_2x(fb, PLAYER_SPRITE_W, PLAYER_SPRITE_H, bounds, src);
         }
+    } else if (entry_idx == 4) {
+        int frame = (int)((anim_tick / 7) % 8);
+        const uint8_t *bounds = g_character_frame_bounds[CHAR_ABANDERADO][0][frame];
+        const uint16_t *src = &g_character_frames[CHAR_ABANDERADO][g_character_frame_offsets[CHAR_ABANDERADO][0][frame]];
+        draw_sprite_2x(fb, 60, 60, bounds, src);
     }
 }
 
@@ -342,7 +356,7 @@ static int count_wrapped_lines(const char *utf8, int max_w) {
 }
 
 static void draw_bottom_card(uint16_t *fb, int entry_idx) {
-    if (!fb || entry_idx < 0 || entry_idx >= 4) return;
+    if (!fb || entry_idx < 0 || entry_idx >= BESTIARY_NUM_ENTRIES) return;
     uint32_t black_pair = 0x80008000;
     swiFastCopy(&black_pair, fb, COPY_MODE_FILL | (BESTIARY_SCREEN_W * BESTIARY_SCREEN_H * 2 / 4));
     draw_border_rect(fb, COLOR_BORDER);
@@ -353,7 +367,7 @@ static void draw_bottom_card(uint16_t *fb, int entry_idx) {
     bestiary_font_draw_utf8(fb, 12, 10, e->name, COLOR_IVORY);
 
     char pbuf[8];
-    snprintf(pbuf, sizeof(pbuf), "%d/4", entry_idx + 1);
+    snprintf(pbuf, sizeof(pbuf), "%d/%d", entry_idx + 1, BESTIARY_NUM_ENTRIES);
     int pw = bestiary_font_measure_utf8(pbuf);
     bestiary_font_draw_utf8(fb, 244 - pw, 10, pbuf, COLOR_WARM_GRAY);
 
@@ -407,6 +421,9 @@ static int compute_anim_frame(int entry_idx, uint32_t anim_tick) {
         int nf = (s_portrait_valid && s_portrait_loaded_entry == 3 && s_portrait_hdr.num_frames > 0)
             ? (int)s_portrait_hdr.num_frames : 8;
         return (int)((anim_tick / 8) % (uint32_t)nf);
+    } else if (entry_idx == 4) {
+        /* Abanderado (8 frames walk loop with staff) */
+        return (int)((anim_tick / 7) % 8);
     }
     return 0;
 }
@@ -435,7 +452,7 @@ static void clear_portrait_union_box(uint16_t *fb) {
 }
 
 static void draw_top_character(uint16_t *fb, int entry_idx, int dir, int frame, int full_clear) {
-    if (!fb || entry_idx < 0 || entry_idx >= 4) return;
+    if (!fb || entry_idx < 0 || entry_idx >= BESTIARY_NUM_ENTRIES) return;
     if (full_clear || !s_portrait_valid || s_portrait_loaded_entry != entry_idx || s_portrait_loaded_dir != (dir & 7)) {
         uint32_t black_pair = 0x80008000;
         swiFastCopy(&black_pair, fb, COPY_MODE_FILL | (BESTIARY_SCREEN_W * BESTIARY_SCREEN_H * 2 / 4));
@@ -526,7 +543,7 @@ void bestiary_run(uint16_t *top_page, uint16_t *bot_page_a, uint16_t *bot_page_b
         }
 
         if (nav_entry != 0) {
-            cur_entry = (cur_entry + nav_entry + 4) % 4;
+            cur_entry = (cur_entry + nav_entry + BESTIARY_NUM_ENTRIES) % BESTIARY_NUM_ENTRIES;
             g_bestiary_debug.entry_index = (uint32_t)cur_entry;
             cur_dir = 0; /* Reset to front view on card change */
             anim_tick = 0;

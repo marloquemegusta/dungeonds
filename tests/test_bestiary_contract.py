@@ -27,6 +27,7 @@ class TestBestiaryContract(unittest.TestCase):
         self.assertIn('El Exvoto', content)
         self.assertIn('El Cireneo', content)
         self.assertIn('El Ojo del Tribunal', content)
+        self.assertIn('El Abanderado', content)
 
     def test_files_exist(self):
         expected_files = [
@@ -41,6 +42,7 @@ class TestBestiaryContract(unittest.TestCase):
             'nitrofiles/bestiary/exvoto.bin',
             'nitrofiles/bestiary/cireneo.bin',
             'nitrofiles/bestiary/ojo.bin',
+            'nitrofiles/bestiary/abanderado.bin',
             'scenarios/bestiary_tour.json'
         ]
         for rel in expected_files:
@@ -85,7 +87,7 @@ class TestBestiaryContract(unittest.TestCase):
         m = large_array_re.search(content)
         self.assertIsNone(m, f"bestiary.c must not duplicate large sprite arrays: {m}")
 
-    def test_four_entries_in_bestiary(self):
+    def test_entries_in_bestiary(self):
         bestiary_c = os.path.join(WT_ROOT, 'source', 'bestiary.c')
         with open(bestiary_c, 'r', encoding='utf-8') as f:
             content = f.read()
@@ -94,7 +96,8 @@ class TestBestiaryContract(unittest.TestCase):
             'El Corazón Abierto',
             'El Exvoto',
             'El Cireneo',
-            'El Ojo del Tribunal'
+            'El Ojo del Tribunal',
+            'El Abanderado'
         ]
         for name in required_names:
             self.assertIn(name, content, f"Entry name '{name}' missing from bestiary.c")
