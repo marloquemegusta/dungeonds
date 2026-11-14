@@ -84,6 +84,7 @@ static int spawn_enemy(Enemy *e, int upper_screen_y, int clustered, int center_x
     e->strafe_dir = (horde_random() & 1u) ? 1 : -1;
     e->pack = -1;
     e->has_los = 0;
+    e->gesture = 0;
     return 1;
 }
 

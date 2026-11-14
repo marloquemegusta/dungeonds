@@ -127,10 +127,13 @@ class LaserDrawContract(unittest.TestCase):
     def test_laser_paints_without_per_pixel_dirty_calls(self):
         laser = read("source", "enemy_laser.c")
         draw = body_of(laser, "static void draw_laser(")
-        self.assertEqual(draw.count("dirty_row("), 1, "one dirty_row per touched row, after the beam")
-        self.assertIn("s_row_x0", draw)
-        # the per-pixel multiplications moved out of the step loop
-        loop = draw[draw.index("for (int d = 1;"):]
+        # Beams are painted in depth-ordered partial passes: the touched rows accumulate in s_row_x0/x1 and are flushed
+        # once, after the last pass (enemy_lasers_end), never per pixel and never per pass.
+        self.assertEqual(draw.count("dirty_row("), 0)
+        self.assertEqual(laser.count("dirty_row(y, (int)s_row_x0[y], (int)s_row_x1[y])"), 1)
+        self.assertIn("s_row_x0", laser)
+        # the per-pixel multiplications live outside the step loop (offsets are precomputed per beam)
+        loop = draw[draw.index("for (int d = d0;"):]
         self.assertNotIn("perp_x *", loop)
         self.assertNotIn("perp_y *", loop)
         self.assertIn("ITCM_CODE", laser)

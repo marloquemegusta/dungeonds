@@ -7,9 +7,9 @@ ROOT = Path(__file__).resolve().parents[1]
 SPRITES = (ROOT / "source" / "player_sprite.c").read_text(encoding="utf-8")
 HEADER = (ROOT / "include" / "player_sprite.h").read_text(encoding="utf-8")
 CHAR_DIR = ROOT / "assets" / "sprites" / "characters"
-# Order of the C tables (NUM_CHARACTERS): hero, charger, necron, skeleton.
-CHARACTERS = ["corazon", "charger", "necron", "skeleton"]
-ARMED = ["corazon", "necron"]
+# Order of the C tables (NUM_CHARACTERS): hero, charger, ojo, skeleton.
+CHARACTERS = ["corazon", "charger", "ojo", "skeleton"]
+ARMED = ["corazon", "ojo"]
 TOLERANCE = 2
 
 
