@@ -1,0 +1,80 @@
+{
+  "id": "dd-torch-lighting-macro",
+  "titulo": "Iluminación de antorcha continua con rendimiento de DS",
+  "tipo": "macro",
+  "parent": null,
+  "clase": "feature",
+  "repo": "dungeonds",
+  "base_commit": "4ef91834885195786397240fad93adf6d175668d",
+  "solution_commits": [
+    "edd33f36fc3c9b4b58266270096007a9bc4e2489",
+    "3ca14d001d11fc6064adcae5ea02cac726fa948f"
+  ],
+  "solucion_resumen": "Se incorporó un horneado offline de visibilidad 3D y rejillas de luz por posiciones caminables.\nEl sombreado se aplica en el buffer inferior con niveles de luz empaquetados.\nSe añadieron rutas rápidas para celdas oscuras y uniformes, DDA incremental y paleta precalculada.\nLa optimización reportada redujo el coste de render frente a la primera versión.\nUna ronda posterior corrigió escala geométrica, atenuación y paleta para evitar bandas y negros indistinguibles.\nLa evaluación de hardware debe usar el umbral de 560190 ticks por frame.",
+  "ficheros_solucion": [
+    "include/baked_visibility.h",
+    "source/baked_visibility.c",
+    "include/smooth_lightmap.h",
+    "source/smooth_lightmap.c",
+    "source/fog_of_war.c",
+    "source/main.c",
+    "tools/bake_all_dungeon_visibility.py",
+    "tools/bake_full_smooth_lightgrid.py"
+  ],
+  "evaluacion": {
+    "tipo": "mixta",
+    "puertas": [
+      {
+        "nivel": "G1 build",
+        "como": "& 'C:\\codexlocal\\skills\\agentic-ds-dev\\scripts\\build-project.ps1' -ProjectPath $P",
+        "criterio": "DS_BUILD=PASS; cero warnings nuevos.",
+        "fuente": "base_commit"
+      },
+      {
+        "nivel": "G2 tests",
+        "como": "Ejecutar las suites de iluminación y shading agregadas con la entrega, además de & 'C:\\codexlocal\\skills\\agentic-ds-dev\\scripts\\run-host-tests.ps1' -ProjectPath $P.",
+        "criterio": "Todas las suites PASS; comparación de sombreado C y los casos de visibilidad no muestran niveles binarios o artefactos de banda.",
+        "fuente": "solution_commit (overlay: tools/test_3d_visibility_model.py, tools/test_angular_torch_system.py, tools/test_banding_solution.py, tools/test_bilinear_lightgrid.py, tools/test_bvh_true_3d_visibility.py, tools/test_dynamic_moving_light.py, tools/test_exact_c_shading.py, tools/test_lowpoly_ds_3d_lighting.py, tools/test_multi_position_bake.py)"
+      },
+      {
+        "nivel": "G3 escenario",
+        "como": "& 'C:\\codexlocal\\skills\\agentic-ds-dev\\scripts\\run-scenario.ps1' -ProjectPath $P -ScenarioPath \"$P\\scenarios\\scifi_dungeon_walk.json\"",
+        "criterio": "PASS con captura de la antorcha en spawn, pasillo y cruces de arco.",
+        "fuente": "base_commit"
+      },
+      {
+        "nivel": "G4 metrica",
+        "como": "Medir en DS con PERF_PROFILE=1 en el mismo recorrido y leer /dungeonds_perf.log.",
+        "criterio": "Cada frame <= 560190 cpuGetTiming() ticks.",
+        "fuente": "por escribir"
+      },
+      {
+        "nivel": "G5 rubrica",
+        "como": "Revisar capturas reales de ROM en zonas iluminadas, penumbra y bajo arcos.",
+        "criterio": "La luz cae gradualmente, la penumbra es visible en LCD y los arcos no reciben una sombra binaria o corte artificial.",
+        "fuente": "solution_commit"
+      }
+    ],
+    "rubrica": [
+      {
+        "criterio": "Continuidad y legibilidad de la atenuación",
+        "peso": 1,
+        "anclas": "0=solo luz/sombra binaria o bandas severas; 1=caída gradual con artefactos visibles; 2=caída gradual legible sin cortes perceptibles en los casos de referencia."
+      }
+    ],
+    "trampas": [
+      "Usar capturas del emulador como prueba de rendimiento en hardware.",
+      "Pasar pruebas matemáticas sin verificar la iluminación renderizada.",
+      "Satisfacer el test con una pantalla uniforme sin oclusión del arco."
+    ]
+  },
+  "dificultad": 5,
+  "historia": "Dos commits de implementación: primero el sistema de iluminación continua y optimizaciones; después una iteración que corrigió desajuste de escala, falloff y aplastamiento de niveles bajos. STATUS registra comparativas y recorridos, pero las cifras antiguas de emulador no certifican el umbral de hardware.",
+  "reproducible": "parcial",
+  "motivo_reproducible": "Hay scripts, tests y escenario; el horneado requiere el entorno de Blender y la puerta de rendimiento necesita DS física.",
+  "coste_ejecucion_estimado": "alto (+ horneado 3D, render, múltiples pruebas y validación de hardware)",
+  "_fuente": "b4",
+  "_validado": true,
+  "_avisos": [],
+  "calibrado": false
+}

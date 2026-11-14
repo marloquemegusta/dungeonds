@@ -1,0 +1,62 @@
+{
+  "id": "dd-gameplay-encounters-progression",
+  "titulo": "Añadir encuentros de sala y progresión",
+  "tipo": "micro",
+  "parent": "dd-gameplay-doom-macro",
+  "clase": "feature",
+  "repo": "dungeonds",
+  "base_commit": "95cced8bb14d5e48e37f92442716d4e6be4a85ed",
+  "solution_commits": [
+    "4ba13ff58d04f7a25d3e37544dbd440aa2cfd715"
+  ],
+  "solucion_resumen": "Se añadió un gestor de encuentros con estados de sala inactiva, activa y despejada.\nLas oleadas reaparecen con enemigos mixtos en coordenadas transitables.\nAl limpiar la sala se garantizan drops de recompensa.\nLa salida abre el portal al siguiente piso.\nLa IA se integra con el gestor de encuentro.\nUn contrato host y un escenario verifican la progresión.",
+  "ficheros_solucion": [
+    "include/encounters.h",
+    "source/encounters.c",
+    "source/enemy_ai.c",
+    "source/main.c"
+  ],
+  "evaluacion": {
+    "tipo": "mixta",
+    "puertas": [
+      {
+        "nivel": "G1 build",
+        "como": "& 'C:\\codexlocal\\skills\\agentic-ds-dev\\scripts\\build-project.ps1' -ProjectPath $P",
+        "criterio": "DS_BUILD=PASS; cero warnings nuevos.",
+        "fuente": "base_commit"
+      },
+      {
+        "nivel": "G2 tests",
+        "como": "& 'C:\\codexlocal\\skills\\agentic-ds-dev\\scripts\\run-host-tests.ps1' -ProjectPath $P -Filter test_encounters_contract",
+        "criterio": "DS_HOST_TESTS=PASS.",
+        "fuente": "solution_commit (overlay: tests/test_encounters_contract.py)"
+      },
+      {
+        "nivel": "G3 escenario",
+        "como": "& 'C:\\codexlocal\\skills\\agentic-ds-dev\\scripts\\run-scenario.ps1' -ProjectPath $P -ScenarioPath \"$P\\scenarios\\room_encounter_test.json\"",
+        "criterio": "PASS al completar la oleada, eliminar enemigos y abrir el portal.",
+        "fuente": "solution_commit (overlay: scenarios/room_encounter_test.json)"
+      },
+      {
+        "nivel": "G4 metrica",
+        "como": "Medir en hardware Nintendo DS con PERF_PROFILE=1 y leer /dungeonds_perf.log.",
+        "criterio": "Cada frame <= 560190 cpuGetTiming() ticks.",
+        "fuente": "por escribir"
+      }
+    ],
+    "rubrica": [],
+    "trampas": [
+      "Validar solo el estado final del portal sin comprobar que la oleada se completa.",
+      "Tomar el tiempo de DeSmuME como certificado de 60 FPS en DS."
+    ]
+  },
+  "dificultad": 4,
+  "historia": "Un commit de implementación; añadió el escenario de sala y una suite de contrato de 291 líneas. STATUS registra tests y escenario PASS.",
+  "reproducible": "parcial",
+  "motivo_reproducible": "La lógica tiene oráculos host y de emulador; no consta telemetría de hardware que certifique el presupuesto.",
+  "coste_ejecucion_estimado": "medio (+ gestor de encuentros, build, test, escenario y medición de hardware)",
+  "_fuente": "b4",
+  "_validado": true,
+  "_avisos": [],
+  "calibrado": false
+}

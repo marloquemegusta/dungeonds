@@ -1,0 +1,61 @@
+{
+  "id": "td-live-dismemberment",
+  "titulo": "Mostrar daño no letal como desmembramiento progresivo",
+  "tipo": "macro",
+  "parent": null,
+  "clase": "feature",
+  "repo": "towerds",
+  "base_commit": "5c45ec9acaac84ad3a14f1895a195d9ee7fd2949",
+  "solution_commits": [
+    "6e91f26c8aaa0f31a9e596f2735c9f45137b19ed",
+    "20fd44a052389115213c686e3d50f7b4946cfdd2",
+    "c6ba30312bac8b3155e4b635611929502d6dcf09"
+  ],
+  "solucion_resumen": "Añade máscaras de heridas para recortar bloques irregulares del borde.\nLos mismos píxeles recortados se reutilizan para crear escombros.\nEl cupo de heridas depende de la salud ya perdida; el golpe letal no produce una herida adicional.\nLa amputación puede activarse o desactivarse en compilación.\nMantiene fast path para sprites intactos y mide su coste con seis Ultralisks.\nCommits posteriores corrigen textura de carne y limpieza de máscara al reciclar ranuras.",
+  "ficheros_solucion": [
+    "source/enemy_data.c",
+    "source/simulation.c",
+    "source/renderer.c",
+    "include/enemy_data.h",
+    "include/game.h",
+    "scenarios/perf_wound.json",
+    "scenarios/wound_smoke.json"
+  ],
+  "evaluacion": {
+    "tipo": "mixta",
+    "puertas": [
+      {
+        "nivel": "G1 build",
+        "como": "C:\\codexlocal\\skills\\agentic-ds-dev\\scripts\\build-project.ps1 -ProjectPath <workspace>",
+        "criterio": "DS_BUILD=PASS",
+        "fuente": "solution_commit (overlay: escenarios wound y perf)"
+      },
+      {
+        "nivel": "G3 escenario",
+        "como": "Ejecutar escenarios wound por especie y perf_wound.json; revisar GIFs",
+        "criterio": "Al menos un impacto no letal arranca borde y lanza el fragmento correspondiente; el golpe letal no añade herida",
+        "fuente": "solution_commit (overlay: scenarios/wound_*.json y scenarios/perf_wound.json)"
+      },
+      {
+        "nivel": "G4 metrica",
+        "como": "Leer HUD de perf_wound.json para sprites intactos y heridos",
+        "criterio": "Registrar base B:553 y herida B:565 ticks en el escenario histórico; umbral de regresión del benchmark: ≤565 ticks",
+        "fuente": "solution_commit (overlay: scenarios/perf_wound.json)"
+      }
+    ],
+    "rubrica": [],
+    "trampas": [
+      "Sprites con mucha salud pueden ocultar una implementación que hiere cada impacto sin limitarse por HP.",
+      "Medir solo un sprite pequeño no prueba el presupuesto de los mayores."
+    ]
+  },
+  "dificultad": 5,
+  "historia": "Un commit principal implementó el sistema y escenarios por especie; dos commits posteriores documentados en la rama de gore corrigieron carne moteada y máscara residual al reutilizar una ranura. El perfil registró +12 ticks con seis Ultralisks.",
+  "reproducible": "si",
+  "motivo_reproducible": "Escenarios de las ocho variantes y medición de rendimiento están versionados.",
+  "coste_ejecucion_estimado": "alto (+ build y múltiples escenarios/capturas)",
+  "_fuente": "b3",
+  "_validado": true,
+  "_avisos": [],
+  "calibrado": false
+}

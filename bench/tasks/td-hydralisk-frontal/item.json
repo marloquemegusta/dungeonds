@@ -1,0 +1,60 @@
+{
+  "id": "td-hydralisk-frontal",
+  "titulo": "Corregir orientación frontal del Hydralisk",
+  "tipo": "micro",
+  "parent": "td-sprites-direccionales",
+  "clase": "bug-acotado",
+  "repo": "towerds",
+  "base_commit": "cb04dbfc82cb0961311ab3f0b79220ff4959e2f5",
+  "solution_commits": [
+    "359cc8b4dcedcb2b7c87d1c9f31bb1365c27a5be"
+  ],
+  "solucion_resumen": "Se cambia la referencia de orientación frontal en los datos del enemigo.\nSe ajusta el generador de assets para producir la tabla correspondiente.\nLa verificación debe comparar al enemigo avanzando hacia el frente con la orientación de su hoja.\nEl historial anterior ya contenía fixes de dirección, lo que muestra que el mapeo inicial no bastó.\nNo consta una aserción automática para la dirección correcta.",
+  "ficheros_solucion": [
+    "include/enemy_data.h",
+    "scripts/build_assets.py",
+    "source/enemy_data.c"
+  ],
+  "evaluacion": {
+    "tipo": "mixta",
+    "puertas": [
+      {
+        "nivel": "G1 build",
+        "como": "C:\\codexlocal\\skills\\agentic-ds-dev\\scripts\\build-project.ps1 -ProjectPath <checkout>",
+        "criterio": "Build PASS",
+        "fuente": "solution_commit"
+      },
+      {
+        "nivel": "G3 escenario",
+        "como": "C:\\codexlocal\\skills\\agentic-ds-dev\\scripts\\run-scenario.ps1 -RomPath <rom> -ScenarioPath scenarios\\swarm_walk_test.json -OutputPath <dir>",
+        "criterio": "PASS; la captura frontal muestra el frente del enemigo",
+        "fuente": "solution_commit"
+      },
+      {
+        "nivel": "G5 rubrica",
+        "como": "Revisión visual de Hydralisk en rumbo frontal",
+        "criterio": "La orientación coincide con el frente de la hoja",
+        "fuente": "solution_commit"
+      }
+    ],
+    "rubrica": [
+      {
+        "criterio": "Orientación frontal del Hydralisk",
+        "peso": 1,
+        "anclas": "0=espaldas; 1=perfil o frente ambiguo; 2=frente reconocible y consistente"
+      }
+    ],
+    "trampas": [
+      "Una captura en diagonal no comprueba la orientación frontal."
+    ]
+  },
+  "dificultad": 2,
+  "historia": "Un commit dedicado; antes hubo varios cambios de estabilización y mapeo direccional en el historial.",
+  "reproducible": "parcial",
+  "motivo_reproducible": "Build y escenario son repetibles; el criterio de orientación requiere evaluación visual.",
+  "coste_ejecucion_estimado": "medio (+ build y captura headless)",
+  "_fuente": "b1",
+  "_validado": true,
+  "_avisos": [],
+  "calibrado": false
+}

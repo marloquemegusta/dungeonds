@@ -1,0 +1,51 @@
+{
+  "id": "td-master-enemy-table",
+  "titulo": "Unificar estadísticas de enemigos en una tabla maestra",
+  "tipo": "macro",
+  "parent": null,
+  "clase": "refactor",
+  "repo": "towerds",
+  "base_commit": "c4c14dbc78ecb5724a819c668ecf32233be25114",
+  "solution_commits": [
+    "d922f3839171633492fd753f8c3b0573061d1d7b"
+  ],
+  "solucion_resumen": "Centraliza HP, velocidad, recompensa y tier en GameBalanceConfig.enemy[].\nConecta spawn, muerte, mordida, sandbox y calibración con esa tabla.\nDefine dos especies por tier entre T1 y T4.\nRetira CSV, exportadores y campos duplicados que quedan sin uso.\nIncrementa la magia de balance para invalidar saves antiguos.\nAñade escenario de comprobación de tier.",
+  "ficheros_solucion": [
+    "include/game.h",
+    "source/simulation.c",
+    "source/renderer.c",
+    "scripts/build_assets.py",
+    "scenarios/master_table_tier_check.json",
+    "docs/BALANCE_DATA.md"
+  ],
+  "evaluacion": {
+    "tipo": "mixta",
+    "puertas": [
+      {
+        "nivel": "G1 build",
+        "como": "C:\\codexlocal\\skills\\agentic-ds-dev\\scripts\\build-project.ps1 -ProjectPath <workspace>",
+        "criterio": "DS_BUILD=PASS",
+        "fuente": "solution_commit (overlay: scenarios/master_table_tier_check.json)"
+      },
+      {
+        "nivel": "G3 escenario",
+        "como": "C:\\codexlocal\\skills\\agentic-ds-dev\\scripts\\run-scenario.ps1 -RomPath <workspace>\\game.nds -ScenarioPath <workspace>\\scenarios\\master_table_tier_check.json -OutputPath <out>",
+        "criterio": "DSM_SCENARIO_RESULT=PASS captures=5 events=61",
+        "fuente": "solution_commit (overlay: scenario)"
+      }
+    ],
+    "rubrica": [],
+    "trampas": [
+      "Validar solo la página de estadísticas no prueba que spawn y recompensas lean la misma tabla."
+    ]
+  },
+  "dificultad": 4,
+  "historia": "Un commit principal consolidó los datos y retiró duplicados; la evidencia registrada incluye build y un escenario de tabla maestra.",
+  "reproducible": "si",
+  "motivo_reproducible": "La verificación de tiers y capturas está versionada.",
+  "coste_ejecucion_estimado": "medio (+ build y escenario)",
+  "_fuente": "b3",
+  "_validado": true,
+  "_avisos": [],
+  "calibrado": false
+}

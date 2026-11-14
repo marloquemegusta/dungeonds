@@ -1,0 +1,49 @@
+{
+  "id": "skill-runner-state-and-upload-errors",
+  "titulo": "Aplicar todas las cotas de aserción y tolerar stderr de curl",
+  "tipo": "micro",
+  "parent": null,
+  "clase": "bug-acotado",
+  "repo": "skill",
+  "base_commit": "fef3aba5ea52351fdb226692b92bed2bae76de54",
+  "solution_commits": [
+    "16babb0c2a55e78de865a3f8f67ee98f1113d4a2"
+  ],
+  "solucion_resumen": "Evalúa todas las condiciones de una aserción, incluidas las dos cotas de un rango.\nAñade pruebas que comprueban límites inferior y superior, rangos de delta y símbolo de mapa.\nEjecuta curl en silencio, recoge el código de salida y verifica el listado FTP.\nIncluye el código de salida en el error de subida.",
+  "ficheros_solucion": [
+    "runtime/run_scenario.py",
+    "scripts/upload-rom.ps1",
+    "tests/test_run_scenario.py"
+  ],
+  "evaluacion": {
+    "tipo": "comando",
+    "puertas": [
+      {
+        "nivel": "G2 tests",
+        "como": "python -m unittest discover -s tests -p test_run_scenario.py",
+        "criterio": "Todas las pruebas pasan; especialmente rango 161000..163000 rechaza 180480 y 150000",
+        "fuente": "solution_commit (overlay: tests/test_run_scenario.py)"
+      },
+      {
+        "nivel": "G5 rubrica",
+        "como": "Ejecutar upload-rom.ps1 en Windows PowerShell 5.1 con curl exitoso y fallido",
+        "criterio": "No aborta por progress stderr; exit != 0 falla; listado remoto confirma nombre canónico",
+        "fuente": "por escribir"
+      }
+    ],
+    "rubrica": [],
+    "trampas": [
+      "Un valor que cumple el mínimo pero excede el máximo detecta el bug; probar solo valores interiores no.",
+      "Simular un curl exitoso sin validar el listado remoto no verifica la subida."
+    ]
+  },
+  "dificultad": 2,
+  "historia": "Un commit de fixes añadió seis pruebas unitarias y cambió el manejo de errores de curl. El historial lo atribuye a la causa de que min_value ocultaba max_value.",
+  "reproducible": "si",
+  "motivo_reproducible": "La suite unitaria está incluida en el commit; la prueba FTP requiere entorno simulado o consola accesible.",
+  "coste_ejecucion_estimado": "bajo (+ suite unitaria; integración FTP opcional)",
+  "_fuente": "b3",
+  "_validado": true,
+  "_avisos": [],
+  "calibrado": false
+}

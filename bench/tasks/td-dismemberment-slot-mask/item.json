@@ -1,0 +1,47 @@
+{
+  "id": "td-dismemberment-slot-mask",
+  "titulo": "Limpiar heridas al reutilizar una ranura de enemigo",
+  "tipo": "micro",
+  "parent": "td-live-dismemberment",
+  "clase": "bug-acotado",
+  "repo": "towerds",
+  "base_commit": "8dc90e0e4f21c93aa6c81e20e514b242d9192f1d",
+  "solution_commits": [
+    "c6ba30312bac8b3155e4b635611929502d6dcf09"
+  ],
+  "solucion_resumen": "Reinicia la máscara de heridas al inicializar el enemigo en una ranura reutilizada.\nEvita que la siguiente entidad aparezca ya mutilada.\nEl cambio se limita al ciclo de vida del estado del enemigo.",
+  "ficheros_solucion": [
+    "source/enemy_data.c",
+    "source/simulation.c"
+  ],
+  "evaluacion": {
+    "tipo": "mixta",
+    "puertas": [
+      {
+        "nivel": "G1 build",
+        "como": "C:\\codexlocal\\skills\\agentic-ds-dev\\scripts\\build-project.ps1 -ProjectPath <workspace>",
+        "criterio": "DS_BUILD=PASS",
+        "fuente": "solution_commit"
+      },
+      {
+        "nivel": "G3 escenario",
+        "como": "Generar heridas, eliminar el enemigo y spawnear otra especie en la misma ranura",
+        "criterio": "La segunda entidad comienza sin máscara ni píxeles amputados",
+        "fuente": "por escribir"
+      }
+    ],
+    "rubrica": [],
+    "trampas": [
+      "Probar una sola entidad sin reciclar la ranura no detecta el defecto."
+    ]
+  },
+  "dificultad": 2,
+  "historia": "Un commit de corrección; la prueba de reciclaje no aparece en los escenarios versionados.",
+  "reproducible": "parcial",
+  "motivo_reproducible": "Es posible probarlo con un escenario de spawn y muerte, pero hay que escribirlo.",
+  "coste_ejecucion_estimado": "medio (+ build y escenario específico)",
+  "_fuente": "b3",
+  "_validado": true,
+  "_avisos": [],
+  "calibrado": false
+}

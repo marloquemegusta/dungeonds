@@ -1,0 +1,55 @@
+{
+  "id": "dd-v01-decision-diseno",
+  "titulo": "Definir el alcance de la prueba de diversión",
+  "tipo": "micro",
+  "parent": "dd-v01-prueba-diversion",
+  "clase": "diseno",
+  "repo": "dungeonds",
+  "base_commit": "4dba82cbd907cdbad62c121d9a4d7f3eb8b50664",
+  "solution_commits": [
+    "c1e74ef0efe37465c4680f6052b325789a5450f7"
+  ],
+  "solucion_resumen": "El documento fija una prueba de combate con cuatro arenas cortas.\nDefine dos armas y dos enemigos con roles distintos.\nEspecifica controles, encuentros y progreso entre arenas.\nLimita el alcance para concentrar la evaluación en combate y movimiento.\nLa propuesta incluye criterios observables para revisar el prototipo.",
+  "ficheros_solucion": [
+    "DESIGN.md",
+    "TECHNICAL.md",
+    "STATUS.md",
+    "walkthroughs/diseno-gameplay-minimo/walkthrough.md"
+  ],
+  "evaluacion": {
+    "tipo": "rubrica-llm",
+    "puertas": [
+      {
+        "nivel": "G5 rubrica",
+        "como": "Revisar que el documento permita implementar y evaluar la prueba sin decisiones de gameplay críticas pendientes.",
+        "criterio": "Incluye alcance, controles, roles de armas/enemigos, estructura de arenas y criterios observables.",
+        "fuente": "solution_commit"
+      }
+    ],
+    "rubrica": [
+      {
+        "criterio": "Alcance acotado y medible",
+        "peso": 4,
+        "anclas": "0=visión vaga sin tarea evaluable; 1=alcance útil con huecos importantes; 2=prueba concreta con criterios observables."
+      },
+      {
+        "criterio": "Coherencia entre mecánicas y restricciones técnicas",
+        "peso": 3,
+        "anclas": "0=propuesta incompatible con DS; 1=restricciones incompletas; 2=alcance compatible con la plataforma y documentado."
+      }
+    ],
+    "trampas": [
+      "Usar una lista de features sin explicar qué se pretende validar.",
+      "Añadir progresión o sistemas secundarios que desplacen la prueba de combate."
+    ]
+  },
+  "dificultad": 2,
+  "historia": "Un commit documental del 3 de noviembre; la decisión sirvió de brief para las cuatro fases de implementación.",
+  "reproducible": "parcial",
+  "motivo_reproducible": "La presencia de criterios y decisiones se revisa de forma consistente, pero la calidad de diseño necesita rúbrica.",
+  "coste_ejecucion_estimado": "bajo (+ revisión documental)",
+  "_fuente": "b5",
+  "_validado": true,
+  "_avisos": [],
+  "calibrado": false
+}

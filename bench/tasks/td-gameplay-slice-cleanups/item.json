@@ -1,0 +1,47 @@
+{
+  "id": "td-gameplay-slice-cleanups",
+  "titulo": "Corregir controles y artefactos del slice City Defense",
+  "tipo": "micro",
+  "parent": "td-city-defense-slice",
+  "clase": "bug-acotado",
+  "repo": "towerds",
+  "base_commit": "84de1e4e6fab4db13736ef3ce60f91d206fa31d1",
+  "solution_commits": [
+    "d0f2b2a10cfd02cb99b173a2320ccca35e6ed1f1"
+  ],
+  "solucion_resumen": "Fija tasa inicial de 0.50/s y corrige los controles de cruceta del dial.\nPermite que enemigos atraviesen el andamio sin tiers construidos.\nLimita las salpicaduras a la pantalla inferior.\nSimplifica el fondo del scaffold y actualiza capturas del slice.",
+  "ficheros_solucion": [
+    "source/simulation.c",
+    "source/tiles.c"
+  ],
+  "evaluacion": {
+    "tipo": "mixta",
+    "puertas": [
+      {
+        "nivel": "G1 build",
+        "como": "C:\\codexlocal\\skills\\agentic-ds-dev\\scripts\\build-project.ps1 -ProjectPath <workspace>",
+        "criterio": "DS_BUILD=PASS",
+        "fuente": "solution_commit"
+      },
+      {
+        "nivel": "G3 escenario",
+        "como": "Ejecutar phase1_vertical_slice.json y revisar ambas pantallas",
+        "criterio": "Dial inicia en 0.50/s y responde a cruceta; enemigos atraviesan scaffold vacío; sin salpicaduras en pantalla superior",
+        "fuente": "solution_commit (overlay: escenario phase1_vertical_slice.json)"
+      }
+    ],
+    "rubrica": [],
+    "trampas": [
+      "El escenario debe observar suficiente tiempo para distinguir spawn continuo y paso bajo el andamio."
+    ]
+  },
+  "dificultad": 3,
+  "historia": "Un commit corrigió en conjunto cuatro problemas de gameplay/render, con capturas actualizadas; no consta una serie de intentos.",
+  "reproducible": "parcial",
+  "motivo_reproducible": "El slice tiene escenario, pero el criterio de ausencia de salpicaduras requiere revisar capturas.",
+  "coste_ejecucion_estimado": "medio (+ build y escenario visual)",
+  "_fuente": "b3",
+  "_validado": true,
+  "_avisos": [],
+  "calibrado": false
+}

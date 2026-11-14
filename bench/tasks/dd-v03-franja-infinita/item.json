@@ -1,0 +1,78 @@
+{
+  "id": "dd-v03-franja-infinita",
+  "titulo": "Implementar la franja vertical infinita jugable",
+  "tipo": "macro",
+  "parent": null,
+  "clase": "feature",
+  "repo": "dungeonds",
+  "base_commit": "915b3b4d772115ae153fe39958b11d02cee9d5cb",
+  "solution_commits": [
+    "2d3dcfe6b9924f47eb5f50066cf114d533ddbadd"
+  ],
+  "solucion_resumen": "Añade una arena de ventana 512×2048 sobre una franja de 512 px generada por bandas de 128 px.\nAl subir, rebasa la ventana, desplaza el estado Y vivo y genera nuevas bandas.\nIncluye kit de tiles con carril transitable y columnas que no ocluyen ni bloquean balas.\nLa horda escala el intervalo de spawn y el máximo de enemigos vivos.\nLa marea ralentiza y daña al jugador usando ventana de hardware.\nAñade drops de cura, HUD y resumen al morir.\nBuild, 154 tests y escenarios pasaron; la medición reportada en DS quedó bajo el presupuesto.",
+  "ficheros_solucion": [
+    "source/strip.c",
+    "source/strip_kit.c",
+    "source/horde.c",
+    "source/tide.c",
+    "source/pickups.c",
+    "source/main.c",
+    "include/strip.h",
+    "include/horde.h",
+    "include/tide.h",
+    "include/pickups.h",
+    "scenarios/strip_climb_smoke.json",
+    "scenarios/strip_horde_tide.json",
+    "walkthroughs/v03-minima/walkthrough.md"
+  ],
+  "evaluacion": {
+    "tipo": "mixta",
+    "puertas": [
+      {
+        "nivel": "G1 build",
+        "como": "Compilar con scripts/build-project.ps1 de la skill ds-game-dev.",
+        "criterio": "DS_BUILD=PASS sin warnings nuevos.",
+        "fuente": "solution_commit"
+      },
+      {
+        "nivel": "G2 tests",
+        "como": "Ejecutar los tests de host y contratos añadidos para franja, kit y horda.",
+        "criterio": "154 tests pasan en el conjunto de referencia.",
+        "fuente": "solution_commit (overlay: tests de strip, strip_kit y horde)"
+      },
+      {
+        "nivel": "G3 escenario",
+        "como": "Ejecutar strip_climb_smoke y strip_horde_tide.",
+        "criterio": "El primero sube 2852 px y acumula 2048 px de rebase en 4500 frames; el segundo llega a 6 enemigos vivos al frame 600 y reduce vida de 5 a 0 al frame 1000.",
+        "fuente": "solution_commit (overlay: scenarios/strip_*)"
+      },
+      {
+        "nivel": "G4 metrica",
+        "como": "Medir PERF_PROFILE en DS durante una partida y comparar máximos por frame.",
+        "criterio": "La referencia reporta media 219000 y máximo 489882 ticks; ningún frame excede 560190 ticks por trabajo propio.",
+        "fuente": "por escribir"
+      },
+      {
+        "nivel": "G6 humano",
+        "como": "Jugar la situación en Nintendo DS.",
+        "criterio": "La franja se juega en continuo y se reconoce la nueva versión en pantalla; registrar cualquier caída de rendimiento.",
+        "fuente": "por escribir"
+      }
+    ],
+    "rubrica": [],
+    "trampas": [
+      "Basar la prueba de subida en Y local de la ventana en vez de coordenadas acumuladas.",
+      "Aprobar en DeSmuME como certificación de 60 FPS.",
+      "Olvidar que los escenarios dungeon_pack_* ya no representan la ROM principal."
+    ]
+  },
+  "dificultad": 5,
+  "historia": "Un commit de entrega, precedido por una revisión que encontró 12 bugs de lógica y los corrigió: navegación tras rebase, curas bloqueantes, daño de marea e i-frames, muerte con stylus pulsado, costura del carril, posiciones de spawn y slots reciclados, entre otros. Se midió en DS: media 219000, máximo 489882 ticks; el perfilado de escritura a SD explica los frames con más de un vblank.",
+  "reproducible": "si",
+  "motivo_reproducible": "Hay contratos host, dos escenarios reproducibles y resultados de una medición hardware documentados.",
+  "coste_ejecucion_estimado": "alto (+ build, tests, escenarios y medición DS)",
+  "_fuente": "b6",
+  "_validado": true,
+  "_avisos": [],
+  "calibrado": false
+}

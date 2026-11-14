@@ -1,0 +1,65 @@
+{
+  "id": "td-perf-fps-dirty-blocks-itcm",
+  "titulo": "Reducir restauraciones repetidas del fondo en el renderer inferior",
+  "tipo": "micro",
+  "parent": "td-perf-fps-root-cause",
+  "clase": "perf-hw",
+  "repo": "towerds",
+  "base_commit": "1edc90b49ca2fbbad0e2e0a1f04da9cfa9c45e05",
+  "solution_commits": [
+    "f3ba0a24193b53c23d6b32b7a31bd7f7a56e56b2"
+  ],
+  "solucion_resumen": "La restauración del fondo se agrupa por bloques de 8x8 y un bitmask evita procesar repetidamente el mismo bloque.\nEl dirty bound se integra en el blit de los sprites.\nLa ruta caliente del blit se coloca en ITCM.\nLa simulación reparte parte del trabajo entre frames.\nEl informe posterior registra la restauración deduplicada, pero la carga móvil aún no demuestra por sí sola que baste para alcanzar 60 FPS.",
+  "ficheros_solucion": [
+    "source/renderer.c",
+    "source/tiles.c",
+    "source/simulation.c",
+    "source/enemy_data.c",
+    "include/tiles.h",
+    "include/game.h",
+    "include/enemy_data.h"
+  ],
+  "evaluacion": {
+    "tipo": "mixta",
+    "puertas": [
+      {
+        "nivel": "G1 build",
+        "como": "C:\\codexlocal\\skills\\agentic-ds-dev\\scripts\\build-project.ps1 -ProjectPath C:\\codexlocal\\towerds",
+        "criterio": "Build PASS sin advertencias de declaración implícita.",
+        "fuente": "base_commit"
+      },
+      {
+        "nivel": "G3 escenario",
+        "como": "Ejecutar el escenario de estrés móvil y el escenario de regresión de combate.",
+        "criterio": "Estrés mantiene 384 enemigos; combate termina PASS.",
+        "fuente": "solution_commit (overlay: stress y escenarios de regresión)"
+      },
+      {
+        "nivel": "G4 metrica",
+        "como": "Comparar ticks de restauración y de frame completo antes/después en la misma carga.",
+        "criterio": "Reportar ticks medidos y no reclamar que alcanza 60 FPS sin demostrar <=545 ticks/frame.",
+        "fuente": "solution_commit (overlay: profiler)"
+      },
+      {
+        "nivel": "G5 rubrica",
+        "como": "Revisar capturas antes/después.",
+        "criterio": "Sin trail de puntos marrones, huecos de sprites o deterioro del combate.",
+        "fuente": "solution_commit (overlay: capturas)"
+      }
+    ],
+    "rubrica": [],
+    "trampas": [
+      "Contar deduplicación en perfil fijo como prueba suficiente de mejora en una carga móvil.",
+      "La primera saga ya implementó dirty rects, pero KNOWN_ISSUES registró trails y FPS insuficientes."
+    ]
+  },
+  "dificultad": 4,
+  "historia": "Dirty rects se añadieron el 17 sep 23:56; luego hubo correcciones de trails, oclusión, copia por palabras, bounds y overhead gratuito hasta el 18 sep 11:51. El informe registra ~13 FPS antes/después de las optimizaciones de dirty rects en estrés móvil: el trabajo auxiliar no atacaba el coste dominante de escritura/restauración de píxeles.",
+  "reproducible": "parcial",
+  "motivo_reproducible": "La build y escenarios se pueden repetir; el beneficio exacto depende del timer del emulador y la captura visual.",
+  "coste_ejecucion_estimado": "alto (+ escenarios de estrés, regresión y comparación visual)",
+  "_fuente": "b2",
+  "_validado": true,
+  "_avisos": [],
+  "calibrado": false
+}

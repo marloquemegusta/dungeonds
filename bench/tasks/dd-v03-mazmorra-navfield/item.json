@@ -1,0 +1,62 @@
+{
+  "id": "dd-v03-mazmorra-navfield",
+  "titulo": "Ampliar navegación para un mapa de 1280×1280",
+  "tipo": "micro",
+  "parent": null,
+  "clase": "refactor",
+  "repo": "dungeonds",
+  "base_commit": "7873ff3a0478ce498a125dbbf015a65929099570",
+  "solution_commits": [
+    "1e4973d4e86783e1c870d349b4659ea303c54f8f"
+  ],
+  "solucion_resumen": "Amplía el campo a 80×80 nodos y usa distancias uint16.\nEvita división y módulo en el recorrido por nodo.\nAñade un límite de profundidad NAV_MAX_DEPTH.\nAjusta el desplazamiento del campo en los tests host.\nLa rama experimental también cambia generador de mapa, arte y perfil de luz.\nEl commit quedó aparcado y no se probó en DS; la solución de referencia solo sirve como candidato técnico a revisar.",
+  "ficheros_solucion": [
+    "source/navfield.c",
+    "include/navfield.h",
+    "tests/host/nav_host_test.c",
+    "tests/test_navfield.py"
+  ],
+  "evaluacion": {
+    "tipo": "mixta",
+    "puertas": [
+      {
+        "nivel": "G1 build",
+        "como": "Compilar la rama candidata para DS.",
+        "criterio": "DS_BUILD=PASS sin warnings nuevos.",
+        "fuente": "solution_commit"
+      },
+      {
+        "nivel": "G2 tests",
+        "como": "Ejecutar tests host de navfield.",
+        "criterio": "PASS para campo de 80×80, distancias y límite de expansión.",
+        "fuente": "solution_commit (overlay: tests/host/nav_host_test.c y tests/test_navfield.py)"
+      },
+      {
+        "nivel": "G4 metrica",
+        "como": "Medir navegación en DS dentro de escena representativa.",
+        "criterio": "Completa rutas sin exceder 560190 ticks/frame y no excede NAV_MAX_DEPTH.",
+        "fuente": "por escribir"
+      },
+      {
+        "nivel": "G6 humano",
+        "como": "Revisar la solución experimental antes de rescatarla.",
+        "criterio": "Aceptar únicamente si las rutas son correctas y el rendimiento queda medido en DS.",
+        "fuente": "por escribir"
+      }
+    ],
+    "rubrica": [],
+    "trampas": [
+      "Usar el paso de tests host como evidencia de rendimiento DS.",
+      "Ampliar dimensiones sin revisar el tipo de distancia o los límites de recorrido."
+    ]
+  },
+  "dificultad": 3,
+  "historia": "Un commit WIP aparcado el 2026-11-06. La dirección v0.3 cambió a survivors vertical y no hubo validación ni revisión en DS.",
+  "reproducible": "parcial",
+  "motivo_reproducible": "Los tests de host están en la rama; falta validación hardware y aprobación de la rama experimental.",
+  "coste_ejecucion_estimado": "medio (+ build, tests host y medición en DS)",
+  "_fuente": "b6",
+  "_validado": true,
+  "_avisos": [],
+  "calibrado": false
+}

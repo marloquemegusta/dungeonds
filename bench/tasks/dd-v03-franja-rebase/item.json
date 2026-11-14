@@ -1,0 +1,54 @@
+{
+  "id": "dd-v03-franja-rebase",
+  "titulo": "Generar bandas y mantener el mundo al rebajar la ventana",
+  "tipo": "micro",
+  "parent": "dd-v03-franja-infinita",
+  "clase": "feature",
+  "repo": "dungeonds",
+  "base_commit": "915b3b4d772115ae153fe39958b11d02cee9d5cb",
+  "solution_commits": [
+    "2d3dcfe6b9924f47eb5f50066cf114d533ddbadd"
+  ],
+  "solucion_resumen": "La geometría de cada banda depende de semilla y número de banda.\nEl carril libre es de al menos 64 px y su desplazamiento se limita entre bandas.\nAl alcanzar el umbral se desplaza la ventana 512 px y se crean cuatro bandas nuevas.\nSe aplica el mismo desplazamiento a todas las coordenadas vivas del mundo.\nLa navegación se desplaza junto con la ventana en vez de reconstruirse completa.\nEl test host usa coordenadas acumuladas para verificar varios rebases.",
+  "ficheros_solucion": [
+    "source/strip.c",
+    "source/strip_kit.c",
+    "source/navfield.c",
+    "tests/host/strip_host_test.c",
+    "tests/host/strip_nav_host_test.c",
+    "tests/test_strip.py",
+    "tests/test_strip_kit.py",
+    "scenarios/strip_climb_smoke.json"
+  ],
+  "evaluacion": {
+    "tipo": "mixta",
+    "puertas": [
+      {
+        "nivel": "G2 tests",
+        "como": "Ejecutar tests de strip, kit y navegación host.",
+        "criterio": "PASS, incluyendo generación de bandas, carril y desplazamiento de estado.",
+        "fuente": "solution_commit (overlay: tests/host/strip_* y tests/test_strip*)"
+      },
+      {
+        "nivel": "G3 escenario",
+        "como": "Ejecutar strip_climb_smoke.",
+        "criterio": "En 4500 frames: recorrido de 2852 px y 2048 px de rebase, medidos en coordenadas globales.",
+        "fuente": "solution_commit (overlay: scenarios/strip_climb_smoke.json)"
+      }
+    ],
+    "rubrica": [],
+    "trampas": [
+      "Medir progreso usando Y dentro de la ventana, que se reinicia en cada rebase.",
+      "Generar un carril bloqueado por columnas debido a un error de geometría."
+    ]
+  },
+  "dificultad": 4,
+  "historia": "La revisión de v0.3 encontró y corrigió la costura del carril, bandas despejadas en posiciones incorrectas, Y sin desplazar, navegación ciega durante el rebase y un puntero nulo con kit inválido.",
+  "reproducible": "si",
+  "motivo_reproducible": "Hay tests host y escenario de subida con coordenadas globales.",
+  "coste_ejecucion_estimado": "medio (+ tests host y escenario)",
+  "_fuente": "b6",
+  "_validado": true,
+  "_avisos": [],
+  "calibrado": false
+}

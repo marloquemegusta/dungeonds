@@ -1,0 +1,64 @@
+{
+  "id": "td-roster-xeno",
+  "titulo": "Desplegar roster de ocho especies xeno",
+  "tipo": "macro",
+  "parent": null,
+  "clase": "arte-impl",
+  "repo": "towerds",
+  "base_commit": "0b4056a28472e92d70e00a950d2604d3330da933",
+  "solution_commits": [
+    "f57562b5a1571967fbad931268e3fd85e9909ef9"
+  ],
+  "solucion_resumen": "Se incorporan ocho especies StarCraft xeno con hojas maestras y assets procesados.\nSe genera una tabla direccional con reflejo runtime para reducir duplicación de imágenes.\nSe actualizan datos de enemigos, render y simulación para incorporar las especies.\nSe agrega un escenario de demostración del enjambre.\nEl commit también registra cambios de assets y tiles; la evaluación debe centrarse en el roster.",
+  "ficheros_solucion": [
+    "source/enemy_data.c",
+    "source/simulation.c",
+    "source/renderer.c",
+    "scripts/build_assets.py",
+    "tools/build_canonical_enemy_strips.py",
+    "scenarios/swarm_showcase.json"
+  ],
+  "evaluacion": {
+    "tipo": "mixta",
+    "puertas": [
+      {
+        "nivel": "G1 build",
+        "como": "C:\\codexlocal\\skills\\agentic-ds-dev\\scripts\\build-project.ps1 -ProjectPath <checkout>",
+        "criterio": "Build PASS",
+        "fuente": "solution_commit"
+      },
+      {
+        "nivel": "G3 escenario",
+        "como": "C:\\codexlocal\\skills\\agentic-ds-dev\\scripts\\run-scenario.ps1 -RomPath <rom> -ScenarioPath scenarios\\swarm_showcase.json -OutputPath <dir>",
+        "criterio": "PASS; captura muestra enemigos del roster en marcha",
+        "fuente": "solution_commit"
+      },
+      {
+        "nivel": "G5 rubrica",
+        "como": "Revisión de capturas y catálogo de especies",
+        "criterio": "Ocho especies registradas, sus sprites se renderizan y calibración permite seleccionarlas",
+        "fuente": "solution_commit"
+      }
+    ],
+    "rubrica": [
+      {
+        "criterio": "Cobertura y render de especies",
+        "peso": 1,
+        "anclas": "0=build falla o faltan la mayoría; 1=integración parcial; 2=ocho especies seleccionables y visibles"
+      }
+    ],
+    "trampas": [
+      "El escenario puede pasar mostrando solo una especie; comprobar registros y capturas del roster completo.",
+      "La comparación de píxeles no identifica la especie renderizada."
+    ]
+  },
+  "dificultad": 5,
+  "historia": "Un commit grande de integración con 113 archivos; incluye nueva tabla de especies, pipeline de assets y escenario showcase. Antes consta una ronda de análisis y ajuste de hojas; el journal señala recortes iniciales incorrectos y refinamientos posteriores.",
+  "reproducible": "parcial",
+  "motivo_reproducible": "Assets, código y escenario están versionados; validar todas las especies exige inspección de capturas.",
+  "coste_ejecucion_estimado": "alto (+ build, escenario y revisión de múltiples sprites)",
+  "_fuente": "b1",
+  "_validado": true,
+  "_avisos": [],
+  "calibrado": false
+}

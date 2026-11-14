@@ -1,0 +1,53 @@
+{
+  "id": "dd-v01-tirador-necron",
+  "titulo": "Implementar el tirador con telegraph y ráfaga",
+  "tipo": "micro",
+  "parent": "dd-v01-prueba-diversion",
+  "clase": "feature",
+  "repo": "dungeonds",
+  "base_commit": "3881f76ea108d18bba35bf7a3e862f0f10e785c4",
+  "solution_commits": [
+    "73fbd753a887e94bb3c067ad102c58463c96aea2"
+  ],
+  "solucion_resumen": "El tirador usa estados de posicionamiento, aviso, ráfaga y cooldown.\nSe mueve para conservar una banda de distancia y hace strafe lateral.\nSi no hay tiro limpio, busca una posición accesible.\nEl aviso dura 18 frames y el ataque lanza tres proyectiles con lead.\nProyectiles y daño usan una elipse en métrica de suelo.\nEl empujón de escopeta cancela telegraph o ráfaga.",
+  "ficheros_solucion": [
+    "source/enemy_ai.c",
+    "source/projectiles.c",
+    "source/gameplay.c",
+    "source/encounters.c",
+    "tests/test_shooter_contract.py",
+    "scenarios/shooter_keeps_distance.json",
+    "scenarios/shooter_telegraph_burst.json"
+  ],
+  "evaluacion": {
+    "tipo": "mixta",
+    "puertas": [
+      {
+        "nivel": "G2 tests",
+        "como": "Ejecutar `test_shooter_contract.py` sobre el C real.",
+        "criterio": "Todos los contratos de estados, distancias y proyectiles pasan.",
+        "fuente": "solution_commit"
+      },
+      {
+        "nivel": "G3 escenario",
+        "como": "Ejecutar `shooter_keeps_distance` y `shooter_telegraph_burst`.",
+        "criterio": "El tirador conserva distancia durante 240 frames y el aviso precede a tres disparos.",
+        "fuente": "solution_commit"
+      }
+    ],
+    "rubrica": [],
+    "trampas": [
+      "Disparar a través de un muro o crear los proyectiles dentro de una pared.",
+      "Validar solo la ráfaga sin comprobar que el tirador mantiene su distancia."
+    ]
+  },
+  "dificultad": 4,
+  "historia": "Una fase principal. Se corrigieron pool insuficiente, proyectil nacido en muro, empujón que no cancelaba el aviso y parpadeo inicial del destello. Quedaron pendientes tuning y medición en DS.",
+  "reproducible": "parcial",
+  "motivo_reproducible": "Contratos y escenarios son repetibles; ajuste de cadencia y rendimiento final requieren hardware.",
+  "coste_ejecucion_estimado": "medio (+ suite host y escenarios)",
+  "_fuente": "b5",
+  "_validado": true,
+  "_avisos": [],
+  "calibrado": false
+}

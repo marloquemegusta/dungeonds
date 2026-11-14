@@ -1,0 +1,40 @@
+{
+  "id": "td-sandbox-contrato-captura",
+  "titulo": "Ajustar el contrato de captura del sandbox",
+  "tipo": "micro",
+  "parent": "td-sandbox-operativo",
+  "clase": "tooling",
+  "repo": "towerds",
+  "base_commit": "d7d224e08ea236204160780cb7e750b73ea1a98c",
+  "solution_commits": [
+    "a148e56f8ae9415d39b73aedf71a6522b0029623"
+  ],
+  "solucion_resumen": "Se incorpora sandbox_verification.json con una secuencia de taps, botones y esperas.\nCaptura el estado previo, el sandbox, el enemigo aparecido, la torreta y la limpieza.\nAsegura el inicio de la simulación y deja tiempo para que ocurra el render.\nLas aserciones comparan cambios de pantalla con mínimos explícitos de píxeles.\nKNOWN_ISSUES.md posterior identifica capturas demasiado tempranas como causa de falsos fallos.",
+  "ficheros_solucion": [
+    "scenarios/sandbox_verification.json"
+  ],
+  "evaluacion": {
+    "tipo": "comando",
+    "puertas": [
+      {
+        "nivel": "G3 escenario",
+        "como": "C:\\codexlocal\\skills\\agentic-ds-dev\\scripts\\run-scenario.ps1 -RomPath <rom> -ScenarioPath scenarios\\sandbox_verification.json -OutputPath <dir>",
+        "criterio": "PASS y todas las comparaciones screen_changed/screen_changes superan sus mínimos",
+        "fuente": "solution_commit"
+      }
+    ],
+    "rubrica": [],
+    "trampas": [
+      "Se puede satisfacer screen_changed con una pantalla distinta que no muestre el estado esperado."
+    ]
+  },
+  "dificultad": 2,
+  "historia": "Se añadió dentro del commit de integración del sandbox; no consta una iteración separada del escenario en ese commit.",
+  "reproducible": "parcial",
+  "motivo_reproducible": "El JSON está versionado; la validación semántica requiere revisar capturas.",
+  "coste_ejecucion_estimado": "bajo (+ un escenario headless)",
+  "_fuente": "b1",
+  "_validado": true,
+  "_avisos": [],
+  "calibrado": false
+}

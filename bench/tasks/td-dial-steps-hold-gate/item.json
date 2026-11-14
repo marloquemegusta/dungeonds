@@ -1,0 +1,143 @@
+{
+  "id": "td-dial-steps-hold-gate",
+  "titulo": "Corregir precisión del dial y compuerta de Hold-to-Fire",
+  "tipo": "micro",
+  "parent": null,
+  "clase": "bug-acotado",
+  "repo": "towerds",
+  "base_commit": "2ffd2063f46a4ed49ce3997c239e91986b8f3eb3",
+  "solution_commits": [
+    "f409935f333aff260fc33d22e1cdb53064ad313f"
+  ],
+  "solucion_resumen": "Hace de los ticks enteros de 0.05 la fuente de verdad de tasa y tier.\nDeriva las vistas Q8 para compatibilidad con la simulación.\nAcumula el presupuesto de spawn por frame hasta completar un segundo de tasa.\nAñade autorepeat acelerado al mantener la cruceta.\nLa compuerta de fuego sostenido exige compra de A1 y tier activo.\nIncluye escenarios de dial y regresión A/B.",
+  "ficheros_solucion": [
+    "source/simulation.c",
+    "source/renderer.c",
+    "include/game.h",
+    "scenarios/dial_step_accel.json",
+    "scenarios/hold_gate_shop.json",
+    "scenarios/hold_gate_repair_repro.json"
+  ],
+  "evaluacion": {
+    "tipo": "mixta",
+    "puertas": [
+      {
+        "nivel": "G1 build",
+        "como": "C:\\codexlocal\\skills\\agentic-ds-dev\\scripts\\build-project.ps1 -ProjectPath <workspace>",
+        "criterio": "DS_BUILD=PASS",
+        "fuente": "solution_commit (overlay: escenarios)"
+      },
+      {
+        "nivel": "G3 escenario",
+        "como": "Ejecutar dial_step_accel, hold_gate_shop y hold_gate_repair_repro",
+        "criterio": "Paso visible de 0.05; Hold solo tras compra A1; gesto de reparación más hold produce un disparo, no una ráfaga",
+        "fuente": "solution_commit (overlay: scenarios/*.json)"
+      }
+    ],
+    "rubrica": [],
+    "trampas": [
+      "Probar solo tasas enteras no detecta la pérdida de fracciones pequeñas.",
+      "Probar Hold con A1 ya comprado no reproduce la compuerta incorrecta."
+    ]
+  },
+  "dificultad": 3,
+  "historia": "Un commit cambió representación, acumulación, autorepeat y compuerta; la prueba A/B registrada comparó 15 disparos en baseline con 1 en solución.",
+  "reproducible": "si",
+  "motivo_reproducible": "Hay tres escenarios dedicados y A/B determinista en walkthrough.",
+  "coste_ejecucion_estimado": "medio (+ build y varios escenarios)",
+  "_fuente": "b3",
+  "_validado": true,
+  "_avisos": [],
+  "calibrado": true,
+  "oraculo_auto": [
+    {
+      "id": "hold_gate_tras_reparar",
+      "gate": "G4",
+      "scenario": "hold_gate_repair_repro",
+      "capture": "r03_hold_after_repair",
+      "medida": "max_row_count",
+      "region": [
+        90,
+        330,
+        170,
+        360
+      ],
+      "color": {
+        "r": [
+          200,
+          255
+        ],
+        "g": [
+          130,
+          200
+        ],
+        "b": [
+          0,
+          70
+        ]
+      },
+      "min": 38,
+      "explica": "Longitud (px) de la barra de municion tras reparar la bahia y mantener 180 f. Baseline con bug: 25 (15 disparos); solucion: 39."
+    },
+    {
+      "id": "sin_A1_no_hay_rafaga",
+      "gate": "G4",
+      "scenario": "hold_gate_shop",
+      "capture": "g07_hold_cadence_only",
+      "medida": "max_row_count",
+      "region": [
+        90,
+        330,
+        170,
+        360
+      ],
+      "color": {
+        "r": [
+          200,
+          255
+        ],
+        "g": [
+          130,
+          200
+        ],
+        "b": [
+          0,
+          70
+        ]
+      },
+      "min": 38,
+      "explica": "Sin comprar A1 el hold no dispara en rafaga (39 en base y solucion)."
+    },
+    {
+      "id": "con_A1_si_hay_rafaga",
+      "gate": "G4",
+      "scenario": "hold_gate_shop",
+      "capture": "g10_hold_a1",
+      "medida": "max_row_count",
+      "region": [
+        90,
+        330,
+        170,
+        360
+      ],
+      "color": {
+        "r": [
+          200,
+          255
+        ],
+        "g": [
+          130,
+          200
+        ],
+        "b": [
+          0,
+          70
+        ]
+      },
+      "max": 30,
+      "explica": "Con A1 comprado la rafaga sigue funcionando (21 en base y solucion). Evita la trampa de desactivar el hold por completo."
+    }
+  ],
+  "cobertura_oraculo": "parcial: cubre la compuerta del Hold-to-Fire (1 de 3 comportamientos). Paso de 0.05 del dial y truncado de tasas <0.23/s NO estan cubiertos por oraculo automatico (el HUD de la referencia imprime 2 decimales, pero el formato no esta fijado por el enunciado): pendiente de rubrica LLM o de un test de estado.",
+  "calibracion": "2026-11-07: base REJECTED (barra 25 < 38), solucion ACCEPTED (39). Oraculo parcial, ver cobertura_oraculo."
+}

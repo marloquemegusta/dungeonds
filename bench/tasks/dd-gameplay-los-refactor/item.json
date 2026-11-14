@@ -1,0 +1,50 @@
+{
+  "id": "dd-gameplay-los-refactor",
+  "titulo": "Aislar la línea de visión para el combate",
+  "tipo": "micro",
+  "parent": "dd-gameplay-doom-macro",
+  "clase": "refactor",
+  "repo": "dungeonds",
+  "base_commit": "3e18cd38eb5358b23ab1140dbbd4d40f8aab4d19",
+  "solution_commits": [
+    "19f4250be8c8e923be8e588f912fbb813d4b0ac2"
+  ],
+  "solucion_resumen": "Se eliminó el subsistema de niebla de guerra y sus datos precalculados.\nSe sustituyó por un módulo independiente de línea de visión sobre la rejilla de colisión.\nLa comprobación usa recorrido entero tipo Bresenham.\nSe actualizaron los puntos de integración en el bucle principal.\nSe documentó en DESIGN el cambio de comportamiento.\nEl test nuevo cubre la línea de visión como lógica pura.",
+  "ficheros_solucion": [
+    "DESIGN.md",
+    "include/los.h",
+    "source/los.c",
+    "source/main.c"
+  ],
+  "evaluacion": {
+    "tipo": "mixta",
+    "puertas": [
+      {
+        "nivel": "G1 build",
+        "como": "& 'C:\\codexlocal\\skills\\agentic-ds-dev\\scripts\\build-project.ps1' -ProjectPath $P",
+        "criterio": "DS_BUILD=PASS; cero warnings nuevos.",
+        "fuente": "base_commit"
+      },
+      {
+        "nivel": "G2 tests",
+        "como": "& 'C:\\codexlocal\\skills\\agentic-ds-dev\\scripts\\run-host-tests.ps1' -ProjectPath $P -Filter test_los",
+        "criterio": "DS_HOST_TESTS=PASS para la suite de línea de visión.",
+        "fuente": "solution_commit (overlay: tests/test_los.py)"
+      }
+    ],
+    "rubrica": [],
+    "trampas": [
+      "Dejar la niebla en el render y solo cambiar su indicador.",
+      "Probar exclusivamente pares de coordenadas sin obstáculo."
+    ]
+  },
+  "dificultad": 3,
+  "historia": "Un commit de implementación; se añadió una suite de línea de visión y se retiraron las pruebas del sistema descartado.",
+  "reproducible": "si",
+  "motivo_reproducible": "La lógica tiene una prueba host versionada y una build reproducible con la skill.",
+  "coste_ejecucion_estimado": "bajo (+ cambio acotado, build y una suite host)",
+  "_fuente": "b4",
+  "_validado": true,
+  "_avisos": [],
+  "calibrado": false
+}

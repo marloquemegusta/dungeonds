@@ -1,0 +1,49 @@
+{
+  "id": "skill-runner-assertions-filmstrip",
+  "titulo": "Añadir aserciones de estado y capturas secuenciales al runner",
+  "tipo": "micro",
+  "parent": null,
+  "clase": "tooling",
+  "repo": "skill",
+  "base_commit": "3af158277ff883de409cff58605a750e1d1dc4f8",
+  "solution_commits": [
+    "62021524fe4a9620153836e3902e3ebb9040afa4"
+  ],
+  "solucion_resumen": "Amplía el formato de escenario con aserciones de estado y secuencias de captura.\nAjusta lectura de símbolos de mapa y validación de estado.\nCorrige el manejo de keypad para que acciones sucesivas conserven solo las teclas esperadas.\nDocumenta el formato y sus opciones en la skill compartida.",
+  "ficheros_solucion": [
+    "runtime/run_scenario.py",
+    "scripts/run-scenario.ps1",
+    "references/scenario-format.md",
+    "SKILL.md"
+  ],
+  "evaluacion": {
+    "tipo": "rubrica-llm",
+    "puertas": [
+      {
+        "nivel": "G5 rubrica",
+        "como": "Crear escenarios pequeños que comprueben estado, capturas secuenciales y keypad; ejecutar en DeSmuME",
+        "criterio": "El estado observado satisface cada aserción; la secuencia de imágenes tiene el orden y conteo solicitados; entradas no quedan retenidas accidentalmente",
+        "fuente": "solution_commit (overlay: fixtures/escenarios de prueba por escribir)"
+      }
+    ],
+    "rubrica": [
+      {
+        "criterio": "Aserciones, secuencias de captura e input reproducibles",
+        "peso": 3,
+        "anclas": "0=ignora o altera acciones; 1=soporta parte del contrato; 2=aplica todo el contrato y falla con diagnóstico"
+      }
+    ],
+    "trampas": [
+      "Capturar imágenes sin comprobar aserciones puede ocultar un runner que siempre declara PASS."
+    ]
+  },
+  "dificultad": 3,
+  "historia": "Un commit grande amplió el runner y el formato; luego hubo commits de endurecimiento de validación y corrección de casos límite.",
+  "reproducible": "parcial",
+  "motivo_reproducible": "No consta una suite de pruebas automatizada en ese commit; requiere fixtures de ROM/escenario.",
+  "coste_ejecucion_estimado": "alto (+ build, emulación y análisis de aserciones)",
+  "_fuente": "b3",
+  "_validado": true,
+  "_avisos": [],
+  "calibrado": false
+}

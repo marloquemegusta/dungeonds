@@ -1,0 +1,52 @@
+{
+  "id": "dd-v02-manadas",
+  "titulo": "Despertar manadas y otorgar recompensa al despejarlas",
+  "tipo": "micro",
+  "parent": "dd-v02-mazmorra-run",
+  "clase": "feature",
+  "repo": "dungeonds",
+  "base_commit": "bf596c07b308f227d735cbde45b36e0f0023f9a2",
+  "solution_commits": [
+    "8d535300fd5192ba254f90953a8470cebad8c0a2"
+  ],
+  "solucion_resumen": "Añade estado de encuentro por manada y transiciones de dormida a activa.\nLa proximidad usa la distancia de suelo establecida para v0.2; recibir daño también despierta el grupo.\nLos enemigos de una manada activa actúan juntos.\nAl eliminar su último miembro, el encuentro otorga una unidad de curación.\nSe generan dos pedestales y recoger uno retira el otro.\nLos escenarios cubren despertar por proximidad y aparición de recompensas.",
+  "ficheros_solucion": [
+    "source/encounters.c",
+    "include/encounters.h",
+    "source/main.c",
+    "scenarios/dungeon_pack_wakes_near_player.json",
+    "scenarios/dungeon_pack_reward_pedestals.json",
+    "tests/test_encounters_contract.py"
+  ],
+  "evaluacion": {
+    "tipo": "mixta",
+    "puertas": [
+      {
+        "nivel": "G2 tests",
+        "como": "Ejecutar tests/test_encounters_contract.py.",
+        "criterio": "Contrato PASS.",
+        "fuente": "solution_commit (overlay: tests/test_encounters_contract.py)"
+      },
+      {
+        "nivel": "G3 escenario",
+        "como": "Ejecutar ambos escenarios dungeon_pack_* y comprobar sus posiciones respecto a enemigos y jugador.",
+        "criterio": "La manada objetivo despierta por proximidad o daño; completar una produce cura y dos pedestales.",
+        "fuente": "solution_commit (overlay: escenarios dungeon_pack_*)"
+      }
+    ],
+    "rubrica": [],
+    "trampas": [
+      "Un escenario puede dar PASS sin cruzar la distancia de activación; verificar coordenadas y eventos.",
+      "Activar todas las manadas al iniciar la partida."
+    ]
+  },
+  "dificultad": 4,
+  "historia": "Un commit de entrega. Se reemplazaron los escenarios de arenas de v0.1 por los dos de encuentros de mazmorra.",
+  "reproducible": "si",
+  "motivo_reproducible": "Incluye escenarios y contrato de host para las transiciones principales.",
+  "coste_ejecucion_estimado": "medio (+ tests host y escenarios)",
+  "_fuente": "b6",
+  "_validado": true,
+  "_avisos": [],
+  "calibrado": false
+}

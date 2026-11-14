@@ -1,0 +1,67 @@
+{
+  "id": "dd-v03-direccion-survivors",
+  "titulo": "Definir la dirección v0.3 como survivors vertical",
+  "tipo": "micro",
+  "parent": null,
+  "clase": "diseno",
+  "repo": "dungeonds",
+  "base_commit": "b848ff73b6a424cea5c77bb9f122455de9788c25",
+  "solution_commits": [
+    "3c5cf91463bd79285d4e4ef31930fd2fdf7a75ac"
+  ],
+  "solucion_resumen": "El documento elige survivors de frente vertical con apuntado manual.\nPropone niveles de unos ocho minutos en una franja ascendente y una marea que avanza desde abajo.\nDefine horda continua, gemas y mejoras como progresión, y élites y jefes como etapas posteriores.\nAsocia clase a arma y esboza francotirador/láser y escopeta.\nSepara la v0.3 mínima de las versiones posteriores.\nLa entrega sirve de contrato de diseño para implementar la franja inicial.",
+  "ficheros_solucion": [
+    "DESIGN.md"
+  ],
+  "evaluacion": {
+    "tipo": "rubrica-llm",
+    "puertas": [
+      {
+        "nivel": "G5 rubrica",
+        "como": "Revisar DESIGN.md para verificar que la propuesta incluye bucle, perspectiva, progresión, clases y corte de alcance por versión.",
+        "criterio": "Puntuar cada criterio con anclas 0–2; total mínimo 8/10 y ninguna contradicción interna.",
+        "fuente": "solution_commit"
+      }
+    ],
+    "rubrica": [
+      {
+        "criterio": "Perspectiva y control de combate descritos de forma concreta.",
+        "peso": 2,
+        "anclas": "0=ausente; 1=genérico; 2=orientación y apuntado definidos."
+      },
+      {
+        "criterio": "Bucle de nivel y amenaza principal definidos.",
+        "peso": 2,
+        "anclas": "0=ausentes; 1=solo uno claro; 2=ambos con progresión temporal."
+      },
+      {
+        "criterio": "Progresión y clases conectadas con el bucle.",
+        "peso": 2,
+        "anclas": "0=ausentes; 1=lista inconexa; 2=relación explícita entre recursos, mejoras y armas."
+      },
+      {
+        "criterio": "Alcance separado por versiones.",
+        "peso": 2,
+        "anclas": "0=sin corte; 1=parcial; 2=define qué entra en la primera entrega y qué queda después."
+      },
+      {
+        "criterio": "Documento consistente con restricciones y decisiones del proyecto.",
+        "peso": 2,
+        "anclas": "0=contradicciones graves; 1=algunas; 2=sin contradicciones relevantes."
+      }
+    ],
+    "trampas": [
+      "Proponer características atractivas sin decidir la perspectiva o el bucle central.",
+      "Mezclar ideas futuras con el alcance de la primera versión."
+    ]
+  },
+  "dificultad": 3,
+  "historia": "Un commit de diseño. Esta decisión reemplazó la dirección de mazmorra que luego quedó aparcada.",
+  "reproducible": "si",
+  "motivo_reproducible": "El criterio es documental y se puede puntuar sobre DESIGN.md.",
+  "coste_ejecucion_estimado": "bajo (+ revisión de un documento)",
+  "_fuente": "b6",
+  "_validado": true,
+  "_avisos": [],
+  "calibrado": false
+}

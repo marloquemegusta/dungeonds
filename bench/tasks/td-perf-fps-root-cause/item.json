@@ -1,0 +1,91 @@
+{
+  "id": "td-perf-fps-root-cause",
+  "titulo": "Diagnosticar y eliminar la caída de FPS bajo carga máxima",
+  "tipo": "macro",
+  "parent": null,
+  "clase": "perf-hw",
+  "repo": "towerds",
+  "base_commit": "3f8656ccddee762591a7b1bd6b99e5e9dcdde8bf",
+  "solution_commits": [
+    "1edc90b49ca2fbbad0e2e0a1f04da9cfa9c45e05",
+    "f3ba0a24193b53c23d6b32b7a31bd7f7a56e56b2",
+    "6e7939291750d7e44dc5b871e51a1df5566aeb4c",
+    "5a2a853fac83f5df9773958583b7740a17f5f2f1",
+    "7bfcd6575fe854361623d860b41e44d2a830b422"
+  ],
+  "solucion_resumen": "La primera saga redujo copias del fondo, recortó dirty rects y ajustó límites y bucles auxiliares.\nNo bajó el coste dominante: dibujar y restaurar grandes cantidades de píxeles de enemigos.\nEl perfilador y la carga reproducible permitieron observar por separado simulación, render y presentación.\nLa arquitectura posterior deduplicó restauraciones en bloques de 8x8 y movió el blit a ITCM.\nRedujo el coste por píxel con sprites de 8 bits paletizados y recortes ajustados.\nAlternó bancos de VRAM para evitar copiar el framebuffer completo en cada presentación.\nAñadió transferencias de quads y un pipeline superior nativo de 8 bits.\nLa referencia exige conservar la imagen: las estelas marrones y sprites incompletos son fallos, aunque una métrica mejore.",
+  "ficheros_solucion": [
+    "source/main.c",
+    "source/renderer.c",
+    "source/simulation.c",
+    "source/tiles.c",
+    "source/enemy_data.c",
+    "include/game.h",
+    "include/tiles.h",
+    "include/enemy_data.h",
+    "docs/performance-profiling-report.md",
+    "scenarios/performance_sandbox_stress_hold.json"
+  ],
+  "evaluacion": {
+    "tipo": "mixta",
+    "puertas": [
+      {
+        "nivel": "G1 build",
+        "como": "C:\\codexlocal\\skills\\agentic-ds-dev\\scripts\\build-project.ps1 -ProjectPath C:\\codexlocal\\towerds",
+        "criterio": "Compilación PASS sin errores; comprobar además la ejecución del escenario en la ROM generada.",
+        "fuente": "base_commit"
+      },
+      {
+        "nivel": "G3 escenario",
+        "como": "C:\\codexlocal\\skills\\agentic-ds-dev\\scripts\\run-scenario.ps1 -RomPath .\\game.nds -ScenarioPath .\\scenarios\\performance_sandbox_stress_hold.json -OutputPath .\\artifacts\\td-perf-fps-root-cause",
+        "criterio": "600 frames de carga móvil determinista; 384 enemigos vivos durante la ventana de medida, sin transición a victoria. DSM_SCENARIO_RESULT=PASS.",
+        "fuente": "solution_commit (overlay: escenarios y harness de estrés añadidos por la solución)"
+      },
+      {
+        "nivel": "G4 metrica",
+        "como": "Instrumentar ticks por frame en el escenario de estrés y registrar FPS y proporción de frames que exceden el presupuesto.",
+        "criterio": "Presupuesto documentado: 545 ticks/frame. PASS si el percentil 95 es <=545 y 0% de frames medidos supera 545; publicar también mediana y máximo. Este umbral es una meta del benchmark, no una cifra de resultado que se haya podido verificar para el commit final.",
+        "fuente": "solution_commit (overlay: profiler/harness añadido por la solución)"
+      },
+      {
+        "nivel": "G5 rubrica",
+        "como": "Comparar capturas de la misma carga y revisar diagnóstico, atribución de costes y controles contra la solución de referencia.",
+        "criterio": "No aceptar una mejora de ticks si aparecen estelas, partes de sprites ausentes o cambios de gameplay.",
+        "fuente": "solution_commit (overlay: capturas del escenario)"
+      }
+    ],
+    "rubrica": [
+      {
+        "criterio": "Diagnóstico basado en medidas separadas por etapa; distingue el coste dominante de optimizaciones marginales.",
+        "peso": 35,
+        "anclas": "0=conjeturas sin mediciones; 1=mide alguna etapa pero atribuye mal o incompletamente el cuello; 2=perfil reproducible, separa render/simulación/presentación y justifica la prioridad."
+      },
+      {
+        "criterio": "Mejora de rendimiento bajo la carga fija de estrés.",
+        "peso": 35,
+        "anclas": "0=no mejora o no es medible; 1=mejora parcial pero incumple el presupuesto; 2=cumple el umbral de ticks y FPS definido en G4."
+      },
+      {
+        "criterio": "Fidelidad visual y de juego.",
+        "peso": 30,
+        "anclas": "0=estelas, sprites rotos o regresión de combate; 1=sin regresión grave pero hay diferencias visibles; 2=capturas correctas y escenario de regresión pasa."
+      }
+    ],
+    "trampas": [
+      "Usar enemigos inmóviles o una carga que termina en victoria como si midiera una oleada móvil sostenida.",
+      "Informar solo FPS promedio y ocultar frames que exceden el vblank.",
+      "Mejorar el resultado omitiendo sprites, perdiendo píxeles o dejando trails marrones.",
+      "Contar ticks del emulador como tiempo de hardware sin declarar la limitación de DeSmuME."
+    ]
+  },
+  "dificultad": 5,
+  "historia": "Entre el 17 sep 23:39 y el 18 sep 11:51 hay cambios de caché DMA, telemetría, dirty rects, restauración de arte y bounds, optimización de copias y retirada de overhead. KNOWN_ISSUES registra que el pico seguía rondando 30 FPS; el informe posterior registra unos 13 FPS en carga de 384 enemigos y mejoras previas sin ganancia medible. Entre el 18 sep 23:09 y el 19 sep 01:17 se añadió profiler y fixtures de estrés, bloques 8x8/ITCM, sprites paletizados, doble buffer VRAM y pipeline 8-bit/quads. Git acredita commits y cambios, pero los documentos consultados no permiten verificar el resultado final de ~3x para esta secuencia.",
+  "reproducible": "parcial",
+  "motivo_reproducible": "Los commits incorporan fixtures y profiler; se puede construir y medir con el flujo indicado. El umbral de hardware requiere interpretar con cuidado el emulador, y la comparación visual necesita las capturas overlay.",
+  "coste_ejecucion_estimado": "alto (+ build, escenario de 600 frames, capturas y análisis de métricas)",
+  "_fuente": "b2",
+  "_validado": true,
+  "_avisos": [],
+  "calibrado": false,
+  "prior_historico": "Segun el usuario: varias decenas de commits con un modelo (GPT 5.6) sin efecto real; luego una o dos sesiones con Gemini 3.8 Flash arreglaron el rendimiento (~x3 FPS) y redujeron bugs. Hipotesis a contrastar con el benchmark, no dato verificado (git no registra el modelo por commit)."
+}

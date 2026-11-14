@@ -1,0 +1,47 @@
+{
+  "id": "skill-runner-strict-tap-grid",
+  "titulo": "Fallar ante pasos inválidos y soportar tap_grid",
+  "tipo": "micro",
+  "parent": null,
+  "clase": "tooling",
+  "repo": "skill",
+  "base_commit": "33a3337cdd2daf4ec2c6f6964999df8c6f0b0265",
+  "solution_commits": [
+    "fef3aba5ea52351fdb226692b92bed2bae76de54"
+  ],
+  "solucion_resumen": "Rechaza pasos que no sean objetos y claves que no estén en el contrato.\nValida que assertions tenga tipo objeto antes de iniciar DeSmuME.\nAñade tap_grid para recorrer puntos en filas con pausa y botones opcionales.\nDocumenta el contrato y la resolución del mapa en scenario-format.md.",
+  "ficheros_solucion": [
+    "runtime/run_scenario.py",
+    "references/scenario-format.md"
+  ],
+  "evaluacion": {
+    "tipo": "mixta",
+    "puertas": [
+      {
+        "nivel": "G2 tests",
+        "como": "Prueba un escenario con clave desconocida y otro con tap_grid; ejecutar ambos con el runner",
+        "criterio": "La clave desconocida falla antes de iniciar emulador; tap_grid registra y ejecuta count taps",
+        "fuente": "por escribir"
+      },
+      {
+        "nivel": "G3 escenario",
+        "como": "Validar en towerds los escenarios existentes con la skill compartida",
+        "criterio": "59 escenarios con paridad respecto al runner anterior",
+        "fuente": "solution_commit"
+      }
+    ],
+    "rubrica": [],
+    "trampas": [
+      "Una prueba de tap_grid sin verificar cantidad y coordenadas no detecta pasos omitidos."
+    ]
+  },
+  "dificultad": 2,
+  "historia": "Un commit añadió validación estricta y tap_grid; se registró paridad en 59 escenarios de towerds y validación en dungeonds.",
+  "reproducible": "parcial",
+  "motivo_reproducible": "La paridad se documentó, pero los casos unitarios específicos del contrato deben añadirse como fixtures.",
+  "coste_ejecucion_estimado": "medio (+ validación de runner sobre varios escenarios)",
+  "_fuente": "b3",
+  "_validado": true,
+  "_avisos": [],
+  "calibrado": false
+}

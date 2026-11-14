@@ -1,0 +1,50 @@
+{
+  "id": "td-city-defense-simulation",
+  "titulo": "Implementar el stream y el Generador del slice",
+  "tipo": "micro",
+  "parent": "td-city-defense-slice",
+  "clase": "feature",
+  "repo": "towerds",
+  "base_commit": "c4a5d905341704e56d61bcb8d5a6bd85c9ef56f4",
+  "solution_commits": [
+    "919aff71f0434b4a86a1fe29ced696a71ca316bc"
+  ],
+  "solucion_resumen": "Reestructura la simulación para sustituir la oleada tradicional por spawn continuo.\nAñade estado del Generador y sus siete tiers.\nRepresenta una defensa lógica mediante cuatro sprites con fuego alternado.\nAdapta el render a la muralla y al stream.\nIncluye un escenario de demo y evidencia visual del combate continuo.",
+  "ficheros_solucion": [
+    "source/simulation.c",
+    "source/renderer.c",
+    "source/wall_data.c",
+    "include/game.h",
+    "scenarios/city_defense_demo.json"
+  ],
+  "evaluacion": {
+    "tipo": "mixta",
+    "puertas": [
+      {
+        "nivel": "G1 build",
+        "como": "C:\\codexlocal\\skills\\agentic-ds-dev\\scripts\\build-project.ps1 -ProjectPath <workspace>",
+        "criterio": "DS_BUILD=PASS",
+        "fuente": "solution_commit (overlay: scenarios/city_defense_demo.json)"
+      },
+      {
+        "nivel": "G3 escenario",
+        "como": "C:\\codexlocal\\skills\\agentic-ds-dev\\scripts\\run-scenario.ps1 -RomPath <workspace>\\game.nds -ScenarioPath <workspace>\\scenarios\\city_defense_demo.json -OutputPath <out>",
+        "criterio": "DSM_SCENARIO_RESULT=PASS y evidencia de combate con stream",
+        "fuente": "solution_commit (overlay: scenarios/city_defense_demo.json)"
+      }
+    ],
+    "rubrica": [],
+    "trampas": [
+      "Una ROM que compila pero conserva el ciclo por oleadas no resuelve la tarea."
+    ]
+  },
+  "dificultad": 5,
+  "historia": "Un commit de implementación del slice; el cierre de la progresión se completó en un commit posterior.",
+  "reproducible": "si",
+  "motivo_reproducible": "El escenario de demo se versionó con la solución.",
+  "coste_ejecucion_estimado": "alto (+ build y ejecución headless)",
+  "_fuente": "b3",
+  "_validado": true,
+  "_avisos": [],
+  "calibrado": false
+}
