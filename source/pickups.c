@@ -1,15 +1,19 @@
 #include "pickups.h"
 #include "collision.h"
+#include "hud_icons_gfx.h"
 
 #define HEAL_PICKUP_RECYCLE_BELOW_PX 400 // [TUNABLE-PLACEHOLDER]
+#define HEAL_PICKUP_HOVER_PX 3           // base height above ground shadow
 
 typedef struct { fixed x, y; int active; } HealPickup;
 static HealPickup s_pickups[HEAL_PICKUP_MAX_ACTIVE];
 static uint32_t s_rng = 1;
+static uint32_t s_anim_tick = 0;
 
 void pickups_init(uint32_t seed) {
     for (int i = 0; i < HEAL_PICKUP_MAX_ACTIVE; i++) s_pickups[i].active = 0;
     s_rng = seed ? seed : 1u;
+    s_anim_tick = 0;
 }
 
 void pickups_shift_y(int dy_px) {
@@ -32,6 +36,7 @@ void pickups_enemy_killed(const Enemy *enemy) {
 }
 
 void pickups_update(fixed player_x, fixed player_y, fixed tide_y, PlayerState *player) {
+    s_anim_tick++;
     for (int i = 0; i < HEAL_PICKUP_MAX_ACTIVE; i++) {
         HealPickup *p = &s_pickups[i];
         if (!p->active) continue;
@@ -49,24 +54,41 @@ void pickups_update(fixed player_x, fixed player_y, fixed tide_y, PlayerState *p
 }
 
 void pickups_render(uint16_t *buffer, int cam_x, int cam_y) {
-    uint16_t fill = RGB15(3, 31, 10) | BIT(15);
-    uint16_t edge = RGB15(31, 31, 22) | BIT(15);
-    int half = HEAL_PICKUP_SIZE / 2;
+    static const int8_t bob_lut[16] = {
+        0, 0, -1, -1, -2, -2, -2, -1, -1, 0, 1, 1, 2, 2, 1, 1
+    };
+    const int bob_y = bob_lut[(s_anim_tick >> 2) & 15];
+    const uint16_t shadow_col = RGB15(4, 3, 3) | BIT(15);
+    const int half_w = HUD_ICON_W >> 1;
+
     for (int i = 0; i < HEAL_PICKUP_MAX_ACTIVE; i++) {
         HealPickup *p = &s_pickups[i];
         if (!p->active) continue;
         int cx = TO_INT(p->x) - cam_x;
         int cy = TO_INT(p->y) - cam_y;
-        if (cx < -half || cx >= SCREEN_W + half || cy < -half || cy >= SCREEN_H + half) continue;
-        for (int dy = -half; dy < half; dy++) {
-            int sy = cy + dy;
+        int x0 = cx - half_w;
+        int y0 = cy - HUD_ICON_H - HEAL_PICKUP_HOVER_PX + bob_y;
+        if (x0 >= SCREEN_W || x0 + HUD_ICON_W <= 0 || cy + 1 <= 0 || y0 >= SCREEN_H) continue;
+
+        // Subtle ground shadow beneath the levitating heart.
+        for (int sy = cy - 1; sy <= cy; sy++) {
             if ((unsigned)sy >= SCREEN_H) continue;
-            int x0 = (dy == 0) ? cx - half : cx - 1;
-            int x1 = (dy == 0) ? cx + half : cx + 1;
-            dirty_row(sy, x0, x1);
-            for (int x = x0; x < x1; x++) {
-                if ((unsigned)x >= SCREEN_W) continue;
-                buffer[sy * SCREEN_W + x] = (x == cx || dy == 0 || dy == -half || dy == half - 1) ? edge : fill;
+            dirty_row(sy, cx - 3, cx + 4);
+            for (int sx = cx - 3; sx <= cx + 3; sx++) {
+                if ((unsigned)sx < SCREEN_W) buffer[sy * SCREEN_W + sx] = shadow_col;
+            }
+        }
+
+        for (int gy = 0; gy < HUD_ICON_H; gy++) {
+            int sy = y0 + gy;
+            if ((unsigned)sy >= SCREEN_H) continue;
+            dirty_row(sy, x0, x0 + HUD_ICON_W);
+            const uint16_t *row = &g_hud_heart_full[gy * HUD_ICON_W];
+            for (int gx = 0; gx < HUD_ICON_W; gx++) {
+                uint16_t c = row[gx];
+                if (!c) continue;
+                int sx = x0 + gx;
+                if ((unsigned)sx < SCREEN_W) buffer[sy * SCREEN_W + sx] = c;
             }
         }
     }

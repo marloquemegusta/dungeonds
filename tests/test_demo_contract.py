@@ -51,6 +51,12 @@ class DemoContractTest(unittest.TestCase):
         self.assertIsNone(re.search(r"\b(float|double)\b|[/%] ", icon))
         self.assertIn("if (c)", icon)
 
+    def test_heal_pickups_render_levitating_sacred_heart(self):
+        pickups = read("source/pickups.c")
+        self.assertIn("g_hud_heart_full", pickups)
+        self.assertIn("bob_lut", pickups)
+        self.assertIsNone(re.search(r"\b(float|double)\b", pickups))
+
 
 if __name__ == "__main__":
     unittest.main()

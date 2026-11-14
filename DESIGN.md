@@ -505,6 +505,7 @@ Tras cerrar la 0.3.1, el usuario quiere dedicar dos versiones al aspecto antes d
 #### 6.9.1c Demo para un colega (decidido 2026-11-14)
 **Objetivo:** una ROM que un colega juegue ~5 minutos para **evaluar los gráficos y el *juice***, sin subir de nivel y sin cosas a medias a la vista. La economía y las mejoras (0.4) no tienen código, así que no hay nada que ocultar ahí.
 - **Vida en pantalla con corazones:** la vida del jugador (5 golpes) se muestra como fila de **sagrados corazones** (`14×18` px, sin outline) en la pantalla inferior, arriba a la derecha (lleno = vida, apagado = perdida). Los iconos salen del modelo 3D del Sagrado Corazón pre-renderizado con el lab (`--legibility c2`) y horneado con `tools/hud/prerender_hud_heart.py`, `tools/hud/bake_hud_heart.py` y `tools/generate_hud_icons_c.py`.
+- **Drops de vida:** siguen activos y sustituyen la cruz verde por el mismo icono del **Sagrado Corazón** (`g_hud_heart_full`), levitando suavemente arriba y abajo sobre una pequeña sombra en el suelo.
 - **Arma única:** el héroe sale con el **láser** (su arma real, §6.10) y `L` deja de cambiar de arma en la ROM principal. Escopeta y granada siguen solo en las variantes de prueba (playground/escenarios).
 - **Comparación de efectos se mantiene:** `SELECT` (estilo de efectos) e `Y` (aura de carga) siguen activos para que el colega compare gráficos.
 - **Marea:** se queda la actual. La marea de esqueletos (`walkthroughs/marea-esqueletos/`, solo maquetas) no entra.
