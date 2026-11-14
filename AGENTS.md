@@ -26,10 +26,9 @@ Si una regla o cifra aparece en dos documentos, uno de ellos sobra: dejarla en s
    - OAM: 128 entradas de sprites hardware.
    - 4 MB de RAM principal (DS clásica).
    - Cifras actuales de uso y la arquitectura de render vigente: `TECHNICAL.md` §3.3 y §4.5.
-4. **Verificación antes de dar por cerrada una tarea**:
-   - Compilación limpia con la skill, sin warnings nuevos.
-   - Tests de host y escenarios headless relevantes.
-   - Evidencia visual (capturas / GIFs) de la ROM real en caso de cambios gráficos.
+4. **Verificación en dos fases (primera versión rápida vs cierre)**:
+   - **Fase 1 — Primera versión e iteración:** prioridad absoluta a entregar algo compilado y visible/jugable cuanto antes. **Prohibido** ejecutar `pytest` o `run-scenario.ps1` en bucle tras cada micro-cambio o como "línea base" antes de editar (salvo petición expresa del usuario o depuración de lógica pura). Evitar subagentes si la tarea se resuelve leyendo 2-3 archivos directamente con `rg`. Ciclo rápido: leer lo mínimo → editar → compilar ROM (`build-project.ps1`, sin warnings nuevos) → enseñar captura/GIF o preparar subida a la DS.
+   - **Fase 2 — Cierre (solo cuando el usuario apruebe la versión para mergear a `main`):** pasar tests de host (`pytest`), escenarios headless relevantes, evidencia visual en `walkthroughs/`, actualizar `STATUS.md` y validar rendimiento en DS si aplica (regla 6).
    - **Automatización de navegador exclusivamente headless:** toda validación con navegador usa Chromium/Playwright en modo headless explícito.
 5. **Escenarios de prueba headless**:
    - **Precondición geométrica obligatoria:** al escribir o modificar un escenario (`scenarios/*.json`), verificar que las coordenadas del actor crucen de verdad la entidad o volumen a probar (muro, oclusión, proyectil). Nunca probar oclusión o colisión en suelo abierto.
@@ -84,7 +83,7 @@ Lecciones: un bucle sin tope congela el juego; el coste de la oclusión por píx
    git worktree add .worktrees/<nombre> -b feat/<nombre>
    ```
    - Todo el trabajo y las compilaciones de la sesión se hacen en ese worktree. Las ROMs `dungeonds*.nds` de la raíz del repo principal no son la versión de trabajo.
-   - **Grafo graphify:** `graphify-out/` no está versionado y el worktree nace sin él. Copiarlo y refrescarlo (AST-only, sin coste de API); en llamadas MCP usar `project_path` = ruta del worktree.
+   - **Grafo graphify (bajo demanda / cierre):** `graphify-out/` no está versionado y el worktree nace sin él. **No copiarlo ni refrescarlo al arrancar el worktree** salvo que vayas a consultar el grafo para una duda arquitectónica amplia; para código conocido usa `rg` directo. Al mergear en `main`, ejecutar `graphify update .` (AST-only, sin coste de API). Si lo copias a un worktree para consultarlo, en llamadas MCP usa `project_path` = ruta del worktree.
      - PowerShell:
        ```powershell
        Copy-Item -Recurse -Force graphify-out .worktrees\<nombre>\graphify-out
@@ -124,11 +123,11 @@ This project has a knowledge graph at graphify-out/ with god nodes, community st
 When the user types `/graphify`, use the installed graphify skill or instructions before doing anything else.
 
 Rules:
-- For codebase questions, first run `graphify query "<question>"` (CLI) or `query_graph` (MCP). When using MCP tools, pass `project_path: "<path>"` (or rely on default in `mcp_config.json`). Use `graphify path "<A>" "<B>"` / `shortest_path` for relationships and `graphify explain "<concept>"` / `get_node` for focused concepts.
+- For codebase or architecture questions where you don't already know which file/symbol to inspect, run `graphify query "<question>"` (CLI) or `query_graph` (MCP). If you already know the target file or symbol, read/grep it directly without querying the graph first. When using MCP tools, pass `project_path: "<path>"` (or rely on default in `mcp_config.json`). Use `graphify path "<A>" "<B>"` / `shortest_path` for relationships and `graphify explain "<concept>"` / `get_node` for focused concepts.
 - Dirty graphify-out/ files are expected after hooks or incremental updates; dirty graph files are not a reason to skip graphify. Only skip graphify if the task is about stale or incorrect graph output, or the user explicitly says not to use it.
 - If graphify-out/wiki/index.md exists, use it for broad navigation instead of raw source browsing.
 - Read graphify-out/GRAPH_REPORT.md only for broad architecture review or when query/path/explain do not surface enough context.
-- After modifying code, run `graphify update .` (AST-only, no API cost) with the executable and shell syntax given in the worktree section above.
+- Run `graphify update .` (AST-only, no API cost) **at session close / merge** rather than after every intermediate edit, using the executable and shell syntax given in the worktree section above.
 
 ---
 
