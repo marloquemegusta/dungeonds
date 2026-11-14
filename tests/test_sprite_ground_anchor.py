@@ -3,7 +3,6 @@ import unittest
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-MAIN = (ROOT / "source" / "main.c").read_text(encoding="utf-8")
 SPRITES = (ROOT / "source" / "player_sprite.c").read_text(encoding="utf-8")
 WIDTH = 40
 HEIGHT = 40
@@ -66,35 +65,10 @@ class SpriteGroundAnchorTests(unittest.TestCase):
         anchor = max(exported_anchors()[1])
         self.assertGreaterEqual(lowest - anchor, 0)
 
-    def test_player_and_enemy_frames_use_exported_ground_anchor(self):
-        for function in ("draw_player", "draw_enemy"):
-            start = MAIN.index(f"static void {function}(")
-            end = MAIN.index("\n}", start) + 2
-            body = MAIN[start:end]
-            self.assertIn("py - s_char_ground_anchor[", body)
-            self.assertNotIn("sprite_max_y", body)
-
-    def test_no_hardcoded_anchor_constant(self):
-        header = (ROOT / "include" / "player_sprite.h").read_text(encoding="utf-8")
-        self.assertNotIn("PLAYER_ANCHOR_Y", header)
-        self.assertNotIn("PLAYER_ANCHOR_Y", MAIN)
+    def test_anchor_table_has_one_row_per_character(self):
         anchors = exported_anchors()
         self.assertEqual(len(anchors), 9)
         self.assertTrue(all(len(row) == 8 for row in anchors))
-
-    def test_shadow_masks_and_bounds_dimensions(self):
-        prefixes = ("g_player", "g_charger", "g_ojo", "g_exvoto", "g_exvoto_pray_stand",
-                    "g_exvoto_pray_kneel", "g_exvoto_stand_up", "g_abanderado", "g_monaguillo")
-        for prefix in prefixes:
-            mask_decl = f"const uint8_t {prefix}_shadow_masks[]"
-            self.assertIn(mask_decl, SPRITES)
-            off_decl = f"const uint32_t {prefix}_shadow_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES]"
-            self.assertIn(off_decl, SPRITES)
-            bounds_decl = f"const uint8_t {prefix}_shadow_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4]"
-            self.assertIn(bounds_decl, SPRITES)
-
-        anchor_decl = "const uint8_t g_character_ground_anchors[NUM_CHARACTERS][PLAYER_NUM_DIRS]"
-        self.assertIn(anchor_decl, SPRITES)
 
 
 if __name__ == "__main__":

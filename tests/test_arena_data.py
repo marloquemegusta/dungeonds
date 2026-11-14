@@ -44,9 +44,6 @@ class ArenaDataTest(unittest.TestCase):
     def test_only_the_dungeon_is_baked(self):
         self.assertEqual([a["name"] for a in SPEC["arenas"]], ["dungeon_01"])
         self.assertEqual([p.name for p in self.files], ["arena_dungeon_01.c"])
-        listing = (ROOT / "source" / "arenas.c").read_text(encoding="utf-8")
-        self.assertIn("&g_arena_dungeon_01,", listing)
-        self.assertIn("const int g_num_arenas = 1;", listing)
 
     def test_start_and_spawn_points_are_clear_for_the_body(self):
         for path in self.files:

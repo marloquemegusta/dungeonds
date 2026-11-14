@@ -705,5 +705,6 @@
         "min_value": 1
       }
     ]
-  }
+  },
+  "suite": false
 }

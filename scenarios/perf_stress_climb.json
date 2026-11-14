@@ -400,5 +400,6 @@
         "min_value": 3072
       }
     ]
-  }
+  },
+  "suite": false
 }

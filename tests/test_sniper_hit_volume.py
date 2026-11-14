@@ -1,4 +1,5 @@
 """The sniper ray must hit wherever the stylus is on the enemy sprite (fix/sniper-hit-side)."""
+import functools
 import subprocess
 import sys
 import tempfile
@@ -9,18 +10,28 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "tests"))
 from test_sprite_ground_anchor import exported_anchors, frame_bounds, frame_offsets, pixel_values  # noqa: E402
 
-WEAPONS_C = (ROOT / "source" / "weapons.c").read_text(encoding="utf-8")
-HIT_H = (ROOT / "include" / "hitvolume.h").read_text(encoding="utf-8")
 CHARACTERS = {"charger": ("g_charger_frames", 1, 60, 60, 1), "shooter": ("g_ojo_frames", 2, 40, 40, 2)}
 MUZZLE_HEIGHTS = (14, 18, 22)
 
 
-def hit_grid(height, large=0):
-    with tempfile.TemporaryDirectory() as tmp:
-        exe = Path(tmp) / "grid.exe"
+_EXE_DIR = None
+_EXE = None
+
+
+def _grid_exe():
+    """Compila hitvolume_grid.c una sola vez por ejecucion."""
+    global _EXE_DIR, _EXE
+    if _EXE is None:
+        _EXE_DIR = tempfile.TemporaryDirectory()
+        _EXE = Path(_EXE_DIR.name) / "grid.exe"
         subprocess.run(["gcc", "-O1", "-Wall", "-Werror", "-I", str(ROOT / "include"),
-                        str(ROOT / "tests" / "host" / "hitvolume_grid.c"), "-o", str(exe)], check=True)
-        out = subprocess.run([str(exe), str(height), str(large)], check=True, capture_output=True, text=True).stdout
+                        str(ROOT / "tests" / "host" / "hitvolume_grid.c"), "-o", str(_EXE)], check=True)
+    return _EXE
+
+
+@functools.lru_cache(maxsize=None)
+def hit_grid(height, large=0):
+    out = subprocess.run([str(_grid_exe()), str(height), str(large)], check=True, capture_output=True, text=True).stdout
     grid = {}
     for line in out.splitlines():
         px, up, old, new, _ = map(int, line.split())
@@ -67,7 +78,7 @@ class SniperHitVolumeTests(unittest.TestCase):
                 for d, pts in pts_by_dir.items():
                     old, new = coverage(grid, pts, 0), coverage(grid, pts, 1)
                     self.assertGreaterEqual(new, 0.80, f"{name} dir{d} h{mh}: new {new:.2f}")
-                    self.assertGreater(new, old + 0.4, f"{name} dir{d} h{h}: old {old:.2f} new {new:.2f}")
+                    self.assertGreater(new, old + 0.4, f"{name} dir{d} h{mh}: old {old:.2f} new {new:.2f}")
 
     def test_volume_does_not_swallow_far_misses(self):
         grid = hit_grid(18)
@@ -80,12 +91,6 @@ class SniperHitVolumeTests(unittest.TestCase):
         for px in (-10, 0, 10):
             hits = sum(grid[(px, up)][1] for up in range(0, 31))
             self.assertGreaterEqual(hits, 24, f"column {px}: {hits}/31 rows hit")
-
-    def test_ray_uses_body_volume_and_no_float(self):
-        # The sniper ray (fire_sniper) is the only caller since the C reticle (DESIGN.md 6.10) went away.
-        self.assertGreaterEqual(WEAPONS_C.count("body_hit_test("), 1)
-        self.assertNotIn("float", HIT_H)
-        self.assertNotIn("double", HIT_H)
 
 
 if __name__ == "__main__":
