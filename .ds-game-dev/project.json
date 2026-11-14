@@ -24,6 +24,12 @@
         "cathedral-playground": {
             "defines": ["SANDBOX=1", "PLAYGROUND=1", "GODRAYS_PROTO=1", "CATHEDRAL_PLAYGROUND=1"]
         },
+        "cathedral-sandbox": {
+            "defines": ["SANDBOX=1", "CATHEDRAL_PLAYGROUND=1", "CATHEDRAL_AI=1"]
+        },
+        "cathedral-horde": {
+            "defines": ["SANDBOX=1", "CATHEDRAL_PLAYGROUND=1", "CATHEDRAL_AI=2"]
+        },
         "cathedral-playground-perf": {
             "defines": ["SANDBOX=1", "PLAYGROUND=1", "GODRAYS_PROTO=1", "CATHEDRAL_PLAYGROUND=1", "PERF_PROFILE=1"]
         }
@@ -43,7 +49,8 @@
         "python.exe tests/test_ai_perf_contract.py",
         "python.exe tests/test_blit_runs_contract.py",
         "python.exe tests/test_dirty_clear_contract.py",
-        "python.exe tests/test_spikes_contract.py"
+        "python.exe tests/test_spikes_contract.py",
+        "python.exe tests/test_exvoto_contract.py"
     ],
     "blocksdsImage": "skylyrac/blocksds:slim-latest",
     "romUploadName": "dungeonds.nds",

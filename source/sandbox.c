@@ -11,6 +11,7 @@ typedef int sandbox_translation_unit_not_empty;
 #include "gameplay.h"
 #include "weapons.h"
 #include "player_sprite.h"
+#include "enemy_ai.h"
 
 SandboxMailbox g_sandbox;
 int g_sandbox_freeze_ai;
@@ -118,7 +119,7 @@ static void sandbox_clear(Enemy *enemies, int max_enemies) {
 
 // Initializes one enemy slot with the fields encounters_spawn() uses. The enemy lives in the
 // reserved pack MAX_PACKS - 1; the caller marks that pack awake. ordinal only seeds dir/strafe.
-static void sandbox_place(Enemy *e, EnemyType type, int x, int y, int ordinal, int asleep) {
+static void sandbox_place(Enemy *e, EnemyType type, int x, int y, int ordinal, int asleep, int flags) {
     e->x = TO_FIXED(x);
     e->y = TO_FIXED(y);
     e->active = 1;
@@ -140,6 +141,10 @@ static void sandbox_place(Enemy *e, EnemyType type, int x, int y, int ordinal, i
     e->charge_hit = 0;
     e->strafe_dir = (ordinal & 1) ? 1 : -1;
     e->has_los = 0;
+    e->kneel = 0;
+    if (type == ENEMY_TYPE_EXVOTO && (flags & SANDBOX_ENEMY_FLAG_PRAY))
+        enemy_exvoto_start_praying(e, (flags & SANDBOX_ENEMY_FLAG_KNEEL) != 0,
+                                   (flags >> SANDBOX_ENEMY_FLAG_DIR_SHIFT) & 7);
     g_encounter_mgr.pack_alive[e->pack]++;
 }
 
@@ -160,7 +165,7 @@ static void sandbox_spawn(Enemy *enemies, int max_enemies) {
         EnemyType type;
         if (spec->type == SANDBOX_ENEMY_CHARGER) type = ENEMY_TYPE_CHARGER;
         else if (spec->type == SANDBOX_ENEMY_SHOOTER) type = ENEMY_TYPE_SHOOTER;
-        else if (spec->type == SANDBOX_ENEMY_SKELETON) type = ENEMY_TYPE_SKELETON;
+        else if (spec->type == SANDBOX_ENEMY_EXVOTO) type = ENEMY_TYPE_EXVOTO;
         else continue;
 
         int slot = -1;
@@ -173,7 +178,7 @@ static void sandbox_spawn(Enemy *enemies, int max_enemies) {
         s_spawn_slot[k] = slot;
 #endif
         sandbox_place(&enemies[slot], type, spec->x, spec->y, spawned,
-                      (spec->flags & SANDBOX_ENEMY_FLAG_ASLEEP) != 0);
+                      (spec->flags & SANDBOX_ENEMY_FLAG_ASLEEP) != 0, spec->flags);
         spawned++;
     }
 
@@ -197,7 +202,7 @@ static void pg_respawn_dummy(Enemy *enemies, int max_enemies, int i) {
         s_dummy_slot[i] = slot;
     }
     EnemyType type = (s_dummies[i].type == SANDBOX_ENEMY_CHARGER) ? ENEMY_TYPE_CHARGER : ENEMY_TYPE_SHOOTER;
-    sandbox_place(&enemies[slot], type, s_dummies[i].x, s_dummies[i].y, i, 0);
+    sandbox_place(&enemies[slot], type, s_dummies[i].x, s_dummies[i].y, i, 0, 0);
     g_encounter_mgr.pack_awake[MAX_PACKS - 1] = 1;
     s_dummy_calm[i] = 0;
 }

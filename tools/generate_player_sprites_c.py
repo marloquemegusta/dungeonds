@@ -268,8 +268,17 @@ chars_meta = [
     ('player', 'corazon', 'Corazon Abierto Hero', 340, 4),
     ('charger', 'cireneo', 'Enemy Charger (Knocker)', 310, 5),
     ('necron', 'necron', 'Necron Shooter Enemy', 385, 4),
-    ('skeleton', 'skeleton', 'Skeleton Walker Enemy', 39, 22),
+    ('exvoto', 'exvoto', 'Exvoto Walker Enemy', 130, 8),
+    # Exvoto clips (DESIGN.md 6.10): each one is a character slot of its own, so the enemy swaps char_id
+    # when its pose changes and the renderer needs no special case. Same 40x40 cell as the walk.
+    ('exvoto_pray_stand', 'exvoto_pray_stand', 'Exvoto praying standing', 11, 24),
+    ('exvoto_pray_kneel', 'exvoto_pray_kneel', 'Exvoto praying kneeling', 27, 14),
+    ('exvoto_stand_up', 'exvoto_stand_up', 'Exvoto standing up', 0, 9),
 ]
+
+# Ticks per frame of the Exvoto clips come from the manifest (the lab settings carry the template's).
+with open(os.path.join(SRC_ROOT, 'characters.json'), 'r', encoding='utf-8') as _mf:
+    MANIFEST = json.load(_mf)['characters']
 
 out_lines = []
 out_lines.append('#include "player_sprite.h"\n\n')
@@ -293,6 +302,8 @@ for var_name, folder, disp_name, def_spd, def_ticks in chars_meta:
                 sw, sh = int(parts[0]), int(parts[1])
             if 'shadowSize' in sdata:
                 shw, shh = int(sdata['shadowSize'][0]), int(sdata['shadowSize'][1])
+    if folder.startswith('exvoto') and 'ticksPerFrame' in MANIFEST.get(folder, {}):
+        ticks = int(MANIFEST[folder]['ticksPerFrame'])
     if var_name == 'charger':
         ticks = 8  # match 37.86 px stride at ENEMY_CHARGER_APPROACH_SPEED (150)
     out_shw = SHADOW_W if shw == 120 else shw
@@ -472,49 +483,49 @@ out_lines.append('};\n\n')
 out_lines.append('const uint16_t * const g_character_frames[NUM_CHARACTERS] = {\n')
 out_lines.append('    g_player_frames,\n')
 out_lines.append('    g_charger_frames,\n')
-out_lines.append('    g_necron_frames,\n    g_skeleton_frames\n')
+out_lines.append('    g_necron_frames,\n    g_exvoto_frames,\n    g_exvoto_pray_stand_frames,\n    g_exvoto_pray_kneel_frames,\n    g_exvoto_stand_up_frames\n')
 out_lines.append('};\n\n')
 
 out_lines.append('const uint32_t (* const g_character_frame_offsets[NUM_CHARACTERS])[PLAYER_NUM_FRAMES] = {\n')
 out_lines.append('    g_player_frame_offsets,\n')
 out_lines.append('    g_charger_frame_offsets,\n')
-out_lines.append('    g_necron_frame_offsets,\n    g_skeleton_frame_offsets\n')
+out_lines.append('    g_necron_frame_offsets,\n    g_exvoto_frame_offsets,\n    g_exvoto_pray_stand_frame_offsets,\n    g_exvoto_pray_kneel_frame_offsets,\n    g_exvoto_stand_up_frame_offsets\n')
 out_lines.append('};\n\n')
 
 out_lines.append('const uint8_t (* const g_character_frame_bounds[NUM_CHARACTERS])[PLAYER_NUM_FRAMES][4] = {\n')
 out_lines.append('    g_player_frame_bounds,\n')
 out_lines.append('    g_charger_frame_bounds,\n')
-out_lines.append('    g_necron_frame_bounds,\n    g_skeleton_frame_bounds\n')
+out_lines.append('    g_necron_frame_bounds,\n    g_exvoto_frame_bounds,\n    g_exvoto_pray_stand_frame_bounds,\n    g_exvoto_pray_kneel_frame_bounds,\n    g_exvoto_stand_up_frame_bounds\n')
 out_lines.append('};\n\n')
 
 out_lines.append('const uint16_t * const g_character_runs[NUM_CHARACTERS] = {\n')
 out_lines.append('    g_player_runs,\n')
 out_lines.append('    g_charger_runs,\n')
-out_lines.append('    g_necron_runs,\n    g_skeleton_runs\n')
+out_lines.append('    g_necron_runs,\n    g_exvoto_runs,\n    g_exvoto_pray_stand_runs,\n    g_exvoto_pray_kneel_runs,\n    g_exvoto_stand_up_runs\n')
 out_lines.append('};\n\n')
 
 out_lines.append('const uint32_t (* const g_character_run_offsets[NUM_CHARACTERS])[PLAYER_NUM_FRAMES] = {\n')
 out_lines.append('    g_player_run_offsets,\n')
 out_lines.append('    g_charger_run_offsets,\n')
-out_lines.append('    g_necron_run_offsets,\n    g_skeleton_run_offsets\n')
+out_lines.append('    g_necron_run_offsets,\n    g_exvoto_run_offsets,\n    g_exvoto_pray_stand_run_offsets,\n    g_exvoto_pray_kneel_run_offsets,\n    g_exvoto_stand_up_run_offsets\n')
 out_lines.append('};\n\n')
 
 out_lines.append('const uint8_t * const g_character_shadow_masks[NUM_CHARACTERS] = {\n')
 out_lines.append('    g_player_shadow_masks,\n')
 out_lines.append('    g_charger_shadow_masks,\n')
-out_lines.append('    g_necron_shadow_masks,\n    g_skeleton_shadow_masks\n')
+out_lines.append('    g_necron_shadow_masks,\n    g_exvoto_shadow_masks,\n    g_exvoto_pray_stand_shadow_masks,\n    g_exvoto_pray_kneel_shadow_masks,\n    g_exvoto_stand_up_shadow_masks\n')
 out_lines.append('};\n\n')
 
 out_lines.append('const uint32_t (* const g_character_shadow_offsets[NUM_CHARACTERS])[PLAYER_NUM_FRAMES] = {\n')
 out_lines.append('    g_player_shadow_offsets,\n')
 out_lines.append('    g_charger_shadow_offsets,\n')
-out_lines.append('    g_necron_shadow_offsets,\n    g_skeleton_shadow_offsets\n')
+out_lines.append('    g_necron_shadow_offsets,\n    g_exvoto_shadow_offsets,\n    g_exvoto_pray_stand_shadow_offsets,\n    g_exvoto_pray_kneel_shadow_offsets,\n    g_exvoto_stand_up_shadow_offsets\n')
 out_lines.append('};\n\n')
 
 out_lines.append('const uint8_t (* const g_character_shadow_bounds[NUM_CHARACTERS])[PLAYER_NUM_FRAMES][4] = {\n')
 out_lines.append('    g_player_shadow_bounds,\n')
 out_lines.append('    g_charger_shadow_bounds,\n')
-out_lines.append('    g_necron_shadow_bounds,\n    g_skeleton_shadow_bounds\n')
+out_lines.append('    g_necron_shadow_bounds,\n    g_exvoto_shadow_bounds,\n    g_exvoto_pray_stand_shadow_bounds,\n    g_exvoto_pray_kneel_shadow_bounds,\n    g_exvoto_stand_up_shadow_bounds\n')
 out_lines.append('};\n')
 
 out_path = os.path.join(WT, 'source/player_sprite.c')

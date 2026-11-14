@@ -26,7 +26,7 @@ const EnemyTuning g_enemy_tuning[NUM_ENEMY_TYPES] = {
         .preferred_dist_max = 104,// [TUNABLE-PLACEHOLDER] closes in beyond this (ground px)
         .position_duration = 30,  // [TUNABLE-PLACEHOLDER] frames settling before it starts a laser
     },
-    [ENEMY_TYPE_SKELETON] = {
+    [ENEMY_TYPE_EXVOTO] = {
         .max_hp = 100,            // [TUNABLE-PLACEHOLDER] scale 100 = 1.0: dies to one sniper hit or a point-blank shotgun
         .speed = 130,             // [TUNABLE-PLACEHOLDER] 8.8 fixed: ~40% of the hero's 326
         .attack_cooldown = 30,    // [TUNABLE-PLACEHOLDER] frames between bites

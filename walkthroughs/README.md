@@ -126,3 +126,4 @@ Resúmenes acumulativos y auditables de cada entrega y avance de desarrollo en `
 | 108 | Sombras por hardware y pase de rendimiento: horda de 48 a ~60 FPS en DS (34 → 15 ms) | [`hw-shadows/`](hw-shadows/walkthrough.md) | Tests host 15/15, escenarios PASS y medido en DS |
 | 109 | Legibilidad del pre-render de personajes: A/B y preset C2 en el lab (sin cambios en ROM) | [`legibilidad-lab/`](legibilidad-lab/walkthrough.md) | Preset en el lab; pendiente re-exportar personajes y probar en DS |
 | 110 | Cámara vertical con adelanto (*look-ahead*) y bloqueo en *kiting* | [`camera-lookahead/`](camera-lookahead/walkthrough.md) | Integrado en ROM, tests host OK y validado en DS |
+| 111 | Animaciones del Exvoto: rezar de pie y de rodillas, levantarse y andar rezando, a escala común a 40 px | [`exvoto-anim/`](exvoto-anim/walkthrough.md) | Assets y sprites del lab; sin integrar en ROM |

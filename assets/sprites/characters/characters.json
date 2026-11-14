@@ -71,6 +71,42 @@
       "template": "assets/sprites/characters/skeleton/settings.json",
       "speedFixed8_8": 39,
       "ticksPerFrame": 22
+    },
+    "exvoto": {
+      "model": "assets/models/characters/exvoto/exvoto_walk.fbx",
+      "anim": "exvoto_walk (1.47s)",
+      "resolution": 40,
+      "fitZoom": 0.86,
+      "template": "assets/sprites/characters/skeleton/settings.json",
+      "speedFixed8_8": 89,
+      "ticksPerFrame": 8
+    },
+    "exvoto_pray_stand": {
+      "model": "assets/models/characters/exvoto/exvoto_pray_stand.fbx",
+      "anim": "exvoto_pray_stand (3.23s)",
+      "resolution": 40,
+      "fitZoom": 0.7727,
+      "template": "assets/sprites/characters/skeleton/settings.json",
+      "speedFixed8_8": 11,
+      "ticksPerFrame": 24
+    },
+    "exvoto_pray_kneel": {
+      "model": "assets/models/characters/exvoto/exvoto_pray_kneel.fbx",
+      "anim": "exvoto_pray_kneel (1.93s)",
+      "resolution": 40,
+      "fitZoom": 0.6649,
+      "template": "assets/sprites/characters/skeleton/settings.json",
+      "speedFixed8_8": 27,
+      "ticksPerFrame": 14
+    },
+    "exvoto_stand_up": {
+      "model": "assets/models/characters/exvoto/exvoto_stand_up.fbx",
+      "anim": "exvoto_stand_up (2.30s)",
+      "resolution": 40,
+      "fitZoom": 0.9154,
+      "template": "assets/sprites/characters/skeleton/settings.json",
+      "speedFixed8_8": 389,
+      "ticksPerFrame": 9
     }
   }
 }

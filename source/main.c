@@ -21,6 +21,7 @@
 #include "godrays.h"
 #include "hwshadow.h"
 #include "pickups.h"
+#include "exvoto_melt.h"
 #include "sfx.h"
 #include <string.h>
 #include <time.h>
@@ -142,7 +143,7 @@ volatile OcclusionStats g_occlusion_stats;
 Enemy g_enemies[MAX_ENEMIES];     // not static: headless scenarios read it by symbol (the arena data also has an s_enemies)
 // Headless scenarios read g_enemies / g_player_state by byte offset (scenarios/enemy_*.json); a moved field breaks the build.
 // ARM EABI enums are 1 byte here (type and state are u8 in the scenarios).
-_Static_assert(sizeof(Enemy) == 84 && offsetof(Enemy, hp) == 28 && offsetof(Enemy, type) == 40 &&
+_Static_assert(sizeof(Enemy) == 88 && offsetof(Enemy, hp) == 28 && offsetof(Enemy, type) == 40 &&
                offsetof(Enemy, state) == 41 && offsetof(Enemy, state_timer) == 44 && offsetof(Enemy, stun_timer) == 76,
                "Enemy layout used by the scenarios changed");
 _Static_assert(sizeof(PlayerState) == 24 && offsetof(PlayerState, hp) == 0 && offsetof(PlayerState, invuln_timer) == 16,
@@ -169,7 +170,8 @@ static uint32_t s_death_chunk_seed;
 
 typedef struct {
     int depth;     // ground world Y in pixels
-    int ref;       // -1 = player, -2 - i = enemy i, -2 - MAX_ENEMIES - i = death chunk i
+    int ref;       // -1 = player, -2 - i = enemy i, -2 - MAX_ENEMIES - i = death chunk i,
+                   // -2 - MAX_ENEMIES - MAX_DEATH_CHUNKS - i = sinking Exvoto i (exvoto_melt.h)
     int cx;        // world pixel centre X
     int cy;        // world pixel centre Y (ground point)
 } DrawItem;
@@ -796,6 +798,26 @@ static void draw_enemy(uint16_t *buffer, const Enemy *e, int cam_x, int cam_y) {
         draw_hit_spark(buffer, px, py - (sh * 3) / 5, cam_x, cam_y, e->hit_timer);
 }
 
+// A dying Exvoto (DESIGN.md 6.10): the sprite it died with sinks into the floor, feet first. The lowest
+// rows are cut as it goes down and the rest moves down with them, so it ends flush with the puddle.
+static void draw_melt(uint16_t *buffer, const ExvotoMelt *m, int cam_x, int cam_y) {
+    int px = player_screen_x(m->x, m->y);
+    int py = player_screen_y(m->x, m->y);
+    const uint8_t *b = g_character_frame_bounds[m->char_id][m->dir][m->frame];
+    int bw = b[2];
+    int bh = b[3];
+    if (bw == 0 || bh == 0) return;
+    int hidden = exvoto_melt_hidden_rows(m, bh);
+    int visible = bh - hidden;
+    if (visible <= 0) return;
+    int sw = g_characters[m->char_id].sprite_w;
+    blit_stride(buffer, character_frame_ptr(m->char_id, m->dir, m->frame),
+                character_runs_ptr(m->char_id, m->dir, m->frame),
+                sprite_pitch(bw), bw, visible,
+                px - sw / 2 + b[0], py - s_char_ground_anchor[m->char_id][m->dir] + b[1] + hidden,
+                cam_x, cam_y, s_draw_item_depth);
+}
+
 static void bone_effect_pixel(uint16_t *buffer, int x, int y, int cam_x, int cam_y, uint16_t color) {
     int sx = x - cam_x, sy = y - cam_y;
     if (sx >= 0 && sx < SCREEN_W && sy >= 0 && sy < SCREEN_H &&
@@ -929,7 +951,7 @@ ITCM_CODE static void render_screen(uint16_t *buffer, DirtySpan *spans, int cam_
 #if !HW_SHADOWS
     (void)sub_screen;
 #endif
-    DrawItem items[MAX_DRAW_ITEMS + MAX_ENEMIES + MAX_DEATH_CHUNKS + 1];
+    DrawItem items[MAX_DRAW_ITEMS + MAX_ENEMIES + MAX_DEATH_CHUNKS + EXVOTO_MELT_MAX + 1];
     int count = 0;
 
     // The static floor is in BG1; this buffer contains only dynamic layers.
@@ -989,6 +1011,22 @@ ITCM_CODE static void render_screen(uint16_t *buffer, DirtySpan *spans, int cam_
         }
     }
 
+    for (int i = 0; i < EXVOTO_MELT_MAX; i++) {
+        const ExvotoMelt *m = exvoto_melt_sinking(i);
+        if (!m) continue;
+        int mx = player_screen_x(m->x, m->y);
+        int my = player_screen_y(m->x, m->y);
+        if (mx + PLAYER_SPRITE_W / 2 < cam_x || mx - PLAYER_SPRITE_W / 2 > cam_x + SCREEN_W ||
+            my < cam_y || my - PLAYER_SPRITE_H > cam_y + SCREEN_H) continue;
+        if (count < MAX_DRAW_ITEMS + MAX_ENEMIES + MAX_DEATH_CHUNKS + EXVOTO_MELT_MAX) {
+            items[count].depth = my;
+            items[count].ref = -2 - MAX_ENEMIES - MAX_DEATH_CHUNKS - i;
+            items[count].cx = mx;
+            items[count].cy = my;
+            count++;
+        }
+    }
+
     // The static FBX bake is now a hardware BG; keep this bitmap layer transparent
     // (0x0000 = transparent in 16-bit direct bitmap mode) and render only dynamic
     // actors, shadows, particles, and the HUD into it.
@@ -1001,6 +1039,10 @@ ITCM_CODE static void render_screen(uint16_t *buffer, DirtySpan *spans, int cam_
 
     // 0) Ground decals of the weapons (aim marker, warning zones, shock rings): under everything.
     weapons_render_floor(buffer, cam_x, cam_y);
+    {
+        GroundTarget melt_ground = { buffer, cam_x, cam_y };
+        exvoto_melt_render_floor(&melt_ground);       // wax puddles of the dead Exvotos
+    }
 
     // 1) Actor shadows (player & enemies, animated per frame). Hardware: one OBJ-window list per
     // screen, darkened by the engine (hwshadow.c). Software: darken the page pixel by pixel.
@@ -1047,6 +1089,9 @@ ITCM_CODE static void render_screen(uint16_t *buffer, DirtySpan *spans, int cam_
         CRASH_MARK(CL_DRAW_ITEM, sp, items[i].depth);
         if (sp == -1) {
             draw_player(buffer, cam_x, cam_y);
+        } else if (sp <= -2 - MAX_ENEMIES - MAX_DEATH_CHUNKS) {
+            const ExvotoMelt *melt = exvoto_melt_sinking(-2 - MAX_ENEMIES - MAX_DEATH_CHUNKS - sp);
+            if (melt) draw_melt(buffer, melt, cam_x, cam_y);
         } else if (sp <= -2 - MAX_ENEMIES) {
             int chunk_idx = -2 - MAX_ENEMIES - sp;
             draw_death_chunk(buffer, &s_death_chunks[chunk_idx], cam_x, cam_y);
@@ -1460,7 +1505,9 @@ static void death_chunks_frame_begin(void) {
 static void on_enemy_death(const Enemy *e, fixed hit_vx, fixed hit_vy) {
     CRASH_MARK(CL_DEATH_CHUNKS, e->char_id, e->dir);
     DeathSpawn spawn = { e->x, e->y, hit_vx, hit_vy, e->char_id, e->dir, e->frame };
-    if (s_death_spawn_budget > 0) {
+    if (e->type == ENEMY_TYPE_EXVOTO) {
+        exvoto_melt_spawn(e);                 // wax: it melts instead of breaking into chunks
+    } else if (s_death_spawn_budget > 0) {
         s_death_spawn_budget--;
         death_chunks_spawn(&spawn);
     } else if (s_pending_count < MAX_PENDING_DEATHS) {
@@ -1497,6 +1544,7 @@ static void weapons_and_effects_update(void) {
     grenade_set_player_pos(s_player.x, s_player.y);
     weapons_update(g_enemies, MAX_ENEMIES);
     death_chunks_update();
+    exvoto_melt_update();
 }
 
 static void strip_shift_world_y(int dy_px) {
@@ -1508,6 +1556,7 @@ static void strip_shift_world_y(int dy_px) {
         if (s_death_chunks[i].active) s_death_chunks[i].y += shift;
     for (int i = 0; i < s_pending_count; i++)
         s_pending_deaths[(s_pending_head + i) & (MAX_PENDING_DEATHS - 1)].y += shift;
+    exvoto_melt_shift_y(dy_px);
     s_cam_y += dy_px;
     grenade_shift_y(dy_px);
     weapons_shift_y(dy_px);
@@ -1556,13 +1605,15 @@ static void enemies_update(void) {
 // Strip mode (DESIGN.md 6.0): the horde from above replaces the v0.2 packs and modifiers.
 // Runs in the enemies slot of the frame so PERF_PROFILE charges it to `en`.
 static void strip_enemies_update(void) {
-#if CATHEDRAL_PLAYGROUND
+#if CATHEDRAL_PLAYGROUND && CATHEDRAL_AI == 0
     // Fixed sandbox dummies replace the procedural horde in the review ROM.
     return;
 #endif
     nav_set_goal(TO_INT(s_player.x), TO_INT(s_player.y));
     nav_update(NAV_BUDGET_PER_FRAME);
+#if !CATHEDRAL_PLAYGROUND || CATHEDRAL_AI == 2
     horde_update(g_enemies, MAX_ENEMIES, s_player.y, s_cam_y - SCREEN_H, tide_y());
+#endif
     enemy_ai_set_view(s_cam_x, s_cam_y - SCREEN_H, s_cam_y + SCREEN_H);
     enemy_ai_update(g_enemies, MAX_ENEMIES, s_player.x, s_player.y);
     pickups_update(s_player.x, s_player.y, tide_y(), &g_player_state);
@@ -1907,6 +1958,7 @@ static void arena_restart(void) {
     camera_init();                   // the fade-in shows the new arena before the player moves
     g_hitstop_frames = 0;
     memset(s_death_chunks, 0, sizeof(s_death_chunks));
+    exvoto_melt_reset();
     s_pending_head = s_pending_count = 0;
     if (s_strip_mode) memset(g_enemies, 0, sizeof(g_enemies));
     else encounters_spawn(&g_encounter_mgr, g_enemies, MAX_ENEMIES);
@@ -2047,6 +2099,7 @@ int main(void) {
 #endif
 
     init_char_sprite_data();
+    exvoto_melt_reset();
     sfx_init();
     CRASH_INIT();
     PP_INIT();

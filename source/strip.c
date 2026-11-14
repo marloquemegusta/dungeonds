@@ -70,7 +70,22 @@ typedef struct {
     uint32_t *run_count;
     uint32_t run_limit;            // runs beyond this are dropped (the STRIP_OCCLUSION_CAPACITY rule)
     uint32_t *run_dropped;         // drops are counted here; NULL for the live window
+    StripDevout *devout;           // devout pieces placed through this sink (window coordinates)
+    uint32_t *devout_count;
 } BandSink;
+
+// Devout pieces (santo, vela, relicario) of the live window and of the window being prepared, kept so
+// the horde can seat Exvotos in front of one without replanning blocks (strip_devout_in_band()).
+// Same window coordinates as the occlusion runs: a rebase shifts them with the window.
+#define STRIP_DEVOUT_MAX 96
+static StripDevout s_devout_active[STRIP_DEVOUT_MAX];
+static uint32_t s_devout_active_n;
+static StripDevout s_devout_stage[STRIP_DEVOUT_MAX];
+static uint32_t s_devout_stage_n;
+
+static int piece_is_devout(uint8_t piece_id) {
+    return piece_id == STRIP_PIECE_SANTO || piece_id == STRIP_PIECE_VELA || piece_id == STRIP_PIECE_RELICARIO;
+}
 
 // Active window (what the Arena exposes) and its reserve. strip_prepare_step() fills the reserve;
 // the commit swaps the pointers, so a reader never sees a half-built index.
@@ -406,6 +421,32 @@ static void stamp_place_band(const BandSink *sink, const PlanItem *it, int32_t o
                              int map_row, int collision_row) {
     const StripStamp *stamp = it->stamp;
     int rel = it->y - (int)off;                       // piece top row, band-local
+    if (rel >= 0 && rel < STRIP_BAND_TILES && piece_is_devout(it->piece_id) &&
+        sink->devout && *sink->devout_count < STRIP_DEVOUT_MAX) {
+        // Once per piece, in the band that holds its top row: footprint rectangle in window px.
+        int x0 = it->x * 8, x1 = x0 + (int)stamp->w_tiles * 8;
+        int y0 = (map_row + rel) * 8, y1 = y0 + (int)stamp->h_tiles * 8;
+        if (stamp->num_foot_runs) {
+            int fx0 = 255, fx1 = 0, fy0 = 255, fy1 = 0;
+            for (unsigned ri = 0; ri < stamp->num_foot_runs; ri++) {
+                const StripFootprintRun *run = &stamp->foot_runs[ri];
+                if (run->x_cell < fx0) fx0 = run->x_cell;
+                if (run->x_cell + run->length_cells > fx1) fx1 = run->x_cell + run->length_cells;
+                if (run->y_cell < fy0) fy0 = run->y_cell;
+                if (run->y_cell + 1 > fy1) fy1 = run->y_cell + 1;
+            }
+            x1 = it->x * 8 + fx1 * 4;
+            x0 = it->x * 8 + fx0 * 4;
+            y1 = (map_row + rel) * 8 + fy1 * 4;
+            y0 = (map_row + rel) * 8 + fy0 * 4;
+        }
+        StripDevout *d = &sink->devout[(*sink->devout_count)++];
+        d->x = (int16_t)((x0 + x1) / 2);
+        d->y = (int16_t)((y0 + y1) / 2);
+        d->hw = (int16_t)((x1 - x0) / 2);
+        d->hh = (int16_t)((y1 - y0) / 2);
+        d->kind = it->piece_id;
+    }
     for (unsigned sy = 0; sy < stamp->h_tiles; sy++) {
         int ly = rel + (int)sy;
         if (ly < 0 || ly >= STRIP_BAND_TILES) continue;
@@ -669,6 +710,9 @@ static void prep_begin(void) {
     s_stage_sink.run_count = &s_stage_new_count;
     s_stage_sink.run_limit = room < STRIP_STAGE_RUNS_MAX ? room : STRIP_STAGE_RUNS_MAX;
     s_stage_sink.run_dropped = &s_stage_dropped;
+    s_stage_sink.devout = s_devout_stage;
+    s_stage_sink.devout_count = &s_devout_stage_n;
+    s_devout_stage_n = 0;
     memset(s_row_reserve, 0, (STRIP_SHIFT_PX + 1u) * sizeof(uint32_t));
     s_prep_new = 0;
     s_prep_cursor = 0;
@@ -873,6 +917,20 @@ static int commit_prepared(void) {
     s_arena.occlusion_runs = s_runs_active;
     s_arena.occlusion_row_start = s_row_active;
 
+    // Devout pieces: the survivors move down with the window, the new ones (already in window rows
+    // 0..767) join them.
+    uint32_t kept = 0;
+    for (uint32_t i = 0; i < s_devout_active_n; i++) {
+        StripDevout d = s_devout_active[i];
+        d.y = (int16_t)(d.y + STRIP_SHIFT_PX);
+        if (d.y - d.hh >= STRIP_WIN_H_PX) continue;
+        s_devout_active[kept++] = d;
+    }
+    for (uint32_t i = 0; i < s_devout_stage_n && kept < STRIP_DEVOUT_MAX; i++)
+        s_devout_active[kept++] = s_devout_stage[i];
+    s_devout_active_n = kept;
+    s_devout_stage_n = 0;
+
     s_next_band += STRIP_PREP_STAGE_BANDS;
     s_shift_total_px += STRIP_SHIFT_PX;
     s_prep_steps_last = s_prep_steps;
@@ -883,13 +941,15 @@ static int commit_prepared(void) {
 // Live window: where strip_start() writes its bands.
 static BandSink live_sink(void) {
     BandSink sink = { s_map, s_collision, s_occlusion_runs, &s_occlusion_count,
-                      STRIP_OCCLUSION_CAPACITY, 0 };
+                      STRIP_OCCLUSION_CAPACITY, 0, s_devout_active, &s_devout_active_n };
     return sink;
 }
 
 void strip_start(uint32_t seed) {
     s_seed = seed;
     s_next_band = 0;
+    s_devout_active_n = 0;
+    s_devout_stage_n = 0;
     s_shift_total_px = 0;
     s_occlusion_count = 0;
     s_plan_block = STRIP_PLAN_NONE;
@@ -975,6 +1035,16 @@ void strip_stage_leave(void) {
 }
 
 int32_t strip_shift_total_px(void) { return s_shift_total_px; }
+
+int strip_devout_in_band(int y_lo, int y_hi, StripDevout *out, int max) {
+    if (g_arena != &s_arena || !s_kit_valid) return 0;
+    int n = 0;
+    for (uint32_t i = 0; i < s_devout_active_n && n < max; i++) {
+        const StripDevout *d = &s_devout_active[i];
+        if (d->y >= y_lo && d->y <= y_hi) out[n++] = *d;
+    }
+    return n;
+}
 int strip_start_x(void) { return STRIP_W_PX / 2; }
 int strip_start_y(void) { return STRIP_WIN_H_PX - 256; }
 int strip_height_m(int player_y_px) {

@@ -79,11 +79,12 @@ class SpriteGroundAnchorTests(unittest.TestCase):
         self.assertNotIn("PLAYER_ANCHOR_Y", header)
         self.assertNotIn("PLAYER_ANCHOR_Y", MAIN)
         anchors = exported_anchors()
-        self.assertEqual(len(anchors), 4)
+        self.assertEqual(len(anchors), 7)
         self.assertTrue(all(len(row) == 8 for row in anchors))
 
     def test_shadow_masks_and_bounds_dimensions(self):
-        prefixes = ("g_player", "g_charger", "g_necron", "g_skeleton")
+        prefixes = ("g_player", "g_charger", "g_necron", "g_exvoto", "g_exvoto_pray_stand",
+                    "g_exvoto_pray_kneel", "g_exvoto_stand_up")
         for prefix in prefixes:
             mask_decl = f"const uint8_t {prefix}_shadow_masks[]"
             self.assertIn(mask_decl, SPRITES)

@@ -29,7 +29,7 @@
 #define HORDE_SPAWN_X_MIN 20 // [TUNABLE-PLACEHOLDER] left safe spawn coordinate in strip
 #define HORDE_SPAWN_X_MAX 492 // [TUNABLE-PLACEHOLDER] right safe spawn coordinate in strip
 #define STRIP_DEATH_SCREEN_FRAMES 60 // [TUNABLE-PLACEHOLDER] minimum death summary duration
-#define HORDE_SKELETON_PERCENT 60 // [TUNABLE-PLACEHOLDER] share of skeleton spawns
+#define HORDE_EXVOTO_PERCENT 60 // [TUNABLE-PLACEHOLDER] share of Exvoto spawns (the mass tier; they replaced the skeleton)
 #define HORDE_CHARGER_PERCENT 15 // [TUNABLE-PLACEHOLDER] share of charger spawns; shooters take the remaining 25%
 #define HORDE_CHARGER_MAX_ALIVE 3 // [TUNABLE-PLACEHOLDER] chargers alive at once; a charger roll over it spawns a skeleton
 #define HORDE_RAMP_STEP_FRAMES 257 // [TUNABLE-PLACEHOLDER] interval tuning cadence (~18,000 frames total)
@@ -37,6 +37,12 @@
 #define HORDE_SHOOTER_TOP_LIMIT_PX 288 // [TUNABLE-PLACEHOLDER] visible world height above player across both screens
 #define HORDE_CLUSTER_HALF_WIDTH_PX 16 // [TUNABLE-PLACEHOLDER] horizontal radius for grouped spawns
 #define HORDE_CLUSTER_HALF_HEIGHT_PX 8 // [TUNABLE-PLACEHOLDER] vertical radius for grouped spawns
+#define HORDE_EXVOTO_GROUP_MAX 4 // [TUNABLE-PLACEHOLDER] Exvotos of one burst that pray to the same devout piece
+#define HORDE_EXVOTO_SPACING_PX 14 // [TUNABLE-PLACEHOLDER] ground px: nearest an Exvoto is seated to any other enemy
+#define HORDE_EXVOTO_CLAIM_RADIUS_PX 24 // [TUNABLE-PLACEHOLDER] ground px beyond a piece's footprint that count as its praying spot
+#define HORDE_EXVOTO_SIDE_PX 7 // [TUNABLE-PLACEHOLDER] px beside a piece's footprint where the 6 px body circle first fits
+#define HORDE_EXVOTO_FRONT_PX 4 // [TUNABLE-PLACEHOLDER] screen rows in front of a piece's footprint where the body first fits
+#define HORDE_DEVOUT_CANDIDATES 16 // [TUNABLE-PLACEHOLDER] devout pieces looked at per spawn burst
 
 void horde_init(uint32_t seed);
 void horde_update(Enemy *enemies, int count, fixed player_y,

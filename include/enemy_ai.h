@@ -14,6 +14,10 @@ void enemy_ai_update(Enemy *enemies, int num_enemies, fixed player_x, fixed play
 // World position of the enemy's muzzle and its height above the ground (px); the shooter's laser leaves from it.
 void enemy_muzzle(const Enemy *e, fixed *mx, fixed *my, int *mh);
 void enemy_ai_set_strip_mode(int enabled);
+// Puts a freshly spawned Exvoto to pray (kneeling or standing) facing dir; it wakes by itself (DESIGN.md 6.10).
+// One of the 8 sprite directions (DIR_*) of a screen-space vector, the quantisation the AI uses to face things.
+int enemy_dir_from_vector(fixed dx, fixed dy);
+void enemy_exvoto_start_praying(Enemy *e, int kneel, int dir);
 
 // Level of detail: enemies outside the world window shown by the two screens (cam_x..cam_x+256 wide,
 // cam_top_y..cam_bottom_y tall, plus ENEMY_AI_VIEW_MARGIN) run their walking AI every 2nd frame with a doubled step.

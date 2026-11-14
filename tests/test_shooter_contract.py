@@ -31,7 +31,7 @@ class ShooterLaserContractTest(unittest.TestCase):
         enum = GAMEPLAY_H.split("typedef enum {\n    ENEMY_STATE_CHASE")[1].split("} EnemyState;")[0]
         states = re.findall(r"ENEMY_STATE_(\w+)", enum)
         self.assertEqual(states, ["ATTACK", "POSITION", "TELEGRAPH", "CHARGE", "RECOVER", "STUNNED",
-                                  "LASER_AIM", "LASER_FIX", "LASER_FIRE", "COOLDOWN", "DEAD", "DORMANT"])
+                                  "LASER_AIM", "LASER_FIX", "LASER_FIRE", "COOLDOWN", "DEAD", "DORMANT", "PRAY", "RISE"])
         for removed in ("IDLE", "ALERT", "SEARCH", "BURST", "last_seen", "los_lost"):
             self.assertNotIn(removed, shooter_function(), removed)
 
