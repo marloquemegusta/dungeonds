@@ -21,7 +21,7 @@ MAGIC = 0x4251
 CANVAS_W = 160
 CANVAS_H = 160
 NUM_DIRS = 8
-ALPHA_THRESHOLD = 77
+ALPHA_THRESHOLD = 160
 
 CHARACTERS = [
     {
@@ -45,7 +45,7 @@ CHARACTERS = [
     {
         'id': 'ojo',
         'clips': [
-            ('ojo_look', list(range(4)))
+            ('ojo_walk', list(range(8)))
         ]
     }
 ]
@@ -83,8 +83,8 @@ def build_portrait_binary(char_info):
         for frame in dirs[d]:
             arr = np.array(frame)
             mask = arr[:, :, 3] >= ALPHA_THRESHOLD
-            rgb = arr[mask, :3]
-            if len(rgb) > 0:
+            if np.any(mask):
+                rgb = (arr[mask, :3].astype(np.uint16) * arr[mask, 3:4].astype(np.uint16) // 255).astype(np.uint8)
                 opaque_pixels.append(rgb)
 
     if not opaque_pixels:
@@ -129,7 +129,9 @@ def build_portrait_binary(char_info):
             arr = np.array(frame)
             alpha_mask = arr[:, :, 3] >= ALPHA_THRESHOLD
 
-            rgb_frame = frame.convert('RGB')
+            # Composite over pure black using alpha so edge pixels never pop as bright white dots
+            premul_rgb = (arr[:, :, :3].astype(np.uint16) * arr[:, :, 3:4].astype(np.uint16) // 255).astype(np.uint8)
+            rgb_frame = Image.fromarray(premul_rgb, 'RGB')
             mapped = rgb_frame.quantize(palette=pal_img, dither=Image.Dither.NONE)
             mapped_arr = np.array(mapped, dtype=np.uint8)
 

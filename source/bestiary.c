@@ -410,9 +410,8 @@ static int compute_anim_frame(int entry_idx, uint32_t anim_tick) {
         /* Cireneo (8 frames hunched walk loop, ~50% slower) */
         return (int)((anim_tick / 8) % 8);
     } else if (entry_idx == 3) {
-        /* Ojo del Tribunal (4 frames head-turn ping-pong, ~50% slower) */
-        static const int ojo_seq[6] = { 0, 1, 2, 3, 2, 1 };
-        return ojo_seq[(anim_tick / 10) % 6];
+        /* Ojo del Tribunal (8 frames walking & turning lantern-head searching for victim) */
+        return (int)((anim_tick / 8) % 8);
     }
     return 0;
 }
