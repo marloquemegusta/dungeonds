@@ -277,10 +277,19 @@ chars_meta = [
     ('player', 'corazon', 'Corazon Abierto Hero', 340, 4),
     ('charger', 'cireneo', 'Enemy Charger (Knocker)', 310, 5),
     ('ojo', 'ojo', 'El Ojo del Tribunal', 110, 9),
-    ('skeleton', 'skeleton', 'Skeleton Walker Enemy', 39, 22),
+    ('exvoto', 'exvoto', 'Exvoto Walker Enemy', 130, 8),
+    # Exvoto clips (DESIGN.md 6.10): each one is a character slot of its own, so the enemy swaps char_id
+    # when its pose changes and the renderer needs no special case. Same 40x40 cell as the walk.
+    ('exvoto_pray_stand', 'exvoto_pray_stand', 'Exvoto praying standing', 11, 24),
+    ('exvoto_pray_kneel', 'exvoto_pray_kneel', 'Exvoto praying kneeling', 27, 14),
+    ('exvoto_stand_up', 'exvoto_stand_up', 'Exvoto standing up', 0, 9),
     ('abanderado', 'abanderado', 'El Abanderado', 50, 14),
     ('monaguillo', 'monaguillo', 'Exvoto Monaguillo', 39, 22),
 ]
+
+# Ticks per frame of the Exvoto clips come from the manifest (the lab settings carry the template's).
+with open(os.path.join(SRC_ROOT, 'characters.json'), 'r', encoding='utf-8') as _mf:
+    MANIFEST = json.load(_mf)['characters']
 
 out_lines = []
 out_lines.append('#include "player_sprite.h"\n\n')
@@ -304,6 +313,8 @@ for var_name, folder, disp_name, def_spd, def_ticks in chars_meta:
                 sw, sh = int(parts[0]), int(parts[1])
             if 'shadowSize' in sdata:
                 shw, shh = int(sdata['shadowSize'][0]), int(sdata['shadowSize'][1])
+    if folder.startswith('exvoto') and 'ticksPerFrame' in MANIFEST.get(folder, {}):
+        ticks = int(MANIFEST[folder]['ticksPerFrame'])
     if var_name == 'charger':
         ticks = 8  # match 37.86 px stride at ENEMY_CHARGER_APPROACH_SPEED (150)
     if var_name == 'ojo':

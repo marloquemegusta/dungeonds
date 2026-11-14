@@ -1,0 +1,759 @@
+{
+  "name": "exvoto_reza_despierta_derrite",
+  "description": "ROM cathedral-playground (seed 0xC0DE1234). Three Exvotos pray in a south arc in front of the real relicario (window px 248,682, footprint half-extent 16x6), facing it; a fourth prays on its north side. The hero (god mode) walks north: the Exvotos stay still until he is within 96 ground px, the north one wakes only by the 48 px chain, the kneeling ones rise (stand_up clip), then everybody walks; a sniper shot kills the ones on the line and they melt into a wax puddle.",
+  "state": {
+    "symbols": {
+      "sb": "g_sandbox",
+      "enemies": "g_enemies"
+    },
+    "default_symbol": "sb",
+    "fields": {
+      "seq": {
+        "offset": 0,
+        "type": "u32"
+      },
+      "ack": {
+        "offset": 4,
+        "type": "u32"
+      },
+      "player_x": {
+        "offset": 8,
+        "type": "s16"
+      },
+      "player_y": {
+        "offset": 10,
+        "type": "s16"
+      },
+      "weapon": {
+        "offset": 12,
+        "type": "u8"
+      },
+      "style": {
+        "offset": 13,
+        "type": "u8"
+      },
+      "enemy_count": {
+        "offset": 14,
+        "type": "u8"
+      },
+      "flags": {
+        "offset": 15,
+        "type": "u8"
+      },
+      "e0_type": {
+        "offset": 16,
+        "type": "u8"
+      },
+      "e0_flags": {
+        "offset": 17,
+        "type": "u8"
+      },
+      "e0_x": {
+        "offset": 18,
+        "type": "s16"
+      },
+      "e0_y": {
+        "offset": 20,
+        "type": "s16"
+      },
+      "e1_type": {
+        "offset": 22,
+        "type": "u8"
+      },
+      "e1_flags": {
+        "offset": 23,
+        "type": "u8"
+      },
+      "e1_x": {
+        "offset": 24,
+        "type": "s16"
+      },
+      "e1_y": {
+        "offset": 26,
+        "type": "s16"
+      },
+      "e2_type": {
+        "offset": 28,
+        "type": "u8"
+      },
+      "e2_flags": {
+        "offset": 29,
+        "type": "u8"
+      },
+      "e2_x": {
+        "offset": 30,
+        "type": "s16"
+      },
+      "e2_y": {
+        "offset": 32,
+        "type": "s16"
+      },
+      "e3_type": {
+        "offset": 34,
+        "type": "u8"
+      },
+      "e3_flags": {
+        "offset": 35,
+        "type": "u8"
+      },
+      "e3_x": {
+        "offset": 36,
+        "type": "s16"
+      },
+      "e3_y": {
+        "offset": 38,
+        "type": "s16"
+      },
+      "e4_type": {
+        "offset": 40,
+        "type": "u8"
+      },
+      "e4_flags": {
+        "offset": 41,
+        "type": "u8"
+      },
+      "e4_x": {
+        "offset": 42,
+        "type": "s16"
+      },
+      "e4_y": {
+        "offset": 44,
+        "type": "s16"
+      },
+      "e5_type": {
+        "offset": 46,
+        "type": "u8"
+      },
+      "e5_flags": {
+        "offset": 47,
+        "type": "u8"
+      },
+      "e5_x": {
+        "offset": 48,
+        "type": "s16"
+      },
+      "e5_y": {
+        "offset": 50,
+        "type": "s16"
+      },
+      "e6_type": {
+        "offset": 52,
+        "type": "u8"
+      },
+      "e6_flags": {
+        "offset": 53,
+        "type": "u8"
+      },
+      "e6_x": {
+        "offset": 54,
+        "type": "s16"
+      },
+      "e6_y": {
+        "offset": 56,
+        "type": "s16"
+      },
+      "e7_type": {
+        "offset": 58,
+        "type": "u8"
+      },
+      "e7_flags": {
+        "offset": 59,
+        "type": "u8"
+      },
+      "e7_x": {
+        "offset": 60,
+        "type": "s16"
+      },
+      "e7_y": {
+        "offset": 62,
+        "type": "s16"
+      },
+      "e8_type": {
+        "offset": 64,
+        "type": "u8"
+      },
+      "e8_flags": {
+        "offset": 65,
+        "type": "u8"
+      },
+      "e8_x": {
+        "offset": 66,
+        "type": "s16"
+      },
+      "e8_y": {
+        "offset": 68,
+        "type": "s16"
+      },
+      "e9_type": {
+        "offset": 70,
+        "type": "u8"
+      },
+      "e9_flags": {
+        "offset": 71,
+        "type": "u8"
+      },
+      "e9_x": {
+        "offset": 72,
+        "type": "s16"
+      },
+      "e9_y": {
+        "offset": 74,
+        "type": "s16"
+      },
+      "e10_type": {
+        "offset": 76,
+        "type": "u8"
+      },
+      "e10_flags": {
+        "offset": 77,
+        "type": "u8"
+      },
+      "e10_x": {
+        "offset": 78,
+        "type": "s16"
+      },
+      "e10_y": {
+        "offset": 80,
+        "type": "s16"
+      },
+      "e11_type": {
+        "offset": 82,
+        "type": "u8"
+      },
+      "e11_flags": {
+        "offset": 83,
+        "type": "u8"
+      },
+      "e11_x": {
+        "offset": 84,
+        "type": "s16"
+      },
+      "e11_y": {
+        "offset": 86,
+        "type": "s16"
+      },
+      "e12_type": {
+        "offset": 88,
+        "type": "u8"
+      },
+      "e12_flags": {
+        "offset": 89,
+        "type": "u8"
+      },
+      "e12_x": {
+        "offset": 90,
+        "type": "s16"
+      },
+      "e12_y": {
+        "offset": 92,
+        "type": "s16"
+      },
+      "e13_type": {
+        "offset": 94,
+        "type": "u8"
+      },
+      "e13_flags": {
+        "offset": 95,
+        "type": "u8"
+      },
+      "e13_x": {
+        "offset": 96,
+        "type": "s16"
+      },
+      "e13_y": {
+        "offset": 98,
+        "type": "s16"
+      },
+      "e14_type": {
+        "offset": 100,
+        "type": "u8"
+      },
+      "e14_flags": {
+        "offset": 101,
+        "type": "u8"
+      },
+      "e14_x": {
+        "offset": 102,
+        "type": "s16"
+      },
+      "e14_y": {
+        "offset": 104,
+        "type": "s16"
+      },
+      "e15_type": {
+        "offset": 106,
+        "type": "u8"
+      },
+      "e15_flags": {
+        "offset": 107,
+        "type": "u8"
+      },
+      "e15_x": {
+        "offset": 108,
+        "type": "s16"
+      },
+      "e15_y": {
+        "offset": 110,
+        "type": "s16"
+      },
+      "en0_x": {
+        "symbol": "enemies",
+        "offset": 0,
+        "type": "s32"
+      },
+      "en0_y": {
+        "symbol": "enemies",
+        "offset": 4,
+        "type": "s32"
+      },
+      "en0_dir": {
+        "symbol": "enemies",
+        "offset": 8,
+        "type": "s32"
+      },
+      "en0_frame": {
+        "symbol": "enemies",
+        "offset": 12,
+        "type": "s32"
+      },
+      "en0_char": {
+        "symbol": "enemies",
+        "offset": 20,
+        "type": "s32"
+      },
+      "en0_active": {
+        "symbol": "enemies",
+        "offset": 24,
+        "type": "s32"
+      },
+      "en0_hp": {
+        "symbol": "enemies",
+        "offset": 28,
+        "type": "s32"
+      },
+      "en0_state": {
+        "symbol": "enemies",
+        "offset": 41,
+        "type": "u8"
+      },
+      "en1_x": {
+        "symbol": "enemies",
+        "offset": 116,
+        "type": "s32"
+      },
+      "en1_y": {
+        "symbol": "enemies",
+        "offset": 120,
+        "type": "s32"
+      },
+      "en1_dir": {
+        "symbol": "enemies",
+        "offset": 124,
+        "type": "s32"
+      },
+      "en1_frame": {
+        "symbol": "enemies",
+        "offset": 128,
+        "type": "s32"
+      },
+      "en1_char": {
+        "symbol": "enemies",
+        "offset": 136,
+        "type": "s32"
+      },
+      "en1_active": {
+        "symbol": "enemies",
+        "offset": 140,
+        "type": "s32"
+      },
+      "en1_hp": {
+        "symbol": "enemies",
+        "offset": 144,
+        "type": "s32"
+      },
+      "en1_state": {
+        "symbol": "enemies",
+        "offset": 157,
+        "type": "u8"
+      },
+      "en2_x": {
+        "symbol": "enemies",
+        "offset": 232,
+        "type": "s32"
+      },
+      "en2_y": {
+        "symbol": "enemies",
+        "offset": 236,
+        "type": "s32"
+      },
+      "en2_dir": {
+        "symbol": "enemies",
+        "offset": 240,
+        "type": "s32"
+      },
+      "en2_frame": {
+        "symbol": "enemies",
+        "offset": 244,
+        "type": "s32"
+      },
+      "en2_char": {
+        "symbol": "enemies",
+        "offset": 252,
+        "type": "s32"
+      },
+      "en2_active": {
+        "symbol": "enemies",
+        "offset": 256,
+        "type": "s32"
+      },
+      "en2_hp": {
+        "symbol": "enemies",
+        "offset": 260,
+        "type": "s32"
+      },
+      "en2_state": {
+        "symbol": "enemies",
+        "offset": 273,
+        "type": "u8"
+      },
+      "en3_x": {
+        "symbol": "enemies",
+        "offset": 348,
+        "type": "s32"
+      },
+      "en3_y": {
+        "symbol": "enemies",
+        "offset": 352,
+        "type": "s32"
+      },
+      "en3_dir": {
+        "symbol": "enemies",
+        "offset": 356,
+        "type": "s32"
+      },
+      "en3_frame": {
+        "symbol": "enemies",
+        "offset": 360,
+        "type": "s32"
+      },
+      "en3_char": {
+        "symbol": "enemies",
+        "offset": 368,
+        "type": "s32"
+      },
+      "en3_active": {
+        "symbol": "enemies",
+        "offset": 372,
+        "type": "s32"
+      },
+      "en3_hp": {
+        "symbol": "enemies",
+        "offset": 376,
+        "type": "s32"
+      },
+      "en3_state": {
+        "symbol": "enemies",
+        "offset": 389,
+        "type": "u8"
+      }
+    }
+  },
+  "steps": [
+    {
+      "frames": 30
+    },
+    {
+      "tap": {
+        "x": 128,
+        "y": 66
+      },
+      "frames": 4
+    },
+    {
+      "release": true,
+      "frames": 10
+    },
+    {
+      "poke": [
+        {
+          "field": "player_x",
+          "value": 250
+        },
+        {
+          "field": "player_y",
+          "value": 800
+        },
+        {
+          "field": "weapon",
+          "value": 1
+        },
+        {
+          "field": "style",
+          "value": 0
+        },
+        {
+          "field": "flags",
+          "value": 5
+        },
+        {
+          "field": "enemy_count",
+          "value": 4
+        },
+        {
+          "field": "e0_type",
+          "value": 3
+        },
+        {
+          "field": "e0_flags",
+          "value": 34
+        },
+        {
+          "field": "e0_x",
+          "value": 248
+        },
+        {
+          "field": "e0_y",
+          "value": 692
+        },
+        {
+          "field": "e1_type",
+          "value": 3
+        },
+        {
+          "field": "e1_flags",
+          "value": 46
+        },
+        {
+          "field": "e1_x",
+          "value": 231
+        },
+        {
+          "field": "e1_y",
+          "value": 692
+        },
+        {
+          "field": "e2_type",
+          "value": 3
+        },
+        {
+          "field": "e2_flags",
+          "value": 30
+        },
+        {
+          "field": "e2_x",
+          "value": 264
+        },
+        {
+          "field": "e2_y",
+          "value": 692
+        },
+        {
+          "field": "e3_type",
+          "value": 3
+        },
+        {
+          "field": "e3_flags",
+          "value": 6
+        },
+        {
+          "field": "e3_x",
+          "value": 248
+        },
+        {
+          "field": "e3_y",
+          "value": 672
+        },
+        {
+          "field": "seq",
+          "value": 100
+        }
+      ],
+      "frames": 1
+    },
+    {
+      "wait_until": {
+        "field": "ack",
+        "equals": 100,
+        "timeout_frames": 30
+      }
+    },
+    {
+      "frames": 12,
+      "capture": "01_rezando",
+      "state_capture": "praying"
+    },
+    {
+      "frames": 96,
+      "capture_sequence": "a_reza",
+      "capture_every": 4,
+      "state_capture": "praying_later"
+    },
+    {
+      "frames": 1,
+      "capture": "02_rezando_quietos"
+    },
+    {
+      "button_down": "UP",
+      "frames": 100,
+      "capture_sequence": "b_acerca",
+      "capture_every": 6
+    },
+    {
+      "wait_until": {
+        "field": "en1_state",
+        "equals": 14,
+        "timeout_frames": 400
+      },
+      "capture": "03_despiertan",
+      "state_capture": "woken"
+    },
+    {
+      "button_up": "UP",
+      "frames": 1
+    },
+    {
+      "frames": 60,
+      "capture_sequence": "c_levanta",
+      "capture_every": 3,
+      "state_capture": "rising"
+    },
+    {
+      "wait_until": {
+        "field": "en1_state",
+        "equals": 0,
+        "timeout_frames": 120
+      },
+      "capture": "05_andan",
+      "state_capture": "walking"
+    },
+    {
+      "frames": 45,
+      "capture_sequence": "d_andan",
+      "capture_every": 3,
+      "state_capture": "advancing"
+    },
+    {
+      "frames": 1,
+      "capture": "06_avanzan"
+    },
+    {
+      "tap": {
+        "x": 128,
+        "y": 20
+      },
+      "frames": 40,
+      "capture": "07_apunta"
+    },
+    {
+      "release": true,
+      "frames": 6,
+      "capture_sequence": "e_disparo",
+      "capture_every": 1
+    },
+    {
+      "frames": 100,
+      "capture_sequence": "f_charco",
+      "capture_every": 2
+    }
+  ],
+  "assertions": {
+    "state_changes": [
+      {
+        "at": "praying",
+        "field": "en0_state",
+        "equals": 13
+      },
+      {
+        "at": "praying",
+        "field": "en1_state",
+        "equals": 13
+      },
+      {
+        "at": "praying",
+        "field": "en2_state",
+        "equals": 13
+      },
+      {
+        "at": "praying",
+        "field": "en3_state",
+        "equals": 13
+      },
+      {
+        "at": "praying",
+        "field": "en0_char",
+        "equals": 4
+      },
+      {
+        "at": "praying",
+        "field": "en1_char",
+        "equals": 5
+      },
+      {
+        "from": "praying",
+        "to": "praying_later",
+        "field": "en0_x",
+        "max_abs_delta": 0
+      },
+      {
+        "from": "praying",
+        "to": "praying_later",
+        "field": "en1_y",
+        "max_abs_delta": 0
+      },
+      {
+        "at": "woken",
+        "field": "en3_state",
+        "equals": 14
+      },
+      {
+        "at": "woken",
+        "field": "en1_state",
+        "equals": 14
+      },
+      {
+        "at": "woken",
+        "field": "en0_char",
+        "equals": 3
+      },
+      {
+        "at": "woken",
+        "field": "en1_char",
+        "equals": 6
+      },
+      {
+        "from": "woken",
+        "to": "rising",
+        "field": "en1_x",
+        "max_abs_delta": 0
+      },
+      {
+        "at": "walking",
+        "field": "en1_char",
+        "equals": 3
+      },
+      {
+        "at": "walking",
+        "field": "en1_state",
+        "equals": 0
+      },
+      {
+        "from": "walking",
+        "to": "advancing",
+        "field": "en0_y",
+        "min_delta": 1
+      }
+    ],
+    "screen_changes": [
+      {
+        "from": "02_rezando_quietos",
+        "to": "03_despiertan",
+        "min_changed_pixels": 50
+      },
+      {
+        "from": "06_avanzan",
+        "to": "07_apunta",
+        "min_changed_pixels": 20
+      }
+    ]
+  }
+}

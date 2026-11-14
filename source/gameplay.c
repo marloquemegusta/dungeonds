@@ -23,7 +23,7 @@ const EnemyTuning g_enemy_tuning[NUM_ENEMY_TYPES] = {
         .speed = 110,             // [TUNABLE-PLACEHOLDER] 8.8 fixed: about a third of the hero's 326
         .attack_cooldown = 90,    // [TUNABLE-PLACEHOLDER] frames of cooldown after the sentence, then it closes in again
     },
-    [ENEMY_TYPE_SKELETON] = {
+    [ENEMY_TYPE_EXVOTO] = {
         .max_hp = 100,            // [TUNABLE-PLACEHOLDER] scale 100 = 1.0: dies to one sniper hit or a point-blank shotgun
         .speed = 130,             // [TUNABLE-PLACEHOLDER] 8.8 fixed: ~40% of the hero's 326
         .attack_cooldown = 30,    // [TUNABLE-PLACEHOLDER] frames between bites
@@ -74,7 +74,11 @@ void player_state_init(PlayerState *player) {
     if (!player) return;
     player->max_hp = PLAYER_MAX_HP + g_mods.max_hp;
     player->hp = player->max_hp;
+#if TEST_WEAPON_CYCLE
     player->current_weapon = WEAPON_SHOTGUN;
+#else
+    player->current_weapon = WEAPON_SNIPER;  // demo: the laser is the hero's only weapon (DESIGN.md 6.9.1c)
+#endif
     player->is_dead = 0;
     player->invuln_timer = 0;
 }

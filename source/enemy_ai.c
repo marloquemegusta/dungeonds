@@ -48,6 +48,8 @@ static inline int dir_from_vector(fixed dx, fixed dy) {
     return sdy < 0 ? DIR_NORTHEAST : DIR_SOUTHEAST;
 }
 
+int enemy_dir_from_vector(fixed dx, fixed dy) { return dir_from_vector(dx, dy); }
+
 ITCM_CODE static int move_with_slide(fixed *x, fixed *y, fixed vx, fixed vy) {
     if (vx == 0 && vy == 0) return 0;
 
@@ -217,10 +219,63 @@ static void refresh_view(Enemy *e, int idx, int wx, int wy, int px, int py, int 
     if (clear) e->has_los |= VIEW_ENGAGE;
 }
 
-// Skeleton & Monaguillo (DESIGN.md 6.9.1 / 6.10): relentless melee pressure.
-// Monaguillo starts in EMERGE (~0.5 s, invulnerable, still) then runs the same CHASE <-> ATTACK loop.
-static void update_melee_walker(Enemy *e, Enemy *enemies, int num_enemies, int idx,
-                                fixed player_x, fixed player_y, const EnemyTuning *tuning) {
+// ---- Exvoto & Monaguillo praying / emerging / melee (DESIGN.md 6.10) -------------------------------------
+// The pose of a praying Exvoto is a character slot of its own (player_sprite.h): the enemy swaps char_id.
+
+// Pose slot and first frame of a praying Exvoto: on its feet or on its knees.
+void enemy_exvoto_start_praying(Enemy *e, int kneel, int dir) {
+    e->state = ENEMY_STATE_PRAY;
+    e->kneel = kneel != 0;
+    e->char_id = e->kneel ? CHAR_EXVOTO_PRAY_KNEEL : CHAR_EXVOTO_PRAY_STAND;
+    e->dir = dir;
+    e->frame = 0;
+    e->anim_timer = 0;
+    e->state_timer = 0;
+}
+
+// Wakes one praying Exvoto: the kneeling ones rise first (still), the standing ones walk at once.
+static void exvoto_wake_one(Enemy *e) {
+    e->anim_timer = 0;
+    e->frame = 0;
+    if (e->kneel) {
+        e->state = ENEMY_STATE_RISE;
+        e->state_timer = EXVOTO_RISE_FRAMES;
+        e->char_id = CHAR_EXVOTO_STAND_UP;
+    } else {
+        e->state = ENEMY_STATE_CHASE;
+        e->char_id = CHAR_EXVOTO;
+    }
+}
+
+// Wakes enemies[idx] and, in chain, every praying Exvoto within EXVOTO_CHAIN_WAKE_RADIUS (ground metric)
+// of one that has just woken, so a procession starts at once. Runs only on a wake event; the work list
+// is bounded by the pool.
+static void exvoto_wake_chain(Enemy *enemies, int num_enemies, int idx) {
+    uint8_t queue[MAX_GAMEPLAY_ENEMIES];
+    int head = 0, tail = 0;
+    if (num_enemies > MAX_GAMEPLAY_ENEMIES) num_enemies = MAX_GAMEPLAY_ENEMIES;
+    exvoto_wake_one(&enemies[idx]);
+    queue[tail++] = (uint8_t)idx;
+    while (head < tail) {
+        const Enemy *w = &enemies[queue[head++]];
+        for (int j = 0; j < num_enemies; j++) {
+            Enemy *p = &enemies[j];
+            if (!p->active || p->type != ENEMY_TYPE_EXVOTO || p->state != ENEMY_STATE_PRAY) continue;
+            int dx = TO_INT(p->x - w->x);
+            int dy = TO_INT(p->y - w->y);
+            if (dx * dx + GROUND_DY2(dy) <= EXVOTO_CHAIN_WAKE_RADIUS * EXVOTO_CHAIN_WAKE_RADIUS) {
+                exvoto_wake_one(p);
+                queue[tail++] = (uint8_t)j;       // each Exvoto is queued once: it leaves PRAY when woken
+            }
+        }
+    }
+}
+
+// Exvoto & Monaguillo (DESIGN.md 6.10): relentless melee pressure, no telegraph.
+// Exvoto: PRAY -> (RISE) -> CHASE <-> ATTACK; * -> DEAD.
+// Monaguillo: EMERGE (~0.5 s, invulnerable, still) -> CHASE <-> ATTACK; * -> DEAD.
+static void update_exvoto(Enemy *e, Enemy *enemies, int num_enemies, int idx,
+                          fixed player_x, fixed player_y, const EnemyTuning *tuning) {
     if (e->state == ENEMY_STATE_EMERGE) {
         e->dir = dir_from_vector(player_x - e->x, player_y - e->y);
         if (--e->state_timer <= 0) {
@@ -244,6 +299,36 @@ static void update_melee_walker(Enemy *e, Enemy *enemies, int num_enemies, int i
     int ground_dist_sq = dx * dx + GROUND_DY2(dy);
 
     switch (e->state) {
+        case ENEMY_STATE_PRAY: {
+            if (ground_dist_sq <= EXVOTO_WAKE_RADIUS * EXVOTO_WAKE_RADIUS || e->hit_timer > 0) {
+                exvoto_wake_chain(enemies, num_enemies, idx);
+                break;
+            }
+            // Loop of the pose clip, no movement.
+            int anim_period = g_characters[e->char_id].anim_period;
+            if (++e->anim_timer >= anim_period) {
+                e->anim_timer = 0;
+                e->frame = (e->frame + 1) % PLAYER_NUM_FRAMES;
+            }
+            break;
+        }
+
+        case ENEMY_STATE_RISE: {
+            // stand_up clip: 8 frames over EXVOTO_RISE_FRAMES, still. Ends on the first walk frame.
+            int anim_period = g_characters[e->char_id].anim_period;
+            if (++e->anim_timer >= anim_period) {
+                e->anim_timer = 0;
+                if (e->frame < PLAYER_NUM_FRAMES - 1) e->frame++;
+            }
+            if (--e->state_timer <= 0) {
+                e->state = ENEMY_STATE_CHASE;
+                e->char_id = CHAR_EXVOTO;
+                e->frame = 0;
+                e->anim_timer = 0;
+            }
+            break;
+        }
+
         case ENEMY_STATE_ATTACK: {
             e->dir = dir_from_vector(player_x - e->x, player_y - e->y);
             if (--e->state_timer <= 0) e->state = ENEMY_STATE_CHASE;
@@ -791,6 +876,8 @@ ITCM_CODE void enemy_ai_update(Enemy *enemies, int num_enemies, fixed player_x, 
                 e->state = ENEMY_STATE_STUNNED;      // interrupted lunge: dazed after the stagger
                 e->state_timer = CHARGER_STUN_HIT_FRAMES;
             }
+            if (e->type == ENEMY_TYPE_EXVOTO && e->state == ENEMY_STATE_PRAY)
+                exvoto_wake_chain(enemies, num_enemies, i);   // hurt but alive: it wakes (and the others with it)
             e->stun_timer--;
             move_with_slide(&e->x, &e->y, e->knock_vx, e->knock_vy);
             e->knock_vx = (e->knock_vx * 224) >> 8;
@@ -816,10 +903,10 @@ ITCM_CODE void enemy_ai_update(Enemy *enemies, int num_enemies, fixed player_x, 
             }
         }
 
-        if (e->type == ENEMY_TYPE_SKELETON) {
-            update_melee_walker(e, enemies, num_enemies, i, player_x, player_y, &g_enemy_tuning[ENEMY_TYPE_SKELETON]);
+        if (e->type == ENEMY_TYPE_EXVOTO) {
+            update_exvoto(e, enemies, num_enemies, i, player_x, player_y, &g_enemy_tuning[ENEMY_TYPE_EXVOTO]);
         } else if (e->type == ENEMY_TYPE_MONAGUILLO) {
-            update_melee_walker(e, enemies, num_enemies, i, player_x, player_y, &g_enemy_tuning[ENEMY_TYPE_MONAGUILLO]);
+            update_exvoto(e, enemies, num_enemies, i, player_x, player_y, &g_enemy_tuning[ENEMY_TYPE_MONAGUILLO]);
         } else if (e->type == ENEMY_TYPE_ABANDERADO) {
             update_abanderado(e, enemies, num_enemies, i, player_x, player_y);
         } else if (e->type == ENEMY_TYPE_CHARGER) {

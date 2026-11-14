@@ -21,7 +21,10 @@
 #include "godrays.h"
 #include "hwshadow.h"
 #include "pickups.h"
+#include "exvoto_melt.h"
 #include "sfx.h"
+#include "hud_icons_gfx.h"
+#include "menu.h"
 #include <string.h>
 #include <time.h>
 
@@ -131,6 +134,8 @@ typedef struct {
 volatile NavigationState g_nav_state;
 static uint32_t s_blocked_moves = 0;
 static uint32_t s_keys_down_latch = 0;
+static int s_run_started = 0;
+static int s_menu_prev_touch = 0;
 
 typedef struct {
     uint32_t calls, runs, pixels, ticks, frame_index;
@@ -169,7 +174,8 @@ static uint32_t s_death_chunk_seed;
 
 typedef struct {
     int depth;     // ground world Y in pixels
-    int ref;       // -1 = player, -2 - i = enemy i, -2 - MAX_ENEMIES - i = death chunk i
+    int ref;       // -1 = player, -2 - i = enemy i, -2 - MAX_ENEMIES - i = death chunk i,
+                   // -2 - MAX_ENEMIES - MAX_DEATH_CHUNKS - i = sinking Exvoto i (exvoto_melt.h)
     int cx;        // world pixel centre X
     int cy;        // world pixel centre Y (ground point)
 } DrawItem;
@@ -849,6 +855,26 @@ static void draw_enemy(uint16_t *buffer, const Enemy *e, int cam_x, int cam_y) {
         draw_hit_spark(buffer, px, py - (sh * 3) / 5, cam_x, cam_y, e->hit_timer);
 }
 
+// A dying Exvoto (DESIGN.md 6.10): the sprite it died with sinks into the floor, feet first. The lowest
+// rows are cut as it goes down and the rest moves down with them, so it ends flush with the puddle.
+static void draw_melt(uint16_t *buffer, const ExvotoMelt *m, int cam_x, int cam_y) {
+    int px = player_screen_x(m->x, m->y);
+    int py = player_screen_y(m->x, m->y);
+    const uint8_t *b = g_character_frame_bounds[m->char_id][m->dir][m->frame];
+    int bw = b[2];
+    int bh = b[3];
+    if (bw == 0 || bh == 0) return;
+    int hidden = exvoto_melt_hidden_rows(m, bh);
+    int visible = bh - hidden;
+    if (visible <= 0) return;
+    int sw = g_characters[m->char_id].sprite_w;
+    blit_stride(buffer, character_frame_ptr(m->char_id, m->dir, m->frame),
+                character_runs_ptr(m->char_id, m->dir, m->frame),
+                sprite_pitch(bw), bw, visible,
+                px - sw / 2 + b[0], py - s_char_ground_anchor[m->char_id][m->dir] + b[1] + hidden,
+                cam_x, cam_y, s_draw_item_depth);
+}
+
 static void bone_effect_pixel(uint16_t *buffer, int x, int y, int cam_x, int cam_y, uint16_t color) {
     int sx = x - cam_x, sy = y - cam_y;
     if (sx >= 0 && sx < SCREEN_W && sy >= 0 && sy < SCREEN_H &&
@@ -1002,7 +1028,7 @@ ITCM_CODE static void render_screen(uint16_t *buffer, DirtySpan *spans, int cam_
 #if !HW_SHADOWS
     (void)sub_screen;
 #endif
-    DrawItem items[MAX_DRAW_ITEMS + MAX_ENEMIES + MAX_DEATH_CHUNKS + 1];
+    DrawItem items[MAX_DRAW_ITEMS + MAX_ENEMIES + MAX_DEATH_CHUNKS + EXVOTO_MELT_MAX + 1];
     int count = 0;
 
     // The static floor is in BG1; this buffer contains only dynamic layers.
@@ -1062,6 +1088,22 @@ ITCM_CODE static void render_screen(uint16_t *buffer, DirtySpan *spans, int cam_
         }
     }
 
+    for (int i = 0; i < EXVOTO_MELT_MAX; i++) {
+        const ExvotoMelt *m = exvoto_melt_sinking(i);
+        if (!m) continue;
+        int mx = player_screen_x(m->x, m->y);
+        int my = player_screen_y(m->x, m->y);
+        if (mx + PLAYER_SPRITE_W / 2 < cam_x || mx - PLAYER_SPRITE_W / 2 > cam_x + SCREEN_W ||
+            my < cam_y || my - PLAYER_SPRITE_H > cam_y + SCREEN_H) continue;
+        if (count < MAX_DRAW_ITEMS + MAX_ENEMIES + MAX_DEATH_CHUNKS + EXVOTO_MELT_MAX) {
+            items[count].depth = my;
+            items[count].ref = -2 - MAX_ENEMIES - MAX_DEATH_CHUNKS - i;
+            items[count].cx = mx;
+            items[count].cy = my;
+            count++;
+        }
+    }
+
     // The static FBX bake is now a hardware BG; keep this bitmap layer transparent
     // (0x0000 = transparent in 16-bit direct bitmap mode) and render only dynamic
     // actors, shadows, particles, and the HUD into it.
@@ -1072,9 +1114,22 @@ ITCM_CODE static void render_screen(uint16_t *buffer, DirtySpan *spans, int cam_
     if (out_floor) *out_floor = cpuGetTiming() - floor_start_ticks;
     PP_ADD(PP_CLEAR, pp_clear);
 
-    // 0) Ground decals of the weapons and boss puddles: under everything.
+    if (!s_run_started) {
+#if HW_SHADOWS
+        hwshadow_begin(sub_screen);
+#endif
+        if (out_shadow) *out_shadow = 0;
+        if (out_blit) *out_blit = 0;
+        return;
+    }
+
+    // 0) Ground decals of the weapons, Exvoto wax puddles, and boss puddles: under everything.
     weapons_render_floor(buffer, cam_x, cam_y);
     enemy_puddles_render(buffer, cam_x, cam_y);
+    {
+        GroundTarget melt_ground = { buffer, cam_x, cam_y };
+        exvoto_melt_render_floor(&melt_ground);       // wax puddles of the dead Exvotos
+    }
 
     // 1) Actor shadows (player & enemies, animated per frame). Hardware: one OBJ-window list per
     // screen, darkened by the engine (hwshadow.c). Software: darken the page pixel by pixel.
@@ -1125,6 +1180,9 @@ ITCM_CODE static void render_screen(uint16_t *buffer, DirtySpan *spans, int cam_
         CRASH_MARK(CL_DRAW_ITEM, sp, items[i].depth);
         if (sp == -1) {
             draw_player(buffer, cam_x, cam_y);
+        } else if (sp <= -2 - MAX_ENEMIES - MAX_DEATH_CHUNKS) {
+            const ExvotoMelt *melt = exvoto_melt_sinking(-2 - MAX_ENEMIES - MAX_DEATH_CHUNKS - sp);
+            if (melt) draw_melt(buffer, melt, cam_x, cam_y);
         } else if (sp <= -2 - MAX_ENEMIES) {
             int chunk_idx = -2 - MAX_ENEMIES - sp;
             draw_death_chunk(buffer, &s_death_chunks[chunk_idx], cam_x, cam_y);
@@ -1314,6 +1372,17 @@ static void hud_square(uint16_t *buffer, int x, int y, int size, uint16_t fill, 
     }
 }
 
+// Opaque pixels of a HUD icon (BIT(15) set), clipped to the screen; transparent ones are skipped.
+static void hud_icon(uint16_t *buffer, int x, int y, const uint16_t *icon) {
+    for (int gy = 0; gy < HUD_ICON_H; gy++) {
+        dirty_row(y + gy, x, x + HUD_ICON_W);
+        for (int gx = 0; gx < HUD_ICON_W; gx++) {
+            uint16_t c = icon[gy * HUD_ICON_W + gx];
+            if (c) hud_px(buffer, x + gx, y + gy, c);
+        }
+    }
+}
+
 static void draw_run_hud(uint16_t *buffer) {
     const uint16_t ink = RGB15(31, 31, 31) | BIT(15);
     const uint16_t dark = RGB15(5, 1, 1) | BIT(15);
@@ -1336,6 +1405,14 @@ static void draw_run_hud(uint16_t *buffer) {
         hud_text(buffer, 6, SCREEN_H - 32, line, ink);
         snprintf(line, sizeof(line), "TIEMPO %lu:%02lu", (unsigned long)(seconds / 60u), (unsigned long)(seconds % 60u));
         hud_text(buffer, 6, SCREEN_H - 16, line, ink);
+
+        // Sacred Hearts: one per max hit point, right-aligned at the top of the bottom screen.
+        const int heart_gap = 2;
+        int max_hp = g_player_state.max_hp;
+        int hx0 = SCREEN_W - 6 - max_hp * (HUD_ICON_W + heart_gap) + heart_gap;
+        for (int i = 0; i < max_hp; i++)
+            hud_icon(buffer, hx0 + i * (HUD_ICON_W + heart_gap), 6,
+                     i < g_player_state.hp ? g_hud_heart_full : g_hud_heart_empty);
         return;
     }
 
@@ -1395,6 +1472,33 @@ static void present_vblank_begin(void) {
 // + floor-only darkening, with the tide taking over from its first line (tide_window_top).
 // Software shadows: the tide module alone, as before.
 static void present_screen_effects(int top_cam_y, int bot_tide_cam_y) {
+    if (menu_is_open()) {
+#if HW_SHADOWS
+        if (g_hw_shadows_on) {
+            hwshadow_screen_regs(1, (s_run_started && s_strip_mode) ? tide_window_top(top_cam_y) : SCREEN_H);
+            hwshadow_screen_regs(0, SCREEN_H);
+        } else {
+            hwshadow_regs_off();
+            if (s_run_started && s_strip_mode) {
+                tide_render_window(1, top_cam_y);
+            } else {
+                REG_BLDCNT_SUB = 0;
+                REG_DISPCNT_SUB &= ~DISPLAY_WIN0_ON;
+            }
+        }
+#else
+        if (s_run_started && s_strip_mode) {
+            tide_render_window(1, top_cam_y);
+        } else {
+            REG_BLDCNT_SUB = 0;
+            REG_DISPCNT_SUB &= ~DISPLAY_WIN0_ON;
+        }
+#endif
+        REG_DISPCNT &= ~(DISPLAY_WIN0_ON | DISPLAY_SPR_WIN_ON);
+        REG_BLDCNT = BIT(1) | (3 << 6);
+        REG_BLDY = 9;
+        return;
+    }
 #if HW_SHADOWS
     if (g_hw_shadows_on) {
         hwshadow_screen_regs(1, s_strip_mode ? tide_window_top(top_cam_y) : SCREEN_H);
@@ -1406,6 +1510,9 @@ static void present_screen_effects(int top_cam_y, int bot_tide_cam_y) {
     if (s_strip_mode) {
         tide_render_window(1, top_cam_y);
         tide_render_window(0, bot_tide_cam_y);
+    } else {
+        REG_BLDCNT = 0;
+        REG_BLDY = 0;
     }
 }
 
@@ -1538,7 +1645,9 @@ static void death_chunks_frame_begin(void) {
 static void on_enemy_death(const Enemy *e, fixed hit_vx, fixed hit_vy) {
     CRASH_MARK(CL_DEATH_CHUNKS, e->char_id, e->dir);
     DeathSpawn spawn = { e->x, e->y, hit_vx, hit_vy, e->char_id, e->dir, e->frame };
-    if (s_death_spawn_budget > 0) {
+    if (e->type == ENEMY_TYPE_EXVOTO) {
+        exvoto_melt_spawn(e);                 // wax: it melts instead of breaking into chunks
+    } else if (s_death_spawn_budget > 0) {
         s_death_spawn_budget--;
         death_chunks_spawn(&spawn);
     } else if (s_pending_count < MAX_PENDING_DEATHS) {
@@ -1575,6 +1684,7 @@ static void weapons_and_effects_update(void) {
     grenade_set_player_pos(s_player.x, s_player.y);
     weapons_update(g_enemies, MAX_ENEMIES);
     death_chunks_update();
+    exvoto_melt_update();
 }
 
 static void strip_shift_world_y(int dy_px) {
@@ -1586,6 +1696,7 @@ static void strip_shift_world_y(int dy_px) {
         if (s_death_chunks[i].active) s_death_chunks[i].y += shift;
     for (int i = 0; i < s_pending_count; i++)
         s_pending_deaths[(s_pending_head + i) & (MAX_PENDING_DEATHS - 1)].y += shift;
+    exvoto_melt_shift_y(dy_px);
     s_cam_y += dy_px;
     grenade_shift_y(dy_px);
     weapons_shift_y(dy_px);
@@ -1635,13 +1746,15 @@ static void enemies_update(void) {
 // Strip mode (DESIGN.md 6.0): the horde from above replaces the v0.2 packs and modifiers.
 // Runs in the enemies slot of the frame so PERF_PROFILE charges it to `en`.
 static void strip_enemies_update(void) {
-#if CATHEDRAL_PLAYGROUND
+#if CATHEDRAL_PLAYGROUND && CATHEDRAL_AI == 0
     // Fixed sandbox dummies replace the procedural horde in the review ROM.
     return;
 #endif
     nav_set_goal(TO_INT(s_player.x), TO_INT(s_player.y));
     nav_update(NAV_BUDGET_PER_FRAME);
+#if !CATHEDRAL_PLAYGROUND || CATHEDRAL_AI == 2
     horde_update(g_enemies, MAX_ENEMIES, s_player.y, s_cam_y - SCREEN_H, tide_y());
+#endif
     enemy_ai_set_view(s_cam_x, s_cam_y - SCREEN_H, s_cam_y + SCREEN_H);
     enemy_ai_update(g_enemies, MAX_ENEMIES, s_player.x, s_player.y);
     pickups_update(s_player.x, s_player.y, tide_y(), &g_player_state);
@@ -1795,10 +1908,12 @@ static void player_update(uint32_t keys, uint32_t keys_down) {
         }
     }
 
-    // L is the only button of the test: it switches weapon (and cancels a sniper aim).
+#if TEST_WEAPON_CYCLE
+    // Test variants only: L switches weapon (and cancels a sniper aim). The demo ROM has just the laser.
     if (keys_down & KEY_L) {
         weapons_cycle(&g_player_state);
     }
+#endif
     // Playground ROM: R puts the parked dummies back (no-op in every other build).
     if (keys_down & KEY_R) sandbox_respawn();
     // DESIGN.md 4.9 (debug): SELECT cycles the shotgun and grenade effects style A/B/C (the sniper is always C).
@@ -1987,6 +2102,7 @@ static void arena_restart(void) {
     camera_init();                   // the fade-in shows the new arena before the player moves
     g_hitstop_frames = 0;
     memset(s_death_chunks, 0, sizeof(s_death_chunks));
+    exvoto_melt_reset();
     s_pending_head = s_pending_count = 0;
     if (s_strip_mode) memset(g_enemies, 0, sizeof(g_enemies));
     else encounters_spawn(&g_encounter_mgr, g_enemies, MAX_ENEMIES);
@@ -2127,6 +2243,7 @@ int main(void) {
 #endif
 
     init_char_sprite_data();
+    exvoto_melt_reset();
     sfx_init();
     CRASH_INIT();
     PP_INIT();
@@ -2154,10 +2271,18 @@ int main(void) {
     init_bg_tile_cache(&s_bot_bg_tile_cache, BG_TILE_CACHE_CAPACITY, s_bot_bg_tiles_vram);
     update_screen_hardware_bg(1, s_top_map_ptr, s_cam_x, s_cam_y - SCREEN_H);
 
+#if !(SANDBOX || STRESS_TEST)
+    menu_open_title();
+    sfx_stop_bgm();
+#else
+    s_run_started = 1;
+#endif
+
     render_screen(s_top_page, s_dirty_top, s_cam_x, s_cam_y - SCREEN_H, 1, NULL, NULL, NULL);
     render_screen(bot_page_ptr(s_bot_active_page), s_dirty[s_bot_active_page == 24], s_cam_x, s_cam_y, 0, NULL, NULL, NULL);
-    draw_run_hud(bot_page_ptr(s_bot_active_page));
-    draw_fps_hud(bot_page_ptr(s_bot_active_page));
+    if (s_run_started) draw_run_hud(bot_page_ptr(s_bot_active_page));
+    if (menu_is_open()) menu_render_bottom(bot_page_ptr(s_bot_active_page));
+    if (g_perf.show_hud != 0) draw_fps_hud(bot_page_ptr(s_bot_active_page));
     update_screen_hardware_bg(0, s_bot_map_ptr, s_cam_x, s_cam_y);
 
     while (1) {
@@ -2171,19 +2296,45 @@ int main(void) {
         touchPosition touch;
         touchRead(&touch);
         int touch_down = (keys_held & KEY_TOUCH) && touch.px < SCREEN_W && touch.py < SCREEN_H;
-
-        if (keys_down & KEY_START) {
-            g_perf.show_hud = !g_perf.show_hud;
-        }
+        int menu_touch_pressed = touch_down && !s_menu_prev_touch;
+        s_menu_prev_touch = touch_down;
+        static int s_menu_ignore_held_touch = 0;
 
         uint32_t t0 = cpuGetTiming();
         sfx_frame_begin(s_cam_x);
-        touch_track(touch_down, touch.px, touch.py);
-        s_keys_down_latch |= keys_down;
+        if (menu_is_open()) {
+            MenuAction act = menu_update(keys_down, menu_touch_pressed, touch.px, touch.py);
+            if (act == MENU_ACT_START_NEW) {
+                menu_close();
+                s_run_started = 1;
+                arena_restart();
+                sfx_start_bgm();
+                s_keys_down_latch = 0;
+                s_menu_ignore_held_touch = touch_down;
+                touch_track(0, 0, 0);
+            } else if (act == MENU_ACT_RESUME) {
+                menu_close();
+                sfx_set_bgm_paused(0);
+                s_keys_down_latch = 0;
+                s_menu_ignore_held_touch = touch_down;
+                touch_track(0, 0, 0);
+            }
+        } else {
+            if (!touch_down) s_menu_ignore_held_touch = 0;
+            touch_track(s_menu_ignore_held_touch ? 0 : touch_down, touch.px, touch.py);
+            s_keys_down_latch |= keys_down;
+            if ((keys_down & KEY_START) && !g_player_state.is_dead && s_transition == TRANSITION_NONE) {
+                menu_open_pause();
+                sfx_set_bgm_paused(1);
+                s_keys_down_latch = 0;
+                touch_track(0, 0, 0);
+            }
+        }
         transition_update();
         int simulate = g_hitstop_frames <= 0 && s_transition == TRANSITION_NONE &&
+                       !menu_is_open() &&
                        (!s_strip_mode || !g_player_state.is_dead);
-        if (!simulate) g_hitstop_frames--;
+        if (!menu_is_open() && !simulate) g_hitstop_frames--;
         if (simulate) {
             death_chunks_frame_begin();
             sandbox_update(g_enemies, MAX_ENEMIES, &s_player.x, &s_player.y);
@@ -2235,14 +2386,19 @@ int main(void) {
         uint32_t t2 = cpuGetTiming();
         CRASH_MARK(CL_RENDER_START, 0, 0);
         render_screen(bot_page_ptr(s_bot_back_page), s_dirty[s_bot_back_page == 24], view_x, view_y, 0, &bot_floor, &bot_sh, &bot_bl);
-        if (s_strip_mode) {
+        if (s_run_started && s_strip_mode) {
             g_dirty_cur = s_dirty[s_bot_back_page == 24];
             pickups_render(bot_page_ptr(s_bot_back_page), view_x, view_y);
             tide_render_border(bot_page_ptr(s_bot_back_page), view_y);
         }
         CRASH_MARK(CL_RENDER_DONE, 0, 0);
         PP_T0(pp_hud);
-        draw_run_hud(bot_page_ptr(s_bot_back_page));
+        if (s_run_started) {
+            draw_run_hud(bot_page_ptr(s_bot_back_page));
+        }
+        if (menu_is_open()) {
+            menu_render_bottom(bot_page_ptr(s_bot_back_page));
+        }
         if (g_perf.show_hud != 0) {
             draw_fps_hud(bot_page_ptr(s_bot_back_page));
         }
@@ -2250,7 +2406,7 @@ int main(void) {
         uint32_t bot_ticks = cpuGetTiming() - t2;
 
 #if defined(GODRAYS_PROTO) && GODRAYS_PROTO
-        godrays_update(view_x, top_cam_y, view_y);
+        if (!menu_is_open()) godrays_update(view_x, top_cam_y, view_y);
 #endif
         uint32_t pre_vwait_cpu = cpuGetTiming() - frame_start_ticks;
         int vcount_done = REG_VCOUNT;
@@ -2264,7 +2420,7 @@ int main(void) {
         present_screen_effects(top_cam_y, (s_strip_mode && g_player_state.is_dead) ? TO_INT(tide_y()) - SCREEN_H : view_y);
         uint32_t t_top = cpuGetTiming();
         render_screen(s_top_page, s_dirty_top, view_x, view_y - SCREEN_H, 1, &top_floor, &top_sh, &top_bl);
-        if (s_strip_mode) {
+        if (s_run_started && s_strip_mode) {
             g_dirty_cur = s_dirty_top;
             pickups_render(s_top_page, view_x, view_y - SCREEN_H);
             tide_render_border(s_top_page, view_y - SCREEN_H);
