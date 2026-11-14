@@ -17,6 +17,8 @@ typedef enum {
     ENEMY_TYPE_CHARGER,
     ENEMY_TYPE_SHOOTER,
     ENEMY_TYPE_SKELETON,    // 0.3.1: slow melee mass (the old v0.3 charger AI); the new charger lunges
+    ENEMY_TYPE_ABANDERADO,  // Boss (minimal v1): patrols, points banner, summons cream puddles + monaguillos
+    ENEMY_TYPE_MONAGUILLO,  // Exvoto variant summoned by Abanderado: 1-hit, slow prayer-walk, emerges from puddle
     NUM_ENEMY_TYPES
 } EnemyType;
 
@@ -56,10 +58,21 @@ typedef struct {
 #define OJO_TARGET_HEIGHT 14       // [TUNABLE-PLACEHOLDER] px above the hero's feet the gaze and beam aim at (chest)
 #define OJO_BEAM_MAX_LEN 200       // [TUNABLE-PLACEHOLDER] ground px; also the bound of the beam and band draw loops
 
+// El Abanderado (jefe, version minima, DESIGN.md 6.10):
+#define ABANDERADO_SIGHT_RANGE 160       // [TUNABLE-PLACEHOLDER] ground px: ~1 screen
+#define ABANDERADO_SIGHT_MARGIN 24       // [TUNABLE-PLACEHOLDER] hysteresis while pointing
+#define ABANDERADO_LOSE_SIGHT_FRAMES 120 // [TUNABLE-PLACEHOLDER] 2 s out of sight before returning to patrol
+#define ABANDERADO_SUMMON_FRAMES 180     // [TUNABLE-PLACEHOLDER] ~3 s between cream puddles
+#define ABANDERADO_SPAWN_FRAMES 7200     // [TUNABLE-PLACEHOLDER] 2:00 (at 60 FPS) first spawn and respawn after death
+#define ABANDERADO_MAX_MONAGUILLOS 8     // [TUNABLE-PLACEHOLDER] cap of live monaguillos at once
+#define MONAGUILLO_EMERGE_FRAMES 30      // [TUNABLE-PLACEHOLDER] ~0.5 s emerging from puddle (invulnerable, still)
+
 // The sprite of each enemy type: the only place that maps tiers to models.
 static inline int enemy_type_char_id(EnemyType type) {
     if (type == ENEMY_TYPE_SHOOTER) return CHAR_OJO;
     if (type == ENEMY_TYPE_SKELETON) return CHAR_SKELETON;
+    if (type == ENEMY_TYPE_ABANDERADO) return CHAR_ABANDERADO;
+    if (type == ENEMY_TYPE_MONAGUILLO) return CHAR_MONAGUILLO;
     return CHAR_CHARGER;
 }
 
@@ -95,6 +108,8 @@ typedef enum {
     ENEMY_STATE_LOCK,         // Ojo: the line is frozen where the hero was; the shot falls when the timer runs out
     ENEMY_STATE_SENTENCE,     // Ojo: the beam from the mouth along the locked line (one hit)
     ENEMY_STATE_COOLDOWN,
+    ENEMY_STATE_POINT,        // Abanderado: stopped, head up, staff tilted forward, summoning puddles
+    ENEMY_STATE_EMERGE,       // Monaguillo: emerging from a cream puddle (~0.5 s, invulnerable, no damage/move)
     ENEMY_STATE_DEAD,
     ENEMY_STATE_DORMANT       // v0.2: standing still in its pack until the pack wakes (DESIGN.md 5)
 } EnemyState;
@@ -159,6 +174,25 @@ static inline int ojo_clip_frame(const struct Enemy *e, int clip) {
     return e->frame;
 }
 
+// Abanderado sprite clips: walk (CHAR_ABANDERADO slot) or point (head up + staff tilted forward).
+#define CLIP_ABANDERADO_WALK 0
+#define CLIP_ABANDERADO_POINT 1
+#define ABANDERADO_POINT_PERIOD 2   // [TUNABLE-PLACEHOLDER] game frames per transition frame (16 frames total, holds last)
+
+static inline int abanderado_clip(const struct Enemy *e) {
+    if (e->char_id != CHAR_ABANDERADO) return CLIP_ABANDERADO_WALK;
+    if (e->state == ENEMY_STATE_POINT) return CLIP_ABANDERADO_POINT;
+    return CLIP_ABANDERADO_WALK;
+}
+
+static inline int abanderado_clip_frame(const struct Enemy *e, int clip) {
+    if (clip == CLIP_ABANDERADO_POINT) {
+        int f = (e->gesture > 0 ? e->gesture - 1 : 0) / ABANDERADO_POINT_PERIOD;
+        return f < ABANDERADO_POINT_NUM_FRAMES ? f : ABANDERADO_POINT_NUM_FRAMES - 1;
+    }
+    return e->frame;
+}
+
 // Applies damage to an enemy. On a kill it marks the enemy dead, records the kill
 // with the encounter manager and notifies the death hook.
 void enemy_hit(Enemy *e, int damage, fixed hit_vx, fixed hit_vy);
@@ -167,6 +201,12 @@ void enemy_hit(Enemy *e, int damage, fixed hit_vx, fixed hit_vy);
 // The renderer owns the visuals; gameplay code never depends on it directly.
 typedef void (*EnemyDeathHook)(const Enemy *e, fixed hit_vx, fixed hit_vy);
 void enemy_set_death_hook(EnemyDeathHook hook);
+
+// Cream puddles summoned by El Abanderado (DESIGN.md 6.10).
+void enemy_puddles_init(void);
+void enemy_puddles_shift_y(int dy_px);
+void enemy_puddles_update(void);
+void enemy_puddles_render(uint16_t *buffer, int cam_x, int cam_y);
 
 // ---------------------------------------------------------------------------
 // 3. Player Stats (DESIGN.md 4.2: a handful of hits)

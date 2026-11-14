@@ -1,6 +1,7 @@
 #include "enemy_ai.h"
 #include "horde.h"
 #include "enemy_laser.h"
+#include "groundfx.h"
 #include "los.h"
 #include "navfield.h"
 #include "player_sprite.h"
@@ -216,11 +217,18 @@ static void refresh_view(Enemy *e, int idx, int wx, int wy, int px, int py, int 
     if (clear) e->has_los |= VIEW_ENGAGE;
 }
 
-// Skeleton (DESIGN.md 6.9.1): the 0.3 charger AI, relentless melee pressure, no telegraph. FSM:
-// CHASE -> ATTACK(cooldown) -> CHASE; * -> DEAD. Always active; no detection states.
-static void update_skeleton(Enemy *e, Enemy *enemies, int num_enemies, int idx,
-                            fixed player_x, fixed player_y) {
-    const EnemyTuning *tuning = &g_enemy_tuning[ENEMY_TYPE_SKELETON];
+// Skeleton & Monaguillo (DESIGN.md 6.9.1 / 6.10): relentless melee pressure.
+// Monaguillo starts in EMERGE (~0.5 s, invulnerable, still) then runs the same CHASE <-> ATTACK loop.
+static void update_melee_walker(Enemy *e, Enemy *enemies, int num_enemies, int idx,
+                                fixed player_x, fixed player_y, const EnemyTuning *tuning) {
+    if (e->state == ENEMY_STATE_EMERGE) {
+        e->dir = dir_from_vector(player_x - e->x, player_y - e->y);
+        if (--e->state_timer <= 0) {
+            e->state = ENEMY_STATE_CHASE;
+            e->state_timer = 0;
+        }
+        return;
+    }
 
     if (g_player_state.is_dead) {
         update_animation(e, 0);
@@ -548,10 +556,219 @@ static void update_shooter(Enemy *e, Enemy *enemies, int num_enemies, int idx,
     }
 }
 
+// ---------------------------------------------------------------------------
+// El Abanderado (jefe, version minima) & cream puddles (DESIGN.md 6.10)
+// ---------------------------------------------------------------------------
+#define MAX_PUDDLES 8
+#define PUDDLE_DURATION 36    // ~0.6 s total: opens, monaguillos emerge (30 f), dries out
+
+typedef struct {
+    int x, y;
+    int timer;
+    int active;
+} CreamPuddle;
+
+static CreamPuddle s_puddles[MAX_PUDDLES];
+
+void enemy_puddles_init(void) {
+    memset(s_puddles, 0, sizeof(s_puddles));
+}
+
+void enemy_puddles_shift_y(int dy_px) {
+    for (int i = 0; i < MAX_PUDDLES; i++)
+        if (s_puddles[i].active) s_puddles[i].y += dy_px;
+}
+
+void enemy_puddles_update(void) {
+    for (int i = 0; i < MAX_PUDDLES; i++) {
+        if (!s_puddles[i].active) continue;
+        if (++s_puddles[i].timer >= PUDDLE_DURATION) s_puddles[i].active = 0;
+    }
+}
+
+void enemy_puddles_render(uint16_t *buffer, int cam_x, int cam_y) {
+    GroundTarget g = { buffer, cam_x, cam_y };
+    const uint16_t cream_fill = RGB15(23, 21, 16); // desaturated warm cream
+    const uint16_t cream_edge = RGB15(17, 15, 11);
+    for (int i = 0; i < MAX_PUDDLES; i++) {
+        const CreamPuddle *p = &s_puddles[i];
+        if (!p->active) continue;
+        int t = p->timer;
+        int r = 14;
+        if (t < 8) r = 4 + ((t * 10) >> 3);
+        else if (t > PUDDLE_DURATION - 8) r = (((PUDDLE_DURATION - t) * 14) >> 3);
+        if (r < 2) continue;
+        gfx_ground_disc(&g, p->x, p->y, r, cream_fill, GFX_FILL_SOLID, 0);
+        gfx_ground_ring(&g, p->x, p->y, r, cream_edge, 0);
+    }
+}
+
+static int count_live_monaguillos(const Enemy *enemies, int num_enemies) {
+    int n = 0;
+    for (int i = 0; i < num_enemies; i++) {
+        if (enemies[i].active && enemies[i].type == ENEMY_TYPE_MONAGUILLO) n++;
+    }
+    return n;
+}
+
+static void spawn_monaguillo_at(Enemy *slot, int x, int y) {
+    memset(slot, 0, sizeof(*slot));
+    slot->x = TO_FIXED(x);
+    slot->y = TO_FIXED(y);
+    slot->type = ENEMY_TYPE_MONAGUILLO;
+    slot->char_id = CHAR_MONAGUILLO;
+    slot->hp = g_enemy_tuning[ENEMY_TYPE_MONAGUILLO].max_hp;
+    slot->max_hp = slot->hp;
+    slot->dir = DIR_SOUTH;
+    slot->active = 1;
+    slot->state = ENEMY_STATE_EMERGE;
+    slot->state_timer = MONAGUILLO_EMERGE_FRAMES;
+    slot->strafe_dir = (rng_next() & 1u) ? 1 : -1;
+    slot->pack = -1;
+}
+
+static void spawn_cream_puddle(Enemy *enemies, int num_enemies, int mx, int my) {
+    for (int i = 0; i < MAX_PUDDLES; i++) {
+        if (!s_puddles[i].active) {
+            s_puddles[i].x = mx;
+            s_puddles[i].y = my;
+            s_puddles[i].timer = 0;
+            s_puddles[i].active = 1;
+            break;
+        }
+    }
+    static const int8_t dx_off[2] = { -8, 8 };
+    int live = count_live_monaguillos(enemies, num_enemies);
+    for (int k = 0; k < 2 && live < ABANDERADO_MAX_MONAGUILLOS; k++) {
+        int sx = mx + dx_off[k];
+        int sy = my;
+        if (!position_is_free(TO_FIXED(sx), TO_FIXED(sy))) { sx = mx; sy = my; }
+        if (!position_is_free(TO_FIXED(sx), TO_FIXED(sy))) continue;
+        for (int i = 0; i < num_enemies; i++) {
+            if (!enemies[i].active) {
+                spawn_monaguillo_at(&enemies[i], sx, sy);
+                live++;
+                break;
+            }
+        }
+    }
+}
+
+static void pick_abanderado_patrol_target(Enemy *e, int px, int py) {
+    int min_x = s_view_valid ? s_view_l + ENEMY_AI_VIEW_MARGIN + 24 : px - 100;
+    int max_x = s_view_valid ? s_view_r - ENEMY_AI_VIEW_MARGIN - 24 : px + 100;
+    int min_y = s_view_valid ? s_view_t + ENEMY_AI_VIEW_MARGIN + 24 : py - 140;
+    int max_y = s_view_valid ? s_view_b - ENEMY_AI_VIEW_MARGIN - 24 : py + 40;
+    if (min_x > max_x) { min_x = px - 40; max_x = px + 40; }
+    if (min_y > max_y) { min_y = py - 60; max_y = py + 20; }
+    for (int attempt = 0; attempt < 8; attempt++) {
+        int tx = rng_range(min_x, max_x);
+        int ty = rng_range(min_y, max_y);
+        if (position_is_free(TO_FIXED(tx), TO_FIXED(ty))) {
+            e->aim_px = tx;
+            e->aim_py = ty;
+            e->state_timer = 150;
+            return;
+        }
+    }
+    e->aim_px = px;
+    e->aim_py = py - 48;
+    e->state_timer = 60;
+}
+
+static void update_abanderado(Enemy *e, Enemy *enemies, int num_enemies, int idx,
+                              fixed player_x, fixed player_y) {
+    const EnemyTuning *tuning = &g_enemy_tuning[ENEMY_TYPE_ABANDERADO];
+    (void)idx;
+    if (g_player_state.is_dead) {
+        update_animation(e, 0);
+        return;
+    }
+
+    int wx = TO_INT(e->x);
+    int wy = TO_INT(e->y);
+    int px = TO_INT(player_x);
+    int py = TO_INT(player_y);
+    int dx = px - wx;
+    int dy = py - wy;
+    int ground_dist_sq = dx * dx + GROUND_DY2(dy);
+    int sight_r = (e->state == ENEMY_STATE_POINT)
+        ? (ABANDERADO_SIGHT_RANGE + ABANDERADO_SIGHT_MARGIN)
+        : ABANDERADO_SIGHT_RANGE;
+    int in_sight = (ground_dist_sq <= sight_r * sight_r) && los_has_line_of_sight(wx, wy, px, py, 0);
+
+    if (e->state == ENEMY_STATE_POINT) {
+        e->dir = dir_from_vector(player_x - e->x, player_y - e->y);
+        if (e->gesture < ABANDERADO_POINT_NUM_FRAMES * ABANDERADO_POINT_PERIOD) e->gesture++;
+        if (in_sight) {
+            e->beam_mx = 0; // lose_sight_timer
+        } else if (++e->beam_mx >= ABANDERADO_LOSE_SIGHT_FRAMES) {
+            e->state = ENEMY_STATE_CHASE;
+            e->gesture = 0;
+            e->state_timer = 0;
+            return;
+        }
+        if (--e->beam_len <= 0) { // summon_timer
+            e->beam_len = ABANDERADO_SUMMON_FRAMES;
+            if (count_live_monaguillos(enemies, num_enemies) < ABANDERADO_MAX_MONAGUILLOS) {
+                int mx = (wx + px) >> 1;
+                int my = (wy + py) >> 1;
+                if (!position_is_free(TO_FIXED(mx), TO_FIXED(my))) {
+                    mx = div32(wx + px * 2, 3);
+                    my = div32(wy + py * 2, 3);
+                }
+                if (!position_is_free(TO_FIXED(mx), TO_FIXED(my))) {
+                    mx = wx;
+                    my = wy;
+                }
+                spawn_cream_puddle(enemies, num_enemies, mx, my);
+            }
+        }
+        return;
+    }
+
+    // Patrol state (ENEMY_STATE_CHASE)
+    e->state = ENEMY_STATE_CHASE;
+    e->gesture = 0;
+    if (in_sight) {
+        e->state = ENEMY_STATE_POINT;
+        e->gesture = 1;
+        e->beam_mx = 0;
+        if (e->beam_len <= 0 || e->beam_len > 30) e->beam_len = 30;
+        e->dir = dir_from_vector(player_x - e->x, player_y - e->y);
+        return;
+    }
+
+    int band_top = s_view_valid ? s_view_t + ENEMY_AI_VIEW_MARGIN : py - 180;
+    int band_bot = s_view_valid ? s_view_b - ENEMY_AI_VIEW_MARGIN : py + 80;
+    if (e->state_timer <= 0 || e->aim_py < band_top || e->aim_py > band_bot) {
+        pick_abanderado_patrol_target(e, px, py);
+    } else {
+        e->state_timer--;
+    }
+
+    int tdx = e->aim_px - wx;
+    int tdy = e->aim_py - wy;
+    uint32_t tdist = int_sqrt((uint32_t)(tdx * tdx + GROUND_DY2(tdy)));
+    if (tdist <= 12) {
+        e->state_timer = 0;
+        update_animation(e, 0);
+        return;
+    }
+    fixed spd = (wy > band_bot) ? (tuning->speed * 2) : tuning->speed;
+    fixed vx = (fixed)div32(tdx * (int32_t)spd, (int32_t)tdist);
+    fixed vy = (fixed)div32(tdy * (int32_t)spd, (int32_t)tdist);
+    int moved = move_with_slide(&e->x, &e->y, vx, vy);
+    if (!moved) e->state_timer = 0;
+    e->dir = dir_from_vector(TO_FIXED(tdx), TO_FIXED(tdy));
+    update_animation(e, moved);
+}
+
 ITCM_CODE void enemy_ai_update(Enemy *enemies, int num_enemies, fixed player_x, fixed player_y) {
     if (!enemies || num_enemies <= 0) return;
 
     s_ai_tick++;
+    enemy_puddles_update();
     if (!s_sep_ready) sep_init_table();
     sep_build_grid(enemies, num_enemies);
 
@@ -600,7 +817,11 @@ ITCM_CODE void enemy_ai_update(Enemy *enemies, int num_enemies, fixed player_x, 
         }
 
         if (e->type == ENEMY_TYPE_SKELETON) {
-            update_skeleton(e, enemies, num_enemies, i, player_x, player_y);
+            update_melee_walker(e, enemies, num_enemies, i, player_x, player_y, &g_enemy_tuning[ENEMY_TYPE_SKELETON]);
+        } else if (e->type == ENEMY_TYPE_MONAGUILLO) {
+            update_melee_walker(e, enemies, num_enemies, i, player_x, player_y, &g_enemy_tuning[ENEMY_TYPE_MONAGUILLO]);
+        } else if (e->type == ENEMY_TYPE_ABANDERADO) {
+            update_abanderado(e, enemies, num_enemies, i, player_x, player_y);
         } else if (e->type == ENEMY_TYPE_CHARGER) {
             update_charger(e, enemies, num_enemies, i, player_x, player_y);
         } else if (e->type == ENEMY_TYPE_SHOOTER) {

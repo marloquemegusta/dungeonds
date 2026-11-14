@@ -15,19 +15,22 @@
 #define CHARGER_TELEGRAPH_NUM_FRAMES 1
 #define OJO_LOOK_NUM_FRAMES 4       // breathing loop of the gaze (LOOK / CONDEMNED)
 #define OJO_SENTENCE_NUM_FRAMES 6   // head-raising gesture when the beam is released
+#define ABANDERADO_POINT_NUM_FRAMES 8 // head raised + staff tilted forward
 #define PLAYER_NUM_DIRS 8
 #define PLAYER_NUM_FRAMES 8
 
 // The ground origin row varies per character/direction: see g_character_ground_anchors.
 #define PLAYER_ANCHOR_X 20
 
-#define NUM_CHARACTERS 4
+#define NUM_CHARACTERS 6
 
 enum {
     CHAR_HERO = 0,
     CHAR_CHARGER = 1,
     CHAR_OJO = 2,       // El Ojo del Tribunal (ENEMY_TYPE_SHOOTER); the old necron assets are kept on disk but unused
-    CHAR_SKELETON = 3
+    CHAR_SKELETON = 3,
+    CHAR_ABANDERADO = 4,
+    CHAR_MONAGUILLO = 5
 };
 
 typedef struct {
@@ -119,6 +122,14 @@ extern const uint8_t g_skeleton_shadow_masks[];
 extern const uint32_t g_skeleton_shadow_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES];
 extern const uint8_t g_skeleton_shadow_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4];
 
+// Abanderado point clip (CHAR_ABANDERADO, 60x60, 8 dirs x 8 frames, cropped)
+extern const uint16_t g_abanderado_point_frames[];
+extern const uint32_t g_abanderado_point_frame_offsets[PLAYER_NUM_DIRS][ABANDERADO_POINT_NUM_FRAMES];
+extern const uint8_t g_abanderado_point_frame_bounds[PLAYER_NUM_DIRS][ABANDERADO_POINT_NUM_FRAMES][4];
+extern const uint8_t g_abanderado_point_shadow_masks[];
+extern const uint32_t g_abanderado_point_shadow_offsets[PLAYER_NUM_DIRS][ABANDERADO_POINT_NUM_FRAMES];
+extern const uint8_t g_abanderado_point_shadow_bounds[PLAYER_NUM_DIRS][ABANDERADO_POINT_NUM_FRAMES][4];
+
 // Frame pixels are stored row by row with this pitch (the cropped width rounded up to even), so
 // every row starts on a 32-bit boundary and the blit can read whole words.
 static inline int sprite_pitch(int bw) { return (bw + 1) & ~1; }
@@ -144,6 +155,12 @@ extern const uint16_t g_ojo_sentence_runs[];
 extern const uint32_t g_ojo_sentence_run_offsets[PLAYER_NUM_DIRS][OJO_SENTENCE_NUM_FRAMES];
 extern const uint16_t g_skeleton_runs[];
 extern const uint32_t g_skeleton_run_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES];
+extern const uint16_t g_abanderado_runs[];
+extern const uint32_t g_abanderado_run_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES];
+extern const uint16_t g_abanderado_point_runs[];
+extern const uint32_t g_abanderado_point_run_offsets[PLAYER_NUM_DIRS][ABANDERADO_POINT_NUM_FRAMES];
+extern const uint16_t g_monaguillo_runs[];
+extern const uint32_t g_monaguillo_run_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES];
 
 // Fast indexed lookups:
 extern const uint16_t * const g_character_frames[NUM_CHARACTERS];

@@ -40,7 +40,7 @@ class OjoGazeContractTest(unittest.TestCase):
         states = re.findall(r"ENEMY_STATE_(\w+)", enum)
         # The first seven keep their values: the charger scenarios read them by number.
         self.assertEqual(states, ["ATTACK", "POSITION", "TELEGRAPH", "CHARGE", "RECOVER", "STUNNED",
-                                  "TRACK", "LOCK", "SENTENCE", "COOLDOWN", "DEAD", "DORMANT"])
+                                  "TRACK", "LOCK", "SENTENCE", "COOLDOWN", "POINT", "EMERGE", "DEAD", "DORMANT"])
         for removed in ("LASER_AIM", "LASER_FIX", "LASER_FIRE", "shooter_aim", "laser_covers", "lasers_charging",
                         "shooter_reposition", "CONDEMNED", "ENEMY_STATE_LOOK", "g_condemn", "CondemnState",
                         "gaze_update_player", "s_gaze_seen"):

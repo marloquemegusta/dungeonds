@@ -765,8 +765,11 @@ static void draw_enemy(uint16_t *buffer, const Enemy *e, int cam_x, int cam_y) {
     int cf = e->frame & (CHARGER_CHARGE_NUM_FRAMES - 1);
     int oc = ojo_clip(e);                                  // Ojo: walk (CHAR_OJO slot), look loop or sentence gesture
     int of = ojo_clip_frame(e, oc);
+    int ac = abanderado_clip(e);
+    int af = abanderado_clip_frame(e, ac);
     const uint8_t *b = oc == CLIP_OJO_SENTENCE ? g_ojo_sentence_frame_bounds[e->dir][of]
                      : oc == CLIP_OJO_LOOK     ? g_ojo_look_frame_bounds[e->dir][of]
+                     : ac == CLIP_ABANDERADO_POINT ? g_abanderado_point_frame_bounds[e->dir][af]
                      : (is_telegraph && e->frame == 0) ? g_character_frame_bounds[CHAR_CHARGER][e->dir][0]
                      : (is_telegraph && tf)           ? g_charger_telegraph_frame_bounds[e->dir][0]
                      : (is_telegraph || is_charge)    ? g_charger_charge_frame_bounds[e->dir][is_telegraph ? 0 : cf]
@@ -781,6 +784,7 @@ static void draw_enemy(uint16_t *buffer, const Enemy *e, int cam_x, int cam_y) {
     int sh = g_characters[e->char_id].sprite_h;
     const uint16_t *frame = oc == CLIP_OJO_SENTENCE ? &g_ojo_sentence_frames[g_ojo_sentence_frame_offsets[e->dir][of]]
         : oc == CLIP_OJO_LOOK ? &g_ojo_look_frames[g_ojo_look_frame_offsets[e->dir][of]]
+        : ac == CLIP_ABANDERADO_POINT ? &g_abanderado_point_frames[g_abanderado_point_frame_offsets[e->dir][af]]
         : (is_telegraph && e->frame == 0)
         ? character_frame_ptr(CHAR_CHARGER, e->dir, 0)
         : (is_telegraph && tf)
@@ -790,6 +794,7 @@ static void draw_enemy(uint16_t *buffer, const Enemy *e, int cam_x, int cam_y) {
         : character_frame_ptr(e->char_id, e->dir, e->frame);
     const uint16_t *runs = oc == CLIP_OJO_SENTENCE ? &g_ojo_sentence_runs[g_ojo_sentence_run_offsets[e->dir][of]]
         : oc == CLIP_OJO_LOOK ? &g_ojo_look_runs[g_ojo_look_run_offsets[e->dir][of]]
+        : ac == CLIP_ABANDERADO_POINT ? &g_abanderado_point_runs[g_abanderado_point_run_offsets[e->dir][af]]
         : (is_telegraph && e->frame == 0)
         ? character_runs_ptr(CHAR_CHARGER, e->dir, 0)
         : (is_telegraph && tf)
@@ -797,11 +802,49 @@ static void draw_enemy(uint16_t *buffer, const Enemy *e, int cam_x, int cam_y) {
         : (is_telegraph || is_charge)
         ? &g_charger_charge_runs[g_charger_charge_run_offsets[e->dir][is_telegraph ? 0 : cf]]
         : character_runs_ptr(e->char_id, e->dir, e->frame);
-    blit_stride(buffer, frame, runs, sprite_pitch(bw), bw, bh,
-                px - sw / 2 + min_x, py - s_char_ground_anchor[e->char_id][e->dir] + min_y,
+
+    int draw_bh = bh;
+    int draw_y_off = 0;
+    if (e->type == ENEMY_TYPE_MONAGUILLO && e->state == ENEMY_STATE_EMERGE) {
+        int emerged = (bh * (MONAGUILLO_EMERGE_FRAMES - e->state_timer)) / MONAGUILLO_EMERGE_FRAMES;
+        if (emerged <= 0) return;
+        if (emerged < bh) {
+            draw_bh = emerged;
+            draw_y_off = bh - emerged;
+        }
+    }
+    blit_stride(buffer, frame, runs, sprite_pitch(bw), bw, draw_bh,
+                px - sw / 2 + min_x, py - s_char_ground_anchor[e->char_id][e->dir] + min_y + draw_y_off,
                 cam_x, cam_y, s_draw_item_depth);
     if (e->char_id == CHAR_OJO)
         enemy_ojo_mouth_glow_render(buffer, e, (int)(e - g_enemies), cam_x, cam_y, s_draw_item_depth);
+    if (e->type == ENEMY_TYPE_ABANDERADO && e->max_hp > 0) {
+        const int bar_w = 28;
+        const int bar_h = 3;
+        int bx0 = px - bar_w / 2 - cam_x;
+        int by0 = py - 56 - cam_y;
+        int fill_w = (e->hp * bar_w) / e->max_hp;
+        if (e->hp > 0 && fill_w < 1) fill_w = 1;
+        if (fill_w > bar_w) fill_w = bar_w;
+        const uint16_t c_border = RGB15(2, 2, 2) | BIT(15);
+        const uint16_t c_bg = RGB15(5, 3, 3) | BIT(15);
+        const uint16_t c_fill = RGB15(20, 4, 4) | BIT(15);
+        for (int ry = -1; ry <= bar_h; ry++) {
+            int sy = by0 + ry;
+            if ((unsigned)sy >= SCREEN_H) continue;
+            int x_start = bx0 - 1 < 0 ? 0 : bx0 - 1;
+            int x_end = bx0 + bar_w + 1 > SCREEN_W ? SCREEN_W : bx0 + bar_w + 1;
+            if (x_start < x_end) dirty_row(sy, x_start, x_end);
+            for (int rx = -1; rx <= bar_w; rx++) {
+                int sx = bx0 + rx;
+                if ((unsigned)sx >= SCREEN_W) continue;
+                if (occlusion_blocks_pixel(sx + cam_x, sy + cam_y, s_draw_item_depth)) continue;
+                uint16_t col = (ry < 0 || ry >= bar_h || rx < 0 || rx >= bar_w) ? c_border
+                             : (rx < fill_w) ? c_fill : c_bg;
+                buffer[sy * SCREEN_W + sx] = col;
+            }
+        }
+    }
     if (e->hit_timer > 0)
         draw_hit_spark(buffer, px, py - (sh * 3) / 5, cam_x, cam_y, e->hit_timer);
 }
@@ -932,6 +975,15 @@ static int shadow_select(const DrawItem *it, ShadowSel *sel) {
             sel->top = it->cy - shh / 2;
             return 1;
         }
+        int ac = abanderado_clip(e);
+        int af = abanderado_clip_frame(e, ac);
+        if (ac == CLIP_ABANDERADO_POINT) {
+            sel->mask = &g_abanderado_point_shadow_masks[g_abanderado_point_shadow_offsets[e->dir][af]];
+            sel->bounds = g_abanderado_point_shadow_bounds[e->dir][af];
+            sel->left = it->cx - shw / 2;
+            sel->top = it->cy - shh / 2;
+            return 1;
+        }
         sel->mask = (is_telegraph && e->frame == 0) ? character_shadow_mask_ptr(CHAR_CHARGER, e->dir, 0)
                   : (is_telegraph || is_charge)     ? &g_charger_charge_shadow_masks[g_charger_charge_shadow_offsets[e->dir][is_telegraph ? 0 : cf]]
                                                     : character_shadow_mask_ptr(e->char_id, e->dir, e->frame);
@@ -1020,8 +1072,9 @@ ITCM_CODE static void render_screen(uint16_t *buffer, DirtySpan *spans, int cam_
     if (out_floor) *out_floor = cpuGetTiming() - floor_start_ticks;
     PP_ADD(PP_CLEAR, pp_clear);
 
-    // 0) Ground decals of the weapons (aim marker, warning zones, shock rings): under everything.
+    // 0) Ground decals of the weapons and boss puddles: under everything.
     weapons_render_floor(buffer, cam_x, cam_y);
+    enemy_puddles_render(buffer, cam_x, cam_y);
 
     // 1) Actor shadows (player & enemies, animated per frame). Hardware: one OBJ-window list per
     // screen, darkened by the engine (hwshadow.c). Software: darken the page pixel by pixel.
@@ -1538,6 +1591,7 @@ static void strip_shift_world_y(int dy_px) {
     weapons_shift_y(dy_px);
     tide_shift_y(dy_px);
     pickups_shift_y(dy_px);
+    enemy_puddles_shift_y(dy_px);
 
     // The rebase moves the world and the camera by the same rows, so what is on screen does not
     // change and the BG tile caches stay valid. Shifting the streaming reference by those rows
@@ -1900,6 +1954,7 @@ static void arena_restart(void) {
         strip_start(seed);
         horde_init(seed ^ 0x684f5244u);
         pickups_init(seed ^ 0x5049434bu);
+        enemy_puddles_init();
         apply_arena_palette();
         init_bg_tile_cache(&s_top_bg_tile_cache, TOP_TILE_CACHE_CAPACITY, s_top_bg_tiles_vram);
         init_bg_tile_cache(&s_bot_bg_tile_cache, BG_TILE_CACHE_CAPACITY, s_bot_bg_tiles_vram);
@@ -2088,6 +2143,7 @@ int main(void) {
         uint32_t seed = (uint32_t)time(NULL) ^ (uint32_t)cpuGetTiming() ^ 0xa5a5a5a5u;
         horde_init(seed ^ 0x684f5244u);
         pickups_init(seed ^ 0x5049434bu);
+        enemy_puddles_init();
         tide_init(s_player.y);
     }
 

@@ -20,15 +20,26 @@ void pickups_shift_y(int dy_px) {
 
 void pickups_enemy_killed(const Enemy *enemy) {
     if (!enemy) return;
-    s_rng = s_rng * 1664525u + 1013904223u;
-    if ((s_rng % HEAL_PICKUP_CHANCE_DENOMINATOR) != 0) return;
-    for (int i = 0; i < HEAL_PICKUP_MAX_ACTIVE; i++) {
-        if (s_pickups[i].active) continue;
-        s_pickups[i].x = enemy->x;
-        s_pickups[i].y = enemy->y;
-        s_pickups[i].active = 1;
-        return;
+    int force = (enemy->type == ENEMY_TYPE_ABANDERADO);
+    if (!force) {
+        s_rng = s_rng * 1664525u + 1013904223u;
+        if ((s_rng % HEAL_PICKUP_CHANCE_DENOMINATOR) != 0) return;
     }
+    int slot = -1;
+    for (int i = 0; i < HEAL_PICKUP_MAX_ACTIVE; i++) {
+        if (!s_pickups[i].active) { slot = i; break; }
+    }
+    if (slot < 0 && force) {
+        // Boss drop replaces the lowest (oldest/farthest behind) cross if all slots are occupied.
+        slot = 0;
+        for (int i = 1; i < HEAL_PICKUP_MAX_ACTIVE; i++) {
+            if (s_pickups[i].y > s_pickups[slot].y) slot = i;
+        }
+    }
+    if (slot < 0) return;
+    s_pickups[slot].x = enemy->x;
+    s_pickups[slot].y = enemy->y;
+    s_pickups[slot].active = 1;
 }
 
 void pickups_update(fixed player_x, fixed player_y, fixed tide_y, PlayerState *player) {
