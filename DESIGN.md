@@ -607,10 +607,20 @@ Conceptos para la demo de la catedral. Solo cambia el aspecto y se añaden élit
       - Tope de 2 Ojos apuntando a la vez (legibilidad); el resto se acerca o espera.
       - Animaciones: andar, mirar (quieto, linterna adelantada, en bucle) y sentenciar (gesto corto de 4-6 frames al soltar el haz).
 - **Élites, se prueban dos** (sueltan cofre):
-  - **El Abanderado:** empalado en el asta de su propio estandarte, hecho con tabardos cosidos de caídos. Los enemigos cercanos se aceleran. El asta lo hace el más alto de la pantalla.
+  - **El Abanderado:** empalado en el asta de su propio estandarte, hecho con tabardos cosidos de caídos. Los enemigos cercanos se aceleran. El asta lo hace el más alto de la pantalla. *(Concepto original; la versión que se programa es la de abajo, «El Abanderado (jefe, versión mínima)», que lo sustituye.)*
   - **El Campanero de Ánimas:** se arrancó la lengua para hacerla badajo de su campana, a cambio de que los muertos le oigan; boca vacía y cosida. Arrastra la campana rajada; al tocarla brotan Exvotos en un círculo de cera en el suelo (elipse 2:1, §4.9). El toque es la telegrafía.
 - **Jefe: El Paso.** Paso de Semana Santa con costaleros muertos fusionados a las vigas; arriba, una Dolorosa viva con siete puñales que disparan rayos verdes que siguen al jugador. Embiste en línea; al matar costaleros cojea, se inclina y se ralentiza. Probablemente se trate como bloque rígido con costaleros sencillos, no como un modelo rigeado entero (decidir en su sesión).
 - **Objetos en el cuerpo:** Tripo rigea y anima el cuerpo pero no gestiona objetos aparte. La cruz del Cireneo y el asta del Abanderado se modelan aparte y se pegan al hueso de la espalda en el lab de armas (hoy solo pega a las manos; falta comprobarlo). La campana va en la mano, como un arma.
+- **El Abanderado (jefe, versión mínima) (decidido 2026-11-14, rama `feat/abanderado-jefe`).** Jefe sencillo que **no ataca**: es un invocador. Sustituye al concepto de élite de arriba (sin aura de aceleración, sin clavar el asta, sin parar la marea y sin cura al morir).
+  - **Aspecto:** el estandarte va **en la mano, como bastón** (no atravesando el cuerpo). Tamaño: ~54 px en celda de 60×60 («Tamaño del Abanderado»), exportado con el preset de legibilidad C2.
+  - **Aparición:** cada **2 minutos**. La primera a los 2:00 de partida; el siguiente reloj de 2 minutos empieza cuando muere el anterior, así que nunca hay dos a la vez.
+  - **Vida:** aguanta unos **8 disparos cargados**. Barra de vida **sencilla flotando sobre el enemigo**, con colores que encajen con la paleta (rojo y negro de los personajes, §6.10). La presentación definitiva de los jefes está sin decidir.
+  - **Patrulla:** anda despacio y **cabizbajo**, apoyado en el estandarte como bastón (clip «Sad Walk» de Mixamo), entre puntos al azar **dentro de la banda visible alrededor de la cámara** (si el avance o la marea lo dejan atrás, avanza hacia arriba hasta reentrar en pantalla).
+  - **Te ve:** si estás a menos de ~1 pantalla y no hay pared en medio. Entonces se para, **levanta la cabeza, te mira e inclina el estandarte hacia ti** (no como una varita: el asta se inclina en tu dirección). Este gesto se genera por programa sobre el modelo (cabeza y brazo), sin clip de Mixamo. Si te alejas o te escondes unos 2 s, baja la cabeza y vuelve a patrullar.
+  - **Invocar:** mientras te apunta, aparece un **charco color crema** en el suelo cada ~3 s, a medio camino entre él y tú. De cada charco salen **2 Exvotos monaguillo**. Tope de 8 monaguillos vivos.
+  - **Salir del charco:** el monaguillo emerge poco a poco del charco, como si este lo fuera soltando (~0,5 s); el charco se seca al terminar. Mientras emerge **es invulnerable**, no hace daño ni se mueve.
+  - **Exvoto monaguillo:** variante nueva del Exvoto (modelo «monje zombi», `tripo_convert_9a55a12b`). Mismas reglas que el Exvoto: muere de un golpe, camina lento hacia ti en postura de rezar (animación de andar rezando del Exvoto) y hace daño por contacto.
+  - **Al morir:** en esta versión mínima suelta una **cruz de curación** (el cofre entra en la 0.5). Los monaguillos que queden siguen vivos.
 - **Pendiente:** qué aura de carga se queda (L/G/E/H, arriba) y si la quemadura crece con las mejoras; cifras, fases y telegrafías de élites y jefe; tamaño del paso en pantalla (sprites grandes o capa de fondo, `TECHNICAL.md`); si hay minijefe en la demo.
 - **Corazón Abierto en el juego (decidido 2026-11-11/12, rama `feat/corazon-abierto`, `walkthroughs/corazon-abierto/`):**
   - **Animaciones:** modelo Tripo con rig Mixamo (`assets/models/characters/corazon/`). **Andar:** el «Walking» genérico de Mixamo (`assets/models/animations/walk/walk_normal.fbx`) adaptado al modelo con la cadera en el sitio; se descartaron el andar del nigromante (el torso se retorcía) y uno renqueante (a 31 px no se distinguía).
@@ -637,7 +647,7 @@ Conceptos para la demo de la catedral. Solo cambia el aspecto y se añaden élit
   - **Tema base (`cathedral_battle_loop`, 21,6 s, 11.025 Hz mono 8-bit PCM en NitroFS):** corte de 12 compases sin letra en inglés ni drops bruscos (`Loop A` de tecno industrial + coro grave) en streaming continuo (`mmStreamOpen`, buffer 2 KB) al 42 % de amplitud para dejar espacio a los SFX en `soundbank.bin`.
   - **Reserva para jefes (`boss_climax_loop`, 28,8 s):** corte `Loop B` con subida y drop guardado en `assets/music/` para futuros jefes.
 
-### 6.11 Códice / Bestiario (decidido 2026-11-14)
+### 6.11 Bestiario / Códice (decidido 2026-11-14)
 - **Acceso y visibilidad:** todas las fichas de la demo (4 en total) están visibles desde el principio, sin desbloqueo progresivo. Se entra desde el botón `CODICE` del menú inicial o de pausa y se vuelve con `B` o el botón táctil `Volver`.
 - **Maquetación B minimalista:**
   - **Estética:** fondo negro (`#000000`) y borde gris muy fino (1 px) en ambas pantallas.

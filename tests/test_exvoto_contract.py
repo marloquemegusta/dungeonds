@@ -83,7 +83,7 @@ class ExvotoContractTest(unittest.TestCase):
 
     def test_clips_are_character_slots_and_the_rise_ends_walking(self):
         header = read("include/player_sprite.h")
-        self.assertRegex(header, r"#define NUM_CHARACTERS 7")
+        self.assertRegex(header, r"#define NUM_CHARACTERS ([7-9]|\d{2,})")
         for name in ("CHAR_EXVOTO ", "CHAR_EXVOTO_PRAY_STAND", "CHAR_EXVOTO_PRAY_KNEEL", "CHAR_EXVOTO_STAND_UP"):
             self.assertIn(name, header)
         rise = AI_C.split("case ENEMY_STATE_RISE:")[1].split("case ENEMY_STATE_ATTACK:")[0]

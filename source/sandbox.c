@@ -168,6 +168,8 @@ static void sandbox_spawn(Enemy *enemies, int max_enemies) {
         if (spec->type == SANDBOX_ENEMY_CHARGER) type = ENEMY_TYPE_CHARGER;
         else if (spec->type == SANDBOX_ENEMY_SHOOTER) type = ENEMY_TYPE_SHOOTER;
         else if (spec->type == SANDBOX_ENEMY_EXVOTO) type = ENEMY_TYPE_EXVOTO;
+        else if (spec->type == SANDBOX_ENEMY_ABANDERADO) type = ENEMY_TYPE_ABANDERADO;
+        else if (spec->type == SANDBOX_ENEMY_MONAGUILLO) type = ENEMY_TYPE_MONAGUILLO;
         else continue;
 
         int slot = -1;

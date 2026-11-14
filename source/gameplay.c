@@ -29,6 +29,17 @@ const EnemyTuning g_enemy_tuning[NUM_ENEMY_TYPES] = {
         .attack_cooldown = 30,    // [TUNABLE-PLACEHOLDER] frames between bites
         .preferred_dist_max = 16, // [TUNABLE-PLACEHOLDER] melee range (ground px)
     },
+    [ENEMY_TYPE_ABANDERADO] = {
+        .max_hp = 1200,           // [TUNABLE-PLACEHOLDER] 8 charged sniper shots (150 each)
+        .speed = 75,              // [TUNABLE-PLACEHOLDER] 8.8 fixed: slow patrol
+        .attack_cooldown = ABANDERADO_SUMMON_FRAMES,
+    },
+    [ENEMY_TYPE_MONAGUILLO] = {
+        .max_hp = 100,            // [TUNABLE-PLACEHOLDER] same rules as Exvoto: dies in one hit
+        .speed = 130,             // [TUNABLE-PLACEHOLDER] 8.8 fixed: slow prayer-walk
+        .attack_cooldown = 30,    // [TUNABLE-PLACEHOLDER] frames between bites
+        .preferred_dist_max = 16, // [TUNABLE-PLACEHOLDER] melee range (ground px)
+    },
 };
 
 // ---------------------------------------------------------------------------
@@ -96,7 +107,7 @@ void enemy_set_death_hook(EnemyDeathHook hook) {
 }
 
 void enemy_hit(Enemy *e, int damage, fixed hit_vx, fixed hit_vy) {
-    if (!e || !e->active || e->hp <= 0) return;
+    if (!e || !e->active || e->hp <= 0 || e->state == ENEMY_STATE_EMERGE) return;
     e->hp -= damage;
     e->hit_timer = 8;
     int hitstop = e->hp <= 0 ? 4 : 3;

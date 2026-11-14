@@ -14,6 +14,7 @@ static int s_cap;
 static int s_cap_ramp;
 static int s_cap_ramp_timer;
 static int s_chargers_alive;      // recounted every update, bumped on each charger spawn
+static int s_boss_timer;          // countdown to next Abanderado spawn while none is alive
 
 static uint32_t horde_random(void) {
     s_rng = s_rng * 1664525u + 1013904223u;
@@ -29,6 +30,7 @@ void horde_init(uint32_t seed) {
     s_cap = HORDE_INITIAL_CAP;
     s_cap_ramp = HORDE_CAP_RAMP_FRAMES / (HORDE_MAX_CAP - HORDE_INITIAL_CAP);
     s_cap_ramp_timer = s_cap_ramp;
+    s_boss_timer = ABANDERADO_SPAWN_FRAMES;
 }
 
 // 2:1 ellipse table, 32 steps (unit circle x256): step 0 = east, step 8 = south on screen.
@@ -203,14 +205,55 @@ ITCM_CODE void horde_update(Enemy *enemies, int count, fixed player_y,
     }
 
     int alive = 0;
+    int boss_alive = 0;
     s_chargers_alive = 0;
     for (int i = 0; i < count; i++) {
         Enemy *e = &enemies[i];
         if (!e->active) continue;
+        if (e->type == ENEMY_TYPE_ABANDERADO) {
+            boss_alive = 1;
+            alive++;
+            continue;
+        }
         if (e->y > player_y + TO_FIXED(HORDE_RECYCLE_BEHIND_PX) || e->y >= tide_y) e->active = 0;
         else {
             alive++;
             if (e->type == ENEMY_TYPE_CHARGER) s_chargers_alive++;
+        }
+    }
+
+    if (!boss_alive && --s_boss_timer <= 0) {
+        int slot = -1;
+        int fallback = -1;
+        for (int i = 0; i < count; i++) {
+            if (!enemies[i].active) { slot = i; break; }
+            if (enemies[i].type == ENEMY_TYPE_EXVOTO) fallback = i;
+        }
+        if (slot < 0) slot = fallback;
+        if (slot >= 0) {
+            int bx = (HORDE_SPAWN_X_MIN + HORDE_SPAWN_X_MAX) / 2;
+            int by = upper_screen_y - HORDE_SPAWN_GAP_MIN;
+            for (int attempt = 0; attempt < 16; attempt++) {
+                int tx = HORDE_SPAWN_X_MIN + (int)(horde_random() % (HORDE_SPAWN_X_MAX - HORDE_SPAWN_X_MIN + 1));
+                int ty = upper_screen_y - HORDE_SPAWN_GAP_MIN - (int)(horde_random() % (HORDE_SPAWN_GAP_MAX - HORDE_SPAWN_GAP_MIN + 1));
+                if (position_is_free(TO_FIXED(tx), TO_FIXED(ty))) { bx = tx; by = ty; break; }
+            }
+            if (position_is_free(TO_FIXED(bx), TO_FIXED(by))) {
+                Enemy *b = &enemies[slot];
+                memset(b, 0, sizeof(*b));
+                b->x = TO_FIXED(bx);
+                b->y = TO_FIXED(by);
+                b->type = ENEMY_TYPE_ABANDERADO;
+                b->char_id = CHAR_ABANDERADO;
+                b->hp = g_enemy_tuning[ENEMY_TYPE_ABANDERADO].max_hp;
+                b->max_hp = b->hp;
+                b->dir = DIR_SOUTH;
+                b->active = 1;
+                b->state = ENEMY_STATE_CHASE;
+                b->pack = -1;
+                s_boss_timer = ABANDERADO_SPAWN_FRAMES;
+                alive++;
+            }
         }
     }
 
