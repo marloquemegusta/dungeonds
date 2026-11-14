@@ -38,9 +38,9 @@
   "dirBounds": [
     [
       19,
-      8,
+      9,
       20,
-      42
+      41
     ],
     [
       11,
@@ -50,9 +50,9 @@
     ],
     [
       9,
-      7,
+      8,
       31,
-      41
+      40
     ],
     [
       16,
@@ -70,7 +70,7 @@
       17,
       6,
       28,
-      44
+      43
     ],
     [
       16,
@@ -830,14 +830,14 @@
     ]
   ],
   "stride3dMeters": 1.416,
-  "strideRatio": 0.786,
-  "ticksPerFrame": 12,
-  "stridePixels": 44.04,
-  "speedFixed8_8": 117,
+  "strideRatio": 0.784,
+  "ticksPerFrame": 5,
+  "stridePixels": 43.92,
+  "speedFixed8_8": 315,
   "inPlace": true,
   "rigScale": 1,
   "cameraElevationDegrees": 30,
-  "contrast": 1.2,
+  "contrast": 1,
   "saturation": 1,
   "neckPitchDegrees": 0,
   "displace": 0,
@@ -845,7 +845,8 @@
   "webglShadowQuality": 16,
   "normalStrength": 0.5,
   "shadowSoftness": 2,
-  "supersample": 2,
+  "supersample": 4,
+  "legibility": "c2",
   "boneShader": false,
   "renderEngine": "Three.js WebGL (browser)",
   "lightPreset": "neutral",
@@ -854,5 +855,6 @@
     "bone": "mixamorig:OjoMouth",
     "forward": 0
   },
-  "fitZoom": 0.78
+  "fitZoom": 0.78,
+  "toneMapping": "neutral"
 }

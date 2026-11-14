@@ -331,6 +331,16 @@
         "offset": 41,
         "type": "u8"
       },
+      "en1_state": {
+        "symbol": "enemies",
+        "offset": 157,
+        "type": "u8"
+      },
+      "en1_y": {
+        "symbol": "enemies",
+        "offset": 120,
+        "type": "s32"
+      },
       "en0_timer": {
         "symbol": "enemies",
         "offset": 44,
@@ -445,7 +455,14 @@
     },
     {
       "frames": 8,
-      "capture": "03_haz_esquivado",
+      "capture": "03_haz_esquivado"
+    },
+    {
+      "wait_until": {
+        "field": "en0_state",
+        "equals": 10,
+        "timeout_frames": 60
+      },
       "state_capture": "despues"
     }
   ],

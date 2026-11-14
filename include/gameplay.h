@@ -45,7 +45,11 @@ typedef struct {
 #define OJO_TRACK_FRAMES 40        // [TUNABLE-PLACEHOLDER] frames the band follows the hero while it narrows
 #define OJO_LOCK_FRAMES 20         // [TUNABLE-PLACEHOLDER] frames the line stays frozen: the dodge window
 #define OJO_AIM_FRAMES (OJO_TRACK_FRAMES + OJO_LOCK_FRAMES) // [TUNABLE-PLACEHOLDER] derived: whole aim, also the mouth charge
-#define OJO_BEAM_FRAMES 6          // [TUNABLE-PLACEHOLDER] frames of the sentence beam (gesture); it hurts on the first
+#define OJO_BEAM_IMPACT_FRAMES 3   // [TUNABLE-PLACEHOLDER] "llamarada espectral": widest and brightest; it hurts
+#define OJO_BEAM_FLARE_FRAMES 20   // [TUNABLE-PLACEHOLDER] wide, burning edges; it still hurts (a temporary wall)
+#define OJO_BEAM_FADE_FRAMES 8     // [TUNABLE-PLACEHOLDER] dissipation: narrows and breaks up; it no longer hurts
+#define OJO_BEAM_HIT_FRAMES (OJO_BEAM_IMPACT_FRAMES + OJO_BEAM_FLARE_FRAMES) // [TUNABLE-PLACEHOLDER] derived: frames that hurt
+#define OJO_BEAM_FRAMES (OJO_BEAM_HIT_FRAMES + OJO_BEAM_FADE_FRAMES) // [TUNABLE-PLACEHOLDER] derived: whole SENTENCE, the Ojo stands still
 #define OJO_HIT_HALF_WIDTH 8       // [TUNABLE-PLACEHOLDER] ground px either side of the locked line that the beam hurts
 #define OJO_MAX_LOOKING 2          // [TUNABLE-PLACEHOLDER] Ojos aiming at once (TRACK, LOCK, SENTENCE); the rest wait
 #define OJO_WAIT_DIST 72           // [TUNABLE-PLACEHOLDER] ground px: an Ojo this close without a free slot waits instead of walking in
@@ -121,7 +125,11 @@ struct Enemy {
     int aim_px;         // Ojo: ground world px of the hero where the gaze points (followed in TRACK, frozen in LOCK/SENTENCE)
     int aim_py;
     int beam_len;       // Ojo: ground px of the sentence beam (cut at the first wall), set when it fires
-    int gesture;        // Ojo: 0 = none; 1.. = game frames of the sentence gesture (SENTENCE, then the start of COOLDOWN)
+    int gesture;        // Ojo: 0 = none; 1.. = game frames of the sentence gesture (held on its last frame while SENTENCE lasts)
+    int beam_mx;        // Ojo: ground world px of the mouth when it fired (the damage line starts here)
+    int beam_my;
+    int beam_ux;        // Ojo: true-ground unit vector of the damage line, 8.8
+    int beam_uy;
 };
 
 // Ojo del Tribunal sprite clips (player_sprite.h): the walk is the CHAR_OJO slot; TRACK/LOCK show the look

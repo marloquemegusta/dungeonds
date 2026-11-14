@@ -142,7 +142,7 @@ volatile OcclusionStats g_occlusion_stats;
 Enemy g_enemies[MAX_ENEMIES];     // not static: headless scenarios read it by symbol (the arena data also has an s_enemies)
 // Headless scenarios read g_enemies / g_player_state by byte offset (scenarios/enemy_*.json); a moved field breaks the build.
 // ARM EABI enums are 1 byte here (type and state are u8 in the scenarios).
-_Static_assert(sizeof(Enemy) == 100 && offsetof(Enemy, hp) == 28 && offsetof(Enemy, type) == 40 &&
+_Static_assert(sizeof(Enemy) == 116 && offsetof(Enemy, hp) == 28 && offsetof(Enemy, type) == 40 &&
                offsetof(Enemy, state) == 41 && offsetof(Enemy, state_timer) == 44 && offsetof(Enemy, stun_timer) == 76,
                "Enemy layout used by the scenarios changed");
 _Static_assert(sizeof(PlayerState) == 24 && offsetof(PlayerState, hp) == 0 && offsetof(PlayerState, invuln_timer) == 16,
@@ -1062,9 +1062,11 @@ ITCM_CODE static void render_screen(uint16_t *buffer, DirtySpan *spans, int cam_
     PP_ADD(PP_SORT, pp_sort);
     uint32_t t_bl0 = cpuGetTiming();
     PP_T0(pp_blit);
-    // Paint the sentence before actors so their sprites occlude the beam by depth.
-    enemy_lasers_render(buffer, g_enemies, MAX_ENEMIES, cam_x, cam_y);
+    // Gaze bands and sentence beams are interleaved with the actors by ground depth: the steps further away than an actor
+    // are painted before it (it covers them), the nearer ones after it (they cover it).
+    enemy_lasers_begin(g_enemies, MAX_ENEMIES, cam_x, cam_y);
     for (int i = 0; i < count; i++) {
+        enemy_lasers_draw_before(buffer, items[i].depth);
         s_draw_item_depth = items[i].depth;
         int sp = items[i].ref;
         CRASH_MARK(CL_DRAW_ITEM, sp, items[i].depth);
@@ -1077,6 +1079,7 @@ ITCM_CODE static void render_screen(uint16_t *buffer, DirtySpan *spans, int cam_
             draw_enemy(buffer, &g_enemies[-2 - sp], cam_x, cam_y);
         }
     }
+    enemy_lasers_end(buffer);
     PP_ADD(PP_BLIT, pp_blit);
     weapons_render_light(buffer, cam_x, cam_y);     // beams light the sprites drawn above
     PP_T0(pp_proj);

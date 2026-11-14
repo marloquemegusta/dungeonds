@@ -30,6 +30,8 @@ OJO_TYPE = sb.SHOOTER                 # the Ojo is the shooter type (SANDBOX_ENE
 ST_TRACK, ST_LOCK, ST_SENTENCE, ST_COOLDOWN = 7, 8, 9, 10          # ENEMY_STATE_* (include/gameplay.h)
 TRACK_FRAMES, LOCK_FRAMES, SIGHT_RANGE = 40, 20, 140               # OJO_* (include/gameplay.h)
 PILLAR = (352, 383, 520, 535)         # x0, x1, y0, y1 of the pillar in the collision grid (world px)
+ENEMY_STRIDE = 116                   # sizeof(Enemy), asserted in source/main.c
+ST_DORMANT = 12
 HERO_VY_PER_FRAME = 163 / 256         # 326 8.8 speed halved on the 2:1 ground (source/main.c GROUND_Y_SHIFT)
 
 # ---------------------------------------------------------------------------
@@ -106,6 +108,8 @@ def fields():
         "en0_hp": {"symbol": "enemies", "offset": 28, "type": "s32"},
         "en0_type": {"symbol": "enemies", "offset": 40, "type": "u8"},
         "en0_state": {"symbol": "enemies", "offset": 41, "type": "u8"},
+        "en1_state": {"symbol": "enemies", "offset": ENEMY_STRIDE + 41, "type": "u8"},
+        "en1_y": {"symbol": "enemies", "offset": ENEMY_STRIDE + 4, "type": "s32"},
         "en0_timer": {"symbol": "enemies", "offset": 44, "type": "s32"},
         "player_hp": {"symbol": "player", "offset": 0, "type": "s32"},
         "player_iframes": {"symbol": "player", "offset": 16, "type": "s32"},
@@ -153,7 +157,8 @@ def open_field():
         {"frames": 14, "capture": "02_linea_fina_fija", "state_capture": "fijada_14"},
         wait_state(ST_SENTENCE, 60, state_capture="haz"),
         {"frames": 2, "capture": "03_haz_de_sentencia"},                    # the beam lasts 6 frames
-        {"frames": 12, "state_capture": "despues"},
+        {"frames": 6, "capture": "04_llamarada"},
+        wait_state(ST_COOLDOWN, 60, state_capture="despues"),
     ]
     assertions = {
         "screen_changes": [
@@ -201,7 +206,8 @@ def full_cycle():
         {"frames": 14, "capture": "02_linea_fina_fija"},
         wait_state(ST_SENTENCE, 60, state_capture="haz"),
         {"frames": 2, "capture": "03_haz_de_sentencia"},
-        {"frames": 12, "capture": "04_gesto", "state_capture": "despues"},
+        {"frames": 10, "capture": "04_llamarada"},
+        wait_state(ST_COOLDOWN, 60, state_capture="despues"),
     ]
     assertions = {
         "screen_changes": [
@@ -238,7 +244,8 @@ def dodge_by_leaving_the_line():
         {"button_down": "UP", "frames": 20, "capture": "02_heroe_fuera_de_la_linea", "state_capture": "esquiva"},
         {"button_up": "UP", "frames": 1},
         wait_state(ST_SENTENCE, 20, state_capture="haz"),
-        {"frames": 8, "capture": "03_haz_esquivado", "state_capture": "despues"},
+        {"frames": 8, "capture": "03_haz_esquivado"},
+        wait_state(ST_COOLDOWN, 60, state_capture="despues"),
     ]
     assertions = {
         "screen_changes": [{"from": "01_linea_fija_con_el_heroe_encima", "to": "03_haz_esquivado", "min_changed_pixels": 10}],
@@ -257,6 +264,100 @@ def dodge_by_leaving_the_line():
         "move about 12 screen px = 24 ground px, well beyond the 8 px half-width of the beam on the locked row. The "
         "sentence is visible and misses (5 hp); it never goes back to tracking.",
         steps, assertions)
+
+
+def hero_walks_into_the_flare():
+    hero, ojo = (384, 724), (300, 724)
+    require_clear(ojo, hero, "walk into the flare")
+    steps = stage(hero, ojo) + [
+        wait_state(ST_LOCK, 120, state_capture="fijada"),
+        {"button_down": "UP", "frames": 20, "state_capture": "fuera"},
+        {"button_up": "UP", "frames": 1},
+        wait_state(ST_SENTENCE, 20, state_capture="haz"),
+        {"frames": 2, "capture": "01_llamarada_con_el_heroe_fuera", "state_capture": "fuera_de_la_linea"},
+        {"button_down": "DOWN", "frames": 20, "capture": "02_heroe_entra_en_la_llamarada", "state_capture": "dentro"},
+        {"button_up": "DOWN", "frames": 1},
+        wait_state(ST_COOLDOWN, 60, state_capture="despues"),
+    ]
+    assertions = {
+        "screen_changes": [{"from": "01_llamarada_con_el_heroe_fuera", "to": "02_heroe_entra_en_la_llamarada", "min_changed_pixels": 10}],
+        "state_changes": [
+            {"at": "fuera", "field": "nav_y", "max_value": 182272},            # >= 12 px north of the line: off it
+            {"at": "haz", "field": "player_hp", "equals": 5},                  # the shot started and he was not on the line
+            {"at": "fuera_de_la_linea", "field": "player_hp", "equals": 5},
+            {"at": "fuera_de_la_linea", "field": "en0_state", "equals": ST_SENTENCE},
+            {"at": "dentro", "field": "en0_state", "equals": ST_SENTENCE},     # still flaring: it hurts him now
+            {"at": "dentro", "field": "player_hp", "equals": 4},               # one hit (i-frames cover the rest)
+            {"at": "despues", "field": "player_hp", "equals": 4},
+        ],
+    }
+    return scenario(
+        "enemy_ojo_heroe_entra_en_la_llamarada",
+        "Ojo 84 ground px west of the hero on open floor. The hero leaves the locked row (20 UP frames = about 24 ground "
+        "px off it), the shot starts and misses him (5 hp). While the flare still burns he walks back DOWN into the row "
+        "(20 frames, 8 ground px half-width crossed after about 12) and takes exactly one hit (4 hp): the beam is a "
+        "temporary wall during impact and flare.",
+        steps, assertions)
+
+
+# ---------------------------------------------------------------------------
+# (f) The beam and an actor that is NOT its target: painter order by ground depth
+# ---------------------------------------------------------------------------
+BEAM_GROUND_Y = 724                   # the locked line runs along this row: Ojo and hero stand on it
+ACTOR_X = 350                         # between the Ojo's hand (x ~ 325) and the hero (384)
+
+
+def depth_actor_scene(name, actor_y, description, front):
+    hero, ojo = (384, 724), (300, 724)
+    require_clear(ojo, hero, name)
+    # The sleeping charger (a DORMANT enemy stands still and is drawn) overlaps the beam on screen: its feet are within
+    # a sprite height below the beam's screen row (mouth ~ 21 px above the ground row) and its body covers that row.
+    beam_screen_y = BEAM_GROUND_Y - 21
+    if not (actor_y - 32 < beam_screen_y < actor_y):
+        raise ValueError(f"{name}: the actor at feet y={actor_y} does not cover the beam's screen row {beam_screen_y}")
+    if front and not actor_y < BEAM_GROUND_Y - 4:
+        raise ValueError(f"{name}: an actor in front of the beam must have its feet further away than the beam's ground row")
+    if not front and not actor_y > BEAM_GROUND_Y + 4:
+        raise ValueError(f"{name}: an actor behind the beam must have its feet nearer than the beam's ground row")
+    steps = sb.setup_steps(hero, "sniper", 0, [(OJO_TYPE, *ojo), (sb.CHARGER, ACTOR_X, actor_y)],
+                           flags=sb.FLAG_CLEAR | sb.FLAG_GOD)[:-1]
+    for st in steps:
+        for pk in st.get("poke", []):
+            if pk["field"] == "e1_flags":
+                pk["value"] = 1                                   # SANDBOX_ENEMY_FLAG_ASLEEP: it stays where it is
+    steps += [
+        wait_state(ST_SENTENCE, 200, state_capture="haz"),
+        {"frames": 6, "capture": "01_llamarada_" + ("sobre_el_actor_mas_lejano" if front else "tras_el_actor_mas_cercano"),
+         "state_capture": "llamarada"},
+        {"frames": 2, "capture": "02_llamarada_siguiente_frame"},
+    ]
+    assertions = {
+        "screen_changes": [{"from": steps[-2]["capture"], "to": "02_llamarada_siguiente_frame", "min_changed_pixels": 1}],
+        "state_changes": [
+            {"at": "llamarada", "field": "en0_state", "equals": ST_SENTENCE},
+            {"at": "llamarada", "field": "en1_state", "equals": ST_DORMANT},     # the actor did not move
+            {"at": "llamarada", "field": "en1_y", "equals": actor_y * 256},
+        ],
+    }
+    return scenario(name, description, steps, assertions)
+
+
+def beam_in_front_of_actor():
+    return depth_actor_scene(
+        "enemy_ojo_llamarada_pasa_delante_de_un_actor_mas_lejano", 716,
+        "Ojo at (300,724), hero at (384,724) on the same ground row (god mode). A sleeping charger at (350,716) stands 8 ground "
+        "px FURTHER from the camera than the beam's row 724 and its sprite covers the beam's screen row: the flare must be "
+        "painted over its body. Capture only (pixels are inspected by eye); the assertions check the staging.",
+        True)
+
+
+def beam_behind_an_actor():
+    return depth_actor_scene(
+        "enemy_ojo_llamarada_pasa_detras_de_un_actor_mas_cercano", 730,
+        "Ojo at (300,724), hero at (384,724) on the same ground row (god mode). A sleeping charger at (350,730) stands 6 ground "
+        "px NEARER to the camera than the beam's row 724 and its sprite covers the beam's screen row: the charger must be "
+        "painted over the flare. Capture only (pixels are inspected by eye); the assertions check the staging.",
+        False)
 
 
 # ---------------------------------------------------------------------------
@@ -304,7 +405,8 @@ def pillar_hides_the_hero_during_the_aim():
         {"button_down": "UP", "frames": walk, "capture": "02_heroe_tras_la_columna", "state_capture": "oculto"},
         {"button_up": "UP", "frames": 1},
         wait_state(ST_SENTENCE, 20, state_capture="haz"),
-        {"frames": 8, "capture": "03_haz_sin_heroe", "state_capture": "despues"},
+        {"frames": 8, "capture": "03_haz_sin_heroe"},
+        wait_state(ST_COOLDOWN, 60, state_capture="despues"),
     ]
     assertions = {
         "screen_changes": [{"from": "01_linea_fija_heroe_a_la_vista", "to": "02_heroe_tras_la_columna", "min_changed_pixels": 10}],
@@ -395,7 +497,7 @@ def perf_two_ojos():
 
 def main():
     out = ROOT / "scenarios"
-    scenes = [open_field(), full_cycle(), dodge_by_leaving_the_line(), pillar_cuts_the_gaze(),
+    scenes = [open_field(), full_cycle(), dodge_by_leaving_the_line(), hero_walks_into_the_flare(), beam_in_front_of_actor(), beam_behind_an_actor(), pillar_cuts_the_gaze(),
               pillar_hides_the_hero_during_the_aim(), ojo_dies_before_the_shot(), perf_two_ojos()]
     for sc in scenes:
         path = out / f"{sc['name']}.json"

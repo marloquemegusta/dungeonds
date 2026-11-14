@@ -57,6 +57,7 @@ Si una regla o cifra aparece en dos documentos, uno de ellos sobra: dejarla en s
 ## Flujo de VFX (como se hicieron los efectos de armas, 2026-11)
 
 1. **Decisión antes de código** (regla 9): la dirección artística se escribe en `DESIGN.md` con referencias (imágenes del usuario) y reglas comunes, por ejemplo la perspectiva 2:1 del suelo y la oclusión por el cuerpo.
+   - **Saturación obligatoria:** todo efecto, del héroe o de cualquier enemigo, usa paletas apagadas que encajen con el mundo, como el rayo y el aura del Corazón Abierto (`DESIGN.md` §6.10, «Efectos desaturados en todos los personajes»; paleta `FX_SH_*` de `source/weapons.c`). Nunca primarios puros (`RGB15(31,31,31)`, verde o rojo a tope) ni rampas «de neón». Cada efecto nuevo lleva un test de contrato que lo compruebe sobre su paleta.
 2. **Mockups baratos primero**, solo para elegir: GIFs o hojas de píxeles con 3 alternativas por efecto. No valen como evidencia de juego (regla 8).
 3. **Implementación real en la ROM**, con un selector de depuración para comparar variantes en vivo. El agente implementa (Haiku por defecto) y quien dirige el arte revisa; cada agente lleva un brief con archivos, tope de coste por frame y criterio de aceptación.
 4. **Sandbox y capturas**: escenas con enemigos parados y héroe invulnerable (`tools/sandbox_scenes.py`), geometría exacta (regla 5), GIFs de la ROM real a ~50-60 ms por frame, y hojas de contacto ampliadas (4x NEAREST sobre el héroe) que se miran de verdad antes de dar nada por bueno.

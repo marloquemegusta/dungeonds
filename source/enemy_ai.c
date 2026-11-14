@@ -398,6 +398,18 @@ static void ojo_look_anim(Enemy *e) {
     }
 }
 
+// The damage line is a temporary wall: while the beam hurts (impact + flare) a hero within OJO_HIT_HALF_WIDTH ground px of
+// the fixed line, ahead of the mouth and before the first wall, takes a hit (player_take_hit's i-frames cap it at one).
+// Once per frame per Ojo.
+static void ojo_beam_hurts(const Enemy *e, fixed player_x, fixed player_y) {
+    int rx = TO_INT(player_x) - e->beam_mx;
+    int ry2 = 2 * (TO_INT(player_y) - e->beam_my);
+    int along = (rx * e->beam_ux + ry2 * e->beam_uy) >> 8;
+    int cross = (rx * e->beam_uy - ry2 * e->beam_ux) >> 8;
+    if (cross < 0) cross = -cross;
+    if (along >= 0 && along <= e->beam_len && cross <= OJO_HIT_HALF_WIDTH) player_take_hit(&g_player_state);
+}
+
 // Fires the sentence: the beam leaves the mouth along the line to the locked point (ground metric), is cut at
 // the first wall or column and hurts the hero once if he is on it (player_take_hit respects the i-frames).
 static void ojo_fire(Enemy *e, fixed player_x, fixed player_y) {
@@ -419,21 +431,19 @@ static void ojo_fire(Enemy *e, fixed player_x, fixed player_y) {
     if (glen < 1) { gx = 1; gy2 = 0; glen = 1; }
     int ux = div32(gx * 256, glen);                  // unit vector 8.8
     int uy = div32(gy2 * 256, glen);
-    int cut = ojo_ray_wall_dist(mxi, myi, ux << 7, uy << 7, OJO_BEAM_MAX_LEN);
-    e->beam_len = cut;
-    int rx = TO_INT(player_x) - mxi;
-    int ry2 = 2 * (TO_INT(player_y) - myi);
-    int along = (rx * ux + ry2 * uy) >> 8;
-    int cross = (rx * uy - ry2 * ux) >> 8;
-    if (cross < 0) cross = -cross;
-    if (along >= 0 && along <= cut && cross <= OJO_HIT_HALF_WIDTH) player_take_hit(&g_player_state);
+    e->beam_len = ojo_ray_wall_dist(mxi, myi, ux << 7, uy << 7, OJO_BEAM_MAX_LEN);
+    e->beam_mx = mxi;
+    e->beam_my = myi;
+    e->beam_ux = ux;
+    e->beam_uy = uy;
+    ojo_beam_hurts(e, player_x, player_y);
 }
 
 // Advances the sentence gesture (SENTENCE and the start of COOLDOWN); 0 once it has played out.
 static void ojo_gesture_tick(Enemy *e) {
     if (e->gesture <= 0) return;
     e->gesture++;
-    if (e->gesture > OJO_GESTURE_FRAMES) e->gesture = 0;
+    if (e->gesture > OJO_GESTURE_FRAMES) e->gesture = e->state == ENEMY_STATE_SENTENCE ? OJO_GESTURE_FRAMES : 0;   // held while the beam lasts
 }
 
 static void update_shooter(Enemy *e, Enemy *enemies, int num_enemies, int idx,
@@ -487,6 +497,7 @@ static void update_shooter(Enemy *e, Enemy *enemies, int num_enemies, int idx,
 
         case ENEMY_STATE_SENTENCE: {
             ojo_gesture_tick(e);
+            if (OJO_BEAM_FRAMES - e->state_timer < OJO_BEAM_HIT_FRAMES) ojo_beam_hurts(e, player_x, player_y);   // impact + flare, not dissipation
             if (--e->state_timer <= 0) {
                 e->state = ENEMY_STATE_COOLDOWN;
                 e->state_timer = tuning->attack_cooldown;
