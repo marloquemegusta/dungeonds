@@ -1,16 +1,24 @@
 [CmdletBinding()]
 param(
-    [switch]$NoRebuild
+    [switch]$NoRebuild,
+    [Parameter(ValueFromRemainingArguments = $true)]
+    [string[]]$ForwardArgs
 )
 
 $ErrorActionPreference = 'Stop'
 $scriptRoot = $PSScriptRoot
 $projectRoot = Split-Path -Parent $scriptRoot
+$pythonScript = Join-Path $scriptRoot 'rebuild_all.py'
 
-$pythonScript = Join-Path $scriptRoot 'build_assets.py'
-
+$allArgs = @()
 if ($NoRebuild) {
-    & python $pythonScript
-} else {
-    & python $pythonScript --rebuild
+    $allArgs += '--skip-render'
+}
+if ($ForwardArgs) {
+    $allArgs += $ForwardArgs
+}
+
+& python $pythonScript @allArgs
+if ($LASTEXITCODE -ne 0) {
+    exit $LASTEXITCODE
 }

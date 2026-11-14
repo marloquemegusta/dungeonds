@@ -1,0 +1,76 @@
+{
+  "defaults": {
+    "legibility": "c2",
+    "lightPreset": "neutral",
+    "outlineMode": "none",
+    "saturation": 1.0,
+    "inPlace": true
+  },
+  "characters": {
+    "corazon": {
+      "model": "assets/models/characters/corazon/corazon_walk_normal.fbx",
+      "anim": "Scene (1.07s)",
+      "resolution": 40,
+      "fitZoom": 0.86,
+      "muzzleBone": "mixamorig:Spine2",
+      "muzzleForward": 0.05,
+      "template": "assets/sprites/characters/corazon/settings.json",
+      "speedFixed8_8": 326,
+      "ticksPerFrame": 4
+    },
+    "corazon_disparo": {
+      "model": "assets/models/characters/corazon/corazon.fbx",
+      "anim": "A single continuous one-second animation, in place, feet plante (0.92s)",
+      "resolution": 40,
+      "fitZoom": 0.86,
+      "muzzleBone": "mixamorig:Spine2",
+      "muzzleForward": 0.05,
+      "template": "assets/sprites/characters/corazon_disparo/settings.json",
+      "speedFixed8_8": 100,
+      "ticksPerFrame": 7
+    },
+    "cireneo": {
+      "model": "assets/models/characters/cireneo/cireneo_walk.fbx",
+      "anim": "cireneo_walk (1.63s)",
+      "resolution": 60,
+      "fitZoom": 0.88,
+      "template": "assets/sprites/characters/cireneo/settings.json",
+      "speedFixed8_8": 106,
+      "ticksPerFrame": 12
+    },
+    "cireneo_charge": {
+      "model": "assets/models/characters/cireneo/cireneo_charge.fbx",
+      "anim": "cireneo_charge (0.96s)",
+      "resolution": 60,
+      "fitZoom": 0.88,
+      "template": "assets/sprites/characters/cireneo_charge/settings.json",
+      "speedFixed8_8": 223,
+      "ticksPerFrame": 7
+    },
+    "cireneo_telegraph": {
+      "model": "assets/models/characters/cireneo/cireneo_telegraph.fbx",
+      "anim": "cireneo_telegraph (0.50s)",
+      "resolution": 60,
+      "fitZoom": 0.88,
+      "template": "assets/sprites/characters/cireneo_telegraph/settings.json",
+      "speedFixed8_8": 1107,
+      "ticksPerFrame": 4
+    },
+    "necron": {
+      "model": "assets/models/characters/necron/necron_running_rifle.fbx",
+      "anim": "Rifle Run Forward (0.50s)",
+      "resolution": 40,
+      "template": "assets/sprites/characters/necron/settings.json",
+      "speedFixed8_8": 353,
+      "ticksPerFrame": 4
+    },
+    "skeleton": {
+      "model": "assets/models/characters/skeleton/skeleton.fbx",
+      "anim": "andando despacio como un zombie (2.92s)",
+      "resolution": 40,
+      "template": "assets/sprites/characters/skeleton/settings.json",
+      "speedFixed8_8": 39,
+      "ticksPerFrame": 22
+    }
+  }
+}

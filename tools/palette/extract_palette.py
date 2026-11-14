@@ -299,6 +299,8 @@ def main(argv=None):
             parser.error(f"no existe la imagen: {path}")
         stem = path.stem
         if stem in output_stems:
+            stem = f"{path.parent.name}_{path.stem}"
+        if stem in output_stems:
             parser.error(f"dos entradas comparten el nombre de salida '{stem}'")
         output_stems.add(stem)
         rgb, valid = load_ds_image(path, args.native)

@@ -17,12 +17,12 @@ PROP_PALETTE = ROOT / "assets/environment/cathedral/palette/palette.json"
 OUTPUT = ROOT / "source/strip_kit.c"
 DEFAULT_PROPS = ("columna_entera", "banco_entero", "relicario", "vela",
                  "lapida_3x2_cruz", "lapida_3x2_cab", "lapida_2x1_cruz", "lapida_2x1_cab",
-                 "banco_grupo4")
+                 "banco_grupo4", "santo")
 # Piece ids emitted in StripStamp.piece_id; must match enum STRIP_PIECE_* in include/strip_kit.h.
 PIECE_IDS = {
     "columna_entera": 1, "banco_entero": 2, "relicario": 3, "vela": 4,
     "lapida_3x2_cruz": 5, "lapida_3x2_cab": 6, "lapida_2x1_cruz": 7, "lapida_2x1_cab": 8,
-    "banco_grupo4": 9,
+    "banco_grupo4": 9, "santo": 10,
 }
 LAPIDA_NAMES = ("lapida_3x2_cruz", "lapida_3x2_cab", "lapida_2x1_cruz", "lapida_2x1_cab")
 # Piezas sin carpeta propia: se componen en el baker a partir de otras.
@@ -489,6 +489,8 @@ LEFT_BENCH_X = (19, 16)     # banco_grupo4 izquierdo: pc 3 o pc 0, por hash; pas
 BENCH_DY = (0, 8)           # fila de inicio del banco dentro de la pantalla (pr 0 u 8)
 RELIC_X = 28                # relicario en el eje (pc 12); fila 9 (A, pr 9) o 33 (B, pr 1)
 RELIC_DY = 9
+SANTO_X = (16, 40)          # santo izquierdo / derecho en el crucero/relicario (fases pc 0 y 8)
+SANTO_DY = 9                # misma fila que relicario y columna (pr 9 en pantalla A, pr 1 en B)
 TOMB_X_MIN, TOMB_X_MAX = 7, 41   # lapida: x de la estampa dentro de 56..456 px
 VELA_REACH = 3              # velas junto a columna: +-3 tiles (+-24 px)
 RELIC_VELA_REACH = 5        # velas junto a relicario: +-5 tiles (+-40 px)
@@ -524,6 +526,7 @@ def catedral_phase_map():
         "columna_entera": [(7, 9), (7, 1), (3, 9), (3, 1)],
         "banco_grupo4": [(3, 0), (3, 8), (0, 0), (0, 8)],
         "relicario": [(12, 9), (12, 1)],
+        "santo": [(0, 9), (0, 1), (8, 9), (8, 1)],
         "vela": list(VELA_PHASES),
         **{name: list(LAPIDA_PHASES) for name in LAPIDA_NAMES},
     }
@@ -651,6 +654,8 @@ def _block_records(stamps, seed, block):
             _try_place(stamps, acc, "struct", "columna_entera", x, top + COLUMN_DY, (0, BLOCK_TILES), clip=True)
         if kinds[s]:
             _try_place(stamps, acc, "struct", "relicario", RELIC_X, top + RELIC_DY, (0, BLOCK_TILES))
+            for x in SANTO_X:
+                _try_place(stamps, acc, "struct", "santo", x, top + SANTO_DY, (0, BLOCK_TILES))
         else:
             lx = LEFT_BENCH_X[_pick(seed, sidx, S_BENCH_LX) & 1]
             ly = top + BENCH_DY[_pick(seed, sidx, S_BENCH_LY) & 1]

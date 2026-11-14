@@ -51,7 +51,7 @@ def check_bench_plan(name, piece):
 
 
 def main():
-    for name in ("columna_entera", "relicario", "vela"):
+    for name in ("columna_entera", "relicario", "vela", "santo"):
         check_physical(name, baker.source_layout(name))
     for name in ("banco_entero", "banco_grupo4"):
         piece = baker.source_layout(name)
@@ -77,7 +77,7 @@ def main():
         assert not piece["foot_runs"], f"{name}: flat floor decoration must stay walkable"
         assert not piece["depth_runs"], f"{name}: flat floor decoration must not occlude actors"
 
-    print("CATHEDRAL_KIT_CONTRACT=PASS physical_props=3 bench_props=2 group_union=ok flat_decor=4")
+    print("CATHEDRAL_KIT_CONTRACT=PASS physical_props=4 bench_props=2 group_union=ok flat_decor=4")
 
 
 if __name__ == "__main__":

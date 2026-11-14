@@ -11,6 +11,11 @@
 //                 heights along the model front (+Z). Without it the muzzle is the weapon tip (or none).
 //   --fitZoom Z   camera zoom-out factor: 1 fills the cell with the model extent; < 1 shrinks the sprite.
 //   --resolution N override frameSize (e.g. 60 for 60x60).
+//   --legibility L  anterior (default: today's look, AgX tone mapping) or c2 (DESIGN.md 6.9.1b: supersample 4,
+//                   THREE.NeutralToneMapping, lab contrast 1.0, then soft S-curve + alpha-aware sharpen on all frames).
+//   --tone T        tone mapping override: agx or neutral. Default follows --legibility (c2 -> neutral).
+//   --supersample N / --contrast N  explicit overrides of the template's supersample / lab contrast
+//                   (c2 implies 4 / 1.0 unless given).
 //   --list  prints the animation clips and exits without rendering.
 const fs = require('node:fs');
 const path = require('node:path');
@@ -24,7 +29,7 @@ if (!chromium) { console.error('Playwright not found'); process.exit(1); }
 
 const argv = process.argv.slice(2);
 const opt = (n) => { const i = argv.indexOf(n); return i >= 0 ? argv[i + 1] : undefined; };
-const flagVals = new Set(['--template', '--anim', '--rigScale', '--light', '--outline', '--saturation', '--muzzleBone', '--muzzleForward', '--fitZoom', '--resolution']);
+const flagVals = new Set(['--template', '--anim', '--rigScale', '--light', '--outline', '--saturation', '--muzzleBone', '--muzzleForward', '--fitZoom', '--resolution', '--tone', '--supersample', '--contrast', '--legibility']);
 const pos = argv.filter((a, i) => !a.startsWith('--') && !(i > 0 && flagVals.has(argv[i - 1])));
 const listOnly = argv.includes('--list');
 const model = pos[0] && path.resolve(pos[0]);
@@ -57,17 +62,27 @@ const HTML = path.join(__dirname, 'FBX-Web-Renderer-offline.html');
     console.log('animations: ' + JSON.stringify(anims));
     if (listOnly) return;
 
-    const anim = opt('--anim') || anims[0];
+    const anim = opt('--anim') || s.animation || anims[0];
     const rigScale = opt('--rigScale') !== undefined ? parseFloat(opt('--rigScale')) : s.rigScale;
     const lightPreset = opt('--light') || s.lightPreset || (s.lighting && s.lighting.preset);
     const outlineMode = opt('--outline') || s.outlineMode;
     const saturation = opt('--saturation') !== undefined ? parseFloat(opt('--saturation')) : s.saturation;
-    const muzzleBone = opt('--muzzleBone');
-    const muzzleForward = opt('--muzzleForward') !== undefined ? parseFloat(opt('--muzzleForward')) : undefined;
-    const fitZoom = opt('--fitZoom') !== undefined ? parseFloat(opt('--fitZoom')) : undefined;
+    const muzzleBone = opt('--muzzleBone') || (s.muzzleSource && s.muzzleSource.bone) || undefined;
+    const muzzleForward = opt('--muzzleForward') !== undefined ? parseFloat(opt('--muzzleForward')) : (s.muzzleSource && s.muzzleSource.forward !== undefined ? s.muzzleSource.forward : undefined);
+    const fitZoom = opt('--fitZoom') !== undefined ? parseFloat(opt('--fitZoom')) : (s.fitZoom !== undefined ? s.fitZoom : 1);
     const resolution = opt('--resolution') !== undefined ? parseInt(opt('--resolution'), 10) : undefined;
+    const legibility = opt('--legibility') || 'anterior';
+    if (!['anterior', 'c2'].includes(legibility)) { console.error('--legibility must be anterior or c2'); process.exit(2); }
+    const toneOpt = opt('--tone');
+    if (toneOpt !== undefined && !['agx', 'neutral'].includes(toneOpt)) { console.error('--tone must be agx or neutral'); process.exit(2); }
+    const tone = toneOpt || (legibility === 'c2' ? 'neutral' : 'agx');
+    const supersampleOpt = opt('--supersample') !== undefined ? parseInt(opt('--supersample'), 10) : undefined;
+    const contrastOpt = opt('--contrast') !== undefined ? parseFloat(opt('--contrast')) : undefined;
+    if (legibility === 'c2') { s.supersample = 4; s.contrast = 1.0; }
+    if (supersampleOpt !== undefined) s.supersample = supersampleOpt;
+    if (contrastOpt !== undefined) s.contrast = contrastOpt;
 
-    const setup = await page.evaluate(async ({ s, anim, rigScale, lightPreset, outlineMode, saturation, muzzleBone, muzzleForward, fitZoom, resolution }) => {
+    const setup = await page.evaluate(async ({ s, anim, rigScale, lightPreset, outlineMode, saturation, muzzleBone, muzzleForward, fitZoom, resolution, tone, toneOpt, legibility }) => {
       const set = (id, v) => {
         const el = document.getElementById(id);
         if (!el || v === undefined || v === null) return;
@@ -75,6 +90,8 @@ const HTML = path.join(__dirname, 'FBX-Web-Renderer-offline.html');
         el.dispatchEvent(new Event('input', { bubbles: true }));
         el.dispatchEvent(new Event('change', { bubbles: true }));
       };
+      // Preset de legibilidad primero (C2 fuerza supersample/contraste); los valores efectivos se fijan justo despues.
+      set('labLegibility', legibility);
       set('resolution', resolution !== undefined ? resolution : parseInt(String(s.frameSize).split('x')[0], 10));
       set('frameCount', s.framesPerDirection);
       set('elevation', s.cameraElevationDegrees);
@@ -107,9 +124,15 @@ const HTML = path.join(__dirname, 'FBX-Web-Renderer-offline.html');
       if (typeof rigScale === 'number') lab.rigScale = rigScale;
       lab.muzzleBone = muzzleBone || null;
       if (typeof muzzleForward === 'number') lab.muzzleForward = muzzleForward;
+      lab.toneMapping = toneOpt || null; // null: el preset decide (c2 -> neutral, anterior -> agx)
       lab.fitZoom = typeof fitZoom === 'number' ? fitZoom : 1;
       const sel = document.getElementById('animSelect');
-      const idx = Array.from(sel.options).findIndex(o => o.textContent === anim);
+      let idx = Array.from(sel.options).findIndex(o => o.textContent === anim);
+      if (idx < 0) {
+        const clean = (t) => (t || '').replace(/\s*\(\s*\d+(?:\.\d+)?s\s*\)\s*$/, '').trim();
+        const target = clean(anim);
+        idx = Array.from(sel.options).findIndex(o => clean(o.textContent) === target);
+      }
       if (idx < 0) return { ok: false };
       sel.selectedIndex = idx; sel.dispatchEvent(new Event('change', { bubbles: true }));
       return {
@@ -122,7 +145,7 @@ const HTML = path.join(__dirname, 'FBX-Web-Renderer-offline.html');
         keyLight: document.getElementById('keyLight')?.value,
         keyColor: document.getElementById('keyColor')?.value
       };
-    }, { s, anim, rigScale, lightPreset, outlineMode, saturation, muzzleBone, muzzleForward, fitZoom, resolution });
+    }, { s, anim, rigScale, lightPreset, outlineMode, saturation, muzzleBone, muzzleForward, fitZoom, resolution, tone, toneOpt, legibility });
     if (!setup.ok) { console.error(`animation "${anim}" not found`); process.exitCode = 1; return; }
     console.log('Setup applied: ' + JSON.stringify(setup));
     await page.waitForTimeout(1000);
@@ -156,6 +179,10 @@ const HTML = path.join(__dirname, 'FBX-Web-Renderer-offline.html');
         if (outlineMode) outData.outlineMode = outlineMode;
         if (muzzleBone) outData.muzzleSource = { bone: muzzleBone, forward: muzzleForward ?? 0.05 };
         if (fitZoom !== undefined) outData.fitZoom = fitZoom;
+        outData.toneMapping = tone;
+        outData.legibility = legibility;
+        if (s.speedFixed8_8 !== undefined) outData.speedFixed8_8 = s.speedFixed8_8;
+        if (s.ticksPerFrame !== undefined) outData.ticksPerFrame = s.ticksPerFrame;
         fs.writeFileSync(outSettings, JSON.stringify(outData, null, 2) + '\n');
       } catch (e) {
         console.warn('Could not update exported settings.json with light/outline:', e.message);

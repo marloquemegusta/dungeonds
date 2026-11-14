@@ -4,6 +4,8 @@ from PIL import Image
 WT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 parser = argparse.ArgumentParser()
 parser.add_argument('--src', default=os.path.join(WT, 'assets/sprites/characters'))
+parser.add_argument('--legibility', choices=['auto', 'anterior', 'c2'], default='auto',
+                    help='DS conversion mode: auto (from settings.json), anterior (a<40, shift), or c2 (a<77, rounded)')
 ARGS = parser.parse_args()
 SRC_ROOT = os.path.abspath(ARGS.src)
 SPRITE_W = 40
@@ -113,13 +115,30 @@ def crop_shadow_masks(shb_body, mask_body, shw=SHADOW_W, shh=SHADOW_H, frame_ind
     return ''.join(off_lines), ''.join(data_lines)
 
 
+def resolve_legibility(char_dir, cli_mode):
+    if cli_mode in ('anterior', 'c2'):
+        return cli_mode
+    settings_path = os.path.join(char_dir, 'settings.json')
+    if os.path.exists(settings_path):
+        try:
+            with open(settings_path, 'r', encoding='utf-8') as sf:
+                sdata = json.load(sf)
+                if sdata.get('legibility') == 'c2':
+                    return 'c2'
+        except Exception:
+            pass
+    return 'anterior'
+
+
 RUN_STATS = []
 
 
-def convert_sheet_cropped(png_path, w=SPRITE_W, h=SPRITE_H, dir_shift=None, frame_indices=None):
+def convert_sheet_cropped(png_path, w=SPRITE_W, h=SPRITE_H, dir_shift=None, frame_indices=None, legibility='anterior'):
     im = Image.open(png_path).convert('RGBA')
     if frame_indices is None:
         frame_indices = list(range(8))
+    use_c2 = (legibility == 'c2')
+    alpha_thresh = 77 if use_c2 else 40
     pixels_all = []
     offsets = []
     bounds = []
@@ -142,12 +161,17 @@ def convert_sheet_cropped(png_path, w=SPRITE_W, h=SPRITE_H, dir_shift=None, fram
                         r, g, b, a = 0, 0, 0, 0
                     else:
                         r, g, b, a = cell.getpixel((x, sy))
-                    if a < 40:
+                    if a < alpha_thresh:
                         val = 0
                     else:
-                        r5 = (r >> 3) & 0x1F
-                        g5 = (g >> 3) & 0x1F
-                        b5 = (b >> 3) & 0x1F
+                        if use_c2:
+                            r5 = (r * 31 + 127) // 255
+                            g5 = (g * 31 + 127) // 255
+                            b5 = (b * 31 + 127) // 255
+                        else:
+                            r5 = (r >> 3) & 0x1F
+                            g5 = (g >> 3) & 0x1F
+                            b5 = (b >> 3) & 0x1F
                         val = r5 | (g5 << 5) | (b5 << 10) | 0x8000
                         if x < min_x: min_x = x
                         if x > max_x: max_x = x
@@ -299,7 +323,8 @@ for var_name, folder, disp_name, spd, ticks, sw, sh, shw, shh, out_shw, out_shh 
             muzzle = [[[int(v) for v in dm[d][f]] for f in range(8)] for d in range(8)]
     all_muzzles.append(muzzle)
 
-    fr_offs, fr_bnds, fr_pix, fr_run_offs, fr_runs = convert_sheet_cropped(png_path, sw, sh)
+    char_mode = resolve_legibility(char_dir, ARGS.legibility)
+    fr_offs, fr_bnds, fr_pix, fr_run_offs, fr_runs = convert_sheet_cropped(png_path, sw, sh, legibility=char_mode)
     out_lines.append(f'// {sw}x{sh} BGR555 frames for {disp_name}, 8 directions x 8 frames (cropped to bounds)\n')
     out_lines.append(f'const uint16_t g_{var_name}_frames[] __attribute__((aligned(4))) = ')
     out_lines.append(fr_pix)
@@ -335,7 +360,8 @@ chg_frames = [0, 2, 4, 6]
 chg_shb_body, chg_mask_body = crop_shadow_120_to_80(chg_shb_body, chg_mask_body, chg_frames)
 print('charger charge anchors: walk', walk_c_anchors, 'charge', chg_anchors, 'shift', chg_shift)
 
-chg_fr_offs, chg_fr_bnds, chg_fr_pix, chg_run_offs, chg_runs = convert_sheet_cropped(os.path.join(CHARGE_DIR, 'spritesheet.png'), 60, 60, chg_shift, chg_frames)
+chg_mode = resolve_legibility(CHARGE_DIR, ARGS.legibility)
+chg_fr_offs, chg_fr_bnds, chg_fr_pix, chg_run_offs, chg_runs = convert_sheet_cropped(os.path.join(CHARGE_DIR, 'spritesheet.png'), 60, 60, chg_shift, chg_frames, legibility=chg_mode)
 out_lines.append('// 60x60 BGR555 charge clip of the charger (CHAR_CHARGER), 8 directions x 4 frames (cropped to bounds)\n')
 out_lines.append('const uint16_t g_charger_charge_frames[] __attribute__((aligned(4))) = ')
 out_lines.append(chg_fr_pix)
@@ -369,7 +395,8 @@ tg_shift = [walk_c_anchors[d] - tg_anchors[d] for d in range(8)]
 tg_frames = [6]
 print('charger telegraph anchors: walk', walk_c_anchors, 'telegraph', tg_anchors, 'shift', tg_shift)
 
-tg_fr_offs, tg_fr_bnds, tg_fr_pix, tg_run_offs, tg_runs = convert_sheet_cropped(os.path.join(TELE_DIR, 'spritesheet.png'), 60, 60, tg_shift, tg_frames)
+tg_mode = resolve_legibility(TELE_DIR, ARGS.legibility)
+tg_fr_offs, tg_fr_bnds, tg_fr_pix, tg_run_offs, tg_runs = convert_sheet_cropped(os.path.join(TELE_DIR, 'spritesheet.png'), 60, 60, tg_shift, tg_frames, legibility=tg_mode)
 out_lines.append('// 60x60 BGR555 telegraph keyframe of the charger (CHAR_CHARGER), 8 directions x 1 frame (cropped to bounds)\n')
 out_lines.append('const uint16_t g_charger_telegraph_frames[] __attribute__((aligned(4))) = ')
 out_lines.append(tg_fr_pix)
@@ -395,7 +422,8 @@ with open(os.path.join(SHOT_DIR, 'settings.json'), 'r', encoding='utf-8') as sf:
     shot_dm = json.load(sf)['dirMuzzle']
 shot_muzzle = [[[int(v) for v in shot_dm[d][f]] for f in range(8)] for d in range(8)]
 
-shot_fr_offs, shot_fr_bnds, shot_fr_pix, shot_run_offs, shot_runs = convert_sheet_cropped(os.path.join(SHOT_DIR, 'spritesheet.png'), SPRITE_W, SPRITE_H, shot_shift)
+shot_mode = resolve_legibility(SHOT_DIR, ARGS.legibility)
+shot_fr_offs, shot_fr_bnds, shot_fr_pix, shot_run_offs, shot_runs = convert_sheet_cropped(os.path.join(SHOT_DIR, 'spritesheet.png'), SPRITE_W, SPRITE_H, shot_shift, legibility=shot_mode)
 out_lines.append('// 40x40 BGR555 shot clip of the hero (CHAR_HERO only), 8 directions x 8 frames: f0 arms crossed, f7 collapsed (cropped to bounds)\n')
 out_lines.append('const uint16_t g_player_shot_frames[] __attribute__((aligned(4))) = ')
 out_lines.append(shot_fr_pix)

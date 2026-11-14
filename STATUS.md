@@ -296,3 +296,9 @@ El láser de apuntado se colima durante la carga (ancho, difuso y rojo a 1 px ve
 - DS física (`stress-perf`, 48 enemigos): 14,3–15,1 ms de media, peor frame 17–18,5 ms; versión normal jugada sin caídas.
 - Arreglado el log de `PERF_PROFILE` (ruta `fat:/` explícita por NitroFS).
 - Detalle: [`walkthroughs/hw-shadows/`](walkthroughs/hw-shadows/walkthrough.md).
+
+## 2026-11-14 - Legibilidad C2, estatuas y flujo único de reconstrucción (`feat/legibilidad-lab`)
+
+- **Legibilidad C2 en personajes y props:** tono neutro, curva S suave, enfoque suave, bordes al 30 % y redondeo BGR555 en `generate_player_sprites_c.py` y `prerender_props.py`, con paleta de props recalculada automáticamente (`extract_palette.py`: 144 tonos únicos, 156/256 compartidos). Comparativas A/B en [`walkthroughs/legibilidad-lab/`](walkthroughs/legibilidad-lab/walkthrough.md); decisión en `DESIGN.md` §6.9.1b.
+- **Estatuas y velas:** integradas dos estatuas `santo` simétricas en los tramos abiertos/relicario (`strip_kit.h`, `strip.c`, `bake_cathedral_kit.py`: 896/1024 tiles, peor ventana 389/<440) y limpiados los trozos sueltos de alambre en `vela` con `prep_props.py`.
+- **Flujo único en 1 comando:** creado el manifiesto `assets/sprites/characters/characters.json` y el orquestador `tools/rebuild_all.py` (conectado a `tools/rebuild-assets.ps1`) para re-renderizar, extraer paleta, hornear, pasar los 15 tests de contrato y compilar `dungeonds.nds` sin warnings. Validado en la Nintendo DS física por el usuario.

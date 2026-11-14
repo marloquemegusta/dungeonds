@@ -12,12 +12,12 @@
   "scale_factor": 0.06796116504854369,
   "source_render_px": [
     515,
-    1727
+    1726
   ],
   "yaw": 0,
   "depth_units": "sprite_px",
-  "tiles_8x8_nonempty": 60,
-  "tiles_8x8_unique": 60,
+  "tiles_8x8_nonempty": 67,
+  "tiles_8x8_unique": 67,
   "shadow_offset_px": [
     -8,
     0
