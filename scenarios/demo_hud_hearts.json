@@ -1,0 +1,13 @@
+{
+  "name": "demo_hud_hearts",
+  "description": "ROM principal (modo strip), heroe vivo y sin tocar nada: la pantalla inferior muestra la fila de corazones de vida arriba a la derecha (5 llenos al arrancar). Captura al arrancar y tras 3 s de juego.",
+  "steps": [
+    { "frames": 30, "capture": "00_start_hearts_full" },
+    { "frames": 180, "capture": "01_after_3s_alive" }
+  ],
+  "assertions": {
+    "screen_changes": [
+      { "from": "00_start_hearts_full", "to": "01_after_3s_alive", "min_changed_pixels": 1 }
+    ]
+  }
+}

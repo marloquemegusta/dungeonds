@@ -22,6 +22,7 @@
 #include "hwshadow.h"
 #include "pickups.h"
 #include "sfx.h"
+#include "hud_icons_gfx.h"
 #include <string.h>
 #include <time.h>
 
@@ -1236,6 +1237,17 @@ static void hud_square(uint16_t *buffer, int x, int y, int size, uint16_t fill, 
     }
 }
 
+// Opaque pixels of a HUD icon (BIT(15) set), clipped to the screen; transparent ones are skipped.
+static void hud_icon(uint16_t *buffer, int x, int y, const uint16_t *icon) {
+    for (int gy = 0; gy < HUD_ICON_H; gy++) {
+        dirty_row(y + gy, x, x + HUD_ICON_W);
+        for (int gx = 0; gx < HUD_ICON_W; gx++) {
+            uint16_t c = icon[gy * HUD_ICON_W + gx];
+            if (c) hud_px(buffer, x + gx, y + gy, c);
+        }
+    }
+}
+
 static void draw_run_hud(uint16_t *buffer) {
     const uint16_t ink = RGB15(31, 31, 31) | BIT(15);
     const uint16_t dark = RGB15(5, 1, 1) | BIT(15);
@@ -1258,6 +1270,14 @@ static void draw_run_hud(uint16_t *buffer) {
         hud_text(buffer, 6, SCREEN_H - 32, line, ink);
         snprintf(line, sizeof(line), "TIEMPO %lu:%02lu", (unsigned long)(seconds / 60u), (unsigned long)(seconds % 60u));
         hud_text(buffer, 6, SCREEN_H - 16, line, ink);
+
+        // Sacred Hearts: one per max hit point, right-aligned at the top of the bottom screen.
+        const int heart_gap = 2;
+        int max_hp = g_player_state.max_hp;
+        int hx0 = SCREEN_W - 6 - max_hp * (HUD_ICON_W + heart_gap) + heart_gap;
+        for (int i = 0; i < max_hp; i++)
+            hud_icon(buffer, hx0 + i * (HUD_ICON_W + heart_gap), 6,
+                     i < g_player_state.hp ? g_hud_heart_full : g_hud_heart_empty);
         return;
     }
 
@@ -1716,10 +1736,12 @@ static void player_update(uint32_t keys, uint32_t keys_down) {
         }
     }
 
-    // L is the only button of the test: it switches weapon (and cancels a sniper aim).
+#if TEST_WEAPON_CYCLE
+    // Test variants only: L switches weapon (and cancels a sniper aim). The demo ROM has just the laser.
     if (keys_down & KEY_L) {
         weapons_cycle(&g_player_state);
     }
+#endif
     // Playground ROM: R puts the parked dummies back (no-op in every other build).
     if (keys_down & KEY_R) sandbox_respawn();
     // DESIGN.md 4.9 (debug): SELECT cycles the shotgun and grenade effects style A/B/C (the sniper is always C).

@@ -66,7 +66,11 @@ void player_state_init(PlayerState *player) {
     if (!player) return;
     player->max_hp = PLAYER_MAX_HP + g_mods.max_hp;
     player->hp = player->max_hp;
+#if TEST_WEAPON_CYCLE
     player->current_weapon = WEAPON_SHOTGUN;
+#else
+    player->current_weapon = WEAPON_SNIPER;  // demo: the laser is the hero's only weapon (DESIGN.md 6.9.1c)
+#endif
     player->is_dead = 0;
     player->invuln_timer = 0;
 }

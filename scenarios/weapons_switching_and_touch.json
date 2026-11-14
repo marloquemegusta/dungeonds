@@ -3,29 +3,7 @@
   "steps": [
     {
       "frames": 20,
-      "capture": "00_shotgun_idle"
-    },
-    {
-      "tap": {
-        "x": 190,
-        "y": 80
-      },
-      "frames": 6,
-      "capture": "01_shotgun_shot"
-    },
-    {
-      "release": true,
-      "frames": 45,
-      "capture": "02_shotgun_recovered"
-    },
-    {
-      "button_down": "L",
-      "frames": 2
-    },
-    {
-      "button_up": "L",
-      "frames": 10,
-      "capture": "03_sniper_selected"
+      "capture": "00_sniper_idle"
     },
     {
       "tap": {
@@ -33,12 +11,12 @@
         "y": 80
       },
       "frames": 8,
-      "capture": "04_sniper_aiming"
+      "capture": "01_sniper_aiming"
     },
     {
       "release": true,
       "frames": 10,
-      "capture": "05_early_release_no_shot"
+      "capture": "02_early_release_no_shot"
     },
     {
       "tap": {
@@ -46,56 +24,31 @@
         "y": 80
       },
       "frames": 40,
-      "capture": "06_sniper_armed"
+      "capture": "03_sniper_armed"
     },
     {
       "release": true,
       "frames": 5,
-      "capture": "07_sniper_shot"
+      "capture": "04_sniper_shot"
     },
     {
       "frames": 60,
-      "capture": "08_sniper_recovered"
-    },
-    {
-      "tap": {
-        "x": 200,
-        "y": 80
-      },
-      "frames": 40,
-      "capture": "09_sniper_armed_again"
-    },
-    {
-      "button_down": "L",
-      "frames": 2
-    },
-    {
-      "button_up": "L",
-      "frames": 2
-    },
-    {
-      "release": true,
-      "frames": 10,
-      "capture": "10_cancelled_by_weapon_switch"
+      "capture": "05_sniper_recovered"
     }
   ],
   "assertions": {
     "screen_changes": [
       {
-        "from": "00_shotgun_idle",
-        "to": "01_shotgun_shot",
-        "min_changed_pixels": 30
-      },
-      {
-        "from": "03_sniper_selected",
-        "to": "04_sniper_aiming",
+        "from": "00_sniper_idle",
+        "to": "01_sniper_aiming",
         "min_changed_pixels": 10
       },
       {
-        "from": "06_sniper_armed",
-        "to": "07_sniper_shot",
+        "from": "03_sniper_armed",
+        "to": "04_sniper_shot",
         "min_changed_pixels": 30
       }
     ]
-  }
+  },
+  "description": "ROM principal: el heroe sale con el laser (unica arma, L ya no cambia de arma). Apunta tactil, soltar pronto no dispara, armado y disparo."
 }

@@ -4,6 +4,8 @@ Primero el estado necesario para retomar el trabajo sin depender del chat; despu
 
 ## Estado actual (2026-11-14)
 
+- **Demo para un colega (`feat/demo-colega`, 2026-11-14, `walkthroughs/demo-colega/`):** HUD de vida con 5 Sagrados Corazones (`14×18` px, pre-renderizados en el lab con `--legibility c2`) en la pantalla inferior, láser como arma única en la ROM principal (`L` desactivado; `SELECT` e `Y` activos para comparar VFX). Compilación sin warnings (`default` y `playground`), 16/16 tests de host y 3 escenarios headless PASS; pendiente validar en la DS física.
+
 - **Cámara con adelanto vertical (`feat/camera-lookahead`, 2026-11-14, `walkthroughs/camera-lookahead/`):** encuadre *look-ahead* en la pantalla inferior (`CAM_ANCHOR_UP = 132` al subir, `CAM_ANCHOR_DOWN = 64` al bajar, retardo de 22 frames y *freeze* al parar o *kitear* apuntando hacia delante). Compilación sin warnings, contratos host OK (14/14) y validada en la DS física.
 
 - **Sombras por hardware y horda doble (`perf/hw-shadows`, 2026-11-14, `walkthroughs/hw-shadows/`):** sombras oscurecidas por la consola (ventana OBJ) en vez del procesador, IA con rejilla y LOD, blit por tramos opacos, limpieza más rápida, camino caliente en ITCM y picos de rebase/láseres/muertes troceados. Medido en la DS con 48 enemigos: **14,3–15,1 ms** de media (antes 34–36 ms, 20 FPS), casi siempre a 60 FPS; la versión normal (24) va sobrada. La separación entre enemigos se conserva. Siguiente cuello: el blit (~6 ms con horda llena). Variantes `stress` y `stress-perf` y banco A/B `perf_stress_bench` (`TECHNICAL.md` §3.6).

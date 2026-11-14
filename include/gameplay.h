@@ -66,6 +66,13 @@ extern const EnemyTuning g_enemy_tuning[NUM_ENEMY_TYPES];
 #ifndef STRESS_TEST
 #define STRESS_TEST 0               // 1 = measurement build: big horde, 1 HP enemies, god mode (variants stress / stress-perf)
 #endif
+// Demo ROM (DESIGN.md 6.9.1c): the laser is the only weapon and L does not cycle weapons.
+// The test variants (sandbox, playground, stress, godrays) keep the shotgun start and the L cycle.
+#if SANDBOX || PLAYGROUND || STRESS_TEST || GODRAYS_PROTO
+#define TEST_WEAPON_CYCLE 1
+#else
+#define TEST_WEAPON_CYCLE 0
+#endif
 #if STRESS_TEST
 #define MAX_GAMEPLAY_ENEMIES 64
 #else
