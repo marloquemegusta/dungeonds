@@ -16,7 +16,9 @@ int main(int argc, char **argv) {
         for (int px = -max_x; px <= max_x; px++) {
             int dy = -up + h;
             int old_hit = px * px + GROUND_DY2(dy) <= ENEMY_HIT_RADIUS * ENEMY_HIT_RADIUS;
-            int new_hit = large
+            int new_hit = large == 2
+                ? body_hit_test_ex(px, dy, h, OJO_BODY_HIT_CY, OJO_BODY_HIT_RX, OJO_BODY_HIT_RY)
+                : large
                 ? body_hit_test_ex(px, dy, h, CHARGER_BODY_HIT_CY, CHARGER_BODY_HIT_RX, CHARGER_BODY_HIT_RY)
                 : body_hit_test(px, dy, h);
             printf("%d %d %d %d %d\n", px, up, old_hit, new_hit, 0);

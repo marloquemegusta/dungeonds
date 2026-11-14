@@ -68,7 +68,7 @@ class SkeletonContractTest(unittest.TestCase):
     def test_a_woken_pack_chases_at_once(self):
         # DESIGN.md 5: no detection states; a woken pack goes straight to its first active state.
         self.assertIn("e->state = ENEMY_INITIAL_STATE(e->type);", ENCOUNTERS_C)
-        self.assertIn("(type) == ENEMY_TYPE_SHOOTER ? ENEMY_STATE_POSITION : ENEMY_STATE_CHASE", GAMEPLAY_H)
+        self.assertIn("#define ENEMY_INITIAL_STATE(type) ENEMY_STATE_CHASE", GAMEPLAY_H)
 
 
 class ChargerContractTest(unittest.TestCase):

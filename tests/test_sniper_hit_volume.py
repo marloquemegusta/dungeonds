@@ -11,7 +11,7 @@ from test_sprite_ground_anchor import exported_anchors, frame_bounds, frame_offs
 
 WEAPONS_C = (ROOT / "source" / "weapons.c").read_text(encoding="utf-8")
 HIT_H = (ROOT / "include" / "hitvolume.h").read_text(encoding="utf-8")
-CHARACTERS = {"charger": ("g_charger_frames", 1, 60, 60, 1), "shooter": ("g_necron_frames", 2, 40, 40, 0)}
+CHARACTERS = {"charger": ("g_charger_frames", 1, 60, 60, 1), "shooter": ("g_ojo_frames", 2, 40, 40, 2)}
 MUZZLE_HEIGHTS = (14, 18, 22)
 
 

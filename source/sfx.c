@@ -23,6 +23,8 @@ static mm_sfxhand s_charge_handle = 0;
 static FILE *s_bgm_file = NULL;
 static int s_audio_ready = 0;
 static int s_stream_active = 0;
+static int s_bgm_paused = 0;
+static long s_bgm_saved_pos = 0;
 
 static const mm_word s_mm_ids[SND_COUNT] = {
     [SND_HEART_CHARGE] = SFX_HEART_CHARGE,
@@ -162,9 +164,26 @@ void sfx_stop_charge(void) {
 #endif
 }
 
+#ifdef ARM9
+static void open_bgm_stream(void) {
+    mm_stream st = {
+        .sampling_rate = BGM_SAMPLE_RATE,
+        .buffer_length = BGM_BUFFER_LEN,
+        .callback      = bgm_stream_cb,
+        .format        = MM_STREAM_8BIT_MONO,
+        .timer         = MM_TIMER0,
+        .manual        = true,
+    };
+    mmStreamOpen(&st);
+    s_stream_active = 1;
+}
+#endif
+
 void sfx_start_bgm(void) {
     sfx_stop_bgm();
 #ifdef ARM9
+    s_bgm_saved_pos = 0;
+    s_bgm_paused = 0;
     if (!s_audio_ready) return;
     if (!s_bgm_file) {
         s_bgm_file = fopen("nitro:/bgm.raw", "rb");
@@ -172,16 +191,7 @@ void sfx_start_bgm(void) {
         fseek(s_bgm_file, 0, SEEK_SET);
     }
     if (s_bgm_file) {
-        mm_stream st = {
-            .sampling_rate = BGM_SAMPLE_RATE,
-            .buffer_length = BGM_BUFFER_LEN,
-            .callback      = bgm_stream_cb,
-            .format        = MM_STREAM_8BIT_MONO,
-            .timer         = MM_TIMER0,
-            .manual        = true,
-        };
-        mmStreamOpen(&st);
-        s_stream_active = 1;
+        open_bgm_stream();
     }
 #endif
 }
@@ -192,5 +202,30 @@ void sfx_stop_bgm(void) {
         mmStreamClose();
         s_stream_active = 0;
     }
+    s_bgm_paused = 0;
+    s_bgm_saved_pos = 0;
+#endif
+}
+
+void sfx_set_bgm_paused(int paused) {
+#ifdef ARM9
+    if (paused) {
+        sfx_stop_charge();
+        if (s_stream_active) {
+            long pos = s_bgm_file ? ftell(s_bgm_file) : 0;
+            s_bgm_saved_pos = pos >= 0 ? pos : 0;
+            mmStreamClose();
+            s_stream_active = 0;
+            s_bgm_paused = 1;
+        }
+    } else {
+        if (s_bgm_paused && s_audio_ready && s_bgm_file) {
+            fseek(s_bgm_file, s_bgm_saved_pos, SEEK_SET);
+            open_bgm_stream();
+            s_bgm_paused = 0;
+        }
+    }
+#else
+    (void)paused;
 #endif
 }

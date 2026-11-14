@@ -722,6 +722,8 @@ static void fire_sniper(const WeaponTuning *tuning, const WeaponInput *in, fixed
             int edy = TO_INT(cur_y - e->y);
             int hit = (e->char_id == CHAR_CHARGER)
                 ? body_hit_test_ex(edx, edy, in->muzzle_h, CHARGER_BODY_HIT_CY, CHARGER_BODY_HIT_RX, CHARGER_BODY_HIT_RY)
+                : (e->char_id == CHAR_OJO)
+                ? body_hit_test_ex(edx, edy, in->muzzle_h, OJO_BODY_HIT_CY, OJO_BODY_HIT_RX, OJO_BODY_HIT_RY)
                 : body_hit_test(edx, edy, in->muzzle_h);
             if (hit) {
                 hit_mask |= 1u << i;
@@ -1160,7 +1162,8 @@ void weapons_update(Enemy *enemies, int max_enemies) {
             if (!e->active || e->hp <= 0 || (p->hit_mask & (1u << e_idx))) continue;
             int dx = TO_INT(p->x - e->x);
             int dy = TO_INT(p->y - e->y);
-            if (dx * dx + GROUND_DY2(dy) > ENEMY_HIT_RADIUS * ENEMY_HIT_RADIUS) continue;
+            int hit_radius = e->char_id == CHAR_OJO ? 15 : ENEMY_HIT_RADIUS;
+            if (dx * dx + GROUND_DY2(dy) > hit_radius * hit_radius) continue;
 
             // Damage falls off from 100% at the muzzle to 25% at the end of the range.
             int damage = (p->damage * (64 + (192 * p->life) / p->max_life)) >> 8;

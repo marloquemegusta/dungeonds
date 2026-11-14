@@ -71,6 +71,39 @@
       "template": "assets/sprites/characters/skeleton/settings.json",
       "speedFixed8_8": 39,
       "ticksPerFrame": 22
+    },
+    "ojo": {
+      "model": "assets/models/characters/ojo/ojo_walk.fbx",
+      "anim": "ojo_walk (1.67s)",
+      "resolution": 56,
+      "fitZoom": 0.78,
+      "muzzleBone": "mixamorig:OjoMouth",
+      "muzzleForward": 0,
+      "template": "tools/characters/ojo_lab_template.json",
+      "speedFixed8_8": 117,
+      "ticksPerFrame": 12
+    },
+    "ojo_look": {
+      "model": "assets/models/characters/ojo/ojo_look.fbx",
+      "anim": "ojo_look (0.33s)",
+      "resolution": 56,
+      "fitZoom": 0.78,
+      "muzzleBone": "mixamorig:OjoMouth",
+      "muzzleForward": 0,
+      "template": "tools/characters/ojo_lab_template.json",
+      "speedFixed8_8": 159,
+      "ticksPerFrame": 3
+    },
+    "ojo_sentence": {
+      "model": "assets/models/characters/ojo/ojo_sentence.fbx",
+      "anim": "ojo_sentence (0.33s)",
+      "resolution": 56,
+      "fitZoom": 0.78,
+      "muzzleBone": "mixamorig:OjoMouth",
+      "muzzleForward": 0,
+      "template": "tools/characters/ojo_lab_template.json",
+      "speedFixed8_8": 159,
+      "ticksPerFrame": 3
     }
   }
 }

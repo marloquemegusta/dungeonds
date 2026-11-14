@@ -23,10 +23,8 @@ typedef enum {
 typedef struct {
     int max_hp;             // [TUNABLE-PLACEHOLDER] base health points
     fixed speed;            // [TUNABLE-PLACEHOLDER] 8.8 fixed movement speed
-    int attack_cooldown;    // [TUNABLE-PLACEHOLDER] frames between bites (skeleton) / after a laser shot (shooter)
-    int preferred_dist_min; // [TUNABLE-PLACEHOLDER] min distance band (ground px); melee types: 0
-    int preferred_dist_max; // [TUNABLE-PLACEHOLDER] max distance band (ground px); skeleton: melee range
-    int position_duration;  // [TUNABLE-PLACEHOLDER] shooter: frames settling before it starts a laser
+    int attack_cooldown;    // [TUNABLE-PLACEHOLDER] frames between bites (skeleton) / after a sentence (Ojo)
+    int preferred_dist_max; // [TUNABLE-PLACEHOLDER] skeleton: melee range (ground px); others: 0
     int telegraph_duration; // [TUNABLE-PLACEHOLDER] charger: frames standing still and blinking before the charge
     fixed charge_speed;     // [TUNABLE-PLACEHOLDER] charger: 8.8 fixed speed of the charge
 } EnemyTuning;
@@ -39,23 +37,34 @@ typedef struct {
 #define CHARGER_STUN_HIT_FRAMES 60  // [TUNABLE-PLACEHOLDER] stunned by a shotgun hit during telegraph or charge
 #define CHARGER_HIT_RADIUS 14       // [TUNABLE-PLACEHOLDER] ground px: the charge hurts the player this close
 
-// Shooter laser (DESIGN.md 6.9.1): POSITION -> LASER_AIM -> LASER_FIX -> LASER_FIRE -> COOLDOWN -> POSITION.
-#define SHOOTER_LASER_TRACK_FRAMES 40  // [TUNABLE-PLACEHOLDER] thin green line follows the player
-#define SHOOTER_LASER_FIX_FRAMES 20    // [TUNABLE-PLACEHOLDER] last frames of the charge: the line is locked and wider
-#define SHOOTER_LASER_FIRE_FRAMES 8    // [TUNABLE-PLACEHOLDER] frames the beam is lethal
-#define SHOOTER_LASER_LENGTH 320       // [TUNABLE-PLACEHOLDER] ground px; also the bound of the draw loop
-#define SHOOTER_LASER_HALF_WIDTH 7     // [TUNABLE-PLACEHOLDER] ground px either side of the line that hurt
-#define SHOOTER_MAX_CHARGING 2         // [TUNABLE-PLACEHOLDER] shooters charging a laser at once; the rest wait in their band
+// Ojo del Tribunal (DESIGN.md 6.10, "Mirada colimada"), ENEMY_TYPE_SHOOTER:
+// CHASE (search) -> TRACK (green band follows the hero) -> LOCK (line frozen) -> SENTENCE (beam from the mouth)
+// -> COOLDOWN -> CHASE (POSITION: waiting for a free aiming slot).
+#define OJO_SIGHT_RANGE 140        // [TUNABLE-PLACEHOLDER] ground px: it stops and aims from this far with line of sight
+#define OJO_RANGE_MARGIN 24        // [TUNABLE-PLACEHOLDER] ground px beyond the sight range where a tracking Ojo still follows the hero
+#define OJO_TRACK_FRAMES 40        // [TUNABLE-PLACEHOLDER] frames the band follows the hero while it narrows
+#define OJO_LOCK_FRAMES 20         // [TUNABLE-PLACEHOLDER] frames the line stays frozen: the dodge window
+#define OJO_AIM_FRAMES (OJO_TRACK_FRAMES + OJO_LOCK_FRAMES) // [TUNABLE-PLACEHOLDER] derived: whole aim, also the mouth charge
+#define OJO_BEAM_IMPACT_FRAMES 3   // [TUNABLE-PLACEHOLDER] "llamarada espectral": widest and brightest; it hurts
+#define OJO_BEAM_FLARE_FRAMES 20   // [TUNABLE-PLACEHOLDER] wide, burning edges; it still hurts (a temporary wall)
+#define OJO_BEAM_FADE_FRAMES 8     // [TUNABLE-PLACEHOLDER] dissipation: narrows and breaks up; it no longer hurts
+#define OJO_BEAM_HIT_FRAMES (OJO_BEAM_IMPACT_FRAMES + OJO_BEAM_FLARE_FRAMES) // [TUNABLE-PLACEHOLDER] derived: frames that hurt
+#define OJO_BEAM_FRAMES (OJO_BEAM_HIT_FRAMES + OJO_BEAM_FADE_FRAMES) // [TUNABLE-PLACEHOLDER] derived: whole SENTENCE, the Ojo stands still
+#define OJO_HIT_HALF_WIDTH 8       // [TUNABLE-PLACEHOLDER] ground px either side of the locked line that the beam hurts
+#define OJO_MAX_LOOKING 2          // [TUNABLE-PLACEHOLDER] Ojos aiming at once (TRACK, LOCK, SENTENCE); the rest wait
+#define OJO_WAIT_DIST 72           // [TUNABLE-PLACEHOLDER] ground px: an Ojo this close without a free slot waits instead of walking in
+#define OJO_TARGET_HEIGHT 14       // [TUNABLE-PLACEHOLDER] px above the hero's feet the gaze and beam aim at (chest)
+#define OJO_BEAM_MAX_LEN 200       // [TUNABLE-PLACEHOLDER] ground px; also the bound of the beam and band draw loops
 
 // The sprite of each enemy type: the only place that maps tiers to models.
 static inline int enemy_type_char_id(EnemyType type) {
-    if (type == ENEMY_TYPE_SHOOTER) return CHAR_NECRON;
+    if (type == ENEMY_TYPE_SHOOTER) return CHAR_OJO;
     if (type == ENEMY_TYPE_SKELETON) return CHAR_SKELETON;
     return CHAR_CHARGER;
 }
 
 // State a freshly spawned or woken enemy starts in.
-#define ENEMY_INITIAL_STATE(type) ((type) == ENEMY_TYPE_SHOOTER ? ENEMY_STATE_POSITION : ENEMY_STATE_CHASE)
+#define ENEMY_INITIAL_STATE(type) ENEMY_STATE_CHASE
 
 extern const EnemyTuning g_enemy_tuning[NUM_ENEMY_TYPES];
 
@@ -80,7 +89,7 @@ extern const EnemyTuning g_enemy_tuning[NUM_ENEMY_TYPES];
 #endif
 
 // Skeleton: CHASE <-> ATTACK. Charger: CHASE -> TELEGRAPH -> CHARGE -> RECOVER -> CHASE (STUNNED from
-// a wall hit or a shotgun hit). Shooter: POSITION -> LASER_AIM -> LASER_FIX -> LASER_FIRE -> COOLDOWN -> POSITION.
+// a wall hit or a shotgun hit). Ojo (shooter type): CHASE -> TRACK -> LOCK -> SENTENCE -> COOLDOWN -> CHASE.
 typedef enum {
     ENEMY_STATE_CHASE = 0,
     ENEMY_STATE_ATTACK,
@@ -89,9 +98,9 @@ typedef enum {
     ENEMY_STATE_CHARGE,
     ENEMY_STATE_RECOVER,
     ENEMY_STATE_STUNNED,
-    ENEMY_STATE_LASER_AIM,
-    ENEMY_STATE_LASER_FIX,
-    ENEMY_STATE_LASER_FIRE,
+    ENEMY_STATE_TRACK,        // Ojo: stopped, the green band from the lantern follows the hero (state_timer counts down)
+    ENEMY_STATE_LOCK,         // Ojo: the line is frozen where the hero was; the shot falls when the timer runs out
+    ENEMY_STATE_SENTENCE,     // Ojo: the beam from the mouth along the locked line (one hit)
     ENEMY_STATE_COOLDOWN,
     ENEMY_STATE_DEAD,
     ENEMY_STATE_DORMANT       // v0.2: standing still in its pack until the pack wakes (DESIGN.md 5)
@@ -112,7 +121,7 @@ struct Enemy {
     EnemyState state;
     int state_timer;
     int charge_hit;     // charger: 1 once this charge has hurt the player (one hit per charge)
-    int aim_dir_x;      // 8.8 unit direction in ground metric: charger lunge / shooter laser line
+    int aim_dir_x;      // 8.8 unit direction in ground metric: charger lunge / Ojo sentence beam
     int aim_dir_y;
     int strafe_dir;
     int has_los;        // cached view of the player (bit flags, refreshed every few frames)
@@ -120,7 +129,42 @@ struct Enemy {
     fixed knock_vy;
     int stun_timer;     // frames the enemy stays staggered after a shotgun hit
     int pack;           // pack index from the arena data (woken, healed and rewarded together)
+    int aim_px;         // Ojo: ground world px of the hero where the gaze points (followed in TRACK, frozen in LOCK/SENTENCE)
+    int aim_py;
+    int beam_len;       // Ojo: ground px of the sentence beam (cut at the first wall), set when it fires
+    int gesture;        // Ojo: 0 = none; 1.. = game frames of the sentence gesture (held on its last frame while SENTENCE lasts)
+    int beam_mx;        // Ojo: ground world px of the mouth when it fired (the damage line starts here)
+    int beam_my;
+    int beam_ux;        // Ojo: true-ground unit vector of the damage line, 8.8
+    int beam_uy;
 };
+
+// Ojo del Tribunal sprite clips (player_sprite.h): the walk is the CHAR_OJO slot; TRACK/LOCK show the look
+// loop (e->frame) and the sentence gesture shows the sentence clip (frame from e->gesture).
+#define CLIP_OJO_WALK 0
+#define CLIP_OJO_LOOK 1
+#define CLIP_OJO_SENTENCE 2
+#define OJO_LOOK_PERIOD 16          // [TUNABLE-PLACEHOLDER] game frames per frame of the 4-frame look loop (a 64-frame breath)
+#define OJO_GESTURE_PERIOD 3        // [TUNABLE-PLACEHOLDER] game frames per frame of the 6-frame sentence gesture (18 frames in all)
+#define OJO_GESTURE_FRAMES (OJO_SENTENCE_NUM_FRAMES * OJO_GESTURE_PERIOD)   // [TUNABLE-PLACEHOLDER] derived
+
+static inline int ojo_clip(const struct Enemy *e) {
+    if (e->char_id != CHAR_OJO) return CLIP_OJO_WALK;
+    if (e->gesture > 0 && (e->state == ENEMY_STATE_SENTENCE || e->state == ENEMY_STATE_COOLDOWN))
+        return CLIP_OJO_SENTENCE;
+    if (e->state == ENEMY_STATE_TRACK || e->state == ENEMY_STATE_LOCK) return CLIP_OJO_LOOK;
+    return CLIP_OJO_WALK;
+}
+
+// Frame inside the clip ojo_clip() picked.
+static inline int ojo_clip_frame(const struct Enemy *e, int clip) {
+    if (clip == CLIP_OJO_SENTENCE) {
+        int f = (e->gesture - 1) / OJO_GESTURE_PERIOD;
+        return f < OJO_SENTENCE_NUM_FRAMES ? f : OJO_SENTENCE_NUM_FRAMES - 1;
+    }
+    if (clip == CLIP_OJO_LOOK) return e->frame & (OJO_LOOK_NUM_FRAMES - 1);
+    return e->frame;
+}
 
 // Applies damage to an enemy. On a kill it marks the enemy dead, records the kill
 // with the encounter manager and notifies the death hook.

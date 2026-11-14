@@ -13,6 +13,8 @@
 #define CHARGER_SHADOW_H 80
 #define CHARGER_CHARGE_NUM_FRAMES 4
 #define CHARGER_TELEGRAPH_NUM_FRAMES 1
+#define OJO_LOOK_NUM_FRAMES 4       // breathing loop of the gaze (LOOK / CONDEMNED)
+#define OJO_SENTENCE_NUM_FRAMES 6   // head-raising gesture when the beam is released
 #define PLAYER_NUM_DIRS 8
 #define PLAYER_NUM_FRAMES 8
 
@@ -24,7 +26,7 @@
 enum {
     CHAR_HERO = 0,
     CHAR_CHARGER = 1,
-    CHAR_NECRON = 2,
+    CHAR_OJO = 2,       // El Ojo del Tribunal (ENEMY_TYPE_SHOOTER); the old necron assets are kept on disk but unused
     CHAR_SKELETON = 3
 };
 
@@ -84,13 +86,30 @@ extern const uint16_t g_charger_telegraph_frames[];
 extern const uint32_t g_charger_telegraph_frame_offsets[PLAYER_NUM_DIRS][CHARGER_TELEGRAPH_NUM_FRAMES];
 extern const uint8_t g_charger_telegraph_frame_bounds[PLAYER_NUM_DIRS][CHARGER_TELEGRAPH_NUM_FRAMES][4];
 
-// Necron enemy frames & animated crisp 3D shadows (8 dirs x 8 frames, cropped)
-extern const uint16_t g_necron_frames[];
-extern const uint32_t g_necron_frame_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES];
-extern const uint8_t g_necron_frame_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4];
-extern const uint8_t g_necron_shadow_masks[];
-extern const uint32_t g_necron_shadow_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES];
-extern const uint8_t g_necron_shadow_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4];
+// Ojo del Tribunal frames & animated crisp 3D shadows (walk clip, 8 dirs x 8 frames, 40x40, cropped)
+extern const uint16_t g_ojo_frames[];
+extern const uint32_t g_ojo_frame_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES];
+extern const uint8_t g_ojo_frame_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4];
+extern const uint8_t g_ojo_shadow_masks[];
+extern const uint32_t g_ojo_shadow_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES];
+extern const uint8_t g_ojo_shadow_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4];
+
+// Ojo look clip (4-frame breathing loop) and sentence clip (6-frame gesture): 8 dirs, 40x40, cropped.
+// Their muzzles ({ gx, gy, h } like g_character_muzzle) follow the raised hand.
+extern const uint16_t g_ojo_look_frames[];
+extern const uint32_t g_ojo_look_frame_offsets[PLAYER_NUM_DIRS][OJO_LOOK_NUM_FRAMES];
+extern const uint8_t g_ojo_look_frame_bounds[PLAYER_NUM_DIRS][OJO_LOOK_NUM_FRAMES][4];
+extern const uint8_t g_ojo_look_shadow_masks[];
+extern const uint32_t g_ojo_look_shadow_offsets[PLAYER_NUM_DIRS][OJO_LOOK_NUM_FRAMES];
+extern const uint8_t g_ojo_look_shadow_bounds[PLAYER_NUM_DIRS][OJO_LOOK_NUM_FRAMES][4];
+extern const int8_t g_ojo_look_muzzle[PLAYER_NUM_DIRS][OJO_LOOK_NUM_FRAMES][3];
+extern const uint16_t g_ojo_sentence_frames[];
+extern const uint32_t g_ojo_sentence_frame_offsets[PLAYER_NUM_DIRS][OJO_SENTENCE_NUM_FRAMES];
+extern const uint8_t g_ojo_sentence_frame_bounds[PLAYER_NUM_DIRS][OJO_SENTENCE_NUM_FRAMES][4];
+extern const uint8_t g_ojo_sentence_shadow_masks[];
+extern const uint32_t g_ojo_sentence_shadow_offsets[PLAYER_NUM_DIRS][OJO_SENTENCE_NUM_FRAMES];
+extern const uint8_t g_ojo_sentence_shadow_bounds[PLAYER_NUM_DIRS][OJO_SENTENCE_NUM_FRAMES][4];
+extern const int8_t g_ojo_sentence_muzzle[PLAYER_NUM_DIRS][OJO_SENTENCE_NUM_FRAMES][3];
 
 // Skeleton enemy frames & animated crisp 3D shadows (8 dirs x 8 frames, cropped)
 extern const uint16_t g_skeleton_frames[];
@@ -117,8 +136,12 @@ extern const uint16_t g_charger_charge_runs[];
 extern const uint32_t g_charger_charge_run_offsets[PLAYER_NUM_DIRS][CHARGER_CHARGE_NUM_FRAMES];
 extern const uint16_t g_charger_telegraph_runs[];
 extern const uint32_t g_charger_telegraph_run_offsets[PLAYER_NUM_DIRS][CHARGER_TELEGRAPH_NUM_FRAMES];
-extern const uint16_t g_necron_runs[];
-extern const uint32_t g_necron_run_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES];
+extern const uint16_t g_ojo_runs[];
+extern const uint32_t g_ojo_run_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES];
+extern const uint16_t g_ojo_look_runs[];
+extern const uint32_t g_ojo_look_run_offsets[PLAYER_NUM_DIRS][OJO_LOOK_NUM_FRAMES];
+extern const uint16_t g_ojo_sentence_runs[];
+extern const uint32_t g_ojo_sentence_run_offsets[PLAYER_NUM_DIRS][OJO_SENTENCE_NUM_FRAMES];
 extern const uint16_t g_skeleton_runs[];
 extern const uint32_t g_skeleton_run_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES];
 
