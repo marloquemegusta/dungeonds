@@ -135,3 +135,6 @@ Resúmenes acumulativos y auditables de cada entrega y avance de desarrollo en `
 | 117 | Limpieza de tests y reglas de verificación: fuera los contratos de texto, cierre ligero, batería completa solo en hitos | [`tests-limpieza/`](tests-limpieza/walkthrough.md) | 16 tests de host en verde; sin cambios en la ROM |
 | 118 | Ficha de El Abanderado en el Códice: retrato 160×160 en 8 direcciones, cortejo de exvotos suplicantes y ficha de invocador | [`abanderado-codice/`](abanderado-codice/walkthrough.md) | Build 0 warnings, tests de host PASS, escenario DeSmuME PASS y validado en DS física |
 | 119 | Tarjetas de introducción tras `NUEVA PARTIDA` con vídeo real del juego arriba y botón `Saltar` | [`intro-tarjetas/`](intro-tarjetas/walkthrough.md) | Build 0 warnings, host 21/21, escenario PASS y validado en DS física |
+| 120 | Vídeo vertical de lore: El Exvoto (`CÓDICE · II`) | [`codice-exvoto/`](codice-exvoto/walkthrough.md) | Vídeo 1080×1920 (01:06), voz Carmelo y Palatino Linotype |
+| 121 | Vídeo vertical de lore: El Cireneo (`CÓDICE · III`) | [`codice-cireneo/`](codice-cireneo/walkthrough.md) | Vídeo 1080×1920 (01:04), voz Carmelo y Palatino Linotype |
+| 122 | Vídeo vertical de lore: El Ojo del Tribunal (`CÓDICE · IV`) | [`codice-ojo/`](codice-ojo/walkthrough.md) | Vídeo 1080×1920 (01:10), voz Carmelo y Palatino Linotype generado y verificado |

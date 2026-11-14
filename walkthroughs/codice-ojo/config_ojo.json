@@ -1,0 +1,112 @@
+{
+  "codice_header": "CÓDICE · IV",
+  "character_name": "EL OJO DEL TRIBUNAL",
+  "voice_id": "5egO01tkUjEzu7xSSE8M",
+  "stability": 0.28,
+  "similarity_boost": 0.80,
+  "style": 0.60,
+  "character_gif": "assets/sprites/bestiary/ojo_walk/dirs/0_S.gif",
+  "card_png": "walkthroughs/bestiario/assets/04_ojo.png",
+  "card_mask_rect": null,
+  "mosaic_gifs": [
+    "assets/sprites/bestiary/corazon_disparo/dirs/0_S.gif",
+    "assets/sprites/bestiary/exvoto_walk/dirs/0_S.gif",
+    "assets/sprites/bestiary/cireneo_walk/dirs/0_S.gif",
+    "assets/sprites/bestiary/ojo_walk/dirs/0_S.gif"
+  ],
+  "bgm_wav": "assets/music/cathedral_battle_loop.wav",
+  "work_dir": "walkthroughs/codice-ojo/scratch",
+  "output_mp4": "walkthroughs/codice-ojo/assets/codice_04_ojo.mp4",
+  "phrases": [
+    {
+      "id": "p01",
+      "text": "En la penumbra de la Catedral, la verdad no se busca: se impone.",
+      "pause": 0.50,
+      "segment": "char_1",
+      "subtitles": [
+        "En la penumbra de la Catedral,\\Nla verdad no se busca: se impone."
+      ]
+    },
+    {
+      "id": "p02",
+      "text": "Los antiguos inquisidores del Tribunal arrancaron sus propios ojos con tenazas benditas.",
+      "pause": 0.55,
+      "segment": "char_1",
+      "subtitles": [
+        "Los antiguos inquisidores del Tribunal\\narrancaron sus propios ojos con tenazas benditas."
+      ]
+    },
+    {
+      "id": "p03",
+      "text": "Creían que la mirada humana era débil, piadosa y propensa al perdón.",
+      "pause": 0.65,
+      "segment": "char_1",
+      "subtitles": [
+        "Creían que la mirada humana era débil,\\npiadosa y propensa al perdón."
+      ]
+    },
+    {
+      "id": "p04",
+      "text": "En su lugar, alzaron un farol de juicio alimentado por una llama fría e impasible.",
+      "pause": 0.50,
+      "segment": "card",
+      "subtitles": [
+        "En su lugar, alzaron un farol de juicio\\nalimentado por una llama fría e impasible."
+      ]
+    },
+    {
+      "id": "p05",
+      "text": "Caminan a tientas por las naves, escrutando la piedra con paciencia implacable.",
+      "pause": 0.55,
+      "segment": "card",
+      "subtitles": [
+        "Caminan a tientas por las naves,\\nescrutando la piedra con paciencia implacable."
+      ]
+    },
+    {
+      "id": "p06",
+      "text": "No necesitan verte para saber que has pecado; el farol busca la culpa en tu sombra.",
+      "pause": 0.70,
+      "segment": "card",
+      "subtitles": [
+        "No necesitan verte para saber que has pecado;\\nel farol busca la culpa en tu sombra."
+      ]
+    },
+    {
+      "id": "p07",
+      "text": "Su mirada te examina en un lento balanceo... pero si la luz se detiene, el juicio ha concluido.",
+      "pause": 0.50,
+      "segment": "char_2",
+      "subtitles": [
+        "Su mirada te examina en un lento balanceo...\\npero si la luz se detiene, el juicio ha concluido."
+      ]
+    },
+    {
+      "id": "p08",
+      "text": "Desde la boca abierta del penitente brota la sentencia sin réplica ni consuelo.",
+      "pause": 0.60,
+      "segment": "char_2",
+      "subtitles": [
+        "Desde la boca abierta del penitente brota\\nla sentencia sin réplica ni consuelo."
+      ]
+    },
+    {
+      "id": "p09",
+      "text": "Pues bien saben los inquisidores que si la linterna no ve culpables, los fabrica.",
+      "pause": 0.85,
+      "segment": "char_2",
+      "subtitles": [
+        "Pues bien saben los inquisidores\\nque si la linterna no ve culpables, los fabrica."
+      ]
+    },
+    {
+      "id": "p10",
+      "text": "Próximamente en tu Nintendo DS.",
+      "pause": 0.60,
+      "segment": "outro",
+      "subtitles": [
+        "Próximamente en tu Nintendo DS."
+      ]
+    }
+  ]
+}

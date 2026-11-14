@@ -1,0 +1,113 @@
+{
+  "codice_header": "CÓDICE · III",
+  "character_name": "EL CIRENEO",
+  "voice_id": "5egO01tkUjEzu7xSSE8M",
+  "stability": 0.28,
+  "similarity_boost": 0.8,
+  "style": 0.6,
+  "character_gif": "assets/sprites/bestiary/cireneo_walk/dirs/7_SE.gif",
+  "card_png": "walkthroughs/bestiario/assets/03_cireneo.png",
+  "card_mask_rect": null,
+  "mosaic_gifs": [
+    "assets/sprites/bestiary/corazon_disparo/dirs/0_S.gif",
+    "assets/sprites/bestiary/exvoto_walk/dirs/0_S.gif",
+    "assets/sprites/bestiary/cireneo_walk/dirs/0_S.gif",
+    "assets/sprites/bestiary/ojo_walk/dirs/0_S.gif"
+  ],
+  "bgm_wav": "assets/music/cathedral_battle_loop.wav",
+  "work_dir": "walkthroughs/codice-cireneo/scratch",
+  "output_mp4": "walkthroughs/codice-cireneo/assets/codice_03_cireneo.mp4",
+  "phrases": [
+    {
+      "id": "p01",
+      "text": "Dicen en la Catedral que quien huye de la batalla nunca deja de correr.",
+      "pause": 0.5,
+      "segment": "char_1",
+      "subtitles": [
+        "Dicen en la Catedral que quien huye\\Nde la batalla nunca deja de correr."
+      ]
+    },
+    {
+      "id": "p02",
+      "text": "Soltó el estandarte y la lanza cuando el frente quebró entre alaridos.",
+      "pause": 0.55,
+      "segment": "char_1",
+      "subtitles": [
+        "Soltó el estandarte y la lanza\\Ncuando el frente quebró entre alaridos."
+      ]
+    },
+    {
+      "id": "p03",
+      "text": "Pero el peso de la cobardía no se lava con plegarias ni agua bendita.",
+      "pause": 0.65,
+      "segment": "char_1",
+      "subtitles": [
+        "Pero el peso de la cobardía no se lava\\Ncon plegarias ni agua bendita."
+      ]
+    },
+    {
+      "id": "p04",
+      "text": "Desertó, y regresó de rodillas suplicando que le clavaran la cruz a la espalda.",
+      "pause": 0.5,
+      "segment": "card",
+      "subtitles": [
+        "Desertó, y regresó de rodillas suplicando\\Nque le clavaran la cruz a la espalda."
+      ]
+    },
+    {
+      "id": "p05",
+      "text": "Un castigo de hierro y astillas para no volver a huir jamás.",
+      "pause": 0.55,
+      "segment": "card",
+      "subtitles": [
+        "Un castigo de hierro y astillas\\Npara no volver a huir jamás."
+      ]
+    },
+    {
+      "id": "p06",
+      "text": "Avanza en silencio, encorvado bajo la viga que desgarra su carne a cada paso.",
+      "pause": 0.7,
+      "segment": "card",
+      "subtitles": [
+        "Avanza en silencio, encorvado bajo la viga\\Nque desgarra su carne a cada paso."
+      ]
+    },
+    {
+      "id": "p07",
+      "text": "Cuando divisa una sombra, agacha la cerviz y embiste en línea recta sin poder girar.",
+      "pause": 0.5,
+      "segment": "char_2",
+      "subtitles": [
+        "Cuando divisa una sombra, agacha la cerviz\\Ny embiste en línea recta sin poder girar."
+      ]
+    },
+    {
+      "id": "p08",
+      "text": "Si su carrera frena contra los muros de piedra, queda crucificado en pie por su propio ímpetu.",
+      "pause": 0.6,
+      "segment": "char_2",
+      "subtitles": [
+        "Si su carrera frena contra los muros de piedra,\\Nqueda crucificado en pie por su propio ímpetu."
+      ]
+    },
+    {
+      "id": "p09",
+      "text": "Ayudó a cargar una cruz... y ahora es la cruz quien le carga a él.",
+      "pause": 0.85,
+      "segment": "char_2",
+      "subtitles": [
+        "Ayudó a cargar una cruz...",
+        "y ahora es la cruz quien le carga a él."
+      ]
+    },
+    {
+      "id": "p10",
+      "text": "Próximamente en tu Nintendo DS.",
+      "pause": 0.6,
+      "segment": "outro",
+      "subtitles": [
+        "Próximamente en tu Nintendo DS."
+      ]
+    }
+  ]
+}
