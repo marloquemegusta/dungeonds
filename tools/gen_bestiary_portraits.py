@@ -47,6 +47,12 @@ CHARACTERS = [
         'clips': [
             ('ojo_walk', list(range(16)))
         ]
+    },
+    {
+        'id': 'abanderado',
+        'clips': [
+            ('abanderado_walk', list(range(8)))
+        ]
     }
 ]
 

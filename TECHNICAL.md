@@ -106,6 +106,11 @@
 - **Banco A/B en DeSmuME:** `scenarios/perf_stress_bench.json` (+ `_sw_shadows`, `perf_stress_climb`) y `python tools/perf_bench_summary.py <salida> [<base>]`. Solo comparativo (regla 6).
 - **Medido en la DS (`stress-perf`, horda llena ~48):** CPU 14,3–15,1 ms de media por ventana de 1 s y peor frame 17–18,5 ms; 0–5 frames perdidos por segundo en los peores tramos (parte, la escritura del log). Antes: 34–36 ms (20 FPS) con sombras y 17–21 ms sin ellas. Con el pool normal de 24, 8–12 ms. Lo que más pesa ahora es el blit (~6 ms con horda llena).
 
+### 3.7. Vídeos Verticales y Difusión (`assets/videos/`)
+- **Carpeta de salida centralizada:** `assets/videos/` contiene los vídeos verticales en formato MP4 (1080×1920, 9:16) producidos para redes sociales (TikTok, Reels, Shorts). Cada archivo se nombra de forma canónica (p. ej. `codice_03_cireneo.mp4`, `codice_04_ojo.mp4`).
+- **Pipeline:** skill `.agents/skills/codice-lore-video` basada en ElevenLabs CLI (`eleven_multilingual_v2`, voz Carmelo a bloques cortos con pausas de 0,5–0,85 s), FFmpeg y Pillow.
+- **Automatización:** el script `render_codice_video.py` compila subtítulos Palatino Linotype en formato `.ass` (`MarginV = 240`) y copia automáticamente el archivo generado a `assets/videos/`.
+
 ## 4. Deuda Técnica Pendiente (auditoría 2026-11-02)
 
 Origen: `walkthroughs/audit-saneamiento-2d3d/`. Lo ya resuelto (colisión/oclusión coherentes con el render) está en `walkthroughs/map-export-coherence/`. Se referencian funciones, no líneas, porque se desplazan. Al cerrar un punto, borrarlo de aquí y registrarlo en `STATUS.md`.

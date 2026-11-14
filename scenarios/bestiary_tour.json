@@ -24,8 +24,10 @@
     { "button_up": "R", "frames": 10, "capture": "03_cireneo", "state_capture": "s_cireneo" },
     { "button_down": "R", "frames": 2 },
     { "button_up": "R", "frames": 10, "capture": "04_ojo", "state_capture": "s_ojo" },
+    { "button_down": "R", "frames": 2 },
+    { "button_up": "R", "frames": 10, "capture": "05_abanderado", "state_capture": "s_abanderado" },
     { "button_down": "B", "frames": 2 },
-    { "button_up": "B", "frames": 15, "capture": "05_returned", "state_capture": "s_returned" }
+    { "button_up": "B", "frames": 15, "capture": "06_returned", "state_capture": "s_returned" }
   ],
   "assertions": {
     "state_changes": [
@@ -37,6 +39,8 @@
       { "field": "entry_index", "at": "s_cireneo", "equals": 2 },
       { "field": "active", "at": "s_ojo", "equals": 1 },
       { "field": "entry_index", "at": "s_ojo", "equals": 3 },
+      { "field": "active", "at": "s_abanderado", "equals": 1 },
+      { "field": "entry_index", "at": "s_abanderado", "equals": 4 },
       { "field": "active", "at": "s_returned", "equals": 0 }
     ]
   }
