@@ -1,16 +1,15 @@
 #include "enemy_laser.h"
 #include "enemy_ai.h"
+#include <nds.h>
 
 #define LASER_CORE   (RGB15(6, 30, 10) | BIT(15))     // the thin line
 #define LASER_DIM    (RGB15(2, 14, 5) | BIT(15))      // checkered rim of the wide line
 #define LASER_BODY   (RGB15(3, 24, 8) | BIT(15))
 #define LASER_BRIGHT (RGB15(22, 31, 22) | BIT(15))    // lethal core
 
-static inline void laser_px(uint16_t *buffer, int x, int y, uint16_t color) {
-    if (x < 0 || x >= SCREEN_W || y < 0 || y >= SCREEN_H) return;
-    buffer[y * SCREEN_W + x] = color;
-    dirty_row(y, x, x + 1);
-}
+// Painted x range per screen row of the beam being drawn: the dirty spans are bounding ranges, so
+// one dirty_row() per touched row gives the same union as one call per pixel.
+static uint32_t s_row_x0[SCREEN_H], s_row_x1[SCREEN_H];
 
 static int laser_width(EnemyState state) {
     if (state == ENEMY_STATE_LASER_FIRE) return 3;
@@ -18,7 +17,7 @@ static int laser_width(EnemyState state) {
     return 0;
 }
 
-static void draw_laser(uint16_t *buffer, const Enemy *e, int cam_x, int cam_y) {
+__attribute__((target("arm"), optimize("O3"))) ITCM_CODE static void draw_laser(uint16_t *buffer, const Enemy *e, int cam_x, int cam_y) {
     fixed mx, my;
     int mh;
     enemy_muzzle(e, &mx, &my, &mh);
@@ -46,6 +45,26 @@ static void draw_laser(uint16_t *buffer, const Enemy *e, int cam_x, int cam_y) {
         perp_y = (dir_x * 256) / m;
     }
 
+    // The 2w+1 pixels of a step, once per beam: perpendicular offsets (same expression as always),
+    // colour, and a dither mask (the dim rim of the wide, non-lethal line paints only (x + y) even).
+    const int n = 2 * w + 1;
+    int off_x[7], off_y[7], dither[7];
+    uint16_t colour[7];
+    if (w == 0) {
+        off_x[0] = off_y[0] = dither[0] = 0;
+        colour[0] = LASER_CORE;
+    }
+    for (int o = -w; w > 0 && o <= w; o++) {
+        int k = o + w;
+        int edge = o == w || o == -w;
+        off_x[k] = (perp_x * o) >> 8;
+        off_y[k] = (perp_y * o) >> 8;
+        dither[k] = (!lethal && edge) ? 1 : 0;
+        colour[k] = lethal ? (edge ? LASER_BODY : LASER_BRIGHT)
+                           : (edge ? LASER_DIM : (o == 0 ? LASER_CORE : LASER_BODY));
+    }
+    for (int y = 0; y < SCREEN_H; y++) { s_row_x0[y] = SCREEN_W; s_row_x1[y] = 0; }
+
     int fx = (ox << 8) + 128;
     int fy = (oy << 8) + 128;
     for (int d = 1; d <= SHOOTER_LASER_LENGTH; d++) {
@@ -53,19 +72,21 @@ static void draw_laser(uint16_t *buffer, const Enemy *e, int cam_x, int cam_y) {
         fy += dir_y;
         int px = fx >> 8;
         int py = fy >> 8;
-        if (w == 0) {
-            laser_px(buffer, px, py, LASER_CORE);
-            continue;
-        }
-        for (int o = -w; o <= w; o++) {
-            int x = px + ((perp_x * o) >> 8);
-            int y = py + ((perp_y * o) >> 8);
-            int edge = o == w || o == -w;
-            if (lethal) laser_px(buffer, x, y, edge ? LASER_BODY : LASER_BRIGHT);
-            else if (edge) { if (((x + y) & 1) == 0) laser_px(buffer, x, y, LASER_DIM); }
-            else laser_px(buffer, x, y, o == 0 ? LASER_CORE : LASER_BODY);
+        // Steps whose centre is further off screen than the beam is wide paint nothing (|offset| <= w <= 3).
+        if (px < -4 || px >= SCREEN_W + 4 || py < -4 || py >= SCREEN_H + 4) continue;
+        const int inside = px >= 4 && px < SCREEN_W - 4 && py >= 4 && py < SCREEN_H - 4;
+        for (int k = 0; k < n; k++) {
+            int x = px + off_x[k];
+            int y = py + off_y[k];
+            if (dither[k] && ((x + y) & 1)) continue;
+            if (!inside && ((unsigned)x >= SCREEN_W || (unsigned)y >= SCREEN_H)) continue;
+            buffer[(y << 8) + x] = colour[k];
+            if (x < (int)s_row_x0[y]) s_row_x0[y] = (uint32_t)x;
+            if (x >= (int)s_row_x1[y]) s_row_x1[y] = (uint32_t)(x + 1);
         }
     }
+    for (int y = 0; y < SCREEN_H; y++)
+        if (s_row_x1[y] > s_row_x0[y]) dirty_row(y, (int)s_row_x0[y], (int)s_row_x1[y]);
 }
 
 void enemy_lasers_render(uint16_t *buffer, const Enemy *enemies, int count, int cam_x, int cam_y) {

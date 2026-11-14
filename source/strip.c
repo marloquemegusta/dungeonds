@@ -47,8 +47,12 @@
 #define STRIP_PREP_STAGE_BANDS (STRIP_SHIFT_PX / STRIP_BAND_PX)
 #define STRIP_KEEP_MAX_Y (STRIP_WIN_H_PX - STRIP_SHIFT_PX)
 #define STRIP_STAGE_RUNS_MAX 8192      // new runs of one rebase (about 5500 measured): 64 KB
-#define STRIP_PREP_CHUNK_RUNS 512      // runs per count / scatter / insertion call
+#define STRIP_PREP_CHUNK_RUNS 512      // runs per count / scatter call
+#define STRIP_PREP_INSERT_RUNS 256     // runs per insertion-sort call (the costliest per run)
+#define STRIP_PREP_PIECES 3            // stamps placed per band call
 #define STRIP_PREP_COPY_RUNS 2048      // surviving runs copied per call
+#define STRIP_FLOOR_MAP_SLICES 6       // slices of the surviving map rows (about 4.3 KB each)
+#define STRIP_FLOOR_COL_SLICES 4       // slices of the surviving collision rows (about 3.8 KB each)
 
 typedef struct {
     const StripStamp *stamp;
@@ -70,8 +74,16 @@ typedef struct {
 
 // Active window (what the Arena exposes) and its reserve. strip_prepare_step() fills the reserve;
 // the commit swaps the pointers, so a reader never sees a half-built index.
-static uint16_t s_map[STRIP_W_TILES * STRIP_MAP_H_TILES];
-static uint8_t s_collision[(STRIP_COLLISION_W * STRIP_COLLISION_H) / 4];
+// Window floor data has an active and a reserve copy, like the runs: the reserve receives the next window (new
+// bands on top, the surviving rows shifted down) in slices before the rebase, the commit swaps.
+static uint16_t s_map_a[STRIP_W_TILES * STRIP_MAP_H_TILES];
+static uint8_t s_collision_a[(STRIP_COLLISION_W * STRIP_COLLISION_H) / 4];
+static uint16_t s_map_b[STRIP_W_TILES * STRIP_MAP_H_TILES];
+static uint8_t s_collision_b[(STRIP_COLLISION_W * STRIP_COLLISION_H) / 4];
+static uint16_t *s_map = s_map_a;                  // active
+static uint8_t *s_collision = s_collision_a;
+static uint16_t *s_map_res = s_map_b;              // reserve
+static uint8_t *s_collision_res = s_collision_b;
 static uint32_t s_occlusion_row_start[STRIP_WIN_H_PX + 1];
 static DungeonOcclusionRun s_occlusion_runs[STRIP_OCCLUSION_CAPACITY];
 static uint32_t s_occlusion_count;
@@ -82,8 +94,6 @@ static DungeonOcclusionRun *s_runs_reserve = s_occlusion_scratch;
 static uint32_t *s_row_active = s_occlusion_row_start;
 static uint32_t s_stage_row_start[STRIP_WIN_H_PX + 1];                    // reserve row index
 static uint32_t *s_row_reserve = s_stage_row_start;
-static uint16_t s_stage_map[STRIP_MAP_SHIFT_ROWS * STRIP_W_TILES];        // 6 bands x 16 rows
-static uint8_t s_stage_collision[STRIP_COLLISION_SHIFT_ROWS * STRIP_COLLISION_ROW_BYTES]; // 6 x 32 rows
 static DungeonOcclusionRun s_stage_new_runs[STRIP_STAGE_RUNS_MAX];        // new runs, emission order
 static uint32_t s_stage_new_count;
 static uint32_t s_stage_dropped;                                          // must stay 0 (host checks it)
@@ -101,17 +111,20 @@ static int s_plan_n;
 #define STRIP_INITIAL_BANDS (STRIP_MAP_H_TILES / STRIP_BAND_TILES)
 enum {
     PREP_IDLE, PREP_BANDS, PREP_PLAN, PREP_COUNT, PREP_PREFIX, PREP_PLACE, PREP_INSERT,
-    PREP_COPY, PREP_INDEX, PREP_READY
+    PREP_COPY, PREP_INDEX, PREP_FLOOR, PREP_READY
 };
 static int s_prep_phase = PREP_IDLE;
 static uint32_t s_prep_cursor;         // next band / run / kept run of the current phase
 static uint32_t s_prep_kept;           // surviving runs of the active window
 static uint32_t s_prep_new;            // new runs (placed first in the reserve)
 static uint32_t s_prep_steps;          // units run by the current preparation
+static uint32_t s_stage_id;            // changes whenever a preparation begins (nav staging key)
 static uint32_t s_prep_steps_last;     // units of the last commit (host measurement)
 static int32_t s_prep_plan_block;      // block whose plan is being built (PREP_PLAN)
 static uint32_t s_prep_plan_unit;      // next plan_unit() part of that block
 static int s_prep_plan_n;              // pieces accepted so far for that block
+static int s_prep_band_step;           // 0: floor rows of the band next, 1: stamps
+static int s_prep_cat, s_prep_idx;     // stamp cursor inside the band
 
 #if STRIP_LAYOUT_DUMP
 // Host-only parity hook (tests/test_strip_layout_parity.py): called for every planned piece, in
@@ -132,10 +145,10 @@ static Arena s_arena = {
     .player_x = STRIP_W_PX / 2,
     .player_y = STRIP_WIN_H_PX - 256,
     .num_enemies = 0,
-    .collision = s_collision,
+    .collision = s_collision_a,
     .palette = 0,
     .tiles = 0,
-    .map = s_map,
+    .map = s_map_a,
     .occlusion_runs = s_occlusion_runs,
     .occlusion_row_start = s_occlusion_row_start,
     .enemies = 0
@@ -443,28 +456,60 @@ static void dump_block_plan(int32_t block, const PlanItem *acc, int n) {
 }
 #endif
 
-static void stamp_band(const BandSink *sink, int32_t band, int map_row, int collision_row) {
+// False when the band takes no stamps (showcase build, the cleared bands at the start, no kit data).
+static int stamp_band_enabled(int32_t band) {
 #if defined(PROPS_SHOWCASE) && PROPS_SHOWCASE
     // Showcase build: strip_start() places one fixed exemplar of each physical prop instead.
-    return;
+    (void)band;
+    return 0;
+#else
+    return !((band >= STRIP_INITIAL_BANDS - STRIP_START_CLEAR_BANDS && band < STRIP_INITIAL_BANDS) ||
+             g_strip_kit.num_stamps == 0 ||
+             g_strip_kit.stamps == 0 || g_strip_kit.floor_h_tiles == 0);
 #endif
-    if ((band >= STRIP_INITIAL_BANDS - STRIP_START_CLEAR_BANDS && band < STRIP_INITIAL_BANDS) ||
-        g_strip_kit.num_stamps == 0 ||
-        g_strip_kit.stamps == 0 || g_strip_kit.floor_h_tiles == 0) return;
-    int32_t block, off;
-    band_to_block(band, &block, &off);
-    // The three bands of a block share one plan: compute it once, when the first band asks.
-    // The cache key is the block, and the plan is a pure function of (seed, block), so the
-    // preparation may fill it for the bands it builds ahead.
+}
+
+// The plan of a block is computed once, when the first of its three bands asks: the cache key is the
+// block, and the plan is a pure function of (seed, block), so the preparation may fill it for the
+// bands it builds ahead.
+static void stamp_band_plan(int32_t band, int32_t *off) {
+    int32_t block;
+    band_to_block(band, &block, off);
     if (block != s_plan_block) {
         s_plan_n = plan_block(block, s_plan);
         s_plan_block = block;
     }
-    for (int cat = 0; cat < 3; cat++) {
-        for (int i = 0; i < s_plan_n; i++) {
-            if (s_plan[i].cat == cat) stamp_place_band(sink, &s_plan[i], off, map_row, collision_row);
+}
+
+// Stamps of a band, in (category, plan index) order, at most `max_pieces` per call (0 = all). The
+// cursor (cat, idx) lives with the caller; returns 1 when the band is complete. The order of the
+// stamps is the one of the single call, so sliced and whole bands are identical.
+static int stamp_band_slice(const BandSink *sink, int32_t off, int map_row, int collision_row,
+                            int *cat_io, int *idx_io, int max_pieces) {
+    int cat = *cat_io, i = *idx_io, placed = 0;
+    for (; cat < 3; cat++, i = 0) {
+        for (; i < s_plan_n; i++) {
+            if (s_plan[i].cat != cat) continue;
+            if (max_pieces && placed == max_pieces) {
+                *cat_io = cat;
+                *idx_io = i;
+                return 0;
+            }
+            stamp_place_band(sink, &s_plan[i], off, map_row, collision_row);
+            placed++;
         }
     }
+    *cat_io = 3;
+    *idx_io = 0;
+    return 1;
+}
+
+static void stamp_band(const BandSink *sink, int32_t band, int map_row, int collision_row) {
+    if (!stamp_band_enabled(band)) return;
+    int32_t off;
+    stamp_band_plan(band, &off);
+    int cat = 0, idx = 0;
+    stamp_band_slice(sink, off, map_row, collision_row, &cat, &idx, 0);
 }
 
 #if STRIP_LAYOUT_DUMP
@@ -489,8 +534,8 @@ const DungeonOcclusionRun *strip_layout_occlusion(uint32_t *count) {
 const uint32_t *strip_layout_occlusion_row_start(void) { return s_row_active; }
 #endif
 
-// One band: the floor copy of its rows plus its stamps, written into `sink` (window row numbering).
-static void generate_band(const BandSink *sink, int32_t band, int map_row, int collision_row) {
+// Floor rows of one band (the tiles and collision cells it repeats from the kit), into `sink`.
+static void band_floor(const BandSink *sink, int32_t band, int map_row, int collision_row) {
     const unsigned map_period = g_strip_kit.map_h_tiles;
     const unsigned collision_period = (unsigned)g_strip_kit.floor_h_tiles * 2u;
     unsigned map_phase = (unsigned)((uint32_t)band * STRIP_BAND_TILES) % map_period;
@@ -510,23 +555,35 @@ static void generate_band(const BandSink *sink, int32_t band, int map_row, int c
         collision_phase++;
         if (collision_phase == collision_period) collision_phase = 0;
     }
+}
 
+// One band: the floor copy of its rows plus its stamps, written into `sink` (window row numbering).
+static void generate_band(const BandSink *sink, int32_t band, int map_row, int collision_row) {
+    band_floor(sink, band, map_row, collision_row);
     stamp_band(sink, band, map_row, collision_row);
 }
 
 // Hard edges (DESIGN.md 6.9.1b): the wall columns of collision rows [0, row_end) and the whole
 // bottom row. A commit passes only the rows it rewrote: the others already carry their walls.
-static void enforce_hard_edges(unsigned row_end) {
-    for (unsigned row = 0; row < row_end; row++) {
+static void enforce_edges_in(uint8_t *collision, unsigned row_start, unsigned row_end) {
+    for (unsigned row = row_start; row < row_end; row++) {
         unsigned base = row * STRIP_COLLISION_W;
         for (unsigned x = 0; x < STRIP_WALL_CELLS; x++) {
-            packed_collision_set(s_collision, base + x, 3);
-            packed_collision_set(s_collision, base + STRIP_COLLISION_W - STRIP_WALL_CELLS + x, 3);
+            packed_collision_set(collision, base + x, 3);
+            packed_collision_set(collision, base + STRIP_COLLISION_W - STRIP_WALL_CELLS + x, 3);
         }
     }
+}
+
+static void enforce_bottom_in(uint8_t *collision) {
     unsigned bottom = (STRIP_COLLISION_H - 1u) * STRIP_COLLISION_W;
     for (unsigned x = 0; x < STRIP_COLLISION_W; x++)
-        packed_collision_set(s_collision, bottom + x, 3);
+        packed_collision_set(collision, bottom + x, 3);
+}
+
+static void enforce_hard_edges(unsigned row_end) {
+    enforce_edges_in(s_collision, 0, row_end);
+    enforce_bottom_in(s_collision);
 }
 
 // Row of a run, clamped to the tail bucket STRIP_WIN_H_PX (runs outside the window never occur).
@@ -580,8 +637,8 @@ static void rebuild_occlusion_index(void) {
 //
 // A rebase depends only on the current window, s_seed and s_next_band, so the window it will
 // produce can be built ahead in the reserve buffers, one bounded unit of work per call:
-//   BANDS   6 calls   generate band b into s_stage_map / s_stage_collision (window rows 0..95 and
-//                     0..191) and its runs, in emission order, into s_stage_new_runs.
+//   BANDS   ~6 calls per band: floor rows, then the stamps STRIP_PREP_PIECES at a time; generate band b into the top rows of the reserve map / collision (window rows
+//                     0..95 and 0..191; the wall columns are enforced there at the end) and its runs, in emission order, into s_stage_new_runs.
 //   PLAN    10 calls  per block, before its first band (two blocks per rebase): plan_unit() parts.
 //   COUNT   chunks    per-row counts of the new runs (STRIP_PREP_CHUNK_RUNS per call).
 //   PREFIX  1 call    prefix sums over the 768 new rows.
@@ -592,7 +649,9 @@ static void rebuild_occlusion_index(void) {
 //                     +768 in y and depth, after the new ones (STRIP_PREP_COPY_RUNS per call).
 //   INDEX   1 call    row starts of the reserve: rows 0..767 from the scatter, rows 768..2048 are
 //                     nn + the active row starts of y - 768.
-//   READY             the commit is a few copies and pointer swaps (commit_prepared).
+//   FLOOR   10 calls  the surviving map / collision rows copied (shifted down) into the reserve below
+//                     the new bands, then the bottom wall row: the reserve is the complete next window.
+//   READY             the commit is pointer swaps (commit_prepared); nothing moves in that frame.
 // The active window does not change until the commit, so the preparation never needs to be
 // redone. strip_start() drops it (phase IDLE). A rebase that finds the preparation unfinished runs
 // the remaining units in the same call: the same result, with the full cost in one frame.
@@ -601,8 +660,9 @@ static void prep_begin(void) {
     s_prep_kept = s_row_active[STRIP_KEEP_MAX_Y];      // runs of the active window that survive
     uint32_t room = STRIP_OCCLUSION_CAPACITY - s_prep_kept;
     s_stage_new_count = 0;
-    s_stage_sink.map = s_stage_map;
-    s_stage_sink.collision = s_stage_collision;
+    s_stage_id++;
+    s_stage_sink.map = s_map_res;
+    s_stage_sink.collision = s_collision_res;
     s_stage_sink.runs = s_stage_new_runs;
     s_stage_sink.run_count = &s_stage_new_count;
     s_stage_sink.run_limit = room < STRIP_STAGE_RUNS_MAX ? room : STRIP_STAGE_RUNS_MAX;
@@ -610,6 +670,7 @@ static void prep_begin(void) {
     memset(s_row_reserve, 0, (STRIP_SHIFT_PX + 1u) * sizeof(uint32_t));
     s_prep_new = 0;
     s_prep_cursor = 0;
+    s_prep_band_step = 0;
     s_prep_steps = 0;
     s_prep_phase = PREP_BANDS;
 }
@@ -625,10 +686,12 @@ static void prep_plan(void) {
     }
 }
 
+// One band takes 1 call for its floor rows plus ceil(pieces / STRIP_PREP_PIECES) calls for its stamps.
 static void prep_band(void) {
     uint32_t b = s_prep_cursor;
+    const int32_t band = s_next_band + (int32_t)b;
     int32_t block, off;
-    band_to_block(s_next_band + (int32_t)b, &block, &off);
+    band_to_block(band, &block, &off);
     if (block != s_plan_block) {
         s_prep_plan_block = block;
         s_prep_plan_unit = 0;
@@ -636,8 +699,22 @@ static void prep_band(void) {
         s_prep_phase = PREP_PLAN;
         return;
     }
-    generate_band(&s_stage_sink, s_next_band + (int32_t)b,
-                  (int)(b * STRIP_BAND_TILES), (int)(b * STRIP_BAND_CELLS));
+    const int map_row = (int)(b * STRIP_BAND_TILES), collision_row = (int)(b * STRIP_BAND_CELLS);
+    int done;
+    if (s_prep_band_step == 0) {
+        band_floor(&s_stage_sink, band, map_row, collision_row);
+        s_prep_band_step = 1;
+        s_prep_cat = 0;
+        s_prep_idx = 0;
+        done = !stamp_band_enabled(band);
+    } else {
+        done = stamp_band_slice(&s_stage_sink, off, map_row, collision_row,
+                                &s_prep_cat, &s_prep_idx, STRIP_PREP_PIECES);
+    }
+    if (!done) return;
+    // The wall columns of this band's rows, so the reserve rows are final once the six bands exist.
+    enforce_edges_in(s_collision_res, (unsigned)collision_row, (unsigned)collision_row + STRIP_BAND_CELLS);
+    s_prep_band_step = 0;
     if (++s_prep_cursor == STRIP_PREP_STAGE_BANDS) {
         s_prep_cursor = 0;
         s_prep_phase = PREP_COUNT;
@@ -682,7 +759,7 @@ static void prep_place(void) {
 static void prep_insert(void) {
     const uint32_t n = s_prep_new;
     uint32_t i = s_prep_cursor < 1u ? 1u : s_prep_cursor;
-    uint32_t end = i + STRIP_PREP_CHUNK_RUNS;
+    uint32_t end = i + STRIP_PREP_INSERT_RUNS;
     if (end > n) end = n;
     DungeonOcclusionRun *a = s_runs_reserve;
     for (; i < end; i++) {
@@ -723,7 +800,34 @@ static void prep_copy(void) {
 static void prep_index(void) {
     for (uint32_t y = STRIP_SHIFT_PX; y <= STRIP_WIN_H_PX; y++)
         s_row_reserve[y] = s_prep_new + s_row_active[y - STRIP_SHIFT_PX];
-    s_prep_phase = PREP_READY;
+    s_prep_cursor = 0;
+    s_prep_phase = PREP_FLOOR;
+}
+
+// Surviving rows of the active window into the reserve, shifted down by the rebase: the map in
+// STRIP_FLOOR_MAP_SLICES slices, then the collision in STRIP_FLOOR_COL_SLICES (about 4-5 KB each).
+static void prep_floor(void) {
+    uint32_t u = s_prep_cursor;
+    if (u < STRIP_FLOOR_MAP_SLICES) {
+        const unsigned keep = (STRIP_MAP_H_TILES - STRIP_MAP_SHIFT_ROWS) * STRIP_MAP_ROW_BYTES;
+        const unsigned chunk = keep / STRIP_FLOOR_MAP_SLICES;
+        const unsigned off = u * chunk;
+        const unsigned len = (u == STRIP_FLOOR_MAP_SLICES - 1u) ? keep - off : chunk;
+        memcpy((uint8_t *)s_map_res + STRIP_MAP_SHIFT_ROWS * STRIP_MAP_ROW_BYTES + off,
+               (const uint8_t *)s_map + off, len);
+    } else {
+        const unsigned keep = (STRIP_COLLISION_H - STRIP_COLLISION_SHIFT_ROWS) * STRIP_COLLISION_ROW_BYTES;
+        const unsigned chunk = keep / STRIP_FLOOR_COL_SLICES;
+        const unsigned off = (u - STRIP_FLOOR_MAP_SLICES) * chunk;
+        const unsigned len = (u == STRIP_FLOOR_MAP_SLICES + STRIP_FLOOR_COL_SLICES - 1u) ? keep - off : chunk;
+        memcpy(s_collision_res + STRIP_COLLISION_SHIFT_ROWS * STRIP_COLLISION_ROW_BYTES + off,
+               s_collision + off, len);
+    }
+    if (++s_prep_cursor == STRIP_FLOOR_MAP_SLICES + STRIP_FLOOR_COL_SLICES) {
+        enforce_bottom_in(s_collision_res);
+        s_prep_cursor = 0;
+        s_prep_phase = PREP_READY;
+    }
 }
 
 // One unit of preparation work (the IDLE unit only starts the preparation).
@@ -739,22 +843,23 @@ static void prep_unit(void) {
     case PREP_INSERT: prep_insert(); break;
     case PREP_COPY:   prep_copy(); break;
     case PREP_INDEX:  prep_index(); break;
+    case PREP_FLOOR:  prep_floor(); break;
     default:          break;
     }
 }
 
-// Commit of a READY preparation: the window moves up by STRIP_SHIFT_PX. The map and collision
-// rows move with two memmove; the six new bands come from the stage; the run arrays and row
-// indexes swap roles, so the Arena reads the new window from its next call on.
+// Commit of a READY preparation: the window moves up by STRIP_SHIFT_PX. The reserve already holds
+// the complete next window, so the floor arrays, the run arrays and the row indexes only swap
+// roles; the Arena reads the new window from its next call on.
 static int commit_prepared(void) {
-    memmove(s_map + STRIP_MAP_SHIFT_ROWS * STRIP_W_TILES,
-            s_map,
-            (STRIP_MAP_H_TILES - STRIP_MAP_SHIFT_ROWS) * STRIP_MAP_ROW_BYTES);
-    memmove(s_collision + STRIP_COLLISION_SHIFT_ROWS * STRIP_COLLISION_ROW_BYTES,
-            s_collision,
-            (STRIP_COLLISION_H - STRIP_COLLISION_SHIFT_ROWS) * STRIP_COLLISION_ROW_BYTES);
-    memcpy(s_map, s_stage_map, sizeof(s_stage_map));
-    memcpy(s_collision, s_stage_collision, sizeof(s_stage_collision));
+    uint16_t *map = s_map;
+    s_map = s_map_res;
+    s_map_res = map;
+    uint8_t *col = s_collision;
+    s_collision = s_collision_res;
+    s_collision_res = col;
+    s_arena.map = s_map;
+    s_arena.collision = s_collision;
 
     DungeonOcclusionRun *runs = s_runs_active;
     s_runs_active = s_runs_reserve;
@@ -766,7 +871,6 @@ static int commit_prepared(void) {
     s_arena.occlusion_runs = s_runs_active;
     s_arena.occlusion_row_start = s_row_active;
 
-    enforce_hard_edges(STRIP_COLLISION_SHIFT_ROWS);
     s_next_band += STRIP_PREP_STAGE_BANDS;
     s_shift_total_px += STRIP_SHIFT_PX;
     s_prep_steps_last = s_prep_steps;
@@ -788,6 +892,13 @@ void strip_start(uint32_t seed) {
     s_occlusion_count = 0;
     s_plan_block = STRIP_PLAN_NONE;
     s_prep_phase = PREP_IDLE;
+    s_stage_id++;
+    s_map = s_map_a;
+    s_collision = s_collision_a;
+    s_map_res = s_map_b;
+    s_collision_res = s_collision_b;
+    s_arena.map = s_map;
+    s_arena.collision = s_collision;
     s_runs_active = s_occlusion_runs;
     s_runs_reserve = s_occlusion_scratch;
     s_row_active = s_occlusion_row_start;
@@ -802,8 +913,8 @@ void strip_start(uint32_t seed) {
         g_strip_kit.floor_h_tiles == 0 || g_strip_kit.floor_h_tiles > STRIP_BAND_TILES ||
         !g_strip_kit.floor_map || !g_strip_kit.floor_collision || !g_strip_kit.palette ||
         !g_strip_kit.tiles) {
-        memset(s_map, 0, sizeof(s_map));
-        memset(s_collision, 0, sizeof(s_collision));
+        memset(s_map, 0, sizeof(s_map_a));
+        memset(s_collision, 0, sizeof(s_collision_a));
         memset(s_occlusion_row_start, 0, sizeof(s_occlusion_row_start));
         s_arena.occlusion_runs = 0;
         s_arena.num_tiles = 1;
@@ -837,6 +948,28 @@ int strip_rebase_if_needed(int player_y_px) {
     // Units the preparation has not reached yet run now: same result, the full cost in this call.
     while (s_prep_phase != PREP_READY) prep_unit();
     return commit_prepared();
+}
+
+// Nav staging (main.c -> nav_stage_step): once the six new bands exist, the reserve rows 0..191 are
+// final, so the walkability of the nodes of the next window can be computed ahead. The Arena is
+// pointed at those rows for the duration of the call and restored by strip_stage_leave().
+static const uint8_t *s_saved_collision;
+static uint16_t s_saved_collision_h;
+
+uint32_t strip_stage_id(void) { return s_stage_id; }
+
+int strip_stage_enter(void) {
+    if (g_arena != &s_arena || !s_kit_valid || s_prep_phase < PREP_COUNT) return 0;
+    s_saved_collision = s_arena.collision;
+    s_saved_collision_h = s_arena.collision_h;
+    s_arena.collision = s_collision_res;
+    s_arena.collision_h = STRIP_COLLISION_SHIFT_ROWS;
+    return 1;
+}
+
+void strip_stage_leave(void) {
+    s_arena.collision = s_saved_collision;
+    s_arena.collision_h = s_saved_collision_h;
 }
 
 int32_t strip_shift_total_px(void) { return s_shift_total_px; }

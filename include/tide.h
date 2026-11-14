@@ -23,6 +23,9 @@ int tide_player_slowed(fixed player_y);
 void tide_damage_player(PlayerState *player, fixed player_y);
 void tide_render_window(int sub_screen, int camera_y);
 int tide_visible_on_screen(int camera_y);
+// First screen line darkened by the tide window (below the edge band): SCREEN_H when the tide is
+// not on this screen, 0 when it covers it all. The hardware shadows split their blend there.
+int tide_window_top(int camera_y);
 void tide_render_border(uint16_t *buffer, int camera_y);
 
 #endif

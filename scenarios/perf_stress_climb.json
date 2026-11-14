@@ -1,0 +1,404 @@
+{
+  "name": "perf_stress_climb",
+  "description": "Banco A/B de picos con rebase en DeSmuME (solo comparativo; AGENTS.md regla 6). ROM stress-perf: tras la rampa de la horda (48 enemigos, heroe en god mode, dispara sin parar) se fuerza la subida con pokes de s_player.y (la semilla de la franja depende de la hora y un obstaculo podria bloquear una subida real): y=790 (la preparacion del rebase empieza por debajo de 1280), 240 frames de preparacion, y=764 (cruza STRIP_REBASE_TOP_PX 768 y dispara el rebase). 4 ciclos = 4 rebases (shift 3072). Muestras cada 30 frames de medias y maximos por etapa (pl = rebase). Resumir con tools/perf_bench_summary.py.",
+  "state": {
+    "symbols": {
+      "avg": "s_hud_avg",
+      "fps": "s_hud_fps10",
+      "strip": "g_strip_debug",
+      "mx": "s_hud_max",
+      "pl": "s_player"
+    },
+    "default_symbol": "avg",
+    "fields": {
+      "pl": 0,
+      "en": 8,
+      "wp": 12,
+      "dclr": 16,
+      "sh": 20,
+      "sort": 24,
+      "blit": 28,
+      "proj": 32,
+      "pick": 36,
+      "hud": 40,
+      "bgsub": 48,
+      "bgbot": 52,
+      "vwait": 56,
+      "cpu": 60,
+      "frame": 64,
+      "pl_max": {
+        "symbol": "mx",
+        "offset": 0,
+        "type": "u32"
+      },
+      "en_max": {
+        "symbol": "mx",
+        "offset": 8,
+        "type": "u32"
+      },
+      "wp_max": {
+        "symbol": "mx",
+        "offset": 12,
+        "type": "u32"
+      },
+      "dclr_max": {
+        "symbol": "mx",
+        "offset": 16,
+        "type": "u32"
+      },
+      "sh_max": {
+        "symbol": "mx",
+        "offset": 20,
+        "type": "u32"
+      },
+      "sort_max": {
+        "symbol": "mx",
+        "offset": 24,
+        "type": "u32"
+      },
+      "blit_max": {
+        "symbol": "mx",
+        "offset": 28,
+        "type": "u32"
+      },
+      "proj_max": {
+        "symbol": "mx",
+        "offset": 32,
+        "type": "u32"
+      },
+      "pick_max": {
+        "symbol": "mx",
+        "offset": 36,
+        "type": "u32"
+      },
+      "hud_max": {
+        "symbol": "mx",
+        "offset": 40,
+        "type": "u32"
+      },
+      "bgsub_max": {
+        "symbol": "mx",
+        "offset": 48,
+        "type": "u32"
+      },
+      "bgbot_max": {
+        "symbol": "mx",
+        "offset": 52,
+        "type": "u32"
+      },
+      "vwait_max": {
+        "symbol": "mx",
+        "offset": 56,
+        "type": "u32"
+      },
+      "cpu_max": {
+        "symbol": "mx",
+        "offset": 60,
+        "type": "u32"
+      },
+      "frame_max": {
+        "symbol": "mx",
+        "offset": 64,
+        "type": "u32"
+      },
+      "fps10": {
+        "symbol": "fps",
+        "offset": 0,
+        "type": "u32"
+      },
+      "alive": {
+        "symbol": "strip",
+        "offset": 8,
+        "type": "s32"
+      },
+      "py": {
+        "symbol": "pl",
+        "offset": 4,
+        "type": "s32"
+      },
+      "shift": {
+        "symbol": "strip",
+        "offset": 4,
+        "type": "s32"
+      }
+    }
+  },
+  "steps": [
+    {
+      "frames": 120
+    },
+    {
+      "tap": {
+        "x": 128,
+        "y": 20
+      },
+      "frames": 1
+    },
+    {
+      "button_down": "LEFT",
+      "frames": 200
+    },
+    {
+      "button_up": "LEFT",
+      "button_down": "RIGHT",
+      "frames": 300
+    },
+    {
+      "button_up": "RIGHT",
+      "button_down": "LEFT",
+      "frames": 280
+    },
+    {
+      "frames": 30,
+      "state_capture": "w01",
+      "poke": [
+        {
+          "field": "py",
+          "value": 202240
+        }
+      ]
+    },
+    {
+      "frames": 30,
+      "state_capture": "w02"
+    },
+    {
+      "frames": 30,
+      "state_capture": "w03"
+    },
+    {
+      "frames": 30,
+      "state_capture": "w04"
+    },
+    {
+      "frames": 30,
+      "state_capture": "w05"
+    },
+    {
+      "frames": 30,
+      "state_capture": "w06"
+    },
+    {
+      "frames": 30,
+      "state_capture": "w07"
+    },
+    {
+      "frames": 30,
+      "state_capture": "w08"
+    },
+    {
+      "frames": 30,
+      "state_capture": "w09",
+      "poke": [
+        {
+          "field": "py",
+          "value": 195584
+        }
+      ]
+    },
+    {
+      "frames": 30,
+      "state_capture": "w10"
+    },
+    {
+      "frames": 30,
+      "state_capture": "w11"
+    },
+    {
+      "frames": 30,
+      "state_capture": "w12"
+    },
+    {
+      "frames": 30,
+      "state_capture": "w13",
+      "poke": [
+        {
+          "field": "py",
+          "value": 202240
+        }
+      ]
+    },
+    {
+      "frames": 30,
+      "state_capture": "w14"
+    },
+    {
+      "frames": 30,
+      "state_capture": "w15"
+    },
+    {
+      "frames": 30,
+      "state_capture": "w16"
+    },
+    {
+      "frames": 30,
+      "state_capture": "w17"
+    },
+    {
+      "frames": 30,
+      "state_capture": "w18"
+    },
+    {
+      "frames": 30,
+      "state_capture": "w19"
+    },
+    {
+      "frames": 30,
+      "state_capture": "w20"
+    },
+    {
+      "frames": 30,
+      "state_capture": "w21",
+      "poke": [
+        {
+          "field": "py",
+          "value": 195584
+        }
+      ]
+    },
+    {
+      "frames": 30,
+      "state_capture": "w22"
+    },
+    {
+      "frames": 30,
+      "state_capture": "w23"
+    },
+    {
+      "frames": 30,
+      "state_capture": "w24"
+    },
+    {
+      "frames": 30,
+      "state_capture": "w25",
+      "poke": [
+        {
+          "field": "py",
+          "value": 202240
+        }
+      ]
+    },
+    {
+      "frames": 30,
+      "state_capture": "w26"
+    },
+    {
+      "frames": 30,
+      "state_capture": "w27"
+    },
+    {
+      "frames": 30,
+      "state_capture": "w28"
+    },
+    {
+      "frames": 30,
+      "state_capture": "w29"
+    },
+    {
+      "frames": 30,
+      "state_capture": "w30"
+    },
+    {
+      "frames": 30,
+      "state_capture": "w31"
+    },
+    {
+      "frames": 30,
+      "state_capture": "w32"
+    },
+    {
+      "frames": 30,
+      "state_capture": "w33",
+      "poke": [
+        {
+          "field": "py",
+          "value": 195584
+        }
+      ]
+    },
+    {
+      "frames": 30,
+      "state_capture": "w34"
+    },
+    {
+      "frames": 30,
+      "state_capture": "w35"
+    },
+    {
+      "frames": 30,
+      "state_capture": "w36"
+    },
+    {
+      "frames": 30,
+      "state_capture": "w37",
+      "poke": [
+        {
+          "field": "py",
+          "value": 202240
+        }
+      ]
+    },
+    {
+      "frames": 30,
+      "state_capture": "w38"
+    },
+    {
+      "frames": 30,
+      "state_capture": "w39"
+    },
+    {
+      "frames": 30,
+      "state_capture": "w40"
+    },
+    {
+      "frames": 30,
+      "state_capture": "w41"
+    },
+    {
+      "frames": 30,
+      "state_capture": "w42"
+    },
+    {
+      "frames": 30,
+      "state_capture": "w43"
+    },
+    {
+      "frames": 30,
+      "state_capture": "w44"
+    },
+    {
+      "frames": 30,
+      "state_capture": "w45",
+      "poke": [
+        {
+          "field": "py",
+          "value": 195584
+        }
+      ]
+    },
+    {
+      "frames": 30,
+      "state_capture": "w46"
+    },
+    {
+      "frames": 30,
+      "state_capture": "w47"
+    },
+    {
+      "frames": 30,
+      "state_capture": "w48"
+    },
+    {
+      "frames": 1
+    }
+  ],
+  "assertions": {
+    "state_changes": [
+      {
+        "at": "w48",
+        "field": "shift",
+        "min_value": 3072
+      }
+    ]
+  }
+}

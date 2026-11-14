@@ -39,7 +39,10 @@ class UpperScreenContractTest(unittest.TestCase):
 
     def test_occluded_actors_are_hidden_without_through_wall_effects(self):
         blit = MAIN_C.split("static void blit_stride", 1)[1].split("// Shadow shape", 1)[0]
-        self.assertIn("find_hiding_run(world_y, world_x0, world_x1, depth", blit)
+        # The blit reads the baked per-row runs directly and paints only between hiding runs.
+        self.assertIn("g_arena->occlusion_row_start[world_y]", blit)
+        self.assertIn("(int)r->depth > depth", blit)
+        self.assertIn("blit_runs_span(drow, srow, rr, rend, cur, rx0)", blit)
         self.assertNotIn("see_through", MAIN_C)
         self.assertNotIn("draw_hidden_wall_base", MAIN_C)
         self.assertNotIn("wall_base_px", MAIN_C)

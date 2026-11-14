@@ -4,6 +4,7 @@
 #include "navfield.h"
 #include "player_sprite.h"
 #include "sandbox.h"
+#include <nds.h>
 #include <string.h>
 
 static uint32_t s_ai_tick = 0;
@@ -11,20 +12,21 @@ static int s_strip_mode;
 
 void enemy_ai_set_strip_mode(int enabled) { s_strip_mode = enabled != 0; }
 
-static inline uint32_t int_sqrt(uint32_t n) {
-    uint32_t root = 0;
-    uint32_t bit = 1u << 30;
-    while (bit > n) bit >>= 2;
-    while (bit != 0) {
-        if (n >= root + bit) {
-            n -= root + bit;
-            root = (root >> 1) + bit;
-        } else {
-            root >>= 1;
-        }
-        bit >>= 2;
-    }
-    return root;
+// Hardware divider and square root of the ARM9 (the C operators / and the old bit loop are software routines).
+static inline uint32_t int_sqrt(uint32_t n) { return (uint32_t)sqrt32((int)n); }
+
+// Level of detail: enemies outside the two screens (plus a margin) think every 2nd frame and move twice as far.
+static int s_view_valid = 0;
+static int s_view_l, s_view_t, s_view_r, s_view_b;   // world px, margin included
+static int s_offscreen = 0;                          // this enemy is outside the window (any state)
+static int s_lod_mult = 1;                           // 2 on the frame an off-screen enemy runs its AI
+
+void enemy_ai_set_view(int cam_x, int cam_top_y, int cam_bottom_y) {
+    s_view_valid = 1;
+    s_view_l = cam_x - ENEMY_AI_VIEW_MARGIN;
+    s_view_r = cam_x + 256 + ENEMY_AI_VIEW_MARGIN;
+    s_view_t = cam_top_y - ENEMY_AI_VIEW_MARGIN;
+    s_view_b = cam_bottom_y + ENEMY_AI_VIEW_MARGIN;
 }
 
 static inline int dir_from_vector(fixed dx, fixed dy) {
@@ -44,7 +46,7 @@ static inline int dir_from_vector(fixed dx, fixed dy) {
     return sdy < 0 ? DIR_NORTHEAST : DIR_SOUTHEAST;
 }
 
-static int move_with_slide(fixed *x, fixed *y, fixed vx, fixed vy) {
+ITCM_CODE static int move_with_slide(fixed *x, fixed *y, fixed vx, fixed vy) {
     if (vx == 0 && vy == 0) return 0;
 
     fixed next_x = *x;
@@ -74,30 +76,67 @@ static int move_with_slide(fixed *x, fixed *y, fixed vx, fixed vy) {
     return 0;
 }
 
-static void apply_separation(Enemy *enemies, int num_enemies, int current_idx, fixed *vx, fixed *vy) {
+// Separation: a uniform grid of SEP_CELL_PX cells (>= the 16 px radius) rebuilt once per frame, so an enemy only
+// looks at the 3x3 cells around it. Cells wrap (hash) and every candidate is re-checked with its real distance.
+#define SEP_CELL_SHIFT 4
+#define SEP_GRID_BITS 5
+#define SEP_GRID_DIM (1 << SEP_GRID_BITS)
+#define SEP_NONE 0xFF
+static uint8_t s_grid_head[SEP_GRID_DIM * SEP_GRID_DIM];
+static uint8_t s_grid_next[MAX_GAMEPLAY_ENEMIES];
+static uint16_t s_sep_scale[256];                    // 8.8 of 128 / sqrt(d2) for d2 in 1..255 (0.5 px/frame impulse)
+static int s_sep_ready = 0;
+
+static inline int sep_cell(int cx, int cy) {
+    return ((cy & (SEP_GRID_DIM - 1)) << SEP_GRID_BITS) | (cx & (SEP_GRID_DIM - 1));
+}
+
+static void sep_init_table(void) {
+    for (int d2 = 1; d2 < 256; d2++) {
+        uint32_t d16 = int_sqrt((uint32_t)d2 << 8);   // 16 * sqrt(d2)
+        s_sep_scale[d2] = (uint16_t)div32(524288, (int32_t)d16);
+    }
+    s_sep_ready = 1;
+}
+
+ITCM_CODE static void sep_build_grid(const Enemy *enemies, int num_enemies) {
+    memset(s_grid_head, SEP_NONE, sizeof(s_grid_head));
+    if (num_enemies > MAX_GAMEPLAY_ENEMIES) num_enemies = MAX_GAMEPLAY_ENEMIES;
+    for (int i = 0; i < num_enemies; i++) {
+        if (!enemies[i].active) continue;
+        int c = sep_cell(TO_INT(enemies[i].x) >> SEP_CELL_SHIFT, TO_INT(enemies[i].y) >> SEP_CELL_SHIFT);
+        s_grid_next[i] = s_grid_head[c];
+        s_grid_head[c] = (uint8_t)i;
+    }
+}
+
+ITCM_CODE static void apply_separation(Enemy *enemies, int num_enemies, int current_idx, fixed *vx, fixed *vy) {
+    (void)num_enemies;
     Enemy *e = &enemies[current_idx];
-    fixed rep_vx = 0;
-    fixed rep_vy = 0;
+    int cx = TO_INT(e->x) >> SEP_CELL_SHIFT;
+    int cy = TO_INT(e->y) >> SEP_CELL_SHIFT;
+    int32_t rep_vx = 0;
+    int32_t rep_vy = 0;
 
-    for (int j = 0; j < num_enemies; j++) {
-        if (j == current_idx || !enemies[j].active) continue;
-        int32_t edx = TO_INT(e->x - enemies[j].x);
-        int32_t edy = TO_INT(e->y - enemies[j].y);
-        int32_t d2 = edx * edx + edy * edy;
-
-        // Separation radius: 16 pixels (256 sq px)
-        if (d2 > 0 && d2 < 256) {
-            uint32_t d = int_sqrt((uint32_t)d2);
-            if (d > 0) {
-                // Repel with 0.5 px/frame impulse
-                rep_vx += (fixed)((edx * 128) / (int32_t)d);
-                rep_vy += (fixed)((edy * 128) / (int32_t)d);
+    for (int gy = cy - 1; gy <= cy + 1; gy++) {
+        for (int gx = cx - 1; gx <= cx + 1; gx++) {
+            for (int j = s_grid_head[sep_cell(gx, gy)]; j != SEP_NONE; j = s_grid_next[j]) {
+                if (j == current_idx || !enemies[j].active) continue;
+                int32_t edx = TO_INT(e->x - enemies[j].x);
+                int32_t edy = TO_INT(e->y - enemies[j].y);
+                int32_t d2 = edx * edx + edy * edy;
+                // Separation radius: 16 pixels (256 sq px)
+                if (d2 > 0 && d2 < 256) {
+                    int32_t k = s_sep_scale[d2];
+                    rep_vx += (edx * k) / 256;      // constant divisor: shifts
+                    rep_vy += (edy * k) / 256;
+                }
             }
         }
     }
 
-    *vx += rep_vx;
-    *vy += rep_vy;
+    *vx = (*vx + (fixed)rep_vx) * s_lod_mult;
+    *vy = (*vy + (fixed)rep_vy) * s_lod_mult;
 }
 
 static void update_animation(Enemy *e, int moved) {
@@ -130,8 +169,8 @@ static int aim_vector(int ox, int oy, int tx, int ty, int *dx, int *dy) {
     int ay = ty - oy;
     int len = (int)int_sqrt((uint32_t)(ax * ax + GROUND_DY2(ay)));
     if (len < 1) return 0;
-    *dx = (ax * 256) / len;
-    *dy = (ay * 256) / len;
+    *dx = div32(ax * 256, len);
+    *dy = div32(ay * 256, len);
     return 1;
 }
 
@@ -155,8 +194,8 @@ static void chase_step(Enemy *e, Enemy *enemies, int num_enemies, int idx, fixed
     uint32_t t_dist = int_sqrt((uint32_t)(t_dx * t_dx + GROUND_DY2(t_dy)));
     fixed vx = 0, vy = 0;
     if (t_dist > 0) {
-        vx = (fixed)((t_dx * (int32_t)speed) / (int32_t)t_dist);
-        vy = (fixed)((t_dy * (int32_t)speed) / (int32_t)t_dist);
+        vx = (fixed)div32(t_dx * (int32_t)speed, (int32_t)t_dist);
+        vy = (fixed)div32(t_dy * (int32_t)speed, (int32_t)t_dist);
     }
 
     apply_separation(enemies, num_enemies, idx, &vx, &vy);
@@ -168,6 +207,7 @@ static void chase_step(Enemy *e, Enemy *enemies, int num_enemies, int idx, fixed
 // Cached for a few frames: line of sight plus a walkable line for the body, within engage_dist.
 static void refresh_view(Enemy *e, int idx, int wx, int wy, int px, int py, int ground_dist_sq, int engage_dist) {
     if (((s_ai_tick + idx) & 3) != 0) return;
+
     int clear = 0;
     if (ground_dist_sq <= engage_dist * engage_dist)
         clear = los_has_line_of_sight(wx, wy, px, py, 0) && line_is_walkable(wx, wy, px, py);
@@ -323,6 +363,7 @@ static void update_charger(Enemy *e, Enemy *enemies, int num_enemies, int idx,
 // POSITION -> LASER_AIM (line follows) -> LASER_FIX (locked, wider) -> LASER_FIRE -> COOLDOWN -> POSITION.
 // ---------------------------------------------------------------------------
 
+#define SHOOTER_WALK_CHECK_MAX 256    // ground px: an off-screen shooter farther than this skips the straight-walk test (it follows the field)
 #define SHOOTER_FIRE_MARGIN 24        // ground px beyond the band's far edge from which it already charges
 
 void enemy_muzzle(const Enemy *e, fixed *mx, fixed *my, int *mh) {
@@ -369,8 +410,8 @@ static void shooter_reposition(Enemy *e, Enemy *enemies, int num_enemies, int id
     uint32_t m_dist = int_sqrt((uint32_t)(move_x * move_x + GROUND_DY2(move_y)));
     fixed vx = 0, vy = 0;
     if (m_dist > 0) {
-        vx = (fixed)((move_x * (int32_t)tuning->speed) / (int32_t)m_dist);
-        vy = (fixed)((move_y * (int32_t)tuning->speed) / (int32_t)m_dist);
+        vx = (fixed)div32(move_x * (int32_t)tuning->speed, (int32_t)m_dist);
+        vy = (fixed)div32(move_y * (int32_t)tuning->speed, (int32_t)m_dist);
     }
     apply_separation(enemies, num_enemies, idx, &vx, &vy);
     int moved = move_with_slide(&e->x, &e->y, vx, vy);
@@ -432,9 +473,11 @@ static void update_shooter(Enemy *e, Enemy *enemies, int num_enemies, int idx,
     int dx = px - wx;
     int dy = py - wy;
     int ground_dist = (int)int_sqrt((uint32_t)(dx * dx + GROUND_DY2(dy)));
-    if (((s_ai_tick + idx) & 3) == 0) {
-        e->has_los = (bullet_line_is_free(wx, wy, px, py) ? VIEW_BULLET : 0) |
-                     (line_is_walkable(wx, wy, px, py) ? VIEW_WALKABLE : 0);
+    if (((s_ai_tick + idx) & (s_offscreen ? 7 : 3)) == 0) {
+        // The bullet line only matters inside firing reach: beyond it the shooter closes in whatever the line says.
+        int in_reach = ground_dist <= tuning->preferred_dist_max + SHOOTER_FIRE_MARGIN;
+        e->has_los = ((in_reach && bullet_line_is_free(wx, wy, px, py)) ? VIEW_BULLET : 0) |
+                     (!(s_offscreen && ground_dist > SHOOTER_WALK_CHECK_MAX) && line_is_walkable(wx, wy, px, py) ? VIEW_WALKABLE : 0);
     }
     if (s_strip_mode && wy < py - HORDE_SHOOTER_TOP_LIMIT_PX) {
         e->state = ENEMY_STATE_POSITION;
@@ -492,7 +535,7 @@ static void update_shooter(Enemy *e, Enemy *enemies, int num_enemies, int idx,
         default: {
             e->state = ENEMY_STATE_POSITION;
             shooter_reposition(e, enemies, num_enemies, idx, px, py, ground_dist);
-            e->state_timer++;
+            e->state_timer += s_lod_mult;
             // Charge the laser once it has settled, has a clear line, is not out of reach and a laser
             // slot is free (otherwise it keeps waiting in its band).
             if (e->state_timer >= tuning->position_duration && (e->has_los & VIEW_BULLET) &&
@@ -509,10 +552,12 @@ static void update_shooter(Enemy *e, Enemy *enemies, int num_enemies, int idx,
     }
 }
 
-void enemy_ai_update(Enemy *enemies, int num_enemies, fixed player_x, fixed player_y) {
+ITCM_CODE void enemy_ai_update(Enemy *enemies, int num_enemies, fixed player_x, fixed player_y) {
     if (!enemies || num_enemies <= 0) return;
 
     s_ai_tick++;
+    if (!s_sep_ready) sep_init_table();
+    sep_build_grid(enemies, num_enemies);
 
     for (int i = 0; i < num_enemies; i++) {
         Enemy *e = &enemies[i];
@@ -543,6 +588,20 @@ void enemy_ai_update(Enemy *enemies, int num_enemies, fixed player_x, fixed play
 
         if (e->state == ENEMY_STATE_DORMANT) continue;     // asleep: encounters.c wakes the whole pack
 
+        // Level of detail: off-screen enemies that are only walking (CHASE / POSITION) think every 2nd frame,
+        // staggered by index, and cover twice the distance on that frame.
+        s_lod_mult = 1;
+        s_offscreen = 0;
+        if (s_view_valid) {
+            int wx = TO_INT(e->x);
+            int wy = TO_INT(e->y);
+            s_offscreen = wx < s_view_l || wx >= s_view_r || wy < s_view_t || wy >= s_view_b;
+            if (s_offscreen && (e->state == ENEMY_STATE_CHASE || e->state == ENEMY_STATE_POSITION)) {
+                if ((s_ai_tick + (uint32_t)i) & 1) continue;
+                s_lod_mult = 2;
+            }
+        }
+
         if (e->type == ENEMY_TYPE_SKELETON) {
             update_skeleton(e, enemies, num_enemies, i, player_x, player_y);
         } else if (e->type == ENEMY_TYPE_CHARGER) {
@@ -551,4 +610,5 @@ void enemy_ai_update(Enemy *enemies, int num_enemies, fixed player_x, fixed play
             update_shooter(e, enemies, num_enemies, i, player_x, player_y);
         }
     }
+    s_lod_mult = 1;
 }

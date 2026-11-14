@@ -23,7 +23,13 @@ void nav_init(void);
 // Rebuilds the walkable grid incrementally after the active arena data shifts.
 // nav_update spends its node budget on this grid first, then on the distance search.
 void nav_refresh_begin(int goal_px, int goal_py);
-void nav_shift_down(int rows, int goal_px, int goal_py);
+// stage_id: the id the rows were staged under by nav_stage_step (0 = none); a match skips the
+// per-node walkability work of the shift frame.
+void nav_shift_down(int rows, int goal_px, int goal_py, uint32_t stage_id);
+// Computes ahead, `budget` nodes per call, the walkable flags of the `rows` top node rows that the
+// next nav_shift_down(rows, ...) will need. The caller points the arena at the window those rows
+// belong to (strip_stage_enter) and passes the stage id; a changed id restarts. Returns 1 when done.
+int nav_stage_step(int rows, int budget, uint32_t stage_id);
 
 // Grid size of the active arena, in nodes.
 int nav_width(void);

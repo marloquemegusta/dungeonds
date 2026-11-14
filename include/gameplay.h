@@ -63,7 +63,14 @@ extern const EnemyTuning g_enemy_tuning[NUM_ENEMY_TYPES];
 // 2. Generic Enemy Pool
 // ---------------------------------------------------------------------------
 
+#ifndef STRESS_TEST
+#define STRESS_TEST 0               // 1 = measurement build: big horde, 1 HP enemies, god mode (variants stress / stress-perf)
+#endif
+#if STRESS_TEST
+#define MAX_GAMEPLAY_ENEMIES 64
+#else
 #define MAX_GAMEPLAY_ENEMIES 24     // every enemy of the dungeon exists from the start (dormant until woken)
+#endif
 
 // Skeleton: CHASE <-> ATTACK. Charger: CHASE -> TELEGRAPH -> CHARGE -> RECOVER -> CHASE (STUNNED from
 // a wall hit or a shotgun hit). Shooter: POSITION -> LASER_AIM -> LASER_FIX -> LASER_FIRE -> COOLDOWN -> POSITION.

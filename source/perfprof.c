@@ -34,10 +34,12 @@ static uint32_t s_window_no;
 static uint32_t s_sd_prev_ticks, s_sd_prev_len;
 
 static uint32_t s_hud_avg[PP_COUNT];
+// Per-stage peak of the last 60-frame window, readable by scenarios (perf_stress_bench.json).
+static volatile uint32_t s_hud_max[PP_COUNT];
 static uint32_t s_hud_fps10 = 600;
 
 static char s_hud_text[2][56];
-static FILE *s_file;
+static const char *s_log_path = NULL;
 static char s_line[1400];
 static void build_hud_text(void);
 
@@ -60,10 +62,18 @@ void perfprof_init(void) {
     if (sd_ok) {
         // libnds FAT only commits the file size on fclose, so every write
         // reopens and closes the file; fflush alone leaves a 0-byte log.
-        s_file = fopen("/dungeonds_perf.log", "ab");
-        if (s_file) {
-            fputs("BOOT perf_log=1 window=60 ticks_per_ms=33514 budget=560190\n", s_file);
-            fclose(s_file);
+        // The default working directory is the read-only nitro:/ filesystem after
+        // nitroFSInit, so the log must use an explicit FAT device prefix.
+        FILE *f = fopen("fat:/dungeonds_perf.log", "ab");
+        if (f) {
+            s_log_path = "fat:/dungeonds_perf.log";
+        } else {
+            f = fopen("sd:/dungeonds_perf.log", "ab");
+            if (f) s_log_path = "sd:/dungeonds_perf.log";
+        }
+        if (f) {
+            fputs("BOOT perf_log=1 window=60 ticks_per_ms=33514 budget=560190\n", f);
+            fclose(f);
         }
     }
     reset_window();
@@ -86,9 +96,9 @@ static void write_window(uint32_t frame_index) {
     }
     s_line[len++] = '\n';
     s_line[len] = 0;
-    if (s_file) {
+    if (s_log_path) {
         uint32_t t0 = cpuGetTiming();
-        FILE *f = fopen("/dungeonds_perf.log", "ab");
+        FILE *f = fopen(s_log_path, "ab");
         if (f) {
             fwrite(s_line, 1, len, f);
             fclose(f);
@@ -110,7 +120,10 @@ void perfprof_frame_end(uint32_t frame_index, uint32_t vblanks) {
     s_vb_sum += vblanks;
     if (vblanks > 1) s_vb_multi++;
     if (s_n >= WINDOW_FRAMES) {
-        for (int i = 0; i < PP_COUNT; i++) s_hud_avg[i] = (uint32_t)(s_sum[i] / s_n);
+        for (int i = 0; i < PP_COUNT; i++) {
+            s_hud_avg[i] = (uint32_t)(s_sum[i] / s_n);
+            s_hud_max[i] = s_max[i];
+        }
         // fps*10 = n frames / (vblanks / 59.83 Hz) * 10
         s_hud_fps10 = s_vb_sum ? (s_n * 5983u) / (s_vb_sum * 10u) : 600;
         build_hud_text();

@@ -1,0 +1,211 @@
+{
+  "name": "perf_stress_bench_sw_shadows",
+  "description": "Igual que perf_stress_bench, pero pulsa L+R+A al arrancar para medir con las sombras por software (linea base de la mejora A).",
+  "state": {
+    "symbols": {
+      "avg": "s_hud_avg",
+      "fps": "s_hud_fps10",
+      "strip": "g_strip_debug",
+      "mx": "s_hud_max"
+    },
+    "default_symbol": "avg",
+    "fields": {
+      "pl": 0,
+      "en": 8,
+      "wp": 12,
+      "dclr": 16,
+      "sh": 20,
+      "sort": 24,
+      "blit": 28,
+      "proj": 32,
+      "pick": 36,
+      "hud": 40,
+      "bgsub": 48,
+      "bgbot": 52,
+      "vwait": 56,
+      "cpu": 60,
+      "frame": 64,
+      "pl_max": { "symbol": "mx", "offset": 0, "type": "u32" },
+      "en_max": { "symbol": "mx", "offset": 8, "type": "u32" },
+      "wp_max": { "symbol": "mx", "offset": 12, "type": "u32" },
+      "dclr_max": { "symbol": "mx", "offset": 16, "type": "u32" },
+      "sh_max": { "symbol": "mx", "offset": 20, "type": "u32" },
+      "sort_max": { "symbol": "mx", "offset": 24, "type": "u32" },
+      "blit_max": { "symbol": "mx", "offset": 28, "type": "u32" },
+      "proj_max": { "symbol": "mx", "offset": 32, "type": "u32" },
+      "pick_max": { "symbol": "mx", "offset": 36, "type": "u32" },
+      "hud_max": { "symbol": "mx", "offset": 40, "type": "u32" },
+      "bgsub_max": { "symbol": "mx", "offset": 48, "type": "u32" },
+      "bgbot_max": { "symbol": "mx", "offset": 52, "type": "u32" },
+      "vwait_max": { "symbol": "mx", "offset": 56, "type": "u32" },
+      "cpu_max": { "symbol": "mx", "offset": 60, "type": "u32" },
+      "frame_max": { "symbol": "mx", "offset": 64, "type": "u32" },
+      "fps10": {
+        "symbol": "fps",
+        "offset": 0,
+        "type": "u32"
+      },
+      "alive": {
+        "symbol": "strip",
+        "offset": 8,
+        "type": "s32"
+      }
+    }
+  },
+  "steps": [
+    {
+      "frames": 60
+    },
+    {
+      "button_down": "L",
+      "frames": 2
+    },
+    {
+      "button_down": "R",
+      "frames": 2
+    },
+    {
+      "button_down": "A",
+      "frames": 2
+    },
+    {
+      "button_up": "A",
+      "frames": 2
+    },
+    {
+      "button_up": "R",
+      "frames": 2
+    },
+    {
+      "button_up": "L",
+      "frames": 2
+    },
+    {
+      "frames": 48
+    },
+    {
+      "tap": {
+        "x": 128,
+        "y": 20
+      },
+      "frames": 1
+    },
+    {
+      "button_down": "LEFT",
+      "frames": 200
+    },
+    {
+      "button_up": "LEFT",
+      "button_down": "RIGHT",
+      "frames": 300
+    },
+    {
+      "button_up": "RIGHT",
+      "button_down": "LEFT",
+      "frames": 280,
+      "capture": "ramp_done"
+    },
+    {
+      "button_up": "LEFT",
+      "button_down": "RIGHT",
+      "frames": 60,
+      "state_capture": "w01"
+    },
+    {
+      "frames": 60,
+      "state_capture": "w02"
+    },
+    {
+      "frames": 60,
+      "state_capture": "w03"
+    },
+    {
+      "frames": 60,
+      "state_capture": "w04"
+    },
+    {
+      "button_up": "RIGHT",
+      "button_down": "LEFT",
+      "frames": 60,
+      "state_capture": "w05"
+    },
+    {
+      "frames": 60,
+      "state_capture": "w06"
+    },
+    {
+      "frames": 60,
+      "state_capture": "w07"
+    },
+    {
+      "frames": 60,
+      "state_capture": "w08"
+    },
+    {
+      "button_up": "LEFT",
+      "button_down": "RIGHT",
+      "frames": 60,
+      "state_capture": "w09"
+    },
+    {
+      "frames": 60,
+      "state_capture": "w10",
+      "capture": "mid"
+    },
+    {
+      "frames": 60,
+      "state_capture": "w11"
+    },
+    {
+      "frames": 60,
+      "state_capture": "w12"
+    },
+    {
+      "button_up": "RIGHT",
+      "button_down": "LEFT",
+      "frames": 60,
+      "state_capture": "w13"
+    },
+    {
+      "frames": 60,
+      "state_capture": "w14"
+    },
+    {
+      "frames": 60,
+      "state_capture": "w15"
+    },
+    {
+      "frames": 60,
+      "state_capture": "w16"
+    },
+    {
+      "button_up": "LEFT",
+      "button_down": "RIGHT",
+      "frames": 60,
+      "state_capture": "w17"
+    },
+    {
+      "frames": 60,
+      "state_capture": "w18"
+    },
+    {
+      "frames": 60,
+      "state_capture": "w19"
+    },
+    {
+      "frames": 60,
+      "state_capture": "w20",
+      "capture": "end"
+    }
+  ],
+  "assertions": {
+    "state_changes": [
+      {
+        "at": "w10",
+        "field": "alive",
+        "min_value": 15
+      }
+    ]
+  },
+  "suite": false
+}

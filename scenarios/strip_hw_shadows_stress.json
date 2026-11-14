@@ -1,0 +1,25 @@
+{
+  "name": "strip_hw_shadows_stress",
+  "description": "ROM stress (variante stress: horda de hasta 48, enemigos de 1 PS, heroe en god mode). El heroe esta quieto; la horda baja por las dos pantallas y la marea sube hasta cruzarlos. Se capturan filmstrips con sombras por hardware (SH HW en el HUD), y despues L+R+A pasa a sombras por software (SH SW) para comparar el mismo tipo de escena. No afirma geometria concreta de oclusion: solo que hay horda.",
+  "state": {
+    "symbols": { "strip": "g_strip_debug" },
+    "default_symbol": "strip",
+    "fields": { "height_px": 0, "shift_px": 4, "alive": 8, "hp": 12 }
+  },
+  "steps": [
+    { "frames": 600, "capture": "00_horde_building", "state_capture": "early" },
+    { "frames": 700, "capture_sequence": "hw", "capture_every": 35, "state_capture": "hw" },
+    { "button_down": "L", "frames": 2 },
+    { "button_down": "R", "frames": 2 },
+    { "button_down": "A", "frames": 2 },
+    { "button_up": "A", "frames": 2 },
+    { "button_up": "R", "frames": 2 },
+    { "button_up": "L", "frames": 30, "capture": "01_software_toggled", "state_capture": "sw" },
+    { "frames": 100, "capture_sequence": "sw", "capture_every": 50 }
+  ],
+  "assertions": {
+    "state_changes": [
+      { "at": "hw", "field": "alive", "min_value": 8 }
+    ]
+  }
+}

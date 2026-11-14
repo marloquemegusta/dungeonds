@@ -113,6 +113,9 @@ def crop_shadow_masks(shb_body, mask_body, shw=SHADOW_W, shh=SHADOW_H, frame_ind
     return ''.join(off_lines), ''.join(data_lines)
 
 
+RUN_STATS = []
+
+
 def convert_sheet_cropped(png_path, w=SPRITE_W, h=SPRITE_H, dir_shift=None, frame_indices=None):
     im = Image.open(png_path).convert('RGBA')
     if frame_indices is None:
@@ -120,9 +123,12 @@ def convert_sheet_cropped(png_path, w=SPRITE_W, h=SPRITE_H, dir_shift=None, fram
     pixels_all = []
     offsets = []
     bounds = []
+    runs_all = []      # uint16 halfwords: per frame block = (bh+1) row offsets, then one (x | len << 8) per opaque run
+    run_offsets = []
     for d in range(8):
         dir_offs = []
         dir_bnds = []
+        dir_run_offs = []
         shift = dir_shift[d] if dir_shift else 0
         for f in frame_indices:
             cell = im.crop((f * w, d * h, (f + 1) * w, (d + 1) * h))
@@ -149,6 +155,7 @@ def convert_sheet_cropped(png_path, w=SPRITE_W, h=SPRITE_H, dir_shift=None, fram
                         if y > max_y: max_y = y
                     buf[y * w + x] = val
             dir_offs.append(len(pixels_all))
+            dir_run_offs.append(len(runs_all))
             if max_x < min_x:
                 dir_bnds.append((0, 0, 0, 0))
             else:
@@ -157,8 +164,38 @@ def convert_sheet_cropped(png_path, w=SPRITE_W, h=SPRITE_H, dir_shift=None, fram
                 dir_bnds.append((min_x, min_y, bw, bh))
                 for y in range(min_y, max_y + 1):
                     pixels_all.extend(buf[y * w + min_x:y * w + max_x + 1])
+                    if bw & 1:
+                        pixels_all.append(0)    # even row pitch: every row starts on a 32-bit boundary
+                assert bw <= 255
+                # Opaque runs (bit 15 set) per row, x relative to the cropped frame.
+                row_runs = []
+                for y in range(min_y, max_y + 1):
+                    rr = []
+                    x = min_x
+                    while x <= max_x:
+                        if buf[y * w + x] & 0x8000:
+                            x0 = x
+                            while x <= max_x and (buf[y * w + x] & 0x8000):
+                                x += 1
+                            rr.append((x0 - min_x) | ((x - x0) << 8))
+                        else:
+                            x += 1
+                    row_runs.append(rr)
+                block = []
+                pos = bh + 1
+                for rr in row_runs:
+                    block.append(pos)
+                    pos += len(rr)
+                block.append(pos)
+                for rr in row_runs:
+                    block.extend(rr)
+                if len(block) & 1:
+                    block.append(0)     # keep every block 4-byte aligned
+                assert len(block) < 65536
+                runs_all.extend(block)
         offsets.append(dir_offs)
         bounds.append(dir_bnds)
+        run_offsets.append(dir_run_offs)
 
     off_lines = ['{\n']
     for d in range(8):
@@ -178,7 +215,30 @@ def convert_sheet_cropped(png_path, w=SPRITE_W, h=SPRITE_H, dir_shift=None, fram
             chunk = ', '.join(f'0x{v:04X}' for v in pixels_all[i:i + 16])
             pix_lines.append(f'    {chunk},\n')
     pix_lines.append('};\n')
-    return ''.join(off_lines), ''.join(bnd_lines), ''.join(pix_lines)
+
+    run_off_lines = ['{\n']
+    for d in range(8):
+        run_off_lines.append('    { ' + ', '.join(str(v) for v in run_offsets[d]) + ' },\n')
+    run_off_lines.append('};\n')
+    run_lines = ['{\n']
+    if not runs_all:
+        runs_all = [0]
+    for i in range(0, len(runs_all), 16):
+        run_lines.append('    ' + ', '.join(str(v) for v in runs_all[i:i + 16]) + ',\n')
+    run_lines.append('};\n')
+    RUN_STATS.append(len(runs_all) * 2 + 4 * 8 * len(frame_indices))
+    return (''.join(off_lines), ''.join(bnd_lines), ''.join(pix_lines),
+            ''.join(run_off_lines), ''.join(run_lines))
+
+def emit_runs(out_lines, name, run_offs, run_data, frames_const, comment):
+    out_lines.append(f'// {comment}\n')
+    out_lines.append(f'const uint16_t g_{name}_runs[] __attribute__((aligned(4))) = ')
+    out_lines.append(run_data)
+    out_lines.append('\n')
+    out_lines.append(f'const uint32_t g_{name}_run_offsets[PLAYER_NUM_DIRS][{frames_const}] = ')
+    out_lines.append(run_offs)
+    out_lines.append('\n')
+
 
 chars_meta = [
     ('player', 'corazon', 'Corazon Abierto Hero', 340, 4),
@@ -239,7 +299,7 @@ for var_name, folder, disp_name, spd, ticks, sw, sh, shw, shh, out_shw, out_shh 
             muzzle = [[[int(v) for v in dm[d][f]] for f in range(8)] for d in range(8)]
     all_muzzles.append(muzzle)
 
-    fr_offs, fr_bnds, fr_pix = convert_sheet_cropped(png_path, sw, sh)
+    fr_offs, fr_bnds, fr_pix, fr_run_offs, fr_runs = convert_sheet_cropped(png_path, sw, sh)
     out_lines.append(f'// {sw}x{sh} BGR555 frames for {disp_name}, 8 directions x 8 frames (cropped to bounds)\n')
     out_lines.append(f'const uint16_t g_{var_name}_frames[] __attribute__((aligned(4))) = ')
     out_lines.append(fr_pix)
@@ -250,6 +310,8 @@ for var_name, folder, disp_name, spd, ticks, sw, sh, shw, shh, out_shw, out_shh 
     out_lines.append(f'const uint8_t g_{var_name}_frame_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4] = ')
     out_lines.append(fr_bnds)
     out_lines.append('\n')
+    emit_runs(out_lines, var_name, fr_run_offs, fr_runs, 'PLAYER_NUM_FRAMES',
+              f'Opaque runs per row of {disp_name} frames (blit_stride): block = (bh+1) row offsets in halfwords, then x | len << 8')
 
     sh_offs, sh_data = crop_shadow_masks(shb_body, mask_body, out_shw, out_shh)
     out_lines.append(f'// 4-bit packed animated crisp 3D shadow masks for {disp_name} (8 dirs x 8 frames, cropped to bounds)\n')
@@ -273,7 +335,7 @@ chg_frames = [0, 2, 4, 6]
 chg_shb_body, chg_mask_body = crop_shadow_120_to_80(chg_shb_body, chg_mask_body, chg_frames)
 print('charger charge anchors: walk', walk_c_anchors, 'charge', chg_anchors, 'shift', chg_shift)
 
-chg_fr_offs, chg_fr_bnds, chg_fr_pix = convert_sheet_cropped(os.path.join(CHARGE_DIR, 'spritesheet.png'), 60, 60, chg_shift, chg_frames)
+chg_fr_offs, chg_fr_bnds, chg_fr_pix, chg_run_offs, chg_runs = convert_sheet_cropped(os.path.join(CHARGE_DIR, 'spritesheet.png'), 60, 60, chg_shift, chg_frames)
 out_lines.append('// 60x60 BGR555 charge clip of the charger (CHAR_CHARGER), 8 directions x 4 frames (cropped to bounds)\n')
 out_lines.append('const uint16_t g_charger_charge_frames[] __attribute__((aligned(4))) = ')
 out_lines.append(chg_fr_pix)
@@ -284,6 +346,7 @@ out_lines.append('\n')
 out_lines.append('const uint8_t g_charger_charge_frame_bounds[PLAYER_NUM_DIRS][CHARGER_CHARGE_NUM_FRAMES][4] = ')
 out_lines.append(chg_fr_bnds)
 out_lines.append('\n')
+emit_runs(out_lines, 'charger_charge', chg_run_offs, chg_runs, 'CHARGER_CHARGE_NUM_FRAMES', 'Opaque runs of the charger charge clip')
 
 chg_sh_offs, chg_sh_data = crop_shadow_masks(chg_shb_body, chg_mask_body, 80, 80, chg_frames)
 out_lines.append('// 4-bit packed shadow masks of the charger charge clip (8 dirs x 4 frames, cropped to bounds)\n')
@@ -306,7 +369,7 @@ tg_shift = [walk_c_anchors[d] - tg_anchors[d] for d in range(8)]
 tg_frames = [6]
 print('charger telegraph anchors: walk', walk_c_anchors, 'telegraph', tg_anchors, 'shift', tg_shift)
 
-tg_fr_offs, tg_fr_bnds, tg_fr_pix = convert_sheet_cropped(os.path.join(TELE_DIR, 'spritesheet.png'), 60, 60, tg_shift, tg_frames)
+tg_fr_offs, tg_fr_bnds, tg_fr_pix, tg_run_offs, tg_runs = convert_sheet_cropped(os.path.join(TELE_DIR, 'spritesheet.png'), 60, 60, tg_shift, tg_frames)
 out_lines.append('// 60x60 BGR555 telegraph keyframe of the charger (CHAR_CHARGER), 8 directions x 1 frame (cropped to bounds)\n')
 out_lines.append('const uint16_t g_charger_telegraph_frames[] __attribute__((aligned(4))) = ')
 out_lines.append(tg_fr_pix)
@@ -317,6 +380,7 @@ out_lines.append('\n')
 out_lines.append('const uint8_t g_charger_telegraph_frame_bounds[PLAYER_NUM_DIRS][CHARGER_TELEGRAPH_NUM_FRAMES][4] = ')
 out_lines.append(tg_fr_bnds)
 out_lines.append('\n')
+emit_runs(out_lines, 'charger_telegraph', tg_run_offs, tg_runs, 'CHARGER_TELEGRAPH_NUM_FRAMES', 'Opaque runs of the charger telegraph keyframe')
 
 # Hero shot clip (Corazon Abierto, DESIGN.md "Carga y disparo"): a second set for CHAR_HERO only.
 # It is the clip rendered by the lab with the walk's settings. Its ground line was 1 px lower
@@ -331,7 +395,7 @@ with open(os.path.join(SHOT_DIR, 'settings.json'), 'r', encoding='utf-8') as sf:
     shot_dm = json.load(sf)['dirMuzzle']
 shot_muzzle = [[[int(v) for v in shot_dm[d][f]] for f in range(8)] for d in range(8)]
 
-shot_fr_offs, shot_fr_bnds, shot_fr_pix = convert_sheet_cropped(os.path.join(SHOT_DIR, 'spritesheet.png'), SPRITE_W, SPRITE_H, shot_shift)
+shot_fr_offs, shot_fr_bnds, shot_fr_pix, shot_run_offs, shot_runs = convert_sheet_cropped(os.path.join(SHOT_DIR, 'spritesheet.png'), SPRITE_W, SPRITE_H, shot_shift)
 out_lines.append('// 40x40 BGR555 shot clip of the hero (CHAR_HERO only), 8 directions x 8 frames: f0 arms crossed, f7 collapsed (cropped to bounds)\n')
 out_lines.append('const uint16_t g_player_shot_frames[] __attribute__((aligned(4))) = ')
 out_lines.append(shot_fr_pix)
@@ -342,6 +406,7 @@ out_lines.append('\n')
 out_lines.append('const uint8_t g_player_shot_frame_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4] = ')
 out_lines.append(shot_fr_bnds)
 out_lines.append('\n')
+emit_runs(out_lines, 'player_shot', shot_run_offs, shot_runs, 'PLAYER_NUM_FRAMES', 'Opaque runs of the hero shot clip')
 
 shot_sh_offs, shot_sh_data = crop_shadow_masks(shot_shb_body, shot_mask_body, SHADOW_W, SHADOW_H)
 out_lines.append('// 4-bit packed shadow masks of the hero shot clip (8 dirs x 8 frames, cropped to bounds)\n')
@@ -394,6 +459,18 @@ out_lines.append('    g_charger_frame_bounds,\n')
 out_lines.append('    g_necron_frame_bounds,\n    g_skeleton_frame_bounds\n')
 out_lines.append('};\n\n')
 
+out_lines.append('const uint16_t * const g_character_runs[NUM_CHARACTERS] = {\n')
+out_lines.append('    g_player_runs,\n')
+out_lines.append('    g_charger_runs,\n')
+out_lines.append('    g_necron_runs,\n    g_skeleton_runs\n')
+out_lines.append('};\n\n')
+
+out_lines.append('const uint32_t (* const g_character_run_offsets[NUM_CHARACTERS])[PLAYER_NUM_FRAMES] = {\n')
+out_lines.append('    g_player_run_offsets,\n')
+out_lines.append('    g_charger_run_offsets,\n')
+out_lines.append('    g_necron_run_offsets,\n    g_skeleton_run_offsets\n')
+out_lines.append('};\n\n')
+
 out_lines.append('const uint8_t * const g_character_shadow_masks[NUM_CHARACTERS] = {\n')
 out_lines.append('    g_player_shadow_masks,\n')
 out_lines.append('    g_charger_shadow_masks,\n')
@@ -416,4 +493,5 @@ out_path = os.path.join(WT, 'source/player_sprite.c')
 with open(out_path, 'w', encoding='utf-8') as f:
     f.writelines(out_lines)
 
+print('Opaque-run tables: %d bytes (runs + offsets)' % sum(RUN_STATS))
 print('Generated source/player_sprite.c successfully! Size:', os.path.getsize(out_path), 'bytes')

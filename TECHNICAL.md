@@ -82,6 +82,17 @@
 - **Desajuste de origen:** la variante de rosetón también se coloca en los anclajes periódicos de los muros laterales. El layout de catedral reserva el rosetón para el arco frontal del crucero; separar ese emisor es trabajo de la Sesión 3 (`DESIGN.md` §6.9.1b).
 - **Prioridad en crucero:** la Sesión 3 debe suspender los haces laterales durante la pantalla del rosetón; `BLDALPHA` comparte la intensidad por pantalla y dos haces solapados no se suman (`walkthroughs/v032-escenario/BIBLIA.md` §7).
 - **Pendiente:** certificar 60 FPS en la DS con `PERF_PROFILE` antes de activarlo en la build por defecto (regla 6) y escribir la decisión de arte (regla 9).
+- **Incompatibles con las sombras hardware (§3.6):** ambos usan los bancos OBJ, así que con `GODRAYS_PROTO=1` se fuerza `HW_SHADOWS 0` (camino software).
+
+### 3.6. Sombras hardware y pase de rendimiento de la horda (2026-11-14, `walkthroughs/hw-shadows/`)
+- **Sombras por hardware (`source/hwshadow.c`, `HW_SHADOWS 1` por defecto):** cada máscara 4 bpp del lab se convierte a tiles OBJ (caché LRU por puntero de máscara; banco E en la principal, 1024 tiles; banco I en la secundaria, 512) y se emite como 1–4 OBJ en modo ventana. La ventana OBJ aplica `BLDCNT` modo 3 (oscurecer) solo al suelo con `BLDY 8` (≈50 %). La marea usa WIN0 con su propio `BLDY` (`TIDE_BRIGHTNESS`); una IRQ de VCOUNT cambia el registro en la línea de la marea (`tide_window_top`). Decisión y diferencias aceptadas en `DESIGN.md` §3.
+- **IA (`enemy_ai.c`):** separación por rejilla de 16 px, dirección por tabla (sin raíz ni división), `sqrt32`/`div32` hardware, LOD fuera de pantalla (cada 2 frames con paso doble, `enemy_ai_set_view`) y línea de visión del tirador solo dentro de rango. `navfield.c`: BFS más rápido, caché por nodo de `nav_next_step` y sin reinicio si el objetivo no cambia.
+- **Blit por tramos opacos:** el generador (`tools/generate_player_sprites_c.py`) emite por fila los tramos opacos (`g_character_runs`, `x | len << 8`) y filas con pitch par; +72 KB de ROM.
+- **Limpieza:** `zero_words_burst` escribe 8 palabras por iteración (`stmia`). Camino caliente en ITCM (§4.5).
+- **Picos:** el rebase de la franja prepara el suelo en 10 trozos en frames previos y conmuta punteros (+~40 KB de RAM; vuelve a costar ~10 ms si el jugador sube más de ~3,6 px/frame). La navegación se prepara por adelantado (`nav_stage_step`). Láseres con un `dirty_row` por fila. Fragmentos de muerte: máximo 2 enemigos por frame, cola de 16.
+- **Variantes:** `stress` (`STRESS_TEST=1`: horda a 48, pool 64, enemigos de 1 PS, héroe invulnerable, L+R+A alterna sombras HW/SW) y `stress-perf` (además `PERF_PROFILE=1`). El log de `PERF_PROFILE` usa ruta explícita `fat:/` (o `sd:/`), porque NitroFS deja el directorio en `nitro:/`.
+- **Banco A/B en DeSmuME:** `scenarios/perf_stress_bench.json` (+ `_sw_shadows`, `perf_stress_climb`) y `python tools/perf_bench_summary.py <salida> [<base>]`. Solo comparativo (regla 6).
+- **Medido en la DS (`stress-perf`, horda llena ~48):** CPU 14,3–15,1 ms de media por ventana de 1 s y peor frame 17–18,5 ms; 0–5 frames perdidos por segundo en los peores tramos (parte, la escritura del log). Antes: 34–36 ms (20 FPS) con sombras y 17–21 ms sin ellas. Con el pool normal de 24, 8–12 ms. Lo que más pesa ahora es el blit (~6 ms con horda llena).
 
 ## 4. Deuda Técnica Pendiente (auditoría 2026-11-02)
 
@@ -113,7 +124,7 @@ Origen: `walkthroughs/audit-motor-2d3d/`. Resueltos en el prototipo A (composito
 - **Timestep por frame presentado.** A 30 FPS el juego va a media velocidad; usar delta de tiempo o paso fijo con acumulador.
 - **Oclusión tras muros:** transparencia alterna y línea de base eliminadas en 2026-11-10; ver §4.6.
 - **Anillo de BG:** reescanea 2048 celdas por pantalla en cada cambio de tile (~0,1 ms de media, picos ~2 ms). Baja prioridad.
-- **Assets:** sprites BGR555 crudos (614 KB) y máscaras de sombra 4 bpp 80×80 (614 KB) sin paleta ni compresión ni NitroFS; ~2,0 MiB de 3,5 MiB de EWRAM; ITCM/DTCM sin uso.
+- **Assets:** sprites BGR555 crudos (614 KB) y máscaras de sombra 4 bpp 80×80 (614 KB) sin paleta ni compresión ni NitroFS; ~2,0 MiB de 3,5 MiB de EWRAM. ITCM (unos 18 KB de 32 KB) aloja el camino caliente por frame: `render_screen`, `blit_stride` y sus auxiliares de limpieza y sombra, la IA y navegación de enemigos, la colisión de líneas, la lista de sombras hardware y `horde_update`. DTCM ya aloja la pila (tope en 0x02FF8000) y no se ha movido ningún dato.
 - **Pipeline:** `tools/rebuild-assets.ps1` llama a `tools/build_assets.py` inexistente; `generate_player_sprites_c.py` copia texto del `.h` del lab en vez de convertir `shadow.png`; tamaño del mundo duplicado en 4 sitios; `SPAWN` hardcodeado en el baker; `.c` generados sin hash de origen; ~40 scripts muertos en `tools/`.
 - **Acoplamiento:** coordenadas de mundo = píxeles de pantalla; impactos con círculo en pantalla frente a movimiento con métrica de suelo; estado global en `main.c`; `on_enemy_death` copia píxeles.
 - **Escenarios:** sensibles a frames perdidos del emulador; deberían basarse en frames de lógica, no en vblanks.
