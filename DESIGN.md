@@ -231,7 +231,10 @@ Primer paso jugable hacia §6.1–6.8: el juego actual (armas, cargador, tirador
 - La longitud es la que dé ~8 min a la velocidad de la marea; se ajusta jugando.
 
 ### 6.3 Cámara y pantallas
-- El jugador va **centrado en la pantalla inferior**, porque solo ahí se toca. Quedan ~96 px de vista detrás de él y ~288 delante.
+- **Cámara con adelanto vertical (*look-ahead*, decidido 2026-11-14):** en lugar de centrar al jugador en el 50 % de la pantalla inferior, el encuadre se adelanta suavemente según el sentido de marcha vertical:
+  - **Al subir:** coloca al jugador en el tercio inferior (~69 %, ~132 px de vista delante y ~60 px detrás en la pantalla táctil).
+  - **Al bajar (retroceder):** desliza la vista hacia atrás hasta dejar al jugador en el tercio superior (~33 %, ~128 px de vista detrás para ver la marea y retroceder con comodidad), **salvo si está apuntando hacia delante con el stylus (*kiting*)**, en cuyo caso mantiene la vista al frente.
+  - **Al parar o hacer *strafe* lateral:** la cámara mantiene el último encuadre (no vuelve sola al centro), y requiere ~0,37 s (22 frames) de marcha vertical sostenida antes de empezar a deslizarse (a 2 px/frame) para que los esquives cortos no muevan el suelo bajo el stylus.
 - **La pantalla superior es la vanguardia, no un menú:** muestra la horda que llega, los puntos de aparición y los avisos de élite, minijefe y jefe. Se le puede disparar con el apuntado por vector de §4.1. Premia a las clases de largo alcance.
 - Los menús, como la elección al subir de nivel, van en la pantalla inferior.
 
