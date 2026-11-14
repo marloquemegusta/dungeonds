@@ -35,7 +35,7 @@ typedef struct {
 // RISE (kneeling ones only, stand_up clip, still) -> CHASE <-> ATTACK like the old skeleton.
 #define EXVOTO_WAKE_RADIUS 96          // [TUNABLE-PLACEHOLDER] ground px: the hero this close wakes a praying Exvoto
 #define EXVOTO_CHAIN_WAKE_RADIUS 48    // [TUNABLE-PLACEHOLDER] ground px: a waking Exvoto wakes the praying ones this close
-#define EXVOTO_KNEEL_PERCENT 50        // [TUNABLE-PLACEHOLDER] share of praying Exvotos on their knees (the rest stand)
+#define EXVOTO_KNEEL_PERCENT 100       // [TUNABLE-PLACEHOLDER] share of praying Exvotos on their knees (100: all of them; the horde mass arrives walking, so the ones met praying kneel and rise when woken)
 #define EXVOTO_RISE_FRAMES 72          // [TUNABLE-PLACEHOLDER] frames of the stand_up clip (8 frames x 9 ticks, characters.json)
 #define EXVOTO_PRAY_SEARCH_PX 24       // [TUNABLE-PLACEHOLDER] a praying Exvoto this close to a devout piece has claimed it
 
