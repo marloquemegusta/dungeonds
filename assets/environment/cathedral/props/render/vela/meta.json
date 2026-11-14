@@ -1,29 +1,29 @@
 {
   "piece": "vela",
   "size_px": [
-    32,
-    24
+    16,
+    16
   ],
   "content_px": [
-    25,
-    21
+    14,
+    12
   ],
-  "target_width": 25,
-  "scale_factor": 0.04325259515570934,
+  "target_width": 14,
+  "scale_factor": 0.02422145328719723,
   "source_render_px": [
     578,
-    490
+    491
   ],
   "yaw": 0,
-  "tiles_8x8_nonempty": 10,
-  "tiles_8x8_unique": 10,
+  "tiles_8x8_nonempty": 4,
+  "tiles_8x8_unique": 4,
   "shadow_offset_px": [
     0,
     0
   ],
   "shadow_canvas_px": [
-    32,
-    32
+    16,
+    16
   ],
   "depth_units": "sprite_px"
 }

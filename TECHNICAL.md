@@ -29,6 +29,17 @@
 - **Cámara:** sigue al jugador sin salir de la imagen en horizontal; en vertical el jugador se mantiene en la pantalla táctil y la superior muestra la franja de encima (como mucho media pantalla de vacío fuera de la arena).
 - **Verificación:** `tests/test_arena_export.py` (geometría del export contra la especificación), `tests/test_map_export_coherence.py` (paquete del lab, baker y runtime coherentes por arena), `tests/test_arena_data.py` (inicio y spawns libres para el cuerpo, composición del diseño) y `tests/test_navfield.py` (colisión y navegación compiladas en el host sobre cada arena).
 
+### Reconstrucción completa en 1 comando (`tools/rebuild_all.py`)
+- **Comando maestro:** `python tools/rebuild_all.py` (o `tools/rebuild-assets.ps1`, que delega en él). Reconstruye de forma determinista y sin pasos manuales:
+  1. `lab`: regenera `tools/lab/FBX-Web-Renderer-offline.html` desde `tools/lab/FBX-Web-Renderer-parity.js` (`build_offline_renderer.py`).
+  2. `characters`: lee el manifiesto único `assets/sprites/characters/characters.json` (modelo `.fbx`, clip, resolución, `fitZoom`, `muzzleBone`, `speedFixed8_8`, `ticksPerFrame`, preset `legibility`) y exporta en paralelo con `tools/lab/export_character_headless.cjs`. Sustituir un modelo 3D o cambiar de preset se hace editando `characters.json`.
+  3. `props`: si existen `.glb` en `assets/environment/cathedral/props/glb/`, re-renderiza con `tools/props/prerender_props.py` (con `--legibility`) y regenera sombras con `tools/props/prop_shadows.py`. Si faltan `.glb`, reprocesa lo que haya en `%TEMP%\props_raw` con `--skip-lab` o conserva `props/render/`. (Los `.glb` se preparan desde los `.fbx` de `inbox/` con `blender -b -P tools/props/prep_props.py -- <root> <piezas...>`).
+  4. `arenas`: ejecuta `tools/export_arenas.py`.
+  5. `bake`: genera `source/player_sprite.c` (`generate_player_sprites_c.py` con soporte `--legibility c2` = bordes al 30 % y redondeo BGR555), recalcula `assets/environment/cathedral/palette/palette.json` desde los renders actuales (`tools/palette/extract_palette.py --terrain-colors 0 --prop-colors 190 --native`), hornea `source/strip_kit.c` (`bake_cathedral_kit.py --mode catedral`, incluyendo `santo`) y hornea `source/arena_01.c` (`bake_arena.py`).
+  6. `tests`: ejecuta los `hostTests` de `.ds-game-dev/project.json`.
+  7. `rom`: compila la ROM con `build-project.ps1`.
+- **Flags útiles:** `--only <pasos>` (`lab,characters,props,arenas,bake,tests,rom`), `--char <nombre>` (un personaje concreto), `--legibility anterior|c2`, `--skip-render`, `--skip-tests`, `--skip-rom`, `--variant <nombre>`, `--jobs N`.
+
 ### Personajes: lab → generador → runtime
 - **Export:** en el lab, renderizar 8 direcciones y pulsar "Exportar paquete completo". El paquete va a `assets/sprites/characters/<nombre>/` con `spritesheet.png` (8×8 celdas de 40×40: 8 direcciones × 8 frames), `shadow.png`, `settings.json` (direcciones, ancla, bounds por dirección) y `nds_shadow_anchor.h`. Modelos fuente en `assets/models/characters/`.
 - **Generación:** `python tools/generate_player_sprites_c.py` convierte cada spritesheet a BGR555 y cada máscara de sombra a 4 bits, y escribe `source/player_sprite.c`. Personajes (`NUM_CHARACTERS 4` en `include/player_sprite.h`): `CHAR_HERO` (Corazón Abierto, 40×40), `CHAR_CHARGER` (Cireneo v2, 60×60 + clips de carga y telegrafía), `CHAR_NECRON` (40×40) y `CHAR_SKELETON` (40×40).
@@ -125,7 +136,7 @@ Origen: `walkthroughs/audit-motor-2d3d/`. Resueltos en el prototipo A (composito
 - **Oclusión tras muros:** transparencia alterna y línea de base eliminadas en 2026-11-10; ver §4.6.
 - **Anillo de BG:** reescanea 2048 celdas por pantalla en cada cambio de tile (~0,1 ms de media, picos ~2 ms). Baja prioridad.
 - **Assets:** sprites BGR555 crudos (614 KB) y máscaras de sombra 4 bpp 80×80 (614 KB) sin paleta ni compresión ni NitroFS; ~2,0 MiB de 3,5 MiB de EWRAM. ITCM (unos 18 KB de 32 KB) aloja el camino caliente por frame: `render_screen`, `blit_stride` y sus auxiliares de limpieza y sombra, la IA y navegación de enemigos, la colisión de líneas, la lista de sombras hardware y `horde_update`. DTCM ya aloja la pila (tope en 0x02FF8000) y no se ha movido ningún dato.
-- **Pipeline:** `tools/rebuild-assets.ps1` llama a `tools/build_assets.py` inexistente; `generate_player_sprites_c.py` copia texto del `.h` del lab en vez de convertir `shadow.png`; tamaño del mundo duplicado en 4 sitios; `SPAWN` hardcodeado en el baker; `.c` generados sin hash de origen; ~40 scripts muertos en `tools/`.
+- **Pipeline:** `generate_player_sprites_c.py` copia texto del `.h` del lab en vez de convertir `shadow.png`; tamaño del mundo duplicado en 4 sitios; `SPAWN` hardcodeado en el baker; `.c` generados sin hash de origen; ~40 scripts muertos en `tools/`. (Orquestación unificada en `tools/rebuild_all.py`).
 - **Acoplamiento:** coordenadas de mundo = píxeles de pantalla; impactos con círculo en pantalla frente a movimiento con métrica de suelo; estado global en `main.c`; `on_enemy_death` copia píxeles.
 - **Escenarios:** sensibles a frames perdidos del emulador; deberían basarse en frames de lógica, no en vblanks.
 

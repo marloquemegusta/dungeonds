@@ -315,6 +315,8 @@ static void plan_unit(int32_t block, PlanItem *acc, int *n_io, int unit) {
         plan_try(acc, &n, PLAN_CAT_STRUCT, STRIP_PIECE_COLUMNA_ENTERA, 51, top + 9, 0, STRIP_BLOCK_TILES, 1);
         if (kinds[s]) {
             plan_try(acc, &n, PLAN_CAT_STRUCT, STRIP_PIECE_RELICARIO, 28, top + 9, 0, STRIP_BLOCK_TILES, 0);
+            plan_try(acc, &n, PLAN_CAT_STRUCT, STRIP_PIECE_SANTO, 16, top + 9, 0, STRIP_BLOCK_TILES, 0);
+            plan_try(acc, &n, PLAN_CAT_STRUCT, STRIP_PIECE_SANTO, 40, top + 9, 0, STRIP_BLOCK_TILES, 0);
         } else {
             int lx = (plan_pick(sidx, S_BENCH_LX, 0) & 1u) ? 16 : 19;
             int ly = top + ((plan_pick(sidx, S_BENCH_LY, 0) & 1u) ? 8 : 0);

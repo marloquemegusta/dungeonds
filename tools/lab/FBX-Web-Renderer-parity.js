@@ -33,6 +33,8 @@
     boneMode: false,
     displace: 0,
     supersample: 4,
+    // Legibilidad del pre-render: 'anterior' (comportamiento historico) | 'c2' (ver DESIGN.md 6.9.1b).
+    legibility: 'anterior',
     filterWidth: 1.5,
     neckPitch: 0,
     // Anchor & Shadow state
@@ -958,6 +960,90 @@
     return [Math.round(gpx - anchorX), Math.round(gpy - anchorY), Math.round(gpy - py)];
   }
 
+  // ---- Legibilidad C2: tone mapping por render + post-proceso de todos los frames ----
+  const TONE_AGX = 6, TONE_NEUTRAL = 7;
+  const LEG_CURVE_GAIN = 1.45, LEG_SHARPEN_AMOUNT = 0.5, LEG_EDGE_ALPHA = 77;
+
+  // Tone mapping efectivo de un render: 'neutral' (THREE.NeutralToneMapping = 7) solo bajo C2 o con override explicito.
+  function applyToneMappingForRender(renderer) {
+    const mode = state.toneMapping || (state.legibility === 'c2' ? 'neutral' : 'agx');
+    const target = mode === 'neutral' ? TONE_NEUTRAL : TONE_AGX;
+    if (renderer.toneMapping !== target) {
+      renderer.toneMapping = target;
+      $.scene.traverse(o => { if (o.material) [].concat(o.material).forEach(m => { m.needsUpdate = true; }); });
+    }
+  }
+
+  // Mediana de luminancia Rec.709 (0..1) de los pixeles opacos (alpha>0) de TODOS los frames: un unico pivote por render.
+  function legibilityPivot(frames) {
+    const lum = [];
+    for (const f of frames) {
+      const px = f.pixels;
+      for (let i = 0; i < px.length; i += 4) {
+        if (px[i + 3] > 0) lum.push(0.2126 * (px[i] / 255) + 0.7152 * (px[i + 1] / 255) + 0.0722 * (px[i + 2] / 255));
+      }
+    }
+    if (!lum.length) return 0.5;
+    const sorted = Float64Array.from(lum).sort();
+    const n = sorted.length;
+    return n % 2 ? sorted[(n - 1) / 2] : (sorted[n / 2 - 1] + sorted[n / 2]) / 2;
+  }
+
+  function legibilityBlur3(src, w, h, channels) {
+    const k0 = 0.25, k1 = 0.5, k2 = 0.25;
+    const tmp = new Float64Array(src.length), out = new Float64Array(src.length);
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+      const xl = Math.max(0, x - 1), xr = Math.min(w - 1, x + 1);
+      for (let c = 0; c < channels; c++) {
+        tmp[(y * w + x) * channels + c] = k0 * src[(y * w + xl) * channels + c] + k1 * src[(y * w + x) * channels + c] + k2 * src[(y * w + xr) * channels + c];
+      }
+    }
+    for (let y = 0; y < h; y++) {
+      const yu = Math.max(0, y - 1), yd = Math.min(h - 1, y + 1);
+      for (let x = 0; x < w; x++) for (let c = 0; c < channels; c++) {
+        out[(y * w + x) * channels + c] = k0 * tmp[(yu * w + x) * channels + c] + k1 * tmp[(y * w + x) * channels + c] + k2 * tmp[(yd * w + x) * channels + c];
+      }
+    }
+    return out;
+  }
+
+  // Curva S suave en luminancia (pivote unico) + enfoque consciente del alfa. El alfa no se toca.
+  function applyLegibilityC2(frames) {
+    const gain = LEG_CURVE_GAIN;
+    const p = legibilityPivot(frames);
+    for (const f of frames) {
+      const px = f.pixels, w = f.width, h = f.height;
+      for (let i = 0; i < px.length; i += 4) {
+        if (px[i + 3] === 0) continue;
+        const r = px[i] / 255, g = px[i + 1] / 255, b = px[i + 2] / 255;
+        const L = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+        const d = L - p;
+        const m = d < 0 ? p : 1 - p;
+        const out = p + d * gain / (1 + (gain - 1) * Math.abs(d) / Math.max(m, 1e-4));
+        const scale = L > 1e-4 ? out / Math.max(L, 1e-4) : 1;
+        px[i] = Math.floor(Math.min(1, Math.max(0, r * scale)) * 255);
+        px[i + 1] = Math.floor(Math.min(1, Math.max(0, g * scale)) * 255);
+        px[i + 2] = Math.floor(Math.min(1, Math.max(0, b * scale)) * 255);
+      }
+      const n = w * h;
+      const rgbm = new Float64Array(n * 3), mask = new Float64Array(n);
+      for (let j = 0; j < n; j++) {
+        const m = px[j * 4 + 3] >= LEG_EDGE_ALPHA ? 1 : 0;
+        mask[j] = m;
+        rgbm[j * 3] = px[j * 4] * m; rgbm[j * 3 + 1] = px[j * 4 + 1] * m; rgbm[j * 3 + 2] = px[j * 4 + 2] * m;
+      }
+      const bl = legibilityBlur3(rgbm, w, h, 3), bm = legibilityBlur3(mask, w, h, 1);
+      for (let j = 0; j < n; j++) {
+        if (px[j * 4 + 3] === 0) continue;
+        const den = Math.max(bm[j], 1e-3);
+        for (let c = 0; c < 3; c++) {
+          const v = px[j * 4 + c];
+          px[j * 4 + c] = Math.floor(Math.min(255, Math.max(0, v + LEG_SHARPEN_AMOUNT * (v - bl[j * 3 + c] / den))));
+        }
+      }
+    }
+  }
+
   // Full animation render loop
   Qf = async function ({ renderer, scene, controls, state: app, params, onProgress, onStatus }) {
     params.brightness = parseFloat(document.getElementById('labBrightness')?.value) || 1;
@@ -991,6 +1077,9 @@
       }
       applyBlenderLighting();
       setupModelMaterials(app.model);
+      // Tone mapping por render (AgX = 6 por defecto, Neutral = 7 bajo C2), asi alternar presets no deja estado colgado.
+      applyToneMappingForRender(renderer);
+      const deferGif = state.legibility === 'c2';
       let duration = 0;
       if (app.currentAction?.getClip) duration = app.currentAction.getClip().duration || 0;
       else if (app.clips?.length) duration = app.clips[0].duration || 0;
@@ -1089,9 +1178,27 @@
           onProgress && onProgress((direction * frameCount + index + 1) / (Ff.length * frameCount));
           if (index % 2 === 1) await new Promise(resolve => setTimeout(resolve, 0));
         }
-        const blob = qf(gifFrames, size, size, delay);
-        results.push({ name, index: direction, blob, url: URL.createObjectURL(blob), width: size, height: size });
+        if (!deferGif) {
+          const blob = qf(gifFrames, size, size, delay);
+          results.push({ name, index: direction, blob, url: URL.createObjectURL(blob), width: size, height: size });
+        }
         await new Promise(resolve => setTimeout(resolve, 0));
+      }
+      if (deferGif) {
+        // C2: el pivote se calcula una vez sobre todos los frames; despues se rehacen GIFs y collage con los frames procesados.
+        applyLegibilityC2(state.frames);
+        firstFrames.length = 0;
+        for (let direction = 0; direction < Ff.length; direction++) {
+          const gifFrames = [];
+          for (let index = 0; index < frameCount; index++) {
+            const f = state.frames[direction * frameCount + index];
+            gifFrames.push(Bf(f.pixels, f.width, f.height, Vf));
+          }
+          firstFrames.push(gifFrames[0]);
+          const blob = qf(gifFrames, size, size, delay);
+          results.push({ name: Ff[direction], index: direction, blob, url: URL.createObjectURL(blob), width: size, height: size });
+          await new Promise(resolve => setTimeout(resolve, 0));
+        }
       }
       const collage = $f(firstFrames, size);
       const result = { results, collage, width: size, height: size, delay, frames: state.frames };
@@ -1670,6 +1777,7 @@
       normalStrength: parseFloat(document.getElementById('labNormal')?.value || 0.35),
       shadowSoftness: parseFloat(document.getElementById('labShadow')?.value || 2.0),
       supersample: state.supersample || 4,
+      legibility: state.legibility || 'anterior',
       boneShader: state.boneMode,
       renderEngine: 'Three.js WebGL (browser)'
     };
@@ -2834,6 +2942,7 @@
     applyBlenderLighting();
     setupModelMaterials($.model);
     applyNeckPitch();
+    applyToneMappingForRender($.renderer);
 
     try {
       const fit = computeCharacterFit(size, targetPixels);
@@ -3745,6 +3854,15 @@
               <input id="meshDisplace" type="number" min="0" max="0.5" step="0.01" value="0" style="padding:6px; font-size:0.75rem;">
             </div>
           </div>
+          <div class="lab-control-row">
+            <div class="lab-control-group">
+              <label>Legibilidad</label>
+              <select id="labLegibility" style="padding:6px; font-size:0.75rem;">
+                <option value="anterior" selected>Anterior</option>
+                <option value="c2">C2 (tono neutro + curva S + enfoque)</option>
+              </select>
+            </div>
+          </div>
           <div class="lab-control-row" style="align-items:center;">
             <div class="lab-control-group">
               <label style="align-items:center; gap:6px; cursor:pointer;">
@@ -4272,6 +4390,32 @@
     if (supersample) {
       supersample.addEventListener('change', e => {
         state.supersample = parseInt(e.target.value, 10) || 4;
+        scheduleLivePreview(true);
+      });
+    }
+
+    // Preset de legibilidad: C2 fuerza supersample 4 y contraste 1.0; Anterior restaura los valores previos.
+    const legibility = document.getElementById('labLegibility');
+    if (legibility) {
+      legibility.addEventListener('change', e => {
+        const next = e.target.value === 'c2' ? 'c2' : 'anterior';
+        const ssEl = document.getElementById('labSupersample');
+        const contrastEl = document.getElementById('contrast');
+        const setControl = (el, value, evt) => {
+          if (!el) return;
+          el.value = String(value);
+          el.dispatchEvent(new Event(evt, { bubbles: true }));
+        };
+        if (next === 'c2' && state.legibility !== 'c2') {
+          state.legibilityPrev = { supersample: ssEl ? ssEl.value : '4', contrast: contrastEl ? contrastEl.value : '1.5' };
+          setControl(ssEl, 4, 'change');
+          setControl(contrastEl, 1, 'input');
+        } else if (next === 'anterior' && state.legibility === 'c2' && state.legibilityPrev) {
+          setControl(ssEl, state.legibilityPrev.supersample, 'change');
+          setControl(contrastEl, state.legibilityPrev.contrast, 'input');
+          state.legibilityPrev = null;
+        }
+        state.legibility = next;
         scheduleLivePreview(true);
       });
     }

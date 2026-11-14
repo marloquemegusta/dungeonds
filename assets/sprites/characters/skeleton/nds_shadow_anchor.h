@@ -19,12 +19,12 @@ static const uint8_t g_skeleton_ground_anchors[8] = {
 // Sprite bounding boxes [min_x, min_y, w, h] per direction
 static const uint8_t g_skeleton_sprite_bounds[8][4] = {
     { 9, 4, 22, 35 },
-    { 10, 3, 20, 36 },
-    { 7, 2, 23, 37 },
-    { 6, 1, 24, 39 },
+    { 10, 4, 20, 35 },
+    { 7, 2, 23, 36 },
+    { 6, 1, 24, 38 },
     { 9, 0, 22, 39 },
     { 10, 0, 20, 40 },
-    { 10, 0, 23, 40 },
+    { 10, 1, 23, 39 },
     { 10, 3, 24, 36 },
 };
 

@@ -38,9 +38,33 @@
   "dirBounds": [
     [
       13,
-      2,
+      3,
       14,
-      35
+      33
+    ],
+    [
+      9,
+      3,
+      22,
+      34
+    ],
+    [
+      10,
+      3,
+      21,
+      33
+    ],
+    [
+      9,
+      3,
+      22,
+      34
+    ],
+    [
+      13,
+      3,
+      14,
+      34
     ],
     [
       9,
@@ -57,32 +81,8 @@
     [
       8,
       3,
-      24,
-      34
-    ],
-    [
-      13,
-      3,
-      14,
-      34
-    ],
-    [
-      9,
-      2,
-      22,
-      35
-    ],
-    [
-      9,
-      2,
-      22,
-      34
-    ],
-    [
-      8,
-      2,
       23,
-      35
+      34
     ]
   ],
   "dirMuzzle": [
@@ -830,14 +830,14 @@
     ]
   ],
   "stride3dMeters": 1.478,
-  "strideRatio": 0.824,
+  "strideRatio": 0.812,
   "ticksPerFrame": 4,
-  "stridePixels": 32.95,
+  "stridePixels": 32.5,
   "speedFixed8_8": 326,
   "inPlace": true,
   "rigScale": 1,
   "cameraElevationDegrees": 30,
-  "contrast": 1.2,
+  "contrast": 1,
   "saturation": 1,
   "neckPitchDegrees": -35,
   "displace": 0,
@@ -845,7 +845,8 @@
   "webglShadowQuality": 16,
   "normalStrength": 0.5,
   "shadowSoftness": 2,
-  "supersample": 2,
+  "supersample": 4,
+  "legibility": "c2",
   "boneShader": false,
   "renderEngine": "Three.js WebGL (browser)",
   "lightPreset": "neutral",
@@ -855,5 +856,5 @@
     "forward": 0.05
   },
   "fitZoom": 0.86,
-  "note": "Andar normal de Mixamo (walk_normal.fbx) retargeteado con la cadera horizontal fija (retarget3.py) y renderizado en el lab (fitZoom 0.86, muzzle Spine2 +0.05). speedFixed8_8 326 y ticksPerFrame 4 de la configuracion de juego (marine). stride3dMeters/strideRatio/stridePixels son del lab y no los usa el juego."
+  "toneMapping": "neutral"
 }
