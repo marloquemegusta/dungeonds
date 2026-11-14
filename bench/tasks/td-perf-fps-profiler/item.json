@@ -1,0 +1,68 @@
+{
+  "id": "td-perf-fps-profiler",
+  "titulo": "Añadir perfilado por etapa para localizar el cuello de botella",
+  "tipo": "micro",
+  "parent": "td-perf-fps-root-cause",
+  "clase": "depuracion-hw",
+  "repo": "towerds",
+  "base_commit": "cf70894db7d7efd674987a6d648674366125e6fb",
+  "solution_commits": [
+    "f66f8bebc56f93c18df87e364a832d53e327a01f",
+    "1edc90b49ca2fbbad0e2e0a1f04da9cfa9c45e05"
+  ],
+  "solucion_resumen": "Se integró un profiler de sandbox que expone contadores por etapa, incluidas simulación, render y presentación.\nEl informe documenta el peor caso reproducible y los límites de la medición del emulador.\nEl HUD del profiler también consume tiempo, por lo que debe contabilizarse y no confundirse con el coste normal.\nLa telemetría sirve para priorizar trabajo; por sí sola no demuestra una mejora de rendimiento.",
+  "ficheros_solucion": [
+    "source/main.c",
+    "source/renderer.c",
+    "source/simulation.c",
+    "docs/performance-profiling-report.md"
+  ],
+  "evaluacion": {
+    "tipo": "mixta",
+    "puertas": [
+      {
+        "nivel": "G1 build",
+        "como": "C:\\codexlocal\\skills\\agentic-ds-dev\\scripts\\build-project.ps1 -ProjectPath C:\\codexlocal\\towerds",
+        "criterio": "Build PASS.",
+        "fuente": "base_commit"
+      },
+      {
+        "nivel": "G4 metrica",
+        "como": "Ejecutar la carga de 384 enemigos y capturar las lecturas de las etapas instrumentadas.",
+        "criterio": "Muestra lecturas separadas de simulación, render superior/inferior y presentación/restauración; identifica el coste de profiler/HUD y explicita la limitación de resolución.",
+        "fuente": "solution_commit (overlay: código del profiler y escenarios incorporados por la solución)"
+      },
+      {
+        "nivel": "G5 rubrica",
+        "como": "Revisar el informe de diagnóstico.",
+        "criterio": "No atribuye los ticks del emulador directamente a hardware sin cautela y no presenta la instrumentación como optimización.",
+        "fuente": "solution_commit"
+      }
+    ],
+    "rubrica": [
+      {
+        "criterio": "Cobertura y utilidad de las mediciones.",
+        "peso": 70,
+        "anclas": "0=no hay medidas separadas; 1=hay medidas pero faltan etapas o caveats; 2=descomposición útil, con coste de profiler y limitaciones explicados."
+      },
+      {
+        "criterio": "Diagnóstico sustentado.",
+        "peso": 30,
+        "anclas": "0=conclusiones sin evidencia; 1=identifica sospechosos; 2=usa lecturas reproducibles y separa lo medible de lo incierto."
+      }
+    ],
+    "trampas": [
+      "Tomar el profiler HUD como representativo del coste del juego sin instrumentación.",
+      "Inferir un cuello de botella de una sola captura o de un escenario que pierde enemigos."
+    ]
+  },
+  "dificultad": 3,
+  "historia": "El commit de profiler aparece después de múltiples optimizaciones sin evidencia de mejora bajo carga; el commit siguiente agrega informe de profiling y fixtures de estrés. No consta el número exacto de iteraciones previas.",
+  "reproducible": "parcial",
+  "motivo_reproducible": "Profiler y escenarios están versionados, pero las cifras indicadas por el informe provienen de DeSmuME y tienen límites de resolución.",
+  "coste_ejecucion_estimado": "medio (+ build y escenario de carga alta)",
+  "_fuente": "b2",
+  "_validado": true,
+  "_avisos": [],
+  "calibrado": false
+}

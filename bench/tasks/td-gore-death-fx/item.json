@@ -1,0 +1,58 @@
+{
+  "id": "td-gore-death-fx",
+  "titulo": "Añadir efectos de muerte con restos y sangre",
+  "tipo": "macro",
+  "parent": null,
+  "clase": "feature",
+  "repo": "towerds",
+  "base_commit": "8ebbc35d022b220465555e003e9f1b956d14ba16",
+  "solution_commits": [
+    "55c6035e1652b012de1841ee108be9e4018b5508"
+  ],
+  "solucion_resumen": "Añade la transición de muerte licuada y generación de trozos.\nConserva los índices de paleta del sprite para construir los restos.\nAñade salpicaduras rojas persistentes en el terreno y controla su dibujo por pantalla.\nIncluye una bandera para el cono de muerte.\nAñade herramienta de inspección y escenario de persistencia.",
+  "ficheros_solucion": [
+    "source/enemy_data.c",
+    "source/simulation.c",
+    "source/renderer.c",
+    "source/tiles.c",
+    "include/game.h",
+    "scenarios/melt_persistence_debug.json",
+    "tools/gore_probe.py"
+  ],
+  "evaluacion": {
+    "tipo": "mixta",
+    "puertas": [
+      {
+        "nivel": "G1 build",
+        "como": "C:\\codexlocal\\skills\\agentic-ds-dev\\scripts\\build-project.ps1 -ProjectPath <workspace>",
+        "criterio": "DS_BUILD=PASS",
+        "fuente": "solution_commit"
+      },
+      {
+        "nivel": "G3 escenario",
+        "como": "Ejecutar escenario de muerte y revisar capturas de ambas pantallas",
+        "criterio": "Se ven restos/sangre en la pantalla inferior y no hay salpicaduras de cono en la superior",
+        "fuente": "solution_commit (overlay: escenarios del walkthrough)"
+      }
+    ],
+    "rubrica": [
+      {
+        "criterio": "El efecto de muerte es visible, persistente en terreno y usa colores de sangre",
+        "peso": 2,
+        "anclas": "0=sin efecto o pantalla incorrecta; 1=efecto parcial; 2=restos y sangre visibles en terreno"
+      }
+    ],
+    "trampas": [
+      "Una imagen aislada no demuestra que los restos persistan tras el cambio de frame."
+    ]
+  },
+  "dificultad": 4,
+  "historia": "Un commit de feature añadió efecto, herramienta de inspección y walkthrough. No consta número de intentos previos.",
+  "reproducible": "si",
+  "motivo_reproducible": "Hay escenario y capturas A/B versionadas; la geometría se ejecuta dentro del binario de DS.",
+  "coste_ejecucion_estimado": "medio (+ build, escenario y revisión visual)",
+  "_fuente": "b3",
+  "_validado": true,
+  "_avisos": [],
+  "calibrado": false
+}

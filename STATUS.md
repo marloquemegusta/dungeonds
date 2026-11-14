@@ -4,7 +4,9 @@ Primero el estado necesario para retomar el trabajo sin depender del chat; despu
 
 ## Estado actual (2026-11-14)
 
-- **Ojo del Tribunal (`feat/ojo-tribunal`, en curso):** cuerpo más grande que el protagonista; cabeza abierta nueva al 150 % de la anterior, fija a la mano animada por el cuerpo. El aura de la boca crece desde apagada hasta muy brillante durante 1 s, luego el cono se estrecha 0,5 s y el rayo se puede esquivar; el haz es fino y queda ocluido por los actores. Builds normal/sandbox limpias, host 266/266 y escenario de ciclo PASS; falta medir en DS antes de integrar. [`walkthrough`](walkthroughs/ojo-tribunal/walkthrough.md), decisión en `DESIGN.md` §6.10.
+- **Ojo del Tribunal (`feat/ojo-tribunal`, en curso):** cuerpo más grande que el protagonista y cabeza abierta en la mano. Mecánica «Mirada colimada» (DESIGN §6.10): sin efectos al buscar; al ficharte se para, la mirada sale del farol y te sigue estrechándose (40 f), se fija (20 f) y la cabeza dispara por la boca; se esquiva saliendo de la línea o tras una columna. VFX desaturados (regla nueva para todos los enemigos). Escenarios del Ojo PASS; pendiente: re-render con C2, 2 tests heredados de la rama (volumen de impacto, coste del haz) y medir en DS. [`walkthrough`](walkthroughs/ojo-tribunal/walkthrough.md).
+- **Cámara con adelanto vertical (`feat/camera-lookahead`, 2026-11-14, `walkthroughs/camera-lookahead/`):** encuadre *look-ahead* en la pantalla inferior (`CAM_ANCHOR_UP = 132` al subir, `CAM_ANCHOR_DOWN = 64` al bajar, retardo de 22 frames y *freeze* al parar o *kitear* apuntando hacia delante). Compilación sin warnings, contratos host OK (14/14) y validada en la DS física.
+
 - **Sombras por hardware y horda doble (`perf/hw-shadows`, 2026-11-14, `walkthroughs/hw-shadows/`):** sombras oscurecidas por la consola (ventana OBJ) en vez del procesador, IA con rejilla y LOD, blit por tramos opacos, limpieza más rápida, camino caliente en ITCM y picos de rebase/láseres/muertes troceados. Medido en la DS con 48 enemigos: **14,3–15,1 ms** de media (antes 34–36 ms, 20 FPS), casi siempre a 60 FPS; la versión normal (24) va sobrada. La separación entre enemigos se conserva. Siguiente cuello: el blit (~6 ms con horda llena). Variantes `stress` y `stress-perf` y banco A/B `perf_stress_bench` (`TECHNICAL.md` §3.6).
 
 - **Fix de parpadeo en pantalla superior (`fix/top-flicker`, `walkthroughs/top-flicker-fix/`):** reordenado el bucle principal en `source/main.c` para renderizar la pantalla inferior (doble búfer) antes de `swiWaitForVBlank()` y pintar `s_top_page` (búfer único) nada más empezar el VBlank. Validado en tests de host (`5/5` + `58/58`) y en Nintendo DS física por el usuario.
@@ -298,7 +300,13 @@ El láser de apuntado se colima durante la carga (ancho, difuso y rojo a 1 px ve
 - Arreglado el log de `PERF_PROFILE` (ruta `fat:/` explícita por NitroFS).
 - Detalle: [`walkthroughs/hw-shadows/`](walkthroughs/hw-shadows/walkthrough.md).
 
-## 2026-11-14 - Ojo del Tribunal: escala y sentencia (`feat/ojo-tribunal`)
+## 2026-11-14 - Legibilidad C2, estatuas y flujo único de reconstrucción (`feat/legibilidad-lab`)
+
+- **Legibilidad C2 en personajes y props:** tono neutro, curva S suave, enfoque suave, bordes al 30 % y redondeo BGR555 en `generate_player_sprites_c.py` y `prerender_props.py`, con paleta de props recalculada automáticamente (`extract_palette.py`: 144 tonos únicos, 156/256 compartidos). Comparativas A/B en [`walkthroughs/legibilidad-lab/`](walkthroughs/legibilidad-lab/walkthrough.md); decisión en `DESIGN.md` §6.9.1b.
+- **Estatuas y velas:** integradas dos estatuas `santo` simétricas en los tramos abiertos/relicario (`strip_kit.h`, `strip.c`, `bake_cathedral_kit.py`: 896/1024 tiles, peor ventana 389/<440) y limpiados los trozos sueltos de alambre en `vela` con `prep_props.py`.
+- **Flujo único en 1 comando:** creado el manifiesto `assets/sprites/characters/characters.json` y el orquestador `tools/rebuild_all.py` (conectado a `tools/rebuild-assets.ps1`) para re-renderizar, extraer paleta, hornear, pasar los 15 tests de contrato y compilar `dungeonds.nds` sin warnings. Validado en la Nintendo DS física por el usuario.
+
+## 2026-11-14 - Ojo del Tribunal: escala, mirada colimada y sentencia (`feat/ojo-tribunal`)
 
 - Sprite de cuerpo al 140 %, cabeza abierta del inbox al 150 % del tamaño anterior, y volumen de impacto ajustado. La boca se enciende progresivamente con un aura y lenguas finales durante 60 frames; luego el cono se estrecha durante 30 frames y el disparo se puede esquivar.
 - Pipeline real de arte regenerado; `16/16` tests de host y escenario de ciclo PASS; compilación normal y sandbox sin warnings nuevos. Vídeo hecho con capturas reales de DeSmuME.

@@ -13,12 +13,18 @@ for (const p of ['playwright',
 }
 if (!chromium) { console.error('Playwright not found'); process.exit(1); }
 
-const [model, settingsPath, outDir] = process.argv.slice(2).map(p => p && path.resolve(p));
+const argv = process.argv.slice(2);
+const legIdx = argv.indexOf('--legibility');
+const legOpt = legIdx >= 0 ? argv[legIdx + 1] : undefined;
+const pos = argv.filter((a, i) => !a.startsWith('--') && !(i > 0 && argv[i - 1] === '--legibility'));
+const [model, settingsPath, outDir] = pos.map(p => p && path.resolve(p));
 if (!model || !settingsPath || !outDir) {
-  console.error('usage: node export_map_package_headless.cjs <model> <map_settings.json> <out_dir>');
+  console.error('usage: node export_map_package_headless.cjs <model> <map_settings.json> <out_dir> [--legibility anterior|c2]');
   process.exit(2);
 }
 const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
+if (legOpt) settings.legibility = legOpt;
+if (settings.legibility === 'c2') settings.contrast = 1.0;
 const HTML = path.join(__dirname, 'FBX-Web-Renderer-offline.html');
 
 function s_waitTextures(s) { return s.waitTextures === true; }
@@ -44,6 +50,7 @@ function s_waitTextures(s) { return s.waitTextures === true; }
       const sizeInput = document.getElementById('mapPixelSize');
       if (sizeInput && s.width > Number(sizeInput.max)) sizeInput.max = String(s.width);
       if (sizeInput && s.width < Number(sizeInput.min)) sizeInput.min = String(s.width); // small tile renders
+      if (s.legibility) set('labLegibility', s.legibility);
       set('mapPixelSize', s.width);
       set('elevation', s.cameraElevationDegrees);
       set('contrast', s.contrast);

@@ -1,0 +1,59 @@
+{
+  "id": "dd-enemy-death-data-abort",
+  "titulo": "Investigar el data abort al matar enemigos en DS",
+  "tipo": "macro",
+  "parent": null,
+  "clase": "depuracion-hw",
+  "repo": "dungeonds",
+  "base_commit": "5b17476352422c1861bee3c1e5cf5ab61795f8c0",
+  "solution_commits": [],
+  "solucion_resumen": "No consta un commit de arreglo que cierre el fallo.\nEl digest de las sesiones 08834c96 y 8a0fb635 señala como sospechoso el camino de muerte que fue refactorizado.\nEl commit de saneamiento posterior añadió crashlog apagado por defecto para investigar abortos intermitentes.\nEl propio commit documenta que la causa seguía sin identificar.\nLa evidencia disponible no permite atribuir una causa raíz ni afirmar una corrección definitiva.\nLa solución de referencia para el benchmark debe ser una reproducción y fix nuevos, o instrumentación diagnóstica verificable.",
+  "ficheros_solucion": [
+    "source/gameplay.c",
+    "source/enemy_ai.c",
+    "include/crashlog.h"
+  ],
+  "evaluacion": {
+    "tipo": "humano",
+    "puertas": [
+      {
+        "nivel": "G1 build",
+        "como": "Compilar la ROM normal y la variante instrumentada.",
+        "criterio": "Ambas compilan; crashlog desactivado en la ROM normal.",
+        "fuente": "base_commit"
+      },
+      {
+        "nivel": "G6 humano",
+        "como": "Ejecutar una sesión prolongada en DS matando enemigos y recuperar el log de crash si ocurre.",
+        "criterio": "Fix: no se reproduce el abort tras una prueba representativa y se aporta evidencia; instrumentación: el log identifica estado/contexto suficiente para localizar el fallo.",
+        "fuente": "por escribir"
+      }
+    ],
+    "rubrica": [
+      {
+        "criterio": "Razonamiento que distingue sospecha de causa confirmada.",
+        "peso": 2,
+        "anclas": "0=declara una causa sin evidencia; 1=hipótesis parcialmente sustentada; 2=diagnóstico respaldado por reproducción o log."
+      },
+      {
+        "criterio": "Corrección o instrumentación útil y de bajo impacto normal.",
+        "peso": 2,
+        "anclas": "0=no aborda el fallo; 1=registra información insuficiente o añade coste permanente; 2=fix verificado o logging desactivado por defecto y accionable."
+      }
+    ],
+    "trampas": [
+      "Declarar resuelto porque una sesión corta no aborta.",
+      "Tratar crashlog como corrección de la causa raíz.",
+      "Validar solo en emulador."
+    ]
+  },
+  "dificultad": 5,
+  "historia": "Los digests registran varios intentos y dos reportes del usuario en hardware. El camino de muerte refactorizado quedó como sospechoso; el saneamiento añadió crashlog, pero la causa quedó abierta y no se ve un commit de arreglo claro.",
+  "reproducible": "parcial",
+  "motivo_reproducible": "Hay reportes reales y una hipótesis sobre el camino de muerte, pero faltan ROM, secuencia determinista, log de fallo y solución verificada.",
+  "coste_ejecucion_estimado": "alto (+ requiere DS física, prueba prolongada e instrumentación)",
+  "_fuente": "b6",
+  "_validado": true,
+  "_avisos": [],
+  "calibrado": false
+}

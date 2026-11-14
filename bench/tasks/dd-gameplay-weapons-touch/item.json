@@ -1,0 +1,56 @@
+{
+  "id": "dd-gameplay-weapons-touch",
+  "titulo": "Añadir arsenal y apuntado táctil",
+  "tipo": "micro",
+  "parent": "dd-gameplay-doom-macro",
+  "clase": "feature",
+  "repo": "dungeonds",
+  "base_commit": "3379786811b2de52ce8688b0555a5221577eb3ea",
+  "solution_commits": [
+    "95cced8bb14d5e48e37f92442716d4e6be4a85ed"
+  ],
+  "solucion_resumen": "Se añadió un módulo de armas conectado al estado del jugador y los proyectiles.\nLa pistola tiene munición infinita y trazador lineal.\nLa escopeta dispara un cono de perdigones; la gatling penaliza movimiento.\nEl lanzacohetes crea una explosión radial.\nL/R cambian el arma y la pantalla inferior dirige el disparo.\nEl HUD presenta el estado de combate y munición.\nEl contrato host y el escenario cubren armas y toque.",
+  "ficheros_solucion": [
+    "include/weapons.h",
+    "source/weapons.c",
+    "include/gameplay.h",
+    "source/main.c"
+  ],
+  "evaluacion": {
+    "tipo": "mixta",
+    "puertas": [
+      {
+        "nivel": "G1 build",
+        "como": "& 'C:\\codexlocal\\skills\\agentic-ds-dev\\scripts\\build-project.ps1' -ProjectPath $P",
+        "criterio": "DS_BUILD=PASS; cero warnings nuevos.",
+        "fuente": "base_commit"
+      },
+      {
+        "nivel": "G2 tests",
+        "como": "& 'C:\\codexlocal\\skills\\agentic-ds-dev\\scripts\\run-host-tests.ps1' -ProjectPath $P -Filter test_weapons_contract",
+        "criterio": "DS_HOST_TESTS=PASS.",
+        "fuente": "solution_commit (overlay: tests/test_weapons_contract.py)"
+      },
+      {
+        "nivel": "G3 escenario",
+        "como": "& 'C:\\codexlocal\\skills\\agentic-ds-dev\\scripts\\run-scenario.ps1' -ProjectPath $P -ScenarioPath \"$P\\scenarios\\weapons_switching_and_touch.json\"",
+        "criterio": "PASS en cambio de armas, apuntado táctil y explosiones según las aserciones del escenario.",
+        "fuente": "solution_commit (overlay: scenarios/weapons_switching_and_touch.json)"
+      }
+    ],
+    "rubrica": [],
+    "trampas": [
+      "Simular solo el cambio de arma sin verificar que el toque cambie la dirección del disparo.",
+      "Afirmar compatibilidad física basándose únicamente en que el emulador acepta coordenadas táctiles."
+    ]
+  },
+  "dificultad": 4,
+  "historia": "Un commit de implementación; se añadió un test de contrato y un escenario específico. El registro posterior documenta ambos como PASS.",
+  "reproducible": "si",
+  "motivo_reproducible": "Build, prueba host y escenario están cubiertos por los scripts y overlays versionados.",
+  "coste_ejecucion_estimado": "medio (+ módulo de armas, build, suite host y escenario)",
+  "_fuente": "b4",
+  "_validado": true,
+  "_avisos": [],
+  "calibrado": false
+}

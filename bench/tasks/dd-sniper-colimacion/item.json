@@ -1,0 +1,66 @@
+{
+  "id": "dd-sniper-colimacion",
+  "titulo": "Colimar el rayo de apuntado del francotirador",
+  "tipo": "micro",
+  "parent": null,
+  "clase": "arte-impl",
+  "repo": "dungeonds",
+  "base_commit": "79789f54c30460eef0560eb2ec59d89df4eb8a3a",
+  "solution_commits": [
+    "56cb16e61e2234189b094ae20eac6d223cff016c"
+  ],
+  "solucion_resumen": "Calcula una progresión de carga en rango fijo 0–256, una vez por frame.\nReduce el ancho del rayo a medida que se completa la carga.\nA cambia de una línea discontinua a un trazo fino listo para disparar.\nB añade una nube determinista que se contrae junto con el rayo.\nC contrae el halo alrededor del retículo.\nLa aleatoriedad visual es determinista y no requiere estado RNG.\nSe añade selector de depuración para comparar estilos.",
+  "ficheros_solucion": [
+    "source/weapons.c",
+    "include/weapons.h",
+    "DESIGN.md",
+    "tests/test_weapons_contract.py"
+  ],
+  "evaluacion": {
+    "tipo": "mixta",
+    "puertas": [
+      {
+        "nivel": "G2 tests",
+        "como": "Ejecutar contratos de armas y revisar restricciones de runtime.",
+        "criterio": "PASS; sin float/double ni bucles de render no acotados.",
+        "fuente": "solution_commit"
+      },
+      {
+        "nivel": "G5 rubrica",
+        "como": "Comparar capturas de carga y estado listo para estilos A/B/C.",
+        "criterio": "Cada estilo comunica carga decreciente y estado listo inequívoco; todos difieren visualmente según el diseño.",
+        "fuente": "por escribir"
+      }
+    ],
+    "rubrica": [
+      {
+        "criterio": "Progresión legible desde carga incompleta hasta lista.",
+        "peso": 2,
+        "anclas": "0=sin diferencia; 1=se percibe pero es ambigua; 2=progresión clara y estado final inequívoco."
+      },
+      {
+        "criterio": "Los tres estilos presentan variantes reconocibles.",
+        "peso": 2,
+        "anclas": "0=idénticos o rotos; 1=variaciones leves; 2=variantes distinguibles que conservan la misma semántica."
+      },
+      {
+        "criterio": "Compatibilidad con restricciones de render DS.",
+        "peso": 2,
+        "anclas": "0=operaciones no acotadas o float; 1=coste sin justificar; 2=trabajo acotado y sin float/double."
+      }
+    ],
+    "trampas": [
+      "Hacer que el trazo parezca listo desde el inicio.",
+      "Evaluar solo un estilo del selector."
+    ]
+  },
+  "dificultad": 3,
+  "historia": "Un commit de implementación tras decisiones de diseño y prototipos VFX. La entrega añadía selector de estilos; la evaluación visual se apoyó en capturas del walkthrough.",
+  "reproducible": "parcial",
+  "motivo_reproducible": "El código y los estilos están en el commit; no se identifica un test automático específico de colimación.",
+  "coste_ejecucion_estimado": "medio (+ build, contratos y revisión visual)",
+  "_fuente": "b6",
+  "_validado": true,
+  "_avisos": [],
+  "calibrado": false
+}

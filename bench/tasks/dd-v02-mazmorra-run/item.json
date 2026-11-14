@@ -1,0 +1,68 @@
+{
+  "id": "dd-v02-mazmorra-run",
+  "titulo": "Implementar la mazmorra v0.2 y el ciclo de partida",
+  "tipo": "macro",
+  "parent": null,
+  "clase": "feature",
+  "repo": "dungeonds",
+  "base_commit": "bf596c07b308f227d735cbde45b36e0f0023f9a2",
+  "solution_commits": [
+    "8d535300fd5192ba254f90953a8470cebad8c0a2"
+  ],
+  "solucion_resumen": "Sustituye las cuatro arenas por una mazmorra horneada desde el pipeline existente.\nAñade seis manadas que despiertan por proximidad o daño y dos pedestales al completar una.\nImplementa ocho modificadores integrados con armas y gameplay.\nAñade curación, HUD de la run y reinicio total al morir.\nActualiza los escenarios y contratos de tests para el nuevo mapa y encuentros.\nCorrige además orientación de enemigos y oclusión de proyectiles.\nLa entrega se jugó en DS, pero el rendimiento aún no quedó certificado a 60 FPS.",
+  "ficheros_solucion": [
+    "source/arena_dungeon_01.c",
+    "source/encounters.c",
+    "source/modifiers.c",
+    "source/main.c",
+    "source/weapons.c",
+    "include/modifiers.h",
+    "scenarios/dungeon_pack_wakes_near_player.json",
+    "scenarios/dungeon_pack_reward_pedestals.json",
+    "tests/test_modifiers_contract.py",
+    "tests/test_encounters_contract.py"
+  ],
+  "evaluacion": {
+    "tipo": "mixta",
+    "puertas": [
+      {
+        "nivel": "G1 build",
+        "como": "Compilar con scripts/build-project.ps1 de la skill ds-game-dev para el worktree del candidato.",
+        "criterio": "DS_BUILD=PASS sin warnings nuevos.",
+        "fuente": "solution_commit"
+      },
+      {
+        "nivel": "G2 tests",
+        "como": "Ejecutar los tests de host y contratos del proyecto.",
+        "criterio": "Todos pasan, incluidos los contratos de modificadores y encuentros.",
+        "fuente": "solution_commit (overlay: tests/test_modifiers_contract.py y tests/test_encounters_contract.py)"
+      },
+      {
+        "nivel": "G3 escenario",
+        "como": "Ejecutar escenarios de manadas y recompensas con run-scenario.ps1.",
+        "criterio": "Ambos escenarios PASS; despertar y pedestales observables en la geometría definida.",
+        "fuente": "solution_commit (overlay: escenarios dungeon_pack_*)"
+      },
+      {
+        "nivel": "G6 humano",
+        "como": "Jugar una partida en DS y medir PERF_PROFILE con varias manadas activas.",
+        "criterio": "No exceder el presupuesto de 560190 ticks/frame; la referencia original no lo certificó.",
+        "fuente": "por escribir"
+      }
+    ],
+    "rubrica": [],
+    "trampas": [
+      "Hardcodear las capturas o los eventos de escenario sin implementar los estados de manada.",
+      "Aprobar en emulador y afirmar que queda certificado el rendimiento en DS."
+    ]
+  },
+  "dificultad": 5,
+  "historia": "Un commit de entrega. La primera exportación del mapa salió sin sombras ni luz porque el shadow camera solo cubría el centro; se amplió en el export. Los tests y escenarios pasaron. La medición en DS tuvo picos sobre el presupuesto y quedó pendiente el certificado de 60 FPS.",
+  "reproducible": "si",
+  "motivo_reproducible": "El commit incluye código, contratos y escenarios; la medición final de rendimiento requiere hardware DS.",
+  "coste_ejecucion_estimado": "alto (+ build NDS, tests, dos escenarios y validación de rendimiento en hardware)",
+  "_fuente": "b6",
+  "_validado": true,
+  "_avisos": [],
+  "calibrado": false
+}

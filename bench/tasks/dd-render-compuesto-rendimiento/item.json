@@ -1,0 +1,71 @@
+{
+  "id": "dd-render-compuesto-rendimiento",
+  "titulo": "Reducir el coste del compositor y la oclusión",
+  "tipo": "macro",
+  "parent": null,
+  "clase": "perf-hw",
+  "repo": "dungeonds",
+  "base_commit": "c8e015587ccdbc87b678df156b61f0a9023f7482",
+  "solution_commits": [
+    "7ea9dff9adb90055ae93ee695b319a2d45505818",
+    "361e751101466bce2c9396b895d7d77e8ac2d2a2",
+    "57dbed324ac06462e8fee0c556d6a1f735b1dd58",
+    "48b1aad2a1abbce93e455dfec336be01807b1069",
+    "54be17ef7fe8bb4af215cdee89f8bc9dac62a2ea",
+    "014c2b9def973e3b57d6cca37b2fcbadc41062d4"
+  ],
+  "solucion_resumen": "El render se dibuja directamente en la página trasera de VRAM.\nLa limpieza se limita a spans sucios y se evita copiar la página completa.\nLa oclusión consulta runs por fila y se verifica a nivel de píxel.\nSe reduce el coste de sombras, base de pared y blit.\nEl HUD y logging dejan de ejecutarse continuamente en modo normal.\nEl perfilado en DS documenta reducción de CPU media de 12,03 a 1,58 ms.\nLa captura incluye frames de más de un vblank y coste de escritura a SD.",
+  "ficheros_solucion": [
+    "include/game.h",
+    "include/perfprof.h",
+    "source/main.c",
+    "source/perfprof.c",
+    "source/gameplay.c",
+    "tests/test_floor_copy_contract.py",
+    "walkthroughs/audit-motor-2d3d/walkthrough.md"
+  ],
+  "evaluacion": {
+    "tipo": "mixta",
+    "puertas": [
+      {
+        "nivel": "G1 build",
+        "como": "Build con `build-project.ps1` de la skill.",
+        "criterio": "Build limpia y sin warnings nuevos.",
+        "fuente": "solution_commit"
+      },
+      {
+        "nivel": "G2 tests",
+        "como": "Suites de contrato de render y limpieza de framebuffer.",
+        "criterio": "Sin copia/limpieza completa por frame en el camino principal; verificadores de spans pasan.",
+        "fuente": "solution_commit"
+      },
+      {
+        "nivel": "G4 metrica",
+        "como": "Perfilar la misma situación en DS física con PERF_PROFILE; no usar cpu_ticks de emulador como certificación.",
+        "criterio": "Media CPU de referencia 1,58 ms y máximo 3,98 ms; 12 de 2520 frames tuvieron más de un vblank, incluidos picos por escritura SD. Para aprobar hardware, comprobar máximo ≤560190 ticks/frame.",
+        "fuente": "solution_commit"
+      },
+      {
+        "nivel": "G5 rubrica",
+        "como": "Comparar capturas antes/después en el spawn y revisar oclusión de actores detrás de bloque y muro.",
+        "criterio": "No hay píxeles visibles a través de oclusores que deban cubrirlos; la imagen no presenta regiones persistentes sin limpiar.",
+        "fuente": "solution_commit"
+      }
+    ],
+    "rubrica": [],
+    "trampas": [
+      "Usar solo ticks de DeSmuME como prueba de 60 FPS.",
+      "Mejorar tiempo a costa de borrar actores o mostrar píxeles a través de paredes.",
+      "Ignorar el coste de logging a SD al interpretar máximos."
+    ]
+  },
+  "dificultad": 5,
+  "historia": "El walkthrough compara el prototipo y el compositor A en DS: CPU media 12,03→1,58 ms; frames con más de un vblank 226/1500→12/2520. El perfilado detectó que FAT solo actualiza tamaño al cerrar archivo; se añadió cierre por escritura.",
+  "reproducible": "parcial",
+  "motivo_reproducible": "Contratos y builds son repetibles; la métrica válida requiere DS física y separar ventanas de escritura a SD.",
+  "coste_ejecucion_estimado": "alto (+ build, escenas gráficas y medición en hardware)",
+  "_fuente": "b5",
+  "_validado": true,
+  "_avisos": [],
+  "calibrado": false
+}

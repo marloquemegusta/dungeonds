@@ -1,0 +1,81 @@
+{
+  "id": "dd-v01-prueba-diversion",
+  "titulo": "Construir la prueba de diversión v0.1",
+  "tipo": "macro",
+  "parent": null,
+  "clase": "feature",
+  "repo": "dungeonds",
+  "base_commit": "c3d9926c5bcfd2a5633acbbe193adf5289371abe",
+  "solution_commits": [
+    "f0a25c711e89d552607d1b7bb45bd8f332e48f73",
+    "3881f76ea108d18bba35bf7a3e862f0f10e785c4",
+    "73fbd753a887e94bb3c067ad102c58463c96aea2",
+    "bf596c07b308f227d735cbde45b36e0f0023f9a2"
+  ],
+  "solucion_resumen": "La referencia añade escopeta y francotirador con apuntado táctil y efectos de impacto.\nEl cargador persigue al jugador y rodea obstáculos mediante un campo BFS incremental.\nEl tirador necrón mantiene distancia, telegrafía y dispara ráfagas de proyectiles.\nEl runtime carga cuatro arenas pequeñas con encuentros y spawns diferenciados.\nLa cámara y el paso entre arenas se adaptan al nuevo formato.\nLos escenarios cubren armas, navegación, enemigos, oclusión y la cadena de arenas.\nLa implementación usa enteros y prueba la navegación sobre la colisión real.",
+  "ficheros_solucion": [
+    "source/weapons.c",
+    "source/enemy_ai.c",
+    "source/navfield.c",
+    "source/encounters.c",
+    "source/arena.c",
+    "source/arenas.c",
+    "source/main.c",
+    "tools/bake_arena.py",
+    "scenarios/"
+  ],
+  "evaluacion": {
+    "tipo": "mixta",
+    "puertas": [
+      {
+        "nivel": "G1 build",
+        "como": "Compilar con `& 'C:\\codexlocal\\skills\\agentic-ds-dev\\scripts\\build-project.ps1' -ProjectPath <worktree>`.",
+        "criterio": "Build limpia y sin warnings nuevos.",
+        "fuente": "solution_commit (overlay: no)"
+      },
+      {
+        "nivel": "G2 tests",
+        "como": "Ejecutar las suites host de armas, encuentros, navegación y arenas disponibles en `tests/`.",
+        "criterio": "Todas las pruebas relevantes pasan; la navegación cubre las celdas transitables y el gradiente no atraviesa muros.",
+        "fuente": "solution_commit"
+      },
+      {
+        "nivel": "G3 escenario",
+        "como": "Ejecutar `arena_chain`, `arena_pillar_occlusion`, `charger_walks_around_wall`, `shooter_telegraph_burst` y `weapons_switching_and_touch` con `run-scenario.ps1` de la skill.",
+        "criterio": "Todos los escenarios terminan PASS y verifican las acciones descritas.",
+        "fuente": "solution_commit"
+      },
+      {
+        "nivel": "G5 rubrica",
+        "como": "Revisar integración de dos armas, dos enemigos y cuatro arenas contra el brief.",
+        "criterio": "Cada subsistema funciona en el runtime integrado y respeta enteros y presupuestos de DS.",
+        "fuente": "solution_commit"
+      }
+    ],
+    "rubrica": [
+      {
+        "criterio": "Integración jugable de armas, enemigos y arenas",
+        "peso": 5,
+        "anclas": "0=componentes ausentes o incompatibles; 1=la mayoría está presente pero la cadena o el combate falla; 2=las cuatro fases se integran y los escenarios pasan."
+      },
+      {
+        "criterio": "Restricciones de Nintendo DS",
+        "peso": 3,
+        "anclas": "0=usa float/double o excede límites evidentes; 1=restricciones parcialmente cubiertas; 2=aritmética entera y presupuestos respetados."
+      }
+    ],
+    "trampas": [
+      "Pasar pruebas de contrato sin demostrar la cadena completa de cuatro arenas.",
+      "Probar navegación solo en suelo abierto y no hacer que el enemigo rodee un obstáculo."
+    ]
+  },
+  "dificultad": 5,
+  "historia": "Cuatro commits de fase, del 3 de noviembre. El walkthrough registra revisiones y correcciones: errores en seguimiento del cargador, ataques a través de muros, origen de proyectiles y cancelación de telegraph. Las fases A-D tienen evidencia y suites propias; la medición de coste de navegación y arenas densas en DS quedó pendiente.",
+  "reproducible": "parcial",
+  "motivo_reproducible": "Build, suites host y escenarios son repetibles; la diversión y el rendimiento final de arenas densas requieren evaluación en hardware.",
+  "coste_ejecucion_estimado": "alto (+ build, muchas suites y escenarios; rendimiento de arenas densas requiere hardware)",
+  "_fuente": "b5",
+  "_validado": true,
+  "_avisos": [],
+  "calibrado": false
+}

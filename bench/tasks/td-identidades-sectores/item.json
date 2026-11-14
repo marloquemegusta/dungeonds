@@ -1,0 +1,54 @@
+{
+  "id": "td-identidades-sectores",
+  "titulo": "Definir identidades visuales de sectores",
+  "tipo": "micro",
+  "parent": null,
+  "clase": "diseno",
+  "repo": "towerds",
+  "base_commit": "d7ab91b68066d6c43806de6571e4b629aa87a468",
+  "solution_commits": [
+    "03ff40ee0f5de0ee1ee2b2c4d8f189a6b0798a89"
+  ],
+  "solucion_resumen": "Se crea SECTORS.md con identidades para Escoria, Prometeo y Sanctum.\nCada sector recibe tema visual y peligros ambientales.\nSe añaden capturas de referencia en tamaño ampliado y 1x.\nLa solución es documentación de diseño con referencias visuales, no implementación jugable.\nLa evaluación requiere comprobar consistencia entre texto, nombres y láminas.",
+  "ficheros_solucion": [
+    "SECTORS.md",
+    "assets/screenshots/sector_1_scoria.png",
+    "assets/screenshots/sector_2_foundry.png",
+    "assets/screenshots/sector_3_sanctum.png"
+  ],
+  "evaluacion": {
+    "tipo": "rubrica-llm",
+    "puertas": [
+      {
+        "nivel": "G5 rubrica",
+        "como": "Revisar SECTORS.md y las tres referencias visuales",
+        "criterio": "Cada sector tiene identidad, tema y peligros definidos y distinguibles",
+        "fuente": "solution_commit"
+      }
+    ],
+    "rubrica": [
+      {
+        "criterio": "Tres identidades diferenciables y coherentes con sus referencias",
+        "peso": 2,
+        "anclas": "0=identidades ausentes o contradictorias; 1=parcialmente diferenciadas; 2=las tres son claras y consistentes"
+      },
+      {
+        "criterio": "Peligros y tema ambiental concretos por sector",
+        "peso": 1,
+        "anclas": "0=no especificados; 1=genéricos o repetidos; 2=concretos y asociados a cada sector"
+      }
+    ],
+    "trampas": [
+      "No evaluar el arte como implementación del juego: este commit documenta propuestas visuales."
+    ]
+  },
+  "dificultad": 2,
+  "historia": "Un commit creó el documento y referencias de los tres sectores; no consta iteración de evaluación en git.",
+  "reproducible": "si",
+  "motivo_reproducible": "Documento e imágenes están versionados y se pueden revisar directamente.",
+  "coste_ejecucion_estimado": "bajo (+ revisión documental)",
+  "_fuente": "b1",
+  "_validado": true,
+  "_avisos": [],
+  "calibrado": false
+}

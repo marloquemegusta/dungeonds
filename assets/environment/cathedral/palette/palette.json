@@ -2,44 +2,39 @@
   "terrain": [],
   "props": [
     [
-      2,
+      1,
       1,
       1
     ],
     [
+      3,
+      2,
+      2
+    ],
+    [
+      4,
+      2,
+      2
+    ],
+    [
       4,
       3,
-      2
-    ],
-    [
-      5,
-      3,
-      1
-    ],
-    [
-      4,
-      4,
-      4
-    ],
-    [
-      5,
-      4,
       3
     ],
     [
-      5,
-      4,
-      4
-    ],
-    [
       6,
-      4,
+      2,
       2
     ],
     [
-      7,
       4,
-      2
+      4,
+      4
+    ],
+    [
+      5,
+      4,
+      4
     ],
     [
       6,
@@ -47,91 +42,66 @@
       4
     ],
     [
-      9,
-      4,
-      3
+      7,
+      6,
+      4
     ],
     [
-      8,
+      7,
+      6,
+      5
+    ],
+    [
+      10,
       5,
-      3
-    ],
-    [
-      7,
-      6,
-      4
-    ],
-    [
-      7,
-      6,
-      5
-    ],
-    [
-      8,
-      6,
-      4
-    ],
-    [
-      9,
-      6,
       4
     ],
     [
       7,
       7,
-      6
+      5
+    ],
+    [
+      7,
+      7,
+      7
     ],
     [
       8,
       7,
-      5
-    ],
-    [
-      8,
-      7,
       6
-    ],
-    [
-      9,
-      7,
-      5
-    ],
-    [
-      9,
-      7,
-      6
-    ],
-    [
-      10,
-      7,
-      5
     ],
     [
       11,
-      7,
-      4
+      6,
+      5
     ],
     [
+      9,
+      7,
+      5
+    ],
+    [
+      9,
+      7,
+      6
+    ],
+    [
+      9,
       8,
+      6
+    ],
+    [
+      9,
+      8,
+      7
+    ],
+    [
+      9,
       8,
       8
     ],
     [
-      9,
-      8,
-      6
-    ],
-    [
-      9,
-      8,
-      7
-    ],
-    [
-      10,
-      8,
-      6
-    ],
-    [
       10,
       8,
       7
@@ -140,31 +110,6 @@
       11,
       8,
       6
-    ],
-    [
-      11,
-      8,
-      7
-    ],
-    [
-      12,
-      8,
-      5
-    ],
-    [
-      9,
-      9,
-      8
-    ],
-    [
-      12,
-      8,
-      6
-    ],
-    [
-      12,
-      8,
-      7
     ],
     [
       10,
@@ -177,9 +122,9 @@
       8
     ],
     [
-      13,
-      8,
-      5
+      10,
+      9,
+      9
     ],
     [
       11,
@@ -192,24 +137,19 @@
       8
     ],
     [
-      14,
-      8,
-      4
-    ],
-    [
       12,
       9,
       7
     ],
     [
-      13,
+      12,
       9,
-      6
+      8
     ],
     [
-      13,
-      9,
-      7
+      10,
+      10,
+      10
     ],
     [
       13,
@@ -222,16 +162,6 @@
       9
     ],
     [
-      14,
-      9,
-      6
-    ],
-    [
-      14,
-      9,
-      8
-    ],
-    [
       12,
       10,
       8
@@ -242,14 +172,9 @@
       9
     ],
     [
-      15,
-      9,
-      7
-    ],
-    [
-      13,
+      12,
       10,
-      7
+      10
     ],
     [
       13,
@@ -257,9 +182,14 @@
       8
     ],
     [
-      16,
-      9,
-      5
+      13,
+      10,
+      9
+    ],
+    [
+      14,
+      10,
+      7
     ],
     [
       14,
@@ -267,9 +197,19 @@
       8
     ],
     [
-      16,
-      9,
-      9
+      11,
+      11,
+      10
+    ],
+    [
+      12,
+      11,
+      8
+    ],
+    [
+      11,
+      11,
+      12
     ],
     [
       12,
@@ -284,11 +224,6 @@
     [
       13,
       11,
-      8
-    ],
-    [
-      13,
-      11,
       9
     ],
     [
@@ -297,9 +232,9 @@
       10
     ],
     [
-      16,
-      10,
-      6
+      14,
+      11,
+      9
     ],
     [
       14,
@@ -312,14 +247,14 @@
       8
     ],
     [
-      15,
-      11,
-      9
+      12,
+      12,
+      12
     ],
     [
-      16,
-      11,
-      8
+      13,
+      12,
+      9
     ],
     [
       13,
@@ -332,9 +267,9 @@
       9
     ],
     [
-      16,
-      11,
-      10
+      13,
+      12,
+      11
     ],
     [
       13,
@@ -344,17 +279,7 @@
     [
       14,
       12,
-      9
-    ],
-    [
-      14,
-      12,
       10
-    ],
-    [
-      17,
-      11,
-      8
     ],
     [
       14,
@@ -364,22 +289,22 @@
     [
       15,
       12,
-      9
-    ],
-    [
-      15,
-      12,
       10
     ],
     [
-      15,
-      12,
+      18,
+      11,
       11
     ],
     [
       16,
       12,
-      9
+      11
+    ],
+    [
+      13,
+      13,
+      13
     ],
     [
       14,
@@ -390,6 +315,11 @@
       17,
       12,
       9
+    ],
+    [
+      14,
+      13,
+      12
     ],
     [
       14,
@@ -399,6 +329,11 @@
     [
       15,
       13,
+      10
+    ],
+    [
+      15,
+      13,
       11
     ],
     [
@@ -409,27 +344,7 @@
     [
       16,
       13,
-      10
-    ],
-    [
-      16,
-      13,
       11
-    ],
-    [
-      16,
-      13,
-      12
-    ],
-    [
-      19,
-      12,
-      9
-    ],
-    [
-      17,
-      13,
-      9
     ],
     [
       17,
@@ -442,14 +357,24 @@
       11
     ],
     [
-      17,
-      13,
+      15,
+      14,
       12
+    ],
+    [
+      18,
+      13,
+      10
     ],
     [
       15,
       14,
       13
+    ],
+    [
+      18,
+      13,
+      11
     ],
     [
       15,
@@ -457,26 +382,26 @@
       14
     ],
     [
+      15,
+      14,
+      15
+    ],
+    [
+      16,
+      14,
+      11
+    ],
+    [
+      16,
+      14,
+      12
+    ],
+    [
       16,
       14,
       13
     ],
     [
-      19,
-      13,
-      12
-    ],
-    [
-      17,
-      14,
-      11
-    ],
-    [
-      17,
-      14,
-      12
-    ],
-    [
       17,
       14,
       13
@@ -490,11 +415,6 @@
       18,
       14,
       12
-    ],
-    [
-      19,
-      14,
-      10
     ],
     [
       19,
@@ -507,34 +427,69 @@
       13
     ],
     [
-      17,
-      15,
-      13
-    ],
-    [
-      18,
-      15,
-      13
-    ],
-    [
       19,
-      15,
+      14,
       12
     ],
     [
-      19,
+      16,
       15,
       14
+    ],
+    [
+      16,
+      15,
+      15
+    ],
+    [
+      17,
+      15,
+      12
+    ],
+    [
+      17,
+      15,
+      13
+    ],
+    [
+      17,
+      15,
+      14
+    ],
+    [
+      18,
+      15,
+      13
+    ],
+    [
+      19,
+      15,
+      12
+    ],
+    [
+      21,
+      14,
+      13
     ],
     [
       20,
       15,
-      12
+      11
+    ],
+    [
+      17,
+      16,
+      15
     ],
     [
       18,
       16,
       13
+    ],
+    [
+      21,
+      15,
+      12
     ],
     [
       18,
@@ -549,42 +504,102 @@
     [
       19,
       16,
+      14
+    ],
+    [
+      20,
+      16,
+      12
+    ],
+    [
+      20,
+      16,
       13
     ],
     [
-      19,
+      21,
       16,
+      12
+    ],
+    [
+      18,
+      17,
+      14
+    ],
+    [
+      18,
+      17,
       15
     ],
     [
-      21,
-      16,
+      18,
+      17,
+      16
+    ],
+    [
+      18,
+      17,
+      17
+    ],
+    [
+      19,
+      17,
+      14
+    ],
+    [
+      19,
+      17,
+      15
+    ],
+    [
+      19,
+      17,
+      16
+    ],
+    [
+      20,
+      17,
+      14
+    ],
+    [
+      20,
+      17,
+      15
+    ],
+    [
+      22,
+      17,
       13
     ],
     [
       19,
+      18,
+      15
+    ],
+    [
+      22,
       17,
       14
     ],
     [
       19,
-      17,
+      18,
       16
     ],
     [
-      20,
-      17,
-      14
+      19,
+      18,
+      17
     ],
     [
       20,
-      17,
+      18,
+      15
+    ],
+    [
+      20,
+      18,
       16
-    ],
-    [
-      21,
-      17,
-      14
     ],
     [
       20,
@@ -592,237 +607,300 @@
       17
     ],
     [
+      20,
+      18,
+      18
+    ],
+    [
       21,
       18,
       16
     ],
     [
-      20,
-      19,
-      18
+      23,
+      18,
+      13
     ],
     [
-      22,
+      21,
       19,
       16
     ],
     [
-      22,
+      21,
       19,
       17
     ],
     [
-      22,
+      21,
       19,
       18
     ],
     [
       22,
-      21,
-      19
-    ],
-    [
-      23,
-      21,
-      19
-    ],
-    [
-      24,
-      21,
+      19,
       17
     ],
     [
-      24,
+      22,
+      20,
+      17
+    ],
+    [
+      22,
+      20,
+      18
+    ],
+    [
+      22,
+      20,
+      19
+    ],
+    [
       23,
-      21
+      20,
+      16
+    ],
+    [
+      23,
+      21,
+      18
+    ],
+    [
+      23,
+      21,
+      19
+    ],
+    [
+      23,
+      21,
+      20
+    ],
+    [
+      24,
+      21,
+      18
+    ],
+    [
+      24,
+      22,
+      19
+    ],
+    [
+      24,
+      22,
+      20
+    ],
+    [
+      25,
+      23,
+      20
     ],
     [
       25,
       24,
-      23
+      22
     ],
     [
       26,
-      25,
-      25
+      24,
+      21
     ],
     [
       28,
-      27,
+      25,
+      22
+    ],
+    [
+      28,
+      25,
+      24
+    ],
+    [
+      30,
+      28,
       26
     ]
   ],
   "bgr555_hex": {
     "terrain": [],
     "props": [
-      "0x0422",
-      "0x0864",
-      "0x0465",
+      "0x0421",
+      "0x0843",
+      "0x0844",
+      "0x0C64",
+      "0x0846",
       "0x1084",
-      "0x0C85",
       "0x1085",
-      "0x0886",
-      "0x0887",
       "0x10A6",
-      "0x0C89",
-      "0x0CA8",
       "0x10C7",
       "0x14C7",
-      "0x10C8",
-      "0x10C9",
-      "0x18E7",
-      "0x14E8",
+      "0x10AA",
+      "0x14E7",
+      "0x1CE7",
       "0x18E8",
+      "0x14CB",
       "0x14E9",
       "0x18E9",
-      "0x14EA",
-      "0x10EB",
-      "0x2108",
       "0x1909",
       "0x1D09",
-      "0x190A",
+      "0x2109",
       "0x1D0A",
       "0x190B",
-      "0x1D0B",
-      "0x150C",
-      "0x2129",
-      "0x190C",
-      "0x1D0C",
       "0x1D2A",
       "0x212A",
-      "0x150D",
+      "0x252A",
       "0x1D2B",
       "0x212B",
-      "0x110E",
       "0x1D2C",
-      "0x192D",
-      "0x1D2D",
+      "0x212C",
+      "0x294A",
       "0x252D",
       "0x254B",
-      "0x192E",
-      "0x212E",
       "0x214C",
       "0x254C",
-      "0x1D2F",
-      "0x1D4D",
+      "0x294C",
       "0x214D",
-      "0x1530",
+      "0x254D",
+      "0x1D4E",
       "0x214E",
-      "0x2530",
+      "0x296B",
+      "0x216C",
+      "0x316B",
       "0x256C",
       "0x296C",
-      "0x216D",
       "0x256D",
       "0x296D",
-      "0x1950",
+      "0x256E",
       "0x296E",
       "0x216F",
-      "0x256F",
-      "0x2170",
+      "0x318C",
+      "0x258D",
       "0x298D",
       "0x2570",
-      "0x2970",
+      "0x2D8D",
       "0x318D",
-      "0x258E",
       "0x298E",
-      "0x2171",
       "0x2D8E",
-      "0x258F",
       "0x298F",
-      "0x2D8F",
-      "0x2590",
+      "0x2D72",
+      "0x2D90",
+      "0x35AD",
       "0x2DAE",
       "0x2591",
+      "0x31AE",
       "0x35AE",
+      "0x29AF",
       "0x2DAF",
       "0x31AF",
-      "0x29B0",
       "0x2DB0",
-      "0x31B0",
-      "0x2593",
-      "0x25B1",
       "0x29B1",
       "0x2DB1",
-      "0x31B1",
+      "0x31CF",
+      "0x29B2",
       "0x35CF",
+      "0x2DB2",
       "0x39CF",
+      "0x3DCF",
+      "0x2DD0",
+      "0x31D0",
       "0x35D0",
-      "0x31B3",
-      "0x2DD1",
-      "0x31D1",
       "0x35D1",
       "0x2DD2",
       "0x31D2",
-      "0x29D3",
       "0x2DD3",
       "0x35F0",
+      "0x31D3",
+      "0x39F0",
+      "0x3DF0",
+      "0x31F1",
       "0x35F1",
+      "0x39F1",
       "0x35F2",
       "0x31F3",
-      "0x39F3",
-      "0x31F4",
+      "0x35D5",
+      "0x2DF4",
+      "0x3E11",
       "0x3612",
+      "0x31F5",
       "0x3A12",
       "0x3E12",
-      "0x3613",
-      "0x3E13",
-      "0x3615",
+      "0x3A13",
+      "0x3214",
+      "0x3614",
+      "0x3215",
+      "0x3A32",
+      "0x3E32",
+      "0x4232",
+      "0x4632",
       "0x3A33",
+      "0x3E33",
       "0x4233",
       "0x3A34",
-      "0x4234",
-      "0x3A35",
+      "0x3E34",
+      "0x3636",
+      "0x3E53",
+      "0x3A36",
+      "0x4253",
+      "0x4653",
+      "0x3E54",
+      "0x4254",
       "0x4654",
+      "0x4A54",
       "0x4255",
-      "0x4A74",
-      "0x4276",
+      "0x3657",
+      "0x4275",
+      "0x4675",
+      "0x4A75",
       "0x4676",
-      "0x4A76",
-      "0x4EB6",
+      "0x4696",
+      "0x4A96",
+      "0x4E96",
+      "0x4297",
+      "0x4AB7",
       "0x4EB7",
-      "0x46B8",
-      "0x56F8",
-      "0x5F19",
-      "0x673A",
-      "0x6B7C"
+      "0x52B7",
+      "0x4AB8",
+      "0x4ED8",
+      "0x52D8",
+      "0x52F9",
+      "0x5B19",
+      "0x571A",
+      "0x5B3C",
+      "0x633C",
+      "0x6B9E"
     ]
   },
   "sources": [
-    "C:\\Users\\malfonso\\AppData\\Local\\Temp\\claude\\8336d32f341296e9\\2d4996c8-ed50-4c7a-ada4-8ab8e81ae3cb\\scratchpad\\palin_n\\banco_roto.png",
-    "C:\\Users\\malfonso\\AppData\\Local\\Temp\\claude\\8336d32f341296e9\\2d4996c8-ed50-4c7a-ada4-8ab8e81ae3cb\\scratchpad\\palin_n\\banco_volcado.png",
-    "C:\\Users\\malfonso\\AppData\\Local\\Temp\\claude\\8336d32f341296e9\\2d4996c8-ed50-4c7a-ada4-8ab8e81ae3cb\\scratchpad\\palin_n\\columna.png",
-    "C:\\Users\\malfonso\\AppData\\Local\\Temp\\claude\\8336d32f341296e9\\2d4996c8-ed50-4c7a-ada4-8ab8e81ae3cb\\scratchpad\\palin_n\\relicario.png",
-    "C:\\Users\\malfonso\\AppData\\Local\\Temp\\claude\\8336d32f341296e9\\2d4996c8-ed50-4c7a-ada4-8ab8e81ae3cb\\scratchpad\\palin_n\\santo.png",
-    "C:\\Users\\malfonso\\AppData\\Local\\Temp\\claude\\8336d32f341296e9\\2d4996c8-ed50-4c7a-ada4-8ab8e81ae3cb\\scratchpad\\palin_n\\vela.png"
+    "C:\\codexlocal\\dungeonds\\.worktrees\\legibilidad-lab\\assets\\environment\\cathedral\\props\\render\\columna_entera\\color.png",
+    "C:\\codexlocal\\dungeonds\\.worktrees\\legibilidad-lab\\assets\\environment\\cathedral\\props\\render\\banco_entero\\color.png",
+    "C:\\codexlocal\\dungeonds\\.worktrees\\legibilidad-lab\\assets\\environment\\cathedral\\props\\render\\relicario\\color.png",
+    "C:\\codexlocal\\dungeonds\\.worktrees\\legibilidad-lab\\assets\\environment\\cathedral\\props\\render\\santo\\color.png",
+    "C:\\codexlocal\\dungeonds\\.worktrees\\legibilidad-lab\\assets\\environment\\cathedral\\props\\render\\vela\\color.png"
   ],
   "regions": [
     {
-      "source": "C:\\Users\\malfonso\\AppData\\Local\\Temp\\claude\\8336d32f341296e9\\2d4996c8-ed50-4c7a-ada4-8ab8e81ae3cb\\scratchpad\\palin_n\\banco_roto.png",
+      "source": "C:\\codexlocal\\dungeonds\\.worktrees\\legibilidad-lab\\assets\\environment\\cathedral\\props\\render\\columna_entera\\color.png",
       "normalized": [],
       "ds_pixels": []
     },
     {
-      "source": "C:\\Users\\malfonso\\AppData\\Local\\Temp\\claude\\8336d32f341296e9\\2d4996c8-ed50-4c7a-ada4-8ab8e81ae3cb\\scratchpad\\palin_n\\banco_volcado.png",
+      "source": "C:\\codexlocal\\dungeonds\\.worktrees\\legibilidad-lab\\assets\\environment\\cathedral\\props\\render\\banco_entero\\color.png",
       "normalized": [],
       "ds_pixels": []
     },
     {
-      "source": "C:\\Users\\malfonso\\AppData\\Local\\Temp\\claude\\8336d32f341296e9\\2d4996c8-ed50-4c7a-ada4-8ab8e81ae3cb\\scratchpad\\palin_n\\columna.png",
+      "source": "C:\\codexlocal\\dungeonds\\.worktrees\\legibilidad-lab\\assets\\environment\\cathedral\\props\\render\\relicario\\color.png",
       "normalized": [],
       "ds_pixels": []
     },
     {
-      "source": "C:\\Users\\malfonso\\AppData\\Local\\Temp\\claude\\8336d32f341296e9\\2d4996c8-ed50-4c7a-ada4-8ab8e81ae3cb\\scratchpad\\palin_n\\relicario.png",
+      "source": "C:\\codexlocal\\dungeonds\\.worktrees\\legibilidad-lab\\assets\\environment\\cathedral\\props\\render\\santo\\color.png",
       "normalized": [],
       "ds_pixels": []
     },
     {
-      "source": "C:\\Users\\malfonso\\AppData\\Local\\Temp\\claude\\8336d32f341296e9\\2d4996c8-ed50-4c7a-ada4-8ab8e81ae3cb\\scratchpad\\palin_n\\santo.png",
-      "normalized": [],
-      "ds_pixels": []
-    },
-    {
-      "source": "C:\\Users\\malfonso\\AppData\\Local\\Temp\\claude\\8336d32f341296e9\\2d4996c8-ed50-4c7a-ada4-8ab8e81ae3cb\\scratchpad\\palin_n\\vela.png",
+      "source": "C:\\codexlocal\\dungeonds\\.worktrees\\legibilidad-lab\\assets\\environment\\cathedral\\props\\render\\vela\\color.png",
       "normalized": [],
       "ds_pixels": []
     }

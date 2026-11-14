@@ -1,0 +1,49 @@
+{
+  "id": "td-calibracion-roster-xeno",
+  "titulo": "Exponer especies xeno a calibración",
+  "tipo": "micro",
+  "parent": "td-roster-xeno",
+  "clase": "feature",
+  "repo": "towerds",
+  "base_commit": "0b4056a28472e92d70e00a950d2604d3330da933",
+  "solution_commits": [
+    "f57562b5a1571967fbad931268e3fd85e9909ef9"
+  ],
+  "solucion_resumen": "Se amplían estructuras y tablas de datos para las especies nuevas.\nLos enemigos se incorporan al flujo de selección y calibración.\nEl commit declara compatibilidad completa con calibración junto con la integración del roster.\nLa verificación requiere recorrer las especies en la herramienta y comprobar campos disponibles.\nNo consta una prueba automatizada exclusiva de esta interacción.",
+  "ficheros_solucion": [
+    "include/enemy_data.h",
+    "include/game.h",
+    "source/enemy_data.c",
+    "source/simulation.c"
+  ],
+  "evaluacion": {
+    "tipo": "mixta",
+    "puertas": [
+      {
+        "nivel": "G1 build",
+        "como": "C:\\codexlocal\\skills\\agentic-ds-dev\\scripts\\build-project.ps1 -ProjectPath <checkout>",
+        "criterio": "Build PASS",
+        "fuente": "solution_commit"
+      },
+      {
+        "nivel": "G3 escenario",
+        "como": "Ejecutar scenarios/calibration_live_test.json y recorrer las entradas del roster",
+        "criterio": "Las ocho especies son seleccionables y muestran campos de calibración",
+        "fuente": "solution_commit (overlay: escenario de recorrido completo por escribir)"
+      }
+    ],
+    "rubrica": [],
+    "trampas": [
+      "Un escenario que solo abre calibración puede pasar sin visitar las ocho especies."
+    ]
+  },
+  "dificultad": 3,
+  "historia": "Se implementó dentro del commit grande del roster; no consta un commit o escenario separado para esta interacción.",
+  "reproducible": "parcial",
+  "motivo_reproducible": "El código está versionado, pero falta un escenario que recorra todas las especies.",
+  "coste_ejecucion_estimado": "medio (+ build y escenario de navegación)",
+  "_fuente": "b1",
+  "_validado": true,
+  "_avisos": [],
+  "calibrado": false
+}

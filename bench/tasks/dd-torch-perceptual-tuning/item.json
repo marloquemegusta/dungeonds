@@ -1,0 +1,68 @@
+{
+  "id": "dd-torch-perceptual-tuning",
+  "titulo": "Corregir cortes y negros en la atenuación de antorcha",
+  "tipo": "micro",
+  "parent": "dd-torch-lighting-macro",
+  "clase": "bug-acotado",
+  "repo": "dungeonds",
+  "base_commit": "edd33f36fc3c9b4b58266270096007a9bc4e2489",
+  "solution_commits": [
+    "3ca14d001d11fc6064adcae5ea02cac726fa948f"
+  ],
+  "solucion_resumen": "Se ajustó la escala ortográfica del horneado para alinear los rayos con el mapa.\nSe reemplazó una caída demasiado abrupta por una curva smoothstep.\nSe aplicó corrección gamma y tinte cálido en la paleta.\nSe extendió el rango procesado hasta los niveles bajos distintos de cero.\nLa iteración se documentó con comparativas y capturas de recorrido.\nLa evaluación debe confirmar legibilidad en hardware y medir el frame.",
+  "ficheros_solucion": [
+    "source/smooth_lightmap.c",
+    "tools/bake_full_smooth_lightgrid.py",
+    "tools/test_banding_solution.py",
+    "walkthroughs/19-smooth-torch-shading/walkthrough.md"
+  ],
+  "evaluacion": {
+    "tipo": "mixta",
+    "puertas": [
+      {
+        "nivel": "G2 tests",
+        "como": "Ejecutar tools/test_banding_solution.py y tools/test_exact_c_shading.py.",
+        "criterio": "Ambas suites PASS.",
+        "fuente": "solution_commit (overlay: tools/test_banding_solution.py, tools/test_exact_c_shading.py)"
+      },
+      {
+        "nivel": "G3 escenario",
+        "como": "& 'C:\\codexlocal\\skills\\agentic-ds-dev\\scripts\\run-scenario.ps1' -ProjectPath $P -ScenarioPath \"$P\\scenarios\\scifi_dungeon_walk.json\"",
+        "criterio": "PASS con capturas en spawn, pasillo y bajo arcos.",
+        "fuente": "base_commit"
+      },
+      {
+        "nivel": "G5 rubrica",
+        "como": "Comparar evidencia de ROM real en LCD en penumbra y borde de la luz.",
+        "criterio": "0=negros aplastados o corte visible; 1=falloff gradual con diferencia tenue; 2=los niveles bajos son distinguibles y el borde de luz es gradual.",
+        "fuente": "solution_commit"
+      },
+      {
+        "nivel": "G4 metrica",
+        "como": "Perfilado en DS del mismo escenario.",
+        "criterio": "Cada frame <= 560190 cpuGetTiming() ticks.",
+        "fuente": "por escribir"
+      }
+    ],
+    "rubrica": [
+      {
+        "criterio": "Legibilidad de penumbra y suavidad del borde",
+        "peso": 1,
+        "anclas": "0=negro o salto binario; 1=se distinguen niveles pero quedan cortes; 2=penumbra legible y transición gradual."
+      }
+    ],
+    "trampas": [
+      "Aumentar el brillo global hasta ocultar el problema de atenuación.",
+      "Validar solo en monitor RGB e ignorar la visibilidad de niveles bajos en LCD DS."
+    ]
+  },
+  "dificultad": 3,
+  "historia": "Un commit de refinamiento después de la primera implementación; el registro identifica tres causas: escala del bake desalineada, falloff empinado y aplastamiento de negros en LCD.",
+  "reproducible": "parcial",
+  "motivo_reproducible": "Las pruebas y capturas existen; la lectura perceptual objetivo requiere pantalla DS y el rendimiento exige perfilado en hardware.",
+  "coste_ejecucion_estimado": "medio (+ ajuste del bake, suites visuales y verificación en pantalla)",
+  "_fuente": "b4",
+  "_validado": true,
+  "_avisos": [],
+  "calibrado": false
+}

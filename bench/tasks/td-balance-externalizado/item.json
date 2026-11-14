@@ -1,0 +1,51 @@
+{
+  "id": "td-balance-externalizado",
+  "titulo": "Externalizar datos de balance editables",
+  "tipo": "macro",
+  "parent": null,
+  "clase": "feature",
+  "repo": "towerds",
+  "base_commit": "81c4bdc83d7eb8c1a6959c4231934db785f0d506",
+  "solution_commits": [
+    "4d67ddeac9c08375bce936f818c0cbbecddddf62"
+  ],
+  "solucion_resumen": "Se agregan CSV separados para oleadas, enemigos y mejoras.\nUn compilador genera el archivo binario de balance con comprobaciones de entrada.\nSe documenta el formato y el flujo de edición.\nEl formato está pensado para edición en hoja de cálculo y guardado como CSV UTF-8.\nEl juego conserva sus valores por defecto si el archivo falta o no pasa la validación de magia.",
+  "ficheros_solucion": [
+    "config/balance/enemies.csv",
+    "config/balance/upgrades.csv",
+    "config/balance/waves.csv",
+    "docs/BALANCE_DATA.md",
+    "tools/compile_balance.py"
+  ],
+  "evaluacion": {
+    "tipo": "mixta",
+    "puertas": [
+      {
+        "nivel": "G2 tests",
+        "como": "python tools/compile_balance.py --output towerds_balance.bin",
+        "criterio": "Salida exitosa y generación del binario; probar CSV válido y entradas inválidas",
+        "fuente": "solution_commit"
+      },
+      {
+        "nivel": "G4 metrica",
+        "como": "Comparar cabecera, campos y valores binarios con el esquema de docs/BALANCE_DATA.md",
+        "criterio": "Los tres CSV se representan sin pérdida y un archivo inválido se rechaza",
+        "fuente": "solution_commit"
+      }
+    ],
+    "rubrica": [],
+    "trampas": [
+      "Generar un archivo sin comprobar que contenga los datos de los tres CSV.",
+      "La ejecución local de Python no fue realizada en esta tarea de benchmark."
+    ]
+  },
+  "dificultad": 3,
+  "historia": "Un commit añadió CSV, compilador y documentación; no consta prueba de ejecución en el registro inspeccionado.",
+  "reproducible": "parcial",
+  "motivo_reproducible": "El código y los datos están versionados, pero el compilador debe ejecutarse en el entorno de evaluación.",
+  "coste_ejecucion_estimado": "bajo (+ compilación de datos, sin emulación)",
+  "_fuente": "b1",
+  "_validado": true,
+  "_avisos": [],
+  "calibrado": false
+}

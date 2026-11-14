@@ -18,11 +18,11 @@
   "tiles_8x8_nonempty": 29,
   "tiles_8x8_unique": 29,
   "shadow_offset_px": [
-    -16,
+    -8,
     0
   ],
   "shadow_canvas_px": [
-    48,
+    40,
     72
   ],
   "depth_units": "sprite_px"

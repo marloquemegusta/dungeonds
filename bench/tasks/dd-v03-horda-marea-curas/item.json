@@ -1,0 +1,52 @@
+{
+  "id": "dd-v03-horda-marea-curas",
+  "titulo": "Añadir horda descendente, marea y curas",
+  "tipo": "micro",
+  "parent": "dd-v03-franja-infinita",
+  "clase": "feature",
+  "repo": "dungeonds",
+  "base_commit": "915b3b4d772115ae153fe39958b11d02cee9d5cb",
+  "solution_commits": [
+    "2d3dcfe6b9924f47eb5f50066cf114d533ddbadd"
+  ],
+  "solucion_resumen": "Añade un controlador de horda con intervalo de aparición decreciente y tope de vivos creciente.\nLos enemigos nacen fuera del borde superior y los rezagados o tragados por la marea se reciclan sin recompensa.\nLa marea daña por intervalos compatibles con los i-frames del jugador.\nSe renderiza mediante ventana hardware y un borde de pocos píxeles.\nLos drops tienen probabilidad 1/12 y límite de cuatro simultáneos.\nEl escenario verifica aparición y daño con el jugador quieto.",
+  "ficheros_solucion": [
+    "source/horde.c",
+    "source/tide.c",
+    "source/pickups.c",
+    "source/main.c",
+    "tests/test_horde_contract.py",
+    "scenarios/strip_horde_tide.json"
+  ],
+  "evaluacion": {
+    "tipo": "mixta",
+    "puertas": [
+      {
+        "nivel": "G2 tests",
+        "como": "Ejecutar tests/test_horde_contract.py y contratos de gameplay.",
+        "criterio": "PASS; límites de spawn, reciclaje y pickups respetados.",
+        "fuente": "solution_commit (overlay: tests/test_horde_contract.py)"
+      },
+      {
+        "nivel": "G3 escenario",
+        "como": "Ejecutar strip_horde_tide.",
+        "criterio": "A frame 600 hay 6 enemigos vivos; a frame 1000 la vida baja de 5 a 0.",
+        "fuente": "solution_commit (overlay: scenarios/strip_horde_tide.json)"
+      }
+    ],
+    "rubrica": [],
+    "trampas": [
+      "Evaluar la marea en un escenario donde el jugador nunca cruza su volumen.",
+      "Permitir que el daño se aplique cada frame ignorando los i-frames."
+    ]
+  },
+  "dificultad": 4,
+  "historia": "La revisión detectó que la marea perdía golpes durante i-frames y que la rama del tirador afectaba al juego anterior; ambos errores se corrigieron antes del cierre.",
+  "reproducible": "si",
+  "motivo_reproducible": "Hay contrato de horda y escenario con umbrales de tiempo y vida.",
+  "coste_ejecucion_estimado": "medio (+ tests host y escenario)",
+  "_fuente": "b6",
+  "_validado": true,
+  "_avisos": [],
+  "calibrado": false
+}

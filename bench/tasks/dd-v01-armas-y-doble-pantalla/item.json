@@ -1,0 +1,60 @@
+{
+  "id": "dd-v01-armas-y-doble-pantalla",
+  "titulo": "Implementar armas táctiles y render en ambas pantallas",
+  "tipo": "micro",
+  "parent": "dd-v01-prueba-diversion",
+  "clase": "feature",
+  "repo": "dungeonds",
+  "base_commit": "445f1538dba9f5c2a6c06a3b8c6724f593fbaeed",
+  "solution_commits": [
+    "f0a25c711e89d552607d1b7bb45bd8f332e48f73"
+  ],
+  "solucion_resumen": "El commit implementa escopeta y francotirador con munición infinita.\nIntegra tabla de bocas de arma por dirección y frame exportada desde el lab.\nEl francotirador usa carga, láser de aviso y disparo al soltar.\nLa escopeta aporta dispersión, retroceso, empujón y aturdimiento.\nSe renderiza suelo, actores y efectos en ambas pantallas.\nLos escenarios verifican origen del disparo, controles táctiles y contenido de pantalla.",
+  "ficheros_solucion": [
+    "source/weapons.c",
+    "source/gameplay.c",
+    "source/main.c",
+    "include/weapons.h",
+    "include/gameplay.h",
+    "scenarios/shot_origin_8_dirs.json",
+    "scenarios/sniper_aims_upper_screen.json",
+    "scenarios/weapons_switching_and_touch.json"
+  ],
+  "evaluacion": {
+    "tipo": "mixta",
+    "puertas": [
+      {
+        "nivel": "G1 build",
+        "como": "Build con `build-project.ps1` de la skill.",
+        "criterio": "Build limpia y sin warnings nuevos.",
+        "fuente": "solution_commit (overlay: no)"
+      },
+      {
+        "nivel": "G2 tests",
+        "como": "Suite host de contratos de armas y gameplay.",
+        "criterio": "Pruebas relevantes pasan y no se introduce float/double en runtime.",
+        "fuente": "solution_commit"
+      },
+      {
+        "nivel": "G3 escenario",
+        "como": "Ejecutar `shot_origin_8_dirs`, `weapons_switching_and_touch`, `sniper_aims_upper_screen` y `upper_screen_shows_enemies`.",
+        "criterio": "PASS; en el escenario de origen el fogonazo queda a ≤2 px de la boca exportada.",
+        "fuente": "solution_commit"
+      }
+    ],
+    "rubrica": [],
+    "trampas": [
+      "Aprobar solo el cambio de arma sin comprobar que el proyectil sale de la boca exportada.",
+      "Aprobar una captura con actores solo en la pantalla inferior."
+    ]
+  },
+  "dificultad": 4,
+  "historia": "Una fase principal. La revisión consignada en el walkthrough encontró nueve problemas; se corrigieron siete, entre ellos cancelación del cooldown, desplazamiento del toque por screen shake, boca dentro de un muro y orden de hitstop. Quedaron dos decisiones aceptadas. El hit volume independiente del sniper se corrigió después del tramo.",
+  "reproducible": "parcial",
+  "motivo_reproducible": "Escenarios y contratos son repetibles; parpadeo en la pantalla superior y rendimiento dependen de hardware.",
+  "coste_ejecucion_estimado": "medio (+ build, cuatro escenarios y revisión visual)",
+  "_fuente": "b5",
+  "_validado": true,
+  "_avisos": [],
+  "calibrado": false
+}

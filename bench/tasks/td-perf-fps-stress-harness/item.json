@@ -1,0 +1,44 @@
+{
+  "id": "td-perf-fps-stress-harness",
+  "titulo": "Crear un estrés móvil estable y comparable",
+  "tipo": "micro",
+  "parent": "td-perf-fps-root-cause",
+  "clase": "tooling",
+  "repo": "towerds",
+  "base_commit": "f66f8bebc56f93c18df87e364a832d53e327a01f",
+  "solution_commits": [
+    "1edc90b49ca2fbbad0e2e0a1f04da9cfa9c45e05"
+  ],
+  "solucion_resumen": "Se añadieron fixtures de carga y un escenario de estrés del sandbox.\nEl informe explica defectos de las pruebas anteriores: capturas prematuras y una carga que acababa en victoria.\nLa carga mantenida de 384 entidades separa el coste sostenido de una transición de fin de oleada.\nEl informe distingue el perfil fijo útil para aislar subsistemas del perfil móvil más parecido a gameplay.",
+  "ficheros_solucion": [
+    "scenarios/performance_sandbox_stress_hold.json",
+    "scenarios/performance_sandbox_load.json",
+    "scenarios/performance_sandbox_separation_ab.json",
+    "docs/performance-profiling-report.md"
+  ],
+  "evaluacion": {
+    "tipo": "comando",
+    "puertas": [
+      {
+        "nivel": "G3 escenario",
+        "como": "C:\\codexlocal\\skills\\agentic-ds-dev\\scripts\\run-scenario.ps1 -RomPath .\\game.nds -ScenarioPath .\\scenarios\\performance_sandbox_stress_hold.json -OutputPath .\\artifacts\\td-perf-stress",
+        "criterio": "600 frames medidos con población ALIVE:384 TOTAL:384 estable; el escenario no llega a victoria y finaliza DSM_SCENARIO_RESULT=PASS.",
+        "fuente": "solution_commit (overlay: escenario/harness de estrés)"
+      }
+    ],
+    "rubrica": [],
+    "trampas": [
+      "La variante stress_run llega a 384 pero luego los enemigos mueren y aparece victoria; no usarla para el promedio.",
+      "Las capturas intermedias de load pueden ocurrir antes de estabilizar la pantalla."
+    ]
+  },
+  "dificultad": 3,
+  "historia": "El informe registra una carga progresiva con capturas prematuras y un estrés original que acababa en victoria; después endurece la carga fija y crea un perfil móvil con wrap para conservar 384 enemigos. No consta el total de intentos.",
+  "reproducible": "si",
+  "motivo_reproducible": "Los escenarios JSON están versionados; falta validar la ejecución en el entorno suministrado para cada ROM.",
+  "coste_ejecucion_estimado": "medio (+ build y corrida de cientos de frames)",
+  "_fuente": "b2",
+  "_validado": true,
+  "_avisos": [],
+  "calibrado": false
+}

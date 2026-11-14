@@ -106,6 +106,14 @@ static uint8_t *s_bot_bg_tiles_vram;
 static Player s_player;
 static int s_cam_x = 0;
 static int s_cam_y = 0;
+#define CAM_ANCHOR_UP          132  // ~69% down: 132 px ahead, 60 px behind on bottom screen
+#define CAM_ANCHOR_DOWN         64  // ~33% down: 64 px ahead, 128 px behind on bottom screen
+#define CAM_LOOK_DELAY_FRAMES   22  // ~0.37 s sustained vertical move before shifting
+#define CAM_LOOK_STEP_PX         2  // 2 px/frame glide so short dodges don't shift aim
+static int s_cam_anchor_y = SCREEN_H / 2;
+static int s_cam_anchor_target = SCREEN_H / 2;
+static int s_cam_dir_intent = 0;
+static int s_cam_dir_frames = 0;
 #if (SANDBOX || PLAYGROUND) && !CATHEDRAL_PLAYGROUND
 static const int s_strip_mode = 0;
 #else
@@ -1634,12 +1642,41 @@ static void player_muzzle(fixed *mx, fixed *my, int *mh) {
     *mh = m[2];
 }
 
+static void update_camera_lookahead(int sdy, int moved, int aim_ahead) {
+    // Kiting: walking backward while aiming ahead keeps the forward view intact.
+    if (sdy != 0 && moved && !(sdy > 0 && aim_ahead)) {
+        int dir = (sdy < 0) ? -1 : 1;
+        if (dir == s_cam_dir_intent) {
+            if (s_cam_dir_frames < CAM_LOOK_DELAY_FRAMES) s_cam_dir_frames++;
+        } else {
+            s_cam_dir_intent = dir;
+            s_cam_dir_frames = 1;
+        }
+        if (s_cam_dir_frames >= CAM_LOOK_DELAY_FRAMES) {
+            s_cam_anchor_target = (dir < 0) ? CAM_ANCHOR_UP : CAM_ANCHOR_DOWN;
+        }
+    } else {
+        s_cam_dir_intent = 0;
+        s_cam_dir_frames = 0;
+        // Freeze the look-ahead target on stop/strafe so the ground stays still under the stylus.
+        s_cam_anchor_target = s_cam_anchor_y;
+    }
+
+    if (s_cam_anchor_y < s_cam_anchor_target) {
+        s_cam_anchor_y += CAM_LOOK_STEP_PX;
+        if (s_cam_anchor_y > s_cam_anchor_target) s_cam_anchor_y = s_cam_anchor_target;
+    } else if (s_cam_anchor_y > s_cam_anchor_target) {
+        s_cam_anchor_y -= CAM_LOOK_STEP_PX;
+        if (s_cam_anchor_y < s_cam_anchor_target) s_cam_anchor_y = s_cam_anchor_target;
+    }
+}
+
 // The camera follows the player but stays inside the arena: horizontally the view never leaves
 // the floor image, and vertically the player stays on the touch screen (the upper screen shows
 // the strip above it) with at most half a screen of void beyond the arena edge.
 static void update_camera(void) {
     int x = player_screen_x(s_player.x, s_player.y) - SCREEN_W / 2;
-    int y = player_screen_y(s_player.x, s_player.y) - SCREEN_H / 2;
+    int y = player_screen_y(s_player.x, s_player.y) - s_cam_anchor_y;
     int max_x = g_arena->world_w - SCREEN_W;
     if (max_x <= 0) x = max_x / 2;
     else if (x < 0) x = 0;
@@ -1650,6 +1687,14 @@ static void update_camera(void) {
     if (y > max_y) y = max_y;
     s_cam_x = x;
     s_cam_y = y;
+}
+
+static void camera_init(void) {
+    s_cam_anchor_y = s_strip_mode ? CAM_ANCHOR_UP : (SCREEN_H / 2);
+    s_cam_anchor_target = s_cam_anchor_y;
+    s_cam_dir_intent = 0;
+    s_cam_dir_frames = 0;
+    update_camera();
 }
 
 static void player_update(uint32_t keys, uint32_t keys_down) {
@@ -1795,6 +1840,9 @@ static void player_update(uint32_t keys, uint32_t keys_down) {
         s_player.anim_timer = 0;
     }
 
+    int aim_ahead = touch_down &&
+        (s_last_touch_y + s_cam_y <= player_screen_y(s_player.x, s_player.y) - AIM_CHEST_H);
+    update_camera_lookahead(sdy, s_player.is_moving, aim_ahead);
     update_camera();
 
     // Stylus: aim and fire. The character turns towards the touched point first so the
@@ -1878,7 +1926,7 @@ static void arena_restart(void) {
     s_latch_pressed = 0;
     s_latch_released = 0;
     s_keys_down_latch = 0;
-    update_camera();                 // the fade-in shows the new arena before the player moves
+    camera_init();                   // the fade-in shows the new arena before the player moves
     g_hitstop_frames = 0;
     memset(s_death_chunks, 0, sizeof(s_death_chunks));
     s_pending_head = s_pending_count = 0;
@@ -2041,8 +2089,7 @@ int main(void) {
     }
 
     // Initialise camera position to match player spawn
-    s_cam_x = player_screen_x(s_player.x, s_player.y) - SCREEN_W / 2;
-    s_cam_y = player_screen_y(s_player.x, s_player.y) - SCREEN_H / 2;
+    camera_init();
 
     init_bg_tile_cache(&s_top_bg_tile_cache, TOP_TILE_CACHE_CAPACITY, s_top_bg_tiles_vram);
     init_bg_tile_cache(&s_bot_bg_tile_cache, BG_TILE_CACHE_CAPACITY, s_bot_bg_tiles_vram);

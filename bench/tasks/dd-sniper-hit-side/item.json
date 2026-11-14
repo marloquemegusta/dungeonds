@@ -1,0 +1,50 @@
+{
+  "id": "dd-sniper-hit-side",
+  "titulo": "Hacer que el rayo del francotirador acierte en el cuerpo visible",
+  "tipo": "micro",
+  "parent": null,
+  "clase": "bug-acotado",
+  "repo": "dungeonds",
+  "base_commit": "79789f54c30460eef0560eb2ec59d89df4eb8a3a",
+  "solution_commits": [
+    "402e2780103ab62f529f09a53d37f5f65da2e77f"
+  ],
+  "solucion_resumen": "Sustituye el radio circular sobre el suelo por una prueba de impacto del cuerpo en pantalla.\nLa prueba incorpora el desplazamiento de altura del rayo y la silueta de cuerpo elegida.\nApuntado y disparo usan la misma función de prueba.\nAsí el indicador de objetivo y el impacto real no discrepan por el tamaño vertical del sprite.\nEl cambio queda limitado a la lógica de armas y su volumen de impacto.",
+  "ficheros_solucion": [
+    "source/weapons.c",
+    "source/hitvolume.c",
+    "include/hitvolume.h",
+    "tests/test_hitvolume_contract.py"
+  ],
+  "evaluacion": {
+    "tipo": "mixta",
+    "puertas": [
+      {
+        "nivel": "G2 tests",
+        "como": "Ejecutar tests/test_hitvolume_contract.py y contratos de armas.",
+        "criterio": "PASS para centro, bordes del cuerpo y puntos fuera del volumen.",
+        "fuente": "solution_commit (overlay: tests/test_hitvolume_contract.py)"
+      },
+      {
+        "nivel": "G3 escenario",
+        "como": "Probar apuntado y disparo en escenario con enemigos a varias orientaciones y alturas de rayo.",
+        "criterio": "El objetivo indicado recibe el impacto cuando el rayo cruza el cuerpo visible; el suelo abierto no genera impactos.",
+        "fuente": "por escribir"
+      }
+    ],
+    "rubrica": [],
+    "trampas": [
+      "Usar un radio enorme que haga acertar al enemigo aunque el rayo no cruce su cuerpo.",
+      "Probar solo con enemigos alineados al punto de anclaje de suelo."
+    ]
+  },
+  "dificultad": 3,
+  "historia": "Un commit de fix. El parche aplica la misma prueba de cuerpo a la selección del objetivo y al recorrido del rayo.",
+  "reproducible": "parcial",
+  "motivo_reproducible": "El contrato de volumen es automático; falta un escenario headless que compruebe la geometría completa de apuntado y disparo.",
+  "coste_ejecucion_estimado": "medio (+ tests host y escenario geométrico)",
+  "_fuente": "b6",
+  "_validado": true,
+  "_avisos": [],
+  "calibrado": false
+}

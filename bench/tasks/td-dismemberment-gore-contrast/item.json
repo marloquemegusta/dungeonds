@@ -1,0 +1,56 @@
+{
+  "id": "td-dismemberment-gore-contrast",
+  "titulo": "Mejorar la lectura visual de la carne expuesta",
+  "tipo": "micro",
+  "parent": "td-live-dismemberment",
+  "clase": "arte-impl",
+  "repo": "towerds",
+  "base_commit": "fed1ecc29da21629f2ae35295a0ade7e6e232546",
+  "solution_commits": [
+    "8dc90e0e4f21c93aa6c81e20e514b242d9192f1d"
+  ],
+  "solucion_resumen": "Cambia la paleta por defecto a tonos oliva ácidos y permite seleccionar variantes.\nAjusta el tramado de la zona expuesta para evitar que parezca una rejilla fina.\nAñade escenarios de muerte para todas las especies y comparativas visuales de contraste.",
+  "ficheros_solucion": [
+    "source/enemy_data.c",
+    "source/renderer.c",
+    "include/game.h",
+    "scenarios/gore_contrast.json",
+    "scenarios/gore_death_gif.json"
+  ],
+  "evaluacion": {
+    "tipo": "mixta",
+    "puertas": [
+      {
+        "nivel": "G1 build",
+        "como": "C:\\codexlocal\\skills\\agentic-ds-dev\\scripts\\build-project.ps1 -ProjectPath <workspace>",
+        "criterio": "DS_BUILD=PASS",
+        "fuente": "solution_commit"
+      },
+      {
+        "nivel": "G3 escenario",
+        "como": "Ejecutar escenarios gore_death_gif y gore_contrast",
+        "criterio": "La zona de daño se distingue del caparazón y no forma damero fino",
+        "fuente": "solution_commit (overlay: escenarios gore_*.json)"
+      }
+    ],
+    "rubrica": [
+      {
+        "criterio": "Lectura de carne y contraste en pantalla DS",
+        "peso": 2,
+        "anclas": "0=parece rejilla o se confunde; 1=legible solo en zoom; 2=se distingue en escala de juego"
+      }
+    ],
+    "trampas": [
+      "Evaluar solo un PNG ampliado puede ocultar que la textura no se lee a escala nativa."
+    ]
+  },
+  "dificultad": 2,
+  "historia": "El commit principal de gore define la paleta seleccionable; cuatro correcciones posteriores figuran en la rama gore-contrast. El commit de textura específico no quedó disponible con hash completo verificable en este checkout y se omite.",
+  "reproducible": "si",
+  "motivo_reproducible": "Los escenarios de muerte por especie y comparativas están versionados.",
+  "coste_ejecucion_estimado": "medio (+ build y revisión visual de ocho especies)",
+  "_fuente": "b3",
+  "_validado": true,
+  "_avisos": [],
+  "calibrado": false
+}

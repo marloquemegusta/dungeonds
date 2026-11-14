@@ -50,9 +50,9 @@
     ],
     [
       5,
-      11,
+      12,
       47,
-      41
+      40
     ],
     [
       8,
@@ -62,9 +62,9 @@
     ],
     [
       5,
-      14,
+      15,
       50,
-      38
+      36
     ],
     [
       13,
@@ -80,9 +80,9 @@
     ],
     [
       12,
-      9,
+      10,
       40,
-      42
+      41
     ]
   ],
   "shadowSize": [
@@ -173,9 +173,9 @@
       ],
       [
         26,
-        29,
+        28,
         43,
-        32
+        33
       ],
       [
         26,
@@ -492,14 +492,14 @@
     ]
   ],
   "stride3dMeters": 1.224,
-  "strideRatio": 0.968,
+  "strideRatio": 0.876,
   "ticksPerFrame": 7,
-  "stridePixels": 48.78,
+  "stridePixels": 44.17,
   "speedFixed8_8": 223,
   "inPlace": true,
   "rigScale": 1,
   "cameraElevationDegrees": 30,
-  "contrast": 1.2,
+  "contrast": 1,
   "saturation": 1,
   "neckPitchDegrees": -35,
   "displace": 0,
@@ -507,10 +507,12 @@
   "webglShadowQuality": 16,
   "normalStrength": 0.5,
   "shadowSoftness": 2,
-  "supersample": 2,
+  "supersample": 4,
+  "legibility": "c2",
   "boneShader": false,
   "renderEngine": "Three.js WebGL (browser)",
   "lightPreset": "neutral",
   "outlineMode": "none",
-  "fitZoom": 0.88
+  "fitZoom": 0.88,
+  "toneMapping": "neutral"
 }

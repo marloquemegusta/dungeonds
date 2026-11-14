@@ -1,0 +1,65 @@
+{
+  "id": "dd-torch-smooth-shading",
+  "titulo": "Sustituir la luz binaria por sombreado continuo",
+  "tipo": "micro",
+  "parent": "dd-torch-lighting-macro",
+  "clase": "feature",
+  "repo": "dungeonds",
+  "base_commit": "4ef91834885195786397240fad93adf6d175668d",
+  "solution_commits": [
+    "edd33f36fc3c9b4b58266270096007a9bc4e2489"
+  ],
+  "solucion_resumen": "Se añadió una rejilla de iluminación 3D horneada desde la malla.\nLa rejilla se empaqueta en niveles de luz para reducir memoria.\nEl renderer interpola niveles y aplica sombreado al buffer de pantalla.\nSe añadieron vías rápidas para celdas negras y uniformes.\nEl algoritmo interior usa incrementos para evitar trabajo costoso por píxel.\nLas pruebas añadidas cubren el modelo de visibilidad y el sombreado.",
+  "ficheros_solucion": [
+    "include/baked_visibility.h",
+    "source/baked_visibility.c",
+    "include/smooth_lightmap.h",
+    "source/smooth_lightmap.c",
+    "source/fog_of_war.c",
+    "source/main.c",
+    "tools/bake_full_smooth_lightgrid.py"
+  ],
+  "evaluacion": {
+    "tipo": "mixta",
+    "puertas": [
+      {
+        "nivel": "G1 build",
+        "como": "& 'C:\\codexlocal\\skills\\agentic-ds-dev\\scripts\\build-project.ps1' -ProjectPath $P",
+        "criterio": "DS_BUILD=PASS; cero warnings nuevos.",
+        "fuente": "base_commit"
+      },
+      {
+        "nivel": "G2 tests",
+        "como": "Ejecutar tools/test_exact_c_shading.py y tools/test_bilinear_lightgrid.py en el entorno de pruebas configurado.",
+        "criterio": "Ambas suites PASS.",
+        "fuente": "solution_commit (overlay: tools/test_exact_c_shading.py, tools/test_bilinear_lightgrid.py)"
+      },
+      {
+        "nivel": "G3 escenario",
+        "como": "& 'C:\\codexlocal\\skills\\agentic-ds-dev\\scripts\\run-scenario.ps1' -ProjectPath $P -ScenarioPath \"$P\\scenarios\\scifi_dungeon_walk.json\"",
+        "criterio": "PASS; evidencia cubre spawn, pasillo y arcos.",
+        "fuente": "base_commit"
+      },
+      {
+        "nivel": "G4 metrica",
+        "como": "Medir el mismo recorrido en Nintendo DS con PERF_PROFILE=1.",
+        "criterio": "Cada frame <= 560190 cpuGetTiming() ticks.",
+        "fuente": "por escribir"
+      }
+    ],
+    "rubrica": [],
+    "trampas": [
+      "Medir solo una celda o una escena sin oclusores.",
+      "Aprobar el horneado sin comprobar el resultado renderizado."
+    ]
+  },
+  "dificultad": 5,
+  "historia": "Commit inicial del sistema continuo; añadió tests del horneado, visibilidad y sombreado. El commit siguiente corrigió defectos visuales detectados en la iteración.",
+  "reproducible": "parcial",
+  "motivo_reproducible": "El horneado y las suites requieren entorno 3D; rendimiento de frame requiere DS.",
+  "coste_ejecucion_estimado": "alto (+ pipeline de bake, render y prueba de hardware)",
+  "_fuente": "b4",
+  "_validado": true,
+  "_avisos": [],
+  "calibrado": false
+}

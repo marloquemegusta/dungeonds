@@ -1,0 +1,62 @@
+{
+  "id": "dd-v01-cuatro-arenas",
+  "titulo": "Crear runtime para cuatro arenas encadenadas",
+  "tipo": "micro",
+  "parent": "dd-v01-prueba-diversion",
+  "clase": "feature",
+  "repo": "dungeonds",
+  "base_commit": "73fbd753a887e94bb3c067ad102c58463c96aea2",
+  "solution_commits": [
+    "bf596c07b308f227d735cbde45b36e0f0023f9a2"
+  ],
+  "solucion_resumen": "Se crean cuatro arenas de 384×384 con geometrías y encuentros diferenciados.\nUn generador GLB propio y un export headless producen paquetes de arena.\nEl baker genera una unidad de datos por arena con tiles, colisión y oclusión.\nEl runtime cambia de arena y adapta cámara, encuentros y navegación.\nSe añade paso automático con fundido y reinicio local al morir.\nLa cadena se verifica desde arena 1 hasta volver a arena 1.",
+  "ficheros_solucion": [
+    "tools/make_arena_glb.py",
+    "tools/export_arenas.py",
+    "tools/bake_arena.py",
+    "include/arena.h",
+    "source/arena.c",
+    "source/arenas.c",
+    "source/encounters.c",
+    "source/main.c",
+    "scenarios/arena_chain.json",
+    "tests/test_arena_export.py"
+  ],
+  "evaluacion": {
+    "tipo": "mixta",
+    "puertas": [
+      {
+        "nivel": "G2 tests",
+        "como": "Suites `test_arena_export`, `test_arena_data` y `test_navfield`.",
+        "criterio": "Geometría dentro de 1 px; spawns libres y alcanzables; suelo conexo.",
+        "fuente": "solution_commit"
+      },
+      {
+        "nivel": "G3 escenario",
+        "como": "Ejecutar `arena_chain` y `arena_pillar_occlusion`.",
+        "criterio": "La secuencia es 1→2→3→4→1 y la escena del pilar muestra oclusión y rodeo del obstáculo.",
+        "fuente": "solution_commit"
+      },
+      {
+        "nivel": "G4 metrica",
+        "como": "Medir en DS la arena más densa con PERF_PROFILE.",
+        "criterio": "Pendiente de criterio histórico: el commit dejó esta medición abierta; para benchmark exigir ≤560190 ticks/frame y revisar frames con más de un vblank.",
+        "fuente": "por escribir"
+      }
+    ],
+    "rubrica": [],
+    "trampas": [
+      "Pasar geometría de exportación sin comprobar que los encuentros sobreviven al bake.",
+      "Ejecutar la cadena sin validar spawns o conectividad."
+    ]
+  },
+  "dificultad": 4,
+  "historia": "Un commit principal de fase. Se reemplazó el mapa anterior y se retiraron cinco escenarios ligados a él. El walkthrough valida la cadena y 17 tests host; la medición de arenas densas y `nav_update` en DS quedó pendiente.",
+  "reproducible": "parcial",
+  "motivo_reproducible": "Export, tests y escenario son repetibles; certificación de rendimiento exige DS física.",
+  "coste_ejecucion_estimado": "alto (+ exportación, bake, build, suites y escenarios)",
+  "_fuente": "b5",
+  "_validado": true,
+  "_avisos": [],
+  "calibrado": false
+}

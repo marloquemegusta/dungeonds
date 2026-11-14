@@ -269,7 +269,7 @@ class CompositorV2InvariantsTest(unittest.TestCase):
 
     def test_no_lapida_under_a_bench_or_a_relicario(self):
         for block, acc in self.records.items():
-            solid = [r for r in acc if r["cat"] == "struct" and r["name"] in ("banco_grupo4", "relicario")]
+            solid = [r for r in acc if r["cat"] == "struct" and r["name"] in ("banco_grupo4", "relicario", "santo")]
             for lap in (r for r in acc if r["cat"] == "lap"):
                 for other in solid:
                     self.assertFalse(self.bake._masks_overlap(lap["x"], lap["y"], lap["nz"],

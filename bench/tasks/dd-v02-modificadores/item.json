@@ -1,0 +1,53 @@
+{
+  "id": "dd-v02-modificadores",
+  "titulo": "Añadir modificadores con coste a la partida",
+  "tipo": "micro",
+  "parent": "dd-v02-mazmorra-run",
+  "clase": "feature",
+  "repo": "dungeonds",
+  "base_commit": "bf596c07b308f227d735cbde45b36e0f0023f9a2",
+  "solution_commits": [
+    "8d535300fd5192ba254f90953a8470cebad8c0a2"
+  ],
+  "solucion_resumen": "Define los ocho modificadores y sus efectos en un módulo dedicado.\nMantiene el estado activo en g_mods.\nConecta sus efectos con armas, gameplay y lógica principal.\nAl limpiar una manada aparecen dos pedestales; recoger uno elimina el otro.\nEl HUD muestra los modificadores activos y el nombre de la opción cercana.\nAñade un contrato automático que comprueba los efectos y límites definidos.\nEl catálogo y los valores se documentan en DESIGN.md §5.",
+  "ficheros_solucion": [
+    "source/modifiers.c",
+    "include/modifiers.h",
+    "source/weapons.c",
+    "source/gameplay.c",
+    "source/main.c",
+    "tests/test_modifiers_contract.py",
+    "DESIGN.md"
+  ],
+  "evaluacion": {
+    "tipo": "mixta",
+    "puertas": [
+      {
+        "nivel": "G2 tests",
+        "como": "Ejecutar tests host, en particular tests/test_modifiers_contract.py.",
+        "criterio": "Contrato PASS para los ocho modificadores y sus efectos.",
+        "fuente": "solution_commit (overlay: tests/test_modifiers_contract.py)"
+      },
+      {
+        "nivel": "G3 escenario",
+        "como": "Ejecutar dungeon_pack_reward_pedestals.",
+        "criterio": "Tras despejar una manada se muestran dos opciones; al recoger una, desaparece la otra.",
+        "fuente": "solution_commit (overlay: scenarios/dungeon_pack_reward_pedestals.json)"
+      }
+    ],
+    "rubrica": [],
+    "trampas": [
+      "Cumplir el contrato con nombres o valores sin aplicar los efectos al gameplay.",
+      "Permitir recoger ambas recompensas de una misma pareja."
+    ]
+  },
+  "dificultad": 4,
+  "historia": "Implementado dentro del commit de v0.2. El walkthrough registra que los modificadores se ven en HUD y que los pedestales desaparecen correctamente tras recoger uno.",
+  "reproducible": "si",
+  "motivo_reproducible": "Hay contrato de host y escenario de recompensas en el commit de referencia.",
+  "coste_ejecucion_estimado": "medio (+ tests host y escenario)",
+  "_fuente": "b6",
+  "_validado": true,
+  "_avisos": [],
+  "calibrado": false
+}

@@ -1,0 +1,50 @@
+{
+  "id": "dd-render-dirty-spans",
+  "titulo": "Evitar limpiar y copiar el framebuffer entero",
+  "tipo": "micro",
+  "parent": "dd-render-compuesto-rendimiento",
+  "clase": "perf-hw",
+  "repo": "dungeonds",
+  "base_commit": "48b1aad2a1abbce93e455dfec336be01807b1069",
+  "solution_commits": [
+    "54be17ef7fe8bb4af215cdee89f8bc9dac62a2ea"
+  ],
+  "solucion_resumen": "El render pasa a dibujar directamente en la página trasera de VRAM.\nSe añaden spans sucios por fila y rectángulos sucios.\nLa limpieza afecta solo a esos spans.\nSe elimina la reconstrucción/copia de framebuffer completo del camino principal.\nUn modo de verificación permite detectar píxeles sucios no registrados.\nEl contrato de test cubre el flujo de copia y limpieza.",
+  "ficheros_solucion": [
+    "include/game.h",
+    "source/main.c",
+    "source/weapons.c",
+    "tests/test_floor_copy_contract.py"
+  ],
+  "evaluacion": {
+    "tipo": "mixta",
+    "puertas": [
+      {
+        "nivel": "G2 tests",
+        "como": "Ejecutar `test_floor_copy_contract.py` y los contratos de dirty spans.",
+        "criterio": "PASS; no se requiere copia full-frame en el camino normal y las regiones cambiadas se limpian.",
+        "fuente": "solution_commit"
+      },
+      {
+        "nivel": "G4 metrica",
+        "como": "Medir en DS con PERF_PROFILE en una escena representativa.",
+        "criterio": "Máximo ≤560190 ticks/frame y sin píxeles residuales en movimiento repetido.",
+        "fuente": "por escribir"
+      }
+    ],
+    "rubrica": [],
+    "trampas": [
+      "Desactivar limpieza y pasar un test estático sin movimiento repetido.",
+      "Medir solo CPU y excluir DMA u otras operaciones del frame."
+    ]
+  },
+  "dificultad": 4,
+  "historia": "Un commit principal de compositor. La auditoría documenta reducción de limpieza media de 5,48 a 0,22 ms y eliminación de copia completa; la prueba de consistencia visual usa `DIRTY_VERIFY`.",
+  "reproducible": "parcial",
+  "motivo_reproducible": "Contrato repetible; perfilado y artefactos visuales requieren build y validación en DS.",
+  "coste_ejecucion_estimado": "alto (+ build, comparación visual y hardware)",
+  "_fuente": "b5",
+  "_validado": true,
+  "_avisos": [],
+  "calibrado": false
+}

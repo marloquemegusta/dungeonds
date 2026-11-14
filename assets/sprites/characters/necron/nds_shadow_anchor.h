@@ -18,13 +18,13 @@ static const uint8_t g_necron_running_rifle_ground_anchors[8] = {
 
 // Sprite bounding boxes [min_x, min_y, w, h] per direction
 static const uint8_t g_necron_running_rifle_sprite_bounds[8][4] = {
-    { 11, 7, 14, 33 },
-    { 5, 5, 24, 34 },
-    { 0, 3, 32, 32 },
-    { 6, 3, 25, 33 },
-    { 15, 0, 14, 39 },
+    { 11, 7, 13, 33 },
+    { 5, 5, 24, 33 },
+    { 0, 4, 32, 31 },
+    { 6, 3, 24, 33 },
+    { 16, 0, 13, 39 },
     { 11, 3, 24, 35 },
-    { 7, 7, 33, 29 },
+    { 8, 7, 32, 29 },
     { 9, 8, 25, 30 },
 };
 

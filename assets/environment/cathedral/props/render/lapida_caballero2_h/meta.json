@@ -16,5 +16,6 @@
   ],
   "yaw": 45,
   "tiles_8x8_nonempty": 24,
-  "tiles_8x8_unique": 24
+  "tiles_8x8_unique": 24,
+  "depth_units": "sprite_px"
 }

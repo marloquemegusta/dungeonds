@@ -14,13 +14,37 @@ OUT = os.path.join(PROPS, "render")
 LAB = os.path.join(ROOT, "tools/lab/export_map_package_headless.cjs")
 SETTINGS = os.path.join(ROOT, "tools/props/props_render_settings.json")
 
-def run_lab(name, raw, settings):
+def run_lab(name, raw, settings, legibility="anterior"):
     d = os.path.join(raw, name)
-    r = subprocess.run(["node", LAB, os.path.join(PROPS, "glb", name + ".glb"), settings, d],
+    r = subprocess.run(["node", LAB, os.path.join(PROPS, "glb", name + ".glb"), settings, d, "--legibility", legibility],
                        capture_output=True, text=True)
     if r.returncode != 0:
         raise RuntimeError(name + ": " + r.stderr[-500:])
     return d
+
+def soft_contrast(rgb, gain=1.45):
+    f = rgb / 255.0
+    L = 0.2126 * f[..., 0] + 0.7152 * f[..., 1] + 0.0722 * f[..., 2]
+    p = float(np.median(L))
+    d = L - p
+    m = np.where(d < 0, p, 1 - p)
+    out = p + d * gain / (1 + (gain - 1) * np.abs(d) / np.maximum(m, 1e-4))
+    scale = np.where(L > 1e-4, out / np.maximum(L, 1e-4), 1)
+    return np.clip(f * scale[..., None], 0, 1) * 255.0
+
+def blur3(x):
+    k = np.array([1.0, 2.0, 1.0]) / 4.0
+    p = np.pad(x, ((1, 1), (1, 1)) + ((0, 0),) * (x.ndim - 2), mode="edge")
+    h = k[0] * p[:, :-2] + k[1] * p[:, 1:-1] + k[2] * p[:, 2:]
+    return k[0] * h[:-2] + k[1] * h[1:-1] + k[2] * h[2:]
+
+def sharpen_rgba(rgba, amount=0.5):
+    rgb = rgba[..., :3].astype(float)
+    m = (rgba[..., 3] > 0).astype(float)
+    bl = blur3(rgb * m[..., None]) / np.maximum(blur3(m), 1e-3)[..., None]
+    out = rgba.copy()
+    out[..., :3] = np.clip(rgb + amount * (rgb - bl), 0, 255).astype(np.uint8)
+    return out
 
 def silhouette(d):
     world = np.array(Image.open(os.path.join(d, "world.png")).convert("RGB"))
@@ -94,7 +118,7 @@ def footprint_from_depth(d, x0, x1, y0, y1, nw, nh, close_px=9, min_cover=0.35):
     cover = np.array(Image.fromarray(sub.astype(np.float32), mode="F").resize((nw, nh), Image.BOX))
     return Image.fromarray(((cover >= min_cover) * 255).astype(np.uint8), "L")
 
-def process(name, cfg, d, out_root):
+def process(name, cfg, d, out_root, legibility="anterior"):
     mask = silhouette(d)
     ys, xs = np.nonzero(mask)
     x0, x1, y0, y1 = xs.min(), xs.max() + 1, ys.min(), ys.max() + 1
@@ -117,12 +141,16 @@ def process(name, cfg, d, out_root):
         im = Image.fromarray(world[..., c] * m, mode="F").resize((nw, nh), Image.LANCZOS)
         chans.append(np.array(im))
     am = np.array(Image.fromarray(m, mode="F").resize((nw, nh), Image.BOX))
-    a = am >= 0.5
+    alpha_thresh = 0.30 if legibility == "c2" else 0.50
+    a = am >= alpha_thresh
     rgb = np.stack(chans, -1) / np.maximum(am[..., None], 1e-3)
     rgb = np.clip(rgb, 0, 255).astype(np.uint8)
     rgba = np.zeros((nh, nw, 4), np.uint8)
     rgba[..., :3] = rgb * a[..., None]
     rgba[..., 3] = a * 255
+    if legibility == "c2" and a.any():
+        rgba[..., :3][a] = soft_contrast(rgba[..., :3][a].astype(float)[None], 1.45)[0].astype(np.uint8)
+        rgba = sharpen_rgba(rgba, 0.5)
     color = Image.new("RGBA", (cw, ch), (0, 0, 0, 0)); color.paste(Image.fromarray(rgba), (ox, oy))
 
     def nearest(fn, mode):
@@ -162,16 +190,23 @@ def main():
     ap.add_argument("--settings", default=SETTINGS)
     ap.add_argument("--out", default=OUT)
     ap.add_argument("--raw"); ap.add_argument("--skip-lab", action="store_true")
+    ap.add_argument("--legibility", choices=("auto", "anterior", "c2"), default="auto")
     ap.add_argument("pieces", nargs="*"); a = ap.parse_args()
+    leg = a.legibility
+    if leg == "auto":
+        try:
+            leg = json.load(open(a.settings, encoding="utf-8")).get("legibility", "anterior")
+        except Exception:
+            leg = "anterior"
     cfg = json.load(open(os.path.join(ROOT, "tools/props/props.json")))
     names = a.pieces or list(cfg)
     raw = a.raw or os.path.join(tempfile.gettempdir(), "props_raw")
     os.makedirs(raw, exist_ok=True)
     if a.skip_lab: dirs = {n: os.path.join(raw, n) for n in names}
     else:
-        with ThreadPoolExecutor(3) as ex: dirs = dict(zip(names, ex.map(lambda n: run_lab(n, raw, a.settings), names)))
+        with ThreadPoolExecutor(3) as ex: dirs = dict(zip(names, ex.map(lambda n: run_lab(n, raw, a.settings, leg), names)))
     for n in names:
-        m = process(n, cfg[n], dirs[n], a.out)
+        m = process(n, cfg[n], dirs[n], a.out, leg)
         print(n, m["size_px"], "tiles", m["tiles_8x8_nonempty"], "unique", m["tiles_8x8_unique"], "scale %.4f" % m["scale_factor"])
 
 if __name__ == "__main__": main()

@@ -1,0 +1,58 @@
+{
+  "id": "td-touch-hitbox-adaptive",
+  "titulo": "Hacer que el stylus seleccione la silueta visible",
+  "tipo": "macro",
+  "parent": null,
+  "clase": "bug-acotado",
+  "repo": "towerds",
+  "base_commit": "5f7c7fd59a375f62817fe211367256d6a3a6077d",
+  "solution_commits": [
+    "aeb1f95b6864390364cf953320b4d2a77f899f56",
+    "8ebbc35d022b220465555e003e9f1b956d14ba16",
+    "a2a30a88f9d6de83955fa034b5c0ebfe0f935ec7"
+  ],
+  "solucion_resumen": "Primero se amplió la selección táctil respecto del punto lógico.\nDespués se adaptó la caja a especie, dirección, frame y altura de vuelo.\nLa iteración final ancló la caja al sprite dibujado y añadió un radio de gracia alrededor de su centro.\nAl tocar varios enemigos, se elige el objetivo cuyo centro está más cerca.\nLa evidencia geométrica cubre ocho variantes, aunque la sensación final requiere hardware físico.",
+  "ficheros_solucion": [
+    "source/simulation.c",
+    "source/enemy_data.c",
+    "include/enemy_data.h",
+    "tools/hitbox_geometry.py",
+    "scenarios/full_screen_targeting.json"
+  ],
+  "evaluacion": {
+    "tipo": "mixta",
+    "puertas": [
+      {
+        "nivel": "G1 build",
+        "como": "C:\\codexlocal\\skills\\agentic-ds-dev\\scripts\\build-project.ps1 -ProjectPath <workspace>",
+        "criterio": "DS_BUILD=PASS",
+        "fuente": "solution_commit"
+      },
+      {
+        "nivel": "G4 metrica",
+        "como": "Ejecutar tools/hitbox_geometry.py contra las ocho variantes",
+        "criterio": "8/8 siluetas dentro de la nueva región; la región no es más estricta que el círculo de 24 px anterior",
+        "fuente": "solution_commit"
+      },
+      {
+        "nivel": "G6 humano",
+        "como": "Probar taps sobre las siluetas en consola DS física",
+        "criterio": "La selección responde sobre los píxeles visibles, incluyendo unidades voladoras",
+        "fuente": "por escribir"
+      }
+    ],
+    "rubrica": [],
+    "trampas": [
+      "Un test solo sobre el punto lógico no cubre los offsets y la altura de vuelo."
+    ]
+  },
+  "dificultad": 3,
+  "historia": "Tres commits en dos etapas: ampliación y caja adaptativa; después ajuste de la región para coincidir con el sprite y mantener la gracia. La evidencia A/B funcional con enemigos tempranos no discriminaba el cambio; la auditoría geométrica sí.",
+  "reproducible": "parcial",
+  "motivo_reproducible": "La geometría de sprites se puede automatizar; la sensación del stylus en hardware no queda cubierta por DeSmuME.",
+  "coste_ejecucion_estimado": "medio (+ build, auditoría de variantes y validación física opcional)",
+  "_fuente": "b3",
+  "_validado": true,
+  "_avisos": [],
+  "calibrado": false
+}

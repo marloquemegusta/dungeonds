@@ -1,0 +1,63 @@
+{
+  "id": "td-sandbox-operativo",
+  "titulo": "Hacer reproducible el sandbox de depuración",
+  "tipo": "macro",
+  "parent": null,
+  "clase": "tooling",
+  "repo": "towerds",
+  "base_commit": "d7d224e08ea236204160780cb7e750b73ea1a98c",
+  "solution_commits": [
+    "a148e56f8ae9415d39b73aedf71a6522b0029623"
+  ],
+  "solucion_resumen": "Se habilita el flujo del sandbox en el juego y se corrige la preparación de la prueba.\nEl escenario incorpora pasos de entrada, aparición de enemigo, observación del fuego y limpieza.\nSe amplían las capturas y se comprueba que la pantalla cambie entre estados clave.\nEl arreglo cubre cambios de simulación, renderizado e input.\nLa aserción automática verifica cambios visuales, no la corrección semántica de cada imagen.",
+  "ficheros_solucion": [
+    "include/game.h",
+    "source/main.c",
+    "source/renderer.c",
+    "source/simulation.c",
+    "scenarios/sandbox_verification.json"
+  ],
+  "evaluacion": {
+    "tipo": "mixta",
+    "puertas": [
+      {
+        "nivel": "G1 build",
+        "como": "C:\\codexlocal\\skills\\agentic-ds-dev\\scripts\\build-project.ps1 -ProjectPath <checkout>",
+        "criterio": "Build PASS",
+        "fuente": "solution_commit (overlay: ninguno)"
+      },
+      {
+        "nivel": "G3 escenario",
+        "como": "C:\\codexlocal\\skills\\agentic-ds-dev\\scripts\\run-scenario.ps1 -RomPath <rom> -ScenarioPath scenarios\\sandbox_verification.json -OutputPath <dir>",
+        "criterio": "Escenario PASS; pasan las aserciones screen_changed y screen_changes",
+        "fuente": "solution_commit"
+      },
+      {
+        "nivel": "G5 rubrica",
+        "como": "Revisar capturas del escenario",
+        "criterio": "Sandbox abierto, enemigo visible, torreta en acción y limpieza visible",
+        "fuente": "solution_commit"
+      }
+    ],
+    "rubrica": [
+      {
+        "criterio": "Los estados capturados corresponden a las acciones indicadas",
+        "peso": 1,
+        "anclas": "0=no hay transición; 1=transiciones parciales o ambiguas; 2=se observan todos los estados y limpieza"
+      }
+    ],
+    "trampas": [
+      "La aserción de píxeles puede pasar aunque el estado mostrado no sea el esperado.",
+      "El escenario de referencia tiene 20 frames de arranque; KNOWN_ISSUES.md documenta que algunas pruebas de sandbox necesitan al menos 90 frames antes de la primera captura."
+    ]
+  },
+  "dificultad": 4,
+  "historia": "Un commit de integración; el diff modifica simulación, render y main e incorpora un escenario con capturas y aserciones.",
+  "reproducible": "parcial",
+  "motivo_reproducible": "El escenario automatizado está versionado, pero la aserción de cambio de pantalla no comprueba por sí sola la semántica visual.",
+  "coste_ejecucion_estimado": "medio (+ build de ROM y escenario headless)",
+  "_fuente": "b1",
+  "_validado": true,
+  "_avisos": [],
+  "calibrado": false
+}

@@ -1,0 +1,56 @@
+{
+  "id": "dd-map-runtime-index-runs",
+  "titulo": "Consultar oclusión visible sin picos de coste",
+  "tipo": "micro",
+  "parent": "dd-map-coherencia-geometrica",
+  "clase": "perf-hw",
+  "repo": "dungeonds",
+  "base_commit": "b359192e2a90d7aed169edde100fcc197e25d445",
+  "solution_commits": [
+    "b53af2aecf6e874771a36884ece4c7e59f0f20be"
+  ],
+  "solucion_resumen": "Se agrega un índice de inicio de runs para cada fila del mapa.\nEl runtime recorre solo las filas visibles.\nDentro de cada fila usa búsqueda binaria para saltar runs fuera de cámara.\nLa rejilla de colisión pasa a ser la única fuente de suelo.\nEl cambio evita los picos de ~370000 ticks reportados con escaneo previo.",
+  "ficheros_solucion": [
+    "tools/bake_isometric_shooter_bl.py",
+    "source/main.c",
+    "source/diablo_dungeon.c",
+    "source/dungeon_occlusion.c"
+  ],
+  "evaluacion": {
+    "tipo": "mixta",
+    "puertas": [
+      {
+        "nivel": "G2 tests",
+        "como": "Ejecutar los contratos de profundidad/índice de runs.",
+        "criterio": "Las consultas apuntan al primer run que alcanza la cámara y respetan el índice de fila.",
+        "fuente": "solution_commit"
+      },
+      {
+        "nivel": "G3 escenario",
+        "como": "Ejecutar `map_occlusion_collision_coherence` mientras la cámara recorre posiciones delante y detrás de obstáculos.",
+        "criterio": "PASS; las rutas y posiciones atraviesan los volúmenes descritos por el escenario.",
+        "fuente": "solution_commit (overlay: scenarios/map_occlusion_collision_coherence.json)"
+      },
+      {
+        "nivel": "G4 metrica",
+        "como": "Medir la misma ruta A/B en DS con PERF_PROFILE.",
+        "criterio": "Sin picos que superen 560190 ticks/frame; confirmar frames con más de un vblank.",
+        "fuente": "por escribir"
+      }
+    ],
+    "rubrica": [],
+    "trampas": [
+      "Usar un mapa pequeño donde no se manifieste el coste de escaneo.",
+      "Probar el lookup sin mover la cámara."
+    ]
+  },
+  "dificultad": 4,
+  "historia": "El walkthrough atribuye picos cercanos a 370000 ticks al escaneo de runs y describe índice por fila y búsqueda binaria. El escenario quedó en 901 frames lógicos y ~922 vblanks frente a ~904/~922 antes; la validación absoluta en DS no consta para este commit.",
+  "reproducible": "parcial",
+  "motivo_reproducible": "El escenario es repetible; certificación de FPS exige hardware.",
+  "coste_ejecucion_estimado": "alto (+ build, escenario largo y medición en DS)",
+  "_fuente": "b5",
+  "_validado": true,
+  "_avisos": [],
+  "calibrado": false
+}
