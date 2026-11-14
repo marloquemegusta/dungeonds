@@ -4,6 +4,8 @@ Primero el estado necesario para retomar el trabajo sin depender del chat; despu
 
 ## Estado actual (2026-11-14)
 
+- **Cámara con adelanto vertical (`feat/camera-lookahead`, 2026-11-14, `walkthroughs/camera-lookahead/`):** encuadre *look-ahead* en la pantalla inferior (`CAM_ANCHOR_UP = 132` al subir, `CAM_ANCHOR_DOWN = 64` al bajar, retardo de 22 frames y *freeze* al parar o *kitear* apuntando hacia delante). Compilación sin warnings, contratos host OK (14/14) y validada en la DS física.
+
 - **Sombras por hardware y horda doble (`perf/hw-shadows`, 2026-11-14, `walkthroughs/hw-shadows/`):** sombras oscurecidas por la consola (ventana OBJ) en vez del procesador, IA con rejilla y LOD, blit por tramos opacos, limpieza más rápida, camino caliente en ITCM y picos de rebase/láseres/muertes troceados. Medido en la DS con 48 enemigos: **14,3–15,1 ms** de media (antes 34–36 ms, 20 FPS), casi siempre a 60 FPS; la versión normal (24) va sobrada. La separación entre enemigos se conserva. Siguiente cuello: el blit (~6 ms con horda llena). Variantes `stress` y `stress-perf` y banco A/B `perf_stress_bench` (`TECHNICAL.md` §3.6).
 
 - **Fix de parpadeo en pantalla superior (`fix/top-flicker`, `walkthroughs/top-flicker-fix/`):** reordenado el bucle principal en `source/main.c` para renderizar la pantalla inferior (doble búfer) antes de `swiWaitForVBlank()` y pintar `s_top_page` (búfer único) nada más empezar el VBlank. Validado en tests de host (`5/5` + `58/58`) y en Nintendo DS física por el usuario.
