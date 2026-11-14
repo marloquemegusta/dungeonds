@@ -22,6 +22,7 @@
 #include "hwshadow.h"
 #include "pickups.h"
 #include "sfx.h"
+#include "menu.h"
 #include <string.h>
 #include <time.h>
 
@@ -131,6 +132,8 @@ typedef struct {
 volatile NavigationState g_nav_state;
 static uint32_t s_blocked_moves = 0;
 static uint32_t s_keys_down_latch = 0;
+static int s_run_started = 0;
+static int s_menu_prev_touch = 0;
 
 typedef struct {
     uint32_t calls, runs, pixels, ticks, frame_index;
@@ -1020,6 +1023,15 @@ ITCM_CODE static void render_screen(uint16_t *buffer, DirtySpan *spans, int cam_
     if (out_floor) *out_floor = cpuGetTiming() - floor_start_ticks;
     PP_ADD(PP_CLEAR, pp_clear);
 
+    if (!s_run_started) {
+#if HW_SHADOWS
+        hwshadow_begin(sub_screen);
+#endif
+        if (out_shadow) *out_shadow = 0;
+        if (out_blit) *out_blit = 0;
+        return;
+    }
+
     // 0) Ground decals of the weapons (aim marker, warning zones, shock rings): under everything.
     weapons_render_floor(buffer, cam_x, cam_y);
 
@@ -1342,6 +1354,33 @@ static void present_vblank_begin(void) {
 // + floor-only darkening, with the tide taking over from its first line (tide_window_top).
 // Software shadows: the tide module alone, as before.
 static void present_screen_effects(int top_cam_y, int bot_tide_cam_y) {
+    if (menu_is_open()) {
+#if HW_SHADOWS
+        if (g_hw_shadows_on) {
+            hwshadow_screen_regs(1, (s_run_started && s_strip_mode) ? tide_window_top(top_cam_y) : SCREEN_H);
+            hwshadow_screen_regs(0, SCREEN_H);
+        } else {
+            hwshadow_regs_off();
+            if (s_run_started && s_strip_mode) {
+                tide_render_window(1, top_cam_y);
+            } else {
+                REG_BLDCNT_SUB = 0;
+                REG_DISPCNT_SUB &= ~DISPLAY_WIN0_ON;
+            }
+        }
+#else
+        if (s_run_started && s_strip_mode) {
+            tide_render_window(1, top_cam_y);
+        } else {
+            REG_BLDCNT_SUB = 0;
+            REG_DISPCNT_SUB &= ~DISPLAY_WIN0_ON;
+        }
+#endif
+        REG_DISPCNT &= ~(DISPLAY_WIN0_ON | DISPLAY_SPR_WIN_ON);
+        REG_BLDCNT = BIT(1) | (3 << 6);
+        REG_BLDY = 9;
+        return;
+    }
 #if HW_SHADOWS
     if (g_hw_shadows_on) {
         hwshadow_screen_regs(1, s_strip_mode ? tide_window_top(top_cam_y) : SCREEN_H);
@@ -1353,6 +1392,9 @@ static void present_screen_effects(int top_cam_y, int bot_tide_cam_y) {
     if (s_strip_mode) {
         tide_render_window(1, top_cam_y);
         tide_render_window(0, bot_tide_cam_y);
+    } else {
+        REG_BLDCNT = 0;
+        REG_BLDY = 0;
     }
 }
 
@@ -2098,10 +2140,18 @@ int main(void) {
     init_bg_tile_cache(&s_bot_bg_tile_cache, BG_TILE_CACHE_CAPACITY, s_bot_bg_tiles_vram);
     update_screen_hardware_bg(1, s_top_map_ptr, s_cam_x, s_cam_y - SCREEN_H);
 
+#if !(SANDBOX || STRESS_TEST)
+    menu_open_title();
+    sfx_stop_bgm();
+#else
+    s_run_started = 1;
+#endif
+
     render_screen(s_top_page, s_dirty_top, s_cam_x, s_cam_y - SCREEN_H, 1, NULL, NULL, NULL);
     render_screen(bot_page_ptr(s_bot_active_page), s_dirty[s_bot_active_page == 24], s_cam_x, s_cam_y, 0, NULL, NULL, NULL);
-    draw_run_hud(bot_page_ptr(s_bot_active_page));
-    draw_fps_hud(bot_page_ptr(s_bot_active_page));
+    if (s_run_started) draw_run_hud(bot_page_ptr(s_bot_active_page));
+    if (menu_is_open()) menu_render_bottom(bot_page_ptr(s_bot_active_page));
+    if (g_perf.show_hud != 0) draw_fps_hud(bot_page_ptr(s_bot_active_page));
     update_screen_hardware_bg(0, s_bot_map_ptr, s_cam_x, s_cam_y);
 
     while (1) {
@@ -2115,19 +2165,45 @@ int main(void) {
         touchPosition touch;
         touchRead(&touch);
         int touch_down = (keys_held & KEY_TOUCH) && touch.px < SCREEN_W && touch.py < SCREEN_H;
-
-        if (keys_down & KEY_START) {
-            g_perf.show_hud = !g_perf.show_hud;
-        }
+        int menu_touch_pressed = touch_down && !s_menu_prev_touch;
+        s_menu_prev_touch = touch_down;
+        static int s_menu_ignore_held_touch = 0;
 
         uint32_t t0 = cpuGetTiming();
         sfx_frame_begin(s_cam_x);
-        touch_track(touch_down, touch.px, touch.py);
-        s_keys_down_latch |= keys_down;
+        if (menu_is_open()) {
+            MenuAction act = menu_update(keys_down, menu_touch_pressed, touch.px, touch.py);
+            if (act == MENU_ACT_START_NEW) {
+                menu_close();
+                s_run_started = 1;
+                arena_restart();
+                sfx_start_bgm();
+                s_keys_down_latch = 0;
+                s_menu_ignore_held_touch = touch_down;
+                touch_track(0, 0, 0);
+            } else if (act == MENU_ACT_RESUME) {
+                menu_close();
+                sfx_set_bgm_paused(0);
+                s_keys_down_latch = 0;
+                s_menu_ignore_held_touch = touch_down;
+                touch_track(0, 0, 0);
+            }
+        } else {
+            if (!touch_down) s_menu_ignore_held_touch = 0;
+            touch_track(s_menu_ignore_held_touch ? 0 : touch_down, touch.px, touch.py);
+            s_keys_down_latch |= keys_down;
+            if ((keys_down & KEY_START) && !g_player_state.is_dead && s_transition == TRANSITION_NONE) {
+                menu_open_pause();
+                sfx_set_bgm_paused(1);
+                s_keys_down_latch = 0;
+                touch_track(0, 0, 0);
+            }
+        }
         transition_update();
         int simulate = g_hitstop_frames <= 0 && s_transition == TRANSITION_NONE &&
+                       !menu_is_open() &&
                        (!s_strip_mode || !g_player_state.is_dead);
-        if (!simulate) g_hitstop_frames--;
+        if (!menu_is_open() && !simulate) g_hitstop_frames--;
         if (simulate) {
             death_chunks_frame_begin();
             sandbox_update(g_enemies, MAX_ENEMIES, &s_player.x, &s_player.y);
@@ -2179,14 +2255,19 @@ int main(void) {
         uint32_t t2 = cpuGetTiming();
         CRASH_MARK(CL_RENDER_START, 0, 0);
         render_screen(bot_page_ptr(s_bot_back_page), s_dirty[s_bot_back_page == 24], view_x, view_y, 0, &bot_floor, &bot_sh, &bot_bl);
-        if (s_strip_mode) {
+        if (s_run_started && s_strip_mode) {
             g_dirty_cur = s_dirty[s_bot_back_page == 24];
             pickups_render(bot_page_ptr(s_bot_back_page), view_x, view_y);
             tide_render_border(bot_page_ptr(s_bot_back_page), view_y);
         }
         CRASH_MARK(CL_RENDER_DONE, 0, 0);
         PP_T0(pp_hud);
-        draw_run_hud(bot_page_ptr(s_bot_back_page));
+        if (s_run_started) {
+            draw_run_hud(bot_page_ptr(s_bot_back_page));
+        }
+        if (menu_is_open()) {
+            menu_render_bottom(bot_page_ptr(s_bot_back_page));
+        }
         if (g_perf.show_hud != 0) {
             draw_fps_hud(bot_page_ptr(s_bot_back_page));
         }
@@ -2194,7 +2275,7 @@ int main(void) {
         uint32_t bot_ticks = cpuGetTiming() - t2;
 
 #if defined(GODRAYS_PROTO) && GODRAYS_PROTO
-        godrays_update(view_x, top_cam_y, view_y);
+        if (!menu_is_open()) godrays_update(view_x, top_cam_y, view_y);
 #endif
         uint32_t pre_vwait_cpu = cpuGetTiming() - frame_start_ticks;
         int vcount_done = REG_VCOUNT;
@@ -2208,7 +2289,7 @@ int main(void) {
         present_screen_effects(top_cam_y, (s_strip_mode && g_player_state.is_dead) ? TO_INT(tide_y()) - SCREEN_H : view_y);
         uint32_t t_top = cpuGetTiming();
         render_screen(s_top_page, s_dirty_top, view_x, view_y - SCREEN_H, 1, &top_floor, &top_sh, &top_bl);
-        if (s_strip_mode) {
+        if (s_run_started && s_strip_mode) {
             g_dirty_cur = s_dirty_top;
             pickups_render(s_top_page, view_x, view_y - SCREEN_H);
             tide_render_border(s_top_page, view_y - SCREEN_H);

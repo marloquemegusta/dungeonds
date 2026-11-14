@@ -237,6 +237,13 @@ Primer paso jugable hacia §6.1–6.8: el juego actual (armas, cargador, tirador
   - **Al parar o hacer *strafe* lateral:** la cámara mantiene el último encuadre (no vuelve sola al centro), y requiere ~0,37 s (22 frames) de marcha vertical sostenida antes de empezar a deslizarse (a 2 px/frame) para que los esquives cortos no muevan el suelo bajo el stylus.
 - **La pantalla superior es la vanguardia, no un menú:** muestra la horda que llega, los puntos de aparición y los avisos de élite, minijefe y jefe. Se le puede disparar con el apuntado por vector de §4.1. Premia a las clases de largo alcance.
 - Los menús, como la elección al subir de nivel, van en la pantalla inferior.
+- **Menú inicial y menú de pausa (decidido 2026-11-14):**
+  - **Reparto entre pantallas:** la pantalla superior muestra únicamente la catedral de fondo (sin título ni adornos); la pantalla inferior (táctil) muestra la catedral por detrás con un tinte oscurecido y el menú encima.
+  - **Estilo minimalista:** cajas semitransparentes oscuras con texto plano sobre la catedral oscurecida, usando la paleta `FX_SH_*` (marfil y oro/carmesí apagado para la opción activa, ceniza para las inactivas), sin marcos ni títulos postizos.
+  - **Navegación (ambos):** táctil con lápiz sobre cualquier botón y cruceta (`Arriba`/`Abajo`) + `A` (confirmar) / `B` (volver o reanudar en pausa). `START` abre y cierra la pausa durante la partida (cuando el jugador sigue vivo; tras morir conserva el reinicio).
+  - **Menú inicial (al arrancar la ROM):** `NUEVA PARTIDA`, `BESTIARIO` y `CONTROLES`.
+  - **Menú de pausa (`START` en partida):** `CONTINUAR`, `REINICIAR`, `BESTIARIO` y `CONTROLES`. Congela horda, marea, temporizador, combate y música (sin coste por frame durante la partida activa). `SELECT` e `Y` siguen funcionando en partida para comparar efectos de la demo.
+  - **Submenús:** `BESTIARIO` muestra el placeholder `PROXIMAMENTE` con botón `VOLVER`; `CONTROLES` muestra `CRUCETA: MOVERSE`, `LAPIZ: APUNTAR Y MANTENER PARA CARGAR`, `START: PAUSA` y `SELECT / Y: COMPARAR EFECTOS (DEMO)`, más botón `VOLVER`.
 
 ### 6.4 Marea y aparición de enemigos
 - **Marea (revisada 2026-11-13, muelle elástico):** sube desde el borde inferior con velocidad elástica en función de la distancia al jugador (`dist = tide_y - player_y`):
