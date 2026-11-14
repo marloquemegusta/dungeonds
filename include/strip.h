@@ -12,6 +12,17 @@
 // strip_prepare_step() builds the next rebase while player_y < STRIP_REBASE_TOP_PX + this margin.
 #define STRIP_PREPARE_MARGIN_PX 512
 
+// A devout piece of the window (santo, vela or relicario): footprint centre and half-extent, window px.
+// `kind` is a STRIP_PIECE_* id.
+typedef struct {
+    int16_t x, y;
+    int16_t hw, hh;
+    uint8_t kind;
+} StripDevout;
+// Devout pieces of the live window whose centre lies in window rows [y_lo, y_hi]: at most `max` are
+// copied to `out`. A scan of the small list kept by the compositor; the plan is never recomputed.
+int strip_devout_in_band(int y_lo, int y_hi, StripDevout *out, int max);
+
 void strip_start(uint32_t seed);
 // One bounded unit of work toward the next rebase. Call once per frame, before strip_rebase_if_needed.
 void strip_prepare_step(int player_y_px);

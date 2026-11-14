@@ -28,7 +28,7 @@ def parse_enemy_hp():
     return {
         "charger": int(re.search(r"ENEMY_TYPE_CHARGER\] = \{\s*\.max_hp = (\d+)", GAMEPLAY_C).group(1)),
         "shooter": int(re.search(r"ENEMY_TYPE_SHOOTER\] = \{\s*\.max_hp = (\d+)", GAMEPLAY_C).group(1)),
-        "skeleton": int(re.search(r"ENEMY_TYPE_SKELETON\] = \{\s*\.max_hp = (\d+)", GAMEPLAY_C).group(1)),
+        "skeleton": int(re.search(r"ENEMY_TYPE_EXVOTO\] = \{\s*\.max_hp = (\d+)", GAMEPLAY_C).group(1)),
     }
 
 

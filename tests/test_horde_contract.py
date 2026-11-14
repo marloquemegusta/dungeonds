@@ -27,12 +27,12 @@ class HordeContractTests(unittest.TestCase):
 
     def test_horde_mix_is_skeleton_charger_shooter_with_a_charger_cap(self):
         header = (ROOT / "include" / "horde.h").read_text(encoding="utf-8")
-        skeleton = int(re.search(r"#define HORDE_SKELETON_PERCENT (\d+)", header).group(1))
+        skeleton = int(re.search(r"#define HORDE_EXVOTO_PERCENT (\d+)", header).group(1))
         charger = int(re.search(r"#define HORDE_CHARGER_PERCENT (\d+)", header).group(1))
         self.assertEqual((skeleton, charger, 100 - skeleton - charger), (60, 15, 25))
         self.assertIn("#define HORDE_CHARGER_MAX_ALIVE 3", header)
         source = (ROOT / "source" / "horde.c").read_text(encoding="utf-8")
-        self.assertIn("s_chargers_alive < HORDE_CHARGER_MAX_ALIVE ? ENEMY_TYPE_CHARGER : ENEMY_TYPE_SKELETON", source)
+        self.assertIn("s_chargers_alive < HORDE_CHARGER_MAX_ALIVE ? ENEMY_TYPE_CHARGER : ENEMY_TYPE_EXVOTO", source)
         self.assertIn("e->char_id = enemy_type_char_id(e->type);", source)
 
     def test_tunable_defines_are_marked_in_headers(self):

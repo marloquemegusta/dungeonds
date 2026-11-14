@@ -12,7 +12,7 @@ MAIN_C = (ROOT / "source" / "main.c").read_text(encoding="utf-8")
 
 
 def skeleton_function():
-    return AI_C.split("static void update_skeleton")[1].split("// Charger (DESIGN.md 6.9.1)")[0]
+    return AI_C.split("static void update_exvoto")[1].split("// Charger (DESIGN.md 6.9.1)")[0]
 
 
 def charger_function():
@@ -35,23 +35,25 @@ def hero_speed():
 class SkeletonContractTest(unittest.TestCase):
     """DESIGN.md 6.9.1: the 0.3 charger AI under a new name. CHASE <-> ATTACK, slow, one bite."""
 
-    def test_fsm_has_only_chase_and_attack(self):
+    def test_fsm_has_only_pray_rise_chase_and_attack(self):
         body = skeleton_function()
         self.assertIn("case ENEMY_STATE_ATTACK:", body)
         self.assertIn("case ENEMY_STATE_CHASE:", body)
+        self.assertIn("case ENEMY_STATE_PRAY:", body)
+        self.assertIn("case ENEMY_STATE_RISE:", body)
         for removed in ("TELEGRAPH", "CHARGE", "IDLE", "ALERT", "SEARCH", "last_seen", "los_lost"):
             self.assertNotIn(removed, body, removed)
 
     def test_tuning_is_the_decided_one(self):
-        self.assertEqual(tuning("SKELETON", "max_hp"), 100)
-        self.assertEqual(tuning("SKELETON", "speed"), 130)
-        ratio = tuning("SKELETON", "speed") / hero_speed()
+        self.assertEqual(tuning("EXVOTO", "max_hp"), 100)
+        self.assertEqual(tuning("EXVOTO", "speed"), 130)
+        ratio = tuning("EXVOTO", "speed") / hero_speed()
         self.assertTrue(0.35 <= ratio <= 0.45, ratio)          # ~40 % of the hero
 
     def test_bite_has_cooldown_and_needs_a_clear_line(self):
         body = skeleton_function()
         self.assertIn("e->state_timer = tuning->attack_cooldown;", body)
-        self.assertLessEqual(tuning("SKELETON", "attack_cooldown"), 40)
+        self.assertLessEqual(tuning("EXVOTO", "attack_cooldown"), 40)
         bite = body.split("// Bite")[1].split("refresh_view")[0]
         self.assertIn("los_has_line_of_sight(wx, wy, px, py, 0)", bite)
         self.assertIn("line_is_walkable(wx, wy, px, py)", bite)   # low walls do not block line of sight
@@ -62,7 +64,7 @@ class SkeletonContractTest(unittest.TestCase):
         self.assertIn("nav_set_goal(TO_INT(s_player.x), TO_INT(s_player.y));", MAIN_C)
 
     def test_it_uses_its_own_sprite_through_one_function(self):
-        self.assertIn("return CHAR_SKELETON;", GAMEPLAY_H.split("enemy_type_char_id")[1])
+        self.assertIn("return CHAR_EXVOTO;", GAMEPLAY_H.split("enemy_type_char_id")[1])
         self.assertIn("enemy_type_char_id(type)", ENCOUNTERS_C)
 
     def test_a_woken_pack_chases_at_once(self):
@@ -109,7 +111,7 @@ class ChargerContractTest(unittest.TestCase):
         self.assertIn("g_charger_telegraph_frames", MAIN_C)       # uses dedicated telegraph clip without blinking
 
     def test_telegraph_needs_a_clear_walkable_view_within_range(self):
-        refresh = AI_C.split("static void refresh_view")[1].split("// Skeleton")[0]
+        refresh = AI_C.split("static void refresh_view")[1].split("// ---- Exvoto praying")[0]
         self.assertIn("los_has_line_of_sight(wx, wy, px, py, 0)", refresh)
         self.assertIn("line_is_walkable(wx, wy, px, py)", refresh)
         chase = charger_function().split("case ENEMY_STATE_CHASE:")[1]

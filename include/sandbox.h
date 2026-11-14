@@ -18,6 +18,12 @@
 #ifndef CATHEDRAL_PLAYGROUND
 #define CATHEDRAL_PLAYGROUND 0
 #endif
+// CATHEDRAL_AI (needs CATHEDRAL_PLAYGROUND=1): what the review ROM simulates. 0 = nothing (fixed dummies), 1 = the enemy AI
+// runs on the enemies a scenario stages (variant "cathedral-sandbox"), 2 = AI and the procedural horde, on the stable
+// seed (variant "cathedral-horde").
+#ifndef CATHEDRAL_AI
+#define CATHEDRAL_AI 0
+#endif
 
 // Scenario sandbox (build variant "sandbox", -DSANDBOX=1; never in the shipping ROM).
 // A headless scenario fills g_sandbox with `poke` steps and finally increments `seq`; the game
@@ -40,8 +46,13 @@
 #define SANDBOX_ENEMY_NONE    0
 #define SANDBOX_ENEMY_CHARGER 1
 #define SANDBOX_ENEMY_SHOOTER 2
-#define SANDBOX_ENEMY_SKELETON 3
+#define SANDBOX_ENEMY_EXVOTO  3
 #define SANDBOX_ENEMY_FLAG_ASLEEP 1   // spawn dormant instead of awake
+// Exvoto only (DESIGN.md 6.10): PRAY spawns it praying (it wakes by the hero's distance or a hit), KNEEL on its knees
+// instead of standing, and bits 3-5 hold the facing (DIR_*) it prays with.
+#define SANDBOX_ENEMY_FLAG_PRAY 2
+#define SANDBOX_ENEMY_FLAG_KNEEL 4
+#define SANDBOX_ENEMY_FLAG_DIR_SHIFT 3
 
 typedef struct {
     uint8_t type;      // SANDBOX_ENEMY_*

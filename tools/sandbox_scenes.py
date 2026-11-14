@@ -37,7 +37,7 @@ FLAG_CLEAR, FLAG_FREEZE_AI, FLAG_GOD = 1, 2, 4
 # Sniper charge aura look in flag bits 3-4 (include/sandbox.h, g_aura_style): 0 = L (flames), 1 = G, 2 = E, 3 = H.
 AURA_LOOKS = ("L", "G", "E", "H")
 FLAG_AURA_SHIFT = 3
-CHARGER, SHOOTER, SKELETON = 1, 2, 3          # SANDBOX_ENEMY_* (include/sandbox.h)
+CHARGER, SHOOTER, EXVOTO = 1, 2, 3          # SANDBOX_ENEMY_* (include/sandbox.h)
 WEAPON = {"shotgun": 0, "sniper": 1, "grenade": 2}
 STYLE = "ABC"
 
@@ -151,7 +151,7 @@ def shotgun_scene(style):
     return sc
 
 
-# Sniper hit sweep (fix/sniper-hit-side). One parked skeleton (SKELETON) facing south (sandbox ordinal 0 = DIR_SOUTH,
+# Sniper hit sweep (fix/sniper-hit-side). One parked Exvoto (EXVOTO) facing south (sandbox ordinal 0 = DIR_SOUTH,
 # 100 hp, one sniper hit (150) kills it) at ENEMY, the hero 70 px to its west or east. The stylus touches the
 # enemy's column at SWEEP_UP px above its feet, so the beam crosses the sprite at that screen height
 # (the touch is read at muzzle height). Ground-plane hit test (old): only up 13..23 hit; body volume
@@ -161,14 +161,14 @@ SWEEP_UP = (-14, 0, 4, 8, 12, 16, 20, 24, 28, 32, 46)
 HIT_ROWS = (4, 8, 12, 16, 20, 24, 28)          # clearly on the sprite: must kill
 MISS_ROWS = (-14, 46)                          # clearly off the sprite: must not hurt
 ENEMY_HP_OFFSET = 28                           # offsetof(Enemy, hp) in g_enemies[0]
-ENEMY_FULL_HP = 100                            # skeleton hp (weapons.c: the sniper hit, 150, kills it)
+ENEMY_FULL_HP = 100                            # Exvoto hp (weapons.c: the sniper hit, 150, kills it)
 
 
 def sniper_sweep_scene(side):
     player = {"west": (40, 724), "east": (180, 724)}[side]
     steps, assertions = [], []
     for n, up in enumerate(SWEEP_UP, start=1):
-        steps += setup_steps(player, "sniper", 0, [(SKELETON, *ENEMY)], seq=n, boot=30 if n == 1 else 0)
+        steps += setup_steps(player, "sniper", 0, [(EXVOTO, *ENEMY)], seq=n, boot=30 if n == 1 else 0)
         steps += [
             {"tap": touch_at(player, ENEMY[0], ENEMY[1], up), "frames": 34},
             {"release": True, "frames": 12, "state_capture": f"up{up}"},
@@ -209,6 +209,135 @@ def sniper_fire_scene(look=None):
     return scenario(f"sandbox_sniper_fire_aura_{look}" if look else "sandbox_sniper_fire", steps)
 
 
+# ---- Exvotos praying in front of a real devout piece (DESIGN.md 6.10, feat/exvoto) ---------------------------
+# Needs the cathedral-playground ROM: its stable seed (0xC0DE1234) puts the relicario of the first window at
+# window px (248, 682) with a footprint of half-extent 16 x 6 (dumped from strip_devout_in_band() on the host).
+# The Exvotos stand where horde.c seat_exvoto() would seat them (1 cell of 4 px outside the footprint, south arc
+# first, then alternating sides) and face the piece with the same 8-direction quantisation the AI uses.
+RELICARIO = (248, 682, 16, 6)                  # centre x, centre y, half width, half height (window px)
+STATE = {"CHASE": 0, "DEAD": 11, "PRAY": 13, "RISE": 14}
+FLAG_PRAY, FLAG_KNEEL, FLAG_DIR_SHIFT = 2, 4, 3
+CHAR = {"walk": 3, "pray_stand": 4, "pray_kneel": 5, "stand_up": 6}
+ENEMY_SIZE = 88                                # sizeof(Enemy), asserted in source/main.c
+# offsetof(Enemy, ...) in g_enemies[i]
+ENEMY_FIELDS = {"x": (0, "s32"), "y": (4, "s32"), "dir": (8, "s32"), "frame": (12, "s32"), "char": (20, "s32"),
+                "active": (24, "s32"), "hp": (28, "s32"), "state": (41, "u8")}
+_RING_COS = [256, 251, 237, 213, 181, 142, 98, 50, 0, -50, -98, -142, -181, -213, -237, -251,
+             -256, -251, -237, -213, -181, -142, -98, -50, 0, 50, 98, 142, 181, 213, 237, 251]
+_RING_SIN = [0, 50, 98, 142, 181, 213, 237, 251, 256, 251, 237, 213, 181, 142, 98, 50,
+             0, -50, -98, -142, -181, -213, -237, -251, -256, -251, -237, -213, -181, -142, -98, -50]
+
+
+def dir_from_vector(dx, dy):
+    """enemy_ai.c dir_from_vector(): 0 S, 1 SW, 2 W, 3 NW, 4 N, 5 NE, 6 E, 7 SE."""
+    ax, ay = abs(dx), abs(dy)
+    sdx, sdy = dx, dy
+    if ax * 2 < ay:
+        sdx = 0
+    elif ay * 2 < ax:
+        sdy = 0
+    else:
+        sdx, sdy = (-1 if dx < 0 else 1), (-1 if dy < 0 else 1)
+    if sdx == 0:
+        return 0 if sdy >= 0 else 4
+    if sdy == 0:
+        return 2 if sdx < 0 else 6
+    if sdx < 0:
+        return 1 if sdy > 0 else 3
+    return 5 if sdy < 0 else 7
+
+
+def seat(piece, step, extra=0):
+    """Position of one praying Exvoto on ring step `step` (0..31, 8 = due south) of `piece`, and its facing. `extra` is
+    the optional second collision cell (0 or 4 px). The body circle (radius 6) first fits 7 px beside the footprint and
+    4 screen rows in front of it (HORDE_EXVOTO_SIDE_PX / FRONT_PX in horde.h)."""
+    cx, cy, hw, hh = piece
+    x = cx + ((hw + 7 + extra) * _RING_COS[step] >> 8)
+    y = cy + ((hh + 4 + extra // 2) * _RING_SIN[step] >> 8)
+    if _RING_SIN[step] > 0 and y < cy + hh + 4:      # the front of the piece is a straight row (horde.c)
+        y = cy + hh + 4
+    return x, y, dir_from_vector(cx - x, cy - y)
+
+
+def exvoto_pray_scene():
+    """Three Exvotos in a south arc in front of the relicario (one standing, two kneeling: no chance involved) and
+    a fourth on its north side, 34 ground px from the first. The hero walks north from the south hall: the first
+    Exvoto wakes when he is within 96 ground px; the north one is out of his reach and wakes only by the chain
+    (48 px). The kneeling ones rise (still), the standing one walks at once; then a sniper shot up the arc kills
+    the ones on the line and they melt into a puddle."""
+    rel = RELICARIO
+    spots = [(seat(rel, 8), 0), (seat(rel, 12), 1), (seat(rel, 4), 1), (seat(rel, 24), 1)]   # ((x, y, dir), kneel)
+    enemies = [(x, y, d, kneel) for (x, y, d), kneel in spots]
+    # Rule 5 guard: every Exvoto must stand just outside the footprint and look at the piece centre.
+    for x, y, d, _ in enemies:
+        assert abs(x - rel[0]) <= rel[2] + 18 and abs(y - rel[1]) <= rel[3] + 8, (x, y)
+        assert d == dir_from_vector(rel[0] - x, rel[1] - y)
+    hero = (250, 800)
+    pokes = [{"field": "player_x", "value": hero[0]}, {"field": "player_y", "value": hero[1]},
+             {"field": "weapon", "value": WEAPON["sniper"]}, {"field": "style", "value": 0},
+             {"field": "flags", "value": FLAG_CLEAR | FLAG_GOD}, {"field": "enemy_count", "value": len(enemies)}]
+    for i, (x, y, d, kneel) in enumerate(enemies):
+        pokes += [{"field": f"e{i}_type", "value": EXVOTO},
+                  {"field": f"e{i}_flags", "value": FLAG_PRAY | (FLAG_KNEEL if kneel else 0) | (d << FLAG_DIR_SHIFT)},
+                  {"field": f"e{i}_x", "value": x}, {"field": f"e{i}_y", "value": y}]
+    pokes.append({"field": "seq", "value": 1})
+    fields = {k: dict(v) for k, v in FIELDS.items()}
+    for i in range(len(enemies)):
+        for name, (off, typ) in ENEMY_FIELDS.items():
+            fields[f"en{i}_{name}"] = {"symbol": "enemies", "offset": i * ENEMY_SIZE + off, "type": typ}
+    steps = [
+        {"frames": 30},
+        {"poke": pokes, "frames": 1},
+        {"wait_until": {"field": "ack", "equals": 1, "timeout_frames": 30}},
+        {"frames": 12, "capture": "01_rezando", "state_capture": "praying"},
+        {"frames": 96, "capture_sequence": "a_reza", "capture_every": 4, "state_capture": "praying_later"},
+        {"frames": 1, "capture": "02_rezando_quietos"},
+        {"button_down": "UP", "frames": 100, "capture_sequence": "b_acerca", "capture_every": 6},
+        {"wait_until": {"field": "en1_state", "equals": STATE["RISE"], "timeout_frames": 400},
+         "capture": "03_despiertan", "state_capture": "woken"},
+        {"button_up": "UP", "frames": 1},
+        {"frames": 60, "capture_sequence": "c_levanta", "capture_every": 3, "state_capture": "rising"},
+        {"wait_until": {"field": "en1_state", "equals": STATE["CHASE"], "timeout_frames": 120},
+         "capture": "05_andan", "state_capture": "walking"},
+        {"frames": 45, "capture_sequence": "d_andan", "capture_every": 3, "state_capture": "advancing"},
+        {"frames": 1, "capture": "06_avanzan"},
+    ]
+    # Sniper up the arc: the touch (read at muzzle height) is straight above the hero, so the beam runs north along his
+    # column and crosses the Exvotos that walk down it.
+    steps += [{"tap": {"x": 128, "y": 20}, "frames": 40, "capture": "07_apunta"},
+              {"release": True, "frames": 6, "capture_sequence": "e_disparo", "capture_every": 1},
+              {"frames": 100, "capture_sequence": "f_charco", "capture_every": 2}]
+    return {
+        "name": "exvoto_reza_despierta_derrite",
+        "description": ("ROM cathedral-playground (seed 0xC0DE1234). Three Exvotos pray in a south arc in front of the real relicario "
+                        f"(window px {rel[0]},{rel[1]}, footprint half-extent {rel[2]}x{rel[3]}), facing it; a fourth prays on its north side. "
+                        "The hero (god mode) walks north: the Exvotos stay still until he is within 96 ground px, the north one wakes "
+                        "only by the 48 px chain, the kneeling ones rise (stand_up clip), then everybody walks; a sniper shot kills the "
+                        "ones on the line and they melt into a wax puddle."),
+        "state": {"symbols": {"sb": "g_sandbox", "enemies": "g_enemies"}, "default_symbol": "sb", "fields": fields},
+        "steps": steps,
+        "assertions": {"state_changes": [
+            {"at": "praying", "field": "en0_state", "equals": STATE["PRAY"]},
+            {"at": "praying", "field": "en1_state", "equals": STATE["PRAY"]},
+            {"at": "praying", "field": "en2_state", "equals": STATE["PRAY"]},
+            {"at": "praying", "field": "en3_state", "equals": STATE["PRAY"]},
+            {"at": "praying", "field": "en0_char", "equals": CHAR["pray_stand"]},
+            {"at": "praying", "field": "en1_char", "equals": CHAR["pray_kneel"]},
+            {"from": "praying", "to": "praying_later", "field": "en0_x", "max_abs_delta": 0},
+            {"from": "praying", "to": "praying_later", "field": "en1_y", "max_abs_delta": 0},
+            {"at": "woken", "field": "en3_state", "equals": STATE["RISE"]},
+            {"at": "woken", "field": "en1_state", "equals": STATE["RISE"]},
+            {"at": "woken", "field": "en0_char", "equals": CHAR["walk"]},
+            {"at": "woken", "field": "en1_char", "equals": CHAR["stand_up"]},
+            {"from": "woken", "to": "rising", "field": "en1_x", "max_abs_delta": 0},
+            {"at": "walking", "field": "en1_char", "equals": CHAR["walk"]},
+            {"at": "walking", "field": "en1_state", "equals": STATE["CHASE"]},
+            {"from": "walking", "to": "advancing", "field": "en0_y", "min_delta": 1},
+        ], "screen_changes": [{"from": "02_rezando_quietos", "to": "03_despiertan", "min_changed_pixels": 50},
+                              {"from": "06_avanzan", "to": "07_apunta", "min_changed_pixels": 20}]},
+    }
+
+
 # Walk cycles over open floor (no enemies, god mode): start point and key per facing. Each run is 40 frames,
 # long enough for two full 8-frame cycles at ticksPerFrame 2, and far from the arena edges.
 HERO_WALKS = {
@@ -240,6 +369,7 @@ def main():
     scenes += [sniper_fire_scene(look) for look in AURA_LOOKS]
     scenes += [sniper_sweep_scene(side) for side in ("west", "east")]
     scenes += [hero_walk_scene(d) for d in HERO_WALKS]
+    scenes.append(exvoto_pray_scene())
     for sc in scenes:
         path = out / f"{sc['name']}.json"
         path.write_text(json.dumps(sc, indent=2) + "\n", encoding="utf-8")

@@ -16,7 +16,7 @@ typedef enum {
     ENEMY_TYPE_NONE = 0,
     ENEMY_TYPE_CHARGER,
     ENEMY_TYPE_SHOOTER,
-    ENEMY_TYPE_SKELETON,    // 0.3.1: slow melee mass (the old v0.3 charger AI); the new charger lunges
+    ENEMY_TYPE_EXVOTO,      // wax nun: slow melee mass (DESIGN.md 6.10); replaces the skeleton. Prays, wakes, then the old skeleton AI
     NUM_ENEMY_TYPES
 } EnemyType;
 
@@ -28,6 +28,14 @@ typedef struct {
     int telegraph_duration; // [TUNABLE-PLACEHOLDER] charger: frames standing still and blinking before the charge
     fixed charge_speed;     // [TUNABLE-PLACEHOLDER] charger: 8.8 fixed speed of the charge
 } EnemyTuning;
+
+// Exvoto (DESIGN.md 6.10, "Exvoto en el juego, versión mínima"): PRAY (still, loop of the pose) -> wake ->
+// RISE (kneeling ones only, stand_up clip, still) -> CHASE <-> ATTACK like the old skeleton.
+#define EXVOTO_WAKE_RADIUS 96          // [TUNABLE-PLACEHOLDER] ground px: the hero this close wakes a praying Exvoto
+#define EXVOTO_CHAIN_WAKE_RADIUS 48    // [TUNABLE-PLACEHOLDER] ground px: a waking Exvoto wakes the praying ones this close
+#define EXVOTO_KNEEL_PERCENT 50        // [TUNABLE-PLACEHOLDER] share of praying Exvotos on their knees (the rest stand)
+#define EXVOTO_RISE_FRAMES 72          // [TUNABLE-PLACEHOLDER] frames of the stand_up clip (8 frames x 9 ticks, characters.json)
+#define EXVOTO_PRAY_SEARCH_PX 24       // [TUNABLE-PLACEHOLDER] a praying Exvoto this close to a devout piece has claimed it
 
 // Charger (DESIGN.md 6.9.1): APPROACH (CHASE) -> TELEGRAPH -> CHARGE -> RECOVER -> CHASE.
 #define CHARGER_ENGAGE_DIST 160     // [TUNABLE-PLACEHOLDER] ground px: with a clear view this close it telegraphs
@@ -59,7 +67,7 @@ typedef struct {
 // The sprite of each enemy type: the only place that maps tiers to models.
 static inline int enemy_type_char_id(EnemyType type) {
     if (type == ENEMY_TYPE_SHOOTER) return CHAR_OJO;
-    if (type == ENEMY_TYPE_SKELETON) return CHAR_SKELETON;
+    if (type == ENEMY_TYPE_EXVOTO) return CHAR_EXVOTO;     // base walk slot; a praying Exvoto swaps char_id per pose
     return CHAR_CHARGER;
 }
 
@@ -75,13 +83,20 @@ extern const EnemyTuning g_enemy_tuning[NUM_ENEMY_TYPES];
 #ifndef STRESS_TEST
 #define STRESS_TEST 0               // 1 = measurement build: big horde, 1 HP enemies, god mode (variants stress / stress-perf)
 #endif
+// Demo ROM (DESIGN.md 6.9.1c): the laser is the only weapon and L does not cycle weapons.
+// The test variants (sandbox, playground, stress, godrays) keep the shotgun start and the L cycle.
+#if SANDBOX || PLAYGROUND || STRESS_TEST || GODRAYS_PROTO
+#define TEST_WEAPON_CYCLE 1
+#else
+#define TEST_WEAPON_CYCLE 0
+#endif
 #if STRESS_TEST
 #define MAX_GAMEPLAY_ENEMIES 64
 #else
 #define MAX_GAMEPLAY_ENEMIES 24     // every enemy of the dungeon exists from the start (dormant until woken)
 #endif
 
-// Skeleton: CHASE <-> ATTACK. Charger: CHASE -> TELEGRAPH -> CHARGE -> RECOVER -> CHASE (STUNNED from
+// Exvoto (ex skeleton): PRAY -> RISE -> CHASE <-> ATTACK. Charger: CHASE -> TELEGRAPH -> CHARGE -> RECOVER -> CHASE (STUNNED from
 // a wall hit or a shotgun hit). Ojo (shooter type): CHASE -> TRACK -> LOCK -> SENTENCE -> COOLDOWN -> CHASE.
 typedef enum {
     ENEMY_STATE_CHASE = 0,
@@ -96,7 +111,9 @@ typedef enum {
     ENEMY_STATE_SENTENCE,     // Ojo: the beam from the mouth along the locked line (one hit)
     ENEMY_STATE_COOLDOWN,
     ENEMY_STATE_DEAD,
-    ENEMY_STATE_DORMANT       // v0.2: standing still in its pack until the pack wakes (DESIGN.md 5)
+    ENEMY_STATE_DORMANT,      // v0.2: standing still in its pack until the pack wakes (DESIGN.md 5)
+    ENEMY_STATE_PRAY,         // Exvoto: praying in front of a devout piece until the hero comes close or hits it
+    ENEMY_STATE_RISE          // Exvoto: getting up from its knees (stand_up clip), then CHASE
 } EnemyState;
 
 struct Enemy {
@@ -112,6 +129,7 @@ struct Enemy {
     int hit_timer;
     EnemyType type;
     EnemyState state;
+    uint8_t kneel;      // Exvoto: 1 = prays on its knees (and rises when woken), 0 = prays standing (fits in enum padding)
     int state_timer;
     int charge_hit;     // charger: 1 once this charge has hurt the player (one hit per charge)
     int aim_dir_x;      // 8.8 unit direction in ground metric: charger lunge / Ojo sentence beam

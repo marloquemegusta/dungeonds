@@ -21,13 +21,17 @@
 // The ground origin row varies per character/direction: see g_character_ground_anchors.
 #define PLAYER_ANCHOR_X 20
 
-#define NUM_CHARACTERS 4
+#define NUM_CHARACTERS 7
 
 enum {
     CHAR_HERO = 0,
     CHAR_CHARGER = 1,
-    CHAR_OJO = 2,       // El Ojo del Tribunal (ENEMY_TYPE_SHOOTER); the old necron assets are kept on disk but unused
-    CHAR_SKELETON = 3
+    CHAR_OJO = 2,               // El Ojo del Tribunal (ENEMY_TYPE_SHOOTER); the old necron assets are kept on disk but unused
+    CHAR_EXVOTO = 3,            // wax nun walking (the horde mass; replaces the skeleton, DESIGN.md 6.10)
+    // Exvoto clips: one slot each, the enemy swaps char_id with its pose (same 40x40 cell as the walk).
+    CHAR_EXVOTO_PRAY_STAND = 4, // praying on her feet (loop)
+    CHAR_EXVOTO_PRAY_KNEEL = 5, // praying on her knees (loop)
+    CHAR_EXVOTO_STAND_UP = 6    // kneeling -> standing, ends where the walk starts
 };
 
 typedef struct {
@@ -111,13 +115,37 @@ extern const uint32_t g_ojo_sentence_shadow_offsets[PLAYER_NUM_DIRS][OJO_SENTENC
 extern const uint8_t g_ojo_sentence_shadow_bounds[PLAYER_NUM_DIRS][OJO_SENTENCE_NUM_FRAMES][4];
 extern const int8_t g_ojo_sentence_muzzle[PLAYER_NUM_DIRS][OJO_SENTENCE_NUM_FRAMES][3];
 
-// Skeleton enemy frames & animated crisp 3D shadows (8 dirs x 8 frames, cropped)
-extern const uint16_t g_skeleton_frames[];
-extern const uint32_t g_skeleton_frame_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES];
-extern const uint8_t g_skeleton_frame_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4];
-extern const uint8_t g_skeleton_shadow_masks[];
-extern const uint32_t g_skeleton_shadow_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES];
-extern const uint8_t g_skeleton_shadow_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4];
+// Exvoto walk (andar rezando) frames & animated crisp 3D shadows (8 dirs x 8 frames, cropped)
+extern const uint16_t g_exvoto_frames[];
+extern const uint32_t g_exvoto_frame_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES];
+extern const uint8_t g_exvoto_frame_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4];
+extern const uint8_t g_exvoto_shadow_masks[];
+extern const uint32_t g_exvoto_shadow_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES];
+extern const uint8_t g_exvoto_shadow_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4];
+
+// Exvoto praying standing frames & animated crisp 3D shadows (8 dirs x 8 frames, cropped)
+extern const uint16_t g_exvoto_pray_stand_frames[];
+extern const uint32_t g_exvoto_pray_stand_frame_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES];
+extern const uint8_t g_exvoto_pray_stand_frame_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4];
+extern const uint8_t g_exvoto_pray_stand_shadow_masks[];
+extern const uint32_t g_exvoto_pray_stand_shadow_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES];
+extern const uint8_t g_exvoto_pray_stand_shadow_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4];
+
+// Exvoto praying kneeling frames & animated crisp 3D shadows (8 dirs x 8 frames, cropped)
+extern const uint16_t g_exvoto_pray_kneel_frames[];
+extern const uint32_t g_exvoto_pray_kneel_frame_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES];
+extern const uint8_t g_exvoto_pray_kneel_frame_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4];
+extern const uint8_t g_exvoto_pray_kneel_shadow_masks[];
+extern const uint32_t g_exvoto_pray_kneel_shadow_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES];
+extern const uint8_t g_exvoto_pray_kneel_shadow_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4];
+
+// Exvoto standing up frames & animated crisp 3D shadows (8 dirs x 8 frames, cropped)
+extern const uint16_t g_exvoto_stand_up_frames[];
+extern const uint32_t g_exvoto_stand_up_frame_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES];
+extern const uint8_t g_exvoto_stand_up_frame_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4];
+extern const uint8_t g_exvoto_stand_up_shadow_masks[];
+extern const uint32_t g_exvoto_stand_up_shadow_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES];
+extern const uint8_t g_exvoto_stand_up_shadow_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4];
 
 // Frame pixels are stored row by row with this pitch (the cropped width rounded up to even), so
 // every row starts on a 32-bit boundary and the blit can read whole words.
@@ -142,8 +170,14 @@ extern const uint16_t g_ojo_look_runs[];
 extern const uint32_t g_ojo_look_run_offsets[PLAYER_NUM_DIRS][OJO_LOOK_NUM_FRAMES];
 extern const uint16_t g_ojo_sentence_runs[];
 extern const uint32_t g_ojo_sentence_run_offsets[PLAYER_NUM_DIRS][OJO_SENTENCE_NUM_FRAMES];
-extern const uint16_t g_skeleton_runs[];
-extern const uint32_t g_skeleton_run_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES];
+extern const uint16_t g_exvoto_runs[];
+extern const uint32_t g_exvoto_run_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES];
+extern const uint16_t g_exvoto_pray_stand_runs[];
+extern const uint32_t g_exvoto_pray_stand_run_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES];
+extern const uint16_t g_exvoto_pray_kneel_runs[];
+extern const uint32_t g_exvoto_pray_kneel_run_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES];
+extern const uint16_t g_exvoto_stand_up_runs[];
+extern const uint32_t g_exvoto_stand_up_run_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES];
 
 // Fast indexed lookups:
 extern const uint16_t * const g_character_frames[NUM_CHARACTERS];
