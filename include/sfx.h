@@ -23,8 +23,9 @@ void sfx_play(SfxId id, int world_x);
 void sfx_start_charge(void);
 void sfx_stop_charge(void);
 
-/* Start or stop the looping cathedral battle BGM (NitroFS stream). */
+/* Start, stop, or pause/resume the looping cathedral battle BGM (NitroFS stream). */
 void sfx_start_bgm(void);
 void sfx_stop_bgm(void);
+void sfx_set_bgm_paused(int paused);
 
 #endif /* SFX_H */

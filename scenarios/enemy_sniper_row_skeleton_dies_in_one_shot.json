@@ -1,6 +1,6 @@
 {
   "name": "enemy_sniper_row_skeleton_dies_in_one_shot",
-  "description": "Frozen skeleton (100 hp), shooter (200) and charger (300) in a row along the sniper ray, 70 px apart on open floor. One sniper shot (150) must kill the skeleton and leave 50 and 150 on the others.",
+  "description": "Frozen skeleton (100 hp), Ojo (shooter type, 300) and charger (300) in a row along the sniper ray, 70 px apart on open floor. One sniper shot (150) must kill the skeleton and leave 150 on both of the others.",
   "tags": [
     "enemy-tiers"
   ],
@@ -129,72 +129,72 @@
       },
       "en1_x": {
         "symbol": "enemies",
-        "offset": 84,
+        "offset": 104,
         "type": "s32"
       },
       "en1_y": {
         "symbol": "enemies",
-        "offset": 88,
+        "offset": 108,
         "type": "s32"
       },
       "en1_active": {
         "symbol": "enemies",
-        "offset": 108,
+        "offset": 128,
         "type": "s32"
       },
       "en1_hp": {
         "symbol": "enemies",
-        "offset": 112,
+        "offset": 132,
         "type": "s32"
       },
       "en1_type": {
         "symbol": "enemies",
-        "offset": 124,
+        "offset": 144,
         "type": "u8"
       },
       "en1_state": {
         "symbol": "enemies",
-        "offset": 125,
+        "offset": 145,
         "type": "u8"
       },
       "en1_timer": {
         "symbol": "enemies",
-        "offset": 128,
+        "offset": 148,
         "type": "s32"
       },
       "en2_x": {
         "symbol": "enemies",
-        "offset": 168,
+        "offset": 208,
         "type": "s32"
       },
       "en2_y": {
         "symbol": "enemies",
-        "offset": 172,
+        "offset": 212,
         "type": "s32"
       },
       "en2_active": {
         "symbol": "enemies",
-        "offset": 192,
+        "offset": 232,
         "type": "s32"
       },
       "en2_hp": {
         "symbol": "enemies",
-        "offset": 196,
+        "offset": 236,
         "type": "s32"
       },
       "en2_type": {
         "symbol": "enemies",
-        "offset": 208,
+        "offset": 248,
         "type": "u8"
       },
       "en2_state": {
         "symbol": "enemies",
-        "offset": 209,
+        "offset": 249,
         "type": "u8"
       },
       "en2_timer": {
         "symbol": "enemies",
-        "offset": 212,
+        "offset": 252,
         "type": "s32"
       },
       "player_hp": {
@@ -347,7 +347,7 @@
       {
         "at": "staged",
         "field": "en1_hp",
-        "equals": 200
+        "equals": 300
       },
       {
         "at": "staged",
@@ -367,7 +367,7 @@
       {
         "at": "after",
         "field": "en1_hp",
-        "equals": 50
+        "equals": 150
       },
       {
         "at": "after",

@@ -8,7 +8,7 @@ ROOT = Path(__file__).resolve().parents[1]
 SETS = [
     ("player", 8),
     ("charger", 8),
-    ("necron", 8),
+    ("ojo", 8),
     ("exvoto", 8),
     ("exvoto_pray_stand", 8),
     ("exvoto_pray_kneel", 8),

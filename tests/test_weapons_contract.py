@@ -56,7 +56,7 @@ class WeaponsContractTest(unittest.TestCase):
         self.assertEqual(hits_to_kill(hp["charger"], sniper["damage_per_hit"]), 2)
 
     def test_enemy_health_scale_is_hundredths(self):
-        self.assertEqual(parse_enemy_hp(), {"charger": 300, "shooter": 200, "skeleton": 100})
+        self.assertEqual(parse_enemy_hp(), {"charger": 300, "shooter": 300, "skeleton": 100})
 
     def test_sniper_one_shots_the_skeleton(self):
         sniper = parse_weapon_table()["WEAPON_SNIPER"]
@@ -68,7 +68,7 @@ class WeaponsContractTest(unittest.TestCase):
         shotgun = table["WEAPON_SHOTGUN"]
         full_blast = shotgun["damage_per_hit"] * shotgun["pellets"]
         self.assertEqual(shotgun["damage_per_hit"], 40)    # scale 100 = 1.0
-        self.assertGreaterEqual(full_blast, hp["shooter"])
+        self.assertEqual(hits_to_kill(hp["shooter"], full_blast), 2)   # the Ojo (300 hp) takes two point-blank blasts
         shots = hits_to_kill(hp["charger"], full_blast)
         self.assertEqual(shots, 2)                                # DESIGN.md 6.9.1: charger in 2 point-blank shots
         self.assertEqual(hits_to_kill(hp["skeleton"], full_blast), 1)

@@ -31,6 +31,10 @@ enum { GFX_FILL_SOLID = 0, GFX_FILL_CHECKER, GFX_FILL_HATCH };
 // One pixel at ground point (wx, wy). `color` is BGR555 without the alpha bit.
 void gfx_ground_px(const GroundTarget *g, int wx, int wy, uint16_t color);
 
+// One-pixel line between two world points (already in the 2:1 world: a ground vector must have its y
+// halved by the caller). `dash` as in gfx_ground_ring. At most max(|dx|, |dy|) + 1 pixels.
+void gfx_ground_line(const GroundTarget *g, int x0, int y0, int x1, int y1, uint16_t color, int dash);
+
 // One-pixel ellipse outline. `dash`: 0 = continuous, otherwise draw an arc step only when
 // (step / dash) is even (step = one outline pixel along the perimeter).
 void gfx_ground_ring(const GroundTarget *g, int cx, int cy, int radius, uint16_t color, int dash);

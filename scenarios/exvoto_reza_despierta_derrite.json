@@ -338,122 +338,122 @@
       },
       "en1_x": {
         "symbol": "enemies",
-        "offset": 88,
+        "offset": 116,
         "type": "s32"
       },
       "en1_y": {
         "symbol": "enemies",
-        "offset": 92,
+        "offset": 120,
         "type": "s32"
       },
       "en1_dir": {
         "symbol": "enemies",
-        "offset": 96,
+        "offset": 124,
         "type": "s32"
       },
       "en1_frame": {
         "symbol": "enemies",
-        "offset": 100,
+        "offset": 128,
         "type": "s32"
       },
       "en1_char": {
         "symbol": "enemies",
-        "offset": 108,
+        "offset": 136,
         "type": "s32"
       },
       "en1_active": {
         "symbol": "enemies",
-        "offset": 112,
+        "offset": 140,
         "type": "s32"
       },
       "en1_hp": {
         "symbol": "enemies",
-        "offset": 116,
+        "offset": 144,
         "type": "s32"
       },
       "en1_state": {
         "symbol": "enemies",
-        "offset": 129,
+        "offset": 157,
         "type": "u8"
       },
       "en2_x": {
         "symbol": "enemies",
-        "offset": 176,
+        "offset": 232,
         "type": "s32"
       },
       "en2_y": {
         "symbol": "enemies",
-        "offset": 180,
+        "offset": 236,
         "type": "s32"
       },
       "en2_dir": {
         "symbol": "enemies",
-        "offset": 184,
+        "offset": 240,
         "type": "s32"
       },
       "en2_frame": {
         "symbol": "enemies",
-        "offset": 188,
+        "offset": 244,
         "type": "s32"
       },
       "en2_char": {
         "symbol": "enemies",
-        "offset": 196,
+        "offset": 252,
         "type": "s32"
       },
       "en2_active": {
         "symbol": "enemies",
-        "offset": 200,
+        "offset": 256,
         "type": "s32"
       },
       "en2_hp": {
         "symbol": "enemies",
-        "offset": 204,
+        "offset": 260,
         "type": "s32"
       },
       "en2_state": {
         "symbol": "enemies",
-        "offset": 217,
+        "offset": 273,
         "type": "u8"
       },
       "en3_x": {
         "symbol": "enemies",
-        "offset": 264,
+        "offset": 348,
         "type": "s32"
       },
       "en3_y": {
         "symbol": "enemies",
-        "offset": 268,
+        "offset": 352,
         "type": "s32"
       },
       "en3_dir": {
         "symbol": "enemies",
-        "offset": 272,
+        "offset": 356,
         "type": "s32"
       },
       "en3_frame": {
         "symbol": "enemies",
-        "offset": 276,
+        "offset": 360,
         "type": "s32"
       },
       "en3_char": {
         "symbol": "enemies",
-        "offset": 284,
+        "offset": 368,
         "type": "s32"
       },
       "en3_active": {
         "symbol": "enemies",
-        "offset": 288,
+        "offset": 372,
         "type": "s32"
       },
       "en3_hp": {
         "symbol": "enemies",
-        "offset": 292,
+        "offset": 376,
         "type": "s32"
       },
       "en3_state": {
         "symbol": "enemies",
-        "offset": 305,
+        "offset": 389,
         "type": "u8"
       }
     }
@@ -461,6 +461,17 @@
   "steps": [
     {
       "frames": 30
+    },
+    {
+      "tap": {
+        "x": 128,
+        "y": 66
+      },
+      "frames": 4
+    },
+    {
+      "release": true,
+      "frames": 10
     },
     {
       "poke": [

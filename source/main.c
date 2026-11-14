@@ -23,6 +23,8 @@
 #include "pickups.h"
 #include "exvoto_melt.h"
 #include "sfx.h"
+#include "hud_icons_gfx.h"
+#include "menu.h"
 #include <string.h>
 #include <time.h>
 
@@ -132,6 +134,8 @@ typedef struct {
 volatile NavigationState g_nav_state;
 static uint32_t s_blocked_moves = 0;
 static uint32_t s_keys_down_latch = 0;
+static int s_run_started = 0;
+static int s_menu_prev_touch = 0;
 
 typedef struct {
     uint32_t calls, runs, pixels, ticks, frame_index;
@@ -143,7 +147,7 @@ volatile OcclusionStats g_occlusion_stats;
 Enemy g_enemies[MAX_ENEMIES];     // not static: headless scenarios read it by symbol (the arena data also has an s_enemies)
 // Headless scenarios read g_enemies / g_player_state by byte offset (scenarios/enemy_*.json); a moved field breaks the build.
 // ARM EABI enums are 1 byte here (type and state are u8 in the scenarios).
-_Static_assert(sizeof(Enemy) == 88 && offsetof(Enemy, hp) == 28 && offsetof(Enemy, type) == 40 &&
+_Static_assert(sizeof(Enemy) == 116 && offsetof(Enemy, hp) == 28 && offsetof(Enemy, type) == 40 &&
                offsetof(Enemy, state) == 41 && offsetof(Enemy, state_timer) == 44 && offsetof(Enemy, stun_timer) == 76,
                "Enemy layout used by the scenarios changed");
 _Static_assert(sizeof(PlayerState) == 24 && offsetof(PlayerState, hp) == 0 && offsetof(PlayerState, invuln_timer) == 16,
@@ -765,7 +769,11 @@ static void draw_enemy(uint16_t *buffer, const Enemy *e, int cam_x, int cam_y) {
 
     int tf = (e->frame == 1);
     int cf = e->frame & (CHARGER_CHARGE_NUM_FRAMES - 1);
-    const uint8_t *b = (is_telegraph && e->frame == 0) ? g_character_frame_bounds[CHAR_CHARGER][e->dir][0]
+    int oc = ojo_clip(e);                                  // Ojo: walk (CHAR_OJO slot), look loop or sentence gesture
+    int of = ojo_clip_frame(e, oc);
+    const uint8_t *b = oc == CLIP_OJO_SENTENCE ? g_ojo_sentence_frame_bounds[e->dir][of]
+                     : oc == CLIP_OJO_LOOK     ? g_ojo_look_frame_bounds[e->dir][of]
+                     : (is_telegraph && e->frame == 0) ? g_character_frame_bounds[CHAR_CHARGER][e->dir][0]
                      : (is_telegraph && tf)           ? g_charger_telegraph_frame_bounds[e->dir][0]
                      : (is_telegraph || is_charge)    ? g_charger_charge_frame_bounds[e->dir][is_telegraph ? 0 : cf]
                                                       : g_character_frame_bounds[e->char_id][e->dir][e->frame];
@@ -777,14 +785,18 @@ static void draw_enemy(uint16_t *buffer, const Enemy *e, int cam_x, int cam_y) {
 
     int sw = g_characters[e->char_id].sprite_w;
     int sh = g_characters[e->char_id].sprite_h;
-    const uint16_t *frame = (is_telegraph && e->frame == 0)
+    const uint16_t *frame = oc == CLIP_OJO_SENTENCE ? &g_ojo_sentence_frames[g_ojo_sentence_frame_offsets[e->dir][of]]
+        : oc == CLIP_OJO_LOOK ? &g_ojo_look_frames[g_ojo_look_frame_offsets[e->dir][of]]
+        : (is_telegraph && e->frame == 0)
         ? character_frame_ptr(CHAR_CHARGER, e->dir, 0)
         : (is_telegraph && tf)
         ? &g_charger_telegraph_frames[g_charger_telegraph_frame_offsets[e->dir][0]]
         : (is_telegraph || is_charge)
         ? &g_charger_charge_frames[g_charger_charge_frame_offsets[e->dir][is_telegraph ? 0 : cf]]
         : character_frame_ptr(e->char_id, e->dir, e->frame);
-    const uint16_t *runs = (is_telegraph && e->frame == 0)
+    const uint16_t *runs = oc == CLIP_OJO_SENTENCE ? &g_ojo_sentence_runs[g_ojo_sentence_run_offsets[e->dir][of]]
+        : oc == CLIP_OJO_LOOK ? &g_ojo_look_runs[g_ojo_look_run_offsets[e->dir][of]]
+        : (is_telegraph && e->frame == 0)
         ? character_runs_ptr(CHAR_CHARGER, e->dir, 0)
         : (is_telegraph && tf)
         ? &g_charger_telegraph_runs[g_charger_telegraph_run_offsets[e->dir][0]]
@@ -794,6 +806,8 @@ static void draw_enemy(uint16_t *buffer, const Enemy *e, int cam_x, int cam_y) {
     blit_stride(buffer, frame, runs, sprite_pitch(bw), bw, bh,
                 px - sw / 2 + min_x, py - s_char_ground_anchor[e->char_id][e->dir] + min_y,
                 cam_x, cam_y, s_draw_item_depth);
+    if (e->char_id == CHAR_OJO)
+        enemy_ojo_mouth_glow_render(buffer, e, (int)(e - g_enemies), cam_x, cam_y, s_draw_item_depth);
     if (e->hit_timer > 0)
         draw_hit_spark(buffer, px, py - (sh * 3) / 5, cam_x, cam_y, e->hit_timer);
 }
@@ -933,6 +947,17 @@ static int shadow_select(const DrawItem *it, ShadowSel *sel) {
         int is_telegraph = (e->char_id == CHAR_CHARGER && e->state == ENEMY_STATE_TELEGRAPH);
         int is_charge = (e->char_id == CHAR_CHARGER && e->state == ENEMY_STATE_CHARGE);
         int cf = e->frame & (CHARGER_CHARGE_NUM_FRAMES - 1);
+        int oc = ojo_clip(e);
+        int of = ojo_clip_frame(e, oc);
+        if (oc != CLIP_OJO_WALK) {
+            sel->mask = oc == CLIP_OJO_SENTENCE ? &g_ojo_sentence_shadow_masks[g_ojo_sentence_shadow_offsets[e->dir][of]]
+                                                : &g_ojo_look_shadow_masks[g_ojo_look_shadow_offsets[e->dir][of]];
+            sel->bounds = oc == CLIP_OJO_SENTENCE ? g_ojo_sentence_shadow_bounds[e->dir][of]
+                                                  : g_ojo_look_shadow_bounds[e->dir][of];
+            sel->left = it->cx - shw / 2;
+            sel->top = it->cy - shh / 2;
+            return 1;
+        }
         sel->mask = (is_telegraph && e->frame == 0) ? character_shadow_mask_ptr(CHAR_CHARGER, e->dir, 0)
                   : (is_telegraph || is_charge)     ? &g_charger_charge_shadow_masks[g_charger_charge_shadow_offsets[e->dir][is_telegraph ? 0 : cf]]
                                                     : character_shadow_mask_ptr(e->char_id, e->dir, e->frame);
@@ -1037,6 +1062,15 @@ ITCM_CODE static void render_screen(uint16_t *buffer, DirtySpan *spans, int cam_
     if (out_floor) *out_floor = cpuGetTiming() - floor_start_ticks;
     PP_ADD(PP_CLEAR, pp_clear);
 
+    if (!s_run_started) {
+#if HW_SHADOWS
+        hwshadow_begin(sub_screen);
+#endif
+        if (out_shadow) *out_shadow = 0;
+        if (out_blit) *out_blit = 0;
+        return;
+    }
+
     // 0) Ground decals of the weapons (aim marker, warning zones, shock rings): under everything.
     weapons_render_floor(buffer, cam_x, cam_y);
     {
@@ -1083,7 +1117,11 @@ ITCM_CODE static void render_screen(uint16_t *buffer, DirtySpan *spans, int cam_
     PP_ADD(PP_SORT, pp_sort);
     uint32_t t_bl0 = cpuGetTiming();
     PP_T0(pp_blit);
+    // Gaze bands and sentence beams are interleaved with the actors by ground depth: the steps further away than an actor
+    // are painted before it (it covers them), the nearer ones after it (they cover it).
+    enemy_lasers_begin(g_enemies, MAX_ENEMIES, cam_x, cam_y);
     for (int i = 0; i < count; i++) {
+        enemy_lasers_draw_before(buffer, items[i].depth);
         s_draw_item_depth = items[i].depth;
         int sp = items[i].ref;
         CRASH_MARK(CL_DRAW_ITEM, sp, items[i].depth);
@@ -1099,10 +1137,10 @@ ITCM_CODE static void render_screen(uint16_t *buffer, DirtySpan *spans, int cam_
             draw_enemy(buffer, &g_enemies[-2 - sp], cam_x, cam_y);
         }
     }
+    enemy_lasers_end(buffer);
     PP_ADD(PP_BLIT, pp_blit);
     weapons_render_light(buffer, cam_x, cam_y);     // beams light the sprites drawn above
     PP_T0(pp_proj);
-    enemy_lasers_render(buffer, g_enemies, MAX_ENEMIES, cam_x, cam_y);
     weapons_render(buffer, cam_x, cam_y);
     mods_render(buffer, cam_x, cam_y);
     PP_ADD(PP_PROJ, pp_proj);
@@ -1281,6 +1319,17 @@ static void hud_square(uint16_t *buffer, int x, int y, int size, uint16_t fill, 
     }
 }
 
+// Opaque pixels of a HUD icon (BIT(15) set), clipped to the screen; transparent ones are skipped.
+static void hud_icon(uint16_t *buffer, int x, int y, const uint16_t *icon) {
+    for (int gy = 0; gy < HUD_ICON_H; gy++) {
+        dirty_row(y + gy, x, x + HUD_ICON_W);
+        for (int gx = 0; gx < HUD_ICON_W; gx++) {
+            uint16_t c = icon[gy * HUD_ICON_W + gx];
+            if (c) hud_px(buffer, x + gx, y + gy, c);
+        }
+    }
+}
+
 static void draw_run_hud(uint16_t *buffer) {
     const uint16_t ink = RGB15(31, 31, 31) | BIT(15);
     const uint16_t dark = RGB15(5, 1, 1) | BIT(15);
@@ -1303,6 +1352,14 @@ static void draw_run_hud(uint16_t *buffer) {
         hud_text(buffer, 6, SCREEN_H - 32, line, ink);
         snprintf(line, sizeof(line), "TIEMPO %lu:%02lu", (unsigned long)(seconds / 60u), (unsigned long)(seconds % 60u));
         hud_text(buffer, 6, SCREEN_H - 16, line, ink);
+
+        // Sacred Hearts: one per max hit point, right-aligned at the top of the bottom screen.
+        const int heart_gap = 2;
+        int max_hp = g_player_state.max_hp;
+        int hx0 = SCREEN_W - 6 - max_hp * (HUD_ICON_W + heart_gap) + heart_gap;
+        for (int i = 0; i < max_hp; i++)
+            hud_icon(buffer, hx0 + i * (HUD_ICON_W + heart_gap), 6,
+                     i < g_player_state.hp ? g_hud_heart_full : g_hud_heart_empty);
         return;
     }
 
@@ -1362,6 +1419,33 @@ static void present_vblank_begin(void) {
 // + floor-only darkening, with the tide taking over from its first line (tide_window_top).
 // Software shadows: the tide module alone, as before.
 static void present_screen_effects(int top_cam_y, int bot_tide_cam_y) {
+    if (menu_is_open()) {
+#if HW_SHADOWS
+        if (g_hw_shadows_on) {
+            hwshadow_screen_regs(1, (s_run_started && s_strip_mode) ? tide_window_top(top_cam_y) : SCREEN_H);
+            hwshadow_screen_regs(0, SCREEN_H);
+        } else {
+            hwshadow_regs_off();
+            if (s_run_started && s_strip_mode) {
+                tide_render_window(1, top_cam_y);
+            } else {
+                REG_BLDCNT_SUB = 0;
+                REG_DISPCNT_SUB &= ~DISPLAY_WIN0_ON;
+            }
+        }
+#else
+        if (s_run_started && s_strip_mode) {
+            tide_render_window(1, top_cam_y);
+        } else {
+            REG_BLDCNT_SUB = 0;
+            REG_DISPCNT_SUB &= ~DISPLAY_WIN0_ON;
+        }
+#endif
+        REG_DISPCNT &= ~(DISPLAY_WIN0_ON | DISPLAY_SPR_WIN_ON);
+        REG_BLDCNT = BIT(1) | (3 << 6);
+        REG_BLDY = 9;
+        return;
+    }
 #if HW_SHADOWS
     if (g_hw_shadows_on) {
         hwshadow_screen_regs(1, s_strip_mode ? tide_window_top(top_cam_y) : SCREEN_H);
@@ -1373,6 +1457,9 @@ static void present_screen_effects(int top_cam_y, int bot_tide_cam_y) {
     if (s_strip_mode) {
         tide_render_window(1, top_cam_y);
         tide_render_window(0, bot_tide_cam_y);
+    } else {
+        REG_BLDCNT = 0;
+        REG_BLDY = 0;
     }
 }
 
@@ -1767,10 +1854,12 @@ static void player_update(uint32_t keys, uint32_t keys_down) {
         }
     }
 
-    // L is the only button of the test: it switches weapon (and cancels a sniper aim).
+#if TEST_WEAPON_CYCLE
+    // Test variants only: L switches weapon (and cancels a sniper aim). The demo ROM has just the laser.
     if (keys_down & KEY_L) {
         weapons_cycle(&g_player_state);
     }
+#endif
     // Playground ROM: R puts the parked dummies back (no-op in every other build).
     if (keys_down & KEY_R) sandbox_respawn();
     // DESIGN.md 4.9 (debug): SELECT cycles the shotgun and grenade effects style A/B/C (the sniper is always C).
@@ -2126,10 +2215,18 @@ int main(void) {
     init_bg_tile_cache(&s_bot_bg_tile_cache, BG_TILE_CACHE_CAPACITY, s_bot_bg_tiles_vram);
     update_screen_hardware_bg(1, s_top_map_ptr, s_cam_x, s_cam_y - SCREEN_H);
 
+#if !(SANDBOX || STRESS_TEST)
+    menu_open_title();
+    sfx_stop_bgm();
+#else
+    s_run_started = 1;
+#endif
+
     render_screen(s_top_page, s_dirty_top, s_cam_x, s_cam_y - SCREEN_H, 1, NULL, NULL, NULL);
     render_screen(bot_page_ptr(s_bot_active_page), s_dirty[s_bot_active_page == 24], s_cam_x, s_cam_y, 0, NULL, NULL, NULL);
-    draw_run_hud(bot_page_ptr(s_bot_active_page));
-    draw_fps_hud(bot_page_ptr(s_bot_active_page));
+    if (s_run_started) draw_run_hud(bot_page_ptr(s_bot_active_page));
+    if (menu_is_open()) menu_render_bottom(bot_page_ptr(s_bot_active_page));
+    if (g_perf.show_hud != 0) draw_fps_hud(bot_page_ptr(s_bot_active_page));
     update_screen_hardware_bg(0, s_bot_map_ptr, s_cam_x, s_cam_y);
 
     while (1) {
@@ -2143,19 +2240,45 @@ int main(void) {
         touchPosition touch;
         touchRead(&touch);
         int touch_down = (keys_held & KEY_TOUCH) && touch.px < SCREEN_W && touch.py < SCREEN_H;
-
-        if (keys_down & KEY_START) {
-            g_perf.show_hud = !g_perf.show_hud;
-        }
+        int menu_touch_pressed = touch_down && !s_menu_prev_touch;
+        s_menu_prev_touch = touch_down;
+        static int s_menu_ignore_held_touch = 0;
 
         uint32_t t0 = cpuGetTiming();
         sfx_frame_begin(s_cam_x);
-        touch_track(touch_down, touch.px, touch.py);
-        s_keys_down_latch |= keys_down;
+        if (menu_is_open()) {
+            MenuAction act = menu_update(keys_down, menu_touch_pressed, touch.px, touch.py);
+            if (act == MENU_ACT_START_NEW) {
+                menu_close();
+                s_run_started = 1;
+                arena_restart();
+                sfx_start_bgm();
+                s_keys_down_latch = 0;
+                s_menu_ignore_held_touch = touch_down;
+                touch_track(0, 0, 0);
+            } else if (act == MENU_ACT_RESUME) {
+                menu_close();
+                sfx_set_bgm_paused(0);
+                s_keys_down_latch = 0;
+                s_menu_ignore_held_touch = touch_down;
+                touch_track(0, 0, 0);
+            }
+        } else {
+            if (!touch_down) s_menu_ignore_held_touch = 0;
+            touch_track(s_menu_ignore_held_touch ? 0 : touch_down, touch.px, touch.py);
+            s_keys_down_latch |= keys_down;
+            if ((keys_down & KEY_START) && !g_player_state.is_dead && s_transition == TRANSITION_NONE) {
+                menu_open_pause();
+                sfx_set_bgm_paused(1);
+                s_keys_down_latch = 0;
+                touch_track(0, 0, 0);
+            }
+        }
         transition_update();
         int simulate = g_hitstop_frames <= 0 && s_transition == TRANSITION_NONE &&
+                       !menu_is_open() &&
                        (!s_strip_mode || !g_player_state.is_dead);
-        if (!simulate) g_hitstop_frames--;
+        if (!menu_is_open() && !simulate) g_hitstop_frames--;
         if (simulate) {
             death_chunks_frame_begin();
             sandbox_update(g_enemies, MAX_ENEMIES, &s_player.x, &s_player.y);
@@ -2207,14 +2330,19 @@ int main(void) {
         uint32_t t2 = cpuGetTiming();
         CRASH_MARK(CL_RENDER_START, 0, 0);
         render_screen(bot_page_ptr(s_bot_back_page), s_dirty[s_bot_back_page == 24], view_x, view_y, 0, &bot_floor, &bot_sh, &bot_bl);
-        if (s_strip_mode) {
+        if (s_run_started && s_strip_mode) {
             g_dirty_cur = s_dirty[s_bot_back_page == 24];
             pickups_render(bot_page_ptr(s_bot_back_page), view_x, view_y);
             tide_render_border(bot_page_ptr(s_bot_back_page), view_y);
         }
         CRASH_MARK(CL_RENDER_DONE, 0, 0);
         PP_T0(pp_hud);
-        draw_run_hud(bot_page_ptr(s_bot_back_page));
+        if (s_run_started) {
+            draw_run_hud(bot_page_ptr(s_bot_back_page));
+        }
+        if (menu_is_open()) {
+            menu_render_bottom(bot_page_ptr(s_bot_back_page));
+        }
         if (g_perf.show_hud != 0) {
             draw_fps_hud(bot_page_ptr(s_bot_back_page));
         }
@@ -2222,7 +2350,7 @@ int main(void) {
         uint32_t bot_ticks = cpuGetTiming() - t2;
 
 #if defined(GODRAYS_PROTO) && GODRAYS_PROTO
-        godrays_update(view_x, top_cam_y, view_y);
+        if (!menu_is_open()) godrays_update(view_x, top_cam_y, view_y);
 #endif
         uint32_t pre_vwait_cpu = cpuGetTiming() - frame_start_ticks;
         int vcount_done = REG_VCOUNT;
@@ -2236,7 +2364,7 @@ int main(void) {
         present_screen_effects(top_cam_y, (s_strip_mode && g_player_state.is_dead) ? TO_INT(tide_y()) - SCREEN_H : view_y);
         uint32_t t_top = cpuGetTiming();
         render_screen(s_top_page, s_dirty_top, view_x, view_y - SCREEN_H, 1, &top_floor, &top_sh, &top_bl);
-        if (s_strip_mode) {
+        if (s_run_started && s_strip_mode) {
             g_dirty_cur = s_dirty_top;
             pickups_render(s_top_page, view_x, view_y - SCREEN_H);
             tide_render_border(s_top_page, view_y - SCREEN_H);

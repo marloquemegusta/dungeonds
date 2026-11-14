@@ -19,12 +19,9 @@ const EnemyTuning g_enemy_tuning[NUM_ENEMY_TYPES] = {
         .charge_speed = 650,      // [TUNABLE-PLACEHOLDER] 8.8 fixed: ~2 x the hero (326), straight line
     },
     [ENEMY_TYPE_SHOOTER] = {
-        .max_hp = 200,            // [TUNABLE-PLACEHOLDER] scale 100 = 1.0 (was 20)
-        .speed = 180,             // [TUNABLE-PLACEHOLDER] 8.8 fixed: ~55% of the hero, enough to back off
-        .attack_cooldown = 90,    // [TUNABLE-PLACEHOLDER] frames of cooldown after the laser fires (was 70 between bursts)
-        .preferred_dist_min = 56, // [TUNABLE-PLACEHOLDER] band: backs off closer than this (ground px)
-        .preferred_dist_max = 104,// [TUNABLE-PLACEHOLDER] closes in beyond this (ground px)
-        .position_duration = 30,  // [TUNABLE-PLACEHOLDER] frames settling before it starts a laser
+        .max_hp = 300,            // [TUNABLE-PLACEHOLDER] Ojo del Tribunal (DESIGN.md 6.10), scale 100 = 1.0: two sniper hits (150 each)
+        .speed = 110,             // [TUNABLE-PLACEHOLDER] 8.8 fixed: about a third of the hero's 326
+        .attack_cooldown = 90,    // [TUNABLE-PLACEHOLDER] frames of cooldown after the sentence, then it closes in again
     },
     [ENEMY_TYPE_EXVOTO] = {
         .max_hp = 100,            // [TUNABLE-PLACEHOLDER] scale 100 = 1.0: dies to one sniper hit or a point-blank shotgun
@@ -66,7 +63,11 @@ void player_state_init(PlayerState *player) {
     if (!player) return;
     player->max_hp = PLAYER_MAX_HP + g_mods.max_hp;
     player->hp = player->max_hp;
+#if TEST_WEAPON_CYCLE
     player->current_weapon = WEAPON_SHOTGUN;
+#else
+    player->current_weapon = WEAPON_SNIPER;  // demo: the laser is the hero's only weapon (DESIGN.md 6.9.1c)
+#endif
     player->is_dead = 0;
     player->invuln_timer = 0;
 }

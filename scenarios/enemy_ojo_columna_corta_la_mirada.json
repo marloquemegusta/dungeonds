@@ -1,0 +1,456 @@
+{
+  "name": "enemy_ojo_columna_corta_la_mirada",
+  "description": "Ojo at (300,528) and a hero at (420,528), 120 ground px away (inside the sight range) with the pillar x352-383,y520-535 exactly in the line (checked with the game's los test). For 25 frames the Ojo never starts tracking (state CHASE) and the hero is not hurt: a column cuts the gaze.",
+  "tags": [
+    "ojo-tribunal"
+  ],
+  "state": {
+    "symbols": {
+      "sb": "g_sandbox",
+      "enemies": "g_enemies",
+      "player": "g_player_state",
+      "nav": "g_nav_state"
+    },
+    "default_symbol": "sb",
+    "fields": {
+      "seq": {
+        "offset": 0,
+        "type": "u32"
+      },
+      "ack": {
+        "offset": 4,
+        "type": "u32"
+      },
+      "player_x": {
+        "offset": 8,
+        "type": "s16"
+      },
+      "player_y": {
+        "offset": 10,
+        "type": "s16"
+      },
+      "weapon": {
+        "offset": 12,
+        "type": "u8"
+      },
+      "style": {
+        "offset": 13,
+        "type": "u8"
+      },
+      "enemy_count": {
+        "offset": 14,
+        "type": "u8"
+      },
+      "flags": {
+        "offset": 15,
+        "type": "u8"
+      },
+      "e0_type": {
+        "offset": 16,
+        "type": "u8"
+      },
+      "e0_flags": {
+        "offset": 17,
+        "type": "u8"
+      },
+      "e0_x": {
+        "offset": 18,
+        "type": "s16"
+      },
+      "e0_y": {
+        "offset": 20,
+        "type": "s16"
+      },
+      "e1_type": {
+        "offset": 22,
+        "type": "u8"
+      },
+      "e1_flags": {
+        "offset": 23,
+        "type": "u8"
+      },
+      "e1_x": {
+        "offset": 24,
+        "type": "s16"
+      },
+      "e1_y": {
+        "offset": 26,
+        "type": "s16"
+      },
+      "e2_type": {
+        "offset": 28,
+        "type": "u8"
+      },
+      "e2_flags": {
+        "offset": 29,
+        "type": "u8"
+      },
+      "e2_x": {
+        "offset": 30,
+        "type": "s16"
+      },
+      "e2_y": {
+        "offset": 32,
+        "type": "s16"
+      },
+      "e3_type": {
+        "offset": 34,
+        "type": "u8"
+      },
+      "e3_flags": {
+        "offset": 35,
+        "type": "u8"
+      },
+      "e3_x": {
+        "offset": 36,
+        "type": "s16"
+      },
+      "e3_y": {
+        "offset": 38,
+        "type": "s16"
+      },
+      "e4_type": {
+        "offset": 40,
+        "type": "u8"
+      },
+      "e4_flags": {
+        "offset": 41,
+        "type": "u8"
+      },
+      "e4_x": {
+        "offset": 42,
+        "type": "s16"
+      },
+      "e4_y": {
+        "offset": 44,
+        "type": "s16"
+      },
+      "e5_type": {
+        "offset": 46,
+        "type": "u8"
+      },
+      "e5_flags": {
+        "offset": 47,
+        "type": "u8"
+      },
+      "e5_x": {
+        "offset": 48,
+        "type": "s16"
+      },
+      "e5_y": {
+        "offset": 50,
+        "type": "s16"
+      },
+      "e6_type": {
+        "offset": 52,
+        "type": "u8"
+      },
+      "e6_flags": {
+        "offset": 53,
+        "type": "u8"
+      },
+      "e6_x": {
+        "offset": 54,
+        "type": "s16"
+      },
+      "e6_y": {
+        "offset": 56,
+        "type": "s16"
+      },
+      "e7_type": {
+        "offset": 58,
+        "type": "u8"
+      },
+      "e7_flags": {
+        "offset": 59,
+        "type": "u8"
+      },
+      "e7_x": {
+        "offset": 60,
+        "type": "s16"
+      },
+      "e7_y": {
+        "offset": 62,
+        "type": "s16"
+      },
+      "e8_type": {
+        "offset": 64,
+        "type": "u8"
+      },
+      "e8_flags": {
+        "offset": 65,
+        "type": "u8"
+      },
+      "e8_x": {
+        "offset": 66,
+        "type": "s16"
+      },
+      "e8_y": {
+        "offset": 68,
+        "type": "s16"
+      },
+      "e9_type": {
+        "offset": 70,
+        "type": "u8"
+      },
+      "e9_flags": {
+        "offset": 71,
+        "type": "u8"
+      },
+      "e9_x": {
+        "offset": 72,
+        "type": "s16"
+      },
+      "e9_y": {
+        "offset": 74,
+        "type": "s16"
+      },
+      "e10_type": {
+        "offset": 76,
+        "type": "u8"
+      },
+      "e10_flags": {
+        "offset": 77,
+        "type": "u8"
+      },
+      "e10_x": {
+        "offset": 78,
+        "type": "s16"
+      },
+      "e10_y": {
+        "offset": 80,
+        "type": "s16"
+      },
+      "e11_type": {
+        "offset": 82,
+        "type": "u8"
+      },
+      "e11_flags": {
+        "offset": 83,
+        "type": "u8"
+      },
+      "e11_x": {
+        "offset": 84,
+        "type": "s16"
+      },
+      "e11_y": {
+        "offset": 86,
+        "type": "s16"
+      },
+      "e12_type": {
+        "offset": 88,
+        "type": "u8"
+      },
+      "e12_flags": {
+        "offset": 89,
+        "type": "u8"
+      },
+      "e12_x": {
+        "offset": 90,
+        "type": "s16"
+      },
+      "e12_y": {
+        "offset": 92,
+        "type": "s16"
+      },
+      "e13_type": {
+        "offset": 94,
+        "type": "u8"
+      },
+      "e13_flags": {
+        "offset": 95,
+        "type": "u8"
+      },
+      "e13_x": {
+        "offset": 96,
+        "type": "s16"
+      },
+      "e13_y": {
+        "offset": 98,
+        "type": "s16"
+      },
+      "e14_type": {
+        "offset": 100,
+        "type": "u8"
+      },
+      "e14_flags": {
+        "offset": 101,
+        "type": "u8"
+      },
+      "e14_x": {
+        "offset": 102,
+        "type": "s16"
+      },
+      "e14_y": {
+        "offset": 104,
+        "type": "s16"
+      },
+      "e15_type": {
+        "offset": 106,
+        "type": "u8"
+      },
+      "e15_flags": {
+        "offset": 107,
+        "type": "u8"
+      },
+      "e15_x": {
+        "offset": 108,
+        "type": "s16"
+      },
+      "e15_y": {
+        "offset": 110,
+        "type": "s16"
+      },
+      "en0_x": {
+        "symbol": "enemies",
+        "offset": 0,
+        "type": "s32"
+      },
+      "en0_y": {
+        "symbol": "enemies",
+        "offset": 4,
+        "type": "s32"
+      },
+      "en0_active": {
+        "symbol": "enemies",
+        "offset": 24,
+        "type": "s32"
+      },
+      "en0_hp": {
+        "symbol": "enemies",
+        "offset": 28,
+        "type": "s32"
+      },
+      "en0_type": {
+        "symbol": "enemies",
+        "offset": 40,
+        "type": "u8"
+      },
+      "en0_state": {
+        "symbol": "enemies",
+        "offset": 41,
+        "type": "u8"
+      },
+      "en1_state": {
+        "symbol": "enemies",
+        "offset": 157,
+        "type": "u8"
+      },
+      "en1_y": {
+        "symbol": "enemies",
+        "offset": 120,
+        "type": "s32"
+      },
+      "en0_timer": {
+        "symbol": "enemies",
+        "offset": 44,
+        "type": "s32"
+      },
+      "player_hp": {
+        "symbol": "player",
+        "offset": 0,
+        "type": "s32"
+      },
+      "player_iframes": {
+        "symbol": "player",
+        "offset": 16,
+        "type": "s32"
+      },
+      "nav_y": {
+        "symbol": "nav",
+        "offset": 4,
+        "type": "s32"
+      }
+    }
+  },
+  "steps": [
+    {
+      "frames": 30
+    },
+    {
+      "poke": [
+        {
+          "field": "player_x",
+          "value": 420
+        },
+        {
+          "field": "player_y",
+          "value": 528
+        },
+        {
+          "field": "weapon",
+          "value": 1
+        },
+        {
+          "field": "style",
+          "value": 0
+        },
+        {
+          "field": "flags",
+          "value": 1
+        },
+        {
+          "field": "enemy_count",
+          "value": 1
+        },
+        {
+          "field": "e0_type",
+          "value": 2
+        },
+        {
+          "field": "e0_flags",
+          "value": 0
+        },
+        {
+          "field": "e0_x",
+          "value": 300
+        },
+        {
+          "field": "e0_y",
+          "value": 528
+        },
+        {
+          "field": "seq",
+          "value": 1
+        }
+      ],
+      "frames": 1
+    },
+    {
+      "wait_until": {
+        "field": "ack",
+        "equals": 1,
+        "timeout_frames": 30
+      }
+    },
+    {
+      "frames": 12,
+      "capture": "01_heroe_oculto_tras_la_columna",
+      "state_capture": "a_los_12"
+    },
+    {
+      "frames": 13,
+      "capture": "02_sigue_sin_fijarlo",
+      "state_capture": "a_los_25"
+    }
+  ],
+  "assertions": {
+    "state_changes": [
+      {
+        "at": "a_los_12",
+        "field": "en0_state",
+        "max_value": 1
+      },
+      {
+        "at": "a_los_25",
+        "field": "en0_state",
+        "max_value": 1
+      },
+      {
+        "at": "a_los_25",
+        "field": "player_hp",
+        "equals": 5
+      }
+    ]
+  }
+}

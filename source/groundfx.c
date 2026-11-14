@@ -104,6 +104,12 @@ static void ring_walk(const GroundTarget *g, int cx, int cy, int r, uint16_t col
     }
 }
 
+void gfx_ground_line(const GroundTarget *g, int x0, int y0, int x1, int y1, uint16_t color, int dash) {
+    if (!g) return;
+    DashState ds = { dash, 0, 1 };
+    ground_line(g, x0, y0, x1, y1, color, &ds, 0);
+}
+
 void gfx_ground_ring(const GroundTarget *g, int cx, int cy, int radius, uint16_t color, int dash) {
     if (!g) return;
     ring_walk(g, cx, cy, radius, color, dash, 0, 32);

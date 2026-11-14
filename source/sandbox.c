@@ -142,6 +142,8 @@ static void sandbox_place(Enemy *e, EnemyType type, int x, int y, int ordinal, i
     e->strafe_dir = (ordinal & 1) ? 1 : -1;
     e->has_los = 0;
     e->kneel = 0;
+    e->aim_px = e->aim_py = e->beam_len = 0;
+    e->gesture = 0;
     if (type == ENEMY_TYPE_EXVOTO && (flags & SANDBOX_ENEMY_FLAG_PRAY))
         enemy_exvoto_start_praying(e, (flags & SANDBOX_ENEMY_FLAG_KNEEL) != 0,
                                    (flags >> SANDBOX_ENEMY_FLAG_DIR_SHIFT) & 7);

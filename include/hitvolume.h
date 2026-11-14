@@ -14,6 +14,10 @@
 #define CHARGER_BODY_HIT_RX 23
 #define CHARGER_BODY_HIT_RY 27
 
+#define OJO_BODY_HIT_CY 17     // Ojo rendered at 140%: ellipse follows the enlarged body and extended arm
+#define OJO_BODY_HIT_RX 18
+#define OJO_BODY_HIT_RY 22
+
 // dx = ray x - enemy x; dy = ray ground y - enemy y; h = height of the ray over the ground.
 static inline int body_hit_test_ex(int dx, int dy, int h, int cy, int rx, int ry) {
     int sy = dy - h + cy;               // ray point on screen, relative to the ellipse centre

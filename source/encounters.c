@@ -58,6 +58,8 @@ int encounters_spawn(EncounterManager *mgr, Enemy *enemies, int max_enemies) {
         e->charge_hit = 0;
         e->strafe_dir = (spawned & 1) ? 1 : -1;
         e->has_los = 0;
+        e->aim_px = e->aim_py = e->beam_len = 0;
+        e->gesture = 0;
         mgr->pack_alive[e->pack]++;
         spawned++;
     }

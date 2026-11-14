@@ -183,6 +183,7 @@ static int spawn_enemy(Enemy *e, Enemy *enemies, int count, int upper_screen_y, 
     e->strafe_dir = (horde_random() & 1u) ? 1 : -1;
     e->pack = -1;
     e->has_los = 0;
+    e->gesture = 0;
     if (seated)
         enemy_exvoto_start_praying(e, (int)(horde_random() % 100u) < EXVOTO_KNEEL_PERCENT, e->dir);
     return 1;
