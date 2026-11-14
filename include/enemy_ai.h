@@ -15,4 +15,10 @@ void enemy_ai_update(Enemy *enemies, int num_enemies, fixed player_x, fixed play
 void enemy_muzzle(const Enemy *e, fixed *mx, fixed *my, int *mh);
 void enemy_ai_set_strip_mode(int enabled);
 
+// Level of detail: enemies outside the world window shown by the two screens (cam_x..cam_x+256 wide,
+// cam_top_y..cam_bottom_y tall, plus ENEMY_AI_VIEW_MARGIN) run their walking AI every 2nd frame with a doubled step.
+// Never calling it keeps every enemy at full rate.
+#define ENEMY_AI_VIEW_MARGIN 64
+void enemy_ai_set_view(int cam_x, int cam_top_y, int cam_bottom_y);
+
 #endif // ENEMY_AI_H

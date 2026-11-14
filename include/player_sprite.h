@@ -100,6 +100,28 @@ extern const uint8_t g_skeleton_shadow_masks[];
 extern const uint32_t g_skeleton_shadow_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES];
 extern const uint8_t g_skeleton_shadow_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4];
 
+// Frame pixels are stored row by row with this pitch (the cropped width rounded up to even), so
+// every row starts on a 32-bit boundary and the blit can read whole words.
+static inline int sprite_pitch(int bw) { return (bw + 1) & ~1; }
+
+// Opaque runs per sprite row (blit_stride). Each frame is a block of uint16: (bh + 1) row offsets in
+// halfwords from the block start, then one run per entry = x | (len << 8) (x relative to the cropped
+// frame). Row y owns the entries [rows[y], rows[y + 1]). Offsets index the *_runs array in halfwords.
+extern const uint16_t g_player_runs[];
+extern const uint32_t g_player_run_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES];
+extern const uint16_t g_player_shot_runs[];
+extern const uint32_t g_player_shot_run_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES];
+extern const uint16_t g_charger_runs[];
+extern const uint32_t g_charger_run_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES];
+extern const uint16_t g_charger_charge_runs[];
+extern const uint32_t g_charger_charge_run_offsets[PLAYER_NUM_DIRS][CHARGER_CHARGE_NUM_FRAMES];
+extern const uint16_t g_charger_telegraph_runs[];
+extern const uint32_t g_charger_telegraph_run_offsets[PLAYER_NUM_DIRS][CHARGER_TELEGRAPH_NUM_FRAMES];
+extern const uint16_t g_necron_runs[];
+extern const uint32_t g_necron_run_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES];
+extern const uint16_t g_skeleton_runs[];
+extern const uint32_t g_skeleton_run_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES];
+
 // Fast indexed lookups:
 extern const uint16_t * const g_character_frames[NUM_CHARACTERS];
 extern const uint32_t (* const g_character_frame_offsets[NUM_CHARACTERS])[PLAYER_NUM_FRAMES];
@@ -110,6 +132,13 @@ extern const uint8_t (* const g_character_shadow_bounds[NUM_CHARACTERS])[PLAYER_
 
 static inline const uint16_t *character_frame_ptr(int char_id, int dir, int frame) {
     return g_character_frames[char_id] + g_character_frame_offsets[char_id][dir][frame];
+}
+
+extern const uint16_t * const g_character_runs[NUM_CHARACTERS];
+extern const uint32_t (* const g_character_run_offsets[NUM_CHARACTERS])[PLAYER_NUM_FRAMES];
+
+static inline const uint16_t *character_runs_ptr(int char_id, int dir, int frame) {
+    return g_character_runs[char_id] + g_character_run_offsets[char_id][dir][frame];
 }
 
 static inline const uint8_t *character_shadow_mask_ptr(int char_id, int dir, int frame) {

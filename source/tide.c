@@ -111,6 +111,18 @@ void tide_render_window(int sub_screen, int camera_y) {
 #endif
 }
 
+int tide_window_top(int camera_y) {
+#if defined(GODRAYS_PROTO) && GODRAYS_PROTO
+    (void)camera_y;
+    return SCREEN_H;
+#else
+    int line = TO_INT(s_tide_y) - camera_y;
+    if (line >= SCREEN_H) return SCREEN_H;
+    int top = (line < 0) ? 0 : line + TIDE_BORDER_PX;
+    return top > SCREEN_H ? SCREEN_H : top;
+#endif
+}
+
 int tide_visible_on_screen(int camera_y) {
 #if defined(GODRAYS_PROTO) && GODRAYS_PROTO
     (void)camera_y;

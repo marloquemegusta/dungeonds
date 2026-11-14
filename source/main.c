@@ -19,6 +19,7 @@
 #include "horde.h"
 #include "tide.h"
 #include "godrays.h"
+#include "hwshadow.h"
 #include "pickups.h"
 #include "sfx.h"
 #include <string.h>
@@ -287,16 +288,75 @@ int world_span_hidden(int y, int x0, int x1, int depth) {
     return find_hiding_run(y, x0, x1, depth, &row_end) < row_end;
 }
 
-static inline void blit_px_range(uint16_t *drow, const uint16_t *srow, int a, int b) {
-    for (; a < b; a++) {
-        uint16_t c = srow[a];
-        if (c & BIT(15)) drow[a] = c;
+// Copies src[a..b) over dst[a..b) with word stores (VRAM ignores byte writes, so never write bytes).
+// Sprite rows start on a 32-bit boundary (even pitch), so the source is read by whole words too:
+// straight when source and destination have the same parity, funnel-shifted when they differ.
+__attribute__((target("arm"), optimize("O3"), always_inline))
+static inline void copy_run(uint16_t *drow, const uint16_t *srow, int a, int b) {
+    uint16_t *d = drow + a;
+    const uint16_t *s = srow + a;
+    int n = b - a;
+    if (n <= 0) return;
+    if ((uintptr_t)d & 2) { *d++ = *s++; n--; }       // destination now word aligned
+    uint32_t *d32 = (uint32_t *)d;
+    int w = n >> 1;                                   // whole destination words
+    if (((uintptr_t)s & 2) == 0) {
+        const uint32_t *s32 = (const uint32_t *)s;
+        for (; w >= 4; w -= 4) {
+            uint32_t w0 = s32[0], w1 = s32[1], w2 = s32[2], w3 = s32[3];
+            d32[0] = w0; d32[1] = w1; d32[2] = w2; d32[3] = w3;
+            d32 += 4; s32 += 4;
+        }
+        if (w & 2) {
+            uint32_t w0 = s32[0], w1 = s32[1];
+            d32[0] = w0; d32[1] = w1;
+            d32 += 2; s32 += 2;
+        }
+        if (w & 1) { *d32++ = *s32++; }
+        s = (const uint16_t *)s32;
+    } else {
+        // Source on an odd halfword: read the aligned words around it and shift (never past the run's
+        // last pixel, only the word that holds it).
+        const uint32_t *s32 = (const uint32_t *)(s - 1);
+        uint32_t cur = s32[0];
+        for (; w >= 2; w -= 2) {
+            uint32_t n1 = s32[1], n2 = s32[2];
+            d32[0] = (cur >> 16) | (n1 << 16);
+            d32[1] = (n1 >> 16) | (n2 << 16);
+            cur = n2;
+            d32 += 2; s32 += 2;
+        }
+        if (w) {
+            uint32_t n1 = s32[1];
+            *d32++ = (cur >> 16) | (n1 << 16);
+            s32++;
+        }
+        s = (const uint16_t *)s32 + 1;
+    }
+    if (n & 1) *(uint16_t *)d32 = *s;
+}
+
+// Paints the opaque runs r[0..rend) (x | len << 8) of one sprite row inside [s0, s1).
+__attribute__((target("arm"), optimize("O3"), always_inline))
+static inline void blit_runs_span(uint16_t *drow, const uint16_t *srow,
+                                  const uint16_t *r, const uint16_t *rend, int s0, int s1) {
+    for (; r < rend; r++) {
+        uint32_t v = *r;
+        int a = (int)(v & 0xFF);
+        int b = a + (int)(v >> 8);
+        if (b <= s0) continue;
+        if (a >= s1) break;
+        if (a < s0) a = s0;
+        if (b > s1) b = s1;
+        copy_run(drow, srow, a, b);
     }
 }
 
 // Blit a BGR555 sprite with arbitrary pitch, clipping opaque pixels against baked depth.
-__attribute__((target("arm"), noinline))
-static void blit_stride(uint16_t *buffer, const uint16_t *src, int pitch, int sw, int sh,
+// `runs` is the frame's opaque-run block (player_sprite.h): only opaque stretches are copied,
+// there is no per-pixel transparency test.
+__attribute__((target("arm"), optimize("O3"), noinline))
+ITCM_CODE static void blit_stride(uint16_t *buffer, const uint16_t *src, const uint16_t *runs, int pitch, int sw, int sh,
                         int left, int top, int cam_x, int cam_y, int depth) {
     int ox = left - cam_x;
     int oy = top - cam_y;
@@ -314,61 +374,77 @@ static void blit_stride(uint16_t *buffer, const uint16_t *src, int pitch, int sw
         if (sx0 >= sx1) return;
     }
 
-    for (int y = sy0; y < sy1; y++) {
-        const uint16_t *srow = &src[y * pitch];
+    // Broad phase: when no wall run touches any row of the sprite, skip every per-row occlusion lookup.
+    int check_occ = 0;
+    if (depth >= 0) {
+        int wy0 = top + sy0, wy1 = top + sy1;
+        if (wy0 < 0) wy0 = 0;
+        if (wy1 > (int)g_arena->world_h) wy1 = (int)g_arena->world_h;
+        check_occ = wy0 < wy1 && g_arena->occlusion_row_start[wy0] != g_arena->occlusion_row_start[wy1];
+    }
+
+    const uint16_t *srow = src + sy0 * pitch;
+    DirtySpan *dspan = g_dirty_cur + oy + sy0;
+    for (int y = sy0; y < sy1; y++, srow += pitch, dspan++) {
+        const uint16_t *rr = runs + runs[y];
+        const uint16_t *rend = runs + runs[y + 1];
+        if (rr == rend) continue;                       // fully transparent row: nothing painted
         uint16_t *drow = &buffer[(oy + y) * SCREEN_W + ox];
-        int x = sx0;
-        int world_y = top + y;
-        int world_x0 = left + sx0;
-        int world_x1 = left + sx1;
-        dirty_row(oy + y, ox + sx0, ox + sx1);
-        if (depth >= 0 && (uint32_t)world_y < g_arena->world_h) {
-            uint32_t re;
-            uint32_t k = find_hiding_run(world_y, world_x0, world_x1, depth, &re);
-            if (k < re) {
-                // Paint the stretches between hiding runs; pixels inside them stay hidden.
-                int cur = sx0;
-                for (; k < re; k++) {
-                    const DungeonOcclusionRun *r = &g_arena->occlusion_runs[k];
-                    int rx0 = (int)r->x - left;
-                    if (rx0 >= sx1) break;
-                    if ((int)r->depth <= depth) continue;
-                    if (rx0 > cur) blit_px_range(drow, srow, cur, rx0);
-                    int rx1 = rx0 + (int)r->length;
-                    if (rx1 > cur) cur = rx1;
-                    if (cur >= sx1) break;
+
+        // Painted span of this row: first run start .. last run end, clipped to the screen window
+        // (already inside 0..SCREEN_W, so no further clamping is needed for the dirty span).
+        int first = (int)(*rr & 0xFF);
+        uint32_t lv = rend[-1];
+        int last = (int)(lv & 0xFF) + (int)(lv >> 8);
+        if (first < sx0) first = sx0;
+        if (last > sx1) last = sx1;
+        if (first >= last) continue;
+        if (ox + first < (int)dspan->x0) dspan->x0 = (uint16_t)(ox + first);
+        if (ox + last > (int)dspan->x1) dspan->x1 = (uint16_t)(ox + last);
+
+        if (check_occ) {
+            int world_y = top + y;
+            if ((uint32_t)world_y < g_arena->world_h) {
+                uint32_t lo = g_arena->occlusion_row_start[world_y];
+                uint32_t re = g_arena->occlusion_row_start[world_y + 1];
+                if (lo != re) {
+                    int world_x0 = left + sx0;
+                    int world_x1 = left + sx1;
+                    // First run of the row that may reach world_x0 (binary search, runs never overlap).
+                    uint32_t low = lo, high = re;
+                    while (low < high) {
+                        uint32_t mid = (low + high) >> 1;
+                        const DungeonOcclusionRun *m = &g_arena->occlusion_runs[mid];
+                        if ((int)m->x + (int)m->length <= world_x0) low = mid + 1;
+                        else high = mid;
+                    }
+                    // First of those, starting before world_x1, that hides this actor.
+                    uint32_t k = low;
+                    for (; k < re; k++) {
+                        const DungeonOcclusionRun *r = &g_arena->occlusion_runs[k];
+                        if ((int)r->x >= world_x1) { k = re; break; }
+                        if ((int)r->depth > depth) break;
+                    }
+                    if (k < re) {
+                        // Paint the stretches between hiding runs; pixels inside them stay hidden.
+                        int cur = sx0;
+                        for (; k < re; k++) {
+                            const DungeonOcclusionRun *r = &g_arena->occlusion_runs[k];
+                            int rx0 = (int)r->x - left;
+                            if (rx0 >= sx1) break;
+                            if ((int)r->depth <= depth) continue;
+                            if (rx0 > cur) blit_runs_span(drow, srow, rr, rend, cur, rx0);
+                            int rx1 = rx0 + (int)r->length;
+                            if (rx1 > cur) cur = rx1;
+                            if (cur >= sx1) break;
+                        }
+                        if (cur < sx1) blit_runs_span(drow, srow, rr, rend, cur, sx1);
+                        continue;
+                    }
                 }
-                if (cur < sx1) blit_px_range(drow, srow, cur, sx1);
-                continue;
             }
         }
-
-        // Align drow + x to 32-bit (4-byte) boundary if needed
-        if (((uintptr_t)&drow[x] & 2) && x < sx1) {
-            uint16_t a = srow[x];
-            if (a & BIT(15)) drow[x] = a;
-            x++;
-        }
-
-        uint32_t *d32 = (uint32_t *)&drow[x];
-        for (; x + 1 < sx1; x += 2, d32++) {
-            uint16_t a = srow[x];
-            uint16_t b = srow[x + 1];
-            uint32_t test = (a | b);
-            if (!test) continue;
-            if ((a & BIT(15)) && (b & BIT(15))) {
-                *d32 = (uint32_t)a | ((uint32_t)b << 16);
-            } else if (a & BIT(15)) {
-                drow[x] = a;
-            } else if (b & BIT(15)) {
-                drow[x + 1] = b;
-            }
-        }
-
-        if (x < sx1) {
-            uint16_t a = srow[x];
-            if (a & BIT(15)) drow[x] = a;
-        }
+        blit_runs_span(drow, srow, rr, rend, sx0, sx1);
     }
 }
 
@@ -400,7 +476,7 @@ static inline uint16_t world_floor_color(int x, int y) {
 }
 
 __attribute__((target("arm"), noinline))
-static void draw_shadow_mask(uint16_t *buffer, const uint8_t *mask,
+ITCM_CODE static void draw_shadow_mask(uint16_t *buffer, const uint8_t *mask,
                              const uint8_t *bounds, int left, int top,
                              int cam_x, int cam_y, int depth) {
     int ox = left - cam_x;
@@ -596,25 +672,27 @@ static void draw_player(uint16_t *buffer, int cam_x, int cam_y) {
     const uint16_t *frame = clip >= 0
         ? &g_player_shot_frames[g_player_shot_frame_offsets[s_player.dir][clip]]
         : character_frame_ptr(s_player.char_id, s_player.dir, s_player.frame);
-    int pitch = bw;
+    const uint16_t *runs = clip >= 0
+        ? &g_player_shot_runs[g_player_shot_run_offsets[s_player.dir][clip]]
+        : character_runs_ptr(s_player.char_id, s_player.dir, s_player.frame);
+    int pitch = sprite_pitch(bw);
     if (g_player_state.invuln_timer > 0 && ((g_player_state.invuln_timer >> 2) & 1)) {
         // Hit feedback: red flash while the i-frames run.
-        static uint16_t s_tint[PLAYER_SPRITE_W * PLAYER_SPRITE_H];
+        static uint16_t s_tint[PLAYER_SPRITE_W * PLAYER_SPRITE_H] __attribute__((aligned(4)));
         for (int y = 0; y < bh; y++) {
             for (int x = 0; x < bw; x++) {
-                uint16_t c = frame[y * bw + x];
+                uint16_t c = frame[y * pitch + x];
                 if (c & BIT(15)) {
                     int red = (c & 31) + 14, green = ((c >> 5) & 31) >> 1, blue = ((c >> 10) & 31) >> 1;
                     if (red > 31) red = 31;
                     c = (uint16_t)(red | (green << 5) | (blue << 10) | BIT(15));
                 }
-                s_tint[y * bw + x] = c;
+                s_tint[y * pitch + x] = c;
             }
         }
         frame = s_tint;
-        pitch = bw;
     }
-    blit_stride(buffer, frame, pitch, bw, bh,
+    blit_stride(buffer, frame, runs, pitch, bw, bh,
                 px - sw / 2 + min_x, py - s_char_ground_anchor[s_player.char_id][s_player.dir] + min_y,
                 cam_x, cam_y, s_draw_item_depth);
 }
@@ -696,7 +774,14 @@ static void draw_enemy(uint16_t *buffer, const Enemy *e, int cam_x, int cam_y) {
         : (is_telegraph || is_charge)
         ? &g_charger_charge_frames[g_charger_charge_frame_offsets[e->dir][is_telegraph ? 0 : cf]]
         : character_frame_ptr(e->char_id, e->dir, e->frame);
-    blit_stride(buffer, frame, bw, bw, bh,
+    const uint16_t *runs = (is_telegraph && e->frame == 0)
+        ? character_runs_ptr(CHAR_CHARGER, e->dir, 0)
+        : (is_telegraph && tf)
+        ? &g_charger_telegraph_runs[g_charger_telegraph_run_offsets[e->dir][0]]
+        : (is_telegraph || is_charge)
+        ? &g_charger_charge_runs[g_charger_charge_run_offsets[e->dir][is_telegraph ? 0 : cf]]
+        : character_runs_ptr(e->char_id, e->dir, e->frame);
+    blit_stride(buffer, frame, runs, sprite_pitch(bw), bw, bh,
                 px - sw / 2 + min_x, py - s_char_ground_anchor[e->char_id][e->dir] + min_y,
                 cam_x, cam_y, s_draw_item_depth);
     if (e->hit_timer > 0)
@@ -734,10 +819,41 @@ static void draw_death_chunk(uint16_t *buffer, const DeathChunk *chunk, int cam_
         }
     }
 }
+// Zero n 32-bit words at p (4-byte aligned) with ARM STMIA bursts of 8 words; the tail (< 8 words)
+// is written with single volatile word stores. Only 32-bit stores: VRAM ignores 8-bit writes.
+__attribute__((target("arm"), optimize("O3"), noinline))
+ITCM_CODE static void zero_words_burst(uint32_t *p, int n) {
+    int bursts = n >> 3;
+    if (bursts > 0) {
+        uint32_t *q = p;
+        int b = bursts;
+        __asm__ __volatile__(
+            "mov r2, #0\n\t"
+            "mov r3, #0\n\t"
+            "mov r4, #0\n\t"
+            "mov r5, #0\n\t"
+            "mov r6, #0\n\t"
+            "mov r7, #0\n\t"
+            "mov r8, #0\n\t"
+            "mov r12, #0\n\t"
+            "1:\n\t"
+            "stmia %[q]!, {r2-r8, r12}\n\t"
+            "subs %[b], %[b], #1\n\t"
+            "bne 1b"
+            : [q] "+r"(q), [b] "+r"(b)
+            :
+            : "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r12", "memory", "cc");
+        p = q;
+        n &= 7;
+    }
+    volatile uint32_t *t = (volatile uint32_t *)p;
+    while (n-- > 0) *t++ = 0;
+}
+
 // Zero the rows' painted spans (32-bit stores: VRAM ignores 8-bit writes) and forget them.
 // Spans widen to even pixels; pixels outside a span are already zero.
 __attribute__((target("arm"), optimize("O3,no-tree-loop-distribute-patterns"), noinline))
-static void clear_dirty_spans(uint16_t *page, DirtySpan *spans) {
+ITCM_CODE static void clear_dirty_spans(uint16_t *page, DirtySpan *spans) {
     for (int y = 0; y < SCREEN_H; y++) {
         int x0 = spans[y].x0, x1 = spans[y].x1;
         if (x0 >= x1) continue;
@@ -745,8 +861,7 @@ static void clear_dirty_spans(uint16_t *page, DirtySpan *spans) {
         spans[y].x1 = 0;
         x0 &= ~1;
         x1 = (x1 + 1) & ~1;
-        volatile uint32_t *p = (volatile uint32_t *)&page[y * SCREEN_W + x0];
-        for (int n = (x1 - x0) >> 1; n > 0; n--) *p++ = 0;
+        zero_words_burst((uint32_t *)&page[y * SCREEN_W + x0], (x1 - x0) >> 1);
     }
 #if DIRTY_VERIFY
     const uint32_t *w = (const uint32_t *)page;
@@ -759,8 +874,53 @@ static void clear_dirty_spans(uint16_t *page, DirtySpan *spans) {
 #endif
 }
 
-static void render_screen(uint16_t *buffer, DirtySpan *spans, int cam_x, int cam_y,
+// Which shadow mask an actor shows this frame (hero shot clip, charger telegraph/charge frames
+// included) and where its canvas sits in world space. Shared by the software and hardware paths.
+typedef struct {
+    const uint8_t *mask;
+    const uint8_t *bounds;   // {x, y, w, h} of the cropped mask inside the canvas
+    int left, top;           // world position of the canvas
+} ShadowSel;
+
+static int shadow_select(const DrawItem *it, ShadowSel *sel) {
+    if (it->ref == -1) {
+        const int clip = s_hero_clip_frame;
+        int shw = clip >= 0 ? PLAYER_SHADOW_W : g_characters[s_player.char_id].shadow_w;
+        int shh = clip >= 0 ? PLAYER_SHADOW_H : g_characters[s_player.char_id].shadow_h;
+        sel->mask = clip >= 0
+            ? &g_player_shot_shadow_masks[g_player_shot_shadow_offsets[s_player.dir][clip]]
+            : character_shadow_mask_ptr(s_player.char_id, s_player.dir, s_player.frame);
+        sel->bounds = clip >= 0 ? g_player_shot_shadow_bounds[s_player.dir][clip]
+            : g_character_shadow_bounds[s_player.char_id][s_player.dir][s_player.frame];
+        sel->left = it->cx - shw / 2;
+        sel->top = it->cy - shh / 2;
+        return 1;
+    }
+    if (it->ref <= -2 && it->ref > -2 - MAX_ENEMIES) {
+        const Enemy *e = &g_enemies[-2 - it->ref];
+        int shw = g_characters[e->char_id].shadow_w;
+        int shh = g_characters[e->char_id].shadow_h;
+        int is_telegraph = (e->char_id == CHAR_CHARGER && e->state == ENEMY_STATE_TELEGRAPH);
+        int is_charge = (e->char_id == CHAR_CHARGER && e->state == ENEMY_STATE_CHARGE);
+        int cf = e->frame & (CHARGER_CHARGE_NUM_FRAMES - 1);
+        sel->mask = (is_telegraph && e->frame == 0) ? character_shadow_mask_ptr(CHAR_CHARGER, e->dir, 0)
+                  : (is_telegraph || is_charge)     ? &g_charger_charge_shadow_masks[g_charger_charge_shadow_offsets[e->dir][is_telegraph ? 0 : cf]]
+                                                    : character_shadow_mask_ptr(e->char_id, e->dir, e->frame);
+        sel->bounds = (is_telegraph && e->frame == 0) ? g_character_shadow_bounds[CHAR_CHARGER][e->dir][0]
+                    : (is_telegraph || is_charge)     ? g_charger_charge_shadow_bounds[e->dir][is_telegraph ? 0 : cf]
+                                                      : g_character_shadow_bounds[e->char_id][e->dir][e->frame];
+        sel->left = it->cx - shw / 2;
+        sel->top = it->cy - shh / 2;
+        return 1;
+    }
+    return 0;                // death chunks keep their own 1-pixel ground dot
+}
+
+ITCM_CODE static void render_screen(uint16_t *buffer, DirtySpan *spans, int cam_x, int cam_y, int sub_screen,
                           uint32_t *out_floor, uint32_t *out_shadow, uint32_t *out_blit) {
+#if !HW_SHADOWS
+    (void)sub_screen;
+#endif
     DrawItem items[MAX_DRAW_ITEMS + MAX_ENEMIES + MAX_DEATH_CHUNKS + 1];
     int count = 0;
 
@@ -834,43 +994,26 @@ static void render_screen(uint16_t *buffer, DirtySpan *spans, int cam_x, int cam
     // 0) Ground decals of the weapons (aim marker, warning zones, shock rings): under everything.
     weapons_render_floor(buffer, cam_x, cam_y);
 
-    // 1) Composite dynamic entity shadows (player & enemies, animated per frame)
+    // 1) Actor shadows (player & enemies, animated per frame). Hardware: one OBJ-window list per
+    // screen, darkened by the engine (hwshadow.c). Software: darken the page pixel by pixel.
     uint32_t t_sh0 = cpuGetTiming();
     PP_T0(pp_shadow);
+#if HW_SHADOWS
+    hwshadow_begin(sub_screen);
+    const int hw_shadows = g_hw_shadows_on;
+#endif
     for (int i = 0; i < count; i++) {
-        if (items[i].ref == -1) {
-            const int clip = s_hero_clip_frame;
-            int shw = clip >= 0 ? PLAYER_SHADOW_W : g_characters[s_player.char_id].shadow_w;
-            int shh = clip >= 0 ? PLAYER_SHADOW_H : g_characters[s_player.char_id].shadow_h;
-            const uint8_t *shadow_mask = clip >= 0
-                ? &g_player_shot_shadow_masks[g_player_shot_shadow_offsets[s_player.dir][clip]]
-                : character_shadow_mask_ptr(s_player.char_id, s_player.dir, s_player.frame);
-            const uint8_t *shadow_bounds = clip >= 0 ? g_player_shot_shadow_bounds[s_player.dir][clip]
-                : g_character_shadow_bounds[s_player.char_id][s_player.dir][s_player.frame];
-            draw_shadow_mask(buffer, shadow_mask,
-                             shadow_bounds,
-                             items[i].cx - shw / 2,
-                             items[i].cy - shh / 2, cam_x, cam_y, items[i].depth);
-        } else if (items[i].ref <= -2 &&
-                   items[i].ref > -2 - MAX_ENEMIES) {
-            int e_idx = -2 - items[i].ref;
-            const Enemy *e = &g_enemies[e_idx];
-            int shw = g_characters[e->char_id].shadow_w;
-            int shh = g_characters[e->char_id].shadow_h;
-            int is_telegraph = (e->char_id == CHAR_CHARGER && e->state == ENEMY_STATE_TELEGRAPH);
-            int is_charge = (e->char_id == CHAR_CHARGER && e->state == ENEMY_STATE_CHARGE);
-            int cf = e->frame & (CHARGER_CHARGE_NUM_FRAMES - 1);
-            const uint8_t *sh_mask = (is_telegraph && e->frame == 0) ? character_shadow_mask_ptr(CHAR_CHARGER, e->dir, 0)
-                                   : (is_telegraph || is_charge)     ? &g_charger_charge_shadow_masks[g_charger_charge_shadow_offsets[e->dir][is_telegraph ? 0 : cf]]
-                                                                     : character_shadow_mask_ptr(e->char_id, e->dir, e->frame);
-            const uint8_t *sh_bounds = (is_telegraph && e->frame == 0) ? g_character_shadow_bounds[CHAR_CHARGER][e->dir][0]
-                                     : (is_telegraph || is_charge)     ? g_charger_charge_shadow_bounds[e->dir][is_telegraph ? 0 : cf]
-                                                                       : g_character_shadow_bounds[e->char_id][e->dir][e->frame];
-            draw_shadow_mask(buffer, sh_mask,
-                             sh_bounds,
-                             items[i].cx - shw / 2,
-                             items[i].cy - shh / 2, cam_x, cam_y, items[i].depth);
+        ShadowSel sel;
+        if (!shadow_select(&items[i], &sel)) continue;
+#if HW_SHADOWS
+        if (hw_shadows) {
+            // A shadow whose actor is behind a wall is hidden whole (DESIGN.md 3): test the foot point.
+            if (!occlusion_blocks_pixel(items[i].cx, items[i].cy, items[i].depth))
+                hwshadow_add(sub_screen, sel.mask, sel.bounds, sel.left - cam_x, sel.top - cam_y);
+            continue;
         }
+#endif
+        draw_shadow_mask(buffer, sel.mask, sel.bounds, sel.left, sel.top, cam_x, cam_y, items[i].depth);
     }
     PP_ADD(PP_SHADOW, pp_shadow);
     uint32_t shadow_ticks = cpuGetTiming() - t_sh0;
@@ -992,6 +1135,13 @@ static void draw_fps_hud(uint16_t *buffer) {
         snprintf(labels[2], sizeof(labels[2]), "HP:%d",
                  g_player_state.hp);
     }
+#if STRESS_TEST && HW_SHADOWS
+    // Stress build: which shadow path is running (L+R+A toggles).
+    {
+        size_t n = strlen(labels[2]);
+        snprintf(labels[2] + n, sizeof(labels[2]) - n, " SH %s", g_hw_shadows_on ? "HW" : "SW");
+    }
+#endif
     snprintf(labels[3], sizeof(labels[3]), "WPN:%s FX:%c%c",
              weapons_get_name(g_player_state.current_weapon), weapons_fx_style_letter(),
              weapons_aura_style_letter());
@@ -1147,6 +1297,30 @@ static void present_vblank_begin(void) {
     int old_page = s_bot_active_page;
     s_bot_active_page = s_bot_back_page;
     s_bot_back_page = old_page;
+#if HW_SHADOWS
+    // Bottom shadows go live in the same VBlank as the page they were built for.
+    PP_T0(pp_hs);
+    hwshadow_commit(0);
+    PP_ADD(PP_SHADOW, pp_hs);
+#endif
+}
+
+// Window/blend setup of both engines, once per frame inside VBlank. Hardware shadows: OBJ window
+// + floor-only darkening, with the tide taking over from its first line (tide_window_top).
+// Software shadows: the tide module alone, as before.
+static void present_screen_effects(int top_cam_y, int bot_tide_cam_y) {
+#if HW_SHADOWS
+    if (g_hw_shadows_on) {
+        hwshadow_screen_regs(1, s_strip_mode ? tide_window_top(top_cam_y) : SCREEN_H);
+        hwshadow_screen_regs(0, s_strip_mode ? tide_window_top(bot_tide_cam_y) : SCREEN_H);
+        return;
+    }
+    hwshadow_regs_off();
+#endif
+    if (s_strip_mode) {
+        tide_render_window(1, top_cam_y);
+        tide_render_window(0, bot_tide_cam_y);
+    }
 }
 
 static void present_hardware_bgs(int top_cam_x, int top_cam_y,
@@ -1185,7 +1359,15 @@ static int aim_dir_from_screen(int dx, int dy) {
     return dy < 0 ? 5 : 7;
 }
 
-static void death_chunks_spawn(const Enemy *e, fixed hit_vx, fixed hit_vy) {
+// What a death needs to cut its chunks out of the sprite: queued when a frame has many deaths.
+typedef struct {
+    fixed x, y;
+    fixed hit_vx, hit_vy;
+    int char_id, dir, frame;
+} DeathSpawn;
+
+static void death_chunks_spawn(const DeathSpawn *e) {
+    const fixed hit_vx = e->hit_vx, hit_vy = e->hit_vy;
     const uint8_t *bounds = g_character_frame_bounds[e->char_id][e->dir][e->frame];
     int min_x = bounds[0], min_y = bounds[1];
     int width = bounds[2], height = bounds[3];
@@ -1215,7 +1397,7 @@ static void death_chunks_spawn(const Enemy *e, fixed hit_vx, fixed hit_vy) {
         for (int y = 0; y < DEATH_CHUNK_SIZE; y++) {
             for (int x = 0; x < DEATH_CHUNK_SIZE; x++) {
                 uint16_t color = (lx + x < width && ly + y < height)
-                    ? frame[(ly + y) * width + lx + x] : 0;
+                    ? frame[(ly + y) * sprite_pitch(width) + lx + x] : 0;
                 chunk->pixels[y * DEATH_CHUNK_SIZE + x] = color;
                 opaque |= (color & BIT(15)) != 0;
             }
@@ -1246,9 +1428,37 @@ static void death_chunks_spawn(const Enemy *e, fixed hit_vx, fixed hit_vy) {
 }
 
 // Registered with enemy_set_death_hook(); enemy_hit() (gameplay.c) calls it on a kill.
+// Cutting the six chunks of a death out of its sprite is the costliest part of a kill (it copies
+// sprite pixels), so a frame cuts at most DEATH_SPAWNS_PER_FRAME deaths and queues the rest for the
+// following frames (death_chunks_frame_begin). Normal play kills one or two enemies per frame and
+// never sees the cap; a mass kill spreads its debris over a few frames instead of one long frame.
+#define DEATH_SPAWNS_PER_FRAME 2
+#define MAX_PENDING_DEATHS 16
+static DeathSpawn s_pending_deaths[MAX_PENDING_DEATHS];
+static int s_pending_head, s_pending_count;
+static int s_death_spawn_budget = DEATH_SPAWNS_PER_FRAME;
+
+// Start of a simulated frame: refill the budget and cut the queued deaths first, oldest first.
+static void death_chunks_frame_begin(void) {
+    s_death_spawn_budget = DEATH_SPAWNS_PER_FRAME;
+    while (s_pending_count > 0 && s_death_spawn_budget > 0) {
+        death_chunks_spawn(&s_pending_deaths[s_pending_head]);
+        s_pending_head = (s_pending_head + 1) & (MAX_PENDING_DEATHS - 1);
+        s_pending_count--;
+        s_death_spawn_budget--;
+    }
+}
+
 static void on_enemy_death(const Enemy *e, fixed hit_vx, fixed hit_vy) {
     CRASH_MARK(CL_DEATH_CHUNKS, e->char_id, e->dir);
-    death_chunks_spawn(e, hit_vx, hit_vy);
+    DeathSpawn spawn = { e->x, e->y, hit_vx, hit_vy, e->char_id, e->dir, e->frame };
+    if (s_death_spawn_budget > 0) {
+        s_death_spawn_budget--;
+        death_chunks_spawn(&spawn);
+    } else if (s_pending_count < MAX_PENDING_DEATHS) {
+        s_pending_deaths[(s_pending_head + s_pending_count) & (MAX_PENDING_DEATHS - 1)] = spawn;
+        s_pending_count++;
+    }
     weapons_notify_kill();
     if (s_strip_mode) pickups_enemy_killed(e);
     CRASH_MARK(CL_DEATH_HOOK_DONE, 0, 0);
@@ -1288,6 +1498,8 @@ static void strip_shift_world_y(int dy_px) {
         if (g_enemies[i].active) g_enemies[i].y += shift;
     for (int i = 0; i < MAX_DEATH_CHUNKS; i++)
         if (s_death_chunks[i].active) s_death_chunks[i].y += shift;
+    for (int i = 0; i < s_pending_count; i++)
+        s_pending_deaths[(s_pending_head + i) & (MAX_PENDING_DEATHS - 1)].y += shift;
     s_cam_y += dy_px;
     grenade_shift_y(dy_px);
     weapons_shift_y(dy_px);
@@ -1312,11 +1524,22 @@ static void strip_shift_world_y(int dy_px) {
     // world-space effect move by the same amount; the next pass clears them.
 }
 
+// Rebase preparation, nav side: the walkable flags of the top rows of the next window are computed
+// in slices while the window is being prepared, so the shift frame only copies them.
+#define NAV_STAGE_NODES_PER_FRAME 96    // 1536 nodes of a rebase: 16 frames
+static void strip_nav_stage_step(void) {
+    if (strip_stage_enter()) {
+        nav_stage_step(STRIP_SHIFT_PX / NAV_NODE_PX, NAV_STAGE_NODES_PER_FRAME, strip_stage_id());
+        strip_stage_leave();
+    }
+}
+
 #define NAV_BUDGET_PER_FRAME 300   // BFS node expansions per frame (a full field takes ~10 frames; measure with PERF_PROFILE)
 
 static void enemies_update(void) {
     nav_set_goal(TO_INT(s_player.x), TO_INT(s_player.y));
     nav_update(NAV_BUDGET_PER_FRAME);
+    enemy_ai_set_view(s_cam_x, s_cam_y - SCREEN_H, s_cam_y + SCREEN_H);
     enemy_ai_update(g_enemies, MAX_ENEMIES, s_player.x, s_player.y);
     encounters_update(&g_encounter_mgr, g_enemies, MAX_ENEMIES, s_player.x, s_player.y);
     mods_update(s_player.x, s_player.y);
@@ -1332,6 +1555,7 @@ static void strip_enemies_update(void) {
     nav_set_goal(TO_INT(s_player.x), TO_INT(s_player.y));
     nav_update(NAV_BUDGET_PER_FRAME);
     horde_update(g_enemies, MAX_ENEMIES, s_player.y, s_cam_y - SCREEN_H, tide_y());
+    enemy_ai_set_view(s_cam_x, s_cam_y - SCREEN_H, s_cam_y + SCREEN_H);
     enemy_ai_update(g_enemies, MAX_ENEMIES, s_player.x, s_player.y);
     pickups_update(s_player.x, s_player.y, tide_y(), &g_player_state);
 }
@@ -1418,6 +1642,12 @@ static void player_update(uint32_t keys, uint32_t keys_down) {
     }
     shot_clip_step();
 
+#if STRESS_TEST && HW_SHADOWS
+    // Stress build: hold L+R and press A to switch between hardware and software shadows.
+    if ((keys & (KEY_L | KEY_R)) == (KEY_L | KEY_R) && (keys_down & KEY_A)) {
+        g_hw_shadows_on = !g_hw_shadows_on;
+    }
+#endif
     // Debug god mode for headless walk scenarios: hold L+R and press B.
     if ((keys & (KEY_L | KEY_R)) == (KEY_L | KEY_R) && (keys_down & KEY_B)) {
         g_player_state.god_mode = !g_player_state.god_mode;
@@ -1629,6 +1859,7 @@ static void arena_restart(void) {
     update_camera();                 // the fade-in shows the new arena before the player moves
     g_hitstop_frames = 0;
     memset(s_death_chunks, 0, sizeof(s_death_chunks));
+    s_pending_head = s_pending_count = 0;
     if (s_strip_mode) memset(g_enemies, 0, sizeof(g_enemies));
     else encounters_spawn(&g_encounter_mgr, g_enemies, MAX_ENEMIES);
 }
@@ -1689,7 +1920,7 @@ volatile PerfStats g_perf = {
     .top_render_ticks = 0,
     .bot_render_ticks = 0,
     .present_ticks = 0,
-    .show_hud = PLAYGROUND,       // the playground ROM shows the weapon / style label from the start
+    .show_hud = PLAYGROUND || STRESS_TEST,       // the playground ROM shows the weapon / style label from the start
     .dirty_leaks = 0
 };
 
@@ -1763,7 +1994,9 @@ int main(void) {
 #if defined(GODRAYS_PROTO) && GODRAYS_PROTO
     godrays_init();
 #endif
-
+#if HW_SHADOWS
+    hwshadow_init();
+#endif
 
     init_char_sprite_data();
     sfx_init();
@@ -1775,6 +2008,9 @@ int main(void) {
     nav_set_goal(g_arena->player_x, g_arena->player_y);
     nav_rebuild_now();                  // at boot a full search costs nothing visible
     player_init();
+#if STRESS_TEST
+    g_player_state.god_mode = 1;      // measurement build: the horde cannot kill the player
+#endif
     if (s_strip_mode) {
         uint32_t seed = (uint32_t)time(NULL) ^ (uint32_t)cpuGetTiming() ^ 0xa5a5a5a5u;
         horde_init(seed ^ 0x684f5244u);
@@ -1790,8 +2026,8 @@ int main(void) {
     init_bg_tile_cache(&s_bot_bg_tile_cache, BG_TILE_CACHE_CAPACITY, s_bot_bg_tiles_vram);
     update_screen_hardware_bg(1, s_top_map_ptr, s_cam_x, s_cam_y - SCREEN_H);
 
-    render_screen(s_top_page, s_dirty_top, s_cam_x, s_cam_y - SCREEN_H, NULL, NULL, NULL);
-    render_screen(bot_page_ptr(s_bot_active_page), s_dirty[s_bot_active_page == 24], s_cam_x, s_cam_y, NULL, NULL, NULL);
+    render_screen(s_top_page, s_dirty_top, s_cam_x, s_cam_y - SCREEN_H, 1, NULL, NULL, NULL);
+    render_screen(bot_page_ptr(s_bot_active_page), s_dirty[s_bot_active_page == 24], s_cam_x, s_cam_y, 0, NULL, NULL, NULL);
     draw_run_hud(bot_page_ptr(s_bot_active_page));
     draw_fps_hud(bot_page_ptr(s_bot_active_page));
     update_screen_hardware_bg(0, s_bot_map_ptr, s_cam_x, s_cam_y);
@@ -1821,15 +2057,17 @@ int main(void) {
                        (!s_strip_mode || !g_player_state.is_dead);
         if (!simulate) g_hitstop_frames--;
         if (simulate) {
+            death_chunks_frame_begin();
             sandbox_update(g_enemies, MAX_ENEMIES, &s_player.x, &s_player.y);
             player_update(keys_held, s_keys_down_latch);
             if (s_strip_mode) {
                 strip_prepare_step(TO_INT(s_player.y));
+                strip_nav_stage_step();
                 int shifted = strip_rebase_if_needed(TO_INT(s_player.y));
                 if (shifted) {
                     strip_shift_world_y(shifted);
                     nav_shift_down(STRIP_SHIFT_PX / NAV_NODE_PX,
-                                   TO_INT(s_player.x), TO_INT(s_player.y));
+                                   TO_INT(s_player.x), TO_INT(s_player.y), strip_stage_id());
                 }
                 tide_update(s_player.y);
                 tide_damage_player(&g_player_state, s_player.y);
@@ -1868,7 +2106,7 @@ int main(void) {
         // The lower screen is double buffered, so render it first during active display.
         uint32_t t2 = cpuGetTiming();
         CRASH_MARK(CL_RENDER_START, 0, 0);
-        render_screen(bot_page_ptr(s_bot_back_page), s_dirty[s_bot_back_page == 24], view_x, view_y, &bot_floor, &bot_sh, &bot_bl);
+        render_screen(bot_page_ptr(s_bot_back_page), s_dirty[s_bot_back_page == 24], view_x, view_y, 0, &bot_floor, &bot_sh, &bot_bl);
         if (s_strip_mode) {
             g_dirty_cur = s_dirty[s_bot_back_page == 24];
             pickups_render(bot_page_ptr(s_bot_back_page), view_x, view_y);
@@ -1894,18 +2132,21 @@ int main(void) {
         uint32_t t3 = cpuGetTiming();
         present_vblank_begin();
         uint32_t post_vwait_start = cpuGetTiming();
-        if (s_strip_mode) {
-            tide_render_window(1, top_cam_y);
-            // The death summary is drawn on the lower screen: keep it out of the darkening.
-            tide_render_window(0, g_player_state.is_dead ? TO_INT(tide_y()) - SCREEN_H : view_y);
-        }
+        // The death summary is drawn on the lower screen: keep it out of the darkening.
+        present_screen_effects(top_cam_y, (s_strip_mode && g_player_state.is_dead) ? TO_INT(tide_y()) - SCREEN_H : view_y);
         uint32_t t_top = cpuGetTiming();
-        render_screen(s_top_page, s_dirty_top, view_x, view_y - SCREEN_H, &top_floor, &top_sh, &top_bl);
+        render_screen(s_top_page, s_dirty_top, view_x, view_y - SCREEN_H, 1, &top_floor, &top_sh, &top_bl);
         if (s_strip_mode) {
             g_dirty_cur = s_dirty_top;
             pickups_render(s_top_page, view_x, view_y - SCREEN_H);
             tide_render_border(s_top_page, view_y - SCREEN_H);
         }
+#if HW_SHADOWS
+        // The top page is single buffered and was just redrawn: its shadows go live now.
+        PP_T0(pp_hs2);
+        hwshadow_commit(1);
+        PP_ADD(PP_SHADOW, pp_hs2);
+#endif
         uint32_t top_ticks = cpuGetTiming() - t_top;
         present_hardware_bgs(top_cam_x, top_cam_y, view_x, view_y);
         uint32_t post_vwait_cpu = cpuGetTiming() - post_vwait_start;

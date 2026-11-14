@@ -2,9 +2,9 @@
 
 Primero el estado necesario para retomar el trabajo sin depender del chat; después, las entregas recientes verificadas (más nueva al final). El historial hasta 2026-10-21 está en `STATUS-ARCHIVE.md`.
 
-## Estado actual (2026-11-13)
+## Estado actual (2026-11-14)
 
-- **Profiling de estrés de enemigos (`perf/stress-enemies`, `walkthroughs/stress-enemies-profiling/`):** medido en Nintendo DS física con `PERF_PROFILE=1`. Con sombras suaves actuales, 48–72 enemigos caen a **20 FPS** (`34,3–36,5 ms`, de los cuales **15,8 ms** son solo sombras por lectura píxel a píxel del suelo). Sin sombras: **30–38 FPS** (`17,3–21,1 ms`). Con sombras negras alternadas (30 Hz): techo de **60 FPS** en **18–20 enemigos** (`8,8–11,7 ms` de media, pico `13,9 ms`), aunque el parpadeo de las sombras a 30 Hz se nota en pantalla real. Queda pendiente una sesión específica de rendimiento (sombras, picos de rebase/proyectiles y logger `PERF_PROFILE` con NitroFS).
+- **Sombras por hardware y horda doble (`perf/hw-shadows`, 2026-11-14, `walkthroughs/hw-shadows/`):** sombras oscurecidas por la consola (ventana OBJ) en vez del procesador, IA con rejilla y LOD, blit por tramos opacos, limpieza más rápida, camino caliente en ITCM y picos de rebase/láseres/muertes troceados. Medido en la DS con 48 enemigos: **14,3–15,1 ms** de media (antes 34–36 ms, 20 FPS), casi siempre a 60 FPS; la versión normal (24) va sobrada. La separación entre enemigos se conserva. Siguiente cuello: el blit (~6 ms con horda llena). Variantes `stress` y `stress-perf` y banco A/B `perf_stress_bench` (`TECHNICAL.md` §3.6).
 
 - **Fix de parpadeo en pantalla superior (`fix/top-flicker`, `walkthroughs/top-flicker-fix/`):** reordenado el bucle principal en `source/main.c` para renderizar la pantalla inferior (doble búfer) antes de `swiWaitForVBlank()` y pintar `s_top_page` (búfer único) nada más empezar el VBlank. Validado en tests de host (`5/5` + `58/58`) y en Nintendo DS física por el usuario.
 
@@ -28,7 +28,7 @@ Primero el estado necesario para retomar el trabajo sin depender del chat; despu
 - **Render:** actores dibujados directamente en la página trasera del framebuffer de VRAM, limpieza por spans sucios y oclusión exacta al píxel por consulta de tramos (`TECHNICAL.md` §3.3). Medido en DS: CPU 1,58 ms de media y 12 de 2520 frames con más de un vblank.
 - **Personajes:** héroe (`CHAR_HERO`: Corazón Abierto; el space marine queda sin uso), charger (`CHAR_CHARGER`: Cireneo v2 a 60×60 con clips de carga agachado y telegrafía), necron (`CHAR_NECRON`) y esqueleto (`CHAR_SKELETON`), exportados por el lab a `assets/sprites/characters/<nombre>/`. El lab puede tomar el `muzzle` de un hueso (`--muzzleBone`).
 - **Sin existir en código:** iluminación dinámica, niebla de guerra.
-- **Herramientas de diagnóstico en DS:** `PERF_PROFILE` (`include/perfprof.h`, log `/dungeonds_perf.log`) y `crashlog` (`CRASHLOG_ENABLED`, logs `/dungeonds_crash.log` y `/dungeonds_live.log`). Ambas apagadas por defecto; se leen con `fetch-device-log.ps1` de la skill.
+- **Herramientas de diagnóstico en DS:** `PERF_PROFILE` (`include/perfprof.h`, log `fat:/dungeonds_perf.log`) y `crashlog` (`CRASHLOG_ENABLED`, logs `/dungeonds_crash.log` y `/dungeonds_live.log`). Ambas apagadas por defecto; se leen con `fetch-device-log.ps1` de la skill.
 
 ### Siguientes pasos
 Hoja de ruta por versiones en `DESIGN.md` §6.9; cada versión es una sesión y una rama.
@@ -287,3 +287,12 @@ El láser de apuntado se colima durante la carga (ancho, difuso y rojo a 1 px ve
 - **Verificación:** `build-project.ps1` (`0 warnings`), tests de host (`9` + `58` OK) y prueba en DS real aprobada por el usuario.
 - **Detalle:** [`walkthroughs/bgm-loop/`](walkthroughs/bgm-loop/walkthrough.md).
 - **Verificación:** test de contrato `tests/test_tide_contract.py` OK. **Sin probar en DeSmuME ni en Nintendo DS física; sin walkthrough propio todavía.**
+
+---
+
+## 2026-11-14 - Sombras por Hardware y Horda Doble a 60 FPS
+
+- Fase 1 de rendimiento (A–F) en `perf/hw-shadows`: sombras por hardware, IA más barata, blit por tramos, limpieza en ráfaga, ITCM y picos troceados. DeSmuME: 34,1 → ~15,5 ms en el banco A/B.
+- DS física (`stress-perf`, 48 enemigos): 14,3–15,1 ms de media, peor frame 17–18,5 ms; versión normal jugada sin caídas.
+- Arreglado el log de `PERF_PROFILE` (ruta `fat:/` explícita por NitroFS).
+- Detalle: [`walkthroughs/hw-shadows/`](walkthroughs/hw-shadows/walkthrough.md).

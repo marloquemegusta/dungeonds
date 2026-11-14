@@ -4,12 +4,22 @@
 #include <stdint.h>
 #include "gameplay.h"
 
+#if STRESS_TEST
+// Measurement build: the horde reaches 48 alive within ~30 s and spawns fast.
+#define HORDE_INITIAL_INTERVAL 12
+#define HORDE_MIN_INTERVAL 6
+#define HORDE_INTERVAL_RAMP_FRAMES 600
+#define HORDE_INITIAL_CAP 6
+#define HORDE_MAX_CAP 48
+#define HORDE_CAP_RAMP_FRAMES 1800
+#else
 #define HORDE_INITIAL_INTERVAL 90 // [TUNABLE-PLACEHOLDER] frames between spawns at run start
 #define HORDE_MIN_INTERVAL 20 // [TUNABLE-PLACEHOLDER] minimum frames between spawns
 #define HORDE_INTERVAL_RAMP_FRAMES 18000 // [TUNABLE-PLACEHOLDER] frames to reach the minimum interval (~5 min)
 #define HORDE_INITIAL_CAP 6 // [TUNABLE-PLACEHOLDER] initial active enemy cap
 #define HORDE_MAX_CAP MAX_GAMEPLAY_ENEMIES // [TUNABLE-PLACEHOLDER] maximum active enemy cap
 #define HORDE_CAP_RAMP_FRAMES 18000 // [TUNABLE-PLACEHOLDER] frames to reach the maximum active cap
+#endif
 #define HORDE_SPAWN_GROUP_CHANCE 25 // [TUNABLE-PLACEHOLDER] percent chance to spawn a group
 #define HORDE_SPAWN_GROUP_MIN 2 // [TUNABLE-PLACEHOLDER] smallest group size
 #define HORDE_SPAWN_GROUP_MAX 3 // [TUNABLE-PLACEHOLDER] largest group size

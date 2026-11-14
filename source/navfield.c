@@ -1,6 +1,7 @@
 #include "navfield.h"
 #include "collision.h"
 #include "arena.h"
+#include <nds/ndstypes.h>
 
 #include <string.h>
 
@@ -20,6 +21,12 @@ static int s_refresh_x = 0, s_refresh_y = 0;
 static int s_refreshing = 0;
 static int s_field_valid = 0;
 static int s_goal_px = 0, s_goal_py = 0;
+static int s_dirty = 1;                    // walkable grid or fields changed under the search: it must restart
+static int s_searched_goal = -1;           // goal node of the search that last started
+// Next-step cache per node (valid for the field in s_dist[s_read]); crowds share nodes.
+#define STEP_UNKNOWN 0xFF
+#define STEP_NONE 0xFE
+static uint8_t s_step_cache[NAV_NODES];
 
 static const int8_t s_dx[8] = { 1, -1, 0, 0, 1, 1, -1, -1 };
 static const int8_t s_dy[8] = { 0, 0, 1, -1, 1, -1, 1, -1 };
@@ -74,6 +81,8 @@ void nav_init(void) {
         s_dist[1][i] = NAV_UNREACHABLE;
     }
     s_read = 0;
+    s_dirty = 1;
+    memset(s_step_cache, STEP_UNKNOWN, sizeof(s_step_cache));
     s_head = s_tail = 0;
     s_goal_node = -1;
     s_goal_node_x = s_goal_node_y = 0;
@@ -90,13 +99,42 @@ void nav_refresh_begin(int goal_px, int goal_py) {
     s_refresh_x = s_refresh_y = 0;
     s_refreshing = 1;
     s_field_valid = 0;
+    s_dirty = 1;
+    memset(s_step_cache, STEP_UNKNOWN, sizeof(s_step_cache));
     s_head = s_tail = 0;
     s_goal_node = -1;
     s_goal_px = goal_px;
     s_goal_py = goal_py;
 }
 
-void nav_shift_down(int rows, int goal_px, int goal_py) {
+// Walkable flags of the top node rows of the next strip window, computed ahead of the rebase.
+static uint8_t s_stage_walk[NAV_MAX_W * (NAV_MAX_H / 2)];
+static int s_stage_rows, s_stage_cursor, s_stage_count;
+static uint32_t s_stage_key;                 // 0 = nothing staged
+
+int nav_stage_step(int rows, int budget, uint32_t stage_id) {
+    if (rows <= 0 || rows >= s_h || rows * s_w > (int)sizeof(s_stage_walk)) return 0;
+    if (s_stage_key != stage_id || s_stage_rows != rows) {
+        s_stage_key = stage_id;
+        s_stage_rows = rows;
+        s_stage_cursor = 0;
+        s_stage_count = 0;
+    }
+    const int total = rows * s_w;
+    int end = s_stage_cursor + budget;
+    if (end > total) end = total;
+    int nx = s_stage_cursor % s_w, ny = s_stage_cursor / s_w;   // one division per call
+    for (int i = s_stage_cursor; i < end; i++) {
+        int ok = node_walkable(nx, ny);
+        s_stage_walk[i] = (uint8_t)ok;
+        s_stage_count += ok;
+        if (++nx == s_w) { nx = 0; ny++; }
+    }
+    s_stage_cursor = end;
+    return end == total;
+}
+
+void nav_shift_down(int rows, int goal_px, int goal_py, uint32_t stage_id) {
     if (rows <= 0 || rows >= s_h) {
         nav_refresh_begin(goal_px, goal_py);
         return;
@@ -107,17 +145,27 @@ void nav_shift_down(int rows, int goal_px, int goal_py) {
     memmove(s_walkable + rows * s_w, s_walkable, (size_t)keep_rows * (size_t)s_w);
     for (int b = 0; b < 2; b++) {
         memmove(s_dist[b] + rows * s_w, s_dist[b], (size_t)keep_rows * (size_t)s_w);
-        for (int i = 0; i < rows * s_w; i++) s_dist[b][i] = NAV_UNREACHABLE;
+        memset(s_dist[b], NAV_UNREACHABLE, (size_t)(rows * s_w));
     }
     s_walkable_count -= removed_walkable;
-    for (int ny = 0; ny < rows; ny++) {
-        for (int nx = 0; nx < s_w; nx++) {
-            int index = ny * s_w + nx;
-            int ok = node_walkable(nx, ny);
-            s_walkable[index] = (uint8_t)ok;
-            s_walkable_count += ok;
+    s_dirty = 1;
+    memset(s_step_cache, STEP_UNKNOWN, sizeof(s_step_cache));
+    if (stage_id != 0 && s_stage_key == stage_id && s_stage_rows == rows &&
+        s_stage_cursor == rows * s_w) {
+        // Staged ahead from the same window data: identical to the loop below.
+        memcpy(s_walkable, s_stage_walk, (size_t)(rows * s_w));
+        s_walkable_count += s_stage_count;
+    } else {
+        for (int ny = 0; ny < rows; ny++) {
+            for (int nx = 0; nx < s_w; nx++) {
+                int index = ny * s_w + nx;
+                int ok = node_walkable(nx, ny);
+                s_walkable[index] = (uint8_t)ok;
+                s_walkable_count += ok;
+            }
         }
     }
+    s_stage_key = 0;                  // the staged rows are consumed
     s_goal_px = goal_px;
     s_goal_py = goal_py;
     s_refreshing = 0;
@@ -168,14 +216,16 @@ void nav_set_goal(int goal_px, int goal_py) {
 
 static void start_search(void) {
     uint8_t *dist = s_dist[1 - s_read];
-    for (int i = 0; i < s_w * s_h; i++) dist[i] = NAV_UNREACHABLE;
+    memset(dist, NAV_UNREACHABLE, (size_t)(s_w * s_h));
+    s_dirty = 0;
+    s_searched_goal = s_goal_node;
     s_head = 0;
     s_tail = 0;
     dist[s_goal_node] = 0;
     s_queue[s_tail++] = (uint16_t)((s_goal_node_y << 6) | s_goal_node_x);
 }
 
-void nav_update(int budget) {
+ITCM_CODE void nav_update(int budget) {
     while (s_refreshing && budget > 0 && s_refresh_cursor < s_w * s_h) {
         int index = s_refresh_cursor++;
         int ok = node_walkable(s_refresh_x, s_refresh_y);
@@ -192,18 +242,35 @@ void nav_update(int budget) {
     if (budget <= 0) return;
     if (s_head >= s_tail) {
         if (s_goal_node < 0) return;
+        // The field of an unchanged goal over an unchanged grid would come out identical: keep reading it.
+        if (s_field_valid && !s_dirty && s_goal_node == s_searched_goal) return;
         start_search();
     }
     uint8_t *dist = s_dist[1 - s_read];
+    const int w = s_w, h = s_h;
+    const uint8_t *walk = s_walkable;
     while (budget-- > 0 && s_head < s_tail) {
         uint16_t packed = s_queue[s_head++];
         int nx = packed & 63, ny = packed >> 6;
-        int node = ny * s_w + nx;
+        int node = ny * w + nx;
         int next = dist[node] + 1;
         if (next >= NAV_UNREACHABLE) continue;
+        if (nx > 0 && nx < w - 1 && ny > 0 && ny < h - 1) {
+            // Interior node: no bounds checks. Same neighbours, same order and same corner rule as the generic loop.
+            int e = walk[node + 1], wst = walk[node - 1], so = walk[node + w], no = walk[node - w];
+            if (e && dist[node + 1] == NAV_UNREACHABLE) { dist[node + 1] = (uint8_t)next; s_queue[s_tail++] = (uint16_t)((ny << 6) | (nx + 1)); }
+            if (wst && dist[node - 1] == NAV_UNREACHABLE) { dist[node - 1] = (uint8_t)next; s_queue[s_tail++] = (uint16_t)((ny << 6) | (nx - 1)); }
+            if (so && dist[node + w] == NAV_UNREACHABLE) { dist[node + w] = (uint8_t)next; s_queue[s_tail++] = (uint16_t)(((ny + 1) << 6) | nx); }
+            if (no && dist[node - w] == NAV_UNREACHABLE) { dist[node - w] = (uint8_t)next; s_queue[s_tail++] = (uint16_t)(((ny - 1) << 6) | nx); }
+            if (e && so && walk[node + w + 1] && dist[node + w + 1] == NAV_UNREACHABLE) { dist[node + w + 1] = (uint8_t)next; s_queue[s_tail++] = (uint16_t)(((ny + 1) << 6) | (nx + 1)); }
+            if (e && no && walk[node - w + 1] && dist[node - w + 1] == NAV_UNREACHABLE) { dist[node - w + 1] = (uint8_t)next; s_queue[s_tail++] = (uint16_t)(((ny - 1) << 6) | (nx + 1)); }
+            if (wst && so && walk[node + w - 1] && dist[node + w - 1] == NAV_UNREACHABLE) { dist[node + w - 1] = (uint8_t)next; s_queue[s_tail++] = (uint16_t)(((ny + 1) << 6) | (nx - 1)); }
+            if (wst && no && walk[node - w - 1] && dist[node - w - 1] == NAV_UNREACHABLE) { dist[node - w - 1] = (uint8_t)next; s_queue[s_tail++] = (uint16_t)(((ny - 1) << 6) | (nx - 1)); }
+            continue;
+        }
         for (int k = 0; k < 8; k++) {
             if (!step_allowed(nx, ny, k)) continue;
-            int target = (ny + s_dy[k]) * s_w + (nx + s_dx[k]);
+            int target = (ny + s_dy[k]) * w + (nx + s_dx[k]);
             if (dist[target] != NAV_UNREACHABLE) continue;
             dist[target] = (uint8_t)next;
             int tx = nx + s_dx[k], ty = ny + s_dy[k];
@@ -213,6 +280,7 @@ void nav_update(int budget) {
     if (s_head >= s_tail) {
         // Finished: the field just built becomes the one enemies read.
         s_read = 1 - s_read;
+        memset(s_step_cache, STEP_UNKNOWN, sizeof(s_step_cache));
         s_head = s_tail = 0;
         s_field_valid = 1;
     }
@@ -220,6 +288,7 @@ void nav_update(int budget) {
 
 void nav_rebuild_now(void) {
     if (!s_refreshing && s_goal_node < 0) return;
+    s_dirty = 1;
     s_head = s_tail = 0;
     nav_update(NAV_NODES * 8);
 }
@@ -231,14 +300,21 @@ int nav_distance(int px, int py) {
     return s_dist[s_read][node];
 }
 
-int nav_next_step(int px, int py, int *target_px, int *target_py) {
+ITCM_CODE int nav_next_step(int px, int py, int *target_px, int *target_py) {
     if (!s_field_valid || s_refreshing) return 0;
     int node = node_of(px, py);
     if (node < 0) return 0;
+    int nx = px / NAV_NODE_PX, ny = py / NAV_NODE_PX;
+    int cached = s_step_cache[node];
+    if (cached != STEP_UNKNOWN) {
+        if (cached == STEP_NONE) return 0;
+        *target_px = (nx + s_dx[cached]) * NAV_NODE_PX + NAV_NODE_PX / 2;
+        *target_py = (ny + s_dy[cached]) * NAV_NODE_PX + NAV_NODE_PX / 2;
+        return 1;
+    }
     const uint8_t *dist = s_dist[s_read];
     int here = dist[node];
-    if (here == 0) return 0;
-    int nx = px / NAV_NODE_PX, ny = py / NAV_NODE_PX;
+    if (here == 0) { s_step_cache[node] = STEP_NONE; return 0; }
     int best = here, best_k = -1;
     for (int k = 0; k < 8; k++) {
         // A body can stand where its node's centre is blocked (hugging a wall); then no
@@ -255,7 +331,8 @@ int nav_next_step(int px, int py, int *target_px, int *target_py) {
             best_k = k;
         }
     }
-    if (best_k < 0) return 0;
+    if (best_k < 0) { s_step_cache[node] = STEP_NONE; return 0; }
+    s_step_cache[node] = (uint8_t)best_k;
     *target_px = (nx + s_dx[best_k]) * NAV_NODE_PX + NAV_NODE_PX / 2;
     *target_py = (ny + s_dy[best_k]) * NAV_NODE_PX + NAV_NODE_PX / 2;
     return 1;

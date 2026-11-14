@@ -1,6 +1,7 @@
 #include "horde.h"
 #include "collision.h"
 #include "player_sprite.h"
+#include <nds/ndstypes.h>
 
 static uint32_t s_rng;
 static uint32_t s_run_frames;
@@ -65,6 +66,9 @@ static int spawn_enemy(Enemy *e, int upper_screen_y, int clustered, int center_x
     if (e->type == ENEMY_TYPE_CHARGER) s_chargers_alive++;
     e->char_id = enemy_type_char_id(e->type);
     e->hp = g_enemy_tuning[e->type].max_hp;
+#if STRESS_TEST
+    e->hp = 1;                // measurement build: any hit kills
+#endif
     e->max_hp = e->hp;
     e->dir = DIR_SOUTH;
     e->frame = 0;
@@ -83,7 +87,7 @@ static int spawn_enemy(Enemy *e, int upper_screen_y, int clustered, int center_x
     return 1;
 }
 
-void horde_update(Enemy *enemies, int count, fixed player_y,
+ITCM_CODE void horde_update(Enemy *enemies, int count, fixed player_y,
                   int upper_screen_y, fixed tide_y) {
     if (!enemies || count <= 0) return;
     s_run_frames++;

@@ -43,10 +43,11 @@ def opaque_pixels(symbol, char_id, w=40, h=40):
             idx = d * 8 + f
             off = offsets[idx]
             bx, by, bw, bh = bounds[idx]
-            frame = values[off:off + bw * bh]
+            pitch = (bw + 1) & ~1               # rows are padded to an even pitch (sprite_pitch)
+            frame = values[off:off + pitch * bh]
             for y in range(bh):
                 for x in range(bw):
-                    if frame[y * bw + x] & 0x8000:
+                    if frame[y * pitch + x] & 0x8000:
                         pts.add((bx + x - anchor_x, anchors[d] - (by + y)))
         result[d] = pts
     return result

@@ -10,12 +10,18 @@
 #define STRIP_REBASE_TOP_PX 768
 #define STRIP_PIXELS_PER_METER_100X 4042 // [TUNABLE-PLACEHOLDER] projected pixels per meter, hundredths (40.42)
 // strip_prepare_step() builds the next rebase while player_y < STRIP_REBASE_TOP_PX + this margin.
-#define STRIP_PREPARE_MARGIN_PX 256
+#define STRIP_PREPARE_MARGIN_PX 512
 
 void strip_start(uint32_t seed);
 // One bounded unit of work toward the next rebase. Call once per frame, before strip_rebase_if_needed.
 void strip_prepare_step(int player_y_px);
 int strip_rebase_if_needed(int player_y_px);
+// Staging of the next window for nav_stage_step(): while strip_stage_enter() returns 1 the Arena
+// reads the final collision rows 0..191 of the next window (call strip_stage_leave() right after).
+// strip_stage_id() changes whenever a preparation begins, so a staged result can be told stale.
+uint32_t strip_stage_id(void);
+int strip_stage_enter(void);
+void strip_stage_leave(void);
 int32_t strip_shift_total_px(void);
 int strip_start_x(void);
 int strip_start_y(void);

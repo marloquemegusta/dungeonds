@@ -1,5 +1,6 @@
 #include "collision.h"
 #include "arena.h"
+#include <nds/ndstypes.h>
 
 // ---------------------------------------------------------------------------
 // World Collision
@@ -16,7 +17,7 @@ static inline uint8_t world_collision_flags(int cx, int cy) {
 
 // The body footprint is a circle on the ground (radius 6), which the 2:1
 // projection turns into an ellipse of 6 x 3 screen pixels.
-int position_is_free(fixed x, fixed y) {
+ITCM_CODE int position_is_free(fixed x, fixed y) {
     int wx = (int)(x >> FIXED_SHIFT);
     int wy = (int)(y >> FIXED_SHIFT);
     const int radius = 6;
@@ -87,26 +88,61 @@ int sweep_position(fixed *x, fixed *y, fixed dx, fixed dy) {
     return 1;
 }
 
-int line_is_walkable(int x0, int y0, int x1, int y1) {
+// Samples x0 + dx * i / steps (C truncation toward zero) without a division per sample: one divide
+// up front, then the remainder is carried (software division is slow on the ARM9).
+typedef struct {
+    int origin, sign, q, r, steps, acc, extra;
+} LineStepper;
+
+static inline void line_stepper_init(LineStepper *s, int origin, int delta, int steps) {
+    int a = delta < 0 ? -delta : delta;
+    s->origin = origin;
+    s->sign = delta < 0 ? -1 : 1;
+    s->q = a / steps;
+    s->r = a % steps;
+    s->steps = steps;
+    s->acc = 0;
+    s->extra = 0;
+}
+
+// Value for sample i; call with i = 1, 2, 3, ... in order.
+static inline int line_stepper_next(LineStepper *s, int i) {
+    s->acc += s->r;
+    if (s->acc >= s->steps) {
+        s->acc -= s->steps;
+        s->extra++;
+    }
+    return s->origin + s->sign * (s->q * i + s->extra);
+}
+
+ITCM_CODE int line_is_walkable(int x0, int y0, int x1, int y1) {
     int dx = x1 - x0, dy = y1 - y0;
     int adx = dx < 0 ? -dx : dx;
     int ady = (dy < 0 ? -dy : dy) << GROUND_Y_SHIFT;          // ground units
     int steps = ((adx > ady ? adx : ady) >> 2) + 1;           // a sample every ~4 ground px
+    LineStepper sx, sy;
+    line_stepper_init(&sx, x0, dx, steps);
+    line_stepper_init(&sy, y0, dy, steps);
     for (int i = 1; i < steps; i++) {
-        int x = x0 + dx * i / steps;
-        int y = y0 + dy * i / steps;
+        int x = line_stepper_next(&sx, i);
+        int y = line_stepper_next(&sy, i);
         if (!position_is_free(TO_FIXED(x), TO_FIXED(y))) return 0;
     }
     return 1;
 }
 
-int bullet_line_is_free(int x0, int y0, int x1, int y1) {
+ITCM_CODE int bullet_line_is_free(int x0, int y0, int x1, int y1) {
     int dx = x1 - x0, dy = y1 - y0;
     int adx = dx < 0 ? -dx : dx;
     int ady = dy < 0 ? -dy : dy;
     int steps = ((adx > ady ? adx : ady) >> 2) + 1;           // a sample every ~4 px
+    LineStepper sx, sy;
+    line_stepper_init(&sx, x0, dx, steps);
+    line_stepper_init(&sy, y0, dy, steps);
     for (int i = 1; i < steps; i++) {
-        if (!bullet_position_is_free(TO_FIXED(x0 + dx * i / steps), TO_FIXED(y0 + dy * i / steps))) return 0;
+        int x = line_stepper_next(&sx, i);
+        int y = line_stepper_next(&sy, i);
+        if (!bullet_position_is_free(TO_FIXED(x), TO_FIXED(y))) return 0;
     }
     return 1;
 }
