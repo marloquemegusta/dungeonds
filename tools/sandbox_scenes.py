@@ -371,6 +371,11 @@ def main():
     scenes += [hero_walk_scene(d) for d in HERO_WALKS]
     scenes.append(exvoto_pray_scene())
     for sc in scenes:
+        if sc["name"].startswith(("sandbox_grenade_", "sandbox_shotgun_", "sandbox_sniper_fire")):
+            sc["suite"] = False                       # variantes de arte y capturas: fuera de la bateria
+        if sc["name"].startswith("sandbox_hero_walk_"):
+            sc["suite"] = False
+            sc["evidence_only"] = True                # solo capturas, sin aserciones
         path = out / f"{sc['name']}.json"
         path.write_text(json.dumps(sc, indent=2) + "\n", encoding="utf-8")
         print(path.relative_to(ROOT))

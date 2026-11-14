@@ -285,7 +285,7 @@ Primer paso jugable hacia §6.1–6.8: el juego actual (armas, cargador, tirador
 - **Se sustituye:** las manadas dormidas por un generador de oleadas; los pedestales por la elección al subir de nivel; la mazmorra por la franja; el HUD de la run por uno de vida, experiencia, nivel y tiempo.
 
 ### 6.9 Hoja de ruta por versiones (revisada 2026-11-07)
-La prueba de §6.1–6.8 se construye en versiones jugables pequeñas, cada una en su sesión y su rama. Una versión se cierra con build sin warnings, tests de host, escenarios y 60 FPS medidos en la DS (`AGENTS.md` reglas 4 y 6), y se fusiona en `main` antes de empezar la siguiente. Las que traen comportamiento nuevo empiezan con una sesión de diseño que lo deja escrito aquí (regla 9). Tras cada versión el usuario la juega en la DS y su feedback entra en la siguiente.
+La prueba de §6.1–6.8 se construye en versiones jugables pequeñas, cada una en su sesión y su rama. Una versión se cierra con el cierre de `AGENTS.md` (reglas 4 y 6), que en los hitos de versión incluye la batería completa de escenarios, y se fusiona en `main` antes de empezar la siguiente. Las que traen comportamiento nuevo empiezan con una sesión de diseño que lo deja escrito aquí (regla 9). Tras cada versión el usuario la juega en la DS y su feedback entra en la siguiente.
 
 | Versión | Contenido | Antes de empezar | Estado |
 | :--- | :--- | :--- | :--- |

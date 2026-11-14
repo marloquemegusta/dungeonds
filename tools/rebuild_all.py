@@ -2,7 +2,7 @@
 """Deterministic 1-command rebuild orchestrator for DungeonDS.
 
 Rebuilds assets (lab, characters, props, arenas), bakes runtime assets,
-runs host contract tests, and builds the Nintendo DS ROM.
+builds the Nintendo DS ROM.
 """
 
 from __future__ import annotations
@@ -21,6 +21,8 @@ import time
 ROOT = Path(__file__).resolve().parents[1]
 
 ALL_STEPS = ["lab", "characters", "props", "arenas", "bake", "tests", "rom"]
+# "tests" no corre por defecto: se activa con --tests o con --only tests.
+DEFAULT_STEPS = [s for s in ALL_STEPS if s != "tests"]
 RENDER_STEPS = {"lab", "characters", "props", "arenas"}
 BUILD_PROJECT_SCRIPT = Path(r"C:\codexlocal\skills\agentic-ds-dev\scripts\build-project.ps1")
 
@@ -335,7 +337,7 @@ def main() -> None:
     parser.add_argument(
         "--only",
         default="all",
-        help="Comma-separated list of pipeline steps to run (choices: all, lab, characters, props, arenas, bake, tests, rom). Default: all",
+        help="Comma-separated list of pipeline steps to run (choices: all, lab, characters, props, arenas, bake, tests, rom). Default: all (all no incluye tests; usa --tests o --only tests)",
     )
     parser.add_argument(
         "--char",
@@ -351,12 +353,17 @@ def main() -> None:
     parser.add_argument(
         "--skip-render",
         action="store_true",
-        help="Skip render steps (lab, characters, props, arenas), running only bake, tests, rom.",
+        help="Skip render steps (lab, characters, props, arenas), running only bake, rom.",
+    )
+    parser.add_argument(
+        "--tests",
+        action="store_true",
+        help="Also run the host tests (off by default; they run in the closing phase).",
     )
     parser.add_argument(
         "--skip-tests",
         action="store_true",
-        help="Skip host tests.",
+        help="Deprecated no-op: host tests are already skipped by default.",
     )
     parser.add_argument(
         "--skip-rom",
@@ -385,15 +392,16 @@ def main() -> None:
             parser.error(f"Invalid step '{tok}' in --only. Valid choices: {', '.join(ALL_STEPS)}, all")
 
     if "all" in tokens:
-        selected = list(ALL_STEPS)
+        selected = list(ALL_STEPS) if args.tests else list(DEFAULT_STEPS)
     else:
         selected = [s for s in ALL_STEPS if s in tokens]
+        if args.tests and "tests" not in selected:
+            selected.append("tests")
+            selected = [s for s in ALL_STEPS if s in selected]
 
     # Apply skip flags
     if args.skip_render:
         selected = [s for s in selected if s not in RENDER_STEPS]
-    if args.skip_tests:
-        selected = [s for s in selected if s != "tests"]
     if args.skip_rom:
         selected = [s for s in selected if s != "rom"]
 

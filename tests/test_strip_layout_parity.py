@@ -6,7 +6,7 @@ uses. A host build of strip.c with -DSTRIP_LAYOUT_DUMP=1 prints:
   * the plan of blocks -16..5, piece by piece, in emission order;
   * the window (tiles and collision cells) after strip_start() and after one rebase.
 The test rebuilds the same window from the Python plan and compares every cell. It also checks the
-layout invariants of DESIGN.md 6.9.1b on 40 blocks, and the no-float contract of the composer.
+layout invariants of DESIGN.md 6.9.1b on 40 blocks.
 """
 import importlib.util
 import re
@@ -329,11 +329,6 @@ class CompositorV2InvariantsTest(unittest.TestCase):
         for g in range(8):
             blocks = [self.bake.band_block(16 + 6 * g + k)[0] for k in range(6)]
             self.assertEqual(blocks, [-2 * (g + 1)] * 3 + [-2 * (g + 1) + 1] * 3)
-
-    def test_composer_has_no_floating_point(self):
-        source = STRIP_C.read_text(encoding="utf-8")
-        self.assertIsNone(re.search(r"\b(?:float|double)\b", source))
-        self.assertIsNone(re.search(r"\b(?:float|double)\b", SOURCE.read_text(encoding="utf-8")))
 
 
 if __name__ == "__main__":

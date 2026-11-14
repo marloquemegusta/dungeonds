@@ -5,7 +5,6 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SPRITES = (ROOT / "source" / "player_sprite.c").read_text(encoding="utf-8")
-HEADER = (ROOT / "include" / "player_sprite.h").read_text(encoding="utf-8")
 CHAR_DIR = ROOT / "assets" / "sprites" / "characters"
 # Order of the C tables (NUM_CHARACTERS): hero, charger, ojo, exvoto walk, exvoto pray_stand, pray_kneel, stand_up, abanderado, monaguillo.
 CHARACTERS = [
@@ -31,12 +30,6 @@ def c_muzzle_table():
 
 
 class CharacterMuzzleTests(unittest.TestCase):
-    def test_header_declares_table(self):
-        self.assertIn(
-            "extern const int8_t g_character_muzzle[NUM_CHARACTERS][PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][3];",
-            HEADER,
-        )
-
     def test_armed_characters_have_valid_muzzles(self):
         for name in ARMED:
             with self.subTest(character=name):

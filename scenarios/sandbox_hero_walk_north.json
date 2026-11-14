@@ -355,5 +355,7 @@
       "frames": 4
     }
   ],
-  "assertions": {}
+  "assertions": {},
+  "suite": false,
+  "evidence_only": true
 }

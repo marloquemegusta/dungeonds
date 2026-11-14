@@ -463,5 +463,6 @@
     "min_changed_pixels": 100
    }
   ]
- }
+ },
+ "suite": false
 }

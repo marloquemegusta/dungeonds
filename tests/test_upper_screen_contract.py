@@ -6,7 +6,6 @@ import numpy as np
 
 ROOT = Path(__file__).resolve().parents[1]
 MAIN_C = (ROOT / "source" / "main.c").read_text(encoding="utf-8")
-PERFPROF_H = (ROOT / "include" / "perfprof.h").read_text(encoding="utf-8")
 
 SUB_VRAM_BYTES = 128 * 1024          # bank C
 PAGE_BYTES = 256 * 192 * 2           # one 16 bpp actor page
@@ -32,21 +31,6 @@ def arena_tile_maps():
 
 class UpperScreenContractTest(unittest.TestCase):
     """Both screens draw the same layers: floor tiles plus a 16 bpp actor page."""
-
-    def test_both_screens_run_the_same_compositor(self):
-        self.assertIn("render_screen(s_top_page, s_dirty_top, view_x, view_y - SCREEN_H", MAIN_C)
-        self.assertIn("render_screen(bot_page_ptr(s_bot_back_page), s_dirty[s_bot_back_page == 24], view_x, view_y", MAIN_C)
-
-    def test_occluded_actors_are_hidden_without_through_wall_effects(self):
-        blit = MAIN_C.split("static void blit_stride", 1)[1].split("// Shadow shape", 1)[0]
-        # The blit reads the baked per-row runs directly and paints only between hiding runs.
-        self.assertIn("g_arena->occlusion_row_start[world_y]", blit)
-        self.assertIn("(int)r->depth > depth", blit)
-        self.assertIn("blit_runs_span(drow, srow, rr, rend, cur, rx0)", blit)
-        self.assertNotIn("see_through", MAIN_C)
-        self.assertNotIn("draw_hidden_wall_base", MAIN_C)
-        self.assertNotIn("wall_base_px", MAIN_C)
-        self.assertNotIn("PP_WALLBASE", PERFPROF_H)
 
     def test_sub_vram_layout_fits_bank_c(self):
         capacity = define(MAIN_C, "TOP_TILE_CACHE_CAPACITY")

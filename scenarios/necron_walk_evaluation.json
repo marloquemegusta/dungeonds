@@ -19,5 +19,7 @@
     { "button_up": "DOWN", "frames": 1 },
     { "button_up": "LEFT", "frames": 4 }
   ],
-  "assertions": {}
+  "assertions": {},
+  "suite": false,
+  "evidence_only": true
 }
