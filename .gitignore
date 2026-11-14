@@ -65,3 +65,7 @@ assets/models/characters/exvoto/exvoto_*.fbx
 # Ojo del Tribunal: FBX animados derivados; se regeneran con tools/characters/build_ojo.py
 assets/models/characters/ojo/ojo_*.fbx
 assets/environment/cathedral/props/*.fbm/
+# Abanderado: FBX animados derivados; se regeneran con tools/characters/build_abanderado.py
+assets/models/characters/abanderado/abanderado_*.fbx
+# Monaguillo: FBX animados derivados; se regeneran con tools/characters/build_monaguillo.py
+assets/models/characters/monaguillo/monaguillo_*.fbx

@@ -631,7 +631,7 @@ static int compute_aim(const WeaponInput *in, fixed *dir_x, fixed *dir_y) {
 // ---------------------------------------------------------------------------
 
 static void shove_enemy(Enemy *e, const WeaponTuning *tuning, fixed dir_x, fixed dir_y) {
-    if (!e->active || e->hp <= 0 || tuning->knockback <= 0) return;
+    if (!e->active || e->hp <= 0 || e->type == ENEMY_TYPE_ABANDERADO || tuning->knockback <= 0) return;
     fixed knock = tuning->knockback * g_mods.knock_pct / 100;
     e->knock_vx = (dir_x * knock) >> 8;
     e->knock_vy = (dir_y * knock) >> 8;
@@ -717,10 +717,10 @@ static void fire_sniper(const WeaponTuning *tuning, const WeaponInput *in, fixed
 
         for (int i = 0; i < max_enemies; i++) {
             Enemy *e = &enemies[i];
-            if (!e->active || e->hp <= 0 || (hit_mask & (1u << i))) continue;
+            if (!e->active || e->hp <= 0 || e->state == ENEMY_STATE_EMERGE || (hit_mask & (1u << i))) continue;
             int edx = TO_INT(cur_x - e->x);
             int edy = TO_INT(cur_y - e->y);
-            int hit = (e->char_id == CHAR_CHARGER)
+            int hit = (e->char_id == CHAR_CHARGER || e->char_id == CHAR_ABANDERADO)
                 ? body_hit_test_ex(edx, edy, in->muzzle_h, CHARGER_BODY_HIT_CY, CHARGER_BODY_HIT_RX, CHARGER_BODY_HIT_RY)
                 : (e->char_id == CHAR_OJO)
                 ? body_hit_test_ex(edx, edy, in->muzzle_h, OJO_BODY_HIT_CY, OJO_BODY_HIT_RX, OJO_BODY_HIT_RY)
@@ -1159,7 +1159,7 @@ void weapons_update(Enemy *enemies, int max_enemies) {
 
         for (int e_idx = 0; e_idx < max_enemies; e_idx++) {
             Enemy *e = &enemies[e_idx];
-            if (!e->active || e->hp <= 0 || (p->hit_mask & (1u << e_idx))) continue;
+            if (!e->active || e->hp <= 0 || e->state == ENEMY_STATE_EMERGE || (p->hit_mask & (1u << e_idx))) continue;
             int dx = TO_INT(p->x - e->x);
             int dy = TO_INT(p->y - e->y);
             int hit_radius = e->char_id == CHAR_OJO ? 15 : ENEMY_HIT_RADIUS;

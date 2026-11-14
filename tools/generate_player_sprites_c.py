@@ -283,6 +283,8 @@ chars_meta = [
     ('exvoto_pray_stand', 'exvoto_pray_stand', 'Exvoto praying standing', 11, 24),
     ('exvoto_pray_kneel', 'exvoto_pray_kneel', 'Exvoto praying kneeling', 27, 14),
     ('exvoto_stand_up', 'exvoto_stand_up', 'Exvoto standing up', 0, 9),
+    ('abanderado', 'abanderado', 'El Abanderado', 50, 14),
+    ('monaguillo', 'monaguillo', 'Exvoto Monaguillo', 39, 22),
 ]
 
 # Ticks per frame of the Exvoto clips come from the manifest (the lab settings carry the template's).
@@ -555,6 +557,39 @@ for d in range(8):
     out_lines.append('    { ' + ', '.join('{ %d, %d, %d }' % tuple(shot_muzzle[d][f]) for f in range(8)) + ' },\n')
 out_lines.append('};\n\n')
 
+# Abanderado point clip (CHAR_ABANDERADO): 8 directions x 8 frames at 60x60 (head raised, staff tilted forward).
+AB_PT_DIR = os.path.join(SRC_ROOT, 'abanderado_point')
+ab_walk_anc, _, _, _ = parse_header(os.path.join(SRC_ROOT, 'abanderado', 'nds_shadow_anchor.h'), (120 * 120) // 2)
+ab_pt_anc, _, ab_pt_shb, ab_pt_mask = parse_header(os.path.join(AB_PT_DIR, 'nds_shadow_anchor.h'), (120 * 120) // 2)
+ab_pt_shift = [ab_walk_anc[d] - ab_pt_anc[d] for d in range(8)]
+ab_pt_shb, ab_pt_mask = crop_shadow_to_80(ab_pt_shb, ab_pt_mask, 120, 120)
+ab_pt_mode = resolve_legibility(AB_PT_DIR, ARGS.legibility)
+ab_pt_offs, ab_pt_bnds, ab_pt_pix, ab_pt_roffs, ab_pt_runs = convert_sheet_cropped(
+    os.path.join(AB_PT_DIR, 'spritesheet.png'), 60, 60, ab_pt_shift, legibility=ab_pt_mode)
+out_lines.append('// 60x60 BGR555 point clip of El Abanderado (CHAR_ABANDERADO), 8 directions x 8 frames (cropped to bounds)\n')
+out_lines.append('const uint16_t g_abanderado_point_frames[] __attribute__((aligned(4))) = ')
+out_lines.append(ab_pt_pix)
+out_lines.append('\n')
+out_lines.append('const uint32_t g_abanderado_point_frame_offsets[PLAYER_NUM_DIRS][ABANDERADO_POINT_NUM_FRAMES] = ')
+out_lines.append(ab_pt_offs)
+out_lines.append('\n')
+out_lines.append('const uint8_t g_abanderado_point_frame_bounds[PLAYER_NUM_DIRS][ABANDERADO_POINT_NUM_FRAMES][4] = ')
+out_lines.append(ab_pt_bnds)
+out_lines.append('\n')
+emit_runs(out_lines, 'abanderado_point', ab_pt_roffs, ab_pt_runs, 'ABANDERADO_POINT_NUM_FRAMES',
+          'Opaque runs of the Abanderado point clip')
+ab_pt_so, ab_pt_sd = crop_shadow_masks(ab_pt_shb, ab_pt_mask, SHADOW_W, SHADOW_H)
+out_lines.append('// 4-bit packed shadow masks of the Abanderado point clip (8 dirs x 8 frames, cropped to bounds)\n')
+out_lines.append('const uint8_t g_abanderado_point_shadow_masks[] __attribute__((aligned(4))) = ')
+out_lines.append(ab_pt_sd)
+out_lines.append('\n')
+out_lines.append('const uint32_t g_abanderado_point_shadow_offsets[PLAYER_NUM_DIRS][ABANDERADO_POINT_NUM_FRAMES] = ')
+out_lines.append(ab_pt_so)
+out_lines.append('\n')
+out_lines.append('const uint8_t g_abanderado_point_shadow_bounds[PLAYER_NUM_DIRS][ABANDERADO_POINT_NUM_FRAMES][4] = {\n')
+out_lines.append(ab_pt_shb)
+out_lines.append('\n};\n\n')
+
 out_lines.append('const uint8_t g_character_ground_anchors[NUM_CHARACTERS][PLAYER_NUM_DIRS] = {\n')
 for anc in all_anchors:
     out_lines.append('    { ' + ', '.join(str(x) for x in anc) + ' },\n')
@@ -569,53 +604,19 @@ for muzzle in all_muzzles:
     out_lines.append('    },\n')
 out_lines.append('};\n\n')
 
-out_lines.append('const uint16_t * const g_character_frames[NUM_CHARACTERS] = {\n')
-out_lines.append('    g_player_frames,\n')
-out_lines.append('    g_charger_frames,\n')
-out_lines.append('    g_ojo_frames,\n    g_exvoto_frames,\n    g_exvoto_pray_stand_frames,\n    g_exvoto_pray_kneel_frames,\n    g_exvoto_stand_up_frames\n')
-out_lines.append('};\n\n')
-
-out_lines.append('const uint32_t (* const g_character_frame_offsets[NUM_CHARACTERS])[PLAYER_NUM_FRAMES] = {\n')
-out_lines.append('    g_player_frame_offsets,\n')
-out_lines.append('    g_charger_frame_offsets,\n')
-out_lines.append('    g_ojo_frame_offsets,\n    g_exvoto_frame_offsets,\n    g_exvoto_pray_stand_frame_offsets,\n    g_exvoto_pray_kneel_frame_offsets,\n    g_exvoto_stand_up_frame_offsets\n')
-out_lines.append('};\n\n')
-
-out_lines.append('const uint8_t (* const g_character_frame_bounds[NUM_CHARACTERS])[PLAYER_NUM_FRAMES][4] = {\n')
-out_lines.append('    g_player_frame_bounds,\n')
-out_lines.append('    g_charger_frame_bounds,\n')
-out_lines.append('    g_ojo_frame_bounds,\n    g_exvoto_frame_bounds,\n    g_exvoto_pray_stand_frame_bounds,\n    g_exvoto_pray_kneel_frame_bounds,\n    g_exvoto_stand_up_frame_bounds\n')
-out_lines.append('};\n\n')
-
-out_lines.append('const uint16_t * const g_character_runs[NUM_CHARACTERS] = {\n')
-out_lines.append('    g_player_runs,\n')
-out_lines.append('    g_charger_runs,\n')
-out_lines.append('    g_ojo_runs,\n    g_exvoto_runs,\n    g_exvoto_pray_stand_runs,\n    g_exvoto_pray_kneel_runs,\n    g_exvoto_stand_up_runs\n')
-out_lines.append('};\n\n')
-
-out_lines.append('const uint32_t (* const g_character_run_offsets[NUM_CHARACTERS])[PLAYER_NUM_FRAMES] = {\n')
-out_lines.append('    g_player_run_offsets,\n')
-out_lines.append('    g_charger_run_offsets,\n')
-out_lines.append('    g_ojo_run_offsets,\n    g_exvoto_run_offsets,\n    g_exvoto_pray_stand_run_offsets,\n    g_exvoto_pray_kneel_run_offsets,\n    g_exvoto_stand_up_run_offsets\n')
-out_lines.append('};\n\n')
-
-out_lines.append('const uint8_t * const g_character_shadow_masks[NUM_CHARACTERS] = {\n')
-out_lines.append('    g_player_shadow_masks,\n')
-out_lines.append('    g_charger_shadow_masks,\n')
-out_lines.append('    g_ojo_shadow_masks,\n    g_exvoto_shadow_masks,\n    g_exvoto_pray_stand_shadow_masks,\n    g_exvoto_pray_kneel_shadow_masks,\n    g_exvoto_stand_up_shadow_masks\n')
-out_lines.append('};\n\n')
-
-out_lines.append('const uint32_t (* const g_character_shadow_offsets[NUM_CHARACTERS])[PLAYER_NUM_FRAMES] = {\n')
-out_lines.append('    g_player_shadow_offsets,\n')
-out_lines.append('    g_charger_shadow_offsets,\n')
-out_lines.append('    g_ojo_shadow_offsets,\n    g_exvoto_shadow_offsets,\n    g_exvoto_pray_stand_shadow_offsets,\n    g_exvoto_pray_kneel_shadow_offsets,\n    g_exvoto_stand_up_shadow_offsets\n')
-out_lines.append('};\n\n')
-
-out_lines.append('const uint8_t (* const g_character_shadow_bounds[NUM_CHARACTERS])[PLAYER_NUM_FRAMES][4] = {\n')
-out_lines.append('    g_player_shadow_bounds,\n')
-out_lines.append('    g_charger_shadow_bounds,\n')
-out_lines.append('    g_ojo_shadow_bounds,\n    g_exvoto_shadow_bounds,\n    g_exvoto_pray_stand_shadow_bounds,\n    g_exvoto_pray_kneel_shadow_bounds,\n    g_exvoto_stand_up_shadow_bounds\n')
-out_lines.append('};\n')
+for tbl, suffix in (
+    ('const uint16_t * const g_character_frames[NUM_CHARACTERS]', 'frames'),
+    ('const uint32_t (* const g_character_frame_offsets[NUM_CHARACTERS])[PLAYER_NUM_FRAMES]', 'frame_offsets'),
+    ('const uint8_t (* const g_character_frame_bounds[NUM_CHARACTERS])[PLAYER_NUM_FRAMES][4]', 'frame_bounds'),
+    ('const uint16_t * const g_character_runs[NUM_CHARACTERS]', 'runs'),
+    ('const uint32_t (* const g_character_run_offsets[NUM_CHARACTERS])[PLAYER_NUM_FRAMES]', 'run_offsets'),
+    ('const uint8_t * const g_character_shadow_masks[NUM_CHARACTERS]', 'shadow_masks'),
+    ('const uint32_t (* const g_character_shadow_offsets[NUM_CHARACTERS])[PLAYER_NUM_FRAMES]', 'shadow_offsets'),
+    ('const uint8_t (* const g_character_shadow_bounds[NUM_CHARACTERS])[PLAYER_NUM_FRAMES][4]', 'shadow_bounds'),
+):
+    out_lines.append(f'{tbl} = {{\n')
+    out_lines.append(',\n'.join(f'    g_{c[0]}_{suffix}' for c in char_configs) + '\n')
+    out_lines.append('};\n\n')
 
 out_path = os.path.join(WT, 'source/player_sprite.c')
 with open(out_path, 'w', encoding='utf-8') as f:

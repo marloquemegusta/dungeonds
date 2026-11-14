@@ -46,7 +46,9 @@
 #define SANDBOX_ENEMY_NONE    0
 #define SANDBOX_ENEMY_CHARGER 1
 #define SANDBOX_ENEMY_SHOOTER 2
-#define SANDBOX_ENEMY_EXVOTO  3
+#define SANDBOX_ENEMY_EXVOTO     3
+#define SANDBOX_ENEMY_ABANDERADO 4
+#define SANDBOX_ENEMY_MONAGUILLO 5
 #define SANDBOX_ENEMY_FLAG_ASLEEP 1   // spawn dormant instead of awake
 // Exvoto only (DESIGN.md 6.10): PRAY spawns it praying (it wakes by the hero's distance or a hit), KNEEL on its knees
 // instead of standing, and bits 3-5 hold the facing (DIR_*) it prays with.
