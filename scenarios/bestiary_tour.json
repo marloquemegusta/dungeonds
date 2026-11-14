@@ -1,0 +1,43 @@
+{
+  "name": "bestiary_tour",
+  "description": "Opens the bestiary via trigger poke, navigates all 4 high-res portrait entries with R, tests character rotation with RIGHT, and returns to gameplay with B.",
+  "state": {
+    "symbols": {
+      "bestiary": "g_bestiary_debug"
+    },
+    "default_symbol": "bestiary",
+    "fields": {
+      "active": { "offset": 0, "type": "u32" },
+      "entry_index": { "offset": 4, "type": "u32" },
+      "frame_count": { "offset": 8, "type": "u32" },
+      "trigger": { "offset": 12, "type": "u32" }
+    }
+  },
+  "steps": [
+    { "frames": 15 },
+    { "poke": [{ "field": "trigger", "value": 1 }], "frames": 10, "capture": "01_corazon", "state_capture": "s_corazon" },
+    { "button_down": "R", "frames": 2 },
+    { "button_up": "R", "frames": 10, "capture": "02_exvoto", "state_capture": "s_exvoto" },
+    { "button_down": "RIGHT", "frames": 2 },
+    { "button_up": "RIGHT", "frames": 10, "capture": "02_exvoto_rotado" },
+    { "button_down": "R", "frames": 2 },
+    { "button_up": "R", "frames": 10, "capture": "03_cireneo", "state_capture": "s_cireneo" },
+    { "button_down": "R", "frames": 2 },
+    { "button_up": "R", "frames": 10, "capture": "04_ojo", "state_capture": "s_ojo" },
+    { "button_down": "B", "frames": 2 },
+    { "button_up": "B", "frames": 15, "capture": "05_returned", "state_capture": "s_returned" }
+  ],
+  "assertions": {
+    "state_changes": [
+      { "field": "active", "at": "s_corazon", "equals": 1 },
+      { "field": "entry_index", "at": "s_corazon", "equals": 0 },
+      { "field": "active", "at": "s_exvoto", "equals": 1 },
+      { "field": "entry_index", "at": "s_exvoto", "equals": 1 },
+      { "field": "active", "at": "s_cireneo", "equals": 1 },
+      { "field": "entry_index", "at": "s_cireneo", "equals": 2 },
+      { "field": "active", "at": "s_ojo", "equals": 1 },
+      { "field": "entry_index", "at": "s_ojo", "equals": 3 },
+      { "field": "active", "at": "s_returned", "equals": 0 }
+    ]
+  }
+}

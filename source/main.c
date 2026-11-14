@@ -22,6 +22,7 @@
 #include "hwshadow.h"
 #include "pickups.h"
 #include "sfx.h"
+#include "bestiary.h"
 #include <string.h>
 #include <time.h>
 
@@ -2118,6 +2119,26 @@ int main(void) {
 
         if (keys_down & KEY_START) {
             g_perf.show_hud = !g_perf.show_hud;
+        }
+
+#if defined(BESTIARY_START) && BESTIARY_START
+        static int s_bestiary_boot_triggered = 0;
+        if (!s_bestiary_boot_triggered) {
+            s_bestiary_boot_triggered = 1;
+            g_bestiary_debug.trigger = 1;
+        }
+#endif
+        int open_bestiary = (g_bestiary_debug.trigger != 0) ||
+            (((keys_held & (KEY_L | KEY_R)) == (KEY_L | KEY_R)) && (keys_down & KEY_SELECT));
+        if (open_bestiary) {
+            bestiary_run(s_top_page, bot_page_ptr(8), bot_page_ptr(24), &s_bot_active_page, present_vblank_begin);
+            s_top_map_ready = 0;
+            s_bot_map_ready = 0;
+            memset(s_dirty, 0, sizeof(s_dirty));
+            memset(s_dirty_top, 0, sizeof(s_dirty_top));
+            update_screen_hardware_bg(1, s_top_map_ptr, s_cam_x, s_cam_y - SCREEN_H);
+            update_screen_hardware_bg(0, s_bot_map_ptr, s_cam_x, s_cam_y);
+            continue;
         }
 
         uint32_t t0 = cpuGetTiming();

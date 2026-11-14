@@ -609,3 +609,16 @@ Conceptos para la demo de la catedral. Solo cambia el aspecto y se añaden élit
 - **BSO de combate en streaming (decidido 2026-11-13, rama `feat/bgm-loop`):**
   - **Tema base (`cathedral_battle_loop`, 21,6 s, 11.025 Hz mono 8-bit PCM en NitroFS):** corte de 12 compases sin letra en inglés ni drops bruscos (`Loop A` de tecno industrial + coro grave) en streaming continuo (`mmStreamOpen`, buffer 2 KB) al 42 % de amplitud para dejar espacio a los SFX en `soundbank.bin`.
   - **Reserva para jefes (`boss_climax_loop`, 28,8 s):** corte `Loop B` con subida y drop guardado en `assets/music/` para futuros jefes.
+
+### 6.11 Bestiario (decidido 2026-11-14)
+- **Acceso y visibilidad:** todas las fichas de la demo (4 en total) están visibles desde el principio, sin desbloqueo progresivo. Se entra desde el botón `BESTIARIO` del menú inicial (cuando se integre en `main`) y se vuelve con `B` o el botón táctil `Volver`.
+- **Maquetación B minimalista:**
+  - **Estética:** fondo negro (`#000000`) y borde gris muy fino (1 px) en ambas pantallas.
+  - **Pantalla superior (256×192):** ilustración animada en grande del personaje en su pose/acción característica, centrada dentro del marco.
+  - **Pantalla inferior (256×192):** ficha de texto a ancho completo (nombre, 1 línea de comportamiento, párrafo breve de lore y cita) en fuente bitmap legible con soporte completo de español (tildes y `ñ`), más navegación minimalista (`< Ant`, `Volver`, `Sig >`), controlable con táctil, cruceta o `L`/`R`/`B`.
+- **Reutilización de assets:** los personajes ya presentes en la ROM (`El Corazón Abierto`, `El Cireneo`, `El Ojo del Tribunal`) reutilizan sus sprites existentes en ROM dibujados a escala 2× sin duplicar datos; `El Exvoto` (cuya rama de combate aún no está en `main`) aporta únicamente su tira frontal de 8 frames (`exvoto_walk.fbx`).
+- **Fichas de la demo (4):**
+  1. **El Corazón Abierto** *(Héroe)* — vista de frente pasando de encorvado a brazos en cruz. *Comportamiento:* carga su fe en cruz y desata un haz que atraviesa filas. *Lore:* último capellán de la columna. Pidió un arma cuando faltó la pólvora y Dios le abrió el pecho; cada milagro le consume un poco más, pero la fe no le deja morir. *«No es mi corazón. Solo lo llevo.»*
+  2. **El Exvoto** *(Masa)* — caminando *in-place* con las manos en rezo (sin cirio). *Comportamiento:* avanza en masa sin descanso; cae al primer impacto. *Lore:* fieles que rezaron hasta volverse figuras de cera. Siguen en procesión con las manos en rezo; la cera no resiste la luz. *«Pidieron no estar solos. Les fue concedido.»*
+  3. **El Cireneo** *(Cargador)* — agachado en telegrafía y embestida encorvado con la cruz por delante. *Comportamiento:* se agacha antes de embestir en línea recta; no puede girar. *Lore:* desertó y pidió que le clavaran la cruz a la espalda para no volver a huir. Si choca contra una columna, queda crucificado contra la piedra. *«Ayudó a cargar una cruz. Ahora la cruz le carga a él.»*
+  4. **El Ojo del Tribunal** *(Tirador)* — oscilando con el farol y alzando la cabeza de la mano para sentenciar. *Comportamiento:* vigila con su farol, fija la línea de juicio y sentencia desde la boca. *Lore:* inquisidores que cambiaron sus ojos por una linterna del juicio. Su mirada verde te examina; cuando se queda quieta, ya ha dictado sentencia. *«La linterna no ve culpables. Los fabrica.»*

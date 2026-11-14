@@ -1,0 +1,567 @@
+#include "bestiary.h"
+#include "bestiary_font.h"
+#include "bestiary_exvoto.h"
+#include "player_sprite.h"
+#include <nds.h>
+#include <string.h>
+#include <stdio.h>
+
+#define BESTIARY_SCREEN_W 256
+#define BESTIARY_SCREEN_H 192
+
+#define COLOR_BLACK_OPAQUE (0x8000)
+#define COLOR_BORDER       (RGB15(8, 8, 8) | 0x8000)
+#define COLOR_SEPARATOR    (RGB15(6, 6, 6) | 0x8000)
+#define COLOR_IVORY        (RGB15(29, 28, 26) | 0x8000)
+#define COLOR_BEHAVIOR     (RGB15(26, 26, 24) | 0x8000)
+#define COLOR_WARM_GRAY    (RGB15(20, 19, 18) | 0x8000)
+#define COLOR_QUOTE        (RGB15(24, 23, 21) | 0x8000)
+#define COLOR_BUTTON       (RGB15(22, 21, 20) | 0x8000)
+#define COLOR_HINT         (RGB15(12, 12, 12) | 0x8000)
+
+volatile BestiaryDebugState g_bestiary_debug = {0, 0, 0, 0};
+
+typedef struct {
+    const char *id;
+    const char *name;
+    const char *role;
+    const char *behavior;
+    const char *lore;
+    const char *quote;
+} BestiaryEntry;
+
+static const BestiaryEntry s_entries[4] = {
+    {
+        .id = "corazon",
+        .name = "El Corazón Abierto",
+        .role = "(Héroe)",
+        .behavior = "Carga su fe en cruz y desata un haz que atraviesa filas.",
+        .lore = "Último capellán de la columna. Pidió un arma cuando faltó la pólvora y Dios le abrió el pecho; cada milagro le consume un poco más, pero la fe no le deja morir.",
+        .quote = "«No es mi corazón. Solo lo llevo.»"
+    },
+    {
+        .id = "exvoto",
+        .name = "El Exvoto",
+        .role = "(Masa)",
+        .behavior = "Avanza en masa sin descanso; cae al primer impacto.",
+        .lore = "Fieles que rezaron hasta volverse figuras de cera. Siguen en procesión con las manos en rezo; la cera no resiste la luz.",
+        .quote = "«Pidieron no estar solos. Les fue concedido.»"
+    },
+    {
+        .id = "cireneo",
+        .name = "El Cireneo",
+        .role = "(Cargador)",
+        .behavior = "Se agacha antes de embestir en línea recta; no puede girar.",
+        .lore = "Desertó y pidió que le clavaran la cruz a la espalda para no volver a huir. Si choca contra una columna, queda crucificado contra la piedra.",
+        .quote = "«Ayudó a cargar una cruz. Ahora la cruz le carga a él.»"
+    },
+    {
+        .id = "ojo",
+        .name = "El Ojo del Tribunal",
+        .role = "(Tirador)",
+        .behavior = "Vigila con su farol, fija la línea de juicio y sentencia desde la boca.",
+        .lore = "Inquisidores que cambiaron sus ojos por una linterna del juicio. Su mirada verde te examina; cuando se queda quieta, ya ha dictado sentencia.",
+        .quote = "«La linterna no ve culpables. Los fabrica.»"
+    }
+};
+
+/* Binary portrait structs matching tools/gen_bestiary_portraits.py */
+typedef struct {
+    uint16_t magic;          /* 0x4251 */
+    uint8_t  num_dirs;       /* 8 */
+    uint8_t  num_frames;
+    uint8_t  canvas_w;       /* 160 */
+    uint8_t  canvas_h;       /* 160 */
+    uint8_t  pad[2];
+    uint16_t palette[256];   /* 512 bytes */
+    uint32_t dir_offsets[8];
+    uint32_t dir_sizes[8];
+} __attribute__((packed)) BestiaryPortraitFileHeader;
+
+typedef struct {
+    uint8_t u_min_x;
+    uint8_t u_min_y;
+    uint8_t u_max_x;
+    uint8_t u_max_y;
+} __attribute__((packed)) BestiaryDirHeader;
+
+typedef struct {
+    uint8_t  bx;
+    uint8_t  by;
+    uint8_t  bw;
+    uint8_t  bh;
+    uint32_t offset;
+} __attribute__((packed)) BestiaryPortraitFrame;
+
+/* Static direction buffer: 144 KB is enough for the largest single direction (Cireneo ~132 KB) */
+#define BESTIARY_PORTRAIT_BUF_SIZE (144 * 1024)
+static uint8_t s_portrait_buf[BESTIARY_PORTRAIT_BUF_SIZE];
+static BestiaryPortraitFileHeader s_portrait_hdr;
+static int s_portrait_loaded_entry = -1;
+static int s_portrait_loaded_dir = -1;
+static int s_portrait_valid = 0;
+
+static const char *s_dir_names[8] = { "S", "SO", "O", "NO", "N", "NE", "E", "SE" };
+
+static void draw_border_rect(uint16_t *fb, uint16_t color) {
+    if (!fb) return;
+    uint16_t *top_row = fb + (4 << 8);
+    uint16_t *bot_row = fb + (187 << 8);
+    for (int x = 4; x <= 251; x++) {
+        top_row[x] = color;
+        bot_row[x] = color;
+    }
+    for (int y = 4; y <= 187; y++) {
+        uint16_t *row = fb + (y << 8);
+        row[4] = color;
+        row[251] = color;
+    }
+}
+
+static int load_portrait_direction(int entry_idx, int dir) {
+    if (entry_idx < 0 || entry_idx >= 4) return 0;
+    dir &= 7;
+
+    char path[64];
+    snprintf(path, sizeof(path), "nitro:/bestiary/%s.bin", s_entries[entry_idx].id);
+
+    FILE *f = fopen(path, "rb");
+    if (!f) {
+        s_portrait_valid = 0;
+        return 0;
+    }
+
+    if (entry_idx != s_portrait_loaded_entry) {
+        if (fread(&s_portrait_hdr, sizeof(s_portrait_hdr), 1, f) != 1 || s_portrait_hdr.magic != 0x4251) {
+            fclose(f);
+            s_portrait_valid = 0;
+            return 0;
+        }
+        s_portrait_loaded_entry = entry_idx;
+    }
+
+    uint32_t d_offset = s_portrait_hdr.dir_offsets[dir];
+    uint32_t d_size = s_portrait_hdr.dir_sizes[dir];
+    if (d_size > BESTIARY_PORTRAIT_BUF_SIZE) {
+        fclose(f);
+        s_portrait_valid = 0;
+        return 0;
+    }
+
+    if (fseek(f, (long)d_offset, SEEK_SET) != 0) {
+        fclose(f);
+        s_portrait_valid = 0;
+        return 0;
+    }
+
+    if (fread(s_portrait_buf, 1, d_size, f) != d_size) {
+        fclose(f);
+        s_portrait_valid = 0;
+        return 0;
+    }
+
+    fclose(f);
+    s_portrait_loaded_dir = dir;
+    s_portrait_valid = 1;
+    return 1;
+}
+
+static void draw_portrait_frame_160(uint16_t *fb, int frame_idx) {
+    if (!fb || !s_portrait_valid) return;
+    if (frame_idx < 0 || frame_idx >= s_portrait_hdr.num_frames) return;
+
+    const BestiaryDirHeader *dh = (const BestiaryDirHeader *)s_portrait_buf;
+    const BestiaryPortraitFrame *frames = (const BestiaryPortraitFrame *)(s_portrait_buf + sizeof(BestiaryDirHeader));
+    const uint8_t *pixel_pool = s_portrait_buf + sizeof(BestiaryDirHeader) + sizeof(BestiaryPortraitFrame) * s_portrait_hdr.num_frames;
+
+    /* Center within screen frame [4..251, 4..187] using bounding box union */
+    int u_cx = (dh->u_min_x + dh->u_max_x) >> 1;
+    int u_cy = (dh->u_min_y + dh->u_max_y) >> 1;
+    int canvas_x = 128 - u_cx;
+    int canvas_y = 96 - u_cy;
+
+    const BestiaryPortraitFrame *fr = &frames[frame_idx];
+    if (fr->bw == 0 || fr->bh == 0) return;
+
+    int dst_x = canvas_x + fr->bx;
+    int dst_y = canvas_y + fr->by;
+    const uint8_t *src_pixels = pixel_pool + fr->offset;
+
+    for (int y = 0; y < fr->bh; y++) {
+        int py = dst_y + y;
+        if (py < 4 || py > 187) continue;
+        uint16_t *fb_row = fb + (py << 8);
+        const uint8_t *prow = src_pixels + y * fr->bw;
+        for (int x = 0; x < fr->bw; x++) {
+            uint8_t idx = prow[x];
+            if (idx != 0) {
+                int px = dst_x + x;
+                if (px >= 4 && px <= 251) {
+                    fb_row[px] = s_portrait_hdr.palette[idx];
+                }
+            }
+        }
+    }
+}
+
+/* Fallback 2x nearest-neighbor drawer for original ROM sprites if NitroFS file is missing */
+static void draw_sprite_2x(uint16_t *fb, int canvas_w, int canvas_h,
+                           const uint8_t *bounds, const uint16_t *src) {
+    if (!fb || !bounds || !src) return;
+    int min_x = bounds[0], min_y = bounds[1], bw = bounds[2], bh = bounds[3];
+    if (bw <= 0 || bh <= 0) return;
+    int pitch = (bw + 1) & ~1;
+    int dst_x = (BESTIARY_SCREEN_W - (canvas_w << 1)) >> 1;
+    int dst_y = (BESTIARY_SCREEN_H - (canvas_h << 1)) >> 1;
+
+    for (int y = 0; y < bh; y++) {
+        int py0 = dst_y + ((min_y + y) << 1);
+        int py1 = py0 + 1;
+        const uint16_t *srow = src + y * pitch;
+        for (int x = 0; x < bw; x++) {
+            uint16_t px = srow[x];
+            if (px & 0x8000) {
+                int px0 = dst_x + ((min_x + x) << 1);
+                int px1 = px0 + 1;
+                uint16_t col = (uint16_t)(px | 0x8000);
+                if (py0 >= 0 && py0 < BESTIARY_SCREEN_H) {
+                    uint16_t *row0 = fb + (py0 << 8);
+                    if (px0 >= 0 && px0 < BESTIARY_SCREEN_W) row0[px0] = col;
+                    if (px1 >= 0 && px1 < BESTIARY_SCREEN_W) row0[px1] = col;
+                }
+                if (py1 >= 0 && py1 < BESTIARY_SCREEN_H) {
+                    uint16_t *row1 = fb + (py1 << 8);
+                    if (px0 >= 0 && px0 < BESTIARY_SCREEN_W) row1[px0] = col;
+                    if (px1 >= 0 && px1 < BESTIARY_SCREEN_W) row1[px1] = col;
+                }
+            }
+        }
+    }
+}
+
+static void draw_fallback_sprite_2x(uint16_t *fb, int entry_idx, uint32_t anim_tick) {
+    if (entry_idx == 0) {
+        uint32_t t = anim_tick % 104;
+        int frame = (t < 32) ? (7 - (int)(t >> 2)) : ((t < 56) ? 0 : ((t < 88) ? (int)((t - 56) >> 2) : 7));
+        const uint8_t *bounds = g_player_shot_frame_bounds[0][frame];
+        const uint16_t *src = &g_player_shot_frames[g_player_shot_frame_offsets[0][frame]];
+        draw_sprite_2x(fb, PLAYER_SPRITE_W, PLAYER_SPRITE_H, bounds, src);
+    } else if (entry_idx == 1) {
+        int frame = (int)((anim_tick >> 2) % BESTIARY_EXVOTO_NUM_FRAMES);
+        const uint8_t *bounds = bestiary_exvoto_bounds[frame];
+        const uint16_t *src = &bestiary_exvoto_frames[bestiary_exvoto_offsets[frame]];
+        draw_sprite_2x(fb, BESTIARY_EXVOTO_FRAME_W, BESTIARY_EXVOTO_FRAME_H, bounds, src);
+    } else if (entry_idx == 2) {
+        uint32_t t = anim_tick % 100;
+        if (t < 24) {
+            const uint8_t *bounds = g_charger_telegraph_frame_bounds[0][0];
+            const uint16_t *src = &g_charger_telegraph_frames[g_charger_telegraph_frame_offsets[0][0]];
+            draw_sprite_2x(fb, CHARGER_SPRITE_W, CHARGER_SPRITE_H, bounds, src);
+        } else if (t < 60) {
+            int cf = (int)(((t - 24) / 3) % CHARGER_CHARGE_NUM_FRAMES);
+            const uint8_t *bounds = g_charger_charge_frame_bounds[0][cf];
+            const uint16_t *src = &g_charger_charge_frames[g_charger_charge_frame_offsets[0][cf]];
+            draw_sprite_2x(fb, CHARGER_SPRITE_W, CHARGER_SPRITE_H, bounds, src);
+        } else {
+            int mf = (int)(((t - 60) / 5) % 4);
+            const uint8_t *bounds = g_charger_frame_bounds[0][mf];
+            const uint16_t *src = &g_charger_frames[g_charger_frame_offsets[0][mf]];
+            draw_sprite_2x(fb, CHARGER_SPRITE_W, CHARGER_SPRITE_H, bounds, src);
+        }
+    } else if (entry_idx == 3) {
+        uint32_t t = anim_tick % 96;
+        if (t < 48) {
+            int lf = (int)((t / 6) % OJO_LOOK_NUM_FRAMES);
+            const uint8_t *bounds = g_ojo_look_frame_bounds[0][lf];
+            const uint16_t *src = &g_ojo_look_frames[g_ojo_look_frame_offsets[0][lf]];
+            draw_sprite_2x(fb, PLAYER_SPRITE_W, PLAYER_SPRITE_H, bounds, src);
+        } else {
+            int sf = (int)((t - 48) / 5);
+            if (sf > 5) sf = 5;
+            const uint8_t *bounds = g_ojo_sentence_frame_bounds[0][sf];
+            const uint16_t *src = &g_ojo_sentence_frames[g_ojo_sentence_frame_offsets[0][sf]];
+            draw_sprite_2x(fb, PLAYER_SPRITE_W, PLAYER_SPRITE_H, bounds, src);
+        }
+    }
+}
+
+static int count_wrapped_lines(const char *utf8, int max_w) {
+    if (!utf8 || max_w <= 0) return 0;
+    int lines = 1;
+    int cur_x = 0;
+    const char *p = utf8;
+    while (*p) {
+        if (*p == '\n') {
+            lines++;
+            cur_x = 0;
+            p++;
+            continue;
+        }
+        if (*p == '\r') {
+            p++;
+            continue;
+        }
+        if (*p == ' ') {
+            if (cur_x == 0) {
+                p++;
+                continue;
+            }
+            const BestiaryGlyph *g_sp = bestiary_font_get_glyph(' ');
+            int sp_w = g_sp ? (int)g_sp->advance : 3;
+            cur_x += sp_w;
+            p++;
+            continue;
+        }
+
+        const char *w_ptr = p;
+        int word_w = 0;
+        while (*w_ptr && *w_ptr != ' ' && *w_ptr != '\n' && *w_ptr != '\r') {
+            uint32_t cp = 0;
+            uint8_t c = (uint8_t)*w_ptr;
+            if (c < 0x80) {
+                cp = c;
+                w_ptr++;
+            } else if ((c & 0xE0) == 0xC0) {
+                cp = ((c & 0x1F) << 6) | (w_ptr[1] & 0x3F);
+                w_ptr += 2;
+            } else if ((c & 0xF0) == 0xE0) {
+                cp = ((c & 0x0F) << 12) | ((w_ptr[1] & 0x3F) << 6) | (w_ptr[2] & 0x3F);
+                w_ptr += 3;
+            } else {
+                w_ptr++;
+                continue;
+            }
+            const BestiaryGlyph *g = bestiary_font_get_glyph(cp);
+            if (!g) g = bestiary_font_get_glyph('?');
+            if (g) word_w += g->advance;
+        }
+
+        if (cur_x + word_w > max_w && cur_x > 0) {
+            lines++;
+            cur_x = 0;
+        }
+        cur_x += word_w;
+        p = w_ptr;
+    }
+    return lines;
+}
+
+static void draw_bottom_card(uint16_t *fb, int entry_idx) {
+    if (!fb || entry_idx < 0 || entry_idx >= 4) return;
+    uint32_t black_pair = 0x80008000;
+    swiFastCopy(&black_pair, fb, COPY_MODE_FILL | (BESTIARY_SCREEN_W * BESTIARY_SCREEN_H * 2 / 4));
+    draw_border_rect(fb, COLOR_BORDER);
+
+    const BestiaryEntry *e = &s_entries[entry_idx];
+
+    /* Header: Name, Role, Page indicator */
+    bestiary_font_draw_utf8(fb, 12, 10, e->name, COLOR_IVORY);
+    int nw = bestiary_font_measure_utf8(e->name);
+    bestiary_font_draw_utf8(fb, 12 + nw + 6, 10, e->role, COLOR_WARM_GRAY);
+
+    char pbuf[8];
+    snprintf(pbuf, sizeof(pbuf), "%d/4", entry_idx + 1);
+    int pw = bestiary_font_measure_utf8(pbuf);
+    bestiary_font_draw_utf8(fb, 244 - pw, 10, pbuf, COLOR_WARM_GRAY);
+
+    /* Separator line under header */
+    uint16_t *sep_row = fb + (24 << 8);
+    for (int x = 12; x <= 243; x++) sep_row[x] = COLOR_SEPARATOR;
+
+    /* Content: Behavior (1 line), Lore (short paragraph), Quote */
+    int cur_y = 30;
+    bestiary_font_draw_wrapped(fb, 12, cur_y, 231, 12, e->behavior, COLOR_BEHAVIOR);
+    int comp_lines = count_wrapped_lines(e->behavior, 231);
+    cur_y += comp_lines * 12 + 6;
+
+    bestiary_font_draw_wrapped(fb, 12, cur_y, 231, 12, e->lore, COLOR_WARM_GRAY);
+    int lore_lines = count_wrapped_lines(e->lore, 231);
+    cur_y += lore_lines * 12 + 6;
+
+    bestiary_font_draw_wrapped(fb, 12, cur_y, 231, 12, e->quote, COLOR_QUOTE);
+
+    /* Bottom navigation bar separator */
+    uint16_t *bar_row = fb + (158 << 8);
+    for (int x = 12; x <= 243; x++) bar_row[x] = COLOR_SEPARATOR;
+
+    /* Bottom buttons */
+    bestiary_font_draw_utf8(fb, 14, 166, "< Ant", COLOR_BUTTON);
+
+    int bw = bestiary_font_measure_utf8("Volver (B)");
+    int bx = (BESTIARY_SCREEN_W - bw) >> 1;
+    bestiary_font_draw_utf8(fb, bx, 166, "Volver (B)", COLOR_BUTTON);
+
+    int sw = bestiary_font_measure_utf8("Sig >");
+    bestiary_font_draw_utf8(fb, 242 - sw, 166, "Sig >", COLOR_BUTTON);
+}
+
+static void draw_top_character(uint16_t *fb, int entry_idx, int dir, uint32_t anim_tick) {
+    if (!fb || entry_idx < 0 || entry_idx >= 4) return;
+    uint32_t black_pair = 0x80008000;
+    swiFastCopy(&black_pair, fb, COPY_MODE_FILL | (BESTIARY_SCREEN_W * BESTIARY_SCREEN_H * 2 / 4));
+    draw_border_rect(fb, COLOR_BORDER);
+
+    if (s_portrait_valid && s_portrait_loaded_entry == entry_idx && s_portrait_loaded_dir == (dir & 7)) {
+        int frame = 0;
+        if (entry_idx == 0) {
+            /* Corazón Abierto (8 frames: f7 -> f0 with pause at f0 and back) */
+            uint32_t t = anim_tick % 104;
+            if (t < 32) frame = 7 - (int)(t >> 2);
+            else if (t < 56) frame = 0;
+            else if (t < 88) frame = (int)((t - 56) >> 2);
+            else frame = 7;
+        } else if (entry_idx == 1) {
+            /* Exvoto (8 frames walk loop) */
+            frame = (int)((anim_tick >> 2) % 8);
+        } else if (entry_idx == 2) {
+            /* Cireneo (9 frames: frame 0 telegraph + 8 frames charge loop) */
+            uint32_t t = anim_tick % 88;
+            if (t < 24) frame = 0;
+            else frame = 1 + (int)(((t - 24) / 3) % 8);
+        } else if (entry_idx == 3) {
+            /* Ojo del Tribunal (10 frames: frames 0..3 look + 4..9 sentence) */
+            uint32_t t = anim_tick % 96;
+            if (t < 48) {
+                frame = (int)((t / 6) % 4);
+            } else {
+                int f = 4 + (int)((t - 48) / 5);
+                if (f > 9) f = 9;
+                frame = f;
+            }
+        }
+        draw_portrait_frame_160(fb, frame);
+    } else {
+        /* Fallback */
+        draw_fallback_sprite_2x(fb, entry_idx, anim_tick);
+    }
+
+    /* Orientation hint in bottom-right corner of top screen */
+    char hint[24];
+    snprintf(hint, sizeof(hint), "< > Rotar (%s)", s_dir_names[dir & 7]);
+    int hw = bestiary_font_measure_utf8(hint);
+    bestiary_font_draw_utf8(fb, 248 - hw, 172, hint, COLOR_HINT);
+}
+
+void bestiary_run(uint16_t *top_page, uint16_t *bot_page_a, uint16_t *bot_page_b,
+                  int *bot_active_page_idx, void (*vblank_flip_fn)(void)) {
+    if (!top_page || !bot_page_a || !bot_page_b) return;
+
+    g_bestiary_debug.active = 1;
+    g_bestiary_debug.trigger = 0;
+    g_bestiary_debug.entry_index = 0;
+    g_bestiary_debug.frame_count = 0;
+
+    int cur_entry = 0;
+    int cur_dir = 0;
+    uint32_t anim_tick = 0;
+    int prev_touch_down = 0;
+
+    /* Load initial high-res portrait */
+    load_portrait_direction(cur_entry, cur_dir);
+
+    /* Render initial cards to both bottom buffers */
+    draw_bottom_card(bot_page_a, cur_entry);
+    draw_bottom_card(bot_page_b, cur_entry);
+    draw_top_character(top_page, cur_entry, cur_dir, anim_tick);
+
+    if (vblank_flip_fn) {
+        vblank_flip_fn();
+    } else {
+        swiWaitForVBlank();
+    }
+
+    int bot_dirty = 0;
+
+    while (1) {
+        g_bestiary_debug.frame_count++;
+
+        scanKeys();
+        uint32_t keys_down = keysDown();
+        uint32_t keys_held = keysHeld();
+        touchPosition touch;
+        touchRead(&touch);
+
+        int touch_down = (keys_held & KEY_TOUCH) && (touch.px < BESTIARY_SCREEN_W) && (touch.py < BESTIARY_SCREEN_H);
+        int touch_pressed = touch_down && !prev_touch_down;
+        prev_touch_down = touch_down;
+
+        /* Exit check: B button, START, or touch 'Volver (B)' */
+        int exit_requested = (keys_down & (KEY_B | KEY_START)) != 0;
+        if (touch_pressed && touch.py >= 156 && touch.py <= 188 && touch.px >= 80 && touch.px <= 176) {
+            exit_requested = 1;
+        }
+
+        if (exit_requested) {
+            break;
+        }
+
+        /* 1. Entry Navigation: L / R triggers, UP / DOWN dpad, or touch '< Ant' / 'Sig >' */
+        int nav_entry = 0;
+        if (keys_down & (KEY_L | KEY_UP)) nav_entry = -1;
+        if (keys_down & (KEY_R | KEY_DOWN)) nav_entry = 1;
+
+        if (touch_pressed && touch.py >= 156 && touch.py <= 188) {
+            if (touch.px >= 4 && touch.px <= 64) nav_entry = -1;
+            else if (touch.px >= 192 && touch.px <= 252) nav_entry = 1;
+        }
+
+        if (nav_entry != 0) {
+            cur_entry = (cur_entry + nav_entry + 4) % 4;
+            g_bestiary_debug.entry_index = (uint32_t)cur_entry;
+            cur_dir = 0; /* Reset to front view on card change */
+            anim_tick = 0;
+            load_portrait_direction(cur_entry, cur_dir);
+            bot_dirty = 2; /* Redraw both buffer pages */
+        }
+
+        /* 2. Character Rotation: LEFT / RIGHT dpad */
+        int nav_rot = 0;
+        if (keys_down & KEY_LEFT) nav_rot = -1;
+        if (keys_down & KEY_RIGHT) nav_rot = 1;
+
+        if (nav_rot != 0) {
+            cur_dir = (cur_dir + nav_rot + 8) & 7;
+            load_portrait_direction(cur_entry, cur_dir);
+        }
+
+        /* Update bottom screen if dirty */
+        if (bot_dirty > 0) {
+            uint16_t *target_bot = bot_page_a;
+            if (bot_active_page_idx && *bot_active_page_idx == 8) {
+                target_bot = bot_page_b;
+            } else if (bot_active_page_idx && *bot_active_page_idx == 24) {
+                target_bot = bot_page_a;
+            }
+            draw_bottom_card(target_bot, cur_entry);
+            bot_dirty--;
+        }
+
+        /* Update top screen animated character */
+        draw_top_character(top_page, cur_entry, cur_dir, anim_tick);
+        anim_tick++;
+
+        /* Vertical sync / flip */
+        if (vblank_flip_fn) {
+            vblank_flip_fn();
+        } else {
+            swiWaitForVBlank();
+        }
+    }
+
+    /* Clean exit: clear bitmap buffers to 0x0000 (transparent) without stutter */
+    uint32_t zero = 0;
+    swiFastCopy(&zero, top_page, COPY_MODE_FILL | (BESTIARY_SCREEN_W * BESTIARY_SCREEN_H * 2 / 4));
+    swiFastCopy(&zero, bot_page_a, COPY_MODE_FILL | (BESTIARY_SCREEN_W * BESTIARY_SCREEN_H * 2 / 4));
+    swiFastCopy(&zero, bot_page_b, COPY_MODE_FILL | (BESTIARY_SCREEN_W * BESTIARY_SCREEN_H * 2 / 4));
+
+    if (vblank_flip_fn) {
+        vblank_flip_fn();
+    } else {
+        swiWaitForVBlank();
+    }
+
+    s_portrait_loaded_entry = -1;
+    s_portrait_loaded_dir = -1;
+    s_portrait_valid = 0;
+    g_bestiary_debug.active = 0;
+}

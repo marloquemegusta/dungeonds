@@ -86,6 +86,9 @@ const HTML = path.join(__dirname, 'FBX-Web-Renderer-offline.html');
       const set = (id, v) => {
         const el = document.getElementById(id);
         if (!el || v === undefined || v === null) return;
+        if (el.tagName === 'INPUT' && el.type === 'range' && Number(v) > Number(el.max || 0)) {
+          el.max = String(v);
+        }
         el.value = String(v);
         el.dispatchEvent(new Event('input', { bubbles: true }));
         el.dispatchEvent(new Event('change', { bubbles: true }));

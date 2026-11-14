@@ -127,3 +127,4 @@ Resúmenes acumulativos y auditables de cada entrega y avance de desarrollo en `
 | 109 | Legibilidad del pre-render de personajes: A/B y preset C2 en el lab (sin cambios en ROM) | [`legibilidad-lab/`](legibilidad-lab/walkthrough.md) | Preset en el lab; pendiente re-exportar personajes y probar en DS |
 | 110 | Cámara vertical con adelanto (*look-ahead*) y bloqueo en *kiting* | [`camera-lookahead/`](camera-lookahead/walkthrough.md) | Integrado en ROM, tests host OK y validado en DS |
 | 111 | Ojo del Tribunal: mirada colimada desde el farol, llamarada espectral desde la boca y oclusión por profundidad | [`ojo-tribunal/`](ojo-tribunal/walkthrough.md) | Host 16/16, escenarios 9/9, jugado en DS (sin registro de rendimiento) |
+| 112 | Bestiario minimalista: 4 fichas animadas, fuente bitmap en español y reutilización de sprites ROM | [`bestiario/`](bestiario/walkthrough.md) | Build 0 warnings, host 18/18, escenario `bestiary_tour` PASS; pendiente prueba en DS |
