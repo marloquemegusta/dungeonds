@@ -27,10 +27,13 @@ def parse_header(h_path, mask_bytes=MASK_BYTES):
     return anchors, sprite_bounds, shb_body, mask_body
 
 
-def crop_shadow_120_to_80(shb_body, mask_body, frame_indices=None):
-    """Crop 120x120 shadow bounds and 4-bit packed masks to 80x80 centered at (60, 60)."""
+def crop_shadow_to_80(shb_body, mask_body, src_w=120, src_h=120, frame_indices=None):
+    """Crop src_w x src_h shadow bounds and 4-bit packed masks to 80x80 centered."""
     if frame_indices is None:
         frame_indices = list(range(8))
+    off_x = (src_w - 80) // 2
+    off_y = (src_h - 80) // 2
+    assert off_x % 2 == 0, f'Expected even x offset, got {off_x}'
     rows = re.findall(r'\{\s*(\d+),\s*(\d+),\s*(\d+),\s*(\d+)\s*\}', shb_body)
     assert len(rows) == 64, f'Expected 64 shadow_bounds, got {len(rows)}'
     shb_out = []
@@ -38,13 +41,15 @@ def crop_shadow_120_to_80(shb_body, mask_body, frame_indices=None):
         shb_out.append('    {\n')
         for f in frame_indices:
             x, y, w, h = [int(v) for v in rows[d * 8 + f]]
-            nx = max(0, x - 20)
-            ny = max(0, y - 20)
+            nx = max(0, x - off_x)
+            ny = max(0, y - off_y)
             shb_out.append(f'        {{ {nx}, {ny}, {w}, {h} }},\n')
         shb_out.append('    },\n')
 
     hex_bytes = [int(b, 16) for b in re.findall(r'0x[0-9A-Fa-f]{2}', mask_body)]
-    frame_bytes = (120 * 120) // 2
+    frame_bytes = (src_w * src_h) // 2
+    src_row_bytes = src_w // 2
+    byte_off = off_x // 2
     assert len(hex_bytes) == 64 * frame_bytes, f'Expected {64 * frame_bytes} mask bytes, got {len(hex_bytes)}'
     mask_out = []
     for d in range(8):
@@ -52,9 +57,9 @@ def crop_shadow_120_to_80(shb_body, mask_body, frame_indices=None):
         for f in frame_indices:
             src = hex_bytes[(d * 8 + f) * frame_bytes:(d * 8 + f + 1) * frame_bytes]
             cropped = []
-            for y in range(20, 100):
-                row_off = y * 60
-                cropped.extend(src[row_off + 10:row_off + 50])
+            for y in range(off_y, off_y + 80):
+                row_off = y * src_row_bytes
+                cropped.extend(src[row_off + byte_off:row_off + byte_off + 40])
             mask_out.append('        {\n')
             for i in range(0, len(cropped), 16):
                 chunk = ', '.join(f'0x{b:02X}' for b in cropped[i:i + 16])
@@ -62,6 +67,10 @@ def crop_shadow_120_to_80(shb_body, mask_body, frame_indices=None):
             mask_out.append('        },\n')
         mask_out.append('    },\n')
     return ''.join(shb_out).rstrip('\n'), ''.join(mask_out).rstrip('\n')
+
+
+def crop_shadow_120_to_80(shb_body, mask_body, frame_indices=None):
+    return crop_shadow_to_80(shb_body, mask_body, 120, 120, frame_indices)
 
 def crop_shadow_masks(shb_body, mask_body, shw=SHADOW_W, shh=SHADOW_H, frame_indices=None):
     """Pack 4-bit shadow masks tightly to each frame's [x, y, w, h] bounding box."""
@@ -243,7 +252,7 @@ def emit_runs(out_lines, name, run_offs, run_data, frames_const, comment):
 chars_meta = [
     ('player', 'corazon', 'Corazon Abierto Hero', 340, 4),
     ('charger', 'cireneo', 'Enemy Charger (Knocker)', 310, 5),
-    ('necron', 'necron', 'Necron Shooter Enemy', 385, 4),
+    ('ojo', 'ojo', 'El Ojo del Tribunal', 110, 9),
     ('skeleton', 'skeleton', 'Skeleton Walker Enemy', 39, 22),
 ]
 
@@ -271,8 +280,11 @@ for var_name, folder, disp_name, def_spd, def_ticks in chars_meta:
                 shw, shh = int(sdata['shadowSize'][0]), int(sdata['shadowSize'][1])
     if var_name == 'charger':
         ticks = 8  # match 37.86 px stride at ENEMY_CHARGER_APPROACH_SPEED (150)
-    out_shw = SHADOW_W if shw == 120 else shw
-    out_shh = SHADOW_H if shh == 120 else shh
+    if var_name == 'ojo':
+        spd = 110   # ENEMY_TYPE_SHOOTER speed (gameplay.c), 8.8 fixed = 0.43 px/frame
+        ticks = 9   # 8 frames x 9 = 72 game frames per cycle x 0.43 px = 30.9 px, the lab's 31.3 px stride (no magic carpet)
+    out_shw = SHADOW_W if shw > SHADOW_W else shw
+    out_shh = SHADOW_H if shh > SHADOW_H else shh
     char_configs.append((var_name, folder, disp_name, spd, ticks, sw, sh, shw, shh, out_shw, out_shh))
 
 out_lines.append('const CharacterConfig g_characters[NUM_CHARACTERS] = {\n')
@@ -287,8 +299,8 @@ for var_name, folder, disp_name, spd, ticks, sw, sh, shw, shh, out_shw, out_shh 
 
     mask_bytes = (shw * shh) // 2
     anchors, sb, shb_body, mask_body = parse_header(h_path, mask_bytes)
-    if shw == 120:
-        shb_body, mask_body = crop_shadow_120_to_80(shb_body, mask_body)
+    if shw > SHADOW_W:
+        shb_body, mask_body = crop_shadow_to_80(shb_body, mask_body, shw, shh)
     all_anchors.append(anchors)
     muzzle = [[[0, 0, 0] for _ in range(8)] for _ in range(8)]
     settings_path = os.path.join(char_dir, 'settings.json')
@@ -382,6 +394,83 @@ out_lines.append(tg_fr_bnds)
 out_lines.append('\n')
 emit_runs(out_lines, 'charger_telegraph', tg_run_offs, tg_runs, 'CHARGER_TELEGRAPH_NUM_FRAMES', 'Opaque runs of the charger telegraph keyframe')
 
+# Ojo del Tribunal clips (DESIGN.md 6.10): look (4 frames of the breathing loop) and sentence (6 frames of the
+# gesture) at 40x40, with their own muzzle table. The walk is the CHAR_OJO slot (8 frames). Each clip is shifted so
+# its feet sit on the walk's ground row (walk_anchor - clip_anchor), like the charger clips.
+def filter_shadow_80(shb_body, mask_body, frame_indices):
+    rows = re.findall(r'\{\s*(\d+),\s*(\d+),\s*(\d+),\s*(\d+)\s*\}', shb_body)
+    assert len(rows) == 64
+    hex_bytes = re.findall(r'0x[0-9A-Fa-f]{2}', mask_body)
+    fb = (SHADOW_W * SHADOW_H) // 2
+    assert len(hex_bytes) == 64 * fb
+    shb, msk = [], []
+    for d in range(8):
+        shb.append('    {\n')
+        for f in frame_indices:
+            shb.append('        { %s, %s, %s, %s },\n' % tuple(rows[d * 8 + f]))
+            msk.extend(hex_bytes[(d * 8 + f) * fb:(d * 8 + f + 1) * fb])
+        shb.append('    },\n')
+    return ''.join(shb).rstrip('\n'), ' '.join(msk)
+
+
+OJO_WALK_ANCHORS, _, _, _ = parse_header(os.path.join(SRC_ROOT, 'ojo', 'nds_shadow_anchor.h'), (112 * 112) // 2)
+
+
+def sole_row(png_path, frames, w=56, h=56):
+    """90th percentile over directions/frames of the lowest opaque row of each cell: the row where the soles touch the floor.
+    The lab's ground anchor is estimated per clip and can differ by 1-2 rows between clips of a standing pose and
+    a walk, so the clips are aligned on the soles instead (no pop when the Ojo stops walking to look)."""
+    im = Image.open(png_path).convert('RGBA')
+    rows = []
+    for d in range(8):
+        for f in frames:
+            ys = [y for y in range(h) for x in range(w) if im.getpixel((f * w + x, d * h + y))[3] > 0]
+            rows.append(max(ys))
+    rows.sort()
+    return rows[(len(rows) * 9) // 10]
+
+
+OJO_WALK_SOLE = sole_row(os.path.join(SRC_ROOT, 'ojo', 'spritesheet.png'), range(8))
+OJO_CLIPS = [('ojo_look', 'ojo_look', [0, 2, 4, 6], 'OJO_LOOK_NUM_FRAMES', 'Ojo look (breathing loop)'),
+             ('ojo_sentence', 'ojo_sentence', [0, 2, 3, 4, 5, 7], 'OJO_SENTENCE_NUM_FRAMES', 'Ojo sentence (gesture)')]
+for cvar, cfolder, cframes, cconst, cdesc in OJO_CLIPS:
+    cdir = os.path.join(SRC_ROOT, cfolder)
+    c_anchors, _, c_shb, c_mask = parse_header(os.path.join(cdir, 'nds_shadow_anchor.h'), (112 * 112) // 2)
+    c_sole = sole_row(os.path.join(cdir, 'spritesheet.png'), cframes)
+    c_shift = [OJO_WALK_SOLE - c_sole] * 8
+    print(cvar, 'soles: walk', OJO_WALK_SOLE, 'clip', c_sole, 'shift', c_shift, '(lab anchors: walk', OJO_WALK_ANCHORS[0], 'clip', c_anchors[0], ')')
+    c_shb, c_mask = crop_shadow_to_80(c_shb, c_mask, 112, 112, cframes)
+    c_offs, c_bnds, c_pix, c_roffs, c_runs = convert_sheet_cropped(os.path.join(cdir, 'spritesheet.png'), 56, 56, c_shift, cframes)
+    out_lines.append(f'// 56x56 BGR555 {cdesc} clip of the Ojo (CHAR_OJO), 8 directions x {len(cframes)} frames (cropped to bounds)\n')
+    out_lines.append(f'const uint16_t g_{cvar}_frames[] __attribute__((aligned(4))) = ')
+    out_lines.append(c_pix)
+    out_lines.append('\n')
+    out_lines.append(f'const uint32_t g_{cvar}_frame_offsets[PLAYER_NUM_DIRS][{cconst}] = ')
+    out_lines.append(c_offs)
+    out_lines.append('\n')
+    out_lines.append(f'const uint8_t g_{cvar}_frame_bounds[PLAYER_NUM_DIRS][{cconst}][4] = ')
+    out_lines.append(c_bnds)
+    out_lines.append('\n')
+    emit_runs(out_lines, cvar, c_roffs, c_runs, cconst, f'Opaque runs of the {cdesc} clip')
+    c_so, c_sd = crop_shadow_masks(c_shb, c_mask, SHADOW_W, SHADOW_H, cframes)
+    out_lines.append(f'// 4-bit packed shadow masks of the {cdesc} clip (8 dirs x {len(cframes)} frames, cropped to bounds)\n')
+    out_lines.append(f'const uint8_t g_{cvar}_shadow_masks[] __attribute__((aligned(4))) = ')
+    out_lines.append(c_sd)
+    out_lines.append('\n')
+    out_lines.append(f'const uint32_t g_{cvar}_shadow_offsets[PLAYER_NUM_DIRS][{cconst}] = ')
+    out_lines.append(c_so)
+    out_lines.append('\n')
+    out_lines.append(f'const uint8_t g_{cvar}_shadow_bounds[PLAYER_NUM_DIRS][{cconst}][4] = {{\n')
+    out_lines.append(c_shb)
+    out_lines.append('\n};\n\n')
+    with open(os.path.join(cdir, 'settings.json'), 'r', encoding='utf-8') as sf:
+        c_dm = json.load(sf)['dirMuzzle']
+    out_lines.append(f'// {cdesc} muzzle per direction/frame: gx, gy, h (same meaning as g_character_muzzle)\n')
+    out_lines.append(f'const int8_t g_{cvar}_muzzle[PLAYER_NUM_DIRS][{cconst}][3] = {{\n')
+    for d in range(8):
+        out_lines.append('    { ' + ', '.join('{ %d, %d, %d }' % tuple(int(v) for v in c_dm[d][f]) for f in cframes) + ' },\n')
+    out_lines.append('};\n\n')
+
 # Hero shot clip (Corazon Abierto, DESIGN.md "Carga y disparo"): a second set for CHAR_HERO only.
 # It is the clip rendered by the lab with the walk's settings. Its ground line was 1 px lower
 # (anchor 34 vs 33 in the walk), so each direction is shifted up by walk_anchor - shot_anchor rows:
@@ -444,49 +533,49 @@ out_lines.append('};\n\n')
 out_lines.append('const uint16_t * const g_character_frames[NUM_CHARACTERS] = {\n')
 out_lines.append('    g_player_frames,\n')
 out_lines.append('    g_charger_frames,\n')
-out_lines.append('    g_necron_frames,\n    g_skeleton_frames\n')
+out_lines.append('    g_ojo_frames,\n    g_skeleton_frames\n')
 out_lines.append('};\n\n')
 
 out_lines.append('const uint32_t (* const g_character_frame_offsets[NUM_CHARACTERS])[PLAYER_NUM_FRAMES] = {\n')
 out_lines.append('    g_player_frame_offsets,\n')
 out_lines.append('    g_charger_frame_offsets,\n')
-out_lines.append('    g_necron_frame_offsets,\n    g_skeleton_frame_offsets\n')
+out_lines.append('    g_ojo_frame_offsets,\n    g_skeleton_frame_offsets\n')
 out_lines.append('};\n\n')
 
 out_lines.append('const uint8_t (* const g_character_frame_bounds[NUM_CHARACTERS])[PLAYER_NUM_FRAMES][4] = {\n')
 out_lines.append('    g_player_frame_bounds,\n')
 out_lines.append('    g_charger_frame_bounds,\n')
-out_lines.append('    g_necron_frame_bounds,\n    g_skeleton_frame_bounds\n')
+out_lines.append('    g_ojo_frame_bounds,\n    g_skeleton_frame_bounds\n')
 out_lines.append('};\n\n')
 
 out_lines.append('const uint16_t * const g_character_runs[NUM_CHARACTERS] = {\n')
 out_lines.append('    g_player_runs,\n')
 out_lines.append('    g_charger_runs,\n')
-out_lines.append('    g_necron_runs,\n    g_skeleton_runs\n')
+out_lines.append('    g_ojo_runs,\n    g_skeleton_runs\n')
 out_lines.append('};\n\n')
 
 out_lines.append('const uint32_t (* const g_character_run_offsets[NUM_CHARACTERS])[PLAYER_NUM_FRAMES] = {\n')
 out_lines.append('    g_player_run_offsets,\n')
 out_lines.append('    g_charger_run_offsets,\n')
-out_lines.append('    g_necron_run_offsets,\n    g_skeleton_run_offsets\n')
+out_lines.append('    g_ojo_run_offsets,\n    g_skeleton_run_offsets\n')
 out_lines.append('};\n\n')
 
 out_lines.append('const uint8_t * const g_character_shadow_masks[NUM_CHARACTERS] = {\n')
 out_lines.append('    g_player_shadow_masks,\n')
 out_lines.append('    g_charger_shadow_masks,\n')
-out_lines.append('    g_necron_shadow_masks,\n    g_skeleton_shadow_masks\n')
+out_lines.append('    g_ojo_shadow_masks,\n    g_skeleton_shadow_masks\n')
 out_lines.append('};\n\n')
 
 out_lines.append('const uint32_t (* const g_character_shadow_offsets[NUM_CHARACTERS])[PLAYER_NUM_FRAMES] = {\n')
 out_lines.append('    g_player_shadow_offsets,\n')
 out_lines.append('    g_charger_shadow_offsets,\n')
-out_lines.append('    g_necron_shadow_offsets,\n    g_skeleton_shadow_offsets\n')
+out_lines.append('    g_ojo_shadow_offsets,\n    g_skeleton_shadow_offsets\n')
 out_lines.append('};\n\n')
 
 out_lines.append('const uint8_t (* const g_character_shadow_bounds[NUM_CHARACTERS])[PLAYER_NUM_FRAMES][4] = {\n')
 out_lines.append('    g_player_shadow_bounds,\n')
 out_lines.append('    g_charger_shadow_bounds,\n')
-out_lines.append('    g_necron_shadow_bounds,\n    g_skeleton_shadow_bounds\n')
+out_lines.append('    g_ojo_shadow_bounds,\n    g_skeleton_shadow_bounds\n')
 out_lines.append('};\n')
 
 out_path = os.path.join(WT, 'source/player_sprite.c')

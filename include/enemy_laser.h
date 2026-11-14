@@ -4,14 +4,16 @@
 #include <stdint.h>
 #include "gameplay.h"
 
-// Shooter laser (DESIGN.md 6.9.1). The beam has no state of its own: it is the shooter's FSM
-// (ENEMY_STATE_LASER_AIM / LASER_FIX / LASER_FIRE, enemy_ai.c) that follows the player, locks and
-// hurts. This only draws it, with the same pixel-line method as the player's aim laser but in green:
-//   AIM  thin 1 px line that follows the player
-//   FIX  locked and wider (5 px, checkered rim), the last SHOOTER_LASER_FIX_FRAMES of the charge
-//   FIRE bright 7 px beam while it is lethal
-// Cost per beam is bounded: one loop of at most SHOOTER_LASER_LENGTH steps with at most 7 pixels
-// per step; a beam that cannot touch the screen is skipped before the loop.
+// Ojo del Tribunal drawing (DESIGN.md 6.10 "Mirada colimada"). None of it holds state: the FSM lives in
+// enemy_ai.c (Enemy state, state_timer, aim_px/aim_py).
+// Collimating gaze band (TRACK, LOCK) and sentence beam (SENTENCE) of every Ojo, under the actor sprites.
 void enemy_lasers_render(uint16_t *buffer, const Enemy *enemies, int count, int cam_x, int cam_y);
+
+// Ground distance (px) from (fx, fy) along the true-ground unit vector (vx, vy) (1.15) to the first wall or
+// column, or max_len; the sentence beam and the gaze band are cut there.
+int ojo_ray_wall_dist(int fx, int fy, int vx, int vy, int max_len);
+
+// Mouth charge aura drawn on top of the Ojo's sprite at the hand-held head.
+void enemy_ojo_mouth_glow_render(uint16_t *buffer, const Enemy *e, int idx, int cam_x, int cam_y, int depth);
 
 #endif // ENEMY_LASER_H

@@ -4,6 +4,7 @@ Primero el estado necesario para retomar el trabajo sin depender del chat; despu
 
 ## Estado actual (2026-11-14)
 
+- **Ojo del Tribunal (`feat/ojo-tribunal`, en curso):** cuerpo más grande que el protagonista; cabeza abierta nueva al 150 % de la anterior, fija a la mano animada por el cuerpo. El aura de la boca crece desde apagada hasta muy brillante durante 1 s, luego el cono se estrecha 0,5 s y el rayo se puede esquivar; el haz es fino y queda ocluido por los actores. Builds normal/sandbox limpias, host 266/266 y escenario de ciclo PASS; falta medir en DS antes de integrar. [`walkthrough`](walkthroughs/ojo-tribunal/walkthrough.md), decisión en `DESIGN.md` §6.10.
 - **Sombras por hardware y horda doble (`perf/hw-shadows`, 2026-11-14, `walkthroughs/hw-shadows/`):** sombras oscurecidas por la consola (ventana OBJ) en vez del procesador, IA con rejilla y LOD, blit por tramos opacos, limpieza más rápida, camino caliente en ITCM y picos de rebase/láseres/muertes troceados. Medido en la DS con 48 enemigos: **14,3–15,1 ms** de media (antes 34–36 ms, 20 FPS), casi siempre a 60 FPS; la versión normal (24) va sobrada. La separación entre enemigos se conserva. Siguiente cuello: el blit (~6 ms con horda llena). Variantes `stress` y `stress-perf` y banco A/B `perf_stress_bench` (`TECHNICAL.md` §3.6).
 
 - **Fix de parpadeo en pantalla superior (`fix/top-flicker`, `walkthroughs/top-flicker-fix/`):** reordenado el bucle principal en `source/main.c` para renderizar la pantalla inferior (doble búfer) antes de `swiWaitForVBlank()` y pintar `s_top_page` (búfer único) nada más empezar el VBlank. Validado en tests de host (`5/5` + `58/58`) y en Nintendo DS física por el usuario.
@@ -296,3 +297,9 @@ El láser de apuntado se colima durante la carga (ancho, difuso y rojo a 1 px ve
 - DS física (`stress-perf`, 48 enemigos): 14,3–15,1 ms de media, peor frame 17–18,5 ms; versión normal jugada sin caídas.
 - Arreglado el log de `PERF_PROFILE` (ruta `fat:/` explícita por NitroFS).
 - Detalle: [`walkthroughs/hw-shadows/`](walkthroughs/hw-shadows/walkthrough.md).
+
+## 2026-11-14 - Ojo del Tribunal: escala y sentencia (`feat/ojo-tribunal`)
+
+- Sprite de cuerpo al 140 %, cabeza abierta del inbox al 150 % del tamaño anterior, y volumen de impacto ajustado. La boca se enciende progresivamente con un aura y lenguas finales durante 60 frames; luego el cono se estrecha durante 30 frames y el disparo se puede esquivar.
+- Pipeline real de arte regenerado; `16/16` tests de host y escenario de ciclo PASS; compilación normal y sandbox sin warnings nuevos. Vídeo hecho con capturas reales de DeSmuME.
+- **Pendiente antes de integrar:** medir el coste del blit en Nintendo DS física. Detalle y vídeo: [`walkthroughs/ojo-tribunal/`](walkthroughs/ojo-tribunal/walkthrough.md).

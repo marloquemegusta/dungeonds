@@ -1,0 +1,709 @@
+{
+  "name": "perf_ojo_dos_mirando",
+  "description": "DeSmuME A/B only, never a certification (AGENTS.md rule 6). Two shooter-type enemies 84 px either side of a god-mode hero in the open south hall (clear lines, checked in tools/ojo_scenes.py). ROM: sandbox + PERF_PROFILE=1. 20 windows of 60 frames of the profiler averages; summarise with tools/perf_bench_summary.py.",
+  "tags": [
+    "ojo-tribunal",
+    "perf"
+  ],
+  "state": {
+    "symbols": {
+      "sb": "g_sandbox",
+      "avg": "s_hud_avg",
+      "fps": "s_hud_fps10",
+      "strip": "g_strip_debug",
+      "mx": "s_hud_max"
+    },
+    "default_symbol": "sb",
+    "fields": {
+      "seq": {
+        "offset": 0,
+        "type": "u32",
+        "symbol": "sb"
+      },
+      "ack": {
+        "offset": 4,
+        "type": "u32",
+        "symbol": "sb"
+      },
+      "player_x": {
+        "offset": 8,
+        "type": "s16",
+        "symbol": "sb"
+      },
+      "player_y": {
+        "offset": 10,
+        "type": "s16",
+        "symbol": "sb"
+      },
+      "weapon": {
+        "offset": 12,
+        "type": "u8",
+        "symbol": "sb"
+      },
+      "style": {
+        "offset": 13,
+        "type": "u8",
+        "symbol": "sb"
+      },
+      "enemy_count": {
+        "offset": 14,
+        "type": "u8",
+        "symbol": "sb"
+      },
+      "flags": {
+        "offset": 15,
+        "type": "u8",
+        "symbol": "sb"
+      },
+      "e0_type": {
+        "offset": 16,
+        "type": "u8",
+        "symbol": "sb"
+      },
+      "e0_flags": {
+        "offset": 17,
+        "type": "u8",
+        "symbol": "sb"
+      },
+      "e0_x": {
+        "offset": 18,
+        "type": "s16",
+        "symbol": "sb"
+      },
+      "e0_y": {
+        "offset": 20,
+        "type": "s16",
+        "symbol": "sb"
+      },
+      "e1_type": {
+        "offset": 22,
+        "type": "u8",
+        "symbol": "sb"
+      },
+      "e1_flags": {
+        "offset": 23,
+        "type": "u8",
+        "symbol": "sb"
+      },
+      "e1_x": {
+        "offset": 24,
+        "type": "s16",
+        "symbol": "sb"
+      },
+      "e1_y": {
+        "offset": 26,
+        "type": "s16",
+        "symbol": "sb"
+      },
+      "e2_type": {
+        "offset": 28,
+        "type": "u8",
+        "symbol": "sb"
+      },
+      "e2_flags": {
+        "offset": 29,
+        "type": "u8",
+        "symbol": "sb"
+      },
+      "e2_x": {
+        "offset": 30,
+        "type": "s16",
+        "symbol": "sb"
+      },
+      "e2_y": {
+        "offset": 32,
+        "type": "s16",
+        "symbol": "sb"
+      },
+      "e3_type": {
+        "offset": 34,
+        "type": "u8",
+        "symbol": "sb"
+      },
+      "e3_flags": {
+        "offset": 35,
+        "type": "u8",
+        "symbol": "sb"
+      },
+      "e3_x": {
+        "offset": 36,
+        "type": "s16",
+        "symbol": "sb"
+      },
+      "e3_y": {
+        "offset": 38,
+        "type": "s16",
+        "symbol": "sb"
+      },
+      "e4_type": {
+        "offset": 40,
+        "type": "u8",
+        "symbol": "sb"
+      },
+      "e4_flags": {
+        "offset": 41,
+        "type": "u8",
+        "symbol": "sb"
+      },
+      "e4_x": {
+        "offset": 42,
+        "type": "s16",
+        "symbol": "sb"
+      },
+      "e4_y": {
+        "offset": 44,
+        "type": "s16",
+        "symbol": "sb"
+      },
+      "e5_type": {
+        "offset": 46,
+        "type": "u8",
+        "symbol": "sb"
+      },
+      "e5_flags": {
+        "offset": 47,
+        "type": "u8",
+        "symbol": "sb"
+      },
+      "e5_x": {
+        "offset": 48,
+        "type": "s16",
+        "symbol": "sb"
+      },
+      "e5_y": {
+        "offset": 50,
+        "type": "s16",
+        "symbol": "sb"
+      },
+      "e6_type": {
+        "offset": 52,
+        "type": "u8",
+        "symbol": "sb"
+      },
+      "e6_flags": {
+        "offset": 53,
+        "type": "u8",
+        "symbol": "sb"
+      },
+      "e6_x": {
+        "offset": 54,
+        "type": "s16",
+        "symbol": "sb"
+      },
+      "e6_y": {
+        "offset": 56,
+        "type": "s16",
+        "symbol": "sb"
+      },
+      "e7_type": {
+        "offset": 58,
+        "type": "u8",
+        "symbol": "sb"
+      },
+      "e7_flags": {
+        "offset": 59,
+        "type": "u8",
+        "symbol": "sb"
+      },
+      "e7_x": {
+        "offset": 60,
+        "type": "s16",
+        "symbol": "sb"
+      },
+      "e7_y": {
+        "offset": 62,
+        "type": "s16",
+        "symbol": "sb"
+      },
+      "e8_type": {
+        "offset": 64,
+        "type": "u8",
+        "symbol": "sb"
+      },
+      "e8_flags": {
+        "offset": 65,
+        "type": "u8",
+        "symbol": "sb"
+      },
+      "e8_x": {
+        "offset": 66,
+        "type": "s16",
+        "symbol": "sb"
+      },
+      "e8_y": {
+        "offset": 68,
+        "type": "s16",
+        "symbol": "sb"
+      },
+      "e9_type": {
+        "offset": 70,
+        "type": "u8",
+        "symbol": "sb"
+      },
+      "e9_flags": {
+        "offset": 71,
+        "type": "u8",
+        "symbol": "sb"
+      },
+      "e9_x": {
+        "offset": 72,
+        "type": "s16",
+        "symbol": "sb"
+      },
+      "e9_y": {
+        "offset": 74,
+        "type": "s16",
+        "symbol": "sb"
+      },
+      "e10_type": {
+        "offset": 76,
+        "type": "u8",
+        "symbol": "sb"
+      },
+      "e10_flags": {
+        "offset": 77,
+        "type": "u8",
+        "symbol": "sb"
+      },
+      "e10_x": {
+        "offset": 78,
+        "type": "s16",
+        "symbol": "sb"
+      },
+      "e10_y": {
+        "offset": 80,
+        "type": "s16",
+        "symbol": "sb"
+      },
+      "e11_type": {
+        "offset": 82,
+        "type": "u8",
+        "symbol": "sb"
+      },
+      "e11_flags": {
+        "offset": 83,
+        "type": "u8",
+        "symbol": "sb"
+      },
+      "e11_x": {
+        "offset": 84,
+        "type": "s16",
+        "symbol": "sb"
+      },
+      "e11_y": {
+        "offset": 86,
+        "type": "s16",
+        "symbol": "sb"
+      },
+      "e12_type": {
+        "offset": 88,
+        "type": "u8",
+        "symbol": "sb"
+      },
+      "e12_flags": {
+        "offset": 89,
+        "type": "u8",
+        "symbol": "sb"
+      },
+      "e12_x": {
+        "offset": 90,
+        "type": "s16",
+        "symbol": "sb"
+      },
+      "e12_y": {
+        "offset": 92,
+        "type": "s16",
+        "symbol": "sb"
+      },
+      "e13_type": {
+        "offset": 94,
+        "type": "u8",
+        "symbol": "sb"
+      },
+      "e13_flags": {
+        "offset": 95,
+        "type": "u8",
+        "symbol": "sb"
+      },
+      "e13_x": {
+        "offset": 96,
+        "type": "s16",
+        "symbol": "sb"
+      },
+      "e13_y": {
+        "offset": 98,
+        "type": "s16",
+        "symbol": "sb"
+      },
+      "e14_type": {
+        "offset": 100,
+        "type": "u8",
+        "symbol": "sb"
+      },
+      "e14_flags": {
+        "offset": 101,
+        "type": "u8",
+        "symbol": "sb"
+      },
+      "e14_x": {
+        "offset": 102,
+        "type": "s16",
+        "symbol": "sb"
+      },
+      "e14_y": {
+        "offset": 104,
+        "type": "s16",
+        "symbol": "sb"
+      },
+      "e15_type": {
+        "offset": 106,
+        "type": "u8",
+        "symbol": "sb"
+      },
+      "e15_flags": {
+        "offset": 107,
+        "type": "u8",
+        "symbol": "sb"
+      },
+      "e15_x": {
+        "offset": 108,
+        "type": "s16",
+        "symbol": "sb"
+      },
+      "e15_y": {
+        "offset": 110,
+        "type": "s16",
+        "symbol": "sb"
+      },
+      "pl": {
+        "symbol": "avg",
+        "offset": 0,
+        "type": "u32"
+      },
+      "pl_max": {
+        "symbol": "mx",
+        "offset": 0,
+        "type": "u32"
+      },
+      "en": {
+        "symbol": "avg",
+        "offset": 8,
+        "type": "u32"
+      },
+      "en_max": {
+        "symbol": "mx",
+        "offset": 8,
+        "type": "u32"
+      },
+      "wp": {
+        "symbol": "avg",
+        "offset": 12,
+        "type": "u32"
+      },
+      "wp_max": {
+        "symbol": "mx",
+        "offset": 12,
+        "type": "u32"
+      },
+      "dclr": {
+        "symbol": "avg",
+        "offset": 16,
+        "type": "u32"
+      },
+      "dclr_max": {
+        "symbol": "mx",
+        "offset": 16,
+        "type": "u32"
+      },
+      "sh": {
+        "symbol": "avg",
+        "offset": 20,
+        "type": "u32"
+      },
+      "sh_max": {
+        "symbol": "mx",
+        "offset": 20,
+        "type": "u32"
+      },
+      "sort": {
+        "symbol": "avg",
+        "offset": 24,
+        "type": "u32"
+      },
+      "sort_max": {
+        "symbol": "mx",
+        "offset": 24,
+        "type": "u32"
+      },
+      "blit": {
+        "symbol": "avg",
+        "offset": 28,
+        "type": "u32"
+      },
+      "blit_max": {
+        "symbol": "mx",
+        "offset": 28,
+        "type": "u32"
+      },
+      "proj": {
+        "symbol": "avg",
+        "offset": 32,
+        "type": "u32"
+      },
+      "proj_max": {
+        "symbol": "mx",
+        "offset": 32,
+        "type": "u32"
+      },
+      "pick": {
+        "symbol": "avg",
+        "offset": 36,
+        "type": "u32"
+      },
+      "pick_max": {
+        "symbol": "mx",
+        "offset": 36,
+        "type": "u32"
+      },
+      "hud": {
+        "symbol": "avg",
+        "offset": 40,
+        "type": "u32"
+      },
+      "hud_max": {
+        "symbol": "mx",
+        "offset": 40,
+        "type": "u32"
+      },
+      "bgsub": {
+        "symbol": "avg",
+        "offset": 48,
+        "type": "u32"
+      },
+      "bgsub_max": {
+        "symbol": "mx",
+        "offset": 48,
+        "type": "u32"
+      },
+      "bgbot": {
+        "symbol": "avg",
+        "offset": 52,
+        "type": "u32"
+      },
+      "bgbot_max": {
+        "symbol": "mx",
+        "offset": 52,
+        "type": "u32"
+      },
+      "vwait": {
+        "symbol": "avg",
+        "offset": 56,
+        "type": "u32"
+      },
+      "vwait_max": {
+        "symbol": "mx",
+        "offset": 56,
+        "type": "u32"
+      },
+      "cpu": {
+        "symbol": "avg",
+        "offset": 60,
+        "type": "u32"
+      },
+      "cpu_max": {
+        "symbol": "mx",
+        "offset": 60,
+        "type": "u32"
+      },
+      "frame": {
+        "symbol": "avg",
+        "offset": 64,
+        "type": "u32"
+      },
+      "frame_max": {
+        "symbol": "mx",
+        "offset": 64,
+        "type": "u32"
+      },
+      "fps10": {
+        "symbol": "fps",
+        "offset": 0,
+        "type": "u32"
+      },
+      "alive": {
+        "symbol": "strip",
+        "offset": 8,
+        "type": "s32"
+      }
+    }
+  },
+  "steps": [
+    {
+      "frames": 30
+    },
+    {
+      "poke": [
+        {
+          "field": "player_x",
+          "value": 384
+        },
+        {
+          "field": "player_y",
+          "value": 724
+        },
+        {
+          "field": "weapon",
+          "value": 1
+        },
+        {
+          "field": "style",
+          "value": 0
+        },
+        {
+          "field": "flags",
+          "value": 5
+        },
+        {
+          "field": "enemy_count",
+          "value": 2
+        },
+        {
+          "field": "e0_type",
+          "value": 2
+        },
+        {
+          "field": "e0_flags",
+          "value": 0
+        },
+        {
+          "field": "e0_x",
+          "value": 300
+        },
+        {
+          "field": "e0_y",
+          "value": 724
+        },
+        {
+          "field": "e1_type",
+          "value": 2
+        },
+        {
+          "field": "e1_flags",
+          "value": 0
+        },
+        {
+          "field": "e1_x",
+          "value": 468
+        },
+        {
+          "field": "e1_y",
+          "value": 724
+        },
+        {
+          "field": "seq",
+          "value": 1
+        }
+      ],
+      "frames": 1
+    },
+    {
+      "wait_until": {
+        "field": "ack",
+        "equals": 1,
+        "timeout_frames": 30
+      }
+    },
+    {
+      "frames": 240
+    },
+    {
+      "frames": 60,
+      "state_capture": "w01"
+    },
+    {
+      "frames": 60,
+      "state_capture": "w02"
+    },
+    {
+      "frames": 60,
+      "state_capture": "w03"
+    },
+    {
+      "frames": 60,
+      "state_capture": "w04"
+    },
+    {
+      "frames": 60,
+      "state_capture": "w05"
+    },
+    {
+      "frames": 60,
+      "state_capture": "w06"
+    },
+    {
+      "frames": 60,
+      "state_capture": "w07"
+    },
+    {
+      "frames": 60,
+      "state_capture": "w08"
+    },
+    {
+      "frames": 60,
+      "state_capture": "w09"
+    },
+    {
+      "frames": 60,
+      "state_capture": "w10"
+    },
+    {
+      "frames": 60,
+      "state_capture": "w11"
+    },
+    {
+      "frames": 60,
+      "state_capture": "w12"
+    },
+    {
+      "frames": 60,
+      "state_capture": "w13"
+    },
+    {
+      "frames": 60,
+      "state_capture": "w14"
+    },
+    {
+      "frames": 60,
+      "state_capture": "w15"
+    },
+    {
+      "frames": 60,
+      "state_capture": "w16"
+    },
+    {
+      "frames": 60,
+      "state_capture": "w17"
+    },
+    {
+      "frames": 60,
+      "state_capture": "w18"
+    },
+    {
+      "frames": 60,
+      "state_capture": "w19"
+    },
+    {
+      "frames": 60,
+      "state_capture": "w20"
+    }
+  ],
+  "assertions": {
+    "state_changes": [
+      {
+        "at": "w10",
+        "field": "fps10",
+        "min_value": 1
+      }
+    ]
+  }
+}

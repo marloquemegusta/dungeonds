@@ -6,12 +6,13 @@
 // Updates AI state machines for all active enemies:
 // - Skeleton FSM: CHASE <-> ATTACK
 // - Charger FSM: CHASE -> TELEGRAPH -> CHARGE -> RECOVER -> CHASE (STUNNED by a wall or a shotgun hit)
-// - Shooter FSM: POSITION -> LASER_AIM -> LASER_FIX -> LASER_FIRE -> COOLDOWN -> POSITION
+// - Ojo del Tribunal FSM (shooter type): CHASE -> TRACK (40 frames, the band follows the hero) -> LOCK (20 frames, frozen line)
+//   -> SENTENCE -> COOLDOWN -> CHASE (DESIGN.md 6.10)
 // Handles separation repulsion between enemies.
 // Handles obstacle navigation with sweep_position / sliding.
 void enemy_ai_update(Enemy *enemies, int num_enemies, fixed player_x, fixed player_y);
 
-// World position of the enemy's muzzle and its height above the ground (px); the shooter's laser leaves from it.
+// World position of the enemy's muzzle and its height above the ground (px); the Ojo sentence beam leaves from it.
 void enemy_muzzle(const Enemy *e, fixed *mx, fixed *my, int *mh);
 void enemy_ai_set_strip_mode(int enabled);
 

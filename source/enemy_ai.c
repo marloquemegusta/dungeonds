@@ -1,5 +1,6 @@
 #include "enemy_ai.h"
 #include "horde.h"
+#include "enemy_laser.h"
 #include "los.h"
 #include "navfield.h"
 #include "player_sprite.h"
@@ -155,10 +156,9 @@ static void update_animation(Enemy *e, int moved) {
     }
 }
 
-#define VIEW_BULLET 1                 // e->has_los bits: a bullet can fly from here to the player
-#define VIEW_WALKABLE 2               //                  a body can walk it
-#define VIEW_DIRECT 4                 //                  close, in view and walkable: run straight at the player
+#define VIEW_DIRECT 4                 // e->has_los bits: close, in view and walkable: run straight at the player
 #define VIEW_ENGAGE 8                 //                  charger: within CHARGER_ENGAGE_DIST, in view and walkable
+#define VIEW_SIGHT 16                 //                  Ojo: line of sight (walls and columns cut it) within OJO_SIGHT_RANGE
 
 #define CHASE_DIRECT_RANGE 48         // ground px: closer than this (with a clear view) it runs straight at the player
 
@@ -359,102 +359,81 @@ static void update_charger(Enemy *e, Enemy *enemies, int num_enemies, int idx,
 }
 
 // ---------------------------------------------------------------------------
-// Necron shooter (DESIGN.md 6.9.1): zone control with a laser the player must leave. FSM
-// POSITION -> LASER_AIM (line follows) -> LASER_FIX (locked, wider) -> LASER_FIRE -> COOLDOWN -> POSITION.
+// Ojo del Tribunal (DESIGN.md 6.10, "Mirada colimada"), ENEMY_TYPE_SHOOTER. FSM
+// CHASE (search) -> TRACK (40 frames: the band from the lantern follows the hero and narrows, the held head
+// charges) -> LOCK (20 frames: the line is frozen where the hero was) -> SENTENCE (the head fires the beam
+// from its mouth along the locked line, one hit) -> COOLDOWN -> CHASE.
+// A wall or column cuts the sight and the beam (los_has_line_of_sight / ojo_ray_wall_dist). The rhythm is the
+// old sniper's (aim, fix, fire); the hero is safe by leaving the line before SENTENCE or hiding behind a column.
 // ---------------------------------------------------------------------------
 
-#define SHOOTER_WALK_CHECK_MAX 256    // ground px: an off-screen shooter farther than this skips the straight-walk test (it follows the field)
-#define SHOOTER_FIRE_MARGIN 24        // ground px beyond the band's far edge from which it already charges
-
 void enemy_muzzle(const Enemy *e, fixed *mx, fixed *my, int *mh) {
-    const int8_t *m = g_character_muzzle[e->char_id][e->dir][e->frame];
-    *mx = e->x + TO_FIXED(m[0]);
-    *my = e->y + TO_FIXED(m[1]);
-    *mh = m[2];
+    int clip = ojo_clip(e);
+    const int8_t *m = clip == CLIP_OJO_SENTENCE ? g_ojo_sentence_muzzle[e->dir][ojo_clip_frame(e, clip)]
+                    : clip == CLIP_OJO_LOOK     ? g_ojo_look_muzzle[e->dir][ojo_clip_frame(e, clip)]
+                                                : g_character_muzzle[e->char_id][e->dir][e->frame];
+    int gx = m[0], gy = m[1], gh = m[2];
+    *mx = e->x + TO_FIXED(gx);
+    *my = e->y + TO_FIXED(gy);
+    *mh = gh;
 }
 
-// Walks the distance band: back off when the player is too close, close in (straight if the
-// body can walk it, else down the navigation field) when too far or out of view, and strafe
-// sideways in between. Used while positioning and while cooling down.
-static void shooter_reposition(Enemy *e, Enemy *enemies, int num_enemies, int idx,
-                               int px, int py, int ground_dist) {
-    const EnemyTuning *tuning = &g_enemy_tuning[ENEMY_TYPE_SHOOTER];
-    int wx = TO_INT(e->x);
-    int wy = TO_INT(e->y);
-    int dx = px - wx;
-    int dy = py - wy;
-    int move_x, move_y;
-    int strafing = 0;
-
-    if (ground_dist < tuning->preferred_dist_min) {
-        move_x = -dx;
-        move_y = -dy;
-    } else if (ground_dist > tuning->preferred_dist_max || !(e->has_los & VIEW_BULLET)) {
-        move_x = dx;
-        move_y = dy;
-        if (!(e->has_los & VIEW_WALKABLE)) {
-            int step_x, step_y;
-            if (nav_next_step(wx, wy, &step_x, &step_y)) {
-                move_x = step_x - wx;
-                move_y = step_y - wy;
-            }
-        }
-    } else {
-        // Sideways on the ground: perpendicular to (dx, 2*dy), which is (-2*dy, dx/2) on screen.
-        if (e->strafe_dir == 0) e->strafe_dir = 1;
-        move_x = -2 * dy * e->strafe_dir;
-        move_y = (dx * e->strafe_dir) / 2;
-        strafing = 1;
-    }
-
-    uint32_t m_dist = int_sqrt((uint32_t)(move_x * move_x + GROUND_DY2(move_y)));
-    fixed vx = 0, vy = 0;
-    if (m_dist > 0) {
-        vx = (fixed)div32(move_x * (int32_t)tuning->speed, (int32_t)m_dist);
-        vy = (fixed)div32(move_y * (int32_t)tuning->speed, (int32_t)m_dist);
-    }
-    apply_separation(enemies, num_enemies, idx, &vx, &vy);
-    int moved = move_with_slide(&e->x, &e->y, vx, vy);
-    if (strafing && !moved) e->strafe_dir = -e->strafe_dir;
-
-    // Face the player while aiming-ready (backing off or strafing); face the way it walks when
-    // it is closing in or going around a wall, so it does not slide sideways looking at the player.
-    if (moved && !strafing && ground_dist >= tuning->preferred_dist_min)
-        e->dir = dir_from_vector(TO_FIXED(move_x), TO_FIXED(move_y));
-    else
-        e->dir = dir_from_vector(px - e->x, py - e->y);
-    update_animation(e, moved);
-}
-
-// Points the laser from the muzzle at the player's feet; keeps the old line when they coincide.
-static void shooter_aim(Enemy *e, fixed player_x, fixed player_y) {
-    fixed mx, my;
-    int mh;
-    enemy_muzzle(e, &mx, &my, &mh);
-    aim_vector(TO_INT(mx), TO_INT(my), TO_INT(player_x), TO_INT(player_y), &e->aim_dir_x, &e->aim_dir_y);
-}
-
-// 1 when the player stands in the beam: ahead of the muzzle, within SHOOTER_LASER_LENGTH along the line
-// and SHOOTER_LASER_HALF_WIDTH across it (ground metric). Columns do not stop it.
-static int laser_covers(const Enemy *e, fixed player_x, fixed player_y) {
-    fixed mx, my;
-    int mh;
-    enemy_muzzle(e, &mx, &my, &mh);
-    int dx = TO_INT(player_x - mx);
-    int dy = TO_INT(player_y - my);
-    int along = (dx * e->aim_dir_x + 4 * dy * e->aim_dir_y) >> 8;
-    int across = (2 * (dy * e->aim_dir_x - dx * e->aim_dir_y)) >> 8;
-    if (across < 0) across = -across;
-    return along >= 0 && along <= SHOOTER_LASER_LENGTH && across <= SHOOTER_LASER_HALF_WIDTH;
-}
-
-static int lasers_charging(const Enemy *enemies, int num_enemies) {
+// Ojos that are tracking, locked or sentencing: they hold an aiming slot.
+static int ojos_looking(const Enemy *enemies, int num_enemies) {
     int n = 0;
     for (int i = 0; i < num_enemies; i++) {
-        if (enemies[i].active && (enemies[i].state == ENEMY_STATE_LASER_AIM || enemies[i].state == ENEMY_STATE_LASER_FIX))
+        const Enemy *o = &enemies[i];
+        if (o->active && (o->state == ENEMY_STATE_TRACK || o->state == ENEMY_STATE_LOCK ||
+                          o->state == ENEMY_STATE_SENTENCE))
             n++;
     }
     return n;
+}
+
+// Look loop (breathing) while it aims, instead of the walk frames.
+static void ojo_look_anim(Enemy *e) {
+    if (++e->anim_timer >= OJO_LOOK_PERIOD) {
+        e->anim_timer = 0;
+        e->frame = (e->frame + 1) & (OJO_LOOK_NUM_FRAMES - 1);
+    }
+}
+
+// Fires the sentence: the beam leaves the mouth along the line to the locked point (ground metric), is cut at
+// the first wall or column and hurts the hero once if he is on it (player_take_hit respects the i-frames).
+static void ojo_fire(Enemy *e, fixed player_x, fixed player_y) {
+    fixed mx, my;
+    int mh;
+    enemy_muzzle(e, &mx, &my, &mh);
+    int mxi = TO_INT(mx), myi = TO_INT(my);
+    // Drawn direction: screen metric from the mouth to the locked chest point (as the old beam).
+    int ax = e->aim_px - mxi;
+    int ay = e->aim_py - myi + mh - OJO_TARGET_HEIGHT;
+    int slen = (int)int_sqrt((uint32_t)(ax * ax + GROUND_DY2(ay)));
+    if (slen < 1) { ax = 1; ay = 0; slen = 1; }
+    e->aim_dir_x = div32(ax * 256, slen);
+    e->aim_dir_y = div32(ay * 256, slen);
+    // Hit line: true ground metric from the mouth to the locked point.
+    int gx = e->aim_px - mxi;
+    int gy2 = 2 * (e->aim_py - myi);
+    int glen = (int)int_sqrt((uint32_t)(gx * gx + gy2 * gy2));
+    if (glen < 1) { gx = 1; gy2 = 0; glen = 1; }
+    int ux = div32(gx * 256, glen);                  // unit vector 8.8
+    int uy = div32(gy2 * 256, glen);
+    int cut = ojo_ray_wall_dist(mxi, myi, ux << 7, uy << 7, OJO_BEAM_MAX_LEN);
+    e->beam_len = cut;
+    int rx = TO_INT(player_x) - mxi;
+    int ry2 = 2 * (TO_INT(player_y) - myi);
+    int along = (rx * ux + ry2 * uy) >> 8;
+    int cross = (rx * uy - ry2 * ux) >> 8;
+    if (cross < 0) cross = -cross;
+    if (along >= 0 && along <= cut && cross <= OJO_HIT_HALF_WIDTH) player_take_hit(&g_player_state);
+}
+
+// Advances the sentence gesture (SENTENCE and the start of COOLDOWN); 0 once it has played out.
+static void ojo_gesture_tick(Enemy *e) {
+    if (e->gesture <= 0) return;
+    e->gesture++;
+    if (e->gesture > OJO_GESTURE_FRAMES) e->gesture = 0;
 }
 
 static void update_shooter(Enemy *e, Enemy *enemies, int num_enemies, int idx,
@@ -462,6 +441,7 @@ static void update_shooter(Enemy *e, Enemy *enemies, int num_enemies, int idx,
     const EnemyTuning *tuning = &g_enemy_tuning[ENEMY_TYPE_SHOOTER];
 
     if (g_player_state.is_dead) {
+        if (e->state == ENEMY_STATE_TRACK || e->state == ENEMY_STATE_LOCK) e->state = ENEMY_STATE_CHASE;
         update_animation(e, 0);
         return;
     }
@@ -472,49 +452,41 @@ static void update_shooter(Enemy *e, Enemy *enemies, int num_enemies, int idx,
     int py = TO_INT(player_y);
     int dx = px - wx;
     int dy = py - wy;
-    int ground_dist = (int)int_sqrt((uint32_t)(dx * dx + GROUND_DY2(dy)));
-    if (((s_ai_tick + idx) & (s_offscreen ? 7 : 3)) == 0) {
-        // The bullet line only matters inside firing reach: beyond it the shooter closes in whatever the line says.
-        int in_reach = ground_dist <= tuning->preferred_dist_max + SHOOTER_FIRE_MARGIN;
-        e->has_los = ((in_reach && bullet_line_is_free(wx, wy, px, py)) ? VIEW_BULLET : 0) |
-                     (!(s_offscreen && ground_dist > SHOOTER_WALK_CHECK_MAX) && line_is_walkable(wx, wy, px, py) ? VIEW_WALKABLE : 0);
-    }
-    if (s_strip_mode && wy < py - HORDE_SHOOTER_TOP_LIMIT_PX) {
-        e->state = ENEMY_STATE_POSITION;
-        e->state_timer = 0;
-        shooter_reposition(e, enemies, num_enemies, idx, px, py, ground_dist);
-        return;
-    }
+    int ground_dist_sq = dx * dx + GROUND_DY2(dy);
+    int ground_dist = (int)int_sqrt((uint32_t)ground_dist_sq);
 
     switch (e->state) {
-        case ENEMY_STATE_LASER_AIM: {
-            // Thin line that follows the player; the shooter stands still.
-            // The muzzle moves with the facing, so aim, face the line, then aim again from the new muzzle:
-            // the beam origin (fixed from now on) and the locked direction then agree.
-            shooter_aim(e, player_x, player_y);
-            e->dir = dir_from_vector(TO_FIXED(e->aim_dir_x), TO_FIXED(e->aim_dir_y));
-            shooter_aim(e, player_x, player_y);
-            update_animation(e, 0);
+        case ENEMY_STATE_TRACK: {
+            // Stands still facing the hero; the band follows him while it has a clear line within range,
+            // otherwise it keeps its last point (a column or wall cuts the gaze, not the clock).
+            if (ground_dist <= OJO_SIGHT_RANGE + OJO_RANGE_MARGIN && los_has_line_of_sight(wx, wy, px, py, 0)) {
+                e->aim_px = px;
+                e->aim_py = py;
+                e->dir = dir_from_vector(player_x - e->x, player_y - e->y);
+            }
+            ojo_look_anim(e);
             if (--e->state_timer <= 0) {
-                e->state = ENEMY_STATE_LASER_FIX;
-                e->state_timer = SHOOTER_LASER_FIX_FRAMES;
+                e->state = ENEMY_STATE_LOCK;
+                e->state_timer = OJO_LOCK_FRAMES;
             }
             break;
         }
 
-        case ENEMY_STATE_LASER_FIX: {
-            // Locked and wider: the player has to leave the line. The facing stays, so the muzzle stays.
-            update_animation(e, 0);
+        case ENEMY_STATE_LOCK: {
+            // Direction and point frozen: the dodge window.
+            ojo_look_anim(e);
             if (--e->state_timer <= 0) {
-                e->state = ENEMY_STATE_LASER_FIRE;
-                e->state_timer = SHOOTER_LASER_FIRE_FRAMES;
+                e->state = ENEMY_STATE_SENTENCE;
+                e->state_timer = OJO_BEAM_FRAMES;
+                e->frame = 0;
+                e->gesture = 1;
+                ojo_fire(e, player_x, player_y);
             }
             break;
         }
 
-        case ENEMY_STATE_LASER_FIRE: {
-            update_animation(e, 0);
-            if (laser_covers(e, player_x, player_y)) player_take_hit(&g_player_state);   // i-frames absorb repeats
+        case ENEMY_STATE_SENTENCE: {
+            ojo_gesture_tick(e);
             if (--e->state_timer <= 0) {
                 e->state = ENEMY_STATE_COOLDOWN;
                 e->state_timer = tuning->attack_cooldown;
@@ -523,29 +495,42 @@ static void update_shooter(Enemy *e, Enemy *enemies, int num_enemies, int idx,
         }
 
         case ENEMY_STATE_COOLDOWN: {
-            shooter_reposition(e, enemies, num_enemies, idx, px, py, ground_dist);
-            if (--e->state_timer <= 0) {
-                e->state = ENEMY_STATE_POSITION;
-                e->state_timer = 0;
-            }
+            update_animation(e, 0);
+            ojo_gesture_tick(e);
+            if (--e->state_timer <= 0) e->state = ENEMY_STATE_CHASE;
             break;
         }
 
-        case ENEMY_STATE_POSITION:
+        case ENEMY_STATE_POSITION:      // waiting for a free aiming slot
+        case ENEMY_STATE_CHASE:
         default: {
-            e->state = ENEMY_STATE_POSITION;
-            shooter_reposition(e, enemies, num_enemies, idx, px, py, ground_dist);
-            e->state_timer += s_lod_mult;
-            // Charge the laser once it has settled, has a clear line, is not out of reach and a laser
-            // slot is free (otherwise it keeps waiting in its band).
-            if (e->state_timer >= tuning->position_duration && (e->has_los & VIEW_BULLET) &&
-                ground_dist <= tuning->preferred_dist_max + SHOOTER_FIRE_MARGIN &&
-                lasers_charging(enemies, num_enemies) < SHOOTER_MAX_CHARGING) {
-                e->state = ENEMY_STATE_LASER_AIM;
-                e->state_timer = SHOOTER_LASER_TRACK_FRAMES;
-                e->frame = 0;                        // standing pose, so the beam leaves the muzzle
+            e->state = ENEMY_STATE_CHASE;
+            e->gesture = 0;
+            refresh_view(e, idx, wx, wy, px, py, ground_dist_sq, OJO_SIGHT_RANGE);   // walking flags (direct run)
+            if (((s_ai_tick + idx) & 3) == 0 && ground_dist <= OJO_SIGHT_RANGE &&
+                los_has_line_of_sight(wx, wy, px, py, 0))
+                e->has_los |= VIEW_SIGHT;                                             // same cadence as the refresh above
+            int sight = (e->has_los & VIEW_SIGHT) && ground_dist <= OJO_SIGHT_RANGE;
+            // Far above the player in the strip it keeps walking instead of aiming (the horde keeps them near).
+            int may_look = !(s_strip_mode && wy < py - HORDE_SHOOTER_TOP_LIMIT_PX);
+            if (sight && may_look && ojos_looking(enemies, num_enemies) < OJO_MAX_LOOKING) {
+                e->state = ENEMY_STATE_TRACK;
+                e->state_timer = OJO_TRACK_FRAMES;
+                e->frame = 0;
                 e->anim_timer = 0;
-                shooter_aim(e, player_x, player_y);
+                e->aim_px = px;
+                e->aim_py = py;
+                e->dir = dir_from_vector(player_x - e->x, player_y - e->y);
+            } else if (sight && ground_dist <= OJO_WAIT_DIST) {
+                e->state = ENEMY_STATE_POSITION;        // no free slot: waits where it is
+                e->dir = dir_from_vector(player_x - e->x, player_y - e->y);
+                update_animation(e, 0);
+            } else {
+                chase_step(e, enemies, num_enemies, idx, tuning->speed, wx, wy, px, py, ground_dist_sq);
+                // Search: sweep head/facing slowly left and right while walking; no light, no mark.
+                static const int8_t s_search_sweep[4] = { 0, 1, 0, -1 };
+                int sweep = s_search_sweep[((s_ai_tick + idx * 17) >> 5) & 3];
+                e->dir = (e->dir + sweep) & 7;
             }
             break;
         }
@@ -568,10 +553,11 @@ ITCM_CODE void enemy_ai_update(Enemy *enemies, int num_enemies, fixed player_x, 
         // Staggered by a shotgun hit: shoved along the blast, no AI until it recovers.
         if (e->stun_timer > 0) {
             if (e->type == ENEMY_TYPE_SHOOTER &&
-                (e->state == ENEMY_STATE_LASER_AIM || e->state == ENEMY_STATE_LASER_FIX ||
-                 e->state == ENEMY_STATE_LASER_FIRE)) {
-                e->state = ENEMY_STATE_POSITION;     // a shove spoils the shot
+                (e->state == ENEMY_STATE_TRACK || e->state == ENEMY_STATE_LOCK ||
+                 e->state == ENEMY_STATE_SENTENCE)) {
+                e->state = ENEMY_STATE_CHASE;        // a shove breaks the aim (and annuls a pending sentence)
                 e->state_timer = 0;
+                e->gesture = 0;
             } else if (e->type == ENEMY_TYPE_CHARGER &&
                        (e->state == ENEMY_STATE_TELEGRAPH || e->state == ENEMY_STATE_CHARGE)) {
                 e->state = ENEMY_STATE_STUNNED;      // interrupted lunge: dazed after the stagger

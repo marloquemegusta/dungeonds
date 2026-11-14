@@ -83,7 +83,7 @@ class SpriteGroundAnchorTests(unittest.TestCase):
         self.assertTrue(all(len(row) == 8 for row in anchors))
 
     def test_shadow_masks_and_bounds_dimensions(self):
-        prefixes = ("g_player", "g_charger", "g_necron", "g_skeleton")
+        prefixes = ("g_player", "g_charger", "g_ojo", "g_skeleton")
         for prefix in prefixes:
             mask_decl = f"const uint8_t {prefix}_shadow_masks[]"
             self.assertIn(mask_decl, SPRITES)

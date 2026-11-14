@@ -134,7 +134,7 @@ volatile OcclusionStats g_occlusion_stats;
 Enemy g_enemies[MAX_ENEMIES];     // not static: headless scenarios read it by symbol (the arena data also has an s_enemies)
 // Headless scenarios read g_enemies / g_player_state by byte offset (scenarios/enemy_*.json); a moved field breaks the build.
 // ARM EABI enums are 1 byte here (type and state are u8 in the scenarios).
-_Static_assert(sizeof(Enemy) == 84 && offsetof(Enemy, hp) == 28 && offsetof(Enemy, type) == 40 &&
+_Static_assert(sizeof(Enemy) == 100 && offsetof(Enemy, hp) == 28 && offsetof(Enemy, type) == 40 &&
                offsetof(Enemy, state) == 41 && offsetof(Enemy, state_timer) == 44 && offsetof(Enemy, stun_timer) == 76,
                "Enemy layout used by the scenarios changed");
 _Static_assert(sizeof(PlayerState) == 24 && offsetof(PlayerState, hp) == 0 && offsetof(PlayerState, invuln_timer) == 16,
@@ -755,7 +755,11 @@ static void draw_enemy(uint16_t *buffer, const Enemy *e, int cam_x, int cam_y) {
 
     int tf = (e->frame == 1);
     int cf = e->frame & (CHARGER_CHARGE_NUM_FRAMES - 1);
-    const uint8_t *b = (is_telegraph && e->frame == 0) ? g_character_frame_bounds[CHAR_CHARGER][e->dir][0]
+    int oc = ojo_clip(e);                                  // Ojo: walk (CHAR_OJO slot), look loop or sentence gesture
+    int of = ojo_clip_frame(e, oc);
+    const uint8_t *b = oc == CLIP_OJO_SENTENCE ? g_ojo_sentence_frame_bounds[e->dir][of]
+                     : oc == CLIP_OJO_LOOK     ? g_ojo_look_frame_bounds[e->dir][of]
+                     : (is_telegraph && e->frame == 0) ? g_character_frame_bounds[CHAR_CHARGER][e->dir][0]
                      : (is_telegraph && tf)           ? g_charger_telegraph_frame_bounds[e->dir][0]
                      : (is_telegraph || is_charge)    ? g_charger_charge_frame_bounds[e->dir][is_telegraph ? 0 : cf]
                                                       : g_character_frame_bounds[e->char_id][e->dir][e->frame];
@@ -767,14 +771,18 @@ static void draw_enemy(uint16_t *buffer, const Enemy *e, int cam_x, int cam_y) {
 
     int sw = g_characters[e->char_id].sprite_w;
     int sh = g_characters[e->char_id].sprite_h;
-    const uint16_t *frame = (is_telegraph && e->frame == 0)
+    const uint16_t *frame = oc == CLIP_OJO_SENTENCE ? &g_ojo_sentence_frames[g_ojo_sentence_frame_offsets[e->dir][of]]
+        : oc == CLIP_OJO_LOOK ? &g_ojo_look_frames[g_ojo_look_frame_offsets[e->dir][of]]
+        : (is_telegraph && e->frame == 0)
         ? character_frame_ptr(CHAR_CHARGER, e->dir, 0)
         : (is_telegraph && tf)
         ? &g_charger_telegraph_frames[g_charger_telegraph_frame_offsets[e->dir][0]]
         : (is_telegraph || is_charge)
         ? &g_charger_charge_frames[g_charger_charge_frame_offsets[e->dir][is_telegraph ? 0 : cf]]
         : character_frame_ptr(e->char_id, e->dir, e->frame);
-    const uint16_t *runs = (is_telegraph && e->frame == 0)
+    const uint16_t *runs = oc == CLIP_OJO_SENTENCE ? &g_ojo_sentence_runs[g_ojo_sentence_run_offsets[e->dir][of]]
+        : oc == CLIP_OJO_LOOK ? &g_ojo_look_runs[g_ojo_look_run_offsets[e->dir][of]]
+        : (is_telegraph && e->frame == 0)
         ? character_runs_ptr(CHAR_CHARGER, e->dir, 0)
         : (is_telegraph && tf)
         ? &g_charger_telegraph_runs[g_charger_telegraph_run_offsets[e->dir][0]]
@@ -784,6 +792,8 @@ static void draw_enemy(uint16_t *buffer, const Enemy *e, int cam_x, int cam_y) {
     blit_stride(buffer, frame, runs, sprite_pitch(bw), bw, bh,
                 px - sw / 2 + min_x, py - s_char_ground_anchor[e->char_id][e->dir] + min_y,
                 cam_x, cam_y, s_draw_item_depth);
+    if (e->char_id == CHAR_OJO)
+        enemy_ojo_mouth_glow_render(buffer, e, (int)(e - g_enemies), cam_x, cam_y, s_draw_item_depth);
     if (e->hit_timer > 0)
         draw_hit_spark(buffer, px, py - (sh * 3) / 5, cam_x, cam_y, e->hit_timer);
 }
@@ -903,6 +913,17 @@ static int shadow_select(const DrawItem *it, ShadowSel *sel) {
         int is_telegraph = (e->char_id == CHAR_CHARGER && e->state == ENEMY_STATE_TELEGRAPH);
         int is_charge = (e->char_id == CHAR_CHARGER && e->state == ENEMY_STATE_CHARGE);
         int cf = e->frame & (CHARGER_CHARGE_NUM_FRAMES - 1);
+        int oc = ojo_clip(e);
+        int of = ojo_clip_frame(e, oc);
+        if (oc != CLIP_OJO_WALK) {
+            sel->mask = oc == CLIP_OJO_SENTENCE ? &g_ojo_sentence_shadow_masks[g_ojo_sentence_shadow_offsets[e->dir][of]]
+                                                : &g_ojo_look_shadow_masks[g_ojo_look_shadow_offsets[e->dir][of]];
+            sel->bounds = oc == CLIP_OJO_SENTENCE ? g_ojo_sentence_shadow_bounds[e->dir][of]
+                                                  : g_ojo_look_shadow_bounds[e->dir][of];
+            sel->left = it->cx - shw / 2;
+            sel->top = it->cy - shh / 2;
+            return 1;
+        }
         sel->mask = (is_telegraph && e->frame == 0) ? character_shadow_mask_ptr(CHAR_CHARGER, e->dir, 0)
                   : (is_telegraph || is_charge)     ? &g_charger_charge_shadow_masks[g_charger_charge_shadow_offsets[e->dir][is_telegraph ? 0 : cf]]
                                                     : character_shadow_mask_ptr(e->char_id, e->dir, e->frame);
@@ -1033,6 +1054,8 @@ ITCM_CODE static void render_screen(uint16_t *buffer, DirtySpan *spans, int cam_
     PP_ADD(PP_SORT, pp_sort);
     uint32_t t_bl0 = cpuGetTiming();
     PP_T0(pp_blit);
+    // Paint the sentence before actors so their sprites occlude the beam by depth.
+    enemy_lasers_render(buffer, g_enemies, MAX_ENEMIES, cam_x, cam_y);
     for (int i = 0; i < count; i++) {
         s_draw_item_depth = items[i].depth;
         int sp = items[i].ref;
@@ -1049,7 +1072,6 @@ ITCM_CODE static void render_screen(uint16_t *buffer, DirtySpan *spans, int cam_
     PP_ADD(PP_BLIT, pp_blit);
     weapons_render_light(buffer, cam_x, cam_y);     // beams light the sprites drawn above
     PP_T0(pp_proj);
-    enemy_lasers_render(buffer, g_enemies, MAX_ENEMIES, cam_x, cam_y);
     weapons_render(buffer, cam_x, cam_y);
     mods_render(buffer, cam_x, cam_y);
     PP_ADD(PP_PROJ, pp_proj);
