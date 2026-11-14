@@ -2255,6 +2255,9 @@ int main(void) {
         int open_bestiary = (g_bestiary_debug.trigger != 0) ||
             (((keys_held & (KEY_L | KEY_R)) == (KEY_L | KEY_R)) && (keys_down & KEY_SELECT));
         if (open_bestiary) {
+#if HW_SHADOWS
+            hwshadow_regs_off();
+#endif
             bestiary_run(s_top_page, bot_page_ptr(8), bot_page_ptr(24), &s_bot_active_page, present_vblank_begin);
             s_top_map_ready = 0;
             s_bot_map_ready = 0;
@@ -2270,6 +2273,9 @@ int main(void) {
         if (menu_is_open()) {
             MenuAction act = menu_update(keys_down, menu_touch_pressed, touch.px, touch.py);
             if (menu_state() == MENU_BESTIARY) {
+#if HW_SHADOWS
+                hwshadow_regs_off();
+#endif
                 bestiary_run(s_top_page, bot_page_ptr(8), bot_page_ptr(24), &s_bot_active_page, present_vblank_begin);
                 menu_update(KEY_B, 0, 0, 0);
                 s_top_map_ready = 0;

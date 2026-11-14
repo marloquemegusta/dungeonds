@@ -93,8 +93,8 @@ typedef struct {
     uint32_t offset;
 } __attribute__((packed)) BestiaryPortraitFrame;
 
-/* Static direction buffer: 144 KB is enough for the largest single direction (Cireneo ~132 KB) */
-#define BESTIARY_PORTRAIT_BUF_SIZE (144 * 1024)
+/* Static direction buffer: 160 KB is enough for the largest single direction (Cireneo ~145.2 KB) */
+#define BESTIARY_PORTRAIT_BUF_SIZE (160 * 1024)
 static uint8_t s_portrait_buf[BESTIARY_PORTRAIT_BUF_SIZE];
 static BestiaryPortraitFileHeader s_portrait_hdr;
 static int s_portrait_loaded_entry = -1;
@@ -395,44 +395,66 @@ static void draw_bottom_card(uint16_t *fb, int entry_idx) {
     bestiary_font_draw_utf8(fb, 242 - sw, 166, "Sig >", COLOR_BUTTON);
 }
 
-static void draw_top_character(uint16_t *fb, int entry_idx, int dir, uint32_t anim_tick) {
+static int compute_anim_frame(int entry_idx, uint32_t anim_tick) {
+    if (entry_idx == 0) {
+        /* Corazón Abierto (8 frames: f7 -> f0 with pause at f0 and back, ~50% slower) */
+        uint32_t t = anim_tick % 160;
+        if (t < 56) return 7 - (int)(t / 7);
+        if (t < 92) return 0;
+        if (t < 148) return (int)((t - 92) / 7);
+        return 7;
+    } else if (entry_idx == 1) {
+        /* Exvoto (8 frames walk loop, ~50% slower) */
+        return (int)((anim_tick / 7) % 8);
+    } else if (entry_idx == 2) {
+        /* Cireneo (8 frames hunched walk loop, ~50% slower) */
+        return (int)((anim_tick / 8) % 8);
+    } else if (entry_idx == 3) {
+        /* Ojo del Tribunal (4 frames head-turn ping-pong, ~50% slower) */
+        static const int ojo_seq[6] = { 0, 1, 2, 3, 2, 1 };
+        return ojo_seq[(anim_tick / 10) % 6];
+    }
+    return 0;
+}
+
+static void clear_portrait_union_box(uint16_t *fb) {
+    if (!fb || !s_portrait_valid) return;
+    const BestiaryDirHeader *dh = (const BestiaryDirHeader *)s_portrait_buf;
+    int u_cx = (dh->u_min_x + dh->u_max_x) >> 1;
+    int u_cy = (dh->u_min_y + dh->u_max_y) >> 1;
+    int canvas_x = 128 - u_cx;
+    int canvas_y = 96 - u_cy;
+    int x0 = canvas_x + dh->u_min_x;
+    int y0 = canvas_y + dh->u_min_y;
+    int x1 = canvas_x + dh->u_max_x;
+    int y1 = canvas_y + dh->u_max_y;
+    if (x0 < 5) x0 = 5;
+    if (y0 < 5) y0 = 5;
+    if (x1 > 250) x1 = 250;
+    if (y1 > 186) y1 = 186;
+    for (int y = y0; y <= y1; y++) {
+        uint16_t *row = fb + (y << 8);
+        for (int x = x0; x <= x1; x++) {
+            row[x] = COLOR_BLACK_OPAQUE;
+        }
+    }
+}
+
+static void draw_top_character(uint16_t *fb, int entry_idx, int dir, int frame, int full_clear) {
     if (!fb || entry_idx < 0 || entry_idx >= 4) return;
-    uint32_t black_pair = 0x80008000;
-    swiFastCopy(&black_pair, fb, COPY_MODE_FILL | (BESTIARY_SCREEN_W * BESTIARY_SCREEN_H * 2 / 4));
-    draw_border_rect(fb, COLOR_BORDER);
+    if (full_clear || !s_portrait_valid || s_portrait_loaded_entry != entry_idx || s_portrait_loaded_dir != (dir & 7)) {
+        uint32_t black_pair = 0x80008000;
+        swiFastCopy(&black_pair, fb, COPY_MODE_FILL | (BESTIARY_SCREEN_W * BESTIARY_SCREEN_H * 2 / 4));
+        draw_border_rect(fb, COLOR_BORDER);
+    } else {
+        clear_portrait_union_box(fb);
+    }
 
     if (s_portrait_valid && s_portrait_loaded_entry == entry_idx && s_portrait_loaded_dir == (dir & 7)) {
-        int frame = 0;
-        if (entry_idx == 0) {
-            /* Corazón Abierto (8 frames: f7 -> f0 with pause at f0 and back) */
-            uint32_t t = anim_tick % 104;
-            if (t < 32) frame = 7 - (int)(t >> 2);
-            else if (t < 56) frame = 0;
-            else if (t < 88) frame = (int)((t - 56) >> 2);
-            else frame = 7;
-        } else if (entry_idx == 1) {
-            /* Exvoto (8 frames walk loop) */
-            frame = (int)((anim_tick >> 2) % 8);
-        } else if (entry_idx == 2) {
-            /* Cireneo (9 frames: frame 0 telegraph + 8 frames charge loop) */
-            uint32_t t = anim_tick % 88;
-            if (t < 24) frame = 0;
-            else frame = 1 + (int)(((t - 24) / 3) % 8);
-        } else if (entry_idx == 3) {
-            /* Ojo del Tribunal (10 frames: frames 0..3 look + 4..9 sentence) */
-            uint32_t t = anim_tick % 96;
-            if (t < 48) {
-                frame = (int)((t / 6) % 4);
-            } else {
-                int f = 4 + (int)((t - 48) / 5);
-                if (f > 9) f = 9;
-                frame = f;
-            }
-        }
         draw_portrait_frame_160(fb, frame);
     } else {
         /* Fallback */
-        draw_fallback_sprite_2x(fb, entry_idx, anim_tick);
+        draw_fallback_sprite_2x(fb, entry_idx, (uint32_t)frame * 6u);
     }
 
     /* Orientation hint in bottom-right corner of top screen */
@@ -459,10 +481,9 @@ void bestiary_run(uint16_t *top_page, uint16_t *bot_page_a, uint16_t *bot_page_b
     /* Load initial high-res portrait */
     load_portrait_direction(cur_entry, cur_dir);
 
-    /* Render initial cards to both bottom buffers */
+    /* Render initial cards to both bottom buffers and wait for VBlank before drawing single-buffered top_page */
     draw_bottom_card(bot_page_a, cur_entry);
     draw_bottom_card(bot_page_b, cur_entry);
-    draw_top_character(top_page, cur_entry, cur_dir, anim_tick);
 
     if (vblank_flip_fn) {
         vblank_flip_fn();
@@ -470,6 +491,11 @@ void bestiary_run(uint16_t *top_page, uint16_t *bot_page_a, uint16_t *bot_page_b
         swiWaitForVBlank();
     }
 
+    int cur_frame = compute_anim_frame(cur_entry, anim_tick);
+    draw_top_character(top_page, cur_entry, cur_dir, cur_frame, 1);
+    int prev_drawn_entry = cur_entry;
+    int prev_drawn_dir = cur_dir;
+    int prev_drawn_frame = cur_frame;
     int bot_dirty = 0;
 
     while (1) {
@@ -524,7 +550,7 @@ void bestiary_run(uint16_t *top_page, uint16_t *bot_page_a, uint16_t *bot_page_b
             load_portrait_direction(cur_entry, cur_dir);
         }
 
-        /* Update bottom screen if dirty */
+        /* Update bottom screen (2-page buffered) before VBlank */
         if (bot_dirty > 0) {
             uint16_t *target_bot = bot_page_a;
             if (bot_active_page_idx && *bot_active_page_idx == 8) {
@@ -536,15 +562,22 @@ void bestiary_run(uint16_t *top_page, uint16_t *bot_page_a, uint16_t *bot_page_b
             bot_dirty--;
         }
 
-        /* Update top screen animated character */
-        draw_top_character(top_page, cur_entry, cur_dir, anim_tick);
         anim_tick++;
+        cur_frame = compute_anim_frame(cur_entry, anim_tick);
 
-        /* Vertical sync / flip */
+        /* Wait for VBlank, then draw single-buffered top_page at the start of VBlank (zero tearing) */
         if (vblank_flip_fn) {
             vblank_flip_fn();
         } else {
             swiWaitForVBlank();
+        }
+
+        if (cur_entry != prev_drawn_entry || cur_dir != prev_drawn_dir || cur_frame != prev_drawn_frame) {
+            int full_clear = (cur_entry != prev_drawn_entry || cur_dir != prev_drawn_dir);
+            draw_top_character(top_page, cur_entry, cur_dir, cur_frame, full_clear);
+            prev_drawn_entry = cur_entry;
+            prev_drawn_dir = cur_dir;
+            prev_drawn_frame = cur_frame;
         }
     }
 

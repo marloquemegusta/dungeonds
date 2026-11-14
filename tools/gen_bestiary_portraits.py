@@ -39,15 +39,13 @@ CHARACTERS = [
     {
         'id': 'cireneo',
         'clips': [
-            ('cireneo_telegraph', [0]),
-            ('cireneo_charge', list(range(8)))
+            ('cireneo_walk', list(range(8)))
         ]
     },
     {
         'id': 'ojo',
         'clips': [
-            ('ojo_look', list(range(4))),
-            ('ojo_sentence', list(range(6)))
+            ('ojo_look', list(range(4)))
         ]
     }
 ]
