@@ -779,5 +779,16 @@
     "reproducible": "parcial",
     "eval": "mixta",
     "calibrado": false
+  },
+  {
+    "id": "dd-perf-horda-doble",
+    "repo": "dungeonds",
+    "tipo": "macro",
+    "parent": null,
+    "clase": "perf-hw",
+    "dificultad": 5,
+    "reproducible": "parcial",
+    "eval": "mixta",
+    "calibrado": true
   }
 ]

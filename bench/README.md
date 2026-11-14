@@ -4,9 +4,9 @@ Generado desde `tasks/*/item.json`. Protocolo y decisiones: [../BENCHMARK.md](..
 
 Cada tarea vive en `tasks/<id>/` con `problem.md` (lo unico que ve el modelo) e `item.json` (commit base, solucion de referencia, evaluacion, trampas, historia). `calibrado: false` hasta pasar la calibracion (§4 de BENCHMARK.md).
 
-Total: 71 items - dungeonds/macro: 8, dungeonds/micro: 27, skill/micro: 4, towerds/macro: 12, towerds/micro: 20
+Total: 72 items - dungeonds/macro: 9, dungeonds/micro: 27, skill/micro: 4, towerds/macro: 12, towerds/micro: 20
 
-Clases: feature 26, bug-acotado 15, perf-hw 10, tooling 6, refactor 4, arte-impl 4, diseno 3, depuracion-hw 2, revision 1
+Clases: feature 26, bug-acotado 15, perf-hw 11, tooling 6, refactor 4, arte-impl 4, diseno 3, depuracion-hw 2, revision 1
 
 | id | repo | tipo | clase | dif | evaluacion | reproducible |
 |---|---|---|---|---|---|---|
@@ -20,6 +20,7 @@ Clases: feature 26, bug-acotado 15, perf-hw 10, tooling 6, refactor 4, arte-impl
 | [dd-map-coherencia-geometrica](tasks/dd-map-coherencia-geometrica/item.json) | dungeonds | macro | bug-acotado | 4 | mixta | parcial |
 | [dd-map-export-coherencia](tasks/dd-map-export-coherencia/item.json) | dungeonds | micro <- dd-map-coherencia-geometrica | bug-acotado | 4 | mixta | parcial |
 | [dd-map-runtime-index-runs](tasks/dd-map-runtime-index-runs/item.json) | dungeonds | micro <- dd-map-coherencia-geometrica | perf-hw | 4 | mixta | parcial |
+| [dd-perf-horda-doble](tasks/dd-perf-horda-doble/item.json) | dungeonds | macro | perf-hw | 5 | mixta | parcial |
 | [dd-render-compuesto-rendimiento](tasks/dd-render-compuesto-rendimiento/item.json) | dungeonds | macro | perf-hw | 5 | mixta | parcial |
 | [dd-perf-log-fat](tasks/dd-perf-log-fat/item.json) | dungeonds | micro <- dd-render-compuesto-rendimiento | bug-acotado | 2 | mixta | parcial |
 | [dd-render-bajar-coste-occlusion](tasks/dd-render-bajar-coste-occlusion/item.json) | dungeonds | micro <- dd-render-compuesto-rendimiento | perf-hw | 3 | mixta | parcial |
