@@ -138,3 +138,4 @@ Resúmenes acumulativos y auditables de cada entrega y avance de desarrollo en `
 | 120 | Vídeo vertical de lore: El Exvoto (`CÓDICE · II`) | [`codice-exvoto/`](codice-exvoto/walkthrough.md) | Vídeo 1080×1920 (01:06), voz Carmelo y Palatino Linotype |
 | 121 | Vídeo vertical de lore: El Cireneo (`CÓDICE · III`) | [`codice-cireneo/`](codice-cireneo/walkthrough.md) | Vídeo 1080×1920 (01:04), voz Carmelo y Palatino Linotype |
 | 122 | Vídeo vertical de lore: El Ojo del Tribunal (`CÓDICE · IV`) | [`codice-ojo/`](codice-ojo/walkthrough.md) | Vídeo 1080×1920 (01:10), voz Carmelo y Palatino Linotype generado y verificado |
+| 123 | Vídeo vertical de lore: El Abanderado (`CÓDICE · V`) | [`codice-abanderado/`](codice-abanderado/walkthrough.md) | Vídeo 1080×1920 (01:22), voz Carmelo y Palatino Linotype generado y verificado |
