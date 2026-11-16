@@ -36,6 +36,15 @@ Flujo estandarizado para crear vídeos verticales de lore estilo *Blasphemous* p
 
 ---
 
+## Estilo visual de los planos (decidido 2026-11-16)
+
+- **Composición metafórica, no escena de juego:** fondo negro, sin suelo ni baldosas. Encima solo personajes y props sueltos que cuentan algo (una vela, una lápida, bancos volcados, columnas, el relicario). Que no parezca una captura del juego.
+- **A escala:** los props guardan la proporción del juego respecto al personaje (la columna mide casi 4 veces a Elías; el banco le llega a la rodilla) y la misma densidad de píxel que el sprite del Códice. Si el render de la DS se queda pequeño o en otro ángulo, se re-renderiza el prop desde su modelo 3D: es barato y preferible a ampliar de más.
+- **Props en `assets/videos/props/<prop>/`** (`color.png`, `shadow.png`, `meta.json` con la altura en metros): re-renderizados con `tools/props/render_video_props.py` a la densidad del Códice (Elías mide 143 px = 2 m; columna 7,5 m, banco 1,75 m). Estilos `A|B|C` (negro y escala real / con suelo y sombras / escala metafórica): leyenda de `assets/videos/guiones/lote-01.md`.
+- **El guion lo contiene todo:** cada plano dice qué se ve (personaje, animación, dirección y props); los ajustes de producción se apuntan en el guion para poder rehacer el vídeo ejecutando el generador.
+
+---
+
 ## Voz y audio (ElevenLabs CLI)
 
 - **Narrador:** `Carmelo - Mature, Mysterious and Clear` (`voice_id`: `5egO01tkUjEzu7xSSE8M`), modelo `eleven_multilingual_v2`, generado **frase por frase** con pausas reales entre bloques (sin acelerones; subtítulos sincronizados).
@@ -50,7 +59,7 @@ Flujo estandarizado para crear vídeos verticales de lore estilo *Blasphemous* p
 
 ## Flujo recomendado: lotes desde un archivo de guiones
 
-Un lote es un único markdown: `walkthroughs/lore-lote-01/guiones.md` es el ejemplo y su **leyenda es la referencia completa de la sintaxis**. Resumen:
+Un lote es un único markdown: `assets/videos/guiones/lote-01.md` es el ejemplo y su **leyenda es la referencia completa de la sintaxis**. Resumen:
 
 - `## NN · CÓDICE · <N> — <TÍTULO>`; partes `### Parte N · <animación>[ + <animación B>] · <modo> [· modificadores]`; una frase por línea `- `; la frase final `> Nombre: «…»`.
 - **Modo `cortes`:** un plano por frase con su etiqueta `[…]` al inicio: `cerca`, dirección (`S` de frente … `N` de espaldas), y trayectos `DIR origen>destino` o por personaje `A DIR …` / `B DIR …` con posiciones `centro izq der fuera-izq fuera-der arriba abajo fuera-arriba fuera-abajo`.
@@ -65,7 +74,7 @@ python .agents/skills/codice-lore-video/scripts/render_guiones.py --guiones <lot
 python .agents/skills/codice-lore-video/scripts/render_guiones.py --guiones <lote.md> [--solo 01,03] [--prefijo prueba]
 ```
 
-Salida: `assets/videos/loreXX_NN_<titulo>.mp4` y una tira de 6 fotogramas en `<carpeta del lote>/assets/`. Antes de entregar, mirar fotogramas de cada plano (arranque, cortes, trayectos), no solo la tira.
+Salida: `assets/videos/loreXX_NN_<titulo>.mp4` y una tira de 6 fotogramas en `walkthroughs/lore-lote-XX/assets/` (`--tiras` lo cambia). Antes de entregar, mirar fotogramas de cada plano (arranque, cortes, trayectos), no solo la tira.
 
 ---
 

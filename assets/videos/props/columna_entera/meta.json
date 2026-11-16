@@ -1,0 +1,32 @@
+{
+  "piece": "columna_entera",
+  "size_px": [
+    168,
+    544
+  ],
+  "content_px": [
+    161,
+    540
+  ],
+  "target_width": 161,
+  "scale_factor": 0.1564625850340136,
+  "source_render_px": [
+    1029,
+    3453
+  ],
+  "yaw": 0,
+  "depth_units": "sprite_px",
+  "tiles_8x8_nonempty": 1095,
+  "tiles_8x8_unique": 1095,
+  "video_k": 4.613,
+  "dims_m": [
+    0.3122,
+    0.3212,
+    1.0
+  ],
+  "alto_px": 540,
+  "px_por_m_vertical": 540.0,
+  "alto_m": 7.55,
+  "hero_px": 143,
+  "px_por_m": 71.5
+}

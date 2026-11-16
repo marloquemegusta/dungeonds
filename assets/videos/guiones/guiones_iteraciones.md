@@ -10,7 +10,7 @@ v1: arranque en negro, 48 s. v2: sin negro, frase fuerte primero, subtítulos al
 - Aldonza: 4VwK2ER2kZPZRkO5vQ8n
 - Bartolomé: 5Nyqo2cUdr59EbFivYhz
 - Leonor: pCiVQwaEUl8YwVxKhOCd
-- Inés: archivo:walkthroughs/lore-lote-01/assets/ines_cita.mp3
+- Inés: archivo:assets/videos/voces/ines_cita.mp3
 - Íñigo: iHCoxvyy4J2mUw5uRJED
 - Gaspar: rC1yBQViNSR6g3kqT94H
 - Monaguillos: PJca6lR0NZwKiJY56HrR

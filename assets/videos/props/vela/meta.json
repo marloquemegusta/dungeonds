@@ -1,0 +1,34 @@
+{
+  "piece": "vela",
+  "size_px": [
+    72,
+    77
+  ],
+  "content_px": [
+    65,
+    76
+  ],
+  "target_width": 65,
+  "scale_factor": 0.05627705627705628,
+  "source_render_px": [
+    1155,
+    980
+  ],
+  "yaw": 0,
+  "depth_units": "sprite_px",
+  "tiles_8x8_nonempty": 44,
+  "tiles_8x8_unique": 44,
+  "shadow_offset_px": [
+    0,
+    21
+  ],
+  "shadow_canvas_px": [
+    72,
+    64
+  ],
+  "video_k": 4.613,
+  "alto_px": 74,
+  "px_por_m": 71.5,
+  "alto_m": 1.03,
+  "hero_px": 143
+}
