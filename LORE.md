@@ -118,7 +118,7 @@ Se cierra aquí antes de usarlo en un vídeo; mientras tanto, los vídeos pueden
 
 | Tema | Estado | Depende de |
 | :--- | :--- | :--- |
-| Qué es el Altar y qué pasa al llegar | Abierto | Final del juego y jefe (`DESIGN.md` §6.9, 0.6) |
+| Qué es el Altar y qué pasa al llegar | Abierto | Final del juego y jefe (`DESIGN.md` §6.13: El Paso en la estación XIV; al ganar se baja a las criptas) |
 | Qué busca Elías al subir | Abierto | Lo anterior |
 | Por qué se alargó la nave | Abierto | — |
 | Qué fue la «sequía del cielo» | Abierto | — |
