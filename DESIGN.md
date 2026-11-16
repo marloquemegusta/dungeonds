@@ -271,7 +271,7 @@ Primer paso jugable hacia §6.1–6.8: el juego actual (armas, cargador, tirador
 ### 6.6 Economía y mejoras
 - **Gemas:** cada muerte suelta una gema cuyo valor depende del tipo de enemigo. Se recoge pisándola, con un imán corto que se puede mejorar. Las que se traga la marea se pierden, así que hay que decidir si se vuelve a por ellas.
 - **Subir de nivel:** al llenar la barra se pausa el juego y se elige **1 de 3 mejoras** tocando la pantalla inferior. Unos 15–20 niveles por run. Sin reroll en la prueba.
-- **Mejoras:** la mitad son del arma y cambian su comportamiento, no solo un número (perforar, rebotar, explotar al matar, más proyectiles...). La otra mitad son del personaje (vida máxima, velocidad, imán, i-frames). La tabla de modificadores de §5 sirve de semilla.
+- **Mejoras:** Dones (estadísticas apilables) en cada nivel y Reliquias (únicas, cambian cómo se juega) cada 4 niveles, diseñadas por arquetipos. Detalle en §6.12 (decidido 2026-11-15), que sustituye el reparto «mitad arma, mitad personaje».
 - **Presentación:** cada mejora se muestra con icono, nombre y su efecto en una línea. Es la lección de la v0.2, donde los modificadores parecían aleatorios porque solo se veía el nombre.
 - **Cofres:** los sueltan élites y minijefe. Dan una mejora extra.
 
@@ -298,7 +298,7 @@ La prueba de §6.1–6.8 se construye en versiones jugables pequeñas, cada una 
 | **0.3.1** | Tuning y pulido de la 0.3 mínima, con tres tiers de enemigos (esqueleto, cargador que carga, tirador láser) y escala de cifras 100 = 1,0 (§6.9.1). | Nada | Cerrada 2026-11-07 (`walkthroughs/v031-tuning/`) |
 | **0.3.2** | Escenario del primer nivel: estilo, ambientación y piezas del entorno (§6.9.1b). | Sesión de dirección de arte | **En curso** (v2 en `main`, `walkthroughs/catedral-v2-salon/`, pendiente de ajustes de escala y variedad) |
 | **0.3.3** | Personajes: reevaluar los sprites, ajustar tamaño y pasar al estilo definido en la 0.3.2 (§6.9.1b). | 0.3.2 cerrada | **En curso** (Corazón Abierto, Cireneo v2, telegrafía y SFX base en `main`; faltan Exvotos, Ojo del Tribunal y elegir aura) |
-| **0.4** | Progresión dentro de la run: gemas con imán corto, experiencia, subir de nivel con pausa y elegir 1 de 3 mejoras con icono y una línea de efecto (§6.6), HUD de vida, experiencia, nivel y tiempo, elección de clase al empezar y controles de §6.5 que falten. | Sesión de diseño de mejoras y clases | Pendiente de diseño |
+| **0.4** | Progresión dentro de la run: gemas con imán corto, experiencia, subir de nivel con pausa y elegir 1 de 3 mejoras con icono y una línea de efecto (§6.6), HUD de vida, experiencia, nivel y tiempo y controles de §6.5 que falten. Un solo personaje. | Sesión de diseño de mejoras | Diseño en curso (§6.12; faltan cifras) |
 | **0.5** | Enemigos y recompensas: enjambre, élites que sueltan cofre, emboscadas desde abajo con aviso. Pool de 48 y criterio de horda de `TECHNICAL.md` §4.7 (IA por niveles de detalle, separación por rejilla, blit más barato). | Sesión de diseño de enemigos | Pendiente de diseño |
 | **0.6** | Estructura de la run: tramos hechos a mano encadenados por reglas (§6.2), dos biomas, minijefe a mitad y jefe arriba, marea que se para en los combates. Cierra la prueba completa de §6.1 (~8 min, ganar matando al jefe). | Sesión de diseño de tramos, biomas y jefes | Pendiente de diseño |
 
@@ -525,16 +525,14 @@ Tras cerrar la 0.3.1, el usuario quiere dedicar dos versiones al aspecto antes d
 **Dentro:**
 - **Gemas** al matar, con valor según el tipo de enemigo. Se recogen pisándolas, con un imán corto, y la marea se las traga (§6.6). Se dibujan en OAM (`TECHNICAL.md` §4.7).
 - **Experiencia y nivel.** Al llenar la barra se pausa el juego y se elige **1 de 3 mejoras** tocando la pantalla inferior. Unos 15–20 niveles por run, sin reroll.
-- **Mejoras:** la mitad del arma, que cambian su comportamiento (perforar, rebotar, explotar al matar, más proyectiles…); la otra mitad del personaje (vida máxima, velocidad, imán, i-frames). Cada una con icono, nombre y una línea de efecto. La tabla de modificadores de §5 sirve de semilla.
-- **Clases:** se elige francotirador/láser o escopeta al empezar (§6.5), cada una con su árbol de mejoras.
+- **Mejoras:** sistema de §6.12: 7 Dones y 10 Reliquias del Corazón Abierto, nuevo comportamiento base del rayo y estado Quemado en los enemigos.
+- **Clases:** fuera de la demo; un solo personaje, El Corazón Abierto (decidido 2026-11-15).
 - **Controles de §6.5 que falten:** mantener pulsado para disparar al ritmo del arma y la granada en L con enfriamiento.
 - **HUD:** vida, barra de experiencia, nivel y tiempo; se mantiene la altura.
 
 **Antes de empezar (sesión de diseño):**
-- lista de mejoras de cada clase, con sus cifras de partida y cómo se combinan;
-- curva de experiencia;
-- iconos y presentación de la elección;
-- si las curas de la 0.3 conviven con la mejora de vida o se ajustan.
+- ~~lista de mejoras y cómo se combinan~~: hecho en §6.12;
+- lo que queda está en §6.12.9 (cifras, curva de experiencia, curas e iconos).
 
 **Fuera:** cofres, élites y enemigos nuevos (0.5); progresión entre runs (§1).
 
@@ -580,7 +578,7 @@ Tras cerrar la 0.3.1, el usuario quiere dedicar dos versiones al aspecto antes d
 ### 6.10 Reparto de la demo (sesión de concepto, 2026-11-11)
 Conceptos para la demo de la catedral. Solo cambia el aspecto y se añaden élites y jefe; las mecánicas base son las de "Enemigos de la 0.3.1" (§6.9.1). Nada de esto se programa hasta que su detalle esté escrito aquí (regla 9).
 
-- **Personaje (clase láser): se continúa con El Corazón Abierto** (el usuario ya generó modelo y animación de carga); El Lector y La Custodia quedan en reserva. Prompts y pendientes: `walkthroughs/concepto-demo-personajes/`. Mecánica sin cambios: cargar, soltar, rayo que atraviesa filas. Las imágenes para 3D se generan en **T-pose, con las manos vacías**, y el arma en una imagen aparte; se ensamblan después.
+- **Personaje (clase láser): se continúa con El Corazón Abierto** (el usuario ya generó modelo y animación de carga); El Lector y La Custodia quedan en reserva. Prompts y pendientes: `walkthroughs/concepto-demo-personajes/`. Mecánica: cargar, soltar, rayo que atraviesa filas (desde 2026-11-15 atraviesa a quien mata y lo cortan muros y columnas, §6.12.2). Las imágenes para 3D se generan en **T-pose, con las manos vacías**, y el arma en una imagen aparte; se ensamblan después.
   El rayo no es un arma sino un milagro que consume el cuerpo: sale del propio personaje, que va quemado por usarlo y sigue vivo por fe (tono Trench Crusade). A 31 px el origen del rayo debe ser un punto de luz claro y la carga una pose que cambie la silueta. Descartados (2026-11-11, genéricos): Portaluz, Hermana del Cirio y Penitente tirador.
   1. **El Lector:** monje con un libro encadenado a la muñeca; al cargar alza libro y cabeza recitando y el rayo sale de boca y ojos. Cara quemada hasta el hueso, capucha chamuscada.
   2. **El Corazón Abierto:** pecho abierto con grapas de hierro y un sagrado corazón en llamas dentro; carga con los brazos en cruz y el rayo sale del pecho. Ropa quemada en círculo alrededor.
@@ -626,7 +624,7 @@ Conceptos para la demo de la catedral. Solo cambia el aspecto y se añaden élit
   - **Salir del charco:** el monaguillo emerge poco a poco del charco, como si este lo fuera soltando (~0,5 s); el charco se seca al terminar. Mientras emerge **es invulnerable**, no hace daño ni se mueve.
   - **Exvoto monaguillo:** variante nueva del Exvoto (modelo «monje zombi», `tripo_convert_9a55a12b`). Mismas reglas que el Exvoto: muere de un golpe, camina lento hacia ti en postura de rezar (animación de andar rezando del Exvoto) y hace daño por contacto.
   - **Al morir:** en esta versión mínima suelta una **cruz de curación** (el cofre entra en la 0.5). Los monaguillos que queden siguen vivos.
-- **Pendiente:** qué aura de carga se queda (L/G/E/H, arriba) y si la quemadura crece con las mejoras; cifras, fases y telegrafías de élites y jefe; tamaño del paso en pantalla (sprites grandes o capa de fondo, `TECHNICAL.md`); si hay minijefe en la demo.
+- **Pendiente:** si la quemadura del cuerpo crece con las mejoras (las auras L/G/E/H ya no compiten: cada una es el aspecto de una reliquia, §6.12.8); cifras, fases y telegrafías de élites y jefe; tamaño del paso en pantalla (sprites grandes o capa de fondo, `TECHNICAL.md`); si hay minijefe en la demo.
 - **Corazón Abierto en el juego (decidido 2026-11-11/12, rama `feat/corazon-abierto`, `walkthroughs/corazon-abierto/`):**
   - **Animaciones:** modelo Tripo con rig Mixamo (`assets/models/characters/corazon/`). **Andar:** el «Walking» genérico de Mixamo (`assets/models/animations/walk/walk_normal.fbx`) adaptado al modelo con la cadera en el sitio; se descartaron el andar del nigromante (el torso se retorcía) y uno renqueante (a 31 px no se distinguía).
   - **Carga y disparo:** un solo clip de 8 frames por dirección, el de disparo (f0 = brazos en cruz, f7 = derrumbado con los brazos delante). **Cargar** lo recorre **al revés** (f7 → f0) según el progreso de carga (`prog` 0..256 de §4.9), no según el tiempo, y se queda en f0 (cruz) desde `AIM_READY` hasta soltar. **Soltar** dispara en f0 y reproduce f0 → f7 a 3 frames de juego por frame (~0,4 s); después vuelve al andar. **Cancelar** vuelve al andar al instante y moverse durante la recuperación la corta. Mientras carga, el personaje está parado. Se acepta el salto de la pose de andar a la encorvada al empezar a cargar.
@@ -664,3 +662,187 @@ Conceptos para la demo de la catedral. Solo cambia el aspecto y se añaden élit
   3. **El Cireneo** — caminando encorvado en bucle *in-place* con la cruz a la espalda (`cireneo_walk`). *Comportamiento:* se agacha antes de embestir en línea recta; no puede girar. *Lore:* desertó y pidió que le clavaran la cruz a la espalda para no volver a huir. Si choca contra una columna, queda crucificado contra la piedra. *«Ayudó a cargar una cruz. Ahora la cruz le carga a él.»*
   4. **El Ojo del Tribunal** — caminando mientras gira la cabeza-farol a izquierda y derecha buscando (1 barrido cada 2 ciclos de paso, 16 frames por dirección en `ojo_walk_bestiary`). *Comportamiento:* vigila con su farol, fija la línea de juicio y sentencia desde la boca. *Lore:* inquisidores que cambiaron sus ojos por una linterna del juicio. Su mirada verde te examina; cuando se queda quieta, ya ha dictado sentencia. *«La linterna no ve culpables. Los fabrica.»*
   5. **El Abanderado** — caminando cabizbajo apoyado en el estandarte como bastón, seguido por dos exvotos de jóvenes suplicantes (`abanderado_walk`, 8 frames por dirección). *Comportamiento:* patrulla con el asta; al divisarte te apunta e invoca exvotos de jóvenes suplicantes. *Lore:* juró que el estandarte jamás tocaría el suelo. Apoyado en él vaga reuniendo a los caídos; de los charcos que señala brotan exvotos de jóvenes suplicantes que aún marchan tras su bandera. *«Mientras el asta siga en pie, nadie se retira.»*
+
+### 6.12 Sistema de mejoras del Corazón Abierto (decidido 2026-11-15)
+Sesión de diseño de la v0.4 (§6.9.2). Sustituye la regla de §6.6 «mitad del arma, mitad del personaje» y la elección de clase: la demo tiene un solo personaje. Las cifras están en `[TUNABLE-PLACEHOLDER]` hasta la sesión de números.
+
+#### 6.12.1 Filosofía
+- **Pool abierto, espíritu *The Binding of Isaac*.** Todas las mejoras conviven en el mismo pool, sin ramas excluyentes. Elegir bien rompe la partida; elegir sin criterio te deja sin nada. Con poco contenido ya tiene que divertir, y añadir mejoras no debe empeorarlo.
+- **Builds como en *League of Legends*.** Hay estadísticas que solo valen para unas builds, y la misma mejora vale oro en una partida y es basura en otra. Ejemplo: «carga más rápida» no le sirve de nada a quien juega a mantener el rayo cargado.
+- **La build cero crece sumando; las demás, multiplicando.** La Ráfaga (§6.12.3) es fiable desde el primer minuto y tiene techo. Las demás necesitan juntar varias piezas: con una sola están peor que antes (valle) y con tres se disparan. **Cuanto más rota es una build, peores son sus piezas por separado y más hondo es su valle.**
+- **Contrapartida solo cuando la mejora rompe una regla del personaje** (por ejemplo, moverse mientras carga). Las demás reliquias son ventaja pura o llevan un riesgo que depende de la habilidad.
+- **La marea manda.** No es un survivors abierto: no se puede uno plantar. Todo lo que frena al héroe es un coste real porque la marea empuja desde abajo.
+
+#### 6.12.2 Reglas comunes
+**El rayo base (cambia el comportamiento actual):**
+- **Atraviesa a quien mata y se detiene en el primero que sobrevive.** Con poco daño se queda en el primer enemigo duro; con mucho, limpia filas. Atravesar es la recompensa natural de subir el daño.
+- **Muros y columnas cortan el rayo y la línea de apuntado**, con chispas en el punto de impacto, como el haz del Ojo del Tribunal (§6.10). Lore: es fuego que sale de la carne, y la piedra lo detiene. Las columnas dan cobertura a los dos lados.
+- **Alcance base más corto que el actual,** para que haya que acercarse a la vanguardia. El alcance actual de la ROM pasa a ser ~75 % del máximo con mejoras.
+
+**Dos tipos de daño:**
+- **Daño del rayo:** solo el disparo.
+- **Daño de fuego:** todo lo demás (quemadura, explosiones, aro, ondas, línea de apuntado).
+
+**Un único estado en los enemigos, «Quemado».** Se acumula en capas. Cada capa hace daño de fuego por segundo y frena un poco al enemigo; seguir quemándolo renueva la duración. Hay un tope de capas. No existe un estado aparte de «ralentizado»: frenar va dentro de Quemado.
+
+**Vocabulario de las mejoras.** Toda mejora, presente o futura, se construye con estas piezas. Así las sinergias salen solas y no se diseñan de dos en dos:
+- **Momentos:** al cargar, mientras cargas, al disparar, al impactar, al matar, al recibir un golpe y al recoger una gema.
+- **Toda muerte cuenta como muerte,** también las de explosiones, quemaduras o aros. Así, por ejemplo, Martirio alimenta a Sed de Ceniza sin programarlo aparte.
+- **Todo fuego usa el daño de fuego, y todo rayo hereda los modificadores del rayo.**
+- **Topes visibles** de capas de quemadura y de explosiones encadenadas, para que una partida rota no baje de 60 FPS en la DS.
+
+**Texto de cada mejora:** icono, nombre y una línea que **empieza por el momento en que actúa** («Mientras cargas: …», «Al matar: …»). Es la lección de la v0.2 (§6.6) y lo que permite aprender las builds leyendo.
+
+#### 6.12.3 Arquetipos
+Son una guía de diseño para dar variedad, no ramas ni clases. El jugador no los ve nombrados: los descubre combinando.
+
+| Arquetipo | Fantasía | Cómo mata | Piezas clave | Valle |
+|---|---|---|---|---|
+| **Ráfaga** (build cero) | La ametralladora: «pa, pa, pa», cada disparo limpia una fila | Daño del rayo y cadencia | Fervor, Prisa, Alcance, Sed de Ceniza, Lanza de Longinos | Ninguno. Es la opción segura cuando vas apurado; con ella se puede pasar el juego, pero tiene techo |
+| **Vigilia** | Cargar y no soltar: barrer la pantalla con la línea (de lejos) y quemar lo que se acerca con el aro (de cerca) | Capas de Quemado | Llama Votiva, Aura de Cilicio, Paso de Procesión, Brasa, Rescoldo, Paso | Hondo. Sin el Don de Paso, Procesión va más lenta que la marea y hay que soltar; sin Brasa, la quemadura hace poco |
+| **Mártir** | Kamikaze: vivir a 1-2 corazones a cambio de mucho daño y curarse jugándosela | Todo su daño crece con la vida perdida; se cura matando de cerca | Llaga Abierta, Corazón Flagelado, Viático, Paso | El más hondo. Llaga sola solo quita vida |
+| **Puentes** | Mezclan arquetipos | — | Auto de Fe (rayo ↔ fuego), Martirio Contagioso (fuego para Vigilia y Mártir) | — |
+
+#### 6.12.4 Ritmo de la partida
+- **Cada subida de nivel ofrece 1 de 3 Dones.** ~15-20 niveles por partida, sin volver a tirar.
+- **En los niveles 4, 8, 12 y 16 se ofrece 1 de 3 Reliquias** en lugar de Dones, en una pantalla distinta (marco dorado) que se note como el momento especial de la partida. Unas 4 reliquias por partida. Más adelante los cofres de élite y los jefes darán reliquias extra (§6.9.3).
+- **Ofertas con cabeza:** a partir de la segunda reliquia, al menos una de las tres opciones comparte arquetipo con alguna reliquia que ya tengas. No asegura la pieza que falta, solo que el camino sigue abierto; romper la partida sigue dependiendo de elegir bien y de algo de suerte.
+- **Requisitos (decidido 2026-11-15):** una mejora solo se ofrece si ya tienes lo que la activa. Hoy: Brasa, Rescoldo, Auto de Fe y Martirio Contagioso necesitan una fuente de quemadura (Llama Votiva, Aura de Cilicio o Corazón Flagelado). La primera reliquia de fuego abre ese camino. Toda mejora futura declara su requisito.
+- Una reliquia cogida sale del pool. Un Don al máximo deja de ofrecerse; si no queda ninguno, la oferta es curar 1 corazón.
+
+#### 6.12.5 Dones (estadísticas apilables, 4 rangos)
+| Don | Qué sube | Le sirve a | Le estorba o no le sirve a |
+|---|---|---|---|
+| **Fervor** | Daño del rayo | Ráfaga, Auto de Fe | Fuego puro (no lo usa) |
+| **Prisa** | Velocidad de carga | Ráfaga | Vigilia (no suelta nunca: desperdiciado) |
+| **Alcance** | Largo del rayo y de la línea de apuntado | Ráfaga, Vigilia de lejos | — |
+| **Brasa** | Daño de fuego | Vigilia, Mártir (Flagelado), Martirio | Ráfaga pura (no lo usa) |
+| **Rescoldo** | Duración y tope de capas de Quemado | Vigilia | Ráfaga pura (no lo usa) |
+| **Paso** | Velocidad de movimiento (también con Procesión) | Vigilia, Mártir | — |
+| **Vida** | +1 corazón de tope y cura 1 | Cualquiera que vaya apurado | Mártir (le resta daño con Llaga) |
+
+#### 6.12.6 Reliquias (10, una vez por partida)
+| Reliquia | Línea de efecto | Arquetipo | Cómo se ve | Contrapartida |
+|---|---|---|---|---|
+| **Sed de Ceniza** | Al disparar: cada enemigo que matas acelera la siguiente carga; si no matas a nadie, va más lenta | Ráfaga | Aura H, ceniza, al cargar | Su propio riesgo |
+| **Lanza de Longinos** | Siempre: el rayo atraviesa a todos los enemigos, mueran o no | Todas | Sin efecto propio: se ve en que el rayo atraviesa a todos (decidido 2026-11-15) | Ninguna |
+| **Auto de Fe** | Al impactar: el rayo hace el doble a los quemados y consume sus capas | Puente rayo ↔ fuego | Láser: núcleo del disparo en hoguera; los quemados estallan en chispas al recibirlo | Ninguna |
+| **Llama Votiva** | Mientras cargas: la línea de apuntado aplica capas de Quemado a lo que toca | Vigilia de lejos | Láser: la línea de apuntado arde en llamas | Ninguna |
+| **Aura de Cilicio** | Mientras cargas: un aro de brasas a tus pies quema a quien entra; crece con la carga | Vigilia de cerca | Aura E, corona de espinas, en el suelo | Ninguna |
+| **Paso de Procesión** | Mientras cargas: puedes andar despacio | Vigilia | Cuerpo: anda en cruz mientras carga | Carga más lenta (rompe una regla) |
+| **Martirio Contagioso** | Al matar a un quemado: explota con daño de fuego y aplica Quemado alrededor | Puente de fuego | En los enemigos: explosiones | Ninguna; tope de cadena |
+| **Corazón Flagelado** | Al recibir un golpe: onda de fuego alrededor y siguiente disparo cargado al instante | Mártir | Onda de fuego al recibir el golpe; aura L, llamas, mientras espera el disparo instantáneo | Ninguna |
+| **Llaga Abierta** | Al cogerla: tu vida máxima baja a la mitad. Siempre: todo tu daño sube por cada corazón por debajo de 5 | Mártir | Láser: el rayo enrojece cuanta menos vida te queda; el pecho gotea sangre | Pierdes vida máxima |
+| **Viático** (concepto cambiado 2026-11-15: robo de vida) | Al matar con el rayo: probabilidad de robar 1 corazón al enemigo, el doble si estaba pegado a ti | Mártir | Sifón: la vida del enemigo viaja hasta el pecho del héroe (ronda A/B/C); aura G, gloria, al cargar | Ninguna |
+
+**Detalles:**
+- **Llama Votiva** quema solo donde apuntas en ese momento; no deja rastro en el suelo (opción A, elegida por coste y rendimiento). El rastro persistente es Tierra Quemada, en reserva.
+- **Aura de Cilicio:** el aro a carga completa es su tamaño máximo. Sin Procesión, mantenerlo te deja clavado y la marea te obliga a soltar; con Procesión avanzas con el aro al máximo.
+- **Paso de Procesión:** su velocidad base está **por debajo de la marea**; con rangos de Paso llega a igualarla. Para la Ráfaga, la carga lenta es un castigo; para la Vigilia, que no suelta, no cuesta nada.
+- **Llaga Abierta:** el bonus de daño se cuenta **siempre respecto a los 5 corazones de partida**, no respecto al tope actual. Al cogerla (de 5 a 3) ya tienes el bonus de 2 corazones; a 1 corazón, el máximo. Subir Vida te protege pero te quita daño.
+- **Martirio** solo explota con enemigos quemados, así que en una Ráfaga pura no hace nada.
+
+**Reserva para la segunda tanda (sin código en la demo):** Ascua Impaciente (soltar antes de tiempo dispara un rayo corto), Óleo Sagrado (cada X gemas, disparo instantáneo), Pilar Consagrador (rayo ancho que empuja), Tierra Quemada (la línea deja brasas persistentes; parches con tope, dibujados como las gemas) y Reflejo de Penitencia (el rayo rebota 1 vez en los muros). Descartado: Botafumeiro (incensario que gira), redundante con el Aura de Cilicio.
+
+#### 6.12.7 Ejemplos de builds
+- **Ráfaga limpia:** Fervor, Prisa y Alcance en casi todos los niveles; reliquias Sed de Ceniza y Lanza de Longinos. Cada disparo mata a una fila y la siguiente carga llega casi al instante. Fuerte desde el principio y estable, pero sin explosiones ni cadenas: es la que te lleva al final, no la que lo rompe.
+- **Ametralladora en cadena (Ráfaga con fuego):** Sed de Ceniza, Llama Votiva, Martirio y Auto de Fe. Una carga corta marca con la línea, el disparo remata doble a los quemados, los muertos explotan y contagian, y cada muerte acelera la siguiente carga. Valle: hasta tener Llama Votiva, Martirio no hace nada.
+- **Procesión de fuego (Vigilia):** Llama Votiva, Aura de Cilicio y Paso de Procesión, con Dones de Brasa, Rescoldo y Paso. Avanzas con los brazos en cruz arrastrando la línea por la horda y con el aro al máximo; ya casi no disparas. Valle: entre coger Procesión y juntar 2 rangos de Paso, la marea te come y la carga lenta estorba.
+- **Hoguera (Vigilia de cerca con Martirio):** Aura de Cilicio, Martirio, Paso de Procesión y Brasa. Te metes en la masa con el aro a tope; los quemados revientan pegados a ti y contagian a los de detrás.
+- **Penitente kamikaze (Mártir):** Llaga Abierta, Corazón Flagelado y Viático, con Dones de Paso y Brasa. Vives a 1-2 corazones con el daño al máximo. Cada golpe que recibes suelta una onda y un disparo instantáneo, y robas vida al matar, más aún de cerca. Con Aura de Cilicio, el aro hace las muertes cercanas por ti. Valle: Llaga sola solo te deja con 3 corazones.
+- **Partida sin criterio (el contraejemplo):** Llama Votiva, Sed de Ceniza y tres rangos de Prisa. La línea quema medio segundo porque cargas rapidísimo, y Sed te castiga cada vez que barres sin matar. Las piezas se anulan entre sí.
+
+#### 6.12.8 Presentación
+- **Cada reliquia se ve donde actúa (decidido 2026-11-15):** los efectos pegados a personajes respetan la oclusión con sus cuerpos, como las auras. no todas son auras. Unas son auras del cuerpo, otras cambian el láser o la línea de apuntado, y otras se ven en los enemigos o en el movimiento (columna «Cómo se ve» de §6.12.6). Las cuatro auras de carga en comparación (§6.10, selector `Y` de depuración) dejan de competir: E → Cilicio, H → Sed de Ceniza, G → Viático y L → Corazón Flagelado, y se apilan según lo que lleves. Sin reliquias, la carga muestra solo el rayo. Cada aura tiene un coste fijo por frame: con 3 o 4 apiladas se mide en la DS y, si se pasa, se dibujan las dos últimas cogidas.
+- **Enemigos quemados:** brasas procedurales sobre el cuerpo con el sistema de chispas del rayo (más capas, más brasas subiendo) y una lengua de fuego sobre la cabeza al tope de capas. Tope global de partículas. Descartados: sprites requemados (doblan el arte y la memoria y no muestran las capas) y teñir el sprite (encarece el paso de dibujo que hoy más pesa).
+- **Fuego en el suelo:** en la demo solo hay efectos breves en el pase de suelo: el aro del Cilicio y un anillo corto por cada explosión de Martirio. Nada persistente.
+- **Pantalla de elección (decidido 2026-11-15):** estilo Códice (§6.11: fondo negro, borde gris fino). Sobre el juego pausado y oscurecido aparecen **3 cartas en paralelo** en primer plano en la pantalla inferior; la seleccionada se ilumina (borde y brillo) y se adelanta un poco. Cada carta lleva su nombre y un **arte que es una vista previa del efecto tal como se ve en el juego** (decidido 2026-11-15, opción A): una escena de la propia ROM (héroe, efecto y los enemigos que hagan falta, sobre fondo oscuro) capturada en bucle y ampliada 2×, enmarcada al estilo Códice. Se descarta pintar el efecto aparte sobre el retrato del Códice (primer horneado: el efecto quedaba pobre frente al del juego). El efecto completo de la carta seleccionada se lee en una franja de texto. Las reliquias llevan marco dorado. El arte se genera fuera de la ROM a partir de esas capturas y se carga bajo demanda desde NitroFS; se regenera cuando cambie un efecto.
+- **Gemas y HUD de nivel:** se quedan como la variante A, provisionales; irán prerrenderizados en 3D como los corazones del HUD (decidido 2026-11-15).
+- **Ronda A/B/C (decidido 2026-11-15):** cuando todo funcione, cada elemento visual nuevo (pantalla y cartas, arte de cartas, gemas, HUD de nivel, enemigo quemado, línea de Llama Votiva, explosión de Martirio, onda de Flagelado y auras nuevas) se presenta en un walkthrough con tres variantes sacadas de la ROM, con `SELECT` como selector de depuración en vivo, y el usuario elige.
+
+#### 6.12.9 Pendiente (siguiente paso de la sesión de diseño)
+- Cifras de partida: alcance base y máximo, tiempos de carga, daño del rayo y del fuego frente a la vida de exvoto, cireneo y ojo, valor por rango de cada Don, capas y duración de Quemado, bonus de Llaga y N de Viático.
+- Curva de experiencia (~15-20 niveles en ~8 min) y valor de las gemas por enemigo.
+- Si las curas que caen en la v0.3 conviven con el Don de Vida y con Viático o se ajustan.
+- Aspecto definitivo de los cambios del láser (Auto de Fe, Llama Votiva y Llaga), en la ronda A/B/C.
+
+#### 6.12.10 Cifras de la primera versión (provisionales, 2026-11-15)
+Todas son `[TUNABLE-PLACEHOLDER]`. Se fijaron a ojo partiendo de las cifras vigentes para montar la primera versión completa, y se ajustan con la lista que salga de la partida de prueba en la DS. Frames a 60 FPS; distancias en píxeles de suelo; vida en la escala 100 = 1,0 (exvoto 100, cireneo y ojo 300, abanderado 1200).
+
+**Rayo base:** daño 150 (sin cambios). Carga 24 frames. Recuperación tras disparar 40 frames. **Alcance 160** (antes 320; 240 en la primera versión, demasiado largo según el usuario, 2026-11-15).
+
+**Dones (4 rangos cada uno):**
+| Don | Por rango | Al máximo |
+|---|---|---|
+| Fervor | +25 % daño del rayo | 300: mata cireneo y ojo de un disparo |
+| Prisa | −4 frames de carga y −6 de recuperación | carga 8, recuperación 16 |
+| Alcance | +64 de alcance del rayo y de la línea | 416 (el 320 de antes es ~77 %) |
+| Brasa | +25 % daño de fuego | ×2 |
+| Rescoldo | +1 capa de tope y +30 frames de duración | 9 capas, 240 frames |
+| Paso | +12 % velocidad (también con Procesión) | +48 % |
+| Vida | +1 corazón de tope y cura 1 | 9 corazones |
+
+**Quemado:** tope base 5 capas; duración base 120 frames, que se renueva al volver a aplicar. Cada 15 frames hace 3 de daño de fuego por capa (12 por capa y segundo). Frena un 10 % por capa, hasta un 50 %. Las muertes por fuego no congelan la imagen (sin *hitstop*).
+
+**Reliquias:**
+- **Sed de Ceniza:** cada muerte del disparo resta un 15 % a la siguiente carga (hasta −60 %); un disparo sin muertes suma un 30 %.
+- **Lanza de Longinos:** el rayo atraviesa a todos.
+- **Auto de Fe:** el rayo hace ×2 a los enemigos con al menos 1 capa y les quita todas.
+- **Llama Votiva:** la línea aplica 1 capa cada 8 frames de contacto.
+- **Aura de Cilicio:** radio de 12 + 28 × carga (de 12 a 40); 1 capa cada 10 frames a quien esté dentro.
+- **Paso de Procesión:** andar al 35 % de la velocidad mientras cargas; la carga dura un 50 % más.
+- **Martirio Contagioso:** al morir quemado, explosión de radio 32 con 60 de daño de fuego y 2 capas a los que alcanza. Tope de 4 explosiones por frame (las demás esperan al siguiente).
+- **Corazón Flagelado:** al recibir un golpe, onda de radio 48 con 100 de daño de fuego y 3 capas; la siguiente carga llega lista al instante.
+- **Llaga Abierta:** vida máxima a la mitad, redondeando hacia arriba (5 → 3). Todo el daño (rayo y fuego) +20 % por cada corazón por debajo de 5.
+- **Viático:** cada muerte por el rayo tiene un 8 % de probabilidad de robar 1 corazón (16 % si el enemigo estaba a menos de 40 del héroe), sin pasar del tope.
+
+**Gemas y experiencia:**
+- Valor de las gemas: exvoto y monaguillo 1; cireneo y ojo 3; abanderado 15.
+- Imán de radio 24; se recogen a 10. Las que se traga la marea se pierden. Tope de 48 gemas en el suelo; si se llena, la experiencia se suma directamente.
+- Experiencia para pasar del nivel n al n+1: 5 + 3·(n−1). Eso da ~440 de experiencia para el nivel 17.
+- Reliquias en los niveles 4, 8, 12 y 16. Las curas de la v0.3 se mantienen (1 de cada 12 muertes).
+
+**Depuración (solo para la prueba):** `X` sube de nivel al instante. `Y` deja de cambiar el aura: las auras salen de las reliquias.
+
+#### 6.12.11 Elecciones de la ronda A/B/C (2026-11-15, primera vuelta)
+- **Enemigo quemado:** A (brasas y lenguas, potenciada) o B (corona de llamas a los pies), por decidir entre las dos, **más un tinte en el propio sprite** del enemigo (oscurecido o enrojecido según las capas). Se acepta el coste del tinte en el dibujo de los enemigos quemados, pero se mide en la DS.
+- **Llama Votiva:** mezcla de A y C: chispas alrededor de la línea que giran de forma irregular y procedural (como manchas solares), no una hélice perfecta.
+- **Corazón Flagelado:** A (anillo grande).
+- **Martirio Contagioso:** A, con el mismo lenguaje visual que Flagelado, por consonancia.
+- **Auto de Fe:** A, pero las tres variantes se parecían demasiado: hay que hacerla más distinta de un impacto normal.
+- **Llaga Abierta:** ninguna convence; nueva ronda con otras ideas.
+- **Viático:** cambia de concepto: de curarse por muertes cercanas a **robar vida al disparar**, con un sifón visible de la víctima al héroe (tabla de §6.12.6).
+
+#### 6.12.12 Elecciones de la ronda A/B/C (2026-11-15, segunda vuelta)
+- **Enemigo quemado:** se descarta C. Siguen A y B. El tinte del sprite indica las capas: claro con 1 capa y más rojo con cada capa. El tinte actual es el tope, al que se llega con 3-4 capas.
+- **Llama Votiva:** B (chispas sueltas que giran de forma irregular). Se seguirá afinando más adelante.
+- **Auto de Fe:** A, chispas minimalistas en el punto de impacto. B y C no son un efecto aparte: **animan el propio estado de quemado al consumirse**. Las llamas del quemado se avivan, envuelven al enemigo y se evaporan hacia arriba mientras el tinte vuelve a la normalidad (B parte del quemado A; C, del B). Todo efecto tiene que nacer del mundo (del suelo, del cuerpo o del punto de impacto), nunca flotar como un icono.
+- **Llaga Abierta:** se descarta A (se confunde con los efectos de fuego que se expanden). B pasa a ser **sangre que gotea** (con poca vida gotea poco y al límite mucho más) **y aspecto de ascendido**, no rojo: es un poder, no un castigo, y el rojo se confunde con el quemado. C (borde rojo que late) se mantiene como opción.
+- **Viático:** A (hilo de sangre) o C (alma pálida). Al robar vida, la víctima no desaparece en el acto: se queda **inerte y suspendida unos 0,3 s** (ni ataca ni bloquea, ya cuenta como muerta para experiencia y gemas) mientras se le extrae el hilo o el alma, y luego muere con su animación normal. Propuesta del coordinador, a validar con el GIF.
+
+#### 6.12.13 Elecciones de la ronda A/B/C (2026-11-15, tercera vuelta)
+- **Enemigo quemado:** A y B gustan las dos; se decide más adelante jugando.
+- **Auto de Fe:** A (chispas al impactar) y C (la corona de llamas sube y se evapora) gustan; se descarta B.
+- **Llaga Abierta:** B. El aura de ascendido crece con la sangre: cuantos menos corazones, más gotea y más intenso es el brillo pálido dorado.
+- **Viático:** A (hilo de sangre); C (alma pálida) se conserva como alternativa.
+
+#### 6.12.14 Pendiente: efectos de sonido (sesión aparte)
+El sistema de mejoras no tiene sonido propio todavía. Faltan, como mínimo:
+- subir de nivel (se abre la pantalla de cartas);
+- mover la selección y elegir carta (Don y Reliquia, esta más solemne);
+- recoger gema (por valor: 1, 3 y 15) y el imán;
+- enemigo empezando a arder y tic de quemadura (muy discreto, con enfriamiento);
+- explosión de Martirio Contagioso;
+- onda de Corazón Flagelado;
+- Auto de Fe al consumir la quemadura;
+- Llama Votiva (línea ardiendo mientras se carga, en bucle);
+- Aura de Cilicio (aro ardiendo mientras se carga, en bucle);
+- robo de vida de Viático (sifón y cura);
+- Llaga Abierta (latido o goteo según la vida que falte).
+Se generan con el flujo de `AGENTS.md` (ElevenLabs CLI) en su propia sesión.
+
+#### 6.12.15 Estado y siguiente paso (2026-11-16)
+- **Hecho:** primera versión jugable completa del sistema (gemas, nivel, cartas, 7 Dones, 10 Reliquias, quemado, requisitos de oferta) y la ronda A/B/C de efectos.
+- **Pendiente de validar:** si es divertido. Se hará con el plan de pruebas de `walkthroughs/mejoras-v04/plan_pruebas.md` (Ráfaga, Vigilia, Mártir, sin criterio y techo con trucos, con puntos de control de tensión, poder y decisión) y una entrevista de ajustes posterior. Las cifras de §6.12.10 siguen siendo provisionales hasta entonces.
+- **Mientras tanto:** se arreglan los problemas básicos que el usuario detecta jugando, uno a uno, sin tocar el equilibrio.
+

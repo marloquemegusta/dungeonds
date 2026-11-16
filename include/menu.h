@@ -8,20 +8,25 @@ typedef enum {
     MENU_TITLE,
     MENU_PAUSE,
     MENU_BESTIARY,
-    MENU_CONTROLS
+    MENU_CONTROLS,
+    MENU_LEVELUP        /* DESIGN.md 6.12.8: pick 1 of 3 cards, no cancel */
 } MenuState;
 
 typedef enum {
     MENU_ACT_NONE = 0,
     MENU_ACT_START_NEW,
     MENU_ACT_START_INTRO, /* NUEVA PARTIDA desde el titulo: tarjetas de introduccion y partida */
-    MENU_ACT_RESUME
+    MENU_ACT_RESUME,
+    MENU_ACT_LEVELUP_PICK /* a card was chosen: read it with menu_levelup_pick() */
 } MenuAction;
 
 /* Open the title menu, open the pause menu, or close any active menu. */
 void menu_open_title(void);
 void menu_open_pause(void);
 void menu_close(void);
+/* Level-up cards (upgrades_begin_offer() must have run). */
+void menu_open_levelup(void);
+int menu_levelup_pick(void);
 
 /* Query whether a menu is currently open and which state is active. */
 int menu_is_open(void);

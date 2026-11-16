@@ -1,0 +1,306 @@
+{
+ "name": "upgrade_requisitos",
+ "description": "Evidence only: 16 level-ups picking the first card; burn cards must not appear before a burn relic.",
+ "suite": false,
+ "evidence_only": true,
+ "steps": [
+  {
+   "frames": 60
+  },
+  {
+   "tap": {
+    "x": 128,
+    "y": 66
+   },
+   "frames": 6
+  },
+  {
+   "release": true,
+   "frames": 20
+  },
+  {
+   "button_down": "START",
+   "frames": 4
+  },
+  {
+   "button_up": "START",
+   "frames": 200
+  },
+  {
+   "button_down": "X",
+   "frames": 3
+  },
+  {
+   "button_up": "X",
+   "frames": 14,
+   "capture": "02_nivel2"
+  },
+  {
+   "button_down": "A",
+   "frames": 3
+  },
+  {
+   "button_up": "A",
+   "frames": 12
+  },
+  {
+   "button_down": "X",
+   "frames": 3
+  },
+  {
+   "button_up": "X",
+   "frames": 14,
+   "capture": "03_nivel3"
+  },
+  {
+   "button_down": "A",
+   "frames": 3
+  },
+  {
+   "button_up": "A",
+   "frames": 12
+  },
+  {
+   "button_down": "X",
+   "frames": 3
+  },
+  {
+   "button_up": "X",
+   "frames": 14,
+   "capture": "04_nivel4"
+  },
+  {
+   "button_down": "A",
+   "frames": 3
+  },
+  {
+   "button_up": "A",
+   "frames": 12
+  },
+  {
+   "button_down": "X",
+   "frames": 3
+  },
+  {
+   "button_up": "X",
+   "frames": 14,
+   "capture": "05_nivel5"
+  },
+  {
+   "button_down": "A",
+   "frames": 3
+  },
+  {
+   "button_up": "A",
+   "frames": 12
+  },
+  {
+   "button_down": "X",
+   "frames": 3
+  },
+  {
+   "button_up": "X",
+   "frames": 14,
+   "capture": "06_nivel6"
+  },
+  {
+   "button_down": "A",
+   "frames": 3
+  },
+  {
+   "button_up": "A",
+   "frames": 12
+  },
+  {
+   "button_down": "X",
+   "frames": 3
+  },
+  {
+   "button_up": "X",
+   "frames": 14,
+   "capture": "07_nivel7"
+  },
+  {
+   "button_down": "A",
+   "frames": 3
+  },
+  {
+   "button_up": "A",
+   "frames": 12
+  },
+  {
+   "button_down": "X",
+   "frames": 3
+  },
+  {
+   "button_up": "X",
+   "frames": 14,
+   "capture": "08_nivel8"
+  },
+  {
+   "button_down": "A",
+   "frames": 3
+  },
+  {
+   "button_up": "A",
+   "frames": 12
+  },
+  {
+   "button_down": "X",
+   "frames": 3
+  },
+  {
+   "button_up": "X",
+   "frames": 14,
+   "capture": "09_nivel9"
+  },
+  {
+   "button_down": "A",
+   "frames": 3
+  },
+  {
+   "button_up": "A",
+   "frames": 12
+  },
+  {
+   "button_down": "X",
+   "frames": 3
+  },
+  {
+   "button_up": "X",
+   "frames": 14,
+   "capture": "10_nivel10"
+  },
+  {
+   "button_down": "A",
+   "frames": 3
+  },
+  {
+   "button_up": "A",
+   "frames": 12
+  },
+  {
+   "button_down": "X",
+   "frames": 3
+  },
+  {
+   "button_up": "X",
+   "frames": 14,
+   "capture": "11_nivel11"
+  },
+  {
+   "button_down": "A",
+   "frames": 3
+  },
+  {
+   "button_up": "A",
+   "frames": 12
+  },
+  {
+   "button_down": "X",
+   "frames": 3
+  },
+  {
+   "button_up": "X",
+   "frames": 14,
+   "capture": "12_nivel12"
+  },
+  {
+   "button_down": "A",
+   "frames": 3
+  },
+  {
+   "button_up": "A",
+   "frames": 12
+  },
+  {
+   "button_down": "X",
+   "frames": 3
+  },
+  {
+   "button_up": "X",
+   "frames": 14,
+   "capture": "13_nivel13"
+  },
+  {
+   "button_down": "A",
+   "frames": 3
+  },
+  {
+   "button_up": "A",
+   "frames": 12
+  },
+  {
+   "button_down": "X",
+   "frames": 3
+  },
+  {
+   "button_up": "X",
+   "frames": 14,
+   "capture": "14_nivel14"
+  },
+  {
+   "button_down": "A",
+   "frames": 3
+  },
+  {
+   "button_up": "A",
+   "frames": 12
+  },
+  {
+   "button_down": "X",
+   "frames": 3
+  },
+  {
+   "button_up": "X",
+   "frames": 14,
+   "capture": "15_nivel15"
+  },
+  {
+   "button_down": "A",
+   "frames": 3
+  },
+  {
+   "button_up": "A",
+   "frames": 12
+  },
+  {
+   "button_down": "X",
+   "frames": 3
+  },
+  {
+   "button_up": "X",
+   "frames": 14,
+   "capture": "16_nivel16"
+  },
+  {
+   "button_down": "A",
+   "frames": 3
+  },
+  {
+   "button_up": "A",
+   "frames": 12
+  },
+  {
+   "button_down": "X",
+   "frames": 3
+  },
+  {
+   "button_up": "X",
+   "frames": 14,
+   "capture": "17_nivel17"
+  },
+  {
+   "button_down": "A",
+   "frames": 3
+  },
+  {
+   "button_up": "A",
+   "frames": 12
+  },
+  {
+   "frames": 10,
+   "capture": "99_final"
+  }
+ ]
+}

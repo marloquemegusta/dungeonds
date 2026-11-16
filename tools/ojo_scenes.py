@@ -30,7 +30,7 @@ OJO_TYPE = sb.SHOOTER                 # the Ojo is the shooter type (SANDBOX_ENE
 ST_TRACK, ST_LOCK, ST_SENTENCE, ST_COOLDOWN = 7, 8, 9, 10          # ENEMY_STATE_* (include/gameplay.h)
 TRACK_FRAMES, LOCK_FRAMES, SIGHT_RANGE = 40, 20, 140               # OJO_* (include/gameplay.h)
 PILLAR = (352, 383, 520, 535)         # x0, x1, y0, y1 of the pillar in the collision grid (world px)
-ENEMY_STRIDE = 116                   # sizeof(Enemy), asserted in source/main.c
+ENEMY_STRIDE = 124                   # sizeof(Enemy), asserted in source/main.c
 ST_DORMANT = 12
 HERO_VY_PER_FRAME = 163 / 256         # 326 8.8 speed halved on the 2:1 ground (source/main.c GROUND_Y_SHIFT)
 
