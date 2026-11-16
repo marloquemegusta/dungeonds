@@ -3,7 +3,7 @@
 ## 1. Visión y Alcance
 - **Concepto:** survivors de frente vertical para Nintendo DS, con apuntado manual y tono gótico/grimdark (el Corazón Abierto y otros futuros personajes contra los caídos de la Cruzada). Referencias: Halls of Torment y Vampire Survivors por el bucle; Diablo y Warhammer 40K: Inquisitor por lo que engancha al usuario (ir a la siguiente misión y mejorar); Isaac por la dificultad (lo normal es morir pronto hasta conocer las mejoras).
 - **Pilar:** combate de Doom en isométrico (cada personaje con un arma contundente y mucho *feel*, esquivar con strafe), contra una horda que viene de arriba y por un pasillo que hay que abrirse a tiros. Las dos pantallas forman un campo vertical: la superior es la vanguardia que se ve llegar y a la que se puede disparar.
-- **Bucle vigente (v0.3, decidido 2026-11-06):** un nivel vertical de ~8 min con una marea que sube desde abajo, horda continua, gemas → nivel → elegir 1 de 3 mejoras, élites, un minijefe a mitad y un jefe arriba. Personaje = arma única (no hay cambio de armas en partida). Detalle en §6.
+- **Bucle vigente (v0.3, decidido 2026-11-06; estructura revisada 2026-11-16):** una subida vertical de 15–18 min con una marea que sube desde abajo, horda continua, gemas → nivel → elegir 1 de 3 mejoras, élites y tres actos con un jefe al final de cada uno (Vía Crucis de 14 estaciones, §6.13). Personaje = arma única (no hay cambio de armas en partida). Detalle en §6.
 - **Fantasía:** sin lore, pero clara y con entorno cambiante: ascender (o descender) por un pozo o una aguja infestada, cambiando de bioma por el camino. Los personajes, enemigos y mapas actuales son placeholders con la estética buena; el sistema debe aguantar cambiarlos.
 - **Fuera de la prueba de la v0.3, a propósito:** progresión entre runs (equipo, desbloqueos), más de dos clases, sonido, más de dos biomas. La capa de equipo es el gancho a largo plazo (Diablo) y se diseña tras validar que una run divierte.
 - **Historia de la dirección:** el proyecto nació como un Diablo de nigromancia con esbirros, descartado a favor del shooter. La v0.1 (4 arenas cerradas, §4) era fácil y poco divertida en la DS. La v0.2 (mazmorra de manadas con modificadores estilo Isaac, §5) fue más divertida pero se agotaba en un par de minutos: sin variedad entre runs ni motivo para volver. El 2026-11-06 se eligió el survivors vertical (§6) frente a un Isaac de salas (más barato pero menos del gusto del usuario) y a una campaña lineal tipo Diablo (demasiado contenido a mano). La lanza ósea y la muerte por fragmentos quedan como FX reutilizables.
@@ -22,7 +22,7 @@
 - **Actores detrás de muros (decidido 2026-11-10):** personaje y enemigos se ocultan según la profundidad horneada; no parpadean ni reciben transparencias, siluetas o marcas negras auxiliares cuando quedan detrás. La base caminable no se dibuja sobre el muro.
 - **Sombras de personajes por hardware (decidido 2026-11-13, rama `perf/hw-shadows`):** la sombra de héroe y enemigos conserva la forma horneada del lab por dirección y frame y su tono actual (suelo al 50 %), pero la oscurece la propia consola en vez del procesador. Se aceptan tres diferencias: dos sombras solapadas se funden en un solo tono (antes se oscurecían el doble); bajo la marea la sombra toma la oscuridad de la marea; y si un enemigo queda detrás de una pieza o muro, su sombra se oculta entera en vez de recortarse píxel a píxel. Además, las marcas de suelo de las armas (anillos y elipses del pase de suelo) ya no quedan oscurecidas por las sombras que pasan por encima, porque la consola solo oscurece la capa del suelo. Motivo: las sombras eran el 43 % del frame con horda (`walkthroughs/stress-enemies-profiling/`). Si con esto y la optimización de IA/dibujo no se duplica la horda a 60 FPS, la siguiente opción aceptada por el usuario es quitar la separación entre enemigos (que puedan solaparse, estilo *Vampire Survivors*). **Resultado (2026-11-14, medido en la DS):** con 48 enemigos el juego se mantiene casi siempre a 60 FPS, así que la separación se conserva.
 - **Sonido:** fuera de la v0.3.
-- **Por decidir antes de cada versión (§6.9):** árbol de mejoras de las dos clases y su presentación (antes de la 0.4); enjambre, élites, cofres y emboscadas (antes de la 0.5); catálogo y reglas de tramos, tema de los dos biomas, minijefe, jefe y aspecto final de la marea (antes de la 0.6).
+- **Por decidir antes de cada versión (§6.9):** árbol de mejoras de las dos clases y su presentación (antes de la 0.4); enjambre, élites, cofres y emboscadas (antes de la 0.5); catálogo y reglas de tramos, aspecto de cada acto, jefes y aspecto final de la marea (antes de la 0.6; estructura ya decidida en §6.13).
 - **Tuning de combate y stats:** se hace jugando en la DS en la 0.3.1 (§6.9.1), sobre los valores de partida de §6.
 - **Ya no aplican (v0.2):** mazmorra más grande con puertas y rediseño de pedestales; los sustituye la v0.3.
 
@@ -218,6 +218,8 @@ Primer paso jugable hacia §6.1–6.8: el juego actual (armas, cargador, tirador
 - **Fuera de este hito:** gemas, niveles y mejoras, élites, minijefe y jefe, emboscadas desde abajo, biomas y salas laterales.
 
 ### 6.1 Bucle de la run (prueba)
+> **Revisado 2026-11-16:** la estructura vigente es la de §6.13 (15–18 min, tres actos, tres jefes). Lo de abajo queda como historia de la prueba de la v0.3.
+
 - Un solo nivel. Se empieza abajo del todo y se sube abriéndose paso entre la horda mientras una **marea** sube detrás (§6.4).
 - A mitad, al cambiar de bioma, hay un **minijefe**. Arriba, en una sala final, espera el **jefe**. Matar al jefe gana la run.
 - Duración objetivo: unos 8 min hasta el jefe. La fija la velocidad de la marea.
@@ -300,7 +302,7 @@ La prueba de §6.1–6.8 se construye en versiones jugables pequeñas, cada una 
 | **0.3.3** | Personajes: reevaluar los sprites, ajustar tamaño y pasar al estilo definido en la 0.3.2 (§6.9.1b). | 0.3.2 cerrada | **En curso** (Corazón Abierto, Cireneo v2, telegrafía y SFX base en `main`; faltan Exvotos, Ojo del Tribunal y elegir aura) |
 | **0.4** | Progresión dentro de la run: gemas con imán corto, experiencia, subir de nivel con pausa y elegir 1 de 3 mejoras con icono y una línea de efecto (§6.6), HUD de vida, experiencia, nivel y tiempo y controles de §6.5 que falten. Un solo personaje. | Sesión de diseño de mejoras | Diseño en curso (§6.12; faltan cifras) |
 | **0.5** | Enemigos y recompensas: enjambre, élites que sueltan cofre, emboscadas desde abajo con aviso. Pool de 48 y criterio de horda de `TECHNICAL.md` §4.7 (IA por niveles de detalle, separación por rejilla, blit más barato). | Sesión de diseño de enemigos | Pendiente de diseño |
-| **0.6** | Estructura de la run: tramos hechos a mano encadenados por reglas (§6.2), dos biomas, minijefe a mitad y jefe arriba, marea que se para en los combates. Cierra la prueba completa de §6.1 (~8 min, ganar matando al jefe). | Sesión de diseño de tramos, biomas y jefes | Pendiente de diseño |
+| **0.6** | Estructura de la run: la Subida de §6.13 (Vía Crucis de 14 estaciones, tres actos, jefes en las estaciones V, X y XIV, encuentros con pantalla bloqueada), tramos hechos a mano por acto. ~15–18 min, ganar matando a El Paso. | Sesiones de escenario y de cada jefe | Estructura decidida (§6.13); faltan escenario y jefes |
 
 **Correspondencia con el plan anterior por pasos:**
 - La prueba de horda está medida con 24 enemigos (CPU media del 39 %, sin frames perdidos). El techo se mide en la 0.3.1 y el criterio de 48 activos se cumple en la 0.5.
@@ -555,7 +557,7 @@ Tras cerrar la 0.3.1, el usuario quiere dedicar dos versiones al aspecto antes d
 **Fuera:** minijefe, jefe, biomas y tramos (0.6).
 
 #### 6.9.4 Versión 0.6: estructura de la run completa (borrador)
-**Objetivo:** la prueba completa de §6.1. Una run de unos 8 min con principio, mitad y final, que se gana matando al jefe.
+**Objetivo:** la prueba completa. Una run de 15–18 min con principio, mitad y final, que se gana matando al jefe. **La estructura está decidida en §6.13 (2026-11-16) y prevalece sobre este borrador** (tres actos en lugar de dos biomas, tres jefes en lugar de minijefe y jefe, encuentros en el pasillo con pantalla bloqueada).
 
 **Dentro:**
 - **Mapa por tramos** hechos a mano de una pantalla de alto, encadenados por reglas (abierto, estrechamiento, sala lateral con cofre o élite, coberturas bajas), en lugar de las bandas procedurales de la 0.3 (§6.2). Pipeline lab → baker para los tramos.
@@ -706,7 +708,7 @@ Son una guía de diseño para dar variedad, no ramas ni clases. El jugador no lo
 
 #### 6.12.4 Ritmo de la partida
 - **Cada subida de nivel ofrece 1 de 3 Dones.** ~15-20 niveles por partida, sin volver a tirar.
-- **En los niveles 4, 8, 12 y 16 se ofrece 1 de 3 Reliquias** en lugar de Dones, en una pantalla distinta (marco dorado) que se note como el momento especial de la partida. Unas 4 reliquias por partida. Más adelante los cofres de élite y los jefes darán reliquias extra (§6.9.3).
+- **En los niveles 4, 8, 12 y 16 se ofrece 1 de 3 Reliquias** en lugar de Dones, en una pantalla distinta (marco dorado) que se note como el momento especial de la partida. Unas 4 reliquias por partida. Con la estructura de la Subida pasan a darse en el nivel 5 y al vencer a cada jefe (§6.13.5).
 - **Ofertas con cabeza:** a partir de la segunda reliquia, al menos una de las tres opciones comparte arquetipo con alguna reliquia que ya tengas. No asegura la pieza que falta, solo que el camino sigue abierto; romper la partida sigue dependiendo de elegir bien y de algo de suerte.
 - **Requisitos (decidido 2026-11-15):** una mejora solo se ofrece si ya tienes lo que la activa. Hoy: Brasa, Rescoldo, Auto de Fe y Martirio Contagioso necesitan una fuente de quemadura (Llama Votiva, Aura de Cilicio o Corazón Flagelado). La primera reliquia de fuego abre ese camino. Toda mejora futura declara su requisito.
 - Una reliquia cogida sale del pool. Un Don al máximo deja de ofrecerse; si no queda ninguno, la oferta es curar 1 corazón.
@@ -847,3 +849,55 @@ Se generan con el flujo de `AGENTS.md` (ElevenLabs CLI) en su propia sesión.
 - **Pendiente de validar:** si es divertido. Se hará con el plan de pruebas de `walkthroughs/mejoras-v04/plan_pruebas.md` (Ráfaga, Vigilia, Mártir, sin criterio y techo con trucos, con puntos de control de tensión, poder y decisión) y una entrevista de ajustes posterior. Las cifras de §6.12.10 siguen siendo provisionales hasta entonces.
 - **Mientras tanto:** se arreglan los problemas básicos que el usuario detecta jugando, uno a uno, sin tocar el equilibrio.
 
+
+### 6.13 Estructura de la partida: la Subida (decidido 2026-11-16, rama `docs/estructura-partida`)
+Sustituye al nivel infinito de la 0.3 y concreta §6.1 y la 0.6 (§6.9.4). Motivo: la catedral infinita no tiene intención (el compositor alterna piezas al azar y nada anuncia lo que viene) y es difícil de hacer bien. Una partida con principio, mitad y final se entiende, se recuerda y encaja con el lore (`LORE.md`: la Columna intentó llegar al Altar y cayó por el camino; Elías hace el mismo recorrido).
+
+- **Duración objetivo: 15–18 min** hasta ganar al jefe final (antes ~8). Referencias: Isaac hasta Mom, 20–30 min en pisos de 3–5 min; Vampire Survivors y Halls of Torment, 30 min. Se queda por debajo porque es una portátil sin guardado a mitad de partida. Si se queda corta en la DS, se alarga cada acto sin cambiar el esqueleto.
+- **Columna vertebral: un Vía Crucis de 14 estaciones.** Cada estación es un hito visible en el muro con su número romano (la pieza exacta se decide en la sesión del escenario). El jugador sabe dónde está y cuánto le falta sin barra de progreso. Las estaciones son también los sitios donde pasan cosas (crucero, capilla, élite, jefe).
+
+| Tramo | Estaciones | Tiempo | Final del tramo |
+| :--- | :--- | :--- | :--- |
+| **Pórtico** | — | ~0:30 | Entrada tranquila, último campamento de la Columna. Empieza la marea. |
+| **Acto I: la nave** | I–IV | ~5 min | **Jefe 1: El Abanderado** en la estación V. |
+| **Acto II: el coro** | VI–IX | ~5 min | **Jefe 2: El Campanero de Ánimas** en la estación X. |
+| **Acto III: el Calvario** | XI–XIII | ~5 min | **Jefe final: El Paso** en la estación XIV (el altar). Victoria. |
+
+- **Cada acto es como un piso de Isaac:** subida con horda y marea → encuentro con el jefe → respiro y recompensa → el siguiente acto empieza con otro ambiente, más profanado que el anterior (estados de profanación de §6.9.1b).
+- **Los enemigos entran por actos:** acto I, Exvotos, y el Cireneo a mitad del acto (la estación V del Vía Crucis es la del Cireneo); acto II, se suma el Ojo del Tribunal; acto III, todos.
+- **Cada jefe vuelve después como enemigo normal (élite):** el Abanderado en los actos II y III; el Campanero en el acto III. El jugador reconoce al que ya venció y la partida tiene memoria. Su versión élite es más débil que la de jefe; las cifras se deciden en la sesión de cada jefe.
+- **El escenario se ordena por actos:** tramos hechos a mano para cada acto, en orden fijo y reconocible entre partidas; el azar solo elige variantes dentro de cada tramo. Sustituye al compositor infinito de la catedral (§6.9.1b) cuando se implemente. «La catedral que no termina» queda como lore (el altar se aleja), no como mapa infinito.
+- **Morir** reinicia la partida desde el pórtico, como hoy.
+
+#### 6.13.1 Encuentros con jefe
+- **En el mismo pasillo, no en una sala aparte.** Al llegar a la estación del jefe:
+  1. **Presentación:** pantalla de intro del jefe con un zoom sobre él y su nombre (presentación concreta en su propia ronda A/B/C).
+  2. **Pantalla bloqueada:** la cámara se fija y el jugador no puede avanzar ni retroceder fuera de esa pantalla hasta que gane o muera.
+  3. **Se para todo lo demás:** la marea se detiene y deja de aparecer la horda aleatoria.
+- **Encuentro coreografiado (por defecto):** el jefe llega con una escolta definida que se renueva desde arriba según la vas matando; por ejemplo, el Abanderado con varios Ojos y algún Cireneo. Qué escolta lleva cada jefe y a qué ritmo vuelve se decide en su sesión.
+- **Alternativa por jefe: el jefe solo,** reforzado para que sea interesante sin escolta. Se elige una u otra en la sesión de cada jefe.
+- **Al ganar:** el jefe da una reliquia (§6.13.5), se desbloquea la pantalla y, tras un respiro, la marea vuelve a subir en el acto siguiente.
+- **El Abanderado actual** (§6.10, aparición cada 2 min) se mantiene como está hasta que se implemente esta estructura; entonces pasa a ser el jefe fijo de la estación V y su invocación de monaguillos es la base de su encuentro.
+
+#### 6.13.2 El Campanero de Ánimas (jefe del acto II, dirección inicial)
+- **Poder (dirección del usuario, detalle por decidir):** refuerza a los enemigos que tiene alrededor: más fuertes o invulnerables mientras dura el efecto. El toque de campana es la telegrafía (concepto de §6.10). El combate pide romper su protección o separar a los enemigos de él antes de atacarlos.
+- Lore y ficha del Códice: pendientes (`LORE.md` §9, «Enemigos nuevos»).
+
+#### 6.13.3 Al ganar la partida
+- Tras vencer a El Paso aparecen **unas escaleras que bajan a las criptas**: el siguiente nivel. Encaja con `LORE.md` §5 («se puede salir, por abajo»; la Marea como lo que la Iglesia enterró sin nombre).
+- **La partida sigue (decidido 2026-11-16):** al bajar las escaleras se continúa en las criptas sin cortar la partida, con el mismo personaje y sus mejoras, como Isaac tras Mom. No hay desbloqueo ni guardado en la consola (§6.3). Ganar a El Paso es la victoria de la catedral; las criptas son contenido extra para quien llega.
+- **Pendiente:** qué hay en las criptas (estructura, enemigos y jefe), si tienen final propio y qué pasa mientras no existan (por ahora, pantalla de victoria al vencer a El Paso).
+
+#### 6.13.4 Pendiente
+1. Poder exacto del Campanero y escolta de cada jefe.
+2. Pieza visual de las estaciones y aspecto de cada acto (sesión del escenario).
+3. Qué es el Altar y qué encuentra Elías al llegar (`LORE.md` §9).
+
+#### 6.13.5 Ritmo de mejoras en la Subida (decidido 2026-11-16)
+Sustituye al reparto de reliquias por nivel de §6.12.4 cuando se implemente la estructura; hasta entonces la ROM sigue con los niveles 4, 8, 12 y 16.
+- **4 reliquias por partida, como ahora,** para no tocar el equilibrio de §6.12:
+  1. **Nivel 5:** la primera, antes del primer jefe, para que la construcción empiece a definirse en el acto I.
+  2. **Jefe 1 (Abanderado), jefe 2 (Campanero) y jefe final (El Paso):** una al vencer a cada uno, con la misma pantalla de marco dorado de §6.12.4. La de El Paso llega para las criptas.
+- **Cada jefe es un punto de inflexión de la build.** Las reglas de oferta de §6.12.4 (arquetipo compartido, requisitos, una reliquia cogida sale del pool) valen igual.
+- **Dones:** siguen saliendo en cada subida de nivel. La experiencia se espacia para unos **25 niveles** en la partida completa (cifra `[TUNABLE-PLACEHOLDER]`, se ajusta jugando).
+- Los cofres de élite (§6.9.3) quedan como posible fuente extra, por decidir.
