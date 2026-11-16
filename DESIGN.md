@@ -653,6 +653,7 @@ Conceptos para la demo de la catedral. Solo cambia el aspecto y se añaden élit
   - **Reserva para jefes (`boss_climax_loop`, 28,8 s):** corte `Loop B` con subida y drop guardado en `assets/music/` para futuros jefes.
 
 ### 6.11 Bestiario / Códice (decidido 2026-11-14)
+- **Lore:** los textos de las fichas siguen la biblia del mundo, `LORE.md` (fuente canónica de nombres, cronología y tono).
 - **Acceso y visibilidad:** todas las fichas de la demo (5 en total) están visibles desde el principio, sin desbloqueo progresivo. Se entra desde el botón `CODICE` del menú inicial o de pausa y se vuelve con `B` o el botón táctil `Volver`.
 - **Maquetación B minimalista:**
   - **Estética:** fondo negro (`#000000`) y borde gris muy fino (1 px) en ambas pantallas.

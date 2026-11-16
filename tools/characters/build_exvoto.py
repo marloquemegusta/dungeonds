@@ -37,6 +37,23 @@ WALK_STRIDE = 0.8             # factor de zancada sobre rotaciones de UpLeg/Leg
 WALK_SPINE_DAMP = 0.5         # fraccion del giro de columna del andar que se conserva
 WALK_LEAN = {'Spine': 7, 'Spine1': 7, 'Spine2': 7, 'Neck': 12, 'Head': 12}   # grados, + = hacia delante
 WALK_ARMS_FRAME = 1           # frame de pray_standing del que salen los brazos
+# Variante B (pareja): EXVOTO_VARIANT=b sobrescribe el andar y escribe SOLO exvoto_walk_b.fbx (por defecto nada cambia).
+# Ajustes sueltos por entorno: EXVOTO_WALK_FRAMES, EXVOTO_WALK_STRIDE, EXVOTO_WALK_ARMS_FRAME,
+# EXVOTO_WALK_LEAN (p.ej. "Spine=4,Spine1=5,Spine2=6,Neck=22,Head=24"), EXVOTO_HEAD_TILT (grados de ladeo de cabeza, eje Y).
+VARIANT = os.environ.get('EXVOTO_VARIANT', '')
+HEAD_TILT = 0.0
+if VARIANT == 'b':
+    WALK_FRAMES = 50
+    WALK_STRIDE = 0.65
+    WALK_LEAN = {'Spine': 4, 'Spine1': 5, 'Spine2': 6, 'Neck': 22, 'Head': 24}
+    WALK_ARMS_FRAME = 40
+    HEAD_TILT = 10.0
+WALK_FRAMES = int(os.environ.get('EXVOTO_WALK_FRAMES', WALK_FRAMES))
+WALK_STRIDE = float(os.environ.get('EXVOTO_WALK_STRIDE', WALK_STRIDE))
+WALK_ARMS_FRAME = int(os.environ.get('EXVOTO_WALK_ARMS_FRAME', WALK_ARMS_FRAME))
+if os.environ.get('EXVOTO_WALK_LEAN'):
+    WALK_LEAN = {k: float(v) for k, v in (kv.split('=') for kv in os.environ['EXVOTO_WALK_LEAN'].split(','))}
+HEAD_TILT = float(os.environ.get('EXVOTO_HEAD_TILT', HEAD_TILT))
 ARM_BONES_KEYS = ('Shoulder', 'Arm', 'ForeArm', 'Hand')   # incluye dedos (nombres con 'Hand' + dedo)
 
 scene = bpy.context.scene
@@ -179,6 +196,13 @@ def apply_lean(basis, lean):
             T = Matrix.Translation(h)
             R = Matrix.Rotation(math.radians(deg), 4, 'X')
             Mo = T @ R @ T.inverted() @ Mo
+        tilt = HEAD_TILT if n.replace(P, '') in ('Neck', 'Head') else 0
+        if tilt:   # ladeo lateral de cabeza (eje Y = eje de mirada); se reparte entre Neck y Head
+            h = Mo.translation.copy()
+            T = Matrix.Translation(h)
+            R = Matrix.Rotation(math.radians(tilt / 2), 4, 'Y')
+            Mo = T @ R @ T.inverted() @ Mo
+        if deg or tilt:
             l2, r2, _ = (Pm.inverted() @ Mo).decompose()
             out[n] = (l2, r2)
         M[n] = Mo
@@ -398,6 +422,11 @@ for key, (poses, rng) in clips.items():
 for key, (poses, rng) in clips.items():
     made[key] = write_action(NAMES[key], poses)
 
+if VARIANT == 'b':
+    NAMES['walk'] = 'exvoto_walk_b'
+    clips = {'walk': clips['walk']}
+    made = {}
+    made['walk'] = write_action(NAMES['walk'], clips['walk'][0])
 for key, (poses, rng) in clips.items():
     arm.animation_data.action = made[key]
     scene.name = NAMES[key]

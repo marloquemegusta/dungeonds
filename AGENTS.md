@@ -7,6 +7,7 @@ El repositorio cuenta con fuentes de verdad canónicas sin duplicación:
 | Documento | Ámbito | Contenido |
 | :--- | :--- | :--- |
 | `DESIGN.md` | Producto y Arte | Visión de juego, controles, mecánicas, dirección visual y decisiones abiertas. |
+| `LORE.md` | Lore | Biblia del mundo: eje temático, nombres, lugares, cronología y reglas de escritura. Todo texto de lore (Códice, vídeos) se escribe contra ella. |
 | `TECHNICAL.md` | Arquitectura C / NDS | Toolchain, presupuestos, pipeline de assets y render, dependencias de host y deuda técnica. |
 | `AGENTS.md` | Proceso y Reglas | Protocolo de trabajo, workflow de desarrollo para Nintendo DS y verificación de cambios. |
 | `STATUS.md` | Estado y Registro | Estado actual para retomar el trabajo y entregas recientes verificadas. Lo anterior a 2026-11 está en `STATUS-ARCHIVE.md`. |
@@ -162,5 +163,5 @@ Cualquier agente (Antigravity, Claude Code, Codex, CommandCode) puede generar SF
 Los vídeos verticales generados con la skill `codice-lore-video` (TikTok, Reels, YouTube Shorts) se centralizan en la carpeta `assets/videos/` del repositorio:
 
 - **Destino canónico:** `assets/videos/<nombre_video>.mp4` (ej. `assets/videos/codice_03_cireneo.mp4`, `assets/videos/codice_04_ojo.mp4`).
-- **Pipeline:** script de la skill (`.agents/skills/codice-lore-video/scripts/render_codice_video.py`), que realiza la locución con ElevenLabs CLI, el montaje con FFmpeg y la copia automática a `assets/videos/`.
+- **Pipeline:** lotes desde un markdown de guiones con `.agents/skills/codice-lore-video/scripts/render_guiones.py` (locución con ElevenLabs CLI, montaje con FFmpeg, salida en `assets/videos/`). Reglas de retención, voces y puesta en escena: `SKILL.md` de la skill.
 - **Walkthroughs:** cada sesión documenta el proceso y guarda sus fotogramas y tira de control en `walkthroughs/<sesion>/assets/`, pero la copia final del MP4 se conserva siempre centralizada en `assets/videos/`.

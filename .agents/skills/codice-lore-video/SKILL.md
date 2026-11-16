@@ -8,53 +8,70 @@ description: >-
 
 # Códice Lore Video (`codice-lore-video`)
 
-Flujo estandarizado para crear vídeos verticales (~1 minuto) de lore estilo *Blasphemous* para redes sociales, usando **ElevenLabs CLI** (`elevenlabs`) + **FFmpeg** + **Pillow**.
+Flujo estandarizado para crear vídeos verticales de lore estilo *Blasphemous* para redes sociales, usando **ElevenLabs CLI** (`elevenlabs`) + **FFmpeg** + **Pillow**. Generar un vídeo debe costar escribir el guion y ejecutar un comando.
 
 ---
 
 ## Reglas de Oro (aprendidas e innegociables)
 
-1. **Iterar primero el guion con el usuario** (a menos que ya traiga el texto cerrado). Objetivo: ~115–130 palabras (~55–68 s con pausas dramáticas).
-   - **Escritura aspiracional y mitológica (no literal):**
-     - **Prohibidas las descripciones visuales obvias o «baratas»:** nunca describir lo que los ojos del espectador ya ven en pantalla (p. ej. colores evidentes como «verde», «verduzca» o términos genéricos como «su haz»).
-     - **Foco narrativo:** elevar el lore evocando la culpa, el dogma, el castigo, la penitencia y la psicología de la condena. El guion debe contar lo que el píxel por sí solo no puede decir.
-2. **Nomenclatura estricta:**
+1. **Guion contra `LORE.md`**, iterado con el usuario salvo que ya traiga el texto cerrado.
+   - **Escritura aspiracional y mitológica (no literal):** nunca describir lo que el espectador ya ve (colores, «su haz»); contar la culpa, el dogma y la condena que el píxel no puede decir.
+   - **Nombres cruzados:** cada historia nombra a personajes de otras (Martín, Bartolomé, Elías, Gaspar…), para que los vídeos se refuercen entre sí.
+   - **Frase final del personaje:** un aforismo corto y emotivo, dicho con la voz del personaje (no la del narrador).
+2. **Retención (medido en TikTok e Instagram, 2026-11):** casi todo el público se decide en los 2–3 primeros segundos.
+   - **Nunca un primer fotograma en negro:** el personaje y el título se ven desde el instante 0 (sin fundido de entrada) y la voz arranca casi enseguida.
+   - **Empezar por la frase más fuerte de la historia**, no por el contexto («Dios le abrió el pecho…», no «Elías era capellán…»). El contexto viene después.
+   - **Duración:** 50–60 s funcionó algo mejor que un recorte a 38 s con el mismo arranque (una sola prueba; señal débil).
+   - **La imagen cambia con la narración:** un plano por frase (`cortes`), con la puesta en escena pensada para cada vídeo (quién mira dónde, quién se mueve, quién sale de cuadro), no reglas genéricas ni un giro en bucle.
+3. **Nomenclatura estricta:**
    - Usar siempre **`CÓDICE · <ROMANO>`** (ej. `CÓDICE · II`), **nunca** `BESTIARIO`.
    - **Prohibido mencionar un nombre del juego** (ni `DungeonDS` ni ningún título provisional como `Penitencia`).
-   - **Cierre estándar:** `PRÓXIMAMENTE` / `en tu Nintendo DS` (en voz, pantalla y subtítulo).
+   - **Cierre estándar:** `PRÓXIMAMENTE` / `en tu Nintendo DS` (en voz, pantalla y subtítulo). La DS solo aparece al final.
    - **Sin etiquetas de rol** como `(Masa)` en la ficha de doble pantalla de la DS (si la captura la tiene, enmascarar con `#000000`).
-3. **Separación estricta de capas en 1080×1920 (fondo `#000000`):**
-   - **Capa visual (arriba/centro, `y = 150..1430`):** cabecera `CÓDICE · <N>` + `<NOMBRE>`, sprite animado escalado con `flags=neighbor` (píxel perfecto) o ficha de doble pantalla de la DS.
-   - **Capa de subtítulos (siempre debajo, `MarginV = 240`):** tipografía constante de principio a fin (`Palatino Linotype`, `Fontsize = 54`, negrita, marfil `#F2ECE0`, contorno negro), máximo 2 líneas por bloque, siguiendo **literalmente** cada frase del audio. Nunca pisa la capa visual ni entra en la zona inferior de botones de TikTok/Reels.
-4. **Cierre sin gameplay (por defecto):** mostrar el mosaico animado 2×2 de los 4 personajes del Códice sobre negro puro (`#000000`) durante *"Próximamente en tu Nintendo DS"*, salvo que el usuario pida explícitamente enseñar gameplay.
+4. **Capas en 1080×1920 (fondo `#000000`):**
+   - **Capa visual:** cabecera `CÓDICE · <N>` + `<NOMBRE>` arriba; el personaje debajo (caja de 840 px de alto desde `y = 340`), escalado con vecino más próximo.
+   - **Subtítulos justo debajo del personaje** (`MarginV = 600`): `Palatino Linotype` 54, negrita, marfil, contorno negro, máximo 2 líneas, siguiendo literalmente el audio.
+   - **El 30 % inferior de la pantalla queda vacío:** ahí TikTok e Instagram ponen el nombre de la cuenta y la descripción, que taparían los subtítulos.
+5. **Cierre sin gameplay (por defecto):** mosaico animado 2×2 de los personajes del Códice sobre negro durante *"Próximamente en tu Nintendo DS"*, salvo que el usuario pida enseñar gameplay.
 
 ---
 
-## Configuración de Voz y Audio (ElevenLabs CLI)
+## Voz y audio (ElevenLabs CLI)
 
-- **Voz por defecto:** `Carmelo - Mature, Mysterious and Clear` (`voice_id`: `5egO01tkUjEzu7xSSE8M`).
-- **Modelo:** `eleven_multilingual_v2`.
-- **Sliders de emoción:** `stability = 0.28`, `similarity_boost = 0.80`, `style = 0.60`, `speed = 1.0`.
-- **Anti-acelerones:** generar la locución **frase por frase** en bloques cortos a `speed = 1.0` (nunca un texto de 60 s en una sola llamada) y añadir pausas reales de silencio (`0.35 s – 0.85 s`) entre bloques. Así se evitan acelerones de ritmo y los subtítulos quedan sincronizados al milisegundo.
-- **Música de fondo:** `assets/music/cathedral_battle_loop.wav` en bucle al `9 %` de volumen (`volume=0.09`) con fade-in de `1.5 s` y fade-out de `2.5 s`.
-
----
-
-## Cómo ejecutarlo
-
-1. Consultar el lore base del personaje en `source/bestiary.c` (o en la rama correspondiente si aún no se ha mergeado).
-2. Acordar el guion dividido en bloques cortos con el usuario.
-3. Crear un archivo JSON de configuración para el episodio (p. ej. en el directorio `scratch/` de la sesión) siguiendo el esquema de `scripts/render_codice_video.py`.
-4. Ejecutar:
-   ```bash
-   python .agents/skills/codice-lore-video/scripts/render_codice_video.py --config <ruta_config.json>
-   ```
-5. Extraer al menos 2–3 fotogramas del MP4 generado con `ffmpeg` y revisarlos visualmente antes de entregar el vídeo al usuario.
-6. **Almacenamiento centralizado:** todos los vídeos finales se conservan en `assets/videos/<nombre>.mp4`. El script `render_codice_video.py` copia automáticamente el MP4 resultante a `assets/videos/`.
+- **Narrador:** `Carmelo - Mature, Mysterious and Clear` (`voice_id`: `5egO01tkUjEzu7xSSE8M`), modelo `eleven_multilingual_v2`, generado **frase por frase** con pausas reales entre bloques (sin acelerones; subtítulos sincronizados).
+- **Voces de personaje:** diseñadas a medida (`elevenlabs text-to-voice design`, 3 muestras; el usuario elige). Siempre pedir **castellano peninsular** explícitamente («from Madrid, Spain… NOT Latin American»).
+  - **Ajustes estables** (`stability 0.65`, `style 0.15`): con más emoción la voz pierde el acento y alarga palabras (pasó con Jimena y con el «nos» de Aldonza).
+  - **Mejor aún: recortar la frase de la muestra elegida** y usarla tal cual con `archivo:<ruta>` en la tabla de voces. Suena exactamente como lo que el usuario aprobó. Para eso, el texto de la muestra empieza por la frase final del personaje.
+  - La cuenta tiene un tope de 10 voces creadas; `archivo:` no gasta hueco.
+  - **Dos voces a la vez** (`A + B`): el generador las iguala de volumen antes de mezclarlas. Si los ritmos no casan, mejor repartir la frase entre ellas.
+- **Música de fondo:** `assets/music/cathedral_battle_loop.wav` en bucle al 9 % con fade-in de 1,5 s y fade-out de 2,5 s.
 
 ---
 
-## Esquema del JSON de entrada
+## Flujo recomendado: lotes desde un archivo de guiones
+
+Un lote es un único markdown: `walkthroughs/lore-lote-01/guiones.md` es el ejemplo y su **leyenda es la referencia completa de la sintaxis**. Resumen:
+
+- `## NN · CÓDICE · <N> — <TÍTULO>`; partes `### Parte N · <animación>[ + <animación B>] · <modo> [· modificadores]`; una frase por línea `- `; la frase final `> Nombre: «…»`.
+- **Modo `cortes`:** un plano por frase con su etiqueta `[…]` al inicio: `cerca`, dirección (`S` de frente … `N` de espaldas), y trayectos `DIR origen>destino` o por personaje `A DIR …` / `B DIR …` con posiciones `centro izq der fuera-izq fuera-der arriba abajo fuera-arriba fuera-abajo`.
+- **Trayectos solo con el exvoto** (`exvoto_walk`, `exvoto_walk_b`): es el único con la zancada medida (`STRIDE_PX_FRAME` en el script); con otro personaje, medirla antes o los pies resbalan.
+- **Ritmo:** `--paso natural` por defecto (anda a su ritmo y llega antes); `--paso lento` estira el paso a todo el plano.
+- **Animaciones para vídeo:** cualquier carpeta de `assets/sprites/bestiary/<anim>/dirs/`. Para variar sin clones, generar variantes (p. ej. `exvoto_walk_b` con `EXVOTO_VARIANT=b` en `tools/characters/build_exvoto.py`).
+
+```bash
+# Prueba gratis (sin voz): comprueba encuadre, planos y subtítulos
+python .agents/skills/codice-lore-video/scripts/render_guiones.py --guiones <lote.md> --solo 01 --sin-voz
+# Real (gasta créditos solo en frases nuevas; la caché de voz es compartida)
+python .agents/skills/codice-lore-video/scripts/render_guiones.py --guiones <lote.md> [--solo 01,03] [--prefijo prueba]
+```
+
+Salida: `assets/videos/loreXX_NN_<titulo>.mp4` y una tira de 6 fotogramas en `<carpeta del lote>/assets/`. Antes de entregar, mirar fotogramas de cada plano (arranque, cortes, trayectos), no solo la tira.
+
+---
+
+## Formato largo de un solo vídeo (JSON, heredado)
+
+`scripts/render_codice_video.py --config <ruta_config.json>`: un único GIF, tarjeta de doble pantalla opcional y segmentos `char_1` → `card` → `char_2` → `outro`. Se mantiene por los cuatro primeros vídeos (`codice_0N_*.mp4`); lo nuevo se hace con lotes.
 
 ```json
 {
@@ -64,25 +81,13 @@ Flujo estandarizado para crear vídeos verticales (~1 minuto) de lore estilo *Bl
   "character_gif": "assets/sprites/bestiary/exvoto_walk/dirs/0_S.gif",
   "card_png": "walkthroughs/bestiario/assets/02_exvoto.png",
   "card_mask_rect": [64, 202, 105, 215],
-  "mosaic_gifs": [
-    "assets/sprites/bestiary/corazon_disparo/dirs/0_S.gif",
-    "assets/sprites/bestiary/exvoto_walk/dirs/0_S.gif",
-    "assets/sprites/bestiary/cireneo_walk/dirs/0_S.gif",
-    "assets/sprites/bestiary/ojo_walk/dirs/0_S.gif"
-  ],
+  "mosaic_gifs": ["assets/sprites/bestiary/corazon_disparo/dirs/0_S.gif", "..."],
   "bgm_wav": "assets/music/cathedral_battle_loop.wav",
   "work_dir": "<scratch_dir>",
   "output_mp4": "<scratch_dir>/codice_02_exvoto.mp4",
   "phrases": [
-    {
-      "id": "p01",
-      "text": "En la Catedral, ninguna plegaria queda sin respuesta...",
-      "pause": 0.40,
-      "segment": "char_1",
-      "subtitles": ["En la Catedral, ninguna plegaria\\Nqueda sin respuesta..."]
-    }
+    {"id": "p01", "text": "En la Catedral, ninguna plegaria queda sin respuesta...", "pause": 0.40,
+     "segment": "char_1", "subtitles": ["En la Catedral, ninguna plegaria\\Nqueda sin respuesta..."]}
   ]
 }
 ```
-
-Los valores válidos de `segment` en orden son: `"char_1"`, `"card"`, `"char_2"`, `"outro"`. (Si un episodio no usa tarjeta de doble pantalla, se puede omitir `"card"` y usar `"char_1"` → `"outro"`).
