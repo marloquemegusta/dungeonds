@@ -2,9 +2,16 @@
 
 Escritos contra `LORE.md`. Este archivo es la entrada directa del generador de vídeos (`codice-lore-video`, `render_guiones.py`).
 
+> **Guiones preliminares.** Salvo los marcados como cerrados, estos guiones son una primera idea: sirven de punto de partida, no de versión final. Cada uno se reescribe en detalle el día que le toca (texto revisado contra `LORE.md` y puesta en escena plano a plano) y, al publicarlo, queda aquí tal cual se renderizó.
+>
+> **El guion lo contiene todo.** Cada plano dice qué personaje, qué animación, hacia dónde mira y qué objetos se ven. Cualquier ajuste que se haga al producir el vídeo se apunta en el guion, de modo que volver a ejecutar el generador rehaga el mismo vídeo. No hay desgloses aparte.
+>
+> **Cerrados:** 08 (pendiente de que el generador admita las fichas nuevas de props y las animaciones de rezar de Elías).
+
 **Cómo se lee cada guion**
 
 - **Narrador:** una sola voz (Carmelo). Cada línea `- ` es una frase locutada y subtitulada.
+- **Silencio dentro de una frase:** `(pausa N)` con N en segundos (p. ej. `(pausa 1.2)`) calla ese tiempo en la voz; no aparece en los subtítulos.
 - **Frase final:** `> Nombre: «frase»` es el aforismo del personaje, con su propia voz (tabla `## Voces`). `A + B` suenan a la vez, igualadas de volumen. Una voz `archivo:<ruta>` usa un audio ya grabado (p. ej. la frase recortada de la muestra que eligió el usuario).
 - **Partes:** `### Parte N · <animación> · <modo> [· modificadores]` es lo que se ve. Puede haber tantas partes como haga falta; cambiar de parte = cambiar de animación (andar, cargar, mirar…).
 - **Dos personajes:** `animA + animB` los pone juntos (B algo más bajo, detrás, con otro ritmo y el paso desfasado). Opcionales: `escala B 0.9`, `separación 140`.
@@ -14,6 +21,11 @@ Escritos contra `LORE.md`. Este archivo es la entrada directa del generador de v
   - Posiciones: `centro`, `izq`, `der`, `fuera-izq`, `fuera-der`, `arriba`, `abajo`, `fuera-arriba`, `fuera-abajo` (combinables con `+`). Mirar S = bajar por la pantalla, N = subir.
   - Los planos con trayecto salen en plano general; los quietos llevan un acercamiento lento.
   - **Trayectos solo con el exvoto** (`exvoto_walk`, `exvoto_walk_b`): es el único con la zancada medida; con otros personajes los pies resbalarían. Los demás, quietos o andando en el sitio.
+  - **Props** (de `assets/environment/cathedral/props/render/`, a la misma escala de píxel que el personaje; delante o detrás de él según su fila): `bancos` (bancos rotos, volcados y enteros repartidos alrededor); `columnas` (dos hileras de columnas a los lados, formando una nave, fijas; implica plano general); `columnas desfilan` (las mismas hileras bajan en bucle al paso del personaje, que anda en el sitio de espaldas `N`); `general` (fuerza plano general, personaje pequeño). Combinan con la dirección: `[N · columnas desfilan]`.
+  - **Props, fichas nuevas:** cualquier prop de `assets/videos/props/` por su nombre, con posición opcional: `vela delante`, `santo der`, `relicario izq`, `detrás`. Posición = en pantalla: `delante` es más cerca de cámara (se dibuja sobre el personaje, a sus pies), `detrás` más lejos; `izq`/`der` a su lado; sin posición, a la derecha. `vela apagada` (misma vela sin llama), `bancos volcados` (solo rotos y volcados, como tras un registro), `bancos en fila` (dos filas de bancos enteros a los lados del pasillo, fijas o desfilando con las columnas), `lápidas` (sueltas en el suelo, siempre bajo los personajes; desfilan si desfilan las columnas), `pasa <prop> [izq|der]` (el prop entra por arriba y sale por abajo durante el plano). `bancos`, `columnas`, `lápidas`, `general` y `lejos` fuerzan plano general. Con `columnas desfilan` el suelo sube si el personaje mira al sur y baja si mira al norte, y el personaje marcha a 1,6x. En partes `una vez` la animación se ajusta para acabar justo al final del plano.
+  - **Fichas de cámara/multitud (2.ª vuelta del 08):** `sigue` (la frase continúa el plano de la anterior sin corte: se construye un solo plano con la suma de duraciones y cada frase muestra su tramo; el desfile y la fase del paso no saltan; la ficha de la primera frase define la escena); `altar` (relicario sobre tarima baja con 6 velas encendidas, centrado arriba al fondo, detrás de todo; no desfila: se aleja un 18 % y sube un poco durante el plano; `altar lejos` = el mismo, diminuto); `solemne` (en desfiles, marcha a 1,0x en vez de 1,6x); `alejar` arranca sin fundido de entrada; `entero` (con `cerca`: el personaje entero y centrado, a la mayor escala que quepa; sin él, `cerca` es un busto con zoom); `alejar` (zoom out lento, un solo plano: del encuadre cercano al personaje entero con todo lo que abre; úsalo con `una vez`); `multitud N` (N figuras en bloque de 3 carriles y N/3 filas, más grandes delante que detrás, que avanzan juntas hacia cámara a su paso natural, mezclando TODAS las animaciones de la parte: `### Parte 5 · exvoto_walk + exvoto_walk_b + monaguillo_walk`). Una parte puede llevar más de dos animaciones con `+`, pero solo `multitud` usa más de dos. `cerca` en un plano escenificado ajusta la escala para que el personaje quepa entero (sin cabeza cortada). `una vez` en un plano: la animación ocupa el 85 % del plano y se queda en su último fotograma. Sprites a más resolución (celda 320×320, p. ej. `abanderado_solo`, sin cortejo): el generador los encuadra a la misma altura que uno de 160. Naves (A/B): columnas a ±3,4 Elías (cada hilera entera y con margen al borde) con un hueco de negro entre una y la siguiente (4,6 Elías); bancos en fila dentro de la nave (±1,5), dos hileras densas (un banco tras otro con medio banco de hueco, separación = 1,5 alturas de banco) y con el pasillo central libre; en `multitud` las filas alternas se desplazan medio hueco y se separan más en profundidad; la vela se dibuja a 0,45 de escala (vela votiva real); `vela delante` = hacia donde mira el personaje (de espaldas queda entre él y el fondo, algo a su derecha para que asome).
+  - **Estilo del vídeo** (línea `Estilo: A|B|C` bajo el título del guion; `--estilo` la sobrescribe): **A** negro puro, sin suelo, props a escala real del juego (por defecto); **B** como A con suelo insinuado (sombras del lab de personajes y props y un charco tenue de suelo de la catedral con viñeta radial hacia el negro, solo bajo el grupo); **C** escala metafórica (props al tamaño que tenían en la DS, columnas que se leen como pasillo), con los props nuevos más nítidos.
+  - **Cambiar de personaje en la cita:** una parte propia solo con la cita, p. ej. `### Parte 3 · ojo_look · cortes` y `> [S] Gaspar: «…»`.
 - **Otros modos:** `girando` (da vueltas) o una dirección fija. Modificadores: `lento N`, `inverso`, `una vez` (se queda en el último fotograma), `ida y vuelta`.
 - **Ritmo de los trayectos:** por defecto `--paso natural` (anda a su ritmo, llega antes y sigue andando en el sitio); `--paso lento` estira el paso a todo el plano. También por plano con la ficha `natural`/`lento`.
 - **Cierre:** «Próximamente en tu Nintendo DS» y el mosaico los añade el generador. Opcional: `### Ficha · <imagen>` (ficha de la DS); este lote no la usa.
@@ -28,11 +40,11 @@ Escritos contra `LORE.md`. Este archivo es la entrada directa del generador de v
 - Narrador: 5egO01tkUjEzu7xSSE8M
 - Elías: AZSMzFaZsuZZS1Qsqytv
 - Remedios: BFUc9BU4Tlk58ZBkwuS3
-- Jimena: archivo:walkthroughs/lore-lote-01/assets/cita_jimena_muestra3.mp3
-- Aldonza: archivo:walkthroughs/lore-lote-01/assets/cita_aldonza_muestra.mp3
+- Jimena: archivo:assets/videos/voces/cita_jimena_muestra3.mp3
+- Aldonza: archivo:assets/videos/voces/cita_aldonza_muestra.mp3
 - Bartolomé: 5Nyqo2cUdr59EbFivYhz
 - Leonor: pCiVQwaEUl8YwVxKhOCd
-- Inés: archivo:walkthroughs/lore-lote-01/assets/ines_cita.mp3
+- Inés: archivo:assets/videos/voces/ines_cita.mp3
 - Íñigo: iHCoxvyy4J2mUw5uRJED
 - Gaspar: rC1yBQViNSR6g3kqT94H
 - Monaguillos: PJca6lR0NZwKiJY56HrR
@@ -128,15 +140,34 @@ Escritos contra `LORE.md`. Este archivo es la entrada directa del generador de v
 > [cerca · S] Íñigo: «Mi silencio pesa más que el estandarte.»
 
 ## 08 · CÓDICE — LA CATEDRAL QUE NO TERMINA
-### Parte 1 · corazon_walk · cortes
-- [cerca · N] Dicen que el Altar retrocede un paso por cada plegaria de misericordia.
-- [NE] Por eso el Tribunal prohibió rezarlas.
-- [NW] La Iglesia levantó una catedral sobre Valdenoche para que el cielo volviera a responder.
-- [N] Un día, el altar empezó a alejarse. La Iglesia lo llamó milagro, y prometió la salvación a quien llegara hasta él.
-### Parte 2 · corazon_disparo · cortes
-- [S] Pero la nave no termina.
-- [cerca · S] La cruzada no terminó. Nadie se atrevió a darla por terminada.
-> [S] Gaspar: «La misericordia es el camino más largo hacia Dios.»
+Estilo: A
+### Parte 1 · corazon_rezar · cortes
+- [cerca · N · vela delante] Dicen que el Altar retrocede un paso por cada plegaria de misericordia.
+### Parte 2 · corazon_levantarse · cortes · una vez
+- [NE · bancos en fila · vela izq] Por eso el Tribunal de la Luz prohibió rezarlas.
+### Parte 3 · corazon_walk · cortes
+- [general · N · columnas desfilan · bancos en fila · altar · solemne] Valdenoche llevaba años de hambre, y el cielo había dejado de responder.
+- [sigue] La Iglesia levantó una catedral en lo alto de la colina.
+- [sigue] Un día, el altar empezó a alejarse.
+- [sigue] La Iglesia lo llamó milagro: quien llegara al Altar devolvería la voz al cielo.
+- [cerca · S] Y proclamó una cruzada.
+### Parte 4 · abanderado_solo · cortes · lento 2
+- [cerca · S · entero] Los hombres de Valdenoche formaron la Columna de Lázaro, y entraron armados.
+### Parte 5 · exvoto_walk + exvoto_walk_b + monaguillo_walk · cortes
+- [S · multitud 12] Entre ellos y el Altar, Dios había puesto a los herejes: sus madres, sus vecinos, sus hermanos.
+### Parte 6 · corazon_walk · cortes
+- [general · N · columnas desfilan · lápidas · altar lejos] Pero la nave no termina.
+### Parte 7 · corazon_disparo · cortes · inverso · una vez
+- [cerca · S · alejar] Y la cruzada nunca se dio por terminada.
+### Parte 8 · ojo_look · cortes
+> [S · vela apagada delante] Gaspar: «La misericordia es el camino más largo hacia Dios. (pausa 1.2) Por eso la prohibimos.»
+
+**Notas del 08 (2026-11-16):**
+- Arranca con el gesto prohibido (Elías reza y enciende una vela); la vela vuelve, apagada, a los pies del Ojo en la cita: el Tribunal sobre el sitio donde rezó.
+- Frase 9 es la frase fuerte de la mitad: el narrador los llama «herejes» y en la misma frase dice quiénes son. Cuenta la Marcha y la guerra contra el propio pueblo (`LORE.md` §4.5-6) sin afirmar nada abierto (ni por qué se alargó la nave ni qué hay en el Altar).
+- Apariciones breves del Abanderado y los exvotos: anticipan Remedios (día 2) y Lope (día 3).
+- Necesita: `corazon_rezar` (rezar de rodillas) y `corazon_levantarse` (de rodillas a de pie) desde `assets/models/animations/pray/`; props re-renderizados a la densidad de píxel de los personajes del Códice; las fichas nuevas de props.
+- Primera prueba sin voz (con el guion anterior y props a escala de la DS, fuera de escala): `walkthroughs/lore-video-08/`.
 
 ## 09 · CÓDICE · II — LOS MONAGUILLOS
 ### Parte 1 · monaguillo_walk · cortes
@@ -176,7 +207,7 @@ Regla: **nunca el mismo personaje en pantalla dos días seguidos**, y los vídeo
 
 | Día | Vídeo | Personaje en pantalla | Lo nuevo | Pendiente del usuario |
 | :--- | :--- | :--- | :--- | :--- |
-| 1 | 08 La Catedral que no termina | Corazón Abierto | Columnas y bancos que desfilan a los lados (la nave sin fin); Elías mira hacia arriba; cameo del Ojo en la cita de Gaspar | *Looking up* de Mixamo (opcional) |
+| 1 | 08 La Catedral que no termina | Corazón Abierto | Guion reescrito (la Marcha y la guerra contra el propio pueblo); Elías reza y enciende una vela; columnas y bancos que desfilan; apariciones del Abanderado, los exvotos y el Ojo | — |
 | 2 | 02 Remedios, la cerera | Exvoto | Reza de rodillas entre velas y se levanta | — |
 | 3 | 07 Lope | Abanderado | Íñigo se tapa la cara | *Crying* de Mixamo |
 | 4 | 05 Sor Leonor | Gaspar humano → el Ojo | Gaspar con su cabeza y el farol en la mano, que acaba convertido en el Ojo | Modelo 3D de Gaspar humano |
@@ -190,20 +221,6 @@ Regla: **nunca el mismo personaje en pantalla dos días seguidos**, y los vídeo
 **Material disponible:** animaciones de rezar de pie, rezar de rodillas, arrodillarse/levantarse (al revés), andar triste y andar renqueante (`assets/models/animations/`); props renderizados de vela, santo, relicario, bancos (entero, roto, volcado), columna y lápidas (`assets/environment/cathedral/props/render/`). Prop nuevo opcional: un sagrario o altar pequeño.
 
 **Regla de imagen:** la voz cuenta el pasado y la imagen enseña el presente del condenado; solo hay modelos de la forma condenada, salvo variaciones hechas a propósito para un vídeo (Gaspar humano, Bartolomé sin cruz).
-
-## Desglose del día 1: 08 La Catedral que no termina
-
-| # | Frase | Qué se ve | Necesita |
-| :--- | :--- | :--- | :--- |
-| 1 | «Dicen que el Altar retrocede un paso por cada plegaria de misericordia.» | Primer plano de Elías de espaldas, mirando hacia arriba | *Looking up*; si no, de espaldas quieto |
-| 2 | «Por eso el Tribunal prohibió rezarlas.» | De tres cuartos entre bancos rotos y volcados | Bancos |
-| 3 | «La Iglesia levantó una catedral sobre Valdenoche…» | Plano general: Elías pequeño de espaldas entre dos hileras de columnas | Columnas |
-| 4 | «Un día, el altar empezó a alejarse…» | Elías anda de espaldas en el sitio y las columnas pasan a sus lados hacia abajo | Columnas, andar |
-| 5 | «Pero la nave no termina.» | Sigue andando; las columnas no dejan de pasar | Igual |
-| 6 | «La cruzada no terminó. Nadie se atrevió a darla por terminada.» | Primer plano de frente: la carga del corazón | Carga |
-| 7 | Gaspar: «La misericordia es el camino más largo hacia Dios.» | Aparece el Ojo alzando el farol (es su voz) | Ojo mirando |
-
-Trabajo del coordinador: capa de props en el generador (delante/detrás del personaje) y props que desfilan; exportar *Looking up* si llega; montar y enviar para revisar.
 
 ## Reserva
 

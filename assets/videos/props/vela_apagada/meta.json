@@ -1,0 +1,26 @@
+{
+  "piece": "vela_apagada",
+  "size_px": [
+    72,
+    56
+  ],
+  "content_px": [
+    65,
+    55
+  ],
+  "target_width": 65,
+  "scale_factor": 0.05627705627705628,
+  "source_render_px": [
+    1155,
+    980
+  ],
+  "yaw": 0,
+  "depth_units": "sprite_px",
+  "tiles_8x8_nonempty": 44,
+  "tiles_8x8_unique": 44,
+  "video_k": 4.613,
+  "alto_px": 55,
+  "px_por_m": 71.5,
+  "alto_m": 0.77,
+  "hero_px": 143
+}

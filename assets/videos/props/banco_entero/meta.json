@@ -1,0 +1,26 @@
+{
+  "piece": "banco_entero",
+  "size_px": [
+    296,
+    128
+  ],
+  "content_px": [
+    295,
+    125
+  ],
+  "target_width": 295,
+  "scale_factor": 0.2414075286415712,
+  "source_render_px": [
+    1222,
+    517
+  ],
+  "yaw": -45,
+  "depth_units": "sprite_px",
+  "tiles_8x8_nonempty": 268,
+  "tiles_8x8_unique": 268,
+  "video_k": 4.613,
+  "alto_px": 125,
+  "px_por_m": 71.5,
+  "alto_m": 1.75,
+  "hero_px": 143
+}

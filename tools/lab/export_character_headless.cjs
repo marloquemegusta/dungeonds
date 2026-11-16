@@ -169,6 +169,7 @@ const HTML = path.join(__dirname, 'FBX-Web-Renderer-offline.html');
       let bin = ''; for (let i = 0; i < buf.length; i += 0x8000) bin += String.fromCharCode.apply(null, buf.subarray(i, i + 0x8000));
       return btoa(bin);
     });
+    { const f = await page.evaluate(() => { const l = window.__spriteLab.lastFit; return l && { extent: l.extent, half: l.half, center: l.center }; }); if (f) console.log('FIT ' + JSON.stringify(f)); }
     if (errors.length) console.error('page errors:\n' + errors.join('\n'));
     const zipPath = path.join(require('node:os').tmpdir(), `dungeonds_char_export_${Date.now()}_${process.pid}.zip`);
     fs.writeFileSync(zipPath, Buffer.from(b64, 'base64'));

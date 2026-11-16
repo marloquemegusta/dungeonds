@@ -1,0 +1,66 @@
+{
+  "name": "corazon_levantarse",
+  "model": "corazon_levantarse.fbx",
+  "animation": "levantarse (1.00s)",
+  "directions": [
+    "S",
+    "SW",
+    "W",
+    "NW",
+    "N",
+    "NE",
+    "E",
+    "SE"
+  ],
+  "framesPerDirection": 24,
+  "frameSize": "160x160",
+  "spritesheet": {
+    "columns": 24,
+    "rows": 8,
+    "width": 3840,
+    "height": 1280,
+    "alpha": true
+  },
+  "anchor": [
+    80,
+    142
+  ],
+  "dirGroundAnchors": [
+    142,
+    142,
+    142,
+    142,
+    142,
+    142,
+    142,
+    142
+  ],
+  "shadowSize": [
+    320,
+    320
+  ],
+  "stride3dMeters": 3.284,
+  "strideRatio": 2.127,
+  "ticksPerFrame": 11,
+  "stridePixels": 340.39,
+  "speedFixed8_8": 315,
+  "inPlace": true,
+  "rigScale": 1,
+  "cameraElevationDegrees": 30,
+  "contrast": 1,
+  "saturation": 1,
+  "neckPitchDegrees": 0,
+  "displace": 0,
+  "brightness": 1,
+  "webglShadowQuality": 16,
+  "normalStrength": 0.5,
+  "shadowSoftness": 2,
+  "supersample": 4,
+  "legibility": "c2",
+  "boneShader": false,
+  "renderEngine": "Three.js WebGL (browser)",
+  "lightPreset": "neutral",
+  "outlineMode": "none",
+  "fitZoom": 1.0410708231531445,
+  "toneMapping": "neutral"
+}

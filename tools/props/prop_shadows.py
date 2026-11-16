@@ -49,6 +49,8 @@ KEY_AZIMUTH = 30.0            # applyBlenderLighting del lab (SPRITE_KEY_ROT[1])
 # esa pieza: menos desplazamiento horizontal y la sombra cabe entera en el lienzo sin cortarse recta.
 # Es el angulo respecto a la vertical (como dungeonLightPosition): menor = sol mas alto = sombra mas corta.
 SUPERSAMPLE = 4
+MARGIN_SCALE_TOL = 1.0         # idem para la tolerancia de altura (px)
+MARGIN_SCALE = 1.0            # render_video_props.py lo sube a la escala del Codice (margen de 8 px del juego)
 COMP = {5120: "b", 5121: "B", 5122: "h", 5123: "H", 5125: "I", 5126: "f"}
 NCOMP = {"SCALAR": 1, "VEC2": 2, "VEC3": 3, "VEC4": 4}
 
@@ -154,7 +156,7 @@ def process(name, dry_run=False):
     sx0, sx1 = scr[:, 0].min(), scr[:, 0].max()
     sy0, sy1 = scr[:, 1].min(), scr[:, 1].max()
     scale = nw / (sx1 - sx0)
-    if abs((sy1 - sy0) * scale - nh) > 1.5:
+    if abs((sy1 - sy0) * scale - nh) > 1.5 * MARGIN_SCALE_TOL:
         raise ValueError(f"{name}: la altura proyectada no encaja con content_px (camara o escala)")
 
     def canvas(points_scr):
@@ -171,7 +173,7 @@ def process(name, dry_run=False):
     # El lienzo no puede crecer mas alla de un margen de 8 px a la izquierda del cuerpo: la estampa
     # se coloca en x_tile 8/48 y su borde izquierdo no puede salir de la retícula. Si la sombra no
     # cabe, no se trunca en silencio: se aborta pidiendo subir el sol (`shadow_elevation`).
-    if x_min < -7.5:
+    if x_min < -7.5 * MARGIN_SCALE:
         raise ValueError(
             f"{name}: la sombra llega a x={x_min:.2f} px y no cabe en el margen de 8 px del lienzo "
             f"(elevacion {elevation}); sube `shadow_elevation` en tools/props/props.json")

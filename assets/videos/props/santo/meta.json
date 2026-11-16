@@ -1,0 +1,26 @@
+{
+  "piece": "santo",
+  "size_px": [
+    152,
+    312
+  ],
+  "content_px": [
+    148,
+    305
+  ],
+  "target_width": 148,
+  "scale_factor": 0.11644374508261211,
+  "source_render_px": [
+    1271,
+    2615
+  ],
+  "yaw": 180,
+  "depth_units": "sprite_px",
+  "tiles_8x8_nonempty": 446,
+  "tiles_8x8_unique": 446,
+  "video_k": 4.613,
+  "alto_px": 305,
+  "px_por_m": 71.5,
+  "alto_m": 4.27,
+  "hero_px": 143
+}
