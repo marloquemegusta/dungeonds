@@ -3,6 +3,7 @@
 #include "encounters.h"
 #include "collision.h"
 #include "modifiers.h"
+#include "upgrades.h"
 #include "sfx.h"
 #include <string.h>
 
@@ -92,6 +93,7 @@ int player_take_hit(PlayerState *player) {
         player->is_dead = 1;
         sfx_stop_charge();
     }
+    weapons_player_hit();           // Corazon Flagelado (ignores a hit that kills)
     sfx_play(SND_PLAYER_HURT, -1);
     return 1;
 }
@@ -101,20 +103,39 @@ int player_take_hit(PlayerState *player) {
 // ---------------------------------------------------------------------------
 
 static EnemyDeathHook s_enemy_death_hook = NULL;
+int g_death_phase = DEATH_ALL;
 
 void enemy_set_death_hook(EnemyDeathHook hook) {
     s_enemy_death_hook = hook;
 }
 
-void enemy_hit(Enemy *e, int damage, fixed hit_vx, fixed hit_vy) {
+static void enemy_damage(Enemy *e, int damage, fixed hit_vx, fixed hit_vy, int quiet) {
     if (!e || !e->active || e->hp <= 0 || e->state == ENEMY_STATE_EMERGE) return;
     e->hp -= damage;
-    e->hit_timer = 8;
-    int hitstop = e->hp <= 0 ? 4 : 3;
-    if (g_hitstop_frames < hitstop) g_hitstop_frames = hitstop;
+    if (!quiet) {
+        e->hit_timer = 8;
+        int hitstop = e->hp <= 0 ? 4 : 3;
+        if (g_hitstop_frames < hitstop) g_hitstop_frames = hitstop;
+    }
     CRASH_MARK(e->hp <= 0 ? CL_ENEMY_KILL : CL_ENEMY_HIT, e->type, e->hp <= 0 ? e->char_id : e->hp);
     if (e->hp <= 0) {
-        sfx_play(SND_ENEMY_DEATH, TO_INT(e->x));
+        if (!quiet) sfx_play(SND_ENEMY_DEATH, TO_INT(e->x));
+        if (e->suspend_req) {
+            // Viatico: counts as dead now (xp, gems, pack), but stays inert and in place for SUSPEND_FRAMES; the death
+            // animation plays when enemy_suspend_update ends it. hp <= 0 keeps every weapon from hitting it again.
+            e->suspend_req = 0;
+            g_death_phase = DEATH_BOOKKEEPING;
+            if (s_enemy_death_hook) s_enemy_death_hook(e, hit_vx, hit_vy);
+            g_death_phase = DEATH_ALL;
+            e->state = ENEMY_STATE_SUSPENDED;
+            e->suspend_timer = SUSPEND_FRAMES;
+            e->knock_vx = hit_vx;
+            e->knock_vy = hit_vy;
+            e->stun_timer = 0;
+            e->hit_timer = 0;
+            encounters_record_kill(&g_encounter_mgr, e->pack, e->x, e->y);
+            return;
+        }
         if (s_enemy_death_hook) s_enemy_death_hook(e, hit_vx, hit_vy);
         e->active = 0;
         e->state = ENEMY_STATE_DEAD;
@@ -124,12 +145,71 @@ void enemy_hit(Enemy *e, int damage, fixed hit_vx, fixed hit_vy) {
         snprintf(msg, sizeof(msg), "ENEMY_KILL type=%d hp=0", e->type);
         nocashMessage(msg);
 #endif
-    } else {
+    } else if (!quiet) {
         sfx_play(SND_ENEMY_HIT, TO_INT(e->x));
 #ifdef DEBUG
         char msg[64];
         snprintf(msg, sizeof(msg), "ENEMY_HIT type=%d hp=%d", e->type, e->hp);
         nocashMessage(msg);
 #endif
+    }
+}
+
+// Once a frame: ends the suspended deaths (Viatico): the death animation plays now, the bookkeeping already ran.
+void enemy_suspend_update(Enemy *enemies, int max_enemies) {
+    for (int i = 0; i < max_enemies; i++) {
+        Enemy *e = &enemies[i];
+        if (!e->active || e->state != ENEMY_STATE_SUSPENDED) continue;
+        if (e->suspend_timer > 0) e->suspend_timer--;
+        if (e->suspend_timer > 0) continue;
+        g_death_phase = DEATH_VISUALS;
+        if (s_enemy_death_hook) s_enemy_death_hook(e, e->knock_vx, e->knock_vy);
+        g_death_phase = DEATH_ALL;
+        e->active = 0;
+        e->state = ENEMY_STATE_DEAD;
+    }
+}
+
+void enemy_hit(Enemy *e, int damage, fixed hit_vx, fixed hit_vy) {
+    enemy_damage(e, damage, hit_vx, hit_vy, 0);
+}
+
+void enemy_hit_quiet(Enemy *e, int damage) {
+    enemy_damage(e, damage, 0, 0, 1);
+}
+
+// ---------------------------------------------------------------------------
+// Quemado (DESIGN.md 6.12.2, 6.12.10)
+// ---------------------------------------------------------------------------
+
+void burn_apply(Enemy *e, int layers) {
+    if (!e || !e->active || e->hp <= 0 || e->state == ENEMY_STATE_EMERGE || layers <= 0) return;
+    int cap = BURN_BASE_CAP + g_mods.burn_cap_bonus;
+    int n = e->burn_layers + layers;
+    if (n > cap) n = cap;
+    if (e->burn_layers == 0) e->burn_tick = 0;
+    e->burn_layers = (uint8_t)n;
+    e->burn_timer = (uint16_t)(BURN_BASE_FRAMES + g_mods.burn_dur_bonus);   // every application renews it
+}
+
+void burn_clear(Enemy *e) {
+    e->burn_layers = 0;
+    e->burn_timer = 0;
+    e->burn_tick = 0;
+}
+
+// Once a frame, outside the AI (the off-screen LOD runs the AI every other frame). Kills by fire go
+// through the quiet path, so the death hook (gems, xp, Martirio) still runs without hit stop or sounds.
+void burn_update(Enemy *enemies, int max_enemies) {
+    for (int i = 0; i < max_enemies; i++) {
+        Enemy *e = &enemies[i];
+        if (!e->burn_layers) continue;
+        if (!e->active || e->hp <= 0) { burn_clear(e); continue; }
+        if (e->burn_timer > 0) e->burn_timer--;
+        if (e->burn_timer == 0) { burn_clear(e); continue; }
+        if (++e->burn_tick >= BURN_TICK_FRAMES) {
+            e->burn_tick = 0;
+            enemy_hit_quiet(e, upgrades_fire_damage(BURN_TICK_DAMAGE * e->burn_layers));
+        }
     }
 }

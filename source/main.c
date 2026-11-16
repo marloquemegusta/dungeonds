@@ -21,6 +21,8 @@
 #include "godrays.h"
 #include "hwshadow.h"
 #include "pickups.h"
+#include "gems.h"
+#include "upgrades.h"
 #include "exvoto_melt.h"
 #include "sfx.h"
 #include "bestiary.h"
@@ -149,7 +151,7 @@ volatile OcclusionStats g_occlusion_stats;
 Enemy g_enemies[MAX_ENEMIES];     // not static: headless scenarios read it by symbol (the arena data also has an s_enemies)
 // Headless scenarios read g_enemies / g_player_state by byte offset (scenarios/enemy_*.json); a moved field breaks the build.
 // ARM EABI enums are 1 byte here (type and state are u8 in the scenarios).
-_Static_assert(sizeof(Enemy) == 116 && offsetof(Enemy, hp) == 28 && offsetof(Enemy, type) == 40 &&
+_Static_assert(sizeof(Enemy) == 124 && offsetof(Enemy, hp) == 28 && offsetof(Enemy, type) == 40 &&
                offsetof(Enemy, state) == 41 && offsetof(Enemy, state_timer) == 44 && offsetof(Enemy, stun_timer) == 76,
                "Enemy layout used by the scenarios changed");
 _Static_assert(sizeof(PlayerState) == 24 && offsetof(PlayerState, hp) == 0 && offsetof(PlayerState, invuln_timer) == 16,
@@ -366,6 +368,82 @@ static inline void blit_runs_span(uint16_t *drow, const uint16_t *srow,
         if (b > s1) b = s1;
         copy_run(drow, srow, a, b);
     }
+}
+
+// Sprite tint (DESIGN.md 6.12.12): darkens and pushes the opaque pixels of a frame towards dried blood. Level 0..3 =
+// lightest, light, medium, strong (burning enemies: 1, 2, 3 and 4+ layers; the strongest is the cap). Table lookups per
+// channel, only the opaque runs are touched, the rest of the buffer is never read by the blit. Only tinted actors
+// pay this; the untinted blit path is unchanged.
+static uint16_t s_tint_buf[64 * 64] __attribute__((aligned(4)));
+static uint8_t s_tint_r[4][32], s_tint_g[4][32], s_tint_b[4][32];
+static int s_tint_ready = 0;
+static const uint16_t *sprite_tint(const uint16_t *src, const uint16_t *runs, int pitch, int bw, int bh, int level) {
+    if (pitch * bh > 64 * 64) return src;
+    if (!s_tint_ready) {
+        static const uint8_t rm[4] = { 7, 6, 5, 4 }, ra[4] = { 1, 2, 3, 4 }, gm[4] = { 6, 4, 3, 2 }, bm[4] = { 5, 3, 2, 1 };
+        for (int l = 0; l < 4; l++)
+            for (int v = 0; v < 32; v++) {
+                s_tint_r[l][v] = (uint8_t)((v * rm[l] >> 3) + ra[l]);
+                s_tint_g[l][v] = (uint8_t)(v * gm[l] >> 3);
+                s_tint_b[l][v] = (uint8_t)(v * bm[l] >> 3);
+            }
+        s_tint_ready = 1;
+    }
+    if (level > 3) level = 3;
+    const uint8_t *tr = s_tint_r[level], *tg = s_tint_g[level], *tb = s_tint_b[level];
+    for (int y = 0; y < bh; y++) {
+        const uint16_t *rr = runs + runs[y], *rend = runs + runs[y + 1];
+        for (; rr < rend; rr++) {
+            int a = *rr & 0xFF, n = *rr >> 8;
+            for (int x = a; x < a + n; x++) {
+                uint32_t c = src[y * pitch + x];
+                s_tint_buf[y * pitch + x] = (uint16_t)(tr[c & 31] | (tg[(c >> 5) & 31] << 5) | (tb[(c >> 10) & 31] << 10) | BIT(15));
+            }
+        }
+    }
+    return s_tint_buf;
+}
+
+// Llaga Abierta B (DESIGN.md 6.12.12): the hero looks ascended, not hurt: a faint pale-gold brightening of the opaque pixels.
+// Level 1..4 = hearts missing: faint to clearly ascended. Same buffer and cost as the tint; only the hero with the relic pays it.
+static const uint16_t *sprite_glow(const uint16_t *src, const uint16_t *runs, int pitch, int bw, int bh, int level) {
+    if (pitch * bh > 64 * 64) return src;
+    const int sh = level >= 3 ? 3 : level == 2 ? 4 : 5;
+    for (int y = 0; y < bh; y++) {
+        const uint16_t *rr = runs + runs[y], *rend = runs + runs[y + 1];
+        for (; rr < rend; rr++) {
+            int a = *rr & 0xFF, n = *rr >> 8;
+            for (int x = a; x < a + n; x++) {
+                uint32_t c = src[y * pitch + x];
+                int r = c & 31, g = (c >> 5) & 31, b = (c >> 10) & 31;
+                r += ((31 - r) >> sh) + level; g += ((31 - g) >> sh) + level; b += (31 - b) >> (sh + 1);
+                if (r > 31) r = 31;
+                if (g > 31) g = 31;
+                s_tint_buf[y * pitch + x] = (uint16_t)(r | (g << 5) | (b << 10) | BIT(15));
+            }
+        }
+    }
+    return s_tint_buf;
+}
+
+// Viatico (DESIGN.md 6.12.12): the suspended victim loses its colour while the thread leaves its body. strong = second half.
+static const uint16_t *sprite_fade(const uint16_t *src, const uint16_t *runs, int pitch, int bw, int bh, int strong) {
+    if (pitch * bh > 64 * 64) return src;
+    for (int y = 0; y < bh; y++) {
+        const uint16_t *rr = runs + runs[y], *rend = runs + runs[y + 1];
+        for (; rr < rend; rr++) {
+            int a = *rr & 0xFF, n = *rr >> 8;
+            for (int x = a; x < a + n; x++) {
+                uint32_t c = src[y * pitch + x];
+                int r = c & 31, g = (c >> 5) & 31, b = (c >> 10) & 31;
+                int gray = (r + g + b) / 3;
+                if (strong) { r = (r + 3 * gray + 2) >> 2; g = (g + 3 * gray + 2) >> 2; b = (b + 3 * gray + 2) >> 2; }
+                else { r = (r + gray) >> 1; g = (g + gray) >> 1; b = (b + gray) >> 1; }
+                s_tint_buf[y * pitch + x] = (uint16_t)(r | (g << 5) | (b << 10) | BIT(15));
+            }
+        }
+    }
+    return s_tint_buf;
 }
 
 // Blit a BGR555 sprite with arbitrary pitch, clipping opaque pixels against baked depth.
@@ -707,6 +785,9 @@ static void draw_player(uint16_t *buffer, int cam_x, int cam_y) {
             }
         }
         frame = s_tint;
+    } else {
+        const int lt = weapons_llaga_tint();                // Llaga Abierta B: blood red as the hearts drop
+        if (lt > 0) frame = sprite_glow(frame, runs, pitch, bw, bh, lt);
     }
     blit_stride(buffer, frame, runs, pitch, bw, bh,
                 px - sw / 2 + min_x, py - s_char_ground_anchor[s_player.char_id][s_player.dir] + min_y,
@@ -811,6 +892,15 @@ static void draw_enemy(uint16_t *buffer, const Enemy *e, int cam_x, int cam_y) {
         ? &g_charger_charge_runs[g_charger_charge_run_offsets[e->dir][is_telegraph ? 0 : cf]]
         : character_runs_ptr(e->char_id, e->dir, e->frame);
 
+    if (e->state == ENEMY_STATE_SUSPENDED) {               // Viatico: drained, it loses colour
+        frame = sprite_fade(frame, runs, sprite_pitch(bw), bw, bh, e->suspend_timer <= SUSPEND_FRAMES / 2);
+    } else if (e->burn_layers) {                           // burning: darkened, dried-blood red; 1 layer lightest, 4+ the strongest
+        const int L = e->burn_layers;
+        frame = sprite_tint(frame, runs, sprite_pitch(bw), bw, bh, (L > 4 ? 4 : L) - 1);
+    } else {
+        const int ct = weapons_consume_tint((int)(e - g_enemies));   // Auto de Fe: the tint fades as the burn is consumed
+        if (ct > 0) frame = sprite_tint(frame, runs, sprite_pitch(bw), bw, bh, ct - 1);
+    }
     int draw_bh = bh;
     int draw_y_off = 0;
     if (e->type == ENEMY_TYPE_MONAGUILLO && e->state == ENEMY_STATE_EMERGE) {
@@ -1030,7 +1120,8 @@ ITCM_CODE static void render_screen(uint16_t *buffer, DirtySpan *spans, int cam_
 #if !HW_SHADOWS
     (void)sub_screen;
 #endif
-    DrawItem items[MAX_DRAW_ITEMS + MAX_ENEMIES + MAX_DEATH_CHUNKS + EXVOTO_MELT_MAX + 1];
+    DrawItem items[MAX_DRAW_ITEMS + MAX_ENEMIES + MAX_DEATH_CHUNKS + EXVOTO_MELT_MAX + GEM_MAX_ACTIVE + HEAL_PICKUP_MAX_ACTIVE + 1];
+    const int pk_base = -(2 + MAX_ENEMIES + MAX_DEATH_CHUNKS + EXVOTO_MELT_MAX);  // gem i: pk_base - 1 - i; heart i: pk_base - 1 - GEM_MAX_ACTIVE - i
     int count = 0;
 
     // The static floor is in BG1; this buffer contains only dynamic layers.
@@ -1104,6 +1195,19 @@ ITCM_CODE static void render_screen(uint16_t *buffer, DirtySpan *spans, int cam_
             items[count].cy = my;
             count++;
         }
+    }
+
+    // Gems and heart pickups sort with the actors: walls hide them (per pixel), characters nearer the camera cover them.
+    if (s_run_started && s_strip_mode) {
+        int d;
+        for (int i = 0; i < GEM_MAX_ACTIVE; i++)
+            if (gems_item(i, cam_x, cam_y, &d)) {
+                items[count].depth = d; items[count].ref = pk_base - 1 - i; items[count].cx = 0; items[count].cy = d; count++;
+            }
+        for (int i = 0; i < HEAL_PICKUP_MAX_ACTIVE; i++)
+            if (pickups_item(i, cam_x, cam_y, &d)) {
+                items[count].depth = d; items[count].ref = pk_base - 1 - GEM_MAX_ACTIVE - i; items[count].cx = 0; items[count].cy = d; count++;
+            }
     }
 
     // The static FBX bake is now a hardware BG; keep this bitmap layer transparent
@@ -1182,6 +1286,10 @@ ITCM_CODE static void render_screen(uint16_t *buffer, DirtySpan *spans, int cam_
         CRASH_MARK(CL_DRAW_ITEM, sp, items[i].depth);
         if (sp == -1) {
             draw_player(buffer, cam_x, cam_y);
+        } else if (sp <= pk_base - 1 - GEM_MAX_ACTIVE) {
+            pickups_draw(buffer, pk_base - 1 - GEM_MAX_ACTIVE - sp, cam_x, cam_y);
+        } else if (sp <= pk_base - 1) {
+            gems_draw(buffer, pk_base - 1 - sp, cam_x, cam_y);
         } else if (sp <= -2 - MAX_ENEMIES - MAX_DEATH_CHUNKS) {
             const ExvotoMelt *melt = exvoto_melt_sinking(-2 - MAX_ENEMIES - MAX_DEATH_CHUNKS - sp);
             if (melt) draw_melt(buffer, melt, cam_x, cam_y);
@@ -1197,6 +1305,7 @@ ITCM_CODE static void render_screen(uint16_t *buffer, DirtySpan *spans, int cam_
     weapons_render_light(buffer, cam_x, cam_y);     // beams light the sprites drawn above
     PP_T0(pp_proj);
     weapons_render(buffer, cam_x, cam_y);
+    if (!sub_screen) weapons_render_overlay(buffer);
     mods_render(buffer, cam_x, cam_y);
     PP_ADD(PP_PROJ, pp_proj);
     uint32_t blit_ticks = cpuGetTiming() - t_bl0;
@@ -1385,6 +1494,111 @@ static void hud_icon(uint16_t *buffer, int x, int y, const uint16_t *icon) {
     }
 }
 
+// Level / xp HUD (DESIGN.md 6.12.8), three looks selected by g_design_variant.
+static void hud_rect(uint16_t *buffer, int x, int y, int w, int h, uint16_t c) {
+    for (int row = 0; row < h; row++) {
+        dirty_row(y + row, x, x + w);
+        for (int col = 0; col < w; col++) hud_px(buffer, x + col, y + row, c);
+    }
+}
+
+// Roman numeral glyphs (the HUD font has no X): 5x7 bitmaps for I, V, X.
+static void hud_roman(uint16_t *buffer, int x, int y, int n, uint16_t ink) {
+    static const uint8_t glyph[3][7] = {
+        { 0x0E, 0x04, 0x04, 0x04, 0x04, 0x04, 0x0E },     // I
+        { 0x11, 0x11, 0x11, 0x11, 0x0A, 0x0A, 0x04 },     // V
+        { 0x11, 0x11, 0x0A, 0x04, 0x0A, 0x11, 0x11 },     // X
+    };
+    char seq[8];
+    int len = 0;
+    while (n >= 10 && len < 7) { seq[len++] = 2; n -= 10; }
+    if (n >= 9) { seq[len++] = 0; seq[len++] = 2; n = 0; }
+    if (n >= 5) { seq[len++] = 1; n -= 5; }
+    if (n == 4) { seq[len++] = 0; seq[len++] = 1; n = 0; }
+    while (n > 0 && len < 7) { seq[len++] = 0; n--; }
+    const uint16_t shadow = RGB15(1, 1, 2) | BIT(15);
+    for (int i = 0; i < len; i++)
+        for (int gy = 0; gy < 7; gy++)
+            for (int gx = 0; gx < 5; gx++)
+                if (glyph[(int)seq[i]][gy] & (1u << (4 - gx))) {
+                    hud_px(buffer, x + i * 6 + gx + 1, y + gy + 1, shadow);
+                    hud_px(buffer, x + i * 6 + gx, y + gy, ink);
+                }
+    for (int row = 0; row < 9; row++) dirty_row(y + row, x, x + len * 6 + 2);
+}
+
+static void hud_level(uint16_t *buffer) {
+    const uint16_t gold = RGB15(27, 20, 11) | BIT(15);
+    const uint16_t gold_dim = RGB15(18, 13, 6) | BIT(15);
+    const uint16_t back = RGB15(3, 2, 3) | BIT(15);
+    char line[16];
+    int need = upgrades_xp_needed();
+    int xp = upgrades_xp();
+    int level = upgrades_level();
+    if (g_design_variant == 1) {
+        // B: a candle. Wax in bone, the xp as a band of gold rising from the foot, the level number on the wax,
+        // a small flame that flickers on top.
+        const uint16_t bone = RGB15(22, 19, 14) | BIT(15);
+        const uint16_t bone_hi = RGB15(26, 23, 17) | BIT(15);
+        const uint16_t wax_edge = RGB15(10, 8, 6) | BIT(15);
+        const uint16_t ink = RGB15(3, 2, 2) | BIT(15);
+        const int cx0 = 6, cw = 15, top = 18, ch = 27;
+        hud_rect(buffer, cx0, top, cw, ch, wax_edge);
+        hud_rect(buffer, cx0 + 1, top + 1, cw - 2, ch - 2, bone);
+        hud_rect(buffer, cx0 + 1, top + 1, 1, ch - 2, bone_hi);
+        int band = xp * (ch - 2) / need;
+        if (band > 0) hud_rect(buffer, cx0 + 1, top + ch - 1 - band, cw - 2, band, gold);
+        snprintf(line, sizeof(line), "%d", level);
+        hud_text(buffer, cx0 + (cw - hud_text_width(line)) / 2, top + 10, line, ink);
+        hud_px(buffer, cx0 + 7, top - 1, wax_edge);                       // wick
+        {
+            const uint16_t fa = RGB15(24, 15, 7) | BIT(15), fg = RGB15(27, 20, 11) | BIT(15);
+            const uint16_t fe = RGB15(20, 9, 5) | BIT(15), fc = RGB15(15, 5, 4) | BIT(15);
+            int fx = cx0 + 7, fl = (int)(s_frame_index >> 2) & 3;
+            int sway = fl == 1 ? 1 : fl == 3 ? -1 : 0;
+            hud_px(buffer, fx - 1, top - 2, fa); hud_px(buffer, fx, top - 2, fg); hud_px(buffer, fx + 1, top - 2, fa);
+            hud_px(buffer, fx - 1, top - 3, fa); hud_px(buffer, fx, top - 3, fg); hud_px(buffer, fx + 1, top - 3, fa);
+            hud_px(buffer, fx, top - 4, fg);
+            hud_px(buffer, fx + sway, top - 5, fa);
+            hud_px(buffer, fx + sway, top - 6, fe);
+            if (fl != 2) hud_px(buffer, fx + sway, top - 7, fc);
+            for (int row = 0; row < 8; row++) dirty_row(top - 7 + row, fx - 2, fx + 3);
+        }
+        return;
+    }
+    if (g_design_variant == 2) {
+        // C: ten rosary beads that light up with the xp; the level is a roman numeral (arabic past 39).
+        if (level < 40) hud_roman(buffer, 6, 6, level, gold);
+        else { snprintf(line, sizeof(line), "%d", level); hud_text(buffer, 6, 6, line, gold); }
+        const uint16_t wood = RGB15(9, 6, 4) | BIT(15);
+        const uint16_t thread = RGB15(5, 4, 3) | BIT(15);
+        const uint16_t spark = RGB15(29, 25, 19) | BIT(15);
+        int lit = xp * 10 / need;
+        for (int i = 0; i < 10; i++) {
+            int bx = 6 + i * 6, by = 19;
+            uint16_t c = i < lit ? gold : (i == lit ? gold_dim : wood);
+            if (i > 0) hud_rect(buffer, bx - 2, by + 1, 2, 1, thread);
+            hud_rect(buffer, bx + 1, by, 2, 4, c);
+            hud_rect(buffer, bx, by + 1, 4, 2, c);
+            if (i < lit) hud_px(buffer, bx + 1, by + 1, spark);
+            else hud_px(buffer, bx + 2, by + 3, thread);
+        }
+        return;
+    }
+    const int bar_w = 60, bar_h = 4, bar_x = 6, bar_y = 18;
+    snprintf(line, sizeof(line), "NV %d", level);
+    hud_text(buffer, 6, 6, line, gold);
+    int fill = xp * (bar_w - 2) / need;   // per HUD draw, not per entity
+    for (int y = 0; y < bar_h; y++) {
+        dirty_row(bar_y + y, bar_x, bar_x + bar_w);
+        for (int x = 0; x < bar_w; x++) {
+            int edge = (x == 0 || y == 0 || x == bar_w - 1 || y == bar_h - 1);
+            hud_px(buffer, bar_x + x, bar_y + y, edge ? gold_dim : (x - 1 < fill ? gold : back));
+        }
+    }
+}
+
+
 static void draw_run_hud(uint16_t *buffer) {
     const uint16_t ink = RGB15(31, 31, 31) | BIT(15);
     const uint16_t dark = RGB15(5, 1, 1) | BIT(15);
@@ -1407,6 +1621,9 @@ static void draw_run_hud(uint16_t *buffer) {
         hud_text(buffer, 6, SCREEN_H - 32, line, ink);
         snprintf(line, sizeof(line), "TIEMPO %lu:%02lu", (unsigned long)(seconds / 60u), (unsigned long)(seconds % 60u));
         hud_text(buffer, 6, SCREEN_H - 16, line, ink);
+
+        // Level and xp, top left (DESIGN.md 6.12.8). A: "NV n" + bar. B: a candle. C: rosary beads + roman numeral.
+        hud_level(buffer);
 
         // Sacred Hearts: one per max hit point, right-aligned at the top of the bottom screen.
         const int heart_gap = 2;
@@ -1647,7 +1864,9 @@ static void death_chunks_frame_begin(void) {
 static void on_enemy_death(const Enemy *e, fixed hit_vx, fixed hit_vy) {
     CRASH_MARK(CL_DEATH_CHUNKS, e->char_id, e->dir);
     DeathSpawn spawn = { e->x, e->y, hit_vx, hit_vy, e->char_id, e->dir, e->frame };
-    if (e->type == ENEMY_TYPE_EXVOTO) {
+    if (g_death_phase == DEATH_BOOKKEEPING) {
+        // Viatico: the victim is held suspended; the death animation comes later (DEATH_VISUALS), the counts are due now.
+    } else if (e->type == ENEMY_TYPE_EXVOTO) {
         exvoto_melt_spawn(e);                 // wax: it melts instead of breaking into chunks
     } else if (s_death_spawn_budget > 0) {
         s_death_spawn_budget--;
@@ -1656,8 +1875,13 @@ static void on_enemy_death(const Enemy *e, fixed hit_vx, fixed hit_vy) {
         s_pending_deaths[(s_pending_head + s_pending_count) & (MAX_PENDING_DEATHS - 1)] = spawn;
         s_pending_count++;
     }
+    if (g_death_phase == DEATH_VISUALS) { CRASH_MARK(CL_DEATH_HOOK_DONE, 0, 0); return; }
     weapons_notify_kill();
-    if (s_strip_mode) pickups_enemy_killed(e);
+    weapons_enemy_died(e);                    // Martirio Contagioso (needs the burn layers, still intact here)
+    if (s_strip_mode) {
+        pickups_enemy_killed(e);
+        gems_enemy_killed(e);          // DESIGN.md 6.12.10: one xp gem per kill
+    }
     CRASH_MARK(CL_DEATH_HOOK_DONE, 0, 0);
 }
 
@@ -1684,6 +1908,7 @@ static void death_chunks_update(void) {
 
 static void weapons_and_effects_update(void) {
     grenade_set_player_pos(s_player.x, s_player.y);
+    weapons_set_hero_pos(TO_INT(s_player.x), TO_INT(s_player.y));
     weapons_update(g_enemies, MAX_ENEMIES);
     death_chunks_update();
     exvoto_melt_update();
@@ -1704,6 +1929,7 @@ static void strip_shift_world_y(int dy_px) {
     weapons_shift_y(dy_px);
     tide_shift_y(dy_px);
     pickups_shift_y(dy_px);
+    gems_shift_y(dy_px);
     enemy_puddles_shift_y(dy_px);
 
     // The rebase moves the world and the camera by the same rows, so what is on screen does not
@@ -1760,6 +1986,7 @@ static void strip_enemies_update(void) {
     enemy_ai_set_view(s_cam_x, s_cam_y - SCREEN_H, s_cam_y + SCREEN_H);
     enemy_ai_update(g_enemies, MAX_ENEMIES, s_player.x, s_player.y);
     pickups_update(s_player.x, s_player.y, tide_y(), &g_player_state);
+    gems_update(s_player.x, s_player.y, tide_y());
 }
 
 // ---------------------------------------------------------------------------
@@ -1776,6 +2003,7 @@ static void player_init(void) {
     s_player.char_id = CHAR_HERO;
 
     mods_reset();
+    upgrades_reset((uint32_t)cpuGetTiming() ^ s_frame_index ^ 0x55504752u);   // DESIGN.md 6.12: after mods_reset
     player_state_init(&g_player_state);
     weapons_init();
 
@@ -1920,12 +2148,11 @@ static void player_update(uint32_t keys, uint32_t keys_down) {
     if (keys_down & KEY_R) sandbox_respawn();
     // DESIGN.md 4.9 (debug): SELECT cycles the shotgun and grenade effects style A/B/C (the sniper is always C).
     if (keys_down & KEY_SELECT) {
-        g_fx_style = (g_fx_style + 1) % FX_STYLE_COUNT;
+        upgrades_cycle_design_variant();   // also advances g_fx_style
     }
-    // DESIGN.md 4.9 (debug): Y cycles the sniper charge aura look L -> G -> E -> H for the comparison.
-    if (keys_down & KEY_Y) {
-        g_aura_style = (g_aura_style + 1) % AURA_STYLE_COUNT;
-    }
+    upgrades_debug_update();
+    // DEBUG (playtest v0.4): X queues one level-up at once (DESIGN.md 6.12.10).
+    if ((keys_down & KEY_X) && !g_player_state.is_dead) upgrades_queue_levelup();
 
     int pressed = s_latch_pressed;
     int released = s_latch_released;
@@ -1942,12 +2169,15 @@ static void player_update(uint32_t keys, uint32_t keys_down) {
     int cur_char = s_player.char_id;
     fixed current_speed = g_characters[cur_char].speed * g_mods.speed_pct / 100;
     if (s_strip_mode && tide_player_slowed(s_player.y)) current_speed = (current_speed * 3) >> 2;
+    // Paso de Procesion (DESIGN.md 6.12.10): while charging the hero walks at 35 % of that speed.
+    const int procession = s_rooted && upgrades_has_relic(RELIC_PROCESION);
+    if (procession) current_speed = current_speed * 35 / 100;
     int current_period = g_characters[cur_char].anim_period;
 
     if (pressed && weapons_can_start_aim(&g_player_state)) s_rooted = 1;
 
     int sdx = 0, sdy = 0; // screen-space input axes
-    if (!s_rooted) {
+    if (!s_rooted || procession) {
         if (keys & KEY_UP) sdy -= 1;
         if (keys & KEY_DOWN) sdy += 1;
         if (keys & KEY_LEFT) sdx -= 1;
@@ -2071,6 +2301,7 @@ static void arena_restart(void) {
         strip_start(seed);
         horde_init(seed ^ 0x684f5244u);
         pickups_init(seed ^ 0x5049434bu);
+        gems_init();
         enemy_puddles_init();
         apply_arena_palette();
         init_bg_tile_cache(&s_top_bg_tile_cache, TOP_TILE_CACHE_CAPACITY, s_top_bg_tiles_vram);
@@ -2092,6 +2323,7 @@ static void arena_restart(void) {
     s_player.is_moving = 0;
     s_player.anim_timer = 0;
     mods_reset();                    // a new run: modifiers are lost (DESIGN.md 5)
+    upgrades_reset((uint32_t)cpuGetTiming() ^ s_frame_index ^ 0x55504752u);   // xp, level, Dones and relics too
     player_state_init(&g_player_state);
     g_player_state.god_mode = god;
     weapons_init();
@@ -2262,6 +2494,7 @@ int main(void) {
         uint32_t seed = (uint32_t)time(NULL) ^ (uint32_t)cpuGetTiming() ^ 0xa5a5a5a5u;
         horde_init(seed ^ 0x684f5244u);
         pickups_init(seed ^ 0x5049434bu);
+        gems_init();
         enemy_puddles_init();
         tide_init(s_player.y);
     }
@@ -2412,6 +2645,13 @@ int main(void) {
                 s_keys_down_latch = 0;
                 s_menu_ignore_held_touch = touch_down;
                 touch_track(0, 0, 0);
+            } else if (act == MENU_ACT_LEVELUP_PICK) {
+                // DESIGN.md 6.12.8: apply the card, resume; the next pending level opens on a following frame.
+                upgrades_choose(menu_levelup_pick());
+                menu_close();
+                s_keys_down_latch = 0;
+                s_menu_ignore_held_touch = touch_down;
+                touch_track(0, 0, 0);
             }
         } else {
             if (!touch_down) s_menu_ignore_held_touch = 0;
@@ -2422,6 +2662,15 @@ int main(void) {
                 sfx_set_bgm_paused(1);
                 s_keys_down_latch = 0;
                 touch_track(0, 0, 0);
+            } else if (s_run_started && upgrades_pending() > 0 && !g_player_state.is_dead &&
+                       s_transition == TRANSITION_NONE && g_hitstop_frames <= 0) {
+                // Level-up screen: drop any charge, then the menu freezes the simulation like the pause.
+                weapons_cancel_aim();
+                upgrades_begin_offer();
+                menu_open_levelup();
+                s_keys_down_latch = 0;
+                touch_track(0, 0, 0);
+                s_menu_ignore_held_touch = touch_down;
             }
         }
         transition_update();
@@ -2482,7 +2731,6 @@ int main(void) {
         render_screen(bot_page_ptr(s_bot_back_page), s_dirty[s_bot_back_page == 24], view_x, view_y, 0, &bot_floor, &bot_sh, &bot_bl);
         if (s_run_started && s_strip_mode) {
             g_dirty_cur = s_dirty[s_bot_back_page == 24];
-            pickups_render(bot_page_ptr(s_bot_back_page), view_x, view_y);
             tide_render_border(bot_page_ptr(s_bot_back_page), view_y);
         }
         CRASH_MARK(CL_RENDER_DONE, 0, 0);
@@ -2516,7 +2764,6 @@ int main(void) {
         render_screen(s_top_page, s_dirty_top, view_x, view_y - SCREEN_H, 1, &top_floor, &top_sh, &top_bl);
         if (s_run_started && s_strip_mode) {
             g_dirty_cur = s_dirty_top;
-            pickups_render(s_top_page, view_x, view_y - SCREEN_H);
             tide_render_border(s_top_page, view_y - SCREEN_H);
         }
 #if HW_SHADOWS

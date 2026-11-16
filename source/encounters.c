@@ -55,6 +55,7 @@ int encounters_spawn(EncounterManager *mgr, Enemy *enemies, int max_enemies) {
         e->knock_vx = 0;
         e->knock_vy = 0;
         e->stun_timer = 0;
+        e->suspend_timer = e->suspend_req = 0;
         e->charge_hit = 0;
         e->strafe_dir = (spawned & 1) ? 1 : -1;
         e->has_los = 0;

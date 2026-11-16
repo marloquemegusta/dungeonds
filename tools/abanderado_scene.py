@@ -11,7 +11,7 @@ ROOT = Path(__file__).resolve().parents[1]
 ABANDERADO_TYPE = 4  # SANDBOX_ENEMY_ABANDERADO
 ST_POINT = 11
 ST_EMERGE = 12
-ENEMY_STRIDE = 116
+ENEMY_STRIDE = 124
 
 fields = dict(sb.FIELDS)
 fields["en0_active"] = {"symbol": "enemies", "offset": 24, "type": "u8"}

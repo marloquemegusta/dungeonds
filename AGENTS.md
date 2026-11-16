@@ -71,6 +71,16 @@ Si una regla o cifra aparece en dos documentos, uno de ellos sobra: dejarla en s
 
 Lecciones: un bucle sin tope congela el juego; el coste de la oclusión por píxel se come el frame, mejor por tramos; un agente que se atasca se reanuda con un mensaje corto; los pokes en el frame 0 los borra crt0.
 
+**Rondas A/B/C para el usuario (aprendido en `walkthroughs/mejoras-v04/`, 2026-11-15):**
+- **Escena montada para cada elemento:** solo el héroe y los enemigos que hacen falta, quietos y colocados para que el efecto ocurra en el centro (sandbox `cathedral-sandbox`, `tools/abc_scenes.py`). Nunca capturas genéricas de partida donde se mezclan horda, marea y otros efectos.
+- **GIFs, no fotos:** la misma escena repetida con cada variante, en columnas A | B | C, con 4× NEAREST y ≥15 fps (`tools/abc_gif.py`).
+- **Explicar qué es cada cosa:** antes de cada GIF, una frase con qué mejora es y cuándo aparece el efecto.
+- **HTML para el móvil:** un solo archivo con las imágenes dentro, porque el usuario revisa desde el teléfono.
+- **Sin ruido de depuración:** nada forzado que no sea del juego (el aura que forzaba el sandbox, gemas que caen en la escena).
+- **Efectos que nacen del mundo:** del suelo, del cuerpo o del punto de impacto, y respetando la oclusión con los cuerpos; nada flotando como un icono.
+- **Vista previa = juego:** el arte que enseña un efecto (cartas de mejora) se captura de la ROM, no se pinta aparte (`tools/levelup_cards/capture_cards.py`).
+- **Iterar por vueltas:** el usuario elige o descarta por elemento y cada vuelta se apunta en `DESIGN.md` (§6.12.11-13 como ejemplo).
+
 ## Subagentes y Modelos
 
 - Todo plan que lance subagentes indica el modelo de cada uno. Por defecto: **Haiku** para búsquedas, listados, verificar que algo sigue presente o leer logs; **Sonnet** para análisis de código, revisiones y auditorías por área; **Opus** solo para decisiones de arquitectura o diseño que no se puedan partir.

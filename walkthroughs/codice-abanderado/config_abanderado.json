@@ -1,0 +1,112 @@
+{
+  "codice_header": "CÓDICE · V",
+  "character_name": "EL ABANDERADO",
+  "voice_id": "5egO01tkUjEzu7xSSE8M",
+  "stability": 0.28,
+  "similarity_boost": 0.80,
+  "style": 0.60,
+  "character_gif": "assets/sprites/bestiary/abanderado_walk/dirs/1_SW.gif",
+  "card_png": "walkthroughs/abanderado-codice/assets/05_abanderado.png",
+  "card_mask_rect": null,
+  "mosaic_gifs": [
+    "assets/sprites/bestiary/corazon_disparo/dirs/0_S.gif",
+    "assets/sprites/bestiary/exvoto_walk/dirs/0_S.gif",
+    "assets/sprites/bestiary/cireneo_walk/dirs/0_S.gif",
+    "assets/sprites/bestiary/ojo_walk/dirs/0_S.gif"
+  ],
+  "bgm_wav": "assets/music/cathedral_battle_loop.wav",
+  "work_dir": "walkthroughs/codice-abanderado/scratch",
+  "output_mp4": "walkthroughs/codice-abanderado/assets/codice_05_abanderado.mp4",
+  "phrases": [
+    {
+      "id": "p01",
+      "text": "En las guerras olvidadas de la Catedral, una retirada era peor que la muerte: era herejía.",
+      "pause": 0.50,
+      "segment": "char_1",
+      "subtitles": [
+        "En las guerras olvidadas de la Catedral,\\Nuna retirada era peor que la muerte: era herejía."
+      ]
+    },
+    {
+      "id": "p02",
+      "text": "El capitán juró ante el altar que el estandarte de su fe jamás tocaría el suelo.",
+      "pause": 0.55,
+      "segment": "char_1",
+      "subtitles": [
+        "El capitán juró ante el altar que el estandarte\\nde su fe jamás tocaría el suelo."
+      ]
+    },
+    {
+      "id": "p03",
+      "text": "Cuando sus hermanos cayeron desangrados, cosió sus mortajas a la tela para que marcharan eternamente.",
+      "pause": 0.65,
+      "segment": "char_1",
+      "subtitles": [
+        "Cuando sus hermanos cayeron desangrados,\\ncosió sus mortajas a la tela para que marcharan eternamente."
+      ]
+    },
+    {
+      "id": "p04",
+      "text": "Hoy vaga encorvado entre las ruinas, usando el asta sagrada no como estandarte, sino como cayado.",
+      "pause": 0.50,
+      "segment": "card",
+      "subtitles": [
+        "Hoy vaga encorvado entre las ruinas, usando el asta\\nsagrada no como estandarte, sino como cayado."
+      ]
+    },
+    {
+      "id": "p05",
+      "text": "Su condena no es el dolor, sino la persistencia ciega de quien no concibe el descanso.",
+      "pause": 0.55,
+      "segment": "card",
+      "subtitles": [
+        "Su condena no es el dolor, sino la persistencia\\nciega de quien no concibe el descanso."
+      ]
+    },
+    {
+      "id": "p06",
+      "text": "Allí donde clava su mirada y apunta el hierro, el fango responde a su llamada.",
+      "pause": 0.70,
+      "segment": "card",
+      "subtitles": [
+        "Allí donde clava su mirada y apunta el hierro,\\nel fango responde a su llamada."
+      ]
+    },
+    {
+      "id": "p07",
+      "text": "De las aguas estancadas brotan jóvenes suplicantes, almas en pena que aún creen obedecer una orden.",
+      "pause": 0.50,
+      "segment": "char_2",
+      "subtitles": [
+        "De las aguas estancadas brotan jóvenes suplicantes,\\nalmas en pena que aún creen obedecer una orden."
+      ]
+    },
+    {
+      "id": "p08",
+      "text": "No hay victoria posible en estos claustros profanados, mas la disciplina del dogma es implacable.",
+      "pause": 0.60,
+      "segment": "char_2",
+      "subtitles": [
+        "No hay victoria posible en estos claustros profanados,\\nmas la disciplina del dogma es implacable."
+      ]
+    },
+    {
+      "id": "p09",
+      "text": "Pues en el credo del Abanderado, mientras el asta siga en pie... nadie tiene derecho a retirarse.",
+      "pause": 0.85,
+      "segment": "char_2",
+      "subtitles": [
+        "Pues en el credo del Abanderado, mientras el asta\\nsiga en pie... nadie tiene derecho a retirarse."
+      ]
+    },
+    {
+      "id": "p10",
+      "text": "Próximamente en tu Nintendo DS.",
+      "pause": 0.50,
+      "segment": "outro",
+      "subtitles": [
+        "Próximamente en tu Nintendo DS."
+      ]
+    }
+  ]
+}

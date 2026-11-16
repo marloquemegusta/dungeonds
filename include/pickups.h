@@ -12,6 +12,8 @@ void pickups_init(uint32_t seed);
 void pickups_shift_y(int dy_px);
 void pickups_enemy_killed(const Enemy *enemy);
 void pickups_update(fixed player_x, fixed player_y, fixed tide_y, PlayerState *player);
-void pickups_render(uint16_t *buffer, int cam_x, int cam_y);
+// Painter's list (render_screen): same contract as gems_item / gems_draw.
+int pickups_item(int i, int cam_x, int cam_y, int *depth);
+void pickups_draw(uint16_t *buffer, int i, int cam_x, int cam_y);
 
 #endif

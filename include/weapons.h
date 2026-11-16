@@ -42,11 +42,14 @@ extern const WeaponTuning g_weapon_tuning[NUM_WEAPON_TYPES];
 extern int g_fx_style;
 char weapons_fx_style_letter(void);
 
-// DESIGN.md 4.9 (debug): sniper charge aura look. 0 = L (flames, F2, default), 1 = G (glow from the chest),
-// 2 = E (thorn crown on the floor), 3 = H (ash). KEY_Y cycles them; the sandbox sets it from flag bits 3-4.
+// Sniper charge auras (DESIGN.md 4.9, 6.12.6, 6.12.8): a bitmask (1 << AURA_STYLE_*) that stacks. The relic ->
+// look mapping lives in relic_aura_mask() (weapons.c): E thorn ring (Aura de Cilicio), H ash (Sed de Ceniza),
+// G glow (Viatico), L flames (Corazon Flagelado, only while its instant charge is pending: g_aura_force_mask).
+// The sandbox forces one look through g_aura_debug_mask (flag bits 3-4).
 #define AURA_STYLE_COUNT 4
 enum { AURA_STYLE_L = 0, AURA_STYLE_G = 1, AURA_STYLE_E = 2, AURA_STYLE_H = 3 };
-extern int g_aura_style;
+extern int g_aura_debug_mask;
+extern int g_aura_force_mask;   // gameplay bits raised by relics (Corazon Flagelado: AURA_STYLE_L while its instant charge is pending)
 char weapons_aura_style_letter(void);
 
 // Pellet in flight. x/y live on the ground plane; the shot is drawn `height`
@@ -89,6 +92,14 @@ typedef struct {
 void weapons_init(void);
 void weapons_shift_y(int dy_px);
 void weapons_cycle(PlayerState *player);
+// Drops a sniper charge in progress without firing (level-up screen).
+void weapons_cancel_aim(void);
+// Death hook: a burning enemy that dies may explode (Martirio Contagioso). Call with the enemy still intact.
+void weapons_enemy_died(const Enemy *e);
+// Part C relics: the hero feet (world px), once a frame before weapons_update; and a hit the hero took
+// (Corazon Flagelado: wave of fire and instant next charge).
+void weapons_set_hero_pos(int x, int y);
+void weapons_player_hit(void);
 // True when a stylus press would start a sniper aim (the player must stop that frame).
 int weapons_can_start_aim(const PlayerState *player);
 // Sniper charge for the hero's animation: 1 while AIMING or READY, and the collimation progress 0..256.
@@ -102,6 +113,9 @@ void weapons_render(uint16_t *buffer, int cam_x, int cam_y);
 // Ground decals (under shadows and sprites) and the light pass (over the sprites); see groundfx.h.
 void weapons_render_floor(uint16_t *buffer, int cam_x, int cam_y);
 void weapons_render_light(uint16_t *buffer, int cam_x, int cam_y);
+void weapons_render_overlay(uint16_t *buffer);      // screen-space look of Llaga Abierta C (bottom screen only)
+int weapons_llaga_tint(void);                       // hero glow level 0..2 (Llaga Abierta B), see sprite_glow in main.c
+int weapons_consume_tint(int enemy_idx);            // burn tint level 1..4 an enemy keeps while Auto de Fe consumes its burn, else 0
 const char *weapons_get_name(WeaponType type);
 int weapons_get_active_projectile_count(void);
 
