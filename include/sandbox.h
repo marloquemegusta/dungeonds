@@ -38,6 +38,7 @@
 #define SANDBOX_FLAG_CLEAR     1   // remove every existing enemy (and effects) before spawning
 #define SANDBOX_FLAG_FREEZE_AI 2   // enemies keep their place (hits still hurt, shove and kill)
 #define SANDBOX_FLAG_GOD       4   // the player ignores damage
+#define SANDBOX_FLAG_NO_GEMS   32  // kills drop no xp gems (capture scenes show only hero, enemies and the effect)
 // Sniper charge aura look (g_aura_style, AURA_STYLE_*) in flag bits 3-4: 8 = bit 0, 16 = bit 1.
 // 0 = L (flames, default), 1 = G, 2 = E, 3 = H.
 #define SANDBOX_FLAG_AURA_SHIFT 3

@@ -10,6 +10,7 @@ typedef int sandbox_translation_unit_not_empty;
 #include "encounters.h"
 #include "gameplay.h"
 #include "weapons.h"
+#include "gems.h"
 #include "player_sprite.h"
 #include "enemy_ai.h"
 
@@ -144,6 +145,9 @@ static void sandbox_place(Enemy *e, EnemyType type, int x, int y, int ordinal, i
     e->kneel = 0;
     e->aim_px = e->aim_py = e->beam_len = 0;
     e->gesture = 0;
+    e->burn_layers = e->burn_tick = e->burn_ember = e->votive_hits = 0;   // a staged enemy never inherits the fire of the slot's last tenant
+    e->burn_timer = 0;
+    e->suspend_timer = e->suspend_req = 0;
     if (type == ENEMY_TYPE_EXVOTO && (flags & SANDBOX_ENEMY_FLAG_PRAY))
         enemy_exvoto_start_praying(e, (flags & SANDBOX_ENEMY_FLAG_KNEEL) != 0,
                                    (flags >> SANDBOX_ENEMY_FLAG_DIR_SHIFT) & 7);
@@ -292,9 +296,11 @@ void sandbox_update(Enemy *enemies, int max_enemies, fixed *player_x, fixed *pla
     g_player_state.god_mode = (flags & SANDBOX_FLAG_GOD) != 0;
     g_player_state.current_weapon = (WeaponType)(g_sandbox.weapon % NUM_WEAPON_TYPES);
     g_fx_style = g_sandbox.style % FX_STYLE_COUNT;
-    g_aura_style = ((flags & SANDBOX_FLAG_AURA_MASK) >> SANDBOX_FLAG_AURA_SHIFT) % AURA_STYLE_COUNT;
+    /* Las auras vienen solo de las reliquias (DESIGN.md §6.12.8); los bits de flag de aura se ignoran. */
+    g_aura_debug_mask = 0;
 
     g_sandbox_freeze_ai = (flags & SANDBOX_FLAG_FREEZE_AI) != 0;
+    g_gems_off = (flags & SANDBOX_FLAG_NO_GEMS) != 0;
 
     sandbox_spawn(enemies, max_enemies);
 

@@ -333,12 +333,12 @@
       },
       "en1_state": {
         "symbol": "enemies",
-        "offset": 157,
+        "offset": 165,
         "type": "u8"
       },
       "en1_y": {
         "symbol": "enemies",
-        "offset": 120,
+        "offset": 128,
         "type": "s32"
       },
       "en0_timer": {

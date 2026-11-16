@@ -139,3 +139,4 @@ Resúmenes acumulativos y auditables de cada entrega y avance de desarrollo en `
 | 121 | Vídeo vertical de lore: El Cireneo (`CÓDICE · III`) | [`codice-cireneo/`](codice-cireneo/walkthrough.md) | Vídeo 1080×1920 (01:04), voz Carmelo y Palatino Linotype |
 | 122 | Vídeo vertical de lore: El Ojo del Tribunal (`CÓDICE · IV`) | [`codice-ojo/`](codice-ojo/walkthrough.md) | Vídeo 1080×1920 (01:10), voz Carmelo y Palatino Linotype generado y verificado |
 | 123 | Vídeo vertical de lore: El Abanderado (`CÓDICE · V`) | [`codice-abanderado/`](codice-abanderado/walkthrough.md) | Vídeo 1080×1920 (01:22), voz Carmelo y Palatino Linotype generado y verificado |
+| 124 | Sistema de mejoras v0.4 (gemas, nivel, 7 Dones, 10 Reliquias, cartas) y ronda A/B/C de su aspecto | [`mejoras-v04/`](mejoras-v04/walkthrough.md) | Build 0 warnings, normas de color OK, jugado en DeSmuME con builds forzadas; pendiente DS |

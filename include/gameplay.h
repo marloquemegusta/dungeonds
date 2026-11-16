@@ -128,7 +128,8 @@ typedef enum {
     ENEMY_STATE_DEAD,
     ENEMY_STATE_DORMANT,      // v0.2: standing still in its pack until the pack wakes (DESIGN.md 5)
     ENEMY_STATE_PRAY,         // Exvoto: praying in front of a devout piece until the hero comes close or hits it
-    ENEMY_STATE_RISE          // Exvoto: getting up from its knees (stand_up clip), then CHASE
+    ENEMY_STATE_RISE,         // Exvoto: getting up from its knees (stand_up clip), then CHASE
+    ENEMY_STATE_SUSPENDED     // Viatico: killed (counted dead) but held inert ~0.3 s while the thread leaves its body
 } EnemyState;
 
 struct Enemy {
@@ -163,7 +164,32 @@ struct Enemy {
     int beam_my;
     int beam_ux;        // Ojo: true-ground unit vector of the damage line, 8.8
     int beam_uy;
+    // Quemado (DESIGN.md 6.12.2): layers stack up to the cap, the timer renews on every application.
+    uint8_t burn_layers;    // 0..cap (5 + Rescoldo)
+    uint8_t burn_tick;      // frames since the last fire tick
+    uint8_t burn_ember;     // frames until the next ember of the visual (weapons.c)
+    uint8_t votive_hits;    // Llama Votiva: frames of contact with the aim line since the last layer
+    uint16_t burn_timer;    // frames of Quemado left
+    uint8_t suspend_timer;  // Viatico: frames left of the suspended death (fits the tail padding: sizeof stays 124)
+    uint8_t suspend_req;    // Viatico: the next lethal hit suspends the death instead of finishing it
 };
+
+// Quemado: layers, tick and slow (DESIGN.md 6.12.10). burn_update runs once a frame from weapons_update.
+#define BURN_BASE_CAP 5          // [TUNABLE-PLACEHOLDER] layers
+#define BURN_BASE_FRAMES 120     // [TUNABLE-PLACEHOLDER] duration, renewed on every application
+#define BURN_TICK_FRAMES 15      // [TUNABLE-PLACEHOLDER] frames between fire ticks
+#define BURN_TICK_DAMAGE 3       // [TUNABLE-PLACEHOLDER] fire damage per layer per tick
+void burn_apply(struct Enemy *e, int layers);
+void burn_clear(struct Enemy *e);
+void burn_update(struct Enemy *enemies, int max_enemies);
+
+// Walking speed under Quemado: 10 % less per layer, up to 50 % (26/256 ~ 10.2 %).
+static inline fixed burn_slow(const struct Enemy *e, fixed speed) {
+    int l = e->burn_layers;
+    if (l <= 0) return speed;
+    if (l > 5) l = 5;
+    return speed - ((speed * l * 26) >> 8);
+}
 
 // Ojo del Tribunal sprite clips (player_sprite.h): the walk is the CHAR_OJO slot; TRACK/LOCK show the look
 // loop (e->frame) and the sentence gesture shows the sentence clip (frame from e->gesture).
@@ -214,9 +240,19 @@ static inline int abanderado_clip_frame(const struct Enemy *e, int clip) {
 // Applies damage to an enemy. On a kill it marks the enemy dead, records the kill
 // with the encounter manager and notifies the death hook.
 void enemy_hit(Enemy *e, int damage, fixed hit_vx, fixed hit_vy);
+// Fire damage (burn ticks, explosions): same kill path and death hook, but no hit stop, flash or sounds.
+void enemy_hit_quiet(Enemy *e, int damage);
 
 // Presentation hook called by enemy_hit() when an enemy dies (e.g. death chunks).
 // The renderer owns the visuals; gameplay code never depends on it directly.
+// g_death_phase tells the hook what to do: 0 everything, 1 only the bookkeeping (xp, gems, counters; the
+// death is suspended), 2 only the visuals (the suspension ended).
+#define DEATH_ALL 0
+#define DEATH_BOOKKEEPING 1
+#define DEATH_VISUALS 2
+extern int g_death_phase;
+#define SUSPEND_FRAMES 18            // [TUNABLE-PLACEHOLDER] Viatico: ~0.3 s inert before the death animation
+void enemy_suspend_update(Enemy *enemies, int max_enemies);
 typedef void (*EnemyDeathHook)(const Enemy *e, fixed hit_vx, fixed hit_vy);
 void enemy_set_death_hook(EnemyDeathHook hook);
 

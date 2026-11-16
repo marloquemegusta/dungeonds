@@ -107,7 +107,7 @@ ITCM_CODE static void sep_build_grid(const Enemy *enemies, int num_enemies) {
     memset(s_grid_head, SEP_NONE, sizeof(s_grid_head));
     if (num_enemies > MAX_GAMEPLAY_ENEMIES) num_enemies = MAX_GAMEPLAY_ENEMIES;
     for (int i = 0; i < num_enemies; i++) {
-        if (!enemies[i].active) continue;
+        if (!enemies[i].active || enemies[i].state == ENEMY_STATE_SUSPENDED) continue;   // a suspended victim does not push
         int c = sep_cell(TO_INT(enemies[i].x) >> SEP_CELL_SHIFT, TO_INT(enemies[i].y) >> SEP_CELL_SHIFT);
         s_grid_next[i] = s_grid_head[c];
         s_grid_head[c] = (uint8_t)i;
@@ -182,6 +182,7 @@ static int aim_vector(int ox, int oy, int tx, int ty, int *dx, int *dy) {
 // Shared by the skeleton and the charger's approach.
 static void chase_step(Enemy *e, Enemy *enemies, int num_enemies, int idx, fixed speed,
                        int wx, int wy, int px, int py, int ground_dist_sq) {
+    speed = burn_slow(e, speed);          // Quemado frena (DESIGN.md 6.12.2)
     int target_x = px, target_y = py;
     int direct = (e->has_los & VIEW_DIRECT) && ground_dist_sq <= CHASE_DIRECT_RANGE * CHASE_DIRECT_RANGE;
     if (!direct) {
@@ -840,7 +841,7 @@ static void update_abanderado(Enemy *e, Enemy *enemies, int num_enemies, int idx
         update_animation(e, 0);
         return;
     }
-    fixed spd = (wy > band_bot) ? (tuning->speed * 2) : tuning->speed;
+    fixed spd = burn_slow(e, (wy > band_bot) ? (tuning->speed * 2) : tuning->speed);
     fixed vx = (fixed)div32(tdx * (int32_t)spd, (int32_t)tdist);
     fixed vy = (fixed)div32(tdy * (int32_t)spd, (int32_t)tdist);
     int moved = move_with_slide(&e->x, &e->y, vx, vy);
@@ -859,7 +860,7 @@ ITCM_CODE void enemy_ai_update(Enemy *enemies, int num_enemies, fixed player_x, 
 
     for (int i = 0; i < num_enemies; i++) {
         Enemy *e = &enemies[i];
-        if (!e->active) continue;
+        if (!e->active || e->state == ENEMY_STATE_SUSPENDED) continue;   // Viatico: inert until enemy_suspend_update ends it
 
         if (e->hit_timer > 0) e->hit_timer--;
 

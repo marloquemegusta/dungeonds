@@ -707,6 +707,7 @@ Son una guía de diseño para dar variedad, no ramas ni clases. El jugador no lo
 - **Cada subida de nivel ofrece 1 de 3 Dones.** ~15-20 niveles por partida, sin volver a tirar.
 - **En los niveles 4, 8, 12 y 16 se ofrece 1 de 3 Reliquias** en lugar de Dones, en una pantalla distinta (marco dorado) que se note como el momento especial de la partida. Unas 4 reliquias por partida. Más adelante los cofres de élite y los jefes darán reliquias extra (§6.9.3).
 - **Ofertas con cabeza:** a partir de la segunda reliquia, al menos una de las tres opciones comparte arquetipo con alguna reliquia que ya tengas. No asegura la pieza que falta, solo que el camino sigue abierto; romper la partida sigue dependiendo de elegir bien y de algo de suerte.
+- **Requisitos (decidido 2026-11-15):** una mejora solo se ofrece si ya tienes lo que la activa. Hoy: Brasa, Rescoldo, Auto de Fe y Martirio Contagioso necesitan una fuente de quemadura (Llama Votiva, Aura de Cilicio o Corazón Flagelado). La primera reliquia de fuego abre ese camino. Toda mejora futura declara su requisito.
 - Una reliquia cogida sale del pool. Un Don al máximo deja de ofrecerse; si no queda ninguno, la oferta es curar 1 corazón.
 
 #### 6.12.5 Dones (estadísticas apilables, 4 rangos)
@@ -721,18 +722,18 @@ Son una guía de diseño para dar variedad, no ramas ni clases. El jugador no lo
 | **Vida** | +1 corazón de tope y cura 1 | Cualquiera que vaya apurado | Mártir (le resta daño con Llaga) |
 
 #### 6.12.6 Reliquias (10, una vez por partida)
-| Reliquia | Línea de efecto | Arquetipo | Aura | Contrapartida |
+| Reliquia | Línea de efecto | Arquetipo | Cómo se ve | Contrapartida |
 |---|---|---|---|---|
-| **Sed de Ceniza** | Al disparar: cada enemigo que matas acelera la siguiente carga; si no matas a nadie, va más lenta | Ráfaga | H, ceniza | Su propio riesgo |
-| **Lanza de Longinos** | Siempre: el rayo atraviesa a todos los enemigos, mueran o no | Todas | G, gloria | Ninguna |
-| **Auto de Fe** | Al impactar: el rayo hace el doble a los quemados y consume sus capas | Puente rayo ↔ fuego | Por decidir | Ninguna |
-| **Llama Votiva** | Mientras cargas: la línea de apuntado aplica capas de Quemado a lo que toca | Vigilia de lejos | L, llamas | Ninguna |
-| **Aura de Cilicio** | Mientras cargas: un aro de brasas a tus pies quema a quien entra; crece con la carga | Vigilia de cerca | E, corona de espinas | Ninguna |
-| **Paso de Procesión** | Mientras cargas: puedes andar despacio | Vigilia | Por decidir | Carga más lenta (rompe una regla) |
-| **Martirio Contagioso** | Al matar a un quemado: explota con daño de fuego y aplica Quemado alrededor | Puente de fuego | Por decidir | Ninguna; tope de cadena |
-| **Corazón Flagelado** | Al recibir un golpe: onda de fuego alrededor y siguiente disparo cargado al instante | Mártir | Por decidir | Ninguna |
-| **Llaga Abierta** | Al cogerla: tu vida máxima baja a la mitad. Siempre: todo tu daño sube por cada corazón por debajo de 5 | Mártir | Por decidir | Pierdes vida máxima |
-| **Viático** | Al matar a un enemigo pegado a ti: cada N muertes cercanas recuperas 1 corazón | Mártir | Por decidir | Ninguna |
+| **Sed de Ceniza** | Al disparar: cada enemigo que matas acelera la siguiente carga; si no matas a nadie, va más lenta | Ráfaga | Aura H, ceniza, al cargar | Su propio riesgo |
+| **Lanza de Longinos** | Siempre: el rayo atraviesa a todos los enemigos, mueran o no | Todas | Sin efecto propio: se ve en que el rayo atraviesa a todos (decidido 2026-11-15) | Ninguna |
+| **Auto de Fe** | Al impactar: el rayo hace el doble a los quemados y consume sus capas | Puente rayo ↔ fuego | Láser: núcleo del disparo en hoguera; los quemados estallan en chispas al recibirlo | Ninguna |
+| **Llama Votiva** | Mientras cargas: la línea de apuntado aplica capas de Quemado a lo que toca | Vigilia de lejos | Láser: la línea de apuntado arde en llamas | Ninguna |
+| **Aura de Cilicio** | Mientras cargas: un aro de brasas a tus pies quema a quien entra; crece con la carga | Vigilia de cerca | Aura E, corona de espinas, en el suelo | Ninguna |
+| **Paso de Procesión** | Mientras cargas: puedes andar despacio | Vigilia | Cuerpo: anda en cruz mientras carga | Carga más lenta (rompe una regla) |
+| **Martirio Contagioso** | Al matar a un quemado: explota con daño de fuego y aplica Quemado alrededor | Puente de fuego | En los enemigos: explosiones | Ninguna; tope de cadena |
+| **Corazón Flagelado** | Al recibir un golpe: onda de fuego alrededor y siguiente disparo cargado al instante | Mártir | Onda de fuego al recibir el golpe; aura L, llamas, mientras espera el disparo instantáneo | Ninguna |
+| **Llaga Abierta** | Al cogerla: tu vida máxima baja a la mitad. Siempre: todo tu daño sube por cada corazón por debajo de 5 | Mártir | Láser: el rayo enrojece cuanta menos vida te queda; el pecho gotea sangre | Pierdes vida máxima |
+| **Viático** (concepto cambiado 2026-11-15: robo de vida) | Al matar con el rayo: probabilidad de robar 1 corazón al enemigo, el doble si estaba pegado a ti | Mártir | Sifón: la vida del enemigo viaja hasta el pecho del héroe (ronda A/B/C); aura G, gloria, al cargar | Ninguna |
 
 **Detalles:**
 - **Llama Votiva** quema solo donde apuntas en ese momento; no deja rastro en el suelo (opción A, elegida por coste y rendimiento). El rastro persistente es Tierra Quemada, en reserva.
@@ -748,32 +749,34 @@ Son una guía de diseño para dar variedad, no ramas ni clases. El jugador no lo
 - **Ametralladora en cadena (Ráfaga con fuego):** Sed de Ceniza, Llama Votiva, Martirio y Auto de Fe. Una carga corta marca con la línea, el disparo remata doble a los quemados, los muertos explotan y contagian, y cada muerte acelera la siguiente carga. Valle: hasta tener Llama Votiva, Martirio no hace nada.
 - **Procesión de fuego (Vigilia):** Llama Votiva, Aura de Cilicio y Paso de Procesión, con Dones de Brasa, Rescoldo y Paso. Avanzas con los brazos en cruz arrastrando la línea por la horda y con el aro al máximo; ya casi no disparas. Valle: entre coger Procesión y juntar 2 rangos de Paso, la marea te come y la carga lenta estorba.
 - **Hoguera (Vigilia de cerca con Martirio):** Aura de Cilicio, Martirio, Paso de Procesión y Brasa. Te metes en la masa con el aro a tope; los quemados revientan pegados a ti y contagian a los de detrás.
-- **Penitente kamikaze (Mártir):** Llaga Abierta, Corazón Flagelado y Viático, con Dones de Paso y Brasa. Vives a 1-2 corazones con el daño al máximo. Cada golpe que recibes suelta una onda y un disparo instantáneo, y matar de cerca te devuelve corazones. Con Aura de Cilicio, el aro hace las muertes cercanas por ti. Valle: Llaga sola solo te deja con 3 corazones.
+- **Penitente kamikaze (Mártir):** Llaga Abierta, Corazón Flagelado y Viático, con Dones de Paso y Brasa. Vives a 1-2 corazones con el daño al máximo. Cada golpe que recibes suelta una onda y un disparo instantáneo, y robas vida al matar, más aún de cerca. Con Aura de Cilicio, el aro hace las muertes cercanas por ti. Valle: Llaga sola solo te deja con 3 corazones.
 - **Partida sin criterio (el contraejemplo):** Llama Votiva, Sed de Ceniza y tres rangos de Prisa. La línea quema medio segundo porque cargas rapidísimo, y Sed te castiga cada vez que barres sin matar. Las piezas se anulan entre sí.
 
 #### 6.12.8 Presentación
-- **Auras por reliquia:** las cuatro auras de carga en comparación (§6.10, selector `Y` de depuración) dejan de competir. Cada una pasa a ser el aspecto de una reliquia (columna «Aura» de §6.12.6) y se apilan según lo que lleves. Sin reliquias, la carga muestra solo el rayo. Cada aura tiene un coste fijo por frame: con 3 o 4 apiladas se mide en la DS y, si se pasa, se dibujan las dos últimas cogidas.
+- **Cada reliquia se ve donde actúa (decidido 2026-11-15):** los efectos pegados a personajes respetan la oclusión con sus cuerpos, como las auras. no todas son auras. Unas son auras del cuerpo, otras cambian el láser o la línea de apuntado, y otras se ven en los enemigos o en el movimiento (columna «Cómo se ve» de §6.12.6). Las cuatro auras de carga en comparación (§6.10, selector `Y` de depuración) dejan de competir: E → Cilicio, H → Sed de Ceniza, G → Viático y L → Corazón Flagelado, y se apilan según lo que lleves. Sin reliquias, la carga muestra solo el rayo. Cada aura tiene un coste fijo por frame: con 3 o 4 apiladas se mide en la DS y, si se pasa, se dibujan las dos últimas cogidas.
 - **Enemigos quemados:** brasas procedurales sobre el cuerpo con el sistema de chispas del rayo (más capas, más brasas subiendo) y una lengua de fuego sobre la cabeza al tope de capas. Tope global de partículas. Descartados: sprites requemados (doblan el arte y la memoria y no muestran las capas) y teñir el sprite (encarece el paso de dibujo que hoy más pesa).
 - **Fuego en el suelo:** en la demo solo hay efectos breves en el pase de suelo: el aro del Cilicio y un anillo corto por cada explosión de Martirio. Nada persistente.
-- **Pantalla de elección:** 3 tarjetas en la pantalla inferior con icono, nombre y línea de efecto. Las reliquias van con marco dorado. Diseño de iconos por decidir.
+- **Pantalla de elección (decidido 2026-11-15):** estilo Códice (§6.11: fondo negro, borde gris fino). Sobre el juego pausado y oscurecido aparecen **3 cartas en paralelo** en primer plano en la pantalla inferior; la seleccionada se ilumina (borde y brillo) y se adelanta un poco. Cada carta lleva su nombre y un **arte que es una vista previa del efecto tal como se ve en el juego** (decidido 2026-11-15, opción A): una escena de la propia ROM (héroe, efecto y los enemigos que hagan falta, sobre fondo oscuro) capturada en bucle y ampliada 2×, enmarcada al estilo Códice. Se descarta pintar el efecto aparte sobre el retrato del Códice (primer horneado: el efecto quedaba pobre frente al del juego). El efecto completo de la carta seleccionada se lee en una franja de texto. Las reliquias llevan marco dorado. El arte se genera fuera de la ROM a partir de esas capturas y se carga bajo demanda desde NitroFS; se regenera cuando cambie un efecto.
+- **Gemas y HUD de nivel:** se quedan como la variante A, provisionales; irán prerrenderizados en 3D como los corazones del HUD (decidido 2026-11-15).
+- **Ronda A/B/C (decidido 2026-11-15):** cuando todo funcione, cada elemento visual nuevo (pantalla y cartas, arte de cartas, gemas, HUD de nivel, enemigo quemado, línea de Llama Votiva, explosión de Martirio, onda de Flagelado y auras nuevas) se presenta en un walkthrough con tres variantes sacadas de la ROM, con `SELECT` como selector de depuración en vivo, y el usuario elige.
 
 #### 6.12.9 Pendiente (siguiente paso de la sesión de diseño)
 - Cifras de partida: alcance base y máximo, tiempos de carga, daño del rayo y del fuego frente a la vida de exvoto, cireneo y ojo, valor por rango de cada Don, capas y duración de Quemado, bonus de Llaga y N de Viático.
 - Curva de experiencia (~15-20 niveles en ~8 min) y valor de las gemas por enemigo.
 - Si las curas que caen en la v0.3 conviven con el Don de Vida y con Viático o se ajustan.
-- Auras de las reliquias que no tienen una existente (Auto de Fe, Procesión, Martirio y las tres del Mártir) e iconos de la pantalla de elección.
+- Aspecto definitivo de los cambios del láser (Auto de Fe, Llama Votiva y Llaga), en la ronda A/B/C.
 
 #### 6.12.10 Cifras de la primera versión (provisionales, 2026-11-15)
 Todas son `[TUNABLE-PLACEHOLDER]`. Se fijaron a ojo partiendo de las cifras vigentes para montar la primera versión completa, y se ajustan con la lista que salga de la partida de prueba en la DS. Frames a 60 FPS; distancias en píxeles de suelo; vida en la escala 100 = 1,0 (exvoto 100, cireneo y ojo 300, abanderado 1200).
 
-**Rayo base:** daño 150 (sin cambios). Carga 24 frames. Recuperación tras disparar 40 frames. **Alcance 240** (antes 320).
+**Rayo base:** daño 150 (sin cambios). Carga 24 frames. Recuperación tras disparar 40 frames. **Alcance 160** (antes 320; 240 en la primera versión, demasiado largo según el usuario, 2026-11-15).
 
 **Dones (4 rangos cada uno):**
 | Don | Por rango | Al máximo |
 |---|---|---|
 | Fervor | +25 % daño del rayo | 300: mata cireneo y ojo de un disparo |
 | Prisa | −4 frames de carga y −6 de recuperación | carga 8, recuperación 16 |
-| Alcance | +48 de alcance del rayo y de la línea | 432 (el 320 de antes es ~75 %) |
+| Alcance | +64 de alcance del rayo y de la línea | 416 (el 320 de antes es ~77 %) |
 | Brasa | +25 % daño de fuego | ×2 |
 | Rescoldo | +1 capa de tope y +30 frames de duración | 9 capas, 240 frames |
 | Paso | +12 % velocidad (también con Procesión) | +48 % |
@@ -791,7 +794,7 @@ Todas son `[TUNABLE-PLACEHOLDER]`. Se fijaron a ojo partiendo de las cifras vige
 - **Martirio Contagioso:** al morir quemado, explosión de radio 32 con 60 de daño de fuego y 2 capas a los que alcanza. Tope de 4 explosiones por frame (las demás esperan al siguiente).
 - **Corazón Flagelado:** al recibir un golpe, onda de radio 48 con 100 de daño de fuego y 3 capas; la siguiente carga llega lista al instante.
 - **Llaga Abierta:** vida máxima a la mitad, redondeando hacia arriba (5 → 3). Todo el daño (rayo y fuego) +20 % por cada corazón por debajo de 5.
-- **Viático:** cada 12 muertes a menos de 40 del héroe, +1 corazón (sin pasar del tope).
+- **Viático:** cada muerte por el rayo tiene un 8 % de probabilidad de robar 1 corazón (16 % si el enemigo estaba a menos de 40 del héroe), sin pasar del tope.
 
 **Gemas y experiencia:**
 - Valor de las gemas: exvoto y monaguillo 1; cireneo y ojo 3; abanderado 15.
@@ -800,3 +803,46 @@ Todas son `[TUNABLE-PLACEHOLDER]`. Se fijaron a ojo partiendo de las cifras vige
 - Reliquias en los niveles 4, 8, 12 y 16. Las curas de la v0.3 se mantienen (1 de cada 12 muertes).
 
 **Depuración (solo para la prueba):** `X` sube de nivel al instante. `Y` deja de cambiar el aura: las auras salen de las reliquias.
+
+#### 6.12.11 Elecciones de la ronda A/B/C (2026-11-15, primera vuelta)
+- **Enemigo quemado:** A (brasas y lenguas, potenciada) o B (corona de llamas a los pies), por decidir entre las dos, **más un tinte en el propio sprite** del enemigo (oscurecido o enrojecido según las capas). Se acepta el coste del tinte en el dibujo de los enemigos quemados, pero se mide en la DS.
+- **Llama Votiva:** mezcla de A y C: chispas alrededor de la línea que giran de forma irregular y procedural (como manchas solares), no una hélice perfecta.
+- **Corazón Flagelado:** A (anillo grande).
+- **Martirio Contagioso:** A, con el mismo lenguaje visual que Flagelado, por consonancia.
+- **Auto de Fe:** A, pero las tres variantes se parecían demasiado: hay que hacerla más distinta de un impacto normal.
+- **Llaga Abierta:** ninguna convence; nueva ronda con otras ideas.
+- **Viático:** cambia de concepto: de curarse por muertes cercanas a **robar vida al disparar**, con un sifón visible de la víctima al héroe (tabla de §6.12.6).
+
+#### 6.12.12 Elecciones de la ronda A/B/C (2026-11-15, segunda vuelta)
+- **Enemigo quemado:** se descarta C. Siguen A y B. El tinte del sprite indica las capas: claro con 1 capa y más rojo con cada capa. El tinte actual es el tope, al que se llega con 3-4 capas.
+- **Llama Votiva:** B (chispas sueltas que giran de forma irregular). Se seguirá afinando más adelante.
+- **Auto de Fe:** A, chispas minimalistas en el punto de impacto. B y C no son un efecto aparte: **animan el propio estado de quemado al consumirse**. Las llamas del quemado se avivan, envuelven al enemigo y se evaporan hacia arriba mientras el tinte vuelve a la normalidad (B parte del quemado A; C, del B). Todo efecto tiene que nacer del mundo (del suelo, del cuerpo o del punto de impacto), nunca flotar como un icono.
+- **Llaga Abierta:** se descarta A (se confunde con los efectos de fuego que se expanden). B pasa a ser **sangre que gotea** (con poca vida gotea poco y al límite mucho más) **y aspecto de ascendido**, no rojo: es un poder, no un castigo, y el rojo se confunde con el quemado. C (borde rojo que late) se mantiene como opción.
+- **Viático:** A (hilo de sangre) o C (alma pálida). Al robar vida, la víctima no desaparece en el acto: se queda **inerte y suspendida unos 0,3 s** (ni ataca ni bloquea, ya cuenta como muerta para experiencia y gemas) mientras se le extrae el hilo o el alma, y luego muere con su animación normal. Propuesta del coordinador, a validar con el GIF.
+
+#### 6.12.13 Elecciones de la ronda A/B/C (2026-11-15, tercera vuelta)
+- **Enemigo quemado:** A y B gustan las dos; se decide más adelante jugando.
+- **Auto de Fe:** A (chispas al impactar) y C (la corona de llamas sube y se evapora) gustan; se descarta B.
+- **Llaga Abierta:** B. El aura de ascendido crece con la sangre: cuantos menos corazones, más gotea y más intenso es el brillo pálido dorado.
+- **Viático:** A (hilo de sangre); C (alma pálida) se conserva como alternativa.
+
+#### 6.12.14 Pendiente: efectos de sonido (sesión aparte)
+El sistema de mejoras no tiene sonido propio todavía. Faltan, como mínimo:
+- subir de nivel (se abre la pantalla de cartas);
+- mover la selección y elegir carta (Don y Reliquia, esta más solemne);
+- recoger gema (por valor: 1, 3 y 15) y el imán;
+- enemigo empezando a arder y tic de quemadura (muy discreto, con enfriamiento);
+- explosión de Martirio Contagioso;
+- onda de Corazón Flagelado;
+- Auto de Fe al consumir la quemadura;
+- Llama Votiva (línea ardiendo mientras se carga, en bucle);
+- Aura de Cilicio (aro ardiendo mientras se carga, en bucle);
+- robo de vida de Viático (sifón y cura);
+- Llaga Abierta (latido o goteo según la vida que falte).
+Se generan con el flujo de `AGENTS.md` (ElevenLabs CLI) en su propia sesión.
+
+#### 6.12.15 Estado y siguiente paso (2026-11-16)
+- **Hecho:** primera versión jugable completa del sistema (gemas, nivel, cartas, 7 Dones, 10 Reliquias, quemado, requisitos de oferta) y la ronda A/B/C de efectos.
+- **Pendiente de validar:** si es divertido. Se hará con el plan de pruebas de `walkthroughs/mejoras-v04/plan_pruebas.md` (Ráfaga, Vigilia, Mártir, sin criterio y techo con trucos, con puntos de control de tensión, poder y decisión) y una entrevista de ajustes posterior. Las cifras de §6.12.10 siguen siendo provisionales hasta entonces.
+- **Mientras tanto:** se arreglan los problemas básicos que el usuario detecta jugando, uno a uno, sin tocar el equilibrio.
+
