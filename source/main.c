@@ -2287,8 +2287,11 @@ static void player_update(uint32_t keys, uint32_t keys_down) {
         upgrades_cycle_design_variant();   // also advances g_fx_style
     }
     upgrades_debug_update();
-    // DEBUG (playtest v0.4): X queues one level-up at once (DESIGN.md 6.12.10).
+#if !ENCOUNTERS_PROTO
+    // DEBUG (playtest v0.4): X queues one level-up at once (DESIGN.md 6.12.10). Not in the encounters run:
+    // there an offer only comes from a broken relicario or a beaten boss, never from a key with no cause.
     if ((keys_down & KEY_X) && !g_player_state.is_dead) upgrades_queue_levelup();
+#endif
 
     int pressed = s_latch_pressed;
     int released = s_latch_released;

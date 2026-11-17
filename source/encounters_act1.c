@@ -169,6 +169,7 @@ void enc_init(uint32_t seed) {
     memset(s_relic_damage, 0, sizeof(s_relic_damage));
     s_relic_k = -1;
     s_relicarios = 0;
+    g_enc_debug.start_dones = 0;       // a new act never inherits a "apply Dones now" debug request
     s_victory = 0;
     s_boss_locked = 0;
     s_active_boss_k = ENC_FIRST_BOSS;
