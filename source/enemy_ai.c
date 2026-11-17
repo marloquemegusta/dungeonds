@@ -482,7 +482,7 @@ static void update_charger(Enemy *e, Enemy *enemies, int num_enemies, int idx,
             // 3-stage progressive crouch (walk[0] -> telegraph -> charge[0]) without blinking.
             e->dir = dir_from_vector(TO_FIXED(e->aim_dir_x), TO_FIXED(e->aim_dir_y));
             int elapsed = tuning->telegraph_duration - e->state_timer;
-            e->frame = (elapsed < 6) ? 0 : (elapsed < 20) ? 1 : 2;
+            e->frame = (elapsed < 10) ? 0 : (elapsed < 28) ? 1 : 2;
             if (--e->state_timer <= 0) {
                 e->state = ENEMY_STATE_CHARGE;
                 e->state_timer = CHARGER_CHARGE_FRAMES;
@@ -536,9 +536,8 @@ static void update_charger(Enemy *e, Enemy *enemies, int num_enemies, int idx,
             refresh_view(e, idx, wx, wy, px, py, ground_dist_sq, CHARGER_ENGAGE_DIST);
 #if ENCOUNTERS_PROTO
             // v2: it charges only when it has the hero lined up (heading within one 45-degree sector of him),
-            // 40 to 160 px away, with a clear view.
+            // up to 160 px away, with a clear view. It also telegraphs point blank so the player can dodge.
             if ((e->has_los & VIEW_ENGAGE) && ground_dist_sq <= CHARGER_ENGAGE_DIST * CHARGER_ENGAGE_DIST &&
-                ground_dist_sq >= CHARGER_MIN_DIST * CHARGER_MIN_DIST &&
                 ((dir_from_vector(player_x - e->x, player_y - e->y) - e->dir + 9) & 7) <= 2 &&
                 aim_vector(wx, wy, px, py, &e->aim_dir_x, &e->aim_dir_y)) {
 #else

@@ -44,7 +44,6 @@ typedef struct {
 #if ENCOUNTERS_PROTO
 #define CHARGER_CHARGE_FRAMES 45    // [TUNABLE-PLACEHOLDER] v2 (variant "encuentros"): ~175 px at 1000
 #define CHARGER_RECOVER_FRAMES 20   // [TUNABLE-PLACEHOLDER] v2: short recovery when the charge hits nothing
-#define CHARGER_MIN_DIST 40         // [TUNABLE-PLACEHOLDER] v2 ground px: closer than this it does not charge, it keeps walking
 #else
 #define CHARGER_CHARGE_FRAMES 63    // [TUNABLE-PLACEHOLDER] frames of charge (~160 px at 650)
 #define CHARGER_RECOVER_FRAMES 60   // [TUNABLE-PLACEHOLDER] frames standing still after the charge, vulnerable
