@@ -1126,7 +1126,11 @@
       }
       const extent = Math.max(maxX - minX, maxV - minV);
       // state.fitZoom < 1 zooms the camera out (smaller sprite inside the same cell), used to match the hero's apparent size.
-      const half = extent * size / targetPixels / 2 / (state.fitZoom || 1);
+      // state.fitExtent (optional): frames the camera with this extent instead of the measured one, so every clip of a
+      // character shares the pixels-per-meter of its reference clip (framing stays centred per clip).
+      const fitExtent = state.fitExtent > 0 ? state.fitExtent : extent;
+      const half = fitExtent * size / targetPixels / 2 / (state.fitZoom || 1);
+      if (extent > half * 2 * 1.0005) console.warn(`[fit] CROPPED: extent ${extent.toFixed(4)} m does not fit the camera span ${(half * 2).toFixed(4)} m (fitExtent ${fitExtent.toFixed(4)}, fitZoom ${state.fitZoom || 1}); the sprite is cut off`);
       const center = new K()
         .addScaledVector(right, (minX + maxX) / 2)
         .addScaledVector(upAxis, (minV + maxV) / 2);
@@ -1134,7 +1138,7 @@
       camera.position.copy(center).addScaledVector(toCamera, 30);
       camera.lookAt(center);
       camera.updateMatrixWorld(true);
-      state.lastFit = { extent, half, center: center.toArray(), minX, maxX, minV, maxV, pts: samples[0].pts, minY0: samples[0].minY, camera };
+      state.lastFit = { extent, fitExtent, half, center: center.toArray(), minX, maxX, minV, maxV, pts: samples[0].pts, minY0: samples[0].minY, camera };
 
       renderer.setClearColor(0x000000, 0);
       renderer.setSize(size * ss, size * ss, false);

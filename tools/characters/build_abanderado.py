@@ -23,8 +23,6 @@ OUT = os.path.join(ROOT, 'assets/models/characters/abanderado')
 CHAR_FBX = glob.glob(os.path.join(OUT, 'source/tripo_convert_6e3a96b5-*.fbx'))[0]
 STD_FBX = glob.glob(os.path.join(OUT, 'source/estandarte/*.fbx'))[0]
 WALK_FBX = os.path.join(ROOT, 'assets/models/animations/walk/sad_walk.fbx')
-if not os.path.exists(WALK_FBX):
-    WALK_FBX = 'C:/codexlocal/dungeonds/assets/models/animations/walk/sad_walk.fbx'
 
 # ---- andar ----
 WALK_FRAMES = 48        # 44 intervalos de Mixamo repartidos en 48 (multiplo de 8) + 1 de cierre

@@ -279,7 +279,8 @@ chars_meta = [
     ('ojo', 'ojo', 'El Ojo del Tribunal', 110, 9),
     ('exvoto', 'exvoto', 'Exvoto Walker Enemy', 130, 8),
     # Exvoto clips (DESIGN.md 6.10): each one is a character slot of its own, so the enemy swaps char_id
-    # when its pose changes and the renderer needs no special case. Same 40x40 cell as the walk.
+    # when its pose changes and the renderer needs no special case. Same 40x40 cell as the walk, except
+    # exvoto_stand_up (48x48 cell, see characters.json).
     ('exvoto_pray_stand', 'exvoto_pray_stand', 'Exvoto praying standing', 11, 24),
     ('exvoto_pray_kneel', 'exvoto_pray_kneel', 'Exvoto praying kneeling', 27, 14),
     ('exvoto_stand_up', 'exvoto_stand_up', 'Exvoto standing up', 0, 9),

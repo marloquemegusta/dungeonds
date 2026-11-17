@@ -63,3 +63,17 @@ Detalle y imágenes en [`inventario.md`](inventario.md).
   - disparo, 9.463 con un máximo de 27/255 por canal: los dos FBX originales traían normales distintas y ahora hay una sola malla. A la vista no se distingue ([comparación ×4, diferencia ×8](assets/corazon_disparo_ab.png)).
   - Los sprites del juego no se han regenerado.
 - **Riesgo anotado:** `build_corazon.py` restituye el desfase de tiempo original de los clips reescribiendo los tiempos del FBX con módulos internos de Blender 5.2; puede romperse con otra versión de Blender.
+
+## Escala fija por personaje y re-render completo (2026-11-17)
+
+- **Problema:** el render encuadraba cada animación según su propia amplitud. Una pose más abierta alejaba la cámara y el personaje salía más pequeño. Corazón disparando salía al 87 % de su andar, el Exvoto arrodillado y levantándose al 80 %, y la carga del Cireneo al 94 %. El Exvoto lo compensaba con zooms ajustados a mano.
+- **Arreglo:** cada personaje se renderiza a los píxeles por metro de su animación de andar. Las demás animaciones llevan `scaleRef` en `characters.json` y heredan esa escala, sin zooms por animación. Si una pose no cabe, esa animación lleva una celda mayor: el Exvoto levantándose pasa a 48 px, ocupa +32 KB de ROM y no necesita cambios en el código del juego. Regla y tabla sprite → modelo → animación: `assets/MANIFEST.md` §2.
+- **Resultado:** todas las animaciones están a escala 1,000 de su referencia, todos los personajes están re-renderizados y la ROM compila sin avisos.
+
+![Corazón: andar y disparar, antes y después](assets/corazon_escala_hoja.png)
+![Exvoto: andar, arrodillada y levantándose, antes y después](assets/exvoto_escala_hoja.png)
+![Exvoto levantándose en celda de 48 px a la escala del andar](assets/exvoto_levantarse_48.png)
+
+- **Pendiente:**
+  - Medir en la DS.
+  - Las variantes `cathedral-playground` no compilan, tampoco en `main`: falta declarar `g_hw_shadows_on` con `GODRAYS_PROTO`. Mientras siga así, no se puede capturar el levantarse en la ROM.

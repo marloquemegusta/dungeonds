@@ -104,8 +104,21 @@ def step_characters(
 
     print(f"\n=== [characters: export {len(chars_to_export)} character(s) (jobs={jobs})] ===")
 
-    task_list: list[tuple[str, list[str]]] = []
+    # scaleRef: a clip entry that names another entry inherits its fitZoom and is framed with the ref's measured
+    # extent (--fitExtent), so every clip of one character has the same pixels-per-meter. Two phases: refs first.
+    def _ref_of(cfg: dict) -> str | None:
+        return cfg.get("scaleRef")
+
     for name, cfg in chars_to_export.items():
+        ref = _ref_of(cfg)
+        if ref is None:
+            continue
+        if ref not in all_chars or _ref_of(all_chars[ref]) is not None:
+            print(f"ERROR: {name}: scaleRef '{ref}' must be an entry without scaleRef", file=sys.stderr)
+            sys.exit(1)
+        # A clip may use a larger (or smaller) cell than its ref: _build_cmd rescales fitExtent so px/m stays equal.
+
+    def _build_cmd(name: str, cfg: dict, fit_extent: float | None) -> list[str]:
         model_path = ROOT / cfg["model"]
         out_dir = ROOT / "assets" / "sprites" / "characters" / name
         template_path = ROOT / cfg["template"]
@@ -123,9 +136,20 @@ def step_characters(
             str(cfg["resolution"]),
         ]
 
-        fit_zoom = cfg.get("fitZoom", defaults.get("fitZoom"))
+        ref = _ref_of(cfg)
+        outline = cfg.get("outlineMode", cfg.get("outline", defaults.get("outlineMode", defaults.get("outline"))))
+        fit_zoom = (all_chars[ref] if ref else cfg).get("fitZoom", defaults.get("fitZoom"))
         if fit_zoom is not None:
             cmd.extend(["--fitZoom", str(fit_zoom)])
+        if fit_extent is not None:
+            # Lab: span = fitExtent * size / targetPixels / fitZoom, targetPixels = size - 2 with an outline, else size.
+            # px/m = size / span, so a different cell keeps the ref's px/m with fitExtent * tp_clip / tp_ref (a no-op at equal size).
+            if ref and cfg["resolution"] != all_chars[ref]["resolution"]:
+                eff_outline = outline or json.loads(template_path.read_text(encoding="utf-8")).get("outlineMode", "none")
+                outline_on = eff_outline != "none"
+                tp = lambda r: r - (2 if outline_on else 0)
+                fit_extent = fit_extent * tp(cfg["resolution"]) / tp(all_chars[ref]["resolution"])
+            cmd.extend(["--fitExtent", repr(fit_extent)])
 
         muzzle_bone = cfg.get("muzzleBone", defaults.get("muzzleBone"))
         if muzzle_bone:
@@ -139,7 +163,6 @@ def step_characters(
         if light:
             cmd.extend(["--light", str(light)])
 
-        outline = cfg.get("outlineMode", cfg.get("outline", defaults.get("outlineMode", defaults.get("outline"))))
         if outline:
             cmd.extend(["--outline", str(outline)])
 
@@ -153,8 +176,7 @@ def step_characters(
             char_legibility = cfg.get("legibility", defaults.get("legibility", "c2"))
         if char_legibility in ("anterior", "c2"):
             cmd.extend(["--legibility", str(char_legibility)])
-
-        task_list.append((name, cmd))
+        return cmd
 
     def _worker(item: tuple[str, list[str]]) -> tuple[str, int, str, str, float]:
         cname, cmd = item
@@ -164,27 +186,54 @@ def step_characters(
         dt = time.time() - t0
         return cname, res.returncode, res.stdout, res.stderr, dt
 
-    max_workers = max(1, jobs)
-    failed: list[tuple[str, str, str]] = []
-    with ThreadPoolExecutor(max_workers=max_workers) as executor:
-        futures = {executor.submit(_worker, item): item[0] for item in task_list}
-        for fut in as_completed(futures):
-            cname, retcode, stdout, stderr, dt = fut.result()
-            if retcode != 0:
-                print(f"  !! FAILED {cname} (in {dt:.1f}s, exit code {retcode})", file=sys.stderr)
-                failed.append((cname, stdout, stderr))
-            else:
+    def _run_phase(task_list: list[tuple[str, list[str]]]) -> dict[str, float]:
+        """Runs the exports in parallel; returns the measured extent of each clip (from the FIT line)."""
+        extents: dict[str, float] = {}
+        failed: list[tuple[str, str, str]] = []
+        with ThreadPoolExecutor(max_workers=max(1, jobs)) as executor:
+            futures = {executor.submit(_worker, item): item[0] for item in task_list}
+            for fut in as_completed(futures):
+                cname, retcode, stdout, stderr, dt = fut.result()
+                if retcode != 0:
+                    print(f"  !! FAILED {cname} (in {dt:.1f}s, exit code {retcode})", file=sys.stderr)
+                    failed.append((cname, stdout, stderr))
+                    continue
                 print(f"  ok {cname} (in {dt:.1f}s)")
+                for line in stdout.splitlines():
+                    if line.startswith("WARNING [fit]"):
+                        print(f"  !! {cname}: {line}", file=sys.stderr)
+                    elif line.startswith("FIT "):
+                        extents[cname] = json.loads(line[4:])["extent"]
+        if failed:
+            print("\nERROR: One or more character exports failed:", file=sys.stderr)
+            for cname, stdout, stderr in failed:
+                print(f"\n--- Output for {cname} ---", file=sys.stderr)
+                if stdout:
+                    print(stdout, file=sys.stderr)
+                if stderr:
+                    print(stderr, file=sys.stderr)
+            sys.exit(1)
+        return extents
 
-    if failed:
-        print("\nERROR: One or more character exports failed:", file=sys.stderr)
-        for cname, stdout, stderr in failed:
-            print(f"\n--- Output for {cname} ---", file=sys.stderr)
-            if stdout:
-                print(stdout, file=sys.stderr)
-            if stderr:
-                print(stderr, file=sys.stderr)
-        sys.exit(1)
+    refs_phase = [(n, _build_cmd(n, c, None)) for n, c in chars_to_export.items() if _ref_of(c) is None]
+    extents = _run_phase(refs_phase)
+
+    dep_phase: list[tuple[str, list[str]]] = []
+    for name, cfg in chars_to_export.items():
+        ref = _ref_of(cfg)
+        if ref is None:
+            continue
+        ref_extent = extents.get(ref)
+        if ref_extent is None:  # ref not re-rendered in this run: read it back from its last export
+            ref_settings = ROOT / "assets" / "sprites" / "characters" / ref / "settings.json"
+            if ref_settings.exists():
+                ref_extent = json.loads(ref_settings.read_text(encoding="utf-8")).get("measuredExtent")
+        if ref_extent is None:
+            print(f"ERROR: {name}: no measured extent for scaleRef '{ref}'; render '{ref}' first (--char {ref},{name})", file=sys.stderr)
+            sys.exit(1)
+        dep_phase.append((name, _build_cmd(name, cfg, ref_extent)))
+    if dep_phase:
+        _run_phase(dep_phase)
 
 
 def step_props(legibility: str | None = None) -> None:

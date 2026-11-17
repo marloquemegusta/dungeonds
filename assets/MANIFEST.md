@@ -27,21 +27,49 @@ Estado a 2026-11-17.
 | Icono de la ROM | `assets/icon.png` | toolchain | banner de la ROM | git |
 | Vídeos de redes | skill `codice-lore-video` | `render_guiones.py` | no van en la ROM | LFS (`assets/videos/*.mp4`) |
 
-## 2. Personajes (originales 3D)
+## 2. Personajes: de qué sale cada sprite
 
-| Pieza | Original vigente (UUID Tripo) | Script de construcción | Derivados (no versionados) | Entrada en `characters.json` | Uso en el juego |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| Corazón Abierto (héroe) | `corazon/source/corazon.fbx` (`f25681c0`) + clips `animations/corazon/{walk,disparo}.fbx` | `build_corazon.py` | `corazon_{walk,disparo}.fbx` | `corazon`, `corazon_disparo` | `CHAR_HERO` |
-| Cireneo v2 (cargador) | `cireneo/source/…cd715dbe` + cruz `…ed8f6d13` + `animations/walk/walk_normal.fbx` + clips de walk y charge `animations/cireneo/v1_clips.fbx` | `build_cireneo_v2.py` | `cireneo_{walk,charge,telegraph,stuck}.fbx` | `cireneo`, `cireneo_charge`, `cireneo_telegraph` | `CHAR_CHARGER` |
-| Exvoto (la horda) | `exvoto/source/…45adc30a` | `build_exvoto.py` | `exvoto_{walk,walk_b,pray_stand,pray_kneel,stand_up}.fbx` | `exvoto*` | `CHAR_EXVOTO*` |
-| Ojo del Tribunal | cuerpo `ojo/source/…ed4d249d`, cabeza `ojo/source/cabeza/…5f17753f` | `build_ojo.py` (+ `regen_ojo.ps1`) | `ojo_{walk,look,sentence}.fbx` | `ojo`, `ojo_look`, `ojo_sentence` | `CHAR_OJO` |
-| Abanderado | cuerpo `abanderado/source/…6e3a96b5`, estandarte `source/estandarte/…989b9291` | `build_abanderado.py` (+ `regen_abanderado.ps1`) | `abanderado_{walk,point}.fbx` | (sin entrada, usa el regen) | `CHAR_ABANDERADO` |
-| Monaguillo | `monaguillo/source/…9a55a12b` | `build_monaguillo.py` | `monaguillo_walk.fbx` | (sin entrada, usa el regen) | `CHAR_MONAGUILLO` |
-| Campanero | campana `campanero/source/campana/…af5a0caa`; cuerpo `campanero/source/…0865ecc9` (con barba) | aún sin script | — | — | solo `LORE.md`, sin integrar |
+Esta tabla es la única fuente de verdad de qué modelo y qué animación producen cada sprite del juego. Las rutas de modelos son relativas a `assets/models/characters/`, las de animaciones a `assets/models/animations/` y los scripts están en `tools/characters/`. La celda es el tamaño en píxeles del recuadro (`resolution`). Los parámetros de render están en `assets/sprites/characters/characters.json`.
 
-**Convención:** en `characters/<personaje>/source/` va solo el modelo con esqueleto (accesorios en subcarpetas); en `animations/<grupo>/<clip>.fbx`, solo esqueleto y movimiento, sin malla (de Mixamo se baja «sin piel»). El script `build_<personaje>.py` los junta y exporta los FBX animados, que son derivados.
+| Sprite del juego | Entrada de `characters.json` (celda) | Modelo (UUID Tripo) | Animación | Script |
+| :--- | :--- | :--- | :--- | :--- |
+| `CHAR_HERO`: andar | `corazon` (40) | `corazon/source/corazon.fbx` (`f25681c0`) | `corazon/walk.fbx` | `build_corazon.py` |
+| `CHAR_HERO`: cargar y disparar | `corazon_disparo` (40) | el mismo | `corazon/disparo.fbx` | `build_corazon.py` |
+| `CHAR_CHARGER`: andar | `cireneo` (60) | `cireneo/source/…cd715dbe` + cruz `source/cruz/…ed8f6d13` | `walk/walk_normal.fbx` y `cireneo/v1_clips.fbx` | `build_cireneo_v2.py` |
+| `CHAR_CHARGER`: carga | `cireneo_charge` (60) | el mismo | `cireneo/v1_clips.fbx` | `build_cireneo_v2.py` |
+| `CHAR_CHARGER`: telegrafía | `cireneo_telegraph` (60) | el mismo | pose generada en el script | `build_cireneo_v2.py` |
+| `CHAR_OJO`: andar | `ojo` (56) | cuerpo `ojo/source/…ed4d249d`, cabeza `ojo/source/cabeza/…5f17753f` | `walk/walk_normal.fbx` | `build_ojo.py` |
+| `CHAR_OJO`: mirar y sentenciar | `ojo_look`, `ojo_sentence` (56) | el mismo | poses generadas en el script | `build_ojo.py` |
+| `CHAR_EXVOTO`: andar | `exvoto` (40) | `exvoto/source/…45adc30a` | `walk/walk_normal.fbx` | `build_exvoto.py` |
+| `CHAR_EXVOTO_PRAY_STAND` | `exvoto_pray_stand` (40) | el mismo | `pray/pray_standing.fbx` | `build_exvoto.py` |
+| `CHAR_EXVOTO_PRAY_KNEEL` | `exvoto_pray_kneel` (40) | el mismo | `pray/pray_kneeling.fbx` | `build_exvoto.py` |
+| `CHAR_EXVOTO_STAND_UP` | `exvoto_stand_up` (48) | el mismo | `pray/pray_kneel_to_stand.fbx` | `build_exvoto.py` |
+| `CHAR_ABANDERADO`: andar | `abanderado` (60) | cuerpo `abanderado/source/…6e3a96b5`, estandarte `source/estandarte/…989b9291` | `walk/sad_walk.fbx` | `build_abanderado.py` |
+| `CHAR_ABANDERADO`: señalar | `abanderado_point` (60) | el mismo | pose generada en el script | `build_abanderado.py` |
+| `CHAR_MONAGUILLO` | `monaguillo` (40) | `monaguillo/source/…9a55a12b` | `monaguillo/walk_pray.fbx` (andar rezando, extraído del esqueleto retirado) | `build_monaguillo.py` |
+| Retratos del bestiario (rezo) | no aplica (160 px) | Corazón y Exvoto | `pray/*` | `build_corazon_pray.py`, `build_exvoto_pray.py` |
+| Campanero | sin integrar | campana `campanero/source/campana/…af5a0caa`, cuerpo `campanero/source/…0865ecc9` | — | sin script (solo en `LORE.md`) |
 
-Animaciones (`assets/models/animations/`): `walk/walk_normal.fbx` (Ojo, Abanderado, Exvoto, Cireneo), `walk/sad_walk.fbx` (Abanderado), `pray/*` (Exvoto), `corazon/{walk,disparo}.fbx` y `cireneo/v1_clips.fbx` (andar y carga del Cireneo).
+**Convención:**
+- En `characters/<personaje>/source/` va solo el modelo con esqueleto, con los accesorios en subcarpetas.
+- En `animations/<grupo>/<clip>.fbx` va solo esqueleto y movimiento, sin malla; de Mixamo se descarga «sin piel».
+- El script `build_<personaje>.py` los junta y exporta un FBX animado por clip, `characters/<personaje>/<entrada>.fbx`. Son derivados: no se versionan.
+
+**Escala fija por personaje (2026-11-17):**
+- Cada personaje se renderiza a unos píxeles por metro fijos, los de su animación de referencia (la de andar). El resto de sus animaciones llevan `"scaleRef": "<referencia>"` en `characters.json` y heredan esa escala, así que el personaje no cambia de tamaño al cambiar de animación.
+- No se compensa con `fitZoom` por animación.
+- Si una pose no cabe en la celda, esa animación lleva una celda mayor (`resolution`) y mantiene la escala; así está `exvoto_stand_up`, a 48 px. Cuando una pose se sale, el render avisa con `CROPPED`. La celda puede llegar hasta 60 px: por encima, la sombra (de 80×80 en el motor) se recortaría.
+
+### Cómo regenerar los sprites de personajes
+
+1. **FBX animados** (solo si cambia un modelo o una animación, o faltan):
+   ```
+   "C:/Program Files/Blender Foundation/Blender 5.2/blender.exe" -b -P tools/characters/build_<personaje>.py -- <raíz del repo>
+   ```
+2. **Sprites y código C:** `python tools/rebuild_all.py --only characters,bake --char <entradas>`. Si la referencia no entra en la lista, se lee su escala de su `settings.json`. Sin `--char` se renderizan todos.
+3. **ROM:** `python tools/rebuild_all.py --only rom`, o `build-project.ps1`.
+
+Todo de una vez: `python tools/rebuild_all.py`. Pasos y opciones: `TECHNICAL.md` §3.
 
 ## 3. Props de la catedral (originales 3D)
 
@@ -76,7 +104,11 @@ En Descargas, fuera del repo: `tripo_convert_8c5b4a72` (esqueleto soldado) y `tr
 
 ## 7. Anomalías abiertas
 
-- **`.h` del bestiario versionados:** `assets/sprites/bestiary/*/nds_shadow_anchor.h` ocupa ~270 MB en git y es un derivado (`TECHNICAL.md` §4.4).
-- **Sin versionar y en uso:** `assets/sprites/levelup/` y `tools/levelup_cards/bake_cards.py` (cartas de mejora), y los vídeos `assets/videos/lore01_*.mp4` y avatares, que solo están en la carpeta principal.
+- **`.h` del bestiario versionados:** `assets/sprites/bestiary/*/nds_shadow_anchor.h` ocupan ~270 MB en git y son derivados (`TECHNICAL.md` §4.4).
+- **Sin versionar, solo en la carpeta principal:**
+  - Vídeos `assets/videos/lore01_*.mp4` (7) y avatares `avatar_{corazon,ojo}.png`: son finales, así que deben adoptarse en LFS.
+  - Cartas de mejora: `assets/sprites/levelup/{A,B,C}`, sus hojas y `tools/levelup_cards/bake_cards.py` son la ronda A/B/C de mockups, que el juego no usa. `levelup/ingame/` es un intermedio de `capture_cards.py`, y el juego lee `nitrofiles/levelup/`.
+  - `assets/sprites/hud/pickup/`: corazones girando sin referencias en el código.
+- **Restos del legado en la carpeta principal:** necrón, marine, cargador, esqueleto, armas, scifi_dungeon, blockout, `lancet_pair`, rifle y combat, Cireneo v1 y `source_v2` siguen en disco sin versionar (están en el historial de git). Se borran al cerrar la sesión (el clip del monaguillo ya está extraído a `animations/monaguillo/`).
 - **Modelos de prueba del usuario** (`archive/legacy/custom/` en la carpeta principal: mago, esqueleto muriendo y dos personajes): sin decidir; no se versionan.
 - **Originales perdidos:** `columna` (base rota), `banco_roto`, `banco_volcado` (ver §3).

@@ -35,11 +35,9 @@ def blender_main(root):
     import math
     from mathutils import Vector, Matrix
     P = 'mixamorig:'
-    main = 'C:/codexlocal/dungeonds'
 
     def find(rel):
-        p = os.path.join(root, rel)
-        return p if os.path.exists(p) else os.path.join(main, rel)
+        return os.path.join(root, rel)
 
     char_fbx = find('assets/models/characters/corazon/source/corazon.fbx')
     out_dir = os.path.join(root, 'assets/models/characters/corazon')
@@ -158,20 +156,14 @@ def launcher():
             json.dump(t, f)
         fbx = os.path.join(root, 'assets/models/characters/corazon/corazon_%s.fbx' % name)
         out = os.path.join(root, 'assets/sprites/bestiary/corazon_%s' % name)
-        fit = 1.0
-        for attempt in range(2):
-            t['fitZoom'] = fit
-            with open(tmp, 'w', encoding='utf-8', newline='') as f:
-                json.dump(t, f)
-            r = subprocess.run(['node', os.path.join(root, 'tools/lab/export_character_headless.cjs'), fbx, out,
-                                '--template', tmp, '--resolution', '160', '--frames', str(nframes), '--fitZoom', str(fit),
-                                '--anim', name, '--legibility', 'c2'], check=True, capture_output=True, text=True)
-            extent = float([l for l in r.stdout.splitlines() if l.startswith('FIT ')][-1].split('"extent":')[1].split(',')[0])
-            want = extent / WALK_EXTENT           # misma escala px/metro que corazon_walk (half = extent / fitZoom)
-            print('%s: extent %.4f, fitZoom %.4f -> %.4f' % (name, extent, fit, want))
-            if abs(want - fit) < 0.004:
-                break
-            fit = want
+        # misma escala px/metro que corazon_walk: --fitExtent WALK_EXTENT con fitZoom 1, una sola pasada
+        t['fitZoom'] = 1.0
+        with open(tmp, 'w', encoding='utf-8', newline='') as f:
+            json.dump(t, f)
+        r = subprocess.run(['node', os.path.join(root, 'tools/lab/export_character_headless.cjs'), fbx, out,
+                            '--template', tmp, '--resolution', '160', '--frames', str(nframes), '--fitZoom', '1',
+                            '--fitExtent', repr(WALK_EXTENT), '--anim', name, '--legibility', 'c2'], check=True, capture_output=True, text=True)
+        print(name, [l for l in r.stdout.splitlines() if l.startswith(('FIT ', 'WARNING'))])
         align(out, MS[name])
 
 
