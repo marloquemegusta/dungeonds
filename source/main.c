@@ -1837,10 +1837,14 @@ static void boss_snapshot_screen(uint16_t *dst, int sub, int cam_x, int cam_y) {
     static DirtySpan spans[SCREEN_H];
     memset(spans, 0, sizeof(spans));
     memset(dst, 0, SCREEN_W * SCREEN_H * 2);
+#if HW_SHADOWS
     const int hw = g_hw_shadows_on;
     g_hw_shadows_on = 0;
     render_screen(dst, spans, cam_x, cam_y, sub, NULL, NULL, NULL);
     g_hw_shadows_on = hw;
+#else
+    render_screen(dst, spans, cam_x, cam_y, sub, NULL, NULL, NULL);
+#endif
     for (int y = 0; y < SCREEN_H; y++) {
         uint16_t *row = dst + y * SCREEN_W;
         for (int x = 0; x < SCREEN_W; x++)
