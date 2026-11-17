@@ -18,6 +18,7 @@ Flujo estandarizado para crear vídeos verticales de lore estilo *Blasphemous* p
    - **Escritura aspiracional y mitológica (no literal):** nunca describir lo que el espectador ya ve (colores, «su haz»); contar la culpa, el dogma y la condena que el píxel no puede decir.
    - **Nombres cruzados:** cada historia nombra a personajes de otras (Martín, Bartolomé, Elías, Gaspar…), para que los vídeos se refuercen entre sí.
    - **Frase final del personaje:** un aforismo corto y emotivo, dicho con la voz del personaje (no la del narrador).
+   - **Identidad sin etiquetas, pero sin ambigüedad (feedback 2026-11-17, Remedios):** el eje LGBT de `LORE.md` se cuenta sin decir «trans», «lesbiana»… pero tiene que entenderse a la primera en el móvil. «Eligió su nombre» se quedó corto (parecía un simple cambio de nombre); funcionó un hecho concreto y el cargo del Tribunal: «En la pila la bautizaron con nombre de varón» + «vestir de mujer y renegar del nombre que Dios le dio». Propón al usuario dos versiones (una clara y otra más velada) y recomienda la clara.
 2. **Retención (medido en TikTok e Instagram, 2026-11):** casi todo el público se decide en los 2–3 primeros segundos.
    - **Nunca un primer fotograma en negro:** el personaje y el título se ven desde el instante 0 (sin fundido de entrada) y la voz arranca casi enseguida.
    - **Empezar por la frase más fuerte de la historia**, no por el contexto («Dios le abrió el pecho…», no «Elías era capellán…»). El contexto viene después.
@@ -33,13 +34,20 @@ Flujo estandarizado para crear vídeos verticales de lore estilo *Blasphemous* p
    - **Subtítulos justo debajo del personaje** (`MarginV = 600`): `Palatino Linotype` 54, negrita, marfil, contorno negro, máximo 2 líneas, siguiendo literalmente el audio.
    - **El 30 % inferior de la pantalla queda vacío:** ahí TikTok e Instagram ponen el nombre de la cuenta y la descripción, que taparían los subtítulos.
 5. **Cierre sin gameplay (por defecto):** mosaico animado 2×2 de los personajes del Códice sobre negro durante *"Próximamente en tu Nintendo DS"*, salvo que el usuario pida enseñar gameplay.
+6. **Pregunta moral para pedir comentarios (desde 2026-11-17):** los vídeos tenían buenas vistas y casi ningún comentario porque cada historia queda cerrada. Tras la cita, `> Pregunta: «¿…?»`: el narrador hace una pregunta moral sobre la historia y dice «Deja tu veredicto en los comentarios»; la pregunta queda escrita arriba hasta el final, también sobre el mosaico.
+   - **De respuesta corta:** sí/no o elegir entre dos («¿Cobarde… o el único valiente?»). Nada de «¿tenéis dudas de lore?», que obliga a pensar una pregunta.
+   - **Dentro del mundo:** «veredicto», no «comenta»; el espectador hace de Tribunal.
+   - **Arriba y como subtítulo:** mientras el narrador la dice, la pregunta sale también como subtítulo además de escrita arriba; el usuario prefirió dejar las dos (2026-11-17).
+   - **Se paga con tiempo de historia:** se recortan unos 10 s de frases de contexto del medio; nunca el arranque ni la cita.
+   - **Fuera del vídeo:** la misma pregunta abre el texto del post y va fijada como primer comentario.
+   - **Medir:** comentarios por cada 1.000 vistas, en la tabla de `## Publicado` del lote, y comprobar que la retención final no cae.
 
 ---
 
 ## Estilo visual de los planos (decidido 2026-11-16)
 
 - **Composición metafórica, no escena de juego:** fondo negro, sin suelo ni baldosas. Encima solo personajes y props sueltos que cuentan algo (una vela, una lápida, bancos volcados, columnas, el relicario). Que no parezca una captura del juego.
-- **A escala:** los props guardan la proporción del juego respecto al personaje (la columna mide casi 4 veces a Elías; el banco le llega a la rodilla) y la misma densidad de píxel que el sprite del Códice. Si el render de la DS se queda pequeño o en otro ángulo, se re-renderiza el prop desde su modelo 3D: es barato y preferible a ampliar de más.
+- **A escala:** los props guardan la proporción del juego respecto al personaje (la columna mide casi 4 veces a Elías; el banco le llega a la rodilla) y la misma densidad de píxel que el sprite del Códice. Si el render de la DS se queda pequeño o en otro ángulo, se re-renderiza el prop desde su modelo 3D: es barato y preferible a ampliar de más. **Nunca encoger un prop al dibujarlo** (feedback 2026-11-17): la vela se renderizaba grande y se reducía al 45 %, y sus píxeles salían más finos que los de la monja; se nota. Un prop se renderiza ya al tamaño final (`w` en `render_video_props.py`) y se dibuja al mismo factor entero y NEAREST que el sprite; para comprobarlo, ampliar 3-4× NEAREST el prop junto al personaje y comparar el tamaño de los bloques.
 - **Props en `assets/videos/props/<prop>/`** (`color.png`, `shadow.png`, `meta.json` con la altura en metros): re-renderizados con `tools/props/render_video_props.py` a la densidad del Códice (Elías mide 143 px = 2 m; columna 7,5 m, banco 1,75 m). Estilos `A|B|C` (negro y escala real / con suelo y sombras / escala metafórica): leyenda de `assets/videos/guiones/lote-01.md`.
 - **El guion lo contiene todo:** cada plano dice qué se ve (personaje, animación, dirección y props); los ajustes de producción se apuntan en el guion para poder rehacer el vídeo ejecutando el generador.
 
