@@ -7,18 +7,18 @@ Primero el estado necesario para retomar el trabajo sin depender del chat; despu
 - **Modo jefe integrado en la ROM principal (`feat/integrar-jefe`, 2026-11-17, integrado en `main`):** `dungeonds.nds` arranca ya por defecto con el escenario por encuentros, la nueva IA de enemigos y el modo jefe (`boss.c`, `DESIGN.md` §6.13.7: intro con zoom y voz, barra de vida en pantalla inferior, fases con invulnerabilidad, escolta y victoria con reliquia). Partida estructurada en 14 stages (Vía Crucis): **primer jefe (El Abanderado) en el stage 5**, y **jefe repetido (El Abanderado) en los stages 10 y 14** hasta añadir los otros dos jefes. Build 0 avisos, tests de host y escenario `integracion_jefe_stage5` PASS. [`walkthrough`](walkthroughs/integrar-jefe/walkthrough.md).
 - **Acto I por encuentros, prototipo v2 (`feat/encuentros-acto1`, 2026-11-17, integrado como versión de prueba):** variante de build `encuentros` (la ROM normal no cambia de comportamiento). Catedral de 256 de ancho, 6 salas hechas a mano con 3 poblaciones cada una (ligera, media y dura por tercios), pasillo con relicario lateral (Don o corazón), barrera que se abre al limpiar y el Abanderado con escolta al final. Todos los enemigos están en la sala desde el principio y despiertan a la vez; el Exvoto esquiva el rayo, el Cireneo persigue y embiste (aturdido al chocar), el rayo sigue solo con el daño sobrante. Diseño en `DESIGN.md` §6.13.6; catálogo de salas en `walkthroughs/encuentros-acto1/catalogo-salas.html` (generado por `tools/encuentros/catalogo_v2.py`, que también genera los datos). Bot de pruebas dentro de la ROM (variante `encuentros-bot`). Build 0 avisos, tests de host del kit, strip, navegación y normas PASS. Jugado en la DS por el usuario; **sin registro de rendimiento**. [`walkthrough`](walkthroughs/encuentros-acto1/walkthrough.md).
   - **Problemas abiertos (prueba del usuario en la DS, 2026-11-17):**
-    - Sale una oferta de mejora nada más arrancar, sin causa conocida.
-    - Muchas salas no son simétricas y quedan feas: las columnas y las estatuas deberían ir en pares simétricos (el kit solo admite ciertas posiciones y las desplaza).
-    - No hay lápidas en las salas.
+    - ~~Sale una oferta de mejora nada más arrancar, sin causa conocida.~~ *(Resuelto 2026-11-17: desactivada la tecla de depuración `X` en encuentros y limpiados los flags de depuración al reiniciar).*
+    - ~~Muchas salas no son simétricas y quedan feas: las columnas y las estatuas deberían ir en pares simétricos.~~ *(Resuelto 2026-11-17: fase espejo de `santo` horneada en el kit y ajuste por pares simétricos en el catálogo).*
+    - ~~No hay lápidas en las salas.~~ *(Resuelto 2026-11-17: 1–2 lápidas aleatorias por sala respetando el damero y sin solapar piezas).*
     - Los muros del ancho 256 pueden ser más finos.
     - La IA del Exvoto se siente lista pero hace alguna cosa rara; falta explicar con claridad qué hace (esquiva de la línea de apuntado y zigzag al andar) y revisarla.
     - En muchas salas la estrategia óptima es quedarse quieto o recular y matar lo que viene: estudiarlo.
-    - Una partida completa se queda corta: solo hay un acto y un jefe.
+    - Una partida completa se queda corta: solo hay un acto y un jefe *(stages 10 y 14 cubiertos con El Abanderado repetido; faltan los otros 2 jefes).*
   - **Para siguientes sesiones:**
     - Consolidar la lista de assets que faltan para hacerlos en 3D (sacos, alambre de espino, barrera o verja, muro fino de 256, relicario dorado y lo que salga del inventario).
     - Los otros dos jefes (Campanero y El Paso) y los actos II y III.
     - El escenario cambia tras cada jefe (cada acto más profanado: bancos rotos, sacos, etc.); sin implementar.
-    - Medir rendimiento en la DS con `PERF_PROFILE` (las salas grandes tienen hasta 17 enemigos).
+    - ~~Medir rendimiento en la DS con `PERF_PROFILE`~~ *(Medido por el usuario en DS: va bien, no hace falta medir más).*
     - Retirar los ganchos de prueba cuando la variante pase a ser el juego (`g_enc_debug`, bot).
 
 - **Estructura de la partida, la Subida (`docs/estructura-partida`, 2026-11-16, integrado):** decidida en `DESIGN.md` §6.13, sin código. Partida de 15–18 min como un Vía Crucis de 14 estaciones en tres actos, con jefes en las estaciones V (Abanderado), X (Campanero) y XIV (El Paso) que luego vuelven como élites; encuentros en el pasillo con intro y pantalla bloqueada; al ganar se sigue en las criptas; reliquias en el nivel 5 y al vencer a cada jefe. Sustituye a la catedral infinita y concreta la 0.6. Siguiente: escenario por actos, Campanero y escoltas. [`walkthrough`](walkthroughs/estructura-partida/walkthrough.md).
