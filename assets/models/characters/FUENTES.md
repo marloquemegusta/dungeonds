@@ -6,7 +6,7 @@ Nombres según el bestiario de `DESIGN.md` §6.10. Los FBX conservan el nombre d
 | :--- | :--- | :--- | :--- |
 | `abanderado/source/` | El Abanderado (cruzado) | `tripo_convert_6e3a96b5` | Mixamo |
 | `abanderado/source/estandarte/` | Su estandarte (pieza aparte, va en la mano como bastón) | `tripo_convert_989b9291` | sin rig |
-| `campanero/source_barba/` | El Campanero de Ánimas, con barba | `tripo_convert_0865ecc9` | Mixamo |
+| `campanero/source/` | El Campanero de Ánimas, con barba | `tripo_convert_0865ecc9` | Mixamo |
 | `campanero/source_sin_barba/` | El Campanero de Ánimas, sin barba | `tripo_convert_b142ae4c` | **sin rig** (hay que rigearlo) |
 | `campanero/source/campana/` | La campana (va en la mano, como un arma) | `tripo_convert_af5a0caa` | sin rig |
 | `exvoto/source/` | Los Exvotos (monja de cera) | `tripo_convert_45adc30a` | Mixamo |

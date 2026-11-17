@@ -29,12 +29,12 @@ archive/lab_runs/
 assets/lab_runs/
 
 # Custom test assets
-assets/models/characters/custom/
+assets/models/archive/legacy/custom/
 
 # 3D Source Environment Assets (Heavy external packs)
 assets/models/environment/dreadhollow/GLB/
 assets/models/environment/dreadhollow/Previews/
-assets/models/characters/monster/Walking.fbx
+assets/models/archive/legacy/monster/Walking.fbx
 
 # Archive directory
 archive/
@@ -48,9 +48,6 @@ assets/models/environment/cathedral/tripo/
 
 # v0.3.2: intermedios regenerables (GLB de prep_props.py, variantes de losas, iteraciones del suelo, scratch y sets de personajes de prueba)
 assets/environment/cathedral/props/glb/
-assets/environment/cathedral/floor_tiles/*
-!assets/environment/cathedral/floor_tiles/losa_a.fbx
-!assets/environment/cathedral/floor_tiles/losa_a.fbm/
 assets/models/environment/floor_proc/
 assets/models/environment/floor_proto/
 .scratch_*/
@@ -69,3 +66,8 @@ assets/environment/cathedral/props/*.fbm/
 assets/models/characters/abanderado/abanderado_*.fbx
 # Monaguillo: FBX animados derivados; se regeneran con tools/characters/build_monaguillo.py
 assets/models/characters/monaguillo/monaguillo_*.fbx
+# Corazon Abierto: FBX animados derivados; se regeneran con tools/characters/build_corazon.py
+assets/models/characters/corazon/corazon_*.fbx
+
+# Geometría de arenas: la regeneran tools/make_arena_glb.py y export_arenas.py
+assets/models/environment/arenas/

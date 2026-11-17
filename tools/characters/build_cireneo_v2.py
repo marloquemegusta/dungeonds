@@ -3,22 +3,23 @@
 Uso:
   "C:/Program Files/Blender Foundation/Blender 5.2/blender.exe" -b -P tools/characters/build_cireneo_v2.py -- <raiz_worktree>
 
-Entradas: modelo nuevo rigeado sin animaciones (source_v2), cruz nueva (source_v2/cruz) y el modelo
-antiguo con las animaciones Tripo de walk y charge (source). Walk y charge se transfieren por
-COPY_ROTATION (WORLD) y se hornean; el armature antiguo se borra despues.
+Entradas: modelo nuevo rigeado sin animaciones (cireneo/source), cruz nueva (cireneo/source/cruz) y clips:
+el modelo antiguo reducido a armature + acciones walk/charge (assets/models/animations/cireneo/v1_clips.fbx, generado
+con extract_cireneo_v1_clips.py) y el andar Mixamo (assets/models/animations/walk/walk_normal.fbx). Charge se transfiere por COPY_ROTATION (WORLD) y se hornea; el armature
+antiguo se borra despues.
 Salidas (en <raiz>/assets/models/characters/cireneo): cireneo_{walk,charge,telegraph,stuck}.fbx
 """
 import bpy, bmesh, sys, os, math
 from mathutils import Vector, Matrix, Quaternion
 
 ROOT = sys.argv[sys.argv.index('--') + 1]
-SRC = os.path.join(ROOT, 'assets/models/characters/cireneo/source_v2')
-OLD_SRC = os.path.join(ROOT, 'assets/models/characters/cireneo/source')
+SRC = os.path.join(ROOT, 'assets/models/characters/cireneo/source')
 OUT = os.path.join(ROOT, 'assets/models/characters/cireneo')
 CHAR_FBX = os.path.join(SRC, 'tripo_convert_cd715dbe-128f-4b59-b47f-5e36cc9cd8ac.fbx')
-OLD_FBX = os.path.join(OLD_SRC, 'tripo_convert_172f5fef-dd4a-431e-99f9-1ab308e5dd5f.fbx')
+ANIM = os.path.join(ROOT, 'assets/models/animations/cireneo')
+OLD_FBX = os.path.join(ANIM, 'v1_clips.fbx')   # solo armature + acciones walk/charge del v1
 CRUZ_FBX = os.path.join(SRC, 'cruz/tripo_convert_ed8f6d13-db47-4c2d-be6b-24996b3fd8fe.fbx')
-WALK_FBX = os.path.join(SRC, 'anim/Walking.fbx')   # andar Mixamo (32 frames, root motion)
+WALK_FBX = os.path.join(ROOT, 'assets/models/animations/walk/walk_normal.fbx')   # andar Mixamo (32 frames, root motion)
 # ---- parametros de la cruz (unidades locales del armature = cm) ----
 CRUZ_SCALE = 1.15       # escala uniforme respecto a la cruz original
 CRUZ_LOWER_K = 0.70     # compresion del palo por debajo del travesaño
@@ -34,9 +35,16 @@ before_old = set(bpy.data.objects)
 bpy.ops.import_scene.fbx(filepath=OLD_FBX)
 old_objs = [o for o in bpy.data.objects if o not in before_old]
 old_arm = [o for o in old_objs if o.type == 'ARMATURE'][0]
-old_mesh = [o for o in old_objs if o.type == 'MESH'][0]
 old_walk_act = [a for a in bpy.data.actions if 'walk' in a.name][0]
 old_charge_act = [a for a in bpy.data.actions if 'charge' in a.name][0]
+# el FBX reducido trae tambien canales del objeto armature (loc/rot/scale horneados por el exportador):
+# se quitan para que la escala del armature (ajuste de altura mas abajo) no la pise la accion
+for _a in (old_walk_act, old_charge_act):
+    for _l in _a.layers:
+        for _s in _l.strips:
+            for _cb in _s.channelbags:
+                for _fc in [f for f in _cb.fcurves if not f.data_path.startswith('pose.bones')]:
+                    _cb.fcurves.remove(_fc)
 before_walk = set(bpy.data.objects)
 bpy.ops.import_scene.fbx(filepath=WALK_FBX)
 walk_objs = [o for o in bpy.data.objects if o not in before_walk]

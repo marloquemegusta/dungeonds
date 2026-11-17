@@ -1,20 +1,17 @@
-# assets/ - Catálogo Canónico de Assets de DungeonDS
+# assets/
 
-Estructura organizada según el pipeline 3D a 2D para Nintendo DS:
+Catálogo de todos los assets (qué es cada cosa, de dónde sale y dónde se guarda): [`MANIFEST.md`](MANIFEST.md).
+Política de entrada, adopción, retirada y limpieza: `AGENTS.md`, «Ciclo de vida de los assets».
 
 ```
 assets/
-  ├── models/                 # Modelos 3D fuente (.fbx, .glb) limpios y categorizados
-  │    ├── characters/        # Personajes (monster, charger, skeleton, necron, spacemarine, custom)
-  │    ├── environment/       # Escenarios y props modulares (scifi_dungeon, dreadhollow)
-  │    ├── weapons/           # Armas (shotgun_marine, sniper_necron, sword)
-  │    └── animations/        # Clips esqueléticos FBX adicionales (combat, rifle)
-  │
-  ├── sprites/                # Spritesheets 2D procesados y listos para el motor NDS
-  │    ├── characters/        # Carpetas de sprites exportadas desde el Shader Lab HTML
-  │    └── dungeon/           # Suelos, props y fondos pre-renderizados
-  │
-  └── icon.png                # Icono oficial del banner de la ROM NDS
+  ├── inbox/        # entrada de descargas (zips de Tripo, packs); ignorado por git
+  ├── models/       # originales 3D en Git LFS: characters/<p>/source/ (modelo), animations/<grupo>/ (clips sin malla), environment/, hud/
+  ├── environment/  # catedral: losas del suelo, renders de props, lápidas, muros, paleta
+  ├── sprites/      # paquetes del lab y sprites 2D que lee el generador de la ROM
+  ├── arenas/       # arenas.json, fuente de la mazmorra
+  ├── sfx/          # raw/ (ElevenLabs) y baked/ (16.384 Hz para la DS)
+  ├── music/        # bucles de música
+  ├── videos/       # vídeos finales de redes (Git LFS)
+  └── icon.png      # icono del banner de la ROM
 ```
-
-Todo el material histórico previo (antiguos bakes de baja resolución, runs temporales del shader lab y demos de combate anteriores) se conserva en `archive/`.

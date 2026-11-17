@@ -11,6 +11,7 @@ El repositorio cuenta con fuentes de verdad canónicas sin duplicación:
 | `TECHNICAL.md` | Arquitectura C / NDS | Toolchain, presupuestos, pipeline de assets y render, dependencias de host y deuda técnica. |
 | `AGENTS.md` | Proceso y Reglas | Protocolo de trabajo, workflow de desarrollo para Nintendo DS y verificación de cambios. |
 | `STATUS.md` | Estado y Registro | Estado actual para retomar el trabajo y entregas recientes verificadas. Lo anterior a 2026-11 está en `STATUS-ARCHIVE.md`. |
+| `assets/MANIFEST.md` | Catálogo de assets | Qué asset alimenta qué parte del juego, con qué script se genera y dónde se guarda. Política: «Ciclo de vida de los assets» abajo. |
 | `walkthroughs/` | Documentación por sesión | Un `walkthrough.md` por entrega, con su evidencia en `assets/`. Índice en `walkthroughs/README.md`. |
 | `LEAN-CTX.md` | Herramienta | Reglas de la herramienta lean-ctx; no es documentación del juego. |
 | Skill compartida `ds-game-dev` | `C:\codexlocal\skills\agentic-ds-dev` | Flujo genérico del toolchain NDS (Docker + DeSmuME + FTP). Vive fuera del repo y no se debe copiar aquí. |
@@ -144,6 +145,29 @@ Rules:
 - If graphify-out/wiki/index.md exists, use it for broad navigation instead of raw source browsing.
 - Read graphify-out/GRAPH_REPORT.md only for broad architecture review or when query/path/explain do not surface enough context.
 - Run `graphify update .` (AST-only, no API cost) **at session close / merge** rather than after every intermediate edit, using the executable and shell syntax given in the worktree section above.
+
+---
+
+## Ciclo de vida de los assets
+
+Todo asset que use el juego está en el catálogo `assets/MANIFEST.md` y versionado. Lo que no está en el catálogo no existe para el proyecto.
+
+**Dónde se guarda cada cosa:**
+- **Originales** (modelos 3D de Tripo o Mixamo con sus texturas, vídeos finales): git con **Git LFS**. `.gitattributes` decide qué va a LFS (`*.fbx`, `*.glb`, `*.obj`, `*.blend`, `*.mp4` y las texturas de `assets/models/` y de las losas); basta con `git add` y `git push`. Detalle técnico: `TECHNICAL.md`, «Assets pesados: Git LFS».
+- **Derivados** (FBX animados, GLB intermedios, renders del lab que se rehacen con un comando): no se versionan; los ignora `.gitignore` y se regeneran con el script que indica el catálogo.
+- **Lo que lee la ROM** (`source/*.c` generados, `nitrofiles/`, paquetes de sprites, paletas): git normal, para compilar sin regenerar.
+- **Lo que entra en LFS ocupa cupo para siempre** (10 GiB en la cuenta gratuita de GitHub), aunque se borre después. Por eso solo se adopta lo final.
+
+**Etapas:**
+1. **Entrada.** Todo lo descargado (zips de Tripo, packs, audio en bruto) cae en `assets/inbox/`, que git ignora. Ningún script lee de `inbox/`.
+2. **Evaluación.** Las alternativas se comparan desde `inbox/` o el scratchpad (renders, rondas A/B/C). Nada de esto se versiona; la comparación queda en el walkthrough de la sesión.
+3. **Adopción.** Solo cuando el usuario elige la versión que va al juego: se extrae a `assets/models/<tipo>/<pieza>/source/` (nombre de pieza y UUID de Tripo), se añade su fila al catálogo y se commitea. Personajes y animaciones van separados: en `source/`, solo el modelo con esqueleto (accesorios en subcarpetas); en `assets/models/animations/<grupo>/<clip>.fbx`, solo esqueleto y movimiento, sin malla (de Mixamo se baja «sin piel»). El `build_<personaje>.py` los junta. El zip pasa a `assets/inbox/processed/`.
+4. **Derivados.** Se generan con el script del catálogo. Un retoque a mano de un derivado (por ejemplo, un banco roto editado en Blender) lo convierte en original: se guarda en `source/` y se registra. Así no vuelve a perderse.
+5. **Sustitución.** Cuando una versión nueva sustituye a otra, la vieja se borra de la carpeta activa (sigue en el historial de git) y se apunta en «Descartado» del catálogo con su UUID. No se guardan variantes «por si acaso».
+6. **Retirada.** Lo que sale del juego se borra y se apunta en el catálogo (qué era y su UUID). No hay carpeta de archivo: lo borrado se recupera del historial de git o de la copia completa del repo que se guarda antes de cada reescritura del historial.
+7. **Limpieza del inbox.** Al cerrar la sesión que adoptó algo, y después del `git push`, se borran sus zips de `inbox/processed/`. Lo que quede suelto en `inbox/` se lista al usuario, que decide qué se borra.
+
+**Al cerrar una sesión que toca assets:** el catálogo está al día, `git lfs ls-files` incluye los originales nuevos, `git push` sube también los datos de LFS y no quedan originales en uso solo en la carpeta principal (la regla de rescate de assets de «Protocolo de Sesiones» sigue vigente).
 
 ---
 
