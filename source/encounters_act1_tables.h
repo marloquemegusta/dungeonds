@@ -1,10 +1,10 @@
 // Generado por tools/encuentros/gen_act1_tables.py desde tools/encuentros/acto1_v2.json. No editar a mano.
 
 static const EncPieceDef s_p0_pieces[] = {  // procesion
-    { STRIP_PIECE_BANCO_GRUPO4, 0, 64 },
-    { STRIP_PIECE_BANCO_GRUPO4, 128, 64 },
-    { STRIP_PIECE_BANCO_GRUPO4, 0, 256 },
-    { STRIP_PIECE_BANCO_GRUPO4, 128, 256 },
+    { STRIP_PIECE_BANCO_GRUPO4, 8, 64 },
+    { STRIP_PIECE_BANCO_GRUPO4, 120, 64 },
+    { STRIP_PIECE_BANCO_GRUPO4, 8, 256 },
+    { STRIP_PIECE_BANCO_GRUPO4, 120, 256 },
 };
 static const EncEnemyDef s_p0_t0[] = {
     { ENC_E_EXVOTO, ENC_S_AWAKE, 94, 70 },
@@ -47,6 +47,8 @@ static const EncEnemyDef s_p0_t2[] = {
     { ENC_E_OJO, ENC_S_AWAKE, 172, 14 },
 };
 static const EncPieceDef s_p1_pieces[] = {  // embudo
+    { STRIP_PIECE_SACOS, 0, 200 },
+    { STRIP_PIECE_SACOS_REMATE_DER, 64, 208 },
 };
 static const EncRectDef s_p1_rects[] = {
     { ENC_R_SACOS, 0, 200, 150, 24 },
@@ -89,9 +91,9 @@ static const EncEnemyDef s_p1_t2[] = {
 };
 static const EncPieceDef s_p2_pieces[] = {  // balcon
     { STRIP_PIECE_COLUMNA_ENTERA, 32, 72 },
-    { STRIP_PIECE_COLUMNA_ENTERA, 128, 72 },
+    { STRIP_PIECE_COLUMNA_ROTA, 112, 112 },
     { STRIP_PIECE_SANTO, 40, 264 },
-    { STRIP_PIECE_SANTO, 128, 264 },
+    { STRIP_PIECE_SANTO_DER, 120, 264 },
 };
 static const EncEnemyDef s_p2_t0[] = {
     { ENC_E_OJO, ENC_S_AWAKE, 104, 30 },
@@ -129,9 +131,9 @@ static const EncEnemyDef s_p2_t2[] = {
 };
 static const EncPieceDef s_p3_pieces[] = {  // pinza
     { STRIP_PIECE_SANTO, 0, 136 },
-    { STRIP_PIECE_SANTO, 168, 136 },
-    { STRIP_PIECE_BANCO_GRUPO4, 0, 0 },
-    { STRIP_PIECE_BANCO_GRUPO4, 128, 0 },
+    { STRIP_PIECE_SANTO_DER, 160, 136 },
+    { STRIP_PIECE_BANCO_GRUPO4, 8, 0 },
+    { STRIP_PIECE_BANCO_GRUPO4, 120, 0 },
 };
 static const EncEnemyDef s_p3_t0[] = {
     { ENC_E_EXVOTO, ENC_S_AWAKE, 20, 270 },
@@ -174,7 +176,7 @@ static const EncEnemyDef s_p3_t2[] = {
 };
 static const EncPieceDef s_p4_pieces[] = {  // claro
     { STRIP_PIECE_SANTO, 0, 8 },
-    { STRIP_PIECE_SANTO, 168, 8 },
+    { STRIP_PIECE_SANTO_DER, 160, 8 },
 };
 static const EncEnemyDef s_p4_t0[] = {
     { ENC_E_EXVOTO, ENC_S_AWAKE, 40, 60 },
@@ -224,10 +226,18 @@ static const EncEnemyDef s_p4_t2[] = {
 };
 static const EncPieceDef s_p5_pieces[] = {  // alambrada
     { STRIP_PIECE_COLUMNA_ENTERA, 160, 72 },
+    { STRIP_PIECE_ALAMBRE, 0, 128 },
+    { STRIP_PIECE_ALAMBRE, 32, 128 },
+    { STRIP_PIECE_ALAMBRE, 64, 128 },
+    { STRIP_PIECE_ALAMBRE, 96, 128 },
+    { STRIP_PIECE_ALAMBRE, 80, 256 },
+    { STRIP_PIECE_ALAMBRE, 112, 256 },
+    { STRIP_PIECE_ALAMBRE, 144, 256 },
+    { STRIP_PIECE_ALAMBRE, 176, 256 },
 };
 static const EncRectDef s_p5_rects[] = {
-    { ENC_R_ALAMBRE, 0, 150, 140, 12 },
-    { ENC_R_ALAMBRE, 68, 250, 140, 12 },
+    { ENC_R_ALAMBRE, 0, 140, 128, 12 },
+    { ENC_R_ALAMBRE, 80, 268, 128, 12 },
 };
 static const EncEnemyDef s_p5_t0[] = {
     { ENC_E_EXVOTO, ENC_S_AWAKE, 30, 90 },
@@ -315,7 +325,7 @@ static const EncPlant s_plants[ENC_PLANT_COUNT] = {
 };
 
 static const EncPieceDef s_corridor_pieces[] = {
-    { STRIP_PIECE_RELICARIO, 84, 170 },
+    { STRIP_PIECE_RELICARIO, 80, 170 },
     { STRIP_PIECE_VELA, 44, 180 },
     { STRIP_PIECE_VELA, 148, 210 },
 };

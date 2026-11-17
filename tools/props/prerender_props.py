@@ -151,6 +151,10 @@ def process(name, cfg, d, out_root, legibility="anterior"):
     if legibility == "c2" and a.any():
         rgba[..., :3][a] = soft_contrast(rgba[..., :3][a].astype(float)[None], 1.45)[0].astype(np.uint8)
         rgba = sharpen_rgba(rgba, 0.5)
+    if "tone" in cfg:
+        # Per-piece brightness: the lab light lifts dark metal (verja negra) to mid grey.
+        # A list [r, g, b] also tints (sacos: burlap tierra instead of pale grey).
+        rgba[..., :3] = np.clip(rgba[..., :3].astype(float) * np.asarray(cfg["tone"], float), 0, 255).astype(np.uint8)
     color = Image.new("RGBA", (cw, ch), (0, 0, 0, 0)); color.paste(Image.fromarray(rgba), (ox, oy))
 
     def nearest(fn, mode):

@@ -1,0 +1,29 @@
+{
+  "piece": "alambre",
+  "size_px": [
+    32,
+    24
+  ],
+  "content_px": [
+    32,
+    23
+  ],
+  "target_width": 32,
+  "scale_factor": 0.055944055944055944,
+  "source_render_px": [
+    572,
+    405
+  ],
+  "yaw": -45,
+  "depth_units": "sprite_px",
+  "tiles_8x8_nonempty": 12,
+  "tiles_8x8_unique": 12,
+  "shadow_offset_px": [
+    0,
+    0
+  ],
+  "shadow_canvas_px": [
+    32,
+    24
+  ]
+}

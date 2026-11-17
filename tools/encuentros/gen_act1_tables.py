@@ -13,7 +13,10 @@ OUT_HP = ROOT / "include/encounters_act1_hp.h"
 
 PIECES = {"columna_entera": "STRIP_PIECE_COLUMNA_ENTERA", "relicario": "STRIP_PIECE_RELICARIO",
           "vela": "STRIP_PIECE_VELA", "banco_grupo4": "STRIP_PIECE_BANCO_GRUPO4",
-          "santo": "STRIP_PIECE_SANTO"}
+          "santo": "STRIP_PIECE_SANTO", "sacos": "STRIP_PIECE_SACOS", "sacos_remate": "STRIP_PIECE_SACOS_REMATE",
+          "sacos_remate_der": "STRIP_PIECE_SACOS_REMATE_DER", "alambre": "STRIP_PIECE_ALAMBRE",
+          "santo_der": "STRIP_PIECE_SANTO_DER",
+          "columna": "STRIP_PIECE_COLUMNA_ROTA"}
 ENEMIES = {"exvoto": "ENC_E_EXVOTO", "cireneo": "ENC_E_CIRENEO", "ojo": "ENC_E_OJO",
            "abanderado": "ENC_E_ABANDERADO", "monaguillo": "ENC_E_MONAGUILLO"}
 STATES = {"pray": "ENC_S_PRAY", "dormant": "ENC_S_DORMANT", "awake": "ENC_S_AWAKE"}

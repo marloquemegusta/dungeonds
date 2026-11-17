@@ -173,19 +173,36 @@ def process(name, dry_run=False):
     # El lienzo no puede crecer mas alla de un margen de 8 px a la izquierda del cuerpo: la estampa
     # se coloca en x_tile 8/48 y su borde izquierdo no puede salir de la retícula. Si la sombra no
     # cabe, no se trunca en silencio: se aborta pidiendo subir el sol (`shadow_elevation`).
-    if x_min < -7.5 * MARGIN_SCALE:
+    if cfg.get("shadow_wrap"):
+        # Pieza modular (verja, sacos): los tramos van pegados, asi que lo que la sombra saca por un
+        # lado cae donde iria la del tramo vecino. Se envuelve en el ancho del cuerpo y el lienzo no
+        # crece a los lados: dos tramos seguidos caben a 8 tiles y la sombra sale continua.
+        shadow_xy = shadow_xy.copy()
+        y0 = floor8(min(0, math.floor(y_min)))
+        y1 = ceil8(max(ch, math.ceil(y_max)))
+        h = y1 - y0
+        shadow = np.zeros((h, cw), dtype=bool)
+        # "clip" (remates): la sombra que sale por los lados se recorta en vez de envolverse.
+        for k in ((0,) if cfg["shadow_wrap"] == "clip" else (-1, 0, 1)):
+            shadow |= raster(shadow_xy - [k * cw, y0], tris, (cw, h))
+        own = np.zeros((h, cw), dtype=bool)
+        own[-y0:-y0 + ch, :] = alpha
+        shadow &= ~own
+        x0, w = 0, cw
+    elif x_min < -7.5 * MARGIN_SCALE:
         raise ValueError(
             f"{name}: la sombra llega a x={x_min:.2f} px y no cabe en el margen de 8 px del lienzo "
             f"(elevacion {elevation}); sube `shadow_elevation` en tools/props/props.json")
-    x0 = floor8(min(0, math.floor(x_min)))
-    y0 = floor8(min(0, math.floor(y_min)))
-    x1 = ceil8(max(cw, math.ceil(x_max)))
-    y1 = ceil8(max(ch, math.ceil(y_max)))
-    w, h = x1 - x0, y1 - y0
-    shadow = raster(shadow_xy - [x0, y0], tris, (w, h))
-    own = np.zeros((h, w), dtype=bool)
-    own[-y0:-y0 + ch, -x0:-x0 + cw] = alpha
-    shadow &= ~own
+    if not cfg.get("shadow_wrap"):
+        x0 = floor8(min(0, math.floor(x_min)))
+        y0 = floor8(min(0, math.floor(y_min)))
+        x1 = ceil8(max(cw, math.ceil(x_max)))
+        y1 = ceil8(max(ch, math.ceil(y_max)))
+        w, h = x1 - x0, y1 - y0
+        shadow = raster(shadow_xy - [x0, y0], tris, (w, h))
+        own = np.zeros((h, w), dtype=bool)
+        own[-y0:-y0 + ch, -x0:-x0 + cw] = alpha
+        shadow &= ~own
 
     if not dry_run:
         Image.fromarray((shadow * 255).astype(np.uint8), "L").save(os.path.join(folder, "shadow.png"))

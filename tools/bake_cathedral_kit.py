@@ -17,16 +17,26 @@ PROP_PALETTE = ROOT / "assets/environment/cathedral/palette/palette.json"
 OUTPUT = ROOT / "source/strip_kit.c"
 DEFAULT_PROPS = ("columna_entera", "banco_entero", "relicario", "vela",
                  "lapida_3x2_cruz", "lapida_3x2_cab", "lapida_2x1_cruz", "lapida_2x1_cab",
-                 "banco_grupo4", "santo")
+                 "banco_grupo4", "santo", "sacos", "verja", "columna", "banco_grupo4_roto",
+                 "sacos_b", "sacos_remate", "sacos_remate_der", "alambre", "santo_der")
 # Piece ids emitted in StripStamp.piece_id; must match enum STRIP_PIECE_* in include/strip_kit.h.
 PIECE_IDS = {
     "columna_entera": 1, "banco_entero": 2, "relicario": 3, "vela": 4,
     "lapida_3x2_cruz": 5, "lapida_3x2_cab": 6, "lapida_2x1_cruz": 7, "lapida_2x1_cab": 8,
     "banco_grupo4": 9, "santo": 10,
+    "sacos": 11, "verja": 12, "columna": 13, "banco_grupo4_roto": 14,
+    "sacos_b": 15, "sacos_remate": 16, "sacos_remate_der": 17, "alambre": 18,
+    "santo_der": 19,
 }
 LAPIDA_NAMES = ("lapida_3x2_cruz", "lapida_3x2_cab", "lapida_2x1_cruz", "lapida_2x1_cab")
+# Decorado con rectangulo de colision propio (planta de la sala): la estampa no escribe colision, para
+# que el rect de enc_block_rects() siga siendo el unico que bloquea (igual que los provisionales).
+DECOR_PIECES = ("sacos", "sacos_b", "sacos_remate", "sacos_remate_der", "alambre", "verja")
 # Piezas sin carpeta propia: se componen en el baker a partir de otras.
-COMPOSITE_NAMES = ("banco_grupo4",)
+COMPOSITE_NAMES = ("banco_grupo4", "banco_grupo4_roto")
+# Bancos de cada grupo, de arriba abajo (banco_roto como alternativa dentro del grupo).
+BENCH_GROUPS = {"banco_grupo4": ("banco_entero",) * 4,
+                "banco_grupo4_roto": ("banco_entero", "banco_roto", "banco_entero", "banco_entero")}
 WALL_BACKDROP_RGB = (0x1c, 0x19, 0x20)
 WALL_TILE_COLS = 6            # 48 px por lado
 WALL_MAX_NEW_COLORS = 32
@@ -89,7 +99,7 @@ class Tiles:
             idx = len(self.data)
             self.index[canonical] = idx
             self.data.append(canonical)
-        return idx | (0x400 if h else 0) | (0x800 if v else 0)
+        return idx | (0x4000 if h else 0) | (0x8000 if v else 0)
 
 
 def read_floor(directory):
@@ -130,8 +140,8 @@ def make_floor_tiles(colors, raw, grid, tiles):
         expanded = []
         for cell in row:
             encoded = raw_to_map[cell["t"]]
-            requested = (0x400 if cell["h"] else 0) | (0x800 if cell["v"] else 0)
-            encoded = (encoded & 0x3ff) | ((encoded ^ requested) & 0xc00)
+            requested = (0x4000 if cell["h"] else 0) | (0x8000 if cell["v"] else 0)
+            encoded = (encoded & 0x3fff) | ((encoded ^ requested) & 0xc000)
             expanded.append(encoded)
         # The 16-tile period repeats across the 64-tile lane: repeat the whole row, not each tile.
         floor_map.append(expanded * 4)
@@ -241,7 +251,7 @@ def piece_layout(name):
         raise ValueError(f"{name}: color, depth and footprint dimensions must match")
     rgba = np.asarray(color)
     if not np.isin(rgba[:, :, 3], [0, 255]).all(): raise ValueError(f"{name}: alpha must be binary")
-    value = 3 if name in ("columna_entera", "santo") else 1
+    value = 3 if name in ("columna_entera", "santo", "santo_der", "columna") else (0 if name in DECOR_PIECES else 1)
     try:
         foot_runs = footprint_runs(foot)
     except ValueError as e:
@@ -308,24 +318,29 @@ def crop_bench_canvas(lay, target_h_px=None):
     return new
 
 
-def compose_bench_group():
+def compose_bench_group(name="banco_grupo4"):
     """banco_grupo4: four banco_entero stacked GROUP_STEP_PX apart (3 tiles), painted in order of y
     so each lower bank, body and shadow, covers the one above. The footprint is the union of the
     four. Each depth run keeps the ground of its own bank (rebased to the group's footprint anchor)
     and is kept only where its bank is the visible one."""
-    bank = crop_bench_canvas(piece_layout("banco_entero"))
+    banks = [crop_bench_canvas(piece_layout(b)) for b in BENCH_GROUPS[name]]
+    bank = banks[0]
     bh, bw = bank["h"], bank["w"]
+    if any((b["h"], b["w"]) != (bh, bw) for b in banks):
+        raise ValueError(f"{name}: all benches of a group need the same canvas")
     H = GROUP_STEP_PX * (GROUP_BANKS - 1) + bh
-    src_rgba = bank["rgba"]
-    src_op = src_rgba[:, :, 3] >= 128
-    src_sh = (bank["shadow"] if bank["shadow"] is not None else np.zeros((bh, bw), bool)) & ~src_op
-    touched = src_op | src_sh
+    def src(b):
+        op = b["rgba"][:, :, 3] >= 128
+        sh = (b["shadow"] if b["shadow"] is not None else np.zeros((bh, bw), bool)) & ~op
+        return b["rgba"], op, sh, op | sh
     rgba = np.zeros((H, bw, 4), np.uint8)
     shadow = np.zeros((H, bw), bool)
     owner = np.full((H, bw), -1, np.int16)
     cells = set()
     for i in range(GROUP_BANKS):
         dy = i * GROUP_STEP_PX
+        bank = banks[i]
+        src_rgba, src_op, src_sh, touched = src(bank)
         r = rgba[dy:dy + bh]
         s = shadow[dy:dy + bh]
         o = owner[dy:dy + bh]
@@ -345,6 +360,7 @@ def compose_bench_group():
     depth_runs = []
     for i in range(GROUP_BANKS):
         dy = i * GROUP_STEP_PX
+        bank = banks[i]
         d_shift = dy + bank["foot_anchor_y_px"] - anchor_g
         for x, y, n, d in bank["depth_runs"]:
             yy = y + dy
@@ -357,14 +373,14 @@ def compose_bench_group():
                 while px < x + n and owner[yy, px] == i:
                     px += 1
                 depth_runs.append((x0, yy, px - x0, d + d_shift))
-    return {"name": "banco_grupo4", "value": 1, "foot_runs": foot_runs,
+    return {"name": name, "value": 1, "foot_runs": foot_runs,
             "foot_anchor_y_px": anchor_g, "depth_runs": depth_runs,
             "rgba": rgba, "shadow": shadow & (rgba[:, :, 3] < 128), "ox": 0, "oy": 0, "w": bw, "h": H}
 
 
 def source_layout(name):
     if name in LAPIDA_NAMES: return lapida_layout(name)
-    if name in COMPOSITE_NAMES: return compose_bench_group()
+    if name in COMPOSITE_NAMES: return compose_bench_group(name)
     return piece_layout(name)
 
 
@@ -374,7 +390,7 @@ def has_art(name):
     return (PROP_DIR / name / "color.png").is_file()
 
 
-def load_pieces(names, phases, floor_pixels, floor_grid, floor_palette, prop_lab, tiles, phase_map=None):
+def load_pieces(names, phases, floor_pixels, floor_grid, floor_palette, prop_lab, tiles, phase_map=None, props=None):
     layouts = [source_layout(name) for name in names]
 
     def phases_for(name):
@@ -393,6 +409,16 @@ def load_pieces(names, phases, floor_pixels, floor_grid, floor_palette, prop_lab
                 if c not in floor_palette and c not in shadow_colors: shadow_colors.append(c)
     floor_palette.extend(shadow_colors)
     floor_count = len(floor_palette) - 1
+    # Con `props`, los pixeles de pieza se escriben ya con su indice FINAL de paleta (los colores de
+    # props se anaden despues del suelo y las sombras, en orden): los tiles se deduplican al crearlos y
+    # el tope de 1024 se mide sobre tiles reales, no sobre tiles que solo difieren en un indice temporal.
+    final_idx = None
+    if props is not None:
+        pal_final = list(floor_palette)
+        final_idx = []
+        for c in props:
+            if c not in pal_final: pal_final.append(c)
+            final_idx.append(pal_final.index(c))
     result = []
     for lay in layouts:
         name, w, h, rgba, shadow = lay["name"], lay["w"], lay["h"], lay["rgba"], lay["shadow"]
@@ -411,7 +437,8 @@ def load_pieces(names, phases, floor_pixels, floor_grid, floor_palette, prop_lab
                     for py in range(8):
                         for px in range(8):
                             if opaque[py, px]:
-                                pix[py, px] = floor_count + 1 + int(q[ty*8+py, tx*8+px])
+                                qi = int(q[ty*8+py, tx*8+px])
+                                pix[py, px] = floor_count + 1 + qi if final_idx is None else final_idx[qi]
                             else:
                                 fi = floor_color(floor_pixels, floor_palette, floor_grid,
                                                  pc * 8 + tx*8 + px, pr * 8 + ty*8 + py)
@@ -518,22 +545,63 @@ CENTRAL_LEFT_PX, CENTRAL_RIGHT_PX = 112, 392
 BENCH_CANVAS_H_PX = 32       # alto del lienzo de un banco: caben 4 filas sin solapar tiles
 
 
+LAPIDAS_EN_KIT = True
+ENC_FLOOR_X, ENC_FLOOR_W = 152, 208       # suelo util de las salas (include/encounters_act1.h)
+ENC_BLOCK_H = 384
+ENC_PLAN = ROOT / "tools/encuentros/acto1_v2.json"
+# El kit no tiene piezas espejadas: con la planta espejada el remate cambia de id (igual que enc_block_pieces).
+MIRROR_SWAP = {
+    "sacos_remate": "sacos_remate_der", "sacos_remate_der": "sacos_remate",
+    "santo": "santo_der", "santo_der": "santo",
+}
+
+
+def encounter_piece_uses():
+    """Every (piece, lx, ly, mirror) the encounter rooms can ask enc_place_piece() for: the pieces of
+    the six plants and of the corridor, with and without mirror. (verja is drawn with OBJ sprites)."""
+    d = json.loads(ENC_PLAN.read_text(encoding="utf-8"))
+    uses = []
+    groups = [pl["pieces"] for pl in d["plantas"].values()] + [d["pasillo"]["pieces"]]
+    for pieces in groups:
+        for pc in pieces:
+            for mirror in (0, 1):
+                name = MIRROR_SWAP.get(pc["piece"], pc["piece"]) if mirror else pc["piece"]
+                uses.append((name, pc["x"], pc["y"], mirror))
+                # Una de cada cuatro agrupaciones sale con el banco roto, pero solo en la fase de fila 0 (las
+                # agrupaciones de fila 8 nunca): presupuesto de tiles, igual que enc_block_pieces.
+                if name == "banco_grupo4" and ((pc["y"] + 4) // 8) & 15 == 0:
+                    uses.append(("banco_grupo4_roto", pc["x"], pc["y"], mirror))
+    return uses
+
+
+def encounter_phase_map():
+    """piece -> [(phase_col, phase_row)] as enc_place_piece() (source/strip.c) derives it:
+    tx = (nominal_px + 4) / 8, ty = (ly + 4) / 8, phase = (tx & 15, ty & 15), with
+    nominal_px = FLOOR_X + FLOOR_W - (lx + w_px) when mirrored. w_px is the canvas width of the stamp."""
+    phases = {}
+    widths = {}
+    for name, lx, ly, mirror in encounter_piece_uses():
+        if name not in widths: widths[name] = source_layout(name)["w"]
+        w_px = widths[name]
+        nominal = ENC_FLOOR_X + ENC_FLOOR_W - (lx + w_px) if mirror else ENC_FLOOR_X + lx
+        ph = (((nominal + 4) // 8) & 15, ((ly + 4) // 8) & 15)
+        lst = phases.setdefault(name, [])
+        if ph not in lst: lst.append(ph)
+    return phases
+
+
 def catedral_phase_map():
-    """(piece -> list of (phase_col, phase_row)) that the composer can use. Baking only these
-    keeps the kit within the tile budget. banco_entero is not listed: it is only the source of
-    banco_grupo4, which is the bench the composer places."""
-    return {
-        "columna_entera": [(7, 9), (7, 1), (3, 9), (3, 1)],
-        "banco_grupo4": [(3, 0), (3, 8), (0, 0), (0, 8)],
-        # 12: relicario de la catedral; 4 / 7: pegado a la izquierda / derecha (variante encuentros);
-        # 13: centrado exacto en el eje del pasillo (tile 29, centro de arte en 256 px).
-        "relicario": [(12, 9), (12, 1), (4, 9), (4, 1), (7, 9), (7, 1), (13, 9)],
-        # (3, 1): fase espejo para los pares de estatuas de las salas de encuentros. Con w=5 tiles el
-        # par simetrico respecto al eje (tile 32) cumple x + x' = 59; 8 + 3 = 11 (mod 16) lo permite.
-        "santo": [(0, 9), (0, 1), (8, 9), (8, 1), (3, 1)],
-        "vela": list(VELA_PHASES),
-        **{name: list(LAPIDA_PHASES) for name in LAPIDA_NAMES},
-    }
+    """(piece -> list of (phase_col, phase_row)) that the kit bakes. Since 2026-11-17 the kit serves
+    only the encounter rooms, the corridors and the lapidas (DESIGN.md 6.13.6): the phases are derived
+    from what the rooms place, so the kit fits the 1024 tiles. banco_entero is not listed: it is only
+    the source of banco_grupo4 / banco_grupo4_roto, which are the benches the rooms place."""
+    phases = encounter_phase_map()
+    # Lapidas: fuera del kit de las salas (presupuesto de 1024 tiles: con las piezas nuevas no caben ni
+    # con una sola fase). enc_place_lapidas() no encuentra estampa y no coloca ninguna. Poner a True para
+    # volver a hornearlas (LAPIDA_PHASES) cuando el presupuesto lo permita.
+    if LAPIDAS_EN_KIT:
+        phases.update({name: list(LAPIDA_PHASES) for name in LAPIDA_NAMES})
+    return phases
 
 
 def _stamp_for(stamps, name, x, y):
@@ -973,7 +1041,7 @@ def make_wall_map(floor_map, tiles, palette, props, prop_lab):
         for tx in range(WALL_TILE_COLS):
             entry = tiles.add(np.ascontiguousarray(pal_idx[ty*8:ty*8+8, tx*8:tx*8+8]).tobytes())
             row[tx] = entry
-            row[63 - tx] = entry ^ 0x400
+            row[63 - tx] = entry ^ 0x4000
         out.append(row)
     return out, new_colors
 
@@ -1068,12 +1136,7 @@ def build(floor_dir, phases=4, output=OUTPUT, preview=None, prop_names=DEFAULT_P
     palette, floor_pixels, floor_map = make_floor_tiles(floor_colors, raw_floor, grid, tiles)
     props, prop_lab = read_prop_palette()
     stamps, shadow_colors = load_pieces(prop_names, all_phases, floor_pixels, grid, palette,
-                                        prop_lab, tiles, phase_map=phase_map)
-    # Hard budget: the 10-bit tile format cannot address more than 1024 unique tiles. Fail here,
-    # before any image or source is written, instead of wrapping indices with & 0x3ff.
-    if len(tiles.data) > 1024:
-        raise ValueError(f"tile budget exceeded: {len(tiles.data)} baked unique tiles > 1024 "
-                         f"(mode={mode}, {len(prop_names)} pieces); free tiles before baking")
+                                        prop_lab, tiles, phase_map=phase_map, props=props)
     prop_remap = {}
     prop_temp_base = len(palette)
     for i, c in enumerate(props):
@@ -1081,7 +1144,7 @@ def build(floor_dir, phases=4, output=OUTPUT, preview=None, prop_names=DEFAULT_P
             palette.append(c)
         prop_remap[prop_temp_base + i] = palette.index(c)
     remap_lut = np.arange(256, dtype=np.uint8)
-    for old, new in prop_remap.items(): remap_lut[old] = new
+    # (load_pieces ya escribio los indices finales: la LUT queda como identidad)
     # Remapear los bytes de paleta de TODOS los tiles una sola vez (los indices temporales
     # floor_count+1+q pasan a indices finales). Se hace por tile, sin depender del dedupe,
     # para que ningun tile referenciado quede con indices temporales.
@@ -1100,31 +1163,64 @@ def build(floor_dir, phases=4, output=OUTPUT, preview=None, prop_names=DEFAULT_P
         e = int(e)
         if not e:
             return 0
-        ne = merge[e & 0x3ff]
-        return (ne & 0x3ff) | ((e ^ ne) & 0xc00)
+        ne = merge[e & 0x3fff]
+        return (ne & 0x3fff) | ((e ^ ne) & 0xc000)
 
     floor_map = [[remap_entry(v) for v in row] for row in floor_map]
     for st in stamps:
         st["tiles"] = np.vectorize(remap_entry, otypes=[np.uint16])(st["tiles"])
     map_map, wall_new = make_wall_map(floor_map, tiles, palette, props, prop_lab)
-    if mode == "catedral" and len(tiles.data) > 1024:
-        raise ValueError(f"tile budget exceeded: {len(tiles.data)} unique tiles including the wall "
-                         f"map > 1024 (mode=catedral); free tiles before baking")
     if len(palette) > 256: raise ValueError(f"shared palette requires {len(palette)} entries including transparent")
+    # Merge nearly-identical tiles (same approach as bake_arena.py) when > 980 tiles so lapidas fit with margin.
+    if len(tiles.data) > 950:
+        pal_rgb = np.zeros((256, 3), dtype=np.float32)
+        for i, c in enumerate(palette):
+            pal_rgb[i] = ((c & 31) * 255.0 / 31.0, ((c >> 5) & 31) * 255.0 / 31.0, ((c >> 10) & 31) * 255.0 / 31.0)
+        arr = np.array([np.frombuffer(t, dtype=np.uint8) for t in tiles.data])
+        rgb = pal_rgb[arr].reshape(len(tiles.data), -1)
+        void = (arr == 0)
+        counts = np.zeros(len(tiles.data), dtype=np.int64)
+        for row in map_map:
+            for v in row: counts[int(v) & 0x3fff] += 10
+        for st in stamps:
+            for v in st["tiles"].flat:
+                if int(v): counts[int(v) & 0x3fff] += 1
+        order_m = [0] + [int(t) for t in np.argsort(-counts, kind="stable") if t != 0]
+        for thr in (1.0, 1.5, 2.0, 2.5, 3.0, 4.0, 6.0):
+            kept, kept_rgb, kept_void = [], np.zeros((len(tiles.data), rgb.shape[1]), dtype=np.float32), np.zeros((len(tiles.data), arr.shape[1]), dtype=bool)
+            m_remap = np.zeros(len(tiles.data), dtype=np.int64)
+            for t in order_m:
+                k = len(kept)
+                if k:
+                    diff = np.abs(kept_rgb[:k] - rgb[t])
+                    mean = diff.mean(axis=1)
+                    ok = (mean <= thr) & (diff.max(axis=1) <= 96) & (kept_void[:k] == void[t]).all(axis=1)
+                    if ok.any():
+                        m_remap[t] = int(np.argmin(np.where(ok, mean, 1e9)))
+                        continue
+                kept_rgb[k] = rgb[t]; kept_void[k] = void[t]; m_remap[t] = k; kept.append(t)
+            if len(kept) <= 950:
+                print(f"merged tiles at threshold {thr}: {len(tiles.data)} -> {len(kept)}")
+                tiles.data = [tiles.data[t] for t in kept]
+                tiles.index = {t: i for i, t in enumerate(tiles.data)}
+                map_map = [[(int(m_remap[int(v) & 0x3fff]) | (int(v) & 0xc000)) if int(v) else 0 for v in row] for row in map_map]
+                for st in stamps:
+                    st["tiles"] = np.vectorize(lambda v: (int(m_remap[int(v) & 0x3fff]) | (int(v) & 0xc000)) if int(v) else 0, otypes=[np.uint16])(st["tiles"])
+                break
     collision = np.zeros((32, 128), np.uint8)
     collision[:, :12] = 3; collision[:, 116:] = 3
     flat = collision.reshape(-1)
     packed = (flat[0::4] | (flat[1::4] << 2) | (flat[2::4] << 4) | (flat[3::4] << 6)).astype(np.uint8)
     # Compactar: tras el remapeo de colores los tiles previos de las piezas quedan sin referencia; no se emiten.
     used = {0}
-    for row in map_map: used |= {int(v) & 0x3ff for v in row}
-    for st in stamps: used |= {int(v) & 0x3ff for v in st["tiles"].flat if int(v)}
+    for row in map_map: used |= {int(v) & 0x3fff for v in row}
+    for st in stamps: used |= {int(v) & 0x3fff for v in st["tiles"].flat if int(v)}
     order = sorted(used); new_id = {o: n for n, o in enumerate(order)}
     if len(order) > 1024:
         raise ValueError(f"tile budget exceeded: {len(order)} referenced unique tiles > 1024 "
                          f"(mode={mode}); free tiles before baking")
     def renum(v):
-        v = int(v); return v if not v else (new_id[v & 0x3ff] | (v & 0xc00))
+        v = int(v); return v if not v else (new_id[v & 0x3fff] | ((v & 0xc000) >> 4))
     map_map = [[renum(v) if int(v) else 0 for v in row] for row in map_map]
     for st in stamps: st["tiles"] = np.vectorize(renum, otypes=[np.uint16])(st["tiles"])
     tiles.data = [tiles.data[o] for o in order]

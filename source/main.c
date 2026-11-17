@@ -1262,6 +1262,9 @@ ITCM_CODE static void render_screen(uint16_t *buffer, DirtySpan *spans, int cam_
     PP_T0(pp_shadow);
 #if HW_SHADOWS
     hwshadow_begin(sub_screen);
+#if ENCOUNTERS_PROTO
+    if (s_strip_mode) enc_verja_draw(sub_screen, cam_x, cam_y);
+#endif
     const int hw_shadows = g_hw_shadows_on;
 #endif
     for (int i = 0; i < count; i++) {
