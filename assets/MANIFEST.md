@@ -20,7 +20,7 @@ Estado a 2026-11-17.
 | Arenas (mazmorra) | `assets/arenas/arenas.json` | `tools/export_arenas.py` → `bake_arena.py` | `source/arena_0N.c` | git |
 | HUD | corazón sagrado 3D `assets/models/hud/sacred_heart/` | `tools/hud/prerender_hud_heart.py` → `tools/generate_hud_icons_c.py` | `source/hud_icons_gfx.c` | LFS (PNG: git) |
 | Rayos de luz | pintados a mano, `assets/sprites/godrays/` | `source/godrays_gfx.c` (notas en `tools/godrays/README.md`) | `source/godrays_gfx.c` | git |
-| Cartas de mejora | escenas reales de la ROM (`cathedral-sandbox`) | `tools/levelup_cards/capture_cards.py` | `nitrofiles/levelup/*.bin` | derivado (capturas: §7) |
+| Cartas de mejora | escenas reales de la ROM (`cathedral-sandbox`) | `tools/levelup_cards/capture_cards.py` | `nitrofiles/levelup/*.bin` | derivado (capturas intermedias en `assets/sprites/levelup/`, ignoradas) |
 | Clips de la intro | partida real en DeSmuME | `tools/gen_intro_clips.py` | `nitrofiles/intro/*.bin` | derivado |
 | Efectos de sonido | ElevenLabs → `assets/sfx/raw/` | recorte a mano → `assets/sfx/baked/` → `tools/bake_sfx.py` | arrays en C (`source/sfx.c`) | git |
 | Música | `assets/music/*.wav` | conversión a `nitrofiles/bgm.raw` | `nitrofiles/bgm.raw` | git |
@@ -96,6 +96,8 @@ El suelo del juego (`assets/environment/cathedral/floor/rombos_tripo/`) sale de 
 
 **Borrado del legado** (2026-11-17, decisión del usuario): necrón, marine espacial, cargador antiguo, esqueleto sin textura, animaciones y armas del lab (`assets/models/archive/legacy/`), el blockout del shooter isométrico, el par de ventanas ojivales (`lancet_pair`) y el monstruo (solo local). La geometría de arenas (`assets/models/environment/arenas/`) deja de versionarse: la regeneran `make_arena_glb.py` y `export_arenas.py`. Todo lo que estaba en git sigue en el historial hasta su reescritura (pendiente); el monstruo se pierde.
 
+**Borrado sin copia en git** (2026-11-17, decisión del usuario): maquetas A/B/C de las cartas de mejora y su `bake_cards.py`, y los corazones girando de `hud/pickup/`. Ninguno lo usaba el juego. También los restos del legado que quedaban en el disco de la carpeta principal; esos siguen en el historial.
+
 **Borrado** (2026-11-16): `environment/dreadhollow/GLB` y `Previews` (306 MB; pack «Dreadhollow — The Cursed Kingdom» de Kareel Games, se vuelve a bajar del proveedor); `animations/rifle/aim.fbx`, `walk/walk_renqueante.fbx`, `weapons/sword/sword.glb` (sin referencias); `environment/scifi_dungeon` (68 MB, pipeline legado; los scripts `bake_scifi_dungeon.py` y afines ya no se pueden ejecutar). Todo sigue en el historial de git salvo dreadhollow.
 
 ## 6. Sin registrar
@@ -105,10 +107,6 @@ En Descargas, fuera del repo: `tripo_convert_8c5b4a72` (esqueleto soldado) y `tr
 ## 7. Anomalías abiertas
 
 - **`.h` del bestiario versionados:** `assets/sprites/bestiary/*/nds_shadow_anchor.h` ocupan ~270 MB en git y son derivados (`TECHNICAL.md` §4.4).
-- **Sin versionar, solo en la carpeta principal:**
-  - Vídeos `assets/videos/lore01_*.mp4` (7) y avatares `avatar_{corazon,ojo}.png`: son finales, así que deben adoptarse en LFS.
-  - Cartas de mejora: `assets/sprites/levelup/{A,B,C}`, sus hojas y `tools/levelup_cards/bake_cards.py` son la ronda A/B/C de mockups, que el juego no usa. `levelup/ingame/` es un intermedio de `capture_cards.py`, y el juego lee `nitrofiles/levelup/`.
-  - `assets/sprites/hud/pickup/`: corazones girando sin referencias en el código.
-- **Restos del legado en la carpeta principal:** necrón, marine, cargador, esqueleto, armas, scifi_dungeon, blockout, `lancet_pair`, rifle y combat, Cireneo v1 y `source_v2` siguen en disco sin versionar (están en el historial de git). Se borran al cerrar la sesión (el clip del monaguillo ya está extraído a `animations/monaguillo/`).
+- **Sin versionar, solo en la carpeta principal:** vídeos `assets/videos/lore01_{04..10}*.mp4`, `lore01_02_…_sinvoz.mp4` y avatares `avatar_{corazon,ojo}.png`. Si son finales, se adoptan en LFS.
 - **Modelos de prueba del usuario** (`archive/legacy/custom/` en la carpeta principal: mago, esqueleto muriendo y dos personajes): sin decidir; no se versionan.
 - **Originales perdidos:** `columna` (base rota), `banco_roto`, `banco_volcado` (ver §3).

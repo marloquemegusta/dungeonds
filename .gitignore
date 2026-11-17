@@ -71,3 +71,8 @@ assets/models/characters/corazon/corazon_*.fbx
 
 # Geometría de arenas: la regeneran tools/make_arena_glb.py y export_arenas.py
 assets/models/environment/arenas/
+
+# Derivados que se regeneran: capturas intermedias de las cartas (capture_cards.py) y mapas de color del paso bake
+assets/sprites/levelup/
+assets/environment/cathedral/palette/*color_ds.png
+assets/environment/cathedral/palette/*color_regions.png
