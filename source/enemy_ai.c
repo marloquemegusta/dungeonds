@@ -314,18 +314,20 @@ static int exvoto_dodge(Enemy *e, int wx, int wy, int ground_dist_sq, fixed spee
     int along = (rx * gx + ry * gy) >> 8;
     int cross = (rx * gy - ry * gx) >> 8;
     if (EX_STEP(e) > 0) {
-        // Sidestep: perpendicular to the line, towards the Exvoto's own side.
-        if (line) {
-            int s = EX_SIDE(e);
-            int sp = speed * EXVOTO_DODGE_SPEED_NUM / 2;
-            fixed vx = (fixed)((gy * s * sp) >> 8);
-            fixed vy = (fixed)((-gx * s * sp) >> 9);   // ground y -> world y
-            int moved = move_with_slide(&e->x, &e->y, vx, vy);
-            e->dir = dir_from_vector(vx, vy * 2);
-            update_animation(e, moved);
-        } else {
-            update_animation(e, 0);
+        // The hero fired or let go of the aim: drop the sidestep at once and resume the chase this same frame.
+        if (!line) {
+            EX_STEP(e) = 0;
+            EX_COOL(e) = EXVOTO_DODGE_COOL;
+            return 0;
         }
+        // Sidestep: perpendicular to the line, towards the Exvoto's own side.
+        int s = EX_SIDE(e);
+        int sp = speed * EXVOTO_DODGE_SPEED_NUM / 2;
+        fixed vx = (fixed)((gy * s * sp) >> 8);
+        fixed vy = (fixed)((-gx * s * sp) >> 9);   // ground y -> world y
+        int moved = move_with_slide(&e->x, &e->y, vx, vy);
+        e->dir = dir_from_vector(vx, vy * 2);
+        update_animation(e, moved);
         if (--EX_STEP(e) <= 0) EX_COOL(e) = EXVOTO_DODGE_COOL;
         return 1;
     }
@@ -353,11 +355,12 @@ static void exvoto_weave(const Enemy *e, int idx, int dx, int dy) {
     int m = dx < 0 ? -dx : dx;
     int a = dy2 < 0 ? -dy2 : dy2;
     if (a > m) m = a;
-    if (m < 64) return;                               // within ~64 ground px: straight at the hero
+    if (m <= 32) return;                              // within ~32 ground px: straight at the hero
     int ph = (int)((s_ai_tick * 2 + (uint32_t)idx * 77u) & 255u);
     int tri = (ph < 128 ? ph : 256 - ph) - 64;         // -64..64
     int amp = (e->strafe_dir >= 0 ? 1 : -1) * tri;     // the strafe sign gives each Exvoto its own phase direction
-    int off = amp * 24 / 64;                           // up to +-24 px
+    int fade = m >= 96 ? 64 : m - 32;                  // 0 at 32 px, 64 (=100 % in /64) from 96 px out
+    int off = div32(amp * 24 * fade, 4096);            // up to +-24 px, eased out as the Exvoto closes in
     s_chase_bias_x = div32(-dy2 * off, m);
     s_chase_bias_y = div32(dx * off, m) / 2;
 }
