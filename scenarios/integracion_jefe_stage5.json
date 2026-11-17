@@ -1,0 +1,83 @@
+{
+  "name": "integracion_jefe_stage5",
+  "description": "Verifica en la ROM por defecto (dungeonds.nds) que el stage 5 es el primer jefe (Abanderado), que entra en intro/combate/victoria y que al vencerlo se abren las barreras para seguir al stage 6.",
+  "suite": true,
+  "rom": "../dungeonds.nds",
+  "state": {
+    "elf": "../.ds-game-dev/build/out/dungeonds.elf",
+    "symbols": {
+      "stats": "g_enc_stats",
+      "dbg": "g_enc_debug"
+    },
+    "default_symbol": "stats",
+    "fields": {
+      "current": { "offset": 1, "type": "u8" },
+      "cleared": { "offset": 5, "type": "u8" },
+      "boss_hp_now": { "offset": 184, "type": "u16" },
+      "boss_state": { "offset": 189, "type": "u8" },
+      "boss_phase": { "offset": 190, "type": "u8" },
+      "dbg_god": { "symbol": "dbg", "offset": 2, "type": "u8" },
+      "dbg_no_dones": { "symbol": "dbg", "offset": 3, "type": "u8" },
+      "dbg_restart": { "symbol": "dbg", "offset": 12, "type": "u8" },
+      "dbg_start_boss": { "symbol": "dbg", "offset": 16, "type": "u8" },
+      "dbg_boss_damage": { "symbol": "dbg", "offset": 18, "type": "u16" }
+    }
+  },
+  "steps": [
+    { "frames": 20 },
+    {
+      "poke": [
+        { "field": "dbg_god", "value": 1 },
+        { "field": "dbg_no_dones", "value": 1 },
+        { "field": "dbg_start_boss", "value": 1 },
+        { "field": "dbg_restart", "value": 1 }
+      ],
+      "frames": 60,
+      "state_capture": "at_corridor_before_stage5"
+    },
+    {
+      "button_down": "UP",
+      "wait_until": { "field": "boss_state", "equals": 1, "timeout_frames": 600 },
+      "state_capture": "boss_intro"
+    },
+    {
+      "button_up": "UP",
+      "frames": 10
+    },
+    {
+      "button_down": "START",
+      "frames": 4
+    },
+    {
+      "button_up": "START",
+      "wait_until": { "field": "boss_state", "equals": 2, "timeout_frames": 120 },
+      "state_capture": "boss_combat"
+    },
+    {
+      "poke": [ { "field": "dbg_boss_damage", "value": 6000 } ],
+      "wait_until": { "field": "boss_state", "equals": 4, "timeout_frames": 120 },
+      "state_capture": "boss_victory"
+    },
+    { "frames": 70 },
+    {
+      "button_down": "START",
+      "frames": 4
+    },
+    {
+      "button_up": "START",
+      "wait_until": { "field": "boss_state", "equals": 5, "timeout_frames": 120 },
+      "state_capture": "after_boss_stage6"
+    }
+  ],
+  "assertions": {
+    "state_changes": [
+      { "at": "at_corridor_before_stage5", "field": "current", "equals": 4 },
+      { "at": "boss_intro", "field": "boss_state", "equals": 1 },
+      { "at": "boss_combat", "field": "boss_state", "equals": 2 },
+      { "at": "boss_victory", "field": "boss_state", "equals": 4 },
+      { "at": "after_boss_stage6", "field": "boss_state", "equals": 5 },
+      { "at": "after_boss_stage6", "field": "cleared", "equals": 5 },
+      { "at": "after_boss_stage6", "field": "current", "equals": 5 }
+    ]
+  }
+}

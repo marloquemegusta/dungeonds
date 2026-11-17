@@ -7,6 +7,8 @@ typedef int encounters_act1_translation_unit_not_empty;
 
 #include <string.h>
 #include "encounters.h"
+#include "boss.h"
+#include "sfx_voice_len.h"
 #include "collision.h"
 #include "enemy_ai.h"
 #include "groundfx.h"
@@ -22,6 +24,8 @@ typedef int encounters_act1_translation_unit_not_empty;
 #if ENC_BOT
 volatile EncDebug g_enc_debug = { .auto_pick = 2, .seed = 1,
                                   .bot_reaction = 15, .bot_aim_err = 6, .bot_ojo_delay = 20 };   // human-like bot, cards at random, seed 1
+#elif ENC_START_BOSS
+volatile EncDebug g_enc_debug = { .start_boss = 1 };   // console test build: every act (and every retry) starts at the boss
 #else
 volatile EncDebug g_enc_debug;
 #endif
@@ -31,10 +35,21 @@ volatile EncStats g_enc_stats;
 // Act plan: which plant, tier and mirror each encounter has. Pure function of the seed.
 // ---------------------------------------------------------------------------
 
-#define ENC_BOSS 12                         // index of the boss "encounter" in the runtime arrays
+#define ENC_STAGES 14                       // Via Crucis: 14 stations (DESIGN.md 6.13)
+#define ENC_FIRST_BOSS 4                    // station V (stage 5, 0-based index 4)
+#define ENC_BOSS (ENC_STAGES - 1)           // final boss station (XIV, stage 14)
 #define ENC_FIRST_BLOCK 3                   // block of the first encounter; blocks above 3 are the cleared start
 #define ENC_BOSS_HP_MARK 1
 
+static int is_boss_stage(int k) { return k == 4 || k == 9 || k == 13; }
+static int enc_idx_of_stage(int k) {
+    if (k < 4) return k;
+    if (k < 9) return k - 1;
+    return k - 2;
+}
+
+static int s_first_block = ENC_FIRST_BLOCK;   // moves down the strip with start_boss so the boss room is the first block
+static int s_active_boss_k = ENC_FIRST_BOSS;  // stage index (4, 9, or 13) of the active boss fight
 static uint32_t s_seed;
 static uint8_t s_plant[ENC_COUNT];
 static uint8_t s_mirror[ENC_COUNT];
@@ -43,13 +58,14 @@ static uint8_t s_tier[ENC_COUNT];           // tier of each encounter (s_tier_of
 typedef struct {
     uint8_t spawned, awake, cleared, wave2_done, barrier_open;
 } EncRuntime;
-static EncRuntime s_rt[ENC_COUNT + 1];
-static uint8_t s_relic_broken[ENC_COUNT];
-static int16_t s_relic_damage[ENC_COUNT];
+static EncRuntime s_rt[ENC_STAGES];
+static uint8_t s_relic_broken[ENC_STAGES];
+static int16_t s_relic_damage[ENC_STAGES];
 static int s_relic_k = -1;                  // corridor of the relicario target in front of the hero, -1 none
 static int s_relic_x, s_relic_y;
 static int s_relicarios;
 static int s_victory;
+static int s_boss_locked;                   // the bottom barrier of the boss room is closed (boss mode)
 static int s_deaths;
 static int s_was_dead;
 static int s_fx_timer, s_fx_x, s_fx_y;      // little ring where a relicario broke
@@ -92,7 +108,32 @@ static int assign_plants(int slot, uint8_t *count, uint8_t *first_tier) {
     return 0;
 }
 
-static void esc_reset(void);
+static void boss_set_barriers(int closed);
+static void boss_spawn_escort(EnemyType type, int floor_x);
+
+// Sheet of the Abanderado (DESIGN.md 6.13.7). The three phases share the escort of the prototype: 2 Ojos and 1 Cireneo,
+// one that falls comes back from the top ~4 s later.
+static const BossEscortDef s_abanderado_escort[] = {
+    { ENEMY_TYPE_SHOOTER, 2, 240, { 40, 168 } },
+    { ENEMY_TYPE_CHARGER, 1, 240, { 104, 104 } },
+};
+static const BossDef s_abanderado_def = {
+    .enemy_type = ENEMY_TYPE_ABANDERADO,
+    .name = "EL ABANDERADO",
+    .title = "Capitán Íñigo Albar",
+    .line_intro = "«Mientras el asta siga en pie,\nnadie se retira.»",
+    .line_defeat = "«El asta ha caído.»",
+    .sfx_intro = SND_ABANDERADO_INTRO,
+    .sfx_defeat = SND_ABANDERADO_DEFEAT,
+    .voice_intro_frames = SFX_VOICE_VBLANKS_ABANDERADO_INTRO,
+    .voice_defeat_frames = SFX_VOICE_VBLANKS_ABANDERADO_DEFEAT,
+    .n_phases = 3,
+    .phase_pct = { 100, 66, 33 },
+    .n_escort = { 2, 2, 2 },
+    .escort = { s_abanderado_escort, s_abanderado_escort, s_abanderado_escort },
+};
+
+int enc_start_up_px(void) { return g_enc_debug.start_boss ? 156 : 0; }   // hero ~100 px under the boss room's bottom edge
 
 void enc_init(uint32_t seed) {
     s_seed = seed ? seed : 1u;
@@ -119,18 +160,30 @@ void enc_init(uint32_t seed) {
         if (g_enc_debug.force_tier > 0 && g_enc_debug.force_tier <= 3) s_tier[0] = (uint8_t)(g_enc_debug.force_tier - 1);
     }
     memset(s_rt, 0, sizeof(s_rt));
-    esc_reset();
+    s_first_block = ENC_FIRST_BLOCK;
+    if (g_enc_debug.start_boss) {              // debug: the act starts at the first boss (stage 5), stages 1..4 already won
+        s_first_block += 2 * ENC_FIRST_BOSS;
+        for (int i = 0; i < ENC_FIRST_BOSS; i++) s_rt[i].spawned = s_rt[i].awake = s_rt[i].cleared = s_rt[i].wave2_done = s_rt[i].barrier_open = 1;
+    }
     memset(s_relic_broken, 0, sizeof(s_relic_broken));
     memset(s_relic_damage, 0, sizeof(s_relic_damage));
     s_relic_k = -1;
     s_relicarios = 0;
     s_victory = 0;
+    s_boss_locked = 0;
+    s_active_boss_k = ENC_FIRST_BOSS;
     s_was_dead = 0;
     s_fx_timer = 0;
+    {
+        static const BossHooks hooks = { boss_spawn_escort, boss_set_barriers };
+        boss_set_hooks(&hooks);
+        boss_reset(&s_abanderado_def, ENC_FIRST_BOSS);
+    }
     volatile EncStats *st = &g_enc_stats;
     uint8_t deaths = (uint8_t)s_deaths;
     memset((void *)st, 0, sizeof(EncStats));
     st->deaths = deaths;
+    if (g_enc_debug.start_boss) st->cleared = ENC_FIRST_BOSS;
     for (int i = 0; i < ENC_COUNT; i++) st->plants[i] = s_plant[i];
     st->plant = s_plant[0];
     st->tier = s_tier[0];
@@ -152,11 +205,11 @@ int enc_pick_index(void) {
 void enc_block_info(int32_t block, EncBlock *out) {
     memset(out, 0, sizeof(*out));
     out->kind = ENC_BLOCK_CLEAR;
-    int32_t k = ENC_FIRST_BLOCK - block;
+    int32_t k = s_first_block - block;
     if (k < 0) return;
     if (k & 1) {
         int idx = (int)((k - 1) >> 1);
-        if (idx < ENC_COUNT) {
+        if (idx < ENC_STAGES - 1) {
             out->kind = ENC_BLOCK_CORRIDOR;
             out->idx = (uint8_t)idx;
             out->mirror = (uint8_t)(idx & 1);
@@ -164,15 +217,18 @@ void enc_block_info(int32_t block, EncBlock *out) {
         return;
     }
     int idx = (int)(k >> 1);
-    if (idx < ENC_COUNT) {
-        out->kind = ENC_BLOCK_ENCOUNTER;
-        out->idx = (uint8_t)idx;
-        out->plant = s_plant[idx];
-        out->tier = s_tier[idx];
-        out->mirror = s_mirror[idx];
-    } else if (idx == ENC_COUNT) {
-        out->kind = ENC_BLOCK_BOSS;
-        out->idx = ENC_BOSS;
+    if (idx < ENC_STAGES) {
+        if (is_boss_stage(idx)) {
+            out->kind = ENC_BLOCK_BOSS;
+            out->idx = (uint8_t)idx;
+        } else {
+            int e = enc_idx_of_stage(idx);
+            out->kind = ENC_BLOCK_ENCOUNTER;
+            out->idx = (uint8_t)idx;
+            out->plant = s_plant[e];
+            out->tier = s_tier[e];
+            out->mirror = s_mirror[e];
+        }
     }
 }
 
@@ -214,7 +270,7 @@ int enc_block_rects(int32_t block, EncRect *out, int max) {
             n++;
         }
     }
-    if ((b.kind == ENC_BLOCK_ENCOUNTER && !s_rt[b.idx].barrier_open) || b.kind == ENC_BLOCK_BOSS) {
+    if ((b.kind == ENC_BLOCK_ENCOUNTER || b.kind == ENC_BLOCK_BOSS) && !s_rt[b.idx].barrier_open) {
         if (n < max) {
             out[n].kind = ENC_R_BARRERA;
             out[n].x = ENC_FLOOR_X;
@@ -223,6 +279,14 @@ int enc_block_rects(int32_t block, EncRect *out, int max) {
             out[n].h = ENC_BARRIER_H;
             n++;
         }
+    }
+    if (b.kind == ENC_BLOCK_BOSS && s_boss_locked && b.idx == s_active_boss_k && n < max) {      // boss mode: the same barrier closes the bottom edge
+        out[n].kind = ENC_R_BARRERA;
+        out[n].x = ENC_FLOOR_X;
+        out[n].y = ENC_BLOCK_H - ENC_BARRIER_H;
+        out[n].w = ENC_FLOOR_W;
+        out[n].h = ENC_BARRIER_H;
+        n++;
     }
     return n;
 }
@@ -235,8 +299,8 @@ int enc_collision_value(uint8_t rect_kind) {
 // Runtime
 // ---------------------------------------------------------------------------
 
-static int block_of_encounter(int k) { return ENC_FIRST_BLOCK - 2 * k; }       // k = 12 is the boss
-static int block_of_corridor(int k) { return ENC_FIRST_BLOCK - 1 - 2 * k; }
+static int block_of_encounter(int k) { return s_first_block - 2 * k; }       // k = 12 is the boss
+static int block_of_corridor(int k) { return s_first_block - 1 - 2 * k; }
 static int window_top(int block) { return block * ENC_BLOCK_H + (int)strip_shift_total_px(); }
 
 static EnemyType enemy_type_of(uint8_t t) {
@@ -312,50 +376,35 @@ static void wake_owner(Enemy *enemies, int max_enemies, int owner) {
     }
 }
 
-// Boss escort (v2): 2 Ojos and 1 Cireneo; one that falls comes back in from the top (ly 8-24) ~4 s later. This is the
-// only place where reinforcements enter.
-#define ENC_ESCORT_FRAMES 240
-#define ENC_ESCORT_SLOTS 4
-static uint16_t s_esc_timer[ENC_ESCORT_SLOTS];
-static uint8_t s_esc_type[ENC_ESCORT_SLOTS];
-static uint8_t s_esc_count;
+// Escort and phases live in boss.c (BossDef above); these are the hooks it calls. They need the enemy pool and the hero
+// position the last enc_update saw.
+static Enemy *s_pool;
+static int s_pool_n, s_hero_px, s_hero_py;
 
-static void esc_reset(void) {
-    memset(s_esc_timer, 0, sizeof(s_esc_timer));
-    s_esc_count = 0;
+static void boss_spawn_escort(EnemyType type, int floor_x) {
+    if (!s_pool) return;
+    const uint8_t t = type == ENEMY_TYPE_SHOOTER ? ENC_E_OJO : type == ENEMY_TYPE_CHARGER ? ENC_E_CIRENEO : ENC_E_EXVOTO;
+    EncEnemyDef def = { t, ENC_S_AWAKE, (int16_t)floor_x, 16 };
+    spawn_group(s_pool, s_pool_n, &def, 1, 0, window_top(block_of_encounter(s_active_boss_k)), 16, s_active_boss_k, 1);
 }
 
-static void boss_escort_update(Enemy *enemies, int max_enemies, int top) {
-    int live[2] = { 0, 0 }, pending[2] = { 0, 0 };                // 0 Ojo, 1 Cireneo
-    for (int i = 0; i < max_enemies; i++) {
-        const Enemy *e = &enemies[i];
-        if (!e->active || e->hp <= 0 || e->pack != ENC_BOSS) continue;
-        if (e->type == ENEMY_TYPE_SHOOTER) live[0]++;
-        else if (e->type == ENEMY_TYPE_CHARGER) live[1]++;
+static void boss_set_barriers(int closed) {
+    const int k = s_active_boss_k;
+    const int top = window_top(block_of_encounter(k));
+    s_boss_locked = closed;
+    if (closed) {
+        strip_collision_fill_win(ENC_FLOOR_X, top + ENC_BLOCK_H - ENC_BARRIER_H, ENC_FLOOR_W, ENC_BARRIER_H, enc_collision_value(ENC_R_BARRERA));
+    } else {
+        s_rt[k].barrier_open = 1;
+        if (k < ENC_STAGES - 1) strip_collision_fill_win(ENC_FLOOR_X, top, ENC_FLOOR_W, ENC_BARRIER_H, 0);
+        strip_collision_fill_win(ENC_FLOOR_X, top + ENC_BLOCK_H - ENC_BARRIER_H, ENC_FLOOR_W, ENC_BARRIER_H, 0);
     }
-    for (int s = 0; s < ENC_ESCORT_SLOTS; s++) if (s_esc_timer[s]) pending[s_esc_type[s]]++;
-    const int want[2] = { 2, 1 };
-    for (int t = 0; t < 2; t++) {
-        for (int d = want[t] - live[t] - pending[t]; d > 0; d--) {
-            for (int s = 0; s < ENC_ESCORT_SLOTS; s++) {
-                if (s_esc_timer[s]) continue;
-                s_esc_timer[s] = ENC_ESCORT_FRAMES;
-                s_esc_type[s] = (uint8_t)t;
-                break;
-            }
-        }
-    }
-    for (int s = 0; s < ENC_ESCORT_SLOTS; s++) {
-        if (!s_esc_timer[s] || --s_esc_timer[s] != 0) continue;
-        EncEnemyDef def = { s_esc_type[s] == 0 ? ENC_E_OJO : ENC_E_CIRENEO, ENC_S_AWAKE,
-                            (int16_t)(s_esc_type[s] == 0 ? ((s_esc_count++ & 1) ? 168 : 40) : 104), 16 };
-        spawn_group(enemies, max_enemies, &def, 1, 0, top, 16, ENC_BOSS, 1);
-    }
+    nav_refresh_begin(s_hero_px, s_hero_py);      // the walkable grid knew the barrier as a wall (or not)
 }
 
 static void open_barrier(int k, int px, int py) {
     s_rt[k].barrier_open = 1;
-    if (k < ENC_COUNT) {
+    if (k < ENC_STAGES - 1) {
         strip_collision_fill_win(ENC_FLOOR_X, window_top(block_of_encounter(k)), ENC_FLOOR_W, ENC_BARRIER_H, 0);
         nav_refresh_begin(px, py);          // the walkable grid knew the barrier as a wall
     }
@@ -378,7 +427,7 @@ static void apply_debug(void) {
 static void update_relic_target(int py) {
     s_relic_k = -1;
     int best = 0x7fffffff;
-    for (int k = 0; k < ENC_COUNT; k++) {
+    for (int k = 0; k < ENC_STAGES - 1; k++) {
         if (s_relic_broken[k]) continue;
         int top = window_top(block_of_corridor(k));
         if (top > py + 400 || top + ENC_BLOCK_H < py - 400) continue;
@@ -411,31 +460,48 @@ void enc_update(Enemy *enemies, int max_enemies, int px, int py) {
         return;
     }
     s_was_dead = 0;
+    s_pool = enemies;
+    s_pool_n = max_enemies;
+    s_hero_px = px;
+    s_hero_py = py;
     if (s_victory) return;
     st->state = ENC_STATE_PLAYING;
+    if (g_enc_debug.boss_damage > 0) {          // debug: one shot of this damage at the boss, once it is there
+        for (int i = 0; i < max_enemies; i++) {
+            Enemy *e = &enemies[i];
+            if (e->active && e->hp > 0 && e->type == ENEMY_TYPE_ABANDERADO) {
+                enemy_hit(e, g_enc_debug.boss_damage, 0, 0);
+                g_enc_debug.boss_damage = 0;
+                break;
+            }
+        }
+    }
 
     int cur = ENC_BOSS;                       // the encounter the hero faces next
-    for (int k = 0; k <= ENC_BOSS; k++) {
+    for (int k = 0; k < ENC_STAGES; k++) {
         if (!s_rt[k].cleared) { cur = k; break; }
     }
     int alive_cur = 0;
 
-    for (int k = 0; k <= ENC_BOSS; k++) {
+    for (int k = 0; k < ENC_STAGES; k++) {
         EncRuntime *rt = &s_rt[k];
         if (rt->cleared) continue;
         const int top = window_top(block_of_encounter(k));
         const int bottom = top + ENC_BLOCK_H;
-        const int is_boss = (k == ENC_BOSS);
+        const int is_boss = is_boss_stage(k);
 
         if (!rt->spawned) {
             if ((k == 0 || s_rt[k - 1].cleared) && top >= 0 && py <= bottom + ENC_SPAWN_AHEAD) {
                 rt->spawned = 1;
                 if (is_boss) {
+                    s_active_boss_k = k;
+                    boss_reset(&s_abanderado_def, k);
                     spawn_group(enemies, max_enemies, s_boss_enemies,
                                 (int)(sizeof(s_boss_enemies) / sizeof(s_boss_enemies[0])), 0, top, -1, k, 0);
                 } else {
-                    const EncPopulation *pop = population_of(k);
-                    spawn_group(enemies, max_enemies, pop->enemies, pop->n, s_mirror[k], top, -1, k, 0);
+                    int e = enc_idx_of_stage(k);
+                    const EncPopulation *pop = population_of(e);
+                    spawn_group(enemies, max_enemies, pop->enemies, pop->n, s_mirror[e], top, -1, k, 0);
                 }
             }
             continue;
@@ -448,6 +514,7 @@ void enc_update(Enemy *enemies, int max_enemies, int px, int py) {
                 rt->awake = 1;
                 wake_owner(enemies, max_enemies, k);
                 if (st->woken < k + 1) st->woken = (uint8_t)(k + 1);
+                if (is_boss) boss_begin(enemies, max_enemies);                 // the hero is in the room: close it, intro
                 if (k == cur) st->wake_frames = 0;
             }
             continue;
@@ -455,10 +522,11 @@ void enc_update(Enemy *enemies, int max_enemies, int px, int py) {
         if (k == cur && st->wake_frames < 0xFFFF) st->wake_frames++;
 
         if (!is_boss && !rt->wave2_done) {
-            const EncPopulation *pop = population_of(k);
+            int e = enc_idx_of_stage(k);
+            const EncPopulation *pop = population_of(e);
             if (pop->n2 > 0 && alive <= 1) {
                 rt->wave2_done = 1;
-                spawn_group(enemies, max_enemies, pop->wave2, pop->n2, s_mirror[k], top, 16, k, 1);
+                spawn_group(enemies, max_enemies, pop->wave2, pop->n2, s_mirror[e], top, 16, k, 1);
                 alive = alive_of(enemies, max_enemies, k, &hurt);
             } else if (pop->n2 == 0) {
                 rt->wave2_done = 1;
@@ -466,13 +534,10 @@ void enc_update(Enemy *enemies, int max_enemies, int px, int py) {
         }
         if (is_boss) {
             // The escort and the Monaguillos do not keep the fight alive: it ends when the Abanderado falls.
-            int boss_live = 0;
-            for (int i = 0; i < max_enemies; i++)
-                if (enemies[i].active && enemies[i].hp > 0 && enemies[i].type == ENEMY_TYPE_ABANDERADO) boss_live = 1;
-            if (boss_live) boss_escort_update(enemies, max_enemies, top);
-            else {
+            // boss.c runs the phases and the escort while it lives.
+            if (!boss_combat_update(enemies, max_enemies)) {
                 for (int i = 0; i < max_enemies; i++)
-                    if (enemies[i].active && enemies[i].hp > 0 && enemies[i].pack == ENC_BOSS) enemy_hit(&enemies[i], 9999, 0, 0);
+                    if (enemies[i].active && enemies[i].hp > 0 && enemies[i].pack == k) enemy_hit(&enemies[i], 9999, 0, 0);
                 alive = 0;
             }
         }
@@ -481,13 +546,20 @@ void enc_update(Enemy *enemies, int max_enemies, int px, int py) {
         if (alive == 0 && (is_boss || rt->wave2_done)) {
             rt->cleared = 1;
             if (!is_boss) {
-                st->clear_frames[k] = st->wake_frames;
-                st->hp_end[k] = (uint8_t)g_player_state.hp;
-                st->dones_at[k] = st->dones;
+                int e = enc_idx_of_stage(k);
+                if (e < ENC_COUNT) {
+                    st->clear_frames[e] = st->wake_frames;
+                    st->hp_end[e] = (uint8_t)g_player_state.hp;
+                    st->dones_at[e] = st->dones;
+                }
                 st->cleared = (uint8_t)(k + 1);
                 open_barrier(k, px, py);
+            } else if (k < ENC_BOSS) {
+                st->cleared = (uint8_t)(k + 1);
+                boss_victory();
             } else {
                 s_victory = 1;
+                boss_victory();
                 st->boss_frames = st->wake_frames;
                 st->state = ENC_STATE_VICTORY;
             }
@@ -496,21 +568,22 @@ void enc_update(Enemy *enemies, int max_enemies, int px, int py) {
 
     // Stats for the scenarios.
     cur = ENC_BOSS;
-    for (int k = 0; k <= ENC_BOSS; k++) {
+    for (int k = 0; k < ENC_STAGES; k++) {
         if (!s_rt[k].cleared) { cur = k; break; }
     }
     st->current = (uint8_t)cur;
-    if (cur < ENC_COUNT) {
-        st->plant = s_plant[cur];
-        st->tier = s_tier[cur];
+    if (!is_boss_stage(cur)) {
+        int e = enc_idx_of_stage(cur);
+        st->plant = s_plant[e];
+        st->tier = s_tier[e];
     } else {
         st->plant = 0xFF;
         st->tier = 3;
     }
     st->alive = (uint8_t)(alive_cur > 255 ? 255 : alive_cur);
     int hurt_dummy;
-    st->boss_alive = (uint8_t)(s_rt[ENC_BOSS].spawned && !s_rt[ENC_BOSS].cleared &&
-                               alive_of(enemies, max_enemies, ENC_BOSS, &hurt_dummy) > 0);
+    st->boss_alive = (uint8_t)(s_rt[s_active_boss_k].spawned && !s_rt[s_active_boss_k].cleared &&
+                               alive_of(enemies, max_enemies, s_active_boss_k, &hurt_dummy) > 0);
 
     {   // boss diagnostics
         int boss_hp = 0, mona = 0, blocked = 0;
@@ -586,7 +659,10 @@ void enc_note_beam_hit(const Enemy *e) {
 
 void enc_player_hit(void) {
     int cur = g_enc_stats.current;
-    if (cur < ENC_COUNT && g_enc_stats.hits[cur] < 255) g_enc_stats.hits[cur]++;
+    if (!is_boss_stage(cur)) {
+        int e = enc_idx_of_stage(cur);
+        if (e < ENC_COUNT && g_enc_stats.hits[e] < 255) g_enc_stats.hits[e]++;
+    }
     if (g_enc_stats.hits_total < 0xFFFF) g_enc_stats.hits_total++;
 }
 
@@ -617,6 +693,8 @@ static void cap_bump(void) {
 void enc_stats_frame(void) {
     volatile EncStats *st = &g_enc_stats;
     st->clock++;
+    st->boss_state = (uint8_t)boss_state();
+    st->boss_phase = (uint8_t)boss_phase();
     st->hp = (uint8_t)g_player_state.hp;
     st->max_hp = (uint8_t)g_player_state.max_hp;
     if (st->hp_min == 0 || (st->hp < st->hp_min && st->result == 0)) st->hp_min = st->hp ? st->hp : st->hp_min;
@@ -648,7 +726,7 @@ int enc_victory(void) { return s_victory; }
 
 int enc_current_encounter(void) {
     int cur = g_enc_stats.current;
-    return cur >= ENC_COUNT ? ENC_COUNT + 1 : cur + 1;
+    return cur >= ENC_STAGES ? ENC_STAGES : cur + 1;
 }
 
 // ---------------------------------------------------------------------------

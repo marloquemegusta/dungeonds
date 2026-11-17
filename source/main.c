@@ -30,6 +30,7 @@
 #include "hud_icons_gfx.h"
 #include "menu.h"
 #include "encounters_act1.h"
+#include "boss.h"
 #include <string.h>
 #include <time.h>
 
@@ -74,6 +75,8 @@ static uint16_t *s_top_page = NULL;    // upper-screen 16 bpp actor page (single
 static u16 *s_bot_map_ptr = NULL;
 static int s_bot_active_page = 8;
 static int s_bot_back_page = 24;
+static int s_top_hw_bg = 0;            // hardware floor layers (hidden while a boss screen is frozen)
+static int s_bot_hw_bg = 0;
 
 // World tile origin currently loaded into each 64x32 hardware BG map.
 static int s_top_map_tile_x = 0;
@@ -130,7 +133,7 @@ static const int s_strip_mode = 1;
 static int s_draw_item_depth;
 #if ENCOUNTERS_PROTO
 #define ENC_AUTO_PICK() (g_enc_debug.auto_pick != 0)
-#define ENC_STOPPED() enc_victory()
+#define ENC_STOPPED() boss_frozen()          // the boss intro and the victory screen stop the simulation
 #define ENC_PICK() (g_enc_debug.auto_pick == 2 ? enc_pick_index() : 0)
 #else
 #define ENC_AUTO_PICK() 0
@@ -926,6 +929,7 @@ static void draw_enemy(uint16_t *buffer, const Enemy *e, int cam_x, int cam_y) {
                 cam_x, cam_y, s_draw_item_depth);
     if (e->char_id == CHAR_OJO)
         enemy_ojo_mouth_glow_render(buffer, e, (int)(e - g_enemies), cam_x, cam_y, s_draw_item_depth);
+#if !ENCOUNTERS_PROTO                     // the encuentros variant shows the boss mode bar instead (boss.c)
     if (e->type == ENEMY_TYPE_ABANDERADO && e->max_hp > 0) {
         const int bar_w = 28;
         const int bar_h = 3;
@@ -953,6 +957,7 @@ static void draw_enemy(uint16_t *buffer, const Enemy *e, int cam_x, int cam_y) {
             }
         }
     }
+#endif
     if (e->hit_timer > 0)
         draw_hit_spark(buffer, px, py - (sh * 3) / 5, cam_x, cam_y, e->hit_timer);
 }
@@ -1321,6 +1326,9 @@ ITCM_CODE static void render_screen(uint16_t *buffer, DirtySpan *spans, int cam_
     weapons_render(buffer, cam_x, cam_y);
     if (!sub_screen) weapons_render_overlay(buffer);
     mods_render(buffer, cam_x, cam_y);
+#if ENCOUNTERS_PROTO
+    boss_draw_world(buffer, cam_x, cam_y);          // phase numeral over the boss
+#endif
     PP_ADD(PP_PROJ, pp_proj);
     uint32_t blit_ticks = cpuGetTiming() - t_bl0;
 
@@ -1639,14 +1647,16 @@ static void draw_run_hud(uint16_t *buffer) {
 
         // Level and xp, top left (DESIGN.md 6.12.8). A: "NV n" + bar. B: a candle. C: rosary beads + roman numeral.
 #if ENCOUNTERS_PROTO
-        {   // Variant "encuentros": no xp, no levels; the encounter the hero is on, and the end.
-            int enc = enc_current_encounter();
-            if (enc > 12) snprintf(line, sizeof(line), "JEFE");
-            else snprintf(line, sizeof(line), "ENC %d DE 12", enc);
-            hud_text(buffer, 6, 6, line, RGB15(27, 20, 11) | BIT(15));
-            if (enc_victory()) {
-                snprintf(line, sizeof(line), "VICTORIA");
-                hud_text(buffer, (SCREEN_W - hud_text_width(line)) / 2, 84, line, RGB15(27, 20, 11) | BIT(15));
+        {   // Via Crucis (DESIGN.md 6.13): 14 stations, bosses at 5, 10 and 14.
+            if (!boss_hud_active() && !boss_frozen()) {      // while the boss mode runs, its life bar takes this corner
+                int enc = enc_current_encounter();
+                if (enc == 5 || enc == 10 || enc == 14) snprintf(line, sizeof(line), "JEFE %d DE 14", enc);
+                else snprintf(line, sizeof(line), "ENC %d DE 14", enc);
+                hud_text(buffer, 6, 6, line, RGB15(27, 20, 11) | BIT(15));
+                if (enc_victory()) {
+                    snprintf(line, sizeof(line), "VICTORIA");
+                    hud_text(buffer, (SCREEN_W - hud_text_width(line)) / 2, 84, line, RGB15(27, 20, 11) | BIT(15));
+                }
             }
         }
 #else
@@ -1660,6 +1670,9 @@ static void draw_run_hud(uint16_t *buffer) {
         for (int i = 0; i < max_hp; i++)
             hud_icon(buffer, hx0 + i * (HUD_ICON_W + heart_gap), 6,
                      i < g_player_state.hp ? g_hud_heart_full : g_hud_heart_empty);
+#if ENCOUNTERS_PROTO
+        if (boss_hud_active()) boss_draw_hud(buffer, hx0 - 8, hud_text);      // thin bar from the left edge to the hearts
+#endif
         return;
     }
 
@@ -1772,6 +1785,88 @@ static void present_hardware_bgs(int top_cam_x, int top_cam_y,
     update_screen_hardware_bg(0, s_bot_map_ptr, bot_cam_x, bot_cam_y);
     PP_ADD(PP_BGBOT, pp_bb);
 }
+
+#if ENCOUNTERS_PROTO
+// ---------------------------------------------------------------------------
+// Boss screens (boss.c): the simulation stops, both views are frozen into RAM and drawn opaque on the actor pages.
+// ---------------------------------------------------------------------------
+
+static int s_boss_frozen_on;
+
+static void boss_freeze_begin(void) {
+#if HW_SHADOWS
+    hwshadow_regs_off();
+#endif
+    REG_BLDCNT = 0;
+    REG_BLDY = 0;
+    REG_BLDCNT_SUB = 0;
+    REG_BLDY_SUB = 0;
+    bgHide(s_top_hw_bg);
+    bgHide(s_bot_hw_bg);
+    oamDisable(&oamMain);
+    oamDisable(&oamSub);
+    s_boss_frozen_on = 1;
+}
+
+static void boss_freeze_end(void) {
+    uint32_t zero = 0;
+    swiFastCopy(&zero, s_top_page, COPY_MODE_FILL | (SCREEN_W * SCREEN_H * 2 / 4));
+    swiFastCopy(&zero, bot_page_ptr(8), COPY_MODE_FILL | (SCREEN_W * SCREEN_H * 2 / 4));
+    swiFastCopy(&zero, bot_page_ptr(24), COPY_MODE_FILL | (SCREEN_W * SCREEN_H * 2 / 4));
+    bgShow(s_top_hw_bg);
+    bgShow(s_bot_hw_bg);
+#if HW_SHADOWS || (defined(GODRAYS_PROTO) && GODRAYS_PROTO)
+    oamEnable(&oamMain);
+    oamEnable(&oamSub);
+#endif
+    s_top_map_ready = 0;
+    s_bot_map_ready = 0;
+    memset(s_dirty, 0, sizeof(s_dirty));
+    memset(s_dirty_top, 0, sizeof(s_dirty_top));
+    update_screen_hardware_bg(1, s_top_map_ptr, s_cam_x, s_cam_y - SCREEN_H);
+    update_screen_hardware_bg(0, s_bot_map_ptr, s_cam_x, s_cam_y);
+    s_boss_frozen_on = 0;
+}
+
+// One view as the player sees it, floor included (the hardware layers are not readable): actors with software shadows
+// on a scratch page, then the floor under every transparent pixel.
+static void boss_snapshot_screen(uint16_t *dst, int sub, int cam_x, int cam_y) {
+    static DirtySpan spans[SCREEN_H];
+    memset(spans, 0, sizeof(spans));
+    memset(dst, 0, SCREEN_W * SCREEN_H * 2);
+    const int hw = g_hw_shadows_on;
+    g_hw_shadows_on = 0;
+    render_screen(dst, spans, cam_x, cam_y, sub, NULL, NULL, NULL);
+    g_hw_shadows_on = hw;
+    for (int y = 0; y < SCREEN_H; y++) {
+        uint16_t *row = dst + y * SCREEN_W;
+        for (int x = 0; x < SCREEN_W; x++)
+            if (!row[x]) row[x] = world_floor_color(cam_x + x, cam_y + y);
+    }
+}
+
+// Both frozen views. The victory one shows the boss in its last pose (it is already gone from the pool) and none of the
+// death debris, so it can fade with everything else.
+static void boss_snapshot_all(void) {
+    int slot = -1;
+    if (boss_state() == BOSS_VICTORY) {
+        memset(s_death_chunks, 0, sizeof(s_death_chunks));
+        const Enemy *pose = boss_last_pose();
+        for (int i = 0; pose && i < MAX_ENEMIES; i++)
+            if (!g_enemies[i].active) { slot = i; break; }
+        if (slot >= 0) {
+            g_enemies[slot] = *pose;
+            g_enemies[slot].active = 1;
+            g_enemies[slot].hp = 1;
+            g_enemies[slot].hit_timer = 0;
+        }
+    }
+    boss_snapshot_screen(boss_snapshot_buffer(1), 1, s_cam_x, boss_focus_view_y());   // boss in the middle
+    boss_snapshot_screen(boss_snapshot_buffer(0), 0, s_cam_x, s_cam_y);
+    if (slot >= 0) g_enemies[slot].active = 0;
+    boss_snapshot_commit(s_cam_x);
+}
+#endif
 
 // ---------------------------------------------------------------------------
 // Enemies
@@ -2479,6 +2574,7 @@ int main(void) {
     // BG1 map lives at 0x06000000; 1024 streamed tile slots start at +64 KiB.
     int bot_hw_bg = bgInit(1, BgType_Text8bpp, BgSize_T_512x256, 0, 4);
     bgSetPriority(bot_hw_bg, 3); // Lowest priority (drawn behind entities)
+    s_bot_hw_bg = bot_hw_bg;
     bgShow(bot_hw_bg);
     BG_PALETTE[0] = RGB15(0, 0, 0);
     s_bot_map_ptr = bgGetMapPtr(bot_hw_bg);
@@ -2500,6 +2596,7 @@ int main(void) {
     vramSetBankC(VRAM_C_SUB_BG_0x06200000); // 128 KB for the upper floor tiles and map
 
     int top_hw_bg = bgInitSub(0, BgType_Text8bpp, BgSize_T_512x256, 14, 0);
+    s_top_hw_bg = top_hw_bg;
     bgSetPriority(top_hw_bg, 1);
     bgShow(top_hw_bg);
     s_top_map_ptr = bgGetMapPtr(top_hw_bg);
@@ -2605,6 +2702,15 @@ int main(void) {
 #endif
 #if ENCOUNTERS_PROTO
         enc_stats_frame();
+        {   // Boss mode clock (vblanks); START skips the intro and the victory screen instead of pausing.
+            static uint32_t s_boss_last_vb = 0;
+            int bdt = (int)(s_vblank_count - s_boss_last_vb);
+            s_boss_last_vb = s_vblank_count;
+            if (bdt > 8) bdt = 8;
+            const int was_frozen = boss_frozen();
+            if (!menu_is_open()) boss_tick(bdt, keys_down);
+            if (was_frozen) keys_down &= ~KEY_START;
+        }
 #endif
         int touch_down = (keys_held & KEY_TOUCH) && touch.px < SCREEN_W && touch.py < SCREEN_H;
         int menu_touch_pressed = touch_down && !s_menu_prev_touch;
@@ -2754,6 +2860,19 @@ int main(void) {
                 s_menu_ignore_held_touch = touch_down;
             }
         }
+#if ENCOUNTERS_PROTO
+        if (boss_frozen() && !menu_is_open()) {
+            if (boss_snapshot_pending()) {            // first, while the floor is still on screen (it takes a few frames)
+                boss_snapshot_all();
+            }
+            boss_frozen_bottom(bot_page_ptr(s_bot_back_page));
+            present_vblank_begin();
+            boss_frozen_top(s_top_page);
+            if (!s_boss_frozen_on) boss_freeze_begin();         // the floor layers go off once the new pages are in
+            continue;
+        }
+        if (s_boss_frozen_on) boss_freeze_end();
+#endif
         transition_update();
         int simulate = g_hitstop_frames <= 0 && s_transition == TRANSITION_NONE &&
                        !menu_is_open() && !ENC_STOPPED() &&

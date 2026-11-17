@@ -1,6 +1,7 @@
 #include "gameplay.h"
 #include "crashlog.h"
 #include "encounters.h"
+#include "boss.h"
 #include "collision.h"
 #include "modifiers.h"
 #include "upgrades.h"
@@ -117,6 +118,9 @@ void enemy_set_death_hook(EnemyDeathHook hook) {
 
 static void enemy_damage(Enemy *e, int damage, fixed hit_vx, fixed hit_vy, int quiet) {
     if (!e || !e->active || e->hp <= 0 || e->state == ENEMY_STATE_EMERGE) return;
+#if ENCOUNTERS_PROTO
+    if (boss_blocks_damage(e)) return;           // the invulnerable second of a phase change (DESIGN.md 6.13.7)
+#endif
     e->hp -= damage;
     if (!quiet) {
         e->hit_timer = 8;

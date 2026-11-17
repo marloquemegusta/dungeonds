@@ -1,0 +1,209 @@
+{
+  "name": "modo_jefe_gifs",
+  "description": "Evidencia del modo jefe (variante encuentros): intro lenta completa (~10 s), cambio a la fase II, victoria completa (~8,6 s) hasta abrir las barreras. Ambas pantallas cada 3 frames.",
+  "suite": false,
+  "evidence_only": true,
+  "state": {
+    "elf": "../.ds-game-dev/build/out/dungeonds-encuentros.elf",
+    "symbols": {
+      "stats": "g_enc_stats",
+      "dbg": "g_enc_debug",
+      "nav": "g_nav_state"
+    },
+    "default_symbol": "stats",
+    "fields": {
+      "woken": {
+        "offset": 4,
+        "type": "u8"
+      },
+      "cleared": {
+        "offset": 5,
+        "type": "u8"
+      },
+      "alive": {
+        "offset": 61,
+        "type": "u8"
+      },
+      "blocked": {
+        "offset": 188,
+        "type": "u8"
+      },
+      "plant": {
+        "offset": 2,
+        "type": "u8"
+      },
+      "tier": {
+        "offset": 3,
+        "type": "u8"
+      },
+      "dbg_auto_pick": {
+        "symbol": "dbg",
+        "offset": 1,
+        "type": "u8"
+      },
+      "dbg_god": {
+        "symbol": "dbg",
+        "offset": 2,
+        "type": "u8"
+      },
+      "dbg_force_plant": {
+        "symbol": "dbg",
+        "offset": 10,
+        "type": "u8"
+      },
+      "dbg_force_tier": {
+        "symbol": "dbg",
+        "offset": 11,
+        "type": "u8"
+      },
+      "dbg_restart": {
+        "symbol": "dbg",
+        "offset": 12,
+        "type": "u8"
+      },
+      "dbg_cam_up": {
+        "symbol": "dbg",
+        "offset": 13,
+        "type": "u8"
+      },
+      "hero_x": {
+        "symbol": "nav",
+        "offset": 0,
+        "type": "s32"
+      },
+      "hero_y": {
+        "symbol": "nav",
+        "offset": 4,
+        "type": "s32"
+      },
+      "dbg_start_boss": {
+        "symbol": "dbg",
+        "offset": 16,
+        "type": "u8"
+      },
+      "boss_state": {
+        "offset": 189,
+        "type": "u8"
+      },
+      "boss_phase": {
+        "offset": 190,
+        "type": "u8"
+      },
+      "boss_hp_now": {
+        "offset": 184,
+        "type": "u16"
+      },
+      "dbg_boss_damage": {
+        "symbol": "dbg",
+        "offset": 18,
+        "type": "u16"
+      }
+    }
+  },
+  "steps": [
+    {
+      "frames": 20
+    },
+    {
+      "poke": [
+        {
+          "field": "dbg_god",
+          "value": 1
+        },
+        {
+          "field": "dbg_auto_pick",
+          "value": 1
+        },
+        {
+          "field": "dbg_start_boss",
+          "value": 1
+        },
+        {
+          "field": "dbg_restart",
+          "value": 1
+        }
+      ],
+      "frames": 90,
+      "capture": "jefe_a_pasillo",
+      "state_capture": "a_pasillo"
+    },
+    {
+      "button_down": "UP",
+      "wait_until": {
+        "field": "boss_state",
+        "equals": 1,
+        "timeout_frames": 600
+      }
+    },
+    {
+      "button_up": "UP",
+      "frames": 620,
+      "capture_sequence": "intro",
+      "capture_every": 3,
+      "state_capture": "b_tras_intro"
+    },
+    {
+      "frames": 90,
+      "capture_sequence": "combate",
+      "capture_every": 10,
+      "state_capture": "c_combate"
+    },
+    {
+      "poke": [
+        {
+          "field": "dbg_boss_damage",
+          "value": 5000
+        }
+      ],
+      "frames": 80,
+      "capture_sequence": "fase2",
+      "capture_every": 3,
+      "state_capture": "d_fase2"
+    },
+    {
+      "frames": 40,
+      "state_capture": "e_tras_fase2"
+    },
+    {
+      "poke": [
+        {
+          "field": "dbg_boss_damage",
+          "value": 40000
+        }
+      ],
+      "frames": 560,
+      "capture_sequence": "victoria",
+      "capture_every": 3,
+      "state_capture": "f_victoria"
+    },
+    {
+      "wait_until": {
+        "field": "boss_state",
+        "equals": 5,
+        "timeout_frames": 300
+      },
+      "frames": 60,
+      "capture": "jefe_z_final",
+      "state_capture": "g_final"
+    }
+  ],
+  "assertions": {
+    "state_changes": [
+      {
+        "at": "b_tras_intro",
+        "field": "boss_state",
+        "equals": 2
+      },
+      {
+        "at": "d_fase2",
+        "field": "boss_phase",
+        "equals": 2
+      },
+      {
+        "at": "g_final",
+        "field": "boss_state",
+        "equals": 5
+      }
+    ]
+  }
+}

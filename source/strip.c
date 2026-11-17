@@ -1079,6 +1079,7 @@ void strip_start(uint32_t seed) {
     s_seed = seed;
 #if ENCOUNTERS_PROTO
     enc_init(seed);
+    s_arena.player_y = STRIP_WIN_H_PX - 256 - enc_start_up_px();
 #endif
     s_next_band = 0;
     s_devout_active_n = 0;

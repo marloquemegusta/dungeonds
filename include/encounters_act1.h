@@ -58,6 +58,7 @@ typedef struct { uint8_t piece, mirror; int16_t lx, ly; } EncPiecePlan;
 typedef struct { uint8_t kind; int16_t x, y, w, h; } EncRect;
 
 void enc_init(uint32_t seed);
+int enc_start_up_px(void);                 // px the hero starts above the usual spot (start_boss: just below the boss room)
 void enc_block_info(int32_t block, EncBlock *out);
 int enc_block_pieces(int32_t block, EncPiecePlan *out, int max);
 // Obstacles of a block plus the barrier when it is closed (read by the compositor and the painter).
@@ -95,8 +96,10 @@ typedef struct {
     uint8_t restart;         // 12 1 = restart the act now (new strip, enc_init runs again); cleared by the game
     uint8_t cam_up;          // 13 debug: the camera looks this many px further up (the guide shows the whole block); 0 = normal
     uint16_t boss_hp;        // 14 Abanderado hearts (0 = the table); read when the boss spawns, set before the act starts
+    uint8_t start_boss;      // 16 1 = the next restart starts at the boss: encounters 0..11 cleared, hero in the corridor just below the boss room
+    uint16_t boss_damage;    // 18 > 0: one shot of this damage at the boss (as the ray would deal it), then back to 0. Scenarios force phases and the kill
 } EncDebug;
-_Static_assert(sizeof(EncDebug) == 16 && offsetof(EncDebug, force_plant) == 10 && offsetof(EncDebug, restart) == 12 && offsetof(EncDebug, cam_up) == 13 && offsetof(EncDebug, bot_reaction) == 6 && offsetof(EncDebug, bot_ojo_delay) == 8 && offsetof(EncDebug, bot_miss_pct) == 9 && offsetof(EncDebug, auto_pick) == 1 && offsetof(EncDebug, god) == 2 &&
+_Static_assert(sizeof(EncDebug) == 20 && offsetof(EncDebug, boss_damage) == 18 && offsetof(EncDebug, start_boss) == 16 && offsetof(EncDebug, force_plant) == 10 && offsetof(EncDebug, restart) == 12 && offsetof(EncDebug, cam_up) == 13 && offsetof(EncDebug, bot_reaction) == 6 && offsetof(EncDebug, bot_ojo_delay) == 8 && offsetof(EncDebug, bot_miss_pct) == 9 && offsetof(EncDebug, auto_pick) == 1 && offsetof(EncDebug, god) == 2 &&
                offsetof(EncDebug, no_dones) == 3 && offsetof(EncDebug, seed) == 4,
                "EncDebug layout is read by scenarios by offset");
 extern volatile EncDebug g_enc_debug;
@@ -157,7 +160,9 @@ typedef struct {
     uint16_t boss_hp_now;               // 184 boss hearts now (0 before it spawns)
     uint16_t mona_kills;                // 186 Monaguillos killed by the beam
     uint8_t blocked_asleep;             // 188 sleeping enemies standing where a body cannot (inside a piece or obstacle)
-    uint8_t pad4[3];                    // 189
+    uint8_t boss_state;                 // 189 BOSS_* of boss.h (0 inactive, 1 intro, 2 combat, 3 phase change, 4 victory, 5 rest)
+    uint8_t boss_phase;                 // 190 phase the boss is in (1..3)
+    uint8_t pad4;                       // 191
 } EncStats;
 _Static_assert(sizeof(EncStats) == 192, "EncStats layout is read by scenarios by offset");
 _Static_assert(offsetof(EncStats, wake_frames) == 8 && offsetof(EncStats, relicarios) == 10 &&
