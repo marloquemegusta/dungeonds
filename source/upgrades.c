@@ -111,6 +111,7 @@ void upgrades_reset(uint32_t seed) {
     s_offer_relic = 0;
     s_rng = seed ? seed : 1u;
     s_dbg_seen_seq = g_upg_debug.apply_seq;
+    g_upg_debug.force_levelups = 0;   // a queued debug level-up never survives into the new run
 }
 
 int upgrades_level(void) { return s_level; }
