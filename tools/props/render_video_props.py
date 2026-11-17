@@ -41,8 +41,10 @@ PROPS = {
     "banco_entero": {"src": "banco_gotico_c2b65edd", "yaw": -45, "w": 64, "shadow_elevation": 50},
     "banco_roto": {"src": "banco_gotico_c2b65edd", "yaw": -45, "w": 72, "variant": "roto"},
     "banco_volcado": {"src": "banco_gotico_c2b65edd", "yaw": -45, "w": 72, "variant": "volcado"},
-    "vela": {"src": "vela_derretida_cb025b38", "yaw": 0, "w": 14, "keep_largest": True, "flame": True},
-    "vela_apagada": {"src": "vela_derretida_cb025b38", "yaw": 0, "w": 14, "keep_largest": True},
+    # vela: 14 px de juego x 0,45 (una vela votiva real, ~0,35 m, no el cirio del modelo). Se renderiza ya al tamano final
+    # (antes 14 y el generador la encogia x0,45, lo que afinaba su pixel respecto al de los sprites del Codice).
+    "vela": {"src": "vela_derretida_cb025b38", "yaw": 0, "w": 6.3, "keep_largest": True, "flame": True, "flame_k": 0.45},
+    "vela_apagada": {"src": "vela_derretida_cb025b38", "yaw": 0, "w": 6.3, "keep_largest": True},
     "relicario": {"src": "relicario_7db9333c", "yaw": 45, "w": 32},
     "santo": {"src": "estatua_caballero_c83faa86", "yaw": 180, "w": 32, "shadow_elevation": 35},
     "lapida_cruz_h": {"glb": "lapida_cruz_v2.glb", "yaw": 45, "w": 64},
@@ -272,7 +274,7 @@ def main():
             ps.MARGIN_SCALE = 100.0   # sin tope de margen: aqui no hay retícula de suelo
             ps.process(n)
         if c.get("flame"):
-            col = draw_flame(col, k)
+            col = draw_flame(col, k * c.get("flame_k", 1.0))   # la llama sigue la escala de la vela
             pad = col.height - Image.open(os.path.join(od, "color.png")).height
             col.save(os.path.join(od, "color.png"))
             m2 = json.load(open(os.path.join(od, "meta.json")))

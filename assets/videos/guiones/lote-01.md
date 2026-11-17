@@ -28,6 +28,7 @@ Escritos contra `LORE.md`. Este archivo es la entrada directa del generador de v
   - **Cambiar de personaje en la cita:** una parte propia solo con la cita, p. ej. `### Parte 3 · ojo_look · cortes` y `> [S] Gaspar: «…»`.
 - **Otros modos:** `girando` (da vueltas) o una dirección fija. Modificadores: `lento N`, `inverso`, `una vez` (se queda en el último fotograma), `ida y vuelta`.
 - **Ritmo de los trayectos:** por defecto `--paso natural` (anda a su ritmo, llega antes y sigue andando en el sitio); `--paso lento` estira el paso a todo el plano. También por plano con la ficha `natural`/`lento`.
+- **Pregunta final:** `> Pregunta: «¿…?»` justo después de la cita. El narrador la dice y añade «Deja tu veredicto en los comentarios»; la pregunta queda escrita arriba hasta el final del vídeo, también sobre el mosaico.
 - **Cierre:** «Próximamente en tu Nintendo DS» y el mosaico los añade el generador. Opcional: `### Ficha · <imagen>` (ficha de la DS); este lote no la usa.
 
 ## Voces`). `A + B` suenan a la vez.
@@ -64,17 +65,19 @@ Escritos contra `LORE.md`. Este archivo es la entrada directa del generador de v
 > Elías: «No es mi corazón. Solo lo llevo.»
 
 ## 02 · CÓDICE · II — REMEDIOS, LA CERERA
-### Parte 1 · exvoto_walk · cortes
-- [cerca · S] Remedios fue la primera condenada en volverse cera.
-- [SE] En Valdenoche, era ella quien hacía las velas de la Catedral.
-- [S] El nombre también lo eligió ella. El pueblo tardó un invierno en aprenderlo, y luego nunca lo olvidó.
-- [W der>izq] Con la cera y el pan de los diezmos alumbraba y daba de comer a quien no tenía nada.
-### Parte 2 · exvoto_walk · cortes
-- [N] El inquisidor Gaspar Valcárcel la acusó de robar a Dios. Y de llevar un nombre que no le dieron en la pila.
-- [N centro>fuera-arriba] La condenaron a rezar dentro de la Catedral hasta el fin de los tiempos.
-### Parte 3 · exvoto_walk + exvoto_walk_b · cortes
-- [S arriba>centro] Y las figuras que había hecho con sus manos echaron a andar detrás de ella.
-> [S] Remedios: «Que me fundan las veces que quieran. Seguiré siendo Remedios.»
+Estilo: A
+### Parte 1 · exvoto_rezar · cortes
+- [cerca · S · vela delante] La condenaron por robar a Dios. Ella solo daba de comer a quien no tenía nada.
+- [SE · vela izq · vela der] Remedios era la cerera de Valdenoche. Con la cera y el pan de los diezmos alumbraba a los pobres y les llenaba la mesa.
+- [S · vela delante] En la pila la bautizaron con nombre de varón. El de Remedios lo eligió ella, y el pueblo tardó un invierno en aprenderlo.
+### Parte 2 · exvoto_rezar · cortes
+- [N · vela apagada delante] El inquisidor Gaspar Valcárcel añadió otro cargo: vestir de mujer y renegar del nombre que Dios le dio.
+- [cerca · S · vela apagada delante] La condenaron a rezar en la Catedral hasta el fin de los tiempos. Fue la primera en volverse cera.
+### Parte 3 · exvoto_levantarse · cortes · una vez
+- [S · vela izq · vela der] Se levantó, y las figuras que había hecho con sus manos echaron a andar detrás de ella.
+### Parte 4 · exvoto_walk + exvoto_walk_b · cortes
+> [S arriba>centro] Remedios: «Que me fundan las veces que quieran. Seguiré siendo Remedios.»
+> Pregunta: «¿Remedios robó a Dios… o hizo lo que Dios no hacía?»
 
 ## 03 · CÓDICE · II — JIMENA Y ALDONZA
 ### Parte 1 · exvoto_walk + exvoto_walk_b · cortes
@@ -198,6 +201,17 @@ Estilo: A
 
 ## Publicado
 
+Publicados a 2026-11-17: **01, 03 y 08**, nada más. Los MP4 de 02, 04-07, 09 y 10 que hay en `assets/videos/` son pruebas antiguas del lote, con el cierre viejo y sin la puesta en escena final; cada uno se rehace el día que le toca en el calendario.
+
+**Cifras de partida (2026-11-17):** ~2.200 vistas por vídeo en Instagram, 600-800 en TikTok y ~500 en YouTube Shorts (el primero, en 3 días). Muy pocos comentarios.
+
+**Cierre con pregunta moral (desde el 02):** para pedir comentarios, cada vídeo acaba con una pregunta moral de respuesta corta (sí/no o elegir entre dos) tras la cita del personaje, dicha por el narrador y seguida de «Deja tu veredicto en los comentarios». Para hacerle sitio, la historia se acorta unos 10 s quitando frases de contexto del medio (nunca el arranque ni la cita). La misma pregunta abre el texto del post y se fija como primer comentario. Al 08 se le fija en comentarios «¿Rezarías la plegaria, sabiendo que aleja el altar?».
+
+| Vídeo | Pregunta | Vistas IG / TikTok / YT | Comentarios | Por 1.000 vistas |
+| :--- | :--- | :--- | :--- | :--- |
+| 01, 03, 08 (sin pregunta) | — | | | |
+| 02 Remedios | ¿Remedios robó a Dios… o hizo lo que Dios no hacía? | | | |
+
 - **01 El Corazón Abierto** (2026-11-15): v1 con arranque en negro; v2 sin negro y frase fuerte primero; v3 recortada a 38 s (iteraciones en `guiones_iteraciones.md`). La v2 retuvo algo mejor que la v3.
 - **03 Jimena y Aldonza** (2026-11-16): primera versión con puesta en escena plano a plano y paso natural. Es el modelo para los siguientes.
 - **08 La Catedral que no termina** (2026-11-17): `assets/videos/lore01_08_la_catedral_que_no_termina.mp4`, estilo A, 67,9 s. TikTok a mano; Instagram y YouTube por Metricool. Textos de los posts:
@@ -218,6 +232,26 @@ Estilo: A
     > Próximamente en tu Nintendo DS.
     >
     > #Shorts #pixelart #nintendods #gamedev #darkfantasy
+- **02 Remedios, la cerera** (lista 2026-11-17, sin publicar): `assets/videos/lore01_02_remedios_la_cerera.mp4`, estilo A, 75,2 s. Primer vídeo con cierre de pregunta moral: la pregunta queda escrita arriba hasta el final y también sale como subtítulo mientras el narrador la dice (decisión del usuario: dejar las dos). TikTok a mano; Instagram y YouTube por Metricool. Textos de los posts:
+  - **Título (YouTube y portada):** «Remedios, la cerera · Códice». Alternativa: «¿Robó a Dios? · Códice».
+  - **TikTok e Instagram:**
+    > ¿Remedios robó a Dios… o hizo lo que Dios no hacía?
+    >
+    > Con la cera y el pan de los diezmos alumbraba a los pobres de Valdenoche y les llenaba la mesa.
+    > El Tribunal la condenó a rezar en la Catedral hasta el fin de los tiempos. Fue la primera en volverse cera.
+    >
+    > Deja tu veredicto en los comentarios.
+    > Próximamente en tu Nintendo DS.
+    >
+    > #pixelart #nintendods #gamedev #indiedev #darkfantasy #gothic #lore #homebrew
+  - **Descripción de YouTube:**
+    > ¿Remedios robó a Dios… o hizo lo que Dios no hacía? La cerera de Valdenoche repartía entre los pobres la cera y el pan de los diezmos. La bautizaron con nombre de varón; el de Remedios lo eligió ella. El inquisidor Gaspar Valcárcel la condenó a rezar en la Catedral para siempre. Fue la primera en volverse cera, y la primera en levantarse.
+    >
+    > Deja tu veredicto en los comentarios.
+    > Próximamente en tu Nintendo DS.
+    >
+    > #Shorts #pixelart #nintendods #gamedev #darkfantasy
+  - **Comentario fijado (en las tres redes):** «¿Remedios robó a Dios… o hizo lo que Dios no hacía?»
 
 ## Calendario: un vídeo al día, más cuidado
 

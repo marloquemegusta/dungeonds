@@ -30,6 +30,9 @@ DIR_INDEX = {d: i for i, d in enumerate(DIRS)}  # file prefix index
 TURN_ORDER = ["S", "SE", "E", "NE", "N", "NW", "W", "SW"]
 MOSAIC_DEFAULT = ["corazon_disparo", "exvoto_walk", "cireneo_walk", "ojo_walk"]
 OUTRO_TEXT = "Próximamente en tu Nintendo DS."
+VEREDICTO_TEXT = "Deja tu veredicto en los comentarios."
+PQ_PAUSE = 0.4          # silencio entre la pregunta y "Deja tu veredicto..."
+PQ_TAIL = 1.5           # ultimo fotograma sostenido tras la voz de "Proximamente" (solo con pregunta)
 LEAD_IN, PAUSE_PHRASE, PAUSE_PART = 0.10, 0.45, 0.85
 BGM = os.path.join(ROOT, "assets", "music", "cathedral_battle_loop.wav")
 
@@ -124,6 +127,10 @@ def parse_guiones(path):
                 part = None
                 continue
             cur["parts"].append(part)
+            continue
+        mpq = re.match(r"^>\s*Pregunta\s*:\s*(.+?)\s*$", s)
+        if mpq:   # pregunta final opcional: tras la cita del personaje
+            cur["pregunta"] = sin_pausas(mpq.group(1).strip("«»\"“”").strip())
             continue
         if part is not None and ln.startswith("- "):
             txt, stage = strip_tag(ln[2:].strip())
@@ -526,7 +533,7 @@ LAPIDAS_X = [-1.2, 1.3, -0.3, 0.9, -1.3, 0.2]
 LAPIDAS_NAMES = ["lapida_cruz_h", "lapida_caballero_h", "lapida_cruz_v", "lapida_cruz_h", "lapida_caballero_h",
                  "lapida_cruz_v"]
 LAPIDAS_SP = 3.1       # Hh
-PROP_SCALE = {"vela": 0.45, "vela_apagada": 0.45}   # una vela votiva real: ~0,35 m, no el cirio del modelo
+PROP_SCALE = {}   # la vela ya se renderiza a su tamano final (0,45 del cirio) en render_video_props.py: encogerla aqui afinaria su pixel
 PROP_ALIAS = {"vela": "vela", "vela apagada": "vela_apagada", "relicario": "relicario", "santo": "santo",
               "banco": "banco_entero", "banco entero": "banco_entero", "banco roto": "banco_roto",
               "banco volcado": "banco_volcado", "columna": "columna_entera", "lapida": "lapida_cruz_h",
@@ -1232,6 +1239,28 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 """
 
 
+# ---------------------------------------------------------------- pregunta final
+def wrap_pregunta(text, max_w=960, max_lines=3, size=64):
+    """Parte la pregunta en lineas de Palatino negrita que quepan en max_w; baja el cuerpo hasta que sean <= max_lines."""
+    while True:
+        try:
+            width = ImageFont.truetype("C:/Windows/Fonts/palab.ttf", size).getlength
+        except OSError:
+            width = lambda w, k=size: len(w) * k * 0.5
+        lines, cur = [], ""
+        for w in text.split():
+            trial = (cur + " " + w).strip()
+            if cur and width(trial) > max_w:
+                lines.append(cur)
+                cur = w
+            else:
+                cur = trial
+        lines.append(cur)
+        if len(lines) <= max_lines or size <= 40:
+            return lines, size
+        size -= 2
+
+
 # ---------------------------------------------------------------- render
 def render_video(video, prefijo, sin_voz, md_dir, voices, estilo=None, tiras_dir=None):
     global ESTILO
@@ -1244,7 +1273,16 @@ def render_video(video, prefijo, sin_voz, md_dir, voices, estilo=None, tiras_dir
     shutil.rmtree(wdir, ignore_errors=True)
     os.makedirs(wdir, exist_ok=True)
 
-    parts = list(video["parts"]) + [{"type": "outro", "phrases": [{"text": OUTRO_TEXT, "voices": None}]}]
+    parts = list(video["parts"])
+    pregunta = video.get("pregunta")
+    if pregunta:   # la pregunta y el veredicto son dos frases del narrador al final de la ultima parte
+        last = dict(parts[-1])
+        last["phrases"] = list(last["phrases"]) + [
+            {"text": pregunta, "voices": None, "cerca": False, "stage": None, "pregunta": True, "pause": PQ_PAUSE},
+            {"text": VEREDICTO_TEXT, "voices": None, "cerca": False, "stage": None, "pregunta": True}]
+        parts[-1] = last
+    parts.append({"type": "outro", "phrases": [{"text": OUTRO_TEXT, "voices": None,
+                                                "pause": PQ_TAIL if pregunta else None}]})
 
     # audio + timing
     t = LEAD_IN
@@ -1265,7 +1303,9 @@ def render_video(video, prefijo, sin_voz, md_dir, voices, estilo=None, tiras_dir
             is_q = bool(ph["voices"])
             src, dur = phrase_audio(ph, sin_voz, wdir, k, voices)
             nxt_q = j + 1 < n and bool(p["phrases"][j + 1]["voices"])
-            if is_q:
+            if ph.get("pause") is not None:
+                pause = ph["pause"]
+            elif is_q:
                 pause = 0.8
             elif nxt_q:
                 pause = 0.9
@@ -1326,7 +1366,7 @@ def render_video(video, prefijo, sin_voz, md_dir, voices, estilo=None, tiras_dir
     segments, cut_state = [], {"last": None, "i": 0}
     for i, p in enumerate(parts):
         if p["type"] == "char" and p.get("dir") == "cortes":
-            nph = len(p["phrases"])
+            nph = sum(1 for ph in p["phrases"] if not ph.get("pregunta"))   # la pregunta continua el ultimo plano
             p["_cerca"] = [bool(ph.get("cerca")) for ph in p["phrases"]]
             p["_stage"] = [ph.get("stage") for ph in p["phrases"]]
             dirs_c = pick_cut_dirs(p, nph, cut_state)
@@ -1375,6 +1415,32 @@ def render_video(video, prefijo, sin_voz, md_dir, voices, estilo=None, tiras_dir
             segments.append({"p": p, "fn": fn, "still": False, "d": durs[i], "first": True, "cut": False})
     first_part = parts[0]
 
+    # pregunta fija arriba desde que empieza hasta el final: el plano de la cita se parte en dos tramos
+    # (mismo fichero, sin corte) y los tramos con pregunta llevan la pregunta en vez de la cabecera
+    q_lines, q_size, q_files = [], 64, []
+    if pregunta:
+        t_q = phrase_start[(len(parts) - 2, len(parts[-2]["phrases"]) - 2)]
+        acc, new = 0.0, []
+        for sg in segments:
+            if acc < t_q - 1e-3 and acc + sg["d"] > t_q + 1e-3 and sg["p"] is parts[-2]:
+                off = t_q - acc
+                new.append({**sg, "d": off})
+                new.append({**sg, "ss": sg.get("ss", 0.0) + off, "d": sg["d"] - off, "first": False, "pq": True})
+            else:
+                new.append({**sg, "pq": True} if acc >= t_q - 1e-3 else sg)
+            acc += sg["d"]
+        segments = new
+        q_lines, q_size = wrap_pregunta(pregunta)
+        q_files = [textfile(f"pq{k}.txt", ln) for k, ln in enumerate(q_lines)]
+        qs_f = textfile("pqs.txt", "Deja tu veredicto en los comentarios")
+
+    def pq_draw():
+        out = ""
+        for k, fl in enumerate(q_files):
+            out += (f",drawtext=fontfile='{FONT_BOLD}':textfile='{fl}':fontsize={q_size}:fontcolor=0xF2ECE0:"
+                    f"borderw=4:bordercolor=black:x=(w-text_w)/2:y={80 + k * int(q_size * 1.18)}")
+        return out
+
     def hold(p):
         return "tpad=stop_mode=clone:stop_duration=120," if p.get("mods", {}).get("una_vez") else ""
 
@@ -1384,16 +1450,27 @@ def render_video(video, prefijo, sin_voz, md_dir, voices, estilo=None, tiras_dir
         # el primer plano entra sin fundido: un primer fotograma negro hace que la gente pase el vídeo;
         # los cortes dentro de una parte son corte seco
         fade = "" if (p is first_part or not sg["first"] or sg.get("nofade")) else "fade=t=in:st=0:d=0.35,"
+        pq = bool(sg.get("pq"))
         if p["type"] == "char":
             sc = ("scale=1080:840:flags=neighbor,pad=1080:1920:0:340:black" if sg.get("wide", p.get("anim_b"))
                   else "scale=840:840:flags=neighbor,pad=1080:1920:120:340:black")
-            c = (f"[{i}:v]fps=30,{hold(p)}{sc},"
+            head = "" if pq else (
                  f"drawtext=fontfile='{FONT_REG}':textfile='{hdr_f}':fontsize=36:fontcolor=0x9A9184:x=(w-text_w)/2:y=165,"
-                 f"drawtext=fontfile='{FONT_BOLD}':textfile='{name_f}':fontsize={name_size}:fontcolor=0xEDE5D5:x=(w-text_w)/2:y=220,"
-                 f"{fade}trim=start={sg.get('ss', 0.0):.3f}:duration={d:.3f},setpts=PTS-STARTPTS[v{i}]")
+                 f"drawtext=fontfile='{FONT_BOLD}':textfile='{name_f}':fontsize={name_size}:fontcolor=0xEDE5D5:x=(w-text_w)/2:y=220,")
+            c = (f"[{i}:v]fps=30,{hold(p)}{sc},{head}"
+                 f"{fade}trim=start={sg.get('ss', 0.0):.3f}:duration={d:.3f},setpts=PTS-STARTPTS"
+                 f"{pq_draw() if pq else ''}[v{i}]")
         elif p["type"] == "card":
             c = (f"[{i}:v]fps=30,scale=768:1152:flags=neighbor,pad=1080:1920:156:250:black,"
-                 f"{fade}trim=duration={d:.3f},setpts=PTS-STARTPTS[v{i}]")
+                 f"{fade}trim=duration={d:.3f},setpts=PTS-STARTPTS{pq_draw() if pq else ''}[v{i}]")
+        elif pq:   # cierre con pregunta: mosaico mas pequeno bajo la pregunta, sin fundido final, invitacion debajo
+            c = (f"[{i}:v]fps=30,scale=700:700:flags=neighbor,pad=1080:1920:190:320:black,"
+                 f"drawtext=fontfile='{FONT_BOLD}':textfile='{pro_f}':fontsize=56:fontcolor=0xEDE5D5:x=(w-text_w)/2:y=1035,"
+                 f"drawtext=fontfile='{FONT_ITAL}':textfile='{dsd_f}':fontsize=42:fontcolor=0xB8AFA0:x=(w-text_w)/2:y=1100,"
+                 f"fade=t=in:st=0:d=0.35,"
+                 f"trim=duration={d:.3f},setpts=PTS-STARTPTS{pq_draw()},"
+                 f"drawtext=fontfile='{FONT_BOLD}':textfile='{qs_f}':fontsize=40:fontcolor=0xF2ECE0:"
+                 f"borderw=3:bordercolor=black:x=(w-text_w)/2:y=1170[v{i}]")
         else:
             c = (f"[{i}:v]fps=30,scale=800:800:flags=neighbor,pad=1080:1920:140:190:black,"
                  f"drawtext=fontfile='{FONT_BOLD}':textfile='{pro_f}':fontsize=56:fontcolor=0xEDE5D5:x=(w-text_w)/2:y=1030,"

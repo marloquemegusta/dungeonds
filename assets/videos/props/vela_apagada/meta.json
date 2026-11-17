@@ -1,26 +1,26 @@
 {
   "piece": "vela_apagada",
   "size_px": [
-    72,
-    56
+    32,
+    32
   ],
   "content_px": [
-    65,
-    55
+    29,
+    25
   ],
-  "target_width": 65,
-  "scale_factor": 0.05627705627705628,
+  "target_width": 29,
+  "scale_factor": 0.025108225108225107,
   "source_render_px": [
     1155,
     980
   ],
   "yaw": 0,
   "depth_units": "sprite_px",
-  "tiles_8x8_nonempty": 44,
-  "tiles_8x8_unique": 44,
+  "tiles_8x8_nonempty": 11,
+  "tiles_8x8_unique": 11,
   "video_k": 4.613,
-  "alto_px": 55,
+  "alto_px": 25,
   "px_por_m": 71.5,
-  "alto_m": 0.77,
+  "alto_m": 0.35,
   "hero_px": 143
 }
