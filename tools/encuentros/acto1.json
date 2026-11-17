@@ -73,8 +73,8 @@
     }
   },
   "pasillo": {
-    "pieces": [{"piece": "relicario", "x": 8, "y": 170}, {"piece": "vela", "x": 44, "y": 180}, {"piece": "vela", "x": 44, "y": 210}],
-    "relic_target": {"x": 24, "y": 200, "hp": 150},
+    "pieces": [{"piece": "relicario", "x": 84, "y": 170}, {"piece": "vela", "x": 44, "y": 180}, {"piece": "vela", "x": 148, "y": 210}],
+    "relic_target": {"x": 84, "y": 200, "hp": 150},
     "mirror": "alterna lado por indice de pasillo"
   },
   "boss": {
