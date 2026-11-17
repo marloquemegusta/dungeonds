@@ -7,6 +7,8 @@ typedef enum {
     SND_ENEMY_HIT,
     SND_ENEMY_DEATH,
     SND_PLAYER_HURT,
+    SND_ABANDERADO_INTRO,    /* boss voices (DESIGN.md 6.13.7): played centred, one at a time */
+    SND_ABANDERADO_DEFEAT,
     SND_COUNT
 } SfxId;
 
@@ -27,5 +29,13 @@ void sfx_stop_charge(void);
 void sfx_start_bgm(void);
 void sfx_stop_bgm(void);
 void sfx_set_bgm_paused(int paused);
+
+/* Choose the BGM track: 0 = cathedral battle (bgm.raw), 1 = boss climax (boss.raw). A running stream restarts on the
+ * new track from its beginning; with no stream running it only selects what sfx_start_bgm() will open. */
+void sfx_set_bgm_track(int track);
+
+/* Boss voice: a one-shot centred effect that sfx_stop_voice() can cut (skipping a boss screen). */
+void sfx_play_voice(SfxId id);
+void sfx_stop_voice(void);
 
 #endif /* SFX_H */

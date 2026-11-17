@@ -982,3 +982,48 @@ Sustituye, cuando se implemente, al compositor v2 de la catedral (§6.9.1b), a l
 - **Provisionales (decidido 2026-11-16):** sacos, alambre y barrera van en el prototipo con un sustituto provisional (rectángulos de color apagado); el usuario hace sus modelos 3D. El muro de 256 también es provisional en el prototipo.
 
 **Siguiente paso:** adaptar el editor a 256 y componer las 6 plantas con sus 3 poblaciones para revisarlas en el móvil; después, prototipo de 3–4 encuentros en la ROM frente a la versión de hoy.
+
+#### 6.13.7 Modo jefe: lógica común (propuesta 2026-11-17, rama `feat/modo-jefe`; en diseño)
+Concreta §6.13.1 para el escenario por actos (§6.13.6). Objetivo: que meter un jefe nuevo sea rellenar una ficha (nombre, retrato, vida, fases y escolta) y escribir su IA, sin tocar la intro, la barra, las fases ni la victoria. Se prueba con el Abanderado tal como está hoy; su combate como jefe se ajusta en otra sesión.
+
+**Secuencia del encuentro.**
+1. **Sala del jefe:** un bloque de 2 pantallas (384 px), como un encuentro, con su barrera arriba.
+2. **Entrada:** al cruzar el borde de abajo se cierra una barrera también detrás del héroe y empieza la intro.
+3. **Intro:** el juego se congela; presentación con el nombre del jefe (y su título del Códice). Se salta con `START`. Al terminar, entra la música de jefe (`boss_climax_loop`).
+4. **Cámara libre (decidido 2026-11-17):** la cámara sigue al héroe como en el resto del acto; solo se dispara desde la pantalla de abajo, así que fijarla no tiene sentido. El héroe se mueve por toda la sala. Por encima de la barrera de arriba la sala se cierra con una **reja** y, al otro lado, algo decorativo (que no se pueda tocar), para que la pantalla de arriba no quede vacía cuando el héroe sube al borde.
+5. **Combate por fases** (abajo).
+6. **Victoria:** el jefe muere; desaparecen su escolta e invocaciones; secuencia de victoria; pantalla de reliquia (marco dorado, §6.13.5); vuelve la música normal y se abren las dos barreras.
+7. **Morir** durante el jefe reinicia la partida, como en cualquier otro sitio.
+
+**Fases.**
+- Cada jefe declara de 1 a 3 fases con el umbral de vida en que empieza cada una (por ejemplo 100 %, 66 %, 33 %). La IA del jefe solo pregunta «¿en qué fase estoy?».
+- **Cambio de fase común a todos:** el jefe queda invulnerable ~1 s, se muestra una telegrafía (la misma para todos los jefes) y se renueva su escolta según la fase. Los disparos durante ese segundo no cuentan.
+- La escolta, si la hay, es una lista por fase: qué enemigos, cuántos a la vez y cada cuánto vuelve uno que cae. Con la lista vacía el jefe pelea solo (§6.13.1).
+
+**Barra de vida del jefe.** Sustituye a la barra flotante sobre el enemigo durante el modo jefe. Fija en pantalla, con el nombre del jefe y una muesca en cada umbral de fase. Colores de la paleta (§6.10), sin primarios puros.
+
+**Pendiente de la ronda A/B/C (definitivo, ROM real):** aspecto de la intro, de la barra de vida, de la telegrafía de cambio de fase y de la secuencia de victoria.
+
+**Ronda 1 de maquetas (2026-11-17, `walkthroughs/modo-jefe/ronda1_maquetas.html`).**
+- **Intro:** el jefe se ve en grande y repartido en las dos pantallas (de la A), pero dentro del propio juego, sin pantalla aparte (de la B). Abajo, su nombre, su título y **su frase del Códice, dicha en voz alta por él**. Descartada la de franjas de cine.
+- **Barra de vida:** barra (no rosario), en la **fila de arriba de la pantalla de abajo, junto a los corazones**: es donde se mira durante la pelea.
+- **Cambio de fase:** la marca de la barra salta rota y aparece el número romano de la fase sobre el jefe (C).
+- **Victoria:** fundido a blanco con su nombre tachado (C), a juego con la intro.
+- Ronda 2 (`ronda2_maquetas.html`): variantes de cada una y tres voces para el Abanderado.
+
+**Decidido tras la ronda 2 (2026-11-17).** Esta es la versión que se programa:
+- **Intro (B):** el juego se congela y la cámara se acerca ×2 al jefe dentro de la sala, en la pantalla de arriba, con un foco que oscurece los bordes. Abajo, la escena a oscuras con su nombre, su título y su frase, que el jefe dice con su voz. Se salta con `START`.
+- **Voz del Abanderado:** la voz B de la ronda 2 (`walkthroughs/modo-jefe/assets/voz/`).
+- **Barra de vida (C):** barra fina en la fila de arriba de la pantalla de abajo, desde el borde izquierdo hasta los corazones, **centrada en vertical con los corazones**; el nombre del jefe, debajo. Una marca en cada umbral de fase.
+- **Cambio de fase:** la marca de la barra salta rota y aparece el número romano de la nueva fase sobre el jefe, mientras este pasa ~1 s invulnerable. Sale del estilo de la barra; no hay más que elegir.
+- **Victoria (A con la frase de B):** la cámara se acerca de nuevo ×2 al jefe y las dos pantallas se destiñen a blanco; abajo, en el mismo sitio que en la intro, su nombre tachado en rojo y su frase de derrota (el Abanderado: «El asta ha caído.»), también con su voz. Después, la pantalla de reliquia.
+- **Ficha de cada jefe:** nombre, título, frase de entrada, frase de derrota, sus dos audios, vida, umbrales de fase y escolta por fase.
+- **Ritmo de la intro (corregido 2026-11-17 tras verla en la ROM: iba demasiado rápida).** Cada cosa a su tiempo, con pausas; cifras `[TUNABLE-PLACEHOLDER]`:
+  1. 0,0 s: se congela; se ve al jefe en la sala, sin acercar, ~0,8 s.
+  2. 0,8–2,6 s: acercamiento lento ×1 → ×2 (con frenada al final) y el foco se cierra a la vez.
+  3. Pausa ~0,6 s.
+  4. Aparece el nombre (fundido ~0,5 s) y, ~0,4 s después, el título.
+  5. Pausa ~0,6 s; entonces dice su frase y el texto aparece mientras la dice.
+  6. Al acabar la voz, ~1,2 s quieto.
+  7. Se aleja (~0,5 s), se va el texto, vuelve el juego y entra la música. En total, ~9 s. START la salta en cualquier momento.
+- **Ritmo de la victoria:** congelado en su última pose ~1 s; acercamiento lento (~1,5 s); se destiñe (~1,5 s); se tacha el nombre (~0,6 s); pausa; dice su frase de derrota y se escribe; ~1,5 s quieto; reliquia. En total, ~8 s.

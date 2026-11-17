@@ -41,6 +41,9 @@
         },
         "encuentros-bot": {
             "defines": ["ENCOUNTERS_PROTO=1", "ENC_BOT=1"]
+        },
+        "encuentros-jefe-perf": {
+            "defines": ["ENCOUNTERS_PROTO=1", "ENC_START_BOSS=1", "PERF_PROFILE=1"]
         }
     },
     "hostTests": [
