@@ -21,14 +21,18 @@ class CathedralKitContractTest(unittest.TestCase):
         self.assertLess(worst_occ, 32768)
 
     def test_generated_kit_stamps_are_exactly_the_baker_pieces(self):
-        # banco_entero solo es la fuente de banco_grupo4: no se hornea como sello propio.
+        # The kit now serves only the encounter rooms (DESIGN.md 6.13.6): it bakes the pieces and
+        # phases the plants, the corridor and the rastrillo ask for, not every PIECE_IDS entry.
+        # banco_entero is only the source of banco_grupo4 / banco_grupo4_roto.
         import bake_cathedral_kit as baker
         generated = (ROOT / "source/strip_kit.c").read_text(encoding="utf-8")
         baked = set(re.findall(r"\},\s*//\s*(\w+)\s*$", generated, re.M))
-        self.assertEqual(baked, set(baker.PIECE_IDS) - {"banco_entero"})
+        self.assertEqual(baked, set(baker.catedral_phase_map()))
 
     def test_piece_ids_match_header_enum_in_order(self):
         import bake_cathedral_kit as baker
+        # The enum names the room role; the art folder (PIECE_IDS key) keeps its own name.
+        aliases = {"columna_rota": "columna"}
         header = (ROOT / "include/strip_kit.h").read_text(encoding="utf-8")
         block = header[header.index("enum {"):header.index("};", header.index("enum {"))]
         names = [n.split("=")[0].strip().rstrip(",") for n in block.splitlines()[1:] if n.strip()]
@@ -36,6 +40,7 @@ class CathedralKitContractTest(unittest.TestCase):
         self.assertEqual(names[-1], "STRIP_PIECE_COUNT")
         for i, enum_name in enumerate(names[1:-1], start=1):
             piece = enum_name[len("STRIP_PIECE_"):].lower()
+            piece = aliases.get(piece, piece)
             self.assertEqual(baker.PIECE_IDS[next(k for k in baker.PIECE_IDS if k.upper() == piece.upper())], i, enum_name)
         self.assertEqual(len(baker.PIECE_IDS), len(names) - 2)
 

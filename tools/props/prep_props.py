@@ -45,6 +45,35 @@ for name, c in cfg.items():
         print("dropping verts", len(drop), "of", len(bm.verts))
         bmesh.ops.delete(bm, geom=drop, context='VERTS')
         bm.to_mesh(obj.data); bm.free()
+    if c.get("clip_x"):
+        # Modular pieces (verja): cut the X overhang so the piece is exactly one period wide and
+        # sections join side by side with the same spacing (values in the FBX frame, before yaw).
+        lo, hi = c["clip_x"]
+        # bisect_plane: clear_inner drops the side behind the normal, clear_outer the side in front.
+        for x, drop_below in ((lo, True), (hi, False)):
+            bm = bmesh.new(); bm.from_mesh(obj.data)
+            geom = bm.verts[:] + bm.edges[:] + bm.faces[:]
+            bmesh.ops.bisect_plane(bm, geom=geom, plane_co=(x, 0, 0), plane_no=(1, 0, 0),
+                                   clear_inner=drop_below, clear_outer=not drop_below)
+            bm.to_mesh(obj.data); bm.free()
+        print(name, "clip_x", lo, hi)
+        # repeat_x: N tramos seguidos en una sola pieza; scale_x: estrecha la pieza (solo X) para
+        # que su ancho en pantalla sea un multiplo de 8 px que cubra la nave (verja: 2 x 104 = 208).
+        bm = bmesh.new(); bm.from_mesh(obj.data)
+        base = bm.verts[:] + bm.edges[:] + bm.faces[:]
+        for i in range(1, c.get("repeat_x", 1)):
+            dup = bmesh.ops.duplicate(bm, geom=base)
+            moved = [g for g in dup["geom"] if isinstance(g, bmesh.types.BMVert)]
+            bmesh.ops.translate(bm, verts=moved, vec=((hi - lo) * i, 0, 0))
+        sx = c.get("scale_x", 1.0)
+        for v in bm.verts: v.co.x *= sx
+        bm.to_mesh(obj.data); bm.free()
+    if c.get("mirror_x"):
+        # Espejo en X (remate derecho de sacos a partir del izquierdo): invierte tambien las caras.
+        bm = bmesh.new(); bm.from_mesh(obj.data)
+        for v in bm.verts: v.co.x = -v.co.x
+        bmesh.ops.reverse_faces(bm, faces=bm.faces[:])
+        bm.to_mesh(obj.data); bm.free()
     # yaw about Z (Blender), applied, then drop to ground at origin
     # optional "pitch" (X, degrees) lays down models that Tripo built standing up
     if c.get("align_slab"):

@@ -1,0 +1,47 @@
+{
+  "name": "props_balcon",
+  "description": "Evidencia piezas 3D: planta balcon (columna entera + columna rota).",
+  "suite": false,
+  "evidence_only": true,
+  "rom": "../dungeonds-encuentros.nds",
+  "state": {
+    "elf": "../.ds-game-dev/build/out/dungeonds-encuentros.elf",
+    "symbols": { "stats": "g_enc_stats", "dbg": "g_enc_debug", "nav": "g_nav_state" },
+    "default_symbol": "stats",
+    "fields": {
+      "woken": { "offset": 4, "type": "u8" },
+      "cleared": { "offset": 5, "type": "u8" },
+      "plant": { "offset": 2, "type": "u8" },
+      "tier": { "offset": 3, "type": "u8" },
+      "dbg_auto_pick": { "symbol": "dbg", "offset": 1, "type": "u8" },
+      "dbg_god": { "symbol": "dbg", "offset": 2, "type": "u8" },
+      "dbg_no_dones": { "symbol": "dbg", "offset": 3, "type": "u8" },
+      "dbg_force_plant": { "symbol": "dbg", "offset": 10, "type": "u8" },
+      "dbg_force_tier": { "symbol": "dbg", "offset": 11, "type": "u8" },
+      "dbg_restart": { "symbol": "dbg", "offset": 12, "type": "u8" },
+      "dbg_cam_up": { "symbol": "dbg", "offset": 13, "type": "u8" },
+      "hero_x": { "symbol": "nav", "offset": 0, "type": "s32" },
+      "hero_y": { "symbol": "nav", "offset": 4, "type": "s32" }
+    }
+  },
+  "steps": [
+    { "frames": 20 },
+    { "poke": [
+      { "field": "dbg_god", "value": 1 },
+      { "field": "dbg_auto_pick", "value": 1 },
+      { "field": "dbg_no_dones", "value": 1 },
+      { "field": "dbg_cam_up", "value": 56 }
+    ], "frames": 2 },
+    { "poke": [
+      { "field": "dbg_force_plant", "value": 3 },
+      { "field": "dbg_force_tier", "value": 2 },
+      { "field": "dbg_restart", "value": 1 }
+    ], "frames": 30, "state_capture": "ini" },
+    { "frames": 40, "capture": "entrada" },
+    { "button_down": "UP", "wait_until": { "field": "woken", "min_value": 1, "timeout_frames": 1200 } },
+    { "button_up": "UP", "frames": 2, "capture": "sala" },
+    { "frames": 90, "capture": "sala_b" },
+    { "poke": [ { "field": "dbg_cam_up", "value": 150 } ], "frames": 8, "capture": "arriba" },
+    { "poke": [ { "field": "dbg_cam_up", "value": 0 } ], "frames": 8, "capture": "cam_normal" }
+  ]
+}

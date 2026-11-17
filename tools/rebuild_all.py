@@ -246,7 +246,8 @@ def step_bake(legibility: str | None) -> None:
     prop_render_dir = ROOT / "assets" / "environment" / "cathedral" / "props" / "render"
     active_prop_imgs = [
         str(prop_render_dir / p / "color.png")
-        for p in ("columna_entera", "banco_entero", "relicario", "santo", "vela")
+        for p in ("columna_entera", "banco_entero", "relicario", "santo", "vela",
+                  "verja", "sacos", "sacos_b", "sacos_remate", "alambre", "columna", "banco_roto")
         if (prop_render_dir / p / "color.png").exists()
     ]
     if extract_pal_script.exists() and active_prop_imgs:
