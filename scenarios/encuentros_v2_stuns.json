@@ -1,0 +1,496 @@
+{
+  "name": "encuentros_v2_stuns",
+  "description": "El Cireneo que embiste contra banco, saco, alambre y estatua queda aturdido.",
+  "suite": false,
+  "evidence_only": true,
+  "state": {
+    "elf": "../.ds-game-dev/build/out/dungeonds-encuentros.elf",
+    "symbols": {
+      "stats": "g_enc_stats",
+      "dbg": "g_enc_debug",
+      "en": "g_enemies"
+    },
+    "default_symbol": "stats",
+    "fields": {
+      "woken": {
+        "offset": 4,
+        "type": "u8"
+      },
+      "dbg_auto_pick": {
+        "symbol": "dbg",
+        "offset": 1,
+        "type": "u8"
+      },
+      "dbg_god": {
+        "symbol": "dbg",
+        "offset": 2,
+        "type": "u8"
+      },
+      "dbg_force_plant": {
+        "symbol": "dbg",
+        "offset": 10,
+        "type": "u8"
+      },
+      "dbg_force_tier": {
+        "symbol": "dbg",
+        "offset": 11,
+        "type": "u8"
+      },
+      "dbg_restart": {
+        "symbol": "dbg",
+        "offset": 12,
+        "type": "u8"
+      },
+      "banco_x": {
+        "symbol": "en",
+        "offset": 1240,
+        "type": "s32"
+      },
+      "banco_y": {
+        "symbol": "en",
+        "offset": 1244,
+        "type": "s32"
+      },
+      "banco_state": {
+        "symbol": "en",
+        "offset": 1281,
+        "type": "u8"
+      },
+      "banco_timer": {
+        "symbol": "en",
+        "offset": 1284,
+        "type": "s32"
+      },
+      "banco_hit": {
+        "symbol": "en",
+        "offset": 1288,
+        "type": "s32"
+      },
+      "banco_adx": {
+        "symbol": "en",
+        "offset": 1292,
+        "type": "s32"
+      },
+      "banco_ady": {
+        "symbol": "en",
+        "offset": 1296,
+        "type": "s32"
+      },
+      "saco_x": {
+        "symbol": "en",
+        "offset": 248,
+        "type": "s32"
+      },
+      "saco_y": {
+        "symbol": "en",
+        "offset": 252,
+        "type": "s32"
+      },
+      "saco_state": {
+        "symbol": "en",
+        "offset": 289,
+        "type": "u8"
+      },
+      "saco_timer": {
+        "symbol": "en",
+        "offset": 292,
+        "type": "s32"
+      },
+      "saco_hit": {
+        "symbol": "en",
+        "offset": 296,
+        "type": "s32"
+      },
+      "saco_adx": {
+        "symbol": "en",
+        "offset": 300,
+        "type": "s32"
+      },
+      "saco_ady": {
+        "symbol": "en",
+        "offset": 304,
+        "type": "s32"
+      },
+      "alambre_x": {
+        "symbol": "en",
+        "offset": 248,
+        "type": "s32"
+      },
+      "alambre_y": {
+        "symbol": "en",
+        "offset": 252,
+        "type": "s32"
+      },
+      "alambre_state": {
+        "symbol": "en",
+        "offset": 289,
+        "type": "u8"
+      },
+      "alambre_timer": {
+        "symbol": "en",
+        "offset": 292,
+        "type": "s32"
+      },
+      "alambre_hit": {
+        "symbol": "en",
+        "offset": 296,
+        "type": "s32"
+      },
+      "alambre_adx": {
+        "symbol": "en",
+        "offset": 300,
+        "type": "s32"
+      },
+      "alambre_ady": {
+        "symbol": "en",
+        "offset": 304,
+        "type": "s32"
+      },
+      "estatua_x": {
+        "symbol": "en",
+        "offset": 248,
+        "type": "s32"
+      },
+      "estatua_y": {
+        "symbol": "en",
+        "offset": 252,
+        "type": "s32"
+      },
+      "estatua_state": {
+        "symbol": "en",
+        "offset": 289,
+        "type": "u8"
+      },
+      "estatua_timer": {
+        "symbol": "en",
+        "offset": 292,
+        "type": "s32"
+      },
+      "estatua_hit": {
+        "symbol": "en",
+        "offset": 296,
+        "type": "s32"
+      },
+      "estatua_adx": {
+        "symbol": "en",
+        "offset": 300,
+        "type": "s32"
+      },
+      "estatua_ady": {
+        "symbol": "en",
+        "offset": 304,
+        "type": "s32"
+      }
+    }
+  },
+  "steps": [
+    {
+      "frames": 20
+    },
+    {
+      "poke": [
+        {
+          "field": "dbg_god",
+          "value": 1
+        },
+        {
+          "field": "dbg_auto_pick",
+          "value": 1
+        }
+      ],
+      "frames": 2
+    },
+    {
+      "poke": [
+        {
+          "field": "dbg_force_plant",
+          "value": 1
+        },
+        {
+          "field": "dbg_force_tier",
+          "value": 2
+        },
+        {
+          "field": "dbg_restart",
+          "value": 1
+        }
+      ],
+      "frames": 40
+    },
+    {
+      "button_down": "UP",
+      "wait_until": {
+        "field": "woken",
+        "min_value": 1,
+        "timeout_frames": 1200
+      }
+    },
+    {
+      "button_up": "UP",
+      "frames": 1
+    },
+    {
+      "poke": [
+        {
+          "field": "banco_x",
+          "value": 68352
+        },
+        {
+          "field": "banco_y",
+          "value": 333312
+        },
+        {
+          "field": "banco_state",
+          "value": 4
+        },
+        {
+          "field": "banco_timer",
+          "value": 45
+        },
+        {
+          "field": "banco_hit",
+          "value": 0
+        },
+        {
+          "field": "banco_adx",
+          "value": -256
+        },
+        {
+          "field": "banco_ady",
+          "value": 0
+        }
+      ],
+      "frames": 0
+    },
+    {
+      "frames": 50,
+      "capture": "banco_stun",
+      "state_capture": "banco_t50"
+    },
+    {
+      "poke": [
+        {
+          "field": "dbg_force_plant",
+          "value": 2
+        },
+        {
+          "field": "dbg_force_tier",
+          "value": 3
+        },
+        {
+          "field": "dbg_restart",
+          "value": 1
+        }
+      ],
+      "frames": 40
+    },
+    {
+      "button_down": "UP",
+      "wait_until": {
+        "field": "woken",
+        "min_value": 1,
+        "timeout_frames": 1200
+      }
+    },
+    {
+      "button_up": "UP",
+      "frames": 1
+    },
+    {
+      "poke": [
+        {
+          "field": "saco_x",
+          "value": 59392
+        },
+        {
+          "field": "saco_y",
+          "value": 371712
+        },
+        {
+          "field": "saco_state",
+          "value": 4
+        },
+        {
+          "field": "saco_timer",
+          "value": 45
+        },
+        {
+          "field": "saco_hit",
+          "value": 0
+        },
+        {
+          "field": "saco_adx",
+          "value": 0
+        },
+        {
+          "field": "saco_ady",
+          "value": -128
+        }
+      ],
+      "frames": 0
+    },
+    {
+      "frames": 50,
+      "capture": "saco_stun",
+      "state_capture": "saco_t50"
+    },
+    {
+      "poke": [
+        {
+          "field": "dbg_force_plant",
+          "value": 6
+        },
+        {
+          "field": "dbg_force_tier",
+          "value": 3
+        },
+        {
+          "field": "dbg_restart",
+          "value": 1
+        }
+      ],
+      "frames": 40
+    },
+    {
+      "button_down": "UP",
+      "wait_until": {
+        "field": "woken",
+        "min_value": 1,
+        "timeout_frames": 1200
+      }
+    },
+    {
+      "button_up": "UP",
+      "frames": 1
+    },
+    {
+      "poke": [
+        {
+          "field": "alambre_x",
+          "value": 56832
+        },
+        {
+          "field": "alambre_y",
+          "value": 355072
+        },
+        {
+          "field": "alambre_state",
+          "value": 4
+        },
+        {
+          "field": "alambre_timer",
+          "value": 45
+        },
+        {
+          "field": "alambre_hit",
+          "value": 0
+        },
+        {
+          "field": "alambre_adx",
+          "value": 0
+        },
+        {
+          "field": "alambre_ady",
+          "value": -128
+        }
+      ],
+      "frames": 0
+    },
+    {
+      "frames": 50,
+      "capture": "alambre_stun",
+      "state_capture": "alambre_t50"
+    },
+    {
+      "poke": [
+        {
+          "field": "dbg_force_plant",
+          "value": 3
+        },
+        {
+          "field": "dbg_force_tier",
+          "value": 3
+        },
+        {
+          "field": "dbg_restart",
+          "value": 1
+        }
+      ],
+      "frames": 40
+    },
+    {
+      "button_down": "UP",
+      "wait_until": {
+        "field": "woken",
+        "min_value": 1,
+        "timeout_frames": 1200
+      }
+    },
+    {
+      "button_up": "UP",
+      "frames": 1
+    },
+    {
+      "poke": [
+        {
+          "field": "estatua_x",
+          "value": 74752
+        },
+        {
+          "field": "estatua_y",
+          "value": 378368
+        },
+        {
+          "field": "estatua_state",
+          "value": 4
+        },
+        {
+          "field": "estatua_timer",
+          "value": 45
+        },
+        {
+          "field": "estatua_hit",
+          "value": 0
+        },
+        {
+          "field": "estatua_adx",
+          "value": -256
+        },
+        {
+          "field": "estatua_ady",
+          "value": 0
+        }
+      ],
+      "frames": 0
+    },
+    {
+      "frames": 50,
+      "capture": "estatua_stun",
+      "state_capture": "estatua_t50"
+    }
+  ],
+  "assertions": {
+    "state_changes": [
+      {
+        "at": "banco_t50",
+        "field": "banco_state",
+        "equals": 6
+      },
+      {
+        "at": "saco_t50",
+        "field": "saco_state",
+        "equals": 6
+      },
+      {
+        "at": "alambre_t50",
+        "field": "alambre_state",
+        "equals": 6
+      },
+      {
+        "at": "estatua_t50",
+        "field": "estatua_state",
+        "equals": 6
+      }
+    ]
+  }
+}

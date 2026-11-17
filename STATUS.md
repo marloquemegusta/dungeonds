@@ -2,7 +2,23 @@
 
 Primero el estado necesario para retomar el trabajo sin depender del chat; después, las entregas recientes verificadas (más nueva al final). El historial hasta 2026-10-21 está en `STATUS-ARCHIVE.md`.
 
-## Estado actual (2026-11-16)
+## Estado actual (2026-11-17)
+
+- **Acto I por encuentros, prototipo v2 (`feat/encuentros-acto1`, 2026-11-17, integrado como versión de prueba):** variante de build `encuentros` (la ROM normal no cambia de comportamiento). Catedral de 256 de ancho, 6 salas hechas a mano con 3 poblaciones cada una (ligera, media y dura por tercios), pasillo con relicario lateral (Don o corazón), barrera que se abre al limpiar y el Abanderado con escolta al final. Todos los enemigos están en la sala desde el principio y despiertan a la vez; el Exvoto esquiva el rayo, el Cireneo persigue y embiste (aturdido al chocar), el rayo sigue solo con el daño sobrante. Diseño en `DESIGN.md` §6.13.6; catálogo de salas en `walkthroughs/encuentros-acto1/catalogo-salas.html` (generado por `tools/encuentros/catalogo_v2.py`, que también genera los datos). Bot de pruebas dentro de la ROM (variante `encuentros-bot`). Build 0 avisos, tests de host del kit, strip, navegación y normas PASS. Jugado en la DS por el usuario; **sin registro de rendimiento**. [`walkthrough`](walkthroughs/encuentros-acto1/walkthrough.md).
+  - **Problemas abiertos (prueba del usuario en la DS, 2026-11-17):**
+    - Sale una oferta de mejora nada más arrancar, sin causa conocida.
+    - Muchas salas no son simétricas y quedan feas: las columnas y las estatuas deberían ir en pares simétricos (el kit solo admite ciertas posiciones y las desplaza).
+    - No hay lápidas en las salas.
+    - Los muros del ancho 256 pueden ser más finos.
+    - La IA del Exvoto se siente lista pero hace alguna cosa rara; falta explicar con claridad qué hace (esquiva de la línea de apuntado y zigzag al andar) y revisarla.
+    - En muchas salas la estrategia óptima es quedarse quieto o recular y matar lo que viene: estudiarlo.
+    - Una partida completa se queda corta: solo hay un acto y un jefe.
+  - **Para siguientes sesiones:**
+    - Consolidar la lista de assets que faltan para hacerlos en 3D (sacos, alambre de espino, barrera o verja, muro fino de 256, relicario dorado y lo que salga del inventario).
+    - Los otros dos jefes (Campanero y El Paso) y los actos II y III.
+    - El escenario cambia tras cada jefe (cada acto más profanado: bancos rotos, sacos, etc.); sin implementar.
+    - Medir rendimiento en la DS con `PERF_PROFILE` (las salas grandes tienen hasta 17 enemigos).
+    - Retirar los ganchos de prueba cuando la variante pase a ser el juego (`g_enc_debug`, bot).
 
 - **Estructura de la partida, la Subida (`docs/estructura-partida`, 2026-11-16, integrado):** decidida en `DESIGN.md` §6.13, sin código. Partida de 15–18 min como un Vía Crucis de 14 estaciones en tres actos, con jefes en las estaciones V (Abanderado), X (Campanero) y XIV (El Paso) que luego vuelven como élites; encuentros en el pasillo con intro y pantalla bloqueada; al ganar se sigue en las criptas; reliquias en el nivel 5 y al vencer a cada jefe. Sustituye a la catedral infinita y concreta la 0.6. Siguiente: escenario por actos, Campanero y escoltas. [`walkthrough`](walkthroughs/estructura-partida/walkthrough.md).
 - **Lore y vídeos de redes (`docs/lore-biblia`, 2026-11-16, integrado):** `LORE.md` es la biblia del mundo (eje LGBT y anticlerical, cronología llana, lo abierto en §9) y toda la escritura de lore va contra ella. Los vídeos se generan por lotes con `render_guiones.py` desde `assets/videos/guiones/lote-01.md`: un plano por frase con puesta en escena, voces de personaje y paso natural. Publicados el 01 y el 03; el 08 (La Catedral que no termina) está listo para publicar, con escenografía de props a escala (`walkthroughs/lore-video-08/`). El calendario de los próximos días está al final de `lote-01.md`; los guiones que no están cerrados son preliminares y se reescriben el día que tocan, y el guion contiene todo lo necesario para rehacer el vídeo. Reglas de retención y voces en la skill `codice-lore-video`. TikTok se sube a mano, no por Metricool. [`walkthrough`](walkthroughs/lore-lote-01/walkthrough.md).

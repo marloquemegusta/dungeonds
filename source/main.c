@@ -29,6 +29,7 @@
 #include "intro.h"
 #include "hud_icons_gfx.h"
 #include "menu.h"
+#include "encounters_act1.h"
 #include <string.h>
 #include <time.h>
 
@@ -127,6 +128,15 @@ static const int s_strip_mode = 0;
 static const int s_strip_mode = 1;
 #endif
 static int s_draw_item_depth;
+#if ENCOUNTERS_PROTO
+#define ENC_AUTO_PICK() (g_enc_debug.auto_pick != 0)
+#define ENC_STOPPED() enc_victory()
+#define ENC_PICK() (g_enc_debug.auto_pick == 2 ? enc_pick_index() : 0)
+#else
+#define ENC_AUTO_PICK() 0
+#define ENC_STOPPED() 0
+#define ENC_PICK() 0
+#endif
 static uint32_t s_frame_index = 0;
 
 typedef struct {
@@ -1237,6 +1247,10 @@ ITCM_CODE static void render_screen(uint16_t *buffer, DirtySpan *spans, int cam_
         exvoto_melt_render_floor(&melt_ground);       // wax puddles of the dead Exvotos
     }
 
+#if ENCOUNTERS_PROTO
+    enc_draw_ground(buffer, cam_x, cam_y);          // provisional obstacles and barriers, flat on the floor
+#endif
+
     // 1) Actor shadows (player & enemies, animated per frame). Hardware: one OBJ-window list per
     // screen, darkened by the engine (hwshadow.c). Software: darken the page pixel by pixel.
     uint32_t t_sh0 = cpuGetTiming();
@@ -1495,6 +1509,7 @@ static void hud_icon(uint16_t *buffer, int x, int y, const uint16_t *icon) {
 }
 
 // Level / xp HUD (DESIGN.md 6.12.8), three looks selected by g_design_variant.
+#if !ENCOUNTERS_PROTO
 static void hud_rect(uint16_t *buffer, int x, int y, int w, int h, uint16_t c) {
     for (int row = 0; row < h; row++) {
         dirty_row(y + row, x, x + w);
@@ -1597,7 +1612,7 @@ static void hud_level(uint16_t *buffer) {
         }
     }
 }
-
+#endif
 
 static void draw_run_hud(uint16_t *buffer) {
     const uint16_t ink = RGB15(31, 31, 31) | BIT(15);
@@ -1623,7 +1638,20 @@ static void draw_run_hud(uint16_t *buffer) {
         hud_text(buffer, 6, SCREEN_H - 16, line, ink);
 
         // Level and xp, top left (DESIGN.md 6.12.8). A: "NV n" + bar. B: a candle. C: rosary beads + roman numeral.
+#if ENCOUNTERS_PROTO
+        {   // Variant "encuentros": no xp, no levels; the encounter the hero is on, and the end.
+            int enc = enc_current_encounter();
+            if (enc > 12) snprintf(line, sizeof(line), "JEFE");
+            else snprintf(line, sizeof(line), "ENC %d DE 12", enc);
+            hud_text(buffer, 6, 6, line, RGB15(27, 20, 11) | BIT(15));
+            if (enc_victory()) {
+                snprintf(line, sizeof(line), "VICTORIA");
+                hud_text(buffer, (SCREEN_W - hud_text_width(line)) / 2, 84, line, RGB15(27, 20, 11) | BIT(15));
+            }
+        }
+#else
         hud_level(buffer);
+#endif
 
         // Sacred Hearts: one per max hit point, right-aligned at the top of the bottom screen.
         const int heart_gap = 2;
@@ -1878,10 +1906,12 @@ static void on_enemy_death(const Enemy *e, fixed hit_vx, fixed hit_vy) {
     if (g_death_phase == DEATH_VISUALS) { CRASH_MARK(CL_DEATH_HOOK_DONE, 0, 0); return; }
     weapons_notify_kill();
     weapons_enemy_died(e);                    // Martirio Contagioso (needs the burn layers, still intact here)
+#if !ENCOUNTERS_PROTO
     if (s_strip_mode) {
         pickups_enemy_killed(e);
         gems_enemy_killed(e);          // DESIGN.md 6.12.10: one xp gem per kill
     }
+#endif
     CRASH_MARK(CL_DEATH_HOOK_DONE, 0, 0);
 }
 
@@ -1980,6 +2010,13 @@ static void strip_enemies_update(void) {
 #endif
     nav_set_goal(TO_INT(s_player.x), TO_INT(s_player.y));
     nav_update(NAV_BUDGET_PER_FRAME);
+#if ENCOUNTERS_PROTO
+    // Encounters and corridors replace the horde, the tide, the gems and the hearts (DESIGN.md 6.13.6).
+    enemy_ai_set_view(s_cam_x, s_cam_y - SCREEN_H, s_cam_y + SCREEN_H);
+    enemy_ai_update(g_enemies, MAX_ENEMIES, s_player.x, s_player.y);
+    enc_update(g_enemies, MAX_ENEMIES, TO_INT(s_player.x), TO_INT(s_player.y));
+    return;
+#endif
 #if !CATHEDRAL_PLAYGROUND || CATHEDRAL_AI == 2
     horde_update(g_enemies, MAX_ENEMIES, s_player.y, s_cam_y - SCREEN_H, tide_y());
 #endif
@@ -2085,6 +2122,10 @@ static void update_camera(void) {
     int max_y = g_arena->world_h - SCREEN_H / 2;
     if (y < min_y) y = min_y;
     if (y > max_y) y = max_y;
+#if ENCOUNTERS_PROTO
+    x = ENC_CAM_X;                    // one screen wide: the view never scrolls sideways (DESIGN.md 6.13.6)
+    y -= g_enc_debug.cam_up;          // debug (the plant guide): look further up
+#endif
     s_cam_x = x;
     s_cam_y = y;
 }
@@ -2428,6 +2469,9 @@ int main(void) {
 #if CATHEDRAL_PLAYGROUND
         seed = 0xC0DE1234u; // stable review layout for repeatable prop collision/occlusion checks
 #endif
+#if ENCOUNTERS_PROTO
+        seed = 0xE1C0DE01u; // stable act: the same plants every boot (a death restarts with a new seed)
+#endif
         strip_start(seed);
     } else arena_select(0);
     apply_arena_palette();
@@ -2482,7 +2526,7 @@ int main(void) {
     CRASH_INIT();
     PP_INIT();
     enemy_set_death_hook(on_enemy_death);
-    enemy_ai_set_strip_mode(s_strip_mode);
+    enemy_ai_set_strip_mode(s_strip_mode && !ENCOUNTERS_PROTO);
     nav_init();
     nav_set_goal(g_arena->player_x, g_arena->player_y);
     nav_rebuild_now();                  // at boot a full search costs nothing visible
@@ -2506,7 +2550,7 @@ int main(void) {
     init_bg_tile_cache(&s_bot_bg_tile_cache, BG_TILE_CACHE_CAPACITY, s_bot_bg_tiles_vram);
     update_screen_hardware_bg(1, s_top_map_ptr, s_cam_x, s_cam_y - SCREEN_H);
 
-#if !(SANDBOX || STRESS_TEST)
+#if !(SANDBOX || STRESS_TEST || ENCOUNTERS_PROTO)
     menu_open_title();
     sfx_stop_bgm();
 #else
@@ -2521,6 +2565,12 @@ int main(void) {
     update_screen_hardware_bg(0, s_bot_map_ptr, s_cam_x, s_cam_y);
 
     while (1) {
+#if ENCOUNTERS_PROTO
+        if (g_enc_debug.restart) {              // scenarios: a new act (the plant of the first encounter may be forced)
+            g_enc_debug.restart = 0;
+            arena_restart();
+        }
+#endif
         uint32_t frame_start_ticks = cpuGetTiming();
         uint32_t start_vblank = s_vblank_count;
         s_frame_index++;
@@ -2530,6 +2580,32 @@ int main(void) {
         uint32_t keys_down = keysDown();
         touchPosition touch;
         touchRead(&touch);
+#if ENC_BOT
+        {
+            // Autopilot of the variant "encuentros-bot": what the buttons and the stylus would say is replaced here.
+            EncBotView bv;
+            bv.hx = TO_INT(s_player.x);
+            bv.hy = TO_INT(s_player.y);
+            bv.cam_x = s_cam_x;
+            bv.cam_y = s_cam_y;
+            fixed bmx, bmy;
+            int bmh;
+            player_muzzle(&bmx, &bmy, &bmh);
+            bv.muzzle_x = TO_INT(bmx);
+            bv.muzzle_y = TO_INT(bmy);
+            bv.muzzle_h = bmh;
+            weapons_shake_offset(&bv.shake_x, &bv.shake_y);
+            EncBotInput bi;
+            enc_bot_step(&bv, g_enemies, MAX_ENEMIES, &bi);
+            keys_held = bi.keys | (bi.touch_down ? KEY_TOUCH : 0);
+            keys_down = 0;
+            touch.px = (uint16_t)bi.touch_x;
+            touch.py = (uint16_t)bi.touch_y;
+        }
+#endif
+#if ENCOUNTERS_PROTO
+        enc_stats_frame();
+#endif
         int touch_down = (keys_held & KEY_TOUCH) && touch.px < SCREEN_W && touch.py < SCREEN_H;
         int menu_touch_pressed = touch_down && !s_menu_prev_touch;
         s_menu_prev_touch = touch_down;
@@ -2663,6 +2739,11 @@ int main(void) {
                 s_keys_down_latch = 0;
                 touch_track(0, 0, 0);
             } else if (s_run_started && upgrades_pending() > 0 && !g_player_state.is_dead &&
+                       s_transition == TRANSITION_NONE && g_hitstop_frames <= 0 &&
+                       ENC_AUTO_PICK()) {
+                upgrades_begin_offer();            // scenarios: the first card (or a random one) at once, no menu
+                upgrades_choose(ENC_PICK());
+            } else if (s_run_started && upgrades_pending() > 0 && !g_player_state.is_dead &&
                        s_transition == TRANSITION_NONE && g_hitstop_frames <= 0) {
                 // Level-up screen: drop any charge, then the menu freezes the simulation like the pause.
                 weapons_cancel_aim();
@@ -2675,7 +2756,7 @@ int main(void) {
         }
         transition_update();
         int simulate = g_hitstop_frames <= 0 && s_transition == TRANSITION_NONE &&
-                       !menu_is_open() &&
+                       !menu_is_open() && !ENC_STOPPED() &&
                        (!s_strip_mode || !g_player_state.is_dead);
         if (!menu_is_open() && !simulate) g_hitstop_frames--;
         if (simulate) {

@@ -6,12 +6,15 @@
 #include "upgrades.h"
 #include "sfx.h"
 #include <string.h>
+#if ENCOUNTERS_PROTO
+#include "encounters_act1.h"
+#endif
 
 // ---------------------------------------------------------------------------
 // 1. Fixed-Point 8.8 Tuning Tables
 // ---------------------------------------------------------------------------
 
-const EnemyTuning g_enemy_tuning[NUM_ENEMY_TYPES] = {
+ENEMY_TUNING_CONST EnemyTuning g_enemy_tuning[NUM_ENEMY_TYPES] = {
     [ENEMY_TYPE_NONE] = { 0 },
     [ENEMY_TYPE_CHARGER] = {
         .max_hp = 300,            // [TUNABLE-PLACEHOLDER] scale 100 = 1.0 (was 60): 2 sniper hits (150 each)
@@ -94,6 +97,9 @@ int player_take_hit(PlayerState *player) {
         sfx_stop_charge();
     }
     weapons_player_hit();           // Corazon Flagelado (ignores a hit that kills)
+#if ENCOUNTERS_PROTO
+    enc_player_hit();
+#endif
     sfx_play(SND_PLAYER_HURT, -1);
     return 1;
 }

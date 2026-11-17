@@ -35,6 +35,12 @@
         },
         "bestiary": {
             "defines": ["BESTIARY_START=1"]
+        },
+        "encuentros": {
+            "defines": ["ENCOUNTERS_PROTO=1"]
+        },
+        "encuentros-bot": {
+            "defines": ["ENCOUNTERS_PROTO=1", "ENC_BOT=1"]
         }
     },
     "hostTests": [

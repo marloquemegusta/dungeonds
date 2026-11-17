@@ -1,14 +1,21 @@
 #include "tide.h"
 #include "game.h"
 
+// The tide is off in the godrays proto and in the encounters variant (DESIGN.md 6.13.6: no tide).
+#if (defined(GODRAYS_PROTO) && GODRAYS_PROTO) || ENCOUNTERS_PROTO
+#define TIDE_OFF 1
+#else
+#define TIDE_OFF 0
+#endif
+
 static fixed s_tide_y;
-#if !defined(GODRAYS_PROTO) || !GODRAYS_PROTO
+#if !TIDE_OFF
 static int s_hit_timer;
 #endif
 
 void tide_init(fixed player_y) {
     s_tide_y = player_y + TO_FIXED(TIDE_START_BELOW_PLAYER_PX);
-#if !defined(GODRAYS_PROTO) || !GODRAYS_PROTO
+#if !TIDE_OFF
     s_hit_timer = TIDE_HIT_FRAMES;
 #endif
 }
@@ -22,7 +29,7 @@ fixed tide_speed_for_distance(int dist_px) {
 }
 
 void tide_update(fixed player_y) {
-#if !defined(GODRAYS_PROTO) || !GODRAYS_PROTO
+#if !TIDE_OFF
     int dist_px = TO_INT(s_tide_y - player_y);
     s_tide_y -= tide_speed_for_distance(dist_px);
 #else
@@ -30,7 +37,7 @@ void tide_update(fixed player_y) {
 #endif
 }
 void tide_shift_y(int dy_px) {
-#if !defined(GODRAYS_PROTO) || !GODRAYS_PROTO
+#if !TIDE_OFF
     s_tide_y += TO_FIXED(dy_px);
 #else
     (void)dy_px;
@@ -38,7 +45,7 @@ void tide_shift_y(int dy_px) {
 }
 fixed tide_y(void) { return s_tide_y; }
 int tide_player_submerged(fixed player_y) {
-#if defined(GODRAYS_PROTO) && GODRAYS_PROTO
+#if TIDE_OFF
     (void)player_y;
     return 0;
 #else
@@ -48,7 +55,7 @@ int tide_player_submerged(fixed player_y) {
 int tide_player_slowed(fixed player_y) { return tide_player_submerged(player_y); }
 
 void tide_damage_player(PlayerState *player, fixed player_y) {
-#if defined(GODRAYS_PROTO) && GODRAYS_PROTO
+#if TIDE_OFF
     (void)player;
     (void)player_y;
     return;
@@ -73,7 +80,7 @@ void tide_damage_player(PlayerState *player, fixed player_y) {
 // hardware window + brightness-decrease blend, so it costs no CPU. Mode 3 in BLDCNT bits 6-7
 // is "fade to black" (2 would fade to white). Without a visible tide the blend is switched off:
 // with WIN0 disabled the blend would otherwise cover the whole screen.
-#if !defined(GODRAYS_PROTO) || !GODRAYS_PROTO
+#if !TIDE_OFF
 static void tide_window_regs(vu16 *bldcnt, vu16 *bldy, vu16 *win0h, vu16 *win0v,
                              vu16 *winin, vu16 *winout, vu32 *dispcnt, int line) {
     if (line >= SCREEN_H) {
@@ -96,7 +103,7 @@ static void tide_window_regs(vu16 *bldcnt, vu16 *bldy, vu16 *win0h, vu16 *win0v,
 #endif
 
 void tide_render_window(int sub_screen, int camera_y) {
-#if defined(GODRAYS_PROTO) && GODRAYS_PROTO
+#if TIDE_OFF
     (void)sub_screen;
     (void)camera_y;
 #else
@@ -112,7 +119,7 @@ void tide_render_window(int sub_screen, int camera_y) {
 }
 
 int tide_window_top(int camera_y) {
-#if defined(GODRAYS_PROTO) && GODRAYS_PROTO
+#if TIDE_OFF
     (void)camera_y;
     return SCREEN_H;
 #else
@@ -124,7 +131,7 @@ int tide_window_top(int camera_y) {
 }
 
 int tide_visible_on_screen(int camera_y) {
-#if defined(GODRAYS_PROTO) && GODRAYS_PROTO
+#if TIDE_OFF
     (void)camera_y;
     return 0;
 #else
@@ -135,7 +142,7 @@ int tide_visible_on_screen(int camera_y) {
 }
 
 void tide_render_border(uint16_t *buffer, int camera_y) {
-#if defined(GODRAYS_PROTO) && GODRAYS_PROTO
+#if TIDE_OFF
     (void)buffer;
     (void)camera_y;
     return;

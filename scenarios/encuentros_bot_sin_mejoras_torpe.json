@@ -1,0 +1,1615 @@
+{
+  "name": "encuentros_bot_sin_mejoras_torpe",
+  "description": "Sin Dones con el bot torpe (ver natural_torpe).",
+  "suite": false,
+  "evidence_only": true,
+  "state": {
+    "elf": "../.ds-game-dev/build/out/dungeonds-encuentros-bot.elf",
+    "symbols": {
+      "stats": "g_enc_stats",
+      "dbg": "g_enc_debug",
+      "nav": "g_nav_state"
+    },
+    "default_symbol": "stats",
+    "fields": {
+      "state": {
+        "offset": 0,
+        "type": "u8"
+      },
+      "current": {
+        "offset": 1,
+        "type": "u8"
+      },
+      "plant": {
+        "offset": 2,
+        "type": "u8"
+      },
+      "tier": {
+        "offset": 3,
+        "type": "u8"
+      },
+      "woken": {
+        "offset": 4,
+        "type": "u8"
+      },
+      "cleared": {
+        "offset": 5,
+        "type": "u8"
+      },
+      "dones": {
+        "offset": 6,
+        "type": "u8"
+      },
+      "deaths": {
+        "offset": 7,
+        "type": "u8"
+      },
+      "wake_frames": {
+        "offset": 8,
+        "type": "u16"
+      },
+      "relicarios": {
+        "offset": 10,
+        "type": "u16"
+      },
+      "alive": {
+        "offset": 61,
+        "type": "u8"
+      },
+      "act_frames": {
+        "offset": 88,
+        "type": "u32"
+      },
+      "clock": {
+        "offset": 92,
+        "type": "u32"
+      },
+      "result": {
+        "offset": 96,
+        "type": "u8"
+      },
+      "death_enc": {
+        "offset": 97,
+        "type": "u8"
+      },
+      "cap_seq": {
+        "offset": 98,
+        "type": "u8"
+      },
+      "hp": {
+        "offset": 99,
+        "type": "u8"
+      },
+      "max_hp": {
+        "offset": 100,
+        "type": "u8"
+      },
+      "bot_rule": {
+        "offset": 101,
+        "type": "u8"
+      },
+      "stuck_events": {
+        "offset": 102,
+        "type": "u16"
+      },
+      "shots": {
+        "offset": 104,
+        "type": "u16"
+      },
+      "hits_total": {
+        "offset": 106,
+        "type": "u16"
+      },
+      "boss_frames": {
+        "offset": 120,
+        "type": "u16"
+      },
+      "relic_mask": {
+        "offset": 122,
+        "type": "u16"
+      },
+      "relic_seen": {
+        "offset": 124,
+        "type": "u16"
+      },
+      "relic_shootable": {
+        "offset": 126,
+        "type": "u16"
+      },
+      "hp_min": {
+        "offset": 132,
+        "type": "u8"
+      },
+      "relic_norange": {
+        "offset": 128,
+        "type": "u16"
+      },
+      "relic_nolos": {
+        "offset": 130,
+        "type": "u16"
+      },
+      "clear_0": {
+        "offset": 12,
+        "type": "u16"
+      },
+      "hits_0": {
+        "offset": 36,
+        "type": "u8"
+      },
+      "plant_0": {
+        "offset": 48,
+        "type": "u8"
+      },
+      "hpend_0": {
+        "offset": 64,
+        "type": "u8"
+      },
+      "tier_0": {
+        "offset": 76,
+        "type": "u8"
+      },
+      "donesat_0": {
+        "offset": 108,
+        "type": "u8"
+      },
+      "clear_1": {
+        "offset": 14,
+        "type": "u16"
+      },
+      "hits_1": {
+        "offset": 37,
+        "type": "u8"
+      },
+      "plant_1": {
+        "offset": 49,
+        "type": "u8"
+      },
+      "hpend_1": {
+        "offset": 65,
+        "type": "u8"
+      },
+      "tier_1": {
+        "offset": 77,
+        "type": "u8"
+      },
+      "donesat_1": {
+        "offset": 109,
+        "type": "u8"
+      },
+      "clear_2": {
+        "offset": 16,
+        "type": "u16"
+      },
+      "hits_2": {
+        "offset": 38,
+        "type": "u8"
+      },
+      "plant_2": {
+        "offset": 50,
+        "type": "u8"
+      },
+      "hpend_2": {
+        "offset": 66,
+        "type": "u8"
+      },
+      "tier_2": {
+        "offset": 78,
+        "type": "u8"
+      },
+      "donesat_2": {
+        "offset": 110,
+        "type": "u8"
+      },
+      "clear_3": {
+        "offset": 18,
+        "type": "u16"
+      },
+      "hits_3": {
+        "offset": 39,
+        "type": "u8"
+      },
+      "plant_3": {
+        "offset": 51,
+        "type": "u8"
+      },
+      "hpend_3": {
+        "offset": 67,
+        "type": "u8"
+      },
+      "tier_3": {
+        "offset": 79,
+        "type": "u8"
+      },
+      "donesat_3": {
+        "offset": 111,
+        "type": "u8"
+      },
+      "clear_4": {
+        "offset": 20,
+        "type": "u16"
+      },
+      "hits_4": {
+        "offset": 40,
+        "type": "u8"
+      },
+      "plant_4": {
+        "offset": 52,
+        "type": "u8"
+      },
+      "hpend_4": {
+        "offset": 68,
+        "type": "u8"
+      },
+      "tier_4": {
+        "offset": 80,
+        "type": "u8"
+      },
+      "donesat_4": {
+        "offset": 112,
+        "type": "u8"
+      },
+      "clear_5": {
+        "offset": 22,
+        "type": "u16"
+      },
+      "hits_5": {
+        "offset": 41,
+        "type": "u8"
+      },
+      "plant_5": {
+        "offset": 53,
+        "type": "u8"
+      },
+      "hpend_5": {
+        "offset": 69,
+        "type": "u8"
+      },
+      "tier_5": {
+        "offset": 81,
+        "type": "u8"
+      },
+      "donesat_5": {
+        "offset": 113,
+        "type": "u8"
+      },
+      "clear_6": {
+        "offset": 24,
+        "type": "u16"
+      },
+      "hits_6": {
+        "offset": 42,
+        "type": "u8"
+      },
+      "plant_6": {
+        "offset": 54,
+        "type": "u8"
+      },
+      "hpend_6": {
+        "offset": 70,
+        "type": "u8"
+      },
+      "tier_6": {
+        "offset": 82,
+        "type": "u8"
+      },
+      "donesat_6": {
+        "offset": 114,
+        "type": "u8"
+      },
+      "clear_7": {
+        "offset": 26,
+        "type": "u16"
+      },
+      "hits_7": {
+        "offset": 43,
+        "type": "u8"
+      },
+      "plant_7": {
+        "offset": 55,
+        "type": "u8"
+      },
+      "hpend_7": {
+        "offset": 71,
+        "type": "u8"
+      },
+      "tier_7": {
+        "offset": 83,
+        "type": "u8"
+      },
+      "donesat_7": {
+        "offset": 115,
+        "type": "u8"
+      },
+      "clear_8": {
+        "offset": 28,
+        "type": "u16"
+      },
+      "hits_8": {
+        "offset": 44,
+        "type": "u8"
+      },
+      "plant_8": {
+        "offset": 56,
+        "type": "u8"
+      },
+      "hpend_8": {
+        "offset": 72,
+        "type": "u8"
+      },
+      "tier_8": {
+        "offset": 84,
+        "type": "u8"
+      },
+      "donesat_8": {
+        "offset": 116,
+        "type": "u8"
+      },
+      "clear_9": {
+        "offset": 30,
+        "type": "u16"
+      },
+      "hits_9": {
+        "offset": 45,
+        "type": "u8"
+      },
+      "plant_9": {
+        "offset": 57,
+        "type": "u8"
+      },
+      "hpend_9": {
+        "offset": 73,
+        "type": "u8"
+      },
+      "tier_9": {
+        "offset": 85,
+        "type": "u8"
+      },
+      "donesat_9": {
+        "offset": 117,
+        "type": "u8"
+      },
+      "clear_10": {
+        "offset": 32,
+        "type": "u16"
+      },
+      "hits_10": {
+        "offset": 46,
+        "type": "u8"
+      },
+      "plant_10": {
+        "offset": 58,
+        "type": "u8"
+      },
+      "hpend_10": {
+        "offset": 74,
+        "type": "u8"
+      },
+      "tier_10": {
+        "offset": 86,
+        "type": "u8"
+      },
+      "donesat_10": {
+        "offset": 118,
+        "type": "u8"
+      },
+      "clear_11": {
+        "offset": 34,
+        "type": "u16"
+      },
+      "hits_11": {
+        "offset": 47,
+        "type": "u8"
+      },
+      "plant_11": {
+        "offset": 59,
+        "type": "u8"
+      },
+      "hpend_11": {
+        "offset": 75,
+        "type": "u8"
+      },
+      "tier_11": {
+        "offset": 87,
+        "type": "u8"
+      },
+      "donesat_11": {
+        "offset": 119,
+        "type": "u8"
+      },
+      "dbg_start_dones": {
+        "symbol": "dbg",
+        "offset": 0,
+        "type": "u8"
+      },
+      "dbg_auto_pick": {
+        "symbol": "dbg",
+        "offset": 1,
+        "type": "u8"
+      },
+      "dbg_god": {
+        "symbol": "dbg",
+        "offset": 2,
+        "type": "u8"
+      },
+      "dbg_no_dones": {
+        "symbol": "dbg",
+        "offset": 3,
+        "type": "u8"
+      },
+      "dbg_seed": {
+        "symbol": "dbg",
+        "offset": 4,
+        "type": "u16"
+      },
+      "dbg_reaction": {
+        "symbol": "dbg",
+        "offset": 6,
+        "type": "u8"
+      },
+      "dbg_aim_err": {
+        "symbol": "dbg",
+        "offset": 7,
+        "type": "u8"
+      },
+      "dbg_ojo_delay": {
+        "symbol": "dbg",
+        "offset": 8,
+        "type": "u8"
+      },
+      "dbg_miss_pct": {
+        "symbol": "dbg",
+        "offset": 9,
+        "type": "u8"
+      },
+      "dbg_boss_hp": {
+        "symbol": "dbg",
+        "offset": 14,
+        "type": "u16"
+      },
+      "boss_hp_0": {
+        "offset": 144,
+        "type": "u16"
+      },
+      "boss_hp_1": {
+        "offset": 146,
+        "type": "u16"
+      },
+      "boss_hp_2": {
+        "offset": 148,
+        "type": "u16"
+      },
+      "boss_hp_3": {
+        "offset": 150,
+        "type": "u16"
+      },
+      "boss_hp_4": {
+        "offset": 152,
+        "type": "u16"
+      },
+      "boss_hp_5": {
+        "offset": 154,
+        "type": "u16"
+      },
+      "boss_hp_6": {
+        "offset": 156,
+        "type": "u16"
+      },
+      "boss_hp_7": {
+        "offset": 158,
+        "type": "u16"
+      },
+      "boss_hp_8": {
+        "offset": 160,
+        "type": "u16"
+      },
+      "boss_hp_9": {
+        "offset": 162,
+        "type": "u16"
+      },
+      "boss_hp_10": {
+        "offset": 164,
+        "type": "u16"
+      },
+      "boss_hp_11": {
+        "offset": 166,
+        "type": "u16"
+      },
+      "boss_hp_12": {
+        "offset": 168,
+        "type": "u16"
+      },
+      "boss_hp_13": {
+        "offset": 170,
+        "type": "u16"
+      },
+      "boss_hp_14": {
+        "offset": 172,
+        "type": "u16"
+      },
+      "boss_hp_15": {
+        "offset": 174,
+        "type": "u16"
+      },
+      "boss_hits": {
+        "offset": 176,
+        "type": "u16"
+      },
+      "mona_hits": {
+        "offset": 178,
+        "type": "u16"
+      },
+      "boss_shots": {
+        "offset": 180,
+        "type": "u16"
+      },
+      "mona_alive": {
+        "offset": 182,
+        "type": "u8"
+      },
+      "mona_alive_max": {
+        "offset": 183,
+        "type": "u8"
+      },
+      "boss_hp_now": {
+        "offset": 184,
+        "type": "u16"
+      },
+      "mona_kills": {
+        "offset": 186,
+        "type": "u16"
+      },
+      "hero_x": {
+        "symbol": "nav",
+        "offset": 0,
+        "type": "s32"
+      },
+      "hero_y": {
+        "symbol": "nav",
+        "offset": 4,
+        "type": "s32"
+      }
+    }
+  },
+  "steps": [
+    {
+      "poke": [
+        {
+          "field": "dbg_seed",
+          "value": 1
+        },
+        {
+          "field": "dbg_reaction",
+          "value": 30
+        },
+        {
+          "field": "dbg_aim_err",
+          "value": 12
+        },
+        {
+          "field": "dbg_ojo_delay",
+          "value": 40
+        },
+        {
+          "field": "dbg_miss_pct",
+          "value": 25
+        },
+        {
+          "field": "dbg_no_dones",
+          "value": 1
+        }
+      ],
+      "frames": 3,
+      "capture": "00_inicio",
+      "state_capture": "start"
+    },
+    {
+      "wait_until": {
+        "field": "cap_seq",
+        "min_value": 1,
+        "timeout_frames": 42000
+      },
+      "capture": "c001",
+      "state_capture": "c001"
+    },
+    {
+      "wait_until": {
+        "field": "cap_seq",
+        "min_value": 2,
+        "timeout_frames": 42000
+      },
+      "capture": "c002",
+      "state_capture": "c002"
+    },
+    {
+      "wait_until": {
+        "field": "cap_seq",
+        "min_value": 3,
+        "timeout_frames": 42000
+      },
+      "capture": "c003",
+      "state_capture": "c003"
+    },
+    {
+      "wait_until": {
+        "field": "cap_seq",
+        "min_value": 4,
+        "timeout_frames": 42000
+      },
+      "capture": "c004",
+      "state_capture": "c004"
+    },
+    {
+      "wait_until": {
+        "field": "cap_seq",
+        "min_value": 5,
+        "timeout_frames": 42000
+      },
+      "capture": "c005",
+      "state_capture": "c005"
+    },
+    {
+      "wait_until": {
+        "field": "cap_seq",
+        "min_value": 6,
+        "timeout_frames": 42000
+      },
+      "capture": "c006",
+      "state_capture": "c006"
+    },
+    {
+      "wait_until": {
+        "field": "cap_seq",
+        "min_value": 7,
+        "timeout_frames": 42000
+      },
+      "capture": "c007",
+      "state_capture": "c007"
+    },
+    {
+      "wait_until": {
+        "field": "cap_seq",
+        "min_value": 8,
+        "timeout_frames": 42000
+      },
+      "capture": "c008",
+      "state_capture": "c008"
+    },
+    {
+      "wait_until": {
+        "field": "cap_seq",
+        "min_value": 9,
+        "timeout_frames": 42000
+      },
+      "capture": "c009",
+      "state_capture": "c009"
+    },
+    {
+      "wait_until": {
+        "field": "cap_seq",
+        "min_value": 10,
+        "timeout_frames": 42000
+      },
+      "capture": "c010",
+      "state_capture": "c010"
+    },
+    {
+      "wait_until": {
+        "field": "cap_seq",
+        "min_value": 11,
+        "timeout_frames": 42000
+      },
+      "capture": "c011",
+      "state_capture": "c011"
+    },
+    {
+      "wait_until": {
+        "field": "cap_seq",
+        "min_value": 12,
+        "timeout_frames": 42000
+      },
+      "capture": "c012",
+      "state_capture": "c012"
+    },
+    {
+      "wait_until": {
+        "field": "cap_seq",
+        "min_value": 13,
+        "timeout_frames": 42000
+      },
+      "capture": "c013",
+      "state_capture": "c013"
+    },
+    {
+      "wait_until": {
+        "field": "cap_seq",
+        "min_value": 14,
+        "timeout_frames": 42000
+      },
+      "capture": "c014",
+      "state_capture": "c014"
+    },
+    {
+      "wait_until": {
+        "field": "cap_seq",
+        "min_value": 15,
+        "timeout_frames": 42000
+      },
+      "capture": "c015",
+      "state_capture": "c015"
+    },
+    {
+      "wait_until": {
+        "field": "cap_seq",
+        "min_value": 16,
+        "timeout_frames": 42000
+      },
+      "capture": "c016",
+      "state_capture": "c016"
+    },
+    {
+      "wait_until": {
+        "field": "cap_seq",
+        "min_value": 17,
+        "timeout_frames": 42000
+      },
+      "capture": "c017",
+      "state_capture": "c017"
+    },
+    {
+      "wait_until": {
+        "field": "cap_seq",
+        "min_value": 18,
+        "timeout_frames": 42000
+      },
+      "capture": "c018",
+      "state_capture": "c018"
+    },
+    {
+      "wait_until": {
+        "field": "cap_seq",
+        "min_value": 19,
+        "timeout_frames": 42000
+      },
+      "capture": "c019",
+      "state_capture": "c019"
+    },
+    {
+      "wait_until": {
+        "field": "cap_seq",
+        "min_value": 20,
+        "timeout_frames": 42000
+      },
+      "capture": "c020",
+      "state_capture": "c020"
+    },
+    {
+      "wait_until": {
+        "field": "cap_seq",
+        "min_value": 21,
+        "timeout_frames": 42000
+      },
+      "capture": "c021",
+      "state_capture": "c021"
+    },
+    {
+      "wait_until": {
+        "field": "cap_seq",
+        "min_value": 22,
+        "timeout_frames": 42000
+      },
+      "capture": "c022",
+      "state_capture": "c022"
+    },
+    {
+      "wait_until": {
+        "field": "cap_seq",
+        "min_value": 23,
+        "timeout_frames": 42000
+      },
+      "capture": "c023",
+      "state_capture": "c023"
+    },
+    {
+      "wait_until": {
+        "field": "cap_seq",
+        "min_value": 24,
+        "timeout_frames": 42000
+      },
+      "capture": "c024",
+      "state_capture": "c024"
+    },
+    {
+      "wait_until": {
+        "field": "cap_seq",
+        "min_value": 25,
+        "timeout_frames": 42000
+      },
+      "capture": "c025",
+      "state_capture": "c025"
+    },
+    {
+      "wait_until": {
+        "field": "cap_seq",
+        "min_value": 26,
+        "timeout_frames": 42000
+      },
+      "capture": "c026",
+      "state_capture": "c026"
+    },
+    {
+      "wait_until": {
+        "field": "cap_seq",
+        "min_value": 27,
+        "timeout_frames": 42000
+      },
+      "capture": "c027",
+      "state_capture": "c027"
+    },
+    {
+      "wait_until": {
+        "field": "cap_seq",
+        "min_value": 28,
+        "timeout_frames": 42000
+      },
+      "capture": "c028",
+      "state_capture": "c028"
+    },
+    {
+      "wait_until": {
+        "field": "cap_seq",
+        "min_value": 29,
+        "timeout_frames": 42000
+      },
+      "capture": "c029",
+      "state_capture": "c029"
+    },
+    {
+      "wait_until": {
+        "field": "cap_seq",
+        "min_value": 30,
+        "timeout_frames": 42000
+      },
+      "capture": "c030",
+      "state_capture": "c030"
+    },
+    {
+      "wait_until": {
+        "field": "cap_seq",
+        "min_value": 31,
+        "timeout_frames": 42000
+      },
+      "capture": "c031",
+      "state_capture": "c031"
+    },
+    {
+      "wait_until": {
+        "field": "cap_seq",
+        "min_value": 32,
+        "timeout_frames": 42000
+      },
+      "capture": "c032",
+      "state_capture": "c032"
+    },
+    {
+      "wait_until": {
+        "field": "cap_seq",
+        "min_value": 33,
+        "timeout_frames": 42000
+      },
+      "capture": "c033",
+      "state_capture": "c033"
+    },
+    {
+      "wait_until": {
+        "field": "cap_seq",
+        "min_value": 34,
+        "timeout_frames": 42000
+      },
+      "capture": "c034",
+      "state_capture": "c034"
+    },
+    {
+      "wait_until": {
+        "field": "cap_seq",
+        "min_value": 35,
+        "timeout_frames": 42000
+      },
+      "capture": "c035",
+      "state_capture": "c035"
+    },
+    {
+      "wait_until": {
+        "field": "cap_seq",
+        "min_value": 36,
+        "timeout_frames": 42000
+      },
+      "capture": "c036",
+      "state_capture": "c036"
+    },
+    {
+      "wait_until": {
+        "field": "cap_seq",
+        "min_value": 37,
+        "timeout_frames": 42000
+      },
+      "capture": "c037",
+      "state_capture": "c037"
+    },
+    {
+      "wait_until": {
+        "field": "cap_seq",
+        "min_value": 38,
+        "timeout_frames": 42000
+      },
+      "capture": "c038",
+      "state_capture": "c038"
+    },
+    {
+      "wait_until": {
+        "field": "cap_seq",
+        "min_value": 39,
+        "timeout_frames": 42000
+      },
+      "capture": "c039",
+      "state_capture": "c039"
+    },
+    {
+      "wait_until": {
+        "field": "cap_seq",
+        "min_value": 40,
+        "timeout_frames": 42000
+      },
+      "capture": "c040",
+      "state_capture": "c040"
+    },
+    {
+      "wait_until": {
+        "field": "cap_seq",
+        "min_value": 41,
+        "timeout_frames": 42000
+      },
+      "capture": "c041",
+      "state_capture": "c041"
+    },
+    {
+      "wait_until": {
+        "field": "cap_seq",
+        "min_value": 42,
+        "timeout_frames": 42000
+      },
+      "capture": "c042",
+      "state_capture": "c042"
+    },
+    {
+      "wait_until": {
+        "field": "cap_seq",
+        "min_value": 43,
+        "timeout_frames": 42000
+      },
+      "capture": "c043",
+      "state_capture": "c043"
+    },
+    {
+      "wait_until": {
+        "field": "cap_seq",
+        "min_value": 44,
+        "timeout_frames": 42000
+      },
+      "capture": "c044",
+      "state_capture": "c044"
+    },
+    {
+      "wait_until": {
+        "field": "cap_seq",
+        "min_value": 45,
+        "timeout_frames": 42000
+      },
+      "capture": "c045",
+      "state_capture": "c045"
+    },
+    {
+      "wait_until": {
+        "field": "cap_seq",
+        "min_value": 46,
+        "timeout_frames": 42000
+      },
+      "capture": "c046",
+      "state_capture": "c046"
+    },
+    {
+      "wait_until": {
+        "field": "cap_seq",
+        "min_value": 47,
+        "timeout_frames": 42000
+      },
+      "capture": "c047",
+      "state_capture": "c047"
+    },
+    {
+      "wait_until": {
+        "field": "cap_seq",
+        "min_value": 48,
+        "timeout_frames": 42000
+      },
+      "capture": "c048",
+      "state_capture": "c048"
+    },
+    {
+      "wait_until": {
+        "field": "cap_seq",
+        "min_value": 49,
+        "timeout_frames": 42000
+      },
+      "capture": "c049",
+      "state_capture": "c049"
+    },
+    {
+      "wait_until": {
+        "field": "cap_seq",
+        "min_value": 50,
+        "timeout_frames": 42000
+      },
+      "capture": "c050",
+      "state_capture": "c050"
+    },
+    {
+      "wait_until": {
+        "field": "cap_seq",
+        "min_value": 51,
+        "timeout_frames": 42000
+      },
+      "capture": "c051",
+      "state_capture": "c051"
+    },
+    {
+      "wait_until": {
+        "field": "cap_seq",
+        "min_value": 52,
+        "timeout_frames": 42000
+      },
+      "capture": "c052",
+      "state_capture": "c052"
+    },
+    {
+      "wait_until": {
+        "field": "cap_seq",
+        "min_value": 53,
+        "timeout_frames": 42000
+      },
+      "capture": "c053",
+      "state_capture": "c053"
+    },
+    {
+      "wait_until": {
+        "field": "cap_seq",
+        "min_value": 54,
+        "timeout_frames": 42000
+      },
+      "capture": "c054",
+      "state_capture": "c054"
+    },
+    {
+      "wait_until": {
+        "field": "cap_seq",
+        "min_value": 55,
+        "timeout_frames": 42000
+      },
+      "capture": "c055",
+      "state_capture": "c055"
+    },
+    {
+      "wait_until": {
+        "field": "cap_seq",
+        "min_value": 56,
+        "timeout_frames": 42000
+      },
+      "capture": "c056",
+      "state_capture": "c056"
+    },
+    {
+      "wait_until": {
+        "field": "cap_seq",
+        "min_value": 57,
+        "timeout_frames": 42000
+      },
+      "capture": "c057",
+      "state_capture": "c057"
+    },
+    {
+      "wait_until": {
+        "field": "cap_seq",
+        "min_value": 58,
+        "timeout_frames": 42000
+      },
+      "capture": "c058",
+      "state_capture": "c058"
+    },
+    {
+      "wait_until": {
+        "field": "cap_seq",
+        "min_value": 59,
+        "timeout_frames": 42000
+      },
+      "capture": "c059",
+      "state_capture": "c059"
+    },
+    {
+      "wait_until": {
+        "field": "cap_seq",
+        "min_value": 60,
+        "timeout_frames": 42000
+      },
+      "capture": "c060",
+      "state_capture": "c060"
+    },
+    {
+      "wait_until": {
+        "field": "cap_seq",
+        "min_value": 61,
+        "timeout_frames": 42000
+      },
+      "capture": "c061",
+      "state_capture": "c061"
+    },
+    {
+      "wait_until": {
+        "field": "cap_seq",
+        "min_value": 62,
+        "timeout_frames": 42000
+      },
+      "capture": "c062",
+      "state_capture": "c062"
+    },
+    {
+      "wait_until": {
+        "field": "cap_seq",
+        "min_value": 63,
+        "timeout_frames": 42000
+      },
+      "capture": "c063",
+      "state_capture": "c063"
+    },
+    {
+      "wait_until": {
+        "field": "cap_seq",
+        "min_value": 64,
+        "timeout_frames": 42000
+      },
+      "capture": "c064",
+      "state_capture": "c064"
+    },
+    {
+      "wait_until": {
+        "field": "cap_seq",
+        "min_value": 65,
+        "timeout_frames": 42000
+      },
+      "capture": "c065",
+      "state_capture": "c065"
+    },
+    {
+      "wait_until": {
+        "field": "cap_seq",
+        "min_value": 66,
+        "timeout_frames": 42000
+      },
+      "capture": "c066",
+      "state_capture": "c066"
+    },
+    {
+      "wait_until": {
+        "field": "cap_seq",
+        "min_value": 67,
+        "timeout_frames": 42000
+      },
+      "capture": "c067",
+      "state_capture": "c067"
+    },
+    {
+      "wait_until": {
+        "field": "cap_seq",
+        "min_value": 68,
+        "timeout_frames": 42000
+      },
+      "capture": "c068",
+      "state_capture": "c068"
+    },
+    {
+      "wait_until": {
+        "field": "cap_seq",
+        "min_value": 69,
+        "timeout_frames": 42000
+      },
+      "capture": "c069",
+      "state_capture": "c069"
+    },
+    {
+      "wait_until": {
+        "field": "cap_seq",
+        "min_value": 70,
+        "timeout_frames": 42000
+      },
+      "capture": "c070",
+      "state_capture": "c070"
+    },
+    {
+      "wait_until": {
+        "field": "cap_seq",
+        "min_value": 71,
+        "timeout_frames": 42000
+      },
+      "capture": "c071",
+      "state_capture": "c071"
+    },
+    {
+      "wait_until": {
+        "field": "cap_seq",
+        "min_value": 72,
+        "timeout_frames": 42000
+      },
+      "capture": "c072",
+      "state_capture": "c072"
+    },
+    {
+      "wait_until": {
+        "field": "cap_seq",
+        "min_value": 73,
+        "timeout_frames": 42000
+      },
+      "capture": "c073",
+      "state_capture": "c073"
+    },
+    {
+      "wait_until": {
+        "field": "cap_seq",
+        "min_value": 74,
+        "timeout_frames": 42000
+      },
+      "capture": "c074",
+      "state_capture": "c074"
+    },
+    {
+      "wait_until": {
+        "field": "cap_seq",
+        "min_value": 75,
+        "timeout_frames": 42000
+      },
+      "capture": "c075",
+      "state_capture": "c075"
+    },
+    {
+      "wait_until": {
+        "field": "cap_seq",
+        "min_value": 76,
+        "timeout_frames": 42000
+      },
+      "capture": "c076",
+      "state_capture": "c076"
+    },
+    {
+      "wait_until": {
+        "field": "cap_seq",
+        "min_value": 77,
+        "timeout_frames": 42000
+      },
+      "capture": "c077",
+      "state_capture": "c077"
+    },
+    {
+      "wait_until": {
+        "field": "cap_seq",
+        "min_value": 78,
+        "timeout_frames": 42000
+      },
+      "capture": "c078",
+      "state_capture": "c078"
+    },
+    {
+      "wait_until": {
+        "field": "cap_seq",
+        "min_value": 79,
+        "timeout_frames": 42000
+      },
+      "capture": "c079",
+      "state_capture": "c079"
+    },
+    {
+      "wait_until": {
+        "field": "cap_seq",
+        "min_value": 80,
+        "timeout_frames": 42000
+      },
+      "capture": "c080",
+      "state_capture": "c080"
+    },
+    {
+      "wait_until": {
+        "field": "cap_seq",
+        "min_value": 81,
+        "timeout_frames": 42000
+      },
+      "capture": "c081",
+      "state_capture": "c081"
+    },
+    {
+      "wait_until": {
+        "field": "cap_seq",
+        "min_value": 82,
+        "timeout_frames": 42000
+      },
+      "capture": "c082",
+      "state_capture": "c082"
+    },
+    {
+      "wait_until": {
+        "field": "cap_seq",
+        "min_value": 83,
+        "timeout_frames": 42000
+      },
+      "capture": "c083",
+      "state_capture": "c083"
+    },
+    {
+      "wait_until": {
+        "field": "cap_seq",
+        "min_value": 84,
+        "timeout_frames": 42000
+      },
+      "capture": "c084",
+      "state_capture": "c084"
+    },
+    {
+      "wait_until": {
+        "field": "cap_seq",
+        "min_value": 85,
+        "timeout_frames": 42000
+      },
+      "capture": "c085",
+      "state_capture": "c085"
+    },
+    {
+      "wait_until": {
+        "field": "cap_seq",
+        "min_value": 86,
+        "timeout_frames": 42000
+      },
+      "capture": "c086",
+      "state_capture": "c086"
+    },
+    {
+      "wait_until": {
+        "field": "cap_seq",
+        "min_value": 87,
+        "timeout_frames": 42000
+      },
+      "capture": "c087",
+      "state_capture": "c087"
+    },
+    {
+      "wait_until": {
+        "field": "cap_seq",
+        "min_value": 88,
+        "timeout_frames": 42000
+      },
+      "capture": "c088",
+      "state_capture": "c088"
+    },
+    {
+      "wait_until": {
+        "field": "cap_seq",
+        "min_value": 89,
+        "timeout_frames": 42000
+      },
+      "capture": "c089",
+      "state_capture": "c089"
+    },
+    {
+      "wait_until": {
+        "field": "cap_seq",
+        "min_value": 90,
+        "timeout_frames": 42000
+      },
+      "capture": "c090",
+      "state_capture": "c090"
+    },
+    {
+      "wait_until": {
+        "field": "cap_seq",
+        "min_value": 91,
+        "timeout_frames": 42000
+      },
+      "capture": "c091",
+      "state_capture": "c091"
+    },
+    {
+      "wait_until": {
+        "field": "cap_seq",
+        "min_value": 92,
+        "timeout_frames": 42000
+      },
+      "capture": "c092",
+      "state_capture": "c092"
+    },
+    {
+      "wait_until": {
+        "field": "cap_seq",
+        "min_value": 93,
+        "timeout_frames": 42000
+      },
+      "capture": "c093",
+      "state_capture": "c093"
+    },
+    {
+      "wait_until": {
+        "field": "cap_seq",
+        "min_value": 94,
+        "timeout_frames": 42000
+      },
+      "capture": "c094",
+      "state_capture": "c094"
+    },
+    {
+      "wait_until": {
+        "field": "cap_seq",
+        "min_value": 95,
+        "timeout_frames": 42000
+      },
+      "capture": "c095",
+      "state_capture": "c095"
+    },
+    {
+      "wait_until": {
+        "field": "cap_seq",
+        "min_value": 96,
+        "timeout_frames": 42000
+      },
+      "capture": "c096",
+      "state_capture": "c096"
+    },
+    {
+      "wait_until": {
+        "field": "cap_seq",
+        "min_value": 97,
+        "timeout_frames": 42000
+      },
+      "capture": "c097",
+      "state_capture": "c097"
+    },
+    {
+      "wait_until": {
+        "field": "cap_seq",
+        "min_value": 98,
+        "timeout_frames": 42000
+      },
+      "capture": "c098",
+      "state_capture": "c098"
+    },
+    {
+      "wait_until": {
+        "field": "cap_seq",
+        "min_value": 99,
+        "timeout_frames": 42000
+      },
+      "capture": "c099",
+      "state_capture": "c099"
+    },
+    {
+      "wait_until": {
+        "field": "cap_seq",
+        "min_value": 100,
+        "timeout_frames": 42000
+      },
+      "capture": "c100",
+      "state_capture": "c100"
+    },
+    {
+      "wait_until": {
+        "field": "cap_seq",
+        "min_value": 101,
+        "timeout_frames": 42000
+      },
+      "capture": "c101",
+      "state_capture": "c101"
+    },
+    {
+      "wait_until": {
+        "field": "cap_seq",
+        "min_value": 102,
+        "timeout_frames": 42000
+      },
+      "capture": "c102",
+      "state_capture": "c102"
+    },
+    {
+      "wait_until": {
+        "field": "cap_seq",
+        "min_value": 103,
+        "timeout_frames": 42000
+      },
+      "capture": "c103",
+      "state_capture": "c103"
+    },
+    {
+      "wait_until": {
+        "field": "cap_seq",
+        "min_value": 104,
+        "timeout_frames": 42000
+      },
+      "capture": "c104",
+      "state_capture": "c104"
+    },
+    {
+      "wait_until": {
+        "field": "cap_seq",
+        "min_value": 105,
+        "timeout_frames": 42000
+      },
+      "capture": "c105",
+      "state_capture": "c105"
+    },
+    {
+      "wait_until": {
+        "field": "cap_seq",
+        "min_value": 106,
+        "timeout_frames": 42000
+      },
+      "capture": "c106",
+      "state_capture": "c106"
+    },
+    {
+      "wait_until": {
+        "field": "cap_seq",
+        "min_value": 107,
+        "timeout_frames": 42000
+      },
+      "capture": "c107",
+      "state_capture": "c107"
+    },
+    {
+      "wait_until": {
+        "field": "cap_seq",
+        "min_value": 108,
+        "timeout_frames": 42000
+      },
+      "capture": "c108",
+      "state_capture": "c108"
+    },
+    {
+      "wait_until": {
+        "field": "cap_seq",
+        "min_value": 109,
+        "timeout_frames": 42000
+      },
+      "capture": "c109",
+      "state_capture": "c109"
+    },
+    {
+      "wait_until": {
+        "field": "cap_seq",
+        "min_value": 110,
+        "timeout_frames": 42000
+      },
+      "capture": "c110",
+      "state_capture": "c110"
+    },
+    {
+      "wait_until": {
+        "field": "result",
+        "min_value": 1,
+        "timeout_frames": 42000
+      },
+      "frames": 5,
+      "capture": "zz_final",
+      "state_capture": "final"
+    }
+  ],
+  "assertions": {
+    "state_changes": [
+      {
+        "at": "final",
+        "field": "result",
+        "min_value": 1
+      }
+    ]
+  }
+}

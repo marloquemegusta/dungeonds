@@ -104,6 +104,8 @@ void weapons_player_hit(void);
 int weapons_can_start_aim(const PlayerState *player);
 // Sniper charge for the hero's animation: 1 while AIMING or READY, and the collimation progress 0..256.
 int weapons_aim_charging(void);
+// While the sniper charges: its aiming line (muzzle in world px and the unit ground direction, length 256, y doubled).
+int weapons_aim_line(int *mx, int *my, int *gx, int *gy);
 int weapons_aim_progress(void);
 int weapons_input(PlayerState *player, const WeaponInput *in, Enemy *enemies, int max_enemies);
 void weapons_update(Enemy *enemies, int max_enemies);

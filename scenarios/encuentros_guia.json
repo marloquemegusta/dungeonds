@@ -1,0 +1,850 @@
+{
+  "name": "encuentros_guia",
+  "description": "Guia de plantas (variante encuentros): una captura por combinacion planta x tier con el primer encuentro forzado (g_enc_debug.force_plant/force_tier + restart). Capturas _a (entrada), _b (3 s tras despertar), _c (wave2).",
+  "suite": false,
+  "evidence_only": true,
+  "state": {
+    "elf": "../.ds-game-dev/build/out/dungeonds-encuentros.elf",
+    "symbols": {
+      "stats": "g_enc_stats",
+      "dbg": "g_enc_debug",
+      "nav": "g_nav_state"
+    },
+    "default_symbol": "stats",
+    "fields": {
+      "woken": {
+        "offset": 4,
+        "type": "u8"
+      },
+      "cleared": {
+        "offset": 5,
+        "type": "u8"
+      },
+      "alive": {
+        "offset": 61,
+        "type": "u8"
+      },
+      "blocked": {
+        "offset": 188,
+        "type": "u8"
+      },
+      "plant": {
+        "offset": 2,
+        "type": "u8"
+      },
+      "tier": {
+        "offset": 3,
+        "type": "u8"
+      },
+      "dbg_auto_pick": {
+        "symbol": "dbg",
+        "offset": 1,
+        "type": "u8"
+      },
+      "dbg_god": {
+        "symbol": "dbg",
+        "offset": 2,
+        "type": "u8"
+      },
+      "dbg_force_plant": {
+        "symbol": "dbg",
+        "offset": 10,
+        "type": "u8"
+      },
+      "dbg_force_tier": {
+        "symbol": "dbg",
+        "offset": 11,
+        "type": "u8"
+      },
+      "dbg_restart": {
+        "symbol": "dbg",
+        "offset": 12,
+        "type": "u8"
+      },
+      "dbg_cam_up": {
+        "symbol": "dbg",
+        "offset": 13,
+        "type": "u8"
+      },
+      "hero_x": {
+        "symbol": "nav",
+        "offset": 0,
+        "type": "s32"
+      },
+      "hero_y": {
+        "symbol": "nav",
+        "offset": 4,
+        "type": "s32"
+      }
+    }
+  },
+  "steps": [
+    {
+      "frames": 20
+    },
+    {
+      "poke": [
+        {
+          "field": "dbg_god",
+          "value": 1
+        },
+        {
+          "field": "dbg_auto_pick",
+          "value": 1
+        },
+        {
+          "field": "dbg_cam_up",
+          "value": 56
+        }
+      ],
+      "frames": 2
+    },
+    {
+      "poke": [
+        {
+          "field": "dbg_force_plant",
+          "value": 1
+        },
+        {
+          "field": "dbg_force_tier",
+          "value": 1
+        },
+        {
+          "field": "dbg_restart",
+          "value": 1
+        }
+      ],
+      "frames": 30,
+      "state_capture": "procesion_ligera_ini"
+    },
+    {
+      "frames": 60,
+      "state_capture": "procesion_ligera_ini2"
+    },
+    {
+      "button_down": "UP",
+      "wait_until": {
+        "field": "woken",
+        "min_value": 1,
+        "timeout_frames": 1200
+      }
+    },
+    {
+      "button_up": "UP",
+      "frames": 2,
+      "capture": "procesion_ligera_a",
+      "state_capture": "procesion_ligera_a"
+    },
+    {
+      "frames": 180,
+      "capture": "procesion_ligera_b",
+      "state_capture": "procesion_ligera_b"
+    },
+    {
+      "poke": [
+        {
+          "field": "dbg_force_plant",
+          "value": 1
+        },
+        {
+          "field": "dbg_force_tier",
+          "value": 2
+        },
+        {
+          "field": "dbg_restart",
+          "value": 1
+        }
+      ],
+      "frames": 30,
+      "state_capture": "procesion_media_ini"
+    },
+    {
+      "frames": 60,
+      "state_capture": "procesion_media_ini2"
+    },
+    {
+      "button_down": "UP",
+      "wait_until": {
+        "field": "woken",
+        "min_value": 1,
+        "timeout_frames": 1200
+      }
+    },
+    {
+      "button_up": "UP",
+      "frames": 2,
+      "capture": "procesion_media_a",
+      "state_capture": "procesion_media_a"
+    },
+    {
+      "frames": 180,
+      "capture": "procesion_media_b",
+      "state_capture": "procesion_media_b"
+    },
+    {
+      "poke": [
+        {
+          "field": "dbg_force_plant",
+          "value": 1
+        },
+        {
+          "field": "dbg_force_tier",
+          "value": 3
+        },
+        {
+          "field": "dbg_restart",
+          "value": 1
+        }
+      ],
+      "frames": 30,
+      "state_capture": "procesion_dura_ini"
+    },
+    {
+      "frames": 60,
+      "state_capture": "procesion_dura_ini2"
+    },
+    {
+      "button_down": "UP",
+      "wait_until": {
+        "field": "woken",
+        "min_value": 1,
+        "timeout_frames": 1200
+      }
+    },
+    {
+      "button_up": "UP",
+      "frames": 2,
+      "capture": "procesion_dura_a",
+      "state_capture": "procesion_dura_a"
+    },
+    {
+      "frames": 180,
+      "capture": "procesion_dura_b",
+      "state_capture": "procesion_dura_b"
+    },
+    {
+      "poke": [
+        {
+          "field": "dbg_force_plant",
+          "value": 2
+        },
+        {
+          "field": "dbg_force_tier",
+          "value": 1
+        },
+        {
+          "field": "dbg_restart",
+          "value": 1
+        }
+      ],
+      "frames": 30,
+      "state_capture": "embudo_ligera_ini"
+    },
+    {
+      "frames": 60,
+      "state_capture": "embudo_ligera_ini2"
+    },
+    {
+      "button_down": "UP",
+      "wait_until": {
+        "field": "woken",
+        "min_value": 1,
+        "timeout_frames": 1200
+      }
+    },
+    {
+      "button_up": "UP",
+      "frames": 2,
+      "capture": "embudo_ligera_a",
+      "state_capture": "embudo_ligera_a"
+    },
+    {
+      "frames": 180,
+      "capture": "embudo_ligera_b",
+      "state_capture": "embudo_ligera_b"
+    },
+    {
+      "poke": [
+        {
+          "field": "dbg_force_plant",
+          "value": 2
+        },
+        {
+          "field": "dbg_force_tier",
+          "value": 2
+        },
+        {
+          "field": "dbg_restart",
+          "value": 1
+        }
+      ],
+      "frames": 30,
+      "state_capture": "embudo_media_ini"
+    },
+    {
+      "frames": 60,
+      "state_capture": "embudo_media_ini2"
+    },
+    {
+      "button_down": "UP",
+      "wait_until": {
+        "field": "woken",
+        "min_value": 1,
+        "timeout_frames": 1200
+      }
+    },
+    {
+      "button_up": "UP",
+      "frames": 2,
+      "capture": "embudo_media_a",
+      "state_capture": "embudo_media_a"
+    },
+    {
+      "frames": 180,
+      "capture": "embudo_media_b",
+      "state_capture": "embudo_media_b"
+    },
+    {
+      "poke": [
+        {
+          "field": "dbg_force_plant",
+          "value": 2
+        },
+        {
+          "field": "dbg_force_tier",
+          "value": 3
+        },
+        {
+          "field": "dbg_restart",
+          "value": 1
+        }
+      ],
+      "frames": 30,
+      "state_capture": "embudo_dura_ini"
+    },
+    {
+      "frames": 60,
+      "state_capture": "embudo_dura_ini2"
+    },
+    {
+      "button_down": "UP",
+      "wait_until": {
+        "field": "woken",
+        "min_value": 1,
+        "timeout_frames": 1200
+      }
+    },
+    {
+      "button_up": "UP",
+      "frames": 2,
+      "capture": "embudo_dura_a",
+      "state_capture": "embudo_dura_a"
+    },
+    {
+      "frames": 180,
+      "capture": "embudo_dura_b",
+      "state_capture": "embudo_dura_b"
+    },
+    {
+      "poke": [
+        {
+          "field": "dbg_force_plant",
+          "value": 3
+        },
+        {
+          "field": "dbg_force_tier",
+          "value": 1
+        },
+        {
+          "field": "dbg_restart",
+          "value": 1
+        }
+      ],
+      "frames": 30,
+      "state_capture": "balcon_ligera_ini"
+    },
+    {
+      "frames": 60,
+      "state_capture": "balcon_ligera_ini2"
+    },
+    {
+      "button_down": "UP",
+      "wait_until": {
+        "field": "woken",
+        "min_value": 1,
+        "timeout_frames": 1200
+      }
+    },
+    {
+      "button_up": "UP",
+      "frames": 2,
+      "capture": "balcon_ligera_a",
+      "state_capture": "balcon_ligera_a"
+    },
+    {
+      "frames": 180,
+      "capture": "balcon_ligera_b",
+      "state_capture": "balcon_ligera_b"
+    },
+    {
+      "poke": [
+        {
+          "field": "dbg_force_plant",
+          "value": 3
+        },
+        {
+          "field": "dbg_force_tier",
+          "value": 2
+        },
+        {
+          "field": "dbg_restart",
+          "value": 1
+        }
+      ],
+      "frames": 30,
+      "state_capture": "balcon_media_ini"
+    },
+    {
+      "frames": 60,
+      "state_capture": "balcon_media_ini2"
+    },
+    {
+      "button_down": "UP",
+      "wait_until": {
+        "field": "woken",
+        "min_value": 1,
+        "timeout_frames": 1200
+      }
+    },
+    {
+      "button_up": "UP",
+      "frames": 2,
+      "capture": "balcon_media_a",
+      "state_capture": "balcon_media_a"
+    },
+    {
+      "frames": 180,
+      "capture": "balcon_media_b",
+      "state_capture": "balcon_media_b"
+    },
+    {
+      "poke": [
+        {
+          "field": "dbg_force_plant",
+          "value": 3
+        },
+        {
+          "field": "dbg_force_tier",
+          "value": 3
+        },
+        {
+          "field": "dbg_restart",
+          "value": 1
+        }
+      ],
+      "frames": 30,
+      "state_capture": "balcon_dura_ini"
+    },
+    {
+      "frames": 60,
+      "state_capture": "balcon_dura_ini2"
+    },
+    {
+      "button_down": "UP",
+      "wait_until": {
+        "field": "woken",
+        "min_value": 1,
+        "timeout_frames": 1200
+      }
+    },
+    {
+      "button_up": "UP",
+      "frames": 2,
+      "capture": "balcon_dura_a",
+      "state_capture": "balcon_dura_a"
+    },
+    {
+      "frames": 180,
+      "capture": "balcon_dura_b",
+      "state_capture": "balcon_dura_b"
+    },
+    {
+      "poke": [
+        {
+          "field": "dbg_force_plant",
+          "value": 4
+        },
+        {
+          "field": "dbg_force_tier",
+          "value": 1
+        },
+        {
+          "field": "dbg_restart",
+          "value": 1
+        }
+      ],
+      "frames": 30,
+      "state_capture": "pinza_ligera_ini"
+    },
+    {
+      "frames": 60,
+      "state_capture": "pinza_ligera_ini2"
+    },
+    {
+      "button_down": "UP",
+      "wait_until": {
+        "field": "woken",
+        "min_value": 1,
+        "timeout_frames": 1200
+      }
+    },
+    {
+      "button_up": "UP",
+      "frames": 2,
+      "capture": "pinza_ligera_a",
+      "state_capture": "pinza_ligera_a"
+    },
+    {
+      "frames": 180,
+      "capture": "pinza_ligera_b",
+      "state_capture": "pinza_ligera_b"
+    },
+    {
+      "poke": [
+        {
+          "field": "dbg_force_plant",
+          "value": 4
+        },
+        {
+          "field": "dbg_force_tier",
+          "value": 2
+        },
+        {
+          "field": "dbg_restart",
+          "value": 1
+        }
+      ],
+      "frames": 30,
+      "state_capture": "pinza_media_ini"
+    },
+    {
+      "frames": 60,
+      "state_capture": "pinza_media_ini2"
+    },
+    {
+      "button_down": "UP",
+      "wait_until": {
+        "field": "woken",
+        "min_value": 1,
+        "timeout_frames": 1200
+      }
+    },
+    {
+      "button_up": "UP",
+      "frames": 2,
+      "capture": "pinza_media_a",
+      "state_capture": "pinza_media_a"
+    },
+    {
+      "frames": 180,
+      "capture": "pinza_media_b",
+      "state_capture": "pinza_media_b"
+    },
+    {
+      "poke": [
+        {
+          "field": "dbg_force_plant",
+          "value": 4
+        },
+        {
+          "field": "dbg_force_tier",
+          "value": 3
+        },
+        {
+          "field": "dbg_restart",
+          "value": 1
+        }
+      ],
+      "frames": 30,
+      "state_capture": "pinza_dura_ini"
+    },
+    {
+      "frames": 60,
+      "state_capture": "pinza_dura_ini2"
+    },
+    {
+      "button_down": "UP",
+      "wait_until": {
+        "field": "woken",
+        "min_value": 1,
+        "timeout_frames": 1200
+      }
+    },
+    {
+      "button_up": "UP",
+      "frames": 2,
+      "capture": "pinza_dura_a",
+      "state_capture": "pinza_dura_a"
+    },
+    {
+      "frames": 180,
+      "capture": "pinza_dura_b",
+      "state_capture": "pinza_dura_b"
+    },
+    {
+      "poke": [
+        {
+          "field": "dbg_force_plant",
+          "value": 5
+        },
+        {
+          "field": "dbg_force_tier",
+          "value": 1
+        },
+        {
+          "field": "dbg_restart",
+          "value": 1
+        }
+      ],
+      "frames": 30,
+      "state_capture": "claro_ligera_ini"
+    },
+    {
+      "frames": 60,
+      "state_capture": "claro_ligera_ini2"
+    },
+    {
+      "button_down": "UP",
+      "wait_until": {
+        "field": "woken",
+        "min_value": 1,
+        "timeout_frames": 1200
+      }
+    },
+    {
+      "button_up": "UP",
+      "frames": 2,
+      "capture": "claro_ligera_a",
+      "state_capture": "claro_ligera_a"
+    },
+    {
+      "frames": 180,
+      "capture": "claro_ligera_b",
+      "state_capture": "claro_ligera_b"
+    },
+    {
+      "poke": [
+        {
+          "field": "dbg_force_plant",
+          "value": 5
+        },
+        {
+          "field": "dbg_force_tier",
+          "value": 2
+        },
+        {
+          "field": "dbg_restart",
+          "value": 1
+        }
+      ],
+      "frames": 30,
+      "state_capture": "claro_media_ini"
+    },
+    {
+      "frames": 60,
+      "state_capture": "claro_media_ini2"
+    },
+    {
+      "button_down": "UP",
+      "wait_until": {
+        "field": "woken",
+        "min_value": 1,
+        "timeout_frames": 1200
+      }
+    },
+    {
+      "button_up": "UP",
+      "frames": 2,
+      "capture": "claro_media_a",
+      "state_capture": "claro_media_a"
+    },
+    {
+      "frames": 180,
+      "capture": "claro_media_b",
+      "state_capture": "claro_media_b"
+    },
+    {
+      "poke": [
+        {
+          "field": "dbg_force_plant",
+          "value": 5
+        },
+        {
+          "field": "dbg_force_tier",
+          "value": 3
+        },
+        {
+          "field": "dbg_restart",
+          "value": 1
+        }
+      ],
+      "frames": 30,
+      "state_capture": "claro_dura_ini"
+    },
+    {
+      "frames": 60,
+      "state_capture": "claro_dura_ini2"
+    },
+    {
+      "button_down": "UP",
+      "wait_until": {
+        "field": "woken",
+        "min_value": 1,
+        "timeout_frames": 1200
+      }
+    },
+    {
+      "button_up": "UP",
+      "frames": 2,
+      "capture": "claro_dura_a",
+      "state_capture": "claro_dura_a"
+    },
+    {
+      "frames": 180,
+      "capture": "claro_dura_b",
+      "state_capture": "claro_dura_b"
+    },
+    {
+      "poke": [
+        {
+          "field": "dbg_force_plant",
+          "value": 6
+        },
+        {
+          "field": "dbg_force_tier",
+          "value": 1
+        },
+        {
+          "field": "dbg_restart",
+          "value": 1
+        }
+      ],
+      "frames": 30,
+      "state_capture": "alambrada_ligera_ini"
+    },
+    {
+      "frames": 60,
+      "state_capture": "alambrada_ligera_ini2"
+    },
+    {
+      "button_down": "UP",
+      "wait_until": {
+        "field": "woken",
+        "min_value": 1,
+        "timeout_frames": 1200
+      }
+    },
+    {
+      "button_up": "UP",
+      "frames": 2,
+      "capture": "alambrada_ligera_a",
+      "state_capture": "alambrada_ligera_a"
+    },
+    {
+      "frames": 180,
+      "capture": "alambrada_ligera_b",
+      "state_capture": "alambrada_ligera_b"
+    },
+    {
+      "poke": [
+        {
+          "field": "dbg_force_plant",
+          "value": 6
+        },
+        {
+          "field": "dbg_force_tier",
+          "value": 2
+        },
+        {
+          "field": "dbg_restart",
+          "value": 1
+        }
+      ],
+      "frames": 30,
+      "state_capture": "alambrada_media_ini"
+    },
+    {
+      "frames": 60,
+      "state_capture": "alambrada_media_ini2"
+    },
+    {
+      "button_down": "UP",
+      "wait_until": {
+        "field": "woken",
+        "min_value": 1,
+        "timeout_frames": 1200
+      }
+    },
+    {
+      "button_up": "UP",
+      "frames": 2,
+      "capture": "alambrada_media_a",
+      "state_capture": "alambrada_media_a"
+    },
+    {
+      "frames": 180,
+      "capture": "alambrada_media_b",
+      "state_capture": "alambrada_media_b"
+    },
+    {
+      "poke": [
+        {
+          "field": "dbg_force_plant",
+          "value": 6
+        },
+        {
+          "field": "dbg_force_tier",
+          "value": 3
+        },
+        {
+          "field": "dbg_restart",
+          "value": 1
+        }
+      ],
+      "frames": 30,
+      "state_capture": "alambrada_dura_ini"
+    },
+    {
+      "frames": 60,
+      "state_capture": "alambrada_dura_ini2"
+    },
+    {
+      "button_down": "UP",
+      "wait_until": {
+        "field": "woken",
+        "min_value": 1,
+        "timeout_frames": 1200
+      }
+    },
+    {
+      "button_up": "UP",
+      "frames": 2,
+      "capture": "alambrada_dura_a",
+      "state_capture": "alambrada_dura_a"
+    },
+    {
+      "frames": 180,
+      "capture": "alambrada_dura_b",
+      "state_capture": "alambrada_dura_b"
+    }
+  ],
+  "assertions": {
+    "state_changes": [
+      {
+        "at": "alambrada_dura_b",
+        "field": "woken",
+        "min_value": 1
+      }
+    ]
+  }
+}

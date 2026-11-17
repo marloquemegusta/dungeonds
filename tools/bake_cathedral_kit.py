@@ -241,7 +241,7 @@ def piece_layout(name):
         raise ValueError(f"{name}: color, depth and footprint dimensions must match")
     rgba = np.asarray(color)
     if not np.isin(rgba[:, :, 3], [0, 255]).all(): raise ValueError(f"{name}: alpha must be binary")
-    value = 3 if name == "columna_entera" else 1
+    value = 3 if name in ("columna_entera", "santo") else 1
     try:
         foot_runs = footprint_runs(foot)
     except ValueError as e:
@@ -525,7 +525,7 @@ def catedral_phase_map():
     return {
         "columna_entera": [(7, 9), (7, 1), (3, 9), (3, 1)],
         "banco_grupo4": [(3, 0), (3, 8), (0, 0), (0, 8)],
-        "relicario": [(12, 9), (12, 1)],
+        "relicario": [(12, 9), (12, 1), (4, 9), (4, 1), (7, 9), (7, 1)],   # 12: eje; 4 / 7: pegado a la izquierda / derecha (variante encuentros)
         "santo": [(0, 9), (0, 1), (8, 9), (8, 1)],
         "vela": list(VELA_PHASES),
         **{name: list(LAPIDA_PHASES) for name in LAPIDA_NAMES},
