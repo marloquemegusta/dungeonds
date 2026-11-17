@@ -56,7 +56,7 @@ static uint8_t s_mirror[ENC_COUNT];
 static uint8_t s_tier[ENC_COUNT];           // tier of each encounter (s_tier_of, with the debug force applied)
 
 typedef struct {
-    uint8_t spawned, awake, cleared, wave2_done, barrier_open;
+    uint8_t spawned, awake, cleared, wave2_done, barrier_open, back_closed;
 } EncRuntime;
 static EncRuntime s_rt[ENC_STAGES];
 static uint8_t s_relic_broken[ENC_STAGES];
@@ -290,6 +290,14 @@ int enc_block_rects(int32_t block, EncRect *out, int max) {
         out[n].h = ENC_BARRIER_H;
         n++;
     }
+    if (b.kind == ENC_BLOCK_ENCOUNTER && s_rt[b.idx].back_closed && !s_rt[b.idx].cleared && n < max) {   // rear barrier closes behind the hero once the room wakes
+        out[n].kind = ENC_R_BARRERA;
+        out[n].x = ENC_FLOOR_X;
+        out[n].y = ENC_BLOCK_H - ENC_BARRIER_H;
+        out[n].w = ENC_FLOOR_W;
+        out[n].h = ENC_BARRIER_H;
+        n++;
+    }
     return n;
 }
 
@@ -406,10 +414,11 @@ static void boss_set_barriers(int closed) {
 
 static void open_barrier(int k, int px, int py) {
     s_rt[k].barrier_open = 1;
-    if (k < ENC_STAGES - 1) {
-        strip_collision_fill_win(ENC_FLOOR_X, window_top(block_of_encounter(k)), ENC_FLOOR_W, ENC_BARRIER_H, 0);
-        nav_refresh_begin(px, py);          // the walkable grid knew the barrier as a wall
-    }
+    s_rt[k].back_closed = 0;
+    const int top = window_top(block_of_encounter(k));
+    strip_collision_fill_win(ENC_FLOOR_X, top, ENC_FLOOR_W, ENC_BARRIER_H, 0);
+    strip_collision_fill_win(ENC_FLOOR_X, top + ENC_BLOCK_H - ENC_BARRIER_H, ENC_FLOOR_W, ENC_BARRIER_H, 0);
+    nav_refresh_begin(px, py);          // the walkable grid knew the barrier as a wall
 }
 
 static void apply_debug(void) {
@@ -516,7 +525,14 @@ void enc_update(Enemy *enemies, int max_enemies, int px, int py) {
                 rt->awake = 1;
                 wake_owner(enemies, max_enemies, k);
                 if (st->woken < k + 1) st->woken = (uint8_t)(k + 1);
-                if (is_boss) boss_begin(enemies, max_enemies);                 // the hero is in the room: close it, intro
+                if (is_boss) {
+                    boss_begin(enemies, max_enemies);                 // the hero is in the room: close it, intro
+                } else {                                              // normal room: close the rear barrier behind the hero
+                    strip_collision_fill_win(ENC_FLOOR_X, bottom - ENC_BARRIER_H, ENC_FLOOR_W, ENC_BARRIER_H,
+                                             enc_collision_value(ENC_R_BARRERA));
+                    rt->back_closed = 1;
+                    nav_refresh_begin(px, py);
+                }
                 if (k == cur) st->wake_frames = 0;
             }
             continue;
@@ -642,12 +658,11 @@ void enc_relic_hit(int damage) {
     s_relic_k = -1;
 }
 
-// DESIGN.md 6.13.6: the enemies of an encounter that has not woken take no damage (the ray goes through them).
+// DESIGN.md 6.13.6: every enemy of an encounter that has not woken takes no damage (the ray goes through it), so the
+// corridor cannot hurt the next room before the hero steps in, whatever state the sleeper is in.
 int enc_untouchable(const Enemy *e) {
     int k = e->pack;
-    // Only the sleepers: an enemy the plant spawns awake (state CHASE) is already in the fight and can be hurt.
-    return k >= 0 && k <= ENC_BOSS && s_rt[k].spawned && !s_rt[k].awake &&
-           (e->state == ENEMY_STATE_DORMANT || e->state == ENEMY_STATE_PRAY);
+    return k >= 0 && k <= ENC_BOSS && s_rt[k].spawned && !s_rt[k].awake;
 }
 
 void enc_note_beam_hit(const Enemy *e) {
