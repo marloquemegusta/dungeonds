@@ -525,7 +525,9 @@ def catedral_phase_map():
     return {
         "columna_entera": [(7, 9), (7, 1), (3, 9), (3, 1)],
         "banco_grupo4": [(3, 0), (3, 8), (0, 0), (0, 8)],
-        "relicario": [(12, 9), (12, 1), (4, 9), (4, 1), (7, 9), (7, 1)],   # 12: eje; 4 / 7: pegado a la izquierda / derecha (variante encuentros)
+        # 12: relicario de la catedral; 4 / 7: pegado a la izquierda / derecha (variante encuentros);
+        # 13: centrado exacto en el eje del pasillo (tile 29, centro de arte en 256 px).
+        "relicario": [(12, 9), (12, 1), (4, 9), (4, 1), (7, 9), (7, 1), (13, 9)],
         # (3, 1): fase espejo para los pares de estatuas de las salas de encuentros. Con w=5 tiles el
         # par simetrico respecto al eje (tile 32) cumple x + x' = 59; 8 + 3 = 11 (mod 16) lo permite.
         "santo": [(0, 9), (0, 1), (8, 9), (8, 1), (3, 1)],

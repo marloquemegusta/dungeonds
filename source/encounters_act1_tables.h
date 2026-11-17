@@ -315,9 +315,9 @@ static const EncPlant s_plants[ENC_PLANT_COUNT] = {
 };
 
 static const EncPieceDef s_corridor_pieces[] = {
-    { STRIP_PIECE_RELICARIO, 8, 170 },
+    { STRIP_PIECE_RELICARIO, 84, 170 },
     { STRIP_PIECE_VELA, 44, 180 },
-    { STRIP_PIECE_VELA, 44, 210 },
+    { STRIP_PIECE_VELA, 148, 210 },
 };
 #define ENC_RELIC_HP 150
 static const EncEnemyDef s_boss_enemies[] = {
