@@ -19,8 +19,8 @@ ENEMY_TUNING_CONST EnemyTuning g_enemy_tuning[NUM_ENEMY_TYPES] = {
     [ENEMY_TYPE_NONE] = { 0 },
     [ENEMY_TYPE_CHARGER] = {
         .max_hp = 300,            // [TUNABLE-PLACEHOLDER] scale 100 = 1.0 (was 60): 2 sniper hits (150 each)
-        .speed = 150,             // [TUNABLE-PLACEHOLDER] 8.8 fixed: slow approach (the 0.3 charger ran at 293)
-        .telegraph_duration = 30, // [TUNABLE-PLACEHOLDER] frames standing still and blinking before the lunge
+        .speed = 105,             // [TUNABLE-PLACEHOLDER] 8.8 fixed: ~58% of the hero (181), so the player can break away and charge the beam
+        .telegraph_duration = 45, // [TUNABLE-PLACEHOLDER] 0.75 s standing still and blinking before the lunge
         .charge_speed = 650,      // [TUNABLE-PLACEHOLDER] 8.8 fixed: ~2 x the hero (326), straight line
     },
     [ENEMY_TYPE_SHOOTER] = {

@@ -144,9 +144,10 @@ void enc_init(uint32_t seed) {
     g_enemy_tuning[ENEMY_TYPE_CHARGER].max_hp = ENC_HP_CIRENEO;
     g_enemy_tuning[ENEMY_TYPE_SHOOTER].max_hp = ENC_HP_OJO;
     g_enemy_tuning[ENEMY_TYPE_ABANDERADO].max_hp = g_enc_debug.boss_hp ? g_enc_debug.boss_hp : ENC_HP_ABANDERADO;
-    // The Cireneo of v2: chases at about the hero's walking pace, telegraphs briefly and charges very fast.
-    g_enemy_tuning[ENEMY_TYPE_CHARGER].speed = 300;
-    g_enemy_tuning[ENEMY_TYPE_CHARGER].telegraph_duration = 15;
+    // The Cireneo of v2: it chases below the hero's pace so the player can break away and charge the beam,
+    // telegraphs 0.75 s and then charges very fast.
+    g_enemy_tuning[ENEMY_TYPE_CHARGER].speed = 105;
+    g_enemy_tuning[ENEMY_TYPE_CHARGER].telegraph_duration = 45;
     g_enemy_tuning[ENEMY_TYPE_CHARGER].charge_speed = 1000;
     uint8_t count[ENC_PLANT_COUNT] = {0};
     uint8_t first_tier[ENC_PLANT_COUNT] = {0};
