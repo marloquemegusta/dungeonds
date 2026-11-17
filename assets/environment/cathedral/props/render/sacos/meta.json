@@ -2,28 +2,28 @@
   "piece": "sacos",
   "size_px": [
     64,
-    40
+    24
   ],
   "content_px": [
     64,
-    38
+    17
   ],
   "target_width": 64,
-  "scale_factor": 0.1032258064516129,
+  "scale_factor": 0.0962406015037594,
   "source_render_px": [
-    620,
-    364
+    665,
+    175
   ],
   "yaw": -45,
   "depth_units": "sprite_px",
-  "tiles_8x8_nonempty": 37,
-  "tiles_8x8_unique": 37,
+  "tiles_8x8_nonempty": 24,
+  "tiles_8x8_unique": 24,
   "shadow_offset_px": [
-    -8,
+    0,
     0
   ],
   "shadow_canvas_px": [
-    72,
-    40
+    64,
+    32
   ]
 }

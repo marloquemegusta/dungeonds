@@ -19,6 +19,7 @@
 #define ENC_BLOCK_H 384          // one block = 2 screens
 #define ENC_COUNT 12             // encounters of the act
 #define ENC_PLANT_COUNT 6
+#define ENC_VERJA_H 56           // rastrillo piece height: stands at the foot of the corridor, base on the barrier line
 #define ENC_BARRIER_H 8          // closed barrier: the top 8 px of the encounter block
 #define ENC_WAKE_MARGIN 36       // the encounter wakes when the hero is this far inside its bottom edge (the rear barrier closes behind the body)
 #define ENC_SPAWN_AHEAD 420      // enemies of an encounter appear (asleep) when the hero is this close to its entrance
@@ -70,6 +71,8 @@ int enc_collision_value(uint8_t rect_kind);
 void enc_update(Enemy *enemies, int max_enemies, int px, int py);
 // Ground painter: obstacles, barriers and the relicario marker (under the actors, over the floor).
 void enc_draw_ground(uint16_t *buffer, int cam_x, int cam_y);
+// Hardware OBJ sprites for the rastrillo gates (called per screen during render_screen).
+void enc_verja_draw(int sub, int cam_x, int cam_y);
 // The sniper ray asks for the relicario target in front of the hero: ground point in window px.
 int enc_relic_target(int *x, int *y);
 void enc_relic_hit(int damage);

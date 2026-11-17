@@ -8,6 +8,7 @@ typedef int encounters_act1_translation_unit_not_empty;
 #include <string.h>
 #include "encounters.h"
 #include "boss.h"
+#include "hwshadow.h"
 #include "sfx_voice_len.h"
 #include "collision.h"
 #include "enemy_ai.h"
@@ -56,7 +57,7 @@ static uint8_t s_mirror[ENC_COUNT];
 static uint8_t s_tier[ENC_COUNT];           // tier of each encounter (s_tier_of, with the debug force applied)
 
 typedef struct {
-    uint8_t spawned, awake, cleared, wave2_done, barrier_open, back_closed;
+    uint8_t spawned, awake, cleared, wave2_done, barrier_open, back_closed, verja_opening, verja_lift, back_lift;
 } EncRuntime;
 static EncRuntime s_rt[ENC_STAGES];
 static uint8_t s_relic_broken[ENC_STAGES];
@@ -161,10 +162,14 @@ void enc_init(uint32_t seed) {
         if (g_enc_debug.force_tier > 0 && g_enc_debug.force_tier <= 3) s_tier[0] = (uint8_t)(g_enc_debug.force_tier - 1);
     }
     memset(s_rt, 0, sizeof(s_rt));
+    for (int i = 0; i < ENC_STAGES; i++) s_rt[i].back_lift = ENC_VERJA_H;
     s_first_block = ENC_FIRST_BLOCK;
     if (g_enc_debug.start_boss) {              // debug: the act starts at the first boss (stage 5), stages 1..4 already won
         s_first_block += 2 * ENC_FIRST_BOSS;
-        for (int i = 0; i < ENC_FIRST_BOSS; i++) s_rt[i].spawned = s_rt[i].awake = s_rt[i].cleared = s_rt[i].wave2_done = s_rt[i].barrier_open = 1;
+        for (int i = 0; i < ENC_FIRST_BOSS; i++) {
+            s_rt[i].spawned = s_rt[i].awake = s_rt[i].cleared = s_rt[i].wave2_done = s_rt[i].barrier_open = 1;
+            s_rt[i].verja_lift = ENC_VERJA_H;
+        }
     }
     memset(s_relic_broken, 0, sizeof(s_relic_broken));
     memset(s_relic_damage, 0, sizeof(s_relic_damage));
@@ -247,13 +252,28 @@ int enc_block_pieces(int32_t block, EncPiecePlan *out, int max) {
         n = (int)(sizeof(s_corridor_pieces) / sizeof(s_corridor_pieces[0]));
     }
     if (n > max) n = max;
+    int m = 0;
     for (int i = 0; i < n; i++) {
-        out[i].piece = defs[i].piece;
-        out[i].mirror = b.mirror;
-        out[i].lx = defs[i].x;
-        out[i].ly = defs[i].y;
+        uint8_t piece = defs[i].piece;
+        // One bench group in four is the variant with the broken bench, picked by (block, piece index). Only the
+        // groups on tile row 0 of the kit phases have it baked (tile budget; tools/bake_cathedral_kit.py).
+        if (piece == STRIP_PIECE_BANCO_GRUPO4 && ((((defs[i].y + 4) >> 3) & 15) == 0) &&
+            (hash32(((uint32_t)block * 0x9e3779b9u) ^ ((uint32_t)i * 0x85ebca6bu) ^ 0x42524b4eu) & 3u) == 0)
+            piece = STRIP_PIECE_BANCO_GRUPO4_ROTO;
+        // The kit has no mirrored piece: the barricade end that opens to the right is the other id when the plan is mirrored.
+        if (b.mirror) {
+            if (piece == STRIP_PIECE_SACOS_REMATE_DER) piece = STRIP_PIECE_SACOS_REMATE;
+            else if (piece == STRIP_PIECE_SACOS_REMATE) piece = STRIP_PIECE_SACOS_REMATE_DER;
+            else if (piece == STRIP_PIECE_SANTO) piece = STRIP_PIECE_SANTO_DER;
+            else if (piece == STRIP_PIECE_SANTO_DER) piece = STRIP_PIECE_SANTO;
+        }
+        out[m].piece = piece;
+        out[m].mirror = b.mirror;
+        out[m].lx = defs[i].x;
+        out[m].ly = defs[i].y;
+        m++;
     }
-    return n;
+    return m;
 }
 
 int enc_block_rects(int32_t block, EncRect *out, int max) {
@@ -403,11 +423,13 @@ static void boss_set_barriers(int closed) {
     const int top = window_top(block_of_encounter(k));
     s_boss_locked = closed;
     if (closed) {
+        s_rt[k].back_closed = 1;
         strip_collision_fill_win(ENC_FLOOR_X, top + ENC_BLOCK_H - ENC_BARRIER_H, ENC_FLOOR_W, ENC_BARRIER_H, enc_collision_value(ENC_R_BARRERA));
     } else {
-        s_rt[k].barrier_open = 1;
-        if (k < ENC_STAGES - 1) strip_collision_fill_win(ENC_FLOOR_X, top, ENC_FLOOR_W, ENC_BARRIER_H, 0);
+        s_rt[k].back_closed = 0;
         strip_collision_fill_win(ENC_FLOOR_X, top + ENC_BLOCK_H - ENC_BARRIER_H, ENC_FLOOR_W, ENC_BARRIER_H, 0);
+        if (k < ENC_STAGES - 1) s_rt[k].verja_opening = 1;
+        else s_rt[k].barrier_open = 1;
     }
     nav_refresh_begin(s_hero_px, s_hero_py);      // the walkable grid knew the barrier as a wall (or not)
 }
@@ -571,7 +593,7 @@ void enc_update(Enemy *enemies, int max_enemies, int px, int py) {
                     st->dones_at[e] = st->dones;
                 }
                 st->cleared = (uint8_t)(k + 1);
-                open_barrier(k, px, py);
+                rt->verja_opening = 1;
             } else if (k < ENC_BOSS) {
                 st->cleared = (uint8_t)(k + 1);
                 boss_victory();
@@ -585,6 +607,21 @@ void enc_update(Enemy *enemies, int max_enemies, int px, int py) {
     }
 
     // Stats for the scenarios.
+    for (int k = 0; k < ENC_STAGES; k++) {
+        if (k < ENC_STAGES - 1 && s_rt[k].verja_opening && !s_rt[k].barrier_open) {
+            if (s_rt[k].verja_lift < ENC_VERJA_H) s_rt[k].verja_lift++;
+            if (s_rt[k].verja_lift >= ENC_VERJA_H) {
+                s_rt[k].verja_opening = 0;
+                open_barrier(k, px, py);
+            }
+        }
+        if (s_rt[k].back_closed && !s_rt[k].cleared) {
+            if (s_rt[k].back_lift > 4) s_rt[k].back_lift -= 4;
+            else s_rt[k].back_lift = 0;
+        } else if (s_rt[k].back_lift < ENC_VERJA_H) {
+            s_rt[k].back_lift++;
+        }
+    }
     cur = ENC_BOSS;
     for (int k = 0; k < ENC_STAGES; k++) {
         if (!s_rt[k].cleared) { cur = k; break; }
@@ -796,15 +833,43 @@ void enc_draw_ground(uint16_t *buffer, int cam_x, int cam_y) {
         const int block = block_of_encounter(k);
         const int top = window_top(block);
         if (top + ENC_BLOCK_H <= cam_y || top >= cam_y + SCREEN_H) continue;
+        // The top barrier is the rastrillo drawn by the kit when the corridor above bakes one; the final
+        // boss is the only room with no corridor over it, so its top keeps the strip.
+        EncBlock above;
+        enc_block_info(block - 1, &above);
+        const int top_is_rastrillo = above.kind == ENC_BLOCK_CORRIDOR;
         EncRect rects[ENC_MAX_RECTS];
         int n = enc_block_rects(block, rects, ENC_MAX_RECTS);
-        for (int i = 0; i < n; i++) fill_rect(buffer, cam_x, cam_y, &rects[i], top);
+        for (int i = 0; i < n; i++) {
+            if (rects[i].kind != ENC_R_BARRERA) continue;
+            if (rects[i].y == 0 && !top_is_rastrillo) fill_rect(buffer, cam_x, cam_y, &rects[i], top);
+        }
     }
     GroundTarget g = { buffer, cam_x, cam_y };
     if (s_relic_k == ENC_GOLDEN_AFTER - 1 && !s_relic_broken[s_relic_k])
         gfx_ground_ring(&g, s_relic_x, s_relic_y, 18, COL_GOLD & ~BIT(15), 4);
     if (s_fx_timer > 0)
         gfx_ground_ring(&g, s_fx_x, s_fx_y, 26 - s_fx_timer, RGB15(20, 17, 12), 0);
+}
+
+void enc_verja_draw(int sub, int cam_x, int cam_y) {
+#if HW_SHADOWS
+    for (int k = 0; k < ENC_STAGES; k++) {
+        const int block_top = window_top(block_of_encounter(k));
+        if (k < ENC_STAGES - 1 && s_rt[k].verja_lift < ENC_VERJA_H) {
+            const int sy = block_top - ENC_VERJA_H - cam_y;
+            if (sy + ENC_VERJA_H > 0 && sy < 192)
+                hwshadow_add_verja(sub, ENC_FLOOR_X - cam_x, sy, s_rt[k].verja_lift, 0);
+        }
+        if (s_rt[k].back_lift < ENC_VERJA_H) {
+            const int sy = block_top + ENC_BLOCK_H - ENC_VERJA_H - cam_y;
+            if (sy + ENC_VERJA_H > 0 && sy < 192)
+                hwshadow_add_verja(sub, ENC_FLOOR_X - cam_x, sy, s_rt[k].back_lift, 1);
+        }
+    }
+#else
+    (void)sub; (void)cam_x; (void)cam_y;
+#endif
 }
 
 #endif // ENCOUNTERS_PROTO

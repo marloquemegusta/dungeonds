@@ -1,29 +1,29 @@
 {
   "piece": "relicario",
   "size_px": [
-    32,
-    40
+    40,
+    56
   ],
   "content_px": [
-    32,
-    38
+    40,
+    52
   ],
-  "target_width": 32,
-  "scale_factor": 0.06286836935166994,
+  "target_width": 40,
+  "scale_factor": 0.07936507936507936,
   "source_render_px": [
-    509,
-    610
+    504,
+    656
   ],
   "yaw": 45,
-  "tiles_8x8_nonempty": 20,
-  "tiles_8x8_unique": 20,
+  "tiles_8x8_nonempty": 31,
+  "tiles_8x8_unique": 31,
   "shadow_offset_px": [
     -8,
     0
   ],
   "shadow_canvas_px": [
-    40,
-    48
+    48,
+    64
   ],
   "depth_units": "sprite_px"
 }
