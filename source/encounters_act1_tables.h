@@ -89,9 +89,9 @@ static const EncEnemyDef s_p1_t2[] = {
 };
 static const EncPieceDef s_p2_pieces[] = {  // balcon
     { STRIP_PIECE_COLUMNA_ENTERA, 32, 72 },
-    { STRIP_PIECE_COLUMNA_ENTERA, 160, 72 },
+    { STRIP_PIECE_COLUMNA_ENTERA, 128, 72 },
     { STRIP_PIECE_SANTO, 40, 264 },
-    { STRIP_PIECE_SANTO, 168, 264 },
+    { STRIP_PIECE_SANTO, 128, 264 },
 };
 static const EncEnemyDef s_p2_t0[] = {
     { ENC_E_OJO, ENC_S_AWAKE, 104, 30 },
@@ -128,7 +128,7 @@ static const EncEnemyDef s_p2_t2[] = {
     { ENC_E_EXVOTO, ENC_S_AWAKE, 104, 60 },
 };
 static const EncPieceDef s_p3_pieces[] = {  // pinza
-    { STRIP_PIECE_SANTO, 40, 136 },
+    { STRIP_PIECE_SANTO, 0, 136 },
     { STRIP_PIECE_SANTO, 168, 136 },
     { STRIP_PIECE_BANCO_GRUPO4, 0, 0 },
     { STRIP_PIECE_BANCO_GRUPO4, 128, 0 },
@@ -173,7 +173,7 @@ static const EncEnemyDef s_p3_t2[] = {
     { ENC_E_OJO, ENC_S_AWAKE, 104, 30 },
 };
 static const EncPieceDef s_p4_pieces[] = {  // claro
-    { STRIP_PIECE_SANTO, 40, 8 },
+    { STRIP_PIECE_SANTO, 0, 8 },
     { STRIP_PIECE_SANTO, 168, 8 },
 };
 static const EncEnemyDef s_p4_t0[] = {

@@ -186,10 +186,18 @@ def count(enemies):
 # Fases legales de cada pieza en el kit horneado (tools/bake_cathedral_kit.py, catedral_phase_map) y su tamano en tiles.
 # El kit solo coloca una pieza donde su fase del suelo (x mod 16, y mod 16 tiles) existe; sin ajustar, el runtime la mueve
 # hasta media fase (hasta 64 px) y ya no coincide con el catalogo. Aqui se ajusta el catalogo a posiciones legales.
+# santo (3, 1) es la fase espejo que permite el par simetrico (8 + 3 = 11 mod 16 con w=5 tiles).
 LEGAL = {"banco_grupo4": (9, 13, [(3, 0), (3, 8), (0, 0), (0, 8)]),
          "columna_entera": (6, 16, [(7, 9), (7, 1), (3, 9), (3, 1)]),
-         "santo": (5, 9, [(0, 9), (0, 1), (8, 9), (8, 1)])}
+         "santo": (5, 9, [(0, 9), (0, 1), (8, 9), (8, 1), (3, 1)])}
 FLOOR_X0, FLOOR_X1, BLOCK_TILES = 19, 45, 48     # tiles de suelo util (x) y de alto del bloque
+WORLD_AXIS_TILE = 32                              # eje del suelo en tiles: (152 + 208/2) / 8
+PAIR_SYMMETRIC = {"columna_entera", "santo"}     # piezas que se colocan en pares espejo izquierda/derecha
+
+
+def _has_stamp(piece, x, y):
+    """Hay estampa horneada para esa pieza en la fase (x mod 16, y mod 16)."""
+    return any((x & 15) == pc and (y & 15) == pr for pc, pr in LEGAL[piece][2])
 
 
 def snap_piece(piece, lx, ly):
@@ -212,14 +220,68 @@ def snap_piece(piece, lx, ly):
     return (best[1] * 8 - 152, best[2] * 8) if best else (lx, ly)
 
 
+def snap_pair(piece, lx_left, ly, lx_right):
+    """Par espejo exacto respecto al eje del suelo: x_left + x_right = 2*eje - w (tiles de estampa).
+    Las dos posiciones deben tener fase horneada; se elige el par legal mas cercano a las nominales."""
+    if piece not in LEGAL:
+        return (lx_left, ly), (lx_right, ly)
+    w, h, phases = LEGAL[piece]
+    tx_l, tx_r = (152 + lx_left + 4) // 8, (152 + lx_right + 4) // 8
+    ty = (ly + 4) // 8
+    target = 2 * WORLD_AXIS_TILE - w
+    rows = set()
+    for _, pr in phases:
+        y_lo = ty - ((ty - pr) & 15)
+        for iy in (-1, 0, 1):
+            y = y_lo + 16 * iy
+            if 0 <= y and y + h <= BLOCK_TILES:
+                rows.add(y)
+    best = None
+    for y in rows:
+        for pc, _ in phases:
+            x_lo = tx_l - ((tx_l - pc) & 15)
+            for ix in (-1, 0, 1):
+                xl = x_lo + 16 * ix
+                xr = target - xl
+                if xl < FLOOR_X0 or xl + w > FLOOR_X1 or xr < FLOOR_X0 or xr + w > FLOOR_X1:
+                    continue
+                if not _has_stamp(piece, xl, y) or not _has_stamp(piece, xr, y):
+                    continue
+                c = (xl - tx_l) ** 2 + (xr - tx_r) ** 2 + 2 * (y - ty) ** 2
+                if best is None or c < best[0]:
+                    best = (c, xl, xr, y)
+    if best is None:
+        return snap_piece(piece, lx_left, ly), snap_piece(piece, lx_right, ly)
+    return (best[1] * 8 - 152, best[3] * 8), (best[2] * 8 - 152, best[3] * 8)
+
+
+def snap_room(room_id, pieces):
+    """Ajusta las piezas a fases legales; los pares de columnas/estatuas a posiciones espejo respecto al eje."""
+    out = list(pieces)
+    groups = {}
+    for i, (kind, x, y) in enumerate(pieces):
+        if kind in PAIR_SYMMETRIC:
+            groups.setdefault((kind, y), []).append(i)
+    paired = set()
+    for (kind, _y), idxs in groups.items():
+        if len(idxs) != 2:
+            continue
+        i, j = sorted(idxs, key=lambda t: pieces[t][1])
+        left, right = snap_pair(kind, pieces[i][1], pieces[i][2], pieces[j][1])
+        out[i], out[j] = (kind, left[0], left[1]), (kind, right[0], right[1])
+        paired.update((i, j))
+    for i, (kind, x, y) in enumerate(pieces):
+        if i not in paired:
+            nx, ny = snap_piece(kind, x, y)
+            out[i] = (kind, nx, ny)
+    for (kind, x, y), (_k, nx, ny) in zip(pieces, out):
+        if (nx, ny) != (x, y):
+            print("ajuste %s %s: (%d,%d) -> (%d,%d)" % (room_id, kind, x, y, nx, ny))
+    return out
+
+
 for _r in ROOMS:
-    _snapped = []
-    for _k, _x, _y in _r["pieces"]:
-        _nx, _ny = snap_piece(_k, _x, _y)
-        if (_nx, _ny) != (_x, _y):
-            print("ajuste %s %s: (%d,%d) -> (%d,%d)" % (_r["id"], _k, _x, _y, _nx, _ny))
-        _snapped.append((_k, _nx, _ny))
-    _r["pieces"] = _snapped
+    _r["pieces"] = snap_room(_r["id"], _r["pieces"])
 
 
 def main():
