@@ -20,7 +20,7 @@
 #define ENC_COUNT 12             // encounters of the act
 #define ENC_PLANT_COUNT 6
 #define ENC_BARRIER_H 8          // closed barrier: the top 8 px of the encounter block
-#define ENC_WAKE_MARGIN 16       // the encounter wakes when the hero is this far inside its bottom edge
+#define ENC_WAKE_MARGIN 36       // the encounter wakes when the hero is this far inside its bottom edge (the rear barrier closes behind the body)
 #define ENC_SPAWN_AHEAD 420      // enemies of an encounter appear (asleep) when the hero is this close to its entrance
 #define ENC_MAX_RECTS 4
 #define ENC_MAX_PIECES 8
