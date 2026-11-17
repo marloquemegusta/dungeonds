@@ -11,7 +11,7 @@ Primero el estado necesario para retomar el trabajo sin depender del chat; despu
     - ~~Muchas salas no son simétricas y quedan feas: las columnas y las estatuas deberían ir en pares simétricos.~~ *(Resuelto 2026-11-17: fase espejo de `santo` horneada en el kit y ajuste por pares simétricos en el catálogo).*
     - ~~No hay lápidas en las salas.~~ *(Resuelto 2026-11-17: 1–2 lápidas aleatorias por sala respetando el damero y sin solapar piezas).*
     - Los muros del ancho 256 pueden ser más finos.
-    - La IA del Exvoto se siente lista pero hace alguna cosa rara; falta explicar con claridad qué hace (esquiva de la línea de apuntado y zigzag al andar) y revisarla.
+    - ~~La IA del Exvoto se siente lista pero hace alguna cosa rara; falta explicar con claridad qué hace (esquiva de la línea de apuntado y zigzag al andar) y revisarla.~~ *(Explicada y corregida 2026-11-17: cancela la esquiva al soltar el apuntado en vez de congelarse y atenúa el zigzag de 96 a 32 px).*
     - En muchas salas la estrategia óptima es quedarse quieto o recular y matar lo que viene: estudiarlo.
     - Una partida completa se queda corta: solo hay un acto y un jefe *(stages 10 y 14 cubiertos con El Abanderado repetido; faltan los otros 2 jefes).*
   - **Para siguientes sesiones:**
