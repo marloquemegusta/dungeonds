@@ -39,6 +39,8 @@ int strip_start_y(void);
 int strip_height_m(int player_y_px);
 int strip_lane_center_px(int32_t band);
 const Arena *strip_arena(void);
+// Variant "encuentros": rewrites a collision rectangle (window px) of the live window and of the next one.
+void strip_collision_fill_win(int x, int y, int w, int h, int value);
 
 #if STRIP_LAYOUT_DUMP
 // Host-only parity harness (tests/test_strip_layout_parity.py). The sink receives every planned piece

@@ -427,6 +427,7 @@ Tras cerrar la 0.3.1, el usuario quiere dedicar dos versiones al aspecto antes d
     - **El muro y las lancetas pintadas de `make_cathedral_map()` se retiran.**
     - **Herramienta de diseño:** `tools/catedral_editor/editor.html`, para componer secciones a mano estampando las piezas reales. De sus diseños se sacarán las reglas del compositor.
   - **Compositor v2: la pantalla como unidad (decidido 2026-11-11 a partir del diseño del usuario en el editor; sustituye al ciclo de 4 tramos de 256 px).**
+    > **Sustituido (2026-11-16) por el escenario por actos de §6.13.6** cuando se implemente; hasta entonces la ROM sigue con este compositor.
     - **Unidad:** una pantalla de 192 px. El número de pantalla decide el tipo y el azar (hash estable) solo las variantes, igual que antes: mismo cálculo en Python y en C, con test de paridad.
     - **Columnata:** una `columna_entera` por pantalla y lado, a la misma altura en las dos hileras (sprite en x = 64 y x = 416; la base cae en el borde inferior de la pantalla). Periodo de 192 px. Todas enteras: la columna rota y la caída salen de la demo.
     - **Tipos de pantalla, alternados al azar:**
@@ -901,3 +902,82 @@ Sustituye al reparto de reliquias por nivel de §6.12.4 cuando se implemente la 
 - **Cada jefe es un punto de inflexión de la build.** Las reglas de oferta de §6.12.4 (arquetipo compartido, requisitos, una reliquia cogida sale del pool) valen igual.
 - **Dones:** siguen saliendo en cada subida de nivel. La experiencia se espacia para unos **25 niveles** en la partida completa (cifra `[TUNABLE-PLACEHOLDER]`, se ajusta jugando).
 - Los cofres de élite (§6.9.3) quedan como posible fuente extra, por decidir.
+
+#### 6.13.6 Escenario por actos: encuentros y pasillos (decidido 2026-11-16, rama `docs/escenario-actos`; en diseño)
+Sustituye, cuando se implemente, al compositor v2 de la catedral (§6.9.1b), a la marea y la horda aleatoria como sistema general (§6.4) y a las gemas y la experiencia (§6.12.4, §6.13.5). Motivo: el apuntado manual y las coberturas piden enemigos colocados con intención (ADN de *twin-stick*: Enter the Gungeon, Isaac), y la marea castigaba justo lo que se quiere diseñar (pensar el encuentro, desviarse al relicario).
+
+**Qué es juego y qué es lore.** El juego se describe con cinco palabras: partida, acto, encuentro, pasillo, pieza. Nave, coro y Calvario son el lore de cada acto y deciden qué piezas usa; el Vía Crucis y sus estaciones son ambientación y no marcan dónde pasan cosas (§6.13 queda así matizado). El pórtico son las primeras pantallas despejadas del acto I.
+
+**Los actos (qué cuentan y cómo se nota).**
+| Acto | Capítulo | Sitio | Piezas propias |
+| :--- | :--- | :--- | :--- |
+| I | La guerra: donde cayó la Columna | La nave | Las de hoy (columna, estatua, bancos, relicario, velas, lápidas) más sacos, banco volcado y roto, columna rota y **alambre de espino** (nueva: cierra el paso, deja pasar los disparos). Cadáveres de cruzado, más adelante. |
+| II | El juicio: el Tribunal y los monaguillos | El coro | Por decidir (candidatas: sillería, rejas, faroles, atril). |
+| III | La condena: las cruces de los penitentes | El Calvario | Por decidir (candidatas: cruces, cera derretida). |
+- Cada acto está más profanado que el anterior y tiene su propio juego de piezas, que se carga durante el respiro tras el jefe (cada acto tiene su propio presupuesto de tiles).
+- El jefe llega por distancia (al final del acto), no por tiempo.
+
+**Estructura de un acto: encuentro, barrera, pasillo.**
+- **Encuentro: 2 pantallas de alto** (384 px), diseñado a mano con piezas y enemigos colocados. Las dos pantallas de la DS forman parte del combate: lo de arriba no es «lo que viene», también te dispara.
+- **La cámara sigue siempre al héroe** (se apunta en la pantalla de abajo); no hay cámara fija salvo en el jefe (§6.13.1).
+- **Barrera en el borde de arriba del encuentro** (en el acto I, alambre o sacos; en el II, la reja del coro): no se abre hasta matar a todos.
+- **Pasillo de ~2 pantallas** detrás de la barrera: colchón para que, estando arriba del encuentro, la pantalla superior no enseñe el siguiente. Al subir por él asoma la parte baja del siguiente encuentro con sus enemigos dormidos (aviso, no revelación).
+- **Un encuentro despierta al cruzar su borde de abajo.** Los enemigos despiertos te siguen a cualquier parte. Nada reaparece.
+- **Antes de despertar, los enemigos del encuentro no reciben daño** (el rayo los atraviesa). Se vio con el bot (2026-11-17): disparar desde el pasillo a los Exvotos que rezan vaciaba el encuentro sin riesgo.
+- **Catálogo:** 8–10 diseños por acto, encadenados al azar y espejados (izquierda ↔ derecha). Acto I: 10–12 encuentros, ~40–48 pantallas, objetivo 5–6 min divertidos de principio a fin. Cada diseño enseña o examina una cosa.
+- **Reglas de oficio:** nunca hacer aparecer un enemigo encima del jugador; avisar de dónde sale cada uno; mezclar 1–2 que disparan con varios cuerpo a cuerpo; acto I con 3–6 enemigos por encuentro, subiendo poco a poco; nunca un hueco cerrado (siempre dos caminos hasta el héroe).
+- **Sensación:** como el primer piso de Isaac, fácil si lo entiendes, mortal si vas a lo loco. Encuentros con bastantes enemigos que no vienen todos a la vez: unos esperan en su puesto, otros van a por ti, otros entran en una segunda oleada.
+
+**Las piezas tienen papel de combate.**
+- Columnas y estatuas paran los disparos de todos (rama `fix/cobertura-estatuas`). Te protegen del Ojo.
+- Bancos y sacos paran cuerpos y cargas, no disparos. Los enemigos los rodean (campo de navegación), así que ordenan a la horda en hileras. Pendiente de comprobar: si el Cireneo queda aturdido al chocar con un banco como con un muro (si sí, el banco te protege del Cireneo).
+- Bancos destructibles y agacharse con `L` tras bancos y sacos: mecánicas candidatas, no ahora.
+
+**Relicario en cada pasillo: mejora continua y periódica.**
+- Sin gemas ni experiencia. En cada pasillo, a un lado, hay un **relicario**: al romperlo a tiros da **elegir un Don**, un corazón o las dos cosas. Los relicarios decorativos al azar desaparecen.
+- Un relicario por encuentro da unos 30 Dones por partida, del orden de los ~25 niveles de §6.13.5: las cifras de los Dones valen como están y se ajustan jugando.
+- **Reliquias:** 4 por partida, como en §6.13.5. Al vencer a cada jefe, y la primera en un relicario de marco dorado a mitad del acto I (sustituye a la del nivel 5).
+
+**Daño: varios disparos por enemigo.**
+| Enemigo | Disparos con el rayo base (antes) |
+| :--- | :--- |
+| Exvoto y monaguillo | 2 (1) |
+| Ojo | 3 (2) |
+| Cireneo | 3 (2) |
+| Abanderado (jefe) | ~20 (8) |
+- **El rayo sigue solo con el daño que le sobra** al matar; si no mata, se para. Con el rayo base, poner a los enemigos en fila ayuda poco; con Fervor vuelve a barrer filas (el poder se gana). La Lanza de Longinos sigue atravesando a todos sin perder daño.
+- Cifras exactas de vida: `[TUNABLE-PLACEHOLDER]` en la sesión de implementación (actualizar §6.12.10 y `tests/test_guardrails.py`).
+
+**Enemigos por acto (corrige §6.13).** Acto I: Exvotos; el Cireneo desde el primer tercio; **el Ojo desde la segunda mitad** (sin él las columnas no sirven). Acto II: se suma el Abanderado como élite. Acto III: todos. La IA de hoy vale casi tal cual (el Exvoto ya duerme rezando, el Cireneo telegrafía su carga, el Ojo se cubre y solo dos apuntan a la vez). Falta: que el Ojo y el Cireneo esperen en su puesto, despertar el encuentro entero, segunda oleada por arriba y abrir la barrera.
+
+**Tras la primera prueba en la DS (decidido 2026-11-17).** El prototipo resultó trivial: el jugador decidía cuándo empezaba la pelea y la empezaba fuera del alcance de los enemigos, con pocos a la vez y un Cireneo que se esquivaba con un paso. Se decide:
+- **Todos los enemigos están en la sala desde el principio, como en Isaac,** y despiertan todos a la vez al cruzar el borde de abajo (también los que rezan). Los refuerzos desde arriba son un recurso ocasional, no la norma: no tiene sentido temático que salgan de la nada. Sustituye a la «segunda oleada por arriba» como regla general.
+- **Más listos, no esponjas de balas.** La dificultad sale de la IA y de la colocación, no de subir la vida a secas. **El Exvoto esquiva el rayo:** si el héroe le está apuntando con el láser de carga, se aparta de la línea, y los de una fila se abren cada uno a un lado para romperla. No anda en línea recta hacia el héroe.
+- **El Cireneo, perseguidor que embiste:** anda siempre hacia el héroe a buen paso; cuando lo tiene alineado carga muy rápido y con poco aviso; si choca con una columna, estatua, saco o alambre queda aturdido un buen rato (la recompensa por usar el escenario).
+- **El Ojo** solo es difícil cuando hay más presión alrededor; subirle la vida no lo arregla. Su cambio se decide con el catálogo de salas.
+- **Salas rediseñadas** en un catálogo revisado antes de tocar la ROM: cada planta plantea una sola pregunta y sus tres poblaciones (ligera, media y dura) son versiones más duras de esa misma pregunta.
+
+**Ancho de la catedral: 256 px (una pantalla), sustituye a los 512 de §6.2.** Sin desplazamiento lateral: el encuentro entero se ve y todo el ancho queda al alcance del lápiz; el escenario cuesta la mitad de tiles. Muros de ~24 px por lado (suelo útil ~208 px), columnas pegadas al muro como pilastras. Corte orientativo: paso lateral ~24 + bancos 64 + pasillo central 32–48 + bancos 64 + paso lateral ~24. Pide rehacer el muro, el editor (hoy a 512) y la navegación y colisión de la ROM.
+
+**Dificultad: planta y población por separado (como Isaac y Hades).**
+- Cada diseño de encuentro es una **planta** (piezas y barrera) con **3 poblaciones**: ligera, media y dura (cuántos enemigos, de qué tipo y si hay segunda oleada).
+- El acto pide los encuentros **por tramos**: el primer tercio en ligera, el segundo en media y el último en dura. El azar elige planta y espejo; la dificultad la marca la posición. Una planta no sale dos veces seguidas y como mucho dos veces por acto (en tramos distintos).
+- En el acto I los tramos siguen la entrada de enemigos: ligera, solo Exvotos; media, se suman el Cireneo y algún Ojo suelto; dura, mezcla completa y segunda oleada.
+- Cada acto empieza algo por encima de donde acabó el anterior, con su propio catálogo de plantas y sus enemigos nuevos. Último recurso si los Dones corren más que los encuentros: +25 % de vida enemiga por acto.
+- Se equilibra jugando la vara de cada población, para que la curva de los encuentros vaya un poco por delante de la del jugador y el jefe sea el examen.
+
+**Catálogo mínimo del acto I.**
+| Planta | Piezas | Qué enseña |
+| :--- | :--- | :--- |
+| **La procesión** | Dos filas de bancos y pasillo central | Los bancos alinean a los Exvotos; cada uno pide dos disparos: retroceder disparando. |
+| **El embudo** | Sacos que cierran el centro, un solo paso | Leer y esquivar la carga del Cireneo; estrellarlo contra algo. |
+| **El balcón** | Dos columnas arriba (pantalla superior) | Mirar arriba y cubrirse del Ojo; en ligera, Exvotos rezando tras las columnas. |
+| **La pinza** | Centro abierto, piezas en los laterales | Dos frentes a la vez; no meterse en medio. |
+| **El claro** | Sin bancos, estatuas en las esquinas | Arena abierta para la multitud y las oleadas. |
+| **La alambrada** | Alambre de espino que cruza la nave | Los enemigos rodean y tú disparas a través. |
+- 6 plantas × 3 poblaciones = 18 encuentros (36 con espejo) para los 10–12 de una partida. Ideal a medio plazo: 8 plantas.
+- Además: **pasillo** (con relicario a un lado, izquierda o derecha), **pasillo dorado** (el relicario de la primera reliquia), **inicio** (pantallas despejadas) y **pantalla del jefe** (Abanderado).
+- Piezas: columna, estatua, banco, sacos, relicario, velas y lápidas (existen) más **alambre de espino** (nueva) y la **barrera que se abre** (sacos o alambre con comportamiento nuevo).
+- **Provisionales (decidido 2026-11-16):** sacos, alambre y barrera van en el prototipo con un sustituto provisional (rectángulos de color apagado); el usuario hace sus modelos 3D. El muro de 256 también es provisional en el prototipo.
+
+**Siguiente paso:** adaptar el editor a 256 y componer las 6 plantas con sus 3 poblaciones para revisarlas en el móvil; después, prototipo de 3–4 encuentros en la ROM frente a la versión de hoy.
