@@ -400,12 +400,72 @@ static void enc_place_piece(PlanItem *acc, int *n, const EncPiecePlan *p) {
     (*n)++;
 }
 
+// Lápidas of the encounter rooms. A lápida is a flat floor stamp (no footprint, no occlusion): the hero
+// and the horde walk over it. The plants only list physical props, so the composer scatters a couple of
+// tombs per encounter block on free floor, hashed from (seed, block) like the rest of the plan: the same
+// block always gets the same tombs and the incremental preparation may plan it ahead. Corridors keep
+// only their relicario and velas, and the boss room stays clear for the fight.
+// Encounters-only salts (the encounter composer has no Python twin).
+#define S_ENC_LAP_N 0x6c617031u
+#define S_ENC_LAP_SCREEN 0x6c617032u
+#define S_ENC_LAP_PIECE 0x6c617033u
+#define S_ENC_LAP_POS 0x6c617034u
+#define S_ENC_LAP_CANDS 64
+
+static void enc_place_lapidas(PlanItem *acc, int *n_io, int32_t block) {
+    static const uint8_t ids[4] = {
+        STRIP_PIECE_LAPIDA_3X2_CRUZ, STRIP_PIECE_LAPIDA_3X2_CAB,
+        STRIP_PIECE_LAPIDA_2X1_CRUZ, STRIP_PIECE_LAPIDA_2X1_CAB
+    };
+    static const StripStamp *cand_stamp[S_ENC_LAP_CANDS];
+    static int cand_x[S_ENC_LAP_CANDS], cand_y[S_ENC_LAP_CANDS];
+    const int x_lo = ENC_FLOOR_X / 8, x_hi = (ENC_FLOOR_X + ENC_FLOOR_W) / 8;
+    int n = *n_io;
+    int count = 1 + (int)(band_hash(block, S_ENC_LAP_N) % 2u);
+    int screen0 = (int)(band_hash(block, S_ENC_LAP_SCREEN) & 1u);
+    for (int i = 0; i < count; i++) {
+        int top = ((screen0 + i) & 1) * STRIP_SCREEN_TILES;    // one tomb per screen half at most
+        uint8_t piece = ids[band_hash(block, S_ENC_LAP_PIECE + (uint32_t)i) % 4u];
+        int ncand = 0;
+        for (int s = 0; s < (int)g_strip_kit.num_stamps; s++) {
+            const StripStamp *stamp = &g_strip_kit.stamps[s];
+            if (stamp->piece_id != piece) continue;
+            // The kit bakes each lápida at the phases that follow the damero rule: (x - phase_col) % 4
+            // and (y - phase_row) % 2 have to be 0 or the joints of the floor break (DESIGN.md 6.9.1b).
+            for (int x = x_lo; x + (int)stamp->w_tiles <= x_hi && ncand < S_ENC_LAP_CANDS; x++) {
+                if (((x - (int)stamp->phase_col) & 3) != 0) continue;
+                int y_end = top + STRIP_SCREEN_TILES - (int)stamp->h_tiles;
+                for (int y = top + 2; y <= y_end && ncand < S_ENC_LAP_CANDS; y++) {
+                    if (((y - (int)stamp->phase_row) & 1) != 0) continue;
+                    if (!plan_fits(acc, n, stamp, x, y)) continue;    // floor bounds and no prop underneath
+                    cand_stamp[ncand] = stamp;
+                    cand_x[ncand] = x;
+                    cand_y[ncand] = y;
+                    ncand++;
+                }
+            }
+        }
+        if (ncand == 0 || n >= STRIP_BLOCK_MAX_PIECES) continue;
+        int pick = (int)(band_hash(block, S_ENC_LAP_POS + (uint32_t)i) % (uint32_t)ncand);
+        acc[n].stamp = cand_stamp[pick];
+        acc[n].x = cand_x[pick];
+        acc[n].y = cand_y[pick];
+        acc[n].piece_id = piece;
+        acc[n].cat = PLAN_CAT_LAP;
+        n++;
+    }
+    *n_io = n;
+}
+
 static void plan_unit(int32_t block, PlanItem *acc, int *n_io, int unit) {
     if (unit != 0) return;
     EncPiecePlan pieces[ENC_MAX_PIECES];
     int count = enc_block_pieces(block, pieces, ENC_MAX_PIECES);
     int n = *n_io;
     for (int i = 0; i < count; i++) enc_place_piece(acc, &n, &pieces[i]);
+    EncBlock info;
+    enc_block_info(block, &info);
+    if (info.kind == ENC_BLOCK_ENCOUNTER) enc_place_lapidas(acc, &n, block);
     *n_io = n;
 }
 #else
