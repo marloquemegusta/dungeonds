@@ -302,7 +302,7 @@ La prueba de §6.1–6.8 se construye en versiones jugables pequeñas, cada una 
 | **0.3.3** | Personajes: reevaluar los sprites, ajustar tamaño y pasar al estilo definido en la 0.3.2 (§6.9.1b). | 0.3.2 cerrada | **En curso** (Corazón Abierto, Cireneo v2, telegrafía y SFX base en `main`; faltan Exvotos, Ojo del Tribunal y elegir aura) |
 | **0.4** | Progresión dentro de la run: gemas con imán corto, experiencia, subir de nivel con pausa y elegir 1 de 3 mejoras con icono y una línea de efecto (§6.6), HUD de vida, experiencia, nivel y tiempo y controles de §6.5 que falten. Un solo personaje. | Sesión de diseño de mejoras | Diseño en curso (§6.12; faltan cifras) |
 | **0.5** | Enemigos y recompensas: enjambre, élites que sueltan cofre, emboscadas desde abajo con aviso. Pool de 48 y criterio de horda de `TECHNICAL.md` §4.7 (IA por niveles de detalle, separación por rejilla, blit más barato). | Sesión de diseño de enemigos | Pendiente de diseño |
-| **0.6** | Estructura de la run: la Subida de §6.13 (Vía Crucis de 14 estaciones, tres actos, jefes en las estaciones V, X y XIV, encuentros con pantalla bloqueada), tramos hechos a mano por acto. ~15–18 min, ganar matando a El Paso. | Sesiones de escenario y de cada jefe | Estructura decidida (§6.13); faltan escenario y jefes |
+| **0.6** | Estructura de la run: la Subida de §6.13 (Vía Crucis de 14 estaciones, tres actos, jefes en las estaciones V, X y XIV, encuentros con sala cerrada), tramos hechos a mano por acto. ~15–18 min, ganar matando a El Paso. | Sesiones de escenario y de cada jefe | Estructura decidida (§6.13); faltan escenario y jefes |
 
 **Correspondencia con el plan anterior por pasos:**
 - La prueba de horda está medida con 24 enemigos (CPU media del 39 %, sin frames perdidos). El techo se mide en la 0.3.1 y el criterio de 48 activos se cumple en la 0.5.
@@ -559,7 +559,7 @@ Tras cerrar la 0.3.1, el usuario quiere dedicar dos versiones al aspecto antes d
 **Fuera:** minijefe, jefe, biomas y tramos (0.6).
 
 #### 6.9.4 Versión 0.6: estructura de la run completa (borrador)
-**Objetivo:** la prueba completa. Una run de 15–18 min con principio, mitad y final, que se gana matando al jefe. **La estructura está decidida en §6.13 (2026-11-16) y prevalece sobre este borrador** (tres actos en lugar de dos biomas, tres jefes en lugar de minijefe y jefe, encuentros en el pasillo con pantalla bloqueada).
+**Objetivo:** la prueba completa. Una run de 15–18 min con principio, mitad y final, que se gana matando al jefe. **La estructura está decidida en §6.13 (2026-11-16) y prevalece sobre este borrador** (tres actos en lugar de dos biomas, tres jefes en lugar de minijefe y jefe, encuentros en el pasillo con sala cerrada).
 
 **Dentro:**
 - **Mapa por tramos** hechos a mano de una pantalla de alto, encadenados por reglas (abierto, estrechamiento, sala lateral con cofre o élite, coberturas bajas), en lugar de las bandas procedurales de la 0.3 (§6.2). Pipeline lab → baker para los tramos.
@@ -874,7 +874,7 @@ Sustituye al nivel infinito de la 0.3 y concreta §6.1 y la 0.6 (§6.9.4). Motiv
 #### 6.13.1 Encuentros con jefe
 - **En el mismo pasillo, no en una sala aparte.** Al llegar a la estación del jefe:
   1. **Presentación:** pantalla de intro del jefe con un zoom sobre él y su nombre (presentación concreta en su propia ronda A/B/C).
-  2. **Pantalla bloqueada:** la cámara se fija y el jugador no puede avanzar ni retroceder fuera de esa pantalla hasta que gane o muera.
+  2. **Sala cerrada:** el jugador no puede avanzar ni retroceder fuera de la sala del jefe hasta que gane o muera. La cámara no se fija: sigue al héroe (§6.13.7, corregido 2026-11-17).
   3. **Se para todo lo demás:** la marea se detiene y deja de aparecer la horda aleatoria.
 - **Encuentro coreografiado (por defecto):** el jefe llega con una escolta definida que se renueva desde arriba según la vas matando; por ejemplo, el Abanderado con varios Ojos y algún Cireneo. Qué escolta lleva cada jefe y a qué ritmo vuelve se decide en su sesión.
 - **Alternativa por jefe: el jefe solo,** reforzado para que sea interesante sin escolta. Se elige una u otra en la sesión de cada jefe.
@@ -920,7 +920,7 @@ Sustituye, cuando se implemente, al compositor v2 de la catedral (§6.9.1b), a l
 
 **Estructura de un acto: encuentro, barrera, pasillo.**
 - **Encuentro: 2 pantallas de alto** (384 px), diseñado a mano con piezas y enemigos colocados. Las dos pantallas de la DS forman parte del combate: lo de arriba no es «lo que viene», también te dispara.
-- **La cámara sigue siempre al héroe** (se apunta en la pantalla de abajo); no hay cámara fija salvo en el jefe (§6.13.1).
+- **La cámara sigue siempre al héroe** (se apunta en la pantalla de abajo); no hay cámara fija, tampoco en el jefe (§6.13.7).
 - **Barrera en el borde de arriba del encuentro** (en el acto I, alambre o sacos; en el II, la reja del coro): no se abre hasta matar a todos.
 - **Pasillo de ~2 pantallas** detrás de la barrera: colchón para que, estando arriba del encuentro, la pantalla superior no enseñe el siguiente. Al subir por él asoma la parte baja del siguiente encuentro con sus enemigos dormidos (aviso, no revelación).
 - **Un encuentro despierta al cruzar su borde de abajo.** Los enemigos despiertos te siguen a cualquier parte. Nada reaparece.
