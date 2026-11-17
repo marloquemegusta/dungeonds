@@ -200,6 +200,24 @@ Estilo: A
 
 - **01 El Corazón Abierto** (2026-11-15): v1 con arranque en negro; v2 sin negro y frase fuerte primero; v3 recortada a 38 s (iteraciones en `guiones_iteraciones.md`). La v2 retuvo algo mejor que la v3.
 - **03 Jimena y Aldonza** (2026-11-16): primera versión con puesta en escena plano a plano y paso natural. Es el modelo para los siguientes.
+- **08 La Catedral que no termina** (2026-11-17): `assets/videos/lore01_08_la_catedral_que_no_termina.mp4`, estilo A, 67,9 s. TikTok a mano; Instagram y YouTube por Metricool. Textos de los posts:
+  - **Título (YouTube y portada):** «La catedral que no termina · Códice». Alternativa: «Rezar aleja el altar · Códice».
+  - **TikTok e Instagram:**
+    > Dicen que el Altar retrocede un paso por cada plegaria de misericordia.
+    > Por eso el Tribunal de la Luz prohibió rezarlas.
+    >
+    > La Iglesia prometió la salvación a quien llegara hasta él.
+    > Nadie ha llegado. La cruzada nunca se dio por terminada.
+    >
+    > Próximamente en tu Nintendo DS.
+    >
+    > #pixelart #nintendods #gamedev #indiedev #darkfantasy #gothic #lore #homebrew
+  - **Descripción de YouTube:**
+    > Valdenoche levantó una catedral para que el cielo volviera a responder. Un día, el altar empezó a alejarse. La Columna de Lázaro entró armada para alcanzarlo, y al otro lado la esperaban sus propios vecinos.
+    >
+    > Próximamente en tu Nintendo DS.
+    >
+    > #Shorts #pixelart #nintendods #gamedev #darkfantasy
 
 ## Calendario: un vídeo al día, más cuidado
 
