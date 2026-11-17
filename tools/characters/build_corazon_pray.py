@@ -7,7 +7,7 @@ Genera, con el MISMO pipeline y ajustes que corazon_walk (plantilla assets/sprit
 Uso (desde la raiz del worktree, Python normal; llama a Blender y a Node/Playwright headless):
   python tools/characters/build_corazon_pray.py [--root <raiz>] [--only rezar|levantarse] [--frames N]
 Pasos: (1) Blender -b -P este mismo script -- <raiz> : retarget por delta de rotacion de las animaciones Mixamo
-(Y-up, 65 huesos mixamorig) sobre el rig del Corazon (corazon.fbx), escalando la cadera por la altura de cadera
+(Y-up, 65 huesos mixamorig) sobre el rig del Corazon (source/corazon.fbx), escalando la cadera por la altura de cadera
 (como build_ojo.py), y exporta corazon_rezar.fbx / corazon_levantarse.fbx en assets/models/characters/corazon/;
 (2) tools/lab/export_character_headless.cjs con la plantilla de corazon_walk (misma camara, escala, luz y
 altura de pies) y la duracion por fotograma (animTicks, 26 ms por tick) acorde al clip.
@@ -41,7 +41,7 @@ def blender_main(root):
         p = os.path.join(root, rel)
         return p if os.path.exists(p) else os.path.join(main, rel)
 
-    char_fbx = find('assets/models/characters/corazon/corazon.fbx')
+    char_fbx = find('assets/models/characters/corazon/source/corazon.fbx')
     out_dir = os.path.join(root, 'assets/models/characters/corazon')
     only = os.environ.get('PRAY_ONLY')
     for name, (anim, nframes, _t, loop) in CLIPS.items():
