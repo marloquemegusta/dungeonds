@@ -7,7 +7,7 @@ ROOT = Path(__file__).resolve().parents[1]
 SOURCES = sorted((ROOT / "source").glob("*.c")) + sorted((ROOT / "include").glob("*.h"))
 
 # Archivos que pintan efectos visuales (VFX): deben usar paletas apagadas.
-VFX_FILES = ["weapons.c", "gems.c", "enemy_laser.c", "groundfx.c", "enemy_ai.c", "grenade.c", "exvoto_melt.c"]
+VFX_FILES = ["weapons.c", "gems.c", "enemy_laser.c", "groundfx.c", "enemy_ai.c", "grenade.c", "exvoto_melt.c", "boss.c"]
 
 # Excepciones explicitas (archivo, fragmento de la linea). Hoy contienen blanco puro.
 VFX_EXCEPTIONS = [

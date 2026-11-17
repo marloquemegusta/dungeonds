@@ -97,7 +97,10 @@ static uint32_t ups_rng_next(void) {
 
 static int rng_below(int n) { return (int)(ups_rng_next() % (uint32_t)n); }   // once per offer card, not per frame
 
+static int s_force_relic;      // variant "encuentros": the next offer is a Reliquia
+
 void upgrades_reset(uint32_t seed) {
+    s_force_relic = 0;
     s_xp = 0;
     s_level = 1;
     s_pending = 0;
@@ -108,6 +111,7 @@ void upgrades_reset(uint32_t seed) {
     s_offer_relic = 0;
     s_rng = seed ? seed : 1u;
     s_dbg_seen_seq = g_upg_debug.apply_seq;
+    g_upg_debug.force_levelups = 0;   // a queued debug level-up never survives into the new run
 }
 
 int upgrades_level(void) { return s_level; }
@@ -136,8 +140,19 @@ void upgrades_add_xp(int amount) {
     if (s_xp >= upgrades_xp_needed()) s_xp = upgrades_xp_needed() - 1;   // queue full: keep the bar below the edge
 }
 
+// Variant "encuentros": Reliquias do not come by level (there are no levels): the golden relicario asks for one.
+void upgrades_queue_relic(void) {
+    s_force_relic = 1;
+    upgrades_queue_levelup();
+}
+
 static int is_relic_level(int level) {
+#if ENCOUNTERS_PROTO
+    (void)level;
+    return s_force_relic;
+#else
     return level <= UPG_LAST_RELIC_LEVEL && (level & (UPG_RELIC_EVERY - 1)) == 0;
+#endif
 }
 
 static uint32_t owned_tags(void) {
@@ -272,6 +287,7 @@ void upgrades_choose(int i) {
     else heal_one();
     s_pending--;
     s_offer_level++;
+    if (s_offer_relic) s_force_relic = 0;      // a forced Reliquia offer is spent (variant "encuentros")
 }
 
 static const UpgradeDef *def_of(const UpgradeOffer *o) {

@@ -41,8 +41,13 @@ typedef struct {
 
 // Charger (DESIGN.md 6.9.1): APPROACH (CHASE) -> TELEGRAPH -> CHARGE -> RECOVER -> CHASE.
 #define CHARGER_ENGAGE_DIST 160     // [TUNABLE-PLACEHOLDER] ground px: with a clear view this close it telegraphs
+#if ENCOUNTERS_PROTO
+#define CHARGER_CHARGE_FRAMES 45    // [TUNABLE-PLACEHOLDER] v2 (variant "encuentros"): ~175 px at 1000
+#define CHARGER_RECOVER_FRAMES 20   // [TUNABLE-PLACEHOLDER] v2: short recovery when the charge hits nothing
+#else
 #define CHARGER_CHARGE_FRAMES 63    // [TUNABLE-PLACEHOLDER] frames of charge (~160 px at 650)
 #define CHARGER_RECOVER_FRAMES 60   // [TUNABLE-PLACEHOLDER] frames standing still after the charge, vulnerable
+#endif
 #define CHARGER_STUN_WALL_FRAMES 90 // [TUNABLE-PLACEHOLDER] stunned after hitting a wall or column
 #define CHARGER_STUN_HIT_FRAMES 60  // [TUNABLE-PLACEHOLDER] stunned by a shotgun hit during telegraph or charge
 #define CHARGER_HIT_RADIUS 14       // [TUNABLE-PLACEHOLDER] ground px: the charge hurts the player this close
@@ -87,7 +92,13 @@ static inline int enemy_type_char_id(EnemyType type) {
 // State a freshly spawned or woken enemy starts in.
 #define ENEMY_INITIAL_STATE(type) ENEMY_STATE_CHASE
 
-extern const EnemyTuning g_enemy_tuning[NUM_ENEMY_TYPES];
+// The variant "encuentros" overwrites the lives at boot (enc_init, tools/encuentros/acto1.json): its table is writable.
+#if ENCOUNTERS_PROTO
+#define ENEMY_TUNING_CONST
+#else
+#define ENEMY_TUNING_CONST const
+#endif
+extern ENEMY_TUNING_CONST EnemyTuning g_enemy_tuning[NUM_ENEMY_TYPES];
 
 // ---------------------------------------------------------------------------
 // 2. Generic Enemy Pool

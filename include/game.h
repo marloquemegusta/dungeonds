@@ -5,6 +5,15 @@
 #include <stdio.h>
 #include <string.h>
 
+// Build variant "encuentros": act I played as encounters and corridors (DESIGN.md 6.13.6, include/encounters_act1.h).
+#ifndef ENCOUNTERS_PROTO
+#define ENCOUNTERS_PROTO 0
+#endif
+// Variant "encuentros-bot": the act played by an autopilot to measure its difficulty (tools/encuentros/BRIEF_bot.md).
+#ifndef ENC_BOT
+#define ENC_BOT 0
+#endif
+
 #define SCREEN_W 256
 #define SCREEN_H 192
 

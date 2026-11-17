@@ -1,0 +1,66 @@
+{
+  "name": "exvoto_stand_up",
+  "model": "exvoto_stand_up.fbx",
+  "animation": "exvoto_stand_up (2.30s)",
+  "directions": [
+    "S",
+    "SW",
+    "W",
+    "NW",
+    "N",
+    "NE",
+    "E",
+    "SE"
+  ],
+  "framesPerDirection": 24,
+  "frameSize": "160x160",
+  "spritesheet": {
+    "columns": 24,
+    "rows": 8,
+    "width": 3840,
+    "height": 1280,
+    "alpha": true
+  },
+  "anchor": [
+    80,
+    137
+  ],
+  "dirGroundAnchors": [
+    137,
+    137,
+    137,
+    137,
+    137,
+    137,
+    137,
+    137
+  ],
+  "shadowSize": [
+    320,
+    320
+  ],
+  "stride3dMeters": 9.082,
+  "strideRatio": 5.138,
+  "ticksPerFrame": 11,
+  "stridePixels": 822.01,
+  "speedFixed8_8": 89,
+  "inPlace": true,
+  "rigScale": 1,
+  "cameraElevationDegrees": 30,
+  "contrast": 1,
+  "saturation": 1,
+  "neckPitchDegrees": 0,
+  "displace": 0,
+  "brightness": 1,
+  "webglShadowQuality": 16,
+  "normalStrength": 0.5,
+  "shadowSoftness": 2,
+  "supersample": 4,
+  "legibility": "c2",
+  "boneShader": false,
+  "renderEngine": "Three.js WebGL (browser)",
+  "lightPreset": "neutral",
+  "outlineMode": "none",
+  "fitZoom": 1.0917705665664497,
+  "toneMapping": "neutral"
+}

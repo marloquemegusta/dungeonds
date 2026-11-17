@@ -40,6 +40,7 @@ void upgrades_reset(uint32_t seed);
 
 void upgrades_add_xp(int amount);
 void upgrades_queue_levelup(void);          // debug (X key): one extra level-up at once
+void upgrades_queue_relic(void);            // variant "encuentros": queues an offer that is a Reliquia (golden relicario)
 int upgrades_pending(void);                 // level-ups waiting for a choice
 int upgrades_level(void);
 int upgrades_xp(void);

@@ -1,0 +1,84 @@
+{
+  "_doc": "Acto I, prototipo (DESIGN.md 6.13.6). Coordenadas locales: lx 0..208 = suelo util (mundo x = 152 + lx); ly 0..384 dentro del bloque, 0 = borde de arriba (barrera), 384 = entrada por abajo. Piezas: x,y = esquina sup. izq. de la huella aproximada; se ajustan a la fase legal mas cercana. Enemigos: x,y = centro de los pies. state: pray (Exvoto rezando), dormant (espera hasta que despierte el encuentro), awake (despierto al despertar el encuentro). Obstaculos provisionales: rect {x,y,w,h} con kind sacos|alambre (sacos bloquea cuerpos; alambre bloquea cuerpos, deja pasar disparos). 'wave2': entra por arriba (ly 8..24) cuando la primera oleada queda en <= 1 vivo.",
+  "floor_w": 208,
+  "block_h": 384,
+  "hp": {"exvoto": 250, "monaguillo": 100, "cireneo": 400, "ojo": 400, "abanderado": 5000},
+  "act": {
+    "start_clear_blocks": 2,
+    "encounters": 12,
+    "tiers": ["ligera", "ligera", "ligera", "ligera", "media", "media", "media", "media", "dura", "dura", "dura", "dura"],
+    "golden_relic_after": 6,
+    "heal_every": 3,
+    "rules": "planta por hash estable; nunca la misma dos veces seguidas; como mucho 2 veces por acto; espejo por hash"
+  },
+  "plantas": {
+    "procesion": {
+      "pieces": [
+        {"piece": "banco_grupo4", "x": 0, "y": 40}, {"piece": "banco_grupo4", "x": 136, "y": 40},
+        {"piece": "banco_grupo4", "x": 0, "y": 232}, {"piece": "banco_grupo4", "x": 136, "y": 232}
+      ],
+      "obstacles": [],
+      "ligera": {"enemies": [["exvoto",104,110,"pray"],["exvoto",104,170,"pray"],["exvoto",104,230,"pray"],["exvoto",104,290,"pray"]]},
+      "media": {"enemies": [["exvoto",104,80,"pray"],["exvoto",104,130,"pray"],["exvoto",104,180,"pray"],["exvoto",104,230,"pray"],["exvoto",104,280,"pray"],["exvoto",104,320,"pray"],["cireneo",104,24,"dormant"]]},
+      "dura": {"enemies": [["exvoto",104,80,"pray"],["exvoto",104,130,"pray"],["exvoto",104,180,"pray"],["exvoto",104,230,"pray"],["exvoto",104,280,"pray"],["exvoto",30,188,"pray"],["exvoto",178,188,"pray"],["ojo",40,20,"dormant"],["ojo",168,20,"dormant"]],
+               "wave2": [["exvoto",60,16],["exvoto",104,16],["exvoto",148,16]]}
+    },
+    "embudo": {
+      "pieces": [{"piece": "banco_grupo4", "x": 0, "y": 250}],
+      "obstacles": [{"kind": "sacos", "x": 0, "y": 180, "w": 152, "h": 24}],
+      "ligera": {"enemies": [["exvoto",40,120,"pray"],["exvoto",80,130,"pray"],["exvoto",120,110,"pray"],["exvoto",180,140,"pray"]]},
+      "media": {"enemies": [["cireneo",40,80,"dormant"],["exvoto",100,120,"pray"],["exvoto",140,100,"pray"],["exvoto",180,130,"pray"],["ojo",150,20,"dormant"]]},
+      "dura": {"enemies": [["cireneo",40,80,"dormant"],["cireneo",170,60,"dormant"],["exvoto",90,120,"pray"],["exvoto",130,110,"pray"],["exvoto",180,150,"pray"],["exvoto",60,140,"pray"],["ojo",104,20,"dormant"],["ojo",20,24,"dormant"]]}
+    },
+    "balcon": {
+      "pieces": [
+        {"piece": "columna_entera", "x": 36, "y": 90}, {"piece": "columna_entera", "x": 132, "y": 90},
+        {"piece": "santo", "x": 40, "y": 260}, {"piece": "santo", "x": 136, "y": 260}
+      ],
+      "obstacles": [],
+      "ligera": {"enemies": [["exvoto",56,40,"pray"],["exvoto",152,40,"pray"],["exvoto",104,60,"pray"],["exvoto",104,140,"pray"]]},
+      "media": {"enemies": [["ojo",104,40,"dormant"],["exvoto",60,170,"awake"],["exvoto",104,160,"awake"],["exvoto",150,170,"awake"],["exvoto",104,120,"awake"]]},
+      "dura": {"enemies": [["ojo",56,30,"dormant"],["ojo",152,30,"dormant"],["cireneo",104,120,"dormant"],["exvoto",60,170,"awake"],["exvoto",104,160,"awake"],["exvoto",150,170,"awake"],["exvoto",104,200,"awake"]],
+               "wave2": [["exvoto",60,16],["exvoto",104,16],["exvoto",148,16]]}
+    },
+    "pinza": {
+      "pieces": [
+        {"piece": "santo", "x": 8, "y": 150}, {"piece": "santo", "x": 168, "y": 150},
+        {"piece": "banco_grupo4", "x": 0, "y": 20}, {"piece": "banco_grupo4", "x": 136, "y": 20}
+      ],
+      "obstacles": [],
+      "ligera": {"enemies": [["exvoto",24,290,"pray"],["exvoto",24,330,"pray"],["exvoto",184,290,"pray"],["exvoto",184,330,"pray"]]},
+      "media": {"enemies": [["exvoto",24,270,"pray"],["exvoto",24,300,"pray"],["exvoto",24,330,"pray"],["exvoto",184,270,"pray"],["exvoto",184,300,"pray"],["exvoto",184,330,"pray"],["cireneo",104,30,"dormant"],["ojo",104,12,"dormant"]]},
+      "dura": {"enemies": [["exvoto",24,250,"pray"],["exvoto",24,280,"pray"],["exvoto",24,310,"pray"],["exvoto",24,340,"pray"],["exvoto",184,250,"pray"],["exvoto",184,280,"pray"],["exvoto",184,310,"pray"],["exvoto",184,340,"pray"],["ojo",104,20,"dormant"]],
+               "wave2": [["exvoto",60,16],["cireneo",104,16],["exvoto",148,16]]}
+    },
+    "claro": {
+      "pieces": [
+        {"piece": "santo", "x": 8, "y": 20}, {"piece": "santo", "x": 168, "y": 20},
+        {"piece": "vela", "x": 48, "y": 40}, {"piece": "vela", "x": 152, "y": 40}
+      ],
+      "obstacles": [],
+      "ligera": {"enemies": [["exvoto",60,40,"awake"],["exvoto",90,60,"awake"],["exvoto",120,40,"awake"],["exvoto",150,60,"awake"],["exvoto",75,90,"awake"],["exvoto",135,90,"awake"]]},
+      "media": {"enemies": [["exvoto",50,40,"awake"],["exvoto",80,60,"awake"],["exvoto",110,40,"awake"],["exvoto",140,60,"awake"],["exvoto",170,40,"awake"],["exvoto",65,90,"awake"],["exvoto",104,90,"awake"],["exvoto",145,90,"awake"]],
+                "wave2": [["exvoto",40,16],["exvoto",104,16],["exvoto",170,16]]},
+      "dura": {"enemies": [["exvoto",50,40,"awake"],["exvoto",80,60,"awake"],["exvoto",110,40,"awake"],["exvoto",140,60,"awake"],["exvoto",170,40,"awake"],["exvoto",65,90,"awake"],["exvoto",104,90,"awake"],["exvoto",145,90,"awake"],["cireneo",40,20,"dormant"],["cireneo",170,20,"dormant"],["ojo",104,16,"dormant"]]}
+    },
+    "alambrada": {
+      "pieces": [{"piece": "columna_entera", "x": 150, "y": 50}],
+      "obstacles": [{"kind": "alambre", "x": 0, "y": 150, "w": 140, "h": 12}, {"kind": "alambre", "x": 68, "y": 250, "w": 140, "h": 12}],
+      "ligera": {"enemies": [["exvoto",30,90,"pray"],["exvoto",70,110,"pray"],["exvoto",110,90,"pray"],["exvoto",180,200,"pray"]]},
+      "media": {"enemies": [["exvoto",30,90,"pray"],["exvoto",70,110,"pray"],["exvoto",110,90,"pray"],["exvoto",30,210,"pray"],["ojo",180,30,"dormant"]]},
+      "dura": {"enemies": [["exvoto",30,90,"pray"],["exvoto",70,110,"pray"],["exvoto",110,90,"pray"],["exvoto",30,210,"pray"],["exvoto",60,210,"pray"],["exvoto",100,200,"pray"],["ojo",180,30,"dormant"],["ojo",100,20,"dormant"],["cireneo",40,40,"dormant"]],
+               "wave2": [["exvoto",60,16],["exvoto",104,16],["exvoto",148,16]]}
+    }
+  },
+  "pasillo": {
+    "pieces": [{"piece": "relicario", "x": 84, "y": 170}, {"piece": "vela", "x": 44, "y": 180}, {"piece": "vela", "x": 148, "y": 210}],
+    "relic_target": {"x": 84, "y": 200, "hp": 150},
+    "mirror": "alterna lado por indice de pasillo"
+  },
+  "boss": {
+    "enemies": [["abanderado",104,80,"dormant"]],
+    "note": "bloque con barrera arriba; al vencer, texto VICTORIA (prototipo)"
+  }
+}

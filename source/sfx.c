@@ -10,6 +10,9 @@
 #endif
 
 #define SFX_PAN_CENTER 128
+/* BGM tracks in NitroFS: the one place that names them (the boss track is being redone). */
+#define SFX_BGM_FILE_NORMAL "nitro:/bgm.raw"
+#define SFX_BGM_FILE_BOSS "nitro:/boss.raw"
 #define BGM_SAMPLE_RATE 11025
 #define BGM_BUFFER_LEN 2048
 
@@ -24,6 +27,8 @@ static FILE *s_bgm_file = NULL;
 static int s_audio_ready = 0;
 static int s_stream_active = 0;
 static int s_bgm_paused = 0;
+static int s_bgm_track = 0;
+static mm_sfxhand s_voice_handle = 0;
 static long s_bgm_saved_pos = 0;
 
 static const mm_word s_mm_ids[SND_COUNT] = {
@@ -32,6 +37,8 @@ static const mm_word s_mm_ids[SND_COUNT] = {
     [SND_ENEMY_HIT]    = SFX_ENEMY_HIT,
     [SND_ENEMY_DEATH]  = SFX_ENEMY_DEATH,
     [SND_PLAYER_HURT]  = SFX_PLAYER_HURT,
+    [SND_ABANDERADO_INTRO]  = SFX_ABANDERADO_INTRO,
+    [SND_ABANDERADO_DEFEAT] = SFX_ABANDERADO_DERROTA,
 };
 #endif
 
@@ -47,6 +54,8 @@ static const SfxMixRule s_mix_rules[SND_COUNT] = {
     [SND_ENEMY_HIT]    = { .volume = 190, .cooldown = 2, .jitter_pct = 12 },
     [SND_ENEMY_DEATH]  = { .volume = 220, .cooldown = 3, .jitter_pct = 6  },
     [SND_PLAYER_HURT]  = { .volume = 255, .cooldown = 0, .jitter_pct = 0  },
+    [SND_ABANDERADO_INTRO]  = { .volume = 255, .cooldown = 0, .jitter_pct = 0 },
+    [SND_ABANDERADO_DEFEAT] = { .volume = 255, .cooldown = 0, .jitter_pct = 0 },
 };
 
 static uint32_t next_rng(void) {
@@ -186,7 +195,7 @@ void sfx_start_bgm(void) {
     s_bgm_paused = 0;
     if (!s_audio_ready) return;
     if (!s_bgm_file) {
-        s_bgm_file = fopen("nitro:/bgm.raw", "rb");
+        s_bgm_file = fopen(s_bgm_track ? SFX_BGM_FILE_BOSS : SFX_BGM_FILE_NORMAL, "rb");
     } else {
         fseek(s_bgm_file, 0, SEEK_SET);
     }
@@ -204,6 +213,48 @@ void sfx_stop_bgm(void) {
     }
     s_bgm_paused = 0;
     s_bgm_saved_pos = 0;
+#endif
+}
+
+void sfx_set_bgm_track(int track) {
+    track = track ? 1 : 0;
+    if (track == s_bgm_track) return;
+    s_bgm_track = track;
+#ifdef ARM9
+    int was_running = s_stream_active;
+    if (was_running) sfx_stop_bgm();
+    if (s_bgm_file) {
+        fclose(s_bgm_file);
+        s_bgm_file = NULL;
+    }
+    s_bgm_saved_pos = 0;
+    if (was_running) sfx_start_bgm();
+#endif
+}
+
+void sfx_play_voice(SfxId id) {
+    sfx_stop_voice();
+#ifdef ARM9
+    if (!s_audio_ready || id < 0 || id >= SND_COUNT) return;
+    mm_sound_effect eff = {
+        .id      = s_mm_ids[id],
+        .rate    = 1024,
+        .handle  = 0,
+        .volume  = s_mix_rules[id].volume,
+        .panning = SFX_PAN_CENTER,
+    };
+    s_voice_handle = mmEffectEx(&eff);
+#else
+    (void)id;
+#endif
+}
+
+void sfx_stop_voice(void) {
+#ifdef ARM9
+    if (s_voice_handle) {
+        mmEffectCancel(s_voice_handle);
+        s_voice_handle = 0;
+    }
 #endif
 }
 

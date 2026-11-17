@@ -1,0 +1,1435 @@
+{
+ "_doc": "Acto I, prototipo (DESIGN.md 6.13.6). Coordenadas locales: lx 0..208 = suelo util (mundo x = 152 + lx); ly 0..384 dentro del bloque, 0 = borde de arriba (barrera), 384 = entrada por abajo. Piezas: x,y = esquina sup. izq. de la huella aproximada; se ajustan a la fase legal mas cercana. Enemigos: x,y = centro de los pies. state: pray (Exvoto rezando), dormant (espera hasta que despierte el encuentro), awake (despierto al despertar el encuentro). Obstaculos provisionales: rect {x,y,w,h} con kind sacos|alambre (sacos bloquea cuerpos; alambre bloquea cuerpos, deja pasar disparos). 'wave2': entra por arriba (ly 8..24) cuando la primera oleada queda en <= 1 vivo. v2 (2026-11-17): todos presentes desde el principio y despiertos al cruzar el borde (state awake); sin wave2. Generado por catalogo_v2.py.",
+ "floor_w": 208,
+ "block_h": 384,
+ "hp": {
+  "exvoto": 250,
+  "monaguillo": 100,
+  "cireneo": 600,
+  "ojo": 400,
+  "abanderado": 5500
+ },
+ "act": {
+  "start_clear_blocks": 2,
+  "encounters": 12,
+  "tiers": [
+   "ligera",
+   "ligera",
+   "ligera",
+   "ligera",
+   "media",
+   "media",
+   "media",
+   "media",
+   "dura",
+   "dura",
+   "dura",
+   "dura"
+  ],
+  "golden_relic_after": 6,
+  "heal_every": 3,
+  "rules": "planta por hash estable; nunca la misma dos veces seguidas; como mucho 2 veces por acto; espejo por hash"
+ },
+ "plantas": {
+  "procesion": {
+   "pieces": [
+    {
+     "piece": "banco_grupo4",
+     "x": 0,
+     "y": 64
+    },
+    {
+     "piece": "banco_grupo4",
+     "x": 128,
+     "y": 64
+    },
+    {
+     "piece": "banco_grupo4",
+     "x": 0,
+     "y": 256
+    },
+    {
+     "piece": "banco_grupo4",
+     "x": 128,
+     "y": 256
+    }
+   ],
+   "obstacles": [],
+   "ligera": {
+    "enemies": [
+     [
+      "exvoto",
+      94,
+      70,
+      "awake"
+     ],
+     [
+      "exvoto",
+      114,
+      70,
+      "awake"
+     ],
+     [
+      "exvoto",
+      94,
+      120,
+      "awake"
+     ],
+     [
+      "exvoto",
+      114,
+      120,
+      "awake"
+     ],
+     [
+      "exvoto",
+      94,
+      170,
+      "awake"
+     ],
+     [
+      "exvoto",
+      114,
+      170,
+      "awake"
+     ],
+     [
+      "exvoto",
+      94,
+      250,
+      "awake"
+     ],
+     [
+      "exvoto",
+      114,
+      250,
+      "awake"
+     ]
+    ]
+   },
+   "media": {
+    "enemies": [
+     [
+      "exvoto",
+      94,
+      60,
+      "awake"
+     ],
+     [
+      "exvoto",
+      114,
+      60,
+      "awake"
+     ],
+     [
+      "exvoto",
+      94,
+      110,
+      "awake"
+     ],
+     [
+      "exvoto",
+      114,
+      110,
+      "awake"
+     ],
+     [
+      "exvoto",
+      94,
+      160,
+      "awake"
+     ],
+     [
+      "exvoto",
+      114,
+      160,
+      "awake"
+     ],
+     [
+      "exvoto",
+      94,
+      250,
+      "awake"
+     ],
+     [
+      "exvoto",
+      114,
+      250,
+      "awake"
+     ],
+     [
+      "exvoto",
+      30,
+      180,
+      "awake"
+     ],
+     [
+      "exvoto",
+      178,
+      180,
+      "awake"
+     ],
+     [
+      "cireneo",
+      104,
+      20,
+      "awake"
+     ]
+    ]
+   },
+   "dura": {
+    "enemies": [
+     [
+      "exvoto",
+      94,
+      60,
+      "awake"
+     ],
+     [
+      "exvoto",
+      114,
+      60,
+      "awake"
+     ],
+     [
+      "exvoto",
+      94,
+      110,
+      "awake"
+     ],
+     [
+      "exvoto",
+      114,
+      110,
+      "awake"
+     ],
+     [
+      "exvoto",
+      94,
+      160,
+      "awake"
+     ],
+     [
+      "exvoto",
+      114,
+      160,
+      "awake"
+     ],
+     [
+      "exvoto",
+      94,
+      250,
+      "awake"
+     ],
+     [
+      "exvoto",
+      114,
+      250,
+      "awake"
+     ],
+     [
+      "exvoto",
+      30,
+      180,
+      "awake"
+     ],
+     [
+      "exvoto",
+      50,
+      180,
+      "awake"
+     ],
+     [
+      "exvoto",
+      158,
+      180,
+      "awake"
+     ],
+     [
+      "exvoto",
+      178,
+      180,
+      "awake"
+     ],
+     [
+      "cireneo",
+      104,
+      20,
+      "awake"
+     ],
+     [
+      "ojo",
+      36,
+      14,
+      "awake"
+     ],
+     [
+      "ojo",
+      172,
+      14,
+      "awake"
+     ]
+    ]
+   }
+  },
+  "embudo": {
+   "pieces": [],
+   "obstacles": [
+    {
+     "kind": "sacos",
+     "x": 0,
+     "y": 200,
+     "w": 150,
+     "h": 24
+    }
+   ],
+   "ligera": {
+    "enemies": [
+     [
+      "ojo",
+      60,
+      40,
+      "awake"
+     ],
+     [
+      "exvoto",
+      40,
+      110,
+      "awake"
+     ],
+     [
+      "exvoto",
+      90,
+      110,
+      "awake"
+     ],
+     [
+      "exvoto",
+      140,
+      110,
+      "awake"
+     ],
+     [
+      "exvoto",
+      60,
+      160,
+      "awake"
+     ],
+     [
+      "exvoto",
+      120,
+      160,
+      "awake"
+     ],
+     [
+      "exvoto",
+      180,
+      160,
+      "awake"
+     ]
+    ]
+   },
+   "media": {
+    "enemies": [
+     [
+      "ojo",
+      40,
+      40,
+      "awake"
+     ],
+     [
+      "ojo",
+      120,
+      30,
+      "awake"
+     ],
+     [
+      "exvoto",
+      30,
+      110,
+      "awake"
+     ],
+     [
+      "exvoto",
+      80,
+      110,
+      "awake"
+     ],
+     [
+      "exvoto",
+      130,
+      110,
+      "awake"
+     ],
+     [
+      "exvoto",
+      180,
+      110,
+      "awake"
+     ],
+     [
+      "exvoto",
+      50,
+      165,
+      "awake"
+     ],
+     [
+      "exvoto",
+      110,
+      165,
+      "awake"
+     ],
+     [
+      "exvoto",
+      170,
+      165,
+      "awake"
+     ],
+     [
+      "exvoto",
+      190,
+      165,
+      "awake"
+     ]
+    ]
+   },
+   "dura": {
+    "enemies": [
+     [
+      "ojo",
+      40,
+      40,
+      "awake"
+     ],
+     [
+      "ojo",
+      120,
+      30,
+      "awake"
+     ],
+     [
+      "cireneo",
+      180,
+      70,
+      "awake"
+     ],
+     [
+      "exvoto",
+      30,
+      110,
+      "awake"
+     ],
+     [
+      "exvoto",
+      80,
+      110,
+      "awake"
+     ],
+     [
+      "exvoto",
+      130,
+      110,
+      "awake"
+     ],
+     [
+      "exvoto",
+      30,
+      140,
+      "awake"
+     ],
+     [
+      "exvoto",
+      80,
+      140,
+      "awake"
+     ],
+     [
+      "exvoto",
+      130,
+      140,
+      "awake"
+     ],
+     [
+      "exvoto",
+      50,
+      170,
+      "awake"
+     ],
+     [
+      "exvoto",
+      110,
+      170,
+      "awake"
+     ],
+     [
+      "exvoto",
+      170,
+      170,
+      "awake"
+     ],
+     [
+      "exvoto",
+      190,
+      170,
+      "awake"
+     ]
+    ]
+   }
+  },
+  "balcon": {
+   "pieces": [
+    {
+     "piece": "columna_entera",
+     "x": 32,
+     "y": 72
+    },
+    {
+     "piece": "columna_entera",
+     "x": 128,
+     "y": 72
+    },
+    {
+     "piece": "santo",
+     "x": 40,
+     "y": 264
+    },
+    {
+     "piece": "santo",
+     "x": 128,
+     "y": 264
+    }
+   ],
+   "obstacles": [],
+   "ligera": {
+    "enemies": [
+     [
+      "ojo",
+      104,
+      30,
+      "awake"
+     ],
+     [
+      "exvoto",
+      30,
+      150,
+      "awake"
+     ],
+     [
+      "exvoto",
+      70,
+      150,
+      "awake"
+     ],
+     [
+      "exvoto",
+      104,
+      150,
+      "awake"
+     ],
+     [
+      "exvoto",
+      140,
+      150,
+      "awake"
+     ],
+     [
+      "exvoto",
+      178,
+      150,
+      "awake"
+     ],
+     [
+      "exvoto",
+      104,
+      190,
+      "awake"
+     ]
+    ]
+   },
+   "media": {
+    "enemies": [
+     [
+      "ojo",
+      56,
+      24,
+      "awake"
+     ],
+     [
+      "ojo",
+      152,
+      24,
+      "awake"
+     ],
+     [
+      "exvoto",
+      30,
+      150,
+      "awake"
+     ],
+     [
+      "exvoto",
+      70,
+      150,
+      "awake"
+     ],
+     [
+      "exvoto",
+      104,
+      150,
+      "awake"
+     ],
+     [
+      "exvoto",
+      140,
+      150,
+      "awake"
+     ],
+     [
+      "exvoto",
+      178,
+      150,
+      "awake"
+     ],
+     [
+      "exvoto",
+      80,
+      195,
+      "awake"
+     ],
+     [
+      "exvoto",
+      128,
+      195,
+      "awake"
+     ],
+     [
+      "exvoto",
+      104,
+      60,
+      "awake"
+     ]
+    ]
+   },
+   "dura": {
+    "enemies": [
+     [
+      "ojo",
+      56,
+      24,
+      "awake"
+     ],
+     [
+      "ojo",
+      152,
+      24,
+      "awake"
+     ],
+     [
+      "cireneo",
+      104,
+      130,
+      "awake"
+     ],
+     [
+      "exvoto",
+      30,
+      150,
+      "awake"
+     ],
+     [
+      "exvoto",
+      70,
+      150,
+      "awake"
+     ],
+     [
+      "exvoto",
+      140,
+      150,
+      "awake"
+     ],
+     [
+      "exvoto",
+      178,
+      150,
+      "awake"
+     ],
+     [
+      "exvoto",
+      60,
+      195,
+      "awake"
+     ],
+     [
+      "exvoto",
+      104,
+      195,
+      "awake"
+     ],
+     [
+      "exvoto",
+      148,
+      195,
+      "awake"
+     ],
+     [
+      "exvoto",
+      104,
+      60,
+      "awake"
+     ]
+    ]
+   }
+  },
+  "pinza": {
+   "pieces": [
+    {
+     "piece": "santo",
+     "x": 0,
+     "y": 136
+    },
+    {
+     "piece": "santo",
+     "x": 168,
+     "y": 136
+    },
+    {
+     "piece": "banco_grupo4",
+     "x": 0,
+     "y": 0
+    },
+    {
+     "piece": "banco_grupo4",
+     "x": 128,
+     "y": 0
+    }
+   ],
+   "obstacles": [],
+   "ligera": {
+    "enemies": [
+     [
+      "exvoto",
+      20,
+      270,
+      "awake"
+     ],
+     [
+      "exvoto",
+      44,
+      270,
+      "awake"
+     ],
+     [
+      "exvoto",
+      20,
+      320,
+      "awake"
+     ],
+     [
+      "exvoto",
+      44,
+      320,
+      "awake"
+     ],
+     [
+      "exvoto",
+      164,
+      270,
+      "awake"
+     ],
+     [
+      "exvoto",
+      188,
+      270,
+      "awake"
+     ],
+     [
+      "exvoto",
+      164,
+      320,
+      "awake"
+     ],
+     [
+      "exvoto",
+      188,
+      320,
+      "awake"
+     ]
+    ]
+   },
+   "media": {
+    "enemies": [
+     [
+      "exvoto",
+      20,
+      250,
+      "awake"
+     ],
+     [
+      "exvoto",
+      44,
+      250,
+      "awake"
+     ],
+     [
+      "exvoto",
+      20,
+      300,
+      "awake"
+     ],
+     [
+      "exvoto",
+      44,
+      300,
+      "awake"
+     ],
+     [
+      "exvoto",
+      32,
+      345,
+      "awake"
+     ],
+     [
+      "exvoto",
+      164,
+      250,
+      "awake"
+     ],
+     [
+      "exvoto",
+      188,
+      250,
+      "awake"
+     ],
+     [
+      "exvoto",
+      164,
+      300,
+      "awake"
+     ],
+     [
+      "exvoto",
+      188,
+      300,
+      "awake"
+     ],
+     [
+      "exvoto",
+      176,
+      345,
+      "awake"
+     ],
+     [
+      "cireneo",
+      104,
+      120,
+      "awake"
+     ]
+    ]
+   },
+   "dura": {
+    "enemies": [
+     [
+      "exvoto",
+      20,
+      240,
+      "awake"
+     ],
+     [
+      "exvoto",
+      44,
+      240,
+      "awake"
+     ],
+     [
+      "exvoto",
+      20,
+      285,
+      "awake"
+     ],
+     [
+      "exvoto",
+      44,
+      285,
+      "awake"
+     ],
+     [
+      "exvoto",
+      20,
+      330,
+      "awake"
+     ],
+     [
+      "exvoto",
+      44,
+      330,
+      "awake"
+     ],
+     [
+      "exvoto",
+      164,
+      240,
+      "awake"
+     ],
+     [
+      "exvoto",
+      188,
+      240,
+      "awake"
+     ],
+     [
+      "exvoto",
+      164,
+      285,
+      "awake"
+     ],
+     [
+      "exvoto",
+      188,
+      285,
+      "awake"
+     ],
+     [
+      "exvoto",
+      164,
+      330,
+      "awake"
+     ],
+     [
+      "exvoto",
+      188,
+      330,
+      "awake"
+     ],
+     [
+      "cireneo",
+      104,
+      120,
+      "awake"
+     ],
+     [
+      "ojo",
+      104,
+      30,
+      "awake"
+     ]
+    ]
+   }
+  },
+  "claro": {
+   "pieces": [
+    {
+     "piece": "santo",
+     "x": 0,
+     "y": 8
+    },
+    {
+     "piece": "santo",
+     "x": 168,
+     "y": 8
+    }
+   ],
+   "obstacles": [],
+   "ligera": {
+    "enemies": [
+     [
+      "exvoto",
+      40,
+      60,
+      "awake"
+     ],
+     [
+      "exvoto",
+      80,
+      60,
+      "awake"
+     ],
+     [
+      "exvoto",
+      128,
+      60,
+      "awake"
+     ],
+     [
+      "exvoto",
+      168,
+      60,
+      "awake"
+     ],
+     [
+      "exvoto",
+      60,
+      110,
+      "awake"
+     ],
+     [
+      "exvoto",
+      104,
+      110,
+      "awake"
+     ],
+     [
+      "exvoto",
+      148,
+      110,
+      "awake"
+     ],
+     [
+      "exvoto",
+      40,
+      160,
+      "awake"
+     ],
+     [
+      "exvoto",
+      104,
+      160,
+      "awake"
+     ],
+     [
+      "exvoto",
+      168,
+      160,
+      "awake"
+     ]
+    ]
+   },
+   "media": {
+    "enemies": [
+     [
+      "exvoto",
+      30,
+      50,
+      "awake"
+     ],
+     [
+      "exvoto",
+      70,
+      50,
+      "awake"
+     ],
+     [
+      "exvoto",
+      110,
+      50,
+      "awake"
+     ],
+     [
+      "exvoto",
+      150,
+      50,
+      "awake"
+     ],
+     [
+      "exvoto",
+      190,
+      50,
+      "awake"
+     ],
+     [
+      "exvoto",
+      50,
+      100,
+      "awake"
+     ],
+     [
+      "exvoto",
+      90,
+      100,
+      "awake"
+     ],
+     [
+      "exvoto",
+      130,
+      100,
+      "awake"
+     ],
+     [
+      "exvoto",
+      170,
+      100,
+      "awake"
+     ],
+     [
+      "exvoto",
+      30,
+      150,
+      "awake"
+     ],
+     [
+      "exvoto",
+      80,
+      150,
+      "awake"
+     ],
+     [
+      "exvoto",
+      128,
+      150,
+      "awake"
+     ],
+     [
+      "exvoto",
+      178,
+      150,
+      "awake"
+     ],
+     [
+      "exvoto",
+      104,
+      190,
+      "awake"
+     ]
+    ]
+   },
+   "dura": {
+    "enemies": [
+     [
+      "exvoto",
+      30,
+      50,
+      "awake"
+     ],
+     [
+      "exvoto",
+      70,
+      50,
+      "awake"
+     ],
+     [
+      "exvoto",
+      110,
+      50,
+      "awake"
+     ],
+     [
+      "exvoto",
+      150,
+      50,
+      "awake"
+     ],
+     [
+      "exvoto",
+      190,
+      50,
+      "awake"
+     ],
+     [
+      "exvoto",
+      50,
+      100,
+      "awake"
+     ],
+     [
+      "exvoto",
+      90,
+      100,
+      "awake"
+     ],
+     [
+      "exvoto",
+      130,
+      100,
+      "awake"
+     ],
+     [
+      "exvoto",
+      170,
+      100,
+      "awake"
+     ],
+     [
+      "exvoto",
+      30,
+      150,
+      "awake"
+     ],
+     [
+      "exvoto",
+      80,
+      150,
+      "awake"
+     ],
+     [
+      "exvoto",
+      128,
+      150,
+      "awake"
+     ],
+     [
+      "exvoto",
+      178,
+      150,
+      "awake"
+     ],
+     [
+      "exvoto",
+      104,
+      190,
+      "awake"
+     ],
+     [
+      "cireneo",
+      104,
+      20,
+      "awake"
+     ],
+     [
+      "ojo",
+      40,
+      16,
+      "awake"
+     ]
+    ]
+   }
+  },
+  "alambrada": {
+   "pieces": [
+    {
+     "piece": "columna_entera",
+     "x": 160,
+     "y": 72
+    }
+   ],
+   "obstacles": [
+    {
+     "kind": "alambre",
+     "x": 0,
+     "y": 150,
+     "w": 140,
+     "h": 12
+    },
+    {
+     "kind": "alambre",
+     "x": 68,
+     "y": 250,
+     "w": 140,
+     "h": 12
+    }
+   ],
+   "ligera": {
+    "enemies": [
+     [
+      "exvoto",
+      30,
+      90,
+      "awake"
+     ],
+     [
+      "exvoto",
+      70,
+      90,
+      "awake"
+     ],
+     [
+      "exvoto",
+      110,
+      90,
+      "awake"
+     ],
+     [
+      "exvoto",
+      100,
+      200,
+      "awake"
+     ],
+     [
+      "exvoto",
+      140,
+      200,
+      "awake"
+     ],
+     [
+      "exvoto",
+      180,
+      200,
+      "awake"
+     ]
+    ]
+   },
+   "media": {
+    "enemies": [
+     [
+      "ojo",
+      100,
+      30,
+      "awake"
+     ],
+     [
+      "exvoto",
+      30,
+      90,
+      "awake"
+     ],
+     [
+      "exvoto",
+      70,
+      90,
+      "awake"
+     ],
+     [
+      "exvoto",
+      110,
+      90,
+      "awake"
+     ],
+     [
+      "exvoto",
+      100,
+      200,
+      "awake"
+     ],
+     [
+      "exvoto",
+      140,
+      200,
+      "awake"
+     ],
+     [
+      "exvoto",
+      180,
+      200,
+      "awake"
+     ],
+     [
+      "exvoto",
+      30,
+      300,
+      "awake"
+     ],
+     [
+      "exvoto",
+      50,
+      300,
+      "awake"
+     ]
+    ]
+   },
+   "dura": {
+    "enemies": [
+     [
+      "ojo",
+      60,
+      30,
+      "awake"
+     ],
+     [
+      "ojo",
+      120,
+      24,
+      "awake"
+     ],
+     [
+      "cireneo",
+      120,
+      200,
+      "awake"
+     ],
+     [
+      "exvoto",
+      30,
+      90,
+      "awake"
+     ],
+     [
+      "exvoto",
+      70,
+      90,
+      "awake"
+     ],
+     [
+      "exvoto",
+      110,
+      90,
+      "awake"
+     ],
+     [
+      "exvoto",
+      90,
+      200,
+      "awake"
+     ],
+     [
+      "exvoto",
+      160,
+      200,
+      "awake"
+     ],
+     [
+      "exvoto",
+      190,
+      200,
+      "awake"
+     ],
+     [
+      "exvoto",
+      30,
+      300,
+      "awake"
+     ],
+     [
+      "exvoto",
+      50,
+      300,
+      "awake"
+     ]
+    ]
+   }
+  }
+ },
+ "pasillo": {
+  "pieces": [
+   {
+    "piece": "relicario",
+    "x": 84,
+    "y": 170
+   },
+   {
+    "piece": "vela",
+    "x": 44,
+    "y": 180
+   },
+   {
+    "piece": "vela",
+    "x": 148,
+    "y": 210
+   }
+  ],
+  "relic_target": {
+   "x": 84,
+   "y": 200,
+   "hp": 150
+  },
+  "mirror": "alterna lado por indice de pasillo"
+ },
+ "boss": {
+  "enemies": [
+   [
+    "abanderado",
+    104,
+    90,
+    "awake"
+   ],
+   [
+    "ojo",
+    40,
+    30,
+    "awake"
+   ],
+   [
+    "ojo",
+    168,
+    30,
+    "awake"
+   ],
+   [
+    "cireneo",
+    104,
+    150,
+    "awake"
+   ]
+  ],
+  "escort_respawn_frames": 240,
+  "note": "bloque con barrera arriba; al vencer, texto VICTORIA (prototipo)"
+ }
+}

@@ -1,0 +1,26 @@
+{
+  "piece": "relicario",
+  "size_px": [
+    152,
+    184
+  ],
+  "content_px": [
+    148,
+    177
+  ],
+  "target_width": 148,
+  "scale_factor": 0.1455260570304818,
+  "source_render_px": [
+    1017,
+    1218
+  ],
+  "yaw": 45,
+  "depth_units": "sprite_px",
+  "tiles_8x8_nonempty": 351,
+  "tiles_8x8_unique": 351,
+  "video_k": 4.613,
+  "alto_px": 177,
+  "px_por_m": 71.5,
+  "alto_m": 2.48,
+  "hero_px": 143
+}

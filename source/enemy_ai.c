@@ -6,6 +6,9 @@
 #include "navfield.h"
 #include "player_sprite.h"
 #include "sandbox.h"
+#if ENCOUNTERS_PROTO
+#include "weapons.h"
+#endif
 #include <nds.h>
 #include <string.h>
 
@@ -180,6 +183,9 @@ static int aim_vector(int ox, int oy, int tx, int ty, int *dx, int *dy) {
 // Walks toward the player: straight when close with a clear walkable line (cached in VIEW_DIRECT),
 // otherwise down the distance field (it walks around walls); with no field value, straight.
 // Shared by the skeleton and the charger's approach.
+#if ENCOUNTERS_PROTO
+static int s_chase_bias_x, s_chase_bias_y;    // v2: lateral offset of the walking target (world px), set by the Exvoto and cleared here
+#endif
 static void chase_step(Enemy *e, Enemy *enemies, int num_enemies, int idx, fixed speed,
                        int wx, int wy, int px, int py, int ground_dist_sq) {
     speed = burn_slow(e, speed);          // Quemado frena (DESIGN.md 6.12.2)
@@ -193,6 +199,11 @@ static void chase_step(Enemy *e, Enemy *enemies, int num_enemies, int idx, fixed
         }
     }
 
+#if ENCOUNTERS_PROTO
+    target_x += s_chase_bias_x;
+    target_y += s_chase_bias_y;
+    s_chase_bias_x = s_chase_bias_y = 0;
+#endif
     int t_dx = target_x - wx;
     int t_dy = target_y - wy;
     uint32_t t_dist = int_sqrt((uint32_t)(t_dx * t_dx + GROUND_DY2(t_dy)));
@@ -275,6 +286,86 @@ static void exvoto_wake_chain(Enemy *enemies, int num_enemies, int idx) {
 // Exvoto & Monaguillo (DESIGN.md 6.10): relentless melee pressure, no telegraph.
 // Exvoto: PRAY -> (RISE) -> CHASE <-> ATTACK; * -> DEAD.
 // Monaguillo: EMERGE (~0.5 s, invulnerable, still) -> CHASE <-> ATTACK; * -> DEAD.
+#if ENCOUNTERS_PROTO
+// ---- v2: the Exvoto dodges the hero's ray and does not walk straight (DESIGN.md 6.13.6) ----------------------
+// While the hero charges the ray the aiming line is a straight line from his muzzle. An awake Exvoto within
+// EXVOTO_DODGE_HALF px of it (ground), ahead of the hero and farther than EXVOTO_DODGE_MIN_DIST from him, reacts after
+// EXVOTO_DODGE_REACT frames and steps sideways for EXVOTO_DODGE_STEP frames, to its own side of the line (sign of the
+// cross product), so a row opens one to each side. Then EXVOTO_DODGE_COOL frames before it can dodge again.
+// One dot and one cross product per Exvoto and frame, in fixed point, only while charging. State lives in fields
+// the Exvoto does not use: aim_px (reaction timer), aim_py (step timer), beam_mx (cooldown), beam_my (side).
+#define EXVOTO_DODGE_HALF 14
+#define EXVOTO_DODGE_MIN_DIST 24
+#define EXVOTO_DODGE_REACT 12
+#define EXVOTO_DODGE_STEP 20
+#define EXVOTO_DODGE_COOL 45
+#define EXVOTO_DODGE_SPEED_NUM 5      // the sidestep runs at 5/2 of the walking speed
+#define EX_REACT(e) ((e)->aim_px)
+#define EX_STEP(e) ((e)->aim_py)
+#define EX_COOL(e) ((e)->beam_mx)
+#define EX_SIDE(e) ((e)->beam_my)
+
+// Returns 1 when the Exvoto spent the frame dodging (it does not also walk or bite).
+static int exvoto_dodge(Enemy *e, int wx, int wy, int ground_dist_sq, fixed speed) {
+    if (EX_COOL(e) > 0) EX_COOL(e)--;
+    int mx = 0, my = 0, gx = 0, gy = 0;
+    const int line = weapons_aim_line(&mx, &my, &gx, &gy);
+    int rx = wx - mx, ry = 2 * (wy - my);
+    int along = (rx * gx + ry * gy) >> 8;
+    int cross = (rx * gy - ry * gx) >> 8;
+    if (EX_STEP(e) > 0) {
+        // The hero fired or let go of the aim: drop the sidestep at once and resume the chase this same frame.
+        if (!line) {
+            EX_STEP(e) = 0;
+            EX_COOL(e) = EXVOTO_DODGE_COOL;
+            return 0;
+        }
+        // Sidestep: perpendicular to the line, towards the Exvoto's own side.
+        int s = EX_SIDE(e);
+        int sp = speed * EXVOTO_DODGE_SPEED_NUM / 2;
+        fixed vx = (fixed)((gy * s * sp) >> 8);
+        fixed vy = (fixed)((-gx * s * sp) >> 9);   // ground y -> world y
+        int moved = move_with_slide(&e->x, &e->y, vx, vy);
+        e->dir = dir_from_vector(vx, vy * 2);
+        update_animation(e, moved);
+        if (--EX_STEP(e) <= 0) EX_COOL(e) = EXVOTO_DODGE_COOL;
+        return 1;
+    }
+    int threatened = line && along > 0 && cross < EXVOTO_DODGE_HALF && cross > -EXVOTO_DODGE_HALF &&
+                     ground_dist_sq >= EXVOTO_DODGE_MIN_DIST * EXVOTO_DODGE_MIN_DIST && EX_COOL(e) <= 0;
+    if (!threatened) {
+        EX_REACT(e) = 0;
+        return 0;
+    }
+    if (EX_REACT(e) == 0) {
+        EX_REACT(e) = EXVOTO_DODGE_REACT;
+        EX_SIDE(e) = cross > 0 ? 1 : cross < 0 ? -1 : (e->strafe_dir >= 0 ? 1 : -1);
+    }
+    if (--EX_REACT(e) <= 0) {
+        EX_REACT(e) = 0;
+        EX_STEP(e) = EXVOTO_DODGE_STEP;
+    }
+    return 0;
+}
+
+// Each Exvoto walks with a slow lateral weave of its own (a triangle wave with a phase per enemy), so a column of them
+// does not arrive in a straight line. Fades to nothing close to the hero.
+static void exvoto_weave(const Enemy *e, int idx, int dx, int dy) {
+    int dy2 = 2 * dy;
+    int m = dx < 0 ? -dx : dx;
+    int a = dy2 < 0 ? -dy2 : dy2;
+    if (a > m) m = a;
+    if (m <= 32) return;                              // within ~32 ground px: straight at the hero
+    int ph = (int)((s_ai_tick * 2 + (uint32_t)idx * 77u) & 255u);
+    int tri = (ph < 128 ? ph : 256 - ph) - 64;         // -64..64
+    int amp = (e->strafe_dir >= 0 ? 1 : -1) * tri;     // the strafe sign gives each Exvoto its own phase direction
+    int fade = m >= 96 ? 64 : m - 32;                  // 0 at 32 px, 64 (=100 % in /64) from 96 px out
+    int off = div32(amp * 24 * fade, 4096);            // up to +-24 px, eased out as the Exvoto closes in
+    s_chase_bias_x = div32(-dy2 * off, m);
+    s_chase_bias_y = div32(dx * off, m) / 2;
+}
+#endif
+
 static void update_exvoto(Enemy *e, Enemy *enemies, int num_enemies, int idx,
                           fixed player_x, fixed player_y, const EnemyTuning *tuning) {
     if (e->state == ENEMY_STATE_EMERGE) {
@@ -354,6 +445,12 @@ static void update_exvoto(Enemy *e, Enemy *enemies, int num_enemies, int idx,
             }
 
             refresh_view(e, idx, wx, wy, px, py, ground_dist_sq, CHASE_DIRECT_RANGE);
+#if ENCOUNTERS_PROTO
+            if (e->type == ENEMY_TYPE_EXVOTO) {
+                if (exvoto_dodge(e, wx, wy, ground_dist_sq, tuning->speed)) break;
+                exvoto_weave(e, idx, dx, dy);
+            }
+#endif
             chase_step(e, enemies, num_enemies, idx, tuning->speed, wx, wy, px, py, ground_dist_sq);
             break;
         }
@@ -385,7 +482,7 @@ static void update_charger(Enemy *e, Enemy *enemies, int num_enemies, int idx,
             // 3-stage progressive crouch (walk[0] -> telegraph -> charge[0]) without blinking.
             e->dir = dir_from_vector(TO_FIXED(e->aim_dir_x), TO_FIXED(e->aim_dir_y));
             int elapsed = tuning->telegraph_duration - e->state_timer;
-            e->frame = (elapsed < 6) ? 0 : (elapsed < 20) ? 1 : 2;
+            e->frame = (elapsed < 10) ? 0 : (elapsed < 28) ? 1 : 2;
             if (--e->state_timer <= 0) {
                 e->state = ENEMY_STATE_CHARGE;
                 e->state_timer = CHARGER_CHARGE_FRAMES;
@@ -437,8 +534,16 @@ static void update_charger(Enemy *e, Enemy *enemies, int num_enemies, int idx,
         default: {
             e->state = ENEMY_STATE_CHASE;
             refresh_view(e, idx, wx, wy, px, py, ground_dist_sq, CHARGER_ENGAGE_DIST);
+#if ENCOUNTERS_PROTO
+            // v2: it charges only when it has the hero lined up (heading within one 45-degree sector of him),
+            // up to 160 px away, with a clear view. It also telegraphs point blank so the player can dodge.
+            if ((e->has_los & VIEW_ENGAGE) && ground_dist_sq <= CHARGER_ENGAGE_DIST * CHARGER_ENGAGE_DIST &&
+                ((dir_from_vector(player_x - e->x, player_y - e->y) - e->dir + 9) & 7) <= 2 &&
+                aim_vector(wx, wy, px, py, &e->aim_dir_x, &e->aim_dir_y)) {
+#else
             if ((e->has_los & VIEW_ENGAGE) && ground_dist_sq <= CHARGER_ENGAGE_DIST * CHARGER_ENGAGE_DIST &&
                 aim_vector(wx, wy, px, py, &e->aim_dir_x, &e->aim_dir_y)) {
+#endif
                 e->state = ENEMY_STATE_TELEGRAPH;
                 e->state_timer = tuning->telegraph_duration;
                 e->dir = dir_from_vector(TO_FIXED(e->aim_dir_x), TO_FIXED(e->aim_dir_y));

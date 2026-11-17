@@ -78,7 +78,7 @@ Confesor de la Sacristía de los Faroles. Le gustaban demasiado los muchachos de
 ### Los Exvotos (`CÓDICE · II`)
 Penitentes de Valdenoche que rezaron hasta volverse cera. Siguen en procesión con las manos en rezo.
 *Ficha oficial:* «Pidieron no estar solos. Les fue concedido.»
-- **Remedios, la cerera.** Mujer trans; eligió su nombre ella misma y el pueblo acabó respetándolo. Hacía las velas y los exvotos de la Catedral, y repartía entre los pobres el pan y la cera de los diezmos. El Tribunal la condenó por robar a Dios y por llevar un nombre que no le dieron en la pila. Fue la primera en volverse cera, y las figuras que había hecho echaron a andar detrás de ella.
+- **Remedios, la cerera.** Mujer trans; eligió su nombre ella misma y el pueblo acabó respetándolo. Hacía las velas y los exvotos de la Catedral, y repartía entre los pobres el pan y la cera de los diezmos. El Tribunal la condenó por robar a Dios y por vestir de mujer y renegar del nombre que Dios le dio (la bautizaron con nombre de varón). Fue la primera en volverse cera, y las figuras que había hecho echaron a andar detrás de ella.
 - **Jimena y Aldonza.** Dos mujeres de Valdenoche que se amaban. El Tribunal las condenó y ordenó separarlas, una a cada extremo de la nave. Rezaron la misma noche para no estar solas. Se lo concedieron: caminan juntas, unidas por la cera.
 - **Inés Arce.** Madre de Martín. Escondió a Bartolomé después de la Quiebra sin saber que su hijo había muerto por él. La condenaron por dar refugio a un desertor. Sube en procesión, nave arriba, hacia un latido que reconoce.
 - **Los monaguillos (los jóvenes suplicantes).** Los muchachos del coro que se negaron al padre Anselmo. Para silenciarlos, el Tribunal los condenó a rezar para siempre. Son los exvotos jóvenes que hoy siguen el estandarte del Abanderado: Íñigo los recogió porque nadie más lo hizo.
@@ -118,7 +118,7 @@ Se cierra aquí antes de usarlo en un vídeo; mientras tanto, los vídeos pueden
 
 | Tema | Estado | Depende de |
 | :--- | :--- | :--- |
-| Qué es el Altar y qué pasa al llegar | Abierto | Final del juego y jefe (`DESIGN.md` §6.9, 0.6) |
+| Qué es el Altar y qué pasa al llegar | Abierto | Final del juego y jefe (`DESIGN.md` §6.13: El Paso en la estación XIV; al ganar se baja a las criptas) |
 | Qué busca Elías al subir | Abierto | Lo anterior |
 | Por qué se alargó la nave | Abierto | — |
 | Qué fue la «sequía del cielo» | Abierto | — |

@@ -3,7 +3,7 @@
 ## 1. Visión y Alcance
 - **Concepto:** survivors de frente vertical para Nintendo DS, con apuntado manual y tono gótico/grimdark (el Corazón Abierto y otros futuros personajes contra los caídos de la Cruzada). Referencias: Halls of Torment y Vampire Survivors por el bucle; Diablo y Warhammer 40K: Inquisitor por lo que engancha al usuario (ir a la siguiente misión y mejorar); Isaac por la dificultad (lo normal es morir pronto hasta conocer las mejoras).
 - **Pilar:** combate de Doom en isométrico (cada personaje con un arma contundente y mucho *feel*, esquivar con strafe), contra una horda que viene de arriba y por un pasillo que hay que abrirse a tiros. Las dos pantallas forman un campo vertical: la superior es la vanguardia que se ve llegar y a la que se puede disparar.
-- **Bucle vigente (v0.3, decidido 2026-11-06):** un nivel vertical de ~8 min con una marea que sube desde abajo, horda continua, gemas → nivel → elegir 1 de 3 mejoras, élites, un minijefe a mitad y un jefe arriba. Personaje = arma única (no hay cambio de armas en partida). Detalle en §6.
+- **Bucle vigente (v0.3, decidido 2026-11-06; estructura revisada 2026-11-16):** una subida vertical de 15–18 min con una marea que sube desde abajo, horda continua, gemas → nivel → elegir 1 de 3 mejoras, élites y tres actos con un jefe al final de cada uno (Vía Crucis de 14 estaciones, §6.13). Personaje = arma única (no hay cambio de armas en partida). Detalle en §6.
 - **Fantasía:** sin lore, pero clara y con entorno cambiante: ascender (o descender) por un pozo o una aguja infestada, cambiando de bioma por el camino. Los personajes, enemigos y mapas actuales son placeholders con la estética buena; el sistema debe aguantar cambiarlos.
 - **Fuera de la prueba de la v0.3, a propósito:** progresión entre runs (equipo, desbloqueos), más de dos clases, sonido, más de dos biomas. La capa de equipo es el gancho a largo plazo (Diablo) y se diseña tras validar que una run divierte.
 - **Historia de la dirección:** el proyecto nació como un Diablo de nigromancia con esbirros, descartado a favor del shooter. La v0.1 (4 arenas cerradas, §4) era fácil y poco divertida en la DS. La v0.2 (mazmorra de manadas con modificadores estilo Isaac, §5) fue más divertida pero se agotaba en un par de minutos: sin variedad entre runs ni motivo para volver. El 2026-11-06 se eligió el survivors vertical (§6) frente a un Isaac de salas (más barato pero menos del gusto del usuario) y a una campaña lineal tipo Diablo (demasiado contenido a mano). La lanza ósea y la muerte por fragmentos quedan como FX reutilizables.
@@ -22,7 +22,7 @@
 - **Actores detrás de muros (decidido 2026-11-10):** personaje y enemigos se ocultan según la profundidad horneada; no parpadean ni reciben transparencias, siluetas o marcas negras auxiliares cuando quedan detrás. La base caminable no se dibuja sobre el muro.
 - **Sombras de personajes por hardware (decidido 2026-11-13, rama `perf/hw-shadows`):** la sombra de héroe y enemigos conserva la forma horneada del lab por dirección y frame y su tono actual (suelo al 50 %), pero la oscurece la propia consola en vez del procesador. Se aceptan tres diferencias: dos sombras solapadas se funden en un solo tono (antes se oscurecían el doble); bajo la marea la sombra toma la oscuridad de la marea; y si un enemigo queda detrás de una pieza o muro, su sombra se oculta entera en vez de recortarse píxel a píxel. Además, las marcas de suelo de las armas (anillos y elipses del pase de suelo) ya no quedan oscurecidas por las sombras que pasan por encima, porque la consola solo oscurece la capa del suelo. Motivo: las sombras eran el 43 % del frame con horda (`walkthroughs/stress-enemies-profiling/`). Si con esto y la optimización de IA/dibujo no se duplica la horda a 60 FPS, la siguiente opción aceptada por el usuario es quitar la separación entre enemigos (que puedan solaparse, estilo *Vampire Survivors*). **Resultado (2026-11-14, medido en la DS):** con 48 enemigos el juego se mantiene casi siempre a 60 FPS, así que la separación se conserva.
 - **Sonido:** fuera de la v0.3.
-- **Por decidir antes de cada versión (§6.9):** árbol de mejoras de las dos clases y su presentación (antes de la 0.4); enjambre, élites, cofres y emboscadas (antes de la 0.5); catálogo y reglas de tramos, tema de los dos biomas, minijefe, jefe y aspecto final de la marea (antes de la 0.6).
+- **Por decidir antes de cada versión (§6.9):** árbol de mejoras de las dos clases y su presentación (antes de la 0.4); enjambre, élites, cofres y emboscadas (antes de la 0.5); catálogo y reglas de tramos, aspecto de cada acto, jefes y aspecto final de la marea (antes de la 0.6; estructura ya decidida en §6.13).
 - **Tuning de combate y stats:** se hace jugando en la DS en la 0.3.1 (§6.9.1), sobre los valores de partida de §6.
 - **Ya no aplican (v0.2):** mazmorra más grande con puertas y rediseño de pedestales; los sustituye la v0.3.
 
@@ -218,6 +218,8 @@ Primer paso jugable hacia §6.1–6.8: el juego actual (armas, cargador, tirador
 - **Fuera de este hito:** gemas, niveles y mejoras, élites, minijefe y jefe, emboscadas desde abajo, biomas y salas laterales.
 
 ### 6.1 Bucle de la run (prueba)
+> **Revisado 2026-11-16:** la estructura vigente es la de §6.13 (15–18 min, tres actos, tres jefes). Lo de abajo queda como historia de la prueba de la v0.3.
+
 - Un solo nivel. Se empieza abajo del todo y se sube abriéndose paso entre la horda mientras una **marea** sube detrás (§6.4).
 - A mitad, al cambiar de bioma, hay un **minijefe**. Arriba, en una sala final, espera el **jefe**. Matar al jefe gana la run.
 - Duración objetivo: unos 8 min hasta el jefe. La fija la velocidad de la marea.
@@ -300,7 +302,7 @@ La prueba de §6.1–6.8 se construye en versiones jugables pequeñas, cada una 
 | **0.3.3** | Personajes: reevaluar los sprites, ajustar tamaño y pasar al estilo definido en la 0.3.2 (§6.9.1b). | 0.3.2 cerrada | **En curso** (Corazón Abierto, Cireneo v2, telegrafía y SFX base en `main`; faltan Exvotos, Ojo del Tribunal y elegir aura) |
 | **0.4** | Progresión dentro de la run: gemas con imán corto, experiencia, subir de nivel con pausa y elegir 1 de 3 mejoras con icono y una línea de efecto (§6.6), HUD de vida, experiencia, nivel y tiempo y controles de §6.5 que falten. Un solo personaje. | Sesión de diseño de mejoras | Diseño en curso (§6.12; faltan cifras) |
 | **0.5** | Enemigos y recompensas: enjambre, élites que sueltan cofre, emboscadas desde abajo con aviso. Pool de 48 y criterio de horda de `TECHNICAL.md` §4.7 (IA por niveles de detalle, separación por rejilla, blit más barato). | Sesión de diseño de enemigos | Pendiente de diseño |
-| **0.6** | Estructura de la run: tramos hechos a mano encadenados por reglas (§6.2), dos biomas, minijefe a mitad y jefe arriba, marea que se para en los combates. Cierra la prueba completa de §6.1 (~8 min, ganar matando al jefe). | Sesión de diseño de tramos, biomas y jefes | Pendiente de diseño |
+| **0.6** | Estructura de la run: la Subida de §6.13 (Vía Crucis de 14 estaciones, tres actos, jefes en las estaciones V, X y XIV, encuentros con sala cerrada), tramos hechos a mano por acto. ~15–18 min, ganar matando a El Paso. | Sesiones de escenario y de cada jefe | Estructura decidida (§6.13); faltan escenario y jefes |
 
 **Correspondencia con el plan anterior por pasos:**
 - La prueba de horda está medida con 24 enemigos (CPU media del 39 %, sin frames perdidos). El techo se mide en la 0.3.1 y el criterio de 48 activos se cumple en la 0.5.
@@ -408,6 +410,7 @@ Tras cerrar la 0.3.1, el usuario quiere dedicar dos versiones al aspecto antes d
     - **Velas:** tiles de suelo con vela; llama animada reescribiendo los tiles de llama compartidos y halo con ciclo de paleta.
     - **Muros laterales:** pasan de 16 a 48 px por lado (suelo útil 416 px), con base de columnas, remate de muro y arranque de capillas.
   - **Coberturas bajas: bloquean el paso, no el fuego, y ocluyen como hoy.** Terreno (losas, alfombra, sangre, cera): solo decorativo. Cada arma es una clase: no se tienen ambas en una run.
+    - **Piezas altas como cobertura (decidido 2026-11-16, rama `fix/cobertura-estatuas`):** las columnas y las estatuas (`santo`) paran todos los disparos, el rayo del jugador y el del Ojo, y cortan la visión del Ojo. Bancos, relicario y velas solo bloquean el paso.
   - **Color y legibilidad (2026-11-08, sustituye a la paleta de colores prohibidos):** sin colores reservados por ahora; entorno y personajes son preliminares y pueden compartir acentos mientras no estorben. La legibilidad se basa en **contraste de luminancia**: suelo transitable tranquilo, de valores medios-bajos y poco contraste local; el detalle fuerte en bordes, muros y piezas. Los personajes finales podrían ir **sin contorno**, con luz de contorno (rim light) del lab; se valida con el marine sobre el suelo nuevo.
   - **Suelo de la nave: damero en rombos (decidido 2026-11-08).** Losas cuadradas giradas 45° que alternan dos piedras pardas casi iguales (poco contraste, por legibilidad). A 30° cada losa es un **rombo de 32×16 px** (lado real 1,26 m). Losas modeladas en 3D (junta hundida, bisel, desgaste) y renderizadas con la cámara del juego y la luz neutra, nunca dibujadas en plano. Encima, **lápidas de cruzado** sueltas como piezas planas (estampas sin colisión) cada pocas pantallas. Cenefa geométrica y laberinto quedan como piezas especiales del crucero, más adelante. Referencias: damero de York Minster, lápidas de la nave de 's-Hertogenbosch, Cosmati de Westminster y laberinto de Amiens.
   - **Lápidas de suelo (decidido 2026-11-08; cerrado 2026-11-09).** La lápida **es** la losa. Se eliminaron definitivamente los stickers 2D y los cajeados oscuros con corte booleano. Se unificó el pipeline al 100% en el Shader Lab de Three.js (`tools/lab/export_map_package_headless.cjs`), con Blender únicamente como ensamblador 3D (`tools/floor/build_lapidas_lab_blender.py`), relieve escultórico v2 aumentado a 12 cm, cero outlines y cuantización nativa BGR555 de Nintendo DS. Ambas variantes quedan abiertas y viables para el mapa:
@@ -425,6 +428,7 @@ Tras cerrar la 0.3.1, el usuario quiere dedicar dos versiones al aspecto antes d
     - **El muro y las lancetas pintadas de `make_cathedral_map()` se retiran.**
     - **Herramienta de diseño:** `tools/catedral_editor/editor.html`, para componer secciones a mano estampando las piezas reales. De sus diseños se sacarán las reglas del compositor.
   - **Compositor v2: la pantalla como unidad (decidido 2026-11-11 a partir del diseño del usuario en el editor; sustituye al ciclo de 4 tramos de 256 px).**
+    > **Sustituido (2026-11-16) por el escenario por actos de §6.13.6** cuando se implemente; hasta entonces la ROM sigue con este compositor.
     - **Unidad:** una pantalla de 192 px. El número de pantalla decide el tipo y el azar (hash estable) solo las variantes, igual que antes: mismo cálculo en Python y en C, con test de paridad.
     - **Columnata:** una `columna_entera` por pantalla y lado, a la misma altura en las dos hileras (sprite en x = 64 y x = 416; la base cae en el borde inferior de la pantalla). Periodo de 192 px. Todas enteras: la columna rota y la caída salen de la demo.
     - **Tipos de pantalla, alternados al azar:**
@@ -555,7 +559,7 @@ Tras cerrar la 0.3.1, el usuario quiere dedicar dos versiones al aspecto antes d
 **Fuera:** minijefe, jefe, biomas y tramos (0.6).
 
 #### 6.9.4 Versión 0.6: estructura de la run completa (borrador)
-**Objetivo:** la prueba completa de §6.1. Una run de unos 8 min con principio, mitad y final, que se gana matando al jefe.
+**Objetivo:** la prueba completa. Una run de 15–18 min con principio, mitad y final, que se gana matando al jefe. **La estructura está decidida en §6.13 (2026-11-16) y prevalece sobre este borrador** (tres actos en lugar de dos biomas, tres jefes en lugar de minijefe y jefe, encuentros en el pasillo con sala cerrada).
 
 **Dentro:**
 - **Mapa por tramos** hechos a mano de una pantalla de alto, encadenados por reglas (abierto, estrechamiento, sala lateral con cofre o élite, coberturas bajas), en lugar de las bandas procedurales de la 0.3 (§6.2). Pipeline lab → baker para los tramos.
@@ -706,7 +710,7 @@ Son una guía de diseño para dar variedad, no ramas ni clases. El jugador no lo
 
 #### 6.12.4 Ritmo de la partida
 - **Cada subida de nivel ofrece 1 de 3 Dones.** ~15-20 niveles por partida, sin volver a tirar.
-- **En los niveles 4, 8, 12 y 16 se ofrece 1 de 3 Reliquias** en lugar de Dones, en una pantalla distinta (marco dorado) que se note como el momento especial de la partida. Unas 4 reliquias por partida. Más adelante los cofres de élite y los jefes darán reliquias extra (§6.9.3).
+- **En los niveles 4, 8, 12 y 16 se ofrece 1 de 3 Reliquias** en lugar de Dones, en una pantalla distinta (marco dorado) que se note como el momento especial de la partida. Unas 4 reliquias por partida. Con la estructura de la Subida pasan a darse en el nivel 5 y al vencer a cada jefe (§6.13.5).
 - **Ofertas con cabeza:** a partir de la segunda reliquia, al menos una de las tres opciones comparte arquetipo con alguna reliquia que ya tengas. No asegura la pieza que falta, solo que el camino sigue abierto; romper la partida sigue dependiendo de elegir bien y de algo de suerte.
 - **Requisitos (decidido 2026-11-15):** una mejora solo se ofrece si ya tienes lo que la activa. Hoy: Brasa, Rescoldo, Auto de Fe y Martirio Contagioso necesitan una fuente de quemadura (Llama Votiva, Aura de Cilicio o Corazón Flagelado). La primera reliquia de fuego abre ese camino. Toda mejora futura declara su requisito.
 - Una reliquia cogida sale del pool. Un Don al máximo deja de ofrecerse; si no queda ninguno, la oferta es curar 1 corazón.
@@ -847,3 +851,179 @@ Se generan con el flujo de `AGENTS.md` (ElevenLabs CLI) en su propia sesión.
 - **Pendiente de validar:** si es divertido. Se hará con el plan de pruebas de `walkthroughs/mejoras-v04/plan_pruebas.md` (Ráfaga, Vigilia, Mártir, sin criterio y techo con trucos, con puntos de control de tensión, poder y decisión) y una entrevista de ajustes posterior. Las cifras de §6.12.10 siguen siendo provisionales hasta entonces.
 - **Mientras tanto:** se arreglan los problemas básicos que el usuario detecta jugando, uno a uno, sin tocar el equilibrio.
 
+
+### 6.13 Estructura de la partida: la Subida (decidido 2026-11-16, rama `docs/estructura-partida`)
+Sustituye al nivel infinito de la 0.3 y concreta §6.1 y la 0.6 (§6.9.4). Motivo: la catedral infinita no tiene intención (el compositor alterna piezas al azar y nada anuncia lo que viene) y es difícil de hacer bien. Una partida con principio, mitad y final se entiende, se recuerda y encaja con el lore (`LORE.md`: la Columna intentó llegar al Altar y cayó por el camino; Elías hace el mismo recorrido).
+
+- **Duración objetivo: 15–18 min** hasta ganar al jefe final (antes ~8). Referencias: Isaac hasta Mom, 20–30 min en pisos de 3–5 min; Vampire Survivors y Halls of Torment, 30 min. Se queda por debajo porque es una portátil sin guardado a mitad de partida. Si se queda corta en la DS, se alarga cada acto sin cambiar el esqueleto.
+- **Columna vertebral: un Vía Crucis de 14 estaciones.** Cada estación es un hito visible en el muro con su número romano (la pieza exacta se decide en la sesión del escenario). El jugador sabe dónde está y cuánto le falta sin barra de progreso. Las estaciones son también los sitios donde pasan cosas (crucero, capilla, élite, jefe).
+
+| Tramo | Estaciones | Tiempo | Final del tramo |
+| :--- | :--- | :--- | :--- |
+| **Pórtico** | — | ~0:30 | Entrada tranquila, último campamento de la Columna. Empieza la marea. |
+| **Acto I: la nave** | I–IV | ~5 min | **Jefe 1: El Abanderado** en la estación V. |
+| **Acto II: el coro** | VI–IX | ~5 min | **Jefe 2: El Campanero de Ánimas** en la estación X. |
+| **Acto III: el Calvario** | XI–XIII | ~5 min | **Jefe final: El Paso** en la estación XIV (el altar). Victoria. |
+
+- **Cada acto es como un piso de Isaac:** subida con horda y marea → encuentro con el jefe → respiro y recompensa → el siguiente acto empieza con otro ambiente, más profanado que el anterior (estados de profanación de §6.9.1b).
+- **Los enemigos entran por actos:** acto I, Exvotos, y el Cireneo a mitad del acto (la estación V del Vía Crucis es la del Cireneo); acto II, se suma el Ojo del Tribunal; acto III, todos.
+- **Cada jefe vuelve después como enemigo normal (élite):** el Abanderado en los actos II y III; el Campanero en el acto III. El jugador reconoce al que ya venció y la partida tiene memoria. Su versión élite es más débil que la de jefe; las cifras se deciden en la sesión de cada jefe.
+- **El escenario se ordena por actos:** tramos hechos a mano para cada acto, en orden fijo y reconocible entre partidas; el azar solo elige variantes dentro de cada tramo. Sustituye al compositor infinito de la catedral (§6.9.1b) cuando se implemente. «La catedral que no termina» queda como lore (el altar se aleja), no como mapa infinito.
+- **Morir** reinicia la partida desde el pórtico, como hoy.
+
+#### 6.13.1 Encuentros con jefe
+- **En el mismo pasillo, no en una sala aparte.** Al llegar a la estación del jefe:
+  1. **Presentación:** pantalla de intro del jefe con un zoom sobre él y su nombre (presentación concreta en su propia ronda A/B/C).
+  2. **Sala cerrada:** el jugador no puede avanzar ni retroceder fuera de la sala del jefe hasta que gane o muera. La cámara no se fija: sigue al héroe (§6.13.7, corregido 2026-11-17).
+  3. **Se para todo lo demás:** la marea se detiene y deja de aparecer la horda aleatoria.
+- **Encuentro coreografiado (por defecto):** el jefe llega con una escolta definida que se renueva desde arriba según la vas matando; por ejemplo, el Abanderado con varios Ojos y algún Cireneo. Qué escolta lleva cada jefe y a qué ritmo vuelve se decide en su sesión.
+- **Alternativa por jefe: el jefe solo,** reforzado para que sea interesante sin escolta. Se elige una u otra en la sesión de cada jefe.
+- **Al ganar:** el jefe da una reliquia (§6.13.5), se desbloquea la pantalla y, tras un respiro, la marea vuelve a subir en el acto siguiente.
+- **El Abanderado actual** (§6.10, aparición cada 2 min) se mantiene como está hasta que se implemente esta estructura; entonces pasa a ser el jefe fijo de la estación V y su invocación de monaguillos es la base de su encuentro.
+
+#### 6.13.2 El Campanero de Ánimas (jefe del acto II, dirección inicial)
+- **Poder (dirección del usuario, detalle por decidir):** refuerza a los enemigos que tiene alrededor: más fuertes o invulnerables mientras dura el efecto. El toque de campana es la telegrafía (concepto de §6.10). El combate pide romper su protección o separar a los enemigos de él antes de atacarlos.
+- Lore y ficha del Códice: pendientes (`LORE.md` §9, «Enemigos nuevos»).
+
+#### 6.13.3 Al ganar la partida
+- Tras vencer a El Paso aparecen **unas escaleras que bajan a las criptas**: el siguiente nivel. Encaja con `LORE.md` §5 («se puede salir, por abajo»; la Marea como lo que la Iglesia enterró sin nombre).
+- **La partida sigue (decidido 2026-11-16):** al bajar las escaleras se continúa en las criptas sin cortar la partida, con el mismo personaje y sus mejoras, como Isaac tras Mom. No hay desbloqueo ni guardado en la consola (§6.3). Ganar a El Paso es la victoria de la catedral; las criptas son contenido extra para quien llega.
+- **Pendiente:** qué hay en las criptas (estructura, enemigos y jefe), si tienen final propio y qué pasa mientras no existan (por ahora, pantalla de victoria al vencer a El Paso).
+
+#### 6.13.4 Pendiente
+1. Poder exacto del Campanero y escolta de cada jefe.
+2. Pieza visual de las estaciones y aspecto de cada acto (sesión del escenario).
+3. Qué es el Altar y qué encuentra Elías al llegar (`LORE.md` §9).
+
+#### 6.13.5 Ritmo de mejoras en la Subida (decidido 2026-11-16)
+Sustituye al reparto de reliquias por nivel de §6.12.4 cuando se implemente la estructura; hasta entonces la ROM sigue con los niveles 4, 8, 12 y 16.
+- **4 reliquias por partida, como ahora,** para no tocar el equilibrio de §6.12:
+  1. **Nivel 5:** la primera, antes del primer jefe, para que la construcción empiece a definirse en el acto I.
+  2. **Jefe 1 (Abanderado), jefe 2 (Campanero) y jefe final (El Paso):** una al vencer a cada uno, con la misma pantalla de marco dorado de §6.12.4. La de El Paso llega para las criptas.
+- **Cada jefe es un punto de inflexión de la build.** Las reglas de oferta de §6.12.4 (arquetipo compartido, requisitos, una reliquia cogida sale del pool) valen igual.
+- **Dones:** siguen saliendo en cada subida de nivel. La experiencia se espacia para unos **25 niveles** en la partida completa (cifra `[TUNABLE-PLACEHOLDER]`, se ajusta jugando).
+- Los cofres de élite (§6.9.3) quedan como posible fuente extra, por decidir.
+
+#### 6.13.6 Escenario por actos: encuentros y pasillos (decidido 2026-11-16, rama `docs/escenario-actos`; en diseño)
+Sustituye, cuando se implemente, al compositor v2 de la catedral (§6.9.1b), a la marea y la horda aleatoria como sistema general (§6.4) y a las gemas y la experiencia (§6.12.4, §6.13.5). Motivo: el apuntado manual y las coberturas piden enemigos colocados con intención (ADN de *twin-stick*: Enter the Gungeon, Isaac), y la marea castigaba justo lo que se quiere diseñar (pensar el encuentro, desviarse al relicario).
+
+**Qué es juego y qué es lore.** El juego se describe con cinco palabras: partida, acto, encuentro, pasillo, pieza. Nave, coro y Calvario son el lore de cada acto y deciden qué piezas usa; el Vía Crucis y sus estaciones son ambientación y no marcan dónde pasan cosas (§6.13 queda así matizado). El pórtico son las primeras pantallas despejadas del acto I.
+
+**Los actos (qué cuentan y cómo se nota).**
+| Acto | Capítulo | Sitio | Piezas propias |
+| :--- | :--- | :--- | :--- |
+| I | La guerra: donde cayó la Columna | La nave | Las de hoy (columna, estatua, bancos, relicario, velas, lápidas) más sacos, banco volcado y roto, columna rota y **alambre de espino** (nueva: cierra el paso, deja pasar los disparos). Cadáveres de cruzado, más adelante. |
+| II | El juicio: el Tribunal y los monaguillos | El coro | Por decidir (candidatas: sillería, rejas, faroles, atril). |
+| III | La condena: las cruces de los penitentes | El Calvario | Por decidir (candidatas: cruces, cera derretida). |
+- Cada acto está más profanado que el anterior y tiene su propio juego de piezas, que se carga durante el respiro tras el jefe (cada acto tiene su propio presupuesto de tiles).
+- El jefe llega por distancia (al final del acto), no por tiempo.
+
+**Estructura de un acto: encuentro, barrera, pasillo.**
+- **Encuentro: 2 pantallas de alto** (384 px), diseñado a mano con piezas y enemigos colocados. Las dos pantallas de la DS forman parte del combate: lo de arriba no es «lo que viene», también te dispara.
+- **La cámara sigue siempre al héroe** (se apunta en la pantalla de abajo); no hay cámara fija, tampoco en el jefe (§6.13.7).
+- **Barrera en el borde de arriba del encuentro** (en el acto I, alambre o sacos; en el II, la reja del coro): no se abre hasta matar a todos.
+- **Pasillo de ~2 pantallas** detrás de la barrera: colchón para que, estando arriba del encuentro, la pantalla superior no enseñe el siguiente. Al subir por él asoma la parte baja del siguiente encuentro con sus enemigos dormidos (aviso, no revelación).
+- **Un encuentro despierta al cruzar su borde de abajo.** Los enemigos despiertos te siguen a cualquier parte. Nada reaparece.
+- **Antes de despertar, los enemigos del encuentro no reciben daño** (el rayo los atraviesa). Se vio con el bot (2026-11-17): disparar desde el pasillo a los Exvotos que rezan vaciaba el encuentro sin riesgo.
+- **Catálogo:** 8–10 diseños por acto, encadenados al azar y espejados (izquierda ↔ derecha). Acto I: 10–12 encuentros, ~40–48 pantallas, objetivo 5–6 min divertidos de principio a fin. Cada diseño enseña o examina una cosa.
+- **Reglas de oficio:** nunca hacer aparecer un enemigo encima del jugador; avisar de dónde sale cada uno; mezclar 1–2 que disparan con varios cuerpo a cuerpo; acto I con 3–6 enemigos por encuentro, subiendo poco a poco; nunca un hueco cerrado (siempre dos caminos hasta el héroe).
+- **Sensación:** como el primer piso de Isaac, fácil si lo entiendes, mortal si vas a lo loco. Encuentros con bastantes enemigos que no vienen todos a la vez: unos esperan en su puesto, otros van a por ti, otros entran en una segunda oleada.
+
+**Las piezas tienen papel de combate.**
+- Columnas y estatuas paran los disparos de todos (rama `fix/cobertura-estatuas`). Te protegen del Ojo.
+- Bancos y sacos paran cuerpos y cargas, no disparos. Los enemigos los rodean (campo de navegación), así que ordenan a la horda en hileras. Pendiente de comprobar: si el Cireneo queda aturdido al chocar con un banco como con un muro (si sí, el banco te protege del Cireneo).
+- Bancos destructibles y agacharse con `L` tras bancos y sacos: mecánicas candidatas, no ahora.
+
+**Relicario en cada pasillo: mejora continua y periódica.**
+- Sin gemas ni experiencia. En cada pasillo, a un lado, hay un **relicario**: al romperlo a tiros da **elegir un Don**, un corazón o las dos cosas. Los relicarios decorativos al azar desaparecen.
+- Un relicario por encuentro da unos 30 Dones por partida, del orden de los ~25 niveles de §6.13.5: las cifras de los Dones valen como están y se ajustan jugando.
+- **Reliquias:** 4 por partida, como en §6.13.5. Al vencer a cada jefe, y la primera en un relicario de marco dorado a mitad del acto I (sustituye a la del nivel 5).
+
+**Daño: varios disparos por enemigo.**
+| Enemigo | Disparos con el rayo base (antes) |
+| :--- | :--- |
+| Exvoto y monaguillo | 2 (1) |
+| Ojo | 3 (2) |
+| Cireneo | 3 (2) |
+| Abanderado (jefe) | ~20 (8) |
+- **El rayo sigue solo con el daño que le sobra** al matar; si no mata, se para. Con el rayo base, poner a los enemigos en fila ayuda poco; con Fervor vuelve a barrer filas (el poder se gana). La Lanza de Longinos sigue atravesando a todos sin perder daño.
+- Cifras exactas de vida: `[TUNABLE-PLACEHOLDER]` en la sesión de implementación (actualizar §6.12.10 y `tests/test_guardrails.py`).
+
+**Enemigos por acto (corrige §6.13).** Acto I: Exvotos; el Cireneo desde el primer tercio; **el Ojo desde la segunda mitad** (sin él las columnas no sirven). Acto II: se suma el Abanderado como élite. Acto III: todos. La IA de hoy vale casi tal cual (el Exvoto ya duerme rezando, el Cireneo telegrafía su carga, el Ojo se cubre y solo dos apuntan a la vez). Falta: que el Ojo y el Cireneo esperen en su puesto, despertar el encuentro entero, segunda oleada por arriba y abrir la barrera.
+
+**Tras la primera prueba en la DS (decidido 2026-11-17).** El prototipo resultó trivial: el jugador decidía cuándo empezaba la pelea y la empezaba fuera del alcance de los enemigos, con pocos a la vez y un Cireneo que se esquivaba con un paso. Se decide:
+- **Todos los enemigos están en la sala desde el principio, como en Isaac,** y despiertan todos a la vez al cruzar el borde de abajo (también los que rezan). Los refuerzos desde arriba son un recurso ocasional, no la norma: no tiene sentido temático que salgan de la nada. Sustituye a la «segunda oleada por arriba» como regla general.
+- **Más listos, no esponjas de balas.** La dificultad sale de la IA y de la colocación, no de subir la vida a secas. **El Exvoto esquiva el rayo:** si el héroe le está apuntando con el láser de carga, se aparta de la línea, y los de una fila se abren cada uno a un lado para romperla. No anda en línea recta hacia el héroe.
+- **El Cireneo, perseguidor que embiste:** anda siempre hacia el héroe a buen paso; cuando lo tiene alineado carga muy rápido y con poco aviso; si choca con una columna, estatua, saco o alambre queda aturdido un buen rato (la recompensa por usar el escenario).
+- **El Ojo** solo es difícil cuando hay más presión alrededor; subirle la vida no lo arregla. Su cambio se decide con el catálogo de salas.
+- **Salas rediseñadas** en un catálogo revisado antes de tocar la ROM: cada planta plantea una sola pregunta y sus tres poblaciones (ligera, media y dura) son versiones más duras de esa misma pregunta.
+
+**Ancho de la catedral: 256 px (una pantalla), sustituye a los 512 de §6.2.** Sin desplazamiento lateral: el encuentro entero se ve y todo el ancho queda al alcance del lápiz; el escenario cuesta la mitad de tiles. Muros de ~24 px por lado (suelo útil ~208 px), columnas pegadas al muro como pilastras. Corte orientativo: paso lateral ~24 + bancos 64 + pasillo central 32–48 + bancos 64 + paso lateral ~24. Pide rehacer el muro, el editor (hoy a 512) y la navegación y colisión de la ROM.
+
+**Dificultad: planta y población por separado (como Isaac y Hades).**
+- Cada diseño de encuentro es una **planta** (piezas y barrera) con **3 poblaciones**: ligera, media y dura (cuántos enemigos, de qué tipo y si hay segunda oleada).
+- El acto pide los encuentros **por tramos**: el primer tercio en ligera, el segundo en media y el último en dura. El azar elige planta y espejo; la dificultad la marca la posición. Una planta no sale dos veces seguidas y como mucho dos veces por acto (en tramos distintos).
+- En el acto I los tramos siguen la entrada de enemigos: ligera, solo Exvotos; media, se suman el Cireneo y algún Ojo suelto; dura, mezcla completa y segunda oleada.
+- Cada acto empieza algo por encima de donde acabó el anterior, con su propio catálogo de plantas y sus enemigos nuevos. Último recurso si los Dones corren más que los encuentros: +25 % de vida enemiga por acto.
+- Se equilibra jugando la vara de cada población, para que la curva de los encuentros vaya un poco por delante de la del jugador y el jefe sea el examen.
+
+**Catálogo mínimo del acto I.**
+| Planta | Piezas | Qué enseña |
+| :--- | :--- | :--- |
+| **La procesión** | Dos filas de bancos y pasillo central | Los bancos alinean a los Exvotos; cada uno pide dos disparos: retroceder disparando. |
+| **El embudo** | Sacos que cierran el centro, un solo paso | Leer y esquivar la carga del Cireneo; estrellarlo contra algo. |
+| **El balcón** | Dos columnas arriba (pantalla superior) | Mirar arriba y cubrirse del Ojo; en ligera, Exvotos rezando tras las columnas. |
+| **La pinza** | Centro abierto, piezas en los laterales | Dos frentes a la vez; no meterse en medio. |
+| **El claro** | Sin bancos, estatuas en las esquinas | Arena abierta para la multitud y las oleadas. |
+| **La alambrada** | Alambre de espino que cruza la nave | Los enemigos rodean y tú disparas a través. |
+- 6 plantas × 3 poblaciones = 18 encuentros (36 con espejo) para los 10–12 de una partida. Ideal a medio plazo: 8 plantas.
+- Además: **pasillo** (con relicario a un lado, izquierda o derecha), **pasillo dorado** (el relicario de la primera reliquia), **inicio** (pantallas despejadas) y **pantalla del jefe** (Abanderado).
+- Piezas: columna, estatua, banco, sacos, relicario, velas y lápidas (existen) más **alambre de espino** (nueva) y la **barrera que se abre** (sacos o alambre con comportamiento nuevo).
+- **Provisionales (decidido 2026-11-16):** sacos, alambre y barrera van en el prototipo con un sustituto provisional (rectángulos de color apagado); el usuario hace sus modelos 3D. El muro de 256 también es provisional en el prototipo.
+
+**Siguiente paso:** adaptar el editor a 256 y componer las 6 plantas con sus 3 poblaciones para revisarlas en el móvil; después, prototipo de 3–4 encuentros en la ROM frente a la versión de hoy.
+
+#### 6.13.7 Modo jefe: lógica común (propuesta 2026-11-17, rama `feat/modo-jefe`; en diseño)
+Concreta §6.13.1 para el escenario por actos (§6.13.6). Objetivo: que meter un jefe nuevo sea rellenar una ficha (nombre, retrato, vida, fases y escolta) y escribir su IA, sin tocar la intro, la barra, las fases ni la victoria. Se prueba con el Abanderado tal como está hoy; su combate como jefe se ajusta en otra sesión.
+
+**Secuencia del encuentro.**
+1. **Sala del jefe:** un bloque de 2 pantallas (384 px), como un encuentro, con su barrera arriba.
+2. **Entrada:** al cruzar el borde de abajo se cierra una barrera también detrás del héroe y empieza la intro.
+3. **Intro:** el juego se congela; presentación con el nombre del jefe (y su título del Códice). Se salta con `START`. Al terminar, entra la música de jefe (`boss_climax_loop`).
+4. **Cámara libre (decidido 2026-11-17):** la cámara sigue al héroe como en el resto del acto; solo se dispara desde la pantalla de abajo, así que fijarla no tiene sentido. El héroe se mueve por toda la sala. Por encima de la barrera de arriba la sala se cierra con una **reja** y, al otro lado, algo decorativo (que no se pueda tocar), para que la pantalla de arriba no quede vacía cuando el héroe sube al borde.
+5. **Combate por fases** (abajo).
+6. **Victoria:** el jefe muere; desaparecen su escolta e invocaciones; secuencia de victoria; pantalla de reliquia (marco dorado, §6.13.5); vuelve la música normal y se abren las dos barreras.
+7. **Morir** durante el jefe reinicia la partida, como en cualquier otro sitio.
+
+**Fases.**
+- Cada jefe declara de 1 a 3 fases con el umbral de vida en que empieza cada una (por ejemplo 100 %, 66 %, 33 %). La IA del jefe solo pregunta «¿en qué fase estoy?».
+- **Cambio de fase común a todos:** el jefe queda invulnerable ~1 s, se muestra una telegrafía (la misma para todos los jefes) y se renueva su escolta según la fase. Los disparos durante ese segundo no cuentan.
+- La escolta, si la hay, es una lista por fase: qué enemigos, cuántos a la vez y cada cuánto vuelve uno que cae. Con la lista vacía el jefe pelea solo (§6.13.1).
+
+**Barra de vida del jefe.** Sustituye a la barra flotante sobre el enemigo durante el modo jefe. Fija en pantalla, con el nombre del jefe y una muesca en cada umbral de fase. Colores de la paleta (§6.10), sin primarios puros.
+
+**Pendiente de la ronda A/B/C (definitivo, ROM real):** aspecto de la intro, de la barra de vida, de la telegrafía de cambio de fase y de la secuencia de victoria.
+
+**Ronda 1 de maquetas (2026-11-17, `walkthroughs/modo-jefe/ronda1_maquetas.html`).**
+- **Intro:** el jefe se ve en grande y repartido en las dos pantallas (de la A), pero dentro del propio juego, sin pantalla aparte (de la B). Abajo, su nombre, su título y **su frase del Códice, dicha en voz alta por él**. Descartada la de franjas de cine.
+- **Barra de vida:** barra (no rosario), en la **fila de arriba de la pantalla de abajo, junto a los corazones**: es donde se mira durante la pelea.
+- **Cambio de fase:** la marca de la barra salta rota y aparece el número romano de la fase sobre el jefe (C).
+- **Victoria:** fundido a blanco con su nombre tachado (C), a juego con la intro.
+- Ronda 2 (`ronda2_maquetas.html`): variantes de cada una y tres voces para el Abanderado.
+
+**Decidido tras la ronda 2 (2026-11-17).** Esta es la versión que se programa:
+- **Intro (B):** el juego se congela y la cámara se acerca ×2 al jefe dentro de la sala, en la pantalla de arriba, con un foco que oscurece los bordes. Abajo, la escena a oscuras con su nombre, su título y su frase, que el jefe dice con su voz. Se salta con `START`.
+- **Voz del Abanderado:** la voz B de la ronda 2 (`walkthroughs/modo-jefe/assets/voz/`).
+- **Barra de vida (C):** barra fina en la fila de arriba de la pantalla de abajo, desde el borde izquierdo hasta los corazones, **centrada en vertical con los corazones**; el nombre del jefe, debajo. Una marca en cada umbral de fase.
+- **Cambio de fase:** la marca de la barra salta rota y aparece el número romano de la nueva fase sobre el jefe, mientras este pasa ~1 s invulnerable. Sale del estilo de la barra; no hay más que elegir.
+- **Victoria (A con la frase de B):** la cámara se acerca de nuevo ×2 al jefe y las dos pantallas se destiñen a blanco; abajo, en el mismo sitio que en la intro, su nombre tachado en rojo y su frase de derrota (el Abanderado: «El asta ha caído.»), también con su voz. Después, la pantalla de reliquia.
+- **Ficha de cada jefe:** nombre, título, frase de entrada, frase de derrota, sus dos audios, vida, umbrales de fase y escolta por fase.
+- **Ritmo de la intro (corregido 2026-11-17 tras verla en la ROM: iba demasiado rápida).** Cada cosa a su tiempo, con pausas; cifras `[TUNABLE-PLACEHOLDER]`:
+  1. 0,0 s: se congela; se ve al jefe en la sala, sin acercar, ~0,8 s.
+  2. 0,8–2,6 s: acercamiento lento ×1 → ×2 (con frenada al final) y el foco se cierra a la vez.
+  3. Pausa ~0,6 s.
+  4. Aparece el nombre (fundido ~0,5 s) y, ~0,4 s después, el título.
+  5. Pausa ~0,6 s; entonces dice su frase y el texto aparece mientras la dice.
+  6. Al acabar la voz, ~1,2 s quieto.
+  7. Se aleja (~0,5 s), se va el texto, vuelve el juego y entra la música. En total, ~9 s. START la salta en cualquier momento.
+- **Ritmo de la victoria:** congelado en su última pose ~1 s; acercamiento lento (~1,5 s); se destiñe (~1,5 s); se tacha el nombre (~0,6 s); pausa; dice su frase de derrota y se escribe; ~1,5 s quieto; reliquia. En total, ~8 s.

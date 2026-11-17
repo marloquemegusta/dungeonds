@@ -1,5 +1,8 @@
 #include "strip.h"
 #include "strip_kit.h"
+#if defined(ENCOUNTERS_PROTO) && ENCOUNTERS_PROTO
+#include "encounters_act1.h"
+#endif
 
 #include <string.h>
 #include <stdlib.h>
@@ -15,6 +18,14 @@
 #define STRIP_COLLISION_ROW_BYTES (STRIP_COLLISION_W / 4)
 #define STRIP_WALL_TILES 6
 #define STRIP_WALL_CELLS (STRIP_WALL_TILES * 2)
+#if ENCOUNTERS_PROTO
+// Variant "encuentros": the floor is one screen wide (DESIGN.md 6.13.6); everything outside it is wall.
+#define STRIP_WALL_L_CELLS (ENC_FLOOR_X / COLLISION_SCALE)
+#define STRIP_WALL_R_FROM ((ENC_FLOOR_X + ENC_FLOOR_W) / COLLISION_SCALE)
+#else
+#define STRIP_WALL_L_CELLS STRIP_WALL_CELLS
+#define STRIP_WALL_R_FROM (STRIP_COLLISION_W - STRIP_WALL_CELLS)
+#endif
 #define STRIP_OCCLUSION_CAPACITY 32768
 #define STRIP_START_CLEAR_BANDS 4
 // Compositor v2 (DESIGN.md 6.9.1b): block = 2 screens of 24 tile rows = 3 bands of 16 rows.
@@ -182,10 +193,12 @@ static uint32_t band_hash(int32_t band, uint32_t salt) {
     return hash32(s_seed ^ ((uint32_t)band * 0x9e3779b9u) ^ salt);
 }
 
+#if !ENCOUNTERS_PROTO
 // Hash of (screen index, salt, sub): the same bits as _pick() in tools/bake_cathedral_kit.py.
 static uint32_t plan_pick(int32_t sidx, uint32_t salt, uint32_t sub) {
     return band_hash(sidx, salt ^ (sub * 0x85ebca6bu));
 }
+#endif
 
 // Hash-selected anchor points every four bands are linearly interpolated. Their
 // x range is only 32 px, so neighboring lane centers differ by at most 8 px;
@@ -228,6 +241,7 @@ static int stamp_tiles_overlap(const StripStamp *a, int ax, int ay,
     return 0;
 }
 
+#if !ENCOUNTERS_PROTO
 static int piece_is_lapida(uint8_t piece_id) {
     return piece_id >= STRIP_PIECE_LAPIDA_3X2_CRUZ && piece_id <= STRIP_PIECE_LAPIDA_2X1_CAB;
 }
@@ -310,6 +324,8 @@ static void pick_velas(PlanItem *acc, int *n, int32_t sidx, uint32_t salt, uint3
     }
 }
 
+#endif
+
 // One part of the plan of a block, in the computation order of plan_block(). The parts are
 // PLAN_UNITS calls: 0..1 structure of each screen (two columns, then a relicario or two benches),
 // 2..3 lapidas of each screen (checked against the structure, so they never sit under a bench or
@@ -317,6 +333,142 @@ static void pick_velas(PlanItem *acc, int *n, int32_t sidx, uint32_t salt, uint3
 // preparation runs the parts over several calls; plan_block() runs them all. Mirrors _block_records()
 // in the baker.
 #define PLAN_UNITS 10
+#if ENCOUNTERS_PROTO
+// Variant "encuentros": the compositor does not scatter its own pieces; a block holds only the pieces of
+// its plant (encounter) or of the corridor. Each piece goes to the legal phase nearest to the design spot
+// (the kit only bakes a few phases per piece, so a spot can move by up to half a floor period).
+static const StripStamp *first_stamp_of(uint8_t piece_id) {
+    for (int i = 0; i < (int)g_strip_kit.num_stamps; i++)
+        if (g_strip_kit.stamps[i].piece_id == piece_id) return &g_strip_kit.stamps[i];
+    return 0;
+}
+
+static int plan_fits(const PlanItem *acc, int n, const StripStamp *stamp, int x, int y) {
+    if (x < ENC_FLOOR_X / 8 || x + (int)stamp->w_tiles > (ENC_FLOOR_X + ENC_FLOOR_W) / 8) return 0;
+    if (y < 0 || y + (int)stamp->h_tiles > STRIP_BLOCK_TILES) return 0;
+    for (int i = 0; i < n; i++)
+        if (stamp_tiles_overlap(stamp, x, y, acc[i].stamp, acc[i].x, acc[i].y)) return 0;
+    return 1;
+}
+
+#if STRIP_LAYOUT_DUMP
+int g_enc_last_place[STRIP_BLOCK_MAX_PIECES][4];   // host harness: piece, x_tile, y_tile, nominal x_tile (-1 = dropped)
+#endif
+
+static void enc_place_piece(PlanItem *acc, int *n, const EncPiecePlan *p) {
+    const StripStamp *any = first_stamp_of(p->piece);
+    if (!any || *n >= STRIP_BLOCK_MAX_PIECES) return;
+    int w_px = (int)any->w_tiles * 8;
+    int nominal_px = p->mirror ? ENC_FLOOR_X + ENC_FLOOR_W - (p->lx + w_px) : ENC_FLOOR_X + p->lx;
+    int tx = (nominal_px + 4) / 8;
+    int ty = (p->ly + 4) / 8;
+    const StripStamp *best = 0;
+    int bx = 0, by = 0, best_cost = 0x7fffffff;
+    for (int i = 0; i < (int)g_strip_kit.num_stamps; i++) {
+        const StripStamp *stamp = &g_strip_kit.stamps[i];
+        if (stamp->piece_id != p->piece) continue;
+        int x_lo = tx - ((tx - (int)stamp->phase_col) & 15);
+        int y_lo = ty - ((ty - (int)stamp->phase_row) & 15);
+        for (int ix = 0; ix < 2; ix++) {
+            for (int iy = 0; iy < 2; iy++) {
+                int x = x_lo + 16 * ix, y = y_lo + 16 * iy;
+                if (!plan_fits(acc, *n, stamp, x, y)) continue;
+                int cost = (x - tx) * (x - tx) + (y - ty) * (y - ty);
+                if (cost < best_cost) { best_cost = cost; best = stamp; bx = x; by = y; }
+            }
+        }
+    }
+#if STRIP_LAYOUT_DUMP
+    {
+        static int slot;
+        if (*n == 0) slot = 0;
+        if (slot < STRIP_BLOCK_MAX_PIECES) {
+            g_enc_last_place[slot][0] = p->piece;
+            g_enc_last_place[slot][1] = best ? bx : -1;
+            g_enc_last_place[slot][2] = best ? by : -1;
+            g_enc_last_place[slot][3] = tx;
+            slot++;
+        }
+    }
+#endif
+    if (!best) return;
+    acc[*n].stamp = best;
+    acc[*n].x = bx;
+    acc[*n].y = by;
+    acc[*n].piece_id = p->piece;
+    acc[*n].cat = p->piece == STRIP_PIECE_VELA ? PLAN_CAT_VEL : PLAN_CAT_STRUCT;
+    (*n)++;
+}
+
+// Lápidas of the encounter rooms. A lápida is a flat floor stamp (no footprint, no occlusion): the hero
+// and the horde walk over it. The plants only list physical props, so the composer scatters a couple of
+// tombs per encounter block on free floor, hashed from (seed, block) like the rest of the plan: the same
+// block always gets the same tombs and the incremental preparation may plan it ahead. Corridors keep
+// only their relicario and velas, and the boss room stays clear for the fight.
+// Encounters-only salts (the encounter composer has no Python twin).
+#define S_ENC_LAP_N 0x6c617031u
+#define S_ENC_LAP_SCREEN 0x6c617032u
+#define S_ENC_LAP_PIECE 0x6c617033u
+#define S_ENC_LAP_POS 0x6c617034u
+#define S_ENC_LAP_CANDS 64
+
+static void enc_place_lapidas(PlanItem *acc, int *n_io, int32_t block) {
+    static const uint8_t ids[4] = {
+        STRIP_PIECE_LAPIDA_3X2_CRUZ, STRIP_PIECE_LAPIDA_3X2_CAB,
+        STRIP_PIECE_LAPIDA_2X1_CRUZ, STRIP_PIECE_LAPIDA_2X1_CAB
+    };
+    static const StripStamp *cand_stamp[S_ENC_LAP_CANDS];
+    static int cand_x[S_ENC_LAP_CANDS], cand_y[S_ENC_LAP_CANDS];
+    const int x_lo = ENC_FLOOR_X / 8, x_hi = (ENC_FLOOR_X + ENC_FLOOR_W) / 8;
+    int n = *n_io;
+    int count = 1 + (int)(band_hash(block, S_ENC_LAP_N) % 2u);
+    int screen0 = (int)(band_hash(block, S_ENC_LAP_SCREEN) & 1u);
+    for (int i = 0; i < count; i++) {
+        int top = ((screen0 + i) & 1) * STRIP_SCREEN_TILES;    // one tomb per screen half at most
+        uint8_t piece = ids[band_hash(block, S_ENC_LAP_PIECE + (uint32_t)i) % 4u];
+        int ncand = 0;
+        for (int s = 0; s < (int)g_strip_kit.num_stamps; s++) {
+            const StripStamp *stamp = &g_strip_kit.stamps[s];
+            if (stamp->piece_id != piece) continue;
+            // The kit bakes each lápida at the phases that follow the damero rule: (x - phase_col) % 4
+            // and (y - phase_row) % 2 have to be 0 or the joints of the floor break (DESIGN.md 6.9.1b).
+            for (int x = x_lo; x + (int)stamp->w_tiles <= x_hi && ncand < S_ENC_LAP_CANDS; x++) {
+                if (((x - (int)stamp->phase_col) & 3) != 0) continue;
+                int y_end = top + STRIP_SCREEN_TILES - (int)stamp->h_tiles;
+                for (int y = top + 2; y <= y_end && ncand < S_ENC_LAP_CANDS; y++) {
+                    if (((y - (int)stamp->phase_row) & 1) != 0) continue;
+                    if (!plan_fits(acc, n, stamp, x, y)) continue;    // floor bounds and no prop underneath
+                    cand_stamp[ncand] = stamp;
+                    cand_x[ncand] = x;
+                    cand_y[ncand] = y;
+                    ncand++;
+                }
+            }
+        }
+        if (ncand == 0 || n >= STRIP_BLOCK_MAX_PIECES) continue;
+        int pick = (int)(band_hash(block, S_ENC_LAP_POS + (uint32_t)i) % (uint32_t)ncand);
+        acc[n].stamp = cand_stamp[pick];
+        acc[n].x = cand_x[pick];
+        acc[n].y = cand_y[pick];
+        acc[n].piece_id = piece;
+        acc[n].cat = PLAN_CAT_LAP;
+        n++;
+    }
+    *n_io = n;
+}
+
+static void plan_unit(int32_t block, PlanItem *acc, int *n_io, int unit) {
+    if (unit != 0) return;
+    EncPiecePlan pieces[ENC_MAX_PIECES];
+    int count = enc_block_pieces(block, pieces, ENC_MAX_PIECES);
+    int n = *n_io;
+    for (int i = 0; i < count; i++) enc_place_piece(acc, &n, &pieces[i]);
+    EncBlock info;
+    enc_block_info(block, &info);
+    if (info.kind == ENC_BLOCK_ENCOUNTER) enc_place_lapidas(acc, &n, block);
+    *n_io = n;
+}
+#else
 static void plan_unit(int32_t block, PlanItem *acc, int *n_io, int unit) {
     int n = *n_io;
     int kinds[2];
@@ -388,6 +540,7 @@ static void plan_unit(int32_t block, PlanItem *acc, int *n_io, int unit) {
     }
     *n_io = n;
 }
+#endif
 
 // Accepted pieces of one block: all parts of plan_unit() in order.
 static int plan_block(int32_t block, PlanItem *acc) {
@@ -499,6 +652,29 @@ static void dump_block_plan(int32_t block, const PlanItem *acc, int n) {
 }
 #endif
 
+#if ENCOUNTERS_PROTO
+// Obstacles and the closed barrier of the block that owns this band, written into the collision rows
+// (4 px cells). The barrier asks the encounter state, so a band built after it opened leaves it free.
+static void band_apply_rects(const BandSink *sink, int32_t band, int collision_row) {
+    int32_t block, off;
+    band_to_block(band, &block, &off);
+    EncRect rects[ENC_MAX_RECTS];
+    int n = enc_block_rects(block, rects, ENC_MAX_RECTS);
+    const int y0 = (int)off * 8, y1 = y0 + STRIP_BAND_PX;
+    for (int i = 0; i < n; i++) {
+        int ry0 = rects[i].y > y0 ? rects[i].y : y0;
+        int ry1 = rects[i].y + rects[i].h < y1 ? rects[i].y + rects[i].h : y1;
+        if (ry0 >= ry1) continue;
+        unsigned value = (unsigned)enc_collision_value(rects[i].kind);
+        for (int py = ry0; py < ry1; py += COLLISION_SCALE) {
+            unsigned cell_y = (unsigned)(collision_row + (py - y0) / COLLISION_SCALE);
+            for (int px = rects[i].x; px < rects[i].x + rects[i].w; px += COLLISION_SCALE)
+                packed_set_cell(sink->collision, cell_y, (unsigned)(px / COLLISION_SCALE), value);
+        }
+    }
+}
+#endif
+
 // False when the band takes no stamps (showcase build, the cleared bands at the start, no kit data).
 static int stamp_band_enabled(int32_t band) {
 #if defined(PROPS_SHOWCASE) && PROPS_SHOWCASE
@@ -553,6 +729,9 @@ static void stamp_band(const BandSink *sink, int32_t band, int map_row, int coll
     stamp_band_plan(band, &off);
     int cat = 0, idx = 0;
     stamp_band_slice(sink, off, map_row, collision_row, &cat, &idx, 0);
+#if ENCOUNTERS_PROTO
+    band_apply_rects(sink, band, collision_row);
+#endif
 }
 
 #if STRIP_LAYOUT_DUMP
@@ -560,6 +739,9 @@ static void stamp_band(const BandSink *sink, int32_t band, int map_row, int coll
 // emission order. Pure function of (seed, block): no arena, no band state.
 void strip_layout_dump_blocks(uint32_t seed, int32_t first_block, int num_blocks) {
     s_seed = seed;
+#if ENCOUNTERS_PROTO
+    enc_init(seed);
+#endif
     for (int i = 0; i < num_blocks; i++) {
         PlanItem acc[STRIP_BLOCK_MAX_PIECES];
         int n = plan_block(first_block + i, acc);
@@ -588,6 +770,13 @@ static void band_floor(const BandSink *sink, int32_t band, int map_row, int coll
         const uint16_t *src = g_strip_kit.floor_map + map_phase * STRIP_W_TILES;
         uint16_t *dst = sink->map + (unsigned)(map_row + (int)row) * STRIP_W_TILES;
         memcpy(dst, src, STRIP_MAP_ROW_BYTES);
+#if ENCOUNTERS_PROTO
+        // The 24 px of wall left on each side of the 256 px view: the inner columns of the baked wall.
+        for (int c = 0; c < 3; c++) {
+            dst[ENC_CAM_X / 8 + c] = src[STRIP_WALL_TILES - 3 + c];
+            dst[(ENC_FLOOR_X + ENC_FLOOR_W) / 8 + c] = src[STRIP_W_TILES - STRIP_WALL_TILES + c];
+        }
+#endif
         map_phase++;
         if (map_phase == map_period) map_phase = 0;
     }
@@ -611,10 +800,8 @@ static void generate_band(const BandSink *sink, int32_t band, int map_row, int c
 static void enforce_edges_in(uint8_t *collision, unsigned row_start, unsigned row_end) {
     for (unsigned row = row_start; row < row_end; row++) {
         unsigned base = row * STRIP_COLLISION_W;
-        for (unsigned x = 0; x < STRIP_WALL_CELLS; x++) {
-            packed_collision_set(collision, base + x, 3);
-            packed_collision_set(collision, base + STRIP_COLLISION_W - STRIP_WALL_CELLS + x, 3);
-        }
+        for (unsigned x = 0; x < STRIP_WALL_L_CELLS; x++) packed_collision_set(collision, base + x, 3);
+        for (unsigned x = STRIP_WALL_R_FROM; x < STRIP_COLLISION_W; x++) packed_collision_set(collision, base + x, 3);
     }
 }
 
@@ -758,6 +945,9 @@ static void prep_band(void) {
                                 &s_prep_cat, &s_prep_idx, STRIP_PREP_PIECES);
     }
     if (!done) return;
+#if ENCOUNTERS_PROTO
+    band_apply_rects(&s_stage_sink, band, collision_row);
+#endif
     // The wall columns of this band's rows, so the reserve rows are final once the six bands exist.
     enforce_edges_in(s_collision_res, (unsigned)collision_row, (unsigned)collision_row + STRIP_BAND_CELLS);
     s_prep_band_step = 0;
@@ -947,6 +1137,10 @@ static BandSink live_sink(void) {
 
 void strip_start(uint32_t seed) {
     s_seed = seed;
+#if ENCOUNTERS_PROTO
+    enc_init(seed);
+    s_arena.player_y = STRIP_WIN_H_PX - 256 - enc_start_up_px();
+#endif
     s_next_band = 0;
     s_devout_active_n = 0;
     s_devout_stage_n = 0;
@@ -1054,3 +1248,21 @@ int strip_height_m(int player_y_px) {
                  ((height_px % STRIP_PIXELS_PER_METER_100X) * 100) / STRIP_PIXELS_PER_METER_100X);
 }
 const Arena *strip_arena(void) { return &s_arena; }
+
+#if ENCOUNTERS_PROTO
+// Rewrites a rectangle of the live collision (window px) and, when a rebase is being prepared, the same rows
+// of the reserve window (shifted down by the rebase), so an opened barrier survives the commit.
+static void fill_collision_in(uint8_t *collision, int x, int y, int w, int h, unsigned value) {
+    for (int py = y; py < y + h; py += COLLISION_SCALE) {
+        if (py < 0 || py >= STRIP_WIN_H_PX - COLLISION_SCALE) continue;
+        for (int px = x; px < x + w; px += COLLISION_SCALE)
+            packed_set_cell(collision, (unsigned)(py / COLLISION_SCALE), (unsigned)(px / COLLISION_SCALE), value);
+    }
+}
+
+void strip_collision_fill_win(int x, int y, int w, int h, int value) {
+    if (g_arena != &s_arena || !s_kit_valid) return;
+    fill_collision_in(s_collision, x, y, w, h, (unsigned)value);
+    if (s_prep_phase != PREP_IDLE) fill_collision_in(s_collision_res, x, y + STRIP_SHIFT_PX, w, h, (unsigned)value);
+}
+#endif

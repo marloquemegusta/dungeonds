@@ -6,6 +6,9 @@
 #include "groundfx.h"
 #include "hitvolume.h"
 #include "sfx.h"
+#if ENCOUNTERS_PROTO
+#include "encounters_act1.h"
+#endif
 
 /* TUNABLE-PLACEHOLDER: Player Weapons Tuning Table (Fixed-Point 8.8).
  * Goal hits to kill (DESIGN.md 4.3): shotgun point blank 1 shooter / 2-3 charger,
@@ -863,6 +866,11 @@ static void fire_sniper(const WeaponTuning *tuning, const WeaponInput *in, fixed
     int survivor = 0;                   // an enemy lived through the hit: the ray ends here
     int kills = 0;                      // Sed de Ceniza
     const int pierce_all = upgrades_has_relic(RELIC_LANZA);
+#if ENCOUNTERS_PROTO
+    // DESIGN.md 6.13.6: the ray goes on with the damage it has left after a kill; a survivor stops it.
+    int beam_left = upgrades_beam_damage(tuning->damage_per_hit);
+    int relic_done = 0;
+#endif
 
     const int range = sniper_range();
     for (int d = 0; d < range; d += 2) {
@@ -875,6 +883,9 @@ static void fire_sniper(const WeaponTuning *tuning, const WeaponInput *in, fixed
         for (int i = 0; i < max_enemies; i++) {
             Enemy *e = &enemies[i];
             if (!e->active || e->hp <= 0 || e->state == ENEMY_STATE_EMERGE || (hit_mask & (1u << i))) continue;
+#if ENCOUNTERS_PROTO
+            if (enc_untouchable(e)) continue;      // asleep: the ray goes through (DESIGN.md 6.13.6)
+#endif
             int edx = TO_INT(cur_x - e->x);
             int edy = TO_INT(cur_y - e->y);
             int hit = (e->char_id == CHAR_CHARGER || e->char_id == CHAR_ABANDERADO)
@@ -884,12 +895,20 @@ static void fire_sniper(const WeaponTuning *tuning, const WeaponInput *in, fixed
                 : body_hit_test(edx, edy, in->muzzle_h);
             if (hit) {
                 hit_mask |= 1u << i;
+#if ENCOUNTERS_PROTO
+                int sniper_damage = beam_left;
+                const int hp_before = e->hp;
+#else
                 int sniper_damage = upgrades_beam_damage(tuning->damage_per_hit);
+#endif
                 const int auto_fe = e->burn_layers && upgrades_has_relic(RELIC_AUTO_FE);   // Auto de Fe: x2 and consumes the layers
                 const int af_layers = e->burn_layers;
                 if (auto_fe) {
                     sniper_damage *= 2;
                     burn_clear(e);
+#if ENCOUNTERS_PROTO
+                    beam_left = sniper_damage;
+#endif
                 }
                 // Where a surviving enemy stops the ray: the touch of its wide hit ellipse is well in front of the
                 // sprite, so the ray goes on to the projection of its centre onto the ray (at most 14 px further),
@@ -903,8 +922,17 @@ static void fire_sniper(const WeaponTuning *tuning, const WeaponInput *in, fixed
                 // Viatico: a lethal beam hit may steal a heart; the victim then stays suspended (see enemy_suspend_update).
                 if (e->hp <= sniper_damage && viatico_roll(e)) e->suspend_req = 1;
                 enemy_hit(e, sniper_damage, dir_x * 4, dir_y * 4);
+#if ENCOUNTERS_PROTO
+                enc_note_beam_hit(e);
+#endif
                 if (e->hp <= 0) {
                     kills++;
+#if ENCOUNTERS_PROTO
+                    if (!pierce_all) {
+                        beam_left -= hp_before;
+                        if (beam_left <= 0) survivor = 1;       // the ray spent all its damage on this kill
+                    }
+#endif
                 } else {
                     survivor = 1;
                     cur_x += (dir_x * adv);
@@ -924,6 +952,17 @@ static void fire_sniper(const WeaponTuning *tuning, const WeaponInput *in, fixed
                 sniper_hit_fx(in, cur_x, cur_y);
             }
         }
+#if ENCOUNTERS_PROTO
+        if (!relic_done) {                 // the relicario of the corridor is a target too
+            int rx, ry;
+            if (enc_relic_target(&rx, &ry) && body_hit_test(TO_INT(cur_x) - rx, TO_INT(cur_y) - ry, in->muzzle_h)) {
+                relic_done = 1;
+                enc_relic_hit(upgrades_beam_damage(tuning->damage_per_hit));
+                spawn_impact(TO_INT(cur_x), TO_INT(cur_y) - in->muzzle_h, -dir_x, -dir_y, 4, 1);
+                survivor = 1;
+            }
+        }
+#endif
         if (survivor && !pierce_all) { end_blocked = 1; break; }
     }
     if (upgrades_has_relic(RELIC_SED_CENIZA)) {          // each kill speeds the next charge up, a miss slows it
@@ -1217,6 +1256,15 @@ static void aura_update(void) {
 // Sniper charge state for the hero's animation: charging = AIM_AIMING or AIM_READY; progress 0..256.
 int weapons_aim_charging(void) {
     return s_aim_state == AIM_AIMING || s_aim_state == AIM_READY;
+}
+
+int weapons_aim_line(int *mx, int *my, int *gx, int *gy) {
+    if (s_aim_state != AIM_AIMING && s_aim_state != AIM_READY) return 0;
+    *mx = TO_INT(s_aim_muzzle_x);
+    *my = TO_INT(s_aim_muzzle_y);
+    *gx = (int)s_aim_dir_x;
+    *gy = (int)s_aim_dir_y * 2;
+    return 1;
 }
 
 int weapons_aim_progress(void) {

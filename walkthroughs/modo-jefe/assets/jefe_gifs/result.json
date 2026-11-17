@@ -1,0 +1,26 @@
+{
+  "name": "modo_jefe_gifs",
+  "scenario": "modo_jefe_gifs.json",
+  "status": "PASS",
+  "failed": [],
+  "error": null,
+  "warnings": [],
+  "frames": 1744,
+  "wall_ms": 36743,
+  "captures": [
+    "jefe_a_pasillo",
+    "jefe_z_final"
+  ],
+  "map": {
+    "source": "explicit",
+    "elf": "/mnt/c/codexlocal/dungeonds/.worktrees/modo-jefe/.ds-game-dev/build/out/dungeonds-encuentros.elf",
+    "map": null
+  },
+  "debug_capture": true,
+  "skip_render": true,
+  "symbol_addresses": {
+    "stats": "0x0225db14",
+    "dbg": "0x0225dbd4",
+    "nav": "0x02265f38"
+  }
+}

@@ -1,22 +1,26 @@
 #include "gameplay.h"
 #include "crashlog.h"
 #include "encounters.h"
+#include "boss.h"
 #include "collision.h"
 #include "modifiers.h"
 #include "upgrades.h"
 #include "sfx.h"
 #include <string.h>
+#if ENCOUNTERS_PROTO
+#include "encounters_act1.h"
+#endif
 
 // ---------------------------------------------------------------------------
 // 1. Fixed-Point 8.8 Tuning Tables
 // ---------------------------------------------------------------------------
 
-const EnemyTuning g_enemy_tuning[NUM_ENEMY_TYPES] = {
+ENEMY_TUNING_CONST EnemyTuning g_enemy_tuning[NUM_ENEMY_TYPES] = {
     [ENEMY_TYPE_NONE] = { 0 },
     [ENEMY_TYPE_CHARGER] = {
         .max_hp = 300,            // [TUNABLE-PLACEHOLDER] scale 100 = 1.0 (was 60): 2 sniper hits (150 each)
-        .speed = 150,             // [TUNABLE-PLACEHOLDER] 8.8 fixed: slow approach (the 0.3 charger ran at 293)
-        .telegraph_duration = 30, // [TUNABLE-PLACEHOLDER] frames standing still and blinking before the lunge
+        .speed = 105,             // [TUNABLE-PLACEHOLDER] 8.8 fixed: ~58% of the hero (181), so the player can break away and charge the beam
+        .telegraph_duration = 45, // [TUNABLE-PLACEHOLDER] 0.75 s standing still and blinking before the lunge
         .charge_speed = 650,      // [TUNABLE-PLACEHOLDER] 8.8 fixed: ~2 x the hero (326), straight line
     },
     [ENEMY_TYPE_SHOOTER] = {
@@ -94,6 +98,9 @@ int player_take_hit(PlayerState *player) {
         sfx_stop_charge();
     }
     weapons_player_hit();           // Corazon Flagelado (ignores a hit that kills)
+#if ENCOUNTERS_PROTO
+    enc_player_hit();
+#endif
     sfx_play(SND_PLAYER_HURT, -1);
     return 1;
 }
@@ -111,6 +118,9 @@ void enemy_set_death_hook(EnemyDeathHook hook) {
 
 static void enemy_damage(Enemy *e, int damage, fixed hit_vx, fixed hit_vy, int quiet) {
     if (!e || !e->active || e->hp <= 0 || e->state == ENEMY_STATE_EMERGE) return;
+#if ENCOUNTERS_PROTO
+    if (boss_blocks_damage(e)) return;           // the invulnerable second of a phase change (DESIGN.md 6.13.7)
+#endif
     e->hp -= damage;
     if (!quiet) {
         e->hit_timer = 8;
