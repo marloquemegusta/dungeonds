@@ -12,7 +12,7 @@ Primero el estado necesario para retomar el trabajo sin depender del chat; despu
     - ~~No hay lápidas en las salas.~~ *(Resuelto 2026-11-17: 1–2 lápidas aleatorias por sala respetando el damero y sin solapar piezas).*
     - Los muros del ancho 256 pueden ser más finos.
     - ~~La IA del Exvoto se siente lista pero hace alguna cosa rara; falta explicar con claridad qué hace (esquiva de la línea de apuntado y zigzag al andar) y revisarla.~~ *(Explicada y corregida 2026-11-17: cancela la esquiva al soltar el apuntado en vez de congelarse y atenúa el zigzag de 96 a 32 px).*
-    - En muchas salas la estrategia óptima es quedarse quieto o recular y matar lo que viene: estudiarlo.
+    - ~~En muchas salas la estrategia óptima es quedarse quieto o recular y matar lo que viene: estudiarlo.~~ *(Resuelto 2026-11-17: al entrar 36 px en la sala se cierra también la barrera trasera hasta limpiarla, y los enemigos siguen siendo intocables desde el pasillo).*
     - Una partida completa se queda corta: solo hay un acto y un jefe *(stages 10 y 14 cubiertos con El Abanderado repetido; faltan los otros 2 jefes).*
   - **Para siguientes sesiones:**
     - Consolidar la lista de assets que faltan para hacerlos en 3D (sacos, alambre de espino, barrera o verja, muro fino de 256, relicario dorado y lo que salga del inventario).
