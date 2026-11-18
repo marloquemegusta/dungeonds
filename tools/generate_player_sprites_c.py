@@ -279,8 +279,8 @@ chars_meta = [
     ('ojo', 'ojo', 'El Ojo del Tribunal', 110, 9),
     ('exvoto', 'exvoto', 'Exvoto Walker Enemy', 130, 8),
     # Exvoto clips (DESIGN.md 6.10): each one is a character slot of its own, so the enemy swaps char_id
-    # when its pose changes and the renderer needs no special case. Same 40x40 cell as the walk, except
-    # exvoto_stand_up (48x48 cell, see characters.json).
+    # when its pose changes and the renderer needs no special case. Same 40x40 cell as the walk (and the
+    # same world scale: characters.json scaleRef + normScale).
     ('exvoto_pray_stand', 'exvoto_pray_stand', 'Exvoto praying standing', 11, 24),
     ('exvoto_pray_kneel', 'exvoto_pray_kneel', 'Exvoto praying kneeling', 27, 14),
     ('exvoto_stand_up', 'exvoto_stand_up', 'Exvoto standing up', 0, 9),
@@ -517,21 +517,42 @@ for cvar, cfolder, cframes, cconst, cdesc in OJO_CLIPS:
     out_lines.append('};\n\n')
 
 # Hero shot clip (Corazon Abierto, DESIGN.md "Carga y disparo"): a second set for CHAR_HERO only.
-# It is the clip rendered by the lab with the walk's settings. Its ground line was 1 px lower
-# (anchor 34 vs 33 in the walk), so each direction is shifted up by walk_anchor - shot_anchor rows:
-# the feet then sit on the same row as in the walk and the walk's ground anchor table serves both.
+# It is the clip rendered by the lab at the walk's world scale (scaleRef + normScale) but in a bigger cell
+# (characters.json resolution, e.g. 48x48 vs 40x40) so the arms spread in a cross are not cut. The cell is
+# not shifted: the clip has its own ground-anchor table (g_player_shot_ground_anchors) and the engine draws
+# it at (feet.x - w/2, feet.y - anchor), so the feet and the horizontal centre stay where the walk has them.
+# The lab's shadow canvas is 2x the cell (96x96 here); it is cropped centred to the 80x80 the engine uses.
 SHOT_DIR = os.path.join(SRC_ROOT, 'corazon_disparo')
-walk_anchors, _, _, _ = parse_header(os.path.join(SRC_ROOT, 'corazon', 'nds_shadow_anchor.h'))
-shot_anchors, _, shot_shb_body, shot_mask_body = parse_header(os.path.join(SHOT_DIR, 'nds_shadow_anchor.h'))
-shot_shift = [walk_anchors[d] - shot_anchors[d] for d in range(8)]
-print('hero shot anchors: walk', walk_anchors, 'shot', shot_anchors, 'shift', shot_shift)
 with open(os.path.join(SHOT_DIR, 'settings.json'), 'r', encoding='utf-8') as sf:
-    shot_dm = json.load(sf)['dirMuzzle']
+    shot_settings = json.load(sf)
+shot_w, shot_h = [int(v) for v in str(shot_settings['frameSize']).split('x')]
+shot_shw, shot_shh = [int(v) for v in shot_settings['shadowSize']]
+with open(os.path.join(WT, 'include', 'player_sprite.h'), 'r', encoding='utf-8') as hf:
+    hdr = hf.read()
+hdr_w = int(re.search(r'#define HERO_SHOT_SPRITE_W (\d+)', hdr).group(1))
+hdr_h = int(re.search(r'#define HERO_SHOT_SPRITE_H (\d+)', hdr).group(1))
+assert (hdr_w, hdr_h) == (shot_w, shot_h), (
+    f'include/player_sprite.h says HERO_SHOT_SPRITE {hdr_w}x{hdr_h} but the lab rendered {shot_w}x{shot_h}')
+assert shot_w % 2 == 0, 'the engine centres the cell with w / 2: use an even width'
+shot_anchors, _, shot_shb_body, shot_mask_body = parse_header(os.path.join(SHOT_DIR, 'nds_shadow_anchor.h'), (shot_shw * shot_shh) // 2)
+walk_anchors, _, _, _ = parse_header(os.path.join(SRC_ROOT, 'corazon', 'nds_shadow_anchor.h'))
+print('hero shot cell %dx%d, anchors: walk' % (shot_w, shot_h), walk_anchors, 'shot', shot_anchors)
+assert shot_settings['anchor'][0] == shot_w // 2, 'the shot clip must be centred on the feet horizontally'
+if shot_shw > SHADOW_W:
+    shot_shb_body, shot_mask_body = crop_shadow_to_80(shot_shb_body, shot_mask_body, shot_shw, shot_shh)
+    # Nothing of the shadow may fall outside the 80x80 window (the crop clamps silently otherwise).
+    _off = (shot_shw - SHADOW_W) // 2
+    for _x, _y, _w, _h in [tuple(int(v) for v in r) for r in re.findall(r'\{\s*(\d+),\s*(\d+),\s*(\d+),\s*(\d+)\s*\}', ''.join(
+            open(os.path.join(SHOT_DIR, 'nds_shadow_anchor.h'), 'r', encoding='utf-8').read().split('shadow_bounds[8][8][4]')[1].split('};')[0]))]:
+        if _w and _h:
+            assert _off <= _x and _x + _w <= _off + SHADOW_W and _off <= _y and _y + _h <= _off + SHADOW_H, (
+                f'hero shot shadow {_x},{_y} {_w}x{_h} is cut by the {SHADOW_W}x{SHADOW_H} crop')
+shot_dm = shot_settings['dirMuzzle']
 shot_muzzle = [[[int(v) for v in shot_dm[d][f]] for f in range(8)] for d in range(8)]
 
 shot_mode = resolve_legibility(SHOT_DIR, ARGS.legibility)
-shot_fr_offs, shot_fr_bnds, shot_fr_pix, shot_run_offs, shot_runs = convert_sheet_cropped(os.path.join(SHOT_DIR, 'spritesheet.png'), SPRITE_W, SPRITE_H, shot_shift, legibility=shot_mode)
-out_lines.append('// 40x40 BGR555 shot clip of the hero (CHAR_HERO only), 8 directions x 8 frames: f0 arms crossed, f7 collapsed (cropped to bounds)\n')
+shot_fr_offs, shot_fr_bnds, shot_fr_pix, shot_run_offs, shot_runs = convert_sheet_cropped(os.path.join(SHOT_DIR, 'spritesheet.png'), shot_w, shot_h, None, legibility=shot_mode)
+out_lines.append('// %dx%d BGR555 shot clip of the hero (CHAR_HERO only), 8 directions x 8 frames: f0 arms crossed, f7 collapsed (cropped to bounds)\n' % (shot_w, shot_h))
 out_lines.append('const uint16_t g_player_shot_frames[] __attribute__((aligned(4))) = ')
 out_lines.append(shot_fr_pix)
 out_lines.append('\n')
@@ -541,6 +562,8 @@ out_lines.append('\n')
 out_lines.append('const uint8_t g_player_shot_frame_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4] = ')
 out_lines.append(shot_fr_bnds)
 out_lines.append('\n')
+out_lines.append('// Ground anchor row (feet) of the shot clip inside its own cell, per direction\n')
+out_lines.append('const uint8_t g_player_shot_ground_anchors[PLAYER_NUM_DIRS] = { ' + ', '.join(str(a) for a in shot_anchors) + ' };\n\n')
 emit_runs(out_lines, 'player_shot', shot_run_offs, shot_runs, 'PLAYER_NUM_FRAMES', 'Opaque runs of the hero shot clip')
 
 shot_sh_offs, shot_sh_data = crop_shadow_masks(shot_shb_body, shot_mask_body, SHADOW_W, SHADOW_H)

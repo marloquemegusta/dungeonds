@@ -830,9 +830,9 @@
     ]
   ],
   "stride3dMeters": 1.416,
-  "strideRatio": 0.782,
+  "strideRatio": 0.787,
   "ticksPerFrame": 5,
-  "stridePixels": 43.81,
+  "stridePixels": 44.06,
   "speedFixed8_8": 315,
   "inPlace": true,
   "rigScale": 1,
@@ -858,5 +858,6 @@
   "fitZoom": 0.78,
   "measuredExtent": 1.8337488496088583,
   "fitExtent": 1.8337488496088583,
+  "normScale": 0.0184114658086357,
   "toneMapping": "neutral"
 }

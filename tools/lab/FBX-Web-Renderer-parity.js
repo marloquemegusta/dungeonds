@@ -413,7 +413,10 @@
       }
       wrapper.add(model);
 
-      const scale = 1.8 / Math.max(height, width, depth);
+      // state.normScale (optional): world scale of the scale reference, so a clip whose first pose is smaller or larger
+      // (kneeling, bending) keeps the same world scale as the rest of the character instead of re-normalizing to 1.8.
+      const scale = state.normScale > 0 ? state.normScale : 1.8 / Math.max(height, width, depth);
+      state.lastNormScale = scale;
       wrapper.scale.setScalar(scale * (scaleMultiplier || 1));
       parentScene.add(wrapper);
 

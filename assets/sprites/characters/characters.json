@@ -21,7 +21,7 @@
     "corazon_disparo": {
       "model": "assets/models/characters/corazon/corazon_disparo.fbx",
       "anim": "corazon_disparo (0.92s)",
-      "resolution": 40,
+      "resolution": 48,
       "scaleRef": "corazon",
       "muzzleBone": "mixamorig:Spine2",
       "muzzleForward": 0.05,
@@ -97,7 +97,7 @@
     "exvoto_stand_up": {
       "model": "assets/models/characters/exvoto/exvoto_stand_up.fbx",
       "anim": "exvoto_stand_up (2.30s)",
-      "resolution": 48,
+      "resolution": 40,
       "scaleRef": "exvoto",
       "template": "assets/sprites/characters/skeleton/settings.json",
       "speedFixed8_8": 389,

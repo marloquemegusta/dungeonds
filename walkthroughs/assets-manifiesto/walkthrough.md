@@ -66,14 +66,17 @@ Detalle y imágenes en [`inventario.md`](inventario.md).
 
 ## Escala fija por personaje y re-render completo (2026-11-17)
 
-- **Problema:** el render encuadraba cada animación según su propia amplitud. Una pose más abierta alejaba la cámara y el personaje salía más pequeño. Corazón disparando salía al 87 % de su andar, el Exvoto arrodillado y levantándose al 80 %, y la carga del Cireneo al 94 %. El Exvoto lo compensaba con zooms ajustados a mano.
-- **Arreglo:** cada personaje se renderiza a los píxeles por metro de su animación de andar. Las demás animaciones llevan `scaleRef` en `characters.json` y heredan esa escala, sin zooms por animación. Si una pose no cabe, esa animación lleva una celda mayor: el Exvoto levantándose pasa a 48 px, ocupa +32 KB de ROM y no necesita cambios en el código del juego. Regla y tabla sprite → modelo → animación: `assets/MANIFEST.md` §2.
-- **Resultado:** todas las animaciones están a escala 1,000 de su referencia, todos los personajes están re-renderizados y la ROM compila sin avisos.
+- **Problema 1, la cámara:** el render encuadraba cada animación según su propia amplitud, y una pose más abierta alejaba la cámara. Corazón disparando salía al 87 % de su andar, y el Exvoto arrodillado y levantándose al 80 %. El Exvoto lo compensaba con zooms puestos a mano.
+- **Problema 2, el reescalado:** al cargar cada animación, el render normalizaba el modelo según su primera postura, así que una animación que empieza de rodillas salía agrandada. Lo destapó la escena de la ROM: la monja levantada medía 37 px y andando 26 px, aunque en Blender las dos miden 0,97 m.
+- **Arreglo:** cada animación hereda de la de andar el reescalado (`normScale`) y la escala de cámara (`fitExtent`, `fitZoom`) mediante `scaleRef` en `characters.json`. Ahora las alturas siguen a las del modelo 3D: de rodillas, 23 px frente a 28 de pie, igual que 0,77 m frente a 0,97 m. La monja levantándose cabe otra vez en 40 px.
+- **Corazón:** con la escala correcta, la cruz del disparo se salía del recuadro de 40 px. Para que cupiera, el héroe tenía que encoger un 9 %. El usuario lo descartó porque se notaría, así que el disparo tiene un recuadro propio de 48 px con su propia fila de pies. El héroe no salta al cambiar de animación, el rayo sigue saliendo del pecho y cuesta +12,7 KB de datos.
+- **Escena de la ROM `exvoto_reza_despierta_derrite`:** se lanzaba en `cathedral-playground`, donde la IA está apagada a propósito; se corre en `cathedral-sandbox`. Los números de estado estaban desfasados (rezar = 15, levantarse = 16). El relicario de la escena ya no existe en el mapa: las monjas rezan en suelo vacío.
+- **Arreglo de compilación:** las variantes con `GODRAYS_PROTO` no compilaban por el modo jefe. Arreglado.
 
-![Corazón: andar y disparar, antes y después](assets/corazon_escala_hoja.png)
-![Exvoto: andar, arrodillada y levantándose, antes y después](assets/exvoto_escala_hoja.png)
-![Exvoto levantándose en celda de 48 px a la escala del andar](assets/exvoto_levantarse_48.png)
+![Antes y después: Corazón](assets/corazon_escala_hoja.png)
+![Escala normalizada: exvoto y Corazón](assets/escala_normalizada_hoja.png)
+![La cruz del disparo en su recuadro de 48 px](assets/corazon_cruz_48.png)
+![Andar, cargar y disparar en la ROM](assets/corazon_disparo_48_rom.gif)
+![Monjas despertando y levantándose en la ROM](assets/exvoto_levantarse_rom.gif)
 
-- **Pendiente:**
-  - Medir en la DS.
-  - Las variantes `cathedral-playground` no compilan, tampoco en `main`: falta declarar `g_hw_shadows_on` con `GODRAYS_PROTO`. Mientras siga así, no se puede capturar el levantarse en la ROM.
+- **DS:** el usuario lo probó en la consola (2026-11-18) y va bien. A partir de ahora, estas pruebas se hacen en la catedral normal.

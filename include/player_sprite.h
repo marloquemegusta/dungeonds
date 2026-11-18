@@ -5,6 +5,10 @@
 
 #define PLAYER_SPRITE_W 40
 #define PLAYER_SPRITE_H 40
+// Hero shot clip (charge / shoot, arms spread in a cross): its own, bigger cell at the same world scale as the
+// walk. Drawn centred on the feet like every sprite (x - W / 2); its ground row is g_player_shot_ground_anchors.
+#define HERO_SHOT_SPRITE_W 48
+#define HERO_SHOT_SPRITE_H 48
 #define PLAYER_SHADOW_W 80
 #define PLAYER_SHADOW_H 80
 #define CHARGER_SPRITE_W 60
@@ -68,6 +72,8 @@ extern const uint8_t g_player_shadow_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][
 extern const uint16_t g_player_shot_frames[];
 extern const uint32_t g_player_shot_frame_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES];
 extern const uint8_t g_player_shot_frame_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4];
+// Ground anchor (feet row inside the HERO_SHOT_SPRITE cell) per direction; the walk's is g_character_ground_anchors.
+extern const uint8_t g_player_shot_ground_anchors[PLAYER_NUM_DIRS];
 extern const uint8_t g_player_shot_shadow_masks[];
 extern const uint32_t g_player_shot_shadow_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES];
 extern const uint8_t g_player_shot_shadow_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4];

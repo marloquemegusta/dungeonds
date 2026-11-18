@@ -6,7 +6,7 @@
 //
 // usage: node export_character_headless.cjs <model.fbx> <outDir> [--template settings.json]
 //          [--anim "<clip name>"] [--rigScale N] [--light <preset>] [--outline <pixel|sobel|none>]
-//          [--saturation N] [--muzzleBone <bone name>] [--muzzleForward F] [--fitZoom Z] [--fitExtent E] [--resolution N] [--list]
+//          [--saturation N] [--muzzleBone <bone name>] [--muzzleForward F] [--fitZoom Z] [--fitExtent E] [--normScale S] [--resolution N] [--list]
 //   --muzzleBone  no weapon: the muzzle (projected into dirMuzzle) is taken from this bone, pushed F model
 //                 heights along the model front (+Z). Without it the muzzle is the weapon tip (or none).
 //   --fitZoom Z   camera zoom-out factor: 1 fills the cell with the model extent; < 1 shrinks the sprite.
@@ -14,6 +14,9 @@
 //                 renders at the same pixels-per-meter as the clip that reported FIT extent E (its scale reference).
 //                 The measured extent and the one used are written to settings.json (measuredExtent, fitExtent) and
 //                 printed in the FIT line; a warning is printed if the clip would be cropped.
+//   --normScale S  world scale applied when the model loads (instead of normalizing the clip's first pose to 1.8 m);
+//                 pass the scale reference's normScale (settings.json / FIT line) so clips that start in another pose
+//                 (kneeling, bending) keep the same world size. Always written to settings.json as normScale.
 //   --resolution N override frameSize (e.g. 60 for 60x60).
 //   --legibility L  anterior (default: today's look, AgX tone mapping) or c2 (DESIGN.md 6.9.1b: supersample 4,
 //                   THREE.NeutralToneMapping, lab contrast 1.0, then soft S-curve + alpha-aware sharpen on all frames).
@@ -33,7 +36,7 @@ if (!chromium) { console.error('Playwright not found'); process.exit(1); }
 
 const argv = process.argv.slice(2);
 const opt = (n) => { const i = argv.indexOf(n); return i >= 0 ? argv[i + 1] : undefined; };
-const flagVals = new Set(['--template', '--anim', '--rigScale', '--light', '--outline', '--saturation', '--muzzleBone', '--muzzleForward', '--fitZoom', '--fitExtent', '--resolution', '--tone', '--supersample', '--contrast', '--legibility', '--frames']);
+const flagVals = new Set(['--template', '--anim', '--rigScale', '--light', '--outline', '--saturation', '--muzzleBone', '--muzzleForward', '--fitZoom', '--fitExtent', '--normScale', '--resolution', '--tone', '--supersample', '--contrast', '--legibility', '--frames']);
 const pos = argv.filter((a, i) => !a.startsWith('--') && !(i > 0 && flagVals.has(argv[i - 1])));
 const listOnly = argv.includes('--list');
 const model = pos[0] && path.resolve(pos[0]);
@@ -56,6 +59,8 @@ const HTML = path.join(__dirname, 'FBX-Web-Renderer-offline.html');
     page.on('console', m => { if (m.text().startsWith('[fit]')) console.log('WARNING ' + m.text()); });
     await page.goto(`file:///${HTML.split(path.sep).join('/')}`, { waitUntil: 'load' });
     await page.waitForFunction(() => !!window.__spriteLab, { timeout: 30000 });
+    const normScaleOpt = opt('--normScale') !== undefined ? parseFloat(opt('--normScale')) : 0;
+    await page.evaluate((v) => { window.__spriteLab.normScale = v > 0 ? v : 0; }, normScaleOpt);
     await page.locator('#fbxInput').setInputFiles(model);
     await page.waitForFunction(() => {
       const sel = document.getElementById('animSelect');
@@ -176,7 +181,7 @@ const HTML = path.join(__dirname, 'FBX-Web-Renderer-offline.html');
       let bin = ''; for (let i = 0; i < buf.length; i += 0x8000) bin += String.fromCharCode.apply(null, buf.subarray(i, i + 0x8000));
       return btoa(bin);
     });
-    const fitInfo = await page.evaluate(() => { const l = window.__spriteLab.lastFit; return l && { extent: l.extent, fitExtent: l.fitExtent, half: l.half, center: l.center }; });
+    const fitInfo = await page.evaluate(() => { const l = window.__spriteLab.lastFit; return l && { extent: l.extent, fitExtent: l.fitExtent, half: l.half, center: l.center, normScale: window.__spriteLab.lastNormScale }; });
     if (fitInfo) console.log('FIT ' + JSON.stringify(fitInfo));
     if (errors.length) console.error('page errors:\n' + errors.join('\n'));
     const zipPath = path.join(require('node:os').tmpdir(), `dungeonds_char_export_${Date.now()}_${process.pid}.zip`);
@@ -194,7 +199,7 @@ const HTML = path.join(__dirname, 'FBX-Web-Renderer-offline.html');
         if (muzzleBone) outData.muzzleSource = { bone: muzzleBone, forward: muzzleForward ?? 0.05 };
         if (fitZoom !== undefined) outData.fitZoom = fitZoom;
         // Read back by rebuild_all.py (scale reference) and by the pray build scripts; never read from the template.
-        if (fitInfo) { outData.measuredExtent = fitInfo.extent; outData.fitExtent = fitInfo.fitExtent; }
+        if (fitInfo) { outData.measuredExtent = fitInfo.extent; outData.fitExtent = fitInfo.fitExtent; if (fitInfo.normScale) outData.normScale = fitInfo.normScale; }
         outData.toneMapping = tone;
         outData.legibility = legibility;
         if (s.speedFixed8_8 !== undefined) outData.speedFixed8_8 = s.speedFixed8_8;

@@ -249,7 +249,7 @@ static void draw_fallback_sprite_2x(uint16_t *fb, int entry_idx, uint32_t anim_t
         int frame = (t < 32) ? (7 - (int)(t >> 2)) : ((t < 56) ? 0 : ((t < 88) ? (int)((t - 56) >> 2) : 7));
         const uint8_t *bounds = g_player_shot_frame_bounds[0][frame];
         const uint16_t *src = &g_player_shot_frames[g_player_shot_frame_offsets[0][frame]];
-        draw_sprite_2x(fb, PLAYER_SPRITE_W, PLAYER_SPRITE_H, bounds, src);
+        draw_sprite_2x(fb, HERO_SHOT_SPRITE_W, HERO_SHOT_SPRITE_H, bounds, src);
     } else if (entry_idx == 1) {
         int frame = (int)((anim_tick >> 2) % BESTIARY_EXVOTO_NUM_FRAMES);
         const uint8_t *bounds = bestiary_exvoto_bounds[frame];
