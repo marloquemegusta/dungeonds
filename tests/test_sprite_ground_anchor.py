@@ -67,7 +67,7 @@ class SpriteGroundAnchorTests(unittest.TestCase):
 
     def test_anchor_table_has_one_row_per_character(self):
         anchors = exported_anchors()
-        self.assertEqual(len(anchors), 9)
+        self.assertEqual(len(anchors), 10)
         self.assertTrue(all(len(row) == 8 for row in anchors))
 
 

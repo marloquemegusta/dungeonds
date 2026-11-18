@@ -940,7 +940,7 @@ Sustituye, cuando se implemente, al compositor v2 de la catedral (§6.9.1b), a l
   - Los cuerpo a cuerpo le alcanzan agachado igual que de pie: el precio es quedarse quieto mientras la horda rodea el banco.
   - Coberturas altas (columnas, estatuas): sin cambios ni animación propia, porque ya paran los disparos.
   - Cifras `[TUNABLE-PLACEHOLDER]`: «pegado» = a ≤ 4 px de la huella de la cobertura; velocidad agachado = 50 % de la normal; se levanta y se agacha en ~6 frames.
-  - Arte: un clip «agachado» quieto y andando, en 8 direcciones, del héroe.
+  - Arte: un clip «agachado» quieto y andando, en 8 direcciones, del héroe. Decidido (2026-11-18): variante A2 del andar agachado (cadera 15 u más baja, torso más inclinado que el clip de Mixamo, 20,8 px de alto frente a 32,3 de pie); el quieto es un fotograma fijo de ese andar.
   - Referencia de género: las mesas volcadas de Enter the Gungeon.
 
 **Relicario en cada pasillo: mejora continua y periódica.**
