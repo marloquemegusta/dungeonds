@@ -1267,6 +1267,10 @@ int weapons_aim_line(int *mx, int *my, int *gx, int *gy) {
     return 1;
 }
 
+void weapons_ready_instant(void) {
+    s_instant_pending = 1;
+}
+
 int weapons_aim_progress(void) {
     return s_aim_prog;
 }

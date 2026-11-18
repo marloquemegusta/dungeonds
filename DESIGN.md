@@ -1009,6 +1009,16 @@ Concreta §6.13.1 para el escenario por actos (§6.13.6). Objetivo: que meter un
 - **Cambio de fase común a todos:** el jefe queda invulnerable ~1 s, se muestra una telegrafía (la misma para todos los jefes) y se renueva su escolta según la fase. Los disparos durante ese segundo no cuentan.
 - La escolta, si la hay, es una lista por fase: qué enemigos, cuántos a la vez y cada cuánto vuelve uno que cae. Con la lista vacía el jefe pelea solo (§6.13.1).
 
+#### 6.13.8 Ejecuciones (remates / glory kills, 2026-11-18, rama `feat/remate`)
+Mecánica de remate cuerpo a cuerpo para ritmo y recarga en combate:
+- **Disparador:** un golpe que no mata deja al enemigo tambaleándose (`ENEMY_STATE_WOBBLE`) durante 60 frames (~1 s), quieto y con un pulso cálido de luz marfil/ocre (sin efectos neón, según §6.10).
+- **Activación:** pulsar `L` a distancia corta (≤ 48 px) sobre el enemigo tambaleante más cercano.
+- **Flujo:** el héroe queda invulnerable y bloqueado mientras transcurre la animación combinada. Al terminar, el enemigo muere de inmediato sin efectos estándar y el rayo del héroe queda recargado al instante (`weapons_ready_instant()`).
+- **Variantes integradas:**
+  - **Exvoto (Opción A de Sonnet):** agarre de muñecas, elevación y partición vertical en 64×64, dejando las dos mitades de cera en el suelo parpadeando durante 0,5 s.
+  - **Cireneo (Opción A de Sonnet):** el héroe le arranca la cruz de la espalda, salta y lo atraviesa contra el suelo con ella (celda 80×80).
+- **Pendiente de balance:** tunear el alcance de detección, la ventana de tambaleo, feedback y el equilibrio de la recarga instantánea.
+
 **Barra de vida del jefe.** Sustituye a la barra flotante sobre el enemigo durante el modo jefe. Fija en pantalla, con el nombre del jefe y una muesca en cada umbral de fase. Colores de la paleta (§6.10), sin primarios puros.
 
 **Pendiente de la ronda A/B/C (definitivo, ROM real):** aspecto de la intro, de la barra de vida, de la telegrafía de cambio de fase y de la secuencia de victoria.
