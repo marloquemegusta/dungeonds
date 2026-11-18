@@ -231,6 +231,21 @@ static void init_char_sprite_data(void) {
 #define SHOT_FRAME_TICKS 3
 #define SHOT_LAST_FRAME (PLAYER_NUM_FRAMES - 1)
 
+// ---------------------------------------------------------------------------
+// Crouching behind low cover (DESIGN.md 6.9, "Agacharse tras coberturas bajas"): no button. Hugging a bench or
+// sacks (grid value 2) without the stylus on screen crouches the hero (CHAR_HERO_CROUCH_WALK), who then walks
+// slower. Touching stands him up on the same frame so the shot is never delayed.
+// ---------------------------------------------------------------------------
+
+#define CROUCH_HUG_PX 4                  // [TUNABLE-PLACEHOLDER] "pegado": the footprint is <= 4 px from low cover
+#define CROUCH_SPEED_PCT 50              // [TUNABLE-PLACEHOLDER] crouched walking speed, % of the normal one
+#define CROUCH_REST_FRAME 7              // [TUNABLE-PLACEHOLDER] frame of the crouched walk shown while standing still (feet together, head low)
+#define CROUCH_TRANSITION_FRAMES 6       // [TUNABLE-PLACEHOLDER] frames hugging (or not) before crouching / rising
+
+static int s_crouched = 0;               // crouched pose in use
+static int s_crouch_timer = 0;           // consecutive frames that want a different state than s_crouched
+int g_hero_crouched = 0;                 // read by enemy_ai.c: a crouched hero is covered from shots across low cover
+
 static int s_hero_clip_frame = -1;  // clip frame drawn and used for the muzzle; -1 = walk or rest pose
 static int s_shot_active = 0;       // the recovery after a sniper shot is playing
 static int s_shot_frame = 0;
@@ -2140,6 +2155,9 @@ static void player_init(void) {
     s_player.is_moving = 0;
     s_player.anim_timer = 0;
     s_player.char_id = CHAR_HERO;
+    s_crouched = 0;
+    s_crouch_timer = 0;
+    g_hero_crouched = 0;
 
     mods_reset();
     upgrades_reset((uint32_t)cpuGetTiming() ^ s_frame_index ^ 0x55504752u);   // DESIGN.md 6.12: after mods_reset
@@ -2248,6 +2266,10 @@ static void player_update(uint32_t keys, uint32_t keys_down) {
         s_player.frame = 0;
         s_shot_active = 0;
         s_hero_clip_frame = -1;
+        s_crouched = 0;
+        s_crouch_timer = 0;
+        g_hero_crouched = 0;
+        s_player.char_id = CHAR_HERO;
         return;
     }
     shot_clip_step();
@@ -2312,13 +2334,28 @@ static void player_update(uint32_t keys, uint32_t keys_down) {
         s_latch_released = 0;
     }
 
-    int cur_char = s_player.char_id;
+    // Crouch state (see CROUCH_*): decided from where the hero stands before this frame's movement.
+    if (touch_down || pressed || s_rooted || s_shot_active) {
+        s_crouched = 0;                // the stylus (or the recovery of a shot) always keeps him standing
+        s_crouch_timer = 0;
+    } else {
+        const int want = low_cover_near(TO_INT(s_player.x), TO_INT(s_player.y), CROUCH_HUG_PX);
+        if (want == s_crouched) {
+            s_crouch_timer = 0;
+        } else if (++s_crouch_timer >= CROUCH_TRANSITION_FRAMES) {
+            s_crouched = want;
+            s_crouch_timer = 0;
+        }
+    }
+    g_hero_crouched = s_crouched;
+    const int cur_char = CHAR_HERO;
     fixed current_speed = g_characters[cur_char].speed * g_mods.speed_pct / 100;
+    if (s_crouched) current_speed = current_speed * CROUCH_SPEED_PCT / 100;
     if (s_strip_mode && tide_player_slowed(s_player.y)) current_speed = (current_speed * 3) >> 2;
     // Paso de Procesion (DESIGN.md 6.12.10): while charging the hero walks at 35 % of that speed.
     const int procession = s_rooted && upgrades_has_relic(RELIC_PROCESION);
     if (procession) current_speed = current_speed * 35 / 100;
-    int current_period = g_characters[cur_char].anim_period;
+    int current_period = g_characters[s_crouched ? CHAR_HERO_CROUCH_WALK : cur_char].anim_period;
 
     if (pressed && weapons_can_start_aim(&g_player_state)) s_rooted = 1;
 
@@ -2389,6 +2426,9 @@ static void player_update(uint32_t keys, uint32_t keys_down) {
         s_player.frame = 0;
         s_player.anim_timer = 0;
     }
+
+    s_player.char_id = s_crouched ? CHAR_HERO_CROUCH_WALK : CHAR_HERO;
+    if (s_crouched && !s_player.is_moving) s_player.frame = CROUCH_REST_FRAME;
 
     int aim_ahead = touch_down &&
         (s_last_touch_y + s_cam_y <= player_screen_y(s_player.x, s_player.y) - AIM_CHEST_H);
@@ -2476,6 +2516,10 @@ static void arena_restart(void) {
     nav_set_goal(g_arena->player_x, g_arena->player_y);
     if (!s_strip_mode) nav_rebuild_now();
     s_rooted = 0;
+    s_crouched = 0;
+    s_crouch_timer = 0;
+    g_hero_crouched = 0;
+    s_player.char_id = CHAR_HERO;
     s_latch_pressed = 0;
     s_latch_released = 0;
     s_keys_down_latch = 0;

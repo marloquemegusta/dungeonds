@@ -286,7 +286,10 @@ chars_meta = [
     ('exvoto_stand_up', 'exvoto_stand_up', 'Exvoto standing up', 0, 9),
     ('abanderado', 'abanderado', 'El Abanderado', 50, 14),
     ('monaguillo', 'monaguillo', 'Exvoto Monaguillo', 39, 22),
+    # Hero crouched walk (DESIGN.md 6.9): a slot of its own like the Exvoto clips; the still pose is one fixed frame of it.
+    ('hero_crouch_walk', 'corazon_agachado_andar', 'Hero crouched walking', 0, 8),
 ]
+SINGLE_FRAME = set()
 
 # Ticks per frame of the Exvoto clips come from the manifest (the lab settings carry the template's).
 with open(os.path.join(SRC_ROOT, 'characters.json'), 'r', encoding='utf-8') as _mf:
@@ -337,8 +340,9 @@ for var_name, folder, disp_name, spd, ticks, sw, sh, shw, shh, out_shw, out_shh 
 
     mask_bytes = (shw * shh) // 2
     anchors, sb, shb_body, mask_body = parse_header(h_path, mask_bytes)
-    if shw > SHADOW_W:
-        shb_body, mask_body = crop_shadow_to_80(shb_body, mask_body, shw, shh)
+    frame_idx = [0] if var_name in SINGLE_FRAME else None
+    if shw > SHADOW_W or frame_idx:
+        shb_body, mask_body = crop_shadow_to_80(shb_body, mask_body, shw, shh, frame_idx)
     all_anchors.append(anchors)
     muzzle = [[[0, 0, 0] for _ in range(8)] for _ in range(8)]
     settings_path = os.path.join(char_dir, 'settings.json')
@@ -350,7 +354,7 @@ for var_name, folder, disp_name, spd, ticks, sw, sh, shw, shh, out_shw, out_shh 
     all_muzzles.append(muzzle)
 
     char_mode = resolve_legibility(char_dir, ARGS.legibility)
-    fr_offs, fr_bnds, fr_pix, fr_run_offs, fr_runs = convert_sheet_cropped(png_path, sw, sh, legibility=char_mode)
+    fr_offs, fr_bnds, fr_pix, fr_run_offs, fr_runs = convert_sheet_cropped(png_path, sw, sh, frame_indices=frame_idx, legibility=char_mode)
     out_lines.append(f'// {sw}x{sh} BGR555 frames for {disp_name}, 8 directions x 8 frames (cropped to bounds)\n')
     out_lines.append(f'const uint16_t g_{var_name}_frames[] __attribute__((aligned(4))) = ')
     out_lines.append(fr_pix)
@@ -364,7 +368,7 @@ for var_name, folder, disp_name, spd, ticks, sw, sh, shw, shh, out_shw, out_shh 
     emit_runs(out_lines, var_name, fr_run_offs, fr_runs, 'PLAYER_NUM_FRAMES',
               f'Opaque runs per row of {disp_name} frames (blit_stride): block = (bh+1) row offsets in halfwords, then x | len << 8')
 
-    sh_offs, sh_data = crop_shadow_masks(shb_body, mask_body, out_shw, out_shh)
+    sh_offs, sh_data = crop_shadow_masks(shb_body, mask_body, out_shw, out_shh, frame_idx)
     out_lines.append(f'// 4-bit packed animated crisp 3D shadow masks for {disp_name} (8 dirs x 8 frames, cropped to bounds)\n')
     out_lines.append(f'const uint8_t g_{var_name}_shadow_masks[] __attribute__((aligned(4))) = ')
     out_lines.append(sh_data)

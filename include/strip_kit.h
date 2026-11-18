@@ -7,7 +7,7 @@
 // source/strip.c stamps floor pieces into the RAM arena window at run time.
 //
 // Units: tiles are 8x8 px; collision cells are COLLISION_SCALE (4) px, 2 bits each with the
-// same values as Arena.collision (0 free, 1 blocks bodies only, 3 blocks bodies and bullets).
+// same values as Arena.collision (0 free, 1 blocks bodies only, 2 low cover = blocks bodies, bullets pass, 3 blocks bodies and bullets).
 
 #define STRIP_W_PX 512                       // world width, 2 screens (DESIGN.md 6.0)
 #define STRIP_W_TILES (STRIP_W_PX / 8)       // 64

@@ -74,7 +74,7 @@ class StripKitTest(unittest.TestCase):
             w, h, foot_value, num_foot = int(w), int(h), int(foot_value), int(num_foot)
             self.assertLessEqual(int(phase_col), 15)
             self.assertLessEqual(int(phase_row), 15)
-            self.assertIn(foot_value, (0, 1, 3))
+            self.assertIn(foot_value, (0, 1, 2, 3))
             if foot_value:
                 self.assertGreater(num_foot, 0)
             # Footprint runs are { x_cell, y_cell, length_cells } on the 4 px collision grid,

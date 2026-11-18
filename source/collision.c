@@ -32,7 +32,7 @@ ITCM_CODE int position_is_free(fixed x, fixed y) {
     for (int cy = cell_y0; cy <= cell_y1; cy++) {
         for (int cx = cell_x0; cx <= cell_x1; cx++) {
             if (cx < 0 || cx >= g_arena->collision_w || cy < 0 || cy >= g_arena->collision_h) return 0;
-            if ((world_collision_flags(cx, cy) & 0x01) == 0) continue;
+            if (world_collision_flags(cx, cy) == 0) continue;     // 1, 2 (low cover) and 3 all stop bodies
             int left = cx * COLLISION_SCALE;
             int top = cy * COLLISION_SCALE;
             int nearest_x = wx < left ? left : (wx > left + COLLISION_SCALE - 1 ? left + COLLISION_SCALE - 1 : wx);
@@ -52,7 +52,7 @@ int bullet_position_is_free(fixed x, fixed y) {
     int cx = px / COLLISION_SCALE;
     int cy = py / COLLISION_SCALE;
     if (cx < 0 || cx >= g_arena->collision_w || cy < 0 || cy >= g_arena->collision_h) return 0;
-    return (world_collision_flags(cx, cy) & 0x02) == 0;
+    return world_collision_flags(cx, cy) != 3;        // only 3 stops bullets: 2 (low cover) lets them pass over
 }
 
 // Sweep in <=1px increments so a frame cannot skip a thin blocked cell.
@@ -145,4 +145,54 @@ ITCM_CODE int bullet_line_is_free(int x0, int y0, int x1, int y1) {
         if (!bullet_position_is_free(TO_FIXED(x), TO_FIXED(y))) return 0;
     }
     return 1;
+}
+
+// Low cover (value 2, DESIGN.md 6.9 "Agacharse tras coberturas bajas"): is there a cell of value 2 within
+// `reach` px of the ground point (wx, wy)? The footprint is the same 2:1 ellipse as position_is_free, so
+// reach = 4 means "hugging" it. Only the few cells around the hero are sampled.
+ITCM_CODE int low_cover_near(int wx, int wy, int reach) {
+    const int rx = 6 + reach;
+    const int ry = rx >> GROUND_Y_SHIFT;
+    int cell_x0 = (wx - rx) / COLLISION_SCALE;
+    int cell_x1 = (wx + rx) / COLLISION_SCALE;
+    int cell_y0 = (wy - ry) / COLLISION_SCALE;
+    int cell_y1 = (wy + ry) / COLLISION_SCALE;
+    if (cell_x0 < 0) cell_x0 = 0;
+    if (cell_y0 < 0) cell_y0 = 0;
+    if (cell_x1 >= g_arena->collision_w) cell_x1 = g_arena->collision_w - 1;
+    if (cell_y1 >= g_arena->collision_h) cell_y1 = g_arena->collision_h - 1;
+    const int rsq = rx * rx;
+    for (int cy = cell_y0; cy <= cell_y1; cy++) {
+        for (int cx = cell_x0; cx <= cell_x1; cx++) {
+            if (world_collision_flags(cx, cy) != 2) continue;
+            int left = cx * COLLISION_SCALE;
+            int top = cy * COLLISION_SCALE;
+            int nearest_x = wx < left ? left : (wx > left + COLLISION_SCALE - 1 ? left + COLLISION_SCALE - 1 : wx);
+            int nearest_y = wy < top ? top : (wy > top + COLLISION_SCALE - 1 ? top + COLLISION_SCALE - 1 : wy);
+            int dx = wx - nearest_x;
+            int dy = wy - nearest_y;
+            if (dx * dx + GROUND_DY2(dy) <= rsq) return 1;
+        }
+    }
+    return 0;
+}
+
+// Does the straight segment (x0,y0) -> (x1,y1), in ground px, cross a low-cover cell (value 2) strictly between
+// its ends? Samples every ~4 px like bullet_line_is_free; the end cells are skipped so the shooter's own cell and
+// the hero's (which touches the cover) never count.
+ITCM_CODE int line_crosses_low_cover(int x0, int y0, int x1, int y1) {
+    int dx = x1 - x0, dy = y1 - y0;
+    int adx = dx < 0 ? -dx : dx;
+    int ady = dy < 0 ? -dy : dy;
+    int steps = ((adx > ady ? adx : ady) >> 1) + 1;
+    LineStepper sx, sy;
+    line_stepper_init(&sx, x0, dx, steps);
+    line_stepper_init(&sy, y0, dy, steps);
+    for (int i = 1; i < steps; i++) {
+        int cx = line_stepper_next(&sx, i) / COLLISION_SCALE;
+        int cy = line_stepper_next(&sy, i) / COLLISION_SCALE;
+        if (cx < 0 || cx >= g_arena->collision_w || cy < 0 || cy >= g_arena->collision_h) continue;
+        if (world_collision_flags(cx, cy) == 2) return 1;
+    }
+    return 0;
 }
