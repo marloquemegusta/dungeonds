@@ -239,7 +239,7 @@ static void init_char_sprite_data(void) {
 
 #define CROUCH_HUG_PX 4                  // [TUNABLE-PLACEHOLDER] "pegado": the footprint is <= 4 px from low cover
 #define CROUCH_SPEED_PCT 50              // [TUNABLE-PLACEHOLDER] crouched walking speed, % of the normal one
-#define CROUCH_REST_FRAME 7              // [TUNABLE-PLACEHOLDER] frame of the crouched walk shown while standing still (feet together, head low)
+#define CROUCH_REST_FRAME 4              // [TUNABLE-PLACEHOLDER] frame of the crouched walk shown while standing still (feet together, head low)
 #define CROUCH_TRANSITION_FRAMES 6       // [TUNABLE-PLACEHOLDER] frames hugging (or not) before crouching / rising
 
 static int s_crouched = 0;               // crouched pose in use

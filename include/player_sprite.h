@@ -40,7 +40,7 @@ enum {
     CHAR_ABANDERADO = 7,
     CHAR_MONAGUILLO = 8,
     // Hero crouched (cobertura baja, DESIGN.md 6.9): the player swaps char_id between CHAR_HERO and this slot.
-    CHAR_HERO_CROUCH_WALK = 9   // crouched walking, 8 frames, 48x48 cell; the still pose is one fixed frame of it
+    CHAR_HERO_CROUCH_WALK = 9   // crouched walking, 8 frames, 40x40 cell; the still pose is one fixed frame of it
 };
 
 typedef struct {

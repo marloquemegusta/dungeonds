@@ -32,7 +32,7 @@
     "corazon_agachado_andar": {
       "model": "assets/models/characters/corazon/corazon_agachado_andar.fbx",
       "anim": "corazon_agachado_andar (1.03s)",
-      "resolution": 48,
+      "resolution": 40,
       "scaleRef": "corazon",
       "muzzleBone": "mixamorig:Spine2",
       "muzzleForward": 0.05,
