@@ -1303,10 +1303,14 @@ int weapons_input(PlayerState *player, const WeaponInput *in, Enemy *enemies, in
         return 0;
     }
 
-    // Sniper: touch to aim (the player stops), release to fire once armed.
+    // Sniper: touch to aim (the player stops), release to fire once armed. A fresh press always
+    // starts the charge at once, even right after a shot: the post-shot cooldown is dropped so
+    // the player never waits for the recovery to end before charging again, and the charge
+    // restarts from zero (timer and progress) on this very frame.
     int result = 0;
     if (s_aim_state == AIM_IDLE) {
-        if (in->touch_pressed && s_weapon_cooldown <= 0) {
+        if (in->touch_pressed) s_weapon_cooldown = 0;
+        if ((in->touch_pressed || in->touch_down) && s_weapon_cooldown <= 0) {
             s_aim_state = AIM_AIMING;
             s_aim_timer = 0;
             s_aim_prog = 0;
