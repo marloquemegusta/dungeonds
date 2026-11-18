@@ -2716,7 +2716,7 @@ volatile PerfStats g_perf = {
     .top_render_ticks = 0,
     .bot_render_ticks = 0,
     .present_ticks = 0,
-    .show_hud = PLAYGROUND || STRESS_TEST,       // the playground ROM shows the weapon / style label from the start
+    .show_hud = (PLAYGROUND && !REMATE_SANDBOX) || STRESS_TEST, // the playground ROM shows the weapon / style label; the remate sandbox looks like the game
     .dirty_leaks = 0
 };
 
