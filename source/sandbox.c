@@ -36,7 +36,11 @@ _Static_assert(sizeof(SandboxMailbox) == 112, "sandbox layout: SandboxMailbox is
 #define PG_PLAYER_X 256
 #define PG_PLAYER_Y 1792
 #define PG_RESPAWN_FRAMES 90     // by then the death chunks (life 28..35 frames) are gone
+#if defined(REMATE_SANDBOX) && REMATE_SANDBOX
+#define PG_DUMMY_COUNT 2
+#else
 #define PG_DUMMY_COUNT 13
+#endif
 _Static_assert(PG_DUMMY_COUNT <= SANDBOX_MAX_ENEMIES, "playground: every dummy fits in the mailbox");
 
 typedef struct {
@@ -46,6 +50,10 @@ typedef struct {
 } PlaygroundDummy;
 
 static const PlaygroundDummy s_dummies[PG_DUMMY_COUNT] = {
+#if defined(REMATE_SANDBOX) && REMATE_SANDBOX
+    { SANDBOX_ENEMY_CHARGER, 208, 1720 },
+    { SANDBOX_ENEMY_EXVOTO,  304, 1720 },
+#else
     { SANDBOX_ENEMY_CHARGER, 192, 1680 },
     { SANDBOX_ENEMY_SHOOTER, 224, 1680 },
     { SANDBOX_ENEMY_CHARGER, 288, 1680 },
@@ -59,6 +67,7 @@ static const PlaygroundDummy s_dummies[PG_DUMMY_COUNT] = {
     { SANDBOX_ENEMY_SHOOTER, 288, 1840 },
     { SANDBOX_ENEMY_CHARGER, 320, 1840 },
     { SANDBOX_ENEMY_CHARGER, 256, 1720 },
+#endif
 };
 
 static int s_playground_ready;                  // the built-in layout was considered at the first update
@@ -184,7 +193,9 @@ static void pg_respawn_dummy(Enemy *enemies, int max_enemies, int i) {
         if (slot < 0) return;          // no room this frame: the dummy retries on the next one
         s_dummy_slot[i] = slot;
     }
-    EnemyType type = (s_dummies[i].type == SANDBOX_ENEMY_CHARGER) ? ENEMY_TYPE_CHARGER : ENEMY_TYPE_SHOOTER;
+    EnemyType type = ENEMY_TYPE_SHOOTER;
+    if (s_dummies[i].type == SANDBOX_ENEMY_CHARGER) type = ENEMY_TYPE_CHARGER;
+    else if (s_dummies[i].type == SANDBOX_ENEMY_EXVOTO) type = ENEMY_TYPE_EXVOTO;
     sandbox_place(&enemies[slot], type, s_dummies[i].x, s_dummies[i].y, i, 0, 0);
     g_encounter_mgr.pack_awake[MAX_PACKS - 1] = 1;
     s_dummy_calm[i] = 0;
@@ -209,7 +220,7 @@ static void pg_tick(Enemy *enemies, int max_enemies) {
 static void pg_queue_layout(void) {
     g_sandbox.player_x = PG_PLAYER_X;
     g_sandbox.player_y = PG_PLAYER_Y;
-    g_sandbox.weapon = 0;
+    g_sandbox.weapon = WEAPON_SNIPER;
     g_sandbox.style = 0;
     g_sandbox.flags = SANDBOX_FLAG_CLEAR | SANDBOX_FLAG_FREEZE_AI | SANDBOX_FLAG_GOD;
     g_sandbox.enemy_count = PG_DUMMY_COUNT;

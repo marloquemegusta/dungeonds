@@ -15,6 +15,9 @@
 #ifndef PLAYGROUND
 #define PLAYGROUND 0
 #endif
+#ifndef REMATE_SANDBOX
+#define REMATE_SANDBOX 0
+#endif
 #ifndef CATHEDRAL_PLAYGROUND
 #define CATHEDRAL_PLAYGROUND 0
 #endif

@@ -1774,7 +1774,7 @@ void weapons_update(Enemy *enemies, int max_enemies) {
 
     fx_update();
 
-    if (s_instant_pending) g_aura_force_mask |= 1 << AURA_STYLE_L;       // Corazon Flagelado: flames while the instant shot waits
+    if (s_instant_pending && upgrades_has_relic(RELIC_FLAGELADO)) g_aura_force_mask |= 1 << AURA_STYLE_L;   // Corazon Flagelado: flames while the instant shot waits
     else g_aura_force_mask &= ~(1 << AURA_STYLE_L);
     s_aura_mask = relic_aura_mask() | g_aura_force_mask | g_aura_debug_mask;
     aura_update();

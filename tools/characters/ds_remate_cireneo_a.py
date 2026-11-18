@@ -66,8 +66,8 @@ def frame_A(i):
         k = i - 9
         lying(90, 0.075)
         hx = -0.30 - 0.12 * (k + 1) / 3.0
-        hero_pose(min(hx, HERO_X) if k >= 2 else hx, ('hero_walk', 1), hips_lean=18 - 6 * k, spine=8 - 3 * k, head=-4,
-                  hips_dz=-0.05 + 0.017 * k, hy=HYA)
+        hero_pose(hx, ('hero_walk', 1), hips_lean=12 - 6 * k, spine=6 - 3 * k, head=-4 + 2 * k,
+                  hips_dz=-0.03 + 0.015 * k, hy=HYA)
         ang = 5 * math.cos(k * 1.6) * (0.6 ** k)
         up = Matrix.Rotation(math.radians(ang), 3, 'Y') @ V((-0.55, HYA, 0.8))
         cruz_place(TIP, up, V((0, 1, 0)), -3.5)

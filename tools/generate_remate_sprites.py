@@ -1,85 +1,69 @@
-"""Genera source/remate_sprites.c y include/remate_sprites.h: las animaciones combinadas
-del remate (glory kill) del Corazon Abierto sobre el Exvoto y sobre el Cireneo.
-
-Entradas:
-  - Exvoto A: walkthroughs/remate-exvoto/assets/ronda2/exvoto_A/f00.png ... f11.png (64x64)
-  - Cireneo A: walkthroughs/remate-exvoto/assets/ronda2/cireneo_A/f00.png ... f11.png (80x80)
-
-Optimizacion de memoria EWRAM para encajar holgadamente en el limite estricto de 3.5 MB de la DS:
-  - Sombras: las mascaras de 4 bpp se comparten cada 2 fotogramas (la sombra varia suavemente a 4 ticks/frame).
-  - Cireneo: los fotogramas finales 10 y 11 (cruz ya clavada) reutilizan los pixeles del fotograma 9.
+"""Genera nitrofiles/remate/<kind>_d<dir>.bin, source/remate_sprites.c y include/remate_sprites.h
+a partir de los paquetes exportados por el lab headless (walkthroughs/remate-exvoto/assets/lab_out/).
 """
+import json
+import math
 import os
+import struct
 import sys
+import numpy as np
 from PIL import Image
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import glb_minmax
+
 WT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+LAB_OUT = os.path.join(WT, 'walkthroughs', 'remate-exvoto', 'assets', 'lab_out')
+GLB_DIR = os.path.join(WT, 'walkthroughs', 'remate-exvoto', 'assets', 'glb')
+HERO_NODE = 'tripo_node_f25681c0'   # malla del heroe (Corazon) dentro de los GLB de la escena
+HERO_MESH = 'f25681c0'
+CAM_COS = math.cos(math.radians(30.0))   # elevacion del lab: 1 m de altura = ppm*cos(30) px
+NITRO_DIR = os.path.join(WT, 'nitrofiles', 'remate')
 
 KINDS = [
     {
         'name': 'exvoto',
-        'dir': os.path.join(WT, 'walkthroughs', 'remate-exvoto', 'assets', 'ronda2', 'exvoto_A'),
-        'cell_w': 64,
-        'cell_h': 64,
-        'anchor_x': 32,
-        'anchor_y': 42,
-        'enemy_dx': 6,
-        'enemy_dy': 4,
-        'shadow_cx': 32,
-        'shadow_cy': 42,
+        'ppm': 38.0,
         'has_remnant': 1,
-        'opaque_a': 96,
-        'shadow_min_a': 4,
-        'shadow_max_a': 95,
         'reuse_pix_from': None,
     },
     {
         'name': 'cireneo',
-        'dir': os.path.join(WT, 'walkthroughs', 'remate-exvoto', 'assets', 'ronda2', 'cireneo_A'),
-        'cell_w': 80,
-        'cell_h': 80,
-        'anchor_x': 19,
-        'anchor_y': 46,
-        'enemy_dx': 26,
-        'enemy_dy': 8,
-        'shadow_cx': 40,
-        'shadow_cy': 45,
-        'has_remnant': 0,
-        'opaque_a': 180,
-        'shadow_min_a': 4,
-        'shadow_max_a': 150,
+        'ppm': 56.4,
+        'has_remnant': 1,
         'reuse_pix_from': {10: 9, 11: 9},
     },
 ]
 
 N_FRAMES = 12
+N_DIRS = 8
 SH_CANVAS = 80
+MAGIC = 0x54414D52  # 'RMAT'
+DIR_NAMES = ['0_S', '1_SW', '2_W', '3_NW', '4_N', '5_NE', '6_E', '7_SE']
 
 
-def load_frame(k_dir, i, cw, ch):
-    p = os.path.join(k_dir, 'f%02d.png' % i)
+def load_lab_frame(kind_dir, d, i, cw, ch):
+    p = os.path.join(kind_dir, 'frames', DIR_NAMES[d], '%d.png' % i)
     im = Image.open(p).convert('RGBA')
-    assert im.size == (cw, ch), (im.size, (cw, ch))
-    return im
-
-
-def split_frame(im, mirror, cfg):
-    cw, ch = cfg['cell_w'], cfg['cell_h']
-    opa_a = cfg['opaque_a']
-    sh_min = cfg['shadow_min_a']
-    sh_max = cfg['shadow_max_a']
+    assert im.size == (cw, ch), (p, im.size, (cw, ch))
     spr = [[0] * (cw + 1) for _ in range(ch)]
-    sh = set()
-
     for y in range(ch):
         for x in range(cw):
             r, g, b, a = im.getpixel((x, y))
-            xx = (cw - x) if mirror else x
-            if a >= opa_a:
-                spr[y][xx] = (r >> 3) | ((g >> 3) << 5) | ((b >> 3) << 10) | 0x8000
-            elif sh_min <= a <= sh_max:
-                sh.add((xx, y))
-    return spr, sh
+            if a >= 96:
+                spr[y][x] = (r >> 3) | ((g >> 3) << 5) | ((b >> 3) << 10) | 0x8000
+    return spr
+
+
+def load_lab_shadow(shadow_atlas, sh_size, d, i):
+    """Celda (i, d) del atlas de sombras: el atlas tiene framesPerDirection columnas y 8 filas de sh_size px."""
+    cell = shadow_atlas.crop((i * sh_size, d * sh_size, (i + 1) * sh_size, (d + 1) * sh_size))
+    pts = set()
+    for y in range(sh_size):
+        for x in range(sh_size):
+            if cell.getpixel((x, y))[3] >= 96:
+                pts.add((x, y))
+    return pts, sh_size, sh_size
 
 
 def components(spr, cw, ch):
@@ -145,11 +129,7 @@ def encode_sprite(spr, cw, ch, pix, runs):
     return (x0, y0, bw, bh), pix_off, run_off
 
 
-def encode_shadow(sh, mirror, cfg, masks):
-    cw, ch = cfg['cell_w'], cfg['cell_h']
-    scx = (cw - cfg['shadow_cx']) if mirror else cfg['shadow_cx']
-    scy = cfg['shadow_cy']
-
+def encode_shadow(sh, scx, scy, masks):
     raw_pts = [(x - scx + SH_CANVAS // 2, y - scy + SH_CANVAS // 2) for (x, y) in sh]
     valid_pts = [(px, py) for (px, py) in raw_pts if 0 <= px < SH_CANVAS and 0 <= py < SH_CANVAS]
 
@@ -187,130 +167,244 @@ def encode_shadow(sh, mirror, cfg, masks):
     return (min_x, min_y, bw, bh), off
 
 
-def main():
+def hero_end_pose(cfg):
+    """Pies del heroe en el ultimo fotograma de la animacion, leidos de la escena exportada (GLB f11):
+    dist = metros por delante hacia el enemigo (el enemigo esta en el origen de mundo), lat = lateral y
+    lift_px = elevacion del dibujo respecto al suelo del ancla. El lab renderiza los remates con suelo comun
+    (--fixedGround: y = 0 de la escena en todos los fotogramas), asi que el ancla del lab ya esta en el suelo
+    de la escena y la elevacion es 0."""
+    p = os.path.join(GLB_DIR, cfg['name'], 'f%02d.glb' % (N_FRAMES - 1))
+    tx, _, tz = glb_minmax.node_translation(p, HERO_NODE)
+    return -tx, -tz, 0.0
+
+
+def hero_feet_by_frame(cfg):
+    """Pies del heroe en cada fotograma (escena de Blender): centroide de sus vertices a menos de 3 cm de su punto
+    mas bajo, en coordenadas de mundo del GLB (x, z) y altura sobre el suelo comun (y)."""
+    res = []
+    for f in range(N_FRAMES):
+        h = glb_minmax.world_points(os.path.join(GLB_DIR, cfg['name'], 'f%02d.glb' % f), HERO_MESH)
+        m = float(h[:, 1].min())
+        c = h[h[:, 1] < m + 0.03]
+        res.append((float(c[:, 0].mean()), float(c[:, 2].mean()), m))
+    return res
+
+
+def hero_feet_cell(cfg, settings, d, feet):
+    """Donde caen los pies del heroe dentro de la celda del lab (px), con el mismo suelo comun que el render."""
+    lab_ax, lab_ay = settings['anchor']
+    ang = d * math.pi / 4.0
+    ux, uy = -math.sin(ang), math.cos(ang)
+    rx, ry = -uy, ux
+    fx, fz, yh = feet
+    edx = (-fx * ux + -fz * rx) * cfg['ppm']
+    edy = (-fx * uy + -fz * ry) * cfg['ppm'] * 0.5
+    return lab_ax - edx, lab_ay - edy - yh * cfg['ppm'] * CAM_COS
+
+
+def split_layers(spr, cw, ch, feet_xy):
+    """Parte un fotograma en dos actores: A = la pieza conexa que toca los pies del heroe (heroe + enemigo en
+    el agarre, cruz que lleva) y B = el resto (mitades, trozos, polvo sueltos). Cada capa se dibuja con su propia
+    profundidad. Devuelve (A, B) con la misma forma que `spr`; B puede quedar vacia."""
+    comps = components(spr, cw, ch)
+    a = [[0] * (cw + 1) for _ in range(ch)]
+    b = [[0] * (cw + 1) for _ in range(ch)]
+    if not comps:
+        return a, b
+    fx, fy = feet_xy
+    owner = min(range(len(comps)), key=lambda k: min((x - fx) ** 2 + (y - fy) ** 2 for x, y in comps[k]))
+    for k, comp in enumerate(comps):
+        dst = a if k == owner else b
+        for x, y in comp:
+            dst[y][x] = spr[y][x]
+    return a, b
+
+
+def bottom_row(spr, ch, w):
+    for y in range(ch - 1, -1, -1):
+        if any(spr[y][:w]):
+            return y
+    return None
+
+
+def dir_geometry(cfg, settings, d):
+    cw, ch = map(int, settings['frameSize'].split('x'))
+    lab_ax, lab_ay = settings['anchor']
+    ang = d * math.pi / 4.0
+    ux = -math.sin(ang)
+    uy = math.cos(ang)
+    rx = -uy
+    ry = ux
+    dist, lat, lift_px = hero_end_pose(cfg)
+    edx = int(round((dist * ux + lat * rx) * cfg['ppm']))
+    edy = int(round((dist * uy + lat * ry) * cfg['ppm'] * 0.5 + lift_px))
+    ax = max(0, min(cw - 1, lab_ax - edx))
+    ay = max(0, min(ch - 1, lab_ay - edy))
+    return cw, ch, ax, ay, edx, edy, lab_ax, lab_ay
+
+
+def pack_dir_bin(cfg, settings, shadow_atlas, d, feet):
+    sh_size = int(settings['shadowSize'][0])
+    kind_dir = os.path.join(LAB_OUT, cfg['name'])
+    cw, ch, ax, ay, edx, edy, lab_ax, lab_ay = dir_geometry(cfg, settings, d)
+    reuse_map = cfg.get('reuse_pix_from') or {}
     pix, runs, masks = [], [], []
+    fb, fp, fr, sb, so = [], [], [], [], []
+    db, dp, dr, depth = [], [], [], []
+    frames = [load_lab_frame(kind_dir, d, i, cw, ch) for i in range(N_FRAMES)]
+    # El render del lab del fotograma 0 no coincide con la escena (GLB f00): heroe ~20 px desplazado y enemigo en otra
+    # pose (bug del renderer pendiente). El hueco 0 es copia del 1 (pixeles, capas, profundidad, sombra y pies).
+    frames[0] = frames[1]
+    feet = [feet[1]] + list(feet[1:])
+    # Pies del heroe en el suelo (altura 0) por fotograma, relativos al ancla (px de mundo).
+    hero_off = []
+    for i in range(N_FRAMES):
+        gx, gy = hero_feet_cell(cfg, settings, d, (feet[i][0], feet[i][1], 0.0))
+        hero_off.append((max(-127, min(127, int(round(gx - ax)))), max(-127, min(127, int(round(gy - ay))))))
 
-    all_f_bounds = []
-    all_f_poff = []
-    all_f_roff = []
-    all_s_bounds = []
-    all_s_off = []
+    prev_sb, prev_so = None, None
+    for i, spr in enumerate(frames):
+        if i in reuse_map:
+            ref_idx = reuse_map[i]
+            b, po, ro = fb[ref_idx], fp[ref_idx], fr[ref_idx]
+            b2_, po2_, ro2_ = db[ref_idx], dp[ref_idx], dr[ref_idx]
+            depth.append(depth[ref_idx])
+        else:
+            la, lb = split_layers(spr, cw, ch, hero_feet_cell(cfg, settings, d, feet[i]))
+            b, po, ro = encode_sprite(la, cw, ch, pix, runs)
+            b2_, po2_, ro2_ = encode_sprite(lb, cw, ch, pix, runs)
+            # Capa A (heroe + enemigo en el agarre): la del mas cercano a la camara entre los pies del heroe en ese
+            # fotograma y el punto de suelo del enemigo (el origen de mundo, la y del ancla del lab). Capa B (restos):
+            # su fila mas baja, que para un trozo tumbado es su borde mas cercano al suelo.
+            hy = hero_feet_cell(cfg, settings, d, feet[i])[1]
+            rb = bottom_row(lb, ch, cw + 1)
+            clamp = lambda v: max(-127, min(127, v))
+            depth.append((clamp(int(round(max(hy, settings['anchor'][1]))) - ay), clamp((rb if rb is not None else ay) - ay)))
+        fb.append(b); fp.append(po); fr.append(ro)
+        db.append(b2_); dp.append(po2_); dr.append(ro2_)
 
-    for k_idx, cfg in enumerate(KINDS):
-        k_fb, k_fp, k_fr, k_sb, k_so = [], [], [], [], []
-        cw, ch = cfg['cell_w'], cfg['cell_h']
-        reuse_map = cfg.get('reuse_pix_from') or {}
+        if (i & 1) and i != 1 and prev_sb is not None:
+            b2, o2 = prev_sb, prev_so
+        else:
+            sh, sw, sh_h = load_lab_shadow(shadow_atlas, sh_size, d, 1 if i == 0 else i)
+            b2, o2 = encode_shadow(sh, sw // 2, sh_h // 2, masks)
+            prev_sb, prev_so = b2, o2
+        sb.append(b2); so.append(o2)
 
-        for mirror in (0, 1):
-            fb, fp, fr, sb, so = [], [], [], [], []
-            frames = [split_frame(load_frame(cfg['dir'], i, cw, ch), mirror, cfg) for i in range(N_FRAMES)]
+    if cfg['has_remnant']:
+        rem = load_lab_frame(kind_dir, d, N_FRAMES, cw, ch)
+        b, po, ro = encode_sprite(rem, cw, ch, pix, runs)
+    else:
+        b, po, ro = (0, 0, 0, 0), len(pix), len(runs)
+    fb.append(b); fp.append(po); fr.append(ro)
+    db.append((0, 0, 0, 0)); dp.append(len(pix)); dr.append(len(runs))   # restos: una sola capa
 
-            prev_sb, prev_so = None, None
-            for i, (spr, sh) in enumerate(frames):
-                if i in reuse_map:
-                    ref_idx = reuse_map[i]
-                    b = fb[ref_idx]
-                    po = fp[ref_idx]
-                    ro = fr[ref_idx]
-                else:
-                    b, po, ro = encode_sprite(spr, cw, ch, pix, runs)
-                fb.append(b); fp.append(po); fr.append(ro)
+    if len(pix) & 1:
+        pix.append(0)
+    if len(runs) & 1:
+        runs.append(0)
+    while len(masks) & 3:
+        masks.append(0)
 
-                # Shadow optimization: share shadow mask every 2 frames (i and i-1)
-                if (i & 1) and prev_sb is not None:
-                    b2, o2 = prev_sb, prev_so
-                else:
-                    b2, o2 = encode_shadow(sh, mirror, cfg, masks)
-                    prev_sb, prev_so = b2, o2
-                sb.append(b2); so.append(o2)
+    pix_bytes = len(pix) * 2
+    runs_bytes = len(runs) * 2
+    mask_bytes = len(masks)
 
-            # Frame 12: remnant
-            if cfg['has_remnant']:
-                last = frames[N_FRAMES - 1][0]
-                comps = components(last, cw, ch)
-                ax = (cw - cfg['anchor_x']) if mirror else cfg['anchor_x']
-                ay = cfg['anchor_y']
-                hero = min(comps, key=lambda c: min(abs(x - ax) + abs(y - (ay - 8)) for x, y in c))
-                rem = [[0] * (cw + 1) for _ in range(ch)]
-                for c in comps:
-                    if c is hero or len(c) < 6:
-                        continue
-                    for x, y in c:
-                        rem[y][x] = last[y][x]
-                b, po, ro = encode_sprite(rem, cw, ch, pix, runs)
-            else:
-                b, po, ro = (0, 0, 0, 0), len(pix), len(runs)
+    buf = bytearray()
+    buf += struct.pack('<4I', MAGIC, pix_bytes, runs_bytes, mask_bytes)
+    for b in fb:
+        buf += struct.pack('<4B', *b)
+    buf += struct.pack('<%dI' % (N_FRAMES + 1), *fp)
+    buf += struct.pack('<%dI' % (N_FRAMES + 1), *fr)
+    for b in sb:
+        buf += struct.pack('<4B', *b)
+    buf += struct.pack('<%dI' % N_FRAMES, *so)
+    for b in db:
+        buf += struct.pack('<4B', *b)
+    buf += struct.pack('<%dI' % (N_FRAMES + 1), *dp)
+    buf += struct.pack('<%dI' % (N_FRAMES + 1), *dr)
+    buf += struct.pack('<%dH' % len(pix), *pix)
+    buf += struct.pack('<%dH' % len(runs), *runs)
+    buf += bytes(masks)
+    return bytes(buf), depth, hero_off
 
-            fb.append(b); fp.append(po); fr.append(ro)
 
-            k_fb.append(fb); k_fp.append(fp); k_fr.append(fr)
-            k_sb.append(sb); k_so.append(so)
+def main():
+    os.makedirs(NITRO_DIR, exist_ok=True)
+    max_bin = 0
+    total_disk = 0
+    kind_infos = []
+    dir_infos = []
+    depth_infos = []
+    off_infos = []
 
-        all_f_bounds.append(k_fb)
-        all_f_poff.append(k_fp)
-        all_f_roff.append(k_fr)
-        all_s_bounds.append(k_sb)
-        all_s_off.append(k_so)
+    for cfg in KINDS:
+        settings_path = os.path.join(LAB_OUT, cfg['name'], 'settings.json')
+        with open(settings_path) as f:
+            settings = json.load(f)
+        shadow_atlas = Image.open(os.path.join(LAB_OUT, cfg['name'], 'shadow.png')).convert('RGBA')
+        cw, ch = map(int, settings['frameSize'].split('x'))
+        sh_size = int(settings['shadowSize'][0])
+        n_lab = int(settings['framesPerDirection'])
+        assert n_lab == N_FRAMES + (1 if cfg['has_remnant'] else 0), (cfg['name'], n_lab)
+        assert shadow_atlas.size == (n_lab * sh_size, N_DIRS * sh_size), (cfg['name'], shadow_atlas.size)
+        kind_infos.append((cw, ch, cfg['has_remnant'], N_FRAMES, cfg['name']))
+        d_list = []
+        depth_list = []
+        off_list = []
+        feet = hero_feet_by_frame(cfg)
+        for d in range(N_DIRS):
+            data, depth, hero_off = pack_dir_bin(cfg, settings, shadow_atlas, d, feet)
+            out_path = os.path.join(NITRO_DIR, '%s_d%d.bin' % (cfg['name'], d))
+            with open(out_path, 'wb') as f:
+                f.write(data)
+            max_bin = max(max_bin, len(data))
+            total_disk += len(data)
+            _, _, ax, ay, edx, edy, lab_ax, lab_ay = dir_geometry(cfg, settings, d)
+            sox = lab_ax - ax
+            soy = lab_ay - ay
+            d_list.append((ax, ay, edx, edy, sox, soy, d))
+            depth_list.append(depth)
+            off_list.append(hero_off)
+        dir_infos.append((cfg['name'], d_list))
+        depth_infos.append((cfg['name'], depth_list))
+        off_infos.append((cfg['name'], off_list))
 
-    def arr_bounds(name, data):
-        out = ['const uint8_t %s[%d][2][%d][4] = {' % (name, len(data), len(data[0][0]))]
-        for k_idx, k_data in enumerate(data):
-            out.append('    { /* kind %d: %s */' % (k_idx, KINDS[k_idx]['name']))
-            for m_data in k_data:
-                out.append('        {')
-                for b in m_data:
-                    out.append('            { %d, %d, %d, %d },' % tuple(b))
-                out.append('        },')
-            out.append('    },')
-        out.append('};\n')
-        return '\n'.join(out)
+    max_bin_aligned = (max_bin + 15) & ~15
 
-    def arr_offsets(name, data):
-        out = ['const uint32_t %s[%d][2][%d] = {' % (name, len(data), len(data[0][0]))]
-        for k_idx, k_data in enumerate(data):
-            out.append('    { /* kind %d: %s */' % (k_idx, KINDS[k_idx]['name']))
-            for m_data in k_data:
-                out.append('        { ' + ', '.join(str(v) for v in m_data) + ' },')
-            out.append('    },')
-        out.append('};\n')
-        return '\n'.join(out)
-
-    def flat(name, ctype, data, fmt, per=16):
-        lines = []
-        for i in range(0, len(data), per):
-            lines.append('    ' + ', '.join(fmt(x) for x in data[i:i + per]) + ',')
-        return 'const %s %s[] __attribute__((aligned(4))) = {\n%s\n};\n' % (ctype, name, '\n'.join(lines))
-
-    # C code output
     c = [
         '// Generado por tools/generate_remate_sprites.py: no editar a mano.\n',
         '#include "remate_sprites.h"\n\n',
-        'const RemateKindInfo g_remate_kind_info[REMATE_NUM_KINDS] = {\n'
+        'const RemateKindInfo g_remate_kind_info[REMATE_NUM_KINDS] = {\n',
     ]
-    for k in KINDS:
-        sox = k['shadow_cx'] - k['anchor_x']
-        soy = k['shadow_cy'] - k['anchor_y']
-        c.append('    { %d, %d, %d, %d, %d, %d, %d, %d, %d, %d }, /* %s */\n' % (
-            k['cell_w'], k['cell_h'], k['anchor_x'], k['anchor_y'],
-            k['enemy_dx'], k['enemy_dy'], sox, soy,
-            k['has_remnant'], N_FRAMES, k['name']
-        ))
+    for cw, ch, hr, rf, name in kind_infos:
+        c.append('    { %d, %d, %d, %d }, /* %s */\n' % (cw, ch, hr, rf, name))
     c.append('};\n\n')
-
-    c.append(arr_bounds('g_remate_frame_bounds', all_f_bounds))
-    c.append('\n' + arr_offsets('g_remate_frame_offsets', all_f_poff))
-    c.append('\n' + arr_offsets('g_remate_run_offsets', all_f_roff))
-    c.append('\n' + arr_bounds('g_remate_shadow_bounds', all_s_bounds))
-    c.append('\n' + arr_offsets('g_remate_shadow_offsets', all_s_off))
-
-    c.append('\n' + flat('g_remate_pixels', 'uint16_t', pix, lambda v: '0x%04X' % v))
-    c.append('\n' + flat('g_remate_runs', 'uint16_t', runs, str))
-    c.append('\n' + flat('g_remate_shadow_masks', 'uint8_t', masks or [0], lambda v: '0x%02X' % v, 24))
+    c.append('const RemateDirInfo g_remate_dir_info[REMATE_NUM_KINDS][REMATE_NUM_DIRS] = {\n')
+    for name, d_list in dir_infos:
+        c.append('    { /* %s */\n' % name)
+        for ax, ay, edx, edy, sox, soy, d in d_list:
+            c.append('        { %d, %d, %d, %d, %d, %d }, /* dir %d */\n' % (ax, ay, edx, edy, sox, soy, d))
+        c.append('    },\n')
+    c.append('};\n\n')
+    c.append('const int8_t g_remate_depth[REMATE_NUM_KINDS][REMATE_NUM_DIRS][REMATE_NUM_FRAMES][2] = {\n')
+    for name, depth_list in depth_infos:
+        c.append('    { /* %s */\n' % name)
+        for d, offs in enumerate(depth_list):
+            c.append('        { %s }, /* dir %d */\n' % (', '.join('{%d, %d}' % v for v in offs), d))
+        c.append('    },\n')
+    c.append('};\n\n')
+    c.append('const int8_t g_remate_hero_off[REMATE_NUM_KINDS][REMATE_NUM_DIRS][REMATE_NUM_FRAMES][2] = {\n')
+    for name, off_list in off_infos:
+        c.append('    { /* %s */\n' % name)
+        for d, offs in enumerate(off_list):
+            c.append('        { %s }, /* dir %d */\n' % (', '.join('{%d, %d}' % v for v in offs), d))
+        c.append('    },\n')
+    c.append('};\n')
 
     with open(os.path.join(WT, 'source', 'remate_sprites.c'), 'w', newline='\n') as f:
         f.write(''.join(c))
 
-    # Header output
     h = '''#ifndef REMATE_SPRITES_H
 #define REMATE_SPRITES_H
 // Generado por tools/generate_remate_sprites.py: no editar a mano.
@@ -319,44 +413,60 @@ def main():
 #define REMATE_KIND_EXVOTO   0
 #define REMATE_KIND_CIRENEO  1
 #define REMATE_NUM_KINDS     2
+#define REMATE_NUM_DIRS      8
 
 #define REMATE_NUM_FRAMES    12
 #define REMATE_SHADOW_CANVAS 80
+#define REMATE_BIN_MAGIC     0x54414D52u
+#define REMATE_MAX_BIN_BYTES %d
 
 typedef struct {
     uint8_t cell_w;
     uint8_t cell_h;
+    uint8_t has_remnant;
+    uint8_t remnant_frame;
+} RemateKindInfo;
+
+typedef struct {
     uint8_t anchor_x;
     uint8_t anchor_y;
     int8_t  enemy_dx;
     int8_t  enemy_dy;
     int8_t  shadow_ox;
     int8_t  shadow_oy;
-    uint8_t has_remnant;
-    uint8_t remnant_frame;
-} RemateKindInfo;
+} RemateDirInfo;
+
+typedef struct {
+    uint32_t magic;
+    uint32_t pix_bytes;
+    uint32_t runs_bytes;
+    uint32_t mask_bytes;
+    uint8_t  f_bounds[REMATE_NUM_FRAMES + 1][4];
+    uint32_t f_pix_off[REMATE_NUM_FRAMES + 1];
+    uint32_t f_run_off[REMATE_NUM_FRAMES + 1];
+    uint8_t  s_bounds[REMATE_NUM_FRAMES][4];
+    uint32_t s_mask_off[REMATE_NUM_FRAMES];
+    uint8_t  d_bounds[REMATE_NUM_FRAMES + 1][4];     // capa B: restos sueltos del fotograma (0 = ninguno)
+    uint32_t d_pix_off[REMATE_NUM_FRAMES + 1];
+    uint32_t d_run_off[REMATE_NUM_FRAMES + 1];
+} RemateBinHeader;
 
 extern const RemateKindInfo g_remate_kind_info[REMATE_NUM_KINDS];
-
-extern const uint8_t g_remate_frame_bounds[REMATE_NUM_KINDS][2][REMATE_NUM_FRAMES + 1][4];
-extern const uint32_t g_remate_frame_offsets[REMATE_NUM_KINDS][2][REMATE_NUM_FRAMES + 1];
-extern const uint32_t g_remate_run_offsets[REMATE_NUM_KINDS][2][REMATE_NUM_FRAMES + 1];
-
-extern const uint8_t g_remate_shadow_bounds[REMATE_NUM_KINDS][2][REMATE_NUM_FRAMES][4];
-extern const uint32_t g_remate_shadow_offsets[REMATE_NUM_KINDS][2][REMATE_NUM_FRAMES];
-
-extern const uint16_t g_remate_pixels[];
-extern const uint16_t g_remate_runs[];
-extern const uint8_t g_remate_shadow_masks[];
+extern const RemateDirInfo g_remate_dir_info[REMATE_NUM_KINDS][REMATE_NUM_DIRS];
+// Profundidad de cada capa de la celda por fotograma ([0] = heroe y enemigo en el agarre, [1] = restos sueltos), en px de mundo
+// respecto a los pies finales del heroe: [0] la mas cercana entre los pies del heroe y el enemigo, [1] la fila mas baja de los restos (pack_dir_bin en el generador).
+extern const int8_t g_remate_depth[REMATE_NUM_KINDS][REMATE_NUM_DIRS][REMATE_NUM_FRAMES][2];
+// Pies del heroe en el suelo (x, y) por fotograma, en px de mundo respecto al ancla (sus pies finales): el fotograma 0 es
+// donde debe estar para empezar sin salto y el 11 es (0,0). Lo usan la embestida previa y la camara (remate.c).
+extern const int8_t g_remate_hero_off[REMATE_NUM_KINDS][REMATE_NUM_DIRS][REMATE_NUM_FRAMES][2];
 
 #endif
-'''
+''' % max_bin_aligned
     with open(os.path.join(WT, 'include', 'remate_sprites.h'), 'w', newline='\n') as f:
         f.write(h)
 
-    print('OK: pixels %d B, runs %d B, shadow %d B (total: %d B)' % (
-        len(pix) * 2, len(runs) * 2, len(masks),
-        len(pix) * 2 + len(runs) * 2 + len(masks)
+    print('OK: 16 nitro bins, max=%d B (buf=%d B), total_nitro=%d B' % (
+        max_bin, max_bin_aligned, total_disk
     ))
 
 

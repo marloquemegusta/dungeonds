@@ -790,27 +790,39 @@ static void update_screen_hardware_bg(int is_sub, u16 *map_ptr, int cam_x, int c
 // Composition
 // ---------------------------------------------------------------------------
 
-// Remate cell (remate_sprites.h): frame `f` of variant `m` (0 normal, 1 mirrored) with the anchor (hero feet) at (ax, ay).
-// The shadow is baked apart (shadow_select). Same cost as one actor blit.
-static void draw_remate_frame(uint16_t *buffer, int kind, int m, int f, int ax, int ay, int cam_x, int cam_y) {
-    if (kind < 0 || kind >= REMATE_NUM_KINDS) return;
-    const RemateKindInfo *nfo = &g_remate_kind_info[kind];
-    const uint8_t *b = g_remate_frame_bounds[kind][m][f];
+// Remate cell (remate_sprites.h): frame `f` of direction `d` (0..7) with the anchor (hero feet) at (ax, ay).
+// The pixels/runs live in the NitroFS buffer loaded by remate_start(). The cell is two actors: layer 0 (hero and enemy in the
+// grip) and layer 1 (loose debris), each occluded by props at its own `depth`.
+static void draw_remate_layer(uint16_t *buffer, int kind, int d, int f, int layer, int ax, int ay, int cam_x, int cam_y, int depth) {
+    if (kind < 0 || kind >= REMATE_NUM_KINDS || d < 0 || d >= REMATE_NUM_DIRS) return;
+    const RemateBinHeader *hdr = remate_bin();
+    if (!hdr) return;
+    const RemateDirInfo *dnfo = &g_remate_dir_info[kind][d];
+    const uint8_t *b = layer ? hdr->d_bounds[f] : hdr->f_bounds[f];
     int bw = b[2], bh = b[3];
     if (bw == 0 || bh == 0) return;
-    int anchor_x = m ? (nfo->cell_w - nfo->anchor_x) : nfo->anchor_x;
-    int anchor_y = nfo->anchor_y;
-    blit_stride(buffer, &g_remate_pixels[g_remate_frame_offsets[kind][m][f]], &g_remate_runs[g_remate_run_offsets[kind][m][f]],
-                sprite_pitch(bw), bw, bh,
-                ax - anchor_x + b[0], ay - anchor_y + b[1],
-                cam_x, cam_y, s_draw_item_depth);
+    int pitch = sprite_pitch(bw);
+    const uint16_t *pix = remate_bin_pixels() + (layer ? hdr->d_pix_off[f] : hdr->f_pix_off[f]);
+    const uint16_t *runs = remate_bin_runs() + (layer ? hdr->d_run_off[f] : hdr->f_run_off[f]);
+    blit_stride(buffer, pix, runs, pitch, bw, bh,
+                ax - dnfo->anchor_x + b[0], ay - dnfo->anchor_y + b[1],
+                cam_x, cam_y, depth);
+}
+
+// Depth of a layer of the running remate cell: the hero's final feet row plus the baked offset (remate_sprites.h).
+static int remate_layer_depth(int ay, int layer) {
+    return ay + g_remate_depth[remate_kind()][remate_dir()][remate_frame()][layer];
 }
 
 static void draw_player(uint16_t *buffer, int cam_x, int cam_y) {
     if (remate_active()) {
         int ax, ay;
         remate_origin(&ax, &ay);
-        draw_remate_frame(buffer, remate_kind(), remate_mirror(), remate_frame(), ax, ay, cam_x, cam_y);
+        const int k = remate_kind(), d = remate_dir(), f = remate_frame();
+        const int dep0 = remate_layer_depth(ay, 0), dep1 = remate_layer_depth(ay, 1);
+        if (dep1 < dep0) draw_remate_layer(buffer, k, d, f, 1, ax, ay, cam_x, cam_y, dep1);   // debris behind the pair: first
+        draw_remate_layer(buffer, k, d, f, 0, ax, ay, cam_x, cam_y, dep0);
+        if (dep1 >= dep0) draw_remate_layer(buffer, k, d, f, 1, ax, ay, cam_x, cam_y, dep1);  // debris nearer: over the pair
         return;
     }
     int px = player_screen_x(s_player.x, s_player.y);
@@ -836,8 +848,8 @@ static void draw_player(uint16_t *buffer, int cam_x, int cam_y) {
         ? &g_player_shot_runs[g_player_shot_run_offsets[s_player.dir][clip]]
         : character_runs_ptr(s_player.char_id, s_player.dir, s_player.frame);
     int pitch = sprite_pitch(bw);
-    if (g_player_state.invuln_timer > 0 && ((g_player_state.invuln_timer >> 2) & 1)) {
-        // Hit feedback: red flash while the i-frames run.
+    if (g_player_state.invuln_timer > 0 && ((g_player_state.invuln_timer >> 2) & 1) && !remate_approaching()) {
+        // Hit feedback: red flash while the i-frames run (not during the remate dash).
         static uint16_t s_tint[HERO_SHOT_SPRITE_W * HERO_SHOT_SPRITE_H] __attribute__((aligned(4)));   // largest hero cell
         for (int y = 0; y < bh; y++) {
             for (int x = 0; x < bw; x++) {
@@ -851,6 +863,9 @@ static void draw_player(uint16_t *buffer, int cam_x, int cam_y) {
             }
         }
         frame = s_tint;
+    } else if (remate_invuln() > 0 && ((remate_invuln() >> 2) & 1)) {
+        // Post-remate invulnerability: soft warm ivory pulse (distinct from red hit flash).
+        frame = sprite_wax_glow(frame, runs, pitch, bw, bh, 2);
     } else {
         const int lt = weapons_llaga_tint();                // Llaga Abierta B: blood red as the hearts drop
         if (lt > 0) frame = sprite_glow(frame, runs, pitch, bw, bh, lt);
@@ -906,7 +921,7 @@ static void draw_telegraph_pulse(uint16_t *buffer, int cx, int cy, int state_tim
 }
 
 static void draw_enemy(uint16_t *buffer, const Enemy *e, int cam_x, int cam_y) {
-    if (e->state == ENEMY_STATE_REMATE) return;            // the remate cell draws it (with the hero)
+    if (e->state == ENEMY_STATE_REMATE && remate_active()) return;   // the remate cell draws it (with the hero); during the dash it stands here
     int px = player_screen_x(e->x, e->y);
     int py = player_screen_y(e->x, e->y);
 
@@ -1041,11 +1056,11 @@ static void draw_melt(uint16_t *buffer, const ExvotoMelt *m, int cam_x, int cam_
 
 // The two wax halves the finisher leaves on the floor (last frame of the cell without the hero), blinking out.
 static void draw_remate_remnant(uint16_t *buffer, int cam_x, int cam_y) {
-    int kind, ax, ay, m, visible;
-    if (!remate_remnant(&kind, &ax, &ay, &m, &visible) || !visible) return;
+    int kind, ax, ay, d, visible;
+    if (!remate_remnant(&kind, &ax, &ay, &d, &visible) || !visible) return;
     const RemateKindInfo *nfo = &g_remate_kind_info[kind];
     if (!nfo->has_remnant) return;
-    draw_remate_frame(buffer, kind, m, nfo->remnant_frame, ax, ay, cam_x, cam_y);
+    draw_remate_layer(buffer, kind, d, nfo->remnant_frame, 0, ax, ay, cam_x, cam_y, s_draw_item_depth);
 }
 
 static void bone_effect_pixel(uint16_t *buffer, int x, int y, int cam_x, int cam_y, uint16_t color) {
@@ -1144,13 +1159,14 @@ typedef struct {
 
 static int shadow_select(const DrawItem *it, ShadowSel *sel) {
     if (it->ref == -1 && remate_active()) {                   // baked shadow of the remate cell
-        const int kind = remate_kind(), m = remate_mirror(), f = remate_frame();
-        const RemateKindInfo *nfo = &g_remate_kind_info[kind];
-        sel->mask = &g_remate_shadow_masks[g_remate_shadow_offsets[kind][m][f]];
-        sel->bounds = g_remate_shadow_bounds[kind][m][f];
-        int sox = m ? -nfo->shadow_ox : nfo->shadow_ox;
-        sel->left = it->cx + sox - REMATE_SHADOW_CANVAS / 2;
-        sel->top = it->cy + nfo->shadow_oy - REMATE_SHADOW_CANVAS / 2;
+        const RemateBinHeader *hdr = remate_bin();
+        if (!hdr) return 0;
+        const int kind = remate_kind(), d = remate_dir(), f = remate_frame();
+        const RemateDirInfo *dnfo = &g_remate_dir_info[kind][d];
+        sel->mask = remate_bin_masks() + hdr->s_mask_off[f];
+        sel->bounds = hdr->s_bounds[f];
+        sel->left = it->cx + dnfo->shadow_ox - REMATE_SHADOW_CANVAS / 2;
+        sel->top = it->cy + dnfo->shadow_oy - REMATE_SHADOW_CANVAS / 2;
         return 1;
     }
     if (it->ref == -1) {
@@ -1168,7 +1184,7 @@ static int shadow_select(const DrawItem *it, ShadowSel *sel) {
     }
     if (it->ref <= -2 && it->ref > -2 - MAX_ENEMIES) {
         const Enemy *e = &g_enemies[-2 - it->ref];
-        if (e->state == ENEMY_STATE_REMATE) return 0;          // its shadow is baked in the remate cell
+        if (e->state == ENEMY_STATE_REMATE && remate_active()) return 0;   // its shadow is baked in the remate cell
         int shw = g_characters[e->char_id].shadow_w;
         int shh = g_characters[e->char_id].shadow_h;
         int is_telegraph = (e->char_id == CHAR_CHARGER && e->state == ENEMY_STATE_TELEGRAPH);
@@ -1221,15 +1237,24 @@ ITCM_CODE static void render_screen(uint16_t *buffer, DirtySpan *spans, int cam_
     // Add player only if visible on this screen
     int psx = player_screen_x(s_player.x, s_player.y);
     int psy = player_screen_y(s_player.x, s_player.y);
-    if (remate_active()) remate_origin(&psx, &psy);        // the remate cell is anchored at the hero's final feet
-    int pl_left = psx - 40 - cam_x;                        // the biggest hero cell (remate cell: 64 px around the anchor) bounds all
+    int pl_depth = 0;                                      // sort/occlusion depth of the hero item (feet row; remate: its nearer layer)
+    int pl_half_w = 40, pl_up = 64;                        // cull margins around the feet
+    if (remate_active()) {
+        remate_origin(&psx, &psy);                         // the remate cell is anchored at the hero's final feet
+        pl_depth = remate_layer_depth(psy, 0);
+        pl_half_w = 76;                                    // remate cells are up to 120 px wide and 120 tall around the anchor
+        pl_up = 110;
+    } else {
+        pl_depth = psy;
+    }
+    int pl_left = psx - pl_half_w - cam_x;                 // the biggest hero cell bounds all
     // Cull on the feet row: the exported ground anchor varies per character
     // and direction, so the sprite top lies within one canvas height above it.
     int pl_feet = psy - cam_y;
-    if (pl_left < SCREEN_W && pl_left + 80 > 0 &&
-        pl_feet - 64 < SCREEN_H && pl_feet + 64 > 0) {
+    if (pl_left < SCREEN_W && pl_left + 2 * pl_half_w > 0 &&
+        pl_feet - pl_up < SCREEN_H && pl_feet + 64 > 0) {
         if (count < MAX_DRAW_ITEMS) {
-            items[count].depth = psy;
+            items[count].depth = pl_depth;
             items[count].ref = -1;
             items[count].cx = psx;
             items[count].cy = psy;
@@ -1278,7 +1303,7 @@ ITCM_CODE static void render_screen(uint16_t *buffer, DirtySpan *spans, int cam_
         int rk, rx, ry, rm, rv;
         if (remate_remnant(&rk, &rx, &ry, &rm, &rv) && rv &&
             rx + 40 > cam_x && rx - 40 < cam_x + SCREEN_W && ry + 40 > cam_y && ry - 64 < cam_y + SCREEN_H) {
-            items[count].depth = ry + 12;                  // the halves lie in front of the hero's feet
+            items[count].depth = ry - 6;                   // flat on the floor: any actor standing there (or nearer) covers them, walls hide them
             items[count].ref = REMATE_REMNANT_REF;
             items[count].cx = rx;
             items[count].cy = ry;
@@ -2352,6 +2377,20 @@ static void player_update(uint32_t keys, uint32_t keys_down) {
         remate_update(g_enemies, MAX_ENEMIES, &s_player.x, &s_player.y, &dir);
         if (dir != s_player.dir) { s_player.dir = dir; s_rooted = 0; s_shot_active = 0; }
     }
+    if (remate_approaching()) {
+        // Remate dash: the hero runs to the cell's start point with the normal walk cycle (no input, no shot).
+        s_rooted = 0;
+        s_player.is_moving = 1;
+        s_shot_active = 0;
+        s_hero_clip_frame = -1;
+        s_latch_pressed = s_latch_released = 0;
+        if (++s_player.anim_timer >= g_characters[s_player.char_id].anim_period) {
+            s_player.anim_timer = 0;
+            s_player.frame = (s_player.frame + 1) % PLAYER_NUM_FRAMES;
+        }
+        update_camera();
+        return;
+    }
     if (remate_active()) {
         s_rooted = 0;
         s_player.is_moving = 0;
@@ -2396,7 +2435,7 @@ static void player_update(uint32_t keys, uint32_t keys_down) {
 
     // L: finishes the nearest reeling enemy (Exvoto or Cireneo) within reach (remate.h). Free in the demo ROM; in the test variants it
     // still cycles weapons when there is nothing to finish.
-    if ((keys_down & KEY_L) && remate_start(g_enemies, MAX_ENEMIES, s_player.x, s_player.y)) {
+    if ((keys_down & KEY_L) && remate_start(g_enemies, MAX_ENEMIES, s_player.x, s_player.y, s_player.dir)) {
         s_rooted = 0;
         s_shot_active = 0;
         s_hero_clip_frame = -1;
@@ -2677,7 +2716,7 @@ volatile PerfStats g_perf = {
     .top_render_ticks = 0,
     .bot_render_ticks = 0,
     .present_ticks = 0,
-    .show_hud = PLAYGROUND || STRESS_TEST,       // the playground ROM shows the weapon / style label from the start
+    .show_hud = (PLAYGROUND && !REMATE_SANDBOX) || STRESS_TEST, // the playground ROM shows the weapon / style label; the remate sandbox looks like the game
     .dirty_leaks = 0
 };
 

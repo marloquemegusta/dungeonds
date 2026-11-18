@@ -487,6 +487,47 @@ def main():
             for d in info['drops']:
                 d.place(t if i >= SPLIT else -1)
         vis = [hero.mesh] + info['draw'](i, parts) + [d.o for d in info['drops'] if not d.o.hide_render]
+        glb_dir = os.environ.get('REMATE_GLB_DIR')
+        if glb_dir:
+            os.makedirs(glb_dir, exist_ok=True)
+            update()
+            depsgraph = bpy.context.evaluated_depsgraph_get()
+            tmp_objs = []
+            for o in vis:
+                if not o or o.type != 'MESH':
+                    continue
+                eo = o.evaluated_get(depsgraph)
+                me = bpy.data.meshes.new_from_object(eo, preserve_all_data_layers=True, depsgraph=depsgraph)
+                no = bpy.data.objects.new(o.name + '_baked', me)
+                no.matrix_world = o.matrix_world.copy()
+                bpy.context.scene.collection.objects.link(no)
+                tmp_objs.append((no, me))
+            bpy.ops.object.select_all(action='DESELECT')
+            for no, _ in tmp_objs:
+                no.select_set(True)
+            if tmp_objs:
+                bpy.context.view_layer.objects.active = tmp_objs[0][0]
+            bpy.ops.export_scene.gltf(
+                filepath=os.path.join(glb_dir, 'f%02d.glb' % i),
+                export_format='GLB', use_selection=True,
+                export_materials='EXPORT', export_yup=True
+            )
+            if i == len(SEQ) - 1:
+                bpy.ops.object.select_all(action='DESELECT')
+                rem_objs = [no for no, _ in tmp_objs if not no.name.startswith(hero.mesh.name)]
+                for no in rem_objs:
+                    no.select_set(True)
+                if rem_objs:
+                    bpy.context.view_layer.objects.active = rem_objs[0]
+                    bpy.ops.export_scene.gltf(
+                        filepath=os.path.join(glb_dir, 'f12.glb'),
+                        export_format='GLB', use_selection=True,
+                        export_materials='EXPORT', export_yup=True
+                    )
+            for no, me in tmp_objs:
+                bpy.data.objects.remove(no, do_unlink=True)
+                bpy.data.meshes.remove(me)
+            continue
         build_shadow(vis, mat=MAT_BLACK)
         render_passes(i, vis, info.get('heat'))
         print('FRAME', OPT, i, 'gaps', gaps, 'feet', px_of(V((sp['hx'], 0, 0))))
