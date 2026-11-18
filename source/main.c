@@ -2313,7 +2313,9 @@ static void player_update(uint32_t keys, uint32_t keys_down) {
     if (procession) current_speed = current_speed * 35 / 100;
     int current_period = g_characters[cur_char].anim_period;
 
-    if (pressed && weapons_can_start_aim(&g_player_state)) s_rooted = 1;
+    // A press held through the post-shot cooldown starts the charge as soon as the weapon is
+    // ready (weapons_input buffers it), so root the hero on that same frame too.
+    if ((pressed || touch_down) && weapons_can_start_aim(&g_player_state)) s_rooted = 1;
 
     int sdx = 0, sdy = 0; // screen-space input axes
     if (!s_rooted || procession) {
@@ -2405,11 +2407,19 @@ static void player_update(uint32_t keys, uint32_t keys_down) {
         s_player.dir = aim_dir_from_screen(in.touch_x - player_screen_x(s_player.x, s_player.y),
                                            in.touch_y - (player_screen_y(s_player.x, s_player.y) - AIM_CHEST_H));
     }
+    // Releasing the stylus cuts the hero clip at once: an unfinished charge and the post-shot
+    // recovery both return to the walk / rest pose immediately, never waiting for the clip.
+    if (!touch_down) s_shot_active = 0;
     s_hero_clip_frame = hero_clip_frame();
     player_muzzle(&in.muzzle_x, &in.muzzle_y, &in.muzzle_h);
 
     int result = weapons_input(&g_player_state, &in, g_enemies, MAX_ENEMIES);
     s_rooted = (result & WEAPON_RESULT_ROOTED) != 0;
+    // Recompute after the input so a release or a body-radius cancel drops the charge pose on
+    // this same frame instead of leaving the previous one on screen for one more frame.
+    if (!(result & WEAPON_RESULT_FIRED)) {
+        s_hero_clip_frame = hero_clip_frame();
+    }
     if ((result & WEAPON_RESULT_FIRED) && g_player_state.current_weapon == WEAPON_SNIPER) {
         // The shot: the recovery plays the clip from f0 (arms crossed) to f7 (collapsed).
         s_shot_active = 1;
