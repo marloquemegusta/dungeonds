@@ -12,7 +12,7 @@
 
 // Body footprint test (a circle on the ground) against the baked collision grid.
 int position_is_free(fixed x, fixed y);
-// Point test for projectiles (bit 0x02 of the grid).
+// Point test for projectiles: only grid value 3 stops them (value 2, low cover, lets them pass over).
 int bullet_position_is_free(fixed x, fixed y);
 // Moves (x, y) by (dx, dy) in <=1 px steps; returns 0 and leaves it unchanged if blocked.
 int sweep_position(fixed *x, fixed *y, fixed dx, fixed dy);
@@ -23,5 +23,11 @@ int line_is_walkable(int x0, int y0, int x1, int y1);
 
 // True when nothing that stops bullets lies on the straight line (endpoints excluded).
 int bullet_line_is_free(int x0, int y0, int x1, int y1);
+
+// Low cover (grid value 2): true when a cell of value 2 lies within `reach` px of the body footprint at ground
+// point (wx, wy), in world px (same units as position_is_free).
+int low_cover_near(int wx, int wy, int reach);
+// True when the segment between two world points crosses a low-cover cell (endpoints excluded).
+int line_crosses_low_cover(int x0, int y0, int x1, int y1);
 
 #endif // COLLISION_MODULE_H

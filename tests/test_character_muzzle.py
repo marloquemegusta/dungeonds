@@ -6,11 +6,11 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 SPRITES = (ROOT / "source" / "player_sprite.c").read_text(encoding="utf-8")
 CHAR_DIR = ROOT / "assets" / "sprites" / "characters"
-# Order of the C tables (NUM_CHARACTERS): hero, charger, ojo, exvoto walk, exvoto pray_stand, pray_kneel, stand_up, abanderado, monaguillo.
+# Order of the C tables (NUM_CHARACTERS): hero, charger, ojo, exvoto walk, exvoto pray_stand, pray_kneel, stand_up, abanderado, monaguillo, corazon_agachado_andar.
 CHARACTERS = [
     "corazon", "charger", "ojo",
     "exvoto", "exvoto_pray_stand", "exvoto_pray_kneel", "exvoto_stand_up",
-    "abanderado", "monaguillo",
+    "abanderado", "monaguillo", "corazon_agachado_andar",
 ]
 ARMED = ["corazon", "ojo"]
 TOLERANCE = 2

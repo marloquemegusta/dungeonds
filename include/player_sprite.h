@@ -26,7 +26,7 @@
 // The ground origin row varies per character/direction: see g_character_ground_anchors.
 #define PLAYER_ANCHOR_X 20
 
-#define NUM_CHARACTERS 9
+#define NUM_CHARACTERS 10
 
 enum {
     CHAR_HERO = 0,
@@ -38,7 +38,9 @@ enum {
     CHAR_EXVOTO_PRAY_KNEEL = 5, // praying on her knees (loop)
     CHAR_EXVOTO_STAND_UP = 6,   // kneeling -> standing, ends where the walk starts
     CHAR_ABANDERADO = 7,
-    CHAR_MONAGUILLO = 8
+    CHAR_MONAGUILLO = 8,
+    // Hero crouched (cobertura baja, DESIGN.md 6.9): the player swaps char_id between CHAR_HERO and this slot.
+    CHAR_HERO_CROUCH_WALK = 9   // crouched walking, 8 frames, 40x40 cell; the still pose is one fixed frame of it
 };
 
 typedef struct {

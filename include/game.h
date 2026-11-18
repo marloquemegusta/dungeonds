@@ -47,8 +47,11 @@ typedef struct {
     int frame;     // 0..7
     int is_moving;
     int anim_timer;
-    int char_id;   // 0 = CHAR_HERO, 1 = CHAR_CHARGER
+    int char_id;   // CHAR_HERO, or CHAR_HERO_CROUCH_WALK while crouched (player_sprite.h)
 } Player;
+
+// The hero is crouched behind low cover (collision grid value 2, DESIGN.md 6.9). Written by main.c every frame.
+extern int g_hero_crouched;
 
 typedef struct {
     uint32_t magic;             // 0x50455246 ("PERF")

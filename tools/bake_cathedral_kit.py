@@ -251,7 +251,9 @@ def piece_layout(name):
         raise ValueError(f"{name}: color, depth and footprint dimensions must match")
     rgba = np.asarray(color)
     if not np.isin(rgba[:, :, 3], [0, 255]).all(): raise ValueError(f"{name}: alpha must be binary")
-    value = 3 if name in ("columna_entera", "santo", "santo_der", "columna") else (0 if name in DECOR_PIECES else 1)
+    # 0 libre, 1 cuerpos, 2 cobertura baja (cuerpos; los disparos pasan por encima), 3 cuerpos y disparos
+    value = (3 if name in ("columna_entera", "santo", "santo_der", "columna") else
+             0 if name in DECOR_PIECES else 2 if name.startswith("banco") else 1)
     try:
         foot_runs = footprint_runs(foot)
     except ValueError as e:
@@ -373,7 +375,7 @@ def compose_bench_group(name="banco_grupo4"):
                 while px < x + n and owner[yy, px] == i:
                     px += 1
                 depth_runs.append((x0, yy, px - x0, d + d_shift))
-    return {"name": name, "value": 1, "foot_runs": foot_runs,
+    return {"name": name, "value": 2, "foot_runs": foot_runs,       # los bancos son cobertura baja
             "foot_anchor_y_px": anchor_g, "depth_runs": depth_runs,
             "rgba": rgba, "shadow": shadow & (rgba[:, :, 3] < 128), "ox": 0, "oy": 0, "w": bw, "h": H}
 

@@ -932,7 +932,16 @@ Sustituye, cuando se implemente, al compositor v2 de la catedral (§6.9.1b), a l
 **Las piezas tienen papel de combate.**
 - Columnas y estatuas paran los disparos de todos (rama `fix/cobertura-estatuas`). Te protegen del Ojo.
 - Bancos y sacos paran cuerpos y cargas, no disparos. Los enemigos los rodean (campo de navegación), así que ordenan a la horda en hileras. Pendiente de comprobar: si el Cireneo queda aturdido al chocar con un banco como con un muro (si sí, el banco te protege del Cireneo).
-- Bancos destructibles y agacharse con `L` tras bancos y sacos: mecánicas candidatas, no ahora.
+- Bancos destructibles: mecánica candidata, no ahora.
+- **Agacharse tras coberturas bajas (decidido 2026-11-17, rama `feat/coberturas-bajas`).** Sin botón: la `L` sigue reservada para la habilidad activa (§6.5).
+  - **Se agacha solo** al pegarse a un banco o a unos sacos. Mientras siga pegado y se mueva, **anda agachado y más lento**. Al separarse se levanta.
+  - **No dispara agachado.** Al tocar con el stylus se levanta y dispara (también mientras carga el rayo), y queda expuesto. Al soltar, vuelve a agacharse si sigue pegado.
+  - **Protege por un solo lado.** Un disparo enemigo le pasa por encima solo si cruza la cobertura antes de llegarle. Desde su lado de la cobertura le da igual que de pie. Cubre también del haz del Ojo.
+  - Los cuerpo a cuerpo le alcanzan agachado igual que de pie: el precio es quedarse quieto mientras la horda rodea el banco.
+  - Coberturas altas (columnas, estatuas): sin cambios ni animación propia, porque ya paran los disparos.
+  - Cifras `[TUNABLE-PLACEHOLDER]`: «pegado» = a ≤ 4 px de la huella de la cobertura; velocidad agachado = 50 % de la normal; se levanta y se agacha en ~6 frames.
+  - Arte: un clip «agachado» quieto y andando, en 8 direcciones, del héroe. Decidido (2026-11-18): variante A2 del andar agachado (cadera 15 u más baja, torso más inclinado que el clip de Mixamo, 20,8 px de alto frente a 32,3 de pie); el quieto es un fotograma fijo de ese andar.
+  - Referencia de género: las mesas volcadas de Enter the Gungeon.
 
 **Relicario en cada pasillo: mejora continua y periódica.**
 - Sin gemas ni experiencia. En cada pasillo, a un lado, hay un **relicario**: al romperlo a tiros da **elegir un Don**, un corazón o las dos cosas. Los relicarios decorativos al azar desaparecen.

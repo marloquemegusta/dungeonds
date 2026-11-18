@@ -3,6 +3,7 @@
 #include "enemy_laser.h"
 #include "groundfx.h"
 #include "los.h"
+#include "collision.h"
 #include "navfield.h"
 #include "player_sprite.h"
 #include "sandbox.h"
@@ -623,7 +624,12 @@ static void ojo_beam_hurts(const Enemy *e, fixed player_x, fixed player_y) {
     int along = (rx * e->beam_ux + ry2 * e->beam_uy) >> 8;
     int cross = (rx * e->beam_uy - ry2 * e->beam_ux) >> 8;
     if (cross < 0) cross = -cross;
-    if (along >= 0 && along <= e->beam_len && cross <= OJO_HIT_HALF_WIDTH) player_take_hit(&g_player_state);
+    if (along >= 0 && along <= e->beam_len && cross <= OJO_HIT_HALF_WIDTH) {
+        // Low cover (DESIGN.md 6.9): a crouched hero is safe when the line from the mouth to him crosses a bench or
+        // sacks before reaching him. The beam is still drawn over the cover; only the hit is cancelled.
+        if (g_hero_crouched && line_crosses_low_cover(e->beam_mx, e->beam_my, TO_INT(player_x), TO_INT(player_y))) return;
+        player_take_hit(&g_player_state);
+    }
 }
 
 // Fires the sentence: the beam leaves the mouth along the line to the locked point (ground metric), is cut at

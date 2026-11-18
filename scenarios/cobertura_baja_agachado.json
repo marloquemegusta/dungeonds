@@ -1,0 +1,315 @@
+{
+  "name": "cobertura_baja_agachado",
+  "description": "cathedral-sandbox ROM (seed 0xC0DE1234, banco_grupo4 at world 280,832; see tools/cobertura_scenes.py). The hero hugs the west face of the first bench row (x 281, y 862 -> 854) and crouches (pose, then crouched walk at half speed). An Ojo at (372,854) beams west along y ~854 across 64 px of low-cover cells (x 288..351): crouched he takes no damage. On the next gaze the stylus touches, he stands up and the same line hits him (5 -> 4 hp).",
+  "tags": [
+    "coberturas",
+    "ojo-tribunal"
+  ],
+  "state": {
+    "symbols": {
+      "sb": "g_sandbox",
+      "enemies": "g_enemies",
+      "player": "g_player_state",
+      "crouch": "g_hero_crouched",
+      "nav": "g_nav_state"
+    },
+    "default_symbol": "sb",
+    "fields": {
+      "seq": {
+        "offset": 0,
+        "type": "u32"
+      },
+      "ack": {
+        "offset": 4,
+        "type": "u32"
+      },
+      "player_x": {
+        "offset": 8,
+        "type": "s16"
+      },
+      "player_y": {
+        "offset": 10,
+        "type": "s16"
+      },
+      "weapon": {
+        "offset": 12,
+        "type": "u8"
+      },
+      "style": {
+        "offset": 13,
+        "type": "u8"
+      },
+      "enemy_count": {
+        "offset": 14,
+        "type": "u8"
+      },
+      "flags": {
+        "offset": 15,
+        "type": "u8"
+      },
+      "e0_type": {
+        "offset": 16,
+        "type": "u8"
+      },
+      "e0_flags": {
+        "offset": 17,
+        "type": "u8"
+      },
+      "e0_x": {
+        "offset": 18,
+        "type": "s16"
+      },
+      "e0_y": {
+        "offset": 20,
+        "type": "s16"
+      },
+      "en0_state": {
+        "symbol": "enemies",
+        "offset": 41,
+        "type": "u8"
+      },
+      "en0_hp": {
+        "symbol": "enemies",
+        "offset": 28,
+        "type": "s32"
+      },
+      "player_hp": {
+        "symbol": "player",
+        "offset": 0,
+        "type": "s32"
+      },
+      "crouched": {
+        "symbol": "crouch",
+        "offset": 0,
+        "type": "s32"
+      },
+      "nav_x": {
+        "symbol": "nav",
+        "offset": 0,
+        "type": "s32"
+      },
+      "nav_y": {
+        "symbol": "nav",
+        "offset": 4,
+        "type": "s32"
+      }
+    }
+  },
+  "steps": [
+    {
+      "frames": 1000
+    },
+    {
+      "poke": [
+        {
+          "field": "player_x",
+          "value": 281
+        },
+        {
+          "field": "player_y",
+          "value": 862
+        },
+        {
+          "field": "weapon",
+          "value": 0
+        },
+        {
+          "field": "style",
+          "value": 0
+        },
+        {
+          "field": "flags",
+          "value": 33
+        },
+        {
+          "field": "enemy_count",
+          "value": 0
+        },
+        {
+          "field": "seq",
+          "value": 1
+        }
+      ],
+      "frames": 1
+    },
+    {
+      "wait_until": {
+        "field": "ack",
+        "equals": 1,
+        "timeout_frames": 30
+      }
+    },
+    {
+      "frames": 3
+    },
+    {
+      "frames": 24,
+      "capture_sequence": "s1_agacha",
+      "capture_every": 3,
+      "state_capture": "quieto"
+    },
+    {
+      "button_down": "UP",
+      "frames": 30,
+      "capture_sequence": "s2_andar",
+      "capture_every": 3,
+      "state_capture": "andando"
+    },
+    {
+      "button_up": "UP",
+      "frames": 18,
+      "capture_sequence": "s3_quieto",
+      "capture_every": 3
+    },
+    {
+      "poke": [
+        {
+          "field": "player_x",
+          "value": 281
+        },
+        {
+          "field": "player_y",
+          "value": 854
+        },
+        {
+          "field": "weapon",
+          "value": 0
+        },
+        {
+          "field": "style",
+          "value": 0
+        },
+        {
+          "field": "flags",
+          "value": 33
+        },
+        {
+          "field": "enemy_count",
+          "value": 1
+        },
+        {
+          "field": "e0_type",
+          "value": 2
+        },
+        {
+          "field": "e0_flags",
+          "value": 0
+        },
+        {
+          "field": "e0_x",
+          "value": 372
+        },
+        {
+          "field": "e0_y",
+          "value": 854
+        },
+        {
+          "field": "seq",
+          "value": 2
+        }
+      ],
+      "frames": 1
+    },
+    {
+      "wait_until": {
+        "field": "ack",
+        "equals": 2,
+        "timeout_frames": 30
+      }
+    },
+    {
+      "frames": 30,
+      "capture_sequence": "s4_mira",
+      "capture_every": 3
+    },
+    {
+      "wait_until": {
+        "field": "en0_state",
+        "equals": 9,
+        "timeout_frames": 200
+      },
+      "state_capture": "haz_sentencia"
+    },
+    {
+      "frames": 36,
+      "capture_sequence": "s5_haz",
+      "capture_every": 3,
+      "state_capture": "haz_fin"
+    },
+    {
+      "wait_until": {
+        "field": "en0_state",
+        "equals": 7,
+        "timeout_frames": 400
+      }
+    },
+    {
+      "tap": {
+        "x": 217,
+        "y": 112
+      },
+      "frames": 24,
+      "capture_sequence": "s6_levanta",
+      "capture_every": 3,
+      "state_capture": "de_pie"
+    },
+    {
+      "wait_until": {
+        "field": "en0_state",
+        "equals": 9,
+        "timeout_frames": 200
+      }
+    },
+    {
+      "frames": 36,
+      "capture_sequence": "s7_haz2",
+      "capture_every": 3,
+      "state_capture": "haz2_fin"
+    },
+    {
+      "release": true,
+      "frames": 40,
+      "capture_sequence": "s8_suelta",
+      "capture_every": 3
+    }
+  ],
+  "assertions": {
+    "state_changes": [
+      {
+        "at": "quieto",
+        "field": "crouched",
+        "equals": 1
+      },
+      {
+        "at": "andando",
+        "field": "crouched",
+        "equals": 1
+      },
+      {
+        "at": "haz_sentencia",
+        "field": "crouched",
+        "equals": 1
+      },
+      {
+        "at": "haz_sentencia",
+        "field": "player_hp",
+        "equals": 5
+      },
+      {
+        "at": "haz_fin",
+        "field": "player_hp",
+        "equals": 5
+      },
+      {
+        "at": "de_pie",
+        "field": "crouched",
+        "equals": 0
+      },
+      {
+        "at": "haz2_fin",
+        "field": "player_hp",
+        "equals": 4
+      }
+    ]
+  }
+}

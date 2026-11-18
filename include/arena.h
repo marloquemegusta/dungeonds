@@ -36,7 +36,7 @@ typedef struct {
     uint16_t num_tiles;                  // distinct tiles in `tiles`
     uint16_t player_x, player_y;         // start, world px (feet)
     uint16_t num_enemies;
-    const uint8_t *collision;            // 2 bits per cell: 0 free, 3 solid
+    const uint8_t *collision;            // 2 bits per cell: 0 free, 1 bodies, 2 low cover (bodies, not bullets), 3 bodies and bullets
     const uint16_t *palette;             // 256 BGR555 entries
     const uint8_t (*tiles)[64];          // 8bpp tile data
     const uint16_t *map;                 // map_w * map_h tile ids, row-major

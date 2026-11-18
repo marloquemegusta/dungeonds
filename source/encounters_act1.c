@@ -322,7 +322,9 @@ int enc_block_rects(int32_t block, EncRect *out, int max) {
 }
 
 int enc_collision_value(uint8_t rect_kind) {
-    return rect_kind == ENC_R_BARRERA ? 3 : 1;      // sacos and alambre stop bodies, the barrier stops bullets too
+    // 0 free, 1 bodies, 2 low cover, 3 bodies and bullets: sacos are low cover (the hero crouches behind them, DESIGN.md 6.9),
+    // the alambre stops bodies, the barrier stops bullets too
+    return rect_kind == ENC_R_BARRERA ? 3 : rect_kind == ENC_R_SACOS ? 2 : 1;
 }
 
 // ---------------------------------------------------------------------------
