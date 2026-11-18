@@ -3,14 +3,8 @@
         "sandbox": {
             "defines": ["SANDBOX=1"]
         },
-        "playground": {
-            "defines": ["SANDBOX=1", "PLAYGROUND=1"]
-        },
         "perf": {
             "defines": ["PERF_PROFILE=1"]
-        },
-        "playground-perf": {
-            "defines": ["SANDBOX=1", "PLAYGROUND=1", "PERF_PROFILE=1"]
         },
         "stress": {
             "defines": ["STRESS_TEST=1"]
