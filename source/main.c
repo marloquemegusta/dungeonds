@@ -125,7 +125,7 @@ static int s_cam_anchor_y = SCREEN_H / 2;
 static int s_cam_anchor_target = SCREEN_H / 2;
 static int s_cam_dir_intent = 0;
 static int s_cam_dir_frames = 0;
-#if (SANDBOX || PLAYGROUND) && !CATHEDRAL_PLAYGROUND
+#if SANDBOX && !CATHEDRAL_PLAYGROUND
 static const int s_strip_mode = 0;
 #else
 static const int s_strip_mode = 1;
