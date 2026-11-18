@@ -46,7 +46,7 @@
       13,
       11,
       13,
-      23
+      22
     ],
     [
       10,
@@ -260,9 +260,15 @@
         21
       ],
       [
-        23,
+        24,
         20,
-        21,
+        20,
+        21
+      ],
+      [
+        24,
+        20,
+        20,
         21
       ],
       [
@@ -282,12 +288,6 @@
         20,
         21,
         21
-      ],
-      [
-        23,
-        20,
-        21,
-        21
       ]
     ],
     [
@@ -484,14 +484,14 @@
         20
       ],
       [
-        32,
+        33,
         23,
-        17,
+        16,
         20
       ]
     ]
   ],
-  "stride3dMeters": 0.524,
+  "stride3dMeters": 0.417,
   "strideRatio": 0.291,
   "ticksPerFrame": 22,
   "stridePixels": 11.64,
@@ -513,6 +513,9 @@
   "renderEngine": "Three.js WebGL (browser)",
   "lightPreset": "neutral",
   "outlineMode": "none",
-  "fitZoom": 0.6649,
+  "fitZoom": 0.86,
+  "measuredExtent": 1.5729109798376597,
+  "fitExtent": 2.0391720414700383,
+  "normScale": 0.018627107106441602,
   "toneMapping": "neutral"
 }

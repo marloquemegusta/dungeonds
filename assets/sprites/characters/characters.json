@@ -21,8 +21,8 @@
     "corazon_disparo": {
       "model": "assets/models/characters/corazon/corazon_disparo.fbx",
       "anim": "corazon_disparo (0.92s)",
-      "resolution": 40,
-      "fitZoom": 0.86,
+      "resolution": 48,
+      "scaleRef": "corazon",
       "muzzleBone": "mixamorig:Spine2",
       "muzzleForward": 0.05,
       "template": "assets/sprites/characters/corazon_disparo/settings.json",
@@ -42,7 +42,7 @@
       "model": "assets/models/characters/cireneo/cireneo_charge.fbx",
       "anim": "cireneo_charge (0.96s)",
       "resolution": 60,
-      "fitZoom": 0.88,
+      "scaleRef": "cireneo",
       "template": "assets/sprites/characters/cireneo_charge/settings.json",
       "speedFixed8_8": 223,
       "ticksPerFrame": 7
@@ -51,7 +51,7 @@
       "model": "assets/models/characters/cireneo/cireneo_telegraph.fbx",
       "anim": "cireneo_telegraph (0.50s)",
       "resolution": 60,
-      "fitZoom": 0.88,
+      "scaleRef": "cireneo",
       "template": "assets/sprites/characters/cireneo_telegraph/settings.json",
       "speedFixed8_8": 1107,
       "ticksPerFrame": 4
@@ -69,7 +69,7 @@
       "model": "assets/models/characters/exvoto/exvoto_pray_stand.fbx",
       "anim": "exvoto_pray_stand (3.23s)",
       "resolution": 40,
-      "fitZoom": 0.7727,
+      "scaleRef": "exvoto",
       "template": "assets/sprites/characters/skeleton/settings.json",
       "speedFixed8_8": 11,
       "ticksPerFrame": 24
@@ -78,7 +78,7 @@
       "model": "assets/models/characters/exvoto/exvoto_pray_kneel.fbx",
       "anim": "exvoto_pray_kneel (1.93s)",
       "resolution": 40,
-      "fitZoom": 0.6649,
+      "scaleRef": "exvoto",
       "template": "assets/sprites/characters/skeleton/settings.json",
       "speedFixed8_8": 27,
       "ticksPerFrame": 14
@@ -87,10 +87,19 @@
       "model": "assets/models/characters/exvoto/exvoto_stand_up.fbx",
       "anim": "exvoto_stand_up (2.30s)",
       "resolution": 40,
-      "fitZoom": 0.9154,
+      "scaleRef": "exvoto",
       "template": "assets/sprites/characters/skeleton/settings.json",
       "speedFixed8_8": 389,
       "ticksPerFrame": 9
+    },
+    "monaguillo": {
+      "model": "assets/models/characters/monaguillo/monaguillo_walk.fbx",
+      "anim": "Scene (2.04s)",
+      "resolution": 40,
+      "fitZoom": 1,
+      "template": "assets/sprites/characters/monaguillo/settings.json",
+      "speedFixed8_8": 39,
+      "ticksPerFrame": 22
     },
     "ojo": {
       "model": "assets/models/characters/ojo/ojo_walk.fbx",
@@ -107,7 +116,7 @@
       "model": "assets/models/characters/ojo/ojo_look.fbx",
       "anim": "ojo_look (0.33s)",
       "resolution": 56,
-      "fitZoom": 0.78,
+      "scaleRef": "ojo",
       "muzzleBone": "mixamorig:OjoMouth",
       "muzzleForward": 0,
       "template": "tools/characters/ojo_lab_template.json",
@@ -118,12 +127,26 @@
       "model": "assets/models/characters/ojo/ojo_sentence.fbx",
       "anim": "ojo_sentence (0.33s)",
       "resolution": 56,
-      "fitZoom": 0.78,
+      "scaleRef": "ojo",
       "muzzleBone": "mixamorig:OjoMouth",
       "muzzleForward": 0,
       "template": "tools/characters/ojo_lab_template.json",
       "speedFixed8_8": 159,
       "ticksPerFrame": 3
+    },
+    "abanderado": {
+      "model": "assets/models/characters/abanderado/abanderado_walk.fbx",
+      "anim": "abanderado_walk",
+      "resolution": 60,
+      "fitZoom": 0.95,
+      "template": "tools/characters/abanderado_lab_template.json"
+    },
+    "abanderado_point": {
+      "model": "assets/models/characters/abanderado/abanderado_point.fbx",
+      "anim": "abanderado_point",
+      "resolution": 60,
+      "scaleRef": "abanderado",
+      "template": "tools/characters/abanderado_lab_template.json"
     }
   }
 }

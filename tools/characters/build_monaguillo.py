@@ -1,4 +1,4 @@
-"""Construye monaguillo_walk.fbx transfiriendo el andar rezando de skeleton.fbx al modelo monje zombi.
+"""Construye monaguillo_walk.fbx transfiriendo el andar rezando de assets/models/animations/monaguillo/walk_pray.fbx al modelo monje zombi.
 
 Uso:
   "C:/Program Files/Blender Foundation/Blender 5.2/blender.exe" -b -P tools/characters/build_monaguillo.py -- <raiz_worktree>
@@ -11,9 +11,7 @@ from mathutils import Vector, Matrix
 ROOT = sys.argv[sys.argv.index('--') + 1]
 OUT = os.path.join(ROOT, 'assets/models/characters/monaguillo')
 CHAR_FBX = glob.glob(os.path.join(OUT, 'source/tripo_convert_9a55a12b-*.fbx'))[0]
-SRC_FBX = os.path.join(ROOT, 'assets/models/characters/skeleton/skeleton.fbx')
-if not os.path.exists(SRC_FBX):
-    SRC_FBX = 'C:/codexlocal/dungeonds/assets/models/characters/skeleton/skeleton.fbx'
+SRC_FBX = os.path.join(ROOT, 'assets/models/animations/monaguillo/walk_pray.fbx')
 
 WALK_FRAMES = 48        # multiplo de 8 para el lab, +1 de cierre
 P = 'mixamorig:'
@@ -46,6 +44,8 @@ K = world_z(arm, 'Hips') / world_z(src_arm, 'Hips')
 f0, f1 = int(round(src_act.frame_range[0])), int(round(src_act.frame_range[1]))
 src_arm.animation_data_create()
 src_arm.animation_data.action = src_act
+if hasattr(src_arm.animation_data, 'action_slot') and src_act.slots:
+    src_arm.animation_data.action_slot = src_act.slots[0]
 arm.animation_data_create()
 arm.animation_data.action = None
 ORDER = [b.name[len(P):] for b in arm.data.bones]

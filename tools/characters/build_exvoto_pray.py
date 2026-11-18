@@ -12,7 +12,8 @@ import os, sys
 MS = {'rezar': 130, 'levantarse': 290}
 WALK_EXTENT = 2.0391720399643707   # extent de encuadre de exvoto_walk (FIT del exportador)
 WALK_FIT = 0.96                    # fitZoom de exvoto_walk: half = extent / fitZoom
-SCALE_FIX = 0.84                   # medido: con la misma escala nominal, rezar/levantarse salian ~1,15x mas grandes que el andar (cabeza y altura de pie)
+# Misma escala px/metro que exvoto_walk: --fitExtent WALK_EXTENT con el mismo fitZoom, una sola pasada. Los modelos miden
+# lo mismo en metros (1,000 m en reposo, medido en Blender), asi que no hace falta ningun factor de correccion (antes SCALE_FIX 0.84).
 GROUND = (80, 137)                 # ancla de suelo de exvoto_walk
 
 CLIPS = {
@@ -29,7 +30,6 @@ def launcher():
     ap.add_argument('--frames', type=int)
     a = ap.parse_args()
     root = os.path.abspath(a.root)
-    main = 'C:/codexlocal/dungeonds'
     tpl = json.load(open(os.path.join(root, 'assets/sprites/bestiary/exvoto_walk/settings.json'), encoding='utf-8'))
     for name, (fbxname, nframes, ticks, _l) in CLIPS.items():
         if a.only and a.only != name:
@@ -40,23 +40,26 @@ def launcher():
         with open(tmp, 'w', encoding='utf-8', newline='') as f:
             json.dump(t, f)
         fbx = os.path.join(root, 'assets/models/characters/exvoto', fbxname)
-        if not os.path.exists(fbx): fbx = os.path.join(main, 'assets/models/characters/exvoto', fbxname)
         out = os.path.join(root, 'assets/sprites/bestiary/exvoto_%s' % name)
-        fit = 1.0
-        for attempt in range(2):
-            t['fitZoom'] = fit
-            with open(tmp, 'w', encoding='utf-8', newline='') as f:
-                json.dump(t, f)
-            r = subprocess.run(['node', os.path.join(root, 'tools/lab/export_character_headless.cjs'), fbx, out,
-                                '--template', tmp, '--resolution', '160', '--frames', str(nframes), '--fitZoom', str(fit),
-                                '--legibility', 'c2'], check=True, capture_output=True, text=True)
-            extent = float([l for l in r.stdout.splitlines() if l.startswith('FIT ')][-1].split('"extent":')[1].split(',')[0])
-            want = extent / WALK_EXTENT * WALK_FIT * SCALE_FIX           # misma escala px/metro que exvoto_walk (half = extent / fitZoom)
-            print('%s: extent %.4f, fitZoom %.4f -> %.4f' % (name, extent, fit, want))
-            if abs(want - fit) < 0.004:
-                break
-            fit = want
+        t['fitZoom'] = WALK_FIT
+        with open(tmp, 'w', encoding='utf-8', newline='') as f:
+            json.dump(t, f)
+        r = subprocess.run(['node', os.path.join(root, 'tools/lab/export_character_headless.cjs'), fbx, out,
+                            '--template', tmp, '--resolution', '160', '--frames', str(nframes), '--fitZoom', str(WALK_FIT),
+                            '--fitExtent', repr(WALK_EXTENT), '--legibility', 'c2'] + norm_args(root), check=True, capture_output=True, text=True)
+        print(name, [l for l in r.stdout.splitlines() if l.startswith(('FIT ', 'WARNING'))])
         align(out, MS[name])
+
+
+def norm_args(root):
+    """--normScale del walk (exvoto): el exportador lo guarda en assets/sprites/characters/exvoto/settings.json al renderizar
+    el walk (rebuild_all.py --only lab,characters --char exvoto). Sin el, un clip que empieza de rodillas se reescala."""
+    import json
+    p = os.path.join(root, 'assets/sprites/characters/exvoto/settings.json')
+    ns = json.load(open(p, encoding='utf-8')).get('normScale') if os.path.exists(p) else None
+    if not ns:
+        raise SystemExit('falta normScale en %s: renderiza antes el walk con rebuild_all.py' % p)
+    return ['--normScale', repr(ns)]
 
 
 def align(out, dur):

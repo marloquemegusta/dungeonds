@@ -230,7 +230,12 @@ class CompositorV2ParityTest(unittest.TestCase):
 
 
 class CompositorV2InvariantsTest(unittest.TestCase):
-    """DESIGN.md 6.9.1b, compositor v2: checked on the Python spec over 40 blocks."""
+    """DESIGN.md 6.9.1b, compositor v2: checked on the Python spec over 40 blocks.
+
+    Since 2026-11-17 the kit bakes only the pieces and phases the encounter rooms use
+    (DESIGN.md 6.13.6), so the old catedral-composer content invariants (two columns per
+    screen, bench aisles, lapidas) no longer hold for it and were removed. C/Python parity
+    of the plan, window and occlusion is still checked by CompositorV2ParityTest above."""
 
     @classmethod
     def setUpClass(cls):
@@ -240,41 +245,6 @@ class CompositorV2InvariantsTest(unittest.TestCase):
         cls.bake = load_bake()
         cls.blocks = range(-17, 23)
         cls.records = {b: cls.bake._block_records(cls.stamps, SEED, b) for b in cls.blocks}
-
-    def test_two_columns_per_screen(self):
-        for block, acc in self.records.items():
-            for s in (0, 1):
-                top = s * 24
-                cols = sorted(r["x"] for r in acc if r["cat"] == "struct"
-                              and r["name"] == "columna_entera" and r["y"] == top + 9)
-                self.assertEqual(cols, [7, 51], f"block {block} screen {s}")
-
-    def test_bancadas_have_two_benches_and_a_central_aisle_of_64_to_88_px(self):
-        checked = 0
-        for block, acc in self.records.items():
-            entries = [{"block": block, "name": self.stamps[r["idx"]]["name"], "idx": r["idx"],
-                        "x": r["x"], "y": r["y"]} for r in acc]
-            for s in (0, 1):
-                top = s * 24
-                benches = [r for r in acc if r["cat"] == "struct" and r["name"] == "banco_grupo4"
-                           and top <= r["y"] < top + 24]
-                if not benches:
-                    continue
-                checked += 1
-                self.assertEqual(len(benches), 2, f"block {block} screen {s}")
-                aisle = self.bake._screen_central_min(entries, self.stamps, block, s)
-                self.assertGreaterEqual(aisle, 64, f"block {block} screen {s}")
-                self.assertLessEqual(aisle, 88, f"block {block} screen {s}")
-        self.assertGreater(checked, 20)
-
-    def test_no_lapida_under_a_bench_or_a_relicario(self):
-        for block, acc in self.records.items():
-            solid = [r for r in acc if r["cat"] == "struct" and r["name"] in ("banco_grupo4", "relicario", "santo")]
-            for lap in (r for r in acc if r["cat"] == "lap"):
-                for other in solid:
-                    self.assertFalse(self.bake._masks_overlap(lap["x"], lap["y"], lap["nz"],
-                                                              other["x"], other["y"], other["nz"]),
-                                     f"block {block}: {lap['name']} under {other['name']}")
 
     def test_no_piece_outside_the_usable_floor(self):
         for block, acc in self.records.items():
@@ -298,29 +268,6 @@ class CompositorV2InvariantsTest(unittest.TestCase):
             self.assertLessEqual(row["footprint_pct"], 15.0, row)
         for block in self.blocks:
             self.assertLessEqual(len(self.records[block]), self.bake.BLOCK_MAX_PIECES, block)
-
-    def test_lapida_stamp_phase_fits_the_damero_rule(self):
-        """Every planned lapida carries the (pc, pr) that fits its tile: (x - pc) % 4 == 0 and
-        (y - pr) % 2 == 0. Both baked phases, (0, 2) and (2, 3), must be used by the plan."""
-        used = set()
-        lapida_ids = {5, 6, 7, 8}
-        for block in PLAN_BLOCKS:
-            for piece_id, pc, pr, x, y in self.bake.catedral_block_plan(self.stamps, SEED, block):
-                if piece_id not in lapida_ids:
-                    continue
-                self.assertEqual((x - pc) % 4, 0, f"block {block}: lapida at x={x} with pc={pc}")
-                self.assertEqual((y - pr) % 2, 0, f"block {block}: lapida at y={y} with pr={pr}")
-                used.add((pc, pr))
-        self.assertEqual(used, {(0, 2), (2, 3)})
-
-    def test_lapida_lookup_rejects_positions_no_phase_fits(self):
-        lookup = self.bake._stamp_lookup
-        self.assertIsNone(lookup(self.stamps, "lapida_3x2_cruz", 8, 1))
-        self.assertIsNone(lookup(self.stamps, "lapida_3x2_cruz", 9, 2))
-        hit = lookup(self.stamps, "lapida_3x2_cruz", 10, 1)
-        self.assertEqual((self.stamps[hit]["phase_col"], self.stamps[hit]["phase_row"]), (2, 3))
-        hit = lookup(self.stamps, "lapida_3x2_cruz", 8, 2)
-        self.assertEqual((self.stamps[hit]["phase_col"], self.stamps[hit]["phase_row"]), (0, 2))
 
     def test_band_map_is_contiguous_and_top_down(self):
         self.assertEqual([self.bake.band_block(b) for b in range(3)], [(0, 0), (0, 16), (0, 32)])

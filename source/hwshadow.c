@@ -5,6 +5,7 @@
 #include <nds.h>
 #include "game.h"
 #include "tide.h"
+#include "verja_gfx.h"
 
 int g_hw_shadows_on = 1;
 
@@ -20,6 +21,7 @@ int g_hw_shadows_on = 1;
 
 #define POOL_TILES_MAIN 1024
 #define POOL_TILES_SUB 512
+#define VERJA_TILES 128          // two 64x64 4bpp OBJs (0..63 left 64px, 64..127 right 40px), reserved at pool start
 #define MAX_ENTRIES 96
 #define OAM_LIMIT 128
 #define PLAN_MAX_PARTS 8
@@ -104,6 +106,57 @@ typedef struct {
 static uint8_t s_occ_main[POOL_TILES_MAIN];
 static uint8_t s_occ_sub[POOL_TILES_SUB];
 static Engine s_eng[2];
+static int s_verja_lift[2] = { -1, -1 };
+
+// Uploads the 104x56 verja sprite shifted up by `lift_px` (0..55) into the first 128 4bpp tiles
+// of `g->vram`, clearing the bottom `lift_px + 8` rows so the gate is clipped at its top edge.
+static void verja_upload_tiles(Engine *g, int lift_px) {
+    for (int blk = 0; blk < 2; blk++) {
+        int x0 = blk * 64;
+        volatile uint32_t *dst = g->vram + blk * 64 * 8;
+        for (int ty = 0; ty < 8; ty++) {
+            for (int tx = 0; tx < 8; tx++) {
+                for (int r = 0; r < 8; r++) {
+                    int sy = lift_px + ty * 8 + r;
+                    uint32_t word = 0;
+                    if (sy >= 0 && sy < VERJA_H) {
+                        for (int px = 0; px < 8; px++) {
+                            int sx = x0 + tx * 8 + px;
+                            if (sx < VERJA_W) {
+                                uint32_t c = g_verja_pixels[sy][sx];
+                                if (c) word |= (c & 0xFu) << (px * 4);
+                            }
+                        }
+                    }
+                    dst[(ty * 8 + tx) * 8 + r] = word;
+                }
+            }
+        }
+    }
+}
+
+void hwshadow_add_verja(int sub, int x, int y, int lift_px, int in_front) {
+    if (lift_px < 0) lift_px = 0;
+    if (lift_px >= VERJA_H) return;
+    if (y + (VERJA_H - lift_px) <= 0 || y >= SCREEN_H) return;
+    Engine *g = &s_eng[sub];
+    if (s_verja_lift[sub] != lift_px) {
+        verja_upload_tiles(g, lift_px);
+        s_verja_lift[sub] = lift_px;
+    }
+    static const int k_xoff[4] = { 0, 64, VERJA_W, VERJA_W + 64 };
+    static const uint16_t k_tile[4] = { 0, 64, 0, 64 };
+    const uint16_t prio = ATTR2_PRIORITY(in_front ? 0 : 1);
+    for (int i = 0; i < 4; i++) {
+        if (g->count >= OAM_LIMIT) return;
+        int px = x + k_xoff[i];
+        if (px >= SCREEN_W || px + 64 <= 0) continue;
+        uint16_t *a = (uint16_t *)g->oam->oamMemory[g->count++].attribute;
+        a[0] = (uint16_t)((y & 0xFF) | ATTR0_NORMAL | ATTR0_TYPE_NORMAL | ATTR0_COLOR_16);
+        a[1] = (uint16_t)((px & 0x1FF) | ATTR1_SIZE_64);
+        a[2] = (uint16_t)(k_tile[i] | prio);
+    }
+}
 
 static void entry_free(Engine *g, Entry *en) {
     const Plan *pl = &s_plan[en->ht][en->wt];
@@ -288,6 +341,18 @@ void hwshadow_init(void) {
     oamInit(&oamSub, SpriteMapping_1D_32, false);
     oamEnable(&oamMain);
     oamEnable(&oamSub);
+    for (int i = 0; i < VERJA_TILES; i++) {
+        s_occ_main[i] = 1;
+        s_occ_sub[i] = 1;
+    }
+    for (int i = 0; i < 16; i++) {
+        SPRITE_PALETTE[i] = g_verja_palette[i];
+        SPRITE_PALETTE_SUB[i] = g_verja_palette[i];
+    }
+    verja_upload_tiles(&s_eng[0], 0);
+    verja_upload_tiles(&s_eng[1], 0);
+    s_verja_lift[0] = 0;
+    s_verja_lift[1] = 0;
     for (int h = 1; h <= 8; h++)
         for (int w = 1; w <= 8; w++) {
             plan_cost(w, h);

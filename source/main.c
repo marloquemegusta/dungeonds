@@ -24,6 +24,8 @@
 #include "gems.h"
 #include "upgrades.h"
 #include "exvoto_melt.h"
+#include "remate.h"
+#include "remate_sprites.h"
 #include "sfx.h"
 #include "bestiary.h"
 #include "intro.h"
@@ -125,7 +127,7 @@ static int s_cam_anchor_y = SCREEN_H / 2;
 static int s_cam_anchor_target = SCREEN_H / 2;
 static int s_cam_dir_intent = 0;
 static int s_cam_dir_frames = 0;
-#if (SANDBOX || PLAYGROUND) && !CATHEDRAL_PLAYGROUND
+#if SANDBOX && !CATHEDRAL_PLAYGROUND
 static const int s_strip_mode = 0;
 #else
 static const int s_strip_mode = 1;
@@ -188,6 +190,8 @@ typedef struct {
 } DeathChunk;
 static DeathChunk s_death_chunks[MAX_DEATH_CHUNKS];
 static uint32_t s_death_chunk_seed;
+
+#define REMATE_REMNANT_REF (-0x40000000)   // DrawItem ref of the wax halves a remate leaves (remate.h)
 
 typedef struct {
     int depth;     // ground world Y in pixels
@@ -452,6 +456,30 @@ static const uint16_t *sprite_fade(const uint16_t *src, const uint16_t *runs, in
                 int gray = (r + g + b) / 3;
                 if (strong) { r = (r + 3 * gray + 2) >> 2; g = (g + 3 * gray + 2) >> 2; b = (b + 3 * gray + 2) >> 2; }
                 else { r = (r + gray) >> 1; g = (g + gray) >> 1; b = (b + gray) >> 1; }
+                s_tint_buf[y * pitch + x] = (uint16_t)(r | (g << 5) | (b << 10) | BIT(15));
+            }
+        }
+    }
+    return s_tint_buf;
+}
+
+// Remate (DESIGN.md 6.13.8): an Exvoto reeling after a hit pulses a warm, muted tint (ivory-gold, never pure white).
+// level 0..4 = faint to strong; the pulse is a triangle wave of the wobble timer (see draw_enemy).
+static const uint16_t *sprite_wax_glow(const uint16_t *src, const uint16_t *runs, int pitch, int bw, int bh, int level) {
+    if (pitch * bh > 64 * 64) return src;
+    const int kr = 2 + level, kg = 1 + level;
+    for (int y = 0; y < bh; y++) {
+        const uint16_t *rr = runs + runs[y], *rend = runs + runs[y + 1];
+        for (; rr < rend; rr++) {
+            int a = *rr & 0xFF, n = *rr >> 8;
+            for (int x = a; x < a + n; x++) {
+                uint32_t c = src[y * pitch + x];
+                int r = c & 31, g = (c >> 5) & 31, b = (c >> 10) & 31;
+                r += ((27 - r) * kr) >> 4;           // towards a warm ivory (27, 22, 11), never to white
+                g += ((22 - g) * kg) >> 4;
+                b -= (b * level) >> 4;
+                if (r < (int)(c & 31)) r = (int)(c & 31);          // never darker than the source
+                if (g < (int)((c >> 5) & 31)) g = (int)((c >> 5) & 31);
                 s_tint_buf[y * pitch + x] = (uint16_t)(r | (g << 5) | (b << 10) | BIT(15));
             }
         }
@@ -762,7 +790,29 @@ static void update_screen_hardware_bg(int is_sub, u16 *map_ptr, int cam_x, int c
 // Composition
 // ---------------------------------------------------------------------------
 
+// Remate cell (remate_sprites.h): frame `f` of variant `m` (0 normal, 1 mirrored) with the anchor (hero feet) at (ax, ay).
+// The shadow is baked apart (shadow_select). Same cost as one actor blit.
+static void draw_remate_frame(uint16_t *buffer, int kind, int m, int f, int ax, int ay, int cam_x, int cam_y) {
+    if (kind < 0 || kind >= REMATE_NUM_KINDS) return;
+    const RemateKindInfo *nfo = &g_remate_kind_info[kind];
+    const uint8_t *b = g_remate_frame_bounds[kind][m][f];
+    int bw = b[2], bh = b[3];
+    if (bw == 0 || bh == 0) return;
+    int anchor_x = m ? (nfo->cell_w - nfo->anchor_x) : nfo->anchor_x;
+    int anchor_y = nfo->anchor_y;
+    blit_stride(buffer, &g_remate_pixels[g_remate_frame_offsets[kind][m][f]], &g_remate_runs[g_remate_run_offsets[kind][m][f]],
+                sprite_pitch(bw), bw, bh,
+                ax - anchor_x + b[0], ay - anchor_y + b[1],
+                cam_x, cam_y, s_draw_item_depth);
+}
+
 static void draw_player(uint16_t *buffer, int cam_x, int cam_y) {
+    if (remate_active()) {
+        int ax, ay;
+        remate_origin(&ax, &ay);
+        draw_remate_frame(buffer, remate_kind(), remate_mirror(), remate_frame(), ax, ay, cam_x, cam_y);
+        return;
+    }
     int px = player_screen_x(s_player.x, s_player.y);
     int py = player_screen_y(s_player.x, s_player.y);
 
@@ -775,7 +825,10 @@ static void draw_player(uint16_t *buffer, int cam_x, int cam_y) {
     int min_x = b[0];
     int min_y = b[1];
 
-    int sw = clip >= 0 ? PLAYER_SPRITE_W : g_characters[s_player.char_id].sprite_w;
+    int sw = clip >= 0 ? HERO_SHOT_SPRITE_W : g_characters[s_player.char_id].sprite_w;
+    // The shot clip has its own cell and feet row (same world scale as the walk), so the feet stay put when switching clips.
+    const int anchor = clip >= 0 ? g_player_shot_ground_anchors[s_player.dir]
+                                 : s_char_ground_anchor[s_player.char_id][s_player.dir];
     const uint16_t *frame = clip >= 0
         ? &g_player_shot_frames[g_player_shot_frame_offsets[s_player.dir][clip]]
         : character_frame_ptr(s_player.char_id, s_player.dir, s_player.frame);
@@ -785,7 +838,7 @@ static void draw_player(uint16_t *buffer, int cam_x, int cam_y) {
     int pitch = sprite_pitch(bw);
     if (g_player_state.invuln_timer > 0 && ((g_player_state.invuln_timer >> 2) & 1)) {
         // Hit feedback: red flash while the i-frames run.
-        static uint16_t s_tint[PLAYER_SPRITE_W * PLAYER_SPRITE_H] __attribute__((aligned(4)));
+        static uint16_t s_tint[HERO_SHOT_SPRITE_W * HERO_SHOT_SPRITE_H] __attribute__((aligned(4)));   // largest hero cell
         for (int y = 0; y < bh; y++) {
             for (int x = 0; x < bw; x++) {
                 uint16_t c = frame[y * pitch + x];
@@ -803,7 +856,7 @@ static void draw_player(uint16_t *buffer, int cam_x, int cam_y) {
         if (lt > 0) frame = sprite_glow(frame, runs, pitch, bw, bh, lt);
     }
     blit_stride(buffer, frame, runs, pitch, bw, bh,
-                px - sw / 2 + min_x, py - s_char_ground_anchor[s_player.char_id][s_player.dir] + min_y,
+                px - sw / 2 + min_x, py - anchor + min_y,
                 cam_x, cam_y, s_draw_item_depth);
 }
 
@@ -853,6 +906,7 @@ static void draw_telegraph_pulse(uint16_t *buffer, int cx, int cy, int state_tim
 }
 
 static void draw_enemy(uint16_t *buffer, const Enemy *e, int cam_x, int cam_y) {
+    if (e->state == ENEMY_STATE_REMATE) return;            // the remate cell draws it (with the hero)
     int px = player_screen_x(e->x, e->y);
     int py = player_screen_y(e->x, e->y);
 
@@ -907,6 +961,9 @@ static void draw_enemy(uint16_t *buffer, const Enemy *e, int cam_x, int cam_y) {
 
     if (e->state == ENEMY_STATE_SUSPENDED) {               // Viatico: drained, it loses colour
         frame = sprite_fade(frame, runs, sprite_pitch(bw), bw, bh, e->suspend_timer <= SUSPEND_FRAMES / 2);
+    } else if (e->state == ENEMY_STATE_WOBBLE) {           // reeling: warm pulse (period 16 frames, triangle 0..4)
+        int ph = (e->state_timer >> 1) & 7;
+        frame = sprite_wax_glow(frame, runs, sprite_pitch(bw), bw, bh, ph < 4 ? ph + 1 : 8 - ph);
     } else if (e->burn_layers) {                           // burning: darkened, dried-blood red; 1 layer lightest, 4+ the strongest
         const int L = e->burn_layers;
         frame = sprite_tint(frame, runs, sprite_pitch(bw), bw, bh, (L > 4 ? 4 : L) - 1);
@@ -980,6 +1037,15 @@ static void draw_melt(uint16_t *buffer, const ExvotoMelt *m, int cam_x, int cam_
                 sprite_pitch(bw), bw, visible,
                 px - sw / 2 + b[0], py - s_char_ground_anchor[m->char_id][m->dir] + b[1] + hidden,
                 cam_x, cam_y, s_draw_item_depth);
+}
+
+// The two wax halves the finisher leaves on the floor (last frame of the cell without the hero), blinking out.
+static void draw_remate_remnant(uint16_t *buffer, int cam_x, int cam_y) {
+    int kind, ax, ay, m, visible;
+    if (!remate_remnant(&kind, &ax, &ay, &m, &visible) || !visible) return;
+    const RemateKindInfo *nfo = &g_remate_kind_info[kind];
+    if (!nfo->has_remnant) return;
+    draw_remate_frame(buffer, kind, m, nfo->remnant_frame, ax, ay, cam_x, cam_y);
 }
 
 static void bone_effect_pixel(uint16_t *buffer, int x, int y, int cam_x, int cam_y, uint16_t color) {
@@ -1077,6 +1143,16 @@ typedef struct {
 } ShadowSel;
 
 static int shadow_select(const DrawItem *it, ShadowSel *sel) {
+    if (it->ref == -1 && remate_active()) {                   // baked shadow of the remate cell
+        const int kind = remate_kind(), m = remate_mirror(), f = remate_frame();
+        const RemateKindInfo *nfo = &g_remate_kind_info[kind];
+        sel->mask = &g_remate_shadow_masks[g_remate_shadow_offsets[kind][m][f]];
+        sel->bounds = g_remate_shadow_bounds[kind][m][f];
+        int sox = m ? -nfo->shadow_ox : nfo->shadow_ox;
+        sel->left = it->cx + sox - REMATE_SHADOW_CANVAS / 2;
+        sel->top = it->cy + nfo->shadow_oy - REMATE_SHADOW_CANVAS / 2;
+        return 1;
+    }
     if (it->ref == -1) {
         const int clip = s_hero_clip_frame;
         int shw = clip >= 0 ? PLAYER_SHADOW_W : g_characters[s_player.char_id].shadow_w;
@@ -1092,6 +1168,7 @@ static int shadow_select(const DrawItem *it, ShadowSel *sel) {
     }
     if (it->ref <= -2 && it->ref > -2 - MAX_ENEMIES) {
         const Enemy *e = &g_enemies[-2 - it->ref];
+        if (e->state == ENEMY_STATE_REMATE) return 0;          // its shadow is baked in the remate cell
         int shw = g_characters[e->char_id].shadow_w;
         int shh = g_characters[e->char_id].shadow_h;
         int is_telegraph = (e->char_id == CHAR_CHARGER && e->state == ENEMY_STATE_TELEGRAPH);
@@ -1135,7 +1212,7 @@ ITCM_CODE static void render_screen(uint16_t *buffer, DirtySpan *spans, int cam_
 #if !HW_SHADOWS
     (void)sub_screen;
 #endif
-    DrawItem items[MAX_DRAW_ITEMS + MAX_ENEMIES + MAX_DEATH_CHUNKS + EXVOTO_MELT_MAX + GEM_MAX_ACTIVE + HEAL_PICKUP_MAX_ACTIVE + 1];
+    DrawItem items[MAX_DRAW_ITEMS + MAX_ENEMIES + MAX_DEATH_CHUNKS + EXVOTO_MELT_MAX + GEM_MAX_ACTIVE + HEAL_PICKUP_MAX_ACTIVE + 2];
     const int pk_base = -(2 + MAX_ENEMIES + MAX_DEATH_CHUNKS + EXVOTO_MELT_MAX);  // gem i: pk_base - 1 - i; heart i: pk_base - 1 - GEM_MAX_ACTIVE - i
     int count = 0;
 
@@ -1144,12 +1221,13 @@ ITCM_CODE static void render_screen(uint16_t *buffer, DirtySpan *spans, int cam_
     // Add player only if visible on this screen
     int psx = player_screen_x(s_player.x, s_player.y);
     int psy = player_screen_y(s_player.x, s_player.y);
-    int pl_left = psx - PLAYER_ANCHOR_X - cam_x;
+    if (remate_active()) remate_origin(&psx, &psy);        // the remate cell is anchored at the hero's final feet
+    int pl_left = psx - 40 - cam_x;                        // the biggest hero cell (remate cell: 64 px around the anchor) bounds all
     // Cull on the feet row: the exported ground anchor varies per character
     // and direction, so the sprite top lies within one canvas height above it.
     int pl_feet = psy - cam_y;
-    if (pl_left < SCREEN_W && pl_left + PLAYER_SPRITE_W > 0 &&
-        pl_feet - PLAYER_SPRITE_H < SCREEN_H && pl_feet + PLAYER_SPRITE_H > 0) {
+    if (pl_left < SCREEN_W && pl_left + 80 > 0 &&
+        pl_feet - 64 < SCREEN_H && pl_feet + 64 > 0) {
         if (count < MAX_DRAW_ITEMS) {
             items[count].depth = psy;
             items[count].ref = -1;
@@ -1192,6 +1270,18 @@ ITCM_CODE static void render_screen(uint16_t *buffer, DirtySpan *spans, int cam_
             items[count].ref = -2 - MAX_ENEMIES - i;
             items[count].cx = px;
             items[count].cy = py;
+            count++;
+        }
+    }
+
+    {
+        int rk, rx, ry, rm, rv;
+        if (remate_remnant(&rk, &rx, &ry, &rm, &rv) && rv &&
+            rx + 40 > cam_x && rx - 40 < cam_x + SCREEN_W && ry + 40 > cam_y && ry - 64 < cam_y + SCREEN_H) {
+            items[count].depth = ry + 12;                  // the halves lie in front of the hero's feet
+            items[count].ref = REMATE_REMNANT_REF;
+            items[count].cx = rx;
+            items[count].cy = ry;
             count++;
         }
     }
@@ -1262,6 +1352,9 @@ ITCM_CODE static void render_screen(uint16_t *buffer, DirtySpan *spans, int cam_
     PP_T0(pp_shadow);
 #if HW_SHADOWS
     hwshadow_begin(sub_screen);
+#if ENCOUNTERS_PROTO
+    if (s_strip_mode) enc_verja_draw(sub_screen, cam_x, cam_y);
+#endif
     const int hw_shadows = g_hw_shadows_on;
 #endif
     for (int i = 0; i < count; i++) {
@@ -1305,6 +1398,8 @@ ITCM_CODE static void render_screen(uint16_t *buffer, DirtySpan *spans, int cam_
         CRASH_MARK(CL_DRAW_ITEM, sp, items[i].depth);
         if (sp == -1) {
             draw_player(buffer, cam_x, cam_y);
+        } else if (sp == REMATE_REMNANT_REF) {
+            draw_remate_remnant(buffer, cam_x, cam_y);
         } else if (sp <= pk_base - 1 - GEM_MAX_ACTIVE) {
             pickups_draw(buffer, pk_base - 1 - GEM_MAX_ACTIVE - sp, cam_x, cam_y);
         } else if (sp <= pk_base - 1) {
@@ -1834,10 +1929,14 @@ static void boss_snapshot_screen(uint16_t *dst, int sub, int cam_x, int cam_y) {
     static DirtySpan spans[SCREEN_H];
     memset(spans, 0, sizeof(spans));
     memset(dst, 0, SCREEN_W * SCREEN_H * 2);
+#if HW_SHADOWS
     const int hw = g_hw_shadows_on;
     g_hw_shadows_on = 0;
     render_screen(dst, spans, cam_x, cam_y, sub, NULL, NULL, NULL);
     g_hw_shadows_on = hw;
+#else
+    render_screen(dst, spans, cam_x, cam_y, sub, NULL, NULL, NULL);
+#endif
     for (int y = 0; y < SCREEN_H; y++) {
         uint16_t *row = dst + y * SCREEN_W;
         for (int x = 0; x < SCREEN_W; x++)
@@ -1989,6 +2088,8 @@ static void on_enemy_death(const Enemy *e, fixed hit_vx, fixed hit_vy) {
     DeathSpawn spawn = { e->x, e->y, hit_vx, hit_vy, e->char_id, e->dir, e->frame };
     if (g_death_phase == DEATH_BOOKKEEPING) {
         // Viatico: the victim is held suspended; the death animation comes later (DEATH_VISUALS), the counts are due now.
+    } else if (remate_killing()) {
+        // Remate: no melt and no chunks, the two halves of the finisher stay on the floor (remate.c).
     } else if (e->type == ENEMY_TYPE_EXVOTO) {
         exvoto_melt_spawn(e);                 // wax: it melts instead of breaking into chunks
     } else if (s_death_spawn_budget > 0) {
@@ -2049,6 +2150,7 @@ static void strip_shift_world_y(int dy_px) {
     for (int i = 0; i < s_pending_count; i++)
         s_pending_deaths[(s_pending_head + i) & (MAX_PENDING_DEATHS - 1)].y += shift;
     exvoto_melt_shift_y(dy_px);
+    remate_shift_y(dy_px);
     s_cam_y += dy_px;
     grenade_shift_y(dy_px);
     weapons_shift_y(dy_px);
@@ -2237,10 +2339,28 @@ static void player_update(uint32_t keys, uint32_t keys_down) {
     if (g_player_state.invuln_timer > 0) g_player_state.invuln_timer--;
 
     if (g_player_state.is_dead) {
+        remate_reset();
         s_player.is_moving = 0;
         s_player.frame = 0;
         s_shot_active = 0;
         s_hero_clip_frame = -1;
+        return;
+    }
+    // Remate (DESIGN.md 6.13.8): the finisher owns the hero (invulnerable, no move, no shot) until it ends.
+    {
+        int dir = s_player.dir;
+        remate_update(g_enemies, MAX_ENEMIES, &s_player.x, &s_player.y, &dir);
+        if (dir != s_player.dir) { s_player.dir = dir; s_rooted = 0; s_shot_active = 0; }
+    }
+    if (remate_active()) {
+        s_rooted = 0;
+        s_player.is_moving = 0;
+        s_player.frame = 0;
+        s_player.anim_timer = 0;
+        s_shot_active = 0;
+        s_hero_clip_frame = -1;
+        s_latch_pressed = s_latch_released = 0;
+        update_camera();
         return;
     }
     shot_clip_step();
@@ -2274,6 +2394,15 @@ static void player_update(uint32_t keys, uint32_t keys_down) {
         }
     }
 
+    // L: finishes the nearest reeling enemy (Exvoto or Cireneo) within reach (remate.h). Free in the demo ROM; in the test variants it
+    // still cycles weapons when there is nothing to finish.
+    if ((keys_down & KEY_L) && remate_start(g_enemies, MAX_ENEMIES, s_player.x, s_player.y)) {
+        s_rooted = 0;
+        s_shot_active = 0;
+        s_hero_clip_frame = -1;
+        s_latch_pressed = s_latch_released = 0;
+        return;
+    }
 #if TEST_WEAPON_CYCLE
     // Test variants only: L switches weapon (and cancels a sniper aim). The demo ROM has just the laser.
     if (keys_down & KEY_L) {
@@ -2486,6 +2615,7 @@ static void arena_restart(void) {
     g_hitstop_frames = 0;
     memset(s_death_chunks, 0, sizeof(s_death_chunks));
     exvoto_melt_reset();
+    remate_reset();
     s_pending_head = s_pending_count = 0;
     if (s_strip_mode) memset(g_enemies, 0, sizeof(g_enemies));
     else encounters_spawn(&g_encounter_mgr, g_enemies, MAX_ENEMIES);
@@ -2632,6 +2762,7 @@ int main(void) {
 
     init_char_sprite_data();
     exvoto_melt_reset();
+    remate_reset();
     sfx_init();
     CRASH_INIT();
     PP_INIT();

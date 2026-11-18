@@ -35,22 +35,22 @@
    "pieces": [
     {
      "piece": "banco_grupo4",
-     "x": 0,
+     "x": 8,
      "y": 64
     },
     {
      "piece": "banco_grupo4",
-     "x": 128,
+     "x": 120,
      "y": 64
     },
     {
      "piece": "banco_grupo4",
-     "x": 0,
+     "x": 8,
      "y": 256
     },
     {
      "piece": "banco_grupo4",
-     "x": 128,
+     "x": 120,
      "y": 256
     }
    ],
@@ -273,7 +273,18 @@
    }
   },
   "embudo": {
-   "pieces": [],
+   "pieces": [
+    {
+     "piece": "sacos",
+     "x": 0,
+     "y": 200
+    },
+    {
+     "piece": "sacos_remate_der",
+     "x": 64,
+     "y": 208
+    }
+   ],
    "obstacles": [
     {
      "kind": "sacos",
@@ -484,9 +495,9 @@
      "y": 72
     },
     {
-     "piece": "columna_entera",
-     "x": 128,
-     "y": 72
+     "piece": "columna",
+     "x": 112,
+     "y": 112
     },
     {
      "piece": "santo",
@@ -494,8 +505,8 @@
      "y": 264
     },
     {
-     "piece": "santo",
-     "x": 128,
+     "piece": "santo_der",
+     "x": 120,
      "y": 264
     }
    ],
@@ -689,18 +700,18 @@
      "y": 136
     },
     {
-     "piece": "santo",
-     "x": 168,
+     "piece": "santo_der",
+     "x": 160,
      "y": 136
     },
     {
      "piece": "banco_grupo4",
-     "x": 0,
+     "x": 8,
      "y": 0
     },
     {
      "piece": "banco_grupo4",
-     "x": 128,
+     "x": 120,
      "y": 0
     }
    ],
@@ -924,8 +935,8 @@
      "y": 8
     },
     {
-     "piece": "santo",
-     "x": 168,
+     "piece": "santo_der",
+     "x": 160,
      "y": 8
     }
    ],
@@ -1189,21 +1200,61 @@
      "piece": "columna_entera",
      "x": 160,
      "y": 72
+    },
+    {
+     "piece": "alambre",
+     "x": 0,
+     "y": 128
+    },
+    {
+     "piece": "alambre",
+     "x": 32,
+     "y": 128
+    },
+    {
+     "piece": "alambre",
+     "x": 64,
+     "y": 128
+    },
+    {
+     "piece": "alambre",
+     "x": 96,
+     "y": 128
+    },
+    {
+     "piece": "alambre",
+     "x": 80,
+     "y": 256
+    },
+    {
+     "piece": "alambre",
+     "x": 112,
+     "y": 256
+    },
+    {
+     "piece": "alambre",
+     "x": 144,
+     "y": 256
+    },
+    {
+     "piece": "alambre",
+     "x": 176,
+     "y": 256
     }
    ],
    "obstacles": [
     {
      "kind": "alambre",
      "x": 0,
-     "y": 150,
-     "w": 140,
+     "y": 140,
+     "w": 128,
      "h": 12
     },
     {
      "kind": "alambre",
-     "x": 68,
-     "y": 250,
-     "w": 140,
+     "x": 80,
+     "y": 268,
+     "w": 128,
      "h": 12
     }
    ],
@@ -1381,7 +1432,7 @@
   "pieces": [
    {
     "piece": "relicario",
-    "x": 84,
+    "x": 80,
     "y": 170
    },
    {
@@ -1396,7 +1447,7 @@
    }
   ],
   "relic_target": {
-   "x": 84,
+   "x": 80,
    "y": 200,
    "hp": 150
   },

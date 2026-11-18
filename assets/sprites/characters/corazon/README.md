@@ -1,4 +1,4 @@
-# corazon_walk_normal
+# corazon_walk
 
 Spritesheet PNG: 8 columnas (frames), 8 filas (direcciones), 40x40px por celda, RGBA transparente.
 

@@ -20,28 +20,59 @@ Estado a 2026-11-17.
 | Arenas (mazmorra) | `assets/arenas/arenas.json` | `tools/export_arenas.py` → `bake_arena.py` | `source/arena_0N.c` | git |
 | HUD | corazón sagrado 3D `assets/models/hud/sacred_heart/` | `tools/hud/prerender_hud_heart.py` → `tools/generate_hud_icons_c.py` | `source/hud_icons_gfx.c` | LFS (PNG: git) |
 | Rayos de luz | pintados a mano, `assets/sprites/godrays/` | `source/godrays_gfx.c` (notas en `tools/godrays/README.md`) | `source/godrays_gfx.c` | git |
-| Cartas de mejora | escenas reales de la ROM (`cathedral-sandbox`) | `tools/levelup_cards/capture_cards.py` | `nitrofiles/levelup/*.bin` | derivado (capturas: §7) |
+| Cartas de mejora | escenas reales de la ROM (`cathedral-sandbox`) | `tools/levelup_cards/capture_cards.py` | `nitrofiles/levelup/*.bin` | derivado (capturas intermedias en `assets/sprites/levelup/`, ignoradas) |
 | Clips de la intro | partida real en DeSmuME | `tools/gen_intro_clips.py` | `nitrofiles/intro/*.bin` | derivado |
 | Efectos de sonido | ElevenLabs → `assets/sfx/raw/` | recorte a mano → `assets/sfx/baked/` → `tools/bake_sfx.py` | arrays en C (`source/sfx.c`) | git |
 | Música | `assets/music/*.wav` | conversión a `nitrofiles/bgm.raw` | `nitrofiles/bgm.raw` | git |
 | Icono de la ROM | `assets/icon.png` | toolchain | banner de la ROM | git |
 | Vídeos de redes | skill `codice-lore-video` | `render_guiones.py` | no van en la ROM | LFS (`assets/videos/*.mp4`) |
 
-## 2. Personajes (originales 3D)
+## 2. Personajes: de qué sale cada sprite
 
-| Pieza | Original vigente (UUID Tripo) | Script de construcción | Derivados (no versionados) | Entrada en `characters.json` | Uso en el juego |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| Corazón Abierto (héroe) | `corazon/source/corazon.fbx` (`f25681c0`) + clips `animations/corazon/{walk,disparo}.fbx` | `build_corazon.py` | `corazon_{walk,disparo}.fbx` | `corazon`, `corazon_disparo` | `CHAR_HERO` |
-| Cireneo v2 (cargador) | `cireneo/source/…cd715dbe` + cruz `…ed8f6d13` + `animations/walk/walk_normal.fbx` + clips de walk y charge `animations/cireneo/v1_clips.fbx` | `build_cireneo_v2.py` | `cireneo_{walk,charge,telegraph,stuck}.fbx` | `cireneo`, `cireneo_charge`, `cireneo_telegraph` | `CHAR_CHARGER` |
-| Exvoto (la horda) | `exvoto/source/…45adc30a` | `build_exvoto.py` | `exvoto_{walk,walk_b,pray_stand,pray_kneel,stand_up}.fbx` | `exvoto*` | `CHAR_EXVOTO*` |
-| Ojo del Tribunal | cuerpo `ojo/source/…ed4d249d`, cabeza `ojo/source/cabeza/…5f17753f` | `build_ojo.py` (+ `regen_ojo.ps1`) | `ojo_{walk,look,sentence}.fbx` | `ojo`, `ojo_look`, `ojo_sentence` | `CHAR_OJO` |
-| Abanderado | cuerpo `abanderado/source/…6e3a96b5`, estandarte `source/estandarte/…989b9291` | `build_abanderado.py` (+ `regen_abanderado.ps1`) | `abanderado_{walk,point}.fbx` | (sin entrada, usa el regen) | `CHAR_ABANDERADO` |
-| Monaguillo | `monaguillo/source/…9a55a12b` | `build_monaguillo.py` | `monaguillo_walk.fbx` | (sin entrada, usa el regen) | `CHAR_MONAGUILLO` |
-| Campanero | campana `campanero/source/campana/…af5a0caa`; cuerpo `campanero/source/…0865ecc9` (con barba) | aún sin script | — | — | solo `LORE.md`, sin integrar |
+Esta tabla es la única fuente de verdad de qué modelo y qué animación producen cada sprite del juego. Las rutas de modelos son relativas a `assets/models/characters/`, las de animaciones a `assets/models/animations/` y los scripts están en `tools/characters/`. La celda es el tamaño en píxeles del recuadro (`resolution`). Los parámetros de render están en `assets/sprites/characters/characters.json`.
 
-**Convención:** en `characters/<personaje>/source/` va solo el modelo con esqueleto (accesorios en subcarpetas); en `animations/<grupo>/<clip>.fbx`, solo esqueleto y movimiento, sin malla (de Mixamo se baja «sin piel»). El script `build_<personaje>.py` los junta y exporta los FBX animados, que son derivados.
+| Sprite del juego | Entrada de `characters.json` (celda) | Modelo (UUID Tripo) | Animación | Script |
+| :--- | :--- | :--- | :--- | :--- |
+| `CHAR_HERO`: andar | `corazon` (40) | `corazon/source/corazon.fbx` (`f25681c0`) | `corazon/walk.fbx` | `build_corazon.py` |
+| `CHAR_HERO`: cargar y disparar | `corazon_disparo` (48) | el mismo | `corazon/disparo.fbx` | `build_corazon.py` |
+| `CHAR_CHARGER`: andar | `cireneo` (60) | `cireneo/source/…cd715dbe` + cruz `source/cruz/…ed8f6d13` | `walk/walk_normal.fbx` y `cireneo/v1_clips.fbx` | `build_cireneo_v2.py` |
+| `CHAR_CHARGER`: carga | `cireneo_charge` (60) | el mismo | `cireneo/v1_clips.fbx` | `build_cireneo_v2.py` |
+| `CHAR_CHARGER`: telegrafía | `cireneo_telegraph` (60) | el mismo | pose generada en el script | `build_cireneo_v2.py` |
+| `CHAR_OJO`: andar | `ojo` (56) | cuerpo `ojo/source/…ed4d249d`, cabeza `ojo/source/cabeza/…5f17753f` | `walk/walk_normal.fbx` | `build_ojo.py` |
+| `CHAR_OJO`: mirar y sentenciar | `ojo_look`, `ojo_sentence` (56) | el mismo | poses generadas en el script | `build_ojo.py` |
+| `CHAR_EXVOTO`: andar | `exvoto` (40) | `exvoto/source/…45adc30a` | `walk/walk_normal.fbx` | `build_exvoto.py` |
+| `CHAR_EXVOTO_PRAY_STAND` | `exvoto_pray_stand` (40) | el mismo | `pray/pray_standing.fbx` | `build_exvoto.py` |
+| `CHAR_EXVOTO_PRAY_KNEEL` | `exvoto_pray_kneel` (40) | el mismo | `pray/pray_kneeling.fbx` | `build_exvoto.py` |
+| `CHAR_EXVOTO_STAND_UP` | `exvoto_stand_up` (40) | el mismo | `pray/pray_kneel_to_stand.fbx` | `build_exvoto.py` |
+| `CHAR_ABANDERADO`: andar | `abanderado` (60) | cuerpo `abanderado/source/…6e3a96b5`, estandarte `source/estandarte/…989b9291` | `walk/sad_walk.fbx` | `build_abanderado.py` |
+| `CHAR_ABANDERADO`: señalar | `abanderado_point` (60) | el mismo | pose generada en el script | `build_abanderado.py` |
+| `CHAR_MONAGUILLO` | `monaguillo` (40) | `monaguillo/source/…9a55a12b` | `monaguillo/walk_pray.fbx` (andar rezando, extraído del esqueleto retirado) | `build_monaguillo.py` |
+| Retratos del bestiario (rezo) | no aplica (160 px) | Corazón y Exvoto | `pray/*` | `build_corazon_pray.py`, `build_exvoto_pray.py` |
+| Campanero | sin integrar | campana `campanero/source/campana/…af5a0caa`, cuerpo `campanero/source/…0865ecc9` | — | sin script (solo en `LORE.md`) |
 
-Animaciones (`assets/models/animations/`): `walk/walk_normal.fbx` (Ojo, Abanderado, Exvoto, Cireneo), `walk/sad_walk.fbx` (Abanderado), `pray/*` (Exvoto), `corazon/{walk,disparo}.fbx` y `cireneo/v1_clips.fbx` (andar y carga del Cireneo).
+**Convención:**
+- En `characters/<personaje>/source/` va solo el modelo con esqueleto, con los accesorios en subcarpetas.
+- En `animations/<grupo>/<clip>.fbx` va solo esqueleto y movimiento, sin malla; de Mixamo se descarga «sin piel».
+- El script `build_<personaje>.py` los junta y exporta un FBX animado por clip, `characters/<personaje>/<entrada>.fbx`. Son derivados: no se versionan.
+
+**Escala fija por personaje (2026-11-17):**
+- Cada personaje se renderiza a la escala de su animación de referencia, la de andar. El resto de sus animaciones llevan `"scaleRef": "<referencia>"` en `characters.json` y heredan dos cosas de ella:
+  - El reescalado del modelo (`normScale`). El render normaliza cada FBX según la postura con que empieza la animación; sin heredarlo, una animación que empieza de rodillas sale más grande.
+  - Los píxeles por metro de la cámara (`fitExtent` y `fitZoom`).
+- Así el personaje mide lo mismo en todas sus animaciones y las alturas en píxeles siguen a las del modelo 3D. No se compensa nada con `fitZoom` por animación.
+- El tamaño del personaje en pantalla se ajusta solo con el `fitZoom` de la referencia.
+- Si una pose no cabe en la celda, el render avisa con `CROPPED`. La salida es dar a esa animación una celda mayor (`resolution`), que mantiene la escala. Así está `corazon_disparo`, a 48 px. No se encoge el personaje. El motor toma el tamaño de cada celda de su `settings.json`; el disparo del héroe tiene además su propia fila de pies (`HERO_SHOT_SPRITE_W/H` y `g_player_shot_ground_anchors` en `player_sprite.h`). Por encima de 60 px se recortaría la sombra, que en el motor mide 80×80.
+
+### Cómo regenerar los sprites de personajes
+
+1. **FBX animados** (solo si cambia un modelo o una animación, o faltan):
+   ```
+   "C:/Program Files/Blender Foundation/Blender 5.2/blender.exe" -b -P tools/characters/build_<personaje>.py -- <raíz del repo>
+   ```
+2. **Sprites y código C:** `python tools/rebuild_all.py --only characters,bake --char <entradas>`. Si la referencia no entra en la lista, se lee su escala de su `settings.json`. Sin `--char` se renderizan todos.
+3. **ROM:** `python tools/rebuild_all.py --only rom`, o `build-project.ps1`.
+
+Todo de una vez: `python tools/rebuild_all.py`. Pasos y opciones: `TECHNICAL.md` §3.
 
 ## 3. Props de la catedral (originales 3D)
 
@@ -68,6 +99,8 @@ El suelo del juego (`assets/environment/cathedral/floor/rombos_tripo/`) sale de 
 
 **Borrado del legado** (2026-11-17, decisión del usuario): necrón, marine espacial, cargador antiguo, esqueleto sin textura, animaciones y armas del lab (`assets/models/archive/legacy/`), el blockout del shooter isométrico, el par de ventanas ojivales (`lancet_pair`) y el monstruo (solo local). La geometría de arenas (`assets/models/environment/arenas/`) deja de versionarse: la regeneran `make_arena_glb.py` y `export_arenas.py`. Todo lo que estaba en git sigue en el historial hasta su reescritura (pendiente); el monstruo se pierde.
 
+**Borrado sin copia en git** (2026-11-17, decisión del usuario): maquetas A/B/C de las cartas de mejora y su `bake_cards.py`, y los corazones girando de `hud/pickup/`. Ninguno lo usaba el juego. También los restos del legado que quedaban en el disco de la carpeta principal; esos siguen en el historial.
+
 **Borrado** (2026-11-16): `environment/dreadhollow/GLB` y `Previews` (306 MB; pack «Dreadhollow — The Cursed Kingdom» de Kareel Games, se vuelve a bajar del proveedor); `animations/rifle/aim.fbx`, `walk/walk_renqueante.fbx`, `weapons/sword/sword.glb` (sin referencias); `environment/scifi_dungeon` (68 MB, pipeline legado; los scripts `bake_scifi_dungeon.py` y afines ya no se pueden ejecutar). Todo sigue en el historial de git salvo dreadhollow.
 
 ## 6. Sin registrar
@@ -76,7 +109,7 @@ En Descargas, fuera del repo: `tripo_convert_8c5b4a72` (esqueleto soldado) y `tr
 
 ## 7. Anomalías abiertas
 
-- **`.h` del bestiario versionados:** `assets/sprites/bestiary/*/nds_shadow_anchor.h` ocupa ~270 MB en git y es un derivado (`TECHNICAL.md` §4.4).
-- **Sin versionar y en uso:** `assets/sprites/levelup/` y `tools/levelup_cards/bake_cards.py` (cartas de mejora), y los vídeos `assets/videos/lore01_*.mp4` y avatares, que solo están en la carpeta principal.
+- **`.h` del bestiario versionados:** `assets/sprites/bestiary/*/nds_shadow_anchor.h` ocupan ~270 MB en git y son derivados (`TECHNICAL.md` §4.4).
+- **Sin versionar, solo en la carpeta principal:** vídeos `assets/videos/lore01_{04..10}*.mp4`, `lore01_02_…_sinvoz.mp4` y avatares `avatar_{corazon,ojo}.png`. Si son finales, se adoptan en LFS.
 - **Modelos de prueba del usuario** (`archive/legacy/custom/` en la carpeta principal: mago, esqueleto muriendo y dos personajes): sin decidir; no se versionan.
 - **Originales perdidos:** `columna` (base rota), `banco_roto`, `banco_volcado` (ver §3).

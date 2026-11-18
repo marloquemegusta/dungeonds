@@ -20,15 +20,9 @@ from mathutils import Vector, Matrix
 ROOT = sys.argv[sys.argv.index('--') + 1]
 OUT = os.path.join(ROOT, 'assets/models/characters/ojo')
 WALK_FBX = os.path.join(ROOT, 'assets/models/animations/walk/walk_normal.fbx')
-if not os.path.exists(WALK_FBX):
-    WALK_FBX = 'C:/codexlocal/dungeonds/assets/models/animations/walk/walk_normal.fbx'
 
-MAIN_OUT = 'C:/codexlocal/dungeonds/assets/models/characters/ojo'
-char_candidates = glob.glob(os.path.join(OUT, 'source/tripo_convert_ed4d249d-*.fbx')) or glob.glob(os.path.join(MAIN_OUT, 'source/tripo_convert_ed4d249d-*.fbx'))
-CHAR_FBX = char_candidates[0]
+CHAR_FBX = glob.glob(os.path.join(OUT, 'source/tripo_convert_ed4d249d-*.fbx'))[0]
 HEAD_DIR = os.path.join(OUT, 'source/cabeza')
-if not os.path.isdir(HEAD_DIR):
-    HEAD_DIR = os.path.join(MAIN_OUT, 'source/cabeza')
 
 # ---- ajustes del cuerpo gordo (andar) ----
 WALK_FRAMES = 40        # 32 frames de Mixamo repartidos en 40 (paso algo mas pesado), +1 de cierre

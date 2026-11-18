@@ -99,9 +99,9 @@
       ],
       [
         28,
-        29,
+        28,
         36,
-        36
+        37
       ],
       [
         28,
@@ -184,9 +184,9 @@
         38
       ],
       [
-        18,
+        17,
         25,
-        43,
+        44,
         38
       ]
     ],
@@ -228,9 +228,9 @@
         39
       ],
       [
-        16,
+        15,
         22,
-        46,
+        47,
         39
       ],
       [
@@ -261,15 +261,15 @@
       ],
       [
         30,
-        18,
+        17,
         36,
-        42
+        43
       ],
       [
         30,
-        18,
+        17,
         36,
-        42
+        43
       ],
       [
         30,
@@ -355,9 +355,9 @@
       ],
       [
         39,
-        20,
+        19,
         34,
-        42
+        43
       ],
       [
         39,
@@ -491,10 +491,10 @@
       ]
     ]
   ],
-  "stride3dMeters": 0.36,
-  "strideRatio": 0.202,
+  "stride3dMeters": 0.382,
+  "strideRatio": 0.2,
   "ticksPerFrame": 5,
-  "stridePixels": 11.96,
+  "stridePixels": 11.86,
   "speedFixed8_8": 315,
   "inPlace": true,
   "rigScale": 1,
@@ -514,5 +514,8 @@
   "lightPreset": "neutral",
   "outlineMode": "none",
   "fitZoom": 0.95,
+  "measuredExtent": 2.094746491699332,
+  "fitExtent": 2.086161044039546,
+  "normScale": 0.018329133244849118,
   "toneMapping": "neutral"
 }

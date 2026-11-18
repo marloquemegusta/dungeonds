@@ -43,7 +43,7 @@ Si una regla o cifra aparece en dos documentos, uno de ellos sobra: dejarla en s
 6. **Rendimiento: 60 FPS se certifican en la DS, no en el emulador.**
    - **Presupuesto único:** un frame son 560190 ticks de `cpuGetTiming()` (bus a 33,514 MHz, 16,7 ms). 33514 ticks es 1 ms, no el presupuesto. No usar otras cifras.
    - **Emulador:** DeSmuME solo sirve para comparar A/B el mismo escenario antes y después de un cambio. Un frame "barato" en DeSmuME puede pasarse del presupuesto en la DS (ya pasó: ~190.000 ticks en el emulador y caídas a 30 FPS en la consola).
-   - **Hardware:** todo cambio que toque render, oclusión, actores o bucles por frame se valida en la DS antes de mergear. Ciclo: compilar con `PERF_PROFILE 1` (`include/perfprof.h`) → `upload-rom.ps1` → el usuario juega la situación → `fetch-device-log.ps1 -RemoteFile /dungeonds_perf.log` → leer media, máximos y frames con más de un vblank. Volver a dejar `PERF_PROFILE 0` antes del merge.
+   - **Hardware:** todo cambio que toque render, oclusión, actores o bucles por frame se valida en la DS antes de mergear, **en la catedral normal**: variante `perf` (el juego tal cual con `PERF_PROFILE`). El escenario de pruebas antiguo (`playground`, `playground-perf`) está descartado (decisión del usuario, 2026-11-18). Ciclo: compilar con `PERF_PROFILE 1` (`include/perfprof.h`) → `upload-rom.ps1` → el usuario juega la situación → `fetch-device-log.ps1 -RemoteFile /dungeonds_perf.log` → leer media, máximos y frames con más de un vblank. Volver a dejar `PERF_PROFILE 0` antes del merge.
    - Si la feature se ve bien pero la DS baja de 60 FPS, la tarea está bloqueada hasta optimizar.
 7. **Subida a la DS (FTP)**:
    - Solo con confirmación explícita del usuario, que vale para esa subida.
@@ -68,7 +68,7 @@ Si una regla o cifra aparece en dos documentos, uno de ellos sobra: dejarla en s
 3. **Implementación real en la ROM**, con un selector de depuración para comparar variantes en vivo. El agente implementa (Haiku por defecto) y quien dirige el arte revisa; cada agente lleva un brief con archivos, tope de coste por frame y criterio de aceptación.
 4. **Sandbox y capturas**: escenas con enemigos parados y héroe invulnerable (`tools/sandbox_scenes.py`), geometría exacta (regla 5), GIFs de la ROM real a ~50-60 ms por frame, y hojas de contacto ampliadas (4x NEAREST sobre el héroe) que se miran de verdad antes de dar nada por bueno.
 5. **Iterar con referencias**: cada ronda ajusta una cosa (por ejemplo, de hélice a rayos angulosos y luego a trazo fino) y se descartan variantes en el walkthrough.
-6. **Cierre**: el de la regla 4 (Fase 2), con medición en la DS con la variante `playground-perf` (regla 6) antes de mergear. Las escenas de comparación A/B/C del sandbox no entran en la batería (`"suite": false`).
+6. **Cierre**: el de la regla 4 (Fase 2), con medición en la DS con la variante `perf` (regla 6) antes de mergear. Las escenas de comparación A/B/C del sandbox no entran en la batería (`"suite": false`).
 
 Lecciones: un bucle sin tope congela el juego; el coste de la oclusión por píxel se come el frame, mejor por tramos; un agente que se atasca se reanuda con un mensaje corto; los pokes en el frame 0 los borra crt0.
 

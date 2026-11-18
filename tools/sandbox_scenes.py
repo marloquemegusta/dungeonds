@@ -210,12 +210,12 @@ def sniper_fire_scene(look=None):
 
 
 # ---- Exvotos praying in front of a real devout piece (DESIGN.md 6.10, feat/exvoto) ---------------------------
-# Needs the cathedral-playground ROM: its stable seed (0xC0DE1234) puts the relicario of the first window at
+# Needs the cathedral-sandbox ROM (CATHEDRAL_AI=1: the AI runs). NOTE: the relicario this once targeted (window px 248,682) no longer exists after the props-v2 kit; its stable seed (0xC0DE1234) put the relicario of the first window at
 # window px (248, 682) with a footprint of half-extent 16 x 6 (dumped from strip_devout_in_band() on the host).
 # The Exvotos stand where horde.c seat_exvoto() would seat them (1 cell of 4 px outside the footprint, south arc
 # first, then alternating sides) and face the piece with the same 8-direction quantisation the AI uses.
 RELICARIO = (248, 682, 16, 6)                  # centre x, centre y, half width, half height (window px)
-STATE = {"CHASE": 0, "DEAD": 11, "PRAY": 13, "RISE": 14}
+STATE = {"CHASE": 0, "DEAD": 13, "PRAY": 15, "RISE": 16}
 FLAG_PRAY, FLAG_KNEEL, FLAG_DIR_SHIFT = 2, 4, 3
 CHAR = {"walk": 3, "pray_stand": 4, "pray_kneel": 5, "stand_up": 6}
 ENEMY_SIZE = 88                                # sizeof(Enemy), asserted in source/main.c
@@ -296,7 +296,7 @@ def exvoto_pray_scene():
         {"wait_until": {"field": "en1_state", "equals": STATE["RISE"], "timeout_frames": 400},
          "capture": "03_despiertan", "state_capture": "woken"},
         {"button_up": "UP", "frames": 1},
-        {"frames": 60, "capture_sequence": "c_levanta", "capture_every": 3, "state_capture": "rising"},
+        {"frames": 60, "capture_sequence": "c_levanta", "capture_every": 2, "state_capture": "rising"},
         {"wait_until": {"field": "en1_state", "equals": STATE["CHASE"], "timeout_frames": 120},
          "capture": "05_andan", "state_capture": "walking"},
         {"frames": 45, "capture_sequence": "d_andan", "capture_every": 3, "state_capture": "advancing"},

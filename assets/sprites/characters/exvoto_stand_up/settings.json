@@ -81,7 +81,7 @@
     [
       15,
       7,
-      19,
+      18,
       29
     ]
   ],
@@ -154,9 +154,9 @@
         19
       ],
       [
-        24,
+        25,
         27,
-        20,
+        19,
         20
       ],
       [
@@ -166,9 +166,9 @@
         20
       ],
       [
-        23,
         24,
-        21,
+        24,
+        20,
         22
       ],
       [
@@ -181,7 +181,7 @@
         23,
         20,
         21,
-        26
+        25
       ],
       [
         23,
@@ -237,7 +237,7 @@
         21,
         18,
         21,
-        27
+        26
       ]
     ],
     [
@@ -445,7 +445,7 @@
         32,
         24,
         17,
-        20
+        19
       ],
       [
         33,
@@ -492,9 +492,9 @@
     ]
   ],
   "stride3dMeters": 9.082,
-  "strideRatio": 5.132,
+  "strideRatio": 6.464,
   "ticksPerFrame": 22,
-  "stridePixels": 205.26,
+  "stridePixels": 258.58,
   "speedFixed8_8": 39,
   "inPlace": true,
   "rigScale": 1,
@@ -513,6 +513,9 @@
   "renderEngine": "Three.js WebGL (browser)",
   "lightPreset": "neutral",
   "outlineMode": "none",
-  "fitZoom": 0.9154,
+  "fitZoom": 0.86,
+  "measuredExtent": 2.1615000327714657,
+  "fitExtent": 2.0391720414700383,
+  "normScale": 0.018627107106441602,
   "toneMapping": "neutral"
 }

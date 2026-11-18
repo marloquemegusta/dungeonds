@@ -1,0 +1,29 @@
+{
+  "piece": "sacos_remate",
+  "size_px": [
+    64,
+    16
+  ],
+  "content_px": [
+    64,
+    16
+  ],
+  "target_width": 64,
+  "scale_factor": 0.09453471196454949,
+  "source_render_px": [
+    677,
+    174
+  ],
+  "yaw": -45,
+  "depth_units": "sprite_px",
+  "tiles_8x8_nonempty": 16,
+  "tiles_8x8_unique": 16,
+  "shadow_offset_px": [
+    0,
+    0
+  ],
+  "shadow_canvas_px": [
+    64,
+    24
+  ]
+}

@@ -140,7 +140,9 @@ typedef enum {
     ENEMY_STATE_DORMANT,      // v0.2: standing still in its pack until the pack wakes (DESIGN.md 5)
     ENEMY_STATE_PRAY,         // Exvoto: praying in front of a devout piece until the hero comes close or hits it
     ENEMY_STATE_RISE,         // Exvoto: getting up from its knees (stand_up clip), then CHASE
-    ENEMY_STATE_SUSPENDED     // Viatico: killed (counted dead) but held inert ~0.3 s while the thread leaves its body
+    ENEMY_STATE_SUSPENDED,    // Viatico: killed (counted dead) but held inert ~0.3 s while the thread leaves its body
+    ENEMY_STATE_WOBBLE,       // Exvoto: reeling after a hit that did not kill (glows, still, no dodge); L finishes it (remate.h)
+    ENEMY_STATE_REMATE        // Exvoto: held inert while the hero's finisher animation plays (remate.h)
 } EnemyState;
 
 struct Enemy {
