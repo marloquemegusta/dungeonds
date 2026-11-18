@@ -967,7 +967,7 @@ Sustituye, cuando se implemente, al compositor v2 de la catedral (§6.9.1b), a l
 - Cada acto empieza algo por encima de donde acabó el anterior, con su propio catálogo de plantas y sus enemigos nuevos. Último recurso si los Dones corren más que los encuentros: +25 % de vida enemiga por acto.
 - Se equilibra jugando la vara de cada población, para que la curva de los encuentros vaya un poco por delante de la del jugador y el jefe sea el examen.
 
-**Catálogo mínimo del acto I.**
+**Catálogo mínimo del acto I.** *(En revisión desde 2026-11-17: se rehace con los papeles y reglas de §6.13.8; las plantas que ya cumplan se conservan, las demás se sustituyen.)*
 | Planta | Piezas | Qué enseña |
 | :--- | :--- | :--- |
 | **La procesión** | Dos filas de bancos y pasillo central | Los bancos alinean a los Exvotos; cada uno pide dos disparos: retroceder disparando. |
@@ -1036,3 +1036,37 @@ Concreta §6.13.1 para el escenario por actos (§6.13.6). Objetivo: que meter un
   6. Al acabar la voz, ~1,2 s quieto.
   7. Se aleja (~0,5 s), se va el texto, vuelve el juego y entra la música. En total, ~9 s. START la salta en cualquier momento.
 - **Ritmo de la victoria:** congelado en su última pose ~1 s; acercamiento lento (~1,5 s); se destiñe (~1,5 s); se tacha el nombre (~0,6 s); pausa; dice su frase de derrota y se escribe; ~1,5 s quieto; reliquia. En total, ~8 s.
+
+#### 6.13.8 Encuentros tácticos: papeles, Ojo de largo alcance y remate (decidido 2026-11-17, rama `docs/encuentros-tacticos`)
+Corrige §6.13.6. **Motivo:** en las salas lo óptimo sigue siendo quedarse abajo y matar lo que baja, aunque se cierre la barrera de atrás. Toda la amenaza llega por un lado y todos los enemigos persiguen, así que la pelea acaba en la pantalla de abajo y la de arriba llega vacía. Esperar no cuesta nada. Además, el Ojo empieza a apuntar a ~140 px, menos que el rayo base (160 px), así que se puede limpiar a los Exvotos fuera de su alcance y luego ir a por él. **Referencias:** Doom 2016/Eternal, donde los enemigos débiles cuerpo a cuerpo no son la amenaza sino un recurso que se remata; Gears of War y XCOM, donde unos te clavan en la cobertura y otros te sacan de ella.
+
+**Papeles de los enemigos.**
+| Papel | Quién | Qué hace en la sala |
+| :--- | :--- | :--- |
+| **Te clava** | Ojo | Desde su puesto en la mitad de arriba controla la sala. Mientras te apunta, cúbrete o muévete. |
+| **Te saca de la cobertura** | Exvoto | Viene a por ti en grupo y por los lados. Es también el recurso del remate. |
+| **Guarda al Ojo y rompe la cobertura** | Cireneo | Espera junto al Ojo y embiste cuando te acercas. Si se estrella contra una pieza queda aturdido y se puede rematar. |
+| **Ancla** | Ojo en el acto I; invocador desde el acto II | No baja: obliga a subir para abrir la barrera. |
+
+- **Ojo:** alcance **mayor que el rayo base**, unos dos tercios de la sala (~256 px, `[TUNABLE-PLACEHOLDER]`; con los Ojos a la altura de ~100 px alcanza al héroe en cuanto se cierra la barrera de atrás), con las columnas cortándole la línea. Se queda en su puesto. Se mantiene que solo dos apunten a la vez. Su aviso largo y legible (la mirada verde) es lo que hace justo el largo alcance.
+- **Exvoto, flanqueo coordinado:** se reúnen fuera del alcance del héroe y entran juntos; uno va de frente y los demás por los carriles laterales; si el héroe está agachado tras una cobertura baja, la rodean. Mantienen la esquiva del rayo.
+- **Invocador:** es un **enemigo nuevo con silueta propia**, no un Exvoto rezando: con el mismo dibujo no se distinguiría a quién disparar primero. Idea: levanta a los caídos si nadie lo interrumpe. Se aplaza al acto II, junto al Campanero y al Abanderado élite. En el acto I el ancla es el Ojo.
+
+**Reglas de sala (se suman a las de §6.13.6).**
+1. **Desde el primer momento en que el héroe puede dar a un Exvoto, algún Ojo puede darle a él.** Los Exvotos se colocan entre el héroe y el Ojo, en su línea de tiro.
+2. **Los Ojos van en la mitad de arriba,** en su puesto. La cobertura buena (columnas y cobertura baja) va en medio y arriba; la entrada queda despejada.
+3. **Composición tipo:** Exvotos arriba que bajan a flanquear, Ojos al fondo y algún Cireneo guardándolos.
+4. Nada de embudos rectos hacia la entrada que pongan a la horda en fila delante del rayo.
+- **Catálogo:** las 6 plantas de §6.13.6 se revisan con estas reglas. Las que cumplan se conservan; las demás se rehacen.
+- **El Ojo, desde las ligeras (decidido 2026-11-18; corrige «el Ojo desde la segunda mitad» y «ligera, solo Exvotos» de §6.13.6):** toda sala del acto I lleva al menos un Ojo, porque es el ancla que obliga a subir. El Cireneo entra en media.
+- **El atrio, primer encuentro fijo del acto:** solo Exvotos y espacio abierto; enseña el remate antes de meter presión. Es la única sala sin Ojo.
+- **Catálogo v3 (propuesta, 2026-11-17):** 7 plantas (el atrio, la procesión, la trinchera, el balcón, la pinza, el claro y la alambrada); la trinchera sustituye al embudo. Esquemas en `walkthroughs/encuentros-tacticos/catalogo-salas-v3.html`, generados por `tools/encuentros/catalogo_v3.py`. La ROM sigue con el catálogo v2 hasta programar la IA nueva.
+
+**Remate (nombre provisional: Extremaunción).**
+- **El primer disparo no mata al Exvoto:** lo deja **tambaleándose y brillando** un momento (~1 s, `[TUNABLE-PLACEHOLDER]`), sin esquivar. Si no se remata a tiempo, se recupera herido.
+- **Cerca de él (~40–50 px, `[TUNABLE-PLACEHOLDER]`), `L`:** el héroe se lanza contra él y lo remata. Es **invulnerable durante la animación**, la muerte es segura y el rayo queda **cargado del todo al instante**. `L` queda para esto: agacharse no usa botón.
+- **El Cireneo aturdido** tras estrellarse contra una pieza también se puede rematar, con su propia animación.
+- **Animación en 3D, una por tipo de enemigo.** La del Exvoto: el héroe lo agarra de los brazos y lo parte por la mitad (es de cera). **Elegida (2026-11-18): la opción A de la ronda 2**, que lo agarra de las dos muñecas, tira a los lados y lo parte en vertical, de la cabeza a la entrepierna; las mitades caen a cada lado con el corte de cera a la vista (64×64, 12 fotogramas; `walkthroughs/remate-exvoto/assets/ronda2/exvoto_A/`, rama `proto/remate-exvoto`). La del Cireneo: en una última ronda A/B. A, le arranca la cruz, lo tira al suelo y lo clava con ella, y queda tumbado boca arriba con los brazos extendidos. B, lo derriba y le deja caer encima su propia cruz.
+- **Arquetipos (§6.12.3):** a Ráfaga le aporta poco, a Vigilia la ayuda y a Mártir le encaja («se cura matando de cerca»). Vigilar que Mártir con Viático no se dispare.
+
+**Siguiente paso:** rehacer el catálogo del acto I en el editor con estas reglas y revisarlo en el móvil. Después, prototipo en la ROM: alcance y puesto del Ojo, flanqueo del Exvoto, Cireneo guardián y remate.

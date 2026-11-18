@@ -1,0 +1,1458 @@
+{
+ "_doc": "Acto I v3 (DESIGN.md 6.13.8, 2026-11-17), PROPUESTA: la ROM sigue leyendo acto1_v2.json hasta implementar la IA nueva. Coordenadas como en v2. Estados: post (Ojo en su puesto), guard (Cireneo que guarda al Ojo mas cercano), flank (Exvoto que flanquea). 'fija' = encuentro fijo (el atrio abre el acto). Generado por catalogo_v3.py.",
+ "floor_w": 208,
+ "block_h": 384,
+ "hp": {
+  "exvoto": 250,
+  "monaguillo": 100,
+  "cireneo": 600,
+  "ojo": 400,
+  "abanderado": 5500
+ },
+ "act": {
+  "start_clear_blocks": 2,
+  "encounters": 12,
+  "tiers": [
+   "ligera",
+   "ligera",
+   "ligera",
+   "ligera",
+   "media",
+   "media",
+   "media",
+   "media",
+   "dura",
+   "dura",
+   "dura",
+   "dura"
+  ],
+  "golden_relic_after": 6,
+  "heal_every": 3,
+  "rules": "planta por hash estable; nunca la misma dos veces seguidas; como mucho 2 veces por acto; espejo por hash"
+ },
+ "plantas": {
+  "atrio": {
+   "pieces": [
+    {
+     "piece": "santo",
+     "x": 0,
+     "y": 136
+    },
+    {
+     "piece": "santo",
+     "x": 168,
+     "y": 136
+    }
+   ],
+   "obstacles": [],
+   "fija": true,
+   "unica": {
+    "enemies": [
+     [
+      "exvoto",
+      40,
+      60,
+      "flank"
+     ],
+     [
+      "exvoto",
+      104,
+      40,
+      "flank"
+     ],
+     [
+      "exvoto",
+      168,
+      60,
+      "flank"
+     ],
+     [
+      "exvoto",
+      70,
+      140,
+      "flank"
+     ],
+     [
+      "exvoto",
+      138,
+      140,
+      "flank"
+     ]
+    ]
+   }
+  },
+  "procesion": {
+   "pieces": [
+    {
+     "piece": "banco_grupo4",
+     "x": 0,
+     "y": 128
+    },
+    {
+     "piece": "banco_grupo4",
+     "x": 128,
+     "y": 128
+    },
+    {
+     "piece": "columna_entera",
+     "x": 32,
+     "y": 8
+    },
+    {
+     "piece": "columna_entera",
+     "x": 128,
+     "y": 8
+    }
+   ],
+   "obstacles": [],
+   "ligera": {
+    "enemies": [
+     [
+      "ojo",
+      104,
+      100,
+      "post"
+     ],
+     [
+      "exvoto",
+      24,
+      40,
+      "flank"
+     ],
+     [
+      "exvoto",
+      60,
+      60,
+      "flank"
+     ],
+     [
+      "exvoto",
+      148,
+      60,
+      "flank"
+     ],
+     [
+      "exvoto",
+      184,
+      40,
+      "flank"
+     ],
+     [
+      "exvoto",
+      20,
+      250,
+      "flank"
+     ],
+     [
+      "exvoto",
+      188,
+      250,
+      "flank"
+     ]
+    ]
+   },
+   "media": {
+    "enemies": [
+     [
+      "ojo",
+      104,
+      100,
+      "post"
+     ],
+     [
+      "cireneo",
+      104,
+      124,
+      "guard"
+     ],
+     [
+      "exvoto",
+      24,
+      40,
+      "flank"
+     ],
+     [
+      "exvoto",
+      60,
+      60,
+      "flank"
+     ],
+     [
+      "exvoto",
+      148,
+      60,
+      "flank"
+     ],
+     [
+      "exvoto",
+      184,
+      40,
+      "flank"
+     ],
+     [
+      "exvoto",
+      20,
+      240,
+      "flank"
+     ],
+     [
+      "exvoto",
+      188,
+      240,
+      "flank"
+     ],
+     [
+      "exvoto",
+      36,
+      280,
+      "flank"
+     ],
+     [
+      "exvoto",
+      172,
+      280,
+      "flank"
+     ]
+    ]
+   },
+   "dura": {
+    "enemies": [
+     [
+      "ojo",
+      40,
+      104,
+      "post"
+     ],
+     [
+      "ojo",
+      168,
+      104,
+      "post"
+     ],
+     [
+      "cireneo",
+      104,
+      120,
+      "guard"
+     ],
+     [
+      "exvoto",
+      24,
+      30,
+      "flank"
+     ],
+     [
+      "exvoto",
+      60,
+      50,
+      "flank"
+     ],
+     [
+      "exvoto",
+      104,
+      40,
+      "flank"
+     ],
+     [
+      "exvoto",
+      148,
+      50,
+      "flank"
+     ],
+     [
+      "exvoto",
+      184,
+      30,
+      "flank"
+     ],
+     [
+      "exvoto",
+      20,
+      236,
+      "flank"
+     ],
+     [
+      "exvoto",
+      188,
+      236,
+      "flank"
+     ],
+     [
+      "exvoto",
+      36,
+      276,
+      "flank"
+     ],
+     [
+      "exvoto",
+      172,
+      276,
+      "flank"
+     ],
+     [
+      "exvoto",
+      104,
+      70,
+      "flank"
+     ]
+    ]
+   }
+  },
+  "trinchera": {
+   "pieces": [],
+   "obstacles": [
+    {
+     "kind": "sacos",
+     "x": 0,
+     "y": 230,
+     "w": 64,
+     "h": 24
+    },
+    {
+     "kind": "sacos",
+     "x": 144,
+     "y": 170,
+     "w": 64,
+     "h": 24
+    },
+    {
+     "kind": "sacos",
+     "x": 0,
+     "y": 112,
+     "w": 64,
+     "h": 24
+    }
+   ],
+   "ligera": {
+    "enemies": [
+     [
+      "ojo",
+      150,
+      100,
+      "post"
+     ],
+     [
+      "exvoto",
+      30,
+      40,
+      "flank"
+     ],
+     [
+      "exvoto",
+      80,
+      30,
+      "flank"
+     ],
+     [
+      "exvoto",
+      130,
+      30,
+      "flank"
+     ],
+     [
+      "exvoto",
+      180,
+      50,
+      "flank"
+     ],
+     [
+      "exvoto",
+      60,
+      80,
+      "flank"
+     ],
+     [
+      "exvoto",
+      180,
+      120,
+      "flank"
+     ]
+    ]
+   },
+   "media": {
+    "enemies": [
+     [
+      "ojo",
+      56,
+      100,
+      "post"
+     ],
+     [
+      "ojo",
+      150,
+      100,
+      "post"
+     ],
+     [
+      "cireneo",
+      104,
+      130,
+      "guard"
+     ],
+     [
+      "exvoto",
+      30,
+      40,
+      "flank"
+     ],
+     [
+      "exvoto",
+      80,
+      30,
+      "flank"
+     ],
+     [
+      "exvoto",
+      130,
+      30,
+      "flank"
+     ],
+     [
+      "exvoto",
+      180,
+      50,
+      "flank"
+     ],
+     [
+      "exvoto",
+      100,
+      70,
+      "flank"
+     ],
+     [
+      "exvoto",
+      180,
+      140,
+      "flank"
+     ],
+     [
+      "exvoto",
+      24,
+      200,
+      "flank"
+     ],
+     [
+      "exvoto",
+      190,
+      240,
+      "flank"
+     ]
+    ]
+   },
+   "dura": {
+    "enemies": [
+     [
+      "ojo",
+      56,
+      100,
+      "post"
+     ],
+     [
+      "ojo",
+      150,
+      100,
+      "post"
+     ],
+     [
+      "cireneo",
+      60,
+      140,
+      "guard"
+     ],
+     [
+      "cireneo",
+      150,
+      136,
+      "guard"
+     ],
+     [
+      "exvoto",
+      30,
+      40,
+      "flank"
+     ],
+     [
+      "exvoto",
+      70,
+      30,
+      "flank"
+     ],
+     [
+      "exvoto",
+      104,
+      50,
+      "flank"
+     ],
+     [
+      "exvoto",
+      140,
+      30,
+      "flank"
+     ],
+     [
+      "exvoto",
+      180,
+      50,
+      "flank"
+     ],
+     [
+      "exvoto",
+      100,
+      80,
+      "flank"
+     ],
+     [
+      "exvoto",
+      180,
+      140,
+      "flank"
+     ],
+     [
+      "exvoto",
+      24,
+      200,
+      "flank"
+     ],
+     [
+      "exvoto",
+      190,
+      240,
+      "flank"
+     ],
+     [
+      "exvoto",
+      104,
+      160,
+      "flank"
+     ]
+    ]
+   }
+  },
+  "balcon": {
+   "pieces": [
+    {
+     "piece": "columna_entera",
+     "x": 32,
+     "y": 200
+    },
+    {
+     "piece": "columna_entera",
+     "x": 128,
+     "y": 200
+    },
+    {
+     "piece": "santo",
+     "x": 0,
+     "y": 8
+    },
+    {
+     "piece": "santo",
+     "x": 168,
+     "y": 8
+    }
+   ],
+   "obstacles": [],
+   "ligera": {
+    "enemies": [
+     [
+      "ojo",
+      104,
+      96,
+      "post"
+     ],
+     [
+      "exvoto",
+      30,
+      90,
+      "flank"
+     ],
+     [
+      "exvoto",
+      178,
+      90,
+      "flank"
+     ],
+     [
+      "exvoto",
+      60,
+      40,
+      "flank"
+     ],
+     [
+      "exvoto",
+      148,
+      40,
+      "flank"
+     ],
+     [
+      "exvoto",
+      20,
+      150,
+      "flank"
+     ],
+     [
+      "exvoto",
+      188,
+      150,
+      "flank"
+     ]
+    ]
+   },
+   "media": {
+    "enemies": [
+     [
+      "ojo",
+      60,
+      100,
+      "post"
+     ],
+     [
+      "ojo",
+      148,
+      100,
+      "post"
+     ],
+     [
+      "exvoto",
+      30,
+      90,
+      "flank"
+     ],
+     [
+      "exvoto",
+      178,
+      90,
+      "flank"
+     ],
+     [
+      "exvoto",
+      104,
+      40,
+      "flank"
+     ],
+     [
+      "exvoto",
+      104,
+      130,
+      "flank"
+     ],
+     [
+      "exvoto",
+      20,
+      150,
+      "flank"
+     ],
+     [
+      "exvoto",
+      188,
+      150,
+      "flank"
+     ],
+     [
+      "exvoto",
+      104,
+      70,
+      "flank"
+     ]
+    ]
+   },
+   "dura": {
+    "enemies": [
+     [
+      "ojo",
+      60,
+      100,
+      "post"
+     ],
+     [
+      "ojo",
+      148,
+      100,
+      "post"
+     ],
+     [
+      "cireneo",
+      104,
+      128,
+      "guard"
+     ],
+     [
+      "exvoto",
+      30,
+      90,
+      "flank"
+     ],
+     [
+      "exvoto",
+      178,
+      90,
+      "flank"
+     ],
+     [
+      "exvoto",
+      80,
+      40,
+      "flank"
+     ],
+     [
+      "exvoto",
+      128,
+      40,
+      "flank"
+     ],
+     [
+      "exvoto",
+      20,
+      150,
+      "flank"
+     ],
+     [
+      "exvoto",
+      188,
+      150,
+      "flank"
+     ],
+     [
+      "exvoto",
+      104,
+      70,
+      "flank"
+     ],
+     [
+      "exvoto",
+      20,
+      220,
+      "flank"
+     ],
+     [
+      "exvoto",
+      188,
+      220,
+      "flank"
+     ]
+    ]
+   }
+  },
+  "pinza": {
+   "pieces": [
+    {
+     "piece": "santo",
+     "x": 0,
+     "y": 136
+    },
+    {
+     "piece": "santo",
+     "x": 168,
+     "y": 136
+    },
+    {
+     "piece": "banco_grupo4",
+     "x": 0,
+     "y": 0
+    },
+    {
+     "piece": "banco_grupo4",
+     "x": 128,
+     "y": 0
+    }
+   ],
+   "obstacles": [],
+   "ligera": {
+    "enemies": [
+     [
+      "ojo",
+      104,
+      100,
+      "post"
+     ],
+     [
+      "exvoto",
+      20,
+      240,
+      "flank"
+     ],
+     [
+      "exvoto",
+      44,
+      270,
+      "flank"
+     ],
+     [
+      "exvoto",
+      20,
+      300,
+      "flank"
+     ],
+     [
+      "exvoto",
+      188,
+      240,
+      "flank"
+     ],
+     [
+      "exvoto",
+      164,
+      270,
+      "flank"
+     ],
+     [
+      "exvoto",
+      188,
+      300,
+      "flank"
+     ]
+    ]
+   },
+   "media": {
+    "enemies": [
+     [
+      "ojo",
+      104,
+      100,
+      "post"
+     ],
+     [
+      "cireneo",
+      104,
+      124,
+      "guard"
+     ],
+     [
+      "exvoto",
+      20,
+      230,
+      "flank"
+     ],
+     [
+      "exvoto",
+      44,
+      260,
+      "flank"
+     ],
+     [
+      "exvoto",
+      20,
+      290,
+      "flank"
+     ],
+     [
+      "exvoto",
+      40,
+      320,
+      "flank"
+     ],
+     [
+      "exvoto",
+      188,
+      230,
+      "flank"
+     ],
+     [
+      "exvoto",
+      164,
+      260,
+      "flank"
+     ],
+     [
+      "exvoto",
+      188,
+      290,
+      "flank"
+     ],
+     [
+      "exvoto",
+      168,
+      320,
+      "flank"
+     ]
+    ]
+   },
+   "dura": {
+    "enemies": [
+     [
+      "ojo",
+      60,
+      100,
+      "post"
+     ],
+     [
+      "ojo",
+      148,
+      100,
+      "post"
+     ],
+     [
+      "cireneo",
+      104,
+      124,
+      "guard"
+     ],
+     [
+      "exvoto",
+      20,
+      220,
+      "flank"
+     ],
+     [
+      "exvoto",
+      44,
+      250,
+      "flank"
+     ],
+     [
+      "exvoto",
+      20,
+      280,
+      "flank"
+     ],
+     [
+      "exvoto",
+      44,
+      310,
+      "flank"
+     ],
+     [
+      "exvoto",
+      24,
+      336,
+      "flank"
+     ],
+     [
+      "exvoto",
+      188,
+      220,
+      "flank"
+     ],
+     [
+      "exvoto",
+      164,
+      250,
+      "flank"
+     ],
+     [
+      "exvoto",
+      188,
+      280,
+      "flank"
+     ],
+     [
+      "exvoto",
+      164,
+      310,
+      "flank"
+     ],
+     [
+      "exvoto",
+      184,
+      336,
+      "flank"
+     ]
+    ]
+   }
+  },
+  "claro": {
+   "pieces": [
+    {
+     "piece": "santo",
+     "x": 0,
+     "y": 8
+    },
+    {
+     "piece": "santo",
+     "x": 168,
+     "y": 8
+    }
+   ],
+   "obstacles": [],
+   "ligera": {
+    "enemies": [
+     [
+      "ojo",
+      104,
+      96,
+      "post"
+     ],
+     [
+      "exvoto",
+      40,
+      60,
+      "flank"
+     ],
+     [
+      "exvoto",
+      80,
+      40,
+      "flank"
+     ],
+     [
+      "exvoto",
+      128,
+      40,
+      "flank"
+     ],
+     [
+      "exvoto",
+      168,
+      60,
+      "flank"
+     ],
+     [
+      "exvoto",
+      30,
+      140,
+      "flank"
+     ],
+     [
+      "exvoto",
+      178,
+      140,
+      "flank"
+     ],
+     [
+      "exvoto",
+      70,
+      180,
+      "flank"
+     ],
+     [
+      "exvoto",
+      138,
+      180,
+      "flank"
+     ]
+    ]
+   },
+   "media": {
+    "enemies": [
+     [
+      "ojo",
+      104,
+      96,
+      "post"
+     ],
+     [
+      "exvoto",
+      30,
+      50,
+      "flank"
+     ],
+     [
+      "exvoto",
+      70,
+      40,
+      "flank"
+     ],
+     [
+      "exvoto",
+      110,
+      30,
+      "flank"
+     ],
+     [
+      "exvoto",
+      150,
+      40,
+      "flank"
+     ],
+     [
+      "exvoto",
+      190,
+      50,
+      "flank"
+     ],
+     [
+      "exvoto",
+      30,
+      140,
+      "flank"
+     ],
+     [
+      "exvoto",
+      178,
+      140,
+      "flank"
+     ],
+     [
+      "exvoto",
+      70,
+      180,
+      "flank"
+     ],
+     [
+      "exvoto",
+      138,
+      180,
+      "flank"
+     ],
+     [
+      "exvoto",
+      20,
+      230,
+      "flank"
+     ],
+     [
+      "exvoto",
+      188,
+      230,
+      "flank"
+     ]
+    ]
+   },
+   "dura": {
+    "enemies": [
+     [
+      "ojo",
+      60,
+      100,
+      "post"
+     ],
+     [
+      "ojo",
+      148,
+      100,
+      "post"
+     ],
+     [
+      "cireneo",
+      104,
+      40,
+      "guard"
+     ],
+     [
+      "exvoto",
+      30,
+      50,
+      "flank"
+     ],
+     [
+      "exvoto",
+      70,
+      40,
+      "flank"
+     ],
+     [
+      "exvoto",
+      110,
+      30,
+      "flank"
+     ],
+     [
+      "exvoto",
+      150,
+      40,
+      "flank"
+     ],
+     [
+      "exvoto",
+      190,
+      50,
+      "flank"
+     ],
+     [
+      "exvoto",
+      30,
+      140,
+      "flank"
+     ],
+     [
+      "exvoto",
+      178,
+      140,
+      "flank"
+     ],
+     [
+      "exvoto",
+      70,
+      180,
+      "flank"
+     ],
+     [
+      "exvoto",
+      138,
+      180,
+      "flank"
+     ],
+     [
+      "exvoto",
+      104,
+      160,
+      "flank"
+     ],
+     [
+      "exvoto",
+      20,
+      230,
+      "flank"
+     ],
+     [
+      "exvoto",
+      188,
+      230,
+      "flank"
+     ]
+    ]
+   }
+  },
+  "alambrada": {
+   "pieces": [
+    {
+     "piece": "columna_entera",
+     "x": 160,
+     "y": 72
+    }
+   ],
+   "obstacles": [
+    {
+     "kind": "alambre",
+     "x": 0,
+     "y": 150,
+     "w": 128,
+     "h": 12
+    },
+    {
+     "kind": "alambre",
+     "x": 80,
+     "y": 240,
+     "w": 128,
+     "h": 12
+    }
+   ],
+   "ligera": {
+    "enemies": [
+     [
+      "ojo",
+      60,
+      100,
+      "post"
+     ],
+     [
+      "exvoto",
+      30,
+      50,
+      "flank"
+     ],
+     [
+      "exvoto",
+      110,
+      40,
+      "flank"
+     ],
+     [
+      "exvoto",
+      180,
+      70,
+      "flank"
+     ],
+     [
+      "exvoto",
+      150,
+      190,
+      "flank"
+     ],
+     [
+      "exvoto",
+      40,
+      200,
+      "flank"
+     ],
+     [
+      "exvoto",
+      180,
+      200,
+      "flank"
+     ]
+    ]
+   },
+   "media": {
+    "enemies": [
+     [
+      "ojo",
+      60,
+      100,
+      "post"
+     ],
+     [
+      "cireneo",
+      150,
+      196,
+      "guard"
+     ],
+     [
+      "exvoto",
+      30,
+      50,
+      "flank"
+     ],
+     [
+      "exvoto",
+      110,
+      40,
+      "flank"
+     ],
+     [
+      "exvoto",
+      180,
+      70,
+      "flank"
+     ],
+     [
+      "exvoto",
+      100,
+      120,
+      "flank"
+     ],
+     [
+      "exvoto",
+      40,
+      200,
+      "flank"
+     ],
+     [
+      "exvoto",
+      60,
+      196,
+      "flank"
+     ],
+     [
+      "exvoto",
+      180,
+      120,
+      "flank"
+     ]
+    ]
+   },
+   "dura": {
+    "enemies": [
+     [
+      "ojo",
+      60,
+      100,
+      "post"
+     ],
+     [
+      "ojo",
+      150,
+      100,
+      "post"
+     ],
+     [
+      "cireneo",
+      150,
+      196,
+      "guard"
+     ],
+     [
+      "exvoto",
+      30,
+      50,
+      "flank"
+     ],
+     [
+      "exvoto",
+      80,
+      40,
+      "flank"
+     ],
+     [
+      "exvoto",
+      130,
+      40,
+      "flank"
+     ],
+     [
+      "exvoto",
+      180,
+      70,
+      "flank"
+     ],
+     [
+      "exvoto",
+      100,
+      120,
+      "flank"
+     ],
+     [
+      "exvoto",
+      40,
+      200,
+      "flank"
+     ],
+     [
+      "exvoto",
+      60,
+      196,
+      "flank"
+     ],
+     [
+      "exvoto",
+      180,
+      120,
+      "flank"
+     ],
+     [
+      "exvoto",
+      30,
+      290,
+      "flank"
+     ]
+    ]
+   }
+  }
+ },
+ "pasillo": {
+  "pieces": [
+   {
+    "piece": "relicario",
+    "x": 80,
+    "y": 170
+   },
+   {
+    "piece": "vela",
+    "x": 44,
+    "y": 180
+   },
+   {
+    "piece": "vela",
+    "x": 148,
+    "y": 210
+   }
+  ],
+  "relic_target": {
+   "x": 80,
+   "y": 200,
+   "hp": 150
+  },
+  "mirror": "alterna lado por indice de pasillo"
+ },
+ "boss": {
+  "enemies": [
+   [
+    "abanderado",
+    104,
+    90,
+    "awake"
+   ],
+   [
+    "ojo",
+    40,
+    30,
+    "awake"
+   ],
+   [
+    "ojo",
+    168,
+    30,
+    "awake"
+   ],
+   [
+    "cireneo",
+    104,
+    150,
+    "awake"
+   ]
+  ],
+  "escort_respawn_frames": 240,
+  "note": "bloque con barrera arriba; al vencer, texto VICTORIA (prototipo)"
+ },
+ "ojo_range": 256
+}
