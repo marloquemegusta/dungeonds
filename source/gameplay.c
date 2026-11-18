@@ -6,6 +6,7 @@
 #include "modifiers.h"
 #include "upgrades.h"
 #include "sfx.h"
+#include "remate.h"
 #include <string.h>
 #if ENCOUNTERS_PROTO
 #include "encounters_act1.h"
@@ -89,7 +90,7 @@ void player_state_init(PlayerState *player) {
 }
 
 int player_take_hit(PlayerState *player) {
-    if (!player || player->is_dead || player->god_mode || player->invuln_timer > 0) return 0;
+    if (!player || player->is_dead || player->god_mode || player->invuln_timer > 0 || remate_invuln() > 0) return 0;
     player->hp--;
     player->invuln_timer = PLAYER_IFRAMES + g_mods.iframes;
     if (player->hp <= 0) {
@@ -117,7 +118,7 @@ void enemy_set_death_hook(EnemyDeathHook hook) {
 }
 
 static void enemy_damage(Enemy *e, int damage, fixed hit_vx, fixed hit_vy, int quiet) {
-    if (!e || !e->active || e->hp <= 0 || e->state == ENEMY_STATE_EMERGE) return;
+    if (!e || !e->active || e->hp <= 0 || e->state == ENEMY_STATE_EMERGE || e->state == ENEMY_STATE_REMATE) return;
 #if ENCOUNTERS_PROTO
     if (boss_blocks_damage(e)) return;           // the invulnerable second of a phase change (DESIGN.md 6.13.7)
 #endif
@@ -156,6 +157,15 @@ static void enemy_damage(Enemy *e, int damage, fixed hit_vx, fixed hit_vy, int q
         nocashMessage(msg);
 #endif
     } else if (!quiet) {
+        if ((e->type == ENEMY_TYPE_EXVOTO || e->type == ENEMY_TYPE_CHARGER) && e->hp * 2 <= e->max_hp &&
+            (e->state == ENEMY_STATE_CHASE || e->state == ENEMY_STATE_ATTACK ||
+             e->state == ENEMY_STATE_TELEGRAPH || e->state == ENEMY_STATE_CHARGE ||
+             e->state == ENEMY_STATE_RECOVER || e->state == ENEMY_STATE_STUNNED ||
+             e->state == ENEMY_STATE_WOBBLE)) {
+            if (e->state != ENEMY_STATE_WOBBLE) e->state_timer = REMATE_WOBBLE_FRAMES;   // a hit that does not kill leaves it reeling
+            e->state = ENEMY_STATE_WOBBLE;
+            e->aim_px = e->aim_py = 0;                          // a dodge or charge in progress is cancelled
+        }
         sfx_play(SND_ENEMY_HIT, TO_INT(e->x));
 #ifdef DEBUG
         char msg[64];

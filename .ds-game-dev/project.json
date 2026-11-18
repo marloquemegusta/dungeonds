@@ -3,14 +3,8 @@
         "sandbox": {
             "defines": ["SANDBOX=1"]
         },
-        "playground": {
-            "defines": ["SANDBOX=1", "PLAYGROUND=1"]
-        },
         "perf": {
             "defines": ["PERF_PROFILE=1"]
-        },
-        "playground-perf": {
-            "defines": ["SANDBOX=1", "PLAYGROUND=1", "PERF_PROFILE=1"]
         },
         "stress": {
             "defines": ["STRESS_TEST=1"]
@@ -23,6 +17,9 @@
         },
         "cathedral-playground": {
             "defines": ["SANDBOX=1", "PLAYGROUND=1", "GODRAYS_PROTO=1", "CATHEDRAL_PLAYGROUND=1"]
+        },
+        "remate-sandbox": {
+            "defines": ["SANDBOX=1", "PLAYGROUND=1", "CATHEDRAL_PLAYGROUND=1", "REMATE_SANDBOX=1"]
         },
         "cathedral-sandbox": {
             "defines": ["SANDBOX=1", "CATHEDRAL_PLAYGROUND=1", "CATHEDRAL_AI=1"]

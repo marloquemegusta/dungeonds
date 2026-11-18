@@ -24,6 +24,8 @@
 #include "gems.h"
 #include "upgrades.h"
 #include "exvoto_melt.h"
+#include "remate.h"
+#include "remate_sprites.h"
 #include "sfx.h"
 #include "bestiary.h"
 #include "intro.h"
@@ -125,7 +127,7 @@ static int s_cam_anchor_y = SCREEN_H / 2;
 static int s_cam_anchor_target = SCREEN_H / 2;
 static int s_cam_dir_intent = 0;
 static int s_cam_dir_frames = 0;
-#if (SANDBOX || PLAYGROUND) && !CATHEDRAL_PLAYGROUND
+#if SANDBOX && !CATHEDRAL_PLAYGROUND
 static const int s_strip_mode = 0;
 #else
 static const int s_strip_mode = 1;
@@ -188,6 +190,8 @@ typedef struct {
 } DeathChunk;
 static DeathChunk s_death_chunks[MAX_DEATH_CHUNKS];
 static uint32_t s_death_chunk_seed;
+
+#define REMATE_REMNANT_REF (-0x40000000)   // DrawItem ref of the wax halves a remate leaves (remate.h)
 
 typedef struct {
     int depth;     // ground world Y in pixels
@@ -452,6 +456,30 @@ static const uint16_t *sprite_fade(const uint16_t *src, const uint16_t *runs, in
                 int gray = (r + g + b) / 3;
                 if (strong) { r = (r + 3 * gray + 2) >> 2; g = (g + 3 * gray + 2) >> 2; b = (b + 3 * gray + 2) >> 2; }
                 else { r = (r + gray) >> 1; g = (g + gray) >> 1; b = (b + gray) >> 1; }
+                s_tint_buf[y * pitch + x] = (uint16_t)(r | (g << 5) | (b << 10) | BIT(15));
+            }
+        }
+    }
+    return s_tint_buf;
+}
+
+// Remate (DESIGN.md 6.13.8): an Exvoto reeling after a hit pulses a warm, muted tint (ivory-gold, never pure white).
+// level 0..4 = faint to strong; the pulse is a triangle wave of the wobble timer (see draw_enemy).
+static const uint16_t *sprite_wax_glow(const uint16_t *src, const uint16_t *runs, int pitch, int bw, int bh, int level) {
+    if (pitch * bh > 64 * 64) return src;
+    const int kr = 2 + level, kg = 1 + level;
+    for (int y = 0; y < bh; y++) {
+        const uint16_t *rr = runs + runs[y], *rend = runs + runs[y + 1];
+        for (; rr < rend; rr++) {
+            int a = *rr & 0xFF, n = *rr >> 8;
+            for (int x = a; x < a + n; x++) {
+                uint32_t c = src[y * pitch + x];
+                int r = c & 31, g = (c >> 5) & 31, b = (c >> 10) & 31;
+                r += ((27 - r) * kr) >> 4;           // towards a warm ivory (27, 22, 11), never to white
+                g += ((22 - g) * kg) >> 4;
+                b -= (b * level) >> 4;
+                if (r < (int)(c & 31)) r = (int)(c & 31);          // never darker than the source
+                if (g < (int)((c >> 5) & 31)) g = (int)((c >> 5) & 31);
                 s_tint_buf[y * pitch + x] = (uint16_t)(r | (g << 5) | (b << 10) | BIT(15));
             }
         }
@@ -762,7 +790,41 @@ static void update_screen_hardware_bg(int is_sub, u16 *map_ptr, int cam_x, int c
 // Composition
 // ---------------------------------------------------------------------------
 
+// Remate cell (remate_sprites.h): frame `f` of direction `d` (0..7) with the anchor (hero feet) at (ax, ay).
+// The pixels/runs live in the NitroFS buffer loaded by remate_start(). The cell is two actors: layer 0 (hero and enemy in the
+// grip) and layer 1 (loose debris), each occluded by props at its own `depth`.
+static void draw_remate_layer(uint16_t *buffer, int kind, int d, int f, int layer, int ax, int ay, int cam_x, int cam_y, int depth) {
+    if (kind < 0 || kind >= REMATE_NUM_KINDS || d < 0 || d >= REMATE_NUM_DIRS) return;
+    const RemateBinHeader *hdr = remate_bin();
+    if (!hdr) return;
+    const RemateDirInfo *dnfo = &g_remate_dir_info[kind][d];
+    const uint8_t *b = layer ? hdr->d_bounds[f] : hdr->f_bounds[f];
+    int bw = b[2], bh = b[3];
+    if (bw == 0 || bh == 0) return;
+    int pitch = sprite_pitch(bw);
+    const uint16_t *pix = remate_bin_pixels() + (layer ? hdr->d_pix_off[f] : hdr->f_pix_off[f]);
+    const uint16_t *runs = remate_bin_runs() + (layer ? hdr->d_run_off[f] : hdr->f_run_off[f]);
+    blit_stride(buffer, pix, runs, pitch, bw, bh,
+                ax - dnfo->anchor_x + b[0], ay - dnfo->anchor_y + b[1],
+                cam_x, cam_y, depth);
+}
+
+// Depth of a layer of the running remate cell: the hero's final feet row plus the baked offset (remate_sprites.h).
+static int remate_layer_depth(int ay, int layer) {
+    return ay + g_remate_depth[remate_kind()][remate_dir()][remate_frame()][layer];
+}
+
 static void draw_player(uint16_t *buffer, int cam_x, int cam_y) {
+    if (remate_active()) {
+        int ax, ay;
+        remate_origin(&ax, &ay);
+        const int k = remate_kind(), d = remate_dir(), f = remate_frame();
+        const int dep0 = remate_layer_depth(ay, 0), dep1 = remate_layer_depth(ay, 1);
+        if (dep1 < dep0) draw_remate_layer(buffer, k, d, f, 1, ax, ay, cam_x, cam_y, dep1);   // debris behind the pair: first
+        draw_remate_layer(buffer, k, d, f, 0, ax, ay, cam_x, cam_y, dep0);
+        if (dep1 >= dep0) draw_remate_layer(buffer, k, d, f, 1, ax, ay, cam_x, cam_y, dep1);  // debris nearer: over the pair
+        return;
+    }
     int px = player_screen_x(s_player.x, s_player.y);
     int py = player_screen_y(s_player.x, s_player.y);
 
@@ -775,7 +837,10 @@ static void draw_player(uint16_t *buffer, int cam_x, int cam_y) {
     int min_x = b[0];
     int min_y = b[1];
 
-    int sw = clip >= 0 ? PLAYER_SPRITE_W : g_characters[s_player.char_id].sprite_w;
+    int sw = clip >= 0 ? HERO_SHOT_SPRITE_W : g_characters[s_player.char_id].sprite_w;
+    // The shot clip has its own cell and feet row (same world scale as the walk), so the feet stay put when switching clips.
+    const int anchor = clip >= 0 ? g_player_shot_ground_anchors[s_player.dir]
+                                 : s_char_ground_anchor[s_player.char_id][s_player.dir];
     const uint16_t *frame = clip >= 0
         ? &g_player_shot_frames[g_player_shot_frame_offsets[s_player.dir][clip]]
         : character_frame_ptr(s_player.char_id, s_player.dir, s_player.frame);
@@ -783,9 +848,9 @@ static void draw_player(uint16_t *buffer, int cam_x, int cam_y) {
         ? &g_player_shot_runs[g_player_shot_run_offsets[s_player.dir][clip]]
         : character_runs_ptr(s_player.char_id, s_player.dir, s_player.frame);
     int pitch = sprite_pitch(bw);
-    if (g_player_state.invuln_timer > 0 && ((g_player_state.invuln_timer >> 2) & 1)) {
-        // Hit feedback: red flash while the i-frames run.
-        static uint16_t s_tint[PLAYER_SPRITE_W * PLAYER_SPRITE_H] __attribute__((aligned(4)));
+    if (g_player_state.invuln_timer > 0 && ((g_player_state.invuln_timer >> 2) & 1) && !remate_approaching()) {
+        // Hit feedback: red flash while the i-frames run (not during the remate dash).
+        static uint16_t s_tint[HERO_SHOT_SPRITE_W * HERO_SHOT_SPRITE_H] __attribute__((aligned(4)));   // largest hero cell
         for (int y = 0; y < bh; y++) {
             for (int x = 0; x < bw; x++) {
                 uint16_t c = frame[y * pitch + x];
@@ -798,12 +863,15 @@ static void draw_player(uint16_t *buffer, int cam_x, int cam_y) {
             }
         }
         frame = s_tint;
+    } else if (remate_invuln() > 0 && ((remate_invuln() >> 2) & 1)) {
+        // Post-remate invulnerability: soft warm ivory pulse (distinct from red hit flash).
+        frame = sprite_wax_glow(frame, runs, pitch, bw, bh, 2);
     } else {
         const int lt = weapons_llaga_tint();                // Llaga Abierta B: blood red as the hearts drop
         if (lt > 0) frame = sprite_glow(frame, runs, pitch, bw, bh, lt);
     }
     blit_stride(buffer, frame, runs, pitch, bw, bh,
-                px - sw / 2 + min_x, py - s_char_ground_anchor[s_player.char_id][s_player.dir] + min_y,
+                px - sw / 2 + min_x, py - anchor + min_y,
                 cam_x, cam_y, s_draw_item_depth);
 }
 
@@ -853,6 +921,7 @@ static void draw_telegraph_pulse(uint16_t *buffer, int cx, int cy, int state_tim
 }
 
 static void draw_enemy(uint16_t *buffer, const Enemy *e, int cam_x, int cam_y) {
+    if (e->state == ENEMY_STATE_REMATE && remate_active()) return;   // the remate cell draws it (with the hero); during the dash it stands here
     int px = player_screen_x(e->x, e->y);
     int py = player_screen_y(e->x, e->y);
 
@@ -907,6 +976,9 @@ static void draw_enemy(uint16_t *buffer, const Enemy *e, int cam_x, int cam_y) {
 
     if (e->state == ENEMY_STATE_SUSPENDED) {               // Viatico: drained, it loses colour
         frame = sprite_fade(frame, runs, sprite_pitch(bw), bw, bh, e->suspend_timer <= SUSPEND_FRAMES / 2);
+    } else if (e->state == ENEMY_STATE_WOBBLE) {           // reeling: warm pulse (period 16 frames, triangle 0..4)
+        int ph = (e->state_timer >> 1) & 7;
+        frame = sprite_wax_glow(frame, runs, sprite_pitch(bw), bw, bh, ph < 4 ? ph + 1 : 8 - ph);
     } else if (e->burn_layers) {                           // burning: darkened, dried-blood red; 1 layer lightest, 4+ the strongest
         const int L = e->burn_layers;
         frame = sprite_tint(frame, runs, sprite_pitch(bw), bw, bh, (L > 4 ? 4 : L) - 1);
@@ -980,6 +1052,15 @@ static void draw_melt(uint16_t *buffer, const ExvotoMelt *m, int cam_x, int cam_
                 sprite_pitch(bw), bw, visible,
                 px - sw / 2 + b[0], py - s_char_ground_anchor[m->char_id][m->dir] + b[1] + hidden,
                 cam_x, cam_y, s_draw_item_depth);
+}
+
+// The two wax halves the finisher leaves on the floor (last frame of the cell without the hero), blinking out.
+static void draw_remate_remnant(uint16_t *buffer, int cam_x, int cam_y) {
+    int kind, ax, ay, d, visible;
+    if (!remate_remnant(&kind, &ax, &ay, &d, &visible) || !visible) return;
+    const RemateKindInfo *nfo = &g_remate_kind_info[kind];
+    if (!nfo->has_remnant) return;
+    draw_remate_layer(buffer, kind, d, nfo->remnant_frame, 0, ax, ay, cam_x, cam_y, s_draw_item_depth);
 }
 
 static void bone_effect_pixel(uint16_t *buffer, int x, int y, int cam_x, int cam_y, uint16_t color) {
@@ -1077,6 +1158,17 @@ typedef struct {
 } ShadowSel;
 
 static int shadow_select(const DrawItem *it, ShadowSel *sel) {
+    if (it->ref == -1 && remate_active()) {                   // baked shadow of the remate cell
+        const RemateBinHeader *hdr = remate_bin();
+        if (!hdr) return 0;
+        const int kind = remate_kind(), d = remate_dir(), f = remate_frame();
+        const RemateDirInfo *dnfo = &g_remate_dir_info[kind][d];
+        sel->mask = remate_bin_masks() + hdr->s_mask_off[f];
+        sel->bounds = hdr->s_bounds[f];
+        sel->left = it->cx + dnfo->shadow_ox - REMATE_SHADOW_CANVAS / 2;
+        sel->top = it->cy + dnfo->shadow_oy - REMATE_SHADOW_CANVAS / 2;
+        return 1;
+    }
     if (it->ref == -1) {
         const int clip = s_hero_clip_frame;
         int shw = clip >= 0 ? PLAYER_SHADOW_W : g_characters[s_player.char_id].shadow_w;
@@ -1092,6 +1184,7 @@ static int shadow_select(const DrawItem *it, ShadowSel *sel) {
     }
     if (it->ref <= -2 && it->ref > -2 - MAX_ENEMIES) {
         const Enemy *e = &g_enemies[-2 - it->ref];
+        if (e->state == ENEMY_STATE_REMATE && remate_active()) return 0;   // its shadow is baked in the remate cell
         int shw = g_characters[e->char_id].shadow_w;
         int shh = g_characters[e->char_id].shadow_h;
         int is_telegraph = (e->char_id == CHAR_CHARGER && e->state == ENEMY_STATE_TELEGRAPH);
@@ -1135,7 +1228,7 @@ ITCM_CODE static void render_screen(uint16_t *buffer, DirtySpan *spans, int cam_
 #if !HW_SHADOWS
     (void)sub_screen;
 #endif
-    DrawItem items[MAX_DRAW_ITEMS + MAX_ENEMIES + MAX_DEATH_CHUNKS + EXVOTO_MELT_MAX + GEM_MAX_ACTIVE + HEAL_PICKUP_MAX_ACTIVE + 1];
+    DrawItem items[MAX_DRAW_ITEMS + MAX_ENEMIES + MAX_DEATH_CHUNKS + EXVOTO_MELT_MAX + GEM_MAX_ACTIVE + HEAL_PICKUP_MAX_ACTIVE + 2];
     const int pk_base = -(2 + MAX_ENEMIES + MAX_DEATH_CHUNKS + EXVOTO_MELT_MAX);  // gem i: pk_base - 1 - i; heart i: pk_base - 1 - GEM_MAX_ACTIVE - i
     int count = 0;
 
@@ -1144,14 +1237,24 @@ ITCM_CODE static void render_screen(uint16_t *buffer, DirtySpan *spans, int cam_
     // Add player only if visible on this screen
     int psx = player_screen_x(s_player.x, s_player.y);
     int psy = player_screen_y(s_player.x, s_player.y);
-    int pl_left = psx - PLAYER_ANCHOR_X - cam_x;
+    int pl_depth = 0;                                      // sort/occlusion depth of the hero item (feet row; remate: its nearer layer)
+    int pl_half_w = 40, pl_up = 64;                        // cull margins around the feet
+    if (remate_active()) {
+        remate_origin(&psx, &psy);                         // the remate cell is anchored at the hero's final feet
+        pl_depth = remate_layer_depth(psy, 0);
+        pl_half_w = 76;                                    // remate cells are up to 120 px wide and 120 tall around the anchor
+        pl_up = 110;
+    } else {
+        pl_depth = psy;
+    }
+    int pl_left = psx - pl_half_w - cam_x;                 // the biggest hero cell bounds all
     // Cull on the feet row: the exported ground anchor varies per character
     // and direction, so the sprite top lies within one canvas height above it.
     int pl_feet = psy - cam_y;
-    if (pl_left < SCREEN_W && pl_left + PLAYER_SPRITE_W > 0 &&
-        pl_feet - PLAYER_SPRITE_H < SCREEN_H && pl_feet + PLAYER_SPRITE_H > 0) {
+    if (pl_left < SCREEN_W && pl_left + 2 * pl_half_w > 0 &&
+        pl_feet - pl_up < SCREEN_H && pl_feet + 64 > 0) {
         if (count < MAX_DRAW_ITEMS) {
-            items[count].depth = psy;
+            items[count].depth = pl_depth;
             items[count].ref = -1;
             items[count].cx = psx;
             items[count].cy = psy;
@@ -1192,6 +1295,18 @@ ITCM_CODE static void render_screen(uint16_t *buffer, DirtySpan *spans, int cam_
             items[count].ref = -2 - MAX_ENEMIES - i;
             items[count].cx = px;
             items[count].cy = py;
+            count++;
+        }
+    }
+
+    {
+        int rk, rx, ry, rm, rv;
+        if (remate_remnant(&rk, &rx, &ry, &rm, &rv) && rv &&
+            rx + 40 > cam_x && rx - 40 < cam_x + SCREEN_W && ry + 40 > cam_y && ry - 64 < cam_y + SCREEN_H) {
+            items[count].depth = ry - 6;                   // flat on the floor: any actor standing there (or nearer) covers them, walls hide them
+            items[count].ref = REMATE_REMNANT_REF;
+            items[count].cx = rx;
+            items[count].cy = ry;
             count++;
         }
     }
@@ -1308,6 +1423,8 @@ ITCM_CODE static void render_screen(uint16_t *buffer, DirtySpan *spans, int cam_
         CRASH_MARK(CL_DRAW_ITEM, sp, items[i].depth);
         if (sp == -1) {
             draw_player(buffer, cam_x, cam_y);
+        } else if (sp == REMATE_REMNANT_REF) {
+            draw_remate_remnant(buffer, cam_x, cam_y);
         } else if (sp <= pk_base - 1 - GEM_MAX_ACTIVE) {
             pickups_draw(buffer, pk_base - 1 - GEM_MAX_ACTIVE - sp, cam_x, cam_y);
         } else if (sp <= pk_base - 1) {
@@ -1996,6 +2113,8 @@ static void on_enemy_death(const Enemy *e, fixed hit_vx, fixed hit_vy) {
     DeathSpawn spawn = { e->x, e->y, hit_vx, hit_vy, e->char_id, e->dir, e->frame };
     if (g_death_phase == DEATH_BOOKKEEPING) {
         // Viatico: the victim is held suspended; the death animation comes later (DEATH_VISUALS), the counts are due now.
+    } else if (remate_killing()) {
+        // Remate: no melt and no chunks, the two halves of the finisher stay on the floor (remate.c).
     } else if (e->type == ENEMY_TYPE_EXVOTO) {
         exvoto_melt_spawn(e);                 // wax: it melts instead of breaking into chunks
     } else if (s_death_spawn_budget > 0) {
@@ -2056,6 +2175,7 @@ static void strip_shift_world_y(int dy_px) {
     for (int i = 0; i < s_pending_count; i++)
         s_pending_deaths[(s_pending_head + i) & (MAX_PENDING_DEATHS - 1)].y += shift;
     exvoto_melt_shift_y(dy_px);
+    remate_shift_y(dy_px);
     s_cam_y += dy_px;
     grenade_shift_y(dy_px);
     weapons_shift_y(dy_px);
@@ -2244,10 +2364,42 @@ static void player_update(uint32_t keys, uint32_t keys_down) {
     if (g_player_state.invuln_timer > 0) g_player_state.invuln_timer--;
 
     if (g_player_state.is_dead) {
+        remate_reset();
         s_player.is_moving = 0;
         s_player.frame = 0;
         s_shot_active = 0;
         s_hero_clip_frame = -1;
+        return;
+    }
+    // Remate (DESIGN.md 6.13.8): the finisher owns the hero (invulnerable, no move, no shot) until it ends.
+    {
+        int dir = s_player.dir;
+        remate_update(g_enemies, MAX_ENEMIES, &s_player.x, &s_player.y, &dir);
+        if (dir != s_player.dir) { s_player.dir = dir; s_rooted = 0; s_shot_active = 0; }
+    }
+    if (remate_approaching()) {
+        // Remate dash: the hero runs to the cell's start point with the normal walk cycle (no input, no shot).
+        s_rooted = 0;
+        s_player.is_moving = 1;
+        s_shot_active = 0;
+        s_hero_clip_frame = -1;
+        s_latch_pressed = s_latch_released = 0;
+        if (++s_player.anim_timer >= g_characters[s_player.char_id].anim_period) {
+            s_player.anim_timer = 0;
+            s_player.frame = (s_player.frame + 1) % PLAYER_NUM_FRAMES;
+        }
+        update_camera();
+        return;
+    }
+    if (remate_active()) {
+        s_rooted = 0;
+        s_player.is_moving = 0;
+        s_player.frame = 0;
+        s_player.anim_timer = 0;
+        s_shot_active = 0;
+        s_hero_clip_frame = -1;
+        s_latch_pressed = s_latch_released = 0;
+        update_camera();
         return;
     }
     shot_clip_step();
@@ -2281,6 +2433,15 @@ static void player_update(uint32_t keys, uint32_t keys_down) {
         }
     }
 
+    // L: finishes the nearest reeling enemy (Exvoto or Cireneo) within reach (remate.h). Free in the demo ROM; in the test variants it
+    // still cycles weapons when there is nothing to finish.
+    if ((keys_down & KEY_L) && remate_start(g_enemies, MAX_ENEMIES, s_player.x, s_player.y, s_player.dir)) {
+        s_rooted = 0;
+        s_shot_active = 0;
+        s_hero_clip_frame = -1;
+        s_latch_pressed = s_latch_released = 0;
+        return;
+    }
 #if TEST_WEAPON_CYCLE
     // Test variants only: L switches weapon (and cancels a sniper aim). The demo ROM has just the laser.
     if (keys_down & KEY_L) {
@@ -2320,7 +2481,9 @@ static void player_update(uint32_t keys, uint32_t keys_down) {
     if (procession) current_speed = current_speed * 35 / 100;
     int current_period = g_characters[cur_char].anim_period;
 
-    if (pressed && weapons_can_start_aim(&g_player_state)) s_rooted = 1;
+    // A press held through the post-shot cooldown starts the charge as soon as the weapon is
+    // ready (weapons_input buffers it), so root the hero on that same frame too.
+    if ((pressed || touch_down) && weapons_can_start_aim(&g_player_state)) s_rooted = 1;
 
     int sdx = 0, sdy = 0; // screen-space input axes
     if (!s_rooted || procession) {
@@ -2412,11 +2575,19 @@ static void player_update(uint32_t keys, uint32_t keys_down) {
         s_player.dir = aim_dir_from_screen(in.touch_x - player_screen_x(s_player.x, s_player.y),
                                            in.touch_y - (player_screen_y(s_player.x, s_player.y) - AIM_CHEST_H));
     }
+    // Releasing the stylus cuts the hero clip at once: an unfinished charge and the post-shot
+    // recovery both return to the walk / rest pose immediately, never waiting for the clip.
+    if (!touch_down) s_shot_active = 0;
     s_hero_clip_frame = hero_clip_frame();
     player_muzzle(&in.muzzle_x, &in.muzzle_y, &in.muzzle_h);
 
     int result = weapons_input(&g_player_state, &in, g_enemies, MAX_ENEMIES);
     s_rooted = (result & WEAPON_RESULT_ROOTED) != 0;
+    // Recompute after the input so a release or a body-radius cancel drops the charge pose on
+    // this same frame instead of leaving the previous one on screen for one more frame.
+    if (!(result & WEAPON_RESULT_FIRED)) {
+        s_hero_clip_frame = hero_clip_frame();
+    }
     if ((result & WEAPON_RESULT_FIRED) && g_player_state.current_weapon == WEAPON_SNIPER) {
         // The shot: the recovery plays the clip from f0 (arms crossed) to f7 (collapsed).
         s_shot_active = 1;
@@ -2483,6 +2654,7 @@ static void arena_restart(void) {
     g_hitstop_frames = 0;
     memset(s_death_chunks, 0, sizeof(s_death_chunks));
     exvoto_melt_reset();
+    remate_reset();
     s_pending_head = s_pending_count = 0;
     if (s_strip_mode) memset(g_enemies, 0, sizeof(g_enemies));
     else encounters_spawn(&g_encounter_mgr, g_enemies, MAX_ENEMIES);
@@ -2544,7 +2716,7 @@ volatile PerfStats g_perf = {
     .top_render_ticks = 0,
     .bot_render_ticks = 0,
     .present_ticks = 0,
-    .show_hud = PLAYGROUND || STRESS_TEST,       // the playground ROM shows the weapon / style label from the start
+    .show_hud = (PLAYGROUND && !REMATE_SANDBOX) || STRESS_TEST, // the playground ROM shows the weapon / style label; the remate sandbox looks like the game
     .dirty_leaks = 0
 };
 
@@ -2629,6 +2801,7 @@ int main(void) {
 
     init_char_sprite_data();
     exvoto_melt_reset();
+    remate_reset();
     sfx_init();
     CRASH_INIT();
     PP_INIT();

@@ -118,7 +118,7 @@ def step_characters(
             sys.exit(1)
         # A clip may use a larger (or smaller) cell than its ref: _build_cmd rescales fitExtent so px/m stays equal.
 
-    def _build_cmd(name: str, cfg: dict, fit_extent: float | None) -> list[str]:
+    def _build_cmd(name: str, cfg: dict, fit_extent: float | None, norm_scale: float | None = None) -> list[str]:
         model_path = ROOT / cfg["model"]
         out_dir = ROOT / "assets" / "sprites" / "characters" / name
         template_path = ROOT / cfg["template"]
@@ -150,6 +150,8 @@ def step_characters(
                 tp = lambda r: r - (2 if outline_on else 0)
                 fit_extent = fit_extent * tp(cfg["resolution"]) / tp(all_chars[ref]["resolution"])
             cmd.extend(["--fitExtent", repr(fit_extent)])
+        if norm_scale is not None:
+            cmd.extend(["--normScale", repr(norm_scale)])
 
         muzzle_bone = cfg.get("muzzleBone", defaults.get("muzzleBone"))
         if muzzle_bone:
@@ -186,9 +188,10 @@ def step_characters(
         dt = time.time() - t0
         return cname, res.returncode, res.stdout, res.stderr, dt
 
-    def _run_phase(task_list: list[tuple[str, list[str]]]) -> dict[str, float]:
-        """Runs the exports in parallel; returns the measured extent of each clip (from the FIT line)."""
+    def _run_phase(task_list: list[tuple[str, list[str]]]) -> tuple[dict[str, float], dict[str, float]]:
+        """Runs the exports in parallel; returns the measured extent and the normScale of each clip (from the FIT line)."""
         extents: dict[str, float] = {}
+        norm_scales: dict[str, float] = {}
         failed: list[tuple[str, str, str]] = []
         with ThreadPoolExecutor(max_workers=max(1, jobs)) as executor:
             futures = {executor.submit(_worker, item): item[0] for item in task_list}
@@ -203,7 +206,10 @@ def step_characters(
                     if line.startswith("WARNING [fit]"):
                         print(f"  !! {cname}: {line}", file=sys.stderr)
                     elif line.startswith("FIT "):
-                        extents[cname] = json.loads(line[4:])["extent"]
+                        fit = json.loads(line[4:])
+                        extents[cname] = fit["extent"]
+                        if fit.get("normScale"):
+                            norm_scales[cname] = fit["normScale"]
         if failed:
             print("\nERROR: One or more character exports failed:", file=sys.stderr)
             for cname, stdout, stderr in failed:
@@ -213,10 +219,10 @@ def step_characters(
                 if stderr:
                     print(stderr, file=sys.stderr)
             sys.exit(1)
-        return extents
+        return extents, norm_scales
 
     refs_phase = [(n, _build_cmd(n, c, None)) for n, c in chars_to_export.items() if _ref_of(c) is None]
-    extents = _run_phase(refs_phase)
+    extents, norm_scales = _run_phase(refs_phase)
 
     dep_phase: list[tuple[str, list[str]]] = []
     for name, cfg in chars_to_export.items():
@@ -224,14 +230,17 @@ def step_characters(
         if ref is None:
             continue
         ref_extent = extents.get(ref)
+        ref_norm = norm_scales.get(ref)
         if ref_extent is None:  # ref not re-rendered in this run: read it back from its last export
             ref_settings = ROOT / "assets" / "sprites" / "characters" / ref / "settings.json"
             if ref_settings.exists():
-                ref_extent = json.loads(ref_settings.read_text(encoding="utf-8")).get("measuredExtent")
+                ref_data = json.loads(ref_settings.read_text(encoding="utf-8"))
+                ref_extent = ref_data.get("measuredExtent")
+                ref_norm = ref_data.get("normScale")
         if ref_extent is None:
             print(f"ERROR: {name}: no measured extent for scaleRef '{ref}'; render '{ref}' first (--char {ref},{name})", file=sys.stderr)
             sys.exit(1)
-        dep_phase.append((name, _build_cmd(name, cfg, ref_extent)))
+        dep_phase.append((name, _build_cmd(name, cfg, ref_extent, ref_norm)))
     if dep_phase:
         _run_phase(dep_phase)
 
@@ -429,7 +438,7 @@ def main() -> None:
     parser.add_argument(
         "--variant",
         default=None,
-        help="Optional ROM build variant for build-project.ps1 (e.g. stress, playground-perf).",
+        help="Optional ROM build variant for build-project.ps1 (e.g. stress, perf).",
     )
 
     args = parser.parse_args()
