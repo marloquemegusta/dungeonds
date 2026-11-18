@@ -35,3 +35,16 @@ Puntúa de 1 a 5 al salir de cada sala y añade una frase si algo llama la atenc
 | Fecha | Versión (commit de `main`) | Duración | Mejor sala | Peor sala | ¿Repetir? | Sala a rediseñar primero |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | | | | | | | |
+
+## Resultados (2026-11-18)
+
+**Vuelta 0, ROM de `main` sin cambios del Ojo:** no se jugó a fondo; sirvió de «antes».
+
+**Vuelta 1, `feat/ojo-alcance` (Ojo sin alcance, un Ojo en todas las salas):** dos partidas; la segunda llegó más lejos. Murió en la tercera pantalla.
+- **Primera sala:** mucho mejor con el Ojo. Obliga a cubrirse con las columnas y se siente más la necesidad de usar la ejecución para ganar invulnerabilidad temporal.
+- **Segunda sala:** bastante dura, «el Ojo es muy cabrón, me gusta». Los Exvotos se sienten peleones.
+- **Problema 1:** la mitad de arriba casi no se usa. Los Exvotos bajan y, aunque subas, arriba solo queda el Ojo; se sube solo para ir a matarlo cuando ya no quedan Exvotos.
+- **Problema 2:** el Ojo está demasiado estático: no se mueve para buscar ángulo cuando una columna le corta la línea.
+- **Falta:** la cobertura baja tras bancos y sacos (rama `feat/coberturas-bajas`, no integrada).
+- **Propuestas del usuario:** (a) IA del Ojo que se recoloque para darte pese a las columnas; (b) Exvotos y Cireneos arriba guardando al Ojo.
+
