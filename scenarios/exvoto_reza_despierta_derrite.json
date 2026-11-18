@@ -1,6 +1,6 @@
 {
   "name": "exvoto_reza_despierta_derrite",
-  "description": "ROM cathedral-playground (seed 0xC0DE1234). Three Exvotos pray in a south arc in front of the real relicario (window px 248,682, footprint half-extent 16x6), facing it; a fourth prays on its north side. The hero (god mode) walks north: the Exvotos stay still until he is within 96 ground px, the north one wakes only by the 48 px chain, the kneeling ones rise (stand_up clip), then everybody walks; a sniper shot kills the ones on the line and they melt into a wax puddle.",
+  "description": "ROM cathedral-sandbox (CATHEDRAL_AI=1: the enemy AI runs; the cathedral-playground ROM freezes it, so nothing wakes there), stable seed 0xC0DE1234. Enemy states used: PRAY=15, RISE=16, CHASE=0 (include/gameplay.h; update them if the enum changes). Three Exvotos pray in a south arc and a fourth on its north side, staged around window px (248,682), facing north. NOTE: since the props-v2 kit the relicario that stood at that spot is gone (the stage has no devout piece there), so they pray at an empty floor; waking depends only on hero distance, not on the piece. The hero (god mode) walks north: the Exvotos stay still until he is within 96 ground px, the north one wakes only by the 48 px chain, the kneeling ones rise (stand_up clip), then everybody walks; a sniper shot kills the ones on the line and they melt into a wax puddle.",
   "state": {
     "symbols": {
       "sb": "g_sandbox",
@@ -601,7 +601,7 @@
     {
       "wait_until": {
         "field": "en1_state",
-        "equals": 14,
+        "equals": 16,
         "timeout_frames": 400
       },
       "capture": "03_despiertan",
@@ -614,7 +614,7 @@
     {
       "frames": 60,
       "capture_sequence": "c_levanta",
-      "capture_every": 3,
+      "capture_every": 2,
       "state_capture": "rising"
     },
     {
@@ -661,22 +661,22 @@
       {
         "at": "praying",
         "field": "en0_state",
-        "equals": 13
+        "equals": 15
       },
       {
         "at": "praying",
         "field": "en1_state",
-        "equals": 13
+        "equals": 15
       },
       {
         "at": "praying",
         "field": "en2_state",
-        "equals": 13
+        "equals": 15
       },
       {
         "at": "praying",
         "field": "en3_state",
-        "equals": 13
+        "equals": 15
       },
       {
         "at": "praying",
@@ -703,12 +703,12 @@
       {
         "at": "woken",
         "field": "en3_state",
-        "equals": 14
+        "equals": 16
       },
       {
         "at": "woken",
         "field": "en1_state",
-        "equals": 14
+        "equals": 16
       },
       {
         "at": "woken",

@@ -46,9 +46,20 @@ def launcher():
             json.dump(t, f)
         r = subprocess.run(['node', os.path.join(root, 'tools/lab/export_character_headless.cjs'), fbx, out,
                             '--template', tmp, '--resolution', '160', '--frames', str(nframes), '--fitZoom', str(WALK_FIT),
-                            '--fitExtent', repr(WALK_EXTENT), '--legibility', 'c2'], check=True, capture_output=True, text=True)
+                            '--fitExtent', repr(WALK_EXTENT), '--legibility', 'c2'] + norm_args(root), check=True, capture_output=True, text=True)
         print(name, [l for l in r.stdout.splitlines() if l.startswith(('FIT ', 'WARNING'))])
         align(out, MS[name])
+
+
+def norm_args(root):
+    """--normScale del walk (exvoto): el exportador lo guarda en assets/sprites/characters/exvoto/settings.json al renderizar
+    el walk (rebuild_all.py --only lab,characters --char exvoto). Sin el, un clip que empieza de rodillas se reescala."""
+    import json
+    p = os.path.join(root, 'assets/sprites/characters/exvoto/settings.json')
+    ns = json.load(open(p, encoding='utf-8')).get('normScale') if os.path.exists(p) else None
+    if not ns:
+        raise SystemExit('falta normScale en %s: renderiza antes el walk con rebuild_all.py' % p)
+    return ['--normScale', repr(ns)]
 
 
 def align(out, dur):

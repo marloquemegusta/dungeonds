@@ -34,7 +34,7 @@ Esta tabla es la única fuente de verdad de qué modelo y qué animación produc
 | Sprite del juego | Entrada de `characters.json` (celda) | Modelo (UUID Tripo) | Animación | Script |
 | :--- | :--- | :--- | :--- | :--- |
 | `CHAR_HERO`: andar | `corazon` (40) | `corazon/source/corazon.fbx` (`f25681c0`) | `corazon/walk.fbx` | `build_corazon.py` |
-| `CHAR_HERO`: cargar y disparar | `corazon_disparo` (40) | el mismo | `corazon/disparo.fbx` | `build_corazon.py` |
+| `CHAR_HERO`: cargar y disparar | `corazon_disparo` (48) | el mismo | `corazon/disparo.fbx` | `build_corazon.py` |
 | `CHAR_CHARGER`: andar | `cireneo` (60) | `cireneo/source/…cd715dbe` + cruz `source/cruz/…ed8f6d13` | `walk/walk_normal.fbx` y `cireneo/v1_clips.fbx` | `build_cireneo_v2.py` |
 | `CHAR_CHARGER`: carga | `cireneo_charge` (60) | el mismo | `cireneo/v1_clips.fbx` | `build_cireneo_v2.py` |
 | `CHAR_CHARGER`: telegrafía | `cireneo_telegraph` (60) | el mismo | pose generada en el script | `build_cireneo_v2.py` |
@@ -43,7 +43,7 @@ Esta tabla es la única fuente de verdad de qué modelo y qué animación produc
 | `CHAR_EXVOTO`: andar | `exvoto` (40) | `exvoto/source/…45adc30a` | `walk/walk_normal.fbx` | `build_exvoto.py` |
 | `CHAR_EXVOTO_PRAY_STAND` | `exvoto_pray_stand` (40) | el mismo | `pray/pray_standing.fbx` | `build_exvoto.py` |
 | `CHAR_EXVOTO_PRAY_KNEEL` | `exvoto_pray_kneel` (40) | el mismo | `pray/pray_kneeling.fbx` | `build_exvoto.py` |
-| `CHAR_EXVOTO_STAND_UP` | `exvoto_stand_up` (48) | el mismo | `pray/pray_kneel_to_stand.fbx` | `build_exvoto.py` |
+| `CHAR_EXVOTO_STAND_UP` | `exvoto_stand_up` (40) | el mismo | `pray/pray_kneel_to_stand.fbx` | `build_exvoto.py` |
 | `CHAR_ABANDERADO`: andar | `abanderado` (60) | cuerpo `abanderado/source/…6e3a96b5`, estandarte `source/estandarte/…989b9291` | `walk/sad_walk.fbx` | `build_abanderado.py` |
 | `CHAR_ABANDERADO`: señalar | `abanderado_point` (60) | el mismo | pose generada en el script | `build_abanderado.py` |
 | `CHAR_MONAGUILLO` | `monaguillo` (40) | `monaguillo/source/…9a55a12b` | `monaguillo/walk_pray.fbx` (andar rezando, extraído del esqueleto retirado) | `build_monaguillo.py` |
@@ -56,9 +56,12 @@ Esta tabla es la única fuente de verdad de qué modelo y qué animación produc
 - El script `build_<personaje>.py` los junta y exporta un FBX animado por clip, `characters/<personaje>/<entrada>.fbx`. Son derivados: no se versionan.
 
 **Escala fija por personaje (2026-11-17):**
-- Cada personaje se renderiza a unos píxeles por metro fijos, los de su animación de referencia (la de andar). El resto de sus animaciones llevan `"scaleRef": "<referencia>"` en `characters.json` y heredan esa escala, así que el personaje no cambia de tamaño al cambiar de animación.
-- No se compensa con `fitZoom` por animación.
-- Si una pose no cabe en la celda, esa animación lleva una celda mayor (`resolution`) y mantiene la escala; así está `exvoto_stand_up`, a 48 px. Cuando una pose se sale, el render avisa con `CROPPED`. La celda puede llegar hasta 60 px: por encima, la sombra (de 80×80 en el motor) se recortaría.
+- Cada personaje se renderiza a la escala de su animación de referencia, la de andar. El resto de sus animaciones llevan `"scaleRef": "<referencia>"` en `characters.json` y heredan dos cosas de ella:
+  - El reescalado del modelo (`normScale`). El render normaliza cada FBX según la postura con que empieza la animación; sin heredarlo, una animación que empieza de rodillas sale más grande.
+  - Los píxeles por metro de la cámara (`fitExtent` y `fitZoom`).
+- Así el personaje mide lo mismo en todas sus animaciones y las alturas en píxeles siguen a las del modelo 3D. No se compensa nada con `fitZoom` por animación.
+- El tamaño del personaje en pantalla se ajusta solo con el `fitZoom` de la referencia.
+- Si una pose no cabe en la celda, el render avisa con `CROPPED`. La salida es dar a esa animación una celda mayor (`resolution`), que mantiene la escala. Así está `corazon_disparo`, a 48 px. No se encoge el personaje. El motor toma el tamaño de cada celda de su `settings.json`; el disparo del héroe tiene además su propia fila de pies (`HERO_SHOT_SPRITE_W/H` y `g_player_shot_ground_anchors` en `player_sprite.h`). Por encima de 60 px se recortaría la sombra, que en el motor mide 80×80.
 
 ### Cómo regenerar los sprites de personajes
 

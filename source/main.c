@@ -775,7 +775,10 @@ static void draw_player(uint16_t *buffer, int cam_x, int cam_y) {
     int min_x = b[0];
     int min_y = b[1];
 
-    int sw = clip >= 0 ? PLAYER_SPRITE_W : g_characters[s_player.char_id].sprite_w;
+    int sw = clip >= 0 ? HERO_SHOT_SPRITE_W : g_characters[s_player.char_id].sprite_w;
+    // The shot clip has its own cell and feet row (same world scale as the walk), so the feet stay put when switching clips.
+    const int anchor = clip >= 0 ? g_player_shot_ground_anchors[s_player.dir]
+                                 : s_char_ground_anchor[s_player.char_id][s_player.dir];
     const uint16_t *frame = clip >= 0
         ? &g_player_shot_frames[g_player_shot_frame_offsets[s_player.dir][clip]]
         : character_frame_ptr(s_player.char_id, s_player.dir, s_player.frame);
@@ -785,7 +788,7 @@ static void draw_player(uint16_t *buffer, int cam_x, int cam_y) {
     int pitch = sprite_pitch(bw);
     if (g_player_state.invuln_timer > 0 && ((g_player_state.invuln_timer >> 2) & 1)) {
         // Hit feedback: red flash while the i-frames run.
-        static uint16_t s_tint[PLAYER_SPRITE_W * PLAYER_SPRITE_H] __attribute__((aligned(4)));
+        static uint16_t s_tint[HERO_SHOT_SPRITE_W * HERO_SHOT_SPRITE_H] __attribute__((aligned(4)));   // largest hero cell
         for (int y = 0; y < bh; y++) {
             for (int x = 0; x < bw; x++) {
                 uint16_t c = frame[y * pitch + x];
@@ -803,7 +806,7 @@ static void draw_player(uint16_t *buffer, int cam_x, int cam_y) {
         if (lt > 0) frame = sprite_glow(frame, runs, pitch, bw, bh, lt);
     }
     blit_stride(buffer, frame, runs, pitch, bw, bh,
-                px - sw / 2 + min_x, py - s_char_ground_anchor[s_player.char_id][s_player.dir] + min_y,
+                px - sw / 2 + min_x, py - anchor + min_y,
                 cam_x, cam_y, s_draw_item_depth);
 }
 
@@ -1144,12 +1147,12 @@ ITCM_CODE static void render_screen(uint16_t *buffer, DirtySpan *spans, int cam_
     // Add player only if visible on this screen
     int psx = player_screen_x(s_player.x, s_player.y);
     int psy = player_screen_y(s_player.x, s_player.y);
-    int pl_left = psx - PLAYER_ANCHOR_X - cam_x;
+    int pl_left = psx - HERO_SHOT_SPRITE_W / 2 - cam_x;   // the biggest hero cell (shot clip) bounds both
     // Cull on the feet row: the exported ground anchor varies per character
     // and direction, so the sprite top lies within one canvas height above it.
     int pl_feet = psy - cam_y;
-    if (pl_left < SCREEN_W && pl_left + PLAYER_SPRITE_W > 0 &&
-        pl_feet - PLAYER_SPRITE_H < SCREEN_H && pl_feet + PLAYER_SPRITE_H > 0) {
+    if (pl_left < SCREEN_W && pl_left + HERO_SHOT_SPRITE_W > 0 &&
+        pl_feet - HERO_SHOT_SPRITE_H < SCREEN_H && pl_feet + HERO_SHOT_SPRITE_H > 0) {
         if (count < MAX_DRAW_ITEMS) {
             items[count].depth = psy;
             items[count].ref = -1;
