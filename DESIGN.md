@@ -967,7 +967,7 @@ Sustituye, cuando se implemente, al compositor v2 de la catedral (§6.9.1b), a l
 - Cada acto empieza algo por encima de donde acabó el anterior, con su propio catálogo de plantas y sus enemigos nuevos. Último recurso si los Dones corren más que los encuentros: +25 % de vida enemiga por acto.
 - Se equilibra jugando la vara de cada población, para que la curva de los encuentros vaya un poco por delante de la del jugador y el jefe sea el examen.
 
-**Catálogo mínimo del acto I.** *(En revisión desde 2026-11-17: se rehace con los papeles y reglas de §6.13.8; las plantas que ya cumplan se conservan, las demás se sustituyen.)*
+**Catálogo mínimo del acto I.** *(En revisión desde 2026-11-17: se rehace con los papeles y reglas de §6.13.9; las plantas que ya cumplan se conservan, las demás se sustituyen.)*
 | Planta | Piezas | Qué enseña |
 | :--- | :--- | :--- |
 | **La procesión** | Dos filas de bancos y pasillo central | Los bancos alinean a los Exvotos; cada uno pide dos disparos: retroceder disparando. |
@@ -1049,7 +1049,7 @@ Mecánica de remate cuerpo a cuerpo para ritmo y recarga en combate:
   7. Se aleja (~0,5 s), se va el texto, vuelve el juego y entra la música. En total, ~9 s. START la salta en cualquier momento.
 - **Ritmo de la victoria:** congelado en su última pose ~1 s; acercamiento lento (~1,5 s); se destiñe (~1,5 s); se tacha el nombre (~0,6 s); pausa; dice su frase de derrota y se escribe; ~1,5 s quieto; reliquia. En total, ~8 s.
 
-#### 6.13.8 Encuentros tácticos: papeles, Ojo de largo alcance y remate (decidido 2026-11-17, rama `docs/encuentros-tacticos`)
+#### 6.13.9 Encuentros tácticos: papeles, Ojo de largo alcance y remate (decidido 2026-11-17, rama `docs/encuentros-tacticos`)
 Corrige §6.13.6. **Motivo:** en las salas lo óptimo sigue siendo quedarse abajo y matar lo que baja, aunque se cierre la barrera de atrás. Toda la amenaza llega por un lado y todos los enemigos persiguen, así que la pelea acaba en la pantalla de abajo y la de arriba llega vacía. Esperar no cuesta nada. Además, el Ojo empieza a apuntar a ~140 px, menos que el rayo base (160 px), así que se puede limpiar a los Exvotos fuera de su alcance y luego ir a por él. **Referencias:** Doom 2016/Eternal, donde los enemigos débiles cuerpo a cuerpo no son la amenaza sino un recurso que se remata; Gears of War y XCOM, donde unos te clavan en la cobertura y otros te sacan de ella.
 
 **Papeles de los enemigos.**
@@ -1074,11 +1074,6 @@ Corrige §6.13.6. **Motivo:** en las salas lo óptimo sigue siendo quedarse abaj
 - **El atrio, primer encuentro fijo del acto:** solo Exvotos y espacio abierto; enseña el remate antes de meter presión. Es la única sala sin Ojo.
 - **Catálogo v3 (propuesta, 2026-11-17):** 7 plantas (el atrio, la procesión, la trinchera, el balcón, la pinza, el claro y la alambrada); la trinchera sustituye al embudo. Esquemas en `walkthroughs/encuentros-tacticos/catalogo-salas-v3.html`, generados por `tools/encuentros/catalogo_v3.py`. La ROM sigue con el catálogo v2 hasta programar la IA nueva.
 
-**Remate (nombre provisional: Extremaunción).**
-- **El primer disparo no mata al Exvoto:** lo deja **tambaleándose y brillando** un momento (~1 s, `[TUNABLE-PLACEHOLDER]`), sin esquivar. Si no se remata a tiempo, se recupera herido.
-- **Cerca de él (~40–50 px, `[TUNABLE-PLACEHOLDER]`), `L`:** el héroe se lanza contra él y lo remata. Es **invulnerable durante la animación**, la muerte es segura y el rayo queda **cargado del todo al instante**. `L` queda para esto: agacharse no usa botón.
-- **El Cireneo aturdido** tras estrellarse contra una pieza también se puede rematar, con su propia animación.
-- **Animación en 3D, una por tipo de enemigo.** La del Exvoto: el héroe lo agarra de los brazos y lo parte por la mitad (es de cera). **Elegida (2026-11-18): la opción A de la ronda 2**, que lo agarra de las dos muñecas, tira a los lados y lo parte en vertical, de la cabeza a la entrepierna; las mitades caen a cada lado con el corte de cera a la vista (64×64, 12 fotogramas; `walkthroughs/remate-exvoto/assets/ronda2/exvoto_A/`, rama `proto/remate-exvoto`). La del Cireneo: en una última ronda A/B. A, le arranca la cruz, lo tira al suelo y lo clava con ella, y queda tumbado boca arriba con los brazos extendidos. B, lo derriba y le deja caer encima su propia cruz.
-- **Arquetipos (§6.12.3):** a Ráfaga le aporta poco, a Vigilia la ayuda y a Mártir le encaja («se cura matando de cerca»). Vigilar que Mártir con Viático no se dispare.
+**Remate:** decidido aquí (primer disparo deja tambaleándose, `L` a corta distancia, invulnerable, muerte segura, rayo cargado, Cireneo aturdido rematable) e implementado y vigente en §6.13.8, que es su fuente. Para las salas importa esto: el remate es la recompensa de dejar que los Exvotos lleguen, y el claro lo usa como única cobertura.
 
 **Siguiente paso:** rehacer el catálogo del acto I en el editor con estas reglas y revisarlo en el móvil. Después, prototipo en la ROM: alcance y puesto del Ojo, flanqueo del Exvoto, Cireneo guardián y remate.
