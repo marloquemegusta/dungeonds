@@ -406,6 +406,14 @@ static void update_exvoto(Enemy *e, Enemy *enemies, int num_enemies, int idx,
             break;
         }
 
+        case ENEMY_STATE_WOBBLE:
+            // Reeling after a hit that did not kill: still, no dodge, no bite; glows (main.c). Recovers wounded.
+            if (--e->state_timer <= 0) {
+                e->state = ENEMY_STATE_CHASE;
+                e->state_timer = 0;
+            }
+            break;
+
         case ENEMY_STATE_RISE: {
             // stand_up clip: 8 frames over EXVOTO_RISE_FRAMES, still. Ends on the first walk frame.
             int anim_period = g_characters[e->char_id].anim_period;
@@ -479,6 +487,15 @@ static void update_charger(Enemy *e, Enemy *enemies, int num_enemies, int idx,
     int ground_dist_sq = dx * dx + GROUND_DY2(dy);
 
     switch (e->state) {
+        case ENEMY_STATE_WOBBLE:
+            // Reeling after a hit that did not kill: still, glows (main.c). Recovers wounded.
+            update_animation(e, 0);
+            if (--e->state_timer <= 0) {
+                e->state = ENEMY_STATE_CHASE;
+                e->state_timer = 0;
+            }
+            break;
+
         case ENEMY_STATE_TELEGRAPH: {
             // 3-stage progressive crouch (walk[0] -> telegraph -> charge[0]) without blinking.
             e->dir = dir_from_vector(TO_FIXED(e->aim_dir_x), TO_FIXED(e->aim_dir_y));
@@ -974,6 +991,7 @@ ITCM_CODE void enemy_ai_update(Enemy *enemies, int num_enemies, fixed player_x, 
         if (!e->active || e->state == ENEMY_STATE_SUSPENDED) continue;   // Viatico: inert until enemy_suspend_update ends it
 
         if (e->hit_timer > 0) e->hit_timer--;
+        if (e->state == ENEMY_STATE_REMATE) continue;       // the finisher animation owns it (remate.c)
 
         // Staggered by a shotgun hit: shoved along the blast, no AI until it recovers.
         if (e->stun_timer > 0) {

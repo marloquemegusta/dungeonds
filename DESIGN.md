@@ -515,7 +515,7 @@ Tras cerrar la 0.3.1, el usuario quiere dedicar dos versiones al aspecto antes d
 **Objetivo:** una ROM que un colega juegue ~5 minutos para **evaluar los gráficos y el *juice***, sin subir de nivel y sin cosas a medias a la vista. La economía y las mejoras (0.4) no tienen código, así que no hay nada que ocultar ahí.
 - **Vida en pantalla con corazones:** la vida del jugador (5 golpes) se muestra como fila de **sagrados corazones** (`14×18` px, sin outline) en la pantalla inferior, arriba a la derecha (lleno = vida, apagado = perdida). Los iconos salen del modelo 3D del Sagrado Corazón pre-renderizado con el lab (`--legibility c2`) y horneado con `tools/hud/prerender_hud_heart.py`, `tools/hud/bake_hud_heart.py` y `tools/generate_hud_icons_c.py`.
 - **Drops de vida:** siguen activos y sustituyen la cruz verde por el mismo icono del **Sagrado Corazón** (`g_hud_heart_full`), levitando suavemente arriba y abajo sobre una pequeña sombra en el suelo.
-- **Arma única:** el héroe sale con el **láser** (su arma real, §6.10) y `L` deja de cambiar de arma en la ROM principal. Escopeta y granada siguen solo en las variantes de prueba (playground/escenarios).
+- **Arma única:** el héroe sale con el **láser** (su arma real, §6.10) y `L` deja de cambiar de arma en la ROM principal. Escopeta y granada siguen solo en las variantes de prueba (sandbox y catedral de revisión).
 - **Comparación de efectos se mantiene:** `SELECT` (estilo de efectos) e `Y` (aura de carga) siguen activos para que el colega compare gráficos.
 - **Marea:** se queda la actual. La marea de esqueletos (`walkthroughs/marea-esqueletos/`, solo maquetas) no entra.
 - **Run infinita:** no hay meta ni pantalla de fin; se juega hasta morir y se reinicia (§6.0).
@@ -631,7 +631,7 @@ Conceptos para la demo de la catedral. Solo cambia el aspecto y se añaden élit
 - **Pendiente:** si la quemadura del cuerpo crece con las mejoras (las auras L/G/E/H ya no compiten: cada una es el aspecto de una reliquia, §6.12.8); cifras, fases y telegrafías de élites y jefe; tamaño del paso en pantalla (sprites grandes o capa de fondo, `TECHNICAL.md`); si hay minijefe en la demo.
 - **Corazón Abierto en el juego (decidido 2026-11-11/12, rama `feat/corazon-abierto`, `walkthroughs/corazon-abierto/`):**
   - **Animaciones:** modelo Tripo con rig Mixamo (archivos: `assets/MANIFEST.md` §2). **Andar:** un andar de Mixamo adaptado al modelo con la cadera en el sitio; se descartaron el andar del nigromante (el torso se retorcía) y uno renqueante (a 31 px no se distinguía).
-  - **Carga y disparo:** un solo clip de 8 frames por dirección, el de disparo (f0 = brazos en cruz, f7 = derrumbado con los brazos delante). **Cargar** lo recorre **al revés** (f7 → f0) según el progreso de carga (`prog` 0..256 de §4.9), no según el tiempo, y se queda en f0 (cruz) desde `AIM_READY` hasta soltar. **Soltar** dispara en f0 y reproduce f0 → f7 a 3 frames de juego por frame (~0,4 s); después vuelve al andar. **Cancelar** vuelve al andar al instante y moverse durante la recuperación la corta. Mientras carga, el personaje está parado. Se acepta el salto de la pose de andar a la encorvada al empezar a cargar.
+  - **Carga y disparo (ajustado 2026-11-18, sesión 135):** un solo clip de 8 frames por dirección, el de disparo (f0 = brazos en cruz, f7 = derrumbado con los brazos delante). **Cargar** lo recorre **al revés** (f7 → f0) según el progreso de carga (`prog` 0..256 de §4.9), no según el tiempo, y se queda en f0 (cruz) desde `AIM_READY` hasta soltar. **Soltar** dispara en f0 y corta la animación de inmediato volviendo al andar/reposo sin atrapar al héroe en la recuperación si el jugador no toca la pantalla. **Cancelar** o soltar antes de armarse vuelve al andar al instante. **Volver a pulsar** en cualquier momento reinicia la carga desde cero (f7 → f0) al instante sin esperar ningún enfriamiento previo. Mientras carga, el personaje está parado. Se acepta el salto de la pose de andar a la encorvada al empezar a cargar.
   - **Origen:** el rayo (`muzzle`) sale del **centro del pecho** del frame que se muestra (hueso `Spine2` en el lab).
   - **Estilo «fuego sagrado»:** sin verde en el jugador (el verde es del láser enemigo). Rampa común: rojo sangre → naranja brasa → oro → blanco. Chispas de impacto del rayo: oro → naranja → ceniza.
   - **Efectos desaturados en todos los personajes (decidido 2026-11-14):** la misma regla que se aplicó al haz y al aura del héroe (paleta `FX_SH_*` de `source/weapons.c`: marfil cálido, oro viejo, ámbar, terracota, carmesí y sangre oscura, sin primarios puros) vale para los efectos de **todos los enemigos**, para que encajen en el mundo del juego. El verde enemigo pasa a una rampa apagada (hueso fosforescente, verdín, musgo, humo) con un brillo máximo similar al del héroe; nada de verde ni blanco puros. Se aplica primero al Ojo del Tribunal y después al resto de enemigos.
@@ -976,7 +976,7 @@ Sustituye, cuando se implemente, al compositor v2 de la catedral (§6.9.1b), a l
 - Cada acto empieza algo por encima de donde acabó el anterior, con su propio catálogo de plantas y sus enemigos nuevos. Último recurso si los Dones corren más que los encuentros: +25 % de vida enemiga por acto.
 - Se equilibra jugando la vara de cada población, para que la curva de los encuentros vaya un poco por delante de la del jugador y el jefe sea el examen.
 
-**Catálogo mínimo del acto I.**
+**Catálogo mínimo del acto I.** *(En revisión desde 2026-11-17: se rehace con los papeles y reglas de §6.13.9; las plantas que ya cumplan se conservan, las demás se sustituyen.)*
 | Planta | Piezas | Qué enseña |
 | :--- | :--- | :--- |
 | **La procesión** | Dos filas de bancos y pasillo central | Los bancos alinean a los Exvotos; cada uno pide dos disparos: retroceder disparando. |
@@ -1018,6 +1018,18 @@ Concreta §6.13.1 para el escenario por actos (§6.13.6). Objetivo: que meter un
 - **Cambio de fase común a todos:** el jefe queda invulnerable ~1 s, se muestra una telegrafía (la misma para todos los jefes) y se renueva su escolta según la fase. Los disparos durante ese segundo no cuentan.
 - La escolta, si la hay, es una lista por fase: qué enemigos, cuántos a la vez y cada cuánto vuelve uno que cae. Con la lista vacía el jefe pelea solo (§6.13.1).
 
+#### 6.13.8 Ejecuciones (remates / glory kills, 2026-11-18, rama `feat/remate`)
+Mecánica de remate cuerpo a cuerpo para ritmo y recarga en combate:
+- **Disparador:** un golpe que no mata y deja al enemigo a **≤ 50 % de su vida máxima** lo deja tambaleándose (`ENEMY_STATE_WOBBLE`) durante 180 frames (~3 s), quieto y con un pulso cálido de luz marfil/ocre (sin efectos neón, según §6.10). Con el rayo base (150 de daño), el Exvoto (250 HP) tambalea tras 1 disparo y el Cireneo (600 HP) tras 2 disparos.
+- **Activación:** pulsar `L` a media/corta distancia (≤ 96 px de suelo) sobre el enemigo tambaleante más cercano, ejecutando la animación desde la dirección de entrada del héroe (8 ángulos).
+- **Flujo:** el héroe queda invulnerable y bloqueado mientras transcurre la animación combinada (72 frames, ~1,2 s), la cámara acompaña suavemente hasta su posición final, y conserva 60 frames (~1 s) de invulnerabilidad con pulso marfil al terminar para reposicionarse. Al terminar, el enemigo muere de inmediato sin efectos estándar y el rayo del héroe queda recargado al instante (`weapons_ready_instant()`, sin encender auras de reliquia que no se posean).
+- **Variantes integradas:**
+  - **Exvoto (Opción A de Sonnet, `proto_remate_exvoto_v2.py`):** agarre de muñecas, elevación y partición vertical en 96×96, dejando las dos mitades de cera en el suelo durante ~1 s (parpadeando al final). Corregido el 2026-11-18: la primera integración usaba por error la A de DeepSeek.
+  - **Cireneo (Opción A de DeepSeek, `ds_remate_cireneo.py`, provisional hasta la ronda final A/B):** el héroe le arranca la cruz de la espalda, salta y lo atraviesa contra el suelo con ella (celda 116×116), dejando el cadáver atravesado en el suelo durante ~1 s antes de desaparecer.
+- **Entrada con embestida previa (decisión del usuario, 2026-11-18):** la animación horneada empieza con el héroe a una distancia fija del enemigo (~30 px el Exvoto, ~42 px el Cireneo), pero `L` vale hasta 96 px; sin más, el héroe aparecía de golpe en ese punto. Ahora, al pulsar `L`, el héroe corre con su animación normal de andar, más rápido que al andar (~4 px por frame, [TUNABLE-PLACEHOLDER], tope ~0,3 s), hasta el punto exacto donde empieza el remate en la dirección elegida, mirando al enemigo; si ya está más cerca, retrocede ese poco sin dejar de mirarle. Durante la embestida el héroe ya es invulnerable y no dispara, y el enemigo deja de tambalearse y espera quieto, orientado como empieza su animación: el Exvoto se gira hacia el héroe (le agarra de frente) y el Cireneo le da la espalda (el héroe le arranca la cruz por detrás). El fotograma 0 horneado no se usa: el renderizador del lab lo saca distinto de la escena 3D (fallo pendiente), así que el remate arranca desde el fotograma 1, que se repite. Al llegar empieza la animación combinada sin salto.
+- **Cámara pegada al héroe durante el remate:** la cámara sigue los pies del héroe tal como aparecen en cada fotograma de la animación (interpolados entre fotogramas para que no dé tirones), en vez de deslizarse en línea recta del punto de partida al final.
+- **Pendiente de balance:** tunear el alcance de detección, la ventana de tambaleo, feedback y el equilibrio de la recarga instantánea.
+
 **Barra de vida del jefe.** Sustituye a la barra flotante sobre el enemigo durante el modo jefe. Fija en pantalla, con el nombre del jefe y una muesca en cada umbral de fase. Colores de la paleta (§6.10), sin primarios puros.
 
 **Pendiente de la ronda A/B/C (definitivo, ROM real):** aspecto de la intro, de la barra de vida, de la telegrafía de cambio de fase y de la secuencia de victoria.
@@ -1045,3 +1057,40 @@ Concreta §6.13.1 para el escenario por actos (§6.13.6). Objetivo: que meter un
   6. Al acabar la voz, ~1,2 s quieto.
   7. Se aleja (~0,5 s), se va el texto, vuelve el juego y entra la música. En total, ~9 s. START la salta en cualquier momento.
 - **Ritmo de la victoria:** congelado en su última pose ~1 s; acercamiento lento (~1,5 s); se destiñe (~1,5 s); se tacha el nombre (~0,6 s); pausa; dice su frase de derrota y se escribe; ~1,5 s quieto; reliquia. En total, ~8 s.
+
+#### 6.13.9 Encuentros tácticos: papeles, Ojo de largo alcance y remate (decidido 2026-11-17, rama `docs/encuentros-tacticos`)
+Corrige §6.13.6. **Motivo:** en las salas lo óptimo sigue siendo quedarse abajo y matar lo que baja, aunque se cierre la barrera de atrás. Toda la amenaza llega por un lado y todos los enemigos persiguen, así que la pelea acaba en la pantalla de abajo y la de arriba llega vacía. Esperar no cuesta nada. Además, el Ojo empieza a apuntar a ~140 px, menos que el rayo base (160 px), así que se puede limpiar a los Exvotos fuera de su alcance y luego ir a por él. **Referencias:** Doom 2016/Eternal, donde los enemigos débiles cuerpo a cuerpo no son la amenaza sino un recurso que se remata; Gears of War y XCOM, donde unos te clavan en la cobertura y otros te sacan de ella.
+
+**Papeles de los enemigos.**
+| Papel | Quién | Qué hace en la sala |
+| :--- | :--- | :--- |
+| **Te clava** | Ojo | Desde su puesto en la mitad de arriba controla la sala. Mientras te apunta, cúbrete o muévete. |
+| **Te saca de la cobertura** | Exvoto | Viene a por ti en grupo y por los lados. Es también el recurso del remate. |
+| **Guarda al Ojo y rompe la cobertura** | Cireneo | Espera junto al Ojo y embiste cuando te acercas. Si se estrella contra una pieza queda aturdido y se puede rematar. |
+| **Ancla** | Ojo en el acto I; invocador desde el acto II | No baja: obliga a subir para abrir la barrera. |
+
+- **Ojo:** alcance **mayor que el rayo base**, **todo el suelo desde su puesto, el doble que el rayo base (~320 px, `[TUNABLE-PLACEHOLDER]`; corregido 2026-11-18: con 256 quedaban en las esquinas de abajo de todas las salas bolsas seguras de 60×60 a 90×90 px donde esperar salía gratis, y con 320 solo quedan las sombras de columnas y estatuas, medidas con `tools/encuentros/audit_ojo_v3.py`; con los Ojos a la altura de ~100 px alcanza al héroe en cuanto se cierra la barrera de atrás), con las columnas cortándole la línea. Se queda en su puesto. Se mantiene que solo dos apunten a la vez. Su aviso largo y legible (la mirada verde) es lo que hace justo el largo alcance.
+- **Exvoto, flanqueo coordinado:** se reúnen fuera del alcance del héroe y entran juntos; uno va de frente y los demás por los carriles laterales; si el héroe está agachado tras una cobertura baja, la rodean. Mantienen la esquiva del rayo.
+- **Invocador:** es un **enemigo nuevo con silueta propia**, no un Exvoto rezando: con el mismo dibujo no se distinguiría a quién disparar primero. Idea: levanta a los caídos si nadie lo interrumpe. Se aplaza al acto II, junto al Campanero y al Abanderado élite. En el acto I el ancla es el Ojo.
+
+**Reglas de sala (se suman a las de §6.13.6).**
+1. **Desde el primer momento en que el héroe puede dar a un Exvoto, algún Ojo puede darle a él.** Los Exvotos se colocan entre el héroe y el Ojo, en su línea de tiro.
+2. **Los Ojos van en la mitad de arriba,** en su puesto. La cobertura buena (columnas y cobertura baja) va en medio y arriba; la entrada queda despejada.
+3. **Composición tipo:** Exvotos arriba que bajan a flanquear, Ojos al fondo y algún Cireneo guardándolos.
+4. Nada de embudos rectos hacia la entrada que pongan a la horda en fila delante del rayo.
+- **Catálogo:** las 6 plantas de §6.13.6 se revisan con estas reglas. Las que cumplan se conservan; las demás se rehacen.
+- **El Ojo, desde las ligeras (decidido 2026-11-18; corrige «el Ojo desde la segunda mitad» y «ligera, solo Exvotos» de §6.13.6):** toda sala del acto I lleva al menos un Ojo, porque es el ancla que obliga a subir. El Cireneo entra en media.
+- **El atrio, primer encuentro fijo del acto:** solo Exvotos y espacio abierto; enseña el remate antes de meter presión. Es la única sala sin Ojo.
+- **Catálogo v3 (propuesta, 2026-11-17):** 7 plantas (el atrio, la procesión, la trinchera, el balcón, la pinza, el claro y la alambrada); la trinchera sustituye al embudo. Esquemas en `walkthroughs/encuentros-tacticos/catalogo-salas-v3.html`, generados por `tools/encuentros/catalogo_v3.py`. La ROM sigue con el catálogo v2 hasta programar la IA nueva.
+
+**Remate:** decidido aquí (primer disparo deja tambaleándose, `L` a corta distancia, invulnerable, muerte segura, rayo cargado, Cireneo aturdido rematable) e implementado y vigente en §6.13.8, que es su fuente. Para las salas importa esto: el remate es la recompensa de dejar que los Exvotos lleguen, y el claro lo usa como única cobertura.
+
+**Siguiente paso:** rehacer el catálogo del acto I en el editor con estas reglas y revisarlo en el móvil. Después, prototipo en la ROM: alcance y puesto del Ojo, flanqueo del Exvoto, Cireneo guardián y remate.
+
+#### 6.13.10 Método de diseño de salas: una a una (decidido 2026-11-18)
+Los sistemas (Ojo, flanqueo, Cireneo guardián, remate) se prueban **a través de salas concretas**, no en bloque: así el feedback es claro y la programación va atada a una prueba.
+- **Una sala, una pregunta.** Cada sala se juega unos minutos con una sola pregunta y acaba en un veredicto: se queda, se cambia o se descarta. El registro vive en `walkthroughs/sala-<nombre>/plan_pruebas.md`.
+- **Equipo de referencia fijo por sala** (la vara de medir, no todas las combinaciones): primera sala ligera, sin Dones; sala media, ~10 Dones de un equipo tipo; sala dura, ~20. El equipo tipo se elige una vez con el usuario y no se toca. Que un equipo muy fuerte arrase una sala no es fallo de la sala; los Dones que rompen todas se buscan con el bot (`encuentros-bot`), no a mano.
+- **Orden por mecánica nueva:** 1) el atrio (remate, ya existe); 2) la procesión ligera (Ojo con alcance y puesto fijo, cobertura baja); 3) el balcón (columnas y flanqueo de los Exvotos); 4) la primera sala media (Cireneo guardián). Después el resto del catálogo v3.
+- **Pasadas por sala:** como mucho dos (equipo de referencia; sin Dones en el atrio y la primera ligera). Un cambio por vuelta.
+- **Primera prueba: partida de referencia.** Antes de rediseñar nada se juega la ROM actual 10 min puntuando cada sala (tensión, decisión, ¿repetir?) para tener una línea base de diversión y saber qué sala rediseñar primero. Plan en `walkthroughs/sala-atrio/plan_pruebas.md`. El atrio queda como sala de entrada del catálogo, sin prioridad (es un tutorial, no mide diversión).

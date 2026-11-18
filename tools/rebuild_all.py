@@ -438,7 +438,7 @@ def main() -> None:
     parser.add_argument(
         "--variant",
         default=None,
-        help="Optional ROM build variant for build-project.ps1 (e.g. stress, playground-perf).",
+        help="Optional ROM build variant for build-project.ps1 (e.g. stress, perf).",
     )
 
     args = parser.parse_args()

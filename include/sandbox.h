@@ -8,12 +8,15 @@
 #ifndef SANDBOX
 #define SANDBOX 0
 #endif
-// PLAYGROUND=1 (build variant "playground", needs SANDBOX=1): a playable test ROM. At boot the sandbox
+// PLAYGROUND=1 (only the "cathedral-playground" variants, with CATHEDRAL_PLAYGROUND=1): a playable review ROM. At boot the sandbox
 // applies a built-in layout (player in the south hall, parked dummies around it, god mode), dead
 // dummies come back by themselves, R puts every dummy back at once and SELECT cycles the effects
 // style. No scenario needed.
 #ifndef PLAYGROUND
 #define PLAYGROUND 0
+#endif
+#ifndef REMATE_SANDBOX
+#define REMATE_SANDBOX 0
 #endif
 #ifndef CATHEDRAL_PLAYGROUND
 #define CATHEDRAL_PLAYGROUND 0

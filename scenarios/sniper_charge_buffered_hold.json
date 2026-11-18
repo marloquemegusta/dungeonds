@@ -1,0 +1,43 @@
+{
+  "name": "sniper_charge_buffered_hold",
+  "description": "Verifica que pulsar y mantener la pantalla tactil durante el cooldown post-disparo del francotirador arranca la carga en cuanto expira el cooldown y permite disparar de nuevo.",
+  "steps": [
+    {
+      "frames": 20
+    },
+    {
+      "tap": { "x": 200, "y": 80 },
+      "frames": 35,
+      "capture": "00_first_aim_ready"
+    },
+    {
+      "release": true,
+      "frames": 5,
+      "capture": "01_first_shot"
+    },
+    {
+      "tap": { "x": 200, "y": 80 },
+      "frames": 65,
+      "capture": "02_buffered_aim_ready"
+    },
+    {
+      "release": true,
+      "frames": 5,
+      "capture": "03_second_shot"
+    }
+  ],
+  "assertions": {
+    "screen_changes": [
+      {
+        "from": "00_first_aim_ready",
+        "to": "01_first_shot",
+        "min_changed_pixels": 30
+      },
+      {
+        "from": "02_buffered_aim_ready",
+        "to": "03_second_shot",
+        "min_changed_pixels": 30
+      }
+    ]
+  }
+}

@@ -23,6 +23,8 @@
 //   --tone T        tone mapping override: agx or neutral. Default follows --legibility (c2 -> neutral).
 //   --supersample N / --contrast N  explicit overrides of the template's supersample / lab contrast
 //                   (c2 implies 4 / 1.0 unless given).
+//   --fixedGround   (remates, GLB sequences) every frame shares the scene floor (y = 0) instead of resting on its own lowest
+//                   point, so falling pieces do not move the whole drawing between frames. --doubleSided draws both faces.
 //   --list  prints the animation clips and exits without rendering.
 const fs = require('node:fs');
 const path = require('node:path');
@@ -56,12 +58,25 @@ const HTML = path.join(__dirname, 'FBX-Web-Renderer-offline.html');
   try {
     const page = await browser.newPage({ viewport: { width: 1280, height: 800 }, deviceScaleFactor: 1 });
     page.on('pageerror', e => errors.push(e.stack || e.message));
-    page.on('console', m => { if (m.text().startsWith('[fit]')) console.log('WARNING ' + m.text()); });
+    page.on('console', m => { if (m.type() === 'error' || m.text().startsWith('[fit]')) console.log(m.type().toUpperCase() + ' ' + m.text()); });
     await page.goto(`file:///${HTML.split(path.sep).join('/')}`, { waitUntil: 'load' });
     await page.waitForFunction(() => !!window.__spriteLab, { timeout: 30000 });
     const normScaleOpt = opt('--normScale') !== undefined ? parseFloat(opt('--normScale')) : 0;
     await page.evaluate((v) => { window.__spriteLab.normScale = v > 0 ? v : 0; }, normScaleOpt);
-    await page.locator('#fbxInput').setInputFiles(model);
+    await page.evaluate((v) => { window.__spriteLab.doubleSided = v; }, argv.includes('--doubleSided'));
+    // --fixedGround (remates): todos los fotogramas comparten el suelo de la escena (y = 0) en vez de apoyarse en su punto mas bajo.
+    await page.evaluate((v) => { window.__spriteLab.fixedGround = v; }, argv.includes('--fixedGround'));
+    if (fs.statSync(model).isDirectory()) {
+      const glbs = fs.readdirSync(model).filter(f => /^f\d+\.glb$/i.test(f)).sort();
+      if (!glbs.length) throw new Error('No fNN.glb files found in ' + model);
+      for (const f of glbs) {
+        const b64 = fs.readFileSync(path.join(model, f)).toString('base64');
+        await page.evaluate((s) => window.__spriteLab.appendGlbFrame(s), b64);
+      }
+      await page.evaluate(() => window.__spriteLab.finishGlbSequence());
+    } else {
+      await page.locator('#fbxInput').setInputFiles(model);
+    }
     await page.waitForFunction(() => {
       const sel = document.getElementById('animSelect');
       return window.$ && window.$.loaded === true && sel && sel.options.length > 0;

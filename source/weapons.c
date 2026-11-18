@@ -1267,6 +1267,10 @@ int weapons_aim_line(int *mx, int *my, int *gx, int *gy) {
     return 1;
 }
 
+void weapons_ready_instant(void) {
+    s_instant_pending = 1;
+}
+
 int weapons_aim_progress(void) {
     return s_aim_prog;
 }
@@ -1299,10 +1303,14 @@ int weapons_input(PlayerState *player, const WeaponInput *in, Enemy *enemies, in
         return 0;
     }
 
-    // Sniper: touch to aim (the player stops), release to fire once armed.
+    // Sniper: touch to aim (the player stops), release to fire once armed. A fresh press always
+    // starts the charge at once, even right after a shot: the post-shot cooldown is dropped so
+    // the player never waits for the recovery to end before charging again, and the charge
+    // restarts from zero (timer and progress) on this very frame.
     int result = 0;
     if (s_aim_state == AIM_IDLE) {
-        if (in->touch_pressed && s_weapon_cooldown <= 0) {
+        if (in->touch_pressed) s_weapon_cooldown = 0;
+        if ((in->touch_pressed || in->touch_down) && s_weapon_cooldown <= 0) {
             s_aim_state = AIM_AIMING;
             s_aim_timer = 0;
             s_aim_prog = 0;
@@ -1766,7 +1774,7 @@ void weapons_update(Enemy *enemies, int max_enemies) {
 
     fx_update();
 
-    if (s_instant_pending) g_aura_force_mask |= 1 << AURA_STYLE_L;       // Corazon Flagelado: flames while the instant shot waits
+    if (s_instant_pending && upgrades_has_relic(RELIC_FLAGELADO)) g_aura_force_mask |= 1 << AURA_STYLE_L;   // Corazon Flagelado: flames while the instant shot waits
     else g_aura_force_mask &= ~(1 << AURA_STYLE_L);
     s_aura_mask = relic_aura_mask() | g_aura_force_mask | g_aura_debug_mask;
     aura_update();
