@@ -10032,14 +10032,14 @@ static const StripStamp s_stamps[] = {
     { 16, 12, 2, 3, 0, 0, 7, s_stamp_12_tiles, 0, 0, 0, 0 }, // lapida_2x1_cruz
     { 16, 12, 0, 2, 0, 0, 8, s_stamp_13_tiles, 0, 0, 0, 0 }, // lapida_2x1_cab
     { 16, 12, 2, 3, 0, 0, 8, s_stamp_14_tiles, 0, 0, 0, 0 }, // lapida_2x1_cab
-    { 9, 13, 4, 8, 104, 1, 9, s_stamp_15_tiles, 16, s_stamp_15_foot, 276, s_stamp_15_depth }, // banco_grupo4
-    { 9, 13, 3, 8, 104, 1, 9, s_stamp_16_tiles, 16, s_stamp_16_foot, 276, s_stamp_16_depth }, // banco_grupo4
-    { 9, 13, 2, 8, 104, 1, 9, s_stamp_17_tiles, 16, s_stamp_17_foot, 276, s_stamp_17_depth }, // banco_grupo4
-    { 9, 13, 5, 8, 104, 1, 9, s_stamp_18_tiles, 16, s_stamp_18_foot, 276, s_stamp_18_depth }, // banco_grupo4
-    { 9, 13, 4, 0, 104, 1, 9, s_stamp_19_tiles, 16, s_stamp_19_foot, 276, s_stamp_19_depth }, // banco_grupo4
-    { 9, 13, 3, 0, 104, 1, 9, s_stamp_20_tiles, 16, s_stamp_20_foot, 276, s_stamp_20_depth }, // banco_grupo4
-    { 9, 13, 2, 0, 104, 1, 9, s_stamp_21_tiles, 16, s_stamp_21_foot, 276, s_stamp_21_depth }, // banco_grupo4
-    { 9, 13, 5, 0, 104, 1, 9, s_stamp_22_tiles, 16, s_stamp_22_foot, 276, s_stamp_22_depth }, // banco_grupo4
+    { 9, 13, 4, 8, 104, 2, 9, s_stamp_15_tiles, 16, s_stamp_15_foot, 276, s_stamp_15_depth }, // banco_grupo4
+    { 9, 13, 3, 8, 104, 2, 9, s_stamp_16_tiles, 16, s_stamp_16_foot, 276, s_stamp_16_depth }, // banco_grupo4
+    { 9, 13, 2, 8, 104, 2, 9, s_stamp_17_tiles, 16, s_stamp_17_foot, 276, s_stamp_17_depth }, // banco_grupo4
+    { 9, 13, 5, 8, 104, 2, 9, s_stamp_18_tiles, 16, s_stamp_18_foot, 276, s_stamp_18_depth }, // banco_grupo4
+    { 9, 13, 4, 0, 104, 2, 9, s_stamp_19_tiles, 16, s_stamp_19_foot, 276, s_stamp_19_depth }, // banco_grupo4
+    { 9, 13, 3, 0, 104, 2, 9, s_stamp_20_tiles, 16, s_stamp_20_foot, 276, s_stamp_20_depth }, // banco_grupo4
+    { 9, 13, 2, 0, 104, 2, 9, s_stamp_21_tiles, 16, s_stamp_21_foot, 276, s_stamp_21_depth }, // banco_grupo4
+    { 9, 13, 5, 0, 104, 2, 9, s_stamp_22_tiles, 16, s_stamp_22_foot, 276, s_stamp_22_depth }, // banco_grupo4
     { 5, 9, 8, 1, 72, 3, 10, s_stamp_23_tiles, 4, s_stamp_23_foot, 233, s_stamp_23_depth }, // santo
     { 5, 9, 9, 1, 72, 3, 10, s_stamp_24_tiles, 4, s_stamp_24_foot, 233, s_stamp_24_depth }, // santo
     { 5, 9, 3, 1, 72, 3, 10, s_stamp_25_tiles, 4, s_stamp_25_foot, 233, s_stamp_25_depth }, // santo
@@ -10048,10 +10048,10 @@ static const StripStamp s_stamps[] = {
     { 8, 4, 5, 9, 24, 0, 11, s_stamp_28_tiles, 1, s_stamp_28_foot, 32, s_stamp_28_depth }, // sacos
     { 8, 10, 1, 14, 80, 3, 13, s_stamp_29_tiles, 5, s_stamp_29_foot, 442, s_stamp_29_depth }, // columna
     { 8, 10, 7, 14, 80, 3, 13, s_stamp_30_tiles, 5, s_stamp_30_foot, 442, s_stamp_30_depth }, // columna
-    { 9, 13, 4, 0, 104, 1, 14, s_stamp_31_tiles, 17, s_stamp_31_foot, 280, s_stamp_31_depth }, // banco_grupo4_roto
-    { 9, 13, 3, 0, 104, 1, 14, s_stamp_32_tiles, 17, s_stamp_32_foot, 280, s_stamp_32_depth }, // banco_grupo4_roto
-    { 9, 13, 2, 0, 104, 1, 14, s_stamp_33_tiles, 17, s_stamp_33_foot, 280, s_stamp_33_depth }, // banco_grupo4_roto
-    { 9, 13, 5, 0, 104, 1, 14, s_stamp_34_tiles, 17, s_stamp_34_foot, 280, s_stamp_34_depth }, // banco_grupo4_roto
+    { 9, 13, 4, 0, 104, 2, 14, s_stamp_31_tiles, 17, s_stamp_31_foot, 280, s_stamp_31_depth }, // banco_grupo4_roto
+    { 9, 13, 3, 0, 104, 2, 14, s_stamp_32_tiles, 17, s_stamp_32_foot, 280, s_stamp_32_depth }, // banco_grupo4_roto
+    { 9, 13, 2, 0, 104, 2, 14, s_stamp_33_tiles, 17, s_stamp_33_foot, 280, s_stamp_33_depth }, // banco_grupo4_roto
+    { 9, 13, 5, 0, 104, 2, 14, s_stamp_34_tiles, 17, s_stamp_34_foot, 280, s_stamp_34_depth }, // banco_grupo4_roto
     { 8, 3, 13, 10, 16, 0, 16, s_stamp_35_tiles, 1, s_stamp_35_foot, 39, s_stamp_35_depth }, // sacos_remate
     { 8, 3, 11, 10, 16, 0, 17, s_stamp_36_tiles, 1, s_stamp_36_foot, 41, s_stamp_36_depth }, // sacos_remate_der
     { 4, 3, 3, 0, 24, 0, 18, s_stamp_37_tiles, 4, s_stamp_37_foot, 79, s_stamp_37_depth }, // alambre

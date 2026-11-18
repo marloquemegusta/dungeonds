@@ -29,6 +29,17 @@
       "speedFixed8_8": 100,
       "ticksPerFrame": 7
     },
+    "corazon_agachado_andar": {
+      "model": "assets/models/characters/corazon/corazon_agachado_andar.fbx",
+      "anim": "corazon_agachado_andar (1.03s)",
+      "resolution": 40,
+      "scaleRef": "corazon",
+      "muzzleBone": "mixamorig:Spine2",
+      "muzzleForward": 0.05,
+      "template": "assets/sprites/characters/corazon_agachado_andar/settings.json",
+      "speedFixed8_8": 163,
+      "ticksPerFrame": 8
+    },
     "cireneo": {
       "model": "assets/models/characters/cireneo/cireneo_walk.fbx",
       "anim": "cireneo_walk (1.63s)",
