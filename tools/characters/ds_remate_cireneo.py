@@ -28,7 +28,8 @@ os.makedirs(OUT, exist_ok=True)
 CELL = int(os.environ.get('REMATE_CELL', '80'))
 AZ = float(os.environ.get('REMATE_AZ', '-45'))
 PPM_CAM = float(os.environ.get('REMATE_PPM', '48'))   # densidad de la camara (celda 80 = 1.67 m de ancho)
-CAM_CENTER = Vector((0.04, -0.14, 0.30))     # mismo anclaje para las tres opciones
+CAM_CENTER = Vector((float(os.environ.get('REMATE_CX', '0.04')),
+                     float(os.environ.get('REMATE_CY', '-0.14')), 0.30))     # mismo anclaje para las tres opciones
 HERO_X = -0.62                               # sitio del heroe en reposo (y donde acaban las tres opciones)
 GAIN_HERO, GAIN_CIR = 3.0, 3.5
 
@@ -41,8 +42,9 @@ ACT['cir_stuck'] = [a for a in bpy.data.actions if 'cireneo_stuck' in a.name][0]
 ACT['cir_stuck'].use_fake_user = True
 ACT['hero_walk'] = load_action(ROOT + '/assets/models/animations/corazon/walk.fbx', 'hero_walk')
 ACT['hero_shot'] = load_action(ROOT + '/assets/models/animations/corazon/disparo.fbx', 'hero_shot')
-gain_textures([hero.mesh], GAIN_HERO)
-gain_textures([cir.mesh, cir.cruz], GAIN_CIR)
+if not os.environ.get('REMATE_GLB_DIR'):
+    gain_textures([hero.mesh], GAIN_HERO)
+    gain_textures([cir.mesh, cir.cruz], GAIN_CIR)
 update()
 CAM = setup_render(CELL, PPM_CAM)
 
@@ -283,6 +285,46 @@ def burst(origin, t, kind, n, speed, up=0.9, seed=0, spread=1.0, grav=2.6, dirv=
 
 # ----------------------------------------------------------------------------------------------- render de un fotograma (color + sombra)
 def render_pass(i, outdir):
+    glb_dir = os.environ.get('REMATE_GLB_DIR')
+    if glb_dir:
+        os.makedirs(glb_dir, exist_ok=True)
+        update()
+        depsgraph = bpy.context.evaluated_depsgraph_get()
+        vis = [o for o in bpy.context.scene.objects if o.type == 'MESH' and not o.hide_render]
+        tmp_objs = []
+        for o in vis:
+            eo = o.evaluated_get(depsgraph)
+            me = bpy.data.meshes.new_from_object(eo, preserve_all_data_layers=True, depsgraph=depsgraph)
+            no = bpy.data.objects.new(o.name + '_baked', me)
+            no.matrix_world = o.matrix_world.copy()
+            bpy.context.scene.collection.objects.link(no)
+            tmp_objs.append((no, me))
+        bpy.ops.object.select_all(action='DESELECT')
+        for no, _ in tmp_objs:
+            no.select_set(True)
+        if tmp_objs:
+            bpy.context.view_layer.objects.active = tmp_objs[0][0]
+        bpy.ops.export_scene.gltf(
+            filepath=os.path.join(glb_dir, 'f%02d.glb' % i),
+            export_format='GLB', use_selection=True,
+            export_materials='EXPORT', export_yup=True
+        )
+        if i == 11:
+            bpy.ops.object.select_all(action='DESELECT')
+            rem_objs = [no for no, _ in tmp_objs if not no.name.startswith(hero.mesh.name)]
+            for no in rem_objs:
+                no.select_set(True)
+            if rem_objs:
+                bpy.context.view_layer.objects.active = rem_objs[0]
+                bpy.ops.export_scene.gltf(
+                    filepath=os.path.join(glb_dir, 'f12.glb'),
+                    export_format='GLB', use_selection=True,
+                    export_materials='EXPORT', export_yup=True
+                )
+        for no, me in tmp_objs:
+            bpy.data.objects.remove(no, do_unlink=True)
+            bpy.data.meshes.remove(me)
+        return
     # 1) color
     world.matrix_parent_inverse = Matrix.Identity(4)
     bpy.context.scene.display.shading.color_type = 'TEXTURE'

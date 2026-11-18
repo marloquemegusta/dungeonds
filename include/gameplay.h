@@ -109,7 +109,7 @@ extern ENEMY_TUNING_CONST EnemyTuning g_enemy_tuning[NUM_ENEMY_TYPES];
 #endif
 // Demo ROM (DESIGN.md 6.9.1c): the laser is the only weapon and L does not cycle weapons.
 // The test variants (sandbox, playground, stress, godrays) keep the shotgun start and the L cycle.
-#if SANDBOX || PLAYGROUND || STRESS_TEST || GODRAYS_PROTO
+#if (SANDBOX || PLAYGROUND || STRESS_TEST || GODRAYS_PROTO) && !(defined(REMATE_SANDBOX) && REMATE_SANDBOX)
 #define TEST_WEAPON_CYCLE 1
 #else
 #define TEST_WEAPON_CYCLE 0

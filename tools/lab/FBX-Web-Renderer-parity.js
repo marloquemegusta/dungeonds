@@ -71,7 +71,64 @@
     strideRatio: 0.833,
     spriteVisibleHeightPx: 42,
     liveDirCanvases: [],
-    activeTab: 'scale'
+    activeTab: 'scale',
+    glbSeq: null,
+    setGlbFrame(idx) {
+      if (!this.glbSeq) return;
+      for (let k = 0; k < this.glbSeq.length; k++) {
+        const on = (k === idx);
+        this.glbSeq[k].visible = on;
+        this.glbSeq[k].traverse(n => { if (n.isMesh) n.visible = on; });
+      }
+    },
+    async appendGlbFrame(b64) {
+      if (!window.MinimalGLBLoader) throw new Error('MinimalGLBLoader unavailable');
+      if (!this.glbSeq) {
+        if ($.modelRoot && $.scene) $.scene.remove($.modelRoot);
+        const root = new THREE_ENV.Mesh();
+        this.glbSeq = [];
+        $.modelRoot = root;
+        $.model = root;
+        $.scene.add(root);
+      }
+      const binStr = atob(b64);
+      const bytes = new Uint8Array(binStr.length);
+      for (let j = 0; j < binStr.length; j++) bytes[j] = binStr.charCodeAt(j);
+      const grp = window.MinimalGLBLoader.buildThreeMeshFromGLB(THREE_ENV, bytes.buffer);
+      grp.rotation.y = -Math.PI / 2;
+      setupModelMaterials(grp);
+      if (this.doubleSided) {
+        // Remates: tunica hueca partida; hay que dibujar tambien la cara interior (DoubleSide = 2), sombras incluidas.
+        grp.traverse(n => {
+          if (!n.isMesh || !n.material) return;
+          (Array.isArray(n.material) ? n.material : [n.material]).forEach(m => { m.side = 2; m.shadowSide = 2; m.needsUpdate = true; });
+        });
+      }
+      await waitForModelTextures(grp);
+      grp.visible = true;
+      grp.traverse(n => { if (n.isMesh) n.visible = true; });
+      $.modelRoot.add(grp);
+      this.glbSeq.push(grp);
+    },
+    finishGlbSequence() {
+      $.clips = [];
+      $.currentAction = null;
+      $.mixer = null;
+      $.loaded = true;
+      $.results = [];
+      const btn = document.getElementById('renderBtn');
+      if (btn) btn.disabled = false;
+      const expBtn = document.getElementById('downloadPackageBtn');
+      if (expBtn) expBtn.disabled = false;
+      const sel = document.getElementById('animSelect');
+      if (sel) {
+        sel.innerHTML = '';
+        const opt = document.createElement('option');
+        opt.value = '0';
+        opt.textContent = 'glb_seq';
+        sel.appendChild(opt);
+      }
+    }
   };
 
   // Match the Blender lab's 45-degree camera azimuth.
@@ -1104,12 +1161,21 @@
         }
       }
       const samples = [];
-      for (const time of times) {
-        app.mixer?.setTime(time);
-        applyNeckPitch();
+      const seqCount = (state.glbSeq && state.glbSeq.length) ? state.glbSeq.length : 0;
+      const sampleCount = seqCount > 0 ? Math.min(frameCount, seqCount) : times.length;
+      for (let sIdx = 0; sIdx < sampleCount; sIdx++) {
+        if (seqCount > 0) {
+          state.setGlbFrame(sIdx);
+        } else {
+          app.mixer?.setTime(times[sIdx]);
+          applyNeckPitch();
+        }
         const pts = posedPoints(root || scene);
         let minY = Infinity;
         for (let i = 1; i < pts.length; i += 3) minY = Math.min(minY, pts[i]);
+        // fixedGround (remates): suelo comun de la escena (y = 0) en todos los fotogramas; sin esto cada fotograma se apoya
+        // en su punto mas bajo (gotas, mitades, cruz) y el dibujo entero sube/baja unos pixeles entre fotogramas.
+        if (state.fixedGround) minY = 0;
         samples.push({ pts, minY });
         await new Promise(resolve => setTimeout(resolve, 0));
       }
@@ -1168,8 +1234,12 @@
             root.rotation.y = DIR0_YAW - direction * DIR_STEP;
             root.position.y = -samples[index % samples.length].minY;
           }
-          app.mixer?.setTime(times[index % times.length]);
-          applyNeckPitch();
+          if (seqCount > 0) {
+            state.setGlbFrame(index % seqCount);
+          } else {
+            app.mixer?.setTime(times[index % times.length]);
+            applyNeckPitch();
+          }
           if (root) root.updateMatrixWorld(true);
           if (muzzleSetup && state.muzzleCapture) {
             state.muzzleCapture[direction][index] = projectMuzzleFrame(muzzleSetup, camera, size, muzzleAnchorX, muzzleAnchorY);
@@ -1423,7 +1493,7 @@
     const modelMeshes = [];
     if (model) {
       model.traverse(node => {
-        if (node.isMesh && node.visible && node.geometry?.attributes?.position) {
+        if (node.isMesh && (node.visible || (state.glbSeq && state.glbSeq.length)) && node.geometry?.attributes?.position) {
           modelMeshes.push(node);
         }
       });
@@ -1435,7 +1505,9 @@
     const times = duration > 0 ? Array.from({ length: frameCount }, (_, index) => duration * index / frameCount) : new Array(frameCount).fill(0);
 
     for (let f = 0; f < frameCount; f++) {
-      if ($.mixer && duration > 0) {
+      if (state.glbSeq && state.glbSeq.length) {
+        state.setGlbFrame(f % state.glbSeq.length);
+      } else if ($.mixer && duration > 0) {
         $.mixer.setTime(times[f]);
       }
       applyNeckPitch();
@@ -1457,6 +1529,7 @@
       const meshWorldVerts = [];
       let frameMinY = Infinity;
       for (const mesh of modelMeshes) {
+        if (!mesh.visible) continue;
         if (mesh.isSkinnedMesh && mesh.skeleton) mesh.skeleton.update();
         const pos = mesh.geometry.attributes.position;
         const count = pos.count;
@@ -1473,6 +1546,7 @@
         meshWorldVerts.push({ mesh, coords, count });
       }
       if (!isFinite(frameMinY)) frameMinY = state.lastCharMinY || 0;
+      if (state.fixedGround) frameMinY = 0;
 
       const projCam = (fit && fit.camera) ? fit.camera : shadowCamera;
       const useFitCam = !!(fit && fit.camera);

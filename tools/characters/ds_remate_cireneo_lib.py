@@ -180,7 +180,17 @@ def render_frame(path):
 
 def flat_mat(name, col):
     m = bpy.data.materials.new(name)
-    m.diffuse_color = col
+    m.diffuse_color = col  # Workbench
+    # Mismo color lineal en el Principled BSDF: es lo que lee el exportador glTF (laboratorio web).
+    m.use_nodes = True
+    bsdf = m.node_tree.nodes.get('Principled BSDF')
+    if bsdf is not None:
+        bsdf.inputs['Base Color'].default_value = (col[0], col[1], col[2], 1.0)
+        bsdf.inputs['Roughness'].default_value = 0.9
+        bsdf.inputs['Metallic'].default_value = 0.0
+        for k in ('Specular IOR Level', 'Specular'):
+            if k in bsdf.inputs:
+                bsdf.inputs[k].default_value = 0.0
     return m
 
 

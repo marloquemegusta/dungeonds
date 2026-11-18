@@ -90,7 +90,7 @@ void player_state_init(PlayerState *player) {
 }
 
 int player_take_hit(PlayerState *player) {
-    if (!player || player->is_dead || player->god_mode || player->invuln_timer > 0) return 0;
+    if (!player || player->is_dead || player->god_mode || player->invuln_timer > 0 || remate_invuln() > 0) return 0;
     player->hp--;
     player->invuln_timer = PLAYER_IFRAMES + g_mods.iframes;
     if (player->hp <= 0) {
@@ -157,7 +157,7 @@ static void enemy_damage(Enemy *e, int damage, fixed hit_vx, fixed hit_vy, int q
         nocashMessage(msg);
 #endif
     } else if (!quiet) {
-        if ((e->type == ENEMY_TYPE_EXVOTO || e->type == ENEMY_TYPE_CHARGER) &&
+        if ((e->type == ENEMY_TYPE_EXVOTO || e->type == ENEMY_TYPE_CHARGER) && e->hp * 2 <= e->max_hp &&
             (e->state == ENEMY_STATE_CHASE || e->state == ENEMY_STATE_ATTACK ||
              e->state == ENEMY_STATE_TELEGRAPH || e->state == ENEMY_STATE_CHARGE ||
              e->state == ENEMY_STATE_RECOVER || e->state == ENEMY_STATE_STUNNED ||

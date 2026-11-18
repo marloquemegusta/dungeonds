@@ -155,10 +155,25 @@ def srgb_lin(c):
     return c / 12.92 if c <= 0.04045 else ((c + 0.055) / 1.055) ** 2.4
 
 
+GLB_GAIN = float(os.environ.get("REMATE_GLB_GAIN", "1.0"))  # factor solo para el color que va al GLB (no toca el Workbench)
+
+
 def flat_mat(name, col):
     """col en sRGB 0-1 (lo que se quiere ver ANTES de la ganancia de la post, 1.38x); se convierte a lineal para Blender."""
     m = bpy.data.materials.new(name)
-    m.diffuse_color = (srgb_lin(col[0]), srgb_lin(col[1]), srgb_lin(col[2]), 1.0)
+    lin = (srgb_lin(col[0]), srgb_lin(col[1]), srgb_lin(col[2]), 1.0)
+    m.diffuse_color = lin  # Workbench
+    # Mismo color en el Principled BSDF: es lo que lee el exportador glTF (laboratorio web). GLB_GAIN ajusta solo el GLB.
+    m.use_nodes = True
+    bsdf = m.node_tree.nodes.get('Principled BSDF')
+    if bsdf is not None:
+        g = GLB_GAIN
+        bsdf.inputs['Base Color'].default_value = (min(lin[0] * g, 1.0), min(lin[1] * g, 1.0), min(lin[2] * g, 1.0), 1.0)
+        bsdf.inputs['Roughness'].default_value = 0.9
+        bsdf.inputs['Metallic'].default_value = 0.0
+        for k in ('Specular IOR Level', 'Specular'):
+            if k in bsdf.inputs:
+                bsdf.inputs[k].default_value = 0.0
     return m
 
 
