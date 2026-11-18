@@ -107,6 +107,8 @@ int weapons_aim_charging(void);
 // While the sniper charges: its aiming line (muzzle in world px and the unit ground direction, length 256, y doubled).
 int weapons_aim_line(int *mx, int *my, int *gx, int *gy);
 int weapons_aim_progress(void);
+// Remate: the hero's next sniper charge is READY on press (same mechanism as Corazon Flagelado).
+void weapons_ready_instant(void);
 int weapons_input(PlayerState *player, const WeaponInput *in, Enemy *enemies, int max_enemies);
 void weapons_update(Enemy *enemies, int max_enemies);
 // An enemy died: the "sed de sangre" modifier readies the shotgun at once.
