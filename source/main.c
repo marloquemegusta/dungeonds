@@ -2169,7 +2169,10 @@ static void strip_shift_world_y(int dy_px) {
     fixed shift = TO_FIXED(dy_px);
     s_player.y += shift;
     for (int i = 0; i < MAX_ENEMIES; i++)
-        if (g_enemies[i].active) g_enemies[i].y += shift;
+        if (g_enemies[i].active) {
+            g_enemies[i].y += shift;
+            if (g_enemies[i].home_flags & ENEMY_HOME_SET) *enemy_home_y(&g_enemies[i]) += dy_px;   // the post moves with the world
+        }
     for (int i = 0; i < MAX_DEATH_CHUNKS; i++)
         if (s_death_chunks[i].active) s_death_chunks[i].y += shift;
     for (int i = 0; i < s_pending_count; i++)

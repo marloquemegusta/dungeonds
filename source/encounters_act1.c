@@ -361,7 +361,12 @@ static void place_enemy(Enemy *e, const EncEnemyDef *d, int x, int y, int ordina
     // v2: every enemy of an encounter is there from the start and waits still (asleep, untouchable) until the hero
     // crosses the bottom edge; then all wake at once (wake_owner). Only the boss escort reinforcements walk in awake.
     e->state = awake_now ? ENEMY_INITIAL_STATE(type) : ENEMY_STATE_DORMANT;
-    (void)d->state;
+    // Post of the Ojo (its leash) and of the garrison (DESIGN.md 6.13.9). Set after strafe_dir: the Ojo keeps its post there.
+    if (type == ENEMY_TYPE_SHOOTER || d->state == ENC_S_GUARD) {
+        e->home_flags = ENEMY_HOME_SET | (d->state == ENC_S_GUARD ? ENEMY_HOME_GUARD : 0);
+        *enemy_home_x(e) = x;
+        *enemy_home_y(e) = y;
+    }
 }
 
 static int spawn_group(Enemy *enemies, int max_enemies, const EncEnemyDef *defs, int n, int mirror,
@@ -401,7 +406,7 @@ static void wake_owner(Enemy *enemies, int max_enemies, int owner) {
     for (int i = 0; i < max_enemies; i++) {
         Enemy *e = &enemies[i];
         if (!e->active || e->pack != owner || e->state != ENEMY_STATE_DORMANT) continue;
-        e->state = ENEMY_INITIAL_STATE(e->type);
+        e->state = (e->home_flags & ENEMY_HOME_GUARD) ? ENEMY_STATE_GUARD : ENEMY_INITIAL_STATE(e->type);
         e->state_timer = 0;
     }
 }

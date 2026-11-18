@@ -19,7 +19,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import catalogo_v2 as v2  # noqa: E402  (reutiliza el ajuste de piezas a fases legales y pares simétricos)
 
 PIECE = {"banco_grupo4": (72, 84), "columna_entera": (24, 24), "santo": (28, 28)}
-OJO_RANGE = 320       # [TUNABLE-PLACEHOLDER] alcance del Ojo (antes ~140; rayo base del héroe 160, máximo 416). 320 cubre todo el suelo desde un puesto central: con 256 quedan bolsas seguras de 60x60 a 90x90 px en las esquinas de abajo (tools/encuentros/audit_ojo_v3.py)
+# El Ojo no tiene alcance (decidido 2026-11-18): solo lo corta la línea de visión. En la ROM OJO_SIGHT_RANGE = 1000 (suelo).
 HERO_RANGE = 160      # rayo base del héroe (DESIGN.md 6.12.10)
 ENTRY = (104, 348)    # el héroe al cerrarse la barrera de atrás (36 px dentro de la sala)
 STATE = {"exvoto": "flank", "ojo": "post", "cireneo": "guard"}
@@ -169,12 +169,23 @@ for _r in ROOMS:
 COL = {"exvoto": "#d8c8a2", "cireneo": "#a0503c", "ojo": "#6f5a8c"}
 
 
-def ojo_ok(enemies):
-    """Regla 1: algún Ojo alcanza al héroe en cuanto se cierra la barrera de atrás."""
+def _ojo_ve(room, ox, oy):
+    """Línea de visión del Ojo a la entrada: la cortan columnas y estatuas (no bancos ni sacos)."""
+    tall = [(x, y, x + PIECE[k][0], y + PIECE[k][1]) for k, x, y in room["pieces"] if k != "banco_grupo4"]
+    for i in range(0, 101):
+        px = ox + (ENTRY[0] - ox) * i / 100.0
+        py = oy + (ENTRY[1] - oy) * i / 100.0
+        if any(r[0] <= px <= r[2] and r[1] <= py <= r[3] for r in tall):
+            return False
+    return True
+
+
+def ojo_ok(room, enemies):
+    """Regla 1: algún Ojo (sin límite de alcance, solo línea de visión) ve al héroe en cuanto se cierra la barrera de atrás."""
     ojos = [(x, y) for k, x, y in enemies if k == "ojo"]
     if not ojos:
         return None
-    return min(math.hypot(x - ENTRY[0], y - ENTRY[1]) for x, y in ojos) <= OJO_RANGE
+    return any(_ojo_ve(room, x, y) for x, y in ojos)
 
 
 def svg(room, enemies):
@@ -187,10 +198,7 @@ def svg(room, enemies):
          '<line x1="0" y1="%d" x2="208" y2="%d" stroke="#2b2926" stroke-width="3" stroke-dasharray="6 4"/>' % (ENTRY[1] + 12, ENTRY[1] + 12),
          '<line x1="0" y1="192" x2="208" y2="192" stroke="#8d897f" stroke-width="1" stroke-dasharray="2 4"/>']
     o.append('<g clip-path="url(#c)">')
-    for kind, x, y in enemies:
-        if kind == "ojo":
-            o.append('<circle cx="%d" cy="%d" r="%d" fill="#6f5a8c" fill-opacity=".10" stroke="#8f78b0" stroke-opacity=".6" stroke-dasharray="5 4"/>' % (x, y, OJO_RANGE))
-    o.append('<circle cx="%d" cy="%d" r="%d" fill="none" stroke="#7fb0d4" stroke-opacity=".8" stroke-width="1.5" stroke-dasharray="3 3"/>' % (ENTRY[0], ENTRY[1], HERO_RANGE))
+    o.append('<ellipse cx="%d" cy="%d" rx="%d" ry="%d" fill="none" stroke="#7fb0d4" stroke-opacity=".8" stroke-width="1.5" stroke-dasharray="3 3"/>' % (ENTRY[0], ENTRY[1], HERO_RANGE, HERO_RANGE // 2))
     o.append('</g>')
     for kind, x, y in room["pieces"]:
         w, h = PIECE[kind]
@@ -236,7 +244,7 @@ def main():
     data["_doc"] = ("Acto I v3 (DESIGN.md 6.13.8, 2026-11-17), PROPUESTA: la ROM sigue leyendo acto1_v2.json hasta implementar la IA "
                     "nueva. Coordenadas como en v2. Estados: post (Ojo en su puesto), guard (Cireneo que guarda al Ojo mas cercano), "
                     "flank (Exvoto que flanquea). 'fija' = encuentro fijo (el atrio abre el acto). Generado por catalogo_v3.py.")
-    data["ojo_range"] = OJO_RANGE
+    data["ojo_sight"] = "sin alcance: solo linea de vision (OJO_SIGHT_RANGE 1000 en la ROM)"
     plantas = {}
     for r in ROOMS:
         p = {"pieces": [{"piece": k, "x": x, "y": y} for k, x, y in r["pieces"]], "obstacles": r["obstacles"]}
@@ -265,12 +273,12 @@ h1{font-size:1.5em}h2{margin-top:2em;border-top:2px solid var(--line);padding-to
          '<h1>Salas del acto I, v3 (propuesta)</h1>',
          '<p>Esquemas para decidir, no capturas de la ROM. Cada sala hace <b>una pregunta</b>; sus tres poblaciones (ligera en los encuentros 1-4, media en el 5-8, dura en el 9-12) son la misma pregunta cada vez más dura.</p>',
          '<div class="box"><b>Reglas nuevas</b> (DESIGN 6.13.8)<ol>',
-         '<li><b>Desde que puedes dar a un Exvoto, un Ojo puede darte a ti.</b> Su alcance pasa de ~140 a %d px (tu rayo inicial llega a %d).</li>' % (OJO_RANGE, HERO_RANGE),
+         '<li><b>Desde que puedes dar a un Exvoto, un Ojo puede darte a ti.</b> El Ojo ya no tiene alcance: te ve desde cualquier punto de la sala y solo lo corta la línea de visión (columnas y estatuas). Tu rayo inicial llega a %d px de suelo.</li>' % HERO_RANGE,
          '<li><b>Los Ojos se quedan en su puesto, en la mitad de arriba.</b> La cobertura buena está en medio y arriba; la entrada queda despejada.</li>',
          '<li><b>Exvotos que bajan a flanquear</b> (se reúnen fuera de tu alcance y entran juntos, por los lados) y <b>un Cireneo guardando a los Ojos</b>.</li>',
          '<li><b>Sin embudos</b> que pongan a la horda en fila delante del rayo.</li></ol>',
          '<p><b>Decidido (18-nov):</b> el Ojo está ya desde las ligeras (antes entraba en la segunda mitad del acto), porque es lo que te obliga a subir. La excepción es <b>el atrio</b>, el primer encuentro del acto, que enseña el remate sin presión.</p></div>',
-         '<p class="ley"><b>Leyenda:</b> <span>● Exvoto</span><span style="color:#a0503c">▲ Cireneo</span><span style="color:#8f78b0">◉ Ojo y su alcance (círculo morado)</span>'
+         '<p class="ley"><b>Leyenda:</b> <span>● Exvoto</span><span style="color:#a0503c">▲ Cireneo</span><span style="color:#8f78b0">◉ Ojo (sin alcance, solo línea de visión)</span>'
          '<span style="color:#7fb0d4">● tú al entrar y tu alcance inicial (círculo azul)</span><span>línea negra arriba = rastrillo</span><span>discontinua abajo = barrera de atrás</span>'
          '<span>punteada = corte entre las dos pantallas (aprox.)</span><span>pardo = sacos (cobertura baja)</span><span>alambre = discontinua gris</span><span>círculo gris = columna</span><span>cuadrado gris = estatua</span><span>listones = bancos (cobertura baja)</span></p>']
     for r in ROOMS:
@@ -281,8 +289,8 @@ h1{font-size:1.5em}h2{margin-top:2em;border-top:2px solid var(--line);padding-to
         h.append('<div class="tiers%s">' % (" one" if len(tiers) == 1 else ""))
         for t in tiers:
             en = r["tiers"][t]
-            ok = ojo_ok(en)
-            chk = "" if ok is None else ('<span class="ok">✓ el Ojo te alcanza al entrar</span>' if ok else '<span class="bad">✗ el Ojo no te alcanza al entrar</span>')
+            ok = ojo_ok(r, en)
+            chk = "" if ok is None else ('<span class="ok">✓ el Ojo te ve al entrar</span>' if ok else '<span class="bad">✗ ningún Ojo te ve al entrar (cobertura)</span>')
             label = "Única" if t == "unica" else t.capitalize()
             h.append('<div>%s<div class="t"><b>%s · %s</b>%s<br>%s</div></div>' % (svg(r, en), label, count(en), r["escala"][t], chk))
         h.append('</div>')
@@ -297,7 +305,7 @@ h1{font-size:1.5em}h2{margin-top:2em;border-top:2px solid var(--line);padding-to
         f.write("".join(h))
     for r in ROOMS:
         for t, en in r["tiers"].items():
-            ok = ojo_ok(en)
+            ok = ojo_ok(r, en)
             if ok is False:
                 print("REGLA 1 FALLA: %s %s" % (r["id"], t))
     print(out)

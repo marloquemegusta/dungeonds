@@ -662,6 +662,61 @@ static void ojo_gesture_tick(Enemy *e) {
     if (e->gesture > OJO_GESTURE_FRAMES) e->gesture = e->state == ENEMY_STATE_SENTENCE ? OJO_GESTURE_FRAMES : 0;   // held while the beam lasts
 }
 
+// The Ojo holds its post (DESIGN.md 6.13.9). With no sight of the hero for OJO_REPOSITION_FRAMES (and not aiming) it walks slowly to
+// the nearest point on its row, to the left or right, from which the line to the hero is open, never farther than OJO_LEASH_DIST from
+// its post nor lower than OJO_LEASH_DOWN_PX below it. With no such point it stands still. aim_px / aim_py hold the walking target
+// here (aim_px 0 = none); the walk clip is the usual one.
+static void ojo_reposition(Enemy *e, Enemy *enemies, int num_enemies, int idx, int wx, int wy, int px, int py,
+                           fixed player_x, fixed player_y, const EnemyTuning *tuning) {
+    if (++e->state_timer < OJO_REPOSITION_FRAMES) {
+        e->aim_px = 0;                                       // (also drops the point left by the last aim)
+        e->dir = dir_from_vector(player_x - e->x, player_y - e->y);
+        update_animation(e, 0);
+        return;
+    }
+    e->state_timer = OJO_REPOSITION_FRAMES;
+    if (e->aim_px == 0 || ((s_ai_tick + idx) & 15) == 0) {
+        const int hx = *enemy_home_x(e);
+        const int hy = *enemy_home_y(e);
+        const int cy = wy > hy + OJO_LEASH_DOWN_PX ? hy + OJO_LEASH_DOWN_PX : wy;
+        const int first = px >= wx ? 1 : -1;                 // the side toward the hero first
+        e->aim_px = 0;
+        for (int step = 1; step <= 6 && !e->aim_px; step++) {
+            for (int k = 0; k < 2 && !e->aim_px; k++) {
+                const int cx = wx + (k ? -first : first) * step * 16;
+                const int lx = cx - hx;
+                const int ly = cy - hy;
+                if (lx * lx + GROUND_DY2(ly) > OJO_LEASH_DIST * OJO_LEASH_DIST) continue;
+                if (line_is_walkable(wx, wy, cx, cy) && los_has_line_of_sight(cx, cy, px, py, 0)) {
+                    e->aim_px = cx;
+                    e->aim_py = cy;
+                }
+            }
+        }
+    }
+    if (e->aim_px == 0) {                                    // no opening inside the leash: it stays put
+        e->dir = dir_from_vector(player_x - e->x, player_y - e->y);
+        update_animation(e, 0);
+        return;
+    }
+    const int tdx = e->aim_px - wx;
+    const int tdy = e->aim_py - wy;
+    const int tdist = (int)int_sqrt((uint32_t)(tdx * tdx + GROUND_DY2(tdy)));
+    if (tdist <= 2) {
+        e->aim_px = 0;
+        update_animation(e, 0);
+        return;
+    }
+    fixed speed = burn_slow(e, (tuning->speed * OJO_REPOSITION_SPEED_PCT) / 100);
+    fixed vx = (fixed)div32(tdx * (int32_t)speed, tdist);
+    fixed vy = (fixed)div32(tdy * (int32_t)speed, tdist);
+    apply_separation(enemies, num_enemies, idx, &vx, &vy);
+    int moved = move_with_slide(&e->x, &e->y, vx, vy);
+    if (!moved) e->aim_px = 0;
+    e->dir = dir_from_vector(TO_FIXED(tdx), TO_FIXED(tdy));
+    update_animation(e, moved);
+}
+
 static void update_shooter(Enemy *e, Enemy *enemies, int num_enemies, int idx,
                            fixed player_x, fixed player_y) {
     const EnemyTuning *tuning = &g_enemy_tuning[ENEMY_TYPE_SHOOTER];
@@ -733,13 +788,14 @@ static void update_shooter(Enemy *e, Enemy *enemies, int num_enemies, int idx,
         default: {
             e->state = ENEMY_STATE_CHASE;
             e->gesture = 0;
+            const int homed = (e->home_flags & ENEMY_HOME_SET) != 0;       // encounter rooms: it holds a post, it does not hunt
             refresh_view(e, idx, wx, wy, px, py, ground_dist_sq, OJO_SIGHT_RANGE);   // walking flags (direct run)
             if (((s_ai_tick + idx) & 3) == 0 && ground_dist <= OJO_SIGHT_RANGE &&
                 los_has_line_of_sight(wx, wy, px, py, 0))
                 e->has_los |= VIEW_SIGHT;                                             // same cadence as the refresh above
             int sight = (e->has_los & VIEW_SIGHT) && ground_dist <= OJO_SIGHT_RANGE;
-            // Far above the player in the strip it keeps walking instead of aiming (the horde keeps them near).
-            int may_look = !(s_strip_mode && wy < py - HORDE_SHOOTER_TOP_LIMIT_PX);
+            // Horde: far above the player in the strip it keeps walking instead of aiming (the horde keeps them near).
+            int may_look = homed || !(s_strip_mode && wy < py - HORDE_SHOOTER_TOP_LIMIT_PX);
             if (sight && may_look && ojos_looking(enemies, num_enemies) < OJO_MAX_LOOKING) {
                 e->state = ENEMY_STATE_TRACK;
                 e->state_timer = OJO_TRACK_FRAMES;
@@ -748,6 +804,16 @@ static void update_shooter(Enemy *e, Enemy *enemies, int num_enemies, int idx,
                 e->aim_px = px;
                 e->aim_py = py;
                 e->dir = dir_from_vector(player_x - e->x, player_y - e->y);
+            } else if (homed) {
+                if (sight) {                                // no free aiming slot: it waits at its post, watching
+                    e->state = ENEMY_STATE_POSITION;
+                    e->state_timer = 0;
+                    e->aim_px = 0;
+                    e->dir = dir_from_vector(player_x - e->x, player_y - e->y);
+                    update_animation(e, 0);
+                } else {
+                    ojo_reposition(e, enemies, num_enemies, idx, wx, wy, px, py, player_x, player_y, tuning);
+                }
             } else if (sight && ground_dist <= OJO_WAIT_DIST) {
                 e->state = ENEMY_STATE_POSITION;        // no free slot: waits where it is
                 e->dir = dir_from_vector(player_x - e->x, player_y - e->y);
@@ -762,6 +828,46 @@ static void update_shooter(Enemy *e, Enemy *enemies, int num_enemies, int idx,
             break;
         }
     }
+}
+
+// Garrison (DESIGN.md 6.13.9): an Exvoto or Cireneo that wakes with the room but holds its post, watching the hero, until the hero
+// comes within GUARD_RELEASE_DIST of the post, it is hurt, or the Ojos it guards (posts within GUARD_OJO_BOND_DIST) are all dead.
+static void guard_release(Enemy *e) {
+    e->home_flags = 0;
+    e->aim_px = e->aim_py = e->beam_mx = e->beam_my = 0;      // the post lived in aim_px / aim_py: give the fields back clean
+    e->state = ENEMY_STATE_CHASE;
+    e->state_timer = 0;
+}
+
+static void update_guard(Enemy *e, Enemy *enemies, int num_enemies, int idx, fixed player_x, fixed player_y) {
+    if (g_player_state.is_dead) {
+        update_animation(e, 0);
+        return;
+    }
+    const int hx = *enemy_home_x(e);
+    const int hy = *enemy_home_y(e);
+    const int dx = TO_INT(player_x) - hx;
+    const int dy = TO_INT(player_y) - hy;
+    if (e->hp < e->max_hp || e->hit_timer > 0 || dx * dx + GROUND_DY2(dy) <= GUARD_RELEASE_DIST * GUARD_RELEASE_DIST) {
+        guard_release(e);
+        return;
+    }
+    if (((s_ai_tick + idx) & 7) == 0) {                      // the guarded Ojos: still alive?
+        int bonded = 0;
+        for (int j = 0; j < num_enemies && !bonded; j++) {
+            Enemy *o = &enemies[j];
+            if (!o->active || o->hp <= 0 || o->type != ENEMY_TYPE_SHOOTER || o->pack != e->pack || !(o->home_flags & ENEMY_HOME_SET)) continue;
+            int ox = *enemy_home_x(o) - hx;
+            int oy = *enemy_home_y(o) - hy;
+            if (ox * ox + GROUND_DY2(oy) <= GUARD_OJO_BOND_DIST * GUARD_OJO_BOND_DIST) bonded = 1;
+        }
+        if (!bonded) {
+            guard_release(e);
+            return;
+        }
+    }
+    e->dir = dir_from_vector(player_x - e->x, player_y - e->y);    // watches the hero
+    update_animation(e, 0);
 }
 
 // ---------------------------------------------------------------------------
@@ -1012,6 +1118,10 @@ ITCM_CODE void enemy_ai_update(Enemy *enemies, int num_enemies, fixed player_x, 
         if (g_sandbox_freeze_ai) continue;                 // sandbox: stand still, no move and no attack
 
         if (e->state == ENEMY_STATE_DORMANT) continue;     // asleep: encounters.c wakes the whole pack
+        if (e->state == ENEMY_STATE_GUARD) {               // garrison: holds its post until released
+            update_guard(e, enemies, num_enemies, i, player_x, player_y);
+            continue;
+        }
 
         // Level of detail: off-screen enemies that are only walking (CHASE / POSITION) think every 2nd frame,
         // staggered by index, and cover twice the distance on that frame.

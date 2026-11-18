@@ -19,7 +19,7 @@ PIECES = {"columna_entera": "STRIP_PIECE_COLUMNA_ENTERA", "relicario": "STRIP_PI
           "columna": "STRIP_PIECE_COLUMNA_ROTA"}
 ENEMIES = {"exvoto": "ENC_E_EXVOTO", "cireneo": "ENC_E_CIRENEO", "ojo": "ENC_E_OJO",
            "abanderado": "ENC_E_ABANDERADO", "monaguillo": "ENC_E_MONAGUILLO"}
-STATES = {"pray": "ENC_S_PRAY", "dormant": "ENC_S_DORMANT", "awake": "ENC_S_AWAKE"}
+STATES = {"pray": "ENC_S_PRAY", "dormant": "ENC_S_DORMANT", "awake": "ENC_S_AWAKE", "guard": "ENC_S_GUARD"}
 KINDS = {"sacos": "ENC_R_SACOS", "alambre": "ENC_R_ALAMBRE"}
 TIERS = ["ligera", "media", "dura"]
 

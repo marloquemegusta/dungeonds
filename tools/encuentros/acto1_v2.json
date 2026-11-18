@@ -58,6 +58,12 @@
    "ligera": {
     "enemies": [
      [
+      "ojo",
+      104,
+      30,
+      "awake"
+     ],
+     [
       "exvoto",
       94,
       70,
@@ -104,11 +110,29 @@
       114,
       250,
       "awake"
+     ],
+     [
+      "exvoto",
+      124,
+      34,
+      "guard"
+     ],
+     [
+      "exvoto",
+      84,
+      34,
+      "guard"
      ]
     ]
    },
    "media": {
     "enemies": [
+     [
+      "ojo",
+      36,
+      40,
+      "awake"
+     ],
      [
       "exvoto",
       94,
@@ -174,6 +198,18 @@
       104,
       20,
       "awake"
+     ],
+     [
+      "exvoto",
+      56,
+      44,
+      "guard"
+     ],
+     [
+      "exvoto",
+      16,
+      44,
+      "guard"
      ]
     ]
    },
@@ -253,9 +289,9 @@
      ],
      [
       "cireneo",
-      104,
-      20,
-      "awake"
+      56,
+      18,
+      "guard"
      ],
      [
       "ojo",
@@ -268,6 +304,24 @@
       172,
       14,
       "awake"
+     ],
+     [
+      "exvoto",
+      16,
+      18,
+      "guard"
+     ],
+     [
+      "exvoto",
+      192,
+      18,
+      "guard"
+     ],
+     [
+      "exvoto",
+      40,
+      38,
+      "guard"
      ]
     ]
    }
@@ -337,6 +391,18 @@
       180,
       160,
       "awake"
+     ],
+     [
+      "exvoto",
+      80,
+      44,
+      "guard"
+     ],
+     [
+      "exvoto",
+      40,
+      44,
+      "guard"
      ]
     ]
    },
@@ -401,6 +467,24 @@
       190,
       165,
       "awake"
+     ],
+     [
+      "cireneo",
+      100,
+      34,
+      "guard"
+     ],
+     [
+      "exvoto",
+      60,
+      44,
+      "guard"
+     ],
+     [
+      "exvoto",
+      140,
+      34,
+      "guard"
      ]
     ]
    },
@@ -420,9 +504,9 @@
      ],
      [
       "cireneo",
-      180,
-      70,
-      "awake"
+      60,
+      44,
+      "guard"
      ],
      [
       "exvoto",
@@ -483,6 +567,24 @@
       190,
       170,
       "awake"
+     ],
+     [
+      "exvoto",
+      20,
+      44,
+      "guard"
+     ],
+     [
+      "exvoto",
+      100,
+      34,
+      "guard"
+     ],
+     [
+      "exvoto",
+      44,
+      64,
+      "guard"
      ]
     ]
    }
@@ -554,6 +656,18 @@
       104,
       190,
       "awake"
+     ],
+     [
+      "exvoto",
+      124,
+      34,
+      "guard"
+     ],
+     [
+      "exvoto",
+      84,
+      34,
+      "guard"
      ]
     ]
    },
@@ -618,6 +732,24 @@
       104,
       60,
       "awake"
+     ],
+     [
+      "cireneo",
+      132,
+      28,
+      "guard"
+     ],
+     [
+      "exvoto",
+      76,
+      28,
+      "guard"
+     ],
+     [
+      "exvoto",
+      172,
+      28,
+      "guard"
      ]
     ]
    },
@@ -637,9 +769,9 @@
      ],
      [
       "cireneo",
-      104,
-      130,
-      "awake"
+      76,
+      28,
+      "guard"
      ],
      [
       "exvoto",
@@ -688,6 +820,24 @@
       104,
       60,
       "awake"
+     ],
+     [
+      "exvoto",
+      36,
+      28,
+      "guard"
+     ],
+     [
+      "exvoto",
+      172,
+      28,
+      "guard"
+     ],
+     [
+      "exvoto",
+      60,
+      48,
+      "guard"
      ]
     ]
    }
@@ -719,6 +869,12 @@
    "ligera": {
     "enemies": [
      [
+      "ojo",
+      104,
+      30,
+      "awake"
+     ],
+     [
       "exvoto",
       20,
       270,
@@ -765,11 +921,29 @@
       188,
       320,
       "awake"
+     ],
+     [
+      "exvoto",
+      108,
+      54,
+      "guard"
+     ],
+     [
+      "exvoto",
+      96,
+      74,
+      "guard"
      ]
     ]
    },
    "media": {
     "enemies": [
+     [
+      "ojo",
+      104,
+      30,
+      "awake"
+     ],
      [
       "exvoto",
       20,
@@ -835,6 +1009,18 @@
       104,
       120,
       "awake"
+     ],
+     [
+      "exvoto",
+      108,
+      54,
+      "guard"
+     ],
+     [
+      "exvoto",
+      96,
+      74,
+      "guard"
      ]
     ]
    },
@@ -914,15 +1100,33 @@
      ],
      [
       "cireneo",
-      104,
-      120,
-      "awake"
+      108,
+      54,
+      "guard"
      ],
      [
       "ojo",
       104,
       30,
       "awake"
+     ],
+     [
+      "exvoto",
+      108,
+      74,
+      "guard"
+     ],
+     [
+      "exvoto",
+      80,
+      94,
+      "guard"
+     ],
+     [
+      "exvoto",
+      108,
+      94,
+      "guard"
      ]
     ]
    }
@@ -943,6 +1147,12 @@
    "obstacles": [],
    "ligera": {
     "enemies": [
+     [
+      "ojo",
+      104,
+      30,
+      "awake"
+     ],
      [
       "exvoto",
       40,
@@ -1002,11 +1212,29 @@
       168,
       160,
       "awake"
+     ],
+     [
+      "exvoto",
+      124,
+      34,
+      "guard"
+     ],
+     [
+      "exvoto",
+      84,
+      34,
+      "guard"
      ]
     ]
    },
    "media": {
     "enemies": [
+     [
+      "ojo",
+      90,
+      34,
+      "awake"
+     ],
      [
       "exvoto",
       30,
@@ -1090,6 +1318,24 @@
       104,
       190,
       "awake"
+     ],
+     [
+      "cireneo",
+      90,
+      58,
+      "guard"
+     ],
+     [
+      "exvoto",
+      130,
+      54,
+      "guard"
+     ],
+     [
+      "exvoto",
+      50,
+      54,
+      "guard"
      ]
     ]
    },
@@ -1181,15 +1427,33 @@
      ],
      [
       "cireneo",
-      104,
+      60,
       20,
-      "awake"
+      "guard"
      ],
      [
       "ojo",
       40,
       16,
       "awake"
+     ],
+     [
+      "exvoto",
+      48,
+      40,
+      "guard"
+     ],
+     [
+      "exvoto",
+      12,
+      48,
+      "guard"
+     ],
+     [
+      "exvoto",
+      80,
+      32,
+      "guard"
      ]
     ]
    }
@@ -1261,6 +1525,12 @@
    "ligera": {
     "enemies": [
      [
+      "ojo",
+      104,
+      30,
+      "awake"
+     ],
+     [
       "exvoto",
       30,
       90,
@@ -1295,6 +1565,18 @@
       180,
       200,
       "awake"
+     ],
+     [
+      "exvoto",
+      124,
+      34,
+      "guard"
+     ],
+     [
+      "exvoto",
+      84,
+      34,
+      "guard"
      ]
     ]
    },
@@ -1353,6 +1635,24 @@
       50,
       300,
       "awake"
+     ],
+     [
+      "cireneo",
+      80,
+      34,
+      "guard"
+     ],
+     [
+      "exvoto",
+      120,
+      34,
+      "guard"
+     ],
+     [
+      "exvoto",
+      88,
+      54,
+      "guard"
      ]
     ]
    },
@@ -1372,9 +1672,9 @@
      ],
      [
       "cireneo",
-      120,
-      200,
-      "awake"
+      80,
+      34,
+      "guard"
      ],
      [
       "exvoto",
@@ -1423,6 +1723,24 @@
       50,
       300,
       "awake"
+     ],
+     [
+      "exvoto",
+      40,
+      34,
+      "guard"
+     ],
+     [
+      "exvoto",
+      100,
+      28,
+      "guard"
+     ],
+     [
+      "exvoto",
+      64,
+      54,
+      "guard"
      ]
     ]
    }

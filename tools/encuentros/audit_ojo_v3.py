@@ -3,7 +3,10 @@
 Para cada sala y población marca como EXPUESTA toda celda de suelo que algún Ojo alcanza (distancia <= alcance, sin que una
 columna o estatua le corte la línea, y sin que el héroe esté agachado a <= 30 px tras un banco o saco). Lo que queda son
 bolsas SEGURAS del Ojo: si son grandes y cercanas a la entrada, esperar allí sigue saliendo gratis.
-Uso: python tools/encuentros/audit_ojo_v3.py [alcance ...]   (por defecto 256 320)
+Metrica: la de la ROM, de SUELO 2:1: d = hypot(dx, 2*dy) con dx, dy en px de pantalla (GROUND_DY2 en collision.h). Decision 2026-11-18: el Ojo NO tiene alcance
+(OJO_SIGHT_RANGE = 1000 en la ROM, mas que el punto mas lejano de una sala, ~800): solo lo corta la linea de vision. Sin argumentos
+el script audita sin alcance; con argumentos prueba alcances de suelo (p. ej. 320 640) para comparar.
+Uso: python tools/encuentros/audit_ojo_v3.py [alcance ...]
 """
 import sys,math
 import os
@@ -37,8 +40,9 @@ def seg_rect_t(ax,ay,bx,by,r):
 def inside(x,y,r): return r[0]<=x<=r[2] and r[1]<=y<=r[3]
 def exposed(x,y,ojos,R,tall,low):
     for ox,oy in ojos:
-        d=math.hypot(ox-x,oy-y)
-        if d>R: continue
+        ds=math.hypot(ox-x,oy-y)   # pantalla (para el tramo agachado)
+        d=math.hypot(ox-x,2*(oy-y))  # suelo 2:1, como la ROM
+        if R is not None and d>R: continue
         if any(inside(x,y,r) for r in tall): continue
         blocked=False
         for r in tall:
@@ -47,7 +51,7 @@ def exposed(x,y,ojos,R,tall,low):
         # crouch: low cover within 30px of the hero toward the Ojo
         for r in low:
             t=seg_rect_t(x,y,ox,oy,r)
-            if t is not None and t*d<=30: blocked=True;break
+            if t is not None and t*ds<=30: blocked=True;break
         if blocked: continue
         return True
     return False
@@ -87,9 +91,9 @@ def bolsa_segura(room, ojos, R):
 
 
 def main():
-    rs = [int(a) for a in sys.argv[1:]] or [256, 320]
+    rs = [int(a) for a in sys.argv[1:]] or [None]
     for R in rs:
-        print("=== alcance del Ojo", R, "px  (seguro % de suelo | px2 de pie en la mitad de abajo | mayor bolsa px2)")
+        print("=== alcance del Ojo", ("sin limite (solo linea de vision)" if R is None else "%d px de suelo (hypot(dx,2dy))" % R), "  (seguro % de suelo | px2 de pie en la mitad de abajo | mayor bolsa px2)")
         for room in c.ROOMS:
             for tn, en in room["tiers"].items():
                 ojos = [(x, y) for k, x, y in en if k == "ojo"]

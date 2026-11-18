@@ -1454,5 +1454,5 @@
   "escort_respawn_frames": 240,
   "note": "bloque con barrera arriba; al vencer, texto VICTORIA (prototipo)"
  },
- "ojo_range": 320
+ "ojo_sight": "sin alcance: solo linea de vision (OJO_SIGHT_RANGE 1000 en la ROM)"
 }
