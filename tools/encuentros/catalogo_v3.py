@@ -19,7 +19,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import catalogo_v2 as v2  # noqa: E402  (reutiliza el ajuste de piezas a fases legales y pares simétricos)
 
 PIECE = {"banco_grupo4": (72, 84), "columna_entera": (24, 24), "santo": (28, 28)}
-OJO_RANGE = 256       # [TUNABLE-PLACEHOLDER] alcance del Ojo (antes ~140; rayo base del héroe 160, máximo 416)
+OJO_RANGE = 320       # [TUNABLE-PLACEHOLDER] alcance del Ojo (antes ~140; rayo base del héroe 160, máximo 416). 320 cubre todo el suelo desde un puesto central: con 256 quedan bolsas seguras de 60x60 a 90x90 px en las esquinas de abajo (tools/encuentros/audit_ojo_v3.py)
 HERO_RANGE = 160      # rayo base del héroe (DESIGN.md 6.12.10)
 ENTRY = (104, 348)    # el héroe al cerrarse la barrera de atrás (36 px dentro de la sala)
 STATE = {"exvoto": "flank", "ojo": "post", "cireneo": "guard"}
@@ -91,7 +91,7 @@ ROOMS = [
                 "subir (paran todos los disparos). Una de las dos es la rota. Los Exvotos bajan por los lados de las columnas a sacarte.",
         "resolver": "Llegar a una columna, aguantar la mirada detrás, rematar a los que vienen y subir al balcón. El Cireneo que embiste contra la columna se queda aturdido: remátalo.",
         "antes": "Las estatuas estaban junto a la entrada: te quedabas detrás de una sin subir nunca. Ahora la cobertura está a medio camino.",
-        "pieces": [("columna_entera", 36, 176), ("columna_entera", 148, 176), ("santo", 8, 40), ("santo", 172, 40)],
+        "pieces": [("columna_entera", 36, 150), ("columna_entera", 148, 260), ("santo", 8, 40), ("santo", 172, 40)],
         "obstacles": [],
         "tiers": {
             "ligera": [["ojo", 104, 96]] + ex((30, 90), (178, 90), (60, 40), (148, 40), (20, 150), (188, 150)),
