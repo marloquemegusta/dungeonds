@@ -60,18 +60,27 @@ steps = [
     {"poke": stage(HY1 + 8, []) + pokes(seq=1), "frames": 1},
     {"wait_until": {"field": "ack", "equals": 1, "timeout_frames": 30}},
     {"frames": 3},                      # the strip bands under the teleport finish drawing
-    seq("s1_agacha", 24, state_capture="quieto"),
-    # 2. walks north along the face, crouched and slow
+    # The bench is east of him (x 288): he crouches only while the cross pushes RIGHT, toward it (DESIGN.md 6.13.6).
+    {"button_down": "RIGHT", **seq("s1_agacha", 24, state_capture="quieto")},
+    # 2. pushes UP too (diagonal toward the bench): walks north along the face, crouched and slow
     {"button_down": "UP", **seq("s2_andar", 30, state_capture="andando")},
     {"button_up": "UP", **seq("s3_quieto", 18)},
+    # 2b. parallel: from the south end of the face he pushes only UP (along the bench, away from it): he stands
+    {"poke": stage(HY0, []) + pokes(seq=3), "frames": 1},
+    {"wait_until": {"field": "ack", "equals": 3, "timeout_frames": 30}},
+    {"frames": 3},
+    {"button_up": "RIGHT", "frames": 0},
+    {"button_down": "UP", **seq("s2b_paralelo", 14, state_capture="paralelo")},
+    {"button_up": "UP", "frames": 0},
+    {"button_down": "RIGHT", "frames": 0},
     # 3. the Ojo appears across the bench and aims: track -> lock -> the beam crosses the bench and misses
-    {"poke": stage(HY1, [(OJO, OX, OY)]) + pokes(seq=2), "frames": 1},
-    {"wait_until": {"field": "ack", "equals": 2, "timeout_frames": 30}},
+    {"poke": stage(HY1, [(OJO, OX, OY)]) + pokes(seq=4), "frames": 1},
+    {"wait_until": {"field": "ack", "equals": 4, "timeout_frames": 30}},
     seq("s4_mira", 30),
-    {"wait_until": {"field": "en0_state", "equals": ST_SENTENCE, "timeout_frames": 200}, "state_capture": "haz_sentencia"},
-    seq("s5_haz", 36, state_capture="haz_fin"),
+    # crouched and still pushing RIGHT: the Ojo waits at the start of its aim (TRACK) and never fires at him
+    seq("s5_espera", 200, every=20, state_capture="espera_cubierto"),
     # 4. next gaze: the stylus touches (he stands up to aim) and the same beam hits him
-    {"wait_until": {"field": "en0_state", "equals": ST_TRACK, "timeout_frames": 400}},
+    {"button_up": "RIGHT", "frames": 0},  # letting go of the cross too: a held push would crouch him again after the tap
     {"tap": {"x": 217, "y": 112}, **seq("s6_levanta", 24, state_capture="de_pie")},
     {"wait_until": {"field": "en0_state", "equals": ST_SENTENCE, "timeout_frames": 200}},
     seq("s7_haz2", 36, state_capture="haz2_fin"),
@@ -81,7 +90,8 @@ steps = [
 scenario = {
     "name": "cobertura_baja_agachado",
     "description": "cathedral-sandbox ROM (seed 0xC0DE1234, banco_grupo4 at world 280,832; see tools/cobertura_scenes.py). The hero "
-                   "hugs the west face of the first bench row (x 281, y 862 -> 854) and crouches (pose, then crouched walk at half speed). "
+                   "hugs the west face of the first bench row (x 281, y 862 -> 854). He crouches only while he pushes RIGHT toward the "
+                   "bench (pose, then crouched walk at half speed, also diagonal up-right); pushing only UP along the face he stands. "
                    "An Ojo at (372,854) beams west along y ~854 across 64 px of low-cover cells (x 288..351): crouched he takes no "
                    "damage. On the next gaze the stylus touches, he stands up and the same line hits him (5 -> 4 hp).",
     "tags": ["coberturas", "ojo-tribunal"],
@@ -92,9 +102,10 @@ scenario = {
         "state_changes": [
             {"at": "quieto", "field": "crouched", "equals": 1},
             {"at": "andando", "field": "crouched", "equals": 1},
-            {"at": "haz_sentencia", "field": "crouched", "equals": 1},
-            {"at": "haz_sentencia", "field": "player_hp", "equals": 5},
-            {"at": "haz_fin", "field": "player_hp", "equals": 5},
+            {"at": "paralelo", "field": "crouched", "equals": 0},
+            {"at": "espera_cubierto", "field": "crouched", "equals": 1},
+            {"at": "espera_cubierto", "field": "en0_state", "equals": ST_TRACK},
+            {"at": "espera_cubierto", "field": "player_hp", "equals": 5},
             {"at": "de_pie", "field": "crouched", "equals": 0},
             {"at": "haz2_fin", "field": "player_hp", "equals": 4},
         ]

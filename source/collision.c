@@ -177,6 +177,58 @@ ITCM_CODE int low_cover_near(int wx, int wy, int reach) {
     return 0;
 }
 
+// Is the cell under ground point (wx, wy) low cover (value 2)? Points off the arena count as free.
+static int low_cover_at(int wx, int wy) {
+    if (wx < 0 || wy < 0) return 0;
+    const int cx = wx / COLLISION_SCALE;
+    const int cy = wy / COLLISION_SCALE;
+    if (cx >= g_arena->collision_w || cy >= g_arena->collision_h) return 0;
+    return world_collision_flags(cx, cy) == 2;
+}
+
+// Bench test start (see collision.h). Scans the whole arena once at boot: the nearest low-cover cell, then the first
+// ground point under it (k px below its bottom edge) that is free and hugs it.
+int low_cover_find_spot(int from_x, int from_y, int reach, int *out_x, int *out_y) {
+    int best_d = -1;
+    int bx = 0, by = 0;
+    for (int cy = 0; cy < g_arena->collision_h; cy++) {
+        for (int cx = 0; cx < g_arena->collision_w; cx++) {
+            if (world_collision_flags(cx, cy) != 2) continue;
+            const int x = cx * COLLISION_SCALE + COLLISION_SCALE / 2;
+            const int bottom = (cy + 1) * COLLISION_SCALE;
+            const int dx = x - from_x, dy = bottom - from_y;
+            const int d = dx * dx + dy * dy;
+            if (best_d >= 0 && d >= best_d) continue;
+            for (int k = 1; k <= 16; k++) {
+                const int py = bottom + k;
+                if (!position_is_free(TO_FIXED(x), TO_FIXED(py))) continue;
+                if (!low_cover_near(x, py, reach)) continue;
+                best_d = d;
+                bx = x;
+                by = py;
+                break;
+            }
+        }
+    }
+    if (best_d < 0) return 0;
+    *out_x = bx;
+    *out_y = by;
+    return 1;
+}
+
+// Low cover the hero is pushing toward (DESIGN.md 6.13.6): the same `reach` ellipse as low_cover_near, sampled on the
+// edge of that ellipse on each axis the input (ix, iy, screen space, -1..1) points along. Cover on the side he pushes
+// toward answers; cover he only walks past (parallel to him) does not, so he stays standing.
+ITCM_CODE int low_cover_toward(int wx, int wy, int reach, int ix, int iy) {
+    const int rx = 6 + reach;
+    const int ry = rx >> GROUND_Y_SHIFT;
+    if (ix > 0 && low_cover_at(wx + rx, wy)) return 1;
+    if (ix < 0 && low_cover_at(wx - rx, wy)) return 1;
+    if (iy > 0 && low_cover_at(wx, wy + ry)) return 1;
+    if (iy < 0 && low_cover_at(wx, wy - ry)) return 1;
+    return 0;
+}
+
 // Does the straight segment (x0,y0) -> (x1,y1), in ground px, cross a low-cover cell (value 2) strictly between
 // its ends? Samples every ~4 px like bullet_line_is_free; the end cells are skipped so the shooter's own cell and
 // the hero's (which touches the cover) never count.

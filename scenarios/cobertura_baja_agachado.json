@@ -1,6 +1,6 @@
 {
   "name": "cobertura_baja_agachado",
-  "description": "cathedral-sandbox ROM (seed 0xC0DE1234, banco_grupo4 at world 280,832; see tools/cobertura_scenes.py). The hero hugs the west face of the first bench row (x 281, y 862 -> 854) and crouches (pose, then crouched walk at half speed). An Ojo at (372,854) looks west along y ~854 across 64 px of low-cover cells (x 288..351). Crouched, the tactical Ojo never fires: after 230 frames it is still in TRACK (waiting at the start of its aim, eyes on him) and he has 5 hp. When the stylus touches and he stands up, the full aim (TRACK, LOCK) runs and the same line hits him (5 -> 4 hp).",
+  "description": "cathedral-sandbox ROM (seed 0xC0DE1234, banco_grupo4 at world 280,832; see tools/cobertura_scenes.py). The hero hugs the west face of the first bench row (x 281, y 862 -> 854). He crouches only while he pushes RIGHT toward the bench (pose, then crouched walk at half speed, also diagonal up-right); pushing only UP along the face he stands. An Ojo at (372,854) beams west along y ~854 across 64 px of low-cover cells (x 288..351): crouched he takes no damage. On the next gaze the stylus touches, he stands up and the same line hits him (5 -> 4 hp).",
   "tags": [
     "coberturas",
     "ojo-tribunal"
@@ -143,6 +143,7 @@
       "frames": 3
     },
     {
+      "button_down": "RIGHT",
       "frames": 24,
       "capture_sequence": "s1_agacha",
       "capture_every": 3,
@@ -160,6 +161,68 @@
       "frames": 18,
       "capture_sequence": "s3_quieto",
       "capture_every": 3
+    },
+    {
+      "poke": [
+        {
+          "field": "player_x",
+          "value": 281
+        },
+        {
+          "field": "player_y",
+          "value": 862
+        },
+        {
+          "field": "weapon",
+          "value": 0
+        },
+        {
+          "field": "style",
+          "value": 0
+        },
+        {
+          "field": "flags",
+          "value": 33
+        },
+        {
+          "field": "enemy_count",
+          "value": 0
+        },
+        {
+          "field": "seq",
+          "value": 3
+        }
+      ],
+      "frames": 1
+    },
+    {
+      "wait_until": {
+        "field": "ack",
+        "equals": 3,
+        "timeout_frames": 30
+      }
+    },
+    {
+      "frames": 3
+    },
+    {
+      "button_up": "RIGHT",
+      "frames": 0
+    },
+    {
+      "button_down": "UP",
+      "frames": 14,
+      "capture_sequence": "s2b_paralelo",
+      "capture_every": 3,
+      "state_capture": "paralelo"
+    },
+    {
+      "button_up": "UP",
+      "frames": 0
+    },
+    {
+      "button_down": "RIGHT",
+      "frames": 0
     },
     {
       "poke": [
@@ -205,7 +268,7 @@
         },
         {
           "field": "seq",
-          "value": 2
+          "value": 4
         }
       ],
       "frames": 1
@@ -213,7 +276,7 @@
     {
       "wait_until": {
         "field": "ack",
-        "equals": 2,
+        "equals": 4,
         "timeout_frames": 30
       }
     },
@@ -227,6 +290,10 @@
       "capture_sequence": "s5_espera",
       "capture_every": 20,
       "state_capture": "espera_cubierto"
+    },
+    {
+      "button_up": "RIGHT",
+      "frames": 0
     },
     {
       "tap": {
@@ -269,6 +336,11 @@
         "at": "andando",
         "field": "crouched",
         "equals": 1
+      },
+      {
+        "at": "paralelo",
+        "field": "crouched",
+        "equals": 0
       },
       {
         "at": "espera_cubierto",

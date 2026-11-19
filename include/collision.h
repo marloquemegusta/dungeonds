@@ -27,6 +27,11 @@ int bullet_line_is_free(int x0, int y0, int x1, int y1);
 // Low cover (grid value 2): true when a cell of value 2 lies within `reach` px of the body footprint at ground
 // point (wx, wy), in world px (same units as position_is_free).
 int low_cover_near(int wx, int wy, int reach);
+// Low cover on the side the input (ix, iy: -1, 0 or 1 per axis, screen space) pushes toward, within the same reach.
+int low_cover_toward(int wx, int wy, int reach, int ix, int iy);
+// Bench test start: the low-cover cell nearest (from_x, from_y) with a free ground point just below it that hugs it
+// within `reach`. Returns 1 and writes the point (world px, feet), or 0 when the arena has no such spot.
+int low_cover_find_spot(int from_x, int from_y, int reach, int *out_x, int *out_y);
 // True when the segment between two world points crosses a low-cover cell (endpoints excluded).
 int line_crosses_low_cover(int x0, int y0, int x1, int y1);
 

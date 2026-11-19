@@ -237,9 +237,10 @@ static void init_char_sprite_data(void) {
 #define SHOT_LAST_FRAME (PLAYER_NUM_FRAMES - 1)
 
 // ---------------------------------------------------------------------------
-// Crouching behind low cover (DESIGN.md 6.9, "Agacharse tras coberturas bajas"): no button. Hugging a bench or
-// sacks (grid value 2) without the stylus on screen crouches the hero (CHAR_HERO_CROUCH_WALK), who then walks
-// slower. Touching stands him up on the same frame so the shot is never delayed.
+// Crouching behind low cover (DESIGN.md 6.13.6, "Agacharse tras coberturas bajas"): no button. Hugging a bench or
+// sacks (grid value 2) and pushing the cross toward them crouches the hero (CHAR_HERO_CROUCH_WALK), who then walks
+// slower. Walking along them, or standing still, keeps him up. Touching stands him up on the same frame so the shot
+// is never delayed.
 // ---------------------------------------------------------------------------
 
 #define CROUCH_HUG_PX 4                  // [TUNABLE-PLACEHOLDER] "pegado": the footprint is <= 4 px from low cover
@@ -250,6 +251,22 @@ static void init_char_sprite_data(void) {
 static int s_crouched = 0;               // crouched pose in use
 static int s_crouch_timer = 0;           // consecutive frames that want a different state than s_crouched
 int g_hero_crouched = 0;                 // read by enemy_ai.c: a crouched hero is covered from shots across low cover
+
+// Bench test ROM (variant "cobertura-prueba", DESIGN.md 6.13.6): no enemies, god mode, and the hero starts just below
+// the bench nearest the strip start. The rest of the game (strip, bench collision, crouch rules) is the real one.
+#ifndef COBERTURA_PRUEBA
+#define COBERTURA_PRUEBA 0
+#endif
+#if COBERTURA_PRUEBA
+static void cobertura_test_start(void) {
+    int x, y;
+    if (low_cover_find_spot(g_arena->player_x, g_arena->player_y, CROUCH_HUG_PX, &x, &y)) {
+        s_player.x = TO_FIXED(x);
+        s_player.y = TO_FIXED(y);
+    }
+    g_player_state.god_mode = 1;
+}
+#endif
 
 static int s_hero_clip_frame = -1;  // clip frame drawn and used for the muzzle; -1 = walk or rest pose
 static int s_shot_active = 0;       // the recovery after a sniper shot is playing
@@ -2240,6 +2257,9 @@ static void strip_enemies_update(void) {
     // Fixed sandbox dummies replace the procedural horde in the review ROM.
     return;
 #endif
+#if COBERTURA_PRUEBA
+    return;                 // bench test ROM: no enemies at all
+#endif
     nav_set_goal(TO_INT(s_player.x), TO_INT(s_player.y));
     nav_update(NAV_BUDGET_PER_FRAME);
 #if ENCOUNTERS_PROTO
@@ -2495,7 +2515,12 @@ static void player_update(uint32_t keys, uint32_t keys_down) {
         s_crouched = 0;                // the stylus (or the recovery of a shot) always keeps him standing
         s_crouch_timer = 0;
     } else {
-        const int want = low_cover_near(TO_INT(s_player.x), TO_INT(s_player.y), CROUCH_HUG_PX);
+        // Crouch only while the cross pushes toward the cover (DESIGN.md 6.13.6): hugging it and walking along it stands.
+        const int push_x = ((keys & KEY_RIGHT) ? 1 : 0) - ((keys & KEY_LEFT) ? 1 : 0);
+        const int push_y = ((keys & KEY_DOWN) ? 1 : 0) - ((keys & KEY_UP) ? 1 : 0);
+        const int want = (push_x != 0 || push_y != 0) &&
+            low_cover_near(TO_INT(s_player.x), TO_INT(s_player.y), CROUCH_HUG_PX) &&
+            low_cover_toward(TO_INT(s_player.x), TO_INT(s_player.y), CROUCH_HUG_PX, push_x, push_y);
         if (want == s_crouched) {
             s_crouch_timer = 0;
         } else if (++s_crouch_timer >= CROUCH_TRANSITION_FRAMES) {
@@ -2850,6 +2875,9 @@ int main(void) {
     nav_set_goal(g_arena->player_x, g_arena->player_y);
     nav_rebuild_now();                  // at boot a full search costs nothing visible
     player_init();
+#if COBERTURA_PRUEBA
+    cobertura_test_start();
+#endif
 #if STRESS_TEST
     g_player_state.god_mode = 1;      // measurement build: the horde cannot kill the player
 #endif
