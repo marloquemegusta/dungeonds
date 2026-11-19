@@ -1,8 +1,8 @@
 # DESIGN.md - Documento de Diseño
 
 > **Estado vigente (revisado 2026-11-19).** Lo que describe este documento y la ROM por defecto, de un vistazo. El texto histórico (v0.1, v0.2, la franja infinita y la marea) está en `DESIGN-ARCHIVE.md`.
-> - **Partida:** el Acto I por encuentros (§6.13.6): salas hechas a mano de 2 pantallas, barrera que se abre al limpiar, pasillo con relicario y jefe al final. Sin marea, sin horda continua, sin gemas ni experiencia. La ROM juega 14 stages con 3 jefes: El Abanderado en el 5, el 10 y el 14.
-> - **Mejoras:** se rompe un relicario por pasillo y se elige un Don; la reliquia, en el relicario dorado a mitad del acto y al vencer a cada jefe (§6.12, §6.13.5, §6.13.6).
+> - **Partida:** el Acto I por encuentros (§6.13.6): salas hechas a mano de 2 pantallas, barrera que se abre al limpiar, pasillo con relicario y jefe al final. Sin marea, sin horda continua, sin gemas ni experiencia. La ROM juega 15 stages (3 actos × 5 stages) con 3 jefes: El Abanderado en el 5, el 10 y el 15, y el Altar en el pasillo posterior al stage 15 («Fin de la demo»).
+> - **Mejoras:** en cada pasillo entre niveles hay un relicario normal que da un Don (14 en total); al vencer a cada jefe (stages 5, 10 y 15) aparece un relicario dorado en la propia sala del jefe que da una Reliquia (3 por partida; §6.12, §6.13.5, §6.13.6).
 > - **Rayo del Corazón Abierto:** se carga y se suelta; al volver a pulsar la carga empieza al instante, sin recuperación tras el disparo (§6.10). El ritmo lo marca solo el tiempo de carga.
 > - **Enemigos:** Exvoto, Cireneo, Ojo del Tribunal y Abanderado (jefe) con las vidas de `include/encounters_act1_hp.h` (§6.11.1).
 > - **Acciones:** cruceta mueve; lápiz apunta y carga; `L` remata (§6.13.8); agacharse tras coberturas bajas es automático (§6.13.6).
@@ -10,7 +10,7 @@
 ## 1. Visión y Alcance
 - **Concepto:** survivors de frente vertical para Nintendo DS, con apuntado manual y tono gótico/grimdark (el Corazón Abierto y otros futuros personajes contra los caídos de la Cruzada). Referencias: Halls of Torment y Vampire Survivors por el bucle; Diablo y Warhammer 40K: Inquisitor por lo que engancha al usuario (ir a la siguiente misión y mejorar); Isaac por la dificultad (lo normal es morir pronto hasta conocer las mejoras).
 - **Pilar:** combate de Doom en isométrico (cada personaje con un arma contundente y mucho *feel*, esquivar con strafe), contra enemigos colocados con intención en salas que hay que abrirse a tiros. Las dos pantallas forman un campo vertical: la superior es parte del combate (también te dispara) y se puede apuntar a ella.
-- **Bucle vigente (decidido 2026-11-16 y 2026-11-17, §6.13):** una subida de 15–18 min por un Vía Crucis de 14 estaciones en tres actos, con un jefe al final de cada uno. Cada acto es una cadena de encuentros (sala cerrada que se abre al limpiarla) y pasillos con un relicario que da un Don. Personaje = arma única. Hoy solo existe el Acto I y El Abanderado como jefe (repetido en los stages 10 y 14).
+- **Bucle vigente (decidido 2026-11-16, 2026-11-17 y 2026-11-19, §6.13):** una subida de 15–18 min de 15 stages en tres actos (4 encuentros + 1 jefe por acto). Cada acto es una cadena de encuentros (sala cerrada que se abre al limpiarla) y pasillos con un relicario normal que da un Don; al vencer al jefe de cada acto aparece un relicario dorado en su sala con una Reliquia, y tras el último jefe espera el Altar. Personaje = arma única. Hoy solo existe el Acto I y El Abanderado como jefe (repetido en los stages 10 y 15).
 - **Fantasía:** la Columna intentó llegar al Altar de una catedral que no termina y cayó por el camino; el jugador hace el mismo recorrido (`LORE.md`). Los personajes, enemigos y mapas actuales son una primera versión con la estética buena; el sistema debe aguantar cambiarlos.
 - **Fuera de la prueba, a propósito:** progresión entre partidas (equipo, desbloqueos), más de un personaje y más de un acto con contenido. La capa de equipo es el gancho a largo plazo (Diablo) y se diseña tras validar que una partida divierte.
 - **Historia de la dirección:** nació como un Diablo de nigromancia con esbirros y pasó por arenas (v0.1), mazmorra de manadas (v0.2) y survivors con marea y horda (v0.3). El 2026-11-16 se sustituyó por salas a mano (encuentros, §6.13.6) porque el apuntado manual y las coberturas piden enemigos colocados con intención. Detalle en `DESIGN-ARCHIVE.md`. La lanza ósea y la muerte por fragmentos quedan como FX reutilizables.
@@ -436,8 +436,8 @@ Sustituyó al nivel infinito de la 0.3 (historia en `DESIGN-ARCHIVE.md`). Motivo
   3. **Solo el jefe y su escolta:** no aparece nada más en la sala.
 - **Encuentro coreografiado (por defecto):** el jefe llega con una escolta definida que se renueva desde arriba según la vas matando; por ejemplo, el Abanderado con varios Ojos y algún Cireneo. Qué escolta lleva cada jefe y a qué ritmo vuelve se decide en su sesión.
 - **Alternativa por jefe: el jefe solo,** reforzado para que sea interesante sin escolta. Se elige una u otra en la sesión de cada jefe.
-- **Al ganar:** el jefe da una reliquia (§6.13.5), se desbloquea la pantalla y, tras un respiro, empieza el acto siguiente.
-- **El Abanderado** es ya el jefe fijo de la estación V (stage 5) y su invocación de monaguillos es la base de su encuentro; repite en los stages 10 y 14 hasta que existan el Campanero y El Paso.
+- **Al ganar:** en la propia sala del jefe aparece un **relicario dorado** que da una Reliquia al romperlo (§6.13.5), se abre la barrera superior y se avanza al pasillo siguiente (con relicario normal tras los jefes 1 y 2, o con el Altar tras el jefe 3).
+- **El Abanderado** es ya el jefe fijo del stage 5 y su invocación de monaguillos es la base de su encuentro; repite en los stages 10 y 15 hasta que existan el Campanero y El Paso.
 
 #### 6.13.2 El Campanero de Ánimas (jefe del acto II, dirección inicial)
 - **Poder (dirección del usuario, detalle por decidir):** refuerza a los enemigos que tiene alrededor: más fuertes o invulnerables mientras dura el efecto. El toque de campana es la telegrafía (concepto de §6.10). El combate pide romper su protección o separar a los enemigos de él antes de atacarlos.
@@ -453,18 +453,17 @@ Sustituyó al nivel infinito de la 0.3 (historia en `DESIGN-ARCHIVE.md`). Motivo
 2. Pieza visual de las estaciones y aspecto de cada acto (sesión del escenario).
 3. Qué es el Altar y qué encuentra Elías al llegar (`LORE.md` §9).
 
-#### 6.13.5 Ritmo de mejoras en la Subida (decidido 2026-11-16)
-Sustituyó al reparto de reliquias por nivel de experiencia (ya retirado).
-- **4 reliquias por partida, como ahora,** para no tocar el equilibrio de §6.12:
-  1. **Relicario dorado a mitad del acto I:** la primera, en el pasillo que sigue al stage 6 (la sala posterior al primer jefe, stage 5; `ENC_GOLDEN_AFTER`), para que la construcción empiece a definirse en el acto I.
-  2. **Jefe 1 (Abanderado), jefe 2 (Campanero) y jefe final (El Paso):** una al vencer a cada uno, con la misma pantalla de marco dorado de §6.12.4. La de El Paso llega para las criptas.
+#### 6.13.5 Ritmo de mejoras en la Subida (revisado 2026-11-19)
+Sustituyó al reparto de reliquias por nivel de experiencia (ya retirado) y al relicario dorado en pasillo.
+- **3 reliquias por partida (una por jefe):** al vencer a cada jefe (stages 5, 10 y 15) aparece un **relicario dorado** en la propia sala del jefe. Al romperlo a tiros se abre la oferta de Reliquia con marco dorado de §6.12.4.
 - **Cada jefe es un punto de inflexión de la build.** Las reglas de oferta de §6.12.4 (arquetipo compartido, requisitos, una reliquia cogida sale del pool) valen igual.
-- **Dones:** salen de los relicarios de los pasillos (§6.13.6), 12 por partida completa.
+- **Dones:** salen de los relicarios normales de los pasillos entre niveles (§6.13.6), 14 por partida completa.
+- **Altar final:** en el pasillo posterior al último jefe (stage 15), en lugar de un relicario normal, está el Altar; al destruirlo termina la demo («Fin de la demo»).
 
 #### 6.13.6 Escenario por actos: encuentros y pasillos (decidido 2026-11-16, rama `docs/escenario-actos`)
 Sustituyó (implementado en la ROM desde 2026-11-17) al compositor v2 de la catedral, a la marea y la horda aleatoria y a las gemas y la experiencia, todo archivado en `DESIGN-ARCHIVE.md`. Motivo: el apuntado manual y las coberturas piden enemigos colocados con intención (ADN de *twin-stick*: Enter the Gungeon, Isaac), y la marea castigaba justo lo que se quiere diseñar (pensar el encuentro, desviarse al relicario).
 
-**Lo que juega la ROM:** 14 stages (encuentros y pasillos) con 3 jefes: El Abanderado en el 5, el 10 y el 14.
+**Lo que juega la ROM:** 15 stages (encuentros y pasillos) con 3 jefes: El Abanderado en el 5, el 10 y el 15, más el pasillo final del Altar.
 
 **Qué es juego y qué es lore.** El juego se describe con cinco palabras: partida, acto, encuentro, pasillo, pieza. Nave, coro y Calvario son el lore de cada acto y deciden qué piezas usa; el Vía Crucis y sus estaciones son ambientación y no marcan dónde pasan cosas. El pórtico son las primeras pantallas despejadas del acto I.
 
@@ -503,9 +502,10 @@ Sustituyó (implementado en la ROM desde 2026-11-17) al compositor v2 de la cate
   - Referencia de género: las mesas volcadas de Enter the Gungeon.
 
 **Relicario en cada pasillo: mejora continua y periódica.**
-- Sin gemas ni experiencia. En cada pasillo, a un lado, hay un **relicario**: al romperlo a tiros da **elegir un Don**. Los relicarios decorativos al azar desaparecen.
-- Un relicario por pasillo da 12 Dones por partida completa: las cifras de los Dones valen como están y se ajustan jugando.
-- **Reliquias:** 4 por partida, como en §6.13.5. Al vencer a cada jefe, y la primera en un relicario de marco dorado a mitad del acto I (sustituye a la del nivel 5).
+- Sin gemas ni experiencia. En cada uno de los 14 pasillos entre niveles, a un lado, hay un **relicario normal**: al romperlo a tiros da **elegir un Don**. Los relicarios decorativos al azar desaparecen.
+- Un relicario por pasillo da 14 Dones por partida completa: las cifras de los Dones valen como están y se ajustan jugando.
+- **Reliquias:** 3 por partida, como en §6.13.5, en un **relicario dorado** que aparece en la sala de cada jefe al derrotarlo.
+- **Altar:** en el pasillo posterior al último jefe (stage 15), en vez de un relicario normal; al destruirlo termina la demo.
 
 **Daño: varios disparos por enemigo.**
 | Enemigo | Disparos con el rayo base |

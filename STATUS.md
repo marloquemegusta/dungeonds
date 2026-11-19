@@ -4,7 +4,7 @@ Primero el estado necesario para retomar el trabajo sin depender del chat; despu
 
 ## Estado actual (2026-11-19)
 
-**Qué es hoy el juego** (detalle en `DESIGN.md`, «Estado vigente»): la ROM por defecto es el Acto I por encuentros: salas hechas a mano con barrera que se abre al limpiarlas, pasillo con relicario (un Don por relicario, reliquia en el relicario dorado y al vencer a cada jefe) y El Abanderado como jefe (stage 5, repetido en el 10 y el 14). Sin marea, sin horda continua, sin gemas ni experiencia. El héroe carga el rayo y, al volver a pulsar, la carga empieza al instante (no hay recuperación tras disparar).
+**Qué es hoy el juego** (detalle en `DESIGN.md`, «Estado vigente»): la ROM por defecto es el Acto I por encuentros: 15 stages en 3 actos (4 encuentros + 1 jefe), salas hechas a mano de 2 pantallas con barrera que se abre al limpiarlas, 14 pasillos con relicario normal (1 Don por pasillo), El Abanderado como jefe (stages 5, 10 y 15) con relicario dorado en su sala al vencerlo (1 Reliquia) y Altar en el pasillo final («Fin de la demo»). Sin marea, sin horda continua, sin gemas ni experiencia. El héroe carga el rayo y, al volver a pulsar, la carga empieza al instante (no hay recuperación tras disparar).
 
 **En qué punto está:**
 - Método de diseño sala a sala (`DESIGN.md` §6.13.10): hecha la primera vuelta del Ojo táctico y la guarnición; siguen la procesión ligera, el balcón y la primera sala media.
@@ -23,6 +23,8 @@ Primero el estado necesario para retomar el trabajo sin depender del chat; despu
 - Data abort intermitente en hardware, sin causa conocida (`TECHNICAL.md` §4.4).
 
 ### Entregas recientes (más nueva primero)
+
+- **Relicarios en pasillos, relicario dorado en jefes y Altar final (`feat/relicarios-boss`, 2026-11-19, integrado en `main`):** 15 stages (jefes en 5, 10 y 15 con El Abanderado), 14 pasillos con relicario normal (Dones), relicario dorado en la sala de cada jefe al vencerlo (Reliquias; retirado `ENC_GOLDEN_AFTER`) y Altar en el pasillo tras el stage 15 («Fin de la demo»). Variantes visuales provisionales para el relicario dorado y el Altar en `include/enc_relic_gfx.h`. Build 0 avisos; `test_guardrails` PASS. [`walkthrough`](walkthroughs/relicarios-boss/walkthrough.md).
 
 - **Limpieza de documentación (`docs/limpieza-docs`, 2026-11-19):** `DESIGN.md` refleja el juego actual (relicarios: 13 pasillos, 12 Dones y 1 Reliquia dorada; Cireneo 4 y Abanderado ~37 disparos; sin marea, horda, gemas ni XP), `STATUS.md` y `TECHNICAL.md` recortados con lo histórico en `STATUS-ARCHIVE.md`, `LORE.md` sin la Marea y regla nueva en `AGENTS.md`: al cerrar cada sesión se revisan los MDs. Borrados legacy (sprites `marine`/`necron`/`charger`, briefs de encuentros, `scenarios_legacy`, test de golpes con armas antiguas). Solo docs; sin build. [`walkthrough`](walkthroughs/limpieza-docs/walkthrough.md).
 
