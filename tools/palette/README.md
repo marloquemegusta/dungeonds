@@ -3,7 +3,7 @@
 Reduce las referencias a 256 píxeles de ancho y extrae una paleta de suelo y piezas en CIELAB, cuantizada a 5 bits por canal. Pillow y NumPy deben estar instalados.
 
 ```powershell
-python tools/palette/extract_palette.py arte/catedral.png `
+python tools/palette/extract_palette.py assets/environment/cathedral/props/render/banco_entero/color.png `
   --terrain-region 0,0.62,1,0.38 `
   --terrain-colors 48 --prop-colors 150 `
   --out assets/environment/cathedral/palette

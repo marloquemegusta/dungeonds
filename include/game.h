@@ -7,9 +7,10 @@
 
 // Build variant "encuentros": act I played as encounters and corridors (DESIGN.md 6.13.6, include/encounters_act1.h).
 #ifndef ENCOUNTERS_PROTO
+// Fallback value: the Makefile (templates/blocksds-test) sets it to 1 in every ROM except sandbox/bestiary/stress/godrays.
 #define ENCOUNTERS_PROTO 0
 #endif
-// Variant "encuentros-bot": the act played by an autopilot to measure its difficulty (tools/encuentros/BRIEF_bot.md).
+// Variant "encuentros-bot": the act played by an autopilot to measure its difficulty.
 // Skip the title menu and start the run directly (headless scenarios of the encounters variants).
 #ifndef SKIP_TITLE
 #define SKIP_TITLE 0

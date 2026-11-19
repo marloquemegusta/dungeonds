@@ -33,7 +33,7 @@
 #define STRIP_WALL_CELLS (STRIP_WALL_TILES * 2)
 #define STRIP_OCCLUSION_CAPACITY 32768
 #define STRIP_START_CLEAR_BANDS 4
-// Compositor v2 (DESIGN.md 6.9.1b): block = 2 screens of 24 tile rows = 3 bands of 16 rows.
+// Compositor v2 (DESIGN-ARCHIVE.md 6.9.1b): block = 2 screens of 24 tile rows = 3 bands of 16 rows.
 #define STRIP_BLOCK_TILES 48
 #define STRIP_SCREEN_TILES 24
 #define STRIP_BLOCK_MAX_PIECES 48
@@ -177,7 +177,7 @@ static int piece_is_lapida(uint8_t piece_id) {
 // never for a raw index, so the kit can be rebaked without renumbering anything here.
 // A lapida is baked at two phases, (0, 2) and (2, 3) (the damero inverted). Its stamp at (pc, pr)
 // fits tile (x, y) when (x - pc) is a multiple of 4 and (y - pr) of 2: the joints of the floor
-// then follow the damero rule (DESIGN.md 6.9.1b). A position no phase fits gets no stamp.
+// then follow the damero rule (DESIGN-ARCHIVE.md 6.9.1b). A position no phase fits gets no stamp.
 // `& 3` and `& 1` give the positive residue for negative differences too (two's complement).
 static const StripStamp *stamp_for_lapida(uint8_t piece_id, int x_tile, int y_tile) {
     for (int i = 0; i < (int)g_strip_kit.num_stamps; i++) {

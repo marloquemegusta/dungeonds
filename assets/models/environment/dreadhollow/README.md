@@ -8,9 +8,11 @@ violet, and spectral-green assets.
 
 ## Start here
 
-Open Previews/catalog.html in a browser. The searchable offline catalog shows
-every asset, four actual export views, measured dimensions, triangle counts,
-placement notes, and download links. No server or internet connection is needed.
+Local note (2026-11-16): the GLB and Previews folders (including
+Previews/catalog.html) were deleted from this repo to save 306 MB; download the
+pack again from the provider if needed. Only ASSET_INDEX.txt, LICENSE.txt,
+Textures/ and this README remain. The rest of this file is the vendor's original
+text and describes the full pack.
 For a fast import with embedded PBR materials, start with GLB.
 
 ## Included folders

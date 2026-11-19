@@ -5,7 +5,7 @@ typedef int encounters_bot_translation_unit_not_empty;
 
 #if ENC_BOT && ENCOUNTERS_PROTO
 
-// Autopilot of the variant "encuentros-bot" (tools/encuentros/BRIEF_bot.md). It plays the act as a careful player:
+// Autopilot of the variant "encuentros-bot". It plays the act as a careful player:
 // dodge the Ojo line and the Cireneo lunge, keep away from the melee enemies, shoot the nearest awake enemy in
 // sight (or the relicario of a corridor), then climb. It only replaces the buttons and the stylus; the game
 // does not know. Test code: it runs in the headless scenarios, never in the shipping ROM.

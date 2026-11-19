@@ -1,12 +1,14 @@
 # BENCHMARK.md - Corpus de tareas y protocolo para elegir el modelo más barato
 
+> **Qué es esto (revisado 2026-11-19).** Proyecto de delegación (elegir el modelo más barato por tipo de tarea), **no documentación del juego**. Mezcla tareas de towerds, dungeonds y la skill; las de dungeonds apuntan a commits antiguos (`base_commit`) y siguen siendo válidas aunque el diseño haya cambiado (v0.1-v0.3, franja, marea, horda). Si estorba en el repo, se puede archivar fuera.
+
 Documento vivo. Objetivo: partir el historial real de towerds y dungeonds en tareas (problema, solución de referencia, evaluación) y ejecutarlas sobre distintos modelos para saber **qué modelo, con qué esfuerzo, es el más barato que resuelve cada clase de problema**. No se concluye nada del historial por sí mismo: el historial solo aporta las tareas.
 Corpus: [bench/README.md](bench/README.md) (índice), `bench/tasks/<id>/{problem.md,item.json}`, `bench/manifest.json`.
 
 ## 1. Qué hay ahora
 
-71 ítems generados el 2026-11-07 por 6 agentes luna:high leyendo git, STATUS/KNOWN_ISSUES y los resúmenes de sesión: towerds 32 (12 macro, 20 micro), dungeonds 35 (8 macro, 27 micro), skill `agentic-ds-dev` 4. Todos los hashes están verificados con `git cat-file` y `merge-base --is-ancestor` (`base_commit` es ancestro de la primera solución).
-Pendiente: **ninguno está calibrado** (§4) y 47 de 71 son `reproducible: parcial`. Los comandos de evaluación son propuestas de los agentes, no se han ejecutado.
+72 ítems generados el 2026-11-07 por 6 agentes luna:high leyendo git, STATUS/KNOWN_ISSUES y los resúmenes de sesión: towerds 32 (12 macro, 20 micro), dungeonds 36 (9 macro, 27 micro), skill `agentic-ds-dev` 4. Todos los hashes están verificados con `git cat-file` y `merge-base --is-ancestor` (`base_commit` es ancestro de la primera solución).
+Pendiente: **ninguno está calibrado** (§4) y 47 de 72 son `reproducible: parcial`. Los comandos de evaluación son propuestas de los agentes, no se han ejecutado.
 
 Estado de cada ítem (`item.json`): `tipo` macro/micro (los micro cuelgan de un macro por `parent`), `clase`, `base_commit`, `solution_commits`, `evaluacion` (puertas + rúbrica + trampas), `dificultad` 1-5, `historia`, `reproducible`, `calibrado`.
 

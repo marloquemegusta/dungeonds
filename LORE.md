@@ -2,7 +2,7 @@
 
 Documento de trabajo para escribir lore nuevo (fichas del Códice, vídeos, textos del juego). Está escrito en lenguaje llano a propósito: aquí no hay ambigüedad poética; la ambigüedad es una decisión que se toma en cada vídeo, no en la biblia. Lo que aún no está decidido se marca como **[ABIERTO]** y se lista en §9.
 
-No decide mecánicas ni aspecto visual: eso sigue en `DESIGN.md`. En particular, la forma de la Marea está por decidir (`DESIGN.md` §6.4).
+No decide mecánicas ni aspecto visual: eso sigue en `DESIGN.md`. La Marea (lo que subía desde abajo) se retiró del juego y del lore el 2026-11-19.
 
 ---
 
@@ -40,22 +40,21 @@ Orden de los hechos, de más antiguo a más reciente.
 6. **La guerra dentro.** Entre la Columna y el Altar están los penitentes transformados: los vecinos condenados de Valdenoche. La Iglesia los declara herejes y la Columna los combate. **La cruzada es una guerra de la Iglesia contra su propio pueblo condenado.**
 7. **La Quiebra.** Una noche, frente a una procesión de exvotos, ordenan a la Columna abrir fuego. Bartolomé se niega y huye; Martín cubre su huida y muere. Se acaba la pólvora y Elías pide un arma: Dios le abre el pecho y le pone el corazón de Martín. El frente se rompe.
 8. **Después de la Quiebra.** Bartolomé escapa hasta Valdenoche e Inés le esconde. El Tribunal los atrapa: a él le clavan la cruz y a ella la condenan; ambos vuelven a la Catedral como penitentes. Los cruzados caídos dentro tampoco mueren: se convierten en lo que hoy son (el Abanderado y los suyos). Los inquisidores, sin nadie a quien juzgar fuera, se quedan dentro como los Ojos.
-9. **Ahora (el juego).** La cruzada nunca se dio por terminada. Dentro solo quedan caídos, penitentes y el Tribunal. Algo empieza a subir desde abajo (la Marea). Elías sube por la nave. *Qué busca Elías y qué hay en el Altar: [ABIERTO].*
+9. **Ahora (el juego).** La cruzada nunca se dio por terminada. Dentro solo quedan caídos, penitentes y el Tribunal. Elías sube por la nave. *Qué busca Elías y qué hay en el Altar: [ABIERTO].*
 
 ## 5. Cómo funciona la Catedral
 
 - **Dentro nadie muere del todo.** Los heridos, los mutilados y los muertos siguen andando. La fe no deja morir; condena a seguir.
 - **La Catedral da forma a la condena.** Quien entra como penitente acaba convertido en la forma de su sentencia: quien rezó por no estar sola se vuelve cera que reza en procesión; el que huyó carga para siempre con la cruz; el inquisidor que no quería ver se queda con un farol por ojos.
 - **El Altar se aleja.** Retrocede un paso por cada plegaria de misericordia. Por eso el Tribunal prohibió rezarlas.
-- **Se puede salir, por abajo.** Antes de la Marea, la entrada seguía abierta (por eso Bartolomé pudo huir a Valdenoche). Si hoy se puede salir: [ABIERTO].
-- **La Marea.** Sube desde abajo y se traga lo que queda atrás. Hipótesis de trabajo para los vídeos: es todo lo que la Iglesia enterró sin nombre, que vuelve a reclamarlo. Qué es de verdad y qué forma tiene: [ABIERTO] (`DESIGN.md` §6.4).
+- **Se puede salir, por abajo.** Antes, la entrada seguía abierta (por eso Bartolomé pudo huir a Valdenoche). Si hoy se puede salir: [ABIERTO].
 
 ## 6. Lugares
 
 - **Valdenoche.** El pueblo de abajo. De allí salieron casi todos los condenados y casi todos los cruzados.
 - **La Catedral que no termina.** Una nave que sube sin fin hacia un altar que se aleja. Dentro está la guerra: bancos en barricada, sacos, alambre, cruzados muertos.
 - **La Sacristía de los Faroles.** Sede del Tribunal, junto a la entrada. Allí se juzgaba y se encendían los faroles.
-- **Biomas posteriores [ABIERTO]:** `DESIGN.md` §6.4 deja candidatos (tierra de nadie, osarios, la brecha).
+- **Biomas posteriores [ABIERTO]:** `DESIGN-ARCHIVE.md` §6.4 deja candidatos (tierra de nadie, osarios, la brecha); el orden vigente de actos está en `DESIGN.md` §6.13.4.
 
 ## 7. Instituciones
 
@@ -122,8 +121,7 @@ Se cierra aquí antes de usarlo en un vídeo; mientras tanto, los vídeos pueden
 | Qué busca Elías al subir | Abierto | Lo anterior |
 | Por qué se alargó la nave | Abierto | — |
 | Qué fue la «sequía del cielo» | Abierto | — |
-| Qué es la Marea y qué forma tiene | Abierto (hipótesis de trabajo en §5) | `DESIGN.md` §6.4 |
 | Destino de Anselmo y de Gaspar | Abierto; candidatos a minijefe o jefe | `DESIGN.md` §6.9, 0.6 |
 | Si se puede salir hoy de la Catedral | Abierto | — |
 | Tecnología máxima (artillería, gas) | Abierto | Enemigos futuros |
-| Enemigos nuevos (monaguillo, campanero) | Hay modelos, sin ficha | Sesión de diseño de enemigos |
+| Enemigos nuevos (monaguillo, campanero) | Monaguillo: sin ficha propia; es el Exvoto monaguillo que invoca el Abanderado (`DESIGN.md`, Abanderado y §6.9 bestiario). Campanero: jefe del acto II con dirección inicial en `DESIGN.md` §6.13.2; sin ficha de lore | Sesión de diseño de enemigos |
