@@ -10,17 +10,12 @@
 // Everything is lost when the run restarts.
 
 typedef struct {
-    int shotgun_pellets;        // extra pellets per shot
-    int shotgun_cooldown;       // extra frames between shots
-    int shotgun_damage_pct;     // 100 = normal
-    int shotgun_pierce;         // enemies a pellet goes through
     int sniper_aim;             // extra aim frames (negative = faster)
     int sniper_damage_pct;
     int max_hp;                 // extra hits the player can take
     int speed_pct;
     int iframes;                // extra invulnerability frames after a hit
-    int kill_resets_shotgun;    // every kill readies the shotgun at once
-    int knock_pct;              // shotgun shove and stun
+    int knock_pct;              // ray shove and stun
     // Open Heart upgrades (DESIGN.md 6.12.5)
     int sniper_range;           // extra ray length in ground px, Alcance
     int fire_dmg_pct;           // 100 = normal, Brasa (read by the fire code)
@@ -31,7 +26,7 @@ typedef struct {
 
 extern ModEffects g_mods;
 
-#define MOD_COUNT 8
+#define MOD_COUNT 5
 #define MOD_NONE (-1)
 
 // Frames between a pack dying and its pedestals being usable (so a step does not take one by accident).

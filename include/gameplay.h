@@ -49,7 +49,7 @@ typedef struct {
 #define CHARGER_RECOVER_FRAMES 60   // [TUNABLE-PLACEHOLDER] frames standing still after the charge, vulnerable
 #endif
 #define CHARGER_STUN_WALL_FRAMES 90 // [TUNABLE-PLACEHOLDER] stunned after hitting a wall or column
-#define CHARGER_STUN_HIT_FRAMES 60  // [TUNABLE-PLACEHOLDER] stunned by a shotgun hit during telegraph or charge
+#define CHARGER_STUN_HIT_FRAMES 60  // [TUNABLE-PLACEHOLDER] stunned by a ray hit during telegraph or charge
 #define CHARGER_HIT_RADIUS 14       // [TUNABLE-PLACEHOLDER] ground px: the charge hurts the player this close
 
 // Ojo del Tribunal (DESIGN.md 6.10, "Mirada colimada"), ENEMY_TYPE_SHOOTER:
@@ -107,13 +107,7 @@ extern ENEMY_TUNING_CONST EnemyTuning g_enemy_tuning[NUM_ENEMY_TYPES];
 #ifndef STRESS_TEST
 #define STRESS_TEST 0               // 1 = measurement build: big horde, 1 HP enemies, god mode (variants stress / stress-perf)
 #endif
-// Demo ROM (DESIGN.md 6.9.1c): the laser is the only weapon and L does not cycle weapons.
-// The test variants (sandbox, playground, stress, godrays) keep the shotgun start and the L cycle.
-#if (SANDBOX || PLAYGROUND || STRESS_TEST || GODRAYS_PROTO) && !(defined(REMATE_SANDBOX) && REMATE_SANDBOX)
-#define TEST_WEAPON_CYCLE 1
-#else
-#define TEST_WEAPON_CYCLE 0
-#endif
+// Demo ROM (DESIGN.md 6.9.1c): the sacred ray (WEAPON_SNIPER) is the only weapon.
 #if STRESS_TEST
 #define MAX_GAMEPLAY_ENEMIES 64
 #else
@@ -121,7 +115,7 @@ extern ENEMY_TUNING_CONST EnemyTuning g_enemy_tuning[NUM_ENEMY_TYPES];
 #endif
 
 // Exvoto (ex skeleton): PRAY -> RISE -> CHASE <-> ATTACK. Charger: CHASE -> TELEGRAPH -> CHARGE -> RECOVER -> CHASE (STUNNED from
-// a wall hit or a shotgun hit). Ojo (shooter type): CHASE -> TRACK -> LOCK -> SENTENCE -> COOLDOWN -> CHASE.
+// a wall hit or a ray hit). Ojo (shooter type): CHASE -> TRACK -> LOCK -> SENTENCE -> COOLDOWN -> CHASE.
 typedef enum {
     ENEMY_STATE_CHASE = 0,
     ENEMY_STATE_ATTACK,
@@ -169,7 +163,7 @@ struct Enemy {
     int has_los;        // cached view of the player (bit flags, refreshed every few frames)
     fixed knock_vx;     // 8.8 shove velocity applied while stunned
     fixed knock_vy;
-    int stun_timer;     // frames the enemy stays staggered after a shotgun hit
+    int stun_timer;     // frames the enemy stays staggered after a ray hit
     int pack;           // pack index from the arena data (woken, healed and rewarded together)
     int aim_px;         // Ojo: ground world px of the hero where the gaze points (followed in TRACK, frozen in LOCK/SENTENCE)
     int aim_py;
@@ -279,7 +273,7 @@ void enemy_hit_quiet(Enemy *e, int damage);
 
 // Presentation hook called by enemy_hit() when an enemy dies (e.g. death chunks).
 // The renderer owns the visuals; gameplay code never depends on it directly.
-// g_death_phase tells the hook what to do: 0 everything, 1 only the bookkeeping (xp, gems, counters; the
+// g_death_phase tells the hook what to do: 0 everything, 1 only the bookkeeping (counters; the
 // death is suspended), 2 only the visuals (the suspension ended).
 #define DEATH_ALL 0
 #define DEATH_BOOKKEEPING 1
@@ -326,7 +320,7 @@ extern int g_hitstop_frames;
 int player_take_hit(PlayerState *player);
 
 /**
- * Initializes the player for a new arena: full health, shotgun, no i-frames.
+ * Initializes the player for a new arena: full health, sacred ray, no i-frames.
  */
 void player_state_init(PlayerState *player);
 

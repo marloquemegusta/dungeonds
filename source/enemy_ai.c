@@ -470,7 +470,7 @@ static void update_exvoto(Enemy *e, Enemy *enemies, int num_enemies, int idx,
 
 // Charger (DESIGN.md 6.9.1): lunge and dodge. FSM CHASE (slow approach) -> TELEGRAPH (still, blinks,
 // locks the direction) -> CHARGE (straight line) -> RECOVER (still, vulnerable) -> CHASE.
-// A wall or column in the way of the charge, or a shotgun hit during TELEGRAPH / CHARGE, leaves it STUNNED.
+// A wall or column in the way of the charge, or a ray hit during TELEGRAPH / CHARGE, leaves it STUNNED.
 static void update_charger(Enemy *e, Enemy *enemies, int num_enemies, int idx,
                            fixed player_x, fixed player_y) {
     const EnemyTuning *tuning = &g_enemy_tuning[ENEMY_TYPE_CHARGER];
@@ -1231,7 +1231,7 @@ ITCM_CODE void enemy_ai_update(Enemy *enemies, int num_enemies, fixed player_x, 
         if (e->hit_timer > 0) e->hit_timer--;
         if (e->state == ENEMY_STATE_REMATE) continue;       // the finisher animation owns it (remate.c)
 
-        // Staggered by a shotgun hit: shoved along the blast, no AI until it recovers.
+        // Staggered by a ray hit: shoved along the blast, no AI until it recovers.
         if (e->stun_timer > 0) {
             if (e->type == ENEMY_TYPE_SHOOTER &&
                 (e->state == ENEMY_STATE_TRACK || e->state == ENEMY_STATE_LOCK ||

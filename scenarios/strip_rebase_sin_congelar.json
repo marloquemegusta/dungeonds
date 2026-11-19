@@ -1,6 +1,6 @@
 {
  "name": "strip_rebase_sin_congelar",
- "description": "ROM cathedral-playground. Regresion del congelado del rebase (2026-11-11: el qsort de los runs de oclusion degeneraba y paraba el juego ~150 frames). Poke a (200, 800) y UP: el marine cruza y=768, la tira se desplaza 768 px y el marine sigue subiendo sin pararse. py es s_player.y en 8.8.",
+ "description": "ROM cathedral-playground. Regresion del congelado del rebase (2026-11-11: el qsort de los runs de oclusion degeneraba y paraba el juego ~150 frames). Poke a (200, 800) y UP: el heroe cruza y=768, la tira se desplaza 768 px y el heroe sigue subiendo sin pararse. py es s_player.y en 8.8.",
  "state": {
   "elf": "../.ds-game-dev/build/out/dungeonds-cathedral-playground.elf",
   "symbols": {

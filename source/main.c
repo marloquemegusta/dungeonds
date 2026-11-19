@@ -8,7 +8,6 @@
 #include "navfield.h"
 #include "enemy_laser.h"
 #include "weapons.h"
-#include "grenade.h"
 #include "sandbox.h"
 #include "encounters.h"
 #include "modifiers.h"
@@ -17,11 +16,9 @@
 #include "strip.h"
 #include "strip_kit.h"
 #include "horde.h"
-#include "tide.h"
 #include "godrays.h"
 #include "hwshadow.h"
 #include "pickups.h"
-#include "gems.h"
 #include "upgrades.h"
 #include "exvoto_melt.h"
 #include "remate.h"
@@ -1262,8 +1259,8 @@ ITCM_CODE static void render_screen(uint16_t *buffer, DirtySpan *spans, int cam_
 #if !HW_SHADOWS
     (void)sub_screen;
 #endif
-    DrawItem items[MAX_DRAW_ITEMS + MAX_ENEMIES + MAX_DEATH_CHUNKS + EXVOTO_MELT_MAX + GEM_MAX_ACTIVE + HEAL_PICKUP_MAX_ACTIVE + 2];
-    const int pk_base = -(2 + MAX_ENEMIES + MAX_DEATH_CHUNKS + EXVOTO_MELT_MAX);  // gem i: pk_base - 1 - i; heart i: pk_base - 1 - GEM_MAX_ACTIVE - i
+    DrawItem items[MAX_DRAW_ITEMS + MAX_ENEMIES + MAX_DEATH_CHUNKS + EXVOTO_MELT_MAX + HEAL_PICKUP_MAX_ACTIVE + 2];
+    const int pk_base = -(2 + MAX_ENEMIES + MAX_DEATH_CHUNKS + EXVOTO_MELT_MAX);  // heart i: pk_base - 1 - i
     int count = 0;
 
     // The static floor is in BG1; this buffer contains only dynamic layers.
@@ -1361,16 +1358,12 @@ ITCM_CODE static void render_screen(uint16_t *buffer, DirtySpan *spans, int cam_
         }
     }
 
-    // Gems and heart pickups sort with the actors: walls hide them (per pixel), characters nearer the camera cover them.
+    // Heart pickups sort with the actors: walls hide them (per pixel), characters nearer the camera cover them.
     if (s_run_started && s_strip_mode) {
         int d;
-        for (int i = 0; i < GEM_MAX_ACTIVE; i++)
-            if (gems_item(i, cam_x, cam_y, &d)) {
-                items[count].depth = d; items[count].ref = pk_base - 1 - i; items[count].cx = 0; items[count].cy = d; count++;
-            }
         for (int i = 0; i < HEAL_PICKUP_MAX_ACTIVE; i++)
             if (pickups_item(i, cam_x, cam_y, &d)) {
-                items[count].depth = d; items[count].ref = pk_base - 1 - GEM_MAX_ACTIVE - i; items[count].cx = 0; items[count].cy = d; count++;
+                items[count].depth = d; items[count].ref = pk_base - 1 - i; items[count].cx = 0; items[count].cy = d; count++;
             }
     }
 #if ENCOUNTERS_PROTO
@@ -1471,10 +1464,8 @@ ITCM_CODE static void render_screen(uint16_t *buffer, DirtySpan *spans, int cam_
         } else if (sp == ENC_RELIC_SPRITE_REF) {
             enc_dynamic_relic_draw(buffer, cam_x, cam_y, s_draw_item_depth);
 #endif
-        } else if (sp <= pk_base - 1 - GEM_MAX_ACTIVE) {
-            pickups_draw(buffer, pk_base - 1 - GEM_MAX_ACTIVE - sp, cam_x, cam_y);
         } else if (sp <= pk_base - 1) {
-            gems_draw(buffer, pk_base - 1 - sp, cam_x, cam_y);
+            pickups_draw(buffer, pk_base - 1 - sp, cam_x, cam_y);
         } else if (sp <= -2 - MAX_ENEMIES - MAX_DEATH_CHUNKS) {
             const ExvotoMelt *melt = exvoto_melt_sinking(-2 - MAX_ENEMIES - MAX_DEATH_CHUNKS - sp);
             if (melt) draw_melt(buffer, melt, cam_x, cam_y);
@@ -1885,31 +1876,21 @@ static void present_vblank_begin(void) {
 #endif
 }
 
-// Window/blend setup of both engines, once per frame inside VBlank. Hardware shadows: OBJ window
-// + floor-only darkening, with the tide taking over from its first line (tide_window_top).
-// Software shadows: the tide module alone, as before.
-static void present_screen_effects(int top_cam_y, int bot_tide_cam_y) {
+// Window/blend setup of both engines, once per frame inside VBlank.
+static void present_screen_effects(void) {
     if (menu_is_open()) {
 #if HW_SHADOWS
         if (g_hw_shadows_on) {
-            hwshadow_screen_regs(1, (s_run_started && s_strip_mode) ? tide_window_top(top_cam_y) : SCREEN_H);
-            hwshadow_screen_regs(0, SCREEN_H);
+            hwshadow_screen_regs(1);
+            hwshadow_screen_regs(0);
         } else {
             hwshadow_regs_off();
-            if (s_run_started && s_strip_mode) {
-                tide_render_window(1, top_cam_y);
-            } else {
-                REG_BLDCNT_SUB = 0;
-                REG_DISPCNT_SUB &= ~DISPLAY_WIN0_ON;
-            }
-        }
-#else
-        if (s_run_started && s_strip_mode) {
-            tide_render_window(1, top_cam_y);
-        } else {
             REG_BLDCNT_SUB = 0;
             REG_DISPCNT_SUB &= ~DISPLAY_WIN0_ON;
         }
+#else
+        REG_BLDCNT_SUB = 0;
+        REG_DISPCNT_SUB &= ~DISPLAY_WIN0_ON;
 #endif
         REG_DISPCNT &= ~(DISPLAY_WIN0_ON | DISPLAY_SPR_WIN_ON);
         REG_BLDCNT = BIT(1) | (3 << 6);
@@ -1918,19 +1899,14 @@ static void present_screen_effects(int top_cam_y, int bot_tide_cam_y) {
     }
 #if HW_SHADOWS
     if (g_hw_shadows_on) {
-        hwshadow_screen_regs(1, s_strip_mode ? tide_window_top(top_cam_y) : SCREEN_H);
-        hwshadow_screen_regs(0, s_strip_mode ? tide_window_top(bot_tide_cam_y) : SCREEN_H);
+        hwshadow_screen_regs(1);
+        hwshadow_screen_regs(0);
         return;
     }
     hwshadow_regs_off();
 #endif
-    if (s_strip_mode) {
-        tide_render_window(1, top_cam_y);
-        tide_render_window(0, bot_tide_cam_y);
-    } else {
-        REG_BLDCNT = 0;
-        REG_BLDY = 0;
-    }
+    REG_BLDCNT = 0;
+    REG_BLDY = 0;
 }
 
 static void present_hardware_bgs(int top_cam_x, int top_cam_y,
@@ -2162,12 +2138,10 @@ static void on_enemy_death(const Enemy *e, fixed hit_vx, fixed hit_vy) {
         s_pending_count++;
     }
     if (g_death_phase == DEATH_VISUALS) { CRASH_MARK(CL_DEATH_HOOK_DONE, 0, 0); return; }
-    weapons_notify_kill();
     weapons_enemy_died(e);                    // Martirio Contagioso (needs the burn layers, still intact here)
 #if !ENCOUNTERS_PROTO
     if (s_strip_mode) {
         pickups_enemy_killed(e);
-        gems_enemy_killed(e);          // DESIGN.md 6.12.10: one xp gem per kill
     }
 #endif
     CRASH_MARK(CL_DEATH_HOOK_DONE, 0, 0);
@@ -2195,7 +2169,6 @@ static void death_chunks_update(void) {
 }
 
 static void weapons_and_effects_update(void) {
-    grenade_set_player_pos(s_player.x, s_player.y);
     weapons_set_hero_pos(TO_INT(s_player.x), TO_INT(s_player.y));
     weapons_update(g_enemies, MAX_ENEMIES);
     death_chunks_update();
@@ -2217,11 +2190,8 @@ static void strip_shift_world_y(int dy_px) {
     exvoto_melt_shift_y(dy_px);
     remate_shift_y(dy_px);
     s_cam_y += dy_px;
-    grenade_shift_y(dy_px);
     weapons_shift_y(dy_px);
-    tide_shift_y(dy_px);
     pickups_shift_y(dy_px);
-    gems_shift_y(dy_px);
     enemy_puddles_shift_y(dy_px);
 
     // The rebase moves the world and the camera by the same rows, so what is on screen does not
@@ -2283,12 +2253,11 @@ static void strip_enemies_update(void) {
     return;
 #endif
 #if !CATHEDRAL_PLAYGROUND || CATHEDRAL_AI == 2
-    horde_update(g_enemies, MAX_ENEMIES, s_player.y, s_cam_y - SCREEN_H, tide_y());
+    horde_update(g_enemies, MAX_ENEMIES, s_player.y, s_cam_y - SCREEN_H);
 #endif
     enemy_ai_set_view(s_cam_x, s_cam_y - SCREEN_H, s_cam_y + SCREEN_H);
     enemy_ai_update(g_enemies, MAX_ENEMIES, s_player.x, s_player.y);
-    pickups_update(s_player.x, s_player.y, tide_y(), &g_player_state);
-    gems_update(s_player.x, s_player.y, tide_y());
+    pickups_update(s_player.x, s_player.y, &g_player_state);
 }
 
 // ---------------------------------------------------------------------------
@@ -2492,15 +2461,9 @@ static void player_update(uint32_t keys, uint32_t keys_down) {
         s_latch_pressed = s_latch_released = 0;
         return;
     }
-#if TEST_WEAPON_CYCLE
-    // Test variants only: L switches weapon (and cancels a sniper aim). The demo ROM has just the laser.
-    if (keys_down & KEY_L) {
-        weapons_cycle(&g_player_state);
-    }
-#endif
     // Playground ROM: R puts the parked dummies back (no-op in every other build).
     if (keys_down & KEY_R) sandbox_respawn();
-    // DESIGN.md 4.9 (debug): SELECT cycles the shotgun and grenade effects style A/B/C (the sniper is always C).
+    // Debug: SELECT cycles the upgrade design variant and g_fx_style.
     if (keys_down & KEY_SELECT) {
         upgrades_cycle_design_variant();   // also advances g_fx_style
     }
@@ -2545,7 +2508,6 @@ static void player_update(uint32_t keys, uint32_t keys_down) {
     const int cur_char = CHAR_HERO;
     fixed current_speed = g_characters[cur_char].speed * g_mods.speed_pct / 100;
     if (s_crouched) current_speed = current_speed * CROUCH_SPEED_PCT / 100;
-    if (s_strip_mode && tide_player_slowed(s_player.y)) current_speed = (current_speed * 3) >> 2;
     // Paso de Procesion (DESIGN.md 6.12.10): while charging the hero walks at 35 % of that speed.
     const int procession = s_rooted && upgrades_has_relic(RELIC_PROCESION);
     if (procession) current_speed = current_speed * 35 / 100;
@@ -2691,7 +2653,6 @@ static void arena_restart(void) {
         strip_start(seed);
         horde_init(seed ^ 0x684f5244u);
         pickups_init(seed ^ 0x5049434bu);
-        gems_init();
         enemy_puddles_init();
         apply_arena_palette();
         init_bg_tile_cache(&s_top_bg_tile_cache, TOP_TILE_CACHE_CAPACITY, s_top_bg_tiles_vram);
@@ -2703,7 +2664,6 @@ static void arena_restart(void) {
     s_player.x = TO_FIXED(g_arena->player_x);
     s_player.y = TO_FIXED(g_arena->player_y);
     if (s_strip_mode) {
-        tide_init(s_player.y);
         s_death_screen_frames = 0;
         s_death_restart_armed = 0;
         s_death_prev_touch_down = 0;
@@ -2898,9 +2858,7 @@ int main(void) {
         uint32_t seed = (uint32_t)time(NULL) ^ (uint32_t)cpuGetTiming() ^ 0xa5a5a5a5u;
         horde_init(seed ^ 0x684f5244u);
         pickups_init(seed ^ 0x5049434bu);
-        gems_init();
         enemy_puddles_init();
-        tide_init(s_player.y);
     }
 
     // Initialise camera position to match player spawn
@@ -3154,8 +3112,6 @@ int main(void) {
                     nav_shift_down(STRIP_SHIFT_PX / NAV_NODE_PX,
                                    TO_INT(s_player.x), TO_INT(s_player.y), strip_stage_id());
                 }
-                tide_update(s_player.y);
-                tide_damage_player(&g_player_state, s_player.y);
             }
             s_keys_down_latch = 0;
         }
@@ -3192,10 +3148,6 @@ int main(void) {
         uint32_t t2 = cpuGetTiming();
         CRASH_MARK(CL_RENDER_START, 0, 0);
         render_screen(bot_page_ptr(s_bot_back_page), s_dirty[s_bot_back_page == 24], view_x, view_y, 0, &bot_floor, &bot_sh, &bot_bl);
-        if (s_run_started && s_strip_mode) {
-            g_dirty_cur = s_dirty[s_bot_back_page == 24];
-            tide_render_border(bot_page_ptr(s_bot_back_page), view_y);
-        }
         CRASH_MARK(CL_RENDER_DONE, 0, 0);
         PP_T0(pp_hud);
         if (s_run_started) {
@@ -3221,14 +3173,9 @@ int main(void) {
         uint32_t t3 = cpuGetTiming();
         present_vblank_begin();
         uint32_t post_vwait_start = cpuGetTiming();
-        // The death summary is drawn on the lower screen: keep it out of the darkening.
-        present_screen_effects(top_cam_y, (s_strip_mode && g_player_state.is_dead) ? TO_INT(tide_y()) - SCREEN_H : view_y);
+        present_screen_effects();
         uint32_t t_top = cpuGetTiming();
         render_screen(s_top_page, s_dirty_top, view_x, view_y - SCREEN_H, 1, &top_floor, &top_sh, &top_bl);
-        if (s_run_started && s_strip_mode) {
-            g_dirty_cur = s_dirty_top;
-            tide_render_border(s_top_page, view_y - SCREEN_H);
-        }
 #if HW_SHADOWS
         // The top page is single buffered and was just redrawn: its shadows go live now.
         PP_T0(pp_hs2);
@@ -3266,7 +3213,6 @@ int main(void) {
 
         uint32_t enemies = 0, projectiles = 0;
         for (int i = 0; i < MAX_ENEMIES; i++) enemies += g_enemies[i].active != 0;
-        projectiles += weapons_get_active_projectile_count();
         g_nav_state.x = s_player.x;
         g_nav_state.y = s_player.y;
         g_nav_state.cam_x = s_cam_x;

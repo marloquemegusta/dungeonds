@@ -2,7 +2,6 @@
 #include "gameplay.h"
 #include "modifiers.h"
 #include "upgrades.h"
-#include "grenade.h"
 #include "groundfx.h"
 #include "hitvolume.h"
 #include "sfx.h"
@@ -10,28 +9,11 @@
 #include "encounters_act1.h"
 #endif
 
-/* TUNABLE-PLACEHOLDER: Player Weapons Tuning Table (Fixed-Point 8.8).
- * Goal hits to kill (DESIGN.md 4.3): shotgun point blank 1 shooter / 2-3 charger,
- * sniper 1 shooter / 2 charger. */
+/* TUNABLE-PLACEHOLDER: Player Weapon Tuning Table (Fixed-Point 8.8). */
 const WeaponTuning g_weapon_tuning[NUM_WEAPON_TYPES] = {
-    [WEAPON_SHOTGUN] = {
-        .name = "SHOTGUN",
-        .damage_per_hit = 40,       /* 40 dmg * 5 pellets = 200 point blank (scale 100 = 1.0) */
-        .pellets = 5,
-        .fire_cooldown = 36,        /* marked pump between shots */
-        .projectile_speed = 1536,   /* 6.0 px/frame */
-        .projectile_range = 22,     /* ~132 px: lethal close, weak far */
-        .spread_angle = 120,
-        .aim_min_frames = 0,
-        .knockback = 640,           /* 2.5 px/frame shove */
-        .stun_frames = 10,
-        .recoil = 512,              /* 2 px kick back */
-        .shake_amp = 2,
-        .shake_frames = 6
-    },
     [WEAPON_SNIPER] = {
         .name = "SNIPER",
-        .damage_per_hit = 150,      /* skeleton 100 hp: 1 hit, shooter 200: 2, charger 300: 2 (scale 100 = 1.0) */
+        .damage_per_hit = 150,      /* exvoto 100 hp: 1 hit, shooter 200: 2, charger 300: 2 (scale 100 = 1.0) */
         .pellets = 1,
         .fire_cooldown = 0,         /* no recovery: a new press charges at once (DESIGN.md 6.10, 6.12.10) */
         .projectile_speed = 0,
@@ -43,21 +25,6 @@ const WeaponTuning g_weapon_tuning[NUM_WEAPON_TYPES] = {
         .recoil = 0,
         .shake_amp = 3,
         .shake_frames = 8
-    },
-    [WEAPON_GRENADE] = {
-        .name = "GRENADE",
-        .damage_per_hit = 300,      /* damage at the blast centre; falls to 75 at the rim */
-        .pellets = 1,
-        .fire_cooldown = 60,
-        .projectile_speed = 0,
-        .projectile_range = 150,    /* maximum throw distance in ground px */
-        .spread_angle = 0,
-        .aim_min_frames = 0,
-        .knockback = 768,           /* 3 px/frame shove at the centre */
-        .stun_frames = 12,
-        .recoil = 0,
-        .shake_amp = 4,
-        .shake_frames = 10
     }
 };
 
@@ -126,23 +93,17 @@ typedef struct {
 
 enum { AIM_IDLE = 0, AIM_AIMING, AIM_READY, AIM_CANCELLED };
 
-static PlayerProjectile s_player_projectiles[MAX_PLAYER_PROJECTILES];
 static WeaponSpark s_sparks[MAX_SPARKS];
 static MuzzleFlash s_flash;
 static SniperTrail s_trail;
 
-// Generic effect parts (shotgun cone, casing, smoke, dust, sniper rings and crosses...).
-// One shared pool of 32 slots per weapon; kind FXP_NONE = free slot.
+// Generic effect parts (sniper crosses and impact fragments).
+// One shared pool of 32 slots; kind FXP_NONE = free slot.
 #define MAX_FX_PARTS 32
 enum {
     FXP_NONE = 0,
-    FXP_CONE,       // shotgun fire cone (B, C); vx,vy = shot direction; life 4 = 3 drawn frames
-    FXP_SMOKE,      // grey puff that rises and drifts (B)
-    FXP_SHELL,      // spent casing: gravity and two bounces (B); aux = bounces
-    FXP_DUST,       // dust cloud of dots (impacts in B, recoil in C); size = spread
-    FXP_ARC,        // shock arc on the ground (C), floor pass; aux = centre index (0..31)
     FXP_CROSS,      // sniper cross flash, muzzle and hits (fire palette); size = arm
-    FXP_FRAG        // fragment with gravity (C shotgun and sniper impacts)
+    FXP_FRAG        // fragment with gravity (sniper impacts)
 };
 
 typedef struct {
@@ -161,14 +122,7 @@ static FxPart s_fx[MAX_FX_PARTS];
 // looks, which use the colours.
 enum {
     FX_CORE = 0, FX_HOT, FX_COOL,                  // muzzle flash
-    FX_PELLET_HEAD,
     FX_SPARK_A, FX_SPARK_B, FX_SPARK_C,            // impact sparks, hot to cold
-    FX_TAIL,                                       // pellet tail, dim blue
-    FX_WHITE, FX_YELLOW, FX_ORANGE,                // shotgun cone, white to orange
-    FX_CYAN, FX_CYAN_DIM,                          // shotgun shock arcs (C), fade out
-    FX_BRASS,                                      // spent casing
-    FX_SMOKE_A, FX_SMOKE_B, FX_SMOKE_C,            // grey smoke, light to dark
-    FX_DUST_A, FX_DUST_B,                          // dust, light to dark
     FX_GOLD, FX_BLOOD, FX_RED, FX_ASH,             // legacy fire palette
     FX_BLACK,                                      // thorn spikes (aura E)
     // Sacred Heart desaturated/prerendered palette (DESIGN.md 6.10)
@@ -181,14 +135,7 @@ enum {
 
 static const uint16_t s_fx_rgb[FX_NUM_COLORS] = {
     RGB15(31, 31, 24), RGB15(31, 24, 6), RGB15(28, 12, 2),
-    RGB15(31, 30, 20),
     RGB15(31, 30, 18), RGB15(31, 18, 3), RGB15(20, 5, 2),
-    RGB15(10, 14, 20),                             // FX_TAIL
-    RGB15(31, 31, 31), RGB15(31, 28, 8), RGB15(31, 15, 3),
-    RGB15(16, 28, 31), RGB15(8, 16, 24),
-    RGB15(28, 22, 8),                              // FX_BRASS
-    RGB15(17, 17, 18), RGB15(11, 11, 12), RGB15(6, 6, 7),
-    RGB15(22, 20, 16), RGB15(13, 12, 10),
     RGB15(31, 21, 4),                              // FX_GOLD
     RGB15(15, 2, 2),                               // FX_BLOOD
     RGB15(28, 5, 2),                               // FX_RED
@@ -398,7 +345,6 @@ void weapons_init(void) {
     s_flash.life = 0;
     s_trail.life = 0;
     s_aim_len = 0;
-    for (int i = 0; i < MAX_PLAYER_PROJECTILES; i++) s_player_projectiles[i].active = 0;
     for (int i = 0; i < MAX_SPARKS; i++) s_sparks[i].active = 0;
     aura_reset();
     for (int i = 0; i < MAX_FX_PARTS; i++) s_fx[i].kind = FXP_NONE;
@@ -414,13 +360,10 @@ void weapons_init(void) {
     g_aura_force_mask = 0;
     s_next_charge_pct = 0;
     s_charge_frames = g_weapon_tuning[WEAPON_SNIPER].aim_min_frames;
-    grenade_init();
 }
 
 void weapons_shift_y(int dy_px) {
     fixed fdy = TO_FIXED(dy_px);
-    for (int i = 0; i < MAX_PLAYER_PROJECTILES; i++)
-        if (s_player_projectiles[i].active) s_player_projectiles[i].y += fdy;
     for (int i = 0; i < MAX_SPARKS; i++)
         if (s_sparks[i].active) s_sparks[i].y += fdy;
     for (int i = 0; i < MAX_FX_PARTS; i++)
@@ -462,27 +405,9 @@ void weapons_cancel_aim(void) {
     aura_reset();
 }
 
-void weapons_cycle(PlayerState *player) {
-    if (!player) return;
-    player->current_weapon = (WeaponType)((player->current_weapon + 1) % NUM_WEAPON_TYPES);
-    s_aim_state = AIM_IDLE;
-    s_aim_timer = 0;
-    s_aim_prog = 0;
-    aura_reset();
-    grenade_cancel();
-}
-
 const char *weapons_get_name(WeaponType type) {
     if (type >= 0 && type < NUM_WEAPON_TYPES) return g_weapon_tuning[type].name;
     return "UNKNOWN";
-}
-
-int weapons_get_active_projectile_count(void) {
-    int count = 0;
-    for (int i = 0; i < MAX_PLAYER_PROJECTILES; i++) {
-        if (s_player_projectiles[i].active) count++;
-    }
-    return count;
 }
 
 void weapons_last_shot_dir(fixed *dir_x, fixed *dir_y) {
@@ -515,8 +440,6 @@ static const int s_ell_sin[32] = {
     0, 50, 98, 142, 181, 213, 237, 251, 256, 251, 237, 213, 181, 142, 98, 50,
     0, -50, -98, -142, -181, -213, -237, -251, -256, -251, -237, -213, -181, -142, -98, -50
 };
-static const int s_dust_dx[6] = {-3, 2, -1, 4, -4, 1};
-static const int s_dust_dy[6] = {1, -2, 3, 0, -1, 2};
 
 // Pool slot for a new part, or 0 when the pool is full (the effect is simply skipped).
 static FxPart *fx_spawn(int kind, int life, fixed x, fixed y) {
@@ -539,20 +462,6 @@ static FxPart *fx_spawn(int kind, int life, fixed x, fixed y) {
     return 0;
 }
 
-// Ellipse index whose screen direction best matches the shot (dot product, no trig).
-static int ellipse_index_for(fixed dir_x, fixed dir_y) {
-    int best = 0;
-    fixed best_dot = dir_x * s_ell_cos[0] + ((dir_y * s_ell_sin[0]) >> 1);
-    for (int i = 1; i < 32; i++) {
-        fixed dot = dir_x * s_ell_cos[i] + ((dir_y * s_ell_sin[i]) >> 1);
-        if (dot > best_dot) {
-            best_dot = dot;
-            best = i;
-        }
-    }
-    return best;
-}
-
 // Fragment thrown from an impact point (screen coordinates, height 0).
 static void spawn_frag(int x, int y, fixed back_x, fixed back_y) {
     FxPart *p = fx_spawn(FXP_FRAG, 12, TO_FIXED(x), TO_FIXED(y));
@@ -564,19 +473,9 @@ static void spawn_frag(int x, int y, fixed back_x, fixed back_y) {
     p->vh = 384 + rng_range(0, 256);
 }
 
-static void spawn_dust(fixed x, fixed y, int size, int life) {
-    FxPart *p = fx_spawn(FXP_DUST, life, x, y);
-    if (p) p->size = size;
-}
-
 // Sparks leave the impact point opposite to the shot, with a sideways spread.
-// Shotgun pellets follow g_fx_style: B adds a dust cloud; C adds a bigger spark burst and a fragment.
-// Sniper impacts always take style C and its palette (gold, orange, ash) in render_fx.
 static void spawn_impact(int x, int y, fixed back_x, fixed back_y, int count, int sniper) {
-    int style = sniper ? 2 : g_fx_style;
-    int n = count;
-    if (style == 1) n = count > 1 ? count - 1 : 1;
-    else if (style == 2) n = count + 2;
+    int n = count + 2;
     for (int k = 0; k < n; k++) {
         for (int i = 0; i < MAX_SPARKS; i++) {
             if (s_sparks[i].active) continue;
@@ -593,11 +492,7 @@ static void spawn_impact(int x, int y, fixed back_x, fixed back_y, int count, in
             break;
         }
     }
-    if (style == 1) {
-        spawn_dust(TO_FIXED(x), TO_FIXED(y), 1, 10);
-    } else if (style == 2) {
-        spawn_frag(x, y, back_x, back_y);
-    }
+    spawn_frag(x, y, back_x, back_y);
 }
 
 static void spawn_flash(const WeaponInput *in, fixed dir_x, fixed dir_y) {
@@ -606,65 +501,6 @@ static void spawn_flash(const WeaponInput *in, fixed dir_x, fixed dir_y) {
     s_flash.y = TO_INT(in->muzzle_y) - in->muzzle_h;
     s_flash.dir_x = dir_x;
     s_flash.dir_y = dir_y;
-}
-
-// Shotgun: wide cone at the muzzle (B, C); B throws a casing and leaves smoke;
-// C kicks up dust at the feet and draws a shock arc on the ground.
-static void spawn_shell(const WeaponInput *in, fixed dir_x, fixed dir_y) {
-    FxPart *p = fx_spawn(FXP_SHELL, 28, in->muzzle_x, in->muzzle_y);
-    if (!p) return;
-    p->h = TO_FIXED(in->muzzle_h);
-    p->vx = (-dir_y * 3) >> 1;          // 1.5 px/frame to the side of the shot
-    p->vy = (dir_x * 3) >> 1;
-    p->vh = 640;
-}
-
-static void spawn_smoke(fixed x, fixed y, fixed h, fixed vx, fixed vy, int life) {
-    FxPart *p = fx_spawn(FXP_SMOKE, life, x, y);
-    if (!p) return;
-    p->h = h;
-    p->vh = 64 + rng_range(0, 64);      // rises slowly
-    p->vx = vx;
-    p->vy = vy;
-    p->size = 3 + rng_range(0, 1);
-}
-
-static void spawn_recoil_dust(const WeaponInput *in) {
-    for (int k = 0; k < 3; k++) {
-        FxPart *p = fx_spawn(FXP_DUST, 12,
-                             in->player_x + rng_range(-6, 6) * 256,
-                             in->player_y + rng_range(-4, 4) * 256);
-        if (!p) return;
-        p->size = 2;
-        p->vx = rng_range(-96, 96);
-        p->vy = rng_range(-64, 64);
-    }
-}
-
-static void spawn_arc(const WeaponInput *in, fixed dir_x, fixed dir_y) {
-    FxPart *p = fx_spawn(FXP_ARC, 8, in->player_x, in->player_y);
-    if (p) p->aux = ellipse_index_for(dir_x, dir_y);
-}
-
-static void spawn_shotgun_fx(const WeaponInput *in, fixed dir_x, fixed dir_y) {
-    if (g_fx_style == 0) return;
-    FxPart *cone = fx_spawn(FXP_CONE, 4, in->muzzle_x, in->muzzle_y);
-    if (cone) {
-        cone->h = TO_FIXED(in->muzzle_h);
-        cone->vx = dir_x;
-        cone->vy = dir_y;
-    }
-    if (g_fx_style == 1) {
-        spawn_shell(in, dir_x, dir_y);
-        for (int k = 0; k < 4; k++) {
-            fixed x = in->muzzle_x + dir_x * rng_range(4, 12) + rng_range(-2, 2) * 256;
-            fixed y = in->muzzle_y + dir_y * rng_range(4, 12) + rng_range(-2, 2) * 256;
-            spawn_smoke(x, y, TO_FIXED(in->muzzle_h), dir_x >> 7, dir_y >> 7, rng_range(22, 30));
-        }
-    } else {
-        spawn_arc(in, dir_x, dir_y);
-        spawn_recoil_dust(in);
-    }
 }
 
 // Sniper shot (fire palette, DESIGN.md 6.10): a cross at the muzzle and, when the shot ends at a wall,
@@ -698,38 +534,6 @@ static void fx_update(void) {
         FxPart *p = &s_fx[i];
         if (p->kind == FXP_NONE) continue;
         switch (p->kind) {
-        case FXP_SMOKE:
-            p->x += p->vx;
-            p->y += p->vy;
-            p->h += p->vh;
-            break;
-        case FXP_DUST:
-            p->x += p->vx;
-            p->y += p->vy;
-            p->vx -= p->vx >> 3;
-            p->vy -= p->vy >> 3;
-            break;
-        case FXP_SHELL:
-            if (p->aux < 2) {
-                p->x += p->vx;
-                p->y += p->vy;
-                p->h += p->vh;
-                p->vh -= 40;                    // gravity
-                if (p->h < 0) {
-                    p->h = 0;
-                    p->aux++;
-                    if (p->aux >= 2) {
-                        p->vh = 0;
-                        p->vx = 0;
-                        p->vy = 0;
-                    } else {
-                        p->vh = -(p->vh >> 1);
-                        p->vx = (p->vx * 3) >> 2;
-                        p->vy = (p->vy * 3) >> 2;
-                    }
-                }
-            }
-            break;
         case FXP_FRAG:
             p->x += p->vx;
             p->y += p->vy;
@@ -816,41 +620,6 @@ static int ray_length(const WeaponInput *in, fixed dir_x, fixed dir_y, int range
         if (!bullet_position_is_free(x, y)) break;
     }
     return d;
-}
-
-static void fire_shotgun(const WeaponTuning *tuning, const WeaponInput *in, fixed dir_x, fixed dir_y) {
-    fixed origin_x, origin_y;
-    shot_origin(in, &origin_x, &origin_y);
-    fixed perp_x = -dir_y;
-    fixed perp_y = dir_x;
-    spawn_shotgun_fx(in, dir_x, dir_y);
-    int pellets =(tuning->pellets > 0 ? tuning->pellets : 1) + g_mods.shotgun_pellets;
-    int pellet_damage = tuning->damage_per_hit * g_mods.shotgun_damage_pct / 100;
-    if (pellet_damage < 1) pellet_damage = 1;
-    for (int p_idx = 0; p_idx < pellets; p_idx++) {
-        int slot = -1;
-        for (int s = 0; s < MAX_PLAYER_PROJECTILES; s++) {
-            if (!s_player_projectiles[s].active) { slot = s; break; }
-        }
-        if (slot < 0) break;
-
-        int spread_idx = (pellets > 1) ? (p_idx - (pellets / 2)) : 0;
-        fixed jitter = (fixed)rng_range(-(int)tuning->spread_angle / 4, (int)tuning->spread_angle / 4);
-        fixed spread_offset = (spread_idx * tuning->spread_angle) / 2 + jitter;
-        PlayerProjectile *proj = &s_player_projectiles[slot];
-        proj->active = 1;
-        proj->weapon_type = WEAPON_SHOTGUN;
-        proj->x = origin_x;
-        proj->y = origin_y;
-        proj->vx = ((dir_x * tuning->projectile_speed) >> 8) + ((perp_x * spread_offset) >> 8);
-        proj->vy = ((dir_y * tuning->projectile_speed) >> 8) + ((perp_y * spread_offset) >> 8);
-        proj->height = in->muzzle_h;
-        proj->life = tuning->projectile_range;
-        proj->max_life = tuning->projectile_range;
-        proj->damage = pellet_damage;
-        proj->pierce = g_mods.shotgun_pierce;
-        proj->hit_mask = 0;
-    }
 }
 
 // Ray (DESIGN.md 6.12.2): pierces the enemies it kills and stops at the first one that survives the hit
@@ -984,18 +753,15 @@ static void fire_sniper(const WeaponTuning *tuning, const WeaponInput *in, fixed
 
 static int fire_weapon(PlayerState *player, const WeaponInput *in, fixed dir_x, fixed dir_y,
                        Enemy *enemies, int max_enemies) {
-    const WeaponTuning *tuning = &g_weapon_tuning[player->current_weapon];
-    s_weapon_cooldown = tuning->fire_cooldown + (player->current_weapon == WEAPON_SHOTGUN ? g_mods.shotgun_cooldown : 0);
+    (void)player;
+    const WeaponTuning *tuning = &g_weapon_tuning[WEAPON_SNIPER];
+    s_weapon_cooldown = tuning->fire_cooldown;
     s_last_dir_x = dir_x;
     s_last_dir_y = dir_y;
-    if (player->current_weapon == WEAPON_SHOTGUN) {
-        fire_shotgun(tuning, in, dir_x, dir_y);
-    } else {
-        sfx_stop_charge();
-        sfx_play(SND_HEART_FIRE, TO_INT(in->player_x));
-        s_instant_pending = 0;                       // the instant shot is spent (Corazon Flagelado)
-        fire_sniper(tuning, in, dir_x, dir_y, enemies, max_enemies);
-    }
+    sfx_stop_charge();
+    sfx_play(SND_HEART_FIRE, TO_INT(in->player_x));
+    s_instant_pending = 0;                       // the instant shot is spent (Corazon Flagelado)
+    fire_sniper(tuning, in, dir_x, dir_y, enemies, max_enemies);
     spawn_flash(in, dir_x, dir_y);
     request_shake(tuning);
     return WEAPON_RESULT_FIRED;
@@ -1272,34 +1038,21 @@ int weapons_aim_progress(void) {
 }
 
 int weapons_can_start_aim(const PlayerState *player) {
-    return player->current_weapon == WEAPON_SNIPER && s_weapon_cooldown <= 0 && s_aim_state == AIM_IDLE;
+    (void)player;
+    return s_weapon_cooldown <= 0 && s_aim_state == AIM_IDLE;
 }
 
 int weapons_input(PlayerState *player, const WeaponInput *in, Enemy *enemies, int max_enemies) {
     if (!player || !in || player->is_dead) {
         if (s_aim_state == AIM_AIMING || s_aim_state == AIM_READY) sfx_stop_charge();
         s_aim_state = AIM_IDLE;
-        grenade_cancel();
         return 0;
-    }
-
-    if (player->current_weapon == WEAPON_GRENADE) {
-        s_aim_state = AIM_IDLE;
-        return grenade_input(player, in);
     }
 
     fixed dir_x = 0, dir_y = 0;
     int has_aim = in->touch_down ? compute_aim(in, &dir_x, &dir_y) : 0;
 
-    if (player->current_weapon == WEAPON_SHOTGUN) {
-        // One shot per touch: holding the stylus does not repeat.
-        if (in->touch_pressed && has_aim && s_weapon_cooldown <= 0) {
-            return fire_weapon(player, in, dir_x, dir_y, enemies, max_enemies);
-        }
-        return 0;
-    }
-
-    // Sniper: touch to aim (the player stops), release to fire once armed. A fresh press always
+    // Sacred ray: touch to aim (the player stops), release to fire once armed. A fresh press always
     // starts the charge at once, even right after a shot: the post-shot cooldown is dropped so
     // the player never waits for the recovery to end before charging again, and the charge
     // restarts from zero (timer and progress) on this very frame.
@@ -1719,10 +1472,6 @@ int weapons_llaga_tint(void) {
     return s_llaga_missing > 4 ? 4 : s_llaga_missing;
 }
 
-void weapons_notify_kill(void) {
-    if (g_mods.kill_resets_shotgun) s_weapon_cooldown = 0;
-}
-
 // Evidence hook for the design-variant scenarios (scenarios/abc_*.json): the runner writes a bit mask here to fire a
 // cue on demand (1 Viatico siphon from a point right of the hero, 2 Corazon Flagelado wave, 4 Martirio blast in front of the hero, 8 Auto de Fe sparks, 16 next beam kill steals a heart, 32 plain sniper trail, 64 / 128 force burn style A / B). Cleared at once.
 volatile uint8_t g_abc_debug = 0;
@@ -1757,7 +1506,6 @@ void weapons_update(Enemy *enemies, int max_enemies) {
     if (s_flash.life > 0) s_flash.life--;
     if (s_trail.life > 0) s_trail.life--;
     if (s_shake_timer > 0) { s_shake_timer--; s_shake_tick++; }
-    grenade_update(enemies, max_enemies, &g_player_state);
 
     for (int i = 0; i < MAX_SPARKS; i++) {
         WeaponSpark *s = &s_sparks[i];
@@ -1784,59 +1532,6 @@ void weapons_update(Enemy *enemies, int max_enemies) {
     cilicio_update(enemies, max_enemies);
     llaga_update();
     burn_fx_update(enemies, max_enemies);
-
-    const WeaponTuning *shotgun = &g_weapon_tuning[WEAPON_SHOTGUN];
-    for (int i = 0; i < MAX_PLAYER_PROJECTILES; i++) {
-        PlayerProjectile *p = &s_player_projectiles[i];
-        if (!p->active) continue;
-
-        if (--p->life <= 0) {
-            p->active = 0;
-            continue;
-        }
-
-        int major = abs_int(p->vx) > abs_int(p->vy) ? abs_int(p->vx) : abs_int(p->vy);
-        int steps = (major + 511) / 512;
-        if (steps < 1) steps = 1;
-        int blocked = 0;
-        for (int s = 1; s <= steps; s++) {
-            fixed nx = p->x + (p->vx / steps);
-            fixed ny = p->y + (p->vy / steps);
-            if (!bullet_position_is_free(nx, ny)) { blocked = 1; break; }
-            p->x = nx;
-            p->y = ny;
-        }
-        if (blocked) {
-            spawn_impact(TO_INT(p->x), TO_INT(p->y) - p->height, -p->vx / 8, -p->vy / 8, 3, 0);
-            p->active = 0;
-            continue;
-        }
-
-        for (int e_idx = 0; e_idx < max_enemies; e_idx++) {
-            Enemy *e = &enemies[e_idx];
-            if (!e->active || e->hp <= 0 || e->state == ENEMY_STATE_EMERGE || (p->hit_mask & (1u << e_idx))) continue;
-            int dx = TO_INT(p->x - e->x);
-            int dy = TO_INT(p->y - e->y);
-            int hit_radius = e->char_id == CHAR_OJO ? 15 : ENEMY_HIT_RADIUS;
-            if (dx * dx + GROUND_DY2(dy) > hit_radius * hit_radius) continue;
-
-            // Damage falls off from 100% at the muzzle to 25% at the end of the range.
-            int damage = (p->damage * (64 + (192 * p->life) / p->max_life)) >> 8;
-            if (damage < 1) damage = 1;
-            spawn_impact(TO_INT(p->x), TO_INT(p->y) - p->height, -p->vx / 8, -p->vy / 8, 3, 0);
-            enemy_hit(e, damage, p->vx, p->vy);
-            fixed len_dir_x = p->vx * 256 / shotgun->projectile_speed;
-            fixed len_dir_y = p->vy * 256 / shotgun->projectile_speed;
-            shove_enemy(e, shotgun, len_dir_x, len_dir_y);
-            if (p->pierce > 0) {            // "perforantes": the pellet goes on through
-                p->pierce--;
-                p->hit_mask |= 1u << e_idx;
-                continue;
-            }
-            p->active = 0;
-            break;
-        }
-    }
 }
 
 // ---------------------------------------------------------------------------
@@ -1909,41 +1604,9 @@ static void aim_point(int d, int cam_x, int cam_y, int *x, int *y) {
     *y = TO_INT(s_aim_muzzle_y + s_aim_dir_y * d) - s_aim_muzzle_h - cam_y;
 }
 
-// Filled disc with an optional checkerboard rim (no transparency on the DS).
-static void draw_disc(const FxTarget *t, int cx, int cy, int r, int color, int dither) {
-    int rr = r * r;
-    int inner = (r - 1) * (r - 1);
-    for (int dy = -r; dy <= r; dy++) {
-        for (int dx = -r; dx <= r; dx++) {
-            int d2 = dx * dx + dy * dy;
-            if (d2 > rr) continue;
-            if (dither && d2 > inner && ((cx + dx + cy + dy) & 1)) continue;
-            put_px(t, cx + dx, cy + dy, color);
-        }
-    }
-}
-
 static void draw_cross(const FxTarget *t, int cx, int cy, int arm, int color) {
     draw_line(t, cx - arm, cy, cx + arm, cy, color);
     draw_line(t, cx, cy - arm, cx, cy + arm, color);
-}
-
-// Shotgun cone: a wedge that widens from the muzzle; age 0 white, 1 yellow, 2 orange.
-static void draw_cone(const FxTarget *t, int ox, int oy, fixed dir_x, fixed dir_y, int idx, int wide) {
-    static const int len_b[3] = {14, 12, 8}, half_b[3] = {12, 10, 7};
-    static const int len_c[3] = {20, 17, 12}, half_c[3] = {16, 13, 9};
-    if (idx < 0 || idx > 2) return;
-    int len = wide ? len_c[idx] : len_b[idx];
-    int half = wide ? half_c[idx] : half_b[idx];
-    int color = idx == 0 ? FX_WHITE : idx == 1 ? FX_YELLOW : FX_ORANGE;
-    for (int k = 1; k <= len; k++) {
-        int cx = ox + ((dir_x * k) >> 8);
-        int cy = oy + ((dir_y * k) >> 8);
-        int w = (half * k) >> 4;        // grows toward the tip, about half-width at the end
-        int sx = (-dir_y * w) >> 8;
-        int sy = (dir_x * w) >> 8;
-        draw_line(t, cx - sx, cy - sy, cx + sx, cy + sy, color);
-    }
 }
 
 // Collimation band: volumetric falloff across -w..w. Core takes `centre`, inner glow takes `inner`,
@@ -2062,8 +1725,7 @@ static void render_aim_line(const FxTarget *t, int cam_x, int cam_y) {
     }
 }
 
-// Parts with volume, drawn over the sprites: cones, smoke, shells, dust, crosses,
-// fragments. FXP_ARC lies on the floor and are drawn by render_fx_ground.
+// Parts with volume, drawn over the sprites: crosses and fragments.
 // age = frames since spawn (1 on the first frame drawn).
 static void render_fx_parts(const FxTarget *t, int cam_x, int cam_y) {
     for (int i = 0; i < MAX_FX_PARTS; i++) {
@@ -2073,31 +1735,6 @@ static void render_fx_parts(const FxTarget *t, int cam_x, int cam_y) {
         int sx = TO_INT(p->x) - cam_x;
         int sy = TO_INT(p->y) - TO_INT(p->h) - cam_y;
         switch (p->kind) {
-        case FXP_CONE:
-            draw_cone(t, sx, sy, p->vx, p->vy, age - 1, g_fx_style == 2);
-            break;
-        case FXP_SMOKE: {
-            // Light grey while young, dark and dithered at the rim when old.
-            int late = age * 3 >= p->max_life * 2;
-            int col = age * 3 < p->max_life ? FX_SMOKE_A : late ? FX_SMOKE_C : FX_SMOKE_B;
-            draw_disc(t, sx, sy, p->size + (age >> 3), col, late);
-            break;
-        }
-        case FXP_SHELL:
-            put_px(t, sx, sy, FX_BRASS);
-            put_px(t, sx + 1, sy, FX_BRASS);
-            break;
-        case FXP_DUST: {
-            int late = age * 2 > p->max_life;
-            int spread = p->size + (age >> 1);
-            for (int k = 0; k < 6; k++) {
-                int x = sx + ((s_dust_dx[k] * spread) >> 1);
-                int y = sy + ((s_dust_dy[k] * spread) >> 1);
-                if (late && ((x + y) & 1)) continue;
-                put_px(t, x, y, late ? FX_DUST_B : FX_DUST_A);
-            }
-            break;
-        }
         case FXP_CROSS: {
             int arm = p->size - (age - 1);
             if (arm < 1) arm = 1;
@@ -2164,36 +1801,6 @@ static void render_trail(const FxTarget *t, int cam_x, int cam_y) {
     }
 }
 
-// Pellets: A short streak (4 px) cooling to blue; B bright head with a dotted tail;
-// C long luminous streak (18 px) with a bright front.
-static void render_pellets(const FxTarget *t, int cam_x, int cam_y) {
-    for (int i = 0; i < MAX_PLAYER_PROJECTILES; i++) {
-        PlayerProjectile *p = &s_player_projectiles[i];
-        if (!p->active) continue;
-        int hx = TO_INT(p->x) - cam_x;
-        int hy = TO_INT(p->y) - p->height - cam_y;
-        if (g_fx_style == 0) {
-            int tx = hx - ((p->vx * 11) >> 12), ty = hy - ((p->vy * 11) >> 12);
-            int mx = hx - ((p->vx * 11) >> 13), my = hy - ((p->vy * 11) >> 13);
-            draw_line(t, tx, ty, mx, my, FX_TAIL);
-            draw_line(t, mx, my, hx, hy, FX_COOL);
-            put_px(t, hx, hy, FX_PELLET_HEAD);
-        } else if (g_fx_style == 1) {
-            for (int k = 1; k <= 3; k++) {
-                put_px(t, hx - ((p->vx * k) >> 9), hy - ((p->vy * k) >> 9), FX_TAIL);
-            }
-            put_px(t, hx, hy, FX_PELLET_HEAD);
-            put_px(t, hx + 1, hy, FX_PELLET_HEAD);
-        } else {
-            int tx = hx - ((p->vx * 3) >> 8), ty = hy - ((p->vy * 3) >> 8);
-            int mx = hx - (p->vx >> 8), my = hy - (p->vy >> 8);
-            draw_line(t, tx, ty, mx, my, FX_TAIL);
-            draw_line(t, mx, my, hx, hy, FX_COOL);
-            put_px(t, hx, hy, FX_PELLET_HEAD);
-        }
-    }
-}
-
 static void render_flash(const FxTarget *t, int cam_x, int cam_y) {
     if (s_flash.life <= 0) return;
     int x = s_flash.x - cam_x, y = s_flash.y - cam_y;
@@ -2214,7 +1821,6 @@ static void render_fx(const FxTarget *t, int cam_x, int cam_y) {
     render_aim_line(t, cam_x, cam_y);
 
     if (s_trail.life > 0) render_trail(t, cam_x, cam_y);
-    render_pellets(t, cam_x, cam_y);
     render_fx_parts(t, cam_x, cam_y);
     render_flash(t, cam_x, cam_y);
 
@@ -2228,31 +1834,6 @@ static void render_fx(const FxTarget *t, int cam_x, int cam_y) {
         int hx = TO_INT(s->x) - cam_x, hy = TO_INT(s->y) - cam_y;
         put_px(t, hx, hy, color);
         put_px(t, hx - (s->vx > 96) + (s->vx < -96), hy - (s->vy > 96) + (s->vy < -96), color);
-    }
-}
-
-// Ground parts (DESIGN.md 4.9): 2:1 ellipses on the floor, drawn on the floor pass under the
-// shadows and sprites. Their x,y is already the ground world point (they never carry height),
-// and groundfx applies the camera and the wall test itself.
-static void render_fx_ground(const GroundTarget *g) {
-    for (int i = 0; i < MAX_FX_PARTS; i++) {
-        const FxPart *p = &s_fx[i];
-        if (p->kind != FXP_ARC) continue;
-        int age = p->max_life - p->life;
-        int wx = TO_INT(p->x);
-        int wy = TO_INT(p->y);
-        int r = 4 + 4 * age;
-        uint16_t col = s_fx_rgb[age <= 2 ? FX_WHITE : age <= 4 ? FX_CYAN : FX_CYAN_DIM];
-        // 9 steps of the 32-step table centred on the shot direction. The window is split
-        // in two when it wraps past step 32, so no call gets a1 > 32.
-        int a0 = (p->aux - 4) & 31;
-        int a1 = a0 + 9;
-        if (a1 <= 32) {
-            gfx_ground_arc(g, wx, wy, r, a0, a1, col, 1);
-        } else {
-            gfx_ground_arc(g, wx, wy, r, a0, 32, col, 1);
-            gfx_ground_arc(g, wx, wy, r, 0, a1 - 32, col, 1);
-        }
     }
 }
 
@@ -2749,8 +2330,6 @@ void weapons_render_overlay(uint16_t *buffer) {
 void weapons_render_floor(uint16_t *buffer, int cam_x, int cam_y) {
     if (!buffer) return;
     GroundTarget ground = { buffer, cam_x, cam_y };
-    grenade_render_floor(&ground);
-    render_fx_ground(&ground);
     burn_rings_draw(&ground);
     // READY flash: a dashed 2:1 warm glow ring on the floor around the feet, under the actors.
     if (s_aura_flash > 0 && s_aim_state == AIM_READY) {
@@ -2774,9 +2353,7 @@ void weapons_render_floor(uint16_t *buffer, int cam_x, int cam_y) {
 }
 
 void weapons_render_light(uint16_t *buffer, int cam_x, int cam_y) {
-    if (!buffer) return;
-    GroundTarget ground = { buffer, cam_x, cam_y };
-    grenade_render_light(&ground);
+    (void)buffer; (void)cam_x; (void)cam_y;
 }
 
 void weapons_render(uint16_t *buffer, int cam_x, int cam_y) {
@@ -2786,5 +2363,4 @@ void weapons_render(uint16_t *buffer, int cam_x, int cam_y) {
     aura_draw_pass(&target, cam_x, cam_y, 0);         // style L: arcs in front of the body
     if (aura_fx_live() && aura_on(AURA_STYLE_H)) ash_draw(&target, cam_x, cam_y, s_aura_prog_live);
     burn_fx_draw(&target, cam_x, cam_y, 0);
-    grenade_render(buffer, cam_x, cam_y);
 }

@@ -1,4 +1,4 @@
-"""1x + 4x contact sheet of the prerendered props next to the marine (scale reference)."""
+"""1x + 4x contact sheet of the prerendered props next to the hero (scale reference)."""
 import argparse, json, os
 from PIL import Image, ImageDraw, ImageFont
 
@@ -14,11 +14,11 @@ def main():
     args = ap.parse_args()
     order = list(json.load(open(os.path.join(ROOT, "tools/props/props.json"))))
 
-    sheet = Image.open(os.path.join(ROOT, "assets/sprites/characters/marine/spritesheet.png")).convert("RGBA")
-    marine = sheet.crop((0, 0, 40, 40))      # row 0 = S (faces camera), col 0
+    sheet = Image.open(os.path.join(ROOT, "assets/sprites/characters/corazon/spritesheet.png")).convert("RGBA")
+    hero = sheet.crop((0, 0, 40, 40))        # row 0 = S (faces camera), col 0
     anchor = (20, 32)
 
-    items = [("marine", marine, anchor[0], anchor[1], 40, 40)]   # name, img, anchor x, ground row (rows above ground line)
+    items = [("hero", hero, anchor[0], anchor[1], 40, 40)]   # name, img, anchor x, ground row (rows above ground line)
     for n in order:
         im = Image.open(os.path.join(args.render, n, "color.png"))
         items.append((n, im, im.width // 2, im.height, im.width, im.height))
@@ -33,7 +33,7 @@ def main():
     for n, im, ax, ay, w, h in items:
         s1.alpha_composite(im, (x, base - ay))
         d.text((x, 2), n, fill=(230, 220, 200, 255), font=f)
-        d.text((x, base + 2), "%dx%d" % ((40, 40) if n == "marine" else (w, h)), fill=(160, 150, 135, 255), font=f)
+        d.text((x, base + 2), "%dx%d" % ((40, 40) if n == "hero" else (w, h)), fill=(160, 150, 135, 255), font=f)
         x += w + pad
     d.line([(0, base), (W, base)], fill=(90, 80, 70, 255))
     s4 = s1.resize((W * 4, H1 * 4), Image.NEAREST)

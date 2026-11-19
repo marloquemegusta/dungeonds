@@ -5,7 +5,7 @@
 
 // Updates AI state machines for all active enemies:
 // - Skeleton FSM: CHASE <-> ATTACK
-// - Charger FSM: CHASE -> TELEGRAPH -> CHARGE -> RECOVER -> CHASE (STUNNED by a wall or a shotgun hit)
+// - Charger FSM: CHASE -> TELEGRAPH -> CHARGE -> RECOVER -> CHASE (STUNNED by a wall or a ray hit)
 // - Ojo del Tribunal FSM (shooter type): CHASE -> TRACK (40 frames, the band follows the hero) -> LOCK (20 frames, frozen line)
 //   -> SENTENCE -> COOLDOWN -> CHASE (DESIGN.md 6.10)
 // Handles separation repulsion between enemies.

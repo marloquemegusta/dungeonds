@@ -1,6 +1,6 @@
 {
   "name": "cathedral_bench_collision",
-  "description": "Seed 0xC0DE1234, bloque 2 pantalla 0 (ROM -perf). banco_grupo4 en x_tile 16, y_tile 8 (origen mundo 128,832): cuatro bancos de 16 px de fondo con paso de 24 px, cubren x 136..200 e y 848..935. Huecos horizontales de 8 px en y 864..871, 888..895 y 912..919. Cuerpo del marine: radio 6 px en x y 3 px en y (position_is_free). Prueba 1: desde (168,955) con UP se choca con la cara inferior del banco en y 939. Prueba 2: desde (100,867) con RIGHT atraviesa el canal de 8 px entre los bancos (y 867 esta dentro del hueco) y sale por x mayor de 200. Ningun poke baja de y 768: no hay rebase.",
+  "description": "Seed 0xC0DE1234, bloque 2 pantalla 0 (ROM -perf). banco_grupo4 en x_tile 16, y_tile 8 (origen mundo 128,832): cuatro bancos de 16 px de fondo con paso de 24 px, cubren x 136..200 e y 848..935. Huecos horizontales de 8 px en y 864..871, 888..895 y 912..919. Cuerpo del heroe: radio 6 px en x y 3 px en y (position_is_free). Prueba 1: desde (168,955) con UP se choca con la cara inferior del banco en y 939. Prueba 2: desde (100,867) con RIGHT atraviesa el canal de 8 px entre los bancos (y 867 esta dentro del hueco) y sale por x mayor de 200. Ningun poke baja de y 768: no hay rebase.",
   "state": {
     "elf": "../.ds-game-dev/build/out/dungeonds-cathedral-playground-perf.elf",
     "symbols": {

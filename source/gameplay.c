@@ -30,7 +30,7 @@ ENEMY_TUNING_CONST EnemyTuning g_enemy_tuning[NUM_ENEMY_TYPES] = {
         .attack_cooldown = 90,    // [TUNABLE-PLACEHOLDER] frames of cooldown after the sentence, then it closes in again
     },
     [ENEMY_TYPE_EXVOTO] = {
-        .max_hp = 100,            // [TUNABLE-PLACEHOLDER] scale 100 = 1.0: dies to one sniper hit or a point-blank shotgun
+        .max_hp = 100,            // [TUNABLE-PLACEHOLDER] scale 100 = 1.0: dies to one sniper hit
         .speed = 130,             // [TUNABLE-PLACEHOLDER] 8.8 fixed: ~40% of the hero's 326
         .attack_cooldown = 30,    // [TUNABLE-PLACEHOLDER] frames between bites
         .preferred_dist_max = 16, // [TUNABLE-PLACEHOLDER] melee range (ground px)
@@ -80,11 +80,7 @@ void player_state_init(PlayerState *player) {
     if (!player) return;
     player->max_hp = PLAYER_MAX_HP + g_mods.max_hp;
     player->hp = player->max_hp;
-#if TEST_WEAPON_CYCLE
-    player->current_weapon = WEAPON_SHOTGUN;
-#else
-    player->current_weapon = WEAPON_SNIPER;  // demo: the laser is the hero's only weapon (DESIGN.md 6.9.1c)
-#endif
+    player->current_weapon = WEAPON_SNIPER;  // the sacred ray is the hero's only weapon (DESIGN.md 6.9.1c)
     player->is_dead = 0;
     player->invuln_timer = 0;
 }
@@ -132,7 +128,7 @@ static void enemy_damage(Enemy *e, int damage, fixed hit_vx, fixed hit_vy, int q
     if (e->hp <= 0) {
         if (!quiet) sfx_play(SND_ENEMY_DEATH, TO_INT(e->x));
         if (e->suspend_req) {
-            // Viatico: counts as dead now (xp, gems, pack), but stays inert and in place for SUSPEND_FRAMES; the death
+            // Viatico: counts as dead now (pack), but stays inert and in place for SUSPEND_FRAMES; the death
             // animation plays when enemy_suspend_update ends it. hp <= 0 keeps every weapon from hitting it again.
             e->suspend_req = 0;
             g_death_phase = DEATH_BOOKKEEPING;
@@ -219,7 +215,7 @@ void burn_clear(Enemy *e) {
 }
 
 // Once a frame, outside the AI (the off-screen LOD runs the AI every other frame). Kills by fire go
-// through the quiet path, so the death hook (gems, xp, Martirio) still runs without hit stop or sounds.
+// through the quiet path, so the death hook (Martirio) still runs without hit stop or sounds.
 void burn_update(Enemy *enemies, int max_enemies) {
     for (int i = 0; i < max_enemies; i++) {
         Enemy *e = &enemies[i];
