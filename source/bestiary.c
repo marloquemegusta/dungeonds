@@ -27,6 +27,9 @@ typedef struct {
     const char *behavior;
     const char *lore;
     const char *quote;
+    uint8_t vida, veloc, amenaza; /* 1-5; 0 = sin bloque de datos (el heroe) */
+    const char *hace;
+    const char *truco;
 } BestiaryEntry;
 
 #define BESTIARY_NUM_ENTRIES 5
@@ -43,6 +46,9 @@ static const BestiaryEntry s_entries[BESTIARY_NUM_ENTRIES] = {
         .id = "exvoto",
         .name = "El Exvoto",
         .behavior = "Avanza en masa sin descanso; cae al primer impacto.",
+        .vida = 1, .veloc = 1, .amenaza = 1,
+        .hace = "Te sigue sin parar y, si lo apuntas con el rayo cargado, se aparta a un lado.",
+        .truco = "Dispara justo tras su esquiva: tarda en repetirla.",
         .lore = "Fieles que rezaron hasta volverse figuras de cera. Siguen en procesión con las manos en rezo; la cera no resiste la luz.",
         .quote = "«Pidieron no estar solos. Les fue concedido.»"
     },
@@ -50,6 +56,9 @@ static const BestiaryEntry s_entries[BESTIARY_NUM_ENTRIES] = {
         .id = "cireneo",
         .name = "El Cireneo",
         .behavior = "Se agacha antes de embestir en línea recta; no puede girar.",
+        .vida = 3, .veloc = 5, .amenaza = 3,
+        .hace = "Se agacha y embiste en línea recta; no gira durante la embestida.",
+        .truco = "Dispárale al recuperarse.",
         .lore = "Desertó y pidió que le clavaran la cruz a la espalda para no volver a huir. Si choca contra una columna, queda crucificado contra la piedra.",
         .quote = "«Ayudó a cargar una cruz. Ahora la cruz le carga a él.»"
     },
@@ -57,6 +66,9 @@ static const BestiaryEntry s_entries[BESTIARY_NUM_ENTRIES] = {
         .id = "ojo",
         .name = "El Ojo del Tribunal",
         .behavior = "Vigila con su farol, fija la línea de juicio y sentencia desde la boca.",
+        .vida = 2, .veloc = 1, .amenaza = 3,
+        .hace = "Se para a distancia, te marca con una banda verde y dispara por la línea fijada.",
+        .truco = "La línea se congela antes de disparar: muévete.",
         .lore = "Inquisidores que cambiaron sus ojos por una linterna del juicio. Su mirada verde te examina; cuando se queda quieta, ya ha dictado sentencia.",
         .quote = "«La linterna no ve culpables. Los fabrica.»"
     },
@@ -64,6 +76,9 @@ static const BestiaryEntry s_entries[BESTIARY_NUM_ENTRIES] = {
         .id = "abanderado",
         .name = "El Abanderado",
         .behavior = "Patrulla con el asta; al divisarte te apunta e invoca exvotos de jóvenes suplicantes.",
+        .vida = 5, .veloc = 1, .amenaza = 5,
+        .hace = "Al verte, invoca monaguillos lentos.",
+        .truco = "Úsale las columnas; limpia monaguillos.",
         .lore = "Juró que el estandarte jamás tocaría el suelo. Apoyado en él vaga reuniendo a los caídos; de los charcos que señala brotan exvotos de jóvenes suplicantes que aún marchan tras su bandera.",
         .quote = "«Mientras el asta siga en pie, nadie se retira.»"
     }
@@ -355,6 +370,17 @@ static int count_wrapped_lines(const char *utf8, int max_w) {
     return lines;
 }
 
+static void draw_scale_mark(uint16_t *fb, int x, int y, int filled) {
+    uint16_t on = COLOR_IVORY;
+    for (int j = 0; j < 5; j++) {
+        for (int i = 0; i < 5; i++) {
+            int edge = (i == 0 || i == 4 || j == 0 || j == 4);
+            if (filled) fb[((y + j) << 8) + x + i] = on;
+            else if (edge) fb[((y + j) << 8) + x + i] = COLOR_WARM_GRAY;
+        }
+    }
+}
+
 static void draw_bottom_card(uint16_t *fb, int entry_idx) {
     if (!fb || entry_idx < 0 || entry_idx >= BESTIARY_NUM_ENTRIES) return;
     uint32_t black_pair = 0x80008000;
@@ -375,15 +401,37 @@ static void draw_bottom_card(uint16_t *fb, int entry_idx) {
     uint16_t *sep_row = fb + (24 << 8);
     for (int x = 12; x <= 243; x++) sep_row[x] = COLOR_SEPARATOR;
 
-    /* Content: Behavior (1 line), Lore (short paragraph), Quote */
-    int cur_y = 30;
-    bestiary_font_draw_wrapped(fb, 12, cur_y, 231, 12, e->behavior, COLOR_BEHAVIOR);
-    int comp_lines = count_wrapped_lines(e->behavior, 231);
-    cur_y += comp_lines * 12 + 6;
+    int cur_y = 28;
+    if (e->vida) {
+        /* Fila de escalas: etiqueta + 5 marcas (llenas / vacias) */
+        static const char *const labels[3] = { "VIDA", "VELOC.", "AMENAZA" };
+        const int vals[3] = { e->vida, e->veloc, e->amenaza };
+        int x = 12;
+        for (int i = 0; i < 3; i++) {
+            bestiary_font_draw_utf8(fb, x, cur_y, labels[i], COLOR_WARM_GRAY);
+            x += bestiary_font_measure_utf8(labels[i]) + 3;
+            for (int m = 0; m < 5; m++) {
+                draw_scale_mark(fb, x, cur_y + 3, m < vals[i]);
+                x += 6;
+            }
+            x += 7;
+        }
+        cur_y += 13;
+        char buf[160];
+        snprintf(buf, sizeof(buf), "HACE: %s", e->hace);
+        bestiary_font_draw_wrapped(fb, 12, cur_y, 231, 12, buf, COLOR_BEHAVIOR);
+        cur_y += count_wrapped_lines(buf, 231) * 12 + 1;
+        snprintf(buf, sizeof(buf), "TRUCO: %s", e->truco);
+        bestiary_font_draw_wrapped(fb, 12, cur_y, 231, 12, buf, COLOR_BEHAVIOR);
+        cur_y += count_wrapped_lines(buf, 231) * 12 + 2;
+    } else {
+        bestiary_font_draw_wrapped(fb, 12, cur_y, 231, 12, e->behavior, COLOR_BEHAVIOR);
+        cur_y += count_wrapped_lines(e->behavior, 231) * 12 + 6;
+    }
 
     bestiary_font_draw_wrapped(fb, 12, cur_y, 231, 12, e->lore, COLOR_WARM_GRAY);
     int lore_lines = count_wrapped_lines(e->lore, 231);
-    cur_y += lore_lines * 12 + 6;
+    cur_y += lore_lines * 12 + 3;
 
     bestiary_font_draw_wrapped(fb, 12, cur_y, 231, 12, e->quote, COLOR_QUOTE);
 

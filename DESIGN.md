@@ -668,6 +668,21 @@ Conceptos para la demo de la catedral. Solo cambia el aspecto y se añaden élit
   4. **El Ojo del Tribunal** — caminando mientras gira la cabeza-farol a izquierda y derecha buscando (1 barrido cada 2 ciclos de paso, 16 frames por dirección en `ojo_walk_bestiary`). *Comportamiento:* vigila con su farol, fija la línea de juicio y sentencia desde la boca. *Lore:* inquisidores que cambiaron sus ojos por una linterna del juicio. Su mirada verde te examina; cuando se queda quieta, ya ha dictado sentencia. *«La linterna no ve culpables. Los fabrica.»*
   5. **El Abanderado** — caminando cabizbajo apoyado en el estandarte como bastón, seguido por dos exvotos de jóvenes suplicantes (`abanderado_walk`, 8 frames por dirección). *Comportamiento:* patrulla con el asta; al divisarte te apunta e invoca exvotos de jóvenes suplicantes. *Lore:* juró que el estandarte jamás tocaría el suelo. Apoyado en él vaga reuniendo a los caídos; de los charcos que señala brotan exvotos de jóvenes suplicantes que aún marchan tras su bandera. *«Mientras el asta siga en pie, nadie se retira.»*
 
+#### 6.11.1 Datos de juego en las fichas (decidido 2026-11-19)
+El Códice deja de ser solo lore: cada ficha de **enemigo** enseña también cómo se comporta y cómo se le gana. Lo lleva todo enemigo nuevo como parte de su ficha.
+- **Maquetación (pantalla inferior, una sola página):** nombre; una fila con tres escalas de marcas, `VIDA`, `VELOC.` y `AMENAZA` (de 1 a 5, marcas llenas y vacías con los colores del Códice); `HACE:` (1-2 líneas); `TRUCO:` (1 línea); y debajo el lore y la cita de §6.11. Si no cabe, se acorta el texto de `HACE`/`TRUCO`, no el lore; si aun así no cabe, se vuelve a preguntar.
+- **Escalas derivadas de las tablas, no de memoria:** `VIDA` = vida del enemigo entre la del Exvoto (hasta 1,25× es 1; hasta 2× 2; hasta 3× 3; hasta 5× 4; más 5); `VELOC.` = su velocidad más alta entre la del Exvoto al andar, con los mismos tramos (la embestida del Cireneo, 650 frente a 130, es 5); `AMENAZA` = subjetiva, medida contra el Exvoto, que es el mínimo (1) de las tres escalas. Lo que va por debajo del Exvoto se queda en 1. Son rangos: ajustar un número del juego no obliga a reescribir fichas salvo que cambie de marca.
+- **Valores de partida** (con las vidas del acto I, `encounters_act1_hp.h`, y `g_enemy_tuning`):
+| Ficha | VIDA | VELOC. | AMENAZA | HACE | TRUCO |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| El Exvoto | 1 | 1 | 1 (alta en masa) | Te sigue sin parar y, si lo apuntas con el rayo cargado, se aparta a un lado. | Dispara justo tras su esquiva: tarda en repetirla. |
+| El Cireneo | 3 | 5 | 3 | Se agacha y embiste en línea recta; no gira durante la embestida. | Dispárale al recuperarse. |
+| El Ojo del Tribunal | 2 | 1 | 3 | Se para a distancia, te marca con una banda verde y dispara por la línea fijada. | La línea se congela antes de disparar: muévete. |
+| El Abanderado (jefe) | 5 | 1 | 5 | Al verte, invoca monaguillos lentos. | Úsale las columnas; limpia monaguillos. |
+- **El Corazón Abierto** (el héroe) no es enemigo: su ficha no lleva bloque de datos y mantiene su línea de comportamiento.
+- **El Monaguillo** no tiene ficha propia hasta que exista su lore (`LORE.md`); mientras tanto sus datos van en la del Abanderado.
+- **Texto fijo, no generado en ejecución:** los datos de cada ficha se escriben a mano en `source/bestiary.c`; si cambia una IA o una vida, se revisa la ficha en la misma entrega.
+
 ### 6.12 Sistema de mejoras del Corazón Abierto (decidido 2026-11-15)
 Sesión de diseño de la v0.4 (§6.9.2). Sustituye la regla de §6.6 «mitad del arma, mitad del personaje» y la elección de clase: la demo tiene un solo personaje. Las cifras están en `[TUNABLE-PLACEHOLDER]` hasta la sesión de números.
 
