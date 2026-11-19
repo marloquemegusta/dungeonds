@@ -134,7 +134,7 @@ static const BossDef s_abanderado_def = {
     .escort = { s_abanderado_escort, s_abanderado_escort, s_abanderado_escort },
 };
 
-int enc_start_up_px(void) { return g_enc_debug.start_boss ? 156 : 0; }   // hero ~100 px under the boss room's bottom edge
+int enc_start_up_px(void) { return g_enc_debug.start_boss ? 156 : 4 * g_enc_debug.start_up4; }   // hero ~100 px under the boss room's bottom edge
 
 void enc_init(uint32_t seed) {
     s_seed = seed ? seed : 1u;
@@ -666,6 +666,8 @@ void enc_update(Enemy *enemies, int max_enemies, int px, int py) {
     }
 
     update_relic_target(py);
+    st->dbg_relic_x = (int16_t)(s_relic_k >= 0 ? s_relic_x : 0);   // debug for scenarios: the relicario in front of the hero (also without the bot)
+    st->dbg_relic_y = (int16_t)(s_relic_k >= 0 ? s_relic_y : 0);
     if (s_fx_timer > 0) s_fx_timer--;
 }
 
@@ -698,7 +700,6 @@ void enc_relic_hit(int damage) {
         if (k == ENC_GOLDEN_AFTER - 1) upgrades_queue_relic();  // the golden relicario: a Reliquia, not a Don
         else upgrades_queue_levelup();
     }
-    if (s_relicarios % ENC_HEAL_EVERY == 0 && g_player_state.hp < g_player_state.max_hp) g_player_state.hp++;
     s_relic_k = -1;
 }
 

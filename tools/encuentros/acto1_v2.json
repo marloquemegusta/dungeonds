@@ -27,7 +27,6 @@
    "dura"
   ],
   "golden_relic_after": 6,
-  "heal_every": 3,
   "rules": "planta por hash estable; nunca la misma dos veces seguidas; como mucho 2 veces por acto; espejo por hash"
  },
  "plantas": {

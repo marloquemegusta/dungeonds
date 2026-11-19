@@ -1,0 +1,316 @@
+{
+  "name": "intro_clip_relicario",
+  "description": "Encuentros: el heroe rompe a tiros el relicario del pasillo y aparece la oferta de Don.",
+  "suite": false,
+  "evidence_only": false,
+  "state": {
+    "elf": "../.ds-game-dev/build/out/dungeonds-encuentros.elf",
+    "symbols": {
+      "stats": "g_enc_stats",
+      "dbg": "g_enc_debug",
+      "nav": "g_nav_state",
+      "en": "g_enemies"
+    },
+    "default_symbol": "stats",
+    "fields": {
+      "woken": {
+        "offset": 4,
+        "type": "u8"
+      },
+      "alive": {
+        "offset": 61,
+        "type": "u8"
+      },
+      "dbg_auto_pick": {
+        "symbol": "dbg",
+        "offset": 1,
+        "type": "u8"
+      },
+      "dbg_god": {
+        "symbol": "dbg",
+        "offset": 2,
+        "type": "u8"
+      },
+      "dbg_force_plant": {
+        "symbol": "dbg",
+        "offset": 10,
+        "type": "u8"
+      },
+      "dbg_force_tier": {
+        "symbol": "dbg",
+        "offset": 11,
+        "type": "u8"
+      },
+      "dbg_restart": {
+        "symbol": "dbg",
+        "offset": 12,
+        "type": "u8"
+      },
+      "dbg_up4": {
+        "symbol": "dbg",
+        "offset": 17,
+        "type": "u8"
+      },
+      "relicarios": {
+        "offset": 10,
+        "type": "u16"
+      },
+      "dones": {
+        "offset": 6,
+        "type": "u8"
+      },
+      "hero_x": {
+        "symbol": "nav",
+        "offset": 0,
+        "type": "s32"
+      },
+      "hero_y": {
+        "symbol": "nav",
+        "offset": 4,
+        "type": "s32"
+      },
+      "relic_x": {
+        "symbol": "stats",
+        "offset": 136,
+        "type": "s16"
+      },
+      "relic_y": {
+        "symbol": "stats",
+        "offset": 138,
+        "type": "s16"
+      },
+      "a0": {
+        "symbol": "en",
+        "offset": 24,
+        "type": "s32"
+      },
+      "a1": {
+        "symbol": "en",
+        "offset": 148,
+        "type": "s32"
+      },
+      "a2": {
+        "symbol": "en",
+        "offset": 272,
+        "type": "s32"
+      },
+      "a3": {
+        "symbol": "en",
+        "offset": 396,
+        "type": "s32"
+      },
+      "a4": {
+        "symbol": "en",
+        "offset": 520,
+        "type": "s32"
+      },
+      "a5": {
+        "symbol": "en",
+        "offset": 644,
+        "type": "s32"
+      },
+      "a6": {
+        "symbol": "en",
+        "offset": 768,
+        "type": "s32"
+      },
+      "a7": {
+        "symbol": "en",
+        "offset": 892,
+        "type": "s32"
+      },
+      "a8": {
+        "symbol": "en",
+        "offset": 1016,
+        "type": "s32"
+      },
+      "a9": {
+        "symbol": "en",
+        "offset": 1140,
+        "type": "s32"
+      },
+      "a10": {
+        "symbol": "en",
+        "offset": 1264,
+        "type": "s32"
+      },
+      "a11": {
+        "symbol": "en",
+        "offset": 1388,
+        "type": "s32"
+      },
+      "a12": {
+        "symbol": "en",
+        "offset": 1512,
+        "type": "s32"
+      },
+      "a13": {
+        "symbol": "en",
+        "offset": 1636,
+        "type": "s32"
+      },
+      "a14": {
+        "symbol": "en",
+        "offset": 1760,
+        "type": "s32"
+      },
+      "a15": {
+        "symbol": "en",
+        "offset": 1884,
+        "type": "s32"
+      }
+    }
+  },
+  "steps": [
+    {
+      "frames": 20
+    },
+    {
+      "poke": [
+        {
+          "field": "dbg_god",
+          "value": 1
+        }
+      ],
+      "frames": 2
+    },
+    {
+      "poke": [
+        {
+          "field": "dbg_up4",
+          "value": 188
+        },
+        {
+          "field": "dbg_restart",
+          "value": 1
+        }
+      ],
+      "frames": 60
+    },
+    {
+      "poke": [
+        {
+          "field": "a0",
+          "value": 0
+        },
+        {
+          "field": "a1",
+          "value": 0
+        },
+        {
+          "field": "a2",
+          "value": 0
+        },
+        {
+          "field": "a3",
+          "value": 0
+        },
+        {
+          "field": "a4",
+          "value": 0
+        },
+        {
+          "field": "a5",
+          "value": 0
+        },
+        {
+          "field": "a6",
+          "value": 0
+        },
+        {
+          "field": "a7",
+          "value": 0
+        },
+        {
+          "field": "a8",
+          "value": 0
+        },
+        {
+          "field": "a9",
+          "value": 0
+        },
+        {
+          "field": "a10",
+          "value": 0
+        },
+        {
+          "field": "a11",
+          "value": 0
+        },
+        {
+          "field": "a12",
+          "value": 0
+        },
+        {
+          "field": "a13",
+          "value": 0
+        },
+        {
+          "field": "a14",
+          "value": 0
+        },
+        {
+          "field": "a15",
+          "value": 0
+        }
+      ],
+      "frames": 2,
+      "state_capture": "antes"
+    },
+    {
+      "frames": 18,
+      "capture_sequence": "c0",
+      "capture_every": 2
+    },
+    {
+      "tap": {
+        "x": 132,
+        "y": 64
+      },
+      "frames": 40,
+      "capture_sequence": "c1",
+      "capture_every": 2
+    },
+    {
+      "release": true,
+      "frames": 22,
+      "capture_sequence": "c2",
+      "capture_every": 2
+    },
+    {
+      "frames": 42,
+      "capture_sequence": "c3",
+      "capture_every": 2,
+      "state_capture": "oferta"
+    }
+  ],
+  "assertions": {
+    "state_changes": [
+      {
+        "at": "antes",
+        "field": "relicarios",
+        "equals": 0
+      },
+      {
+        "at": "oferta",
+        "field": "relicarios",
+        "min_value": 1
+      },
+      {
+        "at": "oferta",
+        "field": "dones",
+        "min_value": 1
+      },
+      {
+        "at": "antes",
+        "field": "hero_y",
+        "min_value": 265216
+      },
+      {
+        "at": "antes",
+        "field": "hero_y",
+        "max_value": 267264
+      }
+    ]
+  }
+}

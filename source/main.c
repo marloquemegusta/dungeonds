@@ -1782,7 +1782,12 @@ static void draw_run_hud(uint16_t *buffer) {
             }
         }
 #else
+        // Intro capture ROMs (cathedral-sandbox, remate-sandbox): no "Nv. N" or xp bar in the clips.
+#if SANDBOX && (CATHEDRAL_AI == 1 || REMATE_SANDBOX)
+        (void)hud_level;
+#else
         hud_level(buffer);
+#endif
 #endif
 
         // Sacred Hearts: one per max hit point, right-aligned at the top of the bottom screen.

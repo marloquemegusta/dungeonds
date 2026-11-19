@@ -1,28 +1,33 @@
 #!/usr/bin/env python3
 """Genera los bucles de video de las tarjetas de introduccion (DESIGN.md 6.3, source/intro.c).
 
-Cada clip es la pantalla inferior (256x192) del juego real, ~2 s a 30 imagenes por segundo, capturada de
-DeSmuME (una de cada 2 imagenes del juego) y guardada SIN PERDIDA en nitrofiles/intro/<nombre>.bin.
+Cada clip es la pantalla inferior (256x192) de la ROM, ~2 s a 30 imagenes por segundo, capturada de DeSmuME y
+guardada SIN PERDIDA en nitrofiles/intro/<nombre>.bin. `catedral` se graba con la variante `encuentros`; apuntar,
+cobertura, remate y corazon se montan en el sandbox con tools/clip_scene.py (escena exacta: heroe, enemigos, vida,
+planos) sobre `cathedral-sandbox` (remate: `remate-sandbox`, donde L es el remate y no cambia de arma).
+
+Compilar los sandbox: build-project.ps1 -ProjectPath . -Variant cathedral-sandbox  (y -Variant remate-sandbox para el remate).
+El Makefile de la plantilla ya no activa ENCOUNTERS_PROTO en las variantes sandbox (antes habia que pasar -Define -UENCOUNTERS_PROTO).
 
 Flujo:  1) escribe scenarios/intro_clip_<nombre>.json   2) ejecuta cada escenario con run-scenario.ps1 sobre la
-ROM de la variante `cathedral-horde` (horda real, marea real, buzon sandbox)   3) toma la mitad inferior de las
-capturas, elige el tramo del bucle y lo codifica.
+ROM `encuentros` (heroe invulnerable con g_enc_debug.dbg_god)   3) toma la mitad inferior de las capturas,
+elige el tramo del bucle y lo codifica.
 
 Uso (desde la raiz del repo / worktree):
-    powershell -NonInteractive -ExecutionPolicy Bypass -File <skill>\\scripts\\build-project.ps1 -ProjectPath . -Variant cathedral-horde
-    python tools/gen_intro_clips.py                 # los 4 clips (escenario + emulador + .bin + hojas de contacto)
-    python tools/gen_intro_clips.py --only corazon  # uno solo
+    powershell -NonInteractive -ExecutionPolicy Bypass -File <skill>/scripts\build-project.ps1 -ProjectPath . -Variant encuentros
+    python tools/gen_intro_clips.py                 # los 5 clips
+    python tools/gen_intro_clips.py --only remate   # uno solo
     python tools/gen_intro_clips.py --reuse         # no vuelve a ejecutar el emulador (usa las capturas de artifacts/intro_clips)
-    python tools/gen_intro_clips.py --verify-bin nitrofiles/intro/marea.bin   # descodifica y compara con las capturas
+    python tools/gen_intro_clips.py --verify-bin nitrofiles/intro/remate.bin   # descodifica y compara con las capturas
 
 Formato .bin (little endian; el descodificador es video_step() en source/intro.c):
     u16 magic 0x4956 | u16 n | u32 max_rec | u32 max_dec | u32 off[n + 2]
     registro 0 = imagen completa (96 KB de pixeles, comprimida con LZ10 de la BIOS); 1..n-1 = delta con la anterior;
     n = delta de la ultima a la 0 (cierra el bucle). Un delta es: s8 dx, s8 dy (nueva[i] = vieja[i + dy*256 + dx],
     compensacion del scroll) + palabras u16 (tipo << 14 | cuenta): 0 saltar, 1 literales, 2 repetir un pixel.
-    Si el registro empieza por 0x10 esta comprimido con LZ10 (swiDecompressLZSSWram); dx esta en [-6, 6], asi
-    que no hay ambiguedad. Pixeles BGR555 con el bit 15 puesto.
-Regla 5 de AGENTS.md: los escenarios de tiro colocan a los enemigos en la fila exacta del rayo del heroe.
+    Si el registro empieza por 0x10 esta comprimido con LZ10 (swiDecompressLZSSWram); dx esta en [-6, 6],
+    asi que no hay ambiguedad. Pixeles BGR555 con el bit 15 puesto.
+Regla 5 de AGENTS.md: los escenarios colocan a cada enemigo y al heroe donde el efecto de verdad ocurre.
 """
 import argparse
 import json
@@ -34,31 +39,42 @@ from pathlib import Path
 import numpy as np
 from PIL import Image
 
-ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import sandbox_scenes as sb  # noqa: E402
+from clip_scene import ClipScene, Enemy, in_frame, to_screen  # noqa: E402
 
+ROOT = Path(__file__).resolve().parents[1]
 SKILL_SCRIPTS = Path(r"C:\codexlocal\skills\agentic-ds-dev\scripts")
-VARIANT = "cathedral-horde"
+VARIANT = "encuentros"
 OUT_DIR = ROOT / "nitrofiles" / "intro"
 WORK_DIR = ROOT / "artifacts" / "intro_clips"
 W, H = 256, 192
 NPIX = W * H
 MAGIC = 0x4956
 LOOP_TARGET = 60            # imagenes por bucle: 2 s a 30 imagenes por segundo
-
-STRIP_START = (256, 1792)   # donde nace el heroe en la ROM cathedral-* (strip.c: STRIP_W_PX / 2, STRIP_WIN_H_PX - 256)
-HERO_SCREEN_X = 128         # con la camara sin recortar el heroe queda en el centro horizontal
-HERO_FEET_Y = 131           # y de pantalla de sus pies en reposo (medido en las capturas de 00_stage)
-MUZZLE_H = sb.MUZZLE_H      # el rayo sale 21 px sobre los pies: el lapiz se lee a esa altura
-AIM_Y = HERO_FEET_Y - MUZZLE_H
+SLOT = 124                  # sizeof(Enemy) en la ROM encuentros
+ELF = "../.ds-game-dev/build/out/dungeonds-encuentros.elf"
+STRIP_START = (256, 1792)   # donde nace el heroe (ROM encuentros y cathedral-sandbox)
+MUZZLE_H = sb.MUZZLE_H      # el rayo sale 21 px sobre los pies
 
 
 def fields():
-    f = {k: dict(v) for k, v in sb.FIELDS.items()}
-    f["god"] = {"symbol": "ps", "offset": 20, "type": "s32"}       # PlayerState.god_mode
-    f["hp"] = {"symbol": "ps", "offset": 0, "type": "s32"}
-    f["force_drop"] = {"symbol": "fd", "offset": 0, "type": "u8"}  # g_pickup_force_drop (solo con SANDBOX)
+    f = {
+        "woken": {"offset": 4, "type": "u8"}, "alive": {"offset": 61, "type": "u8"},
+        "dbg_auto_pick": {"symbol": "dbg", "offset": 1, "type": "u8"},
+        "dbg_god": {"symbol": "dbg", "offset": 2, "type": "u8"},
+        "dbg_force_plant": {"symbol": "dbg", "offset": 10, "type": "u8"},
+        "dbg_force_tier": {"symbol": "dbg", "offset": 11, "type": "u8"},
+        "dbg_restart": {"symbol": "dbg", "offset": 12, "type": "u8"},
+        "dbg_up4": {"symbol": "dbg", "offset": 17, "type": "u8"},     # el heroe empieza este numero de pasos de 4 px mas arriba
+        "relicarios": {"offset": 10, "type": "u16"}, "dones": {"offset": 6, "type": "u8"},
+        "hero_x": {"symbol": "nav", "offset": 0, "type": "s32"},
+        "hero_y": {"symbol": "nav", "offset": 4, "type": "s32"},
+        "relic_x": {"symbol": "stats", "offset": 136, "type": "s16"},   # dbg_relic_x: relicario que ve el heroe (px de suelo)
+        "relic_y": {"symbol": "stats", "offset": 138, "type": "s16"},
+    }
+    for slot in range(16):
+        f[f"a{slot}"] = {"symbol": "en", "offset": slot * SLOT + 24, "type": "s32"}
     return f
 
 
@@ -66,94 +82,149 @@ def scenario(name, description, steps):
     return {
         "name": name,
         "description": description,
+        "suite": False,
         "evidence_only": True,
-        "state": {"symbols": {"sb": "g_sandbox", "ps": "g_player_state", "fd": "g_pickup_force_drop"},
-                  "default_symbol": "sb", "fields": fields()},
+        "state": {"elf": ELF,
+                  "symbols": {"stats": "g_enc_stats", "dbg": "g_enc_debug", "nav": "g_nav_state", "en": "g_enemies"},
+                  "default_symbol": "stats", "fields": fields()},
         "steps": steps,
     }
 
 
-def stage(player, enemies, extra_pokes=()):
-    """Escena del buzon sandbox: heroe invulnerable con el francotirador, enemigos quietos."""
-    steps = sb.setup_steps(player, "sniper", 0, enemies, flags=sb.FLAG_CLEAR | sb.FLAG_FREEZE_AI | sb.FLAG_GOD)
-    # el buzon deja la vida al maximo: los pokes extra (vida, drop forzado) van despues del ack
-    if extra_pokes:
-        steps.append({"poke": list(extra_pokes), "frames": 1})
+def kill_others(keep, n=16):
+    return [{"field": f"a{i}", "value": 0} for i in range(n) if i != keep]
+
+
+def start(plant, tier, keep=None):
+    """Reinicia el primer encuentro con una planta y tier forzados (g_enc_debug)."""
+    steps = [{"frames": 20},
+             {"poke": [{"field": "dbg_god", "value": 1}, {"field": "dbg_auto_pick", "value": 1}], "frames": 2},
+             {"poke": [{"field": "dbg_force_plant", "value": plant}, {"field": "dbg_force_tier", "value": tier},
+                       {"field": "dbg_restart", "value": 1}], "frames": 40}]
+    if keep is not None:
+        steps.append({"poke": kill_others(keep), "frames": 1})
     return steps
 
 
-# --- Los 4 clips ---------------------------------------------------------------------------------------------
+# --- Los 5 clips (tarjetas en el orden de source/intro.c) ----------------------------------------------------
 # loop: "search" = busca el salto menos visible (bucles ciclicos); (inicio, longitud) = tramo fijo de la accion.
 def clip_catedral():
-    player = STRIP_START
-    # Horda: Exvotos (la masa lenta) con Cireneos y un Ojo por delante, al norte del heroe y despiertos.
-    # Para el catedral no hay fila de rayo que respetar: solo suelo libre (las 4 primeras bandas de la tira estan despejadas).
-    ex, ch, oj = sb.EXVOTO, sb.CHARGER, sb.SHOOTER
-    horde = [(ex, 216, 1650), (ex, 256, 1640), (ex, 296, 1650), (ex, 236, 1610), (ex, 280, 1605), (ch, 190, 1620),
-             (ch, 330, 1625), (ex, 205, 1570), (ex, 255, 1560), (ex, 305, 1575), (ex, 230, 1530), (oj, 270, 1500)]
-    steps = sb.setup_steps(player, "sniper", 0, horde, flags=sb.FLAG_CLEAR | sb.FLAG_GOD)
+    steps = start(1, 1)
     steps += [
-        {"button_down": "UP", "frames": 30},
-        {"frames": 200, "capture_sequence": "c1", "capture_every": 2},
+        # entra por el borde hasta despertar la sala (la reja cae a su espalda) y sigue andando: la horda llega a la pantalla
+        {"button_down": "UP", "wait_until": {"field": "woken", "min_value": 1, "timeout_frames": 1200}},
+        {"button_down": "UP", "frames": 120, "capture_sequence": "c0", "capture_every": 2},
+        {"button_up": "UP", "frames": 1},
     ]
-    return scenario("intro_clip_catedral", "Heroe avanzando hacia el norte por la nave con una horda de Exvotos, Cireneos y un Ojo delante.", steps), "search"
+    return scenario("intro_clip_catedral", "Heroe entra en la sala (procesion ligera); la reja cae a su espalda.", steps), "search"
 
 
 def clip_apuntar():
-    player = (330, STRIP_START[1])
-    # Fila del rayo (regla 5): los tres enemigos al este del cañon y en la misma Y de suelo que el heroe.
-    enemies = sb.check_beam(player, 0, [(sb.EXVOTO, player[0] + 30, player[1]),
-                                         (sb.EXVOTO, player[0] + 50, player[1]),
-                                         (sb.EXVOTO, player[0] + 70, player[1])])
-    steps = stage(player, enemies)
-    steps += [
-        # 1) mover: cruceta a la izquierda (el lapiz aun no toca)
-        {"button_down": "LEFT", "frames": 30, "capture_sequence": "c0", "capture_every": 2},
-        # 2) apuntar y cargar: el lapiz sobre la fila del rayo (al este) planta al heroe y carga el disparo
-        {"button_up": "LEFT", "tap": {"x": HERO_SCREEN_X + 60, "y": AIM_Y}, "frames": 34, "capture_sequence": "c1", "capture_every": 2},
-        # 3) soltar: el rayo atraviesa a los tres enemigos de la fila
-        {"release": True, "frames": 56, "capture_sequence": "c2", "capture_every": 2},
-    ]
-    return scenario("intro_clip_apuntar", "Heroe se mueve con la cruceta, apunta y carga el rayo con el lapiz y dispara a tres Exvotos en fila (un rayo mata a cada uno).", steps), (0, LOOP_TARGET)
+    """cathedral-sandbox: Exvoto quieto; 1 el heroe anda, 2 apunta con el lapiz (el rayo se ve moverse), 3 carga, 4 dispara."""
+    ex = (400, 1792)
+    sc = ClipScene("apuntar", hero=(300, 1792), enemies=[Enemy("exvoto", *ex)], weapon="sniper",
+                   description="Sandbox: Exvoto quieto; el heroe anda, apunta con el lapiz, carga y dispara.")
+    sc.walk(["RIGHT"], 30, expect=(338, 1792), tol=14, show=[("exvoto", ex)])
+    sc.sweep((ex[0], ex[1] - 34), ex, 30, expect=(338, 1792), tol=14, show=[("exvoto", ex)])
+    sc.hold(28, show=[("exvoto", ex)])
+    sc.fire(40, show=[("exvoto", ex)])
+    return sc.scenario(), (0, 61, 3), "cathedral-sandbox"
 
 
-def clip_marea():
-    steps = [
-        {"frames": 40},
-        {"poke": [{"field": "god", "value": 1}], "frames": 1},
-        {"button_down": "DOWN", "frames": 150},        # la marea (300 px debajo al empezar) entra por el borde inferior sobre el ~200
-        {"frames": 200, "capture_sequence": "c1", "capture_every": 2},
-    ]
-    return scenario("intro_clip_marea", "Heroe retrocede hacia el sur mientras la marea real sube por el borde inferior.", steps), "search"
+def clip_relicario():
+    """ROM `encuentros` (el juego real): el heroe, junto al primer relicario del pasillo (260, 984), lo rompe a tiros con el rayo
+    y aparece la oferta de Don. dbg_up4 (EncDebug.start_up4) lo coloca en (256, 1040) al reiniciar; se vacian los enemigos de la sala
+    para que la escena sea solo heroe y relicario. Camara de encuentros: x fija (cam_x = 128), cam_y = py - 132."""
+    hero, rel = (256, 1040), (260, 984)
+    if not in_frame(hero, rel, margin_x=20, margin_top=50):
+        raise ValueError(f"[relicario] el relicario {rel} cae fuera del encuadre con el heroe en {hero}: pantalla {to_screen(hero, rel)}")
+    sx, sy = to_screen(hero, rel, 12)                           # el rayo cruza el relicario a 12 px del suelo
+    steps = [{"frames": 20}, {"poke": [{"field": "dbg_god", "value": 1}], "frames": 2},
+             {"poke": [{"field": "dbg_up4", "value": (STRIP_START[1] - hero[1]) // 4}, {"field": "dbg_restart", "value": 1}], "frames": 60},
+             {"poke": kill_others(-1), "frames": 2, "state_capture": "antes"},
+             {"frames": 18, "capture_sequence": "c0", "capture_every": 2},                                   # 1: el relicario a la vista
+             {"tap": {"x": sx, "y": sy}, "frames": 40, "capture_sequence": "c1", "capture_every": 2},       # 2: apunta (carga)
+             {"release": True, "frames": 22, "capture_sequence": "c2", "capture_every": 2},                 # 3: dispara y lo rompe
+             {"frames": 42, "capture_sequence": "c3", "capture_every": 2, "state_capture": "oferta"}]       # 4: la oferta de Don
+    scen = scenario("intro_clip_relicario", "Encuentros: el heroe rompe a tiros el relicario del pasillo y aparece la oferta de Don.", steps)
+    scen["assertions"] = {"state_changes": [
+        {"at": "antes", "field": "relicarios", "equals": 0}, {"at": "oferta", "field": "relicarios", "min_value": 1},
+        {"at": "oferta", "field": "dones", "min_value": 1},                                                 # se ofrece el Don
+        {"at": "antes", "field": "hero_y", "min_value": (hero[1] - 4) * 256}, {"at": "antes", "field": "hero_y", "max_value": (hero[1] + 4) * 256}]}
+    scen["evidence_only"] = False
+    return scen, (0, 61, 3)
+
+
+def clip_cobertura():
+    """cathedral-sandbox, SIN modo dios: un Ojo (SHOOTER; la IA corre) al norte del bloque de bancos (280,1408) apunta hacia el sur
+    con su banda; el heroe, al sur del bloque, se pega a la cara sur, se agacha solo y anda agachado a lo largo detras.
+    Cubierto, el Ojo no gasta su rayo (ojo_hero_covered, enemy_ai.c) y el heroe no pierde vida (aserciones hp == 5).
+    Huella del banco: x 288..351, y 1424..1511."""
+    oj = (320, 1416)
+    sc = ClipScene("cobertura", hero=(320, 1519), enemies=[Enemy("shooter", *oj)], weapon="sniper", god=False, freeze_ai=False,
+                   description="Sandbox: un Ojo apunta desde el norte a traves de un bloque de bancos; el heroe, agachado detras, no recibe dano.")
+    show = [("ojo", oj, 22), ("banco", (320, 1468))]          # el Ojo se ve de cuerpo casi entero (margen superior 22 px)
+    sc.wait(8, expect=(320, 1519), tol=2, show=show)
+    sc.walk(["UP"], 14, expect=(320, 1515), tol=4, show=show)
+    sc.walk(["LEFT"], 50, expect=(296, 1515), tol=8, show=show)
+    sc.walk(["RIGHT"], 50, expect=(320, 1515), tol=8, show=show)
+    for c in ("c0_fin", "c1_fin", "c2_fin", "c3_fin"):
+        sc.assert_at(c, "hp", equals=5)                        # ni un punto de vida perdido, sin god
+    for c in ("c2_fin", "c3_fin"):
+        sc.assert_at(c, "crouched", equals=1)
+    sc.assert_at("c0_fin", "crouched", equals=0)
+    return sc.scenario(), (0, 61, 3), "cathedral-sandbox"
+
+
+def clip_remate():
+    """remate-sandbox: REAL. Un Exvoto quieto a 70 px con 250 PV (los de la ROM por encuentros; el sandbox lo crea con 100 y el
+    rayo, 150, lo mataria: se le pone hp y max_hp = 250 justo tras colocarlo y antes de disparar). El disparo real lo deja a 100
+    PV (<= 50 %) y tambaleando (gameplay.c); el heroe se acerca y pulsa L (remate)."""
+    ex = (330, 1792)
+    sc = ClipScene("remate", hero=(260, 1792), enemies=[Enemy("exvoto", *ex)], weapon="sniper", every=2,
+                   description="Sandbox: un tiro deja al Exvoto tambaleando; el heroe se acerca, pulsa L y lo remata.")
+    sc.poke(en0_hp=250, en0_maxhp=250)                       # vida de la ROM por encuentros
+    show = [("exvoto", ex)]
+    sc.aim(ex, 24, expect=(260, 1792), tol=3, show=show)
+    sc.fire(6, show=show)
+    sc.sample("tras_tiro")
+    sc.assert_at("tras_tiro", "en0_state", equals=18)            # WOBBLE: el tiro lo dejo tambaleando (de verdad)
+    sc.assert_at("tras_tiro", "en0_hp", equals=100)
+    sc.walk(["RIGHT"], 16, expect=(280, 1792), tol=6, show=show)
+    sc.stop()
+    sc.press("L", 88, hold=4, show=show)
+    sc.sample("fin")
+    sc.assert_at("fin", "en0_active", equals=0)                  # el remate lo mato
+    return sc.scenario(), (0, 61, 3), "remate-sandbox"   # VID_MAX_N de intro.c = 64
 
 
 def clip_corazon():
-    player = STRIP_START
-    enemies = sb.check_beam(player, 0, [(sb.EXVOTO, player[0] + 44, player[1])])
-    steps = stage(player, enemies, extra_pokes=[{"field": "hp", "value": 4},
-                                                {"field": "force_drop", "value": 1}])
-    steps += [
-        {"frames": 6},                                   # el HUD redibuja la vida poked (4/5) antes de capturar
-        {"frames": 10, "capture_sequence": "c0", "capture_every": 2},
-        {"tap": {"x": HERO_SCREEN_X + 60, "y": AIM_Y}, "frames": 30, "capture_sequence": "c1", "capture_every": 2},
-        # disparo: el enemigo muere, suelta un Sagrado Corazon y el heroe camina hasta pisarlo
-        {"release": True, "button_down": "RIGHT", "frames": 56, "capture_sequence": "c2", "capture_every": 2},
-        {"button_up": "RIGHT", "frames": 40, "capture_sequence": "c3", "capture_every": 2},
-    ]
-    return scenario("intro_clip_corazon", "Un enemigo muere al disparo, suelta un Sagrado Corazon y el heroe (4/5) lo pisa.", steps), (0, LOOP_TARGET)
+    """cathedral-sandbox: heroe con 2 de 5 de vida; mata a un Exvoto quieto (g_pickup_force_drop fuerza el corazon),
+    anda hasta el corazon, lo pisa y los Sagrados Corazones del HUD suben."""
+    ex = (320, 1792)
+    sc = ClipScene("corazon", hero=(260, 1792), enemies=[Enemy("exvoto", *ex)], weapon="sniper", hp=2,
+                   description="Sandbox: heroe con 2 de 5 de vida; mata a un Exvoto, suelta un corazon, lo pisa y se cura.")
+    show = [("exvoto", ex)]
+    sc.sweep((ex[0], ex[1] - 30), ex, 28, expect=(260, 1792), tol=2, show=show)
+    sc.poke(force_drop=1)                                   # el siguiente enemigo que muera suelta corazon
+    sc.fire(20, show=show)
+    sc.walk(["RIGHT"], 44, expect=(315, 1792), tol=12, show=[("corazon", ex)])
+    sc.walk(["LEFT"], 44, expect=(262, 1792), tol=12, show=[("corazon", ex)])     # vuelve hacia donde empezo: el corte del bucle se nota menos
+    return sc.scenario(), (0, 61, 3), "cathedral-sandbox"
 
 
-CLIPS = {"catedral": clip_catedral, "apuntar": clip_apuntar, "marea": clip_marea, "corazon": clip_corazon}
+CLIPS = {"catedral": clip_catedral, "apuntar": clip_apuntar, "cobertura": clip_cobertura, "remate": clip_remate, "relicario": clip_relicario,
+         "corazon": clip_corazon}
 
 
 # --- Emulador --------------------------------------------------------------------------------------------------
-def run_scenario(name, scen_path):
+def run_scenario(name, scen_path, variant=VARIANT):
     out = WORK_DIR / name
     if out.exists():
         for p in out.glob("*"):
             p.unlink()
     out.mkdir(parents=True, exist_ok=True)
-    rom = ROOT / f"dungeonds-{VARIANT}.nds"
+    rom = ROOT / f"dungeonds-{variant}.nds"
     cmd = ["powershell", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-File", str(SKILL_SCRIPTS / "run-scenario.ps1"),
            "-ProjectPath", str(ROOT), "-RomPath", str(rom), "-ScenarioPath", str(scen_path), "-OutputPath", str(out)]
     r = subprocess.run(cmd, capture_output=True, text=True)
@@ -161,6 +232,20 @@ def run_scenario(name, scen_path):
     if r.returncode not in (0, 1):
         raise SystemExit(f"run-scenario fallo ({r.returncode}): {r.stderr[-400:]}")
     return out
+
+
+def print_samples(out):
+    """Imprime hero_x/hero_y/crouched/hp y el enemigo 0 de cada state_capture (para calibrar coordenadas, regla 11)."""
+    ev = out / "events.jsonl"
+    if not ev.exists():
+        return
+    for line in ev.read_text(encoding="utf-8").splitlines():
+        d = json.loads(line)
+        if d.get("action") == "state_capture":
+            st = d["state"]
+            print(f"  [{d['name']}] f{d['frame']} hero=({st['hero_x'] / 256:.1f},{st['hero_y'] / 256:.1f}) crouched={st.get('crouched')} "
+                  f"hp={st.get('hp')} en0=({st.get('en0_x', 0) / 256:.0f},{st.get('en0_y', 0) / 256:.0f}) active={st.get('en0_active')} "
+                  f"hp0={st.get('en0_hp')} state0={st.get('en0_state')}")
 
 
 def load_frames(out):
@@ -182,10 +267,24 @@ def to_rgb(f):
 
 
 # --- Seleccion del tramo del bucle -------------------------------------------------------------------------
+BAYER4 = np.array([[0, 8, 2, 10], [12, 4, 14, 6], [3, 11, 1, 9], [15, 7, 13, 5]])
+
+
+def dissolve(last, first, steps):
+    """`steps` imagenes intermedias de `last` a `first` por tramado ordenado (Bayer 4x4): la k-esima toma k/(steps+1) de los pixeles de
+    `first`. Los pixeles se eligen por posicion fija, asi que cada imagen es un dither estable (y comprime bien con los deltas)."""
+    thr = np.tile(BAYER4, (H // 4, W // 4)).reshape(-1)
+    return [np.where(thr < round(16 * (k + 1) / (steps + 1)), first, last) for k in range(steps)]
+
+
 def pick_window(frames, loop):
     n = len(frames)
+    if loop[0] == "trim":                       # ("trim", min, max): empieza en 0, la longitud con la imagen final mas parecida a la 0
+        best = min(((int(np.count_nonzero(frames[L - 1] != frames[0])), L) for L in range(loop[1], min(loop[2], n) + 1)))
+        print(f"  bucle (trim): longitud={best[1]} pixeles distintos entre la ultima y la primera={best[0]}")
+        return 0, best[1]
     if loop != "search":
-        s, length = loop
+        s, length = loop[0], loop[1]
         length = min(length, n - s)
         return s, length
     best = None
@@ -435,20 +534,29 @@ def main():
     for name, make in CLIPS.items():
         if args.only and name != args.only:
             continue
-        scen, loop = make()
+        made = make()
+        scen, loop = made[0], made[1]
+        variant = made[2] if len(made) > 2 else VARIANT
         scen_path = ROOT / "scenarios" / f"intro_clip_{name}.json"
         scen_path.write_text(json.dumps(scen, indent=2) + "\n", encoding="utf-8")
         print(f"[{name}] {scen_path.name}")
-        out = WORK_DIR / name if args.reuse else run_scenario(name, scen_path)
+        out = WORK_DIR / name if args.reuse else run_scenario(name, scen_path, variant)
+        print_samples(out)
         files, frames = load_frames(out)
         print(f"  {len(frames)} imagenes capturadas")
         contact_sheet(frames, WORK_DIR / f"{name}_capturas.png", step=6)
         s, length = pick_window(frames, loop)
         win = frames[s:s + length]
+        if isinstance(loop, tuple) and len(loop) > 2:           # (inicio, longitud, n imagenes de disolucion al principio)
+            win = win + dissolve(win[-1], win[0], loop[2])
+            length = len(win)
+            print(f"  fundido: {loop[2]} imagenes de disolucion tramada; total {length}")
         blob = encode(win)
         verify(blob, win)
         (OUT_DIR / f"{name}.bin").write_bytes(blob)
         contact_sheet(win, WORK_DIR / f"{name}_bucle.png", step=4)
+        gif = [Image.fromarray(to_rgb(f)).resize((W * 4, H * 4), Image.Resampling.NEAREST) for f in win]
+        gif[0].save(WORK_DIR / f"{name}.gif", save_all=True, append_images=gif[1:], duration=40, loop=0, optimize=False)   # 25 fps, 4x NEAREST
         for k in (0, length // 2, length - 1):
             Image.fromarray(to_rgb(win[k])).save(WORK_DIR / f"{name}_f{k:02d}.png")
         print(f"  -> {OUT_DIR / (name + '.bin')}: {len(blob)} bytes, {length} imagenes (captura {s}..{s + length - 1})")

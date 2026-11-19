@@ -85,7 +85,6 @@ def main():
     L.append("static const uint8_t s_tier_of[ENC_COUNT] = { %s };" % ", ".join(
         str(TIERS.index(t)) for t in d["act"]["tiers"]))
     L.append("#define ENC_GOLDEN_AFTER %d" % d["act"]["golden_relic_after"])
-    L.append("#define ENC_HEAL_EVERY %d" % d["act"]["heal_every"])
     L.append("#define ENC_START_CLEAR_BLOCKS %d" % d["act"]["start_clear_blocks"])
     L.append("")
     OUT.write_text("\n".join(L), encoding="utf-8", newline="\n")
