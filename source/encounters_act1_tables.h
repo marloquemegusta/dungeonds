@@ -7,6 +7,7 @@ static const EncPieceDef s_p0_pieces[] = {  // procesion
     { STRIP_PIECE_BANCO_GRUPO4, 120, 256 },
 };
 static const EncEnemyDef s_p0_t0[] = {
+    { ENC_E_OJO, ENC_S_AWAKE, 104, 30 },
     { ENC_E_EXVOTO, ENC_S_AWAKE, 94, 70 },
     { ENC_E_EXVOTO, ENC_S_AWAKE, 114, 70 },
     { ENC_E_EXVOTO, ENC_S_AWAKE, 94, 120 },
@@ -15,8 +16,11 @@ static const EncEnemyDef s_p0_t0[] = {
     { ENC_E_EXVOTO, ENC_S_AWAKE, 114, 170 },
     { ENC_E_EXVOTO, ENC_S_AWAKE, 94, 250 },
     { ENC_E_EXVOTO, ENC_S_AWAKE, 114, 250 },
+    { ENC_E_EXVOTO, ENC_S_GUARD, 124, 34 },
+    { ENC_E_EXVOTO, ENC_S_GUARD, 84, 34 },
 };
 static const EncEnemyDef s_p0_t1[] = {
+    { ENC_E_OJO, ENC_S_AWAKE, 36, 40 },
     { ENC_E_EXVOTO, ENC_S_AWAKE, 94, 60 },
     { ENC_E_EXVOTO, ENC_S_AWAKE, 114, 60 },
     { ENC_E_EXVOTO, ENC_S_AWAKE, 94, 110 },
@@ -28,6 +32,8 @@ static const EncEnemyDef s_p0_t1[] = {
     { ENC_E_EXVOTO, ENC_S_AWAKE, 30, 180 },
     { ENC_E_EXVOTO, ENC_S_AWAKE, 178, 180 },
     { ENC_E_CIRENEO, ENC_S_AWAKE, 104, 20 },
+    { ENC_E_EXVOTO, ENC_S_GUARD, 56, 44 },
+    { ENC_E_EXVOTO, ENC_S_GUARD, 16, 44 },
 };
 static const EncEnemyDef s_p0_t2[] = {
     { ENC_E_EXVOTO, ENC_S_AWAKE, 94, 60 },
@@ -42,9 +48,12 @@ static const EncEnemyDef s_p0_t2[] = {
     { ENC_E_EXVOTO, ENC_S_AWAKE, 50, 180 },
     { ENC_E_EXVOTO, ENC_S_AWAKE, 158, 180 },
     { ENC_E_EXVOTO, ENC_S_AWAKE, 178, 180 },
-    { ENC_E_CIRENEO, ENC_S_AWAKE, 104, 20 },
+    { ENC_E_CIRENEO, ENC_S_GUARD, 56, 18 },
     { ENC_E_OJO, ENC_S_AWAKE, 36, 14 },
     { ENC_E_OJO, ENC_S_AWAKE, 172, 14 },
+    { ENC_E_EXVOTO, ENC_S_GUARD, 16, 18 },
+    { ENC_E_EXVOTO, ENC_S_GUARD, 192, 18 },
+    { ENC_E_EXVOTO, ENC_S_GUARD, 40, 38 },
 };
 static const EncPieceDef s_p1_pieces[] = {  // embudo
     { STRIP_PIECE_SACOS, 0, 200 },
@@ -61,6 +70,8 @@ static const EncEnemyDef s_p1_t0[] = {
     { ENC_E_EXVOTO, ENC_S_AWAKE, 60, 160 },
     { ENC_E_EXVOTO, ENC_S_AWAKE, 120, 160 },
     { ENC_E_EXVOTO, ENC_S_AWAKE, 180, 160 },
+    { ENC_E_EXVOTO, ENC_S_GUARD, 80, 44 },
+    { ENC_E_EXVOTO, ENC_S_GUARD, 40, 44 },
 };
 static const EncEnemyDef s_p1_t1[] = {
     { ENC_E_OJO, ENC_S_AWAKE, 40, 40 },
@@ -73,11 +84,14 @@ static const EncEnemyDef s_p1_t1[] = {
     { ENC_E_EXVOTO, ENC_S_AWAKE, 110, 165 },
     { ENC_E_EXVOTO, ENC_S_AWAKE, 170, 165 },
     { ENC_E_EXVOTO, ENC_S_AWAKE, 190, 165 },
+    { ENC_E_CIRENEO, ENC_S_GUARD, 100, 34 },
+    { ENC_E_EXVOTO, ENC_S_GUARD, 60, 44 },
+    { ENC_E_EXVOTO, ENC_S_GUARD, 140, 34 },
 };
 static const EncEnemyDef s_p1_t2[] = {
     { ENC_E_OJO, ENC_S_AWAKE, 40, 40 },
     { ENC_E_OJO, ENC_S_AWAKE, 120, 30 },
-    { ENC_E_CIRENEO, ENC_S_AWAKE, 180, 70 },
+    { ENC_E_CIRENEO, ENC_S_GUARD, 60, 44 },
     { ENC_E_EXVOTO, ENC_S_AWAKE, 30, 110 },
     { ENC_E_EXVOTO, ENC_S_AWAKE, 80, 110 },
     { ENC_E_EXVOTO, ENC_S_AWAKE, 130, 110 },
@@ -88,6 +102,9 @@ static const EncEnemyDef s_p1_t2[] = {
     { ENC_E_EXVOTO, ENC_S_AWAKE, 110, 170 },
     { ENC_E_EXVOTO, ENC_S_AWAKE, 170, 170 },
     { ENC_E_EXVOTO, ENC_S_AWAKE, 190, 170 },
+    { ENC_E_EXVOTO, ENC_S_GUARD, 20, 44 },
+    { ENC_E_EXVOTO, ENC_S_GUARD, 100, 34 },
+    { ENC_E_EXVOTO, ENC_S_GUARD, 44, 64 },
 };
 static const EncPieceDef s_p2_pieces[] = {  // balcon
     { STRIP_PIECE_COLUMNA_ENTERA, 32, 72 },
@@ -103,6 +120,8 @@ static const EncEnemyDef s_p2_t0[] = {
     { ENC_E_EXVOTO, ENC_S_AWAKE, 140, 150 },
     { ENC_E_EXVOTO, ENC_S_AWAKE, 178, 150 },
     { ENC_E_EXVOTO, ENC_S_AWAKE, 104, 190 },
+    { ENC_E_EXVOTO, ENC_S_GUARD, 124, 34 },
+    { ENC_E_EXVOTO, ENC_S_GUARD, 84, 34 },
 };
 static const EncEnemyDef s_p2_t1[] = {
     { ENC_E_OJO, ENC_S_AWAKE, 56, 24 },
@@ -115,11 +134,14 @@ static const EncEnemyDef s_p2_t1[] = {
     { ENC_E_EXVOTO, ENC_S_AWAKE, 80, 195 },
     { ENC_E_EXVOTO, ENC_S_AWAKE, 128, 195 },
     { ENC_E_EXVOTO, ENC_S_AWAKE, 104, 60 },
+    { ENC_E_CIRENEO, ENC_S_GUARD, 132, 28 },
+    { ENC_E_EXVOTO, ENC_S_GUARD, 76, 28 },
+    { ENC_E_EXVOTO, ENC_S_GUARD, 172, 28 },
 };
 static const EncEnemyDef s_p2_t2[] = {
     { ENC_E_OJO, ENC_S_AWAKE, 56, 24 },
     { ENC_E_OJO, ENC_S_AWAKE, 152, 24 },
-    { ENC_E_CIRENEO, ENC_S_AWAKE, 104, 130 },
+    { ENC_E_CIRENEO, ENC_S_GUARD, 76, 28 },
     { ENC_E_EXVOTO, ENC_S_AWAKE, 30, 150 },
     { ENC_E_EXVOTO, ENC_S_AWAKE, 70, 150 },
     { ENC_E_EXVOTO, ENC_S_AWAKE, 140, 150 },
@@ -128,6 +150,9 @@ static const EncEnemyDef s_p2_t2[] = {
     { ENC_E_EXVOTO, ENC_S_AWAKE, 104, 195 },
     { ENC_E_EXVOTO, ENC_S_AWAKE, 148, 195 },
     { ENC_E_EXVOTO, ENC_S_AWAKE, 104, 60 },
+    { ENC_E_EXVOTO, ENC_S_GUARD, 36, 28 },
+    { ENC_E_EXVOTO, ENC_S_GUARD, 172, 28 },
+    { ENC_E_EXVOTO, ENC_S_GUARD, 60, 48 },
 };
 static const EncPieceDef s_p3_pieces[] = {  // pinza
     { STRIP_PIECE_SANTO, 0, 136 },
@@ -136,6 +161,7 @@ static const EncPieceDef s_p3_pieces[] = {  // pinza
     { STRIP_PIECE_BANCO_GRUPO4, 120, 0 },
 };
 static const EncEnemyDef s_p3_t0[] = {
+    { ENC_E_OJO, ENC_S_AWAKE, 104, 30 },
     { ENC_E_EXVOTO, ENC_S_AWAKE, 20, 270 },
     { ENC_E_EXVOTO, ENC_S_AWAKE, 44, 270 },
     { ENC_E_EXVOTO, ENC_S_AWAKE, 20, 320 },
@@ -144,8 +170,11 @@ static const EncEnemyDef s_p3_t0[] = {
     { ENC_E_EXVOTO, ENC_S_AWAKE, 188, 270 },
     { ENC_E_EXVOTO, ENC_S_AWAKE, 164, 320 },
     { ENC_E_EXVOTO, ENC_S_AWAKE, 188, 320 },
+    { ENC_E_EXVOTO, ENC_S_GUARD, 108, 54 },
+    { ENC_E_EXVOTO, ENC_S_GUARD, 96, 74 },
 };
 static const EncEnemyDef s_p3_t1[] = {
+    { ENC_E_OJO, ENC_S_AWAKE, 104, 30 },
     { ENC_E_EXVOTO, ENC_S_AWAKE, 20, 250 },
     { ENC_E_EXVOTO, ENC_S_AWAKE, 44, 250 },
     { ENC_E_EXVOTO, ENC_S_AWAKE, 20, 300 },
@@ -157,6 +186,8 @@ static const EncEnemyDef s_p3_t1[] = {
     { ENC_E_EXVOTO, ENC_S_AWAKE, 188, 300 },
     { ENC_E_EXVOTO, ENC_S_AWAKE, 176, 345 },
     { ENC_E_CIRENEO, ENC_S_AWAKE, 104, 120 },
+    { ENC_E_EXVOTO, ENC_S_GUARD, 108, 54 },
+    { ENC_E_EXVOTO, ENC_S_GUARD, 96, 74 },
 };
 static const EncEnemyDef s_p3_t2[] = {
     { ENC_E_EXVOTO, ENC_S_AWAKE, 20, 240 },
@@ -171,14 +202,18 @@ static const EncEnemyDef s_p3_t2[] = {
     { ENC_E_EXVOTO, ENC_S_AWAKE, 188, 285 },
     { ENC_E_EXVOTO, ENC_S_AWAKE, 164, 330 },
     { ENC_E_EXVOTO, ENC_S_AWAKE, 188, 330 },
-    { ENC_E_CIRENEO, ENC_S_AWAKE, 104, 120 },
+    { ENC_E_CIRENEO, ENC_S_GUARD, 108, 54 },
     { ENC_E_OJO, ENC_S_AWAKE, 104, 30 },
+    { ENC_E_EXVOTO, ENC_S_GUARD, 108, 74 },
+    { ENC_E_EXVOTO, ENC_S_GUARD, 80, 94 },
+    { ENC_E_EXVOTO, ENC_S_GUARD, 108, 94 },
 };
 static const EncPieceDef s_p4_pieces[] = {  // claro
     { STRIP_PIECE_SANTO, 0, 8 },
     { STRIP_PIECE_SANTO_DER, 160, 8 },
 };
 static const EncEnemyDef s_p4_t0[] = {
+    { ENC_E_OJO, ENC_S_AWAKE, 104, 30 },
     { ENC_E_EXVOTO, ENC_S_AWAKE, 40, 60 },
     { ENC_E_EXVOTO, ENC_S_AWAKE, 80, 60 },
     { ENC_E_EXVOTO, ENC_S_AWAKE, 128, 60 },
@@ -189,8 +224,11 @@ static const EncEnemyDef s_p4_t0[] = {
     { ENC_E_EXVOTO, ENC_S_AWAKE, 40, 160 },
     { ENC_E_EXVOTO, ENC_S_AWAKE, 104, 160 },
     { ENC_E_EXVOTO, ENC_S_AWAKE, 168, 160 },
+    { ENC_E_EXVOTO, ENC_S_GUARD, 124, 34 },
+    { ENC_E_EXVOTO, ENC_S_GUARD, 84, 34 },
 };
 static const EncEnemyDef s_p4_t1[] = {
+    { ENC_E_OJO, ENC_S_AWAKE, 90, 34 },
     { ENC_E_EXVOTO, ENC_S_AWAKE, 30, 50 },
     { ENC_E_EXVOTO, ENC_S_AWAKE, 70, 50 },
     { ENC_E_EXVOTO, ENC_S_AWAKE, 110, 50 },
@@ -205,6 +243,9 @@ static const EncEnemyDef s_p4_t1[] = {
     { ENC_E_EXVOTO, ENC_S_AWAKE, 128, 150 },
     { ENC_E_EXVOTO, ENC_S_AWAKE, 178, 150 },
     { ENC_E_EXVOTO, ENC_S_AWAKE, 104, 190 },
+    { ENC_E_CIRENEO, ENC_S_GUARD, 90, 58 },
+    { ENC_E_EXVOTO, ENC_S_GUARD, 130, 54 },
+    { ENC_E_EXVOTO, ENC_S_GUARD, 50, 54 },
 };
 static const EncEnemyDef s_p4_t2[] = {
     { ENC_E_EXVOTO, ENC_S_AWAKE, 30, 50 },
@@ -221,8 +262,11 @@ static const EncEnemyDef s_p4_t2[] = {
     { ENC_E_EXVOTO, ENC_S_AWAKE, 128, 150 },
     { ENC_E_EXVOTO, ENC_S_AWAKE, 178, 150 },
     { ENC_E_EXVOTO, ENC_S_AWAKE, 104, 190 },
-    { ENC_E_CIRENEO, ENC_S_AWAKE, 104, 20 },
+    { ENC_E_CIRENEO, ENC_S_GUARD, 60, 20 },
     { ENC_E_OJO, ENC_S_AWAKE, 40, 16 },
+    { ENC_E_EXVOTO, ENC_S_GUARD, 48, 40 },
+    { ENC_E_EXVOTO, ENC_S_GUARD, 12, 48 },
+    { ENC_E_EXVOTO, ENC_S_GUARD, 80, 32 },
 };
 static const EncPieceDef s_p5_pieces[] = {  // alambrada
     { STRIP_PIECE_COLUMNA_ENTERA, 160, 72 },
@@ -240,12 +284,15 @@ static const EncRectDef s_p5_rects[] = {
     { ENC_R_ALAMBRE, 80, 268, 128, 12 },
 };
 static const EncEnemyDef s_p5_t0[] = {
+    { ENC_E_OJO, ENC_S_AWAKE, 104, 30 },
     { ENC_E_EXVOTO, ENC_S_AWAKE, 30, 90 },
     { ENC_E_EXVOTO, ENC_S_AWAKE, 70, 90 },
     { ENC_E_EXVOTO, ENC_S_AWAKE, 110, 90 },
     { ENC_E_EXVOTO, ENC_S_AWAKE, 100, 200 },
     { ENC_E_EXVOTO, ENC_S_AWAKE, 140, 200 },
     { ENC_E_EXVOTO, ENC_S_AWAKE, 180, 200 },
+    { ENC_E_EXVOTO, ENC_S_GUARD, 124, 34 },
+    { ENC_E_EXVOTO, ENC_S_GUARD, 84, 34 },
 };
 static const EncEnemyDef s_p5_t1[] = {
     { ENC_E_OJO, ENC_S_AWAKE, 100, 30 },
@@ -257,11 +304,14 @@ static const EncEnemyDef s_p5_t1[] = {
     { ENC_E_EXVOTO, ENC_S_AWAKE, 180, 200 },
     { ENC_E_EXVOTO, ENC_S_AWAKE, 30, 300 },
     { ENC_E_EXVOTO, ENC_S_AWAKE, 50, 300 },
+    { ENC_E_CIRENEO, ENC_S_GUARD, 80, 34 },
+    { ENC_E_EXVOTO, ENC_S_GUARD, 120, 34 },
+    { ENC_E_EXVOTO, ENC_S_GUARD, 88, 54 },
 };
 static const EncEnemyDef s_p5_t2[] = {
     { ENC_E_OJO, ENC_S_AWAKE, 60, 30 },
     { ENC_E_OJO, ENC_S_AWAKE, 120, 24 },
-    { ENC_E_CIRENEO, ENC_S_AWAKE, 120, 200 },
+    { ENC_E_CIRENEO, ENC_S_GUARD, 80, 34 },
     { ENC_E_EXVOTO, ENC_S_AWAKE, 30, 90 },
     { ENC_E_EXVOTO, ENC_S_AWAKE, 70, 90 },
     { ENC_E_EXVOTO, ENC_S_AWAKE, 110, 90 },
@@ -270,6 +320,9 @@ static const EncEnemyDef s_p5_t2[] = {
     { ENC_E_EXVOTO, ENC_S_AWAKE, 190, 200 },
     { ENC_E_EXVOTO, ENC_S_AWAKE, 30, 300 },
     { ENC_E_EXVOTO, ENC_S_AWAKE, 50, 300 },
+    { ENC_E_EXVOTO, ENC_S_GUARD, 40, 34 },
+    { ENC_E_EXVOTO, ENC_S_GUARD, 100, 28 },
+    { ENC_E_EXVOTO, ENC_S_GUARD, 64, 54 },
 };
 
 #define ENC_ARR(a) (a), (uint8_t)(sizeof(a) / sizeof((a)[0]))

@@ -55,7 +55,7 @@ typedef struct {
 // Ojo del Tribunal (DESIGN.md 6.10, "Mirada colimada"), ENEMY_TYPE_SHOOTER:
 // CHASE (search) -> TRACK (green band follows the hero) -> LOCK (line frozen) -> SENTENCE (beam from the mouth)
 // -> COOLDOWN -> CHASE (POSITION: waiting for a free aiming slot).
-#define OJO_SIGHT_RANGE 140        // [TUNABLE-PLACEHOLDER] ground px: it stops and aims from this far with line of sight
+#define OJO_SIGHT_RANGE 1000       // [TUNABLE-PLACEHOLDER] ground px (dy counts double): "no range, line of sight only": the farthest point of a room is ~800, so any distance inside one is in range; sq 1.05M fits int32 with the margin
 #define OJO_RANGE_MARGIN 24        // [TUNABLE-PLACEHOLDER] ground px beyond the sight range where a tracking Ojo still follows the hero
 #define OJO_TRACK_FRAMES 40        // [TUNABLE-PLACEHOLDER] frames the band follows the hero while it narrows
 #define OJO_LOCK_FRAMES 20         // [TUNABLE-PLACEHOLDER] frames the line stays frozen: the dodge window
@@ -69,7 +69,7 @@ typedef struct {
 #define OJO_MAX_LOOKING 2          // [TUNABLE-PLACEHOLDER] Ojos aiming at once (TRACK, LOCK, SENTENCE); the rest wait
 #define OJO_WAIT_DIST 72           // [TUNABLE-PLACEHOLDER] ground px: an Ojo this close without a free slot waits instead of walking in
 #define OJO_TARGET_HEIGHT 14       // [TUNABLE-PLACEHOLDER] px above the hero's feet the gaze and beam aim at (chest)
-#define OJO_BEAM_MAX_LEN 200       // [TUNABLE-PLACEHOLDER] ground px; also the bound of the beam and band draw loops
+#define OJO_BEAM_MAX_LEN 1100      // [TUNABLE-PLACEHOLDER] ground px (hit test, wall march) >= OJO_SIGHT_RANGE + OJO_RANGE_MARGIN so the beam reaches the hero from anywhere; also the bound of the beam and band draw loops
 
 // El Abanderado (jefe, version minima, DESIGN.md 6.10):
 #define ABANDERADO_SIGHT_RANGE 160       // [TUNABLE-PLACEHOLDER] ground px: ~1 screen
@@ -142,7 +142,8 @@ typedef enum {
     ENEMY_STATE_RISE,         // Exvoto: getting up from its knees (stand_up clip), then CHASE
     ENEMY_STATE_SUSPENDED,    // Viatico: killed (counted dead) but held inert ~0.3 s while the thread leaves its body
     ENEMY_STATE_WOBBLE,       // Exvoto: reeling after a hit that did not kill (glows, still, no dodge); L finishes it (remate.h)
-    ENEMY_STATE_REMATE        // Exvoto: held inert while the hero's finisher animation plays (remate.h)
+    ENEMY_STATE_REMATE,       // Exvoto: held inert while the hero's finisher animation plays (remate.h)
+    ENEMY_STATE_GUARD         // Exvoto / Cireneo of the garrison (DESIGN.md 6.13.9): awake but holding its post, facing the hero, until released
 } EnemyState;
 
 struct Enemy {
@@ -159,6 +160,7 @@ struct Enemy {
     EnemyType type;
     EnemyState state;
     uint8_t kneel;      // Exvoto: 1 = prays on its knees (and rises when woken), 0 = prays standing (fits in enum padding)
+    uint8_t home_flags; // ENEMY_HOME_*: post and garrison bits (encounter rooms, see enemy_home_x); fits the last byte of the enum padding
     int state_timer;
     int charge_hit;     // charger: 1 once this charge has hurt the player (one hit per charge)
     int aim_dir_x;      // 8.8 unit direction in ground metric: charger lunge / Ojo sentence beam
@@ -186,6 +188,25 @@ struct Enemy {
     uint8_t suspend_timer;  // Viatico: frames left of the suspended death (fits the tail padding: sizeof stays 124)
     uint8_t suspend_req;    // Viatico: the next lethal hit suspends the death instead of finishing it
 };
+
+// Garrison and Ojo leash (DESIGN.md 6.13.9). The post ("home", world px) lives in fields the type does not use, so sizeof(Enemy) stays
+// (scenarios read g_enemies by offset): the Ojo in charge_hit / strafe_dir, the Exvoto and the Cireneo in aim_px / aim_py (zeroed on release).
+#define ENEMY_HOME_SET 1       // the enemy has a post (encounter spawns: every Ojo and every guard)
+#define ENEMY_HOME_GUARD 2     // spawned as garrison: when the room wakes it goes to ENEMY_STATE_GUARD instead of CHASE
+static inline int *enemy_home_x(struct Enemy *e) { return e->type == ENEMY_TYPE_SHOOTER ? &e->charge_hit : &e->aim_px; }
+static inline int *enemy_home_y(struct Enemy *e) { return e->type == ENEMY_TYPE_SHOOTER ? &e->strafe_dir : &e->aim_py; }
+#define GUARD_RELEASE_DIST 220   // [TUNABLE-PLACEHOLDER] ground px (dy counts double) from its post: the hero this close releases a guard
+#define GUARD_OJO_BOND_DIST 90   // [TUNABLE-PLACEHOLDER] ground px between the guard's post and an Ojo's post: the Ojos it guards; it is released when none of them lives
+#define OJO_PURSUE_TICKS 8             // [TUNABLE-PLACEHOLDER] frames between the Ojo's checks of its line to the hero (power of two)
+#define OJO_PURSUE_LOOKAHEAD 30        // [TUNABLE-PLACEHOLDER] frames ahead (at the hero's current velocity) whose position the Ojo also wants in view
+#define OJO_PURSUE_IN_COOLDOWN 1       // [TUNABLE-PLACEHOLDER] 1 = the Ojo also keeps the hero in view while it waits out the cooldown after a sentence
+#define OJO_REPOSITION_SPEED_PCT 100   // [TUNABLE-PLACEHOLDER] % of its normal speed while repositioning
+#define OJO_LEASH_DIST 288             // [TUNABLE-PLACEHOLDER] ground px: it never goes farther than this from its post
+#define OJO_SEARCH_COL_PX 24           // [TUNABLE-PLACEHOLDER] px between the candidate columns of the reposition search
+#define OJO_SEARCH_COLS 12             // [TUNABLE-PLACEHOLDER] columns each side of the post (covers the leash)
+#define OJO_SEARCH_ROW_PX 32           // [TUNABLE-PLACEHOLDER] px between the candidate rows
+#define OJO_SEARCH_ROWS 5              // [TUNABLE-PLACEHOLDER] rows above and below the post's row (the leash and OJO_LEASH_DOWN_PX trim them)
+#define OJO_LEASH_DOWN_PX 80           // [TUNABLE-PLACEHOLDER] screen px: it never goes lower than its post row plus this
 
 // Quemado: layers, tick and slow (DESIGN.md 6.12.10). burn_update runs once a frame from weapons_update.
 #define BURN_BASE_CAP 5          // [TUNABLE-PLACEHOLDER] layers

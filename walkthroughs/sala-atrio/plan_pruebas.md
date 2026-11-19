@@ -48,3 +48,6 @@ Puntúa de 1 a 5 al salir de cada sala y añade una frase si algo llama la atenc
 - **Falta:** la cobertura baja tras bancos y sacos (rama `feat/coberturas-bajas`, no integrada).
 - **Propuestas del usuario:** (a) IA del Ojo que se recoloque para darte pese a las columnas; (b) Exvotos y Cireneos arriba guardando al Ojo.
 
+**Vuelta 2 (guarnición, recolocación del Ojo, cobertura baja de `main`):** el Ojo no se movía nunca; con una recolocación más rápida «tarda muchísimo en llegar»; tras volverlo tirador táctico (espera cubierto, te sigue tras columnas) «mucho mejor». Falló que al levantarte tras estar cubierto «te pilla siempre»: se cambió a ciclo completo de apuntado al salir de la cobertura (**sin jugar en la DS**). Sin tirones apreciados.
+- **Pendiente de decidir:** el Ojo anda a un tercio de la velocidad del héroe (mantiene la línea ~57 % del tiempo moviéndote); palancas: velocidad de persecución y tiempo parado al apuntar.
+- **Pendiente:** repetir la partida de referencia completa con esta ROM y elegir la sala a rediseñar primero.

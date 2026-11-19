@@ -1,6 +1,6 @@
 {
   "name": "cobertura_baja_agachado",
-  "description": "cathedral-sandbox ROM (seed 0xC0DE1234, banco_grupo4 at world 280,832; see tools/cobertura_scenes.py). The hero hugs the west face of the first bench row (x 281, y 862 -> 854) and crouches (pose, then crouched walk at half speed). An Ojo at (372,854) beams west along y ~854 across 64 px of low-cover cells (x 288..351): crouched he takes no damage. On the next gaze the stylus touches, he stands up and the same line hits him (5 -> 4 hp).",
+  "description": "cathedral-sandbox ROM (seed 0xC0DE1234, banco_grupo4 at world 280,832; see tools/cobertura_scenes.py). The hero hugs the west face of the first bench row (x 281, y 862 -> 854) and crouches (pose, then crouched walk at half speed). An Ojo at (372,854) looks west along y ~854 across 64 px of low-cover cells (x 288..351). Crouched, the tactical Ojo never fires: after 230 frames it is still in TRACK (waiting at the start of its aim, eyes on him) and he has 5 hp. When the stylus touches and he stands up, the full aim (TRACK, LOCK) runs and the same line hits him (5 -> 4 hp).",
   "tags": [
     "coberturas",
     "ojo-tribunal"
@@ -223,25 +223,10 @@
       "capture_every": 3
     },
     {
-      "wait_until": {
-        "field": "en0_state",
-        "equals": 9,
-        "timeout_frames": 200
-      },
-      "state_capture": "haz_sentencia"
-    },
-    {
-      "frames": 36,
-      "capture_sequence": "s5_haz",
-      "capture_every": 3,
-      "state_capture": "haz_fin"
-    },
-    {
-      "wait_until": {
-        "field": "en0_state",
-        "equals": 7,
-        "timeout_frames": 400
-      }
+      "frames": 200,
+      "capture_sequence": "s5_espera",
+      "capture_every": 20,
+      "state_capture": "espera_cubierto"
     },
     {
       "tap": {
@@ -286,17 +271,17 @@
         "equals": 1
       },
       {
-        "at": "haz_sentencia",
+        "at": "espera_cubierto",
         "field": "crouched",
         "equals": 1
       },
       {
-        "at": "haz_sentencia",
-        "field": "player_hp",
-        "equals": 5
+        "at": "espera_cubierto",
+        "field": "en0_state",
+        "equals": 7
       },
       {
-        "at": "haz_fin",
+        "at": "espera_cubierto",
         "field": "player_hp",
         "equals": 5
       },

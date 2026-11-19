@@ -1100,7 +1100,13 @@ Corrige §6.13.6. **Motivo:** en las salas lo óptimo sigue siendo quedarse abaj
 
 **Remate:** decidido aquí (primer disparo deja tambaleándose, `L` a corta distancia, invulnerable, muerte segura, rayo cargado, Cireneo aturdido rematable) e implementado y vigente en §6.13.8, que es su fuente. Para las salas importa esto: el remate es la recompensa de dejar que los Exvotos lleguen, y el claro lo usa como única cobertura.
 
-**Siguiente paso:** rehacer el catálogo del acto I en el editor con estas reglas y revisarlo en el móvil. Después, prototipo en la ROM: alcance y puesto del Ojo, flanqueo del Exvoto, Cireneo guardián y remate.
+**En la ROM (2026-11-19, `feat/ojo-alcance`; detalle y constantes en `walkthroughs/ojo-tactico/walkthrough.md`).** Corrige lo de arriba donde se juega distinto:
+- **Ojo sin alcance** (solo línea de visión; sustituye al alcance de ~256 / 320 px). Un Ojo en toda sala del acto I salvo el atrio, que aún no existe en la ROM.
+- **Tirador táctico, no cazador:** cubierto tras cobertura baja espera sin moverse ni disparar y, al salir, arranca el ciclo normal de apuntado (el héroe puede esquivar). Tras columnas y estatuas te sigue manteniendo la línea (se recoloca; correa que crece hasta toda la sala). Sustituye al «se queda en su puesto, quieto».
+- **Guarnición:** Exvotos (y Cireneo desde la media) despiertos que se quedan junto al Ojo hasta que te acercas, los dañas o muere su Ojo. El Cireneo guardián es de guardia, no solo escolta.
+- **Sin programar:** flanqueo coordinado de los Exvotos, atrio, catálogo v3, invocador. **Palancas del Ojo sin decidir:** velocidad de persecución y tiempo parado al apuntar (hoy anda a un tercio de la velocidad del héroe).
+
+**Siguiente paso:** repetir la partida de referencia con la ROM de `main` y elegir la sala a rediseñar primero (§6.13.10).
 
 #### 6.13.10 Método de diseño de salas: una a una (decidido 2026-11-18)
 Los sistemas (Ojo, flanqueo, Cireneo guardián, remate) se prueban **a través de salas concretas**, no en bloque: así el feedback es claro y la programación va atada a una prueba.
