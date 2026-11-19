@@ -1,6 +1,6 @@
 {
   "name": "enemy_ojo_andar_mirar_sentenciar",
-  "description": "Evidence of the whole cycle: the Ojo starts about 175 ground px west-north-west of a still hero in the open south hall (clear line), walks searching (CHASE), stops and follows him with the green band (TRACK), freezes the line (LOCK) and fires from the mouth (SENTENCE, one hit) before the cooldown.",
+  "description": "Evidence of the whole cycle: the Ojo starts about 175 ground px west-north-west of a still hero in the open south hall (clear line), already sees him (the Ojo has no range, only line of sight), stands and follows him with the green band (TRACK), freezes the line (LOCK) and fires from the mouth (SENTENCE, one hit) before the cooldown.",
   "tags": [
     "ojo-tribunal"
   ],
@@ -429,7 +429,7 @@
     },
     {
       "frames": 20,
-      "capture": "00_busca_andando"
+      "capture": "00_mira_de_lejos"
     },
     {
       "wait_until": {
@@ -483,7 +483,7 @@
   "assertions": {
     "screen_changes": [
       {
-        "from": "00_busca_andando",
+        "from": "00_mira_de_lejos",
         "to": "01_banda_ancha_siguiendo",
         "min_changed_pixels": 10
       },
@@ -497,7 +497,7 @@
       {
         "at": "inicio",
         "field": "en0_state",
-        "equals": 0
+        "equals": 7
       },
       {
         "at": "fichado",
