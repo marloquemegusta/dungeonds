@@ -182,7 +182,7 @@ extern volatile EncStats g_enc_stats;
 int enc_pick_index(void);
 
 #if ENC_BOT
-// Autopilot (tools/encuentros/BRIEF_bot.md): plays the act as a careful player so the difficulty can be
+// Autopilot: plays the act as a careful player so the difficulty can be
 // measured without a human. main.c hands it the hero and the camera each frame and replaces what the
 // buttons and the stylus say.
 typedef struct {

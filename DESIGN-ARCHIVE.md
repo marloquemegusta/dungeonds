@@ -445,3 +445,220 @@ Primer paso jugable hacia §6.1–6.8: el juego actual (armas, cargador, tirador
 
 **Criterio de éxito de la prueba:** el usuario juega varias runs seguidas en la DS, muere pronto en las primeras y aun así quiere otra porque sabe qué elegiría distinto.
 
+---
+
+## Retirado en la limpieza de 2026-11-19
+
+Texto de `DESIGN.md` retirado en la limpieza del 2026-11-19 (rama `docs/limpieza-docs`), con su contexto. Cada bloque conserva su texto original; las referencias a líneas, ramas y cifras son las de entonces.
+
+### Visión y dirección
+
+- **Historia de la dirección:** el proyecto nació como un Diablo de nigromancia con esbirros, descartado a favor del shooter. La v0.1 (4 arenas cerradas) era fácil y poco divertida en la DS. La v0.2 (mazmorra de manadas con modificadores estilo Isaac) fue más divertida pero se agotaba en un par de minutos. El 2026-11-06 se eligió un survivors vertical con marea y horda; tras jugarlo, el 2026-11-16 se sustituyó por salas a mano (encuentros, §6.13.6) porque el apuntado manual y las coberturas piden enemigos colocados con intención, y la marea castigaba justo lo que se quería diseñar. Todo ello, en `DESIGN-ARCHIVE.md`. La lanza ósea y la muerte por fragmentos quedan como FX reutilizables.
+
+- **Personaje (clase láser): se continúa con El Corazón Abierto** (el usuario ya generó modelo y animación de carga); El Lector y La Custodia quedan en reserva. Prompts y pendientes: `walkthroughs/concepto-demo-personajes/`. Mecánica: cargar, soltar, rayo que atraviesa filas (desde 2026-11-15 atraviesa a quien mata y lo cortan muros y columnas, §6.12.2). Las imágenes para 3D se generan en **T-pose, con las manos vacías**, y el arma en una imagen aparte; se ensamblan después.
+  El rayo no es un arma sino un milagro que consume el cuerpo: sale del propio personaje, que va quemado por usarlo y sigue vivo por fe (tono Trench Crusade). A 31 px el origen del rayo debe ser un punto de luz claro y la carga una pose que cambie la silueta. Descartados (2026-11-11, genéricos): Portaluz, Hermana del Cirio y Penitente tirador.
+  1. **El Lector:** monje con un libro encadenado a la muñeca; al cargar alza libro y cabeza recitando y el rayo sale de boca y ojos. Cara quemada hasta el hueso, capucha chamuscada.
+  2. **El Corazón Abierto:** pecho abierto con grapas de hierro y un sagrado corazón en llamas dentro; carga con los brazos en cruz y el rayo sale del pecho. Ropa quemada en círculo alrededor.
+  3. **La Custodia:** sacerdote con una custodia soldada en lugar de cabeza; carga echando la cabeza atrás mientras crecen sus rayos y dispara desde la hostia. Cuello de carne fundida con el metal.
+
+### Decisiones abiertas (sombras y tuning)
+
+- **Sombras de personajes por hardware (decidido 2026-11-13, rama `perf/hw-shadows`):** la sombra de héroe y enemigos conserva la forma horneada del lab por dirección y frame y su tono actual (suelo al 50 %), pero la oscurece la propia consola en vez del procesador. Se aceptan tres diferencias: dos sombras solapadas se funden en un solo tono (antes se oscurecían el doble); bajo la marea la sombra toma la oscuridad de la marea; y si un enemigo queda detrás de una pieza o muro, su sombra se oculta entera en vez de recortarse píxel a píxel. Además, las marcas de suelo de las armas (anillos y elipses del pase de suelo) ya no quedan oscurecidas por las sombras que pasan por encima, porque la consola solo oscurece la capa del suelo. Motivo: las sombras eran el 43 % del frame con horda (`walkthroughs/stress-enemies-profiling/`). Si con esto y la optimización de IA/dibujo no se duplica la horda a 60 FPS, la siguiente opción aceptada por el usuario es quitar la separación entre enemigos (que puedan solaparse, estilo *Vampire Survivors*). **Resultado (2026-11-14, medido en la DS):** con 48 enemigos el juego se mantiene casi siempre a 60 FPS, así que la separación se conserva.
+
+- **Tuning de combate y stats:** por decidir (alcance base del rayo, tiempo de carga y Prisa; §6.12.10), jugando en la DS.
+
+### Game feel, granada y variantes de efectos (§4.7, §4.9)
+
+- **Aspecto del disparo (decidido 2026-11-03):** procedural, en la línea de la lanza ósea. Perdigones como trazos cortos con estela que se desvanece; fogonazo de 2–3 frames en la boca; chispas de impacto como líneas que salen según la normal y se apagan; el francotirador, un trazo largo y brillante que se desvanece en pocos frames. Sustituye a los cuadrados y cruces de píxeles actuales.
+
+- **Tuning pendiente:** velocidades, daño, dispersión, cadencias, bandas de distancia y nº máximo de enemigos en pantalla, en punto fijo, ajustados jugando en la DS.
+
+### 4.9 Granada y variantes de efectos (decidido 2026-11-05, rama `proto/weapon-previews`)
+Tras ver las previsualizaciones (`walkthroughs/weapon-previews/`), se implementan **de verdad** para compararlas en la DS. Es un banco de pruebas: tras elegir se borran las variantes descartadas.
+
+- **Selector de estilo (solo depuración):** `SELECT` cambia el estilo global A/B/C (`g_fx_style`), que afecta a escopeta, francotirador y granada a la vez. El HUD de depuración muestra `FX:A|B|C`. No es un control de juego y desaparece al elegir.
+- **Granada, tercera arma del ciclo de L** (escopeta, francotirador, granada). Tocar el suelo marca el punto de destino (se puede arrastrar para moverlo); levantar el stylus la lanza. Arrastrar el stylus sobre el personaje o pulsar L cancela. Alcance máximo 150 px de suelo (el punto se recorta al alcance y al último punto libre de la línea). Munición infinita, enfriamiento 60 frames, como mucho 2 granadas a la vez.
+- **Mecha y daño:** explota 90 frames (1,5 s) después del lanzamiento, por tiempo y no por impacto. Radio 56 px de suelo (elipse 2:1 en pantalla). Daño 60 en el centro bajando linealmente hasta 15 en el borde (cargador 60 PS, tirador 20 PS); empuja y aturde en radio, más cuanto más cerca. **Fuego amigo:** si el jugador está dentro del radio recibe un golpe (`player_take_hit`, respetan los i-frames). Los muros protegen: no hay daño si la línea recta entre el centro y la víctima está bloqueada.
+- **Antes de explotar, variantes:** A, anillo de radio que se contrae hacia el centro durante la mecha; B, la granada rebota dos veces con luz roja que parpadea cada vez más rápido y solo un círculo punteado tenue del radio; C, zona de peligro rayada y parpadeante en el suelo y el proyectil cae desde arriba al final (el vuelo no se dibuja).
+- **Explosión (común a A/B/C, dirección artística):** ni un círculo perfecto ni solo rojo y naranja.
+  - Destello blanco de 2 frames en forma de estrella irregular (8–10 puntas de longitud desigual).
+  - Bola de fuego como **racimo de 7–9 lóbulos** (círculos rellenos de 5–11 px) con ángulo, distancia y retraso de aparición aleatorios (0–4 frames) que suben mientras crecen y se encogen; silueta asimétrica y dentada. Cada lóbulo se pinta en dos tonos (cuerpo más frío, núcleo más caliente desplazado arriba a la izquierda) para dar volumen. Rampa de color por edad: blanco, amarillo, naranja, rojo, rojo oscuro, gris.
+  - Onda de choque en el suelo: elipse 2:1 **pálida (blanco hueso, polvo)**, fina y con huecos (dibujada solo en ~65 % de los ángulos), que se expande hasta el radio de daño en 8 frames; no es roja.
+  - Escombros y brasas: ~14 trazos con gravedad que pasan de naranja a gris.
+  - Humo: 4–5 volutas grises con borde tramado (damero) que suben despacio ~40 frames.
+  - Sin transparencias: los bordes suaves se hacen con tramado.
+  - Temblor de pantalla 4 px durante 10 frames y hitstop de 3 frames.
+- **Escopeta y francotirador, variantes** (las de las previsualizaciones): escopeta A estelas cortas (la de §4.7), B estallido en cono con casquillo y humo, C pesada con onda de choque en abanico y polvo; francotirador A trazo largo que se desvanece, B anillos de choque en la boca y en cada enemigo atravesado, C trazo irregular de dos tonos con retícula en el primer objetivo. Límite de partículas simultáneas por arma: 32.
+- **Perspectiva del suelo (regla, decidida 2026-11-05):** todo lo que está *en el suelo* (marcador de apuntado, anillos de aviso, zona de peligro, onda de choque, anillos del francotirador, arco de la escopeta) es una elipse 2:1 en pantalla (semieje horizontal R, vertical R/2) y se pinta **en el suelo, bajo sombras y personajes** y respetando los muros (`groundfx`, pase de suelo). Lo que tiene volumen (bola de fuego, escombros, humo, destellos) se sigue dibujando encima.
+- **Granada C, «láser desde el espacio» (rediseño):** zona de peligro = disco elíptico 2:1 en el suelo, tramado diagonal en perspectiva, solo sobre el suelo (los personajes se ven por encima y no se tiñen de rojo plano). Los personajes dentro del radio se **iluminan**: durante la mecha una columna de luz cilíndrica sobre la zona aclara y tiñe de rojo los píxeles de los personajes (pase de luz tras los sprites), con intensidad creciente. En los últimos 12 frames cae un haz láser fino y brillante desde lo alto de la pantalla hasta el centro, y la columna se pone al máximo justo antes de la explosión.
+- **Aura de carga del francotirador (histórico: sustituida por las auras del Corazón Abierto, §6.10) (decidida 2026-11-05 tras ver referencias de Killua y SSJ2; tres variantes para comparar con el botón Y, `g_aura_style` 0=K, 1=C, 2=V; vale para los 3 estilos del haz):** mientras se carga el disparo (`AIM_AIMING` a `AIM_READY`) el personaje desprende un aura de **rayos azules angulosos** (no una línea continua ni una hélice lisa): polilíneas finas en zigzag de 3 px de paso con quiebros bruscos, alguna bifurcación y puntas en gancho, que **se regeneran cada 2-3 frames** para que crepiten. Colores: trazo de 1 px blanco con azul claro en píxeles alternos; sin halo oscuro (la v2 de K y C eran demasiado gruesas). Densidad, longitud y altura crecen con el progreso; al llegar a `AIM_READY` hay flash de 3 frames, anillo 2:1 en el suelo y aura al máximo hasta soltar; al soltar o cancelar se apaga en pocos frames. Respeta los muros, límite fijo de segmentos, sin `float`. **Oclusión por el personaje (regla común):** lo que nace en la mitad trasera de la elipse 2:1 (seno < 0) se pinta antes del sprite y lo tapa el cuerpo; lo delantero, después.
+  - **Variante K (Killua / SSJ2, por defecto):** 5-6 rayos finos (1 px, blanco con azul claro en píxeles alternos, sin halo) que nacen en la elipse de los pies a distintas alturas y envuelven el cuerpo subiendo en tangente, 12-16 px de largo, con bifurcaciones ocasionales.
+  - **Variante C (corona + rayos):** corona de 8 rayos de ~14 px que estallan desde un anillo 2:1 en el suelo hacia arriba y hacia fuera con bifurcaciones: base de 2 px (los 2 primeros pasos, borde azul claro y núcleo blanco) y el resto de 1 px como K; más 2 rayos finos de 1 px envolventes a media altura.
+  - **Variante V (chispas verticales, la v1 con oclusión):** chispas finas de 6-14 px que suben desde la elipse de los pies, de blanco a amarillo a naranja según la altura, más densas con la carga.
+- **Colimado del láser del francotirador (histórico: el francotirador usa ahora el haz «fuego» del Corazón Abierto, §6.10) (decidido 2026-11-06, rama `feat/sniper-collimation`, tras ver mockups `walkthroughs/sniper-collimation/assets/`):** mientras se carga, el haz no solo cambia de color: se va **colimando**. Empieza ancho, difuso y rojo; se estrecha, se vuelve estable y pasa a verde, hasta quedar en 1 px cuando está listo. Progreso `prog = s_aim_timer / aim_frames` (0..256, `aim_frames` = `aim_min_frames` + mejora; una sola división por frame). Anchura lateral máxima 6 px a 0 %, 0 a 100 %. El color de la línea central va de rojo a verde entre el 70 % y el 100 %. Al llegar a `AIM_READY` el haz queda fino, verde y estable (sin parpadeo). Compatible con el aura K/C/V (se dibujan en pasadas distintas).
+  - **Estilo A (A1):** banda ancha **tramada** (borde en damero, interior rojo oscuro) que se cierra sobre la línea central hasta 1 px verde.
+  - **Estilo B (B3):** **nube de puntos tramada** en cono alrededor de la línea de puntos (cada 3 px, cada 2 al estar listo); la nube tiene densidad y anchura decrecientes y desaparece al llegar al 100 %. Posiciones deterministas por hash (sin `rng` acumulado), como mucho 128 puntos por frame.
+  - **Estilo C (C1):** línea sólida con **halo ancho tramado** que se afina hacia el retículo (el halo mide un 40 % en el extremo del objetivo) y se cierra a 1 px; el retículo de corchetes sigue cerrándose como hasta ahora.
+  - **Reglas:** nada en el suelo, es luz en el aire a la altura de la boca (no aplica 2:1); la longitud la sigue dando `s_aim_len` (recortada por muros); el halo lateral se recorta con la misma comprobación de píxel de pantalla que el resto de FX. Sin `float`; los bucles tienen tope fijo (longitud del rayo × anchura ≤ 13 px, nube ≤ 128 puntos).
+
+### Hoja de ruta (filas cerradas)
+
+| **0.3 mínima y 0.3.1** | Franja infinita con marea y horda; tuning y tres tiers de enemigos. | Cerradas (2026-11-06 y 07); archivadas en `DESIGN-ARCHIVE.md` |
+
+| **0.5 horda y élites** | Enjambre, élites con cofre, emboscadas. | Absorbida: sin horda; los jefes vuelven como élites en actos posteriores (§6.13) |
+
+### Dirección de arte 0.3.2 y 0.3.3 (§6.9.1b)
+
+#### 6.9.1b Versiones 0.3.2 y 0.3.3: dirección de arte (decidido 2026-11-07, detalle por decidir en sus sesiones)
+Tras cerrar la 0.3.1, el usuario quiere dedicar dos versiones al aspecto antes de seguir con la progresión (0.4). No traen mecánicas nuevas.
+
+**Dirección de estilo para las dos:** pasar el aspecto a algo del tipo **Trench Crusade o Warhammer 40k, pero más sucio y sombrío ("chungo")**: guerra de trincheras, metal oxidado y gastado, fe fanática, reliquias, suciedad y desgaste. Hoy el juego tiene suelo azul pizarra con acento cian y un space marine limpio; la nueva dirección reemplaza esa lectura. El estilo exacto, la paleta y la ambientación definitiva del primer nivel se deciden en la 0.3.2, con referencias del usuario (regla 9: nada se implementa sin decisión escrita aquí).
+
+**0.3.2: escenario del primer nivel.**
+- Objetivo: un escenario que de verdad guste al usuario, que fije estilo y ambientación del primer nivel.
+- Flujo previsto: **generar imágenes** de las piezas (suelo, columnas, muros, atrezo) → pasarlas por **2D→3D** para obtener mallas 3D muy trabajadas → **pre-renderizarlas** con el lab como hoy (`TECHNICAL.md` §3).
+- Se decide aquí: estilo, ambientación, paleta, lectura del suelo, las columnas y el borde de la marea con el nuevo aspecto, y presupuesto de tiles (hoy 90 de 400).
+- **Decisiones de arte de la 0.3.2 (2026-11-07):**
+  - **Hilo conductor: «la Cruzada que no terminó».** Un mundo que se pudría y una cruzada que perdió. Los enemigos son los «caídos» de esa cruzada, con ficha diegética breve (bestiario o diario de campaña) por tipo. Sin gran historia. El orden de biomas tras el nivel 1 queda abierto (candidatos: tierra de nadie, catacumbas/osarios, la brecha estilo Doom 2016 con marea de lava).
+  - **Nivel 1: una catedral (decidido 2026-11-08, sustituye a la tierra de nadie del 2026-11-07).** Estética católica gótica oscura inspirada en Warhammer 40k, Trench Crusade y Blasphemous. Premisa: **la catedral que no termina**: se sube por una nave hacia un altar que se aleja, la guerra se metió dentro (bancos en barricada, sacos, alambre, cruzados muertos) y la marea se traga los bancos por detrás. La tierra de nadie pasa a bioma posterior (su suelo orgánico es el más caro en tiles).
+    - **Tramos** de una pantalla de alto: nave, nave barricada, arco transversal, crucero (arena abierta), capilla o relicario lateral (cofre o élite); coro, cripta y ábside quedan para la 0.6.
+    - **Progresión por estados:** cada tramo es una planta más un estado de profanación (0 sagrado → 3 ruina en guerra) que cambia variantes de pieza, densidad de suciedad, paleta y luz; las mismas piezas sirven para todos los estados. La primera demo empieza ya en guerra (estados 2-3); la degradación progresiva llega después.
+    - **Bancos:** coberturas bajas. Cada tramo deja siempre 3 pasillos libres de ≥ 48 px (central y laterales), bancos en bloques cortos de 2-3 filas y huella de colisión ≤ 15 % del suelo. Se diseñan como estampa alineada a 8 px con versión rota del mismo tamaño, porque **bancos destructibles** es una mecánica candidata para más adelante (no en la 0.3.2).
+    - **Vidrieras:** en los muros laterales; con la cámara ortográfica los muros se ven de canto, así que la vidriera se lee por sus **haces de luz que entran en horizontal hacia el centro** y su mancha de color en el suelo. Haces prerenderizados como sprites de hardware translúcidos y aditivos (tiñen también a los personajes), con polvo y respiración de intensidad. Pendiente del prototipo `proto/godrays` en la DS.
+    - **Velas:** tiles de suelo con vela; llama animada reescribiendo los tiles de llama compartidos y halo con ciclo de paleta.
+    - **Muros laterales:** pasan de 16 a 48 px por lado (suelo útil 416 px), con base de columnas, remate de muro y arranque de capillas.
+  - **Coberturas bajas: bloquean el paso, no el fuego, y ocluyen como hoy.** Terreno (losas, alfombra, sangre, cera): solo decorativo. Cada arma es una clase: no se tienen ambas en una run.
+    - **Piezas altas como cobertura (decidido 2026-11-16, rama `fix/cobertura-estatuas`):** las columnas y las estatuas (`santo`) paran todos los disparos, el rayo del jugador y el del Ojo, y cortan la visión del Ojo. Bancos, relicario y velas solo bloquean el paso.
+  - **Color y legibilidad (2026-11-08, sustituye a la paleta de colores prohibidos):** sin colores reservados por ahora; entorno y personajes son preliminares y pueden compartir acentos mientras no estorben. La legibilidad se basa en **contraste de luminancia**: suelo transitable tranquilo, de valores medios-bajos y poco contraste local; el detalle fuerte en bordes, muros y piezas. Los personajes finales podrían ir **sin contorno**, con luz de contorno (rim light) del lab; se valida con el marine sobre el suelo nuevo.
+  - **Suelo de la nave: damero en rombos (decidido 2026-11-08).** Losas cuadradas giradas 45° que alternan dos piedras pardas casi iguales (poco contraste, por legibilidad). A 30° cada losa es un **rombo de 32×16 px** (lado real 1,26 m). Losas modeladas en 3D (junta hundida, bisel, desgaste) y renderizadas con la cámara del juego y la luz neutra, nunca dibujadas en plano. Encima, **lápidas de cruzado** sueltas como piezas planas (estampas sin colisión) cada pocas pantallas. Cenefa geométrica y laberinto quedan como piezas especiales del crucero, más adelante. Referencias: damero de York Minster, lápidas de la nave de 's-Hertogenbosch, Cosmati de Westminster y laberinto de Amiens.
+  - **Lápidas de suelo (decidido 2026-11-08; cerrado 2026-11-09).** La lápida **es** la losa. Se eliminaron definitivamente los stickers 2D y los cajeados oscuros con corte booleano. Se unificó el pipeline al 100% en el Shader Lab de Three.js (`tools/lab/export_map_package_headless.cjs`), con Blender únicamente como ensamblador 3D (`tools/floor/build_lapidas_lab_blender.py`), relieve escultórico v2 aumentado a 12 cm, cero outlines y cuantización nativa BGR555 de Nintendo DS. Ambas variantes quedan abiertas y viables para el mapa:
+    1. **Vía A ($3 \times 2$ teselas = $80 \times 40\text{ px}$, diagonal a 45°):** sigue los ejes de las juntas del suelo. Muy natural para pasillos y tramos longitudinales de la nave.
+    2. **Vía B ($3 \times 3$ teselas = $96 \times 48\text{ px}$, rombo con figura horizontal):** rombo de 9 losas con la figura tallada horizontalmente respecto a la pantalla. Gran presencia como hito central o focal.
+    Evidencia maestra: `walkthroughs/v032-escenario/assets/cat_lapidas_lab_unified.png`.
+    - **Sustituido el 2026-11-11 (lápidas v5).** La piedra tallada **ocupa el bloque entero de losas**: su borde es la junta del damero. Va a ras del suelo, con los surcos oscurecidos (oclusión ambiental horneada) y la cabeza o el travesaño al fondo de la pantalla (se lee desde los pies). Hay dos tamaños, **3×2 y 2×1 losas**, en cruz y caballero. La **Vía B se descarta**: una figura rectangular no puede llenar un rombo y se lee pegada encima. Retícula real del damero: juntas en `x + 2y ≡ 22,5` y `x − 2y ≡ 16,5` (mod 32). Proceso y lecciones: `tools/catedral_editor/gen/README.md`.
+
+  - **Planta, muros y luz (decidido 2026-11-11, sustituye a lo que contradiga más abajo).**
+    - **Planta de salón:** muros laterales continuos y rectos a los dos lados, sin entrantes ni capillas por ahora. Las columnas van en una línea paralela a cada muro. Crucero, capillas, coro y ábside quedan para más adelante.
+    - **Regla de perspectiva:** todo se ve con la cámara del juego (ortográfica, 30°, mirando a lo largo de la nave). Nada de alzados frontales pintados en los muros.
+    - **Muros:** el módulo 3D `gothic_arch` del usuario (zip `f450c095`), renderizado con el lab y repetido cada 128 px. Ocupa la franja entera de 48 px, como está. Con esta cámara se ve su remate superior: la cara con los arcos queda de canto.
+    - **Corte en el techo:** muros y columnas suben hasta un techo que no se dibuja.
+    - **Vidrieras y rosetones:** no se dibujan; se ven por su luz. El haz entra horizontal desde la cara interior del muro (x = 48 a la izquierda, x = 464 a la derecha). En `source/godrays.c` hoy sale de x = 16 y 240, que es un resto del muro antiguo de 16 px y hay que corregirlo.
+    - **El muro y las lancetas pintadas de `make_cathedral_map()` se retiran.**
+    - **Herramienta de diseño:** `tools/catedral_editor/editor.html`, para componer secciones a mano estampando las piezas reales. De sus diseños se sacarán las reglas del compositor.
+> **Archivado:** el compositor infinito de la catedral (bandas, tramos de 256 px, bancadas, columnata) y su hoja de ruta quedaron sustituidos por el escenario por actos (§6.13.6). `DESIGN-ARCHIVE.md`, «§6.9.1b».
+
+  - **Sombras de las piezas (decidido 2026-11-08).** Las piezas proyectan sombra sobre el suelo igual que los personajes: misma dirección de la luz principal del lab (preset «Neutra») y oscurecimiento parecido. Se hornea en los tiles de la estampa (sin coste por frame): la estampa crece lo que ocupe la sombra y los píxeles de suelo bajo ella se oscurecen. Las lápidas, planas, no llevan sombra.
+  - **Luz única neutra y sprites sin contorno (decidido 2026-11-08).** Piezas, suelo y personajes se renderizan en el lab con **la misma luz: el preset «Neutra»** (`tools/props/props_render_settings.json`: contraste 1,2, saturación 1,0) en lugar del ámbar con saturación 1,5, que volvía todo naranja y borraba piedra, oro y burdeos. La paleta de la catedral se extrae de los prerenders con esa luz (comparativa en `walkthroughs/v032-escenario/assets/paleta_A_vs_B.png`). Los personajes (marine, cargador, tirador y esqueleto) se prueban desde ahora **sin contorno** (`outlineMode` «none») y con esa luz; se adoptan si se leen sobre el suelo nuevo en la ROM, y si no se vuelve al contorno de 1 px.
+  - **Legibilidad del pre-render de personajes (decidido 2026-11-14, rama `feat/legibilidad-lab`, variante «C2»).** Sigue sin contorno. El lab exporta los personajes con: **supersampling ×4** (antes ×2); **tono neutro** en lugar del tono de cine actual, que apagaba la imagen y obligaba a subir el contraste a toda la imagen (eso aplastaba sombras a negro y quemaba luces: 12,6 % de negros en el cargador, 19,4 % de blancos en el esqueleto); una **curva S suave** con el punto medio en el brillo medio del propio personaje, que sube el contraste de los tonos medios sin recortar extremos; **bordes al 30 %** de cobertura (antes al 16 %, que dejaba píxeles negros sueltos; al 50 % se comía brazos y astas finas); y un **enfoque suave** tras reducir, que solo compara píxeles del propio personaje para no crear halo contra el suelo. Al convertir a colores de DS se redondea en vez de truncar. Descartado tras probarlo: contraluz direccional detrás del personaje (a 40–60 px no se ve), brillo de borde por ángulo de visión (desteñía sobre suelo claro), enfoque medio (ruidoso) y bajar el relieve de los materiales (sin efecto en los modelos actuales). Evidencia A/B con Corazón y Abanderado: `walkthroughs/legibilidad-lab/`. Se adopta definitivamente cuando se vea en la ROM sobre la DS. **Estado (2026-11-14):** el lab tiene el preset «Legibilidad: Anterior / C2» (por defecto Anterior; en exportación headless `--legibility c2`), que cubre supersampling, tono, curva S y enfoque. Falta la parte de la conversión a DS (bordes al 30 % y redondeo en `tools/generate_player_sprites_c.py`), re-exportar los personajes de la ROM y el botón para alternar sets en la consola. El escenario no se toca: faltan los modelos 3D de la columna y el banco.
+  - **Tamaño del Abanderado:** mide ~3 m, unos 54 px de alto en celda de 60×60 (Corazón, 1,80 m: 31–33 px en celda de 40×40), coherente con la escala única de abajo.
+  - **Escala única (corrige `TECHNICAL.md` §4.1):** el marine mide **2 m** y ocupa 31 px de alto, así que el mapa se dibuja a **~17,9 px/m** (no 40,42) y los enemigos de 1,5 a 3 m miden 23–46 px. Equivalencias: baldosa de 32×16 px = 1,8 m; el carril de 480 px = 26,8 m; una banda de 128 px = 14,3 m de profundidad; un saco de arena (0,5 × 0,3 m) = 9 × 5 px; un cráter de 4–8 m = 72–144 px. Los sprites actuales no cambian de tamaño.
+  - **Método (2026-11-08):** el suelo es un **juego de tiles diseñado**, no un render troceado: losas con tiles Wang y transiciones por esquinas (alfombra, mosaico, sangre, cera). Las **piezas** (bancos, columnas, estatuas, relicarios, sacos, cirios) siguen el flujo de los personajes: imagen de IA → 2D→3D (Tripo) → render con la misma cámara y luz que los personajes → estampa alineada a 8 px con su huella de colisión y profundidad de oclusión. Escala de juego: piezas un 30-50 % mayores que las reales si hace falta para leerse. Paleta: se extrae de los prerenders de las piezas del lote 1 y la aprueba el usuario (el arte objetivo de pantalla completa se canceló el 2026-11-08). Flujo completo paso a paso: `walkthroughs/v032-escenario/BIBLIA.md`. Motivo: con relieve o grano continuo ningún tile se repite (medido: 960 tiles distintos por banda de 480×128 y 825 en la ventana visible, frente al tope de 440; `walkthroughs/v032-escenario/INFORME_INTENTOS.md`).
+  - **Presupuesto:** hard: < 440 tiles distintos en cualquier ventana visible de la pantalla superior (cache de 448). El tope de 400 totales del kit es del script de bake y puede revisarse. Pruebas y evidencias en `walkthroughs/v032-escenario/`.
+- Cierre: el escenario se ve bien en la ROM real (capturas) y 60 FPS en la DS (regla 6).
+
+**0.3.3: personajes.**
+- **Reevaluar** si los sprites actuales (héroe, cargador, tirador, esqueleto) valen con el nuevo estilo.
+- **Ajustar ligeramente su tamaño** (`TECHNICAL.md` §4.1, escala personaje/mapa) y mantener anclas, muzzle y sombras.
+- Mejorar el estilo pasando de nuevo el flujo imagen → 2D→3D → pre-render, incluida la **marca visual del aturdimiento** del cargador (pendiente de la 0.3.1).
+- Cierre: contactos de las 8 direcciones revisados de verdad, build sin warnings, tests de sprites y 60 FPS en la DS.
+
+### Personajes y enemigos (§6.10)
+
+    - **Comportamiento «en oración» (decidido 2026-11-14; cifras `[TUNABLE-PLACEHOLDER]`):** los Exvotos empiezan quietos rezando de rodillas (desde 2026-11-15, ver «Postura»), repartidos un poco al azar pero con sentido en el mapa: junto a velas, frente a rosarios u otro atrezo devoto. Cuando el héroe se acerca, despiertan y empiezan a andar hacia él (los arrodillados se levantan primero). Pendiente para su integración: radio de despertar, si despiertan en grupo y cómo se colocan los puntos de oración en los tramos.
+    - **Exvoto en el juego, versión mínima (decidido 2026-11-14, rama `feat/exvoto`; cifras `[TUNABLE-PLACEHOLDER]`).** *Nota 2026-11-19: lo de la horda (peso del 60 %, franja de aparición, marea) es de la v0.3 y ya no aplica; hoy los Exvotos están colocados a mano en cada sala (§6.13.6) y sus vidas son las de §6.11.1. Siguen vigentes la postura, el despertar, el andar y la muerte.*
+      - **Sustituye al esqueleto** como masa: misma vida (100), velocidad (130), ataque por contacto (1 golpe) y peso en la horda (60 %). El esqueleto deja de aparecer.
+      - **Dónde rezan:** nunca al azar. Cuando la horda saca Exvotos, los coloca **delante de una pieza devota** del tramo que entra por arriba (la misma franja de aparición que hoy): **estatua de santo, vela o relicario**. Se ponen a 1-2 celdas de la pieza, en hueco libre, **de cara a ella** (la dirección del sprite mira al centro de la pieza). Un grupo de la horda (hasta 4) se reparte en arco alrededor de la misma pieza. Si en esa franja no hay ninguna pieza devota libre, el Exvoto aparece **ya despierto y andando** (como el esqueleto hoy), nunca rezando a la nada.
+      - **Postura (decidido 2026-11-15):** todos los que nacen rezando lo hacen de rodillas; como gran parte de la masa llega ya andando desde arriba, los que te encuentras rezando se levantan al despertar. El rezo de pie queda disponible en la ROM (`EXVOTO_KNEEL_PERCENT`, `[TUNABLE-PLACEHOLDER]`) pero la horda no lo usa.
+      - **Despertar:** cuando el héroe está a menos de **96 px** o cuando recibe daño. **En grupo:** al despertar uno, despiertan también los Exvotos rezando a menos de **48 px** de él (en cadena, así una procesión arranca de golpe). La arrodillada reproduce *levantarse* (~70 frames de clip, sin moverse) y luego anda; la de pie anda al instante.
+      - **Andar:** clip *andar rezando* hacia el héroe con la IA del esqueleto.
+      - **Muerte («se derrite»), sin animación 3D nueva:** el sprite se hunde y se aplasta en ~20 frames y deja un **charco de cera** en el suelo (elipse 2:1 clara con borde oscuro, colores desaturados) que dura ~90 frames, se desvanece y no hace nada.
+      - **Marea:** si alcanza Exvotos rezando, desaparecen sin recompensa, como el resto.
+
+  - **El Abanderado:** empalado en el asta de su propio estandarte, hecho con tabardos cosidos de caídos. Los enemigos cercanos se aceleran. El asta lo hace el más alto de la pantalla. *(Concepto original; la versión que se programa es la de abajo, «El Abanderado (jefe, versión mínima)», que lo sustituye.)*
+
+  - **Al morir:** en esta versión mínima suelta una **cruz de curación** (el cofre entra en la 0.5). Los monaguillos que queden siguen vivos.
+
+  - **Aura de carga, en comparación (selector `Y`, solo depuración; la primera ronda K/F1/F3 se descartó, `contacto_aura.png`).** Reglas comunes: crecen con `prog`, flash de listo de 3 frames, límites fijos de segmentos/puntos, sin `float`, deterministas por LCG, y lo que queda detrás del cuerpo se pinta antes del sprite.
+    - **L, llamas:** 6-8 lenguas cortas onduladas desde la elipse de los pies, amarillo en la base, naranja y rojo en la punta, con borde tramado; anillo 2:1 dorado en listo.
+    - **G, resplandor (gloria):** 10-12 rayos rectos de 1 px desde el **pecho**, alternando largos y cortos, oro con la punta blanca; crecen de 4 a 14 px y giran despacio. Detrás del sprite, como un halo.
+    - **E, corona de espinas:** elipse 2:1 de espinas en el suelo que se cierra hacia los pies, con gotas rojas. Pase de suelo. En la primera captura las espinas negras no se leen sobre el suelo oscuro.
+    - **H, ceniza:** volutas de humo tramado y brasas que suben desde hombros y pecho; bocanada de chispas oro en listo. En la primera captura el humo se lee como motas sueltas.
+
+  - **Reserva para jefes (`boss_climax_loop`, 28,8 s):** corte `Loop B` con subida y drop guardado en `assets/music/` para futuros jefes.
+
+### Mejoras (§6.12): gemas, rondas A/B/C y estado de sesión
+
+- **Gemas y HUD de nivel:** se quedan como la variante A, provisionales; irán prerrenderizados en 3D como los corazones del HUD (decidido 2026-11-15).
+
+**Gemas y experiencia: retiradas** (2026-11-16, §6.13.6). Las cifras antiguas (valor de gemas, imán, curva `5 + 3·(n−1)`) siguen en `gems.c` y `upgrades.c`, sin uso en la ROM por defecto. Reliquias: la primera en el relicario dorado de mitad del acto I y una al vencer a cada jefe.
+
+**Depuración:** `Y` deja de cambiar el aura (las auras salen de las reliquias). La tecla `X` de subida de nivel está desactivada en encuentros.
+
+#### 6.12.11 Elecciones de la ronda A/B/C (2026-11-15, primera vuelta)
+- **Enemigo quemado:** A (brasas y lenguas, potenciada) o B (corona de llamas a los pies), por decidir entre las dos, **más un tinte en el propio sprite** del enemigo (oscurecido o enrojecido según las capas). Se acepta el coste del tinte en el dibujo de los enemigos quemados, pero se mide en la DS.
+- **Llama Votiva:** mezcla de A y C: chispas alrededor de la línea que giran de forma irregular y procedural (como manchas solares), no una hélice perfecta.
+- **Corazón Flagelado:** A (anillo grande).
+- **Martirio Contagioso:** A, con el mismo lenguaje visual que Flagelado, por consonancia.
+- **Auto de Fe:** A, pero las tres variantes se parecían demasiado: hay que hacerla más distinta de un impacto normal.
+- **Llaga Abierta:** ninguna convence; nueva ronda con otras ideas.
+- **Viático:** cambia de concepto: de curarse por muertes cercanas a **robar vida al disparar**, con un sifón visible de la víctima al héroe (tabla de §6.12.6).
+
+#### 6.12.12 Elecciones de la ronda A/B/C (2026-11-15, segunda vuelta)
+- **Enemigo quemado:** se descarta C. Siguen A y B. El tinte del sprite indica las capas: claro con 1 capa y más rojo con cada capa. El tinte actual es el tope, al que se llega con 3-4 capas.
+- **Llama Votiva:** B (chispas sueltas que giran de forma irregular). Se seguirá afinando más adelante.
+- **Auto de Fe:** A, chispas minimalistas en el punto de impacto. B y C no son un efecto aparte: **animan el propio estado de quemado al consumirse**. Las llamas del quemado se avivan, envuelven al enemigo y se evaporan hacia arriba mientras el tinte vuelve a la normalidad (B parte del quemado A; C, del B). Todo efecto tiene que nacer del mundo (del suelo, del cuerpo o del punto de impacto), nunca flotar como un icono.
+- **Llaga Abierta:** se descarta A (se confunde con los efectos de fuego que se expanden). B pasa a ser **sangre que gotea** (con poca vida gotea poco y al límite mucho más) **y aspecto de ascendido**, no rojo: es un poder, no un castigo, y el rojo se confunde con el quemado. C (borde rojo que late) se mantiene como opción.
+- **Viático:** A (hilo de sangre) o C (alma pálida). Al robar vida, la víctima no desaparece en el acto: se queda **inerte y suspendida unos 0,3 s** (ni ataca ni bloquea, ya cuenta como muerta para experiencia y gemas) mientras se le extrae el hilo o el alma, y luego muere con su animación normal. Propuesta del coordinador, a validar con el GIF.
+
+#### 6.12.13 Elecciones de la ronda A/B/C (2026-11-15, tercera vuelta)
+- **Enemigo quemado:** A y B gustan las dos; se decide más adelante jugando.
+- **Auto de Fe:** A (chispas al impactar) y C (la corona de llamas sube y se evapora) gustan; se descarta B.
+- **Llaga Abierta:** B. El aura de ascendido crece con la sangre: cuantos menos corazones, más gotea y más intenso es el brillo pálido dorado.
+- **Viático:** A (hilo de sangre); C (alma pálida) se conserva como alternativa.
+
+#### 6.12.15 Estado y siguiente paso (2026-11-16)
+- **Hecho:** primera versión jugable completa del sistema (cartas, 7 Dones, 10 Reliquias, quemado, requisitos de oferta) y la ronda A/B/C de efectos; las gemas y el nivel se sustituyeron después por relicarios.
+- **Pendiente de validar:** si es divertido. Se hará con el plan de pruebas de `walkthroughs/mejoras-v04/plan_pruebas.md` (Ráfaga, Vigilia, Mártir, sin criterio y techo con trucos, con puntos de control de tensión, poder y decisión) y una entrevista de ajustes posterior. Las cifras de §6.12.10 siguen siendo provisionales hasta entonces.
+- **Mientras tanto:** se arreglan los problemas básicos que el usuario detecta jugando, uno a uno, sin tocar el equilibrio.
+
+### Escenario por actos (§6.13.6): catálogo y pendientes
+
+**Catálogo mínimo del acto I.** *(En revisión desde 2026-11-17: se rehace con los papeles y reglas de §6.13.9; las plantas que ya cumplan se conservan, las demás se sustituyen.)*
+
+- **Provisionales (decidido 2026-11-16):** sacos, alambre y barrera van en el prototipo con un sustituto provisional (rectángulos de color apagado); el usuario hace sus modelos 3D. El muro de 256 también es provisional en el prototipo.
+
+**Siguiente paso:** adaptar el editor a 256 y componer las 6 plantas con sus 3 poblaciones para revisarlas en el móvil; después, prototipo de 3–4 encuentros en la ROM frente a la versión de hoy.
+
+- **Catálogo v3 (propuesta, 2026-11-17):** 7 plantas (el atrio, la procesión, la trinchera, el balcón, la pinza, el claro y la alambrada); la trinchera sustituye al embudo. Esquemas en `walkthroughs/encuentros-tacticos/catalogo-salas-v3.html`, generados por `tools/encuentros/catalogo_v3.py`. La ROM sigue con el catálogo v2 hasta programar la IA nueva.
+
+### Modo jefe (§6.13.7) y remate (§6.13.8)
+
+  - **Exvoto (Opción A de Sonnet, `proto_remate_exvoto_v2.py`):** agarre de muñecas, elevación y partición vertical en 96×96, dejando las dos mitades de cera en el suelo durante ~1 s (parpadeando al final). Corregido el 2026-11-18: la primera integración usaba por error la A de DeepSeek.
+  - **Cireneo (Opción A de DeepSeek, `ds_remate_cireneo.py`, provisional hasta la ronda final A/B):** el héroe le arranca la cruz de la espalda, salta y lo atraviesa contra el suelo con ella (celda 116×116), dejando el cadáver atravesado en el suelo durante ~1 s antes de desaparecer.
+
+**Barra de vida del jefe.** Sustituye a la barra flotante sobre el enemigo durante el modo jefe. Fija en pantalla, con el nombre del jefe y una muesca en cada umbral de fase. Colores de la paleta (§6.10), sin primarios puros.
+
+**Pendiente de la ronda A/B/C (definitivo, ROM real):** aspecto de la intro, de la barra de vida, de la telegrafía de cambio de fase y de la secuencia de victoria.
+
+**Ronda 1 de maquetas (2026-11-17, `walkthroughs/modo-jefe/ronda1_maquetas.html`).**
+- **Intro:** el jefe se ve en grande y repartido en las dos pantallas (de la A), pero dentro del propio juego, sin pantalla aparte (de la B). Abajo, su nombre, su título y **su frase del Códice, dicha en voz alta por él**. Descartada la de franjas de cine.
+- **Barra de vida:** barra (no rosario), en la **fila de arriba de la pantalla de abajo, junto a los corazones**: es donde se mira durante la pelea.
+- **Cambio de fase:** la marca de la barra salta rota y aparece el número romano de la fase sobre el jefe (C).
+- **Victoria:** fundido a blanco con su nombre tachado (C), a juego con la intro.
+- Ronda 2 (`ronda2_maquetas.html`): variantes de cada una y tres voces para el Abanderado.
+
+### Ojo de largo alcance (§6.13.9)
+
+Corrige §6.13.6. **Motivo:** en las salas lo óptimo sigue siendo quedarse abajo y matar lo que baja, aunque se cierre la barrera de atrás. Toda la amenaza llega por un lado y todos los enemigos persiguen, así que la pelea acaba en la pantalla de abajo y la de arriba llega vacía. Esperar no cuesta nada. Además, el Ojo empieza a apuntar a ~140 px, menos que el rayo base (160 px), así que se puede limpiar a los Exvotos fuera de su alcance y luego ir a por él. **Referencias:** Doom 2016/Eternal, donde los enemigos débiles cuerpo a cuerpo no son la amenaza sino un recurso que se remata; Gears of War y XCOM, donde unos te clavan en la cobertura y otros te sacan de ella.
+
+- **Ojo:** alcance **mayor que el rayo base**, **todo el suelo desde su puesto, el doble que el rayo base (~320 px, `[TUNABLE-PLACEHOLDER]`; corregido 2026-11-18: con 256 quedaban en las esquinas de abajo de todas las salas bolsas seguras de 60×60 a 90×90 px donde esperar salía gratis, y con 320 solo quedan las sombras de columnas y estatuas, medidas con `tools/encuentros/audit_ojo_v3.py`; con los Ojos a la altura de ~100 px alcanza al héroe en cuanto se cierra la barrera de atrás), con las columnas cortándole la línea. Se queda en su puesto. Se mantiene que solo dos apunten a la vez. Su aviso largo y legible (la mirada verde) es lo que hace justo el largo alcance.
+
+**Remate:** decidido aquí (primer disparo deja tambaleándose, `L` a corta distancia, invulnerable, muerte segura, rayo cargado, Cireneo aturdido rematable) e implementado y vigente en §6.13.8, que es su fuente. Para las salas importa esto: el remate es la recompensa de dejar que los Exvotos lleguen, y el claro lo usa como única cobertura.
+
+**En la ROM (2026-11-19, `feat/ojo-alcance`; detalle y constantes en `walkthroughs/ojo-tactico/walkthrough.md`).** Corrige lo de arriba donde se juega distinto:
+- **Ojo sin alcance** (solo línea de visión; sustituye al alcance de ~256 / 320 px). Un Ojo en toda sala del acto I salvo el atrio, que aún no existe en la ROM.
+- **Tirador táctico, no cazador:** cubierto tras cobertura baja espera sin moverse ni disparar y, al salir, arranca el ciclo normal de apuntado (el héroe puede esquivar). Tras columnas y estatuas te sigue manteniendo la línea (se recoloca; correa que crece hasta toda la sala). Sustituye al «se queda en su puesto, quieto».
+- **Guarnición:** Exvotos (y Cireneo desde la media) despiertos que se quedan junto al Ojo hasta que te acercas, los dañas o muere su Ojo. El Cireneo guardián es de guardia, no solo escolta.
+- **Sin programar:** flanqueo coordinado de los Exvotos, atrio, catálogo v3, invocador. **Palancas del Ojo sin decidir:** velocidad de persecución y tiempo parado al apuntar (hoy anda a un tercio de la velocidad del héroe).
+
+**Siguiente paso:** repetir la partida de referencia con la ROM de `main` y elegir la sala a rediseñar primero (§6.13.10).

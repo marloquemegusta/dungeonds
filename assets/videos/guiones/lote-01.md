@@ -221,7 +221,7 @@ Publicados a 2026-11-17: **01, 03 y 08**, nada más. Los MP4 de 02, 04-07, 09 y 
 | 01, 03, 08 (sin pregunta) | — | | | |
 | 02 Remedios | ¿Remedios robó a Dios… o hizo lo que Dios no hacía? | | | |
 
-- **01 El Corazón Abierto** (2026-11-15): v1 con arranque en negro; v2 sin negro y frase fuerte primero; v3 recortada a 38 s (iteraciones en `guiones_iteraciones.md`). La v2 retuvo algo mejor que la v3.
+- **01 El Corazón Abierto** (2026-11-15): v1 con arranque en negro; v2 sin negro y frase fuerte primero; v3 recortada a 38 s. La v2 retuvo algo mejor que la v3.
 - **03 Jimena y Aldonza** (2026-11-16): primera versión con puesta en escena plano a plano y paso natural. Es el modelo para los siguientes.
 - **08 La Catedral que no termina** (2026-11-17): `assets/videos/lore01_08_la_catedral_que_no_termina.mp4`, estilo A, 67,9 s. TikTok a mano; Instagram y YouTube por Metricool. Textos de los posts:
   - **Título (YouTube y portada):** «La catedral que no termina · Códice». Alternativa: «Rezar aleja el altar · Códice».
@@ -282,7 +282,3 @@ Regla: **nunca el mismo personaje en pantalla dos días seguidos**, y los vídeo
 **Material disponible:** animaciones de rezar de pie, rezar de rodillas, arrodillarse/levantarse (al revés), andar triste y andar renqueante (`assets/models/animations/`); props renderizados de vela, santo, relicario, bancos (entero, roto, volcado), columna y lápidas (`assets/environment/cathedral/props/render/`). Prop nuevo opcional: un sagrario o altar pequeño.
 
 **Regla de imagen:** la voz cuenta el pasado y la imagen enseña el presente del condenado; solo hay modelos de la forma condenada, salvo variaciones hechas a propósito para un vídeo (Gaspar humano, Bartolomé sin cruz).
-
-## Reserva
-
-- **Lo que sube desde abajo** (la Marea): su naturaleza está [ABIERTO] en `LORE.md` §9; se recupera cuando se decida.

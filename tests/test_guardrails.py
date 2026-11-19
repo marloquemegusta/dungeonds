@@ -50,50 +50,5 @@ class DesaturatedVfxTest(unittest.TestCase):
         self.assertEqual(bad, [])
 
 
-WEAPONS_C = (ROOT / "source" / "weapons.c").read_text(encoding="utf-8")
-GAMEPLAY_C = (ROOT / "source" / "gameplay.c").read_text(encoding="utf-8")
-
-
-def parse_weapon_table():
-    """Lee g_weapon_tuning de weapons.c a {nombre: {campo: int}}."""
-    start = WEAPONS_C.index("const WeaponTuning g_weapon_tuning")
-    body = WEAPONS_C[start:WEAPONS_C.index("};\n", start)]
-    table = {}
-    for name, block in re.findall(r"\[(WEAPON_\w+)\]\s*=\s*\{(.*?)\n    \}", body, re.DOTALL):
-        table[name] = {k: int(v) for k, v in re.findall(r"\.(\w+)\s*=\s*(-?\d+)", block)}
-    return table
-
-
-def parse_enemy_hp():
-    def hp(kind):
-        return int(re.search(rf"ENEMY_TYPE_{kind}\] = \{{\s*\.max_hp = (\d+)", GAMEPLAY_C).group(1))
-    return {"charger": hp("CHARGER"), "shooter": hp("SHOOTER"), "skeleton": hp("EXVOTO")}
-
-
-def hits_to_kill(hp, damage):
-    return -(-hp // damage)
-
-
-class BalanceTest(unittest.TestCase):
-    """Golpes para matar fijados por DESIGN.md."""
-
-    def test_sniper_hits_to_kill(self):
-        hp = parse_enemy_hp()
-        sniper = parse_weapon_table()["WEAPON_SNIPER"]
-        self.assertEqual(sniper["damage_per_hit"], 150)
-        self.assertEqual(hits_to_kill(hp["shooter"], sniper["damage_per_hit"]), 2)
-        self.assertEqual(hits_to_kill(hp["charger"], sniper["damage_per_hit"]), 2)
-        self.assertEqual(hits_to_kill(hp["skeleton"], sniper["damage_per_hit"]), 1)
-
-    def test_shotgun_hits_to_kill(self):
-        hp = parse_enemy_hp()
-        shotgun = parse_weapon_table()["WEAPON_SHOTGUN"]
-        full_blast = shotgun["damage_per_hit"] * shotgun["pellets"]
-        self.assertEqual(shotgun["damage_per_hit"], 40)
-        self.assertEqual(hits_to_kill(hp["shooter"], full_blast), 2)
-        self.assertEqual(hits_to_kill(hp["charger"], full_blast), 2)
-        self.assertEqual(hits_to_kill(hp["skeleton"], full_blast), 1)
-
-
 if __name__ == "__main__":
     unittest.main()

@@ -6,7 +6,7 @@ uses. A host build of strip.c with -DSTRIP_LAYOUT_DUMP=1 prints:
   * the plan of blocks -16..5, piece by piece, in emission order;
   * the window (tiles and collision cells) after strip_start() and after one rebase.
 The test rebuilds the same window from the Python plan and compares every cell. It also checks the
-layout invariants of DESIGN.md 6.9.1b on 40 blocks.
+layout invariants of DESIGN-ARCHIVE.md 6.9.1b on 40 blocks.
 """
 import importlib.util
 import re
@@ -230,7 +230,7 @@ class CompositorV2ParityTest(unittest.TestCase):
 
 
 class CompositorV2InvariantsTest(unittest.TestCase):
-    """DESIGN.md 6.9.1b, compositor v2: checked on the Python spec over 40 blocks.
+    """DESIGN-ARCHIVE.md 6.9.1b, compositor v2: checked on the Python spec over 40 blocks.
 
     Since 2026-11-17 the kit bakes only the pieces and phases the encounter rooms use
     (DESIGN.md 6.13.6), so the old catedral-composer content invariants (two columns per

@@ -43,7 +43,7 @@ WALL_MAX_NEW_COLORS = 32
 # Las lapidas v5 son el propio suelo: floor_origin_px [0, 16] -> fase (pc=0, pr=2) es el origen del arte.
 LAPIDA_PHASE = (0, 2)
 # Fases horneadas de cada lapida: la del arte y la del damero invertido (2 tiles a la derecha, 1 abajo).
-# Una estampa (pc, pr) vale en (x, y) si (x - pc) % 4 == 0 y (y - pr) % 2 == 0 (DESIGN.md 6.9.1b).
+# Una estampa (pc, pr) vale en (x, y) si (x - pc) % 4 == 0 y (y - pr) % 2 == 0 (DESIGN-ARCHIVE.md 6.9.1b).
 LAPIDA_PHASES = ((0, 2), (2, 3))
 GROUP_STEP_PX = 24            # paso vertical de banco_grupo4 (3 tiles)
 GROUP_BANKS = 4
@@ -495,7 +495,7 @@ def placements(stamps, seed, band, occupied):
             break
 
 
-# Compositor v2 (DESIGN.md 6.9.1b, "Compositor v2: la pantalla como unidad").
+# Compositor v2 (DESIGN-ARCHIVE.md 6.9.1b, "Compositor v2: la pantalla como unidad").
 # Bloque = 384 px = 48 filas de tiles = 2 pantallas de 24 filas (A = filas 0..23, B = 24..47) = 3 bandas.
 # Mapa banda -> bloque (identico en source/strip.c, band_block()):
 #   bandas iniciales b < 16:  bloque b // 3,                  desplazamiento (b % 3) * 16
@@ -686,7 +686,7 @@ def _try_place(stamps, acc, cat, name, x, y, rows, clip=False):
 
 
 def _tomb_x0(y):
-    """Smallest lapida x >= TOMB_X_MIN with x == 2 * y (mod 4), the damero joint rule of DESIGN.md 6.9.1b."""
+    """Smallest lapida x >= TOMB_X_MIN with x == 2 * y (mod 4), the damero joint rule of DESIGN-ARCHIVE.md 6.9.1b."""
     return TOMB_X_MIN + ((((2 * y) & 3) + 1) & 3)
 
 

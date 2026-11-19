@@ -28,7 +28,7 @@
 #endif
 #define STRIP_OCCLUSION_CAPACITY 32768
 #define STRIP_START_CLEAR_BANDS 4
-// Compositor v2 (DESIGN.md 6.9.1b): block = 2 screens of 24 tile rows = 3 bands of 16 rows.
+// Compositor v2 (DESIGN-ARCHIVE.md 6.9.1b): block = 2 screens of 24 tile rows = 3 bands of 16 rows.
 #define STRIP_BLOCK_TILES 48
 #define STRIP_SCREEN_TILES 24
 #define STRIP_BLOCK_MAX_PIECES 48
@@ -250,7 +250,7 @@ static int piece_is_lapida(uint8_t piece_id) {
 // never for a raw index, so the kit can be rebaked without renumbering anything here.
 // A lapida is baked at two phases, (0, 2) and (2, 3) (the damero inverted). Its stamp at (pc, pr)
 // fits tile (x, y) when (x - pc) is a multiple of 4 and (y - pr) of 2: the joints of the floor
-// then follow the damero rule (DESIGN.md 6.9.1b). A position no phase fits gets no stamp.
+// then follow the damero rule (DESIGN-ARCHIVE.md 6.9.1b). A position no phase fits gets no stamp.
 // `& 3` and `& 1` give the positive residue for negative differences too (two's complement).
 static const StripStamp *stamp_for_lapida(uint8_t piece_id, int x_tile, int y_tile) {
     for (int i = 0; i < (int)g_strip_kit.num_stamps; i++) {
@@ -431,7 +431,7 @@ static void enc_place_lapidas(PlanItem *acc, int *n_io, int32_t block) {
             const StripStamp *stamp = &g_strip_kit.stamps[s];
             if (stamp->piece_id != piece) continue;
             // The kit bakes each lápida at the phases that follow the damero rule: (x - phase_col) % 4
-            // and (y - phase_row) % 2 have to be 0 or the joints of the floor break (DESIGN.md 6.9.1b).
+            // and (y - phase_row) % 2 have to be 0 or the joints of the floor break (DESIGN-ARCHIVE.md 6.9.1b).
             for (int x = x_lo; x + (int)stamp->w_tiles <= x_hi && ncand < S_ENC_LAP_CANDS; x++) {
                 if (((x - (int)stamp->phase_col) & 3) != 0) continue;
                 int y_end = top + STRIP_SCREEN_TILES - (int)stamp->h_tiles;
@@ -795,7 +795,7 @@ static void generate_band(const BandSink *sink, int32_t band, int map_row, int c
     stamp_band(sink, band, map_row, collision_row);
 }
 
-// Hard edges (DESIGN.md 6.9.1b): the wall columns of collision rows [0, row_end) and the whole
+// Hard edges (DESIGN-ARCHIVE.md 6.9.1b): the wall columns of collision rows [0, row_end) and the whole
 // bottom row. A commit passes only the rows it rewrote: the others already carry their walls.
 static void enforce_edges_in(uint8_t *collision, unsigned row_start, unsigned row_end) {
     for (unsigned row = row_start; row < row_end; row++) {
