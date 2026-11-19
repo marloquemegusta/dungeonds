@@ -33,11 +33,11 @@ const WeaponTuning g_weapon_tuning[NUM_WEAPON_TYPES] = {
         .name = "SNIPER",
         .damage_per_hit = 150,      /* skeleton 100 hp: 1 hit, shooter 200: 2, charger 300: 2 (scale 100 = 1.0) */
         .pellets = 1,
-        .fire_cooldown = 40,
+        .fire_cooldown = 0,         /* no recovery: a new press charges at once (DESIGN.md 6.10, 6.12.10) */
         .projectile_speed = 0,
-        .projectile_range = 160,    /* base ray length in ground px (DESIGN.md 6.12.10); Alcance adds g_mods.sniper_range */
+        .projectile_range = 110,    /* base ray length in ground px (DESIGN.md 6.12.10); Alcance adds g_mods.sniper_range */
         .spread_angle = 0,
-        .aim_min_frames = 24,       /* ~0.4 s before the shot is armed */
+        .aim_min_frames = 48,       /* 0.8 s before the shot is armed; Prisa -10 per rank down to 8 */
         .knockback = 0,
         .stun_frames = 0,
         .recoil = 0,
@@ -986,10 +986,6 @@ static int fire_weapon(PlayerState *player, const WeaponInput *in, fixed dir_x, 
                        Enemy *enemies, int max_enemies) {
     const WeaponTuning *tuning = &g_weapon_tuning[player->current_weapon];
     s_weapon_cooldown = tuning->fire_cooldown + (player->current_weapon == WEAPON_SHOTGUN ? g_mods.shotgun_cooldown : 0);
-    if (player->current_weapon == WEAPON_SNIPER) {
-        s_weapon_cooldown = tuning->fire_cooldown + g_mods.sniper_cooldown;   // Prisa (DESIGN.md 6.12.5)
-        if (s_weapon_cooldown < 6) s_weapon_cooldown = 6;
-    }
     s_last_dir_x = dir_x;
     s_last_dir_y = dir_y;
     if (player->current_weapon == WEAPON_SHOTGUN) {

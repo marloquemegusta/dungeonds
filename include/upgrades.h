@@ -5,12 +5,12 @@
 #include <stddef.h>
 
 // DESIGN.md 6.12: in-run upgrades of the Open Heart. Gems give experience; each level offers
-// 1 of 3 Dones (stackable stats, 4 ranks) or, on levels 4/8/12/16, 1 of 3 Reliquias (once per run).
+// 1 of 3 Dones (stackable stats, 7 ranks) or, on levels 4/8/12/16, 1 of 3 Reliquias (once per run).
 // Dones write into g_mods (modifiers.h); relics only set an owned bit that other modules read.
 
 #define UPG_DON_COUNT   7
 #define UPG_RELIC_COUNT 10
-#define UPG_MAX_RANK    4
+#define UPG_MAX_RANK    7
 
 // Archetype tags (DESIGN.md 6.12.3), used to keep relic offers "con cabeza" (6.12.4).
 #define UPG_TAG_RAFAGA  1u
@@ -26,7 +26,7 @@ enum {
 };
 
 // Capabilities an upgrade can require (DESIGN.md 6.12.4 "Requisitos"). Derived from the relics owned.
-#define UPG_CAP_BURN_SOURCE 1u      // owns Llama Votiva, Aura de Cilicio or Corazón Flagelado
+#define UPG_CAP_BURN_SOURCE 1u      // owns Llama Votiva, Aura de Cilicio or Corazï¿½n Flagelado
 
 enum { UPG_KIND_DON = 0, UPG_KIND_RELIC, UPG_KIND_CURA };
 
