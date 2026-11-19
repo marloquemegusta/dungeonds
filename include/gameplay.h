@@ -197,10 +197,16 @@ static inline int *enemy_home_x(struct Enemy *e) { return e->type == ENEMY_TYPE_
 static inline int *enemy_home_y(struct Enemy *e) { return e->type == ENEMY_TYPE_SHOOTER ? &e->strafe_dir : &e->aim_py; }
 #define GUARD_RELEASE_DIST 220   // [TUNABLE-PLACEHOLDER] ground px (dy counts double) from its post: the hero this close releases a guard
 #define GUARD_OJO_BOND_DIST 90   // [TUNABLE-PLACEHOLDER] ground px between the guard's post and an Ojo's post: the Ojos it guards; it is released when none of them lives
-#define OJO_REPOSITION_FRAMES 120      // [TUNABLE-PLACEHOLDER] frames without seeing the hero (and not aiming) before the Ojo walks to open the line
-#define OJO_REPOSITION_SPEED_PCT 50    // [TUNABLE-PLACEHOLDER] % of its normal speed while repositioning
-#define OJO_LEASH_DIST 96              // [TUNABLE-PLACEHOLDER] ground px: it never goes farther than this from its post
-#define OJO_LEASH_DOWN_PX 24           // [TUNABLE-PLACEHOLDER] screen px: it never goes lower than its post row plus this
+#define OJO_PURSUE_TICKS 8             // [TUNABLE-PLACEHOLDER] frames between the Ojo's checks of its line to the hero (power of two)
+#define OJO_PURSUE_LOOKAHEAD 30        // [TUNABLE-PLACEHOLDER] frames ahead (at the hero's current velocity) whose position the Ojo also wants in view
+#define OJO_PURSUE_IN_COOLDOWN 1       // [TUNABLE-PLACEHOLDER] 1 = the Ojo also keeps the hero in view while it waits out the cooldown after a sentence
+#define OJO_REPOSITION_SPEED_PCT 100   // [TUNABLE-PLACEHOLDER] % of its normal speed while repositioning
+#define OJO_LEASH_DIST 288             // [TUNABLE-PLACEHOLDER] ground px: it never goes farther than this from its post
+#define OJO_SEARCH_COL_PX 24           // [TUNABLE-PLACEHOLDER] px between the candidate columns of the reposition search
+#define OJO_SEARCH_COLS 12             // [TUNABLE-PLACEHOLDER] columns each side of the post (covers the leash)
+#define OJO_SEARCH_ROW_PX 32           // [TUNABLE-PLACEHOLDER] px between the candidate rows
+#define OJO_SEARCH_ROWS 5              // [TUNABLE-PLACEHOLDER] rows above and below the post's row (the leash and OJO_LEASH_DOWN_PX trim them)
+#define OJO_LEASH_DOWN_PX 80           // [TUNABLE-PLACEHOLDER] screen px: it never goes lower than its post row plus this
 
 // Quemado: layers, tick and slow (DESIGN.md 6.12.10). burn_update runs once a frame from weapons_update.
 #define BURN_BASE_CAP 5          // [TUNABLE-PLACEHOLDER] layers

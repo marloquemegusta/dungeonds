@@ -118,6 +118,7 @@ ITCM_CODE static void sep_build_grid(const Enemy *enemies, int num_enemies) {
     }
 }
 
+static int s_sep_skip_guard;            // 1 while an Ojo repositions: it does not push against the garrison
 ITCM_CODE static void apply_separation(Enemy *enemies, int num_enemies, int current_idx, fixed *vx, fixed *vy) {
     (void)num_enemies;
     Enemy *e = &enemies[current_idx];
@@ -130,6 +131,7 @@ ITCM_CODE static void apply_separation(Enemy *enemies, int num_enemies, int curr
         for (int gx = cx - 1; gx <= cx + 1; gx++) {
             for (int j = s_grid_head[sep_cell(gx, gy)]; j != SEP_NONE; j = s_grid_next[j]) {
                 if (j == current_idx || !enemies[j].active) continue;
+                if (s_sep_skip_guard && (enemies[j].home_flags & ENEMY_HOME_GUARD)) continue;
                 int32_t edx = TO_INT(e->x - enemies[j].x);
                 int32_t edy = TO_INT(e->y - enemies[j].y);
                 int32_t d2 = edx * edx + edy * edy;
@@ -615,6 +617,27 @@ static void ojo_look_anim(Enemy *e) {
     }
 }
 
+// A crouched hero is covered when the line from the shooter to him crosses low cover (DESIGN.md 6.9). One rule for the damage
+// (ojo_beam_hurts) and for the Ojo's decision to hold its fire (ojo_hero_covered), so it never spends a beam on a bench.
+static int ojo_cover_shields(int ox, int oy, int px, int py) {
+    return g_hero_crouched && line_crosses_low_cover(ox, oy, px, py);
+}
+
+// Would the beam that the Ojo fires now be cancelled by low cover? Uses the mouth the shot will leave from (the sentence clip's muzzle).
+static int ojo_hero_covered(Enemy *e, fixed player_x, fixed player_y) {
+    if (!g_hero_crouched) return 0;
+    const EnemyState st = e->state;
+    const int g = e->gesture;
+    e->state = ENEMY_STATE_SENTENCE;
+    e->gesture = 1;
+    fixed mx, my;
+    int mh;
+    enemy_muzzle(e, &mx, &my, &mh);
+    e->state = st;
+    e->gesture = g;
+    return ojo_cover_shields(TO_INT(mx), TO_INT(my), TO_INT(player_x), TO_INT(player_y));
+}
+
 // The damage line is a temporary wall: while the beam hurts (impact + flare) a hero within OJO_HIT_HALF_WIDTH ground px of
 // the fixed line, ahead of the mouth and before the first wall, takes a hit (player_take_hit's i-frames cap it at one).
 // Once per frame per Ojo.
@@ -627,7 +650,7 @@ static void ojo_beam_hurts(const Enemy *e, fixed player_x, fixed player_y) {
     if (along >= 0 && along <= e->beam_len && cross <= OJO_HIT_HALF_WIDTH) {
         // Low cover (DESIGN.md 6.9): a crouched hero is safe when the line from the mouth to him crosses a bench or
         // sacks before reaching him. The beam is still drawn over the cover; only the hit is cancelled.
-        if (g_hero_crouched && line_crosses_low_cover(e->beam_mx, e->beam_my, TO_INT(player_x), TO_INT(player_y))) return;
+        if (ojo_cover_shields(e->beam_mx, e->beam_my, TO_INT(player_x), TO_INT(player_y))) return;
         player_take_hit(&g_player_state);
     }
 }
@@ -668,37 +691,96 @@ static void ojo_gesture_tick(Enemy *e) {
     if (e->gesture > OJO_GESTURE_FRAMES) e->gesture = e->state == ENEMY_STATE_SENTENCE ? OJO_GESTURE_FRAMES : 0;   // held while the beam lasts
 }
 
-// The Ojo holds its post (DESIGN.md 6.13.9). With no sight of the hero for OJO_REPOSITION_FRAMES (and not aiming) it walks slowly to
-// the nearest point on its row, to the left or right, from which the line to the hero is open, never farther than OJO_LEASH_DIST from
-// its post nor lower than OJO_LEASH_DOWN_PX below it. With no such point it stands still. aim_px / aim_py hold the walking target
-// here (aim_px 0 = none); the walk clip is the usual one.
+// The Ojo's leash grows while it hunts: ojo_leash_q (units of OJO_LEASH_Q_PX) lives in the Exvoto's `kneel` byte, which an Ojo never uses.
+#define ojo_leash_q(e) ((e)->kneel)
+#define OJO_LEASH_Q_PX 8
+#define OJO_LEASH_Q_MAX 96                // 768 px: the whole room
+#define OJO_LEASH_Q_FRAMES 5              // one unit per 5 frames = 96 px per second without sight of the hero
+
+// The hero is in the sights again: the leash returns to its base, but wide enough to keep the Ojo where it stands (it does not go back).
+static void ojo_leash_settle(Enemy *e) {
+    if (ojo_leash_q(e) == 0) return;
+    const int lx = TO_INT(e->x) - *enemy_home_x(e);
+    const int ly = TO_INT(e->y) - *enemy_home_y(e);
+    const int d = (int)int_sqrt((uint32_t)(lx * lx + GROUND_DY2(ly)));
+    int q = d > OJO_LEASH_DIST ? (d - OJO_LEASH_DIST + OJO_LEASH_Q_PX - 1) / OJO_LEASH_Q_PX : 0;
+    const int dn = TO_INT(e->y) - *enemy_home_y(e) - OJO_LEASH_DOWN_PX;       // also keep the row it stands on
+    if (dn > 0 && (dn * 2 + OJO_LEASH_Q_PX - 1) / OJO_LEASH_Q_PX > q) q = (dn * 2 + OJO_LEASH_Q_PX - 1) / OJO_LEASH_Q_PX;
+    ojo_leash_q(e) = (uint8_t)q;
+}
+
+// Hero velocity (ground px per frame, 8.8), smoothed: the Ojo aims where he will be, not where he is.
+static int s_hero_prev_x, s_hero_prev_y, s_hero_vx, s_hero_vy, s_hero_prev_ok;
+static void hero_velocity_update(int px, int py) {
+    if (s_hero_prev_ok) {
+        const int dx = px - s_hero_prev_x, dy = py - s_hero_prev_y;
+        if (dx > 8 || dx < -8 || dy > 8 || dy < -8) { s_hero_vx = s_hero_vy = 0; }     // a strip rebase or a teleport, not walking
+        else {
+            s_hero_vx = (s_hero_vx * 3 + dx * 256) >> 2;
+            s_hero_vy = (s_hero_vy * 3 + dy * 256) >> 2;
+        }
+    }
+    s_hero_prev_x = px; s_hero_prev_y = py; s_hero_prev_ok = 1;
+}
+
+// The Ojo keeps the hero in view (DESIGN.md 6.13.9). While it is not aiming (CHASE with no sight), every OJO_PURSUE_TICKS frames it picks
+// the nearest walkable point from which it sees the hero where he is now AND where he will be in OJO_PURSUE_LOOKAHEAD frames at his
+// current velocity (if none sees both: the nearest that sees him now), and walks there at full speed. The point is kept until reached or
+// until it loses sight of the hero. The search is a grid around the Ojo scanned ring by ring, inside a leash around its post that grows
+// with the time without sight (ojo_leash_q) and never lower than OJO_LEASH_DOWN_PX (also growing) below it. aim_px / aim_py hold the
+// target here (aim_px 0 = none).
 static void ojo_reposition(Enemy *e, Enemy *enemies, int num_enemies, int idx, int wx, int wy, int px, int py,
                            fixed player_x, fixed player_y, const EnemyTuning *tuning) {
-    if (++e->state_timer < OJO_REPOSITION_FRAMES) {
-        e->aim_px = 0;                                       // (also drops the point left by the last aim)
-        e->dir = dir_from_vector(player_x - e->x, player_y - e->y);
-        update_animation(e, 0);
-        return;
+    if (e->state == ENEMY_STATE_CHASE) {        // (in COOLDOWN state_timer is the cooldown clock)
+        if (e->state_timer < 100000) e->state_timer++;
+        const int q = e->state_timer / OJO_LEASH_Q_FRAMES;
+        if (q > ojo_leash_q(e)) ojo_leash_q(e) = (uint8_t)(q > OJO_LEASH_Q_MAX ? OJO_LEASH_Q_MAX : q);
     }
-    e->state_timer = OJO_REPOSITION_FRAMES;
-    if (e->aim_px == 0 || ((s_ai_tick + idx) & 15) == 0) {
+    const int tick8 = ((s_ai_tick + idx) & (OJO_PURSUE_TICKS - 1)) == 0;
+    if (e->aim_px != 0 && tick8 && !los_has_line_of_sight(e->aim_px, e->aim_py, px, py, 0)) e->aim_px = 0;
+    if (e->aim_px == 0 && tick8) {
         const int hx = *enemy_home_x(e);
         const int hy = *enemy_home_y(e);
-        const int cy = wy > hy + OJO_LEASH_DOWN_PX ? hy + OJO_LEASH_DOWN_PX : wy;
-        const int first = px >= wx ? 1 : -1;                 // the side toward the hero first
-        e->aim_px = 0;
-        for (int step = 1; step <= 6 && !e->aim_px; step++) {
-            for (int k = 0; k < 2 && !e->aim_px; k++) {
-                const int cx = wx + (k ? -first : first) * step * 16;
-                const int lx = cx - hx;
-                const int ly = cy - hy;
-                if (lx * lx + GROUND_DY2(ly) > OJO_LEASH_DIST * OJO_LEASH_DIST) continue;
-                if (line_is_walkable(wx, wy, cx, cy) && los_has_line_of_sight(cx, cy, px, py, 0)) {
-                    e->aim_px = cx;
-                    e->aim_py = cy;
+        const int leash = OJO_LEASH_DIST + ojo_leash_q(e) * OJO_LEASH_Q_PX;
+        const int maxy = hy + OJO_LEASH_DOWN_PX + ojo_leash_q(e) * (OJO_LEASH_Q_PX / 2);
+        const int colpx = leash / OJO_SEARCH_COLS > OJO_SEARCH_COL_PX ? leash / OJO_SEARCH_COLS : OJO_SEARCH_COL_PX;
+        const int rowpx = leash / (2 * OJO_SEARCH_ROWS) > OJO_SEARCH_ROW_PX ? leash / (2 * OJO_SEARCH_ROWS) : OJO_SEARCH_ROW_PX;
+        int fx = px + ((s_hero_vx * OJO_PURSUE_LOOKAHEAD) >> 8);        // where the hero will be (limited to a short stride)
+        int fy = py + ((s_hero_vy * OJO_PURSUE_LOOKAHEAD) >> 8);
+        if (fx > px + 48) fx = px + 48; else if (fx < px - 48) fx = px - 48;
+        if (fy > py + 32) fy = py + 32; else if (fy < py - 32) fy = py - 32;
+        const int moving = fx != px || fy != py;
+        int best_both = 0x7fffffff, best_now = 0x7fffffff;
+        int bx = 0, by = 0, nx = 0, ny = 0, ring_now = 0;
+        for (int ring = 1; ring <= OJO_SEARCH_COLS && best_both == 0x7fffffff; ring++) {
+            if (best_now != 0x7fffffff && ring > ring_now + 2) break;     // a point that sees him now is good enough if no better one is near
+            const int rmax = ring < OJO_SEARCH_ROWS ? ring : OJO_SEARCH_ROWS;
+            for (int ry = -rmax; ry <= rmax; ry++) {
+                const int cy = wy + ry * rowpx;
+                if (cy > maxy) continue;
+                const int ay = ry < 0 ? -ry : ry;
+                for (int rx = -ring; rx <= ring; rx++) {
+                    const int ax = rx < 0 ? -rx : rx;
+                    if (ax != ring && ay != ring) continue;          // only the cells of this ring
+                    const int cx = wx + rx * colpx;
+                    const int lx = cx - hx;
+                    const int ly = cy - hy;
+                    if (lx * lx + GROUND_DY2(ly) > leash * leash) continue;
+                    const int ddx = cx - wx;
+                    const int d2 = ddx * ddx + GROUND_DY2(cy - wy);
+                    if (d2 >= best_both && d2 >= best_now) continue;
+                    if (!line_is_walkable(wx, wy, cx, cy) || !los_has_line_of_sight(cx, cy, px, py, 0)) continue;
+                    if (moving ? los_has_line_of_sight(cx, cy, fx, fy, 0) : 1) {
+                        if (d2 < best_both) { best_both = d2; bx = cx; by = cy; }
+                    } else if (d2 < best_now) {
+                        if (best_now == 0x7fffffff) ring_now = ring;
+                        best_now = d2; nx = cx; ny = cy;
+                    }
                 }
             }
         }
+        if (best_both != 0x7fffffff) { e->aim_px = bx; e->aim_py = by; }
+        else if (best_now != 0x7fffffff) { e->aim_px = nx; e->aim_py = ny; }
     }
     if (e->aim_px == 0) {                                    // no opening inside the leash: it stays put
         e->dir = dir_from_vector(player_x - e->x, player_y - e->y);
@@ -716,12 +798,32 @@ static void ojo_reposition(Enemy *e, Enemy *enemies, int num_enemies, int idx, i
     fixed speed = burn_slow(e, (tuning->speed * OJO_REPOSITION_SPEED_PCT) / 100);
     fixed vx = (fixed)div32(tdx * (int32_t)speed, tdist);
     fixed vy = (fixed)div32(tdy * (int32_t)speed, tdist);
+    s_sep_skip_guard = 1;
     apply_separation(enemies, num_enemies, idx, &vx, &vy);
+    s_sep_skip_guard = 0;
     int moved = move_with_slide(&e->x, &e->y, vx, vy);
     if (!moved) e->aim_px = 0;
     e->dir = dir_from_vector(TO_FIXED(tdx), TO_FIXED(tdy));
     update_animation(e, moved);
 }
+
+#if OJO_PURSUE_IN_COOLDOWN
+// Between shots the Ojo also keeps the hero in view: every OJO_PURSUE_TICKS it checks the line to him now and to where he will be, and
+// walks (ojo_reposition) while either is missing. The verdict is kept in has_los bit 32 between checks.
+#define VIEW_PURSUE 32
+static int ojo_wants_to_move(Enemy *e, int idx, int wx, int wy, int px, int py) {
+    if (((s_ai_tick + idx) & (OJO_PURSUE_TICKS - 1)) == 0) {
+        int fx = px + ((s_hero_vx * OJO_PURSUE_LOOKAHEAD) >> 8);
+        int fy = py + ((s_hero_vy * OJO_PURSUE_LOOKAHEAD) >> 8);
+        if (fx > px + 48) fx = px + 48; else if (fx < px - 48) fx = px - 48;
+        if (fy > py + 32) fy = py + 32; else if (fy < py - 32) fy = py - 32;
+        int need = !los_has_line_of_sight(wx, wy, px, py, 0);
+        if (!need && (fx != px || fy != py)) need = !los_has_line_of_sight(wx, wy, fx, fy, 0);
+        if (need) e->has_los |= VIEW_PURSUE; else { e->has_los &= ~VIEW_PURSUE; e->aim_px = 0; }
+    }
+    return (e->has_los & VIEW_PURSUE) != 0;
+}
+#endif
 
 static void update_shooter(Enemy *e, Enemy *enemies, int num_enemies, int idx,
                            fixed player_x, fixed player_y) {
@@ -744,6 +846,18 @@ static void update_shooter(Enemy *e, Enemy *enemies, int num_enemies, int idx,
 
     switch (e->state) {
         case ENEMY_STATE_TRACK: {
+            if (ojo_hero_covered(e, player_x, player_y)) {
+                // Hero behind low cover: no beam against a bench. The cycle waits at its start (eyes on him); when he is exposed the
+                // whole TRACK -> LOCK -> SENTENCE runs with its normal times. Covering again mid-cycle sends it back here.
+                if (ground_dist <= OJO_SIGHT_RANGE + OJO_RANGE_MARGIN && los_has_line_of_sight(wx, wy, px, py, 0)) {
+                    e->aim_px = px;
+                    e->aim_py = py;
+                    e->dir = dir_from_vector(player_x - e->x, player_y - e->y);
+                }
+                ojo_look_anim(e);
+                e->state_timer = OJO_TRACK_FRAMES;
+                break;
+            }
             // Stands still facing the hero; the band follows him while it has a clear line within range,
             // otherwise it keeps its last point (a column or wall cuts the gaze, not the clock).
             if (ground_dist <= OJO_SIGHT_RANGE + OJO_RANGE_MARGIN && los_has_line_of_sight(wx, wy, px, py, 0)) {
@@ -760,6 +874,12 @@ static void update_shooter(Enemy *e, Enemy *enemies, int num_enemies, int idx,
         }
 
         case ENEMY_STATE_LOCK: {
+            if (ojo_hero_covered(e, player_x, player_y)) {      // covered again mid-cycle: back to the start of the aim
+                e->state = ENEMY_STATE_TRACK;
+                e->state_timer = OJO_TRACK_FRAMES;
+                ojo_look_anim(e);
+                break;
+            }
             // Direction and point frozen: the dodge window.
             ojo_look_anim(e);
             if (--e->state_timer <= 0) {
@@ -783,9 +903,18 @@ static void update_shooter(Enemy *e, Enemy *enemies, int num_enemies, int idx,
         }
 
         case ENEMY_STATE_COOLDOWN: {
-            update_animation(e, 0);
             ojo_gesture_tick(e);
-            if (--e->state_timer <= 0) e->state = ENEMY_STATE_CHASE;
+#if OJO_PURSUE_IN_COOLDOWN
+            if ((e->home_flags & ENEMY_HOME_SET) && e->gesture == 0 && ojo_wants_to_move(e, idx, wx, wy, px, py)) {
+                ojo_reposition(e, enemies, num_enemies, idx, wx, wy, px, py, player_x, player_y, tuning);
+            } else {
+                e->aim_px = 0;
+                update_animation(e, 0);
+            }
+#else
+            update_animation(e, 0);
+#endif
+            if (--e->state_timer <= 0) { e->state = ENEMY_STATE_CHASE; e->aim_px = 0; }
             break;
         }
 
@@ -803,6 +932,7 @@ static void update_shooter(Enemy *e, Enemy *enemies, int num_enemies, int idx,
             // Horde: far above the player in the strip it keeps walking instead of aiming (the horde keeps them near).
             int may_look = homed || !(s_strip_mode && wy < py - HORDE_SHOOTER_TOP_LIMIT_PX);
             if (sight && may_look && ojos_looking(enemies, num_enemies) < OJO_MAX_LOOKING) {
+                if (homed) ojo_leash_settle(e);
                 e->state = ENEMY_STATE_TRACK;
                 e->state_timer = OJO_TRACK_FRAMES;
                 e->frame = 0;
@@ -812,6 +942,7 @@ static void update_shooter(Enemy *e, Enemy *enemies, int num_enemies, int idx,
                 e->dir = dir_from_vector(player_x - e->x, player_y - e->y);
             } else if (homed) {
                 if (sight) {                                // no free aiming slot: it waits at its post, watching
+                    ojo_leash_settle(e);
                     e->state = ENEMY_STATE_POSITION;
                     e->state_timer = 0;
                     e->aim_px = 0;
@@ -1088,6 +1219,7 @@ ITCM_CODE void enemy_ai_update(Enemy *enemies, int num_enemies, fixed player_x, 
     if (!enemies || num_enemies <= 0) return;
 
     s_ai_tick++;
+    hero_velocity_update(TO_INT(player_x), TO_INT(player_y));
     enemy_puddles_update();
     if (!s_sep_ready) sep_init_table();
     sep_build_grid(enemies, num_enemies);
