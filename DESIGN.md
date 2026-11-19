@@ -683,6 +683,16 @@ El Códice deja de ser solo lore: cada ficha de **enemigo** enseña también có
 - **El Monaguillo** no tiene ficha propia hasta que exista su lore (`LORE.md`); mientras tanto sus datos van en la del Abanderado.
 - **Texto fijo, no generado en ejecución:** los datos de cada ficha se escriben a mano en `source/bestiary.c`; si cambia una IA o una vida, se revisa la ficha en la misma entrega.
 
+#### 6.11.2 Tipografía del juego (decidido 2026-11-19, rama `feat/tipografia`)
+Todo el texto que se lee usa **una sola fuente: Palatino de 11 px, dibujada con el trazado nítido (hinting) de la propia fuente**, con tildes y `ñ`. Sustituye a Georgia 11 recortada por umbral (trazos finos rotos, letras pegadas) y a la fuente de 5×7 solo en mayúsculas del menú y del HUD.
+- **Dónde:** fichas del Códice, tarjetas de introducción, pantallas del jefe, título, pausa, controles, subida de nivel (nombres y efecto) y HUD de partida (`Enc. 1 de 14`, `Altura 0 m`, `Tiempo 0:00`, avisos). Los nombres de los pedestales antiguos (`modifiers.c`) también llevan tilde.
+- **Mayúsculas:** las etiquetas pasan a minúscula inicial (`Nueva partida`, `Códice`, `Continuar`). Siguen en mayúsculas las etiquetas de datos del Códice (`VIDA`, `VELOC.`, `AMENAZA`, `HACE:`, `TRUCO:`) y el nombre grande del jefe.
+- **Elegida entre** la actual, Palatino nítida (misma altura y hueco que hoy) y Georgia nítida (más ancha: desborda las fichas con datos y haría falta recortar textos). Descartadas: Georgia a 12, Georgia negrita (demasiado pesada) y Book Antiqua, Sitka, Constantia y Book Old Style (peor trazo). Detalle y rondas en `walkthroughs/tipografia/`.
+- **Fila de escalas del Códice:** marcas de 3 px con paso 5 y hueco de 5 entre bloques (antes 4, 6 y 7) para que `VIDA`, `VELOC.` y `AMENAZA` quepan en el marco con la fuente nueva.
+- **Fuera de alcance:** el contador de FPS y los datos de rendimiento (depuración) siguen en la fuente de 5×7.
+- **Aceptado con matices (visto en el walkthrough):** el HUD de partida sale más fino que el 5×7 y se lee con menos fuerza sobre el suelo con textura; los botones inactivos y la fila de datos del Códice quedan algo tenues. Se pule más adelante si molesta en la DS; no se midió rendimiento (decisión del usuario: no hace falta).
+- **Menú de título:** la ROM jugable vuelve a abrir en él (§6.3). Solo las variantes de pruebas (`SKIP_TITLE`) arrancan directas.
+
 ### 6.12 Sistema de mejoras del Corazón Abierto (decidido 2026-11-15)
 Sesión de diseño de la v0.4 (§6.9.2). Sustituye la regla de §6.6 «mitad del arma, mitad del personaje» y la elección de clase: la demo tiene un solo personaje. Las cifras están en `[TUNABLE-PLACEHOLDER]` hasta la sesión de números.
 
