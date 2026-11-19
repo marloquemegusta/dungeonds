@@ -131,16 +131,25 @@ Estilo: A
 > [cerca · S] Inés: «Le di pan sin saber quién era. Se lo volvería a dar sabiéndolo.»
 
 ## 07 · CÓDICE · V — LOPE
-### Parte 1 · abanderado_walk · cortes
+Estilo: A
+### Parte 1 · abanderado_solo · cortes · lento 1.5
 - [cerca · S] Íñigo Albar calló. Y el hombre al que amaba ardió en la plaza.
-- [SE] El capitán había jurado que el estandarte jamás tocaría el suelo.
-- [E] Lo sostenía a su lado su alférez, Lope de Ayala.
-- [N] Cuando el Tribunal vino a por Lope, Íñigo bajó la mirada. Calló para conservar el mando.
-### Parte 2 · abanderado_walk · cortes
-- [SW] Desde entonces cose a la tela las mortajas de sus caídos, para que nadie se quede atrás.
+- [SE · altar lejos · medio] Era capitán de la Columna y había jurado que su estandarte jamás tocaría el suelo.
+- [E · vela der] Lo sostenía su alférez, Lope.
+### Parte 2 · ojo_look · cortes
+- [cerca · S] Cuando el Tribunal fue a por él, Íñigo pudo plantarle cara: «Yo también le amo. Atreveos a tocar al capitán».
+### Parte 3 · abanderado_solo · cortes · lento 1.5
+- [cerca · S] Era un pulso contra la Iglesia. Bajó la mirada. Calló para conservar el mando.
+### Parte 4 · abanderado_derrota · cortes · una vez
+- [cerca · entero · S] Lope ardió, y el estandarte cayó con él. Íñigo lo alzó y juró que nunca más caería, ni nadie se quedaría atrás.
+### Parte 5 · abanderado_solo + monaguillo_walk · cortes · lento 1.5
+- [N · multitud 9 · solemne] Condujo a la Columna a la Catedral, al servicio de quien lo quemó.
+### Parte 6 · abanderado_solo · cortes · lento 1.5
+- [SW] Hoy cose a la tela la mortaja de cada caído.
 - [cerca · S] La de Lope la lleva junto al asta, justo donde aprieta la mano.
-- [S] La de Martín Arce está vacía.
-> [cerca · S] Íñigo: «Mi silencio pesa más que el estandarte.»
+- [S · vela apagada delante] Solo una va vacía: la de Martín Arce, que murió cubriendo la huida de otro.
+> [cerca · S] Íñigo: «Mi silencio (pausa 0.5) pesa más que el estandarte.»
+> Pregunta: «¿Habrías plantado tú cara al Tribunal?»
 
 ## 08 · CÓDICE — LA CATEDRAL QUE NO TERMINA
 Estilo: A

@@ -6884,6 +6884,7 @@ function applyInPlaceMotion(clips, enabled, model) {
   }
 
   function generateCShadowAnchorHeader(name, anchorData, shadowBounds, shadowMasks) {
+    if (window.__spriteLab && window.__spriteLab.skipCHeader) return '// omitido';
     const cleanName = name.replace(/[^a-zA-Z0-9_]/g, '_');
     const guard = `${cleanName.toUpperCase()}_NDS_SHADOW_ANCHOR_H`;
     const size = parseInt(_p.resolution?.value, 10) || 40;

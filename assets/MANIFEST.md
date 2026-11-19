@@ -47,6 +47,7 @@ Esta tabla es la única fuente de verdad de qué modelo y qué animación produc
 | `CHAR_EXVOTO_STAND_UP` | `exvoto_stand_up` (40) | el mismo | `pray/pray_kneel_to_stand.fbx` | `build_exvoto.py` |
 | `CHAR_ABANDERADO`: andar | `abanderado` (60) | cuerpo `abanderado/source/…6e3a96b5`, estandarte `source/estandarte/…989b9291` | `walk/sad_walk.fbx` | `build_abanderado.py` |
 | `CHAR_ABANDERADO`: señalar | `abanderado_point` (60) | el mismo | pose generada en el script | `build_abanderado.py` |
+| Vídeo de lore 07 (Lope): `abanderado_derrota` (sprite 320, `assets/sprites/bestiary/abanderado_derrota/`) | el mismo cuerpo y estandarte | `animations/derrota/plant_a_plant.fbx` (Mixamo «Plant A Plant», espejado; golpes procedurales) | `build_abanderado_derrota.py` |
 | `CHAR_MONAGUILLO` | `monaguillo` (40) | `monaguillo/source/…9a55a12b` | `monaguillo/walk_pray.fbx` (andar rezando, extraído del esqueleto retirado) | `build_monaguillo.py` |
 | Retratos del bestiario (rezo) | no aplica (160 px) | Corazón y Exvoto | `pray/*` | `build_corazon_pray.py`, `build_exvoto_pray.py` |
 | Campanero | sin integrar | campana `campanero/source/campana/…af5a0caa`, cuerpo `campanero/source/…0865ecc9` | — | sin script (solo en `LORE.md`) |

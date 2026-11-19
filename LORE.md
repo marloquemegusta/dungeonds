@@ -94,7 +94,7 @@ Se arrancaron los ojos porque la mirada humana era propensa al perdón, y alzaro
 *Ficha oficial:* «La linterna no ve culpables. Los fabrica.»
 
 ### El Abanderado — capitán Íñigo Albar (`CÓDICE · V`)
-Juró ante el altar que el estandarte de la Columna jamás tocaría el suelo. Amaba a su alférez, Lope de Ayala. Cuando el Tribunal vino a por Lope, años antes de la Marcha, Íñigo calló para conservar el mando, y Lope ardió en la plaza de Valdenoche. Desde la Quiebra cose a la tela las mortajas de sus caídos para que nadie se quede atrás, y recoge a los monaguillos que nadie quiso. La mortaja de Lope la lleva junto al asta, donde aprieta la mano. La de Martín está vacía.
+Juró ante el altar que el estandarte de la Columna jamás tocaría el suelo. Amaba a su alférez, Lope de Ayala. Cuando el Tribunal vino a por Lope, años antes de la Marcha, Íñigo, capitán con peso suficiente para exigir una excepción o plantar cara al Tribunal declarando que amaba a Lope, no se atrevió y calló para conservar el mando. Lope ardió en la plaza de Valdenoche; ese día el estandarte tocó el suelo por única vez, y Íñigo juró que no volvería a caer. Desde la Quiebra cose a la tela las mortajas de sus caídos para que nadie se quede atrás, y recoge a los monaguillos que nadie quiso. La mortaja de Lope la lleva junto al asta, donde aprieta la mano. La de Martín está vacía.
 *Ficha oficial:* «Mientras el asta siga en pie, nadie se retira.»
 
 ### Enlaces entre historias
