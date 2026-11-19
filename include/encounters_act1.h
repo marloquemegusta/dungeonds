@@ -69,8 +69,11 @@ int enc_collision_value(uint8_t rect_kind);
 
 // Once per simulated frame, after the strip rebase. px, py: hero ground point in window px.
 void enc_update(Enemy *enemies, int max_enemies, int px, int py);
-// Ground painter: obstacles, barriers and the relicario marker (under the actors, over the floor).
+// Ground painter: obstacles and barriers (under the actors, over the floor).
 void enc_draw_ground(uint16_t *buffer, int cam_x, int cam_y);
+// Depth-sorted dynamic props (boss golden relicario, final Altar): returns 1 if visible on screen.
+int enc_dynamic_relic_item(int cam_x, int cam_y, int *out_depth);
+void enc_dynamic_relic_draw(uint16_t *buffer, int cam_x, int cam_y, int depth);
 // Hardware OBJ sprites for the rastrillo gates (called per screen during render_screen).
 void enc_verja_draw(int sub, int cam_x, int cam_y);
 // The sniper ray asks for the relicario target in front of the hero: ground point in window px.

@@ -258,7 +258,6 @@ void boss_tick(int dt, uint32_t keys_down) {
             if (s_hooks.set_barriers) s_hooks.set_barriers(0);
             sfx_set_bgm_track(0);
             sfx_start_bgm();
-            if (!g_enc_debug.no_dones) upgrades_queue_relic();      // the Reliquia screen (golden frame, 6.13.5)
         }
         break;
     }

@@ -193,6 +193,7 @@ static DeathChunk s_death_chunks[MAX_DEATH_CHUNKS];
 static uint32_t s_death_chunk_seed;
 
 #define REMATE_REMNANT_REF (-0x40000000)   // DrawItem ref of the wax halves a remate leaves (remate.h)
+#define ENC_RELIC_SPRITE_REF (-0x40000001) // DrawItem ref of the boss golden relicario or final Altar
 
 typedef struct {
     int depth;     // ground world Y in pixels
@@ -1372,6 +1373,14 @@ ITCM_CODE static void render_screen(uint16_t *buffer, DirtySpan *spans, int cam_
                 items[count].depth = d; items[count].ref = pk_base - 1 - GEM_MAX_ACTIVE - i; items[count].cx = 0; items[count].cy = d; count++;
             }
     }
+#if ENCOUNTERS_PROTO
+    if (s_run_started && s_strip_mode) {
+        int d;
+        if (enc_dynamic_relic_item(cam_x, cam_y, &d)) {
+            items[count].depth = d; items[count].ref = ENC_RELIC_SPRITE_REF; items[count].cx = 0; items[count].cy = d; count++;
+        }
+    }
+#endif
 
     // The static FBX bake is now a hardware BG; keep this bitmap layer transparent
     // (0x0000 = transparent in 16-bit direct bitmap mode) and render only dynamic
@@ -1458,6 +1467,10 @@ ITCM_CODE static void render_screen(uint16_t *buffer, DirtySpan *spans, int cam_
             draw_player(buffer, cam_x, cam_y);
         } else if (sp == REMATE_REMNANT_REF) {
             draw_remate_remnant(buffer, cam_x, cam_y);
+#if ENCOUNTERS_PROTO
+        } else if (sp == ENC_RELIC_SPRITE_REF) {
+            enc_dynamic_relic_draw(buffer, cam_x, cam_y, s_draw_item_depth);
+#endif
         } else if (sp <= pk_base - 1 - GEM_MAX_ACTIVE) {
             pickups_draw(buffer, pk_base - 1 - GEM_MAX_ACTIVE - sp, cam_x, cam_y);
         } else if (sp <= pk_base - 1) {
@@ -1786,14 +1799,14 @@ static void draw_run_hud(uint16_t *buffer) {
 
         // Level and xp, top left (DESIGN.md 6.12.8). A: "NV n" + bar. B: a candle. C: rosary beads + roman numeral.
 #if ENCOUNTERS_PROTO
-        {   // Via Crucis (DESIGN.md 6.13): 14 stations, bosses at 5, 10 and 14.
+        {   // 15 stages (3 acts x 5 stages), bosses at 5, 10 and 15.
             if (!boss_hud_active() && !boss_frozen()) {      // while the boss mode runs, its life bar takes this corner
                 int enc = enc_current_encounter();
-                if (enc == 5 || enc == 10 || enc == 14) snprintf(line, sizeof(line), "Jefe %d de 14", enc);
-                else snprintf(line, sizeof(line), "Enc. %d de 14", enc);
+                if (enc == 5 || enc == 10 || enc == 15) snprintf(line, sizeof(line), "Jefe %d de 15", enc);
+                else snprintf(line, sizeof(line), "Enc. %d de 15", enc);
                 hud_text(buffer, 6, 6, line, RGB15(27, 20, 11) | BIT(15));
                 if (enc_victory()) {
-                    snprintf(line, sizeof(line), "Victoria");
+                    snprintf(line, sizeof(line), "Fin de la demo");
                     hud_text(buffer, (SCREEN_W - hud_text_width(line)) / 2, 84, line, RGB15(27, 20, 11) | BIT(15));
                 }
             }

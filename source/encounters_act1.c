@@ -18,6 +18,7 @@ typedef int encounters_act1_translation_unit_not_empty;
 #include "strip_kit.h"
 #include "upgrades.h"
 #include "player_sprite.h"
+#include "enc_relic_gfx.h"
 
 #include "encounters_act1_tables.h"
 #include "encounters_act1_hp.h"
@@ -36,13 +37,14 @@ volatile EncStats g_enc_stats;
 // Act plan: which plant, tier and mirror each encounter has. Pure function of the seed.
 // ---------------------------------------------------------------------------
 
-#define ENC_STAGES 14                       // Via Crucis: 14 stations (DESIGN.md 6.13)
-#define ENC_FIRST_BOSS 4                    // station V (stage 5, 0-based index 4)
-#define ENC_BOSS (ENC_STAGES - 1)           // final boss station (XIV, stage 14)
+#define ENC_STAGES 15                       // 3 acts x 5 stages (4 encounters + 1 boss each)
+#define ENC_FIRST_BOSS 4                    // stage 5 (0-based index 4)
+#define ENC_BOSS (ENC_STAGES - 1)           // final boss stage (stage 15, 0-based index 14)
 #define ENC_FIRST_BLOCK 3                   // block of the first encounter; blocks above 3 are the cleared start
 #define ENC_BOSS_HP_MARK 1
 
-static int is_boss_stage(int k) { return k == 4 || k == 9 || k == 13; }
+static int is_boss_stage(int k) { return k == 4 || k == 9 || k == 14; }
+static int boss_slot_of_stage(int k) { return k == 4 ? 0 : k == 9 ? 1 : k == 14 ? 2 : -1; }
 static int enc_idx_of_stage(int k) {
     if (k < 4) return k;
     if (k < 9) return k - 1;
@@ -60,9 +62,13 @@ typedef struct {
     uint8_t spawned, awake, cleared, wave2_done, barrier_open, back_closed, verja_opening, verja_lift, back_lift;
 } EncRuntime;
 static EncRuntime s_rt[ENC_STAGES];
+enum { RELIC_KIND_NONE = 0, RELIC_KIND_CORRIDOR, RELIC_KIND_BOSS_GOLD, RELIC_KIND_ALTAR };
 static uint8_t s_relic_broken[ENC_STAGES];
 static int16_t s_relic_damage[ENC_STAGES];
-static int s_relic_k = -1;                  // corridor of the relicario target in front of the hero, -1 none
+static uint8_t s_boss_relic_broken[3];
+static int16_t s_boss_relic_damage[3];
+static uint8_t s_relic_kind;                // RELIC_KIND_* of the target in front of the hero
+static int s_relic_k = -1;                  // stage/corridor index of the target, -1 none
 static int s_relic_x, s_relic_y;
 static int s_relicarios;
 static int s_victory;
@@ -173,6 +179,9 @@ void enc_init(uint32_t seed) {
     }
     memset(s_relic_broken, 0, sizeof(s_relic_broken));
     memset(s_relic_damage, 0, sizeof(s_relic_damage));
+    memset(s_boss_relic_broken, 0, sizeof(s_boss_relic_broken));
+    memset(s_boss_relic_damage, 0, sizeof(s_boss_relic_damage));
+    s_relic_kind = RELIC_KIND_NONE;
     s_relic_k = -1;
     s_relicarios = 0;
     g_enc_debug.start_dones = 0;       // a new act never inherits a "apply Dones now" debug request
@@ -216,7 +225,7 @@ void enc_block_info(int32_t block, EncBlock *out) {
     if (k < 0) return;
     if (k & 1) {
         int idx = (int)((k - 1) >> 1);
-        if (idx < ENC_STAGES - 1) {
+        if (idx < ENC_STAGES) {
             out->kind = ENC_BLOCK_CORRIDOR;
             out->idx = (uint8_t)idx;
             out->mirror = (uint8_t)(idx & 1);
@@ -255,6 +264,7 @@ int enc_block_pieces(int32_t block, EncPiecePlan *out, int max) {
     int m = 0;
     for (int i = 0; i < n; i++) {
         uint8_t piece = defs[i].piece;
+        if (b.kind == ENC_BLOCK_CORRIDOR && b.idx == ENC_BOSS && piece == STRIP_PIECE_RELICARIO) continue;
         // One bench group in four is the variant with the broken bench, picked by (block, piece index). Only the
         // groups on tile row 0 of the kit phases have it baked (tile budget; tools/bake_cathedral_kit.py).
         if (piece == STRIP_PIECE_BANCO_GRUPO4 && ((((defs[i].y + 4) >> 3) & 15) == 0) &&
@@ -435,8 +445,7 @@ static void boss_set_barriers(int closed) {
     } else {
         s_rt[k].back_closed = 0;
         strip_collision_fill_win(ENC_FLOOR_X, top + ENC_BLOCK_H - ENC_BARRIER_H, ENC_FLOOR_W, ENC_BARRIER_H, 0);
-        if (k < ENC_STAGES - 1) s_rt[k].verja_opening = 1;
-        else s_rt[k].barrier_open = 1;
+        s_rt[k].verja_opening = 1;
     }
     nav_refresh_begin(s_hero_px, s_hero_py);      // the walkable grid knew the barrier as a wall (or not)
 }
@@ -464,13 +473,35 @@ static void apply_debug(void) {
     }
 }
 
+static int boss_relic_pos(int k, int *x, int *y) {
+    int slot = boss_slot_of_stage(k);
+    if (slot < 0 || !s_rt[k].cleared || s_boss_relic_broken[slot]) return 0;
+    if (k == s_active_boss_k && boss_state() == BOSS_VICTORY) return 0;
+    int top = window_top(block_of_encounter(k));
+    if (top < 0) return 0;
+    *x = ENC_FLOOR_X + ENC_FLOOR_W / 2;
+    *y = top + ENC_BLOCK_H / 2 - 20;
+    return 1;
+}
+
+static int altar_pos(int *x, int *y) {
+    if (!s_rt[ENC_BOSS].cleared || s_relic_broken[ENC_BOSS]) return 0;
+    if (s_active_boss_k == ENC_BOSS && boss_state() == BOSS_VICTORY) return 0;
+    int top = window_top(block_of_corridor(ENC_BOSS));
+    if (top < 0) return 0;
+    *x = ENC_FLOOR_X + ENC_FLOOR_W / 2;
+    *y = top + 200;
+    return 1;
+}
+
 static void update_relic_target(int py) {
+    s_relic_kind = RELIC_KIND_NONE;
     s_relic_k = -1;
     int best = 0x7fffffff;
     for (int k = 0; k < ENC_STAGES - 1; k++) {
         if (s_relic_broken[k]) continue;
         int top = window_top(block_of_corridor(k));
-        if (top > py + 400 || top + ENC_BLOCK_H < py - 400) continue;
+        if (top < 0 || top > py + 400 || top + ENC_BLOCK_H < py - 400) continue;
         StripDevout d[4];
         int n = strip_devout_in_band(top, top + ENC_BLOCK_H - 1, d, 4);
         for (int i = 0; i < n; i++) {
@@ -479,10 +510,37 @@ static void update_relic_target(int py) {
             if (dy < 0) dy = -dy;
             if (dy < best) {
                 best = dy;
+                s_relic_kind = RELIC_KIND_CORRIDOR;
                 s_relic_k = k;
                 s_relic_x = d[i].x;
                 s_relic_y = d[i].y;
             }
+        }
+    }
+    static const int boss_k[3] = { 4, 9, 14 };
+    for (int b = 0; b < 3; b++) {
+        int rx, ry;
+        if (!boss_relic_pos(boss_k[b], &rx, &ry)) continue;
+        int dy = ry - py;
+        if (dy < 0) dy = -dy;
+        if (dy < 400 && dy < best) {
+            best = dy;
+            s_relic_kind = RELIC_KIND_BOSS_GOLD;
+            s_relic_k = boss_k[b];
+            s_relic_x = rx;
+            s_relic_y = ry;
+        }
+    }
+    int ax, ay;
+    if (altar_pos(&ax, &ay)) {
+        int dy = ay - py;
+        if (dy < 0) dy = -dy;
+        if (dy < 400 && dy < best) {
+            best = dy;
+            s_relic_kind = RELIC_KIND_ALTAR;
+            s_relic_k = ENC_BOSS;
+            s_relic_x = ax;
+            s_relic_y = ay;
         }
     }
 }
@@ -601,21 +659,17 @@ void enc_update(Enemy *enemies, int max_enemies, int px, int py) {
                 }
                 st->cleared = (uint8_t)(k + 1);
                 rt->verja_opening = 1;
-            } else if (k < ENC_BOSS) {
-                st->cleared = (uint8_t)(k + 1);
-                boss_victory();
             } else {
-                s_victory = 1;
+                st->cleared = (uint8_t)(k + 1);
+                if (k == ENC_BOSS) st->boss_frames = st->wake_frames;
                 boss_victory();
-                st->boss_frames = st->wake_frames;
-                st->state = ENC_STATE_VICTORY;
             }
         }
     }
 
     // Stats for the scenarios.
     for (int k = 0; k < ENC_STAGES; k++) {
-        if (k < ENC_STAGES - 1 && s_rt[k].verja_opening && !s_rt[k].barrier_open) {
+        if (s_rt[k].verja_opening && !s_rt[k].barrier_open) {
             if (s_rt[k].verja_lift < ENC_VERJA_H) s_rt[k].verja_lift++;
             if (s_rt[k].verja_lift >= ENC_VERJA_H) {
                 s_rt[k].verja_opening = 0;
@@ -684,22 +738,48 @@ int enc_relic_target(int *x, int *y) {
 
 void enc_relic_hit(int damage) {
     int k = s_relic_k;
-    if (k < 0 || s_relic_broken[k]) return;
+    if (k < 0 || s_relic_kind == RELIC_KIND_NONE) return;
+    if (s_relic_kind == RELIC_KIND_BOSS_GOLD) {
+        int slot = boss_slot_of_stage(k);
+        if (slot < 0 || s_boss_relic_broken[slot]) return;
+        int total = s_boss_relic_damage[slot] + damage;
+        s_boss_relic_damage[slot] = (int16_t)(total > 30000 ? 30000 : total);
+        if (total < ENC_RELIC_HP) return;
+        s_boss_relic_broken[slot] = 1;
+        s_relicarios++;
+        g_enc_stats.relicarios = (uint16_t)s_relicarios;
+        s_fx_timer = 24;
+        s_fx_x = s_relic_x;
+        s_fx_y = s_relic_y;
+        if (!g_enc_debug.no_dones) {
+            g_enc_stats.dones++;
+            upgrades_queue_relic();
+        }
+        s_relic_kind = RELIC_KIND_NONE;
+        s_relic_k = -1;
+        return;
+    }
+    if (k >= ENC_STAGES || s_relic_broken[k]) return;
     int total = s_relic_damage[k] + damage;
     s_relic_damage[k] = (int16_t)(total > 30000 ? 30000 : total);
     if (total < ENC_RELIC_HP) return;
     s_relic_broken[k] = 1;
-    s_relicarios++;
-    g_enc_stats.relicarios = (uint16_t)s_relicarios;
-    g_enc_stats.relic_mask |= (uint16_t)(1u << k);
     s_fx_timer = 24;
     s_fx_x = s_relic_x;
     s_fx_y = s_relic_y;
-    if (!g_enc_debug.no_dones) {                                // no_dones: scenarios measuring the base hero
-        g_enc_stats.dones++;
-        if (k == ENC_GOLDEN_AFTER - 1) upgrades_queue_relic();  // the golden relicario: a Reliquia, not a Don
-        else upgrades_queue_levelup();
+    if (s_relic_kind == RELIC_KIND_ALTAR) {
+        s_victory = 1;
+        g_enc_stats.state = ENC_STATE_VICTORY;
+    } else {
+        s_relicarios++;
+        g_enc_stats.relicarios = (uint16_t)s_relicarios;
+        g_enc_stats.relic_mask |= (uint16_t)(1u << k);
+        if (!g_enc_debug.no_dones) {
+            g_enc_stats.dones++;
+            upgrades_queue_levelup();
+        }
     }
+    s_relic_kind = RELIC_KIND_NONE;
     s_relic_k = -1;
 }
 
@@ -854,17 +934,71 @@ void enc_draw_ground(uint16_t *buffer, int cam_x, int cam_y) {
         }
     }
     GroundTarget g = { buffer, cam_x, cam_y };
-    if (s_relic_k == ENC_GOLDEN_AFTER - 1 && !s_relic_broken[s_relic_k])
-        gfx_ground_ring(&g, s_relic_x, s_relic_y, 18, COL_GOLD & ~BIT(15), 4);
     if (s_fx_timer > 0)
         gfx_ground_ring(&g, s_fx_x, s_fx_y, 26 - s_fx_timer, RGB15(20, 17, 12), 0);
+}
+
+static int dynamic_relic_active(int *out_x, int *out_y, int *out_is_altar) {
+    static const int boss_k[3] = { 4, 9, 14 };
+    for (int b = 0; b < 3; b++) {
+        int rx, ry;
+        if (boss_relic_pos(boss_k[b], &rx, &ry)) {
+            *out_x = rx; *out_y = ry; *out_is_altar = 0;
+            return 1;
+        }
+    }
+    int ax, ay;
+    if (altar_pos(&ax, &ay)) {
+        *out_x = ax; *out_y = ay; *out_is_altar = 1;
+        return 1;
+    }
+    return 0;
+}
+
+int enc_dynamic_relic_item(int cam_x, int cam_y, int *out_depth) {
+    int rx, ry, is_altar;
+    if (!dynamic_relic_active(&rx, &ry, &is_altar)) return 0;
+    int sx = rx - cam_x - ENC_RELIC_SPR_W / 2;
+    int sy = ry - cam_y - ENC_RELIC_SPR_H + 6;
+    if (sx + ENC_RELIC_SPR_W <= 0 || sx >= SCREEN_W || sy + ENC_RELIC_SPR_H <= 0 || sy >= SCREEN_H) return 0;
+    if (out_depth) *out_depth = ry;
+    return 1;
+}
+
+void enc_dynamic_relic_draw(uint16_t *buffer, int cam_x, int cam_y, int depth) {
+    int rx, ry, is_altar;
+    if (!dynamic_relic_active(&rx, &ry, &is_altar)) return;
+    const uint16_t *src = is_altar ? s_altar_px : s_golden_relic_px;
+    int wx0 = rx - ENC_RELIC_SPR_W / 2;
+    int wy0 = ry - ENC_RELIC_SPR_H + 6;
+    int sx0 = wx0 - cam_x;
+    int sy0 = wy0 - cam_y;
+    for (int j = 0; j < ENC_RELIC_SPR_H; j++) {
+        int sy = sy0 + j;
+        if (sy < 0 || sy >= SCREEN_H) continue;
+        int wy = wy0 + j;
+        uint16_t *row = buffer + sy * SCREEN_W;
+        const uint16_t *srow = src + j * ENC_RELIC_SPR_W;
+        int min_x = SCREEN_W, max_x = -1;
+        for (int i = 0; i < ENC_RELIC_SPR_W; i++) {
+            uint16_t c = srow[i];
+            if (!c) continue;
+            int sx = sx0 + i;
+            if (sx < 0 || sx >= SCREEN_W) continue;
+            if (world_pixel_hidden(wx0 + i, wy, depth)) continue;
+            row[sx] = c;
+            if (sx < min_x) min_x = sx;
+            if (sx > max_x) max_x = sx;
+        }
+        if (max_x >= min_x) dirty_row(sy, min_x, max_x + 1);
+    }
 }
 
 void enc_verja_draw(int sub, int cam_x, int cam_y) {
 #if HW_SHADOWS
     for (int k = 0; k < ENC_STAGES; k++) {
         const int block_top = window_top(block_of_encounter(k));
-        if (k < ENC_STAGES - 1 && s_rt[k].verja_lift < ENC_VERJA_H) {
+        if (s_rt[k].verja_lift < ENC_VERJA_H) {
             const int sy = block_top - ENC_VERJA_H - cam_y;
             if (sy + ENC_VERJA_H > 0 && sy < 192)
                 hwshadow_add_verja(sub, ENC_FLOOR_X - cam_x, sy, s_rt[k].verja_lift, 0);
