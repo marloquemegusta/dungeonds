@@ -9,7 +9,7 @@ int world_pixel_hidden(int x, int y, int depth);
 ModEffects g_mods;
 
 typedef struct {
-    const char *name;           // upper case ASCII: the HUD font has no accents
+    const char *name;           // UTF-8, accents allowed: the HUD font supports tildes and ñ
     uint16_t color;
 } ModInfo;
 
@@ -25,14 +25,14 @@ enum {
 };
 
 static const ModInfo s_info[MOD_COUNT] = {
-    [MOD_PIERCING_PELLETS] = { "PERFORANTES",      RGB15(31, 22, 4)  | BIT(15) },
-    [MOD_DOUBLE_CHAMBER]   = { "RECAMARA DOBLE",   RGB15(31, 12, 4)  | BIT(15) },
-    [MOD_LIGHT_TRIGGER]    = { "GATILLO LIGERO",   RGB15(6, 30, 31)  | BIT(15) },
-    [MOD_LONG_BARREL]      = { "CANON LARGO",      RGB15(8, 14, 31)  | BIT(15) },
-    [MOD_BLOODLUST]        = { "SED DE SANGRE",    RGB15(31, 4, 6)   | BIT(15) },
-    [MOD_BONE_PLATE]       = { "CORAZA OSEA",      RGB15(28, 28, 22) | BIT(15) },
-    [MOD_LIGHT_FEET]       = { "PIES LIGEROS",     RGB15(10, 31, 10) | BIT(15) },
-    [MOD_BRUTAL_KICK]      = { "RETROCESO BRUTAL", RGB15(26, 6, 30)  | BIT(15) },
+    [MOD_PIERCING_PELLETS] = { "Perforantes",      RGB15(31, 22, 4)  | BIT(15) },
+    [MOD_DOUBLE_CHAMBER]   = { "Recámara doble",   RGB15(31, 12, 4)  | BIT(15) },
+    [MOD_LIGHT_TRIGGER]    = { "Gatillo ligero",   RGB15(6, 30, 31)  | BIT(15) },
+    [MOD_LONG_BARREL]      = { "Cañón largo",      RGB15(8, 14, 31)  | BIT(15) },
+    [MOD_BLOODLUST]        = { "Sed de sangre",    RGB15(31, 4, 6)   | BIT(15) },
+    [MOD_BONE_PLATE]       = { "Coraza ósea",      RGB15(28, 28, 22) | BIT(15) },
+    [MOD_LIGHT_FEET]       = { "Pies ligeros",     RGB15(10, 31, 10) | BIT(15) },
+    [MOD_BRUTAL_KICK]      = { "Retroceso brutal", RGB15(26, 6, 30)  | BIT(15) },
 };
 
 typedef struct {

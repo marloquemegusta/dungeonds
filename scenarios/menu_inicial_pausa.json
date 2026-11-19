@@ -1,0 +1,100 @@
+{
+  "name": "menu_inicial_pausa",
+  "description": "Navegacion completa de menu inicial (Controles, Bestiario, Nueva partida) y pausa ingame con Start/Continuar.",
+  "steps": [
+    {
+      "frames": 60,
+      "capture": "00_menu_inicial"
+    },
+    {
+      "tap": { "x": 128, "y": 124 },
+      "frames": 6,
+      "capture": "01_controles"
+    },
+    {
+      "release": true,
+      "frames": 4
+    },
+    {
+      "tap": { "x": 128, "y": 150 },
+      "frames": 6
+    },
+    {
+      "release": true,
+      "frames": 4
+    },
+    {
+      "tap": { "x": 128, "y": 95 },
+      "frames": 6,
+      "capture": "02_bestiario"
+    },
+    {
+      "release": true,
+      "frames": 4
+    },
+    {
+      "tap": { "x": 128, "y": 168 },
+      "frames": 6
+    },
+    {
+      "release": true,
+      "frames": 4
+    },
+    {
+      "tap": { "x": 128, "y": 66 },
+      "frames": 6
+    },
+    {
+      "release": true,
+      "frames": 24,
+      "capture": "03_en_partida"
+    },
+    {
+      "button_down": "START",
+      "frames": 4
+    },
+    {
+      "button_up": "START",
+      "frames": 8,
+      "capture": "04_pausa"
+    },
+    {
+      "tap": { "x": 128, "y": 52 },
+      "frames": 6
+    },
+    {
+      "release": true,
+      "frames": 10,
+      "capture": "05_reanudado"
+    }
+  ],
+  "assertions": {
+    "screen_changes": [
+      {
+        "from": "00_menu_inicial",
+        "to": "01_controles",
+        "min_changed_pixels": 50
+      },
+      {
+        "from": "00_menu_inicial",
+        "to": "02_bestiario",
+        "min_changed_pixels": 50
+      },
+      {
+        "from": "00_menu_inicial",
+        "to": "03_en_partida",
+        "min_changed_pixels": 50
+      },
+      {
+        "from": "03_en_partida",
+        "to": "04_pausa",
+        "min_changed_pixels": 50
+      },
+      {
+        "from": "04_pausa",
+        "to": "05_reanudado",
+        "min_changed_pixels": 50
+      }
+    ]
+  }
+}

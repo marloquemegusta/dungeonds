@@ -19,10 +19,6 @@
 #define MENU_COL_HEADER     MENU_COL_ACT_BDR
 #define MENU_COL_BODY       MENU_COL_ACT_TXT
 
-#define FONT_W              5
-#define FONT_H              7
-#define FONT_STEP           6
-
 #define BTN_W               140
 #define BTN_H               21
 #define BTN_X0              ((SCREEN_W - BTN_W) / 2)
@@ -58,82 +54,23 @@ static int s_pick = 0;
 
 static int s_lv_anim = 0;
 
-/* Self-contained 5x7 bitmap font: A-Z, 0-9, space, '-', ':', '/', '.' */
-static const uint8_t s_font_az[26][FONT_H] = {
-    {0x0E,0x11,0x11,0x1F,0x11,0x11,0x11}, /* A */
-    {0x1E,0x11,0x11,0x1E,0x11,0x11,0x1E}, /* B */
-    {0x0E,0x11,0x10,0x10,0x10,0x11,0x0E}, /* C */
-    {0x1E,0x11,0x11,0x11,0x11,0x11,0x1E}, /* D */
-    {0x1F,0x10,0x10,0x1E,0x10,0x10,0x1F}, /* E */
-    {0x1F,0x10,0x10,0x1E,0x10,0x10,0x10}, /* F */
-    {0x0E,0x11,0x10,0x17,0x11,0x11,0x0F}, /* G */
-    {0x11,0x11,0x11,0x1F,0x11,0x11,0x11}, /* H */
-    {0x1F,0x04,0x04,0x04,0x04,0x04,0x1F}, /* I */
-    {0x07,0x02,0x02,0x02,0x02,0x12,0x0C}, /* J */
-    {0x11,0x12,0x14,0x18,0x14,0x12,0x11}, /* K */
-    {0x10,0x10,0x10,0x10,0x10,0x10,0x1F}, /* L */
-    {0x11,0x1B,0x15,0x11,0x11,0x11,0x11}, /* M */
-    {0x11,0x19,0x15,0x13,0x11,0x11,0x11}, /* N */
-    {0x0E,0x11,0x11,0x11,0x11,0x11,0x0E}, /* O */
-    {0x1E,0x11,0x11,0x1E,0x10,0x10,0x10}, /* P */
-    {0x0E,0x11,0x11,0x11,0x15,0x12,0x0D}, /* Q */
-    {0x1E,0x11,0x11,0x1E,0x14,0x12,0x11}, /* R */
-    {0x0F,0x10,0x10,0x0E,0x01,0x01,0x1E}, /* S */
-    {0x1F,0x04,0x04,0x04,0x04,0x04,0x04}, /* T */
-    {0x11,0x11,0x11,0x11,0x11,0x11,0x0E}, /* U */
-    {0x11,0x11,0x11,0x11,0x11,0x0A,0x04}, /* V */
-    {0x11,0x11,0x11,0x15,0x15,0x1B,0x11}, /* W */
-    {0x11,0x11,0x0A,0x04,0x0A,0x11,0x11}, /* X */
-    {0x11,0x11,0x0A,0x04,0x04,0x04,0x04}, /* Y */
-    {0x1F,0x01,0x02,0x04,0x08,0x10,0x1F}, /* Z */
-};
-
-static const uint8_t s_font_09[10][FONT_H] = {
-    {0x0E,0x11,0x13,0x15,0x19,0x11,0x0E}, /* 0 */
-    {0x04,0x0C,0x04,0x04,0x04,0x04,0x0E}, /* 1 */
-    {0x0E,0x11,0x01,0x02,0x04,0x08,0x1F}, /* 2 */
-    {0x1E,0x01,0x01,0x0E,0x01,0x01,0x1E}, /* 3 */
-    {0x02,0x06,0x0A,0x12,0x1F,0x02,0x02}, /* 4 */
-    {0x1F,0x10,0x10,0x1E,0x01,0x01,0x1E}, /* 5 */
-    {0x0E,0x10,0x10,0x1E,0x11,0x11,0x0E}, /* 6 */
-    {0x1F,0x01,0x02,0x04,0x08,0x08,0x08}, /* 7 */
-    {0x0E,0x11,0x11,0x0E,0x11,0x11,0x0E}, /* 8 */
-    {0x0E,0x11,0x11,0x0F,0x01,0x01,0x0E}, /* 9 */
-};
-
-static const uint8_t s_font_space[FONT_H] = {0x00,0x00,0x00,0x00,0x00,0x00,0x00};
-static const uint8_t s_font_dash[FONT_H]  = {0x00,0x00,0x00,0x1F,0x00,0x00,0x00};
-static const uint8_t s_font_colon[FONT_H] = {0x00,0x04,0x04,0x00,0x04,0x04,0x00};
-static const uint8_t s_font_slash[FONT_H] = {0x01,0x01,0x02,0x04,0x08,0x10,0x10};
-static const uint8_t s_font_dot[FONT_H]   = {0x00,0x00,0x00,0x00,0x00,0x0C,0x0C};
-
-static const uint8_t *font_glyph(char c) {
-    if (c >= 'A' && c <= 'Z') return s_font_az[c - 'A'];
-    if (c >= '0' && c <= '9') return s_font_09[c - '0'];
-    if (c == '-') return s_font_dash;
-    if (c == ':') return s_font_colon;
-    if (c == '/') return s_font_slash;
-    if (c == '.') return s_font_dot;
-    return s_font_space;
-}
-
 static int get_buttons(MenuState state, const MenuButton **out_btns) {
     static const MenuButton title_btns[] = {
-        { BTN_X0, 56 + 0 * BTN_PITCH, BTN_W, BTN_H, "NUEVA PARTIDA" },
-        { BTN_X0, 56 + 1 * BTN_PITCH, BTN_W, BTN_H, "CODICE"        },
-        { BTN_X0, 56 + 2 * BTN_PITCH, BTN_W, BTN_H, "CONTROLES"     },
+        { BTN_X0, 56 + 0 * BTN_PITCH, BTN_W, BTN_H, "Nueva partida" },
+        { BTN_X0, 56 + 1 * BTN_PITCH, BTN_W, BTN_H, "Códice"        },
+        { BTN_X0, 56 + 2 * BTN_PITCH, BTN_W, BTN_H, "Controles"     },
     };
     static const MenuButton pause_btns[] = {
-        { BTN_X0, 42 + 0 * BTN_PITCH, BTN_W, BTN_H, "CONTINUAR" },
-        { BTN_X0, 42 + 1 * BTN_PITCH, BTN_W, BTN_H, "REINICIAR" },
-        { BTN_X0, 42 + 2 * BTN_PITCH, BTN_W, BTN_H, "CODICE"    },
-        { BTN_X0, 42 + 3 * BTN_PITCH, BTN_W, BTN_H, "CONTROLES" },
+        { BTN_X0, 42 + 0 * BTN_PITCH, BTN_W, BTN_H, "Continuar" },
+        { BTN_X0, 42 + 1 * BTN_PITCH, BTN_W, BTN_H, "Reiniciar" },
+        { BTN_X0, 42 + 2 * BTN_PITCH, BTN_W, BTN_H, "Códice"    },
+        { BTN_X0, 42 + 3 * BTN_PITCH, BTN_W, BTN_H, "Controles" },
     };
     static const MenuButton bestiary_btns[] = {
-        { BTN_X0, 128, BTN_W, BTN_H, "VOLVER" },
+        { BTN_X0, 128, BTN_W, BTN_H, "Volver" },
     };
     static const MenuButton controls_btns[] = {
-        { BTN_X0, 140, BTN_W, BTN_H, "VOLVER" },
+        { BTN_X0, 140, BTN_W, BTN_H, "Volver" },
     };
 
     switch (state) {
@@ -224,36 +161,17 @@ static void draw_box(uint16_t *buf, int x0, int y0, int w, int h,
     }
 }
 
+/* Menu text uses the bestiary font (Palatino 1-bit); buf is SCREEN_W wide (256). */
 static void draw_text(uint16_t *buf, int x0, int y0, const char *str, uint16_t col) {
-    int len = (int)strlen(str);
-    if (len <= 0) return;
-    int text_w = len * FONT_STEP - 1;
-    dirty_rect(x0, y0, x0 + text_w, y0 + FONT_H);
-
-    for (int i = 0; i < len; i++) {
-        const uint8_t *rows = font_glyph(str[i]);
-        int gx = x0 + i * FONT_STEP;
-        for (int ry = 0; ry < FONT_H; ry++) {
-            int py = y0 + ry;
-            if ((unsigned)py >= SCREEN_H) continue;
-            uint8_t bits = rows[ry];
-            for (int rx = 0; rx < FONT_W; rx++) {
-                if (bits & (1u << (FONT_W - 1 - rx))) {
-                    int px = gx + rx;
-                    if ((unsigned)px < SCREEN_W) {
-                        buf[py * SCREEN_W + px] = col;
-                    }
-                }
-            }
-        }
-    }
+    if (!str || !*str) return;
+    int text_w = bestiary_font_measure_utf8(str);
+    dirty_rect(x0, y0, x0 + text_w + 1, y0 + bestiary_font_line_height());
+    bestiary_font_draw_utf8(buf, x0, y0, str, col);
 }
 
 static void draw_text_centered(uint16_t *buf, int cx, int y0, const char *str, uint16_t col) {
-    int len = (int)strlen(str);
-    if (len <= 0) return;
-    int text_w = len * FONT_STEP - 1;
-    draw_text(buf, cx - text_w / 2, y0, str, col);
+    if (!str || !*str) return;
+    draw_text(buf, cx - bestiary_font_measure_utf8(str) / 2, y0, str, col);
 }
 
 void menu_open_title(void) {
@@ -526,8 +444,8 @@ static void render_levelup(uint16_t *buf) {
     int phase = (s_lv_anim >> 4) & 7;
     const int pulse = phase < 4 ? phase : 8 - phase;   /* 0..4, slow triangle */
 
-    if (relic_offer) snprintf(title, sizeof(title), "RELIQUIA");
-    else snprintf(title, sizeof(title), "NIVEL %d", upgrades_offer_level());
+    if (relic_offer) snprintf(title, sizeof(title), "Reliquia");
+    else snprintf(title, sizeof(title), "Nivel %d", upgrades_offer_level());
     int tw = bestiary_font_measure_utf8(title);
     dirty_rect(0, 2, SCREEN_W, 17);
     bestiary_font_draw_utf8(buf, (SCREEN_W - tw) / 2, 3, title, relic_offer ? gold : MENU_COL_BODY);
@@ -583,20 +501,20 @@ void menu_render_bottom(uint16_t *buf) {
 
     if (s_state == MENU_BESTIARY) {
         draw_box(buf, 38, 36, 180, 72, MENU_COL_INA_FILL, MENU_COL_INA_BDR);
-        draw_text_centered(buf, SCREEN_W / 2, 48, "CODICE", MENU_COL_HEADER);
-        draw_text_centered(buf, SCREEN_W / 2, 76, "PROXIMAMENTE", MENU_COL_BODY);
+        draw_text_centered(buf, SCREEN_W / 2, 48, "Códice", MENU_COL_HEADER);
+        draw_text_centered(buf, SCREEN_W / 2, 76, "Próximamente", MENU_COL_BODY);
     } else if (s_state == MENU_CONTROLS) {
         static const char *const lines[7] = {
-            "CRUCETA - MOVERSE",
-            "LAPIZ - APUNTAR Y CARGAR",
-            "START - PAUSA",
-            "X - SUBIR DE NIVEL (PRUEBA)",
-            "SELECT - EFECTOS A/B/C (PRUEBA)",
-            "L R B - INVULNERABLE (PRUEBA)",
+            "Cruceta - moverse",
+            "Lápiz - apuntar y cargar",
+            "Start - pausa",
+            "X - subir de nivel (prueba)",
+            "Select - efectos A/B/C (prueba)",
+            "L R B - invulnerable (prueba)",
             ""
         };
         draw_box(buf, 12, 10, 232, 116, MENU_COL_INA_FILL, MENU_COL_INA_BDR);
-        draw_text_centered(buf, SCREEN_W / 2, 18, "CONTROLES", MENU_COL_HEADER);
+        draw_text_centered(buf, SCREEN_W / 2, 18, "Controles", MENU_COL_HEADER);
         for (int i = 0; i < 6; i++) {
             draw_text(buf, 22, 36 + i * 13, lines[i], MENU_COL_BODY);
         }
@@ -610,7 +528,7 @@ void menu_render_bottom(uint16_t *buf) {
         uint16_t txt  = active ? MENU_COL_ACT_TXT  : MENU_COL_INA_TXT;
         draw_box(buf, btns[i].x0, btns[i].y0, btns[i].w, btns[i].h, fill, bdr);
         draw_text_centered(buf, btns[i].x0 + btns[i].w / 2,
-                           btns[i].y0 + (btns[i].h - FONT_H) / 2,
+                           btns[i].y0 + (btns[i].h - bestiary_font_line_height()) / 2,
                            btns[i].label, txt);
     }
 }
