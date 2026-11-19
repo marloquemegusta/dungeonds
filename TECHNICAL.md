@@ -56,6 +56,8 @@
 - **Presupuesto:** no guardar máscaras como bytes completos ni usar dimensiones de horneado completas en C. El recorte y empaquetado son parte del contrato de memoria.
 - **Verificación:** compilación con `C:\codexlocal\skills\agentic-ds-dev\scripts\build-project.ps1` y escenario con capturas vía `run-scenario.ps1`.
 
+- **Fuente de texto (2026-11-19):** `tools/gen_bestiary_font.py` hornea Palatino 11 (`C:\Windows\Fonts\pala.ttf`) a 1 bit con el trazado nítido de FreeType (`--mono`, por defecto) en `source/bestiary_font.c`. Menú, HUD y Códice dibujan con ella (`bestiary_font_draw_utf8`); solo el contador de FPS conserva el 5×7. Antes de empaquetar la ROM fuera de este equipo hay que revisar la licencia de Palatino.
+
 ### 3.1. Render de Sprites de Personaje (Shader Lab)
 - **Perfil de render:** los ajustes de cada personaje viven en su `settings.json`. Referencia de contraste del lab: 1,50 (`assets/sprites/characters/README.md`).
 - **Relieves y grading:** las directrices del pipeline Blender (normal maps atenuados al 30–40%, `DISPLACE` para mallas finas, ramp de cavidad en AO y grading PIL de `ds_look.py`) no están implementadas en el lab. No aplicarlas sin validar el resultado en el lab y en Nintendo DS.

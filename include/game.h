@@ -10,6 +10,10 @@
 #define ENCOUNTERS_PROTO 0
 #endif
 // Variant "encuentros-bot": the act played by an autopilot to measure its difficulty (tools/encuentros/BRIEF_bot.md).
+// Skip the title menu and start the run directly (headless scenarios of the encounters variants).
+#ifndef SKIP_TITLE
+#define SKIP_TITLE 0
+#endif
 #ifndef ENC_BOT
 #define ENC_BOT 0
 #endif

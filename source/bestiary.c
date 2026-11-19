@@ -373,8 +373,8 @@ static int count_wrapped_lines(const char *utf8, int max_w) {
 static void draw_scale_mark(uint16_t *fb, int x, int y, int filled) {
     uint16_t on = COLOR_IVORY;
     for (int j = 0; j < 5; j++) {
-        for (int i = 0; i < 5; i++) {
-            int edge = (i == 0 || i == 4 || j == 0 || j == 4);
+        for (int i = 0; i < 3; i++) {
+            int edge = (i == 0 || i == 2 || j == 0 || j == 4);
             if (filled) fb[((y + j) << 8) + x + i] = on;
             else if (edge) fb[((y + j) << 8) + x + i] = COLOR_WARM_GRAY;
         }
@@ -412,9 +412,9 @@ static void draw_bottom_card(uint16_t *fb, int entry_idx) {
             x += bestiary_font_measure_utf8(labels[i]) + 3;
             for (int m = 0; m < 5; m++) {
                 draw_scale_mark(fb, x, cur_y + 3, m < vals[i]);
-                x += 6;
+                x += 5;
             }
-            x += 7;
+            x += 5;
         }
         cur_y += 13;
         char buf[160];

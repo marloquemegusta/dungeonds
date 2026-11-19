@@ -19,9 +19,10 @@ from PIL import Image, ImageFont
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 WT_ROOT = os.path.abspath(os.path.join(SCRIPT_DIR, '..'))
 
-DEFAULT_FONT = r'C:\Windows\Fonts\georgia.ttf'
+DEFAULT_FONT = r'C:\Windows\Fonts\pala.ttf'
 DEFAULT_SIZE = 11
 DEFAULT_THRESH = 100
+DEFAULT_MONO = True
 
 SPANISH_CHARS = [
     '¡', '«', '·', '»', '¿',
@@ -30,8 +31,11 @@ SPANISH_CHARS = [
     '—'
 ]
 
-def collect_glyphs(font_path, font_size, threshold):
-    font = ImageFont.truetype(font_path, font_size)
+def collect_glyphs(font_path, font_size, threshold, mono=False):
+    if mono:
+        font = ImageFont.truetype(font_path, font_size, layout_engine=ImageFont.Layout.BASIC)
+    else:
+        font = ImageFont.truetype(font_path, font_size)
     ascii_chars = [chr(c) for c in range(0x20, 0x7F)]
     all_chars = ascii_chars + sorted(SPANISH_CHARS, key=lambda c: ord(c))
 
@@ -40,7 +44,7 @@ def collect_glyphs(font_path, font_size, threshold):
 
     for ch in all_chars:
         cp = ord(ch)
-        adv = int(round(font.getlength(ch)))
+        adv = int(round(font.getlength(ch, mode='1') if mono else font.getlength(ch)))
         if ch == ' ':
             glyphs.append({
                 'char': ch,
@@ -55,15 +59,19 @@ def collect_glyphs(font_path, font_size, threshold):
             })
             continue
 
-        bbox = font.getbbox(ch)
-        mask = font.getmask(ch, 'L')
+        if mono:
+            bbox = font.getbbox(ch, mode='1')
+            mask = font.getmask(ch, mode='1')
+        else:
+            bbox = font.getbbox(ch)
+            mask = font.getmask(ch, 'L')
         gw, gh = mask.size
         x0, y0, x1, y1 = bbox
 
         row_data = []
         glyph_bytes = bytearray()
         for r in range(gh):
-            row_bits = [(1 if mask.getpixel((c, r)) >= threshold else 0) for c in range(gw)]
+            row_bits = [(1 if (mask.getpixel((c, r)) > 0 if mono else mask.getpixel((c, r)) >= threshold) else 0) for c in range(gw)]
             row_data.append(row_bits)
             bytes_per_row = (gw + 7) // 8
             rb = bytearray(bytes_per_row)
@@ -457,13 +465,15 @@ def main():
     parser.add_argument('--font', default=DEFAULT_FONT, help='TTF font path')
     parser.add_argument('--size', type=int, default=DEFAULT_SIZE, help='Font point size')
     parser.add_argument('--threshold', type=int, default=DEFAULT_THRESH, help='Binarization threshold (0..255)')
+    parser.add_argument('--mono', dest='mono', action='store_true', default=DEFAULT_MONO, help='Hinted 1-bit rasterization (default)')
+    parser.add_argument('--no-mono', dest='mono', action='store_false', help='Antialiased + threshold')
     parser.add_argument('--out-h', default=os.path.join(WT_ROOT, 'include', 'bestiary_font.h'))
     parser.add_argument('--out-c', default=os.path.join(WT_ROOT, 'source', 'bestiary_font.c'))
     parser.add_argument('--out-preview', default=os.path.join(WT_ROOT, 'walkthroughs', 'bestiario', 'assets', 'font_preview.png'))
     args = parser.parse_args()
 
     print(f'Loading font: {args.font} at size {args.size}...')
-    font, glyphs, bitmaps = collect_glyphs(args.font, args.size, args.threshold)
+    font, glyphs, bitmaps = collect_glyphs(args.font, args.size, args.threshold, args.mono)
     print(f'Collected {len(glyphs)} glyphs, {len(bitmaps)} bytes of bitmap data.')
 
     print(f'Writing {args.out_h}...')

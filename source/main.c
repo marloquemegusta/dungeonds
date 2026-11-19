@@ -33,6 +33,7 @@
 #include "menu.h"
 #include "encounters_act1.h"
 #include "boss.h"
+#include "bestiary_font.h"
 #include <string.h>
 #include <time.h>
 
@@ -1602,13 +1603,7 @@ static void draw_fps_hud(uint16_t *buffer) {
 // cleared, the name of the modifier under the player and the "dungeon completed" banner.
 // ---------------------------------------------------------------------------
 
-static int hud_glyph_index(char c) {
-    for (int i = 0; s_fps_chars[i]; i++)
-        if (s_fps_chars[i] == c) return i;
-    return -1;
-}
-
-static int hud_text_width(const char *s) { return (int)strlen(s) * 6 - 1; }
+static int hud_text_width(const char *s) { return bestiary_font_measure_utf8(s); }
 
 static void hud_px(uint16_t *buffer, int x, int y, uint16_t c) {
     if (x < 0 || x >= SCREEN_W || y < 0 || y >= SCREEN_H) return;
@@ -1618,18 +1613,10 @@ static void hud_px(uint16_t *buffer, int x, int y, uint16_t c) {
 static void hud_text(uint16_t *buffer, int x, int y, const char *s, uint16_t ink) {
     const uint16_t shadow = RGB15(1, 1, 2) | BIT(15);
     int w = hud_text_width(s);
-    for (int row = 0; row < 9; row++) dirty_row(y + row, x, x + w + 2);
-    for (int i = 0; s[i]; i++) {
-        int g = hud_glyph_index(s[i]);
-        if (g < 0 || s[i] == ' ') continue;
-        const uint8_t *rows = s_fps_font[g];
-        for (int gy = 0; gy < 7; gy++)
-            for (int gx = 0; gx < 5; gx++)
-                if (rows[gy] & (1u << (4 - gx))) {
-                    hud_px(buffer, x + i * 6 + gx + 1, y + gy + 1, shadow);
-                    hud_px(buffer, x + i * 6 + gx, y + gy, ink);
-                }
-    }
+    int rows = bestiary_font_line_height() + 1;
+    for (int row = 0; row < rows; row++) dirty_row(y + row, x, x + w + 2);
+    bestiary_font_draw_utf8(buffer, x + 1, y + 1, s, shadow);
+    bestiary_font_draw_utf8(buffer, x, y, s, ink);
 }
 
 static void hud_square(uint16_t *buffer, int x, int y, int size, uint16_t fill, uint16_t edge) {
@@ -1744,7 +1731,7 @@ static void hud_level(uint16_t *buffer) {
         return;
     }
     const int bar_w = 60, bar_h = 4, bar_x = 6, bar_y = 18;
-    snprintf(line, sizeof(line), "NV %d", level);
+    snprintf(line, sizeof(line), "Nv. %d", level);
     hud_text(buffer, 6, 6, line, gold);
     int fill = xp * (bar_w - 2) / need;   // per HUD draw, not per entity
     for (int y = 0; y < bar_h; y++) {
@@ -1767,17 +1754,17 @@ static void draw_run_hud(uint16_t *buffer) {
         char line[24];
         uint32_t seconds = horde_run_frames() / 60u;
         if (g_player_state.is_dead) {
-            snprintf(line, sizeof(line), "ALTURA %dM", strip_height_m(TO_INT(s_player.y)));
+            snprintf(line, sizeof(line), "Altura %d m", strip_height_m(TO_INT(s_player.y)));
             hud_text(buffer, (SCREEN_W - hud_text_width(line)) / 2, 70, line, ink);
-            snprintf(line, sizeof(line), "TIEMPO %lu:%02lu", (unsigned long)(seconds / 60u), (unsigned long)(seconds % 60u));
+            snprintf(line, sizeof(line), "Tiempo %lu:%02lu", (unsigned long)(seconds / 60u), (unsigned long)(seconds % 60u));
             hud_text(buffer, (SCREEN_W - hud_text_width(line)) / 2, 92, line, ink);
-            snprintf(line, sizeof(line), "MEJOR %dM", s_best_height_m);
+            snprintf(line, sizeof(line), "Mejor %d m", s_best_height_m);
             hud_text(buffer, (SCREEN_W - hud_text_width(line)) / 2, 114, line, ink);
             return;
         }
-        snprintf(line, sizeof(line), "ALTURA %dM", strip_height_m(TO_INT(s_player.y)));
+        snprintf(line, sizeof(line), "Altura %d m", strip_height_m(TO_INT(s_player.y)));
         hud_text(buffer, 6, SCREEN_H - 32, line, ink);
-        snprintf(line, sizeof(line), "TIEMPO %lu:%02lu", (unsigned long)(seconds / 60u), (unsigned long)(seconds % 60u));
+        snprintf(line, sizeof(line), "Tiempo %lu:%02lu", (unsigned long)(seconds / 60u), (unsigned long)(seconds % 60u));
         hud_text(buffer, 6, SCREEN_H - 16, line, ink);
 
         // Level and xp, top left (DESIGN.md 6.12.8). A: "NV n" + bar. B: a candle. C: rosary beads + roman numeral.
@@ -1785,11 +1772,11 @@ static void draw_run_hud(uint16_t *buffer) {
         {   // Via Crucis (DESIGN.md 6.13): 14 stations, bosses at 5, 10 and 14.
             if (!boss_hud_active() && !boss_frozen()) {      // while the boss mode runs, its life bar takes this corner
                 int enc = enc_current_encounter();
-                if (enc == 5 || enc == 10 || enc == 14) snprintf(line, sizeof(line), "JEFE %d DE 14", enc);
-                else snprintf(line, sizeof(line), "ENC %d DE 14", enc);
+                if (enc == 5 || enc == 10 || enc == 14) snprintf(line, sizeof(line), "Jefe %d de 14", enc);
+                else snprintf(line, sizeof(line), "Enc. %d de 14", enc);
                 hud_text(buffer, 6, 6, line, RGB15(27, 20, 11) | BIT(15));
                 if (enc_victory()) {
-                    snprintf(line, sizeof(line), "VICTORIA");
+                    snprintf(line, sizeof(line), "Victoria");
                     hud_text(buffer, (SCREEN_W - hud_text_width(line)) / 2, 84, line, RGB15(27, 20, 11) | BIT(15));
                 }
             }
@@ -1827,7 +1814,7 @@ static void draw_run_hud(uint16_t *buffer) {
 
     // Packs cleared, bottom left.
     char line[24];
-    snprintf(line, sizeof(line), "MANADAS %d DE %d", g_encounter_mgr.packs_cleared, g_encounter_mgr.packs_total);
+    snprintf(line, sizeof(line), "Manadas %d de %d", g_encounter_mgr.packs_cleared, g_encounter_mgr.packs_total);
     hud_text(buffer, 6, SCREEN_H - 14, line, ink);
 
     // Modifier name: the pedestal the player is near, or the one just taken.
@@ -1835,7 +1822,7 @@ static void draw_run_hud(uint16_t *buffer) {
     if (name) hud_text(buffer, (SCREEN_W - hud_text_width(name)) / 2, SCREEN_H - 32, name, RGB15(31, 28, 8) | BIT(15));
 
     if (g_encounter_mgr.state == ENCOUNTER_STATE_CLEARED) {
-        const char *msg = "MAZMORRA COMPLETADA";
+        const char *msg = "Mazmorra completada";
         hud_text(buffer, (SCREEN_W - hud_text_width(msg)) / 2, 84, msg, RGB15(31, 28, 8) | BIT(15));
     }
 }
@@ -2877,7 +2864,7 @@ int main(void) {
     init_bg_tile_cache(&s_bot_bg_tile_cache, BG_TILE_CACHE_CAPACITY, s_bot_bg_tiles_vram);
     update_screen_hardware_bg(1, s_top_map_ptr, s_cam_x, s_cam_y - SCREEN_H);
 
-#if !(SANDBOX || STRESS_TEST || ENCOUNTERS_PROTO)
+#if !(SANDBOX || STRESS_TEST || SKIP_TITLE)
     menu_open_title();
     sfx_stop_bgm();
 #else
