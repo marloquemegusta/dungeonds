@@ -45,8 +45,7 @@
 #define HORDE_DEVOUT_CANDIDATES 16 // [TUNABLE-PLACEHOLDER] devout pieces looked at per spawn burst
 
 void horde_init(uint32_t seed);
-void horde_update(Enemy *enemies, int count, fixed player_y,
-                  int upper_screen_y, fixed tide_y);
+void horde_update(Enemy *enemies, int count, fixed player_y, int upper_screen_y);
 uint32_t horde_run_frames(void);
 
 #endif

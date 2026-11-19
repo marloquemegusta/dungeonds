@@ -2,6 +2,8 @@
 
 Texto de `DESIGN.md` que ya no describe el juego pero guarda el porqué de decisiones pasadas (archivado el 2026-11-19, rama `docs/limpieza-docs`). No es fuente de verdad: si algo de aquí vuelve a hacer falta, se trae a `DESIGN.md` actualizado. Cada bloque conserva su texto original.
 
+> **Referencia de código para rescatar mecánicas retiradas:** el último commit con la **granada** (`source/grenade.c`, `include/grenade.h`), la **escopeta** (`WEAPON_SHOTGUN`), el **selector de armas** (`weapons_cycle` / `TEST_WEAPON_CYCLE`), la **marea** (`source/tide.c`) y las **gemas** (`source/gems.c`) intactos es **`7aa3b5f`** (rama `fix/purga-obsoletos` los retiró a partir del commit siguiente).
+
 ---
 
 ## §4.1–4.6 (v0.1): controles, jugador, armas, cargador, tirador y arenas

@@ -1,6 +1,6 @@
 {
   "name": "strip_hw_shadows_stress",
-  "description": "ROM stress (variante stress: horda de hasta 48, enemigos de 1 PS, heroe en god mode). El heroe esta quieto; la horda baja por las dos pantallas y la marea sube hasta cruzarlos. Se capturan filmstrips con sombras por hardware (SH HW en el HUD), y despues L+R+A pasa a sombras por software (SH SW) para comparar el mismo tipo de escena. No afirma geometria concreta de oclusion: solo que hay horda.",
+  "description": "ROM stress (variante stress: horda de hasta 48, enemigos de 1 PS, heroe en god mode). El heroe esta quieto y la horda baja por las dos pantallas. Se capturan filmstrips con sombras por hardware (SH HW en el HUD), y despues L+R+A pasa a sombras por software (SH SW) para comparar el mismo tipo de escena. No afirma geometria concreta de oclusion: solo que hay horda.",
   "state": {
     "symbols": { "strip": "g_strip_debug" },
     "default_symbol": "strip",

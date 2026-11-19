@@ -7,15 +7,10 @@ ROOT = Path(__file__).resolve().parents[1]
 SOURCES = sorted((ROOT / "source").glob("*.c")) + sorted((ROOT / "include").glob("*.h"))
 
 # Archivos que pintan efectos visuales (VFX): deben usar paletas apagadas.
-VFX_FILES = ["weapons.c", "gems.c", "enemy_laser.c", "groundfx.c", "enemy_ai.c", "grenade.c", "exvoto_melt.c", "boss.c"]
+VFX_FILES = ["weapons.c", "enemy_laser.c", "groundfx.c", "enemy_ai.c", "exvoto_melt.c", "boss.c"]
 
-# Excepciones explicitas (archivo, fragmento de la linea). Hoy contienen blanco puro.
-VFX_EXCEPTIONS = [
-    # Tabla s_fx_rgb heredada de los estilos antiguos de armas; el blanco puro solo vive en ese estilo legacy.
-    ("weapons.c", "RGB15(31, 31, 31), RGB15(31, 28, 8)"),
-    # Cruz de marca de la granada: blanco puro heredado.
-    ("grenade.c", "[K_MARK_CROSS]"),
-]
+# Excepciones explicitas (archivo, fragmento de la linea).
+VFX_EXCEPTIONS = []
 
 
 def strip_comments(text):

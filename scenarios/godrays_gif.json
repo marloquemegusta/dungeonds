@@ -1,6 +1,6 @@
 {
  "name": "godrays_gif",
- "description": "GIF frames (prefix gcross): god mode, climb 150 frames so the lower-screen rose beam's floor patch is level with the marine, walk left onto the patch (frames 0-24), stand inside the beam (25-69: dust and breathing), walk on out of it (70-99). Path checked on captures with the rose ray at world period 256.",
+ "description": "GIF frames (prefix gcross): god mode, climb 150 frames so the lower-screen rose beam's floor patch is level with the hero, walk left onto the patch (frames 0-24), stand inside the beam (25-69: dust and breathing), walk on out of it (70-99). Path checked on captures with the rose ray at world period 256.",
  "steps": [
   {
    "frames": 30,

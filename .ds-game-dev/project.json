@@ -63,7 +63,6 @@
         "python.exe tests/test_strip.py",
         "python.exe tests/test_strip_kit.py",
         "python.exe tests/test_strip_layout_parity.py",
-        "python.exe tests/test_tide_contract.py",
         "python.exe tests/test_upper_screen_contract.py"
     ],
     "blocksdsImage": "skylyrac/blocksds:slim-latest",

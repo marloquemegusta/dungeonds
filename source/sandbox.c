@@ -10,7 +10,6 @@ typedef int sandbox_translation_unit_not_empty;
 #include "encounters.h"
 #include "gameplay.h"
 #include "weapons.h"
-#include "gems.h"
 #include "player_sprite.h"
 #include "enemy_ai.h"
 
@@ -280,13 +279,12 @@ void sandbox_update(Enemy *enemies, int max_enemies, fixed *player_x, fixed *pla
     g_player_state.is_dead = 0;
     g_player_state.invuln_timer = 0;
     g_player_state.god_mode = (flags & SANDBOX_FLAG_GOD) != 0;
-    g_player_state.current_weapon = (WeaponType)(g_sandbox.weapon % NUM_WEAPON_TYPES);
+    g_player_state.current_weapon = WEAPON_SNIPER;
     g_fx_style = g_sandbox.style % FX_STYLE_COUNT;
     /* Las auras vienen solo de las reliquias (DESIGN.md §6.12.8); los bits de flag de aura se ignoran. */
     g_aura_debug_mask = 0;
 
     g_sandbox_freeze_ai = (flags & SANDBOX_FLAG_FREEZE_AI) != 0;
-    g_gems_off = (flags & SANDBOX_FLAG_NO_GEMS) != 0;
 
     sandbox_spawn(enemies, max_enemies);
 

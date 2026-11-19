@@ -39,11 +39,9 @@ void hwshadow_commit(int sub);
 // in_front: 0 = behind actors (top gate), 1 = in front of actors (rear gate, occludes hero inside).
 void hwshadow_add_verja(int sub, int x, int y, int lift_px, int in_front);
 
-// Programs window/blend registers of one engine for this frame. tide_top is the first line
-// darkened by the tide (tide_window_top()): >= 192 no tide, <= 0 whole screen, otherwise the
-// engine switches to the tide blend settings at that line (VCOUNT interrupt).
-void hwshadow_screen_regs(int sub, int tide_top);
-// Software shadows selected: no OBJ window, no split interrupt (the tide module programs the regs).
+// Programs window/blend registers of one engine for this frame.
+void hwshadow_screen_regs(int sub);
+// Software shadows selected: no OBJ window.
 void hwshadow_regs_off(void);
 
 #endif

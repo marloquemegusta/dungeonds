@@ -191,8 +191,7 @@ static int spawn_enemy(Enemy *e, Enemy *enemies, int count, int upper_screen_y, 
     return 1;
 }
 
-ITCM_CODE void horde_update(Enemy *enemies, int count, fixed player_y,
-                  int upper_screen_y, fixed tide_y) {
+ITCM_CODE void horde_update(Enemy *enemies, int count, fixed player_y, int upper_screen_y) {
     if (!enemies || count <= 0) return;
     s_run_frames++;
     if (s_interval > HORDE_MIN_INTERVAL && --s_interval_ramp <= 0) {
@@ -215,7 +214,7 @@ ITCM_CODE void horde_update(Enemy *enemies, int count, fixed player_y,
             alive++;
             continue;
         }
-        if (e->y > player_y + TO_FIXED(HORDE_RECYCLE_BEHIND_PX) || e->y >= tide_y) e->active = 0;
+        if (e->y > player_y + TO_FIXED(HORDE_RECYCLE_BEHIND_PX)) e->active = 0;
         else {
             alive++;
             if (e->type == ENEMY_TYPE_CHARGER) s_chargers_alive++;

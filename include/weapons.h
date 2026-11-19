@@ -8,25 +8,22 @@
 typedef struct Enemy Enemy;
 typedef struct PlayerState PlayerState;
 
-// DESIGN.md 4.3: two weapons with infinite ammo, limited by rate and cost of use.
+// DESIGN.md 6.5: one character = one weapon (El Corazon Abierto, sacred ray).
 typedef enum {
-    WEAPON_SHOTGUN = 0,
-    WEAPON_SNIPER,
-    WEAPON_GRENADE,             // DESIGN.md 4.9
+    WEAPON_SNIPER = 0,
     NUM_WEAPON_TYPES
 } WeaponType;
 
-// Weapons are defined by parameters so a future upgrade layer can tune them
-// without rewriting the weapon code (DESIGN.md 1).
+// Weapon parameters (kept as a struct for tuning/upgrades).
 typedef struct {
     const char *name;
-    int damage_per_hit;         // damage per pellet / per piercing hit
-    int pellets;                // projectiles per shot
+    int damage_per_hit;         // damage per piercing hit
+    int pellets;                // unused (1)
     int fire_cooldown;          // frames before the next shot can start
-    fixed projectile_speed;     // 8.8 ground px/frame (shotgun pellets)
-    int projectile_range;       // lifetime frames (shotgun) or ray length in px (sniper)
-    fixed spread_angle;         // 8.8 side spread between neighbouring pellets
-    int aim_min_frames;         // sniper: minimum aim time before the shot is armed
+    fixed projectile_speed;     // unused (0)
+    int projectile_range;       // ray length in px
+    fixed spread_angle;         // unused (0)
+    int aim_min_frames;         // minimum aim time before the shot is armed
     fixed knockback;            // 8.8 px/frame impulse given to a hit enemy
     int stun_frames;            // frames a hit enemy stays staggered
     fixed recoil;               // 8.8 px the player is pushed back on firing
@@ -36,8 +33,7 @@ typedef struct {
 
 extern const WeaponTuning g_weapon_tuning[NUM_WEAPON_TYPES];
 
-// DESIGN.md 4.9: debug-only effects style (0 = A, 1 = B, 2 = C) for the shotgun and the grenade, to
-// compare their variants on the console. SELECT cycles it. The sniper always uses C (fuego, DESIGN.md 6.10).
+// Debug-only effects style (0 = A, 1 = B, 2 = C). The sacred ray always uses C (fuego, DESIGN.md 6.10).
 #define FX_STYLE_COUNT 3
 extern int g_fx_style;
 char weapons_fx_style_letter(void);
@@ -51,25 +47,6 @@ enum { AURA_STYLE_L = 0, AURA_STYLE_G = 1, AURA_STYLE_E = 2, AURA_STYLE_H = 3 };
 extern int g_aura_debug_mask;
 extern int g_aura_force_mask;   // gameplay bits raised by relics (Corazon Flagelado: AURA_STYLE_L while its instant charge is pending)
 char weapons_aura_style_letter(void);
-
-// Pellet in flight. x/y live on the ground plane; the shot is drawn `height`
-// pixels above it (the muzzle height) so it leaves the weapon, not the feet.
-#define MAX_PLAYER_PROJECTILES 32
-
-typedef struct {
-    int active;
-    WeaponType weapon_type;
-    fixed x;             // 8.8 ground position X
-    fixed y;             // 8.8 ground position Y
-    fixed vx;            // 8.8 velocity X
-    fixed vy;            // 8.8 velocity Y
-    int height;          // pixels above the ground at which the shot is drawn
-    int life;            // remaining frames
-    int max_life;        // total frames
-    int damage;          // damage at the muzzle (falls off with distance)
-    int pierce;          // further enemies the pellet can go through (modifier)
-    uint32_t hit_mask;   // enemies already hit by this pellet
-} PlayerProjectile;
 
 // One frame of touch / button state for the weapon system.
 typedef struct {
@@ -91,7 +68,6 @@ typedef struct {
 
 void weapons_init(void);
 void weapons_shift_y(int dy_px);
-void weapons_cycle(PlayerState *player);
 // Drops a sniper charge in progress without firing (level-up screen).
 void weapons_cancel_aim(void);
 // Death hook: a burning enemy that dies may explode (Martirio Contagioso). Call with the enemy still intact.
@@ -111,8 +87,6 @@ int weapons_aim_progress(void);
 void weapons_ready_instant(void);
 int weapons_input(PlayerState *player, const WeaponInput *in, Enemy *enemies, int max_enemies);
 void weapons_update(Enemy *enemies, int max_enemies);
-// An enemy died: the "sed de sangre" modifier readies the shotgun at once.
-void weapons_notify_kill(void);
 void weapons_render(uint16_t *buffer, int cam_x, int cam_y);
 // Ground decals (under shadows and sprites) and the light pass (over the sprites); see groundfx.h.
 void weapons_render_floor(uint16_t *buffer, int cam_x, int cam_y);
@@ -121,14 +95,13 @@ void weapons_render_overlay(uint16_t *buffer);      // screen-space look of Llag
 int weapons_llaga_tint(void);                       // hero glow level 0..2 (Llaga Abierta B), see sprite_glow in main.c
 int weapons_consume_tint(int enemy_idx);            // burn tint level 1..4 an enemy keeps while Auto de Fe consumes its burn, else 0
 const char *weapons_get_name(WeaponType type);
-int weapons_get_active_projectile_count(void);
 
 // Direction (8.8, ground metric) of the last shot, for the player's recoil.
 void weapons_last_shot_dir(fixed *dir_x, fixed *dir_y);
 
 // Screen shake currently requested by the weapons (offset to add to the camera).
 void weapons_shake_offset(int *dx, int *dy);
-// Asks for a screen shake (used by weapons that live in their own file, e.g. the grenade).
+// Asks for a screen shake.
 void weapons_request_shake(int amp, int frames);
 
 #endif // WEAPONS_H

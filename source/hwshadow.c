@@ -4,7 +4,6 @@
 
 #include <nds.h>
 #include "game.h"
-#include "tide.h"
 #include "verja_gfx.h"
 
 int g_hw_shadows_on = 1;
@@ -289,48 +288,13 @@ ITCM_CODE void hwshadow_commit(int sub) {
 }
 
 // ---------------------------------------------------------------------------
-// Window, blend and the tide split
+// Window and blend
 //   outside windows : every layer, no effect
 //   OBJ window      : BG layers + effect -> BLDCNT darkens only the floor layer (main BG1 / sub BG0)
-//   tide (WIN0)     : every layer + effect with the tide blend (BLDCNT all layers, BLDY = tide).
-// BLDCNT/BLDY are global per engine, so the tide settings replace the shadow ones from the first
-// tide line: for the whole frame when the tide covers the screen, or at the split line through a
-// VCOUNT interrupt armed each VBlank. WIN0 beats the OBJ window, so shadows under the tide take
-// its darkness. At most one engine has a split line (top camera = bottom camera - 192), but the
-// handler serves both.
 // ---------------------------------------------------------------------------
 
 #define BLD_FADE_BLACK (3 << 6)
-#define BLD_TIDE (0x3f | BLD_FADE_BLACK)
 #define WINOUT_SHADOW 0x3F1F   // outside: BG0-3+OBJ, no effect | OBJ window: all + effect
-
-static volatile int s_split_match[2] = { -1, -1 };   // VCOUNT at which each engine switches to the tide blend
-
-static void split_arm_next(void) {
-    int next = -1;
-    for (int e = 0; e < 2; e++)
-        if (s_split_match[e] >= 0 && (next < 0 || s_split_match[e] < next)) next = s_split_match[e];
-    if (next < 0) {
-        REG_DISPSTAT &= ~DISP_YTRIGGER_IRQ;
-    } else {
-        SetYtrigger(next);
-        REG_DISPSTAT |= DISP_YTRIGGER_IRQ;
-    }
-}
-
-// Fires on the line before the first tide line and waits for its HBlank, so the new blend
-// settings apply from the next line on.
-static void vcount_irq(void) {
-    int line = REG_VCOUNT;
-    while (!(REG_DISPSTAT & DISP_IN_HBLANK)) { }
-    for (int e = 0; e < 2; e++) {
-        if (s_split_match[e] < 0 || s_split_match[e] > line) continue;
-        if (e) { REG_BLDCNT_SUB = BLD_TIDE; REG_BLDY_SUB = TIDE_BRIGHTNESS; }
-        else { REG_BLDCNT = BLD_TIDE; REG_BLDY = TIDE_BRIGHTNESS; }
-        s_split_match[e] = -1;
-    }
-    split_arm_next();
-}
 
 void hwshadow_init(void) {
     s_eng[0] = (Engine){ .oam = &oamMain, .vram = (volatile uint32_t *)0x06400000, .occ = s_occ_main, .pool = POOL_TILES_MAIN };
@@ -359,45 +323,21 @@ void hwshadow_init(void) {
             s_plan[h][w] = (Plan){0};
             plan_emit(&s_plan[h][w], w, h, 0, 0);
         }
-    irqSet(IRQ_VCOUNT, vcount_irq);
-    irqEnable(IRQ_VCOUNT);
 }
 
-void hwshadow_screen_regs(int sub, int tide_top) {
+void hwshadow_screen_regs(int sub) {
     vu16 *bldcnt = sub ? &REG_BLDCNT_SUB : &REG_BLDCNT;
     vu16 *bldy = sub ? &REG_BLDY_SUB : &REG_BLDY;
-    vu16 *win0h = sub ? &REG_WIN0H_SUB : &REG_WIN0H;
-    vu16 *win0v = sub ? &REG_WIN0V_SUB : &REG_WIN0V;
-    vu16 *winin = sub ? &REG_WININ_SUB : &REG_WININ;
     vu16 *winout = sub ? &REG_WINOUT_SUB : &REG_WINOUT;
     vu32 *dispcnt = sub ? &REG_DISPCNT_SUB : &REG_DISPCNT;
 
-    *winin = 0x003f;                 // WIN0 (tide): every layer + colour effect
     *winout = WINOUT_SHADOW;
-    *win0h = 0x00ff;
-    s_split_match[sub] = -1;
-    if (tide_top >= SCREEN_H) {      // no tide on this screen
-        *dispcnt = (*dispcnt & ~DISPLAY_WIN0_ON) | DISPLAY_SPR_WIN_ON | DISPLAY_SPR_ACTIVE;
-        *bldcnt = (uint16_t)((sub ? BIT(0) : BIT(1)) | BLD_FADE_BLACK);
-        *bldy = HW_SHADOW_BLDY;
-    } else {
-        *win0v = (uint16_t)(((tide_top < 0 ? 0 : tide_top) << 8) | SCREEN_H);
-        *dispcnt |= DISPLAY_WIN0_ON | DISPLAY_SPR_WIN_ON | DISPLAY_SPR_ACTIVE;
-        if (tide_top <= 0) {         // the tide covers the whole screen
-            *bldcnt = BLD_TIDE;
-            *bldy = TIDE_BRIGHTNESS;
-        } else {                     // shadow blend above the tide window, tide blend from its top line
-            *bldcnt = (uint16_t)((sub ? BIT(0) : BIT(1)) | BLD_FADE_BLACK);
-            *bldy = HW_SHADOW_BLDY;
-            s_split_match[sub] = tide_top - 1;
-        }
-    }
-    split_arm_next();
+    *dispcnt = (*dispcnt & ~DISPLAY_WIN0_ON) | DISPLAY_SPR_WIN_ON | DISPLAY_SPR_ACTIVE;
+    *bldcnt = (uint16_t)((sub ? BIT(0) : BIT(1)) | BLD_FADE_BLACK);
+    *bldy = HW_SHADOW_BLDY;
 }
 
 void hwshadow_regs_off(void) {
-    s_split_match[0] = s_split_match[1] = -1;
-    REG_DISPSTAT &= ~DISP_YTRIGGER_IRQ;
     REG_DISPCNT &= ~DISPLAY_SPR_WIN_ON;
     REG_DISPCNT_SUB &= ~DISPLAY_SPR_WIN_ON;
 }

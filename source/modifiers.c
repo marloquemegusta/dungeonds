@@ -14,22 +14,16 @@ typedef struct {
 } ModInfo;
 
 enum {
-    MOD_PIERCING_PELLETS = 0,   // shotgun pellets go through 1 enemy, -25% damage
-    MOD_DOUBLE_CHAMBER,         // +3 pellets, +12 frames between shots
-    MOD_LIGHT_TRIGGER,          // sniper aims 8 frames faster, -25% damage
+    MOD_LIGHT_TRIGGER = 0,      // sniper aims 8 frames faster, -25% damage
     MOD_LONG_BARREL,            // sniper +50% damage, aims 10 frames slower
-    MOD_BLOODLUST,              // a kill readies the shotgun at once, -1 max hit
     MOD_BONE_PLATE,             // +2 max hits (and heals 2), -12% speed
     MOD_LIGHT_FEET,             // +15% speed, -20 i-frames
-    MOD_BRUTAL_KICK             // shotgun shove x2, own recoil x2
+    MOD_BRUTAL_KICK             // shove x2, own recoil x2
 };
 
 static const ModInfo s_info[MOD_COUNT] = {
-    [MOD_PIERCING_PELLETS] = { "Perforantes",      RGB15(31, 22, 4)  | BIT(15) },
-    [MOD_DOUBLE_CHAMBER]   = { "Recámara doble",   RGB15(31, 12, 4)  | BIT(15) },
     [MOD_LIGHT_TRIGGER]    = { "Gatillo ligero",   RGB15(6, 30, 31)  | BIT(15) },
     [MOD_LONG_BARREL]      = { "Cañón largo",      RGB15(8, 14, 31)  | BIT(15) },
-    [MOD_BLOODLUST]        = { "Sed de sangre",    RGB15(31, 4, 6)   | BIT(15) },
     [MOD_BONE_PLATE]       = { "Coraza ósea",      RGB15(28, 28, 22) | BIT(15) },
     [MOD_LIGHT_FEET]       = { "Pies ligeros",     RGB15(10, 31, 10) | BIT(15) },
     [MOD_BRUTAL_KICK]      = { "Retroceso brutal", RGB15(26, 6, 30)  | BIT(15) },
@@ -58,14 +52,6 @@ static uint32_t s_run = 0;
 
 static void apply(int id) {
     switch (id) {
-        case MOD_PIERCING_PELLETS:
-            g_mods.shotgun_pierce += 1;
-            g_mods.shotgun_damage_pct = g_mods.shotgun_damage_pct * 75 / 100;
-            break;
-        case MOD_DOUBLE_CHAMBER:
-            g_mods.shotgun_pellets += 3;
-            g_mods.shotgun_cooldown += 12;
-            break;
         case MOD_LIGHT_TRIGGER:
             g_mods.sniper_aim -= 8;
             g_mods.sniper_damage_pct = g_mods.sniper_damage_pct * 75 / 100;
@@ -73,12 +59,6 @@ static void apply(int id) {
         case MOD_LONG_BARREL:
             g_mods.sniper_damage_pct = g_mods.sniper_damage_pct * 150 / 100;
             g_mods.sniper_aim += 10;
-            break;
-        case MOD_BLOODLUST:
-            g_mods.kill_resets_shotgun = 1;
-            g_mods.max_hp -= 1;
-            g_player_state.max_hp -= 1;
-            if (g_player_state.hp > g_player_state.max_hp) g_player_state.hp = g_player_state.max_hp;
             break;
         case MOD_BONE_PLATE:
             g_mods.max_hp += 2;
@@ -101,7 +81,6 @@ static void apply(int id) {
 
 void mods_reset(void) {
     memset(&g_mods, 0, sizeof(g_mods));
-    g_mods.shotgun_damage_pct = 100;
     g_mods.sniper_damage_pct = 100;
     g_mods.speed_pct = 100;
     g_mods.knock_pct = 100;

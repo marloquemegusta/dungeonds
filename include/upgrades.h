@@ -4,7 +4,7 @@
 #include <stdint.h>
 #include <stddef.h>
 
-// DESIGN.md 6.12: in-run upgrades of the Open Heart. Gems give experience; each level offers
+// DESIGN.md 6.12: in-run upgrades of the Open Heart (Dones and Relics).
 // 1 of 3 Dones (stackable stats, 7 ranks) or, on levels 4/8/12/16, 1 of 3 Reliquias (once per run).
 // Dones write into g_mods (modifiers.h); relics only set an owned bit that other modules read.
 

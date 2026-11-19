@@ -5,7 +5,6 @@
 #include <nds.h>
 #include "godrays_gfx.h"
 #include "strip.h"
-#include "tide.h"
 
 #define GODRAY_OAM_LIMIT 128
 #define GODRAY_PIECE_LIMIT 96
@@ -92,7 +91,7 @@ static uint32_t screen_hash(int screen) {
 }
 
 static int render_screen(OamState *oam, uint8_t *gfx_base, int camera_x,
-                         int camera_y, int sub, int tide_visible) {
+                         int camera_y, int sub) {
     int id = 0;
     // Physical world line A = camera_y - shift is invariant under a rebase
     // (shift and camera_y move together), so a ray at world y W is drawn at
@@ -146,24 +145,15 @@ static int render_screen(OamState *oam, uint8_t *gfx_base, int camera_x,
                     dust_palette[d], SpriteSize_8x8, 0, 1);
         }
     }
-    if (tide_visible) {
-        for (int hide = 0; hide < GODRAY_OAM_LIMIT; hide++)
-            oam->oamMemory[hide].attribute[0] = ATTR0_DISABLED;
-    }
     hide_remaining(oam, id);
-    if (!tide_visible) setup_blend(sub);
+    setup_blend(sub);
     return id;
 }
 
 void godrays_update(int camera_x, int top_camera_y, int bottom_camera_y) {
     s_frame++;
-    // Tide rendering belongs to a separate layer. If enabled later, the whole
-    // engine is hidden while its line is visible so semi-transparent OBJ never
-    // becomes opaque inside the tide's fade-to-black window.
-    render_screen(&oamSub, (uint8_t *)0x06600000, camera_x, top_camera_y, 1,
-                  tide_visible_on_screen(top_camera_y));
-    render_screen(&oamMain, (uint8_t *)0x06400000, camera_x, bottom_camera_y, 0,
-                  tide_visible_on_screen(bottom_camera_y));
+    render_screen(&oamSub, (uint8_t *)0x06600000, camera_x, top_camera_y, 1);
+    render_screen(&oamMain, (uint8_t *)0x06400000, camera_x, bottom_camera_y, 0);
 }
 
 void godrays_present(void) {

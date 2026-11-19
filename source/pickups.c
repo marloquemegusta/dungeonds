@@ -55,12 +55,11 @@ void pickups_enemy_killed(const Enemy *enemy) {
     s_pickups[slot].active = 1;
 }
 
-void pickups_update(fixed player_x, fixed player_y, fixed tide_y, PlayerState *player) {
+void pickups_update(fixed player_x, fixed player_y, PlayerState *player) {
     s_anim_tick++;
     for (int i = 0; i < HEAL_PICKUP_MAX_ACTIVE; i++) {
         HealPickup *p = &s_pickups[i];
         if (!p->active) continue;
-        if (p->y >= tide_y) { p->active = 0; continue; }
         if (p->y > player_y + TO_FIXED(HEAL_PICKUP_RECYCLE_BELOW_PX)) {
             p->active = 0;
             continue;
