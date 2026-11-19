@@ -8,9 +8,10 @@ El repositorio cuenta con fuentes de verdad canónicas sin duplicación:
 | :--- | :--- | :--- |
 | `DESIGN.md` | Producto y Arte | Visión de juego, controles, mecánicas, dirección visual y decisiones abiertas. |
 | `LORE.md` | Lore | Biblia del mundo: eje temático, nombres, lugares, cronología y reglas de escritura. Todo texto de lore (Códice, vídeos) se escribe contra ella. |
+| `DESIGN-ARCHIVE.md` | Historia del diseño | Texto retirado de `DESIGN.md` (v0.1, v0.2, franja infinita, marea, gemas). No es fuente de verdad; se consulta solo por el porqué de una decisión pasada. |
 | `TECHNICAL.md` | Arquitectura C / NDS | Toolchain, presupuestos, pipeline de assets y render, dependencias de host y deuda técnica. |
 | `AGENTS.md` | Proceso y Reglas | Protocolo de trabajo, workflow de desarrollo para Nintendo DS y verificación de cambios. |
-| `STATUS.md` | Estado y Registro | Estado actual para retomar el trabajo y entregas recientes verificadas. Lo anterior a 2026-11 está en `STATUS-ARCHIVE.md`. |
+| `STATUS.md` | Estado y Registro | Estado actual para retomar el trabajo y entregas recientes verificadas. Lo anterior a 2026-11-17 está en `STATUS-ARCHIVE.md`. |
 | `assets/MANIFEST.md` | Catálogo de assets | Qué asset alimenta qué parte del juego, con qué script se genera y dónde se guarda. Política: «Ciclo de vida de los assets» abajo. |
 | `walkthroughs/` | Documentación por sesión | Un `walkthrough.md` por entrega, con su evidencia en `assets/`. Índice en `walkthroughs/README.md`. |
 | `LEAN-CTX.md` | Herramienta | Reglas de la herramienta lean-ctx; no es documentación del juego. |

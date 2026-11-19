@@ -1,5 +1,7 @@
 # TECHNICAL.md - Especificación Técnica y Arquitectura
 
+> **Qué es vigente (revisado 2026-11-19).** La ROM por defecto usa el kit de catedral de 256 px por salas (`strip.c` con `ENCOUNTERS_PROTO`), sin horda, marea ni gemas. Las secciones sobre arenas (v0.2), godrays, horda y franja infinita describen variantes de pruebas o historia y llevan su aviso. Lo demás (toolchain, presupuestos, oclusión, personajes, sombras por hardware, LFS) sigue valiendo.
+
 ## 1. Plataforma y Toolchain NDS
 - **Consola:** Nintendo DS (ARM946E-S @ 67 MHz para lógica/render, ARM7TDMI @ 33 MHz para audio/input).
 - **Aritmética:** Sin FPU hardware. Todo cálculo físico o posicional se realiza en punto fijo entero (`int32_t`, 8.8 o 12.12).
@@ -18,6 +20,8 @@
 - **Runtime NDS:** fondo en capas BG de tiles, oclusión por profundidad y actores en OAM. Blender no forma parte del runtime.
 
 ### Arenas: datos → lab → baker → runtime
+> **Solo variantes de pruebas (sandbox, bestiario).** La ROM por defecto no usa `arenas.json`; usa el kit de catedral de `strip.c`. Siguen en `hostTests`.
+
 - **Fuente única:** `assets/arenas/arenas.json` (geometría en píxeles de la imagen final, alturas en metros, inicio del jugador y enemigos con su `pack`). Desde v0.2 contiene una sola mazmorra de 768×768 con zonas de color, puertas y decoración (`zones`, `doors`, `kind` por bloque); la imagen y el recorte son por arena. La paleta de color la ajusta `tools/calibrate_arena_palette.py` (resultado en `tools/arena_palette.json`).
 - **Modelos:** `python tools/make_arena_glb.py` escribe `assets/models/environment/arenas/arena_0N.glb` con un escritor GLB propio (cajas con color plano; no hace falta Blender). La sala se gira 45° para que sus muros salgan alineados con la pantalla.
 - **Export:** `python tools/export_arenas.py [arena_0N]` (unos 25 s las cuatro) construye los GLB y llama a `tools/lab/export_map_package_headless.cjs`. El lab encuadra el modelo por su caja envolvente en ejes del mundo, que para una sala girada es mucho mayor que 384×384; por eso renderiza a 896×541 con 40,42 px/m y recorta 384×384 en (256,68) (`labRender` en `map_settings.json`). Paquete por arena en `assets/sprites/arenas/arena_0N/`: `world.png`, `collision.png/json`, `occlusion.png`, `occlusion_depth.png`.
@@ -97,8 +101,9 @@
 - **Selectores de depuración:** `L` (ciclo de armas heredado de v0.1), `SELECT` (estilo A/B/C) e `Y` (aura L/G/E/H). En el juego actual cada personaje tiene una única arma; estos selectores y cualquier cambio de animación en la ROM son solo para depuración y se retiran al elegir las variantes definitivas.
 
 
-### 3.5. Rayos de luz (godrays): integrados en Catedral v2 (2026-11-09 / 2026-11-12)
-- **Estado:** los godrays están integrados en `main` con la catedral v2 (`walkthroughs/catedral-v2-salon/`, medidos en DS: peor frame al 72 % y 26 % de media), y existe además la variante de compilación `godrays` (`GODRAYS_PROTO=1`, `.ds-game-dev/project.json`).
+### 3.5. Rayos de luz (godrays): solo en la variante `godrays` (2026-11-09 / 2026-11-12)
+> **No están en la ROM por defecto** (solo se compilan con `GODRAYS_PROTO=1`); las anclas descritas abajo son las de la catedral infinita de 512 px y no se han adaptado a las salas de 256 px.
+- **Estado:** integrados con la catedral v2 en su día (`walkthroughs/catedral-v2-salon/`, medidos en DS: peor frame al 72 % y 26 % de media); hoy solo viven en la variante de compilación `godrays` (`GODRAYS_PROTO=1`, `.ds-game-dev/project.json`).
 - **Cómo:** `source/godrays.c` y `source/godrays_gfx.c` (cabeceras `include/godrays*.h`) dibujan rayos con OBJ semitransparentes anclados cada 256 px absolutos de la franja, alternando paredes, compensando los rebases con `strip_shift_total_px()`. Sprites en `assets/sprites/godrays/` y notas en `tools/godrays/README.md`.
 - **Límites conocidos:** con la línea de marea visible se ocultan todos los rayos (la semitransparencia OBJ se vuelve opaca en la ventana de la marea); los rayos usan sprites placeholder y ámbar/vitral sin decisión de arte en `DESIGN.md`.
 - **Desajuste de origen:** la variante de rosetón también se coloca en los anclajes periódicos de los muros laterales. El layout de catedral reserva el rosetón para el arco frontal del crucero; separar ese emisor es trabajo de la Sesión 3 (`DESIGN.md` §6.9.1b).
@@ -132,7 +137,6 @@ Origen: `walkthroughs/audit-saneamiento-2d3d/`. Lo ya resuelto (colisión/oclusi
 - Resuelto (ver `STATUS.md`): movimiento/colisión isotrópicos en suelo (`GROUND_DY2`, elipse 6×3), ancla única exportada, oclusión exacta por consulta directa de tramos (sin mapa 4×4 ni reconstrucción por cámara).
 
 ### 4.2. Gameplay
-- Fallback de spawn de `encounters_spawn_wave` con coordenadas del mapa antiguo (380,227) y centinela `anchor == (0,0)`; el generador de oleadas por "plantas" se sustituye por arenas en la Fase D.
 - `los.c` bloquea la visión con `flags == 3`, las balas con el bit `0x02` y los cuerpos con el `0x01`. Para decidir si un enemigo puede disparar o morder usa `bullet_line_is_free` y `line_is_walkable` (`collision.c`), no solo la visión.
 - Resuelto (ver `STATUS.md`, v0.1): lead del tirador, i-frames, pickups, navegación BFS (`navfield.c`), mordisco a través de muros.
 
@@ -163,8 +167,8 @@ Origen: `walkthroughs/audit-motor-2d3d/`. Resueltos en el prototipo A (composito
 ### 4.6. Oclusión de actores tras muros
 Decisión 2026-11-10 (`DESIGN.md` §3): los píxeles de personaje y enemigos que quedan detrás de una superficie se omiten con la profundidad horneada. Se eliminaron el parpadeo por frames alternos, la transparencia condicionada de enemigos, el dibujo de la sombra del jugador sobre el muro y la línea negra que reconstruía el borde de colisión (`draw_hidden_wall_base`). No se muestran guías de colisión en la pared.
 
-### 4.7. Requisitos técnicos de la v0.3: horda y franja vertical (2026-11-06)
-Diseño en `DESIGN.md` §6. Esto es lo que el motor actual no cubre y cómo se mide.
+### 4.7. Requisitos técnicos de la v0.3: horda y franja vertical (2026-11-06; histórico)
+> **Histórico.** La ROM por defecto ya no tiene horda continua ni franja infinita (`DESIGN.md` §6.13.6); el criterio de 48 enemigos activos no se persigue. Se conserva por las mediciones de rendimiento y por si vuelve una horda en otra variante. Diseño original en `DESIGN-ARCHIVE.md`.
 
 **Cómo manejaba los enemigos la v0.2 (revisado 2026-11-06):**
 - **Total:** array fijo de `MAX_GAMEPLAY_ENEMIES` = 24 (`gameplay.h`). En la v0.2 todos existen desde el principio y los `DORMANT` no ejecutan IA.
