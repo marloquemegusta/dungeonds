@@ -27,6 +27,9 @@
         "cathedral-horde": {
             "defines": ["SANDBOX=1", "CATHEDRAL_PLAYGROUND=1", "CATHEDRAL_AI=2"]
         },
+        "cobertura-prueba": {
+            "defines": ["SKIP_TITLE=1", "COBERTURA_PRUEBA=1"]
+        },
         "cathedral-playground-perf": {
             "defines": ["SANDBOX=1", "PLAYGROUND=1", "GODRAYS_PROTO=1", "CATHEDRAL_PLAYGROUND=1", "PERF_PROFILE=1"]
         },

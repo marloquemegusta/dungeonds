@@ -584,12 +584,12 @@ Sustituyó (implementado en la ROM desde 2026-11-17) al compositor v2 de la cate
 - Bancos y sacos paran cuerpos y cargas, no disparos. Los enemigos los rodean (campo de navegación), así que ordenan a la horda en hileras. Pendiente de comprobar: si el Cireneo queda aturdido al chocar con un banco como con un muro (si sí, el banco te protege del Cireneo).
 - Bancos destructibles: mecánica candidata, no ahora.
 - **Agacharse tras coberturas bajas (decidido 2026-11-17, rama `feat/coberturas-bajas`).** Sin botón: la `L` sigue reservada para la habilidad activa (§6.5).
-  - **Se agacha solo** al pegarse a un banco o a unos sacos. Mientras siga pegado y se mueva, **anda agachado y más lento**. Al separarse se levanta.
+  - **Se agacha solo, y solo mientras pulsa hacia la cobertura** (decidido 2026-11-19). Estar pegado a un banco o a unos sacos no basta: hay que pulsar en la dirección en la que está la cobertura (arriba, o arriba con izquierda/derecha si está encima; el lateral si está al lado). Así andar pegado y en paralelo a un banco no agacha por accidente. Mientras se pulsa hacia ella, **anda agachado y más lento**, también en diagonal y paralelo a la cobertura. Al dejar de pulsar hacia ella, o al separarse, se levanta. Sin pulsar, de pie y expuesto, aunque esté pegado.
   - **No dispara agachado.** Al tocar con el stylus se levanta y dispara (también mientras carga el rayo), y queda expuesto. Al soltar, vuelve a agacharse si sigue pegado.
   - **Protege por un solo lado.** Un disparo enemigo le pasa por encima solo si cruza la cobertura antes de llegarle. Desde su lado de la cobertura le da igual que de pie. Cubre también del haz del Ojo.
   - Los cuerpo a cuerpo le alcanzan agachado igual que de pie: el precio es quedarse quieto mientras la horda rodea el banco.
   - Coberturas altas (columnas, estatuas): sin cambios ni animación propia, porque ya paran los disparos.
-  - Cifras `[TUNABLE-PLACEHOLDER]`: «pegado» = a ≤ 4 px de la huella de la cobertura; velocidad agachado = 50 % de la normal; se levanta y se agacha en ~6 frames.
+  - Cifras `[TUNABLE-PLACEHOLDER]`: «pegado» = a ≤ 4 px de la huella de la cobertura; «hacia ella» = la cobertura está en el lado de la huella al que apunta la cruceta (se mira en el borde de esa zona de 4 px, por eje); velocidad agachado = 50 % de la normal; se levanta y se agacha en ~6 frames.
   - Arte: un clip «agachado» quieto y andando, en 8 direcciones, del héroe. Decidido (2026-11-18): variante A2 del andar agachado (cadera 15 u más baja, torso más inclinado que el clip de Mixamo, 20,8 px de alto frente a 32,3 de pie); el quieto es un fotograma fijo de ese andar.
   - Referencia de género: las mesas volcadas de Enter the Gungeon.
 

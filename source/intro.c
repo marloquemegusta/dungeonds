@@ -27,7 +27,7 @@ static const IntroCard s_cards[N_CARDS] = {
     { "Moverse y apuntar",
       "La cruceta mueve. El lápiz apunta; mantenerlo pulsado carga el disparo y al soltarlo sale el rayo." },
     { "Coberturas",
-      "Pégate a un banco o a unos sacos y te agachas solo. Andas más despacio, y el Ojo no te ve tras ellos." },
+      "Pégate a un banco o a unos sacos y pulsa hacia ellos para agacharte. Andas más despacio, y el Ojo no te ve tras ellos." },
     { "Rematar",
       "Un disparo deja tambaleando al caído. Acércate y pulsa L para rematarlo: durante la ejecución y un segundo después eres invulnerable, y el rayo queda recargado." },
     { "Relicarios",
