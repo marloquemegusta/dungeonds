@@ -66,6 +66,8 @@ const HTML = path.join(__dirname, 'FBX-Web-Renderer-offline.html');
     await page.evaluate((v) => { window.__spriteLab.doubleSided = v; }, argv.includes('--doubleSided'));
     // --fixedGround (remates): todos los fotogramas comparten el suelo de la escena (y = 0) en vez de apoyarse en su punto mas bajo.
     await page.evaluate((v) => { window.__spriteLab.fixedGround = v; }, argv.includes('--fixedGround'));
+    // --noCHeader: no genera nds_shadow_anchor.h (con muchos fotogramas, p. ej. 56, la cadena supera el limite de V8; solo hace falta para la ROM)
+    await page.evaluate((v) => { window.__spriteLab.skipCHeader = v; }, argv.includes('--noCHeader'));
     if (fs.statSync(model).isDirectory()) {
       const glbs = fs.readdirSync(model).filter(f => /^f\d+\.glb$/i.test(f)).sort();
       if (!glbs.length) throw new Error('No fNN.glb files found in ' + model);

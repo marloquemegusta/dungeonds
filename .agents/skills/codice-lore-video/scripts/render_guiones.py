@@ -24,6 +24,7 @@ VOICE_ID = "5egO01tkUjEzu7xSSE8M"
 MODEL_ID = "eleven_multilingual_v2"
 STABILITY, SIMILARITY, STYLE, SPEED = "0.28", "0.80", "0.60", "1.0"
 
+CHAR_SPEED = {"íñigo": "0.8"}   # voces de personaje mas lentas y solemnes (velocidad ElevenLabs, 0.7-1.2)
 CHAR_SETTINGS = ("0.65", "0.85", "0.15", "1.0")   # estable: con mas emocion la voz pierde el acento y alarga palabras
 DIRS = ["S", "SW", "W", "NW", "N", "NE", "E", "SE"]
 DIR_INDEX = {d: i for i, d in enumerate(DIRS)}  # file prefix index
@@ -186,7 +187,7 @@ def parse_stage(inner):
     """Contenido de [..]: fichas separadas por ' · ' (ver la leyenda de `assets/videos/guiones/lote-01.md`). Devuelve el plano o sale con error."""
     st = {"cerca": False, "dir": None, "all": None, "A": None, "B": None, "staged": False, "lejos": False, "paso": None,
           "bancos": None, "columnas": None, "general": False, "lapidas": False, "pasa": None, "props": [],
-          "alejar": False, "multitud": 0, "entero": False, "sigue": False, "altar": None, "solemne": False}
+          "alejar": False, "multitud": 0, "entero": False, "medio": False, "sigue": False, "altar": None, "solemne": False}
     for tok in [t.strip() for t in inner.split("·") if t.strip()]:
         n = norm_tok(tok)
         if n in ("bancos", "bancos volcados", "bancos en fila"):
@@ -200,6 +201,9 @@ def parse_stage(inner):
             continue
         if n == "lapidas":
             st["lapidas"] = True
+            continue
+        if n == "medio":   # plano medio (de cintura para arriba) en una escena con fondo (p. ej. `altar lejos`)
+            st["medio"] = True
             continue
         if n == "entero":   # primer plano escenificado: el personaje entero, centrado, sin cortes
             st["entero"] = True
@@ -246,7 +250,7 @@ def parse_stage(inner):
             st["all"] = spec
             st["dir"] = spec["dir"]
     st["staged"] = bool(st["A"] or st["B"] or (st["all"] and st["all"]["motion"]) or st["bancos"] or st["columnas"]
-                        or st["general"] or st["lapidas"] or st["pasa"] or st["props"] or st["altar"] or st["alejar"] or st["multitud"] or st["entero"])
+                        or st["general"] or st["lapidas"] or st["pasa"] or st["props"] or st["altar"] or st["alejar"] or st["multitud"] or st["entero"] or st["medio"])
     return st
 
 
@@ -489,6 +493,9 @@ def build_shot(part, d, dur, close, dst):
 
 
 # ---------------------------------------------------------------- planos escenificados
+CROWD_PACE_LEAD = 2.2    # multitud con capitan: marcha visible (la formacion y el capitan a la vez)
+MEDIO_H, MEDIO_TOP = 1.12, 0.40
+ALTAR_MEDIO_K, ALTAR_MEDIO_Y = 0.8, 0.36   # altar visible tras el plano medio   # ficha `medio`: alto del personaje (en alturas de plano) y y de su cabeza
 STAGE_SCALE = 5.25     # escala pantalla/sprite de un personaje (840 / 160)
 STAGE_W, STAGE_H = 1080, 840
 STAGE_MARGIN = 70      # margen de izq/der/arriba/abajo respecto al borde
@@ -706,6 +713,13 @@ def build_staged_shot(part, st, dur, dst):
         for f in figs:
             f["off"] = f["slot"] - W / 2
     y_def = STAGE_GROUND_Y * H
+    if st["medio"] and not st["cerca"]:
+        f0 = figs[0]
+        f0["unit"] = MEDIO_H * H / ((f0["feet"] - f0["top"]) * 160.0 / f0["cell"])
+        f0["scale"] = f0["unit"] * 160.0 / f0["cell"]
+        f0["height"] = (f0["feet"] - f0["top"]) * f0["scale"]
+        f0["halfw"] = max(max(abs(b[0] - f0["cell"] / 2), abs(b[2] - f0["cell"] / 2)) for b in f0["bbs"]) * f0["scale"]
+        y_def = MEDIO_TOP * H + f0["height"]       # cabeza arriba, cintura en el borde inferior
     if st["cerca"] and not st["alejar"]:
         y_def = (H + figs[0]["height"]) / 2 + 0.04 * H   # primer plano centrado en vertical
     group = [f for f in figs if f["grouped"] and f["spec"]["motion"]]
@@ -857,6 +871,9 @@ def build_staged_shot(part, st, dur, dst):
     if st["altar"]:
         altar = build_altar(ps * (0.3 if st["altar"] == "lejos" else 1.0))
         altar["fy0"] = (0.13 if st["altar"] == "lejos" else 0.27) * H
+        if st["medio"]:   # plano medio: el altar a escala de plano general, visible sobre la cabeza
+            altar = build_altar((GEN_HH / HERO_PX) * prop_scale_factor() * ALTAR_MEDIO_K)
+            altar["fy0"] = ALTAR_MEDIO_Y * H
     alej = None
     if st["alejar"]:   # zoom out lento: del encuadre cercano al personaje entero con todo lo que abre
         bb = (min(b[0] for b in hero["bbs"]), min(b[1] for b in hero["bbs"]),
@@ -930,6 +947,9 @@ def build_staged_shot(part, st, dur, dst):
             objs.append((1, u * (H + pasa[2]["h"]), -1, ("prop", pasa[2], pasa[1])))
         objs.sort(key=lambda c: (c[0], c[1], c[2]))  # el mas cercano a camara (pies mas abajo) delante
         canvas = Image.new("RGB", (W, H), (0, 0, 0))
+        if altar_now and st["medio"]:   # plano medio: el altar va DETRAS del personaje, sin recuadro negro que le corte el penacho
+            im_, msk_, afy, afeet = altar_now
+            canvas.paste(im_.convert("RGB"), (int(round(W / 2 - im_.width / 2)), int(round(afy - afeet))), msk_)
         if puddle:
             pcx, pcy, rx, ry, fs = puddle
             patch, pm = floor_puddle(rx, ry, fs, -vscroll * t / fs)
@@ -965,7 +985,7 @@ def build_staged_shot(part, st, dur, dst):
             else:
                 _, pd, px_ = it
                 canvas.paste(pd["rgb"], (int(round(px_ - pd["w"] / 2)), int(round(fy - pd["feet"]))), pd["mask"])
-        if altar_now:   # presbiterio despejado: sin bancos alrededor del altar (las columnas siguen); el altar encima
+        if altar_now and not st["medio"]:   # presbiterio despejado: sin bancos alrededor del altar (las columnas siguen); el altar encima
             im_, msk_, afy, afeet = altar_now
             clear_y = int(altar["fy0"] + 0.10 * H)
             canvas.paste((0, 0, 0), (int(W / 2 - 345), 0, int(W / 2 + 345), clear_y))
@@ -995,15 +1015,21 @@ def build_crowd_shot(part, st, dur, dst):
     unit0 = 0.27 * H / HERO_PX                     # fila media: Elias mediria ~285 px
     lanes = 3
     nrows = -(-n // lanes)
-    row_f = [0.70 + 0.44 * r / max(1, nrows - 1) for r in range(nrows)]       # atras pequenas, delante grandes
-    ends = [(0.36 + 0.62 * r / max(1, nrows - 1)) * H for r in range(nrows)]  # filas bien separadas en profundidad
+    lead = d == "N" and len(anims) > 1      # de espaldas: la primera animacion es el capitan, solo y delante (arriba); detras, la formacion
+    canims = anims[1:] if lead else anims
+    nr_all = nrows + (1 if lead else 0)
+    row_f = [0.70 + 0.44 * r / max(1, nr_all - 1) for r in range(nr_all)]       # atras pequenas, delante grandes
+    ends = [(0.36 + 0.62 * r / max(1, nr_all - 1)) * H for r in range(nr_all)]  # filas bien separadas en profundidad
     ref_h = None
     figs = []
-    for r in range(nrows):
-        cnt = min(lanes, n - r * lanes)
-        for c in range(cnt):
+    slots = [(0, 0, 1, anims[0])] if lead else []
+    for r0 in range(nrows):
+        cnt0 = min(lanes, n - r0 * lanes)
+        for c0 in range(cnt0):
+            slots.append((r0 + (1 if lead else 0), c0, cnt0, canims[(len(slots) + r0) % len(canims)]))
+    for r, c, cnt, anim in slots:
+        if True:
             i = len(figs)
-            anim = anims[(i + r) % len(anims)]
             frames, durs = load_dir(anim, d, mods)
             cell = frames[0].width
             bbs = [b for b in (im.point(lambda v: 255 if v > 0 else 0).convert("L").getbbox() for im in frames) if b]
@@ -1013,13 +1039,15 @@ def build_crowd_shot(part, st, dur, dst):
                 ref_h = hgt                          # altura de la primera animacion (monjas) como referencia
             mult = min(1.5, max(1.0, 0.92 * ref_h / hgt))   # los monaguillos, si su sprite es mas pequeno, se suben
             unit = unit0 * row_f[r] * mult
-            jit = ((i * 37) % 11 - 5) / 5.0 * 0.08 * HERO_PX * unit
-            x = W / 2 + (c - (cnt - 1) / 2.0) * 0.95 * HERO_PX * unit0 * row_f[r] + jit                 + (0.5 if r % 2 else -0.0) * 0.5 * HERO_PX * unit0 * row_f[r]   # filas alternas desplazadas medio hueco
+            if lead: unit *= 2.3 if r == 0 else 0.8   # el capitan, claramente mayor; la formacion, mas pequena
+            jit = 0.0 if lead else ((i * 37) % 11 - 5) / 5.0 * 0.08 * HERO_PX * unit
+            x = W / 2 + (c - (cnt - 1) / 2.0) * 0.95 * HERO_PX * unit0 * row_f[r] + jit                 + (0.5 if (r % 2 and not lead) else -0.0) * 0.5 * HERO_PX * unit0 * row_f[r]   # filas alternas desplazadas medio hueco
             scale = unit * 160.0 / cell
             sz = int(round(cell * scale))
             mean_s = sum(durs) / 1000.0 / len(frames)
             v = STRIDE_PX_FRAME[d] * unit0 / mean_s     # velocidad comun: el bloque avanza junto
-            figs.append({"x": x, "y_end": ends[r] + ((i * 53) % 9 - 4) * 2, "v": v, "durs": durs, "feet": feet,
+            if lead: v = -v * CROWD_PACE_LEAD                            # de espaldas el bloque sube por la pantalla
+            figs.append({"x": x, "y_end": ends[r] + (0 if lead else ((i * 53) % 9 - 4) * 2), "v": v, "durs": durs, "feet": feet,
                          "scale": scale, "sz": sz, "phase": (i * 370) % sum(durs),
                          "big": [(im.resize((sz, sz), Image.NEAREST), sprite_mask(im).resize((sz, sz), Image.NEAREST))
                                  for im in frames]})
@@ -1046,7 +1074,7 @@ def build_crowd_shot(part, st, dur, dst):
                 if tm < acc:
                     break
             f["phase"] += dt
-            objs.append((f["y_end"] - f["v"] * max(0.0, dur - t), f, idx))
+            objs.append((f["y_end"] - f["v"] * max(0.0, dur - t), f, idx))   # v < 0: sube
         objs.sort(key=lambda o: o[0])
         canvas = Image.new("RGB", (W, H), (0, 0, 0))
         for fy, f, idx in objs:
@@ -1116,7 +1144,7 @@ def phrase_audio(ph, sin_voz, wdir, idx, voices):
     """Return path of an mp3/wav with the phrase and its duration."""
     text = ph["text"]
     if ph["voices"] and not sin_voz:
-        files = [tts_cached(text, voices[n.lower()], CHAR_SETTINGS) for n in ph["voices"]]
+        files = [tts_cached(text, voices[n.lower()], CHAR_SETTINGS[:3] + (CHAR_SPEED.get(n.lower(), CHAR_SETTINGS[3]),)) for n in ph["voices"]]
         if len(files) == 1:
             return files[0], get_duration(files[0])
         p = os.path.join(wdir, f"vo_{idx:03d}_mix.wav")
