@@ -1,6 +1,6 @@
 {
   "name": "intro_tarjetas",
-  "description": "Recorre las 4 tarjetas de introduccion con sus bucles de video (capturas dobles por tarjeta) y entra en partida.",
+  "description": "Recorre las 5 tarjetas de introduccion (texto y bucle de video) y entra en partida (variante encuentros).",
   "steps": [
     {
       "frames": 60
@@ -60,11 +60,11 @@
     },
     {
       "frames": 50,
-      "capture": "03_marea_a"
+      "capture": "03_remate_a"
     },
     {
       "frames": 13,
-      "capture": "03_marea_b"
+      "capture": "03_remate_b"
     },
     {
       "frames": 37,
@@ -81,11 +81,11 @@
     },
     {
       "frames": 50,
-      "capture": "04_corazon_a"
+      "capture": "04_relicario_a"
     },
     {
       "frames": 13,
-      "capture": "04_corazon_b"
+      "capture": "04_relicario_b"
     },
     {
       "frames": 37,
@@ -101,8 +101,26 @@
       "frames": 10
     },
     {
-      "frames": 30,
-      "capture": "05_en_partida"
+      "frames": 50,
+      "capture": "05_vida_a"
+    },
+    {
+      "frames": 13,
+      "capture": "05_vida_b"
+    },
+    {
+      "frames": 37,
+      "capture_sequence": "v5",
+      "capture_every": 2
+    },
+    {
+      "button_down": "A",
+      "frames": 4
+    },
+    {
+      "button_up": "A",
+      "frames": 60,
+      "capture": "partida"
     }
   ],
   "evidence_only": true

@@ -391,5 +391,4 @@ static const EncEnemyDef s_boss_enemies[] = {
 };
 static const uint8_t s_tier_of[ENC_COUNT] = { 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2 };
 #define ENC_GOLDEN_AFTER 6
-#define ENC_HEAL_EVERY 3
 #define ENC_START_CLEAR_BLOCKS 2

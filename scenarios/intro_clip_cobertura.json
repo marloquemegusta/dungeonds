@@ -1,12 +1,16 @@
 {
-  "name": "intro_clip_marea",
-  "description": "Heroe retrocede hacia el sur mientras la marea real sube por el borde inferior.",
-  "evidence_only": true,
+  "name": "intro_clip_cobertura",
+  "description": "Sandbox: un Ojo apunta desde el norte a traves de un bloque de bancos; el heroe, agachado detras, no recibe dano.",
+  "suite": false,
+  "evidence_only": false,
   "state": {
     "symbols": {
       "sb": "g_sandbox",
       "ps": "g_player_state",
-      "fd": "g_pickup_force_drop"
+      "nav": "g_nav_state",
+      "crouch": "g_hero_crouched",
+      "fd": "g_pickup_force_drop",
+      "en": "g_enemies"
     },
     "default_symbol": "sb",
     "fields": {
@@ -308,34 +312,292 @@
         "offset": 0,
         "type": "s32"
       },
+      "hero_x": {
+        "symbol": "nav",
+        "offset": 0,
+        "type": "s32"
+      },
+      "hero_y": {
+        "symbol": "nav",
+        "offset": 4,
+        "type": "s32"
+      },
+      "crouched": {
+        "symbol": "crouch",
+        "offset": 0,
+        "type": "s32"
+      },
       "force_drop": {
         "symbol": "fd",
         "offset": 0,
         "type": "u8"
+      },
+      "en0_x": {
+        "symbol": "en",
+        "offset": 0,
+        "type": "s32"
+      },
+      "en0_y": {
+        "symbol": "en",
+        "offset": 4,
+        "type": "s32"
+      },
+      "en0_active": {
+        "symbol": "en",
+        "offset": 24,
+        "type": "s32"
+      },
+      "en0_hp": {
+        "symbol": "en",
+        "offset": 28,
+        "type": "s32"
+      },
+      "en0_maxhp": {
+        "symbol": "en",
+        "offset": 32,
+        "type": "s32"
+      },
+      "en0_state": {
+        "symbol": "en",
+        "offset": 41,
+        "type": "u8"
+      },
+      "en0_timer": {
+        "symbol": "en",
+        "offset": 44,
+        "type": "s32"
       }
     }
   },
   "steps": [
     {
-      "frames": 40
+      "frames": 30
     },
     {
       "poke": [
         {
-          "field": "god",
+          "field": "player_x",
+          "value": 320
+        },
+        {
+          "field": "player_y",
+          "value": 1519
+        },
+        {
+          "field": "weapon",
           "value": 1
+        },
+        {
+          "field": "style",
+          "value": 0
+        },
+        {
+          "field": "flags",
+          "value": 33
+        },
+        {
+          "field": "enemy_count",
+          "value": 1
+        },
+        {
+          "field": "e0_type",
+          "value": 2
+        },
+        {
+          "field": "e0_flags",
+          "value": 0
+        },
+        {
+          "field": "e0_x",
+          "value": 320
+        },
+        {
+          "field": "e0_y",
+          "value": 1416
+        },
+        {
+          "field": "seq",
+          "value": 100
         }
       ],
       "frames": 1
     },
     {
-      "button_down": "DOWN",
-      "frames": 150
+      "wait_until": {
+        "field": "ack",
+        "equals": 100,
+        "timeout_frames": 60
+      }
     },
     {
-      "frames": 200,
+      "frames": 40
+    },
+    {
+      "frames": 8,
+      "capture_sequence": "c0",
+      "capture_every": 2,
+      "state_capture": "c0_fin"
+    },
+    {
+      "button_down": "UP",
+      "frames": 0
+    },
+    {
+      "frames": 14,
       "capture_sequence": "c1",
-      "capture_every": 2
+      "capture_every": 2,
+      "state_capture": "c1_fin"
+    },
+    {
+      "button_up": "UP",
+      "frames": 0
+    },
+    {
+      "button_down": "LEFT",
+      "frames": 0
+    },
+    {
+      "frames": 50,
+      "capture_sequence": "c2",
+      "capture_every": 2,
+      "state_capture": "c2_fin"
+    },
+    {
+      "button_up": "LEFT",
+      "frames": 0
+    },
+    {
+      "button_down": "RIGHT",
+      "frames": 0
+    },
+    {
+      "frames": 50,
+      "capture_sequence": "c3",
+      "capture_every": 2,
+      "state_capture": "c3_fin"
+    },
+    {
+      "button_up": "RIGHT",
+      "frames": 0
     }
-  ]
+  ],
+  "assertions": {
+    "state_changes": [
+      {
+        "at": "c0_fin",
+        "field": "hero_x",
+        "min_value": 81408
+      },
+      {
+        "at": "c0_fin",
+        "field": "hero_x",
+        "max_value": 82432
+      },
+      {
+        "at": "c0_fin",
+        "field": "hero_y",
+        "min_value": 388352
+      },
+      {
+        "at": "c0_fin",
+        "field": "hero_y",
+        "max_value": 389376
+      },
+      {
+        "at": "c1_fin",
+        "field": "hero_x",
+        "min_value": 80896
+      },
+      {
+        "at": "c1_fin",
+        "field": "hero_x",
+        "max_value": 82944
+      },
+      {
+        "at": "c1_fin",
+        "field": "hero_y",
+        "min_value": 386816
+      },
+      {
+        "at": "c1_fin",
+        "field": "hero_y",
+        "max_value": 388864
+      },
+      {
+        "at": "c2_fin",
+        "field": "hero_x",
+        "min_value": 73728
+      },
+      {
+        "at": "c2_fin",
+        "field": "hero_x",
+        "max_value": 77824
+      },
+      {
+        "at": "c2_fin",
+        "field": "hero_y",
+        "min_value": 385792
+      },
+      {
+        "at": "c2_fin",
+        "field": "hero_y",
+        "max_value": 389888
+      },
+      {
+        "at": "c3_fin",
+        "field": "hero_x",
+        "min_value": 79872
+      },
+      {
+        "at": "c3_fin",
+        "field": "hero_x",
+        "max_value": 83968
+      },
+      {
+        "at": "c3_fin",
+        "field": "hero_y",
+        "min_value": 385792
+      },
+      {
+        "at": "c3_fin",
+        "field": "hero_y",
+        "max_value": 389888
+      },
+      {
+        "at": "c0_fin",
+        "field": "hp",
+        "equals": 5
+      },
+      {
+        "at": "c1_fin",
+        "field": "hp",
+        "equals": 5
+      },
+      {
+        "at": "c2_fin",
+        "field": "hp",
+        "equals": 5
+      },
+      {
+        "at": "c3_fin",
+        "field": "hp",
+        "equals": 5
+      },
+      {
+        "at": "c2_fin",
+        "field": "crouched",
+        "equals": 1
+      },
+      {
+        "at": "c3_fin",
+        "field": "crouched",
+        "equals": 1
+      },
+      {
+        "at": "c0_fin",
+        "field": "crouched",
+        "equals": 0
+      }
+    ]
+  }
 }

@@ -88,7 +88,7 @@ typedef struct {
     uint8_t start_dones;     // 0  Dones to apply now, picking the first option each time (cleared when done)
     uint8_t auto_pick;       // 1  1 = every offer picks its first option at once (no menu); 2 = picks at random (seed), no menu
     uint8_t god;             // 2  1 = the hero ignores damage
-    uint8_t no_dones;        // 3  1 = relicarios give no Don (the hero stays at base power; the heal still comes)
+    uint8_t no_dones;        // 3  1 = relicarios give no Don (the hero stays at base power)
     uint16_t seed;           // 4  seed of the random offer picks (auto_pick 2) and of the bot
     uint8_t bot_reaction;    // 6  bot: frames of delay before it reacts to what the enemies do (0 = instant)
     uint8_t bot_aim_err;     // 7  bot: random aiming error in px, +-
@@ -100,6 +100,7 @@ typedef struct {
     uint8_t cam_up;          // 13 debug: the camera looks this many px further up (the guide shows the whole block); 0 = normal
     uint16_t boss_hp;        // 14 Abanderado hearts (0 = the table); read when the boss spawns, set before the act starts
     uint8_t start_boss;      // 16 1 = the next restart starts at the boss: encounters 0..11 cleared, hero in the corridor just below the boss room
+    uint8_t start_up4;       // 17 debug (recording shortcut): the hero starts this many 4-px steps higher than the usual spot (0 = normal)
     uint16_t boss_damage;    // 18 > 0: one shot of this damage at the boss (as the ray would deal it), then back to 0. Scenarios force phases and the kill
 } EncDebug;
 _Static_assert(sizeof(EncDebug) == 20 && offsetof(EncDebug, boss_damage) == 18 && offsetof(EncDebug, start_boss) == 16 && offsetof(EncDebug, force_plant) == 10 && offsetof(EncDebug, restart) == 12 && offsetof(EncDebug, cam_up) == 13 && offsetof(EncDebug, bot_reaction) == 6 && offsetof(EncDebug, bot_ojo_delay) == 8 && offsetof(EncDebug, bot_miss_pct) == 9 && offsetof(EncDebug, auto_pick) == 1 && offsetof(EncDebug, god) == 2 &&

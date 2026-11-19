@@ -7,7 +7,7 @@
 
 #define SW 256
 #define SH 192
-#define N_CARDS 4
+#define N_CARDS 6
 
 #define COL_BORDER (RGB15(8, 8, 8) | 0x8000)
 #define COL_SEP    (RGB15(6, 6, 6) | 0x8000)
@@ -23,13 +23,17 @@ typedef struct {
 
 static const IntroCard s_cards[N_CARDS] = {
     { "La catedral",
-      "Una horda de caídos y tú abriéndote paso por una nave que no termina." },
+      "Cada sala tiene sus caídos. Límpiala y la reja se levanta; al entrar, cae detrás de ti." },
     { "Moverse y apuntar",
-      "La cruceta mueve. El lápiz apunta, y mantenerlo pulsado carga el disparo." },
-    { "La marea",
-      "Sube desde abajo y empuja. Quedarse atrás es peligroso." },
+      "La cruceta mueve. El lápiz apunta; mantenerlo pulsado carga el disparo y al soltarlo sale el rayo." },
+    { "Coberturas",
+      "Pégate a un banco o a unos sacos y te agachas solo. Andas más despacio, y el Ojo no te ve tras ellos." },
+    { "Rematar",
+      "Un disparo deja tambaleando al caído. Acércate y pulsa L para rematarlo: durante la ejecución y un segundo después eres invulnerable, y el rayo queda recargado." },
+    { "Relicarios",
+      "Rompe a tiros los relicarios de las salas y elige un Don: una mejora para esta partida." },
     { "Vida",
-      "Tienes 5 Sagrados Corazones. Los enemigos a veces sueltan uno que cura 1 si lo pisas." },
+      "Tienes 5 Sagrados Corazones. Los caídos a veces sueltan uno que cura 1 si lo pisas. Tras un golpe tienes un segundo de invulnerabilidad." },
 };
 
 static void fill_rect(uint16_t *fb, int x0, int y0, int w, int h, uint16_t c) {
@@ -64,7 +68,7 @@ static void clear_black(uint16_t *fb) {
 #define VID_MAX_N 64
 #define VID_PIXELS (SW * SH)
 
-static const char *const s_clip_names[N_CARDS] = { "catedral", "apuntar", "marea", "corazon" };
+static const char *const s_clip_names[N_CARDS] = { "catedral", "apuntar", "cobertura", "remate", "relicario", "corazon" };
 
 typedef struct {
     FILE *f;

@@ -1,0 +1,128 @@
+{
+  "name": "intro_tarjetas_capturas",
+  "description": "Las 6 tarjetas de intro en la ROM por defecto: reposo y un bucle completo de pantalla completa por tarjeta.",
+  "suite": false,
+  "evidence_only": true,
+  "steps": [
+    {
+      "frames": 60
+    },
+    {
+      "tap": {
+        "x": 128,
+        "y": 66
+      },
+      "frames": 6
+    },
+    {
+      "release": true,
+      "frames": 20
+    },
+    {
+      "frames": 60,
+      "capture": "1_catedral"
+    },
+    {
+      "frames": 108,
+      "capture_sequence": "v1",
+      "capture_every": 2
+    },
+    {
+      "button_down": "A",
+      "frames": 4
+    },
+    {
+      "button_up": "A",
+      "frames": 10
+    },
+    {
+      "frames": 60,
+      "capture": "2_apuntar"
+    },
+    {
+      "frames": 128,
+      "capture_sequence": "v2",
+      "capture_every": 2
+    },
+    {
+      "button_down": "A",
+      "frames": 4
+    },
+    {
+      "button_up": "A",
+      "frames": 10
+    },
+    {
+      "frames": 60,
+      "capture": "3_cobertura"
+    },
+    {
+      "frames": 128,
+      "capture_sequence": "v3",
+      "capture_every": 2
+    },
+    {
+      "button_down": "A",
+      "frames": 4
+    },
+    {
+      "button_up": "A",
+      "frames": 10
+    },
+    {
+      "frames": 60,
+      "capture": "4_remate"
+    },
+    {
+      "frames": 128,
+      "capture_sequence": "v4",
+      "capture_every": 2
+    },
+    {
+      "button_down": "A",
+      "frames": 4
+    },
+    {
+      "button_up": "A",
+      "frames": 10
+    },
+    {
+      "frames": 60,
+      "capture": "5_relicario"
+    },
+    {
+      "frames": 128,
+      "capture_sequence": "v5",
+      "capture_every": 2
+    },
+    {
+      "button_down": "A",
+      "frames": 4
+    },
+    {
+      "button_up": "A",
+      "frames": 10
+    },
+    {
+      "frames": 60,
+      "capture": "6_corazon"
+    },
+    {
+      "frames": 128,
+      "capture_sequence": "v6",
+      "capture_every": 2
+    },
+    {
+      "button_down": "A",
+      "frames": 4
+    },
+    {
+      "button_up": "A",
+      "frames": 10
+    },
+    {
+      "frames": 60,
+      "capture": "partida"
+    }
+  ]
+}

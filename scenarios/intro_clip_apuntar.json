@@ -1,12 +1,16 @@
 {
   "name": "intro_clip_apuntar",
-  "description": "Heroe se mueve con la cruceta, apunta y carga el rayo con el lapiz y dispara a tres Exvotos en fila (un rayo mata a cada uno).",
-  "evidence_only": true,
+  "description": "Sandbox: Exvoto quieto; el heroe anda, apunta con el lapiz, carga y dispara.",
+  "suite": false,
+  "evidence_only": false,
   "state": {
     "symbols": {
       "sb": "g_sandbox",
       "ps": "g_player_state",
-      "fd": "g_pickup_force_drop"
+      "nav": "g_nav_state",
+      "crouch": "g_hero_crouched",
+      "fd": "g_pickup_force_drop",
+      "en": "g_enemies"
     },
     "default_symbol": "sb",
     "fields": {
@@ -308,10 +312,60 @@
         "offset": 0,
         "type": "s32"
       },
+      "hero_x": {
+        "symbol": "nav",
+        "offset": 0,
+        "type": "s32"
+      },
+      "hero_y": {
+        "symbol": "nav",
+        "offset": 4,
+        "type": "s32"
+      },
+      "crouched": {
+        "symbol": "crouch",
+        "offset": 0,
+        "type": "s32"
+      },
       "force_drop": {
         "symbol": "fd",
         "offset": 0,
         "type": "u8"
+      },
+      "en0_x": {
+        "symbol": "en",
+        "offset": 0,
+        "type": "s32"
+      },
+      "en0_y": {
+        "symbol": "en",
+        "offset": 4,
+        "type": "s32"
+      },
+      "en0_active": {
+        "symbol": "en",
+        "offset": 24,
+        "type": "s32"
+      },
+      "en0_hp": {
+        "symbol": "en",
+        "offset": 28,
+        "type": "s32"
+      },
+      "en0_maxhp": {
+        "symbol": "en",
+        "offset": 32,
+        "type": "s32"
+      },
+      "en0_state": {
+        "symbol": "en",
+        "offset": 41,
+        "type": "u8"
+      },
+      "en0_timer": {
+        "symbol": "en",
+        "offset": 44,
+        "type": "s32"
       }
     }
   },
@@ -323,7 +377,7 @@
       "poke": [
         {
           "field": "player_x",
-          "value": 330
+          "value": 300
         },
         {
           "field": "player_y",
@@ -339,11 +393,11 @@
         },
         {
           "field": "flags",
-          "value": 7
+          "value": 39
         },
         {
           "field": "enemy_count",
-          "value": 3
+          "value": 1
         },
         {
           "field": "e0_type",
@@ -355,47 +409,15 @@
         },
         {
           "field": "e0_x",
-          "value": 360
+          "value": 400
         },
         {
           "field": "e0_y",
           "value": 1792
         },
         {
-          "field": "e1_type",
-          "value": 3
-        },
-        {
-          "field": "e1_flags",
-          "value": 0
-        },
-        {
-          "field": "e1_x",
-          "value": 380
-        },
-        {
-          "field": "e1_y",
-          "value": 1792
-        },
-        {
-          "field": "e2_type",
-          "value": 3
-        },
-        {
-          "field": "e2_flags",
-          "value": 0
-        },
-        {
-          "field": "e2_x",
-          "value": 400
-        },
-        {
-          "field": "e2_y",
-          "value": 1792
-        },
-        {
           "field": "seq",
-          "value": 1
+          "value": 100
         }
       ],
       "frames": 1
@@ -403,35 +425,196 @@
     {
       "wait_until": {
         "field": "ack",
-        "equals": 1,
-        "timeout_frames": 30
+        "equals": 100,
+        "timeout_frames": 60
       }
     },
     {
-      "frames": 20,
-      "capture": "00_staged"
+      "frames": 40
     },
     {
-      "button_down": "LEFT",
+      "button_down": "RIGHT",
+      "frames": 0
+    },
+    {
       "frames": 30,
       "capture_sequence": "c0",
-      "capture_every": 2
+      "capture_every": 2,
+      "state_capture": "c0_fin"
     },
     {
-      "button_up": "LEFT",
+      "button_up": "RIGHT",
+      "frames": 0
+    },
+    {
       "tap": {
-        "x": 188,
-        "y": 110
+        "x": 190,
+        "y": 77
       },
-      "frames": 34,
+      "frames": 2,
       "capture_sequence": "c1",
       "capture_every": 2
     },
     {
-      "release": true,
-      "frames": 56,
+      "tap": {
+        "x": 190,
+        "y": 79
+      },
+      "frames": 2,
+      "capture_sequence": "c1",
+      "capture_every": 2
+    },
+    {
+      "tap": {
+        "x": 190,
+        "y": 82
+      },
+      "frames": 2,
+      "capture_sequence": "c1",
+      "capture_every": 2
+    },
+    {
+      "tap": {
+        "x": 190,
+        "y": 84
+      },
+      "frames": 2,
+      "capture_sequence": "c1",
+      "capture_every": 2
+    },
+    {
+      "tap": {
+        "x": 190,
+        "y": 87
+      },
+      "frames": 2,
+      "capture_sequence": "c1",
+      "capture_every": 2
+    },
+    {
+      "tap": {
+        "x": 190,
+        "y": 89
+      },
+      "frames": 2,
+      "capture_sequence": "c1",
+      "capture_every": 2
+    },
+    {
+      "tap": {
+        "x": 190,
+        "y": 92
+      },
+      "frames": 2,
+      "capture_sequence": "c1",
+      "capture_every": 2
+    },
+    {
+      "tap": {
+        "x": 190,
+        "y": 94
+      },
+      "frames": 2,
+      "capture_sequence": "c1",
+      "capture_every": 2
+    },
+    {
+      "tap": {
+        "x": 190,
+        "y": 96
+      },
+      "frames": 2,
+      "capture_sequence": "c1",
+      "capture_every": 2
+    },
+    {
+      "tap": {
+        "x": 190,
+        "y": 99
+      },
+      "frames": 2,
+      "capture_sequence": "c1",
+      "capture_every": 2
+    },
+    {
+      "tap": {
+        "x": 190,
+        "y": 101
+      },
+      "frames": 2,
+      "capture_sequence": "c1",
+      "capture_every": 2
+    },
+    {
+      "tap": {
+        "x": 190,
+        "y": 104
+      },
+      "frames": 2,
+      "capture_sequence": "c1",
+      "capture_every": 2
+    },
+    {
+      "tap": {
+        "x": 190,
+        "y": 106
+      },
+      "frames": 2,
+      "capture_sequence": "c1",
+      "capture_every": 2
+    },
+    {
+      "tap": {
+        "x": 190,
+        "y": 109
+      },
+      "frames": 2,
+      "capture_sequence": "c1",
+      "capture_every": 2
+    },
+    {
+      "tap": {
+        "x": 190,
+        "y": 111
+      },
+      "frames": 2,
+      "capture_sequence": "c1",
+      "capture_every": 2
+    },
+    {
+      "frames": 28,
       "capture_sequence": "c2",
       "capture_every": 2
+    },
+    {
+      "release": true,
+      "frames": 40,
+      "capture_sequence": "c3",
+      "capture_every": 2
     }
-  ]
+  ],
+  "assertions": {
+    "state_changes": [
+      {
+        "at": "c0_fin",
+        "field": "hero_x",
+        "min_value": 82944
+      },
+      {
+        "at": "c0_fin",
+        "field": "hero_x",
+        "max_value": 90112
+      },
+      {
+        "at": "c0_fin",
+        "field": "hero_y",
+        "min_value": 455168
+      },
+      {
+        "at": "c0_fin",
+        "field": "hero_y",
+        "max_value": 462336
+      }
+    ]
+  }
 }
