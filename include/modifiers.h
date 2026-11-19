@@ -22,7 +22,6 @@ typedef struct {
     int kill_resets_shotgun;    // every kill readies the shotgun at once
     int knock_pct;              // shotgun shove and stun
     // Open Heart upgrades (DESIGN.md 6.12.5)
-    int sniper_cooldown;        // extra recovery frames after a shot (negative = faster), Prisa
     int sniper_range;           // extra ray length in ground px, Alcance
     int fire_dmg_pct;           // 100 = normal, Brasa (read by the fire code)
     int burn_cap_bonus;         // extra Quemado layers, Rescoldo

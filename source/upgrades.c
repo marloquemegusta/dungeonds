@@ -18,17 +18,17 @@ typedef struct {
 
 // DESIGN.md 6.12.5. Muted palette, in the spirit of FX_SH_* (no primaries).
 static const UpgradeDef s_dones[UPG_DON_COUNT] = {
-    { "Fervor",   "Siempre: +25 % de daño del rayo.",
+    { "Fervor",   "Siempre: +14 % de daño del rayo.",
       UPG_TAG_RAFAGA, 0, UC(27, 17, 8) },
-    { "Prisa",    "Siempre: cargas y recuperas el rayo más rápido.",
+    { "Prisa",    "Siempre: cargas el rayo más rápido.",
       UPG_TAG_RAFAGA, 1, UC(22, 22, 14) },
     { "Alcance",  "Siempre: el rayo y la línea de apuntado llegan más lejos.",
       UPG_TAG_RAFAGA | UPG_TAG_VIGILIA, 2, UC(16, 20, 22) },
-    { "Brasa",    "Siempre: +25 % de daño de fuego.",
+    { "Brasa",    "Siempre: +14 % de daño de fuego.",
       UPG_TAG_FUEGO, 3, UC(26, 12, 6), UPG_CAP_BURN_SOURCE },
     { "Rescoldo", "Al quemar: +1 capa de tope y la quemadura dura más.",
       UPG_TAG_VIGILIA, 4, UC(21, 10, 8), UPG_CAP_BURN_SOURCE },
-    { "Paso",     "Siempre: andas un 12 % más rápido.",
+    { "Paso",     "Siempre: andas un 7 % más rápido.",
       UPG_TAG_VIGILIA | UPG_TAG_MARTIR, 5, UC(15, 21, 14) },
     { "Vida",     "Al elegirla: +1 corazón de tope y curas 1.",
       UPG_TAG_MARTIR, 0, UC(27, 10, 10) },
@@ -232,19 +232,26 @@ static void heal_one(void) {
     if (g_player_state.hp < g_player_state.max_hp) g_player_state.hp++;
 }
 
+// Total effect of each Don at its top rank, spread over UPG_MAX_RANK ranks (DESIGN.md 6.12.10). The cumulative
+// share is rounded up, so the ranks add up exactly to the total whatever UPG_MAX_RANK is.
+static int rank_step(int total, int rank) {
+    return (total * rank + UPG_MAX_RANK - 1) / UPG_MAX_RANK - (total * (rank - 1) + UPG_MAX_RANK - 1) / UPG_MAX_RANK;
+}
+
 static void apply_don(int id) {
     if (s_rank[id] >= UPG_MAX_RANK) return;
     s_rank[id]++;
     switch (id) {
-    case DON_FERVOR:   g_mods.sniper_damage_pct += 25; break;
-    case DON_PRISA:    g_mods.sniper_aim -= 4; g_mods.sniper_cooldown -= 6; break;
-    case DON_ALCANCE:  g_mods.sniper_range += 64; break;
-    case DON_BRASA:    g_mods.fire_dmg_pct += 25; break;
-    case DON_RESCOLDO: g_mods.burn_cap_bonus += 1; g_mods.burn_dur_bonus += 30; break;
-    case DON_PASO:     g_mods.speed_pct += 12; break;
+    case DON_FERVOR:   g_mods.sniper_damage_pct += rank_step(100, s_rank[id]); break;
+    case DON_PRISA:    g_mods.sniper_aim -= rank_step(40, s_rank[id]); break;   // 48 -> 8 frames at the top rank
+    case DON_ALCANCE:  g_mods.sniper_range += rank_step(256, s_rank[id]); break;
+    case DON_BRASA:    g_mods.fire_dmg_pct += rank_step(100, s_rank[id]); break;
+    case DON_RESCOLDO: g_mods.burn_cap_bonus += rank_step(4, s_rank[id]); g_mods.burn_dur_bonus += rank_step(120, s_rank[id]); break;
+    case DON_PASO:     g_mods.speed_pct += rank_step(48, s_rank[id]); break;
     case DON_VIDA:
-        g_mods.max_hp += 1;
-        g_player_state.max_hp += 1;
+        int hearts = rank_step(4, s_rank[id]);   // +4 hearts over all ranks; every rank still heals 1
+        g_mods.max_hp += hearts;
+        g_player_state.max_hp += hearts;
         heal_one();
         break;
     default: break;
@@ -297,7 +304,7 @@ static const UpgradeDef *def_of(const UpgradeOffer *o) {
 }
 
 void upgrades_offer_title(const UpgradeOffer *o, char *buf, int buf_size) {
-    static const char *const roman[UPG_MAX_RANK + 1] = { "", "I", "II", "III", "IV" };
+    static const char *const roman[UPG_MAX_RANK + 1] = { "", "I", "II", "III", "IV", "V", "VI", "VII" };
     const UpgradeDef *d = def_of(o);
     if (o->kind == UPG_KIND_DON) snprintf(buf, (size_t)buf_size, "%s %s", d->name, roman[s_rank[o->id] + 1]);
     else snprintf(buf, (size_t)buf_size, "%s", d->name);

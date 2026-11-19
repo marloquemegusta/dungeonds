@@ -371,7 +371,7 @@ Son una guía de diseño para dar variedad, no ramas ni clases. El jugador no lo
 - **Requisitos (decidido 2026-11-15):** una mejora solo se ofrece si ya tienes lo que la activa. Hoy: Brasa, Rescoldo, Auto de Fe y Martirio Contagioso necesitan una fuente de quemadura (Llama Votiva, Aura de Cilicio o Corazón Flagelado). La primera reliquia de fuego abre ese camino. Toda mejora futura declara su requisito.
 - Una reliquia cogida sale del pool. Un Don al máximo deja de ofrecerse; si no queda ninguno, la oferta es curar 1 corazón.
 
-#### 6.12.5 Dones (estadísticas apilables, 4 rangos)
+#### 6.12.5 Dones (estadísticas apilables, 7 rangos)
 | Don | Qué sube | Le sirve a | Le estorba o no le sirve a |
 |---|---|---|---|
 | **Fervor** | Daño del rayo | Ráfaga, Auto de Fe | Fuego puro (no lo usa) |
@@ -429,18 +429,18 @@ Son una guía de diseño para dar variedad, no ramas ni clases. El jugador no lo
 #### 6.12.10 Cifras vigentes (provisionales; sin gemas ni recuperación, revisado 2026-11-19)
 Todas son `[TUNABLE-PLACEHOLDER]`. Se fijaron a ojo partiendo de las cifras vigentes para montar la primera versión completa, y se ajustan con la lista que salga de la partida de prueba en la DS. Frames a 60 FPS; distancias en píxeles de suelo; vida en la escala 100 = 1,0 (exvoto 100, cireneo y ojo 300, abanderado 1200).
 
-**Rayo base:** daño 150. Carga 24 frames. **Alcance 160** (antes 320; 240 en la primera versión). **No hay recuperación tras disparar:** al volver a pulsar, la carga empieza de cero al instante (§6.10); el ritmo lo marca solo la carga. En el código quedan `fire_cooldown` del rayo y `sniper_cooldown` de Prisa, que no tienen efecto desde 2026-11-18 y se retiran al tocar estos números. **Por decidir:** alcance base más corto y carga más lenta para que las primeras salas sean un reto (pedido del usuario, 2026-11-19).
+**Rayo base (decidido 2026-11-19, a probar en la DS):** daño 150. **Carga 48 frames (0,8 s)**, antes 24. **Alcance 110**, antes 160 (320 y 240 en versiones anteriores). Motivo: con el rayo inicial muy rápido y de largo alcance las primeras salas no eran un reto; se quiere que empiecen justas y que el poder se gane con los Dones. **No hay recuperación tras disparar:** al volver a pulsar, la carga empieza de cero al instante (§6.10); el ritmo lo marca solo la carga. El `fire_cooldown` y el `sniper_cooldown` de Prisa se retiraron del código. **Prisa llega rápido al tope y se acepta:** el techo es estilo metralleta (carga 8), el principio es lento.
 
-**Dones (4 rangos cada uno):**
+**Dones (7 rangos cada uno, decidido 2026-11-19):** el efecto total al máximo es el de antes con 4 rangos (salvo Alcance, que baja de 416 a 366 al bajar la base); se reparte en 7 pasos (en el código, `rank_step` en `upgrades.c`, que reparte lo que haya aunque `UPG_MAX_RANK` cambie). Motivo: con un Don por relicario, una partida completa (~30) no debe permitir llevar todos los Dones al máximo: 7 Dones de 7 rangos son 49 plazas frente a ~30 picks. Se pasó por 4, 5 y 8 rangos antes de llegar a este. **Descartado (decidido 2026-11-19): limitar a 4 el número de Dones distintos** (estilo Vampire Survivors); el usuario prefiere que cualquier Don pueda subirse. **Riesgo conocido, a vigilar jugando:** con ofertas aleatorias y todos los Dones con el mismo peso, los picks tienden a repartirse y las builds pueden quedar planas; si pasa, las palancas son pesos por Don, poder rechazar una carta o sesgar la oferta hacia lo que ya tienes.
 | Don | Por rango | Al máximo |
 |---|---|---|
-| Fervor | +25 % daño del rayo | 300: mata cireneo y ojo de un disparo |
-| Prisa | −4 frames de carga | carga 8 (mínimo 6) |
-| Alcance | +64 de alcance del rayo y de la línea | 416 (el 320 de antes es ~77 %) |
-| Brasa | +25 % daño de fuego | ×2 |
-| Rescoldo | +1 capa de tope y +30 frames de duración | 9 capas, 240 frames |
-| Paso | +12 % velocidad (también con Procesión) | +48 % |
-| Vida | +1 corazón de tope y cura 1 | 9 corazones |
+| Fervor | +14 % daño del rayo (15 o 14 según el rango) | +100 % (×2) |
+| Prisa | −6 frames de carga (−5 en el 4.º y el 7.º) | carga 8 (mínimo 6) |
+| Alcance | +37 de alcance del rayo y de la línea (36 y 37) | 366 |
+| Brasa | +14 % daño de fuego (15 o 14 según el rango) | ×2 |
+| Rescoldo | +1 capa de tope en 4 de los 7 rangos y +18 frames de duración (17 en alguno) | 9 capas, 240 frames |
+| Paso | +7 % velocidad (también con Procesión) | +48 % |
+| Vida | +1 corazón de tope en 4 de los 7 rangos; cada rango cura 1 | 9 corazones |
 
 **Quemado:** tope base 5 capas; duración base 120 frames, que se renueva al volver a aplicar. Cada 15 frames hace 3 de daño de fuego por capa (12 por capa y segundo). Frena un 10 % por capa, hasta un 50 %. Las muertes por fuego no congelan la imagen (sin *hitstop*).
 

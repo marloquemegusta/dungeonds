@@ -8,7 +8,7 @@ Primero el estado necesario para retomar el trabajo sin depender del chat; despu
 
 **En qué punto está:**
 - Método de diseño sala a sala (`DESIGN.md` §6.13.10): hecha la primera vuelta del Ojo táctico y la guarnición; siguen la procesión ligera, el balcón y la primera sala media.
-- Stats del rayo por decidir: alcance base más corto y carga más lenta para que las primeras salas sean un reto (`DESIGN.md` §6.12.10); al hacerlo se retiran `fire_cooldown` y `sniper_cooldown`, sin efecto.
+- Stats del rayo (`feat/stats-rayo`, 2026-11-19, a probar en la DS): carga base 0,8 s, alcance base 110, Prisa −10 por rango hasta carga 8 (`DESIGN.md` §6.12.10); retirada la recuperación muerta del código.
 - Sin programar: atrio, flanqueo coordinado de los Exvotos, invocador, catálogo v3, Campanero, El Paso y los actos II y III.
 - Sin medición `perf` en la DS del último ciclo (intro, coberturas, Ojo táctico).
 
@@ -70,7 +70,7 @@ Primero el estado necesario para retomar el trabajo sin depender del chat; despu
 - **Herramientas de diagnóstico en DS:** `PERF_PROFILE` (`include/perfprof.h`, log `fat:/dungeonds_perf.log`) y `crashlog` (`CRASHLOG_ENABLED`, logs `/dungeonds_crash.log` y `/dungeonds_live.log`). Ambas apagadas por defecto; se leen con `fetch-device-log.ps1` de la skill.
 
 ### Siguientes pasos
-1. **Decidir y aplicar los stats del rayo** (alcance base, tiempo de carga, Prisa) y retirar la recuperación muerta del código.
+1. **Probar los stats del rayo en la DS** (`feat/stats-rayo`) y ajustar carga base, alcance y Prisa.
 2. **Seguir el método sala a sala** (`DESIGN.md` §6.13.10): partida de referencia, después la procesión ligera, el balcón y la primera sala media.
 3. **Contenido que falta para una partida completa:** actos II y III, Campanero y El Paso, escenario que cambia tras cada jefe (`DESIGN.md` §6.13).
 4. **Retirar ganchos de prueba** cuando la variante de encuentros sea el único juego.
