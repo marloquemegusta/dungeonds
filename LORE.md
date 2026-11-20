@@ -83,7 +83,7 @@ Penitentes de Valdenoche que rezaron hasta volverse cera. Siguen en procesión c
 - **Los monaguillos (los jóvenes suplicantes).** Los muchachos del coro que se negaron al padre Anselmo. Para silenciarlos, el Tribunal los condenó a rezar para siempre. Son los exvotos jóvenes que hoy siguen el estandarte del Abanderado: Íñigo los recogió porque nadie más lo hizo.
 
 ### El Cireneo — Bartolomé Ruiz, «el Liebre» (`CÓDICE · III`)
-Soldado de la Columna. En la Quiebra le ordenaron abrir fuego sobre una procesión de exvotos: sus vecinos de Valdenoche. Bajó el fusil y huyó. El acta del Tribunal dice que volvió de rodillas y pidió que le clavaran la cruz a la espalda para no volver a huir. El acta la escribió el Tribunal: en realidad le atraparon en casa de Inés.
+Soldado de la Columna. En la Quiebra le ordenaron abrir fuego sobre una procesión de exvotos: sus vecinos de Valdenoche. Bajó el fusil y huyó. El acta del Tribunal dice que volvió de rodillas y pidió que le clavaran la cruz a la espalda para no volver a huir. El acta la escribió el Tribunal: en realidad le sacaron de casa de Inés. Lo que sí es verdad es que la cruz la pidió él, para no poder volver a huir y no tener que pensar.
 - **Tadeo, el herrero de la Columna.** Clavó la cruz por orden del Tribunal. No ha vuelto a tocar un clavo.
 *Ficha oficial:* «Ayudó a cargar una cruz. Ahora la cruz le carga a él.»
 

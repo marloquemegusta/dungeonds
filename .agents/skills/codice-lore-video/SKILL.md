@@ -54,6 +54,13 @@ Flujo estandarizado para crear vídeos verticales de lore estilo *Blasphemous* p
    - **Animación a medida** cuando el Códice no tiene la que pide la escena (derrumbarse y golpear el suelo): `abanderado_derrota`, de Mixamo «Plant A Plant» espejado y retocado con `tools/characters/build_abanderado_derrota.py`. El asta cae al suelo y se recoge.
    - **Un personaje que sale como imagen del presente de otro** (el Ojo para el Tribunal): una sola aparición, sin nombre, para no confundirlo con Gaspar.
 9. **Duración y primera persona (feedback 2026-11-19):** si el usuario dice que le gusta la duración, no se recorta (07: 88 s, frente a los 50-60 s de la regla 2). La cita en primera persona se dice lenta y solemne: velocidad de la voz del personaje (`CHAR_SPEED`, 0,8 para Íñigo) y una `(pausa 0.5)` en mitad de la frase.
+10. **Producción simple (feedback 2026-11-20, Liebre):** el 04 llegó a 13 animaciones (9 hechas a medida) y salía peor: poses raras y una cabeza que se plegaba hacia atrás. Los vídeos con 1-3 animaciones (01, 03) no rinden peor en redes. Se rehízo con 6 animaciones ya probadas y quedó «mucho más simple y mejor».
+   - **Unas 5 animaciones por vídeo como máximo** y **como mucho 1 nueva**, que sea un clip de Mixamo usado tal cual (`tools/characters/build_cireneo_clips.py` es el modelo).
+   - **Nada de poses montadas a mano** (arrodillarse con un prop, tumbarse, esconderse): el exportador del lab solo aplica las rotaciones de los huesos y la traslación de la cadera, así que las poses que desplazan otros huesos se rompen.
+   - **Lo difícil se cuenta sin animarlo:** con otro personaje (Inés en lugar de Bartolomé escondido), con el resultado (Bartolomé ya en la cruz) o con sonido sobre negro (`negro` + `sfx … fin`: el martillo de Tadeo).
+   - **Personaje a cuerpo entero** (`cerca · entero`) en vez de busto ampliado: la silueta completa impacta más y el píxel no engorda.
+   - **Si la voz de un personaje sobreactúa:** generar 3 tomas planas (estabilidad 0,95, estilo 0, velocidad 0,85, con variantes del texto), que el usuario elija y usar la elegida con `archivo:`. Las `(pausa N)` dentro de una frase corta pueden romper la entonación.
+   - **Exportador del lab:** `--dirs S,SE` renderiza solo las direcciones que usa el guion (resultado idéntico al render completo); `LAB_GL=gpu` gana poco (~30 %) y da píxeles distintos de la CPU, así que no se mezcla dentro de un clip.
 
 ---
 

@@ -13,6 +13,9 @@ import bpy, bmesh, sys, os, math
 from mathutils import Vector, Matrix, Quaternion
 
 ROOT = sys.argv[sys.argv.index('--') + 1]
+# CIRENEO_VARIANT=sincruz: variante sin la cruz clavada (solo andar). No toca el modelo ni el script base.
+SINCRUZ = os.environ.get('CIRENEO_VARIANT', '') == 'sincruz'
+PFX = 'cireneo_sincruz_' if SINCRUZ else 'cireneo_'
 SRC = os.path.join(ROOT, 'assets/models/characters/cireneo/source')
 OUT = os.path.join(ROOT, 'assets/models/characters/cireneo')
 CHAR_FBX = os.path.join(SRC, 'tripo_convert_cd715dbe-128f-4b59-b47f-5e36cc9cd8ac.fbx')
@@ -50,10 +53,13 @@ bpy.ops.import_scene.fbx(filepath=WALK_FBX)
 walk_objs = [o for o in bpy.data.objects if o not in before_walk]
 walk_arm = [o for o in walk_objs if o.type == 'ARMATURE'][0]
 walk_act_src = walk_arm.animation_data.action
-before_cruz = set(bpy.data.objects)
-bpy.ops.import_scene.fbx(filepath=CRUZ_FBX)
-cruz = [o for o in bpy.data.objects if o.type == 'MESH' and o not in before_cruz][0]
-cruz.name = 'Cruz'
+if SINCRUZ:
+    cruz = None
+else:
+    before_cruz = set(bpy.data.objects)
+    bpy.ops.import_scene.fbx(filepath=CRUZ_FBX)
+    cruz = [o for o in bpy.data.objects if o.type == 'MESH' and o not in before_cruz][0]
+    cruz.name = 'Cruz'
 scene = bpy.context.scene
 A_inv = arm.matrix_world.inverted()
 PB = arm.pose.bones
@@ -81,6 +87,11 @@ old_arm.scale = old_arm.scale * _k
 print('TRANSFER hips z new=%.3f old_scaled=%.3f k=%.4f' % (hips_world_z(arm), hips_world_z(old_arm), _k))
 
 
+# sincruz: los brazos tambien siguen el andar Mixamo (cuelgan), no la pose fija de la cruz
+ARM_WALK = ['LeftShoulder', 'LeftArm', 'LeftForeArm', 'LeftHand', 'RightShoulder', 'RightArm', 'RightForeArm', 'RightHand']
+WALK_BONES = BODY_BONES + (ARM_WALK if SINCRUZ else [])
+
+
 def retarget_walk(src_arm, src_act, k):
     """Andar Mixamo -> rig nuevo por delta de rotacion respecto al reposo de cada hueso.
     Un COPY_ROTATION en WORLD copia el reposo del origen (rolls de Mixamo distintos) y gira el cuerpo;
@@ -98,7 +109,7 @@ def retarget_walk(src_arm, src_act, k):
         for pb in PB:
             pb.location = (0, 0, 0); pb.rotation_quaternion = (1, 0, 0, 0); pb.scale = (1, 1, 1)
         update()
-        for n in BODY_BONES:
+        for n in WALK_BONES:
             sp = SPB[P + n]; sb = src_arm.data.bones[P + n]; tb = arm.data.bones[P + n]
             R_src_pose = sp.matrix.to_3x3().normalized()
             R_src_rest = sb.matrix_local.to_3x3().normalized()
@@ -330,6 +341,8 @@ ARM_CONST = compute_arm_constants()
 
 
 def force_arms():
+    if SINCRUZ:
+        return   # sin cruz no hay pose fija de brazos: se conserva la del andar
     for pb in PB:
         short = pb.name.replace(P, '')
         if pb.name in ARM_CONST:
@@ -354,7 +367,8 @@ def arm_back_y():
     return max(ys)
 
 
-prepare_cruz(arm_back_y())
+if not SINCRUZ:
+    prepare_cruz(arm_back_y())
 
 
 # ------------------------------------------------------------------ bake de acciones Tripo
@@ -498,11 +512,13 @@ stuck = [stuck_frame(base, i / N_ST) for i in range(N_ST + 1)]
 stuck[-1] = stuck[0]
 
 ACTIONS = [
-    ('walk', 'cireneo_walk', walk, 24),
-    ('charge', 'cireneo_charge', charge, 24),
-    ('telegraph', 'cireneo_telegraph', telegraph, 30),
-    ('stuck', 'cireneo_stuck', stuck, 30),
+    ('walk', PFX + 'walk', walk, 24),
+    ('charge', PFX + 'charge', charge, 24),
+    ('telegraph', PFX + 'telegraph', telegraph, 30),
+    ('stuck', PFX + 'stuck', stuck, 30),
 ]
+if SINCRUZ:
+    ACTIONS = [a for a in ACTIONS if a[0] == 'walk']
 made = {}
 for key, name, poses, fps in ACTIONS:
     made[key] = write_action(name, poses, fps)
@@ -516,7 +532,7 @@ for key, name, poses, fps in ACTIONS:
     scene.frame_start = 0
     scene.frame_end = len(poses) - 1
     bpy.ops.object.select_all(action='DESELECT')
-    for o in (arm, char_mesh, cruz):
+    for o in [x for x in (arm, char_mesh, cruz) if x is not None]:
         o.select_set(True)
     bpy.context.view_layer.objects.active = arm
     path = os.path.join(OUT, name + '.fbx')

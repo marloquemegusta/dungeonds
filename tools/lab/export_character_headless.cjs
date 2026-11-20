@@ -25,6 +25,12 @@
 //                   (c2 implies 4 / 1.0 unless given).
 //   --fixedGround   (remates, GLB sequences) every frame shares the scene floor (y = 0) instead of resting on its own lowest
 //                   point, so falling pieces do not move the whole drawing between frames. --doubleSided draws both faces.
+//   --dirs S,SE,SW  render only these directions (names S SW W NW N E NE SE or indexed 0_S .. 7_SE, or indices 0-7).
+//                   Framing is still measured over all 8, so each direction is pixel-identical to the full render. The package then has only
+//                   dirs/<dir>.gif, frames/<dir>/*.png, collage.gif and settings.json (dirsRendered lists them): no spritesheet, shadows or C header.
+//                   With --legibility c2 the contrast pivot is the median of the frames rendered, so a subset differs slightly from a full
+//                   render unless you pass --pivot P (the full render's settings.json carries legibilityPivot and logs "legibility pivot").
+//   --pivot P       force the c2 luminance pivot (0..1).
 //   --list  prints the animation clips and exits without rendering.
 const fs = require('node:fs');
 const path = require('node:path');
@@ -38,7 +44,7 @@ if (!chromium) { console.error('Playwright not found'); process.exit(1); }
 
 const argv = process.argv.slice(2);
 const opt = (n) => { const i = argv.indexOf(n); return i >= 0 ? argv[i + 1] : undefined; };
-const flagVals = new Set(['--template', '--anim', '--rigScale', '--light', '--outline', '--saturation', '--muzzleBone', '--muzzleForward', '--fitZoom', '--fitExtent', '--normScale', '--resolution', '--tone', '--supersample', '--contrast', '--legibility', '--frames']);
+const flagVals = new Set(['--template', '--anim', '--rigScale', '--light', '--outline', '--saturation', '--muzzleBone', '--muzzleForward', '--fitZoom', '--fitExtent', '--normScale', '--resolution', '--tone', '--supersample', '--contrast', '--legibility', '--frames', '--dirs', '--pivot']);
 const pos = argv.filter((a, i) => !a.startsWith('--') && !(i > 0 && flagVals.has(argv[i - 1])));
 const listOnly = argv.includes('--list');
 const model = pos[0] && path.resolve(pos[0]);
@@ -47,13 +53,37 @@ if (!model || (!outDir && !listOnly)) {
   console.error('usage: node export_character_headless.cjs <model.fbx> <outDir> [--template settings.json] [--anim name] [--rigScale N] [--light preset] [--outline mode] [--saturation N] [--list]');
   process.exit(2);
 }
+const DIR_NAMES = ['S', 'SW', 'W', 'NW', 'N', 'NE', 'E', 'SE'];
+let dirFilter = null;
+if (opt('--dirs') !== undefined) {
+  dirFilter = [];
+  for (const raw of opt('--dirs').split(',').map(x => x.trim()).filter(Boolean)) {
+    const m = /^(?:([0-7])_)?([A-Za-z]+)?$/.exec(raw);
+    let idx = -1;
+    if (/^[0-7]$/.test(raw)) idx = parseInt(raw, 10);
+    else if (m) {
+      const byName = m[2] ? DIR_NAMES.indexOf(m[2].toUpperCase()) : -1;
+      idx = m[1] !== undefined ? parseInt(m[1], 10) : byName;
+      if (m[1] !== undefined && m[2] && byName !== idx) idx = -1;
+    }
+    if (idx < 0) { console.error(`--dirs: unknown direction "${raw}" (valid: ${DIR_NAMES.join(', ')})`); process.exit(2); }
+    if (!dirFilter.includes(idx)) dirFilter.push(idx);
+  }
+  if (!dirFilter.length) { console.error('--dirs: empty list'); process.exit(2); }
+  dirFilter.sort((a, b) => a - b);
+  if (dirFilter.length === 8) dirFilter = null;
+}
 const templatePath = path.resolve(opt('--template') ||
   path.join(__dirname, '../../assets/sprites/characters/charger/settings.json'));
 const s = JSON.parse(fs.readFileSync(templatePath, 'utf8'));
 const HTML = path.join(__dirname, 'FBX-Web-Renderer-offline.html');
 
 (async () => {
-  const browser = await chromium.launch({ headless: true, args: ['--enable-webgl', '--use-gl=swiftshader', '--disable-dev-shm-usage', '--no-sandbox'] });
+  // LAB_GL=gpu usa la GPU real (ANGLE sobre Direct3D 11); por defecto sigue el render por software (SwiftShader), identico bit a bit entre maquinas.
+  const glArgs = process.env.LAB_GL === 'gpu'
+    ? ['--use-angle=d3d11', '--ignore-gpu-blocklist', '--enable-gpu']
+    : ['--use-gl=swiftshader'];
+  const browser = await chromium.launch({ headless: true, args: ['--enable-webgl', ...glArgs, '--disable-dev-shm-usage', '--no-sandbox'] });
   const errors = [];
   try {
     const page = await browser.newPage({ viewport: { width: 1280, height: 800 }, deviceScaleFactor: 1 });
@@ -68,6 +98,8 @@ const HTML = path.join(__dirname, 'FBX-Web-Renderer-offline.html');
     await page.evaluate((v) => { window.__spriteLab.fixedGround = v; }, argv.includes('--fixedGround'));
     // --noCHeader: no genera nds_shadow_anchor.h (con muchos fotogramas, p. ej. 56, la cadena supera el limite de V8; solo hace falta para la ROM)
     await page.evaluate((v) => { window.__spriteLab.skipCHeader = v; }, argv.includes('--noCHeader'));
+    await page.evaluate((v) => { window.__spriteLab.dirFilter = v; }, dirFilter);
+    if (opt('--pivot') !== undefined) await page.evaluate((v) => { window.__spriteLab.legibilityPivotOverride = v; }, parseFloat(opt('--pivot')));
     if (fs.statSync(model).isDirectory()) {
       const glbs = fs.readdirSync(model).filter(f => /^f\d+\.glb$/i.test(f)).sort();
       if (!glbs.length) throw new Error('No fNN.glb files found in ' + model);
@@ -184,12 +216,13 @@ const HTML = path.join(__dirname, 'FBX-Web-Renderer-offline.html');
     console.log('Setup applied: ' + JSON.stringify(setup));
     await page.waitForTimeout(1000);
 
-    const b64 = await page.evaluate(async () => {
+    const expectedDirs = dirFilter ? dirFilter.length : 8;
+    const b64 = await page.evaluate(async (expectedDirs) => {
       const lab = window.__spriteLab;
       window.$.results = null;
       document.getElementById('renderBtn').click();
       const t0 = performance.now();
-      while (!(window.$.results && window.$.results.length === 8 && !window.$.rendering && lab.anchorData)) {
+      while (!(window.$.results && window.$.results.length === expectedDirs && !window.$.rendering && lab.anchorData)) {
         if (performance.now() - t0 > 900000) throw new Error('render timeout');
         await new Promise(r => setTimeout(r, 200));
       }
@@ -197,7 +230,7 @@ const HTML = path.join(__dirname, 'FBX-Web-Renderer-offline.html');
       const buf = new Uint8Array(await blob.arrayBuffer());
       let bin = ''; for (let i = 0; i < buf.length; i += 0x8000) bin += String.fromCharCode.apply(null, buf.subarray(i, i + 0x8000));
       return btoa(bin);
-    });
+    }, expectedDirs);
     const fitInfo = await page.evaluate(() => { const l = window.__spriteLab.lastFit; return l && { extent: l.extent, fitExtent: l.fitExtent, half: l.half, center: l.center, normScale: window.__spriteLab.lastNormScale }; });
     if (fitInfo) console.log('FIT ' + JSON.stringify(fitInfo));
     if (errors.length) console.error('page errors:\n' + errors.join('\n'));
@@ -219,6 +252,7 @@ const HTML = path.join(__dirname, 'FBX-Web-Renderer-offline.html');
         if (fitInfo) { outData.measuredExtent = fitInfo.extent; outData.fitExtent = fitInfo.fitExtent; if (fitInfo.normScale) outData.normScale = fitInfo.normScale; }
         outData.toneMapping = tone;
         outData.legibility = legibility;
+        if (dirFilter) outData.dirsRendered = dirFilter.map(d => DIR_NAMES[d]);
         if (s.speedFixed8_8 !== undefined) outData.speedFixed8_8 = s.speedFixed8_8;
         if (s.ticksPerFrame !== undefined) outData.ticksPerFrame = s.ticksPerFrame;
         fs.writeFileSync(outSettings, JSON.stringify(outData, null, 2) + '\n');
