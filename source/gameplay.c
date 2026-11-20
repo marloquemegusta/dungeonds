@@ -1,4 +1,5 @@
 #include "gameplay.h"
+#include "dmg_numbers.h"
 #include "crashlog.h"
 #include "encounters.h"
 #include "boss.h"
@@ -51,6 +52,26 @@ ENEMY_TUNING_CONST EnemyTuning g_enemy_tuning[NUM_ENEMY_TYPES] = {
         .attack_cooldown = 30,    // [TUNABLE-PLACEHOLDER] frames between bites
         .preferred_dist_max = 16, // [TUNABLE-PLACEHOLDER] melee range (ground px)
     },
+    // ---- Exvoto tiers (v3, walkthroughs/arpg-predemo §10) -----------------------------------------
+    // Lives come from the rooms table (encounters_act1.c enc_init): Bebé x1 base, Párroco x4 base, Monja x2.
+    [ENEMY_TYPE_BEBE] = {
+        .max_hp = 100,            // [TUNABLE-PLACEHOLDER] swarm: dies in one hit (the ray does ARPG_RAY_DAMAGE)
+        .speed = 160,             // [TUNABLE-PLACEHOLDER] a bit faster than the Exvoto's 130
+        .attack_cooldown = 30,    // [TUNABLE-PLACEHOLDER] frames between bites
+        .preferred_dist_max = 14, // [TUNABLE-PLACEHOLDER] melee range (ground px)
+    },
+    [ENEMY_TYPE_PARROCO] = {
+        .max_hp = 400,            // [TUNABLE-PLACEHOLDER] tank: x4 the Exvoto base before the floor scaling
+        .speed = 105,             // [TUNABLE-PLACEHOLDER] heavier, below the Exvoto
+        .attack_cooldown = 45,    // [TUNABLE-PLACEHOLDER] frames between blows (slower, harder hits)
+        .preferred_dist_max = 20, // [TUNABLE-PLACEHOLDER] melee range (ground px), long arms
+    },
+    [ENEMY_TYPE_MONJA] = {
+        .max_hp = 200,            // [TUNABLE-PLACEHOLDER] support: x2 the Exvoto base
+        .speed = 105,             // [TUNABLE-PLACEHOLDER] 8.8 fixed: she walks only when the group closes in
+        .attack_cooldown = 40,    // [TUNABLE-PLACEHOLDER] frames between bites when forced to fight
+        .preferred_dist_max = 16, // [TUNABLE-PLACEHOLDER] melee range (ground px)
+    },
 };
 
 // ---------------------------------------------------------------------------
@@ -97,6 +118,9 @@ int arpg_enemy_damage(int enemy_type) {
     switch (enemy_type) {
     case ENEMY_TYPE_EXVOTO:     return ARPG_DMG_EXVOTO;
     case ENEMY_TYPE_MONAGUILLO: return ARPG_DMG_MONAGUILLO;
+    case ENEMY_TYPE_BEBE:       return ARPG_DMG_BEBE;
+    case ENEMY_TYPE_PARROCO:    return ARPG_DMG_PARROCO;
+    case ENEMY_TYPE_MONJA:      return ARPG_DMG_MONJA;
     case ENEMY_TYPE_CHARGER:    return ARPG_DMG_CIRENEO;
     case ENEMY_TYPE_SHOOTER:    return ARPG_DMG_OJO;
     case ENEMY_TYPE_ABANDERADO: return ARPG_DMG_ABANDERADO;
@@ -132,6 +156,7 @@ void player_state_init(PlayerState *player) {
 int player_take_damage(PlayerState *player, int damage) {
     if (!player || player->is_dead || player->god_mode || player->invuln_timer > 0 || remate_invuln() > 0) return 0;
     player->hp -= damage;
+    dmg_numbers_spawn_player(damage, DMG_NUM_PLAYER);
     player->invuln_timer = PLAYER_IFRAMES + g_mods.iframes;
     if (player->hp <= 0) {
         player->hp = 0;
@@ -148,6 +173,29 @@ int player_take_damage(PlayerState *player, int damage) {
 
 int player_take_hit(PlayerState *player) {
     return player_take_damage(player, ARPG_DMG_DEFAULT);
+}
+
+// Párroco tier shove (v3): the hero is nudged back along the blow. The state lives here (not in PlayerState,
+// whose layout the scenarios pin by offset) and is applied over a few frames by the main loop, sliding on walls.
+static fixed s_push_vx, s_push_vy;
+static int s_push_frames;
+
+void player_apply_push(fixed vx, fixed vy, int frames) {
+    if (frames <= 0) return;
+    s_push_vx = vx;
+    s_push_vy = vy;
+    s_push_frames = frames;
+}
+
+int player_push_step(fixed *out_vx, fixed *out_vy) {
+    if (s_push_frames <= 0) return 0;
+    s_push_frames--;
+    *out_vx = s_push_vx;
+    *out_vy = s_push_vy;
+    s_push_vx = (s_push_vx * 200) >> 8;      // ease out: it reads as a shove, not a slide
+    s_push_vy = (s_push_vy * 200) >> 8;
+    if (s_push_frames == 0) { s_push_vx = 0; s_push_vy = 0; }
+    return 1;
 }
 
 // ---------------------------------------------------------------------------
@@ -167,6 +215,7 @@ static void enemy_damage(Enemy *e, int damage, fixed hit_vx, fixed hit_vy, int q
     if (boss_blocks_damage(e)) return;           // the invulnerable second of a phase change (DESIGN.md 6.13.7)
 #endif
     e->hp -= damage;
+    dmg_numbers_spawn(e->x, e->y - TO_FIXED(16), damage, quiet ? DMG_NUM_DOT : DMG_NUM_NORMAL);
     if (!quiet) {
         e->hit_timer = 8;
         int hitstop = e->hp <= 0 ? 4 : 3;
@@ -200,22 +249,28 @@ static void enemy_damage(Enemy *e, int damage, fixed hit_vx, fixed hit_vy, int q
         snprintf(msg, sizeof(msg), "ENEMY_KILL type=%d hp=0", e->type);
         nocashMessage(msg);
 #endif
-    } else if (!quiet) {
-        if ((e->type == ENEMY_TYPE_EXVOTO || e->type == ENEMY_TYPE_CHARGER) && e->hp * 2 <= e->max_hp &&
+    } else {
+        // Tambaleo solo por vida baja (DESIGN.md 7.2): ningun golpe lo provoca por si solo; el enemigo se
+        // tambalea al quedarle un 25 % de vida o menos, le de lo que le de (rayo, punetazo, zona/quemadura).
+        if ((e->type == ENEMY_TYPE_EXVOTO || e->type == ENEMY_TYPE_CHARGER ||
+             e->type == ENEMY_TYPE_BEBE || e->type == ENEMY_TYPE_PARROCO || e->type == ENEMY_TYPE_MONJA) &&
+            e->hp * 4 <= e->max_hp &&
             (e->state == ENEMY_STATE_CHASE || e->state == ENEMY_STATE_ATTACK ||
              e->state == ENEMY_STATE_TELEGRAPH || e->state == ENEMY_STATE_CHARGE ||
              e->state == ENEMY_STATE_RECOVER || e->state == ENEMY_STATE_STUNNED ||
              e->state == ENEMY_STATE_WOBBLE)) {
-            if (e->state != ENEMY_STATE_WOBBLE) e->state_timer = REMATE_WOBBLE_FRAMES;   // a hit that does not kill leaves it reeling
+            if (e->state != ENEMY_STATE_WOBBLE) e->state_timer = REMATE_WOBBLE_FRAMES;   // low life: it reels
             e->state = ENEMY_STATE_WOBBLE;
             e->aim_px = e->aim_py = 0;                          // a dodge or charge in progress is cancelled
         }
-        sfx_play(SND_ENEMY_HIT, TO_INT(e->x));
+        if (!quiet) {
+            sfx_play(SND_ENEMY_HIT, TO_INT(e->x));
 #ifdef DEBUG
-        char msg[64];
-        snprintf(msg, sizeof(msg), "ENEMY_HIT type=%d hp=%d", e->type, e->hp);
-        nocashMessage(msg);
+            char msg[64];
+            snprintf(msg, sizeof(msg), "ENEMY_HIT type=%d hp=%d", e->type, e->hp);
+            nocashMessage(msg);
 #endif
+        }
     }
 }
 

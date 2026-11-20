@@ -66,6 +66,8 @@ Esta tabla es la única fuente de verdad de qué modelo y qué animación produc
 | `CHAR_EXVOTO_PRAY_STAND` | `exvoto_pray_stand` (40) | el mismo | `pray/pray_standing.fbx` | `build_exvoto.py` |
 | `CHAR_EXVOTO_PRAY_KNEEL` | `exvoto_pray_kneel` (40) | el mismo | `pray/pray_kneeling.fbx` | `build_exvoto.py` |
 | `CHAR_EXVOTO_STAND_UP` | `exvoto_stand_up` (40) | el mismo | `pray/pray_kneel_to_stand.fbx` | `build_exvoto.py` |
+| Tiers de Exvoto (rama ARPG): `exvoto_bebe`, `exvoto_parroco`, `exvoto_monja` y sus `_pray_stand`, `_pray_kneel`, `_stand_up` (40; `exvoto_parroco_stand_up` 48) | ídem | `exvoto_bebe/source/…79cc0a74`, `exvoto_parroco/source/…6fbad9bb`, `exvoto_monja/source/…269f9186` | las del Exvoto | `build_exvoto_tier.py` (brazos por dirección + giro de palma; la cabeza del Párroco sale girada, pendiente) |
+| Héroe, combo de puñetazos (rama ARPG): `corazon_punch_a`, `corazon_punch_b`, `corazon_gancho` (48) | ídem | `corazon/source/corazon.fbx` | `corazon/{punch_a,punch_b,gancho}.fbx` (Mixamo «Punching», «Punching (1)», «Hook Punch»; recorte `TRIM` en `build_corazon.py`) | `build_corazon.py`; a NitroFS con `tools/generate_punch_sprites.py` |
 | `CHAR_ABANDERADO`: andar | `abanderado` (60) | cuerpo `abanderado/source/…6e3a96b5`, estandarte `source/estandarte/…989b9291` | `walk/sad_walk.fbx` | `build_abanderado.py` |
 | `CHAR_ABANDERADO`: señalar | `abanderado_point` (60) | el mismo | pose generada en el script | `build_abanderado.py` |
 | Vídeo de lore 07 (Lope): `abanderado_derrota` (sprite 320, `assets/sprites/bestiary/abanderado_derrota/`) | el mismo cuerpo y estandarte | `animations/derrota/plant_a_plant.fbx` (Mixamo «Plant A Plant», espejado; golpes procedurales) | `build_abanderado_derrota.py` |
@@ -115,6 +117,8 @@ Ajustes de render por pieza: `tools/props/props.json`. Cada original está extra
 | `banco_gotico_c2b65edd` | `banco_entero` | `banco_roto` y `banco_volcado`: originales perdidos, quedan los renders. El volcado se hará por código; el roto, si hace falta, se regenera en Tripo con `assets/environment/cathedral/prompts.md`. |
 | `arco_gotico_f450c095` | muro izquierdo (`gothic_arch`, 5 módulos) | |
 | `lapida_tumba_abc4677e` (cruz), `lapida_medieval_ceaaedd5` (caballero) | cuatro estampas de lápida | Los `.glb` v2 se regeneran con `tomb_glb.py` + `lapida_ao.py`. |
+| `puerta_f4a93d19`, `cofre_cerrado_efcc7983`, `cofre_abierto_dcd534cc`, `altar_cfd253e4` | `puerta`, `cofre_cerrado`, `cofre_abierto`, `altar` (rama ARPG, horneados en el kit) | Prototipo ARPG, 2026-11-20. |
+| `camp_mesa_49adda99`, `camp_jergon_8cc28e31`, `camp_atril_b2e93f3e`, `camp_hoguera_701a10ac` | props del campamento (rama ARPG) | No van al kit: `tools/camp/generate_camp_gfx.py` los dibuja por software (`source/camp_props_gfx.c`), con la paleta de props y su sombra. |
 
 ## 4. Suelo de la catedral
 

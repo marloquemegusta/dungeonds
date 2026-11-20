@@ -19,6 +19,16 @@ DEFAULT_PROPS = ("columna_entera", "banco_entero", "relicario", "vela",
                  "lapida_3x2_cruz", "lapida_3x2_cab", "lapida_2x1_cruz", "lapida_2x1_cab",
                  "banco_grupo4", "santo", "sacos", "verja", "columna", "banco_grupo4_roto",
                  "sacos_b", "sacos_remate", "sacos_remate_der", "alambre", "santo_der")
+# Room furniture of the encounter rooms (salas ARPG). Only the upper door is placed by the
+# compositor: it never changes, so baking it gives the real art plus its occlusion. The chests and
+# the travel altar keep the software-fixture path (source/encounters_act1.c) because their state
+# changes at run time and a baked tile could not be replaced; they take their art from
+# include/enc_room_gfx.h, generated from the same renders by tools/props/gen_room_sprites.py.
+ROOM_PROPS = ("puerta",)
+ROOM_PIECE_IDS = {"puerta": 200, "cofre_cerrado": 201, "cofre_abierto": 202, "altar": 203}
+# Only phase each room piece is baked at. (12, 0) makes the door art land centred on the nave axis
+# when enc_place_piece() snaps it to the nearest legal tile (see ROOM_DOOR_PHASE below).
+ROOM_PHASES = {"puerta": [(12, 0)]}
 # Piece ids emitted in StripStamp.piece_id; must match enum STRIP_PIECE_* in include/strip_kit.h.
 PIECE_IDS = {
     "columna_entera": 1, "banco_entero": 2, "relicario": 3, "vela": 4,
@@ -27,6 +37,7 @@ PIECE_IDS = {
     "sacos": 11, "verja": 12, "columna": 13, "banco_grupo4_roto": 14,
     "sacos_b": 15, "sacos_remate": 16, "sacos_remate_der": 17, "alambre": 18,
     "santo_der": 19,
+    "puerta": 200, "cofre_cerrado": 201, "cofre_abierto": 202, "altar": 203,
 }
 LAPIDA_NAMES = ("lapida_3x2_cruz", "lapida_3x2_cab", "lapida_2x1_cruz", "lapida_2x1_cab")
 # Decorado con rectangulo de colision propio (planta de la sala): la estampa no escribe colision, para
@@ -120,6 +131,39 @@ def read_floor(directory):
             if not all(k in c for k in ("t", "h", "v")) or c["t"] not in range(len(raw)) or c["h"] not in (0, 1) or c["v"] not in (0, 1):
                 raise ValueError("invalid floor_map entry")
     return colors, raw, grid
+
+
+def reduce_floor_variants(grid, keep=2):
+    """Tile-budget measure (2026-11-20): keep at most `keep` slab variants per checkerboard cell
+    class and map every other slab of that class to the most frequent one.
+
+    The cathedral floor repeats a 16x16 tile period built from five Tripo slabs, each rendered with
+    its own wear (losa_grieta, losa_rota, losa_cera, losa_sangre) and photographed at four different
+    texture offsets, so most of the 92 floor tiles are one-off noise of the same stone. A cell's class
+    is (x % 4, y % 2, (x // 2 + y) & 1): the rombo family and the A/B stone of the damero. Collapsing
+    a class to its most frequent variants keeps the damero and the special slabs that repeat while
+    dropping the one-off offsets; with keep=2 the floor goes from 92 to 16 tiles, and the kit fits
+    the four real props and still leaves room for the lapidas.
+    """
+    classes = {}
+    for y in range(len(grid)):
+        for x in range(len(grid[y])):
+            c = grid[y][x]
+            k = (x % 4, y % 2, ((x // 2) + y) & 1)
+            classes.setdefault(k, Counter())[(c["t"], c["h"], c["v"])] += 1
+    kept = {k: [v for v, _ in cnt.most_common(keep)] for k, cnt in classes.items()}
+    out = []
+    for y in range(len(grid)):
+        row = []
+        for x in range(len(grid[y])):
+            c = grid[y][x]
+            k = (x % 4, y % 2, ((x // 2) + y) & 1)
+            v = (c["t"], c["h"], c["v"])
+            if v not in kept[k]:
+                v = kept[k][0]
+            row.append({"t": v[0], "h": v[1], "v": v[2]})
+        out.append(row)
+    return out
 
 
 def make_floor_tiles(colors, raw, grid, tiles):
@@ -548,6 +592,9 @@ BENCH_CANVAS_H_PX = 32       # alto del lienzo de un banco: caben 4 filas sin so
 
 
 LAPIDAS_EN_KIT = True
+# Variantes de losa que se conservan por clase de celda del damero (ver reduce_floor_variants).
+# Con 2 el suelo pasa de 92 a 16 tiles y el kit cabe con las cuatro piezas de sala.
+FLOOR_VARIANTS_KEPT = 2
 ENC_FLOOR_X, ENC_FLOOR_W = 152, 208       # suelo util de las salas (include/encounters_act1.h)
 ENC_BLOCK_H = 384
 ENC_PLAN = ROOT / "tools/encuentros/acto1_v2.json"
@@ -598,6 +645,7 @@ def catedral_phase_map():
     from what the rooms place, so the kit fits the 1024 tiles. banco_entero is not listed: it is only
     the source of banco_grupo4 / banco_grupo4_roto, which are the benches the rooms place."""
     phases = encounter_phase_map()
+    phases.update({name: list(p) for name, p in ROOM_PHASES.items() if name in PIECE_IDS})
     # Lapidas: fuera del kit de las salas (presupuesto de 1024 tiles: con las piezas nuevas no caben ni
     # con una sola fase). enc_place_lapidas() no encuentra estampa y no coloca ninguna. Poner a True para
     # volver a hornearlas (LAPIDA_PHASES) cuando el presupuesto lo permita.
@@ -1108,9 +1156,11 @@ def format_metrics(entries, stamps, label="catedral", bands=64, worst=0, worst_o
     return "\n".join(lines)
 
 
-def build(floor_dir, phases=4, output=OUTPUT, preview=None, prop_names=DEFAULT_PROPS,
+def build(floor_dir, phases=4, output=OUTPUT, preview=None, prop_names=None,
           mode="actual", metrics=None, dump_plan=None):
     if phases != 4: raise ValueError("--phases supports the four specified offsets: 4")
+    if prop_names is None:
+        prop_names = DEFAULT_PROPS + ROOM_PROPS
     if isinstance(prop_names, str):
         prop_names = tuple(part.strip() for part in prop_names.split(",") if part.strip())
     else:
@@ -1134,6 +1184,8 @@ def build(floor_dir, phases=4, output=OUTPUT, preview=None, prop_names=DEFAULT_P
     else:
         phase_map = None
     floor_colors, raw_floor, grid = read_floor(floor_dir)
+    if mode == "catedral":
+        grid = reduce_floor_variants(grid, FLOOR_VARIANTS_KEPT)
     tiles = Tiles()
     palette, floor_pixels, floor_map = make_floor_tiles(floor_colors, raw_floor, grid, tiles)
     props, prop_lab = read_prop_palette()
@@ -1273,8 +1325,8 @@ def main():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--floor", required=True, type=Path)
     p.add_argument("--phases", type=int, default=4)
-    p.add_argument("--props", default=",".join(DEFAULT_PROPS),
-                   help="comma-separated pieces (default: " + ",".join(DEFAULT_PROPS) + ")")
+    p.add_argument("--props", default=None,
+                   help="comma-separated pieces (default: " + ",".join(DEFAULT_PROPS + ROOM_PROPS) + ")")
     p.add_argument("--output", type=Path, default=OUTPUT)
     p.add_argument("--preview", type=Path, default=Path(os.environ.get("TEMP", "/tmp")) / "cathedral_strip_preview.png")
     p.add_argument("--mode", choices=("actual", "catedral"), default="actual",

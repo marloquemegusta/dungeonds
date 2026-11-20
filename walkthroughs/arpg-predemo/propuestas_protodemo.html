@@ -1,0 +1,282 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Propuestas protodemo</title>
+<style>
+:root{--bg:#f6f3ee;--fg:#24211d;--mute:#6d665c;--card:#fffdf9;--line:#e1d9cc;--acc:#7a3b2e;--tag:#efe6d6;
+--nave:#e9dcc4;--gal:#d9e3d3;--cap:#e6d3d0;--cri:#d6d0e3;--edge:#8a7d6b;--link:#5c7a8f;--short:#a0603a}
+@media (prefers-color-scheme:dark){:root{--bg:#1a1816;--fg:#ece6dc;--mute:#a59d90;--card:#24211e;--line:#3a352f;--acc:#d39a80;--tag:#2f2a24;
+--nave:#4a4132;--gal:#36452f;--cap:#4d3533;--cri:#3d3650;--edge:#a59a88;--link:#8fb0c6;--short:#d99a72}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.5 system-ui,-apple-system,Segoe UI,sans-serif;padding:16px;max-width:760px;margin-inline:auto}
+h1{font-size:1.4rem;margin:.2rem 0 .4rem}
+h2{font-size:1.1rem;margin:0 0 .4rem;color:var(--acc)}
+p.lead{color:var(--mute);margin-top:0}
+section{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px;margin:14px 0}
+.tag{display:inline-block;background:var(--tag);border-radius:6px;padding:1px 8px;font-size:.8rem;color:var(--mute);margin-bottom:6px}
+table{width:100%;border-collapse:collapse;font-size:.92rem;margin:.4rem 0}
+th,td{text-align:left;border-bottom:1px solid var(--line);padding:5px 4px;vertical-align:top}
+th{color:var(--mute);font-weight:600}
+.why{color:var(--mute);font-size:.9rem}
+ul{padding-left:1.2rem;margin:.3rem 0}
+svg{width:100%;height:auto;display:block;margin:6px 0}
+svg text{fill:var(--fg);font:11px system-ui,sans-serif}
+svg .s{font-size:9px;fill:var(--mute)}
+svg .b{font-weight:700}
+svg rect{stroke:var(--edge);stroke-width:1}
+.nave{fill:var(--nave)}.gal{fill:var(--gal)}.cap{fill:var(--cap)}.cri{fill:var(--cri)}
+svg .c{stroke:var(--edge);stroke-width:1.5;fill:none}
+svg .lk{stroke:var(--link);stroke-width:1.5;fill:none;stroke-dasharray:4 3}
+svg .sh{stroke:var(--short);stroke-width:1.5;fill:none;stroke-dasharray:4 3}
+svg .alt{fill:var(--acc)}
+.legend{display:flex;flex-wrap:wrap;gap:10px;font-size:.82rem;color:var(--mute)}
+.legend i{display:inline-block;width:12px;height:12px;border:1px solid var(--edge);border-radius:2px;margin-right:4px;vertical-align:-1px}
+.card{border:1px solid var(--line);border-radius:8px;padding:8px 10px;background:var(--tag);font-size:.92rem;margin:8px 0}
+.card b.r{color:#5d7fa3}
+</style>
+</head>
+<body>
+<h1>Propuestas para la protodemo (v3, cerrada)</h1>
+<p class="lead">Versión cerrada para la protodemo. Cambios respecto a la v2: el tambaleo solo llega por vida baja, los grupos son el doble de grandes y se quitan las auras Reflejo y Fervor. Las cifras son de partida y se ajustan jugando.</p>
+
+<section>
+<span class="tag">1 · Combate cuerpo a cuerpo</span>
+<h2>Combo de puñetazos</h2>
+<ul>
+<li><b>L corto</b> encadena directo → cruzado → <b>gancho</b>. Si vuelves a pulsar antes de que acabe el golpe sale el siguiente; si esperas, empieza de nuevo.</li>
+<li>Daño 50 · 50 · 90. El gancho empuja un poco.</li>
+<li><b>Ningún golpe tambalea por sí solo.</b> Un enemigo se tambalea cuando le queda <b>un 25 % de vida o menos</b>, le dé lo que le dé (puñetazo, rayo o glifo).</li>
+<li>Si hay un enemigo tambaleante al alcance, <b>L</b> lo ejecuta en vez de pegar.</li>
+</ul>
+<p class="why">Animación en render. El gancho original dura unos 2 s: se recortará a un ritmo de combo.</p>
+</section>
+
+<section>
+<span class="tag">2 · Mazmorra</span>
+<h2>Esqueleto de la zona 1</h2>
+<svg viewBox="0 0 372 572" role="img" aria-label="Mapa de la zona 1">
+  <!-- conexiones verticales -->
+  <path class="c" d="M188 56V80M188 200V240M188 360V400M188 496V528"/>
+  <!-- puertas laterales -->
+  <path class="c" d="M118 170H140M236 158H258M118 318H140M236 282H258M118 454H140M236 430H258"/>
+  <!-- enlace galería minijefe -> Nave 3 p7 -->
+  <path class="lk" d="M306 258V244H362V122H236"/>
+  <!-- atajo Nave 3 p9 -> Nave 1 p1 -->
+  <path class="sh" d="M140 98H10V490H140"/>
+
+  <rect class="cri" x="140" y="20" width="96" height="36" rx="4"/>
+  <text x="188" y="36" text-anchor="middle" class="b">Cripta · 2p</text>
+  <text x="188" y="49" text-anchor="middle" class="s">Abanderado</text>
+
+  <rect class="nave" x="140" y="80" width="96" height="120" rx="4"/>
+  <text x="188" y="140" text-anchor="middle" class="b">NAVE 3</text>
+  <text x="188" y="153" text-anchor="middle" class="s">10 pantallas</text>
+  <rect class="alt" x="183" y="190" width="10" height="7" rx="1"/>
+
+  <rect class="nave" x="140" y="240" width="96" height="120" rx="4"/>
+  <text x="188" y="300" text-anchor="middle" class="b">NAVE 2</text>
+  <text x="188" y="313" text-anchor="middle" class="s">10 pantallas</text>
+  <rect class="alt" x="183" y="350" width="10" height="7" rx="1"/>
+
+  <rect class="nave" x="140" y="400" width="96" height="96" rx="4"/>
+  <text x="188" y="448" text-anchor="middle" class="b">NAVE 1</text>
+  <text x="188" y="461" text-anchor="middle" class="s">8 pantallas</text>
+  <rect class="alt" x="183" y="486" width="10" height="7" rx="1"/>
+
+  <rect x="150" y="528" width="76" height="26" rx="13" style="fill:var(--tag)"/>
+  <text x="188" y="545" text-anchor="middle">Entrada</text>
+
+  <!-- laterales -->
+  <rect class="gal" x="22" y="152" width="96" height="36" rx="4"/>
+  <text x="70" y="167" text-anchor="middle" class="b">Galería · 2p</text>
+  <text x="70" y="180" text-anchor="middle" class="s">cofre</text>
+  <text x="129" y="166" text-anchor="middle" class="s">p3</text>
+
+  <rect class="cap" x="258" y="140" width="96" height="36" rx="4"/>
+  <text x="306" y="155" text-anchor="middle" class="b">Capilla · 2p</text>
+  <text x="306" y="168" text-anchor="middle" class="s">párroco: suelta llave</text>
+  <text x="247" y="154" text-anchor="middle" class="s">p4</text>
+
+  <rect class="cap" x="22" y="300" width="96" height="36" rx="4"/>
+  <text x="70" y="315" text-anchor="middle" class="b">Capilla cerrada</text>
+  <text x="70" y="328" text-anchor="middle" class="s">con llave · legendaria</text>
+  <text x="129" y="314" text-anchor="middle" class="s">p4</text>
+
+  <rect class="gal" x="258" y="258" width="96" height="48" rx="4"/>
+  <text x="306" y="278" text-anchor="middle" class="b">Galería · 4p</text>
+  <text x="306" y="291" text-anchor="middle" class="s">minijefe: la Misa</text>
+  <text x="247" y="278" text-anchor="middle" class="s">p7</text>
+
+  <rect class="gal" x="22" y="436" width="96" height="36" rx="4"/>
+  <text x="70" y="451" text-anchor="middle" class="b">Galería · 3p</text>
+  <text x="70" y="464" text-anchor="middle" class="s">prisionero</text>
+  <text x="129" y="450" text-anchor="middle" class="s">p4</text>
+
+  <rect class="gal" x="258" y="412" width="96" height="36" rx="4"/>
+  <text x="306" y="427" text-anchor="middle" class="b">Galería · 2p</text>
+  <text x="306" y="440" text-anchor="middle" class="s">secreto + lápida</text>
+  <text x="247" y="426" text-anchor="middle" class="s">p6</text>
+
+  <text x="300" y="117" text-anchor="middle" class="s" style="fill:var(--link)">enlace a p7</text>
+  <text x="70" y="93" text-anchor="middle" class="s" style="fill:var(--short)">atajo (solo baja)</text>
+  <text x="70" y="503" text-anchor="middle" class="s" style="fill:var(--short)">sale en Nave 1 p1</text>
+</svg>
+<div class="legend">
+<span><i style="background:var(--nave)"></i>Nave</span>
+<span><i style="background:var(--gal)"></i>Galería</span>
+<span><i style="background:var(--cap)"></i>Capilla</span>
+<span><i style="background:var(--cri)"></i>Cripta</span>
+<span><i style="background:var(--acc)"></i>Altar</span>
+<span><b>p4</b> = puerta en la pantalla 4 desde abajo</span>
+</div>
+<ul>
+<li>Altar al pie de cada nave, para viajar desde el campamento.</li>
+<li>La <b>llave</b> la suelta el párroco de la capilla de la Nave 3 y abre la capilla cerrada de la Nave 2: obliga a volver con algo que ganar.</li>
+<li>La galería del minijefe sale por arriba a la Nave 3 (rodeo). El <b>atajo</b> baja de la Nave 3 a la entrada de la Nave 1 y solo se abre desde arriba.</li>
+<li>Unas 44 pantallas, en la línea de 45-60 min la primera vez.</li>
+</ul>
+</section>
+
+<section>
+<span class="tag">3 · Mazmorra</span>
+<h2>Capillas: dónde va la reja</h2>
+<p>Hoy las rejas cortan la sala a lo ancho y la dividen en tramos verticales. En el castillo las naves ya <b>no llevan rejas</b>: se recorren libres de abajo arriba.</p>
+<p>La capilla es una <b>sala lateral</b> como las galerías. Su reja es <b>la propia puerta</b>: al cruzarla se cierra detrás de ti y no se abre hasta matar a todos. Dentro es una sala corta (1-2 pantallas) con combate cerrado, como las del roguelike.</p>
+<p class="why">Alternativa: un tramo de nave entre dos rejas, como ahora. La descarto porque corta el camino principal y obliga a pelear para avanzar, que es justo lo que las naves quieren evitar.</p>
+</section>
+
+<section>
+<span class="tag">4 · Población</span>
+<h2>Exvotos por tier</h2>
+<table>
+<tr><th>Tier</th><th>Papel</th></tr>
+<tr><td>Exvoto bebé</td><td>Enjambre: muere de un golpe, viene en grupos grandes.</td></tr>
+<tr><td>Exvoto</td><td>Base: el de ahora.</td></tr>
+<tr><td>Párroco (élite, hombre)</td><td>Tanque cuerpo a cuerpo: ×4 de vida, golpea más fuerte y empuja al héroe.</td></tr>
+<tr><td>Monja (élite, mujer)</td><td>Apoyo: se queda atrás rezando; mientras reza, los Exvotos de alrededor se curan poco a poco. Prioridad de tiro.</td></tr>
+</table>
+<p class="why">Los tres modelos ya están en el inbox. Los tiers del Ojo se diseñan después, cuando los tengas.</p>
+</section>
+
+<section>
+<span class="tag">5 · Población</span>
+<h2>Grupos tipo de la zona 1</h2>
+<table>
+<tr><th>Grupo</th><th>Quién</th><th>Desde</th></tr>
+<tr><td>Ronda</td><td>6 Exvotos</td><td>Nave 1</td></tr>
+<tr><td>Enjambre</td><td>12 bebés</td><td>Nave 1</td></tr>
+<tr><td>Procesión</td><td>4 Exvotos + 8 bebés</td><td>Nave 1</td></tr>
+<tr><td>Puesto</td><td>2 Ojos + 4 Exvotos de guardia</td><td>Nave 1</td></tr>
+<tr><td>Carga</td><td>2 Cireneos + 6 Exvotos</td><td>Nave 2</td></tr>
+<tr><td>Guardia</td><td>2 Ojos + 2 Cireneos</td><td>Nave 2</td></tr>
+<tr><td>Parroquia</td><td>1 Párroco + 6 Exvotos</td><td>Nave 2</td></tr>
+<tr><td>Convento</td><td>1 Monja + 8 bebés</td><td>Nave 2</td></tr>
+<tr><td>Tiradores</td><td>3 Ojos separados + 6 Exvotos</td><td>Nave 3</td></tr>
+<tr><td>La Misa (minijefe)</td><td>1 Párroco + 1 Monja + 8 Exvotos, con más vida</td><td>Galería de la Nave 2</td></tr>
+</table>
+<ul>
+<li>Grupos el doble de grandes que la v2: de 4 a 12 enemigos.</li>
+<li><b>Un grupo cada pantalla y media</b>: una nave de 10 pantallas lleva 6-7.</li>
+<li>Como mucho <b>2 grupos despiertos a la vez</b>, hasta ~24 enemigos en pantalla. Es el tope técnico de hoy: hay que confirmarlo en la consola a 60 FPS.</li>
+</ul>
+</section>
+
+<section>
+<span class="tag">6 · Botín</span>
+<h2>Reliquias: stats y auras</h2>
+<p>Todo lo que encuentras es una <b>reliquia</b>. Cada una va en un hueco de un hechizo (o en el hueco del pecho, para el héroe) y trae <b>mejoras de stats</b> y, a veces, un <b>aura</b>: una mecánica nueva con su propio número.</p>
+<table>
+<tr><th>Hueco</th><th>Stats que puede subir</th><th>Auras que puede traer</th></tr>
+<tr><td>Rayo</td><td>Daño · Alcance · Velocidad de carga · Coste de maná</td><td><b>Lanza</b>: atraviesa a N enemigos · <b>Llama Votiva</b>: quema un X % del daño</td></tr>
+<tr><td>Ejecución</td><td>Daño del combo · Duración del tambaleo · Alcance</td><td><b>Viático</b>: ejecutar cura un X % de vida · <b>Estallido</b>: la ejecución daña alrededor (X de daño)</td></tr>
+<tr><td>Glifo</td><td>Radio · Duración · Ralentización · Coste de maná</td><td><b>Quemadura</b>: X de daño por segundo dentro · <b>Juicio</b>: los de dentro reciben +X % de todo · <b>Marca</b>: los que mueren dentro estallan (X de daño)</td></tr>
+<tr><td>Pecho (héroe)</td><td>Vida máxima · Maná máximo · Regeneración de maná · Robo de vida</td><td>Ninguna en la protodemo</td></tr>
+</table>
+<div class="card"><b class="r">Llama de la Cerera</b> · reliquia rara de Rayo<br>Aura <b>Llama Votiva</b>: quema el 70 % del daño<br>+15 % de alcance</div>
+<p class="why">La misma aura sale con números distintos: una rara con Llama Votiva 110 % puede valer menos que otra con 60 % y mucho más alcance. Esa es la elección.</p>
+</section>
+
+<section>
+<span class="tag">7 · Botín</span>
+<h2>Rarezas y huecos</h2>
+<table>
+<tr><th>Rareza</th><th>Contenido</th><th>Probabilidad</th></tr>
+<tr><td>Común (blanco)</td><td>1 stat</td><td>60 %</td></tr>
+<tr><td>Poco común (verde)</td><td>2 stats</td><td>25 %</td></tr>
+<tr><td>Rara (azul)</td><td>Aura + 1 stat</td><td>12 %</td></tr>
+<tr><td>Épica (morado)</td><td>Aura con número alto + 2 stats</td><td>3 %</td></tr>
+<tr><td>Legendaria (oro)</td><td>Aura única hecha a mano + 2 stats</td><td>Solo jefe, capilla cerrada o secreto</td></tr>
+</table>
+<ul>
+<li>El <b>nivel del objeto</b> (la nave donde cae) escala todos los números.</li>
+<li><b>Huecos:</b> al empezar, 1 en el Rayo y 1 en la Ejecución. Nivel 2: el del Glifo. Nivel 4: 2.º del Rayo. Nivel 6: el del pecho. Nivel 8: 2.º del Glifo. Nivel 10: 2.º de la Ejecución.</li>
+<li>Dos reliquias del mismo hechizo con la misma aura no se suman: cuenta la de número más alto.</li>
+<li><b>Bolsa de 16.</b> En el campamento se desguaza lo que sobra a cambio de cera, que en la protodemo solo compra pociones.</li>
+</ul>
+</section>
+
+<section>
+<span class="tag">8 · Botín</span>
+<h2>Premios por sala y cofres</h2>
+<table>
+<tr><th>Sala</th><th>Premio</th></tr>
+<tr><td>Nave</td><td>Lo que sueltan los enemigos y los rompibles (cera, pociones y reliquias sueltas)</td></tr>
+<tr><td>Galería sin salida</td><td>Cofre con 2 reliquias, una al menos poco común</td></tr>
+<tr><td>Capilla</td><td>Rara garantizada</td></tr>
+<tr><td>Capilla cerrada con llave</td><td>La legendaria fija de la zona</td></tr>
+<tr><td>Minijefe y jefe</td><td>Épica garantizada; el jefe, la primera vez, una legendaria</td></tr>
+</table>
+<p><b>Al dormir, los cofres no se rellenan.</b> Sí vuelven los enemigos (minijefe y jefe incluidos) y los rompibles.</p>
+<p class="why">Explorar premia una vez y repetir premia combatiendo: farmear es volver a por el jefe, no abrir el mismo cofre.</p>
+</section>
+
+<section>
+<span class="tag">Pedido · lo que necesito de ti</span>
+<h2>Assets para la protodemo, por orden</h2>
+<p class="why">Todo al inbox, como siempre: modelos de Tripo (zip) y animaciones de Mixamo (FBX sin piel). Las variantes salen por código o por render, así que basta con un modelo de cada cosa.</p>
+<table>
+<tr><th>#</th><th>Qué</th><th>Detalle</th></tr>
+<tr><td>1</td><td><b>Puerta lateral</b></td><td>Arco abierto en un muro de la catedral, de frente. La reja, el candado de la llave y el «solo se abre desde el otro lado» van encima.</td></tr>
+<tr><td>2</td><td><b>Puerta superior</b></td><td>Arco grande al fondo de la nave (sube a la siguiente).</td></tr>
+<tr><td>3</td><td><b>Altar</b> (viaje)</td><td>Pequeño, con sitio para velas o una llama. Apagado y encendido lo hace el efecto.</td></tr>
+<tr><td>4</td><td><b>Cofre</b></td><td>Dos modelos: cerrado y abierto. Arcón de iglesia, mejor que un cofre pirata.</td></tr>
+<tr><td>5</td><td><b>Campamento</b></td><td>Props sueltos que compongo en una escena de la pantalla de arriba: hoguera o corro de cirios, jergón para dormir, mesa o yunque de desguace, arcón de la bolsa. Si prefieres, una sola escena ya montada.</td></tr>
+<tr><td>6</td><td><b>Rompibles</b></td><td>Urna, cirio alto y exvoto pequeño de cera. Los restos los hace el código.</td></tr>
+<tr><td>7</td><td><b>Botín en el suelo</b></td><td>Relicario pequeño (la reliquia), llave y frasco (la poción). Runas, cera y orbes los dibujo yo.</td></tr>
+<tr><td>8</td><td><b>Lanzar glifo</b> (Mixamo)</td><td>Un gesto de hechizo hacia el suelo, de 1 s o menos. Búsquedas: «spell cast», «magic attack», «pointing».</td></tr>
+<tr><td>9</td><td>Lápida legible</td><td>Una, para el lore.</td></tr>
+<tr><td>10</td><td>Prisionero</td><td>Solo si da tiempo; su mecánica está sin diseñar.</td></tr>
+</table>
+</section>
+
+<section>
+<span class="tag">Qué falta</span>
+<h2>Camino a la protodemo</h2>
+<table>
+<tr><th>#</th><th>Bloque</th><th>Depende de</th></tr>
+<tr><td>1</td><td>Combo de puñetazos y tambaleo por vida baja</td><td>Nada: se puede empezar ya</td></tr>
+<tr><td>2</td><td>Exvotos bebé, Párroco y Monja en el juego, con sus papeles</td><td>Nada (modelos en el inbox)</td></tr>
+<tr><td>3</td><td>Castillo: salas, puertas con fundido, mapa que se recuerda, altares, dormir repuebla</td><td>Assets 1-3 (mientras, cajas)</td></tr>
+<tr><td>4</td><td>Población por grupos tipo</td><td>Bloques 2 y 3</td></tr>
+<tr><td>5</td><td>Glifo (sustituye a la Maldición) con sus auras</td><td>Asset 8 (mientras, la animación de disparo)</td></tr>
+<tr><td>6</td><td>Reliquias: caída, nombre en el suelo, bolsa, huecos, comparación, desguace, cera, pociones</td><td>Asset 7 y la ronda de estética</td></tr>
+<tr><td>7</td><td>Campamento nuevo (dormir, bolsa, desguace, pociones)</td><td>Asset 5</td></tr>
+<tr><td>8</td><td>Mapa en la pausa</td><td>Bloque 3</td></tr>
+<tr><td>9</td><td>Prueba en la DS a 60 FPS con ~24 enemigos</td><td>Todo lo anterior</td></tr>
+</table>
+<p><b>Rondas de estética pendientes</b> (A/B/C con capturas de la ROM, cuando exista el código): dibujo de los glifos en el suelo, nombre del botín por rareza, carta de reliquia y comparación, bolsa y huecos, mapa, barra de vida del jefe.</p>
+</section>
+
+<section>
+<span class="tag">Opcional · si da tiempo</span>
+<h2>Las 3 legendarias de la zona 1 (auras únicas)</h2>
+<ul>
+<li><b>El Dedo de Longinos</b> (Rayo): atraviesa a todos y cada enemigo atravesado suma un 20 % de daño al siguiente.</li>
+<li><b>El Puño de la Cerera</b> (Ejecución): cada ejecución deja un charco de cera que ralentiza.</li>
+<li><b>El Sello del Tribunal</b> (Glifo): el glifo te sigue los pies en vez de quedarse fijo.</li>
+</ul>
+</section>
+</body>
+</html>

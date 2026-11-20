@@ -146,3 +146,9 @@ Decisión 2026-11-10 (`DESIGN.md` §3): los píxeles de personaje y enemigos que
 
 ### 4.7. Franja vertical y horda (histórico)
 - La ROM por defecto ya no tiene horda continua ni franja infinita (`DESIGN.md` §6.13.6); el criterio de 48 enemigos activos no se persigue. Requisitos, mediciones de la v0.3 mínima y deuda del kit: `STATUS-ARCHIVE.md`, «Movido desde TECHNICAL.md el 2026-11-19». Deuda vigente de aquello: las lápidas planas conservan su `depth.png` en unidades del render fuente y hay que regenerarlo antes de darles oclusión.
+
+### Prototipo ARPG (rama `proto/arpg`, 2026-11-20)
+- **Puñetazos en NitroFS:** los tres clips del combo (~250 KB) no caben en la RAM fija (quedan ~110 KB); se leen de `nitrofiles/punch/` como la celda del remate (`source/punch.c`, `tools/generate_punch_sprites.py`).
+- **Campamento:** modo propio con arena estática (`source/camp.c`, `tools/camp/bake_camp_arena.py`), suelo y muros de la catedral recoloreados en el baker; props por software (`source/camp_props_gfx.c`) con la paleta de props y su sombra.
+- **Salas ARPG:** fundido de sala activo en el modo strip; huecos laterales aplicados después de `enforce_hard_edges` (si no, el muro se reimpone); la puerta, los cofres y el altar van horneados en el kit. Kit: 865 tiles (se quitaron variantes de losa lisa).
+- **Población:** `room_kind_of` en `source/encounters_act1.c` con curva de inicio (`ARPG_MINION_*`, `ARPG_TIER_*` en `include/arpg.h`).

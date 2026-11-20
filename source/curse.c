@@ -15,6 +15,8 @@
 #define CURSE_RING_DASH 3       // dashed ring: one dash every 3 outline pixels
 #define CURSE_FILL RGB15(9, 6, 10)     // ashen violet, hatched
 #define CURSE_RING RGB15(16, 11, 17)   // zone edge
+#define CURSE_FILL_DIM RGB15(5, 3, 6)  // arming: same drawing, darker (DESIGN.md 7.3, tenue durante la espera)
+#define CURSE_RING_DIM RGB15(9, 6, 10)
 #define CURSE_AIM RGB15(20, 16, 20)    // aim ring
 
 typedef struct {
@@ -29,8 +31,9 @@ typedef struct {
     int active;
     int cx, cy;             // centre (world px)
     int radius;             // ground radius
-    int frames_left;
-    int tick_timer;         // frames until the next burn application
+    int frames_left;        // live frames (slowing) left
+    int arm_frames;         // frames left before the glifo acts (0 = slowing already)
+    int tick_timer;         // frames until the next burn application (only with the tree node)
     int phase;              // hatch animation
 } CurseZone;
 
@@ -144,17 +147,21 @@ void curse_update(Enemy *enemies, int max_enemies) {
             s_zones[z].cy = s->ty;
             s_zones[z].radius = zone_radius();
             s_zones[z].frames_left = zone_frames();
-            s_zones[z].tick_timer = 0;     // the first burn lands on the next update
+            s_zones[z].arm_frames = ARPG_CURSE_ARM_FRAMES;   // 0,5 s dibujado, mas tenue, antes de actuar
+            s_zones[z].tick_timer = 0;                       // the first burn lands on the next update
             s_zones[z].phase = 0;
             break;
         }
     }
 
-    // Zones: burn every living enemy inside, every ARPG_CURSE_TICK frames, until they expire.
+    // Glifo: while arming it only shows (darker, see render_floor). Once armed it slows the living enemies
+    // inside. The burn is no longer base: only the tree node gives it (DESIGN.md 7.3).
+    const int burns = arpg_tree_has(4) || arpg_tree_has(5) || arpg_tree_has(6);
     for (int i = 0; i < ARPG_CURSE_MAX; i++) {
         CurseZone *z = &s_zones[i];
         if (!z->active) continue;
-        if (z->tick_timer <= 0) {
+        if (z->arm_frames > 0) { z->arm_frames--; z->phase++; continue; }
+        if (burns && z->tick_timer <= 0) {
             for (int e = 0; e < max_enemies; e++) {
                 Enemy *en = &enemies[e];
                 if (g_enemy_ally[e] || !en->active || en->hp <= 0) continue;
@@ -163,7 +170,7 @@ void curse_update(Enemy *enemies, int max_enemies) {
             }
             z->tick_timer = ARPG_CURSE_TICK;
         }
-        z->tick_timer--;
+        if (z->tick_timer > 0) z->tick_timer--;
         z->phase++;
         if (--z->frames_left <= 0) z->active = 0;
     }
@@ -177,12 +184,28 @@ int curse_point_in_zone(int x, int y) {
     return 0;
 }
 
+// % of speed a living glifo removes from a point (0 = outside or still arming).
+int curse_slow_percent_at(int x, int y) {
+    for (int i = 0; i < ARPG_CURSE_MAX; i++) {
+        const CurseZone *z = &s_zones[i];
+        if (z->active && z->arm_frames <= 0 && ground_inside(x - z->cx, y - z->cy, z->radius))
+            return ARPG_CURSE_SLOW_PCT;
+    }
+    return 0;
+}
+
 void curse_render_floor(uint16_t *buffer, int cam_x, int cam_y) {
     if (!buffer) return;
     GroundTarget g = { buffer, cam_x, cam_y };
     for (int i = 0; i < ARPG_CURSE_MAX; i++) {
         const CurseZone *z = &s_zones[i];
         if (!z->active) continue;
+        if (z->arm_frames > 0) {
+            // Waiting to act: the same drawing, darker and without the hatched fill churn (DESIGN.md 7.3).
+            gfx_ground_disc(&g, z->cx, z->cy, z->radius, CURSE_FILL_DIM, GFX_FILL_HATCH, z->phase >> 4);
+            gfx_ground_ring(&g, z->cx, z->cy, z->radius, CURSE_RING_DIM, CURSE_RING_DASH);
+            continue;
+        }
         gfx_ground_disc(&g, z->cx, z->cy, z->radius, CURSE_FILL, GFX_FILL_HATCH, z->phase >> 3);
         // The last seconds: the edge blinks (off for 8 frames, on for 8 frames).
         if (z->frames_left > CURSE_BLINK_FRAMES || ((z->frames_left >> 3) & 1))

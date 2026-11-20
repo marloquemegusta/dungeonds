@@ -23,10 +23,13 @@
 #include "exvoto_melt.h"
 #include "remate.h"
 #include "remate_sprites.h"
+#include "punch.h"
 #include "sfx.h"
 #include "bestiary.h"
 #include "intro.h"
 #include "hud_icons_gfx.h"
+#include "arpg_hud_gfx.h"
+#include "dmg_numbers.h"
 #include "menu.h"
 #include "encounters_act1.h"
 #include "boss.h"
@@ -36,6 +39,7 @@
 #include "arpg_tree.h"
 #include "curse.h"
 #include "allies.h"
+#include "camp.h"
 #include "placeholders_gfx.h"
 #include <stdio.h>
 #include <string.h>
@@ -199,6 +203,7 @@ static uint32_t s_death_chunk_seed;
 
 #define REMATE_REMNANT_REF (-0x40000000)   // DrawItem ref of the wax halves a remate leaves (remate.h)
 #define ENC_RELIC_SPRITE_REF (-0x40000001) // DrawItem ref of the boss golden relicario or final Altar
+#define ENC_FIXTURE_REF_BASE (-0x40000002) // DrawItem ref of room fixture i: base - i (chests, travel altars)
 
 typedef struct {
     int depth;     // ground world Y in pixels
@@ -853,6 +858,21 @@ static int remate_layer_depth(int ay, int layer) {
     return ay + g_remate_depth[remate_kind()][remate_dir()][remate_frame()][layer];
 }
 
+// Combo de puñetazos (punch.h): el fotograma del golpe en curso, anclado a los pies como el andar. La celda del
+// lab es 48x48 y la fila de pies de cada golpe/dirección está en g_punch_ground_anchor.
+static void draw_punch(uint16_t *buffer, int cam_x, int cam_y) {
+    const uint16_t *pix = punch_pixels();
+    const uint8_t *b = punch_bounds();
+    if (!pix || !b) return;
+    const int bw = b[2], bh = b[3];
+    if (bw == 0 || bh == 0) return;
+    const int px = player_screen_x(s_player.x, s_player.y);
+    const int py = player_screen_y(s_player.x, s_player.y);
+    blit_stride(buffer, pix, punch_runs(), sprite_pitch(bw), bw, bh,
+                px - PUNCH_CELL / 2 + b[0], py - punch_ground_anchor() + b[1],
+                cam_x, cam_y, s_draw_item_depth);
+}
+
 static void draw_player(uint16_t *buffer, int cam_x, int cam_y) {
     if (remate_active()) {
         int ax, ay;
@@ -864,6 +884,7 @@ static void draw_player(uint16_t *buffer, int cam_x, int cam_y) {
         if (dep1 >= dep0) draw_remate_layer(buffer, k, d, f, 1, ax, ay, cam_x, cam_y, dep1);  // debris nearer: over the pair
         return;
     }
+    if (punch_active()) { draw_punch(buffer, cam_x, cam_y); return; }
     int px = player_screen_x(s_player.x, s_player.y);
     int py = player_screen_y(s_player.x, s_player.y);
 
@@ -1283,12 +1304,89 @@ static int shadow_select(const DrawItem *it, ShadowSel *sel) {
     return 0;                // death chunks keep their own 1-pixel ground dot
 }
 
+// The camp scene (DESIGN.md: the claustro as its own room): the hero, the props and the bonfire glow,
+// depth sorted by ground Y, with software shadows. No enemies, no weapons. It reuses render_screen's
+// page/dirty machinery but none of the dungeon systems.
+#if CAMP_SCENE
+static void render_camp_screen(uint16_t *buffer, DirtySpan *spans, int cam_x, int cam_y, int sub_screen,
+                               uint32_t *out_floor, uint32_t *out_shadow, uint32_t *out_blit) {
+    clear_dirty_spans(buffer, spans);
+    g_dirty_cur = spans;
+    if (out_floor) *out_floor = 0;
+    if (out_shadow) *out_shadow = 0;
+    if (out_blit) *out_blit = 0;
+
+    camp_render_floor(buffer, cam_x, cam_y);        // warm pool under the bonfire, under everything
+
+    // Prop ground shadows (baked, 4-bit nibbles) on the floor, before any actor: the same 50 %
+    // darkening (apply_shadow_fast) as the actors and as the cathedral kit.
+    {
+        int nprops = camp_items_count(cam_x, cam_y);
+        for (int i = 0; i < nprops; i++) {
+            const uint8_t *mask;
+            uint8_t bounds[4];
+            int left, top;
+            if (!camp_item_shadow(i, &mask, bounds, &left, &top)) continue;
+            draw_shadow_mask(buffer, mask, bounds, left, top, cam_x, cam_y, camp_item_depth(i));
+        }
+    }
+
+    int psx = player_screen_x(s_player.x, s_player.y);
+    int psy = player_screen_y(s_player.x, s_player.y);
+
+    // Player shadow (the walk sprite's baked mask): hardware OBJ windows when enabled, else software.
+    {
+        const uint8_t *mask = character_shadow_mask_ptr(s_player.char_id, s_player.dir, s_player.frame);
+        const uint8_t *bounds = g_character_shadow_bounds[s_player.char_id][s_player.dir][s_player.frame];
+        int shw = g_characters[s_player.char_id].shadow_w;
+        int shh = g_characters[s_player.char_id].shadow_h;
+#if HW_SHADOWS
+        hwshadow_begin(sub_screen);
+        if (g_hw_shadows_on) {
+            hwshadow_add(sub_screen, mask, bounds, psx - shw / 2 - cam_x, psy - shh / 2 - cam_y);
+        } else {
+            draw_shadow_mask(buffer, mask, bounds, psx - shw / 2, psy - shh / 2, cam_x, cam_y, psy);
+        }
+#else
+        (void)sub_screen;
+        draw_shadow_mask(buffer, mask, bounds, psx - shw / 2, psy - shh / 2, cam_x, cam_y, psy);
+#endif
+    }
+
+    typedef struct { int depth, ref; } CampItem;
+    CampItem items[8];
+    int n = 0;
+    int np = camp_items_count(cam_x, cam_y);
+    for (int i = 0; i < np; i++) { items[n].depth = camp_item_depth(i); items[n].ref = i; n++; }
+    items[n].depth = psy; items[n].ref = -1; n++;   // the hero, ref -1
+    for (int i = 1; i < n; i++) {
+        CampItem key = items[i];
+        int j = i - 1;
+        while (j >= 0 && items[j].depth > key.depth) { items[j + 1] = items[j]; j--; }
+        items[j + 1] = key;
+    }
+    for (int i = 0; i < n; i++) {
+        if (items[i].ref == -1) {
+            s_draw_item_depth = items[i].depth;
+            draw_player(buffer, cam_x, cam_y);
+        } else {
+            s_draw_item_depth = items[i].depth;
+            camp_item_draw(items[i].ref, buffer, cam_x, cam_y, items[i].depth);
+        }
+    }
+    camp_render_overlay(buffer, cam_x, cam_y);
+}
+#endif
+
 ITCM_CODE static void render_screen(uint16_t *buffer, DirtySpan *spans, int cam_x, int cam_y, int sub_screen,
                           uint32_t *out_floor, uint32_t *out_shadow, uint32_t *out_blit) {
+#if CAMP_SCENE
+    if (camp_active()) { render_camp_screen(buffer, spans, cam_x, cam_y, sub_screen, out_floor, out_shadow, out_blit); return; }
+#endif
 #if !HW_SHADOWS
     (void)sub_screen;
 #endif
-    DrawItem items[MAX_DRAW_ITEMS + MAX_ENEMIES + MAX_DEATH_CHUNKS + EXVOTO_MELT_MAX + HEAL_PICKUP_MAX_ACTIVE + 2];
+    DrawItem items[MAX_DRAW_ITEMS + MAX_ENEMIES + MAX_DEATH_CHUNKS + EXVOTO_MELT_MAX + HEAL_PICKUP_MAX_ACTIVE + 2 + 16];
     const int pk_base = -(2 + MAX_ENEMIES + MAX_DEATH_CHUNKS + EXVOTO_MELT_MAX);  // heart i: pk_base - 1 - i
     int count = 0;
 
@@ -1401,6 +1499,13 @@ ITCM_CODE static void render_screen(uint16_t *buffer, DirtySpan *spans, int cam_
         if (enc_dynamic_relic_item(cam_x, cam_y, &d)) {
             items[count].depth = d; items[count].ref = ENC_RELIC_SPRITE_REF; items[count].cx = 0; items[count].cy = d; count++;
         }
+        // Room fixtures (chests and travel altars) of this screen, sorted with the actors.
+        int nf = enc_dynamic_fixture_count(cam_x, cam_y);
+        for (int i = 0; i < nf; i++) {
+            if (!enc_dynamic_fixture_item(i, cam_x, cam_y, &d)) continue;
+            items[count].depth = d; items[count].ref = ENC_FIXTURE_REF_BASE - i;
+            items[count].cx = 0; items[count].cy = d; count++;
+        }
     }
 #endif
 
@@ -1493,6 +1598,8 @@ ITCM_CODE static void render_screen(uint16_t *buffer, DirtySpan *spans, int cam_
 #if ENCOUNTERS_PROTO
         } else if (sp == ENC_RELIC_SPRITE_REF) {
             enc_dynamic_relic_draw(buffer, cam_x, cam_y, s_draw_item_depth);
+        } else if (sp <= ENC_FIXTURE_REF_BASE && sp > ENC_FIXTURE_REF_BASE - 16) {
+            enc_dynamic_fixture_draw(ENC_FIXTURE_REF_BASE - sp, buffer, cam_x, cam_y, s_draw_item_depth);
 #endif
         } else if (sp <= pk_base - 1) {
             pickups_draw(buffer, pk_base - 1 - sp, cam_x, cam_y);
@@ -1517,6 +1624,7 @@ ITCM_CODE static void render_screen(uint16_t *buffer, DirtySpan *spans, int cam_
 #if ENCOUNTERS_PROTO
     boss_draw_world(buffer, cam_x, cam_y);          // phase numeral over the boss
 #endif
+    dmg_numbers_draw(buffer, cam_x, cam_y);
     PP_ADD(PP_PROJ, pp_proj);
     uint32_t blit_ticks = cpuGetTiming() - t_bl0;
 
@@ -1679,27 +1787,6 @@ static void hud_square(uint16_t *buffer, int x, int y, int size, uint16_t fill, 
     }
 }
 
-// Dark box under HUD text, so it reads over the floor and the barrier gates: every channel halved in place.
-// The mask drops the bit each channel receives from its neighbour on the shift.
-static void hud_dim_rect(uint16_t *buffer, int x, int y, int w, int h) {
-    for (int row = 0; row < h; row++) {
-        int py = y + row;
-        if (py < 0 || py >= SCREEN_H) continue;
-        dirty_row(py, x, x + w);
-        for (int col = 0; col < w; col++) {
-            int px = x + col;
-            if (px < 0 || px >= SCREEN_W) continue;
-            uint16_t c = buffer[py * SCREEN_W + px];
-            buffer[py * SCREEN_W + px] = ((c >> 1) & 0x3DEF) | BIT(15);
-        }
-    }
-}
-
-// Box for one line drawn with hud_text at (x, y): 2 px of padding around the glyphs and the 1 px shadow.
-static void hud_dim_text(uint16_t *buffer, int x, int y, const char *s) {
-    hud_dim_rect(buffer, x - 2, y - 2, hud_text_width(s) + 6, bestiary_font_line_height() + 5);
-}
-
 // Level / xp HUD (DESIGN.md 6.12.8), three looks selected by g_design_variant.
 #if !ENCOUNTERS_PROTO
 static void hud_rect(uint16_t *buffer, int x, int y, int w, int h, uint16_t c) {
@@ -1806,27 +1893,100 @@ static void hud_level(uint16_t *buffer) {
 }
 #endif
 
-// Diablo-style orb (DESIGN.md 7.2): a disc filled from the bottom up to value/max of its height. Pixels above the
-// fill are `empty`, a 1-px ring at the edge is `rim`, and a small crescent near the top-left of the fill is `shine`.
-static void draw_orb(uint16_t *buffer, int cx, int cy, int r, int value, int max,
-                     uint16_t fill, uint16_t shine, uint16_t empty, uint16_t rim) {
-    const int r2 = r * r, inner2 = (r - 1) * (r - 1);
-    const int shine_x = -(r / 3);
+// Draws a pre-rendered 3D vessel (Chalice or Reliquary) with procedural liquid inside its hollow bowl.
+// Empty pixels above the liquid level stay 100% transparent so the floor shows through.
+static void draw_hud_vessel(uint16_t *buffer, int x0, int y0, int w, int h,
+                            const uint16_t *sprite, const int8_t *xl_tab, const int8_t *xr_tab,
+                            int bowl_top, int bowl_bot, int value, int max, int is_mana) {
     if (value < 0) value = 0;
     if (value > max) value = max;
-    int level = max > 0 ? (value * 2 * r) / max : 0;     // filled rows, counted from the bottom
-    const int fill_top = cy + r - level;                // first filled row
-    for (int dy = -r; dy <= r; dy++) {
-        const int y = cy + dy;
-        for (int dx = -r; dx <= r; dx++) {
-            const int d2 = dx * dx + dy * dy;
-            if (d2 > r2) continue;
-            uint16_t c;
-            if (d2 > inner2) c = rim;
-            else if (y < fill_top) c = empty;
-            else if (dx < shine_x && y <= fill_top + 2) c = shine;
-            else c = fill;
-            hud_px(buffer, cx + dx, y, c);
+    int span_h = bowl_bot - bowl_top + 1;
+    int filled = (max > 0 && span_h > 0) ? (value * span_h) / max : 0;
+    int fill_y = bowl_bot + 1 - filled;
+
+    for (int y = 0; y < h; y++) {
+        int sy = y0 + y;
+        if (sy < 0 || sy >= SCREEN_H) continue;
+        int xl = xl_tab[y], xr = xr_tab[y];
+        int has_liq = (xl >= 0 && xr > xl && y >= fill_y && y >= bowl_top && y <= bowl_bot);
+        int cx2 = xl + xr;
+        int half_w = (xr - xl) > 1 ? (xr - xl) >> 1 : 1;
+        const uint16_t *row = &sprite[y * w];
+
+        int d0 = x0 < 0 ? 0 : x0;
+        int d1 = (x0 + w) > SCREEN_W ? SCREEN_W : (x0 + w);
+        if (d0 < d1) dirty_row(sy, d0, d1);
+
+        for (int x = 0; x < w; x++) {
+            int sx = x0 + x;
+            if (sx < 0 || sx >= SCREEN_W) continue;
+            uint16_t c = row[x];
+            if (c != 0) {
+                buffer[sy * SCREEN_W + sx] = c;
+            } else if (has_liq && x > xl && x < xr) {
+                if (y == fill_y) {
+                    buffer[sy * SCREEN_W + sx] = is_mana
+                        ? (uint16_t)(RGB15(9, 13, 23) | BIT(15))
+                        : (uint16_t)(RGB15(22, 7, 7) | BIT(15));
+                } else {
+                    // Integer cylindrical shading across x (0..100 scale)
+                    int dx_abs = (x * 2) - cx2;
+                    if (dx_abs < 0) dx_abs = -dx_abs;
+                    int nx8 = (dx_abs * 4) / half_w; // 0..8
+                    int shade = 16 - ((nx8 * nx8) >> 3);
+                    if (shade < 6) shade = 6;
+                    if (is_mana) {
+                        int r = (4 * shade) >> 4;
+                        int g = (7 * shade) >> 4;
+                        int b = (17 * shade) >> 4;
+                        buffer[sy * SCREEN_W + sx] = (uint16_t)(RGB15(r, g, b) | BIT(15));
+                    } else {
+                        int r = (17 * shade) >> 4;
+                        int g = (3 * shade) >> 4;
+                        int b = (3 * shade) >> 4;
+                        buffer[sy * SCREEN_W + sx] = (uint16_t)(RGB15(r, g, b) | BIT(15));
+                    }
+                }
+            }
+        }
+    }
+}
+
+static void draw_hud_sprite(uint16_t *buffer, int x0, int y0, int w, int h, const uint16_t *sprite) {
+    for (int y = 0; y < h; y++) {
+        int sy = y0 + y;
+        if (sy < 0 || sy >= SCREEN_H) continue;
+        int d0 = x0 < 0 ? 0 : x0;
+        int d1 = (x0 + w) > SCREEN_W ? SCREEN_W : (x0 + w);
+        if (d0 < d1) dirty_row(sy, d0, d1);
+        const uint16_t *row = &sprite[y * w];
+        for (int x = 0; x < w; x++) {
+            int sx = x0 + x;
+            if (sx >= 0 && sx < SCREEN_W && row[x] != 0) buffer[sy * SCREEN_W + sx] = row[x];
+        }
+    }
+}
+
+static void draw_hud_chain(uint16_t *buffer, int x0, int y0, int w, int h, const uint16_t *sprite, int fill_x) {
+    for (int y = 0; y < h; y++) {
+        int sy = y0 + y;
+        if (sy < 0 || sy >= SCREEN_H) continue;
+        int d0 = x0 < 0 ? 0 : x0;
+        int d1 = (x0 + w) > SCREEN_W ? SCREEN_W : (x0 + w);
+        if (d0 < d1) dirty_row(sy, d0, d1);
+        const uint16_t *row = &sprite[y * w];
+        for (int x = 0; x < w; x++) {
+            int sx = x0 + x;
+            if (sx < 0 || sx >= SCREEN_W) continue;
+            uint16_t c = row[x];
+            if (c == 0) continue;
+            if (x >= fill_x) {
+                int r = ((c & 31) * 5) >> 4;
+                int g = (((c >> 5) & 31) * 5) >> 4;
+                int b = (((c >> 10) & 31) * 5) >> 4;
+                c = (uint16_t)(RGB15(r, g, b) | BIT(15));
+            }
+            buffer[sy * SCREEN_W + sx] = c;
         }
     }
 }
@@ -1881,7 +2041,6 @@ static void draw_run_hud(uint16_t *buffer) {
                 int enc = enc_current_encounter();
                 if (enc % 5 == 0) snprintf(line, sizeof(line), "Piso %d · Jefe", enc);
                 else snprintf(line, sizeof(line), "Piso %d", enc);
-                hud_dim_text(buffer, 6, 6, line);
                 hud_text(buffer, 6, 6, line, RGB15(27, 20, 11) | BIT(15));
             }
         }
@@ -1894,52 +2053,49 @@ static void draw_run_hud(uint16_t *buffer) {
 #endif
 #endif
 
-        // ARPG orbs (DESIGN.md 7.2): life bottom-left, mana bottom-right, the numbers just above each.
+        // ARPG 3D vessels (DESIGN.md 7.2): Chalice (life) bottom-left, Reliquary (mana) bottom-right, numbers above.
         {
-            const int orb_r = 16, orb_cy = SCREEN_H - 20;
-            const int life_cx = 20, mana_cx = SCREEN_W - 20;
             const uint16_t num_ink = RGB15(27, 24, 18) | BIT(15);
-            const uint16_t rim = RGB15(17, 14, 9) | BIT(15);
-            draw_orb(buffer, life_cx, orb_cy, orb_r, g_player_state.hp, g_player_state.max_hp,
-                     RGB15(17, 4, 4) | BIT(15), RGB15(24, 9, 8) | BIT(15), RGB15(4, 2, 2) | BIT(15), rim);
-            draw_orb(buffer, mana_cx, orb_cy, orb_r, g_player_state.mana, g_player_state.max_mana,
-                     RGB15(5, 8, 17) | BIT(15), RGB15(9, 13, 23) | BIT(15), RGB15(2, 2, 4) | BIT(15), rim);
+            const int cal_x = 4, cal_y = SCREEN_H - HUD_CALIZ_H;
+            const int amp_x = SCREEN_W - HUD_AMPOLLA_W - 6, amp_y = SCREEN_H - HUD_AMPOLLA_H;
+            draw_hud_vessel(buffer, cal_x, cal_y, HUD_CALIZ_W, HUD_CALIZ_H, g_hud_caliz,
+                            g_hud_caliz_xl, g_hud_caliz_xr, HUD_CALIZ_BOWL_TOP, HUD_CALIZ_BOWL_BOT,
+                            g_player_state.hp, g_player_state.max_hp, 0);
+            draw_hud_vessel(buffer, amp_x, amp_y, HUD_AMPOLLA_W, HUD_AMPOLLA_H, g_hud_ampolla,
+                            g_hud_ampolla_xl, g_hud_ampolla_xr, HUD_AMPOLLA_BOWL_TOP, HUD_AMPOLLA_BOWL_BOT,
+                            g_player_state.mana, g_player_state.max_mana, 1);
+
             snprintf(line, sizeof(line), "%d", g_player_state.hp);
-            hud_dim_text(buffer, life_cx - hud_text_width(line) / 2, SCREEN_H - 50, line);
-            hud_text(buffer, life_cx - hud_text_width(line) / 2, SCREEN_H - 50, line, num_ink);
+            int lx = cal_x + (HUD_CALIZ_W - hud_text_width(line)) / 2;
+            hud_text(buffer, lx, cal_y - 12, line, num_ink);
+
             snprintf(line, sizeof(line), "%d", g_player_state.mana);
-            hud_dim_text(buffer, mana_cx - hud_text_width(line) / 2, SCREEN_H - 50, line);
-            hud_text(buffer, mana_cx - hud_text_width(line) / 2, SCREEN_H - 50, line, num_ink);
+            int rx = amp_x + (HUD_AMPOLLA_W - hud_text_width(line)) / 2;
+            hud_text(buffer, rx, amp_y - 12, line, num_ink);
         }
 #if ENCOUNTERS_PROTO
-        if (arpg_tree_has(0)) {   // ARPG: the active spell's name above the mana number (DESIGN.md 7.3)
-            const int curse_on = g_arpg.spell == 1;
-            const uint16_t spell_ink = curse_on ? (RGB15(24, 20, 26) | BIT(15)) : (RGB15(27, 24, 18) | BIT(15));
-            const char *spell_name = curse_on ? "Maldición" : "Rayo";
-            hud_text(buffer, SCREEN_W - 4 - hud_text_width(spell_name), SCREEN_H - 62, spell_name, spell_ink);
+        {   // Active spell Viril Solar to the left of the Reliquary.
+            const uint16_t *viril = (g_arpg.spell == 1) ? g_hud_viril_glifo : g_hud_viril_rayo;
+            draw_hud_sprite(buffer, 203 - (HUD_VIRIL_RAYO_W / 2), SCREEN_H - HUD_VIRIL_RAYO_H,
+                            HUD_VIRIL_RAYO_W, HUD_VIRIL_RAYO_H, viril);
         }
 #endif
 #if ENCOUNTERS_PROTO
-        {   // ARPG: level and banked xp between the two orbs; a full bank says so (sleep at the camp to level up).
+        {   // ARPG: 3D liturgical chain for XP at bottom-center + compact "Nv N" above it.
             const int xp_needed = arpg_xp_needed(g_arpg.level);
-            const int ready = g_arpg.xp >= (uint32_t)xp_needed;
-            const uint16_t lvl_ink = RGB15(27, 20, 11) | BIT(15);
-            const uint16_t xp_ink = ready ? (RGB15(31, 27, 16) | BIT(15)) : lvl_ink;
-            const char *sleep_hint = "Duerme para subir";
-            char nv_txt[16], xp_txt[24];
-            snprintf(nv_txt, sizeof(nv_txt), "Nv %d", g_arpg.level);
-            snprintf(xp_txt, sizeof(xp_txt), "Exp %lu/%d", (unsigned long)g_arpg.xp, xp_needed);
-            // One dark box behind the whole bottom-centre block (2 px padding), sized to its widest line.
-            int block_w = hud_text_width(nv_txt);
-            if (hud_text_width(xp_txt) > block_w) block_w = hud_text_width(xp_txt);
-            if (ready && hud_text_width(sleep_hint) > block_w) block_w = hud_text_width(sleep_hint);
-            const int last_y = ready ? SCREEN_H - 16 : SCREEN_H - 28;
-            const int block_top = SCREEN_H - 40 - 2;
-            const int block_bottom = last_y + bestiary_font_line_height() + 1 + 2;     // exclusive
-            hud_dim_rect(buffer, (SCREEN_W - block_w) / 2 - 2, block_top, block_w + 6, block_bottom - block_top);
-            hud_text(buffer, (SCREEN_W - hud_text_width(nv_txt)) / 2, SCREEN_H - 40, nv_txt, lvl_ink);
-            hud_text(buffer, (SCREEN_W - hud_text_width(xp_txt)) / 2, SCREEN_H - 28, xp_txt, xp_ink);
-            if (ready) hud_text(buffer, (SCREEN_W - hud_text_width(sleep_hint)) / 2, SCREEN_H - 16, sleep_hint, lvl_ink);
+            const int ready = g_player_state.god_mode ? 0 : (g_arpg.xp >= (uint32_t)xp_needed);
+            const uint16_t lvl_ink = ready ? (RGB15(31, 27, 16) | BIT(15)) : (RGB15(27, 20, 11) | BIT(15));
+            int fill_x = ready ? HUD_CADENA_W : (xp_needed > 0 ? (int)((g_arpg.xp * (uint32_t)HUD_CADENA_W) / (uint32_t)xp_needed) : 0);
+            if (fill_x > HUD_CADENA_W) fill_x = HUD_CADENA_W;
+            const int cx = (SCREEN_W - HUD_CADENA_W) / 2;
+            const int cy = SCREEN_H - HUD_CADENA_H;
+            draw_hud_chain(buffer, cx, cy, HUD_CADENA_W, HUD_CADENA_H, g_hud_cadena, fill_x);
+
+            char nv_txt[24];
+            if (ready) snprintf(nv_txt, sizeof(nv_txt), "Nv %d · Duerme", g_arpg.level);
+            else snprintf(nv_txt, sizeof(nv_txt), "Nv %d", g_arpg.level);
+            int nx = (SCREEN_W - hud_text_width(nv_txt)) / 2;
+            hud_text(buffer, nx, cy - 12, nv_txt, lvl_ink);
         }
 #endif
 #if ENCOUNTERS_PROTO
@@ -2400,6 +2556,8 @@ static void strip_enemies_update(void) {
     allies_update(g_enemies, MAX_ENEMIES);                  // ARPG: Resurreccion allies (allies.c)
     enc_update(g_enemies, MAX_ENEMIES, TO_INT(s_player.x), TO_INT(s_player.y));
     pickups_update(s_player.x, s_player.y, &g_player_state);     // ARPG: remate orbs (health, mana)
+    dmg_numbers_set_player_pos(s_player.x, s_player.y);
+    dmg_numbers_update();
     return;
 #endif
 #if !CATHEDRAL_PLAYGROUND || CATHEDRAL_AI == 2
@@ -2408,6 +2566,8 @@ static void strip_enemies_update(void) {
     enemy_ai_set_view(s_cam_x, s_cam_y - SCREEN_H, s_cam_y + SCREEN_H);
     enemy_ai_update(g_enemies, MAX_ENEMIES, s_player.x, s_player.y);
     pickups_update(s_player.x, s_player.y, &g_player_state);
+    dmg_numbers_set_player_pos(s_player.x, s_player.y);
+    dmg_numbers_update();
 }
 
 // ---------------------------------------------------------------------------
@@ -2415,6 +2575,7 @@ static void strip_enemies_update(void) {
 // ---------------------------------------------------------------------------
 
 static void player_init(void) {
+    dmg_numbers_reset();
     s_player.x = TO_FIXED(g_arena->player_x);
     s_player.y = TO_FIXED(g_arena->player_y);
     s_player.dir = DIR_SOUTH;
@@ -2525,35 +2686,11 @@ static void camera_init(void) {
     update_camera();
 }
 
-// ARPG punch (DESIGN.md 7.2): the nearest enemy in reach takes ARPG_PUNCH_DAMAGE and is pushed a little.
-// A survivor that is an Exvoto or a Cireneo reels even above half life, so a remate can follow.
-static void arpg_punch(void) {
-    int best = -1, best_d2 = 0x7fffffff, best_dx = 0, best_dy = 0;
-    const int range2 = ARPG_PUNCH_RANGE * ARPG_PUNCH_RANGE;
-    for (int i = 0; i < MAX_ENEMIES; i++) {
-        const Enemy *e = &g_enemies[i];
-        if (g_enemy_ally[i] || !e->active || e->hp <= 0 || e->state == ENEMY_STATE_EMERGE) continue;
-#if ENCOUNTERS_PROTO
-        if (enc_untouchable(e)) continue;
-#endif
-        int dx = TO_INT(e->x - s_player.x), dy = TO_INT(e->y - s_player.y);
-        int d2 = dx * dx + GROUND_DY2(dy);
-        if (d2 <= range2 && d2 < best_d2) { best_d2 = d2; best = i; best_dx = dx; best_dy = dy; }
-    }
-    if (best < 0) return;
-    Enemy *e = &g_enemies[best];
-    s_player.dir = aim_dir_from_screen(player_screen_x(e->x, e->y) - player_screen_x(s_player.x, s_player.y),
-                                       player_screen_y(e->x, e->y) - player_screen_y(s_player.x, s_player.y));
-    const fixed push_x = best_dx < 0 ? -128 : (best_dx > 0 ? 128 : 0);   // 8.8: a small shove away from the hero
-    const fixed push_y = best_dy < 0 ? -128 : (best_dy > 0 ? 128 : 0);
-    enemy_hit(e, ARPG_PUNCH_DAMAGE, push_x, push_y);
-    if (e->active && e->hp > 0 && (e->type == ENEMY_TYPE_EXVOTO || e->type == ENEMY_TYPE_CHARGER)) {
-        if (e->state != ENEMY_STATE_WOBBLE) e->state_timer = REMATE_WOBBLE_FRAMES;
-        e->state = ENEMY_STATE_WOBBLE;
-        e->aim_px = e->aim_py = 0;
-    }
-    if (g_hitstop_frames < 3) g_hitstop_frames = 3;
-    weapons_request_shake(1, 4);
+// ARPG combo de punetazos (DESIGN.md 7.2, punch.h): L corto. Durante el golpe o en su ventana de encadenado
+// saca el siguiente; si no, empieza por el directo.
+static void arpg_punch(Enemy *enemies, int max_enemies) {
+    if (punch_try_chain(enemies, max_enemies, s_player.x, s_player.y, s_player.dir)) return;
+    punch_start(enemies, max_enemies, s_player.x, s_player.y, s_player.dir, PUNCH_MOVE_A);
 }
 
 // ARPG L tap/hold state (see player_update).
@@ -2574,6 +2711,7 @@ static void player_update(uint32_t keys, uint32_t keys_down) {
     if (g_player_state.is_dead) {
         l_tracking_abort(keys);
         remate_reset();
+        punch_reset();
         s_player.is_moving = 0;
         s_player.frame = 0;
         s_shot_active = 0;
@@ -2616,6 +2754,16 @@ static void player_update(uint32_t keys, uint32_t keys_down) {
         l_tracking_abort(keys);
         update_camera();
         return;
+    }
+    punch_update();                                    // combo de puñetazos: avanza el golpe y su ventana de encadenado
+    if (punch_active()) {
+        // Mientras pega el héroe no anda ni dispara (DESIGN.md 7.2). L sigue leyéndose abajo para encadenar.
+        s_rooted = 0;
+        s_shot_active = 0;
+        s_player.is_moving = 0;
+        s_player.frame = 0;
+        s_player.anim_timer = 0;
+        s_hero_clip_frame = -1;
     }
     shot_clip_step();
 
@@ -2678,8 +2826,8 @@ static void player_update(uint32_t keys, uint32_t keys_down) {
         if (s_l_tracking || (keys_down & KEY_L)) {
             s_l_tracking = 0;
             if (!(keys & KEY_R) && s_punch_cooldown <= 0) {
-                arpg_punch();
-                s_punch_cooldown = ARPG_PUNCH_COOLDOWN;
+                arpg_punch(g_enemies, MAX_ENEMIES);
+                s_punch_cooldown = PUNCH_TICKS;      // un doble tap en el mismo frame no puede saltarse un golpe
             }
         }
     }
@@ -2807,6 +2955,21 @@ static void player_update(uint32_t keys, uint32_t keys_down) {
         s_player.anim_timer = 0;
     }
 
+    // Párroco tier shove (v3): while a shove lasts, the hero is pushed along the blow, sliding on collisions.
+    fixed push_vx, push_vy;
+    if (player_push_step(&push_vx, &push_vy)) {
+        fixed px2 = s_player.x, py2 = s_player.y;
+        if (!sweep_position(&px2, &py2, push_vx, push_vy)) {
+            px2 = s_player.x; py2 = s_player.y;
+            if (!sweep_position(&px2, &py2, push_vx, 0)) {
+                px2 = s_player.x; py2 = s_player.y;
+                if (!sweep_position(&px2, &py2, 0, push_vy)) { px2 = s_player.x; py2 = s_player.y; }
+            }
+        }
+        s_player.x = px2;
+        s_player.y = py2;
+    }
+
     s_player.char_id = s_crouched ? CHAR_HERO_CROUCH_WALK : CHAR_HERO;
     if (s_crouched && !s_player.is_moving) s_player.frame = CROUCH_REST_FRAME;
 
@@ -2927,6 +3090,7 @@ static void arena_restart(void) {
     memset(s_death_chunks, 0, sizeof(s_death_chunks));
     exvoto_melt_reset();
     remate_reset();
+    punch_reset();
     s_pending_head = s_pending_count = 0;
     if (s_strip_mode) memset(g_enemies, 0, sizeof(g_enemies));
     else encounters_spawn(&g_encounter_mgr, g_enemies, MAX_ENEMIES);
@@ -2951,7 +3115,60 @@ enum { TRANSITION_NONE = 0, TRANSITION_OUT, TRANSITION_IN };
 static int s_transition = TRANSITION_NONE;
 static int s_fade_level = 0;
 
+#if ENCOUNTERS_PROTO
+// Room crossing (salas ARPG): fade to black, land at the foot of the destination room, fade back in.
+// The destination is always the room above for now (the strip only advances vertically).
+static int s_room_dest = -1;
+
+static void room_transition_teleport(int k) {
+    int x, y;
+    if (!enc_room_dest_pos(k, &x, &y)) return;
+    s_player.x = TO_FIXED(x);
+    s_player.y = TO_FIXED(y);
+    s_player.dir = DIR_NORTH;
+    s_player.frame = 0;
+    s_player.is_moving = 0;
+    s_player.anim_timer = 0;
+    s_rooted = 0;
+    camera_init();
+    nav_set_goal(x, y);
+    nav_refresh_begin(x, y);      // the walkable grid is read from the new spot
+}
+
+static void room_transition_update(void) {
+    if (s_transition == TRANSITION_NONE) {
+        int k;
+        if (enc_room_take_exit(&k)) {
+            s_room_dest = k;
+            s_transition = TRANSITION_OUT;
+            s_fade_level = 0;
+        }
+        return;
+    }
+    if (s_transition == TRANSITION_OUT) {
+        s_fade_level += FADE_STEP;
+        if (s_fade_level >= 16) {
+            s_fade_level = 16;
+            setBrightness(3, -16);                 // fully black before the teleport
+            if (s_room_dest >= 0) room_transition_teleport(s_room_dest);
+            s_room_dest = -1;
+            s_transition = TRANSITION_IN;
+        }
+    } else {
+        s_fade_level -= FADE_STEP;
+        if (s_fade_level <= 0) {
+            s_fade_level = 0;
+            s_transition = TRANSITION_NONE;
+        }
+    }
+    setBrightness(3, -s_fade_level);
+}
+#endif
+
 static void transition_update(void) {
+#if ENCOUNTERS_PROTO
+    if (s_strip_mode) { room_transition_update(); return; }
+#endif
     if (s_strip_mode) return;
     if (s_transition == TRANSITION_NONE) {
         if (g_encounter_mgr.advance) s_transition = TRANSITION_OUT;
@@ -2998,21 +3215,75 @@ static void on_vblank_irq(void) {
 }
 
 #if ENCOUNTERS_PROTO
-// Leaves the dungeon for the camp (death or pause menu): saves the progress, stops the run and opens the camp.
-static void run_to_camp(void) {
-    arpg_progress_save();
+// The camp is its own playable room (camp.c): one screen wide and two tall, shown whole across both
+// screens. Entering it swaps g_arena to the camp, places the hero by the bonfire and stops the run.
+static void enter_camp_scene(void) {
+    camp_set_active(1);
+    g_arena = camp_arena();
+    apply_arena_palette();
+    init_bg_tile_cache(&s_top_bg_tile_cache, TOP_TILE_CACHE_CAPACITY, s_top_bg_tiles_vram);
+    init_bg_tile_cache(&s_bot_bg_tile_cache, BG_TILE_CACHE_CAPACITY, s_bot_bg_tiles_vram);
+    s_top_map_ready = 0;
+    s_bot_map_ready = 0;
     s_run_started = 0;
-    // Drop the run HUD left in both bottom actor pages (orbs, xp, ...): the camp draws its own menu on top.
+    swiWaitForVBlank();
+    setBrightness(3, 0);
+    // Wipe both actor pages (run HUD, effects) and start fresh in the camp.
     {
         uint32_t zero = 0;
         swiFastCopy(&zero, bot_page_ptr(8), COPY_MODE_FILL | (SCREEN_W * SCREEN_H * 2 / 4));
         swiFastCopy(&zero, bot_page_ptr(24), COPY_MODE_FILL | (SCREEN_W * SCREEN_H * 2 / 4));
+        swiFastCopy(&zero, s_top_page, COPY_MODE_FILL | (SCREEN_W * SCREEN_H * 2 / 4));
         memset(s_dirty, 0, sizeof(s_dirty));
+        memset(s_dirty_top, 0, sizeof(s_dirty_top));
     }
+    s_player.x = TO_FIXED(CAMP_START_X);
+    s_player.y = TO_FIXED(CAMP_START_Y);
+    s_player.dir = DIR_NORTH;
+    s_player.frame = 0;
+    s_player.is_moving = 0;
+    s_player.anim_timer = 0;
+    s_player.char_id = CHAR_HERO;
+    g_player_state.is_dead = 0;
+    g_player_state.invuln_timer = 0;
     weapons_cancel_aim();
-    sfx_stop_bgm();
+    curse_reset();
+    remate_reset();
+    punch_reset();
+    memset(g_enemies, 0, sizeof(g_enemies));
+    memset(s_death_chunks, 0, sizeof(s_death_chunks));
+    exvoto_melt_reset();
+    s_rooted = 0;
+    s_crouched = 0;
+    g_hero_crouched = 0;
+    s_transition = TRANSITION_NONE;
+    s_fade_level = 0;
+    // Fixed camera: top screen shows rows 0..192, bottom 192..384 (the whole room).
+    s_cam_x = 0;
+    s_cam_y = CAMP_CAM_Y;
     s_keys_down_latch = 0;
-    menu_open_camp();
+    touch_track(0, 0, 0);
+    update_screen_hardware_bg(1, s_top_map_ptr, s_cam_x, s_cam_y - SCREEN_H);
+    update_screen_hardware_bg(0, s_bot_map_ptr, s_cam_x, s_cam_y);
+}
+
+// Leaves the camp for the cathedral: restore the strip arena and start the run.
+static void leave_camp_to_dungeon(void) {
+    camp_set_active(0);
+    g_arena = strip_arena();
+    arpg_progress_save();
+    s_run_started = 1;
+    arena_restart();
+    sfx_start_bgm();
+    s_keys_down_latch = 0;
+    touch_track(0, 0, 0);
+}
+
+// Leaves the dungeon for the camp (death or pause menu): saves the progress, stops the run.
+static void run_to_camp(void) {
+    arpg_progress_save();
+    sfx_stop_bgm();
+    enter_camp_scene();
 }
 #endif
 
@@ -3094,6 +3365,7 @@ int main(void) {
     init_char_sprite_data();
     exvoto_melt_reset();
     remate_reset();
+    punch_reset();
     sfx_init();
     CRASH_INIT();
     PP_INIT();
@@ -3319,40 +3591,23 @@ int main(void) {
             }
 #if ENCOUNTERS_PROTO
             else if (act == MENU_ACT_START_INTRO) {
-                menu_open_camp();           // the intro is over: the camp, not the dungeon
+                menu_close();
+                enter_camp_scene();         // the intro is over: the camp scene, not the dungeon
             } else if (act == MENU_ACT_CONTINUE) {
                 if (!arpg_progress_load()) arpg_progress_reset();
-                menu_open_camp();
-            } else if (act == MENU_ACT_ENTER_DUNGEON) {
                 menu_close();
-                s_run_started = 1;
-                arena_restart();
-                sfx_start_bgm();
-            } else if (act == MENU_ACT_SLEEP) {
-                // The camp stays open; the message says what the sleep did.
-                int gained = arpg_sleep();
-                char msg[48];
-                arpg_progress_save();
-                if (gained > 0) {
-                    snprintf(msg, sizeof(msg), "Has subido %d nivel(es). Puntos: %d", gained, (int)g_arpg.points);
-                } else {
-                    unsigned long missing = (unsigned long)(arpg_xp_needed(g_arpg.level) - (int)g_arpg.xp);
-                    snprintf(msg, sizeof(msg), "Necesitas %lu exp más", missing);
-                }
-                menu_camp_message(msg);
-                if (g_arpg.points > 0) menu_open_tree();   // spend the new points; the camp message waits behind
+                enter_camp_scene();
             } else if (act == MENU_ACT_TO_CAMP) {
                 menu_close();
                 run_to_camp();
             }
-            if (act == MENU_ACT_ENTER_DUNGEON || act == MENU_ACT_CONTINUE || act == MENU_ACT_TO_CAMP ||
-                act == MENU_ACT_START_INTRO) {
+            if (act == MENU_ACT_CONTINUE || act == MENU_ACT_TO_CAMP || act == MENU_ACT_START_INTRO) {
                 s_keys_down_latch = 0;
                 s_menu_ignore_held_touch = touch_down;
                 touch_track(0, 0, 0);
             }
 #endif
-        } else {
+        } else if (!CAMP_SCENE || !camp_active()) {
             if (!touch_down) s_menu_ignore_held_touch = 0;
             touch_track(s_menu_ignore_held_touch ? 0 : touch_down, touch.px, touch.py);
             s_keys_down_latch |= keys_down;
@@ -3377,6 +3632,18 @@ int main(void) {
                 s_menu_ignore_held_touch = touch_down;
             }
         }
+#if CAMP_SCENE
+        else {
+            // In the camp: START opens the pause menu (Continuar / Códice / Controles). Its
+            // "Volver al campamento" re-enters the camp scene; nothing else touches the dungeon.
+            if (keys_down & KEY_START) {
+                menu_open_pause();
+                s_keys_down_latch = 0;
+            } else {
+                s_keys_down_latch |= keys_down;
+            }
+        }
+#endif
 #if ENCOUNTERS_PROTO
         if (boss_frozen() && !menu_is_open()) {
             if (boss_snapshot_pending()) {            // first, while the floor is still on screen (it takes a few frames)
@@ -3390,27 +3657,61 @@ int main(void) {
         }
         if (s_boss_frozen_on) boss_freeze_end();
 #endif
-        transition_update();
-        int simulate = g_hitstop_frames <= 0 && s_transition == TRANSITION_NONE &&
-                       !menu_is_open() && !ENC_STOPPED() &&
-                       (!s_strip_mode || !g_player_state.is_dead);
-        if (!menu_is_open() && !simulate) g_hitstop_frames--;
-        if (simulate) {
-            death_chunks_frame_begin();
-            sandbox_update(g_enemies, MAX_ENEMIES, &s_player.x, &s_player.y);
-            player_update(keys_held, s_keys_down_latch);
-            player_regen_mana(&g_player_state);
-            if (s_strip_mode) {
-                strip_prepare_step(TO_INT(s_player.y));
-                strip_nav_stage_step();
-                int shifted = strip_rebase_if_needed(TO_INT(s_player.y));
-                if (shifted) {
-                    strip_shift_world_y(shifted);
-                    nav_shift_down(STRIP_SHIFT_PX / NAV_NODE_PX,
-                                   TO_INT(s_player.x), TO_INT(s_player.y), strip_stage_id());
+        int simulate = 0;
+#if CAMP_SCENE
+        if (camp_active()) {
+            // The camp: walk, focus a prop, interact. The dungeon systems stay off.
+            if (!menu_is_open()) {
+                int act = camp_update(&s_player, keys_held, s_keys_down_latch,
+                                      menu_touch_pressed && !s_menu_ignore_held_touch, touch.px, touch.py);
+                s_keys_down_latch = 0;
+                if (act == CAMP_ACT_SLEEP) {
+                    int gained = arpg_sleep();
+                    arpg_progress_save();
+                    char msg[48];
+                    if (gained > 0)
+                        snprintf(msg, sizeof(msg), "Has subido %d nivel(es). Puntos: %d", gained, (int)g_arpg.points);
+                    else {
+                        unsigned long missing = (unsigned long)(arpg_xp_needed(g_arpg.level) - (int)g_arpg.xp);
+                        snprintf(msg, sizeof(msg), "Necesitas %lu exp más", missing);
+                    }
+                    camp_toast(msg);
+                    if (g_arpg.points > 0) menu_open_tree();   // spend the new points right away
+                } else if (act == CAMP_ACT_TREE) {
+                    menu_open_tree();
+                } else if (act == CAMP_ACT_CODEX) {
+                    menu_open_codex();
+                } else if (act == CAMP_ACT_DOOR) {
+                    leave_camp_to_dungeon();
                 }
             }
-            s_keys_down_latch = 0;
+            s_cam_x = 0;
+            s_cam_y = CAMP_CAM_Y;
+        } else
+#endif
+        {
+            transition_update();
+            simulate = g_hitstop_frames <= 0 && s_transition == TRANSITION_NONE &&
+                       !menu_is_open() && !ENC_STOPPED() &&
+                       (!s_strip_mode || !g_player_state.is_dead);
+            if (!menu_is_open() && !simulate) g_hitstop_frames--;
+            if (simulate) {
+                death_chunks_frame_begin();
+                sandbox_update(g_enemies, MAX_ENEMIES, &s_player.x, &s_player.y);
+                player_update(keys_held, s_keys_down_latch);
+                player_regen_mana(&g_player_state);
+                if (s_strip_mode) {
+                    strip_prepare_step(TO_INT(s_player.y));
+                    strip_nav_stage_step();
+                    int shifted = strip_rebase_if_needed(TO_INT(s_player.y));
+                    if (shifted) {
+                        strip_shift_world_y(shifted);
+                        nav_shift_down(STRIP_SHIFT_PX / NAV_NODE_PX,
+                                       TO_INT(s_player.x), TO_INT(s_player.y), strip_stage_id());
+                    }
+                }
+                s_keys_down_latch = 0;
+            }
         }
         PP_ADD(PP_PLAYER, t0);
         CRASH_FRAME(s_frame_index);
@@ -3520,7 +3821,7 @@ int main(void) {
         g_nav_state.active_enemies = enemies;
         g_nav_state.active_projectiles = projectiles;
         g_nav_state.frame_index = g_perf.frame_index;
-        if (s_strip_mode) {
+        if (s_strip_mode && !camp_active()) {
             int height_px = strip_start_y() + strip_shift_total_px() - TO_INT(s_player.y);
             g_strip_debug[0] = height_px > 0 ? height_px : 0;
             g_strip_debug[1] = strip_shift_total_px();

@@ -1,0 +1,65 @@
+{
+  "name": "combate_combo",
+  "description": "Evidencia del combo de puñetazos (directo -> cruzado -> gancho, L corto) contra Exvotos y del Glifo ralentizando. Solo capturas.",
+  "suite": false,
+  "evidence_only": true,
+  "steps": [
+    { "frames": 60 },
+    { "tap": { "x": 128, "y": 66 }, "frames": 6 },
+    { "release": true, "frames": 40 },
+    { "button_down": "START", "frames": 4 },
+    { "button_up": "START", "frames": 40 },
+    { "tap": { "x": 128, "y": 155 }, "frames": 6 },
+    { "release": true, "frames": 60 },
+    { "poke": [{ "field": "god", "value": 1 }], "frames": 2 },
+    { "button_down": "UP", "frames": 806 },
+    { "button_up": "UP", "frames": 6, "capture": "c00" },
+
+    { "button_down": "L", "frames": 2 },
+    { "button_up": "L", "frames": 1, "capture": "c01" },
+    { "frames": 2, "capture": "c02" },
+    { "frames": 2, "capture": "c03" },
+    { "button_down": "L", "frames": 2 },
+    { "button_up": "L", "frames": 1, "capture": "c04" },
+    { "frames": 2, "capture": "c05" },
+    { "frames": 2, "capture": "c06" },
+    { "button_down": "L", "frames": 2 },
+    { "button_up": "L", "frames": 1, "capture": "c07" },
+    { "frames": 2, "capture": "c08" },
+    { "frames": 2, "capture": "c09" },
+    { "frames": 2, "capture": "c10" },
+    { "frames": 2, "capture": "c11" },
+    { "frames": 2, "capture": "c12" },
+    { "frames": 2, "capture": "c13" },
+    { "frames": 2, "capture": "c14" },
+    { "frames": 2, "capture": "c15" },
+    { "frames": 4, "capture": "c16" },
+
+    { "button_down": "L", "frames": 25 },
+    { "button_up": "L", "frames": 8 },
+    { "tap": { "x": 128, "y": 96 }, "frames": 6 },
+    { "release": true, "frames": 20, "capture": "g01" },
+    { "frames": 10, "capture": "g02" },
+    { "frames": 20, "capture": "g03" },
+    { "frames": 30, "capture": "g04" },
+    { "frames": 60, "capture": "g05" },
+    { "frames": 40, "capture": "g06" }
+  ],
+  "state": {
+    "elf": "../.ds-game-dev/build/out/dungeonds.elf",
+    "symbols": {
+      "stats": "g_enc_stats",
+      "rt": "s_rt",
+      "pl": "s_player",
+      "gps": "g_player_state",
+      "arpg": "g_arpg"
+    },
+    "default_symbol": "stats",
+    "fields": {
+      "hp": { "symbol": "gps", "offset": 0, "type": "s32" },
+      "mana": { "symbol": "gps", "offset": 24, "type": "s32" },
+      "god": { "symbol": "gps", "offset": 20, "type": "s32" },
+      "spell": { "symbol": "arpg", "offset": 18, "type": "u16" }
+    }
+  }
+}

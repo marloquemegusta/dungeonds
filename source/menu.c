@@ -268,6 +268,12 @@ void menu_open_tree(void) {
     s_tree_col = 0;
 }
 
+void menu_open_codex(void) {
+    s_state = MENU_BESTIARY;
+    s_parent = MENU_NONE;   /* the viewer closes straight back to the camp scene */
+    s_sel = 0;
+}
+
 void menu_camp_message(const char *msg) {
     if (!msg) msg = "";
     strncpy(s_camp_msg, msg, sizeof(s_camp_msg) - 1);

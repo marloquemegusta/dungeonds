@@ -70,3 +70,26 @@ Redo this exact stone wall bay with a different shape: a tall, narrow PORTRAIT m
 ```
 
 Antes de enviarla a Tripo, pegar dos copias una encima de la otra y otra al lado en un editor de imágenes: no debe verse costura en ninguna de las dos pruebas.
+
+## Lote 5: protodemo ARPG (2026-11-20)
+
+Mismo flujo: bloque común + imagen del banco como referencia + la línea de la pieza. Escala de referencia: el héroe mide 1,8 m. Las piezas pequeñas (botín) acaban en ~12 px: silueta gruesa y reconocible, sin filigrana. Reutilizadas sin prompt nuevo: la reja de las barreras actuales (puertas de capilla), las lápidas del lote 2 (lápida legible), el cofre cerrado (arcón del campamento) y la `vela` del lote 1 (cirios del campamento).
+
+| Archivo | Línea de la pieza |
+|---|---|
+| `puerta_lateral` | One isolated Gothic doorway set in a short section of thick stone side wall: a pointed arch opening about 3 m tall and 1.8 m wide, deep stone jambs with simple mouldings and a worn threshold step. The opening is empty and pitch dark, no door leaf, no gate. The wall section is only as wide as the arch frame plus a little stone on each side. Weathered warm-grey limestone, soot in the joints. Seen from inside the nave. |
+| `puerta_superior` | One isolated large Gothic pointed archway that closes the far end of a church nave: about 4.5 m tall and 3 m wide, three worn stone steps leading up to it, a few plain carved archivolts, the opening empty and pitch dark, no door leaf. The wall section is only as wide as the arch frame. Weathered warm-grey limestone, soot. Seen straight-on from the nave, slightly above. |
+| `altar_viaje` | Small Gothic stone wayside altar about 1.2 m tall: a carved stone block with a tarnished bronze bowl on top for a sacred flame, a few melted candle stubs around the bowl, a carved open heart on the front face. Unlit, no flame. |
+| `cofre_cerrado` | A heavy church chest about 1 m long: dark aged oak bound with tarnished iron straps and bronze corners, carved Gothic tracery panels on the front, a large iron lock, lid closed. |
+| `cofre_abierto` | The same church chest with the lid fully open and leaning back, the inside empty and dark with a worn burgundy velvet lining. |
+| `campamento_fuego` | A small improvised campfire inside a ruined church: a ring of broken stones around charred pieces of a wooden pew and a few half-burnt candles. Unlit, no flames, no smoke. |
+| `campamento_jergon` | A humble sleeping place on the floor: a worn straw mattress with a rough wool blanket, a folded dark cloak as a pillow and a small wooden crate beside it with a cup on top. |
+| `campamento_desguace` | A sturdy wooden workbench for breaking down relics: a hammer, iron tongs, a small crucible of melted wax and scattered pieces of broken gilded reliquaries on top. |
+| `rompible_urna` | A tall clay funerary urn about 70 cm high with a lid, cracked dark glaze and a simple painted cross. |
+| `rompible_cirio` | A single very tall church candle about 1.4 m high on a black iron floor stand, unlit, thick wax drips down the stand. |
+| `rompible_exvotos` | A cluster of old wax votive offerings about 50 cm tall on a small wooden shelf: a wax heart, a wax leg and a small kneeling wax figure, yellowed and dusty. |
+| `botin_relicario` | A small portable gilded reliquary pendant shown large and centered: a chunky Gothic locket with a round glass window, a short chain loop on top. Bold simple silhouette. |
+| `botin_llave` | A large antique iron church key shown large and centered, with a cross-shaped bow and a chunky bit. Bold simple silhouette. |
+| `botin_frasco` | A small glass ampulla flask shown large and centered, round body and short neck closed with a red wax seal, dark red liquid inside. Bold simple silhouette. |
+
+**Animación `lanzar_glifo` (Mixamo, no Tripo):** buscar «Standing 2H Magic Area Attack», «Magic Spell Casting» o «Spell Cast»; un gesto hacia el suelo de 1 s o menos. Descargar FBX, «Without Skin», 30 fps y, si lo ofrece, «In Place».

@@ -1,0 +1,29 @@
+{
+  "piece": "cofre_cerrado",
+  "size_px": [
+    24,
+    16
+  ],
+  "content_px": [
+    18,
+    12
+  ],
+  "target_width": 18,
+  "scale_factor": 0.03409090909090909,
+  "source_render_px": [
+    528,
+    358
+  ],
+  "yaw": 45,
+  "depth_units": "sprite_px",
+  "tiles_8x8_nonempty": 6,
+  "tiles_8x8_unique": 6,
+  "shadow_offset_px": [
+    0,
+    0
+  ],
+  "shadow_canvas_px": [
+    24,
+    24
+  ]
+}

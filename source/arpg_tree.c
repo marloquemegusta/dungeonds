@@ -10,17 +10,17 @@ typedef struct {
 } TreeNode;
 
 static const TreeNode s_nodes[ARPG_NODE_COUNT] = {
-    { "Maldici\xC3\xB3n",     "Desbloquea la Maldici\xC3\xB3n (L mantenido)", -1, -1 },
+    { "Glifo",                "Desbloquea el Glifo (L mantenido)", -1, -1 },
     { "Prisa",                "Carga del rayo m\xC3\xA1s r\xC3\xA1pida",        0, -1 },
     { "Sed de Ceniza",        "Cada muerte acelera la siguiente carga",       0, 1 },
     { "Lanza",                "El rayo atraviesa a todos",                    0, 2 },
     { "Llama Votiva",         "La l\xC3\xADnea de apuntado quema",             1, -1 },
     { "Brasa",                "M\xC3\xA1s da\xC3\xB1o de fuego y quemaduras largas", 1, 4 },
     { "Auto de Fe",           "Doble da\xC3\xB1o a los quemados",             1, 5 },
-    { "Miasma",               "Zona de maldici\xC3\xB3n m\xC3\xA1s grande y larga", 2, 0 },
+    { "Miasma",               "Glifo m\xC3\xA1s grande y largo",              2, 0 },
     { "Cilicio",              "Aro de brasas a tus pies al cargar",           2, 7 },
     { "Martirio",             "Los quemados explotan al morir",               2, 8 },
-    { "Levantar",             "Los muertos en tu maldici\xC3\xB3n luchan por ti", 3, 0 },
+    { "Levantar",             "Los muertos en tu glifo luchan por ti",        3, 0 },
     { "Procesi\xC3\xB3n",     "M\xC3\xA1s aliados y duran m\xC3\xA1s",         3, 10 },
     { "Ofrenda",              "Los aliados explotan al caer",                 3, 11 },
 };

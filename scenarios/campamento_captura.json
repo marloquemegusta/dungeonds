@@ -1,0 +1,34 @@
+{
+  "name": "campamento_captura",
+  "description": "Campamento como escenario jugable: desde el titulo (primera opcion + START para saltar la intro) se llega al campamento; vista completa con el heroe junto a la hoguera y el nombre del prop encima, y paso por la puerta a la catedral. Solo evidencia.",
+  "suite": false,
+  "evidence_only": true,
+  "state": {
+    "elf": "../.ds-game-dev/build/out/dungeonds.elf",
+    "symbols": { "pl": "s_player", "gps": "g_player_state" },
+    "default_symbol": "pl",
+    "fields": {
+      "px": { "symbol": "pl", "offset": 0, "type": "s32" },
+      "py": { "symbol": "pl", "offset": 4, "type": "s32" },
+      "hp": { "symbol": "gps", "offset": 0, "type": "s32" }
+    }
+  },
+  "steps": [
+    { "frames": 60 },
+    { "tap": { "x": 128, "y": 66 }, "frames": 6 },
+    { "release": true, "frames": 40 },
+    { "button_down": "START", "frames": 4 },
+    { "button_up": "START", "frames": 50 },
+
+    { "frames": 40, "capture": "campamento_vista" },
+
+    { "button_down": "UP", "frames": 200 },
+    { "button_up": "UP", "frames": 20, "capture": "campamento_hoguera" },
+
+    { "poke": [ { "field": "px", "value": 32768 }, { "field": "py", "value": 29696 } ], "frames": 20,
+      "capture": "campamento_puerta" },
+
+    { "button_down": "A", "frames": 4 },
+    { "button_up": "A", "frames": 120, "capture": "campamento_catedral" }
+  ]
+}

@@ -288,6 +288,8 @@ chars_meta = [
     ('monaguillo', 'monaguillo', 'Exvoto Monaguillo', 39, 22),
     # Hero crouched walk (DESIGN.md 6.9): a slot of its own like the Exvoto clips; the still pose is one fixed frame of it.
     ('hero_crouch_walk', 'corazon_agachado_andar', 'Hero crouched walking', 0, 8),
+    # Exvoto tier "Bebe" (v3 tiers, walkthroughs/arpg-predemo §10): a slot of its own like the Exvoto clips.
+    ('exvoto_bebe', 'exvoto_bebe', 'Exvoto Bebe walking', 53, 8),
 ]
 SINGLE_FRAME = set()
 

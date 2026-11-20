@@ -35,6 +35,8 @@ void arpg_progress_reset(void) {
     g_arpg.tree = 0;
     g_arpg.deepest = 0;
     g_arpg.spell = 0;
+    g_arpg.altars_lo = 0;
+    g_arpg.altars_hi = 0;
     g_arpg_level = g_arpg.level;
     arpg_unlock_for_tests();
 }

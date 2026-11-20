@@ -26,7 +26,8 @@
 #define ENC_MAX_RECTS 4
 #define ENC_MAX_PIECES 8
 
-enum { ENC_E_EXVOTO = 0, ENC_E_CIRENEO, ENC_E_OJO, ENC_E_ABANDERADO, ENC_E_MONAGUILLO };
+enum { ENC_E_EXVOTO = 0, ENC_E_CIRENEO, ENC_E_OJO, ENC_E_ABANDERADO, ENC_E_MONAGUILLO,
+       ENC_E_BEBE, ENC_E_PARROCO, ENC_E_MONJA };   // last three: Exvoto tiers (v3)
 enum { ENC_S_PRAY = 0, ENC_S_DORMANT, ENC_S_AWAKE, ENC_S_GUARD };   // GUARD: wakes with the room but stays at its post (6.13.9)
 enum { ENC_R_SACOS = 0, ENC_R_ALAMBRE, ENC_R_BARRERA };
 enum { ENC_BLOCK_CLEAR = 0, ENC_BLOCK_ENCOUNTER, ENC_BLOCK_CORRIDOR, ENC_BLOCK_BOSS };
@@ -67,6 +68,14 @@ int enc_block_rects(int32_t block, EncRect *out, int max);
 // Collision value an obstacle writes into the grid: 1 stops bodies, 3 stops bodies and bullets.
 int enc_collision_value(uint8_t rect_kind);
 
+// Rooms (salas ARPG): the lateral black opening of a block, in world x and block-relative y.
+typedef struct { int16_t x, y, w, h; } EncRoomOpening;
+int enc_room_opening(int32_t block, EncRoomOpening *out);
+// Window px where the hero lands at the foot of room k (door or lateral crossing share it for now).
+int enc_room_dest_pos(int k, int *out_x, int *out_y);
+// Consumes a crossing requested by enc_update(): 1 and the destination room in *out_k.
+int enc_room_take_exit(int *out_k);
+
 // Once per simulated frame, after the strip rebase. px, py: hero ground point in window px.
 void enc_update(Enemy *enemies, int max_enemies, int px, int py);
 // Ground painter: obstacles and barriers (under the actors, over the floor).
@@ -74,6 +83,11 @@ void enc_draw_ground(uint16_t *buffer, int cam_x, int cam_y);
 // Depth-sorted dynamic props (boss golden relicario, final Altar): returns 1 if visible on screen.
 int enc_dynamic_relic_item(int cam_x, int cam_y, int *out_depth);
 void enc_dynamic_relic_draw(uint16_t *buffer, int cam_x, int cam_y, int depth);
+// Room fixtures (chests and travel altars) on this screen, depth-sorted with the actors. The list is
+// rebuilt by the _count call of each screen; the _item/_draw calls read it.
+int enc_dynamic_fixture_count(int cam_x, int cam_y);
+int enc_dynamic_fixture_item(int index, int cam_x, int cam_y, int *out_depth);
+void enc_dynamic_fixture_draw(int index, uint16_t *buffer, int cam_x, int cam_y, int depth);
 // Hardware OBJ sprites for the rastrillo gates (called per screen during render_screen).
 void enc_verja_draw(int sub, int cam_x, int cam_y);
 // The sniper ray asks for the relicario target in front of the hero: ground point in window px.
@@ -110,6 +124,12 @@ _Static_assert(sizeof(EncDebug) == 20 && offsetof(EncDebug, boss_damage) == 18 &
                offsetof(EncDebug, no_dones) == 3 && offsetof(EncDebug, seed) == 4,
                "EncDebug layout is read by scenarios by offset");
 extern volatile EncDebug g_enc_debug;
+
+// Debug mailbox for the tier captures (v3). `spawn` = 1: enc_update() places one Bebé, one Párroco and one
+// praying Monja around the hero (all awake, already wounded so the Monja's heals show) and clears it. Only for
+// headless evidence; the game never sets it.
+typedef struct { uint8_t spawn; uint8_t pad[3]; } EncTierDebug;
+extern volatile EncTierDebug g_tier_debug;
 
 enum { ENC_STATE_PLAYING = 0, ENC_STATE_VICTORY = 1, ENC_STATE_DEAD = 2 };
 typedef struct {

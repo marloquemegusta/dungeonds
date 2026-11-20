@@ -26,7 +26,7 @@
 // The ground origin row varies per character/direction: see g_character_ground_anchors.
 #define PLAYER_ANCHOR_X 20
 
-#define NUM_CHARACTERS 10
+#define NUM_CHARACTERS 11
 
 enum {
     CHAR_HERO = 0,
@@ -40,7 +40,11 @@ enum {
     CHAR_ABANDERADO = 7,
     CHAR_MONAGUILLO = 8,
     // Hero crouched (cobertura baja, DESIGN.md 6.9): the player swaps char_id between CHAR_HERO and this slot.
-    CHAR_HERO_CROUCH_WALK = 9   // crouched walking, 8 frames, 40x40 cell; the still pose is one fixed frame of it
+    CHAR_HERO_CROUCH_WALK = 9,  // crouched walking, 8 frames, 40x40 cell; the still pose is one fixed frame of it
+    // Exvoto tiers (v3, walkthroughs/arpg-predemo §10): only the Bebé has its own baked sheet today; the Párroco
+    // and the Monja still borrow CHAR_EXVOTO / CHAR_EXVOTO_PRAY_STAND (their own sheets do not fit in EWRAM, see
+    // TECHNICAL.md; they need the NitroFS streaming path the punch uses).
+    CHAR_EXVOTO_BEBE = 10       // Exvoto Bebé walking (swarm tier), 8 frames, 40x40 cell
 };
 
 typedef struct {
@@ -158,6 +162,14 @@ extern const uint8_t g_exvoto_stand_up_shadow_masks[];
 extern const uint32_t g_exvoto_stand_up_shadow_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES];
 extern const uint8_t g_exvoto_stand_up_shadow_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4];
 
+// Exvoto Bebé walk (swarm tier) frames & animated crisp 3D shadows (8 dirs x 8 frames, cropped)
+extern const uint16_t g_exvoto_bebe_frames[];
+extern const uint32_t g_exvoto_bebe_frame_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES];
+extern const uint8_t g_exvoto_bebe_frame_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4];
+extern const uint8_t g_exvoto_bebe_shadow_masks[];
+extern const uint32_t g_exvoto_bebe_shadow_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES];
+extern const uint8_t g_exvoto_bebe_shadow_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4];
+
 // Abanderado point clip (CHAR_ABANDERADO, 60x60, 8 dirs x 8 frames, cropped)
 extern const uint16_t g_abanderado_point_frames[];
 extern const uint32_t g_abanderado_point_frame_offsets[PLAYER_NUM_DIRS][ABANDERADO_POINT_NUM_FRAMES];
@@ -197,6 +209,8 @@ extern const uint16_t g_exvoto_pray_kneel_runs[];
 extern const uint32_t g_exvoto_pray_kneel_run_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES];
 extern const uint16_t g_exvoto_stand_up_runs[];
 extern const uint32_t g_exvoto_stand_up_run_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES];
+extern const uint16_t g_exvoto_bebe_runs[];
+extern const uint32_t g_exvoto_bebe_run_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES];
 extern const uint16_t g_abanderado_runs[];
 extern const uint32_t g_abanderado_run_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES];
 extern const uint16_t g_abanderado_point_runs[];

@@ -29,6 +29,33 @@
       "speedFixed8_8": 100,
       "ticksPerFrame": 7
     },
+    "corazon_punch_a": {
+      "model": "assets/models/characters/corazon/corazon_punch_a.fbx",
+      "anim": "corazon_punch_a (1.03s)",
+      "resolution": 48,
+      "scaleRef": "corazon",
+      "template": "assets/sprites/characters/corazon_punch_a/settings.json",
+      "speedFixed8_8": 100,
+      "ticksPerFrame": 8
+    },
+    "corazon_punch_b": {
+      "model": "assets/models/characters/corazon/corazon_punch_b.fbx",
+      "anim": "corazon_punch_b (1.00s)",
+      "resolution": 48,
+      "scaleRef": "corazon",
+      "template": "assets/sprites/characters/corazon_punch_b/settings.json",
+      "speedFixed8_8": 100,
+      "ticksPerFrame": 8
+    },
+    "corazon_gancho": {
+      "model": "assets/models/characters/corazon/corazon_gancho.fbx",
+      "anim": "corazon_gancho (2.17s)",
+      "resolution": 48,
+      "scaleRef": "corazon",
+      "template": "assets/sprites/characters/corazon_gancho/settings.json",
+      "speedFixed8_8": 100,
+      "ticksPerFrame": 8
+    },
     "corazon_agachado_andar": {
       "model": "assets/models/characters/corazon/corazon_agachado_andar.fbx",
       "anim": "corazon_agachado_andar (1.03s)",
@@ -101,6 +128,114 @@
       "scaleRef": "exvoto",
       "template": "assets/sprites/characters/skeleton/settings.json",
       "speedFixed8_8": 389,
+      "ticksPerFrame": 9
+    },
+    "exvoto_bebe": {
+      "model": "assets/models/characters/exvoto_bebe/exvoto_bebe_walk.fbx",
+      "anim": "exvoto_bebe_walk (1.47s)",
+      "resolution": 40,
+      "fitZoom": 0.479,
+      "template": "assets/sprites/characters/skeleton/settings.json",
+      "speedFixed8_8": 53,
+      "ticksPerFrame": 8
+    },
+    "exvoto_bebe_pray_stand": {
+      "model": "assets/models/characters/exvoto_bebe/exvoto_bebe_pray_stand.fbx",
+      "anim": "exvoto_bebe_pray_stand (3.23s)",
+      "resolution": 40,
+      "scaleRef": "exvoto_bebe",
+      "template": "assets/sprites/characters/skeleton/settings.json",
+      "speedFixed8_8": 7,
+      "ticksPerFrame": 24
+    },
+    "exvoto_bebe_pray_kneel": {
+      "model": "assets/models/characters/exvoto_bebe/exvoto_bebe_pray_kneel.fbx",
+      "anim": "exvoto_bebe_pray_kneel (1.93s)",
+      "resolution": 40,
+      "scaleRef": "exvoto_bebe",
+      "template": "assets/sprites/characters/skeleton/settings.json",
+      "speedFixed8_8": 16,
+      "ticksPerFrame": 14
+    },
+    "exvoto_bebe_stand_up": {
+      "model": "assets/models/characters/exvoto_bebe/exvoto_bebe_stand_up.fbx",
+      "anim": "exvoto_bebe_stand_up (2.30s)",
+      "resolution": 40,
+      "scaleRef": "exvoto_bebe",
+      "template": "assets/sprites/characters/skeleton/settings.json",
+      "speedFixed8_8": 233,
+      "ticksPerFrame": 9
+    },
+    "exvoto_parroco": {
+      "model": "assets/models/characters/exvoto_parroco/exvoto_parroco_walk.fbx",
+      "anim": "exvoto_parroco_walk (1.47s)",
+      "resolution": 40,
+      "fitZoom": 0.93,
+      "template": "assets/sprites/characters/skeleton/settings.json",
+      "speedFixed8_8": 102,
+      "ticksPerFrame": 8
+    },
+    "exvoto_parroco_pray_stand": {
+      "model": "assets/models/characters/exvoto_parroco/exvoto_parroco_pray_stand.fbx",
+      "anim": "exvoto_parroco_pray_stand (3.23s)",
+      "resolution": 40,
+      "scaleRef": "exvoto_parroco",
+      "template": "assets/sprites/characters/skeleton/settings.json",
+      "speedFixed8_8": 13,
+      "ticksPerFrame": 24
+    },
+    "exvoto_parroco_pray_kneel": {
+      "model": "assets/models/characters/exvoto_parroco/exvoto_parroco_pray_kneel.fbx",
+      "anim": "exvoto_parroco_pray_kneel (1.93s)",
+      "resolution": 40,
+      "scaleRef": "exvoto_parroco",
+      "template": "assets/sprites/characters/skeleton/settings.json",
+      "speedFixed8_8": 31,
+      "ticksPerFrame": 14
+    },
+    "exvoto_parroco_stand_up": {
+      "model": "assets/models/characters/exvoto_parroco/exvoto_parroco_stand_up.fbx",
+      "anim": "exvoto_parroco_stand_up (2.30s)",
+      "resolution": 48,
+      "scaleRef": "exvoto_parroco",
+      "template": "assets/sprites/characters/skeleton/settings.json",
+      "speedFixed8_8": 447,
+      "ticksPerFrame": 9
+    },
+    "exvoto_monja": {
+      "model": "assets/models/characters/exvoto_monja/exvoto_monja_walk.fbx",
+      "anim": "exvoto_monja_walk (1.47s)",
+      "resolution": 40,
+      "fitZoom": 0.93,
+      "template": "assets/sprites/characters/skeleton/settings.json",
+      "speedFixed8_8": 102,
+      "ticksPerFrame": 8
+    },
+    "exvoto_monja_pray_stand": {
+      "model": "assets/models/characters/exvoto_monja/exvoto_monja_pray_stand.fbx",
+      "anim": "exvoto_monja_pray_stand (3.23s)",
+      "resolution": 40,
+      "scaleRef": "exvoto_monja",
+      "template": "assets/sprites/characters/skeleton/settings.json",
+      "speedFixed8_8": 13,
+      "ticksPerFrame": 24
+    },
+    "exvoto_monja_pray_kneel": {
+      "model": "assets/models/characters/exvoto_monja/exvoto_monja_pray_kneel.fbx",
+      "anim": "exvoto_monja_pray_kneel (1.93s)",
+      "resolution": 40,
+      "scaleRef": "exvoto_monja",
+      "template": "assets/sprites/characters/skeleton/settings.json",
+      "speedFixed8_8": 31,
+      "ticksPerFrame": 14
+    },
+    "exvoto_monja_stand_up": {
+      "model": "assets/models/characters/exvoto_monja/exvoto_monja_stand_up.fbx",
+      "anim": "exvoto_monja_stand_up (2.30s)",
+      "resolution": 40,
+      "scaleRef": "exvoto_monja",
+      "template": "assets/sprites/characters/skeleton/settings.json",
+      "speedFixed8_8": 447,
       "ticksPerFrame": 9
     },
     "monaguillo": {

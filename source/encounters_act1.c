@@ -23,7 +23,9 @@ typedef int encounters_act1_translation_unit_not_empty;
 #include "strip_kit.h"
 #include "upgrades.h"
 #include "player_sprite.h"
+#include "pickups.h"
 #include "enc_relic_gfx.h"
+#include "enc_room_gfx.h"
 
 #include "encounters_act1_tables.h"
 #include "encounters_act1_hp.h"
@@ -37,6 +39,7 @@ volatile EncDebug g_enc_debug = { .start_boss = 1 };   // console test build: ev
 volatile EncDebug g_enc_debug;
 #endif
 volatile EncStats g_enc_stats;
+volatile EncTierDebug g_tier_debug;
 
 // ---------------------------------------------------------------------------
 // Act plan: which plant, tier and mirror each encounter has. Pure function of the seed.
@@ -61,8 +64,11 @@ static uint8_t s_tier[ENC_STAGES];            // tier of each floor (tier_of_sta
 
 typedef struct {
     uint8_t spawned, awake, cleared, wave2_done, barrier_open, back_closed, verja_opening, verja_lift, back_lift;
+    // Rooms (salas ARPG). Offsets 9 and 10 are read by scenarios/salas_captura.json (sizeof is 11).
+    uint8_t chest_open, altar_touched;
 } EncRuntime;
 static EncRuntime s_rt[ENC_STAGES];
+static int s_exit_room = -1;                  // crossing requested by enc_update(), consumed by main.c
 static int s_victory;                         // never set: the dungeon has no victory (enc_victory stays for the HUD)
 static int s_boss_locked;                     // the bottom barrier of the boss room is closed (boss mode)
 static int s_deaths;
@@ -162,7 +168,9 @@ void enc_init(uint32_t seed) {
         if (g_enc_debug.force_tier > 0 && g_enc_debug.force_tier <= 3) s_tier[0] = (uint8_t)(g_enc_debug.force_tier - 1);
     }
     memset(s_rt, 0, sizeof(s_rt));
-    for (int i = 0; i < ENC_STAGES; i++) s_rt[i].back_lift = ENC_VERJA_H;
+    // Rooms have no gates (salas ARPG): both lifts start raised, so no rastrillo is drawn anywhere.
+    for (int i = 0; i < ENC_STAGES; i++) { s_rt[i].back_lift = ENC_VERJA_H; s_rt[i].verja_lift = ENC_VERJA_H; }
+    s_exit_room = -1;
     s_first_block = ENC_FIRST_BLOCK;
     if (g_enc_debug.start_boss) {              // debug: the act starts at the first boss (stage 5), stages 1..4 already won
         s_first_block += ENC_FIRST_BOSS;
@@ -234,8 +242,18 @@ int enc_block_pieces(int32_t block, EncPiecePlan *out, int max) {
         defs = s_corridor_pieces;
         n = (int)(sizeof(s_corridor_pieces) / sizeof(s_corridor_pieces[0]));
     }
-    if (n > max) n = max;
     int m = 0;
+    // The upper door: one piece on the top line of every room, centred on the nave axis. The door art
+    // is 64 px wide (shadow canvas of the 56 px render), so the nominal x is the axis minus half of it.
+    // Its crossing is handled by the room logic, not by this plan.
+    if ((b.kind == ENC_BLOCK_ENCOUNTER || b.kind == ENC_BLOCK_BOSS) && max > 0) {
+        out[0].piece = STRIP_PIECE_PUERTA;
+        out[0].mirror = 0;
+        out[0].lx = ENC_FLOOR_W / 2 - ARPG_ROOM_DOOR_ART_W_PX / 2;
+        out[0].ly = 0;
+        m = 1;
+    }
+    if (n > max - m) n = max - m;
     for (int i = 0; i < n; i++) {
         uint8_t piece = defs[i].piece;
         if (b.kind == ENC_BLOCK_CORRIDOR && b.idx == ENC_BOSS && piece == STRIP_PIECE_RELICARIO) continue;
@@ -276,25 +294,9 @@ int enc_block_rects(int32_t block, EncRect *out, int max) {
             n++;
         }
     }
-    if ((b.kind == ENC_BLOCK_ENCOUNTER || b.kind == ENC_BLOCK_BOSS) && !s_rt[b.idx].barrier_open) {
-        if (n < max) {
-            out[n].kind = ENC_R_BARRERA;
-            out[n].x = ENC_FLOOR_X;
-            out[n].y = 0;
-            out[n].w = ENC_FLOOR_W;
-            out[n].h = ENC_BARRIER_H;
-            n++;
-        }
-    }
-    if (b.kind == ENC_BLOCK_BOSS && s_boss_locked && b.idx == s_active_boss_k && n < max) {      // boss mode: the same barrier closes the bottom edge
-        out[n].kind = ENC_R_BARRERA;
-        out[n].x = ENC_FLOOR_X;
-        out[n].y = ENC_BLOCK_H - ENC_BARRIER_H;
-        out[n].w = ENC_FLOOR_W;
-        out[n].h = ENC_BARRIER_H;
-        n++;
-    }
-    if (b.kind == ENC_BLOCK_ENCOUNTER && s_rt[b.idx].back_closed && !s_rt[b.idx].cleared && n < max) {   // rear barrier closes behind the hero once the room wakes
+    // Rooms have no gates (salas ARPG): no top barrier and nothing closes behind the hero. Only the
+    // boss lock keeps the bottom edge of its own room closed while the fight lasts.
+    if (b.kind == ENC_BLOCK_BOSS && s_boss_locked && b.idx == s_active_boss_k && n < max) {
         out[n].kind = ENC_R_BARRERA;
         out[n].x = ENC_FLOOR_X;
         out[n].y = ENC_BLOCK_H - ENC_BARRIER_H;
@@ -324,8 +326,58 @@ static EnemyType enemy_type_of(uint8_t t) {
     case ENC_E_OJO:        return ENEMY_TYPE_SHOOTER;
     case ENC_E_ABANDERADO: return ENEMY_TYPE_ABANDERADO;
     case ENC_E_MONAGUILLO: return ENEMY_TYPE_MONAGUILLO;
+    case ENC_E_BEBE:       return ENEMY_TYPE_BEBE;
+    case ENC_E_PARROCO:    return ENEMY_TYPE_PARROCO;
+    case ENC_E_MONJA:      return ENEMY_TYPE_MONJA;
     default:               return ENEMY_TYPE_EXVOTO;
     }
+}
+
+// ---------------------------------------------------------------------------
+// Rooms (salas ARPG): geometry of the doors and lateral openings.
+// ---------------------------------------------------------------------------
+
+// Floors of the act are rooms stacked one per block (DESIGN.md 6.13.6). Every room has an upper door
+// centred on its top line, and a lateral opening in the left or right wall, alternating by room.
+int enc_room_opening(int32_t block, EncRoomOpening *out) {
+    int k = s_first_block - (int)block;
+    if (k < 0 || k >= ENC_STAGES) return 0;
+    const int right = k & 1;
+    out->x = (int16_t)(right ? (ENC_FLOOR_X + ENC_FLOOR_W) : ENC_CAM_X);
+    out->y = (int16_t)ARPG_ROOM_HOLE_Y_PX;
+    out->w = (int16_t)ARPG_ROOM_HOLE_W_PX;
+    out->h = (int16_t)ARPG_ROOM_HOLE_H_PX;
+    return 1;
+}
+
+int enc_room_dest_pos(int k, int *out_x, int *out_y) {
+    if (k < 0 || k >= ENC_STAGES) return 0;
+    const int top = window_top(block_of_encounter(k));
+    *out_x = ENC_FLOOR_X + ENC_FLOOR_W / 2;
+    *out_y = top + ENC_BLOCK_H - ARPG_ROOM_FOOT_OFFSET_PX;    // the foot of the room, just above its bottom line
+    return 1;
+}
+
+static int stage_at_py(int py) {
+    int32_t block = (int32_t)(py - (int)strip_shift_total_px()) / ENC_BLOCK_H;
+    return s_first_block - (int)block;
+}
+
+// Which room furniture a floor has. Kept as plain predicates so a later pass can retune the rhythm
+// without touching the placement or the runtime.
+static int room_has_chest(int k) { return k > 0 && (k & 1) == 1; }   // alternate rooms, from the second one
+static int room_has_altar(int k) { return (k % 3) == 2; }            // every third room
+static int room_center_x(void) { return ENC_FLOOR_X + ENC_FLOOR_W / 2; }   // both sit in the hero's path
+static int room_chest_y(int k) { return window_top(block_of_encounter(k)) + 210; }
+static int room_altar_y(int k) { return window_top(block_of_encounter(k)) + 120; }
+
+// A crossing asked by enc_update() is consumed by main.c on the next frame, which fades to black and
+// teleports the hero to the foot of room s_exit_room. -1 = none.
+int enc_room_take_exit(int *out_k) {
+    if (s_exit_room < 0) return 0;
+    *out_k = s_exit_room;
+    s_exit_room = -1;
+    return 1;
 }
 
 // Same field setup as encounters_spawn() / sandbox_place(); the owner encounter goes in `pack`.
@@ -375,8 +427,154 @@ static int spawn_group(Enemy *enemies, int max_enemies, const EncEnemyDef *defs,
     return made;
 }
 
-static const EncPopulation *population_of(int k) {
-    return &s_plants[s_plant[k]].pop[s_tier[k]];
+// ---------------------------------------------------------------------------
+// Group population (v3 §5): each room holds one group of 4..12 that wakes on approach.
+// Types are the real tiers now (v3 tiers): Bebé swarm, Exvoto base, Párroco tank and Monja support.
+// `hp_x` stays as a per-room multiplier on top of the type's tuning (the tiers carry their own base life:
+// Bebé x1, Párroco x4 and Monja x2 over the Exvoto base, see gameplay.c / enc_init).
+// ---------------------------------------------------------------------------
+typedef struct {
+    uint8_t enc_type;   // ENC_E_* of the tier
+    uint8_t hp_x;       // extra life multiplier for this slot (1 = the type's own tuning)
+    uint8_t guard;      // 1 = stays at its post and prays (the Monja)
+    uint8_t weight;     // mix weight inside a group
+} RoomKind;
+static const RoomKind s_room_kinds[] = {
+    { ENC_E_BEBE,       1, 0, 3 },   // bebé: swarm, dies in one hit, a bit faster
+    { ENC_E_EXVOTO,     1, 0, 2 },   // adulta: the base Exvoto
+    { ENC_E_PARROCO,    1, 0, 2 },   // Párroco: tank, x4 life (its own tuning), harder hits, shoves the hero
+    { ENC_E_MONJA,      1, 1, 2 },   // Monja: support, stays behind praying and heals nearby Exvotos
+    { ENC_E_OJO,        1, 0, 1 },   // Ojo, as it is today
+    { ENC_E_CIRENEO,    1, 0, 1 },   // Cireneo, as it is today
+};
+#define ROOM_KIND_COUNT ((int)(sizeof(s_room_kinds) / sizeof(s_room_kinds[0])))
+
+// Indices into s_room_kinds (the order of the table above).
+enum { RK_BEBE = 0, RK_EXVOTO, RK_PARROCO, RK_MONJA, RK_OJO, RK_CIRENEO };
+
+static int room_group_count(int k);
+static int room_kind_of(int k, int i);
+
+// Difficulty ramp (DESIGN.md, opening rooms): how many Ojos/Cireneos a group carries. None before
+// ARPG_MINION_MIN_ROOM; from there until the full mix, 1 in ARPG_MINION_ROOM_FREQ rooms has a single
+// one; from ARPG_FULL_MIX_ROOM on, up to ARPG_MINION_MAX_PER_GROUP. Deterministic from the room hash.
+static int room_minion_count(int k) {
+    if (k < ARPG_MINION_MIN_ROOM) return 0;
+    if (k < ARPG_FULL_MIX_ROOM) {
+        uint32_t h = hash32(s_seed ^ ((uint32_t)k * 0x2545f491u) ^ 0x4d494e31u);
+        return (h % (uint32_t)ARPG_MINION_ROOM_FREQ) == 0 ? 1 : 0;
+    }
+    return ARPG_MINION_MAX_PER_GROUP;
+}
+
+// Weight of a base slot: Ojos/Cireneos only come through the minion slots, and Párroco/Monja only
+// from ARPG_TIER_MIN_ROOM on.
+static int room_base_weight(int k, int j) {
+    if (j == RK_OJO || j == RK_CIRENEO) return 0;
+    if (k < ARPG_TIER_MIN_ROOM && (j == RK_PARROCO || j == RK_MONJA)) return 0;
+    return s_room_kinds[j].weight;
+}
+
+static int room_base_kind_of(int k, int i) {
+    int total = 0;
+    for (int j = 0; j < ROOM_KIND_COUNT; j++) total += room_base_weight(k, j);
+    uint32_t h = hash32(s_seed ^ ((uint32_t)k * 0x9e3779b9u) ^ ((uint32_t)i * 0x85ebca6bu) ^ 0x524f4f4du);
+    int r = (int)(h % (uint32_t)total);
+    int pick = RK_BEBE;
+    for (int j = 0; j < ROOM_KIND_COUNT; j++) {
+        int w = room_base_weight(k, j);
+        if (r < w) { pick = j; break; }
+        r -= w;
+    }
+    // Before the full mix, at most ARPG_TIER_CAP_PER_GROUP Párrocos and Monjas each: a second one
+    // of the same kind becomes a Bebé.
+    if ((pick == RK_PARROCO || pick == RK_MONJA) && k < ARPG_FULL_MIX_ROOM) {
+        int seen = 0;
+        for (int j = 0; j < i; j++) if (room_kind_of(k, j) == pick) seen++;
+        if (seen >= ARPG_TIER_CAP_PER_GROUP) pick = RK_BEBE;
+    }
+    return pick;
+}
+
+static int room_kind_of(int k, int i) {
+    const int want = room_group_count(k);
+    const int minions = room_minion_count(k);
+    if (minions > 0 && i >= want - minions) {     // the last slots carry the Ojo(s)/Cireneo(s)
+        uint32_t h = hash32(s_seed ^ ((uint32_t)k * 0x9e3779b9u) ^ ((uint32_t)i * 0x85ebca6bu) ^ 0x534f464fu);
+        return (h & 1u) ? RK_CIRENEO : RK_OJO;
+    }
+    return room_base_kind_of(k, i);
+}
+
+static int room_group_count(int k) {
+    uint32_t h = hash32(s_seed ^ ((uint32_t)k * 0x45d9f3bu) ^ 0x47525031u);
+    return ARPG_ROOM_GROUP_MIN + (int)(h % (uint32_t)(ARPG_ROOM_GROUP_MAX - ARPG_ROOM_GROUP_MIN + 1));
+}
+
+static void room_group_slot(int k, int i, int *out_x, int *out_y) {
+    const int top = window_top(block_of_encounter(k));
+    const int col = i & 3, row = i >> 2;
+    uint32_t h = hash32(s_seed ^ ((uint32_t)k * 0x9e3779b9u) ^ ((uint32_t)i * 0x119de1f3u) ^ 0x534c4f54u);
+    int x = ENC_FLOOR_X + 28 + col * 48 + (int)(h % 9u) - 4;
+    int y = top + 84 + row * 66 + (int)((h >> 8) % 9u) - 4;
+    if (x < ENC_FLOOR_X + 12) x = ENC_FLOOR_X + 12;
+    if (x > ENC_FLOOR_X + ENC_FLOOR_W - 12) x = ENC_FLOOR_X + ENC_FLOOR_W - 12;
+    *out_x = x;
+    *out_y = y;
+}
+
+static void place_room_enemy(Enemy *e, const RoomKind *kind, int x, int y, int ordinal, int owner) {
+    EnemyType type = enemy_type_of(kind->enc_type);
+    memset(e, 0, sizeof(*e));
+    e->x = TO_FIXED(x);
+    e->y = TO_FIXED(y);
+    e->active = 1;
+    e->type = type;
+    e->pack = owner;
+    e->char_id = enemy_type_char_id(type);
+    e->max_hp = g_enemy_tuning[type].max_hp * kind->hp_x;
+    e->max_hp = e->max_hp * ARPG_DEPTH_PCT(owner) / 100;
+    e->hp = e->max_hp;
+    e->dir = (ordinal * 2) % 8;
+    e->strafe_dir = (ordinal & 1) ? 1 : -1;
+    e->state = ENEMY_STATE_DORMANT;
+    if (type == ENEMY_TYPE_SHOOTER || kind->guard) {
+        e->home_flags = ENEMY_HOME_SET | (kind->guard ? ENEMY_HOME_GUARD : 0);
+        *enemy_home_x(e) = x;
+        *enemy_home_y(e) = y;
+    }
+}
+
+static int active_enemies(const Enemy *enemies, int max_enemies) {
+    int n = 0;
+    for (int i = 0; i < max_enemies; i++) if (enemies[i].active) n++;
+    return n;
+}
+
+// Places the group of room k asleep. Respects the active cap: with no free slots it leaves the room
+// unspawned so a later frame (after the group behind is recycled) can place it.
+static int spawn_room_group(Enemy *enemies, int max_enemies, int k) {
+    const int want = room_group_count(k);
+    int active = active_enemies(enemies, max_enemies);
+    int made = 0;
+    for (int i = 0; i < want && active + made < MAX_GAMEPLAY_ENEMIES; i++) {
+        int slot = -1;
+        for (int s = 0; s < max_enemies; s++) if (!enemies[s].active) { slot = s; break; }
+        if (slot < 0) break;
+        int x, y;
+        room_group_slot(k, i, &x, &y);
+        int placed = 0;
+        for (int t = 0; t < 4 && !placed; t++) {           // nudge around a prop before giving up on the slot
+            int tx = x + (t == 1 ? 12 : t == 2 ? -12 : t == 3 ? 0 : 0);
+            int ty = y + (t == 3 ? 12 : 0);
+            if (position_is_free(TO_FIXED(tx), TO_FIXED(ty))) {
+                place_room_enemy(&enemies[slot], &s_room_kinds[room_kind_of(k, i)], tx, ty, i, k);
+                placed = 1;
+            }
+        }
+        if (placed) made++;
+    }
+    return made;
 }
 
 static int alive_of(const Enemy *enemies, int max_enemies, int owner, int *hurt) {
@@ -445,9 +643,50 @@ static void apply_debug(void) {
 static int boss_relic_pos(int k, int *x, int *y) { (void)k; (void)x; (void)y; return 0; }
 static int altar_pos(int *x, int *y) { (void)x; (void)y; return 0; }
 
+// v3 tier capture (evidence only): place one Bebé, one Párroco and one praying Monja around the hero, all awake
+// and already wounded, in the current room so the Monja's green heals show on them. Clears the request.
+static void tier_debug_spawn(Enemy *enemies, int max_enemies, int px, int py) {
+    static const EnemyType types[3] = { ENEMY_TYPE_BEBE, ENEMY_TYPE_PARROCO, ENEMY_TYPE_MONJA };
+    // Tight formation: the two fighters stay within the Monja's ARPG_MONJA_PRAY_RADIUS (48 ground px) so her
+    // heals land, and she stands a little above the hero (just out of her own brawl range).
+    static const int offs[3][2] = { { 16, -14 }, { -16, -16 }, { 0, -30 } };
+    int made = 0;
+    for (int t = 0; t < 3; t++) {
+        int slot = -1;
+        for (int s = 0; s < max_enemies; s++) if (!enemies[s].active) { slot = s; break; }
+        if (slot < 0) break;
+        Enemy *e = &enemies[slot];
+        memset(e, 0, sizeof(*e));
+        e->x = TO_FIXED(px + offs[t][0]);
+        e->y = TO_FIXED(py + offs[t][1]);
+        e->active = 1;
+        e->type = types[t];
+        e->pack = stage_at_py(py);
+        e->char_id = enemy_type_char_id(types[t]);
+        e->max_hp = g_enemy_tuning[types[t]].max_hp;
+        e->hp = e->max_hp / 2;                       // wounded so the Monja has someone to heal
+        if (e->hp < 1) e->hp = 1;
+        e->dir = 0;
+        e->strafe_dir = 1;
+        if (types[t] == ENEMY_TYPE_MONJA) {
+            e->state = ENEMY_STATE_PRAY;
+            e->char_id = CHAR_EXVOTO_PRAY_STAND;
+            *enemy_home_x(e) = TO_INT(e->x);
+            *enemy_home_y(e) = TO_INT(e->y);
+            e->home_flags = ENEMY_HOME_SET | ENEMY_HOME_GUARD;
+        } else {
+            e->state = ENEMY_INITIAL_STATE(types[t]);
+        }
+        made++;
+    }
+    (void)made;
+    g_tier_debug.spawn = 0;
+}
+
 void enc_update(Enemy *enemies, int max_enemies, int px, int py) {
     volatile EncStats *st = &g_enc_stats;
     apply_debug();
+    if (g_tier_debug.spawn) tier_debug_spawn(enemies, max_enemies, px, py);
     if (g_player_state.is_dead) {
         if (!s_was_dead) {
             s_was_dead = 1;
@@ -475,97 +714,154 @@ void enc_update(Enemy *enemies, int max_enemies, int px, int py) {
         }
     }
 
-    // Only the first floor not cleared, and the one above it, can change this frame (a floor spawns when the one
-    // below is cleared, and nothing higher has spawned yet). Keeps the frame cost flat at 100 floors.
-    int cur = ENC_BOSS;                       // the floor the hero faces next
-    for (int k = 0; k < ENC_STAGES; k++) {
-        if (!s_rt[k].cleared) { cur = k; break; }
-    }
+    // Rooms (salas ARPG): the hero's room, not the cleared count, decides what lives. The group of a
+    // room is placed when he gets close, wakes when he steps in, and enemies left two rooms below are
+    // recycled so the 24-slot pool always serves the fight around him. No gate blocks the way up.
+    int hero_k = stage_at_py(py);
+    if (hero_k < 0) hero_k = 0;
+    if (hero_k >= ENC_STAGES) hero_k = ENC_STAGES - 1;
+    const int cur = hero_k;
     int alive_cur = 0;
-    const int last = cur + 2 < ENC_STAGES ? cur + 2 : ENC_STAGES;
+    int lo = hero_k - 1; if (lo < 0) lo = 0;
+    int hi = hero_k + 2; if (hi > ENC_STAGES) hi = ENC_STAGES;
 
-    for (int k = cur; k < last; k++) {
+    // Recycle enemies far below the hero (rooms already behind him).
+    for (int i = 0; i < max_enemies; i++) {
+        Enemy *e = &enemies[i];
+        if (!e->active || e->hp <= 0) continue;
+        if (TO_INT(e->y) <= py + ARPG_ROOM_DESPAWN_BEHIND_PX) continue;
+        int pk = e->pack;
+        e->active = 0;
+        if (pk >= 0 && pk < ENC_STAGES && !is_boss_stage(pk) && !s_rt[pk].cleared) {
+            s_rt[pk].spawned = 0;      // the room may be repopulated if the hero comes back to it
+            s_rt[pk].awake = 0;
+        }
+    }
+
+    // Place the groups ahead (asleep). spawn_room_group respects the pool cap: with no slots the room
+    // stays unspawned and retries on a later frame.
+    for (int k = lo; k < hi; k++) {
         EncRuntime *rt = &s_rt[k];
-        if (rt->cleared) continue;
+        if (rt->spawned) continue;
         const int top = window_top(block_of_encounter(k));
         const int bottom = top + ENC_BLOCK_H;
-        const int is_boss = is_boss_stage(k);
-
-        if (!rt->spawned) {
-            if ((k == 0 || s_rt[k - 1].cleared) && top >= 0 && py <= bottom + ENC_SPAWN_AHEAD) {
-                rt->spawned = 1;
-                if (is_boss) {
-                    s_active_boss_k = k;
-                    boss_reset(boss_def_of(boss_number(k)), k);
-                    g_abanderado_max_mona = boss_mona_cap(boss_number(k));
-                    spawn_group(enemies, max_enemies, s_boss_enemies,
-                                (int)(sizeof(s_boss_enemies) / sizeof(s_boss_enemies[0])), 0, top, -1, k, 0);
-                } else {
-                    const EncPopulation *pop = population_of(k);
-                    spawn_group(enemies, max_enemies, pop->enemies, pop->n, s_mirror[k], top, -1, k, 0);
-                }
-            }
-            continue;
+        if (bottom < py - ARPG_ROOM_DESPAWN_BEHIND_PX) continue;      // far below: wait
+        if (py > bottom + ARPG_ROOM_SPAWN_AHEAD_PX) continue;         // not close yet
+        if (is_boss_stage(k)) {
+            rt->spawned = 1;
+            s_active_boss_k = k;
+            boss_reset(boss_def_of(boss_number(k)), k);
+            g_abanderado_max_mona = boss_mona_cap(boss_number(k));
+            spawn_group(enemies, max_enemies, s_boss_enemies,
+                        (int)(sizeof(s_boss_enemies) / sizeof(s_boss_enemies[0])), 0, top, -1, k, 0);
+        } else if (spawn_room_group(enemies, max_enemies, k) > 0) {
+            rt->spawned = 1;
+            rt->awake = 0;
+        } else {
+            break;      // pool full: do not mark the room, try again once something behind is recycled
         }
+    }
 
+    // Wake the room the hero steps into, with at most ARPG_ROOM_MAX_AWAKE groups around him.
+    for (int k = lo; k < hi; k++) {
+        EncRuntime *rt = &s_rt[k];
+        if (!rt->spawned || rt->awake) continue;
+        const int top = window_top(block_of_encounter(k));
+        const int bottom = top + ENC_BLOCK_H;
+        int hurt;
+        (void)alive_of(enemies, max_enemies, k, &hurt);
+        if (py >= bottom - ENC_WAKE_MARGIN && !hurt) continue;
+        if (k != hero_k) {
+            int awake = 0;
+            for (int j = lo; j < hi; j++) if (s_rt[j].awake && !s_rt[j].cleared) awake++;
+            if (awake >= ARPG_ROOM_MAX_AWAKE) continue;               // this group waits its turn
+        }
+        rt->awake = 1;
+        if (k + 1 > g_arpg.deepest) g_arpg.deepest = (uint16_t)(k + 1);   // progress: the deepest floor reached
+        wake_owner(enemies, max_enemies, k);
+        if (st->woken < k + 1) st->woken = (uint8_t)(k + 1);
+        if (is_boss_stage(k)) boss_begin(enemies, max_enemies);           // close the room, intro
+        if (k == cur) st->wake_frames = 0;
+    }
+
+    for (int k = lo; k < hi; k++) {
+        EncRuntime *rt = &s_rt[k];
+        if (!rt->spawned) continue;
+        const int is_boss = is_boss_stage(k);
         int hurt;
         int alive = alive_of(enemies, max_enemies, k, &hurt);
-        if (!rt->awake) {
-            if (py < bottom - ENC_WAKE_MARGIN || hurt) {
-                rt->awake = 1;
-                if (k + 1 > g_arpg.deepest) g_arpg.deepest = (uint16_t)(k + 1);   // progress: the deepest floor reached
-                wake_owner(enemies, max_enemies, k);
-                if (st->woken < k + 1) st->woken = (uint8_t)(k + 1);
-                if (is_boss) {
-                    boss_begin(enemies, max_enemies);                 // the hero is in the room: close it, intro
-                } else {                                              // normal room: close the rear barrier behind the hero
-                    strip_collision_fill_win(ENC_FLOOR_X, bottom - ENC_BARRIER_H, ENC_FLOOR_W, ENC_BARRIER_H,
-                                             enc_collision_value(ENC_R_BARRERA));
-                    rt->back_closed = 1;
-                    nav_refresh_begin(px, py);
+        if (rt->awake) {
+            if (k == cur && st->wake_frames < 0xFFFF) st->wake_frames++;
+            if (is_boss) {
+                // The escort and the Monaguillos do not keep the fight alive: it ends when the Abanderado falls.
+                if (!boss_combat_update(enemies, max_enemies)) {
+                    for (int i = 0; i < max_enemies; i++)
+                        if (enemies[i].active && enemies[i].hp > 0 && enemies[i].pack == k) enemy_hit(&enemies[i], 9999, 0, 0);
+                    alive = 0;
                 }
-                if (k == cur) st->wake_frames = 0;
             }
-            continue;
-        }
-        if (k == cur && st->wake_frames < 0xFFFF) st->wake_frames++;
-
-        if (!is_boss && !rt->wave2_done) {
-            const EncPopulation *pop = population_of(k);
-            if (pop->n2 > 0 && alive <= 1) {
-                rt->wave2_done = 1;
-                spawn_group(enemies, max_enemies, pop->wave2, pop->n2, s_mirror[k], top, 16, k, 1);
-                alive = alive_of(enemies, max_enemies, k, &hurt);
-            } else if (pop->n2 == 0) {
-                rt->wave2_done = 1;
-            }
-        }
-        if (is_boss) {
-            // The escort and the Monaguillos do not keep the fight alive: it ends when the Abanderado falls.
-            // boss.c runs the phases and the escort while it lives.
-            if (!boss_combat_update(enemies, max_enemies)) {
-                for (int i = 0; i < max_enemies; i++)
-                    if (enemies[i].active && enemies[i].hp > 0 && enemies[i].pack == k) enemy_hit(&enemies[i], 9999, 0, 0);
-                alive = 0;
-            }
-        }
-        if (k == cur) alive_cur = alive;
-
-        if (alive == 0 && (is_boss || rt->wave2_done)) {
-            rt->cleared = 1;
-            if (!is_boss) {
-                if (k < ENC_COUNT) {
-                    st->clear_frames[k] = st->wake_frames;
-                    st->hp_end[k] = HP_U8(g_player_state.hp);
-                    st->dones_at[k] = st->dones;
+            if (alive == 0 && (is_boss || hurt == 0)) {
+                if (!rt->cleared) {
+                    rt->cleared = 1;
+                    if (k < ENC_COUNT) {
+                        st->clear_frames[k] = st->wake_frames;
+                        st->hp_end[k] = HP_U8(g_player_state.hp);
+                        st->dones_at[k] = st->dones;
+                    }
+                    if (st->cleared < k + 1) st->cleared = (uint8_t)(k + 1);
+                    rt->verja_opening = 1;
+                    if (is_boss) {
+                        st->boss_frames = st->wake_frames;
+                        boss_victory();
+                    }
                 }
-                st->cleared = (uint8_t)(k + 1);
-                rt->verja_opening = 1;
-            } else {
-                st->cleared = (uint8_t)(k + 1);
-                st->boss_frames = st->wake_frames;
-                rt->verja_opening = 1;             // the top barrier rises: the hero walks on into the next floor
-                boss_victory();                    // the bottom barrier opens again when the victory ends (boss hook)
+            }
+        }
+        alive_cur += alive;
+    }
+
+    // Room crossings: the upper door (top line, centred) or the lateral opening of the room the hero
+    // is in asks main.c for a fade. Destination is the room above (the lateral entrance is the same
+    // room for now, as the strip only advances vertically).
+    if (s_exit_room < 0 && hero_k + 1 < ENC_STAGES) {
+        const int top = window_top(block_of_encounter(hero_k));
+        const int cx = room_center_x();
+        const int ax = px > cx ? px - cx : cx - px;
+        if (py < top + ARPG_ROOM_DOOR_TRIGGER_PX && py > top - 4 && ax <= ARPG_ROOM_DOOR_HALF_W_PX) {
+            s_exit_room = hero_k + 1;
+        } else {
+            // The only way the hero's ground point reaches the wall band is through the open hole
+            // (the rest of the wall keeps colliding), so no vertical check is needed here.
+            EncRoomOpening op;
+            if (enc_room_opening(block_of_encounter(hero_k), &op)) {
+                if (op.x == ENC_CAM_X) { if (px < ENC_FLOOR_X - 4) s_exit_room = hero_k + 1; }
+                else { if (px > ENC_FLOOR_X + ENC_FLOOR_W + 4) s_exit_room = hero_k + 1; }
+            }
+        }
+    }
+
+    // Chests and travel altars of the rooms around the hero.
+    for (int k = hero_k - 1; k <= hero_k + 1; k++) {
+        if (k < 0 || k >= ENC_STAGES) continue;
+        if (room_has_chest(k) && !s_rt[k].chest_open) {
+            const int cx = room_center_x(), cy = room_chest_y(k);
+            const int dx = px - cx, dy = py - cy;
+            if (dx * dx + GROUND_DY2(dy) <= ARPG_ROOM_CHEST_REACH_PX * ARPG_ROOM_CHEST_REACH_PX) {
+                s_rt[k].chest_open = 1;
+                const fixed fx = TO_FIXED(cx), fy = TO_FIXED(cy);
+                pickups_spawn_xp(fx, fy, ARPG_ROOM_CHEST_XP + k / 2);
+                pickups_spawn(PICKUP_KIND_HEALTH, fx - TO_FIXED(8), fy);
+                pickups_spawn(PICKUP_KIND_MANA, fx + TO_FIXED(8), fy);
+            }
+        }
+        if (room_has_altar(k) && !s_rt[k].altar_touched) {
+            const int cx = room_center_x(), cy = room_altar_y(k);
+            const int dx = px - cx, dy = py - cy;
+            if (dx * dx + GROUND_DY2(dy) <= ARPG_ROOM_ALTAR_REACH_PX * ARPG_ROOM_ALTAR_REACH_PX) {
+                s_rt[k].altar_touched = 1;
+                const int a = k / 3;                 // altar index in the progress mask
+                if (a < 32) g_arpg.altars_lo |= (1u << a);
+                else if (a < 64) g_arpg.altars_hi |= (1u << (a - 32));
             }
         }
     }
@@ -586,11 +882,7 @@ void enc_update(Enemy *enemies, int max_enemies, int px, int py) {
             s_rt[k].back_lift++;
         }
     }
-    cur = ENC_BOSS;
-    for (int k = 0; k < ENC_STAGES; k++) {
-        if (!s_rt[k].cleared) { cur = k; break; }
-    }
-    st->current = (uint8_t)cur;
+    st->current = (uint8_t)cur;                // the room the hero is in (rooms are not gated by clearing)
     if (!is_boss_stage(cur)) {
         st->plant = s_plant[cur];
         st->tier = s_tier[cur];
@@ -834,6 +1126,110 @@ void enc_dynamic_relic_draw(uint16_t *buffer, int cam_x, int cam_y, int depth) {
             if (sx > max_x) max_x = sx;
         }
         if (max_x >= min_x) dirty_row(sy, min_x, max_x + 1);
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Room fixtures: chests (closed and open) and travel altars, painted as dynamic sprites over the
+// floor so their state can change without repainting the baked tilemap. Their art is the real props
+// of assets/environment/cathedral/props/render, baked into include/enc_room_gfx.h.
+// ---------------------------------------------------------------------------
+#define ENC_FIXTURE_MAX 12
+enum { ENC_FIX_CHEST = 0, ENC_FIX_ALTAR = 1 };
+typedef struct { int16_t x, y; uint8_t k, kind, sprite; } EncFixture;
+static EncFixture s_fixtures[ENC_FIXTURE_MAX];
+static int s_fixture_n;
+
+int enc_dynamic_fixture_count(int cam_x, int cam_y) {
+    (void)cam_x;
+    s_fixture_n = 0;
+    for (int k = 0; k < ENC_STAGES && s_fixture_n < ENC_FIXTURE_MAX; k++) {
+        const int top = window_top(block_of_encounter(k));
+        if (top + ENC_BLOCK_H <= cam_y || top >= cam_y + SCREEN_H) continue;
+        if (room_has_chest(k)) {
+            s_fixtures[s_fixture_n].x = (int16_t)room_center_x();
+            s_fixtures[s_fixture_n].y = (int16_t)room_chest_y(k);
+            s_fixtures[s_fixture_n].k = (uint8_t)k;
+            s_fixtures[s_fixture_n].kind = ENC_FIX_CHEST;
+            // The open chest stays in the room: the loot is out, the furniture is not gone.
+            s_fixtures[s_fixture_n].sprite = s_rt[k].chest_open ? ENC_SPR_COFRE_ABIERTO : ENC_SPR_COFRE_CERRADO;
+            s_fixture_n++;
+        }
+        if (room_has_altar(k)) {
+            s_fixtures[s_fixture_n].x = (int16_t)room_center_x();
+            s_fixtures[s_fixture_n].y = (int16_t)room_altar_y(k);
+            s_fixtures[s_fixture_n].k = (uint8_t)k;
+            s_fixtures[s_fixture_n].kind = ENC_FIX_ALTAR;
+            s_fixtures[s_fixture_n].sprite = ENC_SPR_ALTAR;
+            s_fixture_n++;
+        }
+    }
+    return s_fixture_n;
+}
+
+// Top-left of a fixture sprite in world px: its ground anchor lands on the fixture's Y.
+static void fixture_origin(const EncFixture *f, int *out_x, int *out_y) {
+    const EncRoomSprite *s = &s_enc_room_sprites[f->sprite];
+    *out_x = f->x - s->w / 2;
+    *out_y = f->y - s->anchor_y;
+}
+
+int enc_dynamic_fixture_item(int index, int cam_x, int cam_y, int *out_depth) {
+    if (index < 0 || index >= s_fixture_n) return 0;
+    const EncFixture *f = &s_fixtures[index];
+    const EncRoomSprite *s = &s_enc_room_sprites[f->sprite];
+    int wx0, wy0;
+    fixture_origin(f, &wx0, &wy0);
+    if (wx0 + s->w - cam_x <= 0 || wx0 - cam_x >= SCREEN_W ||
+        wy0 + s->h - cam_y <= 0 || wy0 - cam_y >= SCREEN_H) return 0;
+    if (out_depth) *out_depth = f->y;
+    return 1;
+}
+
+void enc_dynamic_fixture_draw(int index, uint16_t *buffer, int cam_x, int cam_y, int depth) {
+    if (index < 0 || index >= s_fixture_n) return;
+    const EncFixture *f = &s_fixtures[index];
+    const EncRoomSprite *s = &s_enc_room_sprites[f->sprite];
+    int wx0, wy0;
+    fixture_origin(f, &wx0, &wy0);
+    const int sx0 = wx0 - cam_x, sy0 = wy0 - cam_y;
+    for (int j = 0; j < s->h; j++) {
+        int sy = sy0 + j;
+        if (sy < 0 || sy >= SCREEN_H) continue;
+        const int wy = wy0 + j;
+        uint16_t *row = buffer + sy * SCREEN_W;
+        const uint16_t *srow = s->pixels + j * s->w;
+        int min_x = SCREEN_W, max_x = -1;
+        for (int i = 0; i < s->w; i++) {
+            uint16_t c = srow[i];
+            if (!c) continue;
+            int sx = sx0 + i;
+            if (sx < 0 || sx >= SCREEN_W) continue;
+            if (world_pixel_hidden(wx0 + i, wy, depth)) continue;
+            row[sx] = c;
+            if (sx < min_x) min_x = sx;
+            if (sx > max_x) max_x = sx;
+        }
+        if (max_x >= min_x) dirty_row(sy, min_x, max_x + 1);
+    }
+    // Altar touched: a small muted flame above it (the cheap "it is lit" mark).
+    if (f->kind == ENC_FIX_ALTAR && s_rt[f->k].altar_touched) {
+        static const uint16_t flame = RGB15(22, 16, 6) | BIT(15);
+        static const uint16_t tip = RGB15(28, 22, 10) | BIT(15);
+        const int cx = f->x - cam_x;
+        const int top = wy0 - cam_y - 2;
+        for (int j = 0; j < 9; j++) {
+            const int sy = top + j;
+            if (sy < 0 || sy >= SCREEN_H) continue;
+            const int half = (9 - j) / 3;
+            uint16_t *row = buffer + sy * SCREEN_W;
+            for (int i = -half; i <= half; i++) {
+                const int sx = cx + i;
+                if (sx < 0 || sx >= SCREEN_W) continue;
+                row[sx] = j < 3 ? tip : flame;
+            }
+            if (cx - half < cx + half + 1) dirty_row(sy, cx - half, cx + half + 1);
+        }
     }
 }
 

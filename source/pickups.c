@@ -1,4 +1,5 @@
 #include "pickups.h"
+#include "dmg_numbers.h"
 #include "collision.h"
 #include "groundfx.h"
 #include "hud_icons_gfx.h"
@@ -147,10 +148,12 @@ void pickups_update(fixed player_x, fixed player_y, PlayerState *player) {
             if (player) {
                 player->mana += ARPG_REMATE_MANA;
                 if (player->mana > player->max_mana) player->mana = player->max_mana;
+                dmg_numbers_spawn(player_x, player_y - TO_FIXED(18), ARPG_REMATE_MANA, DMG_NUM_MANA);
             }
         } else if (player && player->hp < player->max_hp) {
             player->hp += ARPG_REMATE_HP;
             if (player->hp > player->max_hp) player->hp = player->max_hp;
+            dmg_numbers_spawn(player_x, player_y - TO_FIXED(18), ARPG_REMATE_HP, DMG_NUM_HEAL);
         }
         p->active = 0;
     }

@@ -1,0 +1,200 @@
+{
+  "name": "salas_captura",
+  "description": "Salas ARPG: sube una sala, cruza el hueco lateral izquierdo de la sala 0, abre el cofre de la sala 1, cruza su puerta superior y toca el altar de la sala 2. Solo evidencia.",
+  "suite": false,
+  "evidence_only": true,
+  "state": {
+    "elf": "../.ds-game-dev/build/out/dungeonds.elf",
+    "symbols": {
+      "stats": "g_enc_stats",
+      "dbg": "g_enc_debug",
+      "nav": "g_nav_state",
+      "gps": "g_player_state",
+      "strip": "g_strip_debug",
+      "rt": "s_rt",
+      "pl": "s_player"
+    },
+    "default_symbol": "stats",
+    "fields": {
+      "height": {
+        "symbol": "strip",
+        "offset": 0,
+        "type": "s32"
+      },
+      "chest1": {
+        "symbol": "rt",
+        "offset": 20,
+        "type": "u8"
+      },
+      "altar2": {
+        "symbol": "rt",
+        "offset": 32,
+        "type": "u8"
+      },
+      "hero_x": {
+        "symbol": "nav",
+        "offset": 0,
+        "type": "s32"
+      },
+      "hero_y": {
+        "symbol": "nav",
+        "offset": 4,
+        "type": "s32"
+      },
+      "dbg_god": {
+        "symbol": "dbg",
+        "offset": 2,
+        "type": "u8"
+      },
+      "state": {
+        "offset": 0,
+        "type": "u8"
+      },
+      "current": {
+        "offset": 1,
+        "type": "u8"
+      },
+      "alive": {
+        "offset": 61,
+        "type": "u8"
+      },
+      "px": {
+        "symbol": "pl",
+        "offset": 0,
+        "type": "s32"
+      },
+      "py": {
+        "symbol": "pl",
+        "offset": 4,
+        "type": "s32"
+      }
+    }
+  },
+  "steps": [
+    {
+      "frames": 60
+    },
+    {
+      "tap": {
+        "x": 128,
+        "y": 66
+      },
+      "frames": 6
+    },
+    {
+      "release": true,
+      "frames": 40
+    },
+    {
+      "button_down": "START",
+      "frames": 4
+    },
+    {
+      "button_up": "START",
+      "frames": 40
+    },
+    {
+      "poke": [
+        {
+          "field": "px",
+          "value": 32768
+        },
+        {
+          "field": "py",
+          "value": 29696
+        }
+      ],
+      "frames": 20
+    },
+    {
+      "button_down": "A",
+      "frames": 4
+    },
+    {
+      "button_up": "A",
+      "frames": 120
+    },
+    {
+      "poke": [
+        {
+          "field": "dbg_god",
+          "value": 1
+        }
+      ],
+      "frames": 2
+    },
+    {
+      "button_down": "UP",
+      "wait_until": {
+        "field": "height",
+        "min_value": 452,
+        "timeout_frames": 6000
+      },
+      "capture": "salas_00_ascenso",
+      "state_capture": "ascenso"
+    },
+    {
+      "button_up": "UP",
+      "frames": 1
+    },
+    {
+      "button_down": "LEFT",
+      "wait_until": {
+        "field": "hero_x",
+        "max_value": 38000,
+        "timeout_frames": 900
+      },
+      "capture": "salas_01_hueco",
+      "state_capture": "hueco"
+    },
+    {
+      "button_up": "LEFT",
+      "frames": 20,
+      "capture": "salas_02_cruzado",
+      "state_capture": "cruzado"
+    },
+    {
+      "button_down": "UP",
+      "wait_until": {
+        "field": "chest1",
+        "equals": 1,
+        "timeout_frames": 2400
+      },
+      "capture": "salas_03_cofre",
+      "state_capture": "cofre"
+    },
+    {
+      "wait_until": {
+        "field": "height",
+        "min_value": 1005,
+        "timeout_frames": 2400
+      },
+      "capture": "salas_04_puerta",
+      "state_capture": "puerta"
+    },
+    {
+      "wait_until": {
+        "field": "altar2",
+        "equals": 1,
+        "timeout_frames": 3000
+      },
+      "capture": "salas_05_altar",
+      "state_capture": "altar"
+    },
+    {
+      "wait_until": {
+        "field": "height",
+        "min_value": 1390,
+        "timeout_frames": 3000
+      },
+      "capture": "salas_06_puerta2",
+      "state_capture": "puerta2"
+    },
+    {
+      "button_up": "UP",
+      "frames": 20,
+      "capture": "salas_07_final",
+      "state_capture": "final"
+    }
+  ]
+}

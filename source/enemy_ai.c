@@ -8,7 +8,9 @@
 #include "player_sprite.h"
 #include "sandbox.h"
 #include "arpg.h"
+#include "dmg_numbers.h"
 #include "allies.h"
+#include "curse.h"
 #if ENCOUNTERS_PROTO
 #include "weapons.h"
 #endif
@@ -194,6 +196,10 @@ static int s_chase_bias_x, s_chase_bias_y;    // v2: lateral offset of the walki
 static void chase_step(Enemy *e, Enemy *enemies, int num_enemies, int idx, fixed speed,
                        int wx, int wy, int px, int py, int ground_dist_sq) {
     speed = burn_slow(e, speed);          // Quemado frena (DESIGN.md 6.12.2)
+    {                                     // Glifo (DESIGN.md 7.3): a live zone slows whoever walks inside
+        const int pct = curse_slow_percent_at(TO_INT(e->x), TO_INT(e->y));
+        if (pct > 0) speed = speed * (100 - pct) / 100;
+    }
     int target_x = px, target_y = py;
     int direct = (e->has_los & VIEW_DIRECT) && ground_dist_sq <= CHASE_DIRECT_RANGE * CHASE_DIRECT_RANGE;
     if (!direct) {
@@ -450,6 +456,21 @@ static void update_exvoto(Enemy *e, Enemy *enemies, int num_enemies, int idx,
             if (ground_dist_sq <= melee_range * melee_range &&
                 los_has_line_of_sight(wx, wy, px, py, 0) && line_is_walkable(wx, wy, px, py)) {
                 player_take_damage(&g_player_state, arpg_enemy_damage(e->type));
+#if ENCOUNTERS_PROTO
+                // Párroco tier (v3): besides hitting harder, its blow shoves the hero back a little (ground metric 2:1).
+                if (e->type == ENEMY_TYPE_PARROCO) {
+                    const int pdx = px - wx, pdy = py - wy;
+                    fixed pvx = 0, pvy = 0;
+                    if (pdx != 0 || pdy != 0) {
+                        int m = int_sqrt((uint32_t)(pdx * pdx + GROUND_DY2(pdy)));
+                        if (m > 0) {
+                            pvx = (fixed)((pdx * ARPG_DMG_PARROCO_PUSH) / m);
+                            pvy = (fixed)(((pdy * ARPG_DMG_PARROCO_PUSH) / m) >> GROUND_Y_SHIFT);
+                        }
+                    }
+                    player_apply_push(pvx, pvy, ARPG_DMG_PARROCO_PUSH_FRAMES);
+                }
+#endif
                 e->state = ENEMY_STATE_ATTACK;
                 e->state_timer = tuning->attack_cooldown;
                 e->dir = dir_from_vector(player_x - e->x, player_y - e->y);
@@ -459,8 +480,8 @@ static void update_exvoto(Enemy *e, Enemy *enemies, int num_enemies, int idx,
 
             refresh_view(e, idx, wx, wy, px, py, ground_dist_sq, CHASE_DIRECT_RANGE);
 #if ENCOUNTERS_PROTO
-            if (e->type == ENEMY_TYPE_EXVOTO) {
-                if (exvoto_dodge(e, wx, wy, ground_dist_sq, tuning->speed)) break;
+            if (e->type == ENEMY_TYPE_EXVOTO || e->type == ENEMY_TYPE_PARROCO) {
+                if (e->type == ENEMY_TYPE_EXVOTO && exvoto_dodge(e, wx, wy, ground_dist_sq, tuning->speed)) break;
                 exvoto_weave(e, idx, dx, dy);
             }
 #endif
@@ -1010,6 +1031,97 @@ static void update_guard(Enemy *e, Enemy *enemies, int num_enemies, int idx, fix
 }
 
 // ---------------------------------------------------------------------------
+// Monja (v3 tier): support. She stays behind, praying (the Exvoto pray slot), and while she prays the troops
+// around her (other tiers and Exvotos, not herself) recover a little life per second, shown with the existing
+// green heal numbers (dmg_numbers DMG_NUM_HEAL). She is a guard: she does not chase, she only bites back when the
+// hero comes right into her. `home_flags` carries the post; her prayer clock lives in `state_timer`.
+// ---------------------------------------------------------------------------
+#if ENCOUNTERS_PROTO
+static int monja_heals_ally(const Enemy *m, const Enemy *o) {
+    if (!o->active || o->hp <= 0 || o->hp >= o->max_hp) return 0;
+    if (o == m) return 0;                                     // she never heals herself
+    if (o->type != ENEMY_TYPE_BEBE && o->type != ENEMY_TYPE_EXVOTO && o->type != ENEMY_TYPE_PARROCO &&
+        o->type != ENEMY_TYPE_MONAGUILLO) return 0;            // only the Exvoto family
+    int dx = TO_INT(o->x - m->x);
+    int dy = TO_INT(o->y - m->y);
+    return dx * dx + GROUND_DY2(dy) <= ARPG_MONJA_PRAY_RADIUS * ARPG_MONJA_PRAY_RADIUS;
+}
+
+static void monja_pray(Enemy *e, Enemy *enemies, int num_enemies) {
+    e->state_timer++;
+    // Clip loop of the standing prayer (the Exvoto pray slot).
+    int anim_period = g_characters[e->char_id].anim_period;
+    if (++e->anim_timer >= anim_period) {
+        e->anim_timer = 0;
+        e->frame = (e->frame + 1) % PLAYER_NUM_FRAMES;
+    }
+    if (e->state_timer % ARPG_MONJA_HEAL_PERIOD != 0) return;
+    for (int j = 0; j < num_enemies; j++) {
+        Enemy *o = &enemies[j];
+        if (!monja_heals_ally(e, o)) continue;
+        int heal = o->max_hp * ARPG_MONJA_HEAL_PCT / 100;
+        if (heal < 1) heal = 1;
+        o->hp += heal;
+        if (o->hp > o->max_hp) o->hp = o->max_hp;
+        dmg_numbers_spawn(o->x, o->y - TO_FIXED(16), heal, DMG_NUM_HEAL);   // green sage number over the healed one
+    }
+}
+
+static void update_monja(Enemy *e, Enemy *enemies, int num_enemies, int idx,
+                         fixed player_x, fixed player_y, const EnemyTuning *tuning) {
+    if (e->state == ENEMY_STATE_EMERGE) {
+        e->dir = dir_from_vector(player_x - e->x, player_y - e->y);
+        if (--e->state_timer <= 0) { e->state = ENEMY_STATE_PRAY; e->state_timer = 0; }
+        return;
+    }
+    if (g_player_state.is_dead) { update_animation(e, 0); return; }
+
+    int wx = TO_INT(e->x), wy = TO_INT(e->y);
+    int px = TO_INT(player_x), py = TO_INT(player_y);
+    int dx = px - wx, dy = py - wy;
+    int ground_dist_sq = dx * dx + GROUND_DY2(dy);
+
+    // Hurt or with the hero right on top of her: she drops the prayer and fights back like a weak Exvoto.
+    if (e->state != ENEMY_STATE_ATTACK &&
+        (e->hit_timer > 0 || ground_dist_sq <= (tuning->preferred_dist_max + 8) * (tuning->preferred_dist_max + 8))) {
+        e->state = ENEMY_STATE_ATTACK;
+        e->state_timer = tuning->attack_cooldown;
+        e->char_id = enemy_type_char_id(ENEMY_TYPE_MONJA);
+    }
+
+    switch (e->state) {
+        case ENEMY_STATE_ATTACK: {
+            e->dir = dir_from_vector(player_x - e->x, player_y - e->y);
+            if (e->state_timer == tuning->attack_cooldown && ground_dist_sq <= tuning->preferred_dist_max * tuning->preferred_dist_max)
+                player_take_damage(&g_player_state, arpg_enemy_damage(e->type));
+            if (--e->state_timer <= 0) {
+                // Back to praying (the support pose) if she is safe again, otherwise keep brawling.
+                if (ground_dist_sq > (tuning->preferred_dist_max + 8) * (tuning->preferred_dist_max + 8) && e->hit_timer == 0) {
+                    e->state = ENEMY_STATE_PRAY;
+                    e->state_timer = 0;
+                    e->char_id = CHAR_EXVOTO_PRAY_STAND;
+                    e->frame = 0; e->anim_timer = 0;
+                } else {
+                    e->state_timer = tuning->attack_cooldown;
+                }
+            }
+            update_animation(e, 0);
+            break;
+        }
+        case ENEMY_STATE_PRAY:
+        default: {
+            e->state = ENEMY_STATE_PRAY;
+            e->char_id = CHAR_EXVOTO_PRAY_STAND;
+            e->dir = dir_from_vector(player_x - e->x, player_y - e->y);   // she faces the hero while praying
+            monja_pray(e, enemies, num_enemies);
+            break;
+        }
+    }
+    (void)idx;
+}
+#endif  // ENCOUNTERS_PROTO
+
+// ---------------------------------------------------------------------------
 // El Abanderado (jefe, version minima) & cream puddles (DESIGN.md 6.10)
 // ---------------------------------------------------------------------------
 #define MAX_PUDDLES 8
@@ -1262,6 +1374,12 @@ ITCM_CODE void enemy_ai_update(Enemy *enemies, int num_enemies, fixed player_x, 
 
         if (e->state == ENEMY_STATE_DORMANT) continue;     // asleep: encounters.c wakes the whole pack
         if (e->state == ENEMY_STATE_GUARD) {               // garrison: holds its post until released
+#if ENCOUNTERS_PROTO
+            if (e->type == ENEMY_TYPE_MONJA) {             // the Monja tier prays (and heals) instead of just watching
+                update_monja(e, enemies, num_enemies, i, player_x, player_y, &g_enemy_tuning[ENEMY_TYPE_MONJA]);
+                continue;
+            }
+#endif
             update_guard(e, enemies, num_enemies, i, player_x, player_y);
             continue;
         }
@@ -1284,6 +1402,14 @@ ITCM_CODE void enemy_ai_update(Enemy *enemies, int num_enemies, fixed player_x, 
             update_exvoto(e, enemies, num_enemies, i, player_x, player_y, &g_enemy_tuning[ENEMY_TYPE_EXVOTO]);
         } else if (e->type == ENEMY_TYPE_MONAGUILLO) {
             update_exvoto(e, enemies, num_enemies, i, player_x, player_y, &g_enemy_tuning[ENEMY_TYPE_MONAGUILLO]);
+#if ENCOUNTERS_PROTO
+        } else if (e->type == ENEMY_TYPE_BEBE) {
+            update_exvoto(e, enemies, num_enemies, i, player_x, player_y, &g_enemy_tuning[ENEMY_TYPE_BEBE]);
+        } else if (e->type == ENEMY_TYPE_PARROCO) {
+            update_exvoto(e, enemies, num_enemies, i, player_x, player_y, &g_enemy_tuning[ENEMY_TYPE_PARROCO]);
+        } else if (e->type == ENEMY_TYPE_MONJA) {
+            update_monja(e, enemies, num_enemies, i, player_x, player_y, &g_enemy_tuning[ENEMY_TYPE_MONJA]);
+#endif
         } else if (e->type == ENEMY_TYPE_ABANDERADO) {
             update_abanderado(e, enemies, num_enemies, i, player_x, player_y);
         } else if (e->type == ENEMY_TYPE_CHARGER) {

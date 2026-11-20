@@ -30,8 +30,10 @@ typedef enum {
 void menu_open_title(void);
 void menu_open_pause(void);
 void menu_open_camp(void);
-/* Skill tree screen (DESIGN.md 7.3). Back (Volver or B) returns to the camp with its message kept. */
+/* Skill tree screen (DESIGN.md 7.3). Back (Volver or B) closes it; the camp scene keeps running. */
 void menu_open_tree(void);
+/* Códice (bestiary) from the camp's lectern: opens the viewer, B closes it back to the camp scene. */
+void menu_open_codex(void);
 void menu_close(void);
 /* Message line of the camp screen (e.g. the result of sleeping). Cleared by menu_open_camp(). */
 void menu_camp_message(const char *msg);

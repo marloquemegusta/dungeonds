@@ -661,6 +661,7 @@ Prueba de concepto de dos días: convertir la partida por encuentros en un Actio
 - **El remate suelta vida y maná con probabilidad** (como Doom): orbes que caen al suelo y se recogen al pasar. Es la forma principal de recuperarse.
 - **`L` mantenido:** cambia el hechizo activo entre Rayo y Maldición (si está desbloqueada).
 - **Maná:** se regenera muy despacio.
+- **Números flotantes en combate (decidido 2026-11-20, rama `proto/arpg-hud`):** cifras bitmap de `3×5` px con contorno oscuro de 1 px (sin críticos). Color en paleta apagada (§6.10): marfil cálido (daño normal al enemigo), violeta-ceniza (daño periódico / maldición), carmesí (daño recibido por el héroe), verde salvia `+N` (curación) y azul pizarra `+N` (maná). Duración ~0,55 s (33 frames) con salto parabólico y desvío lateral aleatorio para golpes directos/curación/maná, y ~0,50 s (30 frames) en subida vertical lenta para daño periódico.
 
 ### 7.3 Hechizos y árbol
 - **Rayo** (de partida): el rayo cargado actual, más débil al principio y con coste de maná.

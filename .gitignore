@@ -76,3 +76,8 @@ assets/models/environment/arenas/
 assets/sprites/levelup/
 assets/environment/cathedral/palette/*color_ds.png
 assets/environment/cathedral/palette/*color_regions.png
+
+# Tiers de Exvoto (ARPG): FBX animados derivados de build_exvoto_tier.py
+assets/models/characters/exvoto_bebe/exvoto_*.fbx
+assets/models/characters/exvoto_parroco/exvoto_*.fbx
+assets/models/characters/exvoto_monja/exvoto_*.fbx

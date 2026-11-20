@@ -18,7 +18,15 @@ ANI = os.path.join(ROOT, 'assets/models/animations/corazon')
 # empiezan en el 1; el andar original arrancaba en t = 1/30 s (fotograma 2) y el disparo en t = -1/24 s (fotograma 0).
 # Blender no exporta tiempos negativos: el disparo se exporta desde el fotograma 1 y despues se desplaza el FBX.
 CLIPS = [('walk', 'corazon_walk', 2), ('disparo', 'corazon_disparo', 0),
-         ('agachado_andar', 'corazon_agachado_andar', 1)]
+         ('agachado_andar', 'corazon_agachado_andar', 1),
+         ('punch_a', 'corazon_punch_a', 1), ('punch_b', 'corazon_punch_b', 1),
+         ('gancho', 'corazon_gancho', 1)]
+# Recorte al tramo util del combo (DESIGN.md 7.2; walkthroughs/arpg-predemo/diseno_juego_final.md 10): fotogramas
+# de la fuente a 30 fps, en coordenadas de clave del clip de Mixamo (F0 = clave 1). El clip exportado empieza en el
+# primer fotograma del tramo, asi que el lab muestrea solo el golpe y no la pose de reposo de los extremos.
+TRIM = {'punch_a': (1, 20),   # F0-F19
+        'punch_b': (3, 21),   # F2-F20
+        'gancho': (19, 43)}   # F18-F42
 # Retoque del andar agachado (procedural, tras el retarget): se baja la pelvis `drop` unidades del esqueleto (el modelo
 # mide ~82 u de alto), los pies se quedan donde estaban (IK analitica de pierna con el polo hacia delante, rodillas
 # hacia delante) y la espalda/cabeza se enderezan o inclinan: la inclinacion de Spine*, Neck y Head se multiplica por
@@ -61,7 +69,7 @@ def shift_fbx_times(path, dt):
     print('SHIFT', path, dt)
 
 
-RETARGET = ('agachado_andar',)   # clips Mixamo con otra orientacion de ejes de hueso: se retargetean por orientacion en mundo
+RETARGET = ('agachado_andar', 'punch_a', 'punch_b', 'gancho')   # clips Mixamo con otra orientacion de ejes de hueso: se retargetean por orientacion en mundo
 
 
 def _rot3(m):
@@ -193,6 +201,21 @@ def retarget_action(arm, sa, aname, level=None):
     return new_act
 
 
+def trim_action(act, ta, tb):
+    """Borra las claves fuera de [ta, tb] y desplaza las que quedan para que la primera caiga en el fotograma 1."""
+    for l in act.layers:
+        for s in l.strips:
+            for cb in s.channelbags:
+                for fc in cb.fcurves:
+                    pts = fc.keyframe_points
+                    for i in range(len(pts) - 1, -1, -1):
+                        if pts[i].co.x < ta - 0.5 or pts[i].co.x > tb + 0.5:
+                            pts.remove(pts[i], fast=True)
+                    for kp in fc.keyframe_points:
+                        kp.co.x += 1 - ta; kp.handle_left.x += 1 - ta; kp.handle_right.x += 1 - ta
+                    fc.update()
+
+
 for clip, name, start in CLIPS:
     bpy.ops.wm.read_factory_settings(use_empty=True)
     scene = bpy.context.scene
@@ -206,7 +229,10 @@ for clip, name, start in CLIPS:
     src_arm = [o for o in new if o.type == 'ARMATURE'][0]
     assert {b.name for b in src_arm.data.bones} == {b.name for b in arm.data.bones}, 'esqueletos distintos'
     act = retarget_action(arm, src_arm, clip, CLIP_LEVEL.get(name)) if clip in RETARGET else src_arm.animation_data.action
+    if clip in TRIM:
+        trim_action(act, *TRIM[clip])
     f0, f1 = int(round(act.frame_range[0])), int(round(act.frame_range[1]))
+    print('TRIM', name, '->', f0, f1)
     act.use_fake_user = True
     if src_arm.animation_data:
         src_arm.animation_data.action = None

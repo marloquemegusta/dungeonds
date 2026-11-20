@@ -67,7 +67,9 @@ class SpriteGroundAnchorTests(unittest.TestCase):
 
     def test_anchor_table_has_one_row_per_character(self):
         anchors = exported_anchors()
-        self.assertEqual(len(anchors), 10)
+        with open(ROOT / "include" / "player_sprite.h", encoding="utf-8") as fh:
+            n = int(re.search(r"#define\s+NUM_CHARACTERS\s+(\d+)", fh.read()).group(1))
+        self.assertEqual(len(anchors), n)
         self.assertTrue(all(len(row) == 8 for row in anchors))
 
 

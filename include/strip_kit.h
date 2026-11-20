@@ -52,6 +52,14 @@ enum {
     STRIP_PIECE_COUNT
 };
 
+// Placeholders of the room furniture (salas ARPG). The kit does not bake them yet: the encounters
+// composer falls back to an existing stamp (resolve_room_placeholder() in source/strip.c) while the
+// identifiers stay stable, so the graphics can be swapped later without touching the room logic.
+#define STRIP_PIECE_PUERTA 200          // upper door of every room, centred on its top line
+#define STRIP_PIECE_COFRE_CERRADO 201   // chest, alternate rooms
+#define STRIP_PIECE_COFRE_ABIERTO 202   // chest once opened
+#define STRIP_PIECE_ALTAR 203           // travel altar, every third room
+
 typedef struct {
     uint8_t w_tiles, h_tiles;     // size of the tile block
     uint8_t phase_col, phase_row; // top-left tile coordinate modulo the 16x16 floor period

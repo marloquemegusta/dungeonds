@@ -13,6 +13,8 @@ typedef struct {
     uint16_t tree;       // bitmask of bought skill-tree nodes (used later)
     uint16_t deepest;    // deepest floor reached (used later)
     uint16_t spell;      // active spell (used later)
+    uint32_t altars_lo;  // bit a = travel altar (room index / 3) touched, altars 0..31
+    uint32_t altars_hi;  // altars 32..63
 } ArpgProgress;
 
 extern ArpgProgress g_arpg;

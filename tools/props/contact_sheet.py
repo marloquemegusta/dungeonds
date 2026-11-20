@@ -11,8 +11,11 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--render", default=RENDER)
     ap.add_argument("--out", default=OUT)
+    ap.add_argument("--pieces", nargs="*", help="subset (default: all props.json)")
     args = ap.parse_args()
     order = list(json.load(open(os.path.join(ROOT, "tools/props/props.json"))))
+    if args.pieces:
+        order = [n for n in order if n in args.pieces]
 
     sheet = Image.open(os.path.join(ROOT, "assets/sprites/characters/corazon/spritesheet.png")).convert("RGBA")
     hero = sheet.crop((0, 0, 40, 40))        # row 0 = S (faces camera), col 0

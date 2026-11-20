@@ -2,6 +2,7 @@
 #include "strip_kit.h"
 #if defined(ENCOUNTERS_PROTO) && ENCOUNTERS_PROTO
 #include "encounters_act1.h"
+#include "arpg.h"
 #endif
 
 #include <string.h>
@@ -355,8 +356,40 @@ static int plan_fits(const PlanItem *acc, int n, const StripStamp *stamp, int x,
 int g_enc_last_place[STRIP_BLOCK_MAX_PIECES][4];   // host harness: piece, x_tile, y_tile, nominal x_tile (-1 = dropped)
 #endif
 
+// The upper door is baked with its own art (STRIP_PIECE_PUERTA, tools/bake_cathedral_kit.py). The
+// chests and the travel altar never go through the compositor: source/encounters_act1.c draws them as
+// software fixtures (their state changes at run time), so these mappings survive only as a fallback
+// should a plant ever list them.
+static uint8_t resolve_room_placeholder(uint8_t piece) {
+    switch (piece) {
+    case STRIP_PIECE_COFRE_CERRADO:  return STRIP_PIECE_RELICARIO;
+    case STRIP_PIECE_COFRE_ABIERTO:  return STRIP_PIECE_RELICARIO;
+    case STRIP_PIECE_ALTAR:          return STRIP_PIECE_SANTO;
+    default:                         return piece;
+    }
+}
+
+// Central aisle of a room: the door line the hero walks between rooms. A blocking prop whose
+// footprint would stand there is not placed, so every room can be crossed straight from its bottom
+// to its upper door (the door placeholder itself is exempt: its collision is cleared separately).
+static int stamp_blocks_aisle(const StripStamp *st, int x_tile) {
+    if (st->foot_value == 0 || !st->num_foot_runs) return 0;
+    int lo = 0x7fffffff, hi = -0x7fffffff;
+    for (unsigned i = 0; i < st->num_foot_runs; i++) {
+        const StripFootprintRun *run = &st->foot_runs[i];
+        const int a = x_tile * 8 + (int)run->x_cell * 4;
+        const int b = a + (int)run->length_cells * 4;
+        if (a < lo) lo = a;
+        if (b > hi) hi = b;
+    }
+    const int c0 = ENC_FLOOR_X + ENC_FLOOR_W / 2 - 16;
+    const int c1 = ENC_FLOOR_X + ENC_FLOOR_W / 2 + 16;
+    return hi > c0 && lo < c1;
+}
+
 static void enc_place_piece(PlanItem *acc, int *n, const EncPiecePlan *p) {
-    const StripStamp *any = first_stamp_of(p->piece);
+    uint8_t piece = resolve_room_placeholder(p->piece);
+    const StripStamp *any = first_stamp_of(piece);
     if (!any || *n >= STRIP_BLOCK_MAX_PIECES) return;
     int w_px = (int)any->w_tiles * 8;
     int nominal_px = p->mirror ? ENC_FLOOR_X + ENC_FLOOR_W - (p->lx + w_px) : ENC_FLOOR_X + p->lx;
@@ -366,12 +399,13 @@ static void enc_place_piece(PlanItem *acc, int *n, const EncPiecePlan *p) {
     int bx = 0, by = 0, best_cost = 0x7fffffff;
     for (int i = 0; i < (int)g_strip_kit.num_stamps; i++) {
         const StripStamp *stamp = &g_strip_kit.stamps[i];
-        if (stamp->piece_id != p->piece) continue;
+        if (stamp->piece_id != piece) continue;
         int x_lo = tx - ((tx - (int)stamp->phase_col) & 15);
         int y_lo = ty - ((ty - (int)stamp->phase_row) & 15);
         for (int ix = 0; ix < 2; ix++) {
             for (int iy = 0; iy < 2; iy++) {
                 int x = x_lo + 16 * ix, y = y_lo + 16 * iy;
+                if (p->piece != STRIP_PIECE_PUERTA && stamp_blocks_aisle(stamp, x)) continue;
                 if (!plan_fits(acc, *n, stamp, x, y)) continue;
                 int cost = (x - tx) * (x - tx) + (y - ty) * (y - ty);
                 if (cost < best_cost) { best_cost = cost; best = stamp; bx = x; by = y; }
@@ -395,7 +429,7 @@ static void enc_place_piece(PlanItem *acc, int *n, const EncPiecePlan *p) {
     acc[*n].stamp = best;
     acc[*n].x = bx;
     acc[*n].y = by;
-    acc[*n].piece_id = p->piece;
+    acc[*n].piece_id = piece;
     acc[*n].cat = p->piece == STRIP_PIECE_VELA ? PLAN_CAT_VEL : PLAN_CAT_STRUCT;
     (*n)++;
 }
@@ -670,6 +704,46 @@ static void band_apply_rects(const BandSink *sink, int32_t band, int collision_r
             unsigned cell_y = (unsigned)(collision_row + (py - y0) / COLLISION_SCALE);
             for (int px = rects[i].x; px < rects[i].x + rects[i].w; px += COLLISION_SCALE)
                 packed_set_cell(sink->collision, cell_y, (unsigned)(px / COLLISION_SCALE), value);
+        }
+    }
+}
+
+// Lateral openings of every room that reaches the window: their wall tiles go black and their
+// collision cells are freed. It runs after enforce_hard_edges()/enforce_edges_in(), which is what
+// re-imposes the side walls on every commit and would otherwise close them again. Deterministic per
+// block, so the same call after a rebase (with the new shift) reproduces them.
+static void apply_room_openings(uint16_t *map, uint8_t *collision, int32_t shift) {
+    // -128..8 covers every block of the act (the first block is 3, or 7 with start_boss; the last
+    // room sits ~100 blocks above it). enc_room_opening() drops the blocks that are not rooms.
+    for (int block = -128; block <= 8; block++) {
+        EncRoomOpening op;
+        if (!enc_room_opening(block, &op)) continue;
+        const int top = block * ENC_BLOCK_H + shift;
+        if (top + ENC_BLOCK_H <= 0 || top >= STRIP_WIN_H_PX) continue;
+        const int y0 = top + op.y;
+        const int tx0 = op.x / 8, tx1 = (op.x + op.w) / 8;
+        for (int py = y0; py < y0 + op.h; py++) {
+            if (py < 0 || py >= STRIP_WIN_H_PX - COLLISION_SCALE) continue;
+            uint16_t *row = map + (unsigned)(py / 8) * STRIP_W_TILES;
+            for (int tx = tx0; tx < tx1; tx++)
+                if (tx >= 0 && tx < STRIP_W_TILES) row[tx] = 0;      // blank tile: the void behind the wall
+        }
+        for (int py = y0; py < y0 + op.h; py += COLLISION_SCALE) {
+            if (py < 0 || py >= STRIP_COLLISION_H * COLLISION_SCALE - COLLISION_SCALE) continue;
+            for (int px = op.x; px < op.x + op.w; px += COLLISION_SCALE)
+                packed_set_cell(collision, (unsigned)(py / COLLISION_SCALE),
+                                (unsigned)(px / COLLISION_SCALE), 0);
+        }
+        // Upper door: the baked door is solid (its stone frame has a footprint), but its crossing is a
+        // threshold. Clear the strip under the door art (the full sprite width, centred on the axis) so
+        // the hero can reach the trigger line and step through.
+        const int dc0 = ENC_FLOOR_X + ENC_FLOOR_W / 2 - ARPG_ROOM_DOOR_ART_W_PX / 2;
+        const int dc1 = ENC_FLOOR_X + ENC_FLOOR_W / 2 + ARPG_ROOM_DOOR_ART_W_PX / 2;
+        for (int py = top; py < top + 120; py += COLLISION_SCALE) {
+            if (py < 0 || py >= STRIP_COLLISION_H * COLLISION_SCALE - COLLISION_SCALE) continue;
+            for (int px = dc0; px < dc1; px += COLLISION_SCALE)
+                packed_set_cell(collision, (unsigned)(py / COLLISION_SCALE),
+                                (unsigned)(px / COLLISION_SCALE), 0);
         }
     }
 }
@@ -1123,6 +1197,9 @@ static int commit_prepared(void) {
 
     s_next_band += STRIP_PREP_STAGE_BANDS;
     s_shift_total_px += STRIP_SHIFT_PX;
+#if ENCOUNTERS_PROTO
+    apply_room_openings(s_map, s_collision, s_shift_total_px);   // the walls of the fresh window do not re-close the openings
+#endif
     s_prep_steps_last = s_prep_steps;
     s_prep_phase = PREP_IDLE;
     return STRIP_SHIFT_PX;
@@ -1188,6 +1265,9 @@ void strip_start(uint32_t seed) {
     }
     rebuild_occlusion_index();
     enforce_hard_edges(STRIP_COLLISION_H);
+#if ENCOUNTERS_PROTO
+    apply_room_openings(s_map, s_collision, 0);
+#endif
     s_arena.num_tiles = g_strip_kit.num_tiles;
     s_arena.palette = g_strip_kit.palette;
     s_arena.tiles = g_strip_kit.tiles;

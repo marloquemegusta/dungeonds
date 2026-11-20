@@ -21,6 +21,9 @@ void curse_update(Enemy *enemies, int max_enemies);
 // Non-zero when a world ground point lies inside any live zone.
 int curse_point_in_zone(int x, int y);
 
+// % of speed a live (already armed) Glifo removes from a world ground point; 0 outside or still arming.
+int curse_slow_percent_at(int x, int y);
+
 void curse_render_floor(uint16_t *buffer, int cam_x, int cam_y);   // zones and aim ring: under the actors
 void curse_render(uint16_t *buffer, int cam_x, int cam_y);         // flying projectiles: over the actors
 

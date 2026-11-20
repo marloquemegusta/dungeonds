@@ -19,6 +19,9 @@ typedef enum {
     ENEMY_TYPE_EXVOTO,      // wax nun: slow melee mass (DESIGN.md 6.10); replaces the skeleton. Prays, wakes, then the old skeleton AI
     ENEMY_TYPE_ABANDERADO,  // Boss (minimal v1): patrols, points banner, summons cream puddles + monaguillos
     ENEMY_TYPE_MONAGUILLO,  // Exvoto variant summoned by Abanderado: 1-hit, slow prayer-walk, emerges from puddle
+    ENEMY_TYPE_BEBE,        // Exvoto tier: swarm, dies in one hit, a bit faster than the base (v3 tiers)
+    ENEMY_TYPE_PARROCO,     // Exvoto tier: melee tank, x4 life, hits harder and shoves the hero (v3 tiers)
+    ENEMY_TYPE_MONJA,       // Exvoto tier: support, stays behind praying and heals nearby Exvotos (v3 tiers)
     NUM_ENEMY_TYPES
 } EnemyType;
 
@@ -86,6 +89,11 @@ static inline int enemy_type_char_id(EnemyType type) {
     if (type == ENEMY_TYPE_EXVOTO) return CHAR_EXVOTO;     // base walk slot; a praying Exvoto swaps char_id per pose
     if (type == ENEMY_TYPE_ABANDERADO) return CHAR_ABANDERADO;
     if (type == ENEMY_TYPE_MONAGUILLO) return CHAR_MONAGUILLO;
+    // Exvoto tiers: only the Bebé has its own baked sheet; the Párroco and the Monja borrow the Exvoto slot
+    // (their own sheets do not fit in EWRAM yet, see TECHNICAL.md). A praying Monja swaps to the pray slot.
+    if (type == ENEMY_TYPE_BEBE) return CHAR_EXVOTO_BEBE;
+    if (type == ENEMY_TYPE_PARROCO) return CHAR_EXVOTO;
+    if (type == ENEMY_TYPE_MONJA) return CHAR_EXVOTO;
     return CHAR_CHARGER;
 }
 
@@ -330,6 +338,12 @@ int player_take_hit(PlayerState *player);
  * Initializes the player for a new arena: full health, sacred ray, no i-frames.
  */
 void player_state_init(PlayerState *player);
+
+// Párroco tier shove (v3): the hero is pushed this 8.8 velocity for `frames` frames (ground metric). No-op if already pushing.
+void player_apply_push(fixed vx, fixed vy, int frames);
+// The shove state lives outside PlayerState (its layout is fixed by the scenarios): read it here, and spend one
+// frame (decrements the counter and eases the velocity). Returns 1 while a shove is active this frame.
+int player_push_step(fixed *out_vx, fixed *out_vy);
 
 // ---------------------------------------------------------------------------
 // 4. Deterministic Integer RNG (LCG)

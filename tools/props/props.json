@@ -21,5 +21,13 @@
   "lapida_cruz2_h": {"fbx": "lapida_cruz_v2.fbx", "yaw": 45, "pitch": -90, "target_width": 64, "top_only": true},
   "lapida_cruz2_v": {"fbx": "lapida_cruz_v2.fbx", "yaw": -45, "pitch": -90, "target_width": 53, "top_only": true},
   "lapida_caballero2_h": {"fbx": "lapida_caballero_v2.fbx", "yaw": 45, "pitch": -90, "target_width": 64, "top_only": true, "align_slab": true, "slab_turn": 90},
-  "lapida_caballero2_v": {"fbx": "lapida_caballero_v2.fbx", "yaw": -45, "pitch": -90, "target_width": 44, "top_only": true, "align_slab": true, "slab_turn": 90}
+  "lapida_caballero2_v": {"fbx": "lapida_caballero_v2.fbx", "yaw": -45, "pitch": -90, "target_width": 44, "top_only": true, "align_slab": true, "slab_turn": 90},
+  "puerta":        {"fbx": "tripo_convert_f4a93d19-f59e-4be2-b100-a5ad6d792ac3.fbx", "yaw": 45, "target_width": 54, "footprint_from": "depth", "shadow_elevation": 20},
+  "cofre_cerrado": {"fbx": "tripo_convert_efcc7983-587f-4c27-82b6-dc759f6e3036.fbx", "yaw": 45, "target_width": 18, "footprint_from": "depth", "shadow_elevation": 45},
+  "cofre_abierto": {"fbx": "tripo_convert_dcd534cc-e823-4440-94fa-4c6db10cc6df.fbx", "yaw": 45, "target_width": 18, "footprint_from": "depth", "shadow_elevation": 45},
+  "altar":         {"fbx": "tripo_convert_cfd253e4-4aee-40f6-a954-25bb9feb0bf0.fbx", "yaw": 45, "target_width": 16, "footprint_from": "depth", "shadow_elevation": 45},
+  "camp_mesa":     {"fbx": "tripo_convert_49adda99-b24d-4830-a423-f38e78f54c85.fbx", "yaw": 45, "target_width": 26, "footprint_from": "depth", "shadow_elevation": 45},
+  "camp_jergon":   {"fbx": "tripo_convert_8cc28e31-e80b-4999-aaca-2d68a8277f62.fbx", "yaw": 45, "target_width": 36, "footprint_from": "depth", "shadow_elevation": 45},
+  "camp_atril":    {"fbx": "tripo_convert_b2e93f3e-49ed-4d09-a45b-fd61ace73232.fbx", "yaw": 45, "target_width": 13, "footprint_from": "depth", "shadow_elevation": 40},
+  "camp_hoguera":  {"fbx": "tripo_convert_701a10ac-86df-4af2-bad9-b20c4f78be71.fbx", "yaw": 0, "target_width": 18, "footprint_from": "depth", "shadow_elevation": 45}
 }

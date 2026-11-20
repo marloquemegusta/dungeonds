@@ -160,3 +160,20 @@ P = protodemo, F = juego final. De todos puede prepararse un borrador para corre
 | Pociones: se beben tocando el orbe con el lápiz | **Sí** [DECIDIDO] |
 | Nigromancia en la protodemo | **Después**: la protodemo lleva Rayo, Ejecución y Glifos |
 | Tres dificultades (Normal, Pesadilla, Infierno) en el juego final | **Sí** [DECIDIDO] |
+
+## 10. Cerrado para la protodemo (2026-11-20, segunda tanda)
+Detalle con mapa y tablas: [`propuestas_protodemo.html`](propuestas_protodemo.html) (v3). Sustituye a lo de arriba que lo contradiga.
+- **Combo de puñetazos** [DECIDIDO]: `L` corto encadena directo → cruzado → gancho (Mixamo «Punching», «Punching (1)», «Hook Punch»), daño 50 · 50 · 90; el gancho empuja. Si hay un tambaleante al alcance, `L` ejecuta.
+- **Tambaleo solo por vida baja** [DECIDIDO]: ningún golpe tambalea por sí solo; un enemigo se tambalea al quedarle un 25 % de vida o menos, le dé lo que le dé.
+- **Esqueleto de la zona 1** [DECIDIDO, primera versión]: el del mapa v3 (3 naves de 8-10 pantallas, 4 galerías, 2 capillas, cripta; llave en la capilla de la Nave 3 que abre la capilla cerrada de la Nave 2; enlace de la galería del minijefe a la Nave 3; atajo de la Nave 3 a la Nave 1).
+- **Capillas** [DECIDIDO]: salas laterales cuya puerta se convierte en reja al entrar y se abre al limpiar. Las naves no llevan rejas.
+- **Sin propiedades de élite** [DECIDIDO]: los élites son tiers de Exvoto: bebé (enjambre), Exvoto (base), Párroco (tanque, ×4 de vida) y Monja (apoyo que cura rezando). Tiers del Ojo, más adelante.
+- **Grupos tipo** [DECIDIDO]: 10 grupos de 4 a 12 enemigos (el doble de la primera propuesta); un grupo cada pantalla y media; como mucho 2 despiertos a la vez (~24 enemigos, a medir en la DS).
+- **Reliquias** [DECIDIDO]: todo el botín son reliquias que van en un hueco de hechizo (Rayo, Ejecución, Glifo) o del pecho; traen stats de ese hechizo y, desde rara, un aura con su número. Auras de la protodemo: Lanza y Llama Votiva (Rayo), Viático y Estallido (Ejecución), Quemadura, Juicio y Marca (Glifo). Descartadas: Reflejo y Fervor; Prisa y Glifo mayor pasan a ser stats.
+- **Rarezas, huecos, bolsa y premios** [DECIDIDO]: como en la v3 (común 1 stat … legendaria aura única; huecos que abren los niveles 2, 4, 6, 8 y 10; bolsa de 16; los cofres no se rellenan al dormir).
+- **Puertas** [DECIDIDO 2026-11-20]: la **lateral** no es un modelo (por la perspectiva no se vería): es un **hueco negro en el muro**, un trozo de pared que falta; al cruzarlo, fundido a negro y apareces en la otra sala. La **superior** es el modelo de puerta de Tripo escalado para **sustituir a un bloque de pared** del muro del fondo, encajando como uno más.
+- **Altar y cofres** [primera versión]: modelos de Tripo del usuario (altar, cofre cerrado, cofre abierto). El cofre se abre al tocarlo y cambia al modelo abierto; el altar se enciende al pasar junto a él y queda tocado.
+- **Campamento** [DECIDIDO]: es un **escenario propio**, como la catedral: con sus tiles de suelo y sus props. Se diseña aparte; los props de la lista anterior quedan en suspenso hasta entonces.
+- **Estatuas = santuarios** [DECIDIDO 2026-11-20]: las estatuas de santo de la catedral hacen de santuario (§6: efecto temporal al tocarlas). El altar de viaje es el modelo de altar de Tripo.
+- **Lápidas con lore** [DECIDIDO, más adelante]: las lápidas del suelo serán legibles y contarán lore; no entra en la protodemo.
+- **Curva de dificultad del inicio** [DECIDIDO 2026-11-20]: los primeros minutos tienen que sentirse como Diablo: machacar enemigos débiles. Salas 1-4: solo Bebés y Exvotos, y desde la sala 3 alguna sala suelta (1 de cada 3) con un único Ojo o Cireneo. Párroco y Monja desde la sala 5. Desde la sala 8, hasta 2 Ojos o Cireneos por grupo. Cifras provisionales; se ajustan jugando.

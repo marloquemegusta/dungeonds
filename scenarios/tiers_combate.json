@@ -1,0 +1,42 @@
+{
+  "name": "tiers_combate",
+  "description": "Exvotos por tier en combate: pide a la ROM un Bebe, un Parroco y una Monja rezando, heridos, alrededor del heroe; capturas de la Monja curando (numeros verdes) y del Parroco empujando. Solo evidencia.",
+  "suite": false,
+  "evidence_only": true,
+  "steps": [
+    { "frames": 60 },
+    { "tap": { "x": 128, "y": 66 }, "frames": 6 },
+    { "release": true, "frames": 40 },
+    { "button_down": "START", "frames": 4 },
+    { "button_up": "START", "frames": 40 },
+    { "tap": { "x": 128, "y": 155 }, "frames": 6 },
+    { "release": true, "frames": 60 },
+    { "poke": [{ "field": "god", "value": 1 }], "frames": 2 },
+    { "button_down": "UP", "frames": 620 },
+    { "button_up": "UP", "frames": 30, "capture": "tiers_00_llegada" },
+
+    { "poke": [{ "field": "tier_spawn", "value": 1 }], "frames": 8, "capture": "tiers_01_grupo" },
+    { "frames": 14, "capture": "tiers_02_monja_curando" },
+    { "frames": 20, "capture": "tiers_03_monja_curando" },
+    { "frames": 20, "capture": "tiers_04_heal" },
+    { "frames": 20, "capture": "tiers_05_heal" },
+
+    { "tap": { "x": 128, "y": 120 }, "frames": 6 },
+    { "release": true, "frames": 24, "capture": "tiers_06_rayo" },
+    { "frames": 40, "capture": "tiers_07_combate" },
+    { "frames": 40, "capture": "tiers_08_parroco" },
+    { "frames": 60, "capture": "tiers_09_combate" }
+  ],
+  "state": {
+    "elf": "../.ds-game-dev/build/out/dungeonds.elf",
+    "symbols": {
+      "gps": "g_player_state",
+      "tiers": "g_tier_debug"
+    },
+    "default_symbol": "gps",
+    "fields": {
+      "god": { "symbol": "gps", "offset": 20, "type": "s32" },
+      "tier_spawn": { "symbol": "tiers", "offset": 0, "type": "u8" }
+    }
+  }
+}

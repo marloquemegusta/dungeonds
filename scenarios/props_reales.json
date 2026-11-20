@@ -1,0 +1,56 @@
+{
+  "name": "props_reales",
+  "description": "Props reales de las salas. El heroe se situa por el atajo de grabacion (start_up4 + restart) al pie de la sala 1 (cofre) y de la sala 2 (altar), y la camara de depuracion encuadra el prop. Los estados se fuerzan por poke. Solo evidencia.",
+  "suite": false,
+  "evidence_only": true,
+  "state": {
+    "elf": "../.ds-game-dev/build/out/dungeonds.elf",
+    "symbols": {
+      "dbg": "g_enc_debug",
+      "nav": "g_nav_state",
+      "strip": "g_strip_debug",
+      "rt": "s_rt"
+    },
+    "default_symbol": "dbg",
+    "fields": {
+      "dbg_god": { "symbol": "dbg", "offset": 2, "type": "u8" },
+      "restart": { "symbol": "dbg", "offset": 12, "type": "u8" },
+      "cam_up": { "symbol": "dbg", "offset": 13, "type": "u8" },
+      "start_up4": { "symbol": "dbg", "offset": 17, "type": "u8" },
+      "height": { "symbol": "strip", "offset": 0, "type": "s32" },
+      "chest1": { "symbol": "rt", "offset": 20, "type": "u8" },
+      "altar2": { "symbol": "rt", "offset": 32, "type": "u8" }
+    }
+  },
+  "steps": [
+    { "frames": 60 },
+    { "tap": { "x": 128, "y": 66 }, "frames": 6 },
+    { "release": true, "frames": 40 },
+    { "button_down": "START", "frames": 4 },
+    { "button_up": "START", "frames": 40 },
+    { "tap": { "x": 128, "y": 155 }, "frames": 6 },
+    { "release": true, "frames": 60 },
+    { "poke": [ { "field": "dbg_god", "value": 1 } ], "frames": 2 },
+
+    { "poke": [ { "field": "cam_up", "value": 24 } ], "frames": 6,
+      "capture": "props_reales_puerta", "state_capture": "puerta" },
+
+    { "poke": [ { "field": "start_up4", "value": 100 }, { "field": "restart", "value": 1 } ],
+      "frames": 90 },
+    { "poke": [ { "field": "dbg_god", "value": 1 }, { "field": "cam_up", "value": 150 } ], "frames": 8,
+      "capture": "props_reales_cofre_cerrado", "state_capture": "cofre_cerrado" },
+
+    { "poke": [ { "field": "chest1", "value": 1 } ], "frames": 6,
+      "capture": "props_reales_cofre_abierto", "state_capture": "cofre_abierto" },
+
+    { "poke": [ { "field": "start_up4", "value": 196 }, { "field": "restart", "value": 1 } ],
+      "frames": 90 },
+    { "poke": [ { "field": "dbg_god", "value": 1 }, { "field": "cam_up", "value": 90 } ], "frames": 8,
+      "capture": "props_reales_altar", "state_capture": "altar" },
+
+    { "poke": [ { "field": "altar2", "value": 1 } ], "frames": 6,
+      "capture": "props_reales_altar_encendido", "state_capture": "altar_encendido" },
+
+    { "frames": 2 }
+  ]
+}
