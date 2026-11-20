@@ -24,7 +24,7 @@ VOICE_ID = "5egO01tkUjEzu7xSSE8M"
 MODEL_ID = "eleven_multilingual_v2"
 STABILITY, SIMILARITY, STYLE, SPEED = "0.28", "0.80", "0.60", "1.0"
 
-CHAR_SPEED = {"íñigo": "0.8"}   # voces de personaje mas lentas y solemnes (velocidad ElevenLabs, 0.7-1.2)
+CHAR_SPEED = {"íñigo": "0.8", "bartolomé": "0.8"}   # voces de personaje mas lentas y solemnes (velocidad ElevenLabs, 0.7-1.2)
 CHAR_SETTINGS = ("0.65", "0.85", "0.15", "1.0")   # estable: con mas emocion la voz pierde el acento y alarga palabras
 DIRS = ["S", "SW", "W", "NW", "N", "NE", "E", "SE"]
 DIR_INDEX = {d: i for i, d in enumerate(DIRS)}  # file prefix index
@@ -187,9 +187,17 @@ def parse_stage(inner):
     """Contenido de [..]: fichas separadas por ' · ' (ver la leyenda de `assets/videos/guiones/lote-01.md`). Devuelve el plano o sale con error."""
     st = {"cerca": False, "dir": None, "all": None, "A": None, "B": None, "staged": False, "lejos": False, "paso": None,
           "bancos": None, "columnas": None, "general": False, "lapidas": False, "pasa": None, "props": [],
-          "alejar": False, "multitud": 0, "entero": False, "medio": False, "sigue": False, "altar": None, "solemne": False}
+          "alejar": False, "multitud": 0, "entero": False, "medio": False, "sigue": False, "altar": None, "solemne": False, "sfx": None, "negro": False}
     for tok in [t.strip() for t in inner.split("·") if t.strip()]:
+        if tok.lower().startswith("sfx "):   # `sfx <archivo.wav>`: efecto que suena al inicio de la frase (ruta relativa a la raiz)
+            st["sfx"] = tok[4:].strip()
+            if st["sfx"].lower().endswith(" fin"):   # `sfx <archivo> fin`: suena al acabar la frase, y el plano espera a que termine
+                st["sfx"], st["sfx_fin"] = st["sfx"][:-4].strip(), True
+            continue
         n = norm_tok(tok)
+        if n == "negro":   # plano en negro (solo cabecera y subtitulos): para contar con sonido lo que no se ensena
+            st["negro"] = True
+            continue
         if n in ("bancos", "bancos volcados", "bancos en fila"):
             st["bancos"] = {"bancos": "mixto", "bancos volcados": "volcados", "bancos en fila": "fila"}[n]
             continue
@@ -346,7 +354,12 @@ def anim_dir(anim):
 
 
 def dir_gif(anim, d):
-    return os.path.join(anim_dir(anim), f"{DIR_INDEX[d]}_{d}.gif")
+    p = os.path.join(anim_dir(anim), f"{DIR_INDEX[d]}_{d}.gif")
+    if not os.path.exists(p):
+        have = sorted(f[2:-4] for f in os.listdir(anim_dir(anim))) if os.path.isdir(anim_dir(anim)) else []
+        raise SystemExit(f"Falta la direccion {d} de la animacion '{anim}' (renderizada con --dirs?). "
+                         f"Disponibles: {', '.join(have) or 'ninguna'}. Re-renderiza ese clip incluyendo {d}.")
+    return p
 
 
 def apply_mods(frames, durs, mods):
@@ -699,6 +712,8 @@ def build_staged_shot(part, st, dur, dst):
         top = min(b[1] for b in bbs)
         if st["cerca"] and not st["alejar"]:        # primer plano: que quepa entero (nada de cabezas cortadas)
             fit = 0.9 * H / ((feet - top) * 160.0 / cell)
+            bw = 2 * max(max(abs(b[0] - cell / 2), abs(b[2] - cell / 2)) for b in bbs)   # (se centra en la celda) tambien a lo ancho (la cruz tumbada es mas ancha que alta)
+            fit = min(fit, 0.92 * W / (bw * 160.0 / cell))
             unit = fit if st["entero"] else min(unit, fit)   # entero: la mayor escala que quepa
         scale = unit * 160.0 / cell                 # px de pantalla por px de celda
         halfw = max(max(abs(b[0] - cell / 2), abs(b[2] - cell / 2)) for b in bbs) * scale
@@ -722,6 +737,8 @@ def build_staged_shot(part, st, dur, dst):
         y_def = MEDIO_TOP * H + f0["height"]       # cabeza arriba, cintura en el borde inferior
     if st["cerca"] and not st["alejar"]:
         y_def = (H + figs[0]["height"]) / 2 + 0.04 * H   # primer plano centrado en vertical
+        if any(n == "cruz_suelo" for n, _ in st["props"]):
+            y_def -= 0.12 * H   # deja sitio abajo para la cruz tumbada a sus pies
     group = [f for f in figs if f["grouped"] and f["spec"]["motion"]]
     gw = max([f["halfw"] + abs(f["off"]) for f in group] or [0])
     gh = max([f["height"] for f in group] or [0])
@@ -827,7 +844,7 @@ def build_staged_shot(part, st, dur, dst):
             elif d0 == "W":
                 x, fy = hx - 0.45 * Hh, hfeet
             else:
-                x, fy = hx, hfeet + 0.12 * Hh
+                x, fy = hx, hfeet + (0.30 if name == "cruz_suelo" else 0.12) * Hh   # la cruz tumbada queda a los pies, sin tapar rodillas
         else:
             x, fy = {"detras": (hx, hfeet - 0.35 * Hh), "izq": (hx - dx, hfeet)}.get(pos, (hx + dx, hfeet))
         statics.append((name, min(max(x, pd["w"] / 2 + 10), W - pd["w"] / 2 - 10), min(fy, H - 8), 1))
@@ -1323,10 +1340,17 @@ def render_video(video, prefijo, sin_voz, md_dir, voices, estilo=None, tiras_dir
     wavs.append(lead)
     k = 0
     phrase_start = {}
+    sfx_events = []   # (segundo de inicio, ruta) de las fichas `sfx`
     for i, p in enumerate(parts):
         n = len(p["phrases"])
         for j, ph in enumerate(p["phrases"]):
             phrase_start[(i, j)] = 0.0 if (i, j) == (0, 0) else t
+            sfx_fin = None
+            if ph.get("stage") and ph["stage"].get("sfx"):
+                if ph["stage"].get("sfx_fin"):
+                    sfx_fin = os.path.join(ROOT, ph["stage"]["sfx"])
+                else:
+                    sfx_events.append((t, os.path.join(ROOT, ph["stage"]["sfx"])))
             text = sin_pausas(ph["text"])  # subtitulos: nunca se ve (pausa N)
             is_q = bool(ph["voices"])
             src, dur = phrase_audio(ph, sin_voz, wdir, k, voices)
@@ -1339,6 +1363,9 @@ def render_video(video, prefijo, sin_voz, md_dir, voices, estilo=None, tiras_dir
                 pause = 0.9
             else:
                 pause = PAUSE_PART if j == n - 1 else PAUSE_PHRASE
+            if sfx_fin:   # el efecto entra tras la voz; la pausa se alarga para que suene entero antes de la frase siguiente
+                sfx_events.append((t + dur + 0.15, sfx_fin))
+                pause = max(pause, 0.15 + get_duration(sfx_fin) + 0.3)
             seg_start.setdefault(i, t)
             chunks = split_subs(text)
             if is_q:
@@ -1416,7 +1443,11 @@ def render_video(video, prefijo, sin_voz, md_dir, voices, estilo=None, tiras_dir
                     plano_dur = (phrase_start[(i, k)] if k < nph else part_end) - st
                 else:
                     plano_dur = en - st
-                if staged and stg["multitud"]:
+                if stg and stg["negro"]:
+                    staged = False
+                    run(["ffmpeg", "-y", "-f", "lavfi", "-i", f"color=c=black:s=840x840:r={FPS}:d={en - st:.3f}",
+                         "-c:v", "ffv1", "-pix_fmt", "rgb24", os.path.join(wdir, fn), "-loglevel", "error"])
+                elif staged and stg["multitud"]:
                     build_crowd_shot(p, stg, en - st, os.path.join(wdir, fn))
                 elif staged:
                     build_staged_shot(p, stg, plano_dur, os.path.join(wdir, fn))
@@ -1477,7 +1508,8 @@ def render_video(video, prefijo, sin_voz, md_dir, voices, estilo=None, tiras_dir
         p, d = sg["p"], sg["d"]
         # el primer plano entra sin fundido: un primer fotograma negro hace que la gente pase el vídeo;
         # los cortes dentro de una parte son corte seco
-        fade = "" if (p is first_part or not sg["first"] or sg.get("nofade")) else "fade=t=in:st=0:d=0.35,"
+        # los cortes (planos de la parte `cortes`) entran en seco: un fundido desde negro dejaba un fotograma negro entre partes
+        fade = "" if (p is first_part or not sg["first"] or sg.get("nofade") or sg["cut"]) else "fade=t=in:st=0:d=0.35,"
         pq = bool(sg.get("pq"))
         if p["type"] == "char":
             sc = ("scale=1080:840:flags=neighbor,pad=1080:1920:0:340:black" if sg.get("wide", p.get("anim_b"))
@@ -1509,11 +1541,16 @@ def render_video(video, prefijo, sin_voz, md_dir, voices, estilo=None, tiras_dir
     n = len(segments)
     vlabels = "".join(f"[v{i}]" for i in range(n))
     a_vo, a_bg = n, n + 1
+    # sfx: cada efecto entra en su segundo (adelay) a volumen moderado y se suma a la voz y la musica
+    sfx_chain = "".join(f"[{a_bg + 1 + k}:a]aresample=44100,volume=0.8,adelay={int(round(s * 1000))}:all=1[s{k}];\n"
+                        for k, (s, _) in enumerate(sfx_events))
+    sfx_in = "".join(f"[s{k}]" for k in range(len(sfx_events)))
     fc = ";\n".join(chains) + (
         f";\n{vlabels}concat=n={n}:v=1:a=0,ass='subtitles.ass',format=yuv420p[vout];\n"
         f"[{a_vo}:a]volume=1.15[vo];\n"
         f"[{a_bg}:a]volume=0.09,afade=t=in:st=0:d=1.5,afade=t=out:st={max(0.1, total_dur - 2.5):.3f}:d=2.5[bg];\n"
-        f"[vo][bg]amix=inputs=2:duration=first:normalize=0,atrim=0:{total_dur:.3f}[aout]")
+        f"{sfx_chain}"
+        f"[vo][bg]{sfx_in}amix=inputs={2 + len(sfx_events)}:duration=first:normalize=0,atrim=0:{total_dur:.3f}[aout]")
     with open(os.path.join(wdir, "filter.txt"), "w", encoding="utf-8") as f:
         f.write(fc)
 
@@ -1527,8 +1564,10 @@ def render_video(video, prefijo, sin_voz, md_dir, voices, estilo=None, tiras_dir
             cmd += ["-i", sg["fn"]]
         else:
             cmd += (["-loop", "1"] if sg["still"] else ["-ignore_loop", "1" if once else "0"]) + ["-i", sg["fn"]]
-    cmd += ["-i", "vo_full.wav", "-stream_loop", "-1", "-i", BGM,
-            "-filter_complex_script", "filter.txt", "-map", "[vout]", "-map", "[aout]",
+    cmd += ["-i", "vo_full.wav", "-stream_loop", "-1", "-i", BGM]
+    for _, path in sfx_events:
+        cmd += ["-i", path]
+    cmd += ["-filter_complex_script", "filter.txt", "-map", "[vout]", "-map", "[aout]",
             "-c:v", "libx264", "-preset", "medium", "-crf", "18", "-c:a", "aac", "-b:a", "192k",
             "-t", f"{total_dur:.3f}", mp4]
     run(cmd, cwd=wdir)

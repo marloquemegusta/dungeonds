@@ -47,6 +47,7 @@ Todo asset que use el juego está en este catálogo y versionado. Lo que no est�
 | Música | `assets/music/*.wav` | conversión a `nitrofiles/bgm.raw` | `nitrofiles/bgm.raw` | git |
 | Icono de la ROM | `assets/icon.png` | toolchain | banner de la ROM | git |
 | Vídeos de redes | skill `codice-lore-video` | `render_guiones.py` | no van en la ROM | LFS (`assets/videos/*.mp4`) |
+| Sonidos y citas grabadas de los vídeos | ElevenLabs (efectos y tomas elegidas por el usuario) | a mano; ver la skill | no van en la ROM | git normal (`assets/videos/sfx/`, `assets/videos/voces/`) |
 
 ## 2. Personajes: de qué sale cada sprite
 
@@ -69,6 +70,7 @@ Esta tabla es la única fuente de verdad de qué modelo y qué animación produc
 | `CHAR_ABANDERADO`: andar | `abanderado` (60) | cuerpo `abanderado/source/…6e3a96b5`, estandarte `source/estandarte/…989b9291` | `walk/sad_walk.fbx` | `build_abanderado.py` |
 | `CHAR_ABANDERADO`: señalar | `abanderado_point` (60) | el mismo | pose generada en el script | `build_abanderado.py` |
 | Vídeo de lore 07 (Lope): `abanderado_derrota` (sprite 320, `assets/sprites/bestiary/abanderado_derrota/`) | el mismo cuerpo y estandarte | `animations/derrota/plant_a_plant.fbx` (Mixamo «Plant A Plant», espejado; golpes procedurales) | `build_abanderado_derrota.py` |
+| Vídeo de lore 04 (Liebre): `cireneo_sincruz_triste` y `cireneo_sincruz_run` (160, `assets/sprites/bestiary/`) | Cireneo sin cruz (`cireneo/source/…cd715dbe`) | `idle/sad_idle.fbx` y `walk/fast_run.fbx` (Mixamo tal cual) | `build_cireneo_clips.py` |
 | `CHAR_MONAGUILLO` | `monaguillo` (40) | `monaguillo/source/…9a55a12b` | `monaguillo/walk_pray.fbx` (andar rezando, extraído del esqueleto retirado) | `build_monaguillo.py` |
 | Retratos del bestiario (rezo) | no aplica (160 px) | Corazón y Exvoto | `pray/*` | `build_corazon_pray.py`, `build_exvoto_pray.py` |
 | Campanero | sin integrar (el modelo con barba está en disco; la versión sin barba `b142ae4c`, sin rig, se descartó) | campana `campanero/source/campana/…af5a0caa`, cuerpo `campanero/source/…0865ecc9` | — | sin script (solo en `LORE.md`) |
@@ -137,6 +139,6 @@ En Descargas, fuera del repo: `tripo_convert_8c5b4a72` (esqueleto soldado) y `tr
 ## 7. Anomalías abiertas
 
 - **`.h` del bestiario versionados:** `assets/sprites/bestiary/*/nds_shadow_anchor.h` ocupan ~270 MB en git y son derivados (`TECHNICAL.md` §4.4).
-- **Sin versionar, solo en la carpeta principal:** vídeos `assets/videos/lore01_{04..10}*.mp4`, `lore01_02_…_sinvoz.mp4` y avatares `avatar_{corazon,ojo}.png`. Si son finales, se adoptan en LFS.
+- **Sin versionar, solo en la carpeta principal:** vídeos `assets/videos/lore01_{05,06,09,10}*.mp4` (el 04 final ya está en LFS), `lore01_02_…_sinvoz.mp4` y avatares `avatar_{corazon,ojo}.png`. Si son finales, se adoptan en LFS.
 - **Modelos de prueba del usuario** (`archive/legacy/custom/` en la carpeta principal: mago, esqueleto muriendo y dos personajes): sin decidir; no se versionan.
 - **Originales perdidos:** `columna` (base rota), `banco_roto`, `banco_volcado` (ver §3).
