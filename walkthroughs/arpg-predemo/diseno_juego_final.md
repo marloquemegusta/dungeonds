@@ -148,3 +148,15 @@ P = protodemo, F = juego final. De todos puede prepararse un borrador para corre
 22. F · Biomas de las zonas 2-5.
 
 **Bloquean más:** 13 (esqueleto) y 10 (grupos); después 1 y 17.
+
+## 9. Respuestas de cierre de la sesión (2026-11-20)
+| Pregunta | Respuesta |
+|---|---|
+| Un solo héroe con las cuatro escuelas mezclables (no una clase por escuela) | **Sí** [DECIDIDO] |
+| `L` corto = Ejecución fija; `L` mantenido = cambiar entre los 2 hechizos del lápiz | **Sí, provisional**: probarlo en la consola; si no funciona, otro botón abre el menú de hechizos |
+| Capillas cerradas con reja (combate táctico) dentro del castillo | **No lo sé** [ABIERTO] |
+| Los cofres se rellenan al dormir | **No lo sé** [ABIERTO] |
+| Misiones por plantilla en la protodemo | **No**: quedan para después |
+| Pociones: se beben tocando el orbe con el lápiz | **Sí** [DECIDIDO] |
+| Nigromancia en la protodemo | **Después**: la protodemo lleva Rayo, Ejecución y Glifos |
+| Tres dificultades (Normal, Pesadilla, Infierno) en el juego final | **Sí** [DECIDIDO] |
