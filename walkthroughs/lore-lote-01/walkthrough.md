@@ -32,6 +32,18 @@ Tiras de 6 fotogramas de los vídeos publicados:
 - ![01 v2](assets/lore01_01_el_corazon_abierto_tira.png)
 - ![01 v3](assets/lore01v3_01_el_corazon_abierto_tira.png)
 - ![03 definitivo](assets/lore01_03_jimena_y_aldonza_tira.png)
+- ![07 Lope (88,3 s, sin publicar)](assets/lore01_07_lope_tira.png)
+
+## 07 Lope (2026-11-19)
+
+Cuatro vueltas con el usuario sobre un mismo MP4 (`assets/videos/lore01_07_lope.mp4`):
+
+1. **Guion:** el borrador era enigmático; se reescribió con una culpa concreta (Íñigo pudo plantar cara al Tribunal y calló para conservar el mando), el estandarte que toca el suelo y el juramento de no dejar caer a nadie. Pregunta final: «¿Habrías plantado tú cara al Tribunal?».
+2. **Animación nueva `abanderado_derrota`** (Mixamo «Plant A Plant» espejado, `tools/characters/build_abanderado_derrota.py`): el asta cae, Íñigo se derrumba y golpea el suelo con el puño izquierdo 4 veces y la recoge. La muñeca llega a ~9 cm del suelo y de frente los golpes se leen poco, porque la melena tapa el brazo.
+3. **Correcciones del usuario:** monaguillos fuera salvo en la Columna (capitán arriba a 2,3×, formación 3×3 detrás a 0,8×); plano 2 en `medio` con el altar visible; paso lento (`lento 1.5`); relicario sin recuadro negro que cortaba el penacho; cita final más lenta (voz a 0,8 y `(pausa 0.5)`).
+4. **Pendiente de comprobar en el MP4 final:** nadie escuchó el audio nuevo ni revisó el subtítulo de la cita; el recuadro negro del altar sigue existiendo en los planos con `altar` sin `medio` (p. ej. el 08).
+
+El feedback, generalizado, está en la skill `codice-lore-video` (reglas 7-9). Cambios de generador sin revisión de código: `render_guiones.py` (fichas `medio` y capitán, `CHAR_SPEED`, `CROWD_PACE_LEAD`, `ALTAR_MEDIO_*`) y parches del lab para volcar 56 fotogramas (`--noCHeader` en `export_character_headless.cjs`).
 
 ## Pendiente
 
