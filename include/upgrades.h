@@ -53,6 +53,10 @@ int upgrades_offer_is_relic(void);
 const UpgradeOffer *upgrades_offer(int i);  // i = 0..2
 void upgrades_choose(int i);
 
+// Skill tree (DESIGN.md 7.3): grant a Reliquia if not owned; raise a Don to `rank` (capped at UPG_MAX_RANK).
+void upgrades_grant_relic(int id);
+void upgrades_set_don_rank(int id, int rank);
+
 // Card text for an offer. The title carries the rank the Don would reach ("Fervor II").
 void upgrades_offer_title(const UpgradeOffer *o, char *buf, int buf_size);
 const char *upgrades_offer_text(const UpgradeOffer *o);

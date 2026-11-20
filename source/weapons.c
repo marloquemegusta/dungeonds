@@ -5,6 +5,8 @@
 #include "groundfx.h"
 #include "hitvolume.h"
 #include "sfx.h"
+#include "arpg.h"
+#include "allies.h"
 #if ENCOUNTERS_PROTO
 #include "encounters_act1.h"
 #endif
@@ -13,7 +15,7 @@
 const WeaponTuning g_weapon_tuning[NUM_WEAPON_TYPES] = {
     [WEAPON_SNIPER] = {
         .name = "SNIPER",
-        .damage_per_hit = 150,      /* exvoto 100 hp: 1 hit, shooter 200: 2, charger 300: 2 (scale 100 = 1.0) */
+        .damage_per_hit = ARPG_RAY_DAMAGE,   /* ARPG: 100 (was 150, arpg.h) */
         .pellets = 1,
         .fire_cooldown = 0,         /* no recovery: a new press charges at once (DESIGN.md 6.10, 6.12.10) */
         .projectile_speed = 0,
@@ -651,7 +653,7 @@ static void fire_sniper(const WeaponTuning *tuning, const WeaponInput *in, fixed
 
         for (int i = 0; i < max_enemies; i++) {
             Enemy *e = &enemies[i];
-            if (!e->active || e->hp <= 0 || e->state == ENEMY_STATE_EMERGE || (hit_mask & (1u << i))) continue;
+            if (!e->active || e->hp <= 0 || e->state == ENEMY_STATE_EMERGE || (hit_mask & (1u << i)) || g_enemy_ally[i]) continue;
 #if ENCOUNTERS_PROTO
             if (enc_untouchable(e)) continue;      // asleep: the ray goes through (DESIGN.md 6.13.6)
 #endif
@@ -753,8 +755,9 @@ static void fire_sniper(const WeaponTuning *tuning, const WeaponInput *in, fixed
 
 static int fire_weapon(PlayerState *player, const WeaponInput *in, fixed dir_x, fixed dir_y,
                        Enemy *enemies, int max_enemies) {
-    (void)player;
     const WeaponTuning *tuning = &g_weapon_tuning[WEAPON_SNIPER];
+    player->mana -= ARPG_RAY_COST;                // ARPG: each shot costs mana (arpg.h)
+    if (player->mana < 0) player->mana = 0;
     s_weapon_cooldown = tuning->fire_cooldown;
     s_last_dir_x = dir_x;
     s_last_dir_y = dir_y;
@@ -1059,7 +1062,8 @@ int weapons_input(PlayerState *player, const WeaponInput *in, Enemy *enemies, in
     int result = 0;
     if (s_aim_state == AIM_IDLE) {
         if (in->touch_pressed) s_weapon_cooldown = 0;
-        if ((in->touch_pressed || in->touch_down) && s_weapon_cooldown <= 0) {
+        // ARPG: the ray needs mana for one shot; without it the press does nothing.
+        if ((in->touch_pressed || in->touch_down) && s_weapon_cooldown <= 0 && player->mana >= ARPG_RAY_COST) {
             s_aim_state = AIM_AIMING;
             s_aim_timer = 0;
             s_aim_prog = 0;
@@ -1325,7 +1329,7 @@ static void votive_update(Enemy *enemies, int max_enemies) {
     int mx = TO_INT(s_aim_muzzle_x), my = TO_INT(s_aim_muzzle_y);
     for (int i = 0; i < max_enemies; i++) {
         Enemy *e = &enemies[i];
-        if (!on || !e->active || e->hp <= 0 || e->state == ENEMY_STATE_EMERGE) { e->votive_hits = 0; continue; }
+        if (!on || !e->active || e->hp <= 0 || e->state == ENEMY_STATE_EMERGE || g_enemy_ally[i]) { e->votive_hits = 0; continue; }
         int torso, head, hw;
         burn_body(e, &torso, &head, &hw);
         int wx = TO_INT(e->x) - mx, wy = TO_INT(e->y) - my;
@@ -1371,7 +1375,7 @@ static void blast(int bx, int by, int radius, int damage, int layers, int embers
     const int r2 = radius * radius;
     for (int i = 0; i < max_enemies; i++) {
         Enemy *e = &enemies[i];
-        if (!e->active || e->hp <= 0 || e->state == ENEMY_STATE_EMERGE) continue;
+        if (!e->active || e->hp <= 0 || e->state == ENEMY_STATE_EMERGE || g_enemy_ally[i]) continue;
         int dx = TO_INT(e->x) - bx, dy = TO_INT(e->y) - by;
         if (dx * dx + GROUND_DY2(dy) > r2) continue;
         burn_apply(e, layers);
@@ -1407,7 +1411,7 @@ static void cilicio_update(Enemy *enemies, int max_enemies) {
     const int r = cilicio_radius(s_aim_prog), r2 = r * r;
     for (int i = 0; i < max_enemies; i++) {
         Enemy *e = &enemies[i];
-        if (!e->active || e->hp <= 0 || e->state == ENEMY_STATE_EMERGE) continue;
+        if (!e->active || e->hp <= 0 || e->state == ENEMY_STATE_EMERGE || g_enemy_ally[i]) continue;
         int dx = TO_INT(e->x) - s_hero_x, dy = TO_INT(e->y) - s_hero_y;
         if (dx * dx + GROUND_DY2(dy) <= r2) burn_apply(e, 1);
     }
@@ -1432,7 +1436,8 @@ static int viatico_roll(const Enemy *e) {
     int near = dx * dx + GROUND_DY2(dy) <= VIATICO_RADIUS * VIATICO_RADIUS;
     if (!s_viatico_force && aura_rand8() >= (near ? VIATICO_PCT_NEAR : VIATICO_PCT)) return 0;
     s_viatico_force = 0;
-    g_player_state.hp++;
+    g_player_state.hp += ARPG_HEAL_PICKUP;          // one heart (ARPG: heal in points)
+    if (g_player_state.hp > g_player_state.max_hp) g_player_state.hp = g_player_state.max_hp;
     int torso, head, hw;
     burn_body(e, &torso, &head, &hw);
     siphon_new(TO_INT(e->x), TO_INT(e->y) - torso);

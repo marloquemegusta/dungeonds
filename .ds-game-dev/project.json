@@ -44,6 +44,9 @@
         },
         "encuentros-jefe-perf": {
             "defines": ["ENCOUNTERS_PROTO=1", "SKIP_TITLE=1", "ENC_START_BOSS=1", "PERF_PROFILE=1"]
+        },
+        "arpg-todo": {
+            "defines": ["ARPG_ALL_UNLOCKED=1"]
         }
     },
     "hostTests": [

@@ -2,11 +2,26 @@
 #include "collision.h"
 #include "groundfx.h"
 #include "hud_icons_gfx.h"
+#include "arpg.h"
+#include "arpg_progress.h"
+#if ENCOUNTERS_PROTO
+#include "placeholders_gfx.h"
+#endif
 
 #define HEAL_PICKUP_RECYCLE_BELOW_PX 400 // [TUNABLE-PLACEHOLDER]
 #define HEAL_PICKUP_HOVER_PX 3           // base height above ground shadow
+#define PICKUP_MAGNET_STEP TO_FIXED(2)   // [TUNABLE-PLACEHOLDER] px per frame towards the hero inside the magnet radius
+#define REMATE_ORB_OFFSET_PX 8           // [TUNABLE-PLACEHOLDER] health and mana orbs of one finisher are split by this
 
-typedef struct { fixed x, y; int active; } HealPickup;
+#if ENCOUNTERS_PROTO
+#define PICKUP_SPRITE_W PH_RUNA_XP_W     // placeholder sprites are 12x12
+#define PICKUP_SPRITE_H PH_RUNA_XP_H
+#else
+#define PICKUP_SPRITE_W HUD_ICON_W
+#define PICKUP_SPRITE_H HUD_ICON_H
+#endif
+
+typedef struct { fixed x, y; int active; int kind; int amount; } HealPickup;
 static HealPickup s_pickups[HEAL_PICKUP_MAX_ACTIVE];
 static uint32_t s_rng = 1;
 static uint32_t s_anim_tick = 0;
@@ -30,6 +45,9 @@ void pickups_shift_y(int dy_px) {
 
 void pickups_enemy_killed(const Enemy *enemy) {
     if (!enemy) return;
+#if ENCOUNTERS_PROTO
+    return;     // ARPG: no random hearts from kills; only the remate drops orbs (pickups_remate_drops)
+#endif
     int force = (enemy->type == ENEMY_TYPE_ABANDERADO);
 #if SANDBOX
     if (g_pickup_force_drop) { force = 1; g_pickup_force_drop = 0; }
@@ -52,7 +70,49 @@ void pickups_enemy_killed(const Enemy *enemy) {
     if (slot < 0) return;
     s_pickups[slot].x = enemy->x;
     s_pickups[slot].y = enemy->y;
+    s_pickups[slot].kind = PICKUP_KIND_HEALTH;
+    s_pickups[slot].amount = 0;
     s_pickups[slot].active = 1;
+}
+
+void pickups_spawn(int kind, fixed x, fixed y) {
+    int slot = 0;
+    for (int i = 0; i < HEAL_PICKUP_MAX_ACTIVE; i++) {
+        if (!s_pickups[i].active) { slot = i; break; }
+    }
+    s_pickups[slot].x = x;
+    s_pickups[slot].y = y;
+    s_pickups[slot].kind = kind;
+    s_pickups[slot].amount = 0;
+    s_pickups[slot].active = 1;
+}
+
+void pickups_spawn_xp(fixed x, fixed y, int amount) {
+    int slot = -1;
+    for (int i = 0; i < HEAL_PICKUP_MAX_ACTIVE; i++) {
+        if (!s_pickups[i].active) { slot = i; break; }
+    }
+    if (slot < 0) {
+        // No room on the floor: the xp goes straight into the bank, so it is never lost.
+        arpg_add_xp(amount);
+        return;
+    }
+    s_pickups[slot].x = x;
+    s_pickups[slot].y = y;
+    s_pickups[slot].kind = PICKUP_KIND_XP;
+    s_pickups[slot].amount = amount;
+    s_pickups[slot].active = 1;
+}
+
+void pickups_remate_drops(fixed x, fixed y) {
+    s_rng = s_rng * 1664525u + 1013904223u;
+    int hp_roll = (int)((s_rng >> 8) % 100u);
+    s_rng = s_rng * 1664525u + 1013904223u;
+    int mana_roll = (int)((s_rng >> 8) % 100u);
+    if (hp_roll < ARPG_REMATE_HP_CHANCE)
+        pickups_spawn(PICKUP_KIND_HEALTH, x - TO_FIXED(REMATE_ORB_OFFSET_PX), y);
+    if (mana_roll < ARPG_REMATE_MANA_CHANCE)
+        pickups_spawn(PICKUP_KIND_MANA, x + TO_FIXED(REMATE_ORB_OFFSET_PX), y);
 }
 
 void pickups_update(fixed player_x, fixed player_y, PlayerState *player) {
@@ -64,10 +124,34 @@ void pickups_update(fixed player_x, fixed player_y, PlayerState *player) {
             p->active = 0;
             continue;
         }
+        const int magnet = (p->kind == PICKUP_KIND_XP) ? ARPG_RUNE_MAGNET : ARPG_PICKUP_MAGNET;
         int dx = TO_INT(p->x - player_x);
         int dy = TO_INT(p->y - player_y);
+        int d2 = dx * dx + GROUND_DY2(dy);
+        if (d2 <= magnet * magnet && d2 > HEAL_PICKUP_RADIUS * HEAL_PICKUP_RADIUS) {
+            // Magnet: 2 px per frame along the direction to the hero (one divide per orb per frame).
+            fixed fx = player_x - p->x, fy = player_y - p->y;
+            fixed ax = fx < 0 ? -fx : fx, ay = fy < 0 ? -fy : fy;
+            fixed m = ax > ay ? ax : ay;
+            if (m > 0) {
+                p->x += (fx * PICKUP_MAGNET_STEP) / m;
+                p->y += (fy * PICKUP_MAGNET_STEP) / m;
+            }
+            dx = TO_INT(p->x - player_x);
+            dy = TO_INT(p->y - player_y);
+        }
         if (dx * dx + GROUND_DY2(dy) > HEAL_PICKUP_RADIUS * HEAL_PICKUP_RADIUS) continue;
-        if (player && player->hp < player->max_hp) player->hp++;
+        if (p->kind == PICKUP_KIND_XP) {
+            arpg_add_xp(p->amount);
+        } else if (p->kind == PICKUP_KIND_MANA) {
+            if (player) {
+                player->mana += ARPG_REMATE_MANA;
+                if (player->mana > player->max_mana) player->mana = player->max_mana;
+            }
+        } else if (player && player->hp < player->max_hp) {
+            player->hp += ARPG_REMATE_HP;
+            if (player->hp > player->max_hp) player->hp = player->max_hp;
+        }
         p->active = 0;
     }
 }
@@ -77,8 +161,8 @@ int pickups_item(int i, int cam_x, int cam_y, int *depth) {
     if (!p->active) return 0;
     int cx = TO_INT(p->x) - cam_x;
     int cy = TO_INT(p->y) - cam_y;
-    if (cx - (HUD_ICON_W >> 1) >= SCREEN_W || cx + (HUD_ICON_W >> 1) + 1 <= 0 ||
-        cy + 1 <= 0 || cy - HUD_ICON_H - HEAL_PICKUP_HOVER_PX - 3 >= SCREEN_H) return 0;
+    if (cx - (PICKUP_SPRITE_W >> 1) >= SCREEN_W || cx + (PICKUP_SPRITE_W >> 1) + 1 <= 0 ||
+        cy + 1 <= 0 || cy - PICKUP_SPRITE_H - HEAL_PICKUP_HOVER_PX - 3 >= SCREEN_H) return 0;
     *depth = TO_INT(p->y);
     return 1;
 }
@@ -89,20 +173,26 @@ void pickups_draw(uint16_t *buffer, int i, int cam_x, int cam_y) {
     };
     const int bob_y = bob_lut[(s_anim_tick >> 2) & 15];
     const uint16_t shadow_col = RGB15(4, 3, 3) | BIT(15);
-    const int half_w = HUD_ICON_W >> 1;
+    const int half_w = PICKUP_SPRITE_W >> 1;
     const HealPickup *p = &s_pickups[i];
     const int depth = TO_INT(p->y);
     int cx = TO_INT(p->x) - cam_x;
     int cy = TO_INT(p->y) - cam_y;
     int x0 = cx - half_w;
-    int y0 = cy - HUD_ICON_H - HEAL_PICKUP_HOVER_PX + bob_y;
+#if ENCOUNTERS_PROTO
+    // Runes rise and sink 1 px, slowly (one step every 32 frames); orbs keep the heart's bob.
+    const int bob = (p->kind == PICKUP_KIND_XP) ? (((s_anim_tick >> 5) & 1) ? -1 : 0) : bob_y;
+#else
+    const int bob = bob_y;
+#endif
+    int y0 = cy - PICKUP_SPRITE_H - HEAL_PICKUP_HOVER_PX + bob;
 
-    // Walls in front hide the heart and its shadow pixel by pixel; the test only runs when some wall run reaches the sprite.
+    // Walls in front hide the pickup and its shadow pixel by pixel; the test only runs when some wall run reaches the sprite.
     int occ = 0;
     for (int r = y0; r <= cy + 1 && !occ; r++)
-        if ((unsigned)r < SCREEN_H && world_span_hidden(r + cam_y, x0 + cam_x, x0 + HUD_ICON_W + cam_x, depth)) occ = 1;
+        if ((unsigned)r < SCREEN_H && world_span_hidden(r + cam_y, x0 + cam_x, x0 + PICKUP_SPRITE_W + cam_x, depth)) occ = 1;
 
-    // Subtle ground shadow beneath the levitating heart.
+    // Subtle ground shadow beneath the levitating pickup.
     for (int sy = cy - 1; sy <= cy; sy++) {
         if ((unsigned)sy >= SCREEN_H) continue;
         dirty_row(sy, cx - 3, cx + 4);
@@ -111,6 +201,46 @@ void pickups_draw(uint16_t *buffer, int i, int cam_x, int cam_y) {
             if (occ && world_pixel_hidden(sx + cam_x, sy + cam_y, depth)) continue;
             buffer[sy * SCREEN_W + sx] = shadow_col;
         }
+    }
+
+#if ENCOUNTERS_PROTO
+    // ARPG placeholders (include/placeholders_gfx.h): 0 pixels are transparent.
+    const uint16_t *sprite = (p->kind == PICKUP_KIND_XP) ? g_ph_runa_xp
+                           : (p->kind == PICKUP_KIND_MANA) ? g_ph_orbe_mana : g_ph_orbe_vida;
+    for (int gy = 0; gy < PICKUP_SPRITE_H; gy++) {
+        int sy = y0 + gy;
+        if ((unsigned)sy >= SCREEN_H) continue;
+        dirty_row(sy, x0, x0 + PICKUP_SPRITE_W);
+        const uint16_t *row = &sprite[gy * PICKUP_SPRITE_W];
+        for (int gx = 0; gx < PICKUP_SPRITE_W; gx++) {
+            uint16_t c = row[gx];
+            if (!c) continue;
+            int sx = x0 + gx;
+            if ((unsigned)sx >= SCREEN_W) continue;
+            if (occ && world_pixel_hidden(sx + cam_x, sy + cam_y, depth)) continue;
+            buffer[sy * SCREEN_W + sx] = c;
+        }
+    }
+    return;
+#else
+    if (p->kind == PICKUP_KIND_MANA) {
+        // Mana orb: slate diamond (|dx|+|dy| <= 4) with a lighter top pixel, centred on the heart's middle.
+        const uint16_t mana_col = RGB15(6, 9, 18) | BIT(15);
+        const uint16_t mana_top = RGB15(10, 14, 24) | BIT(15);
+        const int mcy = y0 + (HUD_ICON_H >> 1);
+        for (int ddy = -4; ddy <= 4; ddy++) {
+            int sy = mcy + ddy;
+            if ((unsigned)sy >= SCREEN_H) continue;
+            int ext = 4 - (ddy < 0 ? -ddy : ddy);
+            dirty_row(sy, cx - ext, cx + ext + 1);
+            for (int ddx = -ext; ddx <= ext; ddx++) {
+                int sx = cx + ddx;
+                if ((unsigned)sx >= SCREEN_W) continue;
+                if (occ && world_pixel_hidden(sx + cam_x, sy + cam_y, depth)) continue;
+                buffer[sy * SCREEN_W + sx] = (ddy == -4) ? mana_top : mana_col;
+            }
+        }
+        return;
     }
 
     for (int gy = 0; gy < HUD_ICON_H; gy++) {
@@ -127,4 +257,5 @@ void pickups_draw(uint16_t *buffer, int i, int cam_x, int cam_y) {
             buffer[sy * SCREEN_W + sx] = c;
         }
     }
+#endif
 }

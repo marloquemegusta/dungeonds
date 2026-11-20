@@ -77,7 +77,7 @@ typedef struct {
 #define ABANDERADO_LOSE_SIGHT_FRAMES 120 // [TUNABLE-PLACEHOLDER] 2 s out of sight before returning to patrol
 #define ABANDERADO_SUMMON_FRAMES 180     // [TUNABLE-PLACEHOLDER] ~3 s between cream puddles
 #define ABANDERADO_SPAWN_FRAMES 7200     // [TUNABLE-PLACEHOLDER] 2:00 (at 60 FPS) first spawn and respawn after death
-#define ABANDERADO_MAX_MONAGUILLOS 8     // [TUNABLE-PLACEHOLDER] cap of live monaguillos at once
+extern int g_abanderado_max_mona;        // [TUNABLE-PLACEHOLDER] cap of live monaguillos at once (8, 12 or 16: set per boss floor)
 #define MONAGUILLO_EMERGE_FRAMES 30      // [TUNABLE-PLACEHOLDER] ~0.5 s emerging from puddle (invulnerable, still)
 
 // The sprite of each enemy type: the only place that maps tiers to models.
@@ -298,12 +298,14 @@ void enemy_puddles_render(uint16_t *buffer, int cam_x, int cam_y);
 #define PLAYER_IFRAMES 60            // invulnerability frames after a hit
 
 struct PlayerState {
-    int hp;
+    int hp;             // life in points (ARPG: arpg.h)
     int max_hp;
     WeaponType current_weapon;
     int is_dead;
     int invuln_timer;
     int god_mode;      // debug: L+R+B toggles; damage is ignored (headless scenarios)
+    int mana;           // ARPG: spent by spells, regenerates slowly (arpg.h). Appended: scenarios read the fields above by offset
+    int max_mana;
 };
 
 extern PlayerState g_player_state;
@@ -313,9 +315,14 @@ extern PlayerState g_player_state;
 extern int g_hitstop_frames;
 
 /**
- * A hit from an enemy: removes one hit point, starts the i-frames and kills the
+ * A hit that removes `damage` points of life, starts the i-frames and kills the
  * player at zero. Returns 1 when the hit landed (0 during i-frames, in god mode
  * or when already dead).
+ */
+int player_take_damage(PlayerState *player, int damage);
+
+/**
+ * A hit with the default damage (ARPG_DMG_DEFAULT). Wrapper of player_take_damage.
  */
 int player_take_hit(PlayerState *player);
 

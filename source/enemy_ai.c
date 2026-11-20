@@ -7,6 +7,8 @@
 #include "navfield.h"
 #include "player_sprite.h"
 #include "sandbox.h"
+#include "arpg.h"
+#include "allies.h"
 #if ENCOUNTERS_PROTO
 #include "weapons.h"
 #endif
@@ -447,7 +449,7 @@ static void update_exvoto(Enemy *e, Enemy *enemies, int num_enemies, int idx,
             int melee_range = tuning->preferred_dist_max;
             if (ground_dist_sq <= melee_range * melee_range &&
                 los_has_line_of_sight(wx, wy, px, py, 0) && line_is_walkable(wx, wy, px, py)) {
-                player_take_hit(&g_player_state);
+                player_take_damage(&g_player_state, arpg_enemy_damage(e->type));
                 e->state = ENEMY_STATE_ATTACK;
                 e->state_timer = tuning->attack_cooldown;
                 e->dir = dir_from_vector(player_x - e->x, player_y - e->y);
@@ -532,7 +534,7 @@ static void update_charger(Enemy *e, Enemy *enemies, int num_enemies, int idx,
                 int hx = TO_INT(player_x - e->x);
                 int hy = TO_INT(player_y - e->y);
                 if (hx * hx + GROUND_DY2(hy) <= CHARGER_HIT_RADIUS * CHARGER_HIT_RADIUS) {
-                    player_take_hit(&g_player_state);          // one hit per charge; i-frames may absorb it
+                    player_take_damage(&g_player_state, arpg_enemy_damage(e->type));          // one hit per charge; i-frames may absorb it
                     e->charge_hit = 1;
                 }
             }
@@ -651,7 +653,7 @@ static void ojo_beam_hurts(const Enemy *e, fixed player_x, fixed player_y) {
         // Low cover (DESIGN.md 6.9): a crouched hero is safe when the line from the mouth to him crosses a bench or
         // sacks before reaching him. The beam is still drawn over the cover; only the hit is cancelled.
         if (ojo_cover_shields(e->beam_mx, e->beam_my, TO_INT(player_x), TO_INT(player_y))) return;
-        player_take_hit(&g_player_state);
+        player_take_damage(&g_player_state, arpg_enemy_damage(e->type));
     }
 }
 
@@ -1078,6 +1080,8 @@ static void spawn_monaguillo_at(Enemy *slot, int x, int y) {
     slot->pack = -1;
 }
 
+int g_abanderado_max_mona = 8;           // cap of live monaguillos of the Abanderado (encounters_act1.c sets it per boss)
+
 static void spawn_cream_puddle(Enemy *enemies, int num_enemies, int mx, int my) {
     for (int i = 0; i < MAX_PUDDLES; i++) {
         if (!s_puddles[i].active) {
@@ -1090,7 +1094,7 @@ static void spawn_cream_puddle(Enemy *enemies, int num_enemies, int mx, int my) 
     }
     static const int8_t dx_off[2] = { -8, 8 };
     int live = count_live_monaguillos(enemies, num_enemies);
-    for (int k = 0; k < 2 && live < ABANDERADO_MAX_MONAGUILLOS; k++) {
+    for (int k = 0; k < 2 && live < g_abanderado_max_mona; k++) {
         int sx = mx + dx_off[k];
         int sy = my;
         if (!position_is_free(TO_FIXED(sx), TO_FIXED(sy))) { sx = mx; sy = my; }
@@ -1161,7 +1165,7 @@ static void update_abanderado(Enemy *e, Enemy *enemies, int num_enemies, int idx
         }
         if (--e->beam_len <= 0) { // summon_timer
             e->beam_len = ABANDERADO_SUMMON_FRAMES;
-            if (count_live_monaguillos(enemies, num_enemies) < ABANDERADO_MAX_MONAGUILLOS) {
+            if (count_live_monaguillos(enemies, num_enemies) < g_abanderado_max_mona) {
                 int mx = (wx + px) >> 1;
                 int my = (wy + py) >> 1;
                 if (!position_is_free(TO_FIXED(mx), TO_FIXED(my))) {
@@ -1226,6 +1230,7 @@ ITCM_CODE void enemy_ai_update(Enemy *enemies, int num_enemies, fixed player_x, 
 
     for (int i = 0; i < num_enemies; i++) {
         Enemy *e = &enemies[i];
+        if (g_enemy_ally[i]) continue;                                   // ARPG: allies walk and fight in allies_update (allies.c)
         if (!e->active || e->state == ENEMY_STATE_SUSPENDED) continue;   // Viatico: inert until enemy_suspend_update ends it
 
         if (e->hit_timer > 0) e->hit_timer--;

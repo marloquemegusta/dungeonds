@@ -61,10 +61,10 @@ static void apply(int id) {
             g_mods.sniper_aim += 10;
             break;
         case MOD_BONE_PLATE:
-            g_mods.max_hp += 2;
+            g_mods.max_hp += 2 * 20;        // two hearts, in life points (ARPG)
             g_mods.speed_pct = g_mods.speed_pct * 88 / 100;
-            g_player_state.max_hp += 2;
-            g_player_state.hp += 2;
+            g_player_state.max_hp += 2 * 20;
+            g_player_state.hp += 2 * 20;
             break;
         case MOD_LIGHT_FEET:
             g_mods.speed_pct = g_mods.speed_pct * 115 / 100;

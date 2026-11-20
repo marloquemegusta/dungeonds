@@ -31,6 +31,13 @@
 #include "encounters_act1.h"
 #include "boss.h"
 #include "bestiary_font.h"
+#include "arpg.h"
+#include "arpg_progress.h"
+#include "arpg_tree.h"
+#include "curse.h"
+#include "allies.h"
+#include "placeholders_gfx.h"
+#include <stdio.h>
 #include <string.h>
 #include <time.h>
 
@@ -167,7 +174,8 @@ Enemy g_enemies[MAX_ENEMIES];     // not static: headless scenarios read it by s
 _Static_assert(sizeof(Enemy) == 124 && offsetof(Enemy, hp) == 28 && offsetof(Enemy, type) == 40 &&
                offsetof(Enemy, state) == 41 && offsetof(Enemy, state_timer) == 44 && offsetof(Enemy, stun_timer) == 76,
                "Enemy layout used by the scenarios changed");
-_Static_assert(sizeof(PlayerState) == 24 && offsetof(PlayerState, hp) == 0 && offsetof(PlayerState, invuln_timer) == 16,
+_Static_assert(sizeof(PlayerState) == 32 && offsetof(PlayerState, hp) == 0 && offsetof(PlayerState, invuln_timer) == 16 &&
+               offsetof(PlayerState, mana) == 24,
                "PlayerState layout used by the scenarios changed");
 volatile int32_t g_strip_debug[4]; // height px, accumulated shift, alive enemies, player hp
 static int s_best_height_m;
@@ -951,6 +959,21 @@ static void draw_telegraph_pulse(uint16_t *buffer, int cx, int cy, int state_tim
     }
 }
 
+// ARPG: marca of an ally (placeholder sprite, 0 pixels are transparent). x0, y0: screen px of its top-left corner.
+static void draw_ally_mark(uint16_t *buffer, int x0, int y0) {
+    for (int gy = 0; gy < PH_ALIADO_MARCA_H; gy++) {
+        int sy = y0 + gy;
+        if ((unsigned)sy >= SCREEN_H) continue;
+        dirty_row(sy, x0, x0 + PH_ALIADO_MARCA_W);
+        for (int gx = 0; gx < PH_ALIADO_MARCA_W; gx++) {
+            uint16_t c = g_ph_aliado_marca[gy * PH_ALIADO_MARCA_W + gx];
+            int sx = x0 + gx;
+            if (!c || (unsigned)sx >= SCREEN_W) continue;
+            buffer[sy * SCREEN_W + sx] = c;
+        }
+    }
+}
+
 static void draw_enemy(uint16_t *buffer, const Enemy *e, int cam_x, int cam_y) {
     if (e->state == ENEMY_STATE_REMATE && remate_active()) return;   // the remate cell draws it (with the hero); during the dash it stands here
     int px = player_screen_x(e->x, e->y);
@@ -1030,6 +1053,12 @@ static void draw_enemy(uint16_t *buffer, const Enemy *e, int cam_x, int cam_y) {
     blit_stride(buffer, frame, runs, sprite_pitch(bw), bw, draw_bh,
                 px - sw / 2 + min_x, py - s_char_ground_anchor[e->char_id][e->dir] + min_y + draw_y_off,
                 cam_x, cam_y, s_draw_item_depth);
+    {   // ARPG: an ally wears the marca, 4 px above the top of its body
+        const int slot = (int)(e - g_enemies);
+        if (slot >= 0 && slot < MAX_ENEMIES && g_enemy_ally[slot])
+            draw_ally_mark(buffer, px - PH_ALIADO_MARCA_W / 2,
+                           py - s_char_ground_anchor[e->char_id][e->dir] + min_y - 4 - PH_ALIADO_MARCA_H);
+    }
     if (e->char_id == CHAR_OJO)
         enemy_ojo_mouth_glow_render(buffer, e, (int)(e - g_enemies), cam_x, cam_y, s_draw_item_depth);
 #if !ENCOUNTERS_PROTO                     // the encuentros variant shows the boss mode bar instead (boss.c)
@@ -1396,6 +1425,7 @@ ITCM_CODE static void render_screen(uint16_t *buffer, DirtySpan *spans, int cam_
 
     // 0) Ground decals of the weapons, Exvoto wax puddles, and boss puddles: under everything.
     weapons_render_floor(buffer, cam_x, cam_y);
+    curse_render_floor(buffer, cam_x, cam_y);       // ARPG: Maldicion zones and the aim ring
     enemy_puddles_render(buffer, cam_x, cam_y);
     {
         GroundTarget melt_ground = { buffer, cam_x, cam_y };
@@ -1481,6 +1511,7 @@ ITCM_CODE static void render_screen(uint16_t *buffer, DirtySpan *spans, int cam_
     weapons_render_light(buffer, cam_x, cam_y);     // beams light the sprites drawn above
     PP_T0(pp_proj);
     weapons_render(buffer, cam_x, cam_y);
+    curse_render(buffer, cam_x, cam_y);             // ARPG: flying Maldicion
     if (!sub_screen) weapons_render_overlay(buffer);
     mods_render(buffer, cam_x, cam_y);
 #if ENCOUNTERS_PROTO
@@ -1648,15 +1679,25 @@ static void hud_square(uint16_t *buffer, int x, int y, int size, uint16_t fill, 
     }
 }
 
-// Opaque pixels of a HUD icon (BIT(15) set), clipped to the screen; transparent ones are skipped.
-static void hud_icon(uint16_t *buffer, int x, int y, const uint16_t *icon) {
-    for (int gy = 0; gy < HUD_ICON_H; gy++) {
-        dirty_row(y + gy, x, x + HUD_ICON_W);
-        for (int gx = 0; gx < HUD_ICON_W; gx++) {
-            uint16_t c = icon[gy * HUD_ICON_W + gx];
-            if (c) hud_px(buffer, x + gx, y + gy, c);
+// Dark box under HUD text, so it reads over the floor and the barrier gates: every channel halved in place.
+// The mask drops the bit each channel receives from its neighbour on the shift.
+static void hud_dim_rect(uint16_t *buffer, int x, int y, int w, int h) {
+    for (int row = 0; row < h; row++) {
+        int py = y + row;
+        if (py < 0 || py >= SCREEN_H) continue;
+        dirty_row(py, x, x + w);
+        for (int col = 0; col < w; col++) {
+            int px = x + col;
+            if (px < 0 || px >= SCREEN_W) continue;
+            uint16_t c = buffer[py * SCREEN_W + px];
+            buffer[py * SCREEN_W + px] = ((c >> 1) & 0x3DEF) | BIT(15);
         }
     }
+}
+
+// Box for one line drawn with hud_text at (x, y): 2 px of padding around the glyphs and the 1 px shadow.
+static void hud_dim_text(uint16_t *buffer, int x, int y, const char *s) {
+    hud_dim_rect(buffer, x - 2, y - 2, hud_text_width(s) + 6, bestiary_font_line_height() + 5);
 }
 
 // Level / xp HUD (DESIGN.md 6.12.8), three looks selected by g_design_variant.
@@ -1765,6 +1806,31 @@ static void hud_level(uint16_t *buffer) {
 }
 #endif
 
+// Diablo-style orb (DESIGN.md 7.2): a disc filled from the bottom up to value/max of its height. Pixels above the
+// fill are `empty`, a 1-px ring at the edge is `rim`, and a small crescent near the top-left of the fill is `shine`.
+static void draw_orb(uint16_t *buffer, int cx, int cy, int r, int value, int max,
+                     uint16_t fill, uint16_t shine, uint16_t empty, uint16_t rim) {
+    const int r2 = r * r, inner2 = (r - 1) * (r - 1);
+    const int shine_x = -(r / 3);
+    if (value < 0) value = 0;
+    if (value > max) value = max;
+    int level = max > 0 ? (value * 2 * r) / max : 0;     // filled rows, counted from the bottom
+    const int fill_top = cy + r - level;                // first filled row
+    for (int dy = -r; dy <= r; dy++) {
+        const int y = cy + dy;
+        for (int dx = -r; dx <= r; dx++) {
+            const int d2 = dx * dx + dy * dy;
+            if (d2 > r2) continue;
+            uint16_t c;
+            if (d2 > inner2) c = rim;
+            else if (y < fill_top) c = empty;
+            else if (dx < shine_x && y <= fill_top + 2) c = shine;
+            else c = fill;
+            hud_px(buffer, cx + dx, y, c);
+        }
+    }
+}
+
 static void draw_run_hud(uint16_t *buffer) {
     const uint16_t ink = RGB15(31, 31, 31) | BIT(15);
     const uint16_t dark = RGB15(5, 1, 1) | BIT(15);
@@ -1773,33 +1839,50 @@ static void draw_run_hud(uint16_t *buffer) {
 
     if (s_strip_mode) {
         char line[24];
+#if !ENCOUNTERS_PROTO
         uint32_t seconds = horde_run_frames() / 60u;
+#endif
         if (g_player_state.is_dead) {
+#if ENCOUNTERS_PROTO
+            // Death in the dungeon: the experience is kept, and the camp is the way back.
+            const uint16_t warm = RGB15(27, 20, 11) | BIT(15);
+            const uint16_t soft = RGB15(24, 22, 18) | BIT(15);
+            const char *head = "Has caído";
+            const char *keep = "Conservas la experiencia";
+            const char *back = "Toca para volver al campamento";
+            hud_text(buffer, (SCREEN_W - hud_text_width(head)) / 2, 70, head, warm);
+            hud_text(buffer, (SCREEN_W - hud_text_width(keep)) / 2, 92, keep, soft);
+            hud_text(buffer, (SCREEN_W - hud_text_width(back)) / 2, 114, back, soft);
+#else
             snprintf(line, sizeof(line), "Altura %d m", strip_height_m(TO_INT(s_player.y)));
             hud_text(buffer, (SCREEN_W - hud_text_width(line)) / 2, 70, line, ink);
             snprintf(line, sizeof(line), "Tiempo %lu:%02lu", (unsigned long)(seconds / 60u), (unsigned long)(seconds % 60u));
             hud_text(buffer, (SCREEN_W - hud_text_width(line)) / 2, 92, line, ink);
             snprintf(line, sizeof(line), "Mejor %d m", s_best_height_m);
             hud_text(buffer, (SCREEN_W - hud_text_width(line)) / 2, 114, line, ink);
+#endif
             return;
         }
+#if ENCOUNTERS_PROTO
+        if (!s_run_started) return;     // camp or title menu: no run HUD (floor label, orbs, spell, xp, boss bar)
+#endif
+#if !ENCOUNTERS_PROTO
+        // The ARPG build puts the life and mana orbs in these bottom corners, so the height and time lines go.
         snprintf(line, sizeof(line), "Altura %d m", strip_height_m(TO_INT(s_player.y)));
         hud_text(buffer, 6, SCREEN_H - 32, line, ink);
         snprintf(line, sizeof(line), "Tiempo %lu:%02lu", (unsigned long)(seconds / 60u), (unsigned long)(seconds % 60u));
         hud_text(buffer, 6, SCREEN_H - 16, line, ink);
+#endif
 
         // Level and xp, top left (DESIGN.md 6.12.8). A: "NV n" + bar. B: a candle. C: rosary beads + roman numeral.
 #if ENCOUNTERS_PROTO
-        {   // 15 stages (3 acts x 5 stages), bosses at 5, 10 and 15.
+        {   // The dungeon is floor after floor; every fifth floor is a boss.
             if (!boss_hud_active() && !boss_frozen()) {      // while the boss mode runs, its life bar takes this corner
                 int enc = enc_current_encounter();
-                if (enc == 5 || enc == 10 || enc == 15) snprintf(line, sizeof(line), "Jefe %d de 15", enc);
-                else snprintf(line, sizeof(line), "Enc. %d de 15", enc);
+                if (enc % 5 == 0) snprintf(line, sizeof(line), "Piso %d · Jefe", enc);
+                else snprintf(line, sizeof(line), "Piso %d", enc);
+                hud_dim_text(buffer, 6, 6, line);
                 hud_text(buffer, 6, 6, line, RGB15(27, 20, 11) | BIT(15));
-                if (enc_victory()) {
-                    snprintf(line, sizeof(line), "Fin de la demo");
-                    hud_text(buffer, (SCREEN_W - hud_text_width(line)) / 2, 84, line, RGB15(27, 20, 11) | BIT(15));
-                }
             }
         }
 #else
@@ -1811,15 +1894,56 @@ static void draw_run_hud(uint16_t *buffer) {
 #endif
 #endif
 
-        // Sacred Hearts: one per max hit point, right-aligned at the top of the bottom screen.
-        const int heart_gap = 2;
-        int max_hp = g_player_state.max_hp;
-        int hx0 = SCREEN_W - 6 - max_hp * (HUD_ICON_W + heart_gap) + heart_gap;
-        for (int i = 0; i < max_hp; i++)
-            hud_icon(buffer, hx0 + i * (HUD_ICON_W + heart_gap), 6,
-                     i < g_player_state.hp ? g_hud_heart_full : g_hud_heart_empty);
+        // ARPG orbs (DESIGN.md 7.2): life bottom-left, mana bottom-right, the numbers just above each.
+        {
+            const int orb_r = 16, orb_cy = SCREEN_H - 20;
+            const int life_cx = 20, mana_cx = SCREEN_W - 20;
+            const uint16_t num_ink = RGB15(27, 24, 18) | BIT(15);
+            const uint16_t rim = RGB15(17, 14, 9) | BIT(15);
+            draw_orb(buffer, life_cx, orb_cy, orb_r, g_player_state.hp, g_player_state.max_hp,
+                     RGB15(17, 4, 4) | BIT(15), RGB15(24, 9, 8) | BIT(15), RGB15(4, 2, 2) | BIT(15), rim);
+            draw_orb(buffer, mana_cx, orb_cy, orb_r, g_player_state.mana, g_player_state.max_mana,
+                     RGB15(5, 8, 17) | BIT(15), RGB15(9, 13, 23) | BIT(15), RGB15(2, 2, 4) | BIT(15), rim);
+            snprintf(line, sizeof(line), "%d", g_player_state.hp);
+            hud_dim_text(buffer, life_cx - hud_text_width(line) / 2, SCREEN_H - 50, line);
+            hud_text(buffer, life_cx - hud_text_width(line) / 2, SCREEN_H - 50, line, num_ink);
+            snprintf(line, sizeof(line), "%d", g_player_state.mana);
+            hud_dim_text(buffer, mana_cx - hud_text_width(line) / 2, SCREEN_H - 50, line);
+            hud_text(buffer, mana_cx - hud_text_width(line) / 2, SCREEN_H - 50, line, num_ink);
+        }
 #if ENCOUNTERS_PROTO
-        if (boss_hud_active()) boss_draw_hud(buffer, hx0 - 8, hud_text);      // thin bar from the left edge to the hearts
+        if (arpg_tree_has(0)) {   // ARPG: the active spell's name above the mana number (DESIGN.md 7.3)
+            const int curse_on = g_arpg.spell == 1;
+            const uint16_t spell_ink = curse_on ? (RGB15(24, 20, 26) | BIT(15)) : (RGB15(27, 24, 18) | BIT(15));
+            const char *spell_name = curse_on ? "Maldición" : "Rayo";
+            hud_text(buffer, SCREEN_W - 4 - hud_text_width(spell_name), SCREEN_H - 62, spell_name, spell_ink);
+        }
+#endif
+#if ENCOUNTERS_PROTO
+        {   // ARPG: level and banked xp between the two orbs; a full bank says so (sleep at the camp to level up).
+            const int xp_needed = arpg_xp_needed(g_arpg.level);
+            const int ready = g_arpg.xp >= (uint32_t)xp_needed;
+            const uint16_t lvl_ink = RGB15(27, 20, 11) | BIT(15);
+            const uint16_t xp_ink = ready ? (RGB15(31, 27, 16) | BIT(15)) : lvl_ink;
+            const char *sleep_hint = "Duerme para subir";
+            char nv_txt[16], xp_txt[24];
+            snprintf(nv_txt, sizeof(nv_txt), "Nv %d", g_arpg.level);
+            snprintf(xp_txt, sizeof(xp_txt), "Exp %lu/%d", (unsigned long)g_arpg.xp, xp_needed);
+            // One dark box behind the whole bottom-centre block (2 px padding), sized to its widest line.
+            int block_w = hud_text_width(nv_txt);
+            if (hud_text_width(xp_txt) > block_w) block_w = hud_text_width(xp_txt);
+            if (ready && hud_text_width(sleep_hint) > block_w) block_w = hud_text_width(sleep_hint);
+            const int last_y = ready ? SCREEN_H - 16 : SCREEN_H - 28;
+            const int block_top = SCREEN_H - 40 - 2;
+            const int block_bottom = last_y + bestiary_font_line_height() + 1 + 2;     // exclusive
+            hud_dim_rect(buffer, (SCREEN_W - block_w) / 2 - 2, block_top, block_w + 6, block_bottom - block_top);
+            hud_text(buffer, (SCREEN_W - hud_text_width(nv_txt)) / 2, SCREEN_H - 40, nv_txt, lvl_ink);
+            hud_text(buffer, (SCREEN_W - hud_text_width(xp_txt)) / 2, SCREEN_H - 28, xp_txt, xp_ink);
+            if (ready) hud_text(buffer, (SCREEN_W - hud_text_width(sleep_hint)) / 2, SCREEN_H - 16, sleep_hint, lvl_ink);
+        }
+#endif
+#if ENCOUNTERS_PROTO
+        if (boss_hud_active()) boss_draw_hud(buffer, SCREEN_W - 6, hud_text);      // thin bar from the right edge, above the orbs
 #endif
         return;
     }
@@ -2138,6 +2262,28 @@ static void on_enemy_death(const Enemy *e, fixed hit_vx, fixed hit_vy) {
         s_pending_count++;
     }
     if (g_death_phase == DEATH_VISUALS) { CRASH_MARK(CL_DEATH_HOOK_DONE, 0, 0); return; }
+#if ENCOUNTERS_PROTO
+    // ARPG: the hook gets a const pointer into g_enemies. An ally drops no runes; a dead enemy in a curse zone may rise (allies.c).
+    const int dead_slot = (e >= g_enemies && e < g_enemies + MAX_ENEMIES) ? (int)(e - g_enemies) : -1;
+    const int dead_was_ally = dead_slot >= 0 && g_enemy_ally[dead_slot];
+    if (dead_slot >= 0) allies_on_enemy_death(&g_enemies[dead_slot], g_enemies, MAX_ENEMIES);
+    {   // ARPG: experience runes, dropped once per death (this path only, never in the visuals phase).
+        int xp = dead_was_ally ? 0 : arpg_enemy_xp(e->type, enc_current_encounter());
+        if (xp > 0 && e->type == ENEMY_TYPE_ABANDERADO) {
+            // The boss splits its xp over ARPG_BOSS_RUNES runes scattered around it (the remainder goes on the first one).
+            static const int8_t rune_dx[ARPG_BOSS_RUNES] = { -1, 1, 0, 0, -1, 1 };
+            static const int8_t rune_dy[ARPG_BOSS_RUNES] = { 0, 0, -1, 1, -1, 1 };
+            int share = xp / ARPG_BOSS_RUNES;
+            for (int r = 0; r < ARPG_BOSS_RUNES; r++) {
+                int amount = (r == 0) ? xp - share * (ARPG_BOSS_RUNES - 1) : share;
+                pickups_spawn_xp(e->x + TO_FIXED(rune_dx[r] * ARPG_BOSS_RUNE_SPREAD),
+                                 e->y + TO_FIXED(rune_dy[r] * ARPG_BOSS_RUNE_SPREAD), amount);
+            }
+        } else if (xp > 0) {
+            pickups_spawn_xp(e->x, e->y, xp);
+        }
+    }
+#endif
     weapons_enemy_died(e);                    // Martirio Contagioso (needs the burn layers, still intact here)
 #if !ENCOUNTERS_PROTO
     if (s_strip_mode) {
@@ -2171,6 +2317,7 @@ static void death_chunks_update(void) {
 static void weapons_and_effects_update(void) {
     weapons_set_hero_pos(TO_INT(s_player.x), TO_INT(s_player.y));
     weapons_update(g_enemies, MAX_ENEMIES);
+    curse_update(g_enemies, MAX_ENEMIES);
     death_chunks_update();
     exvoto_melt_update();
 }
@@ -2191,6 +2338,7 @@ static void strip_shift_world_y(int dy_px) {
     remate_shift_y(dy_px);
     s_cam_y += dy_px;
     weapons_shift_y(dy_px);
+    curse_shift_y(dy_px);
     pickups_shift_y(dy_px);
     enemy_puddles_shift_y(dy_px);
 
@@ -2249,7 +2397,9 @@ static void strip_enemies_update(void) {
     // Encounters and corridors replace the horde, the tide, the gems and the hearts (DESIGN.md 6.13.6).
     enemy_ai_set_view(s_cam_x, s_cam_y - SCREEN_H, s_cam_y + SCREEN_H);
     enemy_ai_update(g_enemies, MAX_ENEMIES, s_player.x, s_player.y);
+    allies_update(g_enemies, MAX_ENEMIES);                  // ARPG: Resurreccion allies (allies.c)
     enc_update(g_enemies, MAX_ENEMIES, TO_INT(s_player.x), TO_INT(s_player.y));
+    pickups_update(s_player.x, s_player.y, &g_player_state);     // ARPG: remate orbs (health, mana)
     return;
 #endif
 #if !CATHEDRAL_PLAYGROUND || CATHEDRAL_AI == 2
@@ -2375,10 +2525,54 @@ static void camera_init(void) {
     update_camera();
 }
 
+// ARPG punch (DESIGN.md 7.2): the nearest enemy in reach takes ARPG_PUNCH_DAMAGE and is pushed a little.
+// A survivor that is an Exvoto or a Cireneo reels even above half life, so a remate can follow.
+static void arpg_punch(void) {
+    int best = -1, best_d2 = 0x7fffffff, best_dx = 0, best_dy = 0;
+    const int range2 = ARPG_PUNCH_RANGE * ARPG_PUNCH_RANGE;
+    for (int i = 0; i < MAX_ENEMIES; i++) {
+        const Enemy *e = &g_enemies[i];
+        if (g_enemy_ally[i] || !e->active || e->hp <= 0 || e->state == ENEMY_STATE_EMERGE) continue;
+#if ENCOUNTERS_PROTO
+        if (enc_untouchable(e)) continue;
+#endif
+        int dx = TO_INT(e->x - s_player.x), dy = TO_INT(e->y - s_player.y);
+        int d2 = dx * dx + GROUND_DY2(dy);
+        if (d2 <= range2 && d2 < best_d2) { best_d2 = d2; best = i; best_dx = dx; best_dy = dy; }
+    }
+    if (best < 0) return;
+    Enemy *e = &g_enemies[best];
+    s_player.dir = aim_dir_from_screen(player_screen_x(e->x, e->y) - player_screen_x(s_player.x, s_player.y),
+                                       player_screen_y(e->x, e->y) - player_screen_y(s_player.x, s_player.y));
+    const fixed push_x = best_dx < 0 ? -128 : (best_dx > 0 ? 128 : 0);   // 8.8: a small shove away from the hero
+    const fixed push_y = best_dy < 0 ? -128 : (best_dy > 0 ? 128 : 0);
+    enemy_hit(e, ARPG_PUNCH_DAMAGE, push_x, push_y);
+    if (e->active && e->hp > 0 && (e->type == ENEMY_TYPE_EXVOTO || e->type == ENEMY_TYPE_CHARGER)) {
+        if (e->state != ENEMY_STATE_WOBBLE) e->state_timer = REMATE_WOBBLE_FRAMES;
+        e->state = ENEMY_STATE_WOBBLE;
+        e->aim_px = e->aim_py = 0;
+    }
+    if (g_hitstop_frames < 3) g_hitstop_frames = 3;
+    weapons_request_shake(1, 4);
+}
+
+// ARPG L tap/hold state (see player_update).
+static int s_l_frames = 0;
+static int s_l_tracking = 0;
+static int s_l_consumed = 0;   // this L press already fired (hold, remate or punch); cleared only when L is released
+static int s_punch_cooldown = 0;
+
+// Early-return paths skip the L input code: drop the tracking so it cannot get stuck.
+static void l_tracking_abort(uint32_t keys) {
+    s_l_tracking = 0;
+    if (!(keys & KEY_L)) s_l_consumed = 0;
+}
+
 static void player_update(uint32_t keys, uint32_t keys_down) {
     if (g_player_state.invuln_timer > 0) g_player_state.invuln_timer--;
 
     if (g_player_state.is_dead) {
+        l_tracking_abort(keys);
         remate_reset();
         s_player.is_moving = 0;
         s_player.frame = 0;
@@ -2407,6 +2601,7 @@ static void player_update(uint32_t keys, uint32_t keys_down) {
             s_player.anim_timer = 0;
             s_player.frame = (s_player.frame + 1) % PLAYER_NUM_FRAMES;
         }
+        l_tracking_abort(keys);
         update_camera();
         return;
     }
@@ -2418,6 +2613,7 @@ static void player_update(uint32_t keys, uint32_t keys_down) {
         s_shot_active = 0;
         s_hero_clip_frame = -1;
         s_latch_pressed = s_latch_released = 0;
+        l_tracking_abort(keys);
         update_camera();
         return;
     }
@@ -2439,7 +2635,7 @@ static void player_update(uint32_t keys, uint32_t keys_down) {
     if ((keys & (KEY_L | KEY_R)) == (KEY_L | KEY_R) && (keys_down & KEY_X)) {
         int best = -1, best_d2 = 0x7fffffff;
         for (int i = 0; i < MAX_ENEMIES; i++) {
-            if (!g_enemies[i].active || g_enemies[i].hp <= 0) continue;
+            if (g_enemy_ally[i] || !g_enemies[i].active || g_enemies[i].hp <= 0) continue;
             int dx = TO_INT(g_enemies[i].x - s_player.x), dy = TO_INT(g_enemies[i].y - s_player.y);
             int d2 = dx * dx + GROUND_DY2(dy);
             if (d2 < best_d2) { best_d2 = d2; best = i; }
@@ -2447,7 +2643,7 @@ static void player_update(uint32_t keys, uint32_t keys_down) {
         if (best >= 0) {
             int pack = g_enemies[best].pack;
             for (int i = 0; i < MAX_ENEMIES; i++)
-                if (g_enemies[i].active && g_enemies[i].hp > 0 && g_enemies[i].pack == pack)
+                if (g_enemies[i].active && g_enemies[i].hp > 0 && g_enemies[i].pack == pack && !g_enemy_ally[i])
                     enemy_hit(&g_enemies[i], 9999, 0, 0);
         }
     }
@@ -2459,7 +2655,33 @@ static void player_update(uint32_t keys, uint32_t keys_down) {
         s_shot_active = 0;
         s_hero_clip_frame = -1;
         s_latch_pressed = s_latch_released = 0;
+        s_l_tracking = 0;
+        s_l_consumed = 1;      // the remate owns this press: no punch, no hold switch
         return;
+    }
+    // ARPG: L held past ARPG_L_HOLD_FRAMES is a hold (arpg_on_l_hold); L released before that is a tap = punch.
+    // Level-based start: a press whose edge was missed (hitstop, skipped frames) still starts tracking while L is held.
+    // Holding R with L (debug combos) never starts a hold and never punches.
+    if (s_punch_cooldown > 0) s_punch_cooldown--;
+    if (keys & KEY_L) {
+        if (!s_l_tracking && !s_l_consumed && !(keys & KEY_R)) {
+            s_l_tracking = 1;
+            s_l_frames = 1;
+        } else if (s_l_tracking && ++s_l_frames >= ARPG_L_HOLD_FRAMES) {
+            s_l_tracking = 0;
+            s_l_consumed = 1;
+            arpg_on_l_hold();
+        }
+    } else {
+        s_l_consumed = 0;
+        // Tap: tracked press released before the threshold, or a press edge seen only on release.
+        if (s_l_tracking || (keys_down & KEY_L)) {
+            s_l_tracking = 0;
+            if (!(keys & KEY_R) && s_punch_cooldown <= 0) {
+                arpg_punch();
+                s_punch_cooldown = ARPG_PUNCH_COOLDOWN;
+            }
+        }
     }
     // Playground ROM: R puts the parked dummies back (no-op in every other build).
     if (keys_down & KEY_R) sandbox_respawn();
@@ -2616,7 +2838,15 @@ static void player_update(uint32_t keys, uint32_t keys_down) {
     s_hero_clip_frame = hero_clip_frame();
     player_muzzle(&in.muzzle_x, &in.muzzle_y, &in.muzzle_h);
 
-    int result = weapons_input(&g_player_state, &in, g_enemies, MAX_ENEMIES);
+    int result;
+#if ENCOUNTERS_PROTO
+    if (g_arpg.spell == 1 && arpg_tree_has(0)) {
+        // Maldicion (DESIGN.md 7.3): the stylus throws the curse; while aiming the hero stands still, as with the ray.
+        result = curse_input(&g_player_state, touch_down, pressed, in.touch_x, in.touch_y, s_player.x, s_player.y)
+                 ? WEAPON_RESULT_ROOTED : 0;
+    } else
+#endif
+    result = weapons_input(&g_player_state, &in, g_enemies, MAX_ENEMIES);
     s_rooted = (result & WEAPON_RESULT_ROOTED) != 0;
     // Recompute after the input so a release or a body-radius cancel drops the charge pose on
     // this same frame instead of leaving the previous one on screen for one more frame.
@@ -2674,9 +2904,14 @@ static void arena_restart(void) {
     s_player.anim_timer = 0;
     mods_reset();                    // a new run: modifiers are lost (DESIGN.md 5)
     upgrades_reset((uint32_t)cpuGetTiming() ^ s_frame_index ^ 0x55504752u);   // xp, level, Dones and relics too
+#if ENCOUNTERS_PROTO
+    arpg_tree_apply();              // skill tree (DESIGN.md 7.3): bought nodes give their relics and Dones again
+#endif
     player_state_init(&g_player_state);
     g_player_state.god_mode = god;
     weapons_init();
+    curse_reset();
+    allies_reset();
     nav_set_goal(g_arena->player_x, g_arena->player_y);
     if (!s_strip_mode) nav_rebuild_now();
     s_rooted = 0;
@@ -2762,7 +2997,27 @@ static void on_vblank_irq(void) {
     s_vblank_count++;
 }
 
+#if ENCOUNTERS_PROTO
+// Leaves the dungeon for the camp (death or pause menu): saves the progress, stops the run and opens the camp.
+static void run_to_camp(void) {
+    arpg_progress_save();
+    s_run_started = 0;
+    // Drop the run HUD left in both bottom actor pages (orbs, xp, ...): the camp draws its own menu on top.
+    {
+        uint32_t zero = 0;
+        swiFastCopy(&zero, bot_page_ptr(8), COPY_MODE_FILL | (SCREEN_W * SCREEN_H * 2 / 4));
+        swiFastCopy(&zero, bot_page_ptr(24), COPY_MODE_FILL | (SCREEN_W * SCREEN_H * 2 / 4));
+        memset(s_dirty, 0, sizeof(s_dirty));
+    }
+    weapons_cancel_aim();
+    sfx_stop_bgm();
+    s_keys_down_latch = 0;
+    menu_open_camp();
+}
+#endif
+
 int main(void) {
+    arpg_progress_reset();      // once per boot: the banked xp survives every restart (arena_restart never touches g_arpg)
     irqSet(IRQ_VBLANK, on_vblank_irq);
     irqEnable(IRQ_VBLANK);
     cpuStartTiming(0);
@@ -3010,6 +3265,12 @@ int main(void) {
                 touch_track(0, 0, 0);
                 continue;
             }
+#if ENCOUNTERS_PROTO
+            if (act == MENU_ACT_START_INTRO) {
+                arpg_progress_reset();      // a new game: the save file is overwritten with the empty one
+                arpg_progress_save();
+            }
+#endif
             if (act == MENU_ACT_START_INTRO) {
 #if HW_SHADOWS
                 hwshadow_regs_off();
@@ -3034,7 +3295,7 @@ int main(void) {
                 memset(s_dirty, 0, sizeof(s_dirty));
                 memset(s_dirty_top, 0, sizeof(s_dirty_top));
             }
-            if (act == MENU_ACT_START_NEW || act == MENU_ACT_START_INTRO) {
+            if (act == MENU_ACT_START_NEW || (!ENCOUNTERS_PROTO && act == MENU_ACT_START_INTRO)) {
                 menu_close();
                 s_run_started = 1;
                 arena_restart();
@@ -3056,6 +3317,41 @@ int main(void) {
                 s_menu_ignore_held_touch = touch_down;
                 touch_track(0, 0, 0);
             }
+#if ENCOUNTERS_PROTO
+            else if (act == MENU_ACT_START_INTRO) {
+                menu_open_camp();           // the intro is over: the camp, not the dungeon
+            } else if (act == MENU_ACT_CONTINUE) {
+                if (!arpg_progress_load()) arpg_progress_reset();
+                menu_open_camp();
+            } else if (act == MENU_ACT_ENTER_DUNGEON) {
+                menu_close();
+                s_run_started = 1;
+                arena_restart();
+                sfx_start_bgm();
+            } else if (act == MENU_ACT_SLEEP) {
+                // The camp stays open; the message says what the sleep did.
+                int gained = arpg_sleep();
+                char msg[48];
+                arpg_progress_save();
+                if (gained > 0) {
+                    snprintf(msg, sizeof(msg), "Has subido %d nivel(es). Puntos: %d", gained, (int)g_arpg.points);
+                } else {
+                    unsigned long missing = (unsigned long)(arpg_xp_needed(g_arpg.level) - (int)g_arpg.xp);
+                    snprintf(msg, sizeof(msg), "Necesitas %lu exp más", missing);
+                }
+                menu_camp_message(msg);
+                if (g_arpg.points > 0) menu_open_tree();   // spend the new points; the camp message waits behind
+            } else if (act == MENU_ACT_TO_CAMP) {
+                menu_close();
+                run_to_camp();
+            }
+            if (act == MENU_ACT_ENTER_DUNGEON || act == MENU_ACT_CONTINUE || act == MENU_ACT_TO_CAMP ||
+                act == MENU_ACT_START_INTRO) {
+                s_keys_down_latch = 0;
+                s_menu_ignore_held_touch = touch_down;
+                touch_track(0, 0, 0);
+            }
+#endif
         } else {
             if (!touch_down) s_menu_ignore_held_touch = 0;
             touch_track(s_menu_ignore_held_touch ? 0 : touch_down, touch.px, touch.py);
@@ -3070,7 +3366,7 @@ int main(void) {
                        ENC_AUTO_PICK()) {
                 upgrades_begin_offer();            // scenarios: the first card (or a random one) at once, no menu
                 upgrades_choose(ENC_PICK());
-            } else if (s_run_started && upgrades_pending() > 0 && !g_player_state.is_dead &&
+            } else if (!ENCOUNTERS_PROTO && s_run_started && upgrades_pending() > 0 && !g_player_state.is_dead &&
                        s_transition == TRANSITION_NONE && g_hitstop_frames <= 0) {
                 // Level-up screen: drop any charge, then the menu freezes the simulation like the pause.
                 weapons_cancel_aim();
@@ -3103,6 +3399,7 @@ int main(void) {
             death_chunks_frame_begin();
             sandbox_update(g_enemies, MAX_ENEMIES, &s_player.x, &s_player.y);
             player_update(keys_held, s_keys_down_latch);
+            player_regen_mana(&g_player_state);
             if (s_strip_mode) {
                 strip_prepare_step(TO_INT(s_player.y));
                 strip_nav_stage_step();
@@ -3240,7 +3537,11 @@ int main(void) {
                 if (!(keys_held & restart_keys) && !touch_down) s_death_restart_armed = 1;
                 if (s_death_screen_frames >= STRIP_DEATH_SCREEN_FRAMES && s_death_restart_armed &&
                     ((keys_down & restart_keys) || touch_pressed)) {
+#if ENCOUNTERS_PROTO
+                    run_to_camp();          // the death screen ends at the camp; the banked xp is kept
+#else
                     arena_restart();
+#endif
                 }
                 s_death_prev_touch_down = touch_down;
             }

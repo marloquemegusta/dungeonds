@@ -637,3 +637,42 @@ Los sistemas (Ojo, flanqueo, Cireneo guardián, remate) se prueban **a través d
 - **Orden por mecánica nueva:** 1) la procesión ligera (Ojo con puesto fijo, cobertura baja); 2) el balcón (columnas y flanqueo de los Exvotos); 3) la primera sala media (Cireneo guardián). Después el resto del catálogo v3. El atrio (la mecánica de remate existe; la sala aún no está en la ROM) entra cuando se programe, sin prioridad: es un tutorial, no mide diversión.
 - **Pasadas por sala:** como mucho dos (equipo de referencia; sin Dones en el atrio y la primera ligera). Un cambio por vuelta.
 - **Primera prueba: partida de referencia.** Antes de rediseñar nada se juega la ROM actual 10 min puntuando cada sala (tensión, decisión, ¿repetir?) para tener una línea base de diversión y saber qué sala rediseñar primero. Plan en `walkthroughs/sala-atrio/plan_pruebas.md`.
+
+## 7. Pre-demo ARPG (prototipo, rama `proto/arpg`, decidido 2026-11-19)
+
+> **Aviso (2026-11-20):** esta sección describe **lo que está construido** en la primera pre-demo. El **diseño objetivo** de la protodemo y del juego final (castillo persistente estilo Castlevania con naves, galerías, capillas y cripta; progresión en dos capas, nivel y reliquias aleatorias por rareza; cuatro escuelas) se itera en `walkthroughs/arpg-predemo/diseno_juego_final.md` y sustituye a lo de aquí que lo contradiga (mazmorra infinita, árbol de 13 nodos). Al cerrarlo, se reescribe esta sección.
+
+Prueba de concepto de dos días: convertir la partida por encuentros en un Action RPG pequeño (un «Diablo 2 de DS») para comprobar si desbloquear y combinar habilidades divierte. Todo lo de esta sección es prototipo y sus cifras son `[TUNABLE-PLACEHOLDER]`; no sustituye a §6 hasta que el usuario lo apruebe. Fuera de esta versión: equipo y botín, mercader, enemigos y jefes con sprites nuevos, Catacumbas.
+
+### 7.1 Bucle
+- **Campamento ↔ mazmorra.** El campamento es, de momento, una pantalla de menú sobre la catedral oscurecida (como el título) con `Dormir`, `Entrar en la Catedral` y `Códice`. Se vuelve a él al morir o con `Volver al campamento` en la pausa. En los dos casos **se conserva toda la experiencia ganada**.
+- **Solo se sube de nivel al dormir.** La experiencia se acumula en la mazmorra; al dormir se convierten en niveles los que alcance (curva exponencial: cada vez hay que llegar más lejos para subir) y se gastan los puntos en el árbol.
+- **Mazmorra infinita, sala tras sala** (decidido 2026-11-19): cada sala es un piso y al abrirse su barrera se entra directamente en la siguiente, **sin pasillos**. No hay relicarios de ningún tipo ni Altar. Cada 5 pisos, un jefe: el Abanderado (piso 5), un Abanderado élite con más vida y más monaguillos (piso 10), un Abanderado élite con escolta (piso 15) y, a partir de ahí, la misma escala sigue subiendo. Se sale al morir o desde la pausa.
+- **Siempre se empieza desde el piso 1** (sin atajos): la progresión es el nivel y el árbol.
+- **La experiencia cae como runas** al morir cada enemigo y se recoge al pasar; los jefes sueltan muchas más.
+- **Dificultad por profundidad:** la vida y el número de enemigos suben con el piso. Al principio se muere pronto; es lo esperado.
+- **Sin mercader** en esta versión.
+- **Guardado** en la tarjeta: nivel, experiencia, puntos y nodos del árbol, piso más profundo alcanzado.
+
+### 7.2 Personaje: vida, maná y controles
+- **Vida en puntos** (base 100, +10 por nivel) y **maná** (base 60, +5 por nivel), mostrados como **dos orbes tipo Diablo** en las esquinas inferiores de la pantalla táctil (vida a la izquierda, maná a la derecha), con colores apagados (§6.10). Cada enemigo quita su propio daño por golpe.
+- **Lápiz:** lanza el hechizo activo, que gasta maná. Sin maná no se lanza.
+- **`L` corto:** remate sobre un enemigo tambaleante (§6.13.8). Si no hay ninguno al alcance, **puñetazo** cuerpo a cuerpo, siempre disponible: poco daño y deja al enemigo tambaleante si no lo mata.
+- **El remate suelta vida y maná con probabilidad** (como Doom): orbes que caen al suelo y se recogen al pasar. Es la forma principal de recuperarse.
+- **`L` mantenido:** cambia el hechizo activo entre Rayo y Maldición (si está desbloqueada).
+- **Maná:** se regenera muy despacio.
+
+### 7.3 Hechizos y árbol
+- **Rayo** (de partida): el rayo cargado actual, más débil al principio y con coste de maná.
+- **Maldición** (se desbloquea con un punto): se lanza al punto que toca el lápiz, como la granada retirada (rescatable de `7aa3b5f`), y deja en el suelo una zona que aplica Quemado durante unos segundos.
+- **Cuatro ramas de tres nodos**, en orden dentro de cada rama, un punto por nodo:
+
+| Hechizo | Rama | Nodo 1 | Nodo 2 | Nodo 3 |
+|---|---|---|---|---|
+| Rayo | Metralleta | Carga más rápida (Prisa) | Sed de Ceniza | Lanza de Longinos |
+| Rayo | Quemadura | Llama Votiva | Más daño de fuego (Brasa) | Auto de Fe |
+| Maldición | Veneno | Zona más grande y duradera | Aura de Cilicio | Martirio Contagioso |
+| Maldición | Resurrección | Los que mueren en la zona se levantan como Exvotos aliados (máx. 2, unos segundos) | Hasta 4 aliados y duran más | Los aliados explotan al morir |
+
+- Cada nivel da 1 punto. Las ramas de la Maldición necesitan tenerla desbloqueada.
+- La pantalla del árbol se abre al dormir: cuatro columnas de nodos con nombre y estado (comprado, disponible, bloqueado).

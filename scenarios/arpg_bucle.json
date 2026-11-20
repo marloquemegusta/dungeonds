@@ -1,0 +1,19 @@
+{
+  "name": "arpg_bucle",
+  "description": "Pre-demo ARPG: titulo -> Nueva partida -> saltar intro -> campamento -> Entrar en la Catedral -> primera sala. Solo capturas.",
+  "suite": false,
+  "evidence_only": true,
+  "steps": [
+    { "frames": 60, "capture": "00_titulo" },
+    { "tap": { "x": 128, "y": 66 }, "frames": 6 },
+    { "release": true, "frames": 40 },
+    { "button_down": "START", "frames": 4 },
+    { "button_up": "START", "frames": 40, "capture": "01_campamento" },
+    { "tap": { "x": 128, "y": 114 }, "frames": 6 },
+    { "release": true, "frames": 20, "capture": "02_dormir" },
+    { "tap": { "x": 128, "y": 143 }, "frames": 6 },
+    { "release": true, "frames": 90, "capture": "03_mazmorra" },
+    { "button_down": "UP", "frames": 120 },
+    { "button_up": "UP", "frames": 30, "capture": "04_subiendo" }
+  ]
+}

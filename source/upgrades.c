@@ -2,6 +2,7 @@
 #include "modifiers.h"
 #include "gameplay.h"
 #include "weapons.h"
+#include "arpg.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -229,7 +230,10 @@ void upgrades_begin_offer(void) {
 }
 
 static void heal_one(void) {
-    if (g_player_state.hp < g_player_state.max_hp) g_player_state.hp++;
+    if (g_player_state.hp < g_player_state.max_hp) {
+        g_player_state.hp += ARPG_HEAL_PICKUP;
+        if (g_player_state.hp > g_player_state.max_hp) g_player_state.hp = g_player_state.max_hp;
+    }
 }
 
 // Total effect of each Don at its top rank, spread over UPG_MAX_RANK ranks (DESIGN.md 6.12.10). The cumulative
@@ -249,7 +253,7 @@ static void apply_don(int id) {
     case DON_RESCOLDO: g_mods.burn_cap_bonus += rank_step(4, s_rank[id]); g_mods.burn_dur_bonus += rank_step(120, s_rank[id]); break;
     case DON_PASO:     g_mods.speed_pct += rank_step(48, s_rank[id]); break;
     case DON_VIDA:
-        int hearts = rank_step(4, s_rank[id]);   // +4 hearts over all ranks; every rank still heals 1
+        int hearts = rank_step(4, s_rank[id]) * 20;   // +4 hearts over all ranks (20 life points each, ARPG); every rank still heals 1
         g_mods.max_hp += hearts;
         g_player_state.max_hp += hearts;
         heal_one();
@@ -271,7 +275,8 @@ static void apply_llaga(void) {
 // Hearts below 5 while Llaga Abierta is owned (0 without it): the damage bonus and the crimson look read this.
 int upgrades_llaga_missing(void) {
     if (!(s_relic_mask & (1u << RELIC_LLAGA))) return 0;
-    int missing = PLAYER_MAX_HP - g_player_state.hp;
+    int hearts = (g_player_state.hp + 19) / 20;     // life points -> hearts (20 per heart)
+    int missing = PLAYER_MAX_HP - hearts;
     return missing > 0 ? missing : 0;
 }
 
@@ -284,6 +289,17 @@ static void grant_relic(int id) {
     if (id >= UPG_RELIC_COUNT || (s_relic_mask & (1u << id))) return;
     s_relic_mask |= (uint16_t)(1u << id);   // behaviour lives in the weapon / fire / hit code
     if (id == RELIC_LLAGA) apply_llaga();
+}
+
+// Skill tree (arpg_tree.c): bought nodes are applied at the start of a run through these two.
+void upgrades_grant_relic(int id) {
+    grant_relic(id);
+}
+
+void upgrades_set_don_rank(int id, int rank) {
+    if ((unsigned)id >= UPG_DON_COUNT) return;
+    if (rank > UPG_MAX_RANK) rank = UPG_MAX_RANK;
+    while (s_rank[id] < rank) apply_don(id);
 }
 
 void upgrades_choose(int i) {

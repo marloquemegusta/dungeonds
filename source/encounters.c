@@ -3,6 +3,7 @@
 #include "gameplay.h"
 #include "modifiers.h"
 #include "player_sprite.h"
+#include "arpg.h"
 #include <string.h>
 
 EncounterManager g_encounter_mgr;
@@ -119,7 +120,10 @@ void encounters_update(EncounterManager *mgr, Enemy *enemies, int max_enemies, f
         total_alive += alive[p];
         if (mgr->pack_alive[p] > 0 && alive[p] == 0) {          // the pack just died
             mgr->packs_cleared++;
-            if (g_player_state.hp < g_player_state.max_hp && !g_player_state.is_dead) g_player_state.hp++;
+            if (g_player_state.hp < g_player_state.max_hp && !g_player_state.is_dead) {
+                g_player_state.hp += ARPG_HEAL_PICKUP;
+                if (g_player_state.hp > g_player_state.max_hp) g_player_state.hp = g_player_state.max_hp;
+            }
             if (mgr->packs_cleared < mgr->packs_total) mods_offer(mgr->kill_x[p], mgr->kill_y[p]);
         }
         mgr->pack_alive[p] = alive[p];

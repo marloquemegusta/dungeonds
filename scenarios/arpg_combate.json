@@ -1,0 +1,521 @@
+{
+ "name": "arpg_combate",
+ "description": "Pre-demo ARPG: subir hasta la primera sala y combatir con rayo y L. Solo capturas.",
+ "suite": false,
+ "evidence_only": true,
+ "steps": [
+  {
+   "frames": 60
+  },
+  {
+   "tap": {
+    "x": 128,
+    "y": 66
+   },
+   "frames": 6
+  },
+  {
+   "release": true,
+   "frames": 40
+  },
+  {
+   "button_down": "START",
+   "frames": 4
+  },
+  {
+   "button_up": "START",
+   "frames": 40
+  },
+  {
+   "tap": {
+    "x": 128,
+    "y": 155
+   },
+   "frames": 6
+  },
+  {
+   "release": true,
+   "frames": 60
+  },
+  {
+   "poke": [
+    {
+     "field": "god",
+     "value": 1
+    }
+   ],
+   "frames": 2
+  },
+  {
+   "button_down": "UP",
+   "frames": 500
+  },
+  {
+   "button_up": "UP",
+   "frames": 60,
+   "capture": "01_entra",
+   "state_capture": "01_entra"
+  },
+  {
+   "button_down": "L",
+   "frames": 3
+  },
+  {
+   "button_up": "L",
+   "frames": 27
+  },
+  {
+   "button_down": "L",
+   "frames": 3
+  },
+  {
+   "button_up": "L",
+   "frames": 27
+  },
+  {
+   "button_down": "L",
+   "frames": 3
+  },
+  {
+   "button_up": "L",
+   "frames": 27
+  },
+  {
+   "button_down": "L",
+   "frames": 3
+  },
+  {
+   "button_up": "L",
+   "frames": 27
+  },
+  {
+   "button_down": "L",
+   "frames": 3
+  },
+  {
+   "button_up": "L",
+   "frames": 27,
+   "capture": "L04",
+   "state_capture": "L04"
+  },
+  {
+   "button_down": "L",
+   "frames": 3
+  },
+  {
+   "button_up": "L",
+   "frames": 27
+  },
+  {
+   "button_down": "L",
+   "frames": 3
+  },
+  {
+   "button_up": "L",
+   "frames": 27
+  },
+  {
+   "button_down": "L",
+   "frames": 3
+  },
+  {
+   "button_up": "L",
+   "frames": 27
+  },
+  {
+   "button_down": "L",
+   "frames": 3
+  },
+  {
+   "button_up": "L",
+   "frames": 27
+  },
+  {
+   "button_down": "L",
+   "frames": 3
+  },
+  {
+   "button_up": "L",
+   "frames": 27,
+   "capture": "L09",
+   "state_capture": "L09"
+  },
+  {
+   "tap": {
+    "x": 128,
+    "y": 60
+   },
+   "frames": 50
+  },
+  {
+   "release": true,
+   "frames": 10,
+   "capture": "R09",
+   "state_capture": "R09"
+  },
+  {
+   "button_down": "L",
+   "frames": 3
+  },
+  {
+   "button_up": "L",
+   "frames": 27
+  },
+  {
+   "button_down": "L",
+   "frames": 3
+  },
+  {
+   "button_up": "L",
+   "frames": 27
+  },
+  {
+   "button_down": "L",
+   "frames": 3
+  },
+  {
+   "button_up": "L",
+   "frames": 27
+  },
+  {
+   "button_down": "L",
+   "frames": 3
+  },
+  {
+   "button_up": "L",
+   "frames": 27
+  },
+  {
+   "button_down": "L",
+   "frames": 3
+  },
+  {
+   "button_up": "L",
+   "frames": 27,
+   "capture": "L14",
+   "state_capture": "L14"
+  },
+  {
+   "button_down": "L",
+   "frames": 3
+  },
+  {
+   "button_up": "L",
+   "frames": 27
+  },
+  {
+   "button_down": "L",
+   "frames": 3
+  },
+  {
+   "button_up": "L",
+   "frames": 27
+  },
+  {
+   "button_down": "L",
+   "frames": 3
+  },
+  {
+   "button_up": "L",
+   "frames": 27
+  },
+  {
+   "button_down": "L",
+   "frames": 3
+  },
+  {
+   "button_up": "L",
+   "frames": 27
+  },
+  {
+   "button_down": "L",
+   "frames": 3
+  },
+  {
+   "button_up": "L",
+   "frames": 27,
+   "capture": "L19",
+   "state_capture": "L19"
+  },
+  {
+   "tap": {
+    "x": 128,
+    "y": 60
+   },
+   "frames": 50
+  },
+  {
+   "release": true,
+   "frames": 10,
+   "capture": "R19",
+   "state_capture": "R19"
+  },
+  {
+   "button_down": "L",
+   "frames": 3
+  },
+  {
+   "button_up": "L",
+   "frames": 27
+  },
+  {
+   "button_down": "L",
+   "frames": 3
+  },
+  {
+   "button_up": "L",
+   "frames": 27
+  },
+  {
+   "button_down": "L",
+   "frames": 3
+  },
+  {
+   "button_up": "L",
+   "frames": 27
+  },
+  {
+   "button_down": "L",
+   "frames": 3
+  },
+  {
+   "button_up": "L",
+   "frames": 27
+  },
+  {
+   "button_down": "L",
+   "frames": 3
+  },
+  {
+   "button_up": "L",
+   "frames": 27,
+   "capture": "L24",
+   "state_capture": "L24"
+  },
+  {
+   "button_down": "L",
+   "frames": 3
+  },
+  {
+   "button_up": "L",
+   "frames": 27
+  },
+  {
+   "button_down": "L",
+   "frames": 3
+  },
+  {
+   "button_up": "L",
+   "frames": 27
+  },
+  {
+   "button_down": "L",
+   "frames": 3
+  },
+  {
+   "button_up": "L",
+   "frames": 27
+  },
+  {
+   "button_down": "L",
+   "frames": 3
+  },
+  {
+   "button_up": "L",
+   "frames": 27
+  },
+  {
+   "button_down": "L",
+   "frames": 3
+  },
+  {
+   "button_up": "L",
+   "frames": 27,
+   "capture": "L29",
+   "state_capture": "L29"
+  },
+  {
+   "tap": {
+    "x": 128,
+    "y": 60
+   },
+   "frames": 50
+  },
+  {
+   "release": true,
+   "frames": 10,
+   "capture": "R29",
+   "state_capture": "R29"
+  },
+  {
+   "button_down": "L",
+   "frames": 3
+  },
+  {
+   "button_up": "L",
+   "frames": 27
+  },
+  {
+   "button_down": "L",
+   "frames": 3
+  },
+  {
+   "button_up": "L",
+   "frames": 27
+  },
+  {
+   "button_down": "L",
+   "frames": 3
+  },
+  {
+   "button_up": "L",
+   "frames": 27
+  },
+  {
+   "button_down": "L",
+   "frames": 3
+  },
+  {
+   "button_up": "L",
+   "frames": 27
+  },
+  {
+   "button_down": "L",
+   "frames": 3
+  },
+  {
+   "button_up": "L",
+   "frames": 27,
+   "capture": "L34",
+   "state_capture": "L34"
+  },
+  {
+   "button_down": "L",
+   "frames": 3
+  },
+  {
+   "button_up": "L",
+   "frames": 27
+  },
+  {
+   "button_down": "L",
+   "frames": 3
+  },
+  {
+   "button_up": "L",
+   "frames": 27
+  },
+  {
+   "button_down": "L",
+   "frames": 3
+  },
+  {
+   "button_up": "L",
+   "frames": 27
+  },
+  {
+   "button_down": "L",
+   "frames": 3
+  },
+  {
+   "button_up": "L",
+   "frames": 27
+  },
+  {
+   "button_down": "L",
+   "frames": 3
+  },
+  {
+   "button_up": "L",
+   "frames": 27,
+   "capture": "L39",
+   "state_capture": "L39"
+  },
+  {
+   "tap": {
+    "x": 128,
+    "y": 60
+   },
+   "frames": 50
+  },
+  {
+   "release": true,
+   "frames": 10,
+   "capture": "R39",
+   "state_capture": "R39"
+  },
+  {
+   "frames": 120,
+   "capture": "99_fin",
+   "state_capture": "99_fin"
+  }
+ ],
+ "state": {
+  "elf": "../.ds-game-dev/build/out/dungeonds.elf",
+  "symbols": {
+   "stats": "g_enc_stats",
+   "nav": "g_nav_state",
+   "rt": "s_rt",
+   "fb": "s_first_block",
+   "pl": "s_player",
+   "sh": "s_shift_total_px",
+   "gps": "g_player_state",
+   "arpg": "g_arpg"
+  },
+  "default_symbol": "stats",
+  "fields": {
+   "woken": {
+    "offset": 4,
+    "type": "u8"
+   },
+   "spawned0": {
+    "symbol": "rt",
+    "offset": 0,
+    "type": "u8"
+   },
+   "awake0": {
+    "symbol": "rt",
+    "offset": 1,
+    "type": "u8"
+   },
+   "cleared0": {
+    "symbol": "rt",
+    "offset": 2,
+    "type": "u8"
+   },
+   "py": {
+    "symbol": "pl",
+    "offset": 4,
+    "type": "s32"
+   },
+   "hp": {
+    "symbol": "gps",
+    "offset": 0,
+    "type": "s32"
+   },
+   "mana": {
+    "symbol": "gps",
+    "offset": 24,
+    "type": "s32"
+   },
+   "xp": {
+    "symbol": "arpg",
+    "offset": 8,
+    "type": "u32"
+   },
+   "god": {
+    "symbol": "gps",
+    "offset": 20,
+    "type": "s32"
+   },
+   "alive": {
+    "offset": 61,
+    "type": "u8"
+   },
+   "cleared": {
+    "offset": 5,
+    "type": "u8"
+   }
+  }
+ }
+}

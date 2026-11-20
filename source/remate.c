@@ -3,6 +3,8 @@
 #include "collision.h"
 #include "enemy_ai.h"
 #include "weapons.h"
+#include "pickups.h"
+#include "allies.h"
 #include <stdio.h>
 
 static uint8_t s_bin_buf[REMATE_MAX_BIN_BYTES] __attribute__((aligned(4)));
@@ -110,7 +112,7 @@ int remate_start(Enemy *enemies, int max_enemies, fixed hero_x, fixed hero_y, in
     int best = -1, best_d2 = REMATE_RANGE * REMATE_RANGE + 1;
     for (int i = 0; i < max_enemies; i++) {
         const Enemy *e = &enemies[i];
-        if (!e->active || e->hp <= 0 || e->state != ENEMY_STATE_WOBBLE) continue;
+        if (g_enemy_ally[i] || !e->active || e->hp <= 0 || e->state != ENEMY_STATE_WOBBLE) continue;
         if (e->type != ENEMY_TYPE_EXVOTO && e->type != ENEMY_TYPE_CHARGER) continue;
         int dx = TO_INT(e->x) - hx, dy = TO_INT(e->y) - hy;
         int d2 = dx * dx + GROUND_DY2(dy);
@@ -224,6 +226,7 @@ void remate_update(Enemy *enemies, int max_enemies, fixed *hero_x, fixed *hero_y
     e->state = ENEMY_STATE_CHASE;
     s_killing = 1;
     enemy_hit(e, 9999, 0, 0);
+    pickups_remate_drops(e->x, e->y);            // ARPG: the finisher drops health and mana orbs
     s_killing = 0;
     if (s_hero_end_ok) {
         *hero_x = TO_FIXED(s_ax);

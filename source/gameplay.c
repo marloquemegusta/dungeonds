@@ -7,6 +7,11 @@
 #include "upgrades.h"
 #include "sfx.h"
 #include "remate.h"
+#include "arpg.h"
+#include "arpg_progress.h"
+#include "arpg_tree.h"
+#include "weapons.h"
+#include "curse.h"
 #include <string.h>
 #if ENCOUNTERS_PROTO
 #include "encounters_act1.h"
@@ -75,19 +80,58 @@ int rng_range(int min, int max) {
 
 PlayerState g_player_state;
 int g_hitstop_frames = 0;
+int g_arpg_level = 1;
+
+static int s_mana_regen_timer = 0;
+
+// L held past ARPG_L_HOLD_FRAMES: toggles the active spell (Rayo <-> Maldicion) once the curse is unlocked.
+void arpg_on_l_hold(void) {
+    if (!arpg_tree_has(0)) return;
+    g_arpg.spell = g_arpg.spell ? 0 : 1;
+    weapons_cancel_aim();
+    curse_cancel_aim();
+    sfx_play(SND_HEART_CHARGE, -1);
+}
+
+int arpg_enemy_damage(int enemy_type) {
+    switch (enemy_type) {
+    case ENEMY_TYPE_EXVOTO:     return ARPG_DMG_EXVOTO;
+    case ENEMY_TYPE_MONAGUILLO: return ARPG_DMG_MONAGUILLO;
+    case ENEMY_TYPE_CHARGER:    return ARPG_DMG_CIRENEO;
+    case ENEMY_TYPE_SHOOTER:    return ARPG_DMG_OJO;
+    case ENEMY_TYPE_ABANDERADO: return ARPG_DMG_ABANDERADO;
+    default:                    return ARPG_DMG_DEFAULT;
+    }
+}
+
+void player_regen_mana(PlayerState *player) {
+    if (!player || player->is_dead) return;
+    if (player->mana >= player->max_mana) {
+        s_mana_regen_timer = 0;
+        return;
+    }
+    if (++s_mana_regen_timer >= ARPG_MANA_REGEN_FRAMES) {
+        s_mana_regen_timer = 0;
+        player->mana++;
+    }
+}
 
 void player_state_init(PlayerState *player) {
     if (!player) return;
-    player->max_hp = PLAYER_MAX_HP + g_mods.max_hp;
+    // g_mods.max_hp is already in life points (Vida and Bone Plate add 20 per heart).
+    player->max_hp = ARPG_HP_BASE + (g_arpg_level - 1) * ARPG_HP_PER_LEVEL + g_mods.max_hp;
     player->hp = player->max_hp;
+    player->max_mana = ARPG_MANA_BASE + (g_arpg_level - 1) * ARPG_MANA_PER_LEVEL;
+    player->mana = player->max_mana;
+    s_mana_regen_timer = 0;
     player->current_weapon = WEAPON_SNIPER;  // the sacred ray is the hero's only weapon (DESIGN.md 6.9.1c)
     player->is_dead = 0;
     player->invuln_timer = 0;
 }
 
-int player_take_hit(PlayerState *player) {
+int player_take_damage(PlayerState *player, int damage) {
     if (!player || player->is_dead || player->god_mode || player->invuln_timer > 0 || remate_invuln() > 0) return 0;
-    player->hp--;
+    player->hp -= damage;
     player->invuln_timer = PLAYER_IFRAMES + g_mods.iframes;
     if (player->hp <= 0) {
         player->hp = 0;
@@ -100,6 +144,10 @@ int player_take_hit(PlayerState *player) {
 #endif
     sfx_play(SND_PLAYER_HURT, -1);
     return 1;
+}
+
+int player_take_hit(PlayerState *player) {
+    return player_take_damage(player, ARPG_DMG_DEFAULT);
 }
 
 // ---------------------------------------------------------------------------
