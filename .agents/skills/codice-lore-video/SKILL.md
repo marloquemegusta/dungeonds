@@ -41,6 +41,19 @@ Flujo estandarizado para crear vídeos verticales de lore estilo *Blasphemous* p
    - **Se paga con tiempo de historia:** se recortan unos 10 s de frases de contexto del medio; nunca el arranque ni la cita.
    - **Fuera del vídeo:** la misma pregunta abre el texto del post y va fijada como primer comentario.
    - **Medir:** comentarios por cada 1.000 vistas, en la tabla de `## Publicado` del lote, y comprobar que la retención final no cae.
+7. **Narrativa clara, no solo misterio (feedback 2026-11-19, Lope):** el borrador del 07 era enigmático y «no quedaba claro nada». Cada vídeo debe entenderse a la primera sin haber visto el Códice: quién es, qué hizo o le hicieron, por qué, y qué es hoy. El modelo es Remedios.
+   - **La culpa o la condena, como hecho concreto:** «calló» no basta; funcionó «Íñigo tenía rango para plantar cara al Tribunal (decir "yo también le amo") y no se atrevió, por conservar el mando». Si el lore deja un hueco, proponer al usuario 2-3 opciones con recomendación, y lo elegido se escribe en `LORE.md` antes de renderizar.
+   - **Las pistas a otras historias** (la mortaja vacía de Martín, el corazón de Elías) van al final y son un extra, no la historia.
+   - **Una idea que cierra el círculo:** el estandarte tocó el suelo cuando ardió Lope y Íñigo juró que no volvería a caer, que explica por qué cose las mortajas «para que nadie se quede atrás». Un detalle así vale más que más contexto.
+   - **Parejas del mismo sexo:** hay varias en el lore y es coherente si el castigo por amar es parte de la historia de ese personaje (Íñigo y Lope). Si solo es una historia de amor y pérdida (Martín y Bartolomé) basta «se amaban», sin castigo. No repetir el mismo motivo en dos vídeos seguidos.
+8. **Puesta en escena de los vídeos del Abanderado (feedback 2026-11-19):**
+   - **Sin cortejo por defecto:** el sprite es `abanderado_solo`. Los monaguillos solo salen cuando la frase habla de la Columna: capitán de espaldas (`N`) en el tercio superior, a 2,3× la escala de la formación, y detrás (hacia cámara) `multitud 9` en bloque 3×3 ordenado a 0,8× (`abanderado_solo + monaguillo_walk`).
+   - **`medio`:** plano de cintura para arriba, para presentar al personaje con un prop de fondo (el altar tras Íñigo); `cerca` es busto. El altar se dibuja detrás del personaje y a escala de plano general.
+   - **Props con alfa:** nunca un recuadro negro opaco que corte el penacho o la melena del personaje.
+   - **Ritmo lento:** andar a ritmo lento natural (`lento 1.5` en las partes de andar de Íñigo; la Columna avanza visible, no rápida). Si el usuario dice que algo anda rápido, se baja al ritmo más lento que ya aprobó.
+   - **Animación a medida** cuando el Códice no tiene la que pide la escena (derrumbarse y golpear el suelo): `abanderado_derrota`, de Mixamo «Plant A Plant» espejado y retocado con `tools/characters/build_abanderado_derrota.py`. El asta cae al suelo y se recoge.
+   - **Un personaje que sale como imagen del presente de otro** (el Ojo para el Tribunal): una sola aparición, sin nombre, para no confundirlo con Gaspar.
+9. **Duración y primera persona (feedback 2026-11-19):** si el usuario dice que le gusta la duración, no se recorta (07: 88 s, frente a los 50-60 s de la regla 2). La cita en primera persona se dice lenta y solemne: velocidad de la voz del personaje (`CHAR_SPEED`, 0,8 para Íñigo) y una `(pausa 0.5)` en mitad de la frase.
 
 ---
 
@@ -61,6 +74,7 @@ Flujo estandarizado para crear vídeos verticales de lore estilo *Blasphemous* p
   - **Mejor aún: recortar la frase de la muestra elegida** y usarla tal cual con `archivo:<ruta>` en la tabla de voces. Suena exactamente como lo que el usuario aprobó. Para eso, el texto de la muestra empieza por la frase final del personaje.
   - La cuenta tiene un tope de 10 voces creadas; `archivo:` no gasta hueco.
   - **Dos voces a la vez** (`A + B`): el generador las iguala de volumen antes de mezclarlas. Si los ritmos no casan, mejor repartir la frase entre ellas.
+  - **Velocidad por personaje:** `CHAR_SPEED` en `render_guiones.py` (0,7–1,2); para citas solemnes, 0,8.
 - **Música de fondo:** `assets/music/cathedral_battle_loop.wav` en bucle al 9 % con fade-in de 1,5 s y fade-out de 2,5 s.
 
 ---
