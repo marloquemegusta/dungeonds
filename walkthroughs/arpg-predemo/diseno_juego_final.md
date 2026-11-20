@@ -4,7 +4,8 @@ Documento vivo de la rama `proto/arpg`: se itera con el usuario y, cuando se cie
 
 ## 1. Modelo de juego [DECIDIDO]
 - Modelo Diablo 1 / Castlevania: **un campamento y un castillo-mazmorra persistente**, sin mundo exterior. Copiamos a Diablo sin complejos.
-- El progreso se acumula (no es un roguelite): lo explorado y vencido se queda; los enemigos normales reaparecen al dormir.
+- El progreso se acumula (no es un roguelite): lo explorado se queda en el mapa, y las puertas abiertas, los altares tocados, los cofres y los secretos encontrados no vuelven.
+- **[DECIDIDO 2026-11-20] Al dormir reaparecen todos los enemigos, también élites, minijefes y jefes**, para poder repetirlos a por mejor botín (farmeo, como en Diablo). Vencer a un jefe por primera vez abre el camino y queda registrado; repetirlo solo da botín y experiencia.
 - Combate por **densidad, no precisión**: grupitos de 3-6 enemigos que mueren en 1-2 golpes y quitan un 5-8 % de vida; muchos grupos por sala; élites y jefes largos (minutos). El reto es la build y no dejarse rodear. Tope técnico: ~24 enemigos activos a la vez (los grupos aparecen al acercarse).
 - Hitos: protodemo en 2 días (este finde); con ella se decide si la demo final es el roguelike o el ARPG.
 
