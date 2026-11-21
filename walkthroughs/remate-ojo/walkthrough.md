@@ -44,13 +44,15 @@ luz fija, como haría el juego. Cada dirección tiene su GIF y su carpeta de fot
   la tapa opuesta. **El brazo y la mano de piedra se quedan en el cuerpo.** El cuerpo ya no se hornea: se queda
   *skinned*, así que se deforma con la animación (antes era un bloque rígido que se volcaba).
 - **El desplome es la animación del inbox, no una rotación procedural.** `Falling Back Death.fbx` (79 fotogramas,
-  Mixamo) se retargetiza al esqueleto del Ojo: por hueso se copia el **delta de rotación de mundo respecto al
-  fotograma 7** (el de la reacción) **relativo a su padre**, y se compone sobre la pose de pie del Ojo; la traslación
-  de cadera se escala por 0,52 y se gira −100° para que el cuerpo caiga hacia +X (alejándose del héroe) y no se salga
-  de la celda. Cae de espaldas, con los brazos abiertos y una pierna arriba, como el clip.
+  Mixamo) se retargetiza al esqueleto del Ojo: por hueso se copia su **delta de rotación de mundo respecto al
+  fotograma 7** (el de la reacción) **relativo al padre**, y se compone sobre la pose de pie del Ojo; la traslación
+  de cadera se escala por 0,52 y se gira −100° para que el cuerpo caiga hacia +X (alejándose del héroe). Cae de
+  espaldas, con los brazos abiertos y una pierna arriba, como el clip. *(Corregido en la última vuelta: se estaba
+  aplicando la **pose absoluta** del clip en vez de su **cambio**, así que la pose del Ojo se sumaba dos veces y el
+  cuerpo se contorsionaba al caer.)*
 - **La sincronía patada–caída es un solo fotograma.** Antes el pie «entraba» donde el clip baja la pierna al suelo
   (a los pies del propio héroe) y el cuerpo se caía por su cuenta. Ahora el fotograma de contacto es el clip 23
-  (el pie ya está dentro del cuerpo, a 0,55 m de alto) y el desplome arranca **en ese mismo fotograma**; el 18 es el
+  (el pie ya está dentro del cuerpo, a 0,70 m de alto) y el desplome arranca **en ese mismo fotograma**; el 18 es el
   seguimiento (clip 25) y a partir de ahí el cuerpo acelera. No hay ni un fotograma en el que el cuerpo se mueva sin
   que el pie lo esté tocando.
 - **La patada no se corta a medias.** Se retargetiza también la **cadena de brazos, hombros, cuello y cabeza** (antes
@@ -60,7 +62,7 @@ luz fija, como haría el juego. Cada dirección tiene su GIF y su carpeta de fot
 - **El farol no vuela:** al rozarlo el pie en el 19 sale un palmo, rueda y se para (desplazamiento amortiguado de
   ~0,3 m; antes salía con parábola a 1,4 m/s y se iba de la celda).
 - **Escala y encuadre:** 38 px/m (exactamente la del remate del Exvoto en `generate_remate_sprites.py`) y celda de
-  96×96. La celda queda justa: el cuerpo caído llega al borde derecho en cuatro direcciones (tabla abajo).
+  96×96, que contiene el gesto en las 8 direcciones (tabla abajo).
 - **Punto de contacto:** se calcula con un pre-pase (se posa al héroe con el fotograma de contacto y se lee el pie).
 - **Manos sujetas por IK:** los objetivos se calculan sobre la jaula y siguen al farol mientras se lo lleva al pecho.
 
@@ -76,26 +78,26 @@ luz fija, como haría el juego. Cada dirección tiene su GIF y su carpeta de fot
 - Agarrador: hueco de las manos 0,000 m en el fotograma 2.
 - Farol limpio: la pieza arrancada son 1.158 caras de la cabeza (sin un solo vértice de brazo, hombro ni mano).
 - Contacto: pie del héroe en (0,68, 0,17, 0,71) — dentro del cuerpo, a la altura de la cadera, en el fotograma 17.
-- Desplome: en el 17 la cadera del Ojo está a 0,61 m (de pie) y en el 29 a 0,30 m, con el cuerpo tumbado y la
-  manta (malla) apoyada en el suelo (se corrige la penetración fotograma a fotograma).
+- Desplome: en el 17 la cadera del Ojo está a 0,61 m (de pie); en el 29 a 0,28 m y 0,44 m más atrás (x 0,72 → 1,16);
+  en el 37 el cuerpo queda tumbado de espaldas (cadera a 0,38 m), con la malla apoyada en el suelo
+  (se corrige la penetración fotograma a fotograma).
 - Recuperación: en el 37 el héroe vuelve a la pose de reposo exacta (cadera 0,47 m, cabeza 0,82 m, pie 0,09 m).
 - Encuadre en las 8 direcciones (caja de los personajes en píxeles de celda, 96×96, medido sobre los pases `lit`):
 
 | dir | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| x | 9–96 | 0–96 | 15–84 | 13–75 | 0–87 | 0–96 | 12–81 | 21–83 |
-| y | 11–77 | 10–72 | 8–78 | 6–80 | 5–77 | 7–78 | 9–84 | 11–80 |
+| x | 10–82 | 0–91 | 17–83 | 30–72 | 14–86 | 5–96 | 13–79 | 24–66 |
+| y | 17–72 | 19–70 | 19–76 | 19–80 | 18–73 | 15–66 | 15–73 | 16–77 |
 
-  En 0, 1, 4 y 5 el gesto **toca el borde** (no se recorta nada, pero no sobra sitio): es lo que ocupa la caída
-  completa en una celda de 96 px a 38 px/m. La celda del Exvoto se queda justa para una ejecución de 38 fotogramas con
-  caída larga; si se aprueba el gesto, hay que decidir celda (el Cireneo ya usa 116×116).
+  El gesto cabe en la celda del Exvoto en las 8 direcciones: solo en 1 y 5 roza el borde (0,2 px, inapreciable). La caída,
+  bien aplicada, ocupa menos que en la vuelta anterior y **no hace falta celda nueva**.
 - **No se ha integrado en la ROM** (`remate_sprites.c` solo conoce Exvoto y Cireneo) ni se ha medido en la DS.
   Es una ronda de diseño para aprobar el gesto.
 
 ## Pendiente
 
-- Aprobación del gesto por el usuario y, si se aprueba, decisión de celda: 38 fotogramas no caben en la celda de 12
-  del Exvoto; habría que decidir tamaño de celda y si se parte la acción en dos remates.
+- Aprobación del gesto por el usuario y, si se aprueba, decisión de si la ejecución larga (38 fotogramas, ~2,3 s)
+  convive con la celda de 12 del Exvoto o el Ojo estrena su propia duración.
 - Enlace con la mecánica: el Ojo hoy no se remata (es el ancla que obliga a subir, §6.13.9), así que integrarlo
   cambia la sala; decidir antes de programar.
 

@@ -164,6 +164,9 @@ def fall_rot(src, n):
     return FALL_MS3 @ src[n].to_3x3().normalized()
 
 
+FALL_REF_ROT = {n: fall_rot(FALL_WREF, n) for n in FALL_CHAIN}
+
+
 # ----------------------------------------------------------------------------------------------- heroe
 MAT_EMBER = flat_mat('brasa', (0.86, 0.52, 0.24, 1.0))      # FX_SH_GOLD / AMBER apagados
 MAT_EMBER2 = flat_mat('brasa2', (0.72, 0.33, 0.16, 1.0))
@@ -562,18 +565,17 @@ def ojo_standing(i):
 
 
 def apply_fall(ch, f):
+    """Aplica el CAMBIO del clip respecto a su fotograma de reaccion (FALL_REF) sobre la pose de pie del Ojo.
+    Por hueso se aplica su delta de mundo relativo al padre, asi que la pose del Ojo no se suma dos veces."""
     src = clip_pose(FALL_ARM, f)
     MT3 = ch.arm.matrix_world.to_3x3().normalized()
     W3i = ch.arm.matrix_world.to_3x3().inverted()
-    for n in FALL_CHAIN:
+    Q = {n: fall_rot(src, n) @ FALL_REF_ROT[n].inverted() for n in FALL_CHAIN}
+    for n in FALL_CHAIN:                       # ya ordenada padre primero
         pb = ch.arm.pose.bones[n]
         par = _fb[n].parent
         pn = par.name if par is not None else None
-        Rn = fall_rot(src, n)
-        if pn in src:
-            Dc = Rn @ fall_rot(src, pn).inverted()
-        else:
-            Dc = Rn @ (FALL_MS3 @ FALL_WREF[n].to_3x3().normalized()).inverted()
+        Dc = (Q[pn].inverted() @ Q[n]) if pn in Q else Q[n]
         D = FALL_RZ @ Dc @ FALL_RZ.inverted()
         head = pb.matrix.translation.copy()
         if n == P_ + 'Hips':
@@ -710,9 +712,19 @@ for i in frames:
     vis = [hero.mesh] + ([] if HERO_ONLY else [BODY_SKIN, HEAD_BAKED]) \
         + [s.o for s in rip_sparks + rip_glass + land_sparks + kick_sparks + kick_glass]
     for d in DIRS:
-        if os.environ.get('NO_RENDER') == '1':
-            break
         place_cam(CAM, CENTER, 45.0 - d * 45.0, 30.0, 1.0)
+        _dg = bpy.context.evaluated_depsgraph_get()
+        for o in vis[:1 + (0 if HERO_ONLY else 2)]:
+            _vs, _ = eval_world_mesh(o, _dg)
+            for v in _vs[::7]:
+                co = world_to_camera_view(bpy.context.scene, CAM, v)
+                bb = DIRBB.setdefault(d, [1e9, -1e9, 1e9, -1e9])
+                bb[0] = min(bb[0], co.x * 96)
+                bb[1] = max(bb[1], co.x * 96)
+                bb[2] = min(bb[2], (1 - co.y) * 96)
+                bb[3] = max(bb[3], (1 - co.y) * 96)
+        if os.environ.get('NO_RENDER') == '1':
+            continue
         _t = math.radians(-d * 45.0)
         _lib.LIGHT_DIR = V((math.cos(_t), math.sin(_t)))
         build_shadow(vis, mat=MAT_BLACK)
