@@ -33,6 +33,10 @@
     { "tap": { "x": 27, "y": 11 }, "frames": 6 },
     { "release": true, "frames": 15, "capture": "m06_rayo_seleccion" },
 
+    { "tap": { "x": 116, "y": 44 }, "frames": 6 },
+    { "tap": { "x": 44, "y": 82 }, "frames": 10, "capture": "m06b_drag_comparacion" },
+    { "release": true, "frames": 12, "capture": "m06c_drag_soltado" },
+
     { "button_down": "A", "frames": 4 },
     { "button_up": "A", "frames": 15, "capture": "m07_engarzada" },
 

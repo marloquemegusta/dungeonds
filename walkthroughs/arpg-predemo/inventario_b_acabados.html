@@ -1,0 +1,424 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Propuesta B — Acabado: Minimalista Ahumado vs Marco Gótico</title>
+<style>
+  :root { --bg:#0a0807; --panel:#15100e; --border:#5a4832; --gold:#c9a56a; --text:#d8c9a8; --muted:#8a7c66; }
+  * { box-sizing: border-box; }
+  body { background:var(--bg); color:var(--text); font-family:Georgia,"Palatino Linotype",serif; max-width:960px; margin:0 auto; padding:16px; }
+  h1 { color:var(--gold); font-size:21px; margin:0 0 6px; }
+  .lead { color:var(--muted); font-size:14px; line-height:1.45; margin:0 0 18px; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(350px,1fr)); gap:22px; }
+  .card { background:var(--panel); border:1px solid var(--border); border-radius:6px; padding:14px; }
+  .card h2 { color:var(--gold); font-size:17px; margin:0 0 4px; }
+  .card .sub { color:var(--muted); font-size:13px; margin:0 0 12px; line-height:1.35; }
+  .ds-wrap { background:#040303; border:2px solid #2b2119; border-radius:8px; padding:8px; display:flex; justify-content:center; }
+  canvas.ds { width:100%; max-width:384px; height:auto; image-rendering:pixelated; image-rendering:crisp-edges; }
+  .notes { margin-top:10px; font-size:12.5px; line-height:1.45; }
+  .notes b { color:var(--gold); }
+</style>
+</head>
+<body>
+<h1>Propuesta B (Relicario Lateral) — Comparativa de acabado</h1>
+<p class="lead">
+  Ambas versiones usan <b>la mazmorra real oscurecida de fondo</b> con paneles ahumados semitransparentes e iconos con volumen 3D (simulando sprites pre-renderizados).
+  La diferencia está en el marco: <b>B1</b> apuesta por el minimalismo del Códice (sin cajas pesadas); <b>B2</b> usa un kit de marco gótico esculpido (9-slice).
+</p>
+
+<div class="grid">
+  <div class="card">
+    <h2>B1 · Ahumado Minimalista (estilo Códice / Dark Souls)</h2>
+    <p class="sub">Sin rectángulos ni cajas anidadas: cristal ahumado sobre la mazmorra, líneas doradas finas y foco total en los iconos 3D.</p>
+    <div class="ds-wrap"><canvas class="ds" id="cvB1" width="512" height="784"></canvas></div>
+    <div class="notes">
+      <b>Por qué funciona:</b> Coherente al 100 % con el Códice y la intro; cero ruido visual y coste de arte mínimo (solo hacen falta los iconos 3D).
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>B2 · Ahumado + Marco Gótico 9-slice (estilo Diablo / Castlevania)</h2>
+    <p class="sub">Paneles semitransparentes rematados con esquinas de bronce labrado, bordes de hierro y engarces esculpidos.</p>
+    <div class="ds-wrap"><canvas class="ds" id="cvB2" width="512" height="784"></canvas></div>
+    <div class="notes">
+      <b>Por qué funciona:</b> Más «relicario» físico y sensación de ARPG clásico; se hace con 1 solo kit pequeño de esquinas + bordes reutilizables.
+    </div>
+  </div>
+</div>
+
+<script>
+const S = 2;
+const RARITY = {
+  common:    { name:'Común',      col:'#9a9080', glow:'rgba(154,144,128,0.22)' },
+  uncommon:  { name:'Poco común', col:'#699963', glow:'rgba(105,153,99,0.25)' },
+  rare:      { name:'Rara',       col:'#6388b8', glow:'rgba(99,136,184,0.28)' },
+  epic:      { name:'Épica',      col:'#9970bd', glow:'rgba(153,112,189,0.32)' },
+  legendary: { name:'Legendaria', col:'#d4943a', glow:'rgba(212,148,58,0.34)' }
+};
+
+// Iconos 3D simulados (sombreado direccional cálido arriba-izq + oclusión + brillo especular)
+function draw3DRelic(ctx, type, cx, cy, r, rarCol) {
+  ctx.save();
+  const X = cx * S, Y = cy * S, R = r * S;
+  // Sombra de contacto
+  ctx.fillStyle = 'rgba(0,0,0,0.6)';
+  ctx.beginPath();
+  ctx.ellipse(X + S, Y + R * 0.72, R * 0.72, R * 0.28, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  const metalGrad = (x0, y0, x1, y1, c1, c2, c3) => {
+    const g = ctx.createLinearGradient(x0, y0, x1, y1);
+    g.addColorStop(0, c1); g.addColorStop(0.5, c2); g.addColorStop(1, c3);
+    return g;
+  };
+
+  if (type === 'chalice') {
+    // Cáliz dorado con gema azul
+    ctx.fillStyle = metalGrad(X - R, Y - R, X + R, Y + R, '#f2d593', '#a67d38', '#422d12');
+    ctx.beginPath();
+    ctx.moveTo(X - R*0.55, Y - R*0.65);
+    ctx.lineTo(X + R*0.55, Y - R*0.65);
+    ctx.quadraticCurveTo(X + R*0.5, Y + R*0.05, X + R*0.14, Y + R*0.12);
+    ctx.lineTo(X + R*0.18, Y + R*0.52);
+    ctx.lineTo(X + R*0.48, Y + R*0.72);
+    ctx.lineTo(X - R*0.48, Y + R*0.72);
+    ctx.lineTo(X - R*0.18, Y + R*0.52);
+    ctx.lineTo(X - R*0.14, Y + R*0.12);
+    ctx.quadraticCurveTo(X - R*0.5, Y + R*0.05, X - R*0.55, Y - R*0.65);
+    ctx.fill();
+    // Líquido/gema
+    const g = ctx.createRadialGradient(X - R*0.1, Y - R*0.35, 1, X, Y - R*0.28, R*0.38);
+    g.addColorStop(0, '#bfe0ff'); g.addColorStop(0.5, '#5882b8'); g.addColorStop(1, '#1b2b42');
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.arc(X, Y - R*0.28, R*0.26, 0, Math.PI*2); ctx.fill();
+  } else if (type === 'crown') {
+    // Corona de espinas / Auto de Fe
+    ctx.fillStyle = metalGrad(X - R, Y - R, X + R, Y + R, '#f7dc9c', '#b3863e', '#4d3312');
+    ctx.beginPath();
+    ctx.moveTo(X - R*0.65, Y + R*0.45);
+    ctx.lineTo(X - R*0.72, Y - R*0.35);
+    ctx.lineTo(X - R*0.32, Y + R*0.02);
+    ctx.lineTo(X, Y - R*0.65);
+    ctx.lineTo(X + R*0.32, Y + R*0.02);
+    ctx.lineTo(X + R*0.72, Y - R*0.35);
+    ctx.lineTo(X + R*0.65, Y + R*0.45);
+    ctx.closePath();
+    ctx.fill();
+    // Rubí/amatista central
+    const g = ctx.createRadialGradient(X - 2, Y + 1, 1, X, Y + 2, R*0.25);
+    g.addColorStop(0, '#e3bfff'); g.addColorStop(0.6, '#874fb3'); g.addColorStop(1, '#2b1340');
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.arc(X, Y + R*0.18, R*0.18, 0, Math.PI*2); ctx.fill();
+  } else if (type === 'skull') {
+    // Relicario cráneo de ceniza
+    const g = ctx.createRadialGradient(X - R*0.25, Y - R*0.3, 1, X, Y, R*0.8);
+    g.addColorStop(0, '#e3d8e8'); g.addColorStop(0.55, '#927da3'); g.addColorStop(1, '#31263b');
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.arc(X, Y - R*0.12, R*0.56, 0, Math.PI*2); ctx.fill();
+    ctx.fillRect(X - R*0.32, Y + R*0.18, R*0.64, R*0.38);
+    ctx.fillStyle = '#120c17';
+    ctx.beginPath(); ctx.arc(X - R*0.2, Y - R*0.05, R*0.14, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(X + R*0.2, Y - R*0.05, R*0.14, 0, Math.PI*2); ctx.fill();
+  } else if (type === 'hourglass') {
+    // Reloj de arena ámbar
+    ctx.fillStyle = metalGrad(X - R, Y - R, X + R, Y + R, '#f0cc84', '#9c6e2f', '#422b0e');
+    ctx.fillRect(X - R*0.52, Y - R*0.68, R*1.04, R*0.16);
+    ctx.fillRect(X - R*0.52, Y + R*0.52, R*1.04, R*0.16);
+    const g = ctx.createLinearGradient(X - R*0.4, Y, X + R*0.4, Y);
+    g.addColorStop(0, '#e8b35d'); g.addColorStop(0.5, '#fae09e'); g.addColorStop(1, '#7a511c');
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.moveTo(X - R*0.42, Y - R*0.52); ctx.lineTo(X + R*0.42, Y - R*0.52);
+    ctx.lineTo(X, Y); ctx.lineTo(X + R*0.42, Y + R*0.52);
+    ctx.lineTo(X - R*0.42, Y + R*0.52); ctx.lineTo(X, Y);
+    ctx.closePath(); ctx.fill();
+  } else if (type === 'ember') {
+    const g = ctx.createRadialGradient(X - R*0.2, Y - R*0.2, 1, X, Y, R*0.7);
+    g.addColorStop(0, '#ffe399'); g.addColorStop(0.45, '#c9653e'); g.addColorStop(1, '#471a0e');
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.moveTo(X, Y - R*0.68); ctx.lineTo(X + R*0.52, Y - R*0.1);
+    ctx.lineTo(X + R*0.36, Y + R*0.55); ctx.lineTo(X - R*0.36, Y + R*0.55);
+    ctx.lineTo(X - R*0.52, Y - R*0.1); ctx.closePath(); ctx.fill();
+  } else if (type === 'tome') {
+    ctx.fillStyle = metalGrad(X - R, Y - R, X + R, Y + R, '#9c5243', '#612b22', '#2b110d');
+    ctx.fillRect(X - R*0.52, Y - R*0.62, R*1.04, R*1.24);
+    ctx.strokeStyle = '#d4af6a'; ctx.lineWidth = 1.5 * S;
+    ctx.strokeRect(X - R*0.45, Y - R*0.55, R*0.9, R*1.1);
+    ctx.fillStyle = '#d4af6a';
+    ctx.fillRect(X - R*0.08, Y - R*0.3, R*0.16, R*0.6);
+    ctx.fillRect(X - R*0.24, Y - R*0.12, R*0.48, R*0.16);
+  } else if (type === 'vial') {
+    const g = ctx.createRadialGradient(X - R*0.15, Y + R*0.05, 1, X, Y + R*0.15, R*0.65);
+    g.addColorStop(0, '#9be0cf'); g.addColorStop(0.55, '#3e7d6e'); g.addColorStop(1, '#142e28');
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.arc(X, Y + R*0.16, R*0.46, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#c4a162';
+    ctx.fillRect(X - R*0.16, Y - R*0.58, R*0.32, R*0.32);
+  } else if (type === 'spear') {
+    ctx.fillStyle = metalGrad(X - R, Y - R, X + R, Y + R, '#f0d8a8', '#8f7d64', '#382f24');
+    ctx.beginPath();
+    ctx.moveTo(X + R*0.62, Y - R*0.62);
+    ctx.lineTo(X + R*0.12, Y - R*0.38);
+    ctx.lineTo(X - R*0.58, Y + R*0.42);
+    ctx.lineTo(X - R*0.42, Y + R*0.58);
+    ctx.lineTo(X + R*0.38, Y - R*0.12);
+    ctx.closePath(); ctx.fill();
+  } else {
+    // Anillo / Cilicio
+    ctx.strokeStyle = metalGrad(X - R, Y - R, X + R, Y + R, '#e0d6c3', '#7a7265', '#2e2a24');
+    ctx.lineWidth = 3.2 * S;
+    ctx.beginPath(); ctx.arc(X, Y, R*0.48, 0, Math.PI*2); ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function txt(ctx, str, x, y, size = 9, col = '#d8c9a8', align = 'left', bold = false) {
+  ctx.save();
+  ctx.font = `${bold ? 'bold ' : ''}${size * S}px Georgia, "Palatino Linotype", serif`;
+  ctx.textAlign = align;
+  ctx.fillStyle = 'rgba(0,0,0,0.85)';
+  ctx.fillText(str, x * S + S * 0.7, y * S + S * 0.7);
+  ctx.fillStyle = col;
+  ctx.fillText(str, x * S, y * S);
+  ctx.restore();
+}
+
+// Marco gótico 9-slice simulado (esquinas ornamentadas + bordes labrados)
+function gothicPanel(ctx, x, y, w, h, alpha = 0.84, borderCol = '#755e3d') {
+  ctx.save();
+  ctx.fillStyle = `rgba(14, 10, 9, ${alpha})`;
+  ctx.fillRect(x * S, y * S, w * S, h * S);
+  // Bisel interior
+  ctx.strokeStyle = 'rgba(210, 178, 120, 0.14)';
+  ctx.lineWidth = S;
+  ctx.strokeRect((x + 2) * S, (y + 2) * S, (w - 4) * S, (h - 4) * S);
+  // Borde exterior labrado
+  ctx.strokeStyle = borderCol;
+  ctx.lineWidth = 1.5 * S;
+  ctx.strokeRect(x * S, y * S, w * S, h * S);
+  // Esquinas góticas en L con filigrana
+  const c = 7 * S;
+  const X = x * S, Y = y * S, W = w * S, H = h * S;
+  ctx.fillStyle = '#b89456';
+  // Top-left
+  ctx.fillRect(X - S, Y - S, c, 2 * S); ctx.fillRect(X - S, Y - S, 2 * S, c);
+  ctx.fillRect(X + 3*S, Y + 3*S, 2*S, 2*S);
+  // Top-right
+  ctx.fillRect(X + W - c + S, Y - S, c, 2 * S); ctx.fillRect(X + W - S, Y - S, 2 * S, c);
+  ctx.fillRect(X + W - 5*S, Y + 3*S, 2*S, 2*S);
+  // Bot-left
+  ctx.fillRect(X - S, Y + H - S, c, 2 * S); ctx.fillRect(X - S, Y + H - c + S, 2 * S, c);
+  ctx.fillRect(X + 3*S, Y + H - 5*S, 2*S, 2*S);
+  // Bot-right
+  ctx.fillRect(X + W - c + S, Y + H - S, c, 2 * S); ctx.fillRect(X + W - S, Y + H - c + S, 2 * S, c);
+  ctx.fillRect(X + W - 5*S, Y + H - 5*S, 2*S, 2*S);
+  ctx.restore();
+}
+
+// Panel minimalista ahumado (sin cajas, solo cristal oscuro y filete dorado fino)
+function minimalPanel(ctx, x, y, w, h, alpha = 0.78, accent = 'rgba(201,165,106,0.45)') {
+  ctx.save();
+  ctx.fillStyle = `rgba(10, 8, 7, ${alpha})`;
+  ctx.fillRect(x * S, y * S, w * S, h * S);
+  ctx.fillStyle = accent;
+  ctx.fillRect(x * S, y * S, w * S, S);
+  ctx.fillRect(x * S, (y + h - 1) * S, w * S, S);
+  ctx.restore();
+}
+
+const ITEMS = [
+  { name:'Llama Votiva',  rar:'rare',      icon:'chalice',   mech:'La línea quema',  s:['Quemadura +10%', 'Alcance +10%'] },
+  { name:'Sed de Ceniza', rar:'epic',      icon:'skull',     mech:'Carga reducida',  s:['Carga -6', 'Daño +14%'] },
+  { name:'Prisa',         rar:'legendary', icon:'hourglass', mech:'Disparo veloz',   s:['Carga -12', 'Veloc. +8%'] },
+  { name:'Brasa Viva',    rar:'uncommon',  icon:'ember',     mech:'Chispa residual', s:['Quemadura +18%'] },
+  { name:'Auto de Fe',    rar:'epic',      icon:'crown',     mech:'Explosión ígnea', s:['Daño +22%', 'Quemadura +12%'] },
+  { name:'Cilicio',       rar:'common',    icon:'ring',      mech:'Sin mecánica',    s:['Vida +15'] },
+  { name:'Lanza Longinos',rar:'legendary', icon:'spear',     mech:'Perfora',         s:['Daño +28%'] },
+  { name:'Miasma',        rar:'rare',      icon:'vial',      mech:'Nube densa',      s:['Alcance +15%'] },
+  { name:'Ofrenda',       rar:'uncommon',  icon:'ember',     mech:'Eco al caer',     s:['Vida +20'] },
+  { name:'Viático',       rar:'rare',      icon:'tome',      mech:'Maná en remate',  s:['Daño +12%'] },
+  { name:'Flagelado',     rar:'common',    icon:'ring',      mech:'Sin mecánica',    s:['Carga -3'] }
+];
+
+function drawScene(cvId, bgImg, isGothic) {
+  const cv = document.getElementById(cvId);
+  const ctx = cv.getContext('2d');
+  ctx.imageSmoothingEnabled = false;
+
+  // 1. Mazmorra real oscurecida detrás de ambas pantallas
+  ctx.drawImage(bgImg, 0, 0, 256, 192, 0, 0, 256 * S, 192 * S);
+  ctx.drawImage(bgImg, 0, 192, 256, 192, 0, 200 * S, 256 * S, 192 * S);
+  // Velo oscuro sobre el mundo congelado
+  ctx.fillStyle = 'rgba(8, 6, 5, 0.58)';
+  ctx.fillRect(0, 0, 256 * S, 192 * S);
+  ctx.fillRect(0, 200 * S, 256 * S, 192 * S);
+
+  // Bisagra DS
+  ctx.fillStyle = '#030202';
+  ctx.fillRect(0, 192 * S, 256 * S, 8 * S);
+
+  // --- PANTALLA SUPERIOR ---
+  if (isGothic) {
+    gothicPanel(ctx, 8, 8, 240, 48, 0.85, '#6e5738');
+  } else {
+    minimalPanel(ctx, 8, 8, 240, 48, 0.76);
+  }
+  draw3DRelic(ctx, 'spear', 28, 32, 13, '#d8b467');
+  txt(ctx, 'Rayo', 52, 24, 12, '#e3bf76', 'left', true);
+  txt(ctx, 'Nv. 10 · Activo', 240, 23, 8, '#9e8f76', 'right');
+  txt(ctx, 'Daño 100 → 122%', 52, 37, 8, '#8bab84');
+  txt(ctx, 'Carga 0 → -6', 142, 37, 8, '#8bab84');
+  txt(ctx, 'Quemad. 20 → 10%', 52, 49, 8, '#b8705f');
+  txt(ctx, 'Alcance 10 → 0%', 142, 49, 8, '#b8705f');
+
+  txt(ctx, 'COMPARACIÓN AL SOLTAR EN ENGARCE 2', 128, 69, 7.5, '#d4b06a', 'center', true);
+
+  // Dos tarjetas de comparación
+  const eq = ITEMS[0], held = ITEMS[4];
+  if (isGothic) {
+    gothicPanel(ctx, 8, 75, 115, 108, 0.86, RARITY[eq.rar].col);
+    gothicPanel(ctx, 133, 75, 115, 108, 0.88, RARITY[held.rar].col);
+  } else {
+    minimalPanel(ctx, 8, 75, 115, 108, 0.78, RARITY[eq.rar].col);
+    minimalPanel(ctx, 133, 75, 115, 108, 0.82, RARITY[held.rar].col);
+  }
+  txt(ctx, 'EQUIPADA', 65, 86, 7, '#8a7c66', 'center');
+  draw3DRelic(ctx, eq.icon, 26, 104, 12, RARITY[eq.rar].col);
+  txt(ctx, eq.name, 42, 101, 8.5, RARITY[eq.rar].col, 'left', true);
+  txt(ctx, 'Rara', 42, 112, 7, '#8a7c66');
+  txt(ctx, eq.mech, 15, 129, 7.5, '#c9a56a');
+  txt(ctx, 'Quemadura +10%', 15, 144, 8, '#b8ab92');
+  txt(ctx, 'Alcance +10%', 15, 157, 8, '#b8ab92');
+
+  txt(ctx, 'EN TU MANO', 190, 86, 7, '#e0bd78', 'center', true);
+  draw3DRelic(ctx, held.icon, 151, 104, 12, RARITY[held.rar].col);
+  txt(ctx, held.name, 167, 101, 8.5, RARITY[held.rar].col, 'left', true);
+  txt(ctx, 'Épica', 167, 112, 7, '#8a7c66');
+  txt(ctx, held.mech, 140, 129, 7.5, '#e0bd78');
+  txt(ctx, '▲ Daño +22%', 140, 144, 8, '#8bab84', 'left', true);
+  txt(ctx, '▲ Carga -6', 140, 157, 8, '#8bab84', 'left', true);
+  txt(ctx, '▼ Alcance -10%', 140, 170, 8, '#b8705f');
+
+  // --- PANTALLA INFERIOR ---
+  ctx.save();
+  ctx.translate(0, 200 * S);
+
+  // Pestañas
+  const tabs = ['Rayo ●', 'Ejecuc.', 'Glifo', 'Levantar', 'Pecho'];
+  tabs.forEach((t, i) => {
+    const x = 6 + i * 49;
+    const act = i === 0;
+    if (isGothic) {
+      gothicPanel(ctx, x, 4, 47, 17, act ? 0.9 : 0.72, act ? '#c9a56a' : '#4a3a2a');
+    } else {
+      minimalPanel(ctx, x, 4, 47, 17, act ? 0.85 : 0.6, act ? '#c9a56a' : 'rgba(255,255,255,0.12)');
+    }
+    txt(ctx, t, x + 23.5, 15, 7.5, act ? '#e6c27a' : '#8a7c66', 'center', act);
+  });
+
+  // Panel izquierdo: Engarces + Crisol
+  if (isGothic) {
+    gothicPanel(ctx, 6, 25, 78, 161, 0.85, '#6e5738');
+  } else {
+    minimalPanel(ctx, 6, 25, 78, 161, 0.76);
+  }
+  txt(ctx, 'ENGARCES', 45, 36, 6.5, '#c9a56a', 'center', true);
+
+  const sockY = [56, 94, 132];
+  const equipped = [ITEMS[1], ITEMS[0], ITEMS[2]];
+  sockY.forEach((sy, i) => {
+    const it = equipped[i];
+    const hl = i === 1;
+    // Aro esculpido vs aro minimalista
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(45 * S, sy * S, 16 * S, 0, Math.PI * 2);
+    ctx.fillStyle = isGothic ? 'rgba(8,6,5,0.9)' : 'rgba(0,0,0,0.55)';
+    ctx.fill();
+    ctx.lineWidth = (isGothic ? 2.2 : 1.2) * S;
+    ctx.strokeStyle = hl ? '#e6c27a' : RARITY[it.rar].col;
+    ctx.stroke();
+    if (hl) {
+      ctx.beginPath();
+      ctx.arc(45 * S, sy * S, 19 * S, 0, Math.PI * 2);
+      ctx.setLineDash([3 * S, 2 * S]);
+      ctx.strokeStyle = '#e6c27a';
+      ctx.lineWidth = S;
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+    ctx.restore();
+    draw3DRelic(ctx, it.icon, 45, sy, 11.5, RARITY[it.rar].col);
+  });
+
+  // Crisol
+  ctx.fillStyle = isGothic ? 'rgba(35,20,14,0.85)' : 'rgba(20,12,10,0.65)';
+  ctx.fillRect(14 * S, 155 * S, 62 * S, 25 * S);
+  ctx.strokeStyle = '#755232';
+  ctx.lineWidth = S;
+  ctx.strokeRect(14 * S, 155 * S, 62 * S, 25 * S);
+  txt(ctx, 'Desguazar', 45, 171, 7.5, '#c99c5e', 'center');
+
+  // Panel derecho: Bolsa 4x4
+  if (isGothic) {
+    gothicPanel(ctx, 88, 25, 162, 161, 0.84, '#6e5738');
+  } else {
+    minimalPanel(ctx, 88, 25, 162, 161, 0.74);
+  }
+  txt(ctx, 'Bolsa 11/16', 95, 36, 7, '#9e8f76');
+  txt(ctx, 'Cera 12 · B Salir', 243, 36, 7, '#c9a56a', 'right');
+
+  for (let i = 0; i < 16; i++) {
+    const col = i % 4, row = Math.floor(i / 4);
+    const sx = 94 + col * 38, sy = 40 + row * 36;
+    const it = i < 11 ? ITEMS[i] : null;
+    const isGhost = i === 4;
+
+    if (isGothic) {
+      ctx.fillStyle = isGhost ? 'rgba(8,6,5,0.45)' : 'rgba(10,8,7,0.82)';
+      ctx.fillRect(sx * S, sy * S, 34 * S, 34 * S);
+      ctx.strokeStyle = it && !isGhost ? RARITY[it.rar].col : 'rgba(90,72,50,0.45)';
+      ctx.lineWidth = S;
+      ctx.strokeRect(sx * S, sy * S, 34 * S, 34 * S);
+    } else {
+      // Minimalista: sin bordes de rejilla, solo hueco ahumado suave y línea inferior de rareza
+      ctx.fillStyle = isGhost ? 'rgba(0,0,0,0.22)' : 'rgba(0,0,0,0.48)';
+      ctx.fillRect(sx * S, sy * S, 34 * S, 34 * S);
+      if (it && !isGhost) {
+        ctx.fillStyle = RARITY[it.rar].col;
+        ctx.fillRect((sx + 4) * S, (sy + 32) * S, 26 * S, 1.5 * S);
+      }
+    }
+
+    if (it && !isGhost) {
+      draw3DRelic(ctx, it.icon, sx + 17, sy + 17, 11.5, RARITY[it.rar].col);
+    }
+  }
+
+  // Reliquia arrastrada con el lápiz encima del engarce 2
+  ctx.save();
+  ctx.fillStyle = 'rgba(0,0,0,0.6)';
+  ctx.beginPath(); ctx.arc(47 * S, 98 * S, 15 * S, 0, Math.PI * 2); ctx.fill();
+  draw3DRelic(ctx, held.icon, 45, 94, 13, RARITY[held.rar].col);
+  // Puntero lápiz
+  ctx.beginPath();
+  ctx.moveTo(51 * S, 100 * S); ctx.lineTo(61 * S, 109 * S); ctx.lineTo(58 * S, 113 * S);
+  ctx.closePath();
+  ctx.fillStyle = '#e8dcc4'; ctx.fill();
+  ctx.strokeStyle = '#080605'; ctx.lineWidth = S; ctx.stroke();
+  ctx.restore();
+
+  ctx.restore();
+}
+
+const img = new Image();
+img.onload = () => {
+  drawScene('cvB1', img, false);
+  drawScene('cvB2', img, true);
+};
+img.src = 'assets/salas_02_cruzado.png';
+</script>
+</body>
+</html>

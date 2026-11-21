@@ -7,6 +7,8 @@
 #include <stdint.h>
 
 void inventory_open(void);
+// Informa si el lápiz sigue pulsado cada frame para arrastrar reliquias (drag & drop).
+void inventory_set_touch_held(int touch_held, int touch_x, int touch_y);
 // Procesa entrada del menú. Devuelve 1 cuando debe cerrarse (B sin confirmación).
 int  inventory_update(uint32_t keys_down, int touch_pressed, int touch_x, int touch_y);
 void inventory_render(uint16_t *buf);

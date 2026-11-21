@@ -3579,6 +3579,9 @@ int main(void) {
         uint32_t t0 = cpuGetTiming();
         sfx_frame_begin(s_cam_x);
         if (menu_is_open()) {
+            if (menu_state() == MENU_INVENTORY) {
+                inventory_set_touch_held(touch_down, touch.px, touch.py);
+            }
             MenuAction act = menu_update(keys_down, menu_touch_pressed, touch.px, touch.py);
             if (menu_state() == MENU_BESTIARY) {
 #if HW_SHADOWS

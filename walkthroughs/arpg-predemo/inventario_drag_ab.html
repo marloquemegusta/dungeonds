@@ -1,0 +1,823 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Inventario Táctil ARPG — A/B/C Mockups (Diablo / Sacred)</title>
+<style>
+  :root {
+    --bg: #0a0807;
+    --panel: #15100e;
+    --border: #5a4832;
+    --gold: #c9a56a;
+    --text: #d8c9a8;
+    --muted: #8a7c66;
+  }
+  * { box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: Georgia, "Palatino Linotype", serif;
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 16px;
+  }
+  h1 { color: var(--gold); font-size: 22px; margin: 0 0 6px; letter-spacing: 0.4px; }
+  .lead { color: var(--muted); font-size: 14px; line-height: 1.45; margin: 0 0 18px; }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(330px, 1fr));
+    gap: 20px;
+    align-items: start;
+  }
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 14px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+  }
+  .card h2 { color: var(--gold); font-size: 17px; margin: 0 0 4px; }
+  .card .sub { color: var(--muted); font-size: 13px; margin: 0 0 10px; line-height: 1.35; }
+  .controls {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+  }
+  button.btn {
+    background: #231a15;
+    color: var(--text);
+    border: 1px solid var(--border);
+    padding: 5px 10px;
+    font-family: inherit;
+    font-size: 12px;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  button.btn.active {
+    background: #36271c;
+    border-color: var(--gold);
+    color: var(--gold);
+  }
+  .ds-wrap {
+    background: #050403;
+    border: 2px solid #2b2119;
+    border-radius: 8px;
+    padding: 8px;
+    display: flex;
+    justify-content: center;
+  }
+  canvas.ds {
+    width: 100%;
+    max-width: 384px;
+    height: auto;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+    cursor: grab;
+    touch-action: none;
+  }
+  canvas.ds:active { cursor: grabbing; }
+  .pros-cons {
+    margin-top: 10px;
+    font-size: 12.5px;
+    line-height: 1.4;
+    color: var(--text);
+  }
+  .pros-cons b { color: var(--gold); }
+  .legend {
+    margin-top: 18px;
+    padding: 10px 14px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 12.5px;
+    color: var(--muted);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+  }
+  .dot { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 5px; vertical-align: middle; }
+</style>
+</head>
+<body>
+<h1>Rediseño táctil del inventario (Drag &amp; Drop) — Propuestas A / B / C</h1>
+<p class="lead">
+  Mockups a resolución nativa de Nintendo DS (<b>256×192</b> arriba + <b>256×192</b> táctil abajo).
+  Al bajar los engarces a la pantalla táctil, puedes arrastrar reliquias con el lápiz desde la bolsa hasta un hueco (o al crisol de cera),
+  y la pantalla superior queda libre para la <b>comparación en vivo estilo Diablo / Sacred</b>.
+  <br><i>Puedes usar los botones de cada propuesta para alternar entre estado normal y arrastre, o arrastrar tú mismo una reliquia con el ratón/dedo.</i>
+</p>
+
+<div class="grid">
+  <div class="card">
+    <h2>A · Altar Horizontal (Sacred clásico)</h2>
+    <p class="sub">Pestañas arriba, 3 engarces + Crisol de Cera en una bandeja central, bolsa 6×3 debajo.</p>
+    <div class="controls">
+      <button class="btn active" data-p="A" data-mode="drag">Arrastrando sobre ocupado</button>
+      <button class="btn" data-p="A" data-mode="idle">En reposo</button>
+    </div>
+    <div class="ds-wrap"><canvas class="ds" id="cvA" width="512" height="784"></canvas></div>
+    <div class="pros-cons">
+      <b>A favor:</b> Flujo natural de abajo a arriba (bolsa → engarce) y muestra el nombre bajo cada engarce.<br>
+      <b>En contra:</b> Celdas de bolsa algo más compactas (26×26 px) para dejar sitio a la bandeja de engarces.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>B · Relicario Lateral (Diablo II / Grim Dawn)</h2>
+    <p class="sub">Engarces grandes en columna a la izquierda + Crisol abajo; bolsa 4×4 exacta a la derecha.</p>
+    <div class="controls">
+      <button class="btn active" data-p="B" data-mode="drag">Arrastrando sobre ocupado</button>
+      <button class="btn" data-p="B" data-mode="idle">En reposo</button>
+    </div>
+    <div class="ds-wrap"><canvas class="ds" id="cvB" width="512" height="784"></canvas></div>
+    <div class="pros-cons">
+      <b>A favor:</b> Celdas gigantes (34×34 px) comodísimas para el lápiz, 4×4 = 16 huecos exactos y la mano diestra no tapa los engarces al arrastrar.<br>
+      <b>En contra:</b> Sin espacio para texto bajo los engarces (se leen en la pantalla superior).
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>C · Círculo Arcano (Medallones + Bolsa 8×2)</h2>
+    <p class="sub">Medallones de escuela arriba, tríada de engarces conectada por líneas rúnicas, bolsa 8×2 abajo.</p>
+    <div class="controls">
+      <button class="btn active" data-p="C" data-mode="drag">Arrastrando sobre ocupado</button>
+      <button class="btn" data-p="C" data-mode="idle">En reposo</button>
+    </div>
+    <div class="ds-wrap"><canvas class="ds" id="cvC" width="512" height="784"></canvas></div>
+    <div class="pros-cons">
+      <b>A favor:</b> Estética muy Sacred/Diablo con conexiones rúnicas, 8×2 = 16 huecos exactos y mini-ficha al pie.<br>
+      <b>En contra:</b> 8 columnas dejan menos separación entre celdas de la bolsa.
+    </div>
+  </div>
+</div>
+
+<div class="legend">
+  <span><i class="dot" style="background:#9a9080"></i>Común</span>
+  <span><i class="dot" style="background:#5e8c59"></i>Poco común</span>
+  <span><i class="dot" style="background:#5878a3"></i>Rara</span>
+  <span><i class="dot" style="background:#8862a8"></i>Épica</span>
+  <span><i class="dot" style="background:#c48232"></i>Legendaria</span>
+  <span><i class="dot" style="background:#8bab84"></i>▲ Sube</span>
+  <span><i class="dot" style="background:#b8705f"></i>▼ Baja</span>
+</div>
+
+<script>
+// Renderizado 2x sobre lienzo 512x784 (256x192 arriba + 8px bisagra + 256x192 abajo)
+// Cada unidad "u" equivale a 1 px de DS (= 2 px reales en el canvas).
+const S = 2;
+const RARITY = {
+  common:    { name: 'Común',      col: '#9a9080', dark: '#4a453d', wax: 2 },
+  uncommon:  { name: 'Poco común', col: '#699963', dark: '#314a2e', wax: 4 },
+  rare:      { name: 'Rara',       col: '#6388b8', dark: '#2d3f57', wax: 8 },
+  epic:      { name: 'Épica',      col: '#9970bd', dark: '#473359', wax: 16 },
+  legendary: { name: 'Legendaria', col: '#d4943a', dark: '#634218', wax: 32 }
+};
+
+const ITEMS = [
+  { id: 0, name: 'Llama Votiva',   rar: 'rare',      icon: 'chalice',   mech: 'La línea quema',   stats: [['Quemadura', 10, '%'], ['Alcance', 10, '%']], power: 2 },
+  { id: 1, name: 'Sed de Ceniza',  rar: 'epic',      icon: 'skull',     mech: 'Carga reducida',   stats: [['Carga', -6, ''], ['Daño', 14, '%']],         power: 3 },
+  { id: 2, name: 'Prisa',          rar: 'legendary', icon: 'hourglass', mech: 'Disparo veloz',    stats: [['Carga', -12, ''], ['Velocidad', 8, '%']],    power: 4 },
+  { id: 3, name: 'Brasa Viva',     rar: 'uncommon',  icon: 'ember',     mech: 'Chispa residual',  stats: [['Quemadura', 18, '%']],                       power: 2 },
+  { id: 4, name: 'Auto de Fe',     rar: 'epic',      icon: 'crown',     mech: 'Explosión ígnea',  stats: [['Daño', 22, '%'], ['Quemadura', 12, '%']],    power: 4 },
+  { id: 5, name: 'Cilicio',        rar: 'common',    icon: 'ring',      mech: 'Sin mecánica',     stats: [['Vida', 15, '']],                             power: 1 },
+  { id: 6, name: 'Lanza Longinos', rar: 'legendary', icon: 'spear',     mech: 'Perfora enemigos', stats: [['Daño', 28, '%'], ['Alcance', 20, '%']],      power: 5 },
+  { id: 7, name: 'Miasma',         rar: 'rare',      icon: 'vial',      mech: 'Nube densa',       stats: [['Alcance', 15, '%'], ['Quemadura', 8, '%']],  power: 2 },
+  { id: 8, name: 'Ofrenda',        rar: 'uncommon',  icon: 'wax',       mech: 'Eco al caer',      stats: [['Vida', 20, '']],                             power: 2 },
+  { id: 9, name: 'Viático',        rar: 'rare',      icon: 'tome',      mech: 'Maná en remate',   stats: [['Daño', 12, '%'], ['Vida', 10, '']],          power: 3 },
+  { id:10, name: 'Flagelado',      rar: 'common',    icon: 'ring',      mech: 'Sin mecánica',     stats: [['Carga', -3, '']],                            power: 1 }
+];
+
+// Iconos pixel-art 12x12 (cada carácter es 1 px DS = 2x2 px en canvas)
+const SPRITES = {
+  chalice: [
+    '....YYYY....',
+    '...YYYYYY...',
+    '...YCCCCY...',
+    '....CCCC....',
+    '.....YY.....',
+    '....YYYY....',
+    '.....YY.....',
+    '.....YY.....',
+    '....YYYY....',
+    '...YYYYYY...',
+    '..YYYYYYYY..',
+    '............'
+  ],
+  skull: [
+    '...PPPPPP...',
+    '..PPPPPPPP..',
+    '.PPPPPPPPPP.',
+    '.PP..PP..PP.',
+    '.PP..PP..PP.',
+    '.PPPPPPPPPP.',
+    '..PPP..PPP..',
+    '...PPPPPP...',
+    '...P.PP.P...',
+    '....PPPP....',
+    '............',
+    '............'
+  ],
+  hourglass: [
+    '..YYYYYYYY..',
+    '..YYYYYYYY..',
+    '...YYCCYY...',
+    '....YCCY....',
+    '.....YY.....',
+    '.....YY.....',
+    '....YCCY....',
+    '...YYCCYY...',
+    '..YYCCCCYY..',
+    '..YYYYYYYY..',
+    '..YYYYYYYY..',
+    '............'
+  ],
+  ember: [
+    '.....RR.....',
+    '....RRRR....',
+    '...RRYYRR...',
+    '..RRYYYYRR..',
+    '..RYYYYYYR..',
+    '.RRYYYYYYRR.',
+    '.RYYYYYYYYR.',
+    '..RYYYYYYR..',
+    '...RRRRRR...',
+    '....RRRR....',
+    '............',
+    '............'
+  ],
+  crown: [
+    '.Y...YY...Y.',
+    '.YY..YY..YY.',
+    '.YYY.YY.YYY.',
+    '.YYYYYYYYYY.',
+    '.YYPYYYYPYY.',
+    '.YYYYYYYYYY.',
+    '.YYYYYYYYYY.',
+    '..YYYYYYYY..',
+    '..GGGGGGGG..',
+    '............',
+    '............',
+    '............'
+  ],
+  ring: [
+    '....GGGG....',
+    '..GGYYYYGG..',
+    '.GY......YG.',
+    '.G..GGGG..G.',
+    'G..G....G..G',
+    'G..G....G..G',
+    '.G..GGGG..G.',
+    '.GY......YG.',
+    '..GGYYYYGG..',
+    '....GGGG....',
+    '............',
+    '............'
+  ],
+  spear: [
+    '.........YY.',
+    '........YYY.',
+    '.......YYYY.',
+    '......YYY...',
+    '.....YYC....',
+    '....YYC.....',
+    '...YYC......',
+    '..YYC.......',
+    '.YYC........',
+    'YY..........',
+    '............',
+    '............'
+  ],
+  vial: [
+    '....YYYY....',
+    '.....YY.....',
+    '....BBBB....',
+    '...B....B...',
+    '..B.BBBB.B..',
+    '..BBBBBBBB..',
+    '.BBBBBBBBBB.',
+    '.BBBBBBBBBB.',
+    '.BBBBBBBBBB.',
+    '..BBBBBBBB..',
+    '...BBBBBB...',
+    '............'
+  ],
+  tome: [
+    '..RRRRRRRR..',
+    '.RYYYYYYYYR.',
+    '.RY......YR.',
+    '.RY.YYYY.YR.',
+    '.RY..YY..YR.',
+    '.RY.YYYY.YR.',
+    '.RY..YY..YR.',
+    '.RY......YR.',
+    '.RYYYYYYYYR.',
+    '..RRRRRRRR..',
+    '............',
+    '............'
+  ],
+  wax: [
+    '....CCCC....',
+    '...CCYYCC...',
+    '...CYYYYC...',
+    '..CCCCCCCC..',
+    '..CCCCCCCC..',
+    '..CCCCCCCC..',
+    '...CCCCCC...',
+    '...CCCCCC...',
+    '....CCCC....',
+    '............',
+    '............',
+    '............'
+  ],
+  bolt: [
+    '......YYYY..',
+    '.....YYYY...',
+    '....YYYY....',
+    '...YYYYYY...',
+    '..YYYYYYYY..',
+    '.....YYYY...',
+    '....YYYY....',
+    '...YYY......',
+    '..YY........',
+    '.Y..........',
+    '............',
+    '............'
+  ]
+};
+
+const SPRITE_PAL = {
+  Y: '#d8b467', C: '#87b8d4', P: '#b594d4', R: '#c96b53', G: '#8c8373', B: '#5fa392'
+};
+
+function drawSprite(ctx, key, cx, cy, pxScale = 1.5, rarCol = null) {
+  const grid = SPRITES[key] || SPRITES.ring;
+  const step = Math.round(pxScale * S);
+  const w = 12 * step;
+  const x0 = Math.round(cx * S - w / 2);
+  const y0 = Math.round(cy * S - w / 2);
+  for (let r = 0; r < 12; r++) {
+    for (let c = 0; c < 12; c++) {
+      const ch = grid[r][c];
+      if (ch === '.') continue;
+      ctx.fillStyle = '#090706';
+      ctx.fillRect(x0 + c * step - 1, y0 + r * step - 1, step + 2, step + 2);
+    }
+  }
+  for (let r = 0; r < 12; r++) {
+    for (let c = 0; c < 12; c++) {
+      const ch = grid[r][c];
+      if (ch === '.') continue;
+      ctx.fillStyle = (ch === 'Y' && rarCol) ? rarCol : (SPRITE_PAL[ch] || '#d8c9a8');
+      ctx.fillRect(x0 + c * step, y0 + r * step, step, step);
+    }
+  }
+}
+
+function panel(ctx, x, y, w, h, opts = {}) {
+  const bg = opts.bg || '#17110e';
+  const border = opts.border || '#5c4932';
+  const bevelTop = opts.bevelTop || '#2c2119';
+  const bevelBot = opts.bevelBot || '#0a0706';
+  const rivets = opts.rivets !== false;
+  ctx.fillStyle = bg;
+  ctx.fillRect(x * S, y * S, w * S, h * S);
+  // Subtle gothic scanline grain
+  ctx.fillStyle = 'rgba(255,235,200,0.018)';
+  for (let yy = y + 2; yy < y + h - 2; yy += 2) {
+    ctx.fillRect((x + 2) * S, yy * S, (w - 4) * S, 1);
+  }
+  // Inner bevel
+  ctx.fillStyle = bevelTop;
+  ctx.fillRect((x + 1) * S, (y + 1) * S, (w - 2) * S, S);
+  ctx.fillRect((x + 1) * S, (y + 1) * S, S, (h - 2) * S);
+  ctx.fillStyle = bevelBot;
+  ctx.fillRect((x + 1) * S, (y + h - 2) * S, (w - 2) * S, S);
+  ctx.fillRect((x + w - 2) * S, (y + 1) * S, S, (h - 2) * S);
+  // Outer border
+  ctx.strokeStyle = border;
+  ctx.lineWidth = S;
+  ctx.strokeRect(x * S + S / 2, y * S + S / 2, w * S - S, h * S - S);
+  if (rivets) {
+    ctx.fillStyle = opts.rivetCol || '#9e7f4e';
+    const d = 2 * S;
+    ctx.fillRect((x + 2) * S, (y + 2) * S, d, d);
+    ctx.fillRect((x + w - 4) * S, (y + 2) * S, d, d);
+    ctx.fillRect((x + 2) * S, (y + h - 4) * S, d, d);
+    ctx.fillRect((x + w - 4) * S, (y + h - 4) * S, d, d);
+  }
+}
+
+function txt(ctx, str, x, y, size = 9, col = '#d8c9a8', align = 'left', bold = false) {
+  ctx.save();
+  ctx.font = `${bold ? 'bold ' : ''}${size * S}px Georgia, "Palatino Linotype", serif`;
+  ctx.textAlign = align;
+  ctx.textBaseline = 'alphabetic';
+  ctx.fillStyle = '#080605';
+  ctx.fillText(str, x * S + S * 0.6, y * S + S * 0.6);
+  ctx.fillStyle = col;
+  ctx.fillText(str, x * S, y * S);
+  ctx.restore();
+}
+
+function drawSocket(ctx, cx, cy, r, item, opts = {}) {
+  // Recessed gothic socket ring
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(cx * S, cy * S, (r + 2) * S, 0, Math.PI * 2);
+  ctx.fillStyle = '#090706';
+  ctx.fill();
+  ctx.lineWidth = 2 * S;
+  ctx.strokeStyle = opts.highlight ? '#e0bd78' : (item ? RARITY[item.rar].col : '#4d3e2c');
+  ctx.stroke();
+
+  // Inner metallic ring bevel
+  ctx.beginPath();
+  ctx.arc(cx * S, cy * S, (r - 1) * S, 0, Math.PI * 2);
+  ctx.lineWidth = S;
+  ctx.strokeStyle = opts.highlight ? '#8c6e3b' : '#292018';
+  ctx.stroke();
+
+  if (opts.highlight) {
+    ctx.beginPath();
+    ctx.arc(cx * S, cy * S, (r + 4.5) * S, 0, Math.PI * 2);
+    ctx.lineWidth = S;
+    ctx.setLineDash([3 * S, 2 * S]);
+    ctx.strokeStyle = '#e0bd78';
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  if (item) {
+    const grd = ctx.createRadialGradient(cx * S, cy * S, 2 * S, cx * S, cy * S, r * S);
+    grd.addColorStop(0, RARITY[item.rar].dark);
+    grd.addColorStop(1, '#090706');
+    ctx.beginPath();
+    ctx.arc(cx * S, cy * S, (r - 1.5) * S, 0, Math.PI * 2);
+    ctx.fillStyle = grd;
+    ctx.fill();
+    drawSprite(ctx, item.icon, cx, cy, r >= 15 ? 1.55 : 1.3);
+  } else {
+    ctx.beginPath();
+    ctx.arc(cx * S, cy * S, 3 * S, 0, Math.PI * 2);
+    ctx.fillStyle = '#241b15';
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
+function drawSlot(ctx, x, y, size, item, opts = {}) {
+  panel(ctx, x, y, size, size, {
+    bg: opts.ghost ? '#0c0908' : '#120d0b',
+    border: opts.selected ? '#c9a56a' : (item ? RARITY[item.rar].col : '#382c21'),
+    bevelTop: '#241b15',
+    bevelBot: '#070504',
+    rivets: false
+  });
+  if (item && !opts.ghost) {
+    const grd = ctx.createRadialGradient((x + size / 2) * S, (y + size / 2) * S, 1, (x + size / 2) * S, (y + size / 2) * S, (size * 0.5) * S);
+    grd.addColorStop(0, RARITY[item.rar].dark);
+    grd.addColorStop(1, 'rgba(18,13,11,0)');
+    ctx.fillStyle = grd;
+    ctx.fillRect((x + 2) * S, (y + 2) * S, (size - 4) * S, (size - 4) * S);
+    drawSprite(ctx, item.icon, x + size / 2, y + size / 2, size >= 32 ? 1.55 : 1.25);
+  }
+  if (opts.ghost) {
+    ctx.fillStyle = 'rgba(201,165,106,0.12)';
+    ctx.fillRect((x + 2) * S, (y + 2) * S, (size - 4) * S, (size - 4) * S);
+  }
+}
+
+function drawCrucible(ctx, x, y, w, h, highlight = false) {
+  panel(ctx, x, y, w, h, {
+    bg: highlight ? '#291712' : '#18100d',
+    border: highlight ? '#d4943a' : '#6b4d30',
+    rivets: true,
+    rivetCol: '#b07b42'
+  });
+  drawSprite(ctx, 'wax', x + w / 2, y + h / 2 - 4, 1.15);
+  txt(ctx, 'Desguazar', x + w / 2, y + h - 4, 6.5, highlight ? '#e8b668' : '#a88c66', 'center');
+}
+
+function drawStylusDrag(ctx, x, y, item) {
+  ctx.save();
+  // Drop shadow
+  ctx.fillStyle = 'rgba(0,0,0,0.65)';
+  ctx.beginPath();
+  ctx.arc((x + 2) * S, (y + 4) * S, 14 * S, 0, Math.PI * 2);
+  ctx.fill();
+  // Floating frame
+  panel(ctx, x - 13, y - 13, 26, 26, {
+    bg: '#1c1410',
+    border: RARITY[item.rar].col,
+    rivets: false
+  });
+  drawSprite(ctx, item.icon, x, y, 1.45);
+  // Stylus tip indicator
+  ctx.beginPath();
+  ctx.moveTo((x + 6) * S, (y + 6) * S);
+  ctx.lineTo((x + 17) * S, (y + 15) * S);
+  ctx.lineTo((x + 14) * S, (y + 19) * S);
+  ctx.closePath();
+  ctx.fillStyle = '#d8c9a8';
+  ctx.fill();
+  ctx.strokeStyle = '#090706';
+  ctx.lineWidth = S;
+  ctx.stroke();
+  ctx.restore();
+}
+
+function drawTopScreen(ctx, state) {
+  // Background
+  ctx.fillStyle = '#0c0908';
+  ctx.fillRect(0, 0, 256 * S, 192 * S);
+  panel(ctx, 4, 4, 248, 184, { bg: '#15100d', border: '#6b563a' });
+
+  // Header: Spell summary
+  panel(ctx, 10, 10, 236, 46, { bg: '#1c1511', border: '#5c4932', rivets: false });
+  panel(ctx, 14, 14, 38, 38, { bg: '#110c0a', border: '#c9a56a', rivets: false });
+  drawSprite(ctx, 'bolt', 33, 33, 1.75);
+  txt(ctx, 'Rayo', 58, 25, 12, '#d8b467', 'left', true);
+  txt(ctx, 'Nv. 10 · Activo', 240, 24, 8, '#8a7c66', 'right');
+
+  // Live spell stats preview
+  const isDrag = state.mode === 'drag';
+  txt(ctx, isDrag ? 'Daño 100 → 122%' : 'Daño 100%', 58, 38, 8, isDrag ? '#8bab84' : '#d8c9a8');
+  txt(ctx, isDrag ? 'Carga 0 → -6' : 'Carga 0', 142, 38, 8, isDrag ? '#8bab84' : '#d8c9a8');
+  txt(ctx, isDrag ? 'Quemad. 20 → 10%' : 'Quemad. 20%', 58, 50, 8, isDrag ? '#b8705f' : '#d8c9a8');
+  txt(ctx, isDrag ? 'Alcance 10 → 0%' : 'Alcance 10%', 142, 50, 8, isDrag ? '#b8705f' : '#d8c9a8');
+
+  if (isDrag) {
+    // Diablo-style side-by-side comparison!
+    const eq = state.equipped[state.hoverSocket] || ITEMS[0];
+    const held = state.heldItem;
+
+    txt(ctx, 'COMPARACIÓN AL SOLTAR EN ENGARCE ' + (state.hoverSocket + 1), 128, 68, 7.5, '#c9a56a', 'center', true);
+
+    // Left card: Equipped
+    panel(ctx, 10, 74, 114, 108, { bg: '#130e0c', border: RARITY[eq.rar].col, rivets: true, rivetCol: RARITY[eq.rar].col });
+    txt(ctx, 'EQUIPADA', 67, 85, 7, '#8a7c66', 'center');
+    drawSprite(ctx, eq.icon, 26, 102, 1.25);
+    txt(ctx, eq.name, 42, 100, 8.5, RARITY[eq.rar].col, 'left', true);
+    txt(ctx, RARITY[eq.rar].name, 42, 111, 7, '#8a7c66');
+    txt(ctx, eq.mech, 16, 127, 7.5, '#c9a56a');
+    eq.stats.forEach((st, idx) => {
+      txt(ctx, `${st[0]} ${st[1] > 0 ? '+' : ''}${st[1]}${st[2]}`, 16, 142 + idx * 13, 8, '#b8ab92');
+    });
+    txt(ctx, 'Soltar: vuelve a bolsa', 67, 176, 6.5, '#7a6c56', 'center');
+
+    // Right card: Held (New)
+    panel(ctx, 132, 74, 114, 108, { bg: '#1a1410', border: RARITY[held.rar].col, rivets: true, rivetCol: RARITY[held.rar].col });
+    txt(ctx, 'EN TU MANO', 189, 85, 7, '#e0bd78', 'center', true);
+    drawSprite(ctx, held.icon, 148, 102, 1.25);
+    txt(ctx, held.name, 164, 100, 8.5, RARITY[held.rar].col, 'left', true);
+    txt(ctx, RARITY[held.rar].name, 164, 111, 7, '#8a7c66');
+    txt(ctx, held.mech, 138, 127, 7.5, '#e0bd78');
+
+    // Delta arrows
+    txt(ctx, '▲ Daño +22%', 138, 142, 8, '#8bab84', 'left', true);
+    txt(ctx, '▲ Carga -6', 138, 155, 8, '#8bab84', 'left', true);
+    txt(ctx, '▼ Alcance -10%', 138, 168, 8, '#b8705f');
+    txt(ctx, 'Suelta para intercambiar', 189, 178, 6.5, '#c9a56a', 'center');
+  } else {
+    // Idle inspection card
+    const sel = state.selectedItem;
+    panel(ctx, 10, 64, 236, 118, { bg: '#130e0c', border: RARITY[sel.rar].col });
+    drawSprite(ctx, sel.icon, 32, 88, 1.65);
+    txt(ctx, sel.name, 54, 83, 11, RARITY[sel.rar].col, 'left', true);
+    txt(ctx, `${RARITY[sel.rar].name} · Reliquia de Rayo`, 54, 96, 8, '#8a7c66');
+    txt(ctx, `Mecánica: ${sel.mech}`, 18, 116, 8.5, '#c9a56a');
+    sel.stats.forEach((st, idx) => {
+      txt(ctx, `• ${st[0]}: ${st[1] > 0 ? '+' : ''}${st[1]}${st[2]}`, 18, 132 + idx * 14, 8.5, '#d8c9a8');
+    });
+    txt(ctx, `Desguazar: +${RARITY[sel.rar].wax} cera`, 238, 172, 8, '#c9a56a', 'right');
+    txt(ctx, 'Arrastra desde la bolsa a un engarce', 18, 172, 7.5, '#8a7c66');
+  }
+}
+
+function drawHinge(ctx) {
+  ctx.fillStyle = '#030202';
+  ctx.fillRect(0, 192 * S, 256 * S, 8 * S);
+  ctx.fillStyle = '#1f1914';
+  ctx.fillRect(0, 195 * S, 256 * S, 2 * S);
+}
+
+function drawBottomA(ctx, state) {
+  ctx.save();
+  ctx.translate(0, 200 * S);
+  ctx.fillStyle = '#0c0908';
+  ctx.fillRect(0, 0, 256 * S, 192 * S);
+
+  // 5 Tabs
+  const tabs = ['Rayo ●', 'Ejecuc.', 'Glifo', 'Levantar', 'Pecho'];
+  tabs.forEach((t, i) => {
+    const x = 5 + i * 50;
+    const act = i === 0;
+    panel(ctx, x, 3, 48, 17, {
+      bg: act ? '#241a14' : '#130e0c',
+      border: act ? '#c9a56a' : '#4a3a2a',
+      rivets: false
+    });
+    txt(ctx, t, x + 24, 14, 7.5, act ? '#e0bd78' : '#8a7c66', 'center', act);
+  });
+
+  // Socket tray
+  panel(ctx, 5, 22, 246, 48, { bg: '#15100d', border: '#5c4932' });
+  const sockX = [36, 98, 160];
+  sockX.forEach((sx, i) => {
+    const item = state.equipped[i];
+    const hl = state.mode === 'drag' && state.hoverSocket === i;
+    drawSocket(ctx, sx, 42, 15, item, { highlight: hl });
+    txt(ctx, item ? item.name.split(' ')[0] : 'Vacío', sx, 66, 6.5, hl ? '#e0bd78' : '#9e8f76', 'center');
+  });
+  drawCrucible(ctx, 198, 27, 46, 38, false);
+
+  // Bag 6x3
+  panel(ctx, 5, 73, 246, 102, { bg: '#120d0b', border: '#4d3d2b', rivets: false });
+  for (let i = 0; i < 16; i++) {
+    const col = i % 6;
+    const row = Math.floor(i / 6);
+    const sx = 12 + col * 39;
+    const sy = 77 + row * 32;
+    const it = state.bag[i] || null;
+    const isGhost = state.mode === 'drag' && i === state.dragIndex;
+    drawSlot(ctx, sx, sy, 28, it, { selected: state.mode === 'idle' && i === 0, ghost: isGhost });
+  }
+  // 2 locked/info cells in 6x3 bottom right
+  txt(ctx, '11/16', 214, 152, 8, '#8a7c66', 'center');
+  txt(ctx, 'Cera 12', 214, 164, 8, '#c9a56a', 'center');
+
+  // Footer
+  txt(ctx, 'Arrastra reliquia al engarce · Y desguazar', 8, 187, 7, '#8a7c66');
+  txt(ctx, 'B Salir', 248, 187, 7.5, '#c9a56a', 'right');
+
+  if (state.mode === 'drag') {
+    drawStylusDrag(ctx, 98, 42, state.heldItem);
+  }
+  ctx.restore();
+}
+
+function drawBottomB(ctx, state) {
+  ctx.save();
+  ctx.translate(0, 200 * S);
+  ctx.fillStyle = '#0c0908';
+  ctx.fillRect(0, 0, 256 * S, 192 * S);
+
+  // 5 Tabs
+  const tabs = ['Rayo ●', 'Ejecuc.', 'Glifo', 'Levantar', 'Pecho'];
+  tabs.forEach((t, i) => {
+    const x = 5 + i * 50;
+    const act = i === 0;
+    panel(ctx, x, 3, 48, 17, {
+      bg: act ? '#241a14' : '#130e0c',
+      border: act ? '#c9a56a' : '#4a3a2a',
+      rivets: false
+    });
+    txt(ctx, t, x + 24, 14, 7.5, act ? '#e0bd78' : '#8a7c66', 'center', act);
+  });
+
+  // Left column: Sockets + Crucible
+  panel(ctx, 5, 23, 78, 165, { bg: '#15100d', border: '#5c4932' });
+  txt(ctx, 'ENGARCES', 44, 34, 6.5, '#c9a56a', 'center', true);
+  // Connecting chain line
+  ctx.strokeStyle = '#5c4932';
+  ctx.lineWidth = S;
+  ctx.beginPath();
+  ctx.moveTo(44 * S, 50 * S);
+  ctx.lineTo(44 * S, 134 * S);
+  ctx.stroke();
+
+  const sockY = [54, 92, 130];
+  sockY.forEach((sy, i) => {
+    const hl = state.mode === 'drag' && state.hoverSocket === i;
+    drawSocket(ctx, 44, sy, 16, state.equipped[i], { highlight: hl });
+  });
+  drawCrucible(ctx, 12, 153, 64, 29, false);
+
+  // Right column: Bag 4x4 (big 34x34 slots!)
+  panel(ctx, 87, 23, 164, 165, { bg: '#120d0b', border: '#5c4932' });
+  txt(ctx, 'Bolsa 11/16', 94, 34, 7, '#8a7c66');
+  txt(ctx, 'Cera 12 · B Salir', 244, 34, 7, '#c9a56a', 'right');
+  for (let i = 0; i < 16; i++) {
+    const col = i % 4;
+    const row = Math.floor(i / 4);
+    const sx = 93 + col * 38;
+    const sy = 38 + row * 37;
+    const it = state.bag[i] || null;
+    const isGhost = state.mode === 'drag' && i === state.dragIndex;
+    drawSlot(ctx, sx, sy, 34, it, { selected: state.mode === 'idle' && i === 0, ghost: isGhost });
+  }
+
+  if (state.mode === 'drag') {
+    drawStylusDrag(ctx, 44, 92, state.heldItem);
+  }
+  ctx.restore();
+}
+
+function drawBottomC(ctx, state) {
+  ctx.save();
+  ctx.translate(0, 200 * S);
+  ctx.fillStyle = '#0c0908';
+  ctx.fillRect(0, 0, 256 * S, 192 * S);
+
+  // Top medallions
+  const meds = [
+    { lbl: 'Rayo', icon: 'bolt', act: true },
+    { lbl: 'Ejec.', icon: 'spear', act: false },
+    { lbl: 'Glifo', icon: 'tome', act: false },
+    { lbl: 'Lev.', icon: 'skull', act: false },
+    { lbl: 'Pecho', icon: 'ring', act: false }
+  ];
+  meds.forEach((m, i) => {
+    const cx = 28 + i * 50;
+    const cy = 16;
+    ctx.beginPath();
+    ctx.arc(cx * S, cy * S, (m.act ? 13 : 10) * S, 0, Math.PI * 2);
+    ctx.fillStyle = m.act ? '#291e16' : '#140f0c';
+    ctx.fill();
+    ctx.lineWidth = (m.act ? 1.5 : 1) * S;
+    ctx.strokeStyle = m.act ? '#c9a56a' : '#4a3a2a';
+    ctx.stroke();
+    drawSprite(ctx, m.icon, cx, cy, m.act ? 1.15 : 0.9);
+    txt(ctx, m.lbl, cx, 35, 6.5, m.act ? '#e0bd78' : '#7a6c56', 'center', m.act);
+  });
+
+  // Runic lines from active medallion to triad
+  panel(ctx, 5, 38, 246, 56, { bg: '#15100d', border: '#5c4932' });
+  const sockX = [42, 102, 162];
+  ctx.strokeStyle = '#6b563a';
+  ctx.lineWidth = S;
+  sockX.forEach((sx) => {
+    ctx.beginPath();
+    ctx.moveTo(28 * S, 38 * S);
+    ctx.lineTo(sx * S, 64 * S);
+    ctx.stroke();
+  });
+  sockX.forEach((sx, i) => {
+    const hl = state.mode === 'drag' && state.hoverSocket === i;
+    drawSocket(ctx, sx, 64, 15, state.equipped[i], { highlight: hl });
+  });
+  drawCrucible(ctx, 198, 44, 46, 44, false);
+
+  // Bag 8x2
+  panel(ctx, 5, 97, 246, 68, { bg: '#120d0b', border: '#4d3d2b', rivets: false });
+  for (let i = 0; i < 16; i++) {
+    const col = i % 8;
+    const row = Math.floor(i / 8);
+    const sx = 10 + col * 30;
+    const sy = 102 + row * 30;
+    const it = state.bag[i] || null;
+    const isGhost = state.mode === 'drag' && i === state.dragIndex;
+    drawSlot(ctx, sx, sy, 27, it, { selected: state.mode === 'idle' && i === 0, ghost: isGhost });
+  }
+
+  // Footer mini-info
+  panel(ctx, 5, 168, 246, 20, { bg: '#17110e', border: '#5c4932', rivets: false });
+  txt(ctx, 'Bolsa 11/16 · Cera 12', 12, 181, 7.5, '#c9a56a');
+  txt(ctx, state.mode === 'drag' ? 'Soltar en Engarce 2 para cambiar' : 'Auto de Fe (Épica) · B Salir', 244, 181, 7.5, '#d8c9a8', 'right');
+
+  if (state.mode === 'drag') {
+    drawStylusDrag(ctx, 102, 64, state.heldItem);
+  }
+  ctx.restore();
+}
+
+const baseState = () => ({
+  mode: 'drag',
+  equipped: [ITEMS[1], ITEMS[0], ITEMS[2]],
+  bag: ITEMS.slice(0, 11),
+  dragIndex: 4,
+  heldItem: ITEMS[4], // Auto de Fe (Épica)
+  selectedItem: ITEMS[4],
+  hoverSocket: 1
+});
+
+const states = { A: baseState(), B: baseState(), C: baseState() };
+
+function render(p) {
+  const cv = document.getElementById('cv' + p);
+  const ctx = cv.getContext('2d');
+  ctx.imageSmoothingEnabled = false;
+  drawTopScreen(ctx, states[p]);
+  drawHinge(ctx);
+  if (p === 'A') drawBottomA(ctx, states[p]);
+  if (p === 'B') drawBottomB(ctx, states[p]);
+  if (p === 'C') drawBottomC(ctx, states[p]);
+}
+
+document.querySelectorAll('button.btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const p = btn.dataset.p;
+    const mode = btn.dataset.mode;
+    states[p].mode = mode;
+    document.querySelectorAll(`button.btn[data-p="${p}"]`).forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    render(p);
+  });
+});
+
+['A', 'B', 'C'].forEach(render);
+</script>
+</body>
+</html>
