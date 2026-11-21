@@ -206,11 +206,12 @@ function muzzleCaptureOf(setup, samplePoint, yaw, yOff, camera, size, anchorX, a
 const STROKE_R = 0.8;
 const SS = 8;
 function shadowFrameCore(job) {
-  const { size, minY, fixedGround, anchor, cam, meshes, dirs } = job;
+  const { size, minY, fixedGround, anchor, cam, meshes, dirs, shadowLight } = job;
   const shadowSize = size * 2, halfShadow = shadowSize / 2;
   const G = shadowSize * SS;
   const frameMinY = fixedGround ? 0 : minY;
-  const Lx = -0.4096, Lz = 0.7094;
+  // horizontal ground offset per metre of height (default: the lab's fixed light; shadowLight overrides it per light azimuth)
+  const kx = shadowLight ? shadowLight.kx : -0.4096 / 0.5736, kz = shadowLight ? shadowLight.kz : 0.7094 / 0.5736;
   const { eye, right, up, half } = cam;
   const winding = new Int16Array(G * G);
   const stroke = new Uint8Array(G * G);
@@ -227,8 +228,8 @@ function shadowFrameCore(job) {
       for (let i = 0; i < count; i++) {
         const wx = p[i * 3], wy = p[i * 3 + 1], wz = p[i * 3 + 2];
         const rx = wx * c + wz * s, rz = -wx * s + wz * c;
-        const t = Math.max(0, wy - frameMinY) / 0.5736;
-        const gx = rx + t * Lx, gz = rz + t * Lz;
+        const t = Math.max(0, wy - frameMinY);
+        const gx = rx + t * kx, gz = rz + t * kz;
         // ortho NDC of the ground point (view basis, half span)
         const qx = gx - eye[0], qy = -eye[1], qz = gz - eye[2];
         const nx = (qx * right[0] + qy * right[1] + qz * right[2]) / half;

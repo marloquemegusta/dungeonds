@@ -6,6 +6,7 @@
 //          [--anim "<clip name>"] [--rigScale N] [--light <preset>] [--outline <pixel|sobel|none>]
 //          [--saturation N] [--muzzleBone <bone>] [--muzzleForward F] [--fitZoom Z] [--fitExtent E]
 //          [--normScale S] [--resolution N] [--legibility anterior|c2] [--tone agx|neutral]
+//          [--lightAzimuth 0..7 (world-fixed light from the bonfire; use with --light camp-fire)] [--shadowElevation DEG]
 //          [--supersample N] [--contrast N] [--frames N] [--pivot P] [--dirs S,SE,...]
 //          [--fixedGround] [--doubleSided] [--noCHeader] [--timing]
 // Delegated to the slow exporter (with a warning): a directory of fNN.glb, --list, JPEG textures, unknown flags.
@@ -19,7 +20,7 @@ const { Pool } = require('./pool.cjs');
 const SLOW = path.join(__dirname, '..', 'export_character_headless.cjs');
 const VALUE_FLAGS = new Set(['--template', '--anim', '--rigScale', '--light', '--outline', '--saturation', '--muzzleBone',
   '--muzzleForward', '--fitZoom', '--fitExtent', '--normScale', '--resolution', '--tone', '--supersample', '--contrast',
-  '--legibility', '--frames', '--dirs', '--pivot']);
+  '--legibility', '--frames', '--dirs', '--pivot', '--lightAzimuth', '--shadowElevation']);
 const BOOL_FLAGS = new Set(['--fixedGround', '--doubleSided', '--noCHeader', '--timing']);
 const DELEGATE_FLAGS = new Set(['--list']);
 
@@ -116,6 +117,9 @@ async function main() {
   if (contrastOpt !== undefined) s.contrast = contrastOpt;
 
   const rigScale = opt('--rigScale') !== undefined ? parseFloat(opt('--rigScale')) : s.rigScale;
+  const lightAzOpt = opt('--lightAzimuth') !== undefined ? parseInt(opt('--lightAzimuth'), 10) : undefined;
+  if (lightAzOpt !== undefined && !(lightAzOpt >= 0 && lightAzOpt <= 7)) { console.error('--lightAzimuth must be 0..7'); process.exit(2); }
+  const shadowElOpt = opt('--shadowElevation') !== undefined ? parseFloat(opt('--shadowElevation')) : undefined;
   const lightPreset = opt('--light') || s.lightPreset || (s.lighting && s.lighting.preset) || 'neutral';
   const outlineMode = opt('--outline') || s.outlineMode || 'none';
   const saturation = opt('--saturation') !== undefined ? parseFloat(opt('--saturation')) : s.saturation;
@@ -203,10 +207,14 @@ async function main() {
     const materialIndex = character.matIndexOf(Array.isArray(m.mesh.material) ? m.mesh.material[0] : m.mesh.material);
     return { indices, uvs, materialIndex, doubleSided: false };
   });
+  const lightOverrides = {};
+  if (lightAzOpt !== undefined) lightOverrides.azimuth = lightAzOpt;
+  if (shadowElOpt !== undefined) lightOverrides.shadowElevation = shadowElOpt;
+  const lighting = pose.lightingFor(lightPreset, lightOverrides);
   const renderer = await createRenderer({
     size, ss, meshes: meshSpec,
     materials: character.renderMaterials,
-    lighting: pose.lightingFor(lightPreset, {}),
+    lighting,
     toneMapping: tone, exposure: 1, workers: 8,
   });
   renderer.setFrames(samples.map(sm => ({ positions: sm.meshes.map(m => m.positions), normals: sm.meshes.map(m => m.normals) })));
@@ -215,7 +223,7 @@ async function main() {
   const shadowPromise = subset ? null : Promise.all(Array.from({ length: frameCount }, (_, f) => {
     const sm = samples[f % samples.length];
     return pool.run('shadow', {
-      size, minY: sm.minY, fixedGround, anchor: [muzzleAnchorX, muzzleAnchorY],
+      size, minY: sm.minY, fixedGround, anchor: [muzzleAnchorX, muzzleAnchorY], shadowLight: lighting.shadowLight,
       cam: { eye: camera.eye, right: camera.basis.right, up: camera.basis.up, half: camera.right },
       meshes: sm.meshes.map(m => ({ positions: m.positions, index: m.mesh.geometry.index ? Uint32Array.from(m.mesh.geometry.index.array) : null })),
       dirs: [0, 1, 2, 3, 4, 5, 6, 7],

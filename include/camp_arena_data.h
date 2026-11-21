@@ -8,10 +8,16 @@
 #define CAMP_WORLD_H 384
 #define CAMP_MAP_W 32
 #define CAMP_MAP_H 48
-#define CAMP_NUM_TILES 137
+#define CAMP_NUM_TILES 843
+
+// Baked bonfire light (see camp_floor_light.h): the warm bands are one contiguous block of palette
+// entries that the flicker rewrites; step 0 is the palette as baked.
+#define CAMP_LIGHT_WARM_FIRST 65
+#define CAMP_LIGHT_WARM_COUNT 160
+#define CAMP_LIGHT_FLICKER_STEPS 4
 
 extern const uint16_t g_camp_palette[256];
-extern const uint8_t g_camp_tiles[CAMP_NUM_TILES][64];
 extern const uint16_t g_camp_floor_map[CAMP_MAP_W * CAMP_MAP_H];
+extern const uint16_t g_camp_flicker[CAMP_LIGHT_FLICKER_STEPS][CAMP_LIGHT_WARM_COUNT];
 
 #endif

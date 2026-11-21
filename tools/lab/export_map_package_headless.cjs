@@ -61,6 +61,11 @@ function s_waitTextures(s) { return s.waitTextures === true; }
       set('fillLight', s.lighting?.fill);
       set('rimLight', s.lighting?.rim);
       set('worldLight', s.lighting?.world);
+      // Optional per-render light colours (#rrggbb) and key direction (unit vector toward the light, GLB frame).
+      set('keyColor', s.lighting?.keyColor);
+      set('fillColor', s.lighting?.fillColor);
+      set('rimColor', s.lighting?.rimColor);
+      window.__spriteLab.keyPos = Array.isArray(s.lighting?.keyPos) ? s.lighting.keyPos : null;
       if (s.orthoScaleMeters) window.__spriteLab.mapOrthoScale = s.orthoScaleMeters;
       // Optional: s.shadows === false turns the key-light shadow map off (the old
       // package settings do not carry the key, so their behaviour is unchanged).

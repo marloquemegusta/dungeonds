@@ -6,6 +6,7 @@
 #include "player_sprite.h"
 #include "camp_props_gfx.h"
 #include "camp_arena_data.h"
+#include "camp_marco.h"
 #include "bestiary_font.h"
 #include <stddef.h>
 #include <stdio.h>
@@ -23,14 +24,14 @@
 #define CAMP_COLL_W (CAMP_ROOM_W / COLLISION_SCALE)
 #define CAMP_COLL_H (CAMP_ROOM_H / COLLISION_SCALE)
 
-// Warm, muted FX_SH_*-style colours for the bonfire glow and flame (never pure primaries).
-#define COL_EMBER   (RGB15(20, 9, 5) | BIT(15))
-#define COL_AMBER   (RGB15(24, 15, 7) | BIT(15))
+// Warm, muted FX_SH_*-style colours (never pure primaries). The bonfire flame itself is a precalculated
+// strip (nitrofiles/camp/hoguera_fuego.bin, tools/camp/fuego_frames.py) with the same ramp.
 #define COL_GOLD    (RGB15(27, 20, 11) | BIT(15))
-#define COL_IVORY   (RGB15(29, 25, 19) | BIT(15))
 #define COL_INK     (RGB15(29, 25, 19) | BIT(15))
 #define COL_INK_SH  (RGB15(1, 1, 2) | BIT(15))
 
+#define CAMP_DOOR_HIT_W (CAMP_MARCO_DOOR_X1 - CAMP_MARCO_DOOR_X0)   // hole of the gate in the wall frame
+#define CAMP_DOOR_HIT_H (CAMP_MARCO_DOOR_Y1 - CAMP_MARCO_DOOR_Y0)
 #define CAMP_REACH_PX 34                 // ground px: hero this close to a prop can use it
 
 typedef struct {
@@ -48,9 +49,10 @@ typedef struct {
 // itself on the bottom screen â€” bonfire with the bedroll beside it, table and chest on the left,
 // lectern on the right (DESIGN.md: the camp as its own room).
 static CampProp s_props[] = {
-    { NULL,  CAMP_PUERTA_W,  CAMP_PUERTA_H,   128, 104, "Puerta",       CAMP_ACT_DOOR,
-      NULL,  CAMP_PUERTA_SHADOW_W,  CAMP_PUERTA_SHADOW_H,
-      CAMP_PUERTA_SHADOW_OX,  CAMP_PUERTA_SHADOW_OY  },
+    // The door is the gate panel of the wall frame (tools/camp/marco_build.py): no sprite and no shadow, only
+    // the interaction point. w/h is the hole of the gate (touch area), x/y the threshold.
+    { NULL,  CAMP_DOOR_HIT_W, CAMP_DOOR_HIT_H, 128, CAMP_MARCO_BASE_N + 1, "Puerta",       CAMP_ACT_DOOR,
+      NULL,  0,  0,  0,  0  },
     { NULL,    CAMP_MESA_W,    CAMP_MESA_H,      60, 250, "Mesa",         CAMP_ACT_NONE,
       NULL,    CAMP_MESA_SHADOW_W,    CAMP_MESA_SHADOW_H,
       CAMP_MESA_SHADOW_OX,    CAMP_MESA_SHADOW_OY    },
@@ -70,6 +72,7 @@ static CampProp s_props[] = {
 #define CAMP_PROP_COUNT ((int)(sizeof(s_props) / sizeof(s_props[0])))
 
 static Arena s_camp_arena;
+static uint8_t (*s_camp_tiles)[64] = NULL;   // floor tiles: nitro:/camp/floor_tiles.bin (CAMP_NUM_TILES x 64)
 static uint8_t s_camp_collision[(CAMP_COLL_W * CAMP_COLL_H) / 4];
 static uint32_t s_camp_occ_rows[CAMP_ROOM_H + 1];
 static int s_built = 0;
@@ -78,6 +81,8 @@ static int s_focus = -1;             // prop the hero is next to (-1 none)
 static char s_toast[48];
 static int s_toast_frames = 0;
 static int s_anim = 0;
+static const uint16_t *s_marco_n = NULL, *s_marco_l = NULL, *s_marco_r = NULL;   // wall frame sprites (nitro:/camp/marco_*.bin)
+static const uint16_t *s_fire = NULL;   // bonfire flame strip: CAMP_FUEGO_FRAMES frames of CAMP_FUEGO_W x CAMP_FUEGO_H
 
 // Screen-visible props of the current render pass, filled by camp_items_count.
 static int s_vis[CAMP_PROP_COUNT];
@@ -119,9 +124,17 @@ static void *load_camp_bin(const char *stem, const char *suffix, size_t bytes) {
 }
 
 static void load_camp_gfx(void) {
+    if (!s_camp_tiles)
+        s_camp_tiles = load_camp_bin("floor_tiles", "", (size_t)CAMP_NUM_TILES * 64);
+    if (!s_fire)
+        s_fire = load_camp_bin("hoguera_fuego", "",
+                               (size_t)CAMP_FUEGO_W * CAMP_FUEGO_H * CAMP_FUEGO_FRAMES * 2);
+    if (!s_marco_n) s_marco_n = load_camp_bin("marco_norte", "", (size_t)CAMP_ROOM_W * CAMP_MARCO_NORTH_H * 2);
+    if (!s_marco_l) s_marco_l = load_camp_bin("marco_izq", "", (size_t)CAMP_MARCO_SIDE_W * CAMP_MARCO_SIDE_H * 2);
+    if (!s_marco_r) s_marco_r = load_camp_bin("marco_der", "", (size_t)CAMP_MARCO_SIDE_W * CAMP_MARCO_SIDE_H * 2);
     for (int i = 0; i < CAMP_PROP_COUNT; i++) {
         CampProp *p = &s_props[i];
-        if (p->pix) continue;
+        if (p->pix || p->act == CAMP_ACT_DOOR) continue;   // the door is in the baked wall: nothing to load
         p->pix = load_camp_bin(s_gfx_stem[i], "", (size_t)p->w * p->h * 2);
         p->shadow = load_camp_bin(s_gfx_stem[i], "_shadow", (size_t)((p->shw + 1) / 2) * p->shh);
     }
@@ -130,11 +143,11 @@ static void load_camp_gfx(void) {
 static void build_arena(void) {
     load_camp_gfx();
     memset(s_camp_collision, 0, sizeof(s_camp_collision));
-    // Walls: the 24 px of cathedral wall each side, a thin far edge at the very top (behind the door)
-    // and the foot. The hero can walk right up to the door and under it.
+    // Walls = the inner edge of the wall frame: 24 px each side, the north wall (gate set into it) and the
+    // foot. The hero stops in front of the wall and can walk right up to the gate.
     block_rect(0, 0, 24, CAMP_ROOM_H, 3);
     block_rect(CAMP_ROOM_W - 24, 0, 24, CAMP_ROOM_H, 3);
-    block_rect(0, 0, CAMP_ROOM_W, 44, 3);
+    block_rect(0, 0, CAMP_ROOM_W, 104, 3);   // north wall (base of the panels y=CAMP_MARCO_BASE_N); the gate is a threshold below it
     block_rect(0, CAMP_ROOM_H - 10, CAMP_ROOM_W, 10, 3);
     // Props block their base so the hero stops in front of them (the door is a threshold: no block).
     for (int i = 0; i < CAMP_PROP_COUNT; i++) {
@@ -152,13 +165,15 @@ static void build_arena(void) {
     s_camp_arena.collision_h = CAMP_COLL_H;
     s_camp_arena.map_w = CAMP_MAP_W;
     s_camp_arena.map_h = CAMP_MAP_H;
-    s_camp_arena.num_tiles = CAMP_NUM_TILES;
+    // Without the floor tiles (read failed) num_tiles stays 0: the renderer then draws void instead of
+    // reading a NULL table (main.c checks tile_id >= num_tiles before touching tiles).
+    s_camp_arena.num_tiles = s_camp_tiles ? CAMP_NUM_TILES : 0;
     s_camp_arena.player_x = CAMP_START_X;
     s_camp_arena.player_y = CAMP_START_Y;
     s_camp_arena.num_enemies = 0;
     s_camp_arena.collision = s_camp_collision;
     s_camp_arena.palette = g_camp_palette;
-    s_camp_arena.tiles = g_camp_tiles;
+    s_camp_arena.tiles = s_camp_tiles;
     s_camp_arena.map = g_camp_floor_map;
     s_camp_arena.occlusion_runs = 0;
     s_camp_arena.occlusion_row_start = s_camp_occ_rows;
@@ -280,31 +295,63 @@ int camp_update(Player *p, uint32_t keys_held, uint32_t keys_down, int touch_pre
 // Rendering
 // ---------------------------------------------------------------------------
 
-// The bonfire (single source of truth for its glow and its procedural flame).
+// The bonfire (its flame is drawn on top of the hoguera sprite by draw_prop).
 #define CAMP_BONFIRE_INDEX 4
-// Warm, dim pool of light on the floor under the bonfire, dithered so the stone still shows through.
-void camp_render_floor(uint16_t *buffer, int cam_x, int cam_y) {
-    const CampProp *f = &s_props[CAMP_BONFIRE_INDEX];
-    int cx = f->x - cam_x;
-    int cy = f->y - 8 - cam_y;
-    // The actor page is transparent over the hardware floor, so painting a filled disc would read as
-    // a rug. Instead scatter a few warm embers on the stone: sparse, dimmer towards the edge.
-    const int rx = 48, ry = 20;
-    for (int dy = -ry; dy <= ry; dy++) {
-        int sy = cy + dy;
+// Flame root above the bonfire's ground point: the middle of the log pile.
+#define CAMP_FLAME_ROOT_DY 9
+// Flame animation: one frame every 3 ticks (20 fps), looping over CAMP_FUEGO_FRAMES.
+#define CAMP_FLAME_TICKS 3
+
+// Opaque-pixel blit of a baked RGB15 sprite (0 = transparent) at world (x, y) of the camp.
+static void blit_marco(const uint16_t *pix, int w, int h, int x, int y, uint16_t *buffer, int cam_x, int cam_y,
+                       int row0, int row1) {
+    if (!pix) return;                    // NitroFS read failed: the frame is simply not drawn
+    if (row0 < 0) row0 = 0;
+    if (row1 > h) row1 = h;
+    for (int row = row0; row < row1; row++) {
+        int sy = y + row - cam_y;
         if ((unsigned)sy >= SCREEN_H) continue;
-        for (int dx = -rx; dx <= rx; dx++) {
-            int q = (dx * dx * 100) / (rx * rx) + (dy * dy * 100) / (ry * ry);
-            if (q > 100) continue;
-            int sx = cx + dx;
+        const uint16_t *srow = pix + row * w;
+        uint16_t *drow = buffer + sy * SCREEN_W;
+        int min_x = SCREEN_W, max_x = -1;
+        for (int col = 0; col < w; col++) {
+            uint16_t c = srow[col];
+            if (!c) continue;
+            int sx = x + col - cam_x;
             if ((unsigned)sx >= SCREEN_W) continue;
-            // Sparse: the inner embers denser than the outer ones; a scattered 2-of-3 pattern.
-            int keep = q < 45 ? 2 : 1;
-            if (((sx * 7 + sy * 13) & 3) >= keep) continue;
-            uint16_t c = q < 45 ? COL_EMBER : (q < 75 ? COL_GOLD : COL_AMBER);
-            buffer[sy * SCREEN_W + sx] = c;
-            dirty_row(sy, sx, sx + 1);
+            drow[sx] = c;
+            if (sx < min_x) min_x = sx;
+            if (sx > max_x) max_x = sx;
         }
+        if (max_x >= min_x) dirty_row(sy, min_x, max_x + 1);
+    }
+}
+
+// The bonfire's light on the floor is baked into the camp floor (tools/camp/bake_camp_arena.py). This hook,
+// called right after the floor and before shadows and actors, draws the wall frame (north wall with the gate,
+// side walls, buttresses: tools/camp/marco_build.py), so heroes and props always paint over it.
+void camp_render_floor(uint16_t *buffer, int cam_x, int cam_y) {
+    blit_marco(s_marco_n, CAMP_ROOM_W, CAMP_MARCO_NORTH_H, 0, 0, buffer, cam_x, cam_y, 0, CAMP_MARCO_NORTH_H);
+    blit_marco(s_marco_l, CAMP_MARCO_SIDE_W, CAMP_MARCO_SIDE_H, 0, CAMP_MARCO_SIDE_Y0, buffer, cam_x, cam_y,
+               0, CAMP_MARCO_SIDE_H);
+    blit_marco(s_marco_r, CAMP_MARCO_SIDE_W, CAMP_MARCO_SIDE_H, CAMP_ROOM_W - CAMP_MARCO_SIDE_W, CAMP_MARCO_SIDE_Y0,
+               buffer, cam_x, cam_y, 0, CAMP_MARCO_SIDE_H);
+}
+
+// Ground shadows of props next to a side wall are drawn after the frame and would stain it: repaint only the
+// rows of the wall that such a shadow covers (a few dozen rows, at the end of the frame).
+static void repaint_marco_under_shadows(uint16_t *buffer, int cam_x, int cam_y) {
+    for (int i = 0; i < CAMP_PROP_COUNT; i++) {
+        const CampProp *p = &s_props[i];
+        if (!p->shadow) continue;
+        int left = p->x - p->w / 2 + p->shox;
+        int top = p->y - p->h + p->shoy - CAMP_MARCO_SIDE_Y0;
+        if (left < CAMP_MARCO_SIDE_W)
+            blit_marco(s_marco_l, CAMP_MARCO_SIDE_W, CAMP_MARCO_SIDE_H, 0, CAMP_MARCO_SIDE_Y0, buffer, cam_x, cam_y,
+                       top, top + p->shh);
+        if (left + p->shw > CAMP_ROOM_W - CAMP_MARCO_SIDE_W)
+            blit_marco(s_marco_r, CAMP_MARCO_SIDE_W, CAMP_MARCO_SIDE_H, CAMP_ROOM_W - CAMP_MARCO_SIDE_W,
+                       CAMP_MARCO_SIDE_Y0, buffer, cam_x, cam_y, top, top + p->shh);
     }
 }
 
@@ -330,25 +377,27 @@ static void draw_prop(int index, uint16_t *buffer, int cam_x, int cam_y) {
         }
         if (max_x >= min_x) dirty_row(sy, min_x, max_x + 1);
     }
-    // The bonfire wears a small animated flame and flicker (procedural, muted FX_SH_* colours).
-    if (index == CAMP_BONFIRE_INDEX) {
-        int fx = p->x - cam_x;
-        int base = p->y - cam_y - 6;
-        int sway = ((s_anim >> 2) & 3) - 1;
-        // The flame is twice the old height (the bonfire sprite is twice as wide as it was).
-        for (int j = 0; j < 18; j++) {
-            int sy = base - j;
+    // The bonfire wears its precalculated flame strip (muted FX_SH_* ramp), frame picked by s_anim.
+    if (index == CAMP_BONFIRE_INDEX && s_fire) {
+        const uint16_t *frame = s_fire + ((s_anim / CAMP_FLAME_TICKS) % CAMP_FUEGO_FRAMES) * CAMP_FUEGO_W * CAMP_FUEGO_H;
+        int fleft = p->x - cam_x - CAMP_FUEGO_BASE_X;
+        int ftop = p->y - cam_y - CAMP_FLAME_ROOT_DY - (CAMP_FUEGO_H - 1);
+        for (int y = 0; y < CAMP_FUEGO_H; y++) {
+            int sy = ftop + y;
             if ((unsigned)sy >= SCREEN_H) continue;
-            int off = (j >= 12) ? (sway * (j - 11)) / 6 : 0;
-            int sx = fx + off;
-            uint16_t c = j < 4 ? COL_IVORY : j < 10 ? COL_GOLD : j < 14 ? COL_AMBER : COL_EMBER;
-            int half = j < 10 ? 1 : 0;
-            for (int k = -half; k <= half; k++) {
-                int px = sx + k;
-                if ((unsigned)px >= SCREEN_W) continue;
-                buffer[sy * SCREEN_W + px] = c;
-                dirty_row(sy, px, px + 1);
+            const uint16_t *srow = frame + y * CAMP_FUEGO_W;
+            uint16_t *drow = buffer + sy * SCREEN_W;
+            int min_x = SCREEN_W, max_x = -1;
+            for (int x = 0; x < CAMP_FUEGO_W; x++) {
+                uint16_t c = srow[x];
+                if (!c) continue;
+                int sx = fleft + x;
+                if ((unsigned)sx >= SCREEN_W) continue;
+                drow[sx] = c;
+                if (sx < min_x) min_x = sx;
+                if (sx > max_x) max_x = sx;
             }
+            if (max_x >= min_x) dirty_row(sy, min_x, max_x + 1);
         }
     }
 }
@@ -399,13 +448,7 @@ static void draw_centered(uint16_t *buffer, int cx, int y, const char *s, uint16
 }
 
 void camp_render_overlay(uint16_t *buffer, int cam_x, int cam_y) {
-    // The focused prop's name, above it, on the screen that shows the prop (top or bottom).
-    if (s_focus >= 0) {
-        const CampProp *p = &s_props[s_focus];
-        int sx = p->x - cam_x;
-        int sy = p->y - p->h - cam_y - 14;
-        if (sy >= 0 && sy < SCREEN_H - 14) draw_centered(buffer, sx, sy, p->name, COL_IVORY);
-    }
+    repaint_marco_under_shadows(buffer, cam_x, cam_y);
     // The short message of the last action (e.g. what sleeping did), on the bottom screen.
     if (s_toast_frames > 0 && s_toast[0] && cam_y >= CAMP_CAM_Y)
         draw_centered(buffer, SCREEN_W / 2, 150, s_toast, COL_GOLD);

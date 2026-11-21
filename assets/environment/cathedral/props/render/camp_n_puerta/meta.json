@@ -1,0 +1,29 @@
+{
+  "piece": "camp_n_puerta",
+  "size_px": [
+    56,
+    80
+  ],
+  "content_px": [
+    54,
+    77
+  ],
+  "target_width": 54,
+  "scale_factor": 0.09424083769633508,
+  "source_render_px": [
+    573,
+    816
+  ],
+  "yaw": 45,
+  "depth_units": "sprite_px",
+  "tiles_8x8_nonempty": 70,
+  "tiles_8x8_unique": 70,
+  "shadow_offset_px": [
+    -8,
+    0
+  ],
+  "shadow_canvas_px": [
+    64,
+    80
+  ]
+}

@@ -124,10 +124,11 @@ def raster(xy, tris, size, ss=SUPERSAMPLE):
     return cov >= 127.5
 
 
-def project_shadow(verts, tris, right, up, canvas, elevation):
+def project_shadow(verts, tris, right, up, canvas, elevation, light=None):
     """Cada vertice cae a lo largo de la luz sobre el plano del suelo; devuelve los triangulos ya
-    en coordenadas de lienzo."""
-    light = key_light_direction(elevation, KEY_AZIMUTH)
+    en coordenadas de lienzo. `light` (vector unitario hacia la luz) sustituye a la key del lab."""
+    if light is None:
+        light = key_light_direction(elevation, KEY_AZIMUTH)
     ground = verts[:, 1].min()
     lift = (verts[:, 1] - ground) / light[1]
     on_ground = verts - lift[:, None] * light[None, :]
@@ -150,7 +151,7 @@ def process(name, dry_run=False):
     ox, oy = (cw - nw) // 2, ch - nh
     alpha = np.asarray(color)[:, :, 3] >= 128
 
-    verts, tris = read_glb(os.path.join(GLB_DIR, name + ".glb"))
+    verts, tris = read_glb(os.path.join(GLB_DIR, cfg.get("glb", name) + ".glb"))
     right, up = camera_basis(CAM_AZIMUTH, CAM_ELEVATION)
     scr = np.stack([verts @ right, verts @ up], 1)
     sx0, sx1 = scr[:, 0].min(), scr[:, 0].max()
@@ -166,7 +167,14 @@ def process(name, dry_run=False):
     obj = raster(canvas(scr), tris, (cw, ch))
     iou = float((obj & alpha).sum() / max((obj | alpha).sum(), 1))
 
-    shadow_xy = project_shadow(verts, tris, right, up, canvas, elevation)
+    light_override = None
+    if "camp_pos" in cfg:
+        # Camp night variants: the shadow points away from the bonfire (see props_camp_light.py).
+        from props_camp_light import fire_dir_xz
+        hx, hz = fire_dir_xz(*cfg["camp_pos"])
+        e = math.radians(elevation)
+        light_override = np.array([hx * math.sin(e), math.cos(e), hz * math.sin(e)])
+    shadow_xy = project_shadow(verts, tris, right, up, canvas, elevation, light_override)
 
     x_min, y_min = shadow_xy.min(0)
     x_max, y_max = shadow_xy.max(0)
@@ -189,7 +197,7 @@ def process(name, dry_run=False):
         own[-y0:-y0 + ch, :] = alpha
         shadow &= ~own
         x0, w = 0, cw
-    elif x_min < -7.5 * MARGIN_SCALE:
+    elif x_min < -7.5 * MARGIN_SCALE and not cfg.get("shadow_free_margin"):
         raise ValueError(
             f"{name}: la sombra llega a x={x_min:.2f} px y no cabe en el margen de 8 px del lienzo "
             f"(elevacion {elevation}); sube `shadow_elevation` en tools/props/props.json")

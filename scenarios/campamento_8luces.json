@@ -1,0 +1,167 @@
+{
+  "name": "campamento_8luces",
+  "description": "Heroe en 8 puntos alrededor de la hoguera para ver las 8 variantes de luz y sombra. Solo evidencia.",
+  "suite": false,
+  "evidence_only": true,
+  "state": {
+    "elf": "../.ds-game-dev/build/out/dungeonds.elf",
+    "symbols": {
+      "pl": "s_player",
+      "gps": "g_player_state"
+    },
+    "default_symbol": "pl",
+    "fields": {
+      "px": {
+        "symbol": "pl",
+        "offset": 0,
+        "type": "s32"
+      },
+      "py": {
+        "symbol": "pl",
+        "offset": 4,
+        "type": "s32"
+      },
+      "hp": {
+        "symbol": "gps",
+        "offset": 0,
+        "type": "s32"
+      }
+    }
+  },
+  "steps": [
+    {
+      "frames": 60
+    },
+    {
+      "tap": {
+        "x": 128,
+        "y": 66
+      },
+      "frames": 6
+    },
+    {
+      "release": true,
+      "frames": 40
+    },
+    {
+      "button_down": "START",
+      "frames": 4
+    },
+    {
+      "button_up": "START",
+      "frames": 50
+    },
+    {
+      "poke": [
+        {
+          "field": "px",
+          "value": 32768
+        },
+        {
+          "field": "py",
+          "value": 83200
+        }
+      ],
+      "frames": 24,
+      "capture": "luz_S"
+    },
+    {
+      "poke": [
+        {
+          "field": "px",
+          "value": 23808
+        },
+        {
+          "field": "py",
+          "value": 81152
+        }
+      ],
+      "frames": 24,
+      "capture": "luz_SW"
+    },
+    {
+      "poke": [
+        {
+          "field": "px",
+          "value": 19968
+        },
+        {
+          "field": "py",
+          "value": 76800
+        }
+      ],
+      "frames": 24,
+      "capture": "luz_W"
+    },
+    {
+      "poke": [
+        {
+          "field": "px",
+          "value": 23808
+        },
+        {
+          "field": "py",
+          "value": 72192
+        }
+      ],
+      "frames": 24,
+      "capture": "luz_NW"
+    },
+    {
+      "poke": [
+        {
+          "field": "px",
+          "value": 32768
+        },
+        {
+          "field": "py",
+          "value": 70400
+        }
+      ],
+      "frames": 24,
+      "capture": "luz_N"
+    },
+    {
+      "poke": [
+        {
+          "field": "px",
+          "value": 41728
+        },
+        {
+          "field": "py",
+          "value": 72192
+        }
+      ],
+      "frames": 24,
+      "capture": "luz_NE"
+    },
+    {
+      "poke": [
+        {
+          "field": "px",
+          "value": 45568
+        },
+        {
+          "field": "py",
+          "value": 76800
+        }
+      ],
+      "frames": 24,
+      "capture": "luz_E"
+    },
+    {
+      "poke": [
+        {
+          "field": "px",
+          "value": 41728
+        },
+        {
+          "field": "py",
+          "value": 81152
+        }
+      ],
+      "frames": 24,
+      "capture": "luz_SE"
+    }
+  ]
+}

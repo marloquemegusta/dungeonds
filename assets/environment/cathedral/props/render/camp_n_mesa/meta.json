@@ -1,0 +1,29 @@
+{
+  "piece": "camp_n_mesa",
+  "size_px": [
+    72,
+    40
+  ],
+  "content_px": [
+    65,
+    39
+  ],
+  "target_width": 65,
+  "scale_factor": 0.12149532710280374,
+  "source_render_px": [
+    535,
+    319
+  ],
+  "yaw": 45,
+  "depth_units": "sprite_px",
+  "tiles_8x8_nonempty": 37,
+  "tiles_8x8_unique": 37,
+  "shadow_offset_px": [
+    -16,
+    0
+  ],
+  "shadow_canvas_px": [
+    88,
+    40
+  ]
+}

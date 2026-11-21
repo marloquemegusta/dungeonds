@@ -122,17 +122,46 @@ const LIGHT_PRESETS = {
   dungeon: { key: 4.5, fill: 0.85, rim: 0, world: 0.35, keyColor: '#ffe2b5', fillColor: '#b3c4e1', rimColor: '#cce7ff' },
   neutral: { key: 3.2, fill: 0.65, rim: 0.4, world: 0.25, keyColor: '#fff0d9', fillColor: '#cbd8ff', rimColor: '#dce8ff' },
   warm: { key: 4.5, fill: 0.25, rim: 0.35, world: 0.14, keyColor: '#ffc276', fillColor: '#875c3b', rimColor: '#ffdda8' },
+  // Camp at night (DESIGN.md 7.5): muted amber key low over the horizon (the bonfire), weak cold blue fill, no rim, dark cold ambient.
+  // Meant for lightAzimuth (the key then comes from the bonfire); fast lab only.
+  'camp-fire': { key: 3.4, fill: 0.40, rim: 0, world: 0.75, keyColor: '#d9a066', fillColor: '#5d78a8', rimColor: '#000000', worldColor: '#3a4a6e', elevation: 22, shadowElevation: 38 },
 };
+
+// World-fixed light direction of an object at screen azimuth index a (0..7 = S, SW, W, NW, N, NE, E, SE; the object's
+// position relative to the light source on the ground plane). The light comes from the source, i.e. from the screen
+// direction opposite to the azimuth. Camera: toCamera horizontal = (+x, -z), screen right = (-x, -z) (package.cjs viewBasis).
+// Returns the unit horizontal vector (x, z) from the object towards the light.
+function lightAzimuthDir(a) {
+  const UD = [[0, 1], [-1, 1], [-1, 0], [-1, -1], [0, -1], [1, -1], [1, 0], [1, 1]];   // (screen right, screen down) of the object
+  const [u0, d0] = UD[((a % 8) + 8) % 8];
+  const l = Math.hypot(u0, d0), u = -u0 / l, d = -d0 / l;      // towards the light
+  return [(d - u) / Math.SQRT2, -(u + d) / Math.SQRT2];
+}
 
 function lightingFor(preset, overrides = {}) {
   const p = Object.assign({}, LIGHT_PRESETS[preset] || LIGHT_PRESETS.neutral, overrides);
   const PI = Math.PI;
+  let keyPos = [0.4096 * 30, 0.5736 * 30, -0.7094 * 30];
+  let fillPos = [-0.5318 * 30, 0.3746 * 30, 0.7595 * 30];
+  let shadowLight = null;
+  if (typeof p.azimuth === 'number') {
+    const el = (p.elevation || 22) * PI / 180, h = lightAzimuthDir(p.azimuth);
+    keyPos = [h[0] * Math.cos(el) * 30, Math.sin(el) * 30, h[1] * Math.cos(el) * 30];
+    // cold fill from the opposite side of the key, higher
+    const fe = 35 * PI / 180;
+    fillPos = [-h[0] * Math.cos(fe) * 30, Math.sin(fe) * 30, -h[1] * Math.cos(fe) * 30];
+    // Ground shadow: horizontal offset per metre of height = -h / tan(shadowElevation) (the cell is finite, so the
+    // shadow may use a higher angle than the shading light: p.shadowElevation).
+    const se = (p.shadowElevation || p.elevation || 22) * PI / 180, cot = Math.cos(se) / Math.sin(se);
+    shadowLight = { kx: -h[0] * cot, kz: -h[1] * cot };
+  }
   return {
-    key: { color: hexToLinear(p.keyColor), intensity: p.key * PI, position: [0.4096 * 30, 0.5736 * 30, -0.7094 * 30] },
-    fill: { color: hexToLinear(p.fillColor), intensity: p.fill * PI, position: [-0.5318 * 30, 0.3746 * 30, 0.7595 * 30] },
+    key: { color: hexToLinear(p.keyColor), intensity: p.key * PI, position: keyPos },
+    fill: { color: hexToLinear(p.fillColor), intensity: p.fill * PI, position: fillPos },
     rim: { color: hexToLinear(p.rimColor), intensity: p.rim * PI, position: [0, 30, 0] },
-    ambient: { color: [1, 1, 1], intensity: p.world * PI },
+    ambient: { color: p.worldColor ? hexToLinear(p.worldColor) : [1, 1, 1], intensity: p.world * PI },
     castShadow: true,
+    shadowLight,
   };
 }
 
@@ -702,4 +731,4 @@ function bundleU8(src) {
   return u;
 }
 
-module.exports = { bundleU8, loadCharacter, DelegateError, lightingFor, LIGHT_PRESETS, hexToLinear, posedMeshes, applyNeckPitch, applyInPlaceMotion, loadBundle, getNeckTiltTargets };
+module.exports = { bundleU8, loadCharacter, DelegateError, lightingFor, lightAzimuthDir, LIGHT_PRESETS, hexToLinear, posedMeshes, applyNeckPitch, applyInPlaceMotion, loadBundle, getNeckTiltTargets };

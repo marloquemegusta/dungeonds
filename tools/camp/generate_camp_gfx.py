@@ -6,9 +6,10 @@ Reads assets/environment/cathedral/props/render/<piece>/color.png and shadow.png
 cathedral kit uses, and writes:
   include/camp_props_gfx.h
   source/camp_props_gfx.c
-Colour pixels are quantised to the shared prop palette (assets/environment/cathedral/palette/
-palette.json) with the kit's own criterion (bake_cathedral_kit.read_prop_palette/quantize_props),
-so a camp prop can never introduce a colour outside the palette.
+Night camp (DESIGN.md 7.5): the pieces are the camp_n_* variants (render/camp_n_<piece>/, lit by the bonfire,
+made by tools/props/props_camp_night.py). Pixels are converted straight to RGB15 (no quantisation to the
+cathedral prop palette: the camp is software-blitted RGB15 and the fire-lit tones would band).
+It also writes the animated bonfire flame strip (tools/camp/fuego_frames.py -> nitrofiles/camp/hoguera_fuego.bin).
 Pixels keep BIT(15) (opaque) so the blit copies them straight to the 16 bpp page; transparent is 0.
 Each piece also exports its baked ground-shadow mask (shadow.png on the shadow canvas declared by
 meta.json), packed as 4-bit nibbles like the actor shadows, so source/camp.c can darken the floor
@@ -22,31 +23,27 @@ import numpy as np
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "tools"))
-import bake_cathedral_kit as kit  # noqa: E402
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 RENDER = ROOT / "assets" / "environment" / "cathedral" / "props" / "render"
 
 # symbol suffix -> source piece directory
 PIECES = [
-    ("hoguera", "camp_hoguera"),
-    ("jergon",  "camp_jergon"),
-    ("atril",   "camp_atril"),
-    ("mesa",    "camp_mesa"),
-    ("arcon",   "camp_arcon"),
-    ("puerta",  "puerta"),
+    ("hoguera", "camp_n_hoguera"),
+    ("jergon",  "camp_n_jergon"),
+    ("atril",   "camp_n_atril"),
+    ("mesa",    "camp_n_mesa"),
+    ("arcon",   "camp_n_arcon"),
+    ("puerta",  "camp_n_puerta"),
 ]
 
 
-def img_to_words(path, prop_colors, prop_lab):
+def img_to_words(path):
     im = Image.open(path).convert("RGBA")
-    rgb = np.asarray(im)[:, :, :3]
-    alpha = np.asarray(im)[:, :, 3]
-    q = kit.quantize_props(im, prop_lab)
-    out = []
-    for y in range(im.height):
-        for x in range(im.width):
-            out.append(0 if alpha[y, x] < 128 else prop_colors[int(q[y, x])])
-    return im.width, im.height, out
+    a = np.asarray(im).astype(np.int32)
+    words = ((a[:, :, 0] >> 3) | ((a[:, :, 1] >> 3) << 5) | ((a[:, :, 2] >> 3) << 10) | 0x8000)
+    words = np.where(a[:, :, 3] < 128, 0, words)
+    return im.width, im.height, words.reshape(-1).tolist()
 
 
 def load_shadow(piece_dir, w, h):
@@ -82,11 +79,10 @@ def write_lf(path, text):
 
 
 def main():
-    prop_colors, prop_lab = kit.read_prop_palette()
     parsed = []
     for suffix, piece in PIECES:
         piece_dir = RENDER / piece
-        w, h, px = img_to_words(piece_dir / "color.png", prop_colors, prop_lab)
+        w, h, px = img_to_words(piece_dir / "color.png")
         shadow = load_shadow(piece_dir, w, h)
         parsed.append((suffix, piece, w, h, px, shadow))
 
@@ -114,6 +110,11 @@ def main():
             hdr.append(f"#define CAMP_{tag}_SHADOW_OX {ox}")
             hdr.append(f"#define CAMP_{tag}_SHADOW_OY {oy}")
             (out_dir / f"{suffix}_shadow.bin").write_bytes(packed)
+    # Bonfire flame: FRAMES frames of W x H RGB15 stacked vertically; root = bottom-centre (BASE_X, H-1).
+    import fuego_frames
+    (out_dir / "hoguera_fuego.bin").write_bytes(fuego_frames.strip_bytes())
+    hdr += ["", f"#define CAMP_FUEGO_W {fuego_frames.W}", f"#define CAMP_FUEGO_H {fuego_frames.H}",
+            f"#define CAMP_FUEGO_FRAMES {fuego_frames.FRAMES}", f"#define CAMP_FUEGO_BASE_X {fuego_frames.BASE_X}"]
     hdr += ["", "#endif", ""]
     write_lf(ROOT / "include" / "camp_props_gfx.h", "\n".join(hdr))
     stale = ROOT / "source" / "camp_props_gfx.c"

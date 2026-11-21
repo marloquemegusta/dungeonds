@@ -43,6 +43,8 @@
 #include "radial.h"
 #include "allies.h"
 #include "camp.h"
+#include "camp_hero.h"
+#include "camp_floor_light.h"
 #include "placeholders_gfx.h"
 #include <stdio.h>
 #include <string.h>
@@ -907,14 +909,29 @@ static void draw_player(uint16_t *buffer, int cam_x, int cam_y) {
 
     int sw = clip >= 0 ? HERO_SHOT_SPRITE_W : g_characters[s_player.char_id].sprite_w;
     // The shot clip has its own cell and feet row (same world scale as the walk), so the feet stay put when switching clips.
-    const int anchor = clip >= 0 ? g_player_shot_ground_anchors[s_player.dir]
-                                 : s_char_ground_anchor[s_player.char_id][s_player.dir];
+    int anchor = clip >= 0 ? g_player_shot_ground_anchors[s_player.dir]
+                           : s_char_ground_anchor[s_player.char_id][s_player.dir];
     const uint16_t *frame = clip >= 0
         ? &g_player_shot_frames[g_player_shot_frame_offsets[s_player.dir][clip]]
         : character_frame_ptr(s_player.char_id, s_player.dir, s_player.frame);
     const uint16_t *runs = clip >= 0
         ? &g_player_shot_runs[g_player_shot_run_offsets[s_player.dir][clip]]
         : character_runs_ptr(s_player.char_id, s_player.dir, s_player.frame);
+#if CAMP_SCENE
+    if (camp_active() && clip < 0 && s_player.char_id == CHAR_HERO) {
+        // The camp walk lit by the bonfire (8 baked variants in NitroFS); same cell, scale and feet row as the dungeon walk.
+        const CampHeroFrame *chf = camp_hero_frame(TO_INT(s_player.x), TO_INT(s_player.y), s_player.dir, s_player.frame);
+        if (chf) {
+            b = chf->bounds;
+            bw = b[2]; bh = b[3];
+            if (bw == 0 || bh == 0) return;
+            min_x = b[0]; min_y = b[1];
+            anchor = chf->anchor;
+            frame = chf->pix;
+            runs = chf->runs;
+        }
+    }
+#endif
     int pitch = sprite_pitch(bw);
     if (g_player_state.invuln_timer > 0 && ((g_player_state.invuln_timer >> 2) & 1) && !remate_approaching()) {
         // Hit feedback: red flash while the i-frames run (not during the remate dash).
@@ -1343,14 +1360,18 @@ static void render_camp_screen(uint16_t *buffer, DirtySpan *spans, int cam_x, in
     int psy = player_screen_y(s_player.x, s_player.y);
 
     // Player shadow (the walk sprite's baked mask): hardware OBJ windows when enabled, else software.
+    // Walking in the camp the hero and his shadow come from the variant lit by the bonfire (camp_hero.c): the shadow always
+    // goes by software, because its mask changes with the light and the hardware cache assumes one fixed mask per frame.
     {
-        const uint8_t *mask = character_shadow_mask_ptr(s_player.char_id, s_player.dir, s_player.frame);
-        const uint8_t *bounds = g_character_shadow_bounds[s_player.char_id][s_player.dir][s_player.frame];
+        const CampHeroFrame *chf = (s_player.char_id == CHAR_HERO && s_hero_clip_frame < 0)
+            ? camp_hero_frame(TO_INT(s_player.x), TO_INT(s_player.y), s_player.dir, s_player.frame) : NULL;
+        const uint8_t *mask = chf ? chf->mask : character_shadow_mask_ptr(s_player.char_id, s_player.dir, s_player.frame);
+        const uint8_t *bounds = chf ? chf->sbounds : g_character_shadow_bounds[s_player.char_id][s_player.dir][s_player.frame];
         int shw = g_characters[s_player.char_id].shadow_w;
         int shh = g_characters[s_player.char_id].shadow_h;
 #if HW_SHADOWS
         hwshadow_begin(sub_screen);
-        if (g_hw_shadows_on) {
+        if (g_hw_shadows_on && !chf) {
             hwshadow_add(sub_screen, mask, bounds, psx - shw / 2 - cam_x, psy - shh / 2 - cam_y);
         } else {
             draw_shadow_mask(buffer, mask, bounds, psx - shw / 2, psy - shh / 2, cam_x, cam_y, psy);
@@ -3270,6 +3291,7 @@ static void enter_camp_scene(void) {
     camp_set_active(1);
     g_arena = camp_arena();
     apply_arena_palette();
+    camp_floor_light_reset();
     init_bg_tile_cache(&s_top_bg_tile_cache, TOP_TILE_CACHE_CAPACITY, s_top_bg_tiles_vram);
     init_bg_tile_cache(&s_bot_bg_tile_cache, BG_TILE_CACHE_CAPACITY, s_bot_bg_tiles_vram);
     s_top_map_ready = 0;
@@ -3293,6 +3315,7 @@ static void enter_camp_scene(void) {
     s_player.is_moving = 0;
     s_player.anim_timer = 0;
     s_player.char_id = CHAR_HERO;
+    camp_hero_reset();
     g_player_state.is_dead = 0;
     g_player_state.invuln_timer = 0;
     weapons_cancel_aim();
@@ -3320,6 +3343,7 @@ static void enter_camp_scene(void) {
 // Leaves the camp for the cathedral: restore the strip arena and start the run.
 static void leave_camp_to_dungeon(void) {
     camp_set_active(0);
+    camp_hero_release();
     g_arena = strip_arena();
     arpg_progress_save();
     s_run_started = 1;
@@ -3711,6 +3735,7 @@ int main(void) {
 #if CAMP_SCENE
         if (camp_active()) {
             // The camp: walk, focus a prop, interact. The dungeon systems stay off.
+            camp_floor_light_tick((int)s_vblank_count);
             if (!menu_is_open()) {
                 int act = camp_update(&s_player, keys_held, s_keys_down_latch,
                                       menu_touch_pressed && !s_menu_ignore_held_touch, touch.px, touch.py);

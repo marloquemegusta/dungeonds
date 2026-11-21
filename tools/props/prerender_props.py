@@ -14,9 +14,10 @@ OUT = os.path.join(PROPS, "render")
 LAB = os.path.join(ROOT, "tools/lab/export_map_package_headless.cjs")
 SETTINGS = os.path.join(ROOT, "tools/props/props_render_settings.json")
 
-def run_lab(name, raw, settings, legibility="anterior"):
+def run_lab(name, raw, settings, legibility="anterior", glb=None):
+    # glb: optional GLB basename when the piece is a variant of another one (camp night variants).
     d = os.path.join(raw, name)
-    r = subprocess.run(["node", LAB, os.path.join(PROPS, "glb", name + ".glb"), settings, d, "--legibility", legibility],
+    r = subprocess.run(["node", LAB, os.path.join(PROPS, "glb", (glb or name) + ".glb"), settings, d, "--legibility", legibility],
                        capture_output=True, text=True)
     if r.returncode != 0:
         raise RuntimeError(name + ": " + r.stderr[-500:])

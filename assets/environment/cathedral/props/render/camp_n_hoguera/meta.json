@@ -1,0 +1,29 @@
+{
+  "piece": "camp_n_hoguera",
+  "size_px": [
+    40,
+    24
+  ],
+  "content_px": [
+    36,
+    21
+  ],
+  "target_width": 36,
+  "scale_factor": 0.06691449814126393,
+  "source_render_px": [
+    538,
+    314
+  ],
+  "yaw": 0,
+  "depth_units": "sprite_px",
+  "tiles_8x8_nonempty": 15,
+  "tiles_8x8_unique": 15,
+  "shadow_offset_px": [
+    0,
+    0
+  ],
+  "shadow_canvas_px": [
+    40,
+    32
+  ]
+}

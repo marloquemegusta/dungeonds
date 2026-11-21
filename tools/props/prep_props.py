@@ -27,6 +27,7 @@ def components(bm):
 
 for name, c in cfg.items():
     if only and name not in only: continue
+    if c.get("glb"): continue   # variant of another piece (camp night variants): shares its GLB
     bpy.ops.wm.read_factory_settings(use_empty=True)
     bpy.ops.import_scene.fbx(filepath=os.path.join(src, c["fbx"]))
     obj = [o for o in bpy.data.objects if o.type == 'MESH'][0]

@@ -1,0 +1,29 @@
+{
+  "piece": "camp_n_atril",
+  "size_px": [
+    16,
+    32
+  ],
+  "content_px": [
+    13,
+    27
+  ],
+  "target_width": 13,
+  "scale_factor": 0.03194103194103194,
+  "source_render_px": [
+    407,
+    849
+  ],
+  "yaw": 45,
+  "depth_units": "sprite_px",
+  "tiles_8x8_nonempty": 8,
+  "tiles_8x8_unique": 8,
+  "shadow_offset_px": [
+    0,
+    0
+  ],
+  "shadow_canvas_px": [
+    48,
+    40
+  ]
+}

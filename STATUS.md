@@ -16,6 +16,7 @@ Primero el estado necesario para retomar el trabajo sin depender del chat; despu
 **Fallos y deuda conocidos** (una sola lista; detalle técnico en `TECHNICAL.md` §4):
 - `test_bestiary_assets_contract` falla: `tools/gen_bestiary_exvoto.py:23` apunta a un worktree borrado (`exvoto-anim`).
 - 4 escenarios `enemy_ojo_*` fallan por expectativas desfasadas (heredado de `main`): `esquiva_saliendo_de_la_linea` y `heroe_entra_en_la_llamarada` piden `nav_y` con 0,5 px de diferencia; las dos `llamarada_pasa_*` piden estado del cargador 12 y sale 14.
+- `test_cathedral_kit` falla en `proto/arpg` (23 piezas en el baker frente a 19 en el enum del header; sin diagnosticar, no lo toca el campamento) y `test_character_muzzle` sigue fallando como en `main`.
 - `encuentros_smoke` falla en el relicario (sin diagnosticar; no se sabe si ya fallaba antes).
 - `scenarios/intro_tarjetas.json` (5 tarjetas) desfasado frente a las 6 de la ROM; no verificado.
 - La rotura del relicario se ve poco porque la oferta de Don la tapa.
@@ -23,6 +24,8 @@ Primero el estado necesario para retomar el trabajo sin depender del chat; despu
 - Data abort intermitente en hardware, sin causa conocida (`TECHNICAL.md` §4.4).
 
 ### Entregas recientes (más nueva primero)
+
+- **Campamento nocturno (`proto/arpg`, 2026-11-21, no integrado en `main`):** patio exterior de noche iluminado solo por la hoguera, con la luz horneada: suelo de tierra y piedra con 7 bandas de brillo y parpadeo por paleta, fuego animado nuevo, props y héroe re-renderizados con luz de fuego (el héroe en 8 variantes según su posición respecto al fuego), sin rótulos, y un marco de muros hecho con un kit de 3 imágenes del usuario (norte con portón central; laterales con contrafuertes cada 5 paneles). **Pendiente por decisión del usuario: revisar la perspectiva de los muros laterales** (se ven como texturas pegadas en escorzo; el frontal sí queda bien). **Sin hacer:** medición `perf` en la DS (marco ~40k píxeles/frame y lectura por frame del héroe desde NitroFS), mesa como Crisol, señal diegética de foco. [`walkthrough`](walkthroughs/campamento-nocturno/walkthrough.md)
 
 - **Protodemo ARPG v1 (`proto/arpg`, 2026-11-20, prototipo, no integrado en `main`):** combo de puñetazos, tambaleo por vida baja, Glifo, HUD de vasos y números de daño, salas con puerta, hueco lateral, cofres y altares, población por grupos con curva de inicio, tiers de Exvoto (Bebé, Párroco, Monja) y campamento andable. Build sin avisos; subida a la DS sin medir rendimiento. [`walkthrough`](walkthroughs/arpg-predemo/walkthrough.md).
 

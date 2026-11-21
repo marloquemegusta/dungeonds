@@ -1,0 +1,69 @@
+{
+  "name": "campamento_fuego_solo",
+  "description": "Heroe en 8 puntos alrededor de la hoguera para ver las 8 variantes de luz y sombra. Solo evidencia.",
+  "suite": false,
+  "evidence_only": true,
+  "state": {
+    "elf": "../.ds-game-dev/build/out/dungeonds.elf",
+    "symbols": {
+      "pl": "s_player",
+      "gps": "g_player_state"
+    },
+    "default_symbol": "pl",
+    "fields": {
+      "px": {
+        "symbol": "pl",
+        "offset": 0,
+        "type": "s32"
+      },
+      "py": {
+        "symbol": "pl",
+        "offset": 4,
+        "type": "s32"
+      },
+      "hp": {
+        "symbol": "gps",
+        "offset": 0,
+        "type": "s32"
+      }
+    }
+  },
+  "steps": [
+    {
+      "frames": 60
+    },
+    {
+      "tap": {
+        "x": 128,
+        "y": 66
+      },
+      "frames": 6
+    },
+    {
+      "release": true,
+      "frames": 40
+    },
+    {
+      "button_down": "START",
+      "frames": 4
+    },
+    {
+      "button_up": "START",
+      "frames": 50
+    },
+    {
+      "poke": [
+        {
+          "field": "px",
+          "value": 10240
+        },
+        {
+          "field": "py",
+          "value": 92160
+        }
+      ],
+      "frames": 30,
+      "capture": "fuego_solo"
+    }
+  ]
+}
