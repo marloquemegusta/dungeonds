@@ -71,6 +71,7 @@ luz fija, como haría el juego. Cada dirección tiene su GIF y su carpeta de fot
 - Las 8 direcciones para revisar: [`assets/ojo_remate_8dirs.html`](assets/ojo_remate_8dirs.html) (GIF 4x de cada una).
 - GIF por dirección: `assets/ojo_remate_d0_4x.gif` … `assets/ojo_remate_d7_4x.gif`.
 - Hoja comparativa del fotograma de contacto en las 8: [`assets/ojo_remate_contacto_8dirs.png`](assets/ojo_remate_contacto_8dirs.png)
+- Tira del desplome (fotogramas 17–31, 4x): [`assets/ojo_remate_desplome_4x.png`](assets/ojo_remate_desplome_4x.png)
 - Fotogramas 1x de cada dirección en `assets/dir_<d>/fNN.png`.
 
 ## Verificación
