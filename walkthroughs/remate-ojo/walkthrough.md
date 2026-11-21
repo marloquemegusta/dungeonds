@@ -9,8 +9,11 @@
 Una animación de ejecución del **Ojo del Tribunal** con el **estilo visual de las ejecuciones del Exvoto**: misma
 cámara diagonal (45° de acimut, 30° de elevación), mismos pases de render y misma post (borde duro al alfa 110,
 sombra al 45 %, GIF 4x NEAREST a 60 ms por fotograma). El héroe le **agarra el farol que lleva sobre los hombros**
-(es su cabeza), se lo **arranca de un tirón**, lo **tira al suelo**, el cuerpo descabezado **se levanta tambaleándose**
-y, cuando le llega la **patada**, cae **hacia atrás** con la animación de muerte del inbox y se queda muerto.
+(su cabeza), se lo **arranca de un tirón**, lo **tira al suelo**, el cuerpo descabezado **se incorpora a su postura
+encorvada** (nunca llega a erguirse del todo: es una criatura encorvada) y, cuando le llega la **patada**, cae
+**hacia atrás** con la animación de muerte del inbox. Al caer **se le escurre de la mano la cabeza que lleva
+sujeta** (el Ojo lleva dos: la del hombro, que se arranca, y la de la mano, que se le cae) y las dos piezas quedan en
+el suelo.
 
 Los clips del inbox **no se han movido, copiado ni borrado**: `assets/inbox/Zombie Kicking.fbx` y
 `assets/inbox/Falling Back Death.fbx` se leen desde el repo principal y solo se usan como dato de pose.
@@ -19,15 +22,16 @@ Los clips del inbox **no se han movido, copiado ni borrado**: `assets/inbox/Zomb
 
 | Fotogramas | Qué pasa |
 | :--- | :--- |
-| 0–1 | El héroe entra; el Ojo está arrodillado para que le llegue el farol del hombro. |
+| 0–1 | El héroe entra. El Ojo está **agachado** a propósito (no de pie): es la única forma de que el farol del hombro le llegue al héroe, que es un 40 % más bajo. |
 | 2 | **Agarre:** las dos manos del héroe cierran sobre la jaula del farol (hueco de las manos 0,000 m). |
 | 3–4 | **Tirón y arranque:** el farol se desprende del cuello (borde dentado y sección en rojo oscuro). Chispas y vidrio. |
-| 4–11 | El cuerpo **se levanta** del suelo, tambaleándose (`k` de arrodillado a de pie con un pequeño rebote). |
+| 4–11 | El cuerpo **se incorpora** a su postura natural, algo encorvada (`k` 1 → 0,30 con un pequeño rebote), sin llegar nunca a estar de pie perfecto. |
 | 5–8 | El héroe voltea el farol y lo tira: vuela, cae a sus pies en el 8 y se queda a ras. |
-| 11–17 | El Ojo, ya **de pie y descabezado**, se tambalea (vaivén de ±4,4° con periodo de 5,2 fotogramas). El héroe sube la pierna. |
+| 11–17 | El Ojo, ya **incorporado y descabezado**, se tambalea (vaivén de ±4,4° con periodo de 5,2 fotogramas) con la cabeza de la mano sujeta. El héroe sube la pierna. |
 | **17** | **Contacto:** el pie del héroe toca el cuerpo del Ojo (clip 23 de la patada) **y ese mismo fotograma arranca el desplome**: el cuerpo empieza a irse hacia atrás en el 18 y acelera. |
 | 17–29 | **Desplome:** clip `Falling Back Death` desde su fotograma 7 (el de la reacción), a 2 fotogramas de clip por celda. Se vuelca, los brazos se abren y cae de espaldas. |
-| 30–37 | El cuerpo queda muerto en el suelo. El héroe **recupera la pose**: del 30 al 37 la patada se mezcla de vuelta a su reposo (el clip de patada acaba en un idle de zombi; no se deja así). |
+| **21** | **Se le cae la cabeza de la mano:** al irse de espaldas la suelta; cae al suelo entre los dos y rueda hasta pararse junto al cuerpo. |
+| 30–37 | El cuerpo queda muerto en el suelo, con la cabeza suelta a su lado y el farol arrancado delante. El héroe **recupera la pose**: del 30 al 37 la patada se mezcla de vuelta a su reposo. |
 
 ### Ocho direcciones
 
@@ -59,6 +63,14 @@ luz fija, como haría el juego. Cada dirección tiene su GIF y su carpeta de fot
   los brazos se quedaban en la pose de andar y el héroe acababa encorvado con los brazos de zombi). Del 30 al 37 la
   pose del último fotograma del clip (49) se **mezcla por slerp** con la pose de reposo del héroe, así que la
   animación termina con el héroe de pie, normal.
+- **El cuerpo nunca se yergue del todo.** El Ojo es una criatura encorvada: tras el arranque se incorpora solo hasta
+  su postura natural (`OJO_K_REST` 0,45 = rodillas claramente dobladas + 6° de encorvamiento, `OJO_HUNCH`) y desde
+  ahí cae, en vez de ponerse de pie perfecto antes de recibir la patada.
+- **La cabeza de la mano es un objeto aparte colgado del hueso `RightHand`.** El modelo la trae como malla suelta
+  emparentada a la mano, así que sigue a la mano sola; en el fotograma 21 (cuando el cuerpo se va de espaldas) se
+  suelta: se hornea aparte y se anima su caída (impulso (0,9, 0,35, 0,25) m/s, giro sobre Z y frenada al tocar el
+  suelo), quedando junto al cadáver. *(En la vuelta anterior esta malla se ocultaba por error creyéndola un duplicado
+  del farol; era la cabeza que lleva en la mano.)*
 - **El farol no vuela:** al rozarlo el pie en el 19 sale un palmo, rueda y se para (desplazamiento amortiguado de
   ~0,3 m; antes salía con parábola a 1,4 m/s y se iba de la celda).
 - **Escala y encuadre:** 38 px/m (exactamente la del remate del Exvoto en `generate_remate_sprites.py`) y celda de
@@ -87,8 +99,8 @@ luz fija, como haría el juego. Cada dirección tiene su GIF y su carpeta de fot
 
 | dir | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| x | 10–82 | 0–91 | 17–83 | 30–72 | 14–86 | 5–96 | 13–79 | 24–66 |
-| y | 17–72 | 19–70 | 19–76 | 19–80 | 18–73 | 15–66 | 15–73 | 16–77 |
+| x | 10–82 | 0–91 | 17–83 | 35–72 | 14–86 | 5–96 | 13–79 | 24–61 |
+| y | 20–74 | 23–70 | 21–76 | 21–80 | 22–73 | 20–64 | 18–74 | 17–79 |
 
   El gesto cabe en la celda del Exvoto en las 8 direcciones: solo en 1 y 5 roza el borde (0,2 px, inapreciable). La caída,
   bien aplicada, ocupa menos que en la vuelta anterior y **no hace falta celda nueva**.

@@ -50,6 +50,8 @@ FALLFBX = os.environ.get('FALL_FBX', 'C:/codexlocal/dungeonds/assets/inbox/Falli
 DT = 0.06                 # s por fotograma de celda
 G_ = 9.0                  # gravedad en unidades de Blender por s^2
 OJO_K = float(os.environ.get('OJO_K', '1.32'))
+OJO_K_REST = float(os.environ.get('OJO_K_REST', '0.45'))   # 1 = agachado del todo; este es su postura natural
+OJO_HUNCH = float(os.environ.get('OJO_HUNCH', '6'))       # grados de encorvamiento cuando esta de pie
 OJO_X, OJO_Y = float(os.environ.get('OJO_X', '0.72')), float(os.environ.get('OJO_Y', '0.10'))
 HX0 = float(os.environ.get('HXF', '0.0'))
 HERO_ONLY = os.environ.get('HERO_ONLY') == '1'
@@ -260,10 +262,11 @@ def grip(targets):
 # ----------------------------------------------------------------------------------------------- Ojo: partir la cabeza
 OJO_MESHES = [o for o in bpy.data.objects if o.type == 'MESH' and o.parent and o.parent.name == ojo.arm.name]
 BODY = [o for o in OJO_MESHES if any(m.type == 'ARMATURE' for m in o.modifiers)][0]
-for o in OJO_MESHES:
-    if o is not BODY:
-        o.hide_render = True       # duplicado sin skin (mismo farol: no se usa)
-print('OJO body', BODY.name, len(BODY.data.vertices), 'verts')
+# la cabeza que lleva en la MANO: objeto aparte, colgado del hueso RightHand (sigue a la mano solo)
+_hold = [o for o in OJO_MESHES if o is not BODY]
+HOLD = _hold[0] if _hold else None
+print('OJO body', BODY.name, len(BODY.data.vertices), 'verts', '| cabeza en la mano:', HOLD and HOLD.name,
+      HOLD and HOLD.parent_type, HOLD and HOLD.parent_bone)
 
 
 def split_by_head(ob, thr=0.5, jag_amp=0.020, cap_color=(0.20, 0.07, 0.06, 1.0)):
@@ -377,9 +380,11 @@ HEAD_SKIN, BODY_SKIN = split_by_head(BODY)
 
 
 def ojo_pose(ch, k, sway=0.0, dz_extra=0.0, twist=0.0):
-    """k=1: arrodillado (para que el heroe alcance el farol); k=0: de pie."""
+    """k=1: agachado (para que el heroe alcance el farol del hombro); k=K_REST: su postura natural, algo
+    encorvada. Nunca se yergue del todo: el Ojo es una criatura encorvada, no un humano de pie."""
     apply_basis(ch, base(ch, ('ojo_walk', 1)))
-    thigh, shin, spread, lean = 64.0 * k, -102.0 * k, 5.0 * k, 24.0 * k
+    lean = 24.0 * k + OJO_HUNCH * (1.0 - k)
+    thigh, shin, spread = 64.0 * k, -102.0 * k, 5.0 * k
     for side in ('Left', 'Right'):
         sg = 1.0 if side == 'Left' else -1.0
         rot_bone(ch, side + 'UpLeg', 0, thigh, sg * spread)
@@ -509,7 +514,8 @@ def burst(n, origin, speed, size, seed, mat=None):
 RIP_F = 4
 RELEASE_F = 6
 LAND_F = 8
-RISE = (4, 11)                 # el cuerpo descabezado se levanta
+RISE = (4, 11)                 # el cuerpo descabezado se levanta (hasta su postura encorvada, no hasta de pie)
+HANDF = int(os.environ.get('HAND_F', '21'))            # celda en la que se le cae la cabeza de la mano
 CONTACT_F = 17                 # la patada entra (clip 23: el pie toca); el desplome arranca en este mismo fotograma
 N_FRAMES = 38
 KICK_C0, KICK_C1 = 12, 30      # celdas con clip de patada (contacto en el 18)
@@ -534,14 +540,14 @@ OJO_FEET = V((OJO_X, OJO_Y, 0.0))
 
 
 def ojo_k(i):
-    """1 = arrodillado, 0 = de pie; con la subida repartida en RISE y un pequeno rebote."""
+    """1 = agachado (agarre), K_REST = su postura natural encorvada; con la subida repartida en RISE y un rebote."""
     if i < RISE[0]:
         return 1.0
     if i >= RISE[1]:
-        return 0.0
+        return OJO_K_REST
     t = (i - RISE[0]) / float(RISE[1] - RISE[0])
     e = t * t * (3 - 2 * t)
-    return 1.0 - (e + 0.10 * math.sin(math.pi * t) * (1 - t))
+    return 1.0 - (1.0 - OJO_K_REST) * (e + 0.10 * math.sin(math.pi * t) * (1 - t))
 
 
 def ojo_wobble(i):
@@ -666,6 +672,33 @@ def pose_frame(i):
     return {}
 
 
+# pre-pase: la cabeza que lleva en la mano se le cae al morir. Se captura en el fotograma de la suelta.
+FREE_HEAD, HEAD_C, HEAD_H = None, None, 0.0
+HEAD_V = V((float(os.environ.get('HEAD_VX', '0.90')),
+            float(os.environ.get('HEAD_VY', '0.35')),
+            float(os.environ.get('HEAD_VZ', '0.25'))))
+if HOLD is not None:
+    pose_frame(HANDF)
+    update()
+    FREE_HEAD = bake(HOLD, 'ojo_cabeza_suelta')
+    FREE_HEAD.hide_render = True
+    _dg = bpy.context.evaluated_depsgraph_get()
+    _hvs, _ = eval_world_mesh(FREE_HEAD, _dg)
+    HEAD_C = sum(_hvs, V((0, 0, 0))) / len(_hvs)
+    HEAD_H = HEAD_C.z - min(v.z for v in _hvs)     # altura del centro cuando apoya en el suelo
+    print('CABEZA MANO cent', tuple(round(x, 3) for x in HEAD_C), 'apoya a', round(HEAD_H, 3))
+
+
+def head_hand_matrix(i):
+    """La cabeza suelta: cae de la mano hacia el claro entre los dos, rueda y se para."""
+    t = max(0.0, (i - HANDF) * DT)
+    c = HEAD_C + HEAD_V * t + V((0, 0, -0.5 * G_ * t * t))
+    if c.z <= HEAD_H:
+        c = V((c.x, c.y, HEAD_H))
+    spin = Matrix.Rotation(math.radians(260.0 * min(t, 0.55)), 4, 'Z')
+    return Matrix.Translation(c) @ spin @ Matrix.Translation(-HEAD_C)
+
+
 def render_passes(d, i, visible):
     sc = bpy.context.scene
     sh = sc.display.shading
@@ -709,12 +742,24 @@ for i in frames:
     for s in kick_sparks + kick_glass:
         s.place((i - CONTACT_F) * DT)
     update()
-    vis = [hero.mesh] + ([] if HERO_ONLY else [BODY_SKIN, HEAD_BAKED]) \
-        + [s.o for s in rip_sparks + rip_glass + land_sparks + kick_sparks + kick_glass]
+    # la cabeza de la mano: colgada del hueso hasta HANDF, suelta (y al suelo) despues
+    head_ob = None
+    if not HERO_ONLY and HOLD is not None:
+        if i < HANDF:
+            head_ob = HOLD
+            HOLD.hide_render = False
+            FREE_HEAD.hide_render = True
+        else:
+            head_ob = FREE_HEAD
+            HOLD.hide_render = True
+            FREE_HEAD.hide_render = False
+            FREE_HEAD.matrix_world = head_hand_matrix(i)
+    chars = [hero.mesh] + ([] if HERO_ONLY else [BODY_SKIN, HEAD_BAKED] + ([head_ob] if head_ob else []))
+    vis = chars + [s.o for s in rip_sparks + rip_glass + land_sparks + kick_sparks + kick_glass]
     for d in DIRS:
         place_cam(CAM, CENTER, 45.0 - d * 45.0, 30.0, 1.0)
         _dg = bpy.context.evaluated_depsgraph_get()
-        for o in vis[:1 + (0 if HERO_ONLY else 2)]:
+        for o in chars:
             _vs, _ = eval_world_mesh(o, _dg)
             for v in _vs[::7]:
                 co = world_to_camera_view(bpy.context.scene, CAM, v)
