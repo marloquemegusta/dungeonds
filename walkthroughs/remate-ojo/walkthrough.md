@@ -38,6 +38,15 @@ La animación (guion, poses, clips del inbox, correcciones de las vueltas anteri
 renderizador. El aspecto final es el del lab (el mismo de todos los personajes y del resto de remates): iluminación
 del lab, bordes duros, sombra horneada aparte.
 
+### Sombras de la celda
+
+La proyección de sombra del lab lleva cada vértice al suelo desplazándolo según su altura (~1,7 m de sombra por cada
+metro de altura), así que **las chispas y el vidrio de la escena dejaban su sombra a un metro largo de los actores**:
+la máscara de sombra del juego admite 64 px, el recorte se movía fotograma a fotograma y la sombra se veía rota (el
+lab rápido acepta `--shadow-skip-materials` y la escena del Ojo excluye `brasa,brasa2,vidrio`). Con eso la sombra de
+la animación entra siempre en los 64 px; solo los 4 fotogramas finales (el cadáver ya tendido, cuya sombra mide 75 px)
+se recortan en estático al lienzo de 64, sin saltos.
+
 ## 2. Integración en el juego
 
 - **Nuevo tipo de remate** `REMATE_KIND_OJO` (celda 96×96, **38 fotogramas**, **4 ticks** por fotograma = 152 frames
