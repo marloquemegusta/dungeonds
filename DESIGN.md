@@ -651,17 +651,26 @@ Prueba de concepto de dos días: convertir la partida por encuentros en un Actio
 - **Siempre se empieza desde el piso 1** (sin atajos): la progresión es el nivel y el árbol.
 - **La experiencia cae como runas** al morir cada enemigo y se recoge al pasar; los jefes sueltan muchas más.
 - **Dificultad por profundidad:** la vida y el número de enemigos suben con el piso. Al principio se muere pronto; es lo esperado.
+- **Escala de props del campamento (decidido 2026-11-21, pendiente de re-render):** los elementos actuales se ven demasiado pequeños; el jergón debe ser al menos un +50 % más grande, la mesa 2–3× más grande y el arcón (cofre) 2× más grande.
 - **Sin mercader** en esta versión.
 - **Guardado** en la tarjeta: nivel, experiencia, puntos y nodos del árbol, piso más profundo alcanzado.
 
 ### 7.2 Personaje: vida, maná y controles
 - **Vida en puntos** (base 100, +10 por nivel) y **maná** (base 60, +5 por nivel), mostrados como **dos orbes tipo Diablo** en las esquinas inferiores de la pantalla táctil (vida a la izquierda, maná a la derecha), con colores apagados (§6.10). Cada enemigo quita su propio daño por golpe.
 - **Lápiz:** lanza el hechizo activo, que gasta maná. Sin maná no se lanza.
-- **`L` corto:** remate sobre un enemigo tambaleante (§6.13.8). Si no hay ninguno al alcance, **puñetazo** cuerpo a cuerpo, siempre disponible: poco daño y deja al enemigo tambaleante si no lo mata.
+- **`L` corto:** remate sobre un enemigo tambaleante (§6.13.8). Si no hay ninguno al alcance, **puñetazo** cuerpo a cuerpo, siempre disponible: poco daño y deja al enemigo tambaleante si no lo mata. Tiene `34` px de alcance, ligero empuje en los dos primeros golpes (mayor en el gancho) y *hit-stun* durante `hit_timer` para evitar que los enemigos cuerpo a cuerpo muerdan al héroe mientras pega.
 - **El remate suelta vida y maná con probabilidad** (como Doom): orbes que caen al suelo y se recogen al pasar. Es la forma principal de recuperarse.
 - **`L` mantenido:** cambia el hechizo activo entre Rayo y Maldición (si está desbloqueada).
 - **Maná:** se regenera muy despacio.
+- **Menú radial de hechizos (decidido 2026-11-20, simplificado):** el viril del hechizo activo se queda abajo en la pantalla táctil, junto a la cadena de experiencia, solo como indicador. **Mantener L** abre un menú radial que sale de ese icono con los otros hechizos equipados (3 equipados en total: el activo más 2); se elige tocando uno con el lápiz y se cierra. El juego no se pausa. Sustituye al cambio directo con L mantenido entre Rayo y Maldición. Pendiente: qué pasa si sueltas L sin elegir (propuesta: sigue el hechizo actual), dibujo de las entradas (viriles existentes), animación y el caso de 3 o más hechizos. Aún no implementado.
 - **Números flotantes en combate (decidido 2026-11-20, rama `proto/arpg-hud`):** cifras bitmap de `3×5` px con contorno oscuro de 1 px (sin críticos). Color en paleta apagada (§6.10): marfil cálido (daño normal al enemigo), violeta-ceniza (daño periódico / maldición), carmesí (daño recibido por el héroe), verde salvia `+N` (curación) y azul pizarra `+N` (maná). Duración ~0,55 s (33 frames) con salto parabólico y desvío lateral aleatorio para golpes directos/curación/maná, y ~0,50 s (30 frames) en subida vertical lenta para daño periódico.
+
+### 7.4 Inventario (decidido 2026-11-20, opción B de los mockups)
+- **Pantalla (estilo Sacred, walkthroughs/arpg-predemo/inventario_abc.html):** pestañas **Rayo, Ejecución, Glifo, Levantar y Pecho**. Arriba, el hechizo de la pestaña con sus engarces y lo que sube o baja al engarzar; abajo, la bolsa en rejilla de 6×3 (16-20 reliquias) con la ficha comparativa de la reliquia tocada. Lápiz o cruceta con A/B; Y desguaza por cera.
+- **Escuelas:** Rayo, Glifo y Levantar son hechizos, y **los hechizos son objetos de la bolsa** (tomos que caen en la mazmorra, de jefes, élites y secretos). Hay **3 huecos de hechizo equipado**: el activo más 2 que se despliegan en el menú radial (§7.2); **Ejecución va fija en L**, no ocupa hueco de hechizo pero tiene sus propios engarces; **Pecho** es el relicario con pasivas. Cada hechizo tiene hasta 3 engarces; el pecho, 2.
+- **Acceso:** desde el arcón del campamento y desde la pausa de la mazmorra (botón Inventario, el juego queda congelado). En los dos sitios se puede engarzar, equipar y desguazar para hacer hueco.
+- **El árbol de habilidades desaparece** (sustituido por reliquias y este inventario).
+- Pendiente (decidido 2026-11-21): **arrastrar con el lápiz (drag & drop)** en la pantalla táctil para llevar reliquias de la bolsa a su engarce; mientras se mantiene sujetada encima de un hueco ocupado, muestra la comparación, y al soltar se intercambian. Pendiente también: arte de las reliquias y de los tomos, y ajustar el espaciado del botón 5 en la pausa de mazmorra para no pisar Nv.
 
 ### 7.3 Hechizos y árbol
 - **Rayo** (de partida): el rayo cargado actual, más débil al principio y con coste de maná.

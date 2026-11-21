@@ -31,13 +31,16 @@
 #include "arpg_hud_gfx.h"
 #include "dmg_numbers.h"
 #include "menu.h"
+#include "inventory.h"
 #include "encounters_act1.h"
 #include "boss.h"
 #include "bestiary_font.h"
 #include "arpg.h"
 #include "arpg_progress.h"
 #include "arpg_tree.h"
+#include "arpg_inv.h"
 #include "curse.h"
+#include "radial.h"
 #include "allies.h"
 #include "camp.h"
 #include "placeholders_gfx.h"
@@ -104,6 +107,11 @@ static int s_bot_map_ready = 0;
 static DirtySpan s_dirty[2][SCREEN_H];
 static DirtySpan s_dirty_top[SCREEN_H];
 DirtySpan *g_dirty_cur = s_dirty[0];
+
+// El panel del inventario repinta la pantalla superior entera cada frame: sus marcas de "sucio"
+// no deben quedar en s_dirty_top (que sólo sirve al mundo).
+static DirtySpan s_dirty_inv_top[SCREEN_H];
+static int s_inv_top_on = 0;
 
 static inline uint16_t *bot_page_ptr(int page) {
     return (uint16_t *)(0x06000000 + (uintptr_t)page * 0x4000);
@@ -2100,6 +2108,7 @@ static void draw_run_hud(uint16_t *buffer) {
 #endif
 #if ENCOUNTERS_PROTO
         if (boss_hud_active()) boss_draw_hud(buffer, SCREEN_W - 6, hud_text);      // thin bar from the right edge, above the orbs
+        radial_render(buffer);                                                      // spell radial while L is held; no-op closed
 #endif
         return;
     }
@@ -2707,6 +2716,8 @@ static void l_tracking_abort(uint32_t keys) {
 
 static void player_update(uint32_t keys, uint32_t keys_down) {
     if (g_player_state.invuln_timer > 0) g_player_state.invuln_timer--;
+    // The spell radial lives only while L is held; releasing it on any code path closes it.
+    if (!(keys & KEY_L)) radial_close();
 
     if (g_player_state.is_dead) {
         l_tracking_abort(keys);
@@ -2798,7 +2809,8 @@ static void player_update(uint32_t keys, uint32_t keys_down) {
 
     // L: finishes the nearest reeling enemy (Exvoto or Cireneo) within reach (remate.h). Free in the demo ROM; in the test variants it
     // still cycles weapons when there is nothing to finish.
-    if ((keys_down & KEY_L) && remate_start(g_enemies, MAX_ENEMIES, s_player.x, s_player.y, s_player.dir)) {
+    int l_fresh_press = (keys_down & KEY_L) || ((keys & KEY_L) && !s_l_tracking && !s_l_consumed);
+    if (l_fresh_press && !(keys & KEY_R) && remate_start(g_enemies, MAX_ENEMIES, s_player.x, s_player.y, s_player.dir)) {
         s_rooted = 0;
         s_shot_active = 0;
         s_hero_clip_frame = -1;
@@ -2818,16 +2830,34 @@ static void player_update(uint32_t keys, uint32_t keys_down) {
         } else if (s_l_tracking && ++s_l_frames >= ARPG_L_HOLD_FRAMES) {
             s_l_tracking = 0;
             s_l_consumed = 1;
+#if ENCOUNTERS_PROTO
+            // L held: open the spell radial out of the HUD icon instead of toggling. Nothing to pick
+            // with a single spell, so in that case the hold does nothing.
+            if (radial_begin()) {
+                weapons_cancel_aim();
+                curse_cancel_aim();
+            }
+#else
             arpg_on_l_hold();
+#endif
         }
     } else {
         s_l_consumed = 0;
         // Tap: tracked press released before the threshold, or a press edge seen only on release.
         if (s_l_tracking || (keys_down & KEY_L)) {
             s_l_tracking = 0;
-            if (!(keys & KEY_R) && s_punch_cooldown <= 0) {
-                arpg_punch(g_enemies, MAX_ENEMIES);
-                s_punch_cooldown = PUNCH_TICKS;      // un doble tap en el mismo frame no puede saltarse un golpe
+            if (!(keys & KEY_R)) {
+                if (remate_start(g_enemies, MAX_ENEMIES, s_player.x, s_player.y, s_player.dir)) {
+                    s_rooted = 0;
+                    s_shot_active = 0;
+                    s_hero_clip_frame = -1;
+                    s_latch_pressed = s_latch_released = 0;
+                    return;
+                }
+                if (s_punch_cooldown <= 0) {
+                    arpg_punch(g_enemies, MAX_ENEMIES);
+                    s_punch_cooldown = PUNCH_TICKS;      // un doble tap en el mismo frame no puede saltarse un golpe
+                }
             }
         }
     }
@@ -2854,6 +2884,23 @@ static void player_update(uint32_t keys, uint32_t keys_down) {
         touch_down = 1;
     } else {
         s_latch_released = 0;
+    }
+
+    // Spell radial open (L held): the stylus only picks an entry. The touch is consumed here and
+    // never reaches the weapons or the curse, and a touch outside the entries does nothing.
+    if (radial_is_open()) {
+        if (pressed) {
+            int pick = radial_touch(s_last_touch_x, s_last_touch_y);
+            if (pick >= 0 && pick != (int)g_arpg.spell) {
+                g_arpg.spell = (uint16_t)pick;
+                weapons_cancel_aim();
+                curse_cancel_aim();
+                sfx_play(SND_HEART_CHARGE, -1);
+            }
+        }
+        touch_down = 0;
+        pressed = 0;
+        released = 0;
     }
 
     // Crouch state (see CROUCH_*): decided from where the hero stands before this frame's movement.
@@ -3069,6 +3116,7 @@ static void arena_restart(void) {
     upgrades_reset((uint32_t)cpuGetTiming() ^ s_frame_index ^ 0x55504752u);   // xp, level, Dones and relics too
 #if ENCOUNTERS_PROTO
     arpg_tree_apply();              // skill tree (DESIGN.md 7.3): bought nodes give their relics and Dones again
+    arpg_inv_apply();               // inventory stat lines and mechanics of the equipped relics (DESIGN.md 7.4)
 #endif
     player_state_init(&g_player_state);
     g_player_state.god_mode = god;
@@ -3091,6 +3139,7 @@ static void arena_restart(void) {
     exvoto_melt_reset();
     remate_reset();
     punch_reset();
+    radial_close();
     s_pending_head = s_pending_count = 0;
     if (s_strip_mode) memset(g_enemies, 0, sizeof(g_enemies));
     else encounters_spawn(&g_encounter_mgr, g_enemies, MAX_ENEMIES);
@@ -3250,6 +3299,7 @@ static void enter_camp_scene(void) {
     curse_reset();
     remate_reset();
     punch_reset();
+    radial_close();
     memset(g_enemies, 0, sizeof(g_enemies));
     memset(s_death_chunks, 0, sizeof(s_death_chunks));
     exvoto_melt_reset();
@@ -3612,7 +3662,7 @@ int main(void) {
             touch_track(s_menu_ignore_held_touch ? 0 : touch_down, touch.px, touch.py);
             s_keys_down_latch |= keys_down;
             if ((keys_down & KEY_START) && !g_player_state.is_dead && s_transition == TRANSITION_NONE) {
-                menu_open_pause();
+                menu_open_pause(0);
                 sfx_set_bgm_paused(1);
                 s_keys_down_latch = 0;
                 touch_track(0, 0, 0);
@@ -3634,10 +3684,10 @@ int main(void) {
         }
 #if CAMP_SCENE
         else {
-            // In the camp: START opens the pause menu (Continuar / Códice / Controles). Its
-            // "Volver al campamento" re-enters the camp scene; nothing else touches the dungeon.
+            // In the camp: START opens the pause menu (Continuar / Códice / Controles). There is no
+            // "Volver al campamento" here, since we are already in the camp.
             if (keys_down & KEY_START) {
-                menu_open_pause();
+                menu_open_pause(1);
                 s_keys_down_latch = 0;
             } else {
                 s_keys_down_latch |= keys_down;
@@ -3670,15 +3720,14 @@ int main(void) {
                     arpg_progress_save();
                     char msg[48];
                     if (gained > 0)
-                        snprintf(msg, sizeof(msg), "Has subido %d nivel(es). Puntos: %d", gained, (int)g_arpg.points);
+                        snprintf(msg, sizeof(msg), "Has subido %d nivel(es)", gained);
                     else {
                         unsigned long missing = (unsigned long)(arpg_xp_needed(g_arpg.level) - (int)g_arpg.xp);
                         snprintf(msg, sizeof(msg), "Necesitas %lu exp más", missing);
                     }
                     camp_toast(msg);
-                    if (g_arpg.points > 0) menu_open_tree();   // spend the new points right away
-                } else if (act == CAMP_ACT_TREE) {
-                    menu_open_tree();
+                } else if (act == CAMP_ACT_INVENTORY) {
+                    menu_open_inventory();
                 } else if (act == CAMP_ACT_CODEX) {
                     menu_open_codex();
                 } else if (act == CAMP_ACT_DOOR) {
@@ -3773,7 +3822,27 @@ int main(void) {
         uint32_t post_vwait_start = cpuGetTiming();
         present_screen_effects();
         uint32_t t_top = cpuGetTiming();
-        render_screen(s_top_page, s_dirty_top, view_x, view_y - SCREEN_H, 1, &top_floor, &top_sh, &top_bl);
+        int inv_top = (menu_state() == MENU_INVENTORY);
+        if (inv_top) {
+            // El panel tapa el mundo entero: no se renderiza la escena y solo se repinta cuando
+            // cambia su contenido (la pantalla superior es de un solo buffer; repintarla cada
+            // frame se pasa del VBlank y rasga la imagen).
+            if (!s_inv_top_on || inventory_top_redraw_pending()) {
+                DirtySpan *saved = g_dirty_cur;
+                memset(s_dirty_inv_top, 0, sizeof(s_dirty_inv_top));
+                g_dirty_cur = s_dirty_inv_top;
+                inventory_render_top(s_top_page);
+                g_dirty_cur = saved;
+            }
+        } else {
+            if (s_inv_top_on) {
+                // Al cerrar el inventario la pantalla superior está tapada por el panel:
+                // forzar el repintado completo del mundo.
+                for (int y = 0; y < SCREEN_H; y++) { s_dirty_top[y].x0 = 0; s_dirty_top[y].x1 = SCREEN_W; }
+            }
+            render_screen(s_top_page, s_dirty_top, view_x, view_y - SCREEN_H, 1, &top_floor, &top_sh, &top_bl);
+        }
+        s_inv_top_on = inv_top;
 #if HW_SHADOWS
         // The top page is single buffered and was just redrawn: its shadows go live now.
         PP_T0(pp_hs2);

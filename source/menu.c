@@ -6,7 +6,7 @@
 #include "hud_icons_gfx.h"
 #include "arpg.h"
 #include "arpg_progress.h"
-#include "arpg_tree.h"
+#include "inventory.h"
 #include <stddef.h>
 #include <stdio.h>
 #include <string.h>
@@ -41,29 +41,7 @@ static MenuState s_parent = MENU_TITLE;
 static int s_sel = 0;
 static int s_pick = 0;
 static int s_title_has_save = 0;        /* read once when the title opens (the card is slow to ask) */
-static char s_camp_msg[48] = "";
-
-/* Skill tree screen (DESIGN.md 7.3). Node ids: 0 Maldicion (top), 1..12 in branch columns of 3 (ids 1+3*col+row). */
-#define TREE_COLS       4               /* Metralleta, Quemadura (left half: rayo), Veneno, Resurreccion (right half) */
-#define TREE_NODE_W     56
-#define TREE_NODE_H     28              /* two lines of the 13 px font */
-#define TREE_ROW_Y0     60
-#define TREE_ROW_PITCH  32
-#define TREE_ROOT_X     84
-#define TREE_ROOT_Y     20
-#define TREE_ROOT_W     88
-#define TREE_ROOT_H     18
-#define TREE_BRANCH_Y   44
-#define TREE_STRIP_Y    158
-#define TREE_STRIP_H    32
-static const int s_tree_col_x[TREE_COLS] = { 8, 68, 132, 192 };
-static int s_tree_sel = 1;              /* selected node id */
-static int s_tree_col = 0;              /* column of the last branch node visited: DOWN from node 0 lands there */
-
-/* Camp buttons (four): smaller and closer together so all of them fit above y=192. */
-#define CAMP_BTN_Y0     102
-#define CAMP_BTN_PITCH  22
-#define CAMP_BTN_H      18
+static int s_pause_in_camp = 0;        /* pause opened from the camp scene: no "back to the camp" button */
 
 /* Level-up screen (DESIGN.md 6.12.8): header, 3 cards side by side (76x76 animated art + name), effect strip. */
 #define LV_CARD_W     80
@@ -83,20 +61,11 @@ static int s_tree_col = 0;              /* column of the last branch node visite
 static int s_lv_anim = 0;
 
 static int get_buttons(MenuState state, const MenuButton **out_btns) {
-    /* Title and camp buttons are filled at run time: the title drops "Continuar" when there is no save. */
+    /* Title and pause buttons are filled at run time: the title drops "Continuar" when there is no save,
+       the pause drops "Volver al campamento" when it was opened from the camp itself. */
     static MenuButton title_btns[4];
     static const char *const title_labels[4] = { "Continuar", "Nueva partida", "Códice", "Controles" };
-    static const MenuButton pause_btns[] = {
-        { BTN_X0, 42 + 0 * BTN_PITCH, BTN_W, BTN_H, "Continuar" },
-#if ENCOUNTERS_PROTO
-        { BTN_X0, 42 + 1 * BTN_PITCH, BTN_W, BTN_H, "Volver al campamento" },
-#else
-        { BTN_X0, 42 + 1 * BTN_PITCH, BTN_W, BTN_H, "Reiniciar" },
-#endif
-        { BTN_X0, 42 + 2 * BTN_PITCH, BTN_W, BTN_H, "Códice"    },
-        { BTN_X0, 42 + 3 * BTN_PITCH, BTN_W, BTN_H, "Controles" },
-    };
-    static MenuButton camp_btns[4];
+    static MenuButton pause_btns[5];
     static const MenuButton bestiary_btns[] = {
         { BTN_X0, 128, BTN_W, BTN_H, "Volver" },
     };
@@ -113,14 +82,21 @@ static int get_buttons(MenuState state, const MenuButton **out_btns) {
         *out_btns = title_btns;
         return n;
     }
-    case MENU_CAMP: {
-        static const char *const camp_labels[4] = { "Dormir", "Árbol", "Entrar en la Catedral", "Códice" };
-        for (int i = 0; i < 4; i++)
-            camp_btns[i] = (MenuButton){ BTN_X0, CAMP_BTN_Y0 + i * CAMP_BTN_PITCH, BTN_W, CAMP_BTN_H, camp_labels[i] };
-        *out_btns = camp_btns;
-        return 4;
+    case MENU_PAUSE: {
+        static const char *const pause_labels_camp[3] = { "Continuar", "Códice", "Controles" };
+#if ENCOUNTERS_PROTO
+        /* Inventario (DESIGN.md 7.4): the dungeon pause opens the bag; in the camp it is the chest. */
+        static const char *const pause_labels_dungeon[5] = { "Continuar", "Inventario", "Volver al campamento", "Códice", "Controles" };
+#else
+        static const char *const pause_labels_dungeon[4] = { "Continuar", "Reiniciar", "Códice", "Controles" };
+#endif
+        const char *const *labels = s_pause_in_camp ? pause_labels_camp : pause_labels_dungeon;
+        int n = s_pause_in_camp ? 3 : (ENCOUNTERS_PROTO ? 5 : 4);
+        for (int i = 0; i < n; i++)
+            pause_btns[i] = (MenuButton){ BTN_X0, 42 + i * BTN_PITCH, BTN_W, BTN_H, labels[i] };
+        *out_btns = pause_btns;
+        return n;
     }
-    case MENU_PAUSE:    *out_btns = pause_btns;    return 4;
     case MENU_BESTIARY: *out_btns = bestiary_btns; return 1;
     case MENU_CONTROLS: *out_btns = controls_btns; return 1;
     default:            *out_btns = NULL;          return 0;
@@ -152,46 +128,44 @@ static MenuAction activate_button(int idx) {
         return MENU_ACT_NONE;
     }
 
-    case MENU_CAMP:
-        if (idx == 0) return MENU_ACT_SLEEP;          /* the camp stays open; main reports the result */
-        if (idx == 1) {
-            menu_open_tree();
-            return MENU_ACT_NONE;
-        }
-        if (idx == 2) {
-            s_state = MENU_NONE;
-            return MENU_ACT_ENTER_DUNGEON;
-        }
-        if (idx == 3) {
-            s_parent = MENU_CAMP;
-            s_state = MENU_BESTIARY;
-            s_sel = 0;
-        }
-        return MENU_ACT_NONE;
-
-    case MENU_PAUSE:
-        if (idx == 0) {
+    case MENU_PAUSE: {
+        /* Same order as the labels in get_buttons(): the camp pause has no "back to the camp" button. */
+        int k = idx;
+        if (k == 0) {
             s_state = MENU_NONE;
             return MENU_ACT_RESUME;
         }
-        if (idx == 1) {
-            s_state = MENU_NONE;
 #if ENCOUNTERS_PROTO
-            return MENU_ACT_TO_CAMP;
-#else
-            return MENU_ACT_START_NEW;
-#endif
+        if (!s_pause_in_camp && k == 1) {
+            s_parent = MENU_PAUSE;      /* closing the inventory returns to the pause */
+            s_state = MENU_INVENTORY;
+            inventory_open();
+            return MENU_ACT_NONE;
         }
-        if (idx == 2) {
+#endif
+        if (!s_pause_in_camp) {
+            int camp_k = ENCOUNTERS_PROTO ? 2 : 1;
+            if (k == camp_k) {
+                s_state = MENU_NONE;
+#if ENCOUNTERS_PROTO
+                return MENU_ACT_TO_CAMP;
+#else
+                return MENU_ACT_START_NEW;
+#endif
+            }
+            k -= ENCOUNTERS_PROTO ? 2 : 1;
+        }
+        if (k == 1) {
             s_parent = MENU_PAUSE;
             s_state = MENU_BESTIARY;
             s_sel = 0;
-        } else if (idx == 3) {
+        } else if (k == 2) {
             s_parent = MENU_PAUSE;
             s_state = MENU_CONTROLS;
             s_sel = 0;
         }
         return MENU_ACT_NONE;
+    }
 
     case MENU_BESTIARY:
     case MENU_CONTROLS:
@@ -254,18 +228,10 @@ void menu_open_title(void) {
     s_title_has_save = ENCOUNTERS_PROTO ? arpg_progress_has_save() : 0;
 }
 
-void menu_open_camp(void) {
-    s_state = MENU_CAMP;
-    s_parent = MENU_CAMP;
-    s_sel = 0;
-    s_camp_msg[0] = 0;
-}
-
-void menu_open_tree(void) {
-    s_state = MENU_TREE;
-    s_parent = MENU_CAMP;
-    s_tree_sel = 1;
-    s_tree_col = 0;
+void menu_open_inventory(void) {
+    s_state = MENU_INVENTORY;
+    s_parent = MENU_NONE;   /* Volver/B closes straight back to the camp scene */
+    inventory_open();
 }
 
 void menu_open_codex(void) {
@@ -274,15 +240,10 @@ void menu_open_codex(void) {
     s_sel = 0;
 }
 
-void menu_camp_message(const char *msg) {
-    if (!msg) msg = "";
-    strncpy(s_camp_msg, msg, sizeof(s_camp_msg) - 1);
-    s_camp_msg[sizeof(s_camp_msg) - 1] = 0;
-}
-
-void menu_open_pause(void) {
+void menu_open_pause(int from_camp) {
     s_state = MENU_PAUSE;
     s_parent = MENU_PAUSE;
+    s_pause_in_camp = from_camp != 0;
     s_sel = 0;
 }
 
@@ -317,75 +278,16 @@ MenuState menu_state(void) {
     return s_state;
 }
 
-/* Screen rectangle of a tree node (id 0 = the Maldicion box above the columns). */
-static void tree_node_rect(int id, int *x, int *y, int *w, int *h) {
-    if (id == 0) {
-        *x = TREE_ROOT_X; *y = TREE_ROOT_Y; *w = TREE_ROOT_W; *h = TREE_ROOT_H;
-        return;
-    }
-    int col = (id - 1) / 3, row = (id - 1) % 3;
-    *x = s_tree_col_x[col];
-    *y = TREE_ROW_Y0 + row * TREE_ROW_PITCH;
-    *w = TREE_NODE_W;
-    *h = TREE_NODE_H;
-}
-
-static void tree_select(int id) {
-    s_tree_sel = id;
-    if (id > 0) s_tree_col = (id - 1) / 3;
-}
-
-static void tree_buy_selected(void) {
-    if (!arpg_tree_can_buy(s_tree_sel)) return;
-    arpg_tree_buy(s_tree_sel);
-    arpg_progress_save();
-}
-
-static MenuAction tree_update(uint32_t keys_down, int touch_pressed, int touch_x, int touch_y) {
-    if (touch_pressed) {
-        /* Volver: top-left button of the header. */
-        if (touch_x >= 6 && touch_x < 56 && touch_y >= 3 && touch_y < 17) {
-            s_state = s_parent;
-            s_sel = 0;
-            return MENU_ACT_NONE;
-        }
-        for (int id = 0; id < ARPG_NODE_COUNT; id++) {
-            int x, y, w, h;
-            tree_node_rect(id, &x, &y, &w, &h);
-            if (touch_x >= x && touch_x < x + w && touch_y >= y && touch_y < y + h) {
-                if (id == s_tree_sel) tree_buy_selected();   /* tapping the selected node again buys it */
-                else tree_select(id);
-                return MENU_ACT_NONE;
-            }
-        }
-    }
-
-    int sel = s_tree_sel;
-    if (keys_down & KEY_UP) {
-        if (sel > 0) tree_select((sel - 1) % 3 > 0 ? sel - 1 : 0);
-    }
-    if (keys_down & KEY_DOWN) {
-        if (sel == 0) tree_select(1 + s_tree_col * 3);
-        else if ((sel - 1) % 3 < 2) tree_select(sel + 1);
-    }
-    if (keys_down & KEY_LEFT) {
-        if (sel > 0 && (sel - 1) / 3 > 0) tree_select(sel - 3);
-    }
-    if (keys_down & KEY_RIGHT) {
-        if (sel > 0 && (sel - 1) / 3 < TREE_COLS - 1) tree_select(sel + 3);
-    }
-    if (keys_down & KEY_A) tree_buy_selected();
-    if (keys_down & KEY_B) {
-        s_state = s_parent;
-        s_sel = 0;
-    }
-    return MENU_ACT_NONE;
-}
-
 MenuAction menu_update(uint32_t keys_down, int touch_pressed, int touch_x, int touch_y) {
     if (s_state == MENU_NONE) return MENU_ACT_NONE;
 
-    if (s_state == MENU_TREE) return tree_update(keys_down, touch_pressed, touch_x, touch_y);
+    if (s_state == MENU_INVENTORY) {
+        if (inventory_update(keys_down, touch_pressed, touch_x, touch_y)) {
+            s_state = s_parent;
+            s_sel = 0;
+        }
+        return MENU_ACT_NONE;
+    }
 
     if (s_state == MENU_LEVELUP) {
         /* D-pad LEFT/RIGHT + A, or tap a card (tap the selected one again to confirm). No cancel. */
@@ -659,149 +561,38 @@ static void render_levelup(uint16_t *buf) {
                                MENU_COL_BODY);
 }
 
-/* Skill tree (DESIGN.md 7.3): header, Maldicion box, 4 branch columns (2 rayo on the left, 2 curses on the right),
-   selected node frame, and a strip with the name, the description and the buy hint. */
-static void tree_box(uint16_t *buf, int x0, int y0, int w, int h, uint16_t fill, uint16_t bdr) {
-    fill_rect(buf, x0, y0, w, h, fill);
-    frame_rect(buf, x0, y0, w, h, bdr);
-}
-
-/* Node name: one line centred when it fits, else two lines split at the best space (like draw_card_name). */
-static void draw_node_name(uint16_t *buf, int x0, int y0, int w, int h, const char *name, uint16_t col) {
-    const int lh = bestiary_font_line_height();
-    const int cx = x0 + w / 2;
-    char l1[32], l2[32];
-    int n = (int)strlen(name);
-    if (bestiary_font_measure_utf8(name) <= w - 4 || n >= 32) {
-        draw_text_centered(buf, cx, y0 + (h - lh) / 2, name, col);
-        return;
-    }
-    int best = -1, best_w = 9999;
-    for (int i = 1; i < n; i++) {
-        if (name[i] != ' ') continue;
-        memcpy(l1, name, (size_t)i);
-        l1[i] = 0;
-        strcpy(l2, name + i + 1);
-        int w1 = bestiary_font_measure_utf8(l1), w2 = bestiary_font_measure_utf8(l2);
-        int m = w1 > w2 ? w1 : w2;
-        if (m < best_w) { best_w = m; best = i; }
-    }
-    if (best < 0) {
-        draw_text_centered(buf, cx, y0 + (h - lh) / 2, name, col);
-        return;
-    }
-    memcpy(l1, name, (size_t)best);
-    l1[best] = 0;
-    strcpy(l2, name + best + 1);
-    int top = y0 + (h - 2 * lh) / 2;
-    draw_text_centered(buf, cx, top, l1, col);
-    draw_text_centered(buf, cx, top + lh, l2, col);
-}
-
-static void render_tree(uint16_t *buf) {
-    const uint16_t ivory = RGB15(30, 27, 20) | BIT(15);
-    const uint16_t owned_fill = RGB15(12, 9, 4) | BIT(15);
-    const uint16_t buy_bdr = RGB15(18, 16, 12) | BIT(15);
-    const uint16_t buy_txt = RGB15(22, 20, 17) | BIT(15);
-    const uint16_t lock_bdr = RGB15(6, 5, 5) | BIT(15);
-    const uint16_t lock_txt = RGB15(9, 8, 7) | BIT(15);
-    static const char *const branch_names[TREE_COLS] = { "Metralleta", "Quemadura", "Veneno", "Resurrec." };
-    char line[40];
-
-    fill_rect(buf, 0, 0, SCREEN_W, SCREEN_H, MENU_COL_INA_FILL);
-
-    /* Header: Volver (left), title (centre), points (right). */
-    tree_box(buf, 6, 3, 50, 14, MENU_COL_INA_FILL, MENU_COL_INA_BDR);
-    draw_text_centered(buf, 31, 3 + (14 - bestiary_font_line_height()) / 2, "Volver", MENU_COL_INA_TXT);
-    draw_text_centered(buf, SCREEN_W / 2, 4, "Árbol", MENU_COL_HEADER);
-    snprintf(line, sizeof(line), "Puntos: %d", (int)g_arpg.points);
-    draw_text(buf, 250 - bestiary_font_measure_utf8(line), 4, line, MENU_COL_BODY);
-
-    /* Labels: "Rayo" over the left half (its root box is to the right of it), branch names above each column. */
-    draw_text_centered(buf, 66, TREE_ROOT_Y + 2, "Rayo", MENU_COL_HEADER);
-    for (int c = 0; c < TREE_COLS; c++)
-        draw_text_centered(buf, s_tree_col_x[c] + TREE_NODE_W / 2, TREE_BRANCH_Y, branch_names[c], MENU_COL_INA_TXT);
-
-    for (int id = 0; id < ARPG_NODE_COUNT; id++) {
-        int x, y, w, h;
-        tree_node_rect(id, &x, &y, &w, &h);
-        int owned = arpg_tree_has(id);
-        int buyable = arpg_tree_can_buy(id);
-        uint16_t fill = owned ? owned_fill : MENU_COL_INA_FILL;
-        uint16_t bdr = owned ? MENU_COL_ACT_BDR : (buyable ? buy_bdr : lock_bdr);
-        uint16_t txt = owned ? MENU_COL_ACT_TXT : (buyable ? buy_txt : lock_txt);
-        tree_box(buf, x, y, w, h, fill, bdr);
-        draw_node_name(buf, x, y, w, h, arpg_tree_name(id), txt);
-    }
-
-    /* Selected node: a ivory frame 2 px outside its box. */
-    {
-        int x, y, w, h;
-        tree_node_rect(s_tree_sel, &x, &y, &w, &h);
-        dirty_rect(x - 2, y - 2, x + w + 2, y + h + 2);
-        frame_rect(buf, x - 2, y - 2, w + 4, h + 4, ivory);
-    }
-
-    /* Strip: name and buy state on the first line, description on the second. */
-    fill_rect(buf, 6, TREE_STRIP_Y, 244, TREE_STRIP_H, MENU_COL_INA_FILL);
-    frame_rect(buf, 6, TREE_STRIP_Y, 244, TREE_STRIP_H, MENU_COL_INA_BDR);
-    {
-        int s = s_tree_sel;
-        const char *state = NULL;
-        if (arpg_tree_has(s)) state = "Aprendido";
-        else if (arpg_tree_can_buy(s)) state = "Pulsa A para aprender";
-        else if (g_arpg.points <= 0) state = "Sin puntos";
-        else state = "Requiere otro nodo";
-        draw_text(buf, 12, TREE_STRIP_Y + 3, arpg_tree_name(s), MENU_COL_HEADER);
-        draw_text(buf, 244 - bestiary_font_measure_utf8(state), TREE_STRIP_Y + 3, state,
-                  arpg_tree_can_buy(s) ? MENU_COL_HEADER : MENU_COL_INA_TXT);
-        draw_text(buf, 12, TREE_STRIP_Y + 17, arpg_tree_desc(s), MENU_COL_BODY);
-    }
-}
-
 void menu_render_bottom(uint16_t *buf) {
     if (s_state == MENU_NONE || !buf) return;
     if (s_state == MENU_LEVELUP) {
         render_levelup(buf);
         return;
     }
-    if (s_state == MENU_TREE) {
-        render_tree(buf);
+    if (s_state == MENU_INVENTORY) {
+        inventory_render(buf);
         return;
     }
 
-    if (s_state == MENU_CAMP) {
-        char line[32];
-        const ArpgProgress *p = &g_arpg;
-        draw_box(buf, 12, 6, 232, 90, MENU_COL_INA_FILL, MENU_COL_INA_BDR);
-        draw_text_centered(buf, SCREEN_W / 2, 14, "Campamento", MENU_COL_HEADER);
-        snprintf(line, sizeof(line), "Nivel %d", (int)p->level);
-        draw_text(buf, 26, 30, line, MENU_COL_BODY);
-        snprintf(line, sizeof(line), "Exp %lu / %d", (unsigned long)p->xp, arpg_xp_needed(p->level));
-        draw_text(buf, 26, 42, line, MENU_COL_BODY);
-        snprintf(line, sizeof(line), "Puntos %d", (int)p->points);
-        draw_text(buf, 26, 54, line, MENU_COL_BODY);
-        snprintf(line, sizeof(line), "Piso más hondo %d", (int)p->deepest);
-        draw_text(buf, 26, 66, line, MENU_COL_BODY);
-        if (s_camp_msg[0]) draw_text_centered(buf, SCREEN_W / 2, 80, s_camp_msg, MENU_COL_HEADER);
-    } else if (s_state == MENU_BESTIARY) {
+    if (s_state == MENU_BESTIARY) {
         draw_box(buf, 38, 36, 180, 72, MENU_COL_INA_FILL, MENU_COL_INA_BDR);
         draw_text_centered(buf, SCREEN_W / 2, 48, "Códice", MENU_COL_HEADER);
         draw_text_centered(buf, SCREEN_W / 2, 76, "Próximamente", MENU_COL_BODY);
     } else if (s_state == MENU_CONTROLS) {
-        static const char *const lines[7] = {
-            "Cruceta - moverse",
-            "Lápiz - apuntar y cargar",
-            "Start - pausa",
-            "X - subir de nivel (prueba)",
-            "Select - efectos A/B/C (prueba)",
-            "L R B - invulnerable (prueba)",
-            ""
+        static const char *const lines[10] = {
+            "Cruceta: mover",
+            "Lápiz: apuntar y lanzar el",
+            "hechizo activo (gasta maná)",
+            "L corto: remate ante un",
+            "enemigo tambaleante; si no,",
+            "puñetazo (combo de 3)",
+            "L mantenido: menú radial de",
+            "hechizos (toca uno con el lápiz)",
+            "A: interactuar en el campamento",
+            "START: pausa"
         };
-        draw_box(buf, 12, 10, 232, 116, MENU_COL_INA_FILL, MENU_COL_INA_BDR);
-        draw_text_centered(buf, SCREEN_W / 2, 18, "Controles", MENU_COL_HEADER);
-        for (int i = 0; i < 6; i++) {
-            draw_text(buf, 22, 36 + i * 13, lines[i], MENU_COL_BODY);
+        draw_box(buf, 12, 6, 232, 128, MENU_COL_INA_FILL, MENU_COL_INA_BDR);
+        draw_text_centered(buf, SCREEN_W / 2, 9, "Controles", MENU_COL_HEADER);
+        for (int i = 0; i < 10; i++) {
+            draw_text(buf, 20, 22 + i * 11, lines[i], MENU_COL_BODY);
         }
     }
     const MenuButton *btns = NULL;

@@ -2,10 +2,11 @@
 #include "arpg.h"
 #include <fat.h>
 #include <stdio.h>
+#include <string.h>
 
 ArpgProgress g_arpg;
 
-// Test build (variant arpg-todo, project.json): every save and every fresh start has level 10 and the whole tree bought.
+// Test build (variant arpg-todo, project.json): every save and every fresh start has level 10 and every relic and tome equipped.
 #ifndef ARPG_ALL_UNLOCKED
 #define ARPG_ALL_UNLOCKED 0
 #endif
@@ -13,8 +14,8 @@ ArpgProgress g_arpg;
 static void arpg_unlock_for_tests(void) {
 #if ARPG_ALL_UNLOCKED
     g_arpg.level = 10;
-    g_arpg.tree = 0x1FFF;                 // nodes 0..12 (ARPG_NODE_COUNT 13)
     g_arpg.points = 0;
+    arpg_inv_unlock_all();
     g_arpg_level = g_arpg.level;
 #endif
 }
@@ -27,8 +28,9 @@ static const int s_arpg_xp_needed[ARPG_XP_TABLE_LEN] = {
 };
 
 void arpg_progress_reset(void) {
+    memset(&g_arpg, 0, sizeof(g_arpg));
     g_arpg.magic = 0x41525047u;
-    g_arpg.version = 1;
+    g_arpg.version = 2;
     g_arpg.level = 1;
     g_arpg.xp = 0;
     g_arpg.points = 0;
@@ -37,6 +39,7 @@ void arpg_progress_reset(void) {
     g_arpg.spell = 0;
     g_arpg.altars_lo = 0;
     g_arpg.altars_hi = 0;
+    arpg_inv_new_game();          // Rayo equipado + 11 objetos de ejemplo (fase 2)
     g_arpg_level = g_arpg.level;
     arpg_unlock_for_tests();
 }
@@ -57,7 +60,6 @@ int arpg_sleep(void) {
     while (g_arpg.xp >= (uint32_t)arpg_xp_needed(g_arpg.level)) {
         g_arpg.xp -= (uint32_t)arpg_xp_needed(g_arpg.level);
         g_arpg.level++;
-        g_arpg.points++;
         gained++;
     }
     g_arpg_level = g_arpg.level;
@@ -84,12 +86,26 @@ int arpg_enemy_xp(int enemy_type, int floor) {
 /* ---- Save file (DESIGN.md 7.1: guardado en la tarjeta) ---- */
 
 #define ARPG_SAVE_MAGIC   0x41525047u
-#define ARPG_SAVE_VERSION 1
+#define ARPG_SAVE_VERSION 2
 #if ARPG_ALL_UNLOCKED
 #define ARPG_SAVE_NAME    "dungeonds_arpg_todo.sav"   // the test build never overwrites the player's save
 #else
 #define ARPG_SAVE_NAME    "dungeonds_arpg.sav"
 #endif
+
+// v1 layout (no inventory): read old saves and migrate them keeping level and xp.
+typedef struct {
+    uint32_t magic;
+    uint16_t version;
+    uint16_t level;
+    uint32_t xp;
+    uint16_t points;
+    uint16_t tree;
+    uint16_t deepest;
+    uint16_t spell;
+    uint32_t altars_lo;
+    uint32_t altars_hi;
+} ArpgProgressV1;
 
 static const char *const s_arpg_save_paths[2] = { "fat:/" ARPG_SAVE_NAME, "sd:/" ARPG_SAVE_NAME };
 static int s_arpg_fat_tried = 0;
@@ -117,11 +133,41 @@ int arpg_progress_save(void) {
     return 0;
 }
 
+// Reads `size` bytes of an old v1 save and rebuilds a v2 progress with a fresh inventory.
+static int arpg_load_v1(FILE *f) {
+    ArpgProgressV1 old;
+    if (fread(&old, sizeof(old), 1, f) != 1) return 0;
+    if (old.magic != ARPG_SAVE_MAGIC || old.level < 1) return 0;
+    memset(&g_arpg, 0, sizeof(g_arpg));
+    g_arpg.magic = ARPG_SAVE_MAGIC;
+    g_arpg.version = ARPG_SAVE_VERSION;
+    g_arpg.level = old.level;
+    g_arpg.xp = old.xp;
+    g_arpg.deepest = old.deepest;
+    g_arpg.spell = old.spell;
+    g_arpg.altars_lo = old.altars_lo;
+    g_arpg.altars_hi = old.altars_hi;
+    arpg_inv_new_game();          // the old tree is gone: fresh bag, level and xp kept
+    g_arpg_level = g_arpg.level;
+    arpg_unlock_for_tests();
+    return 1;
+}
+
 int arpg_progress_load(void) {
     if (!arpg_fat_ready()) return 0;
     for (int i = 0; i < 2; i++) {
         FILE *f = fopen(s_arpg_save_paths[i], "rb");
         if (!f) continue;
+        uint32_t magic = 0;
+        uint16_t version = 0;
+        int head = fread(&magic, sizeof(magic), 1, f) == 1 && fread(&version, sizeof(version), 1, f) == 1;
+        if (head && magic == ARPG_SAVE_MAGIC && version == 1) {
+            rewind(f);
+            int ok = arpg_load_v1(f);
+            fclose(f);
+            return ok;
+        }
+        rewind(f);
         ArpgProgress tmp;
         int ok = fread(&tmp, sizeof(tmp), 1, f) == 1;
         fclose(f);

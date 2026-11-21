@@ -10,8 +10,7 @@ typedef enum {
     MENU_BESTIARY,
     MENU_CONTROLS,
     MENU_LEVELUP,       /* DESIGN.md 6.12.8: pick 1 of 3 cards, no cancel */
-    MENU_CAMP,          /* DESIGN.md 7.1: between runs (sleep, tree, enter the cathedral, codex) */
-    MENU_TREE           /* DESIGN.md 7.3: skill tree, spend points (opened from the camp) */
+    MENU_INVENTORY      /* DESIGN.md 7.4: reliquias y tomos (arcón del campamento o pausa) */
 } MenuState;
 
 typedef enum {
@@ -21,22 +20,17 @@ typedef enum {
     MENU_ACT_RESUME,
     MENU_ACT_LEVELUP_PICK, /* a card was chosen: read it with menu_levelup_pick() */
     MENU_ACT_CONTINUE,     /* CONTINUAR desde el titulo: cargar la partida guardada */
-    MENU_ACT_SLEEP,        /* campamento: dormir (convierte la experiencia en niveles) */
-    MENU_ACT_ENTER_DUNGEON,/* campamento: entrar en la catedral */
     MENU_ACT_TO_CAMP       /* pausa: volver al campamento */
 } MenuAction;
 
 /* Open the title menu, open the pause menu, or close any active menu. */
 void menu_open_title(void);
-void menu_open_pause(void);
-void menu_open_camp(void);
-/* Skill tree screen (DESIGN.md 7.3). Back (Volver or B) closes it; the camp scene keeps running. */
-void menu_open_tree(void);
+void menu_open_pause(int from_camp);   /* from_camp != 0 hides "Volver al campamento" */
+/* Inventario (DESIGN.md 7.4). Volver/B lo cierra: vuelve al padre (campamento o pausa). */
+void menu_open_inventory(void);
 /* Códice (bestiary) from the camp's lectern: opens the viewer, B closes it back to the camp scene. */
 void menu_open_codex(void);
 void menu_close(void);
-/* Message line of the camp screen (e.g. the result of sleeping). Cleared by menu_open_camp(). */
-void menu_camp_message(const char *msg);
 /* Level-up cards (upgrades_begin_offer() must have run). */
 void menu_open_levelup(void);
 int menu_levelup_pick(void);

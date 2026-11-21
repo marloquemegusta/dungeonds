@@ -1,0 +1,65 @@
+{
+  "name": "arpg_menus",
+  "description": "ARPG (variante arpg-todo): desde el titulo al campamento, arcón -> inventario (pantalla superior con la escuela, engarces grandes y vista previa del cambio; inferior con bolsa y ficha), pestanas Glifo (sin definir) y Pecho (2 engarces), engarzar con A, desguazar con Y + confirmacion, vuelta al campamento, entrada a la catedral e inventario desde la pausa (B vuelve a la pausa, B sale). Solo evidencia.",
+  "suite": false,
+  "evidence_only": true,
+  "state": {
+    "elf": "../.ds-game-dev/build/out/dungeonds-arpg-todo.elf",
+    "symbols": { "pl": "s_player", "gps": "g_player_state" },
+    "default_symbol": "pl",
+    "fields": {
+      "px": { "symbol": "pl", "offset": 0, "type": "s32" },
+      "py": { "symbol": "pl", "offset": 4, "type": "s32" },
+      "hp": { "symbol": "gps", "offset": 0, "type": "s32" }
+    }
+  },
+  "steps": [
+    { "frames": 60 },
+    { "tap": { "x": 128, "y": 66 }, "frames": 6 },
+    { "release": true, "frames": 40 },
+    { "button_down": "START", "frames": 4 },
+    { "button_up": "START", "frames": 50 },
+    { "frames": 20, "capture": "m01_campamento" },
+
+    { "poke": [ { "field": "px", "value": 15872 }, { "field": "py", "value": 75776 } ], "frames": 20,
+      "capture": "m02_junto_arcon" },
+    { "button_down": "A", "frames": 4 },
+    { "button_up": "A", "frames": 25, "capture": "m03_inventario" },
+
+    { "tap": { "x": 128, "y": 11 }, "frames": 6 },
+    { "release": true, "frames": 15, "capture": "m04_glifo_sin_definir" },
+    { "tap": { "x": 228, "y": 11 }, "frames": 6 },
+    { "release": true, "frames": 15, "capture": "m05_pecho_dos_engarces" },
+    { "tap": { "x": 27, "y": 11 }, "frames": 6 },
+    { "release": true, "frames": 15, "capture": "m06_rayo_seleccion" },
+
+    { "button_down": "A", "frames": 4 },
+    { "button_up": "A", "frames": 15, "capture": "m07_engarzada" },
+
+    { "button_down": "RIGHT", "frames": 4 },
+    { "button_up": "RIGHT", "frames": 10 },
+    { "button_down": "Y", "frames": 4 },
+    { "button_up": "Y", "frames": 10, "capture": "m08_confirmar_desguace" },
+    { "button_down": "Y", "frames": 4 },
+    { "button_up": "Y", "frames": 15, "capture": "m09_desguazada" },
+
+    { "button_down": "B", "frames": 4 },
+    { "button_up": "B", "frames": 20, "capture": "m10_vuelta_campamento" },
+
+    { "poke": [ { "field": "px", "value": 32768 }, { "field": "py", "value": 29696 } ], "frames": 20 },
+    { "button_down": "A", "frames": 4 },
+    { "button_up": "A", "frames": 120 },
+    { "button_down": "UP", "frames": 60 },
+    { "button_up": "UP", "frames": 15, "capture": "m11_catedral" },
+
+    { "button_down": "START", "frames": 4 },
+    { "button_up": "START", "frames": 20, "capture": "m12_pausa" },
+    { "tap": { "x": 128, "y": 81 }, "frames": 6 },
+    { "release": true, "frames": 20, "capture": "m13_inventario_pausa" },
+
+    { "button_down": "B", "frames": 4 },
+    { "button_up": "B", "frames": 20, "capture": "m14_vuelta_pausa" },
+    { "button_down": "B", "frames": 4 },
+    { "button_up": "B", "frames": 20, "capture": "m15_vuelta_juego" }
+  ]
+}

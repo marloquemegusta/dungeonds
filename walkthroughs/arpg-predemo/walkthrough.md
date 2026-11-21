@@ -61,3 +61,11 @@ Evidencia (emulador): `assets/protodemo_v1_rom.png`, `assets/campamento_*.png`, 
 - Suelo del campamento demasiado azul y con dibujo de manchas; cabeza del Párroco girada; la puerta destaca por clara (se puede oscurecer con `tone` en `tools/props/props.json`).
 - Puerta y hueco llevan a la misma sala de arriba: faltan las salas laterales de verdad (castillo), las reliquias, la bolsa, el desguace, los santuarios (estatuas) y el viaje entre altares.
 - Documentos revisados en esta entrega: `assets/MANIFEST.md`, `TECHNICAL.md`, `STATUS.md`, `diseno_juego_final.md` y este walkthrough; `DESIGN.md` §7 sigue remitiendo al documento de trabajo.
+
+## Tercera sesión (2026-11-21): menús, inventario de reliquias y menú radial
+
+- **Campamento y pausa:** eliminado el menú viejo (MENU_CAMP); salir del inventario o del Códice devuelve directo al campamento andable. Pausa en campamento sin «Volver al campamento»; Controles actualizado al flujo ARPG.
+- **Menú radial (source/radial.c):** mantener L despliega los hechizos alternativos en anillo (sin caja negra) alrededor del viril activo; con 1 solo hechizo equipado no abre. Soporta hasta 3 hechizos equipados (activo + 2).
+- **Inventario de reliquias y tomos (source/arpg_inv.c, source/inventory.c):** sustituye al árbol de habilidades (MENU_TREE eliminado). Pantalla superior con escuela/hechizo, engarces grandes (3 en Rayo/Ejecución, 2 en Pecho) y comparación ▲/▼; pantalla inferior con 5 pestañas, bolsa 6×3 (16 huecos), ficha y desguace por cera. Las reliquias equipadas aplican sus modificadores del roguelike. Glifo y Levantar quedan como «Sin definir». Guardado v2.
+- **Pendientes anotados en DESIGN.md:** re-escalar props del campamento (jergón +50 %, mesa 2–3×, arcón 2×), drag & drop táctil en el inventario (comparar al mantener sobre hueco ocupado e intercambiar al soltar), y ajuste vertical de la pausa de mazmorra.
+ (emulador, rpg-todo, escenario rpg_menus): ssets/menus/m03_inventario.png, m04_glifo_sin_definir.png, m05_pecho_dos_engarces.png, m07_engarzada.png, m08_confirmar_desguace.png, m09_desguazada.png, m12_pausa.png, m13_inventario_pausa.png, m09_radial_abierto.png, m10_tras_elegir.png.

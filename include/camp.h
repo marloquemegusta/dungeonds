@@ -18,7 +18,7 @@
 #define CAMP_START_Y 322
 
 // Action a prop triggers when the hero is next to it and touches it (or presses A).
-enum { CAMP_ACT_NONE = 0, CAMP_ACT_SLEEP, CAMP_ACT_TREE, CAMP_ACT_CODEX, CAMP_ACT_DOOR };
+enum { CAMP_ACT_NONE = 0, CAMP_ACT_SLEEP, CAMP_ACT_INVENTORY, CAMP_ACT_CODEX, CAMP_ACT_DOOR };
 
 #if CAMP_SCENE
 const Arena *camp_arena(void);   // the static camp room (built once on first call)

@@ -52,7 +52,7 @@ static const CampProp s_props[] = {
     { g_camp_mesa,    CAMP_MESA_W,    CAMP_MESA_H,      60, 250, "Mesa",         CAMP_ACT_NONE,
       g_camp_mesa_shadow,    CAMP_MESA_SHADOW_W,    CAMP_MESA_SHADOW_H,
       CAMP_MESA_SHADOW_OX,    CAMP_MESA_SHADOW_OY    },
-    { g_camp_arcon,   CAMP_ARCON_W,   CAMP_ARCON_H,     58, 292, "ArcÃ³n",        CAMP_ACT_TREE,
+    { g_camp_arcon,   CAMP_ARCON_W,   CAMP_ARCON_H,     58, 292, "ArcÃ³n",        CAMP_ACT_INVENTORY,
       g_camp_arcon_shadow,   CAMP_ARCON_SHADOW_W,   CAMP_ARCON_SHADOW_H,
       CAMP_ARCON_SHADOW_OX,   CAMP_ARCON_SHADOW_OY   },
     { g_camp_atril,   CAMP_ATRIL_W,   CAMP_ATRIL_H,    198, 296, "Atril",        CAMP_ACT_CODEX,

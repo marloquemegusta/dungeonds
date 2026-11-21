@@ -88,7 +88,7 @@ Problema: árbol + niveles + únicos + inventario son demasiadas vertientes que 
 ## 5. Arquetipos (escuelas) [PROPUESTA]
 Un solo héroe, el Corazón Abierto, con cuatro escuelas; la build sale de qué hechizos lleva y qué les engarza.
 
-**Controles:** lápiz = hechizo activo; `L` corto = Ejecución (siempre); `L` mantenido = cambiar entre los 2 hechizos equipados.
+**Controles:** lápiz = hechizo activo; `L` corto = Ejecución (siempre); `L` mantenido = abrir el menú radial con los 3 hechizos equipados (el activo y 2 más).
 
 | Escuela | Hechizo | Mejoras (engarces) | Fantasía |
 |---|---|---|---|
