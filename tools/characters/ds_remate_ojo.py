@@ -379,7 +379,7 @@ kick_glass = burst('kickg', 6, LAND + V((0, 0, 0.08)), 2.0, 0.007, 46, MAT_GLASS
 # vuelo del farol: de la mano (fotograma RELEASE_F) al suelo (LAND_F) al punto de contacto
 C0 = LANTERN_C.copy()
 T_FLY = (LAND_F - RELEASE_F) * DT
-V_KICK = V((2.6, -0.5, 1.9))
+V_KICK = V((1.4, -1.6, 0.7))     # la patada lo manda a ras de suelo, hacia el espectador
 
 
 # farol en la mano: (centro de mundo, giro sobre Y en grados)
@@ -427,16 +427,28 @@ def lantern_matrix(i):
     return Matrix.Translation(c) @ rot @ Matrix.Translation(-C0)
 
 
+BODY_FEET = V((OJO_X, OJO_Y, 0.0))
+
+
+def body_sway(i):
+    """Cuerpo sin farol: se tambalea sobre sus pies, cada vez mas, sin caerse."""
+    s = 4.2 * math.sin(2 * math.pi * (i - (RIP_F + 1)) / 5.6)
+    f = 2.0 + 1.6 * math.sin(2 * math.pi * (i - (RIP_F + 1)) / 9.0)
+    return xform_about(BODY_FEET, s, f, 0)
+
+
 def body_matrix(i):
-    """El cuerpo del Ojo se vuelca y se arrastra lejos del farol y de la patada."""
+    """Aguanta de pie (tambaleandose) hasta que llega la patada; entonces se desploma."""
     if i < RIP_F:
         return body_xform(tilt_back=0.0, tilt_side=1.5 if i % 2 else -1.5)
     if i == RIP_F:
-        return body_xform(tilt_back=6.0, tilt_side=-4.0)
-    k = min(1.0, (i - RIP_F) / 5.0)
-    M = body_xform(tilt_back=6.0 + 62.0 * k, tilt_side=-4.0 - 26.0 * k,
-                   drag=(0.34 * k, 0.22 * k, 0.0))
-    # que no atraviese el suelo: se apoya en el punto mas bajo
+        return xform_about(BODY_FEET, 0.0, -3.0, 0.0)
+    if i < CONTACT_PREVIEW:
+        return body_sway(i)
+    # la patada lo tumba: se vuelca hacia atras y se apoya en el suelo
+    k = min(1.0, (i - CONTACT_PREVIEW + 1) / 5.0)
+    fall = xform_about(BODY_PIVOT, -10.0 * k, 76.0 * k, 0, (0.24 * k, 0.10 * k, 0.0))
+    M = fall @ body_sway(CONTACT_PREVIEW - 1)
     STUMP.matrix_world = M
     update()
     dg = bpy.context.evaluated_depsgraph_get()

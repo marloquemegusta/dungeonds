@@ -21,12 +21,12 @@ principal y solo se usa como dato de pose (no se copia al worktree ni se toca).
 | :--- | :--- |
 | 0–1 | El héroe entra y el Ojo, arrodillado y tambaleándose, se inclina hacia él. |
 | 2 | **Agarre:** las dos manos del héroe cierran sobre la jaula del farol. |
-| 3–4 | **Tirón y arranque:** el héroe se echa atrás y el farol se desprende del cuello; el cuerpo del Ojo se vuelca y se arrastra lejos de la patada. Chispas y vidrio del farol. |
+| 3–4 | **Tirón y arranque:** el héroe se echa atrás y el farol se desprende del cuello. **El cuerpo se queda de pie, sin cabeza**, y empieza a tambalearse. Chispas y vidrio del farol. |
 | 5–6 | El héroe lo voltea y lo lanza al suelo. |
-| 7–8 | El farol cae en el punto exacto al que va a llegar la patada. |
-| 9–17 | El héroe se coloca y sube la pierna (arranque de la patada). |
-| **18** | **Contacto:** el pie aplasta el farol; saltan chispas y vidrio. |
-| 19–23 | El farol sale volando y rodando; el héroe acompaña y queda sobre el cuerpo caído. |
+| 7–8 | El farol cae a los pies del héroe y se queda a ras de suelo. |
+| 9–17 | El Ojo se tambalea, ciego, mientras el héroe se coloca y sube la pierna (arranque de la patada). |
+| **18** | **Contacto:** el pie le entra al cuerpo y **el Ojo se desploma**; el farol sale despedido a ras de suelo, hacia el espectador. |
+| 19–23 | El Ojo cae de espaldas y queda hecho un montón; el farol se queda al pie. |
 
 ## Cómo se ha hecho
 
@@ -36,8 +36,11 @@ principal y solo se usa como dato de pose (no se copia al worktree ni se toca).
   hacía `build_ojo.py`) y aquí, en el fotograma del agarre, se **hornea la malla ya deformada y se corta** por el
   cuello con `cut_object` (corte dentado y sección rellena en rojo oscuro). Quedan tres piezas: tronco + cabeza de la
   mano, y el farol suelto.
-- **El cuerpo caído es rígido:** se vuelca sobre su propia cadera y se apoya en el suelo, con un arrastre lateral
-  para que no caiga encima del héroe ni de la patada.
+- **El cuerpo caído es rígido y aguanta hasta el golpe:** del 4 al 17 se tambalea sin farol sobre sus pies (vaivén
+  lateral de ±4° con periodo de 5,6 fotogramas, más un cabeceo lento), y solo en el 18, al entrarle el pie, se vuelca
+  hacia atrás sobre su cadera y se apoya en el suelo. Así el remate no se «gasta» antes de la patada.
+- **El farol no vuela:** se apoya en el suelo en el 8 y, cuando la patada lo roza, sale a ras (velocidad (1,4, −1,6,
+  0,7) m/s) hacia el espectador, sin arco alto.
 - **La patada es el clip del inbox, retargetizado:** se copia la **rotación en espacio de mundo** de la cadena
   cadera–columna–piernas (método de delta de `build_ojo.py`) girada +90° porque el FBX mira a −Y y el héroe a +X;
   las longitudes de hueso distintas escalan el alcance solas. Se juega a velocidad casi natural (≈2 fotogramas del
@@ -57,8 +60,8 @@ principal y solo se usa como dato de pose (no se copia al worktree ni se toca).
 ## Verificación
 
 - Comprobado a ojo, fotograma a fotograma, sobre la hoja de contacto: el agarre toca (hueco de las manos 0,000 m en el
-  fotograma 2), el farol sale del cuello, cae en el punto de la patada, el pie lo alcanza en el fotograma 18 y el
-  farol sale volando. El héroe no se sale del encuadre en ningún fotograma.
+  fotograma 2), el farol sale del cuello, el cuerpo **sigue de pie** del 4 al 17 tambaleándose, cae solo en el 18 con el
+  golpe y el farol queda a ras junto a él. El héroe no se sale del encuadre en ningún fotograma.
 - **No se ha integrado en la ROM** (`remate_sprites.c` solo conoce Exvoto y Cireneo) ni se ha medido en la DS.
   Es una ronda de diseño para aprobar el gesto.
 
