@@ -1,29 +1,29 @@
 {
   "piece": "camp_hoguera",
   "size_px": [
-    24,
-    16
+    40,
+    24
   ],
   "content_px": [
-    18,
-    11
+    36,
+    21
   ],
-  "target_width": 18,
-  "scale_factor": 0.03345724907063197,
+  "target_width": 36,
+  "scale_factor": 0.06691449814126393,
   "source_render_px": [
     538,
     314
   ],
   "yaw": 0,
   "depth_units": "sprite_px",
-  "tiles_8x8_nonempty": 6,
-  "tiles_8x8_unique": 6,
+  "tiles_8x8_nonempty": 15,
+  "tiles_8x8_unique": 15,
   "shadow_offset_px": [
     0,
     0
   ],
   "shadow_canvas_px": [
-    24,
-    16
+    40,
+    32
   ]
 }

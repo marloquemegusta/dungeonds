@@ -651,7 +651,7 @@ Prueba de concepto de dos días: convertir la partida por encuentros en un Actio
 - **Siempre se empieza desde el piso 1** (sin atajos): la progresión es el nivel y el árbol.
 - **La experiencia cae como runas** al morir cada enemigo y se recoge al pasar; los jefes sueltan muchas más.
 - **Dificultad por profundidad:** la vida y el número de enemigos suben con el piso. Al principio se muere pronto; es lo esperado.
-- **Escala de props del campamento (decidido 2026-11-21, pendiente de re-render):** los elementos actuales se ven demasiado pequeños; el jergón debe ser al menos un +50 % más grande, la mesa 2–3× más grande y el arcón (cofre) 2× más grande.
+- **Escala de props del campamento (decidido 2026-11-21, aplicado):** jergón +50 % (ancho 36 → 54 px), mesa ×2,5 (26 → 65 px) y arcón ×2 (18 → 36 px; es su propia pieza `camp_arcon`, el cofre de la catedral no cambia). Los sprites del campamento se leen de NitroFS (`nitrofiles/camp/`) porque la EWRAM estática no admitía el aumento.
 - **Sin mercader** en esta versión.
 - **Guardado** en la tarjeta: nivel, experiencia, puntos y nodos del árbol, piso más profundo alcanzado.
 

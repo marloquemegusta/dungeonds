@@ -1,0 +1,29 @@
+{
+  "piece": "camp_arcon",
+  "size_px": [
+    40,
+    24
+  ],
+  "content_px": [
+    36,
+    24
+  ],
+  "target_width": 36,
+  "scale_factor": 0.06818181818181818,
+  "source_render_px": [
+    528,
+    358
+  ],
+  "yaw": 45,
+  "depth_units": "sprite_px",
+  "tiles_8x8_nonempty": 15,
+  "tiles_8x8_unique": 15,
+  "shadow_offset_px": [
+    -8,
+    0
+  ],
+  "shadow_canvas_px": [
+    48,
+    32
+  ]
+}

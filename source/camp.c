@@ -8,6 +8,8 @@
 #include "camp_arena_data.h"
 #include "bestiary_font.h"
 #include <stddef.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 // The camp is its own static room, one screen wide and two screens tall, shown whole across both
@@ -45,24 +47,24 @@ typedef struct {
 // Disposition (world px, y down): the door up top and centred (shown on the top screen), the camp
 // itself on the bottom screen â€” bonfire with the bedroll beside it, table and chest on the left,
 // lectern on the right (DESIGN.md: the camp as its own room).
-static const CampProp s_props[] = {
-    { g_camp_puerta,  CAMP_PUERTA_W,  CAMP_PUERTA_H,   128, 104, "Puerta",       CAMP_ACT_DOOR,
-      g_camp_puerta_shadow,  CAMP_PUERTA_SHADOW_W,  CAMP_PUERTA_SHADOW_H,
+static CampProp s_props[] = {
+    { NULL,  CAMP_PUERTA_W,  CAMP_PUERTA_H,   128, 104, "Puerta",       CAMP_ACT_DOOR,
+      NULL,  CAMP_PUERTA_SHADOW_W,  CAMP_PUERTA_SHADOW_H,
       CAMP_PUERTA_SHADOW_OX,  CAMP_PUERTA_SHADOW_OY  },
-    { g_camp_mesa,    CAMP_MESA_W,    CAMP_MESA_H,      60, 250, "Mesa",         CAMP_ACT_NONE,
-      g_camp_mesa_shadow,    CAMP_MESA_SHADOW_W,    CAMP_MESA_SHADOW_H,
+    { NULL,    CAMP_MESA_W,    CAMP_MESA_H,      60, 250, "Mesa",         CAMP_ACT_NONE,
+      NULL,    CAMP_MESA_SHADOW_W,    CAMP_MESA_SHADOW_H,
       CAMP_MESA_SHADOW_OX,    CAMP_MESA_SHADOW_OY    },
-    { g_camp_arcon,   CAMP_ARCON_W,   CAMP_ARCON_H,     58, 292, "ArcÃ³n",        CAMP_ACT_INVENTORY,
-      g_camp_arcon_shadow,   CAMP_ARCON_SHADOW_W,   CAMP_ARCON_SHADOW_H,
+    { NULL,   CAMP_ARCON_W,   CAMP_ARCON_H,     58, 292, "ArcÃ³n",        CAMP_ACT_INVENTORY,
+      NULL,   CAMP_ARCON_SHADOW_W,   CAMP_ARCON_SHADOW_H,
       CAMP_ARCON_SHADOW_OX,   CAMP_ARCON_SHADOW_OY   },
-    { g_camp_atril,   CAMP_ATRIL_W,   CAMP_ATRIL_H,    198, 296, "Atril",        CAMP_ACT_CODEX,
-      g_camp_atril_shadow,   CAMP_ATRIL_SHADOW_W,   CAMP_ATRIL_SHADOW_H,
+    { NULL,   CAMP_ATRIL_W,   CAMP_ATRIL_H,    198, 296, "Atril",        CAMP_ACT_CODEX,
+      NULL,   CAMP_ATRIL_SHADOW_W,   CAMP_ATRIL_SHADOW_H,
       CAMP_ATRIL_SHADOW_OX,   CAMP_ATRIL_SHADOW_OY   },
-    { g_camp_hoguera, CAMP_HOGUERA_W, CAMP_HOGUERA_H,  112, 312, "Hoguera",      CAMP_ACT_NONE,
-      g_camp_hoguera_shadow, CAMP_HOGUERA_SHADOW_W, CAMP_HOGUERA_SHADOW_H,
+    { NULL, CAMP_HOGUERA_W, CAMP_HOGUERA_H,  128, 300, "Hoguera",      CAMP_ACT_NONE,
+      NULL, CAMP_HOGUERA_SHADOW_W, CAMP_HOGUERA_SHADOW_H,
       CAMP_HOGUERA_SHADOW_OX, CAMP_HOGUERA_SHADOW_OY },
-    { g_camp_jergon,  CAMP_JERGON_W,  CAMP_JERGON_H,   158, 320, "JergÃ³n",       CAMP_ACT_SLEEP,
-      g_camp_jergon_shadow,  CAMP_JERGON_SHADOW_W,  CAMP_JERGON_SHADOW_H,
+    { NULL,  CAMP_JERGON_W,  CAMP_JERGON_H,   196, 346, "JergÃ³n",       CAMP_ACT_SLEEP,
+      NULL,  CAMP_JERGON_SHADOW_W,  CAMP_JERGON_SHADOW_H,
       CAMP_JERGON_SHADOW_OX,  CAMP_JERGON_SHADOW_OY  },
 };
 #define CAMP_PROP_COUNT ((int)(sizeof(s_props) / sizeof(s_props[0])))
@@ -97,7 +99,36 @@ static void block_rect(int x, int y, int w, int h, unsigned v) {
         for (int c = c0; c <= c1; c++) set_coll(c, r, v);
 }
 
+// Prop pixels and ground shadows are read from NitroFS (nitrofiles/camp/, written by
+// tools/camp/generate_camp_gfx.py) instead of living in the ARM9 binary, whose static EWRAM budget
+// is full. Same order as s_props.
+static const char *const s_gfx_stem[] = { "puerta", "mesa", "arcon", "atril", "hoguera", "jergon" };
+
+static void *load_camp_bin(const char *stem, const char *suffix, size_t bytes) {
+    char path[64];
+    snprintf(path, sizeof(path), "nitro:/camp/%s%s.bin", stem, suffix);
+    FILE *f = fopen(path, "rb");
+    if (!f) return NULL;
+    void *buf = malloc(bytes);
+    if (buf && fread(buf, 1, bytes, f) != bytes) {
+        free(buf);
+        buf = NULL;
+    }
+    fclose(f);
+    return buf;
+}
+
+static void load_camp_gfx(void) {
+    for (int i = 0; i < CAMP_PROP_COUNT; i++) {
+        CampProp *p = &s_props[i];
+        if (p->pix) continue;
+        p->pix = load_camp_bin(s_gfx_stem[i], "", (size_t)p->w * p->h * 2);
+        p->shadow = load_camp_bin(s_gfx_stem[i], "_shadow", (size_t)((p->shw + 1) / 2) * p->shh);
+    }
+}
+
 static void build_arena(void) {
+    load_camp_gfx();
     memset(s_camp_collision, 0, sizeof(s_camp_collision));
     // Walls: the 24 px of cathedral wall each side, a thin far edge at the very top (behind the door)
     // and the foot. The hero can walk right up to the door and under it.
@@ -258,7 +289,7 @@ void camp_render_floor(uint16_t *buffer, int cam_x, int cam_y) {
     int cy = f->y - 8 - cam_y;
     // The actor page is transparent over the hardware floor, so painting a filled disc would read as
     // a rug. Instead scatter a few warm embers on the stone: sparse, dimmer towards the edge.
-    const int rx = 36, ry = 15;
+    const int rx = 48, ry = 20;
     for (int dy = -ry; dy <= ry; dy++) {
         int sy = cy + dy;
         if ((unsigned)sy >= SCREEN_H) continue;
@@ -279,6 +310,7 @@ void camp_render_floor(uint16_t *buffer, int cam_x, int cam_y) {
 
 static void draw_prop(int index, uint16_t *buffer, int cam_x, int cam_y) {
     const CampProp *p = &s_props[index];
+    if (!p->pix) return;                 // NitroFS read failed: the prop is simply not drawn
     int left = p->x - p->w / 2 - cam_x;
     int top = p->y - p->h - cam_y;
     for (int y = 0; y < p->h; y++) {
@@ -303,13 +335,14 @@ static void draw_prop(int index, uint16_t *buffer, int cam_x, int cam_y) {
         int fx = p->x - cam_x;
         int base = p->y - cam_y - 6;
         int sway = ((s_anim >> 2) & 3) - 1;
-        for (int j = 0; j < 9; j++) {
+        // The flame is twice the old height (the bonfire sprite is twice as wide as it was).
+        for (int j = 0; j < 18; j++) {
             int sy = base - j;
             if ((unsigned)sy >= SCREEN_H) continue;
-            int off = (j >= 6) ? (sway * (j - 5)) / 3 : 0;
+            int off = (j >= 12) ? (sway * (j - 11)) / 6 : 0;
             int sx = fx + off;
-            uint16_t c = j < 2 ? COL_IVORY : j < 5 ? COL_GOLD : j < 7 ? COL_AMBER : COL_EMBER;
-            int half = j < 5 ? 1 : 0;
+            uint16_t c = j < 4 ? COL_IVORY : j < 10 ? COL_GOLD : j < 14 ? COL_AMBER : COL_EMBER;
+            int half = j < 10 ? 1 : 0;
             for (int k = -half; k <= half; k++) {
                 int px = sx + k;
                 if ((unsigned)px >= SCREEN_W) continue;
