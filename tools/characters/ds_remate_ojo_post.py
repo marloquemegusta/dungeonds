@@ -21,7 +21,7 @@ if '--test' in sys.argv:
     ONLY = int(sys.argv[sys.argv.index('--test') + 1])
 DIRS = [int(x) for x in os.environ.get('DIRS', '0,1,2,3,4,5,6,7').split(',')]
 DIR_NAMES = ['S', 'SW', 'W', 'NW', 'N', 'NE', 'E', 'SE']
-CONTACT_F = int(os.environ.get('CONTACT_F', '18'))
+CONTACT_F = int(os.environ.get('CONTACT_F', '17'))
 
 
 def lum(a):
@@ -116,3 +116,4 @@ if ONLY is None and len(made) == 8:
     with open(os.path.join(OUTD, 'ojo_remate_8dirs.html'), 'w', encoding='utf-8') as f:
         f.write(html)
 print('POST OK', [d for d, _ in made])
+
