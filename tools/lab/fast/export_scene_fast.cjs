@@ -20,7 +20,7 @@ const argv = process.argv.slice(2);
 const opt = n => { const i = argv.indexOf(n); return i >= 0 ? argv[i + 1] : undefined; };
 const has = n => argv.includes(n);
 
-const VALUE_FLAGS = new Set(['--template', '--dirs', '--resolution', '--ppm', '--fitExtent', '--legibility', '--tone', '--limit', '--only-material']);
+const VALUE_FLAGS = new Set(['--template', '--dirs', '--resolution', '--ppm', '--fitExtent', '--legibility', '--tone', '--limit', '--only-material', '--shadow-skip-materials']);
 const BOOL_FLAGS = new Set(['--noCHeader', '--timing', '--doubleSided']);
 for (let i = 0; i < argv.length; i++) {
   const a = argv[i];
@@ -281,10 +281,16 @@ async function main() {
     contrast: s.contrast ?? 1, saturation: s.saturation ?? 1, brightness: s.brightness ?? 1,
     outlineMode, filterWidth: 1.5,
   };
+  // Chispas y demas particulas fuera de la sombra: su proyeccion se desplaza por la altura y ensancha el lienzo
+  // (el lab proyecta 1 m de altura como ~1,7 m de desplazamiento), y la mascara del juego admite 64 px.
+  const shadowSkip = (opt('--shadow-skip-materials') || '').split(',').map(x => x.trim()).filter(Boolean);
+  const shadowMeshes = sm => sm.meshes
+    .filter(m => !shadowSkip.includes(matNames[m.materialIndex] || ''))
+    .map(m => ({ positions: m.positions, index: m.indices }));
   const shadowPromise = Promise.all(samples.map(sm => pool.run('shadow', {
     size, minY: 0, fixedGround: true, anchor: [anchorX, anchorY],
     cam: { eye: camera.eye, right: camera.basis.right, up: camera.basis.up, half: camera.right },
-    meshes: sm.meshes.map(m => ({ positions: m.positions, index: m.indices })),
+    meshes: shadowMeshes(sm),
     dirs: [0, 1, 2, 3, 4, 5, 6, 7],
   })));
   const jobs = [];
