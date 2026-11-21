@@ -1,123 +1,130 @@
-# Walkthrough — Ejecución del Ojo del Tribunal: arrancarle el farol y patearlo (`feat/remate-ojo`)
+# Walkthrough — Ejecución del Ojo del Tribunal: re-render con el lab rápido e integración en el juego (`feat/remate-ojo`)
 
 **Fecha:** 2026-11-21
 **Rama:** `feat/remate-ojo` (worktree `.worktrees/remate-ojo`)
 **Diseño:** `DESIGN.md` §6.13.8 (ejecuciones / glory kills)
 
-## Qué se ha hecho
+## Qué se ha pedido
 
-Una animación de ejecución del **Ojo del Tribunal** con el **estilo visual de las ejecuciones del Exvoto**: misma
-cámara diagonal (45° de acimut, 30° de elevación), mismos pases de render y misma post (borde duro al alfa 110,
-sombra al 45 %, GIF 4x NEAREST a 60 ms por fotograma). El héroe le **agarra el farol que lleva sobre los hombros**
-(su cabeza), se lo **arranca de un tirón**, lo **tira al suelo**, el cuerpo descabezado **se incorpora a su postura
-encorvada** (nunca llega a erguirse del todo: es una criatura encorvada) y, cuando le llega la **patada**, cae
-**hacia atrás** con la animación de muerte del inbox. Al caer **se le escurre de la mano la cabeza que lleva
-sujeta** (el Ojo lleva dos: la del hombro, que se arranca, y la de la mano, que se le cae) y las dos piezas quedan en
-el suelo.
+El gesto ya estaba aprobado, pero se renderizó con **Blender**. La entrega hace dos cosas:
 
-Los clips del inbox **no se han movido, copiado ni borrado**: `assets/inbox/Zombie Kicking.fbx` y
-`assets/inbox/Falling Back Death.fbx` se leen desde el repo principal y solo se usan como dato de pose.
+1. **Re-renderizarlo con el lab rápido** (`tools/lab/fast/`), el pipeline de sprites que usa el resto del juego.
+2. **Integrarlo en la ROM** con las mismas reglas que las ejecuciones del Exvoto y el Cireneo: el Ojo tambaleante se
+   puede rematar con `L`, el héroe es invulnerable durante la ejecución, el enemigo muere sin su efecto estándar, el
+   rayo queda cargado y quedan restos en el suelo.
 
-### Secuencia (38 fotogramas a 60 ms ≈ 2,28 s, 4x NEAREST)
+## 1. Re-render con el lab rápido
+
+El pipeline es el de los remates (Blender hornea la escena, el lab hace los sprites), pero con el lab rápido en lugar
+del web:
+
+1. `tools/characters/ds_remate_ojo.py` con `REMATE_GLB_DIR` escribe **39 GLB** (38 fotogramas + el de restos) con las
+   mallas ya horneadas y sin armadura, en metros de mundo, con el Ojo en el origen (el ancla del lab) y el héroe a −X.
+   Los actores ocultos de cada fotograma se exportan encogidos a 1e-5 para que todos los fotogramas compartan
+   **la misma topología** (es lo que permite al rasterizador compartir una sola malla por actor).
+2. **`tools/lab/fast/export_scene_fast.cjs`** (nuevo, Node sin navegador) lee la secuencia de GLB con
+   `glb_loader_minimal.js`, decodifica sus texturas PNG una sola vez (deducidas por hash), encuadra la escena con
+   cámara ortográfica fija y rasteriza las **8 direcciones × 39 fotogramas** con el mismo `raster.cjs`/`post.cjs` de
+   los personajes. Escribe el paquete del lab (`frames/<dir>/<i>.png` 1x, `shadow.png`, `settings.json`, GIFs).
+   - Celda **96×96**, **38 px/m** (`fitExtent = 96/38 = 2,5263 m`, la escala que asume el packer del remate).
+   - Legibilidad **C2** (supersample 4, tono neutral), la misma de los sprites de personaje.
+   - **14,7 s** en total (lectura 1,1 s, texturas 0,3 s, raster 4,5 s, post 6,6 s, escritura 1,8 s). El lab web tardó
+     **32 min solo en cargar los 39 GLB** y además no puede descartar las chispas aparcadas: mide un encuadre de
+     6,72 m y saca los fotogramas vacíos, así que **no hay referencia válida del lab web** para comparar.
+3. `tools/generate_remate_sprites.py` empaqueta el paquete en `nitrofiles/remate/ojo_d0..d7.bin` y regenera
+   `source/remate_sprites.c` / `include/remate_sprites.h`.
+
+La animación (guion, poses, clips del inbox, correcciones de las vueltas anteriores) **no cambia**: cambia el
+renderizador. El aspecto final es el del lab (el mismo de todos los personajes y del resto de remates): iluminación
+del lab, bordes duros, sombra horneada aparte.
+
+## 2. Integración en el juego
+
+- **Nuevo tipo de remate** `REMATE_KIND_OJO` (celda 96×96, **38 fotogramas**, **4 ticks** por fotograma = 152 frames
+  de juego ≈ 2,5 s, el ritmo del GIF aprobado; restos = el fotograma 38, el cadáver sin el héroe).
+  `RemateKindInfo` gana `frames` y `ticks`: cada tipo decide su duración (Exvoto/Cireneo siguen 12×6 = 72 frames).
+- **Mismas reglas que el resto** (`remate_start`): el Ojo entra en `ENEMY_STATE_WOBBLE` al 50 % de vida (antes los
+  tiradores no tambaleaban; `gameplay.c`), `L` a ≤96 px, embestida previa, invulnerabilidad durante embestida y
+  celda, muerte limpia (`remate_killing`), rayo recargado al instante, invulnerabilidad de 1 s después y restos
+  parpadeando 1 s. El Ojo mira al héroe durante la celda (`e->dir = (s_dir + 4) & 7`), como el Exvoto.
+- **El FSM del Ojo aprende a tambalearse** (`enemy_ai.c`): un caso `ENEMY_STATE_WOBBLE` corta el ciclo de apuntado
+  (no sigue, no fija, no sentencia) mientras dura el aturdimiento; desde ahí `L` abre el remate.
+- **Formato de datos por tipo, no global.** Antes `REMATE_NUM_FRAMES = 12` estaba compilado en el header y en los
+  bins. Ahora la cabecera del bin es variable (cada tipo lleva sus arrays) y el header declara `REMATE_MAX_FRAMES`.
+  Los bins y tablas del Exvoto y el Cireneo quedaron **congelados** en `tools/remate_legacy.json` (sus paquetes del
+  lab nunca se versionaron) y no se reescriben.
+- **Streaming desde NitroFS.** Cargar el bin del Ojo entero (206 KB) dejaba la EWRAM a 4 KB del límite: el vídeo de
+  la intro pide ~98 KB de heap al arrancar y habría fallado. Ahora `remate.c` abre el bin al empezar la celda y lee
+  **solo el fotograma que toca** (píxeles + runs + máscara) a buffers estáticos de 23,5 KB; al terminar deja cargado
+  el fotograma de restos y cierra el fichero. EWRAM: **3,32 de 3,5 MiB** (antes de la sesión, 3,38) y **181 KB de
+  heap**.
+- **Regresión de los otros remates**: los tres escenarios de transición existentes (Exvoto cerca, Exvoto oeste,
+  Cireneo norte) **pasan** con el nuevo cargador.
+
+## Secuencia (38 fotogramas, 4 ticks por fotograma ≈ 2,5 s)
 
 | Fotogramas | Qué pasa |
 | :--- | :--- |
-| 0–1 | El héroe entra. El Ojo está **agachado** a propósito (no de pie): es la única forma de que el farol del hombro le llegue al héroe, que es un 40 % más bajo. |
-| 2 | **Agarre:** las dos manos del héroe cierran sobre la jaula del farol (hueco de las manos 0,000 m). |
+| 0–1 | El héroe entra. El Ojo está **agachado** a propósito: es la única forma de que el farol del hombro le llegue al héroe, que es un 40 % más bajo. |
+| 2 | **Agarre:** las dos manos del héroe cierran sobre la jaula del farol. |
 | 3–4 | **Tirón y arranque:** el farol se desprende del cuello (borde dentado y sección en rojo oscuro). Chispas y vidrio. |
-| 4–11 | El cuerpo **se incorpora** a su postura natural, algo encorvada (`k` 1 → 0,30 con un pequeño rebote), sin llegar nunca a estar de pie perfecto. |
+| 4–11 | El cuerpo **se incorpora** a su postura natural, algo encorvada, sin llegar nunca a estar de pie perfecto. |
 | 5–8 | El héroe voltea el farol y lo tira: vuela, cae a sus pies en el 8 y se queda a ras. |
-| 11–17 | El Ojo, ya **incorporado y descabezado**, se tambalea (vaivén de ±4,4° con periodo de 5,2 fotogramas) con la cabeza de la mano sujeta. El héroe sube la pierna. |
-| **17** | **Contacto:** el pie del héroe toca el cuerpo del Ojo (clip 23 de la patada) **y ese mismo fotograma arranca el desplome**: el cuerpo empieza a irse hacia atrás en el 18 y acelera. |
-| 17–29 | **Desplome:** clip `Falling Back Death` desde su fotograma 7 (el de la reacción), a 2 fotogramas de clip por celda. Se vuelca, los brazos se abren y cae de espaldas. |
-| **21** | **Se le cae la cabeza de la mano:** al irse de espaldas la suelta; cae al suelo entre los dos y rueda hasta pararse junto al cuerpo. |
-| 30–37 | El cuerpo queda muerto en el suelo, con la cabeza suelta a su lado y el farol arrancado delante. El héroe **recupera la pose**: del 30 al 37 la patada se mezcla de vuelta a su reposo. |
-
-### Ocho direcciones
-
-Las 8 variantes de dirección del remate (dir 0 = S … dir 7 = SE, las mismas que `remate_sprites.c`) se generan
-girando **la cámara y el sol** alrededor de la pareja, que se queda en el sitio: equivale a girar el remate bajo una
-luz fija, como haría el juego. Cada dirección tiene su GIF y su carpeta de fotogramas.
-
-## Cómo se ha hecho (y qué se arregló de la ronda anterior)
-
-- **El farol es la cabeza y se corta por PESO, no por un plano.** La ronda anterior partía la malla con un plano que
-  pasaba por el cuello; como el Ojo va inclinado, el plano se llevaba **226 vértices del antebrazo derecho y 52 de la
-  mano**: el héroe arrancaba farol + trozo de brazo y el brazo salía volando. Ahora la malla se parte por el **peso del
-  hueso `Head`** (`split_by_head`): la mitad de cabeza recibe un borde dentado común y una tapa de cera, la del cuerpo
-  la tapa opuesta. **El brazo y la mano de piedra se quedan en el cuerpo.** El cuerpo ya no se hornea: se queda
-  *skinned*, así que se deforma con la animación (antes era un bloque rígido que se volcaba).
-- **El desplome es la animación del inbox, no una rotación procedural.** `Falling Back Death.fbx` (79 fotogramas,
-  Mixamo) se retargetiza al esqueleto del Ojo: por hueso se copia su **delta de rotación de mundo respecto al
-  fotograma 7** (el de la reacción) **relativo al padre**, y se compone sobre la pose de pie del Ojo; la traslación
-  de cadera se escala por 0,52 y se gira −100° para que el cuerpo caiga hacia +X (alejándose del héroe). Cae de
-  espaldas, con los brazos abiertos y una pierna arriba, como el clip. *(Corregido en la última vuelta: se estaba
-  aplicando la **pose absoluta** del clip en vez de su **cambio**, así que la pose del Ojo se sumaba dos veces y el
-  cuerpo se contorsionaba al caer.)*
-- **La sincronía patada–caída es un solo fotograma.** Antes el pie «entraba» donde el clip baja la pierna al suelo
-  (a los pies del propio héroe) y el cuerpo se caía por su cuenta. Ahora el fotograma de contacto es el clip 23
-  (el pie ya está dentro del cuerpo, a 0,70 m de alto) y el desplome arranca **en ese mismo fotograma**; el 18 es el
-  seguimiento (clip 25) y a partir de ahí el cuerpo acelera. No hay ni un fotograma en el que el cuerpo se mueva sin
-  que el pie lo esté tocando.
-- **La patada no se corta a medias.** Se retargetiza también la **cadena de brazos, hombros, cuello y cabeza** (antes
-  los brazos se quedaban en la pose de andar y el héroe acababa encorvado con los brazos de zombi). Del 30 al 37 la
-  pose del último fotograma del clip (49) se **mezcla por slerp** con la pose de reposo del héroe, así que la
-  animación termina con el héroe de pie, normal.
-- **El cuerpo nunca se yergue del todo.** El Ojo es una criatura encorvada: tras el arranque se incorpora solo hasta
-  su postura natural (`OJO_K_REST` 0,45 = rodillas claramente dobladas + 6° de encorvamiento, `OJO_HUNCH`) y desde
-  ahí cae, en vez de ponerse de pie perfecto antes de recibir la patada.
-- **La cabeza de la mano es un objeto aparte colgado del hueso `RightHand`.** El modelo la trae como malla suelta
-  emparentada a la mano, así que sigue a la mano sola; en el fotograma 21 (cuando el cuerpo se va de espaldas) se
-  suelta: se hornea aparte y se anima su caída (impulso (0,9, 0,35, 0,25) m/s, giro sobre Z y frenada al tocar el
-  suelo), quedando junto al cadáver. *(En la vuelta anterior esta malla se ocultaba por error creyéndola un duplicado
-  del farol; era la cabeza que lleva en la mano.)*
-- **El farol no vuela:** al rozarlo el pie en el 19 sale un palmo, rueda y se para (desplazamiento amortiguado de
-  ~0,3 m; antes salía con parábola a 1,4 m/s y se iba de la celda).
-- **Escala y encuadre:** 38 px/m (exactamente la del remate del Exvoto en `generate_remate_sprites.py`) y celda de
-  96×96, que contiene el gesto en las 8 direcciones (tabla abajo).
-- **Punto de contacto:** se calcula con un pre-pase (se posa al héroe con el fotograma de contacto y se lee el pie).
-- **Manos sujetas por IK:** los objetivos se calculan sobre la jaula y siguen al farol mientras se lo lleva al pecho.
+| 11–17 | El Ojo, ya **incorporado y descabezado**, se tambalea; el héroe sube la pierna. |
+| **17** | **Contacto:** el pie del héroe toca el cuerpo del Ojo **y ese mismo fotograma arranca el desplome**. |
+| 17–29 | **Desplome:** clip `Falling Back Death` desde su fotograma 7 (el de la reacción). Se vuelca, abre los brazos y cae de espaldas; el 37 es el cadáver tendido. |
+| **21** | **Se le cae la cabeza de la mano:** cae al suelo entre los dos y rueda hasta pararse junto al cuerpo. |
+| 30–37 | El cuerpo queda muerto en el suelo, con la cabeza suelta a su lado y el farol arrancado delante. El héroe **recupera la pose** (la patada se mezcla de vuelta a su reposo). |
+| 38 | **Restos** (fotograma extra del bin, sin héroe): el cadáver que queda ~1 s parpadeando. |
 
 ## Evidencia
 
-- Las 8 direcciones para revisar: [`assets/ojo_remate_8dirs.html`](assets/ojo_remate_8dirs.html) (GIF 4x de cada una).
-- GIF por dirección: `assets/ojo_remate_d0_4x.gif` … `assets/ojo_remate_d7_4x.gif`.
-- Hoja comparativa del fotograma de contacto en las 8: [`assets/ojo_remate_contacto_8dirs.png`](assets/ojo_remate_contacto_8dirs.png)
-- Tira del desplome (fotogramas 17–31, 4x): [`assets/ojo_remate_desplome_4x.png`](assets/ojo_remate_desplome_4x.png)
-- Fotogramas 1x de cada dirección en `assets/dir_<d>/fNN.png`.
+- **La ejecución en la ROM real** (captura de DeSmuME del escenario, pantalla de juego, 4x):
+  [`assets/ojo_remate_rom_4x.gif`](assets/ojo_remate_rom_4x.gif).
+- **Las 8 direcciones para revisar** (GIF 4x por dirección, ya con el lab rápido):
+  [`assets/ojo_remate_8dirs.html`](assets/ojo_remate_8dirs.html).
+- GIF por dirección: [`assets/ojo_remate_d0_4x.gif`](assets/ojo_remate_d0_4x.gif) … `assets/ojo_remate_d7_4x.gif`.
+- Hoja del fotograma de contacto (17) en las 8:
+  [`assets/ojo_remate_contacto_8dirs.png`](assets/ojo_remate_contacto_8dirs.png).
+- Tira del desplome (fotogramas 16–31, 4x): [`assets/ojo_remate_desplome_4x.png`](assets/ojo_remate_desplome_4x.png).
+- Paquete del lab rápido (fotogramas 1x, sombras y settings) en `assets/lab_out/` (derivado, no versionado).
 
 ## Verificación
 
-- Agarrador: hueco de las manos 0,000 m en el fotograma 2.
-- Farol limpio: la pieza arrancada son 1.158 caras de la cabeza (sin un solo vértice de brazo, hombro ni mano).
-- Contacto: pie del héroe en (0,68, 0,17, 0,71) — dentro del cuerpo, a la altura de la cadera, en el fotograma 17.
-- Desplome: en el 17 la cadera del Ojo está a 0,61 m (de pie); en el 29 a 0,28 m y 0,44 m más atrás (x 0,72 → 1,16);
-  en el 37 el cuerpo queda tumbado de espaldas (cadera a 0,38 m), con la malla apoyada en el suelo
-  (se corrige la penetración fotograma a fotograma).
-- Recuperación: en el 37 el héroe vuelve a la pose de reposo exacta (cadera 0,47 m, cabeza 0,82 m, pie 0,09 m).
-- Encuadre en las 8 direcciones (caja de los personajes en píxeles de celda, 96×96, medido sobre los pases `lit`):
+- **ROM**: `DS_BUILD=PASS` (0 warnings) en la variante de producción y en `remate-sandbox`.
+- **Escenario nuevo** `scenarios/remate_transicion_ojo_cerca.json` (variante `remate-sandbox`, ROM real): el Ojo se
+  fuerza a tambaleo, se pulsa `L` y se capturan 189 frames; **PASS** (`en_state` 18 al empezar, `en_active` 0 al
+  terminar: el remate lo mata). Sin congelaciones (los fotogramas de la celda cambian uno a uno).
+- **Regresión**: `remate_transicion_exvoto_cerca`, `remate_transicion_exvoto_oeste` y
+  `remate_transicion_cireneo_norte` **PASS** con el cargador en streaming. (El de Cireneo destapó un fallo real del
+  streaming en el fotograma de restos —lectura fuera de rango— que está corregido en esta entrega.)
+- **Tests de host**: `test_guardrails`, `test_sprite_ground_anchor`, `test_blit_runs_contract` y el resto de la
+  batería **PASS**; fallan `test_bestiary_assets_contract` y `test_character_muzzle` porque el worktree no tiene los
+  paquetes de sprites sin versionar (`assets/sprites/characters/charger/settings.json`), un fallo de entorno que no
+  toca esta entrega.
+- **Memoria**: EWRAM 3,32/3,5 MiB, heap 181 KB (el bin del Ojo entero habría dejado 4 KB y roto la intro).
+- **Assets**: `nitrofiles/remate/ojo_d0..d7.bin` (1,2 MB los 8; el mayor, 206 KB) + `source/remate_sprites.c` y
+  `include/remate_sprites.h` regenerados con el generador.
 
-| dir | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 |
-| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| x | 10–82 | 0–91 | 17–83 | 35–72 | 14–86 | 5–96 | 13–79 | 24–61 |
-| y | 20–74 | 23–70 | 21–76 | 21–80 | 22–73 | 20–64 | 18–74 | 17–79 |
+## Pendiente / decisiones abiertas
 
-  El gesto cabe en la celda del Exvoto en las 8 direcciones: solo en 1 y 5 roza el borde (0,2 px, inapreciable). La caída,
-  bien aplicada, ocupa menos que en la vuelta anterior y **no hace falta celda nueva**.
-- **No se ha integrado en la ROM** (`remate_sprites.c` solo conoce Exvoto y Cireneo) ni se ha medido en la DS.
-  Es una ronda de diseño para aprobar el gesto.
-
-## Pendiente
-
-- Aprobación del gesto por el usuario y, si se aprueba, decisión de si la ejecución larga (38 fotogramas, ~2,3 s)
-  convive con la celda de 12 del Exvoto o el Ojo estrena su propia duración.
-- Enlace con la mecánica: el Ojo hoy no se remata (es el ancla que obliga a subir, §6.13.9), así que integrarlo
-  cambia la sala; decidir antes de programar.
+- **Duración**: 38×4 = 152 frames (~2,5 s) son el ritmo del GIF aprobado, pero es el doble de los ~1,2 s del
+  Exvoto/Cireneo. Es un número por tipo (`ticks` en `RemateKindInfo`): si en la DS se hace largo, bajar a 3 ticks.
+- **Balance**: el Ojo ahora tambalea y se puede rematar. Falta verlo en una sala real con el Cireneo guardándolo
+  (§6.13.9) y decidir si el tambaleo del tirador es demasiado generoso.
+- **Paridad lab rápido ↔ lab web** en secuencias GLB: no se pudo medir porque el lab web no descarta las chispas
+  aparcadas de los GLB (encuadre de 6,72 m → sprites vacíos). La referencia visual es la captura de la ROM.
+- El fotograma 0 del lab web sigue siendo defectuoso para Exvoto/Cireneo (se usa el 1 repetido); el lab rápido no
+  tiene ese problema y el Ojo usa su fotograma 0.
 
 ## Notas
 
-- Scripts: `tools/characters/ds_remate_ojo.py` (render por pases, los dos clips del inbox) y
-  `tools/characters/ds_remate_ojo_post.py` (composición 1x + GIF 4x + hoja + HTML).
-- Se regeneran los clips derivados del Ojo en el worktree con `build_ojo.py` (no se versionan).
-- Ninguno de los MDs de arquitectura cambia de cifras con esta entrega; sí se apunta el gesto en `DESIGN.md` §6.13.8
-  como prototipo pendiente de aprobación.
+- Scripts: `tools/characters/ds_remate_ojo.py` (escena + export GLB con `REMATE_GLB_DIR`),
+  `tools/lab/fast/export_scene_fast.cjs` (render de la secuencia GLB),
+  `tools/generate_remate_sprites.py` (empaquetado y C generado), `tools/remate_legacy.json` (datos congelados de
+  Exvoto/Cireneo).
+- Los GLB de la escena y el paquete del lab son **derivados** (no se versionan): se regeneran con los comandos de
+  arriba. Los dos clips del inbox **no se han movido, copiado ni borrado** (el usuario pidió no retirarlos).
+- Documentos actualizados: `DESIGN.md` §6.13.8 (ejecución del Ojo integrada y sus reglas), `TECHNICAL.md` §3 (lab
+  rápido con secuencias GLB y bins de remate en streaming, EWRAM 3,32), `assets/MANIFEST.md` (familia de remates),
+  `STATUS.md` y este walkthrough.

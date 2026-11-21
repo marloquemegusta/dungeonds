@@ -76,3 +76,6 @@ assets/models/environment/arenas/
 assets/sprites/levelup/
 assets/environment/cathedral/palette/*color_ds.png
 assets/environment/cathedral/palette/*color_regions.png
+
+# paquete del lab del remate del Ojo (derivado, se regenera con tools/lab/fast/export_scene_fast.cjs)
+walkthroughs/remate-ojo/assets/lab_out/

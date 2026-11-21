@@ -153,7 +153,7 @@ static void enemy_damage(Enemy *e, int damage, fixed hit_vx, fixed hit_vy, int q
         nocashMessage(msg);
 #endif
     } else if (!quiet) {
-        if ((e->type == ENEMY_TYPE_EXVOTO || e->type == ENEMY_TYPE_CHARGER) && e->hp * 2 <= e->max_hp &&
+        if ((e->type == ENEMY_TYPE_EXVOTO || e->type == ENEMY_TYPE_CHARGER || e->type == ENEMY_TYPE_SHOOTER) && e->hp * 2 <= e->max_hp &&
             (e->state == ENEMY_STATE_CHASE || e->state == ENEMY_STATE_ATTACK ||
              e->state == ENEMY_STATE_TELEGRAPH || e->state == ENEMY_STATE_CHARGE ||
              e->state == ENEMY_STATE_RECOVER || e->state == ENEMY_STATE_STUNNED ||

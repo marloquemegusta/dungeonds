@@ -41,6 +41,8 @@ ROOT, OUT, MODE = A_[0], A_[1], A_[2]
 TEST_F = A_[3] if len(A_) > 3 else '2'
 RAW = os.path.join(OUT, 'ds_ojo', 'raw')
 os.makedirs(RAW, exist_ok=True)
+# REMATE_GLB_DIR: modo escena para el lab (una malla horneada por fotograma, sin render de Blender).
+GLB_DIR = os.environ.get('REMATE_GLB_DIR')
 
 HEROFBX = ROOT + '/assets/models/characters/corazon/source/corazon.fbx'
 OJOFBX = ROOT + '/assets/models/characters/ojo/ojo_walk.fbx'
@@ -639,6 +641,7 @@ rip_glass = burst(8, NECK_P + V((0, 0, 0.05)), 1.6, 0.008, 22, MAT_GLASS)
 land_sparks = burst(8, LAND + V((0, 0, 0.05)), 0.9, 0.008, 33)
 kick_sparks = burst(14, IMPACT, 1.7, 0.009, 45)
 kick_glass = burst(6, IMPACT, 2.0, 0.007, 46, MAT_GLASS)
+SPARKS = rip_sparks + rip_glass + land_sparks + kick_sparks + kick_glass
 
 
 def pose_frame(i):
@@ -722,6 +725,44 @@ def render_passes(d, i, visible):
         o.hide_render = h
 
 
+# Escena para el lab: el enemigo (el Ojo) queda en el origen de mundo (el ancla del lab) y el heroe a -X, como en
+# los GLB del remate del Exvoto; el lab gira la camara para las 8 direcciones y hornea 1x + sombras.
+SCENE_OFF = Matrix.Translation(V((-OJO_X, -OJO_Y, 0.0)))
+
+
+def export_glb(path, slots):
+    """Una malla horneada por actor (sin piel ni armadura), en metros de mundo, para el lab rapido.
+    `slots` = [(nombre, objeto, visible)]: los actores ocultos se exportan igual (encogidos a 1e-5) para que todos los
+    fotogramas tengan la misma topologia y el rasterizador pueda compartir una sola malla por actor."""
+    update()
+    dg = bpy.context.evaluated_depsgraph_get()
+    tmp = []
+    for name, o, vis in slots:
+        if o is None or o.type != 'MESH':
+            continue
+        eo = o.evaluated_get(dg)
+        me = bpy.data.meshes.new_from_object(eo, preserve_all_data_layers=True, depsgraph=dg)
+        me.name = name
+        no = bpy.data.objects.new(name, me)
+        M = SCENE_OFF @ o.matrix_world.copy()
+        if not vis:
+            M = M @ Matrix.Scale(1e-5, 4)
+        no.matrix_world = M
+        bpy.context.scene.collection.objects.link(no)
+        tmp.append((no, me))
+    bpy.ops.object.select_all(action='DESELECT')
+    for no, _ in tmp:
+        no.select_set(True)
+    if tmp:
+        bpy.context.view_layer.objects.active = tmp[0][0]
+    bpy.ops.export_scene.gltf(filepath=path, export_format='GLB', use_selection=True,
+                              export_materials='EXPORT', export_yup=True,
+                              export_animations=False, export_apply=False)
+    for no, me in tmp:
+        bpy.data.objects.remove(no, do_unlink=True)
+        bpy.data.meshes.remove(me)
+
+
 DIRS = [int(x) for x in os.environ.get('DIRS', '0,1,2,3,4,5,6,7').split(',')]
 DIRBB = {}
 for _d in DIRS:
@@ -756,6 +797,18 @@ for i in frames:
             FREE_HEAD.matrix_world = head_hand_matrix(i)
     chars = [hero.mesh] + ([] if HERO_ONLY else [BODY_SKIN, HEAD_BAKED] + ([head_ob] if head_ob else []))
     vis = chars + [s.o for s in rip_sparks + rip_glass + land_sparks + kick_sparks + kick_glass]
+    if GLB_DIR:
+        os.makedirs(GLB_DIR, exist_ok=True)
+        slots = [(hero.mesh.name + '_baked', hero.mesh, True), ('body', BODY_SKIN, True), ('lantern', HEAD_BAKED, True)]
+        if head_ob is not None:
+            slots.append(('head', head_ob, True))
+        for _k, _sp in enumerate(SPARKS):
+            slots.append(('spark%02d' % _k, _sp.o, not _sp.o.hide_render))
+        export_glb(os.path.join(GLB_DIR, 'f%02d.glb' % i), slots)
+        if i == N_FRAMES - 1:   # fotograma de restos: cuerpo caido y farol, sin heroe ni chispas (como el Exvoto)
+            export_glb(os.path.join(GLB_DIR, 'f%02d.glb' % N_FRAMES),
+                       [(nm, ob, nm in ('body', 'lantern', 'head')) for nm, ob, _ in slots])
+        continue
     for d in DIRS:
         place_cam(CAM, CENTER, 45.0 - d * 45.0, 30.0, 1.0)
         _dg = bpy.context.evaluated_depsgraph_get()
