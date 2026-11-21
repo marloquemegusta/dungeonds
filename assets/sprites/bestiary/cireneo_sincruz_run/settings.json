@@ -1,0 +1,69 @@
+{
+  "name": "cireneo_sincruz_run",
+  "model": "cireneo_sincruz_run.fbx",
+  "animation": "run (0.67s)",
+  "directions": [
+    "S",
+    "SW",
+    "W",
+    "NW",
+    "N",
+    "NE",
+    "E",
+    "SE"
+  ],
+  "framesPerDirection": 16,
+  "frameSize": "160x160",
+  "spritesheet": {
+    "columns": 16,
+    "rows": 8,
+    "width": 2560,
+    "height": 1280,
+    "alpha": true
+  },
+  "anchor": [
+    80,
+    133
+  ],
+  "dirGroundAnchors": [
+    133,
+    133,
+    133,
+    133,
+    133,
+    133,
+    133,
+    133
+  ],
+  "shadowSize": [
+    320,
+    320
+  ],
+  "stride3dMeters": 1.342,
+  "strideRatio": 1.165,
+  "ticksPerFrame": 1,
+  "stridePixels": 186.47,
+  "speedFixed8_8": 106,
+  "inPlace": true,
+  "rigScale": 1,
+  "cameraElevationDegrees": 30,
+  "contrast": 1,
+  "saturation": 1,
+  "neckPitchDegrees": -35,
+  "displace": 0,
+  "brightness": 1,
+  "webglShadowQuality": 16,
+  "normalStrength": 0.5,
+  "shadowSoftness": 2,
+  "supersample": 4,
+  "legibility": "c2",
+  "boneShader": false,
+  "renderEngine": "Three.js WebGL (browser)",
+  "lightPreset": "neutral",
+  "outlineMode": "none",
+  "fitZoom": 0.9,
+  "measuredExtent": 1.3906839540648481,
+  "fitExtent": 1.872183561426501,
+  "normScale": 0.018199056080475513,
+  "toneMapping": "neutral"
+}

@@ -4492,6 +4492,8 @@ function applyInPlaceMotion(clips, enabled, model) {
 
 
 
+
+
 /* SPRITE-LAB-PARITY:START */
 /**
  * Minimal standalone GLB (GLTF 2.0 Binary) loader.
@@ -5240,6 +5242,14 @@ function applyInPlaceMotion(clips, enabled, model) {
     neckPitch: 0,
     // Anchor & Shadow state
     anchorData: null,
+    // Subconjunto de direcciones a renderizar (indices 0..7) o null = las 8. Lo fija el exportador headless (--dirs).
+    dirFilter: null,
+    // Direcciones realmente renderizadas en el ultimo render (null = las 8); state.frames las contiene en este orden.
+    renderedDirs: null,
+    // Pivote de luminancia C2 forzado (si no, mediana de los frames renderizados). Con subconjuntos fija el mismo aspecto que el render completo.
+    legibilityPivotOverride: null,
+    lastLegibilityPivot: null,
+    skipCHeader: false,
     shadowCanvas: null,
     shadowMasks4Bit: null,
     shadowBounds: null,
@@ -6271,7 +6281,9 @@ function applyInPlaceMotion(clips, enabled, model) {
   // Curva S suave en luminancia (pivote unico) + enfoque consciente del alfa. El alfa no se toca.
   function applyLegibilityC2(frames) {
     const gain = LEG_CURVE_GAIN;
-    const p = legibilityPivot(frames);
+    const p = (typeof state.legibilityPivotOverride === 'number' && isFinite(state.legibilityPivotOverride)) ? state.legibilityPivotOverride : legibilityPivot(frames);
+    state.lastLegibilityPivot = p;
+    console.log('[fit] legibility pivot ' + p);
     for (const f of frames) {
       const px = f.pixels, w = f.width, h = f.height;
       for (let i = 0; i < px.length; i += 4) {
@@ -6323,6 +6335,11 @@ function applyInPlaceMotion(clips, enabled, model) {
     app.rendering = true;
     state.frames = [];
     state.capturing = true;
+    // Subconjunto de direcciones (state.dirFilter): solo se renderizan esas; el encuadre sigue midiendo las 8 (mismo resultado por direccion).
+    const dirList = (Array.isArray(state.dirFilter) && state.dirFilter.length)
+      ? Array.from(new Set(state.dirFilter.map(Number))).filter(d => d >= 0 && d < Ff.length).sort((a, b) => a - b)
+      : Array.from({ length: Ff.length }, (_, d) => d);
+    state.renderedDirs = dirList.length === Ff.length ? null : dirList;
 
     if (state.mapGroup) state.mapGroup.visible = false;
     if (root) {
@@ -6427,7 +6444,8 @@ function applyInPlaceMotion(clips, enabled, model) {
         }
       }
       const results = [], firstFrames = [];
-      for (let direction = 0; direction < Ff.length; direction++) {
+      for (let dirRank = 0; dirRank < dirList.length; dirRank++) {
+        const direction = dirList[dirRank];
         const name = Ff[direction];
         const gifFrames = [];
         for (let index = 0; index < frameCount; index++) {
@@ -6453,7 +6471,7 @@ function applyInPlaceMotion(clips, enabled, model) {
           gifFrames.push(frame);
           if (index === 0) firstFrames.push(frame);
           onStatus && onStatus(name, index + 1, (performance.now() - started) / 1e3);
-          onProgress && onProgress((direction * frameCount + index + 1) / (Ff.length * frameCount));
+          onProgress && onProgress((dirRank * frameCount + index + 1) / (dirList.length * frameCount));
           if (index % 2 === 1) await new Promise(resolve => setTimeout(resolve, 0));
         }
         if (!deferGif) {
@@ -6466,10 +6484,11 @@ function applyInPlaceMotion(clips, enabled, model) {
         // C2: el pivote se calcula una vez sobre todos los frames; despues se rehacen GIFs y collage con los frames procesados.
         applyLegibilityC2(state.frames);
         firstFrames.length = 0;
-        for (let direction = 0; direction < Ff.length; direction++) {
+        for (let dirRank = 0; dirRank < dirList.length; dirRank++) {
+          const direction = dirList[dirRank];
           const gifFrames = [];
           for (let index = 0; index < frameCount; index++) {
-            const f = state.frames[direction * frameCount + index];
+            const f = state.frames[dirRank * frameCount + index];
             gifFrames.push(Bf(f.pixels, f.width, f.height, Vf));
           }
           firstFrames.push(gifFrames[0]);
@@ -6558,7 +6577,9 @@ function applyInPlaceMotion(clips, enabled, model) {
       dirBounds[d] = [0, 0, size, size];
     }
 
-    const hasFullFrames = frames.length === 8 * frameCount;
+    const rdList = state.renderedDirs; // null = las 8
+    const hasFullFrames = !rdList && frames.length === 8 * frameCount;
+    const hasSubsetFrames = !!rdList && frames.length === rdList.length * frameCount;
     const hasLiveFrames = state.liveDirCanvases && state.liveDirCanvases.length === 8;
 
     let totalGroundY = 0;
@@ -6573,6 +6594,9 @@ function applyInPlaceMotion(clips, enabled, model) {
         for (let f = 0; f < frameCount; f++) {
           framesToScan.push(frames[d * frameCount + f]);
         }
+      } else if (hasSubsetFrames) {
+        const rank = rdList.indexOf(d);
+        if (rank >= 0) for (let f = 0; f < frameCount; f++) framesToScan.push(frames[rank * frameCount + f]);
       } else if (hasLiveFrames && state.liveDirCanvases[d]) {
         framesToScan.push(state.liveDirCanvases[d]);
       }
@@ -6632,7 +6656,7 @@ function applyInPlaceMotion(clips, enabled, model) {
   // ---- Character Projected Shadow Generator (8 Directions x 8 Frames, Crisp Pixel-Art NDS Masks) ----
   function generateCharacterShadows() {
     // Headless exporters that only need sprites/anchors/muzzles skip the (slow) shadow atlas.
-    if (state.skipShadowGeneration) return;
+    if (state.skipShadowGeneration || state.renderedDirs) return; // subconjunto de direcciones: sin atlas de sombras
     const model = $.model;
     const root = $.modelRoot || model;
     const size = parseInt(_p.resolution?.value, 10) || 40;
@@ -6976,8 +7000,9 @@ function applyInPlaceMotion(clips, enabled, model) {
     if (!results?.length || getFrames().length === 0) throw new Error('Renderiza el modelo antes de exportar');
     const name = getSanitizedCharName();
     const zip = new Nf.default();
-    const atlas = await makeAtlas();
-    zip.file('spritesheet.png', atlas.blob);
+    const subset = state.renderedDirs; // null = las 8; si no, sin spritesheet, sombras ni cabecera C
+    const atlas = subset ? { blob: null, width: 0, height: 0 } : await makeAtlas();
+    if (atlas.blob) zip.file('spritesheet.png', atlas.blob);
     const collageBlob = ($.collage || state.collage)?.blob || results[0]?.blob;
     if (collageBlob) zip.file('collage.gif', collageBlob);
     const frameCount = parseInt(_p.frameCount.value, 10);
@@ -6985,11 +7010,11 @@ function applyInPlaceMotion(clips, enabled, model) {
 
     // Ensure anchorData and shadows are up-to-date
     if (!state.anchorData) computeAnchorData();
-    if (!state.shadowCanvas || !state.shadowMasks4Bit) generateCharacterShadows();
+    if (!subset && (!state.shadowCanvas || !state.shadowMasks4Bit)) generateCharacterShadows();
     const shadowSize = state.shadowSize || (size * 2);
 
     // Export shadow atlas (frameCount * shadowSize) x (8 * shadowSize)
-    if (state.shadowCanvas) {
+    if (!subset && state.shadowCanvas) {
       const shadowBlob = await new Promise(resolve => state.shadowCanvas.toBlob(resolve, 'image/png'));
       if (shadowBlob) zip.file('shadow.png', shadowBlob);
 
@@ -7009,15 +7034,18 @@ function applyInPlaceMotion(clips, enabled, model) {
     }
 
     // Export auto-generated NDS C header
-    const ndsCHeader = generateCShadowAnchorHeader(name, state.anchorData, state.shadowBounds, state.shadowMasks4Bit);
-    zip.file('nds_shadow_anchor.h', ndsCHeader);
+    if (!subset) {
+      const ndsCHeader = generateCShadowAnchorHeader(name, state.anchorData, state.shadowBounds, state.shadowMasks4Bit);
+      zip.file('nds_shadow_anchor.h', ndsCHeader);
+    }
 
+    const dirOrder = subset || Array.from({ length: Ff.length }, (_, d) => d);
     for (const direction of results) {
       zip.file(`dirs/${direction.index}_${direction.name}.gif`, direction.blob);
     }
     const framesList = getFrames();
     for (let index = 0; index < framesList.length; index++) {
-      const directionIndex = Math.floor(index / frameCount);
+      const directionIndex = dirOrder[Math.floor(index / frameCount)];
       const frameIndex = index % frameCount;
       const frame = framesList[index];
       const blob = await encodePng(frame);
@@ -7034,15 +7062,15 @@ function applyInPlaceMotion(clips, enabled, model) {
       model: cp.textContent,
       animation: _p.animSelect.selectedOptions[0]?.textContent || 'Pose estática',
       directions: Ff,
+      dirsRendered: subset ? subset.map(d => Ff[d]) : Ff.slice(),
       framesPerDirection: frameCount,
       frameSize: `${size}x${size}`,
-      spritesheet: { columns: frameCount, rows: Ff.length, width: atlas.width, height: atlas.height, alpha: true },
+      spritesheet: subset ? null : { columns: frameCount, rows: Ff.length, width: atlas.width, height: atlas.height, alpha: true },
       anchor: state.anchorData ? state.anchorData.anchor : [Math.round(size / 2), size - 4],
       dirGroundAnchors: state.anchorData ? state.anchorData.dirGroundAnchors : new Array(8).fill(size - 4),
       dirBounds: state.anchorData ? state.anchorData.dirBounds : new Array(8).fill([0, 0, size, size]),
       ...(state.anchorData?.dirMuzzle ? { dirMuzzle: state.anchorData.dirMuzzle } : {}),
-      shadowSize: [shadowSize, shadowSize],
-      shadowBounds: state.shadowBounds || new Array(8).fill([24, 24, 16, 16]),
+      ...(subset ? {} : { shadowSize: [shadowSize, shadowSize], shadowBounds: state.shadowBounds || new Array(8).fill([24, 24, 16, 16]) }),
       stride3dMeters: Number(stride.toFixed(3)),
       strideRatio: Number((state.strideRatio || 0.833).toFixed(3)),
       ticksPerFrame: ticks,
@@ -7061,6 +7089,7 @@ function applyInPlaceMotion(clips, enabled, model) {
       shadowSoftness: parseFloat(document.getElementById('labShadow')?.value || 2.0),
       supersample: state.supersample || 4,
       legibility: state.legibility || 'anterior',
+      ...(typeof state.lastLegibilityPivot === 'number' && state.legibility === 'c2' ? { legibilityPivot: state.lastLegibilityPivot } : {}),
       boneShader: state.boneMode,
       renderEngine: 'Three.js WebGL (browser)'
     };

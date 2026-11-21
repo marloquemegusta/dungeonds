@@ -25,6 +25,8 @@ Escritos contra `LORE.md`. Este archivo es la entrada directa del generador de v
   - **Props, fichas nuevas:** cualquier prop de `assets/videos/props/` por su nombre, con posición opcional: `vela delante`, `santo der`, `relicario izq`, `detrás`. Posición = en pantalla: `delante` es más cerca de cámara (se dibuja sobre el personaje, a sus pies), `detrás` más lejos; `izq`/`der` a su lado; sin posición, a la derecha. `vela apagada` (misma vela sin llama), `bancos volcados` (solo rotos y volcados, como tras un registro), `bancos en fila` (dos filas de bancos enteros a los lados del pasillo, fijas o desfilando con las columnas), `lápidas` (sueltas en el suelo, siempre bajo los personajes; desfilan si desfilan las columnas), `pasa <prop> [izq|der]` (el prop entra por arriba y sale por abajo durante el plano). `bancos`, `columnas`, `lápidas`, `general` y `lejos` fuerzan plano general. Con `columnas desfilan` el suelo sube si el personaje mira al sur y baja si mira al norte, y el personaje marcha a 1,6x. En partes `una vez` la animación se ajusta para acabar justo al final del plano.
   - **Fichas de cámara/multitud (2.ª vuelta del 08):** `sigue` (la frase continúa el plano de la anterior sin corte: se construye un solo plano con la suma de duraciones y cada frase muestra su tramo; el desfile y la fase del paso no saltan; la ficha de la primera frase define la escena); `altar` (relicario sobre tarima baja con 6 velas encendidas, centrado arriba al fondo, detrás de todo; no desfila: se aleja un 18 % y sube un poco durante el plano; `altar lejos` = el mismo, diminuto); `solemne` (en desfiles, marcha a 1,0x en vez de 1,6x); `alejar` arranca sin fundido de entrada; `entero` (con `cerca`: el personaje entero y centrado, a la mayor escala que quepa; sin él, `cerca` es un busto con zoom); `alejar` (zoom out lento, un solo plano: del encuadre cercano al personaje entero con todo lo que abre; úsalo con `una vez`); `multitud N` (N figuras en bloque de 3 carriles y N/3 filas, más grandes delante que detrás, que avanzan juntas hacia cámara a su paso natural, mezclando TODAS las animaciones de la parte: `### Parte 5 · exvoto_walk + exvoto_walk_b + monaguillo_walk`). Una parte puede llevar más de dos animaciones con `+`, pero solo `multitud` usa más de dos. `cerca` en un plano escenificado ajusta la escala para que el personaje quepa entero (sin cabeza cortada). `una vez` en un plano: la animación ocupa el 85 % del plano y se queda en su último fotograma. Sprites a más resolución (celda 320×320, p. ej. `abanderado_solo`, sin cortejo): el generador los encuadra a la misma altura que uno de 160. Naves (A/B): columnas a ±3,4 Elías (cada hilera entera y con margen al borde) con un hueco de negro entre una y la siguiente (4,6 Elías); bancos en fila dentro de la nave (±1,5), dos hileras densas (un banco tras otro con medio banco de hueco, separación = 1,5 alturas de banco) y con el pasillo central libre; en `multitud` las filas alternas se desplazan medio hueco y se separan más en profundidad; la vela se dibuja a 0,45 de escala (vela votiva real); `vela delante` = hacia donde mira el personaje (de espaldas queda entre él y el fondo, algo a su derecha para que asome).
   - **Estilo del vídeo** (línea `Estilo: A|B|C` bajo el título del guion; `--estilo` la sobrescribe): **A** negro puro, sin suelo, props a escala real del juego (por defecto); **B** como A con suelo insinuado (sombras del lab de personajes y props y un charco tenue de suelo de la catedral con viñeta radial hacia el negro, solo bajo el grupo); **C** escala metafórica (props al tamaño que tenían en la DS, columnas que se leen como pasillo), con los props nuevos más nítidos.
+  - **Fichas del 07 (Lope):** `medio` (plano de cintura para arriba; con `altar` lo dibuja detrás del personaje, a escala de plano general y sin recuadro negro, para no cortar el penacho); `multitud N` con dirección `N` y la primera animación como capitán (`abanderado_solo + monaguillo_walk`): el capitán va solo arriba a 2,3× y, detrás, la formación en bloque ordenado a 0,8×; `entero` con `cerca` en la parte `abanderado_derrota`. Citas lentas: `CHAR_SPEED` por personaje en `render_guiones.py` y `(pausa N)` en la frase.
+  - **Fichas del 04 (Liebre):** `negro` (plano en negro, solo con la cabecera y los subtítulos: para contar con sonido lo que no conviene enseñar); `sfx <archivo> [fin]` (efecto de sonido, ruta desde la raíz: al empezar la frase o, con `fin`, al acabarla, y la frase siguiente espera a que termine).
   - **Cambiar de personaje en la cita:** una parte propia solo con la cita, p. ej. `### Parte 3 · ojo_look · cortes` y `> [S] Gaspar: «…»`.
 - **Otros modos:** `girando` (da vueltas) o una dirección fija. Modificadores: `lento N`, `inverso`, `una vez` (se queda en el último fotograma), `ida y vuelta`.
 - **Ritmo de los trayectos:** por defecto `--paso natural` (anda a su ritmo, llega antes y sigue andando en el sitio); `--paso lento` estira el paso a todo el plano. También por plano con la ficha `natural`/`lento`.
@@ -43,7 +45,7 @@ Escritos contra `LORE.md`. Este archivo es la entrada directa del generador de v
 - Remedios: BFUc9BU4Tlk58ZBkwuS3
 - Jimena: archivo:assets/videos/voces/cita_jimena_muestra3.mp3
 - Aldonza: archivo:assets/videos/voces/cita_aldonza_muestra.mp3
-- Bartolomé: 5Nyqo2cUdr59EbFivYhz
+- Bartolomé: archivo:assets/videos/voces/bartolome_cita.mp3
 - Leonor: pCiVQwaEUl8YwVxKhOCd
 - Inés: archivo:assets/videos/voces/ines_cita.mp3
 - Íñigo: iHCoxvyy4J2mUw5uRJED
@@ -92,18 +94,29 @@ Estilo: A
 > [S] Jimena + Aldonza: «Nos mandaron rezar por nuestra alma. Rezamos la una por la otra.»
 
 ## 04 · CÓDICE · III — EL LIEBRE
-### Parte 1 · cireneo_walk · cortes
-- [cerca · S] El Tribunal le llamó cobarde por no disparar contra sus vecinos.
-- [E] Bartolomé Ruiz era el más rápido de la Columna. Le llamaban el Liebre.
-- [S] La noche de la Quiebra, una procesión de cera avanzó hacia las trincheras. En aquellos rostros reconoció a su pueblo.
-- [W] Bajó el fusil. Y corrió. Martín Arce se quedó atrás para cubrirle.
-### Parte 2 · cireneo_walk · cortes
-- [N] Le encontraron días después en Valdenoche, escondido en el desván de la madre de Martín.
-- [SW] El acta del Tribunal dice que volvió de rodillas y pidió que le clavaran la cruz a la espalda.
-- [cerca · S] El acta la escribió el Tribunal.
-### Parte 3 · cireneo_charge · cortes
-- [S] Desde entonces, el Liebre solo sabe correr en línea recta. Hacia quien le mira.
-> [cerca · S] Bartolomé: «Cobarde fue el que disparó.»
+Estilo: A
+### Parte 1 · cireneo_sincruz_triste · cortes
+- [cerca · entero · S] El Tribunal le llamó cobarde.
+### Parte 2 · cireneo_sincruz_run · cortes
+- [cerca · entero · E] Bartolomé Ruiz era el más rápido de la Columna. Le llamaban el Liebre.
+### Parte 3 · exvoto_walk + exvoto_walk_b · cortes
+- [S · multitud 9 · solemne] La noche de la Quiebra, una procesión de cera avanzó hacia las trincheras. En sus rostros vio a sus vecinos. A su familia. A sus amigos.
+### Parte 4 · cireneo_sincruz_triste · cortes
+- [cerca · entero · SW] Bajó el fusil.
+### Parte 5 · cireneo_sincruz_run · cortes
+- [cerca · entero · N] Y corrió.
+- [cerca · entero · N · sigue] Martín Arce, el soldado al que amaba, se quedó atrás para cubrirle.
+### Parte 6 · exvoto_walk · cortes · lento 1.5
+- [cerca · entero · S] Días después le encontraron en casa de Inés, la madre de Martín. No sabía que su hijo había muerto por él.
+### Parte 7 · cireneo_walk · cortes
+- [cerca · entero · S] La cruz la pidió él. Para no volver a huir.
+- [negro · sfx assets/videos/sfx/martillo_clavo.wav fin] Tadeo, el herrero, la clavó.
+- [negro] No ha vuelto a tocar un clavo.
+### Parte 8 · cireneo_charge · cortes
+- [cerca · entero · E] Desde entonces solo corre en línea recta. Hacia quien le mira.
+### Parte 9 · cireneo_walk · cortes
+> [cerca · entero · S] Bartolomé: «El cobarde fue el que disparó.»
+> Pregunta: «¿Cobarde… o el único valiente?»
 
 ## 05 · CÓDICE · IV — SOR LEONOR
 ### Parte 1 · ojo_walk · cortes
@@ -220,6 +233,8 @@ Publicados a 2026-11-17: **01, 03 y 08**, nada más. Los MP4 de 02, 04-07, 09 y 
 | :--- | :--- | :--- | :--- | :--- |
 | 01, 03, 08 (sin pregunta) | — | | | |
 | 02 Remedios | ¿Remedios robó a Dios… o hizo lo que Dios no hacía? | | | |
+| 07 Lope | ¿Habrías plantado tú cara al Tribunal? | | | |
+| 04 El Liebre | ¿Cobarde… o el único valiente? | | | |
 
 - **01 El Corazón Abierto** (2026-11-15): v1 con arranque en negro; v2 sin negro y frase fuerte primero; v3 recortada a 38 s. La v2 retuvo algo mejor que la v3.
 - **03 Jimena y Aldonza** (2026-11-16): primera versión con puesta en escena plano a plano y paso natural. Es el modelo para los siguientes.
@@ -261,6 +276,47 @@ Publicados a 2026-11-17: **01, 03 y 08**, nada más. Los MP4 de 02, 04-07, 09 y 
     >
     > #Shorts #pixelart #nintendods #gamedev #darkfantasy
   - **Comentario fijado (en las tres redes):** «¿Remedios robó a Dios… o hizo lo que Dios no hacía?»
+- **07 Lope** (lista 2026-11-19, sin publicar): `assets/videos/lore01_07_lope.mp4`, estilo A, 88,3 s (el usuario no quiere recortarlo). Animación nueva `abanderado_derrota` (el estandarte cae al suelo cuando arde Lope; Íñigo se derrumba, golpea el suelo y recoge el asta); el Ojo aparece como el Tribunal; los monaguillos solo en el plano de la Columna. Textos de los posts:
+  - **Título (YouTube y portada):** «Íñigo y Lope · Códice». Alternativa: «¿Habrías plantado cara al Tribunal? · Códice».
+  - **TikTok e Instagram:**
+    > ¿Habrías plantado tú cara al Tribunal?
+    >
+    > Íñigo Albar era capitán y pudo salvar a Lope. Bastaba con decir «yo también le amo».
+    > Calló para conservar el mando, y Lope ardió en la plaza. Ahora cose a su estandarte la mortaja de cada caído.
+    >
+    > Deja tu veredicto en los comentarios.
+    > Próximamente en tu Nintendo DS.
+    >
+    > #pixelart #nintendods #gamedev #indiedev #darkfantasy #gothic #lore #homebrew
+  - **Descripción de YouTube:**
+    > ¿Habrías plantado tú cara al Tribunal? El capitán Íñigo Albar juró que el estandarte de la Columna de Lázaro jamás tocaría el suelo. Cuando el Tribunal de la Luz fue a por su alférez Lope de Ayala, Íñigo tenía rango para exigir una excepción y no se atrevió. Calló para conservar el mando, y Lope ardió. Hoy cose a la tela la mortaja de cada caído, para que nadie se quede atrás.
+    >
+    > Deja tu veredicto en los comentarios.
+    > Próximamente en tu Nintendo DS.
+    >
+    > #Shorts #pixelart #nintendods #gamedev #darkfantasy
+  - **Comentario fijado (en las tres redes):** «¿Habrías plantado tú cara al Tribunal?»
+
+- **04 El Liebre** (lista 2026-11-20, sin publicar): `assets/videos/lore01_04_el_liebre.mp4`, estilo A, 74,7 s (la historia acaba a los 60 s; el resto es la pregunta y el cierre). Versión simplificada tras 9 pruebas fallidas: solo animaciones que ya funcionaban (Mixamo tal cual y las del juego), sin poses montadas a mano; lo que no se puede animar bien se cuenta con otro personaje (Inés), con el resultado (Bartolomé ya en la cruz) o con sonido sobre negro (el martillo de Tadeo). Todos los planos de personaje a cuerpo entero. Textos de los posts:
+  - **Título (YouTube y portada):** «El Liebre · Códice». Alternativa: «¿Cobarde o el único valiente? · Códice».
+  - **TikTok e Instagram:**
+    > ¿Cobarde… o el único valiente?
+    >
+    > La noche de la Quiebra, Bartolomé Ruiz vio a sus vecinos avanzar hacia las trincheras y bajó el fusil.
+    > Huyó. Martín, el soldado al que amaba, murió cubriéndole. La cruz que hoy carga la pidió él, para no volver a huir.
+    >
+    > Deja tu veredicto en los comentarios.
+    > Próximamente en tu Nintendo DS.
+    >
+    > #pixelart #nintendods #gamedev #indiedev #darkfantasy #gothic #lore #homebrew
+  - **Descripción de YouTube:**
+    > ¿Cobarde… o el único valiente? Bartolomé Ruiz, el Liebre, era el más rápido de la Columna de Lázaro. La noche de la Quiebra, una procesión de cera avanzó hacia las trincheras y en sus rostros reconoció a su pueblo. Se negó a disparar y corrió. Martín Arce, el soldado al que amaba, se quedó atrás para cubrirle. Le encontraron escondido en casa de Inés, la madre de Martín. El Tribunal le llamó cobarde; la cruz la pidió él. Tadeo, el herrero, la clavó, y no ha vuelto a tocar un clavo.
+    >
+    > Deja tu veredicto en los comentarios.
+    > Próximamente en tu Nintendo DS.
+    >
+    > #Shorts #pixelart #nintendods #gamedev #darkfantasy
+  - **Comentario fijado (en las tres redes):** «¿Cobarde… o el único valiente?»
 
 ## Calendario: un vídeo al día, más cuidado
 
@@ -270,7 +326,7 @@ Regla: **nunca el mismo personaje en pantalla dos días seguidos**, y los vídeo
 | :--- | :--- | :--- | :--- | :--- |
 | 1 | 08 La Catedral que no termina | Corazón Abierto | Guion reescrito (la Marcha y la guerra contra el propio pueblo); Elías reza y enciende una vela; columnas y bancos que desfilan; apariciones del Abanderado, los exvotos y el Ojo | — |
 | 2 | 02 Remedios, la cerera | Exvoto | Reza de rodillas entre velas y se levanta | — |
-| 3 | 07 Lope | Abanderado | Íñigo se tapa la cara | *Crying* de Mixamo |
+| 3 | 07 Lope | Abanderado | Íñigo suelta el asta, se derrumba y golpea el suelo (`abanderado_derrota`); el Ojo como el Tribunal; la Columna de monaguillos | — (hecho) |
 | 4 | 05 Sor Leonor | Gaspar humano → el Ojo | Gaspar con su cabeza y el farol en la mano, que acaba convertido en el Ojo | Modelo 3D de Gaspar humano |
 | 5 | 06 Inés | Exvoto | Anda triste, se arrodilla ante una vela | — |
 | 6 | 04 El Liebre | Bartolomé → Cireneo | Bartolomé sin cruz y su crucifixión | Modelo sin cruz y la cruz aparte |

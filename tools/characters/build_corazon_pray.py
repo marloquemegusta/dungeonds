@@ -15,13 +15,28 @@ Los FBX intermedios pesan ~6 MB cada uno y no hay que versionarlos.
 """
 import os, sys
 
-MS = {'rezar': 130, 'levantarse': 290}   # ms por fotograma del GIF (el bucle de rezar ~2,1 s; levantarse ~7 s)
-WALK_EXTENT = 1.8619977081714065   # extent de encuadre de corazon_walk (lo imprime export_character_headless.cjs como FIT)
+# Parametros por entorno (por defecto, corazon; sin variables se genera lo mismo que antes):
+#   PRAY_CHAR     personaje: rig fuente, carpeta de modelos y norm (default corazon)
+#   PRAY_SRC      FBX del rig (default assets/models/characters/<PRAY_CHAR>/source/<PRAY_CHAR>.fbx)
+#   PRAY_TEMPLATE settings.json de plantilla del andar (default assets/sprites/bestiary/corazon_walk/settings.json)
+#   PRAY_FITZOOM  fitZoom de la plantilla (default 1.0)
+#   PRAY_EXTENT   extent de encuadre (default WALK_EXTENT)
+#   PRAY_GROUND_Y fila del suelo en el sprite (default 142)
+#   PRAY_PREFIX   prefijo de FBX y carpeta del sprite (default <PRAY_CHAR>)
+#   PRAY_NAME     nombre de salida de un solo clip (con --only), p. ej. rezar para el clip arrodillarse
+CHAR = os.environ.get('PRAY_CHAR', 'corazon')
+PREFIX = os.environ.get('PRAY_PREFIX', CHAR)
+GROUND_Y = int(os.environ.get('PRAY_GROUND_Y', 142))
+
+MS = {'rezar': 130, 'levantarse': 290, 'arrodillarse': 290}   # ms por fotograma del GIF (el bucle de rezar ~2,1 s; levantarse ~7 s)
+WALK_EXTENT = float(os.environ.get('PRAY_EXTENT', '1.8619977081714065'))   # extent de encuadre de corazon_walk (lo imprime export_character_headless.cjs como FIT)
 
 CLIPS = {
-    # nombre: (fbx de animacion, fotogramas por direccion, ticks por fotograma, bucle)
-    'rezar': ('pray_kneeling.fbx', 16, 5, True),
-    'levantarse': ('pray_kneel_to_stand.fbx', 24, 11, False),
+    # nombre: (fbx de animacion, fotogramas por direccion, ticks por fotograma, bucle, invertido)
+    'rezar': ('pray_kneeling.fbx', 16, 5, True, False),
+    'levantarse': ('pray_kneel_to_stand.fbx', 24, 11, False, False),
+    # de pie a de rodillas: el clip de levantarse al reves (acaba arrodillado y se queda ahi)
+    'arrodillarse': ('pray_kneel_to_stand.fbx', 24, 11, False, True),
 }
 
 try:
@@ -39,13 +54,14 @@ def blender_main(root):
     def find(rel):
         return os.path.join(root, rel)
 
-    char_fbx = find('assets/models/characters/corazon/source/corazon.fbx')
-    out_dir = os.path.join(root, 'assets/models/characters/corazon')
+    char_fbx = find(os.environ.get('PRAY_SRC', 'assets/models/characters/%s/source/%s.fbx' % (CHAR, CHAR)))
+    out_dir = os.path.join(root, 'assets/models/characters', CHAR)
     only = os.environ.get('PRAY_ONLY')
-    for name, (anim, nframes, _t, loop) in CLIPS.items():
+    for name, (anim, nframes, _t, loop, rev) in CLIPS.items():
         if only and only != name:
             continue
         nframes = int(os.environ.get('PRAY_FRAMES', nframes))
+        outname = os.environ.get('PRAY_NAME', name)
         bpy.ops.wm.read_factory_settings(use_empty=True)
         bpy.ops.import_scene.fbx(filepath=char_fbx)
         arm = [o for o in bpy.data.objects if o.type == 'ARMATURE'][0]
@@ -101,7 +117,10 @@ def blender_main(root):
                 t = i / nframes                            # el ultimo clave repite el primero (bucle)
             else:
                 t = min(i, nframes - 1) / (nframes - 1)    # el fotograma N-1 es la pose final; el cierre la mantiene
-            poses.append(sample(f0 + t * (f1 - f0)))
+            if rev:
+                poses.append(sample(f1 - t * (f1 - f0)))
+            else:
+                poses.append(sample(f0 + t * (f1 - f0)))
         if loop:
             poses[-1] = poses[0]
         action = bpy.data.actions.new(name)
@@ -121,7 +140,7 @@ def blender_main(root):
         for o in [arm] + meshes:
             o.select_set(True)
         bpy.context.view_layer.objects.active = arm
-        path = os.path.join(out_dir, 'corazon_%s.fbx' % name)
+        path = os.path.join(out_dir, '%s_%s.fbx' % (PREFIX, outname))
         bpy.ops.export_scene.fbx(
             filepath=path, use_selection=True, object_types={'ARMATURE', 'MESH'}, use_mesh_modifiers=False,
             add_leaf_bones=False, path_mode='COPY', embed_textures=True, bake_anim=True, bake_anim_use_all_bones=True,
@@ -145,23 +164,24 @@ def launcher():
     if a.frames: env['PRAY_FRAMES'] = str(a.frames)
     if not a.skip_blender:
         subprocess.run([blender, '-b', '-P', os.path.abspath(__file__), '--', root], check=True, env=env)
-    tpl = json.load(open(os.path.join(root, 'assets/sprites/bestiary/corazon_walk/settings.json'), encoding='utf-8'))
-    for name, (_a, nframes, ticks, _l) in CLIPS.items():
+    tpl = json.load(open(os.path.join(root, os.environ.get('PRAY_TEMPLATE', 'assets/sprites/bestiary/corazon_walk/settings.json')), encoding='utf-8'))
+    for name, (_a, nframes, ticks, _l, _r) in CLIPS.items():
         if a.only and a.only != name:
             continue
         nframes = a.frames or nframes
+        outname = os.environ.get('PRAY_NAME', name)
         t = dict(tpl); t['ticksPerFrame'] = ticks; t['animation'] = name
-        tmp = os.path.join(tempfile.gettempdir(), 'corazon_%s_tpl.json' % name)
+        tmp = os.path.join(tempfile.gettempdir(), '%s_%s_tpl.json' % (PREFIX, name))
         with open(tmp, 'w', encoding='utf-8', newline='') as f:
             json.dump(t, f)
-        fbx = os.path.join(root, 'assets/models/characters/corazon/corazon_%s.fbx' % name)
-        out = os.path.join(root, 'assets/sprites/bestiary/corazon_%s' % name)
+        fbx = os.path.join(root, 'assets/models/characters', CHAR, '%s_%s.fbx' % (PREFIX, outname))
+        out = os.path.join(root, 'assets/sprites/bestiary/%s_%s' % (PREFIX, outname))
         # misma escala px/metro que corazon_walk: --fitExtent WALK_EXTENT con fitZoom 1, una sola pasada
-        t['fitZoom'] = 1.0
+        t['fitZoom'] = float(os.environ.get('PRAY_FITZOOM', '1.0'))
         with open(tmp, 'w', encoding='utf-8', newline='') as f:
             json.dump(t, f)
         r = subprocess.run(['node', os.path.join(root, 'tools/lab/export_character_headless.cjs'), fbx, out,
-                            '--template', tmp, '--resolution', '160', '--frames', str(nframes), '--fitZoom', '1',
+                            '--template', tmp, '--resolution', '160', '--frames', str(nframes), '--fitZoom', str(t['fitZoom']),
                             '--fitExtent', repr(WALK_EXTENT), '--anim', name, '--legibility', 'c2'] + norm_args(root), check=True, capture_output=True, text=True)
         print(name, [l for l in r.stdout.splitlines() if l.startswith(('FIT ', 'WARNING'))])
         align(out, MS[name])
@@ -171,7 +191,7 @@ def norm_args(root):
     """--normScale del walk (corazon): el exportador lo guarda en assets/sprites/characters/corazon/settings.json al renderizar
     el walk (rebuild_all.py --only lab,characters --char corazon). Sin el, un clip que empieza de rodillas se reescala."""
     import json
-    p = os.path.join(root, 'assets/sprites/characters/corazon/settings.json')
+    p = os.path.join(root, 'assets/sprites/characters/%s/settings.json' % CHAR)
     ns = json.load(open(p, encoding='utf-8')).get('normScale') if os.path.exists(p) else None
     if not ns:
         raise SystemExit('falta normScale en %s: renderiza antes el walk con rebuild_all.py' % p)
@@ -186,7 +206,7 @@ def align(out, dur):
     dirs = ['0_S', '1_SW', '2_W', '3_NW', '4_N', '5_NE', '6_E', '7_SE']
     for k, d in enumerate(dirs):
         ax, ay = st['anchor'][0], st['dirGroundAnchors'][k]
-        dx, dy = 80 - ax, 142 - ay
+        dx, dy = 80 - ax, GROUND_Y - ay
         path = os.path.join(out, 'dirs', d + '.gif')
         im = Image.open(path)
         frames = []
@@ -196,7 +216,7 @@ def align(out, dur):
             canvas = Image.new('RGB', fr.size, bg); canvas.paste(fr, (dx, dy))
             frames.append(canvas.convert('P', palette=Image.ADAPTIVE, colors=256))
         frames[0].save(path, save_all=True, append_images=frames[1:], duration=dur, loop=im.info.get('loop', 0), disposal=1)
-    st['anchor'] = [80, 142]; st['dirGroundAnchors'] = [142] * 8
+    st['anchor'] = [80, GROUND_Y]; st['dirGroundAnchors'] = [GROUND_Y] * 8
     st.pop('dirBounds', None); st.pop('shadowBounds', None)
     with open(os.path.join(out, 'settings.json'), 'w', encoding='utf-8', newline='') as f:
         json.dump(st, f, indent=2); f.write('\n')
