@@ -98,6 +98,9 @@ def step_characters(
         chars_to_export = all_chars
 
     script_path = ROOT / "tools" / "lab" / "export_character_headless.cjs"
+    # Default: exporter without browser (tools/lab/fast); same CLI and package. DS_FAST_RENDER=0 forces the slow web lab.
+    if os.environ.get("DS_FAST_RENDER", "1") != "0":
+        script_path = ROOT / "tools" / "lab" / "fast" / "export_character_fast.cjs"
     if not script_path.exists():
         print(f"ERROR: {script_path} not found", file=sys.stderr)
         sys.exit(1)
