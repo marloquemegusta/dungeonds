@@ -332,13 +332,13 @@ def burst(tag, n, origin, speed, size, seed, mat=None):
 # ----------------------------------------------------------------------------------------------- secuencia
 # fotograma de la celda -> fotograma del clip de patada (30 fps). Se avanza ~2 fotogramas de clip por celda
 # (0,06 s), asi la patada se juega a velocidad casi natural.
-KICK_MAP = {8: 13, 9: 15, 10: 17, 11: 19, 12: 21, 13: 23, 14: 25, 15: 27, 16: 29, 17: 31,
-            18: 33, 19: 37, 20: 41, 21: 45, 22: 49, 23: 53}
-CONTACT_PREVIEW = 18
+KICK_MAP = {i: 13 + 2 * (i - 7) for i in range(7, 20)}       # arranque y bajada, ~natural
+KICK_MAP.update({i: 37 + 2 * (i - 20) for i in range(20, 26)})  # acompanamiento
+CONTACT_PREVIEW = 18          # clip 35: el pie entra al cuerpo del Ojo, a la altura de la rodilla/cadera
 RIP_F = 4
 RELEASE_F = 6
 LAND_F = 8
-N_FRAMES = 24
+N_FRAMES = 26
 
 
 def hp_for(i):
@@ -360,21 +360,23 @@ def hp_for(i):
 
 place_cam(CAM, CENTER, 45.0, 30.0, 1.0)
 
-# pre-pase: punto de contacto del pie para colocar el farol en el suelo
+# pre-pase: punto del impacto (pie extendido en el fotograma de contacto) para las chispas y el farol
 _off0 = kick_hips_offset(KICK_MAP[CONTACT_PREVIEW])
 hero_pose(dict(hx=HX0 + 0.16 + _off0.x, hy=_off0.y, dz=_off0.z, hbase=('hero_walk', 1), pin=True),
           kick_f=KICK_MAP[CONTACT_PREVIEW])
 FOOT_HIT = hero.arm.matrix_world @ hero.arm.pose.bones[P + 'RightFoot'].head
-print('FOOT CONTACT', tuple(round(x, 3) for x in FOOT_HIT))
-LAND = V((FOOT_HIT.x, FOOT_HIT.y, 0.0))
+IMPACT = V((FOOT_HIT.x, FOOT_HIT.y, 0.0))
+print('IMPACT', tuple(round(x, 3) for x in IMPACT))
+# el farol se tira delante del heroe; la patada entra al cuerpo en el 17 y, al bajar, roza el farol en el 21
+LAND = V((0.44, -0.06, 0.0))
+LANTERN_KICK_F = 19
 print('LAND', tuple(round(x, 3) for x in LAND))
 
-sparks = []
 rip_sparks = burst('rip', 12, NECK_P + V((0, 0, 0.03)), 1.25, 0.011, 21)
 rip_glass = burst('ripg', 8, NECK_P + V((0, 0, 0.05)), 1.6, 0.008, 22, MAT_GLASS)
 land_sparks = burst('land', 8, LAND + V((0, 0, 0.05)), 0.9, 0.008, 33)
-kick_sparks = burst('kick', 14, LAND + V((0, 0, 0.06)), 1.7, 0.009, 45)
-kick_glass = burst('kickg', 6, LAND + V((0, 0, 0.08)), 2.0, 0.007, 46, MAT_GLASS)
+kick_sparks = burst('kick', 14, IMPACT + V((0, 0, 0.12)), 1.7, 0.009, 45)
+kick_glass = burst('kickg', 6, IMPACT + V((0, 0, 0.14)), 2.0, 0.007, 46, MAT_GLASS)
 
 # vuelo del farol: de la mano (fotograma RELEASE_F) al suelo (LAND_F) al punto de contacto
 C0 = LANTERN_C.copy()
@@ -414,12 +416,12 @@ def lantern_matrix(i):
         c = REL_C + V_FLY * t + V((0, 0, -0.5 * G_ * t * t))
         rot = Matrix.Rotation(math.radians(90.0 - 380.0 * t), 4, 'Y')
         return Matrix.Translation(c) @ rot @ Matrix.Translation(-C0)
-    if i < CONTACT_PREVIEW:
+    if i < LANTERN_KICK_F:
         # reposa en el suelo
         c = V((LAND.x, LAND.y, REST_DZ))
         return Matrix.Translation(c) @ REST_ROT @ Matrix.Translation(-C0)
-    # pateado: vuela y rueda
-    t = (i - CONTACT_PREVIEW) * DT
+    # rozado por el pie al bajar: sale a ras y rueda
+    t = (i - LANTERN_KICK_F) * DT
     c = V((LAND.x, LAND.y, REST_DZ)) + V_KICK * t + V((0, 0, -0.5 * G_ * t * t))
     if c.z < REST_DZ:
         c = V((c.x, c.y, REST_DZ))
@@ -437,6 +439,10 @@ def body_sway(i):
     return xform_about(BODY_FEET, s, f, 0)
 
 
+# el desplome empieza EN el impacto y acelera: el 18 es el golpe, del 19 al 25 cae
+FALL_DEG = {18: 0.0, 19: 11.0, 20: 36.0, 21: 62.0, 22: 77.0, 23: 83.0, 24: 85.0, 25: 86.0}
+
+
 def body_matrix(i):
     """Aguanta de pie (tambaleandose) hasta que llega la patada; entonces se desploma."""
     if i < RIP_F:
@@ -445,10 +451,12 @@ def body_matrix(i):
         return xform_about(BODY_FEET, 0.0, -3.0, 0.0)
     if i < CONTACT_PREVIEW:
         return body_sway(i)
-    # la patada lo tumba: se vuelca hacia atras y se apoya en el suelo
-    k = min(1.0, (i - CONTACT_PREVIEW + 1) / 5.0)
-    fall = xform_about(BODY_PIVOT, -10.0 * k, 76.0 * k, 0, (0.24 * k, 0.10 * k, 0.0))
+    tilt = FALL_DEG.get(i, 83.0)
+    k = tilt / 83.0
+    fall = xform_about(BODY_PIVOT, -10.0 * k, tilt, 0, (0.24 * k, 0.10 * k, 0.0))
     M = fall @ body_sway(CONTACT_PREVIEW - 1)
+    if i == CONTACT_PREVIEW:
+        M = Matrix.Translation((0, 0, -0.025)) @ M     # el golpe le hunde las piernas, aun de pie
     STUMP.matrix_world = M
     update()
     dg = bpy.context.evaluated_depsgraph_get()
@@ -482,27 +490,32 @@ def pose_frame(i):
     return {}
 
 
-def render_passes(i, visible):
+def render_passes(d, i, visible):
     sc = bpy.context.scene
     sh = sc.display.shading
+    raw = os.path.join(RAW, 'raw_d%d' % d)
     for o in visible:
         o.hide_render = False
     if SHADOW['ob'] is not None:
         SHADOW['ob'].hide_render = True
     sh.light = 'STUDIO'
-    render_to(os.path.join(RAW, 'f%02d_lit.png' % i))
+    render_to(os.path.join(raw, 'f%02d_lit.png' % i))
     sh.light = 'FLAT'
-    render_to(os.path.join(RAW, 'f%02d_flat.png' % i))
+    render_to(os.path.join(raw, 'f%02d_flat.png' % i))
     hid = [(o, o.hide_render) for o in visible]
     for o, _ in hid:
         o.hide_render = True
     if SHADOW['ob'] is not None:
         SHADOW['ob'].hide_render = False
-        render_to(os.path.join(RAW, 's%02d.png' % i))
+        render_to(os.path.join(raw, 's%02d.png' % i))
         SHADOW['ob'].hide_render = True
     for o, h in hid:
         o.hide_render = h
 
+
+DIRS = [int(x) for x in os.environ.get('DIRS', '0,1,2,3,4,5,6,7').split(',')]
+for _d in DIRS:
+    os.makedirs(os.path.join(RAW, 'raw_d%d' % _d), exist_ok=True)
 
 frames = [int(x) for x in str(TEST_F).split(',')] if MODE == 'test' else list(range(N_FRAMES))
 for i in frames:
@@ -529,10 +542,14 @@ for i in frames:
         _kn = hero.arm.matrix_world @ hero.arm.pose.bones[P + 'RightLeg'].head
         print('  KICK clip', KICK_MAP[i], 'ankle', tuple(round(x, 3) for x in _rf),
               'toe', tuple(round(x, 3) for x in _rt), 'knee', tuple(round(x, 3) for x in _kn))
-    build_shadow(vis, mat=MAT_BLACK)
-    render_passes(i, vis)
+    for d in DIRS:
+        # la pareja se queda quieta y giran la camara y el sol: equivale a rotar el remate bajo una luz fija
+        place_cam(CAM, CENTER, 45.0 - d * 45.0, 30.0, 1.0)
+        _t = math.radians(-d * 45.0)
+        _lib.LIGHT_DIR = V((math.cos(_t), math.sin(_t)))
+        build_shadow(vis, mat=MAT_BLACK)
+        render_passes(d, i, vis)
     from bpy_extras.object_utils import world_to_camera_view
     _co = world_to_camera_view(bpy.context.scene, CAM, V((0, 0, 0)))
-    print('FRAME', i, 'gaps', gaps, 'feet_px', (round(_co.x * 96, 1), round((1 - _co.y) * 96, 1)),
-          'lantern', tuple(round(x, 3) for x in LANTERN.matrix_world.to_translation()))
-print('OK', frames, 'cell', CELL)
+    print('FRAME', i, 'gaps', gaps, 'feet_px', (round(_co.x * 96, 1), round((1 - _co.y) * 96, 1)))
+print('OK', frames, 'dirs', DIRS, 'cell', CELL)
