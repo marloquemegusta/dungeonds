@@ -56,9 +56,18 @@ Vídeo final `assets/videos/lore01_04_el_liebre.mp4` (74,1 s, con voz; la histor
 
 Lo generalizado está en la regla 10 de la skill `codice-lore-video`. Sin revisión de código de los cambios del generador y del lab. `DESIGN.md` y `TECHNICAL.md` no cambian.
 
+## 09 Los monaguillos (2026-11-21)
+
+Vídeo final `assets/videos/lore01_09_los_monaguillos.mp4` (57,8 s, con voz). Tira: [`lore01_09_los_monaguillos_tira.png`](assets/lore01_09_los_monaguillos_tira.png). Pregunta final: «¿Habrías hablado tú, sabiendo el castigo?».
+
+1. **Guion:** el borrador no tenía pregunta moral; se añadió y la cita pasó a un plano propio del monaguillo (en la primera prueba salía con Íñigo en primer plano).
+2. **Correcciones del usuario:** el plano de «Aún marchan tras él» era un primer plano cortado del Abanderado, sin monaguillos. Quedó como marcha de espaldas tras Íñigo y, para no repetir la animación, una segunda marcha de frente hacia cámara solo con monaguillos (con dos animaciones y de frente el generador mezcla todas y salían casi todo abanderados).
+3. **Decisión de producción:** no se hace Gaspar humano para el 05; los personajes salen siempre como condenados recreando su pasado (`lote-01.md`, calendario y regla de imagen).
+4. **No verificado:** nadie ha escuchado el audio final. `DESIGN.md`, `TECHNICAL.md`, `LORE.md` y `assets/MANIFEST.md` no cambian; el generador no se toca.
+
 ## Pendiente
 
-- Vídeos 05, 06, 09 y 10: guiones reescritos con arranque fuerte y puesta en escena; probados sin voz, sin generar con voz. Los MP4 antiguos de esos números no se versionan.
+- Vídeos 05, 06 y 10: guiones reescritos con arranque fuerte y puesta en escena; probados sin voz, sin generar con voz. Los MP4 antiguos de esos números no se versionan.
 - Capa de props en el generador (velas, columnas que desfilan) para el día 1 del calendario.
 - Lore del Campanero y destino del padre Anselmo (`LORE.md` §9).
 - Voces con efecto de radio (Remedios): sustituir por recortes de su muestra si molestan.
