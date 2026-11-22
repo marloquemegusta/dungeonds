@@ -1,0 +1,333 @@
+{
+ "name": "arpg_menus_inicio_inventario",
+ "description": "Recorrido de captura: titulo, Controles, Codice, intro, campamento (pausa, arcon, atril, jergon), sala 1, pausa de mazmorra y muerte. Solo evidencia.",
+ "suite": false,
+ "evidence_only": true,
+ "state": {
+  "elf": "../.ds-game-dev/build/out/dungeonds.elf",
+  "symbols": {
+   "pl": "s_player"
+  },
+  "default_symbol": "pl",
+  "fields": {
+   "px": {
+    "symbol": "pl",
+    "offset": 0,
+    "type": "s32"
+   },
+   "py": {
+    "symbol": "pl",
+    "offset": 4,
+    "type": "s32"
+   }
+  }
+ },
+ "steps": [
+  {
+   "frames": 90,
+   "capture": "a01_titulo"
+  },
+  {
+   "tap": {
+    "x": 128,
+    "y": 124
+   },
+   "frames": 6
+  },
+  {
+   "release": true,
+   "frames": 20,
+   "capture": "a02_titulo_controles"
+  },
+  {
+   "button_down": "B",
+   "frames": 4
+  },
+  {
+   "button_up": "B",
+   "frames": 15
+  },
+  {
+   "tap": {
+    "x": 128,
+    "y": 95
+   },
+   "frames": 6
+  },
+  {
+   "release": true,
+   "frames": 20,
+   "capture": "a03_titulo_codice"
+  },
+  {
+   "button_down": "B",
+   "frames": 4
+  },
+  {
+   "button_up": "B",
+   "frames": 15
+  },
+  {
+   "tap": {
+    "x": 128,
+    "y": 66
+   },
+   "frames": 6
+  },
+  {
+   "release": true,
+   "frames": 40,
+   "capture": "b01_intro_1"
+  },
+  {
+   "button_down": "A",
+   "frames": 4
+  },
+  {
+   "button_up": "A",
+   "frames": 40,
+   "capture": "b02_intro_2"
+  },
+  {
+   "button_down": "A",
+   "frames": 4
+  },
+  {
+   "button_up": "A",
+   "frames": 40,
+   "capture": "b03_intro_3"
+  },
+  {
+   "button_down": "A",
+   "frames": 4
+  },
+  {
+   "button_up": "A",
+   "frames": 40,
+   "capture": "b04_intro_4"
+  },
+  {
+   "button_down": "A",
+   "frames": 4
+  },
+  {
+   "button_up": "A",
+   "frames": 40,
+   "capture": "b05_intro_5"
+  },
+  {
+   "button_down": "A",
+   "frames": 4
+  },
+  {
+   "button_up": "A",
+   "frames": 40,
+   "capture": "b06_intro_6"
+  },
+  {
+   "button_down": "A",
+   "frames": 4
+  },
+  {
+   "button_up": "A",
+   "frames": 90,
+   "capture": "c01_campamento"
+  },
+  {
+   "button_down": "START",
+   "frames": 4
+  },
+  {
+   "button_up": "START",
+   "frames": 20,
+   "capture": "c02_pausa_campamento"
+  },
+  {
+   "tap": {
+    "x": 128,
+    "y": 110
+   },
+   "frames": 6
+  },
+  {
+   "release": true,
+   "frames": 20,
+   "capture": "c03_controles"
+  },
+  {
+   "button_down": "B",
+   "frames": 4
+  },
+  {
+   "button_up": "B",
+   "frames": 15
+  },
+  {
+   "button_down": "B",
+   "frames": 4
+  },
+  {
+   "button_up": "B",
+   "frames": 20
+  },
+  {
+   "poke": [
+    {
+     "field": "px",
+     "value": 15872
+    },
+    {
+     "field": "py",
+     "value": 75776
+    }
+   ],
+   "frames": 20,
+   "capture": "c04_junto_arcon"
+  },
+  {
+   "button_down": "A",
+   "frames": 4
+  },
+  {
+   "button_up": "A",
+   "frames": 25,
+   "capture": "c05_inventario_arcon"
+  },
+  {
+   "button_down": "B",
+   "frames": 4
+  },
+  {
+   "button_up": "B",
+   "frames": 20
+  },
+  {
+   "poke": [
+    {
+     "field": "px",
+     "value": 50688
+    },
+    {
+     "field": "py",
+     "value": 76800
+    }
+   ],
+   "frames": 20,
+   "capture": "c06_junto_atril"
+  },
+  {
+   "button_down": "A",
+   "frames": 4
+  },
+  {
+   "button_up": "A",
+   "frames": 25,
+   "capture": "c07_codice_atril"
+  },
+  {
+   "button_down": "B",
+   "frames": 4
+  },
+  {
+   "button_up": "B",
+   "frames": 20
+  },
+  {
+   "poke": [
+    {
+     "field": "px",
+     "value": 50176
+    },
+    {
+     "field": "py",
+     "value": 86016
+    }
+   ],
+   "frames": 20,
+   "capture": "c08_junto_jergon"
+  },
+  {
+   "button_down": "A",
+   "frames": 4
+  },
+  {
+   "button_up": "A",
+   "frames": 40,
+   "capture": "c09_dormir"
+  },
+  {
+   "button_down": "A",
+   "frames": 4
+  },
+  {
+   "button_up": "A",
+   "frames": 20,
+   "capture": "c10_tras_dormir"
+  },
+  {
+   "poke": [
+    {
+     "field": "px",
+     "value": 32768
+    },
+    {
+     "field": "py",
+     "value": 29696
+    }
+   ],
+   "frames": 20,
+   "capture": "c11_puerta"
+  },
+  {
+   "button_down": "A",
+   "frames": 4
+  },
+  {
+   "button_up": "A",
+   "frames": 120,
+   "capture": "d01_sala1"
+  },
+  {
+   "button_down": "START",
+   "frames": 4
+  },
+  {
+   "button_up": "START",
+   "frames": 20,
+   "capture": "d02_pausa_mazmorra"
+  },
+  {
+   "button_down": "B",
+   "frames": 4
+  },
+  {
+   "button_up": "B",
+   "frames": 20
+  },
+  {
+   "button_down": "UP",
+   "frames": 300
+  },
+  {
+   "button_up": "UP",
+   "frames": 30,
+   "capture": "d03_combate"
+  },
+  {
+   "frames": 1500,
+   "capture": "d04_muerte"
+  },
+  {
+   "tap": {
+    "x": 128,
+    "y": 100
+   },
+   "frames": 6
+  },
+  {
+   "release": true,
+   "frames": 60,
+   "capture": "d05_tras_muerte"
+  }
+ ]
+}
