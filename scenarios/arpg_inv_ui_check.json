@@ -1,0 +1,41 @@
+{
+  "name": "arpg_inv_ui_check",
+  "description": "Auditoría visual completa del inventario ARPG: coherencia pestaña/objeto, objeto 3D giratorio, pasivas descritas, comparación lado a lado y confirmación de fundir.",
+  "suite": false,
+  "evidence_only": true,
+  "steps": [
+    { "frames": 60 },
+    { "tap": { "x": 128, "y": 66 }, "frames": 6 },
+    { "release": true, "frames": 40 },
+    { "button_down": "START", "frames": 4 },
+    { "button_up": "START", "frames": 45 },
+
+    { "button_down": "LEFT", "frames": 56 },
+    { "button_up": "LEFT", "frames": 4 },
+    { "button_down": "UP", "frames": 32 },
+    { "button_up": "UP", "frames": 4 },
+    { "button_down": "A", "frames": 4 },
+    { "button_up": "A", "frames": 20, "capture": "01_rayo_llama" },
+
+    { "button_down": "DOWN", "frames": 4 },
+    { "button_up": "DOWN", "frames": 4 },
+    { "button_down": "RIGHT", "frames": 4 },
+    { "button_up": "RIGHT", "frames": 15, "capture": "02_nudillera_viatico" },
+
+    { "button_down": "DOWN", "frames": 4 },
+    { "button_up": "DOWN", "frames": 15, "capture": "03_corazon_cilicio" },
+
+    { "button_down": "DOWN", "frames": 4 },
+    { "button_up": "DOWN", "frames": 15, "capture": "04_craneo_votivo" },
+
+    { "button_down": "LEFT", "frames": 4 },
+    { "button_up": "LEFT", "frames": 15, "capture": "05_tomo_levantar" },
+
+    { "tap": { "x": 116, "y": 44 }, "frames": 6 },
+    { "tap": { "x": 44, "y": 44 }, "frames": 12, "capture": "06_drag_comparacion" },
+    { "release": true, "frames": 12 },
+
+    { "button_down": "Y", "frames": 4 },
+    { "button_up": "Y", "frames": 12, "capture": "07_fundir_confirm" }
+  ]
+}

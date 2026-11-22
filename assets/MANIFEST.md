@@ -40,7 +40,7 @@ Todo asset que use el juego está en este catálogo y versionado. Lo que no est�
 | Paleta de la catedral | renders actuales | `tools/palette/extract_palette.py` | `assets/environment/cathedral/palette/palette.json` | git (derivado versionado) |
 | Arenas (mazmorra) | `assets/arenas/arenas.json` | `tools/export_arenas.py` → `bake_arena.py` | `source/arena_dungeon_01.c` | git |
 | HUD | corazón sagrado 3D `assets/models/hud/sacred_heart/` | `tools/hud/prerender_hud_heart.py` → `tools/generate_hud_icons_c.py` | `source/hud_icons_gfx.c` | LFS (PNG: git) |
-| Reliquias y tomos del inventario | modelos 3D en `assets/models/items/` (§6) | export GLB (Blender) → lab (C2) → `tools/generate_item_icons_c.py` | `include/inv_item_art.h` | LFS |
+| Reliquias y tomos del inventario | modelos 3D en `assets/models/items/` (§6) y `assets/models/hud/sacred_heart/` | export GLB (Blender) → lab (C2) → `tools/generate_item_icons_c.py`; giros 56×56 con `tools/render_item_spin.py` | `include/inv_item_art.h` + `nitrofiles/items/*.bin` | LFS (bins en git) |
 | Rayos de luz | pintados a mano, `assets/sprites/godrays/` | `source/godrays_gfx.c` (notas en `tools/godrays/README.md`) | `source/godrays_gfx.c` | git |
 | Cartas de mejora | escenas reales de la ROM (`cathedral-sandbox`) | `tools/levelup_cards/capture_cards.py` | `nitrofiles/levelup/*.bin` | derivado (capturas intermedias en `assets/sprites/levelup/`, ignoradas) |
 | Clips de la intro | partida real en DeSmuME | `tools/gen_intro_clips.py` | `nitrofiles/intro/*.bin` | derivado |

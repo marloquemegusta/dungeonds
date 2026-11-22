@@ -77,6 +77,7 @@ typedef struct {
     uint8_t mech;                 // id de mecánica (id de nodo antiguo) o ARPG_MECH_NONE
     uint8_t nlines;               // 0..2
     uint8_t line_kind[2];         // ARPG_LINE_*
+    uint8_t mech_val;             // cifra propia del aura/mecánica (para comparar dos con la misma aura)
     int16_t line_val[2];          // valor entero (con signo)
     uint8_t level;                // nivel de objeto (1..99; 0 = 1)
     uint8_t name_id;              // 0 = genérico, >0 = nombre propio legendario
@@ -148,6 +149,8 @@ void arpg_relic_roll_school(ArpgInvItem *out, int school, int floor, int min_rar
 const char *arpg_inv_rarity_name(int rarity);
 const char *arpg_inv_school_name(int school);
 const char *arpg_inv_mechanic_name(int mech);
+const char *arpg_inv_mechanic_desc(int mech);
+void        arpg_inv_mechanic_format(const ArpgInvItem *it, char *buf, int n);
 const char *arpg_inv_line_name(int kind);
 const char *arpg_inv_item_name(const ArpgInvItem *it);
 

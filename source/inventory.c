@@ -6,8 +6,10 @@
 #include "inv_art.h"
 #include "inv_item_art.h"
 #include "sfx.h"
+#include <fcntl.h>
 #include <stdio.h>
 #include <string.h>
+#include <unistd.h>
 
 // Inventario táctil B (Relicario Lateral) con estética Diablo II / Sacred:
 // - Losa de piedra pizarra texturizada + marco biselado grueso con remaches.
@@ -72,16 +74,40 @@ static const uint16_t s_school_col[5] = {
 #define INV_WAX_W     72
 #define INV_WAX_H     16
 
-// Pantalla superior: losa + cabecera + cajetines.
+// Pantalla superior: losa + cabecera + cajetines + ventana de objeto giratorio.
 #define TOP_CARD_Y    58
 #define TOP_CARD_W    116
 #define TOP_CARD_H    124
+
+#define TOP_WIN_X     12
+#define TOP_WIN_Y     58
+#define TOP_WIN_W     82
+#define TOP_WIN_H     122
+#define TOP_WIN_CX    (TOP_WIN_X + TOP_WIN_W / 2)
+#define TOP_WIN_CY    110
+#define TOP_RX        102
+#define TOP_RW        142
+
+#define INV_SPIN_SZ     56
+#define INV_SPIN_MAGIC  0x4954u
+#define INV_SPIN_TICKS  3
 
 static int s_tab = 0;
 static int s_sel = 0;
 static int s_socket_sel = 0;
 static int s_confirm = -1;
 static int s_top_dirty = 1;
+static int s_top_rot_dirty = 0;
+
+static int s_rot_fd = -1;
+static int s_rot_frames = 0;
+static int s_rot_frame_idx = 0;
+static int s_rot_tick = 0;
+static int s_rot_bob_tick = 0;
+static uint8_t s_rot_loaded_kind = 0xFF;
+static uint8_t s_rot_loaded_school = 0xFF;
+static uint16_t s_rot_buf[INV_SPIN_SZ * INV_SPIN_SZ];
+static int s_rot_valid = 0;
 
 static int s_touch_held = 0;
 static int s_touch_x = 0;
@@ -273,6 +299,56 @@ static void text_center(uint16_t *buf, int cx, int y, const char *s, uint16_t co
     text_at(buf, cx - bestiary_font_measure_utf8(s) / 2, y, s, col);
 }
 
+static int measure_wrapped_lines(int max_w, const char *utf8) {
+    if (!utf8 || !*utf8) return 0;
+    const BestiaryGlyph *g_sp = bestiary_font_get_glyph(' ');
+    int sp_w = g_sp ? g_sp->advance : 3;
+    int lines = 1;
+    int line_w = 0;
+    const char *p = utf8;
+    while (*p) {
+        while (*p == ' ') p++;
+        if (!*p) break;
+        if (*p == '\n') { lines++; line_w = 0; p++; continue; }
+        const char *wstart = p;
+        int ww = 0;
+        while (*p && *p != ' ' && *p != '\n') {
+            uint8_t b0 = (uint8_t)*p;
+            uint32_t cp = b0;
+            if (b0 >= 0xC2 && b0 <= 0xDF && p[1]) {
+                cp = ((uint32_t)(b0 & 0x1F) << 6) | ((uint32_t)(uint8_t)p[1] & 0x3F);
+                p += 2;
+            } else if (b0 >= 0xE0 && b0 <= 0xEF && p[1] && p[2]) {
+                cp = ((uint32_t)(b0 & 0x0F) << 12) | (((uint32_t)(uint8_t)p[1] & 0x3F) << 6) | ((uint32_t)(uint8_t)p[2] & 0x3F);
+                p += 3;
+            } else {
+                p++;
+            }
+            const BestiaryGlyph *g = bestiary_font_get_glyph(cp);
+            if (!g) g = bestiary_font_get_glyph('?');
+            if (g) ww += g->advance;
+        }
+        if (wstart == p) break;
+        if (line_w > 0 && line_w + sp_w + ww > max_w) {
+            lines++;
+            line_w = ww;
+        } else {
+            line_w += (line_w > 0 ? sp_w : 0) + ww;
+        }
+    }
+    return lines;
+}
+
+static int text_wrapped(uint16_t *buf, int x, int y, int max_w, int line_step, const char *s, uint16_t col) {
+    if (!s || !*s) return 0;
+    int nlines = measure_wrapped_lines(max_w, s);
+    int h = nlines * line_step;
+    dirty_rect(x, y, x + max_w + 2, y + h + 2);
+    bestiary_font_draw_wrapped(buf, x + 1, y + 1, max_w, line_step, s, INV_SHAD);
+    bestiary_font_draw_wrapped(buf, x, y, max_w, line_step, s, col);
+    return h;
+}
+
 static void diamond(uint16_t *buf, int cx, int cy, int r, uint16_t col) {
     dirty_rect(cx - r, cy - r, cx + r + 1, cy + r + 1);
     for (int dy = -r; dy <= r; dy++) {
@@ -327,6 +403,23 @@ static void draw_sprite_24(uint16_t *buf, const uint16_t *spr, int cx, int cy, i
             if ((unsigned)dx >= SCREEN_W) continue;
             if (dim) c = (uint16_t)(((c & 0x7BDEu) >> 1) | BIT(15));
             buf[dy * SCREEN_W + dx] = c;
+        }
+    }
+}
+
+static void draw_sprite_56(uint16_t *buf, const uint16_t *spr, int cx, int cy) {
+    int x0 = cx - INV_SPIN_SZ / 2, y0 = cy - INV_SPIN_SZ / 2;
+    dirty_rect(x0, y0, x0 + INV_SPIN_SZ, y0 + INV_SPIN_SZ);
+    for (int sy = 0; sy < INV_SPIN_SZ; sy++) {
+        int dy = y0 + sy;
+        if ((unsigned)dy >= SCREEN_H) continue;
+        uint16_t *dst = &buf[dy * SCREEN_W];
+        const uint16_t *src = &spr[sy * INV_SPIN_SZ];
+        for (int sx = 0; sx < INV_SPIN_SZ; sx++) {
+            uint16_t c = src[sx];
+            if (!c) continue;
+            int dx = x0 + sx;
+            if ((unsigned)dx < SCREEN_W) dst[dx] = c;
         }
     }
 }
@@ -406,13 +499,6 @@ static void item_display_name(const ArpgInvItem *it, char *buf, int n) {
         case ARPG_SCHOOL_GLIFO: snprintf(buf, (size_t)n, "Reliquia del Glifo"); break;
         default: snprintf(buf, (size_t)n, "Reliquia"); break;
     }
-}
-
-static int item_fits_tab(const ArpgInvItem *it) {
-    if (!it) return 0;
-    if (s_tab == ARPG_SCHOOL_PECHO) return it->school == ARPG_SCHOOL_PECHO;
-    if (it->kind == ARPG_ITEM_TOME) return 1;
-    return (int)it->school == s_tab;
 }
 
 static void keep_sel_valid(void) {
@@ -517,6 +603,15 @@ static void select_tab(int tab) {
     sfx_play(SND_UI_CLICK, -1);
 }
 
+static void sync_tab_to_bag_sel(void) {
+    const ArpgInvItem *it = bag_sel_item();
+    if (it && it->kind == ARPG_ITEM_RELIC && (int)it->school != s_tab) {
+        s_tab = (int)it->school;
+        if (s_socket_sel >= arpg_inv_socket_count(s_tab)) s_socket_sel = 0;
+        s_top_slab_drawn = 0;
+    }
+}
+
 static void cycle_socket(int step) {
     int n = arpg_inv_socket_count(s_tab);
     if (n <= 0) return;
@@ -529,11 +624,96 @@ static void cycle_socket(int step) {
 // API
 // ---------------------------------------------------------------------------
 
+static const char *item_spin_slug(const ArpgInvItem *it) {
+    if (!it) return NULL;
+    if (it->kind == ARPG_ITEM_TOME) {
+        if (it->school == ARPG_SCHOOL_GLIFO) return "tome_glifo";
+        if (it->school == ARPG_SCHOOL_LEVANTAR) return "tome_levantar";
+        if (it->school == ARPG_SCHOOL_RAYO) return "tome_rayo";
+    } else if (it->kind == ARPG_ITEM_RELIC) {
+        if (it->school == ARPG_SCHOOL_PECHO) return "relic_corazon";
+        if (it->school == ARPG_SCHOOL_RAYO) return "relic_lanza";
+        if (it->school == ARPG_SCHOOL_EJECUCION) return "relic_nudillera";
+        if (it->school == ARPG_SCHOOL_LEVANTAR) return "relic_calavera";
+    }
+    return NULL;
+}
+
+static void rot_close(void) {
+    if (s_rot_fd >= 0) { close(s_rot_fd); s_rot_fd = -1; }
+    s_rot_valid = 0;
+    s_rot_frames = 0;
+    s_rot_loaded_kind = 0xFF;
+    s_rot_loaded_school = 0xFF;
+}
+
+static int read_exact(int fd, void *dst, int bytes) {
+    uint8_t *p = (uint8_t *)dst;
+    int got = 0;
+    while (got < bytes) {
+        int r = (int)read(fd, p + got, (size_t)(bytes - got));
+        if (r <= 0) return 0;
+        got += r;
+    }
+    return 1;
+}
+
+static void rot_ensure_item(const ArpgInvItem *it) {
+    if (!it) { rot_close(); return; }
+    if (s_rot_fd >= 0 && s_rot_loaded_kind == it->kind && s_rot_loaded_school == it->school) return;
+    rot_close();
+    s_rot_loaded_kind = it->kind;
+    s_rot_loaded_school = it->school;
+    const char *slug = item_spin_slug(it);
+    if (!slug) return;
+    char path[64];
+    snprintf(path, sizeof(path), "nitro:/items/%s.bin", slug);
+    int fd = open(path, O_RDONLY);
+    if (fd < 0) return;
+    uint16_t hdr[4];
+    if (!read_exact(fd, hdr, 8) || hdr[0] != INV_SPIN_MAGIC || hdr[1] == 0 ||
+        hdr[2] != INV_SPIN_SZ || hdr[3] != INV_SPIN_SZ) {
+        close(fd);
+        return;
+    }
+    if (!read_exact(fd, s_rot_buf, INV_SPIN_SZ * INV_SPIN_SZ * 2)) {
+        close(fd);
+        return;
+    }
+    s_rot_fd = fd;
+    s_rot_frames = (int)hdr[1];
+    s_rot_frame_idx = 0;
+    s_rot_tick = 0;
+    s_rot_valid = 1;
+    s_top_rot_dirty = 1;
+}
+
+static void rot_step(void) {
+    const ArpgInvItem *it = bag_sel_item();
+    rot_ensure_item(it);
+    s_rot_bob_tick++;
+    if (s_rot_valid && s_rot_fd >= 0) {
+        s_rot_tick++;
+        if (s_rot_tick >= INV_SPIN_TICKS) {
+            s_rot_tick = 0;
+            s_rot_frame_idx = (s_rot_frame_idx + 1) % s_rot_frames;
+            off_t off = (off_t)(8 + s_rot_frame_idx * (INV_SPIN_SZ * INV_SPIN_SZ * 2));
+            if (lseek(s_rot_fd, off, SEEK_SET) == off &&
+                read_exact(s_rot_fd, s_rot_buf, INV_SPIN_SZ * INV_SPIN_SZ * 2)) {
+                s_top_rot_dirty = 1;
+            }
+        } else if ((s_rot_bob_tick & 7) == 0) {
+            s_top_rot_dirty = 1;
+        }
+    }
+}
+
 void inventory_open(void) {
     s_tab = 0;
     s_socket_sel = 0;
     s_confirm = -1;
     s_top_dirty = 1;
+    s_top_rot_dirty = 0;
     s_top_bg_saved = 0;
     s_top_slab_drawn = 0;
     s_drag_bag = -1;
@@ -541,7 +721,11 @@ void inventory_open(void) {
     s_hover_socket = -1;
     s_hover_crucible = 0;
     s_hover_bag = -1;
+    s_rot_bob_tick = 0;
+    rot_close();
     keep_sel_valid();
+    sync_tab_to_bag_sel();
+    rot_ensure_item(bag_sel_item());
 }
 
 void inventory_set_touch_held(int touch_held, int touch_x, int touch_y) {
@@ -551,10 +735,10 @@ void inventory_set_touch_held(int touch_held, int touch_x, int touch_y) {
 }
 
 int inventory_top_redraw_pending(void) {
-    return s_top_dirty;
+    return s_top_dirty || s_top_rot_dirty;
 }
 
-int inventory_update(uint32_t keys_down, int touch_pressed, int touch_x, int touch_y) {
+static int inventory_handle_input(uint32_t keys_down, int touch_pressed, int touch_x, int touch_y) {
     if (keys_down || touch_pressed) s_top_dirty = 1;
 
     if (touch_pressed) {
@@ -583,6 +767,7 @@ int inventory_update(uint32_t keys_down, int touch_pressed, int touch_x, int tou
             if (!arpg_inv_bag_empty(bidx)) {
                 s_sel = bidx;
                 s_confirm = -1;
+                sync_tab_to_bag_sel();
                 s_drag_bag = bidx;
                 s_drag_active = 0;
                 s_drag_start_x = touch_x;
@@ -644,10 +829,12 @@ int inventory_update(uint32_t keys_down, int touch_pressed, int touch_x, int tou
         }
     }
 
+    int prev_sel = s_sel;
     if (keys_down & KEY_LEFT)  { if (s_sel % INV_COLS > 0) s_sel--; s_confirm = -1; }
     if (keys_down & KEY_RIGHT) { if (s_sel % INV_COLS < INV_COLS - 1 && s_sel + 1 < ARPG_INV_BAG) s_sel++; s_confirm = -1; }
     if (keys_down & KEY_UP)    { if (s_sel - INV_COLS >= 0) s_sel -= INV_COLS; s_confirm = -1; }
     if (keys_down & KEY_DOWN)  { if (s_sel + INV_COLS < ARPG_INV_BAG) s_sel += INV_COLS; s_confirm = -1; }
+    if (s_sel != prev_sel) sync_tab_to_bag_sel();
     if (keys_down & KEY_L) cycle_socket(-1);
     if (keys_down & KEY_R) cycle_socket(1);
 
@@ -664,9 +851,16 @@ int inventory_update(uint32_t keys_down, int touch_pressed, int touch_x, int tou
     }
     if (keys_down & KEY_B) {
         if (s_confirm >= 0) { s_confirm = -1; return 0; }
+        rot_close();
         return 1;
     }
     return 0;
+}
+
+int inventory_update(uint32_t keys_down, int touch_pressed, int touch_x, int touch_y) {
+    int exit_inv = inventory_handle_input(keys_down, touch_pressed, touch_x, touch_y);
+    if (!exit_inv) rot_step();
+    return exit_inv;
 }
 
 // ---------------------------------------------------------------------------
@@ -752,7 +946,7 @@ static void render_right_bag(uint16_t *buf) {
         sunken_box_rar(buf, x, y, INV_CELL_SZ, INV_CELL_SZ, (it && !is_ghost) ? (int)it->rarity : -1);
         if (hl) corner_ticks(buf, x, y, INV_CELL_SZ, INV_CELL_SZ, (s_confirm == i) ? INV_RED : INV_GOLD);
         if (it && !is_ghost) {
-            draw_item_glyph(buf, it, x + INV_CELL_SZ / 2, y + INV_CELL_SZ / 2 - 1, 9, !item_fits_tab(it));
+            draw_item_glyph(buf, it, x + INV_CELL_SZ / 2, y + INV_CELL_SZ / 2 - 1, 9, 0);
         }
     }
 
@@ -808,18 +1002,25 @@ static void render_item_card(uint16_t *buf, int x, int y, int w, int h, const ch
     char sub[32];
     snprintf(sub, sizeof(sub), "%s · Nv.%d", arpg_inv_rarity_name(it->rarity), it->level ? (int)it->level : 1);
     text_at(buf, x + 29, y + 32, sub, INV_DIM);
-    hline(buf, x + 6, y + 48, w - 12, INV_EDGE);
+    hline(buf, x + 6, y + 44, w - 12, INV_EDGE);
 
-    int row_y = y + 54;
+    int row_y = y + 47;
     if (it->mech != ARPG_MECH_NONE) {
-        text_at(buf, x + 8, row_y, arpg_inv_mechanic_name(it->mech), INV_GOLD);
-        row_y += 15;
+        text_at(buf, x + 6, row_y, arpg_inv_mechanic_name(it->mech), INV_GOLD);
+        row_y += 11;
+        char desc[96];
+        arpg_inv_mechanic_format(it, desc, sizeof(desc));
+        if (desc[0]) {
+            row_y += text_wrapped(buf, x + 6, row_y, w - 12, 9, desc, INV_TXT);
+        }
+        row_y += 2;
     }
-    for (int i = 0; i < it->nlines && i < 2; i++) {
+    for (int i = 0; i < it->nlines && i < 2 && row_y <= y + h - 15; i++) {
         char val[16];
         snprintf(val, sizeof(val), "%+d", (int)it->line_val[i]);
-        d2_stat_box(buf, x + 4, row_y + i * 18, w - 8,
+        d2_stat_box(buf, x + 4, row_y, w - 8,
                     arpg_inv_line_name(it->line_kind[i]), val, INV_TXT);
+        row_y += 15;
     }
 }
 
@@ -840,30 +1041,74 @@ static void render_top_comparison(uint16_t *buf, int bag_idx, int sock_idx) {
     char sub[32];
     snprintf(sub, sizeof(sub), "%s · Nv.%d", arpg_inv_rarity_name(held->rarity), held->level ? (int)held->level : 1);
     text_at(buf, 132 + 29, TOP_CARD_Y + 32, sub, INV_DIM);
-    hline(buf, 138, TOP_CARD_Y + 48, TOP_CARD_W - 12, INV_EDGE);
+    hline(buf, 138, TOP_CARD_Y + 44, TOP_CARD_W - 12, INV_EDGE);
 
-    int row_y = TOP_CARD_Y + 54;
+    int row_y = TOP_CARD_Y + 47;
     if (held->mech != ARPG_MECH_NONE) {
-        text_at(buf, 140, row_y, arpg_inv_mechanic_name(held->mech), INV_GOLD);
-        row_y += 15;
+        text_at(buf, 138, row_y, arpg_inv_mechanic_name(held->mech), INV_GOLD);
+        row_y += 11;
+        char desc[96];
+        arpg_inv_mechanic_format(held, desc, sizeof(desc));
+        if (desc[0]) {
+            row_y += text_wrapped(buf, 138, row_y, TOP_CARD_W - 12, 9, desc, INV_TXT);
+        }
+        row_y += 2;
     }
 
     ArpgInvPreview pv;
     if (arpg_inv_preview_socket(bag_idx, s_tab, sock_idx, &pv)) {
         int shown = 0;
-        for (int k = 0; k < ARPG_LINE_COUNT && shown < 2; k++) {
+        for (int k = 0; k < ARPG_LINE_COUNT && shown < 2 && row_y <= TOP_CARD_Y + TOP_CARD_H - 15; k++) {
             int d = pv.after[k] - pv.before[k];
             if (d == 0) continue;
             char val[16];
             snprintf(val, sizeof(val), "%+d", d);
-            d2_stat_box(buf, 136, row_y + shown * 18, TOP_CARD_W - 8,
+            d2_stat_box(buf, 136, row_y, TOP_CARD_W - 8,
                         arpg_inv_line_name(k), val, d > 0 ? INV_GREEN : INV_RED);
+            row_y += 15;
             shown++;
         }
     }
 
     render_item_card(buf, 8, TOP_CARD_Y, TOP_CARD_W, TOP_CARD_H,
                      eq ? "EQUIPADA" : "VACÍO", eq, INV_DIM);
+}
+
+static void render_spin_window_item(uint16_t *buf, const ArpgInvItem *sel_it, int redraw_box) {
+    static const int8_t s_bob[8] = { -2, -2, -1, 0, 1, 2, 2, 1 };
+    int bob_y = s_bob[(s_rot_bob_tick >> 3) & 7];
+    int rar = sel_it ? (int)sel_it->rarity : -1;
+
+    if (redraw_box) {
+        sunken_box_rar(buf, TOP_WIN_X, TOP_WIN_Y, TOP_WIN_W, TOP_WIN_H, rar);
+    } else {
+        // Solo refrescar el rectángulo del objeto flotante (sin tocar bordes ni cajetín de cera).
+        static const uint16_t s_rar_tint[5] = {
+            RGB15(0, 0, 0), RGB15(0, 2, 0), RGB15(0, 1, 3), RGB15(2, 0, 3), RGB15(3, 1, 0)
+        };
+        uint16_t tint = (rar >= 0 && rar < 5) ? s_rar_tint[rar] : 0;
+        int rx0 = TOP_WIN_CX - INV_SPIN_SZ / 2;
+        int ry0 = TOP_WIN_CY - INV_SPIN_SZ / 2 - 2;
+        int rw = INV_SPIN_SZ;
+        int rh = INV_SPIN_SZ + 4;
+        dirty_rect(rx0, ry0, rx0 + rw, ry0 + rh);
+        for (int sy = ry0; sy < ry0 + rh; sy++) {
+            const uint16_t *rrow = &s_stone_tex_64[((sy + 23) & 63) * 64];
+            for (int sx = rx0; sx < rx0 + rw; sx++) {
+                uint16_t c = (uint16_t)(((rrow[(sx + 17) & 63] & 0x7BDEu) >> 1) | BIT(15));
+                if (tint) c = (uint16_t)((c + tint) | BIT(15));
+                buf[sy * SCREEN_W + sx] = c;
+            }
+        }
+    }
+
+    if (sel_it) {
+        if (s_rot_valid) {
+            draw_sprite_56(buf, s_rot_buf, TOP_WIN_CX, TOP_WIN_CY + bob_y);
+        } else {
+            draw_item_glyph(buf, sel_it, TOP_WIN_CX, TOP_WIN_CY + bob_y, 12, 0);
+        }
+    }
 }
 
 void inventory_render_top(uint16_t *buf) {
@@ -874,6 +1119,16 @@ void inventory_render_top(uint16_t *buf) {
         s_top_slab_drawn = 0;
     }
 
+    const ArpgInvItem *sel_it = bag_sel_item();
+    int in_cmp = (s_drag_active && s_hover_socket >= 0 && school_defined(s_tab));
+
+    // Ruta rápida VBlank: solo actualizar el objeto flotante girando si el texto no cambió.
+    if (s_top_slab_drawn && !s_top_dirty && s_top_rot_dirty && !in_cmp && sel_it) {
+        render_spin_window_item(buf, sel_it, 0);
+        s_top_rot_dirty = 0;
+        return;
+    }
+
     char line[48];
     if (!s_top_slab_drawn) {
         // Losa de piedra superior + marco + cabecera: solo al abrir o cambiar de pestaña.
@@ -882,7 +1137,6 @@ void inventory_render_top(uint16_t *buf) {
 
         sunken_box(buf, 14, 12, 34, 34, INV_GOLD);
         diamond(buf, 31, 29, 10, s_school_col[s_tab]);
-        // Título contenido en versalitas/mayúsculas (sin escalado 2x gigante).
         static const char *const s_hdr_names[ARPG_INV_SCHOOLS] = {
             "R A Y O", "E J E C U C I Ó N", "G L I F O", "L E V A N T A R", "P E C H O"
         };
@@ -899,72 +1153,89 @@ void inventory_render_top(uint16_t *buf) {
         stone_rect(buf, 10, 54, SCREEN_W - 20, SCREEN_H - 64);
     }
 
-    if (!school_defined(s_tab)) {
-        text_center(buf, SCREEN_W / 2, 106, "Sin definir", INV_DIM);
-        s_top_dirty = 0;
-        return;
-    }
-
-    if (s_drag_active && s_hover_socket >= 0) {
+    if (in_cmp) {
         render_top_comparison(buf, s_drag_bag, s_hover_socket);
         s_top_dirty = 0;
+        s_top_rot_dirty = 0;
         return;
     }
 
-    const ArpgInvItem *sel_it = bag_sel_item();
     if (!sel_it) {
+        if (!school_defined(s_tab)) {
+            text_center(buf, SCREEN_W / 2, 106, "Sin definir", INV_DIM);
+        }
         s_top_dirty = 0;
+        s_top_rot_dirty = 0;
         return;
     }
 
-    // Ficha superior estilo Diablo II: bloque objeto + cajetines de atributos y delta.
-    sunken_box_rar(buf, 12, 58, 232, 42, -1);
-    draw_item_glyph(buf, sel_it, 31, 79, 10, 0);
+    // Ventana izquierda: objeto flotando en grande (56x56) y girando + valor de Cera.
+    render_spin_window_item(buf, sel_it, 1);
+    sunken_box(buf, TOP_WIN_X + (TOP_WIN_W - 44) / 2, TOP_WIN_Y + TOP_WIN_H - 21, 44, 16, 0);
+    draw_wax_coin(buf, TOP_WIN_X + (TOP_WIN_W - 44) / 2 + 4, TOP_WIN_Y + TOP_WIN_H - 18);
+    snprintf(line, sizeof(line), "%d", arpg_inv_wax_value(sel_it->rarity));
+    text_right(buf, TOP_WIN_X + (TOP_WIN_W - 44) / 2 + 40, TOP_WIN_Y + TOP_WIN_H - 20, line, INV_GOLD);
+
+    // Barra vertical de hierro forjado dividiendo la ventana del texto.
+    iron_bar_v(buf, 96, 54, 129);
+
+    // Panel derecho: nombre, rareza/escuela, descripción del aura/mecánica y stats.
     char name[40];
     item_display_name(sel_it, name, sizeof(name));
-    text_at(buf, 50, 62, name, s_rar_bdr[sel_it->rarity]);
+    text_at(buf, TOP_RX, 58, name, s_rar_bdr[sel_it->rarity]);
     snprintf(line, sizeof(line), "%s · %s", arpg_inv_rarity_name(sel_it->rarity), arpg_inv_school_name(sel_it->school));
-    text_at(buf, 50, 76, line, INV_DIM);
+    text_at(buf, TOP_RX, 70, line, INV_DIM);
+    hline(buf, TOP_RX, 84, TOP_RW, INV_EDGE);
 
-    // Cajetín de cera que da al fundir.
-    sunken_box(buf, 196, 65, 40, 16, 0);
-    draw_wax_coin(buf, 200, 68);
-    snprintf(line, sizeof(line), "%d", arpg_inv_wax_value(sel_it->rarity));
-    text_right(buf, 232, 66, line, INV_GOLD);
-
-    int ycur = 104;
-    if (sel_it->mech != ARPG_MECH_NONE) {
-        text_at(buf, 16, ycur, arpg_inv_mechanic_name(sel_it->mech), INV_GOLD);
-        ycur += 14;
-        hline(buf, 14, ycur, 228, INV_EDGE);
-        ycur += 5;
+    int ycur = 87;
+    if (sel_it->kind == ARPG_ITEM_TOME) {
+        text_at(buf, TOP_RX, ycur, "Hechizo equipable", INV_GOLD);
+        ycur += 12;
+        ycur += text_wrapped(buf, TOP_RX, ycur, TOP_RW, 11,
+                             "Equipa en el radial para lanzar este hechizo.", INV_TXT);
+        ycur += 3;
+        hline(buf, TOP_RX, ycur, TOP_RW, INV_EDGE);
+        ycur += 4;
+    } else if (sel_it->mech != ARPG_MECH_NONE) {
+        text_at(buf, TOP_RX, ycur, arpg_inv_mechanic_name(sel_it->mech), INV_GOLD);
+        ycur += 12;
+        char desc[96];
+        arpg_inv_mechanic_format(sel_it, desc, sizeof(desc));
+        if (desc[0]) {
+            ycur += text_wrapped(buf, TOP_RX, ycur, TOP_RW, 11, desc, INV_TXT);
+        }
+        ycur += 3;
+        hline(buf, TOP_RX, ycur, TOP_RW, INV_EDGE);
+        ycur += 4;
     }
 
-    // Tabla única alineada estilo Sacred / Diablo II (etiqueta a la izq, cajetín a la der).
-    for (int i = 0; i < sel_it->nlines && i < 2; i++) {
+    for (int i = 0; i < sel_it->nlines && i < 2 && ycur <= 165; i++) {
         char val[16];
         snprintf(val, sizeof(val), "%+d", (int)sel_it->line_val[i]);
-        d2_stat_box(buf, 14, ycur, 228,
+        d2_stat_box(buf, TOP_RX, ycur, TOP_RW,
                     arpg_inv_line_name(sel_it->line_kind[i]), val, INV_TXT);
         ycur += 16;
     }
 
-    ArpgInvPreview pv;
-    if (arpg_inv_preview_socket(s_sel, s_tab, s_socket_sel, &pv)) {
-        int shown = 0;
-        for (int k = 0; k < ARPG_LINE_COUNT && shown < 2 && ycur <= 168; k++) {
-            int d = pv.after[k] - pv.before[k];
-            if (d == 0) continue;
-            uint16_t col = d > 0 ? INV_GREEN : INV_RED;
-            if (d > 0) tri_up(buf, 16, ycur + 4, col);
-            else tri_down(buf, 16, ycur + 4, col);
-            snprintf(line, sizeof(line), "%d -> %d", pv.before[k], pv.after[k]);
-            d2_stat_box(buf, 28, ycur, 214, arpg_inv_line_name(k), line, col);
-            ycur += 16;
-            shown++;
+    if (school_defined(s_tab) && ycur <= 165) {
+        ArpgInvPreview pv;
+        if (arpg_inv_preview_socket(s_sel, s_tab, s_socket_sel, &pv)) {
+            int shown = 0;
+            for (int k = 0; k < ARPG_LINE_COUNT && shown < 2 && ycur <= 165; k++) {
+                int d = pv.after[k] - pv.before[k];
+                if (d == 0) continue;
+                uint16_t col = d > 0 ? INV_GREEN : INV_RED;
+                if (d > 0) tri_up(buf, TOP_RX, ycur + 4, col);
+                else tri_down(buf, TOP_RX, ycur + 4, col);
+                snprintf(line, sizeof(line), "%d -> %d", pv.before[k], pv.after[k]);
+                d2_stat_box(buf, TOP_RX + 11, ycur, TOP_RW - 11, arpg_inv_line_name(k), line, col);
+                ycur += 16;
+                shown++;
+            }
         }
     }
     s_top_dirty = 0;
+    s_top_rot_dirty = 0;
 }
 
 void inventory_render(uint16_t *buf) {
