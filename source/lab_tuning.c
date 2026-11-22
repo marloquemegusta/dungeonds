@@ -17,6 +17,9 @@ int g_lab_punch_chain = PUNCH_CHAIN_FRAMES;
 int g_lab_punch_walk_pct = PUNCH_WALK_SPEED_PCT;
 int g_lab_punch_range = PUNCH_RANGE;
 int g_lab_punch_impact[3] = { PUNCH_IMPACT_A, PUNCH_IMPACT_B, PUNCH_IMPACT_HOOK };
+int g_lab_punch_follow = PUNCH_FOLLOW;
+int g_lab_punch_split = PUNCH_WALK_SPLIT;
+int g_lab_punch_start[3] = { PUNCH_START_A, PUNCH_START_B, PUNCH_START_HOOK };
 int g_lab_punch_light_push = PUNCH_LIGHT_PUSH;
 int g_lab_punch_hook_push = PUNCH_HOOK_PUSH;
 int g_lab_punch_hitstop = PUNCH_HITSTOP_FRAMES;
@@ -99,6 +102,11 @@ static const LabEntry s_entries[] = {
     { "Puñetazo", "Impacto directo", &g_lab_punch_impact[0], 0, 7, 1, LAB_KIND_INT },
     { "Puñetazo", "Impacto cruzado", &g_lab_punch_impact[1], 0, 7, 1, LAB_KIND_INT },
     { "Puñetazo", "Impacto gancho", &g_lab_punch_impact[2], 0, 7, 1, LAB_KIND_INT },
+    { "Puñetazo", "Inicio directo", &g_lab_punch_start[0], 0, 7, 1, LAB_KIND_INT },
+    { "Puñetazo", "Inicio cruzado", &g_lab_punch_start[1], 0, 7, 1, LAB_KIND_INT },
+    { "Puñetazo", "Inicio gancho", &g_lab_punch_start[2], 0, 7, 1, LAB_KIND_INT },
+    { "Puñetazo", "Corte cintura", &g_lab_punch_split, 4, 24, 1, LAB_KIND_INT },
+    { "Puñetazo", "Seguimiento (fotos)", &g_lab_punch_follow, 0, 3, 1, LAB_KIND_INT },
     { "Puñetazo", "Empuje ligero", &g_lab_punch_light_push, 0, 512, 16, LAB_KIND_INT },
     { "Puñetazo", "Empuje gancho", &g_lab_punch_hook_push, 0, 512, 16, LAB_KIND_INT },
     { "Puñetazo", "Parón al golpear", &g_lab_punch_hitstop, 0, 10, 1, LAB_KIND_INT },

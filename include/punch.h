@@ -22,9 +22,13 @@
 // [TUNABLE-PLACEHOLDER] Fotograma de contacto de cada golpe (0..7): el primer fotograma con el brazo estirado.
 // Un golpe guardado (L durante el golpe) arranca solo cuando el golpe en curso ha mostrado el suyo: la
 // animacion nunca se corta antes del impacto.
-#define PUNCH_IMPACT_A 4
+#define PUNCH_IMPACT_A 7            // fotograma de maxima extension del brazo (hoja de contacto, direcciones E/O): el directo estira en el ultimo
 #define PUNCH_IMPACT_B 5
-#define PUNCH_IMPACT_HOOK 4
+#define PUNCH_IMPACT_HOOK 5
+#define PUNCH_START_A 4             // [TUNABLE-PLACEHOLDER] fotograma por el que arranca cada golpe: salta la guardia identica (0..impacto)
+#define PUNCH_START_B 2
+#define PUNCH_START_HOOK 1
+#define PUNCH_FOLLOW 1              // [TUNABLE-PLACEHOLDER] fotogramas que se ven tras el impacto antes de encadenar el golpe guardado (0..3)
 #define PUNCH_RANGE 34              // [TUNABLE-PLACEHOLDER] alcance del punetazo (px de suelo)
 #define PUNCH_DAMAGE_A 50           // [TUNABLE-PLACEHOLDER] dano del directo
 #define PUNCH_DAMAGE_B 50           // [TUNABLE-PLACEHOLDER] dano del cruzado
@@ -37,7 +41,7 @@
 // en la misma proporcion (current_period / pct) para que los pies no deslicen. El tren superior sigue el
 // clip del golpe; el inferior, el de andar (composicion en draw_punch).
 #define PUNCH_WALK_SPEED_PCT 65     // % de la velocidad normal mientras pega andando
-#define PUNCH_WALK_SPLIT 16         // px sobre los pies donde se corta: debajo anda, encima pega
+#define PUNCH_WALK_SPLIT 8          // px sobre los pies donde se corta: debajo anda, encima pega. Las manos del clip de andar caen a 9..21 px sobre los pies: por debajo de 9 no pasa ninguna
 #define PUNCH_HITSTUN_FRAMES 6      // [TUNABLE-PLACEHOLDER] frames que el golpeado retrocede sin IA
 #define PUNCH_HITSTOP_FRAMES 3      // [TUNABLE-PLACEHOLDER] parada de imagen al conectar
 #define PUNCH_SHAKE_LIGHT 3         // [TUNABLE-PLACEHOLDER] temblor de pantalla del directo y el cruzado (el gancho, +2)
@@ -55,6 +59,9 @@
 #define PUNCH_HITSTOP_V g_lab_punch_hitstop
 #define PUNCH_SHAKE_V g_lab_punch_shake
 #define PUNCH_IMPACT_V(move) g_lab_punch_impact[(move)]
+#define PUNCH_FOLLOW_V g_lab_punch_follow
+#define PUNCH_WALK_SPLIT_V g_lab_punch_split
+#define PUNCH_START_V(move) g_lab_punch_start[(move)]
 #else
 #define PUNCH_TICKS_V PUNCH_TICKS
 #define PUNCH_CHAIN_FRAMES_V PUNCH_CHAIN_FRAMES
@@ -64,6 +71,9 @@
 #define PUNCH_HOOK_PUSH_V PUNCH_HOOK_PUSH
 #define PUNCH_HITSTOP_V PUNCH_HITSTOP_FRAMES
 #define PUNCH_SHAKE_V PUNCH_SHAKE_LIGHT
+#define PUNCH_FOLLOW_V PUNCH_FOLLOW
+#define PUNCH_WALK_SPLIT_V PUNCH_WALK_SPLIT
+#define PUNCH_START_V(move) ((move) == PUNCH_MOVE_A ? PUNCH_START_A : (move) == PUNCH_MOVE_B ? PUNCH_START_B : PUNCH_START_HOOK)
 #define PUNCH_IMPACT_V(move) ((move) == PUNCH_MOVE_A ? PUNCH_IMPACT_A : (move) == PUNCH_MOVE_B ? PUNCH_IMPACT_B : PUNCH_IMPACT_HOOK)
 #endif
 

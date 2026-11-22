@@ -21,7 +21,8 @@
       "button_up": "L",
       "frames": 4,
       "capture_sequence": "combo",
-      "capture_every": 1
+      "capture_every": 1,
+      "state_capture": "toque"
     },
     {
       "button_down": "L",
@@ -457,6 +458,17 @@
         "at": "inicio",
         "field": "e0_active",
         "equals": 1
+      },
+      {
+        "at": "toque",
+        "field": "e0_hp",
+        "equals": 2000
+      },
+      {
+        "from": "toque",
+        "to": "tras_combo",
+        "field": "e0_hp",
+        "max_delta": -1
       },
       {
         "at": "tras_combo",

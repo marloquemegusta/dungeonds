@@ -871,7 +871,7 @@ static int remate_layer_depth(int ay, int layer) {
 // Combo de puñetazos (punch.h): el fotograma del golpe en curso, anclado a los pies como el andar. La celda del
 // lab es 48x48 y la fila de pies de cada golpe/dirección está en g_punch_ground_anchor.
 //
-// Andando, el clip del golpe se compone con el del andar: por encima de la cintura (PUNCH_WALK_SPLIT px sobre
+// Andando, el clip del golpe se compone con el del andar: por encima de la cintura (PUNCH_WALK_SPLIT_V px sobre
 // los pies) manda el golpe, por debajo manda el paseo en la dirección actual. Las dos celdas se alinean por el
 // centro (x) y por su fila de pies, así que el corte es recto y los pies siguen el ritmo real del avance.
 // Se recompone solo cuando cambia el fotograma de golpe o el de andar (no cada frame).
@@ -879,15 +879,15 @@ static int remate_layer_depth(int ay, int layer) {
 static uint16_t s_comp_pix[PUNCH_CELL * PUNCH_CELL] __attribute__((aligned(4)));
 static uint16_t s_comp_runs[PUNCH_COMP_RUNS_HALFWORDS] __attribute__((aligned(4)));
 static int s_ck_move = -1, s_ck_pdir = -1, s_ck_pframe = -1;
-static int s_ck_char = -1, s_ck_wdir = -1, s_ck_wframe = -1;
+static int s_ck_char = -1, s_ck_wdir = -1, s_ck_wframe = -1, s_ck_split = -1;
 
 static void punch_compose_walk(void) {
     const int move = punch_move(), pdir = punch_dir(), pframe = punch_frame();
     const int char_id = s_player.char_id, wdir = s_player.dir, wframe = s_player.frame;
     if (move == s_ck_move && pdir == s_ck_pdir && pframe == s_ck_pframe &&
-        char_id == s_ck_char && wdir == s_ck_wdir && wframe == s_ck_wframe) return;
+        char_id == s_ck_char && wdir == s_ck_wdir && wframe == s_ck_wframe && PUNCH_WALK_SPLIT_V == s_ck_split) return;
     s_ck_move = move; s_ck_pdir = pdir; s_ck_pframe = pframe;
-    s_ck_char = char_id; s_ck_wdir = wdir; s_ck_wframe = wframe;
+    s_ck_char = char_id; s_ck_wdir = wdir; s_ck_wframe = wframe; s_ck_split = PUNCH_WALK_SPLIT_V;
 
     const uint8_t *pb = punch_bounds();
     const uint16_t *pp = punch_pixels();
@@ -899,7 +899,7 @@ static void punch_compose_walk(void) {
     const int ws = g_characters[char_id].sprite_w;
     const int xoff = (PUNCH_CELL - ws) / 2;                 // la celda del andar es mas estrecha: centrada
     const int yoff = punch_ground_anchor() - s_char_ground_anchor[char_id][wdir];
-    const int split_y = punch_ground_anchor() - PUNCH_WALK_SPLIT;
+    const int split_y = punch_ground_anchor() - PUNCH_WALK_SPLIT_V;
 
     for (int i = 0; i < PUNCH_CELL * PUNCH_CELL; i++) s_comp_pix[i] = 0;
     // Tren superior: fotograma del golpe, tal cual (la celda del golpe ya es 48x48 y su anchor es el de la fila de pies).

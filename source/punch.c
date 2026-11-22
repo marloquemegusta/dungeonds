@@ -45,6 +45,9 @@ static int s_punch_dir;
 static int s_punch_frame;
 static int s_punch_t;
 static int s_punch_chain;     // frames de ventana de encadenado que quedan
+static int s_punch_target = -1;    // enemigo elegido al arrancar; el golpe lo cobra en el fotograma de impacto
+static int s_punch_cone;           // 1 = andando (el objetivo debe seguir en el cono frontal), 0 = parado (soft-lock)
+static int s_punch_applied;        // el impacto de este golpe ya se ha aplicado (una vez por golpe)
 static int s_punch_queued;    // golpes guardados (0..2): cada L nuevo durante el golpe suma uno; se cobran cuando toca, sin cortar la animacion
 
 int punch_active(void) { return s_punch_active; }
@@ -57,6 +60,8 @@ void punch_reset(void) {
     s_punch_active = 0;
     s_punch_chain = 0;
     s_punch_queued = 0;
+    s_punch_target = -1;
+    s_punch_applied = 1;
 }
 
 const uint16_t *punch_pixels(void) {
@@ -82,25 +87,33 @@ int punch_ground_anchor(void) { return g_punch_ground_anchor[s_punch_move][s_pun
 // Nearest enemy this close, and whether it is reeling (<= 25 % life, gameplay.c): the hit goes to it.
 // `cone` 0 = cualquier direccion (parado, soft-lock). 1 = solo en +-45 grados de `dir` (andando: el golpe
 // va hacia donde el heroe camina, sin girarse hacia un enemigo que queda detras).
+// Un enemigo puede recibir el golpe desde (hero_x, hero_y): activo, vivo, a tiro y, andando, en el cono frontal.
+static int punch_can_hit(const Enemy *e, int i, int hx, int hy, int dir, int cone, int *d2out) {
+    const int range = PUNCH_RANGE_V * (100 + g_mods.remate_range_bonus) / 100;
+    if (g_enemy_ally[i] || !e->active || e->hp <= 0 || e->state == ENEMY_STATE_EMERGE) return 0;
+#if ENCOUNTERS_PROTO
+    if (enc_untouchable(e)) return 0;
+#endif
+    const int dx = TO_INT(e->x) - hx, dy = TO_INT(e->y) - hy;
+    const int d2 = dx * dx + GROUND_DY2(dy);
+    if (cone && d2 >= 16) {                              // a bocajarro (< 4 px) no se filtra por angulo
+        int dd = (enemy_dir_from_vector(TO_FIXED(dx), TO_FIXED(dy)) - dir) & 7;
+        if (dd > 4) dd = 8 - dd;
+        if (dd > 1) return 0;                             // fuera del cono frontal de +-45 grados
+    }
+    if (d2 > range * range) return 0;
+    *d2out = d2;
+    return 1;
+}
+
 static int punch_target(Enemy *enemies, int max_enemies, fixed hero_x, fixed hero_y,
                         int dir, int cone, int *ex, int *ey) {
     const int hx = TO_INT(hero_x), hy = TO_INT(hero_y);
     const int range = PUNCH_RANGE_V * (100 + g_mods.remate_range_bonus) / 100;
     int best = -1, best_d2 = range * range + 1;
     for (int i = 0; i < max_enemies; i++) {
-        const Enemy *e = &enemies[i];
-        if (g_enemy_ally[i] || !e->active || e->hp <= 0 || e->state == ENEMY_STATE_EMERGE) continue;
-#if ENCOUNTERS_PROTO
-        if (enc_untouchable(e)) continue;
-#endif
-        const int dx = TO_INT(e->x) - hx, dy = TO_INT(e->y) - hy;
-        const int d2 = dx * dx + GROUND_DY2(dy);
-        if (cone && d2 >= 16) {                              // a bocajarro (< 4 px) no se filtra por angulo
-            int dd = (enemy_dir_from_vector(TO_FIXED(dx), TO_FIXED(dy)) - dir) & 7;
-            if (dd > 4) dd = 8 - dd;
-            if (dd > 1) continue;                             // fuera del cono frontal de +-45 grados
-        }
-        if (d2 <= range * range && d2 < best_d2) { best_d2 = d2; best = i; }
+        int d2;
+        if (punch_can_hit(&enemies[i], i, hx, hy, dir, cone, &d2) && d2 < best_d2) { best_d2 = d2; best = i; }
     }
     if (best < 0) return -1;
     *ex = TO_INT(enemies[best].x);
@@ -154,13 +167,36 @@ int punch_start(Enemy *enemies, int max_enemies, fixed hero_x, fixed hero_y, int
     if (!punch_load_bin(move, dir)) return 0;
     s_punch_move = move;
     s_punch_dir = dir;
-    s_punch_frame = 0;
+    s_punch_frame = PUNCH_START_V(move);          // salta la guardia quieta del principio del clip
+    if (s_punch_frame > PUNCH_IMPACT_V(move)) s_punch_frame = PUNCH_IMPACT_V(move);
+    if (s_punch_frame < 0) s_punch_frame = 0;
     s_punch_t = 0;
     s_punch_chain = 0;
+    s_punch_target = idx;
+    s_punch_cone = !soft_lock;
+    s_punch_applied = 0;
     s_punch_active = 1;
+    // Al arrancar solo suena el silbido: dano, sonido de golpe, paron y temblor llegan con el brazo
+    // estirado (punch_impact_step, fotograma de impacto), no con el brazo aun recogido.
     sfx_play_pitched(SND_PUNCH_WHOOSH, TO_INT(hero_x), move == PUNCH_MOVE_HOOK ? 850 : 0);
-    punch_apply(enemies, idx, hero_x, hero_y, move);
     return 1;
+}
+
+// Fotograma de impacto: el brazo esta estirado. Se revalida el objetivo con la posicion actual del heroe
+// (puede haber muerto, haberse ido o haber quedado fuera del alcance/cono); si no vale se busca otro y, si
+// no hay ninguno, el golpe pasa al aire (solo el silbido). Una sola vez por golpe. El paron que pone
+// punch_apply congela la simulacion entera (main.c), asi que la animacion se queda en este fotograma.
+static void punch_impact_step(Enemy *enemies, int max_enemies, fixed hero_x, fixed hero_y) {
+    if (s_punch_applied || s_punch_frame < PUNCH_IMPACT_V(s_punch_move)) return;
+    s_punch_applied = 1;
+    const int hx = TO_INT(hero_x), hy = TO_INT(hero_y);
+    int d2, idx = s_punch_target;
+    if (idx < 0 || idx >= max_enemies || !punch_can_hit(&enemies[idx], idx, hx, hy, s_punch_dir, s_punch_cone, &d2)) {
+        int ex, ey;
+        idx = punch_target(enemies, max_enemies, hero_x, hero_y, s_punch_dir, s_punch_cone, &ex, &ey);
+    }
+    s_punch_target = -1;
+    punch_apply(enemies, idx, hero_x, hero_y, s_punch_move);
 }
 
 // Cobra el golpe guardado (s_punch_queued): cierra el golpe en curso, que ya ha ensenado su impacto o ya
@@ -206,8 +242,10 @@ void punch_update(Enemy *enemies, int max_enemies, fixed hero_x, fixed hero_y, i
             s_punch_chain = s_punch_move < PUNCH_MOVE_HOOK ? PUNCH_CHAIN_FRAMES_V : 0;
         }
     }
-    // El golpe guardado no corta la animacion en seco: se cobra cuando el golpe en curso ya ha ensenado
-    // su fotograma de impacto (la extension del brazo), o en cuanto la animacion termina.
-    if (s_punch_queued > 0 && (!s_punch_active || s_punch_frame > PUNCH_IMPACT_V(s_punch_move)))
+    if (s_punch_active) punch_impact_step(enemies, max_enemies, hero_x, hero_y);
+    // El golpe guardado no corta la animacion en seco: se cobra cuando el golpe en curso ya ha ensenado su
+    // impacto (la extension del brazo) y ademas PUNCH_FOLLOW_V fotogramas de seguimiento enteros, o en
+    // cuanto la animacion termina. Asi el primer golpe del combo se ve siempre hasta el impacto.
+    if (s_punch_queued > 0 && (!s_punch_active || s_punch_frame > PUNCH_IMPACT_V(s_punch_move) + PUNCH_FOLLOW_V))
         punch_fire_queue(enemies, max_enemies, hero_x, hero_y, hero_dir, soft_lock);
 }

@@ -57,6 +57,9 @@ extern int g_lab_sfx_var[SND_COUNT];    /* per event: 0 = Original, 1.. = that e
 extern int g_lab_god;                   /* 1 = the hero cannot die (applied each frame by main.c) */
 /* Punch tuning (page "Puñetazo"); defaults = the constants of punch.h. Read through the PUNCH_*_V macros. */
 extern int g_lab_punch_ticks, g_lab_punch_chain, g_lab_punch_walk_pct, g_lab_punch_range;
+extern int g_lab_punch_split;          /* px above the feet where the walk clip takes over */
+extern int g_lab_punch_start[3];       /* first frame of direct / cross / hook */
+extern int g_lab_punch_follow;         /* frames shown after the impact before a queued punch chains */
 extern int g_lab_punch_impact[3];       /* impact frame of direct / cross / hook */
 extern int g_lab_punch_light_push, g_lab_punch_hook_push, g_lab_punch_hitstop, g_lab_punch_shake;
 #if ARPG_BOXEO

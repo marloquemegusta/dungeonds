@@ -16,7 +16,23 @@ Una ROM donde probar cómo se siente el puñetazo: una sala con un solo enemigo 
 - **Sala de boxeo (`arpg-boxeo`):** el «saco» aparece a la derecha del héroe, no muere, no se tambalea, vuelve a su sitio tras 1 s sin golpes y el héroe es invulnerable. Se puede cambiar de enemigo y dejarlo quieto o atacando desde el menú. `TECHNICAL.md`, «Variante `arpg-boxeo`».
 - **Página «Puñetazo» del menú (SELECT, L/R para cambiar de página):** velocidad, ventana de combo, cuánto anda al pegar, fotograma de impacto de cada golpe, empuje, parón, temblor y alcance. También está en `arpg-lab`.
 
-## Evidencia (ROM real, DeSmuME)
+## Segunda vuelta (tras probarlo en la DS)
+
+El usuario notó tres cosas en la consola:
+
+- **Brazos de más al pegar andando.** No era un fallo de borrado. La figura se compone con el golpe arriba y las piernas del andar abajo, y el corte (16 px sobre los pies) dejaba pasar las manos del andar, que se balancean a la altura de la cadera. El corte baja a 8 px: las manos del andar están siempre entre 9 y 21 px, medido en sus 64 fotogramas.
+- **El sonido y el daño llegaban antes que el brazo.** El golpe se aplicaba al pulsar. Ahora se aplica en el fotograma de brazo estirado, elegido mirando los 8 fotogramas de cada golpe: directo 7, cruzado 5, gancho 5. En ese momento se vuelve a comprobar que el enemigo sigue al alcance.
+- **El primer golpe no se veía entero.** El encadenado cortaba nada más pasar el impacto, y además el impacto estaba mal elegido. Ahora cada golpe enseña su impacto y un fotograma de seguimiento antes del siguiente. Además, cada golpe se salta la guardia quieta del principio, así que el directo impacta unos 9 frames después de pulsar, en vez de 21.
+
+Todo esto se ajusta desde la página «Puñetazo»: inicio, impacto, seguimiento y corte de cintura.
+
+![Fotogramas de cada golpe; en rojo, el de impacto](assets/impacto_frames_sheet.png)
+
+![Pegando andando hacia el saco, fotograma a fotograma](assets/fino_andando_sheet.png)
+
+![Pegando andando](assets/fino_andando_4x.gif) ![Combo parado](assets/fino_combo_4x.gif)
+
+## Evidencia de la primera vuelta (ROM real, DeSmuME)
 
 Combo completo con toques cortos: directo, cruzado y gancho (50 + 50 + 90 de daño); el saco retrocede y vuelve.
 
