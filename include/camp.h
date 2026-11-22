@@ -22,6 +22,7 @@ enum { CAMP_ACT_NONE = 0, CAMP_ACT_SLEEP, CAMP_ACT_INVENTORY, CAMP_ACT_CODEX, CA
 
 #if CAMP_SCENE
 const Arena *camp_arena(void);   // the static camp room (built once on first call)
+void camp_unload_gfx(void);      // frees camp graphics when leaving for the dungeon
 int  camp_active(void);
 void camp_set_active(int on);
 

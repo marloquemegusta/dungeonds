@@ -2306,8 +2306,11 @@ static void boss_snapshot_all(void) {
             g_enemies[slot].hit_timer = 0;
         }
     }
-    boss_snapshot_screen(boss_snapshot_buffer(1), 1, s_cam_x, boss_focus_view_y());   // boss in the middle
-    boss_snapshot_screen(boss_snapshot_buffer(0), 0, s_cam_x, s_cam_y);
+    uint16_t *top = boss_snapshot_buffer(1);
+    uint16_t *bot = boss_snapshot_buffer(0);
+    if (!top || !bot) { if (slot >= 0) g_enemies[slot].active = 0; return; }
+    boss_snapshot_screen(top, 1, s_cam_x, boss_focus_view_y());   // boss in the middle
+    boss_snapshot_screen(bot, 0, s_cam_x, s_cam_y);
     if (slot >= 0) g_enemies[slot].active = 0;
     boss_snapshot_commit(s_cam_x);
 }
@@ -3332,6 +3335,7 @@ static void enter_camp_scene(void) {
 static void leave_camp_to_dungeon(void) {
     camp_set_active(0);
     camp_hero_release();
+    camp_unload_gfx();
     g_arena = strip_arena();
     arpg_progress_save();
     s_run_started = 1;

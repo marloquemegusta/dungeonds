@@ -3,6 +3,7 @@
 #include "bestiary_exvoto.h"
 #include "player_sprite.h"
 #include <nds.h>
+#include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
 
@@ -112,9 +113,9 @@ typedef struct {
     uint32_t offset;
 } __attribute__((packed)) BestiaryPortraitFrame;
 
-/* Static direction buffer: 160 KB is enough for the largest single direction (Cireneo ~145.2 KB) */
+/* Direction buffer allocated only while bestiary_run() is open: 160 KB fits the largest single direction (Cireneo ~145.2 KB). */
 #define BESTIARY_PORTRAIT_BUF_SIZE (160 * 1024)
-static uint8_t s_portrait_buf[BESTIARY_PORTRAIT_BUF_SIZE];
+static uint8_t *s_portrait_buf = NULL;
 static BestiaryPortraitFileHeader s_portrait_hdr;
 static int s_portrait_loaded_entry = -1;
 static int s_portrait_loaded_dir = -1;
@@ -138,7 +139,10 @@ static void draw_border_rect(uint16_t *fb, uint16_t color) {
 }
 
 static int load_portrait_direction(int entry_idx, int dir) {
-    if (entry_idx < 0 || entry_idx >= BESTIARY_NUM_ENTRIES) return 0;
+    if (!s_portrait_buf || entry_idx < 0 || entry_idx >= BESTIARY_NUM_ENTRIES) {
+        s_portrait_valid = 0;
+        return 0;
+    }
     dir &= 7;
 
     char path[64];
@@ -527,6 +531,8 @@ void bestiary_run(uint16_t *top_page, uint16_t *bot_page_a, uint16_t *bot_page_b
                   int *bot_active_page_idx, void (*vblank_flip_fn)(void)) {
     if (!top_page || !bot_page_a || !bot_page_b) return;
 
+    if (!s_portrait_buf) s_portrait_buf = (uint8_t *)malloc(BESTIARY_PORTRAIT_BUF_SIZE);
+
     g_bestiary_debug.active = 1;
     g_bestiary_debug.trigger = 0;
     g_bestiary_debug.entry_index = 0;
@@ -655,5 +661,7 @@ void bestiary_run(uint16_t *top_page, uint16_t *bot_page_a, uint16_t *bot_page_b
     s_portrait_loaded_entry = -1;
     s_portrait_loaded_dir = -1;
     s_portrait_valid = 0;
+    free(s_portrait_buf);
+    s_portrait_buf = NULL;
     g_bestiary_debug.active = 0;
 }
