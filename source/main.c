@@ -39,7 +39,6 @@
 #include "bestiary_font.h"
 #include "arpg.h"
 #include "arpg_progress.h"
-#include "arpg_tree.h"
 #include "arpg_inv.h"
 #include "glifo.h"
 #include "radial.h"
@@ -2534,7 +2533,6 @@ static void on_enemy_death(const Enemy *e, fixed hit_vx, fixed hit_vy) {
     // ARPG: the hook gets a const pointer into g_enemies. An ally drops no runes; a dead enemy in a Glifo may rise (allies.c).
     const int dead_slot = (e >= g_enemies && e < g_enemies + MAX_ENEMIES) ? (int)(e - g_enemies) : -1;
     const int dead_was_ally = dead_slot >= 0 && g_enemy_ally[dead_slot];
-    if (dead_slot >= 0) allies_on_enemy_death(&g_enemies[dead_slot], g_enemies, MAX_ENEMIES);
     {   // ARPG: experiencia directa al matar (sin runas en el suelo) y caída de reliquias.
         int floor = enc_current_encounter() + 1;
         int xp = dead_was_ally ? 0 : arpg_enemy_xp(e->type, enc_current_encounter());
@@ -2655,7 +2653,7 @@ static void strip_enemies_update(void) {
     // Encounters and corridors replace the horde, the tide, the gems and the hearts (DESIGN.md 6.13.6).
     enemy_ai_set_view(s_cam_x, s_cam_y - SCREEN_H, s_cam_y + SCREEN_H);
     enemy_ai_update(g_enemies, MAX_ENEMIES, s_player.x, s_player.y);
-    allies_update(g_enemies, MAX_ENEMIES);                  // ARPG: Resurreccion allies (allies.c)
+    // Resurreccion (allies.c) desenganchada: Levantar queda fuera de la protodemo (DESIGN.md 7.6).
     enc_update(g_enemies, MAX_ENEMIES, TO_INT(s_player.x), TO_INT(s_player.y));
 #if ARPG_BOXEO
     boxeo_update(g_enemies, MAX_ENEMIES, TO_INT(s_player.x), TO_INT(s_player.y));
@@ -3149,7 +3147,7 @@ static void player_update(uint32_t keys, uint32_t keys_down) {
 
     int result;
 #if ENCOUNTERS_PROTO
-    if (g_arpg.spell == 1 && arpg_tree_has(0)) {
+    if (g_arpg.spell == 1 && arpg_inv_has_spell(ARPG_SPELL_GLIFO)) {
         // Glifo (DESIGN.md 7.5): the stylus throws the glifo; while aiming the hero stands still, as with the ray.
         result = glifo_input(&g_player_state, touch_down, pressed, in.touch_x, in.touch_y, s_player.x, s_player.y)
                  ? WEAPON_RESULT_ROOTED : 0;
@@ -3214,7 +3212,6 @@ static void arena_restart(void) {
     mods_reset();                    // a new run: modifiers are lost (DESIGN.md 5)
     upgrades_reset((uint32_t)cpuGetTiming() ^ s_frame_index ^ 0x55504752u);   // xp, level, Dones and relics too
 #if ENCOUNTERS_PROTO
-    arpg_tree_apply();              // skill tree (DESIGN.md 7.3): bought nodes give their relics and Dones again
     arpg_inv_apply();               // inventory stat lines and mechanics of the equipped relics (DESIGN.md 7.4)
 #endif
     player_state_init(&g_player_state);

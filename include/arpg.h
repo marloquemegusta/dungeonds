@@ -57,16 +57,13 @@
 #define ARPG_REMATE_MANA 25         // [TUNABLE-PLACEHOLDER] mana per mana orb
 #define ARPG_PICKUP_MAGNET 36       // [TUNABLE-PLACEHOLDER] ground px: orbs this close fly to the hero
 
-// Experience runes (DESIGN.md 7): what a death is worth, and how far a rune is pulled to the hero.
+// Experience (DESIGN.md 7.1): what a death is worth, granted directly on the kill.
 #define ARPG_XP_EXVOTO 4            // [TUNABLE-PLACEHOLDER] xp per Exvoto
 #define ARPG_XP_MONAGUILLO 1        // [TUNABLE-PLACEHOLDER] xp per Monaguillo
 #define ARPG_XP_CIRENEO 10          // [TUNABLE-PLACEHOLDER] xp per Cireneo (ENEMY_TYPE_CHARGER)
 #define ARPG_XP_OJO 8               // [TUNABLE-PLACEHOLDER] xp per Ojo del Tribunal (ENEMY_TYPE_SHOOTER)
 #define ARPG_XP_BOSS_BASE 100       // [TUNABLE-PLACEHOLDER] Abanderado xp at boss 1; doubles per boss
 #define ARPG_XP_BOSS_CAP 1600       // [TUNABLE-PLACEHOLDER] Abanderado xp ceiling
-#define ARPG_RUNE_MAGNET 64         // [TUNABLE-PLACEHOLDER] ground px: runes this close fly to the hero (orbs: ARPG_PICKUP_MAGNET)
-#define ARPG_BOSS_RUNES 6           // [TUNABLE-PLACEHOLDER] runes an Abanderado drops, splitting its xp
-#define ARPG_BOSS_RUNE_SPREAD 12    // [TUNABLE-PLACEHOLDER] ground px from the boss to each rune
 
 // Glifo (DESIGN.md 7.5-7.7): hechizo de suelo lanzado al punto del lapiz. Ciclo: apertura (la grieta se abre, sin efecto),
 // espera (actuan las auras) y detonacion (un golpe a todo el que este dentro), luego cierre. Auras componibles

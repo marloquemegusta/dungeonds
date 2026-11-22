@@ -533,8 +533,8 @@ static void line_add(InvModDelta *d, const ArpgInvItem *it, int kind, int val) {
 }
 
 // Reliquia del roguelike que corresponde a una mecánica equipada (-1 si no hay ninguna).
-// Prisa y Brasa no tienen reliquia propia: su efecto de Don lo aplica arpg_tree_apply() en el
-// arranque de la partida (nodos 1 y 5), así que aquí solo cuentan sus líneas.
+// Prisa y Brasa no tienen reliquia propia y no se tiran en el botín (Prisa es una línea de stat; Brasa se
+// descartó, DESIGN.md 7.6), así que aquí solo cuentan sus líneas.
 static int mech_relic_bit(int mech) {
     switch (mech) {
     case ARPG_MECH_SED_CENIZA:   return RELIC_SED_CENIZA;
