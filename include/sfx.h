@@ -30,6 +30,11 @@ typedef enum {
     SND_UI_CLICK,
     SND_RELIC_SOCKET,
     SND_LEVEL_UP,
+    SND_CFX_TANIDO,          /* Campanero: minor toll (lab_bell_h2) */
+    SND_CFX_BONG,            /* Campanero: major toll, the strike (lab_bong) */
+    SND_CFX_BELL_LOW,        /* Campanero: major toll, the hum under it (lab_bell_h0) */
+    SND_CFX_GLASS_A,         /* a glyph is silenced (lab_glass1) */
+    SND_CFX_GLASS_B,         /* ... alternate (lab_glass4) */
     SND_COUNT
 } SfxId;
 
