@@ -849,15 +849,13 @@ static void update_screen_hardware_bg(int is_sub, u16 *map_ptr, int cam_x, int c
 // grip) and layer 1 (loose debris), each occluded by props at its own `depth`.
 static void draw_remate_layer(uint16_t *buffer, int kind, int d, int f, int layer, int ax, int ay, int cam_x, int cam_y, int depth) {
     if (kind < 0 || kind >= REMATE_NUM_KINDS || d < 0 || d >= REMATE_NUM_DIRS) return;
-    const RemateBinHeader *hdr = remate_bin();
-    if (!hdr) return;
     const RemateDirInfo *dnfo = &g_remate_dir_info[kind][d];
-    const uint8_t *b = layer ? hdr->d_bounds[f] : hdr->f_bounds[f];
+    const uint8_t *b = remate_layer_bounds(layer, f);
     int bw = b[2], bh = b[3];
     if (bw == 0 || bh == 0) return;
     int pitch = sprite_pitch(bw);
-    const uint16_t *pix = remate_bin_pixels() + (layer ? hdr->d_pix_off[f] : hdr->f_pix_off[f]);
-    const uint16_t *runs = remate_bin_runs() + (layer ? hdr->d_run_off[f] : hdr->f_run_off[f]);
+    const uint16_t *pix = remate_layer_pixels(layer);
+    const uint16_t *runs = remate_layer_runs(layer);
     blit_stride(buffer, pix, runs, pitch, bw, bh,
                 ax - dnfo->anchor_x + b[0], ay - dnfo->anchor_y + b[1],
                 cam_x, cam_y, depth);
@@ -1265,12 +1263,10 @@ typedef struct {
 
 static int shadow_select(const DrawItem *it, ShadowSel *sel) {
     if (it->ref == -1 && remate_active()) {                   // baked shadow of the remate cell
-        const RemateBinHeader *hdr = remate_bin();
-        if (!hdr) return 0;
         const int kind = remate_kind(), d = remate_dir(), f = remate_frame();
         const RemateDirInfo *dnfo = &g_remate_dir_info[kind][d];
-        sel->mask = remate_bin_masks() + hdr->s_mask_off[f];
-        sel->bounds = hdr->s_bounds[f];
+        sel->mask = remate_shadow_mask();
+        sel->bounds = remate_shadow_bounds(f);
         sel->left = it->cx + dnfo->shadow_ox - REMATE_SHADOW_CANVAS / 2;
         sel->top = it->cy + dnfo->shadow_oy - REMATE_SHADOW_CANVAS / 2;
         return 1;

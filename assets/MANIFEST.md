@@ -43,6 +43,7 @@ Todo asset que use el juego está en este catálogo y versionado. Lo que no est�
 | Rayos de luz | pintados a mano, `assets/sprites/godrays/` | `source/godrays_gfx.c` (notas en `tools/godrays/README.md`) | `source/godrays_gfx.c` | git |
 | Cartas de mejora | escenas reales de la ROM (`cathedral-sandbox`) | `tools/levelup_cards/capture_cards.py` | `nitrofiles/levelup/*.bin` | derivado (capturas intermedias en `assets/sprites/levelup/`, ignoradas) |
 | Clips de la intro | partida real en DeSmuME | `tools/gen_intro_clips.py` | `nitrofiles/intro/*.bin` | derivado |
+| Remates (ejecuciones) | clips Mixamo del inbox (patada y muerte) + modelos de los personajes | `tools/characters/ds_remate_ojo.py` (escena + GLB horneados) → `tools/lab/fast/export_scene_fast.cjs` (lab rápido) → `tools/generate_remate_sprites.py` | `nitrofiles/remate/<tipo>_d<dir>.bin` + `source/remate_sprites.c` | derivado (los FBX del inbox son dato de pose; los GLB del lab no se versionan) |
 | Efectos de sonido | ElevenLabs → `assets/sfx/raw/` | recorte a mano → `assets/sfx/baked/` → `tools/bake_sfx.py` | arrays en C (`source/sfx.c`) | git |
 | Música | `assets/music/*.wav` | conversión a `nitrofiles/bgm.raw` | `nitrofiles/bgm.raw` | git |
 | Icono de la ROM | `assets/icon.png` | toolchain | banner de la ROM | git |
