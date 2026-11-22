@@ -20,7 +20,16 @@ ANI = os.path.join(ROOT, 'assets/models/animations/corazon')
 CLIPS = [('walk', 'corazon_walk', 2), ('disparo', 'corazon_disparo', 0),
          ('agachado_andar', 'corazon_agachado_andar', 1),
          ('punch_a', 'corazon_punch_a', 1), ('punch_b', 'corazon_punch_b', 1),
-         ('gancho', 'corazon_gancho', 1)]
+         ('gancho', 'corazon_gancho', 1),
+         ('pray', 'corazon_pray', 1)]
+# Clips cuya fuente de Mixamo vive fuera de animations/corazon/ (ruta relativa a la raiz del worktree).
+CLIP_SRC = {'pray': 'assets/models/animations/pray/pray_standing.fbx'}
+# Rezar (DESIGN.md 7.7, Glifo): el clip de Mixamo «pray standing» es un bucle con las manos ya juntas, sin el gesto de
+# juntarlas. Se construye un clip de 8 fotogramas que lleva al heroe de su pose de reposo (primer fotograma del andar) a la
+# pose del rezo: la rotacion en mundo de cada hueso se interpola (slerp) con una rampa suave que cierra las manos en el
+# fotograma PRAY_CLOSE_FRAME (0..7) y despues sigue el rezo de la fuente. (fotograma de la fuente, avance 0..1) por fotograma
+PRAY_CLOSE_FRAME = 5
+PRAY_PLAN = [(1, 0.0), (1, 0.104), (1, 0.352), (1, 0.648), (1, 0.896), (1, 1.0), (8, 1.0), (16, 1.0), (16, 1.0)]   # el 9.o fotograma duplica el ultimo: el lab muestrea i/8 de la duracion, asi cada muestra cae en su clave
 # Recorte al tramo util del combo (DESIGN.md 7.2; walkthroughs/arpg-predemo/diseno_juego_final.md 10): fotogramas
 # de la fuente a 30 fps, en coordenadas de clave del clip de Mixamo (F0 = clave 1). El clip exportado empieza en el
 # primer fotograma del tramo, asi que el lab muestrea solo el golpe y no la pose de reposo de los extremos.
@@ -69,14 +78,14 @@ def shift_fbx_times(path, dt):
     print('SHIFT', path, dt)
 
 
-RETARGET = ('agachado_andar', 'punch_a', 'punch_b', 'gancho')   # clips Mixamo con otra orientacion de ejes de hueso: se retargetean por orientacion en mundo
+RETARGET = ('agachado_andar', 'punch_a', 'punch_b', 'gancho', 'pray')   # clips Mixamo con otra orientacion de ejes de hueso: se retargetean por orientacion en mundo
 
 
 def _rot3(m):
     return m.to_3x3().normalized()
 
 
-def retarget_action(arm, sa, aname, level=None):
+def retarget_action(arm, sa, aname, level=None, pray=None):
     """Copia al esqueleto del modelo (arm) la animacion del esqueleto Mixamo sa, sin tocar ninguno de los dos.
 
     Los dos tienen los mismos 65 huesos pero otros ejes locales, asi que no se copian las rotaciones locales: por cada
@@ -85,6 +94,7 @@ def retarget_action(arm, sa, aname, level=None):
     scene = bpy.context.scene
     act = sa.animation_data.action
     f0, f1 = int(round(act.frame_range[0])), int(round(act.frame_range[1]))
+    plan = [pf[0] for pf in PRAY_PLAN] if pray else list(range(f0, f1 + 1))
     Rw = _rot3(sa.matrix_world)
     assert _rot3(arm.matrix_world).to_quaternion().angle < 1e-3, 'el modelo no esta alineado con el mundo'
     order = []
@@ -99,7 +109,7 @@ def retarget_action(arm, sa, aname, level=None):
     hs, ht = sa.data.bones['mixamorig:Hips'], arm.data.bones['mixamorig:Hips']
     ratio = ht.head_local.z / (Rw @ hs.head_local).z
     drift = []
-    for f in range(f0, f1 + 1):
+    for f in plan:
         scene.frame_set(f)
         drift.append(Rw @ (sa.pose.bones['mixamorig:Hips'].head - hs.head_local))
     net = drift[-1] - drift[0]
@@ -170,7 +180,7 @@ def retarget_action(arm, sa, aname, level=None):
     arm.animation_data.action = new_act
     for pb in arm.pose.bones:
         pb.rotation_mode = 'QUATERNION'
-    for i, f in enumerate(range(f0, f1 + 1)):
+    for i, f in enumerate(plan):
         scene.frame_set(f)
         T = {}
         for b in order:
@@ -182,6 +192,14 @@ def retarget_action(arm, sa, aname, level=None):
         if fwd is not None:
             d -= fwd * (d.dot(fwd) - drift[0].dot(fwd))
         hips_pos = rh[P + 'Hips'] + d * ratio
+        if pray:
+            k = PRAY_PLAN[i][1]
+            for b in order:
+                q0, q1 = pray['T'][b.name].to_quaternion(), T[b.name].to_quaternion()
+                if q0.dot(q1) < 0:
+                    q1.negate()
+                T[b.name] = q0.slerp(q1, k).to_matrix()
+            hips_pos = pray['hips'].lerp(hips_pos, k)
         if level:
             T, hips_pos = retouch(T, hips_pos, CROUCH_LEVELS[level])
         for b in order:
@@ -191,11 +209,12 @@ def retarget_action(arm, sa, aname, level=None):
             else:
                 basis = rest[n].inverted() @ rest[b.parent.name] @ T[b.parent.name].inverted() @ T[n]
             pb = arm.pose.bones[n]
+            kf = i + 1 if pray else f
             pb.rotation_quaternion = basis.to_quaternion()
-            pb.keyframe_insert('rotation_quaternion', frame=f)
+            pb.keyframe_insert('rotation_quaternion', frame=kf)
             if b.parent is None:
                 pb.location = rest[n].inverted() @ (hips_pos - rh[n])
-                pb.keyframe_insert('location', frame=f)
+                pb.keyframe_insert('location', frame=kf)
     arm.animation_data.action = None
     new_act.name = aname
     return new_act
@@ -216,19 +235,39 @@ def trim_action(act, ta, tb):
                     fc.update()
 
 
+ONLY = os.environ.get('BUILD_ONLY')   # p. ej. BUILD_ONLY=pray: solo ese clip
 for clip, name, start in CLIPS:
+    if ONLY and clip != ONLY:
+        continue
     bpy.ops.wm.read_factory_settings(use_empty=True)
     scene = bpy.context.scene
     bpy.ops.import_scene.fbx(filepath=os.path.join(CHR, 'source/corazon.fbx'))
     arm = [o for o in bpy.data.objects if o.type == 'ARMATURE'][0]
     meshes = [o for o in bpy.data.objects if o.type == 'MESH']
     before = set(bpy.data.objects)
-    bpy.ops.import_scene.fbx(filepath=os.path.join(ANI, clip + '.fbx'))   # fija el fps de la escena al del clip
+    bpy.ops.import_scene.fbx(filepath=os.path.join(ROOT, CLIP_SRC[clip]) if clip in CLIP_SRC else os.path.join(ANI, clip + '.fbx'))   # fija el fps de la escena al del clip
     fps = scene.render.fps
     new = [o for o in bpy.data.objects if o not in before]
     src_arm = [o for o in new if o.type == 'ARMATURE'][0]
     assert {b.name for b in src_arm.data.bones} == {b.name for b in arm.data.bones}, 'esqueletos distintos'
-    act = retarget_action(arm, src_arm, clip, CLIP_LEVEL.get(name)) if clip in RETARGET else src_arm.animation_data.action
+    pray = None
+    if clip == 'pray':
+        # pose de reposo del heroe: primer fotograma del andar (mismos huesos y ejes que el modelo: se evalua tal cual)
+        before = set(bpy.data.objects)
+        bpy.ops.import_scene.fbx(filepath=os.path.join(ANI, 'walk.fbx'))
+        wk = [o for o in bpy.data.objects if o not in before and o.type == 'ARMATURE'][0]
+        scene.frame_set(int(round(wk.animation_data.action.frame_range[0])))
+        bpy.context.view_layer.update()
+        Rk = _rot3(wk.matrix_world)
+        hk = wk.data.bones['mixamorig:Hips']
+        pray = {'T': {pb.name: Rk @ _rot3(pb.matrix) for pb in wk.pose.bones},
+                'hips': arm.data.bones['mixamorig:Hips'].head_local
+                        + (Rk @ (wk.pose.bones['mixamorig:Hips'].head - hk.head_local))
+                        * (arm.data.bones['mixamorig:Hips'].head_local.z / (Rk @ hk.head_local).z)}
+        for o in [o for o in bpy.data.objects if o not in before]:
+            bpy.data.objects.remove(o, do_unlink=True)
+        new = [o for o in new if o.name in bpy.data.objects]
+    act = retarget_action(arm, src_arm, clip, CLIP_LEVEL.get(name), pray) if clip in RETARGET else src_arm.animation_data.action
     if clip in TRIM:
         trim_action(act, *TRIM[clip])
     f0, f1 = int(round(act.frame_range[0])), int(round(act.frame_range[1]))

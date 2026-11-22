@@ -75,8 +75,12 @@ Cómo se hicieron los efectos de armas (2026-11): histórico en `walkthroughs/we
 ## Subagentes y Modelos
 
 - Todo plan que lance subagentes indica el modelo de cada uno. Por defecto: **Haiku** solo para búsquedas, listados, verificar que algo sigue presente o leer logs; **Sonnet** para implementar (también efectos y VFX), análisis de código, revisiones y auditorías por área; **Opus** solo para decisiones de arquitectura o diseño que no se puedan partir.
-- **Modelos de otros proveedores:** el plan nombra el modelo (`luna`, `sol`, `terra`, `astra` por Codex; `argon`, `flash`, `gpt-oss` por Antigravity) y se ejecuta con la skill compartida `delegate-agents` (`C:\codexlocal\skills\delegate-agents`, alias en su `models.json`, `delegate.py --list`). Haiku, Sonnet, Opus y Fable siguen siendo el tool Agent. Escritura solo en worktrees; la respuesta externa se verifica como cualquier otra.
-- **Límite de los agentes Codex:** en su sandbox no arrancan Python, Docker ni WSL (sí gcc y Node). El brief les pide intentarlo una vez y entregar los comandos sin reintentar. Quien coordina compila la ROM, pasa los tests y los escenarios y ejecuta los renders del lab.
+- **Solo subagentes nativos de Claude** (tool Agent: Haiku, Sonnet, Opus). No se delega en modelos de otros proveedores (Codex, Antigravity, Command Code) ni se usa la skill `delegate-agents`.
+- **Velocidad de los agentes** (medido en esta rama: un agente de 23 min gastó ~10 en pensar, ~6 en escenarios y ~3 en leer):
+  - Esfuerzo `medium` para tareas acotadas (un archivo o una mecánica con punteros exactos); `high` solo si hay que diseñar.
+  - Las piezas independientes van en agentes paralelos, cada uno en su worktree o con archivos disjuntos, para que no choquen las compilaciones.
+  - El brief da rutas, símbolos y un escenario plantilla: el agente no explora ni prueba coordenadas a ciegas.
+  - Antes de lanzar escenarios, calentar WSL con un comando trivial (el arranque en frío cuesta ~28 s).
 - Usar el modelo más barato que no baje la calidad del resultado. El usuario lo ha pedido repetidamente: un plan sin esta asignación se considera incompleto.
 
 ---

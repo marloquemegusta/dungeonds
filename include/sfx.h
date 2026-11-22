@@ -15,8 +15,8 @@ typedef enum {
     SND_PUNCH_HIT,
     SND_REMATE_EXEC,
     SND_WOBBLE_CUE,
-    SND_GLIFO_CAST,
-    SND_GLIFO_ACTIVATE,
+    SND_GLIFO_CRACK,         /* Glifo: the floor cracks open (assets/sfx/baked/lab_creak) */
+    SND_GLIFO_DETONATE,      /* Glifo: the rune detonates (lab_mining0) */
     SND_OJO_CHARGE,
     SND_OJO_FIRE,
     SND_CIRENEO_CHARGE,

@@ -9,7 +9,7 @@ Primero el estado necesario para retomar el trabajo sin depender del chat; despu
 **Estado de la rama `proto/arpg` (protodemo ARPG, 2026-11-22):**
 - **Hecho e integrado:** bucle campamento ↔ catedral, XP directa al matar y subida de nivel al dormir, inventario táctil estilo *Diablo II / Sacred* con giros 3D desde NitroFS, reliquias de la protodemo (2 auras de Rayo, 1 de Ejecución reservando la 2.ª para Levantar, 2 de Pecho y 3 Legendarias) conectadas con su `mech_val` y unidades explícitas al combate real, escalado Nivel vs. Rareza con bloqueo `Req. Nv. X` al equipar y drops de nivel fijo por ala/escalón, y dirección de arte documentada para los 3 escalones del Exvoto como etapas de corrupción biológica (*DESIGN.md* §7.6).
 - **Pendiente para cerrar la protodemo:**
-  1. **Hechizo de Glifo:** diseñar su gameplay completo (efecto base + sus 2 auras) e integrarlo como segundo hechizo equipable (más el icono 3D del Vial).
+  1. **Hechizo de Glifo:** hecho y probado en la DS (`glifo-diseno/` y `glifo-pulido/`). Falta el log `perf` con 3 glifos y salas llenas.
   2. **Grafo de la Zona 1:** conectar las salas reales (3 naves, 4 galerías, 2 capillas con reja, cripta, puertas con fundido, llave, atajo, altares de viaje, santuarios y mapa en pausa) con población fija por ala y escalones de corrupción.
   3. **Campamento nocturno:** corregir perspectiva de los muros laterales, conectar la mesa como Crisol de desguace (y uso de cera/pociones) y señal diegética de foco sin rótulos.
   4. **Interfaz:** tipografía definitiva del inventario y ajustar el espaciado del botón 5 en la pausa de mazmorra para no pisar `Nv.`.
@@ -34,6 +34,8 @@ Primero el estado necesario para retomar el trabajo sin depender del chat; despu
 - Data abort intermitente en hardware, sin causa conocida (`TECHNICAL.md` §4.4).
 
 ### Entregas recientes (más nueva primero)
+
+- **Glifo pulido (`feat/glifo-pulido`, 2026-11-22, sobre `proto/arpg`):** sin proyectil, el héroe reza (y puede andar mientras apunta y reza); alcance infinito solo sobre suelo, con la runa recortada en los muros; previsualización tenue con el lápiz apoyado; runa al radio real; SFX del banco (`lab_creak`, `lab_mining0`); Crisol con confirmación; L pega al pulsar y abre el radial si se mantiene. Builds 0 avisos nuevos y escenarios PASS; probado en la DS. [`walkthrough`](walkthroughs/glifo-pulido/walkthrough.md).
 
 - **Sala de boxeo y puñetazo sin cortes (`feat/boxeo-lab`, 2026-11-22, sobre `feat/arpg-lab` + `fix/punch-pies-puños`):** nueva variante `arpg-boxeo` con un solo enemigo de vida infinita delante del héroe para probar el puñetazo, y página «Puñetazo» en el menú del lab para ajustarlo en vivo. El golpe encadenado ya no corta la animación antes del impacto (cola de hasta 2 pulsaciones), el empuje y el *hit-stun* se aplican de verdad y los toques cortos ya no se pierden. Builds `arpg-boxeo`, `arpg-lab` y `default` 0 avisos nuevos; escenario `arpg_boxeo` PASS; sin medición `perf` en la DS. [`walkthrough`](walkthroughs/sala-boxeo/walkthrough.md).
 

@@ -881,16 +881,14 @@ static uint16_t s_comp_runs[PUNCH_COMP_RUNS_HALFWORDS] __attribute__((aligned(4)
 static int s_ck_move = -1, s_ck_pdir = -1, s_ck_pframe = -1;
 static int s_ck_char = -1, s_ck_wdir = -1, s_ck_wframe = -1, s_ck_split = -1;
 
-static void punch_compose_walk(void) {
-    const int move = punch_move(), pdir = punch_dir(), pframe = punch_frame();
+// Compone `pp`/`pb` (fotograma de la parte alta, celda 48x48 con la fila de pies en `anchor`) con el andar actual.
+// `move`/`pdir`/`pframe` identifican el fotograma de la parte alta para la cache (el rezo usa move = -2).
+static void compose_walk_upper(int move, int pdir, int pframe, const uint16_t *pp, const uint8_t *pb, int anchor) {
     const int char_id = s_player.char_id, wdir = s_player.dir, wframe = s_player.frame;
     if (move == s_ck_move && pdir == s_ck_pdir && pframe == s_ck_pframe &&
         char_id == s_ck_char && wdir == s_ck_wdir && wframe == s_ck_wframe && PUNCH_WALK_SPLIT_V == s_ck_split) return;
     s_ck_move = move; s_ck_pdir = pdir; s_ck_pframe = pframe;
     s_ck_char = char_id; s_ck_wdir = wdir; s_ck_wframe = wframe; s_ck_split = PUNCH_WALK_SPLIT_V;
-
-    const uint8_t *pb = punch_bounds();
-    const uint16_t *pp = punch_pixels();
     if (!pb || !pp) return;
     const uint8_t *wb = g_character_frame_bounds[char_id][wdir][wframe];
     const uint16_t *wp = character_frame_ptr(char_id, wdir, wframe);
@@ -898,8 +896,8 @@ static void punch_compose_walk(void) {
     const int wpitch = sprite_pitch(wb[2]);
     const int ws = g_characters[char_id].sprite_w;
     const int xoff = (PUNCH_CELL - ws) / 2;                 // la celda del andar es mas estrecha: centrada
-    const int yoff = punch_ground_anchor() - s_char_ground_anchor[char_id][wdir];
-    const int split_y = punch_ground_anchor() - PUNCH_WALK_SPLIT_V;
+    const int yoff = anchor - s_char_ground_anchor[char_id][wdir];
+    const int split_y = anchor - PUNCH_WALK_SPLIT_V;
 
     for (int i = 0; i < PUNCH_CELL * PUNCH_CELL; i++) s_comp_pix[i] = 0;
     // Tren superior: fotograma del golpe, tal cual (la celda del golpe ya es 48x48 y su anchor es el de la fila de pies).
@@ -942,6 +940,10 @@ static void punch_compose_walk(void) {
     if ((dst - s_comp_runs) & 1) *dst = 0;
 }
 
+static void punch_compose_walk(void) {
+    compose_walk_upper(punch_move(), punch_dir(), punch_frame(), punch_pixels(), punch_bounds(), punch_ground_anchor());
+}
+
 static void draw_punch(uint16_t *buffer, int cam_x, int cam_y) {
     const uint16_t *pix = punch_pixels();
     const uint8_t *b = punch_bounds();
@@ -962,6 +964,25 @@ static void draw_punch(uint16_t *buffer, int cam_x, int cam_y) {
                 cam_x, cam_y, s_draw_item_depth);
 }
 
+// Rezo del Glifo: el clip corazon_pray entero si el heroe esta parado; andando, la parte alta del rezo sobre las piernas
+// del andar (la misma composicion que los punetazos).
+static void draw_pray(uint16_t *buffer, int cam_x, int cam_y) {
+    const uint16_t *pix = glifo_pray_pixels();
+    const uint8_t *b = glifo_pray_bounds();
+    if (!pix || !b || b[2] == 0 || b[3] == 0) return;
+    const int px = player_screen_x(s_player.x, s_player.y);
+    const int py = player_screen_y(s_player.x, s_player.y);
+    if (s_player.is_moving) {
+        compose_walk_upper(-2, glifo_pray_dir(), glifo_pray_frame(), pix, b, glifo_pray_anchor());
+        blit_stride(buffer, s_comp_pix, s_comp_runs, PUNCH_CELL, PUNCH_CELL, PUNCH_CELL,
+                    px - PUNCH_CELL / 2, py - glifo_pray_anchor(), cam_x, cam_y, s_draw_item_depth);
+        return;
+    }
+    blit_stride(buffer, pix, glifo_pray_runs(), sprite_pitch(b[2]), b[2], b[3],
+                px - PUNCH_CELL / 2 + b[0], py - glifo_pray_anchor() + b[1],
+                cam_x, cam_y, s_draw_item_depth);
+}
+
 static void draw_player(uint16_t *buffer, int cam_x, int cam_y) {
     if (remate_active()) {
         int ax, ay;
@@ -973,6 +994,7 @@ static void draw_player(uint16_t *buffer, int cam_x, int cam_y) {
         if (dep1 >= dep0) draw_remate_layer(buffer, k, d, f, 1, ax, ay, cam_x, cam_y, dep1);  // debris nearer: over the pair
         return;
     }
+    if (glifo_busy() && glifo_pray_pixels()) { draw_pray(buffer, cam_x, cam_y); return; }
     if (punch_active()) { draw_punch(buffer, cam_x, cam_y); return; }
     int px = player_screen_x(s_player.x, s_player.y);
     int py = player_screen_y(s_player.x, s_player.y);
@@ -1724,7 +1746,6 @@ ITCM_CODE static void render_screen(uint16_t *buffer, DirtySpan *spans, int cam_
     weapons_render_light(buffer, cam_x, cam_y);     // beams light the sprites drawn above
     PP_T0(pp_proj);
     weapons_render(buffer, cam_x, cam_y);
-    glifo_render(buffer, cam_x, cam_y);             // ARPG: flying Glifo
     if (!sub_screen) weapons_render_overlay(buffer);
     mods_render(buffer, cam_x, cam_y);
 #if ENCOUNTERS_PROTO
@@ -2707,6 +2728,13 @@ static int s_latch_pressed = 0;
 static int s_latch_released = 0;
 static int s_last_touch_x = 0;
 static int s_last_touch_y = 0;
+static int glifo_is_spell(void) {   // the Glifo is the active spell: the stylus casts it and never roots the hero
+#if ENCOUNTERS_PROTO
+    return g_arpg.spell == 1 && arpg_tree_has(0);
+#else
+    return 0;
+#endif
+}
 static int s_rooted = 0;          // the sniper is aiming: the player stands still
 
 #define AIM_CHEST_H 16            // height used to pick the facing direction from the stylus
@@ -2795,6 +2823,7 @@ static void camera_init(void) {
 // saca el siguiente; si no, empieza por el directo. Andando no hay soft-lock: el golpe va en la direccion de
 // movimiento (y solo alcanza el cono frontal), para no girarse hacia un enemigo que queda detras.
 static void arpg_punch(Enemy *enemies, int max_enemies) {
+    if (glifo_busy()) return;                      // rezando: el heroe no pega
     const int soft_lock = !s_player.is_moving;
     if (punch_try_chain(enemies, max_enemies, s_player.x, s_player.y, s_player.dir, soft_lock)) return;
     punch_start(enemies, max_enemies, s_player.x, s_player.y, s_player.dir, PUNCH_MOVE_A, soft_lock);
@@ -2921,6 +2950,10 @@ static void player_update(uint32_t keys, uint32_t keys_down) {
         if (!s_l_tracking && !s_l_consumed && !(keys & KEY_R)) {
             s_l_tracking = 1;
             s_l_frames = 1;
+#if ENCOUNTERS_PROTO
+            // Todo toque de L pega al instante (flanco de pulsacion); si L sigue pulsada se abre ademas el radial.
+            arpg_punch(g_enemies, MAX_ENEMIES);
+#endif
         } else if (s_l_tracking && ++s_l_frames >= ARPG_L_HOLD_FRAMES) {
             s_l_tracking = 0;
             s_l_consumed = 1;
@@ -2938,8 +2971,14 @@ static void player_update(uint32_t keys, uint32_t keys_down) {
     } else {
         s_l_consumed = 0;
         // Tap: tracked press released before the threshold, or a press edge seen only on release.
-        if (s_l_tracking || (keys_down & KEY_L)) {
-            s_l_tracking = 0;
+#if ENCOUNTERS_PROTO
+        // El golpe ya salio en la pulsacion; solo falta el flanco visto unicamente al soltar (pulsar y soltar en el mismo frame).
+        const int l_tap = !s_l_tracking && (keys_down & KEY_L);
+#else
+        const int l_tap = s_l_tracking || (keys_down & KEY_L);
+#endif
+        s_l_tracking = 0;
+        if (l_tap) {
             if (!(keys & KEY_R)) {
                 if (remate_start(g_enemies, MAX_ENEMIES, s_player.x, s_player.y, s_player.dir)) {
                     s_rooted = 0;
@@ -3031,7 +3070,7 @@ static void player_update(uint32_t keys, uint32_t keys_down) {
 
     // A press held through the post-shot cooldown starts the charge as soon as the weapon is
     // ready (weapons_input buffers it), so root the hero on that same frame too.
-    if ((pressed || touch_down) && weapons_can_start_aim(&g_player_state)) s_rooted = 1;
+    if ((pressed || touch_down) && !glifo_is_spell() && weapons_can_start_aim(&g_player_state)) s_rooted = 1;
 
     int sdx = 0, sdy = 0; // screen-space input axes
     if (!s_rooted || procession) {
@@ -3150,9 +3189,9 @@ static void player_update(uint32_t keys, uint32_t keys_down) {
     int result;
 #if ENCOUNTERS_PROTO
     if (g_arpg.spell == 1 && arpg_tree_has(0)) {
-        // Glifo (DESIGN.md 7.5): the stylus throws the glifo; while aiming the hero stands still, as with the ray.
-        result = glifo_input(&g_player_state, touch_down, pressed, in.touch_x, in.touch_y, s_player.x, s_player.y)
-                 ? WEAPON_RESULT_ROOTED : 0;
+        // Glifo (DESIGN.md 7.5): the stylus marks the target and the release casts it; the hero never stands still for it.
+        glifo_input(&g_player_state, touch_down, pressed, in.touch_x, in.touch_y, s_player.x, s_player.y, s_player.dir);
+        result = 0;
     } else
 #endif
     result = weapons_input(&g_player_state, &in, g_enemies, MAX_ENEMIES);
