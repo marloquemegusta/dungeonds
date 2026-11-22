@@ -121,3 +121,23 @@ Propuesta con capturas de la ROM: `walkthroughs/arpg-menus-inicio/`. Sustituye a
 - **Tarjeta del inventario:** la primera vez que se abre el inventario (arcón o pausa), una tarjeta encima: las reliquias se engarzan en un hechizo (Rayo, Ejecución, Glifo) o en el Pecho y lo mejoran; cada una pide un nivel; lo que no uses se funde y da cera. Se cierra con A, B o un toque.
 - **Controles:** pantalla en dos bloques, «En la catedral» y «En el campamento», con el Glifo y el mapa (SELECT).
 - **Pendiente:** imagen y nombre del juego en la pantalla de título (decisión de arte aparte).
+
+## 9. El Campanero de Ánimas, jefe (decidido 2026-11-22)
+Sustituye para el ARPG la dirección inicial de `DESIGN.md` §6.13.2 (reforzar a los de alrededor), que ya cubre la Monja. Aspecto y pacto: `DESIGN.md` §6.10. Es el jefe que **obliga a usar el Rayo**: con el Rayo sin mejorar es una pelea larga y dura, y así enseña a cuidarlo aunque se juegue «main Glifo». Zona y sala exactas, por decidir al diseñar la zona 2. Cifras iniciales `[TUNABLE-PLACEHOLDER]`, a ajustar jugando.
+- **Tañido menor (anula el Glifo):** cada **1,0 s** (por debajo del Glifo más rápido: 2 s de apertura y espera, 1,1 s con `Espera` al tope) una vibración corta recorre **todo el suelo de la sala**, sin alcance límite y sin que la paren las columnas, y **apaga todos los glifos** que haya, se estén abriendo o esperando; el maná gastado se pierde. No hace daño. Aspecto: anillo fino y tenue que se aleja, sin brillo (la campana es la telegrafía, como el toque mayor). El jugador lo descubre solo: el glifo se apaga antes de detonar.
+- **Toque mayor (la onda):** la campana se levanta (**0,6 s** de telegrafía) y suena; nace un anillo en el suelo (elipse 2:1) que se expande a **~180 px/s** hasta el borde de la sala y quita **30** de vida al héroe si le alcanza (respeta los i-frames). **Las piezas altas (columnas y estatuas) paran la onda**, como paran los disparos: detrás de una, a la sombra del Campanero, no llega. Las coberturas bajas no la paran.
+- **Ventana:** tras cada toque mayor la campana vibra **1,0 s** y el Campanero no puede moverse ni tocar. Es el momento seguro para salir y disparar. Fuera de la ventana también recibe daño, pero el siguiente toque llega pronto.
+- **Daño por contacto:** **25**. Vida del jefe: **3000** (≈30 rayos sin mejorar; unos 2-3 min con el Rayo base).
+- **Fases** (100 %, 66 %, 33 %; cambio de fase común de `DESIGN.md` §6.13.7):
+  1. **I:** quieto en el centro-arriba de la sala, en campo abierto; toque mayor cada **3,5 s**.
+  2. **II:** toque doble (dos ondas separadas **0,5 s**; hay que estar tapado durante las dos) cada **4,0 s**. Entra el Cireneo de la escolta.
+  3. **III:** **anda arrastrando la campana** hacia el héroe (velocidad del Exvoto) y toca cada **3,0 s**. Como el foco de la onda se mueve, la sombra de cada columna gira con él: hay que cambiar de refugio. Las columnas no se rompen (romperlas solo aquí sería una regla de mapa que no existe en el resto del juego).
+- **Sala:** cripta de 2 pantallas con **4-5 columnas al tresbolillo y 2 estatuas** a los lados: desde cualquier punto hay refugio a ~2 s de carrera. Columnas y estatuas son las piezas normales (indestructibles).
+- **Escolta (cada pieza saca al héroe de su refugio):**
+  - **Exvotos:** cada toque mayor levanta **2** de los que rezan en la sala o de charcos de cera junto a las columnas (tope **6** vivos). Caminan hacia el héroe y le empujan a salir.
+  - **1 Ojo del Tribunal en posición fija** en un lateral, colocado para que la columna que tapa de la onda deje al héroe en su línea: ningún refugio cubre de los dos. Al morir vuelve al mismo punto a los **12 s**.
+  - **1 Monja:** reza en campo abierto y **cura también al jefe** (su regla normal, 2 %/s de la vida máxima: ~60/s, más que el daño del Rayo base). Es objetivo prioritario. Vuelve a los **20 s** de morir.
+  - **1 Cireneo desde la fase II:** embiste y se clava en las columnas; si clava la tuya, te quedas sin refugio. Vuelve a los **15 s**.
+  - Los Exvotos y la escolta son la fuente de maná del combate (remates con `L`): el Rayo gasta más maná del que se regenera.
+- **Como élite (más adelante):** la misma pieza puede sustituir a un élite en salas normales: vida **1200**, sin fases ni escolta propia, toque mayor cada **4,5 s** y el mismo tañido. En un encuentro mixto anula los glifos de toda la sala mientras vive: quien juegue con glifos lo mata primero con el Rayo.
+- **Pendiente:** lore y ficha del Códice (`LORE.md` §9), modelo 3D, telegrafía exacta de la campana y SFX de los dos toques, y en qué zona va.
