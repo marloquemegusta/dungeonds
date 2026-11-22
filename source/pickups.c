@@ -124,18 +124,25 @@ void pickups_spawn_relic(fixed x, fixed y, const ArpgInvItem *item) {
 void pickups_drop_enemy_loot(int enemy_type, int floor, fixed x, fixed y) {
     int min_rar = ARPG_RAR_COMMON;
     int chance = 7; // ~7% normal enemies
+    int lvl_bonus = 0;
     if (enemy_type == ENEMY_TYPE_ABANDERADO) {
         chance = 100;
         min_rar = ARPG_RAR_LEGENDARY;
+        lvl_bonus = 2;
     } else if (enemy_type == ENEMY_TYPE_PARROCO || enemy_type == ENEMY_TYPE_MONJA ||
                enemy_type == ENEMY_TYPE_SHOOTER || enemy_type == ENEMY_TYPE_CHARGER) {
         chance = 30;
         min_rar = ARPG_RAR_UNCOMMON;
+        lvl_bonus = 1;
     }
     s_rng = s_rng * 1664525u + 1013904223u;
     if ((int)((s_rng >> 8) % 100u) >= chance) return;
+    // Nivel fijo por sala/ala y escalon del enemigo (sin auto-escalado al nivel del heroe).
+    int base_lvl = floor < 1 ? 1 : floor;
+    int item_lvl = base_lvl + lvl_bonus;
+    if (item_lvl > 99) item_lvl = 99;
     ArpgInvItem item;
-    arpg_relic_roll(&item, floor, min_rar, &s_rng);
+    arpg_relic_roll(&item, item_lvl, min_rar, &s_rng);
     pickups_spawn_relic(x, y, &item);
 }
 

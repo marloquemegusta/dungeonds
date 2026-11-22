@@ -75,9 +75,9 @@ static const uint16_t s_school_col[5] = {
 #define INV_WAX_H     16
 
 // Pantalla superior: losa + cabecera + cajetines + ventana de objeto giratorio.
-#define TOP_CARD_Y    58
+#define TOP_CARD_Y    56
 #define TOP_CARD_W    116
-#define TOP_CARD_H    124
+#define TOP_CARD_H    126
 
 #define TOP_WIN_X     12
 #define TOP_WIN_Y     58
@@ -476,28 +476,14 @@ static const ArpgInvItem *bag_sel_item(void) {
 }
 
 static void item_display_name(const ArpgInvItem *it, char *buf, int n) {
-    if (!it) { buf[0] = 0; return; }
-    if (it->kind == ARPG_ITEM_TOME) {
-        snprintf(buf, (size_t)n, "Tomo %s", arpg_inv_school_name(it->school));
-        return;
-    }
-    if (it->kind == ARPG_ITEM_RAYO) { snprintf(buf, (size_t)n, "Rayo"); return; }
-    if (it->name_id > 0) {
-        snprintf(buf, (size_t)n, "%s", arpg_inv_item_name(it));
-        return;
-    }
-    if (it->mech != ARPG_MECH_NONE) {
-        const char *m = arpg_inv_mechanic_name(it->mech);
-        snprintf(buf, (size_t)n, "%s", (*m) ? m : "Reliquia");
-        return;
-    }
-    switch (it->school) {
-        case ARPG_SCHOOL_RAYO: snprintf(buf, (size_t)n, "Punta de Lanza"); break;
-        case ARPG_SCHOOL_EJECUCION: snprintf(buf, (size_t)n, "Nudillera"); break;
-        case ARPG_SCHOOL_LEVANTAR: snprintf(buf, (size_t)n, "Cráneo Votivo"); break;
-        case ARPG_SCHOOL_PECHO: snprintf(buf, (size_t)n, "Sagrado Corazón"); break;
-        case ARPG_SCHOOL_GLIFO: snprintf(buf, (size_t)n, "Reliquia del Glifo"); break;
-        default: snprintf(buf, (size_t)n, "Reliquia"); break;
+    if (!it || !buf || n <= 0) { if (buf && n > 0) buf[0] = 0; return; }
+    snprintf(buf, (size_t)n, "%s", arpg_inv_item_name(it));
+}
+
+static void card_item_name(const ArpgInvItem *it, int max_w, char *buf, int n) {
+    item_display_name(it, buf, n);
+    if (it && max_w < 95 && it->name_id == 1 && bestiary_font_measure_utf8(buf) > max_w) {
+        snprintf(buf, (size_t)n, "Sello del Corazón");
     }
 }
 
@@ -946,7 +932,7 @@ static void render_right_bag(uint16_t *buf) {
         sunken_box_rar(buf, x, y, INV_CELL_SZ, INV_CELL_SZ, (it && !is_ghost) ? (int)it->rarity : -1);
         if (hl) corner_ticks(buf, x, y, INV_CELL_SZ, INV_CELL_SZ, (s_confirm == i) ? INV_RED : INV_GOLD);
         if (it && !is_ghost) {
-            draw_item_glyph(buf, it, x + INV_CELL_SZ / 2, y + INV_CELL_SZ / 2 - 1, 9, 0);
+            draw_item_glyph(buf, it, x + INV_CELL_SZ / 2, y + INV_CELL_SZ / 2 - 1, 9, !arpg_inv_can_equip(it));
         }
     }
 
@@ -978,33 +964,55 @@ static void render_drag_ghost(uint16_t *buf) {
 static void d2_stat_box(uint16_t *buf, int x, int y, int w, const char *label,
                         const char *val, uint16_t val_col) {
     text_at(buf, x + 2, y + 1, label, INV_DIM);
-    int box_w = (w < 140) ? 40 : 54;
+    int box_w = (w < 120) ? 44 : 58;
+    int tw = bestiary_font_measure_utf8(val) + 6;
+    if (tw > box_w) {
+        int max_bw = w - bestiary_font_measure_utf8(label) - 6;
+        if (tw <= max_bw) box_w = tw;
+    }
     int bx = x + w - box_w;
-    sunken_box(buf, bx, y, box_w, 15, 0);
+    sunken_box(buf, bx, y, box_w, 14, 0);
     text_center(buf, bx + box_w / 2, y + 1, val, val_col);
 }
 
-static void render_item_card(uint16_t *buf, int x, int y, int w, int h, const char *tag,
-                             const ArpgInvItem *it, uint16_t tag_col) {
-    sunken_box_rar(buf, x, y, w, h, -1);
+static int render_card_header_and_mech(uint16_t *buf, int x, int y, int w, const char *tag,
+                                       const ArpgInvItem *it, uint16_t tag_col) {
+    sunken_box_rar(buf, x, y, w, TOP_CARD_H, -1);
     fill_rect(buf, x + 1, y + 1, w - 2, 13, INV_SLATE2);
-    text_center(buf, x + w / 2, y + 1, tag, tag_col);
-
-    if (!it) {
+    if (it) {
+        char hdr[32];
+        int ilvl = it->level ? (int)it->level : 1;
+        if (!arpg_inv_can_equip(it)) {
+            snprintf(hdr, sizeof(hdr), "REQ. NV.%d", ilvl);
+            text_center(buf, x + w / 2, y + 1, hdr, INV_RED);
+        } else {
+            snprintf(hdr, sizeof(hdr), "%s · Nv.%d", tag, ilvl);
+            text_center(buf, x + w / 2, y + 1, hdr, tag_col);
+        }
+    } else {
+        text_center(buf, x + w / 2, y + 1, tag, tag_col);
         text_center(buf, x + w / 2, y + 56, "—", INV_DIM);
-        return;
+        return -1;
     }
 
     char name[40];
-    item_display_name(it, name, sizeof(name));
-    draw_item_glyph(buf, it, x + 16, y + 31, 8, 0);
-    text_at(buf, x + 29, y + 19, name, s_rar_bdr[it->rarity]);
-    char sub[32];
-    snprintf(sub, sizeof(sub), "%s · Nv.%d", arpg_inv_rarity_name(it->rarity), it->level ? (int)it->level : 1);
-    text_at(buf, x + 29, y + 32, sub, INV_DIM);
-    hline(buf, x + 6, y + 44, w - 12, INV_EDGE);
+    int name_w = w - 33;
+    card_item_name(it, name_w, name, sizeof(name));
+    draw_item_glyph(buf, it, x + 15, y + 29, 8, 0);
+    int hline_y;
+    if (bestiary_font_measure_utf8(name) > name_w) {
+        int nh = text_wrapped(buf, x + 29, y + 15, name_w, 9, name, s_rar_bdr[it->rarity]);
+        text_at(buf, x + 29, y + 15 + nh, arpg_inv_rarity_name(it->rarity), INV_DIM);
+        hline_y = y + 15 + nh + 11;
+    } else {
+        text_at(buf, x + 29, y + 18, name, s_rar_bdr[it->rarity]);
+        text_at(buf, x + 29, y + 30, arpg_inv_rarity_name(it->rarity), INV_DIM);
+        hline_y = y + 42;
+    }
+    if (hline_y < y + 42) hline_y = y + 42;
+    hline(buf, x + 6, hline_y, w - 12, INV_EDGE);
 
-    int row_y = y + 47;
+    int row_y = hline_y + 3;
     if (it->mech != ARPG_MECH_NONE) {
         text_at(buf, x + 6, row_y, arpg_inv_mechanic_name(it->mech), INV_GOLD);
         row_y += 11;
@@ -1015,9 +1023,18 @@ static void render_item_card(uint16_t *buf, int x, int y, int w, int h, const ch
         }
         row_y += 2;
     }
-    for (int i = 0; i < it->nlines && i < 2 && row_y <= y + h - 15; i++) {
-        char val[16];
-        snprintf(val, sizeof(val), "%+d", (int)it->line_val[i]);
+    return row_y;
+}
+
+static void render_item_card(uint16_t *buf, int x, int y, int w, int h, const char *tag,
+                             const ArpgInvItem *it, uint16_t tag_col) {
+    (void)h;
+    int row_y = render_card_header_and_mech(buf, x, y, w, tag, it, tag_col);
+    if (row_y < 0) return;
+
+    for (int i = 0; i < it->nlines && i < 2 && row_y <= y + TOP_CARD_H - 16; i++) {
+        char val[20];
+        arpg_inv_line_format(it->line_kind[i], (int)it->line_val[i], val, sizeof(val));
         d2_stat_box(buf, x + 4, row_y, w - 8,
                     arpg_inv_line_name(it->line_kind[i]), val, INV_TXT);
         row_y += 15;
@@ -1030,43 +1047,37 @@ static void render_top_comparison(uint16_t *buf, int bag_idx, int sock_idx) {
     if (!held) return;
 
     // Tarjeta derecha primero (evita corte de VBlank arriba-derecha).
-    sunken_box_rar(buf, 132, TOP_CARD_Y, TOP_CARD_W, TOP_CARD_H, -1);
-    fill_rect(buf, 133, TOP_CARD_Y + 1, TOP_CARD_W - 2, 13, INV_SLATE2);
-    text_center(buf, 132 + TOP_CARD_W / 2, TOP_CARD_Y + 1, "EN MANO", INV_GOLD);
+    int row_y = render_card_header_and_mech(buf, 132, TOP_CARD_Y, TOP_CARD_W, "EN MANO", held, INV_GOLD);
+    if (row_y >= 0) {
+        ArpgInvPreview pv;
+        if (arpg_inv_preview_socket(bag_idx, s_tab, sock_idx, &pv)) {
+            int ndeltas = 0;
+            for (int k = 0; k < ARPG_LINE_COUNT; k++)
+                if (pv.after[k] != pv.before[k]) ndeltas++;
 
-    char name[40];
-    item_display_name(held, name, sizeof(name));
-    draw_item_glyph(buf, held, 132 + 16, TOP_CARD_Y + 31, 8, 0);
-    text_at(buf, 132 + 29, TOP_CARD_Y + 19, name, s_rar_bdr[held->rarity]);
-    char sub[32];
-    snprintf(sub, sizeof(sub), "%s · Nv.%d", arpg_inv_rarity_name(held->rarity), held->level ? (int)held->level : 1);
-    text_at(buf, 132 + 29, TOP_CARD_Y + 32, sub, INV_DIM);
-    hline(buf, 138, TOP_CARD_Y + 44, TOP_CARD_W - 12, INV_EDGE);
-
-    int row_y = TOP_CARD_Y + 47;
-    if (held->mech != ARPG_MECH_NONE) {
-        text_at(buf, 138, row_y, arpg_inv_mechanic_name(held->mech), INV_GOLD);
-        row_y += 11;
-        char desc[96];
-        arpg_inv_mechanic_format(held, desc, sizeof(desc));
-        if (desc[0]) {
-            row_y += text_wrapped(buf, 138, row_y, TOP_CARD_W - 12, 9, desc, INV_TXT);
-        }
-        row_y += 2;
-    }
-
-    ArpgInvPreview pv;
-    if (arpg_inv_preview_socket(bag_idx, s_tab, sock_idx, &pv)) {
-        int shown = 0;
-        for (int k = 0; k < ARPG_LINE_COUNT && shown < 2 && row_y <= TOP_CARD_Y + TOP_CARD_H - 15; k++) {
-            int d = pv.after[k] - pv.before[k];
-            if (d == 0) continue;
-            char val[16];
-            snprintf(val, sizeof(val), "%+d", d);
-            d2_stat_box(buf, 136, row_y, TOP_CARD_W - 8,
-                        arpg_inv_line_name(k), val, d > 0 ? INV_GREEN : INV_RED);
-            row_y += 15;
-            shown++;
+            if (ndeltas <= 2) {
+                for (int k = 0; k < ARPG_LINE_COUNT && row_y <= TOP_CARD_Y + TOP_CARD_H - 16; k++) {
+                    int d = pv.after[k] - pv.before[k];
+                    if (d == 0) continue;
+                    char val[20];
+                    arpg_inv_line_format(k, d, val, sizeof(val));
+                    d2_stat_box(buf, 136, row_y, TOP_CARD_W - 8,
+                                arpg_inv_line_name(k), val, d > 0 ? INV_GREEN : INV_RED);
+                    row_y += 15;
+                }
+            } else {
+                int step = (row_y + ndeltas * 10 <= TOP_CARD_Y + TOP_CARD_H - 2) ? 10 : 9;
+                for (int k = 0; k < ARPG_LINE_COUNT && row_y <= TOP_CARD_Y + TOP_CARD_H - 10; k++) {
+                    int d = pv.after[k] - pv.before[k];
+                    if (d == 0) continue;
+                    char val[20];
+                    arpg_inv_line_format(k, d, val, sizeof(val));
+                    uint16_t col = d > 0 ? INV_GREEN : INV_RED;
+                    text_at(buf, 137, row_y, arpg_inv_line_name(k), INV_DIM);
+                    text_right(buf, 132 + TOP_CARD_W - 5, row_y, val, col);
+                    row_y += step;
+                }
+            }
         }
     }
 
@@ -1120,11 +1131,15 @@ void inventory_render_top(uint16_t *buf) {
     }
 
     const ArpgInvItem *sel_it = bag_sel_item();
+    int show_sel = sel_it && (school_defined(s_tab) || (int)sel_it->school == s_tab);
     int in_cmp = (s_drag_active && s_hover_socket >= 0 && school_defined(s_tab));
 
-    // Ruta rápida VBlank: solo actualizar el objeto flotante girando si el texto no cambió.
-    if (s_top_slab_drawn && !s_top_dirty && s_top_rot_dirty && !in_cmp && sel_it) {
-        render_spin_window_item(buf, sel_it, 0);
+    // Ruta rápida VBlank: si el texto no cambió, actualizar solo el giro si aplica
+    // y evitar repintar la losa/comparativa cada 3 frames (evita desbordar VBlank).
+    if (s_top_slab_drawn && !s_top_dirty) {
+        if (s_top_rot_dirty && !in_cmp && show_sel) {
+            render_spin_window_item(buf, sel_it, 0);
+        }
         s_top_rot_dirty = 0;
         return;
     }
@@ -1148,6 +1163,11 @@ void inventory_render_top(uint16_t *buf) {
 
         iron_bar_h(buf, 10, 50, SCREEN_W - 20);
         s_top_slab_drawn = 1;
+    } else if (in_cmp) {
+        // Las dos tarjetas cubren x=8..123 y x=132..247 (y=56..181): pintar solo el margen
+        // superior (2 px) y la calle central (8 px) ahorra 28.728 escrituras en VBlank.
+        stone_rect(buf, 10, 54, SCREEN_W - 20, 2);
+        stone_rect(buf, 124, TOP_CARD_Y, 8, TOP_CARD_H);
     } else {
         // Solo refrescar la zona inferior de tarjetas (cabe holgado en VBlank).
         stone_rect(buf, 10, 54, SCREEN_W - 20, SCREEN_H - 64);
@@ -1160,9 +1180,9 @@ void inventory_render_top(uint16_t *buf) {
         return;
     }
 
-    if (!sel_it) {
+    if (!show_sel) {
         if (!school_defined(s_tab)) {
-            text_center(buf, SCREEN_W / 2, 106, "Sin definir", INV_DIM);
+            text_center(buf, SCREEN_W / 2, 106, "Letanía sellada", INV_DIM);
         }
         s_top_dirty = 0;
         s_top_rot_dirty = 0;
@@ -1179,57 +1199,72 @@ void inventory_render_top(uint16_t *buf) {
     // Barra vertical de hierro forjado dividiendo la ventana del texto.
     iron_bar_v(buf, 96, 54, 129);
 
-    // Panel derecho: nombre, rareza/escuela, descripción del aura/mecánica y stats.
+    // Panel derecho: nombre, rareza/escuela/nivel, descripción del aura/mecánica y stats.
     char name[40];
     item_display_name(sel_it, name, sizeof(name));
-    text_at(buf, TOP_RX, 58, name, s_rar_bdr[sel_it->rarity]);
-    snprintf(line, sizeof(line), "%s · %s", arpg_inv_rarity_name(sel_it->rarity), arpg_inv_school_name(sel_it->school));
-    text_at(buf, TOP_RX, 70, line, INV_DIM);
-    hline(buf, TOP_RX, 84, TOP_RW, INV_EDGE);
+    text_at(buf, TOP_RX, 56, name, s_rar_bdr[sel_it->rarity]);
+    int ilvl = sel_it->level ? (int)sel_it->level : 1;
+    if (!arpg_inv_can_equip(sel_it)) {
+        text_at(buf, TOP_RX, 67, arpg_inv_rarity_name(sel_it->rarity), INV_DIM);
+        snprintf(line, sizeof(line), "Req. Nv.%d", ilvl);
+        text_right(buf, TOP_RX + TOP_RW, 67, line, INV_RED);
+    } else {
+        snprintf(line, sizeof(line), "%s · %s · Nv.%d",
+                 arpg_inv_rarity_name(sel_it->rarity), arpg_inv_school_name(sel_it->school), ilvl);
+        if (bestiary_font_measure_utf8(line) > TOP_RW) {
+            snprintf(line, sizeof(line), "%s·%s·Nv.%d",
+                     arpg_inv_rarity_name(sel_it->rarity), arpg_inv_school_name(sel_it->school), ilvl);
+        }
+        if (bestiary_font_measure_utf8(line) > TOP_RW) {
+            snprintf(line, sizeof(line), "%s · Nv.%d", arpg_inv_rarity_name(sel_it->rarity), ilvl);
+        }
+        text_at(buf, TOP_RX, 67, line, INV_DIM);
+    }
+    hline(buf, TOP_RX, 79, TOP_RW, INV_EDGE);
 
-    int ycur = 87;
+    int ycur = 82;
     if (sel_it->kind == ARPG_ITEM_TOME) {
-        text_at(buf, TOP_RX, ycur, "Hechizo equipable", INV_GOLD);
-        ycur += 12;
-        ycur += text_wrapped(buf, TOP_RX, ycur, TOP_RW, 11,
-                             "Equipa en el radial para lanzar este hechizo.", INV_TXT);
-        ycur += 3;
+        text_at(buf, TOP_RX, ycur, "Plegaria grabada", INV_GOLD);
+        ycur += 11;
+        ycur += text_wrapped(buf, TOP_RX, ycur, TOP_RW, 10,
+                             "Engárzala para invocarla con el lápiz.", INV_TXT);
+        ycur += 2;
         hline(buf, TOP_RX, ycur, TOP_RW, INV_EDGE);
-        ycur += 4;
+        ycur += 3;
     } else if (sel_it->mech != ARPG_MECH_NONE) {
         text_at(buf, TOP_RX, ycur, arpg_inv_mechanic_name(sel_it->mech), INV_GOLD);
-        ycur += 12;
+        ycur += 11;
         char desc[96];
         arpg_inv_mechanic_format(sel_it, desc, sizeof(desc));
         if (desc[0]) {
-            ycur += text_wrapped(buf, TOP_RX, ycur, TOP_RW, 11, desc, INV_TXT);
+            ycur += text_wrapped(buf, TOP_RX, ycur, TOP_RW, 10, desc, INV_TXT);
         }
-        ycur += 3;
+        ycur += 2;
         hline(buf, TOP_RX, ycur, TOP_RW, INV_EDGE);
-        ycur += 4;
+        ycur += 3;
     }
 
-    for (int i = 0; i < sel_it->nlines && i < 2 && ycur <= 165; i++) {
-        char val[16];
-        snprintf(val, sizeof(val), "%+d", (int)sel_it->line_val[i]);
+    for (int i = 0; i < sel_it->nlines && i < 2 && ycur <= 167; i++) {
+        char val[20];
+        arpg_inv_line_format(sel_it->line_kind[i], (int)sel_it->line_val[i], val, sizeof(val));
         d2_stat_box(buf, TOP_RX, ycur, TOP_RW,
                     arpg_inv_line_name(sel_it->line_kind[i]), val, INV_TXT);
-        ycur += 16;
+        ycur += 15;
     }
 
-    if (school_defined(s_tab) && ycur <= 165) {
+    if (school_defined(s_tab) && ycur <= 167) {
         ArpgInvPreview pv;
         if (arpg_inv_preview_socket(s_sel, s_tab, s_socket_sel, &pv)) {
             int shown = 0;
-            for (int k = 0; k < ARPG_LINE_COUNT && shown < 2 && ycur <= 165; k++) {
+            for (int k = 0; k < ARPG_LINE_COUNT && shown < 2 && ycur <= 167; k++) {
                 int d = pv.after[k] - pv.before[k];
                 if (d == 0) continue;
                 uint16_t col = d > 0 ? INV_GREEN : INV_RED;
                 if (d > 0) tri_up(buf, TOP_RX, ycur + 4, col);
                 else tri_down(buf, TOP_RX, ycur + 4, col);
-                snprintf(line, sizeof(line), "%d -> %d", pv.before[k], pv.after[k]);
+                arpg_inv_line_format_delta(k, pv.before[k], pv.after[k], line, sizeof(line));
                 d2_stat_box(buf, TOP_RX + 11, ycur, TOP_RW - 11, arpg_inv_line_name(k), line, col);
-                ycur += 16;
+                ycur += 15;
                 shown++;
             }
         }

@@ -9,6 +9,7 @@
 #include "sfx.h"
 #include "remate.h"
 #include "arpg.h"
+#include "arpg_inv.h"
 #include "arpg_progress.h"
 #include "arpg_tree.h"
 #include "weapons.h"
@@ -147,7 +148,9 @@ void player_regen_mana(PlayerState *player) {
 void player_state_init(PlayerState *player) {
     if (!player) return;
     // g_mods.max_hp is already in life points (Vida and Bone Plate add 20 per heart).
-    player->max_hp = ARPG_HP_BASE + (g_arpg_level - 1) * ARPG_HP_PER_LEVEL + g_mods.max_hp;
+    int full_hp = ARPG_HP_BASE + (g_arpg_level - 1) * ARPG_HP_PER_LEVEL + g_mods.max_hp;
+    player->max_hp = upgrades_has_relic(RELIC_LLAGA) ? (full_hp + 1) / 2 : full_hp;
+    if (player->max_hp < 1) player->max_hp = 1;
     player->hp = player->max_hp;
     player->max_mana = ARPG_MANA_BASE + (g_arpg_level - 1) * ARPG_MANA_PER_LEVEL + g_mods.max_mana;
     if (player->max_mana < 10) player->max_mana = 10;
@@ -337,7 +340,17 @@ void burn_update(Enemy *enemies, int max_enemies) {
         if (e->burn_timer == 0) { burn_clear(e); continue; }
         if (++e->burn_tick >= BURN_TICK_FRAMES) {
             e->burn_tick = 0;
-            enemy_hit_quiet(e, upgrades_fire_damage(BURN_TICK_DAMAGE * e->burn_layers));
+            int tick_base = BURN_TICK_DAMAGE;
+#if ENCOUNTERS_PROTO
+            int v1 = arpg_inv_mechanic_value(ARPG_MECH_LLAMA_VOTIVA);
+            int v2 = arpg_inv_mechanic_value(ARPG_MECH_CILICIO);
+            int dps = v1 > v2 ? v1 : v2;
+            if (dps > 0) {
+                tick_base = (dps + 2) / 4;
+                if (tick_base < 1) tick_base = 1;
+            }
+#endif
+            enemy_hit_quiet(e, upgrades_fire_damage(tick_base * e->burn_layers));
         }
     }
 }

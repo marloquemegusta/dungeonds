@@ -707,20 +707,26 @@ Prueba de concepto de dos días: convertir la partida por encuentros en un Actio
 
 ### 7.6 Reliquias, auras y drops de la protodemo (decidido 2026-11-22)
 - **Alcance de escuelas en la protodemo:** **Rayo**, **Ejecución** y **Pecho**. **Levantar** queda fuera de la protodemo; **Glifo** queda pendiente de diseñar su gameplay en otra sesión.
-- **Auras por escuela (Rara / Épica):**
-  - **Rayo:** *Lanza de Longinos* (atraviesa a todos) y *Llama Votiva* (la línea de carga aplica Quemado).
-  - **Ejecución (`L`):** *Pira* (al ejecutar a un enemigo quemado, explota y propaga el Quemado a los cercanos). Se reserva una 2.ª aura para enlazar con Levantar más adelante.
-  - **Pecho (pasivas):** *Aura de Cilicio* (daño periódico alrededor) y *Llaga Abierta* (más daño cuanta menos vida tienes).
-- **Líneas (stats) por escuela:**
-  - **Rayo:** `Daño`, `Carga`, `Alcance`, `Quemadura`.
-  - **Ejecución:** `Daño`, `Alcance`, `Quemadura`, `+Vida/Maná al rematar`.
-  - **Pecho:** `Vida máx.`, `Maná máx.`, `Regen. de maná`, `Velocidad` (sin armadura ni stats de daño directo).
-- **Rarezas y nivel de objeto:** Común (1 línea), Poco común (2 líneas), Rara (1 aura + 1 línea), Épica (1 aura + 2 líneas), Legendaria (nombre propio, efecto único fijo + 2 líneas). Cada reliquia lleva un **nivel** según el piso/sala donde cae, que escala sus valores.
-- **Legendarias de Zona 1:** *Sello del Corazón Abierto* (Rayo: *Auto de Fe* — ×2 a quemados), *Brasero de Pira* (Ejecución: *Pira*), *Astilla del Estandarte* (Pecho: *Llaga Abierta* + maná/vida altos).
-- **Drops en el suelo:** enemigos (normales con probabilidad baja, élites con probabilidad alta, Abanderado con Legendaria garantizada) y cofres sueltan reliquias en el suelo con destello y etiqueta por rareza (paleta desaturada, §6.10). Al pasar por encima se recogen a la bolsa (si está llena, avisa sin borrarla).
+- **Auras por escuela (Rara / Épica, con cifra escalada por nivel/rareza que actúa en combate):**
+  - **Rayo:** *Lanza de Longinos* (atraviesa a todos, `+N%` de daño) y *Llama Votiva* (la mira al cargar prende con quemadura de `N pts/s`).
+  - **Ejecución (`L`):** *Pira* (al rematar a un enemigo ardiente, explota por `N pts` de daño de fuego y prende alrededor). Se reserva una 2.ª aura para enlazar con Levantar más adelante.
+  - **Pecho (pasivas):** *Aura de Cilicio* (aro continuo que quema a `N pts/s`) y *Llaga Abierta* (vida máx. a la mitad —se devuelve al desequiparla— y `+N%` de daño por cada quinto de vida herido).
+  - Si se equipan dos reliquias con la misma aura, actúa la cifra mayor.
+- **Líneas (stats) por escuela y unidades explícitas:**
+  - **Rayo:** `Daño (+%)`, `Carga (+% de velocidad sobre 0,8 s)`, `Alcance (+% sobre 110 px)`, `Quemadura (+% de daño de fuego)`.
+  - **Ejecución:** `Daño (+% del combo de puñetazos)`, `Alcance (+% del puñetazo y del remate)`, `Quemadura (+%)`, `Orbes remate (+pts al orbe de vida y +N/2 pts al de maná)`.
+  - **Pecho:** `Vida máx. (+pts, en vivo)`, `Maná máx. (+pts, en vivo)`, `Regen. maná (+%)`, `Velocidad (+%)` (sin armadura ni stats de daño directo).
+- **Rarezas y nivel de objeto:** Común (1 línea), Poco común (2 líneas), Rara (1 aura + 1 línea), Épica (1 aura + 2 líneas), Legendaria (nombre propio, efecto único fijo + 2 líneas). Cada reliquia lleva un **nivel** que escala sus valores (`+35 %` por nivel y `+8 %` por rareza en líneas de stat; `+25 %` por nivel y `+10 %` por rareza en auras) de modo que una pieza común o poco común de nivel alto supera en magnitud bruta a una rara/épica de nivel bajo. **Requisito de nivel:** se pueden recoger y desguazar reliquias de cualquier nivel, pero solo se pueden equipar o engarzar cuando `Nv. héroe >= Nv. reliquia`; las piezas bloqueadas muestran su icono atenuado y `Req. Nv.X` en rojo en la ficha y comparativa.
+- **Legendarias de Zona 1:** *Sello del Corazón Abierto* (Rayo: *Auto de Fe* — consume las llamas del enemigo con `+N%` de daño), *Brasero de Pira* (Ejecución: *Pira* de fuego con tirada superior), *Astilla del Estandarte* (Pecho: *Llaga Abierta* con tirada superior + `Vida máx.` y `Maná máx.` altos).
+- **Drops en el suelo:** enemigos y cofres sueltan reliquias de **nivel fijo según el ala y el escalón del enemigo** (sin auto-escalar con el nivel del héroe): la infantería base suelta el nivel de la sala/ala, los escalones intermedios/especialistas (*Monaguillo*, *Monja*, *Ojo*, *Cireneo*) sueltan `+1` sobre la sala y los jefes (*Abanderado*) `+2` sobre la sala (tope de zona, con Legendaria garantizada). Con destello y etiqueta por rareza (paleta desaturada, §6.10); al pasar por encima se recogen a la bolsa (si está llena, avisa sin borrarla).
+- **Escalones de enemigos y dirección de arte (etapas de corrupción, decidido 2026-11-22):**
+  - En un castillo continuo estilo *Castlevania / Diablo*, cada ala tiene población y nivel fijos (volver a una zona inicial mantiene sus enemigos y su botín de nivel bajo).
+  - La familia Exvoto se organiza en 3 escalones: Base (*Bebé / Exvoto*), Intermedio (*Monaguillo* de choque y *Monja* de rezo) y Élite (*Súper Monaguillo* y *Súper Monja*, cuyos modelos FBX ya existen en el repositorio).
+  - **Dirección artística de los escalones superiores (horror biológico/sobrenatural, no «especies distintas» ni «Hulk»):** subir de escalón no convierte al enemigo en otra especie (tipo Zerg) ni en una versión más grande/musculosa (se descarta el enfoque «Hulk» del Súper Monaguillo actual para su futura revisión de arte). Cada escalón superior muestra una **etapa más avanzada de corrupción demoníaca/cósmica del mismo cuerpo** (referencias: *La Monja / Valak*, *The Ritual*, *Pennywise / IT*, *Skinwalker*): criaturas que fingían forma humana/litúrgica cuya anatomía real se traiciona biológicamente (rostro desencajado bajo el hábito, cabeza falsa que vence a un lado abriendo una boca vertical en las costillas, o extremidades desplegadas como cuadrúpedo o mantis con el torso humano colgando como señuelo). Se aplica tanto a la familia Exvoto como a las variantes terroríficas del Cireneo y el Ojo.
 - **Pendiente próximo para la protodemo:**
   1. **Glifo:** diseñar su gameplay completo (base + auras) en la próxima sesión e integrarlo como segundo hechizo equipable.
   2. **Grafo de Zona 1:** conectar salas reales (3 naves, 4 galerías, 2 capillas con reja, cripta, puerta con llave, atajo), persistencia de cofres/puertas/altares, viaje entre altares desde el campamento, santuarios (estatuas) y mapa en la pausa.
   3. **Campamento nocturno:** corregir perspectiva de los muros laterales, conectar la mesa como Crisol de desguace (y uso de cera/pociones) y señal diegética de foco sin rótulos.
   4. **Inventario y pausa:** 5 iconos 3D pendientes (*Tomo, Lanza, Nudillera, Vial, Cráneo*), tipografía definitiva y espaciado del botón 5 en la pausa.
-  5. **Validación en DS:** medición `perf` en hardware (campamento nocturno y salas con ~24 enemigos) y prueba de guardado en tarjeta real (`dungeonds_arpg.sav`).
+  5. **Sonidos definitivos:** elegir y sustituir los efectos de sonido (SFX) actuales, que son provisionales, por los definitivos.
+  6. **Validación en DS:** medición `perf` en hardware (campamento nocturno y salas con ~24 enemigos) y prueba de guardado en tarjeta real (`dungeonds_arpg.sav`).

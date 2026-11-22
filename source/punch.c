@@ -4,6 +4,7 @@
 #include "weapons.h"
 #include "allies.h"
 #include "modifiers.h"
+#include "upgrades.h"
 #include "sfx.h"
 #if ENCOUNTERS_PROTO
 #include "encounters_act1.h"
@@ -78,7 +79,8 @@ int punch_ground_anchor(void) { return g_punch_ground_anchor[s_punch_move][s_pun
 // Nearest enemy this close, and whether it is reeling (<= 25 % life, gameplay.c): the hit goes to it.
 static int punch_target(Enemy *enemies, int max_enemies, fixed hero_x, fixed hero_y, int *ex, int *ey) {
     const int hx = TO_INT(hero_x), hy = TO_INT(hero_y);
-    int best = -1, best_d2 = PUNCH_RANGE * PUNCH_RANGE + 1;
+    const int range = PUNCH_RANGE * (100 + g_mods.remate_range_bonus) / 100;
+    int best = -1, best_d2 = range * range + 1;
     for (int i = 0; i < max_enemies; i++) {
         const Enemy *e = &enemies[i];
         if (g_enemy_ally[i] || !e->active || e->hp <= 0 || e->state == ENEMY_STATE_EMERGE) continue;
@@ -87,7 +89,7 @@ static int punch_target(Enemy *enemies, int max_enemies, fixed hero_x, fixed her
 #endif
         const int dx = TO_INT(e->x) - hx, dy = TO_INT(e->y) - hy;
         const int d2 = dx * dx + GROUND_DY2(dy);
-        if (d2 <= PUNCH_RANGE * PUNCH_RANGE && d2 < best_d2) { best_d2 = d2; best = i; }
+        if (d2 <= range * range && d2 < best_d2) { best_d2 = d2; best = i; }
     }
     if (best < 0) return -1;
     *ex = TO_INT(enemies[best].x);
@@ -110,8 +112,9 @@ static void punch_apply(Enemy *enemies, int max_enemies, fixed hero_x, fixed her
     Enemy *e = &enemies[idx];
     (void)dir;
     const fixed push = (move == PUNCH_MOVE_HOOK) ? PUNCH_HOOK_PUSH : PUNCH_LIGHT_PUSH;
-    const int dmg = ((move == PUNCH_MOVE_HOOK) ? PUNCH_DAMAGE_HOOK
-                   : (move == PUNCH_MOVE_A)    ? PUNCH_DAMAGE_A : PUNCH_DAMAGE_B) * g_mods.punch_damage_pct / 100;
+    const int base_dmg = (move == PUNCH_MOVE_HOOK) ? PUNCH_DAMAGE_HOOK
+                       : (move == PUNCH_MOVE_A)    ? PUNCH_DAMAGE_A : PUNCH_DAMAGE_B;
+    const int dmg = upgrades_punch_damage(base_dmg);
     fixed px = 0, py = 0;
     punch_push_vec(e, hero_x, hero_y, push, &px, &py);
     enemy_hit(e, dmg, px, py);

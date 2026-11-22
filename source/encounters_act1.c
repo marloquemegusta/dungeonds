@@ -856,8 +856,9 @@ void enc_update(Enemy *enemies, int max_enemies, int px, int py) {
                 pickups_spawn(PICKUP_KIND_HEALTH, fx - TO_FIXED(8), fy);
                 pickups_spawn(PICKUP_KIND_MANA, fx + TO_FIXED(8), fy);
                 uint32_t chest_rng = (uint32_t)(k + 1) * 2654435761u ^ (uint32_t)(px * 73856093 ^ py * 19349663);
+                int chest_lvl = (k + 1) < 1 ? 1 : ((k + 1) > 99 ? 99 : (k + 1));
                 ArpgInvItem chest_relic;
-                arpg_relic_roll(&chest_relic, k + 1, ARPG_RAR_UNCOMMON, &chest_rng);
+                arpg_relic_roll(&chest_relic, chest_lvl, ARPG_RAR_UNCOMMON, &chest_rng);
                 pickups_spawn_relic(fx, fy + TO_FIXED(6), &chest_relic);
             }
         }

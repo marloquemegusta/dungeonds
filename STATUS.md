@@ -2,11 +2,21 @@
 
 Primero el estado necesario para retomar el trabajo sin depender del chat; después, las entregas recientes verificadas (más nueva primero). El historial hasta 2026-11-18 está en `STATUS-ARCHIVE.md`.
 
-## Estado actual (2026-11-19)
+## Estado actual (2026-11-22)
 
-**Qué es hoy el juego** (detalle en `DESIGN.md`, «Estado vigente»): la ROM por defecto es el Acto I por encuentros: 15 stages en 3 actos (4 encuentros + 1 jefe), salas hechas a mano de 2 pantallas con barrera que se abre al limpiarlas, 14 pasillos con relicario normal (1 Don por pasillo), El Abanderado como jefe (stages 5, 10 y 15) con relicario dorado en su sala al vencerlo (1 Reliquia) y Altar en el pasillo final («Fin de la demo»). Sin marea, sin horda continua, sin gemas ni experiencia. El héroe carga el rayo y, al volver a pulsar, la carga empieza al instante (no hay recuperación tras disparar).
+**Qué es hoy el juego** (detalle en `DESIGN.md`, «Estado vigente»): la ROM por defecto en `main` es el Acto I por encuentros (15 stages en 3 actos, relicarios normales y dorados, El Abanderado como jefe). En paralelo avanza la rama `proto/arpg` con la protodemo ARPG (campamento nocturno + mazmorra de reliquias).
 
-**En qué punto está:**
+**Estado de la rama `proto/arpg` (protodemo ARPG, 2026-11-22):**
+- **Hecho e integrado:** bucle campamento ↔ catedral, XP directa al matar y subida de nivel al dormir, inventario táctil estilo *Diablo II / Sacred* con giros 3D desde NitroFS, reliquias de la protodemo (2 auras de Rayo, 1 de Ejecución reservando la 2.ª para Levantar, 2 de Pecho y 3 Legendarias) conectadas con su `mech_val` y unidades explícitas al combate real, escalado Nivel vs. Rareza con bloqueo `Req. Nv. X` al equipar y drops de nivel fijo por ala/escalón, y dirección de arte documentada para los 3 escalones del Exvoto como etapas de corrupción biológica (*DESIGN.md* §7.6).
+- **Pendiente para cerrar la protodemo:**
+  1. **Hechizo de Glifo:** diseñar su gameplay completo (efecto base + sus 2 auras) e integrarlo como segundo hechizo equipable (más el icono 3D del Vial).
+  2. **Grafo de la Zona 1:** conectar las salas reales (3 naves, 4 galerías, 2 capillas con reja, cripta, puertas con fundido, llave, atajo, altares de viaje, santuarios y mapa en pausa) con población fija por ala y escalones de corrupción.
+  3. **Campamento nocturno:** corregir perspectiva de los muros laterales, conectar la mesa como Crisol de desguace (y uso de cera/pociones) y señal diegética de foco sin rótulos.
+  4. **Interfaz:** tipografía definitiva del inventario y ajustar el espaciado del botón 5 en la pausa de mazmorra para no pisar `Nv.`.
+  5. **Sonidos definitivos:** elegir y sustituir los efectos de sonido (SFX) actuales, que son provisionales, por los definitivos.
+  6. **Validación en DS:** medición `perf` en hardware (campamento nocturno y salas con ~24 enemigos) y prueba de guardado en tarjeta real (`dungeonds_arpg.sav`).
+
+**En qué punto está (`main` / Acto I por encuentros):**
 - Método de diseño sala a sala (`DESIGN.md` §6.13.10): hecha la primera vuelta del Ojo táctico y la guarnición; siguen la procesión ligera, el balcón y la primera sala media.
 - Stats del rayo (`feat/stats-rayo`, 2026-11-19, a probar en la DS): carga base 0,8 s, alcance base 110, Prisa −10 por rango hasta carga 8 (`DESIGN.md` §6.12.10); retirada la recuperación muerta del código.
 - Sin programar: atrio, flanqueo coordinado de los Exvotos, invocador, catálogo v3, Campanero, El Paso y los actos II y III.
@@ -24,6 +34,8 @@ Primero el estado necesario para retomar el trabajo sin depender del chat; despu
 - Data abort intermitente en hardware, sin causa conocida (`TECHNICAL.md` §4.4).
 
 ### Entregas recientes (más nueva primero)
+
+- **Pulido de reliquias, stats en combate real, bloqueo por nivel y dirección de escalones (`fix/arpg-relic-stats`, 2026-11-22, en `proto/arpg`):** alcance ajustado a la protodemo (2 auras Rayo, 1 Ejecución, 2 Pecho y 3 Legendarias; pestañas *Glifo* y *Levantar* selladas con «Letanía sellada»); unidades explícitas (`%`, `pts`, `pts/s`), `Carga`/`Alcance` en `%` (alcance de Ejecución conectado a puñetazo y remate) y `mech_val` conectado al daño real de cada aura, con `Vida máx.`, `Maná máx.` y *Llaga Abierta* reversibles en vivo; escalado Nivel vs. Rareza donde el nivel manda en stats brutos con bloqueo `Req. Nv. X` (Opción A) y drops fijos por ala/escalón; optimización VBlank en comparativa (`EQUIPADA` vs `REQ. NV.10` sin cortes). Documentadas en `DESIGN.md` §7.6 y `diseno_juego_final.md` las etapas de corrupción biológica y la elección de SFX definitivos como pendiente. Builds `default` y `arpg-todo` con 0 avisos; tests y escenarios PASS. [`walkthrough`](walkthroughs/arpg-relic-stats/walkthrough.md).
 
 - **Pulido de reliquias, ventana 3D giratoria y auras ARPG (`fix/arpg-relic-ui`, 2026-11-22, en `proto/arpg`):** corregido el oscurecimiento de Nudillera y Corazón en la bolsa; pantalla superior dividida con ventana de objeto 3D 56×56 girando en 24 fotogramas desde NitroFS (`tools/render_item_spin.py`, lectura sin búfer `open`/`read` para no consumir heap); cambio automático de pestaña al seleccionar reliquia; descripciones ARPG (sin corazones) con cifra propia (`mech_val`) en ficha y comparativa lado a lado; Rayo limitado a sus 2 auras (*Lanza* y *Llama Votiva*); **Cilicio** activo de forma continua al caminar. Builds `default` y `arpg-todo` con 0 avisos; `test_guardrails` y escenario `arpg_inv_ui_check` PASS. [`walkthrough`](walkthroughs/arpg-relic-ui/walkthrough.md).
 

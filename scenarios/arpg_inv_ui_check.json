@@ -1,41 +1,51 @@
 {
   "name": "arpg_inv_ui_check",
-  "description": "Auditoría visual completa del inventario ARPG: coherencia pestaña/objeto, objeto 3D giratorio, pasivas descritas, comparación lado a lado y confirmación de fundir.",
+  "description": "Auditoría visual completa del inventario ARPG: alcance protodemo (Rayo, Ejecución, Pecho), unidades explícitas, Req. Nv. X en rojo, comparación sin corte VBlank y confirmación de fundir.",
   "suite": false,
   "evidence_only": true,
+  "state": {
+    "elf": "../.ds-game-dev/build/out/dungeonds.elf",
+    "symbols": { "pl": "s_player" },
+    "default_symbol": "pl",
+    "fields": {
+      "px": { "symbol": "pl", "offset": 0, "type": "s32" },
+      "py": { "symbol": "pl", "offset": 4, "type": "s32" }
+    }
+  },
   "steps": [
     { "frames": 60 },
     { "tap": { "x": 128, "y": 66 }, "frames": 6 },
     { "release": true, "frames": 40 },
     { "button_down": "START", "frames": 4 },
-    { "button_up": "START", "frames": 45 },
+    { "button_up": "START", "frames": 50 },
 
-    { "button_down": "LEFT", "frames": 56 },
-    { "button_up": "LEFT", "frames": 4 },
-    { "button_down": "UP", "frames": 32 },
-    { "button_up": "UP", "frames": 4 },
-    { "button_down": "A", "frames": 4 },
-    { "button_up": "A", "frames": 20, "capture": "01_rayo_llama" },
+    { "poke": [ { "field": "px", "value": 15872 }, { "field": "py", "value": 75776 } ], "frames": 15 },
+    { "button_down": "A", "frames": 8 },
+    { "button_up": "A", "frames": 35, "capture": "01_rayo_llama" },
 
-    { "button_down": "DOWN", "frames": 4 },
-    { "button_up": "DOWN", "frames": 4 },
-    { "button_down": "RIGHT", "frames": 4 },
-    { "button_up": "RIGHT", "frames": 15, "capture": "02_nudillera_viatico" },
+    { "button_down": "RIGHT", "frames": 8 },
+    { "button_up": "RIGHT", "frames": 15 },
+    { "button_down": "RIGHT", "frames": 8 },
+    { "button_up": "RIGHT", "frames": 15 },
+    { "button_down": "RIGHT", "frames": 8 },
+    { "button_up": "RIGHT", "frames": 15, "capture": "02_rayo_nv10_req" },
 
-    { "button_down": "DOWN", "frames": 4 },
-    { "button_up": "DOWN", "frames": 15, "capture": "03_corazon_cilicio" },
+    { "button_down": "LEFT", "frames": 8 },
+    { "button_up": "LEFT", "frames": 15 },
+    { "button_down": "LEFT", "frames": 8 },
+    { "button_up": "LEFT", "frames": 15 },
+    { "button_down": "DOWN", "frames": 8 },
+    { "button_up": "DOWN", "frames": 15, "capture": "03_nudillera_pira" },
 
-    { "button_down": "DOWN", "frames": 4 },
-    { "button_up": "DOWN", "frames": 15, "capture": "04_craneo_votivo" },
+    { "button_down": "DOWN", "frames": 8 },
+    { "button_up": "DOWN", "frames": 15, "capture": "04_corazon_cilicio" },
 
-    { "button_down": "LEFT", "frames": 4 },
-    { "button_up": "LEFT", "frames": 15, "capture": "05_tomo_levantar" },
+    { "tap": { "x": 218, "y": 45 }, "frames": 8 },
+    { "tap": { "x": 128, "y": 45 }, "frames": 8 },
+    { "tap": { "x": 44, "y": 44 }, "frames": 18, "capture": "05_drag_comparacion" },
+    { "release": true, "frames": 16 },
 
-    { "tap": { "x": 116, "y": 44 }, "frames": 6 },
-    { "tap": { "x": 44, "y": 44 }, "frames": 12, "capture": "06_drag_comparacion" },
-    { "release": true, "frames": 12 },
-
-    { "button_down": "Y", "frames": 4 },
-    { "button_up": "Y", "frames": 12, "capture": "07_fundir_confirm" }
+    { "button_down": "Y", "frames": 8 },
+    { "button_up": "Y", "frames": 15, "capture": "06_fundir_confirm" }
   ]
 }

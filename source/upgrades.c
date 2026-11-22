@@ -3,6 +3,7 @@
 #include "gameplay.h"
 #include "weapons.h"
 #include "arpg.h"
+#include "arpg_inv.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -264,12 +265,15 @@ static void apply_don(int id) {
 
 // Llaga Abierta (DESIGN.md 6.12.10): max hearts halve, rounding up (5 -> 3). Both the live value and g_mods.max_hp
 // (the base player_state_init and the later Vida picks add to) drop by the same amount, so Vida still adds +1.
+// In ARPG (ENCOUNTERS_PROTO), player_state_init() and arpg_inv_recalc() halve live max_hp so unequipping restores it.
 static void apply_llaga(void) {
+#if !ENCOUNTERS_PROTO
     int max = g_player_state.max_hp;
     int drop = max - (max + 1) / 2;
     g_mods.max_hp -= drop;
     g_player_state.max_hp = max - drop;
     if (g_player_state.hp > g_player_state.max_hp) g_player_state.hp = g_player_state.max_hp;
+#endif
 }
 
 // Hearts below 5 while Llaga Abierta is owned (0 without it): the damage bonus and the crimson look read this.
@@ -287,9 +291,14 @@ int upgrades_llaga_missing(void) {
 #endif
 }
 
-// Llaga Abierta damage: +20 % per heart below the 5 of the start (never relative to the current max).
+// Llaga Abierta damage: +20 % (or mech_val % in ARPG) per fifth / heart below the start.
 static int llaga_pct(void) {
-    return 100 + 20 * upgrades_llaga_missing();
+    int step = 20;
+#if ENCOUNTERS_PROTO
+    int mv = arpg_inv_mechanic_value(ARPG_MECH_LLAGA);
+    if (mv > 0) step = mv;
+#endif
+    return 100 + step * upgrades_llaga_missing();
 }
 
 static void grant_relic(int id) {
@@ -384,13 +393,23 @@ void upgrades_debug_update(void) {
 }
 
 int upgrades_beam_damage(int base) {
-    int d = base * g_mods.sniper_damage_pct / 100;
+    int pct = g_mods.sniper_damage_pct;
+#if ENCOUNTERS_PROTO
+    if (upgrades_has_relic(RELIC_LANZA)) pct += arpg_inv_mechanic_value(ARPG_MECH_LANZA);
+#endif
+    int d = base * pct / 100;
     d = d * llaga_pct() / 100;
     return d < 1 ? 1 : d;
 }
 
 int upgrades_fire_damage(int base) {
     int d = base * g_mods.fire_dmg_pct / 100;
+    d = d * llaga_pct() / 100;
+    return d < 1 ? 1 : d;
+}
+
+int upgrades_punch_damage(int base) {
+    int d = base * g_mods.punch_damage_pct / 100;
     d = d * llaga_pct() / 100;
     return d < 1 ? 1 : d;
 }
