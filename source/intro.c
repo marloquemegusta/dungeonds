@@ -7,7 +7,7 @@
 
 #define SW 256
 #define SH 192
-#define N_CARDS 6
+#define N_CARDS 3
 
 #define COL_BORDER (RGB15(8, 8, 8) | 0x8000)
 #define COL_SEP    (RGB15(6, 6, 6) | 0x8000)
@@ -22,18 +22,12 @@ typedef struct {
 } IntroCard;
 
 static const IntroCard s_cards[N_CARDS] = {
-    { "La catedral",
-      "Cada sala tiene sus caídos. Límpiala y la reja se levanta; al entrar, cae detrás de ti." },
-    { "Moverse y apuntar",
-      "La cruceta mueve. El lápiz apunta; mantenerlo pulsado carga el disparo y al soltarlo sale el rayo." },
-    { "Coberturas",
-      "Pégate a un banco o a unos sacos y pulsa hacia ellos para agacharte. Andas más despacio, y el Ojo no te ve tras ellos." },
-    { "Rematar",
-      "Un disparo deja tambaleando al caído. Acércate y pulsa L para rematarlo: durante la ejecución y un segundo después eres invulnerable, y el rayo queda recargado." },
-    { "Relicarios",
-      "Rompe a tiros los relicarios de las salas y elige un Don: una mejora para esta partida." },
-    { "Vida",
-      "Tienes 5 Sagrados Corazones. Los caídos a veces sueltan uno que cura 1 si lo pisas. Tras un golpe tienes un segundo de invulnerabilidad." },
+    { "Pelear",
+      "La cruceta mueve. L da puñetazos (combo de 3). Cuando un enemigo se tambalea, L lo remata y suelta vida o maná." },
+    { "El lápiz",
+      "Toca la pantalla para lanzar tu hechizo: gasta maná, el orbe azul. Sin maná, a puñetazos." },
+    { "El campamento",
+      "Si caes, vuelves aquí con tu experiencia. Duerme en el jergón para subir de nivel; el arcón guarda tus reliquias." },
 };
 
 static void fill_rect(uint16_t *fb, int x0, int y0, int w, int h, uint16_t c) {
@@ -68,7 +62,7 @@ static void clear_black(uint16_t *fb) {
 #define VID_MAX_N 64
 #define VID_PIXELS (SW * SH)
 
-static const char *const s_clip_names[N_CARDS] = { "catedral", "apuntar", "cobertura", "remate", "relicario", "corazon" };
+static const char *const s_clip_names[N_CARDS] = { "pelear", "lapiz", "campamento" };
 
 typedef struct {
     FILE *f;

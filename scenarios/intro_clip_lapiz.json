@@ -1,0 +1,152 @@
+{
+  "name": "intro_clip_lapiz",
+  "description": "ARPG: el heroe lanza el Rayo con el lapiz contra la horda; baja el orbe de mana.",
+  "suite": false,
+  "evidence_only": true,
+  "state": {
+    "elf": "../.ds-game-dev/build/out/dungeonds.elf",
+    "symbols": {
+      "pl": "s_player",
+      "gps": "g_player_state"
+    },
+    "default_symbol": "pl",
+    "fields": {
+      "px": {
+        "symbol": "pl",
+        "offset": 0,
+        "type": "s32"
+      },
+      "py": {
+        "symbol": "pl",
+        "offset": 4,
+        "type": "s32"
+      },
+      "hp": {
+        "symbol": "gps",
+        "offset": 0,
+        "type": "s32"
+      },
+      "god": {
+        "symbol": "gps",
+        "offset": 20,
+        "type": "s32"
+      },
+      "mana": {
+        "symbol": "gps",
+        "offset": 24,
+        "type": "s32"
+      }
+    }
+  },
+  "steps": [
+    {
+      "frames": 60
+    },
+    {
+      "tap": {
+        "x": 128,
+        "y": 66
+      },
+      "frames": 6
+    },
+    {
+      "release": true,
+      "frames": 40
+    },
+    {
+      "button_down": "START",
+      "frames": 4
+    },
+    {
+      "button_up": "START",
+      "frames": 60
+    },
+    {
+      "poke": [
+        {
+          "field": "px",
+          "value": 32768
+        },
+        {
+          "field": "py",
+          "value": 29696
+        }
+      ],
+      "frames": 20
+    },
+    {
+      "button_down": "A",
+      "frames": 4
+    },
+    {
+      "button_up": "A",
+      "frames": 120
+    },
+    {
+      "poke": [
+        {
+          "field": "god",
+          "value": 1
+        }
+      ],
+      "frames": 2
+    },
+    {
+      "button_down": "UP",
+      "frames": 585
+    },
+    {
+      "button_up": "UP",
+      "frames": 1,
+      "state_capture": "antes"
+    },
+    {
+      "tap": {
+        "x": 128,
+        "y": 60
+      },
+      "frames": 54,
+      "capture_sequence": "c0",
+      "capture_every": 2
+    },
+    {
+      "release": true,
+      "frames": 20,
+      "capture_sequence": "c0",
+      "capture_every": 2,
+      "state_capture": "r0"
+    },
+    {
+      "tap": {
+        "x": 128,
+        "y": 60
+      },
+      "frames": 54,
+      "capture_sequence": "c0",
+      "capture_every": 2
+    },
+    {
+      "release": true,
+      "frames": 20,
+      "capture_sequence": "c0",
+      "capture_every": 2,
+      "state_capture": "r1"
+    },
+    {
+      "tap": {
+        "x": 128,
+        "y": 60
+      },
+      "frames": 54,
+      "capture_sequence": "c0",
+      "capture_every": 2
+    },
+    {
+      "release": true,
+      "frames": 20,
+      "capture_sequence": "c0",
+      "capture_every": 2,
+      "state_capture": "r2"
+    }
+  ]
+}
