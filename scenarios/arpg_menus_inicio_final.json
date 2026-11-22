@@ -139,7 +139,7 @@
   },
   {
    "button_down": "A",
-   "frames": 4
+   "frames": 12
   },
   {
    "button_up": "A",
@@ -148,11 +148,11 @@
   },
   {
    "button_down": "B",
-   "frames": 4
+   "frames": 12
   },
   {
    "button_up": "B",
-   "frames": 30,
+   "frames": 40,
    "capture": "c06_tras_inventario"
   },
   {
