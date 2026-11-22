@@ -1,0 +1,72 @@
+{
+  "name": "punch_andando",
+  "description": "Punetazo andando: en la catedral, con UP pulsado, un L corto compone el tren superior del golpe sobre el andar. El heroe sigue avanzando (mas lento) durante el golpe y la pierna anda; parado, el golpe entero se queda plantado.",
+  "suite": false,
+  "state": {
+    "elf": "../.ds-game-dev/build/out/dungeonds.elf",
+    "symbols": {
+      "pl": "s_player",
+      "gps": "g_player_state",
+      "spa": "s_punch_active"
+    },
+    "default_symbol": "pl",
+    "fields": {
+      "px": { "symbol": "pl", "offset": 0, "type": "s32" },
+      "py": { "symbol": "pl", "offset": 4, "type": "s32" },
+      "pdir": { "symbol": "pl", "offset": 8, "type": "s32" },
+      "moving": { "symbol": "pl", "offset": 16, "type": "s32" },
+      "punch": { "symbol": "spa", "offset": 0, "type": "s32" },
+      "god": { "symbol": "gps", "offset": 20, "type": "s32" }
+    }
+  },
+  "steps": [
+    { "frames": 60 },
+    { "tap": { "x": 128, "y": 66 }, "frames": 6 },
+    { "release": true, "frames": 40 },
+    { "button_down": "START", "frames": 4 },
+    { "button_up": "START", "frames": 50 },
+    { "frames": 20, "capture": "00_camp" },
+
+    { "poke": [
+        { "field": "px", "value": 32768 },
+        { "field": "py", "value": 29696 },
+        { "field": "god", "value": 1 }
+      ], "frames": 20 },
+    { "button_down": "A", "frames": 4 },
+    { "button_up": "A", "frames": 120 },
+    { "button_down": "UP", "frames": 60 },
+    { "button_up": "UP", "frames": 15, "capture": "01_catedral" },
+
+    { "button_down": "UP", "frames": 120, "state_capture": "walking" },
+    { "frames": 6, "state_capture": "walking2" },
+    { "button_down": "L", "frames": 2 },
+    { "button_up": "L", "frames": 1, "state_capture": "punch_start", "capture": "02_punch_start" },
+    { "frames": 6, "state_capture": "punch_mid", "capture_sequence": "punch_walk", "capture_every": 1 },
+    { "frames": 3, "state_capture": "punch_impact", "capture_sequence": "punch_walk", "capture_every": 1 },
+    { "frames": 15, "state_capture": "punch_over", "capture_sequence": "punch_walk", "capture_every": 1 },
+    { "button_up": "UP", "frames": 4, "state_capture": "stopped", "capture": "03_stopped" },
+
+    { "button_down": "L", "frames": 2 },
+    { "button_up": "L", "frames": 1, "state_capture": "stand_punch" },
+    { "frames": 6, "state_capture": "stand_mid", "capture_sequence": "punch_stand", "capture_every": 1 },
+    { "frames": 20, "state_capture": "stand_over", "capture_sequence": "punch_stand", "capture_every": 1 }
+  ],
+  "assertions": {
+    "state_changes": [
+      { "from": "walking", "to": "walking2", "field": "py", "min_abs_delta": 1 },
+      { "at": "punch_start", "field": "punch", "equals": 1 },
+      { "from": "punch_start", "to": "punch_mid", "field": "py", "min_abs_delta": 1 },
+      { "at": "punch_mid", "field": "punch", "equals": 1 },
+      { "at": "punch_mid", "field": "moving", "equals": 1 },
+      { "from": "punch_mid", "to": "punch_impact", "field": "py", "min_abs_delta": 1 },
+      { "from": "punch_impact", "to": "punch_over", "field": "py", "min_abs_delta": 1 },
+      { "at": "punch_over", "field": "punch", "equals": 0 },
+      { "at": "stopped", "field": "moving", "equals": 0 },
+      { "at": "stand_punch", "field": "punch", "equals": 1 },
+      { "at": "stand_mid", "field": "moving", "equals": 0 },
+      { "from": "stand_punch", "to": "stand_mid", "field": "py", "max_abs_delta": 0 },
+      { "from": "stand_mid", "to": "stand_over", "field": "py", "max_abs_delta": 0 },
+      { "at": "stand_over", "field": "punch", "equals": 0 }
+    ]
+  }
+}

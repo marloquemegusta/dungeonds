@@ -77,7 +77,10 @@ const uint8_t *punch_bounds(void) {
 int punch_ground_anchor(void) { return g_punch_ground_anchor[s_punch_move][s_punch_dir]; }
 
 // Nearest enemy this close, and whether it is reeling (<= 25 % life, gameplay.c): the hit goes to it.
-static int punch_target(Enemy *enemies, int max_enemies, fixed hero_x, fixed hero_y, int *ex, int *ey) {
+// `cone` 0 = cualquier direccion (parado, soft-lock). 1 = solo en +-45 grados de `dir` (andando: el golpe
+// va hacia donde el heroe camina, sin girarse hacia un enemigo que queda detras).
+static int punch_target(Enemy *enemies, int max_enemies, fixed hero_x, fixed hero_y,
+                        int dir, int cone, int *ex, int *ey) {
     const int hx = TO_INT(hero_x), hy = TO_INT(hero_y);
     const int range = PUNCH_RANGE * (100 + g_mods.remate_range_bonus) / 100;
     int best = -1, best_d2 = range * range + 1;
@@ -89,6 +92,11 @@ static int punch_target(Enemy *enemies, int max_enemies, fixed hero_x, fixed her
 #endif
         const int dx = TO_INT(e->x) - hx, dy = TO_INT(e->y) - hy;
         const int d2 = dx * dx + GROUND_DY2(dy);
+        if (cone && d2 >= 16) {                              // a bocajarro (< 4 px) no se filtra por angulo
+            int dd = (enemy_dir_from_vector(TO_FIXED(dx), TO_FIXED(dy)) - dir) & 7;
+            if (dd > 4) dd = 8 - dd;
+            if (dd > 1) continue;                             // fuera del cono frontal de +-45 grados
+        }
         if (d2 <= range * range && d2 < best_d2) { best_d2 = d2; best = i; }
     }
     if (best < 0) return -1;
@@ -105,12 +113,12 @@ static void punch_push_vec(const Enemy *e, fixed hero_x, fixed hero_y, fixed str
     *py = dy < 0 ? -(strength >> 1) : (dy > 0 ? (strength >> 1) : 0);
 }
 
-static void punch_apply(Enemy *enemies, int max_enemies, fixed hero_x, fixed hero_y, int move, int dir) {
-    int ex = 0, ey = 0;
-    const int idx = punch_target(enemies, max_enemies, hero_x, hero_y, &ex, &ey);
+// Aplica el golpe al enemigo `idx` ya elegido (el mismo que fijo la direccion): el efecto visible y el
+// dano no pueden apuntar a enemigos distintos.
+static void punch_apply(Enemy *enemies, int idx, fixed hero_x, fixed hero_y, int move) {
     if (idx < 0) return;
     Enemy *e = &enemies[idx];
-    (void)dir;
+    const int ex = TO_INT(e->x);
     const fixed push = (move == PUNCH_MOVE_HOOK) ? PUNCH_HOOK_PUSH : PUNCH_LIGHT_PUSH;
     const int base_dmg = (move == PUNCH_MOVE_HOOK) ? PUNCH_DAMAGE_HOOK
                        : (move == PUNCH_MOVE_A)    ? PUNCH_DAMAGE_A : PUNCH_DAMAGE_B;
@@ -123,16 +131,15 @@ static void punch_apply(Enemy *enemies, int max_enemies, fixed hero_x, fixed her
     weapons_request_shake(1, move == PUNCH_MOVE_HOOK ? 5 : 3);
 }
 
-int punch_start(Enemy *enemies, int max_enemies, fixed hero_x, fixed hero_y, int hero_dir, int move) {
+int punch_start(Enemy *enemies, int max_enemies, fixed hero_x, fixed hero_y, int hero_dir, int move, int soft_lock) {
     if (s_punch_active || g_player_state.is_dead || move < 0 || move >= PUNCH_NUM_MOVES) return 0;
+    const int face = hero_dir & 7;
     int ex = 0, ey = 0;
-    const int idx = punch_target(enemies, max_enemies, hero_x, hero_y, &ex, &ey);
-    int dir;
-    if (idx >= 0) {
+    const int idx = punch_target(enemies, max_enemies, hero_x, hero_y, face, !soft_lock, &ex, &ey);
+    int dir = face;
+    if (soft_lock && idx >= 0) {
         const int dx = ex - TO_INT(hero_x), dy = ey - TO_INT(hero_y);
-        dir = dx * dx + GROUND_DY2(dy) < 16 ? (hero_dir & 7) : enemy_dir_from_vector(TO_FIXED(dx), TO_FIXED(dy));
-    } else {
-        dir = hero_dir & 7;
+        dir = dx * dx + GROUND_DY2(dy) < 16 ? face : enemy_dir_from_vector(TO_FIXED(dx), TO_FIXED(dy));
     }
     if (!punch_load_bin(move, dir)) return 0;
     s_punch_move = move;
@@ -142,11 +149,11 @@ int punch_start(Enemy *enemies, int max_enemies, fixed hero_x, fixed hero_y, int
     s_punch_chain = 0;
     s_punch_active = 1;
     sfx_play_pitched(SND_PUNCH_WHOOSH, TO_INT(hero_x), move == PUNCH_MOVE_HOOK ? 850 : 0);
-    punch_apply(enemies, max_enemies, hero_x, hero_y, move, dir);
+    punch_apply(enemies, idx, hero_x, hero_y, move);
     return 1;
 }
 
-int punch_try_chain(Enemy *enemies, int max_enemies, fixed hero_x, fixed hero_y, int hero_dir) {
+int punch_try_chain(Enemy *enemies, int max_enemies, fixed hero_x, fixed hero_y, int hero_dir, int soft_lock) {
     if (g_player_state.is_dead) return 0;
     int next;
     if (s_punch_active) {
@@ -160,7 +167,7 @@ int punch_try_chain(Enemy *enemies, int max_enemies, fixed hero_x, fixed hero_y,
     const int was_active = s_punch_active;
     s_punch_active = 0;                                       // punch_start rechaza un golpe en curso: cerrar el anterior
     (void)was_active;
-    if (!punch_start(enemies, max_enemies, hero_x, hero_y, hero_dir, next)) { s_punch_active = was_active; return 0; }
+    if (!punch_start(enemies, max_enemies, hero_x, hero_y, hero_dir, next, soft_lock)) { s_punch_active = was_active; return 0; }
     return 1;
 }
 

@@ -869,14 +869,93 @@ static int remate_layer_depth(int ay, int layer) {
 
 // Combo de puñetazos (punch.h): el fotograma del golpe en curso, anclado a los pies como el andar. La celda del
 // lab es 48x48 y la fila de pies de cada golpe/dirección está en g_punch_ground_anchor.
+//
+// Andando, el clip del golpe se compone con el del andar: por encima de la cintura (PUNCH_WALK_SPLIT px sobre
+// los pies) manda el golpe, por debajo manda el paseo en la dirección actual. Las dos celdas se alinean por el
+// centro (x) y por su fila de pies, así que el corte es recto y los pies siguen el ritmo real del avance.
+// Se recompone solo cuando cambia el fotograma de golpe o el de andar (no cada frame).
+#define PUNCH_COMP_RUNS_HALFWORDS (PUNCH_CELL + 1 + PUNCH_CELL * ((PUNCH_CELL + 1) / 2) + 1)
+static uint16_t s_comp_pix[PUNCH_CELL * PUNCH_CELL] __attribute__((aligned(4)));
+static uint16_t s_comp_runs[PUNCH_COMP_RUNS_HALFWORDS] __attribute__((aligned(4)));
+static int s_ck_move = -1, s_ck_pdir = -1, s_ck_pframe = -1;
+static int s_ck_char = -1, s_ck_wdir = -1, s_ck_wframe = -1;
+
+static void punch_compose_walk(void) {
+    const int move = punch_move(), pdir = punch_dir(), pframe = punch_frame();
+    const int char_id = s_player.char_id, wdir = s_player.dir, wframe = s_player.frame;
+    if (move == s_ck_move && pdir == s_ck_pdir && pframe == s_ck_pframe &&
+        char_id == s_ck_char && wdir == s_ck_wdir && wframe == s_ck_wframe) return;
+    s_ck_move = move; s_ck_pdir = pdir; s_ck_pframe = pframe;
+    s_ck_char = char_id; s_ck_wdir = wdir; s_ck_wframe = wframe;
+
+    const uint8_t *pb = punch_bounds();
+    const uint16_t *pp = punch_pixels();
+    if (!pb || !pp) return;
+    const uint8_t *wb = g_character_frame_bounds[char_id][wdir][wframe];
+    const uint16_t *wp = character_frame_ptr(char_id, wdir, wframe);
+    const int ppitch = sprite_pitch(pb[2]);
+    const int wpitch = sprite_pitch(wb[2]);
+    const int ws = g_characters[char_id].sprite_w;
+    const int xoff = (PUNCH_CELL - ws) / 2;                 // la celda del andar es mas estrecha: centrada
+    const int yoff = punch_ground_anchor() - s_char_ground_anchor[char_id][wdir];
+    const int split_y = punch_ground_anchor() - PUNCH_WALK_SPLIT;
+
+    for (int i = 0; i < PUNCH_CELL * PUNCH_CELL; i++) s_comp_pix[i] = 0;
+    // Tren superior: fotograma del golpe, tal cual (la celda del golpe ya es 48x48 y su anchor es el de la fila de pies).
+    for (int y = 0; y < split_y; y++) {
+        if (y < pb[1] || y >= pb[1] + pb[3]) continue;
+        const uint16_t *srow = pp + (y - pb[1]) * ppitch;
+        for (int x = 0; x < PUNCH_CELL; x++) {
+            if (x < pb[0] || x >= pb[0] + pb[2]) continue;
+            const uint16_t c = srow[x - pb[0]];
+            if (c) s_comp_pix[y * PUNCH_CELL + x] = c;
+        }
+    }
+    // Tren inferior: fotograma del andar, desplazado para que su fila de pies caiga en la del golpe.
+    for (int y = split_y; y < PUNCH_CELL; y++) {
+        const int wy = y - yoff;
+        if (wy < wb[1] || wy >= wb[1] + wb[3]) continue;
+        const uint16_t *srow = wp + (wy - wb[1]) * wpitch;
+        for (int x = 0; x < PUNCH_CELL; x++) {
+            const int wx = x - xoff;
+            if (wx < wb[0] || wx >= wb[0] + wb[2]) continue;
+            const uint16_t c = srow[wx - wb[0]];
+            if (c) s_comp_pix[y * PUNCH_CELL + x] = c;
+        }
+    }
+    // Tramos opacos por fila (formato de blit_stride): (bh + 1) offsets y luego x | (longitud << 8).
+    uint16_t *dst = s_comp_runs + PUNCH_CELL + 1;
+    for (int y = 0; y < PUNCH_CELL; y++) {
+        s_comp_runs[y] = (uint16_t)(dst - s_comp_runs);
+        const uint16_t *row = s_comp_pix + y * PUNCH_CELL;
+        int x = 0;
+        while (x < PUNCH_CELL) {
+            while (x < PUNCH_CELL && row[x] == 0) x++;
+            if (x >= PUNCH_CELL) break;
+            const int start = x;
+            while (x < PUNCH_CELL && row[x] != 0) x++;
+            *dst++ = (uint16_t)(start | ((x - start) << 8));
+        }
+    }
+    s_comp_runs[PUNCH_CELL] = (uint16_t)(dst - s_comp_runs);
+    if ((dst - s_comp_runs) & 1) *dst = 0;
+}
+
 static void draw_punch(uint16_t *buffer, int cam_x, int cam_y) {
     const uint16_t *pix = punch_pixels();
     const uint8_t *b = punch_bounds();
     if (!pix || !b) return;
-    const int bw = b[2], bh = b[3];
-    if (bw == 0 || bh == 0) return;
     const int px = player_screen_x(s_player.x, s_player.y);
     const int py = player_screen_y(s_player.x, s_player.y);
+    if (s_player.is_moving) {
+        punch_compose_walk();
+        blit_stride(buffer, s_comp_pix, s_comp_runs, PUNCH_CELL, PUNCH_CELL, PUNCH_CELL,
+                    px - PUNCH_CELL / 2, py - punch_ground_anchor(),
+                    cam_x, cam_y, s_draw_item_depth);
+        return;
+    }
+    const int bw = b[2], bh = b[3];
+    if (bw == 0 || bh == 0) return;
     blit_stride(buffer, pix, punch_runs(), sprite_pitch(bw), bw, bh,
                 px - PUNCH_CELL / 2 + b[0], py - punch_ground_anchor() + b[1],
                 cam_x, cam_y, s_draw_item_depth);
@@ -2709,10 +2788,12 @@ static void camera_init(void) {
 }
 
 // ARPG combo de punetazos (DESIGN.md 7.2, punch.h): L corto. Durante el golpe o en su ventana de encadenado
-// saca el siguiente; si no, empieza por el directo.
+// saca el siguiente; si no, empieza por el directo. Andando no hay soft-lock: el golpe va en la direccion de
+// movimiento (y solo alcanza el cono frontal), para no girarse hacia un enemigo que queda detras.
 static void arpg_punch(Enemy *enemies, int max_enemies) {
-    if (punch_try_chain(enemies, max_enemies, s_player.x, s_player.y, s_player.dir)) return;
-    punch_start(enemies, max_enemies, s_player.x, s_player.y, s_player.dir, PUNCH_MOVE_A);
+    const int soft_lock = !s_player.is_moving;
+    if (punch_try_chain(enemies, max_enemies, s_player.x, s_player.y, s_player.dir, soft_lock)) return;
+    punch_start(enemies, max_enemies, s_player.x, s_player.y, s_player.dir, PUNCH_MOVE_A, soft_lock);
 }
 
 // ARPG L tap/hold state (see player_update).
@@ -2781,12 +2862,10 @@ static void player_update(uint32_t keys, uint32_t keys_down) {
     }
     punch_update();                                    // combo de puñetazos: avanza el golpe y su ventana de encadenado
     if (punch_active()) {
-        // Mientras pega el héroe no anda ni dispara (DESIGN.md 7.2). L sigue leyéndose abajo para encadenar.
+        // Pegando se puede andar (mas lento): el clip del golpe se compone sobre el andar en draw_punch. El
+        // andar sigue leyendo la cruceta mas abajo; aqui solo se corta el clip del disparo y la carga.
         s_rooted = 0;
         s_shot_active = 0;
-        s_player.is_moving = 0;
-        s_player.frame = 0;
-        s_player.anim_timer = 0;
         s_hero_clip_frame = -1;
     }
     shot_clip_step();
@@ -2941,7 +3020,12 @@ static void player_update(uint32_t keys, uint32_t keys_down) {
     // Paso de Procesion (DESIGN.md 6.12.10): while charging the hero walks at 35 % of that speed.
     const int procession = s_rooted && upgrades_has_relic(RELIC_PROCESION);
     if (procession) current_speed = current_speed * 35 / 100;
+    // Pegando andando el heroe avanza al PUNCH_WALK_SPEED_PCT %; la cadencia del andar se alarga en la misma
+    // proporcion para que la zancada siga cuadrando con el avance y los pies no deslicen.
+    if (punch_active()) current_speed = current_speed * PUNCH_WALK_SPEED_PCT / 100;
     int current_period = g_characters[s_crouched ? CHAR_HERO_CROUCH_WALK : cur_char].anim_period;
+    if (punch_active())
+        current_period = (current_period * 100 + PUNCH_WALK_SPEED_PCT / 2) / PUNCH_WALK_SPEED_PCT;
 
     // A press held through the post-shot cooldown starts the charge as soon as the weapon is
     // ready (weapons_input buffers it), so root the hero on that same frame too.
