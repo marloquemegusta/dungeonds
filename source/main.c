@@ -2944,7 +2944,9 @@ static void player_update(uint32_t keys, uint32_t keys_down) {
     if ((pressed || touch_down) && weapons_can_start_aim(&g_player_state)) s_rooted = 1;
 
     int sdx = 0, sdy = 0; // screen-space input axes
-    if (!s_rooted || procession) {
+    // El puñetazo planta los pies: durante el golpe el héroe no anda (punch.h), aunque s_rooted lo sobrescriba
+    // la entrada de armas más abajo. Sin esto, el clip de golpe se desplaza con el jugador y los pies deslizan.
+    if (!punch_active() && (!s_rooted || procession)) {
         if (keys & KEY_UP) sdy -= 1;
         if (keys & KEY_DOWN) sdy += 1;
         if (keys & KEY_LEFT) sdx -= 1;
