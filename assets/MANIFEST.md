@@ -37,6 +37,8 @@ Todo asset que use el juego está en este catálogo y versionado. Lo que no est�
 | Suelo de la catedral | cinco losas en `assets/environment/cathedral/floor_tiles/` (§4) | `tools/floor/rombos_tripo.py` | `floor/rombos_tripo/` → `strip_kit.c` | LFS |
 | Lápidas | lápidas Tripo en `props/` (§3) | `tools/catedral_editor/gen/*` (cadena en su `README.md`) | `assets/environment/cathedral/lapidas/` → `strip_kit.c` | LFS |
 | Muro izquierdo | arco gótico `f450c095` en `props/` | `tools/catedral_editor/gen/wall_row_glb.py` | `muros/muro_izq_128.png` → `strip_kit.c` | LFS |
+| Muro de fondo de sala (ARPG) | mismo arco gótico `f450c095`; variante pasante con intradós de piedra | `tools/catedral_editor/gen/{arco_pasante,wall_end_glb,wall_end_compose}.py` (lab lento, ancho 928) | `muros/muro_fondo_ciego.png`, `muro_fondo_pasante.png` → `strip_kit.c` | git |
+| Hueco lateral de dos módulos (ARPG) | muro lateral fino con dos módulos quitados: canto real del módulo norte (112 px), vacío y arranque del sur | `tools/catedral_editor/gen/{wall_gap_glb,wall_gap_compose,ghost}.py` (lab lento, ancho 1586; `ghost.py` fija el encuadre) | `muros/hueco_izq.png` (24x264) → `strip_kit.c` | git |
 | Paleta de la catedral | renders actuales | `tools/palette/extract_palette.py` | `assets/environment/cathedral/palette/palette.json` | git (derivado versionado) |
 | Arenas (mazmorra) | `assets/arenas/arenas.json` | `tools/export_arenas.py` → `bake_arena.py` | `source/arena_dungeon_01.c` | git |
 | HUD | corazón sagrado 3D `assets/models/hud/sacred_heart/` | `tools/hud/prerender_hud_heart.py` → `tools/generate_hud_icons_c.py` | `source/hud_icons_gfx.c` | LFS (PNG: git) |
@@ -46,6 +48,7 @@ Todo asset que use el juego está en este catálogo y versionado. Lo que no est�
 | Clips de la intro | partida real en DeSmuME | `tools/gen_intro_clips.py` | `nitrofiles/intro/*.bin` | derivado |
 | Remates (ejecuciones) | clips Mixamo del inbox (patada y muerte) + modelos de los personajes | `tools/characters/ds_remate_ojo.py` (escena + GLB horneados) → `tools/lab/fast/export_scene_fast.cjs` (lab rápido) → `tools/generate_remate_sprites.py` | `nitrofiles/remate/<tipo>_d<dir>.bin` + `source/remate_sprites.c` | derivado (los FBX del inbox son dato de pose; los GLB del lab no se versionan) |
 | Efectos de sonido | ElevenLabs → `assets/sfx/raw/` | recorte a mano → `assets/sfx/baked/` → `tools/bake_sfx.py` | arrays en C (`source/sfx.c`) | git |
+| SFX del Glifo | reutilizan clips del lab: `SND_GLIFO_CRACK` = `assets/sfx/baked/lab_creak.wav`, `SND_GLIFO_DETONATE` = `assets/sfx/baked/lab_mining0.wav` | ídem | `source/sfx.c` | git |
 | Música | `assets/music/*.wav` | conversión a `nitrofiles/bgm.raw` | `nitrofiles/bgm.raw` | git |
 | Icono de la ROM | `assets/icon.png` | toolchain | banner de la ROM | git |
 | Vídeos de redes | skill `codice-lore-video` | `render_guiones.py` | no van en la ROM | LFS (`assets/videos/*.mp4`) |
@@ -71,6 +74,7 @@ Esta tabla es la única fuente de verdad de qué modelo y qué animación produc
 | `CHAR_EXVOTO_STAND_UP` | `exvoto_stand_up` (40) | el mismo | `pray/pray_kneel_to_stand.fbx` | `build_exvoto.py` |
 | Tiers de Exvoto (rama ARPG): `exvoto_bebe`, `exvoto_parroco`, `exvoto_monja` y sus `_pray_stand`, `_pray_kneel`, `_stand_up` (40; `exvoto_parroco_stand_up` 48) | ídem | `exvoto_bebe/source/…79cc0a74`, `exvoto_parroco/source/…6fbad9bb`, `exvoto_monja/source/…269f9186` | las del Exvoto | `build_exvoto_tier.py` (brazos por dirección + giro de palma; la cabeza del Párroco sale girada, pendiente) |
 | Héroe, combo de puñetazos (rama ARPG): `corazon_punch_a`, `corazon_punch_b`, `corazon_gancho` (48) | ídem | `corazon/source/corazon.fbx` | `corazon/{punch_a,punch_b,gancho}.fbx` (Mixamo «Punching», «Punching (1)», «Hook Punch»; recorte `TRIM` en `build_corazon.py`) | `build_corazon.py`; a NitroFS con `tools/generate_punch_sprites.py` |
+| Héroe, rezo del Glifo (rama ARPG): `corazon_pray` (48, 8 direcciones) | ídem | `corazon/source/corazon.fbx` | `animations/pray/pray_standing.fbx` (Mixamo «pray standing», `assets/models/animations/pray/pray_standing.fbx` del repo principal; gesto de manos que se juntan) | `build_corazon.py` (clip `pray`); a NitroFS (`nitrofiles/punch/pray_d0..d7.bin`) con `tools/generate_punch_sprites.py` |
 | `CHAR_ABANDERADO`: andar | `abanderado` (60) | cuerpo `abanderado/source/…6e3a96b5`, estandarte `source/estandarte/…989b9291` | `walk/sad_walk.fbx` | `build_abanderado.py` |
 | `CHAR_ABANDERADO`: señalar | `abanderado_point` (60) | el mismo | pose generada en el script | `build_abanderado.py` |
 | Vídeo de lore 07 (Lope): `abanderado_derrota` (sprite 320, `assets/sprites/bestiary/abanderado_derrota/`) | el mismo cuerpo y estandarte | `animations/derrota/plant_a_plant.fbx` (Mixamo «Plant A Plant», espejado; golpes procedurales) | `build_abanderado_derrota.py` |
