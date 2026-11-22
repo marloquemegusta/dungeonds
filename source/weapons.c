@@ -1411,12 +1411,13 @@ static void flagelado_update(Enemy *enemies, int max_enemies) {
     if (s_aim_state == AIM_AIMING) s_aim_timer = s_charge_frames;     // a charge in progress is armed now
 }
 
-// Aura de Cilicio: while charging, 1 layer every CILICIO_PERIOD frames to whoever stands inside the ring.
+// Aura de Cilicio: always active while alive (heart modification); grows further while charging.
 static void cilicio_update(Enemy *enemies, int max_enemies) {
-    if (!upgrades_has_relic(RELIC_CILICIO) || !aura_charging()) { s_cilicio_tick = 0; return; }
+    if (!upgrades_has_relic(RELIC_CILICIO) || g_player_state.is_dead) { s_cilicio_tick = 0; return; }
     if (++s_cilicio_tick < CILICIO_PERIOD) return;
     s_cilicio_tick = 0;
-    const int r = cilicio_radius(s_aim_prog), r2 = r * r;
+    int prog = aura_charging() ? (s_aim_prog > 160 ? s_aim_prog : 160) : 160;
+    const int r = cilicio_radius(prog), r2 = r * r;
     for (int i = 0; i < max_enemies; i++) {
         Enemy *e = &enemies[i];
         if (!e->active || e->hp <= 0 || e->state == ENEMY_STATE_EMERGE || g_enemy_ally[i]) continue;
@@ -2353,9 +2354,18 @@ void weapons_render_floor(uint16_t *buffer, int cam_x, int cam_y) {
     const int cilicio = upgrades_has_relic(RELIC_CILICIO);
     if (s_aim_state == AIM_READY && aura_on(AURA_STYLE_E) && !cilicio)
         gfx_ground_ring(&ground, s_aura_x, s_aura_y, 7, s_fx_rgb[FX_SH_CRIMSON], 2);
-    // Aura de Cilicio: the dashed ember ring is the real reach of the burn.
-    if (cilicio && aura_fx_live() && aura_on(AURA_STYLE_E))
-        gfx_ground_ring(&ground, s_aura_x, s_aura_y, cilicio_radius(s_aura_prog_live), s_fx_rgb[FX_SH_EMBER], 2);
+    // Aura de Cilicio: always active around the hero while alive (heart modification).
+    if (cilicio && !g_player_state.is_dead) {
+        int cprog = aura_fx_live() ? (s_aura_prog_live > 160 ? s_aura_prog_live : 160) : 160;
+        if (!aura_fx_live()) { s_aura_x = s_hero_x; s_aura_y = s_hero_y; }
+        gfx_ground_ring(&ground, s_aura_x, s_aura_y, cilicio_radius(cprog), s_fx_rgb[FX_SH_EMBER], 2);
+        FxTarget target = { buffer };
+        aura_draw_pass(&target, cam_x, cam_y, 1);
+        burn_fx_draw(&target, cam_x, cam_y, 1);
+        if (aura_fx_live() && aura_on(AURA_STYLE_G)) glow_draw(&target, cam_x, cam_y, s_aura_prog_live);
+        thorn_draw(&target, cam_x, cam_y, cprog);
+        return;
+    }
     FxTarget target = { buffer };
     aura_draw_pass(&target, cam_x, cam_y, 1);         // style L: arcs behind the body
     burn_fx_draw(&target, cam_x, cam_y, 1);           // far side of the effects attached to a body: the sprite covers it
