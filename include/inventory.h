@@ -6,6 +6,18 @@
 
 #include <stdint.h>
 
+#include "arpg_inv.h"
+#include <stdint.h>
+// Icono de suelo 24x24 del objeto (NULL si no hay arte).
+const uint16_t *inv_item_floor_icon24(const ArpgInvItem *it);
+// Aura (30x30 u8, icono en 3,3: 0 opaco, 1..3 distancia, 255 nada) y sombra proyectada (INV_FLOOR_SH_W x INV_FLOOR_SH_H, 1 = sombra,
+// origen relativo a la base del icono: INV_FLOOR_SH_OX/OY). NULL si no hay arte. Misma geometria que tools/bake_inv_floor_art.py.
+#define INV_FLOOR_SH_W 36
+#define INV_FLOOR_SH_H 10
+#define INV_FLOOR_SH_OX (-24)
+#define INV_FLOOR_SH_OY 0
+const uint8_t *inv_item_floor_aura30(const ArpgInvItem *it);
+const uint8_t *inv_item_floor_shadow(const ArpgInvItem *it);
 void inventory_open(void);
 // Informa si el lápiz sigue pulsado cada frame para arrastrar reliquias (drag & drop).
 void inventory_set_touch_held(int touch_held, int touch_x, int touch_y);

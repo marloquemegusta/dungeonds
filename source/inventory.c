@@ -5,6 +5,7 @@
 #include "bestiary_font.h"
 #include "inv_art.h"
 #include "inv_item_art.h"
+#include "inv_item_floor_art.h"
 #include "sfx.h"
 #include <fcntl.h>
 #include <stdio.h>
@@ -470,6 +471,28 @@ static void draw_item_glyph(uint16_t *buf, const ArpgInvItem *it, int cx, int cy
     diamond(buf, cx, cy, r, col);
     if (it->kind == ARPG_ITEM_TOME) ring(buf, cx, cy, r + 4, INV_GOLD);
 }
+
+// Icono de suelo 24x24 (0x0000 = transparente) para un objeto soltado; NULL si no hay arte.
+// which: 0 icono, 1 aura 30x30, 2 sombra proyectada.
+static const void *floor_art(const ArpgInvItem *it, int which) {
+    if (!it) return NULL;
+#define FLOOR_PICK(n) (which == 0 ? (const void *)s_##n##_fl24 : which == 1 ? (const void *)s_##n##_aura : (const void *)s_##n##_sh)
+    if (it->kind == ARPG_ITEM_TOME) {
+        if (it->school == ARPG_SCHOOL_GLIFO) return FLOOR_PICK(tome_glifo);
+        if (it->school == ARPG_SCHOOL_LEVANTAR) return FLOOR_PICK(tome_levantar);
+        if (it->school == ARPG_SCHOOL_RAYO) return FLOOR_PICK(tome_rayo);
+    } else if (it->kind == ARPG_ITEM_RELIC) {
+        if (it->school == ARPG_SCHOOL_PECHO) return FLOOR_PICK(heart);
+        if (it->school == ARPG_SCHOOL_RAYO) return FLOOR_PICK(relic_lanza);
+        if (it->school == ARPG_SCHOOL_EJECUCION) return FLOOR_PICK(relic_nudillera);
+        if (it->school == ARPG_SCHOOL_LEVANTAR) return FLOOR_PICK(relic_calavera);
+    }
+#undef FLOOR_PICK
+    return NULL;
+}
+const uint16_t *inv_item_floor_icon24(const ArpgInvItem *it) { return (const uint16_t *)floor_art(it, 0); }
+const uint8_t *inv_item_floor_aura30(const ArpgInvItem *it) { return (const uint8_t *)floor_art(it, 1); }
+const uint8_t *inv_item_floor_shadow(const ArpgInvItem *it) { return (const uint8_t *)floor_art(it, 2); }
 
 // ---------------------------------------------------------------------------
 // Item & Hit-test helpers

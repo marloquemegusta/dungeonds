@@ -665,6 +665,8 @@ static inline uint16_t world_floor_color(int x, int y) {
     return g_arena->palette[palette_index];
 }
 
+uint16_t world_floor_color_at(int x, int y) { return world_floor_color(x, y); }
+
 __attribute__((target("arm"), noinline))
 ITCM_CODE static void draw_shadow_mask(uint16_t *buffer, const uint8_t *mask,
                              const uint8_t *bounds, int left, int top,

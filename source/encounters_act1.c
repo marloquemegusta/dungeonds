@@ -42,6 +42,7 @@ volatile EncDebug g_enc_debug;
 #endif
 volatile EncStats g_enc_stats;
 volatile EncTierDebug g_tier_debug;
+volatile uint8_t g_relic_drop_debug;
 
 // ---------------------------------------------------------------------------
 // Act plan: which plant, tier and mirror each encounter has. Pure function of the seed.
@@ -689,6 +690,27 @@ void enc_update(Enemy *enemies, int max_enemies, int px, int py) {
     volatile EncStats *st = &g_enc_stats;
     apply_debug();
     if (g_tier_debug.spawn) tier_debug_spawn(enemies, max_enemies, px, py);
+#if RELIC_SHOWCASE
+    {
+        static int s_showcase_done = 0;
+        if (!s_showcase_done) { g_relic_drop_debug = 1; s_showcase_done = 1; }
+        if (keysDown() & KEY_SELECT) g_relic_drop_debug = 1;
+    }
+#endif
+    if (g_relic_drop_debug) {   // buzon de escenarios: 5 reliquias/tomos en fila sobre el heroe
+        static const uint8_t kind[5] = {ARPG_ITEM_RELIC, ARPG_ITEM_RELIC, ARPG_ITEM_RELIC, ARPG_ITEM_TOME, ARPG_ITEM_TOME};
+        static const uint8_t sch[5] = {ARPG_SCHOOL_PECHO, ARPG_SCHOOL_RAYO, ARPG_SCHOOL_EJECUCION, ARPG_SCHOOL_RAYO, ARPG_SCHOOL_GLIFO};
+        uint32_t rng = 7u;
+        for (int i = 0; i < 5; i++) {
+            ArpgInvItem it;
+            arpg_relic_roll(&it, 1, ARPG_RAR_COMMON + i, &rng);
+            it.kind = kind[i];
+            it.school = sch[i];
+            it.rarity = (uint8_t)(ARPG_RAR_COMMON + i);
+            pickups_spawn_relic(TO_FIXED(px - 68 + i * 34), TO_FIXED(py - 30), &it);
+        }
+        g_relic_drop_debug = 0;
+    }
     if (g_player_state.is_dead) {
         if (!s_was_dead) {
             s_was_dead = 1;

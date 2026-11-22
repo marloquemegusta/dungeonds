@@ -15,6 +15,9 @@
 // 2 was PICKUP_KIND_XP (experience runes, retired: XP is granted directly on kill)
 #define PICKUP_KIND_RELIC 3     // ground relic drop -> arpg_inv_add()
 
+// Buzon de escenarios (el juego nunca lo pone): != 0 -> 5 reliquias/tomos en fila sobre el heroe.
+extern volatile uint8_t g_relic_drop_debug;
+
 void pickups_init(uint32_t seed);
 void pickups_shift_y(int dy_px);
 void pickups_enemy_killed(const Enemy *enemy);
