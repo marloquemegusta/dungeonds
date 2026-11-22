@@ -1,0 +1,71 @@
+{
+  "name": "sacos_huella_cobertura",
+  "suite": false,
+  "description": "Planta embudo (acto I): la huella de la barricada de sacos es la franja de apoyo de 128x4 px (sprite de 64 px + remate), no la caja del placeholder. El heroe sube de frente y se detiene 3 px por debajo de la base del saco (y ~227 locales), agachado al empujar hacia ella; luego rodea por el paso derecho, se acerca por detras y se detiene 3 px por encima de la base (y ~217). La diferencia entre las dos paradas es de 10 px: antes el rect empezaba 20 px mas arriba y el heroe se quedaba flotando tras los sacos.",
+  "tags": [
+    "props",
+    "coberturas"
+  ],
+  "rom": "../dungeonds-encuentros.nds",
+  "state": {
+    "elf": "../.ds-game-dev/build/out/dungeonds-encuentros.elf",
+    "symbols": {
+      "stats": "g_enc_stats",
+      "dbg": "g_enc_debug",
+      "nav": "g_nav_state",
+      "crouch": "g_hero_crouched"
+    },
+    "default_symbol": "stats",
+    "fields": {
+      "woken": { "offset": 4, "type": "u8" },
+      "cleared": { "offset": 5, "type": "u8" },
+      "plant": { "offset": 2, "type": "u8" },
+      "tier": { "offset": 3, "type": "u8" },
+      "dbg_auto_pick": { "symbol": "dbg", "offset": 1, "type": "u8" },
+      "dbg_god": { "symbol": "dbg", "offset": 2, "type": "u8" },
+      "dbg_no_dones": { "symbol": "dbg", "offset": 3, "type": "u8" },
+      "dbg_force_plant": { "symbol": "dbg", "offset": 10, "type": "u8" },
+      "dbg_force_tier": { "symbol": "dbg", "offset": 11, "type": "u8" },
+      "dbg_restart": { "symbol": "dbg", "offset": 12, "type": "u8" },
+      "dbg_cam_up": { "symbol": "dbg", "offset": 13, "type": "u8" },
+      "hero_x": { "symbol": "nav", "offset": 0, "type": "s32" },
+      "hero_y": { "symbol": "nav", "offset": 4, "type": "s32" },
+      "crouched": { "symbol": "crouch", "offset": 0, "type": "s32" }
+    }
+  },
+  "steps": [
+    { "frames": 20 },
+    { "poke": [
+      { "field": "dbg_god", "value": 1 },
+      { "field": "dbg_auto_pick", "value": 1 },
+      { "field": "dbg_no_dones", "value": 1 },
+      { "field": "dbg_cam_up", "value": 0 }
+    ], "frames": 2 },
+    { "poke": [
+      { "field": "dbg_force_plant", "value": 2 },
+      { "field": "dbg_force_tier", "value": 1 },
+      { "field": "dbg_restart", "value": 1 }
+    ], "frames": 30, "state_capture": "ini" },
+    { "button_down": "UP", "wait_until": { "field": "woken", "min_value": 1, "timeout_frames": 1200 } },
+    { "button_up": "UP", "frames": 4, "state_capture": "despierta" },
+    { "button_down": "UP", "frames": 420, "capture": "frente", "state_capture": "frente" },
+    { "button_up": "UP", "frames": 4 },
+    { "button_down": "RIGHT", "frames": 110, "state_capture": "paso" },
+    { "button_up": "RIGHT", "frames": 2 },
+    { "button_down": "UP", "frames": 800, "state_capture": "arriba" },
+    { "button_up": "UP", "frames": 2 },
+    { "button_down": "LEFT", "frames": 120, "state_capture": "detras_x" },
+    { "button_up": "LEFT", "frames": 2 },
+    { "button_down": "DOWN", "frames": 420 },
+    { "button_up": "DOWN", "frames": 10, "capture": "detras", "state_capture": "detras" }
+  ],
+  "assertions": {
+    "state_changes": [
+      { "at": "frente", "field": "crouched", "equals": 1 },
+      { "from": "frente", "to": "detras", "field": "hero_y", "min_delta": -2816, "max_delta": -2304 }
+    ],
+    "screen_changes": [
+      { "from": "frente", "to": "detras", "min_changed_pixels": 300 }
+    ]
+  }
+}

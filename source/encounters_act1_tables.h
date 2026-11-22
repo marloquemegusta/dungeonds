@@ -60,7 +60,7 @@ static const EncPieceDef s_p1_pieces[] = {  // embudo
     { STRIP_PIECE_SACOS_REMATE_DER, 64, 208 },
 };
 static const EncRectDef s_p1_rects[] = {
-    { ENC_R_SACOS, 0, 200, 150, 24 },
+    { ENC_R_SACOS, 0, 220, 128, 4 },
 };
 static const EncEnemyDef s_p1_t0[] = {
     { ENC_E_OJO, ENC_S_AWAKE, 60, 40 },
