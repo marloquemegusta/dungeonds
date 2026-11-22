@@ -1433,7 +1433,7 @@ static int shadow_select(const DrawItem *it, ShadowSel *sel) {
 #if CAMP_SCENE
 static void render_camp_screen(uint16_t *buffer, DirtySpan *spans, int cam_x, int cam_y, int sub_screen,
                                uint32_t *out_floor, uint32_t *out_shadow, uint32_t *out_blit) {
-    clear_dirty_spans(buffer, spans);
+    camp_clear_page(buffer, spans, cam_x, cam_y);   // keeps the static wall frame on the page
     g_dirty_cur = spans;
     if (out_floor) *out_floor = 0;
     if (out_shadow) *out_shadow = 0;
@@ -3702,6 +3702,7 @@ int main(void) {
             oamEnable(&oamMain);
             oamEnable(&oamSub);
 #endif
+            camp_invalidate_pages();
             s_top_map_ready = 0;
             s_bot_map_ready = 0;
             memset(s_dirty, 0, sizeof(s_dirty));
@@ -3737,6 +3738,7 @@ int main(void) {
                 oamEnable(&oamMain);
                 oamEnable(&oamSub);
 #endif
+                camp_invalidate_pages();
                 menu_update(KEY_B, 0, 0, 0);
                 s_top_map_ready = 0;
                 s_bot_map_ready = 0;
