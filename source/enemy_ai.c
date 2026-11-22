@@ -1,4 +1,5 @@
 #include "enemy_ai.h"
+#include "lab_tuning.h"
 #include "horde.h"
 #include "enemy_laser.h"
 #include "groundfx.h"
@@ -1404,6 +1405,9 @@ ITCM_CODE void enemy_ai_update(Enemy *enemies, int num_enemies, fixed player_x, 
         }
 
         if (g_sandbox_freeze_ai) continue;                 // sandbox: stand still, no move and no attack
+#if ARPG_BOXEO
+        if (g_lab_saco_still) continue;                    // boxeo: the dummy only reels from hits
+#endif
 
         if (e->state == ENEMY_STATE_DORMANT) continue;     // asleep: encounters.c wakes the whole pack
         if (e->state == ENEMY_STATE_GUARD) {               // garrison: holds its post until released

@@ -36,18 +36,18 @@ enum {
 
 // Tipos de línea de estadística. Se aplican al equipar (ver arpg_inv_recalc).
 enum {
-    ARPG_LINE_DAMAGE = 0,         // Rayo: daño del rayo (Fervor). Ejecución: daño del remate/combo.
-    ARPG_LINE_CHARGE,             // Rayo: carga más rápida (Prisa), en frames
-    ARPG_LINE_RANGE,              // Rayo: alcance (Alcance), en px
-    ARPG_LINE_BURN,               // Rayo: daño de fuego / quemadura (Brasa, Rescoldo), en %
-    ARPG_LINE_LIFE,               // Pecho: vida máxima (Vida), en puntos
-    ARPG_LINE_SPEED,              // Pecho: velocidad (Paso), en %
-    ARPG_LINE_MANA,               // Pecho: maná máximo, en puntos
-    ARPG_LINE_MANA_REGEN,         // Pecho: regeneración de maná, en %
-    ARPG_LINE_REMATE_HEAL,        // Ejecución: +vida/maná al rematar, en puntos
-    ARPG_LINE_RADIUS,             // Glifo: radio, en %
-    ARPG_LINE_WAIT,               // Glifo: acorta apertura+espera, en %
-    ARPG_LINE_COST,               // Glifo: coste de maná, en %
+    ARPG_LINE_DAMAGE = 0,         // Rayo: daño del rayo (%). Ejecución: daño del combo de puñetazos (%).
+    ARPG_LINE_CHARGE,             // Rayo: velocidad de carga (% sobre 48 frames base)
+    ARPG_LINE_RANGE,              // Rayo: alcance (% sobre 110 px base). Ejecución: alcance puñetazo/remate (%)
+    ARPG_LINE_BURN,               // Rayo/Ejecución: daño de fuego / quemadura (%)
+    ARPG_LINE_LIFE,               // Pecho: vida máxima (pts)
+    ARPG_LINE_SPEED,              // Pecho: velocidad (%)
+    ARPG_LINE_MANA,               // Pecho: maná máximo (pts)
+    ARPG_LINE_MANA_REGEN,         // Pecho: regeneración de maná (%)
+    ARPG_LINE_REMATE_HEAL,        // Ejecución: +vida (+N pts) y +maná (+N/2 pts) en orbes de remate
+    ARPG_LINE_RADIUS,             // Glifo: radio (%)
+    ARPG_LINE_WAIT,               // Glifo: acorta apertura+espera (%)
+    ARPG_LINE_COST,               // Glifo: coste de mana (%)
     ARPG_LINE_COUNT
 };
 
@@ -112,6 +112,8 @@ int  arpg_inv_socket_count(int school);                // 3 (Pecho: 2)
 const ArpgInvItem *arpg_inv_socket_item(int school, int socket);  // NULL si vacío
 
 // Mueve un objeto de la bolsa a un engarce/ hueco de hechizo. 1 si pudo.
+// 1 si el objeto no esta vacio y el heroe alcanza su nivel requerido.
+int  arpg_inv_can_equip(const ArpgInvItem *it);
 int  arpg_inv_equip_relic(int bag_index, int school, int socket);
 int  arpg_inv_equip_tome(int bag_index);               // a un hueco de hechizo libre
 int  arpg_inv_swap_relic(int bag_index, int school, int socket);   // intercambio
@@ -156,13 +158,17 @@ int arpg_inv_preview_socket(int bag_index, int school, int socket, ArpgInvPrevie
 void arpg_relic_roll(ArpgInvItem *out, int floor, int min_rarity, uint32_t *rng);
 void arpg_relic_roll_school(ArpgInvItem *out, int school, int floor, int min_rarity, uint32_t *rng);
 
-// Texto para la interfaz.
+// Texto para la interfaz y valores activos.
 const char *arpg_inv_rarity_name(int rarity);
 const char *arpg_inv_school_name(int school);
 const char *arpg_inv_mechanic_name(int mech);
 const char *arpg_inv_mechanic_desc(int mech);
 void        arpg_inv_mechanic_format(const ArpgInvItem *it, char *buf, int n);
+int         arpg_inv_mechanic_value(int mech);
 const char *arpg_inv_line_name(int kind);
+int         arpg_inv_line_is_pct(int kind);
+void        arpg_inv_line_format(int kind, int val, char *buf, int n);
+void        arpg_inv_line_format_delta(int kind, int before, int after, char *buf, int n);
 const char *arpg_inv_item_name(const ArpgInvItem *it);
 
 #endif // ARPG_INV_H

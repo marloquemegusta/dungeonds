@@ -1,0 +1,164 @@
+{
+  "name": "arpg_boxeo_frames",
+  "description": "Evidencia: pegar andando hacia el saco y combo parado con 3 toques rapidos.",
+  "suite": false,
+  "evidence_only": true,
+  "state": {
+    "elf": "../.ds-game-dev/build/out/dungeonds-arpg-boxeo.elf",
+    "symbols": {
+      "en": "g_enemies",
+      "pl": "s_player",
+      "spa": "s_punch_active"
+    },
+    "default_symbol": "en",
+    "fields": {
+      "e0_x": {
+        "offset": 0,
+        "type": "s32"
+      },
+      "e0_y": {
+        "offset": 4,
+        "type": "s32"
+      },
+      "e0_active": {
+        "offset": 24,
+        "type": "s32"
+      },
+      "e0_hp": {
+        "offset": 28,
+        "type": "s32"
+      },
+      "e0_max": {
+        "offset": 32,
+        "type": "s32"
+      },
+      "px": {
+        "symbol": "pl",
+        "offset": 0,
+        "type": "s32"
+      },
+      "py": {
+        "symbol": "pl",
+        "offset": 4,
+        "type": "s32"
+      },
+      "punch": {
+        "symbol": "spa",
+        "offset": 0,
+        "type": "s32"
+      },
+      "e0_hit": {
+        "offset": 28,
+        "type": "s32"
+      }
+    }
+  },
+  "steps": [
+    {
+      "frames": 90
+    },
+    {
+      "button_down": "LEFT",
+      "frames": 30
+    },
+    {
+      "button_up": "LEFT",
+      "frames": 2
+    },
+    {
+      "button_down": "RIGHT",
+      "frames": 6
+    },
+    {
+      "button_down": "L",
+      "frames": 2,
+      "capture_sequence": "andando",
+      "capture_every": 1
+    },
+    {
+      "button_up": "L",
+      "frames": 16,
+      "capture_sequence": "andando",
+      "capture_every": 1
+    },
+    {
+      "button_down": "L",
+      "frames": 2,
+      "capture_sequence": "andando",
+      "capture_every": 1
+    },
+    {
+      "button_up": "L",
+      "frames": 16,
+      "capture_sequence": "andando",
+      "capture_every": 1
+    },
+    {
+      "button_down": "L",
+      "frames": 2,
+      "capture_sequence": "andando",
+      "capture_every": 1
+    },
+    {
+      "button_up": "L",
+      "frames": 16,
+      "capture_sequence": "andando",
+      "capture_every": 1
+    },
+    {
+      "button_up": "RIGHT",
+      "frames": 30,
+      "capture_sequence": "andando",
+      "capture_every": 1
+    },
+    {
+      "frames": 60,
+      "state_capture": "parado"
+    },
+    {
+      "button_down": "L",
+      "frames": 2,
+      "capture_sequence": "combo",
+      "capture_every": 1,
+      "state_capture": "toque0"
+    },
+    {
+      "button_up": "L",
+      "frames": 5,
+      "capture_sequence": "combo",
+      "capture_every": 1
+    },
+    {
+      "button_down": "L",
+      "frames": 2,
+      "capture_sequence": "combo",
+      "capture_every": 1,
+      "state_capture": "toque1"
+    },
+    {
+      "button_up": "L",
+      "frames": 5,
+      "capture_sequence": "combo",
+      "capture_every": 1
+    },
+    {
+      "button_down": "L",
+      "frames": 2,
+      "capture_sequence": "combo",
+      "capture_every": 1,
+      "state_capture": "toque2"
+    },
+    {
+      "button_up": "L",
+      "frames": 5,
+      "capture_sequence": "combo",
+      "capture_every": 1
+    },
+    {
+      "frames": 50,
+      "capture_sequence": "combo",
+      "capture_every": 1,
+      "state_capture": "fin"
+    }
+  ]
+}

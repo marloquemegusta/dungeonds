@@ -6,6 +6,7 @@
 #include "hitvolume.h"
 #include "sfx.h"
 #include "arpg.h"
+#include "arpg_inv.h"
 #include "allies.h"
 #if ENCOUNTERS_PROTO
 #include "encounters_act1.h"
@@ -672,10 +673,15 @@ static void fire_sniper(const WeaponTuning *tuning, const WeaponInput *in, fixed
 #else
                 int sniper_damage = upgrades_beam_damage(tuning->damage_per_hit);
 #endif
-                const int auto_fe = e->burn_layers && upgrades_has_relic(RELIC_AUTO_FE);   // Auto de Fe: x2 and consumes the layers
+                const int auto_fe = e->burn_layers && upgrades_has_relic(RELIC_AUTO_FE);   // Auto de Fe: consumes the layers
                 const int af_layers = e->burn_layers;
                 if (auto_fe) {
-                    sniper_damage *= 2;
+                    int af_pct = 100;
+#if ENCOUNTERS_PROTO
+                    int mv = arpg_inv_mechanic_value(ARPG_MECH_AUTO_FE);
+                    if (mv > 0) af_pct = mv;
+#endif
+                    sniper_damage = sniper_damage * (100 + af_pct) / 100;
                     burn_clear(e);
 #if ENCOUNTERS_PROTO
                     beam_left = sniper_damage;
@@ -1397,7 +1403,12 @@ static void martirio_update(Enemy *enemies, int max_enemies) {
         MartirioBlast b = s_mq[s_mq_head];
         s_mq_head = (s_mq_head + 1) & (MARTIRIO_QUEUE - 1);
         s_mq_count--;
-        blast(b.x, b.y, MARTIRIO_RADIUS, MARTIRIO_DAMAGE, MARTIRIO_LAYERS, 8, RING_MARTIRIO, enemies, max_enemies);
+        int dmg = MARTIRIO_DAMAGE;
+#if ENCOUNTERS_PROTO
+        int pv = arpg_inv_mechanic_value(ARPG_MECH_PIRA);
+        if (pv > 0) dmg = pv;
+#endif
+        blast(b.x, b.y, MARTIRIO_RADIUS, dmg, MARTIRIO_LAYERS, 8, RING_MARTIRIO, enemies, max_enemies);
     }
 }
 

@@ -268,7 +268,7 @@
       {
         "at": "fundido",
         "field": "wax",
-        "equals": 16
+        "equals": 4
       },
       {
         "at": "fundido",
@@ -283,7 +283,7 @@
       {
         "at": "tomo_sel",
         "field": "sel",
-        "equals": 11
+        "equals": 12
       },
       {
         "at": "tomo_equipado",
@@ -297,7 +297,7 @@
       },
       {
         "at": "tomo_equipado",
-        "field": "bag11_kind",
+        "field": "bag12_kind",
         "equals": 0
       },
       {
@@ -397,12 +397,12 @@
       },
       {
         "at": "arrastre_desengarza",
-        "field": "bag3_kind",
+        "field": "bag2_kind",
         "equals": 1
       },
       {
         "at": "arrastre_desengarza",
-        "field": "bag3_mech",
+        "field": "bag2_mech",
         "equals": 3
       },
       {
@@ -412,7 +412,7 @@
       },
       {
         "at": "arrastre_fuera",
-        "field": "bag3_kind",
+        "field": "bag2_kind",
         "equals": 1
       }
     ]
@@ -580,27 +580,11 @@
       "frames": 14
     },
     {
-      "button_down": "RIGHT",
+      "button_down": "DOWN",
       "frames": 10
     },
     {
-      "button_up": "RIGHT",
-      "frames": 14
-    },
-    {
-      "button_down": "RIGHT",
-      "frames": 10
-    },
-    {
-      "button_up": "RIGHT",
-      "frames": 14
-    },
-    {
-      "button_down": "RIGHT",
-      "frames": 10
-    },
-    {
-      "button_up": "RIGHT",
+      "button_up": "DOWN",
       "frames": 20,
       "state_capture": "tomo_sel"
     },

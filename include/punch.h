@@ -19,6 +19,16 @@
 #define PUNCH_CELL 48               // celda del lab (characters.json resolution)
 #define PUNCH_TICKS 3               // [TUNABLE-PLACEHOLDER] frames de juego por fotograma de la animacion (~0,4 s por golpe)
 #define PUNCH_CHAIN_FRAMES 10       // [TUNABLE-PLACEHOLDER] ventana tras el golpe para encadenar el siguiente con otro L
+// [TUNABLE-PLACEHOLDER] Fotograma de contacto de cada golpe (0..7): el primer fotograma con el brazo estirado.
+// Un golpe guardado (L durante el golpe) arranca solo cuando el golpe en curso ha mostrado el suyo: la
+// animacion nunca se corta antes del impacto.
+#define PUNCH_IMPACT_A 7            // fotograma de maxima extension del brazo (hoja de contacto, direcciones E/O): el directo estira en el ultimo
+#define PUNCH_IMPACT_B 5
+#define PUNCH_IMPACT_HOOK 5
+#define PUNCH_START_A 4             // [TUNABLE-PLACEHOLDER] fotograma por el que arranca cada golpe: salta la guardia identica (0..impacto)
+#define PUNCH_START_B 2
+#define PUNCH_START_HOOK 1
+#define PUNCH_FOLLOW 1              // [TUNABLE-PLACEHOLDER] fotogramas que se ven tras el impacto antes de encadenar el golpe guardado (0..3)
 #define PUNCH_RANGE 34              // [TUNABLE-PLACEHOLDER] alcance del punetazo (px de suelo)
 #define PUNCH_DAMAGE_A 50           // [TUNABLE-PLACEHOLDER] dano del directo
 #define PUNCH_DAMAGE_B 50           // [TUNABLE-PLACEHOLDER] dano del cruzado
@@ -27,6 +37,45 @@
 #define PUNCH_HOOK_PUSH 192         // [TUNABLE-PLACEHOLDER] 8.8: empuje del gancho (0,75 px/frame)
 #define PUNCH_MAX_BIN_BYTES 16384   // [TUNABLE-PLACEHOLDER] tamano del buffer; el bin mas grande ronda los 12 KB
 #define PUNCH_BIN_MAGIC 0x48434E50u  // 'PNCH'
+// [TUNABLE-PLACEHOLDER] Golpe en movimiento: el heroe anda al 65 % y el clip de andar baja su cadencia
+// en la misma proporcion (current_period / pct) para que los pies no deslicen. El tren superior sigue el
+// clip del golpe; el inferior, el de andar (composicion en draw_punch).
+#define PUNCH_WALK_SPEED_PCT 65     // % de la velocidad normal mientras pega andando
+#define PUNCH_WALK_SPLIT 8          // px sobre los pies donde se corta: debajo anda, encima pega. Las manos del clip de andar caen a 9..21 px sobre los pies: por debajo de 9 no pasa ninguna
+#define PUNCH_HITSTUN_FRAMES 6      // [TUNABLE-PLACEHOLDER] frames que el golpeado retrocede sin IA
+#define PUNCH_HITSTOP_FRAMES 3      // [TUNABLE-PLACEHOLDER] parada de imagen al conectar
+#define PUNCH_SHAKE_LIGHT 3         // [TUNABLE-PLACEHOLDER] temblor de pantalla del directo y el cruzado (el gancho, +2)
+
+// Lectura de los parametros: en la variante arpg-lab los ajusta el menu del laboratorio (lab_tuning.c); en
+// el resto de builds son las constantes de arriba, sin coste.
+#include "lab_tuning.h"
+#if ARPG_LAB
+#define PUNCH_TICKS_V g_lab_punch_ticks
+#define PUNCH_CHAIN_FRAMES_V g_lab_punch_chain
+#define PUNCH_WALK_PCT_V g_lab_punch_walk_pct
+#define PUNCH_RANGE_V g_lab_punch_range
+#define PUNCH_LIGHT_PUSH_V g_lab_punch_light_push
+#define PUNCH_HOOK_PUSH_V g_lab_punch_hook_push
+#define PUNCH_HITSTOP_V g_lab_punch_hitstop
+#define PUNCH_SHAKE_V g_lab_punch_shake
+#define PUNCH_IMPACT_V(move) g_lab_punch_impact[(move)]
+#define PUNCH_FOLLOW_V g_lab_punch_follow
+#define PUNCH_WALK_SPLIT_V g_lab_punch_split
+#define PUNCH_START_V(move) g_lab_punch_start[(move)]
+#else
+#define PUNCH_TICKS_V PUNCH_TICKS
+#define PUNCH_CHAIN_FRAMES_V PUNCH_CHAIN_FRAMES
+#define PUNCH_WALK_PCT_V PUNCH_WALK_SPEED_PCT
+#define PUNCH_RANGE_V PUNCH_RANGE
+#define PUNCH_LIGHT_PUSH_V PUNCH_LIGHT_PUSH
+#define PUNCH_HOOK_PUSH_V PUNCH_HOOK_PUSH
+#define PUNCH_HITSTOP_V PUNCH_HITSTOP_FRAMES
+#define PUNCH_SHAKE_V PUNCH_SHAKE_LIGHT
+#define PUNCH_FOLLOW_V PUNCH_FOLLOW
+#define PUNCH_WALK_SPLIT_V PUNCH_WALK_SPLIT
+#define PUNCH_START_V(move) ((move) == PUNCH_MOVE_A ? PUNCH_START_A : (move) == PUNCH_MOVE_B ? PUNCH_START_B : PUNCH_START_HOOK)
+#define PUNCH_IMPACT_V(move) ((move) == PUNCH_MOVE_A ? PUNCH_IMPACT_A : (move) == PUNCH_MOVE_B ? PUNCH_IMPACT_B : PUNCH_IMPACT_HOOK)
+#endif
 
 typedef struct {
     uint32_t magic;
@@ -37,14 +86,19 @@ typedef struct {
     uint32_t run_off[PUNCH_NUM_FRAMES];
 } PunchBinHeader;
 
-// Empieza un golpe (PUNCH_MOVE_*) hacia el enemigo mas cercano a <= PUNCH_RANGE, o hacia delante si no hay
-// ninguno. Aplica ya el dano y el empuje. Devuelve 1 si empezo.
-int punch_start(Enemy *enemies, int max_enemies, fixed hero_x, fixed hero_y, int hero_dir, int move);
-// Un L nuevo durante el golpe o en su ventana de encadenado: 1 si el combo sigue con el golpe siguiente.
-int punch_try_chain(Enemy *enemies, int max_enemies, fixed hero_x, fixed hero_y, int hero_dir);
-// Una vez por frame simulado: avanza la animacion y la ventana de encadenado.
-void punch_update(void);
-// 1 mientras dura el golpe: el heroe no anda y se dibuja con el clip del golpe.
+// Empieza un golpe (PUNCH_MOVE_*). `soft_lock` 1 = parado: apunta al enemigo mas cercano a <= PUNCH_RANGE
+// (o hacia delante si no hay ninguno). 0 = andando: pega en `hero_dir` y solo alcanza en un cono frontal de
+// +-45 grados, para no girarse hacia un enemigo que queda detras. Aplica ya el dano y el empuje.
+int punch_start(Enemy *enemies, int max_enemies, fixed hero_x, fixed hero_y, int hero_dir, int move, int soft_lock);
+// Un L nuevo durante el golpe se guarda (1, sin cortar la animacion): el golpe siguiente arranca cuando el
+// actual ha mostrado su fotograma de contacto, o en cuanto termina. En la ventana de encadenado (hasta
+// PUNCH_CHAIN_FRAMES despues) saca el siguiente al momento. 0 si no hay combo en marcha.
+int punch_try_chain(Enemy *enemies, int max_enemies, fixed hero_x, fixed hero_y, int hero_dir, int soft_lock);
+// Una vez por frame simulado: avanza la animacion y la ventana de encadenado y lanza el golpe guardado
+// cuando toca (con el mismo `soft_lock` que punch_start).
+void punch_update(Enemy *enemies, int max_enemies, fixed hero_x, fixed hero_y, int hero_dir, int soft_lock);
+// 1 mientras dura el golpe: el heroe anda al PUNCH_WALK_SPEED_PCT % y se dibuja con el clip del golpe
+// (parado, entero; andando, compuesto sobre el clip de andar: piernas de abajo, punetazo de arriba).
 int punch_active(void);
 int punch_move(void);           // golpe en curso (0..2)
 int punch_frame(void);          // fotograma (0..PUNCH_NUM_FRAMES-1)

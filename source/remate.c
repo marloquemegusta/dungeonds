@@ -9,6 +9,7 @@
 #include "pickups.h"
 #include "allies.h"
 #include "arpg_inv.h"
+#include "modifiers.h"
 #include <stdio.h>
 
 // Bin del remate: cabecera fija (magic + tamanos) seguida de los arrays del tipo. La cabecera completa se interpreta
@@ -239,7 +240,8 @@ void remate_shift_y(int dy_px) {
 int remate_start(Enemy *enemies, int max_enemies, fixed hero_x, fixed hero_y, int hero_dir) {
     if (s_active || s_approach || g_player_state.is_dead) return 0;
     int hx = TO_INT(hero_x), hy = TO_INT(hero_y);
-    int best = -1, best_d2 = REMATE_RANGE * REMATE_RANGE + 1;
+    const int range = REMATE_RANGE * (100 + g_mods.remate_range_bonus) / 100;
+    int best = -1, best_d2 = range * range + 1;
     for (int i = 0; i < max_enemies; i++) {
         const Enemy *e = &enemies[i];
         if (g_enemy_ally[i] || !e->active || e->hp <= 0 || e->state != ENEMY_STATE_WOBBLE) continue;

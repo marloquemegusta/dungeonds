@@ -47,6 +47,12 @@
         },
         "arpg-todo": {
             "defines": ["ARPG_ALL_UNLOCKED=1"]
+        },
+        "arpg-lab": {
+            "defines": ["ARPG_LAB=1", "SKIP_TITLE=1", "ARPG_ALL_UNLOCKED=1"]
+        },
+        "arpg-boxeo": {
+            "defines": ["ARPG_LAB=1", "ARPG_BOXEO=1", "SKIP_TITLE=1", "ARPG_ALL_UNLOCKED=1"]
         }
     },
     "hostTests": [

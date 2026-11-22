@@ -70,6 +70,7 @@ const char *upgrades_offer_art_id(const UpgradeOffer *o);   // file name of the 
 // modifiers (Fervor, Brasa, Llaga Abierta later) live in one place. Both return at least 1.
 int upgrades_beam_damage(int base);
 int upgrades_fire_damage(int base);
+int upgrades_punch_damage(int base);
 
 int upgrades_has_relic(int relic_id);       // for the weapon / fire / hit code of parts B and C
 int upgrades_don_rank(int don_id);

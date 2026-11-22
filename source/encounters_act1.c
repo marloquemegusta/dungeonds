@@ -1,4 +1,5 @@
 #include "encounters_act1.h"
+#include "lab_tuning.h"
 
 // Translation unit never empty (ISO C) when ENCOUNTERS_PROTO=0.
 typedef int encounters_act1_translation_unit_not_empty;
@@ -743,6 +744,9 @@ void enc_update(Enemy *enemies, int max_enemies, int px, int py) {
     // stays unspawned and retries on a later frame.
     for (int k = lo; k < hi; k++) {
         EncRuntime *rt = &s_rt[k];
+#if ARPG_BOXEO
+        continue;               // boxeo: no room ever populates; the only enemy is the dummy of boxeo.c
+#endif
         if (rt->spawned) continue;
         const int top = window_top(block_of_encounter(k));
         const int bottom = top + ENC_BLOCK_H;
@@ -856,8 +860,9 @@ void enc_update(Enemy *enemies, int max_enemies, int px, int py) {
                 pickups_spawn(PICKUP_KIND_HEALTH, fx - TO_FIXED(8), fy);
                 pickups_spawn(PICKUP_KIND_MANA, fx + TO_FIXED(8), fy);
                 uint32_t chest_rng = (uint32_t)(k + 1) * 2654435761u ^ (uint32_t)(px * 73856093 ^ py * 19349663);
+                int chest_lvl = (k + 1) < 1 ? 1 : ((k + 1) > 99 ? 99 : (k + 1));
                 ArpgInvItem chest_relic;
-                arpg_relic_roll(&chest_relic, k + 1, ARPG_RAR_UNCOMMON, &chest_rng);
+                arpg_relic_roll(&chest_relic, chest_lvl, ARPG_RAR_UNCOMMON, &chest_rng);
                 pickups_spawn_relic(fx, fy + TO_FIXED(6), &chest_relic);
             }
         }

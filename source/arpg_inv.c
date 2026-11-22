@@ -1,49 +1,51 @@
 #include "arpg_inv.h"
+#include "arpg.h"
 #include "arpg_progress.h"
+#include "gameplay.h"
 #include "modifiers.h"
 #include "upgrades.h"
 #include <stdio.h>
 #include <string.h>
 
 // Todo el estado vive en g_arpg.inv para que el guardado lo escriba de un bloque (arpg_progress.c).
-// LÍMITE decidido: solo Rayo y Ejecución tienen contenido; Glifo y Levantar existen (pestañas,
-// tomos, mecánicas) pero no se inventan reliquias ni tomos de ejemplo. Pecho usa pasivas (líneas).
+// LÍMITE decidido: solo Rayo, Ejecución y Pecho tienen contenido en la protodemo; Glifo y Levantar
+// existen como pestañas selladas pero no se generan reliquias ni tomos suyos.
 
 static const char *const s_rarity_name[] = { "Común", "Poco común", "Rara", "Épica", "Legendaria" };
 static const char *const s_school_name[] = { "Rayo", "Ejecución", "Glifo", "Levantar", "Pecho" };
-// Índice = id de nodo antiguo del árbol (source/arpg_tree.c); 0 es el Glifo/Levantar desbloqueado.
+// Índice = id de mecánica (ARPG_MECH_*).
 static const char *const s_mech_name[] = {
-    "Glifo", "Prisa", "Sed de Ceniza", "Lanza", "Llama Votiva", "Brasa", "Auto de Fe",
-    "Zarza Ardiente", "Cilicio", "Martirio", "Levantar", "Procesión", "Ofrenda", "Viático", "Flagelado",
-    "Pira", "Llaga Abierta", "Redil", "Doble Sello"
+    "Glifo", "Prisa", "Sed de Ceniza", "Lanza de Longinos", "Llama Votiva", "Brasa", "Auto de Fe",
+    "Zarza Ardiente", "Aura de Cilicio", "Martirio Contagioso", "Levantar", "Paso de Procesión", "Ofrenda",
+    "Viático", "Corazón Flagelado", "Pira", "Llaga Abierta", "Redil", "Doble Sello"
 };
 static const char *const s_mech_desc[] = {
-    "Sello arcano: se abre, espera y detona (80).",
-    "Reduce el tiempo de carga del Rayo.",
-    "Matar acelera la sig. carga; fallar la frena.",
-    "El Rayo atraviesa (+%d%% daño).",
-    "Al cargar, el haz quema (%d daño).",
-    "Aumenta el daño de quemadura (+%d%%).",
-    "x2 daño a quemados y consume capas.",
-    "Espera: 1 Quemado cada 0,5 s y +2 al detonar.",
-    "Siempre: aro de brasas (%d quemadura).",
-    "Al matar quemado: explota (%d fuego).",
-    "Hechizo de nigromancia.",
-    "Andas lento al cargar; carga más lenta.",
-    "Sin definir.",
-    "Al matar o ejecutar: %d%% prob. de curar.",
-    "Al recibir golpe: onda (%d fuego) y Rayo.",
-    "Al ejecutar quemado: explota (%d fuego).",
-    "Vida máx. /2; +%d%% daño con poca vida.",
-    "Espera: arrastra al centro a todos (28 px/s).",
+    "Sello arcano: se abre, espera y detona.",
+    "Abrevia la plegaria de carga del Rayo.",
+    "Abatir aviva la siguiente carga; errar la pesa.",
+    "El Rayo atraviesa a todos (+%d%% de daño).",
+    "Al cargar, la mira prende a quien toca (%d pts/s).",
+    "Aviva el ardor de las llamas (+%d%% de daño).",
+    "Consume el fuego del enemigo (+%d%% de daño).",
+    "Espera: prende 1 Quemado cada 0,5 s; +2 al detonar.",
+    "Aro de brasas a tus pies que quema (%d pts/s).",
+    "Todo ardiente estalla al morir (%d pts de daño).",
+    "Liturgia de los caídos en cera.",
+    "Paso lento mientras cargas la plegaria.",
+    "Letanía sellada.",
+    "Al abatir de cerca, restituye %d pts de vida.",
+    "Al sufrir daño: onda de %d pts y Rayo cargado.",
+    "Rematar a un ardiente lo hace estallar (%d pts).",
+    "Media vida máx.; +%d%% daño por quinto herido.",
+    "Espera: arrastra a todos hacia el centro.",
     "Tras detonar, el sello se reabre una vez gratis."
 };
 static const char *const s_line_name[ARPG_LINE_COUNT] = {
-    "Daño", "Carga", "Alcance", "Quemadura", "Vida", "Velocidad", "Maná", "Regen.", "Cura rem.", "Radio", "Espera", "Coste"
+    "Daño", "Carga", "Alcance", "Quemadura", "Vida máx.", "Velocidad", "Maná máx.", "Regen. maná", "Orbes remate", "Radio", "Espera", "Coste"
 };
 static const char *const s_legendary_name[] = {
     "",
-    "Sello del Corazón",
+    "Sello del Corazón Abierto",
     "Brasero de Pira",
     "Astilla del Estandarte",
     "Ampolla del Santo Óleo"
@@ -56,17 +58,19 @@ static const uint16_t s_wax_value[ARPG_RAR_COUNT] = { 2, 4, 8, 16, 32 };
 // Delta de g_mods que aportan las líneas del equipo actual. Se guarda para aplicar solo el cambio
 // al equipar/desequipar en vivo; arpg_inv_apply() lo reconstruye desde cero tras mods_reset.
 typedef struct {
-    int damage_rayo;     // sniper_damage_pct
-    int damage_ejec;     // punch_damage_pct
-    int charge;          // sniper_aim (negativo = más rápido)
-    int range_rayo;      // sniper_range
-    int range_ejec;      // remate_range_bonus
-    int burn;            // fire_dmg_pct
-    int life;            // max_hp
-    int speed;           // speed_pct
-    int max_mana;        // max_mana
-    int mana_regen;      // mana_regen_pct
-    int remate_heal;     // remate_heal_bonus
+    int damage_rayo;     // sniper_damage_pct (%)
+    int damage_ejec;     // punch_damage_pct (%)
+    int charge_pct;      // % de reducción sobre 48 frames base (tope 75 %)
+    int range_rayo_pct;  // % de alcance extra sobre 110 px base
+    int charge;          // sniper_aim (frames recortados, negativo = más rápido)
+    int range_rayo;      // sniper_range (px)
+    int range_ejec;      // remate_range_bonus (%)
+    int burn;            // fire_dmg_pct (%)
+    int life;            // max_hp (pts)
+    int speed;           // speed_pct (%)
+    int max_mana;        // max_mana (pts)
+    int mana_regen;      // mana_regen_pct (%)
+    int remate_heal;     // remate_heal_bonus (pts)
     uint16_t relic_bits; // bit = RELIC_* que una mecánica equipada activa
 } InvModDelta;
 
@@ -124,65 +128,76 @@ static int add_item(ArpgInventory *inv, const ArpgInvItem *item) {
     return -1;
 }
 
-// Partida nueva: Rayo equipado y 11 reliquias de ejemplo de Rayo, Ejecución y Pecho (sin tomos:
-// Glifo y Levantar aún no están definidos). Las de Rayo llevan mecánicas/Dones del rayo; las de
-// Ejecución, los modificadores del remate (Viático/Flagelado) y su línea de daño del combo.
+// Partida nueva: Rayo equipado y 12 reliquias de ejemplo de la protodemo (Rayo, Ejecución y Pecho).
 void arpg_inv_new_game(void) {
     ArpgInventory *inv = &g_arpg.inv;
     ArpgInvItem it;
     arpg_inv_init(inv);
 
     item_make(&it, ARPG_ITEM_RELIC, ARPG_SCHOOL_RAYO, ARPG_RAR_RARE, ARPG_MECH_LLAMA_VOTIVA);
-    it.mech_val = 12;
-    item_line(&it, ARPG_LINE_BURN, 10);
-    item_line(&it, ARPG_LINE_RANGE, 10);
+    it.mech_val = 24;
+    item_line(&it, ARPG_LINE_BURN, 12);
     add_item(inv, &it);
 
     item_make(&it, ARPG_ITEM_RELIC, ARPG_SCHOOL_RAYO, ARPG_RAR_COMMON, ARPG_MECH_NONE);
-    item_line(&it, ARPG_LINE_DAMAGE, 8);
+    item_line(&it, ARPG_LINE_DAMAGE, 10);
     add_item(inv, &it);
 
     item_make(&it, ARPG_ITEM_RELIC, ARPG_SCHOOL_RAYO, ARPG_RAR_EPIC, ARPG_MECH_LANZA);
-    it.mech_val = 20;
-    item_line(&it, ARPG_LINE_CHARGE, 6);
+    it.mech_val = 28;
+    item_line(&it, ARPG_LINE_CHARGE, 12);
+    item_line(&it, ARPG_LINE_RANGE, 16);
     add_item(inv, &it);
 
-    item_make(&it, ARPG_ITEM_RELIC, ARPG_SCHOOL_RAYO, ARPG_RAR_EPIC, ARPG_MECH_LLAMA_VOTIVA);
-    it.mech_val = 28;
+    item_make(&it, ARPG_ITEM_RELIC, ARPG_SCHOOL_RAYO, ARPG_RAR_UNCOMMON, ARPG_MECH_NONE);
+    it.level = 10;
+    item_line(&it, ARPG_LINE_DAMAGE, 42);
+    item_line(&it, ARPG_LINE_CHARGE, 34);
+    add_item(inv, &it);
+
+    item_make(&it, ARPG_ITEM_RELIC, ARPG_SCHOOL_RAYO, ARPG_RAR_LEGENDARY, ARPG_MECH_AUTO_FE);
+    it.mech_val = 120;
+    it.name_id = 1;
+    item_line(&it, ARPG_LINE_DAMAGE, 22);
     item_line(&it, ARPG_LINE_BURN, 18);
     add_item(inv, &it);
 
-    item_make(&it, ARPG_ITEM_RELIC, ARPG_SCHOOL_RAYO, ARPG_RAR_COMMON, ARPG_MECH_NONE);
-    item_line(&it, ARPG_LINE_BURN, 5);
+    item_make(&it, ARPG_ITEM_RELIC, ARPG_SCHOOL_EJECUCION, ARPG_RAR_RARE, ARPG_MECH_PIRA);
+    it.mech_val = 75;
+    item_line(&it, ARPG_LINE_DAMAGE, 14);
     add_item(inv, &it);
 
-    item_make(&it, ARPG_ITEM_RELIC, ARPG_SCHOOL_EJECUCION, ARPG_RAR_UNCOMMON, ARPG_MECH_VIATICO);
-    it.mech_val = 12;
-    item_line(&it, ARPG_LINE_DAMAGE, 12);
+    item_make(&it, ARPG_ITEM_RELIC, ARPG_SCHOOL_EJECUCION, ARPG_RAR_UNCOMMON, ARPG_MECH_NONE);
+    it.level = 4;
+    item_line(&it, ARPG_LINE_DAMAGE, 24);
+    item_line(&it, ARPG_LINE_REMATE_HEAL, 16);
     add_item(inv, &it);
 
-    item_make(&it, ARPG_ITEM_RELIC, ARPG_SCHOOL_EJECUCION, ARPG_RAR_RARE, ARPG_MECH_FLAGELADO);
-    it.mech_val = 20;
-    item_line(&it, ARPG_LINE_DAMAGE, 6);
-    add_item(inv, &it);
-
-    item_make(&it, ARPG_ITEM_RELIC, ARPG_SCHOOL_EJECUCION, ARPG_RAR_LEGENDARY, ARPG_MECH_NONE);
-    item_line(&it, ARPG_LINE_DAMAGE, 20);
-    item_line(&it, ARPG_LINE_SPEED, 4);
+    item_make(&it, ARPG_ITEM_RELIC, ARPG_SCHOOL_EJECUCION, ARPG_RAR_LEGENDARY, ARPG_MECH_PIRA);
+    it.mech_val = 115;
+    it.name_id = 2;
+    item_line(&it, ARPG_LINE_BURN, 20);
+    item_line(&it, ARPG_LINE_RANGE, 18);
     add_item(inv, &it);
 
     item_make(&it, ARPG_ITEM_RELIC, ARPG_SCHOOL_EJECUCION, ARPG_RAR_COMMON, ARPG_MECH_NONE);
-    item_line(&it, ARPG_LINE_DAMAGE, 4);
+    item_line(&it, ARPG_LINE_RANGE, 10);
     add_item(inv, &it);
 
     item_make(&it, ARPG_ITEM_RELIC, ARPG_SCHOOL_PECHO, ARPG_RAR_EPIC, ARPG_MECH_CILICIO);
-    it.mech_val = 18;
-    item_line(&it, ARPG_LINE_LIFE, 20);
-    item_line(&it, ARPG_LINE_SPEED, 4);
+    it.mech_val = 26;
+    item_line(&it, ARPG_LINE_LIFE, 25);
+    item_line(&it, ARPG_LINE_SPEED, 6);
+    add_item(inv, &it);
+
+    item_make(&it, ARPG_ITEM_RELIC, ARPG_SCHOOL_PECHO, ARPG_RAR_RARE, ARPG_MECH_LLAGA);
+    it.mech_val = 20;
+    item_line(&it, ARPG_LINE_MANA, 18);
     add_item(inv, &it);
 
     item_make(&it, ARPG_ITEM_RELIC, ARPG_SCHOOL_PECHO, ARPG_RAR_COMMON, ARPG_MECH_NONE);
-    item_line(&it, ARPG_LINE_LIFE, 10);
+    it.level = 10;
+    item_line(&it, ARPG_LINE_LIFE, 68);
     add_item(inv, &it);
 
     // Tomos de Glifo (verde) y Levantar (negro): equipables para desbloquear hechizos.
@@ -215,29 +230,39 @@ void arpg_inv_unlock_all(void) {
         for (int k = 0; k < ARPG_INV_SOCKETS; k++) item_clear(&inv->socket[s][k]);
 
     item_make(&inv->socket[ARPG_SCHOOL_RAYO][0], ARPG_ITEM_RELIC, ARPG_SCHOOL_RAYO, ARPG_RAR_EPIC, ARPG_MECH_LANZA);
-    inv->socket[ARPG_SCHOOL_RAYO][0].mech_val = 25;
-    item_line(&inv->socket[ARPG_SCHOOL_RAYO][0], ARPG_LINE_CHARGE, 6);
+    inv->socket[ARPG_SCHOOL_RAYO][0].mech_val = 30;
+    item_line(&inv->socket[ARPG_SCHOOL_RAYO][0], ARPG_LINE_CHARGE, 12);
+    item_line(&inv->socket[ARPG_SCHOOL_RAYO][0], ARPG_LINE_RANGE, 15);
     item_make(&inv->socket[ARPG_SCHOOL_RAYO][1], ARPG_ITEM_RELIC, ARPG_SCHOOL_RAYO, ARPG_RAR_RARE, ARPG_MECH_LLAMA_VOTIVA);
-    inv->socket[ARPG_SCHOOL_RAYO][1].mech_val = 15;
-    item_line(&inv->socket[ARPG_SCHOOL_RAYO][1], ARPG_LINE_BURN, 10);
+    inv->socket[ARPG_SCHOOL_RAYO][1].mech_val = 28;
+    item_line(&inv->socket[ARPG_SCHOOL_RAYO][1], ARPG_LINE_BURN, 14);
     item_make(&inv->socket[ARPG_SCHOOL_RAYO][2], ARPG_ITEM_RELIC, ARPG_SCHOOL_RAYO, ARPG_RAR_LEGENDARY, ARPG_MECH_AUTO_FE);
+    inv->socket[ARPG_SCHOOL_RAYO][2].mech_val = 125;
     inv->socket[ARPG_SCHOOL_RAYO][2].name_id = 1;
-    item_line(&inv->socket[ARPG_SCHOOL_RAYO][2], ARPG_LINE_DAMAGE, 20);
+    item_line(&inv->socket[ARPG_SCHOOL_RAYO][2], ARPG_LINE_DAMAGE, 24);
+    item_line(&inv->socket[ARPG_SCHOOL_RAYO][2], ARPG_LINE_BURN, 18);
 
     item_make(&inv->socket[ARPG_SCHOOL_GLIFO][0], ARPG_ITEM_RELIC, ARPG_SCHOOL_GLIFO, ARPG_RAR_RARE, ARPG_MECH_REDIL);
     item_make(&inv->socket[ARPG_SCHOOL_GLIFO][1], ARPG_ITEM_RELIC, ARPG_SCHOOL_GLIFO, ARPG_RAR_RARE, ARPG_MECH_ZARZA);
 
-    item_make(&inv->socket[ARPG_SCHOOL_EJECUCION][0], ARPG_ITEM_RELIC, ARPG_SCHOOL_EJECUCION, ARPG_RAR_UNCOMMON, ARPG_MECH_VIATICO);
-    inv->socket[ARPG_SCHOOL_EJECUCION][0].mech_val = 12;
-    item_line(&inv->socket[ARPG_SCHOOL_EJECUCION][0], ARPG_LINE_DAMAGE, 12);
-    item_make(&inv->socket[ARPG_SCHOOL_EJECUCION][1], ARPG_ITEM_RELIC, ARPG_SCHOOL_EJECUCION, ARPG_RAR_RARE, ARPG_MECH_FLAGELADO);
-    inv->socket[ARPG_SCHOOL_EJECUCION][1].mech_val = 20;
+    item_make(&inv->socket[ARPG_SCHOOL_EJECUCION][0], ARPG_ITEM_RELIC, ARPG_SCHOOL_EJECUCION, ARPG_RAR_RARE, ARPG_MECH_PIRA);
+    inv->socket[ARPG_SCHOOL_EJECUCION][0].mech_val = 80;
+    item_line(&inv->socket[ARPG_SCHOOL_EJECUCION][0], ARPG_LINE_DAMAGE, 16);
+    item_make(&inv->socket[ARPG_SCHOOL_EJECUCION][1], ARPG_ITEM_RELIC, ARPG_SCHOOL_EJECUCION, ARPG_RAR_LEGENDARY, ARPG_MECH_PIRA);
+    inv->socket[ARPG_SCHOOL_EJECUCION][1].mech_val = 120;
+    inv->socket[ARPG_SCHOOL_EJECUCION][1].name_id = 2;
+    item_line(&inv->socket[ARPG_SCHOOL_EJECUCION][1], ARPG_LINE_BURN, 22);
+    item_line(&inv->socket[ARPG_SCHOOL_EJECUCION][1], ARPG_LINE_REMATE_HEAL, 10);
 
     item_make(&inv->socket[ARPG_SCHOOL_PECHO][0], ARPG_ITEM_RELIC, ARPG_SCHOOL_PECHO, ARPG_RAR_EPIC, ARPG_MECH_CILICIO);
-    inv->socket[ARPG_SCHOOL_PECHO][0].mech_val = 24;
-    item_line(&inv->socket[ARPG_SCHOOL_PECHO][0], ARPG_LINE_DAMAGE, 18);
-    item_make(&inv->socket[ARPG_SCHOOL_PECHO][1], ARPG_ITEM_RELIC, ARPG_SCHOOL_PECHO, ARPG_RAR_RARE, ARPG_MECH_NONE);
+    inv->socket[ARPG_SCHOOL_PECHO][0].mech_val = 28;
+    item_line(&inv->socket[ARPG_SCHOOL_PECHO][0], ARPG_LINE_LIFE, 30);
+    item_line(&inv->socket[ARPG_SCHOOL_PECHO][0], ARPG_LINE_SPEED, 8);
+    item_make(&inv->socket[ARPG_SCHOOL_PECHO][1], ARPG_ITEM_RELIC, ARPG_SCHOOL_PECHO, ARPG_RAR_LEGENDARY, ARPG_MECH_LLAGA);
+    inv->socket[ARPG_SCHOOL_PECHO][1].mech_val = 28;
+    inv->socket[ARPG_SCHOOL_PECHO][1].name_id = 3;
     item_line(&inv->socket[ARPG_SCHOOL_PECHO][1], ARPG_LINE_LIFE, 40);
+    item_line(&inv->socket[ARPG_SCHOOL_PECHO][1], ARPG_LINE_MANA, 30);
 }
 
 int arpg_inv_add(const ArpgInvItem *item) {
@@ -287,11 +312,19 @@ static int socket_accepts(const ArpgInvItem *item, int school) {
     return (int)item->school == school;
 }
 
+int arpg_inv_can_equip(const ArpgInvItem *it) {
+    if (!it || it->kind == ARPG_ITEM_EMPTY) return 0;
+    int req = it->level ? (int)it->level : 1;
+    int hero = g_arpg.level ? (int)g_arpg.level : 1;
+    return hero >= req;
+}
+
 int arpg_inv_equip_relic(int bag_index, int school, int socket) {
     if ((unsigned)bag_index >= ARPG_INV_BAG) return 0;
     if ((unsigned)socket >= (unsigned)arpg_inv_socket_count(school)) return 0;
     ArpgInvItem *b = &g_arpg.inv.bag[bag_index];
     if (!socket_accepts(b, school)) return 0;
+    if (!arpg_inv_can_equip(b)) return 0;
     if (g_arpg.inv.socket[school][socket].kind != ARPG_ITEM_EMPTY) return 0;
     g_arpg.inv.socket[school][socket] = *b;
     item_clear(b);
@@ -303,6 +336,7 @@ int arpg_inv_swap_relic(int bag_index, int school, int socket) {
     if ((unsigned)socket >= (unsigned)arpg_inv_socket_count(school)) return 0;
     ArpgInvItem *b = &g_arpg.inv.bag[bag_index];
     if (!socket_accepts(b, school)) return 0;
+    if (!arpg_inv_can_equip(b)) return 0;
     ArpgInvItem tmp = g_arpg.inv.socket[school][socket];
     g_arpg.inv.socket[school][socket] = *b;
     *b = tmp;
@@ -326,6 +360,7 @@ int arpg_inv_equip_tome(int bag_index) {
     if ((unsigned)bag_index >= ARPG_INV_BAG) return 0;
     ArpgInvItem *b = &g_arpg.inv.bag[bag_index];
     if (b->kind != ARPG_ITEM_TOME) return 0;
+    if (!arpg_inv_can_equip(b)) return 0;
     for (int i = 1; i < ARPG_INV_SPELLS; i++) {
         if (g_arpg.inv.spell[i].kind == ARPG_ITEM_EMPTY) {
             g_arpg.inv.spell[i] = *b;
@@ -482,10 +517,10 @@ static void line_add(InvModDelta *d, const ArpgInvItem *it, int kind, int val) {
         if (it->school == ARPG_SCHOOL_EJECUCION) d->damage_ejec += val;
         else d->damage_rayo += val;
         break;
-    case ARPG_LINE_CHARGE:      d->charge -= val; break;   // valor = frames que se recortan
+    case ARPG_LINE_CHARGE:      d->charge_pct += val; break;
     case ARPG_LINE_RANGE:
         if (it->school == ARPG_SCHOOL_EJECUCION) d->range_ejec += val;
-        else d->range_rayo += val;
+        else d->range_rayo_pct += val;
         break;
     case ARPG_LINE_BURN:        d->burn += val; break;
     case ARPG_LINE_LIFE:        d->life += val; break;
@@ -528,6 +563,11 @@ static void compute_delta(InvModDelta *d) {
             if (bit >= 0) d->relic_bits |= (uint16_t)(1u << bit);
         }
     }
+    int cp = d->charge_pct;
+    if (cp > 75) cp = 75;
+    if (cp < 0) cp = 0;
+    d->charge = -(48 * cp + 50) / 100;
+    d->range_rayo = (110 * d->range_rayo_pct + 50) / 100;
 }
 
 static void apply_delta(const InvModDelta *d) {
@@ -555,17 +595,20 @@ void arpg_inv_apply(void) {
     s_have_last = 1;
 }
 
-// En vivo: aplica solo la diferencia de líneas y ajusta las reliquias concedidas por mecánica
-// (grant al engarzar, revoke al quitar). Al cambiar desde la pausa no se recrea el jugador, así que
-// Vida/Velocidad entran en la siguiente partida (igual que los efectos del árbol antiguo, que se
-// aplicaban en arena_restart).
+// En vivo: aplica solo la diferencia de líneas, actualiza reliquias por mecánica y recalcula
+// Vida máx. y Maná máx. de g_player_state al instante.
 void arpg_inv_recalc(void) {
     InvModDelta d;
     compute_delta(&d);
-    if (!s_have_last) { apply_delta(&d); s_last = d; s_have_last = 1; return; }
+    if (!s_have_last) {
+        memset(&s_last, 0, sizeof(s_last));
+        s_have_last = 1;
+    }
     InvModDelta diff;
     diff.damage_rayo = d.damage_rayo - s_last.damage_rayo;
     diff.damage_ejec = d.damage_ejec - s_last.damage_ejec;
+    diff.charge_pct = 0;
+    diff.range_rayo_pct = 0;
     diff.charge = d.charge - s_last.charge;
     diff.range_rayo = d.range_rayo - s_last.range_rayo;
     diff.range_ejec = d.range_ejec - s_last.range_ejec;
@@ -581,6 +624,23 @@ void arpg_inv_recalc(void) {
         int was = (s_last.relic_bits >> id) & 1, now = (d.relic_bits >> id) & 1;
         if (was && !now) upgrades_revoke_relic(id);
         else if (!was && now) upgrades_grant_relic(id);
+    }
+    if (g_player_state.max_hp > 0) {
+        int old_max_hp = g_player_state.max_hp;
+        int full_hp = ARPG_HP_BASE + (g_arpg_level - 1) * ARPG_HP_PER_LEVEL + g_mods.max_hp;
+        int new_max_hp = upgrades_has_relic(RELIC_LLAGA) ? (full_hp + 1) / 2 : full_hp;
+        if (new_max_hp < 1) new_max_hp = 1;
+        g_player_state.max_hp = new_max_hp;
+        if (new_max_hp > old_max_hp) g_player_state.hp += (new_max_hp - old_max_hp);
+        if (g_player_state.hp > new_max_hp) g_player_state.hp = new_max_hp;
+        if (g_player_state.hp < 1 && !g_player_state.is_dead) g_player_state.hp = 1;
+
+        int old_max_mana = g_player_state.max_mana;
+        int new_max_mana = ARPG_MANA_BASE + (g_arpg_level - 1) * ARPG_MANA_PER_LEVEL + g_mods.max_mana;
+        if (new_max_mana < 10) new_max_mana = 10;
+        g_player_state.max_mana = new_max_mana;
+        if (new_max_mana > old_max_mana) g_player_state.mana += (new_max_mana - old_max_mana);
+        if (g_player_state.mana > new_max_mana) g_player_state.mana = new_max_mana;
     }
     s_last = d;
 }
@@ -625,24 +685,40 @@ const char *arpg_inv_mechanic_desc(int mech) {
     return ((unsigned)mech < (unsigned)MECH_COUNT) ? s_mech_desc[mech] : "";
 }
 
+static int default_mech_val(int mech) {
+    switch (mech) {
+    case ARPG_MECH_LANZA:        return 20;
+    case ARPG_MECH_LLAMA_VOTIVA: return 24;
+    case ARPG_MECH_AUTO_FE:      return 100;
+    case ARPG_MECH_CILICIO:      return 20;
+    case ARPG_MECH_PIRA:         return 75;
+    case ARPG_MECH_LLAGA:        return 20;
+    case ARPG_MECH_MARTIRIO:     return 60;
+    case ARPG_MECH_FLAGELADO:    return 100;
+    case ARPG_MECH_VIATICO:      return 20;
+    default:                     return 10;
+    }
+}
+
+int arpg_inv_mechanic_value(int mech) {
+    int best = 0;
+    for (int s = 0; s < ARPG_INV_SCHOOLS; s++) {
+        for (int k = 0; k < arpg_inv_socket_count(s); k++) {
+            const ArpgInvItem *it = arpg_inv_socket_item(s, k);
+            if (!it || it->mech != mech) continue;
+            int v = it->mech_val > 0 ? (int)it->mech_val : default_mech_val(mech);
+            if (v > best) best = v;
+        }
+    }
+    return best;
+}
+
 void arpg_inv_mechanic_format(const ArpgInvItem *it, char *buf, int n) {
     if (!buf || n <= 0) return;
     buf[0] = 0;
     if (!it || it->mech == ARPG_MECH_NONE) return;
     const char *fmt = arpg_inv_mechanic_desc(it->mech);
-    int v = (int)it->mech_val;
-    if (v <= 0) {
-        switch (it->mech) {
-        case ARPG_MECH_LANZA:        v = 20; break;
-        case ARPG_MECH_LLAMA_VOTIVA: v = 12; break;
-        case ARPG_MECH_CILICIO:      v = 15; break;
-        case ARPG_MECH_VIATICO:      v = 10; break;
-        case ARPG_MECH_FLAGELADO:    v = 18; break;
-        case ARPG_MECH_PIRA:         v = 25; break;
-        case ARPG_MECH_LLAGA:        v = 25; break;
-        default:                     v = 10; break;
-        }
-    }
+    int v = it->mech_val > 0 ? (int)it->mech_val : default_mech_val(it->mech);
     snprintf(buf, (size_t)n, fmt, v);
 }
 
@@ -650,21 +726,51 @@ const char *arpg_inv_line_name(int kind) {
     return ((unsigned)kind < ARPG_LINE_COUNT) ? s_line_name[kind] : "";
 }
 
+int arpg_inv_line_is_pct(int kind) {
+    switch (kind) {
+    case ARPG_LINE_DAMAGE:
+    case ARPG_LINE_CHARGE:
+    case ARPG_LINE_RANGE:
+    case ARPG_LINE_BURN:
+    case ARPG_LINE_SPEED:
+    case ARPG_LINE_MANA_REGEN:
+    case ARPG_LINE_RADIUS:
+    case ARPG_LINE_WAIT:
+    case ARPG_LINE_COST:
+        return 1;
+    default:
+        return 0;
+    }
+}
+
+void arpg_inv_line_format(int kind, int val, char *buf, int n) {
+    if (!buf || n <= 0) return;
+    if (arpg_inv_line_is_pct(kind)) snprintf(buf, (size_t)n, "%+d%%", val);
+    else snprintf(buf, (size_t)n, "%+d pts", val);
+}
+
+void arpg_inv_line_format_delta(int kind, int before, int after, char *buf, int n) {
+    if (!buf || n <= 0) return;
+    if (arpg_inv_line_is_pct(kind)) snprintf(buf, (size_t)n, "%d->%d%%", before, after);
+    else snprintf(buf, (size_t)n, "%d->%d pts", before, after);
+}
+
 const char *arpg_inv_item_name(const ArpgInvItem *it) {
     if (!it || it->kind == ARPG_ITEM_EMPTY) return "";
     if (it->kind == ARPG_ITEM_TOME) {
         if (it->school == ARPG_SCHOOL_GLIFO) return "Tomo de Glifo";
         if (it->school == ARPG_SCHOOL_LEVANTAR) return "Tomo de Levantar";
-        return "Tomo";
+        return "Tomo de Rayo";
     }
+    if (it->kind == ARPG_ITEM_RAYO) return "Rayo";
     if (it->name_id > 0 && it->name_id < (uint8_t)(sizeof(s_legendary_name) / sizeof(s_legendary_name[0])))
         return s_legendary_name[it->name_id];
     if (it->mech != ARPG_MECH_NONE) return arpg_inv_mechanic_name(it->mech);
     switch (it->school) {
-    case ARPG_SCHOOL_RAYO:      return "Relicario de Rayo";
-    case ARPG_SCHOOL_EJECUCION: return "Nudillera votiva";
+    case ARPG_SCHOOL_RAYO:      return "Punta de Lanza";
+    case ARPG_SCHOOL_EJECUCION: return "Nudillera Votiva";
     case ARPG_SCHOOL_GLIFO:     return "Vial de Glifo";
-    case ARPG_SCHOOL_LEVANTAR:  return "Cráneo votivo";
+    case ARPG_SCHOOL_LEVANTAR:  return "Cráneo Votivo";
     case ARPG_SCHOOL_PECHO:     return "Sagrado Corazón";
     default:                    return "Reliquia";
     }
@@ -689,6 +795,33 @@ static int roll_range(uint32_t *rng, int lo, int hi) {
     return lo + (int)(roll_u32(rng) % (uint32_t)(hi - lo + 1));
 }
 
+static int16_t roll_line_value(int kind, int level, int rarity, uint32_t *rng) {
+    // Escalado entero por nivel (1..99) y rareza (0..4): sin float.
+    int lvl = level < 1 ? 1 : (level > 99 ? 99 : level);
+    int scale_pct = 100 + (lvl - 1) * 35 + rarity * 8;
+    int base = 5;
+    switch (kind) {
+    case ARPG_LINE_DAMAGE:      base = roll_range(rng, 6, 12);  break;
+    case ARPG_LINE_CHARGE:      base = roll_range(rng, 6, 12);  break;
+    case ARPG_LINE_RANGE:       base = roll_range(rng, 8, 16);  break;
+    case ARPG_LINE_BURN:        base = roll_range(rng, 6, 14);  break;
+    case ARPG_LINE_LIFE:        base = roll_range(rng, 10, 20); break;
+    case ARPG_LINE_SPEED:       base = roll_range(rng, 3, 6);   break;
+    case ARPG_LINE_MANA:        base = roll_range(rng, 8, 16);  break;
+    case ARPG_LINE_MANA_REGEN:  base = roll_range(rng, 10, 22); break;
+    case ARPG_LINE_REMATE_HEAL: base = roll_range(rng, 4, 10);  break;
+    case ARPG_LINE_RADIUS:      base = roll_range(rng, 6, 12);  break;
+    case ARPG_LINE_WAIT:        base = roll_range(rng, 4, 9);   break;
+    case ARPG_LINE_COST:        base = roll_range(rng, 4, 9);   break;
+    default: break;
+    }
+    int val = (base * scale_pct + 50) / 100;
+    if (kind == ARPG_LINE_CHARGE && val > 60) val = 60;
+    if ((kind == ARPG_LINE_WAIT || kind == ARPG_LINE_COST) && val > 45) val = 45;
+    if (val < 1) val = 1;
+    return (int16_t)val;
+}
+
 static int roll_line_for_school(int school, int level, int rarity, int exclude_kind, uint32_t *rng, uint8_t *out_kind, int16_t *out_val) {
     static const uint8_t rayo_lines[]  = { ARPG_LINE_DAMAGE, ARPG_LINE_CHARGE, ARPG_LINE_RANGE, ARPG_LINE_BURN };
     static const uint8_t ejec_lines[]  = { ARPG_LINE_DAMAGE, ARPG_LINE_RANGE, ARPG_LINE_BURN, ARPG_LINE_REMATE_HEAL };
@@ -707,31 +840,8 @@ static int roll_line_for_school(int school, int level, int rarity, int exclude_k
         for (int i = 0; i < count; i++) if (pool[i] != exclude_kind) { kind = pool[i]; break; }
     }
 
-    // Escalado entero por nivel (1..99) y rareza (0..4): sin float.
-    int lvl = level < 1 ? 1 : (level > 99 ? 99 : level);
-    int scale_pct = 100 + (lvl - 1) * 12 + rarity * 15;
-    int base = 5;
-    switch (kind) {
-    case ARPG_LINE_DAMAGE:      base = roll_range(rng, 6, 12); break;
-    case ARPG_LINE_CHARGE:      base = roll_range(rng, 2, 5);  break;
-    case ARPG_LINE_RANGE:       base = roll_range(rng, 8, 16); break;
-    case ARPG_LINE_BURN:        base = roll_range(rng, 6, 14); break;
-    case ARPG_LINE_LIFE:        base = roll_range(rng, 10, 20); break;
-    case ARPG_LINE_SPEED:       base = roll_range(rng, 3, 6);  break;
-    case ARPG_LINE_MANA:        base = roll_range(rng, 8, 16); break;
-    case ARPG_LINE_MANA_REGEN:  base = roll_range(rng, 10, 22); break;
-    case ARPG_LINE_REMATE_HEAL: base = roll_range(rng, 3, 7);  break;
-    case ARPG_LINE_RADIUS:      base = roll_range(rng, 6, 12); break;
-    case ARPG_LINE_WAIT:        base = roll_range(rng, 4, 9);  break;
-    case ARPG_LINE_COST:        base = roll_range(rng, 4, 9);  break;
-    default: break;
-    }
-    int val = (base * scale_pct + 50) / 100;
-    if (kind == ARPG_LINE_CHARGE && val > 14) val = 14;
-    if ((kind == ARPG_LINE_WAIT || kind == ARPG_LINE_COST) && val > 45) val = 45;
-    if (val < 1) val = 1;
     *out_kind = kind;
-    *out_val = (int16_t)val;
+    *out_val = roll_line_value(kind, level, rarity, rng);
     return 1;
 }
 
@@ -765,17 +875,34 @@ void arpg_relic_roll_school(ArpgInvItem *out, int school, int floor, int min_rar
         if (school == ARPG_SCHOOL_RAYO)
             mech = (roll_u32(rng) & 1u) ? ARPG_MECH_LANZA : ARPG_MECH_LLAMA_VOTIVA;
         else if (school == ARPG_SCHOOL_EJECUCION)
-            mech = (roll_u32(rng) & 1u) ? ARPG_MECH_VIATICO : ARPG_MECH_FLAGELADO;
+            mech = ARPG_MECH_PIRA;
         else if (school == ARPG_SCHOOL_GLIFO)
             mech = (roll_u32(rng) & 1u) ? ARPG_MECH_REDIL : ARPG_MECH_ZARZA;
         else
-            mech = ARPG_MECH_CILICIO;
+            mech = (roll_u32(rng) & 1u) ? ARPG_MECH_CILICIO : ARPG_MECH_LLAGA;
     }
     if (mech != ARPG_MECH_NONE) {
-        int scale_pct = 100 + (lvl - 1) * 10 + rarity * 15;
-        int v = (roll_range(rng, 5, 20) * scale_pct + 50) / 100;
-        if (v < 5) v = 5;
-        if (v > 95) v = 95;
+        int scale_pct = 100 + (lvl - 1) * 25 + rarity * 10;
+        int base = 10;
+        int lo = 5, hi = 250;
+        switch (mech) {
+        case ARPG_MECH_LANZA:        base = roll_range(rng, 14, 24); lo = 10; hi = 95;  break;
+        case ARPG_MECH_LLAMA_VOTIVA: base = roll_range(rng, 18, 32); lo = 12; hi = 150; break;
+        case ARPG_MECH_AUTO_FE:      base = roll_range(rng, 90, 120); lo = 90; hi = 180; break;
+        case ARPG_MECH_PIRA:
+            base = (rarity == ARPG_RAR_LEGENDARY) ? roll_range(rng, 85, 115) : roll_range(rng, 55, 85);
+            lo = 40; hi = 220;
+            break;
+        case ARPG_MECH_CILICIO:      base = roll_range(rng, 16, 28); lo = 12; hi = 140; break;
+        case ARPG_MECH_LLAGA:
+            base = (rarity == ARPG_RAR_LEGENDARY) ? roll_range(rng, 22, 30) : roll_range(rng, 15, 22);
+            lo = 12; hi = 45;
+            break;
+        default: break;
+        }
+        int v = (base * scale_pct + 50) / 100;
+        if (v < lo) v = lo;
+        if (v > hi) v = hi;
         mech_val = (uint8_t)v;
     }
 
@@ -784,14 +911,19 @@ void arpg_relic_roll_school(ArpgInvItem *out, int school, int floor, int min_rar
     out->level = (uint8_t)lvl;
     out->name_id = name_id;
 
-    int nlines = (rarity == ARPG_RAR_COMMON || rarity == ARPG_RAR_RARE) ? 1 : 2;
-    uint8_t k0 = 0xFF;
-    for (int i = 0; i < nlines; i++) {
-        uint8_t k = 0;
-        int16_t v = 0;
-        roll_line_for_school(school, lvl, rarity, k0, rng, &k, &v);
-        item_line(out, k, v);
-        k0 = k;
+    if (name_id == 3) {
+        item_line(out, ARPG_LINE_LIFE, roll_line_value(ARPG_LINE_LIFE, lvl, rarity, rng));
+        item_line(out, ARPG_LINE_MANA, roll_line_value(ARPG_LINE_MANA, lvl, rarity, rng));
+    } else {
+        int nlines = (rarity == ARPG_RAR_COMMON || rarity == ARPG_RAR_RARE) ? 1 : 2;
+        uint8_t k0 = 0xFF;
+        for (int i = 0; i < nlines; i++) {
+            uint8_t k = 0;
+            int16_t v = 0;
+            roll_line_for_school(school, lvl, rarity, k0, rng, &k, &v);
+            item_line(out, k, v);
+            k0 = k;
+        }
     }
 }
 
