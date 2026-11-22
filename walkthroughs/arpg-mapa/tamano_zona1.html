@@ -1,0 +1,152 @@
+<title>Tamaño de la zona 1</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alegreya+Sans+SC:wght@500;700&family=IBM+Plex+Sans:wght@400;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: una columna de lectura; primero el modelo de duración, luego las variantes con su plano y sus cifras. */
+:root{
+  --bg:#eef0f2; --panel:#f8f9fa; --fg:#1f2328; --mute:#5b636d; --line:#d3d8de;
+  --accent:#a8641f; --rec:#2f6b4f; --bad:#a3413a;
+  --nave:#d9cfbd; --gal:#c9d8c4; --cap:#dcc3bf; --cri:#c9c3dc; --edge:#6f6658; --short:#a8641f; --link:#4f7189;
+  --display:"Alegreya Sans SC","Trebuchet MS",sans-serif;
+  --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#15181b; --panel:#1d2125; --fg:#e7e9ec; --mute:#9aa3ad; --line:#30363c;
+  --accent:#e0a062; --rec:#7cc39f; --bad:#e58a80;
+  --nave:#4a4232; --gal:#344431; --cap:#4b3432; --cri:#3b3550; --edge:#a59a88; --short:#e0a062; --link:#8fb0c6; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#15181b; --panel:#1d2125; --fg:#e7e9ec; --mute:#9aa3ad; --line:#30363c;
+  --accent:#e0a062; --rec:#7cc39f; --bad:#e58a80;
+  --nave:#4a4232; --gal:#344431; --cap:#4b3432; --cri:#3b3550; --edge:#a59a88; --short:#e0a062; --link:#8fb0c6; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font:16px/1.55 var(--body);margin:0}
+main{max-width:780px;margin:0 auto;padding-block:20px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;gap:24px}
+h1,h2,h3{font-family:var(--display);font-weight:700;text-wrap:balance;margin:0}
+h1{font-size:1.9rem;letter-spacing:.02em}
+h2{font-size:1.35rem;letter-spacing:.03em}
+h3{font-size:1.15rem;letter-spacing:.03em}
+p{margin:0;max-width:65ch}
+.lead{color:var(--mute)}
+section{display:grid;gap:10px}
+.wrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:.92rem;min-width:520px}
+th,td{text-align:left;padding:7px 6px;border-bottom:1px solid var(--line);vertical-align:top}
+th{color:var(--mute);font-weight:600;font-size:.78rem;text-transform:uppercase;letter-spacing:.06em}
+td.n{font-family:var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+tr.rec td{background:color-mix(in srgb,var(--rec) 12%,transparent)}
+.ok{color:var(--rec);font-weight:600}.ko{color:var(--bad);font-weight:600}
+.formula{font-family:var(--mono);font-size:.9rem;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px 12px;display:grid;gap:4px}
+.note{border-left:3px solid var(--accent);padding:8px 12px;background:var(--panel);border-radius:0 6px 6px 0}
+.variants{display:grid;gap:16px}
+.v{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:14px;align-items:start}
+.v.rec{border-color:var(--rec);border-width:2px}
+.tag{font-family:var(--body);font-size:.72rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;margin-left:6px}
+.tag.g{color:var(--rec)}.tag.r{color:var(--bad)}
+.v .info{display:grid;gap:8px;min-width:0}
+.stats{display:flex;flex-wrap:wrap;gap:4px 14px;font-family:var(--mono);font-size:.85rem;color:var(--mute)}
+.stats b{color:var(--fg);font-weight:500}
+ul{margin:0;padding-left:1.1rem}
+li{margin:2px 0}
+svg{width:100%;height:auto;display:block}
+svg text{fill:var(--fg);font:8px var(--body)}
+svg text.s{fill:var(--mute);font-size:6.5px}
+svg text.b{font-weight:600}
+svg rect.r{stroke:var(--edge);stroke-width:.8}
+.nave{fill:var(--nave)}.gal{fill:var(--gal)}.cap{fill:var(--cap)}.cri{fill:var(--cri)}
+svg .c{stroke:var(--edge);stroke-width:1.2;fill:none}
+.legend{display:flex;flex-wrap:wrap;gap:10px;font-size:.82rem;color:var(--mute)}
+.legend i{display:inline-block;width:11px;height:11px;border:1px solid var(--edge);border-radius:2px;margin-right:4px;vertical-align:-1px}
+@media (max-width:600px){.v{grid-template-columns:1fr}}
+</style>
+
+<main>
+<header style="display:grid;gap:8px">
+  <h1>Tamaño de la zona 1</h1>
+  <p class="lead">Cuánto mapa hace falta para que la demo dure al menos 1 hora en Normal y 2-3 horas con todas las dificultades. Una pantalla = 256×192 de la DS. Las cifras son estimaciones que hay que calibrar jugando (ver el final).</p>
+</header>
+
+<section>
+  <h2>Qué significa cada duración</h2>
+  <p>El mapa es persistente y se reutiliza: los enemigos reaparecen al dormir y las dificultades repiten la misma catedral, como en Diablo. Por eso la campaña dura más que una pasada por el mapa.</p>
+  <div class="formula">
+    <div><b>Recorrido limpio</b> ≈ 1 min por pantalla (cruzarla matando su grupo, sin morir)</div>
+    <div><b>Normal, primera vez</b> ≈ recorrido × 1,3-1,5 (morir, volver al campamento, dormir, re-limpiar lo que reaparece, ir a por la llave)</div>
+    <div><b>Cada dificultad más</b> ≈ Normal × 0,6-0,7 (ya conoces el mapa y tienes build, pero los enemigos aguantan más)</div>
+    <div><b>Total</b> = Normal + 2 dificultades más (Pesadilla e Infierno)</div>
+  </div>
+  <p class="lead">Así se contaba en el diseño del juego final: una zona son 1,5-2 h y la campaña de 5 zonas, 8-10 h (~25 h con las 3 dificultades). Para la demo, la zona 1 tiene que dar al menos 1 h en Normal.</p>
+</section>
+
+<section>
+  <h2>Resultado por tamaño</h2>
+  <div class="wrap"><table>
+    <thead><tr><th>Variante</th><th>Salas</th><th>Pantallas</th><th>Recorrido limpio</th><th>Normal</th><th>Total 3 dificultades</th><th>¿Cumple?</th></tr></thead>
+    <tbody>
+      <tr><td>C · Mínima</td><td class="n">6</td><td class="n">24</td><td class="n">~25 min</td><td class="n">30-40 min</td><td class="n">1 h-1 h 30</td><td class="ko">No</td></tr>
+      <tr><td>A · Compacta</td><td class="n">9</td><td class="n">30</td><td class="n">~30 min</td><td class="n">35-50 min</td><td class="n">1 h 20-2 h</td><td class="ko">No</td></tr>
+      <tr><td>B · v3</td><td class="n">10</td><td class="n">44</td><td class="n">~45 min</td><td class="n">50-70 min</td><td class="n">2 h-2 h 45</td><td class="ok">Justo</td></tr>
+      <tr class="rec"><td><b>D · Cuatro naves cortas</b></td><td class="n">12</td><td class="n">46</td><td class="n">~45 min</td><td class="n">55-75 min</td><td class="n">2 h-3 h</td><td class="ok">Sí</td></tr>
+    </tbody>
+  </table></div>
+  <p>Para llegar a 1 h en Normal hacen falta <b>unas 45 pantallas</b>. A y C se quedan cortas. B llega, pero con naves de 8-10 pantallas que hoy serían de solo subida (lo que dejas abajo ya no se puede recorrer). D tiene el tamaño de B repartido en salas de 6 pantallas o menos, así que todas se recorren arriba y abajo.</p>
+</section>
+
+<section>
+  <h2>D · Cuatro naves cortas</h2>
+  <div class="legend"><span><i style="background:var(--nave)"></i>Nave</span><span><i style="background:var(--gal)"></i>Galería</span><span><i style="background:var(--cap)"></i>Capilla</span><span><i style="background:var(--cri)"></i>Cripta</span></div>
+  <article class="v rec">
+    <svg viewBox="0 0 300 420" role="img" aria-label="Plano de la variante D">
+      <path class="c" d="M150 94V108M150 168V182M150 242V256M150 316V330M150 390V400"/>
+      <path class="c" d="M100 375H125M175 345H200M100 291H125M175 271H200M100 207H125M100 153H125M175 133H200"/>
+      <rect class="r cri" x="120" y="74" width="60" height="20" rx="3"/><text x="150" y="82" text-anchor="middle" class="b">Cripta 2p</text><text x="150" y="90" text-anchor="middle" class="s">jefe: Abanderado</text>
+      <rect class="r nave" x="125" y="108" width="50" height="60" rx="3"/><text x="150" y="136" text-anchor="middle" class="b">Nave 4</text><text x="150" y="146" text-anchor="middle" class="s">6p · altar</text>
+      <rect class="r nave" x="125" y="182" width="50" height="60" rx="3"/><text x="150" y="210" text-anchor="middle" class="b">Nave 3</text><text x="150" y="220" text-anchor="middle" class="s">6p · altar</text>
+      <rect class="r nave" x="125" y="256" width="50" height="60" rx="3"/><text x="150" y="284" text-anchor="middle" class="b">Nave 2</text><text x="150" y="294" text-anchor="middle" class="s">6p · altar</text>
+      <rect class="r nave" x="125" y="330" width="50" height="60" rx="3"/><text x="150" y="358" text-anchor="middle" class="b">Nave 1</text><text x="150" y="368" text-anchor="middle" class="s">6p · altar</text>
+      <text x="150" y="412" text-anchor="middle" class="s">Entrada</text>
+      <rect class="r gal" x="40" y="365" width="60" height="20" rx="3"/><text x="70" y="374" text-anchor="middle">Galería 2p</text><text x="70" y="382" text-anchor="middle" class="s">cofre</text>
+      <rect class="r gal" x="200" y="335" width="60" height="20" rx="3"/><text x="230" y="344" text-anchor="middle">Galería 2p</text><text x="230" y="352" text-anchor="middle" class="s">secreto</text>
+      <rect class="r cap" x="40" y="281" width="60" height="20" rx="3"/><text x="70" y="290" text-anchor="middle">Capilla 2p</text><text x="70" y="298" text-anchor="middle" class="s">párroco: llave</text>
+      <rect class="r gal" x="200" y="251" width="60" height="40" rx="3"/><text x="230" y="268" text-anchor="middle">Galería 4p</text><text x="230" y="277" text-anchor="middle" class="s">minijefe: la Misa</text>
+      <rect class="r gal" x="40" y="187" width="60" height="40" rx="3"/><text x="70" y="204" text-anchor="middle">Galería 4p</text><text x="70" y="213" text-anchor="middle" class="s">prisionero</text>
+      <rect class="r cap" x="40" y="143" width="60" height="20" rx="3"/><text x="70" y="152" text-anchor="middle">Capilla 2p</text><text x="70" y="160" text-anchor="middle" class="s">con llave</text>
+      <rect class="r gal" x="200" y="113" width="60" height="40" rx="3"/><text x="230" y="130" text-anchor="middle">Galería 4p</text><text x="230" y="139" text-anchor="middle" class="s">minijefe: élite</text>
+    </svg>
+    <div class="info">
+      <h3>Recomendada<span class="tag g">≥1 h en Normal</span></h3>
+      <div class="stats"><span><b>12</b> salas</span><span><b>46</b> pantallas</span><span><b>4</b> altares</span><span>1 jefe + 2 minijefes</span></div>
+      <ul>
+        <li>Todas las salas de 6 pantallas o menos: se va y se vuelve, como en Castlevania.</li>
+        <li>Ritmo de Diablo: un hito cada 4-5 min (2 minijefes, jefe, llave, secreto, prisionero, cofres).</li>
+        <li>La llave se gana en la Nave 2 y se usa en la Nave 4, así que hay un viaje de vuelta con premio.</li>
+        <li>Un altar por nave: retomar desde el campamento nunca cuesta más de una nave de recorrido.</li>
+        <li>Los minijefes son la Misa (Párroco + Monja + Exvotos) y el Abanderado élite. Ya existen los dos, no hay que hacer arte nuevo.</li>
+      </ul>
+    </div>
+  </article>
+</section>
+
+<section>
+  <h2>Las otras tres, en breve</h2>
+  <ul>
+    <li><b>A · Compacta (30 p, 9 salas):</b> misma idea que D con 3 naves. Se queda en 35-50 min en Normal.</li>
+    <li><b>B · v3 (44 p, 10 salas):</b> llega a la hora, pero sus 3 naves largas serían de solo subida, y repite las 14 pantallas que se recorren dos veces sin contenido nuevo.</li>
+    <li><b>C · Mínima (24 p, 6 salas):</b> sirve para grabar un gameplay de combate, no para una demo de 1 h.</li>
+  </ul>
+</section>
+
+<section>
+  <h2>Otras palancas de duración (sin más mapa)</h2>
+  <div class="wrap"><table>
+    <thead><tr><th>Palanca</th><th>Efecto</th><th>Riesgo</th></tr></thead>
+    <tbody>
+      <tr><td>Más densidad (un grupo por pantalla, no cada 1,5)</td><td>+30 % de recorrido</td><td>Más enemigos a la vez: hay que medir los 60 FPS en la DS</td></tr>
+      <tr><td>Nivel recomendado para el jefe (obliga a dormir y re-limpiar)</td><td>+15-30 min en Normal</td><td>Se nota como «farmeo obligatorio» si se pasa</td></tr>
+      <tr><td>Una cuarta dificultad</td><td>+35-50 min al total</td><td>Ninguno técnico; es repetir más</td></tr>
+    </tbody>
+  </table></div>
+  <p class="note">Lo que más incertidumbre tiene es el «1 min por pantalla». Con la Nave 1 jugable en la consola se mide en 5 minutos: si sale más rápido, D se queda corta y se sube la densidad; si sale más lento, sobra y se puede quitar una galería.</p>
+</section>
+</main>

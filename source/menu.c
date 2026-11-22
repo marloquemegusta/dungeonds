@@ -581,24 +581,24 @@ void menu_render_bottom(uint16_t *buf) {
         draw_text_centered(buf, SCREEN_W / 2, 76, "Próximamente", MENU_COL_BODY);
     } else if (s_state == MENU_CONTROLS) {
         /* Two blocks with a heading: key column in the header colour, description in the body colour. */
-        static const char *const dungeon_keys[5] = { "Cruceta", "Lápiz", "L", "Mantén L", "START" };
-        static const char *const dungeon_text[5] = {
+        static const char *const dungeon_keys[6] = { "Cruceta", "Lápiz", "L", "Mantén L", "SELECT", "START" };
+        static const char *const dungeon_text[6] = {
             "Mover", "Lanzar el hechizo (gasta maná)", "Puñetazo; remata al que se tambalea",
-            "Elegir hechizo (toca uno)", "Pausa"
+            "Elegir hechizo (toca uno)", "Mapa", "Pausa"
         };
         static const char *const camp_keys[2] = { "A", "START" };
         static const char *const camp_text[2] = { "Usar (jergón, arcón, atril, puerta)", "Pausa" };
-        const int key_x = 16, text_x = 72, step = 11;
+        const int key_x = 16, text_x = 72, step = 10;
         draw_box(buf, 6, 4, 244, 130, MENU_COL_INA_FILL, MENU_COL_INA_BDR);
         draw_text_centered(buf, SCREEN_W / 2, 7, "Controles", MENU_COL_HEADER);
         int y = 21;
         draw_text(buf, key_x - 4, y, "En la catedral", MENU_COL_HEADER);
         y += step + 1;
-        for (int i = 0; i < 5; i++, y += step) {
+        for (int i = 0; i < 6; i++, y += step) {
             draw_text(buf, key_x, y, dungeon_keys[i], MENU_COL_HEADER);
             draw_text(buf, text_x, y, dungeon_text[i], MENU_COL_BODY);
         }
-        y += 6;
+        y += 5;
         draw_text(buf, key_x - 4, y, "En el campamento", MENU_COL_HEADER);
         y += step + 1;
         for (int i = 0; i < 2; i++, y += step) {
