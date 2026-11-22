@@ -1,0 +1,88 @@
+{
+  "name": "arpg_lab_menu",
+  "description": "Variante arpg-lab: arranca directo en el combate ARPG (sin titulo), SELECT abre el menu de ajuste, se cambia la variante de 'Puno aire' (original -> Tela rapida 1 -> Tela rapida 4), se prueba con A, se baja de fila y se cambia de pagina. Solo evidencia.",
+  "suite": false,
+  "evidence_only": true,
+  "steps": [
+    {
+      "frames": 90,
+      "capture": "01_arranque_directo"
+    },
+    {
+      "button_down": "SELECT",
+      "frames": 4
+    },
+    {
+      "button_up": "SELECT",
+      "frames": 20,
+      "capture": "02_menu_abierto"
+    },
+    {
+      "button_down": "RIGHT",
+      "frames": 4
+    },
+    {
+      "button_up": "RIGHT",
+      "frames": 4
+    },
+    {
+      "button_down": "RIGHT",
+      "frames": 4
+    },
+    {
+      "button_up": "RIGHT",
+      "frames": 10,
+      "capture": "03_variante_cambiada"
+    },
+    {
+      "button_down": "A",
+      "frames": 4
+    },
+    {
+      "button_up": "A",
+      "frames": 10
+    },
+    {
+      "button_down": "DOWN",
+      "frames": 4
+    },
+    {
+      "button_up": "DOWN",
+      "frames": 6
+    },
+    {
+      "button_down": "RIGHT",
+      "frames": 4
+    },
+    {
+      "button_up": "RIGHT",
+      "frames": 6
+    },
+    {
+      "button_down": "R",
+      "frames": 4
+    },
+    {
+      "button_up": "R",
+      "frames": 4
+    },
+    {
+      "button_down": "R",
+      "frames": 4
+    },
+    {
+      "button_up": "R",
+      "frames": 10,
+      "capture": "04_pagina_sin_variantes"
+    },
+    {
+      "button_down": "B",
+      "frames": 4
+    },
+    {
+      "button_up": "B",
+      "frames": 30,
+      "capture": "05_cerrado"
+    }
+  ]
+}

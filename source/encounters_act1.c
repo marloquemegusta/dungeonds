@@ -1,4 +1,5 @@
 #include "encounters_act1.h"
+#include "lab_tuning.h"
 
 // Translation unit never empty (ISO C) when ENCOUNTERS_PROTO=0.
 typedef int encounters_act1_translation_unit_not_empty;
@@ -743,6 +744,9 @@ void enc_update(Enemy *enemies, int max_enemies, int px, int py) {
     // stays unspawned and retries on a later frame.
     for (int k = lo; k < hi; k++) {
         EncRuntime *rt = &s_rt[k];
+#if ARPG_BOXEO
+        continue;               // boxeo: no room ever populates; the only enemy is the dummy of boxeo.c
+#endif
         if (rt->spawned) continue;
         const int top = window_top(block_of_encounter(k));
         const int bottom = top + ENC_BLOCK_H;

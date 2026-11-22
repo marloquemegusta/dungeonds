@@ -1,0 +1,496 @@
+{
+  "name": "arpg_boxeo",
+  "description": "Variante arpg-boxeo: arranca en la sala con un solo saco (vida infinita). El saco aparece al lado, a tiro; el heroe encadena el combo directo-cruzado-gancho pulsando L durante cada golpe, y sigue pegando: el saco pierde vida pero nunca muere. Luego abre el menu de ajuste (paginas Punetazo y Pruebas).",
+  "suite": false,
+  "steps": [
+    {
+      "frames": 90,
+      "capture": "01_sala_saco",
+      "state_capture": "inicio"
+    },
+    {
+      "frames": 10,
+      "capture": "02_frente_al_saco",
+      "state_capture": "antes"
+    },
+    {
+      "button_down": "L",
+      "frames": 2
+    },
+    {
+      "button_up": "L",
+      "frames": 4,
+      "capture_sequence": "combo",
+      "capture_every": 1,
+      "state_capture": "toque"
+    },
+    {
+      "button_down": "L",
+      "frames": 2,
+      "capture_sequence": "combo",
+      "capture_every": 1
+    },
+    {
+      "button_up": "L",
+      "frames": 10,
+      "capture_sequence": "combo",
+      "capture_every": 1
+    },
+    {
+      "button_down": "L",
+      "frames": 2,
+      "capture_sequence": "combo",
+      "capture_every": 1
+    },
+    {
+      "button_up": "L",
+      "frames": 60,
+      "capture_sequence": "combo",
+      "capture_every": 1
+    },
+    {
+      "frames": 10,
+      "capture": "03_tras_combo",
+      "state_capture": "tras_combo"
+    },
+    {
+      "button_down": "L",
+      "frames": 2
+    },
+    {
+      "button_up": "L",
+      "frames": 10
+    },
+    {
+      "button_down": "L",
+      "frames": 2
+    },
+    {
+      "button_up": "L",
+      "frames": 10
+    },
+    {
+      "button_down": "L",
+      "frames": 2
+    },
+    {
+      "button_up": "L",
+      "frames": 10
+    },
+    {
+      "button_down": "L",
+      "frames": 2
+    },
+    {
+      "button_up": "L",
+      "frames": 10
+    },
+    {
+      "button_down": "L",
+      "frames": 2
+    },
+    {
+      "button_up": "L",
+      "frames": 10
+    },
+    {
+      "button_down": "L",
+      "frames": 2
+    },
+    {
+      "button_up": "L",
+      "frames": 10
+    },
+    {
+      "button_down": "L",
+      "frames": 2
+    },
+    {
+      "button_up": "L",
+      "frames": 10
+    },
+    {
+      "button_down": "L",
+      "frames": 2
+    },
+    {
+      "button_up": "L",
+      "frames": 10
+    },
+    {
+      "button_down": "L",
+      "frames": 2
+    },
+    {
+      "button_up": "L",
+      "frames": 10
+    },
+    {
+      "button_down": "L",
+      "frames": 2
+    },
+    {
+      "button_up": "L",
+      "frames": 10
+    },
+    {
+      "button_down": "L",
+      "frames": 2
+    },
+    {
+      "button_up": "L",
+      "frames": 10
+    },
+    {
+      "button_down": "L",
+      "frames": 2
+    },
+    {
+      "button_up": "L",
+      "frames": 10
+    },
+    {
+      "button_down": "L",
+      "frames": 2
+    },
+    {
+      "button_up": "L",
+      "frames": 10
+    },
+    {
+      "button_down": "L",
+      "frames": 2
+    },
+    {
+      "button_up": "L",
+      "frames": 10
+    },
+    {
+      "button_down": "L",
+      "frames": 2
+    },
+    {
+      "button_up": "L",
+      "frames": 10
+    },
+    {
+      "button_down": "L",
+      "frames": 2
+    },
+    {
+      "button_up": "L",
+      "frames": 10
+    },
+    {
+      "button_down": "L",
+      "frames": 2
+    },
+    {
+      "button_up": "L",
+      "frames": 10
+    },
+    {
+      "button_down": "L",
+      "frames": 2
+    },
+    {
+      "button_up": "L",
+      "frames": 10
+    },
+    {
+      "button_down": "L",
+      "frames": 2
+    },
+    {
+      "button_up": "L",
+      "frames": 10
+    },
+    {
+      "button_down": "L",
+      "frames": 2
+    },
+    {
+      "button_up": "L",
+      "frames": 10
+    },
+    {
+      "button_down": "L",
+      "frames": 2
+    },
+    {
+      "button_up": "L",
+      "frames": 10
+    },
+    {
+      "button_down": "L",
+      "frames": 2
+    },
+    {
+      "button_up": "L",
+      "frames": 10
+    },
+    {
+      "button_down": "L",
+      "frames": 2
+    },
+    {
+      "button_up": "L",
+      "frames": 10
+    },
+    {
+      "button_down": "L",
+      "frames": 2
+    },
+    {
+      "button_up": "L",
+      "frames": 10
+    },
+    {
+      "button_down": "L",
+      "frames": 2
+    },
+    {
+      "button_up": "L",
+      "frames": 10
+    },
+    {
+      "button_down": "L",
+      "frames": 2
+    },
+    {
+      "button_up": "L",
+      "frames": 10
+    },
+    {
+      "button_down": "L",
+      "frames": 2
+    },
+    {
+      "button_up": "L",
+      "frames": 10
+    },
+    {
+      "button_down": "L",
+      "frames": 2
+    },
+    {
+      "button_up": "L",
+      "frames": 10
+    },
+    {
+      "button_down": "L",
+      "frames": 2
+    },
+    {
+      "button_up": "L",
+      "frames": 10
+    },
+    {
+      "button_down": "L",
+      "frames": 2
+    },
+    {
+      "button_up": "L",
+      "frames": 10
+    },
+    {
+      "button_down": "L",
+      "frames": 2
+    },
+    {
+      "button_up": "L",
+      "frames": 10
+    },
+    {
+      "button_down": "L",
+      "frames": 2
+    },
+    {
+      "button_up": "L",
+      "frames": 10
+    },
+    {
+      "button_down": "L",
+      "frames": 2
+    },
+    {
+      "button_up": "L",
+      "frames": 10
+    },
+    {
+      "button_down": "L",
+      "frames": 2
+    },
+    {
+      "button_up": "L",
+      "frames": 10
+    },
+    {
+      "button_down": "L",
+      "frames": 2
+    },
+    {
+      "button_up": "L",
+      "frames": 10
+    },
+    {
+      "button_down": "L",
+      "frames": 2
+    },
+    {
+      "button_up": "L",
+      "frames": 10
+    },
+    {
+      "button_down": "L",
+      "frames": 2
+    },
+    {
+      "button_up": "L",
+      "frames": 10
+    },
+    {
+      "button_down": "L",
+      "frames": 2
+    },
+    {
+      "button_up": "L",
+      "frames": 10
+    },
+    {
+      "button_down": "L",
+      "frames": 2
+    },
+    {
+      "button_up": "L",
+      "frames": 10
+    },
+    {
+      "button_down": "L",
+      "frames": 2
+    },
+    {
+      "button_up": "L",
+      "frames": 10
+    },
+    {
+      "frames": 10,
+      "state_capture": "tras_40_golpes",
+      "capture": "03b_tras_40_golpes"
+    },
+    {
+      "button_down": "SELECT",
+      "frames": 4
+    },
+    {
+      "button_up": "SELECT",
+      "frames": 20,
+      "capture": "04_menu"
+    },
+    {
+      "button_down": "L",
+      "frames": 4
+    },
+    {
+      "button_up": "L",
+      "frames": 10,
+      "capture": "05_menu_pag_ant"
+    },
+    {
+      "button_down": "L",
+      "frames": 4
+    },
+    {
+      "button_up": "L",
+      "frames": 10,
+      "capture": "06_menu_pag_ant2"
+    }
+  ],
+  "state": {
+    "elf": "../.ds-game-dev/build/out/dungeonds-arpg-boxeo.elf",
+    "symbols": {
+      "en": "g_enemies",
+      "pl": "s_player",
+      "spa": "s_punch_active"
+    },
+    "default_symbol": "en",
+    "fields": {
+      "e0_x": {
+        "offset": 0,
+        "type": "s32"
+      },
+      "e0_y": {
+        "offset": 4,
+        "type": "s32"
+      },
+      "e0_active": {
+        "offset": 24,
+        "type": "s32"
+      },
+      "e0_hp": {
+        "offset": 28,
+        "type": "s32"
+      },
+      "e0_max": {
+        "offset": 32,
+        "type": "s32"
+      },
+      "px": {
+        "symbol": "pl",
+        "offset": 0,
+        "type": "s32"
+      },
+      "py": {
+        "symbol": "pl",
+        "offset": 4,
+        "type": "s32"
+      },
+      "punch": {
+        "symbol": "spa",
+        "offset": 0,
+        "type": "s32"
+      }
+    }
+  },
+  "assertions": {
+    "state_changes": [
+      {
+        "at": "inicio",
+        "field": "e0_active",
+        "equals": 1
+      },
+      {
+        "at": "toque",
+        "field": "e0_hp",
+        "equals": 2000
+      },
+      {
+        "from": "toque",
+        "to": "tras_combo",
+        "field": "e0_hp",
+        "max_delta": -1
+      },
+      {
+        "at": "tras_combo",
+        "field": "e0_hp",
+        "equals": 1810
+      },
+      {
+        "at": "tras_40_golpes",
+        "field": "e0_active",
+        "equals": 1
+      },
+      {
+        "at": "tras_40_golpes",
+        "field": "e0_hp",
+        "min_value": 1
+      },
+      {
+        "from": "antes",
+        "to": "tras_combo",
+        "field": "e0_x",
+        "min_delta": 256
+      }
+    ]
+  }
+}
