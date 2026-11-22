@@ -6,6 +6,7 @@ typedef int boss_translation_unit_not_empty;
 #if ENCOUNTERS_PROTO
 
 #include <nds.h>
+#include <stdlib.h>
 #include <string.h>
 #include "bestiary_font.h"
 #include "encounters_act1.h"
@@ -106,6 +107,8 @@ static void escort_reset(void) {
     memset(s_spawn_n, 0, sizeof(s_spawn_n));
 }
 
+static void snap_free(void);
+
 void boss_reset(const BossDef *def, int pack) {
     s_def = def;
     s_pack = pack;
@@ -117,6 +120,7 @@ void boss_reset(const BossDef *def, int pack) {
     s_voice_done = 0;
     s_snap_taken = 0;
     s_pose_ok = 0;
+    snap_free();
     escort_reset();
     sfx_stop_voice();
     sfx_set_bgm_track(0);
@@ -236,6 +240,7 @@ void boss_tick(int dt, uint32_t keys_down) {
         if (s_t >= intro_end() || (keys_down & KEY_START)) {
             s_state = BOSS_COMBAT;
             s_t = 0;
+            snap_free();
             sfx_stop_voice();
             sfx_start_bgm();                  // the boss track chosen in boss_begin()
         }
@@ -254,6 +259,7 @@ void boss_tick(int dt, uint32_t keys_down) {
         if (was_frozen && (keys_down & KEY_START)) s_t = victory_end();
         if (s_t >= victory_end()) {
             s_state = BOSS_REST;
+            snap_free();
             sfx_stop_voice();
             if (s_hooks.set_barriers) s_hooks.set_barriers(0);
             sfx_set_bgm_track(0);
@@ -448,7 +454,23 @@ void boss_draw_world(uint16_t *buffer, int cam_x, int cam_y) {
 // Frozen screens: snapshot, zoom, vignette and fade to bone
 // ---------------------------------------------------------------------------
 
-static uint16_t s_snap[2][SCREEN_W * SCREEN_H] __attribute__((aligned(4)));   // [0] boss view (upper), [1] lower view
+static uint16_t *s_snap[2];   // [0] boss view (upper), [1] lower view; allocated only while frozen
+
+static int snap_alloc(void) {
+    for (int i = 0; i < 2; i++) {
+        if (!s_snap[i]) {
+            s_snap[i] = (uint16_t *)malloc((size_t)SCREEN_W * SCREEN_H * sizeof(uint16_t));
+            if (!s_snap[i]) return 0;
+        }
+    }
+    return 1;
+}
+
+static void snap_free(void) {
+    for (int i = 0; i < 2; i++) {
+        if (s_snap[i]) { free(s_snap[i]); s_snap[i] = NULL; }
+    }
+}
 // Vignette: light = table[tx[x] + ty[y]], an ellipse; ordered dither (Bayer 4x4) between the 16 levels.
 static uint16_t s_vtx[SCREEN_W], s_vty[SCREEN_H];
 static uint8_t s_vlight[512];
@@ -460,7 +482,10 @@ const Enemy *boss_last_pose(void) { return s_pose_ok ? &s_pose : 0; }
 
 int boss_snapshot_pending(void) { return boss_frozen() && !s_snap_taken; }
 int boss_focus_view_y(void) { return s_by - BOSS_BODY_CENTER - SCREEN_H / 2; }
-uint16_t *boss_snapshot_buffer(int top) { return s_snap[top ? 0 : 1]; }
+uint16_t *boss_snapshot_buffer(int top) {
+    if (!snap_alloc()) return NULL;
+    return s_snap[top ? 0 : 1];
+}
 
 static void vignette_build(void) {
     // Elliptical focus: untouched in the middle, about 1/8 of the light in the corners. Integer maths only.
@@ -572,6 +597,7 @@ static void zoom_render(uint16_t *dst, const uint16_t *src, int e, int mode, con
 }
 
 void boss_snapshot_commit(int view_x) {
+    if (!s_snap[0] || !s_snap[1]) return;
     if (!s_vig_ready) vignette_build();
     s_src = 0;
     s_fy = SCREEN_H / 2;                      // snapshot [0] is rendered with the boss in the middle (boss_focus_view_y)
@@ -608,6 +634,7 @@ static int victory_fade_step(void) {
 }
 
 void boss_frozen_bottom(uint16_t *page) {
+    if (!s_snap[1]) return;
     if (s_state == BOSS_INTRO) {
         const uint16_t dark = RGB15(4, 3, 3) | BIT(15);
         const int t = s_t, out = intro_out_start();
@@ -653,6 +680,7 @@ void boss_frozen_bottom(uint16_t *page) {
 // After the vblank: the zoomed boss view straight into the top page, only when it changed.
 void boss_frozen_top(uint16_t *page) {
     if (s_state != BOSS_INTRO && s_state != BOSS_VICTORY) return;
+    if (!s_snap[s_src]) return;
     const int e = zoom_amount();
     const int fs = s_state == BOSS_VICTORY ? victory_fade_step() : 0;
     if (e == s_last_zoom && fs == s_last_fade) return;

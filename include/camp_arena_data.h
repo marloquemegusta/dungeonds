@@ -8,7 +8,7 @@
 #define CAMP_WORLD_H 384
 #define CAMP_MAP_W 32
 #define CAMP_MAP_H 48
-#define CAMP_NUM_TILES 843
+#define CAMP_NUM_TILES 821
 
 // Baked bonfire light (see camp_floor_light.h): the warm bands are one contiguous block of palette
 // entries that the flicker rewrites; step 0 is the palette as baked.

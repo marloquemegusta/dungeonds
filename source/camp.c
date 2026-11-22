@@ -186,6 +186,20 @@ const Arena *camp_arena(void) {
     return &s_camp_arena;
 }
 
+void camp_unload_gfx(void) {
+    free((void *)s_camp_tiles); s_camp_tiles = NULL;
+    free((void *)s_fire);       s_fire = NULL;
+    free((void *)s_marco_n);    s_marco_n = NULL;
+    free((void *)s_marco_l);    s_marco_l = NULL;
+    free((void *)s_marco_r);    s_marco_r = NULL;
+    for (int i = 0; i < CAMP_PROP_COUNT; i++) {
+        free((void *)s_props[i].pix);    s_props[i].pix = NULL;
+        free((void *)s_props[i].shadow); s_props[i].shadow = NULL;
+    }
+    s_camp_arena.tiles = NULL;
+    s_built = 0;
+}
+
 int camp_active(void) { return s_active; }
 void camp_set_active(int on) {
     s_active = on;

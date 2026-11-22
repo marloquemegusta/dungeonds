@@ -3,7 +3,7 @@
 
 The camp reuses the cathedral floor tile geometry (the 16x16 damero of rombos) and the cathedral wall
 slice, but recoloured as ruined courtyard: pale paving stones over packed earth, moss and grass towards
-the edges, cracks, loose stones, a scorched circle under the fire (128,300) and a ruined masonry wall.
+the edges, cracks, loose stones and a ruined masonry wall.
 
 Lighting is computed here, not on the console (DESIGN.md 7.5):
   * Every pixel gets a scalar light L = moon ambient (vignette) + bonfire (falloff over the 2:1 ground
@@ -199,24 +199,6 @@ def apply_stamps(alb, t_img):
                 patch[m == 2] = np.array([54.0, 50.0, 47.0])
 
 
-def add_burnt(alb):
-    yy, xx = np.mgrid[0:H, 0:W]
-    d = np.sqrt((xx - FIRE_X) ** 2 + (2 * (yy - FIRE_Y)) ** 2) + (value_noise(5, 5, seed=21) - 0.5) * 10
-    alb[d < 34] = np.array([50.0, 45.0, 42.0])             # ash
-    alb[d < 26] = np.array([34.0, 30.0, 29.0])             # charcoal
-    alb[d < 14] = np.array([22.0, 19.0, 19.0])             # coals
-    ring = (d >= 34) & (d < 40)
-    alb[ring & (rng.random((H, W)) < 0.45)] = np.array([62.0, 56.0, 50.0])   # scorched fringe
-    # a ring of fire-stones around it
-    for k in range(10):
-        a = k / 10 * 6.2832 + 0.2
-        cx, cy = int(FIRE_X + np.cos(a) * 40), int(FIRE_Y + np.sin(a) * 20)
-        for dx in range(4):
-            for dy in range(2):
-                x, y = cx + dx - 2, cy + dy
-                alb[y, x] = np.array([112, 106, 98]) if dy == 0 else np.array([52, 48, 46])
-
-
 # ---------------------------------------------------------------------------------------------
 # Light
 # ---------------------------------------------------------------------------------------------
@@ -286,7 +268,6 @@ def rgb555(rgb):
 def build():
     alb, t_img = floor_albedo_base()
     apply_stamps(alb, t_img)
-    add_burnt(alb)
     # The wall of modules has its own palette entries; the floor materials are quantised without it, so the
     # wall region of the albedo just repeats the nearest floor.
     # The walls are NOT baked into the floor any more: the frame (tools/camp/marco_build.py) is a sprite drawn
