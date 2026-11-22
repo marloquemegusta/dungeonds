@@ -1,0 +1,316 @@
+{
+ "name": "arpg_mapa_overlay",
+ "description": "Mapa superpuesto (SELECT): Nave 1, Galeria del cofre y Nave 2 reveladas. Solo evidencia.",
+ "suite": false,
+ "evidence_only": true,
+ "state": {
+  "elf": "../.ds-game-dev/build/out/dungeonds.elf",
+  "symbols": {
+   "pl": "s_player",
+   "dbg": "g_enc_debug",
+   "stats": "g_enc_stats"
+  },
+  "default_symbol": "pl",
+  "fields": {
+   "px": {
+    "symbol": "pl",
+    "offset": 0,
+    "type": "s32"
+   },
+   "py": {
+    "symbol": "pl",
+    "offset": 4,
+    "type": "s32"
+   },
+   "dbg_god": {
+    "symbol": "dbg",
+    "offset": 2,
+    "type": "u8"
+   },
+   "dbg_restart": {
+    "symbol": "dbg",
+    "offset": 12,
+    "type": "u8"
+   },
+   "dbg_start_room": {
+    "symbol": "dbg",
+    "offset": 20,
+    "type": "u8"
+   },
+   "room": {
+    "symbol": "stats",
+    "offset": 60,
+    "type": "u8"
+   },
+   "block": {
+    "symbol": "stats",
+    "offset": 1,
+    "type": "u8"
+   }
+  }
+ },
+ "steps": [
+  {
+   "frames": 60
+  },
+  {
+   "tap": {
+    "x": 128,
+    "y": 66
+   },
+   "frames": 6
+  },
+  {
+   "release": true,
+   "frames": 40
+  },
+  {
+   "button_down": "START",
+   "frames": 4
+  },
+  {
+   "button_up": "START",
+   "frames": 90,
+   "capture": "c01_campamento"
+  },
+  {
+   "button_down": "LEFT",
+   "frames": 90
+  },
+  {
+   "button_up": "LEFT",
+   "frames": 10,
+   "capture": "c02_lateral_izq"
+  },
+  {
+   "poke": [
+    {
+     "field": "px",
+     "value": 32768
+    },
+    {
+     "field": "py",
+     "value": 29696
+    }
+   ],
+   "frames": 20,
+   "capture": "c03_puerta"
+  },
+  {
+   "button_down": "A",
+   "frames": 4
+  },
+  {
+   "button_up": "A",
+   "frames": 6,
+   "capture": "c04_fundido_a"
+  },
+  {
+   "frames": 8,
+   "capture": "c05_fundido_b"
+  },
+  {
+   "frames": 20,
+   "capture": "c06_sala1_entrada"
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    },
+    {
+     "field": "dbg_start_room",
+     "value": 1
+    },
+    {
+     "field": "dbg_restart",
+     "value": 1
+    }
+   ],
+   "frames": 60,
+   "capture": "m0_nave1_cerrado"
+  },
+  {
+   "button_down": "SELECT",
+   "frames": 3
+  },
+  {
+   "button_up": "SELECT",
+   "frames": 20,
+   "capture": "m1_nave1_mapa_abierto"
+  },
+  {
+   "frames": 10,
+   "capture": "m1b_nave1_mapa_abierto"
+  },
+  {
+   "poke": [
+    {
+     "field": "px",
+     "value": 65536
+    },
+    {
+     "field": "py",
+     "value": 230400
+    }
+   ],
+   "frames": 40,
+   "capture": "m1c_nave1_mitad"
+  },
+  {
+   "poke": [
+    {
+     "field": "py",
+     "value": 120320
+    }
+   ],
+   "frames": 40,
+   "capture": "m1d_nave1_fondo"
+  },
+  {
+   "poke": [
+    {
+     "field": "px",
+     "value": 42240
+    },
+    {
+     "field": "py",
+     "value": 340480
+    }
+   ],
+   "frames": 20,
+   "capture": "m2_junto_hueco_izq"
+  },
+  {
+   "button_down": "LEFT",
+   "frames": 5
+  },
+  {
+   "button_down": "LEFT",
+   "frames": 5
+  },
+  {
+   "button_down": "LEFT",
+   "frames": 5
+  },
+  {
+   "button_down": "LEFT",
+   "frames": 5
+  },
+  {
+   "button_down": "LEFT",
+   "frames": 5
+  },
+  {
+   "button_down": "LEFT",
+   "frames": 5
+  },
+  {
+   "button_up": "LEFT",
+   "frames": 40,
+   "capture": "m3_galeria_cofre_mapa"
+  },
+  {
+   "button_down": "RIGHT",
+   "frames": 5
+  },
+  {
+   "button_down": "RIGHT",
+   "frames": 5
+  },
+  {
+   "button_down": "RIGHT",
+   "frames": 5
+  },
+  {
+   "button_down": "RIGHT",
+   "frames": 5
+  },
+  {
+   "button_down": "RIGHT",
+   "frames": 5
+  },
+  {
+   "button_down": "RIGHT",
+   "frames": 5
+  },
+  {
+   "button_down": "RIGHT",
+   "frames": 5
+  },
+  {
+   "button_down": "RIGHT",
+   "frames": 5
+  },
+  {
+   "button_up": "RIGHT",
+   "frames": 40,
+   "capture": "m4_nave1_vuelta"
+  },
+  {
+   "poke": [
+    {
+     "field": "px",
+     "value": 65536
+    },
+    {
+     "field": "py",
+     "value": 120320
+    }
+   ],
+   "frames": 30
+  },
+  {
+   "poke": [
+    {
+     "field": "py",
+     "value": 105472
+    }
+   ],
+   "frames": 1
+  },
+  {
+   "button_down": "UP",
+   "frames": 4
+  },
+  {
+   "button_down": "UP",
+   "frames": 4
+  },
+  {
+   "button_down": "UP",
+   "frames": 4
+  },
+  {
+   "button_down": "UP",
+   "frames": 4
+  },
+  {
+   "button_down": "UP",
+   "frames": 4
+  },
+  {
+   "button_down": "UP",
+   "frames": 4
+  },
+  {
+   "button_down": "UP",
+   "frames": 4
+  },
+  {
+   "button_up": "UP",
+   "frames": 40,
+   "capture": "m5_nave2_mapa_3_salas"
+  },
+  {
+   "button_down": "SELECT",
+   "frames": 3
+  },
+  {
+   "button_up": "SELECT",
+   "frames": 20,
+   "capture": "m6_nave2_mapa_cerrado"
+  }
+ ]
+}

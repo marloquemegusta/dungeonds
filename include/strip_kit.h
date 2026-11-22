@@ -59,6 +59,8 @@ enum {
 #define STRIP_PIECE_COFRE_CERRADO 201   // chest, alternate rooms
 #define STRIP_PIECE_COFRE_ABIERTO 202   // chest once opened
 #define STRIP_PIECE_ALTAR 203           // travel altar, every third room
+#define STRIP_PIECE_HUECO_IZQ 204       // occlusion of the south module of a left lateral opening (kit.hole_occ[0])
+#define STRIP_PIECE_HUECO_DER 205       // same for the right one (kit.hole_occ[1])
 
 typedef struct {
     uint8_t w_tiles, h_tiles;     // size of the tile block
@@ -82,6 +84,11 @@ typedef struct {
     const uint16_t *floor_map;    // STRIP_W_TILES * map_h_tiles entries, including DS H/V flip bits
     const uint8_t *floor_collision; // STRIP_W_CELLS * (floor_h_tiles * 2) cells, packed like
                                     // Arena.collision (4 cells per byte, low bits first)
+    uint8_t end_w_tiles, end_h_tiles; // back wall of a room: 32 x 19 tiles covering world x 128..384, base on its last row
+    uint8_t hole_h_tiles;         // lateral opening (two modules removed): 3 x 33 tiles = 24 x 264 px, rows -24..239 from its first row (G0)
+    const uint16_t *hole_map;     // the cut face (canto) of the north module, the void and the first rows of the south one; the right side is the H-flip
+    const StripStamp *hole_occ;   // [0] left, [1] right: depth runs of the south module (no tiles) so the hero and the enemies hide behind it
+    const uint16_t *end_map[2];   // [0] closed (all blind arches), [1] with the through arch in the centre; DS flip bits, 0 = the void
     uint8_t num_stamps;
     const StripStamp *stamps;
 } StripKit;

@@ -39,6 +39,7 @@
 #include "bestiary_font.h"
 #include "arpg.h"
 #include "arpg_progress.h"
+#include "arpg_map.h"
 #include "arpg_inv.h"
 #include "glifo.h"
 #include "radial.h"
@@ -2162,11 +2163,9 @@ static void draw_run_hud(uint16_t *buffer) {
 
         // Level and xp, top left (DESIGN.md 6.12.8). A: "NV n" + bar. B: a candle. C: rosary beads + roman numeral.
 #if ENCOUNTERS_PROTO
-        {   // The dungeon is floor after floor; every fifth floor is a boss.
+        {   // The zone is 12 rooms: the label is the name of the room the hero is in.
             if (!boss_hud_active() && !boss_frozen()) {      // while the boss mode runs, its life bar takes this corner
-                int enc = enc_current_encounter();
-                if (enc % 5 == 0) snprintf(line, sizeof(line), "Piso %d · Jefe", enc);
-                else snprintf(line, sizeof(line), "Piso %d", enc);
+                snprintf(line, sizeof(line), "%s", enc_room_name());
                 hud_text(buffer, 6, 6, line, RGB15(27, 20, 11) | BIT(15));
             }
         }
@@ -2555,8 +2554,8 @@ static void on_enemy_death(const Enemy *e, fixed hit_vx, fixed hit_vy) {
     const int dead_slot = (e >= g_enemies && e < g_enemies + MAX_ENEMIES) ? (int)(e - g_enemies) : -1;
     const int dead_was_ally = dead_slot >= 0 && g_enemy_ally[dead_slot];
     {   // ARPG: experiencia directa al matar (sin runas en el suelo) y caída de reliquias.
-        int floor = enc_current_encounter() + 1;
-        int xp = dead_was_ally ? 0 : arpg_enemy_xp(e->type, enc_current_encounter());
+        int floor = enc_current_encounter();        // fixed level of the room the hero is in
+        int xp = dead_was_ally ? 0 : arpg_enemy_xp(e->type, floor);
         if (xp > 0) arpg_add_xp(xp);
         if (!dead_was_ally) pickups_drop_enemy_loot(e->type, floor, e->x, e->y);
     }
@@ -2996,7 +2995,11 @@ static void player_update(uint32_t keys, uint32_t keys_down) {
     if (keys_down & KEY_R) sandbox_respawn();
     // Debug: SELECT cycles the upgrade design variant and g_fx_style.
     if (keys_down & KEY_SELECT) {
+#if ENCOUNTERS_PROTO
+        if (s_strip_mode && s_run_started && !camp_active()) arpg_map_toggle();   // overlay map on the upper screen
+#else
         upgrades_cycle_design_variant();   // also advances g_fx_style
+#endif
     }
     upgrades_debug_update();
 #if !ENCOUNTERS_PROTO
@@ -3224,9 +3227,20 @@ static void player_update(uint32_t keys, uint32_t keys_down) {
 // Death restarts the current arena at once: full health, the wave respawned.
 static void arena_restart(void) {
     int god = g_player_state.god_mode;
+    int spawn_x = g_arena->player_x, spawn_y = g_arena->player_y, spawn_dir = DIR_SOUTH;
     if (s_strip_mode) {
+#if ENCOUNTERS_PROTO
+        // A run starts in the room of the last altar touched (Nave 1 without one); every room is always the same.
+        enc_room_select(enc_room_entry(), -1);
+        uint32_t seed = enc_room_seed(enc_room_current());
+#else
         uint32_t seed = s_frame_index ^ (uint32_t)cpuGetTiming() ^ (uint32_t)strip_shift_total_px();
+#endif
         strip_start(seed);
+#if ENCOUNTERS_PROTO
+        spawn_x = g_arena->player_x; spawn_y = g_arena->player_y;
+        enc_room_arrival(&spawn_x, &spawn_y, &spawn_dir);
+#endif
         horde_init(seed ^ 0x684f5244u);
         pickups_init(seed ^ 0x5049434bu);
         enemy_puddles_init();
@@ -3235,16 +3249,16 @@ static void arena_restart(void) {
         init_bg_tile_cache(&s_bot_bg_tile_cache, BG_TILE_CACHE_CAPACITY, s_bot_bg_tiles_vram);
         s_top_map_ready = 0;
         s_bot_map_ready = 0;
-        nav_refresh_begin(g_arena->player_x, g_arena->player_y);
+        nav_refresh_begin(spawn_x, spawn_y);
     }
-    s_player.x = TO_FIXED(g_arena->player_x);
-    s_player.y = TO_FIXED(g_arena->player_y);
+    s_player.x = TO_FIXED(spawn_x);
+    s_player.y = TO_FIXED(spawn_y);
     if (s_strip_mode) {
         s_death_screen_frames = 0;
         s_death_restart_armed = 0;
         s_death_prev_touch_down = 0;
     }
-    s_player.dir = DIR_SOUTH;
+    s_player.dir = spawn_dir;
     s_player.frame = 0;
     s_player.is_moving = 0;
     s_player.anim_timer = 0;
@@ -3258,7 +3272,7 @@ static void arena_restart(void) {
     weapons_init();
     glifo_reset();
     allies_reset();
-    nav_set_goal(g_arena->player_x, g_arena->player_y);
+    nav_set_goal(spawn_x, spawn_y);
     if (!s_strip_mode) nav_rebuild_now();
     s_rooted = 0;
     s_crouched = 0;
@@ -3303,23 +3317,51 @@ static int s_transition = TRANSITION_NONE;
 static int s_fade_level = 0;
 
 #if ENCOUNTERS_PROTO
-// Room crossing (salas ARPG): fade to black, land at the foot of the destination room, fade back in.
-// The destination is always the room above for now (the strip only advances vertically).
+// Room crossing (salas ARPG): fade to black, load the room the door leads to (room_reload_light), fade back in.
 static int s_room_dest = -1;
 
-static void room_transition_teleport(int k) {
-    int x, y;
-    if (!enc_room_dest_pos(k, &x, &y)) return;
+// Light reload (no run reset): builds the destination room, which enc_room_select() already chose, and lands the hero on its
+// arrival point. Life, mana, xp, level and inventory are untouched (arena_restart is the "new run" and resets them).
+static void room_reload_light(void) {
+    uint32_t seed = enc_room_seed(enc_room_current());
+    strip_start(seed);
+    horde_init(seed ^ 0x684f5244u);
+    pickups_init(seed ^ 0x5049434bu);
+    enemy_puddles_init();
+    apply_arena_palette();
+    init_bg_tile_cache(&s_top_bg_tile_cache, TOP_TILE_CACHE_CAPACITY, s_top_bg_tiles_vram);
+    init_bg_tile_cache(&s_bot_bg_tile_cache, BG_TILE_CACHE_CAPACITY, s_bot_bg_tiles_vram);
+    s_top_map_ready = 0;
+    s_bot_map_ready = 0;
+    int x = g_arena->player_x, y = g_arena->player_y, dir = DIR_NORTH;
+    enc_room_arrival(&x, &y, &dir);
     s_player.x = TO_FIXED(x);
     s_player.y = TO_FIXED(y);
-    s_player.dir = DIR_NORTH;
+    s_player.dir = dir;
     s_player.frame = 0;
     s_player.is_moving = 0;
     s_player.anim_timer = 0;
+    weapons_cancel_aim();
+    glifo_reset();
+    allies_reset();
     s_rooted = 0;
-    camera_init();
+    s_crouched = 0;
+    s_crouch_timer = 0;
+    g_hero_crouched = 0;
+    s_latch_pressed = 0;
+    s_latch_released = 0;
+    s_keys_down_latch = 0;
     nav_set_goal(x, y);
     nav_refresh_begin(x, y);      // the walkable grid is read from the new spot
+    camera_init();
+    g_hitstop_frames = 0;
+    memset(s_death_chunks, 0, sizeof(s_death_chunks));
+    exvoto_melt_reset();
+    remate_reset();
+    punch_reset();
+    radial_close();
+    s_pending_head = s_pending_count = 0;
+    memset(g_enemies, 0, sizeof(g_enemies));
 }
 
 static void room_transition_update(void) {
@@ -3337,7 +3379,10 @@ static void room_transition_update(void) {
         if (s_fade_level >= 16) {
             s_fade_level = 16;
             setBrightness(3, -16);                 // fully black before the teleport
-            if (s_room_dest >= 0) room_transition_teleport(s_room_dest);
+            if (s_room_dest >= 0) {
+                enc_room_select(s_room_dest, enc_room_current());
+                room_reload_light();
+            }
             s_room_dest = -1;
             s_transition = TRANSITION_IN;
         }
@@ -3880,6 +3925,7 @@ int main(void) {
                 s_keys_down_latch = 0;
                 if (act == CAMP_ACT_SLEEP) {
                     int gained = arpg_sleep();
+                    arpg_world_rest();      // the dead of the cathedral come back; chests, altars and "beaten once" stay
                     arpg_progress_save();
                     char msg[48];
                     if (gained > 0) {
@@ -3989,6 +4035,15 @@ int main(void) {
         present_vblank_begin();
         uint32_t post_vwait_start = cpuGetTiming();
         present_screen_effects();
+#if ENCOUNTERS_PROTO
+        if (arpg_map_is_open() && s_strip_mode && s_run_started && !camp_active() && menu_state() != MENU_INVENTORY) {
+            // Overlay map: dim the floor/walls of the upper screen (BG0 only; the map and actors live on BG2). Set here, before
+            // the top render, so the fade covers every scanline; the shadows' sprite window is off meanwhile.
+            REG_DISPCNT_SUB &= ~DISPLAY_SPR_WIN_ON;
+            REG_BLDCNT_SUB = BIT(0) | (3 << 6);
+            REG_BLDY_SUB = 9;
+        }
+#endif
         uint32_t t_top = cpuGetTiming();
         int inv_top = (menu_state() == MENU_INVENTORY);
         if (inv_top) {
@@ -4009,6 +4064,12 @@ int main(void) {
                 for (int y = 0; y < SCREEN_H; y++) { s_dirty_top[y].x0 = 0; s_dirty_top[y].x1 = SCREEN_W; }
             }
             render_screen(s_top_page, s_dirty_top, view_x, view_y - SCREEN_H, 1, &top_floor, &top_sh, &top_bl);
+#if ENCOUNTERS_PROTO
+            if (arpg_map_is_open() && s_strip_mode && s_run_started && !camp_active()) {
+                g_dirty_cur = s_dirty_top;      // the next render_screen of this page clears the lines
+                arpg_map_draw(s_top_page, TO_INT(s_player.x), TO_INT(s_player.y), (int)s_frame_index);
+            }
+#endif
         }
         s_inv_top_on = inv_top;
 #if HW_SHADOWS
