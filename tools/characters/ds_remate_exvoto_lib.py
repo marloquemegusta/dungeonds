@@ -161,7 +161,12 @@ def srgb_lin(c):
 def flat_mat(name, col):
     """col en sRGB 0-1 (lo que se quiere ver ANTES de la ganancia de la post); se convierte a lineal para Blender."""
     m = bpy.data.materials.new(name)
-    m.diffuse_color = (srgb_lin(col[0]), srgb_lin(col[1]), srgb_lin(col[2]), 1.0)
+    lin = (srgb_lin(col[0]), srgb_lin(col[1]), srgb_lin(col[2]), 1.0)
+    m.diffuse_color = lin
+    m.use_nodes = True
+    bsdf = next((n for n in m.node_tree.nodes if n.type == 'BSDF_PRINCIPLED'), None)
+    if bsdf is not None:
+        bsdf.inputs['Base Color'].default_value = lin
     return m
 
 

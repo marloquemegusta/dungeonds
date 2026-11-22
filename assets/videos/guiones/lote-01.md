@@ -196,15 +196,17 @@ Estilo: A
 
 ## 09 · CÓDICE · II — LOS MONAGUILLOS
 ### Parte 1 · monaguillo_walk · cortes
-- [cerca · S] El Tribunal condenó a los monaguillos por decir la verdad sobre un hombre de Dios.
+- [cerca · entero · S] El Tribunal condenó a los monaguillos por decir la verdad sobre un hombre de Dios.
 - [SE] El padre Anselmo Ribas confesaba en la Sacristía de los Faroles.
 - [S] Le gustaban los muchachos del coro. Demasiado.
 - [SW] Los que obedecían cantaban en misa. Los que se negaban, dejaban de cantar.
 - [N] Los condenaron a rezar para siempre.
-### Parte 2 · abanderado_walk + monaguillo_walk · cortes
-- [S] Nadie fue a buscarlos. Solo el capitán Íñigo Albar, que los recogió bajo su estandarte.
-- [SE] Aún marchan tras él. Es la primera orden que no les pide nada a cambio.
-> [S] Monaguillos: «Nos mandaron callar. Seguimos cantando.»
+### Parte 2 · abanderado_solo + monaguillo_walk · cortes · lento 1.5
+- [N · multitud 9 · solemne] Nadie fue a buscarlos. Solo el capitán Íñigo Albar, que los recogió bajo su estandarte.
+### Parte 3 · monaguillo_walk · cortes
+- [S · multitud 9 · solemne] Aún marchan tras él. Es la primera orden que no les pide nada a cambio.
+> [cerca · entero · S] Monaguillos: «Nos mandaron callar. Seguimos cantando.»
+> Pregunta: «¿Habrías hablado tú, sabiendo el castigo?»
 
 ## 10 · CÓDICE · I — NO ES MI CORAZÓN
 ### Parte 1 · corazon_walk · cortes
@@ -318,6 +320,27 @@ Publicados a 2026-11-17: **01, 03 y 08**, nada más. Los MP4 de 02, 04-07, 09 y 
     > #Shorts #pixelart #nintendods #gamedev #darkfantasy
   - **Comentario fijado (en las tres redes):** «¿Cobarde… o el único valiente?»
 
+- **09 Los monaguillos** (lista 2026-11-21, sin publicar): `assets/videos/lore01_09_los_monaguillos.mp4`, estilo A, 57,8 s. Dos animaciones ya probadas (monaguillo y abanderado), Columna de espaldas tras Íñigo y después de frente hacia cámara solo con monaguillos. Textos de los posts:
+  - **Título (YouTube y portada):** «Los monaguillos · Códice». Alternativa: «¿Habrías hablado tú? · Códice».
+  - **TikTok e Instagram:**
+    > ¿Habrías hablado tú, sabiendo el castigo?
+    >
+    > Los monaguillos de la Sacristía de los Faroles dijeron la verdad sobre un hombre de Dios.
+    > El Tribunal los condenó a rezar para siempre. Solo el capitán Íñigo Albar los recogió bajo su estandarte.
+    >
+    > Deja tu veredicto en los comentarios.
+    > Próximamente en tu Nintendo DS.
+    >
+    > #pixelart #nintendods #gamedev #indiedev #darkfantasy #gothic #lore #homebrew
+  - **Descripción de YouTube:**
+    > ¿Habrías hablado tú, sabiendo el castigo? Los monaguillos eran los muchachos del coro de la Sacristía de los Faroles. El padre Anselmo Ribas los confesaba: los que obedecían cantaban en misa; los que se negaban dejaban de cantar. Cuando dijeron la verdad, el Tribunal de la Luz los condenó a rezar para siempre. Nadie fue a buscarlos, salvo el capitán Íñigo Albar, que los recogió bajo su estandarte. Aún marchan tras él: la primera orden que no les pide nada a cambio.
+    >
+    > Deja tu veredicto en los comentarios.
+    > Próximamente en tu Nintendo DS.
+    >
+    > #Shorts #pixelart #nintendods #gamedev #darkfantasy
+  - **Comentario fijado (en las tres redes):** «¿Habrías hablado tú, sabiendo el castigo?»
+
 ## Calendario: un vídeo al día, más cuidado
 
 Regla: **nunca el mismo personaje en pantalla dos días seguidos**, y los vídeos que necesitan modelos nuevos van más tarde para dar margen. Los días 9 y 10 no tienen guion todavía.
@@ -327,7 +350,7 @@ Regla: **nunca el mismo personaje en pantalla dos días seguidos**, y los vídeo
 | 1 | 08 La Catedral que no termina | Corazón Abierto | Guion reescrito (la Marcha y la guerra contra el propio pueblo); Elías reza y enciende una vela; columnas y bancos que desfilan; apariciones del Abanderado, los exvotos y el Ojo | — |
 | 2 | 02 Remedios, la cerera | Exvoto | Reza de rodillas entre velas y se levanta | — |
 | 3 | 07 Lope | Abanderado | Íñigo suelta el asta, se derrumba y golpea el suelo (`abanderado_derrota`); el Ojo como el Tribunal; la Columna de monaguillos | — (hecho) |
-| 4 | 05 Sor Leonor | Gaspar humano → el Ojo | Gaspar con su cabeza y el farol en la mano, que acaba convertido en el Ojo | Modelo 3D de Gaspar humano |
+| 4 | 05 Sor Leonor | El Ojo (condenado) | El Ojo recreando su acción del pasado (decisión 2026-11-21: sin modelo de Gaspar humano) | — |
 | 5 | 06 Inés | Exvoto | Anda triste, se arrodilla ante una vela | — |
 | 6 | 04 El Liebre | Bartolomé → Cireneo | Bartolomé sin cruz y su crucifixión | Modelo sin cruz y la cruz aparte |
 | 7 | 09 Los monaguillos | Monaguillo + Abanderado | Rezan ante el santo y marchan tras el estandarte | — |
@@ -337,4 +360,4 @@ Regla: **nunca el mismo personaje en pantalla dos días seguidos**, y los vídeo
 
 **Material disponible:** animaciones de rezar de pie, rezar de rodillas, arrodillarse/levantarse (al revés), andar triste y andar renqueante (`assets/models/animations/`); props renderizados de vela, santo, relicario, bancos (entero, roto, volcado), columna y lápidas (`assets/environment/cathedral/props/render/`). Prop nuevo opcional: un sagrario o altar pequeño.
 
-**Regla de imagen:** la voz cuenta el pasado y la imagen enseña el presente del condenado; solo hay modelos de la forma condenada, salvo variaciones hechas a propósito para un vídeo (Gaspar humano, Bartolomé sin cruz).
+**Regla de imagen:** la voz cuenta el pasado y la imagen enseña el presente del condenado; solo hay modelos de la forma condenada. Todo es metafórico: los personajes, tal como están ahora, recrean sus acciones del pasado (decisión del usuario, 2026-11-21: no se hace Gaspar humano). Excepción ya hecha a propósito: Bartolomé sin cruz.

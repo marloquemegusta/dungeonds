@@ -37,9 +37,10 @@ static const HwObjShape k_shapes[12] = {
 // need one 64x64 OBJ = 64 tiles; split it takes about 25). Computed once at boot by a tiny DP.
 typedef struct { uint8_t tx, ty, shape, toff; } PlanPart;   // tile offset in the shadow, OBJ shape, first tile in its block
 typedef struct { uint8_t n; uint8_t tiles; PlanPart p[PLAN_MAX_PARTS]; } Plan;
-static Plan s_plan[9][9];                                    // [h][w], 1..8
-static int16_t s_cost[9][9];
-static int8_t s_choice[9][9];   // 0..11 single OBJ of that shape, 100+c vertical split at c, 120+r horizontal at r
+static Plan s_plan[11][11];                                  // [h][w], 1..10 (hasta 80 px)
+static int16_t s_cost[11][11];
+static int8_t s_choice[11][11]; // 0..11 single OBJ of that shape, 100+c vertical split at c, 120+r horizontal at r
+#define RETIRED_MASK ((const uint8_t *)(uintptr_t)1)
 
 static int plan_cost(int w, int h) {
     if (s_cost[h][w]) return s_cost[h][w];
@@ -243,13 +244,33 @@ void hwshadow_begin(int sub) {
     Engine *g = &s_eng[sub];
     g->build++;
     g->count = 0;
+    for (int i = 0; i < MAX_ENTRIES; i++) {
+        if (g->e[i].mask == RETIRED_MASK && g->e[i].last_build != g->committed) {
+            entry_free(g, &g->e[i]);
+        }
+    }
+}
+
+void hwshadow_invalidate(const uint8_t *mask) {
+    if (!mask) return;
+    for (int sub = 0; sub < 2; sub++) {
+        Engine *g = &s_eng[sub];
+        for (int i = 0; i < MAX_ENTRIES; i++) {
+            Entry *en = &g->e[i];
+            if (en->mask != mask) continue;
+            if (en->last_build != g->build && en->last_build != g->committed)
+                entry_free(g, en);
+            else
+                en->mask = RETIRED_MASK;
+        }
+    }
 }
 
 __attribute__((target("arm"), optimize("O3"), noinline))
 ITCM_CODE void hwshadow_add(int sub, const uint8_t *mask, const uint8_t *bounds, int ox, int oy) {
     Engine *g = &s_eng[sub];
     int bw = bounds[2], bh = bounds[3];
-    if (bw == 0 || bh == 0 || bw > 64 || bh > 64) return;
+    if (bw == 0 || bh == 0 || bw > 80 || bh > 80) return;
     int x0 = ox + bounds[0], y0 = oy + bounds[1];
     if (x0 >= SCREEN_W || y0 >= SCREEN_H || x0 + bw <= 0 || y0 + bh <= 0) return;
     const Plan *pl = &s_plan[(bh + 7) >> 3][(bw + 7) >> 3];
@@ -317,8 +338,8 @@ void hwshadow_init(void) {
     verja_upload_tiles(&s_eng[1], 0);
     s_verja_lift[0] = 0;
     s_verja_lift[1] = 0;
-    for (int h = 1; h <= 8; h++)
-        for (int w = 1; w <= 8; w++) {
+    for (int h = 1; h <= 10; h++)
+        for (int w = 1; w <= 10; w++) {
             plan_cost(w, h);
             s_plan[h][w] = (Plan){0};
             plan_emit(&s_plan[h][w], w, h, 0, 0);

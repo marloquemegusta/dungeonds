@@ -941,6 +941,14 @@ static void update_shooter(Enemy *e, Enemy *enemies, int num_enemies, int idx,
             break;
         }
 
+        case ENEMY_STATE_WOBBLE:
+            // Reeling after a hit that did not kill: the aim cycle stops (no tracking, no sentence) and it just
+            // trembles with the warm pulse of main.c. From here L starts the finisher (remate.c, kind Ojo).
+            e->gesture = 0;
+            e->aim_px = 0;
+            if (--e->state_timer <= 0) { e->state = ENEMY_STATE_CHASE; e->state_timer = 0; }
+            break;
+
         case ENEMY_STATE_POSITION:      // waiting for a free aiming slot
         case ENEMY_STATE_CHASE:
         default: {

@@ -83,3 +83,5 @@ assets/models/characters/exvoto_parroco/exvoto_*.fbx
 assets/models/characters/exvoto_monja/exvoto_*.fbx
 assets/environment/camp/marco_work/
 assets/environment/camp/muro_work/
+# paquete del lab del remate del Ojo (derivado, se regenera con tools/lab/fast/export_scene_fast.cjs)
+walkthroughs/remate-ojo/assets/lab_out/
