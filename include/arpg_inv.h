@@ -42,6 +42,9 @@ enum {
     ARPG_LINE_BURN,               // Rayo: daño de fuego / quemadura (Brasa, Rescoldo), en %
     ARPG_LINE_LIFE,               // Pecho: vida máxima (Vida), en puntos
     ARPG_LINE_SPEED,              // Pecho: velocidad (Paso), en %
+    ARPG_LINE_MANA,               // Pecho: maná máximo, en puntos
+    ARPG_LINE_MANA_REGEN,         // Pecho: regeneración de maná, en %
+    ARPG_LINE_REMATE_HEAL,        // Ejecución: +vida/maná al rematar, en puntos
     ARPG_LINE_COUNT
 };
 
@@ -63,7 +66,9 @@ enum {
 #define ARPG_MECH_OFRENDA   12           // Levantar: sin contenido
 #define ARPG_MECH_VIATICO   13           // Ejecución: robo de vida al ejecutar (RELIC_VIATICO)
 #define ARPG_MECH_FLAGELADO 14           // Ejecución: Corazón Flagelado (RELIC_FLAGELADO)
-#define ARPG_MECH_COUNT     15
+#define ARPG_MECH_PIRA      15           // Ejecución: Pira (al ejecutar quemado, explota y propaga)
+#define ARPG_MECH_LLAGA     16           // Pecho: Llaga Abierta (más daño cuanta menos vida tienes)
+#define ARPG_MECH_COUNT     17
 
 typedef struct {
     uint8_t kind;                 // ARPG_ITEM_*
@@ -73,6 +78,8 @@ typedef struct {
     uint8_t nlines;               // 0..2
     uint8_t line_kind[2];         // ARPG_LINE_*
     int16_t line_val[2];          // valor entero (con signo)
+    uint8_t level;                // nivel de objeto (1..99; 0 = 1)
+    uint8_t name_id;              // 0 = genérico, >0 = nombre propio legendario
 } ArpgInvItem;
 
 typedef struct {
@@ -133,10 +140,15 @@ typedef struct {
 
 int arpg_inv_preview_socket(int bag_index, int school, int socket, ArpgInvPreview *out);
 
+// Generación de reliquias (protodemo: Rayo, Ejecución, Pecho) escalada por nivel/piso.
+void arpg_relic_roll(ArpgInvItem *out, int floor, int min_rarity, uint32_t *rng);
+void arpg_relic_roll_school(ArpgInvItem *out, int school, int floor, int min_rarity, uint32_t *rng);
+
 // Texto para la interfaz.
 const char *arpg_inv_rarity_name(int rarity);
 const char *arpg_inv_school_name(int school);
 const char *arpg_inv_mechanic_name(int mech);
 const char *arpg_inv_line_name(int kind);
+const char *arpg_inv_item_name(const ArpgInvItem *it);
 
 #endif // ARPG_INV_H

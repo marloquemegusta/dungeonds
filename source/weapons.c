@@ -1359,6 +1359,14 @@ void weapons_enemy_died(const Enemy *e) {
     s_mq_count++;
 }
 
+void weapons_pira_explode(const Enemy *e) {
+    if (!e || !e->burn_layers || s_mq_count >= MARTIRIO_QUEUE) return;
+    MartirioBlast *q = &s_mq[(s_mq_head + s_mq_count) & (MARTIRIO_QUEUE - 1)];
+    q->x = TO_INT(e->x);
+    q->y = TO_INT(e->y);
+    s_mq_count++;
+}
+
 // One fire blast: ring, burst of embers, then the layers to every enemy inside the radius (layers first, so a
 // kill chains) and fire damage by the quiet path. Shared by Martirio Contagioso and Corazon Flagelado.
 static void blast(int bx, int by, int radius, int damage, int layers, int embers, int kind, Enemy *enemies, int max_enemies) {

@@ -5,6 +5,9 @@
 #include "hud_icons_gfx.h"
 #include "arpg.h"
 #include "arpg_progress.h"
+#include "modifiers.h"
+#include "sfx.h"
+#include <stdio.h>
 #if ENCOUNTERS_PROTO
 #include "placeholders_gfx.h"
 #endif
@@ -22,10 +25,12 @@
 #define PICKUP_SPRITE_H HUD_ICON_H
 #endif
 
-typedef struct { fixed x, y; int active; int kind; int amount; } HealPickup;
+typedef struct { fixed x, y; int active; int kind; int amount; ArpgInvItem relic; } HealPickup;
 static HealPickup s_pickups[HEAL_PICKUP_MAX_ACTIVE];
 static uint32_t s_rng = 1;
 static uint32_t s_anim_tick = 0;
+static char s_loot_toast[48];
+static int s_loot_toast_t = 0;
 
 #if SANDBOX
 // Scenario hook (never in the shipping ROM): non-zero forces the next enemy death to drop a heart.
@@ -36,6 +41,8 @@ void pickups_init(uint32_t seed) {
     for (int i = 0; i < HEAL_PICKUP_MAX_ACTIVE; i++) s_pickups[i].active = 0;
     s_rng = seed ? seed : 1u;
     s_anim_tick = 0;
+    s_loot_toast[0] = 0;
+    s_loot_toast_t = 0;
 }
 
 void pickups_shift_y(int dy_px) {
@@ -89,20 +96,51 @@ void pickups_spawn(int kind, fixed x, fixed y) {
 }
 
 void pickups_spawn_xp(fixed x, fixed y, int amount) {
+    (void)x; (void)y;
+    arpg_add_xp(amount);
+}
+
+void pickups_spawn_relic(fixed x, fixed y, const ArpgInvItem *item) {
+    if (!item || item->kind == ARPG_ITEM_EMPTY) return;
     int slot = -1;
     for (int i = 0; i < HEAL_PICKUP_MAX_ACTIVE; i++) {
         if (!s_pickups[i].active) { slot = i; break; }
     }
     if (slot < 0) {
-        // No room on the floor: the xp goes straight into the bank, so it is never lost.
-        arpg_add_xp(amount);
-        return;
+        // Evict an orb first rather than losing a relic drop.
+        for (int i = 0; i < HEAL_PICKUP_MAX_ACTIVE; i++) {
+            if (s_pickups[i].kind != PICKUP_KIND_RELIC) { slot = i; break; }
+        }
+        if (slot < 0) slot = 0;
     }
     s_pickups[slot].x = x;
     s_pickups[slot].y = y;
-    s_pickups[slot].kind = PICKUP_KIND_XP;
-    s_pickups[slot].amount = amount;
+    s_pickups[slot].kind = PICKUP_KIND_RELIC;
+    s_pickups[slot].amount = 0;
+    s_pickups[slot].relic = *item;
     s_pickups[slot].active = 1;
+}
+
+void pickups_drop_enemy_loot(int enemy_type, int floor, fixed x, fixed y) {
+    int min_rar = ARPG_RAR_COMMON;
+    int chance = 7; // ~7% normal enemies
+    if (enemy_type == ENEMY_TYPE_ABANDERADO) {
+        chance = 100;
+        min_rar = ARPG_RAR_LEGENDARY;
+    } else if (enemy_type == ENEMY_TYPE_PARROCO || enemy_type == ENEMY_TYPE_MONJA ||
+               enemy_type == ENEMY_TYPE_SHOOTER || enemy_type == ENEMY_TYPE_CHARGER) {
+        chance = 30;
+        min_rar = ARPG_RAR_UNCOMMON;
+    }
+    s_rng = s_rng * 1664525u + 1013904223u;
+    if ((int)((s_rng >> 8) % 100u) >= chance) return;
+    ArpgInvItem item;
+    arpg_relic_roll(&item, floor, min_rar, &s_rng);
+    pickups_spawn_relic(x, y, &item);
+}
+
+const char *pickups_loot_toast(void) {
+    return (s_loot_toast_t > 0 && s_loot_toast[0]) ? s_loot_toast : 0;
 }
 
 void pickups_remate_drops(fixed x, fixed y) {
@@ -118,18 +156,20 @@ void pickups_remate_drops(fixed x, fixed y) {
 
 void pickups_update(fixed player_x, fixed player_y, PlayerState *player) {
     s_anim_tick++;
+    if (s_loot_toast_t > 0) s_loot_toast_t--;
     for (int i = 0; i < HEAL_PICKUP_MAX_ACTIVE; i++) {
         HealPickup *p = &s_pickups[i];
         if (!p->active) continue;
-        if (p->y > player_y + TO_FIXED(HEAL_PICKUP_RECYCLE_BELOW_PX)) {
+        if (p->kind != PICKUP_KIND_RELIC && p->y > player_y + TO_FIXED(HEAL_PICKUP_RECYCLE_BELOW_PX)) {
             p->active = 0;
             continue;
         }
-        const int magnet = (p->kind == PICKUP_KIND_XP) ? ARPG_RUNE_MAGNET : ARPG_PICKUP_MAGNET;
+        const int magnet = (p->kind == PICKUP_KIND_RELIC) ? 0
+                         : (p->kind == PICKUP_KIND_XP) ? ARPG_RUNE_MAGNET : ARPG_PICKUP_MAGNET;
         int dx = TO_INT(p->x - player_x);
         int dy = TO_INT(p->y - player_y);
         int d2 = dx * dx + GROUND_DY2(dy);
-        if (d2 <= magnet * magnet && d2 > HEAL_PICKUP_RADIUS * HEAL_PICKUP_RADIUS) {
+        if (magnet > 0 && d2 <= magnet * magnet && d2 > HEAL_PICKUP_RADIUS * HEAL_PICKUP_RADIUS) {
             // Magnet: 2 px per frame along the direction to the hero (one divide per orb per frame).
             fixed fx = player_x - p->x, fy = player_y - p->y;
             fixed ax = fx < 0 ? -fx : fx, ay = fy < 0 ? -fy : fy;
@@ -141,19 +181,37 @@ void pickups_update(fixed player_x, fixed player_y, PlayerState *player) {
             dx = TO_INT(p->x - player_x);
             dy = TO_INT(p->y - player_y);
         }
-        if (dx * dx + GROUND_DY2(dy) > HEAL_PICKUP_RADIUS * HEAL_PICKUP_RADIUS) continue;
+        const int grab_r = (p->kind == PICKUP_KIND_RELIC) ? (HEAL_PICKUP_RADIUS + 4) : HEAL_PICKUP_RADIUS;
+        if (dx * dx + GROUND_DY2(dy) > grab_r * grab_r) continue;
+        if (p->kind == PICKUP_KIND_RELIC) {
+            if (arpg_inv_add(&p->relic) >= 0) {
+                snprintf(s_loot_toast, sizeof(s_loot_toast), "+ %s", arpg_inv_item_name(&p->relic));
+                s_loot_toast_t = 120;
+                sfx_play_pitched(SND_PICKUP_ORB, TO_INT(p->x), 1180);
+                p->active = 0;
+            } else if (s_loot_toast_t <= 0) {
+                snprintf(s_loot_toast, sizeof(s_loot_toast), "Bolsa llena");
+                s_loot_toast_t = 60;
+            }
+            continue;
+        }
         if (p->kind == PICKUP_KIND_XP) {
             arpg_add_xp(p->amount);
+            sfx_play_pitched(SND_PICKUP_ORB, TO_INT(p->x), 1120);
         } else if (p->kind == PICKUP_KIND_MANA) {
             if (player) {
-                player->mana += ARPG_REMATE_MANA;
+                int gain = ARPG_REMATE_MANA + g_mods.remate_heal_bonus / 2;
+                player->mana += gain;
                 if (player->mana > player->max_mana) player->mana = player->max_mana;
-                dmg_numbers_spawn(player_x, player_y - TO_FIXED(18), ARPG_REMATE_MANA, DMG_NUM_MANA);
+                dmg_numbers_spawn(player_x, player_y - TO_FIXED(18), gain, DMG_NUM_MANA);
             }
+            sfx_play_pitched(SND_PICKUP_ORB, TO_INT(p->x), 1024);
         } else if (player && player->hp < player->max_hp) {
-            player->hp += ARPG_REMATE_HP;
+            int gain = ARPG_REMATE_HP + g_mods.remate_heal_bonus;
+            player->hp += gain;
             if (player->hp > player->max_hp) player->hp = player->max_hp;
-            dmg_numbers_spawn(player_x, player_y - TO_FIXED(18), ARPG_REMATE_HP, DMG_NUM_HEAL);
+            dmg_numbers_spawn(player_x, player_y - TO_FIXED(18), gain, DMG_NUM_HEAL);
+            sfx_play_pitched(SND_PICKUP_ORB, TO_INT(p->x), 920);
         }
         p->active = 0;
     }
@@ -207,6 +265,42 @@ void pickups_draw(uint16_t *buffer, int i, int cam_x, int cam_y) {
     }
 
 #if ENCOUNTERS_PROTO
+    if (p->kind == PICKUP_KIND_RELIC) {
+        // Desaturated rarity gem + subtle vertical beam for Legendary drops.
+        static const uint16_t rar_col[ARPG_RAR_COUNT] = {
+            RGB15(20, 19, 17) | BIT(15), // Común (hueso)
+            RGB15(10, 18, 11) | BIT(15), // Poco común (salvia)
+            RGB15(10, 14, 22) | BIT(15), // Rara (pizarra)
+            RGB15(18, 11, 20) | BIT(15), // Épica (violeta apagado)
+            RGB15(24, 18, 7)  | BIT(15)  // Legendaria (oro viejo)
+        };
+        const uint8_t rar = (p->relic.rarity < ARPG_RAR_COUNT) ? p->relic.rarity : 0;
+        const uint16_t col = rar_col[rar];
+        const uint16_t rim = RGB15(7, 6, 5) | BIT(15);
+        const int rcy = y0 + (PICKUP_SPRITE_H >> 1);
+        if (rar == ARPG_RAR_LEGENDARY) {
+            for (int py = rcy - 18; py < rcy - 4; py++) {
+                if ((unsigned)py >= SCREEN_H || (unsigned)cx >= SCREEN_W) continue;
+                if (occ && world_pixel_hidden(cx + cam_x, py + cam_y, depth)) continue;
+                dirty_row(py, cx, cx + 1);
+                buffer[py * SCREEN_W + cx] = col;
+            }
+        }
+        for (int ddy = -4; ddy <= 4; ddy++) {
+            int sy = rcy + ddy;
+            if ((unsigned)sy >= SCREEN_H) continue;
+            int ext = 4 - (ddy < 0 ? -ddy : ddy);
+            dirty_row(sy, cx - ext, cx + ext + 1);
+            for (int ddx = -ext; ddx <= ext; ddx++) {
+                int sx = cx + ddx;
+                if ((unsigned)sx >= SCREEN_W) continue;
+                if (occ && world_pixel_hidden(sx + cam_x, sy + cam_y, depth)) continue;
+                int edge = (ddx == -ext || ddx == ext || ddy == -4 || ddy == 4);
+                buffer[sy * SCREEN_W + sx] = edge ? rim : col;
+            }
+        }
+        return;
+    }
     // ARPG placeholders (include/placeholders_gfx.h): 0 pixels are transparent.
     const uint16_t *sprite = (p->kind == PICKUP_KIND_XP) ? g_ph_runa_xp
                            : (p->kind == PICKUP_KIND_MANA) ? g_ph_orbe_mana : g_ph_orbe_vida;

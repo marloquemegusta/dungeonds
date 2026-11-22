@@ -650,7 +650,7 @@ Prueba de concepto de dos días: convertir la partida por encuentros en un Actio
 - **Solo se sube de nivel al dormir.** La experiencia se acumula en la mazmorra; al dormir se convierten en niveles los que alcance (curva exponencial: cada vez hay que llegar más lejos para subir) y se gastan los puntos en el árbol.
 - **Mazmorra infinita, sala tras sala** (decidido 2026-11-19): cada sala es un piso y al abrirse su barrera se entra directamente en la siguiente, **sin pasillos**. No hay relicarios de ningún tipo ni Altar. Cada 5 pisos, un jefe: el Abanderado (piso 5), un Abanderado élite con más vida y más monaguillos (piso 10), un Abanderado élite con escolta (piso 15) y, a partir de ahí, la misma escala sigue subiendo. Se sale al morir o desde la pausa.
 - **Siempre se empieza desde el piso 1** (sin atajos): la progresión es el nivel y el árbol.
-- **La experiencia cae como runas** al morir cada enemigo y se recoge al pasar; los jefes sueltan muchas más.
+- **Experiencia directa al matar (decidido 2026-11-22):** no hay runas de experiencia en el suelo; la experiencia se suma al instante al matar a cada enemigo (o abrir un cofre).
 - **Dificultad por profundidad:** la vida y el número de enemigos suben con el piso. Al principio se muere pronto; es lo esperado.
 - **Escala de props del campamento (decidido 2026-11-21, aplicado):** jergón +50 % (ancho 36 → 54 px), mesa ×2,5 (26 → 65 px) y arcón ×2 (18 → 36 px; es su propia pieza `camp_arcon`, el cofre de la catedral no cambia). Los sprites del campamento se leen de NitroFS (`nitrofiles/camp/`) porque la EWRAM estática no admitía el aumento.
 - **Sin mercader** en esta versión.
@@ -704,3 +704,23 @@ Prueba de concepto de dos días: convertir la partida por encuentros en un Actio
 
 - Cada nivel da 1 punto. Las ramas de la Maldición necesitan tenerla desbloqueada.
 - La pantalla del árbol se abre al dormir: cuatro columnas de nodos con nombre y estado (comprado, disponible, bloqueado).
+
+### 7.6 Reliquias, auras y drops de la protodemo (decidido 2026-11-22)
+- **Alcance de escuelas en la protodemo:** **Rayo**, **Ejecución** y **Pecho**. **Levantar** queda fuera de la protodemo; **Glifo** queda pendiente de diseñar su gameplay en otra sesión.
+- **Auras por escuela (Rara / Épica):**
+  - **Rayo:** *Lanza de Longinos* (atraviesa a todos) y *Llama Votiva* (la línea de carga aplica Quemado).
+  - **Ejecución (`L`):** *Pira* (al ejecutar a un enemigo quemado, explota y propaga el Quemado a los cercanos). Se reserva una 2.ª aura para enlazar con Levantar más adelante.
+  - **Pecho (pasivas):** *Aura de Cilicio* (daño periódico alrededor) y *Llaga Abierta* (más daño cuanta menos vida tienes).
+- **Líneas (stats) por escuela:**
+  - **Rayo:** `Daño`, `Carga`, `Alcance`, `Quemadura`.
+  - **Ejecución:** `Daño`, `Alcance`, `Quemadura`, `+Vida/Maná al rematar`.
+  - **Pecho:** `Vida máx.`, `Maná máx.`, `Regen. de maná`, `Velocidad` (sin armadura ni stats de daño directo).
+- **Rarezas y nivel de objeto:** Común (1 línea), Poco común (2 líneas), Rara (1 aura + 1 línea), Épica (1 aura + 2 líneas), Legendaria (nombre propio, efecto único fijo + 2 líneas). Cada reliquia lleva un **nivel** según el piso/sala donde cae, que escala sus valores.
+- **Legendarias de Zona 1:** *Sello del Corazón Abierto* (Rayo: *Auto de Fe* — ×2 a quemados), *Brasero de Pira* (Ejecución: *Pira*), *Astilla del Estandarte* (Pecho: *Llaga Abierta* + maná/vida altos).
+- **Drops en el suelo:** enemigos (normales con probabilidad baja, élites con probabilidad alta, Abanderado con Legendaria garantizada) y cofres sueltan reliquias en el suelo con destello y etiqueta por rareza (paleta desaturada, §6.10). Al pasar por encima se recogen a la bolsa (si está llena, avisa sin borrarla).
+- **Pendiente próximo para la protodemo:**
+  1. **Glifo:** diseñar su gameplay completo (base + auras) en la próxima sesión e integrarlo como segundo hechizo equipable.
+  2. **Grafo de Zona 1:** conectar salas reales (3 naves, 4 galerías, 2 capillas con reja, cripta, puerta con llave, atajo), persistencia de cofres/puertas/altares, viaje entre altares desde el campamento, santuarios (estatuas) y mapa en la pausa.
+  3. **Campamento nocturno:** corregir perspectiva de los muros laterales, conectar la mesa como Crisol de desguace (y uso de cera/pociones) y señal diegética de foco sin rótulos.
+  4. **Inventario y pausa:** 5 iconos 3D pendientes (*Tomo, Lanza, Nudillera, Vial, Cráneo*), tipografía definitiva y espaciado del botón 5 en la pausa.
+  5. **Validación en DS:** medición `perf` en hardware (campamento nocturno y salas con ~24 enemigos) y prueba de guardado en tarjeta real (`dungeonds_arpg.sav`).

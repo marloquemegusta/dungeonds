@@ -23,6 +23,10 @@ typedef struct {
     int burn_dur_bonus;         // extra Quemado frames, Rescoldo
     int recoil_pct;
     int punch_damage_pct;       // 100 = normal; reliquias de Ejecución (línea Daño)
+    int max_mana;               // puntos extra de maná máximo (Pecho)
+    int mana_regen_pct;         // % extra de regeneración de maná (Pecho)
+    int remate_heal_bonus;      // puntos extra de vida/maná al rematar (Ejecución)
+    int remate_range_bonus;     // px extra de alcance en remate (Ejecución)
 } ModEffects;
 
 extern ModEffects g_mods;

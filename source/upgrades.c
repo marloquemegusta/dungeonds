@@ -275,9 +275,16 @@ static void apply_llaga(void) {
 // Hearts below 5 while Llaga Abierta is owned (0 without it): the damage bonus and the crimson look read this.
 int upgrades_llaga_missing(void) {
     if (!(s_relic_mask & (1u << RELIC_LLAGA))) return 0;
+#if ENCOUNTERS_PROTO
+    if (g_player_state.max_hp <= 0 || g_player_state.hp >= g_player_state.max_hp) return 0;
+    int missing = 5 - (g_player_state.hp * 5) / g_player_state.max_hp;
+    if (missing < 1) missing = 1;
+    return missing > 4 ? 4 : missing;
+#else
     int hearts = (g_player_state.hp + 19) / 20;     // life points -> hearts (20 per heart)
     int missing = PLAYER_MAX_HP - hearts;
     return missing > 0 ? missing : 0;
+#endif
 }
 
 // Llaga Abierta damage: +20 % per heart below the 5 of the start (never relative to the current max).

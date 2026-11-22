@@ -2152,6 +2152,8 @@ static void draw_run_hud(uint16_t *buffer) {
     // Modifier name: the pedestal the player is near, or the one just taken.
     const char *name = mods_hud_text();
     if (name) hud_text(buffer, (SCREEN_W - hud_text_width(name)) / 2, SCREEN_H - 32, name, RGB15(31, 28, 8) | BIT(15));
+    const char *loot = pickups_loot_toast();
+    if (!name && loot) hud_text(buffer, (SCREEN_W - hud_text_width(loot)) / 2, SCREEN_H - 32, loot, RGB15(26, 22, 12) | BIT(15));
 
     if (g_encounter_mgr.state == ENCOUNTER_STATE_CLEARED) {
         const char *msg = "Mazmorra completada";
@@ -2449,21 +2451,11 @@ static void on_enemy_death(const Enemy *e, fixed hit_vx, fixed hit_vy) {
     const int dead_slot = (e >= g_enemies && e < g_enemies + MAX_ENEMIES) ? (int)(e - g_enemies) : -1;
     const int dead_was_ally = dead_slot >= 0 && g_enemy_ally[dead_slot];
     if (dead_slot >= 0) allies_on_enemy_death(&g_enemies[dead_slot], g_enemies, MAX_ENEMIES);
-    {   // ARPG: experience runes, dropped once per death (this path only, never in the visuals phase).
+    {   // ARPG: experiencia directa al matar (sin runas en el suelo) y caída de reliquias.
+        int floor = enc_current_encounter() + 1;
         int xp = dead_was_ally ? 0 : arpg_enemy_xp(e->type, enc_current_encounter());
-        if (xp > 0 && e->type == ENEMY_TYPE_ABANDERADO) {
-            // The boss splits its xp over ARPG_BOSS_RUNES runes scattered around it (the remainder goes on the first one).
-            static const int8_t rune_dx[ARPG_BOSS_RUNES] = { -1, 1, 0, 0, -1, 1 };
-            static const int8_t rune_dy[ARPG_BOSS_RUNES] = { 0, 0, -1, 1, -1, 1 };
-            int share = xp / ARPG_BOSS_RUNES;
-            for (int r = 0; r < ARPG_BOSS_RUNES; r++) {
-                int amount = (r == 0) ? xp - share * (ARPG_BOSS_RUNES - 1) : share;
-                pickups_spawn_xp(e->x + TO_FIXED(rune_dx[r] * ARPG_BOSS_RUNE_SPREAD),
-                                 e->y + TO_FIXED(rune_dy[r] * ARPG_BOSS_RUNE_SPREAD), amount);
-            }
-        } else if (xp > 0) {
-            pickups_spawn_xp(e->x, e->y, xp);
-        }
+        if (xp > 0) arpg_add_xp(xp);
+        if (!dead_was_ally) pickups_drop_enemy_loot(e->type, floor, e->x, e->y);
     }
 #endif
     weapons_enemy_died(e);                    // Martirio Contagioso (needs the burn layers, still intact here)
@@ -2912,7 +2904,7 @@ static void player_update(uint32_t keys, uint32_t keys_down) {
                 g_arpg.spell = (uint16_t)pick;
                 weapons_cancel_aim();
                 curse_cancel_aim();
-                sfx_play(SND_HEART_CHARGE, -1);
+                sfx_play(SND_UI_CLICK, -1);
             }
         }
         touch_down = 0;
@@ -3743,9 +3735,10 @@ int main(void) {
                     int gained = arpg_sleep();
                     arpg_progress_save();
                     char msg[48];
-                    if (gained > 0)
+                    if (gained > 0) {
                         snprintf(msg, sizeof(msg), "Has subido %d nivel(es)", gained);
-                    else {
+                        sfx_play(SND_LEVEL_UP, -1);
+                    } else {
                         unsigned long missing = (unsigned long)(arpg_xp_needed(g_arpg.level) - (int)g_arpg.xp);
                         snprintf(msg, sizeof(msg), "Necesitas %lu exp más", missing);
                     }
@@ -3755,6 +3748,7 @@ int main(void) {
                 } else if (act == CAMP_ACT_CODEX) {
                     menu_open_codex();
                 } else if (act == CAMP_ACT_DOOR) {
+                    sfx_play(SND_DOOR_OPEN, -1);
                     leave_camp_to_dungeon();
                 }
             }

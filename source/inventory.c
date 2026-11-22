@@ -5,6 +5,7 @@
 #include "bestiary_font.h"
 #include "inv_art.h"
 #include "inv_item_art.h"
+#include "sfx.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -388,6 +389,10 @@ static void item_display_name(const ArpgInvItem *it, char *buf, int n) {
         return;
     }
     if (it->kind == ARPG_ITEM_RAYO) { snprintf(buf, (size_t)n, "Rayo"); return; }
+    if (it->name_id > 0) {
+        snprintf(buf, (size_t)n, "%s", arpg_inv_item_name(it));
+        return;
+    }
     if (it->mech != ARPG_MECH_NONE) {
         const char *m = arpg_inv_mechanic_name(it->mech);
         snprintf(buf, (size_t)n, "%s", (*m) ? m : "Reliquia");
@@ -456,7 +461,7 @@ static void act_equip_to(int bag_idx, int target_socket) {
     const ArpgInvItem *it = arpg_inv_bag_item(bag_idx);
     if (!it) return;
     if (it->kind == ARPG_ITEM_TOME) {
-        if (arpg_inv_equip_tome(bag_idx)) { arpg_inv_recalc(); arpg_progress_save(); keep_sel_valid(); }
+        if (arpg_inv_equip_tome(bag_idx)) { arpg_inv_recalc(); arpg_progress_save(); keep_sel_valid(); sfx_play(SND_RELIC_SOCKET, -1); }
         return;
     }
     if (it->kind != ARPG_ITEM_RELIC) return;
@@ -476,6 +481,7 @@ static void act_equip_to(int bag_idx, int target_socket) {
         arpg_inv_recalc();
         arpg_progress_save();
         keep_sel_valid();
+        sfx_play(SND_RELIC_SOCKET, -1);
     }
 }
 
@@ -489,6 +495,7 @@ static void act_scrap_idx(int bag_idx) {
         arpg_progress_save();
         s_confirm = -1;
         keep_sel_valid();
+        sfx_play(SND_RELIC_SOCKET, -1);
     }
 }
 
@@ -507,12 +514,14 @@ static void select_tab(int tab) {
     if (s_socket_sel >= arpg_inv_socket_count(s_tab)) s_socket_sel = 0;
     s_confirm = -1;
     s_top_slab_drawn = 0;
+    sfx_play(SND_UI_CLICK, -1);
 }
 
 static void cycle_socket(int step) {
     int n = arpg_inv_socket_count(s_tab);
     if (n <= 0) return;
     s_socket_sel = (s_socket_sel + step + n) % n;
+    sfx_play(SND_UI_CLICK, -1);
     s_confirm = -1;
 }
 
@@ -796,7 +805,9 @@ static void render_item_card(uint16_t *buf, int x, int y, int w, int h, const ch
     item_display_name(it, name, sizeof(name));
     draw_item_glyph(buf, it, x + 16, y + 31, 8, 0);
     text_at(buf, x + 29, y + 19, name, s_rar_bdr[it->rarity]);
-    text_at(buf, x + 29, y + 32, arpg_inv_rarity_name(it->rarity), INV_DIM);
+    char sub[32];
+    snprintf(sub, sizeof(sub), "%s · Nv.%d", arpg_inv_rarity_name(it->rarity), it->level ? (int)it->level : 1);
+    text_at(buf, x + 29, y + 32, sub, INV_DIM);
     hline(buf, x + 6, y + 48, w - 12, INV_EDGE);
 
     int row_y = y + 54;
@@ -826,7 +837,9 @@ static void render_top_comparison(uint16_t *buf, int bag_idx, int sock_idx) {
     item_display_name(held, name, sizeof(name));
     draw_item_glyph(buf, held, 132 + 16, TOP_CARD_Y + 31, 8, 0);
     text_at(buf, 132 + 29, TOP_CARD_Y + 19, name, s_rar_bdr[held->rarity]);
-    text_at(buf, 132 + 29, TOP_CARD_Y + 32, arpg_inv_rarity_name(held->rarity), INV_DIM);
+    char sub[32];
+    snprintf(sub, sizeof(sub), "%s · Nv.%d", arpg_inv_rarity_name(held->rarity), held->level ? (int)held->level : 1);
+    text_at(buf, 132 + 29, TOP_CARD_Y + 32, sub, INV_DIM);
     hline(buf, 138, TOP_CARD_Y + 48, TOP_CARD_W - 12, INV_EDGE);
 
     int row_y = TOP_CARD_Y + 54;

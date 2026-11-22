@@ -134,7 +134,11 @@ void player_regen_mana(PlayerState *player) {
         s_mana_regen_timer = 0;
         return;
     }
-    if (++s_mana_regen_timer >= ARPG_MANA_REGEN_FRAMES) {
+    int denom = 100 + g_mods.mana_regen_pct;
+    if (denom < 25) denom = 25;
+    int period = (ARPG_MANA_REGEN_FRAMES * 100) / denom;
+    if (period < 6) period = 6;
+    if (++s_mana_regen_timer >= period) {
         s_mana_regen_timer = 0;
         player->mana++;
     }
@@ -145,7 +149,8 @@ void player_state_init(PlayerState *player) {
     // g_mods.max_hp is already in life points (Vida and Bone Plate add 20 per heart).
     player->max_hp = ARPG_HP_BASE + (g_arpg_level - 1) * ARPG_HP_PER_LEVEL + g_mods.max_hp;
     player->hp = player->max_hp;
-    player->max_mana = ARPG_MANA_BASE + (g_arpg_level - 1) * ARPG_MANA_PER_LEVEL;
+    player->max_mana = ARPG_MANA_BASE + (g_arpg_level - 1) * ARPG_MANA_PER_LEVEL + g_mods.max_mana;
+    if (player->max_mana < 10) player->max_mana = 10;
     player->mana = player->max_mana;
     s_mana_regen_timer = 0;
     player->current_weapon = WEAPON_SNIPER;  // the sacred ray is the hero's only weapon (DESIGN.md 6.9.1c)
@@ -253,13 +258,17 @@ static void enemy_damage(Enemy *e, int damage, fixed hit_vx, fixed hit_vy, int q
         // Tambaleo solo por vida baja (DESIGN.md 7.2): ningun golpe lo provoca por si solo; el enemigo se
         // tambalea al quedarle un 25 % de vida o menos, le de lo que le de (rayo, punetazo, zona/quemadura).
         if ((e->type == ENEMY_TYPE_EXVOTO || e->type == ENEMY_TYPE_CHARGER || e->type == ENEMY_TYPE_SHOOTER ||
-             e->type == ENEMY_TYPE_BEBE || e->type == ENEMY_TYPE_PARROCO || e->type == ENEMY_TYPE_MONJA) &&
+             e->type == ENEMY_TYPE_BEBE || e->type == ENEMY_TYPE_PARROCO ||
+             e->type == ENEMY_TYPE_MONJA || e->type == ENEMY_TYPE_MONAGUILLO) &&
             e->hp * 4 <= e->max_hp &&
             (e->state == ENEMY_STATE_CHASE || e->state == ENEMY_STATE_ATTACK ||
              e->state == ENEMY_STATE_TELEGRAPH || e->state == ENEMY_STATE_CHARGE ||
              e->state == ENEMY_STATE_RECOVER || e->state == ENEMY_STATE_STUNNED ||
              e->state == ENEMY_STATE_WOBBLE)) {
-            if (e->state != ENEMY_STATE_WOBBLE) e->state_timer = REMATE_WOBBLE_FRAMES;   // low life: it reels
+            if (e->state != ENEMY_STATE_WOBBLE) {
+                e->state_timer = REMATE_WOBBLE_FRAMES;   // low life: it reels
+                sfx_play(SND_WOBBLE_CUE, TO_INT(e->x));
+            }
             e->state = ENEMY_STATE_WOBBLE;
             e->aim_px = e->aim_py = 0;                          // a dodge or charge in progress is cancelled
         }

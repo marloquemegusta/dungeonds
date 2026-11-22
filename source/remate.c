@@ -1,11 +1,14 @@
 #include "remate.h"
 #include "remate_sprites.h"
+#include "punch.h"
 #include "collision.h"
 #include "enemy_ai.h"
 #include "hwshadow.h"
 #include "weapons.h"
+#include "sfx.h"
 #include "pickups.h"
 #include "allies.h"
+#include "arpg_inv.h"
 #include <stdio.h>
 
 // Bin del remate: cabecera fija (magic + tamanos) seguida de los arrays del tipo. La cabecera completa se interpreta
@@ -37,6 +40,8 @@ static const uint8_t *s_shadow;
 static const char *kind_slug(int kind) {
     if (kind == REMATE_KIND_CIRENEO) return "cireneo";
     if (kind == REMATE_KIND_OJO) return "ojo";
+    if (kind == REMATE_KIND_MONAGUILLO) return "monaguillo";
+    if (kind == REMATE_KIND_BEBE) return "exvoto_bebe";
     return "exvoto";
 }
 
@@ -63,6 +68,7 @@ static void read_at(uint32_t off, void *dst, uint32_t n) {
 }
 
 static int remate_load_bin(int kind, int dir) {
+    if (kind < 0 || kind >= REMATE_NUM_KINDS) return 0;
     if (s_loaded_kind == kind && s_loaded_dir == dir && s_bin_f) return 1;
     remate_close_bin();
     char path[48];
@@ -237,7 +243,9 @@ int remate_start(Enemy *enemies, int max_enemies, fixed hero_x, fixed hero_y, in
     for (int i = 0; i < max_enemies; i++) {
         const Enemy *e = &enemies[i];
         if (g_enemy_ally[i] || !e->active || e->hp <= 0 || e->state != ENEMY_STATE_WOBBLE) continue;
-        if (e->type != ENEMY_TYPE_EXVOTO && e->type != ENEMY_TYPE_CHARGER && e->type != ENEMY_TYPE_SHOOTER) continue;
+        if (e->type != ENEMY_TYPE_EXVOTO && e->type != ENEMY_TYPE_CHARGER && e->type != ENEMY_TYPE_SHOOTER &&
+            e->type != ENEMY_TYPE_BEBE && e->type != ENEMY_TYPE_PARROCO &&
+            e->type != ENEMY_TYPE_MONJA && e->type != ENEMY_TYPE_MONAGUILLO) continue;
         int dx = TO_INT(e->x) - hx, dy = TO_INT(e->y) - hy;
         int d2 = dx * dx + GROUND_DY2(dy);
         if (d2 < best_d2) { best_d2 = d2; best = i; }
@@ -246,8 +254,11 @@ int remate_start(Enemy *enemies, int max_enemies, fixed hero_x, fixed hero_y, in
 
     Enemy *e = &enemies[best];
     int ex = TO_INT(e->x), ey = TO_INT(e->y);
-    s_kind = (e->type == ENEMY_TYPE_CHARGER) ? REMATE_KIND_CIRENEO
-           : (e->type == ENEMY_TYPE_SHOOTER) ? REMATE_KIND_OJO : REMATE_KIND_EXVOTO;
+    if (e->type == ENEMY_TYPE_CHARGER) s_kind = REMATE_KIND_CIRENEO;
+    else if (e->type == ENEMY_TYPE_SHOOTER) s_kind = REMATE_KIND_OJO;
+    else if (e->type == ENEMY_TYPE_MONAGUILLO) s_kind = REMATE_KIND_MONAGUILLO;
+    else if (e->type == ENEMY_TYPE_BEBE) s_kind = REMATE_KIND_BEBE;
+    else s_kind = REMATE_KIND_EXVOTO;
 
     int dx = ex - hx, dy = ey - hy;
     if (dx * dx + GROUND_DY2(dy) < 16) s_dir = hero_dir & 7;
@@ -270,6 +281,7 @@ int remate_start(Enemy *enemies, int max_enemies, fixed hero_x, fixed hero_y, in
     e->stun_timer = 0;
     e->hit_timer = 0;
     s_rem_t = 0;                                          // un remate nuevo se lleva los restos del anterior
+    punch_reset();                                        // si venia de un combo de punetazos, no dejar el golpe colgado
     weapons_cancel_aim();                                 // el heroe suelta lo que cargaba
     // invulnerable toda la embestida y la celda
     g_player_state.invuln_timer = REMATE_DASH_MAX_FRAMES + kind_frames() * kind_ticks() + 4;
@@ -289,6 +301,7 @@ static void remate_begin_cell(fixed *hero_x, fixed *hero_y) {
     }
     g_player_state.invuln_timer = kind_frames() * kind_ticks() + 2;
     remate_prepare_frame(0);
+    sfx_play(SND_REMATE_EXEC, s_ax);
 }
 
 void remate_update(Enemy *enemies, int max_enemies, fixed *hero_x, fixed *hero_y, int *hero_dir) {
@@ -367,6 +380,7 @@ void remate_update(Enemy *enemies, int max_enemies, fixed *hero_x, fixed *hero_y
     }
     remate_close_bin();
     s_killing = 1;
+    if (arpg_inv_has_mechanic(ARPG_MECH_PIRA)) weapons_pira_explode(e);
     enemy_hit(e, 9999, 0, 0);
     pickups_remate_drops(e->x, e->y);            // ARPG: the finisher drops health and mana orbs
     s_killing = 0;

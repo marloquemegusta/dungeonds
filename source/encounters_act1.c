@@ -14,6 +14,7 @@ typedef int encounters_act1_translation_unit_not_empty;
 // Life in points (ARPG) can exceed a byte; the stats keep it clamped to 255.
 #define HP_U8(v) ((uint8_t)((v) > 255 ? 255 : (v)))
 #include "hwshadow.h"
+#include "sfx.h"
 #include "sfx_voice_len.h"
 #include "collision.h"
 #include "enemy_ai.h"
@@ -810,6 +811,7 @@ void enc_update(Enemy *enemies, int max_enemies, int px, int py) {
                     }
                     if (st->cleared < k + 1) st->cleared = (uint8_t)(k + 1);
                     rt->verja_opening = 1;
+                    sfx_play(SND_DOOR_OPEN, -1);
                     if (is_boss) {
                         st->boss_frames = st->wake_frames;
                         boss_victory();
@@ -848,10 +850,15 @@ void enc_update(Enemy *enemies, int max_enemies, int px, int py) {
             const int dx = px - cx, dy = py - cy;
             if (dx * dx + GROUND_DY2(dy) <= ARPG_ROOM_CHEST_REACH_PX * ARPG_ROOM_CHEST_REACH_PX) {
                 s_rt[k].chest_open = 1;
+                sfx_play(SND_CHEST_OPEN, cx);
                 const fixed fx = TO_FIXED(cx), fy = TO_FIXED(cy);
-                pickups_spawn_xp(fx, fy, ARPG_ROOM_CHEST_XP + k / 2);
+                arpg_add_xp(ARPG_ROOM_CHEST_XP + k / 2);
                 pickups_spawn(PICKUP_KIND_HEALTH, fx - TO_FIXED(8), fy);
                 pickups_spawn(PICKUP_KIND_MANA, fx + TO_FIXED(8), fy);
+                uint32_t chest_rng = (uint32_t)(k + 1) * 2654435761u ^ (uint32_t)(px * 73856093 ^ py * 19349663);
+                ArpgInvItem chest_relic;
+                arpg_relic_roll(&chest_relic, k + 1, ARPG_RAR_UNCOMMON, &chest_rng);
+                pickups_spawn_relic(fx, fy + TO_FIXED(6), &chest_relic);
             }
         }
         if (room_has_altar(k) && !s_rt[k].altar_touched) {
@@ -1142,6 +1149,13 @@ static int s_fixture_n;
 
 int enc_dynamic_fixture_count(int cam_x, int cam_y) {
     (void)cam_x;
+    // Chests block the hero (and the enemies) on their ground footprint in every room, on or off screen.
+    collision_extra_begin();
+    for (int k = 0; k < ENC_STAGES; k++) {
+        if (!room_has_chest(k)) continue;
+        const int cx = room_center_x(), cy = room_chest_y(k);
+        collision_extra_add(cx - 8, cy - 4, cx + 8, cy + 2);
+    }
     s_fixture_n = 0;
     for (int k = 0; k < ENC_STAGES && s_fixture_n < ENC_FIXTURE_MAX; k++) {
         const int top = window_top(block_of_encounter(k));

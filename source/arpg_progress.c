@@ -30,7 +30,7 @@ static const int s_arpg_xp_needed[ARPG_XP_TABLE_LEN] = {
 void arpg_progress_reset(void) {
     memset(&g_arpg, 0, sizeof(g_arpg));
     g_arpg.magic = 0x41525047u;
-    g_arpg.version = 2;
+    g_arpg.version = 3;
     g_arpg.level = 1;
     g_arpg.xp = 0;
     g_arpg.points = 0;
@@ -86,7 +86,7 @@ int arpg_enemy_xp(int enemy_type, int floor) {
 /* ---- Save file (DESIGN.md 7.1: guardado en la tarjeta) ---- */
 
 #define ARPG_SAVE_MAGIC   0x41525047u
-#define ARPG_SAVE_VERSION 2
+#define ARPG_SAVE_VERSION 3
 #if ARPG_ALL_UNLOCKED
 #define ARPG_SAVE_NAME    "dungeonds_arpg_todo.sav"   // the test build never overwrites the player's save
 #else

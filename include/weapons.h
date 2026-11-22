@@ -72,6 +72,7 @@ void weapons_shift_y(int dy_px);
 void weapons_cancel_aim(void);
 // Death hook: a burning enemy that dies may explode (Martirio Contagioso). Call with the enemy still intact.
 void weapons_enemy_died(const Enemy *e);
+void weapons_pira_explode(const Enemy *e);
 // Part C relics: the hero feet (world px), once a frame before weapons_update; and a hit the hero took
 // (Corazon Flagelado: wave of fire and instant next charge).
 void weapons_set_hero_pos(int x, int y);
