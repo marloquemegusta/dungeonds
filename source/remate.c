@@ -2,6 +2,7 @@
 #include "remate_sprites.h"
 #include "collision.h"
 #include "enemy_ai.h"
+#include "hwshadow.h"
 #include "weapons.h"
 #include <stdio.h>
 
@@ -44,6 +45,9 @@ static uint32_t kind_header_bytes(int kind) {
 
 static void remate_close_bin(void) {
     if (s_bin_f) { fclose(s_bin_f); s_bin_f = NULL; }
+#if HW_SHADOWS
+    hwshadow_invalidate(s_mask);
+#endif
     s_loaded_kind = -1;
     s_loaded_dir = -1;
     s_cur_frame = -1;
@@ -127,10 +131,13 @@ static void remate_prepare_frame(int f) {
     const uint32_t runs_base = s_payload + s_pix_bytes;
     read_at(runs_base + s_fr[f] * 2, s_runs, run_a * 2);
     read_at(runs_base + s_dr[f] * 2, s_runs + run_a * 2, run_b * 2);
-    if (f < fr) {
+    if (f < fr && (s_cur_frame < 0 || s_cur_frame >= fr || s_so[f] != s_so[s_cur_frame])) {
         uint32_t end = s_mask_bytes;
         for (int j = f + 1; j < fr; j++) if (s_so[j] > s_so[f]) { end = s_so[j]; break; }
         read_at(s_payload + s_pix_bytes + s_runs_bytes + s_so[f], s_mask, end - s_so[f]);
+#if HW_SHADOWS
+        hwshadow_invalidate(s_mask);
+#endif
     }
     s_pix_a = (const uint16_t *)s_pix;
     s_pix_b = (const uint16_t *)(s_pix + pix_a * 2);

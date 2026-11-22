@@ -60,6 +60,8 @@ KINDS = [
         'single_layer': True, # la escena no se parte en heroe/restos: una sola capa a la profundidad de los pies
         'dup_frame0': False,  # el lab rapido renderiza el fotograma 0 bien (el hack era del lab web)
         'shadow_share': True, # las mascaras de sombra se comparten cada 2 fotogramas (mismo criterio que el Exvoto)
+        'shadow_canvas': 128,
+        'shadow_max': 80,
         'lab_out': OJO_LAB_OUT,
         'glb_dir': OJO_GLB_DIR,
     },
@@ -159,9 +161,9 @@ def encode_sprite(spr, cw, ch, pix, runs):
     return (x0, y0, bw, bh), pix_off, run_off
 
 
-def encode_shadow(sh, scx, scy, masks):
-    raw_pts = [(x - scx + SH_CANVAS // 2, y - scy + SH_CANVAS // 2) for (x, y) in sh]
-    valid_pts = [(px, py) for (px, py) in raw_pts if 0 <= px < SH_CANVAS and 0 <= py < SH_CANVAS]
+def encode_shadow(sh, scx, scy, masks, canvas=SH_CANVAS, max_dim=64):
+    raw_pts = [(x - scx + canvas // 2, y - scy + canvas // 2) for (x, y) in sh]
+    valid_pts = [(px, py) for (px, py) in raw_pts if 0 <= px < canvas and 0 <= py < canvas]
 
     off = len(masks)
     if not valid_pts:
@@ -174,16 +176,16 @@ def encode_shadow(sh, scx, scy, masks):
     min_y, max_y = min(ys), max(ys)
     bw, bh = max_x - min_x + 1, max_y - min_y + 1
 
-    if bw > 64:
+    if bw > max_dim:
         mid_x = int(round(sum(xs) / len(xs)))
-        min_x = max(0, min(SH_CANVAS - 64, mid_x - 32))
-        max_x = min_x + 63
-        bw = 64
-    if bh > 64:
+        min_x = max(0, min(canvas - max_dim, mid_x - max_dim // 2))
+        max_x = min_x + max_dim - 1
+        bw = max_dim
+    if bh > max_dim:
         mid_y = int(round(sum(ys) / len(ys)))
-        min_y = max(0, min(SH_CANVAS - 64, mid_y - 32))
-        max_y = min_y + 63
-        bh = 64
+        min_y = max(0, min(canvas - max_dim, mid_y - max_dim // 2))
+        max_y = min_y + max_dim - 1
+        bh = max_dim
 
     pset = set((px, py) for (px, py) in valid_pts if min_x <= px <= max_x and min_y <= py <= max_y)
     nib = []
@@ -365,7 +367,9 @@ def pack_dir_bin(cfg, settings, shadow_atlas, d, feet):
             sb.append(prev_sb); so.append(prev_so)
         else:
             sh, sw, sh_h = load_lab_shadow(shadow_atlas, sh_size, d, i)
-            b2, o2 = encode_shadow(sh, sw // 2, sh_h // 2, masks)
+            b2, o2 = encode_shadow(sh, sw // 2, sh_h // 2, masks,
+                                   canvas=cfg.get('shadow_canvas', SH_CANVAS),
+                                   max_dim=cfg.get('shadow_max', 64))
             prev_sb, prev_so = b2, o2
             sb.append(b2); so.append(o2)
 
@@ -450,13 +454,14 @@ def main():
         kind_infos.append((cw, ch, cfg['has_remnant'], F, F, cfg['ticks']))
         d_list, depth_list, off_list = [], [], []
         feet = hero_feet_by_frame(cfg)
+        bias_shift = (cfg.get('shadow_canvas', SH_CANVAS) - SH_CANVAS) // 2
         for d in range(N_DIRS):
             data, depth, hero_off = pack_dir_bin(cfg, settings, shadow_atlas, d, feet)
             with open(os.path.join(NITRO_DIR, '%s_d%d.bin' % (cfg['name'], d)), 'wb') as f:
                 f.write(data)
             max_bin = max(max_bin, len(data))
             _, _, ax, ay, edx, edy, lab_ax, lab_ay = dir_geometry(cfg, settings, d)
-            d_list.append((ax, ay, edx, edy, lab_ax - ax, lab_ay - ay))
+            d_list.append((ax, ay, edx, edy, (lab_ax - ax) - bias_shift, (lab_ay - ay) - bias_shift))
             depth_list.append([v for pair in depth for v in pair])
             off_list.append([v for pair in hero_off for v in pair])
         dir_infos.append(d_list)

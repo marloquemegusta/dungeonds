@@ -41,11 +41,12 @@ del lab, bordes duros, sombra horneada aparte.
 ### Sombras de la celda
 
 La proyección de sombra del lab lleva cada vértice al suelo desplazándolo según su altura (~1,7 m de sombra por cada
-metro de altura), así que **las chispas y el vidrio de la escena dejaban su sombra a un metro largo de los actores**:
-la máscara de sombra del juego admite 64 px, el recorte se movía fotograma a fotograma y la sombra se veía rota (el
-lab rápido acepta `--shadow-skip-materials` y la escena del Ojo excluye `brasa,brasa2,vidrio`). Con eso la sombra de
-la animación entra siempre en los 64 px; solo los 4 fotogramas finales (el cadáver ya tendido, cuya sombra mide 75 px)
-se recortan en estático al lienzo de 64, sin saltos.
+metro de altura), así que **las chispas y el vidrio de la escena dejaban su sombra a un metro largo de los actores**
+(`--shadow-skip-materials brasa,brasa2,vidrio`). Además, la revisión de la ROM destapó y corrigió tres fallos:
+
+1. **Caché de sombras en streaming (`hwshadow.c` / `remate.c`):** como los fotogramas se leen al mismo buffer estático `s_mask`, `hwshadow_invalidate()` retira la entrada anterior en VRAM cuando cambia la máscara sin tocar el frame que sigue en pantalla.
+2. **Lienzo y tope de sombra ampliados:** el Ojo se empaqueta en lienzo de `128×128` con `shadow_max = 80` y `hwshadow.c` planifica hasta `80×80` px (`10×10` tiles), evitando recortes en los laterales y al caer el cadáver (`75×53` px).
+3. **Vértices sin peso y materiales lisos:** colapsados los vértices sin skinning en toda la secuencia (`ds_remate_ojo.py` + `export_scene_fast.cjs`) y fijado el `Base Color` de `Principled BSDF` en `flat_mat` (`ds_remate_exvoto_lib.py`) para que el corte del cuello salga rojo oscuro y las chispas/vidrio con sus tonos apagados.
 
 ## 2. Integración en el juego
 
