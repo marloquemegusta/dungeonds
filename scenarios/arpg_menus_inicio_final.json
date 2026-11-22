@@ -1,0 +1,224 @@
+{
+ "name": "arpg_menus_inicio_final",
+ "description": "Pasada final de menús y arranque ARPG: título, Controles, 3 tarjetas, campamento, pausa, tarjeta del inventario, sala 1, pausa y muerte. Solo evidencia.",
+ "suite": false,
+ "evidence_only": true,
+ "state": {
+  "elf": "../.ds-game-dev/build/out/dungeonds.elf",
+  "symbols": {
+   "pl": "s_player",
+   "ps": "g_player_state"
+  },
+  "default_symbol": "pl",
+  "fields": {
+   "px": {
+    "symbol": "pl",
+    "offset": 0,
+    "type": "s32"
+   },
+   "py": {
+    "symbol": "pl",
+    "offset": 4,
+    "type": "s32"
+   },
+   "hp": {
+    "symbol": "ps",
+    "offset": 0,
+    "type": "s32"
+   },
+   "dead": {
+    "symbol": "ps",
+    "offset": 12,
+    "type": "s32"
+   }
+  }
+ },
+ "steps": [
+  {
+   "frames": 90,
+   "capture": "a01_titulo"
+  },
+  {
+   "tap": {
+    "x": 128,
+    "y": 124
+   },
+   "frames": 6
+  },
+  {
+   "release": true,
+   "frames": 20,
+   "capture": "a02_controles"
+  },
+  {
+   "button_down": "B",
+   "frames": 4
+  },
+  {
+   "button_up": "B",
+   "frames": 15
+  },
+  {
+   "tap": {
+    "x": 128,
+    "y": 66
+   },
+   "frames": 6
+  },
+  {
+   "release": true,
+   "frames": 40,
+   "capture": "b01_tarjeta1"
+  },
+  {
+   "button_down": "A",
+   "frames": 4
+  },
+  {
+   "button_up": "A",
+   "frames": 40,
+   "capture": "b02_tarjeta2"
+  },
+  {
+   "button_down": "A",
+   "frames": 4
+  },
+  {
+   "button_up": "A",
+   "frames": 40,
+   "capture": "b03_tarjeta3"
+  },
+  {
+   "button_down": "A",
+   "frames": 4
+  },
+  {
+   "button_up": "A",
+   "frames": 90,
+   "capture": "c01_campamento"
+  },
+  {
+   "button_down": "START",
+   "frames": 4
+  },
+  {
+   "button_up": "START",
+   "frames": 20,
+   "capture": "c02_pausa"
+  },
+  {
+   "button_down": "B",
+   "frames": 4
+  },
+  {
+   "button_up": "B",
+   "frames": 20,
+   "capture": "c03_tras_pausa"
+  },
+  {
+   "poke": [
+    {
+     "field": "px",
+     "value": 15872
+    },
+    {
+     "field": "py",
+     "value": 75776
+    }
+   ],
+   "frames": 20
+  },
+  {
+   "button_down": "A",
+   "frames": 4
+  },
+  {
+   "button_up": "A",
+   "frames": 25,
+   "capture": "c04_tarjeta_inventario"
+  },
+  {
+   "button_down": "A",
+   "frames": 4
+  },
+  {
+   "button_up": "A",
+   "frames": 20,
+   "capture": "c05_inventario"
+  },
+  {
+   "button_down": "B",
+   "frames": 4
+  },
+  {
+   "button_up": "B",
+   "frames": 30,
+   "capture": "c06_tras_inventario"
+  },
+  {
+   "poke": [
+    {
+     "field": "px",
+     "value": 32768
+    },
+    {
+     "field": "py",
+     "value": 29696
+    }
+   ],
+   "frames": 20
+  },
+  {
+   "button_down": "A",
+   "frames": 4
+  },
+  {
+   "button_up": "A",
+   "frames": 120,
+   "capture": "d01_sala1"
+  },
+  {
+   "button_down": "START",
+   "frames": 4
+  },
+  {
+   "button_up": "START",
+   "frames": 20,
+   "capture": "d02_pausa"
+  },
+  {
+   "button_down": "B",
+   "frames": 4
+  },
+  {
+   "button_up": "B",
+   "frames": 20
+  },
+  {
+   "poke": [
+    {
+     "field": "hp",
+     "value": 0
+    },
+    {
+     "field": "dead",
+     "value": 1
+    }
+   ],
+   "frames": 60,
+   "capture": "d03_muerte"
+  },
+  {
+   "tap": {
+    "x": 128,
+    "y": 100
+   },
+   "frames": 6
+  },
+  {
+   "release": true,
+   "frames": 60,
+   "capture": "d04_campamento"
+  }
+ ]
+}
