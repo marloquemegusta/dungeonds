@@ -40,6 +40,7 @@ Todo asset que use el juego está en este catálogo y versionado. Lo que no est�
 | Paleta de la catedral | renders actuales | `tools/palette/extract_palette.py` | `assets/environment/cathedral/palette/palette.json` | git (derivado versionado) |
 | Arenas (mazmorra) | `assets/arenas/arenas.json` | `tools/export_arenas.py` → `bake_arena.py` | `source/arena_dungeon_01.c` | git |
 | HUD | corazón sagrado 3D `assets/models/hud/sacred_heart/` | `tools/hud/prerender_hud_heart.py` → `tools/generate_hud_icons_c.py` | `source/hud_icons_gfx.c` | LFS (PNG: git) |
+| Reliquias y tomos del inventario | modelos 3D en `assets/models/items/` (§6) | export GLB (Blender) → lab (C2) → `tools/generate_item_icons_c.py` | `include/inv_item_art.h` | LFS |
 | Rayos de luz | pintados a mano, `assets/sprites/godrays/` | `source/godrays_gfx.c` (notas en `tools/godrays/README.md`) | `source/godrays_gfx.c` | git |
 | Cartas de mejora | escenas reales de la ROM (`cathedral-sandbox`) | `tools/levelup_cards/capture_cards.py` | `nitrofiles/levelup/*.bin` | derivado (capturas intermedias en `assets/sprites/levelup/`, ignoradas) |
 | Clips de la intro | partida real en DeSmuME | `tools/gen_intro_clips.py` | `nitrofiles/intro/*.bin` | derivado |
@@ -138,7 +139,20 @@ El suelo del juego (`assets/environment/cathedral/floor/rombos_tripo/`) sale de 
 
 **Borrado** (2026-11-16): `environment/dreadhollow/GLB` y `Previews` (306 MB; pack «Dreadhollow — The Cursed Kingdom» de Kareel Games, se vuelve a bajar del proveedor; en la carpeta quedan `README.md`, `ASSET_INDEX.txt`, `LICENSE.txt` y `Textures/`); `animations/rifle/aim.fbx`, `walk/walk_renqueante.fbx`, `weapons/sword/sword.glb` (sin referencias); `environment/scifi_dungeon` (68 MB, pipeline legado; los scripts `bake_scifi_dungeon.py` y afines ya no se pueden ejecutar). Todo sigue en el historial de git salvo dreadhollow.
 
-## 6. Sin registrar
+## 6. Reliquias y Tomos (ARPG)
+
+Modelos 3D descargados de Tripo y adoptados para el inventario ARPG (2026-11-22). Sus fuentes viven en `assets/models/items/<item>/` (LFS) y se hornean en sprites de 24×24 RGB15 con legibilidad C2 para la ROM (`include/inv_item_art.h`).
+
+| Pieza | UUID de Tripo | Escuela / Uso | Render 24×24 | Estado |
+| :--- | :--- | :--- | :--- | :--- |
+| `relic_lanza` | `0d52d8fc-15de-4d38-96f4-428d929ce548` | Rayo (Reliquia base / Punta de lanza) | `s_relic_lanza_24` | Integrado en ROM |
+| `relic_nudillera` | `bbb28601-f245-42a7-93b7-c5cc8f5208a7` | Ejecución (Reliquia base / Nudillera) | `s_relic_nudillera_24` | Integrado en ROM |
+| `relic_calavera` | `c1f10f3e-f623-4806-9d9f-e33bd68769f8` | Levantar (Reliquia base / Cráneo votivo) | `s_relic_calavera_24` | Integrado en ROM |
+| `tome_glifo` | `d5266d16-afb4-4b41-b70f-4489e4284835` | Glifo (Tomo verde) | `s_tome_glifo_24` | Integrado en ROM |
+| `tome_levantar` | `6d103588-8b90-49d8-a6a3-c08fe9093cd3` | Levantar (Tomo negro) | `s_tome_levantar_24` | Integrado en ROM |
+| `tome_rayo` | `3c8af05f-e6d7-48a1-bb2f-018926b464f0` | Rayo (Tomo amarillo con cruz) | `s_tome_rayo_24` | Horneado; sin uso inicial (el héroe empieza con Rayo) |
+
+## 7. Sin registrar
 
 En Descargas, fuera del repo: `tripo_convert_8c5b4a72` (esqueleto soldado) y `tripo_convert_f65595e4` (esqueleto con máscara antigás), del 2026-11-07. Probables conceptos del esqueleto anterior; decidir si se borran.
 

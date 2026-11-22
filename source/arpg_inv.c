@@ -136,6 +136,18 @@ void arpg_inv_new_game(void) {
     item_make(&it, ARPG_ITEM_RELIC, ARPG_SCHOOL_PECHO, ARPG_RAR_COMMON, ARPG_MECH_NONE);
     item_line(&it, ARPG_LINE_LIFE, 10);
     add_item(inv, &it);
+
+    // Tomos de Glifo (verde) y Levantar (negro): equipables para desbloquear hechizos.
+    item_make(&it, ARPG_ITEM_TOME, ARPG_SCHOOL_GLIFO, ARPG_RAR_UNCOMMON, ARPG_MECH_NONE);
+    add_item(inv, &it);
+
+    item_make(&it, ARPG_ITEM_TOME, ARPG_SCHOOL_LEVANTAR, ARPG_RAR_UNCOMMON, ARPG_MECH_NONE);
+    add_item(inv, &it);
+
+    // Reliquia de Levantar: Cráneo Votivo (mecánicas pendientes de definición).
+    item_make(&it, ARPG_ITEM_RELIC, ARPG_SCHOOL_LEVANTAR, ARPG_RAR_RARE, ARPG_MECH_NONE);
+    item_line(&it, ARPG_LINE_LIFE, 15);
+    add_item(inv, &it);
 }
 
 // Variante arpg-todo: equipa un conjunto de ejemplo de reliquias de Rayo/Ejecución/Pecho y deja
