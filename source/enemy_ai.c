@@ -1392,6 +1392,7 @@ static const uint16_t s_camp_period[3] = { 210, 240, 180 };    // major toll sta
 volatile struct {                   // read by scenarios (symbol g_campanero_dbg)
     uint16_t toques, tanidos, hero_hits, raised;
     uint8_t phase, telegraph, window, pad;
+    uint16_t ring_frames;           // frames the major ring's front was on the hero (hit or not: i-frames can hide the hit)
 } g_campanero_dbg;
 
 static void camp_raise_exvotos(Enemy *boss, Enemy *enemies, int num_enemies) {
@@ -1444,7 +1445,10 @@ static void update_campanero(Enemy *e, Enemy *enemies, int num_enemies, int idx,
     const int dist_sq = dx * dx + GROUND_DY2(dy);
 
     // The major toll's front hurts the hero (through the normal path: i-frames respected).
-    if (cfx_toque_hit(px, py) && player_take_damage(&g_player_state, ARPG_DMG_CAMPANERO_TOQUE)) g_campanero_dbg.hero_hits++;
+    if (cfx_toque_hit(px, py)) {
+        g_campanero_dbg.ring_frames++;
+        if (player_take_damage(&g_player_state, ARPG_DMG_CAMPANERO_TOQUE)) g_campanero_dbg.hero_hits++;
+    }
     // Contact (the bell and the man).
     if (dist_sq <= CAMP_CONTACT_R * CAMP_CONTACT_R) player_take_damage(&g_player_state, arpg_enemy_damage_of(e));
 

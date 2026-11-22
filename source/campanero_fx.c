@@ -21,7 +21,7 @@
 #define CFX_MAX 6
 #define CFX_BINS 128                 // angle bins of the shadow (ring samples are 256 per turn: 2 per bin)
 #define CFX_BIN_SHIFT 1
-#define CFX_R_MAX 420
+#define CFX_R_MAX 640                // ground px: reaches the far end of the 2-screen room (boss near the top)
 #define CFX_SPEED_TANIDO 4
 #define CFX_SPEED_TOQUE 3
 #define CFX_MARCH 6                  // px between tall-piece tests along a bin ray
@@ -36,6 +36,7 @@ typedef struct {
 } Ring;
 
 static Ring s_ring[CFX_MAX];
+volatile struct { int16_t ox, oy; uint16_t silenced; uint16_t blk[CFX_BINS]; } g_cfx_dbg;   // last major toll's shadow (read by scenarios)
 #if CFX_TEST
 // Test bell (variant cfx-test): a fixed floor point of the first strip window (nave 1), between two statue pairs (tall pieces at
 // world (223, 1100) (303, 1100) to its north and (172, 1216) (332, 1216) to its south): a toque casts a shadow behind each statue.
@@ -137,6 +138,8 @@ void cfx_emit(int kind, int ox, int oy) {
     for (int b = 0; b < CFX_BINS; b++) g->nz[b] = (int8_t)((int)(hash2((uint32_t)b, g->seed) % (uint32_t)amp) - amp / 2);
     if (kind == CFX_TOQUE) {
         build_shadow(g);
+        g_cfx_dbg.ox = (int16_t)ox; g_cfx_dbg.oy = (int16_t)oy;
+        for (int b = 0; b < CFX_BINS; b++) g_cfx_dbg.blk[b] = g->blk[b];
         sfx_play(SND_CFX_BONG, ox);
         sfx_play(SND_CFX_BELL_LOW, ox);
     } else {
@@ -166,7 +169,7 @@ void cfx_update(void) {
             if (!glifo_silenceable(z, &cx, &cy, &rad)) continue;
             const int dx = cx - g->ox, dy2 = (cy - g->oy) * 2;
             const int d = (int)sqrt32((unsigned)(dx * dx + dy2 * dy2));
-            if (g->r >= d - rad && g->rprev < d + rad) glifo_silence(z, g->ox, g->oy);
+            if (g->r >= d - rad && g->rprev < d + rad) { glifo_silence(z, g->ox, g->oy); g_cfx_dbg.silenced++; }
         }
     }
 }

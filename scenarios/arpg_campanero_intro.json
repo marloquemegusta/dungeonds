@@ -1,0 +1,59 @@
+{
+ "name": "arpg_campanero_intro",
+ "description": "Variante arpg-campanero: la tarjeta de presentacion tiene sus dos instantaneas en el heap (los samples de voz ya no se precargan): s_snap_taken a 1 en mitad de la intro y el combate empieza (fase 1) al acabar.",
+ "suite": false,
+ "state": {
+  "elf": "../.ds-game-dev/build/out/dungeonds-arpg-campanero.elf",
+  "symbols": {
+   "a": "s_snap_taken",
+   "camp": "g_campanero_dbg"
+  },
+  "default_symbol": "a",
+  "fields": {
+   "taken": {
+    "symbol": "a",
+    "offset": 0,
+    "type": "u8"
+   },
+   "phase": {
+    "symbol": "camp",
+    "offset": 8,
+    "type": "u8"
+   }
+  }
+ },
+ "steps": [
+  {
+   "frames": 90
+  },
+  {
+   "button_down": "UP",
+   "frames": 700
+  },
+  {
+   "button_up": "UP",
+   "frames": 150,
+   "state_capture": "intro_mid",
+   "capture": "intro_mid"
+  },
+  {
+   "frames": 450,
+   "state_capture": "combate",
+   "capture": "combate"
+  }
+ ],
+ "assertions": {
+  "state_changes": [
+   {
+    "at": "intro_mid",
+    "field": "taken",
+    "equals": 1
+   },
+   {
+    "at": "combate",
+    "field": "phase",
+    "equals": 1
+   }
+  ]
+ }
+}

@@ -83,7 +83,7 @@
    "state_capture": "03_t15s"
   },
   {
-   "frames": 600,
+   "frames": 1500,
    "capture": "04_t25s",
    "state_capture": "04_t25s"
   }
@@ -111,7 +111,7 @@
     "from": "01_combate",
     "to": "04_t25s",
     "field": "tanidos",
-    "min_delta": 20
+    "min_delta": 15
    },
    {
     "from": "01_combate",

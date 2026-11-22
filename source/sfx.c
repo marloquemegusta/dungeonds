@@ -30,6 +30,14 @@ static int s_stream_active = 0;
 static int s_bgm_paused = 0;
 static int s_bgm_track = 0;
 static mm_sfxhand s_voice_handle = 0;
+#ifdef ARM9
+static int s_voice_loaded = -1;      /* SfxId of the boss voice sample currently in RAM (-1 none) */
+
+/* Boss voices are 50-115 KB each: loaded only while they play (the boss snapshots need ~192 KB of the heap while the screens are frozen). */
+static int sfx_is_voice(int id) {
+    return id == SND_ABANDERADO_INTRO || id == SND_ABANDERADO_DEFEAT || id == SND_CAMPANERO_INTRO || id == SND_CAMPANERO_DEFEAT;
+}
+#endif
 static long s_bgm_saved_pos = 0;
 
 static const mm_word s_mm_ids[SND_COUNT] = {
@@ -162,7 +170,7 @@ void sfx_init(void) {
     if (!nitroFSInit(NULL)) return;
     mmInitDefault("nitro:/soundbank.bin");
     for (int i = 0; i < SND_COUNT; i++) {
-        mmLoadEffect(s_mm_ids[i]);
+        if (!sfx_is_voice(i)) mmLoadEffect(s_mm_ids[i]);
     }
     s_audio_ready = 1;
     sfx_start_bgm();
@@ -334,6 +342,10 @@ void sfx_play_voice(SfxId id) {
     sfx_stop_voice();
 #ifdef ARM9
     if (!s_audio_ready || id < 0 || id >= SND_COUNT) return;
+    if (sfx_is_voice(id)) {
+        mmLoadEffect(s_mm_ids[id]);
+        s_voice_loaded = id;
+    }
     mm_sound_effect eff = {
         .id      = event_mm_id(id),
         .rate    = 1024,
@@ -352,6 +364,10 @@ void sfx_stop_voice(void) {
     if (s_voice_handle) {
         mmEffectCancel(s_voice_handle);
         s_voice_handle = 0;
+    }
+    if (s_voice_loaded >= 0) {
+        mmUnloadEffect(s_mm_ids[s_voice_loaded]);
+        s_voice_loaded = -1;
     }
 #endif
 }
