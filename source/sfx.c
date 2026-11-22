@@ -1,4 +1,5 @@
 #include "sfx.h"
+#include "lab_tuning.h"
 #include <stdint.h>
 #include <stdio.h>
 
@@ -164,6 +165,30 @@ void sfx_frame_begin(int cam_x) {
 #endif
 }
 
+#ifdef ARM9
+#if ARPG_LAB
+/* Lab build: candidate variants of an event (Kenney CC0, assets/sfx/baked/lab_*.wav) are loaded on first use. */
+static const mm_word s_lab_mm_ids[LABV_COUNT] = {
+#define X(n, label, mm) [LABV_##n] = mm,
+    LAB_VARIANTS(X)
+#undef X
+};
+static uint8_t s_lab_loaded[LABV_COUNT];
+
+static mm_word event_mm_id(SfxId id) {
+    int c = lab_sfx_candidate(id);
+    if (c < 0 || c >= LABV_COUNT) return s_mm_ids[id];
+    if (!s_lab_loaded[c]) {
+        mmLoadEffect(s_lab_mm_ids[c]);
+        s_lab_loaded[c] = 1;
+    }
+    return s_lab_mm_ids[c];
+}
+#else
+#define event_mm_id(id) s_mm_ids[id]
+#endif
+#endif
+
 void sfx_play_pitched(SfxId id, int world_x, uint16_t rate) {
     if (id < 0 || id >= SND_COUNT) return;
     const SfxMixRule *rule = &s_mix_rules[id];
@@ -175,7 +200,7 @@ void sfx_play_pitched(SfxId id, int world_x, uint16_t rate) {
 #ifdef ARM9
     if (!s_audio_ready) return;
     mm_sound_effect eff = {
-        .id      = s_mm_ids[id],
+        .id      = event_mm_id(id),
         .rate    = rate ? rate : compute_rate(rule->jitter_pct),
         .handle  = 0,
         .volume  = rule->volume,
@@ -192,12 +217,28 @@ void sfx_play(SfxId id, int world_x) {
     sfx_play_pitched(id, world_x, 0);
 }
 
+#if ARPG_LAB
+void sfx_lab_preview(int ev) {
+    if (ev < 0 || ev >= SND_COUNT) return;
+    s_last_played[ev] = s_frame - 100;     /* a preview ignores the event cooldown */
+    sfx_play_pitched((SfxId)ev, -1, 1024);
+}
+
+void sfx_lab_prepare(int ev) {
+#ifdef ARM9
+    if (ev >= 0 && ev < SND_COUNT && s_audio_ready) (void)event_mm_id((SfxId)ev);
+#else
+    (void)ev;
+#endif
+}
+#endif
+
 void sfx_start_charge(void) {
     sfx_stop_charge();
 #ifdef ARM9
     if (!s_audio_ready) return;
     mm_sound_effect eff = {
-        .id      = s_mm_ids[SND_HEART_CHARGE],
+        .id      = event_mm_id(SND_HEART_CHARGE),
         .rate    = 1024,
         .handle  = 0,
         .volume  = s_mix_rules[SND_HEART_CHARGE].volume,
@@ -280,7 +321,7 @@ void sfx_play_voice(SfxId id) {
 #ifdef ARM9
     if (!s_audio_ready || id < 0 || id >= SND_COUNT) return;
     mm_sound_effect eff = {
-        .id      = s_mm_ids[id],
+        .id      = event_mm_id(id),
         .rate    = 1024,
         .handle  = 0,
         .volume  = s_mix_rules[id].volume,

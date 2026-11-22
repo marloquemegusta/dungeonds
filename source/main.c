@@ -25,6 +25,7 @@
 #include "remate_sprites.h"
 #include "punch.h"
 #include "sfx.h"
+#include "lab_tuning.h"
 #include "bestiary.h"
 #include "intro.h"
 #include "hud_icons_gfx.h"
@@ -3353,7 +3354,16 @@ static void run_to_camp(void) {
 }
 #endif
 
+#if ARPG_LAB
+#define LAB_PAUSED() lab_tuning_is_open()
+#else
+#define LAB_PAUSED() 0
+#endif
+
 int main(void) {
+#if ARPG_LAB
+    lab_tuning_init();
+#endif
     arpg_progress_reset();      // once per boot: the banked xp survives every restart (arena_restart never touches g_arpg)
     irqSet(IRQ_VBLANK, on_vblank_irq);
     irqEnable(IRQ_VBLANK);
@@ -3491,6 +3501,14 @@ int main(void) {
         uint32_t keys_down = keysDown();
         touchPosition touch;
         touchRead(&touch);
+#if ARPG_LAB
+        // Lab build: SELECT opens the tuning menu; while it is open the game neither simulates nor sees the keys.
+        if (lab_tuning_update(keys_down, keys_held)) {
+            keys_down = 0;
+            keys_held = 0;
+        }
+        g_player_state.god_mode = g_lab_god;
+#endif
 #if ENC_BOT
         {
             // Autopilot of the variant "encuentros-bot": what the buttons and the stylus would say is replaced here.
@@ -3763,7 +3781,7 @@ int main(void) {
         {
             transition_update();
             simulate = g_hitstop_frames <= 0 && s_transition == TRANSITION_NONE &&
-                       !menu_is_open() && !ENC_STOPPED() &&
+                       !menu_is_open() && !ENC_STOPPED() && !LAB_PAUSED() &&
                        (!s_strip_mode || !g_player_state.is_dead);
             if (!menu_is_open() && !simulate) g_hitstop_frames--;
             if (simulate) {
@@ -3825,6 +3843,9 @@ int main(void) {
         if (menu_is_open()) {
             menu_render_bottom(bot_page_ptr(s_bot_back_page));
         }
+#if ARPG_LAB
+        lab_tuning_render(bot_page_ptr(s_bot_back_page));
+#endif
         if (g_perf.show_hud != 0) {
             draw_fps_hud(bot_page_ptr(s_bot_back_page));
         }
