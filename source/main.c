@@ -39,7 +39,7 @@
 #include "arpg_progress.h"
 #include "arpg_tree.h"
 #include "arpg_inv.h"
-#include "curse.h"
+#include "glifo.h"
 #include "radial.h"
 #include "allies.h"
 #include "camp.h"
@@ -1555,7 +1555,7 @@ ITCM_CODE static void render_screen(uint16_t *buffer, DirtySpan *spans, int cam_
 
     // 0) Ground decals of the weapons, Exvoto wax puddles, and boss puddles: under everything.
     weapons_render_floor(buffer, cam_x, cam_y);
-    curse_render_floor(buffer, cam_x, cam_y);       // ARPG: Maldicion zones and the aim ring
+    glifo_render_floor(buffer, cam_x, cam_y);       // ARPG: Glifo runes and the aim ring
     enemy_puddles_render(buffer, cam_x, cam_y);
     {
         GroundTarget melt_ground = { buffer, cam_x, cam_y };
@@ -1643,7 +1643,7 @@ ITCM_CODE static void render_screen(uint16_t *buffer, DirtySpan *spans, int cam_
     weapons_render_light(buffer, cam_x, cam_y);     // beams light the sprites drawn above
     PP_T0(pp_proj);
     weapons_render(buffer, cam_x, cam_y);
-    curse_render(buffer, cam_x, cam_y);             // ARPG: flying Maldicion
+    glifo_render(buffer, cam_x, cam_y);             // ARPG: flying Glifo
     if (!sub_screen) weapons_render_overlay(buffer);
     mods_render(buffer, cam_x, cam_y);
 #if ENCOUNTERS_PROTO
@@ -2450,7 +2450,7 @@ static void on_enemy_death(const Enemy *e, fixed hit_vx, fixed hit_vy) {
     }
     if (g_death_phase == DEATH_VISUALS) { CRASH_MARK(CL_DEATH_HOOK_DONE, 0, 0); return; }
 #if ENCOUNTERS_PROTO
-    // ARPG: the hook gets a const pointer into g_enemies. An ally drops no runes; a dead enemy in a curse zone may rise (allies.c).
+    // ARPG: the hook gets a const pointer into g_enemies. An ally drops no runes; a dead enemy in a Glifo may rise (allies.c).
     const int dead_slot = (e >= g_enemies && e < g_enemies + MAX_ENEMIES) ? (int)(e - g_enemies) : -1;
     const int dead_was_ally = dead_slot >= 0 && g_enemy_ally[dead_slot];
     if (dead_slot >= 0) allies_on_enemy_death(&g_enemies[dead_slot], g_enemies, MAX_ENEMIES);
@@ -2494,7 +2494,7 @@ static void death_chunks_update(void) {
 static void weapons_and_effects_update(void) {
     weapons_set_hero_pos(TO_INT(s_player.x), TO_INT(s_player.y));
     weapons_update(g_enemies, MAX_ENEMIES);
-    curse_update(g_enemies, MAX_ENEMIES);
+    glifo_update(g_enemies, MAX_ENEMIES);
     death_chunks_update();
     exvoto_melt_update();
 }
@@ -2515,7 +2515,7 @@ static void strip_shift_world_y(int dy_px) {
     remate_shift_y(dy_px);
     s_cam_y += dy_px;
     weapons_shift_y(dy_px);
-    curse_shift_y(dy_px);
+    glifo_shift_y(dy_px);
     pickups_shift_y(dy_px);
     enemy_puddles_shift_y(dy_px);
 
@@ -2847,7 +2847,7 @@ static void player_update(uint32_t keys, uint32_t keys_down) {
             // with a single spell, so in that case the hold does nothing.
             if (radial_begin()) {
                 weapons_cancel_aim();
-                curse_cancel_aim();
+                glifo_cancel_aim();
             }
 #else
             arpg_on_l_hold();
@@ -2899,14 +2899,14 @@ static void player_update(uint32_t keys, uint32_t keys_down) {
     }
 
     // Spell radial open (L held): the stylus only picks an entry. The touch is consumed here and
-    // never reaches the weapons or the curse, and a touch outside the entries does nothing.
+    // never reaches the weapons or the Glifo, and a touch outside the entries does nothing.
     if (radial_is_open()) {
         if (pressed) {
             int pick = radial_touch(s_last_touch_x, s_last_touch_y);
             if (pick >= 0 && pick != (int)g_arpg.spell) {
                 g_arpg.spell = (uint16_t)pick;
                 weapons_cancel_aim();
-                curse_cancel_aim();
+                glifo_cancel_aim();
                 sfx_play(SND_UI_CLICK, -1);
             }
         }
@@ -3063,8 +3063,8 @@ static void player_update(uint32_t keys, uint32_t keys_down) {
     int result;
 #if ENCOUNTERS_PROTO
     if (g_arpg.spell == 1 && arpg_tree_has(0)) {
-        // Maldicion (DESIGN.md 7.3): the stylus throws the curse; while aiming the hero stands still, as with the ray.
-        result = curse_input(&g_player_state, touch_down, pressed, in.touch_x, in.touch_y, s_player.x, s_player.y)
+        // Glifo (DESIGN.md 7.5): the stylus throws the glifo; while aiming the hero stands still, as with the ray.
+        result = glifo_input(&g_player_state, touch_down, pressed, in.touch_x, in.touch_y, s_player.x, s_player.y)
                  ? WEAPON_RESULT_ROOTED : 0;
     } else
 #endif
@@ -3133,7 +3133,7 @@ static void arena_restart(void) {
     player_state_init(&g_player_state);
     g_player_state.god_mode = god;
     weapons_init();
-    curse_reset();
+    glifo_reset();
     allies_reset();
     nav_set_goal(g_arena->player_x, g_arena->player_y);
     if (!s_strip_mode) nav_rebuild_now();
@@ -3310,7 +3310,7 @@ static void enter_camp_scene(void) {
     g_player_state.is_dead = 0;
     g_player_state.invuln_timer = 0;
     weapons_cancel_aim();
-    curse_reset();
+    glifo_reset();
     remate_reset();
     punch_reset();
     radial_close();

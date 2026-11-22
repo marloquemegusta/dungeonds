@@ -10,7 +10,7 @@
 #include "arpg.h"
 #include "dmg_numbers.h"
 #include "allies.h"
-#include "curse.h"
+#include "glifo.h"
 #include "sfx.h"
 #if ENCOUNTERS_PROTO
 #include "weapons.h"
@@ -197,10 +197,6 @@ static int s_chase_bias_x, s_chase_bias_y;    // v2: lateral offset of the walki
 static void chase_step(Enemy *e, Enemy *enemies, int num_enemies, int idx, fixed speed,
                        int wx, int wy, int px, int py, int ground_dist_sq) {
     speed = burn_slow(e, speed);          // Quemado frena (DESIGN.md 6.12.2)
-    {                                     // Glifo (DESIGN.md 7.3): a live zone slows whoever walks inside
-        const int pct = curse_slow_percent_at(TO_INT(e->x), TO_INT(e->y));
-        if (pct > 0) speed = speed * (100 - pct) / 100;
-    }
     int target_x = px, target_y = py;
     int direct = (e->has_los & VIEW_DIRECT) && ground_dist_sq <= CHASE_DIRECT_RANGE * CHASE_DIRECT_RANGE;
     if (!direct) {

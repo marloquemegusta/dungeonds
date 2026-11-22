@@ -7,7 +7,7 @@
 
 typedef struct {
     uint32_t magic;      // set by arpg_progress_reset to 0x41525047 ("ARPG")
-    uint16_t version;    // 2 (v1 saves load as v2 with a fresh inventory)
+    uint16_t version;    // 4 (v1: inventario nuevo; v3: se conserva y se le añade el Glifo)
     uint16_t level;      // starts at 1
     uint32_t xp;         // banked xp not yet converted into levels
     uint16_t points;     // retired with the skill tree; kept so the save layout (and scenarios) do not move

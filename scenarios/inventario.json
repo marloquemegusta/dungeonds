@@ -1,0 +1,785 @@
+{
+  "name": "inventario",
+  "description": "Inventario ARPG con botones: engarzar con A, desengarzar con X desde el engarce, engarzar otra, fundir con confirmacion (Y,B cancela; Y,Y funde), equipar y guardar el tomo de Glifo (el hechizo activo vuelve a Rayo), L/R cambian de pestana.",
+  "tags": [
+    "inventario"
+  ],
+  "suite": true,
+  "state": {
+    "elf": "../.ds-game-dev/build/out/dungeonds.elf",
+    "symbols": {
+      "pl": "s_player",
+      "arpg": "g_arpg",
+      "tab": "s_inv_tab",
+      "focus": "s_inv_focus",
+      "sel": "s_inv_sel"
+    },
+    "default_symbol": "pl",
+    "fields": {
+      "spell": {
+        "symbol": "arpg",
+        "offset": 18,
+        "type": "u16"
+      },
+      "wax": {
+        "symbol": "arpg",
+        "offset": 504,
+        "type": "u16"
+      },
+      "tab": {
+        "symbol": "tab",
+        "offset": 0,
+        "type": "s32"
+      },
+      "focus": {
+        "symbol": "focus",
+        "offset": 0,
+        "type": "s32"
+      },
+      "sel": {
+        "symbol": "sel",
+        "offset": 0,
+        "type": "s32"
+      },
+      "px": {
+        "symbol": "pl",
+        "offset": 0,
+        "type": "s32"
+      },
+      "py": {
+        "symbol": "pl",
+        "offset": 4,
+        "type": "s32"
+      },
+      "sock0_kind": {
+        "symbol": "arpg",
+        "offset": 294,
+        "type": "u8"
+      },
+      "sock0_mech": {
+        "symbol": "arpg",
+        "offset": 297,
+        "type": "u8"
+      },
+      "sock1_kind": {
+        "symbol": "arpg",
+        "offset": 308,
+        "type": "u8"
+      },
+      "sock1_mech": {
+        "symbol": "arpg",
+        "offset": 311,
+        "type": "u8"
+      },
+      "bag0_kind": {
+        "symbol": "arpg",
+        "offset": 28,
+        "type": "u8"
+      },
+      "bag0_school": {
+        "symbol": "arpg",
+        "offset": 29,
+        "type": "u8"
+      },
+      "bag2_kind": {
+        "symbol": "arpg",
+        "offset": 56,
+        "type": "u8"
+      },
+      "bag2_school": {
+        "symbol": "arpg",
+        "offset": 57,
+        "type": "u8"
+      },
+      "bag3_kind": {
+        "symbol": "arpg",
+        "offset": 70,
+        "type": "u8"
+      },
+      "bag3_school": {
+        "symbol": "arpg",
+        "offset": 71,
+        "type": "u8"
+      },
+      "bag4_kind": {
+        "symbol": "arpg",
+        "offset": 84,
+        "type": "u8"
+      },
+      "bag4_school": {
+        "symbol": "arpg",
+        "offset": 85,
+        "type": "u8"
+      },
+      "bag11_kind": {
+        "symbol": "arpg",
+        "offset": 182,
+        "type": "u8"
+      },
+      "bag11_school": {
+        "symbol": "arpg",
+        "offset": 183,
+        "type": "u8"
+      },
+      "bag12_kind": {
+        "symbol": "arpg",
+        "offset": 196,
+        "type": "u8"
+      },
+      "bag12_school": {
+        "symbol": "arpg",
+        "offset": 197,
+        "type": "u8"
+      },
+      "bag0_mech": {
+        "symbol": "arpg",
+        "offset": 31,
+        "type": "u8"
+      },
+      "sp1_kind": {
+        "symbol": "arpg",
+        "offset": 266,
+        "type": "u8"
+      },
+      "sp1_school": {
+        "symbol": "arpg",
+        "offset": 267,
+        "type": "u8"
+      },
+      "bag2_mech": {
+        "symbol": "arpg",
+        "offset": 59,
+        "type": "u8"
+      },
+      "bag3_mech": {
+        "symbol": "arpg",
+        "offset": 73,
+        "type": "u8"
+      }
+    }
+  },
+  "assertions": {
+    "state_changes": [
+      {
+        "at": "abierto",
+        "field": "tab",
+        "equals": 0
+      },
+      {
+        "at": "abierto",
+        "field": "focus",
+        "equals": 0
+      },
+      {
+        "at": "abierto",
+        "field": "sel",
+        "equals": 0
+      },
+      {
+        "at": "engarzada",
+        "field": "sock0_kind",
+        "equals": 1
+      },
+      {
+        "at": "engarzada",
+        "field": "sock0_mech",
+        "equals": 4
+      },
+      {
+        "at": "engarzada",
+        "field": "bag0_kind",
+        "equals": 0
+      },
+      {
+        "at": "engarzada",
+        "field": "sel",
+        "equals": 1
+      },
+      {
+        "at": "foco_engarce",
+        "field": "focus",
+        "equals": 1
+      },
+      {
+        "at": "desengarzada",
+        "field": "sock0_kind",
+        "equals": 0
+      },
+      {
+        "at": "desengarzada",
+        "field": "bag0_kind",
+        "equals": 1
+      },
+      {
+        "at": "desengarzada",
+        "field": "bag0_mech",
+        "equals": 4
+      },
+      {
+        "at": "desengarzada",
+        "field": "sel",
+        "equals": 0
+      },
+      {
+        "at": "foco_bolsa",
+        "field": "focus",
+        "equals": 0
+      },
+      {
+        "at": "lanza_sel",
+        "field": "sel",
+        "equals": 2
+      },
+      {
+        "at": "otra_engarzada",
+        "field": "sock0_kind",
+        "equals": 1
+      },
+      {
+        "at": "otra_engarzada",
+        "field": "sock0_mech",
+        "equals": 3
+      },
+      {
+        "at": "otra_engarzada",
+        "field": "bag2_kind",
+        "equals": 0
+      },
+      {
+        "at": "otra_engarzada",
+        "field": "sel",
+        "equals": 3
+      },
+      {
+        "at": "fundir_cancelado",
+        "field": "bag3_kind",
+        "equals": 1
+      },
+      {
+        "at": "fundir_cancelado",
+        "field": "wax",
+        "equals": 0
+      },
+      {
+        "at": "fundido",
+        "field": "bag3_kind",
+        "equals": 0
+      },
+      {
+        "at": "fundido",
+        "field": "wax",
+        "equals": 16
+      },
+      {
+        "at": "fundido",
+        "field": "sock0_mech",
+        "equals": 3
+      },
+      {
+        "at": "fundido",
+        "field": "sel",
+        "equals": 4
+      },
+      {
+        "at": "tomo_sel",
+        "field": "sel",
+        "equals": 11
+      },
+      {
+        "at": "tomo_equipado",
+        "field": "sp1_kind",
+        "equals": 2
+      },
+      {
+        "at": "tomo_equipado",
+        "field": "sp1_school",
+        "equals": 2
+      },
+      {
+        "at": "tomo_equipado",
+        "field": "bag11_kind",
+        "equals": 0
+      },
+      {
+        "at": "tomo_equipado",
+        "field": "tab",
+        "equals": 2
+      },
+      {
+        "at": "tomo_guardado",
+        "field": "sp1_kind",
+        "equals": 0
+      },
+      {
+        "at": "tomo_guardado",
+        "field": "bag2_kind",
+        "equals": 2
+      },
+      {
+        "at": "tomo_guardado",
+        "field": "bag2_school",
+        "equals": 2
+      },
+      {
+        "at": "tomo_guardado",
+        "field": "sel",
+        "equals": 2
+      },
+      {
+        "at": "tomo_guardado",
+        "field": "spell",
+        "equals": 0
+      },
+      {
+        "at": "tomo_reequipado",
+        "field": "sp1_kind",
+        "equals": 2
+      },
+      {
+        "at": "tomo_reequipado",
+        "field": "bag2_kind",
+        "equals": 0
+      },
+      {
+        "at": "pestana_r",
+        "field": "tab",
+        "equals": 3
+      },
+      {
+        "at": "pestana_l",
+        "field": "tab",
+        "equals": 1
+      },
+      {
+        "at": "pestana_rayo",
+        "field": "tab",
+        "equals": 0
+      },
+      {
+        "at": "toque_1",
+        "field": "focus",
+        "equals": 1
+      },
+      {
+        "at": "toque_1",
+        "field": "sock0_mech",
+        "equals": 3
+      },
+      {
+        "at": "toque_2",
+        "field": "sock0_kind",
+        "equals": 0
+      },
+      {
+        "at": "toque_2",
+        "field": "bag2_kind",
+        "equals": 1
+      },
+      {
+        "at": "toque_2",
+        "field": "bag2_mech",
+        "equals": 3
+      },
+      {
+        "at": "arrastre_engarza",
+        "field": "sock0_mech",
+        "equals": 3
+      },
+      {
+        "at": "arrastre_engarza",
+        "field": "bag2_kind",
+        "equals": 0
+      },
+      {
+        "at": "arrastre_desengarza",
+        "field": "sock0_kind",
+        "equals": 0
+      },
+      {
+        "at": "arrastre_desengarza",
+        "field": "bag3_kind",
+        "equals": 1
+      },
+      {
+        "at": "arrastre_desengarza",
+        "field": "bag3_mech",
+        "equals": 3
+      },
+      {
+        "at": "arrastre_fuera",
+        "field": "sock0_kind",
+        "equals": 0
+      },
+      {
+        "at": "arrastre_fuera",
+        "field": "bag3_kind",
+        "equals": 1
+      }
+    ]
+  },
+  "steps": [
+    {
+      "frames": 60
+    },
+    {
+      "tap": {
+        "x": 128,
+        "y": 66
+      },
+      "frames": 6
+    },
+    {
+      "release": true,
+      "frames": 40
+    },
+    {
+      "button_down": "START",
+      "frames": 4
+    },
+    {
+      "button_up": "START",
+      "frames": 50,
+      "state_capture": "partida_nueva"
+    },
+    {
+      "poke": [
+        {
+          "field": "px",
+          "value": 15872
+        },
+        {
+          "field": "py",
+          "value": 75776
+        }
+      ],
+      "frames": 20
+    },
+    {
+      "button_down": "A",
+      "frames": 10
+    },
+    {
+      "button_up": "A",
+      "frames": 25,
+      "capture": "i01_inventario",
+      "state_capture": "abierto"
+    },
+    {
+      "button_down": "A",
+      "frames": 10
+    },
+    {
+      "button_up": "A",
+      "frames": 20,
+      "capture": "i02_engarzada",
+      "state_capture": "engarzada"
+    },
+    {
+      "button_down": "LEFT",
+      "frames": 10
+    },
+    {
+      "button_up": "LEFT",
+      "frames": 14
+    },
+    {
+      "button_down": "LEFT",
+      "frames": 10
+    },
+    {
+      "button_up": "LEFT",
+      "frames": 20,
+      "state_capture": "foco_engarce"
+    },
+    {
+      "button_down": "X",
+      "frames": 10
+    },
+    {
+      "button_up": "X",
+      "frames": 20,
+      "capture": "i03_desengarzada",
+      "state_capture": "desengarzada"
+    },
+    {
+      "button_down": "RIGHT",
+      "frames": 10
+    },
+    {
+      "button_up": "RIGHT",
+      "frames": 20,
+      "state_capture": "foco_bolsa"
+    },
+    {
+      "button_down": "RIGHT",
+      "frames": 10
+    },
+    {
+      "button_up": "RIGHT",
+      "frames": 14
+    },
+    {
+      "button_down": "RIGHT",
+      "frames": 10
+    },
+    {
+      "button_up": "RIGHT",
+      "frames": 20,
+      "state_capture": "lanza_sel"
+    },
+    {
+      "button_down": "A",
+      "frames": 10
+    },
+    {
+      "button_up": "A",
+      "frames": 20,
+      "state_capture": "otra_engarzada"
+    },
+    {
+      "button_down": "Y",
+      "frames": 10
+    },
+    {
+      "button_up": "Y",
+      "frames": 14
+    },
+    {
+      "button_down": "B",
+      "frames": 10
+    },
+    {
+      "button_up": "B",
+      "frames": 20,
+      "state_capture": "fundir_cancelado"
+    },
+    {
+      "button_down": "Y",
+      "frames": 10
+    },
+    {
+      "button_up": "Y",
+      "frames": 20,
+      "capture": "i04_confirmar_fundir"
+    },
+    {
+      "button_down": "Y",
+      "frames": 10
+    },
+    {
+      "button_up": "Y",
+      "frames": 20,
+      "state_capture": "fundido"
+    },
+    {
+      "button_down": "DOWN",
+      "frames": 10
+    },
+    {
+      "button_up": "DOWN",
+      "frames": 14
+    },
+    {
+      "button_down": "RIGHT",
+      "frames": 10
+    },
+    {
+      "button_up": "RIGHT",
+      "frames": 14
+    },
+    {
+      "button_down": "RIGHT",
+      "frames": 10
+    },
+    {
+      "button_up": "RIGHT",
+      "frames": 14
+    },
+    {
+      "button_down": "RIGHT",
+      "frames": 10
+    },
+    {
+      "button_up": "RIGHT",
+      "frames": 20,
+      "state_capture": "tomo_sel"
+    },
+    {
+      "button_down": "A",
+      "frames": 10
+    },
+    {
+      "button_up": "A",
+      "frames": 20,
+      "capture": "i05_tomo_puesto",
+      "state_capture": "tomo_equipado"
+    },
+    {
+      "poke": [
+        {
+          "field": "spell",
+          "value": 1
+        }
+      ],
+      "frames": 6
+    },
+    {
+      "button_down": "X",
+      "frames": 10
+    },
+    {
+      "button_up": "X",
+      "frames": 20,
+      "state_capture": "tomo_guardado"
+    },
+    {
+      "button_down": "A",
+      "frames": 10
+    },
+    {
+      "button_up": "A",
+      "frames": 20,
+      "capture": "i06_tomo_de_nuevo",
+      "state_capture": "tomo_reequipado"
+    },
+    {
+      "button_down": "R",
+      "frames": 10
+    },
+    {
+      "button_up": "R",
+      "frames": 20,
+      "state_capture": "pestana_r"
+    },
+    {
+      "button_down": "L",
+      "frames": 10
+    },
+    {
+      "button_up": "L",
+      "frames": 14
+    },
+    {
+      "button_down": "L",
+      "frames": 10
+    },
+    {
+      "button_up": "L",
+      "frames": 20,
+      "state_capture": "pestana_l"
+    },
+    {
+      "button_down": "L",
+      "frames": 10
+    },
+    {
+      "button_up": "L",
+      "frames": 20,
+      "state_capture": "pestana_rayo"
+    },
+    {
+      "tap": {
+        "x": 44,
+        "y": 44
+      },
+      "frames": 6
+    },
+    {
+      "release": true,
+      "frames": 14,
+      "state_capture": "toque_1"
+    },
+    {
+      "tap": {
+        "x": 44,
+        "y": 44
+      },
+      "frames": 6
+    },
+    {
+      "release": true,
+      "frames": 20,
+      "state_capture": "toque_2",
+      "capture": "i07_toque_desengarza"
+    },
+    {
+      "touch": {
+        "x": 184,
+        "y": 45
+      },
+      "frames": 5
+    },
+    {
+      "drag": {
+        "from": {
+          "x": 184,
+          "y": 45
+        },
+        "to": {
+          "x": 44,
+          "y": 44
+        },
+        "frames": 10
+      },
+      "frames": 4,
+      "capture": "i08_arrastrando"
+    },
+    {
+      "release": true,
+      "frames": 20,
+      "state_capture": "arrastre_engarza"
+    },
+    {
+      "touch": {
+        "x": 44,
+        "y": 44
+      },
+      "frames": 5
+    },
+    {
+      "drag": {
+        "from": {
+          "x": 44,
+          "y": 44
+        },
+        "to": {
+          "x": 217,
+          "y": 45
+        },
+        "frames": 10
+      },
+      "frames": 4
+    },
+    {
+      "release": true,
+      "frames": 20,
+      "state_capture": "arrastre_desengarza"
+    },
+    {
+      "touch": {
+        "x": 217,
+        "y": 45
+      },
+      "frames": 5
+    },
+    {
+      "drag": {
+        "from": {
+          "x": 217,
+          "y": 45
+        },
+        "to": {
+          "x": 90,
+          "y": 100
+        },
+        "frames": 10
+      },
+      "frames": 4
+    },
+    {
+      "release": true,
+      "frames": 20,
+      "state_capture": "arrastre_fuera"
+    }
+  ]
+}

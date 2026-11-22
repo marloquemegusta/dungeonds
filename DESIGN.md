@@ -673,6 +673,8 @@ Prueba de concepto de dos días: convertir la partida por encuentros en un Actio
   - **Interacción:** arrastrar con el lápiz desde la bolsa hasta un engarce (o al Crisol para desguazar por cera); al soltar sobre un hueco ocupado, se intercambian y la anterior vuelve a la bolsa. También se mantiene control por cruceta + A/B/Y.
   - **Acabado:** fondo de la mazmorra/campamento congelado y oscurecido con **paneles ahumados semitransparentes**.
 - **Escuelas:** Rayo, Glifo y Levantar son hechizos, y **los hechizos son objetos de la bolsa** (tomos que caen en la mazmorra, de jefes, élites y secretos). Hay **3 huecos de hechizo equipado**: el activo más 2 que se despliegan en el menú radial (§7.2); **Ejecución va fija en L**, no ocupa hueco de hechizo pero tiene sus propios engarces; **Pecho** es el relicario con pasivas. Cada hechizo tiene hasta 3 engarces; el pecho, 2.
+- **Equipar un tomo (inventario, 2026-11-22):** A sobre el tomo lo pasa a un hueco de hechizo libre (si los 2 están llenos, sustituye al último y el desplazado vuelve a la bolsa) y abre su pestaña: el tomo desaparece de la bolsa, la pestaña lleva una raya dorada y pone «Tomo puesto». X en esa pestaña lo guarda de nuevo en la bolsa. El hechizo solo sale en el radial (L mantenido) con el tomo puesto. La pestaña Glifo tiene 3 engarces como las demás; Levantar queda fuera de la protodemo.
+- **Controles del inventario (2026-11-22):** cruceta mueve el cursor por la bolsa; **izquierda en la primera columna pasa a los engarces** de la pestaña (arriba/abajo eligen, derecha vuelve a la bolsa). **L/R** cambian de pestaña. **A** engarza la reliquia elegida en el primer engarce libre de su escuela (si están todos ocupados, en el engarce seleccionado; se intercambian) o, en los engarces, la **desengarza** a la bolsa; **X** desengarza el engarce elegido o, si no, guarda el tomo de la pestaña; **Y** funde (pide confirmar con Y/A; B cancela); **B** sale. Táctil: arrastrar bolsa→engarce, engarce→bolsa, bolsa→Crisol; un segundo toque sobre un engarce ya elegido lo desengarza. Con la bolsa llena avisa «Bolsa llena» y no hace nada; la ayuda de botones sale en la cabecera de la pantalla superior.
 - **Gráficos de reliquias y tomos (híbrido por arquetipos, decidido 2026-11-21):** **6 arquetipos 3D base** pre-renderizados en dos tamaños —suelo (~14–16 px con destello apagado de rareza) e inventario (~28–30 px)—: **Tomo** (hechizos), **Lanza/Relicario** (Rayo), **Nudillera / puño americano gótico** (Ejecución), **Vial** (Glifo), **Cráneo votivo** (Levantar) y **Sagrado Corazón** (Pecho, reutilizando el modelo 3D ya existente `assets/models/hud/sacred_heart/`). La rareza se distingue por halo/marco y variantes de tono; las Legendarias/únicas podrán añadir 3D propios más adelante.
 - **Acceso:** desde el arcón del campamento y desde la pausa de la mazmorra (botón Inventario, el juego queda congelado). En los dos sitios se puede engarzar, equipar y desguazar para hacer hueco.
 - **El árbol de habilidades desaparece** (sustituido por reliquias y este inventario).
@@ -692,7 +694,7 @@ Prueba de concepto de dos días: convertir la partida por encuentros en un Actio
 
 ### 7.3 Hechizos y árbol
 - **Rayo** (de partida): el rayo cargado actual, más débil al principio y con coste de maná.
-- **Maldición** (se desbloquea con un punto): se lanza al punto que toca el lápiz, como la granada retirada (rescatable de `7aa3b5f`), y deja en el suelo una zona que aplica Quemado durante unos segundos.
+- **Maldición** (sustituida por el Glifo, §7.7; se desbloquea con un punto): se lanza al punto que toca el lápiz, como la granada retirada (rescatable de `7aa3b5f`), y deja en el suelo una zona que aplica Quemado durante unos segundos.
 - **Cuatro ramas de tres nodos**, en orden dentro de cada rama, un punto por nodo:
 
 | Hechizo | Rama | Nodo 1 | Nodo 2 | Nodo 3 |
@@ -706,21 +708,37 @@ Prueba de concepto de dos días: convertir la partida por encuentros en un Actio
 - La pantalla del árbol se abre al dormir: cuatro columnas de nodos con nombre y estado (comprado, disponible, bloqueado).
 
 ### 7.6 Reliquias, auras y drops de la protodemo (decidido 2026-11-22)
-- **Alcance de escuelas en la protodemo:** **Rayo**, **Ejecución** y **Pecho**. **Levantar** queda fuera de la protodemo; **Glifo** queda pendiente de diseñar su gameplay en otra sesión.
+- **Alcance de escuelas en la protodemo:** **Rayo**, **Ejecución** y **Pecho**. **Glifo** entra como segundo hechizo equipable (§7.7). **Levantar** queda fuera de la protodemo.
 - **Auras por escuela (Rara / Épica):**
   - **Rayo:** *Lanza de Longinos* (atraviesa a todos) y *Llama Votiva* (la línea de carga aplica Quemado).
   - **Ejecución (`L`):** *Pira* (al ejecutar a un enemigo quemado, explota y propaga el Quemado a los cercanos). Se reserva una 2.ª aura para enlazar con Levantar más adelante.
+  - **Glifo:** *Redil* (atracción) y *Zarza Ardiente* (fuego) (§7.7).
   - **Pecho (pasivas):** *Aura de Cilicio* (daño periódico alrededor) y *Llaga Abierta* (más daño cuanta menos vida tienes).
 - **Líneas (stats) por escuela:**
   - **Rayo:** `Daño`, `Carga`, `Alcance`, `Quemadura`.
   - **Ejecución:** `Daño`, `Alcance`, `Quemadura`, `+Vida/Maná al rematar`.
+  - **Glifo:** `Daño`, `Radio`, `Espera`, `Coste de maná`.
   - **Pecho:** `Vida máx.`, `Maná máx.`, `Regen. de maná`, `Velocidad` (sin armadura ni stats de daño directo).
 - **Rarezas y nivel de objeto:** Común (1 línea), Poco común (2 líneas), Rara (1 aura + 1 línea), Épica (1 aura + 2 líneas), Legendaria (nombre propio, efecto único fijo + 2 líneas). Cada reliquia lleva un **nivel** según el piso/sala donde cae, que escala sus valores.
-- **Legendarias de Zona 1:** *Sello del Corazón Abierto* (Rayo: *Auto de Fe* — ×2 a quemados), *Brasero de Pira* (Ejecución: *Pira*), *Astilla del Estandarte* (Pecho: *Llaga Abierta* + maná/vida altos).
+- **Legendarias de Zona 1:** *Sello del Corazón Abierto* (Rayo: *Auto de Fe* — ×2 a quemados), *Brasero de Pira* (Ejecución: *Pira*), *Ampolla del Santo Óleo* (Glifo: *Doble Sello*), *Astilla del Estandarte* (Pecho: *Llaga Abierta* + maná/vida altos).
 - **Drops en el suelo:** enemigos (normales con probabilidad baja, élites con probabilidad alta, Abanderado con Legendaria garantizada) y cofres sueltan reliquias en el suelo con destello y etiqueta por rareza (paleta desaturada, §6.10). Al pasar por encima se recogen a la bolsa (si está llena, avisa sin borrarla).
 - **Pendiente próximo para la protodemo:**
-  1. **Glifo:** diseñar su gameplay completo (base + auras) en la próxima sesión e integrarlo como segundo hechizo equipable.
+  1. **Glifo:** integrarlo en la ROM según §7.7.
   2. **Grafo de Zona 1:** conectar salas reales (3 naves, 4 galerías, 2 capillas con reja, cripta, puerta con llave, atajo), persistencia de cofres/puertas/altares, viaje entre altares desde el campamento, santuarios (estatuas) y mapa en la pausa.
   3. **Campamento nocturno:** corregir perspectiva de los muros laterales, conectar la mesa como Crisol de desguace (y uso de cera/pociones) y señal diegética de foco sin rótulos.
   4. **Inventario y pausa:** 5 iconos 3D pendientes (*Tomo, Lanza, Nudillera, Vial, Cráneo*), tipografía definitiva y espaciado del botón 5 en la pausa.
   5. **Validación en DS:** medición `perf` en hardware (campamento nocturno y salas con ~24 enemigos) y prueba de guardado en tarjeta real (`dungeonds_arpg.sav`).
+
+### 7.7 Glifo (decidido 2026-11-22)
+Propuesta, mockups y cuentas: `walkthroughs/glifo-diseno/`. Sustituye a la Maldición de §7.5 (de ella se conservan el lanzamiento con el lápiz, el alcance y el tope de 3). Cifras iniciales, a ajustar jugando.
+- **Ciclo:** el lápiz toca el suelo y el héroe arroja el **Vial** (la reliquia del Glifo) en arco; se rompe al caer y cuesta **30 de maná**. **Apertura 0,5 s** (la grieta traza la runa; no hace nada, es la telegrafía), **espera 1,5 s** (actúa el aura, si la hay), **detonación** de **80** a todo lo que está dentro y **cierre 0,5 s**. Radio **40 px de suelo** (elipse de 80×40). Hasta **3 glifos** a la vez.
+- **Por qué 80:** Exvoto y Bebé tienen 100 de vida y tambalean a ≤25 %; un Sello sin mejoras deja a la multitud **tambaleando** para la Ejecución. Con líneas de `Daño` pasa de 100 y mata del tirón.
+- **Auras (Rara / Épica):**
+  - **Redil:** durante la espera arrastra a los de dentro hacia el centro a **28 px/s** fijos, además de lo que anden. Los lentos (Abanderado, Párroco, Monja, Cireneo, Ojo) quedan clavados o van al centro; el Exvoto casi no avanza; el Bebé va muy frenado; lo que está quieto (rezando, apuntando, tambaleando) cruza el radio en la espera. Aspecto: pozo de luz que gira en el centro y motas que viajan en espiral hacia él.
+  - **Zarza Ardiente:** durante la espera, **1 capa de Quemado cada 0,5 s** a quien esté dentro, y **+2 capas** al detonar (llega al tope de 5 quien aguanta). Aspecto: lenguas de llama por las grietas y llamarada por toda la runa al detonar.
+  - Reservadas para después: *Juicio* (los de dentro reciben más daño) y *Marca* (el marcado estalla al morir).
+- **Líneas:** `Daño`, `Radio`, `Espera` (abre y detona antes), `Coste de maná`.
+- **Legendaria de Zona 1, Ampolla del Santo Óleo:** *Doble Sello*, tras detonar la runa se reabre una vez gratis en el mismo sitio, con su aura.
+- **Escuelas:** se puede jugar «main» de cualquiera, y juntas combinan mejor. Main Glifo juega a distancia y vive del maná (regeneración del Pecho, maná al rematar). Glifo + Ejecución es el bucle principal: el Sello deja tambaleando, `L` remata y cada remate da maná para el siguiente glifo; con Zarza, la Pira hace estallar a los quemados en cadena. Glifo + Rayo: el Redil apelotona para la Lanza y la Zarza quema para el Auto de Fe.
+- **Lenguaje visual:** la runa no se pinta: el suelo se agrieta siguiendo su trazo y por la grieta sale luz (fisura irregular de 1 px, núcleo marfil → oro → ámbar de la paleta `FX_SH_*`, motas que suben, los cuerpos tapan la runa). La grieta se abre trazando la runa (primero el anillo, luego el dibujo), respira durante la espera, destella al detonar y se cierra de fuera hacia dentro dejando una cicatriz que se apaga. Estilo elegido: **A, Sello litúrgico** (doble anillo con inscripción tallada, crismón en el centro, cruces en los cuatro puntos cardinales), frente a B (custodia solar) y C (laberinto chamánico). Las auras se **componen** (un glifo puede llevar ninguna, una o las dos): el Sello A es siempre la base; el **Redil transforma** esa misma runa (la retuerce en remolino hacia el centro, donde gira un pozo de luz); la **Zarza se añade** encima de la runa que haya, base o retorcida (llamas que salen de las propias grietas y llamarada al detonar). Combinaciones: Sello, Sello+Redil, Sello+Zarza y Sello+Redil+Zarza. Las auras futuras entran como otra transformación o como otra capa. Mockup de referencia (script, no ROM): `tools/glifo_mockup/glifo_mockup.py`.
+- **Assets:** la runa se hornea por script (sin modelo 3D), con el orden de encendido de cada píxel de la grieta; icono 3D del **Vial** (ya pendiente), que también es el proyectil; dos SFX (grieta y detonación). Las motas y llamas que suben se miden en la DS.

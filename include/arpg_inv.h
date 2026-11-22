@@ -45,6 +45,9 @@ enum {
     ARPG_LINE_MANA,               // Pecho: maná máximo, en puntos
     ARPG_LINE_MANA_REGEN,         // Pecho: regeneración de maná, en %
     ARPG_LINE_REMATE_HEAL,        // Ejecución: +vida/maná al rematar, en puntos
+    ARPG_LINE_RADIUS,             // Glifo: radio, en %
+    ARPG_LINE_WAIT,               // Glifo: acorta apertura+espera, en %
+    ARPG_LINE_COST,               // Glifo: coste de maná, en %
     ARPG_LINE_COUNT
 };
 
@@ -58,7 +61,7 @@ enum {
 #define ARPG_MECH_LLAMA_VOTIVA 4
 #define ARPG_MECH_BRASA     5
 #define ARPG_MECH_AUTO_FE   6
-#define ARPG_MECH_MIASMA    7            // Glifo: sin contenido
+#define ARPG_MECH_ZARZA     7            // Glifo: aura Zarza Ardiente (antes Miasma, sin contenido)
 #define ARPG_MECH_CILICIO   8
 #define ARPG_MECH_MARTIRIO  9
 #define ARPG_MECH_LEVANTAR  10           // Levantar: sin contenido
@@ -68,7 +71,9 @@ enum {
 #define ARPG_MECH_FLAGELADO 14           // Ejecución: Corazón Flagelado (RELIC_FLAGELADO)
 #define ARPG_MECH_PIRA      15           // Ejecución: Pira (al ejecutar quemado, explota y propaga)
 #define ARPG_MECH_LLAGA     16           // Pecho: Llaga Abierta (más daño cuanta menos vida tienes)
-#define ARPG_MECH_COUNT     17
+#define ARPG_MECH_REDIL     17           // Glifo: aura Redil
+#define ARPG_MECH_DOBLE_SELLO 18         // Glifo legendaria (Ampolla del Santo Óleo): el sello se reabre una vez
+#define ARPG_MECH_COUNT     19
 
 typedef struct {
     uint8_t kind;                 // ARPG_ITEM_*
@@ -122,6 +127,12 @@ int  arpg_inv_has_spell(int spell);                    // 0 = Rayo siempre; 1/2 
 int  arpg_inv_equipped_spell(int slot);
 // Atributo por mecánica (id de nodo antiguo) equipada en cualquier engarce.
 int  arpg_inv_has_mechanic(int mech);
+// Suma de una línea (ARPG_LINE_*) en los engarces de la escuela Glifo (no pasa por g_mods).
+int  arpg_inv_glifo_line(int kind);
+// Guardados v3 -> v4: asegura el Tomo de Glifo y las reliquias Redil y Zarza (en la bolsa si faltan).
+void arpg_inv_migrate_glifo(void);
+// Tras cargar un guardado: descarta objetos con valores fuera de rango y fija el hueco 0 como Rayo.
+void arpg_inv_sanitize(void);
 
 // Modificadores: las líneas y mecánicas equipadas se aplican a g_mods (reutiliza los Dones y
 // reliquias del roguelike). arpg_inv_apply() se llama al empezar la partida (tras mods_reset y

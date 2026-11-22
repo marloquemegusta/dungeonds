@@ -88,12 +88,15 @@ static const uint16_t s_school_col[5] = {
 #define TOP_RX        102
 #define TOP_RW        142
 
+#define INV_FOCUS_BAG   0
+#define INV_FOCUS_SOCK  1
+
 #define INV_SPIN_SZ     56
 #define INV_SPIN_MAGIC  0x4954u
 #define INV_SPIN_TICKS  3
 
-static int s_tab = 0;
-static int s_sel = 0;
+static int s_inv_tab = 0;
+static int s_inv_sel = 0;
 static int s_socket_sel = 0;
 static int s_confirm = -1;
 static int s_top_dirty = 1;
@@ -121,6 +124,11 @@ static int s_drag_y = 0;
 static int s_hover_socket = -1;
 static int s_hover_crucible = 0;
 static int s_hover_bag = -1;
+static int s_inv_focus = 0;               // INV_FOCUS_*: dónde está el cursor de botones
+static int s_drag_sock = -1;          // engarce del que se arrastra (o -1)
+static int s_sock_tap_armed = 0;      // el engarce ya estaba seleccionado al pulsarlo: un toque lo desengarza
+static const char *s_msg = 0;
+static int s_msg_t = 0;
 static int s_top_bg_saved = 0;
 static int s_top_slab_drawn = 0;
 
@@ -468,11 +476,47 @@ static void draw_item_glyph(uint16_t *buf, const ArpgInvItem *it, int cx, int cy
 // ---------------------------------------------------------------------------
 
 static int school_defined(int school) {
-    return school == ARPG_SCHOOL_RAYO || school == ARPG_SCHOOL_EJECUCION || school == ARPG_SCHOOL_PECHO;
+    return school == ARPG_SCHOOL_RAYO || school == ARPG_SCHOOL_EJECUCION || school == ARPG_SCHOOL_PECHO ||
+           school == ARPG_SCHOOL_GLIFO;   // Levantar queda fuera de la protodemo
+}
+
+// 1 si hay un tomo de esa escuela puesto en un hueco de hechizo (Glifo, Levantar).
+static int tome_equipped(int school) {
+    for (int i = 1; i < ARPG_INV_SPELLS; i++)
+        if (g_arpg.inv.spell[i].kind == ARPG_ITEM_TOME && g_arpg.inv.spell[i].school == school) return 1;
+    return 0;
 }
 
 static const ArpgInvItem *bag_sel_item(void) {
-    return arpg_inv_bag_item(s_sel);
+    return arpg_inv_bag_item(s_inv_sel);
+}
+
+// Objeto que se muestra en la pantalla superior: el del engarce si el cursor está en los engarces.
+static const ArpgInvItem *view_item(void) {
+    if (s_inv_focus == INV_FOCUS_SOCK) return arpg_inv_socket_item(s_inv_tab, s_socket_sel);
+    return arpg_inv_bag_item(s_inv_sel);
+}
+
+static void show_msg(const char *m) {
+    s_msg = m;
+    s_msg_t = 90;
+}
+
+// Texto que se acorta con "." si no cabe en `max_w` px.
+static void text_fit(uint16_t *buf, int x, int y, int max_w, const char *s, uint16_t col) {
+    char tmp[64];
+    snprintf(tmp, sizeof(tmp), "%s", s ? s : "");
+    if (bestiary_font_measure_utf8(tmp) > max_w) {
+        int len = (int)strlen(tmp);
+        while (len > 1) {
+            len--;
+            while (len > 1 && ((uint8_t)tmp[len] & 0xC0) == 0x80) len--;   // no cortar un carácter UTF-8
+            tmp[len] = '.';
+            tmp[len + 1] = 0;
+            if (bestiary_font_measure_utf8(tmp) <= max_w) break;
+        }
+    }
+    text_at(buf, x, y, tmp, col);
 }
 
 static void item_display_name(const ArpgInvItem *it, char *buf, int n) {
@@ -501,13 +545,25 @@ static void item_display_name(const ArpgInvItem *it, char *buf, int n) {
     }
 }
 
-static void keep_sel_valid(void) {
-    if ((unsigned)s_sel >= ARPG_INV_BAG || arpg_inv_bag_empty(s_sel)) {
-        for (int i = 0; i < ARPG_INV_BAG; i++)
-            if (!arpg_inv_bag_empty(i)) { s_sel = i; return; }
-        s_sel = 0;
+// Si la selección quedó en un hueco vacío (tras equipar, fundir o desengarzar), salta al siguiente objeto
+// de la bolsa (con vuelta al principio), mejor uno de la escuela `pref` (-1 = cualquiera).
+static void keep_sel_valid_pref(int pref) {
+    if ((unsigned)s_inv_sel < ARPG_INV_BAG && !arpg_inv_bag_empty(s_inv_sel)) return;
+    if ((unsigned)s_inv_sel >= ARPG_INV_BAG) s_inv_sel = 0;
+    for (int pass = 0; pass < 2; pass++) {
+        if (pass == 0 && pref < 0) continue;
+        for (int d = 0; d < ARPG_INV_BAG; d++) {
+            int i = (s_inv_sel + d) % ARPG_INV_BAG;
+            const ArpgInvItem *it = arpg_inv_bag_item(i);
+            if (!it) continue;
+            if (pass == 0 && (int)it->school != pref) continue;
+            s_inv_sel = i;
+            return;
+        }
     }
 }
+
+static void keep_sel_valid(void) { keep_sel_valid_pref(-1); }
 
 static int hit_bag_slot(int tx, int ty) {
     if (tx < INV_GX || ty < INV_GY) return -1;
@@ -522,8 +578,8 @@ static int hit_bag_slot(int tx, int ty) {
 }
 
 static int hit_socket(int tx, int ty) {
-    int n = arpg_inv_socket_count(s_tab);
-    if (n <= 0 || !school_defined(s_tab)) return -1;
+    int n = arpg_inv_socket_count(s_inv_tab);
+    if (n <= 0 || !school_defined(s_inv_tab)) return -1;
     for (int i = 0; i < n; i++) {
         int cy = INV_SOCK_Y0 + i * INV_SOCK_STEP;
         int x0 = INV_SOCK_CX - INV_SOCK_SZ / 2;
@@ -543,44 +599,118 @@ static int hit_crucible(int tx, int ty) {
 // Actions
 // ---------------------------------------------------------------------------
 
+// Engarce al que va una reliquia con A: el primero libre de su escuela; si están todos ocupados,
+// el engarce seleccionado (se intercambian).
+static int equip_target(const ArpgInvItem *it) {
+    int sc = it->school;
+    int n = arpg_inv_socket_count(sc);
+    for (int k = 0; k < n; k++)
+        if (!arpg_inv_socket_item(sc, k)) return k;
+    return (sc == s_inv_tab && s_socket_sel < n) ? s_socket_sel : 0;
+}
+
+// target_socket < 0: elige el engarce solo (equip_target).
 static void act_equip_to(int bag_idx, int target_socket) {
     const ArpgInvItem *it = arpg_inv_bag_item(bag_idx);
     if (!it) return;
     if (it->kind == ARPG_ITEM_TOME) {
-        if (arpg_inv_equip_tome(bag_idx)) { arpg_inv_recalc(); arpg_progress_save(); keep_sel_valid(); sfx_play(SND_RELIC_SOCKET, -1); }
+        int school = it->school;
+        if (!school_defined(school)) { show_msg("Sin definir"); return; }   // Levantar: fuera de la protodemo
+        if (arpg_inv_equip_tome(bag_idx)) {
+            arpg_inv_recalc();
+            arpg_progress_save();
+            keep_sel_valid_pref(school);
+            // Señal visible: la pestaña del tomo se abre ("Equipado") y la bolsa apunta a su primera reliquia.
+            if (school_defined(school)) {
+                s_inv_tab = school;
+                s_socket_sel = 0;
+                for (int i = 0; i < ARPG_INV_BAG; i++) {
+                    const ArpgInvItem *r = arpg_inv_bag_item(i);
+                    if (r && r->kind == ARPG_ITEM_RELIC && (int)r->school == school) { s_inv_sel = i; break; }
+                }
+            }
+            s_confirm = -1;
+            s_top_slab_drawn = 0;
+            s_top_dirty = 1;
+            sfx_play(SND_RELIC_SOCKET, -1);
+        }
         return;
     }
     if (it->kind != ARPG_ITEM_RELIC) return;
 
-    if ((int)it->school != s_tab) { s_tab = it->school; s_socket_sel = 0; }
-    int n = arpg_inv_socket_count(s_tab);
-    if (target_socket < 0 || target_socket >= n) target_socket = 0;
+    int school = it->school;
+    if (!school_defined(school)) return;
+    if (school != s_inv_tab) { s_inv_tab = school; s_socket_sel = 0; s_top_slab_drawn = 0; }
+    int n = arpg_inv_socket_count(s_inv_tab);
+    if (target_socket < 0) target_socket = equip_target(it);
+    if (target_socket >= n) target_socket = 0;
 
     int ok;
-    if (arpg_inv_socket_item(s_tab, target_socket) == 0)
-        ok = arpg_inv_equip_relic(bag_idx, s_tab, target_socket);
+    if (arpg_inv_socket_item(s_inv_tab, target_socket) == 0)
+        ok = arpg_inv_equip_relic(bag_idx, s_inv_tab, target_socket);
     else
-        ok = arpg_inv_swap_relic(bag_idx, s_tab, target_socket);
+        ok = arpg_inv_swap_relic(bag_idx, s_inv_tab, target_socket);
 
     if (ok) {
         s_socket_sel = target_socket;
+        s_confirm = -1;
         arpg_inv_recalc();
         arpg_progress_save();
-        keep_sel_valid();
+        // Tras un intercambio la reliquia vieja ocupa el hueco de bolsa de la nueva.
+        keep_sel_valid_pref(school);
+        s_top_dirty = 1;
         sfx_play(SND_RELIC_SOCKET, -1);
     }
 }
 
+// Saca la reliquia del engarce a la bolsa. Sin hueco en la bolsa avisa y no hace nada.
+static int act_unequip_socket(int socket) {
+    if (!arpg_inv_socket_item(s_inv_tab, socket)) return 0;
+    int slot = arpg_inv_first_free_bag();
+    if (slot < 0) { show_msg("Bolsa llena"); return 0; }
+    if (!arpg_inv_unequip_socket(s_inv_tab, socket)) return 0;
+    arpg_inv_recalc();
+    arpg_progress_save();
+    s_inv_sel = slot;
+    s_confirm = -1;
+    s_top_dirty = 1;
+    sfx_play(SND_UI_CLICK, -1);
+    return 1;
+}
+
+// X: guarda en la bolsa el tomo de la pestaña actual (el hechizo deja de salir en el radial).
+static void act_unequip_tome(void) {
+    for (int i = 1; i < ARPG_INV_SPELLS; i++) {
+        const ArpgInvItem *sp = &g_arpg.inv.spell[i];
+        if (sp->kind == ARPG_ITEM_TOME && (int)sp->school == s_inv_tab) {
+            int slot = arpg_inv_first_free_bag();
+            if (slot < 0) { show_msg("Bolsa llena"); return; }
+            if (arpg_inv_unequip_tome(i)) {
+                s_inv_sel = slot;            // el tomo guardado queda seleccionado (A lo vuelve a poner)
+                arpg_inv_recalc();
+                arpg_progress_save();
+                s_top_slab_drawn = 0;
+                s_top_dirty = 1;
+                sfx_play(SND_UI_CLICK, -1);
+            }
+            return;
+        }
+    }
+}
+
 static void act_equip(void) {
-    act_equip_to(s_sel, s_socket_sel);
+    act_equip_to(s_inv_sel, -1);
 }
 
 static void act_scrap_idx(int bag_idx) {
+    const ArpgInvItem *it = arpg_inv_bag_item(bag_idx);
+    int pref = it ? (int)it->school : -1;
     if (arpg_inv_scrap(bag_idx)) {
         arpg_inv_recalc();
         arpg_progress_save();
         s_confirm = -1;
-        keep_sel_valid();
+        s_top_dirty = 1;
+        keep_sel_valid_pref(pref);
         sfx_play(SND_RELIC_SOCKET, -1);
     }
 }
@@ -590,34 +720,49 @@ static void swap_bag_slots(int a, int b) {
     ArpgInvItem tmp = g_arpg.inv.bag[a];
     g_arpg.inv.bag[a] = g_arpg.inv.bag[b];
     g_arpg.inv.bag[b] = tmp;
-    s_sel = b;
+    s_inv_sel = b;
     arpg_progress_save();
 }
 
 static void select_tab(int tab) {
     if ((unsigned)tab >= ARPG_INV_SCHOOLS) return;
-    s_tab = tab;
-    if (s_socket_sel >= arpg_inv_socket_count(s_tab)) s_socket_sel = 0;
+    s_inv_tab = tab;
+    if (s_socket_sel >= arpg_inv_socket_count(s_inv_tab)) s_socket_sel = 0;
+    if (!school_defined(s_inv_tab)) s_inv_focus = INV_FOCUS_BAG;
     s_confirm = -1;
     s_top_slab_drawn = 0;
+    s_top_dirty = 1;
     sfx_play(SND_UI_CLICK, -1);
 }
 
 static void sync_tab_to_bag_sel(void) {
     const ArpgInvItem *it = bag_sel_item();
-    if (it && it->kind == ARPG_ITEM_RELIC && (int)it->school != s_tab) {
-        s_tab = (int)it->school;
-        if (s_socket_sel >= arpg_inv_socket_count(s_tab)) s_socket_sel = 0;
+    if (it && it->kind == ARPG_ITEM_RELIC && (int)it->school != s_inv_tab) {
+        s_inv_tab = (int)it->school;
+        if (s_socket_sel >= arpg_inv_socket_count(s_inv_tab)) s_socket_sel = 0;
         s_top_slab_drawn = 0;
     }
 }
 
-static void cycle_socket(int step) {
-    int n = arpg_inv_socket_count(s_tab);
-    if (n <= 0) return;
-    s_socket_sel = (s_socket_sel + step + n) % n;
-    sfx_play(SND_UI_CLICK, -1);
-    s_confirm = -1;
+// Soltar en la bolsa un engarce arrastrado: sobre una reliquia de su escuela se intercambian;
+// sobre un hueco libre se queda ahí; sobre otro objeto va al primer hueco libre.
+static void act_drop_socket(int socket, int hover_bag) {
+    if (hover_bag < 0) return;                       // soltar fuera: no pasa nada
+    const ArpgInvItem *tgt = arpg_inv_bag_item(hover_bag);
+    if (tgt && tgt->kind == ARPG_ITEM_RELIC && (int)tgt->school == s_inv_tab) {
+        if (arpg_inv_swap_relic(hover_bag, s_inv_tab, socket)) {
+            s_socket_sel = socket;
+            arpg_inv_recalc();
+            arpg_progress_save();
+            s_inv_sel = hover_bag;
+            s_top_dirty = 1;
+            sfx_play(SND_RELIC_SOCKET, -1);
+        }
+        return;
+    }
+    int free0 = arpg_inv_first_free_bag();
+    if (!act_unequip_socket(socket)) return;
+    if (!tgt && hover_bag != free0) swap_bag_slots(free0, hover_bag);
 }
 
 // ---------------------------------------------------------------------------
@@ -689,7 +834,7 @@ static void rot_ensure_item(const ArpgInvItem *it) {
 }
 
 static void rot_step(void) {
-    const ArpgInvItem *it = bag_sel_item();
+    const ArpgInvItem *it = view_item();
     rot_ensure_item(it);
     s_rot_bob_tick++;
     if (s_rot_valid && s_rot_fd >= 0) {
@@ -709,7 +854,7 @@ static void rot_step(void) {
 }
 
 void inventory_open(void) {
-    s_tab = 0;
+    s_inv_tab = 0;
     s_socket_sel = 0;
     s_confirm = -1;
     s_top_dirty = 1;
@@ -721,11 +866,16 @@ void inventory_open(void) {
     s_hover_socket = -1;
     s_hover_crucible = 0;
     s_hover_bag = -1;
+    s_inv_focus = INV_FOCUS_BAG;
+    s_drag_sock = -1;
+    s_sock_tap_armed = 0;
+    s_msg = 0;
+    s_msg_t = 0;
     s_rot_bob_tick = 0;
     rot_close();
     keep_sel_valid();
     sync_tab_to_bag_sel();
-    rot_ensure_item(bag_sel_item());
+    rot_ensure_item(view_item());
 }
 
 void inventory_set_touch_held(int touch_held, int touch_x, int touch_y) {
@@ -751,21 +901,31 @@ static int inventory_handle_input(uint32_t keys_down, int touch_pressed, int tou
         }
         int sk = hit_socket(touch_x, touch_y);
         if (sk >= 0) {
+            int occ = arpg_inv_socket_item(s_inv_tab, sk) != 0;
+            s_sock_tap_armed = (s_inv_focus == INV_FOCUS_SOCK && s_socket_sel == sk && occ);
+            s_inv_focus = INV_FOCUS_SOCK;
             s_socket_sel = sk;
             s_confirm = -1;
+            s_drag_bag = -1;
+            s_drag_active = 0;
+            s_drag_sock = occ ? sk : -1;
+            s_drag_start_x = s_drag_x = touch_x;
+            s_drag_start_y = s_drag_y = touch_y;
             return 0;
         }
         if (hit_crucible(touch_x, touch_y)) {
-            if (!arpg_inv_bag_empty(s_sel)) {
-                if (s_confirm == s_sel) act_scrap_idx(s_sel);
-                else s_confirm = s_sel;
+            if (!arpg_inv_bag_empty(s_inv_sel)) {
+                if (s_confirm == s_inv_sel) act_scrap_idx(s_inv_sel);
+                else s_confirm = s_inv_sel;
             }
             return 0;
         }
         int bidx = hit_bag_slot(touch_x, touch_y);
         if (bidx >= 0) {
+            s_inv_focus = INV_FOCUS_BAG;
+            s_drag_sock = -1;
             if (!arpg_inv_bag_empty(bidx)) {
-                s_sel = bidx;
+                s_inv_sel = bidx;
                 s_confirm = -1;
                 sync_tab_to_bag_sel();
                 s_drag_bag = bidx;
@@ -780,7 +940,7 @@ static int inventory_handle_input(uint32_t keys_down, int touch_pressed, int tou
         return 0;
     }
 
-    if (s_drag_bag >= 0) {
+    if (s_drag_bag >= 0 || s_drag_sock >= 0) {
         if (s_touch_held) {
             s_drag_x = s_touch_x;
             s_drag_y = s_touch_y;
@@ -791,15 +951,17 @@ static int inventory_handle_input(uint32_t keys_down, int touch_pressed, int tou
                     s_drag_active = 1;
                     s_confirm = -1;
                     const ArpgInvItem *it = arpg_inv_bag_item(s_drag_bag);
-                    if (it && it->kind == ARPG_ITEM_RELIC && (int)it->school != s_tab) {
+                    if (it && it->kind == ARPG_ITEM_RELIC && (int)it->school != s_inv_tab) {
                         select_tab(it->school);
                     }
+                    s_sock_tap_armed = 0;
                     s_top_dirty = 1;
                 }
             }
             if (s_drag_active) {
-                int nh_sock = hit_socket(s_drag_x, s_drag_y);
-                int nh_cruc = hit_crucible(s_drag_x, s_drag_y);
+                int from_sock = (s_drag_sock >= 0);       // un engarce solo se suelta en la bolsa
+                int nh_sock = from_sock ? -1 : hit_socket(s_drag_x, s_drag_y);
+                int nh_cruc = from_sock ? 0 : hit_crucible(s_drag_x, s_drag_y);
                 int nh_bag = hit_bag_slot(s_drag_x, s_drag_y);
                 if (nh_sock != s_hover_socket || nh_cruc != s_hover_crucible || nh_bag != s_hover_bag) {
                     s_hover_socket = nh_sock;
@@ -810,7 +972,12 @@ static int inventory_handle_input(uint32_t keys_down, int touch_pressed, int tou
             }
             return 0;
         } else {
-            if (s_drag_active) {
+            if (s_drag_active && s_drag_sock >= 0) {
+                act_drop_socket(s_drag_sock, s_hover_bag);
+                s_top_dirty = 1;
+            } else if (!s_drag_active && s_drag_sock >= 0 && s_sock_tap_armed) {
+                act_unequip_socket(s_drag_sock);               // segundo toque sobre el engarce ya elegido
+            } else if (s_drag_active) {
                 if (s_hover_socket >= 0) {
                     act_equip_to(s_drag_bag, s_hover_socket);
                 } else if (s_hover_crucible) {
@@ -821,6 +988,8 @@ static int inventory_handle_input(uint32_t keys_down, int touch_pressed, int tou
                 s_top_dirty = 1;
             }
             s_drag_bag = -1;
+            s_drag_sock = -1;
+            s_sock_tap_armed = 0;
             s_drag_active = 0;
             s_hover_socket = -1;
             s_hover_crucible = 0;
@@ -829,24 +998,43 @@ static int inventory_handle_input(uint32_t keys_down, int touch_pressed, int tou
         }
     }
 
-    int prev_sel = s_sel;
-    if (keys_down & KEY_LEFT)  { if (s_sel % INV_COLS > 0) s_sel--; s_confirm = -1; }
-    if (keys_down & KEY_RIGHT) { if (s_sel % INV_COLS < INV_COLS - 1 && s_sel + 1 < ARPG_INV_BAG) s_sel++; s_confirm = -1; }
-    if (keys_down & KEY_UP)    { if (s_sel - INV_COLS >= 0) s_sel -= INV_COLS; s_confirm = -1; }
-    if (keys_down & KEY_DOWN)  { if (s_sel + INV_COLS < ARPG_INV_BAG) s_sel += INV_COLS; s_confirm = -1; }
-    if (s_sel != prev_sel) sync_tab_to_bag_sel();
-    if (keys_down & KEY_L) cycle_socket(-1);
-    if (keys_down & KEY_R) cycle_socket(1);
+    int prev_sel = s_inv_sel;
+    if (s_inv_focus == INV_FOCUS_SOCK) {
+        // Cursor en los engarces de la pestaña: arriba/abajo eligen engarce, derecha vuelve a la bolsa.
+        int n = arpg_inv_socket_count(s_inv_tab);
+        if (keys_down & KEY_UP)    { if (s_socket_sel > 0) s_socket_sel--; s_confirm = -1; }
+        if (keys_down & KEY_DOWN)  { if (s_socket_sel < n - 1) s_socket_sel++; s_confirm = -1; }
+        if (keys_down & KEY_RIGHT) { s_inv_focus = INV_FOCUS_BAG; s_confirm = -1; }
+    } else {
+        if (keys_down & KEY_LEFT) {
+            if (s_inv_sel % INV_COLS > 0) s_inv_sel--;
+            else if (school_defined(s_inv_tab) && arpg_inv_socket_count(s_inv_tab) > 0) s_inv_focus = INV_FOCUS_SOCK;
+            s_confirm = -1;
+        }
+        if (keys_down & KEY_RIGHT) { if (s_inv_sel % INV_COLS < INV_COLS - 1 && s_inv_sel + 1 < ARPG_INV_BAG) s_inv_sel++; s_confirm = -1; }
+        if (keys_down & KEY_UP)    { if (s_inv_sel - INV_COLS >= 0) s_inv_sel -= INV_COLS; s_confirm = -1; }
+        if (keys_down & KEY_DOWN)  { if (s_inv_sel + INV_COLS < ARPG_INV_BAG) s_inv_sel += INV_COLS; s_confirm = -1; }
+        if (s_inv_sel != prev_sel) sync_tab_to_bag_sel();
+    }
+    if (keys_down & KEY_L) select_tab((s_inv_tab + ARPG_INV_SCHOOLS - 1) % ARPG_INV_SCHOOLS);
+    if (keys_down & KEY_R) select_tab((s_inv_tab + 1) % ARPG_INV_SCHOOLS);
 
     if (keys_down & KEY_A) {
-        if (s_confirm == s_sel) act_scrap_idx(s_sel);
+        if (s_inv_focus == INV_FOCUS_SOCK) act_unequip_socket(s_socket_sel);
+        else if (s_confirm == s_inv_sel) act_scrap_idx(s_inv_sel);
         else act_equip();
         return 0;
     }
+    if (keys_down & KEY_X) {
+        if (s_inv_focus == INV_FOCUS_SOCK && arpg_inv_socket_item(s_inv_tab, s_socket_sel)) act_unequip_socket(s_socket_sel);
+        else act_unequip_tome();
+        return 0;
+    }
     if (keys_down & KEY_Y) {
-        if (arpg_inv_bag_empty(s_sel)) return 0;
-        if (s_confirm == s_sel) act_scrap_idx(s_sel);
-        else s_confirm = s_sel;
+        if (s_inv_focus != INV_FOCUS_BAG) return 0;
+        if (arpg_inv_bag_empty(s_inv_sel)) return 0;
+        if (s_confirm == s_inv_sel) act_scrap_idx(s_inv_sel);
+        else s_confirm = s_inv_sel;
         return 0;
     }
     if (keys_down & KEY_B) {
@@ -858,6 +1046,7 @@ static int inventory_handle_input(uint32_t keys_down, int touch_pressed, int tou
 }
 
 int inventory_update(uint32_t keys_down, int touch_pressed, int touch_x, int touch_y) {
+    if (s_msg_t > 0) s_msg_t--;
     int exit_inv = inventory_handle_input(keys_down, touch_pressed, touch_x, touch_y);
     if (!exit_inv) rot_step();
     return exit_inv;
@@ -873,10 +1062,11 @@ static void render_tabs(uint16_t *buf) {
     };
     for (int i = 0; i < ARPG_INV_SCHOOLS; i++) {
         int x = INV_TAB_X0 + i * INV_TAB_W;
-        int active = (i == s_tab);
+        int active = (i == s_inv_tab);
         int ty = INV_TAB_Y + (active ? 0 : 2);
         int th = INV_TAB_H - (active ? 0 : 2);
         fill_rect(buf, x, ty, INV_TAB_W - 3, th, active ? INV_SLATE2 : INV_SLATE);
+        if (tome_equipped(i)) hline(buf, x + 3, ty + th - 2, INV_TAB_W - 9, INV_GOLD);   // tomo puesto
         hline(buf, x, ty, INV_TAB_W - 3, active ? INV_GOLD : INV_BEV_HI);
         vline(buf, x, ty, th, active ? INV_GOLD : INV_EDGE);
         vline(buf, x + INV_TAB_W - 4, ty, th, INV_SHAD);
@@ -893,8 +1083,8 @@ static void render_bottom_slab(uint16_t *buf) {
 }
 
 static void render_left_sockets(uint16_t *buf) {
-    int n = arpg_inv_socket_count(s_tab);
-    if (!school_defined(s_tab) || n <= 0) {
+    int n = arpg_inv_socket_count(s_inv_tab);
+    if (!school_defined(s_inv_tab) || n <= 0) {
         text_center(buf, INV_SOCK_CX, 86, "—", INV_DIM);
     } else {
         if (n > 1) {
@@ -905,15 +1095,25 @@ static void render_left_sockets(uint16_t *buf) {
             int cy = INV_SOCK_Y0 + i * INV_SOCK_STEP;
             int x0 = INV_SOCK_CX - INV_SOCK_SZ / 2;
             int y0 = cy - INV_SOCK_SZ / 2;
-            const ArpgInvItem *it = arpg_inv_socket_item(s_tab, i);
-            int hl = (s_drag_active && s_hover_socket == i) || (!s_drag_active && i == s_socket_sel);
+            const ArpgInvItem *it = arpg_inv_socket_item(s_inv_tab, i);
+            int from_me = (s_drag_active && s_drag_sock == i);
+            int hl = (s_drag_active && s_hover_socket == i) ||
+                     (!s_drag_active && s_inv_focus == INV_FOCUS_SOCK && i == s_socket_sel);
 
-            sunken_box_rar(buf, x0, y0, INV_SOCK_SZ, INV_SOCK_SZ, it ? (int)it->rarity : -1);
+            sunken_box_rar(buf, x0, y0, INV_SOCK_SZ, INV_SOCK_SZ, (it && !from_me) ? (int)it->rarity : -1);
             if (hl) corner_ticks(buf, x0, y0, INV_SOCK_SZ, INV_SOCK_SZ, INV_GOLD);
-            if (it) {
+            else if (s_inv_focus == INV_FOCUS_BAG && !s_drag_active && i == s_socket_sel && !it)
+                corner_ticks(buf, x0, y0, INV_SOCK_SZ, INV_SOCK_SZ, INV_DIM);   // engarce que recibirá la reliquia (si no hay otro libre)
+            if (it && !from_me) {
                 draw_item_glyph(buf, it, INV_SOCK_CX, cy - 1, 9, 0);
             }
         }
+    }
+
+    // Glifo/Levantar: estado del tomo (el hechizo solo sale en el radial con el tomo puesto).
+    if (s_inv_tab == ARPG_SCHOOL_GLIFO || s_inv_tab == ARPG_SCHOOL_LEVANTAR) {
+        int on = tome_equipped(s_inv_tab);
+        text_center(buf, INV_SOCK_CX, 140, on ? "Tomo puesto" : "Sin tomo", on ? INV_GOLD : INV_DIM);
     }
 
     // Crisol de desguace (botón hundido en piedra abajo-izquierda).
@@ -923,7 +1123,7 @@ static void render_left_sockets(uint16_t *buf) {
                      s_hover_crucible ? INV_GOLD : INV_RED);
     }
     text_center(buf, INV_CRUC_X + INV_CRUC_W / 2, INV_CRUC_Y + 5,
-                (s_confirm == s_sel && !arpg_inv_bag_empty(s_sel)) ? "¿Fundir?" : "Fundir",
+                (s_confirm == s_inv_sel && !arpg_inv_bag_empty(s_inv_sel)) ? "¿Fundir?" : "Fundir",
                 s_hover_crucible ? INV_GOLD : (s_confirm >= 0 ? INV_RED : INV_DIM));
 }
 
@@ -941,10 +1141,11 @@ static void render_right_bag(uint16_t *buf) {
         int y = INV_GY + r * INV_PITCH_Y;
         const ArpgInvItem *it = arpg_inv_bag_item(i);
         int is_ghost = (s_drag_active && i == s_drag_bag);
-        int hl = (s_drag_active && i == s_hover_bag) || (!s_drag_active && i == s_sel);
+        int hl = (s_drag_active && i == s_hover_bag) || (!s_drag_active && i == s_inv_sel);
 
         sunken_box_rar(buf, x, y, INV_CELL_SZ, INV_CELL_SZ, (it && !is_ghost) ? (int)it->rarity : -1);
-        if (hl) corner_ticks(buf, x, y, INV_CELL_SZ, INV_CELL_SZ, (s_confirm == i) ? INV_RED : INV_GOLD);
+        if (hl) corner_ticks(buf, x, y, INV_CELL_SZ, INV_CELL_SZ,
+                             (s_confirm == i) ? INV_RED : (s_inv_focus == INV_FOCUS_BAG || s_drag_active ? INV_GOLD : INV_DIM));
         if (it && !is_ghost) {
             draw_item_glyph(buf, it, x + INV_CELL_SZ / 2, y + INV_CELL_SZ / 2 - 1, 9, 0);
         }
@@ -959,8 +1160,8 @@ static void render_right_bag(uint16_t *buf) {
 }
 
 static void render_drag_ghost(uint16_t *buf) {
-    if (!s_drag_active || s_drag_bag < 0) return;
-    const ArpgInvItem *it = arpg_inv_bag_item(s_drag_bag);
+    if (!s_drag_active || (s_drag_bag < 0 && s_drag_sock < 0)) return;
+    const ArpgInvItem *it = (s_drag_sock >= 0) ? arpg_inv_socket_item(s_inv_tab, s_drag_sock) : arpg_inv_bag_item(s_drag_bag);
     if (!it) return;
     int x = s_drag_x - 14;
     int y = s_drag_y - 14;
@@ -979,6 +1180,8 @@ static void d2_stat_box(uint16_t *buf, int x, int y, int w, const char *label,
                         const char *val, uint16_t val_col) {
     text_at(buf, x + 2, y + 1, label, INV_DIM);
     int box_w = (w < 140) ? 40 : 54;
+    int need = bestiary_font_measure_utf8(val) + 8;
+    if (need > box_w) box_w = need;
     int bx = x + w - box_w;
     sunken_box(buf, bx, y, box_w, 15, 0);
     text_center(buf, bx + box_w / 2, y + 1, val, val_col);
@@ -998,15 +1201,15 @@ static void render_item_card(uint16_t *buf, int x, int y, int w, int h, const ch
     char name[40];
     item_display_name(it, name, sizeof(name));
     draw_item_glyph(buf, it, x + 16, y + 31, 8, 0);
-    text_at(buf, x + 29, y + 19, name, s_rar_bdr[it->rarity]);
+    text_fit(buf, x + 29, y + 19, w - 33, name, s_rar_bdr[it->rarity]);
     char sub[32];
     snprintf(sub, sizeof(sub), "%s · Nv.%d", arpg_inv_rarity_name(it->rarity), it->level ? (int)it->level : 1);
-    text_at(buf, x + 29, y + 32, sub, INV_DIM);
+    text_fit(buf, x + 29, y + 32, w - 33, sub, INV_DIM);
     hline(buf, x + 6, y + 44, w - 12, INV_EDGE);
 
     int row_y = y + 47;
     if (it->mech != ARPG_MECH_NONE) {
-        text_at(buf, x + 6, row_y, arpg_inv_mechanic_name(it->mech), INV_GOLD);
+        text_fit(buf, x + 6, row_y, w - 12, arpg_inv_mechanic_name(it->mech), INV_GOLD);
         row_y += 11;
         char desc[96];
         arpg_inv_mechanic_format(it, desc, sizeof(desc));
@@ -1026,7 +1229,7 @@ static void render_item_card(uint16_t *buf, int x, int y, int w, int h, const ch
 
 static void render_top_comparison(uint16_t *buf, int bag_idx, int sock_idx) {
     const ArpgInvItem *held = arpg_inv_bag_item(bag_idx);
-    const ArpgInvItem *eq = arpg_inv_socket_item(s_tab, sock_idx);
+    const ArpgInvItem *eq = arpg_inv_socket_item(s_inv_tab, sock_idx);
     if (!held) return;
 
     // Tarjeta derecha primero (evita corte de VBlank arriba-derecha).
@@ -1037,15 +1240,15 @@ static void render_top_comparison(uint16_t *buf, int bag_idx, int sock_idx) {
     char name[40];
     item_display_name(held, name, sizeof(name));
     draw_item_glyph(buf, held, 132 + 16, TOP_CARD_Y + 31, 8, 0);
-    text_at(buf, 132 + 29, TOP_CARD_Y + 19, name, s_rar_bdr[held->rarity]);
+    text_fit(buf, 132 + 29, TOP_CARD_Y + 19, TOP_CARD_W - 33, name, s_rar_bdr[held->rarity]);
     char sub[32];
     snprintf(sub, sizeof(sub), "%s · Nv.%d", arpg_inv_rarity_name(held->rarity), held->level ? (int)held->level : 1);
-    text_at(buf, 132 + 29, TOP_CARD_Y + 32, sub, INV_DIM);
+    text_fit(buf, 132 + 29, TOP_CARD_Y + 32, TOP_CARD_W - 33, sub, INV_DIM);
     hline(buf, 138, TOP_CARD_Y + 44, TOP_CARD_W - 12, INV_EDGE);
 
     int row_y = TOP_CARD_Y + 47;
     if (held->mech != ARPG_MECH_NONE) {
-        text_at(buf, 138, row_y, arpg_inv_mechanic_name(held->mech), INV_GOLD);
+        text_fit(buf, 138, row_y, TOP_CARD_W - 12, arpg_inv_mechanic_name(held->mech), INV_GOLD);
         row_y += 11;
         char desc[96];
         arpg_inv_mechanic_format(held, desc, sizeof(desc));
@@ -1056,7 +1259,7 @@ static void render_top_comparison(uint16_t *buf, int bag_idx, int sock_idx) {
     }
 
     ArpgInvPreview pv;
-    if (arpg_inv_preview_socket(bag_idx, s_tab, sock_idx, &pv)) {
+    if (arpg_inv_preview_socket(bag_idx, s_inv_tab, sock_idx, &pv)) {
         int shown = 0;
         for (int k = 0; k < ARPG_LINE_COUNT && shown < 2 && row_y <= TOP_CARD_Y + TOP_CARD_H - 15; k++) {
             int d = pv.after[k] - pv.before[k];
@@ -1111,6 +1314,24 @@ static void render_spin_window_item(uint16_t *buf, const ArpgInvItem *sel_it, in
     }
 }
 
+// Línea de ayuda de la cabecera (junto al nombre de la escuela): lo que hacen los botones ahora mismo.
+static void draw_hint(uint16_t *buf, const ArpgInvItem *view) {
+    const char *h;
+    if (s_drag_active) h = (s_drag_sock >= 0) ? "Suéltalo en la bolsa" : "Suelta en engarce o Fundir";
+    else if (s_inv_focus == INV_FOCUS_SOCK)
+        h = view ? "A/X Desengarzar · Der. bolsa" : "Der. bolsa · L/R Pestaña";
+    else if (view && view->kind == ARPG_ITEM_TOME)
+        h = school_defined(view->school) ? "A Equipar · Y Fundir" : "Y Fundir";
+    else if (view)
+        h = "A Engarzar · Y Fundir";
+    else if (tome_equipped(s_inv_tab))
+        h = "Tomo puesto · X lo guarda";
+    else
+        h = "L/R Pestaña · B Salir";
+    stone_rect(buf, 56, 33, 140, 12);
+    text_fit(buf, 56, 35, 140, h, tome_equipped(s_inv_tab) && !view ? INV_GOLD : INV_DIM);
+}
+
 void inventory_render_top(uint16_t *buf) {
     if (!buf) return;
     if (!s_top_bg_saved) {
@@ -1119,8 +1340,9 @@ void inventory_render_top(uint16_t *buf) {
         s_top_slab_drawn = 0;
     }
 
-    const ArpgInvItem *sel_it = bag_sel_item();
-    int in_cmp = (s_drag_active && s_hover_socket >= 0 && school_defined(s_tab));
+    const ArpgInvItem *sel_it = view_item();
+    int from_sock = (s_inv_focus == INV_FOCUS_SOCK);        // se muestra el objeto engarzado, sin vista previa ni Cera
+    int in_cmp = (s_drag_active && s_drag_bag >= 0 && s_hover_socket >= 0 && school_defined(s_inv_tab));
 
     // Ruta rápida VBlank: solo actualizar el objeto flotante girando si el texto no cambió.
     if (s_top_slab_drawn && !s_top_dirty && s_top_rot_dirty && !in_cmp && sel_it) {
@@ -1136,11 +1358,11 @@ void inventory_render_top(uint16_t *buf) {
         gold_frame(buf, 4, 4, SCREEN_W - 8, SCREEN_H - 8);
 
         sunken_box(buf, 14, 12, 34, 34, INV_GOLD);
-        diamond(buf, 31, 29, 10, s_school_col[s_tab]);
+        diamond(buf, 31, 29, 10, s_school_col[s_inv_tab]);
         static const char *const s_hdr_names[ARPG_INV_SCHOOLS] = {
             "R A Y O", "E J E C U C I Ó N", "G L I F O", "L E V A N T A R", "P E C H O"
         };
-        text_at(buf, 56, 22, s_hdr_names[s_tab], INV_GOLD);
+        text_at(buf, 56, 22, s_hdr_names[s_inv_tab], INV_GOLD);
 
         snprintf(line, sizeof(line), "Nv.%d", (int)g_arpg.level);
         sunken_box(buf, 198, 19, 44, 16, 0);
@@ -1153,6 +1375,8 @@ void inventory_render_top(uint16_t *buf) {
         stone_rect(buf, 10, 54, SCREEN_W - 20, SCREEN_H - 64);
     }
 
+    draw_hint(buf, sel_it);
+
     if (in_cmp) {
         render_top_comparison(buf, s_drag_bag, s_hover_socket);
         s_top_dirty = 0;
@@ -1161,8 +1385,10 @@ void inventory_render_top(uint16_t *buf) {
     }
 
     if (!sel_it) {
-        if (!school_defined(s_tab)) {
+        if (!school_defined(s_inv_tab)) {
             text_center(buf, SCREEN_W / 2, 106, "Sin definir", INV_DIM);
+        } else if (from_sock) {
+            text_center(buf, SCREEN_W / 2, 106, "Engarce vacío", INV_DIM);
         }
         s_top_dirty = 0;
         s_top_rot_dirty = 0;
@@ -1171,10 +1397,12 @@ void inventory_render_top(uint16_t *buf) {
 
     // Ventana izquierda: objeto flotando en grande (56x56) y girando + valor de Cera.
     render_spin_window_item(buf, sel_it, 1);
-    sunken_box(buf, TOP_WIN_X + (TOP_WIN_W - 44) / 2, TOP_WIN_Y + TOP_WIN_H - 21, 44, 16, 0);
-    draw_wax_coin(buf, TOP_WIN_X + (TOP_WIN_W - 44) / 2 + 4, TOP_WIN_Y + TOP_WIN_H - 18);
-    snprintf(line, sizeof(line), "%d", arpg_inv_wax_value(sel_it->rarity));
-    text_right(buf, TOP_WIN_X + (TOP_WIN_W - 44) / 2 + 40, TOP_WIN_Y + TOP_WIN_H - 20, line, INV_GOLD);
+    if (!from_sock) {      // la Cera es lo que da fundir un objeto de la bolsa
+        sunken_box(buf, TOP_WIN_X + (TOP_WIN_W - 44) / 2, TOP_WIN_Y + TOP_WIN_H - 21, 44, 16, 0);
+        draw_wax_coin(buf, TOP_WIN_X + (TOP_WIN_W - 44) / 2 + 4, TOP_WIN_Y + TOP_WIN_H - 18);
+        snprintf(line, sizeof(line), "%d", arpg_inv_wax_value(sel_it->rarity));
+        text_right(buf, TOP_WIN_X + (TOP_WIN_W - 44) / 2 + 40, TOP_WIN_Y + TOP_WIN_H - 20, line, INV_GOLD);
+    }
 
     // Barra vertical de hierro forjado dividiendo la ventana del texto.
     iron_bar_v(buf, 96, 54, 129);
@@ -1182,22 +1410,24 @@ void inventory_render_top(uint16_t *buf) {
     // Panel derecho: nombre, rareza/escuela, descripción del aura/mecánica y stats.
     char name[40];
     item_display_name(sel_it, name, sizeof(name));
-    text_at(buf, TOP_RX, 58, name, s_rar_bdr[sel_it->rarity]);
-    snprintf(line, sizeof(line), "%s · %s", arpg_inv_rarity_name(sel_it->rarity), arpg_inv_school_name(sel_it->school));
-    text_at(buf, TOP_RX, 70, line, INV_DIM);
+    text_fit(buf, TOP_RX, 58, TOP_RW, name, s_rar_bdr[sel_it->rarity]);
+    snprintf(line, sizeof(line), "%s · %s%s", arpg_inv_rarity_name(sel_it->rarity), arpg_inv_school_name(sel_it->school),
+             from_sock ? " · engarzada" : "");
+    text_fit(buf, TOP_RX, 70, TOP_RW, line, INV_DIM);
     hline(buf, TOP_RX, 84, TOP_RW, INV_EDGE);
 
     int ycur = 87;
     if (sel_it->kind == ARPG_ITEM_TOME) {
-        text_at(buf, TOP_RX, ycur, "Hechizo equipable", INV_GOLD);
+        text_at(buf, TOP_RX, ycur, school_defined(sel_it->school) ? "Hechizo equipable" : "Fuera de la protodemo", INV_GOLD);
         ycur += 12;
         ycur += text_wrapped(buf, TOP_RX, ycur, TOP_RW, 11,
-                             "Equipa en el radial para lanzar este hechizo.", INV_TXT);
+                             school_defined(sel_it->school) ? "A lo equipa. Mantén L en juego y elígelo en el radial."
+                                                            : "Aún no se puede equipar.", INV_TXT);
         ycur += 3;
         hline(buf, TOP_RX, ycur, TOP_RW, INV_EDGE);
         ycur += 4;
     } else if (sel_it->mech != ARPG_MECH_NONE) {
-        text_at(buf, TOP_RX, ycur, arpg_inv_mechanic_name(sel_it->mech), INV_GOLD);
+        text_fit(buf, TOP_RX, ycur, TOP_RW, arpg_inv_mechanic_name(sel_it->mech), INV_GOLD);
         ycur += 12;
         char desc[96];
         arpg_inv_mechanic_format(sel_it, desc, sizeof(desc));
@@ -1217,9 +1447,10 @@ void inventory_render_top(uint16_t *buf) {
         ycur += 16;
     }
 
-    if (school_defined(s_tab) && ycur <= 165) {
+    if (!from_sock && sel_it->kind == ARPG_ITEM_RELIC && school_defined(sel_it->school) && ycur <= 165) {
         ArpgInvPreview pv;
-        if (arpg_inv_preview_socket(s_sel, s_tab, s_socket_sel, &pv)) {
+        // Vista previa en el engarce al que iría con A (el mismo que elige act_equip).
+        if (arpg_inv_preview_socket(s_inv_sel, sel_it->school, equip_target(sel_it), &pv)) {
             int shown = 0;
             for (int k = 0; k < ARPG_LINE_COUNT && shown < 2 && ycur <= 165; k++) {
                 int d = pv.after[k] - pv.before[k];
@@ -1246,4 +1477,5 @@ void inventory_render(uint16_t *buf) {
     render_left_sockets(buf);
     render_right_bag(buf);
     render_drag_ghost(buf);
+    if (s_msg_t > 0 && s_msg) text_center(buf, 119, 168, s_msg, INV_RED);
 }
