@@ -42,6 +42,7 @@
 #include "arpg_map.h"
 #include "arpg_inv.h"
 #include "glifo.h"
+#include "campanero_fx.h"
 #include "radial.h"
 #include "allies.h"
 #include "camp.h"
@@ -1661,6 +1662,7 @@ ITCM_CODE static void render_screen(uint16_t *buffer, DirtySpan *spans, int cam_
     // 0) Ground decals of the weapons, Exvoto wax puddles, and boss puddles: under everything.
     weapons_render_floor(buffer, cam_x, cam_y);
     glifo_render_floor(buffer, cam_x, cam_y);       // ARPG: Glifo runes and the aim ring
+    cfx_render_floor(buffer, cam_x, cam_y);         // Campanero: bell rings on the floor
     enemy_puddles_render(buffer, cam_x, cam_y);
     {
         GroundTarget melt_ground = { buffer, cam_x, cam_y };
@@ -2596,6 +2598,7 @@ static void weapons_and_effects_update(void) {
     weapons_set_hero_pos(TO_INT(s_player.x), TO_INT(s_player.y));
     weapons_update(g_enemies, MAX_ENEMIES);
     glifo_update(g_enemies, MAX_ENEMIES);
+    cfx_update();
     death_chunks_update();
     exvoto_melt_update();
 }
@@ -2617,6 +2620,7 @@ static void strip_shift_world_y(int dy_px) {
     s_cam_y += dy_px;
     weapons_shift_y(dy_px);
     glifo_shift_y(dy_px);
+    cfx_shift_y(dy_px);
     pickups_shift_y(dy_px);
     enemy_puddles_shift_y(dy_px);
 
@@ -3290,6 +3294,7 @@ static void arena_restart(void) {
     g_player_state.god_mode = god;
     weapons_init();
     glifo_reset();
+    cfx_reset();
     allies_reset();
     nav_set_goal(spawn_x, spawn_y);
     if (!s_strip_mode) nav_rebuild_now();
@@ -3362,6 +3367,7 @@ static void room_reload_light(void) {
     s_player.anim_timer = 0;
     weapons_cancel_aim();
     glifo_reset();
+    cfx_reset();
     allies_reset();
     s_rooted = 0;
     s_crouched = 0;
@@ -3501,6 +3507,7 @@ static void enter_camp_scene(void) {
     g_player_state.invuln_timer = 0;
     weapons_cancel_aim();
     glifo_reset();
+    cfx_reset();
     remate_reset();
     punch_reset();
     radial_close();

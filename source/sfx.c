@@ -59,6 +59,11 @@ static const mm_word s_mm_ids[SND_COUNT] = {
     [SND_UI_CLICK]          = SFX_UI_CLICK,
     [SND_RELIC_SOCKET]      = SFX_RELIC_SOCKET,
     [SND_LEVEL_UP]          = SFX_LEVEL_UP,
+    [SND_CFX_TANIDO]        = SFX_LAB_BELL_H2,
+    [SND_CFX_BONG]          = SFX_LAB_BONG,
+    [SND_CFX_BELL_LOW]      = SFX_LAB_BELL_H0,
+    [SND_CFX_GLASS_A]       = SFX_LAB_GLASS1,
+    [SND_CFX_GLASS_B]       = SFX_LAB_GLASS4,
 };
 #endif
 
@@ -95,6 +100,11 @@ static const SfxMixRule s_mix_rules[SND_COUNT] = {
     [SND_UI_CLICK]          = { .volume = 175, .cooldown = 2, .jitter_pct = 0  },
     [SND_RELIC_SOCKET]      = { .volume = 220, .cooldown = 3, .jitter_pct = 0  },
     [SND_LEVEL_UP]          = { .volume = 245, .cooldown = 10, .jitter_pct = 0 },
+    [SND_CFX_TANIDO]        = { .volume = 215, .cooldown = 4, .jitter_pct = 3 },
+    [SND_CFX_BONG]          = { .volume = 250, .cooldown = 4, .jitter_pct = 2 },
+    [SND_CFX_BELL_LOW]      = { .volume = 235, .cooldown = 4, .jitter_pct = 2 },
+    [SND_CFX_GLASS_A]       = { .volume = 210, .cooldown = 3, .jitter_pct = 6 },
+    [SND_CFX_GLASS_B]       = { .volume = 210, .cooldown = 3, .jitter_pct = 6 },
 };
 
 static uint32_t next_rng(void) {

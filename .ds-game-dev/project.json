@@ -57,6 +57,9 @@
         "arpg-campanero": {
             "defines": ["ENC_START_CAMPANERO=1", "SKIP_TITLE=1", "ARPG_ALL_UNLOCKED=1"]
         },
+        "cfx-test": {
+            "defines": ["ARPG_LAB=1", "SKIP_TITLE=1", "ARPG_ALL_UNLOCKED=1", "CFX_TEST=1"]
+        },
         "arpg-boxeo": {
             "defines": ["ARPG_LAB=1", "ARPG_BOXEO=1", "SKIP_TITLE=1", "ARPG_ALL_UNLOCKED=1"]
         }
