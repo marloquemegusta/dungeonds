@@ -302,6 +302,11 @@ void upgrades_set_don_rank(int id, int rank) {
     while (s_rank[id] < rank) apply_don(id);
 }
 
+void upgrades_revoke_relic(int id) {
+    if (id >= UPG_RELIC_COUNT) return;
+    s_relic_mask &= (uint16_t)~(1u << id);   // the inventory un-equipped it; behaviour code stops reading it
+}
+
 void upgrades_choose(int i) {
     if (s_pending <= 0 || (unsigned)i >= 3u) return;
     const UpgradeOffer *o = &s_offer[i];

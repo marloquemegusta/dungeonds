@@ -86,6 +86,7 @@ void mods_reset(void) {
     g_mods.knock_pct = 100;
     g_mods.recoil_pct = 100;
     g_mods.fire_dmg_pct = 100;
+    g_mods.punch_damage_pct = 100;
     memset(s_pedestals, 0, sizeof(s_pedestals));
     s_owned = 0;
     s_delay = 0;

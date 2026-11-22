@@ -22,6 +22,7 @@ typedef struct {
     int burn_cap_bonus;         // extra Quemado layers, Rescoldo
     int burn_dur_bonus;         // extra Quemado frames, Rescoldo
     int recoil_pct;
+    int punch_damage_pct;       // 100 = normal; reliquias de Ejecución (línea Daño)
 } ModEffects;
 
 extern ModEffects g_mods;

@@ -56,6 +56,8 @@ void upgrades_choose(int i);
 // Skill tree (DESIGN.md 7.3): grant a Reliquia if not owned; raise a Don to `rank` (capped at UPG_MAX_RANK).
 void upgrades_grant_relic(int id);
 void upgrades_set_don_rank(int id, int rank);
+// Inventario (DESIGN.md 7.4): una reliquia desequipada deja de actuar. Solo revierte el bit.
+void upgrades_revoke_relic(int id);
 
 // Card text for an offer. The title carries the rank the Don would reach ("Fervor II").
 void upgrades_offer_title(const UpgradeOffer *o, char *buf, int buf_size);
