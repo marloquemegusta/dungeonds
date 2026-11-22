@@ -1158,3 +1158,28 @@ Una línea por efecto, con lo que vale hoy:
 
 - Cada nivel da 1 punto. Las ramas de la Maldición necesitan tenerla desbloqueada.
 - La pantalla del árbol se abre al dormir: cuatro columnas de nodos con nombre y estado (comprado, disponible, bloqueado).
+
+### Primer prototipo ARPG (§7.1–7.2, después `DESIGN-ARPG.md` §1–2, retirado 2026-11-22)
+
+Texto de `DESIGN.md` §7 antes de reescribirlo: campamento como menú, mazmorra infinita con jefe cada 5 pisos, `L` mantenido para cambiar a la Maldición, árbol de habilidades de 13 nodos (ya archivado arriba) y Resurrección. Lo sustituyen el campamento andable, el inventario de reliquias, el Glifo y el castillo fijo de `walkthroughs/arpg-predemo/diseno_juego_final.md`.
+
+#### 7. Pre-demo ARPG (prototipo, rama `proto/arpg`, decidido 2026-11-19)
+
+> **Aviso (2026-11-20):** esta sección describe **lo que está construido** en la primera pre-demo. El **diseño objetivo** de la protodemo y del juego final (castillo persistente estilo Castlevania con naves, galerías, capillas y cripta; progresión en dos capas, nivel y reliquias aleatorias por rareza; cuatro escuelas) se itera en `walkthroughs/arpg-predemo/diseno_juego_final.md` y sustituye a lo de aquí que lo contradiga (mazmorra infinita, árbol de 13 nodos). Al cerrarlo, se reescribe esta sección.
+
+Prueba de concepto de dos días: convertir la partida por encuentros en un Action RPG pequeño (un «Diablo 2 de DS») para comprobar si desbloquear y combinar habilidades divierte. Todo lo de esta sección es prototipo y sus cifras son `[TUNABLE-PLACEHOLDER]`; no sustituye a §6 hasta que el usuario lo apruebe. Fuera de esta versión: equipo y botín, mercader, enemigos y jefes con sprites nuevos, Catacumbas.
+
+#### 7.1 Bucle
+- **Campamento ↔ mazmorra.** El campamento es, de momento, una pantalla de menú sobre la catedral oscurecida (como el título) con `Dormir`, `Entrar en la Catedral` y `Códice`. Se vuelve a él al morir o con `Volver al campamento` en la pausa. En los dos casos **se conserva toda la experiencia ganada**.
+- **Solo se sube de nivel al dormir.** La experiencia se acumula en la mazmorra; al dormir se convierten en niveles los que alcance (curva exponencial: cada vez hay que llegar más lejos para subir) y se gastan los puntos en el árbol.
+- **Mazmorra infinita, sala tras sala** (decidido 2026-11-19): cada sala es un piso y al abrirse su barrera se entra directamente en la siguiente, **sin pasillos**. No hay relicarios de ningún tipo ni Altar. Cada 5 pisos, un jefe: el Abanderado (piso 5), un Abanderado élite con más vida y más monaguillos (piso 10), un Abanderado élite con escolta (piso 15) y, a partir de ahí, la misma escala sigue subiendo. Se sale al morir o desde la pausa.
+- **Siempre se empieza desde el piso 1** (sin atajos): la progresión es el nivel y el árbol.
+- **Experiencia directa al matar (decidido 2026-11-22):** no hay runas de experiencia en el suelo; la experiencia se suma al instante al matar a cada enemigo (o abrir un cofre).
+- **Dificultad por profundidad:** la vida y el número de enemigos suben con el piso. Al principio se muere pronto; es lo esperado.
+- **Escala de props del campamento (decidido 2026-11-21, aplicado):** jergón +50 % (ancho 36 → 54 px), mesa ×2,5 (26 → 65 px) y arcón ×2 (18 → 36 px; es su propia pieza `camp_arcon`, el cofre de la catedral no cambia). Los sprites del campamento se leen de NitroFS (`nitrofiles/camp/`) porque la EWRAM estática no admitía el aumento.
+- **Sin mercader** en esta versión.
+- **Guardado** en la tarjeta: nivel, experiencia, puntos y nodos del árbol, piso más profundo alcanzado.
+
+
+- **Lápiz:** lanza el hechizo activo, que gasta maná. Sin maná no se lanza.
+- **`L` mantenido:** cambia el hechizo activo entre Rayo y Maldición (si está desbloqueada).
