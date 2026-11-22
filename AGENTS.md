@@ -16,6 +16,7 @@ El repositorio cuenta con fuentes de verdad canónicas sin duplicación:
 | `STATUS-ARPG.md` | Estado (ARPG) | Lo mismo para el prototipo ARPG. |
 | `assets/MANIFEST.md` | Catálogo de assets | Qué asset alimenta qué parte del juego, con qué script se genera y dónde se guarda. Ciclo de vida de los assets: su §0. |
 | `walkthroughs/` | Documentación por sesión | Un `walkthrough.md` por entrega, con su evidencia en `assets/`. Índice en `walkthroughs/README.md`. |
+| `ONBOARDING.md` | Arranque | Montar un PC nuevo para hacer vídeos (programas, repos, `tools/sync.ps1` para mantenerse al día, ramas). |
 | `LEAN-CTX.md` | Herramienta | Reglas de la herramienta lean-ctx; no es documentación del juego. |
 | `BENCHMARK.md` y `bench/` | Proyecto de delegación | Banco de pruebas de modelos delegados; no es documentación del juego (el usuario decidirá si se archiva). |
 | Skill compartida `ds-game-dev` | `C:\codexlocal\skills\agentic-ds-dev` | Flujo genérico del toolchain NDS (Docker + DeSmuME + FTP). Vive fuera del repo y no se debe copiar aquí. |
@@ -26,10 +27,10 @@ Si una regla o cifra aparece en dos documentos, uno de ellos sobra: dejarla en s
 ```bash
 # desde un worktree de la otra rama principal
 git diff --stat <sync-anterior> <rama-destino> -- '*.md'   # si la otra rama también los tocó, fusionar a mano
-git checkout <rama-origen> -- AGENTS.md DESIGN.md DESIGN-ARPG.md DESIGN-ARCHIVE.md TECHNICAL.md LORE.md STATUS.md STATUS-ARPG.md STATUS-ARCHIVE.md assets/MANIFEST.md
+git checkout <rama-origen> -- AGENTS.md ONBOARDING.md DESIGN.md DESIGN-ARPG.md DESIGN-ARCHIVE.md TECHNICAL.md LORE.md STATUS.md STATUS-ARPG.md STATUS-ARCHIVE.md assets/MANIFEST.md
 git commit -m "docs: sincroniza MDs desde <rama-origen>"
 ```
-Comprobación rápida: `git diff --stat main proto/arpg -- AGENTS.md DESIGN*.md TECHNICAL.md LORE.md STATUS*.md assets/MANIFEST.md` debe salir vacío.
+Comprobación rápida: `git diff --stat main proto/arpg -- AGENTS.md ONBOARDING.md DESIGN*.md TECHNICAL.md LORE.md STATUS*.md assets/MANIFEST.md` debe salir vacío.
 
 ---
 
