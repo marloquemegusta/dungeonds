@@ -48,7 +48,7 @@
 #define ARPG_PUNCH_DAMAGE 50        // [TUNABLE-PLACEHOLDER]
 #define ARPG_PUNCH_RANGE 28         // [TUNABLE-PLACEHOLDER] ground px
 #define ARPG_PUNCH_COOLDOWN 24      // [TUNABLE-PLACEHOLDER] frames between punches
-#define ARPG_L_HOLD_FRAMES 15       // [TUNABLE-PLACEHOLDER] an L press held this long is a hold, not a tap
+#define ARPG_L_HOLD_FRAMES 5        // [TUNABLE-PLACEHOLDER] an L press held this long is a hold, not a tap (opens the radial)
 
 // Remate drops: chance in percent and amount restored by each orb.
 #define ARPG_REMATE_HP_CHANCE 60    // [TUNABLE-PLACEHOLDER] %
@@ -68,22 +68,25 @@
 #define ARPG_BOSS_RUNES 6           // [TUNABLE-PLACEHOLDER] runes an Abanderado drops, splitting its xp
 #define ARPG_BOSS_RUNE_SPREAD 12    // [TUNABLE-PLACEHOLDER] ground px from the boss to each rune
 
-// Glifo (antes Maldicion, DESIGN.md 7.3): a second spell thrown to the stylus point. It arms for a moment and
-// then, for a few seconds, slows the enemies standing inside. The burn is no longer part of it: only a tree node
-// gives it (DESIGN.md 7.3).
-#define ARPG_CURSE_COST 30          // [TUNABLE-PLACEHOLDER] mana per throw
-#define ARPG_CURSE_RADIUS 40        // [TUNABLE-PLACEHOLDER] ground px of the zone
-#define ARPG_CURSE_RADIUS_MIASMA 56 // [TUNABLE-PLACEHOLDER] ground px with Miasma (tree node 7)
-#define ARPG_CURSE_FRAMES 240       // [TUNABLE-PLACEHOLDER] zone lifetime (4 s at 60 FPS)
-#define ARPG_CURSE_FRAMES_MIASMA 360 // [TUNABLE-PLACEHOLDER] zone lifetime with Miasma
-#define ARPG_CURSE_ARM_FRAMES 30    // [TUNABLE-PLACEHOLDER] the glifo is drawn, darker, this long before it acts (0,5 s)
-#define ARPG_CURSE_SLOW_PCT 40      // [TUNABLE-PLACEHOLDER] % of speed removed from enemies inside a live glifo
-#define ARPG_CURSE_TICK 30          // [TUNABLE-PLACEHOLDER] frames between burn applications (only with the node)
-#define ARPG_CURSE_RANGE 140        // [TUNABLE-PLACEHOLDER] max throw distance, ground px
-#define ARPG_CURSE_FLIGHT 20        // [TUNABLE-PLACEHOLDER] frames in the air
-#define ARPG_CURSE_MAX 3            // [TUNABLE-PLACEHOLDER] curses (flying or lying) at once
+// Glifo (DESIGN.md 7.5-7.7): hechizo de suelo lanzado al punto del lapiz. Ciclo: apertura (la grieta se abre, sin efecto),
+// espera (actuan las auras) y detonacion (un golpe a todo el que este dentro), luego cierre. Auras componibles
+// (bits de GlifoAura en include/glifo.h): Redil arrastra al centro y Zarza quema.
+#define ARPG_GLIFO_COST 30          // [TUNABLE-PLACEHOLDER] mana per throw
+#define ARPG_GLIFO_COST_MIN 10      // [TUNABLE-PLACEHOLDER] floor of the cost with the "Coste" line
+#define ARPG_GLIFO_RADIUS 40        // [TUNABLE-PLACEHOLDER] ground px of the zone
+#define ARPG_GLIFO_OPEN_FRAMES 30   // [TUNABLE-PLACEHOLDER] apertura: the crack opens, no effect (0,5 s)
+#define ARPG_GLIFO_WAIT_FRAMES 90   // [TUNABLE-PLACEHOLDER] espera: the auras act (1,5 s)
+#define ARPG_GLIFO_CLOSE_FRAMES 30  // [TUNABLE-PLACEHOLDER] cierre: the crack closes, outside-in (0,5 s)
+#define ARPG_GLIFO_WAIT_MIN_PCT 40  // [TUNABLE-PLACEHOLDER] apertura+espera never go below this % of base
+#define ARPG_GLIFO_DAMAGE 80        // [TUNABLE-PLACEHOLDER] single detonation hit
+#define ARPG_GLIFO_REDIL_SPEED 120  // [TUNABLE-PLACEHOLDER] pull toward the centre, 8.8 px/frame (~28 px/s)
+#define ARPG_GLIFO_ZARZA_TICK 30    // [TUNABLE-PLACEHOLDER] frames between Quemado layers during the wait
+#define ARPG_GLIFO_ZARZA_DET 2      // [TUNABLE-PLACEHOLDER] Quemado layers on detonation
+#define ARPG_GLIFO_RANGE 140        // [TUNABLE-PLACEHOLDER] max throw distance, ground px
+#define ARPG_GLIFO_FLIGHT 20        // [TUNABLE-PLACEHOLDER] frames in the air
+#define ARPG_GLIFO_MAX 3            // [TUNABLE-PLACEHOLDER] glifos (flying or lying) at once
 
-// Resurreccion (DESIGN.md 7.3): an Exvoto that dies inside a curse zone rises as an ally for a while.
+// Resurreccion (DESIGN.md 7.3): an Exvoto that dies inside a Glifo rises as an ally for a while.
 #define ARPG_ALLY_MAX_1 2           // [TUNABLE-PLACEHOLDER] live allies (tree node 10)
 #define ARPG_ALLY_MAX_2 4           // [TUNABLE-PLACEHOLDER] live allies with node 11
 #define ARPG_ALLY_FRAMES_1 300      // [TUNABLE-PLACEHOLDER] ally lifetime
@@ -130,7 +133,7 @@ extern int g_arpg_level;
 // Damage the hero takes from one hit by an enemy of this EnemyType.
 int arpg_enemy_damage(int enemy_type);
 
-// L held past ARPG_L_HOLD_FRAMES: switches Rayo <-> Maldicion once the curse is unlocked.
+// L held past ARPG_L_HOLD_FRAMES: switches Rayo <-> Glifo once the Glifo tome is equipped.
 void arpg_on_l_hold(void);
 
 // Adds mana back slowly (one point every ARPG_MANA_REGEN_FRAMES). Call once per simulated frame.

@@ -1,7 +1,7 @@
 #include "allies.h"
 #include "arpg.h"
 #include "arpg_tree.h"
-#include "curse.h"
+#include "glifo.h"
 #include "collision.h"
 #include "enemy_ai.h"
 #include "player_sprite.h"
@@ -69,7 +69,7 @@ void allies_on_enemy_death(Enemy *dead, Enemy *enemies, int max_enemies) {
 
     if (!arpg_tree_has(10)) return;
     if (dead->type == ENEMY_TYPE_ABANDERADO) return;
-    if (!curse_point_in_zone(TO_INT(dead->x), TO_INT(dead->y))) return;
+    if (!glifo_point_in_zone(TO_INT(dead->x), TO_INT(dead->y))) return;
     int cap = arpg_tree_has(11) ? ARPG_ALLY_MAX_2 : ARPG_ALLY_MAX_1;
     if (live_allies(enemies, max_enemies) >= cap) return;
 

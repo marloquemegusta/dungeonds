@@ -30,7 +30,7 @@ static const int s_arpg_xp_needed[ARPG_XP_TABLE_LEN] = {
 void arpg_progress_reset(void) {
     memset(&g_arpg, 0, sizeof(g_arpg));
     g_arpg.magic = 0x41525047u;
-    g_arpg.version = 3;
+    g_arpg.version = 4;
     g_arpg.level = 1;
     g_arpg.xp = 0;
     g_arpg.points = 0;
@@ -86,7 +86,7 @@ int arpg_enemy_xp(int enemy_type, int floor) {
 /* ---- Save file (DESIGN.md 7.1: guardado en la tarjeta) ---- */
 
 #define ARPG_SAVE_MAGIC   0x41525047u
-#define ARPG_SAVE_VERSION 3
+#define ARPG_SAVE_VERSION 4
 #if ARPG_ALL_UNLOCKED
 #define ARPG_SAVE_NAME    "dungeonds_arpg_todo.sav"   // the test build never overwrites the player's save
 #else
@@ -171,8 +171,13 @@ int arpg_progress_load(void) {
         ArpgProgress tmp;
         int ok = fread(&tmp, sizeof(tmp), 1, f) == 1;
         fclose(f);
+        // v3 (mismo formato): se conserva todo y se le añaden el Tomo y las reliquias del Glifo que le falten.
+        int old3 = ok && tmp.magic == ARPG_SAVE_MAGIC && tmp.version == 3 && tmp.level >= 1;
+        if (old3) { tmp.version = ARPG_SAVE_VERSION; }
         if (ok && tmp.magic == ARPG_SAVE_MAGIC && tmp.version == ARPG_SAVE_VERSION && tmp.level >= 1) {
             g_arpg = tmp;
+            arpg_inv_sanitize();
+            if (old3) arpg_inv_migrate_glifo();
             g_arpg_level = g_arpg.level;
             arpg_unlock_for_tests();
             return 1;

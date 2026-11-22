@@ -3,7 +3,7 @@
 
 // Spell radial menu (L held). It opens out of the active-spell viril at the bottom of the touch
 // screen and the stylus picks one of the available spells. The game never pauses; while it is
-// open the stylus is consumed here and never reaches the weapons or the curse.
+// open the stylus is consumed here and never reaches the weapons or the Glifo.
 
 #include <stdint.h>
 

@@ -13,7 +13,7 @@
 #include "arpg_progress.h"
 #include "arpg_tree.h"
 #include "weapons.h"
-#include "curse.h"
+#include "glifo.h"
 #include <string.h>
 #if ENCOUNTERS_PROTO
 #include "encounters_act1.h"
@@ -106,12 +106,12 @@ int g_arpg_level = 1;
 
 static int s_mana_regen_timer = 0;
 
-// L held past ARPG_L_HOLD_FRAMES: toggles the active spell (Rayo <-> Maldicion) once the curse is unlocked.
+// L held past ARPG_L_HOLD_FRAMES: toggles the active spell (Rayo <-> Glifo) once the Glifo tome is equipped.
 void arpg_on_l_hold(void) {
     if (!arpg_tree_has(0)) return;
     g_arpg.spell = g_arpg.spell ? 0 : 1;
     weapons_cancel_aim();
-    curse_cancel_aim();
+    glifo_cancel_aim();
     sfx_play(SND_HEART_CHARGE, -1);
 }
 

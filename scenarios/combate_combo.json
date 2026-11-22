@@ -1,6 +1,6 @@
 {
   "name": "combate_combo",
-  "description": "Evidencia del combo de puñetazos (directo -> cruzado -> gancho, L corto) contra Exvotos y del Glifo ralentizando. Solo capturas.",
+  "description": "Evidencia del combo de puñetazos (directo -> cruzado -> gancho, L corto) contra Exvotos y del Glifo. Solo capturas.",
   "suite": false,
   "evidence_only": true,
   "steps": [

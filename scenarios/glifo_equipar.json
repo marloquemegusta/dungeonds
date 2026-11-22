@@ -1,0 +1,315 @@
+{
+  "name": "glifo_equipar",
+  "description": "Flujo real de equipar el Glifo (partida nueva, juego normal): inventario -> Tomo de Glifo con A -> pestana Glifo con 3 engarces -> Redil y Zarza -> catedral -> L mantenido abre el radial -> elegir Glifo -> lanzar con el lapiz.",
+  "tags": [
+    "glifo",
+    "inventario"
+  ],
+  "state": {
+    "elf": "../.ds-game-dev/build/out/dungeonds.elf",
+    "symbols": {
+      "pl": "s_player",
+      "arpg": "g_arpg",
+      "zones": "s_zones"
+    },
+    "default_symbol": "pl",
+    "fields": {
+      "px": {
+        "symbol": "pl",
+        "offset": 0,
+        "type": "s32"
+      },
+      "py": {
+        "symbol": "pl",
+        "offset": 4,
+        "type": "s32"
+      },
+      "spell": {
+        "symbol": "arpg",
+        "offset": 18,
+        "type": "u16"
+      },
+      "bag12_kind": {
+        "symbol": "arpg",
+        "offset": 196,
+        "type": "u8"
+      },
+      "bag12_school": {
+        "symbol": "arpg",
+        "offset": 197,
+        "type": "u8"
+      },
+      "slot1_kind": {
+        "symbol": "arpg",
+        "offset": 266,
+        "type": "u8"
+      },
+      "slot1_school": {
+        "symbol": "arpg",
+        "offset": 267,
+        "type": "u8"
+      },
+      "gl0_mech": {
+        "symbol": "arpg",
+        "offset": 381,
+        "type": "u8"
+      },
+      "gl1_mech": {
+        "symbol": "arpg",
+        "offset": 395,
+        "type": "u8"
+      },
+      "z0_active": {
+        "symbol": "zones",
+        "offset": 0,
+        "type": "s32"
+      },
+      "z0_aura": {
+        "symbol": "zones",
+        "offset": 40,
+        "type": "u8"
+      }
+    }
+  },
+  "assertions": {
+    "state_changes": [
+      {
+        "at": "partida_nueva",
+        "field": "slot1_kind",
+        "equals": 0
+      },
+      {
+        "at": "tomo_en_bolsa",
+        "field": "bag12_kind",
+        "equals": 2
+      },
+      {
+        "at": "tomo_en_bolsa",
+        "field": "bag12_school",
+        "equals": 2
+      },
+      {
+        "at": "tomo_equipado",
+        "field": "slot1_kind",
+        "equals": 2
+      },
+      {
+        "at": "tomo_equipado",
+        "field": "slot1_school",
+        "equals": 2
+      },
+      {
+        "at": "tomo_equipado",
+        "field": "bag12_kind",
+        "equals": 0
+      },
+      {
+        "at": "engarces",
+        "field": "gl0_mech",
+        "equals": 17
+      },
+      {
+        "at": "engarces",
+        "field": "gl1_mech",
+        "equals": 7
+      },
+      {
+        "at": "hechizo_glifo",
+        "field": "spell",
+        "equals": 1
+      },
+      {
+        "at": "glifo_vivo",
+        "field": "z0_active",
+        "equals": 1
+      },
+      {
+        "at": "glifo_vivo",
+        "field": "z0_aura",
+        "equals": 3
+      }
+    ]
+  },
+  "steps": [
+    {
+      "frames": 60
+    },
+    {
+      "tap": {
+        "x": 128,
+        "y": 66
+      },
+      "frames": 6
+    },
+    {
+      "release": true,
+      "frames": 40
+    },
+    {
+      "button_down": "START",
+      "frames": 4
+    },
+    {
+      "button_up": "START",
+      "frames": 50,
+      "state_capture": "partida_nueva"
+    },
+    {
+      "poke": [
+        {
+          "field": "px",
+          "value": 15872
+        },
+        {
+          "field": "py",
+          "value": 75776
+        }
+      ],
+      "frames": 20
+    },
+    {
+      "button_down": "A",
+      "frames": 10
+    },
+    {
+      "button_up": "A",
+      "frames": 25,
+      "capture": "e01_inventario"
+    },
+    {
+      "button_down": "DOWN",
+      "frames": 10
+    },
+    {
+      "button_up": "DOWN",
+      "frames": 12
+    },
+    {
+      "button_down": "DOWN",
+      "frames": 10
+    },
+    {
+      "button_up": "DOWN",
+      "frames": 12
+    },
+    {
+      "button_down": "DOWN",
+      "frames": 10
+    },
+    {
+      "button_up": "DOWN",
+      "frames": 12
+    },
+    {
+      "frames": 10,
+      "capture": "e02_tomo_seleccionado",
+      "state_capture": "tomo_en_bolsa"
+    },
+    {
+      "button_down": "A",
+      "frames": 10
+    },
+    {
+      "button_up": "A",
+      "frames": 15,
+      "capture": "e03_tomo_equipado",
+      "state_capture": "tomo_equipado"
+    },
+    {
+      "button_down": "A",
+      "frames": 10
+    },
+    {
+      "button_up": "A",
+      "frames": 15,
+      "capture": "e035_redil_engarzado"
+    },
+    {
+      "frames": 8,
+      "capture": "e04_zarza_seleccionada"
+    },
+    {
+      "button_down": "A",
+      "frames": 10
+    },
+    {
+      "button_up": "A",
+      "frames": 15,
+      "capture": "e05_engarces_glifo",
+      "state_capture": "engarces"
+    },
+    {
+      "button_down": "B",
+      "frames": 10
+    },
+    {
+      "button_up": "B",
+      "frames": 20,
+      "capture": "e06_vuelta_campamento"
+    },
+    {
+      "poke": [
+        {
+          "field": "px",
+          "value": 32768
+        },
+        {
+          "field": "py",
+          "value": 29696
+        }
+      ],
+      "frames": 20
+    },
+    {
+      "button_down": "A",
+      "frames": 10
+    },
+    {
+      "button_up": "A",
+      "frames": 120
+    },
+    {
+      "button_down": "UP",
+      "frames": 60
+    },
+    {
+      "button_up": "UP",
+      "frames": 15
+    },
+    {
+      "button_down": "L",
+      "frames": 30,
+      "capture": "e07_radial_abierto"
+    },
+    {
+      "tap": {
+        "x": 178,
+        "y": 154
+      },
+      "frames": 6
+    },
+    {
+      "release": true,
+      "frames": 6
+    },
+    {
+      "button_up": "L",
+      "frames": 10,
+      "state_capture": "hechizo_glifo",
+      "capture": "e08_glifo_activo"
+    },
+    {
+      "tap": {
+        "x": 128,
+        "y": 70
+      },
+      "frames": 8
+    },
+    {
+      "release": true,
+      "frames": 70,
+      "capture": "e09_glifo_lanzado",
+      "state_capture": "glifo_vivo"
+    }
+  ]
+}

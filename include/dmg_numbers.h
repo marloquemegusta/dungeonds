@@ -5,7 +5,7 @@
 
 typedef enum {
     DMG_NUM_NORMAL = 0, // Player hitting enemy (warm ivory)
-    DMG_NUM_DOT,        // Burn / curse / periodic damage (muted ash-violet, vertical)
+    DMG_NUM_DOT,        // Burn / periodic damage (muted ash-violet, vertical)
     DMG_NUM_PLAYER,     // Enemy hitting hero (muted crimson)
     DMG_NUM_HEAL,       // Health restored (+N, muted sage-green)
     DMG_NUM_MANA,       // Mana restored (+N, muted slate-blue)
