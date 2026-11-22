@@ -2653,7 +2653,7 @@ static void strip_enemies_update(void) {
     // Encounters and corridors replace the horde, the tide, the gems and the hearts (DESIGN.md 6.13.6).
     enemy_ai_set_view(s_cam_x, s_cam_y - SCREEN_H, s_cam_y + SCREEN_H);
     enemy_ai_update(g_enemies, MAX_ENEMIES, s_player.x, s_player.y);
-    // Resurreccion (allies.c) desenganchada: Levantar queda fuera de la protodemo (DESIGN.md 7.6).
+    // Resurreccion (allies.c) desenganchada: Levantar queda fuera de la protodemo (DESIGN-ARPG.md §5).
     enc_update(g_enemies, MAX_ENEMIES, TO_INT(s_player.x), TO_INT(s_player.y));
 #if ARPG_BOXEO
     boxeo_update(g_enemies, MAX_ENEMIES, TO_INT(s_player.x), TO_INT(s_player.y));

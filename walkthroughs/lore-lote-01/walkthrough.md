@@ -65,9 +65,18 @@ Vídeo final `assets/videos/lore01_09_los_monaguillos.mp4` (57,8 s, con voz). Ti
 3. **Decisión de producción:** no se hace Gaspar humano para el 05; los personajes salen siempre como condenados recreando su pasado (`lote-01.md`, calendario y regla de imagen).
 4. **No verificado:** nadie ha escuchado el audio final. `DESIGN.md`, `TECHNICAL.md`, `LORE.md` y `assets/MANIFEST.md` no cambian; el generador no se toca.
 
+## 10 No es mi corazón (2026-11-22)
+
+Vídeo final `assets/videos/lore01_10_no_es_mi_corazon.mp4` (66,1 s, con voz). Tira: [`lore01_10_no_es_mi_corazon_tira.png`](assets/lore01_10_no_es_mi_corazon_tira.png). Pregunta final: «¿Quién está más vivo: el que murió o el que lo lleva?».
+
+1. **Sesión previa (Command Code, sin voz):** pregunta moral elegida por el usuario; fuera el arranque «Martín Arce recibió tres balas…» (literal y repetía el 04), sustituido por «En el pecho de este capellán late el corazón de un soldado muerto».
+2. **Lavado final:** se dice que Martín y Bartolomé se amaban antes de «aquel amor» (antes no se entendía); «le dio lo único que aún latía» pasa a «le puso dentro el corazón de Martín» (chocaba con «el muchacho frío» y no se entendía de quién era el corazón); Inés sube siguiendo ese latido como pista final (enlaza con el 06); la frase de Elías a cuerpo entero y la cita de Martín sobre el corazón en busto, con la voz de Martín a 0,8 (`CHAR_SPEED`).
+3. **Revisado:** fotogramas de los 14 planos, subtítulos sin cortes raros y volumen igual que el 07 (la cita suena unos 3 dB por encima del narrador). Nadie ha escuchado el audio final.
+4. `DESIGN.md`, `TECHNICAL.md`, `LORE.md` y `assets/MANIFEST.md` no cambian.
+
 ## Pendiente
 
-- Vídeos 05, 06 y 10: guiones reescritos con arranque fuerte y puesta en escena; probados sin voz, sin generar con voz. Los MP4 antiguos de esos números no se versionan.
+- Vídeos 05 y 06: guiones reescritos con arranque fuerte y puesta en escena; probados sin voz, sin generar con voz. Los MP4 antiguos de esos números no se versionan.
 - Capa de props en el generador (velas, columnas que desfilan) para el día 1 del calendario.
 - Lore del Campanero y destino del padre Anselmo (`LORE.md` §9).
 - Voces con efecto de radio (Remedios): sustituir por recortes de su muestra si molestan.

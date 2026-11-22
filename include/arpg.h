@@ -57,7 +57,7 @@
 #define ARPG_REMATE_MANA 25         // [TUNABLE-PLACEHOLDER] mana per mana orb
 #define ARPG_PICKUP_MAGNET 36       // [TUNABLE-PLACEHOLDER] ground px: orbs this close fly to the hero
 
-// Experience (DESIGN.md 7.1): what a death is worth, granted directly on the kill.
+// Experience (DESIGN-ARPG.md §1): what a death is worth, granted directly on the kill.
 #define ARPG_XP_EXVOTO 4            // [TUNABLE-PLACEHOLDER] xp per Exvoto
 #define ARPG_XP_MONAGUILLO 1        // [TUNABLE-PLACEHOLDER] xp per Monaguillo
 #define ARPG_XP_CIRENEO 10          // [TUNABLE-PLACEHOLDER] xp per Cireneo (ENEMY_TYPE_CHARGER)

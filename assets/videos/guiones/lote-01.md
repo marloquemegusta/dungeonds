@@ -210,16 +210,18 @@ Estilo: A
 
 ## 10 · CÓDICE · I — NO ES MI CORAZÓN
 ### Parte 1 · corazon_walk · cortes
-- [cerca · S] Martín Arce recibió tres balas para que el hombre al que amaba pudiera huir.
-- [SE] La noche de la Quiebra, cubrió la huida de Bartolomé.
-- [S] Murió en brazos del capellán, Elías Montoro.
+- [cerca · S] En el pecho de este capellán late el corazón de un soldado muerto.
+- [SE] La noche de la Quiebra, Martín Arce cubrió la huida del hombre al que amaba, Bartolomé.
+- [S] Y murió por él, en brazos de Elías Montoro.
 - [SW] Elías había bendecido aquel amor en secreto, en una capilla sin velas.
 ### Parte 2 · corazon_disparo · S · inverso · lento 5 · una vez
 - Sin pólvora, con el muchacho frío entre las manos, pidió un arma.
-- Dios le abrió el pecho, y le dio lo único que aún latía en la nave.
+- Dios le abrió el pecho, y le puso dentro el corazón de Martín.
 ### Parte 3 · corazon_walk · cortes
-- [cerca · S] Por eso, cuando le preguntan, Elías responde siempre lo mismo: no es mi corazón. Solo lo llevo.
-> [S] Martín: «Llévame hasta el final, capellán.»
+- [N] Su madre, Inés, aún sube nave arriba siguiendo ese latido.
+- [cerca · entero · S] Cuando le preguntan, Elías responde siempre lo mismo: no es mi corazón. Solo lo llevo.
+> [cerca · S] Martín: «Llévame hasta el final, capellán.»
+> Pregunta: «¿Quién está más vivo: el que murió o el que lo lleva?»
 
 ---
 
@@ -237,6 +239,7 @@ Publicados a 2026-11-17: **01, 03 y 08**, nada más. Los MP4 de 02, 04-07, 09 y 
 | 02 Remedios | ¿Remedios robó a Dios… o hizo lo que Dios no hacía? | | | |
 | 07 Lope | ¿Habrías plantado tú cara al Tribunal? | | | |
 | 04 El Liebre | ¿Cobarde… o el único valiente? | | | |
+| 10 No es mi corazón | ¿Quién está más vivo: el que murió o el que lo lleva? | | | |
 
 - **01 El Corazón Abierto** (2026-11-15): v1 con arranque en negro; v2 sin negro y frase fuerte primero; v3 recortada a 38 s. La v2 retuvo algo mejor que la v3.
 - **03 Jimena y Aldonza** (2026-11-16): primera versión con puesta en escena plano a plano y paso natural. Es el modelo para los siguientes.
@@ -340,6 +343,27 @@ Publicados a 2026-11-17: **01, 03 y 08**, nada más. Los MP4 de 02, 04-07, 09 y 
     >
     > #Shorts #pixelart #nintendods #gamedev #darkfantasy
   - **Comentario fijado (en las tres redes):** «¿Habrías hablado tú, sabiendo el castigo?»
+
+- **10 No es mi corazón** (lista 2026-11-22, sin publicar): `assets/videos/lore01_10_no_es_mi_corazon.mp4`, estilo A, 66,1 s. Dos animaciones de Elías (andar y el disparo al revés, que abre los brazos), Inés como pista final y la cita de Martín sobre el corazón en busto, a voz lenta (0,8). Textos de los posts:
+  - **Título (YouTube y portada):** «No es mi corazón · Códice». Alternativa: «El corazón de Martín · Códice».
+  - **TikTok e Instagram:**
+    > ¿Quién está más vivo: el que murió o el que lo lleva?
+    >
+    > La noche de la Quiebra, Martín Arce murió cubriendo la huida del hombre al que amaba, en brazos del capellán Elías Montoro.
+    > Elías pidió un arma. Dios le abrió el pecho y le puso dentro el corazón de Martín.
+    >
+    > Deja tu veredicto en los comentarios.
+    > Próximamente en tu Nintendo DS.
+    >
+    > #pixelart #nintendods #gamedev #indiedev #darkfantasy #gothic #lore #homebrew
+  - **Descripción de YouTube:**
+    > ¿Quién está más vivo: el que murió o el que lo lleva? Elías Montoro era capellán de la Columna de Lázaro y bendecía en secreto el amor de dos de sus soldados, Martín y Bartolomé. La noche de la Quiebra, Martín cubrió la huida de Bartolomé y murió en brazos de Elías. Sin pólvora, el capellán pidió un arma, y Dios le abrió el pecho y le puso dentro el corazón de Martín. Su madre, Inés, aún sube nave arriba siguiendo ese latido. Elías responde siempre lo mismo: no es mi corazón. Solo lo llevo.
+    >
+    > Deja tu veredicto en los comentarios.
+    > Próximamente en tu Nintendo DS.
+    >
+    > #Shorts #pixelart #nintendods #gamedev #darkfantasy
+  - **Comentario fijado (en las tres redes):** «¿Quién está más vivo: el que murió o el que lo lleva?»
 
 ## Calendario: un vídeo al día, más cuidado
 

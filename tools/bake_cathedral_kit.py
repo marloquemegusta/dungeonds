@@ -41,7 +41,8 @@ PIECE_IDS = {
 }
 LAPIDA_NAMES = ("lapida_3x2_cruz", "lapida_3x2_cab", "lapida_2x1_cruz", "lapida_2x1_cab")
 # Decorado con rectangulo de colision propio (planta de la sala): la estampa no escribe colision, para
-# que el rect de enc_block_rects() siga siendo el unico que bloquea (igual que los provisionales).
+# que el rect de enc_block_rects() siga siendo el unico que bloquea. Ese rect es la huella de apoyo de
+# la pieza en el render (la franja donde apoya), no la caja del sprite: si el arte cambia, se recalcula.
 DECOR_PIECES = ("sacos", "sacos_b", "sacos_remate", "sacos_remate_der", "alambre", "verja")
 # Piezas sin carpeta propia: se componen en el baker a partir de otras.
 COMPOSITE_NAMES = ("banco_grupo4", "banco_grupo4_roto")
