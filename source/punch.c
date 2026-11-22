@@ -6,6 +6,7 @@
 #include "modifiers.h"
 #include "upgrades.h"
 #include "sfx.h"
+#include "lab_tuning.h"
 #if ENCOUNTERS_PROTO
 #include "encounters_act1.h"
 #endif
@@ -44,6 +45,7 @@ static int s_punch_dir;
 static int s_punch_frame;
 static int s_punch_t;
 static int s_punch_chain;     // frames de ventana de encadenado que quedan
+static int s_punch_queued;    // golpes guardados (0..2): cada L nuevo durante el golpe suma uno; se cobran cuando toca, sin cortar la animacion
 
 int punch_active(void) { return s_punch_active; }
 int punch_move(void) { return s_punch_move; }
@@ -54,6 +56,7 @@ int punch_chain_window(void) { return s_punch_chain; }
 void punch_reset(void) {
     s_punch_active = 0;
     s_punch_chain = 0;
+    s_punch_queued = 0;
 }
 
 const uint16_t *punch_pixels(void) {
@@ -82,7 +85,7 @@ int punch_ground_anchor(void) { return g_punch_ground_anchor[s_punch_move][s_pun
 static int punch_target(Enemy *enemies, int max_enemies, fixed hero_x, fixed hero_y,
                         int dir, int cone, int *ex, int *ey) {
     const int hx = TO_INT(hero_x), hy = TO_INT(hero_y);
-    const int range = PUNCH_RANGE * (100 + g_mods.remate_range_bonus) / 100;
+    const int range = PUNCH_RANGE_V * (100 + g_mods.remate_range_bonus) / 100;
     int best = -1, best_d2 = range * range + 1;
     for (int i = 0; i < max_enemies; i++) {
         const Enemy *e = &enemies[i];
@@ -119,16 +122,23 @@ static void punch_apply(Enemy *enemies, int idx, fixed hero_x, fixed hero_y, int
     if (idx < 0) return;
     Enemy *e = &enemies[idx];
     const int ex = TO_INT(e->x);
-    const fixed push = (move == PUNCH_MOVE_HOOK) ? PUNCH_HOOK_PUSH : PUNCH_LIGHT_PUSH;
+    const fixed push = (move == PUNCH_MOVE_HOOK) ? PUNCH_HOOK_PUSH_V : PUNCH_LIGHT_PUSH_V;
     const int base_dmg = (move == PUNCH_MOVE_HOOK) ? PUNCH_DAMAGE_HOOK
                        : (move == PUNCH_MOVE_A)    ? PUNCH_DAMAGE_A : PUNCH_DAMAGE_B;
     const int dmg = upgrades_punch_damage(base_dmg);
     fixed px = 0, py = 0;
     punch_push_vec(e, hero_x, hero_y, push, &px, &py);
     enemy_hit(e, dmg, px, py);
+    // enemy_hit solo usa el empuje al morir: al que sobrevive se le da aqui el retroceso y un hit-stun corto
+    // (DESIGN.md 7.2), que enemy_ai mueve con deslizamiento mientras dura.
+    if (e->active && e->hp > 0) {
+        e->knock_vx = px;
+        e->knock_vy = py;
+        if (e->stun_timer < PUNCH_HITSTUN_FRAMES) e->stun_timer = PUNCH_HITSTUN_FRAMES;
+    }
     sfx_play_pitched(SND_PUNCH_HIT, ex, move == PUNCH_MOVE_HOOK ? 880 : 0);
-    if (g_hitstop_frames < 3) g_hitstop_frames = 3;
-    weapons_request_shake(1, move == PUNCH_MOVE_HOOK ? 5 : 3);
+    if (g_hitstop_frames < PUNCH_HITSTOP_V) g_hitstop_frames = PUNCH_HITSTOP_V;
+    weapons_request_shake(1, PUNCH_SHAKE_V + (move == PUNCH_MOVE_HOOK ? 2 : 0));
 }
 
 int punch_start(Enemy *enemies, int max_enemies, fixed hero_x, fixed hero_y, int hero_dir, int move, int soft_lock) {
@@ -153,35 +163,51 @@ int punch_start(Enemy *enemies, int max_enemies, fixed hero_x, fixed hero_y, int
     return 1;
 }
 
+// Cobra el golpe guardado (s_punch_queued): cierra el golpe en curso, que ya ha ensenado su impacto o ya
+// termino, y saca el siguiente. Si no puede arrancar, el golpe anterior sigue su animacion.
+static void punch_fire_queue(Enemy *enemies, int max_enemies, fixed hero_x, fixed hero_y, int hero_dir, int soft_lock) {
+    s_punch_queued--;                       // se cobra uno; si queda otro, saldra tras el impacto de este
+    const int was_active = s_punch_active;
+    const int next = (s_punch_move >= PUNCH_MOVE_HOOK) ? PUNCH_MOVE_A : s_punch_move + 1;
+    s_punch_active = 0;                     // punch_start rechaza un golpe en curso: cerrar el anterior
+    if (!punch_start(enemies, max_enemies, hero_x, hero_y, hero_dir, next, soft_lock)) s_punch_active = was_active;
+}
+
 int punch_try_chain(Enemy *enemies, int max_enemies, fixed hero_x, fixed hero_y, int hero_dir, int soft_lock) {
     if (g_player_state.is_dead) return 0;
     int next;
     if (s_punch_active) {
         if (s_punch_move >= PUNCH_MOVE_HOOK) return 0;        // el gancho cierra el combo
-        next = s_punch_move + 1;
+        // Se guarda y se cobra en punch_update, sin cortar el golpe en curso. Caben tantos como golpes
+        // le quedan al combo tras el actual (maximo 2): un tercer toque rapido no se funde con el segundo.
+        const int room = PUNCH_MOVE_HOOK - s_punch_move;
+        if (s_punch_queued < room) s_punch_queued++;
+        return 1;
     } else if (s_punch_chain > 0) {
         next = (s_punch_move >= PUNCH_MOVE_HOOK) ? PUNCH_MOVE_A : s_punch_move + 1;
     } else {
         return 0;
     }
-    const int was_active = s_punch_active;
-    s_punch_active = 0;                                       // punch_start rechaza un golpe en curso: cerrar el anterior
-    (void)was_active;
-    if (!punch_start(enemies, max_enemies, hero_x, hero_y, hero_dir, next, soft_lock)) { s_punch_active = was_active; return 0; }
-    return 1;
+    return punch_start(enemies, max_enemies, hero_x, hero_y, hero_dir, next, soft_lock);
 }
 
-void punch_update(void) {
+void punch_update(Enemy *enemies, int max_enemies, fixed hero_x, fixed hero_y, int hero_dir, int soft_lock) {
     if (!s_punch_active) {
         if (s_punch_chain > 0) s_punch_chain--;
+        // Un L guardado mientras el golpe cerraba: arranca de inmediato.
+        if (s_punch_queued > 0) punch_fire_queue(enemies, max_enemies, hero_x, hero_y, hero_dir, soft_lock);
         return;
     }
-    if (++s_punch_t >= PUNCH_TICKS) {
+    if (++s_punch_t >= PUNCH_TICKS_V) {
         s_punch_t = 0;
         if (++s_punch_frame >= PUNCH_NUM_FRAMES) {
             s_punch_active = 0;
             s_punch_frame = PUNCH_NUM_FRAMES - 1;
-            s_punch_chain = s_punch_move < PUNCH_MOVE_HOOK ? PUNCH_CHAIN_FRAMES : 0;
+            s_punch_chain = s_punch_move < PUNCH_MOVE_HOOK ? PUNCH_CHAIN_FRAMES_V : 0;
         }
     }
+    // El golpe guardado no corta la animacion en seco: se cobra cuando el golpe en curso ya ha ensenado
+    // su fotograma de impacto (la extension del brazo), o en cuanto la animacion termina.
+    if (s_punch_queued > 0 && (!s_punch_active || s_punch_frame > PUNCH_IMPACT_V(s_punch_move)))
+        punch_fire_queue(enemies, max_enemies, hero_x, hero_y, hero_dir, soft_lock);
 }

@@ -26,6 +26,7 @@
 #include "punch.h"
 #include "sfx.h"
 #include "lab_tuning.h"
+#include "boxeo.h"
 #include "bestiary.h"
 #include "intro.h"
 #include "hud_icons_gfx.h"
@@ -2656,6 +2657,9 @@ static void strip_enemies_update(void) {
     enemy_ai_update(g_enemies, MAX_ENEMIES, s_player.x, s_player.y);
     allies_update(g_enemies, MAX_ENEMIES);                  // ARPG: Resurreccion allies (allies.c)
     enc_update(g_enemies, MAX_ENEMIES, TO_INT(s_player.x), TO_INT(s_player.y));
+#if ARPG_BOXEO
+    boxeo_update(g_enemies, MAX_ENEMIES, TO_INT(s_player.x), TO_INT(s_player.y));
+#endif
     pickups_update(s_player.x, s_player.y, &g_player_state);     // ARPG: remate orbs (health, mana)
     dmg_numbers_set_player_pos(s_player.x, s_player.y);
     dmg_numbers_update();
@@ -2800,7 +2804,6 @@ static void arpg_punch(Enemy *enemies, int max_enemies) {
 static int s_l_frames = 0;
 static int s_l_tracking = 0;
 static int s_l_consumed = 0;   // this L press already fired (hold, remate or punch); cleared only when L is released
-static int s_punch_cooldown = 0;
 
 // Early-return paths skip the L input code: drop the tracking so it cannot get stuck.
 static void l_tracking_abort(uint32_t keys) {
@@ -2860,7 +2863,7 @@ static void player_update(uint32_t keys, uint32_t keys_down) {
         update_camera();
         return;
     }
-    punch_update();                                    // combo de puñetazos: avanza el golpe y su ventana de encadenado
+    punch_update(g_enemies, MAX_ENEMIES, s_player.x, s_player.y, s_player.dir, !s_player.is_moving);   // combo de puñetazos: avanza el golpe, su ventana de encadenado y el golpe guardado
     if (punch_active()) {
         // Pegando se puede andar (mas lento): el clip del golpe se compone sobre el andar en draw_punch. El
         // andar sigue leyendo la cruceta mas abajo; aqui solo se corta el clip del disparo y la carga.
@@ -2914,7 +2917,6 @@ static void player_update(uint32_t keys, uint32_t keys_down) {
     // ARPG: L held past ARPG_L_HOLD_FRAMES is a hold (arpg_on_l_hold); L released before that is a tap = punch.
     // Level-based start: a press whose edge was missed (hitstop, skipped frames) still starts tracking while L is held.
     // Holding R with L (debug combos) never starts a hold and never punches.
-    if (s_punch_cooldown > 0) s_punch_cooldown--;
     if (keys & KEY_L) {
         if (!s_l_tracking && !s_l_consumed && !(keys & KEY_R)) {
             s_l_tracking = 1;
@@ -2946,10 +2948,10 @@ static void player_update(uint32_t keys, uint32_t keys_down) {
                     s_latch_pressed = s_latch_released = 0;
                     return;
                 }
-                if (s_punch_cooldown <= 0) {
-                    arpg_punch(g_enemies, MAX_ENEMIES);
-                    s_punch_cooldown = PUNCH_TICKS;      // un doble tap en el mismo frame no puede saltarse un golpe
-                }
+                // Sin espera entre toques: un toque corto tras el hitstop se perdia contra ella, y el golpe
+                // guardado (punch_try_chain) ya impide que un toque salte un golpe. Los flancos de L que caen
+                // dentro del hitstop se conservan en s_keys_down_latch hasta el primer frame simulado.
+                arpg_punch(g_enemies, MAX_ENEMIES);
             }
         }
     }
@@ -3022,10 +3024,10 @@ static void player_update(uint32_t keys, uint32_t keys_down) {
     if (procession) current_speed = current_speed * 35 / 100;
     // Pegando andando el heroe avanza al PUNCH_WALK_SPEED_PCT %; la cadencia del andar se alarga en la misma
     // proporcion para que la zancada siga cuadrando con el avance y los pies no deslicen.
-    if (punch_active()) current_speed = current_speed * PUNCH_WALK_SPEED_PCT / 100;
+    if (punch_active()) current_speed = current_speed * PUNCH_WALK_PCT_V / 100;      // 0 = pies plantados
     int current_period = g_characters[s_crouched ? CHAR_HERO_CROUCH_WALK : cur_char].anim_period;
-    if (punch_active())
-        current_period = (current_period * 100 + PUNCH_WALK_SPEED_PCT / 2) / PUNCH_WALK_SPEED_PCT;
+    if (punch_active() && PUNCH_WALK_PCT_V > 0)
+        current_period = (current_period * 100 + PUNCH_WALK_PCT_V / 2) / PUNCH_WALK_PCT_V;
 
     // A press held through the post-shot cooldown starts the charge as soon as the weapon is
     // ready (weapons_input buffers it), so root the hero on that same frame too.
@@ -3236,6 +3238,9 @@ static void arena_restart(void) {
     exvoto_melt_reset();
     remate_reset();
     punch_reset();
+#if ARPG_BOXEO
+    boxeo_reset();
+#endif
     radial_close();
     s_pending_head = s_pending_count = 0;
     if (s_strip_mode) memset(g_enemies, 0, sizeof(g_enemies));

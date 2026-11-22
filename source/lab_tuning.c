@@ -7,9 +7,24 @@
 #include <string.h>
 #include "game.h"
 #include "bestiary_font.h"
+#include "punch.h"
+#include "boxeo.h"
 
 int g_lab_sfx_var[SND_COUNT];
-int g_lab_god = 0;
+int g_lab_god = ARPG_BOXEO;       /* boxeo: the hero starts invulnerable */
+int g_lab_punch_ticks = PUNCH_TICKS;
+int g_lab_punch_chain = PUNCH_CHAIN_FRAMES;
+int g_lab_punch_walk_pct = PUNCH_WALK_SPEED_PCT;
+int g_lab_punch_range = PUNCH_RANGE;
+int g_lab_punch_impact[3] = { PUNCH_IMPACT_A, PUNCH_IMPACT_B, PUNCH_IMPACT_HOOK };
+int g_lab_punch_light_push = PUNCH_LIGHT_PUSH;
+int g_lab_punch_hook_push = PUNCH_HOOK_PUSH;
+int g_lab_punch_hitstop = PUNCH_HITSTOP_FRAMES;
+int g_lab_punch_shake = PUNCH_SHAKE_LIGHT;
+#if ARPG_BOXEO
+int g_lab_saco_still = 1;
+int g_lab_saco_type = 0;
+#endif
 
 static const char *const s_variant_labels[LABV_COUNT] = {
 #define X(n, label, mm) [LABV_##n] = label,
@@ -78,7 +93,23 @@ static const LabEntry s_entries[] = {
     SFXROW(PG_C, "Abanderado voz", SND_ABANDERADO_INTRO),
     SFXROW(PG_C, "Abanderado fin", SND_ABANDERADO_DEFEAT),
 
+    { "Puñetazo", "Velocidad (frames/foto)", &g_lab_punch_ticks, 1, 6, 1, LAB_KIND_INT },
+    { "Puñetazo", "Ventana combo", &g_lab_punch_chain, 0, 40, 2, LAB_KIND_INT },
+    { "Puñetazo", "Andar pegando %", &g_lab_punch_walk_pct, 0, 100, 5, LAB_KIND_INT },
+    { "Puñetazo", "Impacto directo", &g_lab_punch_impact[0], 0, 7, 1, LAB_KIND_INT },
+    { "Puñetazo", "Impacto cruzado", &g_lab_punch_impact[1], 0, 7, 1, LAB_KIND_INT },
+    { "Puñetazo", "Impacto gancho", &g_lab_punch_impact[2], 0, 7, 1, LAB_KIND_INT },
+    { "Puñetazo", "Empuje ligero", &g_lab_punch_light_push, 0, 512, 16, LAB_KIND_INT },
+    { "Puñetazo", "Empuje gancho", &g_lab_punch_hook_push, 0, 512, 16, LAB_KIND_INT },
+    { "Puñetazo", "Parón al golpear", &g_lab_punch_hitstop, 0, 10, 1, LAB_KIND_INT },
+    { "Puñetazo", "Temblor (gancho +2)", &g_lab_punch_shake, 0, 8, 1, LAB_KIND_INT },
+    { "Puñetazo", "Alcance", &g_lab_punch_range, 16, 64, 2, LAB_KIND_INT },
+
     { "Pruebas", "Invulnerable", &g_lab_god, 0, 1, 1, LAB_KIND_INT },
+#if ARPG_BOXEO
+    { "Pruebas", "Saco quieto", &g_lab_saco_still, 0, 1, 1, LAB_KIND_INT },
+    { "Pruebas", "Saco tipo", &g_lab_saco_type, 0, BOXEO_TYPE_COUNT - 1, 1, LAB_KIND_INT, g_boxeo_type_names },
+#endif
 };
 #define N_ENTRIES ((int)(sizeof(s_entries) / sizeof(s_entries[0])))
 
@@ -254,6 +285,8 @@ void lab_tuning_render(uint16_t *buf) {
             int ev = sfx_event(e), k = *e->value;
             dim = (s_ev[ev].n == 0);
             snprintf(val, sizeof(val), "%s%s", k ? "* " : "", k ? s_variant_labels[s_ev[ev].v[k - 1]] : "Original");
+        } else if (e->names) {
+            snprintf(val, sizeof(val), "%s", e->names[*e->value]);
         } else {
             snprintf(val, sizeof(val), "%d", *e->value);
         }

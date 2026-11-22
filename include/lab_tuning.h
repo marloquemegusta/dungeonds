@@ -24,6 +24,10 @@
 #ifndef ARPG_LAB
 #define ARPG_LAB 0
 #endif
+/* Variant "arpg-boxeo": the first ARPG room holds a single immortal dummy (boxeo.c) to tune the punch against. */
+#ifndef ARPG_BOXEO
+#define ARPG_BOXEO 0
+#endif
 
 #if ARPG_LAB
 #include "sfx.h"
@@ -46,10 +50,19 @@ typedef struct {
     int *value;
     int min, max, step;     /* LAB_KIND_SFX_VARIANT ignores them (0..number of variants of its event, wraps) */
     LabKind kind;
+    const char *const *names;   /* optional: value k is shown as names[k] instead of the number */
 } LabEntry;
 
 extern int g_lab_sfx_var[SND_COUNT];    /* per event: 0 = Original, 1.. = that event's candidates in order */
 extern int g_lab_god;                   /* 1 = the hero cannot die (applied each frame by main.c) */
+/* Punch tuning (page "Puñetazo"); defaults = the constants of punch.h. Read through the PUNCH_*_V macros. */
+extern int g_lab_punch_ticks, g_lab_punch_chain, g_lab_punch_walk_pct, g_lab_punch_range;
+extern int g_lab_punch_impact[3];       /* impact frame of direct / cross / hook */
+extern int g_lab_punch_light_push, g_lab_punch_hook_push, g_lab_punch_hitstop, g_lab_punch_shake;
+#if ARPG_BOXEO
+extern int g_lab_saco_still;            /* 1 = the dummy neither attacks nor walks (it still reels from hits) */
+extern int g_lab_saco_type;             /* index into the dummy types of boxeo.c */
+#endif
 /* The candidate (LABV_*) the event currently plays, or -1 for its original sound. */
 int lab_sfx_candidate(int ev);
 
