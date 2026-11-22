@@ -34,6 +34,8 @@ void camp_toast(const char *msg);
 
 // Render hooks called from render_screen.
 void camp_render_floor(uint16_t *buffer, int cam_x, int cam_y);   // bonfire glow, under the actors
+void camp_clear_page(uint16_t *page, DirtySpan *spans, int cam_x, int cam_y);  // clears the dirty spans, keeping the wall frame
+void camp_invalidate_pages(void);                                 // a page was wiped: re-prime the wall frame
 void camp_render_overlay(uint16_t *buffer, int cam_x, int cam_y); // prop name + hint + toast
 int  camp_items_count(int cam_x, int cam_y);                      // props visible on this screen
 int  camp_item_depth(int index);
@@ -46,6 +48,7 @@ int  camp_item_shadow(int index, const uint8_t **mask, uint8_t *bounds, int *lef
 // Not the ARPG build: the camp scene never runs (keeps call sites simple).
 static inline int camp_active(void) { return 0; }
 static inline void camp_set_active(int on) { (void)on; }
+static inline void camp_invalidate_pages(void) {}
 #endif
 
 #endif // CAMP_H

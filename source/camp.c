@@ -200,8 +200,10 @@ void camp_unload_gfx(void) {
     s_built = 0;
 }
 
+static void wipe_primed_pages(void);
 int camp_active(void) { return s_active; }
 void camp_set_active(int on) {
+    if (!on) wipe_primed_pages(); else camp_invalidate_pages();
     s_active = on;
     s_focus = -1;
     s_toast_frames = 0;
@@ -344,12 +346,72 @@ static void blit_marco(const uint16_t *pix, int w, int h, int x, int y, uint16_t
 // The bonfire's light on the floor is baked into the camp floor (tools/camp/bake_camp_arena.py). This hook,
 // called right after the floor and before shadows and actors, draws the wall frame (north wall with the gate,
 // side walls, buttresses: tools/camp/marco_build.py), so heroes and props always paint over it.
+// The wall frame is static, so it is NOT redrawn every frame (30k opaque-pixel tests on the single-buffered upper
+// page outlast the VBlank and the beam showed a black band where the wall was not yet repainted). Each page is
+// primed once with the frame; afterwards clearing a dirty span puts the frame pixels back instead of zeros.
+#define CAMP_PAGES 3                       // upper page + the two lower pages
+static const uint16_t *s_primed[CAMP_PAGES];
+
+static int page_primed(const uint16_t *page) {
+    for (int i = 0; i < CAMP_PAGES; i++) if (s_primed[i] == page) return 1;
+    return 0;
+}
+
+void camp_invalidate_pages(void) {
+    for (int i = 0; i < CAMP_PAGES; i++) s_primed[i] = NULL;
+}
+
+// Leaving the camp: the frame is not tracked by the dirty spans, so the dungeon must not inherit it.
+static void wipe_primed_pages(void) {
+    for (int i = 0; i < CAMP_PAGES; i++) {
+        if (s_primed[i]) memset((void *)s_primed[i], 0, (size_t)SCREEN_W * SCREEN_H * 2);
+        s_primed[i] = NULL;
+    }
+}
+
+static void clear_row_span(uint16_t *page, int y, int x0, int x1, int cam_x, int cam_y) {
+    uint16_t *row = page + y * SCREEN_W;
+    memset(row + x0, 0, (size_t)(x1 - x0) * 2);
+    int wy = y + cam_y;
+    if (s_marco_n && wy >= 0 && wy < CAMP_MARCO_NORTH_H) {
+        int lo = x0 > -cam_x ? x0 : -cam_x, hi = x1 < CAMP_ROOM_W - cam_x ? x1 : CAMP_ROOM_W - cam_x;
+        if (lo < hi) memcpy(row + lo, s_marco_n + wy * CAMP_ROOM_W + lo + cam_x, (size_t)(hi - lo) * 2);
+    }
+    int sy = wy - CAMP_MARCO_SIDE_Y0;
+    if (sy >= 0 && sy < CAMP_MARCO_SIDE_H) {
+        for (int side = 0; side < 2; side++) {
+            const uint16_t *pix = side ? s_marco_r : s_marco_l;
+            if (!pix) continue;
+            int wx0 = side ? CAMP_ROOM_W - CAMP_MARCO_SIDE_W : 0;
+            int lo = x0 > wx0 - cam_x ? x0 : wx0 - cam_x;
+            int hi = x1 < wx0 + CAMP_MARCO_SIDE_W - cam_x ? x1 : wx0 + CAMP_MARCO_SIDE_W - cam_x;
+            if (lo >= hi) continue;
+            const uint16_t *src = pix + sy * CAMP_MARCO_SIDE_W + (lo + cam_x - wx0);
+            for (int x = lo; x < hi; x++, src++) if (*src) row[x] = *src;
+        }
+    }
+}
+
+void camp_clear_page(uint16_t *page, DirtySpan *spans, int cam_x, int cam_y) {
+    if (!page_primed(page)) {
+        // First use (or after a wipe): blank page, then the frame, untracked (edge to edge).
+        memset(page, 0, (size_t)SCREEN_W * SCREEN_H * 2);
+        for (int y = 0; y < SCREEN_H; y++) { spans[y].x0 = SCREEN_W; spans[y].x1 = 0; }
+        for (int y = 0; y < SCREEN_H; y++) clear_row_span(page, y, 0, SCREEN_W, cam_x, cam_y);
+        for (int i = 0; i < CAMP_PAGES; i++) if (!s_primed[i]) { s_primed[i] = page; break; }
+        return;
+    }
+    for (int y = 0; y < SCREEN_H; y++) {
+        int x0 = spans[y].x0, x1 = spans[y].x1;
+        if (x0 >= x1) continue;
+        spans[y].x0 = SCREEN_W;
+        spans[y].x1 = 0;
+        clear_row_span(page, y, x0, x1, cam_x, cam_y);
+    }
+}
+
 void camp_render_floor(uint16_t *buffer, int cam_x, int cam_y) {
-    blit_marco(s_marco_n, CAMP_ROOM_W, CAMP_MARCO_NORTH_H, 0, 0, buffer, cam_x, cam_y, 0, CAMP_MARCO_NORTH_H);
-    blit_marco(s_marco_l, CAMP_MARCO_SIDE_W, CAMP_MARCO_SIDE_H, 0, CAMP_MARCO_SIDE_Y0, buffer, cam_x, cam_y,
-               0, CAMP_MARCO_SIDE_H);
-    blit_marco(s_marco_r, CAMP_MARCO_SIDE_W, CAMP_MARCO_SIDE_H, CAMP_ROOM_W - CAMP_MARCO_SIDE_W, CAMP_MARCO_SIDE_Y0,
-               buffer, cam_x, cam_y, 0, CAMP_MARCO_SIDE_H);
+    (void)buffer; (void)cam_x; (void)cam_y;   // the wall frame lives in the page (camp_clear_page)
 }
 
 // Ground shadows of props next to a side wall are drawn after the frame and would stain it: repaint only the
