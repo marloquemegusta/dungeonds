@@ -4,6 +4,7 @@
 #include "weapons.h"
 #include "allies.h"
 #include "modifiers.h"
+#include "sfx.h"
 #if ENCOUNTERS_PROTO
 #include "encounters_act1.h"
 #endif
@@ -114,6 +115,7 @@ static void punch_apply(Enemy *enemies, int max_enemies, fixed hero_x, fixed her
     fixed px = 0, py = 0;
     punch_push_vec(e, hero_x, hero_y, push, &px, &py);
     enemy_hit(e, dmg, px, py);
+    sfx_play_pitched(SND_PUNCH_HIT, ex, move == PUNCH_MOVE_HOOK ? 880 : 0);
     if (g_hitstop_frames < 3) g_hitstop_frames = 3;
     weapons_request_shake(1, move == PUNCH_MOVE_HOOK ? 5 : 3);
 }
@@ -136,6 +138,7 @@ int punch_start(Enemy *enemies, int max_enemies, fixed hero_x, fixed hero_y, int
     s_punch_t = 0;
     s_punch_chain = 0;
     s_punch_active = 1;
+    sfx_play_pitched(SND_PUNCH_WHOOSH, TO_INT(hero_x), move == PUNCH_MOVE_HOOK ? 850 : 0);
     punch_apply(enemies, max_enemies, hero_x, hero_y, move, dir);
     return 1;
 }

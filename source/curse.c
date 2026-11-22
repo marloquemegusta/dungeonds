@@ -5,6 +5,7 @@
 #include "arpg_tree.h"
 #include "allies.h"
 #include "placeholders_gfx.h"
+#include "sfx.h"
 #include <stddef.h>
 
 // Curse look and arc (DESIGN.md 7.3). Colours are BGR555 without the alpha bit (gfx_* add it).
@@ -126,6 +127,7 @@ int curse_input(PlayerState *player, int touch_down, int touch_pressed, int touc
         s_shots[i].tx = s_aim_x;
         s_shots[i].ty = s_aim_y;
         s_shots[i].frame = 0;
+        sfx_play(SND_GLIFO_CAST, hx);
         break;
     }
     return 0;
@@ -160,7 +162,11 @@ void curse_update(Enemy *enemies, int max_enemies) {
     for (int i = 0; i < ARPG_CURSE_MAX; i++) {
         CurseZone *z = &s_zones[i];
         if (!z->active) continue;
-        if (z->arm_frames > 0) { z->arm_frames--; z->phase++; continue; }
+        if (z->arm_frames > 0) {
+            if (--z->arm_frames == 0) sfx_play(SND_GLIFO_ACTIVATE, z->cx);
+            z->phase++;
+            continue;
+        }
         if (burns && z->tick_timer <= 0) {
             for (int e = 0; e < max_enemies; e++) {
                 Enemy *en = &enemies[e];

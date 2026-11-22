@@ -39,6 +39,25 @@ static const mm_word s_mm_ids[SND_COUNT] = {
     [SND_PLAYER_HURT]  = SFX_PLAYER_HURT,
     [SND_ABANDERADO_INTRO]  = SFX_ABANDERADO_INTRO,
     [SND_ABANDERADO_DEFEAT] = SFX_ABANDERADO_DERROTA,
+    [SND_PUNCH_WHOOSH]      = SFX_PUNCH_WHOOSH,
+    [SND_PUNCH_HIT]         = SFX_PUNCH_HIT,
+    [SND_REMATE_EXEC]       = SFX_REMATE_EXEC,
+    [SND_WOBBLE_CUE]        = SFX_WOBBLE_CUE,
+    [SND_GLIFO_CAST]        = SFX_GLIFO_CAST,
+    [SND_GLIFO_ACTIVATE]    = SFX_GLIFO_ACTIVATE,
+    [SND_OJO_CHARGE]        = SFX_OJO_CHARGE,
+    [SND_OJO_FIRE]          = SFX_OJO_FIRE,
+    [SND_CIRENEO_CHARGE]    = SFX_CIRENEO_CHARGE,
+    [SND_CIRENEO_WALL]      = SFX_CIRENEO_WALL,
+    [SND_MONJA_HEAL]        = SFX_MONJA_HEAL,
+    [SND_MONAGUILLO_EMERGE] = SFX_MONAGUILLO_EMERGE,
+    [SND_BOSS_PHASE]        = SFX_BOSS_PHASE,
+    [SND_PICKUP_ORB]        = SFX_PICKUP_ORB,
+    [SND_CHEST_OPEN]        = SFX_CHEST_OPEN,
+    [SND_DOOR_OPEN]         = SFX_DOOR_OPEN,
+    [SND_UI_CLICK]          = SFX_UI_CLICK,
+    [SND_RELIC_SOCKET]      = SFX_RELIC_SOCKET,
+    [SND_LEVEL_UP]          = SFX_LEVEL_UP,
 };
 #endif
 
@@ -56,6 +75,25 @@ static const SfxMixRule s_mix_rules[SND_COUNT] = {
     [SND_PLAYER_HURT]  = { .volume = 255, .cooldown = 0, .jitter_pct = 0  },
     [SND_ABANDERADO_INTRO]  = { .volume = 255, .cooldown = 0, .jitter_pct = 0 },
     [SND_ABANDERADO_DEFEAT] = { .volume = 255, .cooldown = 0, .jitter_pct = 0 },
+    [SND_PUNCH_WHOOSH]      = { .volume = 185, .cooldown = 3, .jitter_pct = 8  },
+    [SND_PUNCH_HIT]         = { .volume = 235, .cooldown = 2, .jitter_pct = 10 },
+    [SND_REMATE_EXEC]       = { .volume = 245, .cooldown = 6, .jitter_pct = 4  },
+    [SND_WOBBLE_CUE]        = { .volume = 180, .cooldown = 8, .jitter_pct = 0  },
+    [SND_GLIFO_CAST]        = { .volume = 200, .cooldown = 4, .jitter_pct = 6  },
+    [SND_GLIFO_ACTIVATE]    = { .volume = 220, .cooldown = 4, .jitter_pct = 4  },
+    [SND_OJO_CHARGE]        = { .volume = 185, .cooldown = 8, .jitter_pct = 4  },
+    [SND_OJO_FIRE]          = { .volume = 240, .cooldown = 4, .jitter_pct = 4  },
+    [SND_CIRENEO_CHARGE]    = { .volume = 215, .cooldown = 8, .jitter_pct = 6  },
+    [SND_CIRENEO_WALL]      = { .volume = 230, .cooldown = 6, .jitter_pct = 6  },
+    [SND_MONJA_HEAL]        = { .volume = 165, .cooldown = 12, .jitter_pct = 4 },
+    [SND_MONAGUILLO_EMERGE] = { .volume = 175, .cooldown = 6, .jitter_pct = 10 },
+    [SND_BOSS_PHASE]        = { .volume = 250, .cooldown = 10, .jitter_pct = 0 },
+    [SND_PICKUP_ORB]        = { .volume = 180, .cooldown = 2, .jitter_pct = 6  },
+    [SND_CHEST_OPEN]        = { .volume = 225, .cooldown = 6, .jitter_pct = 0  },
+    [SND_DOOR_OPEN]         = { .volume = 220, .cooldown = 10, .jitter_pct = 0 },
+    [SND_UI_CLICK]          = { .volume = 175, .cooldown = 2, .jitter_pct = 0  },
+    [SND_RELIC_SOCKET]      = { .volume = 220, .cooldown = 3, .jitter_pct = 0  },
+    [SND_LEVEL_UP]          = { .volume = 245, .cooldown = 10, .jitter_pct = 0 },
 };
 
 static uint32_t next_rng(void) {
@@ -126,7 +164,7 @@ void sfx_frame_begin(int cam_x) {
 #endif
 }
 
-void sfx_play(SfxId id, int world_x) {
+void sfx_play_pitched(SfxId id, int world_x, uint16_t rate) {
     if (id < 0 || id >= SND_COUNT) return;
     const SfxMixRule *rule = &s_mix_rules[id];
     if (rule->cooldown > 0 && (s_frame - s_last_played[id]) < rule->cooldown) {
@@ -138,7 +176,7 @@ void sfx_play(SfxId id, int world_x) {
     if (!s_audio_ready) return;
     mm_sound_effect eff = {
         .id      = s_mm_ids[id],
-        .rate    = compute_rate(rule->jitter_pct),
+        .rate    = rate ? rate : compute_rate(rule->jitter_pct),
         .handle  = 0,
         .volume  = rule->volume,
         .panning = compute_pan(world_x),
@@ -146,7 +184,12 @@ void sfx_play(SfxId id, int world_x) {
     mmEffectEx(&eff);
 #else
     (void)world_x;
+    (void)rate;
 #endif
+}
+
+void sfx_play(SfxId id, int world_x) {
+    sfx_play_pitched(id, world_x, 0);
 }
 
 void sfx_start_charge(void) {

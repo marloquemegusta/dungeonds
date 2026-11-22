@@ -11,6 +11,7 @@
 #include "dmg_numbers.h"
 #include "allies.h"
 #include "curse.h"
+#include "sfx.h"
 #if ENCOUNTERS_PROTO
 #include "weapons.h"
 #endif
@@ -538,6 +539,7 @@ static void update_charger(Enemy *e, Enemy *enemies, int num_enemies, int idx,
                 e->charge_hit = 0;
                 e->frame = 0;
                 e->anim_timer = 0;
+                sfx_play(SND_CIRENEO_CHARGE, TO_INT(e->x));
             }
             break;
         }
@@ -550,6 +552,7 @@ static void update_charger(Enemy *e, Enemy *enemies, int num_enemies, int idx,
                 e->state = ENEMY_STATE_STUNNED;
                 e->state_timer = CHARGER_STUN_WALL_FRAMES;
                 update_animation(e, 0);
+                sfx_play(SND_CIRENEO_WALL, TO_INT(e->x));
                 break;
             }
             // 4-frame charge clip at 4 ticks/frame (16 frames/stride -> ~40 px at charge_speed 650)
@@ -917,6 +920,7 @@ static void update_shooter(Enemy *e, Enemy *enemies, int num_enemies, int idx,
                 e->frame = 0;
                 e->gesture = 1;
                 ojo_fire(e, player_x, player_y);
+                sfx_play(SND_OJO_FIRE, TO_INT(e->x));
             }
             break;
         }
@@ -977,6 +981,7 @@ static void update_shooter(Enemy *e, Enemy *enemies, int num_enemies, int idx,
                 e->aim_px = px;
                 e->aim_py = py;
                 e->dir = dir_from_vector(player_x - e->x, player_y - e->y);
+                sfx_play(SND_OJO_CHARGE, TO_INT(e->x));
             } else if (homed) {
                 if (sight) {                                // no free aiming slot: it waits at its post, watching
                     ojo_leash_settle(e);
@@ -1070,6 +1075,7 @@ static void monja_pray(Enemy *e, Enemy *enemies, int num_enemies) {
         e->frame = (e->frame + 1) % PLAYER_NUM_FRAMES;
     }
     if (e->state_timer % ARPG_MONJA_HEAL_PERIOD != 0) return;
+    int healed_any = 0;
     for (int j = 0; j < num_enemies; j++) {
         Enemy *o = &enemies[j];
         if (!monja_heals_ally(e, o)) continue;
@@ -1078,7 +1084,9 @@ static void monja_pray(Enemy *e, Enemy *enemies, int num_enemies) {
         o->hp += heal;
         if (o->hp > o->max_hp) o->hp = o->max_hp;
         dmg_numbers_spawn(o->x, o->y - TO_FIXED(16), heal, DMG_NUM_HEAL);   // green sage number over the healed one
+        healed_any = 1;
     }
+    if (healed_any) sfx_play(SND_MONJA_HEAL, TO_INT(e->x));
 }
 
 static void update_monja(Enemy *e, Enemy *enemies, int num_enemies, int idx,
@@ -1218,6 +1226,7 @@ static void spawn_monaguillo_at(Enemy *slot, int x, int y) {
     slot->state_timer = MONAGUILLO_EMERGE_FRAMES;
     slot->strafe_dir = (rng_next() & 1u) ? 1 : -1;
     slot->pack = -1;
+    sfx_play(SND_MONAGUILLO_EMERGE, x);
 }
 
 int g_abanderado_max_mona = 8;           // cap of live monaguillos of the Abanderado (encounters_act1.c sets it per boss)

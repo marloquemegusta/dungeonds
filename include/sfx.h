@@ -1,6 +1,8 @@
 #ifndef SFX_H
 #define SFX_H
 
+#include <stdint.h>
+
 typedef enum {
     SND_HEART_CHARGE = 0,
     SND_HEART_FIRE,
@@ -9,6 +11,25 @@ typedef enum {
     SND_PLAYER_HURT,
     SND_ABANDERADO_INTRO,    /* boss voices (DESIGN.md 6.13.7): played centred, one at a time */
     SND_ABANDERADO_DEFEAT,
+    SND_PUNCH_WHOOSH,
+    SND_PUNCH_HIT,
+    SND_REMATE_EXEC,
+    SND_WOBBLE_CUE,
+    SND_GLIFO_CAST,
+    SND_GLIFO_ACTIVATE,
+    SND_OJO_CHARGE,
+    SND_OJO_FIRE,
+    SND_CIRENEO_CHARGE,
+    SND_CIRENEO_WALL,
+    SND_MONJA_HEAL,
+    SND_MONAGUILLO_EMERGE,
+    SND_BOSS_PHASE,
+    SND_PICKUP_ORB,
+    SND_CHEST_OPEN,
+    SND_DOOR_OPEN,
+    SND_UI_CLICK,
+    SND_RELIC_SOCKET,
+    SND_LEVEL_UP,
     SND_COUNT
 } SfxId;
 
@@ -20,6 +41,9 @@ void sfx_frame_begin(int cam_x);
 
 /* Play a one-shot SFX with optional world-space X panning (pass < 0 for center). */
 void sfx_play(SfxId id, int world_x);
+
+/* Play a one-shot SFX with explicit Maxmod rate (1024 = 1.0x pitch) and world-space X panning. */
+void sfx_play_pitched(SfxId id, int world_x, uint16_t rate);
 
 /* Start or stop the player's charge SFX (cut immediately on fire/cancel/death). */
 void sfx_start_charge(void);

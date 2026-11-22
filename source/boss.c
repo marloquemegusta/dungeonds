@@ -222,6 +222,7 @@ int boss_combat_update(Enemy *enemies, int max_enemies) {
         s_phase++;
         s_state = BOSS_PHASE_CHANGE;
         s_phase_t = 0;
+        sfx_play(SND_BOSS_PHASE, -1);
         escort_reset();                       // the escort follows the list of the new phase
     }
     if (s_state == BOSS_COMBAT || s_state == BOSS_PHASE_CHANGE) escort_update(enemies, max_enemies);
