@@ -93,6 +93,18 @@ int enc_room_arrival(int *out_x, int *out_y, int *out_dir);
 // Consumes a crossing requested by enc_update(): 1 and the destination room in *out_room.
 int enc_room_take_exit(int *out_room);
 
+// Overlay map (SELECT): layout of a room in map units, derived from the ficha of rooms (doors, heights of the lateral openings).
+// x grows east from the left floor edge of Nave 1, y grows north from its foot (the way the hero climbs).
+typedef struct { uint8_t side, dest; int16_t cx, cy; } EncMapDoor;    // side: 0 left, 1 right, 2 up; (cx, cy) on the wall
+typedef struct {
+    int16_t x, y, w, h;
+    uint8_t n_doors, altar, chest, key;       // key: the group of this room drops the key of the zone
+    int16_t altar_x, altar_y, chest_x, chest_y;
+    EncMapDoor door[3];
+} EncMapRoom;
+void enc_map_room(int room, EncMapRoom *out);
+int enc_map_hero(int px, int py, int *mx, int *my);   // hero (window px) in map units of the current room; returns the room id
+
 // Once per simulated frame, after the strip rebase. px, py: hero ground point in window px.
 void enc_update(Enemy *enemies, int max_enemies, int px, int py);
 // Ground painter: obstacles and barriers (under the actors, over the floor).

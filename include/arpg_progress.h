@@ -25,7 +25,8 @@ typedef struct {
     uint8_t  last_altar;     // room id of the last altar touched (the camp door leads there); 0 = Nave 1
     uint8_t  key_have;       // the key of the zone (no logic yet)
     uint8_t  dead_groups[12];// per room: bit b = group of block b dead since the last sleep
-    uint8_t  reserved[4];
+    uint16_t rooms_seen;     // bit r = room r visited at least once (the overlay map of SELECT shows only those)
+    uint8_t  reserved[2];
 } ArpgProgress;
 #define ARPG_SAVE_V4_SIZE offsetof(ArpgProgress, chests_open)
 

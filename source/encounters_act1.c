@@ -464,6 +464,71 @@ int enc_room_top_block(void) { return s_first_block - (room_def()->blocks - 1); 
 void enc_room_select(int room, int from_room) {
     s_room = (room >= 0 && room < ENC_ROOM_COUNT) ? room : 0;
     s_from_room = from_room;
+    if (!((g_arpg.rooms_seen >> s_room) & 1)) {      // first visit: the overlay map reveals it (kept in the save)
+        g_arpg.rooms_seen |= (uint16_t)(1u << s_room);
+        arpg_progress_save();
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Overlay map: the layout is walked from Nave 1 along the doors of the ficha: an upper door stacks the next room on top;
+// a lateral door puts the neighbour beside the wall, at the height that lines up both openings.
+// ---------------------------------------------------------------------------
+#define ENC_MAP_GAP 40
+static EncMapRoom s_map[ENC_ROOM_COUNT];
+static uint8_t s_map_done;
+static uint16_t s_map_mask;
+static int map_door_cy(const RoomDoor *d) {       // lateral door: centre of its opening, from the foot of the room
+    return ((d->screen - 1) / 2 + 1) * ENC_BLOCK_H - ARPG_ROOM_HOLE_Y_PX - ARPG_ROOM_HOLE_H_PX / 2;
+}
+static void map_place(int room, int x, int y) {
+    const RoomDef *r = &s_rooms[room];
+    EncMapRoom *m = &s_map[room];
+    m->x = (int16_t)x; m->y = (int16_t)y; m->w = ENC_FLOOR_W; m->h = (int16_t)(r->blocks * ENC_BLOCK_H);
+    m->n_doors = r->n_doors; m->altar = r->altar; m->chest = r->chest; m->key = r->drops_key;
+    m->altar_x = (int16_t)(x + ENC_FLOOR_W / 2); m->altar_y = (int16_t)(y + ARPG_ROOM_FOOT_OFFSET_PX);
+    m->chest_x = m->altar_x; m->chest_y = (int16_t)(y + (r->blocks - 1) * ENC_BLOCK_H + ENC_BLOCK_H - 90);
+    for (int i = 0; i < r->n_doors; i++) {
+        const RoomDoor *d = &r->doors[i];
+        EncMapDoor *o = &m->door[i];
+        o->side = d->side; o->dest = d->dest;
+        if (d->side == DOOR_UP) { o->cx = (int16_t)(x + ENC_FLOOR_W / 2); o->cy = (int16_t)(m->y + m->h); }
+        else {
+            o->cx = (int16_t)(d->side == DOOR_LEFT ? x : x + ENC_FLOOR_W);
+            o->cy = (int16_t)(y + map_door_cy(d));
+        }
+    }
+}
+static void map_walk(int room, int x, int y) {
+    s_map_mask |= (uint16_t)(1u << room);
+    map_place(room, x, y);
+    const RoomDef *r = &s_rooms[room];
+    for (int i = 0; i < r->n_doors; i++) {
+        const RoomDoor *d = &r->doors[i];
+        if ((s_map_mask >> d->dest) & 1) continue;
+        const RoomDef *c = &s_rooms[d->dest];
+        if (d->side == DOOR_UP) { map_walk(d->dest, x, y + r->blocks * ENC_BLOCK_H); continue; }
+        for (int j = 0; j < c->n_doors; j++) {           // the door of the neighbour that leads back here
+            const RoomDoor *cd = &c->doors[j];
+            if (cd->dest != room || cd->side == DOOR_UP) continue;
+            const int cx = d->side == DOOR_LEFT ? x - (ENC_FLOOR_W + ENC_MAP_GAP) : x + ENC_FLOOR_W + ENC_MAP_GAP;
+            map_walk(d->dest, cx, y + map_door_cy(d) - map_door_cy(cd));
+            break;
+        }
+    }
+}
+void enc_map_room(int room, EncMapRoom *out) {
+    if (!s_map_done) { s_map_done = 1; s_map_mask = 0; map_walk(0, 0, 0); }
+    if (room < 0 || room >= ENC_ROOM_COUNT) room = 0;
+    *out = s_map[room];
+}
+int enc_map_hero(int px, int py, int *mx, int *my) {
+    EncMapRoom m;
+    enc_map_room(s_room, &m);
+    const int foot = window_top(block_of_encounter(0)) + ENC_BLOCK_H;
+    *mx = m.x + (px - ENC_FLOOR_X);
+    *my = m.y + (foot - py);
+    return s_room;
 }
 
 uint32_t enc_room_seed(int room) { return hash32(0x53414c41u + (uint32_t)room * 0x9e3779b9u) | 1u; }

@@ -24,5 +24,22 @@ assert abs((s0 - n1) - 144) <= 2, "escala del lab fuera de 17,9 px/m: ajustar wi
 rho0 = n1 - (G0 - R0)                                           # fila del render de R = R0
 img = w[rho0:rho0 + (R1 - R0), x1 - 24:x1]
 alpha = (m[rho0:rho0 + (R1 - R0), x1 - 24:x1]) * 255
+# Clean ends. The render leaves the stone ribs of the wall edges sticking out past the centre of the cut: a square bite in the
+# middle of the top of the south module and feet on the bottom of the north canto. Both ends are made flat.
+alpha = alpha.copy(); img = img.copy()
+H = alpha.shape[0]
+filled = alpha[:, :] > 0
+rows = np.where(filled.any(1))[0]
+south0 = int(rows[rows > (G0 - R0) + 100][0])                    # first row of the south module (its top)
+cen = ~filled[south0 + 1]                                         # the bitten columns (empty in the first rows)
+fill = w[rho0 + H + 1, x1 - 24:x1]                                # the stone of the centre just below the bite
+for y in range(south0, H):
+    img[y, cen] = fill[cen]; alpha[y, cen] = 255
+# bottom of the north canto: cut everything below the centre of its bottom edge
+cols = np.where(filled[:, :].any(0))[0]
+last = np.array([np.where(filled[:(G0 - R0) + 60, x])[0].max() if filled[:(G0 - R0) + 60, x].any() else -1 for x in range(24)])
+base = int(np.median(last[6:18]))
+for x in range(24):
+    if last[x] > base: alpha[base + 1:last[x] + 1, x] = 0
 Image.fromarray(np.dstack([img, alpha]).astype(np.uint8), "RGBA").save(out)
 print("x1", x1, "rho0", rho0, "fase (rho0-R0-34) mod 128 =", (rho0 - R0 - 34) % 128, "(esperado 0)", "->", out)

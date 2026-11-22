@@ -39,6 +39,7 @@
 #include "bestiary_font.h"
 #include "arpg.h"
 #include "arpg_progress.h"
+#include "arpg_map.h"
 #include "arpg_inv.h"
 #include "glifo.h"
 #include "radial.h"
@@ -2994,7 +2995,11 @@ static void player_update(uint32_t keys, uint32_t keys_down) {
     if (keys_down & KEY_R) sandbox_respawn();
     // Debug: SELECT cycles the upgrade design variant and g_fx_style.
     if (keys_down & KEY_SELECT) {
+#if ENCOUNTERS_PROTO
+        if (s_strip_mode && s_run_started && !camp_active()) arpg_map_toggle();   // overlay map on the upper screen
+#else
         upgrades_cycle_design_variant();   // also advances g_fx_style
+#endif
     }
     upgrades_debug_update();
 #if !ENCOUNTERS_PROTO
@@ -4030,6 +4035,15 @@ int main(void) {
         present_vblank_begin();
         uint32_t post_vwait_start = cpuGetTiming();
         present_screen_effects();
+#if ENCOUNTERS_PROTO
+        if (arpg_map_is_open() && s_strip_mode && s_run_started && !camp_active() && menu_state() != MENU_INVENTORY) {
+            // Overlay map: dim the floor/walls of the upper screen (BG0 only; the map and actors live on BG2). Set here, before
+            // the top render, so the fade covers every scanline; the shadows' sprite window is off meanwhile.
+            REG_DISPCNT_SUB &= ~DISPLAY_SPR_WIN_ON;
+            REG_BLDCNT_SUB = BIT(0) | (3 << 6);
+            REG_BLDY_SUB = 9;
+        }
+#endif
         uint32_t t_top = cpuGetTiming();
         int inv_top = (menu_state() == MENU_INVENTORY);
         if (inv_top) {
@@ -4050,6 +4064,12 @@ int main(void) {
                 for (int y = 0; y < SCREEN_H; y++) { s_dirty_top[y].x0 = 0; s_dirty_top[y].x1 = SCREEN_W; }
             }
             render_screen(s_top_page, s_dirty_top, view_x, view_y - SCREEN_H, 1, &top_floor, &top_sh, &top_bl);
+#if ENCOUNTERS_PROTO
+            if (arpg_map_is_open() && s_strip_mode && s_run_started && !camp_active()) {
+                g_dirty_cur = s_dirty_top;      // the next render_screen of this page clears the lines
+                arpg_map_draw(s_top_page, TO_INT(s_player.x), TO_INT(s_player.y), (int)s_frame_index);
+            }
+#endif
         }
         s_inv_top_on = inv_top;
 #if HW_SHADOWS
