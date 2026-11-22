@@ -13,6 +13,13 @@ ROOT = Path(__file__).resolve().parents[1]
 PROP_DIR = ROOT / "assets/environment/cathedral/props/render"
 LAPIDA_DIR = ROOT / "assets/environment/cathedral/lapidas"
 WALL_PNG = ROOT / "assets/environment/cathedral/muros/muro_izq_128.png"
+END_PNGS = (ROOT / "assets/environment/cathedral/muros/muro_fondo_ciego.png",
+            ROOT / "assets/environment/cathedral/muros/muro_fondo_pasante.png")   # 256x152 px: tiles 32x19, base del muro en la ultima fila
+END_W_TILES, END_H_TILES = 32, 19
+HOLE_PNG = ROOT / "assets/environment/cathedral/muros/hueco_izq.png"   # 24x264 px: hueco lateral de dos modulos (canto real del modulo norte + vacio), filas -24..239 desde G0
+HOLE_H_TILES = 33
+HOLE_FACE_PX = 112                  # alto del muro en pantalla: la fila R del arte es el suelo R + 112 (profundidad de oclusion)
+HOLE_OCC_FROM, HOLE_OCC_TILES = 240, 14   # el modulo sur se pinta desde la fila 240 de la ventana del hueco (G0 + 144); 14 filas de tiles de oclusion
 PROP_PALETTE = ROOT / "assets/environment/cathedral/palette/palette.json"
 OUTPUT = ROOT / "source/strip_kit.c"
 DEFAULT_PROPS = ("columna_entera", "banco_entero", "relicario", "vela",
@@ -24,7 +31,7 @@ DEFAULT_PROPS = ("columna_entera", "banco_entero", "relicario", "vela",
 # the travel altar keep the software-fixture path (source/encounters_act1.c) because their state
 # changes at run time and a baked tile could not be replaced; they take their art from
 # include/enc_room_gfx.h, generated from the same renders by tools/props/gen_room_sprites.py.
-ROOM_PROPS = ("puerta",)
+ROOM_PROPS = ()   # la puerta superior ya no es una pieza: es el arco central del muro del fondo (END_PNGS)
 ROOM_PIECE_IDS = {"puerta": 200, "cofre_cerrado": 201, "cofre_abierto": 202, "altar": 203}
 # Only phase each room piece is baked at. (12, 0) makes the door art land centred on the nave axis
 # when enc_place_piece() snaps it to the nearest legal tile (see ROOM_DOOR_PHASE below).
@@ -1096,7 +1103,69 @@ def make_wall_map(floor_map, tiles, palette, props, prop_lab):
     return out, new_colors
 
 
-def emit(output, palette, tiles, floor_map, stamps, packed, floor_source, worst,
+def make_end_maps(tiles, palette, props, prop_lab):
+    """Muro del fondo de cada sala (cerrado y con arco central pasante), 32x19 tiles en el orden de END_PNGS. Los pixeles
+    transparentes se componen sobre el color del vacio del muro lateral; un tile entero transparente es el tile 0 (el vacio)."""
+    out, new_total = [], 0
+    for path in END_PNGS + (HOLE_PNG,):
+        src = np.asarray(Image.open(path).convert("RGBA"))
+        want = (HOLE_H_TILES * 8, 24, 4) if path == HOLE_PNG else (END_H_TILES * 8, END_W_TILES * 8, 4)
+        if src.shape != want:
+            raise ValueError(f"{path.name} must be {want[1]}x{want[0]}, got {src.shape[1]}x{src.shape[0]}")
+        opaque = src[:, :, 3] >= 128
+        rgb = np.where(opaque[:, :, None], src[:, :, :3], np.array(WALL_BACKDROP_RGB, np.uint8))
+        q = quantize_props(Image.fromarray(np.dstack([rgb, np.full(opaque.shape, 255, np.uint8)])), prop_lab)
+        before = len(palette)
+        table = np.zeros(256, np.uint8)
+        for i in np.unique(q):
+            c = props[int(i)]
+            if c not in palette: palette.append(c)
+            table[int(i)] = palette.index(c)
+        new_total += len(palette) - before
+        pal_idx = table[q]
+        rows = []
+        for ty in range(want[0] // 8):
+            row = []
+            for tx in range(want[1] // 8):
+                blk = (slice(ty*8, ty*8+8), slice(tx*8, tx*8+8))
+                row.append(0 if not opaque[blk].any() else tiles.add(np.ascontiguousarray(pal_idx[blk]).tobytes()))
+            rows.append(row)
+        out.append(rows)
+    return out, new_total
+
+
+def hole_occluder_c():
+    """Estampas de oclusion del modulo sur de un hueco lateral (izquierda y derecha): sin tiles (el arte es el del muro), solo
+    las pasadas de profundidad de las filas de arte desde HOLE_OCC_FROM, tomadas del alfa de muro_izq_128.png: el actor cuyos
+    pies estan por encima de la fila R + HOLE_FACE_PX queda oculto."""
+    png = np.asarray(Image.open(WALL_PNG).convert("RGBA"))
+    inner = png[:, 24:48, 3] >= 128
+    out = [f"static const uint16_t s_hole_occ_tiles[{3 * HOLE_OCC_TILES}] = {{ 0 }};\n"]
+    for side in (0, 1):
+        runs = []
+        for y in range(HOLE_OCC_TILES * 8):
+            row = inner[(HOLE_OCC_FROM + y) % 128]
+            if side: row = row[::-1]
+            x = 0
+            while x < 24:
+                if row[x]:
+                    x1 = x
+                    while x1 < 24 and row[x1]: x1 += 1
+                    runs.append((x, y, x1 - x, y + HOLE_FACE_PX))
+                    x = x1
+                else:
+                    x += 1
+        out.append(f"static const StripDepthRun s_hole_occ_{side}_runs[{len(runs)}] = {{\n")
+        for r in runs: out.append(f"    {{ {r[0]}, {r[1]}, {r[2]}, {r[3]} }},\n")
+        out.append("};\n")
+    out.append("static const StripStamp s_hole_occ[2] = {\n")
+    for side in (0, 1):
+        out.append(f"    {{ 3, {HOLE_OCC_TILES}, 0, 0, 0, 0, 0, s_hole_occ_tiles, 0, 0, (uint16_t)(sizeof(s_hole_occ_{side}_runs) / sizeof(s_hole_occ_{side}_runs[0])), s_hole_occ_{side}_runs }},\n")
+    out.append("};\n\n")
+    return out
+
+
+def emit(output, palette, tiles, floor_map, end_maps, stamps, packed, floor_source, worst,
          worst_occlusion, floor_n, props_n, mode="actual"):
     floor_path = str(floor_source).replace("\\", "/")
     out = [f"// Generated by tools/bake_cathedral_kit.py from floor {floor_path}, assets/environment/cathedral/props/render and assets/environment/cathedral/lapidas; floor={floor_n}, props={props_n}, shared={len(palette)}, tiles={len(tiles.data)}, worst_window={worst}, worst_occlusion_window={worst_occlusion}. Do not edit.\n",
@@ -1108,7 +1177,12 @@ def emit(output, palette, tiles, floor_map, stamps, packed, floor_source, worst,
     for t in tiles.data: out.append("    { " + ", ".join(map(str, t)) + " },\n")
     out += ["};\n\n", f"static const uint16_t s_floor_map[{len(floor_map)*64}] __attribute__((aligned(4))) = {{\n"]
     for r in floor_map: out.append("    " + ", ".join(map(str, r)) + ",\n")
-    out += ["};\n\n", f"static const uint8_t s_floor_collision[{len(packed)}] = {{\n"]
+    out.append("};\n\n")
+    for k, rows in enumerate(end_maps):
+        out.append(f"static const uint16_t s_end_map_{k}[{len(rows)*len(rows[0])}] = {{\n")
+        for r in rows: out.append("    " + ", ".join(map(str, r)) + ",\n")
+        out.append("};\n\n")
+    out += [f"static const uint8_t s_floor_collision[{len(packed)}] = {{\n"]
     for i in range(0, len(packed), 32): out.append("    " + ", ".join(f"0x{c:02X}" for c in packed[i:i+32]) + ",\n")
     out.append("};\n\n")
     for i, s in enumerate(stamps):
@@ -1130,10 +1204,12 @@ def emit(output, palette, tiles, floor_map, stamps, packed, floor_source, worst,
         dr = f"{len(s['depth_runs'])}, s_stamp_{i}_depth" if s["depth_runs"] else "0, 0"
         pid = s["piece_id"] if mode == "catedral" else 0
         out.append(f"    {{ {s['w']}, {s['h']}, {s['phase_col']}, {s['phase_row']}, {s['foot_anchor_y_px']}, {s['foot_value']}, {pid}, s_stamp_{i}_tiles, {fr}, {dr} }}, // {s['name']}\n")
-    out += ["};\n\n", "const StripKit g_strip_kit = {\n", "    .palette = s_palette,\n", "    .tiles = s_tiles,\n",
+    out += ["};\n\n"] + hole_occluder_c() + ["const StripKit g_strip_kit = {\n", "    .palette = s_palette,\n", "    .tiles = s_tiles,\n",
             f"    .num_tiles = {len(tiles.data)},\n", f"    .map_h_tiles = {len(floor_map)},\n",
             "    .floor_h_tiles = 16,\n", "    .floor_map = s_floor_map,\n",
-            "    .floor_collision = s_floor_collision,\n", f"    .num_stamps = {len(stamps)},\n", "    .stamps = s_stamps,\n", "};\n"]
+            "    .floor_collision = s_floor_collision,\n",
+            f"    .end_w_tiles = {END_W_TILES},\n", f"    .end_h_tiles = {END_H_TILES},\n",
+            f"    .hole_h_tiles = {HOLE_H_TILES},\n", "    .hole_map = s_end_map_2,\n", "    .hole_occ = s_hole_occ,\n", "    .end_map = { s_end_map_0, s_end_map_1 },\n", f"    .num_stamps = {len(stamps)},\n", "    .stamps = s_stamps,\n", "};\n"]
     with output.open("w", encoding="utf-8", newline="") as f: f.write("".join(out))
 
 
@@ -1224,6 +1300,8 @@ def build(floor_dir, phases=4, output=OUTPUT, preview=None, prop_names=None,
     for st in stamps:
         st["tiles"] = np.vectorize(remap_entry, otypes=[np.uint16])(st["tiles"])
     map_map, wall_new = make_wall_map(floor_map, tiles, palette, props, prop_lab)
+    end_maps, end_new = make_end_maps(tiles, palette, props, prop_lab)
+    wall_new += end_new
     if len(palette) > 256: raise ValueError(f"shared palette requires {len(palette)} entries including transparent")
     # Merge nearly-identical tiles (same approach as bake_arena.py) when > 980 tiles so lapidas fit with margin.
     if len(tiles.data) > 950:
@@ -1236,6 +1314,9 @@ def build(floor_dir, phases=4, output=OUTPUT, preview=None, prop_names=None,
         counts = np.zeros(len(tiles.data), dtype=np.int64)
         for row in map_map:
             for v in row: counts[int(v) & 0x3fff] += 10
+        for rows in end_maps:
+            for row in rows:
+                for v in row: counts[int(v) & 0x3fff] += 10
         for st in stamps:
             for v in st["tiles"].flat:
                 if int(v): counts[int(v) & 0x3fff] += 1
@@ -1258,6 +1339,7 @@ def build(floor_dir, phases=4, output=OUTPUT, preview=None, prop_names=None,
                 tiles.data = [tiles.data[t] for t in kept]
                 tiles.index = {t: i for i, t in enumerate(tiles.data)}
                 map_map = [[(int(m_remap[int(v) & 0x3fff]) | (int(v) & 0xc000)) if int(v) else 0 for v in row] for row in map_map]
+                end_maps = [[[(int(m_remap[int(v) & 0x3fff]) | (int(v) & 0xc000)) if int(v) else 0 for v in row] for row in rows] for rows in end_maps]
                 for st in stamps:
                     st["tiles"] = np.vectorize(lambda v: (int(m_remap[int(v) & 0x3fff]) | (int(v) & 0xc000)) if int(v) else 0, otypes=[np.uint16])(st["tiles"])
                 break
@@ -1268,6 +1350,8 @@ def build(floor_dir, phases=4, output=OUTPUT, preview=None, prop_names=None,
     # Compactar: tras el remapeo de colores los tiles previos de las piezas quedan sin referencia; no se emiten.
     used = {0}
     for row in map_map: used |= {int(v) & 0x3fff for v in row}
+    for rows in end_maps:
+        for row in rows: used |= {int(v) & 0x3fff for v in row}
     for st in stamps: used |= {int(v) & 0x3fff for v in st["tiles"].flat if int(v)}
     order = sorted(used); new_id = {o: n for n, o in enumerate(order)}
     if len(order) > 1024:
@@ -1276,6 +1360,7 @@ def build(floor_dir, phases=4, output=OUTPUT, preview=None, prop_names=None,
     def renum(v):
         v = int(v); return v if not v else (new_id[v & 0x3fff] | ((v & 0xc000) >> 4))
     map_map = [[renum(v) if int(v) else 0 for v in row] for row in map_map]
+    end_maps = [[[renum(v) if int(v) else 0 for v in row] for row in rows] for rows in end_maps]
     for st in stamps: st["tiles"] = np.vectorize(renum, otypes=[np.uint16])(st["tiles"])
     tiles.data = [tiles.data[o] for o in order]
     tiles.index = {t: i for i, t in enumerate(tiles.data)}
@@ -1291,7 +1376,7 @@ def build(floor_dir, phases=4, output=OUTPUT, preview=None, prop_names=None,
         im = Image.fromarray(sample, "P"); im.putpalette(rgb_palette)
         preview.parent.mkdir(parents=True, exist_ok=True); im.convert("RGB").save(preview)
     floor_n = len(set(floor_colors)); props_n = len(set(props))
-    emit(output, palette, tiles, map_map, stamps, packed, floor_dir, worst, worst_occlusion, floor_n, props_n, mode)
+    emit(output, palette, tiles, map_map, end_maps, stamps, packed, floor_dir, worst, worst_occlusion, floor_n, props_n, mode)
     if dump_plan is not None and mode == "catedral":
         dumped = [{"block": e["block"], "piece_id": stamps[e["idx"]]["piece_id"],
                    "phase_col": stamps[e["idx"]]["phase_col"],

@@ -388,6 +388,19 @@ static int stamp_blocks_aisle(const StripStamp *st, int x_tile) {
 }
 
 static void enc_place_piece(PlanItem *acc, int *n, const EncPiecePlan *p) {
+    if (p->piece == STRIP_PIECE_HUECO_IZQ || p->piece == STRIP_PIECE_HUECO_DER) {
+        // Occlusion of the south module of a lateral opening: a stamp of depth runs without tiles, over the wall columns
+        // (outside the floor, so it skips plan_fits), at the row the plan gives.
+        if (!g_strip_kit.hole_occ || *n >= STRIP_BLOCK_MAX_PIECES) return;
+        const int left = p->piece == STRIP_PIECE_HUECO_IZQ;
+        acc[*n].stamp = &g_strip_kit.hole_occ[left ? 0 : 1];
+        acc[*n].x = (left ? ENC_CAM_X : ENC_FLOOR_X + ENC_FLOOR_W) / 8;
+        acc[*n].y = p->ly / 8;
+        acc[*n].piece_id = p->piece;
+        acc[*n].cat = PLAN_CAT_STRUCT;
+        (*n)++;
+        return;
+    }
     uint8_t piece = resolve_room_placeholder(p->piece);
     const StripStamp *any = first_stamp_of(piece);
     if (!any || *n >= STRIP_BLOCK_MAX_PIECES) return;
@@ -713,37 +726,68 @@ static void band_apply_rects(const BandSink *sink, int32_t band, int collision_r
 // re-imposes the side walls on every commit and would otherwise close them again. Deterministic per
 // block, so the same call after a rebase (with the new shift) reproduces them.
 static void apply_room_openings(uint16_t *map, uint8_t *collision, int32_t shift) {
-    // -128..8 covers every block of the act (the first block is 3, or 7 with start_boss; the last
-    // room sits ~100 blocks above it). enc_room_opening() drops the blocks that are not rooms.
-    for (int block = -128; block <= 8; block++) {
-        EncRoomOpening op;
-        if (!enc_room_opening(block, &op)) continue;
+    // Everything above the last block of the room is black and solid (bodies and bullets).
+    {
+        const int top_px = enc_room_top_block() * ENC_BLOCK_H + (int)shift;
+        for (int py = 0; py < top_px && py < STRIP_WIN_H_PX; py += 8)
+            memset(map + (unsigned)(py / 8) * STRIP_W_TILES, 0, STRIP_MAP_ROW_BYTES);        // blank tiles: the void
+        for (int py = 0; py < top_px && py < STRIP_COLLISION_H * COLLISION_SCALE - COLLISION_SCALE; py += COLLISION_SCALE)
+            for (int px = 0; px < STRIP_W_TILES * 8; px += COLLISION_SCALE)
+                packed_set_cell(collision, (unsigned)(py / COLLISION_SCALE), (unsigned)(px / COLLISION_SCALE), 3);
+    }
+    // The back wall of the room: a row of arches facing the camera, its base on the top line and the rest of the
+    // 32-tile-wide piece going up; the lateral columns of the piece continue the side walls up to where they end. The
+    // arch in the middle goes through (black behind: the void) when the room has an exit upwards; its crossing is the
+    // threshold of the trigger in source/encounters_act1.c, so the wall is solid except for that gap.
+    if (g_strip_kit.end_h_tiles != 0) {
+        const int variant = enc_block_has_door(enc_room_top_block()) ? 1 : 0;
+        const int top_px = enc_room_top_block() * ENC_BLOCK_H + (int)shift;
+        const uint16_t *end = g_strip_kit.end_map[variant];
+        for (int r = 0; r < g_strip_kit.end_h_tiles; r++) {
+            const int py = top_px - (g_strip_kit.end_h_tiles - r) * 8;
+            if (py < 0 || py >= STRIP_WIN_H_PX) continue;
+            uint16_t *row = map + (unsigned)(py / 8) * STRIP_W_TILES;
+            for (int c = 0; c < g_strip_kit.end_w_tiles; c++) row[ENC_CAM_X / 8 + c] = end[r * g_strip_kit.end_w_tiles + c];
+        }
+        if (variant) {      // the gap of the through arch is walkable (its mouth is 26 px wide, centred on the nave axis)
+            for (int py = top_px - 3 * COLLISION_SCALE * 2; py < top_px; py += COLLISION_SCALE) {
+                if (py < 0 || py >= STRIP_COLLISION_H * COLLISION_SCALE - COLLISION_SCALE) continue;
+                for (int px = ENC_FLOOR_X + ENC_FLOOR_W / 2 - ARPG_ROOM_DOOR_HALF_W_PX; px < ENC_FLOOR_X + ENC_FLOOR_W / 2 + ARPG_ROOM_DOOR_HALF_W_PX; px += COLLISION_SCALE)
+                    packed_set_cell(collision, (unsigned)(py / COLLISION_SCALE), (unsigned)(px / COLLISION_SCALE), 0);
+            }
+        }
+    }
+    // The room is at most 3 blocks (-128..8 is a safe sweep); enc_room_openings() drops the blocks that are not its own.
+    for (int block = -8; block <= 8; block++) {
         const int top = block * ENC_BLOCK_H + shift;
         if (top + ENC_BLOCK_H <= 0 || top >= STRIP_WIN_H_PX) continue;
-        const int y0 = top + op.y;
-        const int tx0 = op.x / 8, tx1 = (op.x + op.w) / 8;
-        for (int py = y0; py < y0 + op.h; py++) {
-            if (py < 0 || py >= STRIP_WIN_H_PX - COLLISION_SCALE) continue;
-            uint16_t *row = map + (unsigned)(py / 8) * STRIP_W_TILES;
-            for (int tx = tx0; tx < tx1; tx++)
-                if (tx >= 0 && tx < STRIP_W_TILES) row[tx] = 0;      // blank tile: the void behind the wall
-        }
-        for (int py = y0; py < y0 + op.h; py += COLLISION_SCALE) {
-            if (py < 0 || py >= STRIP_COLLISION_H * COLLISION_SCALE - COLLISION_SCALE) continue;
-            for (int px = op.x; px < op.x + op.w; px += COLLISION_SCALE)
-                packed_set_cell(collision, (unsigned)(py / COLLISION_SCALE),
-                                (unsigned)(px / COLLISION_SCALE), 0);
-        }
-        // Upper door: the baked door is solid (its stone frame has a footprint), but its crossing is a
-        // threshold. Clear the strip under the door art (the full sprite width, centred on the axis) so
-        // the hero can reach the trigger line and step through.
-        const int dc0 = ENC_FLOOR_X + ENC_FLOOR_W / 2 - ARPG_ROOM_DOOR_ART_W_PX / 2;
-        const int dc1 = ENC_FLOOR_X + ENC_FLOOR_W / 2 + ARPG_ROOM_DOOR_ART_W_PX / 2;
-        for (int py = top; py < top + 120; py += COLLISION_SCALE) {
-            if (py < 0 || py >= STRIP_COLLISION_H * COLLISION_SCALE - COLLISION_SCALE) continue;
-            for (int px = dc0; px < dc1; px += COLLISION_SCALE)
-                packed_set_cell(collision, (unsigned)(py / COLLISION_SCALE),
-                                (unsigned)(px / COLLISION_SCALE), 0);
+        EncRoomOpening ops[2];
+        const int n_ops = enc_room_openings(block, ops, 2);
+        for (int oi = 0; oi < n_ops; oi++) {
+            const EncRoomOpening op = ops[oi];
+            const int y0 = top + op.y;
+            const int tx0 = op.x / 8, tx1 = (op.x + op.w) / 8;
+            // Two modules of the wall are missing here (the hole is op.h = 256 px of nave): the floor is cut in a straight line at
+            // the inner face of the wall and the void lies beyond it. The kit paints, from 24 px above the hole, the cut face
+            // (canto) of the module to the north with its real height, the void and the first rows of the module to the south; the
+            // rest of that module is the wall as it was, which hides the hero through the occlusion stamp of the plan.
+            const int right = op.x > ENC_CAM_X;
+            for (int r = 0; r < g_strip_kit.hole_h_tiles; r++) {
+                const int py = top - 24 + r * 8;          // the art window is block-relative: its rows -24..240 (the ground of the hole is 96..352)
+                if (py < 0 || py >= STRIP_WIN_H_PX - COLLISION_SCALE) continue;
+                uint16_t *row = map + (unsigned)(py / 8) * STRIP_W_TILES;
+                for (int tx = tx0; tx < tx1; tx++) {
+                    if (tx < 0 || tx >= STRIP_W_TILES) continue;
+                    const int i = tx - tx0;
+                    row[tx] = right ? (uint16_t)(g_strip_kit.hole_map[r * 3 + (tx1 - 1 - tx)] ^ 0x400) : g_strip_kit.hole_map[r * 3 + i];
+                }
+            }
+            for (int py = y0; py < y0 + op.h; py += COLLISION_SCALE) {
+                if (py < 0 || py >= STRIP_COLLISION_H * COLLISION_SCALE - COLLISION_SCALE) continue;
+                for (int px = op.x; px < op.x + op.w; px += COLLISION_SCALE)
+                    packed_set_cell(collision, (unsigned)(py / COLLISION_SCALE),
+                                    (unsigned)(px / COLLISION_SCALE), 0);
+            }
         }
     }
 }
@@ -891,6 +935,31 @@ static void enforce_hard_edges(unsigned row_end) {
 }
 
 // Row of a run, clamped to the tail bucket STRIP_WIN_H_PX (runs outside the window never occur).
+#if ENCOUNTERS_PROTO
+// The wall that stood where a lateral opening is cut is gone: its occlusion runs (the original wall of those rows) must not hide
+// anyone there, because the map no longer holds that wall. The runs of the module to the south (from the end of the void down)
+// stay: they are the ones that hide the hero behind it.
+static void drop_opening_runs(void) {
+    uint32_t keep = 0;
+    for (uint32_t i = 0; i < s_occlusion_count; i++) {
+        const DungeonOcclusionRun r = s_occlusion_runs[i];
+        int drop = 0;
+        for (int block = -8; block <= 8 && !drop; block++) {
+            EncRoomOpening ops[2];
+            const int n_ops = enc_room_openings(block, ops, 2);
+            const int top = block * ENC_BLOCK_H;
+            for (int oi = 0; oi < n_ops; oi++) {
+                const int y0 = top + ops[oi].y;
+                if ((int)r.y >= top - 24 && (int)r.y < y0 + ops[oi].h - 112 &&
+                    (int)r.x < ops[oi].x + ops[oi].w && (int)r.x + (int)r.length > ops[oi].x) drop = 1;
+            }
+        }
+        if (!drop) s_occlusion_runs[keep++] = r;
+    }
+    s_occlusion_count = keep;
+}
+#endif
+
 static uint32_t occlusion_bucket(uint16_t y) {
     return y < STRIP_WIN_H_PX ? y : STRIP_WIN_H_PX;
 }
@@ -1216,7 +1285,7 @@ void strip_start(uint32_t seed) {
     s_seed = seed;
 #if ENCOUNTERS_PROTO
     enc_init(seed);
-    s_arena.player_y = STRIP_WIN_H_PX - 256 - enc_start_up_px();
+    s_arena.player_y = STRIP_WIN_H_PX - 256;          // main.c moves the hero to the arrival point of the room (enc_room_arrival)
 #endif
     s_next_band = 0;
     s_devout_active_n = 0;
@@ -1263,6 +1332,9 @@ void strip_start(uint32_t seed) {
         generate_band(&sink, band, band * STRIP_BAND_TILES, band * STRIP_BAND_CELLS);
         s_next_band = band + 1;
     }
+#if ENCOUNTERS_PROTO
+    drop_opening_runs();
+#endif
     rebuild_occlusion_index();
     enforce_hard_edges(STRIP_COLLISION_H);
 #if ENCOUNTERS_PROTO
@@ -1274,12 +1346,20 @@ void strip_start(uint32_t seed) {
 }
 
 void strip_prepare_step(int player_y_px) {
+#if ENCOUNTERS_PROTO
+    (void)player_y_px;
+    return;                      // a room always fits the first window: the strip never advances
+#endif
     if (g_arena != &s_arena || !s_kit_valid || s_prep_phase == PREP_READY) return;
     if (player_y_px >= STRIP_REBASE_TOP_PX + STRIP_PREPARE_MARGIN_PX) return;
     prep_unit();
 }
 
 int strip_rebase_if_needed(int player_y_px) {
+#if ENCOUNTERS_PROTO
+    (void)player_y_px;
+    return 0;                    // a room always fits the first window: the strip never advances
+#endif
     if (g_arena != &s_arena || !s_kit_valid || player_y_px >= STRIP_REBASE_TOP_PX) return 0;
     // Units the preparation has not reached yet run now: same result, the full cost in this call.
     while (s_prep_phase != PREP_READY) prep_unit();

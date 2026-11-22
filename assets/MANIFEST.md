@@ -37,6 +37,8 @@ Todo asset que use el juego está en este catálogo y versionado. Lo que no est�
 | Suelo de la catedral | cinco losas en `assets/environment/cathedral/floor_tiles/` (§4) | `tools/floor/rombos_tripo.py` | `floor/rombos_tripo/` → `strip_kit.c` | LFS |
 | Lápidas | lápidas Tripo en `props/` (§3) | `tools/catedral_editor/gen/*` (cadena en su `README.md`) | `assets/environment/cathedral/lapidas/` → `strip_kit.c` | LFS |
 | Muro izquierdo | arco gótico `f450c095` en `props/` | `tools/catedral_editor/gen/wall_row_glb.py` | `muros/muro_izq_128.png` → `strip_kit.c` | LFS |
+| Muro de fondo de sala (ARPG) | mismo arco gótico `f450c095`; variante pasante con intradós de piedra | `tools/catedral_editor/gen/{arco_pasante,wall_end_glb,wall_end_compose}.py` (lab lento, ancho 928) | `muros/muro_fondo_ciego.png`, `muro_fondo_pasante.png` → `strip_kit.c` | git |
+| Hueco lateral de dos módulos (ARPG) | muro lateral fino con dos módulos quitados: canto real del módulo norte (112 px), vacío y arranque del sur | `tools/catedral_editor/gen/{wall_gap_glb,wall_gap_compose,ghost}.py` (lab lento, ancho 1586; `ghost.py` fija el encuadre) | `muros/hueco_izq.png` (24x264) → `strip_kit.c` | git |
 | Paleta de la catedral | renders actuales | `tools/palette/extract_palette.py` | `assets/environment/cathedral/palette/palette.json` | git (derivado versionado) |
 | Arenas (mazmorra) | `assets/arenas/arenas.json` | `tools/export_arenas.py` → `bake_arena.py` | `source/arena_dungeon_01.c` | git |
 | HUD | corazón sagrado 3D `assets/models/hud/sacred_heart/` | `tools/hud/prerender_hud_heart.py` → `tools/generate_hud_icons_c.py` | `source/hud_icons_gfx.c` | LFS (PNG: git) |

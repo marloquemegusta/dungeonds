@@ -194,6 +194,7 @@ struct Enemy {
 // Garrison and Ojo leash (DESIGN.md 6.13.9). The post ("home", world px) lives in fields the type does not use, so sizeof(Enemy) stays
 // (scenarios read g_enemies by offset): the Ojo in charge_hit / strafe_dir, the Exvoto and the Cireneo in aim_px / aim_py (zeroed on release).
 #define ENEMY_HOME_SET 1       // the enemy has a post (encounter spawns: every Ojo and every guard)
+#define ENEMY_TIER2 4          // Ojo / Cireneo of tier 2 (x2 life, x1.5 damage; arpg.h). Lives in home_flags so sizeof(Enemy) stays
 #define ENEMY_HOME_GUARD 2     // spawned as garrison: when the room wakes it goes to ENEMY_STATE_GUARD instead of CHASE
 static inline int *enemy_home_x(struct Enemy *e) { return e->type == ENEMY_TYPE_SHOOTER ? &e->charge_hit : &e->aim_px; }
 static inline int *enemy_home_y(struct Enemy *e) { return e->type == ENEMY_TYPE_SHOOTER ? &e->strafe_dir : &e->aim_py; }

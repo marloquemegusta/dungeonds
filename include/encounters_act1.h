@@ -60,7 +60,6 @@ typedef struct { uint8_t piece, mirror; int16_t lx, ly; } EncPiecePlan;
 typedef struct { uint8_t kind; int16_t x, y, w, h; } EncRect;
 
 void enc_init(uint32_t seed);
-int enc_start_up_px(void);                 // px the hero starts above the usual spot (start_boss: just below the boss room)
 void enc_block_info(int32_t block, EncBlock *out);
 int enc_block_pieces(int32_t block, EncPiecePlan *out, int max);
 // Obstacles of a block plus the barrier when it is closed (read by the compositor and the painter).
@@ -68,13 +67,31 @@ int enc_block_rects(int32_t block, EncRect *out, int max);
 // Collision value an obstacle writes into the grid: 1 stops bodies, 3 stops bodies and bullets.
 int enc_collision_value(uint8_t rect_kind);
 
-// Rooms (salas ARPG): the lateral black opening of a block, in world x and block-relative y.
+// Rooms (salas ARPG, mapa de la zona 1 variante D): the cathedral is a set of 12 rooms of 1..3 blocks. Only the room the
+// hero is in exists in the strip; crossing a door loads the next one (main.c: fade, enc_room_select, strip_start, enc_room_arrival).
+#define ENC_ROOM_COUNT 12
+#define ENC_ROOM_NAVE1 0
+#define ENC_ROOM_CRIPTA 11
+// A lateral opening of a block: world x, block-relative y.
 typedef struct { int16_t x, y, w, h; } EncRoomOpening;
-int enc_room_opening(int32_t block, EncRoomOpening *out);
-// Window px where the hero lands at the foot of room k (door or lateral crossing share it for now).
-int enc_room_dest_pos(int k, int *out_x, int *out_y);
-// Consumes a crossing requested by enc_update(): 1 and the destination room in *out_k.
-int enc_room_take_exit(int *out_k);
+// Chooses the room the next strip_start() builds. `from_room` = room the hero comes from (-1: from the camp or a debug start);
+// it decides where enc_room_arrival() lands him. Call it BEFORE strip_start().
+void enc_room_select(int room, int from_room);
+// Seed for strip_start() of a room: always the same, so every room looks the same each visit.
+uint32_t enc_room_seed(int room);
+// Room the next restart loads when coming from the camp: the last altar touched (Nave 1 without one) or the debug start.
+int enc_room_entry(void);
+int enc_room_current(void);
+int enc_room_level(void);                   // fixed level of the current room (1..5)
+const char *enc_room_name(void);
+int enc_room_top_block(void);               // strip block of the last block of the room; everything above it is black and solid
+// Lateral openings (holes in the wall) of a strip block; returns how many (0..2).
+int enc_room_openings(int32_t block, EncRoomOpening *out, int max);
+int enc_block_has_door(int32_t block);      // 1 = the top door piece stands on this block (last block of a room with an exit upwards)
+// Window px and facing where the hero lands after strip_start() (door of arrival, or the foot of the room).
+int enc_room_arrival(int *out_x, int *out_y, int *out_dir);
+// Consumes a crossing requested by enc_update(): 1 and the destination room in *out_room.
+int enc_room_take_exit(int *out_room);
 
 // Once per simulated frame, after the strip rebase. px, py: hero ground point in window px.
 void enc_update(Enemy *enemies, int max_enemies, int px, int py);
@@ -98,7 +115,7 @@ void enc_note_beam_hit(const Enemy *e);   // stats: the ray hurt this enemy (aft
 void enc_player_hit(void);                 // stats: the hero took a hit
 void enc_stats_frame(void);                // stats: once per frame from the main loop (clock, result, capture triggers)
 int enc_victory(void);
-int enc_current_encounter(void);           // index shown on the HUD (1..12), 13 = boss
+int enc_current_encounter(void);           // level of the room the hero is in (1..5): xp and loot level of the kills
 
 // Debug / stats mailbox for the headless scenarios (symbols g_enc_debug, g_enc_stats).
 typedef struct {
@@ -119,8 +136,10 @@ typedef struct {
     uint8_t start_boss;      // 16 1 = the next restart starts at the boss: encounters 0..11 cleared, hero in the corridor just below the boss room
     uint8_t start_up4;       // 17 debug (recording shortcut): the hero starts this many 4-px steps higher than the usual spot (0 = normal)
     uint16_t boss_damage;    // 18 > 0: one shot of this damage at the boss (as the ray would deal it), then back to 0. Scenarios force phases and the kill
+    uint8_t start_room;      // 20 room id + 1 the next restart loads (0 = normal entry: last altar); start_boss = 1 starts at the Cripta
+    uint8_t pad_room;        // 21
 } EncDebug;
-_Static_assert(sizeof(EncDebug) == 20 && offsetof(EncDebug, boss_damage) == 18 && offsetof(EncDebug, start_boss) == 16 && offsetof(EncDebug, force_plant) == 10 && offsetof(EncDebug, restart) == 12 && offsetof(EncDebug, cam_up) == 13 && offsetof(EncDebug, bot_reaction) == 6 && offsetof(EncDebug, bot_ojo_delay) == 8 && offsetof(EncDebug, bot_miss_pct) == 9 && offsetof(EncDebug, auto_pick) == 1 && offsetof(EncDebug, god) == 2 &&
+_Static_assert(sizeof(EncDebug) == 22 && offsetof(EncDebug, start_room) == 20 && offsetof(EncDebug, boss_damage) == 18 && offsetof(EncDebug, start_boss) == 16 && offsetof(EncDebug, force_plant) == 10 && offsetof(EncDebug, restart) == 12 && offsetof(EncDebug, cam_up) == 13 && offsetof(EncDebug, bot_reaction) == 6 && offsetof(EncDebug, bot_ojo_delay) == 8 && offsetof(EncDebug, bot_miss_pct) == 9 && offsetof(EncDebug, auto_pick) == 1 && offsetof(EncDebug, god) == 2 &&
                offsetof(EncDebug, no_dones) == 3 && offsetof(EncDebug, seed) == 4,
                "EncDebug layout is read by scenarios by offset");
 extern volatile EncDebug g_enc_debug;
@@ -146,7 +165,7 @@ typedef struct {
     uint16_t clear_frames[ENC_COUNT];   // 12 frames from waking to clearing, per encounter
     uint8_t hits[ENC_COUNT];            // 36 hits taken, per encounter
     uint8_t plants[ENC_COUNT];          // 48 plant chosen for each encounter
-    uint8_t corridor_enemies;           // 60 (spare)
+    uint8_t corridor_enemies;           // 60 id of the room loaded now (0..11); a scenario reads it as the room
     uint8_t alive;                      // 61 enemies alive now
     uint8_t boss_alive;                 // 62 1 while the Abanderado lives
     uint8_t pad;                        // 63

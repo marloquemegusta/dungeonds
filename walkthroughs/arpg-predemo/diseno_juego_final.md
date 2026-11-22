@@ -177,3 +177,33 @@ Detalle con mapa y tablas: [`propuestas_protodemo.html`](propuestas_protodemo.ht
 - **Estatuas = santuarios** [DECIDIDO 2026-11-20]: las estatuas de santo de la catedral hacen de santuario (§6: efecto temporal al tocarlas). El altar de viaje es el modelo de altar de Tripo.
 - **Lápidas con lore** [DECIDIDO, más adelante]: las lápidas del suelo serán legibles y contarán lore; no entra en la protodemo.
 - **Curva de dificultad del inicio** [DECIDIDO 2026-11-20]: los primeros minutos tienen que sentirse como Diablo: machacar enemigos débiles. Salas 1-4: solo Bebés y Exvotos, y desde la sala 3 alguna sala suelta (1 de cada 3) con un único Ojo o Cireneo. Párroco y Monja desde la sala 5. Desde la sala 8, hasta 2 Ojos o Cireneos por grupo. Cifras provisionales; se ajustan jugando.
+
+## 11. Mapa de la zona 1: variante D «cuatro naves cortas» (decidido 2026-11-22)
+Sustituye al esqueleto de §10 (3 naves de 8-10 pantallas). Comparativa con Diablo y Castlevania y cuentas de duración: `walkthroughs/arpg-mapa/tamano_zona1.html`.
+- **Objetivo de duración:** al menos 1 h en Normal la primera vez y 2-3 h con las 3 dificultades. Modelo: pasada limpia ≈ 1 min por pantalla; Normal ≈ pasada × 1,3-1,5; cada dificultad extra ≈ Normal × 0,6-0,7. El «1 min por pantalla» se mide en la consola con la Nave 1 y se ajusta la densidad.
+- **12 salas, 46 pantallas, todas de 6 pantallas o menos** (se recorren arriba y abajo):
+
+| Sala | Pantallas | Puertas (pN = pantalla N desde abajo) | Contenido |
+|---|---|---|---|
+| Nave 1 | 6 | izq p2 → Galería del cofre · der p5 → Galería del secreto · arriba → Nave 2 | altar al pie; Bebés y Exvotos |
+| Nave 2 | 6 | izq p3 → Capilla del párroco · der p5 → Galería de la Misa · arriba → Nave 3 | altar; entran Párroco y Monja |
+| Nave 3 | 6 | izq p4 → Galería del prisionero · arriba → Nave 4 | altar; mezcla completa (Ojos y Cireneos) |
+| Nave 4 | 6 | izq p2 → Capilla con llave · der p4 → Galería del élite · arriba → Cripta | altar; mezcla completa |
+| Galería del cofre | 2 | lateral → Nave 1 | cofre |
+| Galería del secreto | 2 | lateral → Nave 1 | cofre (la mecánica de secreto, después) |
+| Capilla del párroco | 2 | lateral → Nave 2 | reja; Párroco con grupo; suelta la **llave**; rara garantizada |
+| Galería de la Misa | 4 | lateral → Nave 2 | **minijefe la Misa**: Párroco + Monja + 8 Exvotos con el doble de vida; épica |
+| Galería del prisionero | 4 | lateral → Nave 3 | cofre (la mecánica de prisionero, después) |
+| Capilla con llave | 2 | lateral → Nave 4, con reja hasta llevar la llave | legendaria fija de la zona |
+| Galería del élite | 4 | lateral → Nave 4 | **minijefe Abanderado élite**; épica |
+| Cripta | 2 | entrada desde la Nave 4 | **jefe Abanderado**; legendaria la primera vez |
+
+- **Sin escalado:** cada sala tiene nivel fijo (Nave 1 = 1 … Cripta = 5; las laterales, el de su nave). Se retiran el «+12 % de vida por piso» y el «jefe cada 5 pisos».
+- **Persistencia:** se recuerdan cofres abiertos, altares tocados, jefes vencidos y la llave. Lo que matas sigue muerto hasta dormir; al dormir vuelven todos los enemigos, minijefes y jefe incluidos; los cofres no se rellenan.
+- **Entrada:** desde el campamento se entra por el último altar tocado (uno al pie de cada nave). Sin menú de viaje entre altares en la protodemo.
+- **Al morir:** vuelves al campamento con todo lo explorado y lo matado (hasta dormir).
+- **Dificultades:** vencer al jefe desbloquea Pesadilla y luego Infierno, en la misma catedral con enemigos más duros y botín de más nivel.
+- **Mapa en la pausa:** las salas se revelan al explorar; marca altares, cofres y la llave.
+- **Escalones de enemigos (decidido 2026-11-22):** Exvoto con dos ramas que comparten el Bebé: chica = Bebé → Exvoto → Monja; chico = Bebé → Monaguillo → Párroco. Ojo y Cireneo con 2 escalones; el segundo de momento solo pega y aguanta más (x2 vida, x1,5 daño); su mecánica propia y su aspecto se deciden después.
+- **Población por grupos tipo** (los de §10, más «Monaguillos»): Ronda, Enjambre, Procesión, Monaguillos y Puesto desde la Nave 1; Carga, Guardia, Parroquia y Convento desde la Nave 2; Tiradores desde la Nave 3. Ojos y Cireneos de segundo escalón: la mitad en la Nave 3, todos en la Nave 4.
+- **Fin de sala y huecos (decidido 2026-11-22):** la cámara nunca se bloquea en las salas (solo en el campamento); por encima del final de la sala se ve negro. Al final de cada sala va un **muro del fondo** hecho con el mismo módulo 3D del muro lateral (arco gótico) girado hacia la cámara, en un número impar de módulos a lo ancho; el central es la puerta abierta (interior del arco en negro) en las salas con salida arriba. Los **huecos laterales** son un módulo del muro lateral quitado: se ve el corte de los vecinos y negro al fondo.
