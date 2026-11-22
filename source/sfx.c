@@ -59,6 +59,8 @@ static const mm_word s_mm_ids[SND_COUNT] = {
     [SND_UI_CLICK]          = SFX_UI_CLICK,
     [SND_RELIC_SOCKET]      = SFX_RELIC_SOCKET,
     [SND_LEVEL_UP]          = SFX_LEVEL_UP,
+    [SND_CAMPANERO_INTRO]   = SFX_CAMPANERO_INTRO,
+    [SND_CAMPANERO_DEFEAT]  = SFX_CAMPANERO_DERROTA,
 };
 #endif
 
@@ -95,6 +97,8 @@ static const SfxMixRule s_mix_rules[SND_COUNT] = {
     [SND_UI_CLICK]          = { .volume = 175, .cooldown = 2, .jitter_pct = 0  },
     [SND_RELIC_SOCKET]      = { .volume = 220, .cooldown = 3, .jitter_pct = 0  },
     [SND_LEVEL_UP]          = { .volume = 245, .cooldown = 10, .jitter_pct = 0 },
+    [SND_CAMPANERO_INTRO]   = { .volume = 255, .cooldown = 0, .jitter_pct = 0 },
+    [SND_CAMPANERO_DEFEAT]  = { .volume = 255, .cooldown = 0, .jitter_pct = 0 },
 };
 
 static uint32_t next_rng(void) {

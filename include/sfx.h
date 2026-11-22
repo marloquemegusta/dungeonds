@@ -30,6 +30,8 @@ typedef enum {
     SND_UI_CLICK,
     SND_RELIC_SOCKET,
     SND_LEVEL_UP,
+    SND_CAMPANERO_INTRO,     /* Campanero boss presentation (no voice: the bell) */
+    SND_CAMPANERO_DEFEAT,
     SND_COUNT
 } SfxId;
 
