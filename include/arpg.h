@@ -57,16 +57,13 @@
 #define ARPG_REMATE_MANA 25         // [TUNABLE-PLACEHOLDER] mana per mana orb
 #define ARPG_PICKUP_MAGNET 36       // [TUNABLE-PLACEHOLDER] ground px: orbs this close fly to the hero
 
-// Experience runes (DESIGN.md 7): what a death is worth, and how far a rune is pulled to the hero.
+// Experience (DESIGN-ARPG.md §1): what a death is worth, granted directly on the kill.
 #define ARPG_XP_EXVOTO 4            // [TUNABLE-PLACEHOLDER] xp per Exvoto
 #define ARPG_XP_MONAGUILLO 1        // [TUNABLE-PLACEHOLDER] xp per Monaguillo
 #define ARPG_XP_CIRENEO 10          // [TUNABLE-PLACEHOLDER] xp per Cireneo (ENEMY_TYPE_CHARGER)
 #define ARPG_XP_OJO 8               // [TUNABLE-PLACEHOLDER] xp per Ojo del Tribunal (ENEMY_TYPE_SHOOTER)
 #define ARPG_XP_BOSS_BASE 100       // [TUNABLE-PLACEHOLDER] Abanderado xp at boss 1; doubles per boss
 #define ARPG_XP_BOSS_CAP 1600       // [TUNABLE-PLACEHOLDER] Abanderado xp ceiling
-#define ARPG_RUNE_MAGNET 64         // [TUNABLE-PLACEHOLDER] ground px: runes this close fly to the hero (orbs: ARPG_PICKUP_MAGNET)
-#define ARPG_BOSS_RUNES 6           // [TUNABLE-PLACEHOLDER] runes an Abanderado drops, splitting its xp
-#define ARPG_BOSS_RUNE_SPREAD 12    // [TUNABLE-PLACEHOLDER] ground px from the boss to each rune
 
 // Glifo (DESIGN.md 7.5-7.7): hechizo de suelo lanzado al punto del lapiz. Ciclo: apertura (la grieta se abre, sin efecto),
 // espera (actuan las auras) y detonacion (un golpe a todo el que este dentro), luego cierre. Auras componibles
@@ -74,6 +71,7 @@
 #define ARPG_GLIFO_COST 30          // [TUNABLE-PLACEHOLDER] mana per throw
 #define ARPG_GLIFO_COST_MIN 10      // [TUNABLE-PLACEHOLDER] floor of the cost with the "Coste" line
 #define ARPG_GLIFO_RADIUS 40        // [TUNABLE-PLACEHOLDER] ground px of the zone
+#define ARPG_GLIFO_RADIUS_MAX 80    // [TUNABLE-PLACEHOLDER] cap with the Radio line (2x: the baked rune scales up to here)
 #define ARPG_GLIFO_OPEN_FRAMES 30   // [TUNABLE-PLACEHOLDER] apertura: the crack opens, no effect (0,5 s)
 #define ARPG_GLIFO_WAIT_FRAMES 90   // [TUNABLE-PLACEHOLDER] espera: the auras act (1,5 s)
 #define ARPG_GLIFO_CLOSE_FRAMES 30  // [TUNABLE-PLACEHOLDER] cierre: the crack closes, outside-in (0,5 s)
@@ -82,8 +80,6 @@
 #define ARPG_GLIFO_REDIL_SPEED 120  // [TUNABLE-PLACEHOLDER] pull toward the centre, 8.8 px/frame (~28 px/s)
 #define ARPG_GLIFO_ZARZA_TICK 30    // [TUNABLE-PLACEHOLDER] frames between Quemado layers during the wait
 #define ARPG_GLIFO_ZARZA_DET 2      // [TUNABLE-PLACEHOLDER] Quemado layers on detonation
-#define ARPG_GLIFO_RANGE 140        // [TUNABLE-PLACEHOLDER] max throw distance, ground px
-#define ARPG_GLIFO_FLIGHT 20        // [TUNABLE-PLACEHOLDER] frames in the air
 #define ARPG_GLIFO_MAX 3            // [TUNABLE-PLACEHOLDER] glifos (flying or lying) at once
 
 // Resurreccion (DESIGN.md 7.3): an Exvoto that dies inside a Glifo rises as an ally for a while.

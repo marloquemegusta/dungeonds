@@ -12,7 +12,7 @@
 // Orb & drop kinds.
 #define PICKUP_KIND_HEALTH 0
 #define PICKUP_KIND_MANA 1
-#define PICKUP_KIND_XP 2        // legacy: banks XP directly
+// 2 was PICKUP_KIND_XP (experience runes, retired: XP is granted directly on kill)
 #define PICKUP_KIND_RELIC 3     // ground relic drop -> arpg_inv_add()
 
 void pickups_init(uint32_t seed);

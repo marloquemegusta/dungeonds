@@ -967,7 +967,8 @@ static int inventory_handle_input(uint32_t keys_down, int touch_pressed, int tou
                 if (s_hover_socket >= 0) {
                     act_equip_to(s_drag_bag, s_hover_socket);
                 } else if (s_hover_crucible) {
-                    act_scrap_idx(s_drag_bag);
+                    s_inv_sel = s_drag_bag;        // Crisol: the drop only marks "confirm melt" (same as Y)
+                    s_confirm = s_drag_bag;
                 } else if (s_hover_bag >= 0 && s_hover_bag != s_drag_bag) {
                     swap_bag_slots(s_drag_bag, s_hover_bag);
                 }

@@ -11,7 +11,6 @@
 #include "arpg.h"
 #include "arpg_inv.h"
 #include "arpg_progress.h"
-#include "arpg_tree.h"
 #include "weapons.h"
 #include "glifo.h"
 #include <string.h>
@@ -108,7 +107,7 @@ static int s_mana_regen_timer = 0;
 
 // L held past ARPG_L_HOLD_FRAMES: toggles the active spell (Rayo <-> Glifo) once the Glifo tome is equipped.
 void arpg_on_l_hold(void) {
-    if (!arpg_tree_has(0)) return;
+    if (!arpg_inv_has_spell(ARPG_SPELL_GLIFO)) return;
     g_arpg.spell = g_arpg.spell ? 0 : 1;
     weapons_cancel_aim();
     glifo_cancel_aim();

@@ -307,7 +307,7 @@ static void grant_relic(int id) {
     if (id == RELIC_LLAGA) apply_llaga();
 }
 
-// Skill tree (arpg_tree.c): bought nodes are applied at the start of a run through these two.
+// ARPG inventory (arpg_inv.c) grants the equipped relics at the start of a run through these.
 void upgrades_grant_relic(int id) {
     grant_relic(id);
 }

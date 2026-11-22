@@ -6,12 +6,14 @@ El repositorio cuenta con fuentes de verdad canónicas sin duplicación:
 
 | Documento | Ámbito | Contenido |
 | :--- | :--- | :--- |
-| `DESIGN.md` | Producto y Arte | Visión de juego, controles, mecánicas, dirección visual y decisiones abiertas. |
+| `DESIGN.md` | Producto y Arte | Diseño vigente del juego de `main` (roguelike por encuentros): visión, controles, mecánicas, dirección visual y decisiones abiertas. Solo lo vigente; la historia de cada decisión va a `DESIGN-ARCHIVE.md`. |
+| `DESIGN-ARPG.md` | Producto (ARPG) | Diseño del prototipo ARPG (`proto/arpg`): solo lo propio del ARPG; lo común (mundo, enemigos, arte) está en `DESIGN.md`. |
 | `LORE.md` | Lore | Biblia del mundo: eje temático, nombres, lugares, cronología y reglas de escritura. Todo texto de lore (Códice, vídeos) se escribe contra ella. |
 | `DESIGN-ARCHIVE.md` | Historia del diseño | Texto retirado de `DESIGN.md` (v0.1, v0.2, franja infinita, marea, gemas). No es fuente de verdad; se consulta solo por el porqué de una decisión pasada. |
-| `TECHNICAL.md` | Arquitectura C / NDS | Toolchain, presupuestos, pipeline de assets y render, dependencias de host y deuda técnica. |
+| `TECHNICAL.md` | Arquitectura C / NDS | Toolchain, presupuestos, pipeline de assets y render, dependencias de host y deuda técnica. Lo propio del ARPG, en su §5. |
 | `AGENTS.md` | Proceso y Reglas | Protocolo de trabajo, workflow de desarrollo para Nintendo DS y verificación de cambios. |
-| `STATUS.md` | Estado y Registro | Estado actual para retomar el trabajo y entregas recientes verificadas. Lo anterior a 2026-11-17 está en `STATUS-ARCHIVE.md`. |
+| `STATUS.md` | Estado y Registro | Estado de `main` para retomar el trabajo y sus ~6 últimas entregas verificadas; las anteriores pasan a `STATUS-ARCHIVE.md`. |
+| `STATUS-ARPG.md` | Estado (ARPG) | Lo mismo para el prototipo ARPG. |
 | `assets/MANIFEST.md` | Catálogo de assets | Qué asset alimenta qué parte del juego, con qué script se genera y dónde se guarda. Ciclo de vida de los assets: su §0. |
 | `walkthroughs/` | Documentación por sesión | Un `walkthrough.md` por entrega, con su evidencia en `assets/`. Índice en `walkthroughs/README.md`. |
 | `LEAN-CTX.md` | Herramienta | Reglas de la herramienta lean-ctx; no es documentación del juego. |
@@ -19,6 +21,15 @@ El repositorio cuenta con fuentes de verdad canónicas sin duplicación:
 | Skill compartida `ds-game-dev` | `C:\codexlocal\skills\agentic-ds-dev` | Flujo genérico del toolchain NDS (Docker + DeSmuME + FTP). Vive fuera del repo y no se debe copiar aquí. |
 
 Si una regla o cifra aparece en dos documentos, uno de ellos sobra: dejarla en su fuente canónica y referenciarla desde el otro.
+
+**MDs idénticos en las dos ramas principales.** Todos los documentos de la tabla de arriba (salvo `walkthroughs/`, que viaja con su rama) son iguales byte a byte en `main` y `proto/arpg`; solo diverge el código. Al cerrar una entrega en una de las dos ramas, en el mismo cierre se llevan a la otra:
+```bash
+# desde un worktree de la otra rama principal
+git diff --stat <sync-anterior> <rama-destino> -- '*.md'   # si la otra rama también los tocó, fusionar a mano
+git checkout <rama-origen> -- AGENTS.md DESIGN.md DESIGN-ARPG.md DESIGN-ARCHIVE.md TECHNICAL.md LORE.md STATUS.md STATUS-ARPG.md STATUS-ARCHIVE.md assets/MANIFEST.md
+git commit -m "docs: sincroniza MDs desde <rama-origen>"
+```
+Comprobación rápida: `git diff --stat main proto/arpg -- AGENTS.md DESIGN*.md TECHNICAL.md LORE.md STATUS*.md assets/MANIFEST.md` debe salir vacío.
 
 ---
 
@@ -57,15 +68,11 @@ Si una regla o cifra aparece en dos documentos, uno de ellos sobra: dejarla en s
 10. **Comunicación con el usuario**: el usuario es ingeniero y arquitecto del juego, no programador de DS/C. Explicar causas, opciones y resultados en lenguaje de producto/arquitectura y *tradeoffs* (impacto en juego, riesgo, esfuerzo), sin jerga técnica de bajo nivel (git, BlocksDS, registros, funciones C o detalles internos de hardware DS). Cuando falte una decisión, hacer **una sola pregunta por turno** con recomendación clara; nunca bloques de varias preguntas a la vez.
 11. **2 fallos → diagnóstico mínimo**: si un render, animación, física de Blender o encaje de mapa falla visualmente 2 veces seguidas, **parar los renders completos** y ejecutar primero una prueba mínima (1 solo modelo, 1 frame o impresión numérica de coordenadas/bounding box) antes de relanzar el proceso completo.
 
-12. **Lab rápido por defecto:** los sprites de personaje se renderizan con `tools/lab/fast/export_character_fast.cjs` y las secuencias GLB de escena (remates) con `tools/lab/fast/export_scene_fast.cjs` (Node, sin navegador; `rebuild_all.py` usa el rápido salvo `DS_FAST_RENDER=0`). El lab web lento (`export_character_headless.cjs` + `FBX-Web-Renderer-*`) queda como respaldo: el exportador rápido lo invoca solo si se pide algo que no soporta (hoy: AgX / `--legibility anterior`, `emissiveMap`, JPEG embebido, `--list`). Si lo que pide el usuario obliga a usar el lento, **avisar al usuario** de que se sale del lab rápido y por qué.
-    - **Sincronía:** no se portan novedades del lab rápido al lento ni al revés. Si una tarea modifica uno, se avisa al usuario de que el otro queda desincronizado (y de en qué) y se deja constancia en `TECHNICAL.md` §3 («Lab rápido»); solo se porta al otro si el usuario lo pide. Se espera que el lab web caiga en desuso.
-    - Mapas y props (`export_map_package_headless.cjs`, `prerender_props.py`) siguen en el lab lento; no existe versión rápida.
+12. **Lab rápido por defecto:** personajes con `tools/lab/fast/export_character_fast.cjs` y secuencias GLB de escena (remates) con `tools/lab/fast/export_scene_fast.cjs` (`rebuild_all.py` lo usa salvo `DS_FAST_RENDER=0`). El lab web lento queda de respaldo para lo que el rápido no soporta (lista en `TECHNICAL.md` §3, «Lab rápido»); si hace falta, **avisar al usuario** de que se sale del lab rápido y por qué. Los dos labs no se sincronizan: si una tarea cambia uno, se avisa al usuario de en qué queda desincronizado el otro y se anota en `TECHNICAL.md` §3; solo se porta si el usuario lo pide. Mapas y props (`export_map_package_headless.cjs`, `prerender_props.py`) siguen en el lab lento.
 
 ---
 
 ## Flujo de VFX
-
-Cómo se hicieron los efectos de armas (2026-11): histórico en `walkthroughs/weapon-previews/` y `walkthroughs/mejoras-v04/`.
 
 - **Decisión antes de código** (regla 9): dirección artística escrita en `DESIGN.md` con referencias y reglas comunes (perspectiva 2:1 del suelo, oclusión por el cuerpo).
 - **Saturación obligatoria:** todo efecto, del héroe o de cualquier enemigo, usa paletas apagadas (`DESIGN.md` §6.10, «Efectos desaturados en todos los personajes»; paleta `FX_SH_*` de `source/weapons.c`). Nunca primarios puros ni rampas «de neón». Lo comprueba `tests/test_guardrails.py`; un efecto en un archivo nuevo se añade a su lista, no a un test propio.
@@ -75,8 +82,12 @@ Cómo se hicieron los efectos de armas (2026-11): histórico en `walkthroughs/we
 ## Subagentes y Modelos
 
 - Todo plan que lance subagentes indica el modelo de cada uno. Por defecto: **Haiku** solo para búsquedas, listados, verificar que algo sigue presente o leer logs; **Sonnet** para implementar (también efectos y VFX), análisis de código, revisiones y auditorías por área; **Opus** solo para decisiones de arquitectura o diseño que no se puedan partir.
-- **Modelos de otros proveedores:** el plan nombra el modelo (`luna`, `sol`, `terra`, `astra` por Codex; `argon`, `flash`, `gpt-oss` por Antigravity) y se ejecuta con la skill compartida `delegate-agents` (`C:\codexlocal\skills\delegate-agents`, alias en su `models.json`, `delegate.py --list`). Haiku, Sonnet, Opus y Fable siguen siendo el tool Agent. Escritura solo en worktrees; la respuesta externa se verifica como cualquier otra.
-- **Límite de los agentes Codex:** en su sandbox no arrancan Python, Docker ni WSL (sí gcc y Node). El brief les pide intentarlo una vez y entregar los comandos sin reintentar. Quien coordina compila la ROM, pasa los tests y los escenarios y ejecuta los renders del lab.
+- **Solo subagentes nativos de Claude** (tool Agent: Haiku, Sonnet, Opus). No se delega en modelos de otros proveedores (Codex, Antigravity, Command Code) ni se usa la skill `delegate-agents`.
+- **Velocidad de los agentes** (medido en esta rama: un agente de 23 min gastó ~10 en pensar, ~6 en escenarios y ~3 en leer):
+  - Esfuerzo `medium` para tareas acotadas (un archivo o una mecánica con punteros exactos); `high` solo si hay que diseñar.
+  - Las piezas independientes van en agentes paralelos, cada uno en su worktree o con archivos disjuntos, para que no choquen las compilaciones.
+  - El brief da rutas, símbolos y un escenario plantilla: el agente no explora ni prueba coordenadas a ciegas.
+  - Antes de lanzar escenarios, calentar WSL con un comando trivial (el arranque en frío cuesta ~28 s).
 - Usar el modelo más barato que no baje la calidad del resultado. El usuario lo ha pedido repetidamente: un plan sin esta asignación se considera incompleto.
 
 ---
@@ -95,7 +106,7 @@ Cómo se hicieron los efectos de armas (2026-11): histórico en `walkthroughs/we
    - Añadir archivos por ruta (`git add <rutas>`); nunca `git add -A`, `git add .` ni `git commit -a`. Revisar `git status --short` antes de cada commit.
    - Commit, merge y push solo cuando el usuario lo pida o lo apruebe para esa entrega.
 5. **Cierre:** al terminar, fusionar a `main` y limpiar:
-   - **Revisar los MDs antes de cerrar (obligatorio):** repasar lo que cambió la sesión (comportamiento, cifras, controles, enemigos, assets, variantes, toolchain, reglas de proceso) y actualizar en la misma entrega cada documento afectado según la taxonomía de arriba: `DESIGN.md` (que siga reflejando el juego actual, sin parches «corrige lo de arriba»; lo retirado va a `DESIGN-ARCHIVE.md`), `TECHNICAL.md`, `LORE.md`, `assets/MANIFEST.md`, `STATUS.md` y este archivo. Si ninguno cambia, decirlo en una línea en el walkthrough. Un texto obsoleto es peor que ninguno: se corrige o se mueve al archivo, no se deja.
+   - **Revisar los MDs antes de cerrar (obligatorio):** repasar lo que cambió la sesión (comportamiento, cifras, controles, enemigos, assets, variantes, toolchain, reglas de proceso) y actualizar en la misma entrega cada documento afectado según la taxonomía de arriba (`DESIGN.md` o `DESIGN-ARPG.md` sin parches «corrige lo de arriba» ni historia de la decisión; lo retirado va a `DESIGN-ARCHIVE.md`). `STATUS.md`/`STATUS-ARPG.md` guardan ~6 entregas: al añadir una, la más vieja pasa a `STATUS-ARCHIVE.md`. Después, sincronizar los MDs con la otra rama principal (arriba, «MDs idénticos»). Si ninguno cambia, decirlo en una línea en el walkthrough. Un texto obsoleto es peor que ninguno: se corrige o se mueve al archivo, no se deja.
    - Mover los archivos ya usados de `assets/inbox/` a `assets/inbox/processed/` en el repo principal y confirmar que no quedan zips/fbx procesados huérfanos en `inbox/`.
    - Si el usuario pidió cerrar o consolidar la sesión, commitear también `DESIGN.md`, `STATUS.md`, `TECHNICAL.md` y `walkthroughs/` sin pedir una segunda confirmación.
    - **Rescatar los assets no versionados antes de borrar el worktree:** todo archivo sin trackear o ignorado de `assets/` (modelos 3D, FBX derivados, texturas, fuentes) debe existir, idéntico, en la carpeta principal del repo aunque no se versione. Copiar los que falten sin sobrescribir; si alguno existe con contenido distinto, preguntar al usuario. Comprobar archivo a archivo, comparando el contenido, antes de `worktree remove`. Sin esa comprobación no se borra el worktree.
@@ -109,16 +120,16 @@ Cómo se hicieron los efectos de armas (2026-11): histórico en `walkthroughs/we
 6. **Walkthroughs por sesión:**
    - Cada entrega genera `walkthroughs/<nombre-sesion>/walkthrough.md` con sus imágenes en `walkthroughs/<nombre-sesion>/assets/`.
    - Se añade una fila a `walkthroughs/README.md` cuyo enlace apunte a una carpeta que exista.
-   - `STATUS.md` recibe la entrega (resumen corto + enlace) y se actualiza su sección "Estado actual" si cambia lo que hay que saber para retomar.
-7. **Etiqueta de estado del chat (Antigravity):**
+   - `STATUS.md` (o `STATUS-ARPG.md` si es del ARPG) recibe la entrega en 2-4 líneas (qué cambia para el jugador, qué se verificó, qué falta, enlace; el detalle va al walkthrough) y se actualiza su «Estado actual» si cambia lo que hay que saber para retomar.
+7. **Título del chat con sentido:** el título automático copia las primeras palabras del usuario («Hola, mira…», «Vale, escucha…») y no sirve. En cuanto quede claro de qué va la tarea (puede ser en el primer mensaje o en el tercero), el agente pone a su sesión un título corto que la describa (3-7 palabras, en castellano, p. ej. «Vídeo de lore del Liebre», «ARPG: menú de inventario»): en Claude Code con `set_session_title` sobre `self`. Si la tarea cambia de rumbo, se actualiza.
+8. **Etiqueta de estado del chat (Antigravity):**
    - Al iniciar una sesión en Antigravity (en cuanto exista título en `C:\Users\malfonso\.gemini\antigravity\annotations\<conversation-id>.pbtxt`), añadir el prefijo `[EN CURSO] ` al título si no tiene ya un tag de estado (`[EN CURSO]`, `[MERGEADO]` o `[ABANDONADO]`).
    - Al acabar la sesión (al mergear a `main` o descartar el trabajo), actualizar el prefijo a `[MERGEADO] ` o `[ABANDONADO] ` según corresponda, tanto en `annotations\<conversation-id>.pbtxt` como en la columna `title` de `conversation_summaries.db`.
 
 ## graphify
 
 El grafo `graphify-out/` (no versionado) sirve para dudas arquitectónicas amplias: `graphify query "<pregunta>"`, `graphify path "<A>" "<B>"`, `graphify explain "<concepto>"` (o MCP `query_graph` con `project_path`). Si ya sabes el archivo o símbolo, usa `rg`. Si existe `graphify-out/wiki/index.md`, úsalo para navegar; `GRAPH_REPORT.md` solo para revisiones amplias. El worktree nace sin grafo: no lo copies al arrancar salvo que vayas a consultarlo. **Al mergear en `main`**, ejecutar `graphify update .` (AST-only, sin API); los archivos sucios de `graphify-out/` son normales. Ejecutable: `$env:GRAPHIFY_EXE` o `C:/Users/malfonso/AppData/Local/Packages/PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0/LocalCache/local-packages/Python313/Scripts/graphify.exe`.
-- PowerShell: `Copy-Item -Recurse -Force graphify-out .worktrees\<nombre>\graphify-out; Push-Location .worktrees\<nombre>; & "$env:GRAPHIFY_EXE" update .; Pop-Location`
-- Bash: `cp -r graphify-out .worktrees/<nombre>/ && (cd .worktrees/<nombre> && "$GRAPHIFY_EXE" update .)` (sin `&`).
+- Copiar y actualizar en un worktree: `cp -r graphify-out .worktrees/<nombre>/ && (cd .worktrees/<nombre> && "$GRAPHIFY_EXE" update .)` (sin `&`).
 - Con `/graphify`, usar la skill instalada antes de nada.
 
 ---

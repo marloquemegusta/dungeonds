@@ -24,7 +24,7 @@ VOICE_ID = "5egO01tkUjEzu7xSSE8M"
 MODEL_ID = "eleven_multilingual_v2"
 STABILITY, SIMILARITY, STYLE, SPEED = "0.28", "0.80", "0.60", "1.0"
 
-CHAR_SPEED = {"íñigo": "0.8", "bartolomé": "0.8"}   # voces de personaje mas lentas y solemnes (velocidad ElevenLabs, 0.7-1.2)
+CHAR_SPEED = {"íñigo": "0.8", "bartolomé": "0.8", "martín": "0.8"}   # voces de personaje mas lentas y solemnes (velocidad ElevenLabs, 0.7-1.2)
 CHAR_SETTINGS = ("0.65", "0.85", "0.15", "1.0")   # estable: con mas emocion la voz pierde el acento y alarga palabras
 DIRS = ["S", "SW", "W", "NW", "N", "NE", "E", "SE"]
 DIR_INDEX = {d: i for i, d in enumerate(DIRS)}  # file prefix index

@@ -7,3 +7,6 @@ const uint8_t g_punch_ground_anchor[PUNCH_NUM_MOVES][PUNCH_NUM_DIRS] = {
     { 37, 37, 37, 37, 37, 37, 37, 37 }, // punch_b
     { 37, 37, 37, 37, 37, 37, 37, 37 }, // gancho
 };
+
+// Rezo del Glifo (corazon_pray): fila de pies por direccion.
+const uint8_t g_pray_ground_anchor[PUNCH_NUM_DIRS] = { 38, 38, 38, 38, 38, 38, 38, 38 };

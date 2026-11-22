@@ -12,7 +12,7 @@ typedef struct {
     uint16_t level;      // starts at 1
     uint32_t xp;         // banked xp not yet converted into levels
     uint16_t points;     // retired with the skill tree; kept so the save layout (and scenarios) do not move
-    uint16_t tree;       // retired with the skill tree; arpg_tree_has() reads the inventory now
+    uint16_t tree;       // retired with the skill tree; the inventory replaced it
     uint16_t deepest;    // deepest floor reached (used later)
     uint16_t spell;      // active spell (used later)
     uint32_t altars_lo;  // bit a = travel altar (room index / 3) touched, altars 0..31
