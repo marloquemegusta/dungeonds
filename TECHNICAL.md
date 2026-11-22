@@ -106,6 +106,9 @@
 - **Picos:** el rebase de la franja prepara el suelo en 10 trozos en frames previos y conmuta punteros (+~40 KB de RAM; vuelve a costar ~10 ms si el jugador sube más de ~3,6 px/frame). La navegación se prepara por adelantado (`nav_stage_step`). Láseres con un `dirty_row` por fila. Fragmentos de muerte: máximo 2 enemigos por frame, cola de 16.
 - El log de `PERF_PROFILE` usa ruta explícita `fat:/` (o `sd:/`), porque NitroFS deja el directorio en `nitro:/`. Variantes `stress`, banco A/B y medición con horda de 48: archivo.
 
+### 3.6b. Audio
+- SFX: 16.384 Hz mono 8-bit PCM en `soundbank.bin` (horneado en `assets/sfx/baked/`; proceso en `AGENTS.md`, «Audio»). Música de combate en streaming desde NitroFS (11.025 Hz mono 8-bit, `mmStreamOpen` con buffer de 2 KB).
+
 ### 3.7. Vídeos verticales
 - Carpeta, nombres y pipeline en `AGENTS.md`, «Vídeos de Redes y Códice Lore».
 
@@ -129,7 +132,6 @@ Origen: `walkthroughs/audit-saneamiento-2d3d/`. Lo ya resuelto (colisión/oclusi
   - **`nds_shadow_anchor.h` versionados:** 40 archivos (12 bajo `assets/sprites/bestiary/`, 20 bajo `assets/sprites/characters/` y 8 en walkthroughs; ~320 MB medidos el 2026-11-19); los genera `tools/generate_player_sprites_c.py`. Valorar dejar de versionarlos y regenerarlos (y si se reescribe historia para reducir `.git`, ~860 MB).
   - **`tools/test_*.py` y `scratch_*.py` sueltos (13):** archivar o borrar; los tests oficiales son los de `tests/`.
   - **Worktrees:** la carpeta vacía `.worktrees/abanderado-jefe/` se borra a mano cuando Windows la libere.
-- **Test roto:** `test_bestiary_assets_contract` falla porque `tools/gen_bestiary_exvoto.py:23` apunta a un worktree borrado (`exvoto-anim`); sin arreglar.
 - **Data abort en hardware, sin causa conocida.** Tras unos minutos jugando (dar vueltas y matar enemigos) la DS mostró una pantalla roja "data abort" con la ROM de esta sesión; no se reproduce en DeSmuME (soak de 23.000 frames) ni se pudo atribuir a un cambio concreto. Con la ROM de depuración no volvió a aparecer, y se detectan "cosas raras" por revisar. Herramienta: `include/crashlog.h` + `source/crashlog.c` (poner `CRASHLOG_ENABLED 1`): migas en un anillo, log vivo `/dungeonds_live.log` cada segundo, informe en ambas pantallas y `/dungeonds_crash.log` con registros; L+R+START muestra el informe, L+R+SELECT provoca una excepción real. El handler real no se pudo validar en DeSmuME. Resolver el PC contra `.ds-game-dev/build/build/game-blocksds.map`.
 
 ### 4.5. Motor 2D/3D (auditoría 2026-11-03)
@@ -149,13 +151,17 @@ Decisión 2026-11-10 (`DESIGN.md` §3): los píxeles de personaje y enemigos que
 ### 4.7. Franja vertical y horda (histórico)
 - La ROM por defecto ya no tiene horda continua ni franja infinita (`DESIGN.md` §6.13.6); el criterio de 48 enemigos activos no se persigue. Requisitos, mediciones de la v0.3 mínima y deuda del kit: `STATUS-ARCHIVE.md`, «Movido desde TECHNICAL.md el 2026-11-19». Deuda vigente de aquello: las lápidas planas conservan su `depth.png` en unidades del render fuente y hay que regenerarlo antes de darles oclusión.
 
-### Prototipo ARPG (rama `proto/arpg`, 2026-11-20)
+## 5. Prototipo ARPG (código solo en la rama `proto/arpg`)
+
+Diseño en `DESIGN-ARPG.md`; estado en `STATUS-ARPG.md`.
+
+### 5.1. Arquitectura del prototipo
 - **Puñetazos en NitroFS:** los tres clips del combo (~250 KB) no caben en la RAM fija (quedan ~110 KB); se leen de `nitrofiles/punch/` como la celda del remate (`source/punch.c`, `tools/generate_punch_sprites.py`).
 - **Campamento:** modo propio con arena estática (`source/camp.c`, `tools/camp/bake_camp_arena.py`), suelo de la catedral recoloreado en el baker y marco de muros como sprite RGB15 en NitroFS (`tools/camp/marco_build.py`: kit de 3 imágenes frontales de `assets/environment/camp/muros_src/`, proyección afín 30° compuesta en Python, luna + baño cálido horneados; `nitrofiles/camp/marco_*.bin`, ~40k píxeles opacos por frame, se pinta justo tras el suelo); props por software (`source/camp_props_gfx.c`) con la paleta de props y su sombra. **Deuda (decidida 2026-11-21):** revisar la perspectiva de los muros laterales (`marco_izq`/`marco_der`): hoy son la textura frontal comprimida con una transformación afín en Python y parecen PNG pegados; hay que rehacerlos con volumen real (p. ej. render 3D del kit con la cámara del juego). La luz del héroe tiene intensidad fija por azimut (sin atenuación por distancia). Campamento sin medición en la DS.
 - **Salas ARPG:** fundido de sala activo en el modo strip; huecos laterales aplicados después de `enforce_hard_edges` (si no, el muro se reimpone); la puerta, los cofres y el altar van horneados en el kit. Kit: 865 tiles (se quitaron variantes de losa lisa).
 - **Población:** `room_kind_of` en `source/encounters_act1.c` con curva de inicio (`ARPG_MINION_*`, `ARPG_TIER_*` en `include/arpg.h`).
 
-### Variante `arpg-lab` y menú de ajuste (2026-11-22)
+### 5.2. Variante `arpg-lab` y menú de ajuste
 
 Banco de pruebas de combate ARPG: `build-project.ps1 -Variant arpg-lab` (defines `ARPG_LAB=1`, `SKIP_TITLE=1`, `ARPG_ALL_UNLOCKED=1`). Arranca directo en la catedral, sin título, vídeo ni campamento, con todo desbloqueado. Todo el código nuevo va bajo `#if ARPG_LAB`; el resto de variantes no cambia.
 
@@ -165,6 +171,6 @@ Banco de pruebas de combate ARPG: `build-project.ps1 -Variant arpg-lab` (defines
 - Página «Pruebas»: «Invulnerable» (variable `g_lab_god`, aplicada cada frame a `god_mode`).
 - **Tamaño de ROM:** la variante copia todo `nitrofiles/` como las demás (~15 MB). Ver el walkthrough `walkthroughs/arpg-lab/` para qué carpetas son prescindibles; `build-project.ps1` no soporta copias por variante.
 
-### Variante `arpg-boxeo`: sala de prueba del puñetazo (2026-11-22)
+### 5.3. Variante `arpg-boxeo`: sala de prueba del puñetazo
 
 `build-project.ps1 -Variant arpg-boxeo` = `arpg-lab` + `ARPG_BOXEO=1`. La sala inicial no se puebla (`enc_update` no hace nada) y `source/boxeo.c` mantiene un único enemigo, el «saco», 28 px al este del héroe: 2000 de vida que se rellena al bajar de la mitad, nunca entra en tambaleo ni remate, reaparece si se desactiva y vuelve a su sitio tras 1 s sin golpes. Héroe invulnerable (`g_lab_god = 1`). En el menú (SELECT), página «Pruebas»: «Saco quieto» (no anda ni ataca, sí recibe empuje) y «Saco tipo» (Exvoto, Cargador, Monaguillo, Bebé, Párroco, Monja, Ojo). Página «Puñetazo» (también en `arpg-lab`): velocidad, ventana de combo, % de andar pegando (0 = pies plantados), fotograma de inicio y de impacto de cada golpe, seguimiento antes de encadenar, corte de cintura al pegar andando, empuje ligero y del gancho, parón, temblor y alcance; el juego lee esas variables mediante macros `PUNCH_*_V` que fuera del lab son las constantes. Escenario `scenarios/arpg_boxeo.json` (`suite: false`, con aserciones de estado).

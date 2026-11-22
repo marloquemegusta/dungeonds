@@ -157,7 +157,7 @@ Modelos 3D descargados de Tripo y adoptados para el inventario ARPG (2026-11-22)
 
 En Descargas, fuera del repo: `tripo_convert_8c5b4a72` (esqueleto soldado) y `tripo_convert_f65595e4` (esqueleto con máscara antigás), del 2026-11-07. Probables conceptos del esqueleto anterior; decidir si se borran.
 
-## 7. Anomalías abiertas
+## 8. Anomalías abiertas
 
 - **`.h` del bestiario versionados:** `assets/sprites/bestiary/*/nds_shadow_anchor.h` ocupan ~270 MB en git y son derivados (`TECHNICAL.md` §4.4).
 - **Sin versionar, solo en la carpeta principal:** vídeos `assets/videos/lore01_{05,06,09,10}*.mp4` (el 04 final ya está en LFS), `lore01_02_…_sinvoz.mp4` y avatares `avatar_{corazon,ojo}.png`. Si son finales, se adoptan en LFS.
