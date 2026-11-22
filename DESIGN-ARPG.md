@@ -44,7 +44,7 @@ Las cifras son `[TUNABLE-PLACEHOLDER]`. Lo retirado del primer prototipo (campam
 - **Gráficos de reliquias y tomos (híbrido por arquetipos, decidido 2026-11-21):** **6 arquetipos 3D base** pre-renderizados en dos tamaños —suelo (~14–16 px con destello apagado de rareza) e inventario (~28–30 px)—: **Tomo** (hechizos), **Lanza/Relicario** (Rayo), **Nudillera / puño americano gótico** (Ejecución), **Vial** (Glifo), **Cráneo votivo** (Levantar) y **Sagrado Corazón** (Pecho, reutilizando el modelo 3D ya existente `assets/models/hud/sacred_heart/`). La rareza se distingue por halo/marco y variantes de tono; las Legendarias/únicas podrán añadir 3D propios más adelante.
 - **Acceso:** desde el arcón del campamento y desde la pausa de la mazmorra (botón Inventario, el juego queda congelado). En los dos sitios se puede engarzar, equipar y desguazar para hacer hueco.
 - **El árbol de habilidades desaparece** (sustituido por reliquias y este inventario).
-- **Pendiente:** modelo 3D de la reliquia del Glifo (los 3 tomos —Rayo, Glifo, Levantar— y las 3 reliquias —Lanza, Nudillera, Cráneo votivo— más el Sagrado Corazón ya están integrados en 24×24 RGB15), ajustar el espaciado del botón 5 en la pausa de mazmorra para no pisar Nv, y elegir la **tipografía definitiva del inventario** (~8–9 px para etiquetas/cifras y ~13–14 px en versalitas espaciadas para el título, estilo *Diablo II / Sacred*, sustituyendo a la fuente actual).
+- **Pendiente:** modelo 3D de la reliquia del Glifo (los 3 tomos —Rayo, Glifo, Levantar— y las 3 reliquias —Lanza, Nudillera, Cráneo votivo— más el Sagrado Corazón ya están integrados en 24×24 RGB15), y elegir la **tipografía definitiva del inventario** (~8–9 px para etiquetas/cifras y ~13–14 px en versalitas espaciadas para el título, estilo *Diablo II / Sacred*, sustituyendo a la fuente actual).
 
 ## 4. Aspecto del campamento (decidido 2026-11-21)
 - **Siempre de noche, iluminado por la hoguera.** El campamento es un patio exterior en ruinas, claramente distinto de la catedral: bordes casi negros, azul frío de luna y un único pozo de luz cálida alrededor del fuego. En el campamento no hay ciclo día-noche. Opcional futuro: un breve amanecer al dormir y subir de nivel (no decidido). La mazmorra no cambia.
@@ -82,7 +82,7 @@ Las cifras son `[TUNABLE-PLACEHOLDER]`. Lo retirado del primer prototipo (campam
   1. **Glifo:** integrarlo en la ROM según §6.
   2. **Grafo de Zona 1:** conectar salas reales (3 naves, 4 galerías, 2 capillas con reja, cripta, puerta con llave, atajo), persistencia de cofres/puertas/altares, viaje entre altares desde el campamento, santuarios (estatuas) y mapa en la pausa.
   3. **Campamento nocturno:** corregir perspectiva de los muros laterales, conectar la mesa como Crisol de desguace (y uso de cera/pociones) y señal diegética de foco sin rótulos.
-  4. **Inventario y pausa:** 5 iconos 3D pendientes (*Tomo, Lanza, Nudillera, Vial, Cráneo*), tipografía definitiva y espaciado del botón 5 en la pausa.
+  4. **Inventario y pausa:** 5 iconos 3D pendientes (*Tomo, Lanza, Nudillera, Vial, Cráneo*), tipografía definitiva.
   5. **Sonidos definitivos:** elegir y sustituir los efectos de sonido (SFX) actuales, que son provisionales, por los definitivos.
   6. **Validación en DS:** medición `perf` en hardware (campamento nocturno y salas con ~24 enemigos) y prueba de guardado en tarjeta real (`dungeonds_arpg.sav`).
 
@@ -109,3 +109,14 @@ Propuesta, mockups y cuentas: `walkthroughs/glifo-diseno/`. Sustituye a la Maldi
 - **Persistencia:** cofres abiertos, altares, jefes vencidos y salas vistas se guardan; al dormir reaparecen los grupos y jefes muertos. Se entra desde el campamento por el último altar tocado.
 - **Mapa con SELECT:** superpuesto en la pantalla de arriba, sin pausar, isométrico al estilo del automapa de *Diablo* (contornos de tiza, girado 45° y aplastado 2:1); el escenario de detrás se oscurece. Solo salas vistas; marca héroe, altares, cofres y llave, y las puertas a salas no vistas como un trazo corto.
 - **Pendiente:** llave, rejas de capilla, premios por sala, dificultades (Pesadilla, Infierno), atajo, viaje entre altares y santuarios.
+
+## 8. Arranque, tutorial y menús (decidido 2026-11-22)
+Propuesta con capturas de la ROM: `walkthroughs/arpg-menus-inicio/`. Sustituye a la intro de 6 tarjetas del roguelike (rejas, coberturas, relicarios, Sagrados Corazones).
+- **Nueva partida → 3 tarjetas cortas → campamento.** Mismo formato que antes (vídeo en bucle de la ROM ARPG arriba, texto abajo, `< Ant` · `Saltar` · `Sig >`; START salta). Textos:
+  1. **Pelear:** la cruceta mueve. `L` da puñetazos (combo de 3). Cuando un enemigo se tambalea, `L` lo remata y suelta vida o maná.
+  2. **El lápiz:** toca la pantalla para lanzar tu hechizo: gasta maná, el orbe azul. Sin maná, a puñetazos.
+  3. **El campamento:** si caes, vuelves aquí con tu experiencia. Duerme en el jergón para subir de nivel; el arcón guarda tus reliquias.
+- **Avisos de primera vez:** un rótulo corto en la pantalla táctil la primera vez que pasa cada cosa; se apuntan en la partida guardada y no se repiten (una partida nueva los vuelve a enseñar). Primer enemigo tambaleante: «L: rematar». Primera reliquia recogida: «Engárzala en el arcón o desde la pausa». Primer tomo de Glifo: «Mantén L y toca el Glifo». Primera vuelta al campamento con experiencia para subir: «Duerme para subir de nivel».
+- **Tarjeta del inventario:** la primera vez que se abre el inventario (arcón o pausa), una tarjeta encima: las reliquias se engarzan en un hechizo (Rayo, Ejecución, Glifo) o en el Pecho y lo mejoran; cada una pide un nivel; lo que no uses se funde y da cera. Se cierra con A, B o un toque.
+- **Controles:** pantalla en dos bloques, «En la catedral» y «En el campamento», con el Glifo y el mapa (SELECT).
+- **Pendiente:** imagen y nombre del juego en la pantalla de título (decisión de arte aparte).
