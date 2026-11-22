@@ -3,10 +3,12 @@
 // Generado por tools/generate_remate_sprites.py: no editar a mano.
 #include <stdint.h>
 
-#define REMATE_KIND_EXVOTO   0
-#define REMATE_KIND_CIRENEO  1
-#define REMATE_KIND_OJO      2
-#define REMATE_NUM_KINDS     3
+#define REMATE_KIND_EXVOTO     0
+#define REMATE_KIND_CIRENEO    1
+#define REMATE_KIND_OJO        2
+#define REMATE_KIND_MONAGUILLO 3
+#define REMATE_KIND_BEBE       4
+#define REMATE_NUM_KINDS       5
 #define REMATE_NUM_DIRS      8
 
 // Mayor numero de fotogramas de animacion de cualquier tipo (el Ojo, 38). Cada tipo declara los suyos en

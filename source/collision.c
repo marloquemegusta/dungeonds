@@ -2,6 +2,26 @@
 #include "arena.h"
 #include <nds/ndstypes.h>
 
+// Extra ground rectangles (room fixtures). They only count while the arena that registered them is
+// the current one, so leaving the rooms drops them without any explicit reset.
+#define COLLISION_EXTRA_MAX 8
+typedef struct { int x0, y0, x1, y1; } ExtraBlock;
+static ExtraBlock s_extra[COLLISION_EXTRA_MAX];
+static int s_extra_n = 0;
+static const Arena *s_extra_arena = 0;
+
+void collision_extra_begin(void) {
+    s_extra_n = 0;
+    s_extra_arena = g_arena;
+}
+
+void collision_extra_add(int x0, int y0, int x1, int y1) {
+    if (s_extra_n >= COLLISION_EXTRA_MAX) return;
+    s_extra[s_extra_n].x0 = x0; s_extra[s_extra_n].y0 = y0;
+    s_extra[s_extra_n].x1 = x1; s_extra[s_extra_n].y1 = y1;
+    s_extra_n++;
+}
+
 // ---------------------------------------------------------------------------
 // World Collision
 //
@@ -39,6 +59,15 @@ ITCM_CODE int position_is_free(fixed x, fixed y) {
             int nearest_y = wy < top ? top : (wy > top + COLLISION_SCALE - 1 ? top + COLLISION_SCALE - 1 : wy);
             int dx = wx - nearest_x;
             int dy = wy - nearest_y;
+            if (dx * dx + GROUND_DY2(dy) <= radius_sq) return 0;
+        }
+    }
+    if (s_extra_arena == g_arena) {
+        for (int i = 0; i < s_extra_n; i++) {
+            int nx = wx < s_extra[i].x0 ? s_extra[i].x0 : (wx > s_extra[i].x1 ? s_extra[i].x1 : wx);
+            int ny = wy < s_extra[i].y0 ? s_extra[i].y0 : (wy > s_extra[i].y1 ? s_extra[i].y1 : wy);
+            int dx = wx - nx;
+            int dy = wy - ny;
             if (dx * dx + GROUND_DY2(dy) <= radius_sq) return 0;
         }
     }

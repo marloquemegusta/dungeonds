@@ -11,7 +11,12 @@
 #define GROUND_DY2(dy) ((dy) * (dy) * 4)
 
 // Body footprint test (a circle on the ground) against the baked collision grid.
+// Also stops at the extra ground rectangles of the current arena (room fixtures such as chests).
 int position_is_free(fixed x, fixed y);
+// Extra ground rectangles (world px) for the arena that is current now. Call collision_extra_begin()
+// each time the fixtures are refreshed, then collision_extra_add() for each blocking rectangle.
+void collision_extra_begin(void);
+void collision_extra_add(int x0, int y0, int x1, int y1);
 // Point test for projectiles: only grid value 3 stops them (value 2, low cover, lets them pass over).
 int bullet_position_is_free(fixed x, fixed y);
 // Moves (x, y) by (dx, dy) in <=1 px steps; returns 0 and leaves it unchanged if blocked.

@@ -19,10 +19,11 @@
 #define PUNCH_CELL 48               // celda del lab (characters.json resolution)
 #define PUNCH_TICKS 3               // [TUNABLE-PLACEHOLDER] frames de juego por fotograma de la animacion (~0,4 s por golpe)
 #define PUNCH_CHAIN_FRAMES 10       // [TUNABLE-PLACEHOLDER] ventana tras el golpe para encadenar el siguiente con otro L
-#define PUNCH_RANGE 28              // [TUNABLE-PLACEHOLDER] alcance del punetazo (px de suelo)
+#define PUNCH_RANGE 34              // [TUNABLE-PLACEHOLDER] alcance del punetazo (px de suelo)
 #define PUNCH_DAMAGE_A 50           // [TUNABLE-PLACEHOLDER] dano del directo
 #define PUNCH_DAMAGE_B 50           // [TUNABLE-PLACEHOLDER] dano del cruzado
 #define PUNCH_DAMAGE_HOOK 90        // [TUNABLE-PLACEHOLDER] dano del gancho
+#define PUNCH_LIGHT_PUSH 96         // [TUNABLE-PLACEHOLDER] 8.8: empuje ligero de directo y cruzado (~0,375 px/frame)
 #define PUNCH_HOOK_PUSH 192         // [TUNABLE-PLACEHOLDER] 8.8: empuje del gancho (0,75 px/frame)
 #define PUNCH_MAX_BIN_BYTES 16384   // [TUNABLE-PLACEHOLDER] tamano del buffer; el bin mas grande ronda los 12 KB
 #define PUNCH_BIN_MAGIC 0x48434E50u  // 'PNCH'

@@ -3,6 +3,7 @@
 #include "enemy_ai.h"
 #include "weapons.h"
 #include "allies.h"
+#include "modifiers.h"
 #if ENCOUNTERS_PROTO
 #include "encounters_act1.h"
 #endif
@@ -93,21 +94,26 @@ static int punch_target(Enemy *enemies, int max_enemies, fixed hero_x, fixed her
     return best;
 }
 
+// Empuje hacia atras desde el heroe en la metrica de suelo 2:1.
+static void punch_push_vec(const Enemy *e, fixed hero_x, fixed hero_y, fixed strength, fixed *px, fixed *py) {
+    const int dx = TO_INT(e->x) - TO_INT(hero_x);
+    const int dy = TO_INT(e->y) - TO_INT(hero_y);
+    *px = dx < 0 ? -strength : (dx > 0 ? strength : 0);
+    *py = dy < 0 ? -(strength >> 1) : (dy > 0 ? (strength >> 1) : 0);
+}
+
 static void punch_apply(Enemy *enemies, int max_enemies, fixed hero_x, fixed hero_y, int move, int dir) {
     int ex = 0, ey = 0;
     const int idx = punch_target(enemies, max_enemies, hero_x, hero_y, &ex, &ey);
     if (idx < 0) return;
     Enemy *e = &enemies[idx];
     (void)dir;
-    if (move == PUNCH_MOVE_HOOK) {
-        // El gancho empuja: hacia atras desde el heroe, en la metrica de suelo 2:1.
-        int dx = TO_INT(e->x) - TO_INT(hero_x), dy = TO_INT(e->y) - TO_INT(hero_y);
-        const fixed px = dx < 0 ? -PUNCH_HOOK_PUSH : (dx > 0 ? PUNCH_HOOK_PUSH : 0);
-        const fixed py = dy < 0 ? -(PUNCH_HOOK_PUSH >> 1) : (dy > 0 ? (PUNCH_HOOK_PUSH >> 1) : 0);
-        enemy_hit(e, PUNCH_DAMAGE_HOOK, px, py);
-    } else {
-        enemy_hit(e, move == PUNCH_MOVE_A ? PUNCH_DAMAGE_A : PUNCH_DAMAGE_B, 0, 0);
-    }
+    const fixed push = (move == PUNCH_MOVE_HOOK) ? PUNCH_HOOK_PUSH : PUNCH_LIGHT_PUSH;
+    const int dmg = ((move == PUNCH_MOVE_HOOK) ? PUNCH_DAMAGE_HOOK
+                   : (move == PUNCH_MOVE_A)    ? PUNCH_DAMAGE_A : PUNCH_DAMAGE_B) * g_mods.punch_damage_pct / 100;
+    fixed px = 0, py = 0;
+    punch_push_vec(e, hero_x, hero_y, push, &px, &py);
+    enemy_hit(e, dmg, px, py);
     if (g_hitstop_frames < 3) g_hitstop_frames = 3;
     weapons_request_shake(1, move == PUNCH_MOVE_HOOK ? 5 : 3);
 }

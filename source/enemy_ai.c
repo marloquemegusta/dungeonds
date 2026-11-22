@@ -451,6 +451,12 @@ static void update_exvoto(Enemy *e, Enemy *enemies, int num_enemies, int idx,
         default: {
             e->state = ENEMY_STATE_CHASE;
 
+            // Hit-stun: brief stagger while hit_timer > 0; no bite, advance or dodge this frame.
+            if (e->hit_timer > 0) {
+                update_animation(e, 0);
+                break;
+            }
+
             // Bite when in melee range and nothing solid is in between.
             int melee_range = tuning->preferred_dist_max;
             if (ground_dist_sq <= melee_range * melee_range &&
@@ -1089,8 +1095,14 @@ static void update_monja(Enemy *e, Enemy *enemies, int num_enemies, int idx,
     int dx = px - wx, dy = py - wy;
     int ground_dist_sq = dx * dx + GROUND_DY2(dy);
 
+    // Hit-stun: while hit_timer > 0 (and not reeling in WOBBLE), do not enter ATTACK or deal damage.
+    if (e->hit_timer > 0 && e->state != ENEMY_STATE_WOBBLE) {
+        update_animation(e, 0);
+        return;
+    }
+
     // Hurt or with the hero right on top of her: she drops the prayer and fights back like a weak Exvoto.
-    if (e->state != ENEMY_STATE_ATTACK &&
+    if (e->state != ENEMY_STATE_ATTACK && e->state != ENEMY_STATE_WOBBLE &&
         (e->hit_timer > 0 || ground_dist_sq <= (tuning->preferred_dist_max + 8) * (tuning->preferred_dist_max + 8))) {
         e->state = ENEMY_STATE_ATTACK;
         e->state_timer = tuning->attack_cooldown;
@@ -1098,6 +1110,14 @@ static void update_monja(Enemy *e, Enemy *enemies, int num_enemies, int idx,
     }
 
     switch (e->state) {
+        case ENEMY_STATE_WOBBLE:
+            if (--e->state_timer <= 0) {
+                e->state = ENEMY_STATE_PRAY;
+                e->state_timer = 0;
+                e->char_id = CHAR_EXVOTO_PRAY_STAND;
+                e->frame = 0; e->anim_timer = 0;
+            }
+            break;
         case ENEMY_STATE_ATTACK: {
             e->dir = dir_from_vector(player_x - e->x, player_y - e->y);
             if (e->state_timer == tuning->attack_cooldown && ground_dist_sq <= tuning->preferred_dist_max * tuning->preferred_dist_max)

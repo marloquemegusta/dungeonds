@@ -84,12 +84,12 @@ Cómo se hicieron los efectos de armas (2026-11): histórico en `walkthroughs/we
 ## Protocolo de Sesiones Atómicas, Ramas y Worktrees
 
 1. **Un Chat = Una Sesión Atómica:** cada conversación se dedica a una feature, fix u optimización concreta.
-2. **Ramas:** `main` integra las entregas. `feat/<nombre>`, `fix/<nombre>`, `perf/<nombre>`, `docs/<nombre>` o `proto/<nombre>` para el trabajo aislado.
-3. **Worktrees obligatorios** para cada tarea sustancial, bajo `.worktrees/` (ignorado por git):
+2. **Ramas:** dos ramas principales en paralelo: `main` (roguelike) y `proto/arpg` (ARPG). Cada una integra sus propias entregas. `feat/<nombre>`, `fix/<nombre>`, `perf/<nombre>`, `docs/<nombre>` o `proto/<nombre>` para el trabajo aislado.
+3. **Worktrees obligatorios** para cada tarea sustancial, bajo `.worktrees/` (ignorado por git), **tanto si se parte de `main` como de `proto/arpg`** (nunca trabajar ni compilar en paralelo sobre `.worktrees/arpg` directamente):
    ```bash
-   git worktree add .worktrees/<nombre> -b feat/<nombre>
+   git worktree add .worktrees/<nombre> -b feat/<nombre> <main|proto/arpg>
    ```
-   - Todo el trabajo y las compilaciones de la sesión se hacen en ese worktree. Las ROMs `dungeonds*.nds` de la raíz del repo principal no son la versión de trabajo.
+   - Todo el trabajo y las compilaciones de la sesión se hacen en ese worktree propio, y al cerrar se fusiona de vuelta a su rama base (`main` o `proto/arpg`) antes de borrarlo. Las ROMs `dungeonds*.nds` de la raíz del repo principal no son la versión de trabajo.
    - **Grafo graphify:** ver la sección graphify, abajo.
 4. **Commits:**
    - Añadir archivos por ruta (`git add <rutas>`); nunca `git add -A`, `git add .` ni `git commit -a`. Revisar `git status --short` antes de cada commit.
