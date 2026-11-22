@@ -1,4 +1,5 @@
 #include "pickups.h"
+#include "inventory.h"
 #include "dmg_numbers.h"
 #include "collision.h"
 #include "groundfx.h"
@@ -264,8 +265,12 @@ void pickups_draw(uint16_t *buffer, int i, int cam_x, int cam_y) {
     for (int r = y0; r <= cy + 1 && !occ; r++)
         if ((unsigned)r < SCREEN_H && world_span_hidden(r + cam_y, x0 + cam_x, x0 + PICKUP_SPRITE_W + cam_x, depth)) occ = 1;
 
-    // Subtle ground shadow beneath the levitating pickup.
-    for (int sy = cy - 1; sy <= cy; sy++) {
+    // Subtle ground shadow beneath the levitating pickup (relics with an icon cast their own projected shadow).
+    int own_shadow = 0;
+#if ENCOUNTERS_PROTO
+    own_shadow = (p->kind == PICKUP_KIND_RELIC && inv_item_floor_icon24(&p->relic) != NULL);
+#endif
+    for (int sy = cy - 1; sy <= cy && !own_shadow; sy++) {
         if ((unsigned)sy >= SCREEN_H) continue;
         dirty_row(sy, cx - 3, cx + 4);
         for (int sx = cx - 3; sx <= cx + 3; sx++) {
@@ -289,6 +294,75 @@ void pickups_draw(uint16_t *buffer, int i, int cam_x, int cam_y) {
         const uint16_t col = rar_col[rar];
         const uint16_t rim = RGB15(7, 6, 5) | BIT(15);
         const int rcy = y0 + (PICKUP_SPRITE_H >> 1);
+        const uint16_t *icon = inv_item_floor_icon24(&p->relic);
+        if (icon) {
+            // 24x24 archetype icon: projected floor shadow, translucent rarity halo (3 px), then the icon.
+            const int ix = cx - 12, iy = rcy - 12;
+            const uint8_t *shm = inv_item_floor_shadow(&p->relic);
+            const uint8_t *aur = inv_item_floor_aura30(&p->relic);
+            if (shm) {
+                const int sx0 = cx + INV_FLOOR_SH_OX, sy0 = cy + INV_FLOOR_SH_OY;
+                for (int my = 0; my < INV_FLOOR_SH_H; my++) {
+                    int sy = sy0 + my;
+                    if ((unsigned)sy >= SCREEN_H) continue;
+                    dirty_row(sy, sx0, sx0 + INV_FLOOR_SH_W);
+                    for (int mx = 0; mx < INV_FLOOR_SH_W; mx++) {
+                        int sx = sx0 + mx;
+                        if (!shm[my * INV_FLOOR_SH_W + mx] || (unsigned)sx >= SCREEN_W) continue;
+                        if (occ && world_pixel_hidden(sx + cam_x, sy + cam_y, depth)) continue;
+                        uint16_t b = buffer[sy * SCREEN_W + sx];
+                        if (!b) b = world_floor_color_at(sx + cam_x, sy + cam_y);
+                        buffer[sy * SCREEN_W + sx] = (uint16_t)(((b & 0x7BDEu) >> 1) | BIT(15));
+                    }
+                }
+            }
+            if (rar == ARPG_RAR_LEGENDARY) {
+                for (int py = iy - 19; py < iy - 6; py++) {
+                    if ((unsigned)py >= SCREEN_H || (unsigned)cx >= SCREEN_W) continue;
+                    if (occ && world_pixel_hidden(cx + cam_x, py + cam_y, depth)) continue;
+                    dirty_row(py, cx, cx + 1);
+                    buffer[py * SCREEN_W + cx] = col;
+                }
+            }
+            if (aur) {
+                // Translucent halo: rarity colour over what is below, 50 / 25 / 12.5 % at ring 1 / 2 / 3 (outer ring pulses 12.5 <-> 25 %).
+                const uint16_t acol = (rar == 0) ? (uint16_t)(RGB15(24, 23, 20) | BIT(15)) : col;
+                const uint16_t ac2 = (uint16_t)((acol & 0x739Cu) >> 2), ac3 = (uint16_t)((acol & 0x6318u) >> 3);
+                const int pulse = (s_anim_tick >> 5) & 1;
+                for (int ay = 0; ay < 30; ay++) {
+                    int sy = iy - 3 + ay;
+                    if ((unsigned)sy >= SCREEN_H) continue;
+                    dirty_row(sy, ix - 3, ix + 27);
+                    for (int ax = 0; ax < 30; ax++) {
+                        int d = aur[ay * 30 + ax];
+                        if (d == 0 || d > 3) continue;
+                        int sx = ix - 3 + ax;
+                        if ((unsigned)sx >= SCREEN_W) continue;
+                        if (occ && world_pixel_hidden(sx + cam_x, sy + cam_y, depth)) continue;
+                        uint16_t b = buffer[sy * SCREEN_W + sx];
+                        if (!b) b = world_floor_color_at(sx + cam_x, sy + cam_y);
+                        uint16_t o;
+                        if (d == 1) o = (uint16_t)(((b & 0x7BDEu) >> 1) + ((acol & 0x7BDEu) >> 1));
+                        else if (d == 2 || pulse) o = (uint16_t)(((b & 0x7BDEu) >> 1) + ((b & 0x739Cu) >> 2) + ac2); // 75 % floor + 25 % rarity
+                        else o = (uint16_t)(b - ((b & 0x6318u) >> 3) + ac3);                                       // 87.5 % floor + 12.5 % rarity
+                        buffer[sy * SCREEN_W + sx] = (uint16_t)(o | BIT(15));
+                    }
+                }
+            }
+            for (int gy = 0; gy < 24; gy++) {
+                int sy = iy + gy;
+                if ((unsigned)sy >= SCREEN_H) continue;
+                dirty_row(sy, ix, ix + 24);
+                for (int gx = 0; gx < 24; gx++) {
+                    uint16_t c = icon[gy * 24 + gx];
+                    int sx = ix + gx;
+                    if (!c || (unsigned)sx >= SCREEN_W) continue;
+                    if (occ && world_pixel_hidden(sx + cam_x, sy + cam_y, depth)) continue;
+                    buffer[sy * SCREEN_W + sx] = c;
+                }
+            }
+            return;
+        }
         if (rar == ARPG_RAR_LEGENDARY) {
             for (int py = rcy - 18; py < rcy - 4; py++) {
                 if ((unsigned)py >= SCREEN_H || (unsigned)cx >= SCREEN_W) continue;

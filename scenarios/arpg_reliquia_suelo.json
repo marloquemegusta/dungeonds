@@ -1,0 +1,131 @@
+{
+ "name": "arpg_reliquia_suelo",
+ "description": "Evidencia: deja junto al heroe una reliquia o tomo de cada rareza (comun a legendaria) para ver su icono en el suelo con el contorno de rareza.",
+ "suite": false,
+ "evidence_only": true,
+ "state": {
+  "elf": "../.ds-game-dev/build/out/dungeonds-encuentros.elf",
+  "symbols": {
+   "dbg": "g_relic_drop_debug"
+  },
+  "default_symbol": "dbg",
+  "fields": {
+   "drop": {
+    "offset": 0,
+    "type": "u8"
+   }
+  }
+ },
+ "steps": [
+  {
+   "frames": 120,
+   "capture": "00_antes"
+  },
+  {
+   "poke": [
+    {
+     "field": "drop",
+     "value": 1
+    }
+   ],
+   "frames": 20,
+   "capture": "01_reliquias"
+  },
+  {
+   "frames": 3,
+   "capture": "g00"
+  },
+  {
+   "frames": 3,
+   "capture": "g01"
+  },
+  {
+   "frames": 3,
+   "capture": "g02"
+  },
+  {
+   "frames": 3,
+   "capture": "g03"
+  },
+  {
+   "frames": 3,
+   "capture": "g04"
+  },
+  {
+   "frames": 3,
+   "capture": "g05"
+  },
+  {
+   "frames": 3,
+   "capture": "g06"
+  },
+  {
+   "frames": 3,
+   "capture": "g07"
+  },
+  {
+   "frames": 3,
+   "capture": "g08"
+  },
+  {
+   "frames": 3,
+   "capture": "g09"
+  },
+  {
+   "frames": 3,
+   "capture": "g10"
+  },
+  {
+   "frames": 3,
+   "capture": "g11"
+  },
+  {
+   "frames": 3,
+   "capture": "g12"
+  },
+  {
+   "frames": 3,
+   "capture": "g13"
+  },
+  {
+   "frames": 3,
+   "capture": "g14"
+  },
+  {
+   "frames": 3,
+   "capture": "g15"
+  },
+  {
+   "frames": 3,
+   "capture": "g16"
+  },
+  {
+   "frames": 3,
+   "capture": "g17"
+  },
+  {
+   "frames": 3,
+   "capture": "g18"
+  },
+  {
+   "frames": 3,
+   "capture": "g19"
+  },
+  {
+   "frames": 3,
+   "capture": "g20"
+  },
+  {
+   "frames": 3,
+   "capture": "g21"
+  },
+  {
+   "frames": 3,
+   "capture": "g22"
+  },
+  {
+   "frames": 3,
+   "capture": "g23"
+  }
+ ]
+}
