@@ -26,6 +26,11 @@
 #define PUNCH_HOOK_PUSH 192         // [TUNABLE-PLACEHOLDER] 8.8: empuje del gancho (0,75 px/frame)
 #define PUNCH_MAX_BIN_BYTES 16384   // [TUNABLE-PLACEHOLDER] tamano del buffer; el bin mas grande ronda los 12 KB
 #define PUNCH_BIN_MAGIC 0x48434E50u  // 'PNCH'
+// [TUNABLE-PLACEHOLDER] Golpe en movimiento: el heroe anda al 65 % y el clip de andar baja su cadencia
+// en la misma proporcion (current_period / pct) para que los pies no deslicen. El tren superior sigue el
+// clip del golpe; el inferior, el de andar (composicion en draw_punch).
+#define PUNCH_WALK_SPEED_PCT 65     // % de la velocidad normal mientras pega andando
+#define PUNCH_WALK_SPLIT 16         // px sobre los pies donde se corta: debajo anda, encima pega
 
 typedef struct {
     uint32_t magic;
@@ -36,14 +41,16 @@ typedef struct {
     uint32_t run_off[PUNCH_NUM_FRAMES];
 } PunchBinHeader;
 
-// Empieza un golpe (PUNCH_MOVE_*) hacia el enemigo mas cercano a <= PUNCH_RANGE, o hacia delante si no hay
-// ninguno. Aplica ya el dano y el empuje. Devuelve 1 si empezo.
-int punch_start(Enemy *enemies, int max_enemies, fixed hero_x, fixed hero_y, int hero_dir, int move);
+// Empieza un golpe (PUNCH_MOVE_*). `soft_lock` 1 = parado: apunta al enemigo mas cercano a <= PUNCH_RANGE
+// (o hacia delante si no hay ninguno). 0 = andando: pega en `hero_dir` y solo alcanza en un cono frontal de
+// +-45 grados, para no girarse hacia un enemigo que queda detras. Aplica ya el dano y el empuje.
+int punch_start(Enemy *enemies, int max_enemies, fixed hero_x, fixed hero_y, int hero_dir, int move, int soft_lock);
 // Un L nuevo durante el golpe o en su ventana de encadenado: 1 si el combo sigue con el golpe siguiente.
-int punch_try_chain(Enemy *enemies, int max_enemies, fixed hero_x, fixed hero_y, int hero_dir);
+int punch_try_chain(Enemy *enemies, int max_enemies, fixed hero_x, fixed hero_y, int hero_dir, int soft_lock);
 // Una vez por frame simulado: avanza la animacion y la ventana de encadenado.
 void punch_update(void);
-// 1 mientras dura el golpe: el heroe no anda y se dibuja con el clip del golpe.
+// 1 mientras dura el golpe: el heroe anda al PUNCH_WALK_SPEED_PCT % y se dibuja con el clip del golpe
+// (parado, entero; andando, compuesto sobre el clip de andar: piernas de abajo, punetazo de arriba).
 int punch_active(void);
 int punch_move(void);           // golpe en curso (0..2)
 int punch_frame(void);          // fotograma (0..PUNCH_NUM_FRAMES-1)
