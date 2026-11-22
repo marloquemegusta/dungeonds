@@ -71,6 +71,7 @@
 #define ARPG_GLIFO_COST 30          // [TUNABLE-PLACEHOLDER] mana per throw
 #define ARPG_GLIFO_COST_MIN 10      // [TUNABLE-PLACEHOLDER] floor of the cost with the "Coste" line
 #define ARPG_GLIFO_RADIUS 40        // [TUNABLE-PLACEHOLDER] ground px of the zone
+#define ARPG_GLIFO_RADIUS_MAX 80    // [TUNABLE-PLACEHOLDER] cap with the Radio line (2x: the baked rune scales up to here)
 #define ARPG_GLIFO_OPEN_FRAMES 30   // [TUNABLE-PLACEHOLDER] apertura: the crack opens, no effect (0,5 s)
 #define ARPG_GLIFO_WAIT_FRAMES 90   // [TUNABLE-PLACEHOLDER] espera: the auras act (1,5 s)
 #define ARPG_GLIFO_CLOSE_FRAMES 30  // [TUNABLE-PLACEHOLDER] cierre: the crack closes, outside-in (0,5 s)
@@ -79,8 +80,6 @@
 #define ARPG_GLIFO_REDIL_SPEED 120  // [TUNABLE-PLACEHOLDER] pull toward the centre, 8.8 px/frame (~28 px/s)
 #define ARPG_GLIFO_ZARZA_TICK 30    // [TUNABLE-PLACEHOLDER] frames between Quemado layers during the wait
 #define ARPG_GLIFO_ZARZA_DET 2      // [TUNABLE-PLACEHOLDER] Quemado layers on detonation
-#define ARPG_GLIFO_RANGE 140        // [TUNABLE-PLACEHOLDER] max throw distance, ground px
-#define ARPG_GLIFO_FLIGHT 20        // [TUNABLE-PLACEHOLDER] frames in the air
 #define ARPG_GLIFO_MAX 3            // [TUNABLE-PLACEHOLDER] glifos (flying or lying) at once
 
 // Resurreccion (DESIGN.md 7.3): an Exvoto that dies inside a Glifo rises as an ally for a while.

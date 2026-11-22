@@ -19,6 +19,9 @@ void collision_extra_begin(void);
 void collision_extra_add(int x0, int y0, int x1, int y1);
 // Point test for projectiles: only grid value 3 stops them (value 2, low cover, lets them pass over).
 int bullet_position_is_free(fixed x, fixed y);
+// Point test of the floor itself (no body radius): 1 when world px (wx, wy) is walkable ground, 0 on a wall,
+// pillar, low cover, room fixture or outside the baked grid. Used by ground decals that must stop at walls.
+int ground_point_is_free(int wx, int wy);
 // Moves (x, y) by (dx, dy) in <=1 px steps; returns 0 and leaves it unchanged if blocked.
 int sweep_position(fixed *x, fixed *y, fixed dx, fixed dy);
 
