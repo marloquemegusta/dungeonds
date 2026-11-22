@@ -1,3 +1,4 @@
+#include "campanero_boss_text.h"
 #include "encounters_act1.h"
 #include "lab_tuning.h"
 
@@ -245,14 +246,14 @@ static const BossEscortDef s_campanero_escort_2[] = {
 };
 static const BossDef s_campanero_def = {
     .enemy_type = ENEMY_TYPE_CAMPANERO,
-    .name = "EL CAMPANERO",
-    .title = "De Ánimas, sin lengua",
-    .line_intro = "«…»",
-    .line_defeat = "«…»",
-    .sfx_intro = SND_ABANDERADO_INTRO,       // placeholder: the bell sounds come with the fx
-    .sfx_defeat = SND_ABANDERADO_DEFEAT,
-    .voice_intro_frames = SFX_VOICE_VBLANKS_ABANDERADO_INTRO,
-    .voice_defeat_frames = SFX_VOICE_VBLANKS_ABANDERADO_DEFEAT,
+    .name = CAMPANERO_BOSS_NAME,
+    .title = CAMPANERO_BOSS_TITLE,
+    .line_intro = CAMPANERO_BOSS_LINE_INTRO,
+    .line_defeat = CAMPANERO_BOSS_LINE_DEFEAT,
+    .sfx_intro = CAMPANERO_BOSS_SFX_INTRO,
+    .sfx_defeat = CAMPANERO_BOSS_SFX_DEFEAT,
+    .voice_intro_frames = CAMPANERO_BOSS_VOICE_INTRO_FRAMES,
+    .voice_defeat_frames = CAMPANERO_BOSS_VOICE_DEFEAT_FRAMES,
     .n_phases = 3,
     .phase_pct = { 100, 66, 33 },
     .n_escort = { 2, 3, 3 },

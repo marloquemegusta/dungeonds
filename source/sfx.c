@@ -64,6 +64,8 @@ static const mm_word s_mm_ids[SND_COUNT] = {
     [SND_CFX_BELL_LOW]      = SFX_LAB_BELL_H0,
     [SND_CFX_GLASS_A]       = SFX_LAB_GLASS1,
     [SND_CFX_GLASS_B]       = SFX_LAB_GLASS4,
+    [SND_CAMPANERO_INTRO]   = SFX_CAMPANERO_INTRO,
+    [SND_CAMPANERO_DEFEAT]  = SFX_CAMPANERO_DERROTA,
 };
 #endif
 
@@ -105,6 +107,8 @@ static const SfxMixRule s_mix_rules[SND_COUNT] = {
     [SND_CFX_BELL_LOW]      = { .volume = 235, .cooldown = 4, .jitter_pct = 2 },
     [SND_CFX_GLASS_A]       = { .volume = 210, .cooldown = 3, .jitter_pct = 6 },
     [SND_CFX_GLASS_B]       = { .volume = 210, .cooldown = 3, .jitter_pct = 6 },
+    [SND_CAMPANERO_INTRO]   = { .volume = 255, .cooldown = 0, .jitter_pct = 0 },
+    [SND_CAMPANERO_DEFEAT]  = { .volume = 255, .cooldown = 0, .jitter_pct = 0 },
 };
 
 static uint32_t next_rng(void) {

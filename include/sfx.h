@@ -35,6 +35,8 @@ typedef enum {
     SND_CFX_BELL_LOW,        /* Campanero: major toll, the hum under it (lab_bell_h0) */
     SND_CFX_GLASS_A,         /* a glyph is silenced (lab_glass1) */
     SND_CFX_GLASS_B,         /* ... alternate (lab_glass4) */
+    SND_CAMPANERO_INTRO,     /* Campanero boss presentation (no voice: the bell) */
+    SND_CAMPANERO_DEFEAT,
     SND_COUNT
 } SfxId;
 
