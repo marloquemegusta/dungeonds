@@ -588,7 +588,7 @@ static int compute_aim(const WeaponInput *in, fixed *dir_x, fixed *dir_y) {
 // ---------------------------------------------------------------------------
 
 static void shove_enemy(Enemy *e, const WeaponTuning *tuning, fixed dir_x, fixed dir_y) {
-    if (!e->active || e->hp <= 0 || e->type == ENEMY_TYPE_ABANDERADO || tuning->knockback <= 0) return;
+    if (!e->active || e->hp <= 0 || e->type == ENEMY_TYPE_ABANDERADO || e->type == ENEMY_TYPE_CAMPANERO || tuning->knockback <= 0) return;
     fixed knock = tuning->knockback * g_mods.knock_pct / 100;
     e->knock_vx = (dir_x * knock) >> 8;
     e->knock_vy = (dir_y * knock) >> 8;

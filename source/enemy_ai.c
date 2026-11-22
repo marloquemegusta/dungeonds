@@ -13,6 +13,11 @@
 #include "allies.h"
 #include "glifo.h"
 #include "sfx.h"
+#include "campanero_fx.h"
+#if ENCOUNTERS_PROTO
+#include "boss.h"
+#include "encounters_act1.h"
+#endif
 #if ENCOUNTERS_PROTO
 #include "weapons.h"
 #endif
@@ -724,6 +729,8 @@ static void ojo_gesture_tick(Enemy *e) {
 #define ojo_leash_q(e) ((e)->kneel)
 #define OJO_LEASH_Q_PX 8
 #define OJO_LEASH_Q_MAX 96                // 768 px: the whole room
+#define OJO_POST_LEASH 20                 // ground px an Ojo may leave its post while a Campanero lives
+static int s_post_fixed;                  // 1 while a Campanero lives (set once per enemy_ai_update)
 #define OJO_LEASH_Q_FRAMES 5              // one unit per 5 frames = 96 px per second without sight of the hero
 
 // The hero is in the sights again: the leash returns to its base, but wide enough to keep the Ojo where it stands (it does not go back).
@@ -770,8 +777,9 @@ static void ojo_reposition(Enemy *e, Enemy *enemies, int num_enemies, int idx, i
     if (e->aim_px == 0 && tick8) {
         const int hx = *enemy_home_x(e);
         const int hy = *enemy_home_y(e);
-        const int leash = OJO_LEASH_DIST + ojo_leash_q(e) * OJO_LEASH_Q_PX;
-        const int maxy = hy + OJO_LEASH_DOWN_PX + ojo_leash_q(e) * (OJO_LEASH_Q_PX / 2);
+        // Campanero fight: the Ojo keeps his post (a short leash that never grows), so the shelter column leaves the hero in his line.
+        const int leash = s_post_fixed ? OJO_POST_LEASH : OJO_LEASH_DIST + ojo_leash_q(e) * OJO_LEASH_Q_PX;
+        const int maxy = s_post_fixed ? hy + OJO_POST_LEASH : hy + OJO_LEASH_DOWN_PX + ojo_leash_q(e) * (OJO_LEASH_Q_PX / 2);
         const int colpx = leash / OJO_SEARCH_COLS > OJO_SEARCH_COL_PX ? leash / OJO_SEARCH_COLS : OJO_SEARCH_COL_PX;
         const int rowpx = leash / (2 * OJO_SEARCH_ROWS) > OJO_SEARCH_ROW_PX ? leash / (2 * OJO_SEARCH_ROWS) : OJO_SEARCH_ROW_PX;
         int fx = px + ((s_hero_vx * OJO_PURSUE_LOOKAHEAD) >> 8);        // where the hero will be (limited to a short stride)
@@ -1057,7 +1065,7 @@ static int monja_heals_ally(const Enemy *m, const Enemy *o) {
     if (!o->active || o->hp <= 0 || o->hp >= o->max_hp) return 0;
     if (o == m) return 0;                                     // she never heals herself
     if (o->type != ENEMY_TYPE_BEBE && o->type != ENEMY_TYPE_EXVOTO && o->type != ENEMY_TYPE_PARROCO &&
-        o->type != ENEMY_TYPE_MONAGUILLO) return 0;            // only the Exvoto family
+        o->type != ENEMY_TYPE_MONAGUILLO && o->type != ENEMY_TYPE_CAMPANERO) return 0;   // the Exvoto family and the Campanero (DESIGN-ARPG.md 9)
     int dx = TO_INT(o->x - m->x);
     int dy = TO_INT(o->y - m->y);
     return dx * dx + GROUND_DY2(dy) <= ARPG_MONJA_PRAY_RADIUS * ARPG_MONJA_PRAY_RADIUS;
@@ -1365,10 +1373,127 @@ static void update_abanderado(Enemy *e, Enemy *enemies, int num_enemies, int idx
     update_animation(e, moved);
 }
 
+// ---------------------------------------------------------------------------
+// El Campanero de Animas (jefe ARPG, DESIGN-ARPG.md 9). One instance. Its clocks live in fields no other type uses here:
+//   beam_len = minor-toll clock, state_timer = major-toll clock (start to start), beam_mx = telegraph left,
+//   gesture = second toll pending (phase II), beam_my = window left (cannot move or toll).
+// The rings themselves (growth, shadows, glyph silencing, sounds) belong to campanero_fx.c.
+// ---------------------------------------------------------------------------
+#if ENCOUNTERS_PROTO
+#define CAMP_TANIDO_FRAMES 60       // [TUNABLE-PLACEHOLDER] minor toll every second, all phases
+#define CAMP_TELEGRAPH_FRAMES 36    // [TUNABLE-PLACEHOLDER] the bell is lifted (0.6 s)
+#define CAMP_WINDOW_FRAMES 60       // [TUNABLE-PLACEHOLDER] after a major toll he cannot move or toll for 1 s
+#define CAMP_DOUBLE_GAP 30          // [TUNABLE-PLACEHOLDER] phase II: second toll this long after the first
+#define CAMP_EXVOTOS_PER_TOQUE 2
+#define CAMP_EXVOTO_CAP 6
+#define CAMP_CONTACT_R 14           // ground px
+static const uint16_t s_camp_period[3] = { 210, 240, 180 };    // major toll start to start: 3.5 s, 4.0 s, 3.0 s
+
+volatile struct {                   // read by scenarios (symbol g_campanero_dbg)
+    uint16_t toques, tanidos, hero_hits, raised;
+    uint8_t phase, telegraph, window, pad;
+} g_campanero_dbg;
+
+static void camp_raise_exvotos(Enemy *boss, Enemy *enemies, int num_enemies) {
+    int live = 0;
+    for (int i = 0; i < num_enemies; i++)
+        if (enemies[i].active && enemies[i].hp > 0 && enemies[i].type == ENEMY_TYPE_EXVOTO) live++;
+    for (int k = 0; k < CAMP_EXVOTOS_PER_TOQUE && live < CAMP_EXVOTO_CAP; k++) {
+        int sx = 0, sy = 0, ok = 0;
+        for (int attempt = 0; attempt < 6 && !ok; attempt++) {      // beside a column or at a random floor spot
+            enc_camp_spot(rng_next(), &sx, &sy);
+            ok = position_is_free(TO_FIXED(sx), TO_FIXED(sy));
+        }
+        if (!ok) continue;
+        int slot = -1;
+        for (int i = 0; i < num_enemies; i++) if (!enemies[i].active) { slot = i; break; }
+        if (slot < 0) return;
+        Enemy *x = &enemies[slot];
+        memset(x, 0, sizeof(*x));
+        x->x = TO_FIXED(sx);
+        x->y = TO_FIXED(sy);
+        x->type = ENEMY_TYPE_EXVOTO;
+        x->char_id = CHAR_EXVOTO;
+        x->max_hp = g_enemy_tuning[ENEMY_TYPE_EXVOTO].max_hp;
+        x->hp = x->max_hp;
+        x->dir = DIR_SOUTH;
+        x->active = 1;
+        x->state = ENEMY_STATE_EMERGE;                 // rises from the floor: still and untouchable for half a second
+        x->state_timer = MONAGUILLO_EMERGE_FRAMES;
+        x->strafe_dir = (rng_next() & 1u) ? 1 : -1;
+        x->pack = boss->pack;                          // dies with the boss
+        live++;
+        g_campanero_dbg.raised++;
+        sfx_play(SND_MONAGUILLO_EMERGE, sx);
+    }
+}
+
+static void camp_toque(Enemy *e, Enemy *enemies, int num_enemies) {
+    cfx_emit(CFX_TOQUE, TO_INT(e->x), TO_INT(e->y));
+    g_campanero_dbg.toques++;
+    camp_raise_exvotos(e, enemies, num_enemies);
+}
+
+static void update_campanero(Enemy *e, Enemy *enemies, int num_enemies, int idx, fixed player_x, fixed player_y) {
+    const int ph = boss_phase();
+    g_campanero_dbg.phase = (uint8_t)ph;
+    if (g_player_state.is_dead) { update_animation(e, 0); return; }
+    const int wx = TO_INT(e->x), wy = TO_INT(e->y);
+    const int px = TO_INT(player_x), py = TO_INT(player_y);
+    const int dx = px - wx, dy = py - wy;
+    const int dist_sq = dx * dx + GROUND_DY2(dy);
+
+    // The major toll's front hurts the hero (through the normal path: i-frames respected).
+    if (cfx_toque_hit(px, py) && player_take_damage(&g_player_state, ARPG_DMG_CAMPANERO_TOQUE)) g_campanero_dbg.hero_hits++;
+    // Contact (the bell and the man).
+    if (dist_sq <= CAMP_CONTACT_R * CAMP_CONTACT_R) player_take_damage(&g_player_state, arpg_enemy_damage_of(e));
+
+    // Minor toll: always, every second, whatever he is doing.
+    if (++e->beam_len >= CAMP_TANIDO_FRAMES) {
+        e->beam_len = 0;
+        cfx_emit(CFX_TANIDO, wx, wy);
+        g_campanero_dbg.tanidos++;
+    }
+
+    int moved = 0;
+    if (e->state_timer < 30000) e->state_timer++;
+    if (e->beam_mx > 0) {                                   // the bell goes up
+        if (--e->beam_mx == 0) {
+            camp_toque(e, enemies, num_enemies);
+            if (ph == 2) e->gesture = CAMP_DOUBLE_GAP; else e->beam_my = CAMP_WINDOW_FRAMES;
+        }
+    } else if (e->gesture > 0) {                            // phase II: the second toll
+        if (--e->gesture == 0) {
+            camp_toque(e, enemies, num_enemies);
+            e->beam_my = CAMP_WINDOW_FRAMES;
+        }
+    } else if (e->beam_my > 0) {                            // the bell still hums: he cannot move or toll
+        e->beam_my--;
+    } else if (e->state_timer >= s_camp_period[ph >= 1 && ph <= 3 ? ph - 1 : 0]) {
+        e->state_timer = 0;
+        e->beam_mx = CAMP_TELEGRAPH_FRAMES;
+        sfx_play(SND_GLIFO_CRACK, wx);                      // lab_creak: the bell is lifted
+    } else if (ph >= 3) {                                   // phase III: he walks to the hero dragging the bell
+        if (dist_sq > CAMP_CONTACT_R * CAMP_CONTACT_R) {
+            const fixed x0 = e->x, y0 = e->y;
+            chase_step(e, enemies, num_enemies, idx, g_enemy_tuning[ENEMY_TYPE_EXVOTO].speed, wx, wy, px, py, dist_sq);
+            moved = (e->x != x0 || e->y != y0);
+        }
+    }
+    e->dir = dir_from_vector(player_x - e->x, player_y - e->y);
+    update_animation(e, moved);
+    g_campanero_dbg.telegraph = (uint8_t)e->beam_mx;
+    g_campanero_dbg.window = (uint8_t)e->beam_my;
+}
+#endif  // ENCOUNTERS_PROTO
+
 ITCM_CODE void enemy_ai_update(Enemy *enemies, int num_enemies, fixed player_x, fixed player_y) {
     if (!enemies || num_enemies <= 0) return;
 
     s_ai_tick++;
+    s_post_fixed = 0;
+    for (int i = 0; i < num_enemies; i++)
+        if (enemies[i].active && enemies[i].hp > 0 && enemies[i].type == ENEMY_TYPE_CAMPANERO) { s_post_fixed = 1; break; }
     hero_velocity_update(TO_INT(player_x), TO_INT(player_y));
     enemy_puddles_update();
     if (!s_sep_ready) sep_init_table();
@@ -1446,6 +1571,10 @@ ITCM_CODE void enemy_ai_update(Enemy *enemies, int num_enemies, fixed player_x, 
             update_exvoto(e, enemies, num_enemies, i, player_x, player_y, &g_enemy_tuning[ENEMY_TYPE_PARROCO]);
         } else if (e->type == ENEMY_TYPE_MONJA) {
             update_monja(e, enemies, num_enemies, i, player_x, player_y, &g_enemy_tuning[ENEMY_TYPE_MONJA]);
+#endif
+        } else if (e->type == ENEMY_TYPE_CAMPANERO) {
+#if ENCOUNTERS_PROTO
+            update_campanero(e, enemies, num_enemies, i, player_x, player_y);
 #endif
         } else if (e->type == ENEMY_TYPE_ABANDERADO) {
             update_abanderado(e, enemies, num_enemies, i, player_x, player_y);

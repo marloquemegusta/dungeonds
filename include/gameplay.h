@@ -22,6 +22,7 @@ typedef enum {
     ENEMY_TYPE_BEBE,        // Exvoto tier: swarm, dies in one hit, a bit faster than the base (v3 tiers)
     ENEMY_TYPE_PARROCO,     // Exvoto tier: melee tank, x4 life, hits harder and shoves the hero (v3 tiers)
     ENEMY_TYPE_MONJA,       // Exvoto tier: support, stays behind praying and heals nearby Exvotos (v3 tiers)
+    ENEMY_TYPE_CAMPANERO,   // Boss (ARPG, DESIGN-ARPG.md 9): the Campanero de Animas, bell rings on the floor
     NUM_ENEMY_TYPES
 } EnemyType;
 
@@ -88,6 +89,7 @@ static inline int enemy_type_char_id(EnemyType type) {
     if (type == ENEMY_TYPE_SHOOTER) return CHAR_OJO;
     if (type == ENEMY_TYPE_EXVOTO) return CHAR_EXVOTO;     // base walk slot; a praying Exvoto swaps char_id per pose
     if (type == ENEMY_TYPE_ABANDERADO) return CHAR_ABANDERADO;
+    if (type == ENEMY_TYPE_CAMPANERO) return CHAR_ABANDERADO;   // placeholder art until the Campanero has his own model
     if (type == ENEMY_TYPE_MONAGUILLO) return CHAR_MONAGUILLO;
     // Exvoto tiers: only the Bebé has its own baked sheet; the Párroco and the Monja borrow the Exvoto slot
     // (their own sheets do not fit in EWRAM yet, see TECHNICAL.md). A praying Monja swaps to the pray slot.
