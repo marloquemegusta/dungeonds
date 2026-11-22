@@ -2658,6 +2658,9 @@ static void enemies_update(void) {
     mods_update(s_player.x, s_player.y);
 }
 
+#if ENCOUNTERS_PROTO
+static void arpg_tips_tick(void);
+#endif
 // Strip mode (DESIGN.md 6.0): the horde from above replaces the v0.2 packs and modifiers.
 // Runs in the enemies slot of the frame so PERF_PROFILE charges it to `en`.
 static void strip_enemies_update(void) {
@@ -2680,6 +2683,7 @@ static void strip_enemies_update(void) {
     boxeo_update(g_enemies, MAX_ENEMIES, TO_INT(s_player.x), TO_INT(s_player.y));
 #endif
     pickups_update(s_player.x, s_player.y, &g_player_state);     // ARPG: remate orbs (health, mana)
+    arpg_tips_tick();
     dmg_numbers_set_player_pos(s_player.x, s_player.y);
     dmg_numbers_update();
     return;
@@ -2693,6 +2697,19 @@ static void strip_enemies_update(void) {
     dmg_numbers_set_player_pos(s_player.x, s_player.y);
     dmg_numbers_update();
 }
+
+#if ENCOUNTERS_PROTO
+// Avisos de primera vez (DESIGN-ARPG 7): rotulo corto en la pantalla tactil, una sola vez por partida.
+static void arpg_tips_tick(void) {
+    if (!(g_arpg.tips & ARPG_TIP_REMATE) && remate_target_in_reach(g_enemies, MAX_ENEMIES, s_player.x, s_player.y)) {
+        arpg_tip_take(ARPG_TIP_REMATE);
+        pickups_toast("L: rematar", 180);
+    } else if (!(g_arpg.tips & ARPG_TIP_GLIFO) && arpg_inv_has_spell(ARPG_SPELL_GLIFO)) {
+        arpg_tip_take(ARPG_TIP_GLIFO);
+        pickups_toast("Mantén L y toca el Glifo", 180);
+    }
+}
+#endif
 
 // ---------------------------------------------------------------------------
 // Player
@@ -3874,6 +3891,10 @@ int main(void) {
         if (camp_active()) {
             // The camp: walk, focus a prop, interact. The dungeon systems stay off.
             camp_floor_light_tick((int)s_vblank_count);
+            if (!(g_arpg.tips & ARPG_TIP_DORMIR) && g_arpg.xp >= (uint32_t)arpg_xp_needed(g_arpg.level)) {
+                arpg_tip_take(ARPG_TIP_DORMIR);
+                camp_toast("Duerme para subir de nivel");
+            }
             if (!menu_is_open()) {
                 int act = camp_update(&s_player, keys_held, s_keys_down_latch,
                                       menu_touch_pressed && !s_menu_ignore_held_touch, touch.px, touch.py);

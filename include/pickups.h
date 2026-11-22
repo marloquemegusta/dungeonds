@@ -31,6 +31,7 @@ void pickups_spawn_relic(fixed x, fixed y, const ArpgInvItem *item);
 void pickups_drop_enemy_loot(int enemy_type, int floor, fixed x, fixed y);
 // Last loot pickup toast message for HUD (NULL if expired).
 const char *pickups_loot_toast(void);
+void pickups_toast(const char *msg, int frames);   // rotulo corto en la pantalla tactil (avisos de primera vez ~180)
 // Painter's list (render_screen).
 int pickups_item(int i, int cam_x, int cam_y, int *depth);
 void pickups_draw(uint16_t *buffer, int i, int cam_x, int cam_y);

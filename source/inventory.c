@@ -839,7 +839,10 @@ static void rot_step(void) {
     }
 }
 
+static int s_tip_card = 0;            // tarjeta de primera vez (DESIGN-ARPG 7) sobre el inventario
+
 void inventory_open(void) {
+    s_tip_card = arpg_tip_take(ARPG_TIP_INVENTARIO);
     s_inv_tab = 0;
     s_socket_sel = 0;
     s_confirm = -1;
@@ -1034,6 +1037,13 @@ static int inventory_handle_input(uint32_t keys_down, int touch_pressed, int tou
 
 int inventory_update(uint32_t keys_down, int touch_pressed, int touch_x, int touch_y) {
     if (s_msg_t > 0) s_msg_t--;
+    if (s_tip_card) {                 // se cierra con A, B o un toque, y no hace nada mas
+        if ((keys_down & (KEY_A | KEY_B)) || touch_pressed) {
+            s_tip_card = 0;
+            s_top_dirty = 1;
+        }
+        return 0;
+    }
     int exit_inv = inventory_handle_input(keys_down, touch_pressed, touch_x, touch_y);
     if (!exit_inv) rot_step();
     return exit_inv;
@@ -1510,4 +1520,14 @@ void inventory_render(uint16_t *buf) {
     render_right_bag(buf);
     render_drag_ghost(buf);
     if (s_msg_t > 0 && s_msg) text_center(buf, 119, 168, s_msg, INV_RED);
+    if (s_tip_card) {
+        const int cx = 20, cy = 40, cw = 216, ch = 112;
+        fill_rect(buf, cx, cy, cw, ch, INV_BLACK);
+        gold_frame(buf, cx, cy, cw, ch);
+        text_center(buf, SCREEN_W / 2, cy + 7, "Reliquias", INV_GOLD);
+        text_wrapped(buf, cx + 10, cy + 24, cw - 20, 11,
+                     "Las reliquias se engarzan en un hechizo (Rayo, Ejecución, Glifo) o en el Pecho y lo mejoran. "
+                     "Cada una pide un nivel. Lo que no uses se funde y da cera.", INV_TXT);
+        text_center(buf, SCREEN_W / 2, cy + ch - 15, "A, B o toca: cerrar", INV_DIM);
+    }
 }

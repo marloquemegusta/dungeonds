@@ -31,6 +31,7 @@ static uint32_t s_rng = 1;
 static uint32_t s_anim_tick = 0;
 static char s_loot_toast[48];
 static int s_loot_toast_t = 0;
+static int s_relic_tip_pending = 0;   // aviso "engarzala" a continuacion del "+ nombre"
 
 #if SANDBOX
 // Scenario hook (never in the shipping ROM): non-zero forces the next enemy death to drop a heart.
@@ -43,6 +44,7 @@ void pickups_init(uint32_t seed) {
     s_anim_tick = 0;
     s_loot_toast[0] = 0;
     s_loot_toast_t = 0;
+    s_relic_tip_pending = 0;
 }
 
 void pickups_shift_y(int dy_px) {
@@ -146,6 +148,12 @@ void pickups_drop_enemy_loot(int enemy_type, int floor, fixed x, fixed y) {
     pickups_spawn_relic(x, y, &item);
 }
 
+
+void pickups_toast(const char *msg, int frames) {
+    snprintf(s_loot_toast, sizeof(s_loot_toast), "%s", msg);
+    s_loot_toast_t = frames;
+}
+
 const char *pickups_loot_toast(void) {
     return (s_loot_toast_t > 0 && s_loot_toast[0]) ? s_loot_toast : 0;
 }
@@ -164,6 +172,10 @@ void pickups_remate_drops(fixed x, fixed y) {
 void pickups_update(fixed player_x, fixed player_y, PlayerState *player) {
     s_anim_tick++;
     if (s_loot_toast_t > 0) s_loot_toast_t--;
+    if (s_loot_toast_t <= 0 && s_relic_tip_pending) {
+        s_relic_tip_pending = 0;
+        pickups_toast("Engárzala en el arcón o desde la pausa", 180);
+    }
     for (int i = 0; i < HEAL_PICKUP_MAX_ACTIVE; i++) {
         HealPickup *p = &s_pickups[i];
         if (!p->active) continue;
@@ -193,6 +205,7 @@ void pickups_update(fixed player_x, fixed player_y, PlayerState *player) {
             if (arpg_inv_add(&p->relic) >= 0) {
                 snprintf(s_loot_toast, sizeof(s_loot_toast), "+ %s", arpg_inv_item_name(&p->relic));
                 s_loot_toast_t = 120;
+                if (arpg_tip_take(ARPG_TIP_RELIQUIA)) s_relic_tip_pending = 1;
                 sfx_play_pitched(SND_PICKUP_ORB, TO_INT(p->x), 1180);
                 p->active = 0;
             } else if (s_loot_toast_t <= 0) {

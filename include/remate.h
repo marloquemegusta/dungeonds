@@ -18,6 +18,7 @@
 
 void remate_reset(void);
 // L: empieza el remate del enemigo tambaleante (Exvoto, Cireneo u Ojo) mas cercano a <= REMATE_RANGE. Devuelve 1 si empezo.
+int remate_target_in_reach(const Enemy *enemies, int max_enemies, fixed hero_x, fixed hero_y);   // 1 si hay un tambaleante al alcance (sin iniciar nada)
 int remate_start(Enemy *enemies, int max_enemies, fixed hero_x, fixed hero_y, int hero_dir);
 // Una vez por frame simulado (aunque no haya remate: avanza el resto). Al terminar mueve al heroe al sitio final.
 void remate_update(Enemy *enemies, int max_enemies, fixed *hero_x, fixed *hero_y, int *hero_dir);

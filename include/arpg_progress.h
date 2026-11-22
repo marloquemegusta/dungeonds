@@ -11,7 +11,7 @@ typedef struct {
     uint16_t level;      // starts at 1
     uint32_t xp;         // banked xp not yet converted into levels
     uint16_t points;     // retired with the skill tree; kept so the save layout (and scenarios) do not move
-    uint16_t tree;       // retired with the skill tree; the inventory replaced it
+    uint16_t tips;       // avisos de primera vez ya vistos (bits ARPG_TIP_*), DESIGN-ARPG 7
     uint16_t deepest;    // deepest floor reached (used later)
     uint16_t spell;      // active spell (used later)
     uint32_t altars_lo;  // bit a = travel altar (room index / 3) touched, altars 0..31
@@ -19,7 +19,15 @@ typedef struct {
     ArpgInventory inv;   // reliquias, tomos, engarces y cera (DESIGN.md 7.4)
 } ArpgProgress;
 
+#define ARPG_TIP_REMATE     0x01
+#define ARPG_TIP_RELIQUIA   0x02
+#define ARPG_TIP_GLIFO      0x04
+#define ARPG_TIP_DORMIR     0x08
+#define ARPG_TIP_INVENTARIO 0x10
+
 extern ArpgProgress g_arpg;
+
+int  arpg_tip_take(int bit);             // 1 solo la primera vez (marca el bit); 0 si ya se vio
 
 void arpg_progress_reset(void);          // level 1, fresh inventory (sample items)
 int  arpg_xp_needed(int level);          // xp to go from `level` to level+1

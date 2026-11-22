@@ -34,7 +34,7 @@ void arpg_progress_reset(void) {
     g_arpg.level = 1;
     g_arpg.xp = 0;
     g_arpg.points = 0;
-    g_arpg.tree = 0;
+    g_arpg.tips = 0;
     g_arpg.deepest = 0;
     g_arpg.spell = 0;
     g_arpg.altars_lo = 0;
@@ -197,4 +197,10 @@ int arpg_progress_has_save(void) {
         }
     }
     return 0;
+}
+
+int arpg_tip_take(int bit) {
+    if (g_arpg.tips & bit) return 0;
+    g_arpg.tips = (uint16_t)(g_arpg.tips | bit);
+    return 1;
 }
