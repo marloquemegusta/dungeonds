@@ -40,6 +40,7 @@ Todo asset que use el juego está en este catálogo y versionado. Lo que no est�
 | Paleta de la catedral | renders actuales | `tools/palette/extract_palette.py` | `assets/environment/cathedral/palette/palette.json` | git (derivado versionado) |
 | Arenas (mazmorra) | `assets/arenas/arenas.json` | `tools/export_arenas.py` → `bake_arena.py` | `source/arena_dungeon_01.c` | git |
 | HUD | corazón sagrado 3D `assets/models/hud/sacred_heart/` | `tools/hud/prerender_hud_heart.py` → `tools/generate_hud_icons_c.py` | `source/hud_icons_gfx.c` | LFS (PNG: git) |
+| Reliquias y tomos del inventario | modelos 3D en `assets/models/items/` (§6) y `assets/models/hud/sacred_heart/` | export GLB (Blender) → lab (C2) → `tools/generate_item_icons_c.py`; giros 56×56 con `tools/render_item_spin.py` | `include/inv_item_art.h` + `nitrofiles/items/*.bin` | LFS (bins en git) |
 | Rayos de luz | pintados a mano, `assets/sprites/godrays/` | `source/godrays_gfx.c` (notas en `tools/godrays/README.md`) | `source/godrays_gfx.c` | git |
 | Cartas de mejora | escenas reales de la ROM (`cathedral-sandbox`) | `tools/levelup_cards/capture_cards.py` | `nitrofiles/levelup/*.bin` | derivado (capturas intermedias en `assets/sprites/levelup/`, ignoradas) |
 | Clips de la intro | partida real en DeSmuME | `tools/gen_intro_clips.py` | `nitrofiles/intro/*.bin` | derivado |
@@ -68,6 +69,8 @@ Esta tabla es la única fuente de verdad de qué modelo y qué animación produc
 | `CHAR_EXVOTO_PRAY_STAND` | `exvoto_pray_stand` (40) | el mismo | `pray/pray_standing.fbx` | `build_exvoto.py` |
 | `CHAR_EXVOTO_PRAY_KNEEL` | `exvoto_pray_kneel` (40) | el mismo | `pray/pray_kneeling.fbx` | `build_exvoto.py` |
 | `CHAR_EXVOTO_STAND_UP` | `exvoto_stand_up` (40) | el mismo | `pray/pray_kneel_to_stand.fbx` | `build_exvoto.py` |
+| Tiers de Exvoto (rama ARPG): `exvoto_bebe`, `exvoto_parroco`, `exvoto_monja` y sus `_pray_stand`, `_pray_kneel`, `_stand_up` (40; `exvoto_parroco_stand_up` 48) | ídem | `exvoto_bebe/source/…79cc0a74`, `exvoto_parroco/source/…6fbad9bb`, `exvoto_monja/source/…269f9186` | las del Exvoto | `build_exvoto_tier.py` (brazos por dirección + giro de palma; la cabeza del Párroco sale girada, pendiente) |
+| Héroe, combo de puñetazos (rama ARPG): `corazon_punch_a`, `corazon_punch_b`, `corazon_gancho` (48) | ídem | `corazon/source/corazon.fbx` | `corazon/{punch_a,punch_b,gancho}.fbx` (Mixamo «Punching», «Punching (1)», «Hook Punch»; recorte `TRIM` en `build_corazon.py`) | `build_corazon.py`; a NitroFS con `tools/generate_punch_sprites.py` |
 | `CHAR_ABANDERADO`: andar | `abanderado` (60) | cuerpo `abanderado/source/…6e3a96b5`, estandarte `source/estandarte/…989b9291` | `walk/sad_walk.fbx` | `build_abanderado.py` |
 | `CHAR_ABANDERADO`: señalar | `abanderado_point` (60) | el mismo | pose generada en el script | `build_abanderado.py` |
 | Vídeo de lore 07 (Lope): `abanderado_derrota` (sprite 320, `assets/sprites/bestiary/abanderado_derrota/`) | el mismo cuerpo y estandarte | `animations/derrota/plant_a_plant.fbx` (Mixamo «Plant A Plant», espejado; golpes procedurales) | `build_abanderado_derrota.py` |
@@ -118,6 +121,10 @@ Ajustes de render por pieza: `tools/props/props.json`. Cada original está extra
 | `banco_gotico_c2b65edd` | `banco_entero` | `banco_roto` y `banco_volcado`: originales perdidos, quedan los renders. El volcado se hará por código; el roto, si hace falta, se regenera en Tripo con `assets/environment/cathedral/prompts.md`. |
 | `arco_gotico_f450c095` | muro izquierdo (`gothic_arch`, 5 módulos) | |
 | `lapida_tumba_abc4677e` (cruz), `lapida_medieval_ceaaedd5` (caballero) | cuatro estampas de lápida | Los `.glb` v2 se regeneran con `tomb_glb.py` + `lapida_ao.py`. |
+| `puerta_f4a93d19`, `cofre_cerrado_efcc7983`, `cofre_abierto_dcd534cc`, `altar_cfd253e4` | `puerta`, `cofre_cerrado`, `cofre_abierto`, `altar` (rama ARPG, horneados en el kit) | Prototipo ARPG, 2026-11-20. |
+| `camp_mesa_49adda99`, `camp_jergon_8cc28e31`, `camp_atril_b2e93f3e`, `camp_hoguera_701a10ac` | props del campamento (rama ARPG) | No van al kit: `tools/camp/generate_camp_gfx.py` los dibuja por software (`source/camp_props_gfx.c`), con la paleta de props y su sombra. |
+| Kit de muros del campamento (`assets/environment/camp/muros_src/`: `panel_liso`, `panel_porton`, `contrafuerte`) | imágenes generadas por el usuario (2026-11-21), prompts en `assets/environment/camp/prompts_muros.md` | `python tools/camp/marco_build.py` → `nitrofiles/camp/marco_{norte,izq,der}.bin` | sprites RGB15 en NitroFS; laterales por revisar |
+| Héroe con luz de hoguera, fuego, suelo y props nocturnos del campamento | lab rápido (`--light camp-fire`), lab de props, scripts propios | `tools/camp/bake_camp_hero.py`, `fuego_frames.py`, `bake_camp_arena.py`, `tools/props/props_camp_night.py` + `generate_camp_gfx.py` | `nitrofiles/camp/{hero_a0..7,hoguera_fuego,floor_tiles,*}.bin` |
 
 ## 4. Suelo de la catedral
 
@@ -133,11 +140,24 @@ El suelo del juego (`assets/environment/cathedral/floor/rombos_tripo/`) sale de 
 
 **Borrado** (2026-11-16): `environment/dreadhollow/GLB` y `Previews` (306 MB; pack «Dreadhollow — The Cursed Kingdom» de Kareel Games, se vuelve a bajar del proveedor; en la carpeta quedan `README.md`, `ASSET_INDEX.txt`, `LICENSE.txt` y `Textures/`); `animations/rifle/aim.fbx`, `walk/walk_renqueante.fbx`, `weapons/sword/sword.glb` (sin referencias); `environment/scifi_dungeon` (68 MB, pipeline legado; los scripts `bake_scifi_dungeon.py` y afines ya no se pueden ejecutar). Todo sigue en el historial de git salvo dreadhollow.
 
-## 6. Sin registrar
+## 6. Reliquias y Tomos (ARPG)
+
+Modelos 3D descargados de Tripo y adoptados para el inventario ARPG (2026-11-22). Sus fuentes viven en `assets/models/items/<item>/` (LFS) y se hornean en sprites de 24×24 RGB15 con legibilidad C2 para la ROM (`include/inv_item_art.h`).
+
+| Pieza | UUID de Tripo | Escuela / Uso | Render 24×24 | Estado |
+| :--- | :--- | :--- | :--- | :--- |
+| `relic_lanza` | `0d52d8fc-15de-4d38-96f4-428d929ce548` | Rayo (Reliquia base / Punta de lanza) | `s_relic_lanza_24` | Integrado en ROM |
+| `relic_nudillera` | `bbb28601-f245-42a7-93b7-c5cc8f5208a7` | Ejecución (Reliquia base / Nudillera) | `s_relic_nudillera_24` | Integrado en ROM |
+| `relic_calavera` | `c1f10f3e-f623-4806-9d9f-e33bd68769f8` | Levantar (Reliquia base / Cráneo votivo) | `s_relic_calavera_24` | Integrado en ROM |
+| `tome_glifo` | `d5266d16-afb4-4b41-b70f-4489e4284835` | Glifo (Tomo verde) | `s_tome_glifo_24` | Integrado en ROM |
+| `tome_levantar` | `6d103588-8b90-49d8-a6a3-c08fe9093cd3` | Levantar (Tomo negro) | `s_tome_levantar_24` | Integrado en ROM |
+| `tome_rayo` | `3c8af05f-e6d7-48a1-bb2f-018926b464f0` | Rayo (Tomo amarillo con cruz) | `s_tome_rayo_24` | Horneado; sin uso inicial (el héroe empieza con Rayo) |
+
+## 7. Sin registrar
 
 En Descargas, fuera del repo: `tripo_convert_8c5b4a72` (esqueleto soldado) y `tripo_convert_f65595e4` (esqueleto con máscara antigás), del 2026-11-07. Probables conceptos del esqueleto anterior; decidir si se borran.
 
-## 7. Anomalías abiertas
+## 8. Anomalías abiertas
 
 - **`.h` del bestiario versionados:** `assets/sprites/bestiary/*/nds_shadow_anchor.h` ocupan ~270 MB en git y son derivados (`TECHNICAL.md` §4.4).
 - **Sin versionar, solo en la carpeta principal:** vídeos `assets/videos/lore01_{05,06,09,10}*.mp4` (el 04 final ya está en LFS), `lore01_02_…_sinvoz.mp4` y avatares `avatar_{corazon,ojo}.png`. Si son finales, se adoptan en LFS.
