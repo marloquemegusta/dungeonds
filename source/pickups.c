@@ -171,8 +171,7 @@ void pickups_update(fixed player_x, fixed player_y, PlayerState *player) {
             p->active = 0;
             continue;
         }
-        const int magnet = (p->kind == PICKUP_KIND_RELIC) ? 0
-                         : (p->kind == PICKUP_KIND_XP) ? ARPG_RUNE_MAGNET : ARPG_PICKUP_MAGNET;
+        const int magnet = (p->kind == PICKUP_KIND_RELIC) ? 0 : ARPG_PICKUP_MAGNET;
         int dx = TO_INT(p->x - player_x);
         int dy = TO_INT(p->y - player_y);
         int d2 = dx * dx + GROUND_DY2(dy);
@@ -202,10 +201,7 @@ void pickups_update(fixed player_x, fixed player_y, PlayerState *player) {
             }
             continue;
         }
-        if (p->kind == PICKUP_KIND_XP) {
-            arpg_add_xp(p->amount);
-            sfx_play_pitched(SND_PICKUP_ORB, TO_INT(p->x), 1120);
-        } else if (p->kind == PICKUP_KIND_MANA) {
+        if (p->kind == PICKUP_KIND_MANA) {
             if (player) {
                 int gain = ARPG_REMATE_MANA + g_mods.remate_heal_bonus / 2;
                 player->mana += gain;
@@ -247,12 +243,7 @@ void pickups_draw(uint16_t *buffer, int i, int cam_x, int cam_y) {
     int cx = TO_INT(p->x) - cam_x;
     int cy = TO_INT(p->y) - cam_y;
     int x0 = cx - half_w;
-#if ENCOUNTERS_PROTO
-    // Runes rise and sink 1 px, slowly (one step every 32 frames); orbs keep the heart's bob.
-    const int bob = (p->kind == PICKUP_KIND_XP) ? (((s_anim_tick >> 5) & 1) ? -1 : 0) : bob_y;
-#else
     const int bob = bob_y;
-#endif
     int y0 = cy - PICKUP_SPRITE_H - HEAL_PICKUP_HOVER_PX + bob;
 
     // Walls in front hide the pickup and its shadow pixel by pixel; the test only runs when some wall run reaches the sprite.
@@ -309,8 +300,7 @@ void pickups_draw(uint16_t *buffer, int i, int cam_x, int cam_y) {
         return;
     }
     // ARPG placeholders (include/placeholders_gfx.h): 0 pixels are transparent.
-    const uint16_t *sprite = (p->kind == PICKUP_KIND_XP) ? g_ph_runa_xp
-                           : (p->kind == PICKUP_KIND_MANA) ? g_ph_orbe_mana : g_ph_orbe_vida;
+    const uint16_t *sprite = (p->kind == PICKUP_KIND_MANA) ? g_ph_orbe_mana : g_ph_orbe_vida;
     for (int gy = 0; gy < PICKUP_SPRITE_H; gy++) {
         int sy = y0 + gy;
         if ((unsigned)sy >= SCREEN_H) continue;

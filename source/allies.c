@@ -1,6 +1,6 @@
 #include "allies.h"
 #include "arpg.h"
-#include "arpg_tree.h"
+#include "arpg_inv.h"
 #include "glifo.h"
 #include "collision.h"
 #include "enemy_ai.h"
@@ -59,7 +59,7 @@ void allies_on_enemy_death(Enemy *dead, Enemy *enemies, int max_enemies) {
     if (g_enemy_ally[slot]) {                                // an ally died: its flag goes, and node 12 blasts
         g_enemy_ally[slot] = 0;
         g_ally_timer[slot] = 0;
-        if (arpg_tree_has(12) && s_blast_count < ALLY_BLAST_QUEUE) {
+        if (arpg_inv_has_mechanic(ARPG_MECH_OFRENDA) && s_blast_count < ALLY_BLAST_QUEUE) {
             s_blast_x[s_blast_count] = TO_INT(dead->x);
             s_blast_y[s_blast_count] = TO_INT(dead->y);
             s_blast_count++;
@@ -67,10 +67,10 @@ void allies_on_enemy_death(Enemy *dead, Enemy *enemies, int max_enemies) {
         return;
     }
 
-    if (!arpg_tree_has(10)) return;
+    if (!arpg_inv_has_mechanic(ARPG_MECH_LEVANTAR)) return;
     if (dead->type == ENEMY_TYPE_ABANDERADO) return;
     if (!glifo_point_in_zone(TO_INT(dead->x), TO_INT(dead->y))) return;
-    int cap = arpg_tree_has(11) ? ARPG_ALLY_MAX_2 : ARPG_ALLY_MAX_1;
+    int cap = arpg_inv_has_mechanic(ARPG_MECH_PROCESION) ? ARPG_ALLY_MAX_2 : ARPG_ALLY_MAX_1;
     if (live_allies(enemies, max_enemies) >= cap) return;
 
     int free_slot = -1;
@@ -93,7 +93,7 @@ void allies_on_enemy_death(Enemy *dead, Enemy *enemies, int max_enemies) {
     a->state = ENEMY_STATE_CHASE;
     a->pack = -1;                                            // no encounter: never counted for a room, never blocks one
     g_enemy_ally[free_slot] = 1;
-    g_ally_timer[free_slot] = (uint16_t)(arpg_tree_has(11) ? ARPG_ALLY_FRAMES_2 : ARPG_ALLY_FRAMES_1);
+    g_ally_timer[free_slot] = (uint16_t)(arpg_inv_has_mechanic(ARPG_MECH_PROCESION) ? ARPG_ALLY_FRAMES_2 : ARPG_ALLY_FRAMES_1);
 }
 
 // Walk step with wall slide: X, then Y; each sweep stops at the first blocked point.
