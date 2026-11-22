@@ -31,6 +31,7 @@ void hwshadow_init(void);
 void hwshadow_begin(int sub);
 void hwshadow_add(int sub, const uint8_t *mask, const uint8_t *bounds, int ox, int oy);
 void hwshadow_commit(int sub);
+void hwshadow_invalidate(const uint8_t *mask);
 
 // Rastrillo of the encounter rooms (DESIGN.md 6.13.6): the gate is drawn with four regular 64x64
 // OBJs from the first 128 pool tiles (reserved at init, the shadow pool never uses them). x, y is the

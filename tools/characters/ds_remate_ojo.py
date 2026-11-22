@@ -378,6 +378,28 @@ def split_by_head(ob, thr=0.5, jag_amp=0.020, cap_color=(0.20, 0.07, 0.06, 1.0))
     return out['head'], out['body']
 
 
+def fix_unweighted_vertices(ob):
+    """Copia pesos del vertice ponderado mas cercano a vertices sin skinning."""
+    me = ob.data
+    weighted, unweighted = [], []
+    for v in me.vertices:
+        if sum(g.weight for g in v.groups) > 1e-4:
+            weighted.append(v)
+        else:
+            unweighted.append(v)
+    if not unweighted or not weighted:
+        return
+    gnames = {g.index: g.name for g in ob.vertex_groups}
+    for v in unweighted:
+        best = min(weighted, key=lambda w: (w.co - v.co).length_squared)
+        for g in best.groups:
+            if g.weight > 1e-4:
+                ob.vertex_groups[gnames[g.group]].add([v.index], g.weight, 'REPLACE')
+    print('FIX_UNWEIGHTED', ob.name, 'fixed', len(unweighted), 'verts')
+
+
+fix_unweighted_vertices(hero.mesh)
+fix_unweighted_vertices(BODY)
 HEAD_SKIN, BODY_SKIN = split_by_head(BODY)
 
 

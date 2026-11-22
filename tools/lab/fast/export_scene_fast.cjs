@@ -233,6 +233,34 @@ async function main() {
     }
   }
   if (collapsed) console.log(`LOG [fit] actores ocultos colapsados: ${collapsed} mallas`);
+  // Vertices desconectados del cuerpo por falta de skinning: dos aristas > 0.12 m y la opuesta < 0.003 m
+  // en algun fotograma; se colapsa en toda la secuencia (misma topologia).
+  let snapped = 0;
+  const vdist = (p, a, b) => Math.hypot(p[a * 3] - p[b * 3], p[a * 3 + 1] - p[b * 3 + 1], p[a * 3 + 2] - p[b * 3 + 2]);
+  for (let mi = 0; mi < ref.length; mi++) {
+    const idx = ref[mi].indices;
+    const snap = new Map();
+    for (const fr of frames) {
+      const p = fr.meshes[mi].positions;
+      for (let k = 0; k + 2 < idx.length; k += 3) {
+        const i0 = idx[k], i1 = idx[k + 1], i2 = idx[k + 2];
+        const d01 = vdist(p, i0, i1), d12 = vdist(p, i1, i2), d20 = vdist(p, i2, i0);
+        if (d01 > 0.12 && d20 > 0.12 && d12 < 0.003) snap.set(i0, i1);
+        else if (d01 > 0.12 && d12 > 0.12 && d20 < 0.003) snap.set(i1, i0);
+        else if (d12 > 0.12 && d20 > 0.12 && d01 < 0.003) snap.set(i2, i0);
+      }
+    }
+    if (!snap.size) continue;
+    for (const fr of frames) {
+      const p = fr.meshes[mi].positions, nrm = fr.meshes[mi].normals;
+      for (const [v, t] of snap) {
+        p[v * 3] = p[t * 3]; p[v * 3 + 1] = p[t * 3 + 1]; p[v * 3 + 2] = p[t * 3 + 2];
+        nrm[v * 3] = nrm[t * 3]; nrm[v * 3 + 1] = nrm[t * 3 + 1]; nrm[v * 3 + 2] = nrm[t * 3 + 2];
+        snapped++;
+      }
+    }
+  }
+  if (snapped) console.log(`LOG [fit] vertices sin skinning colapsados: ${snapped}`);
   if (seq.length) seq.length = 0;
   mark('split');
 
