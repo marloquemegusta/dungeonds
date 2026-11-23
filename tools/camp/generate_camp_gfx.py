@@ -12,7 +12,7 @@ cathedral prop palette: the camp is software-blitted RGB15 and the fire-lit tone
 It also writes the animated bonfire flame strip (tools/camp/fuego_frames.py -> nitrofiles/camp/hoguera_fuego.bin).
 Pixels keep BIT(15) (opaque) so the blit copies them straight to the 16 bpp page; transparent is 0.
 Each piece also exports its baked ground-shadow mask (shadow.png on the shadow canvas declared by
-meta.json), packed as 4-bit nibbles like the actor shadows, so source/camp.c can darken the floor
+meta.json), packed as 1 bpp like the actor shadows, so source/camp.c can darken the floor
 with draw_shadow_mask exactly like the actors do.
 """
 import sys
@@ -48,7 +48,7 @@ def img_to_words(path):
 
 def load_shadow(piece_dir, w, h):
     """Ground-shadow mask on the canvas declared by meta.json, minus the piece's own pixels.
-    Returns (mask bytes packed 4-bit per pixel, canvas w, canvas h, ox, oy) or None."""
+    Returns (mask bytes packed 1 bit per pixel, canvas w, canvas h, ox, oy) or None."""
     shadow_path = piece_dir / "shadow.png"
     if not shadow_path.exists():
         return None
@@ -62,13 +62,14 @@ def load_shadow(piece_dir, w, h):
     full_alpha = np.zeros((sh, sw), np.uint8)
     full_alpha[oy:oy + h, ox:ox + w] = rgba[:, :, 3]
     shadow = shadow & (full_alpha < 128)
-    # 4-bit nibbles, low nibble = even x (same packing as draw_shadow_mask in source/main.c).
+    # 1 bpp, continuous row-major bit stream, LSB first (same indexing as draw_shadow_mask in source/main.c).
+    flat = shadow.reshape(-1)
     packed = bytearray()
-    for y in range(sh):
-        for x in range(0, sw, 2):
-            lo = 0x0F if shadow[y, x] else 0
-            hi = 0x0F if (x + 1 < sw and shadow[y, x + 1]) else 0
-            packed.append(lo | (hi << 4))
+    for i in range(0, len(flat), 8):
+        v = 0
+        for k, bit in enumerate(flat[i:i + 8]):
+            v |= int(bool(bit)) << k
+        packed.append(v)
     # Canvas top-left relative to the colour sprite top-left (negative: the canvas reaches left).
     return bytes(packed), sw, sh, -ox, -oy
 

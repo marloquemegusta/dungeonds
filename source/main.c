@@ -23,9 +23,9 @@
 #include "exvoto_melt.h"
 #include "remate.h"
 #include "campanero_sprite.h"
+#include "chars_pool.h"
 #include "remate_sprites.h"
 #include "punch.h"
-#include "stream_char.h"
 #include "sfx.h"
 #include "lab_tuning.h"
 #include "boxeo.h"
@@ -732,9 +732,7 @@ ITCM_CODE static void draw_shadow_mask(uint16_t *buffer, const uint8_t *mask,
         }
         for (int x = sx0; x < sx1; x++) {
             int pixel = row_offset + (x - bx);
-            uint8_t packed = mask[pixel >> 1];
-            uint8_t nibble = (pixel & 1) ? (packed >> 4) : (packed & 0x0F);
-            if (nibble > 0) {
+            if ((mask[pixel >> 3] >> (pixel & 7)) & 1) {
                 int world_x = left + x;
                 if (world_x < 0 || world_x >= g_arena->world_w || world_y < 0 || world_y >= g_arena->world_h) continue;
                 if (rn) {
@@ -1153,6 +1151,7 @@ static void draw_ally_mark(uint16_t *buffer, int x0, int y0) {
 
 static void draw_enemy(uint16_t *buffer, const Enemy *e, int cam_x, int cam_y) {
     if (e->state == ENEMY_STATE_REMATE && remate_active()) return;   // the remate cell draws it (with the hero); during the dash it stands here
+    if (!chars_ready(e->char_id)) return;                            // art not in the room pool and it did not fit: skip it
     int px = player_screen_x(e->x, e->y);
     int py = player_screen_y(e->x, e->y);
 
@@ -1279,6 +1278,7 @@ static void draw_enemy(uint16_t *buffer, const Enemy *e, int cam_x, int cam_y) {
 // A dying Exvoto (DESIGN.md 6.10): the sprite it died with sinks into the floor, feet first. The lowest
 // rows are cut as it goes down and the rest moves down with them, so it ends flush with the puddle.
 static void draw_melt(uint16_t *buffer, const ExvotoMelt *m, int cam_x, int cam_y) {
+    if (!chars_ready(m->char_id)) return;
     int px = player_screen_x(m->x, m->y);
     int py = player_screen_y(m->x, m->y);
     const uint8_t *b = g_character_frame_bounds[m->char_id][m->dir][m->frame];
@@ -1425,6 +1425,7 @@ static int shadow_select(const DrawItem *it, ShadowSel *sel) {
     if (it->ref <= -2 && it->ref > -2 - MAX_ENEMIES) {
         const Enemy *e = &g_enemies[-2 - it->ref];
         if (e->state == ENEMY_STATE_REMATE && remate_active()) return 0;   // its shadow is baked in the remate cell
+        if (!chars_ready(e->char_id)) return 0;
         int shw = g_characters[e->char_id].shadow_w;
         int shh = g_characters[e->char_id].shadow_h;
         int is_telegraph = (e->char_id == CHAR_CHARGER && e->state == ENEMY_STATE_TELEGRAPH);
@@ -1487,7 +1488,7 @@ static void render_camp_screen(uint16_t *buffer, DirtySpan *spans, int cam_x, in
 
     camp_render_floor(buffer, cam_x, cam_y);        // warm pool under the bonfire, under everything
 
-    // Prop ground shadows (baked, 4-bit nibbles) on the floor, before any actor: the same 50 %
+    // Prop ground shadows (baked, 1 bpp) on the floor, before any actor: the same 50 %
     // darkening (apply_shadow_fast) as the actors and as the cathedral kit.
     {
         int nprops = camp_items_count(cam_x, cam_y);
@@ -2513,6 +2514,7 @@ static void death_chunks_spawn(const DeathSpawn *e) {
     const fixed hit_vx = e->hit_vx, hit_vy = e->hit_vy;
     CampSprite cs;
     const int is_camp = (e->char_id == CHAR_CAMPANERO) && campanero_sprite_get(e->clip, e->dir, e->frame & 7, &cs);
+    if (!is_camp && !chars_ready(e->char_id)) return;
     const uint8_t *bounds = is_camp ? cs.bounds : g_character_frame_bounds[e->char_id][e->dir][e->frame];
     int min_x = bounds[0], min_y = bounds[1];
     int width = bounds[2], height = bounds[3];
@@ -3666,6 +3668,9 @@ int main(void) {
     // Load Background Palette to Main and Sub engines
     // First run: the DS real-time clock varies between boots (the frame counter and the
     // timer right after cpuStartTiming do not), so the first map is not always the same.
+#if !ENCOUNTERS_PROTO
+    room_art_prepare((1u << CG_COUNT) - 1u, 0);   // no rooms in this variant: every enemy group fits the pool at once
+#endif
     if (s_strip_mode) {
         uint32_t seed = (uint32_t)time(NULL) * 0x9e3779b9u ^ (uint32_t)cpuGetTiming();
 #if CATHEDRAL_PLAYGROUND
@@ -3729,7 +3734,6 @@ int main(void) {
     remate_reset();
     punch_reset();
     sfx_init();
-    stream_char_init();            // streamed sheets (Párroco run, Súper Monja) from NitroFS (needs nitroFSInit, done by sfx_init)
     CRASH_INIT();
     PP_INIT();
     enemy_set_death_hook(on_enemy_death);

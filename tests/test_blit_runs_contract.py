@@ -1,8 +1,11 @@
 import re
+import sys
 import unittest
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "tests"))
+from test_sprite_ground_anchor import streamed_block  # noqa: E402
 
 # (symbol stem, number of frames per direction)
 SETS = [
@@ -40,10 +43,10 @@ class BlitRunsContractTest(unittest.TestCase):
     def test_runs_are_exactly_the_opaque_runs_of_every_frame(self):
         c = read("source/player_sprite.c")
         for stem, nframes in SETS:
-            pixels = ints(array_body(c, "g_%s_frames" % stem), 16)
+            pixels = streamed_block(stem, "frames") or ints(array_body(c, "g_%s_frames" % stem), 16)
             offs = ints(array_body(c, "g_%s_frame_offsets" % stem))
             bounds = ints(array_body(c, "g_%s_frame_bounds" % stem))
-            runs = ints(array_body(c, "g_%s_runs" % stem))
+            runs = streamed_block(stem, "runs") or ints(array_body(c, "g_%s_runs" % stem))
             roffs = ints(array_body(c, "g_%s_run_offsets" % stem))
             self.assertEqual(len(offs), 8 * nframes, stem)
             self.assertEqual(len(roffs), 8 * nframes, stem)
@@ -77,7 +80,7 @@ class BlitRunsContractTest(unittest.TestCase):
         c = read("source/player_sprite.c")
         total = 0
         for stem, _ in SETS:
-            total += 2 * len(ints(array_body(c, "g_%s_runs" % stem)))
+            total += 2 * len(streamed_block(stem, "runs") or ints(array_body(c, "g_%s_runs" % stem)))
             total += 4 * len(ints(array_body(c, "g_%s_run_offsets" % stem)))
         self.assertLess(total, 150 * 1024)
 
