@@ -44,6 +44,7 @@ static const char *kind_slug(int kind) {
     if (kind == REMATE_KIND_MONAGUILLO) return "monaguillo";
     if (kind == REMATE_KIND_BEBE) return "exvoto_bebe";
     if (kind == REMATE_KIND_SMONJA) return "smonja";
+    if (kind == REMATE_KIND_PARROCO) return "parroco";
     return "exvoto";
 }
 
@@ -274,6 +275,7 @@ int remate_start(Enemy *enemies, int max_enemies, fixed hero_x, fixed hero_y, in
     else if (e->type == ENEMY_TYPE_MONAGUILLO) s_kind = REMATE_KIND_MONAGUILLO;
     else if (e->type == ENEMY_TYPE_BEBE) s_kind = REMATE_KIND_BEBE;
     else if (e->type == ENEMY_TYPE_MONJA) s_kind = REMATE_KIND_SMONJA;
+    else if (e->type == ENEMY_TYPE_PARROCO) s_kind = REMATE_KIND_PARROCO;
     else s_kind = REMATE_KIND_EXVOTO;
 
     int dx = ex - hx, dy = ey - hy;
