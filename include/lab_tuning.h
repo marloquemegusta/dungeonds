@@ -32,6 +32,10 @@
 #ifndef ARPG_EXVOTO_TEST
 #define ARPG_EXVOTO_TEST 0
 #endif
+/* Variant "arpg-remates": rooms stay empty; remate_test.c keeps a row of frozen exvotos (one punch leaves them reeling) ahead of the hero. */
+#ifndef ARPG_REMATE_TEST
+#define ARPG_REMATE_TEST 0
+#endif
 
 #if ARPG_LAB
 #include "sfx.h"

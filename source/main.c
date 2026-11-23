@@ -29,6 +29,7 @@
 #include "lab_tuning.h"
 #include "boxeo.h"
 #include "exvoto_test.h"
+#include "remate_test.h"
 #include "bestiary.h"
 #include "intro.h"
 #include "hud_icons_gfx.h"
@@ -2711,6 +2712,9 @@ static void strip_enemies_update(void) {
 #if ARPG_EXVOTO_TEST
     exvoto_test_update(g_enemies, MAX_ENEMIES, TO_INT(s_player.x), TO_INT(s_player.y));
 #endif
+#if ARPG_REMATE_TEST
+    remate_test_update(g_enemies, MAX_ENEMIES, TO_INT(s_player.x), TO_INT(s_player.y));
+#endif
     pickups_update(s_player.x, s_player.y, &g_player_state);     // ARPG: remate orbs (health, mana)
     arpg_tips_tick();
     dmg_numbers_set_player_pos(s_player.x, s_player.y);
@@ -3340,6 +3344,9 @@ static void arena_restart(void) {
 #endif
 #if ARPG_EXVOTO_TEST
     exvoto_test_reset();
+#endif
+#if ARPG_REMATE_TEST
+    remate_test_reset();
 #endif
     radial_close();
     s_pending_head = s_pending_count = 0;

@@ -1759,6 +1759,10 @@ static void possession_update(Enemy *enemies, int num_enemies) {
             if (ph) possess_release(e);
             continue;
         }
+        if (e->state == ENEMY_STATE_WOBBLE) {                     // reeling (ready for the finisher): it stands up at once and
+            if (ph) possess_release(e);                           // stays on its feet, so the finisher is its normal one;
+            continue;                                             // no spider again until the reel ends
+        }
         int d2 = 0x7FFFFFFF;
         for (int k = 0; k < nm; k++) {
             const int dx = TO_INT(e->x - enemies[monja[k]].x);
@@ -1850,6 +1854,10 @@ ITCM_CODE void enemy_ai_update(Enemy *enemies, int num_enemies, fixed player_x, 
         }
 
         if (g_sandbox_freeze_ai) continue;                 // sandbox: stand still, no move and no attack
+#if ARPG_REMATE_TEST
+        if (possess_phase(e) == 1 && possession_step(e)) continue;   // remate room: frozen, but the possessed still lie down
+        continue;                                          // no walking, no attack, no guard, no dodge: they only reel from hits
+#endif
 #if ARPG_BOXEO
         if (g_lab_saco_still) continue;                    // boxeo: the dummy only reels from hits
 #endif

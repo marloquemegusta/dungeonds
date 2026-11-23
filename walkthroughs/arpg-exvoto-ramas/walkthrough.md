@@ -19,3 +19,14 @@ Sesión de diseño, sin código. Define las familias de enemigos con sus escalon
 - Curva de inicio de `diseno_juego_final.md` §10 («Párroco y Monja desde la sala 5»): falta decidir qué escalones salen en cada sala con los nombres nuevos.
 - Abanderado invocando Exvotos de cualquier familia y escalón (otra sesión).
 - Animación de carga del Párroco (Mixamo) y sprite nuevo de la Súper Monja.
+
+## Sala de remates (variante `arpg-remates`, 2026-11-23)
+
+Fila al norte del héroe (de oeste a este: Monja de cera, Monaguillo, Bebé, Párroco, Súper Monja, a 40 px; la Súper Monja queda a 120 px de la Monja y el Monaguillo para que no los posea) y, más al norte, un grupo aparte con otra Súper Monja y una Monja de cera y un Monaguillo poseídos. Todos quietos; un puñetazo los deja tambaleantes sin matarlos; al caer por el remate reaparecen en su sitio a los ~2 s. Escenario `scenarios/remates_sala.json` (PASS, `suite: false`).
+
+**Tambaleo de los poseídos:** un poseído que queda tambaleante recupera al instante su forma de pie (no se reproduce la transición al revés: el golpe ya lo interrumpe) y no vuelve a araña hasta que se le pasa el tambaleo, así el remate es el normal de su tipo y nunca se lanza sobre un sprite a medias.
+
+![fila](assets/sala_remates/01_fila_4x.png)
+![poseído levantado y tambaleante](assets/sala_remates/02_poseido_levantado_tambaleante_4x.png)
+![remate normal](assets/sala_remates/03_remate_normal_4x.png)
+![GIF](assets/sala_remates/poseido_se_levanta_y_remate_4x.gif)
