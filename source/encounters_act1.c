@@ -18,6 +18,7 @@ typedef int encounters_act1_translation_unit_not_empty;
 #include "strip_kit.h"
 #include "upgrades.h"
 #include "player_sprite.h"
+#include "chars_pool.h"
 #include "enc_relic_gfx.h"
 
 #include "encounters_act1_tables.h"
@@ -140,6 +141,8 @@ static const BossDef s_abanderado_def = {
     .escort = { s_abanderado_escort, s_abanderado_escort, s_abanderado_escort },
 };
 
+static void room_art_prepare_act(void);
+
 int enc_start_up_px(void) { return g_enc_debug.start_boss ? 156 : 4 * g_enc_debug.start_up4; }   // hero ~100 px under the boss room's bottom edge
 
 void enc_init(uint32_t seed) {
@@ -195,6 +198,7 @@ void enc_init(uint32_t seed) {
         boss_set_hooks(&hooks);
         boss_reset(&s_abanderado_def, ENC_FIRST_BOSS);
     }
+    room_art_prepare_act();
     volatile EncStats *st = &g_enc_stats;
     uint8_t deaths = (uint8_t)s_deaths;
     memset((void *)st, 0, sizeof(EncStats));
@@ -400,6 +404,27 @@ static int spawn_group(Enemy *enemies, int max_enemies, const EncEnemyDef *defs,
 
 static const EncPopulation *population_of(int k) {
     return &s_plants[s_plant[k]].pop[s_tier[k]];
+}
+
+// Room pool (room_pool.h): the act is one strip with one loading point (enc_init). Empties the pool and loads the enemy
+// art the act can show: the types of its 12 encounters (both waves), the Abanderado, his escort and the Monaguillos he
+// summons. Whatever this misses is loaded on demand by chars_ready() and counted in g_pool_misses.
+static void room_art_prepare_act(void) {
+    uint32_t mask = 0;
+    for (int e = 0; e < ENC_COUNT; e++) {
+        const EncPopulation *pop = population_of(e);
+        for (int i = 0; i < pop->n; i++)
+            mask |= 1u << g_char_group[enemy_type_char_id(enemy_type_of(pop->enemies[i].type))];
+        for (int i = 0; i < pop->n2; i++)
+            mask |= 1u << g_char_group[enemy_type_char_id(enemy_type_of(pop->wave2[i].type))];
+    }
+    const BossDef *bd = &s_abanderado_def;
+    mask |= 1u << g_char_group[enemy_type_char_id(bd->enemy_type)];
+    mask |= 1u << CG_MONAGUILLO;                       // the Abanderado summons them
+    for (int ph = 0; ph < bd->n_phases; ph++)
+        for (int i = 0; i < bd->n_escort[ph]; i++)
+            mask |= 1u << g_char_group[enemy_type_char_id(bd->escort[ph][i].type)];
+    room_art_prepare(mask);
 }
 
 static int alive_of(const Enemy *enemies, int max_enemies, int owner, int *hurt) {

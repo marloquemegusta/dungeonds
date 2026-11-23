@@ -13,13 +13,13 @@
 // `RemateKindInfo.frames`; Exvoto y Cireneo usan 12. El bin de cada tipo lleva cabecera del tamano de sus frames.
 #define REMATE_MAX_FRAMES    38
 #define REMATE_SHADOW_CANVAS 80
-#define REMATE_BIN_MAGIC     0x54414D52u
+#define REMATE_BIN_MAGIC     0x31544D52u
 // Streaming desde NitroFS (remate.c): la celda lee el fotograma que toca a estos buffers estaticos en vez de cargar
 // el bin entero. Son el peor fotograma de cualquier tipo/direccion (cuadrados a 1 KiB por el generador).
 #define REMATE_HEADER_BYTES  2048
 #define REMATE_PIX_BYTES     18432
 #define REMATE_RUN_BYTES     1024
-#define REMATE_MASK_BYTES    2048
+#define REMATE_MASK_BYTES    1024
 
 typedef struct {
     uint8_t cell_w;

@@ -14,7 +14,7 @@ int g_hw_shadows_on = 1;
 //     first 1024 tiles (32 KiB) of the 64 KiB bank are addressable.
 //   Sub engine: bank I at 0x06600000, 512 tiles (16 KiB, the whole bank).
 //   OAM: 128 entries per engine. A shadow takes 1-4 entries (see the plan below).
-// Tiles are 4 bpp (32 bytes). Mask nibble != 0 becomes colour index 1: any non-zero index makes
+// Tiles are 4 bpp (32 bytes). Mask bit set (masks are 1 bpp, LSB first) becomes colour index 1: any non-zero index makes
 // the OBJ-window pixel opaque, the palette is irrelevant.
 // ---------------------------------------------------------------------------
 
@@ -202,8 +202,7 @@ ITCM_CODE static void convert_part(volatile uint32_t *dst, const uint8_t *mask, 
                     int xe = xs + 8 < bw ? xs + 8 : bw;
                     int n = y * bw + xs;
                     for (int x = xs; x < xe; x++, n++) {
-                        uint32_t b = mask[n >> 1];
-                        if ((n & 1) ? (b >> 4) : (b & 0x0F)) word |= 1u << ((x - xs) * 4);
+                        if ((mask[n >> 3] >> (n & 7)) & 1) word |= 1u << ((x - xs) * 4);
                     }
                 }
                 dst[(ty * tw + tx) * 8 + r] = word;
@@ -253,11 +252,19 @@ void hwshadow_begin(int sub) {
 
 void hwshadow_invalidate(const uint8_t *mask) {
     if (!mask) return;
+    hwshadow_invalidate_range(mask, mask + 1);
+}
+
+// Every entry whose mask lies in [lo, hi): the room pool empties (its addresses will hold other masks) or a mask
+// buffer is overwritten.
+void hwshadow_invalidate_range(const void *lo, const void *hi) {
+    const uintptr_t a = (uintptr_t)lo, b = (uintptr_t)hi;
     for (int sub = 0; sub < 2; sub++) {
         Engine *g = &s_eng[sub];
         for (int i = 0; i < MAX_ENTRIES; i++) {
             Entry *en = &g->e[i];
-            if (en->mask != mask) continue;
+            const uintptr_t m = (uintptr_t)en->mask;
+            if (m < a || m >= b || en->mask == RETIRED_MASK) continue;
             if (en->last_build != g->build && en->last_build != g->committed)
                 entry_free(g, en);
             else

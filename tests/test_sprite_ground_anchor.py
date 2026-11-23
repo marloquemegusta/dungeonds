@@ -1,4 +1,5 @@
 import re
+import struct
 import unittest
 from pathlib import Path
 
@@ -33,7 +34,28 @@ def _brace_block(symbol_decl):
     raise AssertionError("unterminated " + symbol_decl)
 
 
+def streamed_block(stem, block):
+    """Enemy clips live in nitrofiles/chars/<stem>.bin (CHR1: sizes of frames, runs, masks + the 3 blocks, 4-aligned);
+    returns the words of the block ('frames' | 'runs') or None when the clip is resident in player_sprite.c."""
+    path = ROOT / "nitrofiles" / "chars" / (stem + ".bin")
+    if not path.exists():
+        return None
+    data = path.read_bytes()
+    assert data[:4] == b"CHR1", path
+    sizes = struct.unpack_from("<III", data, 4)
+    pad = lambda n: (n + 3) & ~3
+    start = 16
+    for name, size in zip(("frames", "runs", "masks"), sizes):
+        if name == block:
+            return list(struct.unpack_from("<%dH" % (size // 2), data, start))
+        start += pad(size)
+    raise AssertionError(block)
+
+
 def pixel_values(symbol):
+    streamed = streamed_block(symbol[len("g_"):-len("_frames")], "frames")
+    if streamed is not None:
+        return streamed
     return [int(value, 16) for value in re.findall(r"0x([0-9A-Fa-f]{4})", _brace_block(f"const uint16_t {symbol}["))]
 
 

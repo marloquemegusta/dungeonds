@@ -184,6 +184,13 @@ Todo el texto que se lee usa **una sola fuente: Palatino de 11 px, con el trazad
 - **Fuera de alcance:** el contador de FPS y los datos de rendimiento (depuración) siguen en la fuente de 5×7.
 - **Aceptado con matices:** el HUD de partida sale más fino y se lee con menos fuerza sobre el suelo con textura; los botones inactivos y la fila de datos del Códice quedan algo tenues. Se pule si molesta en la DS.
 
+#### 6.11.3 Números de daño (decidido 2026-11-23, traído del ARPG)
+Cifras flotantes sobre el enemigo golpeado, las mismas del ARPG (`DESIGN-ARPG.md`, «Números flotantes en combate»): bitmap de 3×5 px con contorno oscuro de 1 px, sin críticos, en paleta apagada (§6.10).
+- **Daño del rayo y del fuego al enemigo:** marfil cálido, salto parabólico con desvío lateral aleatorio (~0,55 s).
+- **Quemado y daño periódico:** violeta-ceniza, subida vertical lenta (~0,50 s).
+- **Curación de un enemigo** (`+N`, verde salvia): solo cuando exista un enemigo que cure (Monja).
+- **Sin cifra sobre el héroe:** su vida son golpes y ya la enseñan los corazones del HUD. Sin maná en este modo.
+
 ### 6.12 Sistema de mejoras del Corazón Abierto
 La demo tiene un solo personaje. Las cifras están en `[TUNABLE-PLACEHOLDER]` hasta la sesión de números (§6.12.10).
 

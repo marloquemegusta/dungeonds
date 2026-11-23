@@ -1,4 +1,5 @@
 #include "sfx.h"
+#include "room_pool.h"
 #include <stdint.h>
 #include <stdio.h>
 
@@ -106,7 +107,7 @@ void sfx_init(void) {
 
 #ifdef ARM9
     s_charge_handle = 0;
-    if (!nitroFSInit(NULL)) return;
+    if (!room_pool_fs_ready()) return;
     mmInitDefault("nitro:/soundbank.bin");
     for (int i = 0; i < SND_COUNT; i++) {
         mmLoadEffect(s_mm_ids[i]);

@@ -92,7 +92,7 @@
   },
   "steps": [
     {
-      "frames": 20,
+      "frames": 40,
       "capture": "00_porticho",
       "state_capture": "start"
     },
