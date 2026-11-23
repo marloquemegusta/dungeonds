@@ -180,6 +180,10 @@ Banco de pruebas de combate ARPG: `build-project.ps1 -Variant arpg-lab` (defines
 
 `build-project.ps1 -Variant arpg-boxeo` = `arpg-lab` + `ARPG_BOXEO=1`. La sala inicial no se puebla (`enc_update` no hace nada) y `source/boxeo.c` mantiene un único enemigo, el «saco», 28 px al este del héroe: 2000 de vida que se rellena al bajar de la mitad, nunca entra en tambaleo ni remate, reaparece si se desactiva y vuelve a su sitio tras 1 s sin golpes. Héroe invulnerable (`g_lab_god = 1`). En el menú (SELECT), página «Pruebas»: «Saco quieto» (no anda ni ataca, sí recibe empuje) y «Saco tipo» (Exvoto, Cargador, Monaguillo, Bebé, Párroco, Monja, Ojo). Página «Puñetazo» (también en `arpg-lab`): velocidad, ventana de combo, % de andar pegando (0 = pies plantados), fotograma de inicio y de impacto de cada golpe, seguimiento antes de encadenar, corte de cintura al pegar andando, empuje ligero y del gancho, parón, temblor y alcance; el juego lee esas variables mediante macros `PUNCH_*_V` que fuera del lab son las constantes. Escenario `scenarios/arpg_boxeo.json` (`suite: false`, con aserciones de estado).
 
+### 5.3b. Variantes `arpg-exvotos` y `arpg-remates`
+
+`arpg-exvotos`: sala de prueba con los Exvotos de escalón 3 (Súper Monja, Párroco, guardaespaldas). `arpg-remates`: sala con los Exvotos quietos para probar remates y el tambaleo de los poseídos. `tools/trim_remate_smonja.py` recorta la cola quieta del remate de la Súper Monja (18 fotogramas).
+
 ### 5.4. Variante `reliquias-suelo`: escaparate de reliquias caídas
 
 `build-project.ps1 -Variant reliquias-suelo` = juego normal + `RELIC_SHOWCASE=1`. Al entrar en la catedral, `enc_update` activa el buzón `g_relic_drop_debug`, que suelta junto al héroe 5 reliquias o tomos (común → legendaria, un arquetipo distinto cada uno); SELECT las vuelve a soltar (y a la vez hace lo que SELECT haga en el juego, p. ej. abrir el mapa). Sirve para ver en la DS el arte de suelo (`include/inv_item_floor_art.h`, horneado por `tools/bake_inv_floor_art.py`). El escenario `arpg_reliquia_suelo` usa el mismo buzón en la variante `encuentros`.
