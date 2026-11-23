@@ -45,4 +45,4 @@ Escenario de capturas: `scenarios/arpg_icono_hostia.json` (solo evidencia, fuera
 
 ## Documentos
 
-`DESIGN-ARPG.md` (Vial → hostia consagrada) y `assets/MANIFEST.md` (pipeline y fila de la pieza). Pendiente al cerrar: entrada en `STATUS-ARPG.md` y sincronizar los MDs con `main`.
+`DESIGN-ARPG.md` (Vial → hostia consagrada) y `assets/MANIFEST.md` (pipeline y fila de la pieza). También `STATUS-ARPG.md` (la entrega más vieja pasa a `STATUS-ARCHIVE.md`); MDs sincronizados con `main` al cerrar.
