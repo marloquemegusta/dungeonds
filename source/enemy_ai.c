@@ -668,12 +668,13 @@ static void update_charger(Enemy *e, Enemy *enemies, int num_enemies, int idx,
 }
 
 // ---------------------------------------------------------------------------
-// Ojo del Tribunal (DESIGN.md 6.10, "Mirada colimada"), ENEMY_TYPE_SHOOTER. FSM
-// CHASE (search) -> TRACK (40 frames: the band from the lantern follows the hero and narrows, the held head
-// charges) -> LOCK (20 frames: the line is frozen where the hero was) -> SENTENCE (the head fires the beam
-// from its mouth along the locked line, one hit) -> COOLDOWN -> CHASE.
-// A wall or column cuts the sight and the beam (los_has_line_of_sight / ojo_ray_wall_dist). The rhythm is the
-// old sniper's (aim, fix, fire); the hero is safe by leaving the line before SENTENCE or hiding behind a column.
+// Ojo del Tribunal (DESIGN.md 6.10, "sentencia escrita en el suelo"), ENEMY_TYPE_SHOOTER. FSM
+// CHASE (search) -> TRACK (40 frames: a crack on the ground grows from its feet to the hero and follows him)
+// -> LOCK (20 frames: the crack freezes and extends to the first wall or column; a light runs along it opening
+// each eye, the countdown) -> SENTENCE (the whole line bursts at once into spectral flames; the head opens its
+// mouth and fires nothing; the damage is that strip of ground, from the feet to the wall) -> COOLDOWN (scar) -> CHASE.
+// A wall or column cuts the sight and the line (los_has_line_of_sight / ojo_ray_wall_dist). The hero is safe by
+// leaving the line before SENTENCE or hiding behind a column.
 // ---------------------------------------------------------------------------
 
 void enemy_muzzle(const Enemy *e, fixed *mx, fixed *my, int *mh) {

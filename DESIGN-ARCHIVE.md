@@ -1183,3 +1183,10 @@ Prueba de concepto de dos días: convertir la partida por encuentros en un Actio
 
 - **Lápiz:** lanza el hechizo activo, que gasta maná. Sin maná no se lanza.
 - **`L` mantenido:** cambia el hechizo activo entre Rayo y Maldición (si está desbloqueada).
+
+### Ojo del Tribunal: mirada colimada y haz de hielo (retirado 2026-11-23, sustituido por la sentencia escrita en el suelo)
+
+Retirado porque la banda verde y el haz de hielo por la boca se leían como un láser genérico; la sentencia en el suelo dice lo mismo (te sigue, se fija, ejecuta) con arte propio y sin separar aviso y golpe por tono.
+
+- **Carga de la boca:** durante el segundo de fijación pasaba de apagada a muy brillante: aura verde irregular pegada a la cabeza y, al final, unas pocas lenguas de energía ascendentes. El farol no emitía luz al buscar.
+- **Mecánica «Mirada colimada»:** al fichar, nacía del farol una mirada verde ancha, difusa y tramada hacia el pecho del héroe que lo seguía estrechándose hasta 1 px; al fijar, la línea quedaba congelada y parpadeaba los últimos ~10 frames; en la sentencia la cabeza disparaba por la boca una llamarada de hielo espectral (núcleo recto sólido de 3-5 px, bordes irregulares y volutas), con fogonazo en la boca e impacto en el pecho. «Verde = te apuntan, hielo = te disparan.» Golpe 3 frames, llamarada ~20, disipación ~8.
