@@ -11,16 +11,27 @@ Formato (little endian):
     u8 sbounds[4]  {x, y, w, h} de la sombra recortada dentro del lienzo 112x112
     u32 offset     posicion en el fichero de: pixeles | tramos | mascara de sombra (cada parte alineada a 4)
     u16 pix_hw     halfwords de pixeles (pitch par), u16 runs_hw halfwords de tramos
-    u16 mask_bytes bytes de la mascara de sombra (nibbles apretados, filas contiguas)
-    u16 pad
+    u16 mask_bytes bytes de la mascara de sombra (1 bit por pixel, flujo continuo de filas, LSB primero, relleno a byte)
+    u16 flags      bit 0: los pixeles van comprimidos LZ77 (formato BIOS, tools/lz10.py); la mascara y los tramos van crudos
+    u32 lz_bytes   con el bit 0: bytes que ocupan los pixeles comprimidos en el bin (si no, 0; pix_hw sigue siendo el tamano descomprimido)
 Clips: 0 idle, 1 walk, 2 toque, 3 tanido, 4 death (el orden de CAMP_CLIP_* en include/campanero_sprite.h).
+
+Compresion por clip (desactivada por defecto, para no engordar la ROM): `--lz campanero_tanido,campanero_death` comprime solo los
+pixeles de esos clips (`--lz all` = todos); el registro de cada fotograma dice si va comprimido. El bin comprimido solo
+sirve con CAMP_LZ_BODY=1 en la compilacion (campanero_sprite.c): la cabecera de dimensiones lo declara y la compilacion
+falla si no coinciden. `--dry` calcula tamanos sin escribir nada.
 """
+import argparse
 import json
 import re
 import struct
+import sys
 from pathlib import Path
 
 from PIL import Image
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import lz10  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[1]
 SPR = ROOT / "assets/sprites/characters"
@@ -97,7 +108,7 @@ def parse_header(path):
 
 
 def shadow_frame(rows, masks, i, src=2 * W, shift=0):
-    """Mascara de la sombra del fotograma i recortada al lienzo 112x112 centrado y luego a su bounding box (nibbles apretados)."""
+    """Mascara de la sombra del fotograma i recortada al lienzo 112x112 centrado y luego a su bounding box (1 bpp, LSB primero)."""
     off = (src - SHW) // 2
     x, y, w, h = rows[i]
     frame_bytes = src * src // 2
@@ -112,20 +123,23 @@ def shadow_frame(rows, masks, i, src=2 * W, shift=0):
         for xx in range(x0, x1):
             p = yy * src + xx
             bb = data[p >> 1]
-            nibbles.append((bb >> 4) if (p & 1) else (bb & 0x0F))
+            nib = (bb >> 4) if (p & 1) else (bb & 0x0F)
+            assert nib in (0, 15), "mascara de sombra no binaria"
+            nibbles.append(1 if nib else 0)
     packed = bytearray()
-    for k in range(0, len(nibbles), 2):
-        lo = nibbles[k]
-        hi = nibbles[k + 1] if k + 1 < len(nibbles) else 0
-        packed.append(lo | (hi << 4))
+    for k in range(0, len(nibbles), 8):
+        v = 0
+        for j, bit in enumerate(nibbles[k:k + 8]):
+            v |= bit << j
+        packed.append(v)
     nx, ny, w, h = x0 - off, y0 - off + shift, x1 - x0, y1 - y0
     return (nx, ny, w, h), bytes(packed)
 
 
-def main():
+def main(lz_clips=(), dry=False):
     recs, blobs = [], []
     anchors0 = None
-    mx = dict(pix=0, runs=0, mask=0)
+    mx = dict(pix=0, runs=0, mask=0, lz=0)
     for c, name in enumerate(CLIPS):
         im = Image.open(SPR / name / "spritesheet.png").convert("RGBA")
         anchors, rows, masks = parse_header(SPR / name / "nds_shadow_anchor.h")
@@ -138,7 +152,15 @@ def main():
             for f in range(8):
                 b, pix, runs = encode(load_cell(im, f, d, shifts[d]))
                 sb, mask = shadow_frame(rows, masks, d * 8 + f, shift=shifts[d])
-                recs.append((b, sb, pix, runs, mask))
+                packed = None
+                if name in lz_clips and pix:
+                    raw = struct.pack("<%dH" % len(pix), *pix)
+                    packed = lz10.compress(raw)
+                    if len(packed) >= len(raw):
+                        packed = None        # no compensa: crudo
+                    else:
+                        mx["lz"] = max(mx["lz"], len(packed))
+                recs.append((b, sb, pix, runs, mask, packed))
                 mx["pix"] = max(mx["pix"], len(pix) * 2)
                 mx["runs"] = max(mx["runs"], len(runs) * 2)
                 mx["mask"] = max(mx["mask"], len(mask))
@@ -151,15 +173,23 @@ def main():
         while len(out) & 3:
             out.append(0)
 
-    for i, (b, sb, pix, runs, mask) in enumerate(recs):
+    for i, (b, sb, pix, runs, mask, packed) in enumerate(recs):
         pad4()
         off = len(out)
-        out += struct.pack("<%dH" % len(pix), *pix) if pix else b""
+        if packed:
+            out += packed
+        elif pix:
+            out += struct.pack("<%dH" % len(pix), *pix)
         pad4()
         out += struct.pack("<%dH" % len(runs), *runs)
         pad4()
         out += mask
-        struct.pack_into("<4B4BIHHHH", out, 8 + i * REC, *b, *sb, off, len(pix), len(runs), len(mask), 0)
+        struct.pack_into("<4B4BIHHHHI", out, 8 + i * REC, *b, *sb, off, len(pix), len(runs), len(mask),
+                         1 if packed else 0, len(packed) if packed else 0)
+    any_lz = any(r[5] for r in recs)
+    if dry:
+        print("DRY: bin %d B (lz: %s), mascara max %d" % (len(out), ",".join(sorted(lz_clips)) or "ninguno", mx["mask"]))
+        return len(out)
     dest = ROOT / "nitrofiles/campanero"
     dest.mkdir(parents=True, exist_ok=True)
     (dest / "campanero.bin").write_bytes(bytes(out))
@@ -170,6 +200,8 @@ def main():
            "#define CAMP_PIX_MAX_BYTES %d\n" % ((mx["pix"] + 3) & ~3),
            "#define CAMP_RUNS_MAX_BYTES %d\n" % ((mx["runs"] + 3) & ~3),
            "#define CAMP_MASK_MAX_BYTES %d\n" % ((mx["mask"] + 3) & ~3),
+           "#define CAMP_LZ_MAX_BYTES %d\n" % ((mx["lz"] + 3) & ~3),
+           "#define CAMP_BIN_HAS_LZ %d\n" % (1 if any_lz else 0),
            "#define CAMP_FILE_BYTES %d\n" % len(out),
            "#endif\n"]
     (ROOT / "include/campanero_sprite_dims.h").write_text("".join(hdr), encoding="utf-8", newline="\n")
@@ -177,4 +209,11 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--lz", default="", help="clips cuyos pixeles se comprimen (coma; 'all' = todos); solo para CAMP_LZ_BODY=1")
+    ap.add_argument("--dry", action="store_true", help="solo calcula el tamano, no escribe")
+    a = ap.parse_args()
+    names = CLIPS if a.lz == "all" else [c for c in a.lz.split(",") if c]
+    for c in names:
+        assert c in CLIPS, "clip desconocido: %s (validos: %s)" % (c, ", ".join(CLIPS))
+    main(set(names), a.dry)

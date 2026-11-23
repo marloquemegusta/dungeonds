@@ -13,7 +13,7 @@ Formato (little endian), legible por fotogramas desde NitroFS (camp_hero.c):
                   u32 off (desde el inicio del fichero), u16 pix_bytes, u16 runs_bytes, u16 mask_bytes, u16 pad }
     a partir de 'off', por fotograma y contiguos: pixeles BGR555 (pitch par, filas recortadas, bit 15 = opaco),
     runs (mismo formato que blit_stride: (bh+1) offsets de fila en halfwords + x | len << 8), mascara de sombra
-    (nibbles de 4 bits, 15 = sombra, recortada a sbounds, fila a fila sin relleno).
+    (1 bit por pixel, 1 = sombra, LSB primero, recortada a sbounds, filas contiguas sin relleno).
 La conversion de color y los runs son los de tools/generate_player_sprites_c.py (modo c2: a >= 77, redondeo).
 
 Uso:  python tools/camp/bake_camp_hero.py [--azimuths 0,1,..] [--sheet ruta.png] [--jobs N] [--keep]
@@ -111,16 +111,19 @@ def convert_frame(cell):
 
 
 def convert_mask(shadow_atlas, d, f, sb):
-    """Mascara de sombra recortada a sb = (x, y, w, h): nibbles (15 = sombra), fila a fila."""
+    """Mascara de sombra recortada a sb = (x, y, w, h): 1 bpp (1 = sombra), flujo continuo de filas, LSB primero."""
     x0, y0, bw, bh = sb
     px = shadow_atlas.load()
-    nib = []
+    bits = []
     for y in range(y0, y0 + bh):
         for x in range(x0, x0 + bw):
-            nib.append(15 if px[f * SHADOW + x, d * SHADOW + y][3] > 0 else 0)
+            bits.append(1 if px[f * SHADOW + x, d * SHADOW + y][3] > 0 else 0)
     out = bytearray()
-    for i in range(0, len(nib), 2):
-        out.append(nib[i] | ((nib[i + 1] if i + 1 < len(nib) else 0) << 4))
+    for i in range(0, len(bits), 8):
+        v = 0
+        for k, bit in enumerate(bits[i:i + 8]):
+            v |= bit << k
+        out.append(v)
     return bytes(out)
 
 

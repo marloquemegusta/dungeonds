@@ -9,10 +9,13 @@ Los paquetes del lab de Exvoto y Cireneo nunca se versionaron: sus bins y sus ta
 re-empaqueta aqui, desde su paquete del lab (`OJO_LAB_OUT`, por defecto walkthroughs/remate-ojo/assets/lab_out).
 
 Uso: python tools/generate_remate_sprites.py
+     python tools/generate_remate_sprites.py --migrate-masks   (convierte los bins 'RMAT' existentes, sombras de 4 bpp, al
+     formato 'RMT1' de 1 bpp sin necesitar el lab; sirve tambien para los tipos que este script no regenera)
 """
 import json
 import math
 import os
+import re
 import struct
 import sys
 from PIL import Image
@@ -69,7 +72,8 @@ KINDS = [
 
 N_DIRS = 8
 SH_CANVAS = 80
-MAGIC = 0x54414D52  # 'RMAT'
+MAGIC = 0x31544D52  # 'RMT1': mascaras de sombra a 1 bpp (el 'RMAT' = 0x54414D52 anterior las llevaba en nibbles de 4 bits)
+MAGIC_4BPP = 0x54414D52
 DIR_NAMES = ['0_S', '1_SW', '2_W', '3_NW', '4_N', '5_NE', '6_E', '7_SE']
 MAX_FRAMES = max(k['frames'] for k in KINDS)
 
@@ -188,14 +192,16 @@ def encode_shadow(sh, scx, scy, masks, canvas=SH_CANVAS, max_dim=64):
         bh = max_dim
 
     pset = set((px, py) for (px, py) in valid_pts if min_x <= px <= max_x and min_y <= py <= max_y)
-    nib = []
+    bits = []
     for y in range(min_y, max_y + 1):
         for x in range(min_x, max_x + 1):
-            nib.append(15 if (x, y) in pset else 0)
-    for i in range(0, len(nib), 2):
-        lo = nib[i]
-        hi = nib[i + 1] if i + 1 < len(nib) else 0
-        masks.append(lo | (hi << 4))
+            bits.append(1 if (x, y) in pset else 0)
+    # 1 bpp, flujo continuo de filas, LSB primero, relleno a byte por fotograma
+    for i in range(0, len(bits), 8):
+        v = 0
+        for k, bit in enumerate(bits[i:i + 8]):
+            v |= bit << k
+        masks.append(v)
     return (min_x, min_y, bw, bh), off
 
 
@@ -521,7 +527,7 @@ def main():
 // `RemateKindInfo.frames`; Exvoto y Cireneo usan 12. El bin de cada tipo lleva cabecera del tamano de sus frames.
 #define REMATE_MAX_FRAMES    %d
 #define REMATE_SHADOW_CANVAS 80
-#define REMATE_BIN_MAGIC     0x54414D52u
+#define REMATE_BIN_MAGIC     0x31544D52u
 // Streaming desde NitroFS (remate.c): la celda lee el fotograma que toca a estos buffers estaticos en vez de cargar
 // el bin entero. Son el peor fotograma de cualquier tipo/direccion (cuadrados a 1 KiB por el generador).
 #define REMATE_HEADER_BYTES  %d
@@ -564,6 +570,91 @@ extern const int8_t g_remate_hero_off[REMATE_NUM_KINDS][REMATE_NUM_DIRS][REMATE_
     print('OK: %d tipos, max bin=%d B; buffers header=%d pix=%d runs=%d mask=%d' % (len(KINDS), max_bin, hdr_k, pix_k, runs_k, mask_k))
 
 
+SLUG_FRAMES = {'exvoto': 12, 'cireneo': 12, 'ojo': 38, 'monaguillo': 12, 'exvoto_bebe': 12}
+
+
+def migrate_bin_masks(path, frames):
+    """Reescribe un bin 'RMAT' (mascaras de sombra en nibbles) como 'RMT1' (1 bpp, LSB primero, region por fotograma
+    redondeada a byte). Devuelve (regiones, mayor region en bytes) o None si ya estaba migrado."""
+    with open(path, 'rb') as f:
+        b = f.read()
+    magic, pix_bytes, runs_bytes, mask_bytes = struct.unpack_from('<4I', b, 0)
+    if magic == MAGIC:
+        return None
+    assert magic == MAGIC_4BPP, path
+    F = frames
+    off = 16 + (F + 1) * 4 + (F + 1) * 4 * 2          # f_bounds, fp, fr
+    sb = [struct.unpack_from('<4B', b, off + i * 4) for i in range(F)]
+    so_at = off + F * 4
+    so = list(struct.unpack_from('<%dI' % F, b, so_at))
+    hdr_end = so_at + F * 4 + (F + 1) * 4 * 3
+    assert hdr_end == bin_header_bytes(F), (path, hdr_end)
+    mask0 = hdr_end + pix_bytes + runs_bytes
+    old = b[mask0:mask0 + mask_bytes]
+    assert len(old) == mask_bytes
+    npx = {}                                           # offset viejo -> pixeles de la region
+    for i in range(F):
+        npx[so[i]] = max(npx.get(so[i], 0), sb[i][2] * sb[i][3])
+    new_off, new_mask = {}, bytearray()
+    for o in sorted(npx):
+        new_off[o] = len(new_mask)
+        n = npx[o]
+        bits = []
+        for k in range(n):
+            nib = (old[o + (k >> 1)] >> 4) if (k & 1) else (old[o + (k >> 1)] & 0x0F)
+            assert nib in (0, 15), (path, 'mascara no binaria')
+            bits.append(1 if nib else 0)
+        for k in range(0, n, 8):
+            v = 0
+            for j, bit in enumerate(bits[k:k + 8]):
+                v |= bit << j
+            new_mask.append(v)
+    largest = max(((len(new_mask) if o == max(npx) else new_off[nxt]) - new_off[o])
+                  for o, nxt in zip(sorted(npx), sorted(npx)[1:] + [max(npx)])) if npx else 0
+    while len(new_mask) & 3:
+        new_mask.append(0)
+    out = bytearray(b[:hdr_end + pix_bytes + runs_bytes])
+    struct.pack_into('<II', out, 0, MAGIC, pix_bytes)
+    struct.pack_into('<II', out, 8, runs_bytes, len(new_mask))
+    struct.pack_into('<%dI' % F, out, so_at, *[new_off[o] for o in so])
+    out += new_mask
+    with open(path, 'wb') as f:
+        f.write(out)
+    return len(npx), largest
+
+
+def migrate_masks():
+    biggest = 0
+    for slug, F in SLUG_FRAMES.items():
+        for d in range(N_DIRS):
+            p = os.path.join(NITRO_DIR, '%s_d%d.bin' % (slug, d))
+            r = migrate_bin_masks(p, F)
+            if r:
+                biggest = max(biggest, r[1])
+    hdr_k, pix_k, runs_k, mask_k = chunk_limits_all()
+    print('OK: bins migrados; REMATE_MASK_BYTES necesario = %d' % mask_k)
+    hp = os.path.join(WT, 'include', 'remate_sprites.h')
+    with open(hp, encoding='utf-8', newline='') as f:
+        t = f.read()
+    t2 = re.sub(r'(#define REMATE_BIN_MAGIC\s+)0x[0-9A-Fa-f]+u', r'\g<1>0x31544D52u', t)
+    t2 = re.sub(r'(#define REMATE_MASK_BYTES\s+)\d+', lambda m: m.group(1) + str(mask_k), t2)
+    with open(hp, 'w', encoding='utf-8', newline='') as f:
+        f.write(t2)
+
+
+def chunk_limits_all():
+    hdr = pix = runs = mask = 0
+    for slug, F in SLUG_FRAMES.items():
+        for d in range(N_DIRS):
+            a, b, c, h = bin_chunks(os.path.join(NITRO_DIR, '%s_d%d.bin' % (slug, d)), F)
+            pix, runs, mask, hdr = max(pix, a), max(runs, b), max(mask, c), max(hdr, h)
+    round_k = lambda v: (v + 1023) & ~1023
+    return round_k(hdr), round_k(pix), round_k(runs), round_k(mask)
+
+
 if __name__ == '__main__':
-    main()
+    if '--migrate-masks' in sys.argv:
+        migrate_masks()
+    else:
+        main()
 

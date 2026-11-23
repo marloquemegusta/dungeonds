@@ -2,6 +2,7 @@
 #include "bestiary_font.h"
 #include "bestiary_exvoto.h"
 #include "player_sprite.h"
+#include "chars_pool.h"
 #include <nds.h>
 #include <stdlib.h>
 #include <string.h>
@@ -263,6 +264,11 @@ static void draw_sprite_2x(uint16_t *fb, int canvas_w, int canvas_h,
 }
 
 static void draw_fallback_sprite_2x(uint16_t *fb, int entry_idx, uint32_t anim_tick) {
+    // The enemy art lives in the room pool (chars_pool.h): the codex loads what it shows on demand and skips the sprite
+    // when it does not fit (never reads a NULL table).
+    if (entry_idx == 2 && !chars_ready(CHAR_CHARGER)) return;
+    if (entry_idx == 3 && !chars_ready(CHAR_OJO)) return;
+    if (entry_idx == 4 && !chars_ready(CHAR_ABANDERADO)) return;
     if (entry_idx == 0) {
         uint32_t t = anim_tick % 104;
         int frame = (t < 32) ? (7 - (int)(t >> 2)) : ((t < 56) ? 0 : ((t < 88) ? (int)((t - 56) >> 2) : 7));
