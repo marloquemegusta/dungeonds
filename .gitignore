@@ -85,3 +85,7 @@ assets/environment/camp/marco_work/
 assets/environment/camp/muro_work/
 # paquete del lab del remate del Ojo (derivado, se regenera con tools/lab/fast/export_scene_fast.cjs)
 walkthroughs/remate-ojo/assets/lab_out/
+
+# Derivados de los remates (se regeneran con su script)
+scratch_lab/
+walkthroughs/*/assets/lab_out/

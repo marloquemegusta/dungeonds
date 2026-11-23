@@ -29,6 +29,8 @@
 #include "sfx.h"
 #include "lab_tuning.h"
 #include "boxeo.h"
+#include "exvoto_test.h"
+#include "remate_test.h"
 #include "bestiary.h"
 #include "intro.h"
 #include "hud_icons_gfx.h"
@@ -45,6 +47,7 @@
 #include "arpg_inv.h"
 #include "glifo.h"
 #include "campanero_fx.h"
+#include "cfxprof.h"
 #include "radial.h"
 #include "allies.h"
 #include "camp.h"
@@ -539,6 +542,27 @@ static const uint16_t *sprite_wax_glow(const uint16_t *src, const uint16_t *runs
                 b -= (b * level) >> 4;
                 if (r < (int)(c & 31)) r = (int)(c & 31);          // never darker than the source
                 if (g < (int)((c >> 5) & 31)) g = (int)((c >> 5) & 31);
+                s_tint_buf[y * pitch + x] = (uint16_t)(r | (g << 5) | (b << 10) | BIT(15));
+            }
+        }
+    }
+    return s_tint_buf;
+}
+
+// Parroco flash when the Ray breaks on him (DESIGN-ARPG s5): the body goes wax-white (cream, 3/4 of the way to
+// (30, 28, 24)), still keeping a hint of its own shading. Same buffer and limits as sprite_wax_glow.
+static const uint16_t *sprite_wax_flash(const uint16_t *src, const uint16_t *runs, int pitch, int bw, int bh) {
+    if (pitch * bh > 64 * 64) return src;
+    for (int y = 0; y < bh; y++) {
+        const uint16_t *rr = runs + runs[y], *rend = runs + runs[y + 1];
+        for (; rr < rend; rr++) {
+            int a = *rr & 0xFF, n = *rr >> 8;
+            for (int x = a; x < a + n; x++) {
+                uint32_t c = src[y * pitch + x];
+                int r = c & 31, g = (c >> 5) & 31, b = (c >> 10) & 31;
+                r += ((30 - r) * 12) >> 4;
+                g += ((28 - g) * 12) >> 4;
+                b += ((24 - b) * 12) >> 4;
                 s_tint_buf[y * pitch + x] = (uint16_t)(r | (g << 5) | (b << 10) | BIT(15));
             }
         }
@@ -1182,7 +1206,9 @@ static void draw_enemy(uint16_t *buffer, const Enemy *e, int cam_x, int cam_y) {
         ? &g_charger_charge_runs[g_charger_charge_run_offsets[e->dir][is_telegraph ? 0 : cf]]
         : character_runs_ptr(e->char_id, e->dir, e->frame);
 
-    if (e->state == ENEMY_STATE_SUSPENDED) {               // Viatico: drained, it loses colour
+    if (e->type == ENEMY_TYPE_PARROCO && e->gesture > 0 && sprite_pitch(bw) * bh <= 64 * 64) {   // the Ray broke on it: wax-white flash
+        frame = sprite_wax_flash(frame, runs, sprite_pitch(bw), bw, bh);
+    } else if (e->state == ENEMY_STATE_SUSPENDED) {               // Viatico: drained, it loses colour
         frame = sprite_fade(frame, runs, sprite_pitch(bw), bw, bh, e->suspend_timer <= SUSPEND_FRAMES / 2);
     } else if (e->state == ENEMY_STATE_WOBBLE) {           // reeling: warm pulse (period 16 frames, triangle 0..4)
         int ph = (e->state_timer >> 1) & 7;
@@ -1676,18 +1702,32 @@ ITCM_CODE static void render_screen(uint16_t *buffer, DirtySpan *spans, int cam_
     }
 
     // 0) Ground decals of the weapons, Exvoto wax puddles, and boss puddles: under everything.
+    PP_T0(pp_occ);
+    { CP_BEGIN(CP_OCC_WEAP);
     weapons_render_floor(buffer, cam_x, cam_y);
+    CP_END(CP_OCC_WEAP); }
+    { CP_BEGIN(CP_OCC_GLIFO);
     glifo_render_floor(buffer, cam_x, cam_y);       // ARPG: Glifo runes and the aim ring
+    CP_END(CP_OCC_GLIFO); }
+    PP_T0(pp_cfx);
     cfx_render_floor(buffer, cam_x, cam_y);         // Campanero: bell rings on the floor
+    PP_ADD(PP_PCOPY, pp_cfx);                        // pcopy slot (unused) = rings alone
+    { CP_BEGIN(CP_OCC_PUD);
     enemy_puddles_render(buffer, cam_x, cam_y);
+    CP_END(CP_OCC_PUD); }
     {
+        CP_BEGIN(CP_OCC_MELT);
         GroundTarget melt_ground = { buffer, cam_x, cam_y };
         exvoto_melt_render_floor(&melt_ground);       // wax puddles of the dead Exvotos
+        CP_END(CP_OCC_MELT);
     }
 
 #if ENCOUNTERS_PROTO
+    { CP_BEGIN(CP_OCC_ENC);
     enc_draw_ground(buffer, cam_x, cam_y);          // provisional obstacles and barriers, flat on the floor
+    CP_END(CP_OCC_ENC); }
 #endif
+    PP_ADD(PP_OCCL, pp_occ);
 
     // 1) Actor shadows (player & enemies, animated per frame). Hardware: one OBJ-window list per
     // screen, darkened by the engine (hwshadow.c). Software: darken the page pixel by pixel.
@@ -2674,12 +2714,22 @@ static void strip_nav_stage_step(void) {
 #define NAV_BUDGET_PER_FRAME 300   // BFS node expansions per frame (a full field takes ~10 frames; measure with PERF_PROFILE)
 
 static void enemies_update(void) {
+    CP_BEGIN(CP_EN_ALL);
+    CP_BEGIN(CP_EN_NAV);
     nav_set_goal(TO_INT(s_player.x), TO_INT(s_player.y));
     nav_update(NAV_BUDGET_PER_FRAME);
+    CP_END(CP_EN_NAV);
     enemy_ai_set_view(s_cam_x, s_cam_y - SCREEN_H, s_cam_y + SCREEN_H);
+    CP_BEGIN(CP_EN_AI);
     enemy_ai_update(g_enemies, MAX_ENEMIES, s_player.x, s_player.y);
+    CP_END(CP_EN_AI);
+    CP_BEGIN(CP_EN_ENC);
     encounters_update(&g_encounter_mgr, g_enemies, MAX_ENEMIES, s_player.x, s_player.y);
+    CP_END(CP_EN_ENC);
+    CP_BEGIN(CP_EN_MODS);
     mods_update(s_player.x, s_player.y);
+    CP_END(CP_EN_MODS);
+    CP_END(CP_EN_ALL);
 }
 
 #if ENCOUNTERS_PROTO
@@ -2695,21 +2745,37 @@ static void strip_enemies_update(void) {
 #if COBERTURA_PRUEBA
     return;                 // bench test ROM: no enemies at all
 #endif
+    CP_BEGIN(CP_EN_ALL);
+    CP_BEGIN(CP_EN_NAV);
     nav_set_goal(TO_INT(s_player.x), TO_INT(s_player.y));
     nav_update(NAV_BUDGET_PER_FRAME);
+    CP_END(CP_EN_NAV);
 #if ENCOUNTERS_PROTO
     // Encounters and corridors replace the horde, the tide, the gems and the hearts (DESIGN.md 6.13.6).
     enemy_ai_set_view(s_cam_x, s_cam_y - SCREEN_H, s_cam_y + SCREEN_H);
+    CP_BEGIN(CP_EN_AI);
     enemy_ai_update(g_enemies, MAX_ENEMIES, s_player.x, s_player.y);
+    CP_END(CP_EN_AI);
+    CP_BEGIN(CP_EN_ENC);
     // Resurreccion (allies.c) desenganchada: Levantar queda fuera de la protodemo (DESIGN-ARPG.md §5).
     enc_update(g_enemies, MAX_ENEMIES, TO_INT(s_player.x), TO_INT(s_player.y));
+    CP_END(CP_EN_ENC);
 #if ARPG_BOXEO
     boxeo_update(g_enemies, MAX_ENEMIES, TO_INT(s_player.x), TO_INT(s_player.y));
 #endif
+#if ARPG_EXVOTO_TEST
+    exvoto_test_update(g_enemies, MAX_ENEMIES, TO_INT(s_player.x), TO_INT(s_player.y));
+#endif
+#if ARPG_REMATE_TEST
+    remate_test_update(g_enemies, MAX_ENEMIES, TO_INT(s_player.x), TO_INT(s_player.y));
+#endif
+    CP_BEGIN(CP_EN_MODS);
     pickups_update(s_player.x, s_player.y, &g_player_state);     // ARPG: remate orbs (health, mana)
     arpg_tips_tick();
     dmg_numbers_set_player_pos(s_player.x, s_player.y);
     dmg_numbers_update();
+    CP_END(CP_EN_MODS);
+    CP_END(CP_EN_ALL);
     return;
 #endif
 #if !CATHEDRAL_PLAYGROUND || CATHEDRAL_AI == 2
@@ -3333,6 +3399,12 @@ static void arena_restart(void) {
     punch_reset();
 #if ARPG_BOXEO
     boxeo_reset();
+#endif
+#if ARPG_EXVOTO_TEST
+    exvoto_test_reset();
+#endif
+#if ARPG_REMATE_TEST
+    remate_test_reset();
 #endif
     radial_close();
     s_pending_head = s_pending_count = 0;

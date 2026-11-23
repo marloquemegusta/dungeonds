@@ -810,6 +810,17 @@ static void room_art_prepare_current(void) {
                 mask |= 1u << g_char_group[enemy_type_char_id(bd->escort[ph][i].type)];
     }
     if (arpg_inv_has_mechanic(ARPG_MECH_LEVANTAR)) mask |= 1u << CG_EXVOTO;
+#if ARPG_EXVOTO_TEST || ARPG_REMATE_TEST
+    // Test variants: the rooms are empty and the test code spawns the whole Exvoto family around the hero.
+    mask |= (1u << CG_EXVOTO) | (1u << CG_MONAGUILLO) | (1u << CG_PARROCO) | (1u << CG_SMONJA);
+#endif
+    // Implied art: the Párroco prays with the Exvoto poses; under a Súper Monja's aura the Exvotos and Monaguillos of the
+    // room turn into spiders (their spider clips are only loaded in her rooms).
+    if (mask & (1u << CG_PARROCO)) mask |= 1u << CG_EXVOTO;
+    if (mask & (1u << CG_SMONJA)) {
+        if (mask & (1u << CG_EXVOTO)) mask |= 1u << CG_ARANA_EXVOTO;
+        if (mask & (1u << CG_MONAGUILLO)) mask |= 1u << CG_ARANA_MONA;
+    }
     room_art_prepare(mask, campanero);
 }
 
@@ -1047,8 +1058,8 @@ void enc_update(Enemy *enemies, int max_enemies, int px, int py) {
     }
 #endif
     if (g_relic_drop_debug) {   // buzon de escenarios: 5 reliquias/tomos en fila sobre el heroe
-        static const uint8_t kind[5] = {ARPG_ITEM_RELIC, ARPG_ITEM_RELIC, ARPG_ITEM_RELIC, ARPG_ITEM_TOME, ARPG_ITEM_TOME};
-        static const uint8_t sch[5] = {ARPG_SCHOOL_PECHO, ARPG_SCHOOL_RAYO, ARPG_SCHOOL_EJECUCION, ARPG_SCHOOL_RAYO, ARPG_SCHOOL_GLIFO};
+        static const uint8_t kind[5] = {ARPG_ITEM_RELIC, ARPG_ITEM_RELIC, ARPG_ITEM_RELIC, ARPG_ITEM_RELIC, ARPG_ITEM_TOME};
+        static const uint8_t sch[5] = {ARPG_SCHOOL_PECHO, ARPG_SCHOOL_RAYO, ARPG_SCHOOL_EJECUCION, ARPG_SCHOOL_GLIFO, ARPG_SCHOOL_GLIFO};
         uint32_t rng = 7u;
         for (int i = 0; i < 5; i++) {
             ArpgInvItem it;
@@ -1117,7 +1128,7 @@ void enc_update(Enemy *enemies, int max_enemies, int px, int py) {
     // stays unspawned and retries on a later frame.
     for (int k = lo; k < hi; k++) {
         EncRuntime *rt = &s_rt[k];
-#if ARPG_BOXEO
+#if ARPG_BOXEO || ARPG_EXVOTO_TEST || ARPG_REMATE_TEST
         continue;               // boxeo: no room ever populates; the only enemy is the dummy of boxeo.c
 #endif
         if (rt->spawned) continue;

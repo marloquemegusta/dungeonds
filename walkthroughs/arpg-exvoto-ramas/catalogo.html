@@ -1,0 +1,161 @@
+<title>Catálogo de Exvotos</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Source+Sans+3:wght@400;600;700&display=swap">
+<style>
+/* Layout: una sección por enemigo; cada animación es una rejilla de 8 direcciones (4 columnas en el móvil, 8 en ancho) */
+:root{--bg:#f1ede5;--fg:#2a2420;--muted:#6d625a;--line:#d9cfc0;--tile:#3a3734;--wax:#8f6c32;
+ --display:"Cormorant Garamond",Georgia,serif;--body:"Source Sans 3",system-ui,sans-serif}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#1b1715;--fg:#ece4d8;--muted:#a8998b;--line:#3a332e;--tile:#3a3734;--wax:#d4b37a;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#1b1715;--fg:#ece4d8;--muted:#a8998b;--line:#3a332e;--tile:#3a3734;--wax:#d4b37a;color-scheme:dark}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:16px;line-height:1.5;
+ padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:24px 48px}
+main{max-width:1100px;margin:0 auto;display:flex;flex-direction:column;gap:36px}
+h1,h2{font-family:var(--display);margin:0;line-height:1.15;text-wrap:balance}
+h1{font-size:2.1rem} h2{font-size:1.7rem}
+h3{font-size:1rem;margin:0}
+p{margin:0}
+.lead,.note{color:var(--muted)}
+.eyebrow{font-size:.75rem;letter-spacing:.08em;text-transform:uppercase;color:var(--wax);font-weight:700}
+nav{display:flex;flex-wrap:wrap;gap:8px}
+nav a{color:var(--fg);border:1px solid var(--line);border-radius:999px;padding:4px 12px;text-decoration:none;font-weight:600;font-size:.9rem}
+section{display:flex;flex-direction:column;gap:16px;border-top:1px solid var(--line);padding-top:20px}
+.clip{display:flex;flex-direction:column;gap:8px}
+.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+@media (min-width:760px){.grid{grid-template-columns:repeat(8,minmax(0,1fr))}}
+figure{margin:0;background:var(--tile);border-radius:4px;display:flex;flex-direction:column;align-items:center;padding:4px 2px 6px;min-width:0}
+figure img{width:100%;height:auto;image-rendering:pixelated;display:block}
+figcaption{color:#d9d1c4;font-size:.72rem;letter-spacing:.04em}
+</style>
+<main>
+<header style="display:flex;flex-direction:column;gap:10px">
+ <span class="eyebrow">ARPG · familia Exvoto</span>
+ <h1>Catálogo de Exvotos</h1>
+ <p class="lead">Todas las animaciones de los cinco Exvotos, en las 8 direcciones, sacadas de las mismas hojas que lee la ROM. Ampliadas 4 veces sin suavizar y al ritmo real del juego. Los tamaños se pueden comparar entre sí.</p>
+ <nav>
+<a href="#bebe">Bebé</a>
+<a href="#monaguillo">Monaguillo</a>
+<a href="#monja">Monja</a>
+<a href="#parroco">Párroco</a>
+<a href="#super-monja">Súper Monja</a>
+</nav></header>
+<section id="bebe"><span class="eyebrow">Tier 1 · común a las dos familias</span><h2>Bebé</h2><p class="note">En la ROM.</p>
+<div class="clip"><h3>Andar</h3><div class="grid">
+<figure><img src="catalogo/exvoto_bebe_S.gif" alt="Bebé, andar, mirando al sur" loading="lazy"><figcaption>Sur</figcaption></figure>
+<figure><img src="catalogo/exvoto_bebe_SW.gif" alt="Bebé, andar, mirando al suroeste" loading="lazy"><figcaption>Suroeste</figcaption></figure>
+<figure><img src="catalogo/exvoto_bebe_W.gif" alt="Bebé, andar, mirando al oeste" loading="lazy"><figcaption>Oeste</figcaption></figure>
+<figure><img src="catalogo/exvoto_bebe_NW.gif" alt="Bebé, andar, mirando al noroeste" loading="lazy"><figcaption>Noroeste</figcaption></figure>
+<figure><img src="catalogo/exvoto_bebe_N.gif" alt="Bebé, andar, mirando al norte" loading="lazy"><figcaption>Norte</figcaption></figure>
+<figure><img src="catalogo/exvoto_bebe_NE.gif" alt="Bebé, andar, mirando al noreste" loading="lazy"><figcaption>Noreste</figcaption></figure>
+<figure><img src="catalogo/exvoto_bebe_E.gif" alt="Bebé, andar, mirando al este" loading="lazy"><figcaption>Este</figcaption></figure>
+<figure><img src="catalogo/exvoto_bebe_SE.gif" alt="Bebé, andar, mirando al sureste" loading="lazy"><figcaption>Sureste</figcaption></figure>
+</div></div>
+</section>
+<section id="monaguillo"><span class="eyebrow">Tier 2 · Exvoto chico</span><h2>Monaguillo</h2><p class="note">En la ROM. Hoy solo tiene el andar rezando de la invocación del Abanderado.</p>
+<div class="clip"><h3>Andar rezando</h3><div class="grid">
+<figure><img src="catalogo/monaguillo_S.gif" alt="Monaguillo, andar rezando, mirando al sur" loading="lazy"><figcaption>Sur</figcaption></figure>
+<figure><img src="catalogo/monaguillo_SW.gif" alt="Monaguillo, andar rezando, mirando al suroeste" loading="lazy"><figcaption>Suroeste</figcaption></figure>
+<figure><img src="catalogo/monaguillo_W.gif" alt="Monaguillo, andar rezando, mirando al oeste" loading="lazy"><figcaption>Oeste</figcaption></figure>
+<figure><img src="catalogo/monaguillo_NW.gif" alt="Monaguillo, andar rezando, mirando al noroeste" loading="lazy"><figcaption>Noroeste</figcaption></figure>
+<figure><img src="catalogo/monaguillo_N.gif" alt="Monaguillo, andar rezando, mirando al norte" loading="lazy"><figcaption>Norte</figcaption></figure>
+<figure><img src="catalogo/monaguillo_NE.gif" alt="Monaguillo, andar rezando, mirando al noreste" loading="lazy"><figcaption>Noreste</figcaption></figure>
+<figure><img src="catalogo/monaguillo_E.gif" alt="Monaguillo, andar rezando, mirando al este" loading="lazy"><figcaption>Este</figcaption></figure>
+<figure><img src="catalogo/monaguillo_SE.gif" alt="Monaguillo, andar rezando, mirando al sureste" loading="lazy"><figcaption>Sureste</figcaption></figure>
+</div></div>
+</section>
+<section id="monja"><span class="eyebrow">Tier 2 · Exvoto chica (la monja de cera)</span><h2>Monja</h2><p class="note">En la ROM.</p>
+<div class="clip"><h3>Andar</h3><div class="grid">
+<figure><img src="catalogo/exvoto_S.gif" alt="Monja, andar, mirando al sur" loading="lazy"><figcaption>Sur</figcaption></figure>
+<figure><img src="catalogo/exvoto_SW.gif" alt="Monja, andar, mirando al suroeste" loading="lazy"><figcaption>Suroeste</figcaption></figure>
+<figure><img src="catalogo/exvoto_W.gif" alt="Monja, andar, mirando al oeste" loading="lazy"><figcaption>Oeste</figcaption></figure>
+<figure><img src="catalogo/exvoto_NW.gif" alt="Monja, andar, mirando al noroeste" loading="lazy"><figcaption>Noroeste</figcaption></figure>
+<figure><img src="catalogo/exvoto_N.gif" alt="Monja, andar, mirando al norte" loading="lazy"><figcaption>Norte</figcaption></figure>
+<figure><img src="catalogo/exvoto_NE.gif" alt="Monja, andar, mirando al noreste" loading="lazy"><figcaption>Noreste</figcaption></figure>
+<figure><img src="catalogo/exvoto_E.gif" alt="Monja, andar, mirando al este" loading="lazy"><figcaption>Este</figcaption></figure>
+<figure><img src="catalogo/exvoto_SE.gif" alt="Monja, andar, mirando al sureste" loading="lazy"><figcaption>Sureste</figcaption></figure>
+</div></div>
+<div class="clip"><h3>Rezar de pie</h3><div class="grid">
+<figure><img src="catalogo/exvoto_pray_stand_S.gif" alt="Monja, rezar de pie, mirando al sur" loading="lazy"><figcaption>Sur</figcaption></figure>
+<figure><img src="catalogo/exvoto_pray_stand_SW.gif" alt="Monja, rezar de pie, mirando al suroeste" loading="lazy"><figcaption>Suroeste</figcaption></figure>
+<figure><img src="catalogo/exvoto_pray_stand_W.gif" alt="Monja, rezar de pie, mirando al oeste" loading="lazy"><figcaption>Oeste</figcaption></figure>
+<figure><img src="catalogo/exvoto_pray_stand_NW.gif" alt="Monja, rezar de pie, mirando al noroeste" loading="lazy"><figcaption>Noroeste</figcaption></figure>
+<figure><img src="catalogo/exvoto_pray_stand_N.gif" alt="Monja, rezar de pie, mirando al norte" loading="lazy"><figcaption>Norte</figcaption></figure>
+<figure><img src="catalogo/exvoto_pray_stand_NE.gif" alt="Monja, rezar de pie, mirando al noreste" loading="lazy"><figcaption>Noreste</figcaption></figure>
+<figure><img src="catalogo/exvoto_pray_stand_E.gif" alt="Monja, rezar de pie, mirando al este" loading="lazy"><figcaption>Este</figcaption></figure>
+<figure><img src="catalogo/exvoto_pray_stand_SE.gif" alt="Monja, rezar de pie, mirando al sureste" loading="lazy"><figcaption>Sureste</figcaption></figure>
+</div></div>
+<div class="clip"><h3>Rezar de rodillas</h3><div class="grid">
+<figure><img src="catalogo/exvoto_pray_kneel_S.gif" alt="Monja, rezar de rodillas, mirando al sur" loading="lazy"><figcaption>Sur</figcaption></figure>
+<figure><img src="catalogo/exvoto_pray_kneel_SW.gif" alt="Monja, rezar de rodillas, mirando al suroeste" loading="lazy"><figcaption>Suroeste</figcaption></figure>
+<figure><img src="catalogo/exvoto_pray_kneel_W.gif" alt="Monja, rezar de rodillas, mirando al oeste" loading="lazy"><figcaption>Oeste</figcaption></figure>
+<figure><img src="catalogo/exvoto_pray_kneel_NW.gif" alt="Monja, rezar de rodillas, mirando al noroeste" loading="lazy"><figcaption>Noroeste</figcaption></figure>
+<figure><img src="catalogo/exvoto_pray_kneel_N.gif" alt="Monja, rezar de rodillas, mirando al norte" loading="lazy"><figcaption>Norte</figcaption></figure>
+<figure><img src="catalogo/exvoto_pray_kneel_NE.gif" alt="Monja, rezar de rodillas, mirando al noreste" loading="lazy"><figcaption>Noreste</figcaption></figure>
+<figure><img src="catalogo/exvoto_pray_kneel_E.gif" alt="Monja, rezar de rodillas, mirando al este" loading="lazy"><figcaption>Este</figcaption></figure>
+<figure><img src="catalogo/exvoto_pray_kneel_SE.gif" alt="Monja, rezar de rodillas, mirando al sureste" loading="lazy"><figcaption>Sureste</figcaption></figure>
+</div></div>
+<div class="clip"><h3>Levantarse</h3><div class="grid">
+<figure><img src="catalogo/exvoto_stand_up_S.gif" alt="Monja, levantarse, mirando al sur" loading="lazy"><figcaption>Sur</figcaption></figure>
+<figure><img src="catalogo/exvoto_stand_up_SW.gif" alt="Monja, levantarse, mirando al suroeste" loading="lazy"><figcaption>Suroeste</figcaption></figure>
+<figure><img src="catalogo/exvoto_stand_up_W.gif" alt="Monja, levantarse, mirando al oeste" loading="lazy"><figcaption>Oeste</figcaption></figure>
+<figure><img src="catalogo/exvoto_stand_up_NW.gif" alt="Monja, levantarse, mirando al noroeste" loading="lazy"><figcaption>Noroeste</figcaption></figure>
+<figure><img src="catalogo/exvoto_stand_up_N.gif" alt="Monja, levantarse, mirando al norte" loading="lazy"><figcaption>Norte</figcaption></figure>
+<figure><img src="catalogo/exvoto_stand_up_NE.gif" alt="Monja, levantarse, mirando al noreste" loading="lazy"><figcaption>Noreste</figcaption></figure>
+<figure><img src="catalogo/exvoto_stand_up_E.gif" alt="Monja, levantarse, mirando al este" loading="lazy"><figcaption>Este</figcaption></figure>
+<figure><img src="catalogo/exvoto_stand_up_SE.gif" alt="Monja, levantarse, mirando al sureste" loading="lazy"><figcaption>Sureste</figcaption></figure>
+</div></div>
+</section>
+<section id="parroco"><span class="eyebrow">Tier 3 · Exvoto chico</span><h2>Párroco</h2><p class="note">En la ROM, cargado desde la tarjeta. Rezar y levantarse aún usan el muñeco de la monja de cera.</p>
+<div class="clip"><h3>Correr</h3><div class="grid">
+<figure><img src="catalogo/exvoto_parroco_run_S.gif" alt="Párroco, correr, mirando al sur" loading="lazy"><figcaption>Sur</figcaption></figure>
+<figure><img src="catalogo/exvoto_parroco_run_SW.gif" alt="Párroco, correr, mirando al suroeste" loading="lazy"><figcaption>Suroeste</figcaption></figure>
+<figure><img src="catalogo/exvoto_parroco_run_W.gif" alt="Párroco, correr, mirando al oeste" loading="lazy"><figcaption>Oeste</figcaption></figure>
+<figure><img src="catalogo/exvoto_parroco_run_NW.gif" alt="Párroco, correr, mirando al noroeste" loading="lazy"><figcaption>Noroeste</figcaption></figure>
+<figure><img src="catalogo/exvoto_parroco_run_N.gif" alt="Párroco, correr, mirando al norte" loading="lazy"><figcaption>Norte</figcaption></figure>
+<figure><img src="catalogo/exvoto_parroco_run_NE.gif" alt="Párroco, correr, mirando al noreste" loading="lazy"><figcaption>Noreste</figcaption></figure>
+<figure><img src="catalogo/exvoto_parroco_run_E.gif" alt="Párroco, correr, mirando al este" loading="lazy"><figcaption>Este</figcaption></figure>
+<figure><img src="catalogo/exvoto_parroco_run_SE.gif" alt="Párroco, correr, mirando al sureste" loading="lazy"><figcaption>Sureste</figcaption></figure>
+</div></div>
+</section>
+<section id="super-monja"><span class="eyebrow">Tier 3 · Exvoto chica</span><h2>Súper Monja</h2><p class="note">En la ROM, cargada desde la tarjeta. Alargada un 35 %.</p>
+<div class="clip"><h3>Andar</h3><div class="grid">
+<figure><img src="catalogo/exvoto_super_monja_S.gif" alt="Súper Monja, andar, mirando al sur" loading="lazy"><figcaption>Sur</figcaption></figure>
+<figure><img src="catalogo/exvoto_super_monja_SW.gif" alt="Súper Monja, andar, mirando al suroeste" loading="lazy"><figcaption>Suroeste</figcaption></figure>
+<figure><img src="catalogo/exvoto_super_monja_W.gif" alt="Súper Monja, andar, mirando al oeste" loading="lazy"><figcaption>Oeste</figcaption></figure>
+<figure><img src="catalogo/exvoto_super_monja_NW.gif" alt="Súper Monja, andar, mirando al noroeste" loading="lazy"><figcaption>Noroeste</figcaption></figure>
+<figure><img src="catalogo/exvoto_super_monja_N.gif" alt="Súper Monja, andar, mirando al norte" loading="lazy"><figcaption>Norte</figcaption></figure>
+<figure><img src="catalogo/exvoto_super_monja_NE.gif" alt="Súper Monja, andar, mirando al noreste" loading="lazy"><figcaption>Noreste</figcaption></figure>
+<figure><img src="catalogo/exvoto_super_monja_E.gif" alt="Súper Monja, andar, mirando al este" loading="lazy"><figcaption>Este</figcaption></figure>
+<figure><img src="catalogo/exvoto_super_monja_SE.gif" alt="Súper Monja, andar, mirando al sureste" loading="lazy"><figcaption>Sureste</figcaption></figure>
+</div></div>
+<div class="clip"><h3>Rezar de pie</h3><div class="grid">
+<figure><img src="catalogo/exvoto_super_monja_pray_stand_S.gif" alt="Súper Monja, rezar de pie, mirando al sur" loading="lazy"><figcaption>Sur</figcaption></figure>
+<figure><img src="catalogo/exvoto_super_monja_pray_stand_SW.gif" alt="Súper Monja, rezar de pie, mirando al suroeste" loading="lazy"><figcaption>Suroeste</figcaption></figure>
+<figure><img src="catalogo/exvoto_super_monja_pray_stand_W.gif" alt="Súper Monja, rezar de pie, mirando al oeste" loading="lazy"><figcaption>Oeste</figcaption></figure>
+<figure><img src="catalogo/exvoto_super_monja_pray_stand_NW.gif" alt="Súper Monja, rezar de pie, mirando al noroeste" loading="lazy"><figcaption>Noroeste</figcaption></figure>
+<figure><img src="catalogo/exvoto_super_monja_pray_stand_N.gif" alt="Súper Monja, rezar de pie, mirando al norte" loading="lazy"><figcaption>Norte</figcaption></figure>
+<figure><img src="catalogo/exvoto_super_monja_pray_stand_NE.gif" alt="Súper Monja, rezar de pie, mirando al noreste" loading="lazy"><figcaption>Noreste</figcaption></figure>
+<figure><img src="catalogo/exvoto_super_monja_pray_stand_E.gif" alt="Súper Monja, rezar de pie, mirando al este" loading="lazy"><figcaption>Este</figcaption></figure>
+<figure><img src="catalogo/exvoto_super_monja_pray_stand_SE.gif" alt="Súper Monja, rezar de pie, mirando al sureste" loading="lazy"><figcaption>Sureste</figcaption></figure>
+</div></div>
+<div class="clip"><h3>Rezar de rodillas</h3><div class="grid">
+<figure><img src="catalogo/exvoto_super_monja_pray_kneel_S.gif" alt="Súper Monja, rezar de rodillas, mirando al sur" loading="lazy"><figcaption>Sur</figcaption></figure>
+<figure><img src="catalogo/exvoto_super_monja_pray_kneel_SW.gif" alt="Súper Monja, rezar de rodillas, mirando al suroeste" loading="lazy"><figcaption>Suroeste</figcaption></figure>
+<figure><img src="catalogo/exvoto_super_monja_pray_kneel_W.gif" alt="Súper Monja, rezar de rodillas, mirando al oeste" loading="lazy"><figcaption>Oeste</figcaption></figure>
+<figure><img src="catalogo/exvoto_super_monja_pray_kneel_NW.gif" alt="Súper Monja, rezar de rodillas, mirando al noroeste" loading="lazy"><figcaption>Noroeste</figcaption></figure>
+<figure><img src="catalogo/exvoto_super_monja_pray_kneel_N.gif" alt="Súper Monja, rezar de rodillas, mirando al norte" loading="lazy"><figcaption>Norte</figcaption></figure>
+<figure><img src="catalogo/exvoto_super_monja_pray_kneel_NE.gif" alt="Súper Monja, rezar de rodillas, mirando al noreste" loading="lazy"><figcaption>Noreste</figcaption></figure>
+<figure><img src="catalogo/exvoto_super_monja_pray_kneel_E.gif" alt="Súper Monja, rezar de rodillas, mirando al este" loading="lazy"><figcaption>Este</figcaption></figure>
+<figure><img src="catalogo/exvoto_super_monja_pray_kneel_SE.gif" alt="Súper Monja, rezar de rodillas, mirando al sureste" loading="lazy"><figcaption>Sureste</figcaption></figure>
+</div></div>
+<div class="clip"><h3>Levantarse</h3><div class="grid">
+<figure><img src="catalogo/exvoto_super_monja_stand_up_S.gif" alt="Súper Monja, levantarse, mirando al sur" loading="lazy"><figcaption>Sur</figcaption></figure>
+<figure><img src="catalogo/exvoto_super_monja_stand_up_SW.gif" alt="Súper Monja, levantarse, mirando al suroeste" loading="lazy"><figcaption>Suroeste</figcaption></figure>
+<figure><img src="catalogo/exvoto_super_monja_stand_up_W.gif" alt="Súper Monja, levantarse, mirando al oeste" loading="lazy"><figcaption>Oeste</figcaption></figure>
+<figure><img src="catalogo/exvoto_super_monja_stand_up_NW.gif" alt="Súper Monja, levantarse, mirando al noroeste" loading="lazy"><figcaption>Noroeste</figcaption></figure>
+<figure><img src="catalogo/exvoto_super_monja_stand_up_N.gif" alt="Súper Monja, levantarse, mirando al norte" loading="lazy"><figcaption>Norte</figcaption></figure>
+<figure><img src="catalogo/exvoto_super_monja_stand_up_NE.gif" alt="Súper Monja, levantarse, mirando al noreste" loading="lazy"><figcaption>Noreste</figcaption></figure>
+<figure><img src="catalogo/exvoto_super_monja_stand_up_E.gif" alt="Súper Monja, levantarse, mirando al este" loading="lazy"><figcaption>Este</figcaption></figure>
+<figure><img src="catalogo/exvoto_super_monja_stand_up_SE.gif" alt="Súper Monja, levantarse, mirando al sureste" loading="lazy"><figcaption>Sureste</figcaption></figure>
+</div></div>
+</section>
+<p class="note">Nota: en la ROM actual las cuatro animaciones de la Súper Monja van más lentas de lo que se ve aquí (las cogió con el ritmo del Monaguillo). Aquí se muestran al ritmo del resto de la familia, que es el que tendrán al corregirlo.</p></main>

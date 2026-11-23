@@ -58,8 +58,7 @@ static fixed next_spread_vx(void) {
     return (s_rng & 0x80000000u) ? (fixed)mag : (fixed)(-mag);
 }
 
-void dmg_numbers_spawn(fixed world_x, fixed world_y, int value, DmgNumKind kind) {
-    if (value <= 0) return;
+static void spawn_internal(fixed world_x, fixed world_y, int value, DmgNumKind kind) {
     DmgNum *n = &s_nums[s_next_slot];
     s_next_slot = (s_next_slot + 1) % DMG_NUM_MAX;
 
@@ -79,6 +78,16 @@ void dmg_numbers_spawn(fixed world_x, fixed world_y, int value, DmgNumKind kind)
         n->vy = DMG_ARC_VY0;
         n->life = DMG_LIFE_ARC;
     }
+}
+
+void dmg_numbers_spawn(fixed world_x, fixed world_y, int value, DmgNumKind kind) {
+    if (value <= 0) return;
+    spawn_internal(world_x, world_y, value, kind);
+}
+
+// Shows an explicit "0" (immune target); dmg_numbers_spawn skips non-positive values.
+void dmg_numbers_spawn_zero(fixed world_x, fixed world_y) {
+    spawn_internal(world_x, world_y, 0, DMG_NUM_NORMAL);
 }
 
 void dmg_numbers_spawn_player(int value, DmgNumKind kind) {

@@ -10,6 +10,8 @@ import os
 import struct
 import sys
 import numpy as np
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from lz10 import lz10_compress
 from PIL import Image
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -17,7 +19,7 @@ PROJECT_ROOT = os.path.abspath(os.path.join(SCRIPT_DIR, '..'))
 SPRITES_BASE = os.path.join(PROJECT_ROOT, 'assets', 'sprites', 'bestiary')
 OUTPUT_DIR = os.path.join(PROJECT_ROOT, 'nitrofiles', 'bestiary')
 
-MAGIC = 0x4251
+MAGIC = 0x4252   # LZ10 por direccion (0x4251 = sin comprimir)
 CANVAS_W = 160
 CANVAS_H = 160
 NUM_DIRS = 8
@@ -178,6 +180,8 @@ def build_portrait_binary(char_info):
 
         dir_block = dir_header + frames_bytes + pixels_bytes
         dir_data_blocks.append(dir_block)
+        dir_block = lz10_compress(bytes(dir_block))   # LZ10 de la BIOS; el cargador usa swiDecompressLZSSWram
+        dir_data_blocks[-1] = dir_block
         dir_sizes.append(len(dir_block))
 
     # 5. Pack complete file

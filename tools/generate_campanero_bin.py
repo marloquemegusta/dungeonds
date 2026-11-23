@@ -107,6 +107,32 @@ def parse_header(path):
     return anchors, rows, masks
 
 
+SPECK_MAX = 24   # manchas de sombra de menos pixeles que esto se borran
+
+
+def drop_specks(grid):
+    """Quita las motas sueltas de la sombra: el mesh degenerado de limites de build_campanero.py (invisible en el sprite)
+    si proyecta puntos en el pase de sombra del lab. Se quedan solo las manchas (8-vecinos) de SPECK_MAX pixeles o mas."""
+    seen, keep = set(), {}
+    for start in grid:
+        if start in seen:
+            continue
+        comp, stack = [], [start]
+        seen.add(start)
+        while stack:
+            cx, cy = stack.pop()
+            comp.append((cx, cy))
+            for dx in (-1, 0, 1):
+                for dy in (-1, 0, 1):
+                    q = (cx + dx, cy + dy)
+                    if q in grid and q not in seen:
+                        seen.add(q); stack.append(q)
+        if len(comp) >= SPECK_MAX:
+            for q in comp:
+                keep[q] = grid[q]
+    return keep
+
+
 def shadow_frame(rows, masks, i, src=2 * W, shift=0):
     """Mascara de la sombra del fotograma i recortada al lienzo 112x112 centrado y luego a su bounding box (1 bpp, LSB primero)."""
     off = (src - SHW) // 2
@@ -118,14 +144,21 @@ def shadow_frame(rows, masks, i, src=2 * W, shift=0):
     y0, y1 = max(y, off - shift), min(y + h, off + SHW - shift)
     if x1 <= x0 or y1 <= y0:
         return (0, 0, 0, 0), b""
-    nibbles = []
+    grid = {}
     for yy in range(y0, y1):
         for xx in range(x0, x1):
             p = yy * src + xx
             bb = data[p >> 1]
-            nib = (bb >> 4) if (p & 1) else (bb & 0x0F)
-            assert nib in (0, 15), "mascara de sombra no binaria"
-            nibbles.append(1 if nib else 0)
+            v = (bb >> 4) if (p & 1) else (bb & 0x0F)
+            assert v in (0, 15), "mascara de sombra no binaria"
+            if v:
+                grid[(xx, yy)] = 1
+    grid = drop_specks(grid)
+    if not grid:
+        return (0, 0, 0, 0), b""
+    x0, x1 = min(k[0] for k in grid), max(k[0] for k in grid) + 1
+    y0, y1 = min(k[1] for k in grid), max(k[1] for k in grid) + 1
+    nibbles = [grid.get((xx, yy), 0) for yy in range(y0, y1) for xx in range(x0, x1)]
     packed = bytearray()
     for k in range(0, len(nibbles), 8):
         v = 0

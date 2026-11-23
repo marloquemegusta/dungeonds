@@ -9,7 +9,8 @@
 // only the groups the room can show. Until a group is loaded its pointers are NULL: draw code asks chars_ready() first.
 //
 // Groups (CG_*): Exvoto (walk, praying clips, Bebe: also Parroco and Monja), Ojo (walk, look, sentence), Cargador
-// (walk, charge, telegraph), Abanderado (walk, point), Monaguillo.
+// (walk, charge, telegraph), Abanderado (walk, point), Monaguillo, Parroco (running), Super Monja (4 clips) and Arana
+// (CG_ARANA_EXVOTO / CG_ARANA_MONA: the spider forms of the possessed Exvoto and Monaguillo, only in rooms with a Super Monja).
 
 extern volatile uint32_t g_pool_misses;     // groups that had to be loaded outside the room load (a stutter): 0 is the goal
 extern uint32_t g_chars_loaded;             // bit per CG_* group now in the pool

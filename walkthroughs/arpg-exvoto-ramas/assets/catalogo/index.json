@@ -1,0 +1,200 @@
+{
+ "exvoto_bebe": {
+  "dirs": [
+   "S",
+   "SW",
+   "W",
+   "NW",
+   "N",
+   "NE",
+   "E",
+   "SE"
+  ],
+  "frames": 8,
+  "size": 40,
+  "tpf": 8,
+  "real_ms": 133,
+  "gif_ms": 40,
+  "hold": 3
+ },
+ "monaguillo": {
+  "dirs": [
+   "S",
+   "SW",
+   "W",
+   "NW",
+   "N",
+   "NE",
+   "E",
+   "SE"
+  ],
+  "frames": 8,
+  "size": 40,
+  "tpf": 22,
+  "real_ms": 367,
+  "gif_ms": 50,
+  "hold": 7
+ },
+ "exvoto": {
+  "dirs": [
+   "S",
+   "SW",
+   "W",
+   "NW",
+   "N",
+   "NE",
+   "E",
+   "SE"
+  ],
+  "frames": 8,
+  "size": 40,
+  "tpf": 8,
+  "real_ms": 133,
+  "gif_ms": 40,
+  "hold": 3
+ },
+ "exvoto_pray_stand": {
+  "dirs": [
+   "S",
+   "SW",
+   "W",
+   "NW",
+   "N",
+   "NE",
+   "E",
+   "SE"
+  ],
+  "frames": 8,
+  "size": 40,
+  "tpf": 24,
+  "real_ms": 400,
+  "gif_ms": 60,
+  "hold": 7
+ },
+ "exvoto_pray_kneel": {
+  "dirs": [
+   "S",
+   "SW",
+   "W",
+   "NW",
+   "N",
+   "NE",
+   "E",
+   "SE"
+  ],
+  "frames": 8,
+  "size": 40,
+  "tpf": 14,
+  "real_ms": 233,
+  "gif_ms": 60,
+  "hold": 4
+ },
+ "exvoto_stand_up": {
+  "dirs": [
+   "S",
+   "SW",
+   "W",
+   "NW",
+   "N",
+   "NE",
+   "E",
+   "SE"
+  ],
+  "frames": 8,
+  "size": 40,
+  "tpf": 9,
+  "real_ms": 150,
+  "gif_ms": 50,
+  "hold": 3
+ },
+ "exvoto_parroco_run": {
+  "dirs": [
+   "S",
+   "SW",
+   "W",
+   "NW",
+   "N",
+   "NE",
+   "E",
+   "SE"
+  ],
+  "frames": 8,
+  "size": 48,
+  "tpf": 10,
+  "real_ms": 167,
+  "gif_ms": 60,
+  "hold": 3
+ },
+ "exvoto_super_monja": {
+  "dirs": [
+   "S",
+   "SW",
+   "W",
+   "NW",
+   "N",
+   "NE",
+   "E",
+   "SE"
+  ],
+  "frames": 8,
+  "size": 56,
+  "tpf": 8,
+  "real_ms": 133,
+  "gif_ms": 40,
+  "hold": 3
+ },
+ "exvoto_super_monja_pray_stand": {
+  "dirs": [
+   "S",
+   "SW",
+   "W",
+   "NW",
+   "N",
+   "NE",
+   "E",
+   "SE"
+  ],
+  "frames": 8,
+  "size": 56,
+  "tpf": 24,
+  "real_ms": 400,
+  "gif_ms": 60,
+  "hold": 7
+ },
+ "exvoto_super_monja_pray_kneel": {
+  "dirs": [
+   "S",
+   "SW",
+   "W",
+   "NW",
+   "N",
+   "NE",
+   "E",
+   "SE"
+  ],
+  "frames": 8,
+  "size": 56,
+  "tpf": 14,
+  "real_ms": 233,
+  "gif_ms": 60,
+  "hold": 4
+ },
+ "exvoto_super_monja_stand_up": {
+  "dirs": [
+   "S",
+   "SW",
+   "W",
+   "NW",
+   "N",
+   "NE",
+   "E",
+   "SE"
+  ],
+  "frames": 8,
+  "size": 56,
+  "tpf": 9,
+  "real_ms": 150,
+  "gif_ms": 50,
+  "hold": 3
+ }
+}

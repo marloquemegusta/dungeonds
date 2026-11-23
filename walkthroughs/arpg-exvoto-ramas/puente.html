@@ -1,0 +1,48 @@
+<title>Transición en puente</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Source+Sans+3:wght@400;600;700&display=swap">
+<style>
+/* Layout: una columna para el móvil; GIFs a todo el ancho y una ficha por variante */
+:root{--bg:#f1ede5;--fg:#2a2420;--muted:#6d625a;--card:#fbf8f2;--line:#d9cfc0;--wax:#8f6c32;--rec:#4d6b4a;--recbg:#e6eee2;
+ --display:"Cormorant Garamond",Georgia,serif;--body:"Source Sans 3",system-ui,sans-serif}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#1b1715;--fg:#ece4d8;--muted:#a8998b;--card:#24201d;--line:#3a332e;--wax:#d4b37a;--rec:#9cc095;--recbg:#25301f;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#1b1715;--fg:#ece4d8;--muted:#a8998b;--card:#24201d;--line:#3a332e;--wax:#d4b37a;--rec:#9cc095;--recbg:#25301f;color-scheme:dark}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:16px;line-height:1.55;
+ padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:24px 48px}
+main{max-width:900px;margin:0 auto;display:flex;flex-direction:column;gap:24px}
+h1,h2{font-family:var(--display);margin:0;line-height:1.15;text-wrap:balance}
+h1{font-size:2.1rem} h2{font-size:1.5rem}
+p{margin:0} .lead{color:var(--muted)}
+.eyebrow{font-size:.75rem;letter-spacing:.08em;text-transform:uppercase;color:var(--wax);font-weight:700}
+.shot{display:flex;flex-direction:column;gap:8px}
+.shot img{width:100%;height:auto;image-rendering:pixelated;border-radius:4px;display:block}
+.cards{display:grid;grid-template-columns:1fr;gap:10px}
+@media (min-width:640px){.cards{grid-template-columns:1fr 1fr}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:12px 14px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.card.rec{background:var(--recbg);border-color:var(--rec)}
+.card h3{margin:0;font-size:1.05rem}
+.tag{font-size:.72rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--rec)}
+.ask{background:var(--card);border:2px solid var(--wax);border-radius:6px;padding:16px;display:flex;flex-direction:column;gap:6px}
+</style>
+<main>
+<header style="display:flex;flex-direction:column;gap:8px">
+ <span class="eyebrow">ARPG · posesión · transición</span>
+ <h1>Transición en puente</h1>
+ <p class="lead">Ahora se echan hacia atrás de verdad: suben los brazos, arquean la espalda, apoyan las manos detrás y quedan en puente. En cada GIF, a la izquierda la transición actual (la que rueda) y a la derecha la nueva. Ampliados 4 veces, a su tamaño de juego. Aún fuera de la ROM.</p>
+</header>
+<div class="cards">
+ <div class="card rec"><span class="tag">recomendada</span><h3>A · Media vuelta y puente</h3><p>Primero se gira en el sitio y luego se echa hacia atrás. Acaba con la cabeza hacia donde miraba, así que sale corriendo hacia delante, sin saltos raros.</p></div>
+ <div class="card"><h3>B · Puente directo</h3><p>Se echa hacia atrás sin girar. Es más limpio, pero el juego tiene que darle la vuelta de golpe al empezar, o bien sale corriendo hacia su espalda.</p></div>
+</div>
+<div class="shot"><h2>Monja de cera · A, de frente</h2><img src="puente/exvoto_A_S.gif" alt="Monja, variante A, de frente"></div>
+<div class="shot"><h2>Monja de cera · A, en diagonal</h2><img src="puente/exvoto_A_SE.gif" alt="Monja, variante A, en diagonal"></div>
+<div class="shot"><h2>Monja de cera · B, de frente</h2><img src="puente/exvoto_B_S.gif" alt="Monja, variante B, de frente"></div>
+<div class="shot"><h2>Monja de cera · B, en diagonal</h2><img src="puente/exvoto_B_SE.gif" alt="Monja, variante B, en diagonal"></div>
+<div class="shot"><h2>Monaguillo · A, de frente</h2><img src="puente/monaguillo_A_S.gif" alt="Monaguillo, variante A, de frente"></div>
+<div class="shot"><h2>Monaguillo · A, en diagonal</h2><img src="puente/monaguillo_A_SE.gif" alt="Monaguillo, variante A, en diagonal"></div>
+<div class="shot"><h2>Monaguillo · B, de frente</h2><img src="puente/monaguillo_B_S.gif" alt="Monaguillo, variante B, de frente"></div>
+<div class="shot"><h2>Monaguillo · B, en diagonal</h2><img src="puente/monaguillo_B_SE.gif" alt="Monaguillo, variante B, en diagonal"></div>
+<div class="shot"><h2>El movimiento en grande</h2><p class="lead">Render de Blender de la Monja, variante A, de perfil: los ocho fotogramas.</p><img src="puente/exvoto_A_perfil_8f.png" alt="Ocho fotogramas de perfil del puente"></div>
+<p class="lead">Pegas que veo: los pies se deslizan un poco hacia atrás mientras se arquea, entre el fotograma 4 y el 5 hay un salto algo brusco, y al final la cabeza, con la toca oscura, apenas se distingue.</p>
+<div class="ask"><span class="eyebrow">Una pregunta</span><p><b>¿Metemos la A en el juego en lugar de la que rueda?</b></p></div>
+</main>

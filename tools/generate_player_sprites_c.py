@@ -277,6 +277,11 @@ STREAMED = {
     'exvoto_stand_up': 'CG_EXVOTO', 'exvoto_bebe': 'CG_EXVOTO',
     'abanderado': 'CG_ABANDERADO', 'abanderado_point': 'CG_ABANDERADO',
     'monaguillo': 'CG_MONAGUILLO',
+    'exvoto_parroco_run': 'CG_PARROCO',
+    'exvoto_super_monja': 'CG_SMONJA', 'exvoto_super_monja_pray_stand': 'CG_SMONJA',
+    'exvoto_super_monja_pray_kneel': 'CG_SMONJA', 'exvoto_super_monja_stand_up': 'CG_SMONJA',
+    'exvoto_arana_walk': 'CG_ARANA_EXVOTO', 'exvoto_arana_trans': 'CG_ARANA_EXVOTO',
+    'monaguillo_arana_walk': 'CG_ARANA_MONA', 'monaguillo_arana_trans': 'CG_ARANA_MONA',
 }
 BINS = {}               # clip name -> {'frames': [uint16], 'runs': [uint16], 'masks': [uint8]}
 
@@ -315,6 +320,7 @@ def emit_runs(out_lines, name, run_offs, run_data, frames_const, comment):
     out_lines.append('\n')
 
 
+
 chars_meta = [
     ('player', 'corazon', 'Corazon Abierto Hero', 340, 4),
     ('charger', 'cireneo', 'Enemy Charger (Knocker)', 310, 5),
@@ -335,6 +341,19 @@ chars_meta = [
     # El Campanero de Animas (jefe ARPG): sus 5 clips (80x80) van en NitroFS (tools/generate_campanero_bin.py, source/campanero_sprite.c);
     # este slot solo aporta configuracion, ancla de suelo y municion (ceros), sin pixeles en la EWRAM fija.
     ('campanero', 'campanero', 'El Campanero de Animas', 80, 8),
+    # Exvoto tier "Parroco" running (48x48 cell, Mixamo Running): enemy clip of the room pool (group CG_PARROCO).
+    ('exvoto_parroco_run', 'exvoto_parroco_run', 'Exvoto Parroco running', 0, 10),
+    # Super Monja (Tripo 9713149f, 56x56 cell, tools/characters/bake_exvoto_super_monja.py): her four clips (group CG_SMONJA).
+    ('exvoto_super_monja', 'exvoto_super_monja', 'Super Monja walking', 39, 8),
+    ('exvoto_super_monja_pray_stand', 'exvoto_super_monja_pray_stand', 'Super Monja praying standing', 39, 24),
+    ('exvoto_super_monja_pray_kneel', 'exvoto_super_monja_pray_kneel', 'Super Monja praying kneeling', 39, 14),
+    ('exvoto_super_monja_stand_up', 'exvoto_super_monja_stand_up', 'Super Monja standing up', 39, 9),
+    # Possession by the Super Monja's aura (DESIGN-ARPG s5): the Exvoto and the Monaguillo lie down into the spider form
+    # (trans: standing -> spider, played backwards to get up) and scuttle (walk: frames 0-5 burst, 6-7 pause). Groups CG_ARANA_EXVOTO / CG_ARANA_MONA.
+    ('exvoto_arana_walk', 'exvoto_arana_walk', 'Exvoto spider walking', 39, 6),
+    ('exvoto_arana_trans', 'exvoto_arana_trans', 'Exvoto lying down into the spider', 0, 3),
+    ('monaguillo_arana_walk', 'monaguillo_arana_walk', 'Monaguillo spider walking', 39, 6),
+    ('monaguillo_arana_trans', 'monaguillo_arana_trans', 'Monaguillo lying down into the spider', 0, 3),
 ]
 SINGLE_FRAME = set()
 STUB_NO_PIXELS = {'campanero'}
@@ -367,6 +386,8 @@ for var_name, folder, disp_name, def_spd, def_ticks in chars_meta:
                 shw, shh = int(sdata['shadowSize'][0]), int(sdata['shadowSize'][1])
     if folder.startswith('exvoto') and 'ticksPerFrame' in MANIFEST.get(folder, {}):
         ticks = int(MANIFEST[folder]['ticksPerFrame'])
+    if var_name.endswith('_arana_walk') or var_name.endswith('_arana_trans'):
+        spd, ticks = def_spd, def_ticks    # the staged settings carry the lab's duration, not the game's
     if var_name == 'charger':
         ticks = 8  # match 37.86 px stride at ENEMY_CHARGER_APPROACH_SPEED (150)
     if var_name == 'ojo':

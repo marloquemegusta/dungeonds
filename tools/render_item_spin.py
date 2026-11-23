@@ -1,7 +1,7 @@
 """Render 360-degree spinning 56x56 RGB15 item sprites for the ARPG inventory top screen.
 
 Usage:
-  blender --background --python tools/render_item_spin.py -- [--only SLUG] [--preview]
+  blender --background --python tools/render_item_spin.py -- [--only SLUG] [--preview] [--icon24]
 
 Outputs:
   nitrofiles/items/<slug>.bin  (8-byte header + 24 frames of 56x56 uint16_t RGB15)
@@ -29,6 +29,11 @@ NUM_FRAMES = 24
 RENDER_SZ = 112
 OUT_SZ = 56
 MAGIC = 0x4954  # 'IT'
+# Fuente del icono de 24 px (--icon24): render grande que tools/bake_item_icon24.py reduce.
+ICON_SRC_SZ = 192
+ICON_ORTHO = 1.80
+ICON_TILT_MUL = 2.0
+ICON_YAW = -12.0
 
 # (slug, relative_fbx_path, base_euler_deg (rx, ry, rz), tilt_deg)
 ITEMS = [
@@ -55,6 +60,13 @@ ITEMS = [
         "assets/models/hud/sacred_heart/tripo_convert_d96dac8c-dc43-495d-9495-f318e45fae13.fbx",
         (0.0, 0.0, 0.0),
         10.0,
+    ),
+    (
+        # Hostia del Glifo: geometria generada por tools/make_relic_hostia.py (no hay FBX).
+        "relic_hostia",
+        "gen:make_relic_hostia",
+        (90.0, 0.0, 0.0),
+        15.0,
     ),
     (
         "tome_glifo",
@@ -86,6 +98,7 @@ def parse_args():
     only = None
     preview = False
     single = False
+    icon = False
     i = 0
     while i < len(argv):
         if argv[i] == "--only" and i + 1 < len(argv):
@@ -97,9 +110,12 @@ def parse_args():
         elif argv[i] == "--single":
             single = True
             i += 1
+        elif argv[i] == "--icon24":
+            icon = True
+            i += 1
         else:
             i += 1
-    return only, preview, single
+    return only, preview, single, icon
 
 
 def rgba_to_rgb15_bytes(img_rgba):
@@ -144,9 +160,10 @@ def pack_frames_to_bin(slug, frame_pngs):
     print(f"[pack] wrote {bin_path} ({os.path.getsize(bin_path)} bytes)")
 
 
-def blender_render_item(slug, fbx_rel, base_euler_deg, tilt_deg, single=False):
+def blender_render_item(slug, fbx_rel, base_euler_deg, tilt_deg, single=False, icon=False):
     fbx_path = os.path.join(REPO_ROOT, fbx_rel)
-    if not os.path.exists(fbx_path):
+    generated = fbx_rel.startswith("gen:")
+    if not generated and not os.path.exists(fbx_path):
         print(f"[ERROR] Missing FBX: {fbx_path}")
         return []
 
@@ -157,8 +174,9 @@ def blender_render_item(slug, fbx_rel, base_euler_deg, tilt_deg, single=False):
     scene.render.engine = "BLENDER_EEVEE_NEXT" if "BLENDER_EEVEE_NEXT" in [
         e.identifier for e in bpy.types.RenderSettings.bl_rna.properties["engine"].enum_items
     ] else "BLENDER_EEVEE"
-    scene.render.resolution_x = RENDER_SZ
-    scene.render.resolution_y = RENDER_SZ
+    # --icon24: un fotograma fuente para el icono de 24 px (mas inclinado y mas lleno).
+    scene.render.resolution_x = ICON_SRC_SZ if icon else RENDER_SZ
+    scene.render.resolution_y = ICON_SRC_SZ if icon else RENDER_SZ
     scene.render.resolution_percentage = 100
     scene.render.film_transparent = True
     scene.render.image_settings.file_format = "PNG"
@@ -177,8 +195,12 @@ def blender_render_item(slug, fbx_rel, base_euler_deg, tilt_deg, single=False):
         bg.inputs["Color"].default_value = (0.38, 0.35, 0.32, 1.0)
         bg.inputs["Strength"].default_value = 1.1
 
-    # Import FBX
-    bpy.ops.import_scene.fbx(filepath=fbx_path)
+    # Import FBX (o genera la geometria con su script de tools/)
+    if generated:
+        sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+        __import__(fbx_rel[4:]).build()
+    else:
+        bpy.ops.import_scene.fbx(filepath=fbx_path)
     meshes = [o for o in bpy.context.scene.objects if o.type == "MESH"]
     if not meshes:
         print(f"[ERROR] No meshes in {fbx_path}")
@@ -231,7 +253,7 @@ def blender_render_item(slug, fbx_rel, base_euler_deg, tilt_deg, single=False):
     # Camera looking along +Y (from -Y towards origin)
     cam_data = bpy.data.cameras.new("Cam")
     cam_data.type = "ORTHO"
-    cam_data.ortho_scale = 2.15
+    cam_data.ortho_scale = ICON_ORTHO if icon else 2.15
     cam = bpy.data.objects.new("Cam", cam_data)
     scene.collection.objects.link(cam)
     cam.location = (0.0, -4.0, 0.0)
@@ -258,6 +280,13 @@ def blender_render_item(slug, fbx_rel, base_euler_deg, tilt_deg, single=False):
     item_tmp = os.path.join(TMP_DIR, slug)
     os.makedirs(item_tmp, exist_ok=True)
     pngs = []
+    if icon:
+        spin_pivot.rotation_euler = (math.radians(tilt_deg * ICON_TILT_MUL), 0.0, math.radians(ICON_YAW))
+        out_png = os.path.join(item_tmp, "icon24_src.png")
+        scene.render.filepath = out_png
+        bpy.ops.render.render(write_still=True)
+        print(f"[icon24] {out_png}; hornear con: python tools/bake_item_icon24.py {slug}")
+        return []
     n_frames = 1 if single else NUM_FRAMES
     for fidx in range(n_frames):
         yaw = (360.0 * fidx) / NUM_FRAMES
@@ -271,7 +300,7 @@ def blender_render_item(slug, fbx_rel, base_euler_deg, tilt_deg, single=False):
 
 
 def main():
-    only, preview, single = parse_args()
+    only, preview, single, icon = parse_args()
     if not IN_BLENDER:
         # Pack already-rendered PNGs into nitrofiles/items/*.bin using system Python + PIL
         for slug, _, _, _ in ITEMS:
@@ -289,7 +318,7 @@ def main():
         if only and slug != only:
             continue
         print(f"=== Rendering {slug} ===")
-        pngs = blender_render_item(slug, fbx_rel, euler_deg, tilt_deg, single=single)
+        pngs = blender_render_item(slug, fbx_rel, euler_deg, tilt_deg, single=single, icon=icon)
         if pngs and not preview and not single:
             try:
                 pack_frames_to_bin(slug, pngs)

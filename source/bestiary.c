@@ -156,7 +156,7 @@ static int load_portrait_direction(int entry_idx, int dir) {
     }
 
     if (entry_idx != s_portrait_loaded_entry) {
-        if (fread(&s_portrait_hdr, sizeof(s_portrait_hdr), 1, f) != 1 || s_portrait_hdr.magic != 0x4251) {
+        if (fread(&s_portrait_hdr, sizeof(s_portrait_hdr), 1, f) != 1 || s_portrait_hdr.magic != 0x4252) {
             fclose(f);
             s_portrait_valid = 0;
             return 0;
@@ -178,11 +178,17 @@ static int load_portrait_direction(int entry_idx, int dir) {
         return 0;
     }
 
-    if (fread(s_portrait_buf, 1, d_size, f) != d_size) {
+    /* Bloque LZ10 (BIOS): se lee a un buffer temporal alineado y se descomprime en s_portrait_buf. */
+    uint32_t *tmp = (uint32_t *)malloc((d_size + 3u) & ~3u);
+    if (!tmp || d_size < 4 || fread(tmp, 1, d_size, f) != d_size || (tmp[0] & 0xFF) != 0x10 ||
+        (tmp[0] >> 8) > BESTIARY_PORTRAIT_BUF_SIZE) {
+        free(tmp);
         fclose(f);
         s_portrait_valid = 0;
         return 0;
     }
+    swiDecompressLZSSWram(tmp, s_portrait_buf);
+    free(tmp);
 
     fclose(f);
     s_portrait_loaded_dir = dir;

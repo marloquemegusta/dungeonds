@@ -1,0 +1,143 @@
+<title>Ramas del Exvoto</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Source+Sans+3:wght@400;600;700&display=swap">
+<style>
+/* Layout: una columna de lectura para el móvil; tabla de familias, regla de amenaza y 3 parejas de roles apiladas */
+:root{
+  --bg:#f3efe6; --fg:#2a2420; --muted:#6d625a; --card:#fbf8f2; --line:#ddd3c4;
+  --wax:#9a7638; --blood:#8a3a2e; --rec:#4d6b4a; --recbg:#e6eee2;
+  --display:"Cormorant Garamond", Georgia, serif; --body:"Source Sans 3", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#1b1715; --fg:#ece4d8; --muted:#a8998b; --card:#24201d; --line:#3a332e;
+  --wax:#d4b37a; --blood:#c8705f; --rec:#9cc095; --recbg:#25301f; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#1b1715; --fg:#ece4d8; --muted:#a8998b; --card:#24201d; --line:#3a332e;
+  --wax:#d4b37a; --blood:#c8705f; --rec:#9cc095; --recbg:#25301f; color-scheme:dark}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:16px;line-height:1.55;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:24px 48px}
+main{max-width:680px;margin:0 auto;display:flex;flex-direction:column;gap:28px}
+h1,h2{font-family:var(--display);text-wrap:balance;margin:0;line-height:1.15}
+h1{font-size:2.1rem}
+h2{font-size:1.6rem;border-bottom:1px solid var(--line);padding-bottom:6px}
+h3{font-size:1.05rem;margin:0}
+p{margin:0}
+.lead{color:var(--muted)}
+.eyebrow{font-size:.75rem;letter-spacing:.08em;text-transform:uppercase;color:var(--wax);font-weight:700}
+section{display:flex;flex-direction:column;gap:14px}
+.tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:6px;background:var(--card)}
+table{border-collapse:collapse;width:100%;font-size:.92rem;min-width:420px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+tr:last-child td{border-bottom:0}
+td:first-child{font-weight:700}
+.note{font-size:.9rem;color:var(--muted)}
+.ladder{display:flex;flex-wrap:wrap;align-items:center;gap:8px;font-weight:600}
+.step{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:6px 10px}
+.step.hot{border-color:var(--blood);color:var(--blood)}
+.opt{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:14px;display:flex;flex-direction:column;gap:10px}
+.opt.rec{background:var(--recbg);border-color:var(--rec)}
+.head{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px}
+.tag{font-size:.72rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:2px 8px;border-radius:999px;border:1px solid currentColor}
+.tag.r{color:var(--rec)} .tag.risk{color:var(--blood)}
+.pair{display:grid;grid-template-columns:1fr;gap:8px}
+@media (min-width:560px){.pair{grid-template-columns:1fr 1fr}}
+.who{border-left:3px solid var(--wax);padding-left:10px;min-width:0}
+.who b{display:block}
+dl{margin:0;display:grid;gap:4px}
+dt{font-size:.75rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:700}
+dd{margin:0 0 6px 0}
+.why{font-weight:600}
+.ask{background:var(--card);border:2px solid var(--wax);border-radius:6px;padding:16px;display:flex;flex-direction:column;gap:8px}
+ul{margin:0;padding-left:1.2em}
+.num{font-variant-numeric:tabular-nums}
+</style>
+
+<main>
+<header style="display:flex;flex-direction:column;gap:8px">
+  <span class="eyebrow">ARPG · enemigos de la zona 1</span>
+  <h1>Chico y chica: qué rol hace cada uno</h1>
+  <p class="lead">Rehecho tras tu aclaración: aquí no hablamos del giro del tier 3, sino de qué papel cumple cada familia de Exvoto en un grupo, con una amenaza menor que la del Ojo y el Cireneo.</p>
+</header>
+
+<section>
+  <h2>Cómo lo he entendido</h2>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Familia</th><th>Tier 1</th><th>Tier 2</th><th>Tier 3</th></tr></thead>
+    <tbody>
+      <tr><td>Exvoto chico</td><td>Bebé</td><td>Monaguillo</td><td>Párroco / Súper Monaguillo</td></tr>
+      <tr><td>Exvoto chica</td><td>Bebé</td><td>Monja</td><td>Súper Monja</td></tr>
+      <tr><td>Ojo</td><td>Ojo</td><td>Ojo con aura o más grande</td><td>por definir</td></tr>
+      <tr><td>Cireneo</td><td>Cireneo</td><td>Cireneo con aura o más grande</td><td>por definir</td></tr>
+      <tr><td>Abanderado</td><td colspan="3">Jefe. Quizá más adelante con versiones élite.</td></tr>
+    </tbody>
+  </table></div>
+  <p class="note">Dos cosas que asumo, dímelo si no es así: el Exvoto adulto que hay hoy en la ROM queda como relleno del tier 1 junto al Bebé; y el «Monaguillo» que invoca el Abanderado pasará a llamarse de otra forma para no confundirlo con el tier 2 del chico.</p>
+</section>
+
+<section>
+  <h2>La regla de amenaza</h2>
+  <p>A igualdad de tier:</p>
+  <div class="ladder"><span class="step">Bebé</span>›<span class="step">Chico ≈ Chica</span>›<span class="step hot">Ojo ≈ Cireneo</span></div>
+  <p>El Ojo y el Cireneo <b>te matan</b>: uno te dispara y el otro te embiste. Los Exvotos <b>no te matan solos, pero hacen más peligrosos a los demás</b>. Para que se distingan entre sí, propongo que cada uno lo haga en una dirección distinta:</p>
+  <ul>
+    <li><b>Chico:</b> actúa sobre <b>ti</b>: te estorba, te mueve, te complica.</li>
+    <li><b>Chica:</b> actúa sobre <b>su grupo</b>: lo mantiene en pie.</li>
+  </ul>
+  <p class="note">Un dato de hoy: el Párroco pega 25, lo mismo que el Cireneo. Con esta regla habría que bajarlo.</p>
+</section>
+
+<section>
+  <h2>Tres parejas de roles</h2>
+
+  <div class="opt rec">
+    <div class="head"><h3>A · Muro y Sostén</h3><span class="tag r">recomendada</span></div>
+    <div class="pair">
+      <div class="who"><b>Chico, el Muro</b>Va delante, lento y duro. Pega flojo, pero te empuja: te aparta del tambaleante que ibas a rematar o te mete en la multitud.</div>
+      <div class="who"><b>Chica, el Sostén</b>Se queda detrás rezando y cura a los de su alrededor. Casi no pega. Es el objetivo de «mátala primero».</div>
+    </div>
+    <dl>
+      <dt>Escuelas</dt><dd>El Muro molesta a la Ejecución (te aleja del remate) pero cae ante el Rayo. La Sostén se castiga con la Lanza, que atraviesa el grupo, o con el Redil, que la arrastra al centro.</dd>
+      <dt>Arte</dt><dd>Es lo que ya hay en la ROM; solo falta su muñeco propio.</dd>
+      <dt class="why">Por qué</dt><dd class="why">Se distinguen al primer vistazo (uno delante contra ti, otra detrás a favor de los suyos) y ninguno mata solo, así que quedan por debajo del Ojo y el Cireneo.</dd>
+    </dl>
+  </div>
+
+  <div class="opt">
+    <div class="head"><h3>B · Escudo y Sostén</h3></div>
+    <div class="pair">
+      <div class="who"><b>Chico, el Escudo</b>Se planta delante y para el Rayo y los disparos: cubre a la Monja y al Ojo que tiene detrás. No empuja.</div>
+      <div class="who"><b>Chica, el Sostén</b>Igual que en A.</div>
+    </div>
+    <dl>
+      <dt>Escuelas</dt><dd>Obliga al jugador de Rayo a rodearlo o a llevar la Lanza; la Ejecución y el Glifo lo pasan por encima.</dd>
+      <dt>Arte</dt><dd>Una pose de cubrirse y un destello al parar el Rayo.</dd>
+      <dt>Problema</dt><dd>Castiga a una escuela concreta, y un grupo Escudo + Ojo detrás puede ser más duro que el propio Ojo.</dd>
+    </dl>
+  </div>
+
+  <div class="opt">
+    <div class="head"><h3>C · Acoso y Control</h3><span class="tag risk">sube la amenaza</span></div>
+    <div class="pair">
+      <div class="who"><b>Chico, el Acoso</b>Rápido y agresivo: va a por ti y te rodea junto a los Bebés. Sin empuje.</div>
+      <div class="who"><b>Chica, el Control</b>No cura: derrama cera caliente en el suelo y te frena si la pisas.</div>
+    </div>
+    <dl>
+      <dt>Escuelas</dt><dd>Premia el Glifo (el Acoso se mete solo en la runa); la cera hace que te alcancen el Cireneo y el Ojo.</dd>
+      <dt>Arte</dt><dd>Un charco de cera en el suelo, más sus muñecos.</dd>
+      <dt>Problema</dt><dd>Frenarte es justo lo que hace letal al Ojo y al Cireneo, así que la chica sube a su nivel de amenaza. Además se pierde el «mátala primero».</dd>
+    </dl>
+  </div>
+</section>
+
+<section>
+  <h2>Y los tiers</h2>
+  <p>Con el rol fijado, cada tier hace <b>lo mismo y mejor</b>: más vida, más empuje, más curación. Lo que ves cambiar es la corrupción del cuerpo. Si el tier 3 debe añadir un giro propio (lo de la propuesta anterior), lo decidimos después, rol a rol.</p>
+</section>
+
+<div class="ask">
+  <span class="eyebrow">Una pregunta</span>
+  <p><b>¿Te vale A, Muro (chico) y Sostén (chica), como roles de las dos familias de Exvoto?</b></p>
+  <p class="lead">Si prefieres otra pareja o mezclar (por ejemplo, el Escudo de B con la Sostén), dímelo.</p>
+</div>
+</main>

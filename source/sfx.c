@@ -1,3 +1,4 @@
+#include "cfxprof.h"
 #include "sfx.h"
 #include "room_pool.h"
 #include "lab_tuning.h"
@@ -222,6 +223,7 @@ void sfx_play_pitched(SfxId id, int world_x, uint16_t rate) {
 
 #ifdef ARM9
     if (!s_audio_ready) return;
+    CP_BEGIN(CP_MMARGS);
     mm_sound_effect eff = {
         .id      = event_mm_id(id),
         .rate    = rate ? rate : compute_rate(rule->jitter_pct),
@@ -229,7 +231,10 @@ void sfx_play_pitched(SfxId id, int world_x, uint16_t rate) {
         .volume  = rule->volume,
         .panning = compute_pan(world_x),
     };
+    CP_END(CP_MMARGS);
+    CP_BEGIN(CP_MMEFF);
     mmEffectEx(&eff);
+    CP_END(CP_MMEFF);
 #else
     (void)world_x;
     (void)rate;

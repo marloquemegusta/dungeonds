@@ -3,8 +3,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <nds.h>
 
-#define LVC_MAGIC 0x4C43
+#define LVC_MAGIC 0x4C44   /* indices comprimidos con LZ10 (BIOS) */
 
 typedef struct {
     uint16_t magic;
@@ -38,9 +39,17 @@ void lvcards_load(int slot, const char *art_id) {
     if (!f) return;
     LvcHeader hdr;
     if (fread(&hdr, sizeof(hdr), 1, f) == 1 && hdr.magic == LVC_MAGIC && hdr.frames == LVC_FRAMES &&
-        hdr.size == LVC_SIZE && fread(s->pixels, 1, sizeof(s->pixels), f) == sizeof(s->pixels)) {
-        memcpy(s->palette, hdr.palette, sizeof(s->palette));
-        s->loaded = 1;
+        hdr.size == LVC_SIZE && fseek(f, 0, SEEK_END) == 0) {
+        long total = ftell(f);
+        size_t csize = total > (long)sizeof(hdr) ? (size_t)total - sizeof(hdr) : 0;
+        uint32_t *tmp = csize ? (uint32_t *)malloc((csize + 3) & ~(size_t)3) : NULL;
+        if (tmp && fseek(f, (long)sizeof(hdr), SEEK_SET) == 0 && fread(tmp, 1, csize, f) == csize &&
+            (tmp[0] & 0xFF) == 0x10 && (tmp[0] >> 8) == sizeof(s->pixels)) {
+            swiDecompressLZSSWram(tmp, s->pixels);
+            memcpy(s->palette, hdr.palette, sizeof(s->palette));
+            s->loaded = 1;
+        }
+        free(tmp);
     }
     fclose(f);
 }

@@ -381,6 +381,26 @@ void glifo_update(Enemy *enemies, int max_enemies) {
     }
 }
 
+int glifo_flee_dir(int x, int y, int margin, int side, int *ux, int *uy) {
+    for (int i = 0; i < ARPG_GLIFO_MAX; i++) {
+        const GlifoZone *z = &s_zones[i];
+        if (!z->active || z->t >= z->t_det) continue;               // only until it detonates
+        const int dx = x - z->cx, dy = y - z->cy;
+        if (!ground_inside(dx, dy, z->radius + margin)) continue;
+        if (z->t < ARPG_SMONJA_GLIFO_REACT) { *ux = 0; *uy = 0; return 2; }   // reaction delay: she is still
+        int gx = dx, gy = 2 * dy;                                   // true ground vector
+        int len = (int)sqrt32((unsigned)(gx * gx + gy * gy));
+        if (len < 1) { gx = 256; gy = 0; len = 256; }
+        const int ox = div32(gx * 256, len), oy = div32(gy * 256, len);   // unit, 256 = 1
+        const int fx = (ox * 205 - side * oy * 154) >> 8;           // 0.8 outwards + 0.6 sideways (swerve)
+        const int fy = (oy * 205 + side * ox * 154) >> 8;
+        *ux = fx;
+        *uy = fy / 2;                                               // back to world y
+        return 1;
+    }
+    return 0;
+}
+
 int glifo_point_in_zone(int x, int y) {
     for (int i = 0; i < ARPG_GLIFO_MAX; i++) {
         const GlifoZone *z = &s_zones[i];

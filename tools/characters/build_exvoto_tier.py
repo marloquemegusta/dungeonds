@@ -6,6 +6,9 @@ Uso:
 <personaje> es el nombre de la carpeta en assets/models/characters/ (exvoto_bebe, exvoto_parroco, exvoto_monja)
 y el prefijo de las animaciones exportadas. Requiere rig Mixamo (mixamorig:*) de 65 huesos, el mismo del Exvoto.
 Salidas: assets/models/characters/<personaje>/<personaje>_{pray_stand,pray_kneel,stand_up,walk}.fbx
+
+Con --run-only (tercer argumento tras --) solo se construye <personaje>_run.fbx desde walk/running.fbx (Mixamo
+«Running»), sin tocar los otros cuatro: es el clip de correr del Parroco (CHAR_EXVOTO_PARROCO_RUN, NitroFS).
 """
 import bpy, sys, os, math, glob
 import numpy as np
@@ -21,7 +24,11 @@ SRC_FILES = {
     'kneel': os.path.join(ANIM, 'pray/pray_kneeling.fbx'),
     'k2s': os.path.join(ANIM, 'pray/pray_kneel_to_stand.fbx'),
     'walk': os.path.join(ANIM, 'walk/walk_normal.fbx'),
+    'run': os.path.join(ANIM, 'walk/running.fbx'),
 }
+RUN_ONLY = '--run-only' in sys.argv
+if RUN_ONLY:
+    SRC_FILES = {k: v for k, v in SRC_FILES.items() if k in ('walk', 'run')}  # 'walk' fija la orientacion de referencia
 FPS = 30
 P = 'mixamorig:'
 
@@ -35,6 +42,8 @@ WALK_STRIDE = 0.8
 WALK_SPINE_DAMP = 0.5
 WALK_LEAN = {'Spine': 7, 'Spine1': 7, 'Spine2': 7, 'Neck': 12, 'Head': 12}
 WALK_ARMS_FRAME = 1
+RUN_FRAMES = 33              # fotogramas del ciclo de correr a 30 fps (el cierre repite el primero); se muestrea a 8 en el lab
+RUN_LEAN = {}                # la inclinacion de la carrera ya viene en el clip de Mixamo
 HEAD_TILT = 0.0
 ARM_BONES_KEYS = ('Shoulder', 'Arm', 'ForeArm', 'Hand')
 
@@ -322,82 +331,109 @@ def clip_from(src, f0, f1):
     return [retarget_frame(src, f) for f in range(f0, f1 + 1)]
 
 
+def build_run():
+    """Ciclo de correr: Running de Mixamo retargeteado entero (brazos incluidos), en el sitio y cerrado en bucle."""
+    src = SRC['run']
+    act = src.animation_data.action
+    f0, f1 = int(act.frame_range[0]), int(act.frame_range[1])
+    print('RUN source frames', f0, f1, 'fps', scene.render.fps)
+    raw = [retarget_frame(src, f) for f in range(f0, f1 + 1)]
+    print('LOOP run diff first vs last: %.4f m' % pose_diff(raw[0], raw[-1]))
+    # Mixamo repite el primer pose al final: se descarta el ultimo para que el ciclo no pare un fotograma.
+    loop = raw[:-1] if pose_diff(raw[0], raw[-1]) < 0.03 else raw
+    loop = loop + [loop[0]]
+    res = []
+    for i in range(RUN_FRAMES + 1):
+        x = i * (len(loop) - 1) / RUN_FRAMES
+        i0 = int(x); i1 = min(i0 + 1, len(loop) - 1)
+        res.append(blend_basis(loop[i0], loop[i1], x - i0) if i1 != i0 else loop[i0])
+    res = anchor_hips_xy(res)
+    if RUN_LEAN:
+        res = [apply_lean(b, RUN_LEAN) for b in res]
+    res[-1] = res[0]
+    return ground(res), '%d-%d -> %d frames' % (f0, f1, RUN_FRAMES + 1)
+
+
 clips = {}
+if not RUN_ONLY:
 
-raw = clip_from(SRC['stand'], 1, 98)
-print('LOOP pray_stand diff f1 vs f98: %.4f m' % pose_diff(raw[0], raw[-1]))
-poses = anchor_hips_xy(raw)
-poses[-1] = poses[0]
-clips['pray_stand'] = (ground(poses), '1-98')
+    raw = clip_from(SRC['stand'], 1, 98)
+    print('LOOP pray_stand diff f1 vs f98: %.4f m' % pose_diff(raw[0], raw[-1]))
+    poses = anchor_hips_xy(raw)
+    poses[-1] = poses[0]
+    clips['pray_stand'] = (ground(poses), '1-98')
 
-raw = clip_from(SRC['kneel'], 1, 59)
-print('LOOP pray_kneel diff f1 vs f59: %.4f m' % pose_diff(raw[0], raw[-1]))
-poses = anchor_hips_xy(raw)
-poses[-1] = poses[0]
-clips['pray_kneel'] = (ground(poses), '1-59')
+    raw = clip_from(SRC['kneel'], 1, 59)
+    print('LOOP pray_kneel diff f1 vs f59: %.4f m' % pose_diff(raw[0], raw[-1]))
+    poses = anchor_hips_xy(raw)
+    poses[-1] = poses[0]
+    clips['pray_kneel'] = (ground(poses), '1-59')
 
-walk_raw_src = [retarget_frame(SRC['walk'], f, damp={
-    'Spine': WALK_SPINE_DAMP, 'Spine1': WALK_SPINE_DAMP, 'Spine2': WALK_SPINE_DAMP,
-    'Neck': WALK_SPINE_DAMP, 'Head': WALK_SPINE_DAMP,
-    'LeftUpLeg': WALK_STRIDE, 'RightUpLeg': WALK_STRIDE, 'LeftLeg': WALK_STRIDE, 'RightLeg': WALK_STRIDE,
-}) for f in range(1, 33)]
-arms_pose = retarget_frame(SRC['stand'], WALK_ARMS_FRAME)
-ARM_SET = set(n for n in ORDER if is_arm_bone(n))
-print('ARM_SET', len(ARM_SET))
-walk_in = []
-for b in walk_raw_src:
-    b2 = dict(b)
-    for n in ARM_SET:
-        b2[n] = arms_pose[n]
-    walk_in.append(b2)
-loop = walk_in + [walk_in[0]]
-res = []
-for i in range(WALK_FRAMES + 1):
-    x = i * (len(loop) - 1) / WALK_FRAMES
-    i0 = int(x); i1 = min(i0 + 1, len(loop) - 1)
-    res.append(blend_basis(loop[i0], loop[i1], x - i0) if i1 != i0 else loop[i0])
-res = anchor_hips_xy(res)
-res = [apply_lean(b, WALK_LEAN) for b in res]
-res[-1] = res[0]
-clips['walk'] = (ground(res), '1-32 (+1 cierre) -> %d frames' % (WALK_FRAMES + 1))
+    walk_raw_src = [retarget_frame(SRC['walk'], f, damp={
+        'Spine': WALK_SPINE_DAMP, 'Spine1': WALK_SPINE_DAMP, 'Spine2': WALK_SPINE_DAMP,
+        'Neck': WALK_SPINE_DAMP, 'Head': WALK_SPINE_DAMP,
+        'LeftUpLeg': WALK_STRIDE, 'RightUpLeg': WALK_STRIDE, 'LeftLeg': WALK_STRIDE, 'RightLeg': WALK_STRIDE,
+    }) for f in range(1, 33)]
+    arms_pose = retarget_frame(SRC['stand'], WALK_ARMS_FRAME)
+    ARM_SET = set(n for n in ORDER if is_arm_bone(n))
+    print('ARM_SET', len(ARM_SET))
+    walk_in = []
+    for b in walk_raw_src:
+        b2 = dict(b)
+        for n in ARM_SET:
+            b2[n] = arms_pose[n]
+        walk_in.append(b2)
+    loop = walk_in + [walk_in[0]]
+    res = []
+    for i in range(WALK_FRAMES + 1):
+        x = i * (len(loop) - 1) / WALK_FRAMES
+        i0 = int(x); i1 = min(i0 + 1, len(loop) - 1)
+        res.append(blend_basis(loop[i0], loop[i1], x - i0) if i1 != i0 else loop[i0])
+    res = anchor_hips_xy(res)
+    res = [apply_lean(b, WALK_LEAN) for b in res]
+    res[-1] = res[0]
+    clips['walk'] = (ground(res), '1-32 (+1 cierre) -> %d frames' % (WALK_FRAMES + 1))
 
-k2s_raw = clip_from(SRC['k2s'], 1, 207)
-hz = [hips_world(b).z for b in k2s_raw]
-print('K2S hips z (cada 10 frames):', [(i + 1, round(z, 3)) for i, z in enumerate(hz) if i % 10 == 0], 'f207=%.3f' % hz[-1])
-seg = k2s_raw[STAND_UP_START - 1:207]
-kneel_raw0 = anchor_hips_xy(clip_from(SRC['kneel'], 1, 1))[0]
-kref = hips_world(kneel_raw0)
-seg = anchor_hips_xy(seg, ref_world=Vector((kref.x, kref.y, 0)))
-n = len(seg)
-walk0 = clips['walk'][0][0]
-
-
-def blend_part(b0, b1, t, names):
-    out = dict(b0)
-    for k in names:
-        l0, q0 = b0[k]; l1, q1 = b1[k]
-        out[k] = (l0.lerp(l1, t), q0.slerp(q1, t))
-    return out
+    k2s_raw = clip_from(SRC['k2s'], 1, 207)
+    hz = [hips_world(b).z for b in k2s_raw]
+    print('K2S hips z (cada 10 frames):', [(i + 1, round(z, 3)) for i, z in enumerate(hz) if i % 10 == 0], 'f207=%.3f' % hz[-1])
+    seg = k2s_raw[STAND_UP_START - 1:207]
+    kneel_raw0 = anchor_hips_xy(clip_from(SRC['kneel'], 1, 1))[0]
+    kref = hips_world(kneel_raw0)
+    seg = anchor_hips_xy(seg, ref_world=Vector((kref.x, kref.y, 0)))
+    n = len(seg)
+    walk0 = clips['walk'][0][0]
 
 
-fin = []
-for i, b in enumerate(seg):
-    if i < STAND_UP_START_BLEND:
-        b = blend_basis(kneel_raw0, b, smooth((i + 0.0) / STAND_UP_START_BLEND))
-    ja = i - (n - 1 - STAND_UP_ARMS_BLEND)
-    if ja > 0:
-        b = blend_part(b, walk0, smooth(ja / STAND_UP_ARMS_BLEND), ARM_SET)
-    j = i - (n - 1 - STAND_UP_BLEND)
-    if j > 0:
-        b = blend_basis(b, walk0, smooth(j / STAND_UP_BLEND))
-    fin.append(b)
-walk0_z = clip_zmin([walk0], step=1)[0]
-clips['stand_up'] = (ground(fin, mode='lerp', z_end=walk0_z), '%d-207' % STAND_UP_START)
-print('STAND_UP end vs walk f0 head dist max: %.4f m' % pose_diff(clips['stand_up'][0][-1], walk0))
-print('STAND_UP start vs pray_kneel f0 head dist max: %.4f m' % pose_diff(clips['stand_up'][0][0], clips['pray_kneel'][0][0]))
+    def blend_part(b0, b1, t, names):
+        out = dict(b0)
+        for k in names:
+            l0, q0 = b0[k]; l1, q1 = b1[k]
+            out[k] = (l0.lerp(l1, t), q0.slerp(q1, t))
+        return out
+
+
+    fin = []
+    for i, b in enumerate(seg):
+        if i < STAND_UP_START_BLEND:
+            b = blend_basis(kneel_raw0, b, smooth((i + 0.0) / STAND_UP_START_BLEND))
+        ja = i - (n - 1 - STAND_UP_ARMS_BLEND)
+        if ja > 0:
+            b = blend_part(b, walk0, smooth(ja / STAND_UP_ARMS_BLEND), ARM_SET)
+        j = i - (n - 1 - STAND_UP_BLEND)
+        if j > 0:
+            b = blend_basis(b, walk0, smooth(j / STAND_UP_BLEND))
+        fin.append(b)
+    walk0_z = clip_zmin([walk0], step=1)[0]
+    clips['stand_up'] = (ground(fin, mode='lerp', z_end=walk0_z), '%d-207' % STAND_UP_START)
+    print('STAND_UP end vs walk f0 head dist max: %.4f m' % pose_diff(clips['stand_up'][0][-1], walk0))
+    print('STAND_UP start vs pray_kneel f0 head dist max: %.4f m' % pose_diff(clips['stand_up'][0][0], clips['pray_kneel'][0][0]))
+
+else:
+    clips["run"] = build_run()
 
 NAMES = {'pray_stand': PERSONAJE + '_pray_stand', 'pray_kneel': PERSONAJE + '_pray_kneel',
-         'stand_up': PERSONAJE + '_stand_up', 'walk': PERSONAJE + '_walk'}
+         'stand_up': PERSONAJE + '_stand_up', 'walk': PERSONAJE + '_walk', 'run': PERSONAJE + '_run'}
 made = {}
 for key, (poses, rng) in clips.items():
     report(key, poses, rng)

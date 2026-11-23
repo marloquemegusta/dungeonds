@@ -26,7 +26,7 @@
 // The ground origin row varies per character/direction: see g_character_ground_anchors.
 #define PLAYER_ANCHOR_X 20
 
-#define NUM_CHARACTERS 12
+#define NUM_CHARACTERS 21
 
 enum {
     CHAR_HERO = 0,
@@ -41,13 +41,26 @@ enum {
     CHAR_MONAGUILLO = 8,
     // Hero crouched (cobertura baja, DESIGN.md 6.9): the player swaps char_id between CHAR_HERO and this slot.
     CHAR_HERO_CROUCH_WALK = 9,  // crouched walking, 8 frames, 40x40 cell; the still pose is one fixed frame of it
-    // Exvoto tiers (v3, walkthroughs/arpg-predemo §10): only the Bebé has its own baked sheet today; the Párroco
-    // and the Monja still borrow CHAR_EXVOTO / CHAR_EXVOTO_PRAY_STAND (their own sheets do not fit in EWRAM, see
-    // TECHNICAL.md; they need the NitroFS streaming path the punch uses).
+    // Exvoto tiers (v3, walkthroughs/arpg-predemo §10): the Bebé, the Párroco running and the Súper Monja have their own
+    // sheets (room pool, groups CG_EXVOTO / CG_PARROCO / CG_SMONJA); the praying/rising poses of the Párroco borrow
+    // CHAR_EXVOTO_PRAY_STAND and friends.
     CHAR_EXVOTO_BEBE = 10,      // Exvoto Bebé walking (swarm tier), 8 frames, 40x40 cell
-    // El Campanero de Ánimas (jefe ARPG): slot sin píxeles en la EWRAM; sus 5 clips (60x60) se leen de NitroFS
+    // El Campanero de Ánimas (jefe ARPG): slot sin píxeles en la EWRAM; sus 5 clips (80x80) se leen de NitroFS
     // (source/campanero_sprite.c) y el clip actual va en Enemy.kneel.
-    CHAR_CAMPANERO = 11
+    CHAR_CAMPANERO = 11,
+    // Párroco running (Mixamo Running on exvoto_parroco), 8 frames, 48x48 cell. Enemy clip of the room pool (group CG_PARROCO).
+    CHAR_EXVOTO_PARROCO_RUN = 12,
+    // Súper Monja (ENEMY_TYPE_MONJA, Tripo 9713149f), 56x56 cell, her own four clips (group CG_SMONJA).
+    CHAR_SMONJA_WALK = 13,
+    CHAR_SMONJA_PRAY_STAND = 14,
+    CHAR_SMONJA_PRAY_KNEEL = 15,
+    CHAR_SMONJA_STAND_UP = 16,
+    // Spider form of the Exvoto and the Monaguillo under the Súper Monja's aura (groups CG_ARANA_EXVOTO / CG_ARANA_MONA): walk (burst + pause) and the
+    // lying-down transition (played backwards to get up). Cells 40x40 (Exvoto) and 48x48 (Monaguillo).
+    CHAR_EXVOTO_ARANA_WALK = 17,
+    CHAR_EXVOTO_ARANA_TRANS = 18,
+    CHAR_MONAGUILLO_ARANA_WALK = 19,
+    CHAR_MONAGUILLO_ARANA_TRANS = 20
 };
 
 typedef struct {
@@ -184,7 +197,7 @@ extern const uint8_t g_abanderado_point_shadow_bounds[PLAYER_NUM_DIRS][ABANDERAD
 // Enemy art lives in NitroFS (nitrofiles/chars/<clip>.bin) and is loaded into the room pool (room_pool.h,
 // chars_pool.h): the big arrays of every enemy clip (frames, runs, shadow masks) are pointers that stay NULL until
 // the group is loaded. The small tables (offsets, bounds, muzzles) and the hero clips stay resident in C.
-enum { CG_EXVOTO = 0, CG_OJO, CG_CHARGER, CG_ABANDERADO, CG_MONAGUILLO, CG_COUNT };
+enum { CG_EXVOTO = 0, CG_OJO, CG_CHARGER, CG_ABANDERADO, CG_MONAGUILLO, CG_PARROCO, CG_SMONJA, CG_ARANA_EXVOTO, CG_ARANA_MONA, CG_COUNT };
 typedef struct {
     const char *file;               // path under nitro:/ (written by tools/generate_player_sprites_c.py)
     const uint16_t **frames;

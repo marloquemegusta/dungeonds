@@ -1,0 +1,474 @@
+{
+ "name": "parroco_escudo",
+ "description": "Parroco guardaespaldas e inmune al Rayo (DESIGN-ARPG s5): al cargar el Rayo corre a ponerse en la linea heroe-Exvoto (el Exvoto esta 120 px justo encima del heroe, el Parroco empieza 60 px a su derecha); el Rayo se para en el sin danarlo ni danar al de detras; sin empuje al heroe; los punetazos si le bajan vida. Despues el Monaguillo hace la misma interposicion y el Rayo si lo mata. Heroe en god mode.",
+ "suite": false,
+ "state": {
+  "elf": "../.ds-game-dev/build/out/dungeonds-arpg-lab.elf",
+  "symbols": {
+   "gps": "g_player_state",
+   "en": "g_enemies",
+   "pl": "s_player"
+  },
+  "default_symbol": "gps",
+  "fields": {
+   "god": {
+    "symbol": "gps",
+    "offset": 20,
+    "type": "s32"
+   },
+   "px": {
+    "symbol": "pl",
+    "offset": 0,
+    "type": "s32"
+   },
+   "py": {
+    "symbol": "pl",
+    "offset": 4,
+    "type": "s32"
+   },
+   "q_x": {
+    "symbol": "en",
+    "offset": 1984,
+    "type": "s32"
+   },
+   "q_y": {
+    "symbol": "en",
+    "offset": 1988,
+    "type": "s32"
+   },
+   "q_char": {
+    "symbol": "en",
+    "offset": 2004,
+    "type": "s32"
+   },
+   "q_act": {
+    "symbol": "en",
+    "offset": 2008,
+    "type": "s32"
+   },
+   "q_hp": {
+    "symbol": "en",
+    "offset": 2012,
+    "type": "s32"
+   },
+   "q_max": {
+    "symbol": "en",
+    "offset": 2016,
+    "type": "s32"
+   },
+   "q_type32": {
+    "symbol": "en",
+    "offset": 2024,
+    "type": "s32"
+   },
+   "q_gest": {
+    "symbol": "en",
+    "offset": 2080,
+    "type": "s32"
+   },
+   "q_state": {
+    "symbol": "en",
+    "offset": 2025,
+    "type": "u8"
+   },
+   "t_x": {
+    "symbol": "en",
+    "offset": 2108,
+    "type": "s32"
+   },
+   "t_y": {
+    "symbol": "en",
+    "offset": 2112,
+    "type": "s32"
+   },
+   "t_char": {
+    "symbol": "en",
+    "offset": 2128,
+    "type": "s32"
+   },
+   "t_act": {
+    "symbol": "en",
+    "offset": 2132,
+    "type": "s32"
+   },
+   "t_hp": {
+    "symbol": "en",
+    "offset": 2136,
+    "type": "s32"
+   },
+   "t_max": {
+    "symbol": "en",
+    "offset": 2140,
+    "type": "s32"
+   },
+   "t_type32": {
+    "symbol": "en",
+    "offset": 2148,
+    "type": "s32"
+   },
+   "t_gest": {
+    "symbol": "en",
+    "offset": 2204,
+    "type": "s32"
+   },
+   "t_state": {
+    "symbol": "en",
+    "offset": 2149,
+    "type": "u8"
+   },
+   "r_x": {
+    "symbol": "en",
+    "offset": 2232,
+    "type": "s32"
+   },
+   "r_y": {
+    "symbol": "en",
+    "offset": 2236,
+    "type": "s32"
+   },
+   "r_char": {
+    "symbol": "en",
+    "offset": 2252,
+    "type": "s32"
+   },
+   "r_act": {
+    "symbol": "en",
+    "offset": 2256,
+    "type": "s32"
+   },
+   "r_hp": {
+    "symbol": "en",
+    "offset": 2260,
+    "type": "s32"
+   },
+   "r_max": {
+    "symbol": "en",
+    "offset": 2264,
+    "type": "s32"
+   },
+   "r_type32": {
+    "symbol": "en",
+    "offset": 2272,
+    "type": "s32"
+   },
+   "r_gest": {
+    "symbol": "en",
+    "offset": 2328,
+    "type": "s32"
+   },
+   "r_state": {
+    "symbol": "en",
+    "offset": 2273,
+    "type": "u8"
+   },
+   "q_pack": {
+    "symbol": "en",
+    "offset": 2064,
+    "type": "s32"
+   },
+   "t_pack": {
+    "symbol": "en",
+    "offset": 2188,
+    "type": "s32"
+   },
+   "r_pack": {
+    "symbol": "en",
+    "offset": 2312,
+    "type": "s32"
+   }
+  }
+ },
+ "steps": [
+  {
+   "frames": 60
+  },
+  {
+   "poke": [
+    {
+     "field": "god",
+     "value": 1
+    }
+   ],
+   "frames": 2
+  },
+  {
+   "poke": [
+    {
+     "field": "q_x",
+     "value": 80896
+    },
+    {
+     "field": "q_y",
+     "value": 454656
+    },
+    {
+     "field": "q_char",
+     "value": 11
+    },
+    {
+     "field": "q_hp",
+     "value": 400
+    },
+    {
+     "field": "q_max",
+     "value": 400
+    },
+    {
+     "field": "q_type32",
+     "value": 7
+    },
+    {
+     "field": "q_act",
+     "value": 1
+    },
+    {
+     "field": "t_x",
+     "value": 65536
+    },
+    {
+     "field": "t_y",
+     "value": 428032
+    },
+    {
+     "field": "t_char",
+     "value": 4
+    },
+    {
+     "field": "t_hp",
+     "value": 100
+    },
+    {
+     "field": "t_max",
+     "value": 100
+    },
+    {
+     "field": "t_type32",
+     "value": 3
+    },
+    {
+     "field": "t_act",
+     "value": 1
+    },
+    {
+     "field": "t_state",
+     "value": 15
+    },
+    {
+     "field": "q_pack",
+     "value": -1
+    },
+    {
+     "field": "t_pack",
+     "value": -1
+    }
+   ],
+   "frames": 1,
+   "state_capture": "setup",
+   "capture": "c00_setup"
+  },
+  {
+   "tap": {
+    "x": 128,
+    "y": 20
+   },
+   "frames": 30,
+   "capture": "c01_corre"
+  },
+  {
+   "frames": 70,
+   "capture": "c02_en_la_linea",
+   "state_capture": "guard"
+  },
+  {
+   "release": true,
+   "frames": 2,
+   "capture": "c03_choque",
+   "state_capture": "shot_fx"
+  },
+  {
+   "frames": 2,
+   "capture": "c04_choque_b"
+  },
+  {
+   "frames": 2,
+   "capture": "c05_choque_c"
+  },
+  {
+   "frames": 10,
+   "capture": "c06_tras",
+   "state_capture": "after"
+  },
+  {
+   "frames": 110,
+   "state_capture": "idle"
+  },
+  {
+   "button_down": "L",
+   "frames": 2
+  },
+  {
+   "button_up": "L",
+   "frames": 26,
+   "capture": "c07_punch0"
+  },
+  {
+   "button_down": "L",
+   "frames": 2
+  },
+  {
+   "button_up": "L",
+   "frames": 26,
+   "capture": "c07_punch1"
+  },
+  {
+   "button_down": "L",
+   "frames": 2
+  },
+  {
+   "button_up": "L",
+   "frames": 26,
+   "capture": "c07_punch2"
+  },
+  {
+   "frames": 2,
+   "state_capture": "punched"
+  },
+  {
+   "poke": [
+    {
+     "field": "q_act",
+     "value": 0
+    },
+    {
+     "field": "r_x",
+     "value": 80896
+    },
+    {
+     "field": "r_y",
+     "value": 454656
+    },
+    {
+     "field": "r_char",
+     "value": 8
+    },
+    {
+     "field": "r_hp",
+     "value": 100
+    },
+    {
+     "field": "r_max",
+     "value": 100
+    },
+    {
+     "field": "r_type32",
+     "value": 5
+    },
+    {
+     "field": "r_act",
+     "value": 1
+    },
+    {
+     "field": "r_pack",
+     "value": -1
+    }
+   ],
+   "frames": 1,
+   "state_capture": "mon_setup"
+  },
+  {
+   "tap": {
+    "x": 128,
+    "y": 20
+   },
+   "frames": 100,
+   "capture": "m01_en_la_linea",
+   "state_capture": "mon_guard"
+  },
+  {
+   "release": true,
+   "frames": 12,
+   "capture": "m02_choque",
+   "state_capture": "mon_after"
+  }
+ ],
+ "assertions": {
+  "state_changes": [
+   {
+    "at": "setup",
+    "field": "q_hp",
+    "equals": 400
+   },
+   {
+    "at": "guard",
+    "field": "q_x",
+    "min_value": 64000,
+    "max_value": 67000
+   },
+   {
+    "at": "guard",
+    "field": "q_y",
+    "min_value": 448300,
+    "max_value": 451400
+   },
+   {
+    "at": "shot_fx",
+    "field": "q_gest",
+    "min_value": 1
+   },
+   {
+    "at": "after",
+    "field": "q_hp",
+    "equals": 400
+   },
+   {
+    "at": "after",
+    "field": "t_hp",
+    "equals": 100
+   },
+   {
+    "at": "idle",
+    "field": "q_hp",
+    "equals": 400
+   },
+   {
+    "from": "after",
+    "to": "idle",
+    "field": "px",
+    "max_abs_delta": 0
+   },
+   {
+    "from": "after",
+    "to": "idle",
+    "field": "py",
+    "max_abs_delta": 0
+   },
+   {
+    "at": "punched",
+    "field": "q_hp",
+    "max_value": 300
+   },
+   {
+    "at": "mon_guard",
+    "field": "r_x",
+    "min_value": 64000,
+    "max_value": 67000
+   },
+   {
+    "at": "mon_guard",
+    "field": "r_y",
+    "min_value": 448300,
+    "max_value": 451400
+   },
+   {
+    "at": "mon_after",
+    "field": "r_hp",
+    "max_value": 0
+   },
+   {
+    "at": "mon_after",
+    "field": "t_hp",
+    "equals": 100
+   }
+  ]
+ }
+}

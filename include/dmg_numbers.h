@@ -14,6 +14,7 @@ typedef enum {
 void dmg_numbers_reset(void);
 void dmg_numbers_set_player_pos(fixed x, fixed y);
 void dmg_numbers_spawn(fixed world_x, fixed world_y, int value, DmgNumKind kind);
+void dmg_numbers_spawn_zero(fixed world_x, fixed world_y);
 void dmg_numbers_spawn_player(int value, DmgNumKind kind);
 void dmg_numbers_update(void);
 void dmg_numbers_draw(uint16_t *buffer, int cam_x, int cam_y);

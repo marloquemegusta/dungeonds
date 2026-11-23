@@ -1,0 +1,129 @@
+{
+  "name": "parroco_run",
+  "description": "Evidencia: Parroco con su modelo propio corriendo hacia el heroe invulnerable (hook tier_spawn: Bebe, Parroco y Monja heridos). Solo evidencia.",
+  "suite": false,
+  "evidence_only": true,
+  "steps": [
+    {
+      "frames": 60
+    },
+    {
+      "poke": [
+        {
+          "field": "god",
+          "value": 1
+        }
+      ],
+      "frames": 2
+    },
+    {
+      "poke": [
+        {
+          "field": "tier_spawn",
+          "value": 1
+        }
+      ],
+      "frames": 2
+    },
+    {
+      "button_down": "RIGHT",
+      "frames": 36,
+      "capture_sequence": "s0",
+      "capture_every": 2
+    },
+    {
+      "button_up": "RIGHT",
+      "frames": 2
+    },
+    {
+      "button_down": "DOWN",
+      "frames": 36,
+      "capture_sequence": "s1",
+      "capture_every": 2
+    },
+    {
+      "button_up": "DOWN",
+      "frames": 2
+    },
+    {
+      "button_down": "LEFT",
+      "frames": 36,
+      "capture_sequence": "s2",
+      "capture_every": 2
+    },
+    {
+      "button_up": "LEFT",
+      "frames": 2
+    },
+    {
+      "button_down": "UP",
+      "frames": 36,
+      "capture_sequence": "s3",
+      "capture_every": 2
+    },
+    {
+      "button_up": "UP",
+      "frames": 2
+    },
+    {
+      "button_down": "RIGHT",
+      "frames": 36,
+      "capture_sequence": "s4",
+      "capture_every": 2
+    },
+    {
+      "button_up": "RIGHT",
+      "frames": 2
+    },
+    {
+      "button_down": "DOWN",
+      "frames": 36,
+      "capture_sequence": "s5",
+      "capture_every": 2
+    },
+    {
+      "button_up": "DOWN",
+      "frames": 2
+    },
+    {
+      "button_down": "LEFT",
+      "frames": 36,
+      "capture_sequence": "s6",
+      "capture_every": 2
+    },
+    {
+      "button_up": "LEFT",
+      "frames": 2
+    },
+    {
+      "button_down": "UP",
+      "frames": 36,
+      "capture_sequence": "s7",
+      "capture_every": 2
+    },
+    {
+      "button_up": "UP",
+      "frames": 2
+    }
+  ],
+  "state": {
+    "elf": "../.ds-game-dev/build/out/dungeonds-arpg-lab.elf",
+    "symbols": {
+      "gps": "g_player_state",
+      "tiers": "g_tier_debug"
+    },
+    "default_symbol": "gps",
+    "fields": {
+      "god": {
+        "symbol": "gps",
+        "offset": 20,
+        "type": "s32"
+      },
+      "tier_spawn": {
+        "symbol": "tiers",
+        "offset": 0,
+        "type": "u8"
+      }
+    }
+  }
+}

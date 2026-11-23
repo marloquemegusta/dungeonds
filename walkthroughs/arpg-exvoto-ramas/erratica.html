@@ -1,0 +1,32 @@
+<title>Monjaraña errática</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Source+Sans+3:wght@400;600;700&display=swap">
+<style>
+/* Layout: una columna para el móvil; GIFs a todo el ancho */
+:root{--bg:#f1ede5;--fg:#2a2420;--muted:#6d625a;--card:#fbf8f2;--wax:#8f6c32;
+ --display:"Cormorant Garamond",Georgia,serif;--body:"Source Sans 3",system-ui,sans-serif}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#1b1715;--fg:#ece4d8;--muted:#a8998b;--card:#24201d;--wax:#d4b37a;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#1b1715;--fg:#ece4d8;--muted:#a8998b;--card:#24201d;--wax:#d4b37a;color-scheme:dark}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:16px;line-height:1.55;
+ padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:24px 48px}
+main{max-width:900px;margin:0 auto;display:flex;flex-direction:column;gap:24px}
+h1,h2{font-family:var(--display);margin:0;line-height:1.15;text-wrap:balance}
+h1{font-size:2.1rem} h2{font-size:1.5rem}
+p{margin:0} .lead{color:var(--muted)}
+.eyebrow{font-size:.75rem;letter-spacing:.08em;text-transform:uppercase;color:var(--wax);font-weight:700}
+.shot{display:flex;flex-direction:column;gap:8px}
+.shot img{width:100%;height:auto;image-rendering:pixelated;border-radius:4px;display:block}
+.ask{background:var(--card);border:2px solid var(--wax);border-radius:6px;padding:16px;display:flex;flex-direction:column;gap:6px}
+</style>
+<main>
+<header style="display:flex;flex-direction:column;gap:8px">
+ <span class="eyebrow">ARPG · Súper Monja · movimiento</span>
+ <h1>Monjaraña errática</h1>
+ <p class="lead">Sacado de la ROM, sobre el suelo de la catedral, al ritmo real y ampliado 4 veces, ya un 50 % más grande. Ahora también mueve los brazos: cada mano da el paso a la vez que el pie contrario, como las patas de una araña. Arrancadas rápidas, paradas en seco y quiebros bruscos. El recorrido de estas pruebas está marcado a mano; el movimiento de verdad en el juego está en camino.</p>
+</header>
+<div class="shot"><h2>Emboscada, ya en el juego</h2><p class="lead">Ya se mueve sola, sin recorrido marcado a mano. Ronda al héroe a trompicones, se para y tiembla como aviso, embiste y le da un cabezazo sin atravesarlo (sale el 20 de daño), rebota hacia atrás rápido y, cuando el héroe va a por ella, retrocede de cara a él sin dejarse alcanzar.</p><img src="arana/arana_ia.gif" alt="Súper Monja rondando, avisando, embistiendo y huyendo del héroe"></div>
+<div class="shot"><h2>Se acerca en zigzag</h2><img src="arana/arana_erratica_1.gif" alt="Monjaraña acercándose al héroe en zigzag"></div>
+<div class="shot"><h2>Ronda al héroe</h2><img src="arana/arana_erratica_2.gif" alt="Monjaraña rondando al héroe con quiebros y paradas"></div>
+<div class="shot"><h2>Tamaño, un 50 % más grande</h2><p class="lead">Dos capturas de la ROM. Izquierda: la monjaraña grande junto al héroe. Derecha: la Súper Monja de pie con el héroe y otros Exvotos.</p><img src="arana/arana_escala.png" alt="Comparación de tamaño en la ROM"></div>
+<div class="shot"><h2>Los brazos, en grande</h2><p class="lead">Tres fotogramas seguidos del andar, vistos de perfil, desde arriba y en diagonal: los brazos se levantan y avanzan alternándose con las piernas.</p><img src="arana/brazos_ciclo.png" alt="Ciclo de brazos y piernas en tres vistas"></div>
+</main>
