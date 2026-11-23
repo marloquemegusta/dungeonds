@@ -62,6 +62,8 @@ Flujo estandarizado para crear vídeos verticales de lore estilo *Blasphemous* p
    - **Si la voz de un personaje sobreactúa:** generar 3 tomas planas (estabilidad 0,95, estilo 0, velocidad 0,85, con variantes del texto), que el usuario elija y usar la elegida con `archivo:`. Las `(pausa N)` dentro de una frase corta pueden romper la entonación.
    - **Exportador del lab:** `--dirs S,SE` renderiza solo las direcciones que usa el guion (resultado idéntico al render completo); `LAB_GL=gpu` gana poco (~30 %) y da píxeles distintos de la CPU, así que no se mezcla dentro de un clip.
 
+11. **Montaje dinámico con Remotion (A/B en curso desde 2026-11-23, 05 Sor Leonor):** misma voz y planos que el render clásico, más subtítulo palabra a palabra (palabra activa en dorado apagado), zoom por plano y golpes en las frases clave. Composición `Lore05` en `C:\codexlocal\devlog\src\lore\` (fuera del repo): toma el audio y los planos de `scratch/codice-video/<prefijo>_NN/` y del MP4 clásico, así que primero se renderiza el clásico. Pendiente de ver qué versión retiene mejor (tabla de `## Publicado` en `lote-01.md`); si gana, integrarlo en el generador para que siga siendo un comando.
+
 ---
 
 ## Estilo visual de los planos (decidido 2026-11-16)

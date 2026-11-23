@@ -119,17 +119,21 @@ Estilo: A
 > Pregunta: «¿Cobarde… o el único valiente?»
 
 ## 05 · CÓDICE · IV — SOR LEONOR
-### Parte 1 · ojo_walk · cortes
-- [cerca · S] Dijo que no a un sacerdote. Y el Tribunal la condenó a ella.
-- [SE] Sor Leonor era novicia en la Sacristía de los Faroles.
+### Parte 1 · ojo_walk · cortes · lento 2
+- [cerca · S] Este farol condenó a una novicia por decir que no.
+### Parte 2 · exvoto_walk_b · cortes · lento 1.5
+- [SE] Se llamaba Sor Leonor, y servía en la Sacristía de los Faroles.
 - [S] Sabía por qué los monaguillos del padre Anselmo dejaban de cantar.
-- [SW] Cuando el padre fue a por ella, dijo que no. Y al día siguiente lo dijo en voz alta, ante el Tribunal.
-### Parte 2 · ojo_look · cortes
+- [SW] Una noche, el padre fue a por ella. Leonor dijo que no.
+- [cerca · entero · S] Y al día siguiente lo dijo en voz alta, ante el Tribunal.
+### Parte 3 · ojo_look · cortes · lento 2
 - [E] El Gran Inquisidor Gaspar Valcárcel alzó su farol sobre el confesor... y no halló culpa.
-- [cerca · S] Lo alzó sobre ella, y la halló.
-### Parte 3 · ojo_sentence · S
+- [cerca · S] Lo alzó sobre ella. Y la halló.
+### Parte 4 · ojo_sentence · S · lento 1.5
 - La condenaron por calumnia. Porque la linterna no ve culpables. Los fabrica.
-> Leonor: «Dije que no. Que lo oiga toda la Catedral.»
+### Parte 5 · exvoto_walk_b · cortes · lento 1.5
+> [cerca · entero · S] Leonor: «Dije que no. Que lo oiga toda la Catedral.»
+> Pregunta: «¿Mintió Leonor… o mintió el farol?»
 
 ## 06 · CÓDICE · II — INÉS
 ### Parte 1 · exvoto_walk · cortes
@@ -240,6 +244,8 @@ Publicados a 2026-11-17: **01, 03 y 08**, nada más. Los MP4 de 02, 04-07, 09 y 
 | 07 Lope | ¿Habrías plantado tú cara al Tribunal? | | | |
 | 04 El Liebre | ¿Cobarde… o el único valiente? | | | |
 | 10 No es mi corazón | ¿Quién está más vivo: el que murió o el que lo lleva? | | | |
+| 05 Sor Leonor (clásico) | ¿Mintió Leonor… o mintió el farol? | | | |
+| 05 Sor Leonor (Remotion) | ¿Mintió Leonor… o mintió el farol? | | | |
 
 - **01 El Corazón Abierto** (2026-11-15): v1 con arranque en negro; v2 sin negro y frase fuerte primero; v3 recortada a 38 s. La v2 retuvo algo mejor que la v3.
 - **03 Jimena y Aldonza** (2026-11-16): primera versión con puesta en escena plano a plano y paso natural. Es el modelo para los siguientes.
@@ -364,6 +370,27 @@ Publicados a 2026-11-17: **01, 03 y 08**, nada más. Los MP4 de 02, 04-07, 09 y 
     >
     > #Shorts #pixelart #nintendods #gamedev #darkfantasy
   - **Comentario fijado (en las tres redes):** «¿Quién está más vivo: el que murió o el que lo lleva?»
+
+- **05 Sor Leonor** (lista 2026-11-23, sin publicar): dos montajes con el mismo guion, audio y planos para un A/B: clásico `assets/videos/lore01_05_sor_leonor.mp4` (estilo A, 62,1 s) y dinámico `assets/videos/lore01_05_sor_leonor_remotion.mp4` (Remotion: subtítulo palabra a palabra, zoom por plano, golpes en «halló» y «fabrica»; composición `Lore05` en `C:\codexlocal\devlog`). El Ojo es el Tribunal (arranque, farol, sentencia) y Leonor sale como monja de cera (`exvoto_walk_b`); Ojo a `lento 2`. Textos de los posts (iguales en las dos versiones):
+  - **Título (YouTube y portada):** «Sor Leonor · Códice». Alternativa: «¿Mintió Leonor? · Códice».
+  - **TikTok e Instagram:**
+    > ¿Mintió Leonor… o mintió el farol?
+    >
+    > Sor Leonor dijo que no a un sacerdote, y al día siguiente lo contó ante el Tribunal de la Luz.
+    > El farol del inquisidor no halló culpa en él. En ella, sí. La condenaron por calumnia.
+    >
+    > Deja tu veredicto en los comentarios.
+    > Próximamente en tu Nintendo DS.
+    >
+    > #pixelart #nintendods #gamedev #indiedev #darkfantasy #gothic #lore #homebrew
+  - **Descripción de YouTube:**
+    > ¿Mintió Leonor… o mintió el farol? Sor Leonor era novicia en la Sacristía de los Faroles y sabía por qué los monaguillos del padre Anselmo dejaban de cantar. Cuando el padre fue a por ella, dijo que no, y al día siguiente le denunció ante el Tribunal. El Gran Inquisidor Gaspar Valcárcel alzó su farol sobre el confesor y no halló culpa; lo alzó sobre ella y la halló. La condenaron por calumnia. La linterna no ve culpables: los fabrica.
+    >
+    > Deja tu veredicto en los comentarios.
+    > Próximamente en tu Nintendo DS.
+    >
+    > #Shorts #pixelart #nintendods #gamedev #darkfantasy
+  - **Comentario fijado (en las tres redes):** «¿Mintió Leonor… o mintió el farol?»
 
 ## Calendario: un vídeo al día, más cuidado
 

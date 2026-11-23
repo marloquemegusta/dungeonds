@@ -74,9 +74,23 @@ Vídeo final `assets/videos/lore01_10_no_es_mi_corazon.mp4` (66,1 s, con voz). T
 3. **Revisado:** fotogramas de los 14 planos, subtítulos sin cortes raros y volumen igual que el 07 (la cita suena unos 3 dB por encima del narrador). Nadie ha escuchado el audio final.
 4. `DESIGN.md`, `TECHNICAL.md`, `LORE.md` y `assets/MANIFEST.md` no cambian.
 
+## 05 Sor Leonor (2026-11-23)
+
+Dos montajes del mismo vídeo para publicarlos como A/B (mismo guion, audio y planos):
+
+- **A clásico:** `assets/videos/lore01_05_sor_leonor.mp4` (62,1 s), con el generador de siempre. Tira: [`lore01_05_sor_leonor_tira.png`](assets/lore01_05_sor_leonor_tira.png).
+- **B dinámico (Remotion):** `assets/videos/lore01_05_sor_leonor_remotion.mp4`: el título entra con un golpe, subtítulo palabra a palabra con la palabra activa en dorado apagado, zoom lento por plano, golpes de zoom en «halló» y «fabrica» y destello en la condena. Composición `Lore05` en el proyecto Remotion del devlog (`C:\codexlocal\devlog\src\lore\`, fuera de este repo); toma el audio y los planos del render A, y los tiempos por palabra salen de repartir cada frase por longitud sobre los tramos con voz (no hay Whisper local). Tira: [`lore01_05_sor_leonor_remotion_tira.png`](assets/lore01_05_sor_leonor_remotion_tira.png).
+
+1. **Guion:** arranque nuevo («Este farol condenó a una novicia por decir que no») para que no se confunda al Ojo con Leonor, y pregunta moral «¿Mintió Leonor… o mintió el farol?».
+2. **Correcciones del usuario:** Leonor aparece como monja de cera (`exvoto_walk_b`) en sus frases y en la cita; el Ojo solo como el Tribunal, a `lento 2` porque iba «aceleradísimo».
+3. **Publicación:** en Instagram, las dos como Reels de prueba (mismo público, no seguidores) y se comparte la ganadora; en TikTok y YouTube, las dos separadas unas horas y se oculta la peor. Se compara el porcentaje visto y los comentarios por 1.000 vistas (tabla de `## Publicado` en `lote-01.md`).
+4. **No verificado:** nadie ha escuchado el audio final ni comprobado en movimiento el ritmo nuevo. Si gana B, conviene meter el montaje en el generador para que siga siendo un solo comando.
+5. **Calendario:** mañana toca el 06 Inés, también monja de cera; para no repetir personaje dos días seguidos, adelantar el Campanero.
+6. `DESIGN.md`, `TECHNICAL.md`, `LORE.md` y `assets/MANIFEST.md` no cambian; el generador no se toca.
+
 ## Pendiente
 
-- Vídeos 05 y 06: guiones reescritos con arranque fuerte y puesta en escena; probados sin voz, sin generar con voz. Los MP4 antiguos de esos números no se versionan.
+- Vídeo 06: guion reescrito con arranque fuerte y puesta en escena; probado sin voz, sin generar con voz. El MP4 antiguo de ese número no se versiona.
 - Capa de props en el generador (velas, columnas que desfilan) para el día 1 del calendario.
 - Lore del Campanero y destino del padre Anselmo (`LORE.md` §9).
 - Voces con efecto de radio (Remedios): sustituir por recortes de su muestra si molestan.
