@@ -32,6 +32,8 @@ void hwshadow_begin(int sub);
 void hwshadow_add(int sub, const uint8_t *mask, const uint8_t *bounds, int ox, int oy);
 void hwshadow_commit(int sub);
 void hwshadow_invalidate(const uint8_t *mask);
+// Every entry whose mask lies in [lo, hi): the room pool empties or a mask buffer is overwritten.
+void hwshadow_invalidate_range(const void *lo, const void *hi);
 
 // Rastrillo of the encounter rooms (DESIGN.md 6.13.6): the gate is drawn with four regular 64x64
 // OBJs from the first 128 pool tiles (reserved at init, the shadow pool never uses them). x, y is the

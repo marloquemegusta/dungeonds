@@ -40,7 +40,7 @@ typedef struct {
     int x, y;            // ground point (bottom-centre of the sprite)
     const char *name;
     int act;             // CAMP_ACT_*
-    const uint8_t *shadow;   // baked ground shadow (4-bit nibbles), on its own canvas
+    const uint8_t *shadow;   // baked ground shadow (1 bpp), on its own canvas
     int shw, shh;            // shadow canvas size
     int shox, shoy;          // canvas top-left relative to the colour sprite top-left
 } CampProp;

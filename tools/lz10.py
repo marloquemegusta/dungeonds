@@ -62,3 +62,6 @@ def lz10_decompress(blob: bytes) -> bytes:
             else:
                 out.append(blob[i]); i += 1
     return bytes(out)
+
+
+compress = lz10_compress          # nombre usado por tools/generate_campanero_bin.py

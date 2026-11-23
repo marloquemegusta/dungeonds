@@ -15,7 +15,7 @@ typedef struct {
     const uint16_t *pix;           // BGR555 rows, even pitch, bit 15 = opaque (blit_stride format)
     const uint16_t *runs;          // opaque runs per row (blit_stride format)
     const uint8_t *bounds;         // sprite crop {x, y, w, h} in the 40x40 cell
-    const uint8_t *mask;           // shadow, 4-bit nibbles cropped to sbounds
+    const uint8_t *mask;           // shadow, 1 bpp cropped to sbounds
     const uint8_t *sbounds;        // shadow crop {x, y, w, h} in the 80x80 shadow canvas
     int anchor;                    // ground row of the sprite cell
 } CampHeroFrame;

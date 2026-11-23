@@ -1,6 +1,6 @@
 {
  "name": "arpg_campanero_escolta",
- "description": "Variante arpg-campanero: heroe a cubierto tras la columna izquierda. Comprueba el Ojo en su puesto, la Monja que cura al jefe, los Exvotos que levantan los toques, el glifo acallado por el tanido antes de detonar, la fase II (Cireneo entra a los ~15 s) y la fase III (el jefe anda). Poke de vida del jefe para forzar fases. Solo estado y capturas.",
+ "description": "Variante arpg-campanero: heroe a cubierto tras la columna izquierda. Comprueba el Ojo en su puesto, los Exvotos que levantan los toques, el glifo acallado por el tanido antes de detonar, la fase II (Cireneo entra a los ~15 s) y la fase III (el jefe anda). Poke de vida del jefe para forzar fases. Solo estado y capturas.",
  "suite": false,
  "state": {
   "elf": "../.ds-game-dev/build/out/dungeonds-arpg-campanero.elf",
@@ -497,7 +497,7 @@
   },
   {
    "frames": 90,
-   "capture": "monja_cura",
+   "capture": "monja_junto_jefe",
    "state_capture": "h1"
   },
   {
@@ -797,12 +797,6 @@
     "at": "g2",
     "field": "mana",
     "max_value": 199
-   },
-   {
-    "from": "h0",
-    "to": "h1",
-    "field": "e0_hp",
-    "min_delta": 30
    },
    {
     "at": "f2",

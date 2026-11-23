@@ -30,7 +30,7 @@ def parse_header(h_path, mask_bytes=MASK_BYTES):
 
 
 def crop_shadow_to_80(shb_body, mask_body, src_w=120, src_h=120, frame_indices=None):
-    """Crop src_w x src_h shadow bounds and 4-bit packed masks to 80x80 centered."""
+    """Crop src_w x src_h shadow bounds and 1 bpp packed masks to 80x80 centered."""
     if frame_indices is None:
         frame_indices = list(range(8))
     off_x = (src_w - 80) // 2
@@ -75,7 +75,7 @@ def crop_shadow_120_to_80(shb_body, mask_body, frame_indices=None):
     return crop_shadow_to_80(shb_body, mask_body, 120, 120, frame_indices)
 
 def crop_shadow_masks(shb_body, mask_body, shw=SHADOW_W, shh=SHADOW_H, frame_indices=None):
-    """Pack 4-bit shadow masks tightly to each frame's [x, y, w, h] bounding box."""
+    """Pack the (binary) 4-bit shadow masks to 1 bpp, tightly to each frame's [x, y, w, h] bounding box."""
     if frame_indices is None:
         frame_indices = list(range(8))
     rows = re.findall(r'\{\s*(\d+),\s*(\d+),\s*(\d+),\s*(\d+)\s*\}', shb_body)
@@ -95,17 +95,21 @@ def crop_shadow_masks(shb_body, mask_body, shw=SHADOW_W, shh=SHADOW_H, frame_ind
             bx, by, bw, bh = [int(v) for v in rows[fi]]
             src = hex_bytes[fi * frame_bytes:(fi + 1) * frame_bytes]
             dir_offs.append(len(packed_all))
-            nibbles = []
+            bits = []
             for y in range(by, by + bh):
                 row_off = y * shw
                 for x in range(bx, bx + bw):
                     px = row_off + x
                     b = src[px >> 1]
-                    nibbles.append((b >> 4) if (px & 1) else (b & 0x0F))
-            for i in range(0, len(nibbles), 2):
-                lo = nibbles[i]
-                hi = nibbles[i + 1] if (i + 1) < len(nibbles) else 0
-                packed_all.append(lo | (hi << 4))
+                    nib = (b >> 4) if (px & 1) else (b & 0x0F)
+                    assert nib in (0, 15), f'shadow mask nibble {nib} is not binary'
+                    bits.append(1 if nib else 0)
+            # 1 bpp, row-major continuous bit stream, LSB first, each frame padded to a byte
+            for i in range(0, len(bits), 8):
+                v = 0
+                for k, bit in enumerate(bits[i:i + 8]):
+                    v |= bit << k
+                packed_all.append(v)
         offsets.append(dir_offs)
 
     off_lines = ['{\n']
@@ -263,66 +267,58 @@ def convert_sheet_cropped(png_path, w=SPRITE_W, h=SPRITE_H, dir_shift=None, fram
     return (''.join(off_lines), ''.join(bnd_lines), ''.join(pix_lines),
             ''.join(run_off_lines), ''.join(run_lines))
 
+# Enemy clips live in NitroFS (nitrofiles/chars/<clip>.bin, loaded into the room pool by source/chars_pool.c):
+# their big arrays (frames, runs, shadow masks) become mutable pointers with the same name; the small tables
+# (offsets, bounds) stay in C. The hero clips (player, player_shot, hero_crouch_walk) stay resident.
+STREAMED = {
+    'charger': 'CG_CHARGER', 'charger_charge': 'CG_CHARGER', 'charger_telegraph': 'CG_CHARGER',
+    'ojo': 'CG_OJO', 'ojo_look': 'CG_OJO', 'ojo_sentence': 'CG_OJO',
+    'exvoto': 'CG_EXVOTO', 'exvoto_pray_stand': 'CG_EXVOTO', 'exvoto_pray_kneel': 'CG_EXVOTO',
+    'exvoto_stand_up': 'CG_EXVOTO', 'exvoto_bebe': 'CG_EXVOTO',
+    'abanderado': 'CG_ABANDERADO', 'abanderado_point': 'CG_ABANDERADO',
+    'monaguillo': 'CG_MONAGUILLO',
+    'exvoto_parroco_run': 'CG_PARROCO',
+    'exvoto_super_monja': 'CG_SMONJA', 'exvoto_super_monja_pray_stand': 'CG_SMONJA',
+    'exvoto_super_monja_pray_kneel': 'CG_SMONJA', 'exvoto_super_monja_stand_up': 'CG_SMONJA',
+    'exvoto_arana_walk': 'CG_ARANA_EXVOTO', 'exvoto_arana_trans': 'CG_ARANA_EXVOTO',
+    'monaguillo_arana_walk': 'CG_ARANA_MONA', 'monaguillo_arana_trans': 'CG_ARANA_MONA',
+}
+BINS = {}               # clip name -> {'frames': [uint16], 'runs': [uint16], 'masks': [uint8]}
+
+
+def emit_frames(out_lines, name, pix):
+    if name in STREAMED:
+        BINS.setdefault(name, {})['frames'] = [int(v, 16) for v in re.findall(r'0x([0-9A-Fa-f]{4})', pix)]
+        out_lines.append(f'const uint16_t *g_{name}_frames;   // NitroFS chars/{name}.bin\n')
+    else:
+        out_lines.append(f'const uint16_t g_{name}_frames[] __attribute__((aligned(4))) = ')
+        out_lines.append(pix)
+        out_lines.append('\n')
+
+
+def emit_masks(out_lines, name, data):
+    if name in STREAMED:
+        BINS.setdefault(name, {})['masks'] = [int(v, 16) for v in re.findall(r'0x([0-9A-Fa-f]{2})', data)]
+        out_lines.append(f'const uint8_t *g_{name}_shadow_masks;   // NitroFS chars/{name}.bin\n')
+    else:
+        out_lines.append(f'const uint8_t g_{name}_shadow_masks[] __attribute__((aligned(4))) = ')
+        out_lines.append(data)
+        out_lines.append('\n')
+
+
 def emit_runs(out_lines, name, run_offs, run_data, frames_const, comment):
     out_lines.append(f'// {comment}\n')
-    out_lines.append(f'const uint16_t g_{name}_runs[] __attribute__((aligned(4))) = ')
-    out_lines.append(run_data)
-    out_lines.append('\n')
+    if name in STREAMED:
+        BINS.setdefault(name, {})['runs'] = [int(v) for v in re.findall(r'\d+', run_data)]
+        out_lines.append(f'const uint16_t *g_{name}_runs;   // NitroFS chars/{name}.bin\n')
+    else:
+        out_lines.append(f'const uint16_t g_{name}_runs[] __attribute__((aligned(4))) = ')
+        out_lines.append(run_data)
+        out_lines.append('\n')
     out_lines.append(f'const uint32_t g_{name}_run_offsets[PLAYER_NUM_DIRS][{frames_const}] = ')
     out_lines.append(run_offs)
     out_lines.append('\n')
 
-
-
-STREAM_MAGIC = 0x4E555250   # 'PRUN'
-
-
-def write_streamed_bin(var_name, fr_pix, fr_offs, fr_bnds, fr_runs, fr_run_offs, sh_data, sh_offs, shb_body):
-    """Packs the sheet of a streamed slot (8 dirs x 8 frames) for source/stream_char.c, one record per frame so that
-    a single read fetches everything a frame needs. Little endian. Layout:
-    header (8 u32: magic, frames, max_record_bytes, 5 spare) | records[64] { u32 file_offset, u16 pix_bytes,
-    u16 runs_bytes, u16 shadow_bytes, u16 spare } | frame_bounds u8[256] | shadow_bounds u8[256] | the records' data.
-    A record is its pixels (u16, even row pitch), its opaque-run block (u16) and its shadow mask (u8), each padded to
-    4 bytes, so every part starts word-aligned in the RAM slot."""
-    import struct
-
-    def ints(text):
-        return [int(x) for x in re.findall(r'[0-9]+', text)]
-
-    def pad4(b):
-        return b + bytes(1) * (-len(b) % 4)
-
-    fo = ints(fr_offs); ro = ints(fr_run_offs); so = ints(sh_offs)
-    frame_bounds = ints(fr_bnds); shadow_bounds = ints(shb_body)
-    assert len(fo) == len(ro) == len(so) == 64 and len(frame_bounds) == len(shadow_bounds) == 256
-    pix = [int(x, 16) for x in re.findall(r'0x[0-9A-Fa-f]+', fr_pix)]
-    runs = ints(fr_runs)
-    shadow = [int(x, 16) for x in re.findall(r'0x[0-9A-Fa-f]+', sh_data)]
-
-    def part(arr, offs, i, fmt):
-        end = offs[i + 1] if i < 63 else len(arr)
-        chunk = arr[offs[i]:end]
-        return pad4(struct.pack('<%d%s' % (len(chunk), fmt), *chunk)), len(chunk) * struct.calcsize(fmt)
-
-    head_bytes = 32 + 64 * 12 + 256 + 256
-    recs, data, off, max_rec = [], b'', head_bytes, 0
-    for i in range(64):
-        pb, pn = part(pix, fo, i, 'H')
-        rb, rn = part(runs, ro, i, 'H')
-        sb, sn = part(shadow, so, i, 'B')
-        rec = pb + rb + sb
-        recs.append(struct.pack('<IHHHH', off, pn, rn, sn, 0))
-        data += rec
-        off += len(rec)
-        max_rec = max(max_rec, len(rec))
-    rel = STREAMED[var_name]
-    path = os.path.join(WT, 'nitrofiles', *rel.split('/'))
-    os.makedirs(os.path.dirname(path), exist_ok=True)
-    with open(path, 'wb') as f:
-        f.write(struct.pack('<8I', STREAM_MAGIC, 64, max_rec, 0, 0, 0, 0, 0) + b''.join(recs)
-                + bytes(frame_bounds) + bytes(shadow_bounds) + data)
-    print('streamed %s -> %s: %d bytes, largest record %d bytes (STREAM_SLOT_BYTES must be >= this)' % (
-        var_name, path, os.path.getsize(path), max_rec))
 
 
 chars_meta = [
@@ -345,32 +341,20 @@ chars_meta = [
     # El Campanero de Animas (jefe ARPG): sus 5 clips (80x80) van en NitroFS (tools/generate_campanero_bin.py, source/campanero_sprite.c);
     # este slot solo aporta configuracion, ancla de suelo y municion (ceros), sin pixeles en la EWRAM fija.
     ('campanero', 'campanero', 'El Campanero de Animas', 80, 8),
-    # Exvoto tier "Parroco" running (48x48 cell, Mixamo Running): too big for the fixed RAM, so its pixels, runs and
-    # shadow masks are not emitted as C: they go to nitrofiles/parroco/run.bin and parroco_run.c loads them once.
+    # Exvoto tier "Parroco" running (48x48 cell, Mixamo Running): enemy clip of the room pool (group CG_PARROCO).
     ('exvoto_parroco_run', 'exvoto_parroco_run', 'Exvoto Parroco running', 0, 10),
-    # Super Monja (Tripo 9713149f, 56x56 cell, tools/characters/bake_exvoto_super_monja.py): her four clips, streamed too.
+    # Super Monja (Tripo 9713149f, 56x56 cell, tools/characters/bake_exvoto_super_monja.py): her four clips (group CG_SMONJA).
     ('exvoto_super_monja', 'exvoto_super_monja', 'Super Monja walking', 39, 8),
     ('exvoto_super_monja_pray_stand', 'exvoto_super_monja_pray_stand', 'Super Monja praying standing', 39, 24),
     ('exvoto_super_monja_pray_kneel', 'exvoto_super_monja_pray_kneel', 'Super Monja praying kneeling', 39, 14),
     ('exvoto_super_monja_stand_up', 'exvoto_super_monja_stand_up', 'Super Monja standing up', 39, 9),
     # Possession by the Super Monja's aura (DESIGN-ARPG s5): the Exvoto and the Monaguillo lie down into the spider form
-    # (trans: standing -> spider, played backwards to get up) and scuttle (walk: frames 0-5 burst, 6-7 pause). Streamed too.
+    # (trans: standing -> spider, played backwards to get up) and scuttle (walk: frames 0-5 burst, 6-7 pause). Groups CG_ARANA_EXVOTO / CG_ARANA_MONA.
     ('exvoto_arana_walk', 'exvoto_arana_walk', 'Exvoto spider walking', 39, 6),
     ('exvoto_arana_trans', 'exvoto_arana_trans', 'Exvoto lying down into the spider', 0, 3),
     ('monaguillo_arana_walk', 'monaguillo_arana_walk', 'Monaguillo spider walking', 39, 6),
     ('monaguillo_arana_trans', 'monaguillo_arana_trans', 'Monaguillo lying down into the spider', 0, 3),
 ]
-STREAMED = {   # slot -> file in nitrofiles/ (read by source/stream_char.c; the slot order of player_sprite.h)
-    'exvoto_parroco_run': 'parroco/run.bin',
-    'exvoto_super_monja': 'smonja/walk.bin',
-    'exvoto_super_monja_pray_stand': 'smonja/pray_stand.bin',
-    'exvoto_super_monja_pray_kneel': 'smonja/pray_kneel.bin',
-    'exvoto_super_monja_stand_up': 'smonja/stand_up.bin',
-    'exvoto_arana_walk': 'arana/exvoto_walk.bin',
-    'exvoto_arana_trans': 'arana/exvoto_trans.bin',
-    'monaguillo_arana_walk': 'arana/monaguillo_walk.bin',
-    'monaguillo_arana_trans': 'arana/monaguillo_trans.bin',
-}
 SINGLE_FRAME = set()
 STUB_NO_PIXELS = {'campanero'}
 
@@ -456,30 +440,20 @@ for var_name, folder, disp_name, spd, ticks, sw, sh, shw, shh, out_shw, out_shh 
 
     char_mode = resolve_legibility(char_dir, ARGS.legibility)
     fr_offs, fr_bnds, fr_pix, fr_run_offs, fr_runs = convert_sheet_cropped(png_path, sw, sh, frame_indices=frame_idx, legibility=char_mode)
-    sheet_mark = len(out_lines)
     out_lines.append(f'// {sw}x{sh} BGR555 frames for {disp_name}, 8 directions x 8 frames (cropped to bounds)\n')
-    out_lines.append(f'const uint16_t g_{var_name}_frames[] __attribute__((aligned(4))) = ')
-    out_lines.append(fr_pix)
-    out_lines.append('\n')
+    emit_frames(out_lines, var_name, fr_pix)
     out_lines.append(f'const uint32_t g_{var_name}_frame_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = ')
     out_lines.append(fr_offs)
     out_lines.append('\n')
     out_lines.append(f'const uint8_t g_{var_name}_frame_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4] = ')
     out_lines.append(fr_bnds)
     out_lines.append('\n')
-    if var_name in STREAMED:
-        sh_offs, sh_data = crop_shadow_masks(shb_body, mask_body, out_shw, out_shh, frame_idx)
-        write_streamed_bin(var_name, fr_pix, fr_offs, fr_bnds, fr_runs, fr_run_offs, sh_data, sh_offs, shb_body)
-        del out_lines[sheet_mark:]      # this slot has no C arrays: only the config row, anchors and muzzle tables
-        continue
     emit_runs(out_lines, var_name, fr_run_offs, fr_runs, 'PLAYER_NUM_FRAMES',
               f'Opaque runs per row of {disp_name} frames (blit_stride): block = (bh+1) row offsets in halfwords, then x | len << 8')
 
     sh_offs, sh_data = crop_shadow_masks(shb_body, mask_body, out_shw, out_shh, frame_idx)
-    out_lines.append(f'// 4-bit packed animated crisp 3D shadow masks for {disp_name} (8 dirs x 8 frames, cropped to bounds)\n')
-    out_lines.append(f'const uint8_t g_{var_name}_shadow_masks[] __attribute__((aligned(4))) = ')
-    out_lines.append(sh_data)
-    out_lines.append('\n')
+    out_lines.append(f'// 1 bpp packed animated crisp 3D shadow masks for {disp_name} (8 dirs x 8 frames, cropped to bounds)\n')
+    emit_masks(out_lines, var_name, sh_data)
     out_lines.append(f'const uint32_t g_{var_name}_shadow_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = ')
     out_lines.append(sh_offs)
     out_lines.append('\n')
@@ -500,9 +474,7 @@ print('charger charge anchors: walk', walk_c_anchors, 'charge', chg_anchors, 'sh
 chg_mode = resolve_legibility(CHARGE_DIR, ARGS.legibility)
 chg_fr_offs, chg_fr_bnds, chg_fr_pix, chg_run_offs, chg_runs = convert_sheet_cropped(os.path.join(CHARGE_DIR, 'spritesheet.png'), 60, 60, chg_shift, chg_frames, legibility=chg_mode)
 out_lines.append('// 60x60 BGR555 charge clip of the charger (CHAR_CHARGER), 8 directions x 4 frames (cropped to bounds)\n')
-out_lines.append('const uint16_t g_charger_charge_frames[] __attribute__((aligned(4))) = ')
-out_lines.append(chg_fr_pix)
-out_lines.append('\n')
+emit_frames(out_lines, 'charger_charge', chg_fr_pix)
 out_lines.append('const uint32_t g_charger_charge_frame_offsets[PLAYER_NUM_DIRS][CHARGER_CHARGE_NUM_FRAMES] = ')
 out_lines.append(chg_fr_offs)
 out_lines.append('\n')
@@ -512,10 +484,8 @@ out_lines.append('\n')
 emit_runs(out_lines, 'charger_charge', chg_run_offs, chg_runs, 'CHARGER_CHARGE_NUM_FRAMES', 'Opaque runs of the charger charge clip')
 
 chg_sh_offs, chg_sh_data = crop_shadow_masks(chg_shb_body, chg_mask_body, 80, 80, chg_frames)
-out_lines.append('// 4-bit packed shadow masks of the charger charge clip (8 dirs x 4 frames, cropped to bounds)\n')
-out_lines.append('const uint8_t g_charger_charge_shadow_masks[] __attribute__((aligned(4))) = ')
-out_lines.append(chg_sh_data)
-out_lines.append('\n')
+out_lines.append('// 1 bpp packed shadow masks of the charger charge clip (8 dirs x 4 frames, cropped to bounds)\n')
+emit_masks(out_lines, 'charger_charge', chg_sh_data)
 out_lines.append('const uint32_t g_charger_charge_shadow_offsets[PLAYER_NUM_DIRS][CHARGER_CHARGE_NUM_FRAMES] = ')
 out_lines.append(chg_sh_offs)
 out_lines.append('\n')
@@ -535,9 +505,7 @@ print('charger telegraph anchors: walk', walk_c_anchors, 'telegraph', tg_anchors
 tg_mode = resolve_legibility(TELE_DIR, ARGS.legibility)
 tg_fr_offs, tg_fr_bnds, tg_fr_pix, tg_run_offs, tg_runs = convert_sheet_cropped(os.path.join(TELE_DIR, 'spritesheet.png'), 60, 60, tg_shift, tg_frames, legibility=tg_mode)
 out_lines.append('// 60x60 BGR555 telegraph keyframe of the charger (CHAR_CHARGER), 8 directions x 1 frame (cropped to bounds)\n')
-out_lines.append('const uint16_t g_charger_telegraph_frames[] __attribute__((aligned(4))) = ')
-out_lines.append(tg_fr_pix)
-out_lines.append('\n')
+emit_frames(out_lines, 'charger_telegraph', tg_fr_pix)
 out_lines.append('const uint32_t g_charger_telegraph_frame_offsets[PLAYER_NUM_DIRS][CHARGER_TELEGRAPH_NUM_FRAMES] = ')
 out_lines.append(tg_fr_offs)
 out_lines.append('\n')
@@ -594,9 +562,7 @@ for cvar, cfolder, cframes, cconst, cdesc in OJO_CLIPS:
     c_shb, c_mask = crop_shadow_to_80(c_shb, c_mask, 112, 112, cframes)
     c_offs, c_bnds, c_pix, c_roffs, c_runs = convert_sheet_cropped(os.path.join(cdir, 'spritesheet.png'), 56, 56, c_shift, cframes)
     out_lines.append(f'// 56x56 BGR555 {cdesc} clip of the Ojo (CHAR_OJO), 8 directions x {len(cframes)} frames (cropped to bounds)\n')
-    out_lines.append(f'const uint16_t g_{cvar}_frames[] __attribute__((aligned(4))) = ')
-    out_lines.append(c_pix)
-    out_lines.append('\n')
+    emit_frames(out_lines, cvar, c_pix)
     out_lines.append(f'const uint32_t g_{cvar}_frame_offsets[PLAYER_NUM_DIRS][{cconst}] = ')
     out_lines.append(c_offs)
     out_lines.append('\n')
@@ -605,10 +571,8 @@ for cvar, cfolder, cframes, cconst, cdesc in OJO_CLIPS:
     out_lines.append('\n')
     emit_runs(out_lines, cvar, c_roffs, c_runs, cconst, f'Opaque runs of the {cdesc} clip')
     c_so, c_sd = crop_shadow_masks(c_shb, c_mask, SHADOW_W, SHADOW_H, cframes)
-    out_lines.append(f'// 4-bit packed shadow masks of the {cdesc} clip (8 dirs x {len(cframes)} frames, cropped to bounds)\n')
-    out_lines.append(f'const uint8_t g_{cvar}_shadow_masks[] __attribute__((aligned(4))) = ')
-    out_lines.append(c_sd)
-    out_lines.append('\n')
+    out_lines.append(f'// 1 bpp packed shadow masks of the {cdesc} clip (8 dirs x {len(cframes)} frames, cropped to bounds)\n')
+    emit_masks(out_lines, cvar, c_sd)
     out_lines.append(f'const uint32_t g_{cvar}_shadow_offsets[PLAYER_NUM_DIRS][{cconst}] = ')
     out_lines.append(c_so)
     out_lines.append('\n')
@@ -674,7 +638,7 @@ out_lines.append('const uint8_t g_player_shot_ground_anchors[PLAYER_NUM_DIRS] = 
 emit_runs(out_lines, 'player_shot', shot_run_offs, shot_runs, 'PLAYER_NUM_FRAMES', 'Opaque runs of the hero shot clip')
 
 shot_sh_offs, shot_sh_data = crop_shadow_masks(shot_shb_body, shot_mask_body, SHADOW_W, SHADOW_H)
-out_lines.append('// 4-bit packed shadow masks of the hero shot clip (8 dirs x 8 frames, cropped to bounds)\n')
+out_lines.append('// 1 bpp packed shadow masks of the hero shot clip (8 dirs x 8 frames, cropped to bounds)\n')
 out_lines.append('const uint8_t g_player_shot_shadow_masks[] __attribute__((aligned(4))) = ')
 out_lines.append(shot_sh_data)
 out_lines.append('\n')
@@ -702,9 +666,7 @@ ab_pt_mode = resolve_legibility(AB_PT_DIR, ARGS.legibility)
 ab_pt_offs, ab_pt_bnds, ab_pt_pix, ab_pt_roffs, ab_pt_runs = convert_sheet_cropped(
     os.path.join(AB_PT_DIR, 'spritesheet.png'), 60, 60, ab_pt_shift, legibility=ab_pt_mode)
 out_lines.append('// 60x60 BGR555 point clip of El Abanderado (CHAR_ABANDERADO), 8 directions x 8 frames (cropped to bounds)\n')
-out_lines.append('const uint16_t g_abanderado_point_frames[] __attribute__((aligned(4))) = ')
-out_lines.append(ab_pt_pix)
-out_lines.append('\n')
+emit_frames(out_lines, 'abanderado_point', ab_pt_pix)
 out_lines.append('const uint32_t g_abanderado_point_frame_offsets[PLAYER_NUM_DIRS][ABANDERADO_POINT_NUM_FRAMES] = ')
 out_lines.append(ab_pt_offs)
 out_lines.append('\n')
@@ -714,10 +676,8 @@ out_lines.append('\n')
 emit_runs(out_lines, 'abanderado_point', ab_pt_roffs, ab_pt_runs, 'ABANDERADO_POINT_NUM_FRAMES',
           'Opaque runs of the Abanderado point clip')
 ab_pt_so, ab_pt_sd = crop_shadow_masks(ab_pt_shb, ab_pt_mask, SHADOW_W, SHADOW_H)
-out_lines.append('// 4-bit packed shadow masks of the Abanderado point clip (8 dirs x 8 frames, cropped to bounds)\n')
-out_lines.append('const uint8_t g_abanderado_point_shadow_masks[] __attribute__((aligned(4))) = ')
-out_lines.append(ab_pt_sd)
-out_lines.append('\n')
+out_lines.append('// 1 bpp packed shadow masks of the Abanderado point clip (8 dirs x 8 frames, cropped to bounds)\n')
+emit_masks(out_lines, 'abanderado_point', ab_pt_sd)
 out_lines.append('const uint32_t g_abanderado_point_shadow_offsets[PLAYER_NUM_DIRS][ABANDERADO_POINT_NUM_FRAMES] = ')
 out_lines.append(ab_pt_so)
 out_lines.append('\n')
@@ -739,23 +699,50 @@ for muzzle in all_muzzles:
     out_lines.append('    },\n')
 out_lines.append('};\n\n')
 
+# The three big tables are filled at runtime for the streamed (enemy) slots: NULL until chars_pool.c loads the clip.
 for tbl, suffix in (
     ('const uint16_t * g_character_frames[NUM_CHARACTERS]', 'frames'),
-    ('const uint32_t (* g_character_frame_offsets[NUM_CHARACTERS])[PLAYER_NUM_FRAMES]', 'frame_offsets'),
-    ('const uint8_t (* g_character_frame_bounds[NUM_CHARACTERS])[PLAYER_NUM_FRAMES][4]', 'frame_bounds'),
+    ('const uint32_t (* const g_character_frame_offsets[NUM_CHARACTERS])[PLAYER_NUM_FRAMES]', 'frame_offsets'),
+    ('const uint8_t (* const g_character_frame_bounds[NUM_CHARACTERS])[PLAYER_NUM_FRAMES][4]', 'frame_bounds'),
     ('const uint16_t * g_character_runs[NUM_CHARACTERS]', 'runs'),
-    ('const uint32_t (* g_character_run_offsets[NUM_CHARACTERS])[PLAYER_NUM_FRAMES]', 'run_offsets'),
+    ('const uint32_t (* const g_character_run_offsets[NUM_CHARACTERS])[PLAYER_NUM_FRAMES]', 'run_offsets'),
     ('const uint8_t * g_character_shadow_masks[NUM_CHARACTERS]', 'shadow_masks'),
-    ('const uint32_t (* g_character_shadow_offsets[NUM_CHARACTERS])[PLAYER_NUM_FRAMES]', 'shadow_offsets'),
-    ('const uint8_t (* g_character_shadow_bounds[NUM_CHARACTERS])[PLAYER_NUM_FRAMES][4]', 'shadow_bounds'),
+    ('const uint32_t (* const g_character_shadow_offsets[NUM_CHARACTERS])[PLAYER_NUM_FRAMES]', 'shadow_offsets'),
+    ('const uint8_t (* const g_character_shadow_bounds[NUM_CHARACTERS])[PLAYER_NUM_FRAMES][4]', 'shadow_bounds'),
 ):
     out_lines.append(f'{tbl} = {{\n')
-    out_lines.append(',\n'.join(('    0' if c[0] in STREAMED else f'    g_{c[0]}_{suffix}') for c in char_configs) + '\n')
+    big = suffix in ('frames', 'runs', 'shadow_masks')
+    out_lines.append(',\n'.join('    NULL' if (big and c[0] in STREAMED) else f'    g_{c[0]}_{suffix}' for c in char_configs) + '\n')
     out_lines.append('};\n\n')
+
+# Clip table of the loader (source/chars_pool.c): file, the three pointers to fill, the character slot of the
+# g_character_* tables it feeds (-1 = extra clip addressed by name) and the art group it belongs to.
+slot_of = {c[0]: i for i, c in enumerate(char_configs)}
+out_lines.append('const CharClipDef g_char_clips[] = {\n')
+for clip, group in STREAMED.items():
+    mk = f'&g_{clip}_shadow_masks' if BINS[clip].get('masks') else 'NULL'      # the charger telegraph has no shadow of its own
+    out_lines.append(f'    {{ "chars/{clip}.bin", &g_{clip}_frames, &g_{clip}_runs, {mk}, {slot_of.get(clip, -1)}, {group} }},' + chr(10))
+out_lines.append('};\n')
+out_lines.append(f'const int g_char_clip_count = {len(STREAMED)};\n\n')
 
 out_path = os.path.join(WT, 'source/player_sprite.c')
 with open(out_path, 'w', encoding='utf-8') as f:
     f.writelines(out_lines)
 
+import struct
+BIN_DIR = os.path.join(WT, 'nitrofiles', 'chars')
+os.makedirs(BIN_DIR, exist_ok=True)
+assert set(BINS) == set(STREAMED), (set(STREAMED) ^ set(BINS))
+total_bin = 0
+for clip, blocks in sorted(BINS.items()):
+    fr = struct.pack('<%dH' % len(blocks['frames']), *blocks['frames'])
+    rn = struct.pack('<%dH' % len(blocks['runs']), *blocks['runs'])
+    mk = bytes(blocks.get('masks', []))
+    pad = lambda b: b + b'\0' * (-len(b) & 3)
+    with open(os.path.join(BIN_DIR, clip + '.bin'), 'wb') as bf:
+        bf.write(b'CHR1' + struct.pack('<III', len(fr), len(rn), len(mk)))
+        bf.write(pad(fr)); bf.write(pad(rn)); bf.write(pad(mk))
+    total_bin += 16 + len(pad(fr)) + len(pad(rn)) + len(pad(mk))
+print('Streamed enemy clips: %d bins, %d bytes in nitrofiles/chars/' % (len(BINS), total_bin))
 print('Opaque-run tables: %d bytes (runs + offsets)' % sum(RUN_STATS))
 print('Generated source/player_sprite.c successfully! Size:', os.path.getsize(out_path), 'bytes')

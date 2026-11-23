@@ -61,7 +61,7 @@
             "defines": ["ENC_START_CAMPANERO=1", "SKIP_TITLE=1", "ARPG_ALL_UNLOCKED=1", "CFX_PROF=1"]
         },
         "arpg-campanero-perf": {
-            "defines": ["ENC_START_CAMPANERO=1", "SKIP_TITLE=1", "ARPG_ALL_UNLOCKED=1", "PERF_PROFILE=1", "CAMP_PRELOAD=1"]
+            "defines": ["ENC_START_CAMPANERO=1", "SKIP_TITLE=1", "ARPG_ALL_UNLOCKED=1", "PERF_PROFILE=1"]
         },
         "cfx-test": {
             "defines": ["ARPG_LAB=1", "SKIP_TITLE=1", "ARPG_ALL_UNLOCKED=1", "CFX_TEST=1"]
