@@ -56,6 +56,9 @@
         },
         "arpg-boxeo": {
             "defines": ["ARPG_LAB=1", "ARPG_BOXEO=1", "SKIP_TITLE=1", "ARPG_ALL_UNLOCKED=1"]
+        },
+        "arpg-exvotos": {
+            "defines": ["ARPG_EXVOTO_TEST=1", "SKIP_TITLE=1", "ARPG_ALL_UNLOCKED=1", "PERF_PROFILE=1"]
         }
     },
     "hostTests": [

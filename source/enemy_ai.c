@@ -393,7 +393,7 @@ static void exvoto_weave(const Enemy *e, int idx, int dx, int dy) {
 #endif
 
 // Bodyguard (DESIGN-ARPG s5, Monaguillo and Parroco): while the hero charges the Ray, the guard runs to the point of the
-// line hero -> nearest ally (the Monja de cera first) that is ARPG_GUARD_DIST ground px from the hero, and waits there
+// line hero -> nearest ally (the Súper Monja first, else the ally nearest the hero; never the Bebé or another guard) that is ARPG_GUARD_DIST ground px from the hero, and waits there
 // facing him. Returns 1 when it spent the frame on that (no walk, no bite); 0 when there is nothing to guard.
 static int bodyguard_step(Enemy *e, Enemy *enemies, int num_enemies, int idx, int px, int py, fixed speed) {
     if (!weapons_aim_charging()) return 0;
@@ -403,6 +403,7 @@ static int bodyguard_step(Enemy *e, Enemy *enemies, int num_enemies, int idx, in
         const Enemy *o = &enemies[j];
         if (j == idx || !o->active || o->hp <= 0 || g_enemy_ally[j]) continue;
         if (o->type == ENEMY_TYPE_PARROCO || o->type == ENEMY_TYPE_MONAGUILLO) continue;      // other bodyguards are not guarded
+        if (o->type == ENEMY_TYPE_BEBE) continue;      // the Bebé is filler, not worth guarding
         if (o->state == ENEMY_STATE_DORMANT || o->state == ENEMY_STATE_DEAD || o->state == ENEMY_STATE_EMERGE) continue;
         const int ox = TO_INT(o->x) - px, oy = TO_INT(o->y) - py;
         const int d = ox * ox + GROUND_DY2(oy);
@@ -497,6 +498,10 @@ static void update_exvoto(Enemy *e, Enemy *enemies, int num_enemies, int idx,
         }
 
         case ENEMY_STATE_ATTACK: {
+            if ((e->type == ENEMY_TYPE_PARROCO || e->type == ENEMY_TYPE_MONAGUILLO) && weapons_aim_charging()) {
+                e->state = ENEMY_STATE_CHASE;      // a guard leaves the bite cooldown to cover the hero's Ray charge
+                if (bodyguard_step(e, enemies, num_enemies, idx, px, py, tuning->speed)) break;
+            }
             e->dir = dir_from_vector(player_x - e->x, player_y - e->y);
             if (--e->state_timer <= 0) e->state = ENEMY_STATE_CHASE;
             update_animation(e, 0);
@@ -513,6 +518,10 @@ static void update_exvoto(Enemy *e, Enemy *enemies, int num_enemies, int idx,
                 break;
             }
 
+            // Bodyguards (Monaguillo, Párroco): while the hero charges the Ray they run to stand in the line of fire (before the bite: covering beats biting).
+            if ((e->type == ENEMY_TYPE_PARROCO || e->type == ENEMY_TYPE_MONAGUILLO) &&
+                bodyguard_step(e, enemies, num_enemies, idx, px, py, tuning->speed)) break;
+
             // Bite when in melee range and nothing solid is in between.
             int melee_range = tuning->preferred_dist_max;
             if (ground_dist_sq <= melee_range * melee_range &&
@@ -524,10 +533,6 @@ static void update_exvoto(Enemy *e, Enemy *enemies, int num_enemies, int idx,
                 update_animation(e, 0);
                 break;
             }
-
-            // Bodyguards (Monaguillo, Párroco): while the hero charges the Ray they run to stand in the line of fire.
-            if ((e->type == ENEMY_TYPE_PARROCO || e->type == ENEMY_TYPE_MONAGUILLO) &&
-                bodyguard_step(e, enemies, num_enemies, idx, px, py, tuning->speed)) break;
 
             refresh_view(e, idx, wx, wy, px, py, ground_dist_sq, CHASE_DIRECT_RANGE);
 #if ENCOUNTERS_PROTO
@@ -1311,6 +1316,15 @@ static void smonja_update(Enemy *e, Enemy *enemies, int num_enemies, int idx, in
             return;
         }
         case SM_CHARGE: {
+            if (ground_dist_sq > ARPG_SMONJA_CHARGE_LOCK_DIST * ARPG_SMONJA_CHARGE_LOCK_DIST) {   // she tracks the hero until close
+                int tx, ty;
+                if (aim_vector(wx, wy, px, py, &tx, &ty)) {
+                    int mx = (e->aim_dir_x * ((1 << ARPG_SMONJA_CHARGE_STEER) - 1) + tx) >> ARPG_SMONJA_CHARGE_STEER;
+                    int my = (e->aim_dir_y * ((1 << ARPG_SMONJA_CHARGE_STEER) - 1) + ty) >> ARPG_SMONJA_CHARGE_STEER;
+                    int len = (int)int_sqrt((uint32_t)(mx * mx + GROUND_DY2(my)));
+                    if (len > 0) { e->aim_dir_x = div32(mx * 256, len); e->aim_dir_y = div32(my * 256, len); }
+                }
+            }
             fixed vx = (fixed)((e->aim_dir_x * ARPG_SMONJA_CHARGE_SPEED) >> 8);
             fixed vy = (fixed)((e->aim_dir_y * ARPG_SMONJA_CHARGE_SPEED) >> 8);
             int moved = move_with_slide(&e->x, &e->y, vx, vy);

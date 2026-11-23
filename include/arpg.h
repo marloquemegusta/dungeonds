@@ -19,7 +19,7 @@
 #define ARPG_DMG_BEBE 8             // [TUNABLE-PLACEHOLDER] swarm tier: weak individually, dangerous in numbers
 #define ARPG_DMG_PARROCO 25         // [TUNABLE-PLACEHOLDER] tank tier: hits harder than the Exvoto (15)
 #define ARPG_GUARD_DIST 70          // [TUNABLE-PLACEHOLDER] ground px from the hero where a bodyguard (Monaguillo, PÃ¡rroco) stands in the line of fire
-#define ARPG_GUARD_SPEED_X 3        // [TUNABLE-PLACEHOLDER] a bodyguard runs to the line at this multiple of its walking speed
+#define ARPG_GUARD_SPEED_X 6        // [TUNABLE-PLACEHOLDER] a bodyguard runs to the line at this multiple of its walking speed
 #define ARPG_PARROCO_FLASH_FRAMES 5 // [TUNABLE-PLACEHOLDER] frames the PÃ¡rroco's body flashes wax-white when the ray breaks on it
 #define ARPG_SMONJA_GLIFO_SPEED 768 // [TUNABLE-PLACEHOLDER] 8.8 ground px/frame of the SÃºper Monja's dash out of a glifo (3 px/frame)
 #define ARPG_SMONJA_GLIFO_REACT 10  // [TUNABLE-PLACEHOLDER] frames she stays still after the glifo lands, before dashing out
@@ -60,7 +60,9 @@
 #define ARPG_SMONJA_WARN_FRAMES 30      // [TUNABLE-PLACEHOLDER] still and trembling before the charge (0.5 s)
 #define ARPG_SMONJA_CHARGE_SPEED 768    // [TUNABLE-PLACEHOLDER] 8.8 ground px/frame of the charge (3 px/frame)
 #define ARPG_SMONJA_CHARGE_FRAMES 48    // [TUNABLE-PLACEHOLDER] max frames of the charge (~144 ground px) if it touches nothing
-#define ARPG_SMONJA_HIT_RADIUS 16       // [TUNABLE-PLACEHOLDER] ground px: the headbutt lands (and the charge stops) inside this
+#define ARPG_SMONJA_HIT_RADIUS 24       // [TUNABLE-PLACEHOLDER] ground px: the headbutt lands (and the charge stops) inside this
+#define ARPG_SMONJA_CHARGE_LOCK_DIST 40 // [TUNABLE-PLACEHOLDER] ground px: the charge steers after the hero until this close, then locks its heading
+#define ARPG_SMONJA_CHARGE_STEER 2      // [TUNABLE-PLACEHOLDER] steering sharpness: heading = (heading * (2^N - 1) + toward hero) / 2^N each frame
 #define ARPG_SMONJA_CHARGE_DAMAGE 20    // [TUNABLE-PLACEHOLDER] damage of the charge
 #define ARPG_SMONJA_RECOVER_FRAMES 9    // [TUNABLE-PLACEHOLDER] still after the headbutt / end of the charge: her weak moment
 #define ARPG_SMONJA_BOUNCE_SPEED 640    // [TUNABLE-PLACEHOLDER] 8.8 ground px/frame of the bounce back (2.5 px/frame)

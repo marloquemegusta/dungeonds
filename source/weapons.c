@@ -5,6 +5,7 @@
 #include "groundfx.h"
 #include "hitvolume.h"
 #include "sfx.h"
+#include "dmg_numbers.h"
 #include "arpg.h"
 #include "arpg_inv.h"
 #include "allies.h"
@@ -670,7 +671,7 @@ static void fire_sniper(const WeaponTuning *tuning, const WeaponInput *in, fixed
 #if ENCOUNTERS_PROTO
                 if (e->type == ENEMY_TYPE_PARROCO) {
                     // Parroco (DESIGN-ARPG s5): immune to the Ray. The Lanza goes through it without a mark; any other
-                    // ray breaks on it: no damage, no number, a short fan of sparks and a wax-white flash of its body.
+                    // ray breaks on it: no damage, a 0 number, a short fan of sparks and a wax-white flash of its body.
                     if (pierce_all) continue;
                     int padv = (TO_INT(e->x - cur_x) * dir_x + TO_INT(e->y - cur_y) * dir_y) >> 8;
                     if (padv < 0) padv = 0;
@@ -678,6 +679,7 @@ static void fire_sniper(const WeaponTuning *tuning, const WeaponInput *in, fixed
                     cur_x += dir_x * padv;
                     cur_y += dir_y * padv;
                     e->gesture = ARPG_PARROCO_FLASH_FRAMES;
+                    dmg_numbers_spawn_zero(e->x, e->y - TO_FIXED(16));
                     survivor = 1;
                     spawn_impact(TO_INT(cur_x), TO_INT(cur_y) - in->muzzle_h, -dir_x, -dir_y, 8, 1);
                     sniper_hit_fx(in, cur_x, cur_y);

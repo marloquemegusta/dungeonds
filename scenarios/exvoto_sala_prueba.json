@@ -1,0 +1,11 @@
+{
+  "name": "exvoto_sala_prueba",
+  "description": "Variante arpg-exvotos: arranca en la catedral ARPG con el encuentro de prueba de los Exvotos de escalon 3 delante del heroe (Super Monja, 2 Monjas de cera, 2 Monaguillos, Parroco y Bebe). Sin input ~4 s; la ultima captura debe mostrar a alguno en forma arana por la posesion.",
+  "suite": false,
+  "evidence_only": true,
+  "steps": [
+    { "frames": 40, "capture": "01_aparecen" },
+    { "frames": 80, "capture": "02_avanzan" },
+    { "frames": 120, "capture": "03_posesion" }
+  ]
+}

@@ -28,6 +28,10 @@
 #ifndef ARPG_BOXEO
 #define ARPG_BOXEO 0
 #endif
+/* Variant "arpg-exvotos": rooms stay empty; exvoto_test.c keeps a test encounter of tier-3 exvotos ahead of the hero. */
+#ifndef ARPG_EXVOTO_TEST
+#define ARPG_EXVOTO_TEST 0
+#endif
 
 #if ARPG_LAB
 #include "sfx.h"

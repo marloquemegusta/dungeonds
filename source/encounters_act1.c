@@ -992,7 +992,7 @@ void enc_update(Enemy *enemies, int max_enemies, int px, int py) {
     // stays unspawned and retries on a later frame.
     for (int k = lo; k < hi; k++) {
         EncRuntime *rt = &s_rt[k];
-#if ARPG_BOXEO
+#if ARPG_BOXEO || ARPG_EXVOTO_TEST
         continue;               // boxeo: no room ever populates; the only enemy is the dummy of boxeo.c
 #endif
         if (rt->spawned) continue;
