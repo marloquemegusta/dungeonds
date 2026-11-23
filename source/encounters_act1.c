@@ -1010,8 +1010,8 @@ void enc_update(Enemy *enemies, int max_enemies, int px, int py) {
     }
 #endif
     if (g_relic_drop_debug) {   // buzon de escenarios: 5 reliquias/tomos en fila sobre el heroe
-        static const uint8_t kind[5] = {ARPG_ITEM_RELIC, ARPG_ITEM_RELIC, ARPG_ITEM_RELIC, ARPG_ITEM_TOME, ARPG_ITEM_TOME};
-        static const uint8_t sch[5] = {ARPG_SCHOOL_PECHO, ARPG_SCHOOL_RAYO, ARPG_SCHOOL_EJECUCION, ARPG_SCHOOL_RAYO, ARPG_SCHOOL_GLIFO};
+        static const uint8_t kind[5] = {ARPG_ITEM_RELIC, ARPG_ITEM_RELIC, ARPG_ITEM_RELIC, ARPG_ITEM_RELIC, ARPG_ITEM_TOME};
+        static const uint8_t sch[5] = {ARPG_SCHOOL_PECHO, ARPG_SCHOOL_RAYO, ARPG_SCHOOL_EJECUCION, ARPG_SCHOOL_GLIFO, ARPG_SCHOOL_GLIFO};
         uint32_t rng = 7u;
         for (int i = 0; i < 5; i++) {
             ArpgInvItem it;

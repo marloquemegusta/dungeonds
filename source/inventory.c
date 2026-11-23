@@ -465,6 +465,10 @@ static void draw_item_glyph(uint16_t *buf, const ArpgInvItem *it, int cx, int cy
             draw_sprite_24(buf, s_relic_calavera_24, cx, cy, dim);
             return;
         }
+        if (it->school == ARPG_SCHOOL_GLIFO) {
+            draw_sprite_24(buf, s_relic_hostia_24, cx, cy, dim);
+            return;
+        }
     }
     uint16_t col = s_school_col[it->school];
     if (dim) col = (uint16_t)(((col & 0x7BDEu) >> 1) | BIT(15));
@@ -486,6 +490,7 @@ static const void *floor_art(const ArpgInvItem *it, int which) {
         if (it->school == ARPG_SCHOOL_RAYO) return FLOOR_PICK(relic_lanza);
         if (it->school == ARPG_SCHOOL_EJECUCION) return FLOOR_PICK(relic_nudillera);
         if (it->school == ARPG_SCHOOL_LEVANTAR) return FLOOR_PICK(relic_calavera);
+        if (it->school == ARPG_SCHOOL_GLIFO) return FLOOR_PICK(relic_hostia);
     }
 #undef FLOOR_PICK
     return NULL;
@@ -789,6 +794,7 @@ static const char *item_spin_slug(const ArpgInvItem *it) {
         if (it->school == ARPG_SCHOOL_RAYO) return "relic_lanza";
         if (it->school == ARPG_SCHOOL_EJECUCION) return "relic_nudillera";
         if (it->school == ARPG_SCHOOL_LEVANTAR) return "relic_calavera";
+        if (it->school == ARPG_SCHOOL_GLIFO) return "relic_hostia";
     }
     return NULL;
 }

@@ -42,7 +42,7 @@ Todo asset que use el juego está en este catálogo y versionado. Lo que no est�
 | Paleta de la catedral | renders actuales | `tools/palette/extract_palette.py` | `assets/environment/cathedral/palette/palette.json` | git (derivado versionado) |
 | Arenas (mazmorra) | `assets/arenas/arenas.json` | `tools/export_arenas.py` → `bake_arena.py` | `source/arena_dungeon_01.c` | git |
 | HUD | corazón sagrado 3D `assets/models/hud/sacred_heart/` | `tools/hud/prerender_hud_heart.py` → `tools/generate_hud_icons_c.py` | `source/hud_icons_gfx.c` | LFS (PNG: git) |
-| Reliquias y tomos del inventario | modelos 3D en `assets/models/items/` (§6) y `assets/models/hud/sacred_heart/` | export GLB (Blender) → lab (C2) → `tools/generate_item_icons_c.py`; giros 56×56 con `tools/render_item_spin.py` | `include/inv_item_art.h` + `nitrofiles/items/*.bin` | LFS (bins en git) |
+| Reliquias y tomos del inventario | modelos 3D en `assets/models/items/` (§6) y `assets/models/hud/sacred_heart/`; la hostia del Glifo no tiene modelo: la genera `tools/make_relic_hostia.py` | giros 56×56 con `tools/render_item_spin.py`; icono de 24 px con `render_item_spin.py --icon24` + `tools/bake_item_icon24.py <slug>` (los seis primeros salieron del lab, con `generate_item_icons_c.py`, que ya no está en el repo) | `include/inv_item_art.h` + `nitrofiles/items/*.bin` | LFS (bins en git) |
 | Reliquias y tomos en el suelo (ARPG) | los iconos de 24 px de `include/inv_item_art.h` | `tools/bake_inv_floor_art.py` (contraste, halo y sombra proyectada) | `include/inv_item_floor_art.h` | git |
 | Rayos de luz | pintados a mano, `assets/sprites/godrays/` | `source/godrays_gfx.c` (notas en `tools/godrays/README.md`) | `source/godrays_gfx.c` | git |
 | Cartas de mejora | escenas reales de la ROM (`cathedral-sandbox`) | `tools/levelup_cards/capture_cards.py` (píxeles comprimidos con `tools/lz10.py`) | `nitrofiles/levelup/*.bin` (LZ10) | derivado (capturas intermedias en `assets/sprites/levelup/`, ignoradas) |
@@ -154,6 +154,7 @@ Modelos 3D descargados de Tripo y adoptados para el inventario ARPG (2026-11-22)
 | `relic_lanza` | `0d52d8fc-15de-4d38-96f4-428d929ce548` | Rayo (Reliquia base / Punta de lanza) | `s_relic_lanza_24` | Integrado en ROM |
 | `relic_nudillera` | `bbb28601-f245-42a7-93b7-c5cc8f5208a7` | Ejecución (Reliquia base / Nudillera) | `s_relic_nudillera_24` | Integrado en ROM |
 | `relic_calavera` | `c1f10f3e-f623-4806-9d9f-e33bd68769f8` | Levantar (Reliquia base / Cráneo votivo) | `s_relic_calavera_24` | Integrado en ROM |
+| `relic_hostia` | — (geometría por script: `tools/make_relic_hostia.py`; dibujo de referencia `assets/inbox/hostia_24px_8x_ref1.png`) | Glifo (Hostia consagrada con el anillo y el crismón hendidos) | `s_relic_hostia_24` | Integrado en ROM |
 | `tome_glifo` | `d5266d16-afb4-4b41-b70f-4489e4284835` | Glifo (Tomo verde) | `s_tome_glifo_24` | Integrado en ROM |
 | `tome_levantar` | `6d103588-8b90-49d8-a6a3-c08fe9093cd3` | Levantar (Tomo negro) | `s_tome_levantar_24` | Integrado en ROM |
 | `tome_rayo` | `3c8af05f-e6d7-48a1-bb2f-018926b464f0` | Rayo (Tomo amarillo con cruz) | `s_tome_rayo_24` | Horneado; sin uso inicial (el héroe empieza con Rayo) |
