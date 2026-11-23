@@ -1,6 +1,7 @@
 #include "campanero_boss_text.h"
 #include "encounters_act1.h"
 #include "lab_tuning.h"
+#include "sound_test.h"
 
 // Translation unit never empty (ISO C) when ENCOUNTERS_PROTO=0.
 typedef int encounters_act1_translation_unit_not_empty;
@@ -1130,6 +1131,9 @@ void enc_update(Enemy *enemies, int max_enemies, int px, int py) {
         EncRuntime *rt = &s_rt[k];
 #if ARPG_BOXEO || ARPG_EXVOTO_TEST || ARPG_REMATE_TEST
         continue;               // boxeo: no room ever populates; the only enemy is the dummy of boxeo.c
+#endif
+#if SOUND_TEST
+        if (sound_test_rooms_empty()) continue;     // prueba-sonidos: a scene (1..7) owns the enemies; scene 0 is the normal map
 #endif
         if (rt->spawned) continue;
         const int top = window_top(block_of_encounter(k));

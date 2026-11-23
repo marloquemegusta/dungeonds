@@ -37,6 +37,15 @@
 #define ARPG_REMATE_TEST 0
 #endif
 
+/* Variant "prueba-sonidos" (needs ARPG_LAB): sound test room. Catalogue of every sound with its file name, the free bank
+ * and scenes (sound_test.c) that set up the situations that trigger each one. Compiles to nothing elsewhere. */
+#ifndef SOUND_TEST
+#define SOUND_TEST 0
+#endif
+#if SOUND_TEST && !ARPG_LAB
+#error "SOUND_TEST needs ARPG_LAB"
+#endif
+
 #if ARPG_LAB
 #include "sfx.h"
 
@@ -50,7 +59,8 @@ enum {
     LABV_COUNT
 };
 
-typedef enum { LAB_KIND_INT = 0, LAB_KIND_SFX_VARIANT } LabKind;
+/* LAB_KIND_CANDIDATE (SOUND_TEST): a row of the free bank; `min` holds its LABV_* index and A plays that file as is. */
+typedef enum { LAB_KIND_INT = 0, LAB_KIND_SFX_VARIANT, LAB_KIND_CANDIDATE } LabKind;
 
 typedef struct {
     const char *page;       /* page title (entries with the same text are shown together) */
@@ -86,6 +96,8 @@ void lab_tuning_render(uint16_t *bottom_page);   /* draws over the bottom screen
 /* sfx.c: plays the event with its current variant, ignoring cooldown (the A preview); prepare loads the variant. */
 void sfx_lab_preview(int ev);
 void sfx_lab_prepare(int ev);
+/* sfx.c: plays a free-bank candidate (LABV_*) as it is, centred (loads it on first use). */
+void sfx_lab_play_candidate(int labv);
 #endif
 
 #endif /* LAB_TUNING_H */

@@ -10,7 +10,15 @@ Estado para retomar la protodemo ARPG (código en la rama `proto/arpg`) y sus en
   2. **Zona 1:** mapa fijo de 12 salas, fundidos, persistencia y mapa con SELECT hechos (`arpg-mapa/`). Falta: llave, rejas de capilla, premios por sala, dificultades (Pesadilla, Infierno), atajo, viaje entre altares y santuarios.
   3. **Campamento nocturno:** corregir perspectiva de los muros laterales, conectar la mesa como Crisol de desguace (y uso de cera/pociones) y señal diegética de foco sin rótulos.
   4. **Interfaz:** tipografía definitiva del inventario; imagen y nombre del juego en el título (decisión de arte pendiente).
-  5. **Sonidos definitivos:** elegir y sustituir los efectos de sonido (SFX) actuales, que son provisionales, por los definitivos.
+  5. **Sonidos definitivos:** elegir y sustituir los efectos de sonido (SFX) actuales, que son provisionales, por los definitivos. Escuchados en la DS con la variante `prueba-sonidos` (2026-11-23, [`walkthrough`](walkthroughs/arpg-prueba-sonidos/walkthrough.md)). Chirrían:
+     - `SND_REMATE_EXEC` (`remate_exec`): uno solo para todos los remates y no se entiende qué representa.
+     - `SND_PICKUP_ORB` (`pickup_orb`): se oye poco; recoger una reliquia debe sonar a premio.
+     - `SND_GLIFO_CRACK` (`lab_creak`, gratuito): suena cómico, a trompetilla de payaso.
+     - `SND_GLIFO_DETONATE` (`lab_mining0`, gratuito): flojo y cutre.
+     - `SND_MONAGUILLO_EMERGE` (`monaguillo_emerge`): correcto, pero no se entiende qué representa.
+     - Mezcla: el aviso de tambaleo tapa `SND_PUNCH_HIT` cuando el primer golpe ya tambalea, y el disparo del Rayo tapa `SND_ENEMY_HIT` (quitarlo o dar al Rayo su propio impacto).
+     - Por revisar: `SND_CIRENEO_WALL` no sonó en la escena de prueba (sin confirmar si es la escena o el juego).
+     - Valen todos los demás, incluido `player_hurt`. Ningún candidato del banco gratuito gustó como sustituto.
   6. **Campanero (zona 2):** equilibrar el encuentro y rediseñar su sala (`DESIGN-ARPG.md` §9).
   7. **Validación en DS:** medición `perf` en hardware (campamento nocturno y salas con ~24 enemigos) y prueba de guardado en tarjeta real (`dungeonds_arpg.sav`).
 

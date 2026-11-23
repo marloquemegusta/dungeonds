@@ -1,6 +1,7 @@
 #include "campanero_sprite.h"
 #include "enemy_ai.h"
 #include "lab_tuning.h"
+#include "sound_test.h"
 #include "horde.h"
 #include "enemy_laser.h"
 #include "groundfx.h"
@@ -2014,6 +2015,9 @@ ITCM_CODE void enemy_ai_update(Enemy *enemies, int num_enemies, fixed player_x, 
 #if ARPG_REMATE_TEST
         if (possess_phase(e) == 1 && possession_step(e)) continue;   // remate room: frozen, but the possessed still lie down
         continue;                                          // no walking, no attack, no guard, no dodge: they only reel from hits
+#endif
+#if SOUND_TEST
+        if (sound_test_freeze()) continue;                 // prueba-sonidos: scenes 1, 2 and 5 hold their enemies still (they only reel from hits)
 #endif
 #if ARPG_BOXEO
         if (g_lab_saco_still) continue;                    // boxeo: the dummy only reels from hits

@@ -1,0 +1,524 @@
+{
+  "name": "prueba_sonidos",
+  "description": "Variante prueba-sonidos: arranque, las paginas del catalogo (L/R) y las escenas 1..7 elegidas desde la pagina Escenas del menu. Solo evidencia.",
+  "suite": false,
+  "evidence_only": true,
+  "state": {
+    "elf": "../.ds-game-dev/build/out/dungeonds-prueba-sonidos.elf",
+    "symbols": {
+      "pl": "s_player"
+    },
+    "default_symbol": "pl",
+    "fields": {
+      "px": {
+        "symbol": "pl",
+        "offset": 0,
+        "type": "s32"
+      },
+      "py": {
+        "symbol": "pl",
+        "offset": 4,
+        "type": "s32"
+      }
+    }
+  },
+  "steps": [
+    {
+      "frames": 90,
+      "capture": "00_arranque"
+    },
+    {
+      "button_down": "SELECT",
+      "frames": 4
+    },
+    {
+      "button_up": "SELECT",
+      "frames": 20,
+      "capture": "cat_escenas_mapa"
+    },
+    {
+      "button_down": "R",
+      "frames": 4
+    },
+    {
+      "button_up": "R",
+      "frames": 8,
+      "capture": "cat_heroe"
+    },
+    {
+      "button_down": "R",
+      "frames": 4
+    },
+    {
+      "button_up": "R",
+      "frames": 8,
+      "capture": "cat_enemigos"
+    },
+    {
+      "button_down": "R",
+      "frames": 4
+    },
+    {
+      "button_up": "R",
+      "frames": 8,
+      "capture": "cat_campanero_jefes"
+    },
+    {
+      "button_down": "R",
+      "frames": 4
+    },
+    {
+      "button_up": "R",
+      "frames": 8,
+      "capture": "cat_mundo_menus"
+    },
+    {
+      "button_down": "R",
+      "frames": 4
+    },
+    {
+      "button_up": "R",
+      "frames": 8,
+      "capture": "cat_banco_gratuito"
+    },
+    {
+      "button_down": "DOWN",
+      "frames": 4
+    },
+    {
+      "button_up": "DOWN",
+      "frames": 5
+    },
+    {
+      "button_down": "DOWN",
+      "frames": 4
+    },
+    {
+      "button_up": "DOWN",
+      "frames": 5
+    },
+    {
+      "button_down": "DOWN",
+      "frames": 4
+    },
+    {
+      "button_up": "DOWN",
+      "frames": 5
+    },
+    {
+      "button_down": "DOWN",
+      "frames": 4
+    },
+    {
+      "button_up": "DOWN",
+      "frames": 5
+    },
+    {
+      "button_down": "DOWN",
+      "frames": 4
+    },
+    {
+      "button_up": "DOWN",
+      "frames": 5
+    },
+    {
+      "button_down": "DOWN",
+      "frames": 4
+    },
+    {
+      "button_up": "DOWN",
+      "frames": 5
+    },
+    {
+      "button_down": "DOWN",
+      "frames": 4
+    },
+    {
+      "button_up": "DOWN",
+      "frames": 5
+    },
+    {
+      "button_down": "DOWN",
+      "frames": 4
+    },
+    {
+      "button_up": "DOWN",
+      "frames": 5
+    },
+    {
+      "button_down": "DOWN",
+      "frames": 4
+    },
+    {
+      "button_up": "DOWN",
+      "frames": 5
+    },
+    {
+      "button_down": "DOWN",
+      "frames": 4
+    },
+    {
+      "button_up": "DOWN",
+      "frames": 5
+    },
+    {
+      "button_down": "DOWN",
+      "frames": 4
+    },
+    {
+      "button_up": "DOWN",
+      "frames": 5
+    },
+    {
+      "button_down": "DOWN",
+      "frames": 4
+    },
+    {
+      "button_up": "DOWN",
+      "frames": 5
+    },
+    {
+      "button_down": "DOWN",
+      "frames": 4
+    },
+    {
+      "button_up": "DOWN",
+      "frames": 5
+    },
+    {
+      "button_down": "DOWN",
+      "frames": 4
+    },
+    {
+      "button_up": "DOWN",
+      "frames": 5
+    },
+    {
+      "button_down": "DOWN",
+      "frames": 4
+    },
+    {
+      "button_up": "DOWN",
+      "frames": 5
+    },
+    {
+      "button_down": "DOWN",
+      "frames": 4
+    },
+    {
+      "button_up": "DOWN",
+      "frames": 5
+    },
+    {
+      "button_down": "DOWN",
+      "frames": 4
+    },
+    {
+      "button_up": "DOWN",
+      "frames": 5
+    },
+    {
+      "button_down": "DOWN",
+      "frames": 4
+    },
+    {
+      "button_up": "DOWN",
+      "frames": 5
+    },
+    {
+      "button_down": "DOWN",
+      "frames": 4
+    },
+    {
+      "button_up": "DOWN",
+      "frames": 5
+    },
+    {
+      "button_down": "DOWN",
+      "frames": 4
+    },
+    {
+      "button_up": "DOWN",
+      "frames": 5
+    },
+    {
+      "frames": 4,
+      "capture": "cat_banco_gratuito_abajo"
+    },
+    {
+      "button_down": "R",
+      "frames": 4
+    },
+    {
+      "button_up": "R",
+      "frames": 8
+    },
+    {
+      "button_down": "B",
+      "frames": 4
+    },
+    {
+      "button_up": "B",
+      "frames": 30
+    },
+    {
+      "button_down": "SELECT",
+      "frames": 4
+    },
+    {
+      "button_up": "SELECT",
+      "frames": 12
+    },
+    {
+      "button_down": "RIGHT",
+      "frames": 4
+    },
+    {
+      "button_up": "RIGHT",
+      "frames": 8,
+      "capture": "menu_escena1"
+    },
+    {
+      "button_down": "B",
+      "frames": 4
+    },
+    {
+      "button_up": "B",
+      "frames": 20
+    },
+    {
+      "frames": 150,
+      "capture": "escena1"
+    },
+    {
+      "poke": [
+        {
+          "field": "px",
+          "value": 37376
+        },
+        {
+          "field": "py",
+          "value": 443392
+        }
+      ],
+      "frames": 1
+    },
+    {
+      "button_down": "RIGHT",
+      "frames": 2
+    },
+    {
+      "button_up": "RIGHT",
+      "frames": 4,
+      "capture": "escena1_junto"
+    },
+    {
+      "button_down": "L",
+      "frames": 3
+    },
+    {
+      "button_up": "L",
+      "frames": 30,
+      "capture": "escena1_tambalea"
+    },
+    {
+      "button_down": "L",
+      "frames": 3
+    },
+    {
+      "button_up": "L",
+      "frames": 14,
+      "capture": "escena1_remate_a"
+    },
+    {
+      "frames": 30,
+      "capture": "escena1_remate_b"
+    },
+    {
+      "frames": 60,
+      "capture": "escena1_orbe"
+    },
+    {
+      "button_down": "SELECT",
+      "frames": 4
+    },
+    {
+      "button_up": "SELECT",
+      "frames": 12
+    },
+    {
+      "button_down": "RIGHT",
+      "frames": 4
+    },
+    {
+      "button_up": "RIGHT",
+      "frames": 8,
+      "capture": "menu_escena2"
+    },
+    {
+      "button_down": "B",
+      "frames": 4
+    },
+    {
+      "button_up": "B",
+      "frames": 20
+    },
+    {
+      "frames": 150,
+      "capture": "escena2"
+    },
+    {
+      "button_down": "SELECT",
+      "frames": 4
+    },
+    {
+      "button_up": "SELECT",
+      "frames": 12
+    },
+    {
+      "button_down": "RIGHT",
+      "frames": 4
+    },
+    {
+      "button_up": "RIGHT",
+      "frames": 8,
+      "capture": "menu_escena3"
+    },
+    {
+      "button_down": "B",
+      "frames": 4
+    },
+    {
+      "button_up": "B",
+      "frames": 20
+    },
+    {
+      "frames": 180,
+      "capture": "escena3"
+    },
+    {
+      "button_down": "SELECT",
+      "frames": 4
+    },
+    {
+      "button_up": "SELECT",
+      "frames": 12
+    },
+    {
+      "button_down": "RIGHT",
+      "frames": 4
+    },
+    {
+      "button_up": "RIGHT",
+      "frames": 8,
+      "capture": "menu_escena4"
+    },
+    {
+      "button_down": "B",
+      "frames": 4
+    },
+    {
+      "button_up": "B",
+      "frames": 20
+    },
+    {
+      "frames": 180,
+      "capture": "escena4"
+    },
+    {
+      "button_down": "SELECT",
+      "frames": 4
+    },
+    {
+      "button_up": "SELECT",
+      "frames": 12
+    },
+    {
+      "button_down": "RIGHT",
+      "frames": 4
+    },
+    {
+      "button_up": "RIGHT",
+      "frames": 8,
+      "capture": "menu_escena5"
+    },
+    {
+      "button_down": "B",
+      "frames": 4
+    },
+    {
+      "button_up": "B",
+      "frames": 20
+    },
+    {
+      "frames": 125,
+      "capture": "escena5"
+    },
+    {
+      "frames": 40,
+      "capture": "escena5_curado"
+    },
+    {
+      "button_down": "SELECT",
+      "frames": 4
+    },
+    {
+      "button_up": "SELECT",
+      "frames": 12
+    },
+    {
+      "button_down": "RIGHT",
+      "frames": 4
+    },
+    {
+      "button_up": "RIGHT",
+      "frames": 8,
+      "capture": "menu_escena6"
+    },
+    {
+      "button_down": "B",
+      "frames": 4
+    },
+    {
+      "button_up": "B",
+      "frames": 20
+    },
+    {
+      "frames": 200,
+      "capture": "escena6"
+    },
+    {
+      "button_down": "SELECT",
+      "frames": 4
+    },
+    {
+      "button_up": "SELECT",
+      "frames": 12
+    },
+    {
+      "button_down": "RIGHT",
+      "frames": 4
+    },
+    {
+      "button_up": "RIGHT",
+      "frames": 8,
+      "capture": "menu_escena7"
+    },
+    {
+      "button_down": "B",
+      "frames": 4
+    },
+    {
+      "button_up": "B",
+      "frames": 20
+    },
+    {
+      "frames": 170,
+      "capture": "escena7"
+    },
+    {
+      "frames": 75,
+      "capture": "escena7_toque"
+    }
+  ]
+}

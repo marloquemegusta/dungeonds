@@ -31,6 +31,7 @@
 #include "boxeo.h"
 #include "exvoto_test.h"
 #include "remate_test.h"
+#include "sound_test.h"
 #include "bestiary.h"
 #include "intro.h"
 #include "hud_icons_gfx.h"
@@ -2676,6 +2677,9 @@ static void strip_shift_world_y(int dy_px) {
         s_pending_deaths[(s_pending_head + i) & (MAX_PENDING_DEATHS - 1)].y += shift;
     exvoto_melt_shift_y(dy_px);
     remate_shift_y(dy_px);
+#if SOUND_TEST
+    sound_test_shift_y(dy_px);
+#endif
     s_cam_y += dy_px;
     weapons_shift_y(dy_px);
     glifo_shift_y(dy_px);
@@ -2768,6 +2772,9 @@ static void strip_enemies_update(void) {
 #endif
 #if ARPG_REMATE_TEST
     remate_test_update(g_enemies, MAX_ENEMIES, TO_INT(s_player.x), TO_INT(s_player.y));
+#endif
+#if SOUND_TEST
+    sound_test_update(g_enemies, MAX_ENEMIES, TO_INT(s_player.x), TO_INT(s_player.y));
 #endif
     CP_BEGIN(CP_EN_MODS);
     pickups_update(s_player.x, s_player.y, &g_player_state);     // ARPG: remate orbs (health, mana)
@@ -3405,6 +3412,9 @@ static void arena_restart(void) {
 #endif
 #if ARPG_REMATE_TEST
     remate_test_reset();
+#endif
+#if SOUND_TEST
+    sound_test_reset();
 #endif
     radial_close();
     s_pending_head = s_pending_count = 0;
