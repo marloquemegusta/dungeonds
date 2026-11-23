@@ -11,13 +11,17 @@ import re
 import struct
 import sys
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import generate_remate_sprites as G
+
 WT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 FROM = 36
 N = int(sys.argv[1]) if len(sys.argv) > 1 else 18
-MAGIC = 0x54414D52
+MAGIC = G.MAGIC   # 'RMT1': mascaras 1 bpp; el empaquetado y la migracion viven en generate_remate_sprites.py
 
 
 def trim(path, F, n):
+    G.migrate_bin_masks(path, F)   # un bin 'RMAT' antiguo (4 bpp) pasa a 'RMT1' antes de recortarlo; si ya lo es, no hace nada
     b = open(path, 'rb').read()
     magic, pb, rb, mb = struct.unpack_from('<4I', b, 0)
     assert magic == MAGIC
