@@ -769,7 +769,7 @@ const char *arpg_inv_item_name(const ArpgInvItem *it) {
     switch (it->school) {
     case ARPG_SCHOOL_RAYO:      return "Punta de Lanza";
     case ARPG_SCHOOL_EJECUCION: return "Nudillera Votiva";
-    case ARPG_SCHOOL_GLIFO:     return "Vial de Glifo";
+    case ARPG_SCHOOL_GLIFO:     return "Hostia de Glifo";
     case ARPG_SCHOOL_LEVANTAR:  return "Cráneo Votivo";
     case ARPG_SCHOOL_PECHO:     return "Sagrado Corazón";
     default:                    return "Reliquia";
