@@ -196,6 +196,10 @@ Banco de pruebas de combate ARPG: `build-project.ps1 -Variant arpg-lab` (defines
 
 `arpg-exvotos`: sala de prueba con los Exvotos de escalón 3 (Súper Monja, Párroco, guardaespaldas). `arpg-remates`: sala con los Exvotos quietos para probar remates y el tambaleo de los poseídos. `tools/trim_remate_smonja.py` recorta la cola quieta del remate de la Súper Monja (18 fotogramas).
 
+### 5.3c. Variante `prueba-sonidos`
+
+`arpg-lab` + `SOUND_TEST=1`: el menú (SELECT) abre en «Escenas»; cada escena (`source/sound_test.c`) vacía las salas y coloca ante el héroe un grupo que dispara unos sonidos en contexto (0 mapa normal, 1 remates, 2 hechizos, 3 Ojos, 4 Cireneos, 5 Monja cura simulada, 6 Monaguillos, 7 campana fija). Las páginas de catálogo listan cada `SND_*` con su archivo y origen (`K·` gratuito, `IA·` ElevenLabs) y «Banco gratuito» reproduce los 31 `lab_*`. Con `SOUND_TEST` el héroe invulnerable sigue sonando al recibir daño. Escenario de evidencia `scenarios/prueba_sonidos.json` (`suite: false`).
+
 ### 5.4. Variante `reliquias-suelo`: escaparate de reliquias caídas
 
 `build-project.ps1 -Variant reliquias-suelo` = juego normal + `RELIC_SHOWCASE=1`. Al entrar en la catedral, `enc_update` activa el buzón `g_relic_drop_debug`, que suelta junto al héroe 5 reliquias o tomos (común → legendaria, un arquetipo distinto cada uno); SELECT las vuelve a soltar (y a la vez hace lo que SELECT haga en el juego, p. ej. abrir el mapa). Sirve para ver en la DS el arte de suelo (`include/inv_item_floor_art.h`, horneado por `tools/bake_inv_floor_art.py`). El escenario `arpg_reliquia_suelo` usa el mismo buzón en la variante `encuentros`.
