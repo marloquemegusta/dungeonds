@@ -290,7 +290,7 @@ chars_meta = [
     ('hero_crouch_walk', 'corazon_agachado_andar', 'Hero crouched walking', 0, 8),
     # Exvoto tier "Bebe" (v3 tiers, walkthroughs/arpg-predemo §10): a slot of its own like the Exvoto clips.
     ('exvoto_bebe', 'exvoto_bebe', 'Exvoto Bebe walking', 53, 8),
-    # El Campanero de Animas (jefe ARPG): sus 5 clips (60x60) van en NitroFS (tools/generate_campanero_bin.py, source/campanero_sprite.c);
+    # El Campanero de Animas (jefe ARPG): sus 5 clips (80x80) van en NitroFS (tools/generate_campanero_bin.py, source/campanero_sprite.c);
     # este slot solo aporta configuracion, ancla de suelo y municion (ceros), sin pixeles en la EWRAM fija.
     ('campanero', 'campanero', 'El Campanero de Animas', 80, 8),
 ]
@@ -332,6 +332,8 @@ for var_name, folder, disp_name, def_spd, def_ticks in chars_meta:
         ticks = 9   # 8 frames x 9 = 72 game frames per cycle x 0.43 px = 30.9 px, the lab's 31.3 px stride (no magic carpet)
     out_shw = SHADOW_W if shw > SHADOW_W else shw
     out_shh = SHADOW_H if shh > SHADOW_H else shh
+    if var_name == 'campanero':
+        out_shw = out_shh = 112   # lienzo de sombra propio del jefe (tools/generate_campanero_bin.py SHW)
     char_configs.append((var_name, folder, disp_name, spd, ticks, sw, sh, shw, shh, out_shw, out_shh))
 
 out_lines.append('const CharacterConfig g_characters[NUM_CHARACTERS] = {\n')

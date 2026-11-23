@@ -1245,7 +1245,7 @@ static void draw_enemy(uint16_t *buffer, const Enemy *e, int cam_x, int cam_y) {
     }
 #endif
     if (e->hit_timer > 0)
-        draw_hit_spark(buffer, px, py - (sh * 3) / 5, cam_x, cam_y, e->hit_timer);
+        draw_hit_spark(buffer, px, py - ((e->type == ENEMY_TYPE_CAMPANERO ? 60 : sh) * 3) / 5, cam_x, cam_y, e->hit_timer);
 }
 
 // A dying Exvoto (DESIGN.md 6.10): the sprite it died with sinks into the floor, feet first. The lowest

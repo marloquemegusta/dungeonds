@@ -1,14 +1,14 @@
 """Empaqueta los clips del Campanero de Animas (assets/sprites/characters/campanero*/) a nitrofiles/campanero/campanero.bin
 y genera include/campanero_sprite_dims.h con los tamanos maximos de los buffers de streaming.
 
-Por que NitroFS: cinco clips de 8x8 fotogramas a 60x60 no caben en la EWRAM fija (TECHNICAL.md 3.3), asi que el jefe lee de
+Por que NitroFS: cinco clips de 8x8 fotogramas a 80x80 no caben en la EWRAM fija (TECHNICAL.md 3.3), asi que el jefe lee de
 NitroFS solo el fotograma que toca (source/campanero_sprite.c), como el remate y los punos.
 
 Formato (little endian):
   cabecera: u32 magic 'CAMP', u32 numero de registros (clips * 8 dirs * 8 fotogramas)
   tabla de registros (CAMP_REC_BYTES = 24 cada uno), indice (clip * 8 + dir) * 8 + fotograma:
-    u8 bounds[4]   {x, y, w, h} del fotograma recortado dentro de la celda 60x60
-    u8 sbounds[4]  {x, y, w, h} de la sombra recortada dentro del lienzo 80x80
+    u8 bounds[4]   {x, y, w, h} del fotograma recortado dentro de la celda 80x80
+    u8 sbounds[4]  {x, y, w, h} de la sombra recortada dentro del lienzo 112x112
     u32 offset     posicion en el fichero de: pixeles | tramos | mascara de sombra (cada parte alineada a 4)
     u16 pix_hw     halfwords de pixeles (pitch par), u16 runs_hw halfwords de tramos
     u16 mask_bytes bytes de la mascara de sombra (nibbles apretados, filas contiguas)
@@ -25,8 +25,8 @@ from PIL import Image
 ROOT = Path(__file__).resolve().parents[1]
 SPR = ROOT / "assets/sprites/characters"
 CLIPS = ["campanero", "campanero_walk", "campanero_toque", "campanero_tanido", "campanero_death"]
-W = H = 60
-SHW = 80
+W = H = 80          # celda del lab (resolution de characters.json)
+SHW = 112            # lienzo de sombra del motor (recorte centrado del 160x160 del lab; CharacterConfig.shadow_w)
 ALPHA = 77
 MAGIC = 0x504D4143  # 'CAMP'
 REC = 24
@@ -96,13 +96,13 @@ def parse_header(path):
     return anchors, rows, masks
 
 
-def shadow_frame(rows, masks, i, src=120, shift=0):
-    """Mascara de la sombra del fotograma i recortada al lienzo 80x80 centrado y luego a su bounding box (nibbles apretados)."""
+def shadow_frame(rows, masks, i, src=2 * W, shift=0):
+    """Mascara de la sombra del fotograma i recortada al lienzo 112x112 centrado y luego a su bounding box (nibbles apretados)."""
     off = (src - SHW) // 2
     x, y, w, h = rows[i]
     frame_bytes = src * src // 2
     data = masks[i * frame_bytes:(i + 1) * frame_bytes]
-    # lo que cae fuera del lienzo 80x80 (centrado en el de 120x120, con el desplazamiento del clip) se recorta
+    # lo que cae fuera del lienzo 112x112 (centrado en el de 160x160, con el desplazamiento del clip) se recorta
     x0, x1 = max(x, off), min(x + w, off + SHW)
     y0, y1 = max(y, off - shift), min(y + h, off + SHW - shift)
     if x1 <= x0 or y1 <= y0:

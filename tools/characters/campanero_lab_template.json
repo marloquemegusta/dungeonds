@@ -13,12 +13,12 @@
     "SE"
   ],
   "framesPerDirection": 8,
-  "frameSize": "60x60",
+  "frameSize": "80x80",
   "spritesheet": {
     "columns": 8,
     "rows": 8,
-    "width": 480,
-    "height": 480,
+    "width": 640,
+    "height": 640,
     "alpha": true
   },
   "anchor": [

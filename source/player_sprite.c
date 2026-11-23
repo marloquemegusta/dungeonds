@@ -12,7 +12,7 @@ const CharacterConfig g_characters[NUM_CHARACTERS] = {
     { "Exvoto Monaguillo", 39, 22, 40, 40, 80, 80 },
     { "Hero crouched walking", 100, 7, 40, 40, 80, 80 },
     { "Exvoto Bebe walking", 39, 8, 40, 40, 80, 80 },
-    { "El Campanero de Animas", 315, 5, 60, 60, 80, 80 },
+    { "El Campanero de Animas", 315, 5, 80, 80, 112, 112 },
 };
 
 // 40x40 BGR555 frames for Corazon Abierto Hero, 8 directions x 8 frames (cropped to bounds)
@@ -75121,7 +75121,7 @@ const uint8_t g_character_ground_anchors[NUM_CHARACTERS][PLAYER_NUM_DIRS] = {
     { 35, 35, 35, 35, 35, 35, 35, 35 },
     { 29, 29, 29, 29, 29, 29, 29, 29 },
     { 27, 27, 27, 27, 27, 27, 27, 27 },
-    { 49, 49, 49, 49, 49, 49, 49, 49 },
+    { 66, 66, 66, 66, 66, 66, 66, 66 },
 };
 
 // Weapon muzzle per character/direction/frame: gx, gy, h in sprite pixels relative to the ground anchor (zeros = no weapon)
