@@ -54,9 +54,12 @@
 La partida es la de §6.13. Quiere la dificultad de Isaac (morir mucho hasta dominar las mejoras), el gancho de Diablo (siguiente misión, mejor equipo) y una fantasía clara con entorno que cambia.
 
 ### 6.3 Cámara y pantallas
-- **Cámara con adelanto vertical (*look-ahead*):** el encuadre se adelanta suavemente según el sentido de marcha vertical:
+- **Cámara hacia el grupo (en combate):** si hay enemigos vivos en la sala, el encuadre vertical apunta a un punto entre el héroe y el centro del grupo, pesando más los enemigos cercanos. Así se kitea hacia atrás sin perder de vista al grupo: manda dónde está el peligro, no hacia dónde anda el héroe.
+  - **Sin saltos:** la cámara se acerca a ese punto con suavidad (rápida si está lejos, frenando al llegar); cuando muere un enemigo o el grupo se mueve, el encuadre se recoloca sin tirones.
+  - **Límites:** el héroe nunca sale de una franja de la pantalla táctil (entre ~25 % y ~75 % de su altura) para que siempre se pueda apuntar a su alrededor; si el grupo queda más lejos, se ve solo la parte que cabe.
+- **Cámara con adelanto vertical (*look-ahead*, sin enemigos):** el encuadre se adelanta suavemente según el sentido de marcha vertical:
   - **Al subir:** coloca al jugador en el tercio inferior (~69 %, ~132 px de vista delante y ~60 px detrás en la pantalla táctil).
-  - **Al bajar (retroceder):** desliza la vista hacia atrás hasta dejar al jugador en el tercio superior (~33 %, ~128 px de vista detrás), **salvo si está apuntando hacia delante con el stylus (*kiting*)**, en cuyo caso mantiene la vista al frente.
+  - **Al bajar (retroceder):** desliza la vista hacia atrás hasta dejar al jugador en el tercio superior (~33 %, ~128 px de vista detrás).
   - **Al parar o hacer *strafe* lateral:** la cámara mantiene el último encuadre, y requiere ~0,37 s (22 frames) de marcha vertical sostenida antes de empezar a deslizarse (a 2 px/frame) para que los esquives cortos no muevan el suelo bajo el stylus.
 - **La pantalla superior es la vanguardia, no un menú:** muestra la parte de arriba de la sala, con enemigos que también te disparan, y avisos del jefe. Se le puede disparar con el apuntado por vector (el lápiz apunta desde el personaje, aunque el objetivo quede fuera de la pantalla táctil).
 - Los menús, como la elección de Don, van en la pantalla inferior.
