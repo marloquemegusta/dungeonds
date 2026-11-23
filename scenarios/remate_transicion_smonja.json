@@ -2,7 +2,7 @@
  "name": "remate_transicion_smonja",
  "suite": false,
  "evidence_only": true,
- "description": "Remate de la Super Monja (arana) en la ROM arpg-lab, entrando por el oeste: Monja de la fila de tiers (tier_spawn) con poco de vida en WOBBLE, IA parada -> L -> embestida -> ejecucion de 36 fotogramas -> heroe normal + restos. Solo evidencia visual.",
+ "description": "Remate de la Super Monja (arana) en la ROM arpg-lab, entrando por el oeste: Monja de la fila de tiers (tier_spawn) con poco de vida en WOBBLE, IA parada -> L -> embestida -> ejecucion de 18 fotogramas -> heroe normal + restos. Solo evidencia visual.",
  "state": {
   "elf": "../.ds-game-dev/build/out/dungeonds-arpg-lab.elf",
   "symbols": {

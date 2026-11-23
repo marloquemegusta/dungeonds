@@ -18,7 +18,7 @@ cuerpo cae inerte y espatarrado. Se escribió en el diseño antes de programarlo
    en un arco amplio, unas 1,4 veces el recorrido de la A. El cuello se estira antes de soltarse, salta el doble de cera
    y el cuerpo rebota hacia atrás antes de caer. **El usuario eligió la B.**
 
-## Secuencia (B, 36 fotogramas a 4 ticks ≈ 2,4 s, celda 160×160)
+## Secuencia (B, 18 fotogramas a 4 ticks ≈ 1,2 s; originalmente 36, se recortó la cola quieta, celda 160×160)
 
 Fotogramas en orden: agarre con los brazos estirados → tirón hacia atrás con el cuerpo araña arrastrado → arranque en
 el pico del tirón (estirón del cuello y gotas de cera oscura) → la cabeza sube en arco y cae junto a los pies del

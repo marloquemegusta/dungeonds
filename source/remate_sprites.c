@@ -7,7 +7,7 @@ const RemateKindInfo g_remate_kind_info[REMATE_NUM_KINDS] = {
     { 96, 96, 1, 38, 38, 4 },
     { 64, 64, 1, 12, 12, 6 }, /* monaguillo */
     { 64, 64, 1, 12, 12, 6 }, /* exvoto_bebe */
-    { 160, 160, 1, 36, 36, 4 }, /* smonja */
+    { 160, 160, 1, 18, 18, 4 }, /* smonja */
     { 96, 96, 1, 40, 40, 4 }, /* parroco */
 };
 
