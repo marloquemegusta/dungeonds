@@ -29,6 +29,15 @@
       "speedFixed8_8": 100,
       "ticksPerFrame": 7
     },
+    "corazon_pray": {
+      "model": "assets/models/characters/corazon/corazon_pray.fbx",
+      "anim": "corazon_pray (0.27s)",
+      "resolution": 48,
+      "scaleRef": "corazon",
+      "template": "assets/sprites/characters/corazon_pray/settings.json",
+      "speedFixed8_8": 100,
+      "ticksPerFrame": 4
+    },
     "corazon_punch_a": {
       "model": "assets/models/characters/corazon/corazon_punch_a.fbx",
       "anim": "corazon_punch_a (1.03s)",

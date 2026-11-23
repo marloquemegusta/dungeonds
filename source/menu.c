@@ -70,7 +70,7 @@ static int get_buttons(MenuState state, const MenuButton **out_btns) {
         { BTN_X0, 128, BTN_W, BTN_H, "Volver" },
     };
     static const MenuButton controls_btns[] = {
-        { BTN_X0, 140, BTN_W, BTN_H, "Volver" },
+        { BTN_X0, 142, BTN_W, BTN_H, "Volver" },
     };
 
     switch (state) {
@@ -92,8 +92,11 @@ static int get_buttons(MenuState state, const MenuButton **out_btns) {
 #endif
         const char *const *labels = s_pause_in_camp ? pause_labels_camp : pause_labels_dungeon;
         int n = s_pause_in_camp ? 3 : (ENCOUNTERS_PROTO ? 5 : 4);
+        /* The camp pause (3 buttons) is centred; the dungeon one (5) is packed above the HUD (bottom ~40 px). */
+        int packed = (n == 5);
+        int y0 = packed ? 12 : 42, pitch = packed ? 27 : BTN_PITCH;
         for (int i = 0; i < n; i++)
-            pause_btns[i] = (MenuButton){ BTN_X0, 42 + i * BTN_PITCH, BTN_W, BTN_H, labels[i] };
+            pause_btns[i] = (MenuButton){ BTN_X0, y0 + i * pitch, BTN_W, BTN_H, labels[i] };
         *out_btns = pause_btns;
         return n;
     }
@@ -577,22 +580,30 @@ void menu_render_bottom(uint16_t *buf) {
         draw_text_centered(buf, SCREEN_W / 2, 48, "Códice", MENU_COL_HEADER);
         draw_text_centered(buf, SCREEN_W / 2, 76, "Próximamente", MENU_COL_BODY);
     } else if (s_state == MENU_CONTROLS) {
-        static const char *const lines[10] = {
-            "Cruceta: mover",
-            "Lápiz: apuntar y lanzar el",
-            "hechizo activo (gasta maná)",
-            "L corto: remate ante un",
-            "enemigo tambaleante; si no,",
-            "puñetazo (combo de 3)",
-            "L mantenido: menú radial de",
-            "hechizos (toca uno con el lápiz)",
-            "A: interactuar en el campamento",
-            "START: pausa"
+        /* Two blocks with a heading: key column in the header colour, description in the body colour. */
+        static const char *const dungeon_keys[6] = { "Cruceta", "Lápiz", "L", "Mantén L", "SELECT", "START" };
+        static const char *const dungeon_text[6] = {
+            "Mover", "Lanzar el hechizo (gasta maná)", "Puñetazo; remata al que se tambalea",
+            "Elegir hechizo (toca uno)", "Mapa", "Pausa"
         };
-        draw_box(buf, 12, 6, 232, 128, MENU_COL_INA_FILL, MENU_COL_INA_BDR);
-        draw_text_centered(buf, SCREEN_W / 2, 9, "Controles", MENU_COL_HEADER);
-        for (int i = 0; i < 10; i++) {
-            draw_text(buf, 20, 22 + i * 11, lines[i], MENU_COL_BODY);
+        static const char *const camp_keys[2] = { "A", "START" };
+        static const char *const camp_text[2] = { "Usar (jergón, arcón, atril, puerta)", "Pausa" };
+        const int key_x = 16, text_x = 72, step = 10;
+        draw_box(buf, 6, 4, 244, 130, MENU_COL_INA_FILL, MENU_COL_INA_BDR);
+        draw_text_centered(buf, SCREEN_W / 2, 7, "Controles", MENU_COL_HEADER);
+        int y = 21;
+        draw_text(buf, key_x - 4, y, "En la catedral", MENU_COL_HEADER);
+        y += step + 1;
+        for (int i = 0; i < 6; i++, y += step) {
+            draw_text(buf, key_x, y, dungeon_keys[i], MENU_COL_HEADER);
+            draw_text(buf, text_x, y, dungeon_text[i], MENU_COL_BODY);
+        }
+        y += 5;
+        draw_text(buf, key_x - 4, y, "En el campamento", MENU_COL_HEADER);
+        y += step + 1;
+        for (int i = 0; i < 2; i++, y += step) {
+            draw_text(buf, key_x, y, camp_keys[i], MENU_COL_HEADER);
+            draw_text(buf, text_x, y, camp_text[i], MENU_COL_BODY);
         }
     }
     const MenuButton *btns = NULL;

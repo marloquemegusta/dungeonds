@@ -128,6 +128,12 @@ int arpg_enemy_damage(int enemy_type) {
     }
 }
 
+int arpg_enemy_damage_of(const Enemy *e) {
+    int d = arpg_enemy_damage(e->type);
+    if (e->home_flags & ENEMY_TIER2) d = d * ARPG_TIER2_DAMAGE_PCT / 100;
+    return d;
+}
+
 void player_regen_mana(PlayerState *player) {
     if (!player || player->is_dead) return;
     if (player->mana >= player->max_mana) {

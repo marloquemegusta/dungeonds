@@ -1,0 +1,88 @@
+{
+  "name": "intro_clip_campamento",
+  "description": "ARPG: el heroe anda por el campamento nocturno.",
+  "suite": false,
+  "evidence_only": true,
+  "state": {
+    "elf": "../.ds-game-dev/build/out/dungeonds.elf",
+    "symbols": {
+      "pl": "s_player",
+      "gps": "g_player_state"
+    },
+    "default_symbol": "pl",
+    "fields": {
+      "px": {
+        "symbol": "pl",
+        "offset": 0,
+        "type": "s32"
+      },
+      "py": {
+        "symbol": "pl",
+        "offset": 4,
+        "type": "s32"
+      },
+      "hp": {
+        "symbol": "gps",
+        "offset": 0,
+        "type": "s32"
+      },
+      "god": {
+        "symbol": "gps",
+        "offset": 20,
+        "type": "s32"
+      },
+      "mana": {
+        "symbol": "gps",
+        "offset": 24,
+        "type": "s32"
+      }
+    }
+  },
+  "steps": [
+    {
+      "frames": 60
+    },
+    {
+      "tap": {
+        "x": 128,
+        "y": 66
+      },
+      "frames": 6
+    },
+    {
+      "release": true,
+      "frames": 40
+    },
+    {
+      "button_down": "START",
+      "frames": 4
+    },
+    {
+      "button_up": "START",
+      "frames": 60
+    },
+    {
+      "button_down": "LEFT",
+      "frames": 30,
+      "capture_sequence": "c0",
+      "capture_every": 2
+    },
+    {
+      "button_down": "RIGHT",
+      "frames": 60,
+      "capture_sequence": "c0",
+      "capture_every": 2
+    },
+    {
+      "button_down": "LEFT",
+      "frames": 30,
+      "capture_sequence": "c0",
+      "capture_every": 2
+    },
+    {
+      "button_up": "LEFT",
+      "frames": 2,
+      "state_capture": "fin"
+    }
+  ]
+}

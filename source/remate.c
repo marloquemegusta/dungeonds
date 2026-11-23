@@ -237,6 +237,18 @@ void remate_shift_y(int dy_px) {
     s_rem_y += dy_px;
 }
 
+int remate_target_in_reach(const Enemy *enemies, int max_enemies, fixed hero_x, fixed hero_y) {
+    const int range = REMATE_RANGE * (100 + g_mods.remate_range_bonus) / 100;
+    int hx = TO_INT(hero_x), hy = TO_INT(hero_y);
+    for (int i = 0; i < max_enemies; i++) {
+        const Enemy *e = &enemies[i];
+        if (g_enemy_ally[i] || !e->active || e->hp <= 0 || e->state != ENEMY_STATE_WOBBLE) continue;
+        int dx = TO_INT(e->x) - hx, dy = TO_INT(e->y) - hy;
+        if (dx * dx + GROUND_DY2(dy) <= range * range) return 1;
+    }
+    return 0;
+}
+
 int remate_start(Enemy *enemies, int max_enemies, fixed hero_x, fixed hero_y, int hero_dir) {
     if (s_active || s_approach || g_player_state.is_dead) return 0;
     int hx = TO_INT(hero_x), hy = TO_INT(hero_y);

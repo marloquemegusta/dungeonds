@@ -16,6 +16,7 @@ El repositorio cuenta con fuentes de verdad canónicas sin duplicación:
 | `STATUS-ARPG.md` | Estado (ARPG) | Lo mismo para el prototipo ARPG. |
 | `assets/MANIFEST.md` | Catálogo de assets | Qué asset alimenta qué parte del juego, con qué script se genera y dónde se guarda. Ciclo de vida de los assets: su §0. |
 | `walkthroughs/` | Documentación por sesión | Un `walkthrough.md` por entrega, con su evidencia en `assets/`. Índice en `walkthroughs/README.md`. |
+| `ONBOARDING.md` | Arranque | Montar un PC nuevo para hacer vídeos (programas, repos, `tools/sync.ps1` para mantenerse al día, ramas). |
 | `LEAN-CTX.md` | Herramienta | Reglas de la herramienta lean-ctx; no es documentación del juego. |
 | `BENCHMARK.md` y `bench/` | Proyecto de delegación | Banco de pruebas de modelos delegados; no es documentación del juego (el usuario decidirá si se archiva). |
 | Skill compartida `ds-game-dev` | `C:\codexlocal\skills\agentic-ds-dev` | Flujo genérico del toolchain NDS (Docker + DeSmuME + FTP). Vive fuera del repo y no se debe copiar aquí. |
@@ -26,10 +27,10 @@ Si una regla o cifra aparece en dos documentos, uno de ellos sobra: dejarla en s
 ```bash
 # desde un worktree de la otra rama principal
 git diff --stat <sync-anterior> <rama-destino> -- '*.md'   # si la otra rama también los tocó, fusionar a mano
-git checkout <rama-origen> -- AGENTS.md DESIGN.md DESIGN-ARPG.md DESIGN-ARCHIVE.md TECHNICAL.md LORE.md STATUS.md STATUS-ARPG.md STATUS-ARCHIVE.md assets/MANIFEST.md
+git checkout <rama-origen> -- AGENTS.md ONBOARDING.md DESIGN.md DESIGN-ARPG.md DESIGN-ARCHIVE.md TECHNICAL.md LORE.md STATUS.md STATUS-ARPG.md STATUS-ARCHIVE.md assets/MANIFEST.md
 git commit -m "docs: sincroniza MDs desde <rama-origen>"
 ```
-Comprobación rápida: `git diff --stat main proto/arpg -- AGENTS.md DESIGN*.md TECHNICAL.md LORE.md STATUS*.md assets/MANIFEST.md` debe salir vacío.
+Comprobación rápida: `git diff --stat main proto/arpg -- AGENTS.md ONBOARDING.md DESIGN*.md TECHNICAL.md LORE.md STATUS*.md assets/MANIFEST.md` debe salir vacío.
 
 ---
 
@@ -82,8 +83,12 @@ Comprobación rápida: `git diff --stat main proto/arpg -- AGENTS.md DESIGN*.md 
 ## Subagentes y Modelos
 
 - Todo plan que lance subagentes indica el modelo de cada uno. Por defecto: **Haiku** solo para búsquedas, listados, verificar que algo sigue presente o leer logs; **Sonnet** para implementar (también efectos y VFX), análisis de código, revisiones y auditorías por área; **Opus** solo para decisiones de arquitectura o diseño que no se puedan partir.
-- **Modelos de otros proveedores:** el plan nombra el modelo (`luna`, `sol`, `terra`, `astra` por Codex; `argon`, `flash`, `gpt-oss` por Antigravity) y se ejecuta con la skill compartida `delegate-agents` (`C:\codexlocal\skills\delegate-agents`, alias en su `models.json`, `delegate.py --list`). Haiku, Sonnet, Opus y Fable siguen siendo el tool Agent. Escritura solo en worktrees; la respuesta externa se verifica como cualquier otra.
-- **Límite de los agentes Codex:** en su sandbox no arrancan Python, Docker ni WSL (sí gcc y Node). El brief les pide intentarlo una vez y entregar los comandos sin reintentar. Quien coordina compila la ROM, pasa los tests y los escenarios y ejecuta los renders del lab.
+- **Solo subagentes nativos de Claude** (tool Agent: Haiku, Sonnet, Opus). No se delega en modelos de otros proveedores (Codex, Antigravity, Command Code) ni se usa la skill `delegate-agents`.
+- **Velocidad de los agentes** (medido en esta rama: un agente de 23 min gastó ~10 en pensar, ~6 en escenarios y ~3 en leer):
+  - Esfuerzo `medium` para tareas acotadas (un archivo o una mecánica con punteros exactos); `high` solo si hay que diseñar.
+  - Las piezas independientes van en agentes paralelos, cada uno en su worktree o con archivos disjuntos, para que no choquen las compilaciones.
+  - El brief da rutas, símbolos y un escenario plantilla: el agente no explora ni prueba coordenadas a ciegas.
+  - Antes de lanzar escenarios, calentar WSL con un comando trivial (el arranque en frío cuesta ~28 s).
 - Usar el modelo más barato que no baje la calidad del resultado. El usuario lo ha pedido repetidamente: un plan sin esta asignación se considera incompleto.
 
 ---

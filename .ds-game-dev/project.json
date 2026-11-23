@@ -3,6 +3,9 @@
         "sandbox": {
             "defines": ["SANDBOX=1"]
         },
+        "reliquias-suelo": {
+            "defines": ["RELIC_SHOWCASE=1"]
+        },
         "perf": {
             "defines": ["PERF_PROFILE=1"]
         },

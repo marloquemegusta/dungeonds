@@ -15,6 +15,9 @@
 // 2 was PICKUP_KIND_XP (experience runes, retired: XP is granted directly on kill)
 #define PICKUP_KIND_RELIC 3     // ground relic drop -> arpg_inv_add()
 
+// Buzon de escenarios (el juego nunca lo pone): != 0 -> 5 reliquias/tomos en fila sobre el heroe.
+extern volatile uint8_t g_relic_drop_debug;
+
 void pickups_init(uint32_t seed);
 void pickups_shift_y(int dy_px);
 void pickups_enemy_killed(const Enemy *enemy);
@@ -31,6 +34,7 @@ void pickups_spawn_relic(fixed x, fixed y, const ArpgInvItem *item);
 void pickups_drop_enemy_loot(int enemy_type, int floor, fixed x, fixed y);
 // Last loot pickup toast message for HUD (NULL if expired).
 const char *pickups_loot_toast(void);
+void pickups_toast(const char *msg, int frames);   // rotulo corto en la pantalla tactil (avisos de primera vez ~180)
 // Painter's list (render_screen).
 int pickups_item(int i, int cam_x, int cam_y, int *depth);
 void pickups_draw(uint16_t *buffer, int i, int cam_x, int cam_y);

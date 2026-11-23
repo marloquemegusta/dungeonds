@@ -40,6 +40,7 @@
 #include "bestiary_font.h"
 #include "arpg.h"
 #include "arpg_progress.h"
+#include "arpg_map.h"
 #include "arpg_inv.h"
 #include "glifo.h"
 #include "radial.h"
@@ -687,6 +688,8 @@ static inline uint16_t world_floor_color(int x, int y) {
     return g_arena->palette[palette_index];
 }
 
+uint16_t world_floor_color_at(int x, int y) { return world_floor_color(x, y); }
+
 __attribute__((target("arm"), noinline))
 ITCM_CODE static void draw_shadow_mask(uint16_t *buffer, const uint8_t *mask,
                              const uint8_t *bounds, int left, int top,
@@ -902,16 +905,14 @@ static uint16_t s_comp_runs[PUNCH_COMP_RUNS_HALFWORDS] __attribute__((aligned(4)
 static int s_ck_move = -1, s_ck_pdir = -1, s_ck_pframe = -1;
 static int s_ck_char = -1, s_ck_wdir = -1, s_ck_wframe = -1, s_ck_split = -1;
 
-static void punch_compose_walk(void) {
-    const int move = punch_move(), pdir = punch_dir(), pframe = punch_frame();
+// Compone `pp`/`pb` (fotograma de la parte alta, celda 48x48 con la fila de pies en `anchor`) con el andar actual.
+// `move`/`pdir`/`pframe` identifican el fotograma de la parte alta para la cache (el rezo usa move = -2).
+static void compose_walk_upper(int move, int pdir, int pframe, const uint16_t *pp, const uint8_t *pb, int anchor) {
     const int char_id = s_player.char_id, wdir = s_player.dir, wframe = s_player.frame;
     if (move == s_ck_move && pdir == s_ck_pdir && pframe == s_ck_pframe &&
         char_id == s_ck_char && wdir == s_ck_wdir && wframe == s_ck_wframe && PUNCH_WALK_SPLIT_V == s_ck_split) return;
     s_ck_move = move; s_ck_pdir = pdir; s_ck_pframe = pframe;
     s_ck_char = char_id; s_ck_wdir = wdir; s_ck_wframe = wframe; s_ck_split = PUNCH_WALK_SPLIT_V;
-
-    const uint8_t *pb = punch_bounds();
-    const uint16_t *pp = punch_pixels();
     if (!pb || !pp) return;
     const uint8_t *wb = g_character_frame_bounds[char_id][wdir][wframe];
     const uint16_t *wp = character_frame_ptr(char_id, wdir, wframe);
@@ -919,8 +920,8 @@ static void punch_compose_walk(void) {
     const int wpitch = sprite_pitch(wb[2]);
     const int ws = g_characters[char_id].sprite_w;
     const int xoff = (PUNCH_CELL - ws) / 2;                 // la celda del andar es mas estrecha: centrada
-    const int yoff = punch_ground_anchor() - s_char_ground_anchor[char_id][wdir];
-    const int split_y = punch_ground_anchor() - PUNCH_WALK_SPLIT_V;
+    const int yoff = anchor - s_char_ground_anchor[char_id][wdir];
+    const int split_y = anchor - PUNCH_WALK_SPLIT_V;
 
     for (int i = 0; i < PUNCH_CELL * PUNCH_CELL; i++) s_comp_pix[i] = 0;
     // Tren superior: fotograma del golpe, tal cual (la celda del golpe ya es 48x48 y su anchor es el de la fila de pies).
@@ -963,6 +964,10 @@ static void punch_compose_walk(void) {
     if ((dst - s_comp_runs) & 1) *dst = 0;
 }
 
+static void punch_compose_walk(void) {
+    compose_walk_upper(punch_move(), punch_dir(), punch_frame(), punch_pixels(), punch_bounds(), punch_ground_anchor());
+}
+
 static void draw_punch(uint16_t *buffer, int cam_x, int cam_y) {
     const uint16_t *pix = punch_pixels();
     const uint8_t *b = punch_bounds();
@@ -983,6 +988,25 @@ static void draw_punch(uint16_t *buffer, int cam_x, int cam_y) {
                 cam_x, cam_y, s_draw_item_depth);
 }
 
+// Rezo del Glifo: el clip corazon_pray entero si el heroe esta parado; andando, la parte alta del rezo sobre las piernas
+// del andar (la misma composicion que los punetazos).
+static void draw_pray(uint16_t *buffer, int cam_x, int cam_y) {
+    const uint16_t *pix = glifo_pray_pixels();
+    const uint8_t *b = glifo_pray_bounds();
+    if (!pix || !b || b[2] == 0 || b[3] == 0) return;
+    const int px = player_screen_x(s_player.x, s_player.y);
+    const int py = player_screen_y(s_player.x, s_player.y);
+    if (s_player.is_moving) {
+        compose_walk_upper(-2, glifo_pray_dir(), glifo_pray_frame(), pix, b, glifo_pray_anchor());
+        blit_stride(buffer, s_comp_pix, s_comp_runs, PUNCH_CELL, PUNCH_CELL, PUNCH_CELL,
+                    px - PUNCH_CELL / 2, py - glifo_pray_anchor(), cam_x, cam_y, s_draw_item_depth);
+        return;
+    }
+    blit_stride(buffer, pix, glifo_pray_runs(), sprite_pitch(b[2]), b[2], b[3],
+                px - PUNCH_CELL / 2 + b[0], py - glifo_pray_anchor() + b[1],
+                cam_x, cam_y, s_draw_item_depth);
+}
+
 static void draw_player(uint16_t *buffer, int cam_x, int cam_y) {
     if (remate_active()) {
         int ax, ay;
@@ -994,6 +1018,7 @@ static void draw_player(uint16_t *buffer, int cam_x, int cam_y) {
         if (dep1 >= dep0) draw_remate_layer(buffer, k, d, f, 1, ax, ay, cam_x, cam_y, dep1);  // debris nearer: over the pair
         return;
     }
+    if (glifo_busy() && glifo_pray_pixels()) { draw_pray(buffer, cam_x, cam_y); return; }
     if (punch_active()) { draw_punch(buffer, cam_x, cam_y); return; }
     int px = player_screen_x(s_player.x, s_player.y);
     int py = player_screen_y(s_player.x, s_player.y);
@@ -1435,7 +1460,7 @@ static int shadow_select(const DrawItem *it, ShadowSel *sel) {
 #if CAMP_SCENE
 static void render_camp_screen(uint16_t *buffer, DirtySpan *spans, int cam_x, int cam_y, int sub_screen,
                                uint32_t *out_floor, uint32_t *out_shadow, uint32_t *out_blit) {
-    clear_dirty_spans(buffer, spans);
+    camp_clear_page(buffer, spans, cam_x, cam_y);   // keeps the static wall frame on the page
     g_dirty_cur = spans;
     if (out_floor) *out_floor = 0;
     if (out_shadow) *out_shadow = 0;
@@ -1747,7 +1772,6 @@ ITCM_CODE static void render_screen(uint16_t *buffer, DirtySpan *spans, int cam_
     weapons_render_light(buffer, cam_x, cam_y);     // beams light the sprites drawn above
     PP_T0(pp_proj);
     weapons_render(buffer, cam_x, cam_y);
-    glifo_render(buffer, cam_x, cam_y);             // ARPG: flying Glifo
     if (!sub_screen) weapons_render_overlay(buffer);
     mods_render(buffer, cam_x, cam_y);
 #if ENCOUNTERS_PROTO
@@ -2165,11 +2189,9 @@ static void draw_run_hud(uint16_t *buffer) {
 
         // Level and xp, top left (DESIGN.md 6.12.8). A: "NV n" + bar. B: a candle. C: rosary beads + roman numeral.
 #if ENCOUNTERS_PROTO
-        {   // The dungeon is floor after floor; every fifth floor is a boss.
+        {   // The zone is 12 rooms: the label is the name of the room the hero is in.
             if (!boss_hud_active() && !boss_frozen()) {      // while the boss mode runs, its life bar takes this corner
-                int enc = enc_current_encounter();
-                if (enc % 5 == 0) snprintf(line, sizeof(line), "Piso %d · Jefe", enc);
-                else snprintf(line, sizeof(line), "Piso %d", enc);
+                snprintf(line, sizeof(line), "%s", enc_room_name());
                 hud_text(buffer, 6, 6, line, RGB15(27, 20, 11) | BIT(15));
             }
         }
@@ -2558,8 +2580,8 @@ static void on_enemy_death(const Enemy *e, fixed hit_vx, fixed hit_vy) {
     const int dead_slot = (e >= g_enemies && e < g_enemies + MAX_ENEMIES) ? (int)(e - g_enemies) : -1;
     const int dead_was_ally = dead_slot >= 0 && g_enemy_ally[dead_slot];
     {   // ARPG: experiencia directa al matar (sin runas en el suelo) y caída de reliquias.
-        int floor = enc_current_encounter() + 1;
-        int xp = dead_was_ally ? 0 : arpg_enemy_xp(e->type, enc_current_encounter());
+        int floor = enc_current_encounter();        // fixed level of the room the hero is in
+        int xp = dead_was_ally ? 0 : arpg_enemy_xp(e->type, floor);
         if (xp > 0) arpg_add_xp(xp);
         if (!dead_was_ally) pickups_drop_enemy_loot(e->type, floor, e->x, e->y);
     }
@@ -2661,6 +2683,9 @@ static void enemies_update(void) {
     mods_update(s_player.x, s_player.y);
 }
 
+#if ENCOUNTERS_PROTO
+static void arpg_tips_tick(void);
+#endif
 // Strip mode (DESIGN.md 6.0): the horde from above replaces the v0.2 packs and modifiers.
 // Runs in the enemies slot of the frame so PERF_PROFILE charges it to `en`.
 static void strip_enemies_update(void) {
@@ -2683,6 +2708,7 @@ static void strip_enemies_update(void) {
     boxeo_update(g_enemies, MAX_ENEMIES, TO_INT(s_player.x), TO_INT(s_player.y));
 #endif
     pickups_update(s_player.x, s_player.y, &g_player_state);     // ARPG: remate orbs (health, mana)
+    arpg_tips_tick();
     dmg_numbers_set_player_pos(s_player.x, s_player.y);
     dmg_numbers_update();
     return;
@@ -2696,6 +2722,19 @@ static void strip_enemies_update(void) {
     dmg_numbers_set_player_pos(s_player.x, s_player.y);
     dmg_numbers_update();
 }
+
+#if ENCOUNTERS_PROTO
+// Avisos de primera vez (DESIGN-ARPG 7): rotulo corto en la pantalla tactil, una sola vez por partida.
+static void arpg_tips_tick(void) {
+    if (!(g_arpg.tips & ARPG_TIP_REMATE) && remate_target_in_reach(g_enemies, MAX_ENEMIES, s_player.x, s_player.y)) {
+        arpg_tip_take(ARPG_TIP_REMATE);
+        pickups_toast("L: rematar", 180);
+    } else if (!(g_arpg.tips & ARPG_TIP_GLIFO) && arpg_inv_has_spell(ARPG_SPELL_GLIFO)) {
+        arpg_tip_take(ARPG_TIP_GLIFO);
+        pickups_toast("Mantén L y toca el Glifo", 180);
+    }
+}
+#endif
 
 // ---------------------------------------------------------------------------
 // Player
@@ -2729,6 +2768,13 @@ static int s_latch_pressed = 0;
 static int s_latch_released = 0;
 static int s_last_touch_x = 0;
 static int s_last_touch_y = 0;
+static int glifo_is_spell(void) {   // the Glifo is the active spell: the stylus casts it and never roots the hero
+#if ENCOUNTERS_PROTO
+    return g_arpg.spell == 1 && arpg_inv_has_spell(ARPG_SPELL_GLIFO);
+#else
+    return 0;
+#endif
+}
 static int s_rooted = 0;          // the sniper is aiming: the player stands still
 
 #define AIM_CHEST_H 16            // height used to pick the facing direction from the stylus
@@ -2817,6 +2863,7 @@ static void camera_init(void) {
 // saca el siguiente; si no, empieza por el directo. Andando no hay soft-lock: el golpe va en la direccion de
 // movimiento (y solo alcanza el cono frontal), para no girarse hacia un enemigo que queda detras.
 static void arpg_punch(Enemy *enemies, int max_enemies) {
+    if (glifo_busy()) return;                      // rezando: el heroe no pega
     const int soft_lock = !s_player.is_moving;
     if (punch_try_chain(enemies, max_enemies, s_player.x, s_player.y, s_player.dir, soft_lock)) return;
     punch_start(enemies, max_enemies, s_player.x, s_player.y, s_player.dir, PUNCH_MOVE_A, soft_lock);
@@ -2943,6 +2990,10 @@ static void player_update(uint32_t keys, uint32_t keys_down) {
         if (!s_l_tracking && !s_l_consumed && !(keys & KEY_R)) {
             s_l_tracking = 1;
             s_l_frames = 1;
+#if ENCOUNTERS_PROTO
+            // Todo toque de L pega al instante (flanco de pulsacion); si L sigue pulsada se abre ademas el radial.
+            arpg_punch(g_enemies, MAX_ENEMIES);
+#endif
         } else if (s_l_tracking && ++s_l_frames >= ARPG_L_HOLD_FRAMES) {
             s_l_tracking = 0;
             s_l_consumed = 1;
@@ -2960,8 +3011,14 @@ static void player_update(uint32_t keys, uint32_t keys_down) {
     } else {
         s_l_consumed = 0;
         // Tap: tracked press released before the threshold, or a press edge seen only on release.
-        if (s_l_tracking || (keys_down & KEY_L)) {
-            s_l_tracking = 0;
+#if ENCOUNTERS_PROTO
+        // El golpe ya salio en la pulsacion; solo falta el flanco visto unicamente al soltar (pulsar y soltar en el mismo frame).
+        const int l_tap = !s_l_tracking && (keys_down & KEY_L);
+#else
+        const int l_tap = s_l_tracking || (keys_down & KEY_L);
+#endif
+        s_l_tracking = 0;
+        if (l_tap) {
             if (!(keys & KEY_R)) {
                 if (remate_start(g_enemies, MAX_ENEMIES, s_player.x, s_player.y, s_player.dir)) {
                     s_rooted = 0;
@@ -2981,7 +3038,11 @@ static void player_update(uint32_t keys, uint32_t keys_down) {
     if (keys_down & KEY_R) sandbox_respawn();
     // Debug: SELECT cycles the upgrade design variant and g_fx_style.
     if (keys_down & KEY_SELECT) {
+#if ENCOUNTERS_PROTO
+        if (s_strip_mode && s_run_started && !camp_active()) arpg_map_toggle();   // overlay map on the upper screen
+#else
         upgrades_cycle_design_variant();   // also advances g_fx_style
+#endif
     }
     upgrades_debug_update();
 #if !ENCOUNTERS_PROTO
@@ -3053,7 +3114,7 @@ static void player_update(uint32_t keys, uint32_t keys_down) {
 
     // A press held through the post-shot cooldown starts the charge as soon as the weapon is
     // ready (weapons_input buffers it), so root the hero on that same frame too.
-    if ((pressed || touch_down) && weapons_can_start_aim(&g_player_state)) s_rooted = 1;
+    if ((pressed || touch_down) && !glifo_is_spell() && weapons_can_start_aim(&g_player_state)) s_rooted = 1;
 
     int sdx = 0, sdy = 0; // screen-space input axes
     if (!s_rooted || procession) {
@@ -3172,9 +3233,9 @@ static void player_update(uint32_t keys, uint32_t keys_down) {
     int result;
 #if ENCOUNTERS_PROTO
     if (g_arpg.spell == 1 && arpg_inv_has_spell(ARPG_SPELL_GLIFO)) {
-        // Glifo (DESIGN.md 7.5): the stylus throws the glifo; while aiming the hero stands still, as with the ray.
-        result = glifo_input(&g_player_state, touch_down, pressed, in.touch_x, in.touch_y, s_player.x, s_player.y)
-                 ? WEAPON_RESULT_ROOTED : 0;
+        // Glifo (DESIGN.md 7.5): the stylus marks the target and the release casts it; the hero never stands still for it.
+        glifo_input(&g_player_state, touch_down, pressed, in.touch_x, in.touch_y, s_player.x, s_player.y, s_player.dir);
+        result = 0;
     } else
 #endif
     result = weapons_input(&g_player_state, &in, g_enemies, MAX_ENEMIES);
@@ -3209,9 +3270,20 @@ static void player_update(uint32_t keys, uint32_t keys_down) {
 // Death restarts the current arena at once: full health, the wave respawned.
 static void arena_restart(void) {
     int god = g_player_state.god_mode;
+    int spawn_x = g_arena->player_x, spawn_y = g_arena->player_y, spawn_dir = DIR_SOUTH;
     if (s_strip_mode) {
+#if ENCOUNTERS_PROTO
+        // A run starts in the room of the last altar touched (Nave 1 without one); every room is always the same.
+        enc_room_select(enc_room_entry(), -1);
+        uint32_t seed = enc_room_seed(enc_room_current());
+#else
         uint32_t seed = s_frame_index ^ (uint32_t)cpuGetTiming() ^ (uint32_t)strip_shift_total_px();
+#endif
         strip_start(seed);
+#if ENCOUNTERS_PROTO
+        spawn_x = g_arena->player_x; spawn_y = g_arena->player_y;
+        enc_room_arrival(&spawn_x, &spawn_y, &spawn_dir);
+#endif
         horde_init(seed ^ 0x684f5244u);
         pickups_init(seed ^ 0x5049434bu);
         enemy_puddles_init();
@@ -3220,16 +3292,16 @@ static void arena_restart(void) {
         init_bg_tile_cache(&s_bot_bg_tile_cache, BG_TILE_CACHE_CAPACITY, s_bot_bg_tiles_vram);
         s_top_map_ready = 0;
         s_bot_map_ready = 0;
-        nav_refresh_begin(g_arena->player_x, g_arena->player_y);
+        nav_refresh_begin(spawn_x, spawn_y);
     }
-    s_player.x = TO_FIXED(g_arena->player_x);
-    s_player.y = TO_FIXED(g_arena->player_y);
+    s_player.x = TO_FIXED(spawn_x);
+    s_player.y = TO_FIXED(spawn_y);
     if (s_strip_mode) {
         s_death_screen_frames = 0;
         s_death_restart_armed = 0;
         s_death_prev_touch_down = 0;
     }
-    s_player.dir = DIR_SOUTH;
+    s_player.dir = spawn_dir;
     s_player.frame = 0;
     s_player.is_moving = 0;
     s_player.anim_timer = 0;
@@ -3243,7 +3315,7 @@ static void arena_restart(void) {
     weapons_init();
     glifo_reset();
     allies_reset();
-    nav_set_goal(g_arena->player_x, g_arena->player_y);
+    nav_set_goal(spawn_x, spawn_y);
     if (!s_strip_mode) nav_rebuild_now();
     s_rooted = 0;
     s_crouched = 0;
@@ -3288,23 +3360,51 @@ static int s_transition = TRANSITION_NONE;
 static int s_fade_level = 0;
 
 #if ENCOUNTERS_PROTO
-// Room crossing (salas ARPG): fade to black, land at the foot of the destination room, fade back in.
-// The destination is always the room above for now (the strip only advances vertically).
+// Room crossing (salas ARPG): fade to black, load the room the door leads to (room_reload_light), fade back in.
 static int s_room_dest = -1;
 
-static void room_transition_teleport(int k) {
-    int x, y;
-    if (!enc_room_dest_pos(k, &x, &y)) return;
+// Light reload (no run reset): builds the destination room, which enc_room_select() already chose, and lands the hero on its
+// arrival point. Life, mana, xp, level and inventory are untouched (arena_restart is the "new run" and resets them).
+static void room_reload_light(void) {
+    uint32_t seed = enc_room_seed(enc_room_current());
+    strip_start(seed);
+    horde_init(seed ^ 0x684f5244u);
+    pickups_init(seed ^ 0x5049434bu);
+    enemy_puddles_init();
+    apply_arena_palette();
+    init_bg_tile_cache(&s_top_bg_tile_cache, TOP_TILE_CACHE_CAPACITY, s_top_bg_tiles_vram);
+    init_bg_tile_cache(&s_bot_bg_tile_cache, BG_TILE_CACHE_CAPACITY, s_bot_bg_tiles_vram);
+    s_top_map_ready = 0;
+    s_bot_map_ready = 0;
+    int x = g_arena->player_x, y = g_arena->player_y, dir = DIR_NORTH;
+    enc_room_arrival(&x, &y, &dir);
     s_player.x = TO_FIXED(x);
     s_player.y = TO_FIXED(y);
-    s_player.dir = DIR_NORTH;
+    s_player.dir = dir;
     s_player.frame = 0;
     s_player.is_moving = 0;
     s_player.anim_timer = 0;
+    weapons_cancel_aim();
+    glifo_reset();
+    allies_reset();
     s_rooted = 0;
-    camera_init();
+    s_crouched = 0;
+    s_crouch_timer = 0;
+    g_hero_crouched = 0;
+    s_latch_pressed = 0;
+    s_latch_released = 0;
+    s_keys_down_latch = 0;
     nav_set_goal(x, y);
     nav_refresh_begin(x, y);      // the walkable grid is read from the new spot
+    camera_init();
+    g_hitstop_frames = 0;
+    memset(s_death_chunks, 0, sizeof(s_death_chunks));
+    exvoto_melt_reset();
+    remate_reset();
+    punch_reset();
+    radial_close();
+    s_pending_head = s_pending_count = 0;
+    memset(g_enemies, 0, sizeof(g_enemies));
 }
 
 static void room_transition_update(void) {
@@ -3322,7 +3422,10 @@ static void room_transition_update(void) {
         if (s_fade_level >= 16) {
             s_fade_level = 16;
             setBrightness(3, -16);                 // fully black before the teleport
-            if (s_room_dest >= 0) room_transition_teleport(s_room_dest);
+            if (s_room_dest >= 0) {
+                enc_room_select(s_room_dest, enc_room_current());
+                room_reload_light();
+            }
             s_room_dest = -1;
             s_transition = TRANSITION_IN;
         }
@@ -3688,6 +3791,7 @@ int main(void) {
             oamEnable(&oamMain);
             oamEnable(&oamSub);
 #endif
+            camp_invalidate_pages();
             s_top_map_ready = 0;
             s_bot_map_ready = 0;
             memset(s_dirty, 0, sizeof(s_dirty));
@@ -3723,6 +3827,7 @@ int main(void) {
                 oamEnable(&oamMain);
                 oamEnable(&oamSub);
 #endif
+                camp_invalidate_pages();
                 menu_update(KEY_B, 0, 0, 0);
                 s_top_map_ready = 0;
                 s_bot_map_ready = 0;
@@ -3860,12 +3965,17 @@ int main(void) {
         if (camp_active()) {
             // The camp: walk, focus a prop, interact. The dungeon systems stay off.
             camp_floor_light_tick((int)s_vblank_count);
+            if (!(g_arpg.tips & ARPG_TIP_DORMIR) && g_arpg.xp >= (uint32_t)arpg_xp_needed(g_arpg.level)) {
+                arpg_tip_take(ARPG_TIP_DORMIR);
+                camp_toast("Duerme para subir de nivel");
+            }
             if (!menu_is_open()) {
                 int act = camp_update(&s_player, keys_held, s_keys_down_latch,
                                       menu_touch_pressed && !s_menu_ignore_held_touch, touch.px, touch.py);
                 s_keys_down_latch = 0;
                 if (act == CAMP_ACT_SLEEP) {
                     int gained = arpg_sleep();
+                    arpg_world_rest();      // the dead of the cathedral come back; chests, altars and "beaten once" stay
                     arpg_progress_save();
                     char msg[48];
                     if (gained > 0) {
@@ -3975,6 +4085,15 @@ int main(void) {
         present_vblank_begin();
         uint32_t post_vwait_start = cpuGetTiming();
         present_screen_effects();
+#if ENCOUNTERS_PROTO
+        if (arpg_map_is_open() && s_strip_mode && s_run_started && !camp_active() && menu_state() != MENU_INVENTORY) {
+            // Overlay map: dim the floor/walls of the upper screen (BG0 only; the map and actors live on BG2). Set here, before
+            // the top render, so the fade covers every scanline; the shadows' sprite window is off meanwhile.
+            REG_DISPCNT_SUB &= ~DISPLAY_SPR_WIN_ON;
+            REG_BLDCNT_SUB = BIT(0) | (3 << 6);
+            REG_BLDY_SUB = 9;
+        }
+#endif
         uint32_t t_top = cpuGetTiming();
         int inv_top = (menu_state() == MENU_INVENTORY);
         if (inv_top) {
@@ -3995,6 +4114,12 @@ int main(void) {
                 for (int y = 0; y < SCREEN_H; y++) { s_dirty_top[y].x0 = 0; s_dirty_top[y].x1 = SCREEN_W; }
             }
             render_screen(s_top_page, s_dirty_top, view_x, view_y - SCREEN_H, 1, &top_floor, &top_sh, &top_bl);
+#if ENCOUNTERS_PROTO
+            if (arpg_map_is_open() && s_strip_mode && s_run_started && !camp_active()) {
+                g_dirty_cur = s_dirty_top;      // the next render_screen of this page clears the lines
+                arpg_map_draw(s_top_page, TO_INT(s_player.x), TO_INT(s_player.y), (int)s_frame_index);
+            }
+#endif
         }
         s_inv_top_on = inv_top;
 #if HW_SHADOWS

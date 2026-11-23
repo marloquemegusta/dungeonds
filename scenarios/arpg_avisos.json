@@ -1,0 +1,31 @@
+{
+ "name": "arpg_avisos",
+ "description": "Avisos de primera vez del ARPG: tarjeta del inventario (arcon, su cierre) y aviso de dormir. Solo evidencia.",
+ "suite": false,
+ "evidence_only": true,
+ "state": {
+  "elf": "../.ds-game-dev/build/out/dungeonds.elf",
+  "symbols": {"pl": "s_player", "ga": "g_arpg"},
+  "default_symbol": "pl",
+  "fields": {
+   "px": {"symbol": "pl", "offset": 0, "type": "s32"},
+   "py": {"symbol": "pl", "offset": 4, "type": "s32"},
+   "xp": {"symbol": "ga", "offset": 8, "type": "u32"}
+  }
+ },
+ "steps": [
+  {"frames": 90},
+  {"tap": {"x": 128, "y": 66}, "frames": 6},
+  {"release": true, "frames": 40},
+  {"button_down": "START", "frames": 4},
+  {"button_up": "START", "frames": 90, "capture": "a01_campamento"},
+  {"poke": [{"field": "px", "value": 15872}, {"field": "py", "value": 75776}], "frames": 20},
+  {"button_down": "A", "frames": 4},
+  {"button_up": "A", "frames": 25, "capture": "b01_tarjeta_inventario"},
+  {"button_down": "A", "frames": 12},
+  {"button_up": "A", "frames": 20, "capture": "b02_tarjeta_cerrada"},
+  {"button_down": "B", "frames": 12},
+  {"button_up": "B", "frames": 20},
+  {"poke": [{"field": "xp", "value": 100}], "frames": 12, "capture": "c01_aviso_dormir"}
+ ]
+}

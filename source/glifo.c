@@ -5,9 +5,12 @@
 #include "arpg.h"
 #include "arpg_inv.h"
 #include "allies.h"
-#include "placeholders_gfx.h"
+#include "punch.h"
 #include "sfx.h"
+#include <nds/arm9/math.h>
 #include <stddef.h>
+#include <stdio.h>
+#include <string.h>
 
 // Glifo look and arc (DESIGN.md 7.5-7.7). Colours are BGR555 without the alpha bit (put adds it).
 // Desaturated palette, same values as FX_SH_* in weapons.c (tests/test_guardrails.py watches this file).
@@ -19,23 +22,23 @@
 #define GL_ASH_B   RGB15(10, 9, 8)
 #define GL_ASH_C   RGB15(6, 5, 5)
 #define GL_SMOKE_M RGB15(18, 16, 14)
-#define GL_AIM     RGB15(20, 16, 20)
 
-#define GLIFO_CHEST_H 16        // [TUNABLE-PLACEHOLDER] the projectile leaves this high above the hero's feet
-#define GLIFO_ARC_H 20          // [TUNABLE-PLACEHOLDER] extra height of the arc at mid flight
-#define GLIFO_AIM_RING 10       // [TUNABLE-PLACEHOLDER] ground radius of the aim ring
+// Aim preview colours: the overlay layer has no floor to read, so the faint mix is baked: ~3/8 ivory over the mean floor tone
+// (90, 86, 78) of the cathedral = (143, 129, 106) -> RGB15(18, 16, 13); the branch pixels a step dimmer, like in the seal.
+#define GL_PV_LINE RGB15(18, 16, 13)
+#define GL_PV_DIM  RGB15(16, 14, 11)
+
 #define GLIFO_FLASH_FRAMES 12   // [TUNABLE-PLACEHOLDER] detonation flash before the crack closes
 #define GLIFO_TONGUES 6         // Zarza: flame tongues alive at once
 #define GLIFO_TONGUE_PERIOD 20  // Zarza: frames of one tongue
 #define GLIFO_BASE_R 40         // ground radius the baked rune was made for
 
-typedef struct {
-    int active;
-    fixed x, y;             // ground position (8.8)
-    fixed step_x, step_y;   // ground step per frame (8.8)
-    int tx, ty;             // landing point (world px)
-    int frame;              // frames flown
-} GlifoShot;
+// The hero's prayer (DESIGN.md 7.7): the clip is nitrofiles/punch/pray_d<dir>.bin (same format as the punch clips). The
+// seal appears at the touched point on the frame the hands close.
+#define GLIFO_PRAY_FRAMES 8     // frames of the clip (corazon_pray)
+#define GLIFO_PRAY_TICKS 4      // [TUNABLE-PLACEHOLDER] game frames per clip frame: the hands close at tick 5*4 = 20 (0,33 s)
+#define GLIFO_PRAY_CLOSE 5      // clip frame in which the hands close (tools/characters/build_corazon.py PRAY_CLOSE_FRAME)
+#define GLIFO_PRAY_BIN_BYTES 10240
 
 typedef struct {
     int active;
@@ -48,21 +51,26 @@ typedef struct {
     uint8_t aura;           // GLIFO_AURA_* bits
     uint8_t reopen;         // Doble Sello: reopens once, free, when this cycle ends
     uint8_t seed;
-} GlifoZone;
+    uint8_t det_sound;          // the detonation sound already played (Doble Sello: once per glifo)
+    int xh;                     // half-width (px) of the rows the rune can touch
+    int npx;                    // pixels of this zone's scaled mask (s_px[zone])
+} GlifoZone;   // scenarios read active/aura at fixed offsets (tools/glifo_rune/gen_scenarios.py): new fields go last
 
-static GlifoShot s_shots[ARPG_GLIFO_MAX];
 static GlifoZone s_zones[ARPG_GLIFO_MAX];
+// Prayer in progress.
+static int s_pray_active = 0, s_pray_frame = 0, s_pray_t = 0, s_pray_dir = 0;
+static int s_pray_tx = 0, s_pray_ty = 0;                 // where the seal will appear (world px)
+static uint8_t s_pray_buf[GLIFO_PRAY_BIN_BYTES] __attribute__((aligned(4)));
+static int s_pray_loaded_dir = -1;
 static int s_aiming = 0;
 static int s_aim_x = 0, s_aim_y = 0;     // clamped target while the stylus aims (world px)
 static uint8_t s_next_aura = 0;
 
 static int glifo_count(void) {
     int n = 0;
-    for (int i = 0; i < ARPG_GLIFO_MAX; i++) {
-        if (s_shots[i].active) n++;
+    for (int i = 0; i < ARPG_GLIFO_MAX; i++)
         if (s_zones[i].active) n++;
-    }
-    return n;
+    return n + (s_pray_active ? 1 : 0);
 }
 
 // Ground metric: a point is inside a circle of ground radius r around (cx, cy).
@@ -70,57 +78,60 @@ static int ground_inside(int dx, int dy, int r) {
     return dx * dx + GROUND_DY2(dy) <= r * r;
 }
 
+static inline int scl(int v, int sc) { return (v * sc + (v < 0 ? -128 : 128)) / 256; }
+
 static int throw_cost(void) {
     int c = ARPG_GLIFO_COST * (100 - arpg_inv_glifo_line(ARPG_LINE_COST)) / 100;
     return c < ARPG_GLIFO_COST_MIN ? ARPG_GLIFO_COST_MIN : c;
 }
 
-// Height of the arc above the ground at flight frame f: a line from chest height down to the floor plus a parabola.
-static int arc_height(int f) {
-    const int F = ARPG_GLIFO_FLIGHT;
-    const int rem = F - f;
-    return (GLIFO_CHEST_H * rem) / F + (4 * GLIFO_ARC_H * f * rem) / (F * F);
+static int pray_load_bin(int dir) {
+    if (s_pray_loaded_dir == dir) return 1;
+    char path[40];
+    snprintf(path, sizeof(path), "nitro:/punch/pray_d%d.bin", dir);
+    FILE *f = fopen(path, "rb");
+    if (!f) return 0;
+    size_t n = fread(s_pray_buf, 1, sizeof(s_pray_buf), f);
+    fclose(f);
+    s_pray_loaded_dir = -1;
+    if (n < sizeof(PunchBinHeader)) return 0;
+    const PunchBinHeader *h = (const PunchBinHeader *)s_pray_buf;
+    if (h->magic != PUNCH_BIN_MAGIC || sizeof(PunchBinHeader) + h->pix_bytes + h->runs_bytes > n) return 0;
+    s_pray_loaded_dir = dir;
+    return 1;
 }
 
 void glifo_reset(void) {
-    for (int i = 0; i < ARPG_GLIFO_MAX; i++) {
-        s_shots[i].active = 0;
-        s_zones[i].active = 0;
-    }
+    for (int i = 0; i < ARPG_GLIFO_MAX; i++) s_zones[i].active = 0;
     s_aiming = 0;
+    s_pray_active = 0;
 }
 
 void glifo_cancel_aim(void) { s_aiming = 0; }
 
 void glifo_shift_y(int dy_px) {
-    for (int i = 0; i < ARPG_GLIFO_MAX; i++) {
-        if (s_shots[i].active) {
-            s_shots[i].y += TO_FIXED(dy_px);
-            s_shots[i].ty += dy_px;
-        }
+    for (int i = 0; i < ARPG_GLIFO_MAX; i++)
         if (s_zones[i].active) s_zones[i].cy += dy_px;
-    }
     if (s_aiming) s_aim_y += dy_px;
+    if (s_pray_active) s_pray_ty += dy_px;
 }
 
-int glifo_input(PlayerState *player, int touch_down, int touch_pressed, int touch_x, int touch_y, fixed hero_x, fixed hero_y) {
+int glifo_busy(void) { return s_pray_active; }
+
+int glifo_input(PlayerState *player, int touch_down, int touch_pressed, int touch_x, int touch_y, fixed hero_x, fixed hero_y, int hero_dir) {
+    (void)hero_x; (void)hero_y;
     (void)touch_pressed;
-    const int hx = TO_INT(hero_x), hy = TO_INT(hero_y);
+    if (s_pray_active) {                                  // praying: the hero walks freely and the clip follows his facing
+        s_aiming = 0;
+        const int d = hero_dir & 7;
+        if (d != s_pray_dir && pray_load_bin(d)) s_pray_dir = d;
+        return 0;
+    }
 
     if (touch_down) {
-        // Target = the touched world point, clamped to ARPG_GLIFO_RANGE from the hero (ground metric).
-        int dx = touch_x - hx, dy = touch_y - hy;
-        const int d2 = dx * dx + GROUND_DY2(dy);
-        const int r2 = ARPG_GLIFO_RANGE * ARPG_GLIFO_RANGE;
-        if (d2 > r2) {
-            const int d = (int)sqrt32(d2);
-            if (d > 0) {
-                dx = dx * ARPG_GLIFO_RANGE / d;
-                dy = dy * ARPG_GLIFO_RANGE / d;
-            }
-        }
-        s_aim_x = hx + dx;
-        s_aim_y = hy + dy;
+        // Target = exactly the touched world point (no range limit).
+        s_aim_x = touch_x;
+        s_aim_y = touch_y;
         s_aiming = 1;
         return 1;
     }
@@ -128,26 +139,43 @@ int glifo_input(PlayerState *player, int touch_down, int touch_pressed, int touc
     if (!s_aiming) return 0;
     s_aiming = 0;
 
-    // Release: throw if there is mana and a free slot.
+    // Solo suelo: on a wall, pillar or obstacle nothing happens (no prayer, no mana).
+    if (!ground_point_is_free(s_aim_x, s_aim_y)) return 0;
+
+    // Release: the hero prays if there is mana and a free slot; the mana is paid now (the prayer is a commitment).
     const int cost = throw_cost();
     if (player->mana < cost || glifo_count() >= ARPG_GLIFO_MAX) return 0;
-    for (int i = 0; i < ARPG_GLIFO_MAX; i++) {
-        if (s_shots[i].active) continue;
-        player->mana -= cost;
-        const int F = ARPG_GLIFO_FLIGHT;
-        s_shots[i].active = 1;
-        s_shots[i].x = hero_x;
-        s_shots[i].y = hero_y;
-        s_shots[i].step_x = (fixed)((s_aim_x - hx) * 256 / F);
-        s_shots[i].step_y = (fixed)((s_aim_y - hy) * 256 / F);
-        s_shots[i].tx = s_aim_x;
-        s_shots[i].ty = s_aim_y;
-        s_shots[i].frame = 0;
-        sfx_play(SND_GLIFO_CAST, hx);
-        break;
-    }
-    return 0;
+    player->mana -= cost;
+    s_pray_tx = s_aim_x;
+    s_pray_ty = s_aim_y;
+    s_pray_dir = hero_dir & 7;
+    s_pray_frame = 0;
+    s_pray_t = 0;
+    s_pray_active = 1;
+    if (!pray_load_bin(s_pray_dir)) s_pray_frame = GLIFO_PRAY_CLOSE;   // no clip (should not happen): the seal appears at once
+    return 1;
 }
+
+const uint16_t *glifo_pray_pixels(void) {
+    if (!s_pray_active || s_pray_loaded_dir != s_pray_dir) return NULL;
+    const PunchBinHeader *h = (const PunchBinHeader *)s_pray_buf;
+    return (const uint16_t *)(s_pray_buf + sizeof(PunchBinHeader)) + h->pix_off[s_pray_frame];
+}
+
+const uint16_t *glifo_pray_runs(void) {
+    if (!s_pray_active || s_pray_loaded_dir != s_pray_dir) return NULL;
+    const PunchBinHeader *h = (const PunchBinHeader *)s_pray_buf;
+    return (const uint16_t *)(s_pray_buf + sizeof(PunchBinHeader) + h->pix_bytes) + h->run_off[s_pray_frame];
+}
+
+const uint8_t *glifo_pray_bounds(void) {
+    if (!s_pray_active || s_pray_loaded_dir != s_pray_dir) return NULL;
+    return ((const PunchBinHeader *)s_pray_buf)->bounds[s_pray_frame];
+}
+
+int glifo_pray_dir(void) { return s_pray_dir; }
+int glifo_pray_frame(void) { return s_pray_frame; }
+int glifo_pray_anchor(void) { return g_pray_ground_anchor[s_pray_dir]; }
 
 // ---------------------------------------------------------------------------------------------------------------
 // Simulation
@@ -207,29 +235,104 @@ static void zone_detonate(GlifoZone *z, Enemy *enemies, int max_enemies) {
     }
 }
 
+// Mask scaled to the zone's real radius (computed once when the seal appears). The baked rune is a list of 1 px
+// crack pixels for radius 40; scaled by sc (8.8, 1.0..2.0) each pixel covers a w x h footprint of destination pixels.
+// Drawing the footprint's centre alone would leave holes, so the pixel gets an L: its row across the footprint and its
+// column. That keeps the crack 1 px thin and continuous (its length grows with the radius, its width does not).
+// Extra pixels inherit the opening order and the closing order, brightness and branch bit of their source pixel.
+#define GL_PX_MAX 2400          // 788 source pixels x up to 3 (centre + two arms); duplicates are removed
+#define GL_EX 96                // dedupe bitmap: dx in [-96, 96), dy in [-64, 64)
+#define GL_EY 64
+#define PV_ZONE ARPG_GLIFO_MAX       // scratch slot of s_px / s_floor for the aim preview
+static GlifoPx s_px[ARPG_GLIFO_MAX + 1][GL_PX_MAX];
+// Floor mask of each zone (the rune is only drawn on walkable floor): one byte per 4 px collision cell, filled
+// once when the seal appears. Cells cover dx in [-96, 96] and dy in [-64, 64) around the centre.
+#define FL_W 50
+#define FL_H 34
+static uint8_t s_floor[ARPG_GLIFO_MAX + 1][FL_W * FL_H];
+static int s_fl_bx[ARPG_GLIFO_MAX + 1], s_fl_by[ARPG_GLIFO_MAX + 1];
+static const uint8_t *r_floor;
+static int r_flx, r_fly;
+static void zone_build_floor(int zi, const GlifoZone *z) {
+    const int bx = (z->cx - 96) >> 2, by = (z->cy - 64) >> 2;
+    s_fl_bx[zi] = bx; s_fl_by[zi] = by;
+    for (int j = 0; j < FL_H; j++)
+        for (int i = 0; i < FL_W; i++)
+            s_floor[zi][j * FL_W + i] = (uint8_t)ground_point_is_free((bx + i) * 4 + 2, (by + j) * 4 + 2);
+}
+static uint8_t s_seen[(2 * GL_EX) * (2 * GL_EY) / 8];
+
+static inline int fx(int v, int sc) { return ((2 * v - 1) * sc + 256) >> 9; }    // first destination column of cell v
+static inline int seen_bit(int x, int y) {
+    if ((unsigned)(x + GL_EX) >= (unsigned)(2 * GL_EX) || (unsigned)(y + GL_EY) >= (unsigned)(2 * GL_EY)) return -1;
+    return (y + GL_EY) * (2 * GL_EX) + (x + GL_EX);
+}
+static int seen_test_set(int x, int y) {          // 1 if it was already set (or out of range); sets it otherwise
+    const int b = seen_bit(x, y);
+    if (b < 0) return 1;
+    const uint8_t m = (uint8_t)(1u << (b & 7));
+    if (s_seen[b >> 3] & m) return 1;
+    s_seen[b >> 3] |= m;
+    return 0;
+}
+
+static void zone_build_mask(int zi, GlifoZone *z) {
+    const int redil = (z->aura & GLIFO_AURA_REDIL) != 0;
+    const GlifoPx *src = redil ? g_glifo_twist : g_glifo_base;
+    const int n = redil ? GLIFO_TWIST_N : GLIFO_BASE_N;
+    const int sc = z->sc;
+    GlifoPx *out = s_px[zi];
+    int m = 0;
+    memset(s_seen, 0, sizeof(s_seen));
+    for (int i = 0; i < n; i++) (void)seen_test_set(scl(src[i].dx, sc), scl(src[i].dy, sc));   // the centres are never displaced
+    for (int i = 0; i < n && m < GL_PX_MAX; i++) {
+        const GlifoPx *q = &src[i];
+        const int cx = scl(q->dx, sc), cy = scl(q->dy, sc);
+        out[m++] = (GlifoPx){ (int8_t)cx, (int8_t)cy, q->order, q->close, q->flags };
+        const int x0 = fx(q->dx, sc), x1 = fx(q->dx + 1, sc) - 1;
+        const int y0 = fx(q->dy, sc), y1 = fx(q->dy + 1, sc) - 1;
+        const uint8_t fl = (uint8_t)(q->flags & ~(GLIFO_FL_SHARD | GLIFO_FL_FLARE));
+        for (int x = x0; x <= x1 && m < GL_PX_MAX; x++)
+            if (x != cx && !seen_test_set(x, cy)) out[m++] = (GlifoPx){ (int8_t)x, (int8_t)cy, q->order, q->close, fl };
+        for (int y = y0; y <= y1 && m < GL_PX_MAX; y++)
+            if (y != cy && !seen_test_set(cx, y)) out[m++] = (GlifoPx){ (int8_t)cx, (int8_t)y, q->order, q->close, fl };
+    }
+    z->npx = m;
+}
+
+// The seal appears at the prayer's point with the auras equipped at that moment.
+static void zone_spawn(int tx, int ty) {
+    for (int zi = 0; zi < ARPG_GLIFO_MAX; zi++) {
+        GlifoZone *z = &s_zones[zi];
+        if (z->active) continue;
+        z->active = 1;
+        z->cx = tx;
+        z->cy = ty;
+        int r = ARPG_GLIFO_RADIUS * (100 + arpg_inv_glifo_line(ARPG_LINE_RADIUS)) / 100;
+        if (r > ARPG_GLIFO_RADIUS_MAX) r = ARPG_GLIFO_RADIUS_MAX;
+        z->radius = r;
+        z->sc = r * 256 / GLIFO_BASE_R;
+        z->xh = ((44 * z->sc) >> 8) + 3;
+        z->aura = (uint8_t)((arpg_inv_has_mechanic(ARPG_MECH_REDIL) ? GLIFO_AURA_REDIL : 0) |
+                            (arpg_inv_has_mechanic(ARPG_MECH_ZARZA) ? GLIFO_AURA_ZARZA : 0));
+        z->reopen = (uint8_t)(arpg_inv_has_mechanic(ARPG_MECH_DOBLE_SELLO) ? 1 : 0);
+        z->det_sound = 0;
+        z->seed = (uint8_t)(s_next_aura++ * 37u + 11u);
+        zone_build_mask(zi, z);
+        zone_build_floor(zi, z);
+        zone_start(z);
+        sfx_play(SND_GLIFO_CRACK, z->cx);
+        break;
+    }
+}
+
 void glifo_update(Enemy *enemies, int max_enemies) {
-    // Flight: a projectile that reaches its frame lands as a rune with the auras equipped at the throw.
-    for (int i = 0; i < ARPG_GLIFO_MAX; i++) {
-        GlifoShot *s = &s_shots[i];
-        if (!s->active) continue;
-        s->x += s->step_x;
-        s->y += s->step_y;
-        if (++s->frame < ARPG_GLIFO_FLIGHT) continue;
-        s->active = 0;
-        for (int zi = 0; zi < ARPG_GLIFO_MAX; zi++) {
-            GlifoZone *z = &s_zones[zi];
-            if (z->active) continue;
-            z->active = 1;
-            z->cx = s->tx;
-            z->cy = s->ty;
-            z->radius = ARPG_GLIFO_RADIUS * (100 + arpg_inv_glifo_line(ARPG_LINE_RADIUS)) / 100;
-            z->sc = z->radius * 256 / GLIFO_BASE_R;
-            z->aura = (uint8_t)((arpg_inv_has_mechanic(ARPG_MECH_REDIL) ? GLIFO_AURA_REDIL : 0) |
-                                (arpg_inv_has_mechanic(ARPG_MECH_ZARZA) ? GLIFO_AURA_ZARZA : 0));
-            z->reopen = (uint8_t)(arpg_inv_has_mechanic(ARPG_MECH_DOBLE_SELLO) ? 1 : 0);
-            z->seed = (uint8_t)(s_next_aura++ * 37u + 11u);
-            zone_start(z);
-            break;
+    // Prayer: the hands close on frame GLIFO_PRAY_CLOSE and the seal appears at the touched point.
+    if (s_pray_active) {
+        if (s_pray_t == 0 && s_pray_frame == GLIFO_PRAY_CLOSE) zone_spawn(s_pray_tx, s_pray_ty);
+        if (++s_pray_t >= GLIFO_PRAY_TICKS) {
+            s_pray_t = 0;
+            if (++s_pray_frame >= GLIFO_PRAY_FRAMES) s_pray_active = 0;
         }
     }
 
@@ -237,7 +340,6 @@ void glifo_update(Enemy *enemies, int max_enemies) {
         GlifoZone *z = &s_zones[i];
         if (!z->active) continue;
         const int t = z->t;
-        if (t == z->t_open) sfx_play(SND_GLIFO_ACTIVATE, z->cx);
         if (t >= z->t_open && t < z->t_det) {
             if ((z->aura & GLIFO_AURA_REDIL) || (z->aura & GLIFO_AURA_ZARZA)) {
                 const int zarza_tick = (z->aura & GLIFO_AURA_ZARZA) && z->tick <= 0;
@@ -252,6 +354,7 @@ void glifo_update(Enemy *enemies, int max_enemies) {
             }
         } else if (t == z->t_det) {
             zone_detonate(z, enemies, max_enemies);
+            if (!z->det_sound) { z->det_sound = 1; sfx_play(SND_GLIFO_DETONATE, z->cx); }   // once per glifo, even with Doble Sello
         }
         if (++z->t >= z->t_end) {
             if (z->reopen) {            // Doble Sello: once, free, same spot and same auras
@@ -296,12 +399,14 @@ int glifo_point_in_zone(int x, int y) {
 // Render (DESIGN.md 7.7, variant A). Layers: [Redil: vortex under] -> crack (base or twisted mask) -> [Zarza tongues].
 // ---------------------------------------------------------------------------------------------------------------
 
-#define ROWS 96                 // rows below/above the centre kept in the occlusion cache (dy + 48)
-#define ROW_OFF 48
-#define X_HALF 76               // half-width queried for the occlusion of a row
+#ifndef GLEXP
+#define GLEXP 0
+#endif
+#define ROWS 128                // rows kept in the occlusion cache (dy + 64): the rune reaches 42 px at radius 80 plus flames
+#define ROW_OFF 64
 
 static uint16_t *r_buf;
-static int r_camx, r_camy, r_cx, r_cy;
+static int r_camx, r_camy, r_cx, r_cy, r_xh;     // r_xh: half-width queried for the occlusion of a row
 static int8_t r_hid[ROWS];      // per row: -1 unknown, 0 clear, 1 a wall may hide something
 
 static void put_rel(int dx, int dy, uint16_t col) {
@@ -310,16 +415,18 @@ static void put_rel(int dx, int dy, uint16_t col) {
     if ((unsigned)sy >= SCREEN_H || (unsigned)sx >= SCREEN_W) return;
     const int ri = dy + ROW_OFF;
     if ((unsigned)ri >= ROWS) return;
+    {   // only on walkable floor (cell mask of the zone)
+        const unsigned fi = (unsigned)((wx >> 2) - r_flx), fj = (unsigned)((wy >> 2) - r_fly);
+        if (fi >= FL_W || fj >= FL_H || !r_floor[fj * FL_W + fi]) return;
+    }
     int h = r_hid[ri];
     if (h < 0) {
-        h = world_span_hidden(wy, r_cx - X_HALF, r_cx + X_HALF + 1, wy) ? 1 : 0;
+        h = world_span_hidden(wy, r_cx - r_xh, r_cx + r_xh + 1, wy) ? 1 : 0;
         r_hid[ri] = (int8_t)h;
     }
     if (h && world_pixel_hidden(wx, wy, wy)) return;
     r_buf[sy * SCREEN_W + sx] = (uint16_t)(col | BIT(15));
 }
-
-static inline int scl(int v, int sc) { return (v * sc + (v < 0 ? -128 : 128)) / 256; }
 
 static uint16_t core_color(int v) {
     return v >= 200 ? GL_IVORY : v >= 140 ? GL_GOLD : v >= 90 ? GL_AMBER : GL_EMBER;
@@ -343,27 +450,35 @@ static void draw_tongue(int dx, int dy, int h, int hot) {
     if (h >= 3) put_rel(dx, dy - 1 - h, GL_SMOKE_M);
 }
 
+// The well and its arms scale with the rune: each baked pixel fills its whole footprint (nearest-neighbour upscale).
+static void put_cell(int dx, int dy, int sc, uint16_t col) {
+    if (sc == 256) { put_rel(dx, dy, col); return; }
+    const int x0 = fx(dx, sc), x1 = fx(dx + 1, sc), y0 = fx(dy, sc), y1 = fx(dy + 1, sc);
+    for (int y = y0; y < y1; y++)
+        for (int x = x0; x < x1; x++) put_rel(x, y, col);
+}
+
 static void draw_vortex(int T, const GlifoZone *z, int lim) {
     const int fr = (T >> 1) & 7;
+    const int sc = z->sc;
     for (int i = 0; i < GLIFO_VX_BASE_N; i++) {
         const GlifoVx *p = &g_glifo_vx_base[i];
         if (p->rr > lim) break;
-        put_rel(p->dx, p->dy, p->col == 0 ? GL_DEEP : p->col == 1 ? GL_ASH_C : GL_ASH_B);
+        put_cell(p->dx, p->dy, sc, p->col == 0 ? GL_DEEP : p->col == 1 ? GL_ASH_C : GL_ASH_B);
     }
     for (int i = 0; i < GLIFO_VX_ARM_N; i++) {
         const GlifoVx *p = &g_glifo_vx_arm[fr][i];
         if (p->rr > lim || p->rr == 255) continue;
-        put_rel(p->dx, p->dy, p->col == 3 ? GL_IVORY : p->col == 4 ? GL_GOLD : GL_AMBER);
+        put_cell(p->dx, p->dy, sc, p->col == 3 ? GL_IVORY : p->col == 4 ? GL_GOLD : GL_AMBER);
     }
-    (void)z;
 }
 
-static void draw_zone(const GlifoZone *z) {
+static void draw_zone(const GlifoZone *z, int zi) {
     const int T = z->t;
     const int sc = z->sc;
     const int redil = (z->aura & GLIFO_AURA_REDIL) != 0;
-    const GlifoPx *mask = redil ? g_glifo_twist : g_glifo_base;
-    const int n = redil ? GLIFO_TWIST_N : GLIFO_BASE_N;
+    const GlifoPx *mask = s_px[zi];           // the rune already scaled to this zone's radius
+    const int n = z->npx;
     const int phase_close = T >= z->t_det + GLIFO_FLASH_FRAMES;
     const int flash = T >= z->t_det && !phase_close;
     int p = 255, cprog = -1, f = 256;           // reveal progress, close progress, fade
@@ -397,7 +512,7 @@ static void draw_zone(const GlifoZone *z) {
         if (T < z->t_open && q->order + 14 > p) v = 256;         // the leading edge of the opening is bright
         if (flash) v = 300;
         if (q->flags & GLIFO_FL_BRANCH) v = (v * 3) >> 2;
-        const int dx = scl(q->dx, sc), dy = scl(q->dy, sc);
+        const int dx = q->dx, dy = q->dy;
         if (q->flags & GLIFO_FL_SHARD) {                         // a raised stone chip beside the crack
             put_rel(dx + 1, dy, GL_ASH_C);
             put_rel(dx, dy - 1, GL_SMOKE_M);
@@ -433,59 +548,106 @@ static void draw_zone(const GlifoZone *z) {
             const int h = g_glifo_flame_h[(age * 43) >> 5] + 2;
             for (int i = 0; i < n; i++) {
                 const GlifoPx *q = &mask[i];
-                if (q->flags & GLIFO_FL_FLARE) draw_tongue(scl(q->dx, sc), scl(q->dy, sc), h, 1);
+                if (q->flags & GLIFO_FL_FLARE) draw_tongue(q->dx, q->dy, h, 1);
             }
         }
     }
 
     // Detonation: a ring of light leaves the centre.
     if (flash) {
-        GroundTarget g = { r_buf, r_camx, r_camy };
         const int age = T - z->t_det;
         const int rr = z->radius * (4 + age) / (4 + GLIFO_FLASH_FRAMES);
-        gfx_ground_ring(&g, z->cx, z->cy, rr, age < 6 ? GL_IVORY : GL_GOLD, 0);
+        const uint16_t rc = age < 6 ? GL_IVORY : GL_GOLD;
+        // One-pixel ellipse (half-width rr, half-height rr/2), clipped to the floor by put_rel.
+        for (int x = -rr; x <= rr; x++) {
+            const int y = sqrt32(rr * rr - x * x) >> 1;
+            put_rel(x, y, rc);
+            if (y) put_rel(x, -y, rc);
+        }
+        for (int y = -(rr >> 1); y <= (rr >> 1); y++) {
+            const int x = sqrt32(rr * rr - 4 * y * y);
+            put_rel(x, y, rc);
+            if (x) put_rel(-x, y, rc);
+        }
+    }
+}
+
+// Aim preview (DESIGN.md 7 Glifo): the whole rune, static and faint, at the touched point. The scaled mask is rebuilt only
+// when the radius or the auras change (not while the stylus moves); the floor cells it touches are re-queried only when the
+// aim point enters another 4 px cell (about 250 lookups, not the full window).
+static int s_pv_valid = 0, s_pv_cellx, s_pv_celly, s_pv_sc = -1, s_pv_aura = -1, s_pv_ex, s_pv_ey;
+static GlifoZone s_pv;
+
+static void preview_draw(int cam_x, int cam_y) {
+    if (!ground_point_is_free(s_aim_x, s_aim_y)) return;
+    int r = ARPG_GLIFO_RADIUS * (100 + arpg_inv_glifo_line(ARPG_LINE_RADIUS)) / 100;
+    if (r > ARPG_GLIFO_RADIUS_MAX) r = ARPG_GLIFO_RADIUS_MAX;
+    const int aura = (arpg_inv_has_mechanic(ARPG_MECH_REDIL) ? GLIFO_AURA_REDIL : 0);
+    const int sc = r * 256 / GLIFO_BASE_R;
+    if (sc != s_pv_sc || aura != s_pv_aura) {
+        s_pv.sc = sc; s_pv.aura = (uint8_t)aura; s_pv.radius = r;
+        zone_build_mask(PV_ZONE, &s_pv);
+        s_pv.xh = ((44 * sc) >> 8) + 3;
+        int ex = 0, ey = 0;
+        for (int i = 0; i < s_pv.npx; i++) {
+            const int ax = s_px[PV_ZONE][i].dx < 0 ? -s_px[PV_ZONE][i].dx : s_px[PV_ZONE][i].dx;
+            const int ay = s_px[PV_ZONE][i].dy < 0 ? -s_px[PV_ZONE][i].dy : s_px[PV_ZONE][i].dy;
+            if (ax > ex) ex = ax;
+            if (ay > ey) ey = ay;
+        }
+        s_pv_ex = ex; s_pv_ey = ey;
+        s_pv_sc = sc; s_pv_aura = aura; s_pv_valid = 0;
+    }
+    s_pv.cx = s_aim_x; s_pv.cy = s_aim_y;
+    if (s_pv.xh < 0 || s_pv.xh > 96) return;
+    const int cellx = s_aim_x >> 2, celly = s_aim_y >> 2;
+    if (!s_pv_valid || cellx != s_pv_cellx || celly != s_pv_celly) {
+        const int bx = (s_aim_x - 96) >> 2, by = (s_aim_y - 64) >> 2;
+        s_fl_bx[PV_ZONE] = bx; s_fl_by[PV_ZONE] = by;
+        const int i0 = ((s_aim_x - s_pv_ex) >> 2) - bx, i1 = ((s_aim_x + s_pv_ex) >> 2) - bx;
+        const int j0 = ((s_aim_y - s_pv_ey) >> 2) - by, j1 = ((s_aim_y + s_pv_ey) >> 2) - by;
+        for (int j = j0; j <= j1 && j < FL_H; j++)
+            for (int i = i0; i <= i1 && i < FL_W; i++)
+                if (i >= 0 && j >= 0) s_floor[PV_ZONE][j * FL_W + i] = (uint8_t)ground_point_is_free((bx + i) * 4 + 2, (by + j) * 4 + 2);
+        s_pv_cellx = cellx; s_pv_celly = celly; s_pv_valid = 1;
+    }
+    r_cx = s_pv.cx; r_cy = s_pv.cy; r_xh = s_pv.xh;
+    r_floor = s_floor[PV_ZONE]; r_flx = s_fl_bx[PV_ZONE]; r_fly = s_fl_by[PV_ZONE];
+    for (int k = 0; k < ROWS; k++) r_hid[k] = -1;
+    const int sx = r_cx - cam_x;
+    for (int dy = -ROW_OFF; dy < ROWS - ROW_OFF; dy++) {
+        const int row = r_cy + dy - cam_y;
+        if ((unsigned)row < SCREEN_H) dirty_row(row, sx - s_pv.xh, sx + s_pv.xh + 1);
+    }
+    const GlifoPx *mask = s_px[PV_ZONE];
+    for (int i = 0; i < s_pv.npx; i++) {
+        const GlifoPx *q = &mask[i];
+        put_rel(q->dx, q->dy, (q->flags & GLIFO_FL_BRANCH) ? GL_PV_DIM : GL_PV_LINE);
     }
 }
 
 void glifo_render_floor(uint16_t *buffer, int cam_x, int cam_y) {
     if (!buffer) return;
-    GroundTarget g = { buffer, cam_x, cam_y };
     r_buf = buffer; r_camx = cam_x; r_camy = cam_y;
+    if (s_aiming) preview_draw(cam_x, cam_y);
+    else s_pv_valid = 0;
     for (int i = 0; i < ARPG_GLIFO_MAX; i++) {
         const GlifoZone *z = &s_zones[i];
         if (!z->active) continue;
         // Skip a rune that lies wholly off screen (its widest reach is the radius plus the flames and the well).
         const int sx = z->cx - cam_x, sy = z->cy - cam_y;
-        if (sx + X_HALF < 0 || sx - X_HALF >= SCREEN_W || sy + 40 < 0 || sy - 40 >= SCREEN_H) continue;
-        r_cx = z->cx; r_cy = z->cy;
+        if (sx + z->xh < 0 || sx - z->xh >= SCREEN_W || sy + ROW_OFF < 0 || sy - ROW_OFF >= SCREEN_H) continue;
+        r_cx = z->cx; r_cy = z->cy; r_xh = z->xh;
+        r_floor = s_floor[i]; r_flx = s_fl_bx[i]; r_fly = s_fl_by[i];
         for (int r = 0; r < ROWS; r++) r_hid[r] = -1;
         for (int dy = -ROW_OFF; dy < ROWS - ROW_OFF; dy++) {
             const int row = r_cy + dy - cam_y;
-            if ((unsigned)row < SCREEN_H) dirty_row(row, sx - X_HALF, sx + X_HALF + 1);
+#if GLEXP != 2
+            if ((unsigned)row < SCREEN_H) dirty_row(row, sx - z->xh, sx + z->xh + 1);
+#endif
         }
-        draw_zone(z);
-    }
-    if (s_aiming) gfx_ground_ring(&g, s_aim_x, s_aim_y, GLIFO_AIM_RING, GL_AIM, 0);
-}
-
-void glifo_render(uint16_t *buffer, int cam_x, int cam_y) {
-    if (!buffer) return;
-    for (int i = 0; i < ARPG_GLIFO_MAX; i++) {
-        const GlifoShot *s = &s_shots[i];
-        if (!s->active) continue;
-        const int h = arc_height(s->frame);
-        const int x0 = TO_INT(s->x) - cam_x - PH_MALDICION_W / 2;
-        const int y0 = TO_INT(s->y) - cam_y - h - PH_MALDICION_H / 2;
-        for (int row = 0; row < PH_MALDICION_H; row++) {
-            const int y = y0 + row;
-            if (y < 0 || y >= SCREEN_H) continue;
-            dirty_row(y, x0, x0 + PH_MALDICION_W);
-            for (int col = 0; col < PH_MALDICION_W; col++) {
-                const int x = x0 + col;
-                const uint16_t px = g_ph_maldicion[row * PH_MALDICION_W + col];
-                if (px == 0 || x < 0 || x >= SCREEN_W) continue;
-                buffer[y * SCREEN_W + x] = px | BIT(15);
-            }
-        }
+#if GLEXP != 1
+        draw_zone(z, i);
+#endif
     }
 }

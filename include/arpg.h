@@ -108,6 +108,7 @@
 #define ARPG_GLIFO_COST 30          // [TUNABLE-PLACEHOLDER] mana per throw
 #define ARPG_GLIFO_COST_MIN 10      // [TUNABLE-PLACEHOLDER] floor of the cost with the "Coste" line
 #define ARPG_GLIFO_RADIUS 40        // [TUNABLE-PLACEHOLDER] ground px of the zone
+#define ARPG_GLIFO_RADIUS_MAX 80    // [TUNABLE-PLACEHOLDER] cap with the Radio line (2x: the baked rune scales up to here)
 #define ARPG_GLIFO_OPEN_FRAMES 30   // [TUNABLE-PLACEHOLDER] apertura: the crack opens, no effect (0,5 s)
 #define ARPG_GLIFO_WAIT_FRAMES 90   // [TUNABLE-PLACEHOLDER] espera: the auras act (1,5 s)
 #define ARPG_GLIFO_CLOSE_FRAMES 30  // [TUNABLE-PLACEHOLDER] cierre: the crack closes, outside-in (0,5 s)
@@ -116,8 +117,6 @@
 #define ARPG_GLIFO_REDIL_SPEED 120  // [TUNABLE-PLACEHOLDER] pull toward the centre, 8.8 px/frame (~28 px/s)
 #define ARPG_GLIFO_ZARZA_TICK 30    // [TUNABLE-PLACEHOLDER] frames between Quemado layers during the wait
 #define ARPG_GLIFO_ZARZA_DET 2      // [TUNABLE-PLACEHOLDER] Quemado layers on detonation
-#define ARPG_GLIFO_RANGE 140        // [TUNABLE-PLACEHOLDER] max throw distance, ground px
-#define ARPG_GLIFO_FLIGHT 20        // [TUNABLE-PLACEHOLDER] frames in the air
 #define ARPG_GLIFO_MAX 3            // [TUNABLE-PLACEHOLDER] glifos (flying or lying) at once
 
 // Resurreccion (DESIGN.md 7.3): an Exvoto that dies inside a Glifo rises as an ally for a while.
@@ -132,19 +131,20 @@
 #define ARPG_ALLY_BLAST_DAMAGE 120  // [TUNABLE-PLACEHOLDER] fire damage of the blast when an ally dies (node 12)
 #define ARPG_ALLY_BLAST_RADIUS 40   // [TUNABLE-PLACEHOLDER] ground px of that blast
 
-// Depth (DESIGN.md 7.1): enemies get tougher with the floor (stage k, 0-based); bosses also by their number n (0 = floor 5).
-#define ARPG_DEPTH_HP_PCT 12        // [TUNABLE-PLACEHOLDER] % of life added per floor
+// Room level (zone map, DESIGN.md 7.1): no auto-scaling; the life of an enemy depends on the FIXED level of its room (k = level - 1).
+// Bosses and minibosses also by their number n (0 = Cripta, 1 = Galeria del elite).
+#define ARPG_DEPTH_HP_PCT 12        // [TUNABLE-PLACEHOLDER] % of life added per room level above 1
 #define ARPG_DEPTH_PCT(k) (100 + ARPG_DEPTH_HP_PCT * (k))
 #define ARPG_BOSS_HP_PCT(n) ((n) == 0 ? 100 : (n) == 1 ? 160 : 220 + 40 * ((n) - 2))   // [TUNABLE-PLACEHOLDER] % of life by boss number
 
 // Rooms (salas ARPG): doors, lateral openings, chests and altars, and the group population.
 #define ARPG_ROOM_DOOR_TRIGGER_PX 22      // [TUNABLE-PLACEHOLDER] hero this close to a room's top line, centred, crosses the door
-#define ARPG_ROOM_DOOR_HALF_W_PX 26       // [TUNABLE-PLACEHOLDER] half width of the door gap, ground px
-#define ARPG_ROOM_DOOR_ART_W_PX 64        // [TUNABLE-PLACEHOLDER] baked door sprite width (shadow canvas of the render)
+#define ARPG_ROOM_DOOR_HALF_W_PX 13       // [TUNABLE-PLACEHOLDER] half width of the through arch of the back wall (mouth of 26 px), ground px
 #define ARPG_ROOM_FOOT_OFFSET_PX 40       // [TUNABLE-PLACEHOLDER] where the hero lands above the foot of the next room
 #define ARPG_ROOM_HOLE_W_PX 24            // [TUNABLE-PLACEHOLDER] lateral opening width (3 tiles)
-#define ARPG_ROOM_HOLE_H_PX 24            // [TUNABLE-PLACEHOLDER] lateral opening height (3 tiles)
-#define ARPG_ROOM_HOLE_Y_PX 168           // [TUNABLE-PLACEHOLDER] top of the lateral opening, from the room's top line
+#define ARPG_ROOM_HOLE_H_PX 256           // [TUNABLE-PLACEHOLDER] lateral opening height: two modules of the wall (128 px each), on the ground
+#define ARPG_ROOM_HOLE_Y_PX 96            // [TUNABLE-PLACEHOLDER] top of a lateral opening, from the block top (a module joint of the wall art)
+#define ARPG_ROOM_HOLE_ARRIVE_PX 80       // [TUNABLE-PLACEHOLDER] where the hero lands, from the top of the opening (inside its visible part)
 #define ARPG_ROOM_SPAWN_AHEAD_PX 640      // [TUNABLE-PLACEHOLDER] a room's group is placed this far before the hero reaches it
 #define ARPG_ROOM_DESPAWN_BEHIND_PX 760   // [TUNABLE-PLACEHOLDER] enemies this far below the hero are recycled
 #define ARPG_ROOM_GROUP_MIN 4             // [TUNABLE-PLACEHOLDER] smallest group of a room
@@ -157,6 +157,10 @@
 #define ARPG_TIER_MIN_ROOM 4              // [TUNABLE-PLACEHOLDER] room index from which PÃ¡rroco and Monja join the mix (room 5)
 #define ARPG_TIER_CAP_PER_GROUP 1         // [TUNABLE-PLACEHOLDER] max of each (PÃ¡rroco, Monja) per group until the full mix
 #define ARPG_FULL_MIX_ROOM 7              // [TUNABLE-PLACEHOLDER] room index of the full mix and the Ojo/Cireneo cap (room 8)
+// Tier 2 of the Ojo and the Cireneo (same enemy type; no visual or mechanical change yet, only life and damage).
+#define ARPG_TIER2_HP_PCT 200             // [TUNABLE-PLACEHOLDER] % of the life of tier 1
+#define ARPG_TIER2_DAMAGE_PCT 150         // [TUNABLE-PLACEHOLDER] % of the damage of tier 1
+#define ARPG_MISA_HP_PCT 200              // [TUNABLE-PLACEHOLDER] % of life of every enemy of the miniboss "la Misa"
 #define ARPG_ROOM_CHEST_REACH_PX 24       // [TUNABLE-PLACEHOLDER] chest opens when the hero is this close
 #define ARPG_ROOM_ALTAR_REACH_PX 28       // [TUNABLE-PLACEHOLDER] altar is touched when the hero is this close
 #define ARPG_ROOM_CHEST_XP 6              // [TUNABLE-PLACEHOLDER] xp of a chest at room 1; grows a little per room
@@ -166,6 +170,8 @@ extern int g_arpg_level;
 
 // Damage the hero takes from one hit by an enemy of this EnemyType.
 int arpg_enemy_damage(int enemy_type);
+// Same for a live enemy: adds the damage of its tier (ENEMY_TIER2).
+int arpg_enemy_damage_of(const Enemy *e);
 
 // L held past ARPG_L_HOLD_FRAMES: switches Rayo <-> Glifo once the Glifo tome is equipped.
 void arpg_on_l_hold(void);

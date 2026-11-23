@@ -30,11 +30,11 @@ static const int s_arpg_xp_needed[ARPG_XP_TABLE_LEN] = {
 void arpg_progress_reset(void) {
     memset(&g_arpg, 0, sizeof(g_arpg));
     g_arpg.magic = 0x41525047u;
-    g_arpg.version = 4;
+    g_arpg.version = 5;
     g_arpg.level = 1;
     g_arpg.xp = 0;
     g_arpg.points = 0;
-    g_arpg.tree = 0;
+    g_arpg.tips = 0;
     g_arpg.deepest = 0;
     g_arpg.spell = 0;
     g_arpg.altars_lo = 0;
@@ -83,10 +83,15 @@ int arpg_enemy_xp(int enemy_type, int floor) {
     }
 }
 
+void arpg_world_rest(void) {
+    memset(g_arpg.dead_groups, 0, sizeof(g_arpg.dead_groups));
+    g_arpg.boss_dead = 0;
+}
+
 /* ---- Save file (DESIGN.md 7.1: guardado en la tarjeta) ---- */
 
 #define ARPG_SAVE_MAGIC   0x41525047u
-#define ARPG_SAVE_VERSION 4
+#define ARPG_SAVE_VERSION 5
 #if ARPG_ALL_UNLOCKED
 #define ARPG_SAVE_NAME    "dungeonds_arpg_todo.sav"   // the test build never overwrites the player's save
 #else
@@ -169,11 +174,18 @@ int arpg_progress_load(void) {
         }
         rewind(f);
         ArpgProgress tmp;
-        int ok = fread(&tmp, sizeof(tmp), 1, f) == 1;
+        memset(&tmp, 0, sizeof(tmp));          // a v4 file is shorter: the fields of v5 stay at zero
+        size_t got = fread(&tmp, 1, sizeof(tmp), f);
         fclose(f);
+        int old4 = got >= ARPG_SAVE_V4_SIZE && tmp.magic == ARPG_SAVE_MAGIC && tmp.version == 4;
+        int ok = got == sizeof(tmp) || old4;
+        if (old4) {                             // v4: same layout up to the inventory; the map fields start empty
+            memset((uint8_t *)&tmp + ARPG_SAVE_V4_SIZE, 0, sizeof(tmp) - ARPG_SAVE_V4_SIZE);
+            tmp.version = ARPG_SAVE_VERSION;
+        }
         // v3 (mismo formato): se conserva todo y se le añaden el Tomo y las reliquias del Glifo que le falten.
-        int old3 = ok && tmp.magic == ARPG_SAVE_MAGIC && tmp.version == 3 && tmp.level >= 1;
-        if (old3) { tmp.version = ARPG_SAVE_VERSION; }
+        int old3 = got >= ARPG_SAVE_V4_SIZE && tmp.magic == ARPG_SAVE_MAGIC && tmp.version == 3 && tmp.level >= 1;
+        if (old3) { tmp.version = ARPG_SAVE_VERSION; ok = 1; memset((uint8_t *)&tmp + ARPG_SAVE_V4_SIZE, 0, sizeof(tmp) - ARPG_SAVE_V4_SIZE); }
         if (ok && tmp.magic == ARPG_SAVE_MAGIC && tmp.version == ARPG_SAVE_VERSION && tmp.level >= 1) {
             g_arpg = tmp;
             arpg_inv_sanitize();
@@ -197,4 +209,10 @@ int arpg_progress_has_save(void) {
         }
     }
     return 0;
+}
+
+int arpg_tip_take(int bit) {
+    if (g_arpg.tips & bit) return 0;
+    g_arpg.tips = (uint16_t)(g_arpg.tips | bit);
+    return 1;
 }

@@ -74,6 +74,18 @@ ITCM_CODE int position_is_free(fixed x, fixed y) {
     return 1;
 }
 
+int ground_point_is_free(int wx, int wy) {
+    if (wx < 0 || wy < 0) return 0;
+    const int cx = wx / COLLISION_SCALE, cy = wy / COLLISION_SCALE;
+    if (cx >= g_arena->collision_w || cy >= g_arena->collision_h) return 0;
+    if (world_collision_flags(cx, cy) != 0) return 0;
+    if (s_extra_arena == g_arena) {
+        for (int i = 0; i < s_extra_n; i++)
+            if (wx >= s_extra[i].x0 && wx <= s_extra[i].x1 && wy >= s_extra[i].y0 && wy <= s_extra[i].y1) return 0;
+    }
+    return 1;
+}
+
 int bullet_position_is_free(fixed x, fixed y) {
     int px = (int)(x >> FIXED_SHIFT);
     int py = (int)(y >> FIXED_SHIFT);

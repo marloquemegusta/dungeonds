@@ -1,0 +1,422 @@
+{
+ "name": "arpg_mapa_muro_fondo",
+ "description": "Muro del fondo (con y sin salida), huecos laterales y fundido de las salas. Solo evidencia.",
+ "suite": false,
+ "evidence_only": true,
+ "state": {
+  "elf": "../.ds-game-dev/build/out/dungeonds.elf",
+  "symbols": {
+   "pl": "s_player",
+   "dbg": "g_enc_debug",
+   "stats": "g_enc_stats"
+  },
+  "default_symbol": "pl",
+  "fields": {
+   "px": {
+    "symbol": "pl",
+    "offset": 0,
+    "type": "s32"
+   },
+   "py": {
+    "symbol": "pl",
+    "offset": 4,
+    "type": "s32"
+   },
+   "dbg_god": {
+    "symbol": "dbg",
+    "offset": 2,
+    "type": "u8"
+   },
+   "dbg_restart": {
+    "symbol": "dbg",
+    "offset": 12,
+    "type": "u8"
+   },
+   "dbg_start_room": {
+    "symbol": "dbg",
+    "offset": 20,
+    "type": "u8"
+   },
+   "room": {
+    "symbol": "stats",
+    "offset": 60,
+    "type": "u8"
+   },
+   "block": {
+    "symbol": "stats",
+    "offset": 1,
+    "type": "u8"
+   }
+  }
+ },
+ "steps": [
+  {
+   "frames": 60
+  },
+  {
+   "tap": {
+    "x": 128,
+    "y": 66
+   },
+   "frames": 6
+  },
+  {
+   "release": true,
+   "frames": 40
+  },
+  {
+   "button_down": "START",
+   "frames": 4
+  },
+  {
+   "button_up": "START",
+   "frames": 90,
+   "capture": "c01_campamento"
+  },
+  {
+   "button_down": "LEFT",
+   "frames": 90
+  },
+  {
+   "button_up": "LEFT",
+   "frames": 10,
+   "capture": "c02_lateral_izq"
+  },
+  {
+   "poke": [
+    {
+     "field": "px",
+     "value": 32768
+    },
+    {
+     "field": "py",
+     "value": 29696
+    }
+   ],
+   "frames": 20,
+   "capture": "c03_puerta"
+  },
+  {
+   "button_down": "A",
+   "frames": 4
+  },
+  {
+   "button_up": "A",
+   "frames": 6,
+   "capture": "c04_fundido_a"
+  },
+  {
+   "frames": 8,
+   "capture": "c05_fundido_b"
+  },
+  {
+   "frames": 20,
+   "capture": "c06_sala1_entrada"
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    },
+    {
+     "field": "dbg_start_room",
+     "value": 1
+    },
+    {
+     "field": "dbg_restart",
+     "value": 1
+    }
+   ],
+   "frames": 60,
+   "capture": "a0_nave1_pie",
+   "state_capture": "a0_nave1_pie"
+  },
+  {
+   "frames": 30,
+   "capture": "a1_fondo_con_salida",
+   "state_capture": "a1_fondo_con_salida",
+   "poke": [
+    {
+     "field": "px",
+     "value": 65536
+    },
+    {
+     "field": "py",
+     "value": 120320
+    }
+   ]
+  },
+  {
+   "frames": 1,
+   "capture": "a2_junto_arco",
+   "state_capture": "a2_junto_arco",
+   "poke": [
+    {
+     "field": "py",
+     "value": 105472
+    }
+   ]
+  },
+  {
+   "button_down": "UP",
+   "frames": 4,
+   "capture": "a3_fundido_0",
+   "state_capture": "a3_fundido_0"
+  },
+  {
+   "button_down": "UP",
+   "frames": 4,
+   "capture": "a3_fundido_1",
+   "state_capture": "a3_fundido_1"
+  },
+  {
+   "button_down": "UP",
+   "frames": 4,
+   "capture": "a3_fundido_2",
+   "state_capture": "a3_fundido_2"
+  },
+  {
+   "button_down": "UP",
+   "frames": 4,
+   "capture": "a3_fundido_3",
+   "state_capture": "a3_fundido_3"
+  },
+  {
+   "button_down": "UP",
+   "frames": 4,
+   "capture": "a3_fundido_4",
+   "state_capture": "a3_fundido_4"
+  },
+  {
+   "button_down": "UP",
+   "frames": 4,
+   "capture": "a3_fundido_5",
+   "state_capture": "a3_fundido_5"
+  },
+  {
+   "button_down": "UP",
+   "frames": 4,
+   "capture": "a3_fundido_6",
+   "state_capture": "a3_fundido_6"
+  },
+  {
+   "button_up": "UP",
+   "frames": 30,
+   "capture": "a4_nave2_llegada",
+   "state_capture": "a4_nave2_llegada"
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    },
+    {
+     "field": "dbg_start_room",
+     "value": 5
+    },
+    {
+     "field": "dbg_restart",
+     "value": 1
+    }
+   ],
+   "frames": 60,
+   "capture": "b0_galeria_pie",
+   "state_capture": "b0_galeria_pie"
+  },
+  {
+   "frames": 30,
+   "capture": "b1_fondo_cerrado",
+   "state_capture": "b1_fondo_cerrado",
+   "poke": [
+    {
+     "field": "py",
+     "value": 315392
+    }
+   ]
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    },
+    {
+     "field": "dbg_start_room",
+     "value": 1
+    },
+    {
+     "field": "dbg_restart",
+     "value": 1
+    }
+   ],
+   "frames": 60,
+   "capture": "c0_nave1_pie",
+   "state_capture": "c0_nave1_pie"
+  },
+  {
+   "frames": 30,
+   "capture": "c1_junto_hueco_izq",
+   "state_capture": "c1_junto_hueco_izq",
+   "poke": [
+    {
+     "field": "px",
+     "value": 42240
+    },
+    {
+     "field": "py",
+     "value": 340480
+    }
+   ]
+  },
+  {
+   "frames": 20,
+   "capture": "c1b_en_el_hueco",
+   "state_capture": "c1b_en_el_hueco",
+   "poke": [
+    {
+     "field": "px",
+     "value": 38400
+    },
+    {
+     "field": "py",
+     "value": 340480
+    }
+   ]
+  },
+  {
+   "frames": 20,
+   "capture": "c1c_tras_modulo_sur",
+   "state_capture": "c1c_tras_modulo_sur",
+   "poke": [
+    {
+     "field": "py",
+     "value": 376320
+    }
+   ]
+  },
+  {
+   "frames": 20,
+   "capture": "c1d_pegado_modulo_sur",
+   "state_capture": "c1d_pegado_modulo_sur",
+   "poke": [
+    {
+     "field": "py",
+     "value": 383000
+    }
+   ]
+  },
+  {
+   "frames": 10,
+   "capture": "c1e_vuelve",
+   "state_capture": "c1e_vuelve",
+   "poke": [
+    {
+     "field": "px",
+     "value": 42240
+    },
+    {
+     "field": "py",
+     "value": 340480
+    }
+   ]
+  },
+  {
+   "button_down": "LEFT",
+   "frames": 5,
+   "capture": "c2_cruce_izq_0",
+   "state_capture": "c2_cruce_izq_0"
+  },
+  {
+   "button_down": "LEFT",
+   "frames": 5,
+   "capture": "c2_cruce_izq_1",
+   "state_capture": "c2_cruce_izq_1"
+  },
+  {
+   "button_down": "LEFT",
+   "frames": 5,
+   "capture": "c2_cruce_izq_2",
+   "state_capture": "c2_cruce_izq_2"
+  },
+  {
+   "button_down": "LEFT",
+   "frames": 5,
+   "capture": "c2_cruce_izq_3",
+   "state_capture": "c2_cruce_izq_3"
+  },
+  {
+   "button_down": "LEFT",
+   "frames": 5,
+   "capture": "c2_cruce_izq_4",
+   "state_capture": "c2_cruce_izq_4"
+  },
+  {
+   "button_down": "LEFT",
+   "frames": 5,
+   "capture": "c2_cruce_izq_5",
+   "state_capture": "c2_cruce_izq_5"
+  },
+  {
+   "button_up": "LEFT",
+   "frames": 40,
+   "capture": "c3_galeria_llegada",
+   "state_capture": "c3_galeria_llegada"
+  },
+  {
+   "button_down": "RIGHT",
+   "frames": 5,
+   "capture": "c4_cruce_der_0",
+   "state_capture": "c4_cruce_der_0"
+  },
+  {
+   "button_down": "RIGHT",
+   "frames": 5,
+   "capture": "c4_cruce_der_1",
+   "state_capture": "c4_cruce_der_1"
+  },
+  {
+   "button_down": "RIGHT",
+   "frames": 5,
+   "capture": "c4_cruce_der_2",
+   "state_capture": "c4_cruce_der_2"
+  },
+  {
+   "button_down": "RIGHT",
+   "frames": 5,
+   "capture": "c4_cruce_der_3",
+   "state_capture": "c4_cruce_der_3"
+  },
+  {
+   "button_down": "RIGHT",
+   "frames": 5,
+   "capture": "c4_cruce_der_4",
+   "state_capture": "c4_cruce_der_4"
+  },
+  {
+   "button_down": "RIGHT",
+   "frames": 5,
+   "capture": "c4_cruce_der_5",
+   "state_capture": "c4_cruce_der_5"
+  },
+  {
+   "button_down": "RIGHT",
+   "frames": 5,
+   "capture": "c4_cruce_der_6",
+   "state_capture": "c4_cruce_der_6"
+  },
+  {
+   "button_down": "RIGHT",
+   "frames": 5,
+   "capture": "c4_cruce_der_7",
+   "state_capture": "c4_cruce_der_7"
+  },
+  {
+   "button_up": "RIGHT",
+   "frames": 40,
+   "capture": "c5_nave1_vuelta",
+   "state_capture": "c5_nave1_vuelta"
+  }
+ ]
+}

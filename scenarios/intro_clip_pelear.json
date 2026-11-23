@@ -1,0 +1,514 @@
+{
+  "name": "intro_clip_pelear",
+  "description": "ARPG: el heroe, rodeado en la sala 1, da el combo de punetazos (L) a la horda.",
+  "suite": false,
+  "evidence_only": true,
+  "state": {
+    "elf": "../.ds-game-dev/build/out/dungeonds.elf",
+    "symbols": {
+      "pl": "s_player",
+      "gps": "g_player_state"
+    },
+    "default_symbol": "pl",
+    "fields": {
+      "px": {
+        "symbol": "pl",
+        "offset": 0,
+        "type": "s32"
+      },
+      "py": {
+        "symbol": "pl",
+        "offset": 4,
+        "type": "s32"
+      },
+      "hp": {
+        "symbol": "gps",
+        "offset": 0,
+        "type": "s32"
+      },
+      "god": {
+        "symbol": "gps",
+        "offset": 20,
+        "type": "s32"
+      },
+      "mana": {
+        "symbol": "gps",
+        "offset": 24,
+        "type": "s32"
+      }
+    }
+  },
+  "steps": [
+    {
+      "frames": 60
+    },
+    {
+      "tap": {
+        "x": 128,
+        "y": 66
+      },
+      "frames": 6
+    },
+    {
+      "release": true,
+      "frames": 40
+    },
+    {
+      "button_down": "START",
+      "frames": 4
+    },
+    {
+      "button_up": "START",
+      "frames": 60
+    },
+    {
+      "poke": [
+        {
+          "field": "px",
+          "value": 32768
+        },
+        {
+          "field": "py",
+          "value": 29696
+        }
+      ],
+      "frames": 20
+    },
+    {
+      "button_down": "A",
+      "frames": 4
+    },
+    {
+      "button_up": "A",
+      "frames": 120
+    },
+    {
+      "poke": [
+        {
+          "field": "god",
+          "value": 1
+        }
+      ],
+      "frames": 2
+    },
+    {
+      "button_down": "UP",
+      "frames": 600
+    },
+    {
+      "button_up": "UP",
+      "frames": 1,
+      "state_capture": "antes"
+    },
+    {
+      "button_down": "L",
+      "frames": 3
+    },
+    {
+      "button_up": "L",
+      "frames": 7,
+      "state_capture": "l0"
+    },
+    {
+      "button_down": "L",
+      "frames": 3
+    },
+    {
+      "button_up": "L",
+      "frames": 7,
+      "state_capture": "l1"
+    },
+    {
+      "button_down": "L",
+      "frames": 3
+    },
+    {
+      "button_up": "L",
+      "frames": 7,
+      "state_capture": "l2"
+    },
+    {
+      "button_down": "L",
+      "frames": 3
+    },
+    {
+      "button_up": "L",
+      "frames": 7,
+      "state_capture": "l3"
+    },
+    {
+      "button_down": "L",
+      "frames": 3
+    },
+    {
+      "button_up": "L",
+      "frames": 7,
+      "state_capture": "l4"
+    },
+    {
+      "button_down": "L",
+      "frames": 3
+    },
+    {
+      "button_up": "L",
+      "frames": 7,
+      "state_capture": "l5"
+    },
+    {
+      "button_down": "L",
+      "frames": 3
+    },
+    {
+      "button_up": "L",
+      "frames": 7,
+      "state_capture": "l6"
+    },
+    {
+      "button_down": "L",
+      "frames": 3
+    },
+    {
+      "button_up": "L",
+      "frames": 7,
+      "state_capture": "l7"
+    },
+    {
+      "button_down": "L",
+      "frames": 3,
+      "capture_sequence": "c0",
+      "capture_every": 2
+    },
+    {
+      "button_up": "L",
+      "frames": 7,
+      "state_capture": "l8",
+      "capture_sequence": "c0",
+      "capture_every": 2
+    },
+    {
+      "button_down": "L",
+      "frames": 3,
+      "capture_sequence": "c0",
+      "capture_every": 2
+    },
+    {
+      "button_up": "L",
+      "frames": 7,
+      "state_capture": "l9",
+      "capture_sequence": "c0",
+      "capture_every": 2
+    },
+    {
+      "button_down": "L",
+      "frames": 3,
+      "capture_sequence": "c0",
+      "capture_every": 2
+    },
+    {
+      "button_up": "L",
+      "frames": 7,
+      "state_capture": "l10",
+      "capture_sequence": "c0",
+      "capture_every": 2
+    },
+    {
+      "button_down": "L",
+      "frames": 3,
+      "capture_sequence": "c0",
+      "capture_every": 2
+    },
+    {
+      "button_up": "L",
+      "frames": 7,
+      "state_capture": "l11",
+      "capture_sequence": "c0",
+      "capture_every": 2
+    },
+    {
+      "button_down": "L",
+      "frames": 3,
+      "capture_sequence": "c0",
+      "capture_every": 2
+    },
+    {
+      "button_up": "L",
+      "frames": 7,
+      "state_capture": "l12",
+      "capture_sequence": "c0",
+      "capture_every": 2
+    },
+    {
+      "button_down": "L",
+      "frames": 3,
+      "capture_sequence": "c0",
+      "capture_every": 2
+    },
+    {
+      "button_up": "L",
+      "frames": 7,
+      "state_capture": "l13",
+      "capture_sequence": "c0",
+      "capture_every": 2
+    },
+    {
+      "button_down": "L",
+      "frames": 3,
+      "capture_sequence": "c0",
+      "capture_every": 2
+    },
+    {
+      "button_up": "L",
+      "frames": 7,
+      "state_capture": "l14",
+      "capture_sequence": "c0",
+      "capture_every": 2
+    },
+    {
+      "button_down": "L",
+      "frames": 3,
+      "capture_sequence": "c0",
+      "capture_every": 2
+    },
+    {
+      "button_up": "L",
+      "frames": 7,
+      "state_capture": "l15",
+      "capture_sequence": "c0",
+      "capture_every": 2
+    },
+    {
+      "button_down": "L",
+      "frames": 3,
+      "capture_sequence": "c0",
+      "capture_every": 2
+    },
+    {
+      "button_up": "L",
+      "frames": 7,
+      "state_capture": "l16",
+      "capture_sequence": "c0",
+      "capture_every": 2
+    },
+    {
+      "button_down": "L",
+      "frames": 3,
+      "capture_sequence": "c0",
+      "capture_every": 2
+    },
+    {
+      "button_up": "L",
+      "frames": 7,
+      "state_capture": "l17",
+      "capture_sequence": "c0",
+      "capture_every": 2
+    },
+    {
+      "button_down": "L",
+      "frames": 3,
+      "capture_sequence": "c0",
+      "capture_every": 2
+    },
+    {
+      "button_up": "L",
+      "frames": 7,
+      "state_capture": "l18",
+      "capture_sequence": "c0",
+      "capture_every": 2
+    },
+    {
+      "button_down": "L",
+      "frames": 3,
+      "capture_sequence": "c0",
+      "capture_every": 2
+    },
+    {
+      "button_up": "L",
+      "frames": 7,
+      "state_capture": "l19",
+      "capture_sequence": "c0",
+      "capture_every": 2
+    },
+    {
+      "button_down": "L",
+      "frames": 3,
+      "capture_sequence": "c0",
+      "capture_every": 2
+    },
+    {
+      "button_up": "L",
+      "frames": 7,
+      "state_capture": "l20",
+      "capture_sequence": "c0",
+      "capture_every": 2
+    },
+    {
+      "button_down": "L",
+      "frames": 3,
+      "capture_sequence": "c0",
+      "capture_every": 2
+    },
+    {
+      "button_up": "L",
+      "frames": 7,
+      "state_capture": "l21",
+      "capture_sequence": "c0",
+      "capture_every": 2
+    },
+    {
+      "button_down": "L",
+      "frames": 3,
+      "capture_sequence": "c0",
+      "capture_every": 2
+    },
+    {
+      "button_up": "L",
+      "frames": 7,
+      "state_capture": "l22",
+      "capture_sequence": "c0",
+      "capture_every": 2
+    },
+    {
+      "button_down": "L",
+      "frames": 3,
+      "capture_sequence": "c0",
+      "capture_every": 2
+    },
+    {
+      "button_up": "L",
+      "frames": 7,
+      "state_capture": "l23",
+      "capture_sequence": "c0",
+      "capture_every": 2
+    },
+    {
+      "button_down": "L",
+      "frames": 3,
+      "capture_sequence": "c0",
+      "capture_every": 2
+    },
+    {
+      "button_up": "L",
+      "frames": 7,
+      "state_capture": "l24",
+      "capture_sequence": "c0",
+      "capture_every": 2
+    },
+    {
+      "button_down": "L",
+      "frames": 3,
+      "capture_sequence": "c0",
+      "capture_every": 2
+    },
+    {
+      "button_up": "L",
+      "frames": 7,
+      "state_capture": "l25",
+      "capture_sequence": "c0",
+      "capture_every": 2
+    },
+    {
+      "button_down": "L",
+      "frames": 3,
+      "capture_sequence": "c0",
+      "capture_every": 2
+    },
+    {
+      "button_up": "L",
+      "frames": 7,
+      "state_capture": "l26",
+      "capture_sequence": "c0",
+      "capture_every": 2
+    },
+    {
+      "button_down": "L",
+      "frames": 3,
+      "capture_sequence": "c0",
+      "capture_every": 2
+    },
+    {
+      "button_up": "L",
+      "frames": 7,
+      "state_capture": "l27",
+      "capture_sequence": "c0",
+      "capture_every": 2
+    },
+    {
+      "button_down": "L",
+      "frames": 3,
+      "capture_sequence": "c0",
+      "capture_every": 2
+    },
+    {
+      "button_up": "L",
+      "frames": 7,
+      "state_capture": "l28",
+      "capture_sequence": "c0",
+      "capture_every": 2
+    },
+    {
+      "button_down": "L",
+      "frames": 3,
+      "capture_sequence": "c0",
+      "capture_every": 2
+    },
+    {
+      "button_up": "L",
+      "frames": 7,
+      "state_capture": "l29",
+      "capture_sequence": "c0",
+      "capture_every": 2
+    },
+    {
+      "button_down": "L",
+      "frames": 3,
+      "capture_sequence": "c0",
+      "capture_every": 2
+    },
+    {
+      "button_up": "L",
+      "frames": 7,
+      "state_capture": "l30",
+      "capture_sequence": "c0",
+      "capture_every": 2
+    },
+    {
+      "button_down": "L",
+      "frames": 3,
+      "capture_sequence": "c0",
+      "capture_every": 2
+    },
+    {
+      "button_up": "L",
+      "frames": 7,
+      "state_capture": "l31",
+      "capture_sequence": "c0",
+      "capture_every": 2
+    },
+    {
+      "button_down": "L",
+      "frames": 3,
+      "capture_sequence": "c0",
+      "capture_every": 2
+    },
+    {
+      "button_up": "L",
+      "frames": 7,
+      "state_capture": "l32",
+      "capture_sequence": "c0",
+      "capture_every": 2
+    },
+    {
+      "button_down": "L",
+      "frames": 3,
+      "capture_sequence": "c0",
+      "capture_every": 2
+    },
+    {
+      "button_up": "L",
+      "frames": 7,
+      "state_capture": "l33",
+      "capture_sequence": "c0",
+      "capture_every": 2
+    }
+  ]
+}

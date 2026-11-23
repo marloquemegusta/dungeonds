@@ -22,6 +22,8 @@ typedef struct {
 
 // Wall test used by the decals: non-zero when a wall run hides the pixel (main.c).
 int world_pixel_hidden(int x, int y, int depth);
+// Floor colour (RGB15 | BIT(15)) at a world pixel, ignoring sprites; used to tint shadows drawn over transparent buffer pixels.
+uint16_t world_floor_color_at(int x, int y);
 // Non-zero when a wall run hides any pixel of world row y in [x0, x1) (one lookup per span).
 int world_span_hidden(int y, int x0, int x1, int depth);
 

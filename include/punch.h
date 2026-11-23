@@ -116,5 +116,7 @@ int punch_ground_anchor(void);
 
 // Fila de pies por golpe y direccion (source/punch_sprites.c, generado por tools/generate_punch_sprites.py).
 extern const uint8_t g_punch_ground_anchor[PUNCH_NUM_MOVES][PUNCH_NUM_DIRS];
+// Lo mismo para el rezo del Glifo (corazon_pray; glifo.c lo carga y lo dibuja con el mismo formato de bin).
+extern const uint8_t g_pray_ground_anchor[PUNCH_NUM_DIRS];
 
 #endif

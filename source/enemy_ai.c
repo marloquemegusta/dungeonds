@@ -517,7 +517,22 @@ static void update_exvoto(Enemy *e, Enemy *enemies, int num_enemies, int idx,
             int melee_range = tuning->preferred_dist_max;
             if (ground_dist_sq <= melee_range * melee_range &&
                 los_has_line_of_sight(wx, wy, px, py, 0) && line_is_walkable(wx, wy, px, py)) {
-                player_take_damage(&g_player_state, arpg_enemy_damage(e->type));
+                player_take_damage(&g_player_state, arpg_enemy_damage_of(e));
+#if ENCOUNTERS_PROTO
+                // Párroco tier (v3): besides hitting harder, its blow shoves the hero back a little (ground metric 2:1).
+                if (e->type == ENEMY_TYPE_PARROCO) {
+                    const int pdx = px - wx, pdy = py - wy;
+                    fixed pvx = 0, pvy = 0;
+                    if (pdx != 0 || pdy != 0) {
+                        int m = int_sqrt((uint32_t)(pdx * pdx + GROUND_DY2(pdy)));
+                        if (m > 0) {
+                            pvx = (fixed)((pdx * ARPG_DMG_PARROCO_PUSH) / m);
+                            pvy = (fixed)(((pdy * ARPG_DMG_PARROCO_PUSH) / m) >> GROUND_Y_SHIFT);
+                        }
+                    }
+                    player_apply_push(pvx, pvy, ARPG_DMG_PARROCO_PUSH_FRAMES);
+                }
+#endif
                 e->state = ENEMY_STATE_ATTACK;
                 e->state_timer = tuning->attack_cooldown;
                 e->dir = dir_from_vector(player_x - e->x, player_y - e->y);
@@ -608,7 +623,7 @@ static void update_charger(Enemy *e, Enemy *enemies, int num_enemies, int idx,
                 int hx = TO_INT(player_x - e->x);
                 int hy = TO_INT(player_y - e->y);
                 if (hx * hx + GROUND_DY2(hy) <= CHARGER_HIT_RADIUS * CHARGER_HIT_RADIUS) {
-                    player_take_damage(&g_player_state, arpg_enemy_damage(e->type));          // one hit per charge; i-frames may absorb it
+                    player_take_damage(&g_player_state, arpg_enemy_damage_of(e));          // one hit per charge; i-frames may absorb it
                     e->charge_hit = 1;
                 }
             }
@@ -727,7 +742,7 @@ static void ojo_beam_hurts(const Enemy *e, fixed player_x, fixed player_y) {
         // Low cover (DESIGN.md 6.9): a crouched hero is safe when the line from the mouth to him crosses a bench or
         // sacks before reaching him. The beam is still drawn over the cover; only the hit is cancelled.
         if (ojo_cover_shields(e->beam_mx, e->beam_my, TO_INT(player_x), TO_INT(player_y))) return;
-        player_take_damage(&g_player_state, arpg_enemy_damage(e->type));
+        player_take_damage(&g_player_state, arpg_enemy_damage_of(e));
     }
 }
 
@@ -1056,7 +1071,7 @@ static void update_shooter(Enemy *e, Enemy *enemies, int num_enemies, int idx,
 // Garrison (DESIGN.md 6.13.9): an Exvoto or Cireneo that wakes with the room but holds its post, watching the hero, until the hero
 // comes within GUARD_RELEASE_DIST of the post, it is hurt, or the Ojos it guards (posts within GUARD_OJO_BOND_DIST) are all dead.
 static void guard_release(Enemy *e) {
-    e->home_flags = 0;
+    e->home_flags &= ENEMY_TIER2;                              // the post goes, the tier stays
     e->aim_px = e->aim_py = e->beam_mx = e->beam_my = 0;      // the post lived in aim_px / aim_py: give the fields back clean
     e->state = ENEMY_STATE_CHASE;
     e->state_timer = 0;
@@ -1447,7 +1462,7 @@ static void update_monja(Enemy *e, Enemy *enemies, int num_enemies, int idx,
         case ENEMY_STATE_ATTACK: {
             e->dir = dir_from_vector(player_x - e->x, player_y - e->y);
             if (e->state_timer == tuning->attack_cooldown && ground_dist_sq <= tuning->preferred_dist_max * tuning->preferred_dist_max)
-                player_take_damage(&g_player_state, arpg_enemy_damage(e->type));
+                player_take_damage(&g_player_state, arpg_enemy_damage_of(e));
             if (--e->state_timer <= 0) {
                 // Back to praying (the support pose) if she is safe again, otherwise keep brawling.
                 if (ground_dist_sq > (tuning->preferred_dist_max + 8) * (tuning->preferred_dist_max + 8) && e->hit_timer == 0) {

@@ -1,0 +1,68 @@
+{
+ "name": "intro_3_tarjetas",
+ "description": "Titulo, Nueva partida, las 3 tarjetas de la intro ARPG (con video) y campamento. Solo evidencia.",
+ "suite": false,
+ "evidence_only": true,
+ "state": {
+  "elf": "../.ds-game-dev/build/out/dungeonds.elf",
+  "symbols": {
+   "pl": "s_player"
+  },
+  "default_symbol": "pl",
+  "fields": {
+   "px": {
+    "offset": 0,
+    "type": "s32"
+   },
+   "py": {
+    "offset": 4,
+    "type": "s32"
+   }
+  }
+ },
+ "steps": [
+  {
+   "frames": 90,
+   "capture": "a01_titulo"
+  },
+  {
+   "tap": {
+    "x": 128,
+    "y": 66
+   },
+   "frames": 6
+  },
+  {
+   "release": true,
+   "frames": 40,
+   "capture": "b01_tarjeta_1"
+  },
+  {
+   "button_down": "A",
+   "frames": 4
+  },
+  {
+   "button_up": "A",
+   "frames": 40,
+   "capture": "b02_tarjeta_2"
+  },
+  {
+   "button_down": "A",
+   "frames": 4
+  },
+  {
+   "button_up": "A",
+   "frames": 40,
+   "capture": "b03_tarjeta_3"
+  },
+  {
+   "button_down": "A",
+   "frames": 4
+  },
+  {
+   "button_up": "A",
+   "frames": 90,
+   "capture": "b04_campamento"
+  }
+ ]
+}

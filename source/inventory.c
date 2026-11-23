@@ -5,6 +5,7 @@
 #include "bestiary_font.h"
 #include "inv_art.h"
 #include "inv_item_art.h"
+#include "inv_item_floor_art.h"
 #include "sfx.h"
 #include <fcntl.h>
 #include <stdio.h>
@@ -471,6 +472,28 @@ static void draw_item_glyph(uint16_t *buf, const ArpgInvItem *it, int cx, int cy
     if (it->kind == ARPG_ITEM_TOME) ring(buf, cx, cy, r + 4, INV_GOLD);
 }
 
+// Icono de suelo 24x24 (0x0000 = transparente) para un objeto soltado; NULL si no hay arte.
+// which: 0 icono, 1 aura 30x30, 2 sombra proyectada.
+static const void *floor_art(const ArpgInvItem *it, int which) {
+    if (!it) return NULL;
+#define FLOOR_PICK(n) (which == 0 ? (const void *)s_##n##_fl24 : which == 1 ? (const void *)s_##n##_aura : (const void *)s_##n##_sh)
+    if (it->kind == ARPG_ITEM_TOME) {
+        if (it->school == ARPG_SCHOOL_GLIFO) return FLOOR_PICK(tome_glifo);
+        if (it->school == ARPG_SCHOOL_LEVANTAR) return FLOOR_PICK(tome_levantar);
+        if (it->school == ARPG_SCHOOL_RAYO) return FLOOR_PICK(tome_rayo);
+    } else if (it->kind == ARPG_ITEM_RELIC) {
+        if (it->school == ARPG_SCHOOL_PECHO) return FLOOR_PICK(heart);
+        if (it->school == ARPG_SCHOOL_RAYO) return FLOOR_PICK(relic_lanza);
+        if (it->school == ARPG_SCHOOL_EJECUCION) return FLOOR_PICK(relic_nudillera);
+        if (it->school == ARPG_SCHOOL_LEVANTAR) return FLOOR_PICK(relic_calavera);
+    }
+#undef FLOOR_PICK
+    return NULL;
+}
+const uint16_t *inv_item_floor_icon24(const ArpgInvItem *it) { return (const uint16_t *)floor_art(it, 0); }
+const uint8_t *inv_item_floor_aura30(const ArpgInvItem *it) { return (const uint8_t *)floor_art(it, 1); }
+const uint8_t *inv_item_floor_shadow(const ArpgInvItem *it) { return (const uint8_t *)floor_art(it, 2); }
+
 // ---------------------------------------------------------------------------
 // Item & Hit-test helpers
 // ---------------------------------------------------------------------------
@@ -839,7 +862,10 @@ static void rot_step(void) {
     }
 }
 
+static int s_tip_card = 0;            // tarjeta de primera vez (DESIGN-ARPG 7) sobre el inventario
+
 void inventory_open(void) {
+    s_tip_card = arpg_tip_take(ARPG_TIP_INVENTARIO);
     s_inv_tab = 0;
     s_socket_sel = 0;
     s_confirm = -1;
@@ -967,7 +993,8 @@ static int inventory_handle_input(uint32_t keys_down, int touch_pressed, int tou
                 if (s_hover_socket >= 0) {
                     act_equip_to(s_drag_bag, s_hover_socket);
                 } else if (s_hover_crucible) {
-                    act_scrap_idx(s_drag_bag);
+                    s_inv_sel = s_drag_bag;        // Crisol: the drop only marks "confirm melt" (same as Y)
+                    s_confirm = s_drag_bag;
                 } else if (s_hover_bag >= 0 && s_hover_bag != s_drag_bag) {
                     swap_bag_slots(s_drag_bag, s_hover_bag);
                 }
@@ -1033,6 +1060,13 @@ static int inventory_handle_input(uint32_t keys_down, int touch_pressed, int tou
 
 int inventory_update(uint32_t keys_down, int touch_pressed, int touch_x, int touch_y) {
     if (s_msg_t > 0) s_msg_t--;
+    if (s_tip_card) {                 // se cierra con A, B o un toque, y no hace nada mas
+        if ((keys_down & (KEY_A | KEY_B)) || touch_pressed) {
+            s_tip_card = 0;
+            s_top_dirty = 1;
+        }
+        return 0;
+    }
     int exit_inv = inventory_handle_input(keys_down, touch_pressed, touch_x, touch_y);
     if (!exit_inv) rot_step();
     return exit_inv;
@@ -1509,4 +1543,14 @@ void inventory_render(uint16_t *buf) {
     render_right_bag(buf);
     render_drag_ghost(buf);
     if (s_msg_t > 0 && s_msg) text_center(buf, 119, 168, s_msg, INV_RED);
+    if (s_tip_card) {
+        const int cx = 20, cy = 40, cw = 216, ch = 112;
+        fill_rect(buf, cx, cy, cw, ch, INV_BLACK);
+        gold_frame(buf, cx, cy, cw, ch);
+        text_center(buf, SCREEN_W / 2, cy + 7, "Reliquias", INV_GOLD);
+        text_wrapped(buf, cx + 10, cy + 24, cw - 20, 11,
+                     "Las reliquias se engarzan en un hechizo (Rayo, Ejecución, Glifo) o en el Pecho y lo mejoran. "
+                     "Cada una pide un nivel. Lo que no uses se funde y da cera.", INV_TXT);
+        text_center(buf, SCREEN_W / 2, cy + ch - 15, "A, B o toca: cerrar", INV_DIM);
+    }
 }

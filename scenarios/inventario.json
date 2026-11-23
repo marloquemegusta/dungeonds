@@ -1,6 +1,6 @@
 {
   "name": "inventario",
-  "description": "Inventario ARPG con botones: engarzar con A, desengarzar con X desde el engarce, engarzar otra, fundir con confirmacion (Y,B cancela; Y,Y funde), equipar y guardar el tomo de Glifo (el hechizo activo vuelve a Rayo), L/R cambian de pestana.",
+  "description": "Inventario ARPG con botones: engarzar con A, desengarzar con X desde el engarce, engarzar otra, fundir con confirmacion (tambien al soltar en el Crisol) (Y,B cancela; Y,Y funde), equipar y guardar el tomo de Glifo (el hechizo activo vuelve a Rayo), L/R cambian de pestana.",
   "tags": [
     "inventario"
   ],
@@ -12,7 +12,8 @@
       "arpg": "g_arpg",
       "tab": "s_inv_tab",
       "focus": "s_inv_focus",
-      "sel": "s_inv_sel"
+      "sel": "s_inv_sel",
+      "conf": "s_confirm"
     },
     "default_symbol": "pl",
     "fields": {
@@ -155,6 +156,11 @@
         "symbol": "arpg",
         "offset": 73,
         "type": "u8"
+      },
+      "conf": {
+        "symbol": "conf",
+        "offset": 0,
+        "type": "s32"
       }
     }
   },
@@ -414,6 +420,26 @@
         "at": "arrastre_fuera",
         "field": "bag2_kind",
         "equals": 1
+      },
+      {
+        "at": "arrastre_crisol",
+        "field": "bag2_kind",
+        "equals": 1
+      },
+      {
+        "at": "arrastre_crisol",
+        "field": "wax",
+        "equals": 4
+      },
+      {
+        "at": "arrastre_crisol",
+        "field": "conf",
+        "equals": 2
+      },
+      {
+        "at": "crisol_toque_funde",
+        "field": "bag2_kind",
+        "equals": 0
       }
     ]
   },
@@ -764,6 +790,45 @@
       "release": true,
       "frames": 20,
       "state_capture": "arrastre_fuera"
+    },
+    {
+      "touch": {
+        "x": 184,
+        "y": 45
+      },
+      "frames": 5
+    },
+    {
+      "drag": {
+        "from": {
+          "x": 184,
+          "y": 45
+        },
+        "to": {
+          "x": 44,
+          "y": 166
+        },
+        "frames": 10
+      },
+      "frames": 4
+    },
+    {
+      "release": true,
+      "frames": 20,
+      "state_capture": "arrastre_crisol",
+      "capture": "i09_arrastre_crisol_confirma"
+    },
+    {
+      "touch": {
+        "x": 44,
+        "y": 166
+      },
+      "frames": 5
+    },
+    {
+      "release": true,
+      "frames": 20,
+      "state_capture": "crisol_toque_funde"
     }
   ]
 }

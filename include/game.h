@@ -12,6 +12,10 @@
 #endif
 // Variant "encuentros-bot": the act played by an autopilot to measure its difficulty.
 // Skip the title menu and start the run directly (headless scenarios of the encounters variants).
+// Showcase ROM: drops 5 floor relics/tomes on entering the dungeon; SELECT drops them again.
+#ifndef RELIC_SHOWCASE
+#define RELIC_SHOWCASE 0
+#endif
 #ifndef SKIP_TITLE
 #define SKIP_TITLE 0
 #endif

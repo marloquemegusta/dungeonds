@@ -1,5 +1,6 @@
-"""Empaqueta los clips del combo (assets/sprites/characters/corazon_punch_{a,b}/, corazon_gancho/) a
-nitrofiles/punch/<golpe>_d<dir>.bin y genera source/punch_sprites.c con la fila de pies por golpe y direccion.
+"""Empaqueta los clips del combo (assets/sprites/characters/corazon_punch_{a,b}/, corazon_gancho/) y el rezo del Glifo
+(corazon_pray/) a nitrofiles/punch/<clip>_d<dir>.bin y genera source/punch_sprites.c con la fila de pies por golpe y
+direccion (g_punch_ground_anchor) y la del rezo (g_pray_ground_anchor).
 
 Formato de cada bin (little endian): cabecera PunchBinHeader (include/punch.h) y detras los pixeles BGR555
 recortados a su bounding box por fila con pitch par, y los bloques de tramos opacos que lee blit_stride.
@@ -17,6 +18,7 @@ SPR = ROOT / "assets/sprites/characters"
 OUT = ROOT / "nitrofiles/punch"
 DIRS = ["0_S", "1_SW", "2_W", "3_NW", "4_N", "5_NE", "6_E", "7_SE"]
 MOVES = ["punch_a", "punch_b", "gancho"]
+PRAY = "pray"       # mismo formato de bin; una sola fila de anclas, fuera de la tabla de golpes
 N_FRAMES = 8
 MAGIC = 0x48434E50  # 'PNCH'
 ALPHA = 77          # umbral c2 (characters.json defaults.legibility)
@@ -125,9 +127,13 @@ def main():
         max_all = max(max_all, max_bin)
         lines.append("    { " + ", ".join(str(a) for a in anchors) + " }, // %s\n" % move)
     lines.append("};\n")
+    anchors, max_bin = build(PRAY)
+    max_all = max(max_all, max_bin)
+    lines.append("\n// Rezo del Glifo (corazon_pray): fila de pies por direccion.\n")
+    lines.append("const uint8_t g_pray_ground_anchor[PUNCH_NUM_DIRS] = { " + ", ".join(str(a) for a in anchors) + " };\n")
     out = ROOT / "source/punch_sprites.c"
     out.write_text("".join(lines), encoding="utf-8", newline="\n")
-    print(f"OK: 24 bins, max={max_all} B")
+    print(f"OK: 32 bins, max={max_all} B")
 
 
 if __name__ == "__main__":
