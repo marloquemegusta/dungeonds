@@ -27,7 +27,8 @@
 #define ENC_MAX_PIECES 8
 
 enum { ENC_E_EXVOTO = 0, ENC_E_CIRENEO, ENC_E_OJO, ENC_E_ABANDERADO, ENC_E_MONAGUILLO,
-       ENC_E_BEBE, ENC_E_PARROCO, ENC_E_MONJA };   // last three: Exvoto tiers (v3)
+       ENC_E_BEBE, ENC_E_PARROCO, ENC_E_MONJA,   // BEBE, PARROCO, MONJA: Exvoto tiers (v3)
+       ENC_E_CAMPANERO };                         // boss of the ARPG (DESIGN-ARPG.md 9)
 enum { ENC_S_PRAY = 0, ENC_S_DORMANT, ENC_S_AWAKE, ENC_S_GUARD };   // GUARD: wakes with the room but stays at its post (6.13.9)
 enum { ENC_R_SACOS = 0, ENC_R_ALAMBRE, ENC_R_BARRERA };
 enum { ENC_BLOCK_CLEAR = 0, ENC_BLOCK_ENCOUNTER, ENC_BLOCK_CORRIDOR, ENC_BLOCK_BOSS };
@@ -92,6 +93,8 @@ int enc_block_has_door(int32_t block);      // 1 = the top door piece stands on 
 int enc_room_arrival(int *out_x, int *out_y, int *out_dir);
 // Consumes a crossing requested by enc_update(): 1 and the destination room in *out_room.
 int enc_room_take_exit(int *out_room);
+// Campanero fight: a world point where the Campanero raises an Exvoto, picked by `r` (beside a column or a random floor spot).
+void enc_camp_spot(uint32_t r, int *x, int *y);
 
 // Overlay map (SELECT): layout of a room in map units, derived from the ficha of rooms (doors, heights of the lateral openings).
 // x grows east from the left floor edge of Nave 1, y grows north from its foot (the way the hero climbs).

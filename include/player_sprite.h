@@ -26,7 +26,7 @@
 // The ground origin row varies per character/direction: see g_character_ground_anchors.
 #define PLAYER_ANCHOR_X 20
 
-#define NUM_CHARACTERS 11
+#define NUM_CHARACTERS 12
 
 enum {
     CHAR_HERO = 0,
@@ -44,7 +44,10 @@ enum {
     // Exvoto tiers (v3, walkthroughs/arpg-predemo §10): only the Bebé has its own baked sheet today; the Párroco
     // and the Monja still borrow CHAR_EXVOTO / CHAR_EXVOTO_PRAY_STAND (their own sheets do not fit in EWRAM, see
     // TECHNICAL.md; they need the NitroFS streaming path the punch uses).
-    CHAR_EXVOTO_BEBE = 10       // Exvoto Bebé walking (swarm tier), 8 frames, 40x40 cell
+    CHAR_EXVOTO_BEBE = 10,      // Exvoto Bebé walking (swarm tier), 8 frames, 40x40 cell
+    // El Campanero de Ánimas (jefe ARPG): slot sin píxeles en la EWRAM; sus 5 clips (60x60) se leen de NitroFS
+    // (source/campanero_sprite.c) y el clip actual va en Enemy.kneel.
+    CHAR_CAMPANERO = 11
 };
 
 typedef struct {

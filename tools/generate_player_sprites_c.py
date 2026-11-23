@@ -290,8 +290,12 @@ chars_meta = [
     ('hero_crouch_walk', 'corazon_agachado_andar', 'Hero crouched walking', 0, 8),
     # Exvoto tier "Bebe" (v3 tiers, walkthroughs/arpg-predemo §10): a slot of its own like the Exvoto clips.
     ('exvoto_bebe', 'exvoto_bebe', 'Exvoto Bebe walking', 53, 8),
+    # El Campanero de Animas (jefe ARPG): sus 5 clips (80x80) van en NitroFS (tools/generate_campanero_bin.py, source/campanero_sprite.c);
+    # este slot solo aporta configuracion, ancla de suelo y municion (ceros), sin pixeles en la EWRAM fija.
+    ('campanero', 'campanero', 'El Campanero de Animas', 80, 8),
 ]
 SINGLE_FRAME = set()
+STUB_NO_PIXELS = {'campanero'}
 
 # Ticks per frame of the Exvoto clips come from the manifest (the lab settings carry the template's).
 with open(os.path.join(SRC_ROOT, 'characters.json'), 'r', encoding='utf-8') as _mf:
@@ -328,6 +332,8 @@ for var_name, folder, disp_name, def_spd, def_ticks in chars_meta:
         ticks = 9   # 8 frames x 9 = 72 game frames per cycle x 0.43 px = 30.9 px, the lab's 31.3 px stride (no magic carpet)
     out_shw = SHADOW_W if shw > SHADOW_W else shw
     out_shh = SHADOW_H if shh > SHADOW_H else shh
+    if var_name == 'campanero':
+        out_shw = out_shh = 112   # lienzo de sombra propio del jefe (tools/generate_campanero_bin.py SHW)
     char_configs.append((var_name, folder, disp_name, spd, ticks, sw, sh, shw, shh, out_shw, out_shh))
 
 out_lines.append('const CharacterConfig g_characters[NUM_CHARACTERS] = {\n')
@@ -354,6 +360,20 @@ for var_name, folder, disp_name, spd, ticks, sw, sh, shw, shh, out_shw, out_shh 
         if dm:
             muzzle = [[[int(v) for v in dm[d][f]] for f in range(8)] for d in range(8)]
     all_muzzles.append(muzzle)
+
+    if var_name in STUB_NO_PIXELS:
+        zero_tbl = '{' + chr(10) + ''.join('    { ' + ', '.join('0' for _ in range(8)) + ' },' + chr(10) for _ in range(8)) + '};' + chr(10)
+        zero_bnds = '{' + chr(10) + ''.join('    { ' + ', '.join('{ 0, 0, 0, 0 }' for _ in range(8)) + ' },' + chr(10) for _ in range(8)) + '};' + chr(10)
+        out_lines.append(f'// {disp_name}: slot sin pixeles en la EWRAM (los fotogramas se leen de NitroFS, source/campanero_sprite.c)\n')
+        out_lines.append(f'const uint16_t g_{var_name}_frames[] __attribute__((aligned(4))) = {{ 0 }};\n')
+        out_lines.append(f'const uint32_t g_{var_name}_frame_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = ' + zero_tbl)
+        out_lines.append(f'const uint8_t g_{var_name}_frame_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4] = ' + zero_bnds)
+        out_lines.append(f'const uint16_t g_{var_name}_runs[] __attribute__((aligned(4))) = {{ 0 }};\n')
+        out_lines.append(f'const uint32_t g_{var_name}_run_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = ' + zero_tbl)
+        out_lines.append(f'const uint8_t g_{var_name}_shadow_masks[] __attribute__((aligned(4))) = {{ 0 }};\n')
+        out_lines.append(f'const uint32_t g_{var_name}_shadow_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = ' + zero_tbl)
+        out_lines.append(f'const uint8_t g_{var_name}_shadow_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4] = ' + zero_bnds + '\n')
+        continue
 
     char_mode = resolve_legibility(char_dir, ARGS.legibility)
     fr_offs, fr_bnds, fr_pix, fr_run_offs, fr_runs = convert_sheet_cropped(png_path, sw, sh, frame_indices=frame_idx, legibility=char_mode)

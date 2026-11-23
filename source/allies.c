@@ -68,7 +68,7 @@ void allies_on_enemy_death(Enemy *dead, Enemy *enemies, int max_enemies) {
     }
 
     if (!arpg_inv_has_mechanic(ARPG_MECH_LEVANTAR)) return;
-    if (dead->type == ENEMY_TYPE_ABANDERADO) return;
+    if (dead->type == ENEMY_TYPE_ABANDERADO || dead->type == ENEMY_TYPE_CAMPANERO) return;
     if (!glifo_point_in_zone(TO_INT(dead->x), TO_INT(dead->y))) return;
     int cap = arpg_inv_has_mechanic(ARPG_MECH_PROCESION) ? ARPG_ALLY_MAX_2 : ARPG_ALLY_MAX_1;
     if (live_allies(enemies, max_enemies) >= cap) return;

@@ -12,6 +12,7 @@ const CharacterConfig g_characters[NUM_CHARACTERS] = {
     { "Exvoto Monaguillo", 39, 22, 40, 40, 80, 80 },
     { "Hero crouched walking", 100, 7, 40, 40, 80, 80 },
     { "Exvoto Bebe walking", 39, 8, 40, 40, 80, 80 },
+    { "El Campanero de Animas", 315, 5, 80, 80, 112, 112 },
 };
 
 // 40x40 BGR555 frames for Corazon Abierto Hero, 8 directions x 8 frames (cropped to bounds)
@@ -47758,6 +47759,61 @@ const uint8_t g_exvoto_bebe_shadow_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4]
     },
 };
 
+// El Campanero de Animas: slot sin pixeles en la EWRAM (los fotogramas se leen de NitroFS, source/campanero_sprite.c)
+const uint16_t g_campanero_frames[] __attribute__((aligned(4))) = { 0 };
+const uint32_t g_campanero_frame_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
+    { 0, 0, 0, 0, 0, 0, 0, 0 },
+    { 0, 0, 0, 0, 0, 0, 0, 0 },
+    { 0, 0, 0, 0, 0, 0, 0, 0 },
+    { 0, 0, 0, 0, 0, 0, 0, 0 },
+    { 0, 0, 0, 0, 0, 0, 0, 0 },
+    { 0, 0, 0, 0, 0, 0, 0, 0 },
+    { 0, 0, 0, 0, 0, 0, 0, 0 },
+    { 0, 0, 0, 0, 0, 0, 0, 0 },
+};
+const uint8_t g_campanero_frame_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4] = {
+    { { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 } },
+    { { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 } },
+    { { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 } },
+    { { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 } },
+    { { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 } },
+    { { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 } },
+    { { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 } },
+    { { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 } },
+};
+const uint16_t g_campanero_runs[] __attribute__((aligned(4))) = { 0 };
+const uint32_t g_campanero_run_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
+    { 0, 0, 0, 0, 0, 0, 0, 0 },
+    { 0, 0, 0, 0, 0, 0, 0, 0 },
+    { 0, 0, 0, 0, 0, 0, 0, 0 },
+    { 0, 0, 0, 0, 0, 0, 0, 0 },
+    { 0, 0, 0, 0, 0, 0, 0, 0 },
+    { 0, 0, 0, 0, 0, 0, 0, 0 },
+    { 0, 0, 0, 0, 0, 0, 0, 0 },
+    { 0, 0, 0, 0, 0, 0, 0, 0 },
+};
+const uint8_t g_campanero_shadow_masks[] __attribute__((aligned(4))) = { 0 };
+const uint32_t g_campanero_shadow_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
+    { 0, 0, 0, 0, 0, 0, 0, 0 },
+    { 0, 0, 0, 0, 0, 0, 0, 0 },
+    { 0, 0, 0, 0, 0, 0, 0, 0 },
+    { 0, 0, 0, 0, 0, 0, 0, 0 },
+    { 0, 0, 0, 0, 0, 0, 0, 0 },
+    { 0, 0, 0, 0, 0, 0, 0, 0 },
+    { 0, 0, 0, 0, 0, 0, 0, 0 },
+    { 0, 0, 0, 0, 0, 0, 0, 0 },
+};
+const uint8_t g_campanero_shadow_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4] = {
+    { { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 } },
+    { { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 } },
+    { { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 } },
+    { { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 } },
+    { { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 } },
+    { { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 } },
+    { { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 } },
+    { { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 } },
+};
+
 // 60x60 BGR555 charge clip of the charger (CHAR_CHARGER), 8 directions x 4 frames (cropped to bounds)
 const uint16_t g_charger_charge_frames[] __attribute__((aligned(4))) = {
     0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
@@ -75065,6 +75121,7 @@ const uint8_t g_character_ground_anchors[NUM_CHARACTERS][PLAYER_NUM_DIRS] = {
     { 35, 35, 35, 35, 35, 35, 35, 35 },
     { 29, 29, 29, 29, 29, 29, 29, 29 },
     { 27, 27, 27, 27, 27, 27, 27, 27 },
+    { 66, 66, 66, 66, 66, 66, 66, 66 },
 };
 
 // Weapon muzzle per character/direction/frame: gx, gy, h in sprite pixels relative to the ground anchor (zeros = no weapon)
@@ -75179,6 +75236,16 @@ const int8_t g_character_muzzle[NUM_CHARACTERS][PLAYER_NUM_DIRS][PLAYER_NUM_FRAM
         { { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 } },
         { { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 } },
     },
+    {
+        { { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 } },
+        { { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 } },
+        { { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 } },
+        { { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 } },
+        { { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 } },
+        { { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 } },
+        { { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 } },
+        { { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 } },
+    },
 };
 
 const uint16_t * const g_character_frames[NUM_CHARACTERS] = {
@@ -75192,7 +75259,8 @@ const uint16_t * const g_character_frames[NUM_CHARACTERS] = {
     g_abanderado_frames,
     g_monaguillo_frames,
     g_hero_crouch_walk_frames,
-    g_exvoto_bebe_frames
+    g_exvoto_bebe_frames,
+    g_campanero_frames
 };
 
 const uint32_t (* const g_character_frame_offsets[NUM_CHARACTERS])[PLAYER_NUM_FRAMES] = {
@@ -75206,7 +75274,8 @@ const uint32_t (* const g_character_frame_offsets[NUM_CHARACTERS])[PLAYER_NUM_FR
     g_abanderado_frame_offsets,
     g_monaguillo_frame_offsets,
     g_hero_crouch_walk_frame_offsets,
-    g_exvoto_bebe_frame_offsets
+    g_exvoto_bebe_frame_offsets,
+    g_campanero_frame_offsets
 };
 
 const uint8_t (* const g_character_frame_bounds[NUM_CHARACTERS])[PLAYER_NUM_FRAMES][4] = {
@@ -75220,7 +75289,8 @@ const uint8_t (* const g_character_frame_bounds[NUM_CHARACTERS])[PLAYER_NUM_FRAM
     g_abanderado_frame_bounds,
     g_monaguillo_frame_bounds,
     g_hero_crouch_walk_frame_bounds,
-    g_exvoto_bebe_frame_bounds
+    g_exvoto_bebe_frame_bounds,
+    g_campanero_frame_bounds
 };
 
 const uint16_t * const g_character_runs[NUM_CHARACTERS] = {
@@ -75234,7 +75304,8 @@ const uint16_t * const g_character_runs[NUM_CHARACTERS] = {
     g_abanderado_runs,
     g_monaguillo_runs,
     g_hero_crouch_walk_runs,
-    g_exvoto_bebe_runs
+    g_exvoto_bebe_runs,
+    g_campanero_runs
 };
 
 const uint32_t (* const g_character_run_offsets[NUM_CHARACTERS])[PLAYER_NUM_FRAMES] = {
@@ -75248,7 +75319,8 @@ const uint32_t (* const g_character_run_offsets[NUM_CHARACTERS])[PLAYER_NUM_FRAM
     g_abanderado_run_offsets,
     g_monaguillo_run_offsets,
     g_hero_crouch_walk_run_offsets,
-    g_exvoto_bebe_run_offsets
+    g_exvoto_bebe_run_offsets,
+    g_campanero_run_offsets
 };
 
 const uint8_t * const g_character_shadow_masks[NUM_CHARACTERS] = {
@@ -75262,7 +75334,8 @@ const uint8_t * const g_character_shadow_masks[NUM_CHARACTERS] = {
     g_abanderado_shadow_masks,
     g_monaguillo_shadow_masks,
     g_hero_crouch_walk_shadow_masks,
-    g_exvoto_bebe_shadow_masks
+    g_exvoto_bebe_shadow_masks,
+    g_campanero_shadow_masks
 };
 
 const uint32_t (* const g_character_shadow_offsets[NUM_CHARACTERS])[PLAYER_NUM_FRAMES] = {
@@ -75276,7 +75349,8 @@ const uint32_t (* const g_character_shadow_offsets[NUM_CHARACTERS])[PLAYER_NUM_F
     g_abanderado_shadow_offsets,
     g_monaguillo_shadow_offsets,
     g_hero_crouch_walk_shadow_offsets,
-    g_exvoto_bebe_shadow_offsets
+    g_exvoto_bebe_shadow_offsets,
+    g_campanero_shadow_offsets
 };
 
 const uint8_t (* const g_character_shadow_bounds[NUM_CHARACTERS])[PLAYER_NUM_FRAMES][4] = {
@@ -75290,6 +75364,7 @@ const uint8_t (* const g_character_shadow_bounds[NUM_CHARACTERS])[PLAYER_NUM_FRA
     g_abanderado_shadow_bounds,
     g_monaguillo_shadow_bounds,
     g_hero_crouch_walk_shadow_bounds,
-    g_exvoto_bebe_shadow_bounds
+    g_exvoto_bebe_shadow_bounds,
+    g_campanero_shadow_bounds
 };
 
