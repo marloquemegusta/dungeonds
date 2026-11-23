@@ -1,0 +1,30 @@
+<title>Párroco y Glifo</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Source+Sans+3:wght@400;600;700&display=swap">
+<style>
+/* Layout: una columna para el móvil; GIFs a todo el ancho */
+:root{--bg:#f1ede5;--fg:#2a2420;--muted:#6d625a;--card:#fbf8f2;--wax:#8f6c32;
+ --display:"Cormorant Garamond",Georgia,serif;--body:"Source Sans 3",system-ui,sans-serif}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#1b1715;--fg:#ece4d8;--muted:#a8998b;--card:#24201d;--wax:#d4b37a;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#1b1715;--fg:#ece4d8;--muted:#a8998b;--card:#24201d;--wax:#d4b37a;color-scheme:dark}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:16px;line-height:1.55;
+ padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:24px 48px}
+main{max-width:900px;margin:0 auto;display:flex;flex-direction:column;gap:24px}
+h1,h2{font-family:var(--display);margin:0;line-height:1.15;text-wrap:balance}
+h1{font-size:2.1rem} h2{font-size:1.5rem}
+p{margin:0} .lead{color:var(--muted)}
+.eyebrow{font-size:.75rem;letter-spacing:.08em;text-transform:uppercase;color:var(--wax);font-weight:700}
+.shot{display:flex;flex-direction:column;gap:8px}
+.shot img{width:100%;height:auto;image-rendering:pixelated;border-radius:4px;display:block}
+.ask{background:var(--card);border:2px solid var(--wax);border-radius:6px;padding:16px;display:flex;flex-direction:column;gap:6px}
+</style>
+<main>
+<header style="display:flex;flex-direction:column;gap:8px">
+ <span class="eyebrow">ARPG · Exvotos · escalón 3</span>
+ <h1>Párroco y Glifo</h1>
+ <p class="lead">Sacado de la ROM, ampliado 4 veces. El Párroco para el Rayo y cae a puñetazos; la Súper Monja esquiva el Glifo.</p>
+</header>
+<div class="shot"><h2>El Párroco, escudo contra el Rayo</h2><p class="lead">El héroe carga el Rayo y el Párroco corre a ponerse delante de la Monja. El Rayo se para en él: destella en blanco cera y no sale número. Después, a puñetazos, sí recibe daño.</p><img src="parroco/parroco_escudo.gif" alt="Párroco bloqueando el Rayo y recibiendo puñetazos"></div>
+<div class="shot"><h2>La Súper Monja esquiva el Glifo</h2><p class="lead">El Glifo cae sobre ella y se escabulle en zigzag antes de que estalle; la Monja de al lado se lleva el golpe. La apertura va un poco a cámara lenta.</p><img src="parroco/smonja_glifo.gif" alt="Súper Monja saliendo del Glifo antes de la detonación"></div>
+<p class="lead">Ya con el instante de reacción: se queda quieta unos 0,15 s mientras se abre la grieta y luego huye. Las chispas del Rayo contra el Párroco se ven poco; el destello sí se lee.</p>
+</main>

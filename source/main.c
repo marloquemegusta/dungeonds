@@ -24,6 +24,7 @@
 #include "remate.h"
 #include "remate_sprites.h"
 #include "punch.h"
+#include "stream_char.h"
 #include "sfx.h"
 #include "lab_tuning.h"
 #include "boxeo.h"
@@ -535,6 +536,27 @@ static const uint16_t *sprite_wax_glow(const uint16_t *src, const uint16_t *runs
                 b -= (b * level) >> 4;
                 if (r < (int)(c & 31)) r = (int)(c & 31);          // never darker than the source
                 if (g < (int)((c >> 5) & 31)) g = (int)((c >> 5) & 31);
+                s_tint_buf[y * pitch + x] = (uint16_t)(r | (g << 5) | (b << 10) | BIT(15));
+            }
+        }
+    }
+    return s_tint_buf;
+}
+
+// Parroco flash when the Ray breaks on him (DESIGN-ARPG s5): the body goes wax-white (cream, 3/4 of the way to
+// (30, 28, 24)), still keeping a hint of its own shading. Same buffer and limits as sprite_wax_glow.
+static const uint16_t *sprite_wax_flash(const uint16_t *src, const uint16_t *runs, int pitch, int bw, int bh) {
+    if (pitch * bh > 64 * 64) return src;
+    for (int y = 0; y < bh; y++) {
+        const uint16_t *rr = runs + runs[y], *rend = runs + runs[y + 1];
+        for (; rr < rend; rr++) {
+            int a = *rr & 0xFF, n = *rr >> 8;
+            for (int x = a; x < a + n; x++) {
+                uint32_t c = src[y * pitch + x];
+                int r = c & 31, g = (c >> 5) & 31, b = (c >> 10) & 31;
+                r += ((30 - r) * 12) >> 4;
+                g += ((28 - g) * 12) >> 4;
+                b += ((24 - b) * 12) >> 4;
                 s_tint_buf[y * pitch + x] = (uint16_t)(r | (g << 5) | (b << 10) | BIT(15));
             }
         }
@@ -1152,7 +1174,9 @@ static void draw_enemy(uint16_t *buffer, const Enemy *e, int cam_x, int cam_y) {
         ? &g_charger_charge_runs[g_charger_charge_run_offsets[e->dir][is_telegraph ? 0 : cf]]
         : character_runs_ptr(e->char_id, e->dir, e->frame);
 
-    if (e->state == ENEMY_STATE_SUSPENDED) {               // Viatico: drained, it loses colour
+    if (e->type == ENEMY_TYPE_PARROCO && e->gesture > 0 && sprite_pitch(bw) * bh <= 64 * 64) {   // the Ray broke on it: wax-white flash
+        frame = sprite_wax_flash(frame, runs, sprite_pitch(bw), bw, bh);
+    } else if (e->state == ENEMY_STATE_SUSPENDED) {               // Viatico: drained, it loses colour
         frame = sprite_fade(frame, runs, sprite_pitch(bw), bw, bh, e->suspend_timer <= SUSPEND_FRAMES / 2);
     } else if (e->state == ENEMY_STATE_WOBBLE) {           // reeling: warm pulse (period 16 frames, triangle 0..4)
         int ph = (e->state_timer >> 1) & 7;
@@ -3529,6 +3553,7 @@ int main(void) {
     remate_reset();
     punch_reset();
     sfx_init();
+    stream_char_init();            // streamed sheets (Párroco run, Súper Monja) from NitroFS (needs nitroFSInit, done by sfx_init)
     CRASH_INIT();
     PP_INIT();
     enemy_set_death_hook(on_enemy_death);

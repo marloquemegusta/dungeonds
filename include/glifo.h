@@ -27,6 +27,12 @@ int glifo_input(PlayerState *player, int touch_down, int touch_pressed, int touc
 // Once per simulated frame: flies the projectiles, lands them as runes, runs the cycle and the auras.
 void glifo_update(Enemy *enemies, int max_enemies);
 
+// Super Monja dodge (DESIGN-ARPG s5): non-zero when a glifo that has not detonated yet covers (or nearly covers) the
+// ground point (x, y). *ux / *uy: unit direction (8.8, ground metric, y already halved) leading out of it,
+// from the centre outwards with a sideways swerve (`side` = +1 / -1).
+// Returns 2 (no direction) during the first ARPG_SMONJA_GLIFO_REACT frames of the cycle: she stands still.
+int glifo_flee_dir(int x, int y, int margin, int side, int *ux, int *uy);
+
 // Non-zero when a world ground point lies inside any live glifo.
 int glifo_point_in_zone(int x, int y);
 

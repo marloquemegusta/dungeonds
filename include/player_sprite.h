@@ -26,7 +26,7 @@
 // The ground origin row varies per character/direction: see g_character_ground_anchors.
 #define PLAYER_ANCHOR_X 20
 
-#define NUM_CHARACTERS 11
+#define NUM_CHARACTERS 20
 
 enum {
     CHAR_HERO = 0,
@@ -41,10 +41,26 @@ enum {
     CHAR_MONAGUILLO = 8,
     // Hero crouched (cobertura baja, DESIGN.md 6.9): the player swaps char_id between CHAR_HERO and this slot.
     CHAR_HERO_CROUCH_WALK = 9,  // crouched walking, 8 frames, 40x40 cell; the still pose is one fixed frame of it
-    // Exvoto tiers (v3, walkthroughs/arpg-predemo §10): only the Bebé has its own baked sheet today; the Párroco
-    // and the Monja still borrow CHAR_EXVOTO / CHAR_EXVOTO_PRAY_STAND (their own sheets do not fit in EWRAM, see
-    // TECHNICAL.md; they need the NitroFS streaming path the punch uses).
-    CHAR_EXVOTO_BEBE = 10       // Exvoto Bebé walking (swarm tier), 8 frames, 40x40 cell
+    // Exvoto tiers (v3, walkthroughs/arpg-predemo §10): the Bebé has its own baked sheet; the Párroco runs with
+    // its own sheet streamed from NitroFS (see CHAR_EXVOTO_PARROCO_RUN); the praying/rising poses of the Párroco
+    // still borrow CHAR_EXVOTO / CHAR_EXVOTO_PRAY_STAND (his sheets do not fit in EWRAM, TECHNICAL.md).
+    CHAR_EXVOTO_BEBE = 10,      // Exvoto Bebé walking (swarm tier), 8 frames, 40x40 cell
+    // Párroco running (Mixamo Running on exvoto_parroco), 8 frames, 48x48 cell. Its pixels, runs and shadow masks are
+    // NOT in this file's tables: they live in nitrofiles/parroco/run.bin and source/stream_char.c keeps a small
+    // cache of frames; the character_*_ptr accessors below load a frame on demand for the streamed slots (>= CHAR_FIRST_STREAMED).
+    CHAR_EXVOTO_PARROCO_RUN = 11,
+    CHAR_FIRST_STREAMED = CHAR_EXVOTO_PARROCO_RUN,
+    // Súper Monja (ENEMY_TYPE_MONJA, Tripo 9713149f), 56x56 cell, her own four clips, also streamed (nitrofiles/smonja/).
+    CHAR_SMONJA_WALK = 12,
+    CHAR_SMONJA_PRAY_STAND = 13,
+    CHAR_SMONJA_PRAY_KNEEL = 14,
+    CHAR_SMONJA_STAND_UP = 15,
+    // Spider form of the Exvoto and the Monaguillo under the Súper Monja's aura (nitrofiles/arana/): walk (burst + pause) and the
+    // lying-down transition (played backwards to get up). Cells 40x40 (Exvoto) and 48x48 (Monaguillo).
+    CHAR_EXVOTO_ARANA_WALK = 16,
+    CHAR_EXVOTO_ARANA_TRANS = 17,
+    CHAR_MONAGUILLO_ARANA_WALK = 18,
+    CHAR_MONAGUILLO_ARANA_TRANS = 19
 };
 
 typedef struct {
@@ -219,25 +235,35 @@ extern const uint16_t g_monaguillo_runs[];
 extern const uint32_t g_monaguillo_run_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES];
 
 // Fast indexed lookups:
-extern const uint16_t * const g_character_frames[NUM_CHARACTERS];
-extern const uint32_t (* const g_character_frame_offsets[NUM_CHARACTERS])[PLAYER_NUM_FRAMES];
-extern const uint8_t (* const g_character_frame_bounds[NUM_CHARACTERS])[PLAYER_NUM_FRAMES][4];
-extern const uint8_t * const g_character_shadow_masks[NUM_CHARACTERS];
-extern const uint32_t (* const g_character_shadow_offsets[NUM_CHARACTERS])[PLAYER_NUM_FRAMES];
-extern const uint8_t (* const g_character_shadow_bounds[NUM_CHARACTERS])[PLAYER_NUM_FRAMES][4];
+// The tables are writable only because the streamed slots (>= CHAR_FIRST_STREAMED) fill its entries at runtime.
+extern const uint16_t * g_character_frames[NUM_CHARACTERS];
+extern const uint32_t (* g_character_frame_offsets[NUM_CHARACTERS])[PLAYER_NUM_FRAMES];
+extern const uint8_t (* g_character_frame_bounds[NUM_CHARACTERS])[PLAYER_NUM_FRAMES][4];
+extern const uint8_t * g_character_shadow_masks[NUM_CHARACTERS];
+extern const uint32_t (* g_character_shadow_offsets[NUM_CHARACTERS])[PLAYER_NUM_FRAMES];
+extern const uint8_t (* g_character_shadow_bounds[NUM_CHARACTERS])[PLAYER_NUM_FRAMES][4];
+
+// Streamed slots (source/stream_char.c): makes sure the frame is in the RAM cache before its pointers are used.
+extern int g_parroco_run_ok;    // 1 once run.bin has been read; 0 = enemy_type_char_id falls back to the Exvoto sheet
+extern int g_arana_ok;          // 1 once the four spider-form files (nitrofiles/arana/) have been read; 0 = no possession
+extern int g_smonja_ok;         // 1 once the four Súper Monja files have been read; 0 = the Monja falls back to the Exvoto sheets
+void stream_char_ensure(int char_id, int dir, int frame);
 
 static inline const uint16_t *character_frame_ptr(int char_id, int dir, int frame) {
+    if (__builtin_expect(char_id >= CHAR_FIRST_STREAMED, 0)) stream_char_ensure(char_id, dir, frame);
     return g_character_frames[char_id] + g_character_frame_offsets[char_id][dir][frame];
 }
 
-extern const uint16_t * const g_character_runs[NUM_CHARACTERS];
-extern const uint32_t (* const g_character_run_offsets[NUM_CHARACTERS])[PLAYER_NUM_FRAMES];
+extern const uint16_t * g_character_runs[NUM_CHARACTERS];
+extern const uint32_t (* g_character_run_offsets[NUM_CHARACTERS])[PLAYER_NUM_FRAMES];
 
 static inline const uint16_t *character_runs_ptr(int char_id, int dir, int frame) {
+    if (__builtin_expect(char_id >= CHAR_FIRST_STREAMED, 0)) stream_char_ensure(char_id, dir, frame);
     return g_character_runs[char_id] + g_character_run_offsets[char_id][dir][frame];
 }
 
 static inline const uint8_t *character_shadow_mask_ptr(int char_id, int dir, int frame) {
+    if (__builtin_expect(char_id >= CHAR_FIRST_STREAMED, 0)) stream_char_ensure(char_id, dir, frame);
     return g_character_shadow_masks[char_id] + g_character_shadow_offsets[char_id][dir][frame];
 }
 

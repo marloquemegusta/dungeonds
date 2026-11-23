@@ -1,0 +1,1833 @@
+{
+  "name": "super_monja_arana_erratica_1",
+  "description": "Evidencia: la monjara\u00f1a a arrancadas erraticas (poke de posicion/dir/frame, estado DORMANT para que la IA no interfiera). Solo evidencia.",
+  "suite": false,
+  "evidence_only": true,
+  "steps": [
+    {
+      "frames": 60
+    },
+    {
+      "poke": [
+        {
+          "field": "god",
+          "value": 1
+        }
+      ],
+      "frames": 2
+    },
+    {
+      "poke": [
+        {
+          "field": "tier_spawn",
+          "value": 1
+        }
+      ],
+      "frames": 2
+    },
+    {
+      "poke": [
+        {
+          "field": "a13",
+          "value": 0
+        },
+        {
+          "field": "a14",
+          "value": 0
+        },
+        {
+          "field": "a15",
+          "value": 0
+        }
+      ],
+      "frames": 2
+    },
+    {
+      "poke": [
+        {
+          "field": "n_x",
+          "value": 49408
+        },
+        {
+          "field": "n_y",
+          "value": 440064
+        },
+        {
+          "field": "n_char",
+          "value": 12
+        },
+        {
+          "field": "n_hp",
+          "value": 40
+        },
+        {
+          "field": "n_max",
+          "value": 40
+        },
+        {
+          "field": "n_type",
+          "value": 3
+        },
+        {
+          "field": "n_act",
+          "value": 1
+        },
+        {
+          "field": "n_state",
+          "value": 14
+        },
+        {
+          "field": "n_dir",
+          "value": 0
+        },
+        {
+          "field": "n_frame",
+          "value": 7
+        }
+      ],
+      "frames": 2
+    },
+    {
+      "poke": [
+        {
+          "field": "n_x",
+          "value": 49408
+        },
+        {
+          "field": "n_y",
+          "value": 440064
+        },
+        {
+          "field": "n_dir",
+          "value": 0
+        },
+        {
+          "field": "n_frame",
+          "value": 7
+        },
+        {
+          "field": "n_state",
+          "value": 14
+        }
+      ],
+      "frames": 2,
+      "capture_sequence": "g",
+      "capture_every": 2
+    },
+    {
+      "poke": [
+        {
+          "field": "n_x",
+          "value": 49408
+        },
+        {
+          "field": "n_y",
+          "value": 440064
+        },
+        {
+          "field": "n_dir",
+          "value": 0
+        },
+        {
+          "field": "n_frame",
+          "value": 7
+        },
+        {
+          "field": "n_state",
+          "value": 14
+        }
+      ],
+      "frames": 2,
+      "capture_sequence": "g",
+      "capture_every": 2
+    },
+    {
+      "poke": [
+        {
+          "field": "n_x",
+          "value": 49408
+        },
+        {
+          "field": "n_y",
+          "value": 440064
+        },
+        {
+          "field": "n_dir",
+          "value": 0
+        },
+        {
+          "field": "n_frame",
+          "value": 7
+        },
+        {
+          "field": "n_state",
+          "value": 14
+        }
+      ],
+      "frames": 2,
+      "capture_sequence": "g",
+      "capture_every": 2
+    },
+    {
+      "poke": [
+        {
+          "field": "n_x",
+          "value": 49996
+        },
+        {
+          "field": "n_y",
+          "value": 440557
+        },
+        {
+          "field": "n_dir",
+          "value": 7
+        },
+        {
+          "field": "n_frame",
+          "value": 0
+        },
+        {
+          "field": "n_state",
+          "value": 14
+        }
+      ],
+      "frames": 2,
+      "capture_sequence": "g",
+      "capture_every": 2
+    },
+    {
+      "poke": [
+        {
+          "field": "n_x",
+          "value": 50584
+        },
+        {
+          "field": "n_y",
+          "value": 441051
+        },
+        {
+          "field": "n_dir",
+          "value": 7
+        },
+        {
+          "field": "n_frame",
+          "value": 1
+        },
+        {
+          "field": "n_state",
+          "value": 14
+        }
+      ],
+      "frames": 2,
+      "capture_sequence": "g",
+      "capture_every": 2
+    },
+    {
+      "poke": [
+        {
+          "field": "n_x",
+          "value": 51172
+        },
+        {
+          "field": "n_y",
+          "value": 441544
+        },
+        {
+          "field": "n_dir",
+          "value": 7
+        },
+        {
+          "field": "n_frame",
+          "value": 2
+        },
+        {
+          "field": "n_state",
+          "value": 14
+        }
+      ],
+      "frames": 2,
+      "capture_sequence": "g",
+      "capture_every": 2
+    },
+    {
+      "poke": [
+        {
+          "field": "n_x",
+          "value": 51761
+        },
+        {
+          "field": "n_y",
+          "value": 442038
+        },
+        {
+          "field": "n_dir",
+          "value": 7
+        },
+        {
+          "field": "n_frame",
+          "value": 3
+        },
+        {
+          "field": "n_state",
+          "value": 14
+        }
+      ],
+      "frames": 2,
+      "capture_sequence": "g",
+      "capture_every": 2
+    },
+    {
+      "poke": [
+        {
+          "field": "n_x",
+          "value": 52349
+        },
+        {
+          "field": "n_y",
+          "value": 442532
+        },
+        {
+          "field": "n_dir",
+          "value": 7
+        },
+        {
+          "field": "n_frame",
+          "value": 4
+        },
+        {
+          "field": "n_state",
+          "value": 14
+        }
+      ],
+      "frames": 2,
+      "capture_sequence": "g",
+      "capture_every": 2
+    },
+    {
+      "poke": [
+        {
+          "field": "n_x",
+          "value": 52937
+        },
+        {
+          "field": "n_y",
+          "value": 443025
+        },
+        {
+          "field": "n_dir",
+          "value": 7
+        },
+        {
+          "field": "n_frame",
+          "value": 5
+        },
+        {
+          "field": "n_state",
+          "value": 14
+        }
+      ],
+      "frames": 2,
+      "capture_sequence": "g",
+      "capture_every": 2
+    },
+    {
+      "poke": [
+        {
+          "field": "n_x",
+          "value": 52937
+        },
+        {
+          "field": "n_y",
+          "value": 443025
+        },
+        {
+          "field": "n_dir",
+          "value": 7
+        },
+        {
+          "field": "n_frame",
+          "value": 6
+        },
+        {
+          "field": "n_state",
+          "value": 14
+        }
+      ],
+      "frames": 2,
+      "capture_sequence": "g",
+      "capture_every": 2
+    },
+    {
+      "poke": [
+        {
+          "field": "n_x",
+          "value": 52937
+        },
+        {
+          "field": "n_y",
+          "value": 443025
+        },
+        {
+          "field": "n_dir",
+          "value": 7
+        },
+        {
+          "field": "n_frame",
+          "value": 7
+        },
+        {
+          "field": "n_state",
+          "value": 14
+        }
+      ],
+      "frames": 2,
+      "capture_sequence": "g",
+      "capture_every": 2
+    },
+    {
+      "poke": [
+        {
+          "field": "n_x",
+          "value": 52937
+        },
+        {
+          "field": "n_y",
+          "value": 443025
+        },
+        {
+          "field": "n_dir",
+          "value": 7
+        },
+        {
+          "field": "n_frame",
+          "value": 7
+        },
+        {
+          "field": "n_state",
+          "value": 14
+        }
+      ],
+      "frames": 2,
+      "capture_sequence": "g",
+      "capture_every": 2
+    },
+    {
+      "poke": [
+        {
+          "field": "n_x",
+          "value": 53694
+        },
+        {
+          "field": "n_y",
+          "value": 442892
+        },
+        {
+          "field": "n_dir",
+          "value": 6
+        },
+        {
+          "field": "n_frame",
+          "value": 0
+        },
+        {
+          "field": "n_state",
+          "value": 14
+        }
+      ],
+      "frames": 2,
+      "capture_sequence": "g",
+      "capture_every": 2
+    },
+    {
+      "poke": [
+        {
+          "field": "n_x",
+          "value": 54450
+        },
+        {
+          "field": "n_y",
+          "value": 442759
+        },
+        {
+          "field": "n_dir",
+          "value": 6
+        },
+        {
+          "field": "n_frame",
+          "value": 1
+        },
+        {
+          "field": "n_state",
+          "value": 14
+        }
+      ],
+      "frames": 2,
+      "capture_sequence": "g",
+      "capture_every": 2
+    },
+    {
+      "poke": [
+        {
+          "field": "n_x",
+          "value": 55206
+        },
+        {
+          "field": "n_y",
+          "value": 442625
+        },
+        {
+          "field": "n_dir",
+          "value": 6
+        },
+        {
+          "field": "n_frame",
+          "value": 2
+        },
+        {
+          "field": "n_state",
+          "value": 14
+        }
+      ],
+      "frames": 2,
+      "capture_sequence": "g",
+      "capture_every": 2
+    },
+    {
+      "poke": [
+        {
+          "field": "n_x",
+          "value": 55963
+        },
+        {
+          "field": "n_y",
+          "value": 442492
+        },
+        {
+          "field": "n_dir",
+          "value": 6
+        },
+        {
+          "field": "n_frame",
+          "value": 3
+        },
+        {
+          "field": "n_state",
+          "value": 14
+        }
+      ],
+      "frames": 2,
+      "capture_sequence": "g",
+      "capture_every": 2
+    },
+    {
+      "poke": [
+        {
+          "field": "n_x",
+          "value": 56719
+        },
+        {
+          "field": "n_y",
+          "value": 442359
+        },
+        {
+          "field": "n_dir",
+          "value": 6
+        },
+        {
+          "field": "n_frame",
+          "value": 4
+        },
+        {
+          "field": "n_state",
+          "value": 14
+        }
+      ],
+      "frames": 2,
+      "capture_sequence": "g",
+      "capture_every": 2
+    },
+    {
+      "poke": [
+        {
+          "field": "n_x",
+          "value": 56719
+        },
+        {
+          "field": "n_y",
+          "value": 442359
+        },
+        {
+          "field": "n_dir",
+          "value": 6
+        },
+        {
+          "field": "n_frame",
+          "value": 6
+        },
+        {
+          "field": "n_state",
+          "value": 14
+        }
+      ],
+      "frames": 2,
+      "capture_sequence": "g",
+      "capture_every": 2
+    },
+    {
+      "poke": [
+        {
+          "field": "n_x",
+          "value": 56719
+        },
+        {
+          "field": "n_y",
+          "value": 442359
+        },
+        {
+          "field": "n_dir",
+          "value": 6
+        },
+        {
+          "field": "n_frame",
+          "value": 7
+        },
+        {
+          "field": "n_state",
+          "value": 14
+        }
+      ],
+      "frames": 2,
+      "capture_sequence": "g",
+      "capture_every": 2
+    },
+    {
+      "poke": [
+        {
+          "field": "n_x",
+          "value": 56786
+        },
+        {
+          "field": "n_y",
+          "value": 443124
+        },
+        {
+          "field": "n_dir",
+          "value": 0
+        },
+        {
+          "field": "n_frame",
+          "value": 0
+        },
+        {
+          "field": "n_state",
+          "value": 14
+        }
+      ],
+      "frames": 2,
+      "capture_sequence": "g",
+      "capture_every": 2
+    },
+    {
+      "poke": [
+        {
+          "field": "n_x",
+          "value": 56853
+        },
+        {
+          "field": "n_y",
+          "value": 443889
+        },
+        {
+          "field": "n_dir",
+          "value": 0
+        },
+        {
+          "field": "n_frame",
+          "value": 1
+        },
+        {
+          "field": "n_state",
+          "value": 14
+        }
+      ],
+      "frames": 2,
+      "capture_sequence": "g",
+      "capture_every": 2
+    },
+    {
+      "poke": [
+        {
+          "field": "n_x",
+          "value": 56920
+        },
+        {
+          "field": "n_y",
+          "value": 444654
+        },
+        {
+          "field": "n_dir",
+          "value": 0
+        },
+        {
+          "field": "n_frame",
+          "value": 2
+        },
+        {
+          "field": "n_state",
+          "value": 14
+        }
+      ],
+      "frames": 2,
+      "capture_sequence": "g",
+      "capture_every": 2
+    },
+    {
+      "poke": [
+        {
+          "field": "n_x",
+          "value": 56987
+        },
+        {
+          "field": "n_y",
+          "value": 445419
+        },
+        {
+          "field": "n_dir",
+          "value": 0
+        },
+        {
+          "field": "n_frame",
+          "value": 3
+        },
+        {
+          "field": "n_state",
+          "value": 14
+        }
+      ],
+      "frames": 2,
+      "capture_sequence": "g",
+      "capture_every": 2
+    },
+    {
+      "poke": [
+        {
+          "field": "n_x",
+          "value": 57054
+        },
+        {
+          "field": "n_y",
+          "value": 446184
+        },
+        {
+          "field": "n_dir",
+          "value": 0
+        },
+        {
+          "field": "n_frame",
+          "value": 4
+        },
+        {
+          "field": "n_state",
+          "value": 14
+        }
+      ],
+      "frames": 2,
+      "capture_sequence": "g",
+      "capture_every": 2
+    },
+    {
+      "poke": [
+        {
+          "field": "n_x",
+          "value": 57121
+        },
+        {
+          "field": "n_y",
+          "value": 446949
+        },
+        {
+          "field": "n_dir",
+          "value": 0
+        },
+        {
+          "field": "n_frame",
+          "value": 5
+        },
+        {
+          "field": "n_state",
+          "value": 14
+        }
+      ],
+      "frames": 2,
+      "capture_sequence": "g",
+      "capture_every": 2
+    },
+    {
+      "poke": [
+        {
+          "field": "n_x",
+          "value": 57121
+        },
+        {
+          "field": "n_y",
+          "value": 446949
+        },
+        {
+          "field": "n_dir",
+          "value": 0
+        },
+        {
+          "field": "n_frame",
+          "value": 6
+        },
+        {
+          "field": "n_state",
+          "value": 14
+        }
+      ],
+      "frames": 2,
+      "capture_sequence": "g",
+      "capture_every": 2
+    },
+    {
+      "poke": [
+        {
+          "field": "n_x",
+          "value": 57121
+        },
+        {
+          "field": "n_y",
+          "value": 446949
+        },
+        {
+          "field": "n_dir",
+          "value": 0
+        },
+        {
+          "field": "n_frame",
+          "value": 7
+        },
+        {
+          "field": "n_state",
+          "value": 14
+        }
+      ],
+      "frames": 2,
+      "capture_sequence": "g",
+      "capture_every": 2
+    },
+    {
+      "poke": [
+        {
+          "field": "n_x",
+          "value": 57121
+        },
+        {
+          "field": "n_y",
+          "value": 446949
+        },
+        {
+          "field": "n_dir",
+          "value": 0
+        },
+        {
+          "field": "n_frame",
+          "value": 7
+        },
+        {
+          "field": "n_state",
+          "value": 14
+        }
+      ],
+      "frames": 2,
+      "capture_sequence": "g",
+      "capture_every": 2
+    },
+    {
+      "poke": [
+        {
+          "field": "n_x",
+          "value": 57121
+        },
+        {
+          "field": "n_y",
+          "value": 446949
+        },
+        {
+          "field": "n_dir",
+          "value": 0
+        },
+        {
+          "field": "n_frame",
+          "value": 7
+        },
+        {
+          "field": "n_state",
+          "value": 14
+        }
+      ],
+      "frames": 2,
+      "capture_sequence": "g",
+      "capture_every": 2
+    },
+    {
+      "poke": [
+        {
+          "field": "n_x",
+          "value": 57121
+        },
+        {
+          "field": "n_y",
+          "value": 446949
+        },
+        {
+          "field": "n_dir",
+          "value": 0
+        },
+        {
+          "field": "n_frame",
+          "value": 7
+        },
+        {
+          "field": "n_state",
+          "value": 14
+        }
+      ],
+      "frames": 2,
+      "capture_sequence": "g",
+      "capture_every": 2
+    },
+    {
+      "poke": [
+        {
+          "field": "n_x",
+          "value": 57786
+        },
+        {
+          "field": "n_y",
+          "value": 447333
+        },
+        {
+          "field": "n_dir",
+          "value": 7
+        },
+        {
+          "field": "n_frame",
+          "value": 0
+        },
+        {
+          "field": "n_state",
+          "value": 14
+        }
+      ],
+      "frames": 2,
+      "capture_sequence": "g",
+      "capture_every": 2
+    },
+    {
+      "poke": [
+        {
+          "field": "n_x",
+          "value": 58451
+        },
+        {
+          "field": "n_y",
+          "value": 447717
+        },
+        {
+          "field": "n_dir",
+          "value": 7
+        },
+        {
+          "field": "n_frame",
+          "value": 1
+        },
+        {
+          "field": "n_state",
+          "value": 14
+        }
+      ],
+      "frames": 2,
+      "capture_sequence": "g",
+      "capture_every": 2
+    },
+    {
+      "poke": [
+        {
+          "field": "n_x",
+          "value": 59116
+        },
+        {
+          "field": "n_y",
+          "value": 448101
+        },
+        {
+          "field": "n_dir",
+          "value": 7
+        },
+        {
+          "field": "n_frame",
+          "value": 2
+        },
+        {
+          "field": "n_state",
+          "value": 14
+        }
+      ],
+      "frames": 2,
+      "capture_sequence": "g",
+      "capture_every": 2
+    },
+    {
+      "poke": [
+        {
+          "field": "n_x",
+          "value": 59781
+        },
+        {
+          "field": "n_y",
+          "value": 448485
+        },
+        {
+          "field": "n_dir",
+          "value": 7
+        },
+        {
+          "field": "n_frame",
+          "value": 3
+        },
+        {
+          "field": "n_state",
+          "value": 14
+        }
+      ],
+      "frames": 2,
+      "capture_sequence": "g",
+      "capture_every": 2
+    },
+    {
+      "poke": [
+        {
+          "field": "n_x",
+          "value": 60446
+        },
+        {
+          "field": "n_y",
+          "value": 448869
+        },
+        {
+          "field": "n_dir",
+          "value": 7
+        },
+        {
+          "field": "n_frame",
+          "value": 4
+        },
+        {
+          "field": "n_state",
+          "value": 14
+        }
+      ],
+      "frames": 2,
+      "capture_sequence": "g",
+      "capture_every": 2
+    },
+    {
+      "poke": [
+        {
+          "field": "n_x",
+          "value": 61111
+        },
+        {
+          "field": "n_y",
+          "value": 449253
+        },
+        {
+          "field": "n_dir",
+          "value": 7
+        },
+        {
+          "field": "n_frame",
+          "value": 5
+        },
+        {
+          "field": "n_state",
+          "value": 14
+        }
+      ],
+      "frames": 2,
+      "capture_sequence": "g",
+      "capture_every": 2
+    },
+    {
+      "poke": [
+        {
+          "field": "n_x",
+          "value": 61111
+        },
+        {
+          "field": "n_y",
+          "value": 449253
+        },
+        {
+          "field": "n_dir",
+          "value": 7
+        },
+        {
+          "field": "n_frame",
+          "value": 6
+        },
+        {
+          "field": "n_state",
+          "value": 14
+        }
+      ],
+      "frames": 2,
+      "capture_sequence": "g",
+      "capture_every": 2
+    },
+    {
+      "poke": [
+        {
+          "field": "n_x",
+          "value": 61111
+        },
+        {
+          "field": "n_y",
+          "value": 449253
+        },
+        {
+          "field": "n_dir",
+          "value": 7
+        },
+        {
+          "field": "n_frame",
+          "value": 7
+        },
+        {
+          "field": "n_state",
+          "value": 14
+        }
+      ],
+      "frames": 2,
+      "capture_sequence": "g",
+      "capture_every": 2
+    },
+    {
+      "poke": [
+        {
+          "field": "n_x",
+          "value": 61776
+        },
+        {
+          "field": "n_y",
+          "value": 448869
+        },
+        {
+          "field": "n_dir",
+          "value": 5
+        },
+        {
+          "field": "n_frame",
+          "value": 0
+        },
+        {
+          "field": "n_state",
+          "value": 14
+        }
+      ],
+      "frames": 2,
+      "capture_sequence": "g",
+      "capture_every": 2
+    },
+    {
+      "poke": [
+        {
+          "field": "n_x",
+          "value": 62442
+        },
+        {
+          "field": "n_y",
+          "value": 448485
+        },
+        {
+          "field": "n_dir",
+          "value": 5
+        },
+        {
+          "field": "n_frame",
+          "value": 1
+        },
+        {
+          "field": "n_state",
+          "value": 14
+        }
+      ],
+      "frames": 2,
+      "capture_sequence": "g",
+      "capture_every": 2
+    },
+    {
+      "poke": [
+        {
+          "field": "n_x",
+          "value": 63107
+        },
+        {
+          "field": "n_y",
+          "value": 448101
+        },
+        {
+          "field": "n_dir",
+          "value": 5
+        },
+        {
+          "field": "n_frame",
+          "value": 2
+        },
+        {
+          "field": "n_state",
+          "value": 14
+        }
+      ],
+      "frames": 2,
+      "capture_sequence": "g",
+      "capture_every": 2
+    },
+    {
+      "poke": [
+        {
+          "field": "n_x",
+          "value": 63772
+        },
+        {
+          "field": "n_y",
+          "value": 447717
+        },
+        {
+          "field": "n_dir",
+          "value": 5
+        },
+        {
+          "field": "n_frame",
+          "value": 3
+        },
+        {
+          "field": "n_state",
+          "value": 14
+        }
+      ],
+      "frames": 2,
+      "capture_sequence": "g",
+      "capture_every": 2
+    },
+    {
+      "poke": [
+        {
+          "field": "n_x",
+          "value": 63772
+        },
+        {
+          "field": "n_y",
+          "value": 447717
+        },
+        {
+          "field": "n_dir",
+          "value": 5
+        },
+        {
+          "field": "n_frame",
+          "value": 6
+        },
+        {
+          "field": "n_state",
+          "value": 14
+        }
+      ],
+      "frames": 2,
+      "capture_sequence": "g",
+      "capture_every": 2
+    },
+    {
+      "poke": [
+        {
+          "field": "n_x",
+          "value": 63772
+        },
+        {
+          "field": "n_y",
+          "value": 447717
+        },
+        {
+          "field": "n_dir",
+          "value": 5
+        },
+        {
+          "field": "n_frame",
+          "value": 7
+        },
+        {
+          "field": "n_state",
+          "value": 14
+        }
+      ],
+      "frames": 2,
+      "capture_sequence": "g",
+      "capture_every": 2
+    },
+    {
+      "poke": [
+        {
+          "field": "n_x",
+          "value": 63772
+        },
+        {
+          "field": "n_y",
+          "value": 447717
+        },
+        {
+          "field": "n_dir",
+          "value": 5
+        },
+        {
+          "field": "n_frame",
+          "value": 7
+        },
+        {
+          "field": "n_state",
+          "value": 14
+        }
+      ],
+      "frames": 2,
+      "capture_sequence": "g",
+      "capture_every": 2
+    },
+    {
+      "poke": [
+        {
+          "field": "n_x",
+          "value": 63772
+        },
+        {
+          "field": "n_y",
+          "value": 447717
+        },
+        {
+          "field": "n_dir",
+          "value": 5
+        },
+        {
+          "field": "n_frame",
+          "value": 7
+        },
+        {
+          "field": "n_state",
+          "value": 14
+        }
+      ],
+      "frames": 2,
+      "capture_sequence": "g",
+      "capture_every": 2
+    },
+    {
+      "poke": [
+        {
+          "field": "n_x",
+          "value": 64156
+        },
+        {
+          "field": "n_y",
+          "value": 448382
+        },
+        {
+          "field": "n_dir",
+          "value": 7
+        },
+        {
+          "field": "n_frame",
+          "value": 0
+        },
+        {
+          "field": "n_state",
+          "value": 14
+        }
+      ],
+      "frames": 2,
+      "capture_sequence": "g",
+      "capture_every": 2
+    },
+    {
+      "poke": [
+        {
+          "field": "n_x",
+          "value": 64540
+        },
+        {
+          "field": "n_y",
+          "value": 449047
+        },
+        {
+          "field": "n_dir",
+          "value": 7
+        },
+        {
+          "field": "n_frame",
+          "value": 1
+        },
+        {
+          "field": "n_state",
+          "value": 14
+        }
+      ],
+      "frames": 2,
+      "capture_sequence": "g",
+      "capture_every": 2
+    },
+    {
+      "poke": [
+        {
+          "field": "n_x",
+          "value": 64924
+        },
+        {
+          "field": "n_y",
+          "value": 449712
+        },
+        {
+          "field": "n_dir",
+          "value": 7
+        },
+        {
+          "field": "n_frame",
+          "value": 2
+        },
+        {
+          "field": "n_state",
+          "value": 14
+        }
+      ],
+      "frames": 2,
+      "capture_sequence": "g",
+      "capture_every": 2
+    },
+    {
+      "poke": [
+        {
+          "field": "n_x",
+          "value": 65308
+        },
+        {
+          "field": "n_y",
+          "value": 450378
+        },
+        {
+          "field": "n_dir",
+          "value": 7
+        },
+        {
+          "field": "n_frame",
+          "value": 3
+        },
+        {
+          "field": "n_state",
+          "value": 14
+        }
+      ],
+      "frames": 2,
+      "capture_sequence": "g",
+      "capture_every": 2
+    },
+    {
+      "poke": [
+        {
+          "field": "n_x",
+          "value": 65692
+        },
+        {
+          "field": "n_y",
+          "value": 451043
+        },
+        {
+          "field": "n_dir",
+          "value": 7
+        },
+        {
+          "field": "n_frame",
+          "value": 4
+        },
+        {
+          "field": "n_state",
+          "value": 14
+        }
+      ],
+      "frames": 2,
+      "capture_sequence": "g",
+      "capture_every": 2
+    },
+    {
+      "poke": [
+        {
+          "field": "n_x",
+          "value": 66076
+        },
+        {
+          "field": "n_y",
+          "value": 451708
+        },
+        {
+          "field": "n_dir",
+          "value": 7
+        },
+        {
+          "field": "n_frame",
+          "value": 5
+        },
+        {
+          "field": "n_state",
+          "value": 14
+        }
+      ],
+      "frames": 2,
+      "capture_sequence": "g",
+      "capture_every": 2
+    },
+    {
+      "poke": [
+        {
+          "field": "n_x",
+          "value": 66076
+        },
+        {
+          "field": "n_y",
+          "value": 451708
+        },
+        {
+          "field": "n_dir",
+          "value": 7
+        },
+        {
+          "field": "n_frame",
+          "value": 6
+        },
+        {
+          "field": "n_state",
+          "value": 14
+        }
+      ],
+      "frames": 2,
+      "capture_sequence": "g",
+      "capture_every": 2
+    },
+    {
+      "poke": [
+        {
+          "field": "n_x",
+          "value": 66076
+        },
+        {
+          "field": "n_y",
+          "value": 451708
+        },
+        {
+          "field": "n_dir",
+          "value": 7
+        },
+        {
+          "field": "n_frame",
+          "value": 7
+        },
+        {
+          "field": "n_state",
+          "value": 14
+        }
+      ],
+      "frames": 2,
+      "capture_sequence": "g",
+      "capture_every": 2
+    },
+    {
+      "poke": [
+        {
+          "field": "n_x",
+          "value": 66076
+        },
+        {
+          "field": "n_y",
+          "value": 451708
+        },
+        {
+          "field": "n_dir",
+          "value": 7
+        },
+        {
+          "field": "n_frame",
+          "value": 7
+        },
+        {
+          "field": "n_state",
+          "value": 14
+        }
+      ],
+      "frames": 2,
+      "capture_sequence": "g",
+      "capture_every": 2
+    },
+    {
+      "poke": [
+        {
+          "field": "n_x",
+          "value": 65487
+        },
+        {
+          "field": "n_y",
+          "value": 451214
+        },
+        {
+          "field": "n_dir",
+          "value": 3
+        },
+        {
+          "field": "n_frame",
+          "value": 0
+        },
+        {
+          "field": "n_state",
+          "value": 14
+        }
+      ],
+      "frames": 2,
+      "capture_sequence": "g",
+      "capture_every": 2
+    },
+    {
+      "poke": [
+        {
+          "field": "n_x",
+          "value": 64899
+        },
+        {
+          "field": "n_y",
+          "value": 450720
+        },
+        {
+          "field": "n_dir",
+          "value": 3
+        },
+        {
+          "field": "n_frame",
+          "value": 1
+        },
+        {
+          "field": "n_state",
+          "value": 14
+        }
+      ],
+      "frames": 2,
+      "capture_sequence": "g",
+      "capture_every": 2
+    },
+    {
+      "poke": [
+        {
+          "field": "n_x",
+          "value": 64311
+        },
+        {
+          "field": "n_y",
+          "value": 450227
+        },
+        {
+          "field": "n_dir",
+          "value": 3
+        },
+        {
+          "field": "n_frame",
+          "value": 2
+        },
+        {
+          "field": "n_state",
+          "value": 14
+        }
+      ],
+      "frames": 2,
+      "capture_sequence": "g",
+      "capture_every": 2
+    },
+    {
+      "poke": [
+        {
+          "field": "n_x",
+          "value": 64311
+        },
+        {
+          "field": "n_y",
+          "value": 450227
+        },
+        {
+          "field": "n_dir",
+          "value": 3
+        },
+        {
+          "field": "n_frame",
+          "value": 6
+        },
+        {
+          "field": "n_state",
+          "value": 14
+        }
+      ],
+      "frames": 2,
+      "capture_sequence": "g",
+      "capture_every": 2
+    },
+    {
+      "poke": [
+        {
+          "field": "n_x",
+          "value": 64311
+        },
+        {
+          "field": "n_y",
+          "value": 450227
+        },
+        {
+          "field": "n_dir",
+          "value": 3
+        },
+        {
+          "field": "n_frame",
+          "value": 7
+        },
+        {
+          "field": "n_state",
+          "value": 14
+        }
+      ],
+      "frames": 2,
+      "capture_sequence": "g",
+      "capture_every": 2
+    }
+  ],
+  "state": {
+    "elf": "../.ds-game-dev/build/out/dungeonds-arpg-lab.elf",
+    "symbols": {
+      "gps": "g_player_state",
+      "tiers": "g_tier_debug",
+      "en": "g_enemies",
+      "pl": "s_player"
+    },
+    "default_symbol": "gps",
+    "fields": {
+      "god": {
+        "symbol": "gps",
+        "offset": 20,
+        "type": "s32"
+      },
+      "tier_spawn": {
+        "symbol": "tiers",
+        "offset": 0,
+        "type": "u8"
+      },
+      "a13": {
+        "symbol": "en",
+        "offset": 1636,
+        "type": "s32"
+      },
+      "a14": {
+        "symbol": "en",
+        "offset": 1760,
+        "type": "s32"
+      },
+      "a15": {
+        "symbol": "en",
+        "offset": 1884,
+        "type": "s32"
+      },
+      "px": {
+        "symbol": "pl",
+        "offset": 0,
+        "type": "s32"
+      },
+      "py": {
+        "symbol": "pl",
+        "offset": 4,
+        "type": "s32"
+      },
+      "m_x": {
+        "symbol": "en",
+        "offset": 1860,
+        "type": "s32"
+      },
+      "m_y": {
+        "symbol": "en",
+        "offset": 1864,
+        "type": "s32"
+      },
+      "n_x": {
+        "symbol": "en",
+        "offset": 1984,
+        "type": "s32"
+      },
+      "n_y": {
+        "symbol": "en",
+        "offset": 1988,
+        "type": "s32"
+      },
+      "n_char": {
+        "symbol": "en",
+        "offset": 2004,
+        "type": "s32"
+      },
+      "n_act": {
+        "symbol": "en",
+        "offset": 2008,
+        "type": "s32"
+      },
+      "n_hp": {
+        "symbol": "en",
+        "offset": 2012,
+        "type": "s32"
+      },
+      "n_max": {
+        "symbol": "en",
+        "offset": 2016,
+        "type": "s32"
+      },
+      "n_type": {
+        "symbol": "en",
+        "offset": 2024,
+        "type": "s32"
+      },
+      "m_char": {
+        "symbol": "en",
+        "offset": 1880,
+        "type": "s32"
+      },
+      "m_type": {
+        "symbol": "en",
+        "offset": 1900,
+        "type": "s32"
+      },
+      "m_timer": {
+        "symbol": "en",
+        "offset": 1908,
+        "type": "s32"
+      },
+      "n_dir": {
+        "symbol": "en",
+        "offset": 1992,
+        "type": "s32"
+      },
+      "n_frame": {
+        "symbol": "en",
+        "offset": 1996,
+        "type": "s32"
+      },
+      "n_state": {
+        "symbol": "en",
+        "offset": 2028,
+        "type": "s32"
+      }
+    }
+  }
+}

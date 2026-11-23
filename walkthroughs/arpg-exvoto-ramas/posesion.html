@@ -1,0 +1,36 @@
+<title>Posesión araña</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Source+Sans+3:wght@400;600;700&display=swap">
+<style>
+/* Layout: una columna para el móvil; GIFs a todo el ancho */
+:root{--bg:#f1ede5;--fg:#2a2420;--muted:#6d625a;--card:#fbf8f2;--wax:#8f6c32;
+ --display:"Cormorant Garamond",Georgia,serif;--body:"Source Sans 3",system-ui,sans-serif}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#1b1715;--fg:#ece4d8;--muted:#a8998b;--card:#24201d;--wax:#d4b37a;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#1b1715;--fg:#ece4d8;--muted:#a8998b;--card:#24201d;--wax:#d4b37a;color-scheme:dark}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:16px;line-height:1.55;
+ padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:24px 48px}
+main{max-width:900px;margin:0 auto;display:flex;flex-direction:column;gap:24px}
+h1,h2{font-family:var(--display);margin:0;line-height:1.15;text-wrap:balance}
+h1{font-size:2.1rem} h2{font-size:1.5rem}
+p{margin:0} .lead{color:var(--muted)}
+.eyebrow{font-size:.75rem;letter-spacing:.08em;text-transform:uppercase;color:var(--wax);font-weight:700}
+.shot{display:flex;flex-direction:column;gap:8px}
+.shot img{width:100%;height:auto;image-rendering:pixelated;border-radius:4px;display:block}
+.ask{background:var(--card);border:2px solid var(--wax);border-radius:6px;padding:16px;display:flex;flex-direction:column;gap:6px}
+</style>
+<main>
+<header style="display:flex;flex-direction:column;gap:8px">
+ <span class="eyebrow">ARPG · aura de la Súper Monja</span>
+ <h1>Posesión araña</h1>
+ <p class="lead">La Monja de cera y el Monaguillo pasando a forma araña: de pie, se tumban, dan unos pasos como araña y se vuelven a levantar (la misma animación al revés). Al lado, la Súper Monja para comparar. Ampliados 4 veces, a su tamaño de juego. Aún no están en la ROM.</p>
+</header>
+<div class="shot"><h2>Ya en el juego</h2><p class="lead">Sacado de la ROM, con la transición nueva (media vuelta y puente hacia atrás) y con sombras. La Súper Monja llega junto a la Monja de cera y el Monaguillo: se echan hacia atrás y corren en araña. Al morir ella se levantan. El Bebé no cambia.</p><img src="arana_exvotos/posesion_rom.gif" alt="Posesión araña en la ROM"></div>
+<div class="shot"><h2>Sombras arregladas</h2><p class="lead">Captura de la ROM, ampliada 4 veces: la Súper Monja y los poseídos en araña ya proyectan sombra, como el héroe.</p><img src="arana_exvotos/sombras_rom.png" alt="Forma araña con sombra en la ROM"></div>
+<div class="shot"><h2>Monja de cera, de frente</h2><img src="arana_exvotos/exvoto_arana_S.gif" alt="Monja de cera pasando a araña de frente"></div>
+<div class="shot"><h2>Monja de cera, en diagonal</h2><img src="arana_exvotos/exvoto_arana_SE.gif" alt="Monja de cera pasando a araña en diagonal"></div>
+<div class="shot"><h2>Monaguillo, de frente</h2><img src="arana_exvotos/monaguillo_arana_S.gif" alt="Monaguillo pasando a araña de frente"></div>
+<div class="shot"><h2>Monaguillo, en diagonal</h2><img src="arana_exvotos/monaguillo_arana_SE.gif" alt="Monaguillo pasando a araña en diagonal"></div>
+<div class="shot"><h2>La pose en grande</h2><p class="lead">Render de Blender del Monaguillo y de la Monja de cera en puente.</p><img src="arana_exvotos/monaguillo_pose_arana_blender.png" alt="Monaguillo en puente"><img src="arana_exvotos/exvoto_pose_arana_blender.png" alt="Monja de cera en puente"></div>
+<div class="shot"><h2>La transición, en las 8 direcciones</h2><p class="lead">Una fila por dirección, de pie a araña.</p><img src="arana_exvotos/exvoto_transicion_hoja_8dir.png" alt="Transición de la Monja de cera"><img src="arana_exvotos/monaguillo_transicion_hoja_8dir.png" alt="Transición del Monaguillo"></div>
+<p class="lead">Fallos que veo: la transición se inclina hacia delante y rueda, no se arquea hacia atrás como un puente de verdad, y a mitad de camino algún fotograma es un borrón. Las dos quedan más bajas y chatas que la Súper Monja, que tiene brazos y cuello alargados.</p>
+</main>

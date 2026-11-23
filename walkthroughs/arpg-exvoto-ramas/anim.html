@@ -1,0 +1,58 @@
+<title>Andar de la Súper Monja</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Source+Sans+3:wght@400;600;700&display=swap">
+<style>
+/* Layout: una columna para el móvil; GIFs a todo el ancho y una ficha por versión */
+:root{--bg:#f1ede5;--fg:#2a2420;--muted:#6d625a;--card:#fbf8f2;--line:#d9cfc0;--wax:#8f6c32;
+ --display:"Cormorant Garamond",Georgia,serif;--body:"Source Sans 3",system-ui,sans-serif}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#1b1715;--fg:#ece4d8;--muted:#a8998b;--card:#24201d;--line:#3a332e;--wax:#d4b37a;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#1b1715;--fg:#ece4d8;--muted:#a8998b;--card:#24201d;--line:#3a332e;--wax:#d4b37a;color-scheme:dark}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:16px;line-height:1.55;
+ padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:24px 48px}
+main{max-width:900px;margin:0 auto;display:flex;flex-direction:column;gap:24px}
+h1,h2{font-family:var(--display);margin:0;line-height:1.15;text-wrap:balance}
+h1{font-size:2.1rem} h2{font-size:1.5rem}
+p{margin:0} .lead{color:var(--muted)}
+.eyebrow{font-size:.75rem;letter-spacing:.08em;text-transform:uppercase;color:var(--wax);font-weight:700}
+.shot{display:flex;flex-direction:column;gap:8px}
+.shot img{width:100%;height:auto;image-rendering:pixelated;border-radius:4px;display:block}
+.cards{display:grid;grid-template-columns:1fr;gap:10px}
+@media (min-width:640px){.cards{grid-template-columns:1fr 1fr 1fr}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:12px 14px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.card h3{margin:0;font-size:1.05rem}
+.ask{background:var(--card);border:2px solid var(--wax);border-radius:6px;padding:16px;display:flex;flex-direction:column;gap:6px}
+</style>
+<main>
+<header style="display:flex;flex-direction:column;gap:8px">
+ <span class="eyebrow">ARPG · Súper Monja · andar</span>
+ <h1>Andar de la Súper Monja</h1>
+ <p class="lead">Tres versiones más exageradas del andar, con el color negro actual. En todos los GIFs, de izquierda a derecha: ACTUAL | A | B | C, ampliadas 4 veces.</p>
+</header>
+
+<div class="cards">
+ <div class="card"><h3>A · Al extremo</h3><p>La pose de ahora llevada lejos: cabeza muy ladeada, cuerpo más doblado desde la cadera, zancada larga y lenta.</p></div>
+ <div class="card"><h3>B · Andar roto</h3><p>Avanza a tirones (paso, parada, paso), arrastra una pierna y la cabeza da un latigazo a destiempo. Se nota sobre todo en movimiento.</p></div>
+ <div class="card"><h3>C · Acecho</h3><p>Muy inclinada hacia delante, cuello estirado, la cara mirando al frente y los brazos adelantados, como si fuera a por ti.</p></div>
+</div>
+
+<div class="shot">
+ <h2>De frente, al ritmo del juego</h2>
+ <img src="anim/sm_anim_S.gif" alt="Actual, A, B y C andando hacia el sur">
+</div>
+<div class="shot">
+ <h2>En diagonal</h2>
+ <img src="anim/sm_anim_SE.gif" alt="Actual, A, B y C andando hacia el sureste">
+</div>
+<div class="shot">
+ <h2>Todos los fotogramas</h2>
+ <p class="lead">Por parejas de filas: actual, A, B y C; en cada pareja, de frente y en diagonal.</p>
+ <img src="anim/sm_anim_hoja.png" alt="Hoja con los 8 fotogramas de cada versión">
+</div>
+
+<p class="lead">El límite es la túnica: los brazos casi no se separan de la silueta, así que lo que más se nota es cómo se dobla el cuerpo y cómo se mueve la cabeza.</p>
+
+<div class="ask">
+ <span class="eyebrow">Una pregunta</span>
+ <p><b>¿Cuál te gusta más: A, B o C? Se pueden mezclar, por ejemplo el acecho de C con los tirones de B.</b></p>
+</div>
+</main>

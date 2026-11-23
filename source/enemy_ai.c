@@ -171,6 +171,18 @@ static void update_animation(Enemy *e, int moved) {
     }
 }
 
+// Super Monja haste: while one prays, the Exvoto family inside her radius walks ARPG_MONJA_HASTE_PCT % faster.
+// Rebuilt every frame in enemy_ai_update (haste_refresh); attacks and cooldowns are not touched. No visual yet
+// (pending a design decision, DESIGN-ARPG).
+// Also the speed of the Exvotos possessed by a Súper Monja (possession_update).
+static uint8_t s_haste[MAX_GAMEPLAY_ENEMIES];
+static const Enemy *s_haste_base;
+static inline fixed haste_speed(const Enemy *e, fixed speed) {
+    int i = (int)(e - s_haste_base);
+    if (i >= 0 && i < MAX_GAMEPLAY_ENEMIES && s_haste[i]) return speed + (speed * ARPG_MONJA_HASTE_PCT) / 100;
+    return speed;
+}
+
 #define VIEW_DIRECT 4                 // e->has_los bits: close, in view and walkable: run straight at the player
 #define VIEW_ENGAGE 8                 //                  charger: within CHARGER_ENGAGE_DIST, in view and walkable
 #define VIEW_SIGHT 16                 //                  Ojo: line of sight (walls and columns cut it) within OJO_SIGHT_RANGE
@@ -197,7 +209,7 @@ static int s_chase_bias_x, s_chase_bias_y;    // v2: lateral offset of the walki
 #endif
 static void chase_step(Enemy *e, Enemy *enemies, int num_enemies, int idx, fixed speed,
                        int wx, int wy, int px, int py, int ground_dist_sq) {
-    speed = burn_slow(e, speed);          // Quemado frena (DESIGN.md 6.12.2)
+    speed = burn_slow(e, haste_speed(e, speed));   // Quemado frena (DESIGN.md 6.12.2); Super Monja acelera
     int target_x = px, target_y = py;
     int direct = (e->has_los & VIEW_DIRECT) && ground_dist_sq <= CHASE_DIRECT_RANGE * CHASE_DIRECT_RANGE;
     if (!direct) {
@@ -247,11 +259,16 @@ static void refresh_view(Enemy *e, int idx, int wx, int wy, int px, int py, int 
 void enemy_exvoto_start_praying(Enemy *e, int kneel, int dir) {
     e->state = ENEMY_STATE_PRAY;
     e->kneel = kneel != 0;
-    e->char_id = e->kneel ? CHAR_EXVOTO_PRAY_KNEEL : CHAR_EXVOTO_PRAY_STAND;
+    e->char_id = exvoto_pose_char(e->type, e->kneel ? EXVOTO_POSE_PRAY_KNEEL : EXVOTO_POSE_PRAY_STAND);
     e->dir = dir;
     e->frame = 0;
     e->anim_timer = 0;
     e->state_timer = 0;
+}
+
+// Slot of the moving pose once an Exvoto-family enemy is up: the Exvoto walk, or the Párroco's own run sheet.
+static inline int exvoto_up_char(const Enemy *e) {
+    return (e->type == ENEMY_TYPE_PARROCO || e->type == ENEMY_TYPE_MONJA) ? enemy_type_char_id(e->type) : CHAR_EXVOTO;
 }
 
 // Wakes one praying Exvoto: the kneeling ones rise first (still), the standing ones walk at once.
@@ -261,10 +278,10 @@ static void exvoto_wake_one(Enemy *e) {
     if (e->kneel) {
         e->state = ENEMY_STATE_RISE;
         e->state_timer = EXVOTO_RISE_FRAMES;
-        e->char_id = CHAR_EXVOTO_STAND_UP;
+        e->char_id = exvoto_pose_char(e->type, EXVOTO_POSE_STAND_UP);
     } else {
         e->state = ENEMY_STATE_CHASE;
-        e->char_id = CHAR_EXVOTO;
+        e->char_id = exvoto_up_char(e);
     }
 }
 
@@ -331,7 +348,7 @@ static int exvoto_dodge(Enemy *e, int wx, int wy, int ground_dist_sq, fixed spee
         }
         // Sidestep: perpendicular to the line, towards the Exvoto's own side.
         int s = EX_SIDE(e);
-        int sp = speed * EXVOTO_DODGE_SPEED_NUM / 2;
+        int sp = haste_speed(e, speed) * EXVOTO_DODGE_SPEED_NUM / 2;
         fixed vx = (fixed)((gy * s * sp) >> 8);
         fixed vy = (fixed)((-gx * s * sp) >> 9);   // ground y -> world y
         int moved = move_with_slide(&e->x, &e->y, vx, vy);
@@ -375,8 +392,49 @@ static void exvoto_weave(const Enemy *e, int idx, int dx, int dy) {
 }
 #endif
 
+// Bodyguard (DESIGN-ARPG s5, Monaguillo and Parroco): while the hero charges the Ray, the guard runs to the point of the
+// line hero -> nearest ally (the Monja de cera first) that is ARPG_GUARD_DIST ground px from the hero, and waits there
+// facing him. Returns 1 when it spent the frame on that (no walk, no bite); 0 when there is nothing to guard.
+static int bodyguard_step(Enemy *e, Enemy *enemies, int num_enemies, int idx, int px, int py, fixed speed) {
+    if (!weapons_aim_charging()) return 0;
+    if (num_enemies > MAX_GAMEPLAY_ENEMIES) num_enemies = MAX_GAMEPLAY_ENEMIES;
+    int best = -1, best_d = 0, best_monja = 0;
+    for (int j = 0; j < num_enemies; j++) {
+        const Enemy *o = &enemies[j];
+        if (j == idx || !o->active || o->hp <= 0 || g_enemy_ally[j]) continue;
+        if (o->type == ENEMY_TYPE_PARROCO || o->type == ENEMY_TYPE_MONAGUILLO) continue;      // other bodyguards are not guarded
+        if (o->state == ENEMY_STATE_DORMANT || o->state == ENEMY_STATE_DEAD || o->state == ENEMY_STATE_EMERGE) continue;
+        const int ox = TO_INT(o->x) - px, oy = TO_INT(o->y) - py;
+        const int d = ox * ox + GROUND_DY2(oy);
+        const int mj = o->type == ENEMY_TYPE_MONJA;
+        if (best < 0 || (mj && !best_monja) || (mj == best_monja && d < best_d)) { best = j; best_d = d; best_monja = mj; }
+    }
+    if (best < 0) return 0;
+    const int tx = TO_INT(enemies[best].x) - px, ty = TO_INT(enemies[best].y) - py;
+    const int len = (int)int_sqrt((uint32_t)best_d);
+    if (len < 2 * 8) return 0;
+    int gd = len / 2 < ARPG_GUARD_DIST ? len / 2 : ARPG_GUARD_DIST;
+    const int gx = px + div32(tx * gd, len), gy = py + div32(ty * gd, len);     // the guard post on the line
+    const int wx = TO_INT(e->x), wy = TO_INT(e->y);
+    const int ex = gx - wx, ey = gy - wy;
+    const int d2 = ex * ex + GROUND_DY2(ey);
+    e->dir = dir_from_vector(TO_FIXED(px) - e->x, TO_FIXED(py) - e->y);
+    if (d2 <= 3 * 3) { update_animation(e, 0); return 1; }
+    int ux, uy;
+    if (!aim_vector(wx, wy, gx, gy, &ux, &uy)) { update_animation(e, 0); return 1; }
+    const int sp = (int)burn_slow(e, haste_speed(e, speed)) * ARPG_GUARD_SPEED_X;
+    fixed vx = (fixed)((ux * sp) >> 8);
+    fixed vy = (fixed)((uy * sp) >> 8);
+    if (d2 < 256 && vx * vx + 4 * vy * vy > d2 * 65536) { vx = TO_FIXED(ex); vy = TO_FIXED(ey); }                   // do not overshoot the post
+    const int moved = move_with_slide(&e->x, &e->y, vx, vy);
+    e->dir = dir_from_vector(vx, vy * 2);
+    update_animation(e, moved);
+    return 1;
+}
+
 static void update_exvoto(Enemy *e, Enemy *enemies, int num_enemies, int idx,
                           fixed player_x, fixed player_y, const EnemyTuning *tuning) {
+    if (e->type == ENEMY_TYPE_PARROCO && e->gesture > 0) e->gesture--;      // wax-white flash timer (set when the Ray breaks on it)
     if (e->state == ENEMY_STATE_EMERGE) {
         e->dir = dir_from_vector(player_x - e->x, player_y - e->y);
         if (--e->state_timer <= 0) {
@@ -431,7 +489,7 @@ static void update_exvoto(Enemy *e, Enemy *enemies, int num_enemies, int idx,
             }
             if (--e->state_timer <= 0) {
                 e->state = ENEMY_STATE_CHASE;
-                e->char_id = CHAR_EXVOTO;
+                e->char_id = exvoto_up_char(e);
                 e->frame = 0;
                 e->anim_timer = 0;
             }
@@ -460,27 +518,16 @@ static void update_exvoto(Enemy *e, Enemy *enemies, int num_enemies, int idx,
             if (ground_dist_sq <= melee_range * melee_range &&
                 los_has_line_of_sight(wx, wy, px, py, 0) && line_is_walkable(wx, wy, px, py)) {
                 player_take_damage(&g_player_state, arpg_enemy_damage(e->type));
-#if ENCOUNTERS_PROTO
-                // Párroco tier (v3): besides hitting harder, its blow shoves the hero back a little (ground metric 2:1).
-                if (e->type == ENEMY_TYPE_PARROCO) {
-                    const int pdx = px - wx, pdy = py - wy;
-                    fixed pvx = 0, pvy = 0;
-                    if (pdx != 0 || pdy != 0) {
-                        int m = int_sqrt((uint32_t)(pdx * pdx + GROUND_DY2(pdy)));
-                        if (m > 0) {
-                            pvx = (fixed)((pdx * ARPG_DMG_PARROCO_PUSH) / m);
-                            pvy = (fixed)(((pdy * ARPG_DMG_PARROCO_PUSH) / m) >> GROUND_Y_SHIFT);
-                        }
-                    }
-                    player_apply_push(pvx, pvy, ARPG_DMG_PARROCO_PUSH_FRAMES);
-                }
-#endif
                 e->state = ENEMY_STATE_ATTACK;
                 e->state_timer = tuning->attack_cooldown;
                 e->dir = dir_from_vector(player_x - e->x, player_y - e->y);
                 update_animation(e, 0);
                 break;
             }
+
+            // Bodyguards (Monaguillo, Párroco): while the hero charges the Ray they run to stand in the line of fire.
+            if ((e->type == ENEMY_TYPE_PARROCO || e->type == ENEMY_TYPE_MONAGUILLO) &&
+                bodyguard_step(e, enemies, num_enemies, idx, px, py, tuning->speed)) break;
 
             refresh_view(e, idx, wx, wy, px, py, ground_dist_sq, CHASE_DIRECT_RANGE);
 #if ENCOUNTERS_PROTO
@@ -824,7 +871,7 @@ static void ojo_reposition(Enemy *e, Enemy *enemies, int num_enemies, int idx, i
         update_animation(e, 0);
         return;
     }
-    fixed speed = burn_slow(e, (tuning->speed * OJO_REPOSITION_SPEED_PCT) / 100);
+    fixed speed = burn_slow(e, haste_speed(e, (tuning->speed * OJO_REPOSITION_SPEED_PCT) / 100));
     fixed vx = (fixed)div32(tdx * (int32_t)speed, tdist);
     fixed vy = (fixed)div32(tdy * (int32_t)speed, tdist);
     s_sep_skip_guard = 1;
@@ -1054,13 +1101,26 @@ static void update_guard(Enemy *e, Enemy *enemies, int num_enemies, int idx, fix
 // ---------------------------------------------------------------------------
 #if ENCOUNTERS_PROTO
 static int monja_heals_ally(const Enemy *m, const Enemy *o) {
-    if (!o->active || o->hp <= 0 || o->hp >= o->max_hp) return 0;
+    if (!o->active || o->hp <= 0) return 0;
     if (o == m) return 0;                                     // she never heals herself
     if (o->type != ENEMY_TYPE_BEBE && o->type != ENEMY_TYPE_EXVOTO && o->type != ENEMY_TYPE_PARROCO &&
-        o->type != ENEMY_TYPE_MONAGUILLO) return 0;            // only the Exvoto family
+        o->type != ENEMY_TYPE_MONAGUILLO && o->type != ENEMY_TYPE_MONJA) return 0;   // only the Exvoto family
     int dx = TO_INT(o->x - m->x);
     int dy = TO_INT(o->y - m->y);
     return dx * dx + GROUND_DY2(dy) <= ARPG_MONJA_PRAY_RADIUS * ARPG_MONJA_PRAY_RADIUS;
+}
+
+// Marks (s_haste) every ally inside the radius of a praying Super Monja. Called once per frame.
+static void haste_refresh(Enemy *enemies, int num_enemies) {
+    s_haste_base = enemies;
+    if (num_enemies > MAX_GAMEPLAY_ENEMIES) num_enemies = MAX_GAMEPLAY_ENEMIES;
+    memset(s_haste, 0, sizeof(s_haste));
+    for (int i = 0; i < num_enemies; i++) {
+        const Enemy *m = &enemies[i];
+        if (!m->active || m->hp <= 0 || m->type != ENEMY_TYPE_MONJA || m->state != ENEMY_STATE_PRAY || g_enemy_ally[i]) continue;
+        for (int j = 0; j < num_enemies; j++)
+            if (!g_enemy_ally[j] && monja_heals_ally(m, &enemies[j])) s_haste[j] = 1;
+    }
 }
 
 static void monja_pray(Enemy *e, Enemy *enemies, int num_enemies) {
@@ -1075,7 +1135,7 @@ static void monja_pray(Enemy *e, Enemy *enemies, int num_enemies) {
     int healed_any = 0;
     for (int j = 0; j < num_enemies; j++) {
         Enemy *o = &enemies[j];
-        if (!monja_heals_ally(e, o)) continue;
+        if (!monja_heals_ally(e, o) || o->hp >= o->max_hp) continue;
         int heal = o->max_hp * ARPG_MONJA_HEAL_PCT / 100;
         if (heal < 1) heal = 1;
         o->hp += heal;
@@ -1086,11 +1146,236 @@ static void monja_pray(Enemy *e, Enemy *enemies, int num_enemies) {
     if (healed_any) sfx_play(SND_MONJA_HEAL, TO_INT(e->x));
 }
 
+// One step of the Super Monja's movement: the "monjarana" scuttle. Short, very fast bursts (frames 0-5 of the walk
+// sheet spread over the burst, no skating) toward the goal (the hero's nav field when approaching, straight away from
+// him when fleeing), each one deflected 45-90 degrees alternating sides (zigzag, 1 in ARPG_MONJA_BACKSTEP_ONE_IN a
+// short sideways step back), separated by dead stops on the pause frames (6/7). A burst that hits a wall is cut.
+// Per-enemy state lives in fields the Monja does not otherwise use: beam_len = phase (0 burst, 1 pause), gesture =
+// frames left in the phase, beam_mx = burst length, aim_dir_x/y = burst direction (8.8 unit, ground metric),
+// beam_ux = next deflection side. monja_scuttle_reset() starts it from a pause of 0 frames.
+static void monja_scuttle_reset(Enemy *e) {
+    e->beam_len = 1;
+    e->gesture = 0;
+    e->beam_ux = ((rng_next() >> 16) & 1u) ? 1 : -1;
+    e->beam_my = 0;                                           // Super Monja mode: 0 scuttle, 1 warn, 2 charge, 3 recover
+    e->beam_uy = rng_range(ARPG_SMONJA_CHARGE_CD_MIN, ARPG_SMONJA_CHARGE_CD_MAX);   // frames to the next charge
+    e->kneel = 0;                                             // 1 = kiting (fast escape bursts, no pauses)
+    e->charge_hit = 0;
+}
+
+static void monja_walk(Enemy *e, Enemy *enemies, int num_enemies, int idx, int wx, int wy, int px, int py,
+                       int walk, fixed speed) {
+    (void)speed;
+    if (e->beam_len == 1) {                                   // pause (or about to start a burst)
+        if (e->gesture > 0) {
+            e->gesture--;
+            e->frame = 6 + ((e->gesture & 2) ? 1 : 0);
+            e->anim_timer = 0;
+            return;
+        }
+        // New burst: aim at the goal, then deflect.
+        int tx = px, ty = py;
+        if (walk == 0) {                                      // orbit: tangent to the circle around the hero (ground metric)
+            tx = wx - ((py - wy) * 2) * e->strafe_dir;
+            ty = wy + ((px - wx) * e->strafe_dir) / 2;
+        } else if (walk > 0) {
+            int sx, sy;
+            if (nav_next_step(wx, wy, &sx, &sy)) { tx = sx; ty = sy; }
+        } else {
+            tx = wx - (px - wx);
+            ty = wy - (py - wy);
+        }
+        int ux, uy;
+        if (!aim_vector(wx, wy, tx, ty, &ux, &uy)) { ux = 0; uy = 256 / 2; }
+        static const int16_t k_cos[4] = { 222, 181, 128, 66 };     // 30, 45, 60, 75 degrees (8.8)
+        static const int16_t k_sin[4] = { 128, 181, 222, 247 };
+        int ci = (int)((rng_next() >> 16) & 3u);   // high bits: the LCG low bits cycle
+        int c = k_cos[ci], sn = k_sin[ci];
+        int len = rng_range(ARPG_MONJA_BURST_MIN, ARPG_MONJA_BURST_MAX);
+        if (rng_range(0, ARPG_MONJA_BACKSTEP_ONE_IN - 1) == 0) {   // small sideways step back
+            c = -181; sn = 181;
+            len = ARPG_MONJA_BURST_MIN;
+        }
+        int side = e->beam_ux;
+        int gy = uy * 2;                                       // ground-space vector
+        int rx = (ux * c - side * sn * gy) >> 8;
+        int ry = (side * sn * ux + c * gy) >> 8;               // still ground-space
+        e->aim_dir_x = rx;
+        e->aim_dir_y = ry / 2;                                 // back to the (dx, dy) world convention
+        e->beam_ux = -side;
+        e->beam_mx = len;
+        e->gesture = len;
+        e->beam_len = 0;
+    }
+    // Burst frame: fast, direction fixed for the whole burst.
+    fixed spd = burn_slow(e, haste_speed(e, e->kneel ? ARPG_SMONJA_KITE_SPEED : ARPG_MONJA_BURST_SPEED));
+    fixed vx = (fixed)((e->aim_dir_x * (int32_t)spd) >> 8);
+    fixed vy = (fixed)((e->aim_dir_y * (int32_t)spd) >> 8);
+    int moved = move_with_slide(&e->x, &e->y, vx, vy);
+    e->dir = dir_from_vector(vx, vy * 2);
+    int elapsed = e->beam_mx - e->gesture;                     // 0 .. len-1
+    e->frame = div32(elapsed * 6, e->beam_mx);                 // frames 0-5 spread over the burst
+    e->anim_timer = 0;
+    (void)enemies; (void)num_enemies; (void)idx;
+    if (!moved || --e->gesture <= 0) {                         // blocked by a wall, or the burst is over: stop dead
+        e->beam_len = 1;
+        e->gesture = e->kneel ? 0 : rng_range(ARPG_MONJA_PAUSE_MIN, ARPG_MONJA_PAUSE_MAX);
+        e->frame = 6;
+    }
+}
+
+// Where she goes when she has nothing else to do: the prayer (ARPG_MONJA_PRAYS) or the scuttling approach.
+static void monja_rest(Enemy *e) {
+    e->state_timer = 0;
+    e->frame = 0; e->anim_timer = 0;
+#if ARPG_MONJA_PRAYS
+    e->state = ENEMY_STATE_PRAY;
+    e->char_id = exvoto_pose_char(e->type, EXVOTO_POSE_PRAY_STAND);
+#else
+    e->state = ENEMY_STATE_POSITION;
+    if (e->strafe_dir == 0) e->strafe_dir = 1;
+    e->char_id = enemy_type_char_id(ENEMY_TYPE_MONJA);
+    monja_scuttle_reset(e);
+#endif
+}
+
+#if !ARPG_MONJA_PRAYS
+// Super Monja (DESIGN-ARPG s5): circles the hero at mid distance with the scuttle, kites when he gets to punching
+// range, and every few seconds warns (still, trembling), charges in a straight line and stops (vulnerable).
+// Mode in beam_my (0 scuttle, 1 warn, 2 charge, 3 recover, 4 bounce), mode clock in state_timer, charge direction in
+// aim_dir_x/y. Moving backwards facing the hero (bounce, kite) plays the walk in reverse so she does not skate.
+#define SM_SCUTTLE 0
+#define SM_WARN 1
+#define SM_CHARGE 2
+#define SM_RECOVER 3
+#define SM_BOUNCE 4
+
+// One step straight along the unit vector (ux, uy) (8.8, ground metric) at `speed`, facing the hero, walk played backwards.
+static int smonja_back_step(Enemy *e, int ux, int uy, int speed, fixed player_x, fixed player_y) {
+    fixed vx = (fixed)((ux * speed) >> 8);
+    fixed vy = (fixed)((uy * speed) >> 8);
+    int moved = move_with_slide(&e->x, &e->y, vx, vy);
+    e->dir = dir_from_vector(player_x - e->x, player_y - e->y);
+    e->anim_timer++;
+    e->frame = 5 - ((e->anim_timer / 2) % 6);
+    return moved;
+}
+// The Super Monja is the only Exvoto that dodges the Glifo: while a glifo has not detonated yet and she is inside its
+// ellipse (or about to be), she dashes outwards with a zigzag until she is clear. Cancels any warn / charge in progress.
+static int smonja_glifo_dodge(Enemy *e, int wx, int wy, fixed player_x, fixed player_y) {
+    (void)player_x; (void)player_y;
+    const int side = e->strafe_dir >= 0 ? 1 : -1;
+    int ux, uy;
+    const int fl = glifo_flee_dir(wx, wy, ARPG_SMONJA_GLIFO_MARGIN, ((e->anim_timer >> 3) & 1) ? -side : side, &ux, &uy);
+    if (!fl) return 0;
+    if (fl == 2) {                                           // the crack has just opened under her: a stop dead, then she runs
+        if (e->beam_my == SM_WARN && e->knock_vx) { e->x -= TO_FIXED(e->knock_vx); e->knock_vx = 0; }
+        e->beam_my = SM_SCUTTLE;
+        e->frame = 6; e->anim_timer = 0;
+        return 1;
+    }
+    if (e->beam_my == SM_WARN && e->knock_vx) { e->x -= TO_FIXED(e->knock_vx); e->knock_vx = 0; }   // undo the warning shake
+    e->beam_my = SM_SCUTTLE;
+    e->kneel = 0;
+    fixed vx = (fixed)((ux * ARPG_SMONJA_GLIFO_SPEED) >> 8);
+    fixed vy = (fixed)((uy * ARPG_SMONJA_GLIFO_SPEED) >> 8);
+    move_with_slide(&e->x, &e->y, vx, vy);
+    e->dir = dir_from_vector(vx, vy * 2);
+    e->anim_timer++;
+    e->frame = (e->anim_timer / 2) % 6;                       // the walk, sped up
+    return 1;
+}
+static void smonja_update(Enemy *e, Enemy *enemies, int num_enemies, int idx, int wx, int wy, int px, int py,
+                          int ground_dist_sq, fixed player_x, fixed player_y) {
+    switch (e->beam_my) {
+        case SM_WARN: {
+            e->dir = dir_from_vector(player_x - e->x, player_y - e->y);
+            e->frame = 6; e->anim_timer = 0;
+            int t = ARPG_SMONJA_WARN_FRAMES - e->state_timer;
+            if ((t & 1) == 0) {                               // 1 px shake of the sprite position, +1 / -1 every 2 frames
+                int off = (t & 2) ? -1 : 1;
+                e->x += TO_FIXED(off - e->knock_vx);
+                e->knock_vx = off;
+            }
+            if (--e->state_timer <= 0) {
+                e->x -= TO_FIXED(e->knock_vx);                // back to the true position
+                e->knock_vx = 0;
+                int ux, uy;
+                if (!aim_vector(wx, wy, px, py, &ux, &uy)) { ux = 0; uy = 128; }
+                e->aim_dir_x = ux; e->aim_dir_y = uy;        // where the hero was when the charge began
+                e->beam_my = SM_CHARGE;
+                e->state_timer = ARPG_SMONJA_CHARGE_FRAMES;
+                e->charge_hit = 0;
+                e->frame = 0;
+            }
+            return;
+        }
+        case SM_CHARGE: {
+            fixed vx = (fixed)((e->aim_dir_x * ARPG_SMONJA_CHARGE_SPEED) >> 8);
+            fixed vy = (fixed)((e->aim_dir_y * ARPG_SMONJA_CHARGE_SPEED) >> 8);
+            int moved = move_with_slide(&e->x, &e->y, vx, vy);
+            e->dir = dir_from_vector(vx, vy * 2);
+            e->frame = ((ARPG_SMONJA_CHARGE_FRAMES - e->state_timer) / 2) % 6;   // the walk, sped up (frames 0-5)
+            e->anim_timer = 0;
+            int hit = ground_dist_sq <= ARPG_SMONJA_HIT_RADIUS * ARPG_SMONJA_HIT_RADIUS;
+            if (hit && !e->charge_hit) {
+                e->charge_hit = 1;                            // the headbutt: one hit per charge, and she stops dead
+                player_take_damage(&g_player_state, ARPG_SMONJA_CHARGE_DAMAGE);
+            }
+            if (hit || !moved || --e->state_timer <= 0) {
+                e->beam_my = SM_RECOVER;
+                e->state_timer = ARPG_SMONJA_RECOVER_FRAMES;
+                e->frame = 6;
+            }
+            return;
+        }
+        case SM_RECOVER:
+            e->frame = 6; e->anim_timer = 0;
+            if (--e->state_timer <= 0) {
+                e->beam_my = SM_BOUNCE;                       // after the short pause: straight back, away from the hero
+                e->state_timer = ARPG_SMONJA_BOUNCE_FRAMES;
+            }
+            return;
+        case SM_BOUNCE: {
+            smonja_back_step(e, -e->aim_dir_x, -e->aim_dir_y, ARPG_SMONJA_BOUNCE_SPEED, player_x, player_y);
+            if (ground_dist_sq >= ARPG_SMONJA_BOUNCE_DIST * ARPG_SMONJA_BOUNCE_DIST || --e->state_timer <= 0) {
+                int side = -e->strafe_dir;
+                monja_scuttle_reset(e);                       // new cooldown, back to circling
+                e->strafe_dir = side;
+            }
+            return;
+        }
+        default: break;
+    }
+    // Scuttle: countdown to the next charge (only starts when the hero is within reach).
+    if (e->beam_uy > 0) e->beam_uy--;
+    if (e->beam_uy <= 0 && !e->kneel && ground_dist_sq <= ARPG_SMONJA_CHARGE_MAX_DIST * ARPG_SMONJA_CHARGE_MAX_DIST) {
+        e->beam_my = SM_WARN;
+        e->state_timer = ARPG_SMONJA_WARN_FRAMES;
+        e->knock_vx = 0;
+        return;
+    }
+    // Kite: at punching range she backs off fast, facing the hero, without pauses, until she is out of reach.
+    if (ground_dist_sq <= ARPG_SMONJA_KITE_DIST * ARPG_SMONJA_KITE_DIST) e->kneel = 1;
+    else if (ground_dist_sq >= ARPG_SMONJA_RING_NEAR * ARPG_SMONJA_RING_NEAR) e->kneel = 0;
+    if (e->kneel) {
+        int ux, uy;
+        if (!aim_vector(px, py, wx, wy, &ux, &uy)) { ux = 0; uy = 128; }
+        smonja_back_step(e, ux, uy, ARPG_SMONJA_KITE_SPEED, player_x, player_y);
+        e->beam_len = 1; e->gesture = 0;                      // the next scuttle burst starts at once
+        return;
+    }
+    int walk = ground_dist_sq < ARPG_SMONJA_RING_NEAR * ARPG_SMONJA_RING_NEAR ? -1
+             : ground_dist_sq > ARPG_SMONJA_RING_FAR * ARPG_SMONJA_RING_FAR ? 1 : 0;
+    monja_walk(e, enemies, num_enemies, idx, wx, wy, px, py, walk, 0);
+}
+#endif
+
 static void update_monja(Enemy *e, Enemy *enemies, int num_enemies, int idx,
                          fixed player_x, fixed player_y, const EnemyTuning *tuning) {
     if (e->state == ENEMY_STATE_EMERGE) {
         e->dir = dir_from_vector(player_x - e->x, player_y - e->y);
-        if (--e->state_timer <= 0) { e->state = ENEMY_STATE_PRAY; e->state_timer = 0; }
+        if (--e->state_timer <= 0) monja_rest(e);
         return;
     }
     if (g_player_state.is_dead) { update_animation(e, 0); return; }
@@ -1106,6 +1391,7 @@ static void update_monja(Enemy *e, Enemy *enemies, int num_enemies, int idx,
         return;
     }
 
+#if ARPG_MONJA_PRAYS
     // Hurt or with the hero right on top of her: she drops the prayer and fights back like a weak Exvoto.
     if (e->state != ENEMY_STATE_ATTACK && e->state != ENEMY_STATE_WOBBLE &&
         (e->hit_timer > 0 || ground_dist_sq <= (tuning->preferred_dist_max + 8) * (tuning->preferred_dist_max + 8))) {
@@ -1113,15 +1399,50 @@ static void update_monja(Enemy *e, Enemy *enemies, int num_enemies, int idx,
         e->state_timer = tuning->attack_cooldown;
         e->char_id = enemy_type_char_id(ENEMY_TYPE_MONJA);
     }
+#endif
 
-    switch (e->state) {
-        case ENEMY_STATE_WOBBLE:
-            if (--e->state_timer <= 0) {
-                e->state = ENEMY_STATE_PRAY;
-                e->state_timer = 0;
-                e->char_id = CHAR_EXVOTO_PRAY_STAND;
+#if !ARPG_MONJA_PRAYS
+    // No prayer (see smonja_update). The heal / haste / placement code stays, disconnected, for another enemy.
+    if (e->state == ENEMY_STATE_PRAY || e->state == ENEMY_STATE_DORMANT) monja_rest(e);
+    if (e->state == ENEMY_STATE_POSITION && smonja_glifo_dodge(e, wx, wy, player_x, player_y)) return;
+    if (e->state == ENEMY_STATE_POSITION) {
+        smonja_update(e, enemies, num_enemies, idx, wx, wy, px, py, ground_dist_sq, player_x, player_y);
+        return;
+    }
+#else
+    // Placement: she keeps a middle distance behind her group. Too close -> walks away; too far -> walks closer;
+    // in between (hysteresis) she stops and prays. Only while not brawling or reeling.
+    if (e->state == ENEMY_STATE_PRAY || e->state == ENEMY_STATE_POSITION) {
+        int walk = 0;                                         // -1 = away from the hero, +1 = towards him
+        if (e->state == ENEMY_STATE_POSITION) {
+            walk = e->strafe_dir;
+            if (walk < 0 && ground_dist_sq >= ARPG_MONJA_KEEP_FLEE_STOP * ARPG_MONJA_KEEP_FLEE_STOP) walk = 0;
+            if (walk > 0 && ground_dist_sq <= ARPG_MONJA_KEEP_FAR_STOP * ARPG_MONJA_KEEP_FAR_STOP) walk = 0;
+        } else if (ground_dist_sq < ARPG_MONJA_KEEP_FLEE * ARPG_MONJA_KEEP_FLEE) walk = -1;
+        else if (ground_dist_sq > ARPG_MONJA_KEEP_FAR * ARPG_MONJA_KEEP_FAR) walk = 1;
+        if (walk != 0) {
+            if (e->state != ENEMY_STATE_POSITION) {
+                e->state = ENEMY_STATE_POSITION;
+                e->char_id = enemy_type_char_id(ENEMY_TYPE_MONJA);
+                monja_scuttle_reset(e);
                 e->frame = 0; e->anim_timer = 0;
             }
+            e->strafe_dir = walk;
+            monja_walk(e, enemies, num_enemies, idx, wx, wy, px, py, walk, tuning->speed);
+            return;
+        }
+        if (e->state == ENEMY_STATE_POSITION) {               // arrived: back to the prayer
+            e->state = ENEMY_STATE_PRAY;
+            e->state_timer = 0;
+            e->char_id = exvoto_pose_char(e->type, EXVOTO_POSE_PRAY_STAND);
+            e->frame = 0; e->anim_timer = 0;
+        }
+    }
+
+#endif
+    switch (e->state) {
+        case ENEMY_STATE_WOBBLE:
+            if (--e->state_timer <= 0) monja_rest(e);
             break;
         case ENEMY_STATE_ATTACK: {
             e->dir = dir_from_vector(player_x - e->x, player_y - e->y);
@@ -1130,10 +1451,7 @@ static void update_monja(Enemy *e, Enemy *enemies, int num_enemies, int idx,
             if (--e->state_timer <= 0) {
                 // Back to praying (the support pose) if she is safe again, otherwise keep brawling.
                 if (ground_dist_sq > (tuning->preferred_dist_max + 8) * (tuning->preferred_dist_max + 8) && e->hit_timer == 0) {
-                    e->state = ENEMY_STATE_PRAY;
-                    e->state_timer = 0;
-                    e->char_id = CHAR_EXVOTO_PRAY_STAND;
-                    e->frame = 0; e->anim_timer = 0;
+                    monja_rest(e);
                 } else {
                     e->state_timer = tuning->attack_cooldown;
                 }
@@ -1143,8 +1461,12 @@ static void update_monja(Enemy *e, Enemy *enemies, int num_enemies, int idx,
         }
         case ENEMY_STATE_PRAY:
         default: {
+#if !ARPG_MONJA_PRAYS
+            monja_rest(e);
+            break;
+#endif
             e->state = ENEMY_STATE_PRAY;
-            e->char_id = CHAR_EXVOTO_PRAY_STAND;
+            e->char_id = exvoto_pose_char(e->type, EXVOTO_POSE_PRAY_STAND);
             e->dir = dir_from_vector(player_x - e->x, player_y - e->y);   // she faces the hero while praying
             monja_pray(e, enemies, num_enemies);
             break;
@@ -1365,10 +1687,119 @@ static void update_abanderado(Enemy *e, Enemy *enemies, int num_enemies, int idx
     update_animation(e, moved);
 }
 
+// ---- Possession by the Súper Monja's aura (DESIGN-ARPG s5, "Aura de posesión") ---------------------------------
+// The Exvoto (Monja de cera) and the Monaguillo awake inside the radius of a living Súper Monja turn into spiders: the
+// transition clip (still, ~0.4 s), then the scuttling walk with haste (s_haste). Outside the radius (+ hysteresis) or
+// without a Súper Monja they get up with the transition played backwards. They keep their own AI (the Exvoto walks and
+// bites, never prays; the Monaguillo as ever). No extra Enemy fields: the phase is the clip in char_id (spider walk /
+// transition), the transition's frame is `frame` and `kneel` (unused once awake) = 1 while it plays backwards (getting up).
+static inline int possess_candidate(const Enemy *e) {
+    return e->active && (e->type == ENEMY_TYPE_EXVOTO || e->type == ENEMY_TYPE_MONAGUILLO);
+}
+static inline int possess_walk_char(const Enemy *e) {
+    return e->type == ENEMY_TYPE_MONAGUILLO ? CHAR_MONAGUILLO_ARANA_WALK : CHAR_EXVOTO_ARANA_WALK;
+}
+static inline int possess_trans_char(const Enemy *e) {
+    return e->type == ENEMY_TYPE_MONAGUILLO ? CHAR_MONAGUILLO_ARANA_TRANS : CHAR_EXVOTO_ARANA_TRANS;
+}
+// 0 = normal, 1 = transition playing, 2 = spider walk.
+static inline int possess_phase(const Enemy *e) {
+    if (!possess_candidate(e)) return 0;
+    if (e->char_id == possess_trans_char(e)) return 1;
+    if (e->char_id == possess_walk_char(e)) return 2;
+    return 0;
+}
+static inline int possess_awake(const Enemy *e) {
+    return e->state == ENEMY_STATE_CHASE || e->state == ENEMY_STATE_ATTACK || e->state == ENEMY_STATE_WOBBLE;
+}
+static void possess_release(Enemy *e) {
+    e->char_id = enemy_type_char_id(e->type);
+    e->frame = 0;
+    e->anim_timer = 0;
+    e->kneel = 0;
+}
+
+// Once a frame, before the AI: starts, reverses and ends the possessions and marks the hasted ones (s_haste).
+static void possession_update(Enemy *enemies, int num_enemies) {
+    if (num_enemies > MAX_GAMEPLAY_ENEMIES) num_enemies = MAX_GAMEPLAY_ENEMIES;
+#if !ENCOUNTERS_PROTO
+    s_haste_base = enemies;
+    memset(s_haste, 0, sizeof(s_haste));
+#endif
+    if (!g_arana_ok) return;
+    uint8_t monja[MAX_GAMEPLAY_ENEMIES];
+    int nm = 0;
+    for (int i = 0; i < num_enemies; i++) {
+        const Enemy *m = &enemies[i];
+        if (m->active && m->type == ENEMY_TYPE_MONJA && m->hp > 0 && !g_enemy_ally[i] &&
+            m->state != ENEMY_STATE_DEAD && m->state != ENEMY_STATE_DORMANT && m->state != ENEMY_STATE_SUSPENDED &&
+            m->state != ENEMY_STATE_REMATE)
+            monja[nm++] = (uint8_t)i;
+    }
+    for (int i = 0; i < num_enemies; i++) {
+        Enemy *e = &enemies[i];
+        if (!possess_candidate(e) || g_enemy_ally[i]) continue;
+        const int ph = possess_phase(e);
+        if (e->state == ENEMY_STATE_DEAD) continue;               // it dies in the form it had
+        if (!possess_awake(e)) {                                  // praying, guarding, finisher, suspended...: back to normal at once
+            if (ph) possess_release(e);
+            continue;
+        }
+        int d2 = 0x7FFFFFFF;
+        for (int k = 0; k < nm; k++) {
+            const int dx = TO_INT(e->x - enemies[monja[k]].x);
+            const int dy = TO_INT(e->y - enemies[monja[k]].y);
+            const int q = dx * dx + GROUND_DY2(dy);
+            if (q < d2) d2 = q;
+        }
+        const int in = d2 <= ARPG_SMONJA_POSSESS_RADIUS * ARPG_SMONJA_POSSESS_RADIUS;
+        const int out = d2 > (ARPG_SMONJA_POSSESS_RADIUS + ARPG_SMONJA_POSSESS_HYST) * (ARPG_SMONJA_POSSESS_RADIUS + ARPG_SMONJA_POSSESS_HYST);
+        if (ph == 0) {
+            if (in && e->char_id == enemy_type_char_id(e->type)) {   // lie down
+                e->char_id = possess_trans_char(e);
+                e->frame = 0; e->anim_timer = 0; e->kneel = 0;
+            }
+        } else if (ph == 2) {
+            if (out) {                                              // get up: the transition backwards from its last frame
+                e->char_id = possess_trans_char(e);
+                e->frame = PLAYER_NUM_FRAMES - 1; e->anim_timer = 0; e->kneel = 1;
+            } else {
+                s_haste[i] = 1;
+            }
+        } else {                                                    // mid-transition: change of mind, same frame
+            if (!e->kneel && out) e->kneel = 1;
+            else if (e->kneel && in) e->kneel = 0;
+        }
+    }
+}
+
+// One frame of the transition clip, still (forwards = lying down, backwards = getting up). Returns 1 while it plays.
+static int possession_step(Enemy *e) {
+    if (e->state == ENEMY_STATE_WOBBLE) return 0;                // reeling: update_exvoto counts it down; the frame holds
+    int period = g_characters[e->char_id].anim_period;
+    if (period <= 0) period = 3;
+    if (++e->anim_timer < period) return 1;
+    e->anim_timer = 0;
+    if (e->kneel) {
+        if (e->frame > 0) e->frame--;
+        else possess_release(e);                                 // up again: the normal walk
+    } else if (e->frame < PLAYER_NUM_FRAMES - 1) {
+        e->frame++;
+    } else {
+        e->char_id = possess_walk_char(e);                       // spider: the scuttling walk
+        e->frame = 0;
+    }
+    return 1;
+}
+
 ITCM_CODE void enemy_ai_update(Enemy *enemies, int num_enemies, fixed player_x, fixed player_y) {
     if (!enemies || num_enemies <= 0) return;
 
     s_ai_tick++;
+#if ENCOUNTERS_PROTO
+    haste_refresh(enemies, num_enemies);
+#endif
+    possession_update(enemies, num_enemies);
     hero_velocity_update(TO_INT(player_x), TO_INT(player_y));
     enemy_puddles_update();
     if (!s_sep_ready) sep_init_table();
@@ -1420,6 +1851,9 @@ ITCM_CODE void enemy_ai_update(Enemy *enemies, int num_enemies, fixed player_x, 
             update_guard(e, enemies, num_enemies, i, player_x, player_y);
             continue;
         }
+
+        // Possessed and lying down (or getting up): still, no AI, no bite until the transition ends.
+        if (possess_phase(e) == 1 && possession_step(e)) continue;
 
         // Level of detail: off-screen enemies that are only walking (CHASE / POSITION) think every 2nd frame,
         // staggered by index, and cover twice the distance on that frame.

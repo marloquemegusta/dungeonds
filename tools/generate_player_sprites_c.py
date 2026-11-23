@@ -273,6 +273,58 @@ def emit_runs(out_lines, name, run_offs, run_data, frames_const, comment):
     out_lines.append('\n')
 
 
+
+STREAM_MAGIC = 0x4E555250   # 'PRUN'
+
+
+def write_streamed_bin(var_name, fr_pix, fr_offs, fr_bnds, fr_runs, fr_run_offs, sh_data, sh_offs, shb_body):
+    """Packs the sheet of a streamed slot (8 dirs x 8 frames) for source/stream_char.c, one record per frame so that
+    a single read fetches everything a frame needs. Little endian. Layout:
+    header (8 u32: magic, frames, max_record_bytes, 5 spare) | records[64] { u32 file_offset, u16 pix_bytes,
+    u16 runs_bytes, u16 shadow_bytes, u16 spare } | frame_bounds u8[256] | shadow_bounds u8[256] | the records' data.
+    A record is its pixels (u16, even row pitch), its opaque-run block (u16) and its shadow mask (u8), each padded to
+    4 bytes, so every part starts word-aligned in the RAM slot."""
+    import struct
+
+    def ints(text):
+        return [int(x) for x in re.findall(r'[0-9]+', text)]
+
+    def pad4(b):
+        return b + bytes(1) * (-len(b) % 4)
+
+    fo = ints(fr_offs); ro = ints(fr_run_offs); so = ints(sh_offs)
+    frame_bounds = ints(fr_bnds); shadow_bounds = ints(shb_body)
+    assert len(fo) == len(ro) == len(so) == 64 and len(frame_bounds) == len(shadow_bounds) == 256
+    pix = [int(x, 16) for x in re.findall(r'0x[0-9A-Fa-f]+', fr_pix)]
+    runs = ints(fr_runs)
+    shadow = [int(x, 16) for x in re.findall(r'0x[0-9A-Fa-f]+', sh_data)]
+
+    def part(arr, offs, i, fmt):
+        end = offs[i + 1] if i < 63 else len(arr)
+        chunk = arr[offs[i]:end]
+        return pad4(struct.pack('<%d%s' % (len(chunk), fmt), *chunk)), len(chunk) * struct.calcsize(fmt)
+
+    head_bytes = 32 + 64 * 12 + 256 + 256
+    recs, data, off, max_rec = [], b'', head_bytes, 0
+    for i in range(64):
+        pb, pn = part(pix, fo, i, 'H')
+        rb, rn = part(runs, ro, i, 'H')
+        sb, sn = part(shadow, so, i, 'B')
+        rec = pb + rb + sb
+        recs.append(struct.pack('<IHHHH', off, pn, rn, sn, 0))
+        data += rec
+        off += len(rec)
+        max_rec = max(max_rec, len(rec))
+    rel = STREAMED[var_name]
+    path = os.path.join(WT, 'nitrofiles', *rel.split('/'))
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, 'wb') as f:
+        f.write(struct.pack('<8I', STREAM_MAGIC, 64, max_rec, 0, 0, 0, 0, 0) + b''.join(recs)
+                + bytes(frame_bounds) + bytes(shadow_bounds) + data)
+    print('streamed %s -> %s: %d bytes, largest record %d bytes (STREAM_SLOT_BYTES must be >= this)' % (
+        var_name, path, os.path.getsize(path), max_rec))
+
+
 chars_meta = [
     ('player', 'corazon', 'Corazon Abierto Hero', 340, 4),
     ('charger', 'cireneo', 'Enemy Charger (Knocker)', 310, 5),
@@ -290,7 +342,32 @@ chars_meta = [
     ('hero_crouch_walk', 'corazon_agachado_andar', 'Hero crouched walking', 0, 8),
     # Exvoto tier "Bebe" (v3 tiers, walkthroughs/arpg-predemo §10): a slot of its own like the Exvoto clips.
     ('exvoto_bebe', 'exvoto_bebe', 'Exvoto Bebe walking', 53, 8),
+    # Exvoto tier "Parroco" running (48x48 cell, Mixamo Running): too big for the fixed RAM, so its pixels, runs and
+    # shadow masks are not emitted as C: they go to nitrofiles/parroco/run.bin and parroco_run.c loads them once.
+    ('exvoto_parroco_run', 'exvoto_parroco_run', 'Exvoto Parroco running', 0, 10),
+    # Super Monja (Tripo 9713149f, 56x56 cell, tools/characters/bake_exvoto_super_monja.py): her four clips, streamed too.
+    ('exvoto_super_monja', 'exvoto_super_monja', 'Super Monja walking', 39, 8),
+    ('exvoto_super_monja_pray_stand', 'exvoto_super_monja_pray_stand', 'Super Monja praying standing', 39, 24),
+    ('exvoto_super_monja_pray_kneel', 'exvoto_super_monja_pray_kneel', 'Super Monja praying kneeling', 39, 14),
+    ('exvoto_super_monja_stand_up', 'exvoto_super_monja_stand_up', 'Super Monja standing up', 39, 9),
+    # Possession by the Super Monja's aura (DESIGN-ARPG s5): the Exvoto and the Monaguillo lie down into the spider form
+    # (trans: standing -> spider, played backwards to get up) and scuttle (walk: frames 0-5 burst, 6-7 pause). Streamed too.
+    ('exvoto_arana_walk', 'exvoto_arana_walk', 'Exvoto spider walking', 39, 6),
+    ('exvoto_arana_trans', 'exvoto_arana_trans', 'Exvoto lying down into the spider', 0, 3),
+    ('monaguillo_arana_walk', 'monaguillo_arana_walk', 'Monaguillo spider walking', 39, 6),
+    ('monaguillo_arana_trans', 'monaguillo_arana_trans', 'Monaguillo lying down into the spider', 0, 3),
 ]
+STREAMED = {   # slot -> file in nitrofiles/ (read by source/stream_char.c; the slot order of player_sprite.h)
+    'exvoto_parroco_run': 'parroco/run.bin',
+    'exvoto_super_monja': 'smonja/walk.bin',
+    'exvoto_super_monja_pray_stand': 'smonja/pray_stand.bin',
+    'exvoto_super_monja_pray_kneel': 'smonja/pray_kneel.bin',
+    'exvoto_super_monja_stand_up': 'smonja/stand_up.bin',
+    'exvoto_arana_walk': 'arana/exvoto_walk.bin',
+    'exvoto_arana_trans': 'arana/exvoto_trans.bin',
+    'monaguillo_arana_walk': 'arana/monaguillo_walk.bin',
+    'monaguillo_arana_trans': 'arana/monaguillo_trans.bin',
+}
 SINGLE_FRAME = set()
 
 # Ticks per frame of the Exvoto clips come from the manifest (the lab settings carry the template's).
@@ -321,6 +398,8 @@ for var_name, folder, disp_name, def_spd, def_ticks in chars_meta:
                 shw, shh = int(sdata['shadowSize'][0]), int(sdata['shadowSize'][1])
     if folder.startswith('exvoto') and 'ticksPerFrame' in MANIFEST.get(folder, {}):
         ticks = int(MANIFEST[folder]['ticksPerFrame'])
+    if var_name.endswith('_arana_walk') or var_name.endswith('_arana_trans'):
+        spd, ticks = def_spd, def_ticks    # the staged settings carry the lab's duration, not the game's
     if var_name == 'charger':
         ticks = 8  # match 37.86 px stride at ENEMY_CHARGER_APPROACH_SPEED (150)
     if var_name == 'ojo':
@@ -357,6 +436,7 @@ for var_name, folder, disp_name, spd, ticks, sw, sh, shw, shh, out_shw, out_shh 
 
     char_mode = resolve_legibility(char_dir, ARGS.legibility)
     fr_offs, fr_bnds, fr_pix, fr_run_offs, fr_runs = convert_sheet_cropped(png_path, sw, sh, frame_indices=frame_idx, legibility=char_mode)
+    sheet_mark = len(out_lines)
     out_lines.append(f'// {sw}x{sh} BGR555 frames for {disp_name}, 8 directions x 8 frames (cropped to bounds)\n')
     out_lines.append(f'const uint16_t g_{var_name}_frames[] __attribute__((aligned(4))) = ')
     out_lines.append(fr_pix)
@@ -367,6 +447,11 @@ for var_name, folder, disp_name, spd, ticks, sw, sh, shw, shh, out_shw, out_shh 
     out_lines.append(f'const uint8_t g_{var_name}_frame_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4] = ')
     out_lines.append(fr_bnds)
     out_lines.append('\n')
+    if var_name in STREAMED:
+        sh_offs, sh_data = crop_shadow_masks(shb_body, mask_body, out_shw, out_shh, frame_idx)
+        write_streamed_bin(var_name, fr_pix, fr_offs, fr_bnds, fr_runs, fr_run_offs, sh_data, sh_offs, shb_body)
+        del out_lines[sheet_mark:]      # this slot has no C arrays: only the config row, anchors and muzzle tables
+        continue
     emit_runs(out_lines, var_name, fr_run_offs, fr_runs, 'PLAYER_NUM_FRAMES',
               f'Opaque runs per row of {disp_name} frames (blit_stride): block = (bh+1) row offsets in halfwords, then x | len << 8')
 
@@ -635,17 +720,17 @@ for muzzle in all_muzzles:
 out_lines.append('};\n\n')
 
 for tbl, suffix in (
-    ('const uint16_t * const g_character_frames[NUM_CHARACTERS]', 'frames'),
-    ('const uint32_t (* const g_character_frame_offsets[NUM_CHARACTERS])[PLAYER_NUM_FRAMES]', 'frame_offsets'),
-    ('const uint8_t (* const g_character_frame_bounds[NUM_CHARACTERS])[PLAYER_NUM_FRAMES][4]', 'frame_bounds'),
-    ('const uint16_t * const g_character_runs[NUM_CHARACTERS]', 'runs'),
-    ('const uint32_t (* const g_character_run_offsets[NUM_CHARACTERS])[PLAYER_NUM_FRAMES]', 'run_offsets'),
-    ('const uint8_t * const g_character_shadow_masks[NUM_CHARACTERS]', 'shadow_masks'),
-    ('const uint32_t (* const g_character_shadow_offsets[NUM_CHARACTERS])[PLAYER_NUM_FRAMES]', 'shadow_offsets'),
-    ('const uint8_t (* const g_character_shadow_bounds[NUM_CHARACTERS])[PLAYER_NUM_FRAMES][4]', 'shadow_bounds'),
+    ('const uint16_t * g_character_frames[NUM_CHARACTERS]', 'frames'),
+    ('const uint32_t (* g_character_frame_offsets[NUM_CHARACTERS])[PLAYER_NUM_FRAMES]', 'frame_offsets'),
+    ('const uint8_t (* g_character_frame_bounds[NUM_CHARACTERS])[PLAYER_NUM_FRAMES][4]', 'frame_bounds'),
+    ('const uint16_t * g_character_runs[NUM_CHARACTERS]', 'runs'),
+    ('const uint32_t (* g_character_run_offsets[NUM_CHARACTERS])[PLAYER_NUM_FRAMES]', 'run_offsets'),
+    ('const uint8_t * g_character_shadow_masks[NUM_CHARACTERS]', 'shadow_masks'),
+    ('const uint32_t (* g_character_shadow_offsets[NUM_CHARACTERS])[PLAYER_NUM_FRAMES]', 'shadow_offsets'),
+    ('const uint8_t (* g_character_shadow_bounds[NUM_CHARACTERS])[PLAYER_NUM_FRAMES][4]', 'shadow_bounds'),
 ):
     out_lines.append(f'{tbl} = {{\n')
-    out_lines.append(',\n'.join(f'    g_{c[0]}_{suffix}' for c in char_configs) + '\n')
+    out_lines.append(',\n'.join(('    0' if c[0] in STREAMED else f'    g_{c[0]}_{suffix}') for c in char_configs) + '\n')
     out_lines.append('};\n\n')
 
 out_path = os.path.join(WT, 'source/player_sprite.c')
