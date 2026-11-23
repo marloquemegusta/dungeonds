@@ -22,6 +22,7 @@
 #include "upgrades.h"
 #include "exvoto_melt.h"
 #include "remate.h"
+#include "campanero_sprite.h"
 #include "remate_sprites.h"
 #include "punch.h"
 #include "sfx.h"
@@ -1149,6 +1150,9 @@ static void draw_enemy(uint16_t *buffer, const Enemy *e, int cam_x, int cam_y) {
                      : (is_telegraph && tf)           ? g_charger_telegraph_frame_bounds[e->dir][0]
                      : (is_telegraph || is_charge)    ? g_charger_charge_frame_bounds[e->dir][is_telegraph ? 0 : cf]
                                                       : g_character_frame_bounds[e->char_id][e->dir][e->frame];
+    CampSprite cs;
+    const int is_camp = (e->type == ENEMY_TYPE_CAMPANERO) && campanero_sprite_get(e->kneel, e->dir, e->frame & 7, &cs);
+    if (is_camp) b = cs.bounds;
     int bw = b[2];
     int bh = b[3];
     if (bw == 0 || bh == 0) return;
@@ -1157,7 +1161,7 @@ static void draw_enemy(uint16_t *buffer, const Enemy *e, int cam_x, int cam_y) {
 
     int sw = g_characters[e->char_id].sprite_w;
     int sh = g_characters[e->char_id].sprite_h;
-    const uint16_t *frame = oc == CLIP_OJO_SENTENCE ? &g_ojo_sentence_frames[g_ojo_sentence_frame_offsets[e->dir][of]]
+    const uint16_t *frame = is_camp ? cs.pix : oc == CLIP_OJO_SENTENCE ? &g_ojo_sentence_frames[g_ojo_sentence_frame_offsets[e->dir][of]]
         : oc == CLIP_OJO_LOOK ? &g_ojo_look_frames[g_ojo_look_frame_offsets[e->dir][of]]
         : ac == CLIP_ABANDERADO_POINT ? &g_abanderado_point_frames[g_abanderado_point_frame_offsets[e->dir][af]]
         : (is_telegraph && e->frame == 0)
@@ -1167,7 +1171,7 @@ static void draw_enemy(uint16_t *buffer, const Enemy *e, int cam_x, int cam_y) {
         : (is_telegraph || is_charge)
         ? &g_charger_charge_frames[g_charger_charge_frame_offsets[e->dir][is_telegraph ? 0 : cf]]
         : character_frame_ptr(e->char_id, e->dir, e->frame);
-    const uint16_t *runs = oc == CLIP_OJO_SENTENCE ? &g_ojo_sentence_runs[g_ojo_sentence_run_offsets[e->dir][of]]
+    const uint16_t *runs = is_camp ? cs.runs : oc == CLIP_OJO_SENTENCE ? &g_ojo_sentence_runs[g_ojo_sentence_run_offsets[e->dir][of]]
         : oc == CLIP_OJO_LOOK ? &g_ojo_look_runs[g_ojo_look_run_offsets[e->dir][of]]
         : ac == CLIP_ABANDERADO_POINT ? &g_abanderado_point_runs[g_abanderado_point_run_offsets[e->dir][af]]
         : (is_telegraph && e->frame == 0)
@@ -1408,6 +1412,16 @@ static int shadow_select(const DrawItem *it, ShadowSel *sel) {
             sel->left = it->cx - shw / 2;
             sel->top = it->cy - shh / 2;
             return 1;
+        }
+        if (e->type == ENEMY_TYPE_CAMPANERO) {
+            CampSprite cs;
+            if (campanero_sprite_get(e->kneel, e->dir, e->frame & 7, &cs)) {
+                sel->mask = cs.mask;
+                sel->bounds = cs.sbounds;
+                sel->left = it->cx - shw / 2;
+                sel->top = it->cy - shh / 2;
+                return 1;
+            }
         }
         int ac = abanderado_clip(e);
         int af = abanderado_clip_frame(e, ac);
@@ -2450,17 +2464,19 @@ static int aim_dir_from_screen(int dx, int dy) {
 typedef struct {
     fixed x, y;
     fixed hit_vx, hit_vy;
-    int char_id, dir, frame;
+    int char_id, dir, frame, clip;
 } DeathSpawn;
 
 static void death_chunks_spawn(const DeathSpawn *e) {
     const fixed hit_vx = e->hit_vx, hit_vy = e->hit_vy;
-    const uint8_t *bounds = g_character_frame_bounds[e->char_id][e->dir][e->frame];
+    CampSprite cs;
+    const int is_camp = (e->char_id == CHAR_CAMPANERO) && campanero_sprite_get(e->clip, e->dir, e->frame & 7, &cs);
+    const uint8_t *bounds = is_camp ? cs.bounds : g_character_frame_bounds[e->char_id][e->dir][e->frame];
     int min_x = bounds[0], min_y = bounds[1];
     int width = bounds[2], height = bounds[3];
     if (width == 0 || height == 0) return;
     int sw = g_characters[e->char_id].sprite_w;
-    const uint16_t *frame = character_frame_ptr(e->char_id, e->dir, e->frame);
+    const uint16_t *frame = is_camp ? cs.pix : character_frame_ptr(e->char_id, e->dir, e->frame);
 
     for (int piece = 0; piece < 6; piece++) {
         int column = piece & 1;
@@ -2538,7 +2554,7 @@ static void death_chunks_frame_begin(void) {
 
 static void on_enemy_death(const Enemy *e, fixed hit_vx, fixed hit_vy) {
     CRASH_MARK(CL_DEATH_CHUNKS, e->char_id, e->dir);
-    DeathSpawn spawn = { e->x, e->y, hit_vx, hit_vy, e->char_id, e->dir, e->frame };
+    DeathSpawn spawn = { e->x, e->y, hit_vx, hit_vy, e->char_id, e->dir, e->frame, e->kneel };
     if (g_death_phase == DEATH_BOOKKEEPING) {
         // Viatico: the victim is held suspended; the death animation comes later (DEATH_VISUALS), the counts are due now.
     } else if (remate_killing()) {

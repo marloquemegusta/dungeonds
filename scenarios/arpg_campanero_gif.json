@@ -1,0 +1,476 @@
+{
+ "name": "arpg_campanero_gif",
+ "description": "Variante arpg-campanero: captura seguida del Campanero tocando (evidencia del arte nuevo). Solo capturas.",
+ "suite": false,
+ "state": {
+  "elf": "../.ds-game-dev/build/out/dungeonds-arpg-campanero.elf",
+  "symbols": {
+   "camp": "g_campanero_dbg",
+   "gps": "g_player_state",
+   "stats": "g_enc_stats",
+   "pl": "s_player",
+   "en": "g_enemies",
+   "arpg": "g_arpg",
+   "fx": "g_cfx_dbg",
+   "zones": "s_zones"
+  },
+  "default_symbol": "camp",
+  "fields": {
+   "toques": {
+    "offset": 0,
+    "type": "u16"
+   },
+   "tanidos": {
+    "offset": 2,
+    "type": "u16"
+   },
+   "hero_hits": {
+    "offset": 4,
+    "type": "u16"
+   },
+   "raised": {
+    "offset": 6,
+    "type": "u16"
+   },
+   "phase": {
+    "offset": 8,
+    "type": "u8"
+   },
+   "telegraph": {
+    "offset": 9,
+    "type": "u8"
+   },
+   "px": {
+    "symbol": "pl",
+    "offset": 0,
+    "type": "s32"
+   },
+   "py": {
+    "symbol": "pl",
+    "offset": 4,
+    "type": "s32"
+   },
+   "ring_frames": {
+    "offset": 12,
+    "type": "u16"
+   },
+   "mana": {
+    "symbol": "gps",
+    "offset": 24,
+    "type": "s32"
+   },
+   "spell": {
+    "symbol": "arpg",
+    "offset": 18,
+    "type": "u16"
+   },
+   "mech0": {
+    "symbol": "arpg",
+    "offset": 381,
+    "type": "u8"
+   },
+   "mech1": {
+    "symbol": "arpg",
+    "offset": 395,
+    "type": "u8"
+   },
+   "silenced": {
+    "symbol": "fx",
+    "offset": 4,
+    "type": "u16"
+   },
+   "z_active": {
+    "symbol": "zones",
+    "offset": 0,
+    "type": "s32"
+   },
+   "z_t": {
+    "symbol": "zones",
+    "offset": 20,
+    "type": "s32"
+   },
+   "z_det": {
+    "symbol": "zones",
+    "offset": 28,
+    "type": "s32"
+   },
+   "e0_x": {
+    "symbol": "en",
+    "offset": 0,
+    "type": "s32"
+   },
+   "e0_y": {
+    "symbol": "en",
+    "offset": 4,
+    "type": "s32"
+   },
+   "e0_active": {
+    "symbol": "en",
+    "offset": 24,
+    "type": "s32"
+   },
+   "e0_hp": {
+    "symbol": "en",
+    "offset": 28,
+    "type": "s32"
+   },
+   "e0_type": {
+    "symbol": "en",
+    "offset": 40,
+    "type": "s32"
+   },
+   "e1_x": {
+    "symbol": "en",
+    "offset": 124,
+    "type": "s32"
+   },
+   "e1_y": {
+    "symbol": "en",
+    "offset": 128,
+    "type": "s32"
+   },
+   "e1_active": {
+    "symbol": "en",
+    "offset": 148,
+    "type": "s32"
+   },
+   "e1_hp": {
+    "symbol": "en",
+    "offset": 152,
+    "type": "s32"
+   },
+   "e1_type": {
+    "symbol": "en",
+    "offset": 164,
+    "type": "s32"
+   },
+   "e2_x": {
+    "symbol": "en",
+    "offset": 248,
+    "type": "s32"
+   },
+   "e2_y": {
+    "symbol": "en",
+    "offset": 252,
+    "type": "s32"
+   },
+   "e2_active": {
+    "symbol": "en",
+    "offset": 272,
+    "type": "s32"
+   },
+   "e2_hp": {
+    "symbol": "en",
+    "offset": 276,
+    "type": "s32"
+   },
+   "e2_type": {
+    "symbol": "en",
+    "offset": 288,
+    "type": "s32"
+   },
+   "e3_x": {
+    "symbol": "en",
+    "offset": 372,
+    "type": "s32"
+   },
+   "e3_y": {
+    "symbol": "en",
+    "offset": 376,
+    "type": "s32"
+   },
+   "e3_active": {
+    "symbol": "en",
+    "offset": 396,
+    "type": "s32"
+   },
+   "e3_hp": {
+    "symbol": "en",
+    "offset": 400,
+    "type": "s32"
+   },
+   "e3_type": {
+    "symbol": "en",
+    "offset": 412,
+    "type": "s32"
+   },
+   "e4_x": {
+    "symbol": "en",
+    "offset": 496,
+    "type": "s32"
+   },
+   "e4_y": {
+    "symbol": "en",
+    "offset": 500,
+    "type": "s32"
+   },
+   "e4_active": {
+    "symbol": "en",
+    "offset": 520,
+    "type": "s32"
+   },
+   "e4_hp": {
+    "symbol": "en",
+    "offset": 524,
+    "type": "s32"
+   },
+   "e4_type": {
+    "symbol": "en",
+    "offset": 536,
+    "type": "s32"
+   },
+   "e5_x": {
+    "symbol": "en",
+    "offset": 620,
+    "type": "s32"
+   },
+   "e5_y": {
+    "symbol": "en",
+    "offset": 624,
+    "type": "s32"
+   },
+   "e5_active": {
+    "symbol": "en",
+    "offset": 644,
+    "type": "s32"
+   },
+   "e5_hp": {
+    "symbol": "en",
+    "offset": 648,
+    "type": "s32"
+   },
+   "e5_type": {
+    "symbol": "en",
+    "offset": 660,
+    "type": "s32"
+   },
+   "e6_x": {
+    "symbol": "en",
+    "offset": 744,
+    "type": "s32"
+   },
+   "e6_y": {
+    "symbol": "en",
+    "offset": 748,
+    "type": "s32"
+   },
+   "e6_active": {
+    "symbol": "en",
+    "offset": 768,
+    "type": "s32"
+   },
+   "e6_hp": {
+    "symbol": "en",
+    "offset": 772,
+    "type": "s32"
+   },
+   "e6_type": {
+    "symbol": "en",
+    "offset": 784,
+    "type": "s32"
+   },
+   "bhp": {
+    "symbol": "en",
+    "offset": 28,
+    "type": "s32"
+   },
+   "hp": {
+    "symbol": "gps",
+    "offset": 0,
+    "type": "s32"
+   },
+   "e7_x": {
+    "symbol": "en",
+    "offset": 868,
+    "type": "s32"
+   },
+   "e7_y": {
+    "symbol": "en",
+    "offset": 872,
+    "type": "s32"
+   },
+   "e7_active": {
+    "symbol": "en",
+    "offset": 892,
+    "type": "s32"
+   },
+   "e7_hp": {
+    "symbol": "en",
+    "offset": 896,
+    "type": "s32"
+   },
+   "e7_type": {
+    "symbol": "en",
+    "offset": 908,
+    "type": "s32"
+   },
+   "e8_x": {
+    "symbol": "en",
+    "offset": 992,
+    "type": "s32"
+   },
+   "e8_y": {
+    "symbol": "en",
+    "offset": 996,
+    "type": "s32"
+   },
+   "e8_active": {
+    "symbol": "en",
+    "offset": 1016,
+    "type": "s32"
+   },
+   "e8_hp": {
+    "symbol": "en",
+    "offset": 1020,
+    "type": "s32"
+   },
+   "e8_type": {
+    "symbol": "en",
+    "offset": 1032,
+    "type": "s32"
+   },
+   "e9_x": {
+    "symbol": "en",
+    "offset": 1116,
+    "type": "s32"
+   },
+   "e9_y": {
+    "symbol": "en",
+    "offset": 1120,
+    "type": "s32"
+   },
+   "e9_active": {
+    "symbol": "en",
+    "offset": 1140,
+    "type": "s32"
+   },
+   "e9_hp": {
+    "symbol": "en",
+    "offset": 1144,
+    "type": "s32"
+   },
+   "e9_type": {
+    "symbol": "en",
+    "offset": 1156,
+    "type": "s32"
+   },
+   "e10_x": {
+    "symbol": "en",
+    "offset": 1240,
+    "type": "s32"
+   },
+   "e10_y": {
+    "symbol": "en",
+    "offset": 1244,
+    "type": "s32"
+   },
+   "e10_active": {
+    "symbol": "en",
+    "offset": 1264,
+    "type": "s32"
+   },
+   "e10_hp": {
+    "symbol": "en",
+    "offset": 1268,
+    "type": "s32"
+   },
+   "e10_type": {
+    "symbol": "en",
+    "offset": 1280,
+    "type": "s32"
+   },
+   "e11_x": {
+    "symbol": "en",
+    "offset": 1364,
+    "type": "s32"
+   },
+   "e11_y": {
+    "symbol": "en",
+    "offset": 1368,
+    "type": "s32"
+   },
+   "e11_active": {
+    "symbol": "en",
+    "offset": 1388,
+    "type": "s32"
+   },
+   "e11_hp": {
+    "symbol": "en",
+    "offset": 1392,
+    "type": "s32"
+   },
+   "e11_type": {
+    "symbol": "en",
+    "offset": 1404,
+    "type": "s32"
+   }
+  }
+ },
+ "steps": [
+  {
+   "frames": 90
+  },
+  {
+   "button_down": "UP",
+   "frames": 700
+  },
+  {
+   "button_up": "UP",
+   "frames": 10,
+   "capture_sequence": "intro",
+   "capture_every": 10
+  },
+  {
+   "frames": 620,
+   "capture_sequence": "intro",
+   "capture_every": 10
+  },
+  {
+   "poke": [
+    {
+     "field": "px",
+     "value": 52480
+    },
+    {
+     "field": "py",
+     "value": 380672
+    },
+    {
+     "field": "hp",
+     "value": 190
+    },
+    {
+     "field": "mana",
+     "value": 200
+    },
+    {
+     "field": "spell",
+     "value": 1
+    },
+    {
+     "field": "mech0",
+     "value": 255
+    },
+    {
+     "field": "mech1",
+     "value": 255
+    }
+   ],
+   "frames": 20
+  },
+  {
+   "tap": {
+    "x": 128,
+    "y": 120
+   },
+   "frames": 8
+  },
+  {
+   "release": true,
+   "frames": 480,
+   "capture_sequence": "g",
+   "capture_every": 1
+  }
+ ],
+ "evidence_only": true
+}

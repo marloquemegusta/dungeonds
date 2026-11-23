@@ -1,3 +1,4 @@
+#include "campanero_sprite.h"
 #include "enemy_ai.h"
 #include "lab_tuning.h"
 #include "horde.h"
@@ -1485,7 +1486,25 @@ static void update_campanero(Enemy *e, Enemy *enemies, int num_enemies, int idx,
         }
     }
     e->dir = dir_from_vector(player_x - e->x, player_y - e->y);
-    update_animation(e, moved);
+    {   // Clip and frame (source/campanero_sprite.c): the raise is the telegraph, the strike opens the window
+        int clip, fr;
+        if (e->beam_mx > 0) {
+            clip = CAMP_CLIP_TOQUE; fr = ((CAMP_TELEGRAPH_FRAMES - e->beam_mx) * 6) / CAMP_TELEGRAPH_FRAMES;
+        } else if (e->gesture > 0) {                        // phase II: strike, then raise again for the second toll
+            clip = CAMP_CLIP_TOQUE;
+            fr = e->gesture > CAMP_DOUBLE_GAP - 4 ? 6 : ((CAMP_DOUBLE_GAP - e->gesture) * 6) / CAMP_DOUBLE_GAP;
+        } else if (e->beam_my > 0) {
+            clip = CAMP_CLIP_TOQUE; fr = (CAMP_WINDOW_FRAMES - e->beam_my) < 4 ? 6 : 7;
+        } else if (e->beam_len < 16) {                      // minor toll: the bell swings for 16 frames
+            clip = CAMP_CLIP_TANIDO; fr = e->beam_len >> 1;
+        } else if (moved) {
+            clip = CAMP_CLIP_WALK; fr = (int)((s_ai_tick / 6u) & 7u);
+        } else {
+            clip = CAMP_CLIP_IDLE; fr = (int)((s_ai_tick / 8u) & 7u);
+        }
+        e->kneel = (uint8_t)clip;
+        e->frame = (uint8_t)fr;
+    }
     g_campanero_dbg.telegraph = (uint8_t)e->beam_mx;
     g_campanero_dbg.window = (uint8_t)e->beam_my;
 }
