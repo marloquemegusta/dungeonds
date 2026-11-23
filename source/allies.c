@@ -5,6 +5,7 @@
 #include "collision.h"
 #include "enemy_ai.h"
 #include "player_sprite.h"
+#include "chars_pool.h"
 #include "upgrades.h"
 #if ENCOUNTERS_PROTO
 #include "encounters_act1.h"
@@ -78,6 +79,7 @@ void allies_on_enemy_death(Enemy *dead, Enemy *enemies, int max_enemies) {
         if (!enemies[s].active) { free_slot = s; break; }    // the dead one is still active here, so it is never reused
     }
     if (free_slot < 0) return;
+    if (!chars_ready(enemy_type_char_id(ENEMY_TYPE_EXVOTO))) return;   // the room load had the Exvoto art ready; else no ally
 
     Enemy *a = &enemies[free_slot];
     memset(a, 0, sizeof(*a));

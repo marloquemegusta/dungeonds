@@ -727,7 +727,7 @@
    {
     "at": "b_antes",
     "field": "e7_char",
-    "equals": 18
+    "equals": 19
    },
    {
     "at": "b_tambalea",
@@ -752,7 +752,7 @@
    {
     "at": "b_reaparece",
     "field": "e7_char",
-    "equals": 18
+    "equals": 19
    }
   ]
  }

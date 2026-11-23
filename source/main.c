@@ -23,9 +23,9 @@
 #include "exvoto_melt.h"
 #include "remate.h"
 #include "campanero_sprite.h"
+#include "chars_pool.h"
 #include "remate_sprites.h"
 #include "punch.h"
-#include "stream_char.h"
 #include "sfx.h"
 #include "lab_tuning.h"
 #include "boxeo.h"
@@ -37,6 +37,7 @@
 #include "arpg_hud_gfx.h"
 #include "dmg_numbers.h"
 #include "menu.h"
+#include "title_screen.h"
 #include "inventory.h"
 #include "encounters_act1.h"
 #include "boss.h"
@@ -154,6 +155,13 @@ static int s_cam_anchor_y = SCREEN_H / 2;
 static int s_cam_anchor_target = SCREEN_H / 2;
 static int s_cam_dir_intent = 0;
 static int s_cam_dir_frames = 0;
+#define CAM_GROUP_MIN_ANCHOR   (SCREEN_H / 4)       // hero never above 25% of the touch screen
+#define CAM_GROUP_MAX_ANCHOR   (SCREEN_H * 3 / 4)   // ...nor below 75%
+#define CAM_GROUP_K            320                  // proximity weight base (px)
+#define CAM_GROUP_MAX_DY       384                  // enemies farther than ~2 screens vertically are ignored
+#define CAM_GROUP_MAX_STEP     (3 << 8)             // 8.8 px/frame cap so the view never lurches
+static int s_cam_anchor_fp = (SCREEN_H / 2) << 8;   // 8.8 anchor used while in combat
+static int s_cam_in_combat = 0;
 #if SANDBOX && !CATHEDRAL_PLAYGROUND
 static const int s_strip_mode = 0;
 #else
@@ -731,9 +739,7 @@ ITCM_CODE static void draw_shadow_mask(uint16_t *buffer, const uint8_t *mask,
         }
         for (int x = sx0; x < sx1; x++) {
             int pixel = row_offset + (x - bx);
-            uint8_t packed = mask[pixel >> 1];
-            uint8_t nibble = (pixel & 1) ? (packed >> 4) : (packed & 0x0F);
-            if (nibble > 0) {
+            if ((mask[pixel >> 3] >> (pixel & 7)) & 1) {
                 int world_x = left + x;
                 if (world_x < 0 || world_x >= g_arena->world_w || world_y < 0 || world_y >= g_arena->world_h) continue;
                 if (rn) {
@@ -1152,6 +1158,7 @@ static void draw_ally_mark(uint16_t *buffer, int x0, int y0) {
 
 static void draw_enemy(uint16_t *buffer, const Enemy *e, int cam_x, int cam_y) {
     if (e->state == ENEMY_STATE_REMATE && remate_active()) return;   // the remate cell draws it (with the hero); during the dash it stands here
+    if (!chars_ready(e->char_id)) return;                            // art not in the room pool and it did not fit: skip it
     int px = player_screen_x(e->x, e->y);
     int py = player_screen_y(e->x, e->y);
 
@@ -1278,6 +1285,7 @@ static void draw_enemy(uint16_t *buffer, const Enemy *e, int cam_x, int cam_y) {
 // A dying Exvoto (DESIGN.md 6.10): the sprite it died with sinks into the floor, feet first. The lowest
 // rows are cut as it goes down and the rest moves down with them, so it ends flush with the puddle.
 static void draw_melt(uint16_t *buffer, const ExvotoMelt *m, int cam_x, int cam_y) {
+    if (!chars_ready(m->char_id)) return;
     int px = player_screen_x(m->x, m->y);
     int py = player_screen_y(m->x, m->y);
     const uint8_t *b = g_character_frame_bounds[m->char_id][m->dir][m->frame];
@@ -1424,6 +1432,7 @@ static int shadow_select(const DrawItem *it, ShadowSel *sel) {
     if (it->ref <= -2 && it->ref > -2 - MAX_ENEMIES) {
         const Enemy *e = &g_enemies[-2 - it->ref];
         if (e->state == ENEMY_STATE_REMATE && remate_active()) return 0;   // its shadow is baked in the remate cell
+        if (!chars_ready(e->char_id)) return 0;
         int shw = g_characters[e->char_id].shadow_w;
         int shh = g_characters[e->char_id].shadow_h;
         int is_telegraph = (e->char_id == CHAR_CHARGER && e->state == ENEMY_STATE_TELEGRAPH);
@@ -1486,7 +1495,7 @@ static void render_camp_screen(uint16_t *buffer, DirtySpan *spans, int cam_x, in
 
     camp_render_floor(buffer, cam_x, cam_y);        // warm pool under the bonfire, under everything
 
-    // Prop ground shadows (baked, 4-bit nibbles) on the floor, before any actor: the same 50 %
+    // Prop ground shadows (baked, 1 bpp) on the floor, before any actor: the same 50 %
     // darkening (apply_shadow_fast) as the actors and as the cathedral kit.
     {
         int nprops = camp_items_count(cam_x, cam_y);
@@ -2512,6 +2521,7 @@ static void death_chunks_spawn(const DeathSpawn *e) {
     const fixed hit_vx = e->hit_vx, hit_vy = e->hit_vy;
     CampSprite cs;
     const int is_camp = (e->char_id == CHAR_CAMPANERO) && campanero_sprite_get(e->clip, e->dir, e->frame & 7, &cs);
+    if (!is_camp && !chars_ready(e->char_id)) return;
     const uint8_t *bounds = is_camp ? cs.bounds : g_character_frame_bounds[e->char_id][e->dir][e->frame];
     int min_x = bounds[0], min_y = bounds[1];
     int width = bounds[2], height = bounds[3];
@@ -2863,9 +2873,74 @@ static void player_muzzle(fixed *mx, fixed *my, int *mh) {
     *mh = m[2];
 }
 
-static void update_camera_lookahead(int sdy, int moved, int aim_ahead) {
-    // Kiting: walking backward while aiming ahead keeps the forward view intact.
-    if (sdy != 0 && moved && !(sdy > 0 && aim_ahead)) {
+// Awake, living enemies count as "in combat"; dormant, praying (asleep), dead, suspended and
+// remate-held ones do not.
+static int cam_enemy_in_combat(const Enemy *e) {
+    if (!e->active || e->hp <= 0) return 0;
+    switch (e->state) {
+        case ENEMY_STATE_DEAD:
+        case ENEMY_STATE_DORMANT:
+        case ENEMY_STATE_PRAY:
+        case ENEMY_STATE_SUSPENDED:
+        case ENEMY_STATE_REMATE:
+            return 0;
+        default:
+            return 1;
+    }
+}
+
+// Group camera (DESIGN.md 6.3): aim between the hero and the proximity-weighted centroid of the
+// awake enemies. Returns 1 while it drives the anchor, 0 when there is no combat.
+static int update_camera_group(void) {
+    int hx = player_screen_x(s_player.x, s_player.y);
+    int hy = player_screen_y(s_player.x, s_player.y);
+    int32_t sum_w = 0, sum_wdy = 0;
+    for (int i = 0; i < MAX_ENEMIES; i++) {
+        const Enemy *e = &g_enemies[i];
+        if (!cam_enemy_in_combat(e)) continue;
+        int dy = hy - player_screen_y(e->x, e->y);       // > 0: enemy above the hero
+        int dx = hx - player_screen_x(e->x, e->y);
+        int ady = dy < 0 ? -dy : dy;
+        int adx = dx < 0 ? -dx : dx;
+        if (ady > CAM_GROUP_MAX_DY) continue;
+        int w = CAM_GROUP_K - ady - (adx >> 1);
+        if (w < 1) w = 1;
+        sum_w += w;
+        sum_wdy += w * dy;
+    }
+    if (sum_w == 0) {
+        s_cam_in_combat = 0;
+        return 0;
+    }
+    if (!s_cam_in_combat) {
+        // Combat starts: ease from the current anchor, no jump.
+        s_cam_in_combat = 1;
+        s_cam_anchor_fp = s_cam_anchor_y << 8;
+    }
+    int mean_dy = (int)div32(sum_wdy, sum_w);
+    int target = (SCREEN_H / 2 + (mean_dy >> 1)) << 8;
+    int lo = CAM_GROUP_MIN_ANCHOR << 8, hi = CAM_GROUP_MAX_ANCHOR << 8;
+    if (target < lo) target = lo;
+    if (target > hi) target = hi;
+    int diff = target - s_cam_anchor_fp;
+    int step = diff >> 4;                                 // exponential ease: fast when far, slow on arrival
+    if (step == 0 && diff != 0) step = diff > 0 ? 64 : -64;
+    if (step > CAM_GROUP_MAX_STEP) step = CAM_GROUP_MAX_STEP;
+    if (step < -CAM_GROUP_MAX_STEP) step = -CAM_GROUP_MAX_STEP;
+    if ((diff > 0 && step > diff) || (diff < 0 && step < diff)) step = diff;
+    s_cam_anchor_fp += step;
+    // Keep the hero inside the band even if the anchor was outside it when combat began.
+    if (s_cam_anchor_fp < lo) s_cam_anchor_fp = lo;
+    if (s_cam_anchor_fp > hi) s_cam_anchor_fp = hi;
+    s_cam_anchor_y = s_cam_anchor_fp >> 8;
+    s_cam_anchor_target = s_cam_anchor_y;                 // look-ahead resumes from here without a jump
+    s_cam_dir_intent = 0;
+    s_cam_dir_frames = 0;
+    return 1;
+}
+
+static void update_camera_lookahead(int sdy, int moved) {
+    if (sdy != 0 && moved) {
         int dir = (sdy < 0) ? -1 : 1;
         if (dir == s_cam_dir_intent) {
             if (s_cam_dir_frames < CAM_LOOK_DELAY_FRAMES) s_cam_dir_frames++;
@@ -2919,6 +2994,8 @@ static void camera_init(void) {
     s_cam_anchor_target = s_cam_anchor_y;
     s_cam_dir_intent = 0;
     s_cam_dir_frames = 0;
+    s_cam_in_combat = 0;
+    s_cam_anchor_fp = s_cam_anchor_y << 8;
     update_camera();
 }
 
@@ -3265,9 +3342,7 @@ static void player_update(uint32_t keys, uint32_t keys_down) {
     s_player.char_id = s_crouched ? CHAR_HERO_CROUCH_WALK : CHAR_HERO;
     if (s_crouched && !s_player.is_moving) s_player.frame = CROUCH_REST_FRAME;
 
-    int aim_ahead = touch_down &&
-        (s_last_touch_y + s_cam_y <= player_screen_y(s_player.x, s_player.y) - AIM_CHEST_H);
-    update_camera_lookahead(sdy, s_player.is_moving, aim_ahead);
+    if (!update_camera_group()) update_camera_lookahead(sdy, s_player.is_moving);
     update_camera();
 
     // Stylus: aim and fire. The character turns towards the touched point first so the
@@ -3665,6 +3740,9 @@ int main(void) {
     // Load Background Palette to Main and Sub engines
     // First run: the DS real-time clock varies between boots (the frame counter and the
     // timer right after cpuStartTiming do not), so the first map is not always the same.
+#if !ENCOUNTERS_PROTO
+    room_art_prepare((1u << CG_COUNT) - 1u, 0);   // no rooms in this variant: every enemy group fits the pool at once
+#endif
     if (s_strip_mode) {
         uint32_t seed = (uint32_t)time(NULL) * 0x9e3779b9u ^ (uint32_t)cpuGetTiming();
 #if CATHEDRAL_PLAYGROUND
@@ -3728,7 +3806,6 @@ int main(void) {
     remate_reset();
     punch_reset();
     sfx_init();
-    stream_char_init();            // streamed sheets (Párroco run, Súper Monja) from NitroFS (needs nitroFSInit, done by sfx_init)
     CRASH_INIT();
     PP_INIT();
     enemy_set_death_hook(on_enemy_death);
@@ -4169,8 +4246,11 @@ int main(void) {
         }
 #endif
         uint32_t t_top = cpuGetTiming();
+        int title_top = (menu_state() == MENU_TITLE);
         int inv_top = (menu_state() == MENU_INVENTORY);
-        if (inv_top) {
+        if (title_top) {
+            title_top_render(s_top_page, (uint32_t)s_frame_index, !s_inv_top_on);
+        } else if (inv_top) {
             // El panel tapa el mundo entero: no se renderiza la escena y solo se repinta cuando
             // cambia su contenido (la pantalla superior es de un solo buffer; repintarla cada
             // frame se pasa del VBlank y rasga la imagen).
@@ -4195,7 +4275,7 @@ int main(void) {
             }
 #endif
         }
-        s_inv_top_on = inv_top;
+        s_inv_top_on = inv_top || title_top;
 #if HW_SHADOWS
         // The top page is single buffered and was just redrawn: its shadows go live now.
         PP_T0(pp_hs2);

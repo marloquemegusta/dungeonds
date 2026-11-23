@@ -41,7 +41,7 @@ int  camp_items_count(int cam_x, int cam_y);                      // props visib
 int  camp_item_depth(int index);
 void camp_item_draw(int index, uint16_t *buffer, int cam_x, int cam_y, int depth);
 
-// Baked ground shadow of a visible prop, on its own canvas (4-bit nibbles). Fills the mask pointer,
+// Baked ground shadow of a visible prop, on its own canvas (1 bpp). Fills the mask pointer,
 // its bounds {0, 0, w, h} and the canvas top-left in world pixels. Returns 0 when the piece has none.
 int  camp_item_shadow(int index, const uint8_t **mask, uint8_t *bounds, int *left, int *top);
 #else

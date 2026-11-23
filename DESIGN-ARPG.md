@@ -45,7 +45,7 @@ Las cifras son `[TUNABLE-PLACEHOLDER]`. Lo retirado del primer prototipo (campam
 - **Reliquia en el suelo (decidido 2026-11-22):** se ve su icono de arquetipo a **24 px** (el tamaño del inventario, un 50 % mayor que el primer intento de 16 px) y con **más contraste** que los props: es un objeto mágico y no tiene que compartir la luz apagada del escenario. La rareza se lee por un **halo semitransparente** del color de la rareza alrededor de la silueta (mezclado con el suelo, más opaco junto al objeto y que se desvanece hacia fuera en 2–3 px), como en Diablo; sin contorno duro ni trama. Debajo, una **sombra de verdad**: la silueta del objeto aplastada y proyectada sobre el suelo en la misma dirección y tono (suelo al 50 %) que las sombras de los personajes. La legendaria mantiene además su haz vertical. Alternativa reservada si el halo no se lee: cartel con el nombre en el color de la rareza.
 - **Acceso:** desde el arcón del campamento y desde la pausa de la mazmorra (botón Inventario, el juego queda congelado). En los dos sitios se puede engarzar, equipar y desguazar para hacer hueco.
 - **El árbol de habilidades desaparece** (sustituido por reliquias y este inventario).
-- **Pendiente:** elegir la **tipografía definitiva del inventario** (~8–9 px para etiquetas/cifras y ~13–14 px en versalitas espaciadas para el título, estilo *Diablo II / Sacred*, sustituyendo a la fuente actual).
+- **Tipografía del inventario (decidido 2026-11-23):** Palatino hinteado a **10 px** (fuente propia `inv_font`, generada con `tools/gen_bestiary_font.py --prefix inv --size 10 --line-height 12`) para etiquetas, cifras y descripciones; títulos de escuela en versalitas espaciadas. Probadas y descartadas a tamaño real: Book Antiqua, Garamond, Constantia, Goudy y Bell (cifras antiguas o separación irregular) y Corbel (ilegible a 9). Códice, menús y cartas siguen con Palatino 11.
 
 ## 4. Aspecto del campamento (decidido 2026-11-21)
 - **Siempre de noche, iluminado por la hoguera.** El campamento es un patio exterior en ruinas, claramente distinto de la catedral: bordes casi negros, azul frío de luna y un único pozo de luz cálida alrededor del fuego. En el campamento no hay ciclo día-noche. Opcional futuro: un breve amanecer al dormir y subir de nivel (no decidido). La mazmorra no cambia.
@@ -93,9 +93,8 @@ Las cifras son `[TUNABLE-PLACEHOLDER]`. Lo retirado del primer prototipo (campam
 - **Pendiente próximo para la protodemo:**
   1. **Glifo:** integrarlo en la ROM según §6.
   2. **Grafo de Zona 1:** conectar salas reales (3 naves, 4 galerías, 2 capillas con reja, cripta, puerta con llave, atajo), persistencia de cofres/puertas/altares, viaje entre altares desde el campamento, santuarios (estatuas) y mapa en la pausa.
-  4. **Inventario y pausa:** tipografía definitiva.
-  5. **Sonidos definitivos:** elegir y sustituir los efectos de sonido (SFX) actuales, que son provisionales, por los definitivos.
-  6. **Validación en DS:** medición `perf` en hardware (campamento nocturno y salas con ~24 enemigos) y prueba de guardado en tarjeta real (`dungeonds_arpg.sav`).
+  3. **Sonidos definitivos:** revisar sonido a sonido en una ROM de prueba cuáles chirrían (muchos de ElevenLabs, p. ej. el de ejecución; los gratuitos `lab_*` gustan más) y sustituirlos.
+  4. **Validación en DS:** medición `perf` en hardware (campamento nocturno y salas con ~24 enemigos) y prueba de guardado en tarjeta real (`dungeonds_arpg.sav`).
 
 ## 6. Glifo (decidido 2026-11-22)
 Propuesta, mockups y cuentas: `walkthroughs/glifo-diseno/`. Sustituye a la Maldición (retirada; historia en `DESIGN-ARCHIVE.md`) (de ella se conservan el lanzamiento con el lápiz y el tope de 3). Cifras iniciales, a ajustar jugando.
@@ -130,7 +129,7 @@ Propuesta con capturas de la ROM: `walkthroughs/arpg-menus-inicio/`. Sustituye a
 - **Avisos de primera vez:** un rótulo corto en la pantalla táctil la primera vez que pasa cada cosa; se apuntan en la partida guardada y no se repiten (una partida nueva los vuelve a enseñar). Primer enemigo tambaleante: «L: rematar». Primera reliquia recogida: «Engárzala en el arcón o desde la pausa». Primer tomo de Glifo: «Mantén L y toca el Glifo». Primera vuelta al campamento con experiencia para subir: «Duerme para subir de nivel».
 - **Tarjeta del inventario:** la primera vez que se abre el inventario (arcón o pausa), una tarjeta encima: las reliquias se engarzan en un hechizo (Rayo, Ejecución, Glifo) o en el Pecho y lo mejoran; cada una pide un nivel; lo que no uses se funde y da cera. Se cierra con A, B o un toque.
 - **Controles:** pantalla en dos bloques, «En la catedral» y «En el campamento», con el Glifo y el mapa (SELECT).
-- **Pendiente:** imagen y nombre del juego en la pantalla de título (decisión de arte aparte).
+- **Pantalla de título (decidido 2026-11-23):** nombre provisional **EXVOTION** (el definitivo está por decidir). Pantalla de arriba: fondo casi negro, el nombre en versalitas espaciadas marfil a doble tamaño con un filete fino debajo, y una sola vela de cera con una llama que parpadea (paleta apagada, sin neón) y un halo tenue; sin imagen de juego ni héroe. Abajo siguen los botones sobre el suelo oscurecido.
 
 ## 9. El Campanero de Ánimas, jefe (decidido 2026-11-22)
 Sustituye para el ARPG la dirección inicial de `DESIGN.md` §6.13.2 (reforzar a los de alrededor), que ya cubre la Monja. Aspecto y pacto: `DESIGN.md` §6.10. Es el jefe que **obliga a usar el Rayo**: con el Rayo sin mejorar es una pelea larga y dura, y así enseña a cuidarlo aunque se juegue «main Glifo». Zona y sala exactas, por decidir al diseñar la zona 2. Cifras iniciales `[TUNABLE-PLACEHOLDER]`, a ajustar jugando.
