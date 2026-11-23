@@ -2,7 +2,7 @@
 #include "game.h"
 #include "arpg_inv.h"
 #include "arpg_progress.h"
-#include "bestiary_font.h"
+#include "inv_font.h"
 #include "inv_art.h"
 #include "inv_item_art.h"
 #include "inv_item_floor_art.h"
@@ -295,22 +295,22 @@ static void corner_ticks(uint16_t *buf, int x, int y, int w, int h, uint16_t col
 
 static void text_at(uint16_t *buf, int x, int y, const char *s, uint16_t col) {
     if (!s || !*s) return;
-    dirty_rect(x, y, x + bestiary_font_measure_utf8(s) + 2, y + bestiary_font_line_height() + 1);
-    bestiary_font_draw_utf8(buf, x + 1, y + 1, s, INV_SHAD);
-    bestiary_font_draw_utf8(buf, x, y, s, col);
+    dirty_rect(x, y, x + inv_font_measure_utf8(s) + 2, y + inv_font_line_height() + 1);
+    inv_font_draw_utf8(buf, x + 1, y + 1, s, INV_SHAD);
+    inv_font_draw_utf8(buf, x, y, s, col);
 }
 
 static void text_right(uint16_t *buf, int xr, int y, const char *s, uint16_t col) {
-    text_at(buf, xr - bestiary_font_measure_utf8(s), y, s, col);
+    text_at(buf, xr - inv_font_measure_utf8(s), y, s, col);
 }
 
 static void text_center(uint16_t *buf, int cx, int y, const char *s, uint16_t col) {
-    text_at(buf, cx - bestiary_font_measure_utf8(s) / 2, y, s, col);
+    text_at(buf, cx - inv_font_measure_utf8(s) / 2, y, s, col);
 }
 
 static int measure_wrapped_lines(int max_w, const char *utf8) {
     if (!utf8 || !*utf8) return 0;
-    const BestiaryGlyph *g_sp = bestiary_font_get_glyph(' ');
+    const InvGlyph *g_sp = inv_font_get_glyph(' ');
     int sp_w = g_sp ? g_sp->advance : 3;
     int lines = 1;
     int line_w = 0;
@@ -333,8 +333,8 @@ static int measure_wrapped_lines(int max_w, const char *utf8) {
             } else {
                 p++;
             }
-            const BestiaryGlyph *g = bestiary_font_get_glyph(cp);
-            if (!g) g = bestiary_font_get_glyph('?');
+            const InvGlyph *g = inv_font_get_glyph(cp);
+            if (!g) g = inv_font_get_glyph('?');
             if (g) ww += g->advance;
         }
         if (wstart == p) break;
@@ -353,8 +353,8 @@ static int text_wrapped(uint16_t *buf, int x, int y, int max_w, int line_step, c
     int nlines = measure_wrapped_lines(max_w, s);
     int h = nlines * line_step;
     dirty_rect(x, y, x + max_w + 2, y + h + 2);
-    bestiary_font_draw_wrapped(buf, x + 1, y + 1, max_w, line_step, s, INV_SHAD);
-    bestiary_font_draw_wrapped(buf, x, y, max_w, line_step, s, col);
+    inv_font_draw_wrapped(buf, x + 1, y + 1, max_w, line_step, s, INV_SHAD);
+    inv_font_draw_wrapped(buf, x, y, max_w, line_step, s, col);
     return h;
 }
 
@@ -534,14 +534,14 @@ static void show_msg(const char *m) {
 static void text_fit(uint16_t *buf, int x, int y, int max_w, const char *s, uint16_t col) {
     char tmp[64];
     snprintf(tmp, sizeof(tmp), "%s", s ? s : "");
-    if (bestiary_font_measure_utf8(tmp) > max_w) {
+    if (inv_font_measure_utf8(tmp) > max_w) {
         int len = (int)strlen(tmp);
         while (len > 1) {
             len--;
             while (len > 1 && ((uint8_t)tmp[len] & 0xC0) == 0x80) len--;   // no cortar un carácter UTF-8
             tmp[len] = '.';
             tmp[len + 1] = 0;
-            if (bestiary_font_measure_utf8(tmp) <= max_w) break;
+            if (inv_font_measure_utf8(tmp) <= max_w) break;
         }
     }
     text_at(buf, x, y, tmp, col);
@@ -554,7 +554,7 @@ static void item_display_name(const ArpgInvItem *it, char *buf, int n) {
 
 static void card_item_name(const ArpgInvItem *it, int max_w, char *buf, int n) {
     item_display_name(it, buf, n);
-    if (it && max_w < 95 && it->name_id == 1 && bestiary_font_measure_utf8(buf) > max_w) {
+    if (it && max_w < 95 && it->name_id == 1 && inv_font_measure_utf8(buf) > max_w) {
         snprintf(buf, (size_t)n, "Sello del Corazón");
     }
 }
@@ -1206,9 +1206,9 @@ static void d2_stat_box(uint16_t *buf, int x, int y, int w, const char *label,
                         const char *val, uint16_t val_col) {
     text_at(buf, x + 2, y + 1, label, INV_DIM);
     int box_w = (w < 120) ? 44 : 58;
-    int tw = bestiary_font_measure_utf8(val) + 6;
+    int tw = inv_font_measure_utf8(val) + 6;
     if (tw > box_w) {
-        int max_bw = w - bestiary_font_measure_utf8(label) - 6;
+        int max_bw = w - inv_font_measure_utf8(label) - 6;
         if (tw <= max_bw) box_w = tw;
     }
     int bx = x + w - box_w;
@@ -1241,7 +1241,7 @@ static int render_card_header_and_mech(uint16_t *buf, int x, int y, int w, const
     card_item_name(it, name_w, name, sizeof(name));
     draw_item_glyph(buf, it, x + 15, y + 29, 8, 0);
     int hline_y;
-    if (bestiary_font_measure_utf8(name) > name_w) {
+    if (inv_font_measure_utf8(name) > name_w) {
         int nh = text_wrapped(buf, x + 29, y + 15, name_w, 9, name, s_rar_bdr[it->rarity]);
         text_at(buf, x + 29, y + 15 + nh, arpg_inv_rarity_name(it->rarity), INV_DIM);
         hline_y = y + 15 + nh + 11;
@@ -1477,11 +1477,11 @@ void inventory_render_top(uint16_t *buf) {
     } else {
         snprintf(line, sizeof(line), "%s · %s · Nv.%d",
                  arpg_inv_rarity_name(sel_it->rarity), arpg_inv_school_name(sel_it->school), ilvl);
-        if (bestiary_font_measure_utf8(line) > TOP_RW) {
+        if (inv_font_measure_utf8(line) > TOP_RW) {
             snprintf(line, sizeof(line), "%s·%s·Nv.%d",
                      arpg_inv_rarity_name(sel_it->rarity), arpg_inv_school_name(sel_it->school), ilvl);
         }
-        if (bestiary_font_measure_utf8(line) > TOP_RW) {
+        if (inv_font_measure_utf8(line) > TOP_RW) {
             snprintf(line, sizeof(line), "%s · Nv.%d", arpg_inv_rarity_name(sel_it->rarity), ilvl);
         }
         text_at(buf, TOP_RX, 67, line, INV_DIM);

@@ -575,6 +575,12 @@ void menu_render_bottom(uint16_t *buf) {
         return;
     }
 
+    if (s_state == MENU_TITLE) {
+        /* Mismo fondo casi negro que la pantalla de arriba (title_screen.c): sin suelo de catedral. */
+        const uint16_t bg = RGB15(1, 1, 2) | BIT(15);
+        dirty_rect(0, 0, SCREEN_W, SCREEN_H);
+        for (int i = 0; i < SCREEN_W * SCREEN_H; i++) buf[i] = bg;
+    }
     if (s_state == MENU_BESTIARY) {
         draw_box(buf, 38, 36, 180, 72, MENU_COL_INA_FILL, MENU_COL_INA_BDR);
         draw_text_centered(buf, SCREEN_W / 2, 48, "Códice", MENU_COL_HEADER);

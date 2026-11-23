@@ -37,6 +37,7 @@
 #include "arpg_hud_gfx.h"
 #include "dmg_numbers.h"
 #include "menu.h"
+#include "title_screen.h"
 #include "inventory.h"
 #include "encounters_act1.h"
 #include "boss.h"
@@ -4167,8 +4168,11 @@ int main(void) {
         }
 #endif
         uint32_t t_top = cpuGetTiming();
+        int title_top = (menu_state() == MENU_TITLE);
         int inv_top = (menu_state() == MENU_INVENTORY);
-        if (inv_top) {
+        if (title_top) {
+            title_top_render(s_top_page, (uint32_t)s_frame_index, !s_inv_top_on);
+        } else if (inv_top) {
             // El panel tapa el mundo entero: no se renderiza la escena y solo se repinta cuando
             // cambia su contenido (la pantalla superior es de un solo buffer; repintarla cada
             // frame se pasa del VBlank y rasga la imagen).
@@ -4193,7 +4197,7 @@ int main(void) {
             }
 #endif
         }
-        s_inv_top_on = inv_top;
+        s_inv_top_on = inv_top || title_top;
 #if HW_SHADOWS
         // The top page is single buffered and was just redrawn: its shadows go live now.
         PP_T0(pp_hs2);
