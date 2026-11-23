@@ -55,11 +55,12 @@ def pokes(**kw):
     return [{"field": k, "value": v} for k, v in kw.items()]
 
 
-def stage(vi, relics, enemies, hero_hp=None, extra=()):
+def stage(vi, relics, enemies, hero_hp=None, extra=(), flags=39, hero=None):
     """Variant switch + clean restage of the whole scene (the mailbox clears every enemy and effect)."""
     p = [{"field": "relic_mask", "value": relics}, {"field": "dv", "value": vi}, {"field": "apply_seq", "value": vi + 1}]
     s = [{"poke": p, "frames": 3}]
-    q = pokes(player_x=HX, player_y=HY, weapon=1, style=vi, flags=39, enemy_count=len(enemies))
+    hx, hy = hero if hero else (HX, HY)
+    q = pokes(player_x=hx, player_y=hy, weapon=1, style=vi, flags=flags, enemy_count=len(enemies))
     for i, (t, x, y) in enumerate(enemies):
         q += pokes(**{f"e{i}_type": t, f"e{i}_flags": 0, f"e{i}_x": x, f"e{i}_y": y})
     q.append({"field": "seq", "value": vi + 1})

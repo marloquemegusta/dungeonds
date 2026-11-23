@@ -711,12 +711,13 @@ static void update_charger(Enemy *e, Enemy *enemies, int num_enemies, int idx,
 }
 
 // ---------------------------------------------------------------------------
-// Ojo del Tribunal (DESIGN.md 6.10, "Mirada colimada"), ENEMY_TYPE_SHOOTER. FSM
-// CHASE (search) -> TRACK (40 frames: the band from the lantern follows the hero and narrows, the held head
-// charges) -> LOCK (20 frames: the line is frozen where the hero was) -> SENTENCE (the head fires the beam
-// from its mouth along the locked line, one hit) -> COOLDOWN -> CHASE.
-// A wall or column cuts the sight and the beam (los_has_line_of_sight / ojo_ray_wall_dist). The rhythm is the
-// old sniper's (aim, fix, fire); the hero is safe by leaving the line before SENTENCE or hiding behind a column.
+// Ojo del Tribunal (DESIGN.md 6.10, "sentencia escrita en el suelo"), ENEMY_TYPE_SHOOTER. FSM
+// CHASE (search) -> TRACK (40 frames: a crack on the ground grows from its feet to the hero and follows him)
+// -> LOCK (20 frames: the crack freezes and extends to the first wall or column; a light runs along it opening
+// each eye, the countdown) -> SENTENCE (the whole line bursts at once into spectral flames; the head opens its
+// mouth and fires nothing; the damage is that strip of ground, from the feet to the wall) -> COOLDOWN (scar) -> CHASE.
+// A wall or column cuts the sight and the line (los_has_line_of_sight / ojo_ray_wall_dist). The hero is safe by
+// leaving the line before SENTENCE or hiding behind a column.
 // ---------------------------------------------------------------------------
 
 void enemy_muzzle(const Enemy *e, fixed *mx, fixed *my, int *mh) {
@@ -756,24 +757,15 @@ static int ojo_cover_shields(int ox, int oy, int px, int py) {
     return g_hero_crouched && line_crosses_low_cover(ox, oy, px, py);
 }
 
-// Would the beam that the Ojo fires now be cancelled by low cover? Uses the mouth the shot will leave from (the sentence clip's muzzle).
+// Would the sentence that the Ojo pronounces now be cancelled by low cover? The line starts at its feet (the crack on the floor).
 static int ojo_hero_covered(Enemy *e, fixed player_x, fixed player_y) {
     if (!g_hero_crouched) return 0;
-    const EnemyState st = e->state;
-    const int g = e->gesture;
-    e->state = ENEMY_STATE_SENTENCE;
-    e->gesture = 1;
-    fixed mx, my;
-    int mh;
-    enemy_muzzle(e, &mx, &my, &mh);
-    e->state = st;
-    e->gesture = g;
-    return ojo_cover_shields(TO_INT(mx), TO_INT(my), TO_INT(player_x), TO_INT(player_y));
+    return ojo_cover_shields(TO_INT(e->x), TO_INT(e->y), TO_INT(player_x), TO_INT(player_y));
 }
 
-// The damage line is a temporary wall: while the beam hurts (impact + flare) a hero within OJO_HIT_HALF_WIDTH ground px of
-// the fixed line, ahead of the mouth and before the first wall, takes a hit (player_take_hit's i-frames cap it at one).
-// Once per frame per Ojo.
+// The damage line is a temporary wall: while the sentence hurts (impact + flare) a hero within OJO_HIT_HALF_WIDTH ground px of
+// the crack, from the Ojo's feet to the first wall or column in the direction fixed in LOCK, takes a hit (player_take_hit's
+// i-frames cap it at one). The same line is what enemy_laser.c paints. Once per frame per Ojo.
 static void ojo_beam_hurts(const Enemy *e, fixed player_x, fixed player_y) {
     int rx = TO_INT(player_x) - e->beam_mx;
     int ry2 = 2 * (TO_INT(player_y) - e->beam_my);
@@ -781,37 +773,34 @@ static void ojo_beam_hurts(const Enemy *e, fixed player_x, fixed player_y) {
     int cross = (rx * e->beam_uy - ry2 * e->beam_ux) >> 8;
     if (cross < 0) cross = -cross;
     if (along >= 0 && along <= e->beam_len && cross <= OJO_HIT_HALF_WIDTH) {
-        // Low cover (DESIGN.md 6.9): a crouched hero is safe when the line from the mouth to him crosses a bench or
-        // sacks before reaching him. The beam is still drawn over the cover; only the hit is cancelled.
+        // Low cover (DESIGN.md 6.9): a crouched hero is safe when the line from the Ojo's feet to him crosses a bench or
+        // sacks before reaching him. The crack is still drawn over the cover; only the hit is cancelled.
         if (ojo_cover_shields(e->beam_mx, e->beam_my, TO_INT(player_x), TO_INT(player_y))) return;
         player_take_damage(&g_player_state, arpg_enemy_damage_of(e));
     }
 }
 
-// Fires the sentence: the beam leaves the mouth along the line to the locked point (ground metric), is cut at
-// the first wall or column and hurts the hero once if he is on it (player_take_hit respects the i-frames).
+// Pronounces the sentence: the whole crack from the Ojo's feet along the ground line to the locked point (ground metric)
+// and on to the first wall or column hurts the hero once if he is on it (player_take_hit respects the i-frames).
 static void ojo_fire(Enemy *e, fixed player_x, fixed player_y) {
-    fixed mx, my;
-    int mh;
-    enemy_muzzle(e, &mx, &my, &mh);
-    int mxi = TO_INT(mx), myi = TO_INT(my);
-    // Drawn direction: screen metric from the mouth to the locked chest point (as the old beam).
-    int ax = e->aim_px - mxi;
-    int ay = e->aim_py - myi + mh - OJO_TARGET_HEIGHT;
-    int slen = (int)int_sqrt((uint32_t)(ax * ax + GROUND_DY2(ay)));
+    const int wx = TO_INT(e->x), wy = TO_INT(e->y);
+    // Screen direction of the line (kept for the bots that read aim_dir).
+    int ax = e->aim_px - wx;
+    int ay = e->aim_py - wy;
+    int slen = (int)int_sqrt((uint32_t)(ax * ax + ay * ay));
     if (slen < 1) { ax = 1; ay = 0; slen = 1; }
     e->aim_dir_x = div32(ax * 256, slen);
     e->aim_dir_y = div32(ay * 256, slen);
-    // Hit line: true ground metric from the mouth to the locked point.
-    int gx = e->aim_px - mxi;
-    int gy2 = 2 * (e->aim_py - myi);
+    // Hit line: true ground metric from the feet to the locked point, extended to the first wall or column.
+    int gx = e->aim_px - wx;
+    int gy2 = 2 * (e->aim_py - wy);
     int glen = (int)int_sqrt((uint32_t)(gx * gx + gy2 * gy2));
     if (glen < 1) { gx = 1; gy2 = 0; glen = 1; }
     int ux = div32(gx * 256, glen);                  // unit vector 8.8
     int uy = div32(gy2 * 256, glen);
-    e->beam_len = ojo_ray_wall_dist(mxi, myi, ux << 7, uy << 7, OJO_BEAM_MAX_LEN);
-    e->beam_mx = mxi;
-    e->beam_my = myi;
+    e->beam_len = ojo_ray_wall_dist(wx, wy, ux << 7, uy << 7, OJO_BEAM_MAX_LEN);
+    e->beam_mx = wx;
+    e->beam_my = wy;
     e->beam_ux = ux;
     e->beam_uy = uy;
     ojo_beam_hurts(e, player_x, player_y);

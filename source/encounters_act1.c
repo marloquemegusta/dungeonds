@@ -297,6 +297,15 @@ static const EncPieceDef s_campanero_pieces[] = {
     { STRIP_PIECE_SANTO, 0, 196 },
     { STRIP_PIECE_SANTO_DER, 160, 196 },
 };
+#if ARPG_OJO_TEST
+// Test room (variant arpg-ojo): every block of every room holds the same columns, near the foot of the block where the hero
+// lands, so one is always at hand to hide from the Ojo of ojo_test.c. Nominal top-left in block px (snapped to the kit phases).
+static const EncPieceDef s_ojo_test_pieces[] = {
+    { STRIP_PIECE_COLUMNA_ENTERA, 120, 184 },
+    { STRIP_PIECE_COLUMNA_ENTERA, 24, 120 },
+    { STRIP_PIECE_COLUMNA_ENTERA, 136, 72 },
+};
+#endif
 #if ENC_START_CAMPANERO
 static const EncEnemyDef s_campanero_enemies[] = {
     { ENC_E_CAMPANERO, ENC_S_AWAKE, CAMP_BOSS_X, CAMP_BOSS_Y },
@@ -330,6 +339,9 @@ void enc_init(uint32_t seed) {
     for (int k = 0; k < ENC_STAGES; k++) {
         s_tier[k] = (uint8_t)tier_of_stage(k);
         s_mirror[k] = (uint8_t)(pick_hash(k, 99) & 1u);
+#if ARPG_OJO_TEST
+        s_mirror[k] = 0;             // arpg-ojo: the test columns always stand where ojo_test.c expects them
+#endif
         s_plant[k] = 0;
         if (k >= room->blocks || is_boss_stage(k)) continue;
         const int range = ENC_PLANT_COUNT - (prev_plant >= 0 ? 1 : 0);
@@ -422,6 +434,10 @@ int enc_block_pieces(int32_t block, EncPiecePlan *out, int max) {
         defs = s_plants[b.plant].pieces;
         n = s_plants[b.plant].n_pieces;
         if (room_def()->chapel_gate) n = 0;           // the room of the reja has a clear floor (nothing between the gate and the entrance)
+#if ARPG_OJO_TEST
+        defs = s_ojo_test_pieces;
+        n = (int)(sizeof(s_ojo_test_pieces) / sizeof(s_ojo_test_pieces[0]));
+#endif
     } else if (b.kind == ENC_BLOCK_CORRIDOR) {
         defs = s_corridor_pieces;
         n = (int)(sizeof(s_corridor_pieces) / sizeof(s_corridor_pieces[0]));
@@ -476,7 +492,7 @@ int enc_block_rects(int32_t block, EncRect *out, int max) {
     EncBlock b;
     enc_block_info(block, &b);
     int n = 0;
-    if (b.kind == ENC_BLOCK_ENCOUNTER) {
+    if (b.kind == ENC_BLOCK_ENCOUNTER && !ARPG_OJO_TEST) {      // arpg-ojo: no sacos / alambre, only the test columns
         const EncPlant *pl = &s_plants[b.plant];
         for (int i = 0; i < (room_def()->chapel_gate ? 0 : pl->n_rects) && n < max; i++) {
             const EncRectDef *r = &pl->rects[i];
@@ -851,6 +867,9 @@ static void room_art_prepare_current(void) {
                 mask |= 1u << g_char_group[enemy_type_char_id(bd->escort[ph][i].type)];
     }
     if (arpg_inv_has_mechanic(ARPG_MECH_LEVANTAR)) mask |= 1u << CG_EXVOTO;
+#if ARPG_OJO_TEST
+    mask |= 1u << CG_OJO;            // arpg-ojo: the only enemy is the Ojo (ojo_test.c)
+#endif
 #if ARPG_EXVOTO_TEST || ARPG_REMATE_TEST
     // Test variants: the rooms are empty and the test code spawns the whole Exvoto family around the hero.
     mask |= (1u << CG_EXVOTO) | (1u << CG_MONAGUILLO) | (1u << CG_PARROCO) | (1u << CG_SMONJA);
@@ -1166,7 +1185,7 @@ void enc_update(Enemy *enemies, int max_enemies, int px, int py) {
     // stays unspawned and retries on a later frame.
     for (int k = lo; k < hi; k++) {
         EncRuntime *rt = &s_rt[k];
-#if ARPG_BOXEO || ARPG_EXVOTO_TEST || ARPG_REMATE_TEST
+#if ARPG_BOXEO || ARPG_EXVOTO_TEST || ARPG_REMATE_TEST || ARPG_OJO_TEST
         continue;               // boxeo: no room ever populates; the only enemy is the dummy of boxeo.c
 #endif
 #if SOUND_TEST
