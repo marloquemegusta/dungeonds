@@ -116,7 +116,7 @@ En la DS todo lo que va dentro del programa (arrays `const` de C) se copia a EWR
 - **IA (`enemy_ai.c`):** separación por rejilla de 16 px, dirección por tabla (sin raíz ni división), `sqrt32`/`div32` hardware, LOD fuera de pantalla (cada 2 frames con paso doble, `enemy_ai_set_view`) y línea de visión del tirador solo dentro de rango. `navfield.c`: BFS más rápido, caché por nodo de `nav_next_step` y sin reinicio si el objetivo no cambia.
 - **Blit por tramos opacos:** el generador (`tools/generate_player_sprites_c.py`) emite por fila los tramos opacos (`g_character_runs`, `x | len << 8`) y filas con pitch par; +72 KB de ROM.
 - **Limpieza:** `zero_words_burst` escribe 8 palabras por iteración (`stmia`). Camino caliente en ITCM (§4.5).
-- **Picos:** el rebase de la franja prepara el suelo en 10 trozos en frames previos y conmuta punteros (+~40 KB de RAM; vuelve a costar ~10 ms si el jugador sube más de ~3,6 px/frame). La navegación se prepara por adelantado (`nav_stage_step`). Láseres con un `dirty_row` por fila. Fragmentos de muerte: máximo 2 enemigos por frame, cola de 16.
+- **Picos:** el rebase de la franja prepara el suelo en 10 trozos en frames previos y conmuta punteros (+~40 KB de RAM; vuelve a costar ~10 ms si el jugador sube más de ~3,6 px/frame). La navegación se prepara por adelantado (`nav_stage_step`). Sentencia del Ojo (`source/enemy_laser.c`: grieta, ojos, llamas y cicatriz pintados por pasos de profundidad entre los actores) con un `dirty_row` por fila; sin medir en la DS. Fragmentos de muerte: máximo 2 enemigos por frame, cola de 16.
 - El log de `PERF_PROFILE` usa ruta explícita `fat:/` (o `sd:/`), porque NitroFS deja el directorio en `nitro:/`. Variantes `stress`, banco A/B y medición con horda de 48: archivo.
 
 ### 3.6b. Audio
@@ -200,6 +200,10 @@ Banco de pruebas de combate ARPG: `build-project.ps1 -Variant arpg-lab` (defines
 ### 5.3c. Variante `prueba-sonidos`
 
 `arpg-lab` + `SOUND_TEST=1`: el menú (SELECT) abre en «Escenas»; cada escena (`source/sound_test.c`) vacía las salas y coloca ante el héroe un grupo que dispara unos sonidos en contexto (0 mapa normal, 1 remates, 2 hechizos, 3 Ojos, 4 Cireneos, 5 Monja cura simulada, 6 Monaguillos, 7 campana fija). Las páginas de catálogo listan cada `SND_*` con su archivo y origen (`K·` gratuito, `IA·` ElevenLabs) y «Banco gratuito» reproduce los 31 `lab_*`. Con `SOUND_TEST` el héroe invulnerable sigue sonando al recibir daño. Escenario de evidencia `scenarios/prueba_sonidos.json` (`suite: false`).
+
+### 5.3d. Variante `arpg-ojo`: sala de prueba del Ojo
+
+`ARPG_OJO_TEST=1` + `SKIP_TITLE=1` + `ARPG_ALL_UNLOCKED=1` + `PERF_PROFILE=1` (sin menú de ajuste; `source/ojo_test.c`, bloques `#if ARPG_OJO_TEST` en `main.c` y `encounters_act1.c`, valores de ajuste en `include/lab_tuning.h`): sala con un Ojo para ver la sentencia del suelo. Escenario `scenarios/arpg_ojo_comprobacion.json`. Sin probar en la DS.
 
 ### 5.4. Variante `reliquias-suelo`: escaparate de reliquias caídas
 
