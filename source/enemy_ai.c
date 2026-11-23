@@ -1,6 +1,7 @@
 #include "campanero_sprite.h"
 #include "enemy_ai.h"
 #include "lab_tuning.h"
+#include "sound_test.h"
 #include "horde.h"
 #include "enemy_laser.h"
 #include "groundfx.h"
@@ -8,6 +9,7 @@
 #include "collision.h"
 #include "navfield.h"
 #include "player_sprite.h"
+#include "chars_pool.h"
 #include "sandbox.h"
 #include "arpg.h"
 #include "dmg_numbers.h"
@@ -1762,7 +1764,10 @@ static void update_abanderado(Enemy *e, Enemy *enemies, int num_enemies, int idx
 // bites, never prays; the Monaguillo as ever). No extra Enemy fields: the phase is the clip in char_id (spider walk /
 // transition), the transition's frame is `frame` and `kneel` (unused once awake) = 1 while it plays backwards (getting up).
 static inline int possess_candidate(const Enemy *e) {
-    return e->active && (e->type == ENEMY_TYPE_EXVOTO || e->type == ENEMY_TYPE_MONAGUILLO);
+    if (!e->active) return 0;
+    if (e->type == ENEMY_TYPE_EXVOTO) return (g_chars_loaded >> CG_ARANA_EXVOTO) & 1u;   // the spider forms are in the pool only
+    if (e->type == ENEMY_TYPE_MONAGUILLO) return (g_chars_loaded >> CG_ARANA_MONA) & 1u; // in rooms with a Súper Monja
+    return 0;
 }
 static inline int possess_walk_char(const Enemy *e) {
     return e->type == ENEMY_TYPE_MONAGUILLO ? CHAR_MONAGUILLO_ARANA_WALK : CHAR_EXVOTO_ARANA_WALK;
@@ -1794,7 +1799,7 @@ static void possession_update(Enemy *enemies, int num_enemies) {
     s_haste_base = enemies;
     memset(s_haste, 0, sizeof(s_haste));
 #endif
-    if (!g_arana_ok) return;
+    if (!(g_chars_loaded & ((1u << CG_ARANA_EXVOTO) | (1u << CG_ARANA_MONA)))) return;
     uint8_t monja[MAX_GAMEPLAY_ENEMIES];
     int nm = 0;
     for (int i = 0; i < num_enemies; i++) {
@@ -2053,6 +2058,9 @@ ITCM_CODE void enemy_ai_update(Enemy *enemies, int num_enemies, fixed player_x, 
 #if ARPG_REMATE_TEST
         if (possess_phase(e) == 1 && possession_step(e)) continue;   // remate room: frozen, but the possessed still lie down
         continue;                                          // no walking, no attack, no guard, no dodge: they only reel from hits
+#endif
+#if SOUND_TEST
+        if (sound_test_freeze()) continue;                 // prueba-sonidos: scenes 1, 2 and 5 hold their enemies still (they only reel from hits)
 #endif
 #if ARPG_BOXEO
         if (g_lab_saco_still) continue;                    // boxeo: the dummy only reels from hits

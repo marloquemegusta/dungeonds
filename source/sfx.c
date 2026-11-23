@@ -1,5 +1,6 @@
 #include "cfxprof.h"
 #include "sfx.h"
+#include "room_pool.h"
 #include "lab_tuning.h"
 #include <stdint.h>
 #include <stdio.h>
@@ -168,7 +169,7 @@ void sfx_init(void) {
 
 #ifdef ARM9
     s_charge_handle = 0;
-    if (!nitroFSInit(NULL)) return;
+    if (!room_pool_fs_ready()) return;
     mmInitDefault("nitro:/soundbank.bin");
     for (int i = 0; i < SND_COUNT; i++) {
         if (!sfx_is_voice(i)) mmLoadEffect(s_mm_ids[i]);
@@ -247,8 +248,34 @@ void sfx_play(SfxId id, int world_x) {
 #if ARPG_LAB
 void sfx_lab_preview(int ev) {
     if (ev < 0 || ev >= SND_COUNT) return;
+#ifdef ARM9
+    if (sfx_is_voice(ev)) {            /* boss voices are not resident: sfx_play_voice loads the sample while it plays */
+        sfx_play_voice((SfxId)ev);
+        return;
+    }
+#endif
     s_last_played[ev] = s_frame - 100;     /* a preview ignores the event cooldown */
     sfx_play_pitched((SfxId)ev, -1, 1024);
+}
+
+void sfx_lab_play_candidate(int labv) {
+#ifdef ARM9
+    if (labv < 0 || labv >= LABV_COUNT || !s_audio_ready) return;
+    if (!s_lab_loaded[labv]) {
+        mmLoadEffect(s_lab_mm_ids[labv]);
+        s_lab_loaded[labv] = 1;
+    }
+    mm_sound_effect eff = {
+        .id      = s_lab_mm_ids[labv],
+        .rate    = 1024,
+        .handle  = 0,
+        .volume  = 220,
+        .panning = SFX_PAN_CENTER,
+    };
+    mmEffectEx(&eff);
+#else
+    (void)labv;
+#endif
 }
 
 void sfx_lab_prepare(int ev) {

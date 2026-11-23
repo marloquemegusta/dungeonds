@@ -6,9 +6,9 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 SPRITES = (ROOT / "source" / "player_sprite.c").read_text(encoding="utf-8")
 CHAR_DIR = ROOT / "assets" / "sprites" / "characters"
-# Order of the C tables (NUM_CHARACTERS): hero, charger, ojo, exvoto walk, exvoto pray_stand, pray_kneel, stand_up, abanderado, monaguillo, corazon_agachado_andar.
+# Order of the first C table slots (CHAR_*): hero, charger (art dir: cireneo), ojo, exvoto walk, exvoto pray_stand, pray_kneel, stand_up, abanderado, monaguillo, corazon_agachado_andar.
 CHARACTERS = [
-    "corazon", "charger", "ojo",
+    "corazon", "cireneo", "ojo",
     "exvoto", "exvoto_pray_stand", "exvoto_pray_kneel", "exvoto_stand_up",
     "abanderado", "monaguillo", "corazon_agachado_andar",
 ]
@@ -24,9 +24,10 @@ def c_muzzle_table():
     start = SPRITES.index("const int8_t g_character_muzzle[")
     body = SPRITES[SPRITES.index("=", start):SPRITES.index("};\n\n", start)]
     nums = [int(v) for v in re.findall(r"-?\d+", body)]
-    assert len(nums) == 3 * 8 * 8 * len(CHARACTERS), len(nums)
+    per_char = 3 * 8 * 8
+    assert len(nums) % per_char == 0, len(nums)   # NUM_CHARACTERS crece con cada clip; solo importan los primeros
     it = iter(nums)
-    return [[[[next(it) for _ in range(3)] for _ in range(8)] for _ in range(8)] for _ in CHARACTERS]
+    return [[[[next(it) for _ in range(3)] for _ in range(8)] for _ in range(8)] for _ in range(len(nums) // per_char)]
 
 
 class CharacterMuzzleTests(unittest.TestCase):
@@ -53,8 +54,8 @@ class CharacterMuzzleTests(unittest.TestCase):
                         )
 
     def test_charger_has_no_muzzle(self):
-        self.assertNotIn("dirMuzzle", settings("charger"))
-        table = c_muzzle_table()[CHARACTERS.index("charger")]
+        self.assertNotIn("dirMuzzle", settings("cireneo"))
+        table = c_muzzle_table()[CHARACTERS.index("cireneo")]
         self.assertTrue(all(v == 0 for d in table for f in d for v in f))
 
     def test_c_table_matches_settings(self):

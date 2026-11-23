@@ -27,7 +27,7 @@ typedef enum {
 void menu_open_title(void);
 void menu_open_pause(int from_camp);   /* from_camp != 0 hides "Volver al campamento" */
 /* Inventario (DESIGN.md 7.4). Volver/B lo cierra: vuelve al padre (campamento o pausa). */
-void menu_open_inventory(void);
+void menu_open_inventory(int mode);   /* INV_MODE_* (inventory.h) */
 /* Códice (bestiary) from the camp's lectern: opens the viewer, B closes it back to the camp scene. */
 void menu_open_codex(void);
 void menu_close(void);

@@ -91,19 +91,18 @@ static inline int enemy_type_char_id(EnemyType type) {
     if (type == ENEMY_TYPE_ABANDERADO) return CHAR_ABANDERADO;
     if (type == ENEMY_TYPE_CAMPANERO) return CHAR_CAMPANERO;    // frames streamed from NitroFS (campanero_sprite.h)
     if (type == ENEMY_TYPE_MONAGUILLO) return CHAR_MONAGUILLO;
-    // Exvoto tiers: the Bebé has its own baked sheet; the Párroco runs with a sheet streamed from NitroFS (falls back
-    // to the Exvoto slot if run.bin could not be read); the Súper Monja has her own streamed sheets (falls back to the
-    // Exvoto slot). A praying enemy swaps to its pose slot (exvoto_pose_char).
+    // Exvoto tiers: the Bebé, the Párroco (running) and the Súper Monja have their own sheets (room pool groups CG_EXVOTO,
+    // CG_PARROCO, CG_SMONJA). A praying enemy swaps to its pose slot (exvoto_pose_char).
     if (type == ENEMY_TYPE_BEBE) return CHAR_EXVOTO_BEBE;
-    if (type == ENEMY_TYPE_PARROCO) return g_parroco_run_ok ? CHAR_EXVOTO_PARROCO_RUN : CHAR_EXVOTO;
-    if (type == ENEMY_TYPE_MONJA) return g_smonja_ok ? CHAR_SMONJA_WALK : CHAR_EXVOTO;
+    if (type == ENEMY_TYPE_PARROCO) return CHAR_EXVOTO_PARROCO_RUN;
+    if (type == ENEMY_TYPE_MONJA) return CHAR_SMONJA_WALK;
     return CHAR_CHARGER;
 }
 
 // Pose slots of the Exvoto family: the Súper Monja has her own clips, everyone else borrows the wax-nun ones.
 enum { EXVOTO_POSE_PRAY_STAND = 0, EXVOTO_POSE_PRAY_KNEEL = 1, EXVOTO_POSE_STAND_UP = 2 };
 static inline int exvoto_pose_char(EnemyType type, int pose) {
-    if (type == ENEMY_TYPE_MONJA && g_smonja_ok)
+    if (type == ENEMY_TYPE_MONJA)
         return pose == EXVOTO_POSE_PRAY_STAND ? CHAR_SMONJA_PRAY_STAND
              : pose == EXVOTO_POSE_PRAY_KNEEL ? CHAR_SMONJA_PRAY_KNEEL : CHAR_SMONJA_STAND_UP;
     return pose == EXVOTO_POSE_PRAY_STAND ? CHAR_EXVOTO_PRAY_STAND

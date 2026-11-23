@@ -7,6 +7,7 @@
 #include "modifiers.h"
 #include "upgrades.h"
 #include "sfx.h"
+#include "lab_tuning.h"
 #include "remate.h"
 #include "arpg.h"
 #include "arpg_inv.h"
@@ -173,6 +174,14 @@ void player_state_init(PlayerState *player) {
 }
 
 int player_take_damage(PlayerState *player, int damage) {
+#if SOUND_TEST
+    // prueba-sonidos: the hero is invulnerable but the hurt sound still has to be heard (with the normal i-frames).
+    if (player && !player->is_dead && player->god_mode && player->invuln_timer <= 0 && remate_invuln() <= 0) {
+        player->invuln_timer = PLAYER_IFRAMES;
+        sfx_play(SND_PLAYER_HURT, -1);
+        return 0;
+    }
+#endif
     if (!player || player->is_dead || player->god_mode || player->invuln_timer > 0 || remate_invuln() > 0) return 0;
     player->hp -= damage;
     dmg_numbers_spawn_player(damage, DMG_NUM_PLAYER);

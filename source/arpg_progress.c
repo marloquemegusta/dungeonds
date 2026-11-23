@@ -6,7 +6,7 @@
 
 ArpgProgress g_arpg;
 
-#define ARPG_SAVE_VERSION 6      // v6: 16 rooms (v5 and older keep level, xp, inventory, tips and spell; the map progress restarts)
+#define ARPG_SAVE_VERSION 7      // v7: 16 rooms + camp stash. v6 (12 rooms + stash) keeps its stash; v3-v6 keep level, xp, inventory, tips and spell; the map progress restarts
 
 // Test build (variant arpg-todo, project.json): every save and every fresh start has level 10 and every relic and tome equipped.
 #ifndef ARPG_ALL_UNLOCKED
@@ -182,13 +182,18 @@ int arpg_progress_load(void) {
         size_t got = fread(&tmp, 1, sizeof(tmp), f);
         fclose(f);
         int ok = got == sizeof(tmp);
-        // v4/v5 (and v3, same format): the prefix up to the map fields is identical. v5 room ids changed in v6 (12 -> 16 rooms),
-        // so the map progress (chests, altars, bosses, key, rooms seen, last altar) restarts; level, xp, bag, tips and spell stay.
-        const int old_map = got >= ARPG_SAVE_V4_SIZE && tmp.magic == ARPG_SAVE_MAGIC && tmp.version >= 3 && tmp.version <= 5 && tmp.level >= 1;
+        // v3-v6: the prefix up to the map fields is identical. Room ids changed in v7 (12 -> 16 rooms), so the map
+        // progress (chests, altars, bosses, key, rooms seen, last altar) restarts; level, xp, bag, tips and spell stay.
+        // v6 (dead_groups[12]) also carried the camp stash, 4 bytes earlier than now: it is moved, not lost.
+        const int old_map = got >= ARPG_SAVE_V4_SIZE && tmp.magic == ARPG_SAVE_MAGIC && tmp.version >= 3 && tmp.version <= 6 && tmp.level >= 1;
         const int old3 = old_map && tmp.version == 3;
         if (old_map) {
             ok = 1;
-            memset((uint8_t *)&tmp + ARPG_SAVE_V4_SIZE, 0, sizeof(tmp) - ARPG_SAVE_V4_SIZE);
+            if (tmp.version == 6 && got >= ARPG_SAVE_V6_STASH_OFS + sizeof(tmp.stash))
+                memmove(tmp.stash, (const uint8_t *)&tmp + ARPG_SAVE_V6_STASH_OFS, sizeof(tmp.stash));
+            else
+                memset(tmp.stash, 0, sizeof(tmp.stash));
+            memset((uint8_t *)&tmp + ARPG_SAVE_V4_SIZE, 0, ARPG_SAVE_V5_SIZE - ARPG_SAVE_V4_SIZE);
             tmp.altars_lo = 0;                  // altars are room ids too
             tmp.altars_hi = 0;
             tmp.deepest = 0;

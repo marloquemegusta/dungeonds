@@ -8,7 +8,7 @@
 
 typedef struct {
     uint32_t magic;      // set by arpg_progress_reset to 0x41525047 ("ARPG")
-    uint16_t version;    // 6 (v5: mapa de 12 salas; v4: sin mapa; v1: inventario nuevo; v3: se conserva y se le añade el Glifo)
+    uint16_t version;    // 7 (v6: 12 salas con alijo; v5: 12 salas; v4: sin mapa; v1: inventario nuevo; v3: se conserva y se le añade el Glifo)
     uint16_t level;      // starts at 1
     uint32_t xp;         // banked xp not yet converted into levels
     uint16_t points;     // retired with the skill tree; kept so the save layout (and scenarios) do not move
@@ -18,7 +18,7 @@ typedef struct {
     uint32_t altars_lo;  // bit a = travel altar (room index / 3) touched, altars 0..31
     uint32_t altars_hi;  // altars 32..63
     ArpgInventory inv;   // reliquias, tomos, engarces y cera (DESIGN.md 7.4)
-    // v5/v6 (mapa de la zona 1; v6 = 16 salas): fields appended at the end, never reordered. Bit r = room r (0..15).
+    // v5+ (mapa de la zona 1; v7 = 16 salas): fields appended at the end, never reordered. Bit r = room r (0..15).
     uint16_t chests_open;    // chests opened (never refilled)
     uint16_t boss_ever;      // bosses and minibosses beaten at least once (kept forever)
     uint16_t boss_dead;      // bosses and minibosses dead since the last sleep (they come back when sleeping)
@@ -27,7 +27,12 @@ typedef struct {
     uint8_t  dead_groups[16];// per room: bit b = group of block b dead since the last sleep
     uint16_t rooms_seen;     // bit r = room r visited at least once (the overlay map of SELECT shows only those)
     uint8_t  reserved[2];
+    // v6+: alijo del arcón del campamento (reliquias que no se llevan ni se funden)
+    ArpgInvItem stash[ARPG_INV_STASH];
 } ArpgProgress;
+#define ARPG_SAVE_V5_SIZE offsetof(ArpgProgress, stash)
+#define ARPG_SAVE_V6_STASH_OFS (ARPG_SAVE_V5_SIZE - 4)   // v6 had dead_groups[12]: its stash sat 4 bytes earlier
+_Static_assert(offsetof(ArpgProgress, stash) == offsetof(ArpgProgress, dead_groups) + 20, "v6 stash migration assumes this layout");
 #define ARPG_SAVE_V4_SIZE offsetof(ArpgProgress, chests_open)
 
 #define ARPG_TIP_REMATE     0x01

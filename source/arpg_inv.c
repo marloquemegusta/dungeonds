@@ -114,6 +114,15 @@ void arpg_inv_init(ArpgInventory *inv) {
     for (int s = 0; s < ARPG_INV_SCHOOLS; s++)
         for (int k = 0; k < ARPG_INV_SOCKETS; k++) item_clear(&inv->socket[s][k]);
     for (int i = 0; i < ARPG_INV_SPELLS; i++) item_clear(&inv->spell[i]);
+    for (int i = 0; i < ARPG_INV_STASH; i++) {      // el alijo solo guarda reliquias validas
+        ArpgInvItem *it = &g_arpg.stash[i];
+        if (it->kind == ARPG_ITEM_EMPTY) continue;
+        int bad = it->kind != ARPG_ITEM_RELIC || it->school >= ARPG_INV_SCHOOLS || it->rarity >= ARPG_RAR_COUNT ||
+                  it->nlines > 2 || (it->mech >= MECH_COUNT && it->mech != ARPG_MECH_NONE);
+        for (int l = 0; !bad && l < it->nlines; l++)
+            if (it->line_kind[l] >= ARPG_LINE_COUNT) bad = 1;
+        if (bad) item_clear(it);
+    }
     item_make(&inv->spell[0], ARPG_ITEM_RAYO, ARPG_SCHOOL_RAYO, ARPG_RAR_COMMON, ARPG_MECH_NONE);
     inv->wax = 0;
 }
@@ -292,6 +301,45 @@ int arpg_inv_first_free_bag(void) {
     for (int i = 0; i < ARPG_INV_BAG; i++)
         if (g_arpg.inv.bag[i].kind == ARPG_ITEM_EMPTY) return i;
     return -1;
+}
+
+const ArpgInvItem *arpg_inv_stash_item(int index) {
+    if ((unsigned)index >= ARPG_INV_STASH) return 0;
+    if (g_arpg.stash[index].kind == ARPG_ITEM_EMPTY) return 0;
+    return &g_arpg.stash[index];
+}
+
+int arpg_inv_first_free_stash(void) {
+    for (int i = 0; i < ARPG_INV_STASH; i++)
+        if (g_arpg.stash[i].kind == ARPG_ITEM_EMPTY) return i;
+    return -1;
+}
+
+int arpg_inv_stash_store(int bag_index) {
+    if ((unsigned)bag_index >= ARPG_INV_BAG || g_arpg.inv.bag[bag_index].kind != ARPG_ITEM_RELIC) return 0;
+    int s = arpg_inv_first_free_stash();
+    if (s < 0) return 0;
+    g_arpg.stash[s] = g_arpg.inv.bag[bag_index];
+    item_clear(&g_arpg.inv.bag[bag_index]);
+    return 1;
+}
+
+int arpg_inv_stash_take(int stash_index) {
+    if ((unsigned)stash_index >= ARPG_INV_STASH || g_arpg.stash[stash_index].kind == ARPG_ITEM_EMPTY) return 0;
+    int b = arpg_inv_first_free_bag();
+    if (b < 0) return 0;
+    g_arpg.inv.bag[b] = g_arpg.stash[stash_index];
+    item_clear(&g_arpg.stash[stash_index]);
+    return 1;
+}
+
+int arpg_inv_stash_move(int bag_index, int stash_index) {
+    if ((unsigned)bag_index >= ARPG_INV_BAG || (unsigned)stash_index >= ARPG_INV_STASH) return 0;
+    ArpgInvItem *b = &g_arpg.inv.bag[bag_index], *s = &g_arpg.stash[stash_index];
+    if (b->kind != ARPG_ITEM_EMPTY && b->kind != ARPG_ITEM_RELIC) return 0;   // al alijo solo van reliquias
+    if (b->kind == ARPG_ITEM_EMPTY && s->kind == ARPG_ITEM_EMPTY) return 0;
+    ArpgInvItem t = *b; *b = *s; *s = t;
+    return 1;
 }
 
 int arpg_inv_socket_count(int school) {

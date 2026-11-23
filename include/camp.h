@@ -18,7 +18,7 @@
 #define CAMP_START_Y 322
 
 // Action a prop triggers when the hero is next to it and touches it (or presses A).
-enum { CAMP_ACT_NONE = 0, CAMP_ACT_SLEEP, CAMP_ACT_INVENTORY, CAMP_ACT_CODEX, CAMP_ACT_DOOR };
+enum { CAMP_ACT_NONE = 0, CAMP_ACT_SLEEP, CAMP_ACT_INVENTORY, CAMP_ACT_CODEX, CAMP_ACT_DOOR, CAMP_ACT_CRISOL };
 
 #if CAMP_SCENE
 const Arena *camp_arena(void);   // the static camp room (built once on first call)
@@ -44,7 +44,7 @@ int  camp_items_count(int cam_x, int cam_y);                      // props visib
 int  camp_item_depth(int index);
 void camp_item_draw(int index, uint16_t *buffer, int cam_x, int cam_y, int depth);
 
-// Baked ground shadow of a visible prop, on its own canvas (4-bit nibbles). Fills the mask pointer,
+// Baked ground shadow of a visible prop, on its own canvas (1 bpp). Fills the mask pointer,
 // its bounds {0, 0, w, h} and the canvas top-left in world pixels. Returns 0 when the piece has none.
 int  camp_item_shadow(int index, const uint8_t **mask, uint8_t *bounds, int *left, int *top);
 #else

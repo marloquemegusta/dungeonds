@@ -1,6 +1,7 @@
 #include "campanero_boss_text.h"
 #include "encounters_act1.h"
 #include "lab_tuning.h"
+#include "sound_test.h"
 
 // Translation unit never empty (ISO C) when ENCOUNTERS_PROTO=0.
 typedef int encounters_act1_translation_unit_not_empty;
@@ -12,6 +13,8 @@ typedef int encounters_act1_translation_unit_not_empty;
 #include "arpg.h"
 #include "arpg_progress.h"
 #include "boss.h"
+#include "chars_pool.h"
+#include "arpg_inv.h"
 
 // Life in points (ARPG) can exceed a byte; the stats keep it clamped to 255.
 #define HP_U8(v) ((uint8_t)((v) > 255 ? 255 : (v)))
@@ -305,6 +308,8 @@ static const BossDef *boss_def_of(int n) { (void)n; (void)&s_abanderado_def; ret
 static const BossDef *boss_def_of(int n) { (void)n; return &s_abanderado_def; }
 #endif
 
+static void room_art_prepare_current(void);
+
 void enc_init(uint32_t seed) {
     s_seed = seed ? seed : 1u;
     const RoomDef *room = room_def();
@@ -366,6 +371,7 @@ void enc_init(uint32_t seed) {
         boss_reset(boss_def_of(boss_number(0)), s_active_boss_k);
     }
     g_abanderado_max_mona = boss_mona_cap(boss_number(0));
+    room_art_prepare_current();
     volatile EncStats *st = &g_enc_stats;
     uint8_t deaths = (uint8_t)s_deaths;
     memset((void *)st, 0, sizeof(EncStats));
@@ -816,6 +822,49 @@ static int group_of_block(int k) {
     return prev;
 }
 
+// Room pool (room_pool.h): empties it and loads the enemy art this room can show: the groups of its blocks, the boss
+// and its escort (the Abanderado also summons Monaguillos), the Exvoto when LEVANTAR can raise allies, and the
+// Campanero. Whatever this misses is loaded on demand by chars_ready() and counted in g_pool_misses.
+static void room_art_prepare_current(void) {
+    uint32_t mask = 0;
+    int campanero = 0;
+    const RoomDef *r = room_def();
+    for (int k = 0; k < r->blocks; k++) {
+        const int g = group_of_block(k);
+        if (g < 0) continue;
+        for (int p = 0; p < s_groups[g].n_parts; p++) {
+            const EnemyType t = enemy_type_of(s_room_kinds[s_groups[g].parts[p].kind].enc_type);
+            mask |= 1u << g_char_group[enemy_type_char_id(t)];
+        }
+    }
+    if (r->type == RT_CRIPTA) {
+        const BossDef *bd = boss_def_of(boss_number(0));
+        if (bd->enemy_type == ENEMY_TYPE_CAMPANERO) {
+            campanero = 1;
+            mask |= 1u << CG_EXVOTO;                              // it raises Exvotos from the floor
+        } else {
+            mask |= 1u << g_char_group[enemy_type_char_id(bd->enemy_type)];
+        }
+        if (bd->enemy_type == ENEMY_TYPE_ABANDERADO) mask |= 1u << CG_MONAGUILLO;
+        for (int ph = 0; ph < bd->n_phases; ph++)
+            for (int i = 0; i < bd->n_escort[ph]; i++)
+                mask |= 1u << g_char_group[enemy_type_char_id(bd->escort[ph][i].type)];
+    }
+    if (arpg_inv_has_mechanic(ARPG_MECH_LEVANTAR)) mask |= 1u << CG_EXVOTO;
+#if ARPG_EXVOTO_TEST || ARPG_REMATE_TEST
+    // Test variants: the rooms are empty and the test code spawns the whole Exvoto family around the hero.
+    mask |= (1u << CG_EXVOTO) | (1u << CG_MONAGUILLO) | (1u << CG_PARROCO) | (1u << CG_SMONJA);
+#endif
+    // Implied art: the Párroco prays with the Exvoto poses; under a Súper Monja's aura the Exvotos and Monaguillos of the
+    // room turn into spiders (their spider clips are only loaded in her rooms).
+    if (mask & (1u << CG_PARROCO)) mask |= 1u << CG_EXVOTO;
+    if (mask & (1u << CG_SMONJA)) {
+        if (mask & (1u << CG_EXVOTO)) mask |= 1u << CG_ARANA_EXVOTO;
+        if (mask & (1u << CG_MONAGUILLO)) mask |= 1u << CG_ARANA_MONA;
+    }
+    room_art_prepare(mask, campanero);
+}
+
 // Slot of each member in the 4 x 3 grid of the block: kinds[slot] = RK_*, -1 = empty. Ojos take spread-out slots.
 static int group_kinds(int g, int8_t *kinds) {
     static const uint8_t spread[3] = { 1, 6, 8 };
@@ -1119,6 +1168,9 @@ void enc_update(Enemy *enemies, int max_enemies, int px, int py) {
         EncRuntime *rt = &s_rt[k];
 #if ARPG_BOXEO || ARPG_EXVOTO_TEST || ARPG_REMATE_TEST
         continue;               // boxeo: no room ever populates; the only enemy is the dummy of boxeo.c
+#endif
+#if SOUND_TEST
+        if (sound_test_rooms_empty()) continue;     // prueba-sonidos: a scene (1..7) owns the enemies; scene 0 is the normal map
 #endif
         if (rt->spawned) continue;
         const int top = window_top(block_of_encounter(k));

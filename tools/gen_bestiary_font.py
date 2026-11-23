@@ -470,6 +470,8 @@ def main():
     parser.add_argument('--out-h', default=os.path.join(WT_ROOT, 'include', 'bestiary_font.h'))
     parser.add_argument('--out-c', default=os.path.join(WT_ROOT, 'source', 'bestiary_font.c'))
     parser.add_argument('--out-preview', default=os.path.join(WT_ROOT, 'walkthroughs', 'bestiario', 'assets', 'font_preview.png'))
+    parser.add_argument('--prefix', default='bestiary', help="Nombre de los símbolos (p. ej. 'inv' → inv_font_*, InvGlyph)")
+    parser.add_argument('--line-height', type=int, default=0, help='Altura de línea (0 = la del bestiario, 13)')
     args = parser.parse_args()
 
     print(f'Loading font: {args.font} at size {args.size}...')
@@ -485,6 +487,18 @@ def main():
     print(f'Rendering preview {args.out_preview}...')
     render_preview_image(glyphs, args.out_preview)
 
+    if args.prefix != 'bestiary' or args.line_height:
+        pre = args.prefix
+        for path in (args.out_h, args.out_c):
+            with open(path, encoding='utf-8', newline='') as f:
+                t = f.read()
+            t = t.replace('bestiary_font', pre + '_font').replace('BESTIARY_FONT', pre.upper() + '_FONT')
+            t = t.replace('gen_' + pre + '_font.py', 'gen_bestiary_font.py')
+            t = t.replace('BestiaryGlyph', pre.capitalize() + 'Glyph')
+            if args.line_height:
+                t = t.replace('LINE_HEIGHT 13', 'LINE_HEIGHT %d' % args.line_height)
+            with open(path, 'w', encoding='utf-8', newline='') as f:
+                f.write(t)
     print('Bestiary font generation complete.')
 
 if __name__ == '__main__':

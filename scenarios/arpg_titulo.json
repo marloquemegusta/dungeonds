@@ -1,0 +1,71 @@
+{
+ "name": "arpg_titulo",
+ "description": "Pantalla de t\u00edtulo ARPG: nombre y vela arriba, llama en dos instantes y vuelta del submen\u00fa Controles. Solo evidencia.",
+ "suite": false,
+ "evidence_only": true,
+ "state": {
+  "elf": "../.ds-game-dev/build/out/dungeonds.elf",
+  "symbols": {
+   "pl": "s_player",
+   "ps": "g_player_state"
+  },
+  "default_symbol": "pl",
+  "fields": {
+   "px": {
+    "symbol": "pl",
+    "offset": 0,
+    "type": "s32"
+   },
+   "py": {
+    "symbol": "pl",
+    "offset": 4,
+    "type": "s32"
+   },
+   "hp": {
+    "symbol": "ps",
+    "offset": 0,
+    "type": "s32"
+   },
+   "dead": {
+    "symbol": "ps",
+    "offset": 12,
+    "type": "s32"
+   }
+  }
+ },
+ "steps": [
+  {
+   "frames": 60,
+   "capture": "t01_titulo"
+  },
+  {
+   "frames": 8,
+   "capture": "t02_llama"
+  },
+  {
+   "frames": 4,
+   "capture": "t03_llama"
+  },
+  {
+   "tap": {
+    "x": 128,
+    "y": 124
+   },
+   "frames": 6
+  },
+  {
+   "release": true,
+   "frames": 20,
+   "capture": "t04_controles"
+  },
+  {
+   "button_down": "B",
+   "frames": 4
+  },
+  {
+   "button_up": "B",
+   "frames": 15,
+   "capture": "t05_vuelta"
+  }
+ ]
+}

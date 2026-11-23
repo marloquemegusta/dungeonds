@@ -54,9 +54,12 @@
 La partida es la de §6.13. Quiere la dificultad de Isaac (morir mucho hasta dominar las mejoras), el gancho de Diablo (siguiente misión, mejor equipo) y una fantasía clara con entorno que cambia.
 
 ### 6.3 Cámara y pantallas
-- **Cámara con adelanto vertical (*look-ahead*):** el encuadre se adelanta suavemente según el sentido de marcha vertical:
+- **Cámara hacia el grupo (en combate):** si hay enemigos vivos en la sala, el encuadre vertical apunta a un punto entre el héroe y el centro del grupo, pesando más los enemigos cercanos. Así se kitea hacia atrás sin perder de vista al grupo: manda dónde está el peligro, no hacia dónde anda el héroe.
+  - **Sin saltos:** la cámara se acerca a ese punto con suavidad (rápida si está lejos, frenando al llegar); cuando muere un enemigo o el grupo se mueve, el encuadre se recoloca sin tirones.
+  - **Límites:** el héroe nunca sale de una franja de la pantalla táctil (entre ~25 % y ~75 % de su altura) para que siempre se pueda apuntar a su alrededor; si el grupo queda más lejos, se ve solo la parte que cabe.
+- **Cámara con adelanto vertical (*look-ahead*, sin enemigos):** el encuadre se adelanta suavemente según el sentido de marcha vertical:
   - **Al subir:** coloca al jugador en el tercio inferior (~69 %, ~132 px de vista delante y ~60 px detrás en la pantalla táctil).
-  - **Al bajar (retroceder):** desliza la vista hacia atrás hasta dejar al jugador en el tercio superior (~33 %, ~128 px de vista detrás), **salvo si está apuntando hacia delante con el stylus (*kiting*)**, en cuyo caso mantiene la vista al frente.
+  - **Al bajar (retroceder):** desliza la vista hacia atrás hasta dejar al jugador en el tercio superior (~33 %, ~128 px de vista detrás).
   - **Al parar o hacer *strafe* lateral:** la cámara mantiene el último encuadre, y requiere ~0,37 s (22 frames) de marcha vertical sostenida antes de empezar a deslizarse (a 2 px/frame) para que los esquives cortos no muevan el suelo bajo el stylus.
 - **La pantalla superior es la vanguardia, no un menú:** muestra la parte de arriba de la sala, con enemigos que también te disparan, y avisos del jefe. Se le puede disparar con el apuntado por vector (el lápiz apunta desde el personaje, aunque el objetivo quede fuera de la pantalla táctil).
 - Los menús, como la elección de Don, van en la pantalla inferior.
@@ -180,6 +183,13 @@ Todo el texto que se lee usa **una sola fuente: Palatino de 11 px, con el trazad
 - **Fila de escalas del Códice:** marcas de 3 px con paso 5 y hueco de 5 entre bloques, para que `VIDA`, `VELOC.` y `AMENAZA` quepan en el marco.
 - **Fuera de alcance:** el contador de FPS y los datos de rendimiento (depuración) siguen en la fuente de 5×7.
 - **Aceptado con matices:** el HUD de partida sale más fino y se lee con menos fuerza sobre el suelo con textura; los botones inactivos y la fila de datos del Códice quedan algo tenues. Se pule si molesta en la DS.
+
+#### 6.11.3 Números de daño (decidido 2026-11-23, traído del ARPG)
+Cifras flotantes sobre el enemigo golpeado, las mismas del ARPG (`DESIGN-ARPG.md`, «Números flotantes en combate»): bitmap de 3×5 px con contorno oscuro de 1 px, sin críticos, en paleta apagada (§6.10).
+- **Daño del rayo y del fuego al enemigo:** marfil cálido, salto parabólico con desvío lateral aleatorio (~0,55 s).
+- **Quemado y daño periódico:** violeta-ceniza, subida vertical lenta (~0,50 s).
+- **Curación de un enemigo** (`+N`, verde salvia): solo cuando exista un enemigo que cure (Monja).
+- **Sin cifra sobre el héroe:** su vida son golpes y ya la enseñan los corazones del HUD. Sin maná en este modo.
 
 ### 6.12 Sistema de mejoras del Corazón Abierto
 La demo tiene un solo personaje. Las cifras están en `[TUNABLE-PLACEHOLDER]` hasta la sesión de números (§6.12.10).
