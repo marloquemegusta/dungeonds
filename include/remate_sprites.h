@@ -8,7 +8,8 @@
 #define REMATE_KIND_OJO        2
 #define REMATE_KIND_MONAGUILLO 3
 #define REMATE_KIND_BEBE       4
-#define REMATE_NUM_KINDS       5
+#define REMATE_KIND_SMONJA   5
+#define REMATE_NUM_KINDS       6
 #define REMATE_NUM_DIRS      8
 
 // Mayor numero de fotogramas de animacion de cualquier tipo (el Ojo, 38). Cada tipo declara los suyos en
@@ -19,9 +20,9 @@
 // Streaming desde NitroFS (remate.c): la celda lee el fotograma que toca a estos buffers estaticos en vez de cargar
 // el bin entero. Son el peor fotograma de cualquier tipo/direccion (cuadrados a 1 KiB por el generador).
 #define REMATE_HEADER_BYTES  2048
-#define REMATE_PIX_BYTES     18432
+#define REMATE_PIX_BYTES     23552
 #define REMATE_RUN_BYTES     1024
-#define REMATE_MASK_BYTES    2048
+#define REMATE_MASK_BYTES    3072
 
 typedef struct {
     uint8_t cell_w;

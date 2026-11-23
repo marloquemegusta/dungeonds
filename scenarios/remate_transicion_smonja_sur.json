@@ -1,0 +1,1221 @@
+{
+ "name": "remate_transicion_smonja_sur",
+ "suite": false,
+ "evidence_only": true,
+ "description": "Igual que remate_transicion_smonja, entrando por el sur.",
+ "state": {
+  "elf": "../.ds-game-dev/build/out/dungeonds-arpg-lab.elf",
+  "symbols": {
+   "gps": "g_player_state",
+   "tiers": "g_tier_debug",
+   "en": "g_enemies",
+   "pl": "s_player",
+   "inp": "g_player_state"
+  },
+  "default_symbol": "gps",
+  "fields": {
+   "god": {
+    "symbol": "gps",
+    "offset": 20,
+    "type": "s32"
+   },
+   "tier_spawn": {
+    "symbol": "tiers",
+    "offset": 0,
+    "type": "u8"
+   },
+   "px": {
+    "symbol": "pl",
+    "offset": 0,
+    "type": "s32"
+   },
+   "py": {
+    "symbol": "pl",
+    "offset": 4,
+    "type": "s32"
+   },
+   "e18_x": {
+    "symbol": "en",
+    "offset": 2232,
+    "type": "s32"
+   },
+   "e18_y": {
+    "symbol": "en",
+    "offset": 2236,
+    "type": "s32"
+   },
+   "e18_dir": {
+    "symbol": "en",
+    "offset": 2240,
+    "type": "s32"
+   },
+   "e18_char": {
+    "symbol": "en",
+    "offset": 2252,
+    "type": "s32"
+   },
+   "e18_act": {
+    "symbol": "en",
+    "offset": 2256,
+    "type": "s32"
+   },
+   "e18_hp": {
+    "symbol": "en",
+    "offset": 2260,
+    "type": "s32"
+   },
+   "e18_ty": {
+    "symbol": "en",
+    "offset": 2272,
+    "type": "u8"
+   },
+   "e18_st": {
+    "symbol": "en",
+    "offset": 2273,
+    "type": "u8"
+   },
+   "e18_timer": {
+    "symbol": "en",
+    "offset": 2276,
+    "type": "s32"
+   },
+   "e19_x": {
+    "symbol": "en",
+    "offset": 2356,
+    "type": "s32"
+   },
+   "e19_y": {
+    "symbol": "en",
+    "offset": 2360,
+    "type": "s32"
+   },
+   "e19_dir": {
+    "symbol": "en",
+    "offset": 2364,
+    "type": "s32"
+   },
+   "e19_char": {
+    "symbol": "en",
+    "offset": 2376,
+    "type": "s32"
+   },
+   "e19_act": {
+    "symbol": "en",
+    "offset": 2380,
+    "type": "s32"
+   },
+   "e19_hp": {
+    "symbol": "en",
+    "offset": 2384,
+    "type": "s32"
+   },
+   "e19_ty": {
+    "symbol": "en",
+    "offset": 2396,
+    "type": "u8"
+   },
+   "e19_st": {
+    "symbol": "en",
+    "offset": 2397,
+    "type": "u8"
+   },
+   "e19_timer": {
+    "symbol": "en",
+    "offset": 2400,
+    "type": "s32"
+   },
+   "e20_x": {
+    "symbol": "en",
+    "offset": 2480,
+    "type": "s32"
+   },
+   "e20_y": {
+    "symbol": "en",
+    "offset": 2484,
+    "type": "s32"
+   },
+   "e20_dir": {
+    "symbol": "en",
+    "offset": 2488,
+    "type": "s32"
+   },
+   "e20_char": {
+    "symbol": "en",
+    "offset": 2500,
+    "type": "s32"
+   },
+   "e20_act": {
+    "symbol": "en",
+    "offset": 2504,
+    "type": "s32"
+   },
+   "e20_hp": {
+    "symbol": "en",
+    "offset": 2508,
+    "type": "s32"
+   },
+   "e20_ty": {
+    "symbol": "en",
+    "offset": 2520,
+    "type": "u8"
+   },
+   "e20_st": {
+    "symbol": "en",
+    "offset": 2521,
+    "type": "u8"
+   },
+   "e20_timer": {
+    "symbol": "en",
+    "offset": 2524,
+    "type": "s32"
+   }
+  }
+ },
+ "steps": [
+  {
+   "frames": 60
+  },
+  {
+   "poke": [
+    {
+     "field": "god",
+     "value": 1
+    }
+   ],
+   "frames": 2
+  },
+  {
+   "poke": [
+    {
+     "field": "tier_spawn",
+     "value": 1
+    }
+   ],
+   "frames": 3
+  },
+  {
+   "poke": [
+    {
+     "field": "e18_act",
+     "value": 0
+    },
+    {
+     "field": "e19_act",
+     "value": 0
+    }
+   ],
+   "frames": 1
+  },
+  {
+   "poke": [
+    {
+     "field": "px",
+     "value": 65536
+    },
+    {
+     "field": "py",
+     "value": 458752
+    },
+    {
+     "field": "e20_x",
+     "value": 65536
+    },
+    {
+     "field": "e20_y",
+     "value": 455680
+    },
+    {
+     "field": "e20_char",
+     "value": 12
+    },
+    {
+     "field": "e20_hp",
+     "value": 20
+    },
+    {
+     "field": "e20_st",
+     "value": 18
+    },
+    {
+     "field": "e20_timer",
+     "value": 260
+    }
+   ],
+   "frames": 0
+  },
+  {
+   "frames": 40,
+   "state_capture": "ready"
+  },
+  {
+   "frames": 1,
+   "capture": "f_000",
+   "state_capture": "f_000"
+  },
+  {
+   "frames": 1,
+   "capture": "f_001",
+   "state_capture": "f_001"
+  },
+  {
+   "frames": 1,
+   "capture": "f_002",
+   "state_capture": "f_002"
+  },
+  {
+   "frames": 1,
+   "capture": "f_003",
+   "state_capture": "f_003"
+  },
+  {
+   "frames": 1,
+   "capture": "f_004",
+   "state_capture": "f_004"
+  },
+  {
+   "frames": 1,
+   "capture": "f_005",
+   "state_capture": "f_005"
+  },
+  {
+   "frames": 1,
+   "capture": "f_006",
+   "state_capture": "f_006"
+  },
+  {
+   "frames": 1,
+   "capture": "f_007",
+   "state_capture": "f_007"
+  },
+  {
+   "frames": 1,
+   "capture": "f_008",
+   "state_capture": "f_008"
+  },
+  {
+   "frames": 1,
+   "capture": "f_009",
+   "state_capture": "f_009"
+  },
+  {
+   "frames": 1,
+   "capture": "f_010",
+   "state_capture": "f_010"
+  },
+  {
+   "frames": 1,
+   "capture": "f_011",
+   "state_capture": "f_011"
+  },
+  {
+   "frames": 1,
+   "capture": "f_012",
+   "state_capture": "f_012",
+   "button_down": "L"
+  },
+  {
+   "frames": 1,
+   "capture": "f_013",
+   "state_capture": "f_013",
+   "button_up": "L"
+  },
+  {
+   "frames": 1,
+   "capture": "f_014",
+   "state_capture": "f_014"
+  },
+  {
+   "frames": 1,
+   "capture": "f_015",
+   "state_capture": "f_015"
+  },
+  {
+   "frames": 1,
+   "capture": "f_016",
+   "state_capture": "f_016"
+  },
+  {
+   "frames": 1,
+   "capture": "f_017",
+   "state_capture": "f_017"
+  },
+  {
+   "frames": 1,
+   "capture": "f_018",
+   "state_capture": "f_018"
+  },
+  {
+   "frames": 1,
+   "capture": "f_019",
+   "state_capture": "f_019"
+  },
+  {
+   "frames": 1,
+   "capture": "f_020",
+   "state_capture": "f_020"
+  },
+  {
+   "frames": 1,
+   "capture": "f_021",
+   "state_capture": "f_021"
+  },
+  {
+   "frames": 1,
+   "capture": "f_022",
+   "state_capture": "f_022"
+  },
+  {
+   "frames": 1,
+   "capture": "f_023",
+   "state_capture": "f_023"
+  },
+  {
+   "frames": 1,
+   "capture": "f_024",
+   "state_capture": "f_024"
+  },
+  {
+   "frames": 1,
+   "capture": "f_025",
+   "state_capture": "f_025"
+  },
+  {
+   "frames": 1,
+   "capture": "f_026",
+   "state_capture": "f_026"
+  },
+  {
+   "frames": 1,
+   "capture": "f_027",
+   "state_capture": "f_027"
+  },
+  {
+   "frames": 1,
+   "capture": "f_028",
+   "state_capture": "f_028"
+  },
+  {
+   "frames": 1,
+   "capture": "f_029",
+   "state_capture": "f_029"
+  },
+  {
+   "frames": 1,
+   "capture": "f_030",
+   "state_capture": "f_030"
+  },
+  {
+   "frames": 1,
+   "capture": "f_031",
+   "state_capture": "f_031"
+  },
+  {
+   "frames": 1,
+   "capture": "f_032",
+   "state_capture": "f_032"
+  },
+  {
+   "frames": 1,
+   "capture": "f_033",
+   "state_capture": "f_033"
+  },
+  {
+   "frames": 1,
+   "capture": "f_034",
+   "state_capture": "f_034"
+  },
+  {
+   "frames": 1,
+   "capture": "f_035",
+   "state_capture": "f_035"
+  },
+  {
+   "frames": 1,
+   "capture": "f_036",
+   "state_capture": "f_036"
+  },
+  {
+   "frames": 1,
+   "capture": "f_037",
+   "state_capture": "f_037"
+  },
+  {
+   "frames": 1,
+   "capture": "f_038",
+   "state_capture": "f_038"
+  },
+  {
+   "frames": 1,
+   "capture": "f_039",
+   "state_capture": "f_039"
+  },
+  {
+   "frames": 1,
+   "capture": "f_040",
+   "state_capture": "f_040"
+  },
+  {
+   "frames": 1,
+   "capture": "f_041",
+   "state_capture": "f_041"
+  },
+  {
+   "frames": 1,
+   "capture": "f_042",
+   "state_capture": "f_042"
+  },
+  {
+   "frames": 1,
+   "capture": "f_043",
+   "state_capture": "f_043"
+  },
+  {
+   "frames": 1,
+   "capture": "f_044",
+   "state_capture": "f_044"
+  },
+  {
+   "frames": 1,
+   "capture": "f_045",
+   "state_capture": "f_045"
+  },
+  {
+   "frames": 1,
+   "capture": "f_046",
+   "state_capture": "f_046"
+  },
+  {
+   "frames": 1,
+   "capture": "f_047",
+   "state_capture": "f_047"
+  },
+  {
+   "frames": 1,
+   "capture": "f_048",
+   "state_capture": "f_048"
+  },
+  {
+   "frames": 1,
+   "capture": "f_049",
+   "state_capture": "f_049"
+  },
+  {
+   "frames": 1,
+   "capture": "f_050",
+   "state_capture": "f_050"
+  },
+  {
+   "frames": 1,
+   "capture": "f_051",
+   "state_capture": "f_051"
+  },
+  {
+   "frames": 1,
+   "capture": "f_052",
+   "state_capture": "f_052"
+  },
+  {
+   "frames": 1,
+   "capture": "f_053",
+   "state_capture": "f_053"
+  },
+  {
+   "frames": 1,
+   "capture": "f_054",
+   "state_capture": "f_054"
+  },
+  {
+   "frames": 1,
+   "capture": "f_055",
+   "state_capture": "f_055"
+  },
+  {
+   "frames": 1,
+   "capture": "f_056",
+   "state_capture": "f_056"
+  },
+  {
+   "frames": 1,
+   "capture": "f_057",
+   "state_capture": "f_057"
+  },
+  {
+   "frames": 1,
+   "capture": "f_058",
+   "state_capture": "f_058"
+  },
+  {
+   "frames": 1,
+   "capture": "f_059",
+   "state_capture": "f_059"
+  },
+  {
+   "frames": 1,
+   "capture": "f_060",
+   "state_capture": "f_060"
+  },
+  {
+   "frames": 1,
+   "capture": "f_061",
+   "state_capture": "f_061"
+  },
+  {
+   "frames": 1,
+   "capture": "f_062",
+   "state_capture": "f_062"
+  },
+  {
+   "frames": 1,
+   "capture": "f_063",
+   "state_capture": "f_063"
+  },
+  {
+   "frames": 1,
+   "capture": "f_064",
+   "state_capture": "f_064"
+  },
+  {
+   "frames": 1,
+   "capture": "f_065",
+   "state_capture": "f_065"
+  },
+  {
+   "frames": 1,
+   "capture": "f_066",
+   "state_capture": "f_066"
+  },
+  {
+   "frames": 1,
+   "capture": "f_067",
+   "state_capture": "f_067"
+  },
+  {
+   "frames": 1,
+   "capture": "f_068",
+   "state_capture": "f_068"
+  },
+  {
+   "frames": 1,
+   "capture": "f_069",
+   "state_capture": "f_069"
+  },
+  {
+   "frames": 1,
+   "capture": "f_070",
+   "state_capture": "f_070"
+  },
+  {
+   "frames": 1,
+   "capture": "f_071",
+   "state_capture": "f_071"
+  },
+  {
+   "frames": 1,
+   "capture": "f_072",
+   "state_capture": "f_072"
+  },
+  {
+   "frames": 1,
+   "capture": "f_073",
+   "state_capture": "f_073"
+  },
+  {
+   "frames": 1,
+   "capture": "f_074",
+   "state_capture": "f_074"
+  },
+  {
+   "frames": 1,
+   "capture": "f_075",
+   "state_capture": "f_075"
+  },
+  {
+   "frames": 1,
+   "capture": "f_076",
+   "state_capture": "f_076"
+  },
+  {
+   "frames": 1,
+   "capture": "f_077",
+   "state_capture": "f_077"
+  },
+  {
+   "frames": 1,
+   "capture": "f_078",
+   "state_capture": "f_078"
+  },
+  {
+   "frames": 1,
+   "capture": "f_079",
+   "state_capture": "f_079"
+  },
+  {
+   "frames": 1,
+   "capture": "f_080",
+   "state_capture": "f_080"
+  },
+  {
+   "frames": 1,
+   "capture": "f_081",
+   "state_capture": "f_081"
+  },
+  {
+   "frames": 1,
+   "capture": "f_082",
+   "state_capture": "f_082"
+  },
+  {
+   "frames": 1,
+   "capture": "f_083",
+   "state_capture": "f_083"
+  },
+  {
+   "frames": 1,
+   "capture": "f_084",
+   "state_capture": "f_084"
+  },
+  {
+   "frames": 1,
+   "capture": "f_085",
+   "state_capture": "f_085"
+  },
+  {
+   "frames": 1,
+   "capture": "f_086",
+   "state_capture": "f_086"
+  },
+  {
+   "frames": 1,
+   "capture": "f_087",
+   "state_capture": "f_087"
+  },
+  {
+   "frames": 1,
+   "capture": "f_088",
+   "state_capture": "f_088"
+  },
+  {
+   "frames": 1,
+   "capture": "f_089",
+   "state_capture": "f_089"
+  },
+  {
+   "frames": 1,
+   "capture": "f_090",
+   "state_capture": "f_090"
+  },
+  {
+   "frames": 1,
+   "capture": "f_091",
+   "state_capture": "f_091"
+  },
+  {
+   "frames": 1,
+   "capture": "f_092",
+   "state_capture": "f_092"
+  },
+  {
+   "frames": 1,
+   "capture": "f_093",
+   "state_capture": "f_093"
+  },
+  {
+   "frames": 1,
+   "capture": "f_094",
+   "state_capture": "f_094"
+  },
+  {
+   "frames": 1,
+   "capture": "f_095",
+   "state_capture": "f_095"
+  },
+  {
+   "frames": 1,
+   "capture": "f_096",
+   "state_capture": "f_096"
+  },
+  {
+   "frames": 1,
+   "capture": "f_097",
+   "state_capture": "f_097"
+  },
+  {
+   "frames": 1,
+   "capture": "f_098",
+   "state_capture": "f_098"
+  },
+  {
+   "frames": 1,
+   "capture": "f_099",
+   "state_capture": "f_099"
+  },
+  {
+   "frames": 1,
+   "capture": "f_100",
+   "state_capture": "f_100"
+  },
+  {
+   "frames": 1,
+   "capture": "f_101",
+   "state_capture": "f_101"
+  },
+  {
+   "frames": 1,
+   "capture": "f_102",
+   "state_capture": "f_102"
+  },
+  {
+   "frames": 1,
+   "capture": "f_103",
+   "state_capture": "f_103"
+  },
+  {
+   "frames": 1,
+   "capture": "f_104",
+   "state_capture": "f_104"
+  },
+  {
+   "frames": 1,
+   "capture": "f_105",
+   "state_capture": "f_105"
+  },
+  {
+   "frames": 1,
+   "capture": "f_106",
+   "state_capture": "f_106"
+  },
+  {
+   "frames": 1,
+   "capture": "f_107",
+   "state_capture": "f_107"
+  },
+  {
+   "frames": 1,
+   "capture": "f_108",
+   "state_capture": "f_108"
+  },
+  {
+   "frames": 1,
+   "capture": "f_109",
+   "state_capture": "f_109"
+  },
+  {
+   "frames": 1,
+   "capture": "f_110",
+   "state_capture": "f_110"
+  },
+  {
+   "frames": 1,
+   "capture": "f_111",
+   "state_capture": "f_111"
+  },
+  {
+   "frames": 1,
+   "capture": "f_112",
+   "state_capture": "f_112"
+  },
+  {
+   "frames": 1,
+   "capture": "f_113",
+   "state_capture": "f_113"
+  },
+  {
+   "frames": 1,
+   "capture": "f_114",
+   "state_capture": "f_114"
+  },
+  {
+   "frames": 1,
+   "capture": "f_115",
+   "state_capture": "f_115"
+  },
+  {
+   "frames": 1,
+   "capture": "f_116",
+   "state_capture": "f_116"
+  },
+  {
+   "frames": 1,
+   "capture": "f_117",
+   "state_capture": "f_117"
+  },
+  {
+   "frames": 1,
+   "capture": "f_118",
+   "state_capture": "f_118"
+  },
+  {
+   "frames": 1,
+   "capture": "f_119",
+   "state_capture": "f_119"
+  },
+  {
+   "frames": 1,
+   "capture": "f_120",
+   "state_capture": "f_120"
+  },
+  {
+   "frames": 1,
+   "capture": "f_121",
+   "state_capture": "f_121"
+  },
+  {
+   "frames": 1,
+   "capture": "f_122",
+   "state_capture": "f_122"
+  },
+  {
+   "frames": 1,
+   "capture": "f_123",
+   "state_capture": "f_123"
+  },
+  {
+   "frames": 1,
+   "capture": "f_124",
+   "state_capture": "f_124"
+  },
+  {
+   "frames": 1,
+   "capture": "f_125",
+   "state_capture": "f_125"
+  },
+  {
+   "frames": 1,
+   "capture": "f_126",
+   "state_capture": "f_126"
+  },
+  {
+   "frames": 1,
+   "capture": "f_127",
+   "state_capture": "f_127"
+  },
+  {
+   "frames": 1,
+   "capture": "f_128",
+   "state_capture": "f_128"
+  },
+  {
+   "frames": 1,
+   "capture": "f_129",
+   "state_capture": "f_129"
+  },
+  {
+   "frames": 1,
+   "capture": "f_130",
+   "state_capture": "f_130"
+  },
+  {
+   "frames": 1,
+   "capture": "f_131",
+   "state_capture": "f_131"
+  },
+  {
+   "frames": 1,
+   "capture": "f_132",
+   "state_capture": "f_132"
+  },
+  {
+   "frames": 1,
+   "capture": "f_133",
+   "state_capture": "f_133"
+  },
+  {
+   "frames": 1,
+   "capture": "f_134",
+   "state_capture": "f_134"
+  },
+  {
+   "frames": 1,
+   "capture": "f_135",
+   "state_capture": "f_135"
+  },
+  {
+   "frames": 1,
+   "capture": "f_136",
+   "state_capture": "f_136"
+  },
+  {
+   "frames": 1,
+   "capture": "f_137",
+   "state_capture": "f_137"
+  },
+  {
+   "frames": 1,
+   "capture": "f_138",
+   "state_capture": "f_138"
+  },
+  {
+   "frames": 1,
+   "capture": "f_139",
+   "state_capture": "f_139"
+  },
+  {
+   "frames": 1,
+   "capture": "f_140",
+   "state_capture": "f_140"
+  },
+  {
+   "frames": 1,
+   "capture": "f_141",
+   "state_capture": "f_141"
+  },
+  {
+   "frames": 1,
+   "capture": "f_142",
+   "state_capture": "f_142"
+  },
+  {
+   "frames": 1,
+   "capture": "f_143",
+   "state_capture": "f_143"
+  },
+  {
+   "frames": 1,
+   "capture": "f_144",
+   "state_capture": "f_144"
+  },
+  {
+   "frames": 1,
+   "capture": "f_145",
+   "state_capture": "f_145"
+  },
+  {
+   "frames": 1,
+   "capture": "f_146",
+   "state_capture": "f_146"
+  },
+  {
+   "frames": 1,
+   "capture": "f_147",
+   "state_capture": "f_147"
+  },
+  {
+   "frames": 1,
+   "capture": "f_148",
+   "state_capture": "f_148"
+  },
+  {
+   "frames": 1,
+   "capture": "f_149",
+   "state_capture": "f_149"
+  },
+  {
+   "frames": 1,
+   "capture": "f_150",
+   "state_capture": "f_150"
+  },
+  {
+   "frames": 1,
+   "capture": "f_151",
+   "state_capture": "f_151"
+  },
+  {
+   "frames": 1,
+   "capture": "f_152",
+   "state_capture": "f_152"
+  },
+  {
+   "frames": 1,
+   "capture": "f_153",
+   "state_capture": "f_153"
+  },
+  {
+   "frames": 1,
+   "capture": "f_154",
+   "state_capture": "f_154"
+  },
+  {
+   "frames": 1,
+   "capture": "f_155",
+   "state_capture": "f_155"
+  },
+  {
+   "frames": 1,
+   "capture": "f_156",
+   "state_capture": "f_156"
+  },
+  {
+   "frames": 1,
+   "capture": "f_157",
+   "state_capture": "f_157"
+  },
+  {
+   "frames": 1,
+   "capture": "f_158",
+   "state_capture": "f_158"
+  },
+  {
+   "frames": 1,
+   "capture": "f_159",
+   "state_capture": "f_159"
+  },
+  {
+   "frames": 1,
+   "capture": "f_160",
+   "state_capture": "f_160"
+  },
+  {
+   "frames": 1,
+   "capture": "f_161",
+   "state_capture": "f_161"
+  },
+  {
+   "frames": 1,
+   "capture": "f_162",
+   "state_capture": "f_162"
+  },
+  {
+   "frames": 1,
+   "capture": "f_163",
+   "state_capture": "f_163"
+  },
+  {
+   "frames": 1,
+   "capture": "f_164",
+   "state_capture": "f_164"
+  },
+  {
+   "frames": 1,
+   "capture": "f_165",
+   "state_capture": "f_165"
+  },
+  {
+   "frames": 1,
+   "capture": "f_166",
+   "state_capture": "f_166"
+  },
+  {
+   "frames": 1,
+   "capture": "f_167",
+   "state_capture": "f_167"
+  },
+  {
+   "frames": 1,
+   "capture": "f_168",
+   "state_capture": "f_168"
+  },
+  {
+   "frames": 1,
+   "capture": "f_169",
+   "state_capture": "f_169"
+  },
+  {
+   "frames": 1,
+   "capture": "f_170",
+   "state_capture": "f_170"
+  },
+  {
+   "frames": 1,
+   "capture": "f_171",
+   "state_capture": "f_171"
+  },
+  {
+   "frames": 1,
+   "capture": "f_172",
+   "state_capture": "f_172"
+  },
+  {
+   "frames": 1,
+   "capture": "f_173",
+   "state_capture": "f_173"
+  },
+  {
+   "frames": 1,
+   "capture": "f_174",
+   "state_capture": "f_174"
+  },
+  {
+   "frames": 1,
+   "capture": "f_175",
+   "state_capture": "f_175"
+  },
+  {
+   "frames": 1,
+   "capture": "f_176",
+   "state_capture": "f_176"
+  },
+  {
+   "frames": 1,
+   "capture": "f_177",
+   "state_capture": "f_177"
+  },
+  {
+   "frames": 1,
+   "capture": "f_178",
+   "state_capture": "f_178"
+  },
+  {
+   "frames": 1,
+   "capture": "f_179",
+   "state_capture": "f_179"
+  },
+  {
+   "frames": 1,
+   "capture": "f_180",
+   "state_capture": "f_180"
+  },
+  {
+   "frames": 1,
+   "capture": "f_181",
+   "state_capture": "f_181"
+  },
+  {
+   "frames": 1,
+   "capture": "f_182",
+   "state_capture": "f_182"
+  },
+  {
+   "frames": 1,
+   "capture": "f_183",
+   "state_capture": "f_183"
+  },
+  {
+   "frames": 1,
+   "capture": "f_184",
+   "state_capture": "f_184"
+  },
+  {
+   "frames": 1,
+   "capture": "f_185",
+   "state_capture": "f_185"
+  },
+  {
+   "frames": 1,
+   "capture": "f_186",
+   "state_capture": "f_186"
+  },
+  {
+   "frames": 1,
+   "capture": "f_187",
+   "state_capture": "f_187"
+  },
+  {
+   "frames": 1,
+   "capture": "f_188",
+   "state_capture": "f_188"
+  },
+  {
+   "frames": 1,
+   "capture": "f_189",
+   "state_capture": "f_189"
+  },
+  {
+   "frames": 0,
+   "state_capture": "end"
+  }
+ ],
+ "assertions": {
+  "state_changes": [
+   {
+    "at": "ready",
+    "field": "e20_st",
+    "equals": 18
+   },
+   {
+    "at": "end",
+    "field": "e20_act",
+    "equals": 0
+   }
+  ]
+ }
+}
