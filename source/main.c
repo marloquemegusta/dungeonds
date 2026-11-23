@@ -125,6 +125,13 @@ static int s_cam_anchor_y = SCREEN_H / 2;
 static int s_cam_anchor_target = SCREEN_H / 2;
 static int s_cam_dir_intent = 0;
 static int s_cam_dir_frames = 0;
+#define CAM_GROUP_MIN_ANCHOR   (SCREEN_H / 4)       // hero never above 25% of the touch screen
+#define CAM_GROUP_MAX_ANCHOR   (SCREEN_H * 3 / 4)   // ...nor below 75%
+#define CAM_GROUP_K            320                  // proximity weight base (px)
+#define CAM_GROUP_MAX_DY       384                  // enemies farther than ~2 screens vertically are ignored
+#define CAM_GROUP_MAX_STEP     (3 << 8)             // 8.8 px/frame cap so the view never lurches
+static int s_cam_anchor_fp = (SCREEN_H / 2) << 8;   // 8.8 anchor used while in combat
+static int s_cam_in_combat = 0;
 #if SANDBOX && !CATHEDRAL_PLAYGROUND
 static const int s_strip_mode = 0;
 #else
@@ -2312,9 +2319,74 @@ static void player_muzzle(fixed *mx, fixed *my, int *mh) {
     *mh = m[2];
 }
 
-static void update_camera_lookahead(int sdy, int moved, int aim_ahead) {
-    // Kiting: walking backward while aiming ahead keeps the forward view intact.
-    if (sdy != 0 && moved && !(sdy > 0 && aim_ahead)) {
+// Awake, living enemies count as "in combat"; dormant, praying (asleep), dead, suspended and
+// remate-held ones do not.
+static int cam_enemy_in_combat(const Enemy *e) {
+    if (!e->active || e->hp <= 0) return 0;
+    switch (e->state) {
+        case ENEMY_STATE_DEAD:
+        case ENEMY_STATE_DORMANT:
+        case ENEMY_STATE_PRAY:
+        case ENEMY_STATE_SUSPENDED:
+        case ENEMY_STATE_REMATE:
+            return 0;
+        default:
+            return 1;
+    }
+}
+
+// Group camera (DESIGN.md 6.3): aim between the hero and the proximity-weighted centroid of the
+// awake enemies. Returns 1 while it drives the anchor, 0 when there is no combat.
+static int update_camera_group(void) {
+    int hx = player_screen_x(s_player.x, s_player.y);
+    int hy = player_screen_y(s_player.x, s_player.y);
+    int32_t sum_w = 0, sum_wdy = 0;
+    for (int i = 0; i < MAX_ENEMIES; i++) {
+        const Enemy *e = &g_enemies[i];
+        if (!cam_enemy_in_combat(e)) continue;
+        int dy = hy - player_screen_y(e->x, e->y);       // > 0: enemy above the hero
+        int dx = hx - player_screen_x(e->x, e->y);
+        int ady = dy < 0 ? -dy : dy;
+        int adx = dx < 0 ? -dx : dx;
+        if (ady > CAM_GROUP_MAX_DY) continue;
+        int w = CAM_GROUP_K - ady - (adx >> 1);
+        if (w < 1) w = 1;
+        sum_w += w;
+        sum_wdy += w * dy;
+    }
+    if (sum_w == 0) {
+        s_cam_in_combat = 0;
+        return 0;
+    }
+    if (!s_cam_in_combat) {
+        // Combat starts: ease from the current anchor, no jump.
+        s_cam_in_combat = 1;
+        s_cam_anchor_fp = s_cam_anchor_y << 8;
+    }
+    int mean_dy = (int)div32(sum_wdy, sum_w);
+    int target = (SCREEN_H / 2 + (mean_dy >> 1)) << 8;
+    int lo = CAM_GROUP_MIN_ANCHOR << 8, hi = CAM_GROUP_MAX_ANCHOR << 8;
+    if (target < lo) target = lo;
+    if (target > hi) target = hi;
+    int diff = target - s_cam_anchor_fp;
+    int step = diff >> 4;                                 // exponential ease: fast when far, slow on arrival
+    if (step == 0 && diff != 0) step = diff > 0 ? 64 : -64;
+    if (step > CAM_GROUP_MAX_STEP) step = CAM_GROUP_MAX_STEP;
+    if (step < -CAM_GROUP_MAX_STEP) step = -CAM_GROUP_MAX_STEP;
+    if ((diff > 0 && step > diff) || (diff < 0 && step < diff)) step = diff;
+    s_cam_anchor_fp += step;
+    // Keep the hero inside the band even if the anchor was outside it when combat began.
+    if (s_cam_anchor_fp < lo) s_cam_anchor_fp = lo;
+    if (s_cam_anchor_fp > hi) s_cam_anchor_fp = hi;
+    s_cam_anchor_y = s_cam_anchor_fp >> 8;
+    s_cam_anchor_target = s_cam_anchor_y;                 // look-ahead resumes from here without a jump
+    s_cam_dir_intent = 0;
+    s_cam_dir_frames = 0;
+    return 1;
+}
+
+static void update_camera_lookahead(int sdy, int moved) {
+    if (sdy != 0 && moved) {
         int dir = (sdy < 0) ? -1 : 1;
         if (dir == s_cam_dir_intent) {
             if (s_cam_dir_frames < CAM_LOOK_DELAY_FRAMES) s_cam_dir_frames++;
@@ -2368,6 +2440,8 @@ static void camera_init(void) {
     s_cam_anchor_target = s_cam_anchor_y;
     s_cam_dir_intent = 0;
     s_cam_dir_frames = 0;
+    s_cam_in_combat = 0;
+    s_cam_anchor_fp = s_cam_anchor_y << 8;
     update_camera();
 }
 
@@ -2584,9 +2658,7 @@ static void player_update(uint32_t keys, uint32_t keys_down) {
     s_player.char_id = s_crouched ? CHAR_HERO_CROUCH_WALK : CHAR_HERO;
     if (s_crouched && !s_player.is_moving) s_player.frame = CROUCH_REST_FRAME;
 
-    int aim_ahead = touch_down &&
-        (s_last_touch_y + s_cam_y <= player_screen_y(s_player.x, s_player.y) - AIM_CHEST_H);
-    update_camera_lookahead(sdy, s_player.is_moving, aim_ahead);
+    if (!update_camera_group()) update_camera_lookahead(sdy, s_player.is_moving);
     update_camera();
 
     // Stylus: aim and fire. The character turns towards the touched point first so the
