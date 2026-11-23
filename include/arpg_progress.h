@@ -8,7 +8,7 @@
 
 typedef struct {
     uint32_t magic;      // set by arpg_progress_reset to 0x41525047 ("ARPG")
-    uint16_t version;    // 5 (v4: sin mapa; v1: inventario nuevo; v3: se conserva y se le añade el Glifo)
+    uint16_t version;    // 6 (v5: sin alijo; v4: sin mapa; v1: inventario nuevo; v3: se conserva y se le añade el Glifo)
     uint16_t level;      // starts at 1
     uint32_t xp;         // banked xp not yet converted into levels
     uint16_t points;     // retired with the skill tree; kept so the save layout (and scenarios) do not move
@@ -27,7 +27,10 @@ typedef struct {
     uint8_t  dead_groups[12];// per room: bit b = group of block b dead since the last sleep
     uint16_t rooms_seen;     // bit r = room r visited at least once (the overlay map of SELECT shows only those)
     uint8_t  reserved[2];
+    // v6: alijo del arc�n del campamento (reliquias que no se llevan ni se funden)
+    ArpgInvItem stash[ARPG_INV_STASH];
 } ArpgProgress;
+#define ARPG_SAVE_V5_SIZE offsetof(ArpgProgress, stash)
 #define ARPG_SAVE_V4_SIZE offsetof(ArpgProgress, chests_open)
 
 #define ARPG_TIP_REMATE     0x01

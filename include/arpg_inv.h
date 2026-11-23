@@ -7,6 +7,7 @@
 #include <stdint.h>
 
 #define ARPG_INV_BAG        16          // huecos de bolsa
+#define ARPG_INV_STASH      16          // huecos del alijo del arcon
 #define ARPG_INV_SPELLS     3           // hechizos equipados: hueco 0 = Rayo, 1..2 = tomos
 #define ARPG_INV_SCHOOLS    5           // Rayo, EjecuciÃ³n, Glifo, Levantar, Pecho
 #define ARPG_INV_SOCKETS    3           // engarces por escuela (Pecho usa 2)
@@ -107,6 +108,12 @@ int  arpg_inv_bag_count(void);
 int  arpg_inv_bag_empty(int index);
 const ArpgInvItem *arpg_inv_bag_item(int index);       // NULL si vacÃ­o/fuera
 int  arpg_inv_first_free_bag(void);
+// Alijo del arcón (16 huecos). Mueven la reliquia entre bolsa y alijo; devuelven 0 si no cabe.
+const ArpgInvItem *arpg_inv_stash_item(int index);
+int  arpg_inv_first_free_stash(void);
+int  arpg_inv_stash_store(int bag_index);      // bolsa -> primer hueco libre del alijo
+int  arpg_inv_stash_take(int stash_index);     // alijo -> primer hueco libre de la bolsa
+int  arpg_inv_stash_move(int bag_index, int stash_index);   // intercambia (o mueve si el destino está vacío)
 
 int  arpg_inv_socket_count(int school);                // 3 (Pecho: 2)
 const ArpgInvItem *arpg_inv_socket_item(int school, int socket);  // NULL si vacÃ­o

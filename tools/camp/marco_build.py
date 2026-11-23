@@ -22,6 +22,7 @@ all RGB15 with BIT(15), 0 = transparent; include/camp_marco.h; assets/environmen
 
 Run: python tools/camp/marco_build.py
 """
+import os
 import sys
 from pathlib import Path
 
@@ -52,6 +53,13 @@ TOP_PANEL = 4                   # top face of the panel wall (cap thickness * si
 TOP_PILLAR = 6
 NORTH_H = 112                   # rows of the north strip
 SIDE_Y0 = NORTH_H
+CATH_WALL = ROOT / "assets/environment/cathedral/muros/muro_izq_128.png"
+SIDE_MODE = os.environ.get("DS_CAMP_SIDE", "D")   # A rotated (current), B slanted, C frontal, D cathedral walls + weathering
+NORTH_WALL = ROOT / "assets/environment/cathedral/muros/muro_fondo_pasante.png"
+if SIDE_MODE == "D":                                # whole frame from the cathedral kit: north wall squashed to 128 rows
+    BASE_N = 128
+    NORTH_H = BASE_N + 6
+    SIDE_Y0 = NORTH_H
 
 
 def extract(name):
@@ -103,6 +111,91 @@ class Canvas:
         self.gain[y0:y1, x0:x1][sa] = gain
 
 
+def north_from_cathedral(c):
+    """North wall = the cathedral's back wall with the arched passage (muro_fondo_pasante), cropped to its opaque rows and
+    squashed to BASE_N rows. Returns the boolean mask (H, W) of the passage (the gate hole)."""
+    im = np.asarray(Image.open(NORTH_WALL).convert("RGBA"), np.float64)
+    ys = np.where(im[..., 3].max(axis=1) > 128)[0]
+    im = im[ys.min():ys.max() + 1]
+    # The corner pillars of the source are 22 px wide; the side bands are SIDE_W: stretch each pillar to exactly SIDE_W
+    # (and the middle to fit) so the pillar's inner edge lands on the side bands' inner edge, pixel for pixel.
+    PIL = 22
+    segs = [(0, PIL, SIDE_W), (PIL, W - PIL, W - 2 * SIDE_W), (W - PIL, W, SIDE_W)]
+    parts = [resize(im[:, x0:x1, :3], im[:, x0:x1, 3] > 128, (w, BASE_N)) for x0, x1, w in segs]
+    rgb = np.concatenate([q[0] for q in parts], axis=1)
+    a = np.concatenate([q[1] for q in parts], axis=1)
+    a_op = a >= 0.5
+    c.put(0, 0, rgb, a)
+    c.gain[:BASE_N][a_op] = 1.0
+    # the passage: the transparent region that touches the bottom row at the centre
+    lab, _ = ndimage.label(~a_op)
+    k = lab[BASE_N - 2, W // 2]
+    hole = np.zeros((H, W), bool)
+    if k:
+        hole[:BASE_N] = lab == k
+    c.rgb[hole] = (4, 4, 8)
+    c.a |= hole
+    return hole
+
+
+def weather(c):
+    """Open-air courtyard: cracks and climbing ivy over the walls (deterministic, painted before the night grade)."""
+    rng = np.random.default_rng(11)
+    greens = [(96, 150, 70), (74, 124, 62), (128, 168, 80), (60, 100, 56)]
+    crack = (36, 34, 40)
+    stem = (50, 84, 48)
+
+    def put(x, y, col, box):
+        if box[0] <= x < box[1] and box[2] <= y < box[3] and c.a[y, x] and c.rgb[y, x].sum() > 40:
+            c.rgb[y, x] = col
+
+    def shade(x, y, k, box):
+        if box[0] <= x < box[1] and box[2] <= y < box[3] and c.a[y, x] and c.rgb[y, x].sum() > 40:
+            c.rgb[y, x] = np.clip(c.rgb[y, x] * k, 0, 255)
+
+    def cracks(box, n):
+        # Darken the stone it crosses (not a flat black line): a dark core, a faint dark halo and a lit lip on one side.
+        for _ in range(n):
+            x = int(rng.integers(box[0] + 2, box[1] - 2)); y = int(rng.integers(box[2] + 4, box[3] - 20))
+            for step in range(int(rng.integers(12, 44))):
+                shade(x, y, 0.50 if step % 5 else 0.62, box)
+                shade(x - 1, y, 0.82, box)
+                shade(x + 1, y, 1.12, box)
+                y += 1
+                x += int(rng.choice([-1, -1, 0, 1, 1]))
+                if rng.random() < 0.25:                      # zig-zag: the crack steps sideways
+                    shade(x, y, 0.55, box)
+                    y += 1
+                if rng.random() < 0.05:                      # branch
+                    d = 1 if rng.random() < .5 else -1
+                    for k in range(int(rng.integers(3, 8))):
+                        shade(x + d * k, y + k // 2, 0.58, box)
+                        shade(x + d * k, y + k // 2 + 1, 1.1, box)
+
+    def ivy(box, n, length, x_lo, x_hi, y_start):
+        for _ in range(n):
+            x = int(rng.integers(x_lo, x_hi)); y = y_start(rng)
+            for _ in range(int(rng.integers(length[0], length[1]))):
+                put(x, y, stem, box)
+                for _ in range(2):
+                    if rng.random() < 0.7:
+                        lx, ly = x + int(rng.integers(-3, 4)), y + int(rng.integers(-2, 3))
+                        col = greens[int(rng.integers(0, len(greens)))]
+                        for dx, dy in ((0, 0), (1, 0), (0, 1), (1, 1), (-1, 0)):
+                            put(lx + dx, ly + dy, col, box)
+                y -= 1
+                x += int(rng.choice([-1, 0, 0, 0, 1]))
+                x = min(max(x, x_lo), x_hi - 1)
+
+    for x0 in (0, W - SIDE_W):
+        box = (x0, x0 + SIDE_W, BASE_N, H)
+        cracks(box, 26)
+        ivy(box, 16, (40, 130), x0 + 3, x0 + SIDE_W - 3, lambda r: int(r.integers(BASE_N + 60, H - 4)))
+    box = (0, W, 0, BASE_N)
+    cracks(box, 30)
+    ivy(box, 13, (14, 70), 6, W - 6, lambda r: BASE_N - 2)
+
+
 def build():
     liso, liso_m = extract("panel_liso.jpg")
     port, port_m = extract("panel_porton.jpg")
@@ -151,25 +244,40 @@ def build():
     # ---- side bands: the plain panel, rotated: u (along the nave) -> y at 0.5, height -> x (top outside) ----
     band_len = int(round(PANEL_W[0] * 0.5))          # rows per panel
     for side in (0, 1):
-        y = BASE_N
-        i = 0
-        while y < H:
-            src, srcm = (liso, liso_m)
-            rgb, a = resize(src, srcm, (band_len, SIDE_W))   # (x = along the nave, y = height)
-            rgb = rgb.transpose(1, 0, 2)                     # -> rows = nave, cols = height (top at x=0)
-            a = a.T
-            if side == 1:
-                rgb, a = rgb[:, ::-1], a[:, ::-1]
-            x = 0 if side == 0 else W - SIDE_W
-            c.put(x, y, rgb, a, gain=0.8)
-            y += band_len
-            i += 1
+        n_rows = H - BASE_N + 40
+        stack_rgb = np.zeros((n_rows, SIDE_W, 3))
+        stack_a = np.zeros((n_rows, SIDE_W))
+        y = 0
+        while y < n_rows:
+            if SIDE_MODE == "D":                             # cathedral side wall (assets/environment/cathedral/muros)
+                strip = np.asarray(Image.open(CATH_WALL).convert("RGBA"), np.float64)[:, 48 - SIDE_W:]
+                rgb, a = strip[..., :3], strip[..., 3] / 255.0
+                step = rgb.shape[0]
+            elif SIDE_MODE == "C":                             # frontal courses, compressed across the band
+                rgb, a = resize(liso, liso_m, (SIDE_W, face_h))
+                step = face_h
+            else:                                            # rotated: u (along the nave) -> y at 0.5, height -> x
+                rgb, a = resize(liso, liso_m, (band_len, SIDE_W))
+                rgb = rgb.transpose(1, 0, 2)
+                a = a.T
+                step = band_len
+            h = min(step, n_rows - y)
+            stack_rgb[y:y + h], stack_a[y:y + h] = rgb[:h], a[:h]
+            y += step
+        if SIDE_MODE == "B":                                 # courses slanted 2:1 like the floor diamonds
+            for col in range(SIDE_W):
+                sh = col // 2
+                stack_rgb[:, col] = np.roll(stack_rgb[:, col], sh, axis=0)
+                stack_a[:, col] = np.roll(stack_a[:, col], sh, axis=0)
+        if side == 1:
+            stack_rgb, stack_a = stack_rgb[:, ::-1], stack_a[:, ::-1]
+        c.put(0 if side == 0 else W - SIDE_W, BASE_N, stack_rgb[:H - BASE_N], stack_a[:H - BASE_N], gain=(1.0 if SIDE_MODE == "D" else 0.8))
 
     # ---- north wall: panels (the central one is the gate) --------------------------------------------------
     xs = [PANEL_X0]
     for w in PANEL_W[:-1]:
         xs.append(xs[-1] + w)
-    for i, (x, w) in enumerate(zip(xs, PANEL_W)):
+    for i, (x, w) in enumerate(zip(xs, PANEL_W) if SIDE_MODE != "D" else []):
         src, srcm = (port, port_m) if i == 1 else (liso, liso_m)
         rgb, a = resize(src, srcm, (w, face_h))
         # outer panels continue 8 px under the corner pillars (edge texels repeated): no gap beside the pillar shaft
@@ -204,12 +312,18 @@ def build():
         pillar(0, base)
         pillar(W - PILLAR_W, base, mirror=True)
         base += LAT_PERIOD
-    pillar(0, BASE_N + PILLAR_FWD)
-    pillar(W - PILLAR_W, BASE_N + PILLAR_FWD, mirror=True)
+    if SIDE_MODE != "D":
+        pillar(0, BASE_N + PILLAR_FWD)
+        pillar(W - PILLAR_W, BASE_N + PILLAR_FWD, mirror=True)
+
+    hole = None
+    if SIDE_MODE == "D":
+        hole = north_from_cathedral(c)
+        weather(c)
 
     # gate hole: near black and opaque
     hole_x0 = xs[1]
-    return c, dict(face_h=face_h, xs=xs, hole_x=hole_x0, panel_wh=(pw, ph), s_panel=s_panel)
+    return c, dict(hole_mask_full=hole, face_h=face_h, xs=xs, hole_x=hole_x0, panel_wh=(pw, ph), s_panel=s_panel)
 
 
 def grade(c):
@@ -242,6 +356,12 @@ FIRE_LEVEL = 150.0
 
 def finish(c, info):
     out = grade(c)
+    if info.get("hole_mask_full") is not None:
+        hm = info["hole_mask_full"]
+        out[hm] = (4, 4, 8)
+        info["hole_box"] = (int(np.where(hm.any(0))[0].min()), int(np.where(hm.any(0))[0].max()) + 1,
+                            int(np.where(hm.any(1))[0].min()), int(np.where(hm.any(1))[0].max()) + 1)
+        return out
     # the gate hole: near black (opaque). Dark pixels of the original inside the gate panel.
     x0, w = info["xs"][1], PANEL_W[1]
     y0 = BASE_N - info["face_h"]

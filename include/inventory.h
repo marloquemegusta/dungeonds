@@ -18,7 +18,11 @@ const uint16_t *inv_item_floor_icon24(const ArpgInvItem *it);
 #define INV_FLOOR_SH_OY 0
 const uint8_t *inv_item_floor_aura30(const ArpgInvItem *it);
 const uint8_t *inv_item_floor_shadow(const ArpgInvItem *it);
+// Modo de la pantalla: pausa de la catedral (todo), arcón del campamento (engarces, sin Crisol) o mesa del
+// campamento (solo Crisol de desguace, sin engarces). DESIGN-ARPG §4.
+enum { INV_MODE_ALL = 0, INV_MODE_ARCON, INV_MODE_CRISOL };
 void inventory_open(void);
+void inventory_open_mode(int mode);
 // Informa si el lápiz sigue pulsado cada frame para arrastrar reliquias (drag & drop).
 void inventory_set_touch_held(int touch_held, int touch_x, int touch_y);
 // Procesa entrada del menú. Devuelve 1 cuando debe cerrarse (B sin confirmación).

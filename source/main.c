@@ -4059,7 +4059,9 @@ int main(void) {
                     }
                     camp_toast(msg);
                 } else if (act == CAMP_ACT_INVENTORY) {
-                    menu_open_inventory();
+                    menu_open_inventory(INV_MODE_ARCON);
+                } else if (act == CAMP_ACT_CRISOL) {
+                    menu_open_inventory(INV_MODE_CRISOL);
                 } else if (act == CAMP_ACT_CODEX) {
                     menu_open_codex();
                 } else if (act == CAMP_ACT_DOOR) {

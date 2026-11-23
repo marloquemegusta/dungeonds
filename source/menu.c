@@ -231,10 +231,10 @@ void menu_open_title(void) {
     s_title_has_save = ENCOUNTERS_PROTO ? arpg_progress_has_save() : 0;
 }
 
-void menu_open_inventory(void) {
+void menu_open_inventory(int mode) {
     s_state = MENU_INVENTORY;
     s_parent = MENU_NONE;   /* Volver/B closes straight back to the camp scene */
-    inventory_open();
+    inventory_open_mode(mode);
 }
 
 void menu_open_codex(void) {
