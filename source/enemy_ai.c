@@ -518,21 +518,6 @@ static void update_exvoto(Enemy *e, Enemy *enemies, int num_enemies, int idx,
             if (ground_dist_sq <= melee_range * melee_range &&
                 los_has_line_of_sight(wx, wy, px, py, 0) && line_is_walkable(wx, wy, px, py)) {
                 player_take_damage(&g_player_state, arpg_enemy_damage_of(e));
-#if ENCOUNTERS_PROTO
-                // Párroco tier (v3): besides hitting harder, its blow shoves the hero back a little (ground metric 2:1).
-                if (e->type == ENEMY_TYPE_PARROCO) {
-                    const int pdx = px - wx, pdy = py - wy;
-                    fixed pvx = 0, pvy = 0;
-                    if (pdx != 0 || pdy != 0) {
-                        int m = int_sqrt((uint32_t)(pdx * pdx + GROUND_DY2(pdy)));
-                        if (m > 0) {
-                            pvx = (fixed)((pdx * ARPG_DMG_PARROCO_PUSH) / m);
-                            pvy = (fixed)(((pdy * ARPG_DMG_PARROCO_PUSH) / m) >> GROUND_Y_SHIFT);
-                        }
-                    }
-                    player_apply_push(pvx, pvy, ARPG_DMG_PARROCO_PUSH_FRAMES);
-                }
-#endif
                 e->state = ENEMY_STATE_ATTACK;
                 e->state_timer = tuning->attack_cooldown;
                 e->dir = dir_from_vector(player_x - e->x, player_y - e->y);
