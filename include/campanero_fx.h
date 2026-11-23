@@ -7,6 +7,7 @@
 void cfx_reset(void);                                  // clears every ring (new room / run)
 void cfx_shift_y(int dy_px);                           // strip rebase, like glifo_shift_y
 void cfx_emit(int kind, int ox, int oy);               // a ring is born at the bell (world px of the feet); plays its sound
+void cfx_sfx_later(int sfx_id, int world_x, int delay);   // starts a sound `delay` frames from now, at most one per frame (the sound call itself is expensive: ~80k ticks measured)
 void cfx_update(void);                                 // once per simulated frame: rings grow, tanidos silence glyphs
 int cfx_toque_hit(int x, int y);                       // 1 if a live toque front crosses world point (x,y) this frame and it is not shadowed
 void cfx_render_floor(uint16_t *buffer, int cam_x, int cam_y);   // under the actors

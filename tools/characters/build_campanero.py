@@ -34,16 +34,22 @@ ANIM = os.path.join(ROOT, 'assets/models/animations/campanero')
 SRC_FILES = {'idle': 'sad_idle.fbx', 'walk': 'injured_walk.fbx', 'toque': 'melee_downward.fbx', 'death': 'falling_back_death.fbx'}
 
 # ---- campana ----
-BELL_GRIP_Z = 0.72        # altura (0 boca .. 1 yugo) de la malla donde la mano la agarra
+BELL_GRIP_Z = 0.72        # altura (0 boca .. 1 yugo) de referencia para el tamano de la campana
+HANDLE_MIN_Z = 0.85       # el yugo de madera: lo que queda por encima de esta altura (fraccion del alto)
+HANDLE_MIN_X = 0.30       # fraccion (x0.4) del ancho, desde el borde +x, que es el asa lateral (se excluye del agarre)
 LIP_CLEARANCE = 0.05      # m entre el labio y el suelo en la pose de reposo
-BELL_YAW_DEG = 90.0       # giro de la campana sobre la vertical (yugo de lado -> de frente al andar)
+BELL_YAW_DEG = 0.0        # giro extra sobre la vertical; 0 = la viga del yugo de delante atras
 
 # ---- clips: fotogramas fuente (Mixamo) de las 8 muestras ----
 TOQUE_SRC = [1, 5, 9, 13, 17, 21, 26, 30]   # 0-5 alzar (telegrafia), 6-7 golpe
 DEATH_SRC = [1, 6, 12, 20, 28, 40, 58, 79]
 HIP_XY = {'death': 0.2}
 BELL_FOLLOW = {'idle': 0.0, 'walk': 0.0, 'toque': 0.75, 'tanido': 0.0, 'death': 1.0}
-TANIDO_SWING_DEG = 48.0
+TANIDO_SWING_DEG = 30.0   # balanceo de la campana bajo la mano
+TANIDO_ARM_DEG = 28.0     # balanceo del brazo desde el hombro
+# Brazo derecho separado del cuerpo (grados, giro del hombro hacia fuera) para que la campana no se meta en la pierna.
+# El toque ya la lleva por delante: menos apertura para no deformar el golpe.
+ARM_SPREAD = {'idle': 30.0, 'walk': 30.0, 'toque': 12.0, 'tanido': 30.0, 'death': 0.0}
 P = 'mixamorig:'
 BELL = 'CampaneroBell'
 
@@ -105,9 +111,33 @@ ORDER = [b.name[len(P):] for b in arm.data.bones]
 HAND_REF = {}
 
 
-def solve_pose(key, x, bell_follow=0.0, bell_swing=0.0, hip_xy=0.0, bell_swing_y=0.0):
+RARM = set()
+
+
+def solve_pose(key, x, bell_follow=0.0, bell_swing=0.0, hip_xy=0.0, bell_swing_y=0.0, spread=0.0, arm_swing=0.0):
     """Pose del armature en el frame x de la fuente `key`. bell_follow: fraccion del giro de la mano (respecto a HAND_REF)
-    que sigue la campana; bell_swing: balanceo adelante/atras (grados) de la campana alrededor del agarre."""
+    que sigue la campana; bell_swing: balanceo adelante/atras (grados) de la campana alrededor del agarre; spread: grados
+    que el brazo derecho se abre hacia fuera desde el hombro (se mide en una primera pasada y se aplica en la segunda)."""
+    if not RARM:
+        RARM.update(b.name[len(P):] for b in arm.data.bones
+                    if b.name == P + 'RightArm' or any(q.name == P + 'RightArm' for q in b.parent_recursive))
+        RARM.discard(BELL)
+    Rs = Matrix.Identity(3)
+    if spread:
+        _solve(key, x, bell_follow, bell_swing, hip_xy, bell_swing_y, Rs)
+        up = (MT3.inverted() @ Vector((0, 0, 1))).normalized()
+        sh = PB[P + 'RightArm'].matrix.translation.copy()
+        hand = PB[P + 'RightHand'].matrix.translation.copy()
+        out = sh - PB[P + 'Spine2'].matrix.translation
+        out = (out - up * out.dot(up)).normalized()
+        axis = (hand - sh).cross(out).normalized()
+        Rs = Matrix.Rotation(math.radians(spread), 3, axis)
+        if arm_swing:   # el brazo entero adelante/atras desde el hombro (eje lateral horizontal)
+            Rs = Matrix.Rotation(math.radians(arm_swing), 3, out) @ Rs
+    return _solve(key, x, bell_follow, bell_swing, hip_xy, bell_swing_y, Rs)
+
+
+def _solve(key, x, bell_follow, bell_swing, hip_xy, bell_swing_y, Rs):
     S = SRC[key]
     set_src_frame(S, x)
     for pb in PB:
@@ -130,6 +160,8 @@ def solve_pose(key, x, bell_follow=0.0, bell_swing=0.0, hip_xy=0.0, bell_swing_y
         if sa.pose.bones.get(P + n) is None:
             continue
         R_des = src_rot(S, n, rest3)
+        if n in RARM:
+            R_des = Rs @ R_des
         if n == 'Hips':
             sp = sa.pose.bones[P + n]; sb = sa.data.bones[P + n]
             dW = (sa.matrix_world @ sp.matrix).translation - (sa.matrix_world @ sb.matrix_local).translation
@@ -152,6 +184,9 @@ def solve_pose(key, x, bell_follow=0.0, bell_swing=0.0, hip_xy=0.0, bell_swing_y
 
 # ---- pose de referencia (idle, fotograma 0): agarre de la campana ----
 solve_pose('idle', SRC['idle']['f0'])
+hb0 = arm.data.bones[P + 'RightHand']; hp0 = PB[P + 'RightHand']
+Z_SCALE_REF = (arm.matrix_world @ (hp0.matrix.translation + hp0.matrix.to_3x3().normalized() @ Vector((0, hb0.length * 0.5, 0)))).z
+solve_pose('idle', SRC['idle']['f0'], spread=ARM_SPREAD['idle'])
 hb = arm.data.bones[P + 'RightHand']
 hp = PB[P + 'RightHand']
 HAND_REF['rot'] = hp.matrix.to_3x3().normalized()
@@ -186,8 +221,20 @@ print('CAMPANERO campana bbox', tuple(round(v, 3) for v in mn), tuple(round(v, 3
 body = [p for p in pts if mn.z + 0.25 * (mx.z - mn.z) <= p.z <= mn.z + 0.5 * (mx.z - mn.z)]
 cx = sum(p.x for p in body) / len(body); cy = sum(p.y for p in body) / len(body)
 H = mx.z - mn.z
-grip_local = Vector((cx, cy, mn.z + BELL_GRIP_Z * H))
-BELL_SCALE = (g_world.z - LIP_CLEARANCE) / (BELL_GRIP_Z * H)
+# La mano coge el mango (el extremo del yugo que sobresale) y la campana cuelga de el con su centro de masas debajo:
+# queda inclinada, como un peso que se lleva de un asa.
+# La mano coge el yugo de madera por su centro (no el asa lateral) y la campana cuelga recta de el, con su centro de
+# masas debajo del agarre.
+lip_x = mx.x - HANDLE_MIN_X * 0.4 * (mx.x - mn.x)           # a partir de aqui, el asa lateral: no cuenta
+yoke = [p for p in pts if p.z >= mn.z + HANDLE_MIN_Z * H and p.x < lip_x]
+assert yoke, 'sin yugo'
+grip_local = sum(yoke, Vector()) / len(yoke)
+grip_local.z = max(p.z for p in yoke) - 0.04 * H          # la mano rodea la viga, no su base
+com = sum(pts, Vector()) / len(pts)
+HANG = (com - grip_local).normalized().rotation_difference(Vector((0, 0, -1))).to_matrix().to_4x4()
+lug = [p for p in pts if p.z >= mn.z + HANDLE_MIN_Z * H and p.x >= lip_x]
+beam = HANG.to_3x3() @ ((sum(lug, Vector()) / len(lug)) - grip_local); beam.z = 0   # eje de la viga (hacia el asa)
+BELL_SCALE = (Z_SCALE_REF - LIP_CLEARANCE) / (BELL_GRIP_Z * H)   # tamano fijado sin abrir el brazo
 print('CAMPANERO campana alto %.3f m (escala %.3f), eje en (%.3f, %.3f), labio a %.3f del suelo' % (H * BELL_SCALE, BELL_SCALE, cx, cy, LIP_CLEARANCE))
 
 bpy.ops.object.select_all(action='DESELECT')
@@ -204,8 +251,18 @@ update()
 ORDER = [b.name[len(P):] for b in arm.data.bones]
 sb_ = arm.data.bones[P + BELL]
 rest_head_w = arm.matrix_world @ rest_head
-W = (Matrix.Translation(rest_head_w) @ Matrix.Scale(BELL_SCALE, 4) @ Matrix.Rotation(math.radians(BELL_YAW_DEG), 4, 'Z')
-     @ Matrix.Translation(-grip_local))
+# hacia dentro: del hombro derecho al pecho (mundo, horizontal)
+inward = (arm.matrix_world @ PB[P + 'Spine2'].matrix.translation) - (arm.matrix_world @ PB[P + 'RightArm'].matrix.translation)
+inward.z = 0
+# la viga va de delante atras (perpendicular a la linea hombro-pecho): la mano la rodea como el asa de un cubo
+yaw = math.atan2(inward.y, inward.x) + math.pi / 2 - math.atan2(beam.y, beam.x) + math.radians(BELL_YAW_DEG)
+RY = Matrix.Rotation(yaw, 4, 'Z')
+drop = -min((RY @ HANG @ (p - grip_local)).z for p in pts)
+fit = (g_world.z - LIP_CLEARANCE) / drop   # g_world: el agarre en la pose de reposo (brazo abierto)
+if fit < BELL_SCALE:
+    BELL_SCALE = fit
+print('CAMPANERO mango', tuple(round(v, 3) for v in grip_local), 'caida %.3f escala %.3f' % (drop * BELL_SCALE, BELL_SCALE))
+W = (Matrix.Translation(rest_head_w) @ Matrix.Scale(BELL_SCALE, 4) @ RY @ HANG @ Matrix.Translation(-grip_local))
 parent_inv = (arm.matrix_world @ sb_.matrix_local @ Matrix.Translation((0, sb_.length, 0))).inverted()
 for o in bell:
     o.parent = arm; o.parent_type = 'BONE'; o.parent_bone = P + BELL
@@ -252,14 +309,14 @@ def hold_poses(poses):
 CLIPS = {}
 if 'idle' in ONLY:
     s = SRC['idle']
-    CLIPS['idle'] = loop_poses('idle', [s['f0'] + i * (s['f1'] - s['f0']) / 8.0 for i in range(8)], bell_follow=BELL_FOLLOW['idle'])
+    CLIPS['idle'] = loop_poses('idle', [s['f0'] + i * (s['f1'] - s['f0']) / 8.0 for i in range(8)], bell_follow=BELL_FOLLOW['idle'], spread=ARM_SPREAD['idle'])
 if 'walk' in ONLY:
     s = SRC['walk']
-    CLIPS['walk'] = loop_poses('walk', [s['f0'] + i * (s['f1'] - s['f0']) / 8.0 for i in range(8)], bell_follow=BELL_FOLLOW['walk'])
+    CLIPS['walk'] = loop_poses('walk', [s['f0'] + i * (s['f1'] - s['f0']) / 8.0 for i in range(8)], bell_follow=BELL_FOLLOW['walk'], spread=ARM_SPREAD['walk'])
 if 'toque' in ONLY:
-    CLIPS['toque'] = hold_poses([solve_pose('toque', x, bell_follow=BELL_FOLLOW['toque']) for x in TOQUE_SRC])
+    CLIPS['toque'] = hold_poses([solve_pose('toque', x, bell_follow=BELL_FOLLOW['toque'], spread=ARM_SPREAD['toque']) for x in TOQUE_SRC])
 if 'death' in ONLY:
-    CLIPS['death'] = hold_poses([solve_pose('death', x, bell_follow=BELL_FOLLOW['death'], hip_xy=HIP_XY['death']) for x in DEATH_SRC])
+    CLIPS['death'] = hold_poses([solve_pose('death', x, bell_follow=BELL_FOLLOW['death'], spread=ARM_SPREAD['death'], hip_xy=HIP_XY['death']) for x in DEATH_SRC])
 if 'tanido' in ONLY:
     s = SRC['idle']
     poses = []
@@ -267,9 +324,10 @@ if 'tanido' in ONLY:
         t = i / 7.0
         env = 1.0 - 0.55 * t   # sale fuerte y se amortigua
         a = t * math.pi * 1.6
-        # balanceo conico (adelante/atras y de lado) para que se lea desde cualquier direccion
-        poses.append(solve_pose('idle', s['f0'], bell_follow=0.0, bell_swing=-TANIDO_SWING_DEG * math.cos(a) * env,
-                                bell_swing_y=0.8 * TANIDO_SWING_DEG * math.sin(a) * env))
+        # el brazo sacude la campana adelante/atras desde el hombro y ella le sigue con retraso (pendulo), en un solo plano
+        poses.append(solve_pose('idle', s['f0'], bell_follow=0.0, spread=ARM_SPREAD['tanido'],
+                                arm_swing=TANIDO_ARM_DEG * math.sin(a) * env,
+                                bell_swing=-TANIDO_SWING_DEG * math.sin(a - 0.7) * env))
     CLIPS['tanido'] = hold_poses(poses)
 
 for k, v in CLIPS.items():

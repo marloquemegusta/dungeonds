@@ -3,6 +3,7 @@
 #include "hwshadow.h"
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 
 typedef struct {
     uint8_t  bounds[4];
@@ -19,6 +20,16 @@ static uint8_t s_pix[CAMP_PIX_MAX_BYTES] __attribute__((aligned(4)));
 static uint8_t s_runs[CAMP_RUNS_MAX_BYTES] __attribute__((aligned(4)));
 static uint8_t s_mask[CAMP_MASK_MAX_BYTES] __attribute__((aligned(4)));
 static int s_cur = -1;
+#if CAMP_PRELOAD
+static uint8_t *s_blob;             // prueba: el bin entero en RAM al abrirlo (sin lecturas de la ROM durante el combate)
+static uint32_t s_blob_len;
+static void rd(void *dst, uint32_t off, uint32_t n) {
+    if (s_blob) { if (off + n <= s_blob_len) memcpy(dst, s_blob + off, n); return; }
+    fseek(s_f, (long)off, SEEK_SET); fread(dst, 1, n, s_f);
+}
+#else
+static void rd(void *dst, uint32_t off, uint32_t n) { fseek(s_f, (long)off, SEEK_SET); fread(dst, 1, n, s_f); }
+#endif
 
 _Static_assert(sizeof(CampRec) == 24, "CampRec = registro de campanero.bin");
 
@@ -35,11 +46,20 @@ static int open_bin(void) {
         return 0;
     }
     s_f = f;
+#if CAMP_PRELOAD
+    fseek(f, 0, SEEK_END);
+    s_blob_len = (uint32_t)ftell(f);
+    s_blob = (uint8_t *)malloc(s_blob_len);
+    if (s_blob) { fseek(f, 0, SEEK_SET); if (fread(s_blob, 1, s_blob_len, f) != s_blob_len) { free(s_blob); s_blob = NULL; } }
+#endif
     return 1;
 }
 
 void campanero_sprite_close(void) {
     if (s_f) { fclose(s_f); s_f = NULL; }
+#if CAMP_PRELOAD
+    free(s_blob); s_blob = NULL;
+#endif
     s_tried = 0;
     s_cur = -1;
 #if HW_SHADOWS
@@ -55,16 +75,11 @@ int campanero_sprite_get(int clip, int dir, int frame, CampSprite *out) {
     if (idx != s_cur) {
         uint32_t off = r->offset;
         const uint32_t pix_b = (uint32_t)r->pix_hw * 2u, runs_b = (uint32_t)r->runs_hw * 2u;
-        fseek(s_f, (long)off, SEEK_SET);
-        if (pix_b) fread(s_pix, 1, pix_b, s_f);
+        if (pix_b) rd(s_pix, off, pix_b);
         off = (off + pix_b + 3u) & ~3u;
-        fseek(s_f, (long)off, SEEK_SET);
-        if (runs_b) fread(s_runs, 1, runs_b, s_f);
+        if (runs_b) rd(s_runs, off, runs_b);
         off = (off + runs_b + 3u) & ~3u;
-        if (r->mask_bytes) {
-            fseek(s_f, (long)off, SEEK_SET);
-            fread(s_mask, 1, r->mask_bytes, s_f);
-        }
+        if (r->mask_bytes) rd(s_mask, off, r->mask_bytes);
 #if HW_SHADOWS
         hwshadow_invalidate(s_mask);
 #endif

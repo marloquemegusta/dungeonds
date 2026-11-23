@@ -15,6 +15,7 @@
 #include "glifo.h"
 #include "sfx.h"
 #include "campanero_fx.h"
+#include "cfxprof.h"
 #if ENCOUNTERS_PROTO
 #include "boss.h"
 #include "encounters_act1.h"
@@ -1397,19 +1398,22 @@ volatile struct {                   // read by scenarios (symbol g_campanero_dbg
 } g_campanero_dbg;
 
 static void camp_raise_exvotos(Enemy *boss, Enemy *enemies, int num_enemies) {
+    CP_BEGIN(CP_RAISE);
     int live = 0;
     for (int i = 0; i < num_enemies; i++)
         if (enemies[i].active && enemies[i].hp > 0 && enemies[i].type == ENEMY_TYPE_EXVOTO) live++;
     for (int k = 0; k < CAMP_EXVOTOS_PER_TOQUE && live < CAMP_EXVOTO_CAP; k++) {
         int sx = 0, sy = 0, ok = 0;
+        CP_BEGIN(CP_SPOT);
         for (int attempt = 0; attempt < 6 && !ok; attempt++) {      // beside a column or at a random floor spot
             enc_camp_spot(rng_next(), &sx, &sy);
             ok = position_is_free(TO_FIXED(sx), TO_FIXED(sy));
         }
+        CP_END(CP_SPOT);
         if (!ok) continue;
         int slot = -1;
         for (int i = 0; i < num_enemies; i++) if (!enemies[i].active) { slot = i; break; }
-        if (slot < 0) return;
+        if (slot < 0) { CP_END(CP_RAISE); return; }
         Enemy *x = &enemies[slot];
         memset(x, 0, sizeof(*x));
         x->x = TO_FIXED(sx);
@@ -1426,8 +1430,9 @@ static void camp_raise_exvotos(Enemy *boss, Enemy *enemies, int num_enemies) {
         x->pack = boss->pack;                          // dies with the boss
         live++;
         g_campanero_dbg.raised++;
-        sfx_play(SND_MONAGUILLO_EMERGE, sx);
+        cfx_sfx_later(SND_MONAGUILLO_EMERGE, sx, 4 + 3 * k);          // spaced from the toll's own sounds (campanero_fx.c)
     }
+    CP_END(CP_RAISE);
 }
 
 static void camp_toque(Enemy *e, Enemy *enemies, int num_enemies) {
@@ -1597,7 +1602,9 @@ ITCM_CODE void enemy_ai_update(Enemy *enemies, int num_enemies, fixed player_x, 
 #endif
         } else if (e->type == ENEMY_TYPE_CAMPANERO) {
 #if ENCOUNTERS_PROTO
+            { CP_BEGIN(CP_CAMP);
             update_campanero(e, enemies, num_enemies, i, player_x, player_y);
+            CP_END(CP_CAMP); }
 #endif
         } else if (e->type == ENEMY_TYPE_ABANDERADO) {
             update_abanderado(e, enemies, num_enemies, i, player_x, player_y);

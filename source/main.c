@@ -44,6 +44,7 @@
 #include "arpg_inv.h"
 #include "glifo.h"
 #include "campanero_fx.h"
+#include "cfxprof.h"
 #include "radial.h"
 #include "allies.h"
 #include "camp.h"
@@ -1674,18 +1675,32 @@ ITCM_CODE static void render_screen(uint16_t *buffer, DirtySpan *spans, int cam_
     }
 
     // 0) Ground decals of the weapons, Exvoto wax puddles, and boss puddles: under everything.
+    PP_T0(pp_occ);
+    { CP_BEGIN(CP_OCC_WEAP);
     weapons_render_floor(buffer, cam_x, cam_y);
+    CP_END(CP_OCC_WEAP); }
+    { CP_BEGIN(CP_OCC_GLIFO);
     glifo_render_floor(buffer, cam_x, cam_y);       // ARPG: Glifo runes and the aim ring
+    CP_END(CP_OCC_GLIFO); }
+    PP_T0(pp_cfx);
     cfx_render_floor(buffer, cam_x, cam_y);         // Campanero: bell rings on the floor
+    PP_ADD(PP_PCOPY, pp_cfx);                        // pcopy slot (unused) = rings alone
+    { CP_BEGIN(CP_OCC_PUD);
     enemy_puddles_render(buffer, cam_x, cam_y);
+    CP_END(CP_OCC_PUD); }
     {
+        CP_BEGIN(CP_OCC_MELT);
         GroundTarget melt_ground = { buffer, cam_x, cam_y };
         exvoto_melt_render_floor(&melt_ground);       // wax puddles of the dead Exvotos
+        CP_END(CP_OCC_MELT);
     }
 
 #if ENCOUNTERS_PROTO
+    { CP_BEGIN(CP_OCC_ENC);
     enc_draw_ground(buffer, cam_x, cam_y);          // provisional obstacles and barriers, flat on the floor
+    CP_END(CP_OCC_ENC); }
 #endif
+    PP_ADD(PP_OCCL, pp_occ);
 
     // 1) Actor shadows (player & enemies, animated per frame). Hardware: one OBJ-window list per
     // screen, darkened by the engine (hwshadow.c). Software: darken the page pixel by pixel.
@@ -2671,12 +2686,22 @@ static void strip_nav_stage_step(void) {
 #define NAV_BUDGET_PER_FRAME 300   // BFS node expansions per frame (a full field takes ~10 frames; measure with PERF_PROFILE)
 
 static void enemies_update(void) {
+    CP_BEGIN(CP_EN_ALL);
+    CP_BEGIN(CP_EN_NAV);
     nav_set_goal(TO_INT(s_player.x), TO_INT(s_player.y));
     nav_update(NAV_BUDGET_PER_FRAME);
+    CP_END(CP_EN_NAV);
     enemy_ai_set_view(s_cam_x, s_cam_y - SCREEN_H, s_cam_y + SCREEN_H);
+    CP_BEGIN(CP_EN_AI);
     enemy_ai_update(g_enemies, MAX_ENEMIES, s_player.x, s_player.y);
+    CP_END(CP_EN_AI);
+    CP_BEGIN(CP_EN_ENC);
     encounters_update(&g_encounter_mgr, g_enemies, MAX_ENEMIES, s_player.x, s_player.y);
+    CP_END(CP_EN_ENC);
+    CP_BEGIN(CP_EN_MODS);
     mods_update(s_player.x, s_player.y);
+    CP_END(CP_EN_MODS);
+    CP_END(CP_EN_ALL);
 }
 
 #if ENCOUNTERS_PROTO
@@ -2692,21 +2717,31 @@ static void strip_enemies_update(void) {
 #if COBERTURA_PRUEBA
     return;                 // bench test ROM: no enemies at all
 #endif
+    CP_BEGIN(CP_EN_ALL);
+    CP_BEGIN(CP_EN_NAV);
     nav_set_goal(TO_INT(s_player.x), TO_INT(s_player.y));
     nav_update(NAV_BUDGET_PER_FRAME);
+    CP_END(CP_EN_NAV);
 #if ENCOUNTERS_PROTO
     // Encounters and corridors replace the horde, the tide, the gems and the hearts (DESIGN.md 6.13.6).
     enemy_ai_set_view(s_cam_x, s_cam_y - SCREEN_H, s_cam_y + SCREEN_H);
+    CP_BEGIN(CP_EN_AI);
     enemy_ai_update(g_enemies, MAX_ENEMIES, s_player.x, s_player.y);
+    CP_END(CP_EN_AI);
+    CP_BEGIN(CP_EN_ENC);
     // Resurreccion (allies.c) desenganchada: Levantar queda fuera de la protodemo (DESIGN-ARPG.md §5).
     enc_update(g_enemies, MAX_ENEMIES, TO_INT(s_player.x), TO_INT(s_player.y));
+    CP_END(CP_EN_ENC);
 #if ARPG_BOXEO
     boxeo_update(g_enemies, MAX_ENEMIES, TO_INT(s_player.x), TO_INT(s_player.y));
 #endif
+    CP_BEGIN(CP_EN_MODS);
     pickups_update(s_player.x, s_player.y, &g_player_state);     // ARPG: remate orbs (health, mana)
     arpg_tips_tick();
     dmg_numbers_set_player_pos(s_player.x, s_player.y);
     dmg_numbers_update();
+    CP_END(CP_EN_MODS);
+    CP_END(CP_EN_ALL);
     return;
 #endif
 #if !CATHEDRAL_PLAYGROUND || CATHEDRAL_AI == 2
