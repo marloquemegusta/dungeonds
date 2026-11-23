@@ -23,8 +23,8 @@ import glb_minmax
 WT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 LEGACY_JSON = os.path.join(WT, 'tools', 'remate_legacy.json')
 # Paquete del lab del Ojo y GLB de la escena (para calcular donde caen los pies del heroe en cada fotograma).
-OJO_LAB_OUT = os.environ.get('OJO_LAB_OUT', os.path.join(WT, 'walkthroughs', 'remate-ojo', 'assets', 'lab_out'))
-OJO_GLB_DIR = os.environ.get('OJO_GLB', os.path.join(WT, 'scratch_lab', 'glb_ojo'))
+PARROCO_LAB_OUT = os.environ.get('PARROCO_LAB_OUT', os.path.join(WT, 'walkthroughs', 'remate-parroco', 'assets', 'lab_out'))
+PARROCO_GLB_DIR = os.environ.get('PARROCO_GLB', os.path.join(WT, 'scratch_lab', 'glb_parroco'))
 HERO_NODE = 'tripo_node_f25681c0'   # malla del heroe (Corazon) dentro de los GLB de la escena
 HERO_MESH = 'f25681c0'
 CAM_COS = math.cos(math.radians(30.0))   # elevacion del lab: 1 m de altura = ppm*cos(30) px
@@ -49,21 +49,24 @@ KINDS = [
         'ticks': 6,
         'legacy': True,
     },
+    {'name': 'ojo', 'ppm': 38.0, 'has_remnant': 1, 'reuse_pix_from': None, 'frames': 38, 'ticks': 4, 'legacy': True},
+    {'name': 'monaguillo', 'ppm': 38.0, 'has_remnant': 1, 'reuse_pix_from': None, 'frames': 12, 'ticks': 6, 'legacy': True},
+    {'name': 'exvoto_bebe', 'ppm': 38.0, 'has_remnant': 1, 'reuse_pix_from': None, 'frames': 12, 'ticks': 6, 'legacy': True},
     {
-        'name': 'ojo',
-        'ppm': 35.0,          # lab rapido: 96 px / 2,742857 m de fitExtent
-        'has_remnant': 1,     # fotograma 38 = el Ojo tendido sin el heroe
+        'name': 'parroco',        # derretirlo desde dentro: el puno se queda dentro, brillo en el pecho, hundimiento hasta el charco (walkthroughs/remate-parroco)
+        'ppm': 38.0,
+        'has_remnant': 1,        # fotograma 40 = charco con la mecha, sin heroe
         'reuse_pix_from': None,
-        'frames': 38,
-        'ticks': 4,           # 38*4 = 152 frames de juego (~2,5 s): el ritmo del GIF aprobado (60 ms/fotograma)
+        'frames': 40,
+        'ticks': 4,              # 40*4 = 160 frames de juego (~2,7 s)
         'legacy': False,
-        'single_layer': True, # la escena no se parte en heroe/restos: una sola capa a la profundidad de los pies
-        'dup_frame0': False,  # el lab rapido renderiza el fotograma 0 bien (el hack era del lab web)
-        'shadow_share': True, # las mascaras de sombra se comparten cada 2 fotogramas (mismo criterio que el Exvoto)
+        'single_layer': True,
+        'dup_frame0': False,
+        'shadow_share': True,
         'shadow_canvas': 128,
         'shadow_max': 80,
-        'lab_out': OJO_LAB_OUT,
-        'glb_dir': OJO_GLB_DIR,
+        'lab_out': PARROCO_LAB_OUT,
+        'glb_dir': PARROCO_GLB_DIR,
     },
 ]
 
@@ -462,8 +465,8 @@ def main():
             max_bin = max(max_bin, len(data))
             _, _, ax, ay, edx, edy, lab_ax, lab_ay = dir_geometry(cfg, settings, d)
             d_list.append((ax, ay, edx, edy, (lab_ax - ax) - bias_shift, (lab_ay - ay) - bias_shift))
-            depth_list.append([v for pair in depth for v in pair])
-            off_list.append([v for pair in hero_off for v in pair])
+            depth_list.append(pad_rows([[v for pair in depth for v in pair]], F * 2, MAX_FRAMES * 2)[0])
+            off_list.append(pad_rows([[v for pair in hero_off for v in pair]], F * 2, MAX_FRAMES * 2)[0])
         dir_infos.append(d_list)
         depth_infos.append(depth_list)
         off_infos.append(off_list)
@@ -511,10 +514,13 @@ def main():
 // Generado por tools/generate_remate_sprites.py: no editar a mano.
 #include <stdint.h>
 
-#define REMATE_KIND_EXVOTO   0
-#define REMATE_KIND_CIRENEO  1
-#define REMATE_KIND_OJO      2
-#define REMATE_NUM_KINDS     3
+#define REMATE_KIND_EXVOTO     0
+#define REMATE_KIND_CIRENEO    1
+#define REMATE_KIND_OJO        2
+#define REMATE_KIND_MONAGUILLO 3
+#define REMATE_KIND_BEBE       4
+#define REMATE_KIND_PARROCO    5
+#define REMATE_NUM_KINDS       6
 #define REMATE_NUM_DIRS      8
 
 // Mayor numero de fotogramas de animacion de cualquier tipo (el Ojo, 38). Cada tipo declara los suyos en

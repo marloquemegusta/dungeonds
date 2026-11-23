@@ -8,12 +8,13 @@
 #define REMATE_KIND_OJO        2
 #define REMATE_KIND_MONAGUILLO 3
 #define REMATE_KIND_BEBE       4
-#define REMATE_NUM_KINDS       5
+#define REMATE_KIND_PARROCO    5
+#define REMATE_NUM_KINDS       6
 #define REMATE_NUM_DIRS      8
 
 // Mayor numero de fotogramas de animacion de cualquier tipo (el Ojo, 38). Cada tipo declara los suyos en
 // `RemateKindInfo.frames`; Exvoto y Cireneo usan 12. El bin de cada tipo lleva cabecera del tamano de sus frames.
-#define REMATE_MAX_FRAMES    38
+#define REMATE_MAX_FRAMES    40
 #define REMATE_SHADOW_CANVAS 80
 #define REMATE_BIN_MAGIC     0x54414D52u
 // Streaming desde NitroFS (remate.c): la celda lee el fotograma que toca a estos buffers estaticos en vez de cargar
