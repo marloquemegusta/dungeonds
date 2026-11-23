@@ -81,6 +81,10 @@ Penitentes de Valdenoche que rezaron hasta volverse cera. Siguen en procesión c
 - **Jimena y Aldonza.** Dos mujeres de Valdenoche que se amaban. El Tribunal las condenó y ordenó separarlas, una a cada extremo de la nave. Rezaron la misma noche para no estar solas. Se lo concedieron: caminan juntas, unidas por la cera.
 - **Inés Arce.** Madre de Martín. Escondió a Bartolomé después de la Quiebra sin saber que su hijo había muerto por él. La condenaron por dar refugio a un desertor. Sube en procesión, nave arriba, hacia un latido que reconoce.
 - **Los monaguillos (los jóvenes suplicantes).** Los muchachos del coro que se negaron al padre Anselmo. Para silenciarlos, el Tribunal los condenó a rezar para siempre. Son los exvotos jóvenes que hoy siguen el estandarte del Abanderado: Íñigo los recogió porque nadie más lo hizo.
+- **Sor Leonor, la Súper Monja.** La novicia que denunció al padre Anselmo (su juicio, en el `CÓDICE · IV`). Entró en la Catedral como monja de cera; después del exorcismo se volvió lo que hoy es: negra, bocarriba y arqueada, andando a cuatro patas como una araña. Es el escalón 3 de la familia chica de los Exvotos. No es un jefe.
+  - **La forma de su sentencia.** La condenaron por poseída, y la Catedral se lo cumplió: ahora lo está, y su aura posee a los que tiene cerca. Los monaguillos a los que defendió corren con ella. Las monjas de cera dejan de rezar y de curar a su lado, porque en aquella sacristía rezar no salvó a nadie.
+  - **Lo que muestra cómo se mueve.** Retrocede sin dar nunca la espalda, porque no volvió a dársela a un cura. Esquiva la grieta del Glifo porque ya la juzgaron una vez desde el suelo.
+  - *Ficha oficial:* «Dijeron que tenía el demonio dentro. Se lo dieron.»
 
 ### El Cireneo — Bartolomé Ruiz, «el Liebre» (`CÓDICE · III`)
 Soldado de la Columna. En la Quiebra le ordenaron abrir fuego sobre una procesión de exvotos: sus vecinos de Valdenoche. Bajó el fusil y huyó. El acta del Tribunal dice que volvió de rodillas y pidió que le clavaran la cruz a la espalda para no volver a huir. El acta la escribió el Tribunal: en realidad le sacaron de casa de Inés. Lo que sí es verdad es que la cruz la pidió él, para no poder volver a huir y no tener que pensar.
@@ -89,7 +93,7 @@ Soldado de la Columna. En la Quiebra le ordenaron abrir fuego sobre una procesi�
 
 ### El Ojo del Tribunal — Gaspar Valcárcel y sus inquisidores (`CÓDICE · IV`)
 Se arrancaron los ojos porque la mirada humana era propensa al perdón, y alzaron un farol de juicio. Gaspar firmó todas las condenas de este documento.
-- **Sor Leonor.** Novicia adulta de la Sacristía. Vio lo que el padre Anselmo hacía con los monaguillos, le dijo que no cuando fue a por ella y le denunció ante el Tribunal. El farol de Gaspar examinó al confesor y no encontró culpa; la examinó a ella y la encontró. La condenaron por calumnia.
+- **Sor Leonor.** Novicia adulta de la Sacristía. Vio lo que el padre Anselmo hacía con los monaguillos, le dijo que no cuando fue a por ella y le denunció ante el Tribunal. El farol de Gaspar examinó al confesor y no encontró culpa; la examinó a ella y la encontró. La condenaron por calumnia. El Tribunal dictó además que una novicia que acusa a su confesor solo puede tener el demonio dentro, y la exorcizó durante días sobre la mesa de la Sacristía, atada bocarriba y arqueada. Lo que fue de ella después, en los Exvotos (Súper Monja).
 *Ficha oficial:* «La linterna no ve culpables. Los fabrica.»
 
 ### El Abanderado — capitán Íñigo Albar (`CÓDICE · V`)
@@ -106,6 +110,8 @@ Juró ante el altar que el estandarte de la Columna jamás tocaría el suelo. Am
 | Martín | Íñigo | Su mortaja vacía está en el estandarte. |
 | Inés | Bartolomé | Le escondió; los atraparon juntos. |
 | Anselmo | Monaguillos, Leonor | Abusaba de unos; ella le denunció. |
+| Leonor | Monaguillos | Los defendió; hoy su aura los posee y corren con ella. |
+| Gaspar | Leonor | La condenó por calumnia y la exorcizó. |
 | Gaspar | Todos los condenados | Firmó las sentencias. |
 | Íñigo | Lope, monaguillos | Calló ante uno; recoge a los otros. |
 | Elías | Parejas condenadas | Las bendecía en secreto. |
