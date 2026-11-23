@@ -220,7 +220,7 @@
   },
   {
    "release": true,
-   "frames": 21,
+   "frames": 24,
    "capture": "g01_lanza"
   },
   {
@@ -380,7 +380,7 @@
     "max_value": 63536
    },
    {
-    "at": "g_wait",
+    "at": "g_open",
     "field": "q_x",
     "max_value": 55040
    },

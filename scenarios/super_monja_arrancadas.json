@@ -1195,67 +1195,67 @@
       },
       "b_x": {
         "symbol": "en",
-        "offset": 1612,
+        "offset": 2232,
         "type": "s32"
       },
       "b_y": {
         "symbol": "en",
-        "offset": 1616,
+        "offset": 2236,
         "type": "s32"
       },
       "b_act": {
         "symbol": "en",
-        "offset": 1636,
+        "offset": 2256,
         "type": "s32"
       },
       "p_x": {
         "symbol": "en",
-        "offset": 1736,
+        "offset": 2356,
         "type": "s32"
       },
       "p_y": {
         "symbol": "en",
-        "offset": 1740,
+        "offset": 2360,
         "type": "s32"
       },
       "p_act": {
         "symbol": "en",
-        "offset": 1760,
+        "offset": 2380,
         "type": "s32"
       },
       "m_x": {
         "symbol": "en",
-        "offset": 1860,
+        "offset": 2480,
         "type": "s32"
       },
       "m_y": {
         "symbol": "en",
-        "offset": 1864,
+        "offset": 2484,
         "type": "s32"
       },
       "m_act": {
         "symbol": "en",
-        "offset": 1884,
+        "offset": 2504,
         "type": "s32"
       },
       "m_mode": {
         "symbol": "en",
-        "offset": 1964,
+        "offset": 2584,
         "type": "s32"
       },
       "m_hit": {
         "symbol": "en",
-        "offset": 1908,
+        "offset": 2528,
         "type": "s32"
       },
       "m_dir": {
         "symbol": "en",
-        "offset": 1868,
+        "offset": 2488,
         "type": "s32"
       },
       "m_frame": {
         "symbol": "en",
-        "offset": 1872,
+        "offset": 2492,
         "type": "s32"
       },
       "rng": {
