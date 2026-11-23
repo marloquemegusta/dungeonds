@@ -7,6 +7,7 @@
 #include "upgrades.h"
 #include "sfx.h"
 #include "remate.h"
+#include "dmg_numbers.h"
 #include <string.h>
 #if ENCOUNTERS_PROTO
 #include "encounters_act1.h"
@@ -119,6 +120,7 @@ static void enemy_damage(Enemy *e, int damage, fixed hit_vx, fixed hit_vy, int q
     if (boss_blocks_damage(e)) return;           // the invulnerable second of a phase change (DESIGN.md 6.13.7)
 #endif
     e->hp -= damage;
+    dmg_numbers_spawn(e->x, e->y - TO_FIXED(16), damage, quiet ? DMG_NUM_DOT : DMG_NUM_NORMAL);
     if (!quiet) {
         e->hit_timer = 8;
         int hitstop = e->hp <= 0 ? 4 : 3;
