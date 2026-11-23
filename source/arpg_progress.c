@@ -30,7 +30,7 @@ static const int s_arpg_xp_needed[ARPG_XP_TABLE_LEN] = {
 void arpg_progress_reset(void) {
     memset(&g_arpg, 0, sizeof(g_arpg));
     g_arpg.magic = 0x41525047u;
-    g_arpg.version = 5;
+    g_arpg.version = 6;
     g_arpg.level = 1;
     g_arpg.xp = 0;
     g_arpg.points = 0;
@@ -92,7 +92,7 @@ void arpg_world_rest(void) {
 /* ---- Save file (DESIGN.md 7.1: guardado en la tarjeta) ---- */
 
 #define ARPG_SAVE_MAGIC   0x41525047u
-#define ARPG_SAVE_VERSION 5
+#define ARPG_SAVE_VERSION 6
 #if ARPG_ALL_UNLOCKED
 #define ARPG_SAVE_NAME    "dungeonds_arpg_todo.sav"   // the test build never overwrites the player's save
 #else
@@ -179,7 +179,9 @@ int arpg_progress_load(void) {
         size_t got = fread(&tmp, 1, sizeof(tmp), f);
         fclose(f);
         int old4 = got >= ARPG_SAVE_V4_SIZE && tmp.magic == ARPG_SAVE_MAGIC && tmp.version == 4;
-        int ok = got == sizeof(tmp) || old4;
+        int old5 = got >= ARPG_SAVE_V5_SIZE && got < sizeof(tmp) && tmp.magic == ARPG_SAVE_MAGIC && tmp.version == 5 && tmp.level >= 1;
+        if (old5) { tmp.version = ARPG_SAVE_VERSION; memset((uint8_t *)&tmp + ARPG_SAVE_V5_SIZE, 0, sizeof(tmp) - ARPG_SAVE_V5_SIZE); }
+        int ok = got == sizeof(tmp) || old4 || old5;
         if (old4) {                             // v4: same layout up to the inventory; the map fields start empty
             memset((uint8_t *)&tmp + ARPG_SAVE_V4_SIZE, 0, sizeof(tmp) - ARPG_SAVE_V4_SIZE);
             tmp.version = ARPG_SAVE_VERSION;

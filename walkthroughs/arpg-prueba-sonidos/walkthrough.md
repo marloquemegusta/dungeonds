@@ -16,4 +16,4 @@ Hoja para marcar (móvil): https://claude.ai/artifact/BCUZrgcGjshczPMPAn7WLK
 | ![Catálogo Héroe](assets/catalogo_heroe.png) | ![Escenas](assets/catalogo_escenas.png) |
 | ![Remates](assets/escena1_tambalea.png) | ![Campanero](assets/escena7_toque.png) |
 
-Pendiente: el usuario marca los sonidos que chirrían; la lista se apunta en `STATUS-ARPG.md` como pendiente de sonido. MDs: sin cambios todavía.
+Resultado: el usuario la escuchó en la DS y marcó en la hoja lo que chirría; la lista está en `STATUS-ARPG.md` («Pendiente», punto 5). MDs: `STATUS-ARPG.md`, `STATUS-ARCHIVE.md`, `TECHNICAL.md` §5.3c y `walkthroughs/README.md`.

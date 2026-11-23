@@ -53,7 +53,7 @@ static CampProp s_props[] = {
     // the interaction point. w/h is the hole of the gate (touch area), x/y the threshold.
     { NULL,  CAMP_DOOR_HIT_W, CAMP_DOOR_HIT_H, 128, CAMP_MARCO_BASE_N + 1, "Puerta",       CAMP_ACT_DOOR,
       NULL,  0,  0,  0,  0  },
-    { NULL,    CAMP_MESA_W,    CAMP_MESA_H,      60, 250, "Mesa",         CAMP_ACT_NONE,
+    { NULL,    CAMP_MESA_W,    CAMP_MESA_H,      60, 250, "Mesa",         CAMP_ACT_CRISOL,
       NULL,    CAMP_MESA_SHADOW_W,    CAMP_MESA_SHADOW_H,
       CAMP_MESA_SHADOW_OX,    CAMP_MESA_SHADOW_OY    },
     { NULL,   CAMP_ARCON_W,   CAMP_ARCON_H,     58, 292, "ArcÃ³n",        CAMP_ACT_INVENTORY,
@@ -81,6 +81,7 @@ static int s_focus = -1;             // prop the hero is next to (-1 none)
 static char s_toast[48];
 static int s_toast_frames = 0;
 static int s_anim = 0;
+static int s_glow_n = 0, s_glow_for = -1;   // focus-halo cache (see glow_build)
 static const uint16_t *s_marco_n = NULL, *s_marco_l = NULL, *s_marco_r = NULL;   // wall frame sprites (nitro:/camp/marco_*.bin)
 static const uint16_t *s_fire = NULL;   // bonfire flame strip: CAMP_FUEGO_FRAMES frames of CAMP_FUEGO_W x CAMP_FUEGO_H
 
@@ -147,7 +148,7 @@ static void build_arena(void) {
     // foot. The hero stops in front of the wall and can walk right up to the gate.
     block_rect(0, 0, 24, CAMP_ROOM_H, 3);
     block_rect(CAMP_ROOM_W - 24, 0, 24, CAMP_ROOM_H, 3);
-    block_rect(0, 0, CAMP_ROOM_W, 104, 3);   // north wall (base of the panels y=CAMP_MARCO_BASE_N); the gate is a threshold below it
+    block_rect(0, 0, CAMP_ROOM_W, CAMP_MARCO_BASE_N - 2, 3);   // north wall (base of the panels y=CAMP_MARCO_BASE_N); the gate is a threshold below it
     block_rect(0, CAMP_ROOM_H - 10, CAMP_ROOM_W, 10, 3);
     // Props block their base so the hero stops in front of them (the door is a threshold: no block).
     for (int i = 0; i < CAMP_PROP_COUNT; i++) {
@@ -187,6 +188,7 @@ const Arena *camp_arena(void) {
 }
 
 void camp_unload_gfx(void) {
+    s_glow_for = -1;
     free((void *)s_camp_tiles); s_camp_tiles = NULL;
     free((void *)s_fire);       s_fire = NULL;
     free((void *)s_marco_n);    s_marco_n = NULL;
@@ -431,6 +433,86 @@ static void repaint_marco_under_shadows(uint16_t *buffer, int cam_x, int cam_y) 
     }
 }
 
+// Focus signal (DESIGN-ARPG §4): the prop the hero can use breathes a warm halo around its outline, in the muted
+// fire ramp. The outline (1 px ring outside the opaque pixels) is computed once per focused prop.
+#define GLOW_MAX 1500
+#define GLOW_PAD 2
+static uint8_t s_glow_x[GLOW_MAX], s_glow_y[GLOW_MAX], s_glow_t[GLOW_MAX];   // offsets from (left-PAD, top-PAD); t 0 = ring 1, 1 = ring 2
+
+static void glow_build(int index) {
+    const CampProp *p = &s_props[index];
+    s_glow_for = index;
+    s_glow_n = 0;
+    if (!p->pix) return;
+    int mw = p->w + 2 * GLOW_PAD, mh = p->h + 2 * GLOW_PAD;
+    uint8_t *m = (uint8_t *)calloc((size_t)mw * mh, 1);       // 1 opaque, 2 ring 1, 3 ring 2
+    if (!m) return;
+    for (int y = 0; y < p->h; y++)
+        for (int x = 0; x < p->w; x++)
+            if (p->pix[y * p->w + x]) m[(y + GLOW_PAD) * mw + x + GLOW_PAD] = 1;
+    for (int ring = 2; ring <= 3; ring++) {
+        for (int y = 1; y < mh - 1; y++) {
+            for (int x = 1; x < mw - 1; x++) {
+                uint8_t *c = &m[y * mw + x];
+                if (*c) continue;
+                int src = ring - 1;
+                if (m[y * mw + x - 1] == src || m[y * mw + x + 1] == src || m[(y - 1) * mw + x] == src || m[(y + 1) * mw + x] == src)
+                    *c = (uint8_t)(ring | 4);                  // mark now, promote after the pass (no chaining inside a ring)
+            }
+        }
+        for (int i = 0; i < mw * mh; i++) if (m[i] & 4) m[i] &= 3;
+    }
+    for (int y = 0; y < mh; y++) {
+        for (int x = 0; x < mw; x++) {
+            int v = m[y * mw + x];
+            if (v >= 2 && s_glow_n < GLOW_MAX) {
+                s_glow_x[s_glow_n] = (uint8_t)x;
+                s_glow_y[s_glow_n] = (uint8_t)y;
+                s_glow_t[s_glow_n] = (uint8_t)(v - 2);
+                s_glow_n++;
+            }
+        }
+    }
+    free(m);
+}
+
+static void glow_colours(uint16_t *c1, uint16_t *c2) {
+    int ph = (s_anim >> 2) & 15;
+    int t = ph < 8 ? ph : 16 - ph;                  // 0..8, ~1 s breath
+    *c1 = (uint16_t)(RGB15(18 + (t * 13) / 8, 13 + (t * 12) / 8, 6 + (t * 6) / 8) | BIT(15));
+    *c2 = (uint16_t)(RGB15(10 + (t * 8) / 8, 7 + (t * 7) / 8, 4 + (t * 3) / 8) | BIT(15));
+}
+
+static void draw_focus_glow(int index, uint16_t *buffer, int cam_x, int cam_y) {
+    const CampProp *p = &s_props[index];
+    uint16_t col, col2;
+    glow_colours(&col, &col2);
+    if (p->act == CAMP_ACT_DOOR) {
+        // The gate has no sprite: its sill (the threshold in front of the hole) glows.
+        int sy0 = p->y - cam_y - 2;
+        for (int r = 0; r < 3; r++) {
+            int sy = sy0 + r;
+            if ((unsigned)sy >= SCREEN_H) continue;
+            int x0 = p->x - p->w / 2 - cam_x, x1 = x0 + p->w;
+            if (x0 < 0) x0 = 0;
+            if (x1 > SCREEN_W) x1 = SCREEN_W;
+            for (int x = x0 + r; x < x1 - r; x++) buffer[sy * SCREEN_W + x] = col;
+            dirty_row(sy, x0, x1);
+        }
+        return;
+    }
+    if (s_glow_for != index) glow_build(index);
+    int left = p->x - p->w / 2 - cam_x - GLOW_PAD;
+    int top = p->y - p->h - cam_y - GLOW_PAD;
+    int last_row = -1;
+    for (int i = 0; i < s_glow_n; i++) {
+        int sx = left + s_glow_x[i], sy = top + s_glow_y[i];
+        if ((unsigned)sx >= SCREEN_W || (unsigned)sy >= SCREEN_H) continue;
+        buffer[sy * SCREEN_W + sx] = s_glow_t[i] ? col2 : col;
+        if (sy != last_row) { dirty_row(sy, left, left + p->w + 2 * GLOW_PAD); last_row = sy; }
+    }
+}
+
 static void draw_prop(int index, uint16_t *buffer, int cam_x, int cam_y) {
     const CampProp *p = &s_props[index];
     if (!p->pix) return;                 // NitroFS read failed: the prop is simply not drawn
@@ -499,6 +581,7 @@ void camp_item_draw(int index, uint16_t *buffer, int cam_x, int cam_y, int depth
     (void)depth;
     if (index < 0 || index >= s_vis_n) return;
     draw_prop(s_vis[index], buffer, cam_x, cam_y);
+    if (s_vis[index] == s_focus && s_props[s_vis[index]].act != CAMP_ACT_NONE) draw_focus_glow(s_vis[index], buffer, cam_x, cam_y);
 }
 
 int camp_item_shadow(int index, const uint8_t **mask, uint8_t *bounds, int *left, int *top) {
