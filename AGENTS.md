@@ -84,6 +84,13 @@ Comprobación rápida: `git diff --stat main proto/arpg -- AGENTS.md ONBOARDING.
 ## Subagentes y Modelos
 
 - Todo plan que lance subagentes indica el modelo de cada uno. Por defecto: **Haiku** solo para búsquedas, listados, verificar que algo sigue presente o leer logs; **Sonnet** para implementar (también efectos y VFX), análisis de código, revisiones y auditorías por área; **Opus** solo para decisiones de arquitectura o diseño que no se puedan partir.
+- **El coordinador (Opus) solo piensa y habla con el usuario:** entiende la petición, decide el diseño, escribe los briefs y revisa resultados. El resto se delega:
+  - Explorar para responder una duda (más de 3 archivos o ramas) → Sonnet medio o `Explore`, que devuelve un resumen, no los archivos.
+  - Cierre completo (merge y conflictos, sincronizar MDs, `STATUS.md`, walkthrough, README, rescate de assets, borrar el worktree) → un solo Sonnet medio con la lista de «Cierre» de este archivo; Opus solo revisa el diff final.
+  - Bucles de evidencia (compilar, escenarios, capturas, GIF, subir a la DS) → Sonnet medio; Opus mira la imagen y decide.
+  - Comprobaciones sueltas (estado de ramas, si algo está mergeado, leer logs) → Haiku.
+  - Tareas sin decisión de diseño (render de vídeos, herramientas, ADB, toolchain) → sesión arrancada directamente en Sonnet, no en Opus.
+  - **Señal de alarma:** si Opus va a encadenar más de 5 llamadas seguidas sin nada que decidir ni preguntar al usuario, delega.
 - **Solo subagentes nativos de Claude** (tool Agent: Haiku, Sonnet, Opus). No se delega en modelos de otros proveedores (Codex, Antigravity, Command Code) ni se usa la skill `delegate-agents`.
 - **Velocidad de los agentes** (medido en esta rama: un agente de 23 min gastó ~10 en pensar, ~6 en escenarios y ~3 en leer):
   - Esfuerzo `medium` para tareas acotadas (un archivo o una mecánica con punteros exactos); `high` solo si hay que diseñar.
