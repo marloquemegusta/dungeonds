@@ -255,3 +255,38 @@ void intro_run(uint16_t *top_page, uint16_t *bot_page_a, uint16_t *bot_page_b,
     swiFastCopy(&zero, bot_page_b, COPY_MODE_FILL | (SW * SH * 2 / 4));
     wait_vblank(vblank_flip_fn);
 }
+
+void intro_end_demo_run(uint16_t *top_page, uint16_t *bot_page_a, uint16_t *bot_page_b,
+                        int *bot_active_page_idx, void (*vblank_flip_fn)(void)) {
+    if (!top_page || !bot_page_a || !bot_page_b) return;
+    uint32_t zero = 0;
+    swiFastCopy(&zero, top_page, COPY_MODE_FILL | (SW * SH * 2 / 4));
+    uint16_t *pages[2] = { bot_page_a, bot_page_b };
+    for (int i = 0; i < 2; i++) {
+        uint16_t *fb = pages[i];
+        clear_black(fb);
+        bestiary_font_draw_utf8(fb, 12, 10, "Fin de la demo", COL_IVORY);
+        fill_rect(fb, 12, 24, 232, 1, COL_SEP);
+        bestiary_font_draw_wrapped(fb, 12, 34, 231, 14, "Has vencido al Abanderado. Gracias por jugar.", COL_WARM);
+        fill_rect(fb, 12, 158, 232, 1, COL_SEP);
+        const char *msg = "A o toca: volver al campamento";
+        bestiary_font_draw_utf8(fb, (SW - bestiary_font_measure_utf8(msg)) >> 1, 166, msg, COL_BTN);
+    }
+    (void)bot_active_page_idx;
+    wait_vblank(vblank_flip_fn);
+    int prev_touch_down = 1;                    /* a touch held from the fight does not count */
+    for (;;) {
+        scanKeys();
+        uint32_t keys_down = keysDown();
+        touchPosition touch;
+        touchRead(&touch);
+        int touch_down = (keysHeld() & KEY_TOUCH) && touch.px < SW && touch.py < SH;
+        int touch_pressed = touch_down && !prev_touch_down;
+        prev_touch_down = touch_down;
+        if ((keys_down & KEY_A) || touch_pressed) break;
+        wait_vblank(vblank_flip_fn);
+    }
+    swiFastCopy(&zero, bot_page_a, COPY_MODE_FILL | (SW * SH * 2 / 4));
+    swiFastCopy(&zero, bot_page_b, COPY_MODE_FILL | (SW * SH * 2 / 4));
+    wait_vblank(vblank_flip_fn);
+}

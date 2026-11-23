@@ -8,7 +8,7 @@
 
 typedef struct {
     uint32_t magic;      // set by arpg_progress_reset to 0x41525047 ("ARPG")
-    uint16_t version;    // 5 (v4: sin mapa; v1: inventario nuevo; v3: se conserva y se le añade el Glifo)
+    uint16_t version;    // 6 (v5: mapa de 12 salas; v4: sin mapa; v1: inventario nuevo; v3: se conserva y se le añade el Glifo)
     uint16_t level;      // starts at 1
     uint32_t xp;         // banked xp not yet converted into levels
     uint16_t points;     // retired with the skill tree; kept so the save layout (and scenarios) do not move
@@ -18,13 +18,13 @@ typedef struct {
     uint32_t altars_lo;  // bit a = travel altar (room index / 3) touched, altars 0..31
     uint32_t altars_hi;  // altars 32..63
     ArpgInventory inv;   // reliquias, tomos, engarces y cera (DESIGN.md 7.4)
-    // v5 (mapa de la zona 1, 12 salas): fields appended at the end, never reordered. Bit r = room r (0..11).
+    // v5/v6 (mapa de la zona 1; v6 = 16 salas): fields appended at the end, never reordered. Bit r = room r (0..15).
     uint16_t chests_open;    // chests opened (never refilled)
     uint16_t boss_ever;      // bosses and minibosses beaten at least once (kept forever)
     uint16_t boss_dead;      // bosses and minibosses dead since the last sleep (they come back when sleeping)
     uint8_t  last_altar;     // room id of the last altar touched (the camp door leads there); 0 = Nave 1
-    uint8_t  key_have;       // the key of the zone (no logic yet)
-    uint8_t  dead_groups[12];// per room: bit b = group of block b dead since the last sleep
+    uint8_t  key_have;       // the key of the zone (dropped by the Capilla del parroco)
+    uint8_t  dead_groups[16];// per room: bit b = group of block b dead since the last sleep
     uint16_t rooms_seen;     // bit r = room r visited at least once (the overlay map of SELECT shows only those)
     uint8_t  reserved[2];
 } ArpgProgress;

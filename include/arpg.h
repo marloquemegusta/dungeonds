@@ -50,6 +50,8 @@
 #define ARPG_MONJA_KEEP_FLEE_STOP 90    // [TUNABLE-PLACEHOLDER] ground px: she stops fleeing (and prays) from this distance
 #define ARPG_MONJA_KEEP_FAR 115         // [TUNABLE-PLACEHOLDER] ground px: hero farther than this makes her walk closer
 #define ARPG_MONJA_KEEP_FAR_STOP 100    // [TUNABLE-PLACEHOLDER] ground px: she stops approaching (and prays) from this distance
+#define ARPG_EXVOTO_HEAL_PCT 2          // [TUNABLE-PLACEHOLDER] Monja de cera praying at a post (Capilla del parroco): % of max life healed per second to the Exvoto family around her
+#define ARPG_EXVOTO_HEAL_RADIUS 80      // [TUNABLE-PLACEHOLDER] ground px of that heal
 #define ARPG_MONJA_PRAYS 0              // 1 = the old prayer (heal + haste + placement); 0 = Super Monja: circles, kites and charges (ARPG_SMONJA_*)
 // Super Monja (DESIGN-ARPG s5): circles at mid distance, kites at punching range, charges now and then.
 #define ARPG_SMONJA_RING_NEAR 80        // [TUNABLE-PLACEHOLDER] ground px: closer than this (but outside KITE) she backs off
@@ -99,12 +101,16 @@
 #define ARPG_PICKUP_MAGNET 36       // [TUNABLE-PLACEHOLDER] ground px: orbs this close fly to the hero
 
 // Experience (DESIGN-ARPG.md Â§1): what a death is worth, granted directly on the kill.
-#define ARPG_XP_EXVOTO 4            // [TUNABLE-PLACEHOLDER] xp per Exvoto
-#define ARPG_XP_MONAGUILLO 1        // [TUNABLE-PLACEHOLDER] xp per Monaguillo
-#define ARPG_XP_CIRENEO 10          // [TUNABLE-PLACEHOLDER] xp per Cireneo (ENEMY_TYPE_CHARGER)
-#define ARPG_XP_OJO 8               // [TUNABLE-PLACEHOLDER] xp per Ojo del Tribunal (ENEMY_TYPE_SHOOTER)
-#define ARPG_XP_BOSS_BASE 100       // [TUNABLE-PLACEHOLDER] Abanderado xp at boss 1; doubles per boss
-#define ARPG_XP_BOSS_CAP 1600       // [TUNABLE-PLACEHOLDER] Abanderado xp ceiling
+#define ARPG_XP_BEBE 1              // [TUNABLE-PLACEHOLDER] xp per threat (DESIGN-ARPG.md 7), before the room level factor
+#define ARPG_XP_MONAGUILLO 2
+#define ARPG_XP_EXVOTO 3            // the wax nun
+#define ARPG_XP_PARROCO 8
+#define ARPG_XP_OJO 8               // Ojo del Tribunal (ENEMY_TYPE_SHOOTER)
+#define ARPG_XP_CIRENEO 10          // ENEMY_TYPE_CHARGER
+#define ARPG_XP_MONJA 12            // Super Monja (ENEMY_TYPE_MONJA while ARPG_MONJA_PRAYS is 0)
+#define ARPG_XP_BOSS 250            // Abanderado of the Cripta (room level 5)
+#define ARPG_XP_SPECIAL 60          // extra xp when a special encounter (Capilla del parroco, Misa, monjarana) has fallen whole
+#define ARPG_XP_LEVEL_PCT 30        // +30 % per room level above 1
 
 // Glifo (DESIGN.md 7.5-7.7): hechizo de suelo lanzado al punto del lapiz. Ciclo: apertura (la grieta se abre, sin efecto),
 // espera (actuan las auras) y detonacion (un golpe a todo el que este dentro), luego cierre. Auras componibles
@@ -136,7 +142,7 @@
 #define ARPG_ALLY_BLAST_RADIUS 40   // [TUNABLE-PLACEHOLDER] ground px of that blast
 
 // Room level (zone map, DESIGN.md 7.1): no auto-scaling; the life of an enemy depends on the FIXED level of its room (k = level - 1).
-// Bosses and minibosses also by their number n (0 = Cripta, 1 = Galeria del elite).
+// Bosses and minibosses also by their number n (0 = Cripta).
 #define ARPG_DEPTH_HP_PCT 12        // [TUNABLE-PLACEHOLDER] % of life added per room level above 1
 #define ARPG_DEPTH_PCT(k) (100 + ARPG_DEPTH_HP_PCT * (k))
 #define ARPG_BOSS_HP_PCT(n) ((n) == 0 ? 100 : (n) == 1 ? 160 : 220 + 40 * ((n) - 2))   // [TUNABLE-PLACEHOLDER] % of life by boss number
@@ -164,7 +170,6 @@
 // Tier 2 of the Ojo and the Cireneo (same enemy type; no visual or mechanical change yet, only life and damage).
 #define ARPG_TIER2_HP_PCT 200             // [TUNABLE-PLACEHOLDER] % of the life of tier 1
 #define ARPG_TIER2_DAMAGE_PCT 150         // [TUNABLE-PLACEHOLDER] % of the damage of tier 1
-#define ARPG_MISA_HP_PCT 200              // [TUNABLE-PLACEHOLDER] % of life of every enemy of the miniboss "la Misa"
 #define ARPG_ROOM_CHEST_REACH_PX 24       // [TUNABLE-PLACEHOLDER] chest opens when the hero is this close
 #define ARPG_ROOM_ALTAR_REACH_PX 28       // [TUNABLE-PLACEHOLDER] altar is touched when the hero is this close
 #define ARPG_ROOM_CHEST_XP 6              // [TUNABLE-PLACEHOLDER] xp of a chest at room 1; grows a little per room

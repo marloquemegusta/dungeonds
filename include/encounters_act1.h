@@ -68,11 +68,11 @@ int enc_block_rects(int32_t block, EncRect *out, int max);
 // Collision value an obstacle writes into the grid: 1 stops bodies, 3 stops bodies and bullets.
 int enc_collision_value(uint8_t rect_kind);
 
-// Rooms (salas ARPG, mapa de la zona 1 variante D): the cathedral is a set of 12 rooms of 1..3 blocks. Only the room the
+// Rooms (salas ARPG, mapa de la zona 1 variante D): the cathedral is a set of 16 rooms of 1..3 blocks. Only the room the
 // hero is in exists in the strip; crossing a door loads the next one (main.c: fade, enc_room_select, strip_start, enc_room_arrival).
-#define ENC_ROOM_COUNT 12
+#define ENC_ROOM_COUNT 16
 #define ENC_ROOM_NAVE1 0
-#define ENC_ROOM_CRIPTA 11
+#define ENC_ROOM_CRIPTA 15
 // A lateral opening of a block: world x, block-relative y.
 typedef struct { int16_t x, y, w, h; } EncRoomOpening;
 // Chooses the room the next strip_start() builds. `from_room` = room the hero comes from (-1: from the camp or a debug start);
@@ -93,6 +93,8 @@ int enc_block_has_door(int32_t block);      // 1 = the top door piece stands on 
 int enc_room_arrival(int *out_x, int *out_y, int *out_dir);
 // Consumes a crossing requested by enc_update(): 1 and the destination room in *out_room.
 int enc_room_take_exit(int *out_room);
+// Cripta boss beaten for the first time: 1 once, after its victory sequence has ended (main.c then shows the end-of-demo card).
+int enc_end_demo_take(void);
 // Campanero fight: a world point where the Campanero raises an Exvoto, picked by `r` (beside a column or a random floor spot).
 void enc_camp_spot(uint32_t r, int *x, int *y);
 

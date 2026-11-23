@@ -280,6 +280,7 @@ static inline int exvoto_up_char(const Enemy *e) {
 
 // Wakes one praying Exvoto: the kneeling ones rise first (still), the standing ones walk at once.
 static void exvoto_wake_one(Enemy *e) {
+    e->home_flags &= (uint8_t)~ENEMY_HOME_GUARD;       // a nun of the chapel stops being a praying post
     e->anim_timer = 0;
     e->frame = 0;
     if (e->kneel) {
@@ -440,6 +441,32 @@ static int bodyguard_step(Enemy *e, Enemy *enemies, int num_enemies, int idx, in
     return 1;
 }
 
+#if ENCOUNTERS_PROTO
+// Monja de cera praying at her post (ENEMY_HOME_GUARD + PRAY, Capilla del parroco): once a second she heals ARPG_EXVOTO_HEAL_PCT %
+// of the life of the Exvoto family within ARPG_EXVOTO_HEAL_RADIUS ground px (green numbers, like the Monja's heal).
+static void exvoto_pray_heal(Enemy *e, Enemy *enemies, int num_enemies, int idx) {
+    if (++e->state_timer % ARPG_MONJA_HEAL_PERIOD != (idx % ARPG_MONJA_HEAL_PERIOD)) return;
+    if (num_enemies > MAX_GAMEPLAY_ENEMIES) num_enemies = MAX_GAMEPLAY_ENEMIES;
+    int healed_any = 0;
+    for (int j = 0; j < num_enemies; j++) {
+        Enemy *o = &enemies[j];
+        if (j == idx || !o->active || o->hp <= 0 || o->hp >= o->max_hp || g_enemy_ally[j]) continue;
+        if (o->type != ENEMY_TYPE_BEBE && o->type != ENEMY_TYPE_EXVOTO && o->type != ENEMY_TYPE_PARROCO &&
+            o->type != ENEMY_TYPE_MONAGUILLO) continue;
+        int dx = TO_INT(o->x - e->x);
+        int dy = TO_INT(o->y - e->y);
+        if (dx * dx + GROUND_DY2(dy) > ARPG_EXVOTO_HEAL_RADIUS * ARPG_EXVOTO_HEAL_RADIUS) continue;
+        int heal = o->max_hp * ARPG_EXVOTO_HEAL_PCT / 100;
+        if (heal < 1) heal = 1;
+        o->hp += heal;
+        if (o->hp > o->max_hp) o->hp = o->max_hp;
+        dmg_numbers_spawn(o->x, o->y - TO_FIXED(16), heal, DMG_NUM_HEAL);
+        healed_any = 1;
+    }
+    if (healed_any) sfx_play(SND_MONJA_HEAL, TO_INT(e->x));
+}
+#endif
+
 static void update_exvoto(Enemy *e, Enemy *enemies, int num_enemies, int idx,
                           fixed player_x, fixed player_y, const EnemyTuning *tuning) {
     if (e->type == ENEMY_TYPE_PARROCO && e->gesture > 0) e->gesture--;      // wax-white flash timer (set when the Ray breaks on it)
@@ -467,6 +494,22 @@ static void update_exvoto(Enemy *e, Enemy *enemies, int num_enemies, int idx,
 
     switch (e->state) {
         case ENEMY_STATE_PRAY: {
+#if ENCOUNTERS_PROTO
+            if (e->home_flags & ENEMY_HOME_GUARD) {
+                // Praying nun of the chapel: a hit does not wake her, only the hero on top of her (a stagger from a hit neither).
+                if (ground_dist_sq <= EXVOTO_CHAIN_WAKE_RADIUS * EXVOTO_CHAIN_WAKE_RADIUS) {
+                    exvoto_wake_chain(enemies, num_enemies, idx);
+                    break;
+                }
+                exvoto_pray_heal(e, enemies, num_enemies, idx);
+                int period = g_characters[e->char_id].anim_period;
+                if (++e->anim_timer >= period) {
+                    e->anim_timer = 0;
+                    e->frame = (e->frame + 1) % PLAYER_NUM_FRAMES;
+                }
+                break;
+            }
+#endif
             if (ground_dist_sq <= EXVOTO_WAKE_RADIUS * EXVOTO_WAKE_RADIUS || e->hit_timer > 0) {
                 exvoto_wake_chain(enemies, num_enemies, idx);
                 break;
@@ -1997,7 +2040,7 @@ ITCM_CODE void enemy_ai_update(Enemy *enemies, int num_enemies, fixed player_x, 
                 e->state = ENEMY_STATE_STUNNED;      // interrupted lunge: dazed after the stagger
                 e->state_timer = CHARGER_STUN_HIT_FRAMES;
             }
-            if (e->type == ENEMY_TYPE_EXVOTO && e->state == ENEMY_STATE_PRAY)
+            if (e->type == ENEMY_TYPE_EXVOTO && e->state == ENEMY_STATE_PRAY && !(e->home_flags & ENEMY_HOME_GUARD))
                 exvoto_wake_chain(enemies, num_enemies, i);   // hurt but alive: it wakes (and the others with it)
             e->stun_timer--;
             move_with_slide(&e->x, &e->y, e->knock_vx, e->knock_vy);

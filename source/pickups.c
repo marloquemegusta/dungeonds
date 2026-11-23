@@ -128,7 +128,8 @@ void pickups_drop_enemy_loot(int enemy_type, int floor, fixed x, fixed y) {
     int min_rar = ARPG_RAR_COMMON;
     int chance = 7; // ~7% normal enemies
     int lvl_bonus = 0;
-    if (enemy_type == ENEMY_TYPE_ABANDERADO || enemy_type == ENEMY_TYPE_CAMPANERO) {
+    if (enemy_type == ENEMY_TYPE_ABANDERADO) return;   // the elite and the Cripta boss give their prize from the room (encounters_act1.c)
+    if (enemy_type == ENEMY_TYPE_CAMPANERO) {
         chance = 100;
         min_rar = ARPG_RAR_LEGENDARY;
         lvl_bonus = 2;

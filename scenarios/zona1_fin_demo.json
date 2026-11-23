@@ -1,0 +1,407 @@
+{
+ "name": "zona1_fin_demo",
+ "description": "zona1_fin_demo. Solo evidencia.",
+ "suite": false,
+ "evidence_only": true,
+ "state": {
+  "elf": "../.ds-game-dev/build/out/dungeonds-arpg-todo.elf",
+  "symbols": {
+   "pl": "s_player",
+   "dbg": "g_enc_debug",
+   "stats": "g_enc_stats",
+   "arpg": "g_arpg",
+   "en": "g_enemies"
+  },
+  "default_symbol": "pl",
+  "fields": {
+   "px": {
+    "symbol": "pl",
+    "offset": 0,
+    "type": "s32"
+   },
+   "py": {
+    "symbol": "pl",
+    "offset": 4,
+    "type": "s32"
+   },
+   "dbg_god": {
+    "symbol": "dbg",
+    "offset": 2,
+    "type": "u8"
+   },
+   "dbg_restart": {
+    "symbol": "dbg",
+    "offset": 12,
+    "type": "u8"
+   },
+   "dbg_start_room": {
+    "symbol": "dbg",
+    "offset": 20,
+    "type": "u8"
+   },
+   "dbg_start_boss": {
+    "symbol": "dbg",
+    "offset": 16,
+    "type": "u8"
+   },
+   "dbg_boss_damage": {
+    "symbol": "dbg",
+    "offset": 18,
+    "type": "u16"
+   },
+   "room": {
+    "symbol": "stats",
+    "offset": 60,
+    "type": "u8"
+   },
+   "altars": {
+    "symbol": "arpg",
+    "offset": 20,
+    "type": "u32"
+   },
+   "key_have": {
+    "symbol": "arpg",
+    "offset": 513,
+    "type": "u8"
+   },
+   "boss_ever": {
+    "symbol": "arpg",
+    "offset": 508,
+    "type": "u16"
+   },
+   "dead10": {
+    "symbol": "arpg",
+    "offset": 524,
+    "type": "u8"
+   },
+   "room_now": {
+    "symbol": "stats",
+    "offset": 60,
+    "type": "u8"
+   },
+   "hp0": {
+    "symbol": "en",
+    "offset": 28,
+    "type": "s32"
+   },
+   "hp1": {
+    "symbol": "en",
+    "offset": 152,
+    "type": "s32"
+   },
+   "hp2": {
+    "symbol": "en",
+    "offset": 276,
+    "type": "s32"
+   },
+   "hp3": {
+    "symbol": "en",
+    "offset": 400,
+    "type": "s32"
+   },
+   "hp4": {
+    "symbol": "en",
+    "offset": 524,
+    "type": "s32"
+   },
+   "hp5": {
+    "symbol": "en",
+    "offset": 648,
+    "type": "s32"
+   },
+   "hp6": {
+    "symbol": "en",
+    "offset": 772,
+    "type": "s32"
+   },
+   "hp7": {
+    "symbol": "en",
+    "offset": 896,
+    "type": "s32"
+   },
+   "hp8": {
+    "symbol": "en",
+    "offset": 1020,
+    "type": "s32"
+   },
+   "hp9": {
+    "symbol": "en",
+    "offset": 1144,
+    "type": "s32"
+   },
+   "hp10": {
+    "symbol": "en",
+    "offset": 1268,
+    "type": "s32"
+   },
+   "hp11": {
+    "symbol": "en",
+    "offset": 1392,
+    "type": "s32"
+   },
+   "hp12": {
+    "symbol": "en",
+    "offset": 1516,
+    "type": "s32"
+   },
+   "hp13": {
+    "symbol": "en",
+    "offset": 1640,
+    "type": "s32"
+   },
+   "hp14": {
+    "symbol": "en",
+    "offset": 1764,
+    "type": "s32"
+   },
+   "hp15": {
+    "symbol": "en",
+    "offset": 1888,
+    "type": "s32"
+   },
+   "hp16": {
+    "symbol": "en",
+    "offset": 2012,
+    "type": "s32"
+   },
+   "hp17": {
+    "symbol": "en",
+    "offset": 2136,
+    "type": "s32"
+   },
+   "hp18": {
+    "symbol": "en",
+    "offset": 2260,
+    "type": "s32"
+   },
+   "hp19": {
+    "symbol": "en",
+    "offset": 2384,
+    "type": "s32"
+   },
+   "hp20": {
+    "symbol": "en",
+    "offset": 2508,
+    "type": "s32"
+   },
+   "hp21": {
+    "symbol": "en",
+    "offset": 2632,
+    "type": "s32"
+   },
+   "hp22": {
+    "symbol": "en",
+    "offset": 2756,
+    "type": "s32"
+   },
+   "hp23": {
+    "symbol": "en",
+    "offset": 2880,
+    "type": "s32"
+   }
+  }
+ },
+ "steps": [
+  {
+   "frames": 60
+  },
+  {
+   "tap": {
+    "x": 128,
+    "y": 66
+   },
+   "frames": 6
+  },
+  {
+   "release": true,
+   "frames": 40
+  },
+  {
+   "button_down": "START",
+   "frames": 4
+  },
+  {
+   "button_up": "START",
+   "frames": 90
+  },
+  {
+   "poke": [
+    {
+     "field": "px",
+     "value": 32768
+    },
+    {
+     "field": "py",
+     "value": 29696
+    }
+   ],
+   "frames": 20
+  },
+  {
+   "button_down": "A",
+   "frames": 4
+  },
+  {
+   "button_up": "A",
+   "frames": 40
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    },
+    {
+     "field": "dbg_start_room",
+     "value": 16
+    },
+    {
+     "field": "dbg_restart",
+     "value": 1
+    }
+   ],
+   "frames": 120,
+   "capture": "f0_cripta"
+  },
+  {
+   "button_down": "UP",
+   "frames": 120,
+   "capture": "u1"
+  },
+  {
+   "frames": 120,
+   "capture": "u2"
+  },
+  {
+   "frames": 120,
+   "capture": "u3"
+  },
+  {
+   "button_up": "UP",
+   "frames": 60,
+   "capture": "u4"
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_boss_damage",
+     "value": 30000
+    }
+   ],
+   "frames": 40,
+   "capture": "d00",
+   "state_capture": "d00"
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_boss_damage",
+     "value": 30000
+    }
+   ],
+   "frames": 40,
+   "capture": "d01",
+   "state_capture": "d01"
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_boss_damage",
+     "value": 30000
+    }
+   ],
+   "frames": 40,
+   "capture": "d02",
+   "state_capture": "d02"
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_boss_damage",
+     "value": 30000
+    }
+   ],
+   "frames": 40,
+   "capture": "d03",
+   "state_capture": "d03"
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_boss_damage",
+     "value": 30000
+    }
+   ],
+   "frames": 40,
+   "capture": "d04",
+   "state_capture": "d04"
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_boss_damage",
+     "value": 30000
+    }
+   ],
+   "frames": 40,
+   "capture": "d05",
+   "state_capture": "d05"
+  },
+  {
+   "frames": 60,
+   "capture": "w00"
+  },
+  {
+   "frames": 60,
+   "capture": "w01"
+  },
+  {
+   "frames": 60,
+   "capture": "w02"
+  },
+  {
+   "frames": 60,
+   "capture": "w03"
+  },
+  {
+   "frames": 60,
+   "capture": "w04"
+  },
+  {
+   "frames": 60,
+   "capture": "w05"
+  },
+  {
+   "frames": 60,
+   "capture": "w06"
+  },
+  {
+   "frames": 60,
+   "capture": "w07"
+  },
+  {
+   "frames": 60,
+   "capture": "w08"
+  },
+  {
+   "frames": 60,
+   "capture": "w09"
+  },
+  {
+   "frames": 60,
+   "capture": "w10"
+  },
+  {
+   "frames": 60,
+   "capture": "w11"
+  },
+  {
+   "frames": 60,
+   "capture": "w12"
+  },
+  {
+   "frames": 60,
+   "capture": "w13"
+  }
+ ]
+}

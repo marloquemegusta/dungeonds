@@ -2184,7 +2184,7 @@ static void draw_run_hud(uint16_t *buffer) {
     const uint16_t edge = RGB15(31, 24, 24) | BIT(15);
 
     if (s_strip_mode) {
-        char line[24];
+        char line[40];     // fits the longest room name (Galería de la monjaraña)
 #if !ENCOUNTERS_PROTO
         uint32_t seconds = horde_run_frames() / 60u;
 #endif
@@ -2283,6 +2283,10 @@ static void draw_run_hud(uint16_t *buffer) {
         }
 #endif
 #if ENCOUNTERS_PROTO
+        {   // Short notices (first-time tips, key, relic picked up, full bag), centred near the top of the touch screen: clear of the hero, the orbs and their numbers.
+            const char *toast = pickups_loot_toast();
+            if (toast) hud_text(buffer, (SCREEN_W - hud_text_width(toast)) / 2, 30, toast, RGB15(27, 24, 18) | BIT(15));
+        }
         if (boss_hud_active()) boss_draw_hud(buffer, SCREEN_W - 6, hud_text);      // thin bar from the right edge, above the orbs
         radial_render(buffer);                                                      // spell radial while L is held; no-op closed
 #endif
@@ -3637,6 +3641,35 @@ static void run_to_camp(void) {
     sfx_stop_bgm();
     enter_camp_scene();
 }
+
+// End of the demo (DESIGN-ARPG.md 7): the full-screen card after the Cripta boss falls for the first time, then the camp.
+static void end_demo_card_then_camp(void) {
+#if HW_SHADOWS
+    hwshadow_regs_off();
+#endif
+    REG_BLDCNT = 0;
+    REG_BLDY = 0;
+    REG_BLDCNT_SUB = 0;
+    REG_BLDY_SUB = 0;
+    bgHide(s_top_hw_bg);
+    bgHide(s_bot_hw_bg);
+    oamDisable(&oamMain);
+    oamDisable(&oamSub);
+    intro_end_demo_run(s_top_page, bot_page_ptr(8), bot_page_ptr(24), &s_bot_active_page, present_vblank_begin);
+    bgShow(s_top_hw_bg);
+    bgShow(s_bot_hw_bg);
+#if HW_SHADOWS || (defined(GODRAYS_PROTO) && GODRAYS_PROTO)
+    oamEnable(&oamMain);
+    oamEnable(&oamSub);
+#endif
+    s_top_map_ready = 0;
+    s_bot_map_ready = 0;
+    memset(s_dirty, 0, sizeof(s_dirty));
+    memset(s_dirty_top, 0, sizeof(s_dirty_top));
+    run_to_camp();
+    s_keys_down_latch = 0;
+    touch_track(0, 0, 0);
+}
 #endif
 
 #if ARPG_LAB
@@ -4011,7 +4044,7 @@ int main(void) {
         else {
             // In the camp: START opens the pause menu (Continuar / Códice / Controles). There is no
             // "Volver al campamento" here, since we are already in the camp.
-            if (keys_down & KEY_START) {
+            if ((keys_down & KEY_START) && !camp_altar_list_open()) {
                 menu_open_pause(1);
                 s_keys_down_latch = 0;
             } else {
@@ -4020,6 +4053,10 @@ int main(void) {
         }
 #endif
 #if ENCOUNTERS_PROTO
+        if (!menu_is_open() && s_strip_mode && !camp_active() && enc_end_demo_take()) {
+            end_demo_card_then_camp();
+            s_menu_ignore_held_touch = touch_down;
+        }
         if (boss_frozen() && !menu_is_open()) {
             if (boss_snapshot_pending()) {            // first, while the floor is still on screen (it takes a few frames)
                 boss_snapshot_all();

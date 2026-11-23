@@ -6,6 +6,8 @@
 
 ArpgProgress g_arpg;
 
+#define ARPG_SAVE_VERSION 6      // v6: 16 rooms (v5 and older keep level, xp, inventory, tips and spell; the map progress restarts)
+
 // Test build (variant arpg-todo, project.json): every save and every fresh start has level 10 and every relic and tome equipped.
 #ifndef ARPG_ALL_UNLOCKED
 #define ARPG_ALL_UNLOCKED 0
@@ -20,17 +22,17 @@ static void arpg_unlock_for_tests(void) {
 #endif
 }
 
-// round(25 * 1.45^(L-1)) for levels 1..20 (computed offline, hardcoded). Level 20 and up use the last value.
+// round(110 * 1.45^(L-1)) for levels 1..20 (computed offline, hardcoded). Level 20 and up use the last value.
 #define ARPG_XP_TABLE_LEN 20
 static const int s_arpg_xp_needed[ARPG_XP_TABLE_LEN] = {
-    25, 36, 53, 76, 111, 160, 232, 337, 489, 708,
-    1027, 1489, 2160, 3131, 4540, 6584, 9546, 13842, 20071, 29103
+    110, 160, 231, 335, 486, 705, 1022, 1482, 2149, 3117,
+    4519, 6553, 9502, 13778, 19978, 28968, 42003, 60904, 88311, 128052
 };
 
 void arpg_progress_reset(void) {
     memset(&g_arpg, 0, sizeof(g_arpg));
     g_arpg.magic = 0x41525047u;
-    g_arpg.version = 5;
+    g_arpg.version = ARPG_SAVE_VERSION;
     g_arpg.level = 1;
     g_arpg.xp = 0;
     g_arpg.points = 0;
@@ -67,21 +69,23 @@ int arpg_sleep(void) {
 }
 
 int arpg_enemy_xp(int enemy_type, int floor) {
+    int base;
     switch (enemy_type) {
-    case ENEMY_TYPE_EXVOTO:     return ARPG_XP_EXVOTO;
-    case ENEMY_TYPE_MONAGUILLO: return ARPG_XP_MONAGUILLO;
-    case ENEMY_TYPE_CHARGER:    return ARPG_XP_CIRENEO;
-    case ENEMY_TYPE_SHOOTER:    return ARPG_XP_OJO;
-    case ENEMY_TYPE_CAMPANERO:      // a boss like the Abanderado
-    case ENEMY_TYPE_ABANDERADO: {
-        int boss_index = (floor + 4) / 5;          // floor 5 -> 1, 10 -> 2, 15 -> 3
-        if (boss_index < 1) boss_index = 1;
-        if (boss_index - 1 >= 5) return ARPG_XP_BOSS_CAP;   // the shift would pass the cap anyway
-        int xp = ARPG_XP_BOSS_BASE << (boss_index - 1);
-        return xp > ARPG_XP_BOSS_CAP ? ARPG_XP_BOSS_CAP : xp;
-    }
+    case ENEMY_TYPE_BEBE:       base = ARPG_XP_BEBE; break;
+    case ENEMY_TYPE_MONAGUILLO: base = ARPG_XP_MONAGUILLO; break;
+    case ENEMY_TYPE_EXVOTO:     base = ARPG_XP_EXVOTO; break;
+    case ENEMY_TYPE_PARROCO:    base = ARPG_XP_PARROCO; break;
+    case ENEMY_TYPE_SHOOTER:    base = ARPG_XP_OJO; break;
+    case ENEMY_TYPE_CHARGER:    base = ARPG_XP_CIRENEO; break;
+    case ENEMY_TYPE_MONJA:      base = ARPG_XP_MONJA; break;
+    case ENEMY_TYPE_CAMPANERO:      // a boss like the Abanderado of the Cripta
+        return ARPG_XP_BOSS;
+    case ENEMY_TYPE_ABANDERADO:     // fixed per fight: the Abanderado of the Cripta
+        return ARPG_XP_BOSS;
     default:                    return 0;
     }
+    const int lvl = floor < 1 ? 1 : floor;
+    return base * (100 + ARPG_XP_LEVEL_PCT * (lvl - 1)) / 100;
 }
 
 void arpg_world_rest(void) {
@@ -92,7 +96,6 @@ void arpg_world_rest(void) {
 /* ---- Save file (DESIGN.md 7.1: guardado en la tarjeta) ---- */
 
 #define ARPG_SAVE_MAGIC   0x41525047u
-#define ARPG_SAVE_VERSION 5
 #if ARPG_ALL_UNLOCKED
 #define ARPG_SAVE_NAME    "dungeonds_arpg_todo.sav"   // the test build never overwrites the player's save
 #else
@@ -175,18 +178,22 @@ int arpg_progress_load(void) {
         }
         rewind(f);
         ArpgProgress tmp;
-        memset(&tmp, 0, sizeof(tmp));          // a v4 file is shorter: the fields of v5 stay at zero
+        memset(&tmp, 0, sizeof(tmp));          // an older file is shorter: the fields of the map stay at zero
         size_t got = fread(&tmp, 1, sizeof(tmp), f);
         fclose(f);
-        int old4 = got >= ARPG_SAVE_V4_SIZE && tmp.magic == ARPG_SAVE_MAGIC && tmp.version == 4;
-        int ok = got == sizeof(tmp) || old4;
-        if (old4) {                             // v4: same layout up to the inventory; the map fields start empty
+        int ok = got == sizeof(tmp);
+        // v4/v5 (and v3, same format): the prefix up to the map fields is identical. v5 room ids changed in v6 (12 -> 16 rooms),
+        // so the map progress (chests, altars, bosses, key, rooms seen, last altar) restarts; level, xp, bag, tips and spell stay.
+        const int old_map = got >= ARPG_SAVE_V4_SIZE && tmp.magic == ARPG_SAVE_MAGIC && tmp.version >= 3 && tmp.version <= 5 && tmp.level >= 1;
+        const int old3 = old_map && tmp.version == 3;
+        if (old_map) {
+            ok = 1;
             memset((uint8_t *)&tmp + ARPG_SAVE_V4_SIZE, 0, sizeof(tmp) - ARPG_SAVE_V4_SIZE);
+            tmp.altars_lo = 0;                  // altars are room ids too
+            tmp.altars_hi = 0;
+            tmp.deepest = 0;
             tmp.version = ARPG_SAVE_VERSION;
         }
-        // v3 (mismo formato): se conserva todo y se le añaden el Tomo y las reliquias del Glifo que le falten.
-        int old3 = got >= ARPG_SAVE_V4_SIZE && tmp.magic == ARPG_SAVE_MAGIC && tmp.version == 3 && tmp.level >= 1;
-        if (old3) { tmp.version = ARPG_SAVE_VERSION; ok = 1; memset((uint8_t *)&tmp + ARPG_SAVE_V4_SIZE, 0, sizeof(tmp) - ARPG_SAVE_V4_SIZE); }
         if (ok && tmp.magic == ARPG_SAVE_MAGIC && tmp.version == ARPG_SAVE_VERSION && tmp.level >= 1) {
             g_arpg = tmp;
             arpg_inv_sanitize();

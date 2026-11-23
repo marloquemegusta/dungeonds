@@ -178,7 +178,31 @@ Detalle con mapa y tablas: [`propuestas_protodemo.html`](propuestas_protodemo.ht
 - **Lápidas con lore** [DECIDIDO, más adelante]: las lápidas del suelo serán legibles y contarán lore; no entra en la protodemo.
 - **Curva de dificultad del inicio** [DECIDIDO 2026-11-20]: los primeros minutos tienen que sentirse como Diablo: machacar enemigos débiles. Salas 1-4: solo Bebés y Exvotos, y desde la sala 3 alguna sala suelta (1 de cada 3) con un único Ojo o Cireneo. Párroco y Monja desde la sala 5. Desde la sala 8, hasta 2 Ojos o Cireneos por grupo. Cifras provisionales; se ajustan jugando.
 
-## 11. Mapa de la zona 1: variante D «cuatro naves cortas» (decidido 2026-11-22)
+## 11. Mapa de la zona 1 (ampliado con ramas, decidido 2026-11-23)
+Sustituye a la tabla de 12 salas de la variante D (abajo, como base). Propuesta, mapa a escala y simulación de niveles: `walkthroughs/arpg-zona1-jugable/propuesta_zona1.html`. 16 salas, 70 pantallas (una pantalla = una de las dos de la consola), ~60-65 min la primera vez (sin medir). Las naves solo se suben: toda sala a la que se llega por abajo tiene salida lateral.
+
+| Id | Sala | Pant. | Nv | Puertas (pN = pantalla N desde abajo) | Contenido |
+|---|---|---|---|---|---|
+| 0 | Nave 1 | 6 | 1 | izq p2 → G. del cofre · der p4 → Claustro bajo · arriba → Nave 2 | altar |
+| 1 | Nave 2 | 6 | 2 | izq p4 → Enfermería · der p4 → Claustro alto · arriba → Nave 3 | altar |
+| 2 | Nave 3 | 6 | 3 | izq p4 → Osario · der p4 → G. del prisionero · arriba → Nave 4 | altar |
+| 3 | Nave 4 | 6 | 4 | der p2 → Capilla con llave · der p4 → G. de la monjaraña · arriba → Cripta | altar |
+| 4 | Galería del cofre | 2 | 1 | → Nave 1 | cofre |
+| 5 | Galería del secreto | 2 | 1 | → Claustro bajo | cofre |
+| 6 | Claustro bajo | 6 | 1 | izq p1 → Nave 1 · der p4 → G. del secreto · arriba → Claustro alto | rodeo |
+| 7 | Claustro alto | 6 | 2 | izq p2 → Nave 2 | cofre; vuelve a la Nave 2 |
+| 8 | Enfermería | 6 | 2 | der p1 → Nave 2 · izq p5 → Capilla del párroco · arriba → Osario | rodeo |
+| 9 | Osario | 6 | 3 | der p1 → Nave 3 · izq p4 → G. de la Misa | cofre; vuelve a la Nave 3 |
+| 10 | Capilla del párroco | 2 | 3 | → Enfermería | Párroco, Monaguillos y muchas Monjas de cera rezando; suelta la **llave**; cofre rara |
+| 11 | Galería de la Misa | 4 | 3 | → Osario | **la Misa**: de todo (Monjas de cera, Monaguillos, Párrocos, Súper Monjas); épica |
+| 12 | Galería del prisionero | 4 | 3 | → Nave 3 | cofre |
+| 13 | Capilla con llave | 2 | 4 | → Nave 4 (reja hasta tener la llave) | legendaria fija |
+| 14 | Galería de la monjaraña | 4 | 4 | → Nave 4 | Súper Monja con su corte poseída; épica |
+| 15 | Cripta | 2 | 5 | entrada desde la Nave 4 | **jefe Abanderado**; legendaria la 1.ª vez |
+
+Población, experiencia, premios y fin de la demo: `DESIGN-ARPG.md` §7.
+
+### 11.0 Base: variante D «cuatro naves cortas» (decidido 2026-11-22)
 Sustituye al esqueleto de §10 (3 naves de 8-10 pantallas). Comparativa con Diablo y Castlevania y cuentas de duración: `walkthroughs/arpg-mapa/tamano_zona1.html`.
 - **Objetivo de duración:** al menos 1 h en Normal la primera vez y 2-3 h con las 3 dificultades. Modelo: pasada limpia ≈ 1 min por pantalla; Normal ≈ pasada × 1,3-1,5; cada dificultad extra ≈ Normal × 0,6-0,7. El «1 min por pantalla» se mide en la consola con la Nave 1 y se ajusta la densidad.
 - **12 salas, 46 pantallas, todas de 6 pantallas o menos** (se recorren arriba y abajo):

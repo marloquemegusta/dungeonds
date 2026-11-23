@@ -61,8 +61,8 @@ enum { DOOR_LEFT = 0, DOOR_RIGHT, DOOR_UP };
 typedef struct { uint8_t side, screen, dest; } RoomDoor;   // screen: lateral doors only, screen counted from the bottom (p1 = lowest)
 enum { RT_NORMAL = 0,      // one group per block, taken from the list of groups of its nave
        RT_PARROQUIA,       // Capilla del parroco: always the Parroquia group
-       RT_MISA,            // minijefe "la Misa" in special_block, nothing else
-       RT_ELITE,           // minijefe Abanderado elite (boss machinery) in special_block, nothing else
+       RT_MISA,            // Galeria de la Misa: the fixed group of "la Misa" in special_block, nothing else
+       RT_MONJARANA,       // Galeria de la monjarana: the fixed group of the Super Monja and her court in special_block
        RT_CRIPTA };        // boss Abanderado in special_block
 typedef struct {
     const char *name;           // shown in the HUD
@@ -70,7 +70,7 @@ typedef struct {
     uint8_t level;              // fixed level: life of its enemies, xp and loot level of the kills
     uint8_t nave;               // 1..4: filters the groups and sets the tier of its Ojos and Cireneos
     uint8_t type;               // RT_*
-    uint8_t special_block;      // RT_MISA / RT_ELITE / RT_CRIPTA: block of the miniboss or boss
+    uint8_t special_block;      // RT_MISA / RT_MONJARANA / RT_CRIPTA: block of the special group or boss
     uint8_t n_doors;
     RoomDoor doors[3];
     uint8_t altar;              // altar at the foot of the room (touching it sets where the next run enters)
@@ -86,33 +86,42 @@ typedef struct {
 #define DR(p, d) { DOOR_RIGHT, (p), (d) }
 #define DU(d) { DOOR_UP, 0, (d) }
 // pN = screen N counted from the bottom of the room; block = (N-1)/2, the lower screen of the block when N is odd.
-// Ids: 0..3 Naves, 4 Galeria del cofre, 5 del secreto, 6 Capilla del parroco, 7 Galeria de la Misa, 8 del prisionero,
-// 9 Capilla con llave, 10 Galeria del elite, 11 Cripta.
+// Ids: 0..3 Naves, 4 Galeria del cofre, 5 del secreto, 6 Claustro bajo, 7 Claustro alto, 8 Enfermeria, 9 Osario,
+// 10 Capilla del parroco, 11 Galeria de la Misa, 12 Galeria del prisionero, 13 Capilla con llave, 14 Galeria de la monjarana, 15 Cripta.
+// Doors come in pairs (the arrival looks for the door that leads back). Doors that leave upwards have no pair below.
 static const RoomDef s_rooms[ENC_ROOM_COUNT] = {
     { .name = "Nave 1", .blocks = 3, .level = 1, .nave = 1, .type = RT_NORMAL, .altar = 1,
-      .n_doors = 3, .doors = { DL(2, 4), DR(5, 5), DU(1) } },
+      .n_doors = 3, .doors = { DL(2, 4), DR(4, 6), DU(1) } },
     { .name = "Nave 2", .blocks = 3, .level = 2, .nave = 2, .type = RT_NORMAL, .altar = 1,
-      .n_doors = 3, .doors = { DL(3, 6), DR(5, 7), DU(2) } },
+      .n_doors = 3, .doors = { DL(4, 8), DR(4, 7), DU(2) } },
     { .name = "Nave 3", .blocks = 3, .level = 3, .nave = 3, .type = RT_NORMAL, .altar = 1,
-      .n_doors = 2, .doors = { DL(4, 8), DU(3) } },
+      .n_doors = 3, .doors = { DL(4, 9), DR(4, 12), DU(3) } },
     { .name = "Nave 4", .blocks = 3, .level = 4, .nave = 4, .type = RT_NORMAL, .altar = 1, .key_door = 1,
-      .n_doors = 3, .doors = { DL(2, 9), DR(4, 10), DU(11) } },
+      .n_doors = 3, .doors = { DR(2, 13), DR(4, 14), DU(15) } },
     { .name = "Galería del cofre", .blocks = 1, .level = 1, .nave = 1, .type = RT_NORMAL, .chest = 1,
       .n_doors = 1, .doors = { DR(1, 0) } },
     { .name = "Galería del secreto", .blocks = 1, .level = 1, .nave = 1, .type = RT_NORMAL, .chest = 1,
-      .n_doors = 1, .doors = { DL(1, 0) } },
-    { .name = "Capilla del párroco", .blocks = 1, .level = 2, .nave = 2, .type = RT_PARROQUIA, .chest = 1,
-      .prize_min_rar = ARPG_RAR_RARE, .drops_key = 1, .chapel_gate = 1,
-      .n_doors = 1, .doors = { DR(1, 1) } },
-    { .name = "Galería de la Misa", .blocks = 2, .level = 2, .nave = 2, .type = RT_MISA, .special_block = 1,
+      .n_doors = 1, .doors = { DL(1, 6) } },
+    { .name = "Claustro bajo", .blocks = 3, .level = 1, .nave = 1, .type = RT_NORMAL,
+      .n_doors = 3, .doors = { DL(1, 0), DR(4, 5), DU(7) } },
+    { .name = "Claustro alto", .blocks = 3, .level = 2, .nave = 2, .type = RT_NORMAL, .chest = 1,
+      .n_doors = 1, .doors = { DL(2, 1) } },
+    { .name = "Enfermería", .blocks = 3, .level = 2, .nave = 2, .type = RT_NORMAL,
+      .n_doors = 3, .doors = { DR(1, 1), DL(5, 10), DU(9) } },
+    { .name = "Osario", .blocks = 3, .level = 3, .nave = 3, .type = RT_NORMAL, .chest = 1,
+      .n_doors = 2, .doors = { DR(1, 2), DL(4, 11) } },
+    { .name = "Capilla del párroco", .blocks = 1, .level = 3, .nave = 3, .type = RT_PARROQUIA, .chest = 1,
+      .prize_min_rar = ARPG_RAR_RARE, .drops_key = 1,
+      .n_doors = 1, .doors = { DR(1, 8) } },
+    { .name = "Galería de la Misa", .blocks = 2, .level = 3, .nave = 3, .type = RT_MISA, .special_block = 1,
       .prize_min_rar = ARPG_RAR_EPIC,
-      .n_doors = 1, .doors = { DL(1, 1) } },
+      .n_doors = 1, .doors = { DR(1, 9) } },
     { .name = "Galería del prisionero", .blocks = 2, .level = 3, .nave = 3, .type = RT_NORMAL, .chest = 1,
-      .n_doors = 1, .doors = { DR(1, 2) } },
+      .n_doors = 1, .doors = { DL(1, 2) } },
     { .name = "Capilla con llave", .blocks = 1, .level = 4, .nave = 4, .type = RT_NORMAL, .chest = 1,
       .prize_min_rar = ARPG_RAR_LEGENDARY, .chapel_gate = 1,
-      .n_doors = 1, .doors = { DR(1, 3) } },
-    { .name = "Galería del élite", .blocks = 2, .level = 4, .nave = 4, .type = RT_ELITE, .special_block = 1,
+      .n_doors = 1, .doors = { DL(1, 3) } },
+    { .name = "Galería de la monjaraña", .blocks = 2, .level = 4, .nave = 4, .type = RT_MONJARANA, .special_block = 1,
       .prize_min_rar = ARPG_RAR_EPIC,
       .n_doors = 1, .doors = { DL(1, 3) } },
     { .name = "Cripta", .blocks = 1, .level = 5, .nave = 4, .type = RT_CRIPTA, .special_block = 0,
@@ -126,12 +135,13 @@ static int s_room;                            // room loaded now (enc_room_selec
 #endif
 static int s_from_room = -1;                  // room the hero came from (where he lands), -1 = from the camp
 static const RoomDef *room_def(void) { return &s_rooms[s_room]; }
-static int is_boss_stage(int k) {             // block k holds the boss machinery (Cripta, Galeria del elite)
+static int is_boss_stage(int k) {             // block k holds the boss machinery (Cripta)
     const RoomDef *r = room_def();
-    return (r->type == RT_ELITE || r->type == RT_CRIPTA) && k == r->special_block;
+    return r->type == RT_CRIPTA && k == r->special_block;
 }
-static int is_misa_stage(int k) { const RoomDef *r = room_def(); return r->type == RT_MISA && k == r->special_block; }
-static int boss_number(int k) { (void)k; return room_def()->type == RT_CRIPTA ? 0 : 1; }   // life: ARPG_BOSS_HP_PCT(n)
+// block k holds the fixed group of a special encounter of two blocks (la Misa, la monjarana)
+static int is_special_stage(int k) { const RoomDef *r = room_def(); return (r->type == RT_MISA || r->type == RT_MONJARANA) && k == r->special_block; }
+static int boss_number(int k) { (void)k; return 0; }   // life: ARPG_BOSS_HP_PCT(n); the Abanderado of the Cripta is the only one
 static int tier_of_stage(int k) { (void)k; const int l = room_def()->level; return l <= 2 ? 0 : l <= 4 ? 1 : 2; }
 static int boss_mona_cap(int n) { return n == 0 ? 8 : 12; }   // live Monaguillos of each boss
 
@@ -145,15 +155,43 @@ static uint8_t s_tier[ENC_STAGES];            // plant tier of each block (stats
 // Persistence (g_arpg): what died stays dead until the hero sleeps. A boss or miniboss uses the boss bit of the room, a group
 // the bit of its block.
 static int block_is_dead(int k) {
-    if (is_boss_stage(k) || is_misa_stage(k)) return (g_arpg.boss_dead >> s_room) & 1;
+    if (is_boss_stage(k) || is_special_stage(k)) return (g_arpg.boss_dead >> s_room) & 1;
     return (g_arpg.dead_groups[s_room] >> k) & 1;
 }
 static void block_mark_dead(int k) {
-    if (is_boss_stage(k) || is_misa_stage(k)) {
+    if (is_boss_stage(k) || is_special_stage(k)) {
         g_arpg.boss_dead |= (uint16_t)(1u << s_room);
         g_arpg.boss_ever |= (uint16_t)(1u << s_room);
     } else {
         g_arpg.dead_groups[s_room] |= (uint8_t)(1u << k);
+    }
+}
+
+static int s_end_demo_pending;                // the Cripta boss fell for the first time: the end-of-demo card is due after its victory
+
+static void prize_relic(const RoomDef *room, int level_bonus, int min_rar, int px, int py) {
+    uint32_t rng = (uint32_t)(s_room + 1) * 2246822519u ^ (uint32_t)(px * 73856093 ^ py * 19349663) ^ ((uint32_t)room->level * 3266489917u);
+    ArpgInvItem it;
+    arpg_relic_roll(&it, room->level + level_bonus, min_rar, &rng);
+    pickups_spawn_relic(TO_FIXED(px), TO_FIXED(py - 24), &it);
+}
+
+// Guaranteed rewards when a group, a miniboss or the boss of the room falls (DESIGN-ARPG.md 7). The relic drops a little above the hero.
+static void clear_rewards(const RoomDef *room, int k, int first_time, int px, int py) {
+    if (room->type == RT_PARROQUIA || is_special_stage(k)) arpg_add_xp(ARPG_XP_SPECIAL);   // a special encounter fell whole
+    if (is_special_stage(k)) {
+        prize_relic(room, 1, ARPG_RAR_EPIC, px, py);                // la Misa and la monjarana: epic
+    } else if (room->type == RT_CRIPTA && is_boss_stage(k)) {
+        if (first_time) {                                           // later visits give loot and xp only
+            prize_relic(room, 1, ARPG_RAR_LEGENDARY, px, py);
+            s_end_demo_pending = 1;
+        }
+    }
+    if (room->drops_key && !g_arpg.key_have) {                      // the group of the Capilla del parroco drops the key
+        g_arpg.key_have = 1;
+        arpg_progress_save();
+        sfx_play(SND_PICKUP_ORB, -1);
+        pickups_toast("Llave de la capilla", 180);
     }
 }
 
@@ -165,6 +203,11 @@ typedef struct {
 static EncRuntime s_rt[ENC_STAGES];
 static int s_exit_room = -1;                  // crossing requested by enc_update(), consumed by main.c
 static int s_victory;                         // never set: the dungeon has no victory (enc_victory stays for the HUD)
+// Reja de la llave (sala con chapel_gate): cruza la sala de pared a pared entre la entrada y el cofre.
+#define ENC_GATE_LOCAL_Y 150        // block-local y of the base of the reja (the chest stands at 90, out of reach through the bars)
+#define ENC_GATE_NEAR_PX 40         // with the key, the reja rises when the hero is this close to its line
+static uint8_t s_gate_lift, s_gate_opening, s_gate_open;
+static uint16_t s_gate_toast_cd;
 static int s_boss_locked;                     // the bottom barrier of the boss room is closed (boss mode)
 static int s_deaths;
 static int s_was_dead;
@@ -206,26 +249,6 @@ static const BossDef s_abanderado_def = {
     .phase_pct = { 100, 66, 33 },
     .n_escort = { 2, 2, 2 },
     .escort = { s_abanderado_escort, s_abanderado_escort, s_abanderado_escort },
-};
-// Floor 15 and the bosses after it: the same sheet as an elite, with 2 Ojos and 2 Cireneos per phase.
-static const BossEscortDef s_elite_escort[] = {
-    { ENEMY_TYPE_SHOOTER, 2, 240, { 40, 168 } },
-    { ENEMY_TYPE_CHARGER, 2, 240, { 72, 136 } },
-};
-static const BossDef s_elite_def = {
-    .enemy_type = ENEMY_TYPE_ABANDERADO,
-    .name = "EL ABANDERADO",
-    .title = "Élite",
-    .line_intro = "«Mientras el asta siga en pie,\nnadie se retira.»",
-    .line_defeat = "«El asta ha caído.»",
-    .sfx_intro = SND_ABANDERADO_INTRO,
-    .sfx_defeat = SND_ABANDERADO_DEFEAT,
-    .voice_intro_frames = SFX_VOICE_VBLANKS_ABANDERADO_INTRO,
-    .voice_defeat_frames = SFX_VOICE_VBLANKS_ABANDERADO_DEFEAT,
-    .n_phases = 3,
-    .phase_pct = { 100, 66, 33 },
-    .n_escort = { 2, 2, 2 },
-    .escort = { s_elite_escort, s_elite_escort, s_elite_escort },
 };
 // Sheet of the Campanero de Animas (DESIGN-ARPG.md 9). Posts in floor coordinates of the boss block (see s_campanero_pieces).
 #define CAMP_BOSS_X 104                      // the bell hangs centre-up, in the open
@@ -277,9 +300,9 @@ static const EncEnemyDef s_campanero_enemies[] = {
     { ENC_E_OJO, ENC_S_AWAKE, CAMP_OJO_X, CAMP_OJO_Y },
     { ENC_E_MONJA, ENC_S_AWAKE, CAMP_MONJA_X, CAMP_MONJA_Y },
 };
-static const BossDef *boss_def_of(int n) { (void)n; (void)&s_abanderado_def; (void)&s_elite_def; return &s_campanero_def; }   // the test room has only the Campanero
+static const BossDef *boss_def_of(int n) { (void)n; (void)&s_abanderado_def; return &s_campanero_def; }   // the test room has only the Campanero
 #else
-static const BossDef *boss_def_of(int n) { return n >= 1 ? &s_elite_def : &s_abanderado_def; }
+static const BossDef *boss_def_of(int n) { (void)n; return &s_abanderado_def; }
 #endif
 
 void enc_init(uint32_t seed) {
@@ -319,6 +342,10 @@ void enc_init(uint32_t seed) {
     // Rooms have no gates (salas ARPG): both lifts start raised, so no rastrillo is drawn anywhere.
     for (int i = 0; i < ENC_STAGES; i++) { s_rt[i].back_lift = ENC_VERJA_H; s_rt[i].verja_lift = ENC_VERJA_H; }
     s_exit_room = -1;
+    s_gate_open = room->chapel_gate ? 0 : 1;               // generic: chapel_gate = reja con llave delante del premio
+    s_gate_opening = 0;
+    s_gate_lift = room->chapel_gate ? 0 : ENC_VERJA_H;
+    s_gate_toast_cd = 0;
     s_first_block = ENC_FIRST_BLOCK;
     // What the hero already did here (g_arpg): the dead stay dead, the chest stays open, the altar stays lit.
     for (int k = 0; k < room->blocks; k++) {
@@ -330,7 +357,7 @@ void enc_init(uint32_t seed) {
     g_enc_debug.start_dones = 0;       // a new room never inherits a "apply Dones now" debug request
     s_victory = 0;
     s_boss_locked = 0;
-    s_active_boss_k = (room->type == RT_ELITE || room->type == RT_CRIPTA) ? room->special_block : 0;
+    s_active_boss_k = room->type == RT_CRIPTA ? room->special_block : 0;
     s_was_dead = 0;
     s_fx_timer = 0;
     {
@@ -388,6 +415,7 @@ int enc_block_pieces(int32_t block, EncPiecePlan *out, int max) {
     if (b.kind == ENC_BLOCK_ENCOUNTER) {
         defs = s_plants[b.plant].pieces;
         n = s_plants[b.plant].n_pieces;
+        if (room_def()->chapel_gate) n = 0;           // the room of the reja has a clear floor (nothing between the gate and the entrance)
     } else if (b.kind == ENC_BLOCK_CORRIDOR) {
         defs = s_corridor_pieces;
         n = (int)(sizeof(s_corridor_pieces) / sizeof(s_corridor_pieces[0]));
@@ -444,7 +472,7 @@ int enc_block_rects(int32_t block, EncRect *out, int max) {
     int n = 0;
     if (b.kind == ENC_BLOCK_ENCOUNTER) {
         const EncPlant *pl = &s_plants[b.plant];
-        for (int i = 0; i < pl->n_rects && n < max; i++) {
+        for (int i = 0; i < (room_def()->chapel_gate ? 0 : pl->n_rects) && n < max; i++) {
             const EncRectDef *r = &pl->rects[i];
             out[n].kind = r->kind;
             out[n].x = (int16_t)(ENC_FLOOR_X + (b.mirror ? ENC_FLOOR_W - (r->x + r->w) : r->x));
@@ -453,6 +481,15 @@ int enc_block_rects(int32_t block, EncRect *out, int max) {
             out[n].h = r->h;
             n++;
         }
+    }
+    // The reja of the key (chapel_gate): a barrier line across the floor until it has risen.
+    if (b.kind == ENC_BLOCK_ENCOUNTER && !s_gate_open && room_def()->chapel_gate && b.idx == room_def()->blocks - 1 && n < max) {
+        out[n].kind = ENC_R_BARRERA;
+        out[n].x = ENC_FLOOR_X;
+        out[n].y = ENC_GATE_LOCAL_Y - ENC_BARRIER_H / 2;
+        out[n].w = ENC_FLOOR_W;
+        out[n].h = ENC_BARRIER_H;
+        n++;
     }
     // Rooms have no gates (salas ARPG): no top barrier and nothing closes behind the hero. Only the
     // boss lock keeps the bottom edge of its own room closed while the fight lasts.
@@ -718,15 +755,16 @@ static int spawn_group(Enemy *enemies, int max_enemies, const EncEnemyDef *defs,
 // Group population: each block of a room holds one group of fixed composition (max 12), taken from this list, filtered by
 // the nave and never the same group in two consecutive blocks. Chosen by hash(room, block): a room is always the same.
 // ---------------------------------------------------------------------------
-enum { RK_BEBE = 0, RK_EXVOTO, RK_EXVOTO_GUARD, RK_MONAGUILLO, RK_PARROCO, RK_MONJA, RK_OJO, RK_CIRENEO, RK_COUNT };
+enum { RK_BEBE = 0, RK_EXVOTO, RK_EXVOTO_GUARD, RK_EXVOTO_PRAY, RK_MONAGUILLO, RK_PARROCO, RK_MONJA, RK_OJO, RK_CIRENEO, RK_COUNT };
 typedef struct {
     uint8_t enc_type;   // ENC_E_* of the kind
-    uint8_t guard;      // 1 = stays at its post (the Monja prays, the guard Exvotos watch) until released
+    uint8_t guard;      // 1 = stays at its post, watching, until released; 2 = prays at its post and heals (Monja de cera of the chapel)
 } RoomKind;
 static const RoomKind s_room_kinds[RK_COUNT] = {
     [RK_BEBE]         = { ENC_E_BEBE, 0 },        // swarm, dies in one hit, a bit faster
     [RK_EXVOTO]       = { ENC_E_EXVOTO, 0 },      // the base Exvoto
     [RK_EXVOTO_GUARD] = { ENC_E_EXVOTO, 1 },      // Exvoto of the garrison (DESIGN.md 6.13.9)
+    [RK_EXVOTO_PRAY]  = { ENC_E_EXVOTO, 2 },      // Monja de cera praying at the back: heals those around her until the hero is on her
     [RK_MONAGUILLO]   = { ENC_E_MONAGUILLO, 0 },  // Exvoto branch "chico", tier 2 (walks in, no puddle)
     [RK_PARROCO]      = { ENC_E_PARROCO, 0 },     // Exvoto branch "chico", tier 3: tank, shoves the hero
     [RK_MONJA]        = { ENC_E_MONJA, 1 },       // Exvoto branch "chica", tier 3: prays behind and heals
@@ -738,11 +776,11 @@ typedef struct {
     const char *name;
     uint8_t min_nave;   // first nave (1..4) whose rooms may take it
     uint8_t n_parts;
-    GroupPart parts[3];
+    GroupPart parts[4];
 } GroupDef;
-enum { G_RONDA = 0, G_ENJAMBRE, G_PROCESION, G_MONAGUILLOS, G_PUESTO, G_CARGA, G_GUARDIA, G_PARROQUIA, G_CONVENTO, G_TIRADORES,
-       G_NORMAL_COUNT,   // the ones above are drawn by hash
-       G_MISA = G_NORMAL_COUNT, G_COUNT };   // fixed group of the miniboss, never drawn
+enum { G_RONDA = 0, G_ENJAMBRE, G_PROCESION, G_MONAGUILLOS, G_PUESTO, G_CARGA, G_GUARDIA, G_TIRADORES,
+       G_NORMAL_COUNT,   // the ones above are drawn by hash: Parte 1 of the cathedral only has Bebe, Monaguillo, Monja de cera, Ojo and Cireneo
+       G_PARROQUIA = G_NORMAL_COUNT, G_MISA, G_MONJARANA, G_COUNT };   // fixed groups of the special encounters, never drawn
 static const GroupDef s_groups[G_COUNT] = {
     [G_RONDA]      = { "Ronda",      1, 1, { { RK_EXVOTO, 6 } } },
     [G_ENJAMBRE]   = { "Enjambre",   1, 1, { { RK_BEBE, 12 } } },
@@ -751,17 +789,19 @@ static const GroupDef s_groups[G_COUNT] = {
     [G_PUESTO]     = { "Puesto",     1, 2, { { RK_OJO, 2 }, { RK_EXVOTO_GUARD, 4 } } },   // never in block 0 of Nave 1
     [G_CARGA]      = { "Carga",      2, 2, { { RK_CIRENEO, 2 }, { RK_EXVOTO, 6 } } },
     [G_GUARDIA]    = { "Guardia",    2, 2, { { RK_OJO, 2 }, { RK_CIRENEO, 2 } } },
-    [G_PARROQUIA]  = { "Parroquia",  2, 2, { { RK_PARROCO, 1 }, { RK_MONAGUILLO, 6 } } },
-    [G_CONVENTO]   = { "Convento",   2, 2, { { RK_MONJA, 1 }, { RK_BEBE, 8 } } },
     [G_TIRADORES]  = { "Tiradores",  3, 2, { { RK_OJO, 3 }, { RK_EXVOTO, 6 } } },
-    [G_MISA]       = { "La Misa",   99, 3, { { RK_PARROCO, 1 }, { RK_MONJA, 1 }, { RK_EXVOTO, 8 } } },
+    // Special encounters (the nuns come first: they take the back slots; the Parroco and the Monaguillos stand in front).
+    [G_PARROQUIA]  = { "Parroquia",  99, 3, { { RK_EXVOTO_PRAY, 7 }, { RK_MONAGUILLO, 4 }, { RK_PARROCO, 1 } } },
+    [G_MISA]       = { "La Misa",    99, 4, { { RK_EXVOTO, 4 }, { RK_MONAGUILLO, 3 }, { RK_PARROCO, 2 }, { RK_MONJA, 2 } } },
+    [G_MONJARANA]  = { "La monjaraña", 99, 3, { { RK_MONJA, 1 }, { RK_EXVOTO, 4 }, { RK_MONAGUILLO, 4 } } },
 };
 
 // Group of block k of the current room, -1 when the block has none (boss blocks, the walk-in block of a miniboss gallery).
 static int group_of_block(int k) {
     const RoomDef *r = room_def();
-    if (r->type == RT_ELITE || r->type == RT_CRIPTA) return -1;
+    if (r->type == RT_CRIPTA) return -1;
     if (r->type == RT_MISA) return k == r->special_block ? G_MISA : -1;
+    if (r->type == RT_MONJARANA) return k == r->special_block ? G_MONJARANA : -1;
     if (r->type == RT_PARROQUIA) return G_PARROQUIA;
     int prev = -1;
     for (int b = 0; b <= k; b++) {                    // chosen block by block so that no two consecutive blocks repeat
@@ -803,13 +843,8 @@ static int group_kinds(int g, int8_t *kinds) {
     return total;
 }
 
-// Tier of an Ojo / Cireneo: tier 2 always in nave 4, half of them in nave 3, none before.
-static int tier2_of(int k, int slot) {
-    const int nave = room_def()->nave;
-    if (nave >= 4) return 1;
-    if (nave == 3) return (int)(hash32(s_seed ^ ((uint32_t)k * 0x9e3779b9u) ^ ((uint32_t)slot * 0x85ebca6bu) ^ 0x54495232u) & 1u);
-    return 0;
-}
+// Tier of an Ojo / Cireneo: Parte 1 of the cathedral (this demo) has no tier 2 (DESIGN-ARPG.md 7); Parte 2 brings it back.
+static int tier2_of(int k, int slot) { (void)k; (void)slot; return 0; }
 
 static void room_group_slot(int k, int i, int *out_x, int *out_y) {
     const int top = window_top(block_of_encounter(k));
@@ -840,7 +875,10 @@ static void place_room_enemy(Enemy *e, const RoomKind *kind, int x, int y, int o
     e->dir = (ordinal * 2) % 8;
     e->strafe_dir = (ordinal & 1) ? 1 : -1;
     e->state = ENEMY_STATE_DORMANT;
-    if (type == ENEMY_TYPE_SHOOTER || kind->guard) {
+    if (kind->guard == 2) {              // praying nun: the post is her pose, no home fields (the Exvoto dodge uses them)
+        e->home_flags = ENEMY_HOME_GUARD;
+        enemy_exvoto_start_praying(e, ordinal & 1, (ordinal * 2) % 8);
+    } else if (type == ENEMY_TYPE_SHOOTER || kind->guard) {
         e->home_flags = ENEMY_HOME_SET | (kind->guard ? ENEMY_HOME_GUARD : 0);
         *enemy_home_x(e) = x;
         *enemy_home_y(e) = y;
@@ -861,7 +899,6 @@ static int spawn_room_group(Enemy *enemies, int max_enemies, int k) {
     if (g < 0) return 0;
     int8_t kinds[12];
     group_kinds(g, kinds);
-    const int hp_pct = g == G_MISA ? ARPG_MISA_HP_PCT : 100;
     int active = active_enemies(enemies, max_enemies);
     int made = 0;
     for (int i = 0; i < 12 && active + made < MAX_GAMEPLAY_ENEMIES; i++) {
@@ -878,7 +915,7 @@ static int spawn_room_group(Enemy *enemies, int max_enemies, int k) {
             int tx = x + (t == 1 ? 12 : t == 2 ? -12 : 0);
             int ty = y + (t == 3 ? 12 : 0);
             if (position_is_free(TO_FIXED(tx), TO_FIXED(ty))) {
-                place_room_enemy(&enemies[slot], kind, tx, ty, i, k, hp_pct, tier2);
+                place_room_enemy(&enemies[slot], kind, tx, ty, i, k, 100, tier2);
                 placed = 1;
             }
         }
@@ -1151,7 +1188,9 @@ void enc_update(Enemy *enemies, int max_enemies, int px, int py) {
             if (alive == 0 && (is_boss || hurt == 0)) {
                 if (!rt->cleared) {
                     rt->cleared = 1;
+                    const int first_time = !((g_arpg.boss_ever >> s_room) & 1);   // read before block_mark_dead sets it
                     block_mark_dead(k);                   // stays dead until the hero sleeps
+                    clear_rewards(room, k, first_time, px, py);
                     if (k < ENC_COUNT) {
                         st->clear_frames[k] = st->wake_frames;
                         st->hp_end[k] = HP_U8(g_player_state.hp);
@@ -1191,6 +1230,30 @@ void enc_update(Enemy *enemies, int max_enemies, int px, int py) {
         }
     }
 
+    // The reja of the key: rises when the hero carries the key and comes close; without it, a toast on touching it.
+    if (room->chapel_gate && !s_gate_open) {
+        const int gy = window_top(block_of_encounter(room_chest_block())) + ENC_GATE_LOCAL_Y;
+        if (s_gate_toast_cd) s_gate_toast_cd--;
+        if (!s_gate_opening && py >= gy - 24 && py <= gy + ENC_GATE_NEAR_PX) {
+            if (g_arpg.key_have && py <= gy + ENC_GATE_NEAR_PX) {
+                s_gate_opening = 1;
+                sfx_play(SND_DOOR_OPEN, -1);
+            } else if (!g_arpg.key_have && py <= gy + 10 && !s_gate_toast_cd) {
+                pickups_toast("Necesitas la llave de la capilla", 150);
+                s_gate_toast_cd = 240;
+            }
+        }
+        if (s_gate_opening) {
+            s_gate_lift = (uint8_t)(s_gate_lift + 2 >= ENC_VERJA_H ? ENC_VERJA_H : s_gate_lift + 2);
+            if (s_gate_lift >= ENC_VERJA_H) {
+                s_gate_opening = 0;
+                s_gate_open = 1;
+                strip_collision_fill_win(ENC_FLOOR_X, gy - ENC_BARRIER_H / 2, ENC_FLOOR_W, ENC_BARRIER_H, 0);
+                nav_refresh_begin(px, py);
+            }
+        }
+    }
+
     // The chest of the room and its altar.
     if (room->chest) {
         const int ck = room_chest_block();
@@ -1206,7 +1269,7 @@ void enc_update(Enemy *enemies, int max_enemies, int px, int py) {
             pickups_spawn(PICKUP_KIND_MANA, fx + TO_FIXED(8), fy);
             uint32_t chest_rng = (uint32_t)(s_room + 1) * 2654435761u ^ (uint32_t)(px * 73856093 ^ py * 19349663);
             ArpgInvItem chest_relic;
-            arpg_relic_roll(&chest_relic, room->level, ARPG_RAR_UNCOMMON, &chest_rng);
+            arpg_relic_roll(&chest_relic, room->level, room->prize_min_rar ? room->prize_min_rar : ARPG_RAR_UNCOMMON, &chest_rng);
             pickups_spawn_relic(fx, fy + TO_FIXED(6), &chest_relic);
         }
     }
@@ -1362,6 +1425,12 @@ void enc_stats_frame(void) {
 }
 
 int enc_victory(void) { return s_victory; }
+
+int enc_end_demo_take(void) {
+    if (!s_end_demo_pending || boss_state() != BOSS_REST) return 0;
+    s_end_demo_pending = 0;
+    return 1;
+}
 
 int enc_current_encounter(void) { return room_def()->level; }
 
@@ -1600,6 +1669,11 @@ void enc_dynamic_fixture_draw(int index, uint16_t *buffer, int cam_x, int cam_y,
 
 void enc_verja_draw(int sub, int cam_x, int cam_y) {
 #if HW_SHADOWS
+    if (room_def()->chapel_gate && s_gate_lift < ENC_VERJA_H) {
+        const int sy = window_top(block_of_encounter(room_chest_block())) + ENC_GATE_LOCAL_Y - ENC_VERJA_H - cam_y;
+        if (!(sub == 0 && sy + ENC_VERJA_H > 136) && sy + ENC_VERJA_H > 0 && sy < 192)
+            hwshadow_add_verja(sub, ENC_FLOOR_X - cam_x, sy, s_gate_lift, 0);
+    }
     for (int k = 0; k < ENC_STAGES; k++) {
         const int block_top = window_top(block_of_encounter(k));
         if (s_rt[k].verja_lift < ENC_VERJA_H) {

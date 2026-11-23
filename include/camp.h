@@ -32,6 +32,9 @@ int camp_update(Player *p, uint32_t keys_held, uint32_t keys_down, int touch_pre
 // A short line shown in the middle of the camp (e.g. the result of sleeping).
 void camp_toast(const char *msg);
 
+// 1 while the altar travel list is open (the hero is frozen; START must not open the pause).
+int camp_altar_list_open(void);
+
 // Render hooks called from render_screen.
 void camp_render_floor(uint16_t *buffer, int cam_x, int cam_y);   // bonfire glow, under the actors
 void camp_clear_page(uint16_t *page, DirtySpan *spans, int cam_x, int cam_y);  // clears the dirty spans, keeping the wall frame

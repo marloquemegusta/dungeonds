@@ -1,0 +1,95 @@
+﻿{
+    "name":  "camp_altares_lista",
+    "description":  "Campamento con tres altares tocados: A en la puerta abre la lista de naves. Solo evidencia.",
+    "suite":  false,
+    "evidence_only":  true,
+    "state":  {
+                  "elf":  "../.ds-game-dev/build/out/dungeonds.elf",
+                  "symbols":  {
+                                  "pl":  "s_player",
+                                  "gps":  "g_player_state",
+                                  "arpg":  "g_arpg"
+                              },
+                  "default_symbol":  "pl",
+                  "fields":  {
+                                 "px":  {
+                                            "symbol":  "pl",
+                                            "offset":  0,
+                                            "type":  "s32"
+                                        },
+                                 "py":  {
+                                            "symbol":  "pl",
+                                            "offset":  4,
+                                            "type":  "s32"
+                                        },
+                                 "hp":  {
+                                            "symbol":  "gps",
+                                            "offset":  0,
+                                            "type":  "s32"
+                                        },
+                                 "altars":  {
+                                                "symbol":  "arpg",
+                                                "offset":  20,
+                                                "type":  "u32"
+                                            }
+                             }
+              },
+    "steps":  [
+                  {
+                      "frames":  60
+                  },
+                  {
+                      "tap":  {
+                                  "x":  128,
+                                  "y":  66
+                              },
+                      "frames":  6
+                  },
+                  {
+                      "release":  true,
+                      "frames":  40
+                  },
+                  {
+                      "button_down":  "START",
+                      "frames":  4
+                  },
+                  {
+                      "button_up":  "START",
+                      "frames":  50
+                  },
+                  {
+                      "poke":  [
+                                   {
+                                       "field":  "altars",
+                                       "value":  7
+                                   },
+                                   {
+                                       "field":  "px",
+                                       "value":  32768
+                                   },
+                                   {
+                                       "field":  "py",
+                                       "value":  29696
+                                   }
+                               ],
+                      "frames":  20
+                  },
+                  {
+                      "button_down":  "A",
+                      "frames":  4
+                  },
+                  {
+                      "button_up":  "A",
+                      "frames":  10
+                  },
+                  {
+                      "button_down":  "DOWN",
+                      "frames":  3
+                  },
+                  {
+                      "button_up":  "DOWN",
+                      "frames":  15,
+                      "capture":  "altares_lista"
+                  }
+              ]
+}

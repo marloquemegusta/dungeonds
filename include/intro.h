@@ -8,4 +8,9 @@
 void intro_run(uint16_t *top_page, uint16_t *bot_page_a, uint16_t *bot_page_b,
                int *bot_active_page_idx, void (*vblank_flip_fn)(void));
 
+/* Tarjeta de fin de la demo (DESIGN-ARPG.md 7): pantalla completa, mismo estilo que las de la introduccion.
+ * Bloquea hasta A o un toque. */
+void intro_end_demo_run(uint16_t *top_page, uint16_t *bot_page_a, uint16_t *bot_page_b,
+                        int *bot_active_page_idx, void (*vblank_flip_fn)(void));
+
 #endif /* INTRO_H */

@@ -1,0 +1,127 @@
+<title>Zona 1 de la demo</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+SC:wght@600&family=Inter:wght@400;600&display=swap">
+<style>
+/* Layout: una columna de lectura; mapa a escala en SVG, tabla de recorrido con niveles, duración y siguiente paso. */
+:root{
+  --bg:#f3f1ee; --fg:#22201d; --muted:#6c665e; --line:#cfc8bd; --card:#fbfaf8;
+  --wax:#9a7b4f; --boss:#8a3b34; --key:#6b6a2e; --altar:#3f5a6b;
+  --display:"Cormorant SC", Georgia, serif; --body:Inter, system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#17161a; --fg:#e8e3da; --muted:#a49d92; --line:#3b3833; --card:#1f1e22;
+  --wax:#c9a56f; --boss:#d0786e; --key:#bdbb72; --altar:#8fb3c7; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#17161a; --fg:#e8e3da; --muted:#a49d92; --line:#3b3833; --card:#1f1e22;
+  --wax:#c9a56f; --boss:#d0786e; --key:#bdbb72; --altar:#8fb3c7; color-scheme:dark}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);line-height:1.55;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:24px 48px}
+main{max-width:760px;margin:0 auto;display:flex;flex-direction:column;gap:28px}
+h1{font-family:var(--display);font-size:2.1rem;margin:0;line-height:1.1;text-wrap:balance}
+h2{font-family:var(--display);font-size:1.4rem;margin:0 0 8px}
+p{margin:0}
+.lead{color:var(--muted);max-width:65ch}
+.map{overflow-x:auto;background:var(--card);border:1px solid var(--line);border-radius:6px;padding:8px}
+.map svg{display:block;width:100%;min-width:600px;height:auto}
+.map text{font-family:var(--body);fill:var(--fg)}
+.tbl{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:.88rem;font-variant-numeric:tabular-nums}
+th,td{text-align:left;padding:5px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+td.n{text-align:right;white-space:nowrap}
+td.bad{color:var(--boss);text-align:right}
+tr.sleep td{border-bottom:2px solid var(--altar)}
+.tag{display:inline-block;font-size:.72rem;padding:1px 6px;border-radius:3px;border:1px solid currentColor;margin-right:4px;white-space:nowrap}
+.boss{color:var(--boss)} .key{color:var(--key)} .alt{color:var(--altar)}
+ul{margin:0;padding-left:1.2em;display:flex;flex-direction:column;gap:6px}
+.small{font-size:.85rem;color:var(--muted)}
+.box{border:1px solid var(--wax);background:var(--card);padding:12px 14px;border-radius:6px}
+</style>
+
+<main>
+<header style="display:flex;flex-direction:column;gap:8px">
+  <h1>Zona 1 de la demo</h1>
+  <p class="lead">Propuesta de mapa ampliado con ramas: 16 salas y 70 pantallas, un tercio de la catedral, para una primera vuelta de alrededor de 1 hora.</p>
+</header>
+
+<section>
+  <h2>El mapa</h2>
+  <div class="map"><svg viewBox="0 16 640 420" role="img" aria-label="Mapa a escala de la zona 1 ampliada: 16 salas en cinco columnas"><rect x="264" y="324" width="112" height="90" fill="var(--card)" stroke="var(--fg)" stroke-width="1.5"/><line x1="264" y1="399" x2="270" y2="399" stroke="var(--line)"/><line x1="370" y1="399" x2="376" y2="399" stroke="var(--line)"/><line x1="264" y1="384" x2="270" y2="384" stroke="var(--line)"/><line x1="370" y1="384" x2="376" y2="384" stroke="var(--line)"/><line x1="264" y1="369" x2="270" y2="369" stroke="var(--line)"/><line x1="370" y1="369" x2="376" y2="369" stroke="var(--line)"/><line x1="264" y1="354" x2="270" y2="354" stroke="var(--line)"/><line x1="370" y1="354" x2="376" y2="354" stroke="var(--line)"/><line x1="264" y1="339" x2="270" y2="339" stroke="var(--line)"/><line x1="370" y1="339" x2="376" y2="339" stroke="var(--line)"/><text x="320.0" y="367.0" text-anchor="middle" font-size="10.5" font-weight="600">Nave 1 · 6p</text><text x="320.0" y="379.0" text-anchor="middle" font-size="9" style="fill:var(--muted)">Nv1 · ◆ altar</text><rect x="264" y="234" width="112" height="90" fill="var(--card)" stroke="var(--fg)" stroke-width="1.5"/><line x1="264" y1="309" x2="270" y2="309" stroke="var(--line)"/><line x1="370" y1="309" x2="376" y2="309" stroke="var(--line)"/><line x1="264" y1="294" x2="270" y2="294" stroke="var(--line)"/><line x1="370" y1="294" x2="376" y2="294" stroke="var(--line)"/><line x1="264" y1="279" x2="270" y2="279" stroke="var(--line)"/><line x1="370" y1="279" x2="376" y2="279" stroke="var(--line)"/><line x1="264" y1="264" x2="270" y2="264" stroke="var(--line)"/><line x1="370" y1="264" x2="376" y2="264" stroke="var(--line)"/><line x1="264" y1="249" x2="270" y2="249" stroke="var(--line)"/><line x1="370" y1="249" x2="376" y2="249" stroke="var(--line)"/><text x="320.0" y="277.0" text-anchor="middle" font-size="10.5" font-weight="600">Nave 2 · 6p</text><text x="320.0" y="289.0" text-anchor="middle" font-size="9" style="fill:var(--muted)">Nv2 · ◆ altar</text><rect x="264" y="144" width="112" height="90" fill="var(--card)" stroke="var(--fg)" stroke-width="1.5"/><line x1="264" y1="219" x2="270" y2="219" stroke="var(--line)"/><line x1="370" y1="219" x2="376" y2="219" stroke="var(--line)"/><line x1="264" y1="204" x2="270" y2="204" stroke="var(--line)"/><line x1="370" y1="204" x2="376" y2="204" stroke="var(--line)"/><line x1="264" y1="189" x2="270" y2="189" stroke="var(--line)"/><line x1="370" y1="189" x2="376" y2="189" stroke="var(--line)"/><line x1="264" y1="174" x2="270" y2="174" stroke="var(--line)"/><line x1="370" y1="174" x2="376" y2="174" stroke="var(--line)"/><line x1="264" y1="159" x2="270" y2="159" stroke="var(--line)"/><line x1="370" y1="159" x2="376" y2="159" stroke="var(--line)"/><text x="320.0" y="187.0" text-anchor="middle" font-size="10.5" font-weight="600">Nave 3 · 6p</text><text x="320.0" y="199.0" text-anchor="middle" font-size="9" style="fill:var(--muted)">Nv3 · ◆ altar</text><rect x="264" y="54" width="112" height="90" fill="var(--card)" stroke="var(--fg)" stroke-width="1.5"/><line x1="264" y1="129" x2="270" y2="129" stroke="var(--line)"/><line x1="370" y1="129" x2="376" y2="129" stroke="var(--line)"/><line x1="264" y1="114" x2="270" y2="114" stroke="var(--line)"/><line x1="370" y1="114" x2="376" y2="114" stroke="var(--line)"/><line x1="264" y1="99" x2="270" y2="99" stroke="var(--line)"/><line x1="370" y1="99" x2="376" y2="99" stroke="var(--line)"/><line x1="264" y1="84" x2="270" y2="84" stroke="var(--line)"/><line x1="370" y1="84" x2="376" y2="84" stroke="var(--line)"/><line x1="264" y1="69" x2="270" y2="69" stroke="var(--line)"/><line x1="370" y1="69" x2="376" y2="69" stroke="var(--line)"/><text x="320.0" y="97.0" text-anchor="middle" font-size="10.5" font-weight="600">Nave 4 · 6p</text><text x="320.0" y="109.0" text-anchor="middle" font-size="9" style="fill:var(--muted)">Nv4 · ◆ altar</text><rect x="264" y="24" width="112" height="30" fill="var(--card)" stroke="var(--boss)" stroke-width="1.5"/><line x1="264" y1="39" x2="270" y2="39" stroke="var(--line)"/><line x1="370" y1="39" x2="376" y2="39" stroke="var(--line)"/><text x="320.0" y="37.0" text-anchor="middle" font-size="10.5" font-weight="600">Cripta · 2p</text><text x="320.0" y="49.0" text-anchor="middle" font-size="9" style="fill:var(--boss)">Nv5 · jefe Abanderado</text><rect x="136" y="369" width="112" height="30" fill="var(--card)" stroke="var(--fg)" stroke-width="1.5"/><line x1="136" y1="384" x2="142" y2="384" stroke="var(--line)"/><line x1="242" y1="384" x2="248" y2="384" stroke="var(--line)"/><text x="192.0" y="382.0" text-anchor="middle" font-size="10.5" font-weight="600">G. del cofre · 2p</text><text x="192.0" y="394.0" text-anchor="middle" font-size="9" style="fill:var(--muted)">cofre</text><rect x="392" y="279" width="112" height="90" fill="var(--card)" stroke="var(--fg)" stroke-width="1.5"/><line x1="392" y1="354" x2="398" y2="354" stroke="var(--line)"/><line x1="498" y1="354" x2="504" y2="354" stroke="var(--line)"/><line x1="392" y1="339" x2="398" y2="339" stroke="var(--line)"/><line x1="498" y1="339" x2="504" y2="339" stroke="var(--line)"/><line x1="392" y1="324" x2="398" y2="324" stroke="var(--line)"/><line x1="498" y1="324" x2="504" y2="324" stroke="var(--line)"/><line x1="392" y1="309" x2="398" y2="309" stroke="var(--line)"/><line x1="498" y1="309" x2="504" y2="309" stroke="var(--line)"/><line x1="392" y1="294" x2="398" y2="294" stroke="var(--line)"/><line x1="498" y1="294" x2="504" y2="294" stroke="var(--line)"/><text x="448.0" y="322.0" text-anchor="middle" font-size="10.5" font-weight="600">Claustro bajo · 6p</text><text x="448.0" y="334.0" text-anchor="middle" font-size="9" style="fill:var(--muted)">Nv1</text><rect x="520" y="294" width="112" height="30" fill="var(--card)" stroke="var(--fg)" stroke-width="1.5"/><line x1="520" y1="309" x2="526" y2="309" stroke="var(--line)"/><line x1="626" y1="309" x2="632" y2="309" stroke="var(--line)"/><text x="576.0" y="307.0" text-anchor="middle" font-size="10.5" font-weight="600">G. del secreto · 2p</text><text x="576.0" y="319.0" text-anchor="middle" font-size="9" style="fill:var(--muted)">cofre</text><rect x="392" y="189" width="112" height="90" fill="var(--card)" stroke="var(--fg)" stroke-width="1.5"/><line x1="392" y1="264" x2="398" y2="264" stroke="var(--line)"/><line x1="498" y1="264" x2="504" y2="264" stroke="var(--line)"/><line x1="392" y1="249" x2="398" y2="249" stroke="var(--line)"/><line x1="498" y1="249" x2="504" y2="249" stroke="var(--line)"/><line x1="392" y1="234" x2="398" y2="234" stroke="var(--line)"/><line x1="498" y1="234" x2="504" y2="234" stroke="var(--line)"/><line x1="392" y1="219" x2="398" y2="219" stroke="var(--line)"/><line x1="498" y1="219" x2="504" y2="219" stroke="var(--line)"/><line x1="392" y1="204" x2="398" y2="204" stroke="var(--line)"/><line x1="498" y1="204" x2="504" y2="204" stroke="var(--line)"/><text x="448.0" y="232.0" text-anchor="middle" font-size="10.5" font-weight="600">Claustro alto · 6p</text><text x="448.0" y="244.0" text-anchor="middle" font-size="9" style="fill:var(--muted)">Nv2 · cofre</text><rect x="136" y="189" width="112" height="90" fill="var(--card)" stroke="var(--fg)" stroke-width="1.5"/><line x1="136" y1="264" x2="142" y2="264" stroke="var(--line)"/><line x1="242" y1="264" x2="248" y2="264" stroke="var(--line)"/><line x1="136" y1="249" x2="142" y2="249" stroke="var(--line)"/><line x1="242" y1="249" x2="248" y2="249" stroke="var(--line)"/><line x1="136" y1="234" x2="142" y2="234" stroke="var(--line)"/><line x1="242" y1="234" x2="248" y2="234" stroke="var(--line)"/><line x1="136" y1="219" x2="142" y2="219" stroke="var(--line)"/><line x1="242" y1="219" x2="248" y2="219" stroke="var(--line)"/><line x1="136" y1="204" x2="142" y2="204" stroke="var(--line)"/><line x1="242" y1="204" x2="248" y2="204" stroke="var(--line)"/><text x="192.0" y="232.0" text-anchor="middle" font-size="10.5" font-weight="600">Enfermería · 6p</text><text x="192.0" y="244.0" text-anchor="middle" font-size="9" style="fill:var(--muted)">Nv2</text><rect x="8" y="189" width="112" height="30" fill="var(--card)" stroke="var(--key)" stroke-width="1.5"/><line x1="8" y1="204" x2="14" y2="204" stroke="var(--line)"/><line x1="114" y1="204" x2="120" y2="204" stroke="var(--line)"/><text x="64.0" y="202.0" text-anchor="middle" font-size="10.5" font-weight="600">C. del párroco · 2p</text><text x="64.0" y="214.0" text-anchor="middle" font-size="9" style="fill:var(--key)">llave · rara</text><rect x="136" y="99" width="112" height="90" fill="var(--card)" stroke="var(--fg)" stroke-width="1.5"/><line x1="136" y1="174" x2="142" y2="174" stroke="var(--line)"/><line x1="242" y1="174" x2="248" y2="174" stroke="var(--line)"/><line x1="136" y1="159" x2="142" y2="159" stroke="var(--line)"/><line x1="242" y1="159" x2="248" y2="159" stroke="var(--line)"/><line x1="136" y1="144" x2="142" y2="144" stroke="var(--line)"/><line x1="242" y1="144" x2="248" y2="144" stroke="var(--line)"/><line x1="136" y1="129" x2="142" y2="129" stroke="var(--line)"/><line x1="242" y1="129" x2="248" y2="129" stroke="var(--line)"/><line x1="136" y1="114" x2="142" y2="114" stroke="var(--line)"/><line x1="242" y1="114" x2="248" y2="114" stroke="var(--line)"/><text x="192.0" y="142.0" text-anchor="middle" font-size="10.5" font-weight="600">Osario · 6p</text><text x="192.0" y="154.0" text-anchor="middle" font-size="9" style="fill:var(--muted)">Nv3 · cofre</text><rect x="8" y="84" width="112" height="60" fill="var(--card)" stroke="var(--boss)" stroke-width="1.5"/><line x1="8" y1="129" x2="14" y2="129" stroke="var(--line)"/><line x1="114" y1="129" x2="120" y2="129" stroke="var(--line)"/><line x1="8" y1="114" x2="14" y2="114" stroke="var(--line)"/><line x1="114" y1="114" x2="120" y2="114" stroke="var(--line)"/><line x1="8" y1="99" x2="14" y2="99" stroke="var(--line)"/><line x1="114" y1="99" x2="120" y2="99" stroke="var(--line)"/><text x="64.0" y="112.0" text-anchor="middle" font-size="10.5" font-weight="600">G. de la Misa · 4p</text><text x="64.0" y="124.0" text-anchor="middle" font-size="9" style="fill:var(--boss)">minijefe · épica</text><rect x="392" y="129" width="112" height="60" fill="var(--card)" stroke="var(--fg)" stroke-width="1.5"/><line x1="392" y1="174" x2="398" y2="174" stroke="var(--line)"/><line x1="498" y1="174" x2="504" y2="174" stroke="var(--line)"/><line x1="392" y1="159" x2="398" y2="159" stroke="var(--line)"/><line x1="498" y1="159" x2="504" y2="159" stroke="var(--line)"/><line x1="392" y1="144" x2="398" y2="144" stroke="var(--line)"/><line x1="498" y1="144" x2="504" y2="144" stroke="var(--line)"/><text x="448.0" y="157.0" text-anchor="middle" font-size="10.5" font-weight="600">G. del prisionero · 4p</text><text x="448.0" y="169.0" text-anchor="middle" font-size="9" style="fill:var(--muted)">cofre</text><rect x="392" y="99" width="112" height="30" fill="var(--card)" stroke="var(--key)" stroke-width="1.5"/><line x1="392" y1="114" x2="398" y2="114" stroke="var(--line)"/><line x1="498" y1="114" x2="504" y2="114" stroke="var(--line)"/><text x="448.0" y="112.0" text-anchor="middle" font-size="10.5" font-weight="600">C. con llave · 2p</text><text x="448.0" y="124.0" text-anchor="middle" font-size="9" style="fill:var(--key)">reja · legendaria</text><rect x="392" y="39" width="112" height="60" fill="var(--card)" stroke="var(--boss)" stroke-width="1.5"/><line x1="392" y1="84" x2="398" y2="84" stroke="var(--line)"/><line x1="498" y1="84" x2="504" y2="84" stroke="var(--line)"/><line x1="392" y1="69" x2="398" y2="69" stroke="var(--line)"/><line x1="498" y1="69" x2="504" y2="69" stroke="var(--line)"/><line x1="392" y1="54" x2="398" y2="54" stroke="var(--line)"/><line x1="498" y1="54" x2="504" y2="54" stroke="var(--line)"/><text x="448.0" y="67.0" text-anchor="middle" font-size="10.5" font-weight="600">G. del élite · 4p</text><text x="448.0" y="79.0" text-anchor="middle" font-size="9" style="fill:var(--boss)">Abanderado élite · épica</text><line x1="248" y1="391.5" x2="264" y2="391.5" stroke="var(--wax)" stroke-width="3"/><line x1="376" y1="361.5" x2="392" y2="361.5" stroke="var(--wax)" stroke-width="3"/><line x1="504" y1="316.5" x2="520" y2="316.5" stroke="var(--wax)" stroke-width="3"/><line x1="376" y1="256.5" x2="392" y2="256.5" stroke="var(--wax)" stroke-width="3"/><line x1="248" y1="271.5" x2="264" y2="271.5" stroke="var(--wax)" stroke-width="3"/><line x1="120" y1="211.5" x2="136" y2="211.5" stroke="var(--wax)" stroke-width="3"/><line x1="248" y1="181.5" x2="264" y2="181.5" stroke="var(--wax)" stroke-width="3"/><line x1="120" y1="136.5" x2="136" y2="136.5" stroke="var(--wax)" stroke-width="3"/><line x1="376" y1="181.5" x2="392" y2="181.5" stroke="var(--wax)" stroke-width="3"/><line x1="376" y1="121.5" x2="392" y2="121.5" stroke="var(--wax)" stroke-width="3"/><line x1="376" y1="91.5" x2="392" y2="91.5" stroke="var(--wax)" stroke-width="3"/><line x1="320.0" y1="321" x2="320.0" y2="327" stroke="var(--wax)" stroke-width="5"/><line x1="320.0" y1="231" x2="320.0" y2="237" stroke="var(--wax)" stroke-width="5"/><line x1="320.0" y1="141" x2="320.0" y2="147" stroke="var(--wax)" stroke-width="5"/><line x1="320.0" y1="51" x2="320.0" y2="57" stroke="var(--wax)" stroke-width="5"/><line x1="448.0" y1="276" x2="448.0" y2="282" stroke="var(--wax)" stroke-width="5"/><line x1="192.0" y1="186" x2="192.0" y2="192" stroke="var(--wax)" stroke-width="5"/><text x="320.0" y="430" text-anchor="middle" font-size="10" style="fill:var(--muted)">entrada: altar elegido en el campamento</text></svg></div>
+  <p class="small" style="margin-top:8px">A escala: cada marca del borde es una pantalla (una de las dos de la consola) y «6p» es el largo en pantallas. Las rayas doradas son las puertas. Las naves solo se suben; no hay puerta hacia abajo.</p>
+</section>
+
+<section>
+  <h2>Qué cambia</h2>
+  <ul>
+    <li><b>Dos rodeos con sus propias naves.</b> El <b>Claustro</b> (bajo y alto) sale de la Nave 1 y vuelve a la Nave 2. El <b>Hospital</b> (Enfermería y Osario) sale de la Nave 2 y vuelve a la Nave 3. Son caminos paralelos: se puede ir recto por las naves o dar la vuelta, que tiene más premios.</li>
+    <li><span class="tag key">llave</span>La suelta la Parroquia en la Capilla del párroco, dentro del Hospital. Abre la reja de la Capilla con llave de la Nave 4, donde está la legendaria fija. Quien va recto ve la reja y tiene que volver a por la llave.</li>
+    <li><span class="tag boss">jefes</span>Los mismos tres: la Misa (en el Hospital), el Abanderado élite y el Abanderado en la Cripta. Además, un grupo nuevo con la Súper Monja y su aura de posesión desde las salas de nivel 3.</li>
+    <li><span class="tag alt">altares</span>Uno al pie de cada nave. Desde la puerta del campamento eliges a cuál vas.</li>
+    <li>Cofres en 7 salas; se quitan la Galería del relicario y el atajo.</li>
+  </ul>
+</section>
+
+<section>
+  <h2>Quién es quién</h2>
+  <div class="tbl"><table>
+    <thead><tr><th>Rango</th><th>Qué es</th><th>Con lo que ya tenemos</th></tr></thead>
+    <tbody>
+      <tr><td><b>Normal</b></td><td>Relleno de los grupos; muere en 1-2 golpes.</td><td>Bebé, Monaguillo, Monja de cera, Ojo, Cireneo</td></tr>
+      <tr><td><b>Élite</b></td><td>Un enemigo especial dentro de un grupo, que lo lidera y cambia cómo se pelea. Suelta botín de un nivel más.</td><td>Párroco (no le hace nada el Rayo), Súper Monja (posee a los de su alrededor), Ojo y Cireneo de escalón 2</td></tr>
+      <tr><td><b>Minijefe</b></td><td>Un encuentro único con nombre, en su propia galería, guardando un premio (épica). Sin fases ni intro.</td><td>La Misa. Falta el segundo.</td></tr>
+      <tr><td><b>Jefe</b></td><td>Final de la zona, con intro, fases y escolta. Legendaria la primera vez.</td><td>El Abanderado en la Cripta</td></tr>
+    </tbody>
+  </table></div>
+  <p style="margin-top:10px">El «Abanderado élite» de hoy es el jefe repetido sin fases, y eso no encaja. Propuesta: el Abanderado solo es el jefe, y la Galería del élite pasa a ser el segundo minijefe, <b>el Aquelarre</b>. Es una Súper Monja con el doble de vida y una corte de Monjas de cera y Monaguillos poseídos todo el rato. Se hace con lo que ya existe.</p>
+  <h2 style="margin-top:20px">Qué sale dónde</h2>
+  <div class="tbl"><table>
+    <thead><tr><th>Nivel</th><th>Salas</th><th>Enemigos</th></tr></thead>
+    <tbody>
+      <tr><td class="n">1</td><td>Nave 1, Claustro bajo, galerías del cofre y del secreto</td><td>Bebés, Monjas de cera, Monaguillos; algún Ojo</td></tr>
+      <tr><td class="n">2</td><td>Nave 2, Claustro alto, Enfermería</td><td>+ Cireneos y el primer élite: el Párroco</td></tr>
+      <tr><td class="n">3</td><td>Nave 3, Osario, prisionero, Capilla del párroco, la Misa</td><td>+ élite Súper Monja (grupo Posesión); la mitad de Ojos y Cireneos, de escalón 2</td></tr>
+      <tr><td class="n">4</td><td>Nave 4, Capilla con llave, el Aquelarre</td><td>Todo, con Ojos y Cireneos de escalón 2</td></tr>
+      <tr><td class="n">5</td><td>Cripta</td><td>El Abanderado y su escolta</td></tr>
+    </tbody>
+  </table></div>
+  <p class="small" style="margin-top:8px">El Campanero sigue reservado para la zona 2.</p>
+</section>
+
+<section>
+  <h2>Recorrido y nivel del héroe</h2>
+  <p class="lead" style="margin-bottom:10px">Simulación de una primera vuelta completa por los dos rodeos, durmiendo en las líneas azules. Es el nivel con el que <b>llegas</b> a cada sala, frente al nivel de la sala.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Sala</th><th style="text-align:right">Pant.</th><th style="text-align:right">Nv sala</th><th style="text-align:right">Llegas hoy</th><th style="text-align:right">Llegas propuesta</th></tr></thead>
+    <tbody>
+      <tr><td>Nave 1</td><td class="n">6</td><td class="n">1</td><td class="n">1</td><td class="n">1</td></tr>
+      <tr><td>Galería del cofre</td><td class="n">2</td><td class="n">1</td><td class="n">1</td><td class="n">1</td></tr>
+      <tr><td>Claustro bajo</td><td class="n">6</td><td class="n">1</td><td class="n">1</td><td class="n">1</td></tr>
+      <tr><td>Galería del secreto</td><td class="n">2</td><td class="n">1</td><td class="n">1</td><td class="n">1</td></tr>
+      <tr><td>Claustro alto</td><td class="n">6</td><td class="n">2</td><td class="n">1</td><td class="n">1</td></tr>
+      <tr class="sleep"><td>Nave 2</td><td class="n">6</td><td class="n">2</td><td class="n">1</td><td class="n">1</td></tr>
+      <tr><td>Enfermería</td><td class="n">6</td><td class="n">2</td><td class="bad">5</td><td class="n">3</td></tr>
+      <tr><td>Capilla del párroco</td><td class="n">2</td><td class="n">3</td><td class="bad">5</td><td class="n">3</td></tr>
+      <tr><td>Osario</td><td class="n">6</td><td class="n">3</td><td class="bad">5</td><td class="n">3</td></tr>
+      <tr class="sleep"><td>Galería de la Misa</td><td class="n">4</td><td class="n">3</td><td class="bad">5</td><td class="n">3</td></tr>
+      <tr><td>Nave 3</td><td class="n">6</td><td class="n">3</td><td class="bad">6</td><td class="n">4</td></tr>
+      <tr class="sleep"><td>Galería del prisionero</td><td class="n">4</td><td class="n">3</td><td class="bad">6</td><td class="n">4</td></tr>
+      <tr><td>Nave 4</td><td class="n">6</td><td class="n">4</td><td class="bad">7</td><td class="n">5</td></tr>
+      <tr><td>Capilla con llave</td><td class="n">2</td><td class="n">4</td><td class="bad">7</td><td class="n">5</td></tr>
+      <tr class="sleep"><td>Galería del élite</td><td class="n">4</td><td class="n">4</td><td class="bad">7</td><td class="n">5</td></tr>
+      <tr class="sleep"><td>Cripta</td><td class="n">2</td><td class="n">5</td><td class="bad">8</td><td class="n">5</td></tr>
+    </tbody>
+  </table></div>
+  <div style="display:flex;flex-direction:column;gap:8px;margin-top:12px">
+    <p><b>Hoy</b> se sube demasiado rápido: tras el Claustro ya eres nivel 5 y al jefe llegas con 8. Además, Bebés, Monjas y Párrocos no dan experiencia, y una sala de nivel 4 da lo mismo que una de nivel 1.</p>
+    <p><b>Propuesta:</b> cada enemigo da experiencia según lo peligroso que es (Bebé 1, Monaguillo 2, Exvoto 3, Monja 6, Párroco 8, Ojo 8, Cireneo 10, Súper Monja 12), un 30 % más por cada nivel de sala; los minijefes dan 60-120 y el jefe 250. El nivel 2 pide 110 en vez de 25, con la misma subida de ×1,45 por nivel. Así llegas a cada nave con el nivel de la sala y terminas la demo en el nivel 6.</p>
+  </div>
+</section>
+
+<section>
+  <h2>Cuánto dura</h2>
+  <div class="box">
+    <p>Unos <b>60-65 minutos</b> la primera vez, estimados sin medir en la consola: ~12 min andando, ~3 de vuelta desde las galerías sin salida, ~23 contra 30 grupos, ~10 contra los tres jefes y ~13 entre muertes, campamento, dormir e inventario.</p>
+  </div>
+  <p class="small" style="margin-top:8px">Las cifras se ajustan cuando juegues la Nave 1 en la DS con cronómetro.</p>
+</section>
+</main>

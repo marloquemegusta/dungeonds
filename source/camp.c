@@ -8,6 +8,7 @@
 #include "camp_arena_data.h"
 #include "camp_marco.h"
 #include "bestiary_font.h"
+#include "arpg_progress.h"
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -80,6 +81,7 @@ static int s_active = 0;
 static int s_focus = -1;             // prop the hero is next to (-1 none)
 static char s_toast[48];
 static int s_toast_frames = 0;
+static int s_altar_open = 0;       // altar travel list open (see altar_list_*)
 static int s_anim = 0;
 static const uint16_t *s_marco_n = NULL, *s_marco_l = NULL, *s_marco_r = NULL;   // wall frame sprites (nitro:/camp/marco_*.bin)
 static const uint16_t *s_fire = NULL;   // bonfire flame strip: CAMP_FUEGO_FRAMES frames of CAMP_FUEGO_W x CAMP_FUEGO_H
@@ -206,6 +208,7 @@ void camp_set_active(int on) {
     if (!on) wipe_primed_pages(); else camp_invalidate_pages();
     s_active = on;
     s_focus = -1;
+    s_altar_open = 0;
     s_toast_frames = 0;
     s_toast[0] = 0;
 }
@@ -238,9 +241,89 @@ static int prop_hit(int i, int tx, int ty) {
     return wx >= left && wx < left + p->w && wy >= top && wy < p->y;
 }
 
+// Altar travel list (DESIGN-ARPG.md 7, "Viaje entre altares"): with several altars touched, the door opens a small
+// menu on the bottom screen instead of walking straight in. Rooms 0..3 (the naves) are the only ones with an altar.
+static void draw_centered(uint16_t *buffer, int cx, int y, const char *s, uint16_t ink);
+#define CAMP_ALTAR_ROOMS 4
+static int s_altar_n = 0;
+static int s_altar_sel = 0;
+static uint8_t s_altar_room[CAMP_ALTAR_ROOMS];
+#define ALT_X 76
+#define ALT_W 104
+#define ALT_ROW_H 17
+#define ALT_Y0 52
+
+int camp_altar_list_open(void) { return s_altar_open; }
+
+static void altar_list_try_open(void) {
+    s_altar_n = 0;
+    s_altar_sel = 0;
+    for (int r = 0; r < CAMP_ALTAR_ROOMS; r++) {
+        if (g_arpg.altars_lo & (1u << r)) {
+            if (r == g_arpg.last_altar) s_altar_sel = s_altar_n;
+            s_altar_room[s_altar_n++] = (uint8_t)r;
+        }
+    }
+    s_altar_open = s_altar_n > 1;
+}
+
+// Returns CAMP_ACT_DOOR when a nave is chosen (last_altar set), CAMP_ACT_NONE otherwise.
+static int altar_list_update(uint32_t keys_down, int touch_pressed, int touch_x, int touch_y) {
+    if (keys_down & KEY_B) { s_altar_open = 0; return CAMP_ACT_NONE; }
+    if (keys_down & KEY_UP) s_altar_sel = (s_altar_sel + s_altar_n - 1) % s_altar_n;
+    else if (keys_down & KEY_DOWN) s_altar_sel = (s_altar_sel + 1) % s_altar_n;
+    int chosen = (keys_down & KEY_A) != 0;
+    if (touch_pressed && touch_x >= ALT_X && touch_x < ALT_X + ALT_W) {
+        for (int i = 0; i < s_altar_n; i++) {
+            int y0 = ALT_Y0 + i * ALT_ROW_H;
+            if (touch_y >= y0 && touch_y < y0 + ALT_ROW_H - 2) { s_altar_sel = i; chosen = 1; }
+        }
+    }
+    if (!chosen) return CAMP_ACT_NONE;
+    g_arpg.last_altar = s_altar_room[s_altar_sel];
+    s_altar_open = 0;
+    return CAMP_ACT_DOOR;
+}
+
+// Smoked glass panel: the camp behind is halved in brightness (transparent pixels become the dark tone).
+static void smoke_panel(uint16_t *buf, int x0, int y0, int w, int h, uint16_t bdr) {
+    const uint16_t dark = RGB15(2, 1, 2) | BIT(15);
+    for (int y = y0; y < y0 + h; y++) {
+        if ((unsigned)y >= SCREEN_H) continue;
+        dirty_row(y, x0, x0 + w);
+        for (int x = x0; x < x0 + w; x++) {
+            if ((unsigned)x >= SCREEN_W) continue;
+            uint16_t px = buf[y * SCREEN_W + x];
+            int edge = y == y0 || y == y0 + h - 1 || x == x0 || x == x0 + w - 1;
+            buf[y * SCREEN_W + x] = edge ? bdr : ((px & BIT(15)) ? (uint16_t)(((px & 0x7BDEu) >> 1) | BIT(15)) : dark);
+        }
+    }
+}
+
+static void altar_list_draw(uint16_t *buf) {
+    int h = s_altar_n * ALT_ROW_H + 4;
+    smoke_panel(buf, ALT_X - 4, ALT_Y0 - 4, ALT_W + 8, h, RGB15(10, 9, 8) | BIT(15));
+    for (int i = 0; i < s_altar_n; i++) {
+        int y0 = ALT_Y0 + i * ALT_ROW_H;
+        int sel = i == s_altar_sel;
+        smoke_panel(buf, ALT_X, y0, ALT_W, ALT_ROW_H - 2,
+                    sel ? (RGB15(27, 20, 11) | BIT(15)) : (RGB15(10, 9, 8) | BIT(15)));
+        char s[16];
+        snprintf(s, sizeof(s), "Nave %d", s_altar_room[i] + 1);
+        draw_centered(buf, ALT_X + ALT_W / 2, y0 + (ALT_ROW_H - 2 - bestiary_font_line_height()) / 2, s,
+                      sel ? COL_INK : (RGB15(15, 13, 12) | BIT(15)));
+    }
+}
+
 int camp_update(Player *p, uint32_t keys_held, uint32_t keys_down, int touch_pressed, int touch_x, int touch_y) {
     s_anim++;
     if (s_toast_frames > 0) s_toast_frames--;
+    if (s_altar_open) {                      // the hero stands still while the list is open
+        p->is_moving = 0;
+        p->frame = 0;
+        p->anim_timer = 0;
+        return altar_list_update(keys_down, touch_pressed && touch_y >= 0 && touch_y < SCREEN_H, touch_x, touch_y);
+    }
 
     // Walk (d-pad only; the stylus is for touching props). Same speed and 8-direction diagonal
     // normalisation as the dungeon so the hero feels identical.
@@ -303,6 +386,10 @@ int camp_update(Player *p, uint32_t keys_held, uint32_t keys_down, int touch_pre
         int trigger = (keys_down & KEY_A) != 0;
         if (tapped && prop_hit(s_focus, touch_x, touch_y)) trigger = 1;
         if (trigger) act = fp->act;
+    }
+    if (act == CAMP_ACT_DOOR) {              // several altars touched: pick the nave first
+        altar_list_try_open();
+        if (s_altar_open) act = CAMP_ACT_NONE;
     }
     return act;
 }
@@ -528,6 +615,7 @@ void camp_render_overlay(uint16_t *buffer, int cam_x, int cam_y) {
     // The short message of the last action (e.g. what sleeping did), on the bottom screen.
     if (s_toast_frames > 0 && s_toast[0] && cam_y >= CAMP_CAM_Y)
         draw_centered(buffer, SCREEN_W / 2, 150, s_toast, COL_GOLD);
+    if (s_altar_open && cam_y >= CAMP_CAM_Y) altar_list_draw(buffer);
 }
 
 #endif // CAMP_SCENE
