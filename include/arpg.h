@@ -28,6 +28,8 @@
 #define ARPG_DMG_CIRENEO 25         // [TUNABLE-PLACEHOLDER] ENEMY_TYPE_CHARGER
 #define ARPG_DMG_OJO 30             // [TUNABLE-PLACEHOLDER] ENEMY_TYPE_SHOOTER
 #define ARPG_DMG_ABANDERADO 25      // [TUNABLE-PLACEHOLDER]
+#define ARPG_DMG_CAMPANERO 25       // [TUNABLE-PLACEHOLDER] contact damage of the Campanero (DESIGN-ARPG.md 9)
+#define ARPG_DMG_CAMPANERO_TOQUE 30 // [TUNABLE-PLACEHOLDER] the major toll's ring on the hero
 #define ARPG_DMG_DEFAULT 20         // [TUNABLE-PLACEHOLDER] any other source
 
 // Exvoto tiers (v3, walkthroughs/arpg-predemo Â§10).

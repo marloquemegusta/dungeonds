@@ -1,0 +1,48 @@
+{
+ "name": "arpg_campanero_intro_capturas",
+ "description": "Variante arpg-campanero: la tarjeta de presentacion tiene sus dos instantaneas en el heap (los samples de voz ya no se precargan): s_snap_taken a 1 en mitad de la intro y el combate empieza (fase 1) al acabar.",
+ "suite": false,
+ "steps": [
+  {
+   "frames": 90
+  },
+  {
+   "button_down": "UP",
+   "frames": 700
+  },
+  {
+   "button_up": "UP",
+   "frames": 60,
+   "capture": "i1"
+  },
+  {
+   "frames": 60,
+   "capture": "i2"
+  },
+  {
+   "frames": 60,
+   "capture": "i3"
+  },
+  {
+   "frames": 60,
+   "capture": "i4"
+  },
+  {
+   "frames": 60,
+   "capture": "i5"
+  },
+  {
+   "frames": 60,
+   "capture": "i6"
+  },
+  {
+   "frames": 60,
+   "capture": "i7"
+  },
+  {
+   "frames": 60,
+   "capture": "i8"
+  }
+ ],
+ "evidence_only": true
+}

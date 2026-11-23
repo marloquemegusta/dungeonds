@@ -1,3 +1,4 @@
+#include "campanero_boss_text.h"
 #include "encounters_act1.h"
 #include "lab_tuning.h"
 
@@ -35,7 +36,7 @@ typedef int encounters_act1_translation_unit_not_empty;
 #if ENC_BOT
 volatile EncDebug g_enc_debug = { .auto_pick = 2, .seed = 1,
                                   .bot_reaction = 15, .bot_aim_err = 6, .bot_ojo_delay = 20 };   // human-like bot, cards at random, seed 1
-#elif ENC_START_BOSS
+#elif ENC_START_BOSS || ENC_START_CAMPANERO
 volatile EncDebug g_enc_debug = { .start_boss = 1 };   // console test build: every act (and every retry) starts at the boss
 #else
 volatile EncDebug g_enc_debug;
@@ -118,7 +119,11 @@ static const RoomDef s_rooms[ENC_ROOM_COUNT] = {
       .prize_min_rar = ARPG_RAR_LEGENDARY, .n_doors = 0 },
 };
 
+#if ENC_START_CAMPANERO
+static int s_room = ENC_ROOM_CRIPTA;          // test variant: the first strip is the boss room, no camp in between
+#else
 static int s_room;                            // room loaded now (enc_room_select before strip_start)
+#endif
 static int s_from_room = -1;                  // room the hero came from (where he lands), -1 = from the camp
 static const RoomDef *room_def(void) { return &s_rooms[s_room]; }
 static int is_boss_stage(int k) {             // block k holds the boss machinery (Cripta, Galeria del elite)
@@ -222,7 +227,60 @@ static const BossDef s_elite_def = {
     .n_escort = { 2, 2, 2 },
     .escort = { s_elite_escort, s_elite_escort, s_elite_escort },
 };
+// Sheet of the Campanero de Animas (DESIGN-ARPG.md 9). Posts in floor coordinates of the boss block (see s_campanero_pieces).
+#define CAMP_BOSS_X 104                      // the bell hangs centre-up, in the open
+#define CAMP_BOSS_Y 70
+#define CAMP_OJO_X 20                        // fixed post of the Ojo, on the left side; he respawns here
+#define CAMP_OJO_Y 250
+#define CAMP_MONJA_X 74                      // she prays near the boss, in the open (inside ARPG_MONJA_PRAY_RADIUS of him)
+#define CAMP_MONJA_Y 82
+#if ENC_START_CAMPANERO
+static const BossEscortDef s_campanero_escort_1[] = {
+    { ENEMY_TYPE_SHOOTER, 1, 720, { CAMP_OJO_X, CAMP_OJO_X } },
+    { ENEMY_TYPE_MONJA, 1, 1200, { CAMP_MONJA_X, CAMP_MONJA_X } },
+};
+static const BossEscortDef s_campanero_escort_2[] = {
+    { ENEMY_TYPE_SHOOTER, 1, 720, { CAMP_OJO_X, CAMP_OJO_X } },
+    { ENEMY_TYPE_MONJA, 1, 1200, { CAMP_MONJA_X, CAMP_MONJA_X } },
+    { ENEMY_TYPE_CHARGER, 1, 900, { 104, 104 } },
+};
+static const BossDef s_campanero_def = {
+    .enemy_type = ENEMY_TYPE_CAMPANERO,
+    .name = CAMPANERO_BOSS_NAME,
+    .title = CAMPANERO_BOSS_TITLE,
+    .line_intro = CAMPANERO_BOSS_LINE_INTRO,
+    .line_defeat = CAMPANERO_BOSS_LINE_DEFEAT,
+    .sfx_intro = CAMPANERO_BOSS_SFX_INTRO,
+    .sfx_defeat = CAMPANERO_BOSS_SFX_DEFEAT,
+    .voice_intro_frames = CAMPANERO_BOSS_VOICE_INTRO_FRAMES,
+    .voice_defeat_frames = CAMPANERO_BOSS_VOICE_DEFEAT_FRAMES,
+    .n_phases = 3,
+    .phase_pct = { 100, 66, 33 },
+    .n_escort = { 2, 3, 3 },
+    .escort = { s_campanero_escort_1, s_campanero_escort_2, s_campanero_escort_2 },
+};
+#endif
+// Test room (variant arpg-campanero): the Cripta block gets 5 columns in staggered rows and 2 statues at the sides.
+// Nominal top-left of each piece in block px (the compositor snaps them to the nearest legal phase of the kit).
+static const EncPieceDef s_campanero_pieces[] = {
+    { STRIP_PIECE_COLUMNA_ENTERA, 32, 140 },
+    { STRIP_PIECE_COLUMNA_ENTERA, 144, 140 },
+    { STRIP_PIECE_COLUMNA_ENTERA, 88, 208 },
+    { STRIP_PIECE_COLUMNA_ENTERA, 32, 276 },
+    { STRIP_PIECE_COLUMNA_ENTERA, 144, 276 },
+    { STRIP_PIECE_SANTO, 0, 196 },
+    { STRIP_PIECE_SANTO_DER, 160, 196 },
+};
+#if ENC_START_CAMPANERO
+static const EncEnemyDef s_campanero_enemies[] = {
+    { ENC_E_CAMPANERO, ENC_S_AWAKE, CAMP_BOSS_X, CAMP_BOSS_Y },
+    { ENC_E_OJO, ENC_S_AWAKE, CAMP_OJO_X, CAMP_OJO_Y },
+    { ENC_E_MONJA, ENC_S_AWAKE, CAMP_MONJA_X, CAMP_MONJA_Y },
+};
+static const BossDef *boss_def_of(int n) { (void)n; (void)&s_abanderado_def; (void)&s_elite_def; return &s_campanero_def; }   // the test room has only the Campanero
+#else
 static const BossDef *boss_def_of(int n) { return n >= 1 ? &s_elite_def : &s_abanderado_def; }
+#endif
 
 void enc_init(uint32_t seed) {
     s_seed = seed ? seed : 1u;
@@ -233,6 +291,7 @@ void enc_init(uint32_t seed) {
     g_enemy_tuning[ENEMY_TYPE_CHARGER].max_hp = ENC_HP_CIRENEO;
     g_enemy_tuning[ENEMY_TYPE_SHOOTER].max_hp = ENC_HP_OJO;
     g_enemy_tuning[ENEMY_TYPE_ABANDERADO].max_hp = g_enc_debug.boss_hp ? g_enc_debug.boss_hp : ENC_HP_ABANDERADO;
+    g_enemy_tuning[ENEMY_TYPE_CAMPANERO].max_hp = g_enc_debug.boss_hp ? g_enc_debug.boss_hp : 3000;   // DESIGN-ARPG.md 9
     // The Cireneo of v2: it chases below the hero's pace so the player can break away and charge the beam,
     // telegraphs 0.75 s and then charges very fast.
     g_enemy_tuning[ENEMY_TYPE_CHARGER].speed = 105;
@@ -333,6 +392,12 @@ int enc_block_pieces(int32_t block, EncPiecePlan *out, int max) {
         defs = s_corridor_pieces;
         n = (int)(sizeof(s_corridor_pieces) / sizeof(s_corridor_pieces[0]));
     }
+#if ENC_START_CAMPANERO
+    else if (b.kind == ENC_BLOCK_BOSS) {
+        defs = s_campanero_pieces;
+        n = (int)(sizeof(s_campanero_pieces) / sizeof(s_campanero_pieces[0]));
+    }
+#endif
     int m = 0;
     // The upper door is not a piece: it is the central arch of the back wall (source/strip.c, apply_room_openings).
     // The lateral openings put an occlusion piece in this block: the south module of the wall hides whoever is behind it.
@@ -420,6 +485,7 @@ static EnemyType enemy_type_of(uint8_t t) {
     case ENC_E_CIRENEO:    return ENEMY_TYPE_CHARGER;
     case ENC_E_OJO:        return ENEMY_TYPE_SHOOTER;
     case ENC_E_ABANDERADO: return ENEMY_TYPE_ABANDERADO;
+    case ENC_E_CAMPANERO:  return ENEMY_TYPE_CAMPANERO;
     case ENC_E_MONAGUILLO: return ENEMY_TYPE_MONAGUILLO;
     case ENC_E_BEBE:       return ENEMY_TYPE_BEBE;
     case ENC_E_PARROCO:    return ENEMY_TYPE_PARROCO;
@@ -577,6 +643,23 @@ static int room_chest_y(void) { return window_top(block_of_encounter(room_chest_
 static int room_altar_x(void) { return ENC_FLOOR_X + 48; }
 static int room_altar_y(void) { return window_top(block_of_encounter(0)) + 316; }
 
+// Where the Campanero raises an Exvoto: beside one of the columns of the test room or at a random floor spot of the block.
+void enc_camp_spot(uint32_t r, int *x, int *y) {
+    const int top = window_top(block_of_encounter(s_active_boss_k));
+    const uint32_t h = hash32(r ^ 0x43414d50u);
+    if (h & 1u) {
+        int cols[8], n = 0;
+        for (int i = 0; i < (int)(sizeof(s_campanero_pieces) / sizeof(s_campanero_pieces[0])) && n < 8; i++)
+            if (s_campanero_pieces[i].piece == STRIP_PIECE_COLUMNA_ENTERA) cols[n++] = i;
+        const EncPieceDef *c = &s_campanero_pieces[cols[(h >> 1) % (uint32_t)n]];
+        *x = ENC_FLOOR_X + c->x + 8 + (((h >> 9) & 1u) ? 20 : -20);
+        *y = top + c->y + 64;
+    } else {
+        *x = ENC_FLOOR_X + 20 + (int)((h >> 1) % 168u);
+        *y = top + 120 + (int)((h >> 12) % 200u);
+    }
+}
+
 // A crossing asked by enc_update() is consumed by main.c on the next frame, which fades to black and loads room s_exit_room.
 int enc_room_take_exit(int *out_room) {
     if (s_exit_room < 0) return 0;
@@ -597,8 +680,8 @@ static void place_enemy(Enemy *e, const EncEnemyDef *d, int x, int y, int ordina
     e->char_id = enemy_type_char_id(type);
     e->max_hp = g_enemy_tuning[type].max_hp;
     if (type == ENEMY_TYPE_ABANDERADO && g_enc_debug.boss_hp) e->max_hp = g_enc_debug.boss_hp;    // scenarios tune the boss
-    // Fixed level of the room (no auto-scaling); the Abanderado also by its boss number.
-    e->max_hp = e->max_hp * ARPG_DEPTH_PCT(room_def()->level - 1) / 100;
+    // Fixed level of the room (no auto-scaling); the Abanderado also by its boss number. The Campanero's 3000 is its sheet.
+    if (type != ENEMY_TYPE_CAMPANERO) e->max_hp = e->max_hp * ARPG_DEPTH_PCT(room_def()->level - 1) / 100;
     if (type == ENEMY_TYPE_ABANDERADO) e->max_hp = e->max_hp * ARPG_BOSS_HP_PCT(boss_number(owner)) / 100;
     e->hp = e->max_hp;
     e->dir = (ordinal * 2) % 8;
@@ -832,9 +915,14 @@ static int s_pool_n, s_hero_px, s_hero_py;
 
 static void boss_spawn_escort(EnemyType type, int floor_x) {
     if (!s_pool) return;
-    const uint8_t t = type == ENEMY_TYPE_SHOOTER ? ENC_E_OJO : type == ENEMY_TYPE_CHARGER ? ENC_E_CIRENEO : ENC_E_EXVOTO;
-    EncEnemyDef def = { t, ENC_S_AWAKE, (int16_t)floor_x, 16 };
-    spawn_group(s_pool, s_pool_n, &def, 1, 0, window_top(block_of_encounter(s_active_boss_k)), 16, s_active_boss_k, 1);
+    const uint8_t t = type == ENEMY_TYPE_SHOOTER ? ENC_E_OJO : type == ENEMY_TYPE_CHARGER ? ENC_E_CIRENEO :
+                      type == ENEMY_TYPE_MONJA ? ENC_E_MONJA : ENC_E_EXVOTO;
+    // Walk-in from the top for the Abanderado's escort; the Campanero's Ojo and Monja come back at their posts.
+    int y = 16;
+    if (boss_def_of(boss_number(s_active_boss_k))->enemy_type == ENEMY_TYPE_CAMPANERO)
+        y = type == ENEMY_TYPE_SHOOTER ? CAMP_OJO_Y : type == ENEMY_TYPE_MONJA ? CAMP_MONJA_Y : 16;
+    EncEnemyDef def = { t, ENC_S_AWAKE, (int16_t)floor_x, (int16_t)y };
+    spawn_group(s_pool, s_pool_n, &def, 1, 0, window_top(block_of_encounter(s_active_boss_k)), y, s_active_boss_k, 1);
 }
 
 static void boss_set_barriers(int closed) {
@@ -922,8 +1010,8 @@ void enc_update(Enemy *enemies, int max_enemies, int px, int py) {
     }
 #endif
     if (g_relic_drop_debug) {   // buzon de escenarios: 5 reliquias/tomos en fila sobre el heroe
-        static const uint8_t kind[5] = {ARPG_ITEM_RELIC, ARPG_ITEM_RELIC, ARPG_ITEM_RELIC, ARPG_ITEM_TOME, ARPG_ITEM_TOME};
-        static const uint8_t sch[5] = {ARPG_SCHOOL_PECHO, ARPG_SCHOOL_RAYO, ARPG_SCHOOL_EJECUCION, ARPG_SCHOOL_RAYO, ARPG_SCHOOL_GLIFO};
+        static const uint8_t kind[5] = {ARPG_ITEM_RELIC, ARPG_ITEM_RELIC, ARPG_ITEM_RELIC, ARPG_ITEM_RELIC, ARPG_ITEM_TOME};
+        static const uint8_t sch[5] = {ARPG_SCHOOL_PECHO, ARPG_SCHOOL_RAYO, ARPG_SCHOOL_EJECUCION, ARPG_SCHOOL_GLIFO, ARPG_SCHOOL_GLIFO};
         uint32_t rng = 7u;
         for (int i = 0; i < 5; i++) {
             ArpgInvItem it;
@@ -954,7 +1042,7 @@ void enc_update(Enemy *enemies, int max_enemies, int px, int py) {
     if (g_enc_debug.boss_damage > 0) {          // debug: one shot of this damage at the boss, once it is there
         for (int i = 0; i < max_enemies; i++) {
             Enemy *e = &enemies[i];
-            if (e->active && e->hp > 0 && e->type == ENEMY_TYPE_ABANDERADO) {
+            if (e->active && e->hp > 0 && (e->type == ENEMY_TYPE_ABANDERADO || e->type == ENEMY_TYPE_CAMPANERO)) {
                 enemy_hit(e, g_enc_debug.boss_damage, 0, 0);
                 g_enc_debug.boss_damage = 0;
                 break;
@@ -1005,8 +1093,13 @@ void enc_update(Enemy *enemies, int max_enemies, int px, int py) {
             s_active_boss_k = k;
             boss_reset(boss_def_of(boss_number(k)), k);
             g_abanderado_max_mona = boss_mona_cap(boss_number(k));
+#if ENC_START_CAMPANERO
+            spawn_group(enemies, max_enemies, s_campanero_enemies,
+                        (int)(sizeof(s_campanero_enemies) / sizeof(s_campanero_enemies[0])), 0, top, -1, k, 0);
+#else
             spawn_group(enemies, max_enemies, s_boss_enemies,
                         (int)(sizeof(s_boss_enemies) / sizeof(s_boss_enemies[0])), 0, top, -1, k, 0);
+#endif
         } else if (group_of_block(k) < 0) {
             rt->spawned = rt->awake = rt->cleared = 1;     // a walk-in block: nothing to wake, nothing to remember
         } else if (spawn_room_group(enemies, max_enemies, k) > 0) {
@@ -1166,7 +1259,7 @@ void enc_update(Enemy *enemies, int max_enemies, int px, int py) {
             const Enemy *e = &enemies[i];
             if (!e->active || e->hp <= 0) continue;
             if (e->state == ENEMY_STATE_DORMANT && !position_is_free(e->x, e->y)) blocked++;
-            if (e->type == ENEMY_TYPE_ABANDERADO) boss_hp = e->hp;
+            if (e->type == ENEMY_TYPE_ABANDERADO || e->type == ENEMY_TYPE_CAMPANERO) boss_hp = e->hp;
             else if (e->type == ENEMY_TYPE_MONAGUILLO) mona++;
         }
         st->boss_hp_now = (uint16_t)boss_hp;
@@ -1198,7 +1291,7 @@ int enc_untouchable(const Enemy *e) {
 }
 
 void enc_note_beam_hit(const Enemy *e) {
-    if (e->type == ENEMY_TYPE_ABANDERADO) {
+    if (e->type == ENEMY_TYPE_ABANDERADO || e->type == ENEMY_TYPE_CAMPANERO) {
         if (g_enc_stats.boss_hits < 0xFFFF) g_enc_stats.boss_hits++;
     } else if (e->type == ENEMY_TYPE_MONAGUILLO) {
         if (g_enc_stats.mona_hits < 0xFFFF) g_enc_stats.mona_hits++;

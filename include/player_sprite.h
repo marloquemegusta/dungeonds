@@ -26,7 +26,7 @@
 // The ground origin row varies per character/direction: see g_character_ground_anchors.
 #define PLAYER_ANCHOR_X 20
 
-#define NUM_CHARACTERS 20
+#define NUM_CHARACTERS 21
 
 enum {
     CHAR_HERO = 0,
@@ -45,22 +45,25 @@ enum {
     // its own sheet streamed from NitroFS (see CHAR_EXVOTO_PARROCO_RUN); the praying/rising poses of the Párroco
     // still borrow CHAR_EXVOTO / CHAR_EXVOTO_PRAY_STAND (his sheets do not fit in EWRAM, TECHNICAL.md).
     CHAR_EXVOTO_BEBE = 10,      // Exvoto Bebé walking (swarm tier), 8 frames, 40x40 cell
+    // El Campanero de Ánimas (jefe ARPG): slot sin píxeles en la EWRAM; sus 5 clips (60x60) se leen de NitroFS
+    // (source/campanero_sprite.c) y el clip actual va en Enemy.kneel. No es un slot de stream_char: va antes de CHAR_FIRST_STREAMED.
+    CHAR_CAMPANERO = 11,
     // Párroco running (Mixamo Running on exvoto_parroco), 8 frames, 48x48 cell. Its pixels, runs and shadow masks are
     // NOT in this file's tables: they live in nitrofiles/parroco/run.bin and source/stream_char.c keeps a small
     // cache of frames; the character_*_ptr accessors below load a frame on demand for the streamed slots (>= CHAR_FIRST_STREAMED).
-    CHAR_EXVOTO_PARROCO_RUN = 11,
+    CHAR_EXVOTO_PARROCO_RUN = 12,
     CHAR_FIRST_STREAMED = CHAR_EXVOTO_PARROCO_RUN,
     // Súper Monja (ENEMY_TYPE_MONJA, Tripo 9713149f), 56x56 cell, her own four clips, also streamed (nitrofiles/smonja/).
-    CHAR_SMONJA_WALK = 12,
-    CHAR_SMONJA_PRAY_STAND = 13,
-    CHAR_SMONJA_PRAY_KNEEL = 14,
-    CHAR_SMONJA_STAND_UP = 15,
+    CHAR_SMONJA_WALK = 13,
+    CHAR_SMONJA_PRAY_STAND = 14,
+    CHAR_SMONJA_PRAY_KNEEL = 15,
+    CHAR_SMONJA_STAND_UP = 16,
     // Spider form of the Exvoto and the Monaguillo under the Súper Monja's aura (nitrofiles/arana/): walk (burst + pause) and the
     // lying-down transition (played backwards to get up). Cells 40x40 (Exvoto) and 48x48 (Monaguillo).
-    CHAR_EXVOTO_ARANA_WALK = 16,
-    CHAR_EXVOTO_ARANA_TRANS = 17,
-    CHAR_MONAGUILLO_ARANA_WALK = 18,
-    CHAR_MONAGUILLO_ARANA_TRANS = 19
+    CHAR_EXVOTO_ARANA_WALK = 17,
+    CHAR_EXVOTO_ARANA_TRANS = 18,
+    CHAR_MONAGUILLO_ARANA_WALK = 19,
+    CHAR_MONAGUILLO_ARANA_TRANS = 20
 };
 
 typedef struct {

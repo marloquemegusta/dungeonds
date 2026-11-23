@@ -22,6 +22,7 @@ typedef enum {
     ENEMY_TYPE_BEBE,        // Exvoto tier: swarm, dies in one hit, a bit faster than the base (v3 tiers)
     ENEMY_TYPE_PARROCO,     // Exvoto tier: melee tank, x4 life, hits harder and shoves the hero (v3 tiers)
     ENEMY_TYPE_MONJA,       // Exvoto tier: support, stays behind praying and heals nearby Exvotos (v3 tiers)
+    ENEMY_TYPE_CAMPANERO,   // Boss (ARPG, DESIGN-ARPG.md 9): the Campanero de Animas, bell rings on the floor
     NUM_ENEMY_TYPES
 } EnemyType;
 
@@ -88,6 +89,7 @@ static inline int enemy_type_char_id(EnemyType type) {
     if (type == ENEMY_TYPE_SHOOTER) return CHAR_OJO;
     if (type == ENEMY_TYPE_EXVOTO) return CHAR_EXVOTO;     // base walk slot; a praying Exvoto swaps char_id per pose
     if (type == ENEMY_TYPE_ABANDERADO) return CHAR_ABANDERADO;
+    if (type == ENEMY_TYPE_CAMPANERO) return CHAR_CAMPANERO;    // frames streamed from NitroFS (campanero_sprite.h)
     if (type == ENEMY_TYPE_MONAGUILLO) return CHAR_MONAGUILLO;
     // Exvoto tiers: the Bebé has its own baked sheet; the Párroco runs with a sheet streamed from NitroFS (falls back
     // to the Exvoto slot if run.bin could not be read); the Súper Monja has her own streamed sheets (falls back to the

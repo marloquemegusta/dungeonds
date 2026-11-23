@@ -22,6 +22,11 @@
 #define GL_ASH_B   RGB15(10, 9, 8)
 #define GL_ASH_C   RGB15(6, 5, 5)
 #define GL_SMOKE_M RGB15(18, 16, 14)
+// Silenced glyph: the light turns to the enemy green ramp (bone-phosphor, verdigris, moss, smoke), same values as the bell rings.
+#define GL_SL_BONE  RGB15(23, 26, 19)
+#define GL_SL_VERD  RGB15(14, 21, 15)
+#define GL_SL_MOSS  RGB15(9, 14, 10)
+#define GL_SL_SMOKE RGB15(7, 9, 8)
 
 // Aim preview colours: the overlay layer has no floor to read, so the faint mix is baked: ~3/8 ivory over the mean floor tone
 // (90, 86, 78) of the cathedral = (143, 129, 106) -> RGB15(18, 16, 13); the branch pixels a step dimmer, like in the seal.
@@ -31,6 +36,7 @@
 #define GLIFO_FLASH_FRAMES 12   // [TUNABLE-PLACEHOLDER] detonation flash before the crack closes
 #define GLIFO_TONGUES 6         // Zarza: flame tongues alive at once
 #define GLIFO_TONGUE_PERIOD 20  // Zarza: frames of one tongue
+#define GLIFO_SIL_FRAMES 24     // silencing: green sweep 0..10, extinction sweep 4..14, motes and ash until 24
 #define GLIFO_BASE_R 40         // ground radius the baked rune was made for
 
 // The hero's prayer (DESIGN.md 7.7): the clip is nitrofiles/punch/pray_d<dir>.bin (same format as the punch clips). The
@@ -54,6 +60,9 @@ typedef struct {
     uint8_t det_sound;          // the detonation sound already played (Doble Sello: once per glifo)
     int xh;                     // half-width (px) of the rows the rune can touch
     int npx;                    // pixels of this zone's scaled mask (s_px[zone])
+    int sil_t;                  // silencing: frames since it began (-1 = not silenced)
+    int sil_ux, sil_uy;         // silencing: unit ground vector (8.8) from the centre toward the wave
+    int sil_p;                  // silencing: opening progress frozen at the moment it began (255 = fully open)
 } GlifoZone;   // scenarios read active/aura at fixed offsets (tools/glifo_rune/gen_scenarios.py): new fields go last
 
 static GlifoZone s_zones[ARPG_GLIFO_MAX];
@@ -102,7 +111,7 @@ static int pray_load_bin(int dir) {
 }
 
 void glifo_reset(void) {
-    for (int i = 0; i < ARPG_GLIFO_MAX; i++) s_zones[i].active = 0;
+    for (int i = 0; i < ARPG_GLIFO_MAX; i++) { s_zones[i].active = 0; s_zones[i].sil_t = -1; }
     s_aiming = 0;
     s_pray_active = 0;
 }
@@ -317,6 +326,7 @@ static void zone_spawn(int tx, int ty) {
                             (arpg_inv_has_mechanic(ARPG_MECH_ZARZA) ? GLIFO_AURA_ZARZA : 0));
         z->reopen = (uint8_t)(arpg_inv_has_mechanic(ARPG_MECH_DOBLE_SELLO) ? 1 : 0);
         z->det_sound = 0;
+        z->sil_t = -1;
         z->seed = (uint8_t)(s_next_aura++ * 37u + 11u);
         zone_build_mask(zi, z);
         zone_build_floor(zi, z);
@@ -339,6 +349,10 @@ void glifo_update(Enemy *enemies, int max_enemies) {
     for (int i = 0; i < ARPG_GLIFO_MAX; i++) {
         GlifoZone *z = &s_zones[i];
         if (!z->active) continue;
+        if (z->sil_t >= 0) {                       // silenced: only the animation runs (no auras, no detonation)
+            if (++z->sil_t >= GLIFO_SIL_FRAMES) z->active = 0;
+            continue;
+        }
         const int t = z->t;
         if (t >= z->t_open && t < z->t_det) {
             if ((z->aura & GLIFO_AURA_REDIL) || (z->aura & GLIFO_AURA_ZARZA)) {
@@ -390,9 +404,33 @@ int glifo_flee_dir(int x, int y, int margin, int side, int *ux, int *uy) {
 int glifo_point_in_zone(int x, int y) {
     for (int i = 0; i < ARPG_GLIFO_MAX; i++) {
         const GlifoZone *z = &s_zones[i];
-        if (z->active && ground_inside(x - z->cx, y - z->cy, z->radius)) return 1;
+        if (z->active && z->sil_t < 0 && ground_inside(x - z->cx, y - z->cy, z->radius)) return 1;
     }
     return 0;
+}
+
+int glifo_zone_count(void) { return ARPG_GLIFO_MAX; }
+
+int glifo_silenceable(int zone, int *cx, int *cy, int *radius) {
+    if ((unsigned)zone >= ARPG_GLIFO_MAX) return 0;
+    const GlifoZone *z = &s_zones[zone];
+    if (!z->active || z->sil_t >= 0 || z->t >= z->t_det) return 0;     // a glyph that already detonates is left alone
+    *cx = z->cx; *cy = z->cy; *radius = z->radius;
+    return 1;
+}
+
+void glifo_silence(int zone, int from_x, int from_y) {
+    int cx, cy, rad;
+    if (!glifo_silenceable(zone, &cx, &cy, &rad)) return;
+    GlifoZone *z = &s_zones[zone];
+    const int dx = from_x - z->cx, dy2 = (from_y - z->cy) * 2;
+    const int d = (int)sqrt32((unsigned)(dx * dx + dy2 * dy2));
+    if (d > 0) { z->sil_ux = div32(dx * 256, d); z->sil_uy = div32(dy2 * 256, d); }
+    else { z->sil_ux = 256; z->sil_uy = 0; }
+    z->sil_p = z->t < z->t_open ? div32(z->t * 255, z->t_open) : 255;
+    z->sil_t = 0;
+    static uint8_t s_alt;
+    sfx_play((s_alt++ & 1) ? SND_CFX_GLASS_B : SND_CFX_GLASS_A, z->cx);
 }
 
 // ---------------------------------------------------------------------------------------------------------------
@@ -572,6 +610,61 @@ static void draw_zone(const GlifoZone *z, int zi) {
     }
 }
 
+// Silenced glyph (Campanero de Animas). Stateless from the zone and sil_t. Each crack pixel has a "depth" q = distance from the side
+// the wave enters; the light turns green when the green front (q < sil_t * L / 10) reaches it, the rune goes out when the second
+// sweep does (4 frames later: it flickers first); a fifth of the pixels (and every stone chip) then jump as motes and fall as ash,
+// the rest leave a dark ash speck that fades. No flash, no detonation.
+static void draw_zone_silenced(const GlifoZone *z, int zi) {
+    const int T = z->sil_t;
+    const GlifoPx *mask = s_px[zi];
+    const int n = z->npx;
+    const int L = 2 * z->xh + 4;                        // sweep length (ground px)
+    const int inv = (10 * 256) / L;                     // q -> frames, 8.8
+    const int redil = (z->aura & GLIFO_AURA_REDIL) != 0;
+    const int p = z->sil_p;
+    if (redil && z->t >= z->t_open) {                   // the whirl under the rune fades with the first sweep
+        const int lim = 255 - T * 26;
+        if (lim > 0) draw_vortex(z->t, z, lim);
+    }
+    for (int i = 0; i < n; i++) {
+        const GlifoPx *q = &mask[i];
+        if (q->order > p) break;
+        const int dx = q->dx, dy = q->dy;
+        const int proj = (dx * z->sil_ux + dy * 2 * z->sil_uy) >> 8;           // ground px toward the wave
+        int qd = z->xh + 2 - proj;
+        if (qd < 0) qd = 0;
+        const int tg = (qd * inv) >> 8;                 // frame the green front reaches this pixel
+        const int te = tg + 4;                          // frame it goes out
+        const uint32_t h = hash2((uint32_t)i, z->seed);
+        int v = (k_bright[q->flags & 3] * 256) >> 8;
+        if (q->flags & GLIFO_FL_BRANCH) v = (v * 3) >> 2;
+        if (T < tg) {                                   // still gold; the first frames flicker
+            if (T < 3 && ((T + (int)(h >> 5)) & 1)) v = (v * 5) >> 3;
+            put_rel(dx, dy, core_color(v));
+        } else if (T < te) {                            // green
+            const int ag = T - tg;
+            if (ag >= 2 && T >= te - 2 && (((T + (int)(h >> 7)) & 1) == 0)) continue;   // flickers out
+            put_rel(dx, dy, ag < 2 ? GL_SL_BONE : v >= 200 ? GL_SL_BONE : v >= 140 ? GL_SL_VERD : v >= 90 ? GL_SL_MOSS : GL_SL_SMOKE);
+        } else {                                        // out: mote that jumps and falls, or an ash speck
+            const int a = T - te;
+            if ((h % 5u) == 0u || (q->flags & GLIFO_FL_SHARD)) {
+                const int v0 = 2 + (int)((h >> 8) % 3u);                   // 2..4: jump height ~ v0 * v0 / 2
+                const int drift = (int)((h >> 12) % 3u) - 1;
+                const int land = 2 * v0;
+                if (a < land) {
+                    const int hgt = v0 * a - ((a * a) >> 1);
+                    put_rel(dx + ((drift * a) >> 1), dy - hgt, a < 2 ? GL_SL_BONE : a < 5 ? GL_SL_VERD : GL_SL_MOSS);
+                    if (a < 5) put_rel(dx + ((drift * (a - 1)) >> 1), dy - (hgt > 0 ? hgt - 1 : 0) + 1, GL_SL_SMOKE);   // trail of the jump
+                } else if (a < 10) {
+                    put_rel(dx + drift * v0, dy, a < 7 ? GL_ASH_B : GL_ASH_C);   // fell as ash
+                }
+            } else if (a < 5) {
+                put_rel(dx, dy, a < 2 ? GL_ASH_B : GL_ASH_C);
+            }
+        }
+    }
+}
+
 // Aim preview (DESIGN.md 7 Glifo): the whole rune, static and faint, at the touched point. The scaled mask is rebuilt only
 // when the radius or the auras change (not while the stylus moves); the floor cells it touches are re-queried only when the
 // aim point enters another 4 px cell (about 250 lookups, not the full window).
@@ -647,7 +740,8 @@ void glifo_render_floor(uint16_t *buffer, int cam_x, int cam_y) {
 #endif
         }
 #if GLEXP != 1
-        draw_zone(z, i);
+        if (z->sil_t >= 0) draw_zone_silenced(z, i);
+        else draw_zone(z, i);
 #endif
     }
 }

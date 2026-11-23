@@ -46,6 +46,11 @@ ENEMY_TUNING_CONST EnemyTuning g_enemy_tuning[NUM_ENEMY_TYPES] = {
         .speed = 75,              // [TUNABLE-PLACEHOLDER] 8.8 fixed: slow patrol
         .attack_cooldown = ABANDERADO_SUMMON_FRAMES,
     },
+    [ENEMY_TYPE_CAMPANERO] = {
+        .max_hp = 3000,           // [TUNABLE-PLACEHOLDER] DESIGN-ARPG.md 9: ~30 base rays
+        .speed = 130,             // [TUNABLE-PLACEHOLDER] 8.8 fixed: the Exvoto's pace (phase III drags the bell)
+        .attack_cooldown = 60,    // [TUNABLE-PLACEHOLDER] frames between minor tolls
+    },
     [ENEMY_TYPE_MONAGUILLO] = {
         .max_hp = 100,            // [TUNABLE-PLACEHOLDER] same rules as Exvoto: dies in one hit
         .speed = 130,             // [TUNABLE-PLACEHOLDER] 8.8 fixed: slow prayer-walk
@@ -124,6 +129,7 @@ int arpg_enemy_damage(int enemy_type) {
     case ENEMY_TYPE_CHARGER:    return ARPG_DMG_CIRENEO;
     case ENEMY_TYPE_SHOOTER:    return ARPG_DMG_OJO;
     case ENEMY_TYPE_ABANDERADO: return ARPG_DMG_ABANDERADO;
+    case ENEMY_TYPE_CAMPANERO:  return ARPG_DMG_CAMPANERO;
     default:                    return ARPG_DMG_DEFAULT;
     }
 }

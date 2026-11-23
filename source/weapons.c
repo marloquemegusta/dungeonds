@@ -589,7 +589,7 @@ static int compute_aim(const WeaponInput *in, fixed *dir_x, fixed *dir_y) {
 // ---------------------------------------------------------------------------
 
 static void shove_enemy(Enemy *e, const WeaponTuning *tuning, fixed dir_x, fixed dir_y) {
-    if (!e->active || e->hp <= 0 || e->type == ENEMY_TYPE_ABANDERADO || tuning->knockback <= 0) return;
+    if (!e->active || e->hp <= 0 || e->type == ENEMY_TYPE_ABANDERADO || e->type == ENEMY_TYPE_CAMPANERO || tuning->knockback <= 0) return;
     fixed knock = tuning->knockback * g_mods.knock_pct / 100;
     e->knock_vx = (dir_x * knock) >> 8;
     e->knock_vy = (dir_y * knock) >> 8;
@@ -661,7 +661,7 @@ static void fire_sniper(const WeaponTuning *tuning, const WeaponInput *in, fixed
 #endif
             int edx = TO_INT(cur_x - e->x);
             int edy = TO_INT(cur_y - e->y);
-            int hit = (e->char_id == CHAR_CHARGER || e->char_id == CHAR_ABANDERADO)
+            int hit = (e->char_id == CHAR_CHARGER || e->char_id == CHAR_ABANDERADO || e->char_id == CHAR_CAMPANERO)
                 ? body_hit_test_ex(edx, edy, in->muzzle_h, CHARGER_BODY_HIT_CY, CHARGER_BODY_HIT_RX, CHARGER_BODY_HIT_RY)
                 : (e->char_id == CHAR_OJO)
                 ? body_hit_test_ex(edx, edy, in->muzzle_h, OJO_BODY_HIT_CY, OJO_BODY_HIT_RX, OJO_BODY_HIT_RY)
@@ -1159,7 +1159,7 @@ int weapons_input(PlayerState *player, const WeaponInput *in, Enemy *enemies, in
 
 // Body ellipse of an enemy (hitvolume.h): torso height, head height and half width, by sprite size.
 static void burn_body(const Enemy *e, int *torso, int *head, int *half_w) {
-    if (e->char_id == CHAR_CHARGER || e->char_id == CHAR_ABANDERADO) {
+    if (e->char_id == CHAR_CHARGER || e->char_id == CHAR_ABANDERADO || e->char_id == CHAR_CAMPANERO) {
         *torso = CHARGER_BODY_HIT_CY; *head = CHARGER_BODY_HIT_CY + CHARGER_BODY_HIT_RY; *half_w = CHARGER_BODY_HIT_RX;
     } else if (e->char_id == CHAR_OJO) {
         *torso = OJO_BODY_HIT_CY; *head = OJO_BODY_HIT_CY + OJO_BODY_HIT_RY; *half_w = OJO_BODY_HIT_RX;

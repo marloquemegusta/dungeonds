@@ -275,6 +275,41 @@
       "resolution": 60,
       "scaleRef": "abanderado",
       "template": "tools/characters/abanderado_lab_template.json"
+    },
+    "campanero": {
+      "model": "assets/models/characters/campanero/campanero_idle.fbx",
+      "anim": "campanero_idle (0.33s)",
+      "resolution": 80,
+      "fitZoom": 0.95,
+      "template": "tools/characters/campanero_lab_template.json"
+    },
+    "campanero_walk": {
+      "model": "assets/models/characters/campanero/campanero_walk.fbx",
+      "anim": "campanero_walk (0.33s)",
+      "resolution": 80,
+      "scaleRef": "campanero",
+      "template": "tools/characters/campanero_lab_template.json"
+    },
+    "campanero_toque": {
+      "model": "assets/models/characters/campanero/campanero_toque.fbx",
+      "anim": "campanero_toque (0.33s)",
+      "resolution": 80,
+      "scaleRef": "campanero",
+      "template": "tools/characters/campanero_lab_template.json"
+    },
+    "campanero_tanido": {
+      "model": "assets/models/characters/campanero/campanero_tanido.fbx",
+      "anim": "campanero_tanido (0.33s)",
+      "resolution": 80,
+      "scaleRef": "campanero",
+      "template": "tools/characters/campanero_lab_template.json"
+    },
+    "campanero_death": {
+      "model": "assets/models/characters/campanero/campanero_death.fbx",
+      "anim": "campanero_death (0.33s)",
+      "resolution": 80,
+      "scaleRef": "campanero",
+      "template": "tools/characters/campanero_lab_template.json"
     }
   }
 }

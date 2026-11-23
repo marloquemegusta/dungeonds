@@ -1,3 +1,4 @@
+#include "cfxprof.h"
 #include "sfx.h"
 #include "lab_tuning.h"
 #include <stdint.h>
@@ -30,6 +31,14 @@ static int s_stream_active = 0;
 static int s_bgm_paused = 0;
 static int s_bgm_track = 0;
 static mm_sfxhand s_voice_handle = 0;
+#ifdef ARM9
+static int s_voice_loaded = -1;      /* SfxId of the boss voice sample currently in RAM (-1 none) */
+
+/* Boss voices are 50-115 KB each: loaded only while they play (the boss snapshots need ~192 KB of the heap while the screens are frozen). */
+static int sfx_is_voice(int id) {
+    return id == SND_ABANDERADO_INTRO || id == SND_ABANDERADO_DEFEAT || id == SND_CAMPANERO_INTRO || id == SND_CAMPANERO_DEFEAT;
+}
+#endif
 static long s_bgm_saved_pos = 0;
 
 static const mm_word s_mm_ids[SND_COUNT] = {
@@ -59,6 +68,13 @@ static const mm_word s_mm_ids[SND_COUNT] = {
     [SND_UI_CLICK]          = SFX_UI_CLICK,
     [SND_RELIC_SOCKET]      = SFX_RELIC_SOCKET,
     [SND_LEVEL_UP]          = SFX_LEVEL_UP,
+    [SND_CFX_TANIDO]        = SFX_LAB_BELL_H2,
+    [SND_CFX_BONG]          = SFX_LAB_BONG,
+    [SND_CFX_BELL_LOW]      = SFX_LAB_BELL_H0,
+    [SND_CFX_GLASS_A]       = SFX_LAB_GLASS1,
+    [SND_CFX_GLASS_B]       = SFX_LAB_GLASS4,
+    [SND_CAMPANERO_INTRO]   = SFX_CAMPANERO_INTRO,
+    [SND_CAMPANERO_DEFEAT]  = SFX_CAMPANERO_DERROTA,
 };
 #endif
 
@@ -95,6 +111,13 @@ static const SfxMixRule s_mix_rules[SND_COUNT] = {
     [SND_UI_CLICK]          = { .volume = 175, .cooldown = 2, .jitter_pct = 0  },
     [SND_RELIC_SOCKET]      = { .volume = 220, .cooldown = 3, .jitter_pct = 0  },
     [SND_LEVEL_UP]          = { .volume = 245, .cooldown = 10, .jitter_pct = 0 },
+    [SND_CFX_TANIDO]        = { .volume = 215, .cooldown = 4, .jitter_pct = 3 },
+    [SND_CFX_BONG]          = { .volume = 250, .cooldown = 4, .jitter_pct = 2 },
+    [SND_CFX_BELL_LOW]      = { .volume = 235, .cooldown = 4, .jitter_pct = 2 },
+    [SND_CFX_GLASS_A]       = { .volume = 210, .cooldown = 3, .jitter_pct = 6 },
+    [SND_CFX_GLASS_B]       = { .volume = 210, .cooldown = 3, .jitter_pct = 6 },
+    [SND_CAMPANERO_INTRO]   = { .volume = 255, .cooldown = 0, .jitter_pct = 0 },
+    [SND_CAMPANERO_DEFEAT]  = { .volume = 255, .cooldown = 0, .jitter_pct = 0 },
 };
 
 static uint32_t next_rng(void) {
@@ -148,7 +171,7 @@ void sfx_init(void) {
     if (!nitroFSInit(NULL)) return;
     mmInitDefault("nitro:/soundbank.bin");
     for (int i = 0; i < SND_COUNT; i++) {
-        mmLoadEffect(s_mm_ids[i]);
+        if (!sfx_is_voice(i)) mmLoadEffect(s_mm_ids[i]);
     }
     s_audio_ready = 1;
     sfx_start_bgm();
@@ -199,6 +222,7 @@ void sfx_play_pitched(SfxId id, int world_x, uint16_t rate) {
 
 #ifdef ARM9
     if (!s_audio_ready) return;
+    CP_BEGIN(CP_MMARGS);
     mm_sound_effect eff = {
         .id      = event_mm_id(id),
         .rate    = rate ? rate : compute_rate(rule->jitter_pct),
@@ -206,7 +230,10 @@ void sfx_play_pitched(SfxId id, int world_x, uint16_t rate) {
         .volume  = rule->volume,
         .panning = compute_pan(world_x),
     };
+    CP_END(CP_MMARGS);
+    CP_BEGIN(CP_MMEFF);
     mmEffectEx(&eff);
+    CP_END(CP_MMEFF);
 #else
     (void)world_x;
     (void)rate;
@@ -320,6 +347,10 @@ void sfx_play_voice(SfxId id) {
     sfx_stop_voice();
 #ifdef ARM9
     if (!s_audio_ready || id < 0 || id >= SND_COUNT) return;
+    if (sfx_is_voice(id)) {
+        mmLoadEffect(s_mm_ids[id]);
+        s_voice_loaded = id;
+    }
     mm_sound_effect eff = {
         .id      = event_mm_id(id),
         .rate    = 1024,
@@ -338,6 +369,10 @@ void sfx_stop_voice(void) {
     if (s_voice_handle) {
         mmEffectCancel(s_voice_handle);
         s_voice_handle = 0;
+    }
+    if (s_voice_loaded >= 0) {
+        mmUnloadEffect(s_mm_ids[s_voice_loaded]);
+        s_voice_loaded = -1;
     }
 #endif
 }

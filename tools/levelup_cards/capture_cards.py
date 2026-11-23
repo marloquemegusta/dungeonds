@@ -275,6 +275,8 @@ def process(cid):
 
 def pack(cid, frames):
     import struct
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+    from lz10 import lz10_compress   # LZ10 de la BIOS; formato 0x4C44 (ver tools/repack_compressed.py)
     flat = np.stack([np.array(f) for f in frames]).reshape(-1, 3)
     codes = (flat[:, 0].astype(np.uint32) << 16) | (flat[:, 1].astype(np.uint32) << 8) | flat[:, 2]
     uniq = sorted(set(int(c) for c in np.unique(codes)) - {0})
@@ -288,7 +290,7 @@ def pack(cid, frames):
         r, g, b = (c >> 16) & 255, (c >> 8) & 255, c & 255
         pal[i] = (r >> 3) | ((g >> 3) << 5) | ((b >> 3) << 10) | 0x8000
     idx = np.array([lut[int(c)] for c in codes], dtype=np.uint8)
-    data = struct.pack("<H2B", 0x4C43, len(frames), SIZE) + struct.pack("<256H", *pal) + idx.tobytes()
+    data = struct.pack("<H2B", 0x4C44, len(frames), SIZE) + struct.pack("<256H", *pal) + lz10_compress(idx.tobytes())
     NITRO.mkdir(parents=True, exist_ok=True)
     (NITRO / (cid + ".bin")).write_bytes(data)
     return len(data)

@@ -72,6 +72,7 @@ int arpg_enemy_xp(int enemy_type, int floor) {
     case ENEMY_TYPE_MONAGUILLO: return ARPG_XP_MONAGUILLO;
     case ENEMY_TYPE_CHARGER:    return ARPG_XP_CIRENEO;
     case ENEMY_TYPE_SHOOTER:    return ARPG_XP_OJO;
+    case ENEMY_TYPE_CAMPANERO:      // a boss like the Abanderado
     case ENEMY_TYPE_ABANDERADO: {
         int boss_index = (floor + 4) / 5;          // floor 5 -> 1, 10 -> 2, 15 -> 3
         if (boss_index < 1) boss_index = 1;

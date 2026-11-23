@@ -1,0 +1,204 @@
+{
+ "name": "arpg_icono_hostia",
+ "description": "Evidencia de la hostia (reliquia del Glifo): inventario del arcon en la pestana Glifo y, en la sala 1, las reliquias de prueba en el suelo (la cuarta es del Glifo). Solo capturas.",
+ "suite": false,
+ "evidence_only": true,
+ "state": {
+  "elf": "../.ds-game-dev/build/out/dungeonds-arpg-todo.elf",
+  "symbols": {
+   "pl": "s_player",
+   "dbg": "g_relic_drop_debug"
+  },
+  "default_symbol": "pl",
+  "fields": {
+   "px": {
+    "symbol": "pl",
+    "offset": 0,
+    "type": "s32"
+   },
+   "py": {
+    "symbol": "pl",
+    "offset": 4,
+    "type": "s32"
+   },
+   "drop": {
+    "symbol": "dbg",
+    "offset": 0,
+    "type": "u8"
+   }
+  }
+ },
+ "steps": [
+  {
+   "frames": 90
+  },
+  {
+   "tap": {
+    "x": 128,
+    "y": 66
+   },
+   "frames": 6
+  },
+  {
+   "release": true,
+   "frames": 40
+  },
+  {
+   "button_down": "A",
+   "frames": 4
+  },
+  {
+   "button_up": "A",
+   "frames": 40
+  },
+  {
+   "button_down": "A",
+   "frames": 4
+  },
+  {
+   "button_up": "A",
+   "frames": 40
+  },
+  {
+   "button_down": "A",
+   "frames": 4
+  },
+  {
+   "button_up": "A",
+   "frames": 40
+  },
+  {
+   "button_down": "A",
+   "frames": 4
+  },
+  {
+   "button_up": "A",
+   "frames": 40
+  },
+  {
+   "button_down": "A",
+   "frames": 4
+  },
+  {
+   "button_up": "A",
+   "frames": 40
+  },
+  {
+   "button_down": "A",
+   "frames": 4
+  },
+  {
+   "button_up": "A",
+   "frames": 40
+  },
+  {
+   "frames": 60
+  },
+  {
+   "poke": [
+    {
+     "field": "px",
+     "value": 15872
+    },
+    {
+     "field": "py",
+     "value": 75776
+    }
+   ],
+   "frames": 20
+  },
+  {
+   "button_down": "A",
+   "frames": 4
+  },
+  {
+   "button_up": "A",
+   "frames": 25,
+   "capture": "01_inventario"
+  },
+  {
+   "tap": {
+    "x": 128,
+    "y": 100
+   },
+   "frames": 6
+  },
+  {
+   "release": true,
+   "frames": 20
+  },
+  {
+   "tap": {
+    "x": 126,
+    "y": 10
+   },
+   "frames": 6
+  },
+  {
+   "release": true,
+   "frames": 30,
+   "capture": "02_inventario_glifo"
+  },
+  {
+   "tap": {
+    "x": 184,
+    "y": 144
+   },
+   "frames": 6
+  },
+  {
+   "release": true,
+   "frames": 40,
+   "capture": "03_ficha_hostia"
+  },
+  {
+   "button_down": "B",
+   "frames": 4
+  },
+  {
+   "button_up": "B",
+   "frames": 30
+  },
+  {
+   "button_down": "B",
+   "frames": 4
+  },
+  {
+   "button_up": "B",
+   "frames": 30,
+   "capture": "04_campamento"
+  },
+  {
+   "poke": [
+    {
+     "field": "px",
+     "value": 32768
+    },
+    {
+     "field": "py",
+     "value": 29696
+    }
+   ],
+   "frames": 20
+  },
+  {
+   "button_down": "A",
+   "frames": 4
+  },
+  {
+   "button_up": "A",
+   "frames": 120,
+   "capture": "05_sala1"
+  },
+  {
+   "poke": [
+    {
+     "field": "drop",
+     "value": 1
+    }
+   ],
+   "frames": 30,
+   "capture": "06_reliquias_suelo"
+  }
+ ]
+}

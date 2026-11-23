@@ -48,6 +48,11 @@ int glifo_flee_dir(int x, int y, int margin, int side, int *ux, int *uy);
 // Non-zero when a world ground point lies inside any live glifo.
 int glifo_point_in_zone(int x, int y);
 
+// Silencing (Campanero de Animas, DESIGN-ARPG.md 9): a tanido wave puts a glyph out. No detonation, no mana back.
+int glifo_zone_count(void);                                          // zone slots to iterate with glifo_silenceable
+int glifo_silenceable(int zone, int *cx, int *cy, int *radius);      // 1 when the zone is live, not silenced and before its detonation; writes centre and ground radius
+void glifo_silence(int zone, int from_x, int from_y);                // starts the ~24 frame silencing; (from_x, from_y) is where the wave comes from (it sets the side the green enters)
+
 void glifo_render_floor(uint16_t *buffer, int cam_x, int cam_y);   // runes and aim ring: under the actors
 
 #endif

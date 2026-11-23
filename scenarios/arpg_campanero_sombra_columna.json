@@ -1,0 +1,227 @@
+{
+ "name": "arpg_campanero_sombra_columna",
+ "description": "Heroe justo detras de la columna izquierda de la sala, en la linea jefe-columna: la sombra de la columna le protege de >=3 toques (hero_hits queda en 0).",
+ "suite": false,
+ "state": {
+  "elf": "../.ds-game-dev/build/out/dungeonds-arpg-campanero.elf",
+  "symbols": {
+   "camp": "g_campanero_dbg",
+   "gps": "g_player_state",
+   "stats": "g_enc_stats",
+   "pl": "s_player"
+  },
+  "default_symbol": "camp",
+  "fields": {
+   "toques": {
+    "offset": 0,
+    "type": "u16"
+   },
+   "tanidos": {
+    "offset": 2,
+    "type": "u16"
+   },
+   "hero_hits": {
+    "offset": 4,
+    "type": "u16"
+   },
+   "raised": {
+    "offset": 6,
+    "type": "u16"
+   },
+   "phase": {
+    "offset": 8,
+    "type": "u8"
+   },
+   "telegraph": {
+    "offset": 9,
+    "type": "u8"
+   },
+   "hp": {
+    "symbol": "gps",
+    "offset": 0,
+    "type": "s32"
+   },
+   "px": {
+    "symbol": "pl",
+    "offset": 0,
+    "type": "s32"
+   },
+   "py": {
+    "symbol": "pl",
+    "offset": 4,
+    "type": "s32"
+   },
+   "ring_frames": {
+    "offset": 12,
+    "type": "u16"
+   }
+  }
+ },
+ "steps": [
+  {
+   "frames": 90
+  },
+  {
+   "button_down": "UP",
+   "frames": 700
+  },
+  {
+   "button_up": "UP",
+   "frames": 420
+  },
+  {
+   "poke": [
+    {
+     "field": "px",
+     "value": 52480
+    },
+    {
+     "field": "py",
+     "value": 380672
+    },
+    {
+     "field": "hp",
+     "value": 190
+    }
+   ],
+   "frames": 20,
+   "state_capture": "ini",
+   "capture": "ini"
+  },
+  {
+   "poke": [
+    {
+     "field": "hp",
+     "value": 190
+    }
+   ],
+   "frames": 150,
+   "state_capture": "t0",
+   "capture": "t0"
+  },
+  {
+   "poke": [
+    {
+     "field": "hp",
+     "value": 190
+    }
+   ],
+   "frames": 150,
+   "state_capture": "t1",
+   "capture": "t1"
+  },
+  {
+   "poke": [
+    {
+     "field": "hp",
+     "value": 190
+    }
+   ],
+   "frames": 150,
+   "state_capture": "t2",
+   "capture": "t2"
+  },
+  {
+   "poke": [
+    {
+     "field": "hp",
+     "value": 190
+    }
+   ],
+   "frames": 150,
+   "state_capture": "t3",
+   "capture": "t3"
+  },
+  {
+   "poke": [
+    {
+     "field": "hp",
+     "value": 190
+    }
+   ],
+   "frames": 150,
+   "state_capture": "t4",
+   "capture": "t4"
+  },
+  {
+   "poke": [
+    {
+     "field": "hp",
+     "value": 190
+    }
+   ],
+   "frames": 150,
+   "state_capture": "t5",
+   "capture": "t5"
+  },
+  {
+   "poke": [
+    {
+     "field": "hp",
+     "value": 190
+    }
+   ],
+   "frames": 150,
+   "state_capture": "t6",
+   "capture": "t6"
+  },
+  {
+   "poke": [
+    {
+     "field": "hp",
+     "value": 190
+    }
+   ],
+   "frames": 150,
+   "state_capture": "t7",
+   "capture": "t7"
+  },
+  {
+   "poke": [
+    {
+     "field": "hp",
+     "value": 190
+    }
+   ],
+   "frames": 150,
+   "state_capture": "t8",
+   "capture": "t8"
+  },
+  {
+   "poke": [
+    {
+     "field": "hp",
+     "value": 190
+    }
+   ],
+   "frames": 150,
+   "state_capture": "t9",
+   "capture": "t9"
+  }
+ ],
+ "assertions": {
+  "state_changes": [
+   {
+    "from": "ini",
+    "to": "t9",
+    "field": "toques",
+    "min_delta": 3
+   },
+   {
+    "at": "t9",
+    "field": "hero_hits",
+    "equals": 0
+   },
+   {
+    "at": "t9",
+    "field": "py",
+    "equals": 380672
+   },
+   {
+    "at": "t9",
+    "field": "ring_frames",
+    "equals": 0
+   }
+  ]
+ }
+}
