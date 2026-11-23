@@ -32,6 +32,10 @@
 #ifndef ARPG_EXVOTO_TEST
 #define ARPG_EXVOTO_TEST 0
 #endif
+/* Variant "arpg-ojo": rooms stay empty; ojo_test.c keeps ONE awake Ojo del Tribunal (respawns after ~2 s) with columns to hide behind. */
+#ifndef ARPG_OJO_TEST
+#define ARPG_OJO_TEST 0
+#endif
 /* Variant "arpg-remates": rooms stay empty; remate_test.c keeps a row of frozen exvotos (one punch leaves them reeling) ahead of the hero. */
 #ifndef ARPG_REMATE_TEST
 #define ARPG_REMATE_TEST 0

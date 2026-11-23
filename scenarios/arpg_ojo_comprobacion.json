@@ -1,0 +1,283 @@
+{
+ "name": "arpg_ojo_comprobacion",
+ "description": "Variante arpg-ojo: a los ~3 s el heroe (256,1496) esta en el pie de la sala, el Ojo despierto (272,1421) al norte a 150 de suelo y una columna (pie 292..320 x 1458..1470) a su derecha; coordenadas leidas de g_ojo_test_dbg.",
+ "suite": false,
+ "evidence_only": true,
+ "state": {
+  "elf": "../.ds-game-dev/build/out/dungeonds-arpg-ojo.elf",
+  "symbols": {
+   "dbg": "g_ojo_test_dbg",
+   "pl": "s_player"
+  },
+  "default_symbol": "dbg",
+  "fields": {
+   "d0": {
+    "symbol": "dbg",
+    "offset": 0,
+    "type": "s32"
+   },
+   "d1": {
+    "symbol": "dbg",
+    "offset": 4,
+    "type": "s32"
+   },
+   "d2": {
+    "symbol": "dbg",
+    "offset": 8,
+    "type": "s32"
+   },
+   "d3": {
+    "symbol": "dbg",
+    "offset": 12,
+    "type": "s32"
+   },
+   "d4": {
+    "symbol": "dbg",
+    "offset": 16,
+    "type": "s32"
+   },
+   "d5": {
+    "symbol": "dbg",
+    "offset": 20,
+    "type": "s32"
+   },
+   "d6": {
+    "symbol": "dbg",
+    "offset": 24,
+    "type": "s32"
+   },
+   "d7": {
+    "symbol": "dbg",
+    "offset": 28,
+    "type": "s32"
+   },
+   "d8": {
+    "symbol": "dbg",
+    "offset": 32,
+    "type": "s32"
+   },
+   "d9": {
+    "symbol": "dbg",
+    "offset": 36,
+    "type": "s32"
+   },
+   "px": {
+    "symbol": "pl",
+    "offset": 0,
+    "type": "s32"
+   },
+   "py": {
+    "symbol": "pl",
+    "offset": 4,
+    "type": "s32"
+   },
+   "d10": {
+    "symbol": "dbg",
+    "offset": 40,
+    "type": "s32"
+   },
+   "d11": {
+    "symbol": "dbg",
+    "offset": 44,
+    "type": "s32"
+   },
+   "d12": {
+    "symbol": "dbg",
+    "offset": 48,
+    "type": "s32"
+   },
+   "d13": {
+    "symbol": "dbg",
+    "offset": 52,
+    "type": "s32"
+   },
+   "d14": {
+    "symbol": "dbg",
+    "offset": 56,
+    "type": "s32"
+   },
+   "d15": {
+    "symbol": "dbg",
+    "offset": 60,
+    "type": "s32"
+   },
+   "d16": {
+    "symbol": "dbg",
+    "offset": 64,
+    "type": "s32"
+   },
+   "d17": {
+    "symbol": "dbg",
+    "offset": 68,
+    "type": "s32"
+   },
+   "d18": {
+    "symbol": "dbg",
+    "offset": 72,
+    "type": "s32"
+   },
+   "d19": {
+    "symbol": "dbg",
+    "offset": 76,
+    "type": "s32"
+   },
+   "d20": {
+    "symbol": "dbg",
+    "offset": 80,
+    "type": "s32"
+   },
+   "d21": {
+    "symbol": "dbg",
+    "offset": 84,
+    "type": "s32"
+   },
+   "d22": {
+    "symbol": "dbg",
+    "offset": 88,
+    "type": "s32"
+   },
+   "d23": {
+    "symbol": "dbg",
+    "offset": 92,
+    "type": "s32"
+   },
+   "d24": {
+    "symbol": "dbg",
+    "offset": 96,
+    "type": "s32"
+   },
+   "d25": {
+    "symbol": "dbg",
+    "offset": 100,
+    "type": "s32"
+   },
+   "d26": {
+    "symbol": "dbg",
+    "offset": 104,
+    "type": "s32"
+   },
+   "d27": {
+    "symbol": "dbg",
+    "offset": 108,
+    "type": "s32"
+   },
+   "d28": {
+    "symbol": "dbg",
+    "offset": 112,
+    "type": "s32"
+   },
+   "d29": {
+    "symbol": "dbg",
+    "offset": 116,
+    "type": "s32"
+   },
+   "d30": {
+    "symbol": "dbg",
+    "offset": 120,
+    "type": "s32"
+   },
+   "d31": {
+    "symbol": "dbg",
+    "offset": 124,
+    "type": "s32"
+   },
+   "d32": {
+    "symbol": "dbg",
+    "offset": 128,
+    "type": "s32"
+   },
+   "d33": {
+    "symbol": "dbg",
+    "offset": 132,
+    "type": "s32"
+   },
+   "d34": {
+    "symbol": "dbg",
+    "offset": 136,
+    "type": "s32"
+   },
+   "d35": {
+    "symbol": "dbg",
+    "offset": 140,
+    "type": "s32"
+   },
+   "d36": {
+    "symbol": "dbg",
+    "offset": 144,
+    "type": "s32"
+   },
+   "d37": {
+    "symbol": "dbg",
+    "offset": 148,
+    "type": "s32"
+   },
+   "d38": {
+    "symbol": "dbg",
+    "offset": 152,
+    "type": "s32"
+   },
+   "d39": {
+    "symbol": "dbg",
+    "offset": 156,
+    "type": "s32"
+   },
+   "d40": {
+    "symbol": "dbg",
+    "offset": 160,
+    "type": "s32"
+   },
+   "d41": {
+    "symbol": "dbg",
+    "offset": 164,
+    "type": "s32"
+   },
+   "d42": {
+    "symbol": "dbg",
+    "offset": 168,
+    "type": "s32"
+   },
+   "d43": {
+    "symbol": "dbg",
+    "offset": 172,
+    "type": "s32"
+   },
+   "d44": {
+    "symbol": "dbg",
+    "offset": 176,
+    "type": "s32"
+   },
+   "d45": {
+    "symbol": "dbg",
+    "offset": 180,
+    "type": "s32"
+   },
+   "d46": {
+    "symbol": "dbg",
+    "offset": 184,
+    "type": "s32"
+   },
+   "d47": {
+    "symbol": "dbg",
+    "offset": 188,
+    "type": "s32"
+   }
+  }
+ },
+ "steps": [
+  {
+   "frames": 60,
+   "state_capture": "t1",
+   "capture": "t1"
+  },
+  {
+   "frames": 60,
+   "state_capture": "t2",
+   "capture": "t2"
+  },
+  {
+   "frames": 70,
+   "state_capture": "t3",
+   "capture": "t3"
+  }
+ ]
+}
