@@ -70,6 +70,13 @@ static void read_at(uint32_t off, void *dst, uint32_t n) {
     fread(dst, 1, n, s_bin_f);
 }
 
+// Capa B (restos sueltos) de un fotograma: los tipos de una sola capa (Super Monja, Parroco) la dejan con bounds vacios,
+// pero su tabla de offsets avanza igualmente por el tamano del fotograma siguiente. Leerla era leer por duplicado el
+// fotograma siguiente (el doble de bytes de NitroFS por fotograma): si no se dibuja, no se lee.
+static int layer_b_empty(int f) { return s_db[f * 4 + 2] == 0 || s_db[f * 4 + 3] == 0; }
+static uint32_t layer_b_pix(int f) { return layer_b_empty(f) ? 0 : s_dp[f + 1] - s_dp[f]; }
+static uint32_t layer_b_runs(int f) { return layer_b_empty(f) ? 0 : s_dr[f + 1] - s_dr[f]; }
+
 static int remate_load_bin(int kind, int dir) {
     if (kind < 0 || kind >= REMATE_NUM_KINDS) return 0;
     if (s_loaded_kind == kind && s_loaded_dir == dir && s_bin_f) return 1;
@@ -94,8 +101,8 @@ static int remate_load_bin(int kind, int dir) {
     s_dr = (const uint32_t *)p;
     // Cada fotograma tiene que caber en los buffers estaticos (lo garantiza el generador).
     for (uint32_t i = 0; i < fr; i++) {
-        if ((s_fp[i + 1] - s_fp[i] + s_dp[i + 1] - s_dp[i]) * 2 > sizeof(s_pix) ||
-            (s_fr[i + 1] - s_fr[i] + s_dr[i + 1] - s_dr[i]) * 2 > sizeof(s_runs)) {
+        if ((s_fp[i + 1] - s_fp[i] + layer_b_pix(i)) * 2 > sizeof(s_pix) ||
+            (s_fr[i + 1] - s_fr[i] + layer_b_runs(i)) * 2 > sizeof(s_runs)) {
             fclose(f);
             return 0;
         }
@@ -133,9 +140,9 @@ static void remate_prepare_frame(int f) {
         run_b = 0;
     } else {
         pix_a = s_fp[f + 1] - s_fp[f];
-        pix_b = s_dp[f + 1] - s_dp[f];
+        pix_b = layer_b_pix(f);
         run_a = s_fr[f + 1] - s_fr[f];
-        run_b = s_dr[f + 1] - s_dr[f];
+        run_b = layer_b_runs(f);
     }
     read_at(s_payload + s_fp[f] * 2, s_pix, pix_a * 2);
     read_at(s_payload + s_dp[f] * 2, s_pix + pix_a * 2, pix_b * 2);
