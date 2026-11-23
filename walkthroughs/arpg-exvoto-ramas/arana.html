@@ -1,0 +1,34 @@
+<title>Súper Monja araña</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Source+Sans+3:wght@400;600;700&display=swap">
+<style>
+/* Layout: una columna para el móvil; GIFs a todo el ancho */
+:root{--bg:#f1ede5;--fg:#2a2420;--muted:#6d625a;--card:#fbf8f2;--wax:#8f6c32;
+ --display:"Cormorant Garamond",Georgia,serif;--body:"Source Sans 3",system-ui,sans-serif}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#1b1715;--fg:#ece4d8;--muted:#a8998b;--card:#24201d;--wax:#d4b37a;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#1b1715;--fg:#ece4d8;--muted:#a8998b;--card:#24201d;--wax:#d4b37a;color-scheme:dark}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:16px;line-height:1.55;
+ padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:24px 48px}
+main{max-width:900px;margin:0 auto;display:flex;flex-direction:column;gap:24px}
+h1,h2{font-family:var(--display);margin:0;line-height:1.15;text-wrap:balance}
+h1{font-size:2.1rem} h2{font-size:1.5rem}
+p{margin:0} .lead{color:var(--muted)}
+.eyebrow{font-size:.75rem;letter-spacing:.08em;text-transform:uppercase;color:var(--wax);font-weight:700}
+.shot{display:flex;flex-direction:column;gap:8px}
+.shot img{width:100%;height:auto;image-rendering:pixelated;border-radius:4px;display:block}
+.ask{background:var(--card);border:2px solid var(--wax);border-radius:6px;padding:16px;display:flex;flex-direction:column;gap:6px}
+</style>
+<main>
+<header style="display:flex;flex-direction:column;gap:8px">
+ <span class="eyebrow">ARPG · Súper Monja · andar</span>
+ <h1>Súper Monja araña</h1>
+ <p class="lead">En pino puente, como tu foto: vientre al cielo y la cabeza colgando entre los brazos. Anda en ráfagas rápidas y se para en seco. En cada GIF: a la izquierda el andar roto actual, a la derecha el puente. Ampliadas 4 veces, al ritmo del juego.</p>
+</header>
+<div class="shot"><h2>De frente</h2><img src="arana/arana_andar_S.gif" alt="Andar actual y araña de frente"></div>
+<div class="shot"><h2>En diagonal</h2><img src="arana/arana_andar_SE.gif" alt="Andar actual y araña en diagonal"></div>
+<div class="shot"><h2>De lado</h2><img src="arana/arana_andar_E.gif" alt="Andar actual y araña de lado"></div>
+<div class="shot"><h2>Todos los fotogramas</h2><p class="lead">Una fila por dirección.</p><img src="arana/arana_hoja.png" alt="Ocho direcciones por ocho fotogramas"></div>
+<div class="shot"><h2>La pose, en grande, junto a tu foto</h2><p class="lead">Render de Blender: arriba con la cabeza en rojo, abajo normal. Perfil, frente, desde arriba y en diagonal, con zooms a manos y pies; la línea roja es el suelo.</p><img src="arana/puente_pose_4.png" alt="Pino puente comparado con la foto de referencia"></div>
+<p class="lead">En grande la silueta es la de la foto. Piernas y brazos abiertos como una araña, palmas y plantas apoyadas planas, dedos estirados y la cabeza colgando recta. A tamaño DS es un arco oscuro y ancho; de frente se ve la cara pálida invertida.</p>
+<div class="ask"><span class="eyebrow">Una pregunta</span><p><b>¿La metemos en el juego así, o la retocamos antes?</b></p></div>
+</main>

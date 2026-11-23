@@ -39,6 +39,12 @@ int glifo_pray_frame(void);   // clip frame being drawn
 // Once per simulated frame: advances the prayer (the seal appears when the hands close), runs the cycle and the auras.
 void glifo_update(Enemy *enemies, int max_enemies);
 
+// Super Monja dodge (DESIGN-ARPG s5): non-zero when a glifo that has not detonated yet covers (or nearly covers) the
+// ground point (x, y). *ux / *uy: unit direction (8.8, ground metric, y already halved) leading out of it,
+// from the centre outwards with a sideways swerve (`side` = +1 / -1).
+// Returns 2 (no direction) during the first ARPG_SMONJA_GLIFO_REACT frames of the cycle: she stands still.
+int glifo_flee_dir(int x, int y, int margin, int side, int *ux, int *uy);
+
 // Non-zero when a world ground point lies inside any live glifo.
 int glifo_point_in_zone(int x, int y);
 

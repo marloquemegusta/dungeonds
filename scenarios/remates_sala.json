@@ -1,0 +1,759 @@
+{
+ "name": "remates_sala",
+ "suite": false,
+ "description": "Variante arpg-remates: fila de Exvotos quietos (Monja de cera, Monaguillo, Bebe, Parroco, Super Monja) y, al norte, una Super Monja con Monja de cera y Monaguillo poseidos (arana). Caso A: un punetazo deja tambaleante a la Monja de cera de la fila, L la remata y reaparece a los ~2 s. Caso B: un punetazo al Monaguillo poseido lo levanta y lo deja tambaleante de pie, L lo remata, reaparece poseido.",
+ "state": {
+  "elf": "../.ds-game-dev/build/out/dungeonds-arpg-remates.elf",
+  "symbols": {
+   "en": "g_enemies",
+   "pl": "s_player"
+  },
+  "default_symbol": "en",
+  "fields": {
+   "px": {
+    "symbol": "pl",
+    "offset": 0,
+    "type": "s32"
+   },
+   "py": {
+    "symbol": "pl",
+    "offset": 4,
+    "type": "s32"
+   },
+   "e0_x": {
+    "symbol": "en",
+    "offset": 0,
+    "type": "s32"
+   },
+   "e0_y": {
+    "symbol": "en",
+    "offset": 4,
+    "type": "s32"
+   },
+   "e0_char": {
+    "symbol": "en",
+    "offset": 20,
+    "type": "s32"
+   },
+   "e0_act": {
+    "symbol": "en",
+    "offset": 24,
+    "type": "s32"
+   },
+   "e0_hp": {
+    "symbol": "en",
+    "offset": 28,
+    "type": "s32"
+   },
+   "e0_ty": {
+    "symbol": "en",
+    "offset": 40,
+    "type": "u8"
+   },
+   "e0_st": {
+    "symbol": "en",
+    "offset": 41,
+    "type": "u8"
+   },
+   "e1_x": {
+    "symbol": "en",
+    "offset": 124,
+    "type": "s32"
+   },
+   "e1_y": {
+    "symbol": "en",
+    "offset": 128,
+    "type": "s32"
+   },
+   "e1_char": {
+    "symbol": "en",
+    "offset": 144,
+    "type": "s32"
+   },
+   "e1_act": {
+    "symbol": "en",
+    "offset": 148,
+    "type": "s32"
+   },
+   "e1_hp": {
+    "symbol": "en",
+    "offset": 152,
+    "type": "s32"
+   },
+   "e1_ty": {
+    "symbol": "en",
+    "offset": 164,
+    "type": "u8"
+   },
+   "e1_st": {
+    "symbol": "en",
+    "offset": 165,
+    "type": "u8"
+   },
+   "e2_x": {
+    "symbol": "en",
+    "offset": 248,
+    "type": "s32"
+   },
+   "e2_y": {
+    "symbol": "en",
+    "offset": 252,
+    "type": "s32"
+   },
+   "e2_char": {
+    "symbol": "en",
+    "offset": 268,
+    "type": "s32"
+   },
+   "e2_act": {
+    "symbol": "en",
+    "offset": 272,
+    "type": "s32"
+   },
+   "e2_hp": {
+    "symbol": "en",
+    "offset": 276,
+    "type": "s32"
+   },
+   "e2_ty": {
+    "symbol": "en",
+    "offset": 288,
+    "type": "u8"
+   },
+   "e2_st": {
+    "symbol": "en",
+    "offset": 289,
+    "type": "u8"
+   },
+   "e3_x": {
+    "symbol": "en",
+    "offset": 372,
+    "type": "s32"
+   },
+   "e3_y": {
+    "symbol": "en",
+    "offset": 376,
+    "type": "s32"
+   },
+   "e3_char": {
+    "symbol": "en",
+    "offset": 392,
+    "type": "s32"
+   },
+   "e3_act": {
+    "symbol": "en",
+    "offset": 396,
+    "type": "s32"
+   },
+   "e3_hp": {
+    "symbol": "en",
+    "offset": 400,
+    "type": "s32"
+   },
+   "e3_ty": {
+    "symbol": "en",
+    "offset": 412,
+    "type": "u8"
+   },
+   "e3_st": {
+    "symbol": "en",
+    "offset": 413,
+    "type": "u8"
+   },
+   "e4_x": {
+    "symbol": "en",
+    "offset": 496,
+    "type": "s32"
+   },
+   "e4_y": {
+    "symbol": "en",
+    "offset": 500,
+    "type": "s32"
+   },
+   "e4_char": {
+    "symbol": "en",
+    "offset": 516,
+    "type": "s32"
+   },
+   "e4_act": {
+    "symbol": "en",
+    "offset": 520,
+    "type": "s32"
+   },
+   "e4_hp": {
+    "symbol": "en",
+    "offset": 524,
+    "type": "s32"
+   },
+   "e4_ty": {
+    "symbol": "en",
+    "offset": 536,
+    "type": "u8"
+   },
+   "e4_st": {
+    "symbol": "en",
+    "offset": 537,
+    "type": "u8"
+   },
+   "e5_x": {
+    "symbol": "en",
+    "offset": 620,
+    "type": "s32"
+   },
+   "e5_y": {
+    "symbol": "en",
+    "offset": 624,
+    "type": "s32"
+   },
+   "e5_char": {
+    "symbol": "en",
+    "offset": 640,
+    "type": "s32"
+   },
+   "e5_act": {
+    "symbol": "en",
+    "offset": 644,
+    "type": "s32"
+   },
+   "e5_hp": {
+    "symbol": "en",
+    "offset": 648,
+    "type": "s32"
+   },
+   "e5_ty": {
+    "symbol": "en",
+    "offset": 660,
+    "type": "u8"
+   },
+   "e5_st": {
+    "symbol": "en",
+    "offset": 661,
+    "type": "u8"
+   },
+   "e6_x": {
+    "symbol": "en",
+    "offset": 744,
+    "type": "s32"
+   },
+   "e6_y": {
+    "symbol": "en",
+    "offset": 748,
+    "type": "s32"
+   },
+   "e6_char": {
+    "symbol": "en",
+    "offset": 764,
+    "type": "s32"
+   },
+   "e6_act": {
+    "symbol": "en",
+    "offset": 768,
+    "type": "s32"
+   },
+   "e6_hp": {
+    "symbol": "en",
+    "offset": 772,
+    "type": "s32"
+   },
+   "e6_ty": {
+    "symbol": "en",
+    "offset": 784,
+    "type": "u8"
+   },
+   "e6_st": {
+    "symbol": "en",
+    "offset": 785,
+    "type": "u8"
+   },
+   "e7_x": {
+    "symbol": "en",
+    "offset": 868,
+    "type": "s32"
+   },
+   "e7_y": {
+    "symbol": "en",
+    "offset": 872,
+    "type": "s32"
+   },
+   "e7_char": {
+    "symbol": "en",
+    "offset": 888,
+    "type": "s32"
+   },
+   "e7_act": {
+    "symbol": "en",
+    "offset": 892,
+    "type": "s32"
+   },
+   "e7_hp": {
+    "symbol": "en",
+    "offset": 896,
+    "type": "s32"
+   },
+   "e7_ty": {
+    "symbol": "en",
+    "offset": 908,
+    "type": "u8"
+   },
+   "e7_st": {
+    "symbol": "en",
+    "offset": 909,
+    "type": "u8"
+   }
+  }
+ },
+ "steps": [
+  {
+   "frames": 130,
+   "capture": "01_fila",
+   "state_capture": "ready"
+  },
+  {
+   "poke": [
+    {
+     "field": "px",
+     "value": 37888
+    },
+    {
+     "field": "py",
+     "value": 443392
+    }
+   ],
+   "frames": 1
+  },
+  {
+   "button_down": "RIGHT",
+   "frames": 2
+  },
+  {
+   "button_up": "RIGHT",
+   "frames": 4,
+   "capture": "02_junto_monja_cera",
+   "state_capture": "a_antes"
+  },
+  {
+   "button_down": "L",
+   "frames": 2
+  },
+  {
+   "button_up": "L",
+   "frames": 24,
+   "capture": "03_punetazo_monja_cera",
+   "state_capture": "a_tambalea"
+  },
+  {
+   "button_down": "L",
+   "frames": 2
+  },
+  {
+   "button_up": "L",
+   "frames": 40,
+   "capture": "04_remate_monja_cera",
+   "state_capture": "a_remate"
+  },
+  {
+   "frames": 90,
+   "capture": "05_remate_fin",
+   "state_capture": "a_muerto"
+  },
+  {
+   "frames": 120,
+   "capture": "06_reaparece",
+   "state_capture": "a_reaparece"
+  },
+  {
+   "poke": [
+    {
+     "field": "px",
+     "value": 79360
+    },
+    {
+     "field": "py",
+     "value": 413696
+    }
+   ],
+   "frames": 1
+  },
+  {
+   "button_down": "LEFT",
+   "frames": 2
+  },
+  {
+   "button_up": "LEFT",
+   "frames": 3,
+   "capture": "g000",
+   "state_capture": "b_antes"
+  },
+  {
+   "button_down": "L",
+   "frames": 2,
+   "capture": "g001",
+   "state_capture": "b_g001"
+  },
+  {
+   "button_up": "L",
+   "frames": 1,
+   "capture": "g002",
+   "state_capture": "b_g002"
+  },
+  {
+   "frames": 2,
+   "capture": "g003",
+   "state_capture": "b_g003"
+  },
+  {
+   "frames": 2,
+   "capture": "g004",
+   "state_capture": "b_g004"
+  },
+  {
+   "frames": 2,
+   "capture": "g005",
+   "state_capture": "b_g005"
+  },
+  {
+   "frames": 2,
+   "capture": "g006",
+   "state_capture": "b_g006"
+  },
+  {
+   "frames": 2,
+   "capture": "g007",
+   "state_capture": "b_g007"
+  },
+  {
+   "frames": 2,
+   "capture": "g008",
+   "state_capture": "b_g008"
+  },
+  {
+   "frames": 2,
+   "capture": "g009",
+   "state_capture": "b_g009"
+  },
+  {
+   "frames": 2,
+   "capture": "g010",
+   "state_capture": "b_g010"
+  },
+  {
+   "frames": 2,
+   "capture": "g011",
+   "state_capture": "b_g011"
+  },
+  {
+   "frames": 2,
+   "capture": "g012",
+   "state_capture": "b_g012"
+  },
+  {
+   "frames": 2,
+   "capture": "g013",
+   "state_capture": "b_g013"
+  },
+  {
+   "frames": 3,
+   "capture": "p_tambalea",
+   "state_capture": "b_tambalea"
+  },
+  {
+   "button_down": "L",
+   "frames": 2,
+   "capture": "r000"
+  },
+  {
+   "button_up": "L",
+   "frames": 2,
+   "capture": "r001"
+  },
+  {
+   "frames": 3,
+   "capture": "r002",
+   "state_capture": "b_r002"
+  },
+  {
+   "frames": 3,
+   "capture": "r003",
+   "state_capture": "b_r003"
+  },
+  {
+   "frames": 3,
+   "capture": "r004",
+   "state_capture": "b_r004"
+  },
+  {
+   "frames": 3,
+   "capture": "r005",
+   "state_capture": "b_r005"
+  },
+  {
+   "frames": 3,
+   "capture": "r006",
+   "state_capture": "b_r006"
+  },
+  {
+   "frames": 3,
+   "capture": "r007",
+   "state_capture": "b_r007"
+  },
+  {
+   "frames": 3,
+   "capture": "r008",
+   "state_capture": "b_r008"
+  },
+  {
+   "frames": 3,
+   "capture": "r009",
+   "state_capture": "b_r009"
+  },
+  {
+   "frames": 3,
+   "capture": "r010",
+   "state_capture": "b_r010"
+  },
+  {
+   "frames": 3,
+   "capture": "r011",
+   "state_capture": "b_r011"
+  },
+  {
+   "frames": 3,
+   "capture": "r012",
+   "state_capture": "b_r012"
+  },
+  {
+   "frames": 3,
+   "capture": "r013",
+   "state_capture": "b_r013"
+  },
+  {
+   "frames": 3,
+   "capture": "r014",
+   "state_capture": "b_r014"
+  },
+  {
+   "frames": 3,
+   "capture": "r015",
+   "state_capture": "b_r015"
+  },
+  {
+   "frames": 3,
+   "capture": "r016",
+   "state_capture": "b_r016"
+  },
+  {
+   "frames": 3,
+   "capture": "r017",
+   "state_capture": "b_r017"
+  },
+  {
+   "frames": 3,
+   "capture": "r018",
+   "state_capture": "b_r018"
+  },
+  {
+   "frames": 3,
+   "capture": "r019",
+   "state_capture": "b_r019"
+  },
+  {
+   "frames": 3,
+   "capture": "r020",
+   "state_capture": "b_r020"
+  },
+  {
+   "frames": 3,
+   "capture": "r021",
+   "state_capture": "b_r021"
+  },
+  {
+   "frames": 3,
+   "capture": "r022",
+   "state_capture": "b_r022"
+  },
+  {
+   "frames": 3,
+   "capture": "r023",
+   "state_capture": "b_r023"
+  },
+  {
+   "frames": 3,
+   "capture": "r024",
+   "state_capture": "b_r024"
+  },
+  {
+   "frames": 3,
+   "capture": "r025",
+   "state_capture": "b_r025"
+  },
+  {
+   "frames": 3,
+   "capture": "r026",
+   "state_capture": "b_r026"
+  },
+  {
+   "frames": 3,
+   "capture": "r027",
+   "state_capture": "b_r027"
+  },
+  {
+   "frames": 3,
+   "capture": "r028",
+   "state_capture": "b_r028"
+  },
+  {
+   "frames": 3,
+   "capture": "r029",
+   "state_capture": "b_r029"
+  },
+  {
+   "frames": 3,
+   "capture": "r030",
+   "state_capture": "b_r030"
+  },
+  {
+   "frames": 3,
+   "capture": "r031",
+   "state_capture": "b_r031"
+  },
+  {
+   "frames": 3,
+   "capture": "r032",
+   "state_capture": "b_r032"
+  },
+  {
+   "frames": 3,
+   "capture": "r033",
+   "state_capture": "b_r033"
+  },
+  {
+   "frames": 3,
+   "capture": "r034",
+   "state_capture": "b_r034"
+  },
+  {
+   "frames": 3,
+   "capture": "r035",
+   "state_capture": "b_r035"
+  },
+  {
+   "frames": 3,
+   "capture": "r036",
+   "state_capture": "b_r036"
+  },
+  {
+   "frames": 3,
+   "capture": "r037",
+   "state_capture": "b_r037"
+  },
+  {
+   "frames": 3,
+   "capture": "r038",
+   "state_capture": "b_r038"
+  },
+  {
+   "frames": 3,
+   "capture": "r039",
+   "state_capture": "b_r039"
+  },
+  {
+   "frames": 3,
+   "capture": "r040",
+   "state_capture": "b_r040"
+  },
+  {
+   "frames": 3,
+   "capture": "r041",
+   "state_capture": "b_r041"
+  },
+  {
+   "frames": 3,
+   "capture": "r042",
+   "state_capture": "b_r042"
+  },
+  {
+   "frames": 3,
+   "capture": "r043",
+   "state_capture": "b_r043"
+  },
+  {
+   "frames": 3,
+   "capture": "r044",
+   "state_capture": "b_r044"
+  },
+  {
+   "frames": 60,
+   "capture": "p_fin",
+   "state_capture": "b_muerto"
+  },
+  {
+   "frames": 120,
+   "capture": "p_reaparece",
+   "state_capture": "b_reaparece"
+  }
+ ],
+ "assertions": {
+  "state_changes": [
+   {
+    "at": "a_antes",
+    "field": "e0_st",
+    "equals": 0
+   },
+   {
+    "at": "a_tambalea",
+    "field": "e0_st",
+    "equals": 18
+   },
+   {
+    "at": "a_tambalea",
+    "field": "e0_hp",
+    "equals": 51
+   },
+   {
+    "at": "a_muerto",
+    "field": "e0_act",
+    "equals": 0
+   },
+   {
+    "at": "a_reaparece",
+    "field": "e0_act",
+    "equals": 1
+   },
+   {
+    "at": "a_reaparece",
+    "field": "e0_hp",
+    "equals": 101
+   },
+   {
+    "at": "b_antes",
+    "field": "e7_char",
+    "equals": 18
+   },
+   {
+    "at": "b_tambalea",
+    "field": "e7_char",
+    "equals": 8
+   },
+   {
+    "at": "b_tambalea",
+    "field": "e7_st",
+    "equals": 18
+   },
+   {
+    "at": "b_muerto",
+    "field": "e7_act",
+    "equals": 0
+   },
+   {
+    "at": "b_reaparece",
+    "field": "e7_act",
+    "equals": 1
+   },
+   {
+    "at": "b_reaparece",
+    "field": "e7_char",
+    "equals": 18
+   }
+  ]
+ }
+}
