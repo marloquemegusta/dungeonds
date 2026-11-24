@@ -1,0 +1,116 @@
+{
+  "name": "campanero_tanido",
+  "model": "campanero_tanido.fbx",
+  "animation": "campanero_tanido (0.33s)",
+  "directions": [
+    "S",
+    "SW",
+    "W",
+    "NW",
+    "N",
+    "NE",
+    "E",
+    "SE"
+  ],
+  "dirsRendered": [
+    "S",
+    "SW",
+    "N",
+    "SE"
+  ],
+  "framesPerDirection": 8,
+  "frameSize": "160x160",
+  "spritesheet": null,
+  "anchor": [
+    80,
+    153
+  ],
+  "dirGroundAnchors": [
+    153,
+    153,
+    153,
+    153,
+    153,
+    153,
+    153,
+    153
+  ],
+  "dirBounds": [
+    [
+      31,
+      16,
+      80,
+      132
+    ],
+    [
+      21,
+      17,
+      82,
+      130
+    ],
+    [
+      0,
+      0,
+      160,
+      160
+    ],
+    [
+      0,
+      0,
+      160,
+      160
+    ],
+    [
+      49,
+      11,
+      80,
+      127
+    ],
+    [
+      0,
+      0,
+      160,
+      160
+    ],
+    [
+      0,
+      0,
+      160,
+      160
+    ],
+    [
+      37,
+      14,
+      85,
+      137
+    ]
+  ],
+  "stride3dMeters": 0.613,
+  "strideRatio": 0.276,
+  "ticksPerFrame": 12,
+  "stridePixels": 44.12,
+  "speedFixed8_8": 106,
+  "inPlace": true,
+  "rigScale": 1,
+  "cameraElevationDegrees": 30,
+  "contrast": 1,
+  "saturation": 1,
+  "neckPitchDegrees": -35,
+  "displace": 0,
+  "brightness": 1,
+  "webglShadowQuality": 16,
+  "normalStrength": 0.5,
+  "shadowSoftness": 2,
+  "supersample": 4,
+  "legibility": "c2",
+  "legibilityPivot": 0.2754290196078431,
+  "boneShader": false,
+  "renderEngine": "Three.js WebGL (browser)",
+  "lightPreset": "neutral",
+  "outlineMode": "none",
+  "fitZoom": 0.9,
+  "measuredExtent": 2.711708681727785,
+  "fitExtent": 1.872183561426501,
+  "normScale": 0.018199056080475513,
+  "toneMapping": "neutral"
+}

@@ -88,9 +88,26 @@ Dos montajes del mismo vídeo para publicarlos como A/B (mismo guion, audio y pl
 5. **Calendario:** mañana toca el 06 Inés, también monja de cera; para no repetir personaje dos días seguidos, adelantar el Campanero.
 6. `DESIGN.md`, `TECHNICAL.md`, `LORE.md` y `assets/MANIFEST.md` no cambian; el generador no se toca.
 
+## 11 El Campanero de Ánimas (2026-11-24)
+
+Dos montajes del mismo vídeo (CÓDICE · VI), sin publicar (el usuario los sube a mano):
+
+- **Clásico:** `assets/videos/lore01_11_el_campanero_de_animas.mp4`. Tira: [`lore01_11_el_campanero_de_animas_tira.png`](assets/lore01_11_el_campanero_de_animas_tira.png).
+- **Remotion:** `assets/videos/lore01_11_el_campanero_de_animas_remotion.mp4`, composición `Lore11` en `C:\codexlocal\devlog` con la plantilla `src/theme` (GameBox).
+
+![Plano de la campana](assets/lore01_11_campana_plano.png)
+
+![Hoja del tema visual](assets/lore01_11_theme_sheet.png)
+
+1. **Lore:** `LORE.md` incorpora al Campanero de Ánimas (Simón Requena), vínculos, cronología y §9. Voz de Simón con la toma elegida (`simon_muestra3.mp3` recortada a `simon_cita.mp3`) y tañido en `assets/videos/sfx/campana_tanido.wav`.
+2. **Planos:** el Campanero (idle, walk, toque; `campanero_tanido` se vio mal en primer plano por la cabeza plegada hacia atrás) y la campana como plano de objeto con su lengua original (`campana_lengua`, `tools/props/build_campana_lengua.py`). La vela delante del Campanero se quitó: nada de PNG pegado.
+3. **Remotion:** el cierre no lleva subtítulo bajo PRÓXIMAMENTE (lo tapaba). `Lore05` sigue con ese solape (pendiente).
+4. **No verificado:** nadie ha escuchado el audio final.
+5. `DESIGN.md` y `TECHNICAL.md` no cambian; `LORE.md`, `assets/MANIFEST.md`, `STATUS.md` y la skill `codice-lore-video` sí.
+
 ## Pendiente
 
 - Vídeo 06: guion reescrito con arranque fuerte y puesta en escena; probado sin voz, sin generar con voz. El MP4 antiguo de ese número no se versiona.
 - Capa de props en el generador (velas, columnas que desfilan) para el día 1 del calendario.
-- Lore del Campanero y destino del padre Anselmo (`LORE.md` §9).
+- Destino del padre Anselmo (`LORE.md` §9).
 - Voces con efecto de radio (Remedios): sustituir por recortes de su muestra si molestan.

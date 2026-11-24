@@ -34,7 +34,7 @@ Orden de los hechos, de más antiguo a más reciente.
 
 1. **La sequía del cielo.** Valdenoche es un pueblo pobre al pie de una colina. Llevan años de hambre y malas cosechas y la gente siente que Dios ha dejado de responder. *Qué pasó exactamente, o si fue algo más que hambre: [ABIERTO].*
 2. **La Catedral.** La Iglesia levanta una catedral en lo alto de la colina para que el cielo vuelva a responder. Con ella llega el **Tribunal de la Luz**, la inquisición local, que se instala en la sacristía (la Sacristía de los Faroles).
-3. **Los años del Tribunal.** El Tribunal impone su orden en Valdenoche. Condena a quien se sale del dogma: a Remedios, a Jimena y Aldonza, a Lope, a Sor Leonor, a los monaguillos. La condena habitual es la **penitencia perpetua**: entrar en la Catedral a rezar sin salir nunca. En esta época Elías, capellán, bendice en secreto a las parejas que el Tribunal persigue.
+3. **Los años del Tribunal.** El Tribunal impone su orden en Valdenoche. Condena a quien se sale del dogma: a Remedios, a Jimena y Aldonza, a Lope, a Sor Leonor, a los monaguillos, a Simón el campanero. La condena habitual es la **penitencia perpetua**: entrar en la Catedral a rezar sin salir nunca. En esta época Elías, capellán, bendice en secreto a las parejas que el Tribunal persigue.
 4. **La nave se alarga.** Un día el altar empieza a alejarse: la nave crece sin fin hacia dentro y quien está dentro ya no puede morir del todo. Los penitentes que el Tribunal había metido allí empiezan a transformarse según su condena (ver §5). La Iglesia lo declara un milagro y una prueba: quien llegue al Altar devolverá la voz al cielo. *Por qué ocurre: [ABIERTO].*
 5. **La Marcha.** La Iglesia proclama una cruzada para llegar al Altar. Se forma la **Columna de Lázaro** con los hombres de Valdenoche, al mando del capitán Íñigo Albar, con Elías como capellán y con inquisidores del Tribunal acompañándola. Entran en la Catedral armados.
 6. **La guerra dentro.** Entre la Columna y el Altar están los penitentes transformados: los vecinos condenados de Valdenoche. La Iglesia los declara herejes y la Columna los combate. **La cruzada es una guerra de la Iglesia contra su propio pueblo condenado.**
@@ -100,6 +100,12 @@ Se arrancaron los ojos porque la mirada humana era propensa al perdón, y alzaro
 Juró ante el altar que el estandarte de la Columna jamás tocaría el suelo. Amaba a su alférez, Lope de Ayala. Cuando el Tribunal vino a por Lope, años antes de la Marcha, Íñigo, capitán con peso suficiente para exigir una excepción o plantar cara al Tribunal declarando que amaba a Lope, no se atrevió y calló para conservar el mando. Lope ardió en la plaza de Valdenoche; ese día el estandarte tocó el suelo por única vez, y Íñigo juró que no volvería a caer. Desde la Quiebra cose a la tela las mortajas de sus caídos para que nadie se quede atrás, y recoge a los monaguillos que nadie quiso. La mortaja de Lope la lleva junto al asta, donde aprieta la mano. La de Martín está vacía.
 *Ficha oficial:* «Mientras el asta siga en pie, nadie se retira.»
 
+### El Campanero de Ánimas — Simón Requena (`CÓDICE · VI`)
+Campanero de Valdenoche. Cuando moría alguien en el pueblo, tocaba la campana para despedirle y que los vecinos rezaran por él. El Tribunal lo prohibió para los condenados: a un hereje no se le despide. El día que Lope ardió en la plaza, mientras Íñigo callaba, Simón tocó la campana por él, y desde entonces la tocó por cada condenado del Tribunal. Gaspar mandó quitarle el badajo a la campana. Simón rezó para que los muertos pudieran oírle, y le fue concedido con su precio: se arrancó la lengua y la colgó como badajo. El Tribunal le cosió la boca y le condenó a penitencia perpetua.
+- **Hoy.** Arrastra nave arriba la campana, rajada de tanto tocar. Cuando la toca, los muertos le oyen y acuden. Bajo su campana no se sostiene ninguna otra plegaria: allí solo se reza por los muertos (en el juego, su tañido apaga los glifos del héroe).
+- **Lenguaje:** en los textos para el público no se dice «tocar a muerto» ni «doblar» (jerga de iglesia que no se entiende); se explica una vez («tocaba la campana para despedirle») y después «tocó la campana por Lope».
+*Ficha oficial:* «Le quitaron el badajo. Le quedaba la lengua.»
+
 ### Enlaces entre historias
 
 | Quién | Con quién | Qué les une |
@@ -114,6 +120,8 @@ Juró ante el altar que el estandarte de la Columna jamás tocaría el suelo. Am
 | Gaspar | Leonor | La condenó por calumnia y la exorcizó. |
 | Gaspar | Todos los condenados | Firmó las sentencias. |
 | Íñigo | Lope, monaguillos | Calló ante uno; recoge a los otros. |
+| Simón | Lope, Íñigo | Tocó la campana por Lope mientras Íñigo callaba. |
+| Gaspar | Simón | Le quitó el badajo a la campana. |
 | Elías | Parejas condenadas | Las bendecía en secreto. |
 | Tadeo | Bartolomé | Clavó su cruz. |
 
@@ -130,4 +138,4 @@ Se cierra aquí antes de usarlo en un vídeo; mientras tanto, los vídeos pueden
 | Destino de Anselmo y de Gaspar | Abierto; candidatos a minijefe o jefe | `DESIGN.md` §6.9, 0.6 |
 | Si se puede salir hoy de la Catedral | Abierto | — |
 | Tecnología máxima (artillería, gas) | Abierto | Enemigos futuros |
-| Enemigos nuevos (monaguillo, campanero) | Monaguillo: sin ficha propia; es el Exvoto monaguillo que invoca el Abanderado (`DESIGN.md`, Abanderado y §6.9 bestiario). Campanero: jefe del acto II con dirección inicial en `DESIGN.md` §6.13.2; sin ficha de lore | Sesión de diseño de enemigos |
+| Enemigos nuevos (monaguillo, campanero) | Monaguillo: sin ficha propia; es el Exvoto monaguillo que invoca el Abanderado (`DESIGN.md`, Abanderado y §6.9 bestiario). Campanero: ficha cerrada en §8 (Simón Requena, 2026-11-24) | Sesión de diseño de enemigos |

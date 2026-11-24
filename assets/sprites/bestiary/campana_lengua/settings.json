@@ -1,0 +1,28 @@
+{
+  "name": "campana_lengua",
+  "model": "campana (Tripo) + lengua en malla",
+  "animation": "tanido (10 fotogramas)",
+  "directions": [
+    "S"
+  ],
+  "dirsRendered": [
+    "S"
+  ],
+  "framesPerDirection": 10,
+  "frameSize": "320x320",
+  "spritesheet": null,
+  "anchor": [
+    160,
+    160
+  ],
+  "ticksPerFrame": 8,
+  "inPlace": true,
+  "cameraElevationDegrees": 30,
+  "contrast": 1.2,
+  "saturation": 1.0,
+  "legibility": "c2",
+  "renderEngine": "Lab (node) via build_campana_lengua.py",
+  "tiltDegrees": 55.0,
+  "yawDegrees": 130.0,
+  "fitPx": 314
+}

@@ -52,6 +52,7 @@ Escritos contra `LORE.md`. Este archivo es la entrada directa del generador de v
 - Gaspar: rC1yBQViNSR6g3kqT94H
 - Monaguillos: PJca6lR0NZwKiJY56HrR
 - Martín: b3pxCaASmiYnfI28HI7s
+- Simón: archivo:assets/videos/voces/simon_cita.mp3
 
 ---
 
@@ -227,6 +228,32 @@ Estilo: A
 > [cerca · S] Martín: «Llévame hasta el final, capellán.»
 > Pregunta: «¿Quién está más vivo: el que murió o el que lo lleva?»
 
+## 11 · CÓDICE · VI — EL CAMPANERO DE ÁNIMAS
+Estilo: A
+### Parte 1 · campanero_idle · cortes
+- [cerca · S] Se arrancó la lengua para que los muertos pudieran oírle.
+### Parte 2 · campanero_walk · cortes · lento 1.5
+- [cerca · entero · SE] Simón Requena tocaba la campana de Valdenoche para despedir a sus muertos.
+- [cerca · entero · SW] El Tribunal lo prohibió para los condenados.
+### Parte 3 · abanderado_solo · cortes · lento 1.5
+- [cerca · entero · S] Cuando Lope de Ayala ardió en la plaza, el capitán Íñigo, que le amaba, calló.
+### Parte 4 · campanero_toque · cortes
+- [cerca · entero · S] Simón tocó por él. Y después, por cada condenado.
+### Parte 5 · ojo_look · cortes · lento 2
+- [cerca · entero · S] El Tribunal mandó quitarle el badajo a la campana.
+### Parte 6 · campana_lengua · cortes
+- [cerca · entero · S · sfx assets/videos/sfx/campana_tanido.wav fin] Simón se arrancó la lengua y la colgó dentro.
+### Parte 6b · campanero_idle · cortes
+- [cerca · entero · S] El Tribunal le cosió la boca.
+### Parte 7 · campanero_walk · cortes · lento 1.5
+- [N · columnas desfilan · solemne] Aún arrastra la campana nave arriba. Se rajó de tanto tocar.
+### Parte 8 · exvoto_walk + exvoto_walk_b · cortes
+- [S · multitud 9 · solemne] Cuando la toca, los muertos le oyen. Y acuden.
+### Parte 9 · campanero_toque · cortes
+- [cerca · entero · S] Bajo su campana no se sostiene ninguna otra plegaria.
+> [cerca · entero · S] Simón: «Me quitaron el badajo. Me quedaba la lengua.»
+> Pregunta: «¿Habrías tocado tú la campana por un condenado?»
+
 ---
 
 ## Publicado
@@ -246,7 +273,10 @@ Publicados a 2026-11-17: **01, 03 y 08**, nada más. Los MP4 de 02, 04-07, 09 y 
 | 10 No es mi corazón | ¿Quién está más vivo: el que murió o el que lo lleva? | | | |
 | 05 Sor Leonor (clásico) | ¿Mintió Leonor… o mintió el farol? | | | |
 | 05 Sor Leonor (Remotion) | ¿Mintió Leonor… o mintió el farol? | | | |
+| 11 El Campanero de Ánimas (clásico) | | | | |
+| 11 El Campanero de Ánimas (Remotion) | | | | |
 
+- **11 El Campanero de Ánimas** (lista 2026-11-24, sin publicar; el usuario la sube a mano): dos versiones, `assets/videos/lore01_11_el_campanero_de_animas.mp4` (clásica) y `lore01_11_el_campanero_de_animas_remotion.mp4` (composición `Lore11`). Voz de Simón con `archivo:` (`simon_cita.mp3`). Textos de los posts: pendientes.
 - **01 El Corazón Abierto** (2026-11-15): v1 con arranque en negro; v2 sin negro y frase fuerte primero; v3 recortada a 38 s. La v2 retuvo algo mejor que la v3.
 - **03 Jimena y Aldonza** (2026-11-16): primera versión con puesta en escena plano a plano y paso natural. Es el modelo para los siguientes.
 - **08 La Catedral que no termina** (2026-11-17): `assets/videos/lore01_08_la_catedral_que_no_termina.mp4`, estilo A, 67,9 s. TikTok a mano; Instagram y YouTube por Metricool. Textos de los posts:

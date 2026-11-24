@@ -63,6 +63,11 @@ Flujo estandarizado para crear vídeos verticales de lore estilo *Blasphemous* p
    - **Exportador del lab:** `--dirs S,SE` renderiza solo las direcciones que usa el guion (resultado idéntico al render completo); `LAB_GL=gpu` gana poco (~30 %) y da píxeles distintos de la CPU, así que no se mezcla dentro de un clip.
 
 11. **Montaje dinámico con Remotion (A/B en curso desde 2026-11-23, 05 Sor Leonor):** misma voz y planos que el render clásico, más subtítulo palabra a palabra (palabra activa en dorado apagado), zoom por plano y golpes en las frases clave. Composición `Lore05` en `C:\codexlocal\devlog\src\lore\` (fuera del repo): toma el audio y los planos de `scratch/codice-video/<prefijo>_NN/` y del MP4 clásico, así que primero se renderiza el clásico. Pendiente de ver qué versión retiene mejor (tabla de `## Publicado` en `lote-01.md`); si gana, integrarlo en el generador para que siga siendo un comando.
+12. **Aprendizajes del 11 (Campanero, 2026-11-24):**
+    - **Props en el plano:** nada de PNG pegado; si un objeto sale, va renderizado como parte del mundo (la vela delante del Campanero se quitó por eso).
+    - **Antes de modificar un modelo, mirar qué trae:** la campana ya tenía una lengua de badajo y se usó tal cual (`campana_lengua`, `tools/props/build_campana_lengua.py`). Un plano de objeto solo es una animación más en `assets/sprites/bestiary/<nombre>/` con celda 320.
+    - **Animación que se ve mal en primer plano** (la cabeza de `campanero_tanido` se pliega hacia atrás): cambiarla por otra del personaje.
+    - **Remotion:** composición `Lore11` en `C:\codexlocal\devlog` con la plantilla `src/theme` (GameBox); en el cierre no se pone subtítulo bajo el rótulo PRÓXIMAMENTE (lo tapaba). Pendiente: `Lore05` sigue con ese solape.
 
 ---
 
