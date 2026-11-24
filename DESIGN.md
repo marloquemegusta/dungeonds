@@ -437,6 +437,11 @@ Los encuentros colocados a mano sustituyen a la marea y la horda aleatoria: el a
 - **Todos los enemigos están en la sala desde el principio, como en Isaac,** y despiertan todos a la vez al cruzar el borde de abajo (también los que rezan). Los refuerzos desde arriba (segunda oleada) son un recurso ocasional de las poblaciones duras, no la norma.
 - **Más listos, no esponjas de balas.** La dificultad sale de la IA y de la colocación, no de subir la vida a secas. **El Exvoto esquiva el rayo:** si el héroe le está apuntando con el láser de carga, se aparta de la línea, y los de una fila se abren cada uno a un lado para romperla. No anda en línea recta hacia el héroe.
 - **El Cireneo, perseguidor que embiste:** anda siempre hacia el héroe a buen paso; cuando lo tiene alineado carga muy rápido y con poco aviso; si choca con una columna, estatua, saco o alambre queda aturdido un buen rato (la recompensa por usar el escenario).
+  - **Atasco en tres tiempos** (solo al chocar; el aturdimiento por disparo no cambia). Duración total igual que hoy (90 frames, `[TUNABLE-PLACEHOLDER]`), y es vulnerable y rematable en los tres:
+    1. **Impacto** (~10 frames): la cruz se clava, el cuerpo rebota un poco hacia atrás y vuelve; saltan astillas y polvo desde el punto de choque, con paleta apagada (§6.10).
+    2. **Forcejeo** (~65 frames): mirando a la pared, tira de la cruz a sacudidas lentas (alterna una pose de la carga y la de la telegrafía cada 8 frames).
+    3. **Liberación** (~15 frames): arranca la cruz de un tirón y retrocede un paso corto (~6 px) en sentido contrario a la carga; después vuelve a perseguir.
+    - Reutiliza poses de la carga, la telegrafía y el andar: no hay memoria de sala libre para poses propias (~28 KB por fotograma). Si se quieren, es decisión aparte.
 - **El Ojo** solo es difícil cuando hay más presión alrededor; subirle la vida no lo arregla. Diseño vigente: §6.13.9.
 - **Salas:** cada planta plantea una sola pregunta y sus tres poblaciones (ligera, media y dura) son versiones más duras de esa misma pregunta.
 
