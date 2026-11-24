@@ -273,10 +273,29 @@ Publicados a 2026-11-17: **01, 03 y 08**, nada más. Los MP4 de 02, 04-07, 09 y 
 | 10 No es mi corazón | ¿Quién está más vivo: el que murió o el que lo lleva? | | | |
 | 05 Sor Leonor (clásico) | ¿Mintió Leonor… o mintió el farol? | | | |
 | 05 Sor Leonor (Remotion) | ¿Mintió Leonor… o mintió el farol? | | | |
-| 11 El Campanero de Ánimas (clásico) | | | | |
-| 11 El Campanero de Ánimas (Remotion) | | | | |
+| 11 El Campanero de Ánimas (clásico) | ¿Habrías tocado tú la campana por un condenado? | | | |
+| 11 El Campanero de Ánimas (Remotion) | ¿Habrías tocado tú la campana por un condenado? | | | |
 
-- **11 El Campanero de Ánimas** (lista 2026-11-24, sin publicar; el usuario la sube a mano): dos versiones, `assets/videos/lore01_11_el_campanero_de_animas.mp4` (clásica) y `lore01_11_el_campanero_de_animas_remotion.mp4` (composición `Lore11`). Voz de Simón con `archivo:` (`simon_cita.mp3`). Textos de los posts: pendientes.
+- **11 El Campanero de Ánimas** (lista 2026-11-24, sin publicar; el usuario la sube a mano): dos versiones, `assets/videos/lore01_11_el_campanero_de_animas.mp4` (clásica) y `lore01_11_el_campanero_de_animas_remotion.mp4` (composición `Lore11`). Voz de Simón con `archivo:` (`simon_cita.mp3`). Textos de los posts:
+  - **Título (YouTube y portada):** «El Campanero de Ánimas · Códice». Alternativa: «Me quedaba la lengua · Códice».
+  - **TikTok e Instagram:**
+    > ¿Habrías tocado tú la campana por un condenado?
+    >
+    > Simón Requena despedía con su campana a los muertos de Valdenoche. El Tribunal lo prohibió para los condenados, y él tocó por cada uno.
+    > Le quitaron el badajo a la campana. Se arrancó la lengua y la colgó dentro.
+    >
+    > Deja tu veredicto en los comentarios.
+    > Próximamente en tu Nintendo DS.
+    >
+    > #pixelart #nintendods #gamedev #indiedev #darkfantasy #gothic #lore #homebrew
+  - **Descripción de YouTube:**
+    > ¿Habrías tocado tú la campana por un condenado? Simón Requena era el campanero de Valdenoche y despedía a cada muerto con su campana. El Tribunal de la Luz prohibió tocar por los condenados. Cuando Lope de Ayala ardió en la plaza y el capitán Íñigo calló, Simón tocó por él, y después por cada condenado. El Tribunal mandó quitarle el badajo; Simón se arrancó la lengua y la colgó dentro, y le cosieron la boca. Aún arrastra la campana rajada nave arriba. Cuando la toca, los muertos le oyen. Y acuden.
+    >
+    > Deja tu veredicto en los comentarios.
+    > Próximamente en tu Nintendo DS.
+    >
+    > #Shorts #pixelart #nintendods #gamedev #darkfantasy
+  - **Comentario fijado (en las tres redes):** «¿Habrías tocado tú la campana por un condenado?»
 - **01 El Corazón Abierto** (2026-11-15): v1 con arranque en negro; v2 sin negro y frase fuerte primero; v3 recortada a 38 s. La v2 retuvo algo mejor que la v3.
 - **03 Jimena y Aldonza** (2026-11-16): primera versión con puesta en escena plano a plano y paso natural. Es el modelo para los siguientes.
 - **08 La Catedral que no termina** (2026-11-17): `assets/videos/lore01_08_la_catedral_que_no_termina.mp4`, estilo A, 67,9 s. TikTok a mano; Instagram y YouTube por Metricool. Textos de los posts:
