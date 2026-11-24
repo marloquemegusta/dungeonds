@@ -54,6 +54,7 @@ Todo asset que use el juego está en este catálogo y versionado. Lo que no est�
 | Música | `assets/music/*.wav` | conversión a `nitrofiles/bgm.raw` | `nitrofiles/bgm.raw` | git |
 | Icono de la ROM | `assets/icon.png` | toolchain | banner de la ROM | git |
 | Vídeos de redes | skill `codice-lore-video` | `render_guiones.py` | no van en la ROM | LFS (`assets/videos/*.mp4`) |
+| Kit del tema visual de los vídeos (piedra roja, marco dorado, atlas de glifos) | `include/inv_art.h` de `proto/arpg` | `tools/video_theme/build_kit.py` → `tools/video_theme/kit/` | no va en la ROM | git normal |
 | Sonidos y citas grabadas de los vídeos | ElevenLabs (efectos y tomas elegidas por el usuario) | a mano; ver la skill | no van en la ROM | git normal (`assets/videos/sfx/`, `assets/videos/voces/`) |
 
 ## 2. Personajes: de qué sale cada sprite

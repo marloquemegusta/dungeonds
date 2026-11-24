@@ -18,6 +18,8 @@ import unicodedata
 from PIL import Image, ImageChops, ImageDraw, ImageFont
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "..", ".."))
+sys.path.insert(0, os.path.join(ROOT, "tools", "video_theme"))
+from theme import render_box, wrap as theme_wrap  # tema visual: ningun texto de video fuera del tema
 ELEVEN_EXE = shutil.which("elevenlabs") or shutil.which("elevenlabs.exe") or "elevenlabs"
 
 VOICE_ID = "5egO01tkUjEzu7xSSE8M"
@@ -37,9 +39,6 @@ PQ_TAIL = 1.5           # ultimo fotograma sostenido tras la voz de "Proximament
 LEAD_IN, PAUSE_PHRASE, PAUSE_PART = 0.10, 0.45, 0.85
 BGM = os.path.join(ROOT, "assets", "music", "cathedral_battle_loop.wav")
 
-FONT_REG = "C\\:/Windows/Fonts/pala.ttf"
-FONT_BOLD = "C\\:/Windows/Fonts/palab.ttf"
-FONT_ITAL = "C\\:/Windows/Fonts/palai.ttf"
 
 
 CUT_SEQ = ["S", "SE", "SW", "E", "W", "S", "NE", "SW", "SE", "NW", "S", "W", "E", "N"]
@@ -1394,28 +1393,21 @@ def render_video(video, prefijo, sin_voz, md_dir, voices, estilo=None, tiras_dir
     run(["ffmpeg", "-y", "-f", "concat", "-safe", "0", "-i", "vo_concat.txt", "-c", "copy",
          "vo_full.wav", "-loglevel", "error"], cwd=wdir)
 
-    with open(os.path.join(wdir, "subtitles.ass"), "w", encoding="utf-8") as f:
-        f.write(ASS_HEADER)
-        for st, en, txt, sty in sub_events:
-            f.write(f"Dialogue: 0,{fmt_ass(st)},{fmt_ass(en)},{sty},,0,0,0,,{txt}\n")
+    overlays = []   # (png, x, y, t0, t1): cajas del tema, sobre la linea de tiempo final
 
-    def textfile(fname, text):
-        with open(os.path.join(wdir, fname), "w", encoding="utf-8") as f:
-            f.write(text)
-        return fname
+    def box_png(name, lines, **kw):
+        im = render_box(lines, **kw)
+        path = os.path.join(wdir, name)
+        im.save(path)
+        return path, im.size
 
-    hdr_f = textfile("hdr.txt", header)
-    name_f = textfile("name.txt", name)
-    pro_f = textfile("pro.txt", "PRÓXIMAMENTE")
-    dsd_f = textfile("dsd.txt", "en tu Nintendo DS")
-
-    # name font size: shrink long names so they fit in 1000 px
-    name_size = 68
-    try:
-        while name_size > 34 and ImageFont.truetype("C:/Windows/Fonts/palab.ttf", name_size).getlength(name) > 1000:
-            name_size -= 2
-    except OSError:
-        pass
+    for k_, (st, en, txt, sty) in enumerate(sub_events):
+        words = txt.replace("\\N", " ")
+        pth, (bw, bh) = box_png(f"sub_{k_:03d}.png", theme_wrap(words, 186), style="italic" if sty == "Quote" else "regular")
+        overlays.append((pth, (1080 - bw) // 2, 1145, st, en))
+    hdr_lines = [[(header, "ash")]] + theme_wrap(name, 186)
+    hdr_png, (hw, hh) = box_png("hdr.png", hdr_lines)
+    pro_png, (pw_, ph_) = box_png("pro.png", ["PRÓXIMAMENTE", [("en tu Nintendo DS", "ash")]])
 
     # segmentos visuales: una parte = un segmento, salvo "cortes" (un segmento por frase)
     segments, cut_state = [], {"last": None, "i": 0}
@@ -1476,7 +1468,7 @@ def render_video(video, prefijo, sin_voz, md_dir, voices, estilo=None, tiras_dir
 
     # pregunta fija arriba desde que empieza hasta el final: el plano de la cita se parte en dos tramos
     # (mismo fichero, sin corte) y los tramos con pregunta llevan la pregunta en vez de la cabecera
-    q_lines, q_size, q_files = [], 64, []
+    q_png, qw = None, 0
     if pregunta:
         t_q = phrase_start[(len(parts) - 2, len(parts[-2]["phrases"]) - 2)]
         acc, new = 0.0, []
@@ -1489,16 +1481,7 @@ def render_video(video, prefijo, sin_voz, md_dir, voices, estilo=None, tiras_dir
                 new.append({**sg, "pq": True} if acc >= t_q - 1e-3 else sg)
             acc += sg["d"]
         segments = new
-        q_lines, q_size = wrap_pregunta(pregunta)
-        q_files = [textfile(f"pq{k}.txt", ln) for k, ln in enumerate(q_lines)]
-        qs_f = textfile("pqs.txt", "Deja tu veredicto en los comentarios")
-
-    def pq_draw():
-        out = ""
-        for k, fl in enumerate(q_files):
-            out += (f",drawtext=fontfile='{FONT_BOLD}':textfile='{fl}':fontsize={q_size}:fontcolor=0xF2ECE0:"
-                    f"borderw=4:bordercolor=black:x=(w-text_w)/2:y={80 + k * int(q_size * 1.18)}")
-        return out
+        q_png, (qw, qh) = box_png("pq.png", theme_wrap(pregunta, 186))
 
     def hold(p):
         return "tpad=stop_mode=clone:stop_duration=120," if p.get("mods", {}).get("una_vez") else ""
@@ -1514,39 +1497,48 @@ def render_video(video, prefijo, sin_voz, md_dir, voices, estilo=None, tiras_dir
         if p["type"] == "char":
             sc = ("scale=1080:840:flags=neighbor,pad=1080:1920:0:340:black" if sg.get("wide", p.get("anim_b"))
                   else "scale=840:840:flags=neighbor,pad=1080:1920:120:340:black")
-            head = "" if pq else (
-                 f"drawtext=fontfile='{FONT_REG}':textfile='{hdr_f}':fontsize=36:fontcolor=0x9A9184:x=(w-text_w)/2:y=165,"
-                 f"drawtext=fontfile='{FONT_BOLD}':textfile='{name_f}':fontsize={name_size}:fontcolor=0xEDE5D5:x=(w-text_w)/2:y=220,")
-            c = (f"[{i}:v]fps=30,{hold(p)}{sc},{head}"
-                 f"{fade}trim=start={sg.get('ss', 0.0):.3f}:duration={d:.3f},setpts=PTS-STARTPTS"
-                 f"{pq_draw() if pq else ''}[v{i}]")
+            c = (f"[{i}:v]fps=30,{hold(p)}{sc},"
+                 f"{fade}trim=start={sg.get('ss', 0.0):.3f}:duration={d:.3f},setpts=PTS-STARTPTS[v{i}]")
         elif p["type"] == "card":
             c = (f"[{i}:v]fps=30,scale=768:1152:flags=neighbor,pad=1080:1920:156:250:black,"
-                 f"{fade}trim=duration={d:.3f},setpts=PTS-STARTPTS{pq_draw() if pq else ''}[v{i}]")
+                 f"{fade}trim=duration={d:.3f},setpts=PTS-STARTPTS[v{i}]")
         elif pq:   # cierre con pregunta: mosaico mas pequeno bajo la pregunta, sin fundido final, invitacion debajo
             c = (f"[{i}:v]fps=30,scale=700:700:flags=neighbor,pad=1080:1920:190:320:black,"
-                 f"drawtext=fontfile='{FONT_BOLD}':textfile='{pro_f}':fontsize=56:fontcolor=0xEDE5D5:x=(w-text_w)/2:y=1035,"
-                 f"drawtext=fontfile='{FONT_ITAL}':textfile='{dsd_f}':fontsize=42:fontcolor=0xB8AFA0:x=(w-text_w)/2:y=1100,"
                  f"fade=t=in:st=0:d=0.35,"
-                 f"trim=duration={d:.3f},setpts=PTS-STARTPTS{pq_draw()},"
-                 f"drawtext=fontfile='{FONT_BOLD}':textfile='{qs_f}':fontsize=40:fontcolor=0xF2ECE0:"
-                 f"borderw=3:bordercolor=black:x=(w-text_w)/2:y=1170[v{i}]")
+                 f"trim=duration={d:.3f},setpts=PTS-STARTPTS[v{i}]")
         else:
             c = (f"[{i}:v]fps=30,scale=800:800:flags=neighbor,pad=1080:1920:140:190:black,"
-                 f"drawtext=fontfile='{FONT_BOLD}':textfile='{pro_f}':fontsize=56:fontcolor=0xEDE5D5:x=(w-text_w)/2:y=1030,"
-                 f"drawtext=fontfile='{FONT_ITAL}':textfile='{dsd_f}':fontsize=42:fontcolor=0xB8AFA0:x=(w-text_w)/2:y=1105,"
                  f"fade=t=in:st=0:d=0.35,fade=t=out:st={max(0.1, d - 1.2):.3f}:d=1.2,"
                  f"trim=duration={d:.3f},setpts=PTS-STARTPTS[v{i}]")
         chains.append(c)
     n = len(segments)
     vlabels = "".join(f"[v{i}]" for i in range(n))
+    acc_t = 0.0
+    for sg in segments:
+        p_, d_ = sg["p"], sg["d"]
+        if sg.get("pq"):
+            overlays.append((q_png, (1080 - qw) // 2, 50, acc_t, acc_t + d_))
+        elif p_["type"] == "char":
+            overlays.append((hdr_png, (1080 - hw) // 2, 150, acc_t, acc_t + d_))
+        if p_["type"] not in ("char", "card"):
+            if sg.get("pq"):
+                overlays.append((pro_png, (1080 - pw_) // 2, 1040, acc_t, acc_t + d_))
+            else:
+                overlays.append((pro_png, (1080 - pw_) // 2, 1030, acc_t, acc_t + d_))
+        acc_t += d_
     a_vo, a_bg = n, n + 1
     # sfx: cada efecto entra en su segundo (adelay) a volumen moderado y se suma a la voz y la musica
     sfx_chain = "".join(f"[{a_bg + 1 + k}:a]aresample=44100,volume=0.8,adelay={int(round(s * 1000))}:all=1[s{k}];\n"
                         for k, (s, _) in enumerate(sfx_events))
     sfx_in = "".join(f"[s{k}]" for k in range(len(sfx_events)))
+    ov_base = a_bg + 1 + len(sfx_events)
+    ov_chain, last = "", "cc"
+    for k, (_, ox, oy, o0, o1) in enumerate(overlays):
+        nxt = f"o{k}"
+        ov_chain += f"[{last}][{ov_base + k}:v]overlay={ox}:{oy}:enable='between(t,{o0:.3f},{o1:.3f})'[{nxt}];\n"
+        last = nxt
     fc = ";\n".join(chains) + (
-        f";\n{vlabels}concat=n={n}:v=1:a=0,ass='subtitles.ass',format=yuv420p[vout];\n"
+        f";\n{vlabels}concat=n={n}:v=1:a=0[cc];\n{ov_chain}[{last}]format=yuv420p[vout];\n"
         f"[{a_vo}:a]volume=1.15[vo];\n"
         f"[{a_bg}:a]volume=0.09,afade=t=in:st=0:d=1.5,afade=t=out:st={max(0.1, total_dur - 2.5):.3f}:d=2.5[bg];\n"
         f"{sfx_chain}"
@@ -1567,6 +1559,8 @@ def render_video(video, prefijo, sin_voz, md_dir, voices, estilo=None, tiras_dir
     cmd += ["-i", "vo_full.wav", "-stream_loop", "-1", "-i", BGM]
     for _, path in sfx_events:
         cmd += ["-i", path]
+    for ov in overlays:
+        cmd += ["-i", ov[0]]
     cmd += ["-filter_complex_script", "filter.txt", "-map", "[vout]", "-map", "[aout]",
             "-c:v", "libx264", "-preset", "medium", "-crf", "18", "-c:a", "aac", "-b:a", "192k",
             "-t", f"{total_dur:.3f}", mp4]
