@@ -1,0 +1,54 @@
+<title>Póster del mapa</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* Una sola columna: notas cortas arriba, el póster a todo el ancho debajo. Look oscuro fijo, como el juego. */
+:root{
+  --bg:#121016; --panel:#1b1820; --fg:#e8e1d4; --muted:#a39a8c; --accent:#c9a46a; --line:#2e2a33;
+  --display:"Cormorant Garamond", Georgia, serif; --body:"Inter", system-ui, sans-serif;
+  color-scheme:dark;
+}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);line-height:1.5;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:24px 48px}
+.wrap{max-width:1400px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+h1{font-family:var(--display);font-weight:600;font-size:2.2rem;margin:0;text-wrap:balance;color:var(--accent)}
+h2{font-family:var(--display);font-weight:600;font-size:1.5rem;margin:24px 0 0;color:var(--accent)}
+.sub{color:var(--muted);margin:0;max-width:65ch}
+.notes{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
+.note{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:12px 14px;min-width:0}
+.note b{display:block;font-size:.75rem;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);margin-bottom:4px}
+.poster{overflow-x:auto;border:1px solid var(--line);border-radius:6px;background:#0c0b10}
+.poster img{display:block;width:100%;height:auto}
+.big{overflow:auto;max-height:80vh;border:1px solid var(--line);border-radius:6px;background:#0c0b10}
+.big img{display:block;max-width:none;width:5690px;height:auto;image-rendering:pixelated}
+.row{display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start}
+.row figure{margin:0;display:flex;flex-direction:column;gap:6px;min-width:0}
+.row img{image-rendering:pixelated;width:256px;max-width:100%;border:1px solid var(--line)}
+figcaption,.ver{font-size:.8rem;color:var(--muted)}
+details summary{cursor:pointer;color:var(--muted)}
+</style>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600&family=Inter:wght@400;600&display=swap">
+<div class="wrap">
+  <h1>El mapa del ARPG, con su escenario</h1>
+  <p class="sub">Las 16 salas en el sitio y con la inclinación del mapa que sale al pulsar Select, pero con el suelo, los muros y los props reales de cada sala en vez de las líneas de tiza. Se entra por abajo a la izquierda (Nave 1) y se sube hacia la Cripta, arriba a la derecha.</p>
+  <div class="notes">
+    <div class="note"><b>Todo igual</b>Las 16 salas tienen el mismo suelo, los mismos muros y la misma luz. Solo cambian los bancos, las estatuas y las vallas.</div>
+    <div class="note"><b>Cripta y Capilla con llave</b>Están vacías: hoy no llevan props.</div>
+    <div class="note"><b>Lo que falta</b>Enemigos, barreras y lápidas no se dibujan. Los muros de los lados van tumbados sobre el suelo.</div>
+  </div>
+  <div class="poster"><img src="poster_arpg_v0_select_movil.png" alt="Mapa del ARPG en vista inclinada: 16 salas de catedral en escalera diagonal" width="2000" height="1085"></div>
+  <details>
+    <summary>Ver a tamaño real (5690 px, desplázate para ver los props)</summary>
+    <div class="big"><img src="poster_arpg_v0_select.png" alt="Mapa del ARPG a tamaño real" width="5690" height="3086" loading="lazy"></div>
+  </details>
+  <div class="row">
+    <figure><img src="select_ref_arpg.png" alt="Captura de la ROM con el mapa de Select abierto" width="256" height="384"><figcaption>Referencia: el mapa de Select en la ROM.</figcaption></figure>
+  </div>
+  <p class="ver">v0 · estado actual, sin cambios de luz ni props · 1 píxel de suelo = 1 píxel de la DS en la versión grande</p>
+
+  <h2>Antes: acto I del roguelike</h2>
+  <p class="sub">El primer póster, con las 15 salas en línea del roguelike. Lo dejo como referencia.</p>
+  <details>
+    <summary>Ver el póster del acto I</summary>
+    <div class="poster"><img src="poster_acto1_v0.png" alt="Póster del acto I en tres columnas" width="1208" height="3964" loading="lazy"></div>
+  </details>
+</div>
