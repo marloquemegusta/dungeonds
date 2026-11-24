@@ -7,6 +7,7 @@
 #include "inv_item_art.h"
 #include "inv_item_floor_art.h"
 #include "sfx.h"
+#include "arpg_hud_gfx.h"
 #include <fcntl.h>
 #include <stdio.h>
 #include <string.h>
@@ -43,8 +44,6 @@ static const uint16_t s_school_col[5] = {
 // Geometría pantalla inferior (256x192).
 #define INV_TAB_Y     2
 #define INV_TAB_H     17
-#define INV_TAB_W     49
-#define INV_TAB_X0    5
 
 // Losa principal inferior.
 #define INV_SLAB_X    4
@@ -65,15 +64,6 @@ static const uint16_t s_school_col[5] = {
 // Columna derecha: bolsa 4x4 compacta estilo D2 (bloque continuo) + cajetín Cera.
 #define INV_COLS      4
 #define INV_ROWS      4
-#define INV_GX        102
-#define INV_GY        29
-#define INV_CELL_SZ   32
-#define INV_PITCH_X   33
-#define INV_PITCH_Y   33
-#define INV_WAX_X     164
-#define INV_WAX_Y     165
-#define INV_WAX_W     72
-#define INV_WAX_H     16
 
 // Pantalla superior: losa + cabecera + cajetines + ventana de objeto giratorio.
 #define TOP_CARD_Y    56
@@ -93,11 +83,35 @@ static const uint16_t s_school_col[5] = {
 #define INV_FOCUS_SOCK  1
 #define INV_FOCUS_ALIJO 2
 
-// Alijo del arcón: 4x4 de casillas de 17 px en la columna izquierda (solo en INV_MODE_ARCON).
-#define ST_X0   6
-#define ST_Y0   46
-#define ST_CELL 17
-#define ST_PITCH 19
+// Alijo del arcón (solo en INV_MODE_ARCON): su geometría vive en s_lay[1] (casillas de 26 px).
+
+// Layout de la pantalla táctil: [0] columna izquierda de engarces/Crisol (bolsa de 32 px);
+// [1] arcón con alijo visible: alijo y bolsa de casillas de 26 px alineadas, margen de 5 px al marco.
+typedef struct {
+    int gx, gy, bcell, bpitch, bgsz;
+    int sx, sy, scw, sch, spx, spy, sgsz;
+    int wx, wy, ww, wh;
+    int ttl_y, alijo_cx, bolsa_cx, help_cx, help_y;
+} InvLay;
+static const InvLay s_lay[2] = {
+    { 102, 29, 32, 33, 9,  0, 0, 0, 0, 1, 1, 0,  164, 165, 72, 16,  0, 0, 0, 0, 0 },
+    { 130, 46, 26, 27, 8,  14, 46, 26, 26, 27, 27, 7,  126, 162, 115, 16,  31, 67, 183, 67, 166 },
+};
+static int stash_on(void);
+static inline const InvLay *cur_lay(void) { return &s_lay[stash_on() ? 1 : 0]; }
+#define LAY (*cur_lay())
+#define INV_TAB_X0   5
+#define INV_TAB_P    50   // paso entre pestañas (hueco de 4 px), centradas en la losa
+#define INV_TAB_G    4
+#define INV_GX       (LAY.gx)
+#define INV_GY       (LAY.gy)
+#define INV_CELL_SZ  (LAY.bcell)
+#define INV_PITCH_X  (LAY.bpitch)
+#define INV_PITCH_Y  (LAY.bpitch)
+#define INV_WAX_X    (LAY.wx)
+#define INV_WAX_Y    (LAY.wy)
+#define INV_WAX_W    (LAY.ww)
+#define INV_WAX_H    (LAY.wh)
 
 #define INV_SPIN_SZ     56
 #define INV_SPIN_MAGIC  0x4954u
@@ -607,10 +621,11 @@ static int hit_bag_slot(int tx, int ty) {
 static int stash_on(void) { return s_mode == INV_MODE_ARCON && s_stash_view; }
 
 static int hit_stash_slot(int tx, int ty) {
-    if (!stash_on() || tx < ST_X0 || ty < ST_Y0) return -1;
-    int c = (tx - ST_X0) / ST_PITCH, r = (ty - ST_Y0) / ST_PITCH;
+    const InvLay *l = cur_lay();
+    if (!stash_on() || tx < l->sx || ty < l->sy) return -1;
+    int c = (tx - l->sx) / l->spx, r = (ty - l->sy) / l->spy;
     if (c >= 4 || r >= 4) return -1;
-    if ((tx - ST_X0) % ST_PITCH >= ST_CELL || (ty - ST_Y0) % ST_PITCH >= ST_CELL) return -1;
+    if ((tx - l->sx) % l->spx >= l->scw || (ty - l->sy) % l->spy >= l->sch) return -1;
     return r * 4 + c;
 }
 
@@ -971,7 +986,7 @@ static int inventory_handle_input(uint32_t keys_down, int touch_pressed, int tou
 
     if (touch_pressed) {
         if (touch_y >= INV_TAB_Y && touch_y < INV_TAB_Y + INV_TAB_H) {
-            int t = (touch_x - INV_TAB_X0) / INV_TAB_W;
+            int t = (touch_x - INV_TAB_X0) / INV_TAB_P;
             if (touch_x >= INV_TAB_X0 && (unsigned)t < ARPG_INV_SCHOOLS) {
                 select_tab(t);
                 return 0;
@@ -1193,16 +1208,17 @@ static void render_tabs(uint16_t *buf) {
         "Rayo", "Ejecuc.", "Glifo", "Levant.", "Pecho"
     };
     for (int i = 0; i < ARPG_INV_SCHOOLS; i++) {
-        int x = INV_TAB_X0 + i * INV_TAB_W;
+        const int tp = INV_TAB_P, tw = tp - INV_TAB_G;
+        int x = INV_TAB_X0 + i * tp;
         int active = (i == s_inv_tab);
         int ty = INV_TAB_Y + (active ? 0 : 2);
         int th = INV_TAB_H - (active ? 0 : 2);
-        fill_rect(buf, x, ty, INV_TAB_W - 3, th, active ? INV_SLATE2 : INV_SLATE);
-        if (tome_equipped(i)) hline(buf, x + 3, ty + th - 2, INV_TAB_W - 9, INV_GOLD);   // tomo puesto
-        hline(buf, x, ty, INV_TAB_W - 3, active ? INV_GOLD : INV_BEV_HI);
+        fill_rect(buf, x, ty, tw, th, active ? INV_SLATE2 : INV_SLATE);
+        if (tome_equipped(i)) hline(buf, x + 3, ty + th - 2, tw - 6, INV_GOLD);   // tomo puesto
+        hline(buf, x, ty, tw, active ? INV_GOLD : INV_BEV_HI);
         vline(buf, x, ty, th, active ? INV_GOLD : INV_EDGE);
-        vline(buf, x + INV_TAB_W - 4, ty, th, INV_SHAD);
-        text_center(buf, x + (INV_TAB_W - 3) / 2, ty + 2,
+        vline(buf, x + tw - 1, ty, th, INV_SHAD);
+        text_center(buf, x + tw / 2, ty + 2,
                     s_tab_lbl[i], active ? INV_GOLD : INV_DIM);
     }
 }
@@ -1211,21 +1227,23 @@ static void render_bottom_slab(uint16_t *buf) {
     stone_rect(buf, INV_SLAB_X, INV_SLAB_Y, INV_SLAB_W, INV_SLAB_H);
     gold_frame(buf, INV_SLAB_X, INV_SLAB_Y, INV_SLAB_W, INV_SLAB_H);
     // Barra de hierro forjado separando engarces (izq) de bolsa (der).
-    iron_bar_v(buf, 83, INV_SLAB_Y + 5, INV_SLAB_H - 10);
+    if (!stash_on()) iron_bar_v(buf, 83, INV_SLAB_Y + 5, INV_SLAB_H - 10);   // con el alijo visible no hay barra central; separan el margen y el marco de la bolsa
 }
 
 static void render_left_stash(uint16_t *buf) {
-    text_center(buf, 44, 26, "Alijo", INV_GOLD);
+    const InvLay *l = cur_lay();
+    text_center(buf, l->alijo_cx, l->ttl_y, "Alijo", INV_GOLD);
+    text_center(buf, l->bolsa_cx, l->ttl_y, "Bolsa", INV_GOLD);
     for (int i = 0; i < ARPG_INV_STASH; i++) {
-        int x = ST_X0 + (i % 4) * ST_PITCH, y = ST_Y0 + (i / 4) * ST_PITCH;
+        int x = l->sx + (i % 4) * l->spx, y = l->sy + (i / 4) * l->spy;
         const ArpgInvItem *it = arpg_inv_stash_item(i);
         int ghost = (s_drag_active && s_drag_stash == i);
         int hl = (s_drag_active && s_hover_stash == i) || (!s_drag_active && s_inv_focus == INV_FOCUS_ALIJO && i == s_stash_sel);
-        sunken_box_rar(buf, x, y, ST_CELL, ST_CELL, (it && !ghost) ? (int)it->rarity : -1);
-        if (hl) corner_ticks(buf, x, y, ST_CELL, ST_CELL, INV_GOLD);
-        if (it && !ghost) draw_item_glyph(buf, it, x + ST_CELL / 2, y + ST_CELL / 2 - 1, 6, 0);
+        sunken_box_rar(buf, x, y, l->scw, l->sch, (it && !ghost) ? (int)it->rarity : -1);
+        if (hl) corner_ticks(buf, x, y, l->scw, l->sch, INV_GOLD);
+        if (it && !ghost) draw_item_glyph(buf, it, x + l->scw / 2, y + l->sch / 2, l->sgsz, 0);
     }
-    text_center(buf, 44, 126, "SEL: engarces", INV_DIM);
+    text_center(buf, l->help_cx, l->help_y, "SEL: engarces", INV_DIM);
 }
 
 static void render_left_sockets(uint16_t *buf) {
@@ -1316,7 +1334,7 @@ static void render_right_bag(uint16_t *buf) {
         if (hl) corner_ticks(buf, x, y, INV_CELL_SZ, INV_CELL_SZ,
                              (s_confirm == i) ? INV_RED : (s_inv_focus == INV_FOCUS_BAG || s_drag_active ? INV_GOLD : INV_DIM));
         if (it && !is_ghost) {
-            draw_item_glyph(buf, it, x + INV_CELL_SZ / 2, y + INV_CELL_SZ / 2 - 1, 9, !arpg_inv_can_equip(it));
+            draw_item_glyph(buf, it, x + INV_CELL_SZ / 2, y + INV_CELL_SZ / 2 - 1, LAY.bgsz, !arpg_inv_can_equip(it));
         }
     }
 
@@ -1559,7 +1577,15 @@ void inventory_render_top(uint16_t *buf) {
         gold_frame(buf, 4, 4, SCREEN_W - 8, SCREEN_H - 8);
 
         sunken_box(buf, 14, 12, 34, 34, INV_GOLD);
-        diamond(buf, 31, 29, 10, s_school_col[s_inv_tab]);
+        if (s_inv_tab < 4) {
+            static const uint16_t *const s_hdr_icon[4] = { g_hud_viril_rayo, g_hud_viril_ejecucion, g_hud_viril_glifo, g_hud_viril_levantar };
+            const uint16_t *ic = s_hdr_icon[s_inv_tab];
+            for (int iy = 0; iy < HUD_VIRIL_RAYO_H; iy++)
+                for (int ix = 0; ix < HUD_VIRIL_RAYO_W; ix++) {
+                    uint16_t c = ic[iy * HUD_VIRIL_RAYO_W + ix];
+                    if (c) buf[(16 + iy) * SCREEN_W + 18 + ix] = c;
+                }
+        } else diamond(buf, 31, 29, 10, s_school_col[s_inv_tab]);
         static const char *const s_hdr_names[ARPG_INV_SCHOOLS] = {
             "R A Y O", "E J E C U C I Ó N", "G L I F O", "L E V A N T A R", "P E C H O"
         };
