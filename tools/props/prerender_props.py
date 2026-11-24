@@ -11,13 +11,16 @@ from PIL import Image, ImageDraw, ImageFilter
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 PROPS = os.path.join(ROOT, "assets/environment/cathedral/props")
 OUT = os.path.join(PROPS, "render")
-LAB = os.path.join(ROOT, "tools/lab/export_map_package_headless.cjs")
+# Por defecto el lab rapido (Node, sin navegador); DS_FAST_RENDER=0 fuerza el lab web (Playwright), como rebuild_all.py.
+LAB_SLOW = os.path.join(ROOT, "tools/lab/export_map_package_headless.cjs")
+LAB_FAST = os.path.join(ROOT, "tools/lab/fast/export_prop_fast.cjs")
+LAB = LAB_FAST if os.environ.get("DS_FAST_RENDER", "1") != "0" else LAB_SLOW
 SETTINGS = os.path.join(ROOT, "tools/props/props_render_settings.json")
 
 def run_lab(name, raw, settings, legibility="anterior"):
     d = os.path.join(raw, name)
     r = subprocess.run(["node", LAB, os.path.join(PROPS, "glb", name + ".glb"), settings, d, "--legibility", legibility],
-                       capture_output=True, text=True)
+                       capture_output=True, text=True, env={**os.environ, "DS_PYTHON": sys.executable})
     if r.returncode != 0:
         raise RuntimeError(name + ": " + r.stderr[-500:])
     return d

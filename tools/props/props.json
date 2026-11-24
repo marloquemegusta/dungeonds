@@ -1,7 +1,7 @@
 {
   "banco_roto":    {"fbx": "banco_roto.fbx",    "yaw": -45, "target_width": 64, "footprint_from": "depth", "shadow_elevation": 45},
-  "banco_volcado": {"fbx": "banco_volcado.fbx", "yaw": 45,  "target_width": 72, "footprint_from": "depth"},
-  "banco_entero":  {"fbx": "banco_entero.fbx",  "yaw": 45,  "target_width": 64, "footprint_from": "depth", "shadow_elevation": 50},
+  "banco_volcado": {"fbx": "banco_entero.fbx", "pitch": -50, "yaw": 135, "target_width": 72, "footprint_from": "depth", "shadow_elevation": 45},
+  "banco_entero": {"fbx": "banco_entero.fbx", "pitch": 0, "yaw": 135, "target_width": 64, "footprint_from": "depth", "shadow_elevation": 50},
   "sacos":         {"fbx": "sacos.fbx",         "yaw": -45, "target_width": 64, "footprint_from": "depth", "shadow_elevation": 45, "shadow_wrap": true, "tone": [0.68, 0.6, 0.48]},
   "sacos_b":       {"fbx": "sacos_b.fbx",       "yaw": -45, "target_width": 64, "footprint_from": "depth", "shadow_elevation": 45, "shadow_wrap": true, "tone": [0.68, 0.6, 0.48]},
   "sacos_remate":  {"fbx": "sacos_remate.fbx",  "yaw": -45, "target_width": 64, "footprint_from": "depth", "shadow_elevation": 45, "shadow_wrap": "clip", "mirror_x": true, "tone": [0.68, 0.6, 0.48]},

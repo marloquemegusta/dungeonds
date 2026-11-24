@@ -1,0 +1,379 @@
+{
+ "name": "props_lab_rapido_captura",
+ "description": "Captura de evidencia (no aserta): piezas santo, vela y bancos tras regenerar props con el lab rapido. ROM cathedral-playground.",
+ "state": {
+  "elf": "../.ds-game-dev/build/out/dungeonds-cathedral-playground.elf",
+  "symbols": {
+   "strip": "g_strip_debug",
+   "sandbox": "g_sandbox"
+  },
+  "default_symbol": "strip",
+  "fields": {
+   "height_px": 0,
+   "shift_px": 4,
+   "alive": 8,
+   "hp": 12,
+   "seq": {
+    "symbol": "sandbox",
+    "offset": 0,
+    "type": "u32"
+   },
+   "ack": {
+    "symbol": "sandbox",
+    "offset": 4,
+    "type": "u32"
+   },
+   "player_x": {
+    "symbol": "sandbox",
+    "offset": 8,
+    "type": "s16"
+   },
+   "player_y": {
+    "symbol": "sandbox",
+    "offset": 10,
+    "type": "s16"
+   },
+   "enemy_count": {
+    "symbol": "sandbox",
+    "offset": 14,
+    "type": "u8"
+   }
+  }
+ },
+ "steps": [
+  {
+   "frames": 30,
+   "capture": "00_start"
+  },
+  {
+   "poke": [
+    {
+     "field": "player_x",
+     "value": 170
+    },
+    {
+     "field": "player_y",
+     "value": 260
+    },
+    {
+     "field": "seq",
+     "value": 201
+    },
+    {
+     "field": "enemy_count",
+     "value": 0
+    }
+   ],
+   "frames": 25,
+   "capture": "p01_170_260"
+  },
+  {
+   "poke": [
+    {
+     "field": "player_x",
+     "value": 330
+    },
+    {
+     "field": "player_y",
+     "value": 260
+    },
+    {
+     "field": "seq",
+     "value": 202
+    },
+    {
+     "field": "enemy_count",
+     "value": 0
+    }
+   ],
+   "frames": 25,
+   "capture": "p02_330_260"
+  },
+  {
+   "poke": [
+    {
+     "field": "player_x",
+     "value": 170
+    },
+    {
+     "field": "player_y",
+     "value": 400
+    },
+    {
+     "field": "seq",
+     "value": 203
+    },
+    {
+     "field": "enemy_count",
+     "value": 0
+    }
+   ],
+   "frames": 25,
+   "capture": "p03_170_400"
+  },
+  {
+   "poke": [
+    {
+     "field": "player_x",
+     "value": 330
+    },
+    {
+     "field": "player_y",
+     "value": 400
+    },
+    {
+     "field": "seq",
+     "value": 204
+    },
+    {
+     "field": "enemy_count",
+     "value": 0
+    }
+   ],
+   "frames": 25,
+   "capture": "p04_330_400"
+  },
+  {
+   "poke": [
+    {
+     "field": "player_x",
+     "value": 170
+    },
+    {
+     "field": "player_y",
+     "value": 600
+    },
+    {
+     "field": "seq",
+     "value": 205
+    },
+    {
+     "field": "enemy_count",
+     "value": 0
+    }
+   ],
+   "frames": 25,
+   "capture": "p05_170_600"
+  },
+  {
+   "poke": [
+    {
+     "field": "player_x",
+     "value": 330
+    },
+    {
+     "field": "player_y",
+     "value": 600
+    },
+    {
+     "field": "seq",
+     "value": 206
+    },
+    {
+     "field": "enemy_count",
+     "value": 0
+    }
+   ],
+   "frames": 25,
+   "capture": "p06_330_600"
+  },
+  {
+   "poke": [
+    {
+     "field": "player_x",
+     "value": 170
+    },
+    {
+     "field": "player_y",
+     "value": 900
+    },
+    {
+     "field": "seq",
+     "value": 207
+    },
+    {
+     "field": "enemy_count",
+     "value": 0
+    }
+   ],
+   "frames": 25,
+   "capture": "p07_170_900"
+  },
+  {
+   "poke": [
+    {
+     "field": "player_x",
+     "value": 330
+    },
+    {
+     "field": "player_y",
+     "value": 900
+    },
+    {
+     "field": "seq",
+     "value": 208
+    },
+    {
+     "field": "enemy_count",
+     "value": 0
+    }
+   ],
+   "frames": 25,
+   "capture": "p08_330_900"
+  },
+  {
+   "poke": [
+    {
+     "field": "player_x",
+     "value": 170
+    },
+    {
+     "field": "player_y",
+     "value": 1200
+    },
+    {
+     "field": "seq",
+     "value": 209
+    },
+    {
+     "field": "enemy_count",
+     "value": 0
+    }
+   ],
+   "frames": 25,
+   "capture": "p09_170_1200"
+  },
+  {
+   "poke": [
+    {
+     "field": "player_x",
+     "value": 330
+    },
+    {
+     "field": "player_y",
+     "value": 1200
+    },
+    {
+     "field": "seq",
+     "value": 210
+    },
+    {
+     "field": "enemy_count",
+     "value": 0
+    }
+   ],
+   "frames": 25,
+   "capture": "p10_330_1200"
+  },
+  {
+   "poke": [
+    {
+     "field": "player_x",
+     "value": 170
+    },
+    {
+     "field": "player_y",
+     "value": 1500
+    },
+    {
+     "field": "seq",
+     "value": 211
+    },
+    {
+     "field": "enemy_count",
+     "value": 0
+    }
+   ],
+   "frames": 25,
+   "capture": "p11_170_1500"
+  },
+  {
+   "poke": [
+    {
+     "field": "player_x",
+     "value": 330
+    },
+    {
+     "field": "player_y",
+     "value": 1500
+    },
+    {
+     "field": "seq",
+     "value": 212
+    },
+    {
+     "field": "enemy_count",
+     "value": 0
+    }
+   ],
+   "frames": 25,
+   "capture": "p12_330_1500"
+  },
+  {
+   "poke": [
+    {
+     "field": "player_x",
+     "value": 170
+    },
+    {
+     "field": "player_y",
+     "value": 1800
+    },
+    {
+     "field": "seq",
+     "value": 213
+    },
+    {
+     "field": "enemy_count",
+     "value": 0
+    }
+   ],
+   "frames": 25,
+   "capture": "p13_170_1800"
+  },
+  {
+   "poke": [
+    {
+     "field": "player_x",
+     "value": 330
+    },
+    {
+     "field": "player_y",
+     "value": 1800
+    },
+    {
+     "field": "seq",
+     "value": 214
+    },
+    {
+     "field": "enemy_count",
+     "value": 0
+    }
+   ],
+   "frames": 25,
+   "capture": "p14_330_1800"
+  },
+  {
+   "button_down": "DOWN",
+   "frames": 12,
+   "capture": "q0_abajo"
+  },
+  {
+   "button_down": "DOWN",
+   "frames": 12,
+   "capture": "q1_abajo"
+  },
+  {
+   "button_down": "DOWN",
+   "frames": 12,
+   "capture": "q2_abajo"
+  },
+  {
+   "button_down": "DOWN",
+   "frames": 12,
+   "capture": "q3_abajo"
+  }
+ ],
+ "suite": false,
+ "evidence_only": true
+}
