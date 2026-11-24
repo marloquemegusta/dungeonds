@@ -1,0 +1,21 @@
+{
+  "piece": "calaveras_pila",
+  "size_px": [
+    40,
+    40
+  ],
+  "content_px": [
+    40,
+    38
+  ],
+  "target_width": 40,
+  "scale_factor": 0.09592326139088729,
+  "source_render_px": [
+    417,
+    391
+  ],
+  "yaw": 45,
+  "depth_units": "sprite_px",
+  "tiles_8x8_nonempty": 23,
+  "tiles_8x8_unique": 23
+}

@@ -192,3 +192,17 @@ Cifras iniciales del modelo; el bot de pruebas (variante `arpg-bot`, `tools/arpg
 - **La Monja de cera reza en todos los grupos:** se queda detrás, reza y cura a los de su alrededor como en la Capilla del párroco, y solo pelea cuando el héroe llega hasta ella. Los Monaguillos se interponen ante el Rayo para protegerla (§7).
 - **Objetivos que mide el bot:** la zona entera, la primera vez, entre 60 y 75 min con el perfil normal (§7: al menos 1 h); se llega a cada nave con el nivel de la sala y la demo acaba en el nivel 6; a nivel 1 se llega a la Nave 2 y no más allá; el perfil torpe acaba la zona en 1,5-2 veces el tiempo del normal.
 - **Engarces que se abren por nivel:** cada escuela (Rayo, Ejecución, Glifo y Pecho) empieza con **1 engarce**. El 2.º se abre a **nivel 5**, el nivel con el que se llega a la Cripta, justo antes del jefe de la demo. El 3.º se abrirá en la parte 2 de la catedral (nivel por decidir al diseñarla) y ahí se queda el tope; el Pecho, que tiene 2, se queda en 2. Los engarces cerrados se ven con candado y «Nv. X», y no admiten reliquias.
+
+## 11. Props temáticos de las salas (decidido 2026-11-24)
+
+Piezas nuevas para vestir las salas por temática, con la misma escala, cámara y paleta que los props actuales. Se eligieron entre rondas A/B/C por sala, prefiriendo la variante con **menos detalles pequeños** (se pierden al renderizar a 560 px de alto) y formas grandes y claras. Generadas en Tripo con ≤20.000 triángulos y sin partes. Aún **no están colocadas** en ninguna sala (la composición de las salas no se ha tocado): están registradas en el kit y listas para usar en las plantas.
+
+| Sala | Piezas elegidas |
+| :--- | :--- |
+| Osario | `huesos_monton` (huesos grandes y claros, variante A ampliada), `calaveras_pila`, `osario_estante` |
+| Enfermería | `catre`, `biombo`, `palangana` |
+| Capillas | `candelabro_pie`, `reclinatorio`, `exvoto` (placas colgantes) |
+| Cripta | `sarcofago`, `lapida_pie`, `brasero` |
+| Galerías | `cepo`, `capullo` |
+
+Pendiente de decisión: las galerías de Misa, cofre y secreto aún no tienen piezas propuestas.

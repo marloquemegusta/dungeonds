@@ -25,7 +25,9 @@ OUTPUT = ROOT / "source/strip_kit.c"
 DEFAULT_PROPS = ("columna_entera", "banco_entero", "relicario", "vela",
                  "lapida_3x2_cruz", "lapida_3x2_cab", "lapida_2x1_cruz", "lapida_2x1_cab",
                  "banco_grupo4", "santo", "sacos", "verja", "columna", "banco_grupo4_roto",
-                 "sacos_b", "sacos_remate", "sacos_remate_der", "alambre", "santo_der")
+                 "sacos_b", "sacos_remate", "sacos_remate_der", "alambre", "santo_der",
+                 # Props tematicos (Osario, Enfermeria, Capillas, Cripta, Galerias): solo se hornean si una planta los coloca.
+                 "candelabro_pie", "huesos_monton", "catre", "calaveras_pila", "sarcofago", "capullo", "exvoto", "biombo", "osario_estante", "palangana", "brasero", "cepo", "lapida_pie", "reclinatorio")
 # Room furniture of the encounter rooms (salas ARPG). Only the upper door is placed by the
 # compositor: it never changes, so baking it gives the real art plus its occlusion. The chests and
 # the travel altar keep the software-fixture path (source/encounters_act1.c) because their state
@@ -44,6 +46,7 @@ PIECE_IDS = {
     "sacos": 11, "verja": 12, "columna": 13, "banco_grupo4_roto": 14,
     "sacos_b": 15, "sacos_remate": 16, "sacos_remate_der": 17, "alambre": 18,
     "santo_der": 19,
+    "candelabro_pie": 20, "huesos_monton": 21, "catre": 22, "calaveras_pila": 23, "sarcofago": 24, "capullo": 25, "exvoto": 26, "biombo": 27, "osario_estante": 28, "palangana": 29, "brasero": 30, "cepo": 31, "lapida_pie": 32, "reclinatorio": 33,
     "puerta": 200, "cofre_cerrado": 201, "cofre_abierto": 202, "altar": 203,
 }
 LAPIDA_NAMES = ("lapida_3x2_cruz", "lapida_3x2_cab", "lapida_2x1_cruz", "lapida_2x1_cab")

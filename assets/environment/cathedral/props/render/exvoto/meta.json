@@ -1,0 +1,21 @@
+{
+  "piece": "exvoto",
+  "size_px": [
+    40,
+    40
+  ],
+  "content_px": [
+    40,
+    39
+  ],
+  "target_width": 40,
+  "scale_factor": 0.062111801242236024,
+  "source_render_px": [
+    644,
+    626
+  ],
+  "yaw": 45,
+  "depth_units": "sprite_px",
+  "tiles_8x8_nonempty": 23,
+  "tiles_8x8_unique": 23
+}

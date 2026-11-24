@@ -1,0 +1,21 @@
+{
+  "piece": "candelabro_pie",
+  "size_px": [
+    32,
+    32
+  ],
+  "content_px": [
+    32,
+    25
+  ],
+  "target_width": 32,
+  "scale_factor": 0.0425531914893617,
+  "source_render_px": [
+    752,
+    586
+  ],
+  "yaw": 45,
+  "depth_units": "sprite_px",
+  "tiles_8x8_nonempty": 14,
+  "tiles_8x8_unique": 14
+}
