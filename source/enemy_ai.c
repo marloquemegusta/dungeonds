@@ -602,7 +602,8 @@ static void update_exvoto(Enemy *e, Enemy *enemies, int num_enemies, int idx,
 // Charger (DESIGN.md 6.9.1): lunge and dodge. FSM CHASE (slow approach) -> TELEGRAPH (still, blinks,
 // locks the direction) -> CHARGE (straight line) -> RECOVER (still, vulnerable) -> CHASE.
 // A wall or column in the way of the charge, or a ray hit during TELEGRAPH / CHARGE, leaves it STUNNED.
-static void update_charger(Enemy *e, Enemy *enemies, int num_enemies, int idx,
+// noinline: the charger body stays out of the ITCM so enemy_ai_update fits in its 32 KB.
+__attribute__((noinline)) static void update_charger(Enemy *e, Enemy *enemies, int num_enemies, int idx,
                            fixed player_x, fixed player_y) {
     const EnemyTuning *tuning = &g_enemy_tuning[ENEMY_TYPE_CHARGER];
 
