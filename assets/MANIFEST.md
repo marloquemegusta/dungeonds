@@ -33,7 +33,7 @@ Todo asset que use el juego está en este catálogo y versionado. Lo que no est�
 | :--- | :--- | :--- | :--- | :--- |
 | Personajes | modelos 3D en `assets/models/characters/` (§2) | `tools/characters/build_*.py` (Blender) → lab con `characters.json` → `tools/generate_player_sprites_c.py` (paso `characters` y `bake` de `tools/rebuild_all.py`) | `source/player_sprite.c` | LFS (paquetes del lab en `assets/sprites/characters/`: git) |
 | Retratos del bestiario | animaciones exportadas en `assets/sprites/bestiary/<anim>/` | `tools/gen_bestiary_portraits.py` (comprime cada dirección con `tools/lz10.py`) | `nitrofiles/bestiary/*.bin` (LZ10 por dirección) | git (ver §7, deuda de los `.h`) |
-| Props de la catedral | `assets/models/environment/cathedral/props/` (§3) | `tools/props/prep_props.py` → `prerender_props.py` → `bake_cathedral_kit.py` | `source/strip_kit.c` | LFS (renders en `assets/environment/cathedral/props/render/`: git) |
+| Props de la catedral | `assets/models/environment/cathedral/props/` (§3) | `tools/props/prep_props.py` → `prerender_props.py` (lab rápido, `export_prop_fast.cjs`) → `bake_cathedral_kit.py` | `source/strip_kit.c` | LFS (renders en `assets/environment/cathedral/props/render/`: git) |
 | Suelo de la catedral | cinco losas en `assets/environment/cathedral/floor_tiles/` (§4) | `tools/floor/rombos_tripo.py` | `floor/rombos_tripo/` → `strip_kit.c` | LFS |
 | Lápidas | lápidas Tripo en `props/` (§3) | `tools/catedral_editor/gen/*` (cadena en su `README.md`) | `assets/environment/cathedral/lapidas/` → `strip_kit.c` | LFS |
 | Muro izquierdo | arco gótico `f450c095` en `props/` | `tools/catedral_editor/gen/wall_row_glb.py` | `muros/muro_izq_128.png` → `strip_kit.c` | LFS |
@@ -129,7 +129,7 @@ Ajustes de render por pieza: `tools/props/props.json`. Cada original está extra
 | `vela_derretida_cb025b38` | `vela` | |
 | `sacos_barrera_fa59a3ab` | `sacos` | |
 | `columna_antigua_7b241e8d` | `columna_entera` | `columna` (base rota) salió de otro modelo Tripo del 8-nov cuyo original se perdió; queda su render. |
-| `banco_gotico_c2b65edd` | `banco_entero` | `banco_roto` y `banco_volcado`: originales perdidos, quedan los renders. El volcado se hará por código; el roto, si hace falta, se regenera en Tripo con `assets/environment/cathedral/prompts.md`. |
+| `banco_gotico_c2b65edd` | `banco_entero` | Original válido. `banco_volcado` sale de `banco_entero.fbx` (pitch -50, yaw 135, `props.json`); `banco_roto`: original perdido, queda el render (si hace falta, se regenera en Tripo con `assets/environment/cathedral/prompts.md`). |
 | `arco_gotico_f450c095` | muro izquierdo (`gothic_arch`, 5 módulos) | |
 | `lapida_tumba_abc4677e` (cruz), `lapida_medieval_ceaaedd5` (caballero) | cuatro estampas de lápida | Los `.glb` v2 se regeneran con `tomb_glb.py` + `lapida_ao.py`. |
 | `puerta_f4a93d19`, `cofre_cerrado_efcc7983`, `cofre_abierto_dcd534cc`, `altar_cfd253e4` | `puerta`, `cofre_cerrado`, `cofre_abierto`, `altar` (rama ARPG, horneados en el kit) | Prototipo ARPG, 2026-11-20. |
@@ -174,4 +174,4 @@ En Descargas, fuera del repo: `tripo_convert_8c5b4a72` (esqueleto soldado) y `tr
 - **`.h` del bestiario versionados:** `assets/sprites/bestiary/*/nds_shadow_anchor.h` ocupan ~270 MB en git y son derivados (`TECHNICAL.md` §4.4).
 - **Sin versionar, solo en la carpeta principal:** vídeos `assets/videos/lore01_{05,06,09,10}*.mp4` (el 04 final ya está en LFS), `lore01_02_…_sinvoz.mp4` y avatares `avatar_{corazon,ojo}.png`. Si son finales, se adoptan en LFS.
 - **Modelos de prueba del usuario** (`archive/legacy/custom/` en la carpeta principal: mago, esqueleto muriendo y dos personajes): sin decidir; no se versionan.
-- **Originales perdidos:** `columna` (base rota), `banco_roto`, `banco_volcado` (ver §3).
+- **Originales perdidos:** `columna` (base rota), `banco_roto` (ver §3).
