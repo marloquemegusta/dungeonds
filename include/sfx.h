@@ -13,10 +13,17 @@ typedef enum {
     SND_ABANDERADO_DEFEAT,
     SND_PUNCH_WHOOSH,
     SND_PUNCH_HIT,
-    SND_REMATE_EXEC,
+    SND_REMATE_CERA,         /* remate: the wax splits (Exvoto, Monaguillo, Bebe, Monja) */
+    SND_REMATE_VIGA,         /* remate: Cireneo beam smash */
+    SND_REMATE_OJO,          /* remate: Ojo body topples to the floor */
+    SND_REMATE_DERRETIR,     /* remate: Parroco melts (1,6 s) */
+    SND_REMATE_TIRON,
+    SND_REMATE_CAIDA,
+    SND_REMATE_FORCEJEO,
+    SND_REMATE_MANO,
     SND_WOBBLE_CUE,
-    SND_GLIFO_CRACK,         /* Glifo: the floor cracks open (assets/sfx/baked/lab_creak) */
-    SND_GLIFO_DETONATE,      /* Glifo: the rune detonates (lab_mining0) */
+    SND_GLIFO_CRACK,         /* Glifo: the floor cracks open (glifo_grieta) */
+    SND_GLIFO_DETONATE,      /* Glifo: the rune detonates (glifo_detonacion) */
     SND_OJO_CHARGE,
     SND_OJO_FIRE,
     SND_CIRENEO_CHARGE,
@@ -30,6 +37,7 @@ typedef enum {
     SND_UI_CLICK,
     SND_RELIC_SOCKET,
     SND_LEVEL_UP,
+    SND_CFX_LIFT,            /* Campanero: lifts the bell (lab_creak) */
     SND_CFX_TANIDO,          /* Campanero: minor toll (lab_bell_h2) */
     SND_CFX_BONG,            /* Campanero: major toll, the strike (lab_bong) */
     SND_CFX_BELL_LOW,        /* Campanero: major toll, the hum under it (lab_bell_h0) */

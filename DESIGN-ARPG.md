@@ -93,7 +93,7 @@ Las cifras son `[TUNABLE-PLACEHOLDER]`. Lo retirado del primer prototipo (campam
 - **Pendiente próximo para la protodemo:**
   1. **Glifo:** integrarlo en la ROM según §6.
   2. **Grafo de Zona 1:** conectar salas reales (3 naves, 4 galerías, 2 capillas con reja, cripta, puerta con llave, atajo), persistencia de cofres/puertas/altares, viaje entre altares desde el campamento, santuarios (estatuas) y mapa en la pausa.
-  3. **Sonidos definitivos:** revisar sonido a sonido en una ROM de prueba cuáles chirrían (muchos de ElevenLabs, p. ej. el de ejecución; los gratuitos `lab_*` gustan más) y sustituirlos.
+  3. **Sonidos definitivos:** revisar sonido a sonido en una ROM de prueba cuáles chirrían (muchos de ElevenLabs, p. ej. el de ejecución; los gratuitos `lab_*` gustan más) y sustituirlos. **Sonido de remate por ejecución (decidido 2026-11-23):** cada animación de remate tiene su sonido, sincronizado con lo que se ve (suena en el fotograma del corte, el desgarro o el derretido, no al empezar la celda), en vez de un único `remate_exec` para todos. El sonido cubre toda la acción: si un remate tiene varios tiempos, suena uno en cada uno, y cada sonido dura lo que dura su tramo. Se comparte solo cuando la acción es la misma: Exvoto (Monja de cera), Monaguillo y Bebé, partidos en dos (cera que se raja); Súper Monja, tirón de la cabeza y caída del cuerpo; Cireneo, la viga que lo aplasta; Ojo, forcejeo (un gañido casi humano, que gusta) y vuelco contra el suelo; Párroco, la mano que se hunde en el pecho y el derretido hasta el charco.
   4. **Validación en DS:** medición `perf` en hardware (campamento nocturno y salas con ~24 enemigos) y prueba de guardado en tarjeta real (`dungeonds_arpg.sav`).
 
 ## 6. Glifo (decidido 2026-11-22)

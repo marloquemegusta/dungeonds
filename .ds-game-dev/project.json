@@ -79,7 +79,7 @@
             "defines": ["ARPG_REMATE_TEST=1", "SKIP_TITLE=1", "ARPG_ALL_UNLOCKED=1"]
         },
         "prueba-sonidos": {
-            "defines": ["ARPG_LAB=1", "SOUND_TEST=1", "SKIP_TITLE=1", "ARPG_ALL_UNLOCKED=1"]
+            "defines": ["ARPG_LAB=1", "SOUND_TEST=1", "SKIP_TITLE=1", "ARPG_ALL_UNLOCKED=1", "ROOM_POOL_BYTES=1760000"]
         }
     },
     "hostTests": [

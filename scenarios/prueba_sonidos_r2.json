@@ -1,0 +1,129 @@
+{
+  "name": "prueba_sonidos_r2",
+  "description": "Catalogo de prueba-sonidos con candidatos de la ronda 2 elegidos (Glifo grieta A, Glifo deton B). Solo evidencia.",
+  "suite": false,
+  "evidence_only": true,
+  "state": {
+    "elf": "../.ds-game-dev/build/out/dungeonds-prueba-sonidos.elf",
+    "symbols": {
+      "pl": "s_player"
+    },
+    "default_symbol": "pl",
+    "fields": {
+      "px": {
+        "symbol": "pl",
+        "offset": 0,
+        "type": "s32"
+      },
+      "py": {
+        "symbol": "pl",
+        "offset": 4,
+        "type": "s32"
+      }
+    }
+  },
+  "steps": [
+    {
+      "frames": 90
+    },
+    {
+      "button_down": "SELECT",
+      "frames": 4
+    },
+    {
+      "button_up": "SELECT",
+      "frames": 20
+    },
+    {
+      "button_down": "R",
+      "frames": 4
+    },
+    {
+      "button_up": "R",
+      "frames": 8,
+      "capture": "cat_heroe_r2"
+    },
+    {
+      "button_down": "DOWN",
+      "frames": 4
+    },
+    {
+      "button_up": "DOWN",
+      "frames": 5
+    },
+    {
+      "button_down": "DOWN",
+      "frames": 4
+    },
+    {
+      "button_up": "DOWN",
+      "frames": 5
+    },
+    {
+      "button_down": "DOWN",
+      "frames": 4
+    },
+    {
+      "button_up": "DOWN",
+      "frames": 5
+    },
+    {
+      "button_down": "DOWN",
+      "frames": 4
+    },
+    {
+      "button_up": "DOWN",
+      "frames": 5
+    },
+    {
+      "button_down": "DOWN",
+      "frames": 4
+    },
+    {
+      "button_up": "DOWN",
+      "frames": 5
+    },
+    {
+      "button_down": "DOWN",
+      "frames": 4
+    },
+    {
+      "button_up": "DOWN",
+      "frames": 5
+    },
+    {
+      "button_down": "RIGHT",
+      "frames": 4
+    },
+    {
+      "button_up": "RIGHT",
+      "frames": 6,
+      "capture": "glifo_grieta_A"
+    },
+    {
+      "button_down": "DOWN",
+      "frames": 4
+    },
+    {
+      "button_up": "DOWN",
+      "frames": 5
+    },
+    {
+      "button_down": "RIGHT",
+      "frames": 4
+    },
+    {
+      "button_up": "RIGHT",
+      "frames": 6
+    },
+    {
+      "button_down": "RIGHT",
+      "frames": 4
+    },
+    {
+      "button_up": "RIGHT",
+      "frames": 6,
+      "capture": "glifo_deton_B"
+    }
+  ]
+}

@@ -1964,7 +1964,7 @@ static void update_campanero(Enemy *e, Enemy *enemies, int num_enemies, int idx,
     } else if (e->state_timer >= s_camp_period[ph >= 1 && ph <= 3 ? ph - 1 : 0]) {
         e->state_timer = 0;
         e->beam_mx = CAMP_TELEGRAPH_FRAMES;
-        sfx_play(SND_GLIFO_CRACK, wx);                      // lab_creak: the bell is lifted
+        sfx_play(SND_CFX_LIFT, wx);                          // lab_creak: the bell is lifted
     } else if (ph >= 3) {                                   // phase III: he walks to the hero dragging the bell
         if (dist_sq > CAMP_CONTACT_R * CAMP_CONTACT_R) {
             const fixed x0 = e->x, y0 = e->y;
