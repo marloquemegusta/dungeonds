@@ -192,6 +192,7 @@ static void heal_fx_spawn(fixed x, fixed y, uint16_t col) {
 }
 
 // The finisher restores life and mana at once (no orbs): same chances and relic bonus as the old drops.
+// Silent: the finisher's own sound covers the whole action (DESIGN-ARPG.md); the spark and the +N show the heal.
 void pickups_remate_drops(fixed x, fixed y) {
     s_rng = s_rng * 1664525u + 1013904223u;
     int hp_roll = (int)((s_rng >> 8) % 100u);
@@ -207,7 +208,6 @@ void pickups_remate_drops(fixed x, fixed y) {
         if (player->hp > player->max_hp) player->hp = player->max_hp;
         dmg_numbers_spawn(x - TO_FIXED(REMATE_ORB_OFFSET_PX), y - TO_FIXED(18), gain, DMG_NUM_HEAL);
         heal_fx_spawn(x - TO_FIXED(3), y, RGB15(15, 24, 13) | BIT(15));
-        sfx_play_pitched(SND_PICKUP_ORB, TO_INT(x), 920);
     }
     if (mana_roll < BAL(remate_mana_chance, ARPG_REMATE_MANA_CHANCE)) {
         int gain = BAL(remate_mana, ARPG_REMATE_MANA) + g_mods.remate_heal_bonus / 2;
@@ -215,7 +215,6 @@ void pickups_remate_drops(fixed x, fixed y) {
         if (player->mana > player->max_mana) player->mana = player->max_mana;
         dmg_numbers_spawn(x + TO_FIXED(REMATE_ORB_OFFSET_PX), y - TO_FIXED(18), gain, DMG_NUM_MANA);
         heal_fx_spawn(x + TO_FIXED(3), y, RGB15(13, 19, 27) | BIT(15));
-        sfx_play_pitched(SND_PICKUP_ORB, TO_INT(x), 1024);
     }
 }
 
