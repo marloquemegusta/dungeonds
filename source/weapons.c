@@ -715,7 +715,9 @@ static void fire_sniper(const WeaponTuning *tuning, const WeaponInput *in, fixed
                 }
                 // Viatico: a lethal beam hit may steal a heart; the victim then stays suspended (see enemy_suspend_update).
                 if (e->hp <= sniper_damage && viatico_roll(e)) e->suspend_req = 1;
+                g_enemy_hit_silent = 1;
                 enemy_hit(e, sniper_damage, dir_x * 4, dir_y * 4);
+                g_enemy_hit_silent = 0;
 #if ENCOUNTERS_PROTO
                 enc_note_beam_hit(e);
 #endif

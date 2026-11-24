@@ -1,0 +1,135 @@
+{
+  "name": "prueba_sonidos_r3_catalogo",
+  "description": "Catalogo Heroe con filas de remate. Solo evidencia.",
+  "suite": false,
+  "evidence_only": true,
+  "state": {
+    "elf": "../.ds-game-dev/build/out/dungeonds-prueba-sonidos.elf",
+    "symbols": {
+      "pl": "s_player"
+    },
+    "default_symbol": "pl",
+    "fields": {
+      "px": {
+        "symbol": "pl",
+        "offset": 0,
+        "type": "s32"
+      },
+      "py": {
+        "symbol": "pl",
+        "offset": 4,
+        "type": "s32"
+      }
+    }
+  },
+  "steps": [
+    {
+      "frames": 90
+    },
+    {
+      "button_down": "SELECT",
+      "frames": 4
+    },
+    {
+      "button_up": "SELECT",
+      "frames": 20
+    },
+    {
+      "button_down": "R",
+      "frames": 4
+    },
+    {
+      "button_up": "R",
+      "frames": 8
+    },
+    {
+      "button_down": "DOWN",
+      "frames": 4
+    },
+    {
+      "button_up": "DOWN",
+      "frames": 5
+    },
+    {
+      "button_down": "DOWN",
+      "frames": 4
+    },
+    {
+      "button_up": "DOWN",
+      "frames": 5
+    },
+    {
+      "button_down": "DOWN",
+      "frames": 4
+    },
+    {
+      "button_up": "DOWN",
+      "frames": 5
+    },
+    {
+      "button_down": "DOWN",
+      "frames": 4
+    },
+    {
+      "button_up": "DOWN",
+      "frames": 5
+    },
+    {
+      "button_down": "DOWN",
+      "frames": 4
+    },
+    {
+      "button_up": "DOWN",
+      "frames": 5
+    },
+    {
+      "button_down": "DOWN",
+      "frames": 4
+    },
+    {
+      "button_up": "DOWN",
+      "frames": 5
+    },
+    {
+      "button_down": "DOWN",
+      "frames": 4
+    },
+    {
+      "button_up": "DOWN",
+      "frames": 5
+    },
+    {
+      "button_down": "DOWN",
+      "frames": 4
+    },
+    {
+      "button_up": "DOWN",
+      "frames": 5
+    },
+    {
+      "button_down": "DOWN",
+      "frames": 4
+    },
+    {
+      "button_up": "DOWN",
+      "frames": 8
+    },
+    {
+      "button_down": "DOWN",
+      "frames": 4
+    },
+    {
+      "button_up": "DOWN",
+      "frames": 5
+    },
+    {
+      "button_down": "DOWN",
+      "frames": 4
+    },
+    {
+      "button_up": "DOWN",
+      "frames": 5,
+      "capture": "r3_catalogo_remates"
+    }
+  ]
+}

@@ -287,6 +287,7 @@ static inline int abanderado_clip_frame(const struct Enemy *e, int clip) {
 
 // Applies damage to an enemy. On a kill it marks the enemy dead, records the kill
 // with the encounter manager and notifies the death hook.
+extern int g_enemy_hit_silent;   // 1 around a ray hit: enemy_hit skips SND_ENEMY_HIT
 void enemy_hit(Enemy *e, int damage, fixed hit_vx, fixed hit_vy);
 // Fire damage (burn ticks, explosions): same kill path and death hook, but no hit stop, flash or sounds.
 void enemy_hit_quiet(Enemy *e, int damage);

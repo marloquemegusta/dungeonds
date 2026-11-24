@@ -31,6 +31,7 @@
 #include "boxeo.h"
 #include "exvoto_test.h"
 #include "remate_test.h"
+#include "ojo_test.h"
 #include "sound_test.h"
 #include "bestiary.h"
 #include "intro.h"
@@ -2785,6 +2786,9 @@ static void strip_enemies_update(void) {
 #if ARPG_EXVOTO_TEST
     exvoto_test_update(g_enemies, MAX_ENEMIES, TO_INT(s_player.x), TO_INT(s_player.y));
 #endif
+#if ARPG_OJO_TEST
+    ojo_test_update(g_enemies, MAX_ENEMIES, TO_INT(s_player.x), TO_INT(s_player.y));
+#endif
 #if ARPG_REMATE_TEST
     remate_test_update(g_enemies, MAX_ENEMIES, TO_INT(s_player.x), TO_INT(s_player.y));
 #endif
@@ -2832,6 +2836,15 @@ static void player_init(void) {
     s_player.x = TO_FIXED(g_arena->player_x);
     s_player.y = TO_FIXED(g_arena->player_y);
     s_player.dir = DIR_SOUTH;
+#if ARPG_OJO_TEST && ENCOUNTERS_PROTO
+    {   // arpg-ojo: the run starts in the room (where the real game lands the hero), not on the strip's default spot
+        int ax = g_arena->player_x, ay = g_arena->player_y, adir = DIR_NORTH;
+        enc_room_arrival(&ax, &ay, &adir);
+        s_player.x = TO_FIXED(ax);
+        s_player.y = TO_FIXED(ay);
+        s_player.dir = adir;
+    }
+#endif
     s_player.frame = 0;
     s_player.is_moving = 0;
     s_player.anim_timer = 0;
@@ -3489,6 +3502,9 @@ static void arena_restart(void) {
 #endif
 #if ARPG_EXVOTO_TEST
     exvoto_test_reset();
+#endif
+#if ARPG_OJO_TEST
+    ojo_test_reset();
 #endif
 #if ARPG_REMATE_TEST
     remate_test_reset();

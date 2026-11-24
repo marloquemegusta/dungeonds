@@ -84,6 +84,14 @@ Comprobación rápida: `git diff --stat main proto/arpg -- AGENTS.md ONBOARDING.
 ## Subagentes y Modelos
 
 - Todo plan que lance subagentes indica el modelo de cada uno. Por defecto: **Haiku** solo para búsquedas, listados, verificar que algo sigue presente o leer logs; **Sonnet** para implementar (también efectos y VFX), análisis de código, revisiones y auditorías por área; **Opus** solo para decisiones de arquitectura o diseño que no se puedan partir.
+- **El coordinador (Opus) solo piensa y habla con el usuario:** entiende la petición, decide el diseño, escribe los briefs y revisa resultados. El resto se delega:
+  - **Opus no lee ni comprueba a mano:** leer más de 2 archivos, mirar un log, un diff o resultados de escenarios, ver el estado de las ramas o comprobar que algo está hecho → `lector` (Haiku), que devuelve un resumen corto. Opus solo lee directamente lo que va a editar o un archivo puntual que ya sabe dónde está (una lectura suelta le sale más barata que lanzar un agente; las salidas largas se pagan de nuevo en cada mensaje). Excepción: el diff final antes de mergear lo revisa Opus.
+  - Explorar para responder una duda que pida analizar código (no solo localizar o resumir) → Sonnet medio o `Explore`, que devuelve un resumen, no los archivos.
+  - Cierre completo (merge y conflictos, sincronizar MDs, `STATUS.md`, walkthrough, README, rescate de assets, borrar el worktree) → un solo Sonnet medio con la lista de «Cierre» de este archivo; Opus solo revisa el diff final.
+  - Bucles de evidencia (compilar, escenarios, capturas, GIF, subir a la DS) → Sonnet medio; Opus mira la imagen y decide.
+  - Tareas sin decisión de diseño (render de vídeos, herramientas, ADB, toolchain) → sesión arrancada directamente en Sonnet, no en Opus.
+  - **Señal de alarma:** si Opus va a encadenar más de 5 llamadas seguidas sin nada que decidir ni preguntar al usuario, delega.
+- **Subagentes a medida en vez de `general-purpose`** (definidos en `~/.claude/agents/`): `lector` (Haiku, solo lee) para explorar y responder dudas con un resumen corto; `implementador` (Sonnet medio) para implementar y sacar evidencias; `cierre` (Sonnet medio) para el cierre completo de una entrega aprobada. `general-purpose` arranca con ~85k de contexto en herramientas que no usa y los relee en cada paso; `implementador` arranca con ~22k. `general-purpose` solo si la tarea necesita navegador, artifacts u otras herramientas.
 - **Solo subagentes nativos de Claude** (tool Agent: Haiku, Sonnet, Opus). No se delega en modelos de otros proveedores (Codex, Antigravity, Command Code) ni se usa la skill `delegate-agents`.
 - **Velocidad de los agentes** (medido en esta rama: un agente de 23 min gastó ~10 en pensar, ~6 en escenarios y ~3 en leer):
   - Esfuerzo `medium` para tareas acotadas (un archivo o una mecánica con punteros exactos); `high` solo si hay que diseñar.
