@@ -1,0 +1,270 @@
+﻿{
+    "name":  "arpg_inv_alijo",
+    "description":  "ARPG (variante arpg-todo): desde el titulo al campamento, arcÃ³n -\u003e inventario (pantalla superior con la escuela, engarces grandes y vista previa del cambio; inferior con bolsa y ficha), pestanas Glifo (sin definir) y Pecho (2 engarces), engarzar con A, desguazar con Y + confirmacion, vuelta al campamento, entrada a la catedral e inventario desde la pausa (B vuelve a la pausa, B sale). Solo evidencia.",
+    "suite":  false,
+    "evidence_only":  true,
+    "state":  {
+                  "elf":  "../.ds-game-dev/build/out/dungeonds-arpg-todo.elf",
+                  "symbols":  {
+                                  "pl":  "s_player",
+                                  "gps":  "g_player_state"
+                              },
+                  "default_symbol":  "pl",
+                  "fields":  {
+                                 "px":  {
+                                            "symbol":  "pl",
+                                            "offset":  0,
+                                            "type":  "s32"
+                                        },
+                                 "py":  {
+                                            "symbol":  "pl",
+                                            "offset":  4,
+                                            "type":  "s32"
+                                        },
+                                 "hp":  {
+                                            "symbol":  "gps",
+                                            "offset":  0,
+                                            "type":  "s32"
+                                        }
+                             }
+              },
+    "steps":  [
+                  {
+                      "frames":  60
+                  },
+                  {
+                      "tap":  {
+                                  "x":  128,
+                                  "y":  66
+                              },
+                      "frames":  6
+                  },
+                  {
+                      "release":  true,
+                      "frames":  40
+                  },
+                  {
+                      "button_down":  "START",
+                      "frames":  4
+                  },
+                  {
+                      "button_up":  "START",
+                      "frames":  50
+                  },
+                  {
+                      "frames":  20,
+                      "capture":  "m01_campamento"
+                  },
+                  {
+                      "poke":  [
+                                   {
+                                       "field":  "px",
+                                       "value":  15872
+                                   },
+                                   {
+                                       "field":  "py",
+                                       "value":  75776
+                                   }
+                               ],
+                      "frames":  20,
+                      "capture":  "m02_junto_arcon"
+                  },
+                  {
+                      "button_down":  "A",
+                      "frames":  4
+                  },
+                  {
+                      "button_up":  "A",
+                      "frames":  25,
+                      "capture":  "m03_inventario"
+                  },
+                  {
+                      "tap":  {
+                                  "x":  128,
+                                  "y":  100
+                              },
+                      "frames":  6
+                  },
+                  {
+                      "release":  true,
+                      "frames":  15
+                  },
+                  {
+                      "tap":  {
+                                  "x":  77,
+                                  "y":  11
+                              },
+                      "frames":  6
+                  },
+                  {
+                      "release":  true,
+                      "frames":  15
+                  },
+                  {
+                      "tap":  {
+                                  "x":  138,
+                                  "y":  54
+                              },
+                      "frames":  6
+                  },
+                  {
+                      "tap":  {
+                                  "x":  22,
+                                  "y":  54
+                              },
+                      "frames":  10
+                  },
+                  {
+                      "release":  true,
+                      "frames":  15
+                  },
+                  {
+                      "tap":  {
+                                  "x":  165,
+                                  "y":  54
+                              },
+                      "frames":  6
+                  },
+                  {
+                      "tap":  {
+                                  "x":  49,
+                                  "y":  54
+                              },
+                      "frames":  10
+                  },
+                  {
+                      "release":  true,
+                      "frames":  15
+                  },
+                  {
+                      "tap":  {
+                                  "x":  192,
+                                  "y":  54
+                              },
+                      "frames":  6
+                  },
+                  {
+                      "tap":  {
+                                  "x":  76,
+                                  "y":  54
+                              },
+                      "frames":  10
+                  },
+                  {
+                      "release":  true,
+                      "frames":  15
+                  },
+                  {
+                      "tap":  {
+                                  "x":  219,
+                                  "y":  54
+                              },
+                      "frames":  6
+                  },
+                  {
+                      "tap":  {
+                                  "x":  103,
+                                  "y":  54
+                              },
+                      "frames":  10
+                  },
+                  {
+                      "release":  true,
+                      "frames":  15
+                  },
+                  {
+                      "tap":  {
+                                  "x":  138,
+                                  "y":  81
+                              },
+                      "frames":  6
+                  },
+                  {
+                      "tap":  {
+                                  "x":  22,
+                                  "y":  81
+                              },
+                      "frames":  10
+                  },
+                  {
+                      "release":  true,
+                      "frames":  15
+                  },
+                  {
+                      "tap":  {
+                                  "x":  165,
+                                  "y":  81
+                              },
+                      "frames":  6
+                  },
+                  {
+                      "tap":  {
+                                  "x":  49,
+                                  "y":  81
+                              },
+                      "frames":  10
+                  },
+                  {
+                      "release":  true,
+                      "frames":  15
+                  },
+                  {
+                      "tap":  {
+                                  "x":  192,
+                                  "y":  81
+                              },
+                      "frames":  6
+                  },
+                  {
+                      "tap":  {
+                                  "x":  76,
+                                  "y":  108
+                              },
+                      "frames":  10
+                  },
+                  {
+                      "release":  true,
+                      "frames":  15
+                  },
+                  {
+                      "tap":  {
+                                  "x":  219,
+                                  "y":  81
+                              },
+                      "frames":  6
+                  },
+                  {
+                      "tap":  {
+                                  "x":  103,
+                                  "y":  135
+                              },
+                      "frames":  10
+                  },
+                  {
+                      "release":  true,
+                      "frames":  15
+                  },
+                  {
+                      "frames":  15,
+                      "capture":  "a03_alijo"
+                  },
+                  {
+                      "button_down":  "SELECT",
+                      "frames":  4
+                  },
+                  {
+                      "button_up":  "SELECT",
+                      "frames":  15,
+                      "capture":  "a04_engarces"
+                  },
+                  {
+                      "button_down":  "SELECT",
+                      "frames":  4
+                  },
+                  {
+                      "button_up":  "SELECT",
+                      "frames":  15,
+                      "capture":  "a05_alijo_de_nuevo"
+                  }
+              ]
+}
