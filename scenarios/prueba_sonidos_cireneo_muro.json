@@ -1,0 +1,82 @@
+{
+  "name": "prueba_sonidos_cireneo_muro",
+  "description": "Escena 4 (Cireneos): la carga acaba contra un muro y suena SND_CIRENEO_WALL. Solo evidencia (el contador temporal de depuracion que verific\u00f3 la rama se retir\u00f3: cwall=2 con la ampliacion, 0 sin ella).",
+  "suite": false,
+  "state": {
+    "elf": "../.ds-game-dev/build/out/dungeonds-prueba-sonidos.elf",
+    "symbols": {
+      "pl": "s_player"
+    },
+    "default_symbol": "pl",
+    "fields": {
+      "px": {
+        "symbol": "pl",
+        "offset": 0,
+        "type": "s32"
+      },
+      "py": {
+        "symbol": "pl",
+        "offset": 4,
+        "type": "s32"
+      }
+    }
+  },
+  "steps": [
+    {
+      "frames": 90
+    },
+    {
+      "button_down": "SELECT",
+      "frames": 4
+    },
+    {
+      "button_up": "SELECT",
+      "frames": 20
+    },
+    {
+      "button_down": "RIGHT",
+      "frames": 4
+    },
+    {
+      "button_up": "RIGHT",
+      "frames": 10
+    },
+    {
+      "button_down": "RIGHT",
+      "frames": 4
+    },
+    {
+      "button_up": "RIGHT",
+      "frames": 10
+    },
+    {
+      "button_down": "RIGHT",
+      "frames": 4
+    },
+    {
+      "button_up": "RIGHT",
+      "frames": 10
+    },
+    {
+      "button_down": "RIGHT",
+      "frames": 4
+    },
+    {
+      "button_up": "RIGHT",
+      "frames": 10
+    },
+    {
+      "button_down": "SELECT",
+      "frames": 4
+    },
+    {
+      "button_up": "SELECT",
+      "frames": 10
+    },
+    {
+      "frames": 400,
+      "capture": "cireneo_muro"
+    }
+  ],
+  "evidence_only": true
+}

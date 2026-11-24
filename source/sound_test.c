@@ -40,7 +40,7 @@ const char *const g_snd_scene_todo[SND_SCENE_COUNT] = {
     "La campana queda 70 px al norte: tañido cada 2 s y toque cada 7 s. Lanza un Glifo dentro del anillo para oír el cristal.",
 };
 
-#define ST_MAX_UNITS 6
+#define ST_MAX_UNITS 8
 #define ST_DELAY_FRAMES 120         // ~2 s tras caer antes de reaparecer en su sitio
 #define ST_PACK (-1)
 #define ST_MAX_HP 400
@@ -64,14 +64,16 @@ typedef struct {
 } Scene;
 
 #define G(x) (1u << (x))
-#define ART_FAMILY (G(CG_EXVOTO) | G(CG_MONAGUILLO) | G(CG_PARROCO) | G(CG_SMONJA) | G(CG_ARANA_EXVOTO) | G(CG_ARANA_MONA))
+// Sin las aranas: con ellas el pozo de arte se llena y la Super Monja (CG_SMONJA) no llega a cargarse (no se ve). Nadie cae en su aura de posesion.
+#define ART_FAMILY (G(CG_OJO) | G(CG_CHARGER) | G(CG_EXVOTO) | G(CG_MONAGUILLO) | G(CG_PARROCO) | G(CG_SMONJA))
 
 static const Scene s_scene[SND_SCENE_COUNT] = {
     [0] = { 0, 0, 0, { { 0 } } },
-    [1] = { 5, 1, ART_FAMILY, {
+    [1] = { 7, 1, ART_FAMILY, {
         { ENEMY_TYPE_EXVOTO, -80, -60, ST_HP_TOTTER }, { ENEMY_TYPE_MONAGUILLO, -40, -60, ST_HP_TOTTER },
         { ENEMY_TYPE_BEBE, 0, -60, ST_HP_TOTTER }, { ENEMY_TYPE_PARROCO, 40, -60, ST_HP_TOTTER },
-        { ENEMY_TYPE_MONJA, 80, -60, ST_HP_TOTTER } } },
+        { ENEMY_TYPE_MONJA, 80, -60, ST_HP_TOTTER },
+        { ENEMY_TYPE_SHOOTER, -40, -100, ST_HP_TOTTER }, { ENEMY_TYPE_CHARGER, 40, -100, ST_HP_TOTTER } } },
     [2] = { 5, 1, G(CG_EXVOTO) | G(CG_PARROCO), {
         { ENEMY_TYPE_EXVOTO, -96, -70, ST_MAX_HP }, { ENEMY_TYPE_PARROCO, -48, -70, ST_MAX_HP },
         { ENEMY_TYPE_EXVOTO, 0, -70, ST_MAX_HP }, { ENEMY_TYPE_PARROCO, 48, -70, ST_MAX_HP },
@@ -189,6 +191,13 @@ void sound_test_update(Enemy *enemies, int max_enemies, int hero_x, int hero_y) 
         place(&enemies[j], &sc->u[k], s_pos[k][0], s_pos[k][1], k);
         s_slot[k] = j;
         s_dead[k] = 0;
+    }
+
+    if (s_applied == 4) {
+        // A normal charge ends after ~170 px, short of any wall unless the hero stands right against it: here it
+        // runs on until something stops it, so SND_CIRENEO_WALL is heard wherever the player stands.
+        for (int k = 0; k < sc->n; k++)
+            if (unit_alive(enemies, k, sc) && enemies[s_slot[k]].state == ENEMY_STATE_CHARGE) enemies[s_slot[k]].state_timer = 99;
     }
 
     if (s_applied == 5 && s_t % ST_HEAL_PERIOD == 0 && unit_alive(enemies, 0, sc)) {

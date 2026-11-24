@@ -198,7 +198,7 @@ Banco de pruebas de combate ARPG: `build-project.ps1 -Variant arpg-lab` (defines
 
 ### 5.3c. Variante `prueba-sonidos`
 
-`arpg-lab` + `SOUND_TEST=1`: el menú (SELECT) abre en «Escenas»; cada escena (`source/sound_test.c`) vacía las salas y coloca ante el héroe un grupo que dispara unos sonidos en contexto (0 mapa normal, 1 remates, 2 hechizos, 3 Ojos, 4 Cireneos, 5 Monja cura simulada, 6 Monaguillos, 7 campana fija). Las páginas de catálogo listan cada `SND_*` con su archivo y origen (`K·` gratuito, `IA·` ElevenLabs) y «Banco gratuito» reproduce los 31 `lab_*`. Con `SOUND_TEST` el héroe invulnerable sigue sonando al recibir daño. Escenario de evidencia `scenarios/prueba_sonidos.json` (`suite: false`).
+`arpg-lab` + `SOUND_TEST=1`: el menú (SELECT) abre en «Escenas»; cada escena (`source/sound_test.c`) vacía las salas y coloca ante el héroe un grupo que dispara unos sonidos en contexto (0 mapa normal, 1 remates, 2 hechizos, 3 Ojos, 4 Cireneos, 5 Monja cura simulada, 6 Monaguillos, 7 campana fija). Las páginas de catálogo listan cada `SND_*` con su archivo y origen (`K·` gratuito, `IA·` ElevenLabs) y «Banco gratuito» reproduce los 31 `lab_*`. Con `SOUND_TEST` el héroe invulnerable sigue sonando al recibir daño. Escenario de evidencia `scenarios/prueba_sonidos.json` (`suite: false`). La variante define `ROOM_POOL_BYTES=1760000` (depósito de sala mayor, solo aquí) para que la escena 1 cargue 7 unidades con la Súper Monja; la escena 4 alarga la carga del Cireneo. Cada remate dispara sus pistas desde la tabla de `source/remate.c`; las filas del catálogo llevan el nombre del enemigo. Escenarios `scenarios/prueba_sonidos_*.json` (`suite: false`).
 
 ### 5.4. Variante `reliquias-suelo`: escaparate de reliquias caídas
 

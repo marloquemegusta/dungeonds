@@ -187,6 +187,7 @@ static int s_enemy;          // indice en el array de enemigos
 static int s_t;              // frames de juego desde el inicio
 static int s_dir;            // direccion del ataque (0..7)
 static int s_ax, s_ay;       // pies finales del heroe = ancla de la celda (px de mundo)
+static int s_cue_done;       // mascara de los sonidos de esta ejecucion que ya sonaron
 static int s_hero_end_ok;    // 1 si el heroe puede reaparecer en el ancla
 static int s_killing;
 static int s_rem_t;          // frames de vida restantes de los restos; 0 = no hay
@@ -290,6 +291,7 @@ int remate_start(Enemy *enemies, int max_enemies, fixed hero_x, fixed hero_y, in
     s_hero_end_ok = position_is_free(TO_FIXED(s_ax), TO_FIXED(s_ay));
     s_enemy = best;
     s_t = 0;
+    s_cue_done = 0;
     s_dash_t = 0;
     s_post_invuln_t = 0;
     e->state = ENEMY_STATE_REMATE;                        // quieto (sin tambaleo) mientras el heroe llega
@@ -319,7 +321,30 @@ static void remate_begin_cell(fixed *hero_x, fixed *hero_y) {
     }
     g_player_state.invuln_timer = kind_frames() * kind_ticks() + 2;
     remate_prepare_frame(0);
-    sfx_play(SND_REMATE_EXEC, s_ax);
+}
+
+// Sonidos por ejecucion, cada uno en el fotograma de la animacion donde ocurre la accion (DESIGN-ARPG.md, "Sonido de remate
+// por ejecucion"). Lista por REMATE_KIND_* de (fotograma, evento); cada entrada suena una sola vez (mascara s_cue_done).
+typedef struct { int8_t frame; uint8_t snd; } RemateCue;
+#define REMATE_MAX_CUES 3
+static const RemateCue s_cues[7][REMATE_MAX_CUES] = {
+    [REMATE_KIND_EXVOTO]    = { { 5, SND_REMATE_CERA } },
+    [REMATE_KIND_CIRENEO]   = { { 6, SND_REMATE_VIGA } },
+    [REMATE_KIND_OJO]       = { { 3, SND_REMATE_FORCEJEO }, { 18, SND_REMATE_OJO } },
+    [REMATE_KIND_MONAGUILLO] = { { 5, SND_REMATE_CERA } },
+    [REMATE_KIND_BEBE]      = { { 5, SND_REMATE_CERA } },
+    [REMATE_KIND_SMONJA]    = { { 3, SND_REMATE_TIRON }, { 11, SND_REMATE_CAIDA } },
+    [REMATE_KIND_PARROCO]   = { { 2, SND_REMATE_MANO }, { 16, SND_REMATE_DERRETIR } },
+};
+
+static void remate_cue(void) {
+    const int f = s_t / kind_ticks();
+    for (int i = 0; i < REMATE_MAX_CUES; i++) {
+        const RemateCue *c = &s_cues[s_kind][i];
+        if (c->snd == 0 || (s_cue_done & (1 << i)) || f < c->frame) continue;
+        s_cue_done |= 1 << i;
+        sfx_play((SfxId)c->snd, s_ax);
+    }
 }
 
 void remate_update(Enemy *enemies, int max_enemies, fixed *hero_x, fixed *hero_y, int *hero_dir) {
@@ -364,7 +389,9 @@ void remate_update(Enemy *enemies, int max_enemies, fixed *hero_x, fixed *hero_y
 
     const int nf = kind_frames(), tk = kind_ticks();
     const int tot = nf * tk;
-    if (++s_t < tot) {
+    s_t++;
+    remate_cue();
+    if (s_t < tot) {
         if (s_hero_end_ok) {
             // El heroe sigue sus pies horneados de cada fotograma (interpolados entre fotogramas) y la camara con el.
             const int f = s_t / tk, sub = s_t % tk;

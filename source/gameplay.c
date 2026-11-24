@@ -237,6 +237,27 @@ void enemy_set_death_hook(EnemyDeathHook hook) {
     s_enemy_death_hook = hook;
 }
 
+// Aviso de tambaleo diferido (~10 frames) para que el golpe que lo provoca se oiga antes. Sin asignaciones.
+#define WOBBLE_CUE_DELAY 10
+#define WOBBLE_CUE_SLOTS 8
+static Enemy *s_wobble_cue_e[WOBBLE_CUE_SLOTS];
+static int s_wobble_cue_t[WOBBLE_CUE_SLOTS];
+int g_enemy_hit_silent = 0;      // 1 mientras se aplica un golpe del rayo: sin SND_ENEMY_HIT (lo tapa el disparo)
+
+static void wobble_cue_schedule(Enemy *e) {
+    for (int i = 0; i < WOBBLE_CUE_SLOTS; i++)
+        if (s_wobble_cue_t[i] <= 0) { s_wobble_cue_e[i] = e; s_wobble_cue_t[i] = WOBBLE_CUE_DELAY; return; }
+    sfx_play(SND_WOBBLE_CUE, TO_INT(e->x));
+}
+
+static void wobble_cue_update(void) {
+    for (int i = 0; i < WOBBLE_CUE_SLOTS; i++) {
+        if (s_wobble_cue_t[i] <= 0 || --s_wobble_cue_t[i] > 0) continue;
+        Enemy *e = s_wobble_cue_e[i];
+        if (e->active && e->hp > 0 && e->state == ENEMY_STATE_WOBBLE) sfx_play(SND_WOBBLE_CUE, TO_INT(e->x));
+    }
+}
+
 static void enemy_damage(Enemy *e, int damage, fixed hit_vx, fixed hit_vy, int quiet) {
     if (!e || !e->active || e->hp <= 0 || e->state == ENEMY_STATE_EMERGE || e->state == ENEMY_STATE_REMATE) return;
 #if ENCOUNTERS_PROTO
@@ -290,13 +311,13 @@ static void enemy_damage(Enemy *e, int damage, fixed hit_vx, fixed hit_vy, int q
              e->state == ENEMY_STATE_WOBBLE)) {
             if (e->state != ENEMY_STATE_WOBBLE) {
                 e->state_timer = REMATE_WOBBLE_FRAMES;   // low life: it reels
-                sfx_play(SND_WOBBLE_CUE, TO_INT(e->x));
+                wobble_cue_schedule(e);
             }
             e->state = ENEMY_STATE_WOBBLE;
             e->aim_px = e->aim_py = 0;                          // a dodge or charge in progress is cancelled
         }
         if (!quiet) {
-            sfx_play(SND_ENEMY_HIT, TO_INT(e->x));
+            if (!g_enemy_hit_silent) sfx_play(SND_ENEMY_HIT, TO_INT(e->x));
 #ifdef DEBUG
             char msg[64];
             snprintf(msg, sizeof(msg), "ENEMY_HIT type=%d hp=%d", e->type, e->hp);
@@ -308,6 +329,7 @@ static void enemy_damage(Enemy *e, int damage, fixed hit_vx, fixed hit_vy, int q
 
 // Once a frame: ends the suspended deaths (Viatico): the death animation plays now, the bookkeeping already ran.
 void enemy_suspend_update(Enemy *enemies, int max_enemies) {
+    wobble_cue_update();
     for (int i = 0; i < max_enemies; i++) {
         Enemy *e = &enemies[i];
         if (!e->active || e->state != ENEMY_STATE_SUSPENDED) continue;

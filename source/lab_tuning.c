@@ -46,8 +46,11 @@ static const EventVariants s_ev[SND_COUNT] = {
     [SND_CIRENEO_WALL]      = { 3, { LABV_WOOD_HEAVY, LABV_MINING0, LABV_GENERIC_LIGHT } },
     [SND_BOSS_PHASE]        = { 3, { LABV_BELL_H0, LABV_BELL_H2, LABV_BONG } },
     [SND_WOBBLE_CUE]        = { 3, { LABV_BELL_H0, LABV_BELL_H2, LABV_BONG } },
+#if SOUND_TEST
+#else
     [SND_MONAGUILLO_EMERGE] = { 2, { LABV_MINING2, LABV_STEP_STONE } },
     [SND_PICKUP_ORB]        = { 3, { LABV_GLASS1, LABV_GLASS4, LABV_CONFIRM1 } },
+#endif
     [SND_CHEST_OPEN]        = { 3, { LABV_CREAK, LABV_LATCH, LABV_DOOR_OPEN1 } },
     [SND_DOOR_OPEN]         = { 2, { LABV_DOOR_OPEN2, LABV_DOOR_CLOSE } },
     [SND_UI_CLICK]          = { 3, { LABV_CLICK, LABV_SELECT, LABV_TICK } },
@@ -87,8 +90,8 @@ static const char *const s_snd_file[SND_COUNT] = {
     [SND_HEART_CHARGE] = "heart_charge", [SND_HEART_FIRE] = "heart_fire", [SND_ENEMY_HIT] = "enemy_hit",
     [SND_ENEMY_DEATH] = "enemy_death", [SND_PLAYER_HURT] = "player_hurt",
     [SND_ABANDERADO_INTRO] = "abanderado_intro", [SND_ABANDERADO_DEFEAT] = "abanderado_derrota",
-    [SND_PUNCH_WHOOSH] = "punch_whoosh", [SND_PUNCH_HIT] = "punch_hit", [SND_REMATE_EXEC] = "remate_exec",
-    [SND_WOBBLE_CUE] = "wobble_cue", [SND_GLIFO_CRACK] = "lab_creak", [SND_GLIFO_DETONATE] = "lab_mining0",
+    [SND_PUNCH_WHOOSH] = "punch_whoosh", [SND_PUNCH_HIT] = "punch_hit", [SND_REMATE_CERA] = "remate_cera", [SND_REMATE_VIGA] = "remate_viga", [SND_REMATE_OJO] = "remate_ojo", [SND_REMATE_DERRETIR] = "remate_derretir", [SND_REMATE_TIRON] = "remate_tiron", [SND_REMATE_CAIDA] = "remate_caida", [SND_REMATE_FORCEJEO] = "remate_forcejeo", [SND_REMATE_MANO] = "remate_mano",
+    [SND_WOBBLE_CUE] = "wobble_cue", [SND_GLIFO_CRACK] = "glifo_grieta", [SND_GLIFO_DETONATE] = "glifo_detonacion", [SND_CFX_LIFT] = "lab_creak",
     [SND_OJO_CHARGE] = "ojo_charge", [SND_OJO_FIRE] = "ojo_fire", [SND_CIRENEO_CHARGE] = "cireneo_charge",
     [SND_CIRENEO_WALL] = "cireneo_wall", [SND_MONJA_HEAL] = "monja_heal", [SND_MONAGUILLO_EMERGE] = "monaguillo_emerge",
     [SND_BOSS_PHASE] = "boss_phase", [SND_PICKUP_ORB] = "pickup_orb", [SND_CHEST_OPEN] = "chest_open",
@@ -110,6 +113,8 @@ static const char *const s_labv_file[LABV_COUNT] = {
     [LABV_SELECT] = "lab_select", [LABV_TICK] = "lab_tick", [LABV_DROP] = "lab_drop",
     [LABV_METAL_CLICK] = "lab_metal_click", [LABV_PLATE] = "lab_plate", [LABV_CONFIRM2] = "lab_confirm2",
     [LABV_MAXIMIZE] = "lab_maximize",
+#if SOUND_TEST
+#endif
 };
 
 #define CANDROW(n, label, mm) { PG_FREE, "", &s_cand_dummy, LABV_##n, 0, 1, LAB_KIND_CANDIDATE },
@@ -128,7 +133,14 @@ static const LabEntry s_entries[] = {
     SFXROW(PG_HERO, "Puño aire", SND_PUNCH_WHOOSH),
     SFXROW(PG_HERO, "Puño impacto", SND_PUNCH_HIT),
     SFXROW(PG_HERO, "Aviso tambaleo", SND_WOBBLE_CUE),
-    SFXROW(PG_HERO, "Remate", SND_REMATE_EXEC),
+    SFXROW(PG_HERO, "Exvoto/Mon./Bebé: cera", SND_REMATE_CERA),
+    SFXROW(PG_HERO, "S.Monja: tirón", SND_REMATE_TIRON),
+    SFXROW(PG_HERO, "S.Monja: caída", SND_REMATE_CAIDA),
+    SFXROW(PG_HERO, "Cireneo: viga", SND_REMATE_VIGA),
+    SFXROW(PG_HERO, "Ojo: forcejeo", SND_REMATE_FORCEJEO),
+    SFXROW(PG_HERO, "Ojo: vuelco", SND_REMATE_OJO),
+    SFXROW(PG_HERO, "Párroco: mano", SND_REMATE_MANO),
+    SFXROW(PG_HERO, "Párroco: derrite", SND_REMATE_DERRETIR),
     SFXROW(PG_HERO, "Rayo carga", SND_HEART_CHARGE),
     SFXROW(PG_HERO, "Rayo disparo", SND_HEART_FIRE),
     SFXROW(PG_HERO, "Glifo grieta", SND_GLIFO_CRACK),
@@ -183,7 +195,14 @@ static const LabEntry s_entries[] = {
     SFXROW(PG_C, "Golpe enemigo", SND_ENEMY_HIT),
     SFXROW(PG_C, "Muerte enemigo", SND_ENEMY_DEATH),
     SFXROW(PG_C, "Héroe herido", SND_PLAYER_HURT),
-    SFXROW(PG_C, "Remate", SND_REMATE_EXEC),
+    SFXROW(PG_C, "Exvoto/Mon./Bebé: cera", SND_REMATE_CERA),
+    SFXROW(PG_C, "S.Monja: tirón", SND_REMATE_TIRON),
+    SFXROW(PG_C, "S.Monja: caída", SND_REMATE_CAIDA),
+    SFXROW(PG_C, "Cireneo: viga", SND_REMATE_VIGA),
+    SFXROW(PG_C, "Ojo: forcejeo", SND_REMATE_FORCEJEO),
+    SFXROW(PG_C, "Ojo: vuelco", SND_REMATE_OJO),
+    SFXROW(PG_C, "Párroco: mano", SND_REMATE_MANO),
+    SFXROW(PG_C, "Párroco: derrite", SND_REMATE_DERRETIR),
     SFXROW(PG_C, "Glifo grieta", SND_GLIFO_CRACK),
     SFXROW(PG_C, "Glifo detonación", SND_GLIFO_DETONATE),
     SFXROW(PG_C, "Ojo carga", SND_OJO_CHARGE),
@@ -404,7 +423,10 @@ void lab_tuning_render(uint16_t *buf) {
 #if SOUND_TEST
             {   /* the exact file the row plays now, with its origin: K = free bank (Kenney), IA = generated (ElevenLabs) */
                 const char *file = k ? s_labv_file[s_ev[ev].v[k - 1]] : s_snd_file[ev];
-                snprintf(val, sizeof(val), "%s%s%s", k ? "* " : "", strncmp(file, "lab_", 4) == 0 ? "K·" : "IA·", file);
+                if (k && strncmp(file, "cand_", 5) == 0)   /* round-2 candidate: its label already says A/B/C and the origin */
+                    snprintf(val, sizeof(val), "* %s", s_variant_labels[s_ev[ev].v[k - 1]]);
+                else
+                    snprintf(val, sizeof(val), "%s%s%s", k ? "* " : "", strncmp(file, "lab_", 4) == 0 ? "K·" : "IA·", file);
                 dim = 0;
             }
 #else
