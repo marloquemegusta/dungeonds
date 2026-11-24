@@ -136,12 +136,12 @@ def project_shadow(verts, tris, right, up, canvas, elevation, light=None):
 
 
 def process(name, dry_run=False):
-    if name.startswith("lapida_"):
+    cfg = json.load(open(PROPS_JSON, encoding="utf-8")).get(name, {})
+    if name.startswith("lapida_") and not cfg.get("poster_shadow"):      # poster_shadow: solo el poster las proyecta
         raise ValueError(f"{name}: las lapidas no llevan sombra")
     folder = os.path.join(RENDER, name)
     meta_path = os.path.join(folder, "meta.json")
     meta = json.load(open(meta_path, encoding="utf-8"))
-    cfg = json.load(open(PROPS_JSON, encoding="utf-8")).get(name, {})
     elevation = cfg.get("shadow_elevation", KEY_ELEVATION)
     color = Image.open(os.path.join(folder, "color.png")).convert("RGBA")
     cw, ch = color.size

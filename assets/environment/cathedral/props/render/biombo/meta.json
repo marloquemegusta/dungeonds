@@ -1,0 +1,21 @@
+{
+  "piece": "biombo",
+  "size_px": [
+    56,
+    48
+  ],
+  "content_px": [
+    56,
+    42
+  ],
+  "target_width": 56,
+  "scale_factor": 0.0761904761904762,
+  "source_render_px": [
+    735,
+    552
+  ],
+  "yaw": 45,
+  "depth_units": "sprite_px",
+  "tiles_8x8_nonempty": 37,
+  "tiles_8x8_unique": 37
+}

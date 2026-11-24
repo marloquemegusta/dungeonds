@@ -1,0 +1,261 @@
+{
+ "titulo": "DungeonDS - Acto I (mapa completo)",
+ "_doc": "luz: preset neutral | tinte [r,g,b] 0-255 | gradiente {abajo,arriba} 0-1 | vineta 0-1. props_extra: {piece,x,y,mirror} (x,y locales de sala como en acto1_v2.json). props_quitar: prefijos de nombre de pieza. espejo 0/1 (en la ROM sale de la semilla). Plantas: reparto valido segun las reglas de assign_plants, no el de una semilla concreta.",
+ "stages": [
+  {
+   "stage": 1,
+   "planta": "procesion",
+   "espejo": 0,
+   "luz": {
+    "preset": "neutral"
+   },
+   "props_extra": [],
+   "props_quitar": [],
+   "pasillo": {
+    "luz": {
+     "preset": "neutral"
+    },
+    "props_extra": [],
+    "props_quitar": []
+   }
+  },
+  {
+   "stage": 2,
+   "planta": "embudo",
+   "espejo": 1,
+   "luz": {
+    "preset": "neutral"
+   },
+   "props_extra": [],
+   "props_quitar": [],
+   "pasillo": {
+    "luz": {
+     "preset": "neutral"
+    },
+    "props_extra": [],
+    "props_quitar": []
+   }
+  },
+  {
+   "stage": 3,
+   "planta": "balcon",
+   "espejo": 0,
+   "luz": {
+    "preset": "neutral"
+   },
+   "props_extra": [],
+   "props_quitar": [],
+   "pasillo": {
+    "luz": {
+     "preset": "neutral"
+    },
+    "props_extra": [],
+    "props_quitar": []
+   }
+  },
+  {
+   "stage": 4,
+   "planta": "pinza",
+   "espejo": 1,
+   "luz": {
+    "preset": "neutral"
+   },
+   "props_extra": [],
+   "props_quitar": [],
+   "pasillo": {
+    "luz": {
+     "preset": "neutral"
+    },
+    "props_extra": [],
+    "props_quitar": []
+   }
+  },
+  {
+   "stage": 5,
+   "planta": "jefe",
+   "espejo": 0,
+   "luz": {
+    "preset": "neutral"
+   },
+   "props_extra": [],
+   "props_quitar": [],
+   "pasillo": {
+    "luz": {
+     "preset": "neutral"
+    },
+    "props_extra": [],
+    "props_quitar": []
+   }
+  },
+  {
+   "stage": 6,
+   "planta": "claro",
+   "espejo": 0,
+   "luz": {
+    "preset": "neutral"
+   },
+   "props_extra": [],
+   "props_quitar": [],
+   "pasillo": {
+    "luz": {
+     "preset": "neutral"
+    },
+    "props_extra": [],
+    "props_quitar": []
+   }
+  },
+  {
+   "stage": 7,
+   "planta": "alambrada",
+   "espejo": 1,
+   "luz": {
+    "preset": "neutral"
+   },
+   "props_extra": [],
+   "props_quitar": [],
+   "pasillo": {
+    "luz": {
+     "preset": "neutral"
+    },
+    "props_extra": [],
+    "props_quitar": []
+   }
+  },
+  {
+   "stage": 8,
+   "planta": "procesion",
+   "espejo": 0,
+   "luz": {
+    "preset": "neutral"
+   },
+   "props_extra": [],
+   "props_quitar": [],
+   "pasillo": {
+    "luz": {
+     "preset": "neutral"
+    },
+    "props_extra": [],
+    "props_quitar": []
+   }
+  },
+  {
+   "stage": 9,
+   "planta": "embudo",
+   "espejo": 1,
+   "luz": {
+    "preset": "neutral"
+   },
+   "props_extra": [],
+   "props_quitar": [],
+   "pasillo": {
+    "luz": {
+     "preset": "neutral"
+    },
+    "props_extra": [],
+    "props_quitar": []
+   }
+  },
+  {
+   "stage": 10,
+   "planta": "jefe",
+   "espejo": 0,
+   "luz": {
+    "preset": "neutral"
+   },
+   "props_extra": [],
+   "props_quitar": [],
+   "pasillo": {
+    "luz": {
+     "preset": "neutral"
+    },
+    "props_extra": [],
+    "props_quitar": []
+   }
+  },
+  {
+   "stage": 11,
+   "planta": "balcon",
+   "espejo": 0,
+   "luz": {
+    "preset": "neutral"
+   },
+   "props_extra": [],
+   "props_quitar": [],
+   "pasillo": {
+    "luz": {
+     "preset": "neutral"
+    },
+    "props_extra": [],
+    "props_quitar": []
+   }
+  },
+  {
+   "stage": 12,
+   "planta": "pinza",
+   "espejo": 1,
+   "luz": {
+    "preset": "neutral"
+   },
+   "props_extra": [],
+   "props_quitar": [],
+   "pasillo": {
+    "luz": {
+     "preset": "neutral"
+    },
+    "props_extra": [],
+    "props_quitar": []
+   }
+  },
+  {
+   "stage": 13,
+   "planta": "claro",
+   "espejo": 0,
+   "luz": {
+    "preset": "neutral"
+   },
+   "props_extra": [],
+   "props_quitar": [],
+   "pasillo": {
+    "luz": {
+     "preset": "neutral"
+    },
+    "props_extra": [],
+    "props_quitar": []
+   }
+  },
+  {
+   "stage": 14,
+   "planta": "alambrada",
+   "espejo": 1,
+   "luz": {
+    "preset": "neutral"
+   },
+   "props_extra": [],
+   "props_quitar": [],
+   "pasillo": {
+    "luz": {
+     "preset": "neutral"
+    },
+    "props_extra": [],
+    "props_quitar": []
+   }
+  },
+  {
+   "stage": 15,
+   "planta": "jefe",
+   "espejo": 0,
+   "luz": {
+    "preset": "neutral"
+   },
+   "props_extra": [],
+   "props_quitar": [],
+   "pasillo": {
+    "luz": {
+     "preset": "neutral"
+    },
+    "props_extra": [],
+    "props_quitar": []
+   }
+  }
+ ]
+}

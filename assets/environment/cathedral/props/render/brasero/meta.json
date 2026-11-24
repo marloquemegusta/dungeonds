@@ -1,0 +1,21 @@
+{
+  "piece": "brasero",
+  "size_px": [
+    40,
+    40
+  ],
+  "content_px": [
+    40,
+    37
+  ],
+  "target_width": 40,
+  "scale_factor": 0.072992700729927,
+  "source_render_px": [
+    548,
+    512
+  ],
+  "yaw": 45,
+  "depth_units": "sprite_px",
+  "tiles_8x8_nonempty": 25,
+  "tiles_8x8_unique": 25
+}

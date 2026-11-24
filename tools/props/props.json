@@ -36,5 +36,20 @@
   "camp_n_atril": {"fbx": "tripo_convert_b2e93f3e-49ed-4d09-a45b-fd61ace73232.fbx", "yaw": 45, "target_width": 13, "footprint_from": "depth", "shadow_elevation": 50, "glb": "camp_atril", "camp_pos": [198, 296], "shadow_free_margin": true},
   "camp_n_jergon": {"fbx": "tripo_convert_8cc28e31-e80b-4999-aaca-2d68a8277f62.fbx", "yaw": 45, "target_width": 54, "footprint_from": "depth", "shadow_elevation": 50, "glb": "camp_jergon", "camp_pos": [196, 346], "shadow_free_margin": true},
   "camp_n_hoguera": {"fbx": "tripo_convert_701a10ac-86df-4af2-bad9-b20c4f78be71.fbx", "yaw": 0, "target_width": 36, "footprint_from": "depth", "shadow_elevation": 45, "glb": "camp_hoguera", "shadow_free_margin": true},
-  "camp_n_puerta": {"fbx": "tripo_convert_f4a93d19-f59e-4be2-b100-a5ad6d792ac3.fbx", "yaw": 45, "target_width": 54, "footprint_from": "depth", "shadow_elevation": 20, "glb": "puerta", "shadow_free_margin": true}
+  "camp_n_puerta": {"fbx": "tripo_convert_f4a93d19-f59e-4be2-b100-a5ad6d792ac3.fbx", "yaw": 45, "target_width": 54, "footprint_from": "depth", "shadow_elevation": 20, "glb": "puerta", "shadow_free_margin": true},
+  "candelabro_pie": {"fbx": "tripo_convert_02d6ee0e-ab55-4317-bf53-85b098dfb860.fbx", "yaw": 45, "target_width": 32, "footprint_from": "depth", "shadow_elevation": 45},
+  "huesos_monton": {"fbx": "tripo_convert_0612cdde-da69-461e-bdbf-6af3254daeae.fbx", "yaw": 45, "target_width": 28, "footprint_from": "depth", "shadow_elevation": 45},
+  "catre": {"fbx": "tripo_convert_0a064bef-9f4c-4b78-a93a-7d1201249572.fbx", "yaw": 45, "target_width": 64, "footprint_from": "depth", "shadow_elevation": 45},
+  "calaveras_pila": {"fbx": "tripo_convert_10ec024b-ab3a-40e7-9fd5-fb13b19781c7.fbx", "yaw": 45, "target_width": 24, "footprint_from": "depth", "shadow_elevation": 45},
+  "sarcofago": {"fbx": "tripo_convert_1d8d5cf1-3e4c-4e20-9cfe-a8d2a001845c.fbx", "yaw": 45, "target_width": 72, "footprint_from": "depth", "shadow_elevation": 45},
+  "capullo": {"fbx": "tripo_convert_28e00986-ad26-4393-b65a-9b9db8e1de79.fbx", "yaw": 45, "target_width": 28, "footprint_from": "depth", "shadow_elevation": 30},
+  "exvoto": {"fbx": "tripo_convert_6994bd3e-11f8-42bd-9021-e1c050a1ac9e.fbx", "yaw": 45, "target_width": 40, "footprint_from": "depth", "shadow_elevation": 30},
+  "biombo": {"fbx": "tripo_convert_7cd78467-4799-478a-8df7-810354836df0.fbx", "yaw": 45, "target_width": 56, "footprint_from": "depth", "shadow_elevation": 45},
+  "osario_estante": {"fbx": "tripo_convert_814fa953-b091-4ecb-8685-9cd41b3310e3.fbx", "yaw": 45, "target_width": 32, "footprint_from": "depth", "shadow_elevation": 45},
+  "palangana": {"fbx": "tripo_convert_8434b898-bab5-4034-bb94-c5a05cabf390.fbx", "yaw": 45, "target_width": 40, "footprint_from": "depth", "shadow_elevation": 45},
+  "brasero": {"fbx": "tripo_convert_c2e7d332-9b6d-4911-8568-f05e5194acea.fbx", "yaw": 45, "target_width": 40, "footprint_from": "depth", "shadow_elevation": 45},
+  "cepo": {"fbx": "tripo_convert_c6ca8709-46d6-441a-88ef-4c79817651d6.fbx", "yaw": 45, "target_width": 52, "footprint_from": "depth", "shadow_elevation": 45},
+  "lapida_pie": {"fbx": "tripo_convert_d7bf8479-51b2-4e43-8b00-d7bc991d2a7f.fbx", "yaw": 45, "target_width": 32, "footprint_from": "depth", "shadow_elevation": 45},
+  "reclinatorio": {"fbx": "tripo_convert_fa9d1256-6b3b-4b4a-861c-86230a90fa6d.fbx", "yaw": 45, "target_width": 44, "footprint_from": "depth", "shadow_elevation": 45},
+  "osario_lado": {"fbx": "tripo_convert_814fa953-b091-4ecb-8685-9cd41b3310e3.fbx", "yaw": -60, "glb_from": "osario_estante", "target_width": 33, "footprint_from": "depth", "shadow_elevation": 45}
 }

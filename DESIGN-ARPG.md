@@ -192,3 +192,37 @@ Cifras iniciales del modelo; el bot de pruebas (variante `arpg-bot`, `tools/arpg
 - **La Monja de cera reza en todos los grupos:** se queda detrás, reza y cura a los de su alrededor como en la Capilla del párroco, y solo pelea cuando el héroe llega hasta ella. Los Monaguillos se interponen ante el Rayo para protegerla (§7).
 - **Objetivos que mide el bot:** la zona entera, la primera vez, entre 60 y 75 min con el perfil normal (§7: al menos 1 h); se llega a cada nave con el nivel de la sala y la demo acaba en el nivel 6; a nivel 1 se llega a la Nave 2 y no más allá; el perfil torpe acaba la zona en 1,5-2 veces el tiempo del normal.
 - **Engarces que se abren por nivel:** cada escuela (Rayo, Ejecución, Glifo y Pecho) empieza con **1 engarce**. El 2.º se abre a **nivel 5**, el nivel con el que se llega a la Cripta, justo antes del jefe de la demo. El 3.º se abrirá en la parte 2 de la catedral (nivel por decidir al diseñarla) y ahí se queda el tope; el Pecho, que tiene 2, se queda en 2. Los engarces cerrados se ven con candado y «Nv. X», y no admiten reliquias.
+
+## 11. Identidad visual por sala (decidido 2026-11-24; seis ambientes)
+
+Cada sala cuenta lo que fue: su función decide qué props lleva, colocados en composición, y su ambiente de luz y sombra la distingue de las demás. Seis ambientes, con contraste fuerte entre ellos; colores apagados (§6.10 de `DESIGN.md`).
+
+| Ambiente | Salas | Luz | Sombras | Motivo |
+| :--- | :--- | :--- | :--- | :--- |
+| **Cielo mudo** | Naves 1-4 | Gris apagada de ventanas altas; se apaga hacia el fondo (Nave 1 la más clara, Nave 4 notablemente más oscura) | Largas y suaves, todas en la misma dirección (luz alta en diagonal) | El cielo dejó de responder y la nave crece alejándose de la luz |
+| **Intemperie** | Claustros | Las únicas salas con cielo: día (sol) o noche (luna fría) | Día: cortas y duras. Noche: casi ninguna | Lo de fuera sigue su curso; lo de dentro no |
+| **Cera** | Capillas, Misa, Enfermería | Oscuridad cálida; solo se ve cerca de las velas | Cortas y tenues, se abren al alejarse de cada grupo de velas | Las velas son de Remedios la cerera |
+| **Faroles del Tribunal** | Prisionero, galerías del cofre y del secreto | Oscuro con conos de luz blanca y dura, de interrogatorio | Largas y duras, salen del farol | El Tribunal de la Luz juzga con lámparas |
+| **Sin luz** | Osario, Monjaraña | Casi negro y frío, sin fuente propia; solo un halo débil alrededor del héroe | Ninguna | Aquí rezar no salvó a nadie (osario y sacristía de Leonor) |
+| **Hogueras de la Columna** | Cripta | Técnica del campamento nocturno: negro alrededor de una hoguera | Las de la hoguera (cálidas, desde el fuego) | La Columna acampa dentro |
+
+- **Ciclo día/noche:** solo en los claustros. Dentro de la catedral el tiempo está parado, así que el resto de salas no cambia.
+- **Composición:** naves = filas simétricas de bancos que se rompen de la Nave 1 a la 4; claustros = arcada de columnas en los bordes y centro libre; capillas = altar al fondo, velas en semicírculo y reclinatorios; cripta = despejada, estatuas flanqueando al jefe. Se respetan puertas, pasillo, altar y cofre, y queda sitio para los enemigos.
+- **Piezas que faltan:** farol del Tribunal (hoy se usa la vela como sustituta), antorchas, y banco entero, banco volcado, santo y vela sin modelo 3D propio (el póster los aproxima sobre su sprite). Osario y enfermería siguen con props provisionales.
+- **Coste en DS:** la sombra con dirección por sala implica variantes de cada prop en el cartucho (una por dirección: centro, izquierda, derecha); la luz implica paletas horneadas por sala, como el campamento (8 variantes del héroe según la luz, bandas de luz sobre suelo y muros). Los halos y conos serían sprites o capas aparte.
+- Detalle y parámetros por sala en `tools/poster/poster_arpg.json` (bloque `ambiente`) y `tools/poster/poster_arpg_v3.py` (tabla de ambientes); el póster v3 los muestra (`TECHNICAL.md` §5.6).
+
+### Composición preliminar de props por sala
+
+Props colocados en el póster (`walkthroughs/poster-mapa/`); la luz definitiva de cada sala y los enemigos están pendientes. El cofre fijo choca con un enemigo en las salas 5, 7 y 12 (pendiente de la revisión de enemigos).
+
+- **Naves 1-4 (salas 0-3):** filas simétricas de bancos a cada lado del pasillo, cada vez más rotos hacia el fondo.
+- **Galería del cofre (4):** cepos y sacos apilados junto al cofre.
+- **Galería del secreto (5):** capullos de araña, sacos y un cepo; el cofre fijo choca con un enemigo.
+- **Claustro bajo (6) y alto (7):** arcada de columnas enteras en los bordes, bancos rotos y una lápida; centro libre.
+- **Enfermería (8):** catres en dos filas, biombos, palangana, exvoto y candelabros de pie.
+- **Osario (9):** pilas de calaveras, montones de huesos y estantes osario a los lados.
+- **Capilla del párroco (10), Galería de la Misa (11) y Capilla con llave (13):** altar al fondo, reclinatorios, exvotos y candelabros de pie (la de la llave añade el relicario).
+- **Galería del prisionero (12):** cepos, alambre y capullos; el cofre fijo choca con un enemigo.
+- **Galería de la Monjaraña (14):** capullos por todo el suelo, santos y columnas, calaveras y huesos.
+- **Cripta (15):** braseros, sarcófagos de frente y de lado, lápidas, calaveras y huesos; despejada para el jefe.
