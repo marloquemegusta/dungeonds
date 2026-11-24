@@ -41,7 +41,7 @@ void arpg_progress_reset(void) {
     g_arpg.spell = 0;
     g_arpg.altars_lo = 0;
     g_arpg.altars_hi = 0;
-    arpg_inv_new_game();          // Rayo equipado + 11 objetos de ejemplo (fase 2)
+    arpg_inv_new_game();          // Rayo equipado, bolsa vacía
     g_arpg_level = g_arpg.level;
     arpg_unlock_for_tests();
 }
@@ -50,6 +50,13 @@ int arpg_xp_needed(int level) {
     int idx = level - 1;
     if (idx < 0) idx = 0;
     if (idx >= ARPG_XP_TABLE_LEN) idx = ARPG_XP_TABLE_LEN - 1;
+#if ARPG_BOT
+    if (g_bal.xp_curve_pm) {                 // balance loop: 25 * f^(L-1) in integer maths, f per mille
+        int v = 25 << 8;
+        for (int i = 0; i < idx; i++) v = (int)(((int64_t)v * g_bal.xp_curve_pm) / 1000);
+        return (v + 128) >> 8;
+    }
+#endif
     return s_arpg_xp_needed[idx];
 }
 
@@ -71,21 +78,22 @@ int arpg_sleep(void) {
 int arpg_enemy_xp(int enemy_type, int floor) {
     int base;
     switch (enemy_type) {
-    case ENEMY_TYPE_BEBE:       base = ARPG_XP_BEBE; break;
-    case ENEMY_TYPE_MONAGUILLO: base = ARPG_XP_MONAGUILLO; break;
-    case ENEMY_TYPE_EXVOTO:     base = ARPG_XP_EXVOTO; break;
-    case ENEMY_TYPE_PARROCO:    base = ARPG_XP_PARROCO; break;
-    case ENEMY_TYPE_SHOOTER:    base = ARPG_XP_OJO; break;
-    case ENEMY_TYPE_CHARGER:    base = ARPG_XP_CIRENEO; break;
-    case ENEMY_TYPE_MONJA:      base = ARPG_XP_MONJA; break;
+    case ENEMY_TYPE_BEBE:       base = BAL_AT(xp, enemy_type, ARPG_XP_BEBE); break;
+    case ENEMY_TYPE_MONAGUILLO: base = BAL_AT(xp, enemy_type, ARPG_XP_MONAGUILLO); break;
+    case ENEMY_TYPE_EXVOTO:     base = BAL_AT(xp, enemy_type, ARPG_XP_EXVOTO); break;
+    case ENEMY_TYPE_PARROCO:    base = BAL_AT(xp, enemy_type, ARPG_XP_PARROCO); break;
+    case ENEMY_TYPE_SHOOTER:    base = BAL_AT(xp, enemy_type, ARPG_XP_OJO); break;
+    case ENEMY_TYPE_CHARGER:    base = BAL_AT(xp, enemy_type, ARPG_XP_CIRENEO); break;
+    case ENEMY_TYPE_MONJA:      base = BAL_AT(xp, enemy_type, ARPG_XP_MONJA); break;
     case ENEMY_TYPE_CAMPANERO:      // a boss like the Abanderado of the Cripta
         return ARPG_XP_BOSS;
     case ENEMY_TYPE_ABANDERADO:     // fixed per fight: the Abanderado of the Cripta
-        return ARPG_XP_BOSS;
+        return BAL_AT(xp, enemy_type, ARPG_XP_BOSS);
     default:                    return 0;
     }
     const int lvl = floor < 1 ? 1 : floor;
-    return base * (100 + ARPG_XP_LEVEL_PCT * (lvl - 1)) / 100;
+    (void)lvl;                      // flat per enemy: no scaling by room level (DESIGN-ARPG.md 10)
+    return base;
 }
 
 void arpg_world_rest(void) {

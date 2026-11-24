@@ -1,4 +1,5 @@
 #include "punch.h"
+#include "arpg_balance.h"
 #include "collision.h"
 #include "enemy_ai.h"
 #include "weapons.h"
@@ -136,8 +137,8 @@ static void punch_apply(Enemy *enemies, int idx, fixed hero_x, fixed hero_y, int
     Enemy *e = &enemies[idx];
     const int ex = TO_INT(e->x);
     const fixed push = (move == PUNCH_MOVE_HOOK) ? PUNCH_HOOK_PUSH_V : PUNCH_LIGHT_PUSH_V;
-    const int base_dmg = (move == PUNCH_MOVE_HOOK) ? PUNCH_DAMAGE_HOOK
-                       : (move == PUNCH_MOVE_A)    ? PUNCH_DAMAGE_A : PUNCH_DAMAGE_B;
+    const int base_dmg = (move == PUNCH_MOVE_HOOK) ? BAL(punch_hook, PUNCH_DAMAGE_HOOK)
+                       : (move == PUNCH_MOVE_A)    ? BAL(punch_a, PUNCH_DAMAGE_A) : BAL(punch_b, PUNCH_DAMAGE_B);
     const int dmg = upgrades_punch_damage(base_dmg);
     fixed px = 0, py = 0;
     punch_push_vec(e, hero_x, hero_y, push, &px, &py);

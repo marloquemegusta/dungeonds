@@ -232,7 +232,7 @@ void upgrades_begin_offer(void) {
 
 static void heal_one(void) {
     if (g_player_state.hp < g_player_state.max_hp) {
-        g_player_state.hp += ARPG_HEAL_PICKUP;
+        g_player_state.hp += BAL(heal_pickup, ARPG_HEAL_PICKUP);
         if (g_player_state.hp > g_player_state.max_hp) g_player_state.hp = g_player_state.max_hp;
     }
 }

@@ -4,8 +4,8 @@
 // Vidas del acto I por encuentros (variante `encuentros`): con el rayo base (150) el Exvoto cae en 2 disparos,
 // el Ojo en 3, el Cireneo en 4, el Abanderado en ~37.
 #define ENC_HP_EXVOTO 250
-#define ENC_HP_MONAGUILLO 100
-#define ENC_HP_CIRENEO 600
-#define ENC_HP_OJO 400
+#define ENC_HP_MONAGUILLO 250
+#define ENC_HP_CIRENEO 500
+#define ENC_HP_OJO 350
 #define ENC_HP_ABANDERADO 5500
 #endif

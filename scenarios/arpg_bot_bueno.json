@@ -1,0 +1,1062 @@
+{
+  "name": "arpg_bot_bueno",
+  "description": "Autopilot del ARPG (variante arpg-bot), perfil bueno, semilla 1, nivel 1: una bajada sin retirada hasta vencer al jefe, morir o 36000 frames; capturas cada 1800 frames y estadisticas al final.",
+  "suite": false,
+  "evidence_only": true,
+  "state": {
+    "elf": "../.ds-game-dev/build/out/dungeonds-arpg-bot.elf",
+    "symbols": {
+      "stats": "g_arpg_bot_stats",
+      "dbg": "g_arpg_bot_debug",
+      "bal": "g_bal"
+    },
+    "default_symbol": "stats",
+    "fields": {
+      "result": {
+        "symbol": "stats",
+        "offset": 0,
+        "type": "u8"
+      },
+      "room": {
+        "symbol": "stats",
+        "offset": 1,
+        "type": "u8"
+      },
+      "rooms_cleared": {
+        "symbol": "stats",
+        "offset": 2,
+        "type": "u8"
+      },
+      "hp": {
+        "symbol": "stats",
+        "offset": 3,
+        "type": "u8"
+      },
+      "hp_min": {
+        "symbol": "stats",
+        "offset": 4,
+        "type": "u8"
+      },
+      "max_hp": {
+        "symbol": "stats",
+        "offset": 5,
+        "type": "u8"
+      },
+      "mana": {
+        "symbol": "stats",
+        "offset": 6,
+        "type": "u8"
+      },
+      "level": {
+        "symbol": "stats",
+        "offset": 7,
+        "type": "u8"
+      },
+      "frames": {
+        "symbol": "stats",
+        "offset": 8,
+        "type": "u32"
+      },
+      "xp": {
+        "symbol": "stats",
+        "offset": 12,
+        "type": "u16"
+      },
+      "death_room": {
+        "symbol": "stats",
+        "offset": 14,
+        "type": "u8"
+      },
+      "killer": {
+        "symbol": "stats",
+        "offset": 15,
+        "type": "u8"
+      },
+      "mana_empty_frames": {
+        "symbol": "stats",
+        "offset": 16,
+        "type": "u16"
+      },
+      "shots": {
+        "symbol": "stats",
+        "offset": 18,
+        "type": "u16"
+      },
+      "punches": {
+        "symbol": "stats",
+        "offset": 20,
+        "type": "u16"
+      },
+      "remates_done": {
+        "symbol": "stats",
+        "offset": 22,
+        "type": "u16"
+      },
+      "remates_missed": {
+        "symbol": "stats",
+        "offset": 24,
+        "type": "u16"
+      },
+      "orbs": {
+        "symbol": "stats",
+        "offset": 26,
+        "type": "u16"
+      },
+      "stuck_events": {
+        "symbol": "stats",
+        "offset": 28,
+        "type": "u16"
+      },
+      "kills": {
+        "symbol": "stats",
+        "offset": 30,
+        "type": "u16"
+      },
+      "rule": {
+        "symbol": "stats",
+        "offset": 32,
+        "type": "u8"
+      },
+      "awake": {
+        "symbol": "stats",
+        "offset": 33,
+        "type": "u8"
+      },
+      "give_ups": {
+        "symbol": "stats",
+        "offset": 42,
+        "type": "u16"
+      },
+      "damage_total": {
+        "symbol": "stats",
+        "offset": 44,
+        "type": "u16"
+      },
+      "hits": {
+        "symbol": "stats",
+        "offset": 46,
+        "type": "u16"
+      },
+      "visited": {
+        "symbol": "stats",
+        "offset": 144,
+        "type": "u16"
+      },
+      "bajadas": {
+        "symbol": "stats",
+        "offset": 168,
+        "type": "u8"
+      },
+      "boss_result": {
+        "symbol": "stats",
+        "offset": 169,
+        "type": "u8"
+      },
+      "max_level": {
+        "symbol": "stats",
+        "offset": 170,
+        "type": "u8"
+      },
+      "phase": {
+        "symbol": "stats",
+        "offset": 171,
+        "type": "u8"
+      },
+      "dungeon_frames": {
+        "symbol": "stats",
+        "offset": 172,
+        "type": "u32"
+      },
+      "camp_frames": {
+        "symbol": "stats",
+        "offset": 176,
+        "type": "u32"
+      },
+      "mana_spent": {
+        "symbol": "stats",
+        "offset": 180,
+        "type": "u32"
+      },
+      "screens": {
+        "symbol": "stats",
+        "offset": 184,
+        "type": "u32"
+      },
+      "bf0": {
+        "symbol": "stats",
+        "offset": 188,
+        "type": "u32"
+      },
+      "rf0": {
+        "symbol": "stats",
+        "offset": 252,
+        "type": "u32"
+      },
+      "bd0": {
+        "symbol": "stats",
+        "offset": 316,
+        "type": "u16"
+      },
+      "bp0": {
+        "symbol": "stats",
+        "offset": 348,
+        "type": "u8"
+      },
+      "bl0": {
+        "symbol": "stats",
+        "offset": 364,
+        "type": "u8"
+      },
+      "bc0": {
+        "symbol": "stats",
+        "offset": 380,
+        "type": "u8"
+      },
+      "bs0": {
+        "symbol": "stats",
+        "offset": 396,
+        "type": "u8"
+      },
+      "rs0": {
+        "symbol": "stats",
+        "offset": 412,
+        "type": "u8"
+      },
+      "rd0": {
+        "symbol": "stats",
+        "offset": 80,
+        "type": "u16"
+      },
+      "bf1": {
+        "symbol": "stats",
+        "offset": 192,
+        "type": "u32"
+      },
+      "rf1": {
+        "symbol": "stats",
+        "offset": 256,
+        "type": "u32"
+      },
+      "bd1": {
+        "symbol": "stats",
+        "offset": 318,
+        "type": "u16"
+      },
+      "bp1": {
+        "symbol": "stats",
+        "offset": 349,
+        "type": "u8"
+      },
+      "bl1": {
+        "symbol": "stats",
+        "offset": 365,
+        "type": "u8"
+      },
+      "bc1": {
+        "symbol": "stats",
+        "offset": 381,
+        "type": "u8"
+      },
+      "bs1": {
+        "symbol": "stats",
+        "offset": 397,
+        "type": "u8"
+      },
+      "rs1": {
+        "symbol": "stats",
+        "offset": 413,
+        "type": "u8"
+      },
+      "rd1": {
+        "symbol": "stats",
+        "offset": 82,
+        "type": "u16"
+      },
+      "bf2": {
+        "symbol": "stats",
+        "offset": 196,
+        "type": "u32"
+      },
+      "rf2": {
+        "symbol": "stats",
+        "offset": 260,
+        "type": "u32"
+      },
+      "bd2": {
+        "symbol": "stats",
+        "offset": 320,
+        "type": "u16"
+      },
+      "bp2": {
+        "symbol": "stats",
+        "offset": 350,
+        "type": "u8"
+      },
+      "bl2": {
+        "symbol": "stats",
+        "offset": 366,
+        "type": "u8"
+      },
+      "bc2": {
+        "symbol": "stats",
+        "offset": 382,
+        "type": "u8"
+      },
+      "bs2": {
+        "symbol": "stats",
+        "offset": 398,
+        "type": "u8"
+      },
+      "rs2": {
+        "symbol": "stats",
+        "offset": 414,
+        "type": "u8"
+      },
+      "rd2": {
+        "symbol": "stats",
+        "offset": 84,
+        "type": "u16"
+      },
+      "bf3": {
+        "symbol": "stats",
+        "offset": 200,
+        "type": "u32"
+      },
+      "rf3": {
+        "symbol": "stats",
+        "offset": 264,
+        "type": "u32"
+      },
+      "bd3": {
+        "symbol": "stats",
+        "offset": 322,
+        "type": "u16"
+      },
+      "bp3": {
+        "symbol": "stats",
+        "offset": 351,
+        "type": "u8"
+      },
+      "bl3": {
+        "symbol": "stats",
+        "offset": 367,
+        "type": "u8"
+      },
+      "bc3": {
+        "symbol": "stats",
+        "offset": 383,
+        "type": "u8"
+      },
+      "bs3": {
+        "symbol": "stats",
+        "offset": 399,
+        "type": "u8"
+      },
+      "rs3": {
+        "symbol": "stats",
+        "offset": 415,
+        "type": "u8"
+      },
+      "rd3": {
+        "symbol": "stats",
+        "offset": 86,
+        "type": "u16"
+      },
+      "bf4": {
+        "symbol": "stats",
+        "offset": 204,
+        "type": "u32"
+      },
+      "rf4": {
+        "symbol": "stats",
+        "offset": 268,
+        "type": "u32"
+      },
+      "bd4": {
+        "symbol": "stats",
+        "offset": 324,
+        "type": "u16"
+      },
+      "bp4": {
+        "symbol": "stats",
+        "offset": 352,
+        "type": "u8"
+      },
+      "bl4": {
+        "symbol": "stats",
+        "offset": 368,
+        "type": "u8"
+      },
+      "bc4": {
+        "symbol": "stats",
+        "offset": 384,
+        "type": "u8"
+      },
+      "bs4": {
+        "symbol": "stats",
+        "offset": 400,
+        "type": "u8"
+      },
+      "rs4": {
+        "symbol": "stats",
+        "offset": 416,
+        "type": "u8"
+      },
+      "rd4": {
+        "symbol": "stats",
+        "offset": 88,
+        "type": "u16"
+      },
+      "bf5": {
+        "symbol": "stats",
+        "offset": 208,
+        "type": "u32"
+      },
+      "rf5": {
+        "symbol": "stats",
+        "offset": 272,
+        "type": "u32"
+      },
+      "bd5": {
+        "symbol": "stats",
+        "offset": 326,
+        "type": "u16"
+      },
+      "bp5": {
+        "symbol": "stats",
+        "offset": 353,
+        "type": "u8"
+      },
+      "bl5": {
+        "symbol": "stats",
+        "offset": 369,
+        "type": "u8"
+      },
+      "bc5": {
+        "symbol": "stats",
+        "offset": 385,
+        "type": "u8"
+      },
+      "bs5": {
+        "symbol": "stats",
+        "offset": 401,
+        "type": "u8"
+      },
+      "rs5": {
+        "symbol": "stats",
+        "offset": 417,
+        "type": "u8"
+      },
+      "rd5": {
+        "symbol": "stats",
+        "offset": 90,
+        "type": "u16"
+      },
+      "bf6": {
+        "symbol": "stats",
+        "offset": 212,
+        "type": "u32"
+      },
+      "rf6": {
+        "symbol": "stats",
+        "offset": 276,
+        "type": "u32"
+      },
+      "bd6": {
+        "symbol": "stats",
+        "offset": 328,
+        "type": "u16"
+      },
+      "bp6": {
+        "symbol": "stats",
+        "offset": 354,
+        "type": "u8"
+      },
+      "bl6": {
+        "symbol": "stats",
+        "offset": 370,
+        "type": "u8"
+      },
+      "bc6": {
+        "symbol": "stats",
+        "offset": 386,
+        "type": "u8"
+      },
+      "bs6": {
+        "symbol": "stats",
+        "offset": 402,
+        "type": "u8"
+      },
+      "rs6": {
+        "symbol": "stats",
+        "offset": 418,
+        "type": "u8"
+      },
+      "rd6": {
+        "symbol": "stats",
+        "offset": 92,
+        "type": "u16"
+      },
+      "bf7": {
+        "symbol": "stats",
+        "offset": 216,
+        "type": "u32"
+      },
+      "rf7": {
+        "symbol": "stats",
+        "offset": 280,
+        "type": "u32"
+      },
+      "bd7": {
+        "symbol": "stats",
+        "offset": 330,
+        "type": "u16"
+      },
+      "bp7": {
+        "symbol": "stats",
+        "offset": 355,
+        "type": "u8"
+      },
+      "bl7": {
+        "symbol": "stats",
+        "offset": 371,
+        "type": "u8"
+      },
+      "bc7": {
+        "symbol": "stats",
+        "offset": 387,
+        "type": "u8"
+      },
+      "bs7": {
+        "symbol": "stats",
+        "offset": 403,
+        "type": "u8"
+      },
+      "rs7": {
+        "symbol": "stats",
+        "offset": 419,
+        "type": "u8"
+      },
+      "rd7": {
+        "symbol": "stats",
+        "offset": 94,
+        "type": "u16"
+      },
+      "bf8": {
+        "symbol": "stats",
+        "offset": 220,
+        "type": "u32"
+      },
+      "rf8": {
+        "symbol": "stats",
+        "offset": 284,
+        "type": "u32"
+      },
+      "bd8": {
+        "symbol": "stats",
+        "offset": 332,
+        "type": "u16"
+      },
+      "bp8": {
+        "symbol": "stats",
+        "offset": 356,
+        "type": "u8"
+      },
+      "bl8": {
+        "symbol": "stats",
+        "offset": 372,
+        "type": "u8"
+      },
+      "bc8": {
+        "symbol": "stats",
+        "offset": 388,
+        "type": "u8"
+      },
+      "bs8": {
+        "symbol": "stats",
+        "offset": 404,
+        "type": "u8"
+      },
+      "rs8": {
+        "symbol": "stats",
+        "offset": 420,
+        "type": "u8"
+      },
+      "rd8": {
+        "symbol": "stats",
+        "offset": 96,
+        "type": "u16"
+      },
+      "bf9": {
+        "symbol": "stats",
+        "offset": 224,
+        "type": "u32"
+      },
+      "rf9": {
+        "symbol": "stats",
+        "offset": 288,
+        "type": "u32"
+      },
+      "bd9": {
+        "symbol": "stats",
+        "offset": 334,
+        "type": "u16"
+      },
+      "bp9": {
+        "symbol": "stats",
+        "offset": 357,
+        "type": "u8"
+      },
+      "bl9": {
+        "symbol": "stats",
+        "offset": 373,
+        "type": "u8"
+      },
+      "bc9": {
+        "symbol": "stats",
+        "offset": 389,
+        "type": "u8"
+      },
+      "bs9": {
+        "symbol": "stats",
+        "offset": 405,
+        "type": "u8"
+      },
+      "rs9": {
+        "symbol": "stats",
+        "offset": 421,
+        "type": "u8"
+      },
+      "rd9": {
+        "symbol": "stats",
+        "offset": 98,
+        "type": "u16"
+      },
+      "bf10": {
+        "symbol": "stats",
+        "offset": 228,
+        "type": "u32"
+      },
+      "rf10": {
+        "symbol": "stats",
+        "offset": 292,
+        "type": "u32"
+      },
+      "bd10": {
+        "symbol": "stats",
+        "offset": 336,
+        "type": "u16"
+      },
+      "bp10": {
+        "symbol": "stats",
+        "offset": 358,
+        "type": "u8"
+      },
+      "bl10": {
+        "symbol": "stats",
+        "offset": 374,
+        "type": "u8"
+      },
+      "bc10": {
+        "symbol": "stats",
+        "offset": 390,
+        "type": "u8"
+      },
+      "bs10": {
+        "symbol": "stats",
+        "offset": 406,
+        "type": "u8"
+      },
+      "rs10": {
+        "symbol": "stats",
+        "offset": 422,
+        "type": "u8"
+      },
+      "rd10": {
+        "symbol": "stats",
+        "offset": 100,
+        "type": "u16"
+      },
+      "bf11": {
+        "symbol": "stats",
+        "offset": 232,
+        "type": "u32"
+      },
+      "rf11": {
+        "symbol": "stats",
+        "offset": 296,
+        "type": "u32"
+      },
+      "bd11": {
+        "symbol": "stats",
+        "offset": 338,
+        "type": "u16"
+      },
+      "bp11": {
+        "symbol": "stats",
+        "offset": 359,
+        "type": "u8"
+      },
+      "bl11": {
+        "symbol": "stats",
+        "offset": 375,
+        "type": "u8"
+      },
+      "bc11": {
+        "symbol": "stats",
+        "offset": 391,
+        "type": "u8"
+      },
+      "bs11": {
+        "symbol": "stats",
+        "offset": 407,
+        "type": "u8"
+      },
+      "rs11": {
+        "symbol": "stats",
+        "offset": 423,
+        "type": "u8"
+      },
+      "rd11": {
+        "symbol": "stats",
+        "offset": 102,
+        "type": "u16"
+      },
+      "bf12": {
+        "symbol": "stats",
+        "offset": 236,
+        "type": "u32"
+      },
+      "rf12": {
+        "symbol": "stats",
+        "offset": 300,
+        "type": "u32"
+      },
+      "bd12": {
+        "symbol": "stats",
+        "offset": 340,
+        "type": "u16"
+      },
+      "bp12": {
+        "symbol": "stats",
+        "offset": 360,
+        "type": "u8"
+      },
+      "bl12": {
+        "symbol": "stats",
+        "offset": 376,
+        "type": "u8"
+      },
+      "bc12": {
+        "symbol": "stats",
+        "offset": 392,
+        "type": "u8"
+      },
+      "bs12": {
+        "symbol": "stats",
+        "offset": 408,
+        "type": "u8"
+      },
+      "rs12": {
+        "symbol": "stats",
+        "offset": 424,
+        "type": "u8"
+      },
+      "rd12": {
+        "symbol": "stats",
+        "offset": 104,
+        "type": "u16"
+      },
+      "bf13": {
+        "symbol": "stats",
+        "offset": 240,
+        "type": "u32"
+      },
+      "rf13": {
+        "symbol": "stats",
+        "offset": 304,
+        "type": "u32"
+      },
+      "bd13": {
+        "symbol": "stats",
+        "offset": 342,
+        "type": "u16"
+      },
+      "bp13": {
+        "symbol": "stats",
+        "offset": 361,
+        "type": "u8"
+      },
+      "bl13": {
+        "symbol": "stats",
+        "offset": 377,
+        "type": "u8"
+      },
+      "bc13": {
+        "symbol": "stats",
+        "offset": 393,
+        "type": "u8"
+      },
+      "bs13": {
+        "symbol": "stats",
+        "offset": 409,
+        "type": "u8"
+      },
+      "rs13": {
+        "symbol": "stats",
+        "offset": 425,
+        "type": "u8"
+      },
+      "rd13": {
+        "symbol": "stats",
+        "offset": 106,
+        "type": "u16"
+      },
+      "bf14": {
+        "symbol": "stats",
+        "offset": 244,
+        "type": "u32"
+      },
+      "rf14": {
+        "symbol": "stats",
+        "offset": 308,
+        "type": "u32"
+      },
+      "bd14": {
+        "symbol": "stats",
+        "offset": 344,
+        "type": "u16"
+      },
+      "bp14": {
+        "symbol": "stats",
+        "offset": 362,
+        "type": "u8"
+      },
+      "bl14": {
+        "symbol": "stats",
+        "offset": 378,
+        "type": "u8"
+      },
+      "bc14": {
+        "symbol": "stats",
+        "offset": 394,
+        "type": "u8"
+      },
+      "bs14": {
+        "symbol": "stats",
+        "offset": 410,
+        "type": "u8"
+      },
+      "rs14": {
+        "symbol": "stats",
+        "offset": 426,
+        "type": "u8"
+      },
+      "rd14": {
+        "symbol": "stats",
+        "offset": 108,
+        "type": "u16"
+      },
+      "bf15": {
+        "symbol": "stats",
+        "offset": 248,
+        "type": "u32"
+      },
+      "rf15": {
+        "symbol": "stats",
+        "offset": 312,
+        "type": "u32"
+      },
+      "bd15": {
+        "symbol": "stats",
+        "offset": 346,
+        "type": "u16"
+      },
+      "bp15": {
+        "symbol": "stats",
+        "offset": 363,
+        "type": "u8"
+      },
+      "bl15": {
+        "symbol": "stats",
+        "offset": 379,
+        "type": "u8"
+      },
+      "bc15": {
+        "symbol": "stats",
+        "offset": 395,
+        "type": "u8"
+      },
+      "bs15": {
+        "symbol": "stats",
+        "offset": 411,
+        "type": "u8"
+      },
+      "rs15": {
+        "symbol": "stats",
+        "offset": 427,
+        "type": "u8"
+      },
+      "rd15": {
+        "symbol": "stats",
+        "offset": 110,
+        "type": "u16"
+      },
+      "lm0": {
+        "symbol": "stats",
+        "offset": 428,
+        "type": "u16"
+      },
+      "lm1": {
+        "symbol": "stats",
+        "offset": 430,
+        "type": "u16"
+      },
+      "lm2": {
+        "symbol": "stats",
+        "offset": 432,
+        "type": "u16"
+      },
+      "lm3": {
+        "symbol": "stats",
+        "offset": 434,
+        "type": "u16"
+      },
+      "lm4": {
+        "symbol": "stats",
+        "offset": 436,
+        "type": "u16"
+      },
+      "lm5": {
+        "symbol": "stats",
+        "offset": 438,
+        "type": "u16"
+      },
+      "lm6": {
+        "symbol": "stats",
+        "offset": 440,
+        "type": "u16"
+      },
+      "lm7": {
+        "symbol": "stats",
+        "offset": 442,
+        "type": "u16"
+      },
+      "dt0": {
+        "symbol": "stats",
+        "offset": 146,
+        "type": "u16"
+      },
+      "dt1": {
+        "symbol": "stats",
+        "offset": 148,
+        "type": "u16"
+      },
+      "dt2": {
+        "symbol": "stats",
+        "offset": 150,
+        "type": "u16"
+      },
+      "dt3": {
+        "symbol": "stats",
+        "offset": 152,
+        "type": "u16"
+      },
+      "dt4": {
+        "symbol": "stats",
+        "offset": 154,
+        "type": "u16"
+      },
+      "dt5": {
+        "symbol": "stats",
+        "offset": 156,
+        "type": "u16"
+      },
+      "dt6": {
+        "symbol": "stats",
+        "offset": 158,
+        "type": "u16"
+      },
+      "dt7": {
+        "symbol": "stats",
+        "offset": 160,
+        "type": "u16"
+      },
+      "dt8": {
+        "symbol": "stats",
+        "offset": 162,
+        "type": "u16"
+      }
+    }
+  },
+  "steps": [
+    {
+      "frames": 30
+    },
+    {
+      "poke": [
+        {
+          "symbol": "dbg",
+          "offset": 0,
+          "type": "u8",
+          "value": 2
+        },
+        {
+          "symbol": "dbg",
+          "offset": 8,
+          "type": "u16",
+          "value": 1
+        }
+      ],
+      "frames": 4
+    },
+    {
+      "poke": [
+        {
+          "symbol": "dbg",
+          "offset": 17,
+          "type": "u8",
+          "value": 0
+        },
+        {
+          "symbol": "dbg",
+          "offset": 18,
+          "type": "u8",
+          "value": 1
+        },
+        {
+          "symbol": "dbg",
+          "offset": 19,
+          "type": "u8",
+          "value": 0
+        },
+        {
+          "symbol": "dbg",
+          "offset": 10,
+          "type": "u16",
+          "value": 36000
+        },
+        {
+          "symbol": "dbg",
+          "offset": 16,
+          "type": "u8",
+          "value": 1
+        }
+      ],
+      "frames": 2
+    },
+    {
+      "wait_until": {
+        "field": "result",
+        "min_value": 1,
+        "timeout_frames": 37200
+      },
+      "capture_sequence": "arpg_bot_bueno",
+      "capture_every": 1800
+    },
+    {
+      "frames": 30,
+      "state_capture": "end"
+    }
+  ]
+}

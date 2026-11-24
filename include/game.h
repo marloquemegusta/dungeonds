@@ -23,6 +23,11 @@
 #define ENC_BOT 0
 #endif
 
+// Variant "arpg-bot": the ARPG cathedral played by an autopilot of configurable skill (source/arpg_bot.c).
+#ifndef ARPG_BOT
+#define ARPG_BOT 0
+#endif
+
 #define SCREEN_W 256
 #define SCREEN_H 192
 

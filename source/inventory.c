@@ -644,8 +644,8 @@ static int equip_target(const ArpgInvItem *it) {
     int sc = it->school;
     int n = arpg_inv_socket_count(sc);
     for (int k = 0; k < n; k++)
-        if (!arpg_inv_socket_item(sc, k)) return k;
-    return (sc == s_inv_tab && s_socket_sel < n) ? s_socket_sel : 0;
+        if (arpg_inv_socket_open(sc, k) && !arpg_inv_socket_item(sc, k)) return k;
+    return (sc == s_inv_tab && s_socket_sel < n && arpg_inv_socket_open(sc, s_socket_sel)) ? s_socket_sel : 0;
 }
 
 // target_socket < 0: elige el engarce solo (equip_target).
@@ -683,6 +683,12 @@ static void act_equip_to(int bag_idx, int target_socket) {
     int n = arpg_inv_socket_count(s_inv_tab);
     if (target_socket < 0) target_socket = equip_target(it);
     if (target_socket >= n) target_socket = 0;
+    if (!arpg_inv_socket_open(s_inv_tab, target_socket)) {
+        char m[24];
+        snprintf(m, sizeof(m), "Engarce cerrado: Nv. %d", arpg_inv_socket_unlock_level(s_inv_tab, target_socket));
+        show_msg(m);
+        return;
+    }
 
     int ok;
     if (arpg_inv_socket_item(s_inv_tab, target_socket) == 0)
@@ -1247,6 +1253,19 @@ static void render_left_sockets(uint16_t *buf) {
                      (!s_drag_active && s_inv_focus == INV_FOCUS_SOCK && i == s_socket_sel);
 
             sunken_box_rar(buf, x0, y0, INV_SOCK_SZ, INV_SOCK_SZ, (it && !from_me) ? (int)it->rarity : -1);
+            if (!arpg_inv_socket_open(s_inv_tab, i)) {          // closed: padlock and the level that opens it
+                const int px = INV_SOCK_CX - 5, py = cy - 9;
+                fill_rect(buf, px, py + 6, 10, 8, INV_DIM);       // body
+                fill_rect(buf, px + 4, py + 9, 2, 3, INV_SHAD);   // keyhole
+                vline(buf, px + 1, py + 1, 5, INV_DIM);           // shackle
+                vline(buf, px + 8, py + 1, 5, INV_DIM);
+                hline(buf, px + 2, py, 6, INV_DIM);
+                hline(buf, px + 1, py + 1, 8, INV_DIM);
+                char lv[12];
+                snprintf(lv, sizeof(lv), "Nv. %d", arpg_inv_socket_unlock_level(s_inv_tab, i));
+                text_center(buf, INV_SOCK_CX, cy + 6, lv, INV_DIM);
+                continue;
+            }
             if (hl) corner_ticks(buf, x0, y0, INV_SOCK_SZ, INV_SOCK_SZ, INV_GOLD);
             else if (s_inv_focus == INV_FOCUS_BAG && !s_drag_active && i == s_socket_sel && !it)
                 corner_ticks(buf, x0, y0, INV_SOCK_SZ, INV_SOCK_SZ, INV_DIM);   // engarce que recibirá la reliquia (si no hay otro libre)

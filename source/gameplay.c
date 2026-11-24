@@ -53,7 +53,7 @@ ENEMY_TUNING_CONST EnemyTuning g_enemy_tuning[NUM_ENEMY_TYPES] = {
         .attack_cooldown = 60,    // [TUNABLE-PLACEHOLDER] frames between minor tolls
     },
     [ENEMY_TYPE_MONAGUILLO] = {
-        .max_hp = 100,            // [TUNABLE-PLACEHOLDER] same rules as Exvoto: dies in one hit
+        .max_hp = 250,            // [TUNABLE-PLACEHOLDER] same rules as Exvoto: dies in one hit
         .speed = 130,             // [TUNABLE-PLACEHOLDER] 8.8 fixed: slow prayer-walk
         .attack_cooldown = 30,    // [TUNABLE-PLACEHOLDER] frames between bites
         .preferred_dist_max = 16, // [TUNABLE-PLACEHOLDER] melee range (ground px)
@@ -61,19 +61,19 @@ ENEMY_TUNING_CONST EnemyTuning g_enemy_tuning[NUM_ENEMY_TYPES] = {
     // ---- Exvoto tiers (v3, walkthroughs/arpg-predemo §10) -----------------------------------------
     // Lives come from the rooms table (encounters_act1.c enc_init): Bebé x1 base, Párroco x4 base, Monja x2.
     [ENEMY_TYPE_BEBE] = {
-        .max_hp = 100,            // [TUNABLE-PLACEHOLDER] swarm: dies in one hit (the ray does ARPG_RAY_DAMAGE)
+        .max_hp = 50,             // [TUNABLE-PLACEHOLDER] swarm: dies in one hit (the ray does ARPG_RAY_DAMAGE)
         .speed = 160,             // [TUNABLE-PLACEHOLDER] a bit faster than the Exvoto's 130
         .attack_cooldown = 30,    // [TUNABLE-PLACEHOLDER] frames between bites
         .preferred_dist_max = 14, // [TUNABLE-PLACEHOLDER] melee range (ground px)
     },
     [ENEMY_TYPE_PARROCO] = {
-        .max_hp = 400,            // [TUNABLE-PLACEHOLDER] tank: x4 the Exvoto base before the floor scaling
+        .max_hp = 1000,           // [TUNABLE-PLACEHOLDER] tank: a wall at level 1 (DESIGN-ARPG.md 10)
         .speed = 105,             // [TUNABLE-PLACEHOLDER] heavier, below the Exvoto
         .attack_cooldown = 45,    // [TUNABLE-PLACEHOLDER] frames between blows (slower, harder hits)
         .preferred_dist_max = 20, // [TUNABLE-PLACEHOLDER] melee range (ground px), long arms
     },
     [ENEMY_TYPE_MONJA] = {
-        .max_hp = 200,            // [TUNABLE-PLACEHOLDER] support: x2 the Exvoto base
+        .max_hp = 600,            // [TUNABLE-PLACEHOLDER] Super Monja: a wall at level 1 (DESIGN-ARPG.md 10)
         .speed = 105,             // [TUNABLE-PLACEHOLDER] 8.8 fixed: she walks only when the group closes in
         .attack_cooldown = 40,    // [TUNABLE-PLACEHOLDER] frames between bites when forced to fight
         .preferred_dist_max = 16, // [TUNABLE-PLACEHOLDER] melee range (ground px)
@@ -120,7 +120,7 @@ void arpg_on_l_hold(void) {
     sfx_play(SND_HEART_CHARGE, -1);
 }
 
-int arpg_enemy_damage(int enemy_type) {
+static int enemy_damage_base(int enemy_type) {
     switch (enemy_type) {
     case ENEMY_TYPE_EXVOTO:     return ARPG_DMG_EXVOTO;
     case ENEMY_TYPE_MONAGUILLO: return ARPG_DMG_MONAGUILLO;
@@ -135,9 +135,13 @@ int arpg_enemy_damage(int enemy_type) {
     }
 }
 
+int arpg_enemy_damage(int enemy_type) {
+    return BAL_AT(dmg, enemy_type, enemy_damage_base(enemy_type));
+}
+
 int arpg_enemy_damage_of(const Enemy *e) {
     int d = arpg_enemy_damage(e->type);
-    if (e->home_flags & ENEMY_TIER2) d = d * ARPG_TIER2_DAMAGE_PCT / 100;
+    if (e->home_flags & ENEMY_TIER2) d = d * BAL(tier2_dmg_pct, ARPG_TIER2_DAMAGE_PCT) / 100;
     return d;
 }
 
@@ -149,7 +153,7 @@ void player_regen_mana(PlayerState *player) {
     }
     int denom = 100 + g_mods.mana_regen_pct;
     if (denom < 25) denom = 25;
-    int period = (ARPG_MANA_REGEN_FRAMES * 100) / denom;
+    int period = (BAL(mana_regen_frames, ARPG_MANA_REGEN_FRAMES) * 100) / denom;
     if (period < 6) period = 6;
     if (++s_mana_regen_timer >= period) {
         s_mana_regen_timer = 0;
@@ -160,11 +164,11 @@ void player_regen_mana(PlayerState *player) {
 void player_state_init(PlayerState *player) {
     if (!player) return;
     // g_mods.max_hp is already in life points (Vida and Bone Plate add 20 per heart).
-    int full_hp = ARPG_HP_BASE + (g_arpg_level - 1) * ARPG_HP_PER_LEVEL + g_mods.max_hp;
+    int full_hp = BAL(hero_hp_base, ARPG_HP_BASE) + (g_arpg_level - 1) * BAL(hero_hp_level, ARPG_HP_PER_LEVEL) + g_mods.max_hp;
     player->max_hp = upgrades_has_relic(RELIC_LLAGA) ? (full_hp + 1) / 2 : full_hp;
     if (player->max_hp < 1) player->max_hp = 1;
     player->hp = player->max_hp;
-    player->max_mana = ARPG_MANA_BASE + (g_arpg_level - 1) * ARPG_MANA_PER_LEVEL + g_mods.max_mana;
+    player->max_mana = BAL(hero_mana_base, ARPG_MANA_BASE) + (g_arpg_level - 1) * BAL(hero_mana_level, ARPG_MANA_PER_LEVEL) + g_mods.max_mana;
     if (player->max_mana < 10) player->max_mana = 10;
     player->mana = player->max_mana;
     s_mana_regen_timer = 0;

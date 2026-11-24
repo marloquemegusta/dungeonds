@@ -41,7 +41,7 @@ static const char *const s_mech_desc[] = {
     "Tras detonar, el sello se reabre una vez gratis."
 };
 static const char *const s_line_name[ARPG_LINE_COUNT] = {
-    "Daño", "Carga", "Alcance", "Quemadura", "Vida máx.", "Velocidad", "Maná máx.", "Regen. maná", "Orbes remate", "Radio", "Espera", "Coste"
+    "Daño", "Carga", "Alcance", "Quemadura", "Vida máx.", "Velocidad", "Maná máx.", "Regen. maná", "Cura remate", "Radio", "Espera", "Coste"
 };
 static const char *const s_legendary_name[] = {
     "",
@@ -137,11 +137,20 @@ static int add_item(ArpgInventory *inv, const ArpgInvItem *item) {
     return -1;
 }
 
-// Partida nueva: Rayo equipado y 12 reliquias de ejemplo de la protodemo (Rayo, Ejecución y Pecho).
+// Partida nueva (DESIGN-ARPG.md §3): solo el Rayo equipado y la bolsa vacía; el tomo de Glifo se gana en la
+// Capilla del párroco (encounters_act1.c).
 void arpg_inv_new_game(void) {
+    arpg_inv_init(&g_arpg.inv);
+}
+
+void arpg_inv_make_tome(ArpgInvItem *it, int school) {
+    item_make(it, ARPG_ITEM_TOME, (uint8_t)school, ARPG_RAR_UNCOMMON, ARPG_MECH_NONE);
+}
+
+// Bolsa de ejemplo de la variante arpg-todo: reliquias de Rayo, Ejecución, Pecho y Glifo y los dos tomos.
+static void add_sample_bag(void) {
     ArpgInventory *inv = &g_arpg.inv;
     ArpgInvItem it;
-    arpg_inv_init(inv);
 
     item_make(&it, ARPG_ITEM_RELIC, ARPG_SCHOOL_RAYO, ARPG_RAR_RARE, ARPG_MECH_LLAMA_VOTIVA);
     it.mech_val = 24;
@@ -231,6 +240,7 @@ void arpg_inv_new_game(void) {
 void arpg_inv_unlock_all(void) {
     ArpgInventory *inv = &g_arpg.inv;
     arpg_inv_new_game();
+    add_sample_bag();
 
     item_make(&inv->spell[0], ARPG_ITEM_RAYO, ARPG_SCHOOL_RAYO, ARPG_RAR_COMMON, ARPG_MECH_NONE);
     item_make(&inv->spell[1], ARPG_ITEM_TOME, ARPG_SCHOOL_GLIFO, ARPG_RAR_UNCOMMON, ARPG_MECH_NONE);
@@ -347,6 +357,33 @@ int arpg_inv_socket_count(int school) {
     return (school == ARPG_SCHOOL_PECHO) ? 2 : 3;
 }
 
+int arpg_inv_socket_unlock_level(int school, int socket) {
+    (void)school;
+    return socket <= 0 ? 1 : socket == 1 ? ARPG_SOCKET2_LEVEL : ARPG_SOCKET3_LEVEL;
+}
+
+int arpg_inv_socket_open(int school, int socket) {
+    if ((unsigned)school >= ARPG_INV_SCHOOLS || (unsigned)socket >= (unsigned)arpg_inv_socket_count(school)) return 0;
+#if ARPG_ALL_UNLOCKED
+    return 1;
+#else
+    return (g_arpg.level ? (int)g_arpg.level : 1) >= arpg_inv_socket_unlock_level(school, socket);
+#endif
+}
+
+// Las reliquias de un engarce cerrado (guardado viejo, nivel que baja) vuelven a la bolsa o, si esta esta llena, al alijo.
+static void expel_from_locked_sockets(void) {
+    for (int s = 0; s < ARPG_INV_SCHOOLS; s++)
+        for (int k = 0; k < ARPG_INV_SOCKETS; k++) {
+            ArpgInvItem *it = &g_arpg.inv.socket[s][k];
+            if (it->kind == ARPG_ITEM_EMPTY || arpg_inv_socket_open(s, k)) continue;
+            int b = arpg_inv_first_free_bag();
+            if (b >= 0) { g_arpg.inv.bag[b] = *it; item_clear(it); continue; }
+            int t = arpg_inv_first_free_stash();
+            if (t >= 0) { g_arpg.stash[t] = *it; item_clear(it); }
+        }
+}
+
 const ArpgInvItem *arpg_inv_socket_item(int school, int socket) {
     if ((unsigned)school >= ARPG_INV_SCHOOLS) return 0;
     if ((unsigned)socket >= (unsigned)arpg_inv_socket_count(school)) return 0;
@@ -369,7 +406,7 @@ int arpg_inv_can_equip(const ArpgInvItem *it) {
 
 int arpg_inv_equip_relic(int bag_index, int school, int socket) {
     if ((unsigned)bag_index >= ARPG_INV_BAG) return 0;
-    if ((unsigned)socket >= (unsigned)arpg_inv_socket_count(school)) return 0;
+    if ((unsigned)socket >= (unsigned)arpg_inv_socket_count(school) || !arpg_inv_socket_open(school, socket)) return 0;
     ArpgInvItem *b = &g_arpg.inv.bag[bag_index];
     if (!socket_accepts(b, school)) return 0;
     if (!arpg_inv_can_equip(b)) return 0;
@@ -381,7 +418,7 @@ int arpg_inv_equip_relic(int bag_index, int school, int socket) {
 
 int arpg_inv_swap_relic(int bag_index, int school, int socket) {
     if ((unsigned)bag_index >= ARPG_INV_BAG) return 0;
-    if ((unsigned)socket >= (unsigned)arpg_inv_socket_count(school)) return 0;
+    if ((unsigned)socket >= (unsigned)arpg_inv_socket_count(school) || !arpg_inv_socket_open(school, socket)) return 0;
     ArpgInvItem *b = &g_arpg.inv.bag[bag_index];
     if (!socket_accepts(b, school)) return 0;
     if (!arpg_inv_can_equip(b)) return 0;
@@ -436,6 +473,8 @@ static int inv_has_item(int kind, int school, int mech) {
     return 0;
 }
 
+int arpg_inv_has_tome(int school) { return inv_has_item(ARPG_ITEM_TOME, school, ARPG_MECH_NONE); }
+
 // Guardado dañado o de otra versión: cualquier objeto con valores fuera de rango se descarta
 // (la interfaz indexa tablas por rareza, escuela y línea) y el hueco 0 vuelve a ser Rayo.
 void arpg_inv_sanitize(void) {
@@ -466,6 +505,7 @@ void arpg_inv_sanitize(void) {
         if (inv->spell[i].kind != ARPG_ITEM_EMPTY && inv->spell[i].kind != ARPG_ITEM_TOME) item_clear(&inv->spell[i]);
     item_make(&inv->spell[0], ARPG_ITEM_RAYO, ARPG_SCHOOL_RAYO, ARPG_RAR_COMMON, ARPG_MECH_NONE);
     fix_active_spell();
+    expel_from_locked_sockets();
 }
 
 void arpg_inv_migrate_glifo(void) {
@@ -646,6 +686,7 @@ void arpg_inv_apply(void) {
 // En vivo: aplica solo la diferencia de líneas, actualiza reliquias por mecánica y recalcula
 // Vida máx. y Maná máx. de g_player_state al instante.
 void arpg_inv_recalc(void) {
+    expel_from_locked_sockets();
     InvModDelta d;
     compute_delta(&d);
     if (!s_have_last) {
@@ -675,7 +716,7 @@ void arpg_inv_recalc(void) {
     }
     if (g_player_state.max_hp > 0) {
         int old_max_hp = g_player_state.max_hp;
-        int full_hp = ARPG_HP_BASE + (g_arpg_level - 1) * ARPG_HP_PER_LEVEL + g_mods.max_hp;
+        int full_hp = BAL(hero_hp_base, ARPG_HP_BASE) + (g_arpg_level - 1) * BAL(hero_hp_level, ARPG_HP_PER_LEVEL) + g_mods.max_hp;
         int new_max_hp = upgrades_has_relic(RELIC_LLAGA) ? (full_hp + 1) / 2 : full_hp;
         if (new_max_hp < 1) new_max_hp = 1;
         g_player_state.max_hp = new_max_hp;
@@ -684,7 +725,7 @@ void arpg_inv_recalc(void) {
         if (g_player_state.hp < 1 && !g_player_state.is_dead) g_player_state.hp = 1;
 
         int old_max_mana = g_player_state.max_mana;
-        int new_max_mana = ARPG_MANA_BASE + (g_arpg_level - 1) * ARPG_MANA_PER_LEVEL + g_mods.max_mana;
+        int new_max_mana = BAL(hero_mana_base, ARPG_MANA_BASE) + (g_arpg_level - 1) * BAL(hero_mana_level, ARPG_MANA_PER_LEVEL) + g_mods.max_mana;
         if (new_max_mana < 10) new_max_mana = 10;
         g_player_state.max_mana = new_max_mana;
         if (new_max_mana > old_max_mana) g_player_state.mana += (new_max_mana - old_max_mana);

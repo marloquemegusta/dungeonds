@@ -39,6 +39,7 @@
 #include "dmg_numbers.h"
 #include "menu.h"
 #include "title_screen.h"
+#include "room_pool.h"
 #include "inventory.h"
 #include "encounters_act1.h"
 #include "boss.h"
@@ -47,6 +48,7 @@
 #include "arpg_progress.h"
 #include "arpg_map.h"
 #include "arpg_inv.h"
+#include "arpg_bot.h"
 #include "glifo.h"
 #include "campanero_fx.h"
 #include "cfxprof.h"
@@ -1820,6 +1822,7 @@ ITCM_CODE static void render_screen(uint16_t *buffer, DirtySpan *spans, int cam_
 #if ENCOUNTERS_PROTO
     boss_draw_world(buffer, cam_x, cam_y);          // phase numeral over the boss
 #endif
+    pickups_fx_draw(buffer, cam_x, cam_y);
     dmg_numbers_draw(buffer, cam_x, cam_y);
     PP_ADD(PP_PROJ, pp_proj);
     uint32_t blit_ticks = cpuGetTiming() - t_bl0;
@@ -3645,6 +3648,12 @@ volatile PerfStats g_perf = {
 };
 
 static volatile uint32_t s_vblank_count = 0;
+#if ARPG_BOT
+#define BOT_FAST() (g_arpg_bot_debug.fast)     // the bot's fast mode skips the drawing of the scene (emulation runs faster)
+#else
+#define BOT_FAST() 0
+#endif
+
 static void on_vblank_irq(void) {
     s_vblank_count++;
 }
@@ -3851,6 +3860,7 @@ int main(void) {
     sfx_init();
     CRASH_INIT();
     PP_INIT();
+    PP_NOTE("boot nitro=%d", room_pool_fs_ready());
     enemy_set_death_hook(on_enemy_death);
     enemy_ai_set_strip_mode(s_strip_mode && !ENCOUNTERS_PROTO);
     nav_init();
@@ -3934,6 +3944,31 @@ int main(void) {
             enc_bot_step(&bv, g_enemies, MAX_ENEMIES, &bi);
             keys_held = bi.keys | (bi.touch_down ? KEY_TOUCH : 0);
             keys_down = 0;
+            touch.px = (uint16_t)bi.touch_x;
+            touch.py = (uint16_t)bi.touch_y;
+        }
+#endif
+#if ARPG_BOT
+        {
+            // Autopilot of the variant "arpg-bot": what the buttons and the stylus would say is replaced here.
+            ArpgBotView bv;
+            bv.hx = TO_INT(s_player.x);
+            bv.hy = TO_INT(s_player.y);
+            bv.cam_x = s_cam_x;
+            bv.cam_y = s_cam_y;
+            fixed bmx, bmy;
+            int bmh;
+            player_muzzle(&bmx, &bmy, &bmh);
+            bv.muzzle_x = TO_INT(bmx);
+            bv.muzzle_y = TO_INT(bmy);
+            bv.muzzle_h = bmh;
+            weapons_shake_offset(&bv.shake_x, &bv.shake_y);
+            ArpgBotInput bi;
+            arpg_bot_step(&bv, g_enemies, MAX_ENEMIES, &bi);
+            static uint32_t s_bot_prev_keys = 0;
+            keys_held = bi.keys | (bi.touch_down ? KEY_TOUCH : 0);
+            keys_down = keys_held & ~s_bot_prev_keys;      // edges like the console: they survive a hitstop through the latch
+            s_bot_prev_keys = keys_held;
             touch.px = (uint16_t)bi.touch_x;
             touch.py = (uint16_t)bi.touch_y;
         }
@@ -4253,10 +4288,10 @@ int main(void) {
         // The lower screen is double buffered, so render it first during active display.
         uint32_t t2 = cpuGetTiming();
         CRASH_MARK(CL_RENDER_START, 0, 0);
-        render_screen(bot_page_ptr(s_bot_back_page), s_dirty[s_bot_back_page == 24], view_x, view_y, 0, &bot_floor, &bot_sh, &bot_bl);
+        if (!BOT_FAST()) render_screen(bot_page_ptr(s_bot_back_page), s_dirty[s_bot_back_page == 24], view_x, view_y, 0, &bot_floor, &bot_sh, &bot_bl);
         CRASH_MARK(CL_RENDER_DONE, 0, 0);
         PP_T0(pp_hud);
-        if (s_run_started) {
+        if (s_run_started && !BOT_FAST()) {
             draw_run_hud(bot_page_ptr(s_bot_back_page));
         }
         if (menu_is_open()) {
@@ -4314,7 +4349,7 @@ int main(void) {
                 // forzar el repintado completo del mundo.
                 for (int y = 0; y < SCREEN_H; y++) { s_dirty_top[y].x0 = 0; s_dirty_top[y].x1 = SCREEN_W; }
             }
-            render_screen(s_top_page, s_dirty_top, view_x, view_y - SCREEN_H, 1, &top_floor, &top_sh, &top_bl);
+            if (!BOT_FAST()) render_screen(s_top_page, s_dirty_top, view_x, view_y - SCREEN_H, 1, &top_floor, &top_sh, &top_bl);
 #if ENCOUNTERS_PROTO
             if (arpg_map_is_open() && s_strip_mode && s_run_started && !camp_active()) {
                 g_dirty_cur = s_dirty_top;      // the next render_screen of this page clears the lines

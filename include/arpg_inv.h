@@ -100,6 +100,8 @@ typedef struct {
 void arpg_inv_init(ArpgInventory *inv);
 // Partida nueva: bolsa con reliquias y tomos de ejemplo (fase 2).
 void arpg_inv_new_game(void);
+void arpg_inv_make_tome(ArpgInvItem *it, int school);   /* tomo de hechizo (ARPG_SCHOOL_GLIFO...) */
+int  arpg_inv_has_tome(int school);                     /* en la bolsa o en un hueco de hechizo */
 // Variante arpg-todo: equipa todos los tomos y reparte reliquias por escuela.
 void arpg_inv_unlock_all(void);
 
@@ -115,6 +117,12 @@ int  arpg_inv_stash_store(int bag_index);      // bolsa -> primer hueco libre de
 int  arpg_inv_stash_take(int stash_index);     // alijo -> primer hueco libre de la bolsa
 int  arpg_inv_stash_move(int bag_index, int stash_index);   // intercambia (o mueve si el destino está vacío)
 
+// Engarces que se abren por nivel (DESIGN-ARPG.md 10): el 1.o desde el principio, el 2.o a nivel ARPG_SOCKET2_LEVEL, el 3.o en la parte 2
+// de la catedral (nivel provisional). Un engarce cerrado se dibuja con candado y no admite reliquias. arpg-todo los tiene abiertos.
+#define ARPG_SOCKET2_LEVEL 5
+#define ARPG_SOCKET3_LEVEL 99
+int  arpg_inv_socket_unlock_level(int school, int socket);   // nivel de heroe que lo abre (1 = abierto desde el principio)
+int  arpg_inv_socket_open(int school, int socket);
 int  arpg_inv_socket_count(int school);                // 3 (Pecho: 2)
 const ArpgInvItem *arpg_inv_socket_item(int school, int socket);  // NULL si vacÃ­o
 

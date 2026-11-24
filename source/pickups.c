@@ -7,6 +7,7 @@
 #include "arpg.h"
 #include "arpg_progress.h"
 #include "modifiers.h"
+#include "gameplay.h"
 #include "sfx.h"
 #include <stdio.h>
 #if ENCOUNTERS_PROTO
@@ -37,6 +38,7 @@ static int s_relic_tip_pending = 0;   // aviso "engarzala" a continuacion del "+
 #if SANDBOX
 // Scenario hook (never in the shipping ROM): non-zero forces the next enemy death to drop a heart.
 uint8_t g_pickup_force_drop = 0;
+uint8_t g_remate_force_heal = 0;    // non-zero: the next remates always restore life and mana
 #endif
 
 void pickups_init(uint32_t seed) {
@@ -97,6 +99,20 @@ void pickups_spawn(int kind, fixed x, fixed y) {
     s_pickups[slot].amount = 0;
     s_pickups[slot].active = 1;
 }
+
+#if ARPG_BOT
+int pickups_nearest(int kind, int px, int py, int *ox, int *oy) {
+    int best = -1;
+    for (int i = 0; i < HEAL_PICKUP_MAX_ACTIVE; i++) {
+        const HealPickup *p = &s_pickups[i];
+        if (!p->active || p->kind != kind) continue;
+        int dx = TO_INT(p->x) - px, dy = TO_INT(p->y) - py;
+        int d2 = dx * dx + GROUND_DY2(dy);
+        if (best < 0 || d2 < best) { best = d2; *ox = TO_INT(p->x); *oy = TO_INT(p->y); }
+    }
+    return best;
+}
+#endif
 
 void pickups_spawn_xp(fixed x, fixed y, int amount) {
     (void)x; (void)y;
@@ -160,19 +176,75 @@ const char *pickups_loot_toast(void) {
     return (s_loot_toast_t > 0 && s_loot_toast[0]) ? s_loot_toast : 0;
 }
 
+// Remate heal streak: a small muted spark travels from the killed enemy to the hero (shifts only, no divides).
+#define HEAL_FX_FRAMES 16
+#define HEAL_FX_MAX 2
+typedef struct { fixed sx, sy; int t; uint16_t col; } HealFx;
+static HealFx s_heal_fx[HEAL_FX_MAX];
+static fixed s_heal_hx, s_heal_hy;     // hero position of the last update (streak target)
+
+static void heal_fx_spawn(fixed x, fixed y, uint16_t col) {
+    for (int i = 0; i < HEAL_FX_MAX; i++) {
+        if (s_heal_fx[i].t > 0) continue;
+        s_heal_fx[i].sx = x; s_heal_fx[i].sy = y - TO_FIXED(10); s_heal_fx[i].t = HEAL_FX_FRAMES; s_heal_fx[i].col = col;
+        return;
+    }
+}
+
+// The finisher restores life and mana at once (no orbs): same chances and relic bonus as the old drops.
 void pickups_remate_drops(fixed x, fixed y) {
     s_rng = s_rng * 1664525u + 1013904223u;
     int hp_roll = (int)((s_rng >> 8) % 100u);
     s_rng = s_rng * 1664525u + 1013904223u;
     int mana_roll = (int)((s_rng >> 8) % 100u);
-    if (hp_roll < ARPG_REMATE_HP_CHANCE)
-        pickups_spawn(PICKUP_KIND_HEALTH, x - TO_FIXED(REMATE_ORB_OFFSET_PX), y);
-    if (mana_roll < ARPG_REMATE_MANA_CHANCE)
-        pickups_spawn(PICKUP_KIND_MANA, x + TO_FIXED(REMATE_ORB_OFFSET_PX), y);
+#if SANDBOX
+    if (g_remate_force_heal) { hp_roll = 0; mana_roll = 0; }   // scenario hook: both rolls succeed
+#endif
+    PlayerState *player = &g_player_state;
+    if (hp_roll < BAL(remate_hp_chance, ARPG_REMATE_HP_CHANCE) && player->hp < player->max_hp) {
+        int gain = BAL(remate_hp, ARPG_REMATE_HP) + g_mods.remate_heal_bonus;
+        player->hp += gain;
+        if (player->hp > player->max_hp) player->hp = player->max_hp;
+        dmg_numbers_spawn(x - TO_FIXED(REMATE_ORB_OFFSET_PX), y - TO_FIXED(18), gain, DMG_NUM_HEAL);
+        heal_fx_spawn(x - TO_FIXED(3), y, RGB15(15, 24, 13) | BIT(15));
+        sfx_play_pitched(SND_PICKUP_ORB, TO_INT(x), 920);
+    }
+    if (mana_roll < BAL(remate_mana_chance, ARPG_REMATE_MANA_CHANCE)) {
+        int gain = BAL(remate_mana, ARPG_REMATE_MANA) + g_mods.remate_heal_bonus / 2;
+        player->mana += gain;
+        if (player->mana > player->max_mana) player->mana = player->max_mana;
+        dmg_numbers_spawn(x + TO_FIXED(REMATE_ORB_OFFSET_PX), y - TO_FIXED(18), gain, DMG_NUM_MANA);
+        heal_fx_spawn(x + TO_FIXED(3), y, RGB15(13, 19, 27) | BIT(15));
+        sfx_play_pitched(SND_PICKUP_ORB, TO_INT(x), 1024);
+    }
+}
+
+void pickups_fx_draw(uint16_t *buffer, int cam_x, int cam_y) {
+    for (int i = 0; i < HEAL_FX_MAX; i++) {
+        HealFx *f = &s_heal_fx[i];
+        if (f->t <= 0) continue;
+        // Trail of 3 samples (head, then two steps behind); progress in 16ths.
+        for (int k = 0; k < 3; k++) {
+            int prog = HEAL_FX_FRAMES - f->t - k * 2;
+            if (prog < 0) continue;
+            fixed px = f->sx + (((s_heal_hx - f->sx) * prog) >> 4);
+            fixed py = f->sy + (((s_heal_hy - TO_FIXED(10) - f->sy) * prog) >> 4) - TO_FIXED((prog * (HEAL_FX_FRAMES - prog)) >> 3);   // arcs up to 8 px
+            int cx = TO_INT(px) - cam_x, cy = TO_INT(py) - cam_y;
+            const uint16_t col = k == 0 ? (RGB15(26, 23, 18) | BIT(15)) : f->col;
+            const int sz = k == 0 ? 3 : k == 1 ? 2 : 1;
+            for (int yy = 0; yy < sz; yy++)
+                for (int xx = 0; xx < sz; xx++) {
+                    int sx2 = cx + xx, sy2 = cy + yy;
+                    if (sx2 >= 0 && sx2 < SCREEN_W && sy2 >= 0 && sy2 < SCREEN_H) buffer[sy2 * SCREEN_W + sx2] = col;
+                }
+        }
+    }
 }
 
 void pickups_update(fixed player_x, fixed player_y, PlayerState *player) {
     s_anim_tick++;
+    s_heal_hx = player_x; s_heal_hy = player_y;
+    for (int i = 0; i < HEAL_FX_MAX; i++) if (s_heal_fx[i].t > 0) s_heal_fx[i].t--;
     if (s_loot_toast_t > 0) s_loot_toast_t--;
     if (s_loot_toast_t <= 0 && s_relic_tip_pending) {
         s_relic_tip_pending = 0;
@@ -218,14 +290,14 @@ void pickups_update(fixed player_x, fixed player_y, PlayerState *player) {
         }
         if (p->kind == PICKUP_KIND_MANA) {
             if (player) {
-                int gain = ARPG_REMATE_MANA + g_mods.remate_heal_bonus / 2;
+                int gain = BAL(remate_mana, ARPG_REMATE_MANA) + g_mods.remate_heal_bonus / 2;
                 player->mana += gain;
                 if (player->mana > player->max_mana) player->mana = player->max_mana;
                 dmg_numbers_spawn(player_x, player_y - TO_FIXED(18), gain, DMG_NUM_MANA);
             }
             sfx_play_pitched(SND_PICKUP_ORB, TO_INT(p->x), 1024);
         } else if (player && player->hp < player->max_hp) {
-            int gain = ARPG_REMATE_HP + g_mods.remate_heal_bonus;
+            int gain = BAL(remate_hp, ARPG_REMATE_HP) + g_mods.remate_heal_bonus;
             player->hp += gain;
             if (player->hp > player->max_hp) player->hp = player->max_hp;
             dmg_numbers_spawn(player_x, player_y - TO_FIXED(18), gain, DMG_NUM_HEAL);

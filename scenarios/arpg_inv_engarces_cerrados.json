@@ -1,0 +1,96 @@
+{
+  "name": "arpg_inv_engarces_cerrados",
+  "description": "Inventario a nivel 1: cada escuela tiene 1 engarce abierto y los demas con candado y Nv. X (DESIGN-ARPG.md 10). Solo capturas.",
+  "suite": false,
+  "evidence_only": true,
+  "state": {
+    "elf": "../.ds-game-dev/build/out/dungeonds.elf",
+    "symbols": {
+      "pl": "s_player"
+    },
+    "default_symbol": "pl",
+    "fields": {
+      "px": {
+        "symbol": "pl",
+        "offset": 0,
+        "type": "s32"
+      },
+      "py": {
+        "symbol": "pl",
+        "offset": 4,
+        "type": "s32"
+      }
+    }
+  },
+  "steps": [
+    {
+      "frames": 60
+    },
+    {
+      "tap": {
+        "x": 128,
+        "y": 66
+      },
+      "frames": 6
+    },
+    {
+      "release": true,
+      "frames": 40
+    },
+    {
+      "button_down": "START",
+      "frames": 4
+    },
+    {
+      "button_up": "START",
+      "frames": 50
+    },
+    {
+      "poke": [
+        {
+          "field": "px",
+          "value": 15872
+        },
+        {
+          "field": "py",
+          "value": 75776
+        }
+      ],
+      "frames": 15
+    },
+    {
+      "button_down": "A",
+      "frames": 8
+    },
+    {
+      "button_up": "A",
+      "frames": 35,
+      "capture": "01_rayo_llama"
+    },
+    {
+      "button_down": "RIGHT",
+      "frames": 8
+    },
+    {
+      "button_up": "RIGHT",
+      "frames": 15
+    },
+    {
+      "button_down": "A",
+      "frames": 6
+    },
+    {
+      "button_up": "A",
+      "frames": 30
+    },
+    {
+      "button_down": "SELECT",
+      "frames": 6
+    },
+    {
+      "button_up": "SELECT",
+      "frames": 25,
+      "capture": "inv_nivel1_rayo"
+    }
+  ]
+}

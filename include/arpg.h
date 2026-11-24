@@ -4,20 +4,21 @@
 // Pre-demo ARPG prototype (DESIGN.md section 7). Every number here is a [TUNABLE-PLACEHOLDER].
 
 #include "gameplay.h"
+#include "arpg_balance.h"   // BAL(): the balance loop's overrides (arpg-bot variant only; a plain constant otherwise)
 
 // Hero life is in points (not hearts): base plus per level.
 #define ARPG_HP_BASE 100            // [TUNABLE-PLACEHOLDER] life at level 1
-#define ARPG_HP_PER_LEVEL 10        // [TUNABLE-PLACEHOLDER] life gained per level
+#define ARPG_HP_PER_LEVEL 80        // [TUNABLE-PLACEHOLDER] life gained per level
 // Mana: spent by spells, regenerated slowly.
 #define ARPG_MANA_BASE 60           // [TUNABLE-PLACEHOLDER] mana at level 1
-#define ARPG_MANA_PER_LEVEL 5       // [TUNABLE-PLACEHOLDER] mana gained per level
+#define ARPG_MANA_PER_LEVEL 10       // [TUNABLE-PLACEHOLDER] mana gained per level
 #define ARPG_MANA_REGEN_FRAMES 30   // [TUNABLE-PLACEHOLDER] 1 mana every N frames
 
 // Damage the hero takes per hit, by enemy type.
-#define ARPG_DMG_EXVOTO 15          // [TUNABLE-PLACEHOLDER]
-#define ARPG_DMG_MONAGUILLO 10      // [TUNABLE-PLACEHOLDER]
+#define ARPG_DMG_EXVOTO 16          // [TUNABLE-PLACEHOLDER]
+#define ARPG_DMG_MONAGUILLO 16      // [TUNABLE-PLACEHOLDER]
 #define ARPG_DMG_BEBE 8             // [TUNABLE-PLACEHOLDER] swarm tier: weak individually, dangerous in numbers
-#define ARPG_DMG_PARROCO 25         // [TUNABLE-PLACEHOLDER] tank tier: hits harder than the Exvoto (15)
+#define ARPG_DMG_PARROCO 70         // [TUNABLE-PLACEHOLDER] tank tier: hits harder than the Exvoto (15)
 #define ARPG_GUARD_DIST 70          // [TUNABLE-PLACEHOLDER] ground px from the hero where a bodyguard (Monaguillo, PÃ¡rroco) stands in the line of fire
 #define ARPG_GUARD_SPEED_X 6        // [TUNABLE-PLACEHOLDER] a bodyguard runs to the line at this multiple of its walking speed
 #define ARPG_PARROCO_FLASH_FRAMES 5 // [TUNABLE-PLACEHOLDER] frames the PÃ¡rroco's body flashes wax-white when the ray breaks on it
@@ -25,7 +26,7 @@
 #define ARPG_SMONJA_GLIFO_REACT 10  // [TUNABLE-PLACEHOLDER] frames she stays still after the glifo lands, before dashing out
 #define ARPG_SMONJA_GLIFO_MARGIN 14 // [TUNABLE-PLACEHOLDER] ground px past the glifo's edge she keeps running to
 #define ARPG_DMG_MONJA 10           // [TUNABLE-PLACEHOLDER] support tier: her blow is weak when cornered
-#define ARPG_DMG_CIRENEO 25         // [TUNABLE-PLACEHOLDER] ENEMY_TYPE_CHARGER
+#define ARPG_DMG_CIRENEO 36         // [TUNABLE-PLACEHOLDER] ENEMY_TYPE_CHARGER
 #define ARPG_DMG_OJO 30             // [TUNABLE-PLACEHOLDER] ENEMY_TYPE_SHOOTER
 #define ARPG_DMG_ABANDERADO 25      // [TUNABLE-PLACEHOLDER]
 #define ARPG_DMG_CAMPANERO 25       // [TUNABLE-PLACEHOLDER] contact damage of the Campanero (DESIGN-ARPG.md 9)
@@ -67,7 +68,7 @@
 #define ARPG_SMONJA_HIT_RADIUS 24       // [TUNABLE-PLACEHOLDER] ground px: the headbutt lands (and the charge stops) inside this
 #define ARPG_SMONJA_CHARGE_LOCK_DIST 40 // [TUNABLE-PLACEHOLDER] ground px: the charge steers after the hero until this close, then locks its heading
 #define ARPG_SMONJA_CHARGE_STEER 2      // [TUNABLE-PLACEHOLDER] steering sharpness: heading = (heading * (2^N - 1) + toward hero) / 2^N each frame
-#define ARPG_SMONJA_CHARGE_DAMAGE 20    // [TUNABLE-PLACEHOLDER] damage of the charge
+#define ARPG_SMONJA_CHARGE_DAMAGE 30    // [TUNABLE-PLACEHOLDER] damage of the charge
 #define ARPG_SMONJA_RECOVER_FRAMES 9    // [TUNABLE-PLACEHOLDER] still after the headbutt / end of the charge: her weak moment
 #define ARPG_SMONJA_BOUNCE_SPEED 640    // [TUNABLE-PLACEHOLDER] 8.8 ground px/frame of the bounce back (2.5 px/frame)
 #define ARPG_SMONJA_BOUNCE_DIST 90      // [TUNABLE-PLACEHOLDER] ground px from the hero where the bounce ends (ring distance)
@@ -101,7 +102,7 @@
 #define ARPG_PICKUP_MAGNET 36       // [TUNABLE-PLACEHOLDER] ground px: orbs this close fly to the hero
 
 // Experience (DESIGN-ARPG.md Â§1): what a death is worth, granted directly on the kill.
-#define ARPG_XP_BEBE 1              // [TUNABLE-PLACEHOLDER] xp per threat (DESIGN-ARPG.md 7), before the room level factor
+#define ARPG_XP_BEBE 1              // [TUNABLE-PLACEHOLDER] xp per threat (DESIGN-ARPG.md 7),
 #define ARPG_XP_MONAGUILLO 2
 #define ARPG_XP_EXVOTO 3            // the wax nun
 #define ARPG_XP_PARROCO 8
@@ -110,7 +111,6 @@
 #define ARPG_XP_MONJA 12            // Super Monja (ENEMY_TYPE_MONJA while ARPG_MONJA_PRAYS is 0)
 #define ARPG_XP_BOSS 250            // Abanderado of the Cripta (room level 5)
 #define ARPG_XP_SPECIAL 60          // extra xp when a special encounter (Capilla del parroco, Misa, monjarana) has fallen whole
-#define ARPG_XP_LEVEL_PCT 30        // +30 % per room level above 1
 
 // Glifo (DESIGN.md 7.5-7.7): hechizo de suelo lanzado al punto del lapiz. Ciclo: apertura (la grieta se abre, sin efecto),
 // espera (actuan las auras) y detonacion (un golpe a todo el que este dentro), luego cierre. Auras componibles
@@ -141,10 +141,8 @@
 #define ARPG_ALLY_BLAST_DAMAGE 120  // [TUNABLE-PLACEHOLDER] fire damage of the blast when an ally dies (node 12)
 #define ARPG_ALLY_BLAST_RADIUS 40   // [TUNABLE-PLACEHOLDER] ground px of that blast
 
-// Room level (zone map, DESIGN.md 7.1): no auto-scaling; the life of an enemy depends on the FIXED level of its room (k = level - 1).
-// Bosses and minibosses also by their number n (0 = Cripta).
-#define ARPG_DEPTH_HP_PCT 12        // [TUNABLE-PLACEHOLDER] % of life added per room level above 1
-#define ARPG_DEPTH_PCT(k) (100 + ARPG_DEPTH_HP_PCT * (k))
+// Enemies have the same numbers in every room (DESIGN-ARPG.md: difficulty comes from count, composition and tier).
+// Bosses and minibosses scale by their number n (0 = Cripta).
 #define ARPG_BOSS_HP_PCT(n) ((n) == 0 ? 100 : (n) == 1 ? 160 : 220 + 40 * ((n) - 2))   // [TUNABLE-PLACEHOLDER] % of life by boss number
 
 // Rooms (salas ARPG): doors, lateral openings, chests and altars, and the group population.

@@ -81,6 +81,16 @@ void perfprof_init(void) {
 
 uint32_t perfprof_fps10(void) { return s_hud_fps10; }
 
+void perfprof_note(const char *text) {
+    if (!s_log_path) return;
+    extern u8 *getHeapEnd(void);
+    extern u8 *getHeapLimit(void);
+    FILE *f = fopen(s_log_path, "ab");
+    if (!f) return;
+    fprintf(f, "NOTE %s sbrk_free=%ld\n", text, (long)(getHeapLimit() - getHeapEnd()));
+    fclose(f);
+}
+
 static void write_window(uint32_t frame_index) {
     int len = snprintf(s_line, sizeof(s_line),
                        "PERF win=%lu f=%lu n=%lu vb=%lu vb2=%lu "

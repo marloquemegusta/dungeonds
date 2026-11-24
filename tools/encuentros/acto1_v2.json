@@ -4,9 +4,9 @@
  "block_h": 384,
  "hp": {
   "exvoto": 250,
-  "monaguillo": 100,
-  "cireneo": 600,
-  "ojo": 400,
+  "monaguillo": 250,
+  "cireneo": 500,
+  "ojo": 350,
   "abanderado": 5500
  },
  "act": {

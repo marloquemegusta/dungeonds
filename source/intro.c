@@ -1,6 +1,7 @@
 #include "intro.h"
 #include "bestiary_font.h"
 #include <nds.h>
+#include "perfprof.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -88,13 +89,14 @@ static int video_open(int card) {
     char path[48];
     snprintf(path, sizeof(path), "nitro:/intro/%s.bin", s_clip_names[card]);
     FILE *f = fopen(path, "rb");
-    if (!f) return 0;
+    if (!f) { PP_NOTE("intro_open_fail %s", path); return 0; }
     uint16_t magic, n;
     uint32_t max_rec, max_dec;
     if (fread(&magic, 2, 1, f) != 1 || fread(&n, 2, 1, f) != 1 || fread(&max_rec, 4, 1, f) != 1 ||
         fread(&max_dec, 4, 1, f) != 1 ||
         magic != VID_MAGIC || n < 2 || n > VID_MAX_N || max_rec > 256 * 1024 || max_dec > 256 * 1024 ||
         fread(s_vid.off, 4, (size_t)n + 2, f) != (size_t)n + 2) {
+        PP_NOTE("intro_header_fail %s", path);
         fclose(f);
         return 0;
     }
@@ -104,6 +106,7 @@ static int video_open(int card) {
     s_vid.rec = (uint8_t *)malloc(max_rec + 4);
     s_vid.dec = (uint8_t *)malloc(max_dec + 4);
     if (!s_vid.fb || !s_vid.rec || !s_vid.dec) {
+        PP_NOTE("intro_malloc_fail %s rec=%u dec=%u", path, (unsigned)max_rec, (unsigned)max_dec);
         video_close();
         return 0;
     }

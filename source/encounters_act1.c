@@ -686,6 +686,7 @@ static int room_chest_y(void) { return window_top(block_of_encounter(room_chest_
 static int room_altar_x(void) { return ENC_FLOOR_X + 48; }
 static int room_altar_y(void) { return window_top(block_of_encounter(0)) + 316; }
 
+
 // Where the Campanero raises an Exvoto: beside one of the columns of the test room or at a random floor spot of the block.
 void enc_camp_spot(uint32_t r, int *x, int *y) {
     const int top = window_top(block_of_encounter(s_active_boss_k));
@@ -721,11 +722,10 @@ static void place_enemy(Enemy *e, const EncEnemyDef *d, int x, int y, int ordina
     e->type = type;
     e->pack = owner;
     e->char_id = enemy_type_char_id(type);
-    e->max_hp = g_enemy_tuning[type].max_hp;
+    e->max_hp = g_enemy_tuning[type].max_hp * BAL_AT(hp_pct, type, 100) / 100;
     if (type == ENEMY_TYPE_ABANDERADO && g_enc_debug.boss_hp) e->max_hp = g_enc_debug.boss_hp;    // scenarios tune the boss
-    // Fixed level of the room (no auto-scaling); the Abanderado also by its boss number. The Campanero's 3000 is its sheet.
-    if (type != ENEMY_TYPE_CAMPANERO) e->max_hp = e->max_hp * ARPG_DEPTH_PCT(room_def()->level - 1) / 100;
-    if (type == ENEMY_TYPE_ABANDERADO) e->max_hp = e->max_hp * ARPG_BOSS_HP_PCT(boss_number(owner)) / 100;
+    // Same life in every room; the Abanderado scales by its boss number. The Campanero's 3000 is its sheet.
+    if (type == ENEMY_TYPE_ABANDERADO) e->max_hp = e->max_hp * BAL(boss_hp_pct0, ARPG_BOSS_HP_PCT(boss_number(owner))) / 100;
     e->hp = e->max_hp;
     e->dir = (ordinal * 2) % 8;
     e->strafe_dir = (ordinal & 1) ? 1 : -1;
@@ -780,22 +780,31 @@ static const RoomKind s_room_kinds[RK_COUNT] = {
 typedef struct { uint8_t kind, count; } GroupPart;
 typedef struct {
     const char *name;
-    uint8_t min_nave;   // first nave (1..4) whose rooms may take it
+    uint8_t nave;       // the nave (1..4) whose rooms draw it; each nave has its own list (DESIGN-ARPG.md 10)
     uint8_t n_parts;
-    GroupPart parts[4];
+    GroupPart parts[5];
 } GroupDef;
-enum { G_RONDA = 0, G_ENJAMBRE, G_PROCESION, G_MONAGUILLOS, G_PUESTO, G_CARGA, G_GUARDIA, G_TIRADORES,
-       G_NORMAL_COUNT,   // the ones above are drawn by hash: Parte 1 of the cathedral only has Bebe, Monaguillo, Monja de cera, Ojo and Cireneo
+// Mixed groups. The Monja de cera (RK_EXVOTO_PRAY) comes first: she takes the back slots and prays there; the Monaguillos
+// stand in front of her and the Bebes at the very front (slots fill from the back of the block).
+enum { G_REBANO = 0, G_PROCESION, G_CORRILLO,                 // Nave 1
+       G_GUARDIA_MONJA, G_PUESTO, G_CARGA,                    // Nave 2
+       G_CORO, G_TIRADORES, G_CARGA_DOBLE,                    // Nave 3
+       G_GUARDIA, G_CORTEJO, G_ASALTO,                        // Nave 4
+       G_NORMAL_COUNT,   // the ones above are drawn by hash from the list of the nave
        G_PARROQUIA = G_NORMAL_COUNT, G_MISA, G_MONJARANA, G_COUNT };   // fixed groups of the special encounters, never drawn
 static const GroupDef s_groups[G_COUNT] = {
-    [G_RONDA]      = { "Ronda",      1, 1, { { RK_EXVOTO, 6 } } },
-    [G_ENJAMBRE]   = { "Enjambre",   1, 1, { { RK_BEBE, 12 } } },
-    [G_PROCESION]  = { "Procesión",  1, 2, { { RK_EXVOTO, 4 }, { RK_BEBE, 8 } } },
-    [G_MONAGUILLOS]= { "Monaguillos",1, 2, { { RK_MONAGUILLO, 6 }, { RK_BEBE, 4 } } },
-    [G_PUESTO]     = { "Puesto",     1, 2, { { RK_OJO, 2 }, { RK_EXVOTO_GUARD, 4 } } },   // never in block 0 of Nave 1
-    [G_CARGA]      = { "Carga",      2, 2, { { RK_CIRENEO, 2 }, { RK_EXVOTO, 6 } } },
-    [G_GUARDIA]    = { "Guardia",    2, 2, { { RK_OJO, 2 }, { RK_CIRENEO, 2 } } },
-    [G_TIRADORES]  = { "Tiradores",  3, 2, { { RK_OJO, 3 }, { RK_EXVOTO, 6 } } },
+    [G_REBANO]        = { "Rebaño",           1, 2, { { RK_EXVOTO_PRAY, 1 }, { RK_BEBE, 6 } } },
+    [G_PROCESION]     = { "Procesión",        1, 2, { { RK_MONAGUILLO, 2 }, { RK_BEBE, 5 } } },
+    [G_CORRILLO]      = { "Corrillo",         1, 3, { { RK_EXVOTO_PRAY, 1 }, { RK_MONAGUILLO, 1 }, { RK_BEBE, 4 } } },
+    [G_GUARDIA_MONJA] = { "Guardia de la monja", 2, 3, { { RK_EXVOTO_PRAY, 2 }, { RK_MONAGUILLO, 2 }, { RK_BEBE, 4 } } },
+    [G_PUESTO]        = { "Puesto",           2, 3, { { RK_OJO, 1 }, { RK_MONAGUILLO, 2 }, { RK_BEBE, 4 } } },
+    [G_CARGA]         = { "Carga",            2, 4, { { RK_EXVOTO_PRAY, 1 }, { RK_CIRENEO, 1 }, { RK_MONAGUILLO, 2 }, { RK_BEBE, 4 } } },
+    [G_CORO]          = { "Coro",             3, 3, { { RK_EXVOTO_PRAY, 3 }, { RK_MONAGUILLO, 3 }, { RK_BEBE, 4 } } },
+    [G_TIRADORES]     = { "Tiradores",        3, 4, { { RK_EXVOTO_PRAY, 1 }, { RK_OJO, 2 }, { RK_MONAGUILLO, 2 }, { RK_BEBE, 4 } } },
+    [G_CARGA_DOBLE]   = { "Carga doble",      3, 4, { { RK_EXVOTO_PRAY, 1 }, { RK_CIRENEO, 2 }, { RK_MONAGUILLO, 2 }, { RK_BEBE, 3 } } },
+    [G_GUARDIA]       = { "Guardia",          4, 5, { { RK_EXVOTO_PRAY, 2 }, { RK_OJO, 1 }, { RK_CIRENEO, 1 }, { RK_MONAGUILLO, 3 }, { RK_BEBE, 4 } } },
+    [G_CORTEJO]       = { "Cortejo",          4, 4, { { RK_EXVOTO_PRAY, 2 }, { RK_OJO, 2 }, { RK_MONAGUILLO, 3 }, { RK_BEBE, 5 } } },
+    [G_ASALTO]        = { "Asalto",           4, 5, { { RK_EXVOTO_PRAY, 2 }, { RK_OJO, 1 }, { RK_CIRENEO, 2 }, { RK_MONAGUILLO, 3 }, { RK_BEBE, 4 } } },
     // Special encounters (the nuns come first: they take the back slots; the Parroco and the Monaguillos stand in front).
     [G_PARROQUIA]  = { "Parroquia",  99, 3, { { RK_EXVOTO_PRAY, 7 }, { RK_MONAGUILLO, 4 }, { RK_PARROCO, 1 } } },
     [G_MISA]       = { "La Misa",    99, 4, { { RK_EXVOTO, 4 }, { RK_MONAGUILLO, 3 }, { RK_PARROCO, 2 }, { RK_MONJA, 2 } } },
@@ -813,8 +822,7 @@ static int group_of_block(int k) {
     for (int b = 0; b <= k; b++) {                    // chosen block by block so that no two consecutive blocks repeat
         int cand[G_NORMAL_COUNT], n = 0;
         for (int g = 0; g < G_NORMAL_COUNT; g++) {
-            if (s_groups[g].min_nave > r->nave || g == prev) continue;
-            if (g == G_PUESTO && s_room == ENC_ROOM_NAVE1 && b == 0) continue;
+            if (s_groups[g].nave != r->nave || g == prev) continue;
             cand[n++] = g;
         }
         prev = cand[hash32(s_seed ^ ((uint32_t)b * 0x45d9f3bu) ^ 0x47525031u) % (uint32_t)n];
@@ -916,9 +924,9 @@ static void place_room_enemy(Enemy *e, const RoomKind *kind, int x, int y, int o
     e->type = type;
     e->pack = owner;
     e->char_id = enemy_type_char_id(type);
-    // Fixed level of the room, then the tier (x2 life) and the miniboss multiplier.
-    e->max_hp = g_enemy_tuning[type].max_hp * ARPG_DEPTH_PCT(room_def()->level - 1) / 100;
-    if (tier2) e->max_hp = e->max_hp * ARPG_TIER2_HP_PCT / 100;
+    // Same life in every room; then the tier (x2 life) and the miniboss multiplier.
+    e->max_hp = g_enemy_tuning[type].max_hp * BAL_AT(hp_pct, type, 100) / 100;
+    if (tier2) e->max_hp = e->max_hp * BAL(tier2_hp_pct, ARPG_TIER2_HP_PCT) / 100;
     e->max_hp = e->max_hp * hp_pct / 100;
     e->hp = e->max_hp;
     e->dir = (ordinal * 2) % 8;
@@ -943,11 +951,44 @@ static int active_enemies(const Enemy *enemies, int max_enemies) {
 
 // Places the group of block k asleep. Respects the active cap: with no free slots it leaves the block
 // unspawned so a later frame (after the group behind is recycled) can place it.
+#if ARPG_BOT
+// Balance loop: density of the groups (g_bal.group_pct, 0 or 100 = as designed): below 100 thins the roster out, above adds copies of it.
+static void bot_group_density(int8_t *kinds) {
+    if (g_bal.group_pct == 0 || g_bal.group_pct == 100) return;
+    int valid = 0;
+    for (int i = 0; i < 12; i++) if (kinds[i] >= 0) valid++;
+    if (valid == 0) return;
+    if (g_bal.group_pct < 100) {
+        int keep = valid * g_bal.group_pct / 100;
+        if (keep < 1) keep = 1;
+        int seen = 0;
+        for (int i = 0; i < 12; i++) {
+            if (kinds[i] < 0) continue;
+            seen++;
+            if ((seen * keep) / valid == ((seen - 1) * keep) / valid) kinds[i] = -1;
+        }
+    } else {
+        int src[12], ns = 0;
+        for (int i = 0; i < 12; i++) if (kinds[i] >= 0 && kinds[i] != RK_OJO) src[ns++] = kinds[i];
+        if (ns == 0) for (int i = 0; i < 12; i++) if (kinds[i] >= 0) src[ns++] = kinds[i];
+        int extra = valid * (g_bal.group_pct - 100) / 100, c = 0;
+        for (int i = 0; i < 12 && extra > 0; i++) {
+            if (kinds[i] >= 0) continue;
+            kinds[i] = (int8_t)src[c++ % ns];
+            extra--;
+        }
+    }
+}
+#endif
+
 static int spawn_room_group(Enemy *enemies, int max_enemies, int k) {
     const int g = group_of_block(k);
     if (g < 0) return 0;
     int8_t kinds[12];
     group_kinds(g, kinds);
+#if ARPG_BOT
+    bot_group_density(kinds);
+#endif
     int active = active_enemies(enemies, max_enemies);
     int made = 0;
     for (int i = 0; i < 12 && active + made < MAX_GAMEPLAY_ENEMIES; i++) {
@@ -1323,6 +1364,11 @@ void enc_update(Enemy *enemies, int max_enemies, int px, int py) {
             ArpgInvItem chest_relic;
             arpg_relic_roll(&chest_relic, room->level, room->prize_min_rar ? room->prize_min_rar : ARPG_RAR_UNCOMMON, &chest_rng);
             pickups_spawn_relic(fx, fy + TO_FIXED(6), &chest_relic);
+            if (room->drops_key && !arpg_inv_has_tome(ARPG_SCHOOL_GLIFO)) {   // Capilla del parroco: the Glifo tome
+                ArpgInvItem tome;
+                arpg_inv_make_tome(&tome, ARPG_SCHOOL_GLIFO);
+                pickups_spawn_relic(fx + TO_FIXED(16), fy + TO_FIXED(6), &tome);
+            }
         }
     }
     if (room->altar) {
@@ -1747,3 +1793,63 @@ void enc_verja_draw(int sub, int cam_x, int cam_y) {
 }
 
 #endif // ENCOUNTERS_PROTO
+
+#if ARPG_BOT
+void arpg_bot_room(ArpgBotRoom *o) {
+    const RoomDef *r = room_def();
+    memset(o, 0, sizeof(*o));
+    o->room = s_room;
+    o->level = r->level;
+    o->nblocks = r->blocks;
+    o->up_dest = -1;
+    int hk = stage_at_py(s_hero_py);
+    o->hero_block = hk < 0 ? 0 : hk >= r->blocks ? r->blocks - 1 : hk;
+    for (int i = 0; i < r->n_doors; i++) {
+        const RoomDoor *d = &r->doors[i];
+        if (d->side != DOOR_UP) continue;
+        o->has_up = 1;
+        o->up_dest = d->dest;
+        o->up_x = room_center_x();
+        o->up_y = window_top(block_of_encounter(door_block(r, d))) + 8;
+    }
+    if (r->chest) {
+        o->chest = 1;
+        o->chest_open = s_rt[room_chest_block()].chest_open;
+        o->chest_x = room_center_x();
+        o->chest_y = room_chest_y();
+    }
+    if (r->altar) {
+        o->altar = 1;
+        o->altar_x = room_altar_x();
+        o->altar_y = room_altar_y();
+    }
+    o->foot_y = window_top(block_of_encounter(0)) + ENC_BLOCK_H;
+    o->top_y = window_top(block_of_encounter(r->blocks - 1));
+    for (int i = 0; i < r->n_doors && o->n_side < 3; i++) {
+        const RoomDoor *d = &r->doors[i];
+        if (d->side == DOOR_UP) continue;
+        const int y0 = window_top(block_of_encounter(door_block(r, d))) + door_hole_y(d);
+        const int k = o->n_side++;
+        o->side_left[k] = d->side == DOOR_LEFT;
+        o->side_y0[k] = y0;
+        o->side_y1[k] = y0 + ARPG_ROOM_HOLE_H_PX;
+        o->side_edge_x[k] = d->side == DOOR_LEFT ? ENC_FLOOR_X : ENC_FLOOR_X + ENC_FLOOR_W;     // the floor line: the door fires 4 px past it
+    }
+    for (int i = 0; i < r->n_doors && o->n_door < 4; i++) {
+        const RoomDoor *d = &r->doors[i];
+        const int k = o->n_door++;
+        o->door_dest[k] = d->dest;
+        if (d->side == DOOR_UP) {
+            o->door_side_k[k] = -1;
+            o->door_gx[k] = room_center_x();
+            o->door_gy[k] = window_top(block_of_encounter(door_block(r, d))) + 8;
+        } else {
+            int sk = 0;
+            for (int j = 0; j < i; j++) if (r->doors[j].side != DOOR_UP) sk++;
+            o->door_side_k[k] = sk;
+            o->door_gx[k] = d->side == DOOR_LEFT ? 140 : ENC_FLOOR_X + ENC_FLOOR_W + 12;
+            o->door_gy[k] = window_top(block_of_encounter(door_block(r, d))) + door_hole_y(d) + ARPG_ROOM_HOLE_H_PX / 2;
+        }
+    }
+}
+#endif

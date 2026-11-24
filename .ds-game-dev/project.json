@@ -24,6 +24,9 @@
         "remate-sandbox": {
             "defines": ["SANDBOX=1", "PLAYGROUND=1", "CATHEDRAL_PLAYGROUND=1", "REMATE_SANDBOX=1"]
         },
+        "remate-sandbox-ai": {
+            "defines": ["SANDBOX=1", "PLAYGROUND=1", "CATHEDRAL_PLAYGROUND=1", "REMATE_SANDBOX=1", "CATHEDRAL_AI=1"]
+        },
         "cathedral-sandbox": {
             "defines": ["SANDBOX=1", "CATHEDRAL_PLAYGROUND=1", "CATHEDRAL_AI=1"]
         },
@@ -47,6 +50,9 @@
         },
         "encuentros-jefe-perf": {
             "defines": ["ENCOUNTERS_PROTO=1", "SKIP_TITLE=1", "ENC_START_BOSS=1", "PERF_PROFILE=1"]
+        },
+        "arpg-bot": {
+            "defines": ["ARPG_BOT=1", "SKIP_TITLE=1"]
         },
         "arpg-todo": {
             "defines": ["ARPG_ALL_UNLOCKED=1"]

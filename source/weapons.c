@@ -641,7 +641,7 @@ static void fire_sniper(const WeaponTuning *tuning, const WeaponInput *in, fixed
     const int pierce_all = upgrades_has_relic(RELIC_LANZA);
 #if ENCOUNTERS_PROTO
     // DESIGN.md 6.13.6: the ray goes on with the damage it has left after a kill; a survivor stops it.
-    int beam_left = upgrades_beam_damage(tuning->damage_per_hit);
+    int beam_left = upgrades_beam_damage(BAL(ray_damage, tuning->damage_per_hit));
     int relic_done = 0;
 #endif
 
@@ -688,7 +688,7 @@ static void fire_sniper(const WeaponTuning *tuning, const WeaponInput *in, fixed
                 int sniper_damage = beam_left;
                 const int hp_before = e->hp;
 #else
-                int sniper_damage = upgrades_beam_damage(tuning->damage_per_hit);
+                int sniper_damage = upgrades_beam_damage(BAL(ray_damage, tuning->damage_per_hit));
 #endif
                 const int auto_fe = e->burn_layers && upgrades_has_relic(RELIC_AUTO_FE);   // Auto de Fe: consumes the layers
                 const int af_layers = e->burn_layers;
@@ -751,7 +751,7 @@ static void fire_sniper(const WeaponTuning *tuning, const WeaponInput *in, fixed
             int rx, ry;
             if (enc_relic_target(&rx, &ry) && body_hit_test(TO_INT(cur_x) - rx, TO_INT(cur_y) - ry, in->muzzle_h)) {
                 relic_done = 1;
-                enc_relic_hit(upgrades_beam_damage(tuning->damage_per_hit));
+                enc_relic_hit(upgrades_beam_damage(BAL(ray_damage, tuning->damage_per_hit)));
                 spawn_impact(TO_INT(cur_x), TO_INT(cur_y) - in->muzzle_h, -dir_x, -dir_y, 4, 1);
                 survivor = 1;
             }
@@ -779,7 +779,7 @@ static void fire_sniper(const WeaponTuning *tuning, const WeaponInput *in, fixed
 static int fire_weapon(PlayerState *player, const WeaponInput *in, fixed dir_x, fixed dir_y,
                        Enemy *enemies, int max_enemies) {
     const WeaponTuning *tuning = &g_weapon_tuning[WEAPON_SNIPER];
-    player->mana -= ARPG_RAY_COST;                // ARPG: each shot costs mana (arpg.h)
+    player->mana -= BAL(ray_cost, ARPG_RAY_COST);                // ARPG: each shot costs mana (arpg.h)
     if (player->mana < 0) player->mana = 0;
     s_weapon_cooldown = tuning->fire_cooldown;
     s_last_dir_x = dir_x;
@@ -1086,7 +1086,7 @@ int weapons_input(PlayerState *player, const WeaponInput *in, Enemy *enemies, in
     if (s_aim_state == AIM_IDLE) {
         if (in->touch_pressed) s_weapon_cooldown = 0;
         // ARPG: the ray needs mana for one shot; without it the press does nothing.
-        if ((in->touch_pressed || in->touch_down) && s_weapon_cooldown <= 0 && player->mana >= ARPG_RAY_COST) {
+        if ((in->touch_pressed || in->touch_down) && s_weapon_cooldown <= 0 && player->mana >= BAL(ray_cost, ARPG_RAY_COST)) {
             s_aim_state = AIM_AIMING;
             s_aim_timer = 0;
             s_aim_prog = 0;
@@ -1473,7 +1473,7 @@ static int viatico_roll(const Enemy *e) {
     int near = dx * dx + GROUND_DY2(dy) <= VIATICO_RADIUS * VIATICO_RADIUS;
     if (!s_viatico_force && aura_rand8() >= (near ? VIATICO_PCT_NEAR : VIATICO_PCT)) return 0;
     s_viatico_force = 0;
-    g_player_state.hp += ARPG_HEAL_PICKUP;          // one heart (ARPG: heal in points)
+    g_player_state.hp += BAL(heal_pickup, ARPG_HEAL_PICKUP);          // one heart (ARPG: heal in points)
     if (g_player_state.hp > g_player_state.max_hp) g_player_state.hp = g_player_state.max_hp;
     int torso, head, hw;
     burn_body(e, &torso, &head, &hw);

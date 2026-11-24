@@ -44,6 +44,9 @@ extern uint32_t g_pp_cur[PP_COUNT];
 #define PP_ADD(stage, v) (g_pp_cur[(stage)] += cpuGetTiming() - (v))
 #define PP_SET(stage, ticks) (g_pp_cur[(stage)] = (ticks))
 #define PP_INIT() perfprof_init()
+// DIAG (temporary): appends "NOTE <text> heap_free=<bytes>" to the perf log.
+void perfprof_note(const char *text);
+#define PP_NOTE(...) do { char _pp_n[96]; snprintf(_pp_n, sizeof(_pp_n), __VA_ARGS__); perfprof_note(_pp_n); } while (0)
 
 void perfprof_init(void);
 // Called once per presented frame, after all stages of that frame are in g_pp_cur.
@@ -58,6 +61,7 @@ uint32_t perfprof_fps10(void);
 #define PP_ADD(stage, v) ((void)0)
 #define PP_SET(stage, ticks) ((void)0)
 #define PP_INIT() ((void)0)
+#define PP_NOTE(...) ((void)0)
 #endif
 
 #endif

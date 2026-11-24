@@ -29,6 +29,11 @@ void camp_set_active(int on);
 // Movement, prop focus and interaction. Returns a CAMP_ACT_* to be handled by the caller.
 int camp_update(Player *p, uint32_t keys_held, uint32_t keys_down, int touch_pressed, int touch_x, int touch_y);
 
+#if ARPG_BOT
+// Autopilot: CAMP_ACT_* of the prop the hero is next to (CAMP_ACT_NONE when none): A would trigger it.
+int  camp_focus_act(void);
+#endif
+
 // A short line shown in the middle of the camp (e.g. the result of sleeping).
 void camp_toast(const char *msg);
 

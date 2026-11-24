@@ -24,8 +24,13 @@ void pickups_enemy_killed(const Enemy *enemy);
 void pickups_update(fixed player_x, fixed player_y, PlayerState *player);
 // Puts one orb of this kind on the floor (first free slot, else slot 0).
 void pickups_spawn(int kind, fixed x, fixed y);
+#if ARPG_BOT
+// Autopilot: nearest orb of this kind on the floor (world px). Returns its ground distance squared, -1 if none.
+int pickups_nearest(int kind, int px, int py, int *ox, int *oy);
+#endif
 // Finisher (remate) loot: rolls the health and mana orbs of ARPG_REMATE_*_CHANCE.
 void pickups_remate_drops(fixed x, fixed y);
+void pickups_fx_draw(uint16_t *buffer, int cam_x, int cam_y);   // remate heal streak
 // Experience helper (now banks XP directly; no ground rune).
 void pickups_spawn_xp(fixed x, fixed y, int amount);
 // Spawns a rolled relic drop on the floor.

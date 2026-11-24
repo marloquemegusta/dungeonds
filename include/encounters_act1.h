@@ -237,6 +237,22 @@ _Static_assert(offsetof(EncStats, wake_frames) == 8 && offsetof(EncStats, relica
                "EncStats layout is read by scenarios by offset");
 extern volatile EncStats g_enc_stats;
 
+#if ARPG_BOT
+// Autopilot: where the exits and the chest of the room are, in window px (hero ground coordinates).
+typedef struct {
+    int room, level, nblocks, hero_block;
+    int has_up, up_dest, up_x, up_y;        // upper door: centre x and a y inside its trigger line
+    int chest, chest_open, chest_x, chest_y;
+    int altar, altar_x, altar_y;            // altar at the foot of the room (touching it sets where the next bajada enters)
+    int foot_y, top_y;                      // window y of the foot (bottom edge) and of the far end of the room
+    int n_side;                             // lateral openings (side rooms); the bot never walks into them from a nave
+    int side_left[3], side_y0[3], side_y1[3];
+    int side_edge_x[3];                     // ground x past which (towards the wall) the hero is in the opening mouth
+    int n_door, door_dest[4], door_gx[4], door_gy[4], door_side_k[4];   // every door: destination room, a point past it to walk to, index in side_* (-1 = upper door)
+} ArpgBotRoom;
+void arpg_bot_room(ArpgBotRoom *out);
+#endif
+
 // Random card for an offer (auto_pick 2): hashed from g_enc_debug.seed and the number of picks so far.
 int enc_pick_index(void);
 

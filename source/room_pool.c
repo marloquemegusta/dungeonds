@@ -1,5 +1,7 @@
 #include "room_pool.h"
 #include "hwshadow.h"
+#include "perfprof.h"
+#include <stdio.h>
 #ifdef ARM9
 #include <filesystem.h>
 #endif
@@ -7,7 +9,7 @@
 int room_pool_fs_ready(void) {
 #ifdef ARM9
     static int s_tried, s_ok;
-    if (!s_tried) { s_tried = 1; s_ok = nitroFSInit(NULL); }
+    if (!s_tried) { s_tried = 1; s_ok = nitroFSInit(NULL); PP_NOTE("nitrofs_init ok=%d", s_ok); }
     return s_ok;
 #else
     return 1;

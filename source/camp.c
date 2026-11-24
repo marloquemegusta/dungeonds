@@ -9,6 +9,7 @@
 #include "camp_marco.h"
 #include "bestiary_font.h"
 #include "arpg_progress.h"
+#include "perfprof.h"
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -116,9 +117,11 @@ static void *load_camp_bin(const char *stem, const char *suffix, size_t bytes) {
     char path[64];
     snprintf(path, sizeof(path), "nitro:/camp/%s%s.bin", stem, suffix);
     FILE *f = fopen(path, "rb");
-    if (!f) return NULL;
+    if (!f) { PP_NOTE("camp_open_fail %s", path); return NULL; }
     void *buf = malloc(bytes);
+    if (!buf) PP_NOTE("camp_malloc_fail %s bytes=%u", path, (unsigned)bytes);
     if (buf && fread(buf, 1, bytes, f) != bytes) {
+        PP_NOTE("camp_read_fail %s", path);
         free(buf);
         buf = NULL;
     }
@@ -127,6 +130,7 @@ static void *load_camp_bin(const char *stem, const char *suffix, size_t bytes) {
 }
 
 static void load_camp_gfx(void) {
+    PP_NOTE("camp_load tiles_loaded=%d", s_camp_tiles != NULL);
     if (!s_camp_tiles)
         s_camp_tiles = load_camp_bin("floor_tiles", "", (size_t)CAMP_NUM_TILES * 64);
     if (!s_fire)
@@ -316,6 +320,10 @@ static void altar_list_draw(uint16_t *buf) {
                       sel ? COL_INK : (RGB15(15, 13, 12) | BIT(15)));
     }
 }
+
+#if ARPG_BOT
+int camp_focus_act(void) { return s_focus >= 0 ? s_props[s_focus].act : CAMP_ACT_NONE; }
+#endif
 
 int camp_update(Player *p, uint32_t keys_held, uint32_t keys_down, int touch_pressed, int touch_x, int touch_y) {
     s_anim++;
