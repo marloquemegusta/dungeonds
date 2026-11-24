@@ -1,0 +1,2277 @@
+{
+ "titulo": "DungeonDS ARPG - mapa completo",
+ "_doc": "Por sala: luz {preset neutral|calido|frio|oscuro, o tinte [r,g,b] 0-255 / gradiente {abajo,arriba} 0-1 / vineta 0-1 que se suman al preset}; props_extra [{piece,x,y,mirror}] con x,y locales de bloque (como acto1_v2.json, sobre el primer bloque si no se indica mas); props_quitar: prefijos de pieza; planta/espejo: fuerzan el primer bloque (por defecto salen de la semilla de la sala, como en la ROM). neutral = sin cambios.",
+ "salas": [
+  {
+   "id": 0,
+   "nombre": "Nave 1",
+   "luz": {
+    "preset": "neutral"
+   },
+   "props_extra": [],
+   "props_quitar": [],
+   "ambiente": {
+    "funcion": "nave de la catedral",
+    "pendiente": "",
+    "resumen": "bancos simetricos intactos",
+    "luz": {
+     "nivel": 1,
+     "acento": {
+      "nombre": "ninguno",
+      "tinte": [
+       255,
+       255,
+       255
+      ],
+      "fuerza": 0.0
+     },
+     "caida": 0.3,
+     "fondo": 0.25,
+     "halos": [],
+     "vidrieras": true
+    },
+    "composicion": [
+     {
+      "piece": "banco_entero",
+      "k": 0,
+      "x": 8,
+      "y": 12
+     },
+     {
+      "piece": "banco_entero",
+      "k": 0,
+      "x": 128,
+      "y": 12
+     },
+     {
+      "piece": "banco_entero",
+      "k": 0,
+      "x": 8,
+      "y": 100
+     },
+     {
+      "piece": "banco_entero",
+      "k": 0,
+      "x": 128,
+      "y": 100
+     },
+     {
+      "piece": "banco_entero",
+      "k": 0,
+      "x": 8,
+      "y": 172
+     },
+     {
+      "piece": "banco_entero",
+      "k": 0,
+      "x": 128,
+      "y": 172
+     },
+     {
+      "piece": "banco_entero",
+      "k": 0,
+      "x": 8,
+      "y": 240
+     },
+     {
+      "piece": "banco_entero",
+      "k": 0,
+      "x": 128,
+      "y": 240
+     },
+     {
+      "piece": "banco_entero",
+      "k": 0,
+      "x": 8,
+      "y": 312
+     },
+     {
+      "piece": "banco_entero",
+      "k": 0,
+      "x": 128,
+      "y": 312
+     },
+     {
+      "piece": "banco_entero",
+      "k": 1,
+      "x": 8,
+      "y": 12
+     },
+     {
+      "piece": "banco_entero",
+      "k": 1,
+      "x": 128,
+      "y": 12
+     },
+     {
+      "piece": "banco_entero",
+      "k": 1,
+      "x": 8,
+      "y": 100
+     },
+     {
+      "piece": "banco_entero",
+      "k": 1,
+      "x": 128,
+      "y": 100
+     },
+     {
+      "piece": "banco_entero",
+      "k": 1,
+      "x": 8,
+      "y": 172
+     },
+     {
+      "piece": "banco_entero",
+      "k": 1,
+      "x": 128,
+      "y": 172
+     },
+     {
+      "piece": "banco_entero",
+      "k": 1,
+      "x": 8,
+      "y": 240
+     },
+     {
+      "piece": "banco_entero",
+      "k": 1,
+      "x": 128,
+      "y": 240
+     },
+     {
+      "piece": "banco_entero",
+      "k": 1,
+      "x": 8,
+      "y": 312
+     },
+     {
+      "piece": "banco_entero",
+      "k": 1,
+      "x": 128,
+      "y": 312
+     },
+     {
+      "piece": "banco_entero",
+      "k": 2,
+      "x": 8,
+      "y": 100
+     },
+     {
+      "piece": "banco_entero",
+      "k": 2,
+      "x": 128,
+      "y": 100
+     },
+     {
+      "piece": "banco_entero",
+      "k": 2,
+      "x": 8,
+      "y": 172
+     },
+     {
+      "piece": "banco_entero",
+      "k": 2,
+      "x": 128,
+      "y": 172
+     },
+     {
+      "piece": "banco_entero",
+      "k": 2,
+      "x": 8,
+      "y": 240
+     },
+     {
+      "piece": "banco_entero",
+      "k": 2,
+      "x": 128,
+      "y": 240
+     },
+     {
+      "piece": "banco_entero",
+      "k": 2,
+      "x": 8,
+      "y": 312
+     },
+     {
+      "piece": "banco_entero",
+      "k": 2,
+      "x": 128,
+      "y": 312
+     },
+     {
+      "piece": "santo",
+      "k": 2,
+      "x": 8,
+      "y": 8
+     },
+     {
+      "piece": "santo_der",
+      "k": 2,
+      "x": 160,
+      "y": 8
+     }
+    ]
+   }
+  },
+  {
+   "id": 1,
+   "nombre": "Nave 2",
+   "luz": {
+    "preset": "neutral"
+   },
+   "props_extra": [],
+   "props_quitar": [],
+   "ambiente": {
+    "funcion": "nave de la catedral; los bancos se rompen cada vez mas",
+    "pendiente": "",
+    "resumen": "bancos simetricos, cada vez mas rotos",
+    "luz": {
+     "nivel": 2,
+     "acento": {
+      "nombre": "ninguno",
+      "tinte": [
+       255,
+       255,
+       255
+      ],
+      "fuerza": 0.0
+     },
+     "caida": 0.35,
+     "fondo": 0.3,
+     "halos": []
+    },
+    "composicion": [
+     {
+      "piece": "banco_entero",
+      "k": 0,
+      "x": 5,
+      "y": 14
+     },
+     {
+      "piece": "banco_entero",
+      "k": 0,
+      "x": 125,
+      "y": 10
+     },
+     {
+      "piece": "banco_entero",
+      "k": 0,
+      "x": 6,
+      "y": 100
+     },
+     {
+      "piece": "banco_entero",
+      "k": 0,
+      "x": 128,
+      "y": 101
+     },
+     {
+      "piece": "banco_entero",
+      "k": 0,
+      "x": 4,
+      "y": 170
+     },
+     {
+      "piece": "banco_entero",
+      "k": 0,
+      "x": 125,
+      "y": 172
+     },
+     {
+      "piece": "banco_entero",
+      "k": 0,
+      "x": 7,
+      "y": 241
+     },
+     {
+      "piece": "banco_roto",
+      "k": 0,
+      "x": 132,
+      "y": 239
+     },
+     {
+      "piece": "banco_entero",
+      "k": 1,
+      "x": 8,
+      "y": 14
+     },
+     {
+      "piece": "banco_entero",
+      "k": 1,
+      "x": 131,
+      "y": 11
+     },
+     {
+      "piece": "banco_entero",
+      "k": 1,
+      "x": 5,
+      "y": 102
+     },
+     {
+      "piece": "banco_entero",
+      "k": 1,
+      "x": 126,
+      "y": 174
+     },
+     {
+      "piece": "banco_entero",
+      "k": 1,
+      "x": 6,
+      "y": 240
+     },
+     {
+      "piece": "banco_entero",
+      "k": 1,
+      "x": 124,
+      "y": 239
+     },
+     {
+      "piece": "banco_entero",
+      "k": 1,
+      "x": 12,
+      "y": 310
+     },
+     {
+      "piece": "banco_entero",
+      "k": 1,
+      "x": 131,
+      "y": 311
+     },
+     {
+      "piece": "banco_entero",
+      "k": 2,
+      "x": 8,
+      "y": 100
+     },
+     {
+      "piece": "banco_entero",
+      "k": 2,
+      "x": 5,
+      "y": 172
+     },
+     {
+      "piece": "banco_volcado",
+      "k": 2,
+      "x": 123,
+      "y": 172
+     },
+     {
+      "piece": "banco_roto",
+      "k": 2,
+      "x": 11,
+      "y": 241
+     },
+     {
+      "piece": "banco_roto",
+      "k": 2,
+      "x": 124,
+      "y": 241
+     },
+     {
+      "piece": "banco_entero",
+      "k": 2,
+      "x": 12,
+      "y": 310
+     },
+     {
+      "piece": "banco_entero",
+      "k": 2,
+      "x": 130,
+      "y": 312
+     },
+     {
+      "piece": "santo",
+      "k": 2,
+      "x": 8,
+      "y": 8
+     },
+     {
+      "piece": "santo_der",
+      "k": 2,
+      "x": 160,
+      "y": 8
+     }
+    ]
+   }
+  },
+  {
+   "id": 2,
+   "nombre": "Nave 3",
+   "luz": {
+    "preset": "neutral"
+   },
+   "props_extra": [],
+   "props_quitar": [],
+   "ambiente": {
+    "funcion": "nave de la catedral; los bancos se rompen cada vez mas",
+    "pendiente": "",
+    "resumen": "bancos simetricos, cada vez mas rotos",
+    "luz": {
+     "nivel": 3,
+     "acento": {
+      "nombre": "ninguno",
+      "tinte": [
+       255,
+       255,
+       255
+      ],
+      "fuerza": 0.0
+     },
+     "caida": 0.4,
+     "fondo": 0.35,
+     "halos": []
+    },
+    "composicion": [
+     {
+      "piece": "banco_entero",
+      "k": 0,
+      "x": 128,
+      "y": 101
+     },
+     {
+      "piece": "banco_roto",
+      "k": 0,
+      "x": -1,
+      "y": 176
+     },
+     {
+      "piece": "banco_entero",
+      "k": 0,
+      "x": 128,
+      "y": 172
+     },
+     {
+      "piece": "banco_entero",
+      "k": 0,
+      "x": 135,
+      "y": 239
+     },
+     {
+      "piece": "banco_entero",
+      "k": 0,
+      "x": 13,
+      "y": 311
+     },
+     {
+      "piece": "banco_roto",
+      "k": 1,
+      "x": 127,
+      "y": 8
+     },
+     {
+      "piece": "banco_entero",
+      "k": 1,
+      "x": 8,
+      "y": 102
+     },
+     {
+      "piece": "banco_roto",
+      "k": 1,
+      "x": 126,
+      "y": 100
+     },
+     {
+      "piece": "banco_roto",
+      "k": 1,
+      "x": 3,
+      "y": 171
+     },
+     {
+      "piece": "banco_entero",
+      "k": 1,
+      "x": 5,
+      "y": 243
+     },
+     {
+      "piece": "banco_entero",
+      "k": 1,
+      "x": -1,
+      "y": 308
+     },
+     {
+      "piece": "banco_roto",
+      "k": 1,
+      "x": 133,
+      "y": 311
+     },
+     {
+      "piece": "banco_entero",
+      "k": 2,
+      "x": 11,
+      "y": 101
+     },
+     {
+      "piece": "banco_entero",
+      "k": 2,
+      "x": 5,
+      "y": 174
+     },
+     {
+      "piece": "banco_roto",
+      "k": 2,
+      "x": 123,
+      "y": 170
+     },
+     {
+      "piece": "banco_entero",
+      "k": 2,
+      "x": 15,
+      "y": 240
+     },
+     {
+      "piece": "banco_entero",
+      "k": 2,
+      "x": 128,
+      "y": 237
+     },
+     {
+      "piece": "banco_roto",
+      "k": 2,
+      "x": 5,
+      "y": 317
+     },
+     {
+      "piece": "banco_entero",
+      "k": 2,
+      "x": 135,
+      "y": 312
+     },
+     {
+      "piece": "santo",
+      "k": 2,
+      "x": 8,
+      "y": 8
+     },
+     {
+      "piece": "santo_der",
+      "k": 2,
+      "x": 160,
+      "y": 8
+     },
+     {
+      "piece": "columna",
+      "k": 2,
+      "x": 0,
+      "y": 120
+     }
+    ]
+   }
+  },
+  {
+   "id": 3,
+   "nombre": "Nave 4",
+   "luz": {
+    "preset": "neutral"
+   },
+   "props_extra": [],
+   "props_quitar": [],
+   "ambiente": {
+    "funcion": "nave de la catedral; los bancos se rompen cada vez mas",
+    "pendiente": "",
+    "resumen": "bancos simetricos, cada vez mas rotos",
+    "luz": {
+     "nivel": 4,
+     "acento": {
+      "nombre": "ninguno",
+      "tinte": [
+       255,
+       255,
+       255
+      ],
+      "fuerza": 0.0
+     },
+     "caida": 0.45,
+     "fondo": 0.4,
+     "halos": []
+    },
+    "composicion": [
+     {
+      "piece": "banco_volcado",
+      "k": 0,
+      "x": 107,
+      "y": 99
+     },
+     {
+      "piece": "banco_roto",
+      "k": 0,
+      "x": 14,
+      "y": 172
+     },
+     {
+      "piece": "banco_entero",
+      "k": 0,
+      "x": 115,
+      "y": 174
+     },
+     {
+      "piece": "banco_roto",
+      "k": 0,
+      "x": 9,
+      "y": 235
+     },
+     {
+      "piece": "banco_roto",
+      "k": 0,
+      "x": 131,
+      "y": 243
+     },
+     {
+      "piece": "banco_roto",
+      "k": 0,
+      "x": 12,
+      "y": 317
+     },
+     {
+      "piece": "banco_roto",
+      "k": 0,
+      "x": 138,
+      "y": 312
+     },
+     {
+      "piece": "banco_roto",
+      "k": 1,
+      "x": 122,
+      "y": 16
+     },
+     {
+      "piece": "banco_volcado",
+      "k": 1,
+      "x": 14,
+      "y": 105
+     },
+     {
+      "piece": "banco_volcado",
+      "k": 1,
+      "x": 4,
+      "y": 165
+     },
+     {
+      "piece": "banco_roto",
+      "k": 1,
+      "x": 136,
+      "y": 164
+     },
+     {
+      "piece": "banco_volcado",
+      "k": 2,
+      "x": 5,
+      "y": 96
+     },
+     {
+      "piece": "banco_roto",
+      "k": 2,
+      "x": 116,
+      "y": 100
+     },
+     {
+      "piece": "banco_roto",
+      "k": 2,
+      "x": 9,
+      "y": 173
+     },
+     {
+      "piece": "banco_roto",
+      "k": 2,
+      "x": 21,
+      "y": 240
+     },
+     {
+      "piece": "banco_roto",
+      "k": 2,
+      "x": 141,
+      "y": 240
+     },
+     {
+      "piece": "banco_roto",
+      "k": 2,
+      "x": -4,
+      "y": 315
+     },
+     {
+      "piece": "santo",
+      "k": 2,
+      "x": 8,
+      "y": 8
+     },
+     {
+      "piece": "santo_der",
+      "k": 2,
+      "x": 160,
+      "y": 8
+     },
+     {
+      "piece": "columna",
+      "k": 2,
+      "x": 0,
+      "y": 120
+     },
+     {
+      "piece": "sacos",
+      "k": 1,
+      "x": 8,
+      "y": 196
+     },
+     {
+      "piece": "sacos_remate_der",
+      "k": 1,
+      "x": 136,
+      "y": 270
+     },
+     {
+      "piece": "columna",
+      "k": 0,
+      "x": 144,
+      "y": 60
+     }
+    ]
+   }
+  },
+  {
+   "id": 4,
+   "nombre": "Galería del cofre",
+   "luz": {
+    "preset": "neutral"
+   },
+   "props_extra": [],
+   "props_quitar": [],
+   "ambiente": {
+    "funcion": "galeria del cofre: tesoro a la vista",
+    "pendiente": "",
+    "resumen": "columnas y estatuas flanquean cofre",
+    "luz": {
+     "nivel": 1,
+     "acento": {
+      "nombre": "tesoro",
+      "tinte": [
+       240,
+       226,
+       190
+      ],
+      "fuerza": 0.25
+     },
+     "caida": 0.3,
+     "fondo": 0.2,
+     "halos": []
+    },
+    "composicion": [
+     {
+      "piece": "columna_entera",
+      "k": 0,
+      "x": 0,
+      "y": 20
+     },
+     {
+      "piece": "columna_entera",
+      "k": 0,
+      "x": 160,
+      "y": 20
+     },
+     {
+      "piece": "santo",
+      "k": 0,
+      "x": 24,
+      "y": 190
+     },
+     {
+      "piece": "santo_der",
+      "k": 0,
+      "x": 144,
+      "y": 190
+     }
+    ]
+   }
+  },
+  {
+   "id": 5,
+   "nombre": "Galería del secreto",
+   "luz": {
+    "preset": "neutral"
+   },
+   "props_extra": [],
+   "props_quitar": [],
+   "ambiente": {
+    "funcion": "galeria del secreto: escondrijo tras sacos",
+    "pendiente": "",
+    "resumen": "sacos, alambrada, columna caida",
+    "luz": {
+     "nivel": 1,
+     "acento": {
+      "nombre": "prision",
+      "tinte": [
+       196,
+       204,
+       214
+      ],
+      "fuerza": 0.3
+     },
+     "caida": 0.4,
+     "fondo": 0.3,
+     "halos": []
+    },
+    "composicion": [
+     {
+      "piece": "sacos",
+      "k": 0,
+      "x": 8,
+      "y": 196
+     },
+     {
+      "piece": "sacos_b",
+      "k": 0,
+      "x": 8,
+      "y": 232
+     },
+     {
+      "piece": "columna",
+      "k": 0,
+      "x": 136,
+      "y": 20
+     },
+     {
+      "piece": "alambre",
+      "k": 0,
+      "x": 0,
+      "y": 270
+     },
+     {
+      "piece": "alambre",
+      "k": 0,
+      "x": 32,
+      "y": 270
+     },
+     {
+      "piece": "alambre",
+      "k": 0,
+      "x": 144,
+      "y": 270
+     },
+     {
+      "piece": "alambre",
+      "k": 0,
+      "x": 176,
+      "y": 270
+     }
+    ]
+   }
+  },
+  {
+   "id": 6,
+   "nombre": "Claustro bajo",
+   "luz": {
+    "preset": "neutral"
+   },
+   "props_extra": [],
+   "props_quitar": [],
+   "ambiente": {
+    "funcion": "claustro bajo: arcada abierta al exterior",
+    "pendiente": "",
+    "resumen": "arcada de columnas, centro despejado",
+    "luz": {
+     "nivel": 1,
+     "acento": {
+      "nombre": "claustro",
+      "tinte": [
+       200,
+       218,
+       248
+      ],
+      "fuerza": 0.4
+     },
+     "caida": 0.12,
+     "fondo": 0.1,
+     "halos": []
+    },
+    "composicion": [
+     {
+      "piece": "columna_entera",
+      "k": 0,
+      "x": 0,
+      "y": 0
+     },
+     {
+      "piece": "columna_entera",
+      "k": 0,
+      "x": 160,
+      "y": 0
+     },
+     {
+      "piece": "columna_entera",
+      "k": 0,
+      "x": 0,
+      "y": 128
+     },
+     {
+      "piece": "columna_entera",
+      "k": 0,
+      "x": 160,
+      "y": 128
+     },
+     {
+      "piece": "columna_entera",
+      "k": 0,
+      "x": 0,
+      "y": 256
+     },
+     {
+      "piece": "columna_entera",
+      "k": 0,
+      "x": 160,
+      "y": 256
+     },
+     {
+      "piece": "columna_entera",
+      "k": 1,
+      "x": 0,
+      "y": 0
+     },
+     {
+      "piece": "columna_entera",
+      "k": 1,
+      "x": 160,
+      "y": 0
+     },
+     {
+      "piece": "columna_entera",
+      "k": 1,
+      "x": 0,
+      "y": 128
+     },
+     {
+      "piece": "columna_entera",
+      "k": 1,
+      "x": 160,
+      "y": 128
+     },
+     {
+      "piece": "columna_entera",
+      "k": 1,
+      "x": 0,
+      "y": 256
+     },
+     {
+      "piece": "columna_entera",
+      "k": 1,
+      "x": 160,
+      "y": 256
+     },
+     {
+      "piece": "columna_entera",
+      "k": 2,
+      "x": 0,
+      "y": 0
+     },
+     {
+      "piece": "columna_entera",
+      "k": 2,
+      "x": 160,
+      "y": 0
+     },
+     {
+      "piece": "columna_entera",
+      "k": 2,
+      "x": 0,
+      "y": 128
+     },
+     {
+      "piece": "columna_entera",
+      "k": 2,
+      "x": 160,
+      "y": 128
+     },
+     {
+      "piece": "columna_entera",
+      "k": 2,
+      "x": 0,
+      "y": 256
+     },
+     {
+      "piece": "columna_entera",
+      "k": 2,
+      "x": 160,
+      "y": 256
+     }
+    ]
+   }
+  },
+  {
+   "id": 7,
+   "nombre": "Claustro alto",
+   "luz": {
+    "preset": "neutral"
+   },
+   "props_extra": [],
+   "props_quitar": [],
+   "ambiente": {
+    "funcion": "claustro alto: arcada y cofre al fondo",
+    "pendiente": "",
+    "resumen": "arcada de columnas, centro despejado",
+    "luz": {
+     "nivel": 2,
+     "acento": {
+      "nombre": "claustro",
+      "tinte": [
+       200,
+       218,
+       248
+      ],
+      "fuerza": 0.4
+     },
+     "caida": 0.12,
+     "fondo": 0.1,
+     "halos": []
+    },
+    "composicion": [
+     {
+      "piece": "columna_entera",
+      "k": 0,
+      "x": 0,
+      "y": 0
+     },
+     {
+      "piece": "columna_entera",
+      "k": 0,
+      "x": 160,
+      "y": 0
+     },
+     {
+      "piece": "columna_entera",
+      "k": 0,
+      "x": 0,
+      "y": 128
+     },
+     {
+      "piece": "columna_entera",
+      "k": 0,
+      "x": 160,
+      "y": 128
+     },
+     {
+      "piece": "columna_entera",
+      "k": 0,
+      "x": 0,
+      "y": 256
+     },
+     {
+      "piece": "columna_entera",
+      "k": 0,
+      "x": 160,
+      "y": 256
+     },
+     {
+      "piece": "columna_entera",
+      "k": 1,
+      "x": 0,
+      "y": 0
+     },
+     {
+      "piece": "columna_entera",
+      "k": 1,
+      "x": 160,
+      "y": 0
+     },
+     {
+      "piece": "columna_entera",
+      "k": 1,
+      "x": 0,
+      "y": 128
+     },
+     {
+      "piece": "columna_entera",
+      "k": 1,
+      "x": 160,
+      "y": 128
+     },
+     {
+      "piece": "columna_entera",
+      "k": 1,
+      "x": 0,
+      "y": 256
+     },
+     {
+      "piece": "columna_entera",
+      "k": 1,
+      "x": 160,
+      "y": 256
+     },
+     {
+      "piece": "columna_entera",
+      "k": 2,
+      "x": 0,
+      "y": 0
+     },
+     {
+      "piece": "columna_entera",
+      "k": 2,
+      "x": 160,
+      "y": 0
+     },
+     {
+      "piece": "columna_entera",
+      "k": 2,
+      "x": 0,
+      "y": 128
+     },
+     {
+      "piece": "columna_entera",
+      "k": 2,
+      "x": 160,
+      "y": 128
+     },
+     {
+      "piece": "columna_entera",
+      "k": 2,
+      "x": 0,
+      "y": 256
+     },
+     {
+      "piece": "columna_entera",
+      "k": 2,
+      "x": 160,
+      "y": 256
+     }
+    ]
+   }
+  },
+  {
+   "id": 8,
+   "nombre": "Enfermería",
+   "luz": {
+    "preset": "neutral"
+   },
+   "props_extra": [],
+   "props_quitar": [],
+   "ambiente": {
+    "funcion": "enfermeria: filas de catres contra los muros",
+    "pendiente": "",
+    "resumen": "bancos rotos como camillas, sacos",
+    "luz": {
+     "nivel": 2,
+     "acento": {
+      "nombre": "enfermeria",
+      "tinte": [
+       226,
+       238,
+       252
+      ],
+      "fuerza": 0.45
+     },
+     "caida": 0.28,
+     "fondo": 0.2,
+     "halos": []
+    },
+    "composicion": [
+     {
+      "piece": "banco_volcado",
+      "k": 0,
+      "x": 8,
+      "y": 60
+     },
+     {
+      "piece": "banco_volcado",
+      "k": 0,
+      "x": 120,
+      "y": 150
+     },
+     {
+      "piece": "banco_volcado",
+      "k": 0,
+      "x": 8,
+      "y": 240
+     },
+     {
+      "piece": "banco_volcado",
+      "k": 0,
+      "x": 120,
+      "y": 330
+     },
+     {
+      "piece": "sacos",
+      "k": 0,
+      "x": 140,
+      "y": 20
+     },
+     {
+      "piece": "banco_roto",
+      "k": 1,
+      "x": 14,
+      "y": 60
+     },
+     {
+      "piece": "banco_roto",
+      "k": 1,
+      "x": 126,
+      "y": 150
+     },
+     {
+      "piece": "banco_roto",
+      "k": 1,
+      "x": 14,
+      "y": 240
+     },
+     {
+      "piece": "banco_roto",
+      "k": 1,
+      "x": 126,
+      "y": 330
+     },
+     {
+      "piece": "sacos",
+      "k": 1,
+      "x": 140,
+      "y": 26
+     },
+     {
+      "piece": "banco_volcado",
+      "k": 2,
+      "x": 20,
+      "y": 60
+     },
+     {
+      "piece": "banco_volcado",
+      "k": 2,
+      "x": 132,
+      "y": 150
+     },
+     {
+      "piece": "banco_volcado",
+      "k": 2,
+      "x": 20,
+      "y": 240
+     },
+     {
+      "piece": "banco_volcado",
+      "k": 2,
+      "x": 132,
+      "y": 330
+     }
+    ]
+   }
+  },
+  {
+   "id": 9,
+   "nombre": "Osario",
+   "luz": {
+    "preset": "neutral"
+   },
+   "props_extra": [],
+   "props_quitar": [],
+   "ambiente": {
+    "funcion": "osario: los muertos del hospital, apilados hasta el cofre",
+    "pendiente": "",
+    "resumen": "nichos de huesos en los muros, cada vez mas llenos hacia el cofre",
+    "luz": {
+     "nivel": 3,
+     "acento": {
+      "nombre": "osario",
+      "tinte": [
+       170,
+       210,
+       150
+      ],
+      "fuerza": 0.5
+     },
+     "caida": 0.42,
+     "fondo": 0.3,
+     "halos": []
+    },
+    "composicion": [
+     {
+      "piece": "sacos",
+      "k": 0,
+      "x": 8,
+      "y": 40
+     },
+     {
+      "piece": "sacos_b",
+      "k": 0,
+      "x": 8,
+      "y": 76
+     },
+     {
+      "piece": "banco_volcado",
+      "k": 0,
+      "x": 120,
+      "y": 110
+     },
+     {
+      "piece": "sacos_remate_der",
+      "k": 0,
+      "x": 136,
+      "y": 300
+     },
+     {
+      "piece": "banco_roto",
+      "k": 0,
+      "x": 10,
+      "y": 230
+     },
+     {
+      "piece": "alambre",
+      "k": 0,
+      "x": 150,
+      "y": 190
+     },
+     {
+      "piece": "alambre",
+      "k": 0,
+      "x": 176,
+      "y": 150
+     },
+     {
+      "piece": "sacos",
+      "k": 1,
+      "x": 120,
+      "y": 50
+     },
+     {
+      "piece": "sacos_b",
+      "k": 1,
+      "x": 120,
+      "y": 86
+     },
+     {
+      "piece": "banco_volcado",
+      "k": 1,
+      "x": 20,
+      "y": 124
+     },
+     {
+      "piece": "sacos_remate_der",
+      "k": 1,
+      "x": 8,
+      "y": 300
+     },
+     {
+      "piece": "banco_roto",
+      "k": 1,
+      "x": 110,
+      "y": 230
+     },
+     {
+      "piece": "alambre",
+      "k": 1,
+      "x": 40,
+      "y": 190
+     },
+     {
+      "piece": "alambre",
+      "k": 1,
+      "x": 8,
+      "y": 150
+     },
+     {
+      "piece": "sacos",
+      "k": 2,
+      "x": 60,
+      "y": 60
+     },
+     {
+      "piece": "sacos_b",
+      "k": 2,
+      "x": 60,
+      "y": 96
+     },
+     {
+      "piece": "banco_volcado",
+      "k": 2,
+      "x": 100,
+      "y": 138
+     },
+     {
+      "piece": "sacos_remate_der",
+      "k": 2,
+      "x": 120,
+      "y": 300
+     },
+     {
+      "piece": "banco_roto",
+      "k": 2,
+      "x": 30,
+      "y": 230
+     },
+     {
+      "piece": "alambre",
+      "k": 2,
+      "x": 90,
+      "y": 190
+     },
+     {
+      "piece": "alambre",
+      "k": 2,
+      "x": 140,
+      "y": 150
+     }
+    ]
+   }
+  },
+  {
+   "id": 10,
+   "nombre": "Capilla del párroco",
+   "luz": {
+    "preset": "neutral"
+   },
+   "props_extra": [],
+   "props_quitar": [],
+   "ambiente": {
+    "funcion": "capilla del parroco: altar, velas y reclinatorios",
+    "pendiente": "",
+    "resumen": "altar, velas en semicirculo, reclinatorios",
+    "luz": {
+     "nivel": 3,
+     "acento": {
+      "nombre": "velas",
+      "tinte": [
+       255,
+       205,
+       140
+      ],
+      "fuerza": 0.45
+     },
+     "caida": 0.38,
+     "fondo": 0.25,
+     "halos": [
+      {
+       "x": 104,
+       "y": 20,
+       "k": 0,
+       "r": 70,
+       "color": [
+        200,
+        150,
+        90
+       ],
+       "fuerza": 0.45
+      }
+     ]
+    },
+    "composicion": [
+     {
+      "piece": "altar",
+      "k": 0,
+      "x": 92,
+      "y": 8,
+      "en_pasillo": true
+     },
+     {
+      "piece": "relicario",
+      "k": 0,
+      "x": 14,
+      "y": 14
+     },
+     {
+      "piece": "relicario",
+      "k": 0,
+      "x": 146,
+      "y": 14
+     },
+     {
+      "piece": "vela",
+      "k": 0,
+      "x": 146,
+      "y": 92,
+      "en_pasillo": true
+     },
+     {
+      "piece": "vela",
+      "k": 0,
+      "x": 139,
+      "y": 107,
+      "en_pasillo": true
+     },
+     {
+      "piece": "vela",
+      "k": 0,
+      "x": 121,
+      "y": 117,
+      "en_pasillo": true
+     },
+     {
+      "piece": "vela",
+      "k": 0,
+      "x": 96,
+      "y": 122,
+      "en_pasillo": true
+     },
+     {
+      "piece": "vela",
+      "k": 0,
+      "x": 71,
+      "y": 117,
+      "en_pasillo": true
+     },
+     {
+      "piece": "vela",
+      "k": 0,
+      "x": 52,
+      "y": 107,
+      "en_pasillo": true
+     },
+     {
+      "piece": "vela",
+      "k": 0,
+      "x": 46,
+      "y": 92,
+      "en_pasillo": true
+     },
+     {
+      "piece": "banco_entero",
+      "k": 0,
+      "x": 8,
+      "y": 208
+     },
+     {
+      "piece": "banco_entero",
+      "k": 0,
+      "x": 128,
+      "y": 208
+     },
+     {
+      "piece": "banco_entero",
+      "k": 0,
+      "x": 8,
+      "y": 268
+     },
+     {
+      "piece": "banco_entero",
+      "k": 0,
+      "x": 128,
+      "y": 268
+     }
+    ]
+   }
+  },
+  {
+   "id": 11,
+   "nombre": "Galería de la Misa",
+   "luz": {
+    "preset": "neutral"
+   },
+   "props_extra": [],
+   "props_quitar": [],
+   "ambiente": {
+    "funcion": "galeria de la Misa: la nave en pequeno ante el altar",
+    "pendiente": "",
+    "resumen": "bancos, altar, hileras de velas",
+    "luz": {
+     "nivel": 3,
+     "acento": {
+      "nombre": "velas",
+      "tinte": [
+       255,
+       205,
+       140
+      ],
+      "fuerza": 0.45
+     },
+     "caida": 0.36,
+     "fondo": 0.25,
+     "halos": []
+    },
+    "composicion": [
+     {
+      "piece": "banco_entero",
+      "k": 0,
+      "x": 8,
+      "y": 100
+     },
+     {
+      "piece": "banco_entero",
+      "k": 0,
+      "x": 128,
+      "y": 100
+     },
+     {
+      "piece": "banco_entero",
+      "k": 0,
+      "x": 8,
+      "y": 172
+     },
+     {
+      "piece": "banco_entero",
+      "k": 0,
+      "x": 128,
+      "y": 172
+     },
+     {
+      "piece": "banco_entero",
+      "k": 0,
+      "x": 8,
+      "y": 240
+     },
+     {
+      "piece": "banco_entero",
+      "k": 0,
+      "x": 128,
+      "y": 240
+     },
+     {
+      "piece": "altar",
+      "k": 1,
+      "x": 92,
+      "y": 8,
+      "en_pasillo": true
+     },
+     {
+      "piece": "relicario",
+      "k": 1,
+      "x": 14,
+      "y": 14
+     },
+     {
+      "piece": "relicario",
+      "k": 1,
+      "x": 146,
+      "y": 14
+     },
+     {
+      "piece": "vela",
+      "k": 1,
+      "x": 4,
+      "y": 60,
+      "en_pasillo": false
+     },
+     {
+      "piece": "vela",
+      "k": 1,
+      "x": 188,
+      "y": 60,
+      "en_pasillo": false
+     },
+     {
+      "piece": "vela",
+      "k": 1,
+      "x": 4,
+      "y": 100,
+      "en_pasillo": false
+     },
+     {
+      "piece": "vela",
+      "k": 1,
+      "x": 188,
+      "y": 100,
+      "en_pasillo": false
+     },
+     {
+      "piece": "vela",
+      "k": 1,
+      "x": 4,
+      "y": 140,
+      "en_pasillo": false
+     },
+     {
+      "piece": "vela",
+      "k": 1,
+      "x": 188,
+      "y": 140,
+      "en_pasillo": false
+     },
+     {
+      "piece": "vela",
+      "k": 1,
+      "x": 4,
+      "y": 180,
+      "en_pasillo": false
+     },
+     {
+      "piece": "vela",
+      "k": 1,
+      "x": 188,
+      "y": 180,
+      "en_pasillo": false
+     },
+     {
+      "piece": "vela",
+      "k": 1,
+      "x": 4,
+      "y": 220,
+      "en_pasillo": false
+     },
+     {
+      "piece": "vela",
+      "k": 1,
+      "x": 188,
+      "y": 220,
+      "en_pasillo": false
+     },
+     {
+      "piece": "vela",
+      "k": 1,
+      "x": 4,
+      "y": 260,
+      "en_pasillo": false
+     },
+     {
+      "piece": "vela",
+      "k": 1,
+      "x": 188,
+      "y": 260,
+      "en_pasillo": false
+     },
+     {
+      "piece": "vela",
+      "k": 1,
+      "x": 4,
+      "y": 300,
+      "en_pasillo": false
+     },
+     {
+      "piece": "vela",
+      "k": 1,
+      "x": 188,
+      "y": 300,
+      "en_pasillo": false
+     }
+    ]
+   }
+  },
+  {
+   "id": 12,
+   "nombre": "Galería del prisionero",
+   "luz": {
+    "preset": "neutral"
+   },
+   "props_extra": [],
+   "props_quitar": [],
+   "ambiente": {
+    "funcion": "galeria del prisionero: celdas de alambre",
+    "pendiente": "",
+    "resumen": "celdas de alambrada, columnas rotas",
+    "luz": {
+     "nivel": 3,
+     "acento": {
+      "nombre": "prision",
+      "tinte": [
+       196,
+       204,
+       214
+      ],
+      "fuerza": 0.3
+     },
+     "caida": 0.4,
+     "fondo": 0.3,
+     "halos": []
+    },
+    "composicion": [
+     {
+      "piece": "alambre",
+      "k": 0,
+      "x": 0,
+      "y": 100
+     },
+     {
+      "piece": "alambre",
+      "k": 0,
+      "x": 32,
+      "y": 100
+     },
+     {
+      "piece": "alambre",
+      "k": 0,
+      "x": 144,
+      "y": 100
+     },
+     {
+      "piece": "alambre",
+      "k": 0,
+      "x": 176,
+      "y": 100
+     },
+     {
+      "piece": "alambre",
+      "k": 0,
+      "x": 0,
+      "y": 214
+     },
+     {
+      "piece": "alambre",
+      "k": 0,
+      "x": 32,
+      "y": 214
+     },
+     {
+      "piece": "alambre",
+      "k": 0,
+      "x": 144,
+      "y": 214
+     },
+     {
+      "piece": "alambre",
+      "k": 0,
+      "x": 176,
+      "y": 214
+     },
+     {
+      "piece": "columna",
+      "k": 0,
+      "x": 0,
+      "y": 20
+     },
+     {
+      "piece": "columna",
+      "k": 0,
+      "x": 144,
+      "y": 20
+     },
+     {
+      "piece": "alambre",
+      "k": 1,
+      "x": 0,
+      "y": 100
+     },
+     {
+      "piece": "alambre",
+      "k": 1,
+      "x": 32,
+      "y": 100
+     },
+     {
+      "piece": "alambre",
+      "k": 1,
+      "x": 144,
+      "y": 100
+     },
+     {
+      "piece": "alambre",
+      "k": 1,
+      "x": 176,
+      "y": 100
+     },
+     {
+      "piece": "alambre",
+      "k": 1,
+      "x": 0,
+      "y": 214
+     },
+     {
+      "piece": "alambre",
+      "k": 1,
+      "x": 32,
+      "y": 214
+     },
+     {
+      "piece": "alambre",
+      "k": 1,
+      "x": 144,
+      "y": 214
+     },
+     {
+      "piece": "alambre",
+      "k": 1,
+      "x": 176,
+      "y": 214
+     },
+     {
+      "piece": "columna",
+      "k": 1,
+      "x": 0,
+      "y": 20
+     },
+     {
+      "piece": "columna",
+      "k": 1,
+      "x": 144,
+      "y": 20
+     },
+     {
+      "piece": "sacos",
+      "k": 0,
+      "x": 8,
+      "y": 300
+     }
+    ]
+   }
+  },
+  {
+   "id": 13,
+   "nombre": "Capilla con llave",
+   "luz": {
+    "preset": "neutral"
+   },
+   "props_extra": [],
+   "props_quitar": [],
+   "ambiente": {
+    "funcion": "capilla con llave: reliquia tras la reja",
+    "pendiente": "",
+    "resumen": "altar y velas tras la reja",
+    "luz": {
+     "nivel": 4,
+     "acento": {
+      "nombre": "velas",
+      "tinte": [
+       255,
+       205,
+       140
+      ],
+      "fuerza": 0.45
+     },
+     "caida": 0.38,
+     "fondo": 0.25,
+     "halos": []
+    },
+    "composicion": [
+     {
+      "piece": "altar",
+      "k": 0,
+      "x": 92,
+      "y": 8,
+      "en_pasillo": true
+     },
+     {
+      "piece": "relicario",
+      "k": 0,
+      "x": 14,
+      "y": 14
+     },
+     {
+      "piece": "relicario",
+      "k": 0,
+      "x": 146,
+      "y": 14
+     },
+     {
+      "piece": "vela",
+      "k": 0,
+      "x": 146,
+      "y": 80,
+      "en_pasillo": true
+     },
+     {
+      "piece": "vela",
+      "k": 0,
+      "x": 139,
+      "y": 93,
+      "en_pasillo": true
+     },
+     {
+      "piece": "vela",
+      "k": 0,
+      "x": 121,
+      "y": 102,
+      "en_pasillo": true
+     },
+     {
+      "piece": "vela",
+      "k": 0,
+      "x": 96,
+      "y": 106,
+      "en_pasillo": true
+     },
+     {
+      "piece": "vela",
+      "k": 0,
+      "x": 71,
+      "y": 102,
+      "en_pasillo": true
+     },
+     {
+      "piece": "vela",
+      "k": 0,
+      "x": 52,
+      "y": 93,
+      "en_pasillo": true
+     },
+     {
+      "piece": "vela",
+      "k": 0,
+      "x": 46,
+      "y": 80,
+      "en_pasillo": true
+     }
+    ]
+   }
+  },
+  {
+   "id": 14,
+   "nombre": "Galería de la monjaraña",
+   "luz": {
+    "preset": "neutral"
+   },
+   "props_extra": [],
+   "props_quitar": [],
+   "ambiente": {
+    "funcion": "galeria de la monjarana: salon de estatuas",
+    "pendiente": "",
+    "resumen": "estatuas en hilera, centro despejado",
+    "luz": {
+     "nivel": 4,
+     "acento": {
+      "nombre": "salon",
+      "tinte": [
+       214,
+       196,
+       216
+      ],
+      "fuerza": 0.28
+     },
+     "caida": 0.36,
+     "fondo": 0.28,
+     "halos": []
+    },
+    "composicion": [
+     {
+      "piece": "santo",
+      "k": 0,
+      "x": 6,
+      "y": 40
+     },
+     {
+      "piece": "santo_der",
+      "k": 0,
+      "x": 162,
+      "y": 40
+     },
+     {
+      "piece": "santo",
+      "k": 0,
+      "x": 6,
+      "y": 168
+     },
+     {
+      "piece": "santo_der",
+      "k": 0,
+      "x": 162,
+      "y": 168
+     },
+     {
+      "piece": "santo",
+      "k": 0,
+      "x": 6,
+      "y": 296
+     },
+     {
+      "piece": "santo_der",
+      "k": 0,
+      "x": 162,
+      "y": 296
+     },
+     {
+      "piece": "santo",
+      "k": 1,
+      "x": 6,
+      "y": 40
+     },
+     {
+      "piece": "santo_der",
+      "k": 1,
+      "x": 162,
+      "y": 40
+     },
+     {
+      "piece": "santo",
+      "k": 1,
+      "x": 6,
+      "y": 168
+     },
+     {
+      "piece": "santo_der",
+      "k": 1,
+      "x": 162,
+      "y": 168
+     },
+     {
+      "piece": "santo",
+      "k": 1,
+      "x": 6,
+      "y": 296
+     },
+     {
+      "piece": "santo_der",
+      "k": 1,
+      "x": 162,
+      "y": 296
+     },
+     {
+      "piece": "columna_entera",
+      "k": 1,
+      "x": 0,
+      "y": 8
+     },
+     {
+      "piece": "columna_entera",
+      "k": 1,
+      "x": 160,
+      "y": 8
+     }
+    ]
+   }
+  },
+  {
+   "id": 15,
+   "nombre": "Cripta",
+   "luz": {
+    "preset": "neutral"
+   },
+   "props_extra": [],
+   "props_quitar": [],
+   "ambiente": {
+    "funcion": "cripta: arena del jefe a la luz de antorchas",
+    "pendiente": "antorchas de pared sin pieza propia (solo halo)",
+    "resumen": "despejada, estatuas flanquean jefe",
+    "luz": {
+     "nivel": 5,
+     "acento": {
+      "nombre": "cripta",
+      "tinte": [
+       130,
+       140,
+       175
+      ],
+      "fuerza": 0.35
+     },
+     "caida": 0.55,
+     "fondo": 0.35,
+     "halos": [
+      {
+       "x": 10,
+       "y": 60,
+       "k": 0,
+       "r": 58,
+       "color": [
+        205,
+        138,
+        72
+       ],
+       "fuerza": 0.48
+      },
+      {
+       "x": 198,
+       "y": 60,
+       "k": 0,
+       "r": 58,
+       "color": [
+        205,
+        138,
+        72
+       ],
+       "fuerza": 0.48
+      },
+      {
+       "x": 10,
+       "y": 250,
+       "k": 0,
+       "r": 58,
+       "color": [
+        205,
+        138,
+        72
+       ],
+       "fuerza": 0.48
+      },
+      {
+       "x": 198,
+       "y": 250,
+       "k": 0,
+       "r": 58,
+       "color": [
+        205,
+        138,
+        72
+       ],
+       "fuerza": 0.48
+      }
+     ]
+    },
+    "composicion": [
+     {
+      "piece": "columna_entera",
+      "k": 0,
+      "x": 0,
+      "y": 24
+     },
+     {
+      "piece": "columna_entera",
+      "k": 0,
+      "x": 160,
+      "y": 24
+     },
+     {
+      "piece": "columna_entera",
+      "k": 0,
+      "x": 0,
+      "y": 240
+     },
+     {
+      "piece": "columna_entera",
+      "k": 0,
+      "x": 160,
+      "y": 240
+     },
+     {
+      "piece": "santo",
+      "k": 0,
+      "x": 26,
+      "y": 150
+     },
+     {
+      "piece": "santo_der",
+      "k": 0,
+      "x": 142,
+      "y": 150
+     }
+    ]
+   }
+  }
+ ],
+ "_ambiente_doc": "Bloque `ambiente` por sala (lo escribe gen_ambientes_arpg.py): funcion, luz {nivel, acento{tinte,fuerza}, caida, fondo, halos} y composicion [{piece,k,x,y,en_pasillo}] con x,y locales del bloque k (0 = entrada); luz_profundidad = capa (a) por nivel.",
+ "luz_profundidad": {
+  "1": {
+   "tinte": [
+    255,
+    226,
+    176
+   ],
+   "brillo": 1.3
+  },
+  "2": {
+   "tinte": [
+    246,
+    222,
+    190
+   ],
+   "brillo": 1.12
+  },
+  "3": {
+   "tinte": [
+    220,
+    212,
+    204
+   ],
+   "brillo": 0.88
+  },
+  "4": {
+   "tinte": [
+    192,
+    196,
+    210
+   ],
+   "brillo": 0.76
+  },
+  "5": {
+   "tinte": [
+    150,
+    160,
+    190
+   ],
+   "brillo": 0.52
+  }
+ },
+ "halo_velas": {
+  "r": 40,
+  "color": [
+   200,
+   150,
+   85
+  ],
+  "fuerza": 0.42
+ },
+ "halo_altar": {
+  "r": 56,
+  "color": [
+   205,
+   160,
+   100
+  ],
+  "fuerza": 0.35
+ }
+}

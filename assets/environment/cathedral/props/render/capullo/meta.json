@@ -1,0 +1,21 @@
+{
+  "piece": "capullo",
+  "size_px": [
+    32,
+    56
+  ],
+  "content_px": [
+    28,
+    52
+  ],
+  "target_width": 28,
+  "scale_factor": 0.04560260586319218,
+  "source_render_px": [
+    614,
+    1145
+  ],
+  "yaw": 45,
+  "depth_units": "sprite_px",
+  "tiles_8x8_nonempty": 22,
+  "tiles_8x8_unique": 22
+}
