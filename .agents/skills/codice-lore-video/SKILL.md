@@ -31,7 +31,7 @@ Flujo estandarizado para crear vídeos verticales de lore estilo *Blasphemous* p
    - **Sin etiquetas de rol** como `(Masa)` en la ficha de doble pantalla de la DS (si la captura la tiene, enmascarar con `#000000`).
 4. **Capas en 1080×1920 (fondo `#000000`):**
    - **Capa visual:** cabecera `CÓDICE · <N>` + `<NOMBRE>` arriba; el personaje debajo (caja de 840 px de alto desde `y = 340`), escalado con vecino más próximo.
-   - **Subtítulos justo debajo del personaje** (`MarginV = 600`): `Palatino Linotype` 54, negrita, marfil, contorno negro, máximo 2 líneas, siguiendo literalmente el audio.
+   - **Subtítulos justo debajo del personaje:** caja del tema visual (abajo) en `y = 1145`, máximo 2 líneas, siguiendo literalmente el audio; las citas en cursiva.
    - **El 30 % inferior de la pantalla queda vacío:** ahí TikTok e Instagram ponen el nombre de la cuenta y la descripción, que taparían los subtítulos.
 5. **Cierre sin gameplay (por defecto):** mosaico animado 2×2 de los personajes del Códice sobre negro durante *"Próximamente en tu Nintendo DS"*, salvo que el usuario pida enseñar gameplay.
 6. **Pregunta moral para pedir comentarios (desde 2026-11-17):** los vídeos tenían buenas vistas y casi ningún comentario porque cada historia queda cerrada. Tras la cita, `> Pregunta: «¿…?»`: el narrador hace una pregunta moral sobre la historia y dice «Deja tu veredicto en los comentarios»; la pregunta queda escrita arriba hasta el final, también sobre el mosaico.
@@ -74,6 +74,12 @@ Flujo estandarizado para crear vídeos verticales de lore estilo *Blasphemous* p
 - **El guion lo contiene todo:** cada plano dice qué se ve (personaje, animación, dirección y props); los ajustes de producción se apuntan en el guion para poder rehacer el vídeo ejecutando el generador.
 
 ---
+
+## Tema visual
+
+Todo texto de vídeo (cabecera, pregunta, subtítulos, cierre; también el devlog en Remotion) usa el tema común: caja de piedra roja con marco dorado del arte de inventario de la ROM y Palatino a 1 bit (13 px nativos, ampliado x5 NEAREST, sombra de 1 px). Fuente de verdad: `tools/video_theme/` (`build_kit.py` genera `kit/` y `theme.json`; `theme.py` expone `render_box(lineas, highlight=..., style="regular"|"italic")` y `wrap`). `render_guiones.py` y `render_codice_video.py` la componen como PNG con `overlay`. Remotion (`devlog/src/theme/`) lee la misma `theme.json`: tras regenerar el kit, `build_kit.py --public <devlog>/public/theme` y copiar `theme.json` a `devlog/src/theme/`.
+
+**Regla: ningún texto de vídeo fuera del tema.** Nada de `drawtext`, ASS ni fuentes CSS propias.
 
 ## Voz y audio (ElevenLabs CLI)
 

@@ -6,7 +6,12 @@ import json
 import os
 import shutil
 import subprocess
+import sys
 from PIL import Image, ImageDraw
+
+_ROOT = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "..", ".."))
+sys.path.insert(0, os.path.join(_ROOT, "tools", "video_theme"))
+from theme import render_box, wrap as theme_wrap  # tema visual: ningun texto de video fuera del tema
 
 ELEVEN_EXE = shutil.which("elevenlabs") or shutil.which("elevenlabs.exe") or "elevenlabs"
 
@@ -202,55 +207,43 @@ def main():
         check=True,
     )
 
-    ass_path = os.path.join(work_dir, "subtitles.ass")
-    ass_header = """[Script Info]
-ScriptType: v4.00+
-PlayResX: 1080
-PlayResY: 1920
-WrapStyle: 0
+    overlays = []   # (png, x, y, t0, t1)
 
-[V4+ Styles]
-Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
-Style: Sub,Palatino Linotype,54,&H00E0ECF2,&H000000FF,&H00000000,&H80000000,-1,0,0,0,100,100,0,0,1,3,1,2,60,60,240,1
+    def box_png(name, lines, **kw):
+        im = render_box(lines, **kw)
+        path = os.path.abspath(os.path.join(work_dir, name))
+        im.save(path)
+        return path, im.size
 
-[Events]
-Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
-"""
-    with open(ass_path, "w", encoding="utf-8") as f:
-        f.write(ass_header)
-        for st, en, txt in sub_events:
-            f.write(f"Dialogue: 0,{fmt_ass(st)},{fmt_ass(en)},Sub,,0,0,0,,{txt}\n")
-
-    font_reg = "C\\:/Windows/Fonts/pala.ttf"
-    font_bold = "C\\:/Windows/Fonts/palab.ttf"
-    font_ital = "C\\:/Windows/Fonts/palai.ttf"
-    try:
-        ass_esc = os.path.relpath(ass_path).replace("\\", "/")
-    except ValueError:
-        ass_esc = ass_path.replace("\\", "/").replace(":", "\\:")
-    hdr = cfg["codice_header"].replace("'", "\\'")
-    cname = cfg["character_name"].replace("'", "\\'")
+    for k_, (st, en, txt) in enumerate(sub_events):
+        pth, (bw, bh) = box_png(f"sub_{k_:03d}.png", theme_wrap(txt.replace("\\N", " ").replace("\\n", " "), 186))
+        overlays.append((pth, (1080 - bw) // 2, 1145, st, en))
+    hdr_png, (hw, hh) = box_png("hdr.png", [[(cfg["codice_header"], "ash")]] + theme_wrap(cfg["character_name"], 186))
+    pro_png, (pw_, ph_) = box_png("pro.png", ["PRÓXIMAMENTE", [("en tu Nintendo DS", "ash")]])
+    t1, t2, t3 = d_v1, d_v1 + d_v2, d_v1 + d_v2 + d_v3
+    overlays.append((hdr_png, (1080 - hw) // 2, 150, 0.0, t1))
+    overlays.append((hdr_png, (1080 - hw) // 2, 150, t2, t3))
+    overlays.append((pro_png, (1080 - pw_) // 2, 1100, t3, total_dur))
+    ov_chain, last = "", "cc"
+    for k, (_, ox, oy, o0, o1) in enumerate(overlays):
+        ov_chain += f"[{last}][{6 + k}:v]overlay={ox}:{oy}:enable='between(t,{o0:.3f},{o1:.3f})'[o{k}];\n"
+        last = f"o{k}"
 
     filter_complex = f"""
 [0:v]fps=30,scale=840:840:flags=neighbor,pad=1080:1920:120:400:black,
-drawtext=fontfile='{font_reg}':text='{hdr}':fontsize=36:fontcolor=0x9A9184:x=(w-text_w)/2:y=165,
-drawtext=fontfile='{font_bold}':text='{cname}':fontsize=68:fontcolor=0xEDE5D5:x=(w-text_w)/2:y=220,
 fade=t=in:st=0:d=0.5,trim=duration={d_v1:.3f},setpts=PTS-STARTPTS[v1];
 
 [1:v]fps=30,scale=768:1152:flags=neighbor,pad=1080:1920:156:250:black,
 fade=t=in:st=0:d=0.35,trim=duration={d_v2:.3f},setpts=PTS-STARTPTS[v2];
 
 [2:v]fps=30,scale=840:840:flags=neighbor,pad=1080:1920:120:400:black,
-drawtext=fontfile='{font_reg}':text='{hdr}':fontsize=36:fontcolor=0x9A9184:x=(w-text_w)/2:y=165,
-drawtext=fontfile='{font_bold}':text='{cname}':fontsize=68:fontcolor=0xEDE5D5:x=(w-text_w)/2:y=220,
 fade=t=in:st=0:d=0.35,trim=duration={d_v3:.3f},setpts=PTS-STARTPTS[v3];
 
 [3:v]fps=30,scale=800:800:flags=neighbor,pad=1080:1920:140:280:black,
-drawtext=fontfile='{font_bold}':text='PRÓXIMAMENTE':fontsize=56:fontcolor=0xEDE5D5:x=(w-text_w)/2:y=1150,
-drawtext=fontfile='{font_ital}':text='en tu Nintendo DS':fontsize=42:fontcolor=0xB8AFA0:x=(w-text_w)/2:y=1230,
 fade=t=in:st=0:d=0.35,fade=t=out:st={max(0.1, d_v4-1.2):.3f}:d=1.2,trim=duration={d_v4:.3f},setpts=PTS-STARTPTS[v4];
 
-[v1][v2][v3][v4]concat=n=4:v=1:a=0,ass='{ass_esc}',format=yuv420p[vout];
+[v1][v2][v3][v4]concat=n=4:v=1:a=0[cc];
+{ov_chain}[{last}]format=yuv420p[vout];
 
 [4:a]volume=1.15[vo];
 [5:a]volume=0.09,afade=t=in:st=0:d=1.5,afade=t=out:st={max(0.1, total_dur-2.5):.3f}:d=2.5[bg];
@@ -266,6 +259,7 @@ fade=t=in:st=0:d=0.35,fade=t=out:st={max(0.1, d_v4-1.2):.3f}:d=1.2,trim=duration
             "-ignore_loop", "0", "-i", mosaic_blk,
             "-i", vo_full,
             "-stream_loop", "-1", "-i", cfg["bgm_wav"],
+            *[x for ov in overlays for x in ("-i", ov[0])],
             "-filter_complex", filter_complex,
             "-map", "[vout]", "-map", "[aout]",
             "-c:v", "libx264", "-preset", "medium", "-crf", "18",
