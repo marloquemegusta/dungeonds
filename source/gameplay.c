@@ -276,7 +276,8 @@ static void enemy_damage(Enemy *e, int damage, fixed hit_vx, fixed hit_vy, int q
     }
     CRASH_MARK(e->hp <= 0 ? CL_ENEMY_KILL : CL_ENEMY_HIT, e->type, e->hp <= 0 ? e->char_id : e->hp);
     if (e->hp <= 0) {
-        if (!quiet) sfx_play(SND_ENEMY_DEATH, TO_INT(e->x));
+        // A finisher kill has its own sound (remate.c cues): no generic death sound on top.
+        if (!quiet && !remate_killing()) sfx_play(SND_ENEMY_DEATH, TO_INT(e->x));
         if (e->suspend_req) {
             // Viatico: counts as dead now (pack), but stays inert and in place for SUSPEND_FRAMES; the death
             // animation plays when enemy_suspend_update ends it. hp <= 0 keeps every weapon from hitting it again.
