@@ -652,7 +652,9 @@ static void update_charger(Enemy *e, Enemy *enemies, int num_enemies, int idx,
             if (!sweep_position(&e->x, &e->y, vx, vy)) {       // no sliding: a wall or column stops it dead
                 e->state = ENEMY_STATE_STUNNED;
                 e->state_timer = CHARGER_STUN_WALL_FRAMES;
-                update_animation(e, 0);
+                e->charge_hit = CHARGER_JAMMED;                // jam in three beats; the clip frame comes from the timer below
+                e->frame = 0;
+                e->anim_timer = 0;
                 sfx_play(SND_CIRENEO_WALL, TO_INT(e->x));
                 break;
             }
@@ -676,8 +678,34 @@ static void update_charger(Enemy *e, Enemy *enemies, int num_enemies, int idx,
             break;
         }
 
-        case ENEMY_STATE_RECOVER:
-        case ENEMY_STATE_STUNNED: {
+        case ENEMY_STATE_STUNNED:
+            if (e->charge_hit == CHARGER_JAMMED) {
+                // Wall jam: impact (frames 0-1), struggle (frames 2/3 alternating shake), release (5 pull, 6 back-step).
+                // Still facing the wall; the whole jam is vulnerable and finishable (state stays STUNNED).
+                e->dir = dir_from_vector(TO_FIXED(e->aim_dir_x), TO_FIXED(e->aim_dir_y));
+                int elapsed = CHARGER_STUN_WALL_FRAMES - e->state_timer;
+                if (elapsed < CHARGER_JAM_IMPACT_FRAMES) {
+                    e->frame = elapsed < 4 ? 0 : 1;
+                } else if (e->state_timer > CHARGER_JAM_RELEASE_FRAMES) {
+                    if (e->frame < 2 || e->frame > 3) { e->frame = 2; e->anim_timer = 0; }
+                    if (++e->anim_timer >= CHARGER_JAM_STRUGGLE_TICKS) { e->anim_timer = 0; e->frame = e->frame == 3 ? 2 : 3; }
+                } else if (e->state_timer > CHARGER_JAM_BACKSTEP_FRAMES) {
+                    e->frame = 5;
+                } else {
+                    e->frame = 6;
+                    sweep_position(&e->x, &e->y, -((e->aim_dir_x * CHARGER_JAM_BACKSTEP_SPEED) >> 8),
+                                   -((e->aim_dir_y * CHARGER_JAM_BACKSTEP_SPEED) >> 8));
+                }
+                if (--e->state_timer <= 0) {
+                    e->state = ENEMY_STATE_CHASE;
+                    e->charge_hit = 0;
+                    e->frame = 0;
+                    e->anim_timer = 0;
+                }
+                break;
+            }
+            // fallthrough: stunned by a ray hit keeps the still frame
+        case ENEMY_STATE_RECOVER: {
             update_animation(e, 0);
             if (--e->state_timer <= 0) e->state = ENEMY_STATE_CHASE;
             break;
@@ -700,6 +728,7 @@ static void update_charger(Enemy *e, Enemy *enemies, int num_enemies, int idx,
                 e->state = ENEMY_STATE_TELEGRAPH;
                 e->state_timer = tuning->telegraph_duration;
                 e->dir = dir_from_vector(TO_FIXED(e->aim_dir_x), TO_FIXED(e->aim_dir_y));
+                e->charge_hit = 0;
                 e->frame = 0;
                 e->anim_timer = 0;
                 break;

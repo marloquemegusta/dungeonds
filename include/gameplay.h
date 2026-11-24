@@ -53,6 +53,13 @@ typedef struct {
 #define CHARGER_RECOVER_FRAMES 60   // [TUNABLE-PLACEHOLDER] frames standing still after the charge, vulnerable
 #endif
 #define CHARGER_STUN_WALL_FRAMES 90 // [TUNABLE-PLACEHOLDER] stunned after hitting a wall or column
+// Wall jam in three beats (DESIGN.md, El Cireneo): impact, struggle, release. Flagged with charge_hit == CHARGER_JAMMED.
+#define CHARGER_JAMMED 2
+#define CHARGER_JAM_IMPACT_FRAMES 10   // [TUNABLE-PLACEHOLDER] body hits and rebounds (clip frames 0-1), debris flies
+#define CHARGER_JAM_RELEASE_FRAMES 15  // [TUNABLE-PLACEHOLDER] last frames of the 90: tug the cross free (frame 5), then back-step (frame 6)
+#define CHARGER_JAM_BACKSTEP_FRAMES 8  // [TUNABLE-PLACEHOLDER] frames of the back-step inside the release
+#define CHARGER_JAM_STRUGGLE_TICKS 8   // [TUNABLE-PLACEHOLDER] ticks per pose of the struggle shake (telegraph / charge alternation)
+#define CHARGER_JAM_BACKSTEP_SPEED 192 // 8.8 px/frame against the charge: 8 frames x 0.75 = 6 px
 #define CHARGER_STUN_HIT_FRAMES 60  // [TUNABLE-PLACEHOLDER] stunned by a ray hit during telegraph or charge
 #define CHARGER_HIT_RADIUS 14       // [TUNABLE-PLACEHOLDER] ground px: the charge hurts the player this close
 

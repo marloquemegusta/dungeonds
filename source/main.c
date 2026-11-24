@@ -1115,6 +1115,35 @@ static void draw_hit_spark(uint16_t *buffer, int x, int y, int cam_x, int cam_y,
     }
 }
 
+// Wall jam of the Cireneo (DESIGN.md, "Atasco en tres tiempos", impact): a few wood splinters (3x2) and dust puffs (3x3)
+// leave the contact point (the cross tip, ahead of the body along the locked charge direction), fly back from the wall
+// and drop to the ground in about 10 frames. Pure function of the age, no state. Muted umber / ash colours (FX_SH_* family).
+static void draw_jam_debris(uint16_t *buffer, int cx, int cy, int age, int aim_x, int aim_y, int cam_x, int cam_y) {
+    // per piece: sideways speed (1/8 px per frame), launch speed (1/8 px per frame, up positive), size (3 splinter, 2 dust)
+    static const int8_t part[6][3] = {
+        { -14, 20, 3 }, { 10, 26, 3 }, { -22, 14, 3 }, { 18, 16, 3 }, { -6, 10, 2 }, { 8, 8, 2 }
+    };
+    if (age < 0 || age > 13) return;
+    for (int i = 0; i < 6; i++) {
+        int px = cx + ((part[i][0] * age) >> 3) - ((aim_x * age) >> 6);
+        int py = cy - ((part[i][1] * age) >> 3) + ((age * age) >> 2) - ((aim_y * age) >> 6);
+        if (py > cy + 8) py = cy + 8;                          // lands and rests until it fades
+        int w = part[i][2];
+        int h = w == 3 ? 2 : 2;
+        uint16_t col = (w == 3 ? (age < 8 ? RGB15(24, 15, 7) : RGB15(15, 8, 5)) : (age < 8 ? RGB15(22, 20, 18) : RGB15(17, 15, 13))) | BIT(15);
+        for (int yy = 0; yy < h; yy++) {
+            for (int xx = 0; xx < w; xx++) {
+                int sx = px + xx - cam_x;
+                int sy = py + yy - cam_y;
+                if (sx >= 0 && sx < SCREEN_W && sy >= 0 && sy < SCREEN_H) {
+                    buffer[sy * SCREEN_W + sx] = col;
+                    dirty_row(sy, sx, sx + 1);
+                }
+            }
+        }
+    }
+}
+
 // Single sober ember pulse behind the Cireneo cross when locking the charge direction (DESIGN.md 6.9.1).
 static void draw_telegraph_pulse(uint16_t *buffer, int cx, int cy, int state_timer, int cam_x, int cam_y) {
     if (state_timer < 10 || state_timer > 24) return;
@@ -1168,12 +1197,23 @@ static void draw_enemy(uint16_t *buffer, const Enemy *e, int cam_x, int cam_y) {
 
     int is_telegraph = (e->char_id == CHAR_CHARGER && e->state == ENEMY_STATE_TELEGRAPH);
     int is_charge = (e->char_id == CHAR_CHARGER && e->state == ENEMY_STATE_CHARGE);
+    int is_jam = (e->char_id == CHAR_CHARGER && e->state == ENEMY_STATE_STUNNED && e->charge_hit == CHARGER_JAMMED);
+    if (is_jam) {
+        int jam_age = CHARGER_STUN_WALL_FRAMES - e->state_timer;
+        // contact point: ~22 px ahead of the body along the charge, at cross height (aim_dir is 8.8 in ground metric)
+        draw_jam_debris(buffer, px + ((e->aim_dir_x * 16) >> 8), py - 12 + ((e->aim_dir_y * 16) >> 8), jam_age, e->aim_dir_x, e->aim_dir_y, cam_x, cam_y);
+    }
     if (is_telegraph) {
         draw_telegraph_pulse(buffer, px, py - 18, e->state_timer, cam_x, cam_y);
         if (e->state_timer <= 10 && (e->state_timer & 2)) px += 1;
     }
 
     int tf = (e->frame == 1);
+    // Wall jam frames come from clips already in the pool: impact = charge lunge, struggle = braced telegraph / charge shake,
+    // release = walk steps (cross back on the shoulder). source 0 charge, 1 telegraph, 2 walk.
+    static const uint8_t jam_map[7][2] = { {0,3}, {0,2}, {1,0}, {0,1}, {1,0}, {2,2}, {2,4} };
+    int jsrc = is_jam ? jam_map[e->frame < 7 ? e->frame : 6][0] : 0;
+    int jidx = is_jam ? jam_map[e->frame < 7 ? e->frame : 6][1] : 0;
     int cf = e->frame & (CHARGER_CHARGE_NUM_FRAMES - 1);
     int oc = ojo_clip(e);                                  // Ojo: walk (CHAR_OJO slot), look loop or sentence gesture
     int of = ojo_clip_frame(e, oc);
@@ -1182,6 +1222,7 @@ static void draw_enemy(uint16_t *buffer, const Enemy *e, int cam_x, int cam_y) {
     const uint8_t *b = oc == CLIP_OJO_SENTENCE ? g_ojo_sentence_frame_bounds[e->dir][of]
                      : oc == CLIP_OJO_LOOK     ? g_ojo_look_frame_bounds[e->dir][of]
                      : ac == CLIP_ABANDERADO_POINT ? g_abanderado_point_frame_bounds[e->dir][af]
+                     : is_jam                         ? (jsrc == 0 ? g_charger_charge_frame_bounds[e->dir][jidx] : jsrc == 1 ? g_charger_telegraph_frame_bounds[e->dir][0] : g_character_frame_bounds[CHAR_CHARGER][e->dir][jidx])
                      : (is_telegraph && e->frame == 0) ? g_character_frame_bounds[CHAR_CHARGER][e->dir][0]
                      : (is_telegraph && tf)           ? g_charger_telegraph_frame_bounds[e->dir][0]
                      : (is_telegraph || is_charge)    ? g_charger_charge_frame_bounds[e->dir][is_telegraph ? 0 : cf]
@@ -1200,6 +1241,7 @@ static void draw_enemy(uint16_t *buffer, const Enemy *e, int cam_x, int cam_y) {
     const uint16_t *frame = is_camp ? cs.pix : oc == CLIP_OJO_SENTENCE ? &g_ojo_sentence_frames[g_ojo_sentence_frame_offsets[e->dir][of]]
         : oc == CLIP_OJO_LOOK ? &g_ojo_look_frames[g_ojo_look_frame_offsets[e->dir][of]]
         : ac == CLIP_ABANDERADO_POINT ? &g_abanderado_point_frames[g_abanderado_point_frame_offsets[e->dir][af]]
+        : is_jam ? (jsrc == 0 ? &g_charger_charge_frames[g_charger_charge_frame_offsets[e->dir][jidx]] : jsrc == 1 ? &g_charger_telegraph_frames[g_charger_telegraph_frame_offsets[e->dir][0]] : character_frame_ptr(CHAR_CHARGER, e->dir, jidx))
         : (is_telegraph && e->frame == 0)
         ? character_frame_ptr(CHAR_CHARGER, e->dir, 0)
         : (is_telegraph && tf)
@@ -1210,6 +1252,7 @@ static void draw_enemy(uint16_t *buffer, const Enemy *e, int cam_x, int cam_y) {
     const uint16_t *runs = is_camp ? cs.runs : oc == CLIP_OJO_SENTENCE ? &g_ojo_sentence_runs[g_ojo_sentence_run_offsets[e->dir][of]]
         : oc == CLIP_OJO_LOOK ? &g_ojo_look_runs[g_ojo_look_run_offsets[e->dir][of]]
         : ac == CLIP_ABANDERADO_POINT ? &g_abanderado_point_runs[g_abanderado_point_run_offsets[e->dir][af]]
+        : is_jam ? (jsrc == 0 ? &g_charger_charge_runs[g_charger_charge_run_offsets[e->dir][jidx]] : jsrc == 1 ? &g_charger_telegraph_runs[g_charger_telegraph_run_offsets[e->dir][0]] : character_runs_ptr(CHAR_CHARGER, e->dir, jidx))
         : (is_telegraph && e->frame == 0)
         ? character_runs_ptr(CHAR_CHARGER, e->dir, 0)
         : (is_telegraph && tf)
@@ -1441,6 +1484,8 @@ static int shadow_select(const DrawItem *it, ShadowSel *sel) {
         int shh = g_characters[e->char_id].shadow_h;
         int is_telegraph = (e->char_id == CHAR_CHARGER && e->state == ENEMY_STATE_TELEGRAPH);
         int is_charge = (e->char_id == CHAR_CHARGER && e->state == ENEMY_STATE_CHARGE);
+        int is_jam = (e->char_id == CHAR_CHARGER && e->state == ENEMY_STATE_STUNNED && e->charge_hit == CHARGER_JAMMED);   // wall jam: shadow of the charge[0] keyframe, like the telegraph
+        is_telegraph |= is_jam;
         int cf = e->frame & (CHARGER_CHARGE_NUM_FRAMES - 1);
         int oc = ojo_clip(e);
         int of = ojo_clip_frame(e, oc);
@@ -1472,10 +1517,10 @@ static int shadow_select(const DrawItem *it, ShadowSel *sel) {
             sel->top = it->cy - shh / 2;
             return 1;
         }
-        sel->mask = (is_telegraph && e->frame == 0) ? character_shadow_mask_ptr(CHAR_CHARGER, e->dir, 0)
+        sel->mask = (is_telegraph && !is_jam && e->frame == 0) ? character_shadow_mask_ptr(CHAR_CHARGER, e->dir, 0)
                   : (is_telegraph || is_charge)     ? &g_charger_charge_shadow_masks[g_charger_charge_shadow_offsets[e->dir][is_telegraph ? 0 : cf]]
                                                     : character_shadow_mask_ptr(e->char_id, e->dir, e->frame);
-        sel->bounds = (is_telegraph && e->frame == 0) ? g_character_shadow_bounds[CHAR_CHARGER][e->dir][0]
+        sel->bounds = (is_telegraph && !is_jam && e->frame == 0) ? g_character_shadow_bounds[CHAR_CHARGER][e->dir][0]
                     : (is_telegraph || is_charge)     ? g_charger_charge_shadow_bounds[e->dir][is_telegraph ? 0 : cf]
                                                       : g_character_shadow_bounds[e->char_id][e->dir][e->frame];
         sel->left = it->cx - shw / 2;
