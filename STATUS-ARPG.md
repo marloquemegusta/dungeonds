@@ -14,6 +14,8 @@ Estado para retomar la protodemo ARPG (código en la rama `proto/arpg`) y sus en
   6. **Campanero (zona 2):** equilibrar el encuentro y rediseñar su sala (`DESIGN-ARPG.md` §9).
   7. **Validación en DS:** medición `perf` en hardware (campamento nocturno y salas con ~24 enemigos) y prueba de guardado en tarjeta real (`dungeonds_arpg.sav`).
 
+- **Siguiente paso:** definir los encuentros de cada sala (fijos o con una lógica de generación) y, después, que el usuario pruebe el juego completo. La luz de velas por paleta queda como concepto aprobado y la luz dinámica descartada (`DESIGN-ARPG.md` §11).
+
 **Fallos conocidos propios de la rama** (los comunes, en `STATUS.md`):
 - `test_cathedral_kit` falla en `proto/arpg` (23 piezas en el baker frente a 19 en el enum del header; sin diagnosticar, no lo toca el campamento).
 
