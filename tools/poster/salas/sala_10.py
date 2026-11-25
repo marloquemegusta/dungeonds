@@ -6,8 +6,8 @@ EXTRA: piezas que pueden ir sobre los pasos reservados (fuentes de luz dibujadas
 AMB = "techo"
 LUZ = dict(L=0.46, tint=(1.0, 0.82, 0.62))   # ambar de vela
 DROP = ['banco_entero', 'vela']
-# Capilla: altar al fondo entre dos candelabros de pie, relicarios y exvotos en los muros del fondo, y dos filas de
+# Capilla: altar al fondo entre dos candelabros de pie, relicarios y exvotos colgados del muro del fondo, y dos filas de
 # reclinatorios (uno a cada lado del pasillo central) mirando al altar. Sin velas: con luz "techo" dejan la luz sin radio.
-ADD = [("altar", 0, 96, 6), ("candelabro_pie", 0, 56, 6), ("candelabro_pie", 0, 120, 6),
-       ("exvoto", 0, 4, 4), ("exvoto", 0, 164, 4)]
-ADD += [("reclinatorio", 0, x, y) for y in (248, 306) for x in (8, 152)]
+ADD = [("altar", 0, 96, 6), ("candelabro_pie", 0, 56, 6), ("candelabro_pie", 0, 120, 6)]
+COLGADOS = [("exvoto", 24, 24), ("exvoto", 184, 24)]   # exvotos colgados del muro norte (antes de pie en el suelo)
+ADD += [("reclinatorio", 0, x, y) for y in (248, 296) for x in (8, 164)]
