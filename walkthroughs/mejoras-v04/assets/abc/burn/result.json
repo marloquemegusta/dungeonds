@@ -1,0 +1,36 @@
+{
+  "name": "abc_burn",
+  "scenario": "abc_burn.json",
+  "status": "PASS",
+  "failed": [],
+  "error": null,
+  "warnings": [
+    "evidence_only"
+  ],
+  "frames": 874,
+  "wall_ms": 7248,
+  "captures": [
+    "v0_a",
+    "v0_b",
+    "v0_c",
+    "v1_a",
+    "v1_b",
+    "v1_c",
+    "v2_a",
+    "v2_b",
+    "v2_c"
+  ],
+  "map": {
+    "source": "explicit",
+    "elf": null,
+    "map": "/mnt/c/codexlocal/dungeonds/.worktrees/mejoras-diseno/.ds-game-dev/build/out/dungeonds.map"
+  },
+  "debug_capture": true,
+  "skip_render": true,
+  "symbol_addresses": {
+    "u": "0x022e5970",
+    "p": "0x022254a0",
+    "a": "0x022e598c",
+    "gm": "0x022254b8"
+  }
+}

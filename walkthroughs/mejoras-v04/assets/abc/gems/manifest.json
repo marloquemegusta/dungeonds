@@ -1,0 +1,777 @@
+{
+  "scenario": "abc_gems.json",
+  "status": "PASS",
+  "captures": {
+    "v0_hud": {
+      "sha256": "ed5582e1b0cd356afe1d7030b0b4d2a598d9adbf7df3f661213b39fed102da57",
+      "path": "v0_hud.png"
+    },
+    "v1_hud": {
+      "sha256": "80de3612d59da0ca24044456917766bb7d12515aeb64ff9e8a0e76c0933273b3",
+      "path": "v1_hud.png"
+    },
+    "v2_hud": {
+      "sha256": "20f1ebce0d7ec71a2f5d6acf51cbc27a83ba01a4abf160c90e84295e0a1cb413",
+      "path": "v2_hud.png"
+    },
+    "v0_floor": {
+      "sha256": "db0ba2c4835d18a7ef3fd0273f0b66a506e5c8d62792fef4dd094838f1c34db7",
+      "path": "v0_floor.png"
+    },
+    "v1_floor": {
+      "sha256": "6860e335eee0577405abb223f0ddae1eff4e5518046f3c12822233ebbd6be2a0",
+      "path": "v1_floor.png"
+    },
+    "v2_floor": {
+      "sha256": "8f2dcf850c4d3cfda449fe44cba3c5d7722d7d6878c8fc015af1b67d69aa5c52",
+      "path": "v2_floor.png"
+    },
+    "v0_pull0": {
+      "sha256": "1a2ed6343c69d6f551c7801676ac86c79c38fce88bf3b5de738184669daa6269",
+      "path": "v0_pull0.png"
+    },
+    "v0_pull1": {
+      "sha256": "e292a3f416a3fd4b6f0da386e0d4e9b33ac8d19bea24868f96f44c82e101858e",
+      "path": "v0_pull1.png"
+    },
+    "v0_pull2": {
+      "sha256": "863ee8fc1c37ac20762a10c9d596daf7f182761bdb4898ddb77cd63d78500bcf",
+      "path": "v0_pull2.png"
+    },
+    "v0_pull3": {
+      "sha256": "224c1e8bf1a975bb1fdca1aa68df615e7f396d932fda7d489229f77c34bd5d99",
+      "path": "v0_pull3.png"
+    },
+    "v1_pull0": {
+      "sha256": "dd72992256a1ec5a727d0087770c7f2f5cde26e05331a25bd512a6dd883f2b9b",
+      "path": "v1_pull0.png"
+    },
+    "v1_pull1": {
+      "sha256": "6056ec151144535286c717a379cadc9e7d5cb6f66d90e90bf05cd4850c17afec",
+      "path": "v1_pull1.png"
+    },
+    "v1_pull2": {
+      "sha256": "6980bb6558c3985c01d4c211f6b8f9a02fd403084dc369d1f92fa8eb901a886e",
+      "path": "v1_pull2.png"
+    },
+    "v1_pull3": {
+      "sha256": "1512e52f2e8244b6205ac3df2204a43e2116e45aa2710ee5265abb9e2f15323f",
+      "path": "v1_pull3.png"
+    },
+    "v2_pull0": {
+      "sha256": "8967ef654b4fd7ba013bdd9e2a0f533dbd47b7155f231dd876044970e4ffa4eb",
+      "path": "v2_pull0.png"
+    },
+    "v2_pull1": {
+      "sha256": "0cd360322f9f1d4c508b4bcc02cc03f64808a0b2d213456b78746442249ca1e7",
+      "path": "v2_pull1.png"
+    },
+    "v2_pull2": {
+      "sha256": "8e2beeb577352feb885fa4c592b5b355a5849c0c2ca2fab1b3d2ce338b151199",
+      "path": "v2_pull2.png"
+    },
+    "v2_pull3": {
+      "sha256": "651782c89fe4986180966f5f3e1b3751230f5666f3b247127b7669e7401eefa4",
+      "path": "v2_pull3.png"
+    }
+  },
+  "capture_sequences": {},
+  "events": [
+    {
+      "step": 0,
+      "frame": 60,
+      "action": "frame_advance",
+      "frames": 60,
+      "keypad": 0
+    },
+    {
+      "step": 1,
+      "frame": 60,
+      "action": "tap",
+      "x": 128,
+      "y": 66
+    },
+    {
+      "step": 1,
+      "frame": 66,
+      "action": "frame_advance",
+      "frames": 6,
+      "keypad": 0
+    },
+    {
+      "step": 2,
+      "frame": 66,
+      "action": "release"
+    },
+    {
+      "step": 2,
+      "frame": 86,
+      "action": "frame_advance",
+      "frames": 20,
+      "keypad": 0
+    },
+    {
+      "step": 3,
+      "frame": 86,
+      "action": "button_down",
+      "button": "START",
+      "keypad": 8
+    },
+    {
+      "step": 3,
+      "frame": 90,
+      "action": "frame_advance",
+      "frames": 4,
+      "keypad": 8
+    },
+    {
+      "step": 4,
+      "frame": 90,
+      "action": "button_up",
+      "button": "START",
+      "keypad": 0,
+      "flush_frames": 0
+    },
+    {
+      "step": 4,
+      "frame": 210,
+      "action": "frame_advance",
+      "frames": 120,
+      "keypad": 0
+    },
+    {
+      "step": 5,
+      "frame": 210,
+      "action": "button_down",
+      "button": "L",
+      "keypad": 512
+    },
+    {
+      "step": 5,
+      "frame": 211,
+      "action": "frame_advance",
+      "frames": 1,
+      "keypad": 512
+    },
+    {
+      "step": 6,
+      "frame": 211,
+      "action": "button_down",
+      "button": "R",
+      "keypad": 768
+    },
+    {
+      "step": 6,
+      "frame": 212,
+      "action": "frame_advance",
+      "frames": 1,
+      "keypad": 768
+    },
+    {
+      "step": 7,
+      "frame": 212,
+      "action": "button_down",
+      "button": "B",
+      "keypad": 770
+    },
+    {
+      "step": 7,
+      "frame": 214,
+      "action": "frame_advance",
+      "frames": 2,
+      "keypad": 770
+    },
+    {
+      "step": 8,
+      "frame": 214,
+      "action": "button_up",
+      "button": "B",
+      "keypad": 768,
+      "flush_frames": 0
+    },
+    {
+      "step": 8,
+      "frame": 215,
+      "action": "frame_advance",
+      "frames": 1,
+      "keypad": 768
+    },
+    {
+      "step": 9,
+      "frame": 215,
+      "action": "button_up",
+      "button": "R",
+      "keypad": 512,
+      "flush_frames": 0
+    },
+    {
+      "step": 9,
+      "frame": 216,
+      "action": "frame_advance",
+      "frames": 1,
+      "keypad": 512
+    },
+    {
+      "step": 10,
+      "frame": 216,
+      "action": "button_up",
+      "button": "L",
+      "keypad": 0,
+      "flush_frames": 0
+    },
+    {
+      "step": 10,
+      "frame": 516,
+      "action": "frame_advance",
+      "frames": 300,
+      "keypad": 0
+    },
+    {
+      "step": 11,
+      "frame": 516,
+      "action": "button_down",
+      "button": "UP",
+      "keypad": 64
+    },
+    {
+      "step": 11,
+      "frame": 756,
+      "action": "frame_advance",
+      "frames": 240,
+      "keypad": 64
+    },
+    {
+      "step": 12,
+      "frame": 756,
+      "action": "button_up",
+      "button": "UP",
+      "keypad": 0,
+      "flush_frames": 0
+    },
+    {
+      "step": 12,
+      "frame": 758,
+      "action": "frame_advance",
+      "frames": 2,
+      "keypad": 0
+    },
+    {
+      "step": 13,
+      "frame": 758,
+      "action": "poke",
+      "symbol": "gm",
+      "offset": 0,
+      "type": "u8",
+      "value": 3,
+      "address": "0x02225264",
+      "field": "gm"
+    },
+    {
+      "step": 13,
+      "frame": 798,
+      "action": "frame_advance",
+      "frames": 40,
+      "keypad": 0
+    },
+    {
+      "step": 14,
+      "frame": 798,
+      "action": "poke",
+      "symbol": "u",
+      "offset": 18,
+      "type": "u8",
+      "value": 0,
+      "address": "0x022e572a",
+      "field": "dv"
+    },
+    {
+      "step": 14,
+      "frame": 798,
+      "action": "poke",
+      "symbol": "u",
+      "offset": 0,
+      "type": "u32",
+      "value": 1,
+      "address": "0x022e5718",
+      "field": "apply_seq"
+    },
+    {
+      "step": 14,
+      "frame": 801,
+      "action": "frame_advance",
+      "frames": 3,
+      "keypad": 0
+    },
+    {
+      "step": 15,
+      "frame": 803,
+      "action": "frame_advance",
+      "frames": 2,
+      "keypad": 0
+    },
+    {
+      "step": 16,
+      "frame": 803,
+      "action": "poke",
+      "symbol": "u",
+      "offset": 18,
+      "type": "u8",
+      "value": 1,
+      "address": "0x022e572a",
+      "field": "dv"
+    },
+    {
+      "step": 16,
+      "frame": 803,
+      "action": "poke",
+      "symbol": "u",
+      "offset": 0,
+      "type": "u32",
+      "value": 2,
+      "address": "0x022e5718",
+      "field": "apply_seq"
+    },
+    {
+      "step": 16,
+      "frame": 806,
+      "action": "frame_advance",
+      "frames": 3,
+      "keypad": 0
+    },
+    {
+      "step": 17,
+      "frame": 808,
+      "action": "frame_advance",
+      "frames": 2,
+      "keypad": 0
+    },
+    {
+      "step": 18,
+      "frame": 808,
+      "action": "poke",
+      "symbol": "u",
+      "offset": 18,
+      "type": "u8",
+      "value": 2,
+      "address": "0x022e572a",
+      "field": "dv"
+    },
+    {
+      "step": 18,
+      "frame": 808,
+      "action": "poke",
+      "symbol": "u",
+      "offset": 0,
+      "type": "u32",
+      "value": 3,
+      "address": "0x022e5718",
+      "field": "apply_seq"
+    },
+    {
+      "step": 18,
+      "frame": 811,
+      "action": "frame_advance",
+      "frames": 3,
+      "keypad": 0
+    },
+    {
+      "step": 19,
+      "frame": 813,
+      "action": "frame_advance",
+      "frames": 2,
+      "keypad": 0
+    },
+    {
+      "step": 20,
+      "frame": 813,
+      "action": "poke",
+      "symbol": "gm",
+      "offset": 0,
+      "type": "u8",
+      "value": 1,
+      "address": "0x02225264",
+      "field": "gm"
+    },
+    {
+      "step": 20,
+      "frame": 815,
+      "action": "frame_advance",
+      "frames": 2,
+      "keypad": 0
+    },
+    {
+      "step": 21,
+      "frame": 815,
+      "action": "poke",
+      "symbol": "u",
+      "offset": 18,
+      "type": "u8",
+      "value": 0,
+      "address": "0x022e572a",
+      "field": "dv"
+    },
+    {
+      "step": 21,
+      "frame": 815,
+      "action": "poke",
+      "symbol": "u",
+      "offset": 0,
+      "type": "u32",
+      "value": 4,
+      "address": "0x022e5718",
+      "field": "apply_seq"
+    },
+    {
+      "step": 21,
+      "frame": 818,
+      "action": "frame_advance",
+      "frames": 3,
+      "keypad": 0
+    },
+    {
+      "step": 22,
+      "frame": 820,
+      "action": "frame_advance",
+      "frames": 2,
+      "keypad": 0
+    },
+    {
+      "step": 23,
+      "frame": 820,
+      "action": "poke",
+      "symbol": "u",
+      "offset": 18,
+      "type": "u8",
+      "value": 1,
+      "address": "0x022e572a",
+      "field": "dv"
+    },
+    {
+      "step": 23,
+      "frame": 820,
+      "action": "poke",
+      "symbol": "u",
+      "offset": 0,
+      "type": "u32",
+      "value": 5,
+      "address": "0x022e5718",
+      "field": "apply_seq"
+    },
+    {
+      "step": 23,
+      "frame": 823,
+      "action": "frame_advance",
+      "frames": 3,
+      "keypad": 0
+    },
+    {
+      "step": 24,
+      "frame": 825,
+      "action": "frame_advance",
+      "frames": 2,
+      "keypad": 0
+    },
+    {
+      "step": 25,
+      "frame": 825,
+      "action": "poke",
+      "symbol": "u",
+      "offset": 18,
+      "type": "u8",
+      "value": 2,
+      "address": "0x022e572a",
+      "field": "dv"
+    },
+    {
+      "step": 25,
+      "frame": 825,
+      "action": "poke",
+      "symbol": "u",
+      "offset": 0,
+      "type": "u32",
+      "value": 6,
+      "address": "0x022e5718",
+      "field": "apply_seq"
+    },
+    {
+      "step": 25,
+      "frame": 828,
+      "action": "frame_advance",
+      "frames": 3,
+      "keypad": 0
+    },
+    {
+      "step": 26,
+      "frame": 830,
+      "action": "frame_advance",
+      "frames": 2,
+      "keypad": 0
+    },
+    {
+      "step": 27,
+      "frame": 830,
+      "action": "poke",
+      "symbol": "u",
+      "offset": 18,
+      "type": "u8",
+      "value": 0,
+      "address": "0x022e572a",
+      "field": "dv"
+    },
+    {
+      "step": 27,
+      "frame": 830,
+      "action": "poke",
+      "symbol": "u",
+      "offset": 0,
+      "type": "u32",
+      "value": 7,
+      "address": "0x022e5718",
+      "field": "apply_seq"
+    },
+    {
+      "step": 27,
+      "frame": 833,
+      "action": "frame_advance",
+      "frames": 3,
+      "keypad": 0
+    },
+    {
+      "step": 28,
+      "frame": 833,
+      "action": "poke",
+      "symbol": "gm",
+      "offset": 0,
+      "type": "u8",
+      "value": 2,
+      "address": "0x02225264",
+      "field": "gm"
+    },
+    {
+      "step": 28,
+      "frame": 834,
+      "action": "frame_advance",
+      "frames": 1,
+      "keypad": 0
+    },
+    {
+      "step": 29,
+      "frame": 835,
+      "action": "frame_advance",
+      "frames": 1,
+      "keypad": 0
+    },
+    {
+      "step": 30,
+      "frame": 836,
+      "action": "frame_advance",
+      "frames": 1,
+      "keypad": 0
+    },
+    {
+      "step": 31,
+      "frame": 837,
+      "action": "frame_advance",
+      "frames": 1,
+      "keypad": 0
+    },
+    {
+      "step": 32,
+      "frame": 838,
+      "action": "frame_advance",
+      "frames": 1,
+      "keypad": 0
+    },
+    {
+      "step": 33,
+      "frame": 868,
+      "action": "frame_advance",
+      "frames": 30,
+      "keypad": 0
+    },
+    {
+      "step": 34,
+      "frame": 868,
+      "action": "poke",
+      "symbol": "u",
+      "offset": 18,
+      "type": "u8",
+      "value": 1,
+      "address": "0x022e572a",
+      "field": "dv"
+    },
+    {
+      "step": 34,
+      "frame": 868,
+      "action": "poke",
+      "symbol": "u",
+      "offset": 0,
+      "type": "u32",
+      "value": 8,
+      "address": "0x022e5718",
+      "field": "apply_seq"
+    },
+    {
+      "step": 34,
+      "frame": 871,
+      "action": "frame_advance",
+      "frames": 3,
+      "keypad": 0
+    },
+    {
+      "step": 35,
+      "frame": 871,
+      "action": "poke",
+      "symbol": "gm",
+      "offset": 0,
+      "type": "u8",
+      "value": 2,
+      "address": "0x02225264",
+      "field": "gm"
+    },
+    {
+      "step": 35,
+      "frame": 872,
+      "action": "frame_advance",
+      "frames": 1,
+      "keypad": 0
+    },
+    {
+      "step": 36,
+      "frame": 873,
+      "action": "frame_advance",
+      "frames": 1,
+      "keypad": 0
+    },
+    {
+      "step": 37,
+      "frame": 874,
+      "action": "frame_advance",
+      "frames": 1,
+      "keypad": 0
+    },
+    {
+      "step": 38,
+      "frame": 875,
+      "action": "frame_advance",
+      "frames": 1,
+      "keypad": 0
+    },
+    {
+      "step": 39,
+      "frame": 876,
+      "action": "frame_advance",
+      "frames": 1,
+      "keypad": 0
+    },
+    {
+      "step": 40,
+      "frame": 906,
+      "action": "frame_advance",
+      "frames": 30,
+      "keypad": 0
+    },
+    {
+      "step": 41,
+      "frame": 906,
+      "action": "poke",
+      "symbol": "u",
+      "offset": 18,
+      "type": "u8",
+      "value": 2,
+      "address": "0x022e572a",
+      "field": "dv"
+    },
+    {
+      "step": 41,
+      "frame": 906,
+      "action": "poke",
+      "symbol": "u",
+      "offset": 0,
+      "type": "u32",
+      "value": 9,
+      "address": "0x022e5718",
+      "field": "apply_seq"
+    },
+    {
+      "step": 41,
+      "frame": 909,
+      "action": "frame_advance",
+      "frames": 3,
+      "keypad": 0
+    },
+    {
+      "step": 42,
+      "frame": 909,
+      "action": "poke",
+      "symbol": "gm",
+      "offset": 0,
+      "type": "u8",
+      "value": 2,
+      "address": "0x02225264",
+      "field": "gm"
+    },
+    {
+      "step": 42,
+      "frame": 910,
+      "action": "frame_advance",
+      "frames": 1,
+      "keypad": 0
+    },
+    {
+      "step": 43,
+      "frame": 911,
+      "action": "frame_advance",
+      "frames": 1,
+      "keypad": 0
+    },
+    {
+      "step": 44,
+      "frame": 912,
+      "action": "frame_advance",
+      "frames": 1,
+      "keypad": 0
+    },
+    {
+      "step": 45,
+      "frame": 913,
+      "action": "frame_advance",
+      "frames": 1,
+      "keypad": 0
+    },
+    {
+      "step": 46,
+      "frame": 914,
+      "action": "frame_advance",
+      "frames": 1,
+      "keypad": 0
+    },
+    {
+      "step": 47,
+      "frame": 944,
+      "action": "frame_advance",
+      "frames": 30,
+      "keypad": 0
+    }
+  ],
+  "frames": 944,
+  "assertions": {
+    "screen_changed": true,
+    "screen_changes": [],
+    "state_changed": true,
+    "state_changes": []
+  },
+  "state_samples": {},
+  "warnings": [
+    "evidence_only"
+  ],
+  "error": null,
+  "skip_render": true,
+  "debug_capture": true,
+  "map_path": "/mnt/c/codexlocal/dungeonds/.worktrees/mejoras-diseno/.ds-game-dev/build/out/dungeonds.map",
+  "symbol_source": {
+    "source": "explicit",
+    "elf": null,
+    "map": "/mnt/c/codexlocal/dungeonds/.worktrees/mejoras-diseno/.ds-game-dev/build/out/dungeonds.map"
+  }
+}

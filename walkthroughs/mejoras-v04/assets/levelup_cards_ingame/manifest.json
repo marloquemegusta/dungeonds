@@ -1,0 +1,480 @@
+{
+  "scenario": "levelup_cards.json",
+  "status": "PASS",
+  "captures": {
+    "01_dones_a_sel0": {
+      "sha256": "c6e2e276b79ac4fbc110c37618186ab52e77ede6ac56a40b2ee76fa9c02359ac",
+      "path": "01_dones_a_sel0.png"
+    },
+    "02_dones_a_sel0_later": {
+      "sha256": "4ba9c6a702887ad33860380fcb744837d84a547824d1ff34669413e97884422e",
+      "path": "02_dones_a_sel0_later.png"
+    },
+    "03_dones_a_sel1": {
+      "sha256": "8bbcc499526ba841a0967733023f1f215729fe06702dc8952f75a443b65869e6",
+      "path": "03_dones_a_sel1.png"
+    },
+    "04_dones_b_sel1": {
+      "sha256": "3677edf5ed33461277f57a96b40c1628247c518ed13777333fc5c37cea23be7a",
+      "path": "04_dones_b_sel1.png"
+    },
+    "05_dones_c_sel1": {
+      "sha256": "ea259e2a3b4974dd896cf2107abe31777eeed0d8d95f3c96e894c573094201fa",
+      "path": "05_dones_c_sel1.png"
+    },
+    "06_nivel3_a": {
+      "sha256": "16ff6c0181fab6ba1e6e5f5dc25049f4a0595e76de62a100c5dae091238a65fc",
+      "path": "06_nivel3_a.png"
+    },
+    "07_reliquia_a": {
+      "sha256": "df8f0181e26c887dd766aea2af4e1d2cb6a1c8a31a8c2816c9517846bec53934",
+      "path": "07_reliquia_a.png"
+    },
+    "08_reliquia_a_sel1": {
+      "sha256": "67a0d29a4b3ba3dfdca45aabfc0b3dd086dab156f1180606c85ce41e26df7275",
+      "path": "08_reliquia_a_sel1.png"
+    },
+    "09_reliquia_b_sel1": {
+      "sha256": "52561b29674f2d54f78d8f84afaa6f41a3232398bb6fd58ee5dbe9cc3f465cfb",
+      "path": "09_reliquia_b_sel1.png"
+    },
+    "10_reliquia_c_sel1": {
+      "sha256": "9734c379485091dec4b0e87a52b3ca7afa4a700b9b165bdb8eb5960e54e7c06a",
+      "path": "10_reliquia_c_sel1.png"
+    }
+  },
+  "capture_sequences": {},
+  "events": [
+    {
+      "step": 0,
+      "frame": 60,
+      "action": "frame_advance",
+      "frames": 60,
+      "keypad": 0
+    },
+    {
+      "step": 1,
+      "frame": 60,
+      "action": "tap",
+      "x": 128,
+      "y": 66
+    },
+    {
+      "step": 1,
+      "frame": 66,
+      "action": "frame_advance",
+      "frames": 6,
+      "keypad": 0
+    },
+    {
+      "step": 2,
+      "frame": 66,
+      "action": "release"
+    },
+    {
+      "step": 2,
+      "frame": 86,
+      "action": "frame_advance",
+      "frames": 20,
+      "keypad": 0
+    },
+    {
+      "step": 3,
+      "frame": 86,
+      "action": "button_down",
+      "button": "START",
+      "keypad": 8
+    },
+    {
+      "step": 3,
+      "frame": 90,
+      "action": "frame_advance",
+      "frames": 4,
+      "keypad": 8
+    },
+    {
+      "step": 4,
+      "frame": 90,
+      "action": "button_up",
+      "button": "START",
+      "keypad": 0,
+      "flush_frames": 0
+    },
+    {
+      "step": 4,
+      "frame": 290,
+      "action": "frame_advance",
+      "frames": 200,
+      "keypad": 0
+    },
+    {
+      "step": 5,
+      "frame": 290,
+      "action": "button_down",
+      "button": "X",
+      "keypad": 1024
+    },
+    {
+      "step": 5,
+      "frame": 293,
+      "action": "frame_advance",
+      "frames": 3,
+      "keypad": 1024
+    },
+    {
+      "step": 6,
+      "frame": 293,
+      "action": "button_up",
+      "button": "X",
+      "keypad": 0,
+      "flush_frames": 0
+    },
+    {
+      "step": 6,
+      "frame": 305,
+      "action": "frame_advance",
+      "frames": 12,
+      "keypad": 0
+    },
+    {
+      "step": 7,
+      "frame": 319,
+      "action": "frame_advance",
+      "frames": 14,
+      "keypad": 0
+    },
+    {
+      "step": 8,
+      "frame": 319,
+      "action": "button_down",
+      "button": "RIGHT",
+      "keypad": 16
+    },
+    {
+      "step": 8,
+      "frame": 322,
+      "action": "frame_advance",
+      "frames": 3,
+      "keypad": 16
+    },
+    {
+      "step": 9,
+      "frame": 322,
+      "action": "button_up",
+      "button": "RIGHT",
+      "keypad": 0,
+      "flush_frames": 0
+    },
+    {
+      "step": 9,
+      "frame": 334,
+      "action": "frame_advance",
+      "frames": 12,
+      "keypad": 0
+    },
+    {
+      "step": 10,
+      "frame": 334,
+      "action": "button_down",
+      "button": "SELECT",
+      "keypad": 4
+    },
+    {
+      "step": 10,
+      "frame": 337,
+      "action": "frame_advance",
+      "frames": 3,
+      "keypad": 4
+    },
+    {
+      "step": 11,
+      "frame": 337,
+      "action": "button_up",
+      "button": "SELECT",
+      "keypad": 0,
+      "flush_frames": 0
+    },
+    {
+      "step": 11,
+      "frame": 349,
+      "action": "frame_advance",
+      "frames": 12,
+      "keypad": 0
+    },
+    {
+      "step": 12,
+      "frame": 349,
+      "action": "button_down",
+      "button": "SELECT",
+      "keypad": 4
+    },
+    {
+      "step": 12,
+      "frame": 352,
+      "action": "frame_advance",
+      "frames": 3,
+      "keypad": 4
+    },
+    {
+      "step": 13,
+      "frame": 352,
+      "action": "button_up",
+      "button": "SELECT",
+      "keypad": 0,
+      "flush_frames": 0
+    },
+    {
+      "step": 13,
+      "frame": 364,
+      "action": "frame_advance",
+      "frames": 12,
+      "keypad": 0
+    },
+    {
+      "step": 14,
+      "frame": 364,
+      "action": "button_down",
+      "button": "SELECT",
+      "keypad": 4
+    },
+    {
+      "step": 14,
+      "frame": 367,
+      "action": "frame_advance",
+      "frames": 3,
+      "keypad": 4
+    },
+    {
+      "step": 15,
+      "frame": 367,
+      "action": "button_up",
+      "button": "SELECT",
+      "keypad": 0,
+      "flush_frames": 0
+    },
+    {
+      "step": 15,
+      "frame": 373,
+      "action": "frame_advance",
+      "frames": 6,
+      "keypad": 0
+    },
+    {
+      "step": 16,
+      "frame": 373,
+      "action": "button_down",
+      "button": "A",
+      "keypad": 1
+    },
+    {
+      "step": 16,
+      "frame": 376,
+      "action": "frame_advance",
+      "frames": 3,
+      "keypad": 1
+    },
+    {
+      "step": 17,
+      "frame": 376,
+      "action": "button_up",
+      "button": "A",
+      "keypad": 0,
+      "flush_frames": 0
+    },
+    {
+      "step": 17,
+      "frame": 388,
+      "action": "frame_advance",
+      "frames": 12,
+      "keypad": 0
+    },
+    {
+      "step": 18,
+      "frame": 388,
+      "action": "button_down",
+      "button": "X",
+      "keypad": 1024
+    },
+    {
+      "step": 18,
+      "frame": 391,
+      "action": "frame_advance",
+      "frames": 3,
+      "keypad": 1024
+    },
+    {
+      "step": 19,
+      "frame": 391,
+      "action": "button_up",
+      "button": "X",
+      "keypad": 0,
+      "flush_frames": 0
+    },
+    {
+      "step": 19,
+      "frame": 403,
+      "action": "frame_advance",
+      "frames": 12,
+      "keypad": 0
+    },
+    {
+      "step": 20,
+      "frame": 403,
+      "action": "button_down",
+      "button": "A",
+      "keypad": 1
+    },
+    {
+      "step": 20,
+      "frame": 406,
+      "action": "frame_advance",
+      "frames": 3,
+      "keypad": 1
+    },
+    {
+      "step": 21,
+      "frame": 406,
+      "action": "button_up",
+      "button": "A",
+      "keypad": 0,
+      "flush_frames": 0
+    },
+    {
+      "step": 21,
+      "frame": 418,
+      "action": "frame_advance",
+      "frames": 12,
+      "keypad": 0
+    },
+    {
+      "step": 22,
+      "frame": 418,
+      "action": "button_down",
+      "button": "X",
+      "keypad": 1024
+    },
+    {
+      "step": 22,
+      "frame": 421,
+      "action": "frame_advance",
+      "frames": 3,
+      "keypad": 1024
+    },
+    {
+      "step": 23,
+      "frame": 421,
+      "action": "button_up",
+      "button": "X",
+      "keypad": 0,
+      "flush_frames": 0
+    },
+    {
+      "step": 23,
+      "frame": 433,
+      "action": "frame_advance",
+      "frames": 12,
+      "keypad": 0
+    },
+    {
+      "step": 24,
+      "frame": 433,
+      "action": "button_down",
+      "button": "RIGHT",
+      "keypad": 16
+    },
+    {
+      "step": 24,
+      "frame": 436,
+      "action": "frame_advance",
+      "frames": 3,
+      "keypad": 16
+    },
+    {
+      "step": 25,
+      "frame": 436,
+      "action": "button_up",
+      "button": "RIGHT",
+      "keypad": 0,
+      "flush_frames": 0
+    },
+    {
+      "step": 25,
+      "frame": 448,
+      "action": "frame_advance",
+      "frames": 12,
+      "keypad": 0
+    },
+    {
+      "step": 26,
+      "frame": 448,
+      "action": "button_down",
+      "button": "SELECT",
+      "keypad": 4
+    },
+    {
+      "step": 26,
+      "frame": 451,
+      "action": "frame_advance",
+      "frames": 3,
+      "keypad": 4
+    },
+    {
+      "step": 27,
+      "frame": 451,
+      "action": "button_up",
+      "button": "SELECT",
+      "keypad": 0,
+      "flush_frames": 0
+    },
+    {
+      "step": 27,
+      "frame": 463,
+      "action": "frame_advance",
+      "frames": 12,
+      "keypad": 0
+    },
+    {
+      "step": 28,
+      "frame": 463,
+      "action": "button_down",
+      "button": "SELECT",
+      "keypad": 4
+    },
+    {
+      "step": 28,
+      "frame": 466,
+      "action": "frame_advance",
+      "frames": 3,
+      "keypad": 4
+    },
+    {
+      "step": 29,
+      "frame": 466,
+      "action": "button_up",
+      "button": "SELECT",
+      "keypad": 0,
+      "flush_frames": 0
+    },
+    {
+      "step": 29,
+      "frame": 478,
+      "action": "frame_advance",
+      "frames": 12,
+      "keypad": 0
+    }
+  ],
+  "frames": 478,
+  "assertions": {
+    "screen_changed": true,
+    "screen_changes": [],
+    "state_changed": true,
+    "state_changes": []
+  },
+  "state_samples": {},
+  "warnings": [
+    "evidence_only"
+  ],
+  "error": null,
+  "skip_render": true,
+  "debug_capture": true
+}

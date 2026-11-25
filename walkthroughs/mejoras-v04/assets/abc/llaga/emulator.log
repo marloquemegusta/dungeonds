@@ -1,0 +1,6 @@
+wsl: Processing /etc/fstab with mount -a failed.
+Microphone successfully inited.
+DeSmuME 0.9.14 git#0 dev+ x64-JIT SSE2
+SoftRasterizer: Running using 22 additional threads. (Multithreading enabled.)
+DSM_SCENARIO_WARNING=abc_llaga:evidence_only
+DSM_SCENARIO_RESULT=PASS name=abc_llaga frames=1136 wall_ms=10486

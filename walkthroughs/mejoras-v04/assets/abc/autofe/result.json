@@ -1,0 +1,57 @@
+{
+  "name": "abc_autofe",
+  "scenario": "abc_autofe.json",
+  "status": "PASS",
+  "failed": [],
+  "error": null,
+  "warnings": [
+    "evidence_only"
+  ],
+  "frames": 1184,
+  "wall_ms": 11197,
+  "captures": [
+    "v0_f0",
+    "v0_f1",
+    "v0_f2",
+    "v0_f3",
+    "v0_p0",
+    "v0_p1",
+    "v0_p2",
+    "v0_p3",
+    "v0_p4",
+    "v0_p5",
+    "v1_f0",
+    "v1_f1",
+    "v1_f2",
+    "v1_f3",
+    "v1_p0",
+    "v1_p1",
+    "v1_p2",
+    "v1_p3",
+    "v1_p4",
+    "v1_p5",
+    "v2_f0",
+    "v2_f1",
+    "v2_f2",
+    "v2_f3",
+    "v2_p0",
+    "v2_p1",
+    "v2_p2",
+    "v2_p3",
+    "v2_p4",
+    "v2_p5"
+  ],
+  "map": {
+    "source": "explicit",
+    "elf": null,
+    "map": "/mnt/c/codexlocal/dungeonds/.worktrees/mejoras-diseno/.ds-game-dev/build/out/dungeonds.map"
+  },
+  "debug_capture": true,
+  "skip_render": true,
+  "symbol_addresses": {
+    "u": "0x022e59f0",
+    "p": "0x02225520",
+    "a": "0x022e5a0c",
+    "gm": "0x02225538"
+  }
+}

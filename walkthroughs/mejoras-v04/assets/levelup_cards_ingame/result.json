@@ -1,0 +1,27 @@
+{
+  "name": "levelup_cards",
+  "scenario": "levelup_cards.json",
+  "status": "PASS",
+  "failed": [],
+  "error": null,
+  "warnings": [
+    "evidence_only"
+  ],
+  "frames": 478,
+  "wall_ms": 5120,
+  "captures": [
+    "01_dones_a_sel0",
+    "02_dones_a_sel0_later",
+    "03_dones_a_sel1",
+    "04_dones_b_sel1",
+    "05_dones_c_sel1",
+    "06_nivel3_a",
+    "07_reliquia_a",
+    "08_reliquia_a_sel1",
+    "09_reliquia_b_sel1",
+    "10_reliquia_c_sel1"
+  ],
+  "map": null,
+  "debug_capture": true,
+  "skip_render": true
+}
