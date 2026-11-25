@@ -12,7 +12,7 @@ DROP = ['alambre', 'banco_roto', 'banco_volcado', 'sacos', 'sacos_b', 'sacos_rem
 # izquierdo) en tramos continuos que solo se abren donde salen los enemigos (filas de y 70..228 de cada tramo) y en las puertas;
 # al fondo (k2) un muro de nichos de frente tras el cofre. Calaveras y huesos solo de remate, al pie de los estantes.
 def _osario():
-    out = [("osario_estante", 2, x, 0) for x in (0, 40, 80, 120, 160)]   # muro de nichos de lado a lado tras el cofre
+    out = [("osario_estante", 2, x, 0) for x in (4, 52, 100, 148)]   # muro de nichos tras el cofre: cada 48 px (los props no comparten tiles, sombra incluida)
     for k in range(3):
         # estantes pegados cada 48 px (los props no comparten tiles); su pie (y+34..y+48) queda fuera de las filas de enemigos
         for y in ((192, 240, 288, 336) if k == 2 else (0, 192, 240, 288, 336)):

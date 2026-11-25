@@ -1,21 +1,21 @@
 {
   "piece": "huesos_monton",
   "size_px": [
-    48,
-    32
+    40,
+    24
   ],
   "content_px": [
-    48,
-    26
+    34,
+    18
   ],
-  "target_width": 48,
-  "scale_factor": 0.07766990291262135,
+  "target_width": 34,
+  "scale_factor": 0.05501618122977346,
   "source_render_px": [
     618,
     329
   ],
   "yaw": 45,
   "depth_units": "sprite_px",
-  "tiles_8x8_nonempty": 21,
-  "tiles_8x8_unique": 21
+  "tiles_8x8_nonempty": 12,
+  "tiles_8x8_unique": 12
 }
