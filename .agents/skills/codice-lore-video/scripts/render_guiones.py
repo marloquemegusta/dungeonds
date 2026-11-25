@@ -1372,7 +1372,8 @@ def render_video(video, prefijo, sin_voz, md_dir, voices, estilo=None, tiras_dir
                 chunks[-1] = chunks[-1] + "»"
             total = sum(len(c.replace("\\N", " ")) for c in chunks) or 1
             ct = t
-            for ci, c in enumerate(chunks):
+            # el cierre ya lleva el rotulo PROXIMAMENTE: sin subtitulo, que lo duplicaba detras
+            for ci, c in enumerate(chunks if p["type"] != "outro" else []):
                 cd = dur * len(c.replace("\\N", " ")) / total
                 sub_events.append((ct, ct + cd + (0.15 if ci == len(chunks) - 1 else 0.0), c, "Quote" if is_q else "Sub"))
                 ct += cd
