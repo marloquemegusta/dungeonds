@@ -110,13 +110,13 @@ Dos montajes del mismo vídeo (CÓDICE · VI), sin publicar (el usuario los sube
 Vídeo CÓDICE · II, sin publicar (el usuario lo sube a mano): `assets/videos/lore01_06_ines.mp4` (56,9 s, con voz, estilo A, sin cambios de planos). Tira: [`lore01_06_ines_tira.png`](assets/lore01_06_ines_tira.png). Hoja de planos: [`lore01_06_ines_planos.png`](assets/lore01_06_ines_planos.png).
 
 1. **Pregunta elegida por el usuario:** «¿Encubridora… o madre?», añadida al guion (`## 06`).
-2. **Defectos aceptados:** la cita sale en 3 líneas de subtítulo; en el cierre asoma «tu Nintendo DS.» detrás del rótulo PRÓXIMAMENTE (fallo del generador clásico); la cita suena ~1 dB por encima del narrador.
+2. **Defectos aceptados:** la cita sale en 3 líneas de subtítulo; la cita suena ~1 dB por encima del narrador.
 3. **No verificado:** nadie ha escuchado el audio final.
-4. `DESIGN.md`, `TECHNICAL.md`, `LORE.md` y `assets/MANIFEST.md` no cambian; el generador no se toca.
+4. **Cierre:** el solape de «tu Nintendo DS.» tras PRÓXIMAMENTE queda arreglado en el generador clásico (`render_guiones.py`: el subtítulo del cierre ya no se pinta).
+5. `DESIGN.md`, `TECHNICAL.md`, `LORE.md` y `assets/MANIFEST.md` no cambian.
 
 ## Pendiente
 
-- Solape del cierre en el render clásico: «tu Nintendo DS.» asoma detrás de PRÓXIMAMENTE (visto en el 06).
 - Capa de props en el generador (velas, columnas que desfilan) para el día 1 del calendario.
 - Destino del padre Anselmo (`LORE.md` §9).
 - Voces con efecto de radio (Remedios): sustituir por recortes de su muestra si molestan.
