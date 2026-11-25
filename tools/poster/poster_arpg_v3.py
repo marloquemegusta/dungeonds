@@ -79,6 +79,7 @@ _TEM = {
     4: dict(drop=set(), add=[("cepo", 0, 150, 150), ("capullo", 0, 30, 120)]),
 }
 FUENTES_DEBILES = {"brasero": 0.4, "candelabro_pie": 0.6}
+COLGADOS = {}   # props colgados del muro norte: (pieza, x_centro, elev) con elev = px entre su base y el pie del muro; sin sombra de suelo
 # Cada sala tiene su archivo salas/sala_NN.py (AMB, LUZ, DROP, ADD y EXTRA opcional) que manda sobre lo de arriba.
 import importlib.util as _ilu                    # noqa: E402
 for _n in range(16):
@@ -93,6 +94,7 @@ for _n in range(16):
         TECHO[_n] = dict(L=_m.LUZ["L"], tint=np.array(_m.LUZ["tint"], float))
     _TEM[_n] = dict(drop=set(_m.DROP), add=list(_m.ADD))
     EXTRA[_n] = list(getattr(_m, "EXTRA", []))
+    COLGADOS[_n] = list(getattr(_m, "COLGADOS", []))
 
 
 def to555(rgb):
@@ -401,6 +403,21 @@ def build(kit, plan, room, rd, cfg, hole, ends, gcfg, enemies, variant):
     Lb, tb = float(Lq[M + 2].mean()), tint[M + 2].mean(0)
     brgb = relight(p1.to_rgb(pix), np.full(pix.shape[:2], Lb), np.broadcast_to(tb, pix.shape[:2] + (3,)))
     back = np.dstack([brgb, np.where(op, 255, 0).astype(np.uint8)])
+    for (piece, cx, elev) in COLGADOS.get(room, []):            # props de pared: se estampan en el muro (back), sin sombra en el suelo
+        lay = akit.layout(f"{piece}@{tag_for(amb, cx, 0, nb - 1, nb, srcs)}")
+        lo = lay["op"]
+        rows, cols = np.where(lo)
+        bh = back.shape[0]
+        y0 = bh - elev - (rows.max() + 1)
+        x0 = cx - (cols.min() + cols.max() + 1) // 2
+        srgb = relight(p1.to_rgb(lay["pix"]), np.full(lo.shape, Lb), np.broadcast_to(tb, lo.shape + (3,)))
+        hh, ww = lo.shape
+        sh = np.zeros((bh, 256), bool); sh[max(0, y0 + 2):y0 + 2 + hh, max(0, x0 + 1):x0 + 1 + ww] = lo[max(0, -(y0 + 2)):bh - y0 - 2, max(0, -(x0 + 1)):256 - x0 - 1]
+        back[..., :3][sh & (back[..., 3] > 0)] = (back[..., :3][sh & (back[..., 3] > 0)] * 0.72).astype(np.uint8)   # sombra pequena sobre el muro
+        ys, xs = slice(max(0, y0), min(bh, y0 + hh)), slice(max(0, x0), min(256, x0 + ww))
+        m = lo[ys.start - y0:ys.stop - y0, xs.start - x0:xs.stop - x0]
+        back[ys, xs, :3][m] = srgb[ys.start - y0:ys.stop - y0, xs.start - x0:xs.stop - x0][m]
+        back[ys, xs, 3][m] = 255
     sky = None
     if room in (6, 7) and not has_up:
         sky = make_sky(amb == "noche", 256, 96)

@@ -21,19 +21,20 @@ def _enfermeria():
             der = [16, 248, 296]   # puerta derecha del tramo 0 (y 206..244)
         if k == 2:
             izq = [16, 248, 296]   # puerta izquierda del tramo 2
-        out += [("catre", k, -8, y) for y in izq] + [("catre~", k, 144, y) for y in der]
+        out += [("catre", k, 0, y) for y in izq] + [("catre~", k, 160, y) for y in der]   # catre de 48 px: espejo pegado al muro derecho
         # ultimo hueco de cada muro: biombo (alterna lados) o cama
         if k != 2:
             out.append(("biombo", k, -8, 328) if k == 0 else ("biombo~", k, 152, 328))
-            out.append(("catre~", k, 144, 328) if k == 0 else ("catre", k, -8, 328))
+            out.append(("catre~", k, 160, 328) if k == 0 else ("catre", k, 0, 328))
         # a los pies de las camas
-        out += [("palangana", k, 72, izq[1] + 4), ("candelabro_pie", k, 96, 236)]
+        out += [("palangana", k, 48, izq[1] + 14), ("candelabro_pie", k, 96, 236)]
     out += [("candelabro_pie", 0, 64, 20), ("candelabro_pie", 1, 104, 12)]
-    out += [("exvoto", 2, x, 4) for x in (64, 112)]
     return out
 
 
 ADD = _enfermeria()
+COLGADOS = [("exvoto", 84, 24), ("exvoto", 132, 24)]   # exvotos colgados del muro norte (antes de pie en el suelo, k2 x=64/112)
+
 
 
 # Nave 2 presenta al Ojo y al Cireneo, cada uno con bebes (DESIGN-ARPG.md §12). Franja libre entre filas de catres: y 70..228 de cada bloque;

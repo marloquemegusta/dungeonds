@@ -73,7 +73,7 @@ def stage_props():
     props = load_props()
     for n in GLB_PIECES:
         f = props.get(n, {}).get("glb_from")
-        if f:
+        if f and os.path.exists(os.path.join(dst, "glb", f + ".glb")):
             tmp = os.path.join(dst, "glb", f"{n}.{os.getpid()}.tmp")
             glb_yaw.main(os.path.join(dst, "glb", f + ".glb"), tmp, props[n]["yaw"])
             os.replace(tmp, os.path.join(dst, "glb", n + ".glb"))   # atomico: otro proceso puede estar leyendolo

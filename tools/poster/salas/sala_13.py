@@ -10,7 +10,7 @@ DROP = ['vela', 'altar', 'relicario']
 # lado; el cofre queda bajo el retablo. El relicario va en EXTRA porque su pie cae sobre el paso
 # reservado del cofre. Reclinatorios en la nave, mirando al fondo; la puerta izquierda queda libre.
 ADD = [("altar", 0, 40, 10), ("altar", 0, 148, 10)]
-ADD += [("reclinatorio", 0, 152, y) for y in (252, 308)] + [("reclinatorio", 0, 56, y) for y in (252, 308)]
+ADD += [("reclinatorio", 0, 164, y) for y in (252, 292)] + [("reclinatorio", 0, 56, y) for y in (252, 292)]
 EXTRA = [("relicario", 0, 80, 0)]
 
 

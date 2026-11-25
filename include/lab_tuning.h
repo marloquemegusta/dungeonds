@@ -25,6 +25,9 @@
 #define ARPG_LAB 0
 #endif
 /* Variant "arpg-boxeo": the first ARPG room holds a single immortal dummy (boxeo.c) to tune the punch against. */
+#ifndef ARPG_BOXEO_MELEE
+#define ARPG_BOXEO_MELEE 0
+#endif
 #ifndef ARPG_BOXEO
 #define ARPG_BOXEO 0
 #endif
