@@ -12,7 +12,7 @@
 // Mana: spent by spells, regenerated slowly.
 #define ARPG_MANA_BASE 60           // [TUNABLE-PLACEHOLDER] mana at level 1
 #define ARPG_MANA_PER_LEVEL 10       // [TUNABLE-PLACEHOLDER] mana gained per level
-#define ARPG_MANA_REGEN_FRAMES 12   // [TUNABLE-PLACEHOLDER] 1 mana every N frames (was 30: the bot spent 21 % of a campaign below the ray's cost)
+#define ARPG_MANA_REGEN_FRAMES 30   // [TUNABLE-PLACEHOLDER] 1 mana every N frames (slow on purpose: mana comes from executions, DESIGN-ARPG.md)
 
 // Damage the hero takes per hit, by enemy type.
 #define ARPG_DMG_EXVOTO 16          // [TUNABLE-PLACEHOLDER]
