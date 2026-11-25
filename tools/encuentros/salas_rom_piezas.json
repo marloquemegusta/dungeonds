@@ -1,0 +1,1205 @@
+{
+ "piezas": [
+  {
+   "piece": "banco_entero",
+   "lx": 0,
+   "ly": 24
+  },
+  {
+   "piece": "banco_entero",
+   "lx": 128,
+   "ly": 24
+  },
+  {
+   "piece": "banco_entero",
+   "lx": 128,
+   "ly": 216
+  },
+  {
+   "piece": "banco_entero",
+   "lx": 128,
+   "ly": 280
+  },
+  {
+   "piece": "banco_entero",
+   "lx": 128,
+   "ly": 344
+  },
+  {
+   "piece": "banco_entero",
+   "lx": 0,
+   "ly": 24
+  },
+  {
+   "piece": "banco_entero",
+   "lx": 128,
+   "ly": 24
+  },
+  {
+   "piece": "banco_entero",
+   "lx": 0,
+   "ly": 216
+  },
+  {
+   "piece": "banco_entero",
+   "lx": 0,
+   "ly": 280
+  },
+  {
+   "piece": "banco_entero",
+   "lx": 0,
+   "ly": 344
+  },
+  {
+   "piece": "banco_entero",
+   "lx": 128,
+   "ly": 344
+  },
+  {
+   "piece": "banco_entero",
+   "lx": 0,
+   "ly": 24
+  },
+  {
+   "piece": "banco_entero",
+   "lx": 128,
+   "ly": 24
+  },
+  {
+   "piece": "banco_entero",
+   "lx": 0,
+   "ly": 216
+  },
+  {
+   "piece": "banco_entero",
+   "lx": 128,
+   "ly": 216
+  },
+  {
+   "piece": "banco_entero",
+   "lx": 0,
+   "ly": 280
+  },
+  {
+   "piece": "banco_entero",
+   "lx": 128,
+   "ly": 280
+  },
+  {
+   "piece": "banco_entero",
+   "lx": 0,
+   "ly": 344
+  },
+  {
+   "piece": "banco_entero",
+   "lx": 128,
+   "ly": 344
+  },
+  {
+   "piece": "banco_entero",
+   "lx": 0,
+   "ly": 24
+  },
+  {
+   "piece": "banco_entero",
+   "lx": 128,
+   "ly": 24
+  },
+  {
+   "piece": "banco_entero",
+   "lx": 128,
+   "ly": 216
+  },
+  {
+   "piece": "banco_entero",
+   "lx": 128,
+   "ly": 280
+  },
+  {
+   "piece": "sacos_b",
+   "lx": 72,
+   "ly": 328
+  },
+  {
+   "piece": "banco_entero",
+   "lx": 128,
+   "ly": 24
+  },
+  {
+   "piece": "banco_entero",
+   "lx": 0,
+   "ly": 32
+  },
+  {
+   "piece": "banco_entero",
+   "lx": 0,
+   "ly": 344
+  },
+  {
+   "piece": "banco_entero",
+   "lx": 128,
+   "ly": 344
+  },
+  {
+   "piece": "banco_entero",
+   "lx": 128,
+   "ly": 24
+  },
+  {
+   "piece": "banco_entero",
+   "lx": 0,
+   "ly": 32
+  },
+  {
+   "piece": "banco_entero",
+   "lx": 128,
+   "ly": 216
+  },
+  {
+   "piece": "banco_roto",
+   "lx": 0,
+   "ly": 256
+  },
+  {
+   "piece": "banco_entero",
+   "lx": 128,
+   "ly": 280
+  },
+  {
+   "piece": "banco_entero",
+   "lx": 0,
+   "ly": 344
+  },
+  {
+   "piece": "banco_entero",
+   "lx": 128,
+   "ly": 344
+  },
+  {
+   "piece": "banco_roto",
+   "lx": 0,
+   "ly": 0
+  },
+  {
+   "piece": "banco_entero",
+   "lx": 128,
+   "ly": 24
+  },
+  {
+   "piece": "banco_entero",
+   "lx": 128,
+   "ly": 280
+  },
+  {
+   "piece": "sacos_b",
+   "lx": 72,
+   "ly": 328
+  },
+  {
+   "piece": "banco_entero",
+   "lx": 0,
+   "ly": 24
+  },
+  {
+   "piece": "banco_roto",
+   "lx": 128,
+   "ly": 24
+  },
+  {
+   "piece": "sacos",
+   "lx": 128,
+   "ly": 264
+  },
+  {
+   "piece": "banco_entero",
+   "lx": 0,
+   "ly": 344
+  },
+  {
+   "piece": "banco_entero",
+   "lx": 0,
+   "ly": 24
+  },
+  {
+   "piece": "banco_roto",
+   "lx": 128,
+   "ly": 24
+  },
+  {
+   "piece": "banco_roto",
+   "lx": 128,
+   "ly": 256
+  },
+  {
+   "piece": "columna",
+   "lx": 0,
+   "ly": 280
+  },
+  {
+   "piece": "banco_roto",
+   "lx": 128,
+   "ly": 320
+  },
+  {
+   "piece": "banco_roto",
+   "lx": 0,
+   "ly": 0
+  },
+  {
+   "piece": "alambre",
+   "lx": 104,
+   "ly": 208
+  },
+  {
+   "piece": "sacos",
+   "lx": 112,
+   "ly": 344
+  },
+  {
+   "piece": "banco_volcado",
+   "lx": 0,
+   "ly": 0
+  },
+  {
+   "piece": "banco_roto",
+   "lx": 128,
+   "ly": 24
+  },
+  {
+   "piece": "sacos",
+   "lx": 72,
+   "ly": 208
+  },
+  {
+   "piece": "columna",
+   "lx": 0,
+   "ly": 216
+  },
+  {
+   "piece": "banco_roto",
+   "lx": 128,
+   "ly": 24
+  },
+  {
+   "piece": "banco_roto",
+   "lx": 0,
+   "ly": 64
+  },
+  {
+   "piece": "banco_entero",
+   "lx": 0,
+   "ly": 216
+  },
+  {
+   "piece": "banco_volcado",
+   "lx": 0,
+   "ly": 280
+  },
+  {
+   "piece": "banco_roto",
+   "lx": 0,
+   "ly": 320
+  },
+  {
+   "piece": "alambre",
+   "lx": 104,
+   "ly": 336
+  },
+  {
+   "piece": "sacos_b",
+   "lx": 128,
+   "ly": 0
+  },
+  {
+   "piece": "cepo",
+   "lx": 16,
+   "ly": 16
+  },
+  {
+   "piece": "cepo",
+   "lx": 0,
+   "ly": 208
+  },
+  {
+   "piece": "sacos",
+   "lx": 128,
+   "ly": 264
+  },
+  {
+   "piece": "cepo",
+   "lx": 16,
+   "ly": 272
+  },
+  {
+   "piece": "cepo",
+   "lx": 0,
+   "ly": 336
+  },
+  {
+   "piece": "sacos_b",
+   "lx": 128,
+   "ly": 336
+  },
+  {
+   "piece": "capullo",
+   "lx": 24,
+   "ly": 0
+  },
+  {
+   "piece": "capullo",
+   "lx": 24,
+   "ly": 256
+  },
+  {
+   "piece": "cepo",
+   "lx": 144,
+   "ly": 280
+  },
+  {
+   "piece": "sacos_b",
+   "lx": 72,
+   "ly": 328
+  },
+  {
+   "piece": "sacos_remate",
+   "lx": 120,
+   "ly": 352
+  },
+  {
+   "piece": "columna_entera",
+   "lx": 128,
+   "ly": 152
+  },
+  {
+   "piece": "columna_entera",
+   "lx": 0,
+   "ly": 24
+  },
+  {
+   "piece": "columna_entera",
+   "lx": 128,
+   "ly": 24
+  },
+  {
+   "piece": "columna_entera",
+   "lx": 0,
+   "ly": 152
+  },
+  {
+   "piece": "columna_entera",
+   "lx": 128,
+   "ly": 152
+  },
+  {
+   "piece": "columna_entera",
+   "lx": 0,
+   "ly": 24
+  },
+  {
+   "piece": "columna_entera",
+   "lx": 128,
+   "ly": 24
+  },
+  {
+   "piece": "columna_entera",
+   "lx": 0,
+   "ly": 152
+  },
+  {
+   "piece": "columna_entera",
+   "lx": 128,
+   "ly": 152
+  },
+  {
+   "piece": "columna_entera",
+   "lx": 128,
+   "ly": 24
+  },
+  {
+   "piece": "columna_entera",
+   "lx": 128,
+   "ly": 152
+  },
+  {
+   "piece": "columna_entera",
+   "lx": 0,
+   "ly": 24
+  },
+  {
+   "piece": "columna_entera",
+   "lx": 128,
+   "ly": 24
+  },
+  {
+   "piece": "columna_entera",
+   "lx": 0,
+   "ly": 152
+  },
+  {
+   "piece": "columna_entera",
+   "lx": 128,
+   "ly": 152
+  },
+  {
+   "piece": "columna_entera",
+   "lx": 0,
+   "ly": 24
+  },
+  {
+   "piece": "columna_entera",
+   "lx": 128,
+   "ly": 24
+  },
+  {
+   "piece": "columna_entera",
+   "lx": 0,
+   "ly": 152
+  },
+  {
+   "piece": "columna_entera",
+   "lx": 128,
+   "ly": 152
+  },
+  {
+   "piece": "catre",
+   "lx": 16,
+   "ly": 16
+  },
+  {
+   "piece": "catre",
+   "lx": 144,
+   "ly": 16
+  },
+  {
+   "piece": "catre",
+   "lx": 16,
+   "ly": 216
+  },
+  {
+   "piece": "catre",
+   "lx": 16,
+   "ly": 272
+  },
+  {
+   "piece": "catre",
+   "lx": 144,
+   "ly": 272
+  },
+  {
+   "piece": "biombo",
+   "lx": 0,
+   "ly": 328
+  },
+  {
+   "piece": "catre",
+   "lx": 144,
+   "ly": 344
+  },
+  {
+   "piece": "catre",
+   "lx": 16,
+   "ly": 16
+  },
+  {
+   "piece": "catre",
+   "lx": 144,
+   "ly": 16
+  },
+  {
+   "piece": "catre",
+   "lx": 16,
+   "ly": 216
+  },
+  {
+   "piece": "catre",
+   "lx": 144,
+   "ly": 216
+  },
+  {
+   "piece": "catre",
+   "lx": 16,
+   "ly": 272
+  },
+  {
+   "piece": "catre",
+   "lx": 144,
+   "ly": 272
+  },
+  {
+   "piece": "biombo",
+   "lx": 128,
+   "ly": 328
+  },
+  {
+   "piece": "catre",
+   "lx": 16,
+   "ly": 344
+  },
+  {
+   "piece": "catre",
+   "lx": 16,
+   "ly": 16
+  },
+  {
+   "piece": "catre",
+   "lx": 144,
+   "ly": 16
+  },
+  {
+   "piece": "catre",
+   "lx": 144,
+   "ly": 216
+  },
+  {
+   "piece": "catre",
+   "lx": 16,
+   "ly": 272
+  },
+  {
+   "piece": "catre",
+   "lx": 144,
+   "ly": 272
+  },
+  {
+   "piece": "osario_lado",
+   "lx": 16,
+   "ly": 0
+  },
+  {
+   "piece": "osario_lado",
+   "lx": 144,
+   "ly": 0
+  },
+  {
+   "piece": "osario_lado",
+   "lx": 8,
+   "ly": 208
+  },
+  {
+   "piece": "osario_lado",
+   "lx": 16,
+   "ly": 256
+  },
+  {
+   "piece": "osario_lado",
+   "lx": 144,
+   "ly": 256
+  },
+  {
+   "piece": "osario_lado",
+   "lx": 16,
+   "ly": 304
+  },
+  {
+   "piece": "osario_lado",
+   "lx": 144,
+   "ly": 304
+  },
+  {
+   "piece": "calaveras_pila",
+   "lx": 152,
+   "ly": 352
+  },
+  {
+   "piece": "osario_lado",
+   "lx": 16,
+   "ly": 0
+  },
+  {
+   "piece": "osario_lado",
+   "lx": 144,
+   "ly": 0
+  },
+  {
+   "piece": "osario_lado",
+   "lx": 144,
+   "ly": 176
+  },
+  {
+   "piece": "osario_lado",
+   "lx": 16,
+   "ly": 256
+  },
+  {
+   "piece": "osario_lado",
+   "lx": 144,
+   "ly": 256
+  },
+  {
+   "piece": "osario_lado",
+   "lx": 16,
+   "ly": 304
+  },
+  {
+   "piece": "osario_lado",
+   "lx": 144,
+   "ly": 304
+  },
+  {
+   "piece": "osario_estante",
+   "lx": 0,
+   "ly": 0
+  },
+  {
+   "piece": "osario_estante",
+   "lx": 160,
+   "ly": 0
+  },
+  {
+   "piece": "osario_lado",
+   "lx": 144,
+   "ly": 176
+  },
+  {
+   "piece": "osario_lado",
+   "lx": 8,
+   "ly": 208
+  },
+  {
+   "piece": "osario_lado",
+   "lx": 16,
+   "ly": 256
+  },
+  {
+   "piece": "osario_lado",
+   "lx": 144,
+   "ly": 256
+  },
+  {
+   "piece": "osario_lado",
+   "lx": 16,
+   "ly": 304
+  },
+  {
+   "piece": "osario_lado",
+   "lx": 144,
+   "ly": 304
+  },
+  {
+   "piece": "candelabro_pie",
+   "lx": 48,
+   "ly": 8
+  },
+  {
+   "piece": "reclinatorio",
+   "lx": 16,
+   "ly": 248
+  },
+  {
+   "piece": "reclinatorio",
+   "lx": 144,
+   "ly": 248
+  },
+  {
+   "piece": "reclinatorio",
+   "lx": 16,
+   "ly": 288
+  },
+  {
+   "piece": "reclinatorio",
+   "lx": 144,
+   "ly": 288
+  },
+  {
+   "piece": "reclinatorio",
+   "lx": 16,
+   "ly": 32
+  },
+  {
+   "piece": "reclinatorio",
+   "lx": 144,
+   "ly": 32
+  },
+  {
+   "piece": "reclinatorio",
+   "lx": 16,
+   "ly": 72
+  },
+  {
+   "piece": "reclinatorio",
+   "lx": 144,
+   "ly": 72
+  },
+  {
+   "piece": "reclinatorio",
+   "lx": 16,
+   "ly": 120
+  },
+  {
+   "piece": "reclinatorio",
+   "lx": 144,
+   "ly": 120
+  },
+  {
+   "piece": "reclinatorio",
+   "lx": 16,
+   "ly": 160
+  },
+  {
+   "piece": "reclinatorio",
+   "lx": 144,
+   "ly": 160
+  },
+  {
+   "piece": "reclinatorio",
+   "lx": 16,
+   "ly": 248
+  },
+  {
+   "piece": "reclinatorio",
+   "lx": 16,
+   "ly": 288
+  },
+  {
+   "piece": "reclinatorio",
+   "lx": 144,
+   "ly": 288
+  },
+  {
+   "piece": "reclinatorio",
+   "lx": 16,
+   "ly": 328
+  },
+  {
+   "piece": "reclinatorio",
+   "lx": 144,
+   "ly": 328
+  },
+  {
+   "piece": "candelabro_pie",
+   "lx": 48,
+   "ly": 8
+  },
+  {
+   "piece": "reclinatorio",
+   "lx": 16,
+   "ly": 248
+  },
+  {
+   "piece": "reclinatorio",
+   "lx": 144,
+   "ly": 248
+  },
+  {
+   "piece": "capullo",
+   "lx": 24,
+   "ly": 0
+  },
+  {
+   "piece": "capullo",
+   "lx": 152,
+   "ly": 0
+  },
+  {
+   "piece": "cepo",
+   "lx": 16,
+   "ly": 280
+  },
+  {
+   "piece": "cepo",
+   "lx": 144,
+   "ly": 280
+  },
+  {
+   "piece": "alambre",
+   "lx": 16,
+   "ly": 336
+  },
+  {
+   "piece": "alambre",
+   "lx": 144,
+   "ly": 336
+  },
+  {
+   "piece": "cepo",
+   "lx": 16,
+   "ly": 16
+  },
+  {
+   "piece": "cepo",
+   "lx": 144,
+   "ly": 16
+  },
+  {
+   "piece": "capullo",
+   "lx": 40,
+   "ly": 304
+  },
+  {
+   "piece": "capullo",
+   "lx": 168,
+   "ly": 304
+  },
+  {
+   "piece": "relicario",
+   "lx": 0,
+   "ly": 0
+  },
+  {
+   "piece": "reclinatorio",
+   "lx": 144,
+   "ly": 248
+  },
+  {
+   "piece": "reclinatorio",
+   "lx": 48,
+   "ly": 272
+  },
+  {
+   "piece": "reclinatorio",
+   "lx": 144,
+   "ly": 288
+  },
+  {
+   "piece": "santo",
+   "lx": 0,
+   "ly": 0
+  },
+  {
+   "piece": "santo_der",
+   "lx": 144,
+   "ly": 0
+  },
+  {
+   "piece": "santo_der",
+   "lx": 144,
+   "ly": 128
+  },
+  {
+   "piece": "santo_der",
+   "lx": 144,
+   "ly": 256
+  },
+  {
+   "piece": "santo",
+   "lx": 0,
+   "ly": 312
+  },
+  {
+   "piece": "capullo",
+   "lx": 24,
+   "ly": 0
+  },
+  {
+   "piece": "santo_der",
+   "lx": 144,
+   "ly": 0
+  },
+  {
+   "piece": "santo",
+   "lx": 0,
+   "ly": 256
+  },
+  {
+   "piece": "santo_der",
+   "lx": 144,
+   "ly": 256
+  }
+ ],
+ "fases": {
+  "banco_entero": [
+   [
+    3,
+    3
+   ],
+   [
+    3,
+    11
+   ],
+   [
+    3,
+    4
+   ]
+  ],
+  "sacos_b": [
+   [
+    12,
+    9
+   ],
+   [
+    3,
+    0
+   ],
+   [
+    3,
+    10
+   ],
+   [
+    2,
+    12
+   ]
+  ],
+  "banco_roto": [
+   [
+    3,
+    3
+   ],
+   [
+    3,
+    8
+   ],
+   [
+    8,
+    10
+   ],
+   [
+    3,
+    0
+   ]
+  ],
+  "banco_volcado": [
+   [
+    3,
+    0
+   ],
+   [
+    0,
+    1
+   ],
+   [
+    3,
+    3
+   ]
+  ],
+  "sacos": [
+   [
+    3,
+    1
+   ],
+   [
+    1,
+    11
+   ],
+   [
+    12,
+    10
+   ],
+   [
+    4,
+    4
+   ]
+  ],
+  "columna": [
+   [
+    3,
+    3
+   ],
+   [
+    3,
+    11
+   ]
+  ],
+  "alambre": [
+   [
+    5,
+    10
+   ],
+   [
+    0,
+    10
+   ],
+   [
+    7,
+    10
+   ]
+  ],
+  "cepo": [
+   [
+    5,
+    2
+   ],
+   [
+    3,
+    10
+   ],
+   [
+    5,
+    3
+   ]
+  ],
+  "capullo": [
+   [
+    6,
+    0
+   ],
+   [
+    11,
+    3
+   ],
+   [
+    8,
+    6
+   ],
+   [
+    14,
+    0
+   ],
+   [
+    0,
+    9
+   ],
+   [
+    13,
+    5
+   ]
+  ],
+  "sacos_remate": [
+   [
+    2,
+    12
+   ]
+  ],
+  "columna_entera": [
+   [
+    3,
+    3
+   ],
+   [
+    0,
+    0
+   ],
+   [
+    7,
+    0
+   ]
+  ],
+  "lapida_pie": [
+   [
+    0,
+    8
+   ]
+  ],
+  "catre": [
+   [
+    5,
+    2
+   ],
+   [
+    5,
+    11
+   ]
+  ],
+  "biombo": [
+   [
+    3,
+    9
+   ]
+  ],
+  "palangana": [
+   [
+    7,
+    0
+   ]
+  ],
+  "candelabro_pie": [
+   [
+    0,
+    0
+   ],
+   [
+    9,
+    1
+   ]
+  ],
+  "osario_lado": [
+   [
+    5,
+    0
+   ],
+   [
+    5,
+    6
+   ],
+   [
+    4,
+    10
+   ]
+  ],
+  "calaveras_pila": [
+   [
+    6,
+    12
+   ],
+   [
+    5,
+    3
+   ],
+   [
+    0,
+    7
+   ]
+  ],
+  "huesos_monton": [
+   [
+    5,
+    4
+   ],
+   [
+    6,
+    7
+   ],
+   [
+    0,
+    5
+   ]
+  ],
+  "osario_estante": [
+   [
+    3,
+    0
+   ],
+   [
+    7,
+    0
+   ],
+   [
+    0,
+    0
+   ]
+  ],
+  "reclinatorio": [
+   [
+    5,
+    4
+   ],
+   [
+    5,
+    15
+   ],
+   [
+    5,
+    9
+   ],
+   [
+    9,
+    2
+   ]
+  ],
+  "relicario": [
+   [
+    3,
+    0
+   ]
+  ],
+  "santo": [
+   [
+    3,
+    0
+   ],
+   [
+    3,
+    7
+   ]
+  ],
+  "santo_der": [
+   [
+    5,
+    0
+   ],
+   [
+    5,
+    7
+   ]
+  ]
+ }
+}

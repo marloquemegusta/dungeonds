@@ -1,0 +1,21 @@
+{
+  "piece": "osario_lado",
+  "size_px": [
+    48,
+    48
+  ],
+  "content_px": [
+    48,
+    45
+  ],
+  "target_width": 48,
+  "scale_factor": 0.0900562851782364,
+  "source_render_px": [
+    533,
+    496
+  ],
+  "yaw": 45,
+  "depth_units": "sprite_px",
+  "tiles_8x8_nonempty": 36,
+  "tiles_8x8_unique": 36
+}

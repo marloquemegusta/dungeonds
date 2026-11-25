@@ -25,7 +25,11 @@ OUTPUT = ROOT / "source/strip_kit.c"
 DEFAULT_PROPS = ("columna_entera", "banco_entero", "relicario", "vela",
                  "lapida_3x2_cruz", "lapida_3x2_cab", "lapida_2x1_cruz", "lapida_2x1_cab",
                  "banco_grupo4", "santo", "sacos", "verja", "columna", "banco_grupo4_roto",
-                 "sacos_b", "sacos_remate", "sacos_remate_der", "alambre", "santo_der")
+                 "sacos_b", "sacos_remate", "sacos_remate_der", "alambre", "santo_der",
+                 # piezas tematicas de las salas del poster (tools/encuentros/gen_salas_rom.py)
+                 "banco_roto", "banco_volcado", "capullo", "cepo", "lapida_pie", "candelabro_pie", "calaveras_pila",
+                 "huesos_monton", "reclinatorio", "catre", "biombo", "palangana", "osario_estante", "osario_lado",
+                 "sarcofago", "brasero")
 # Room furniture of the encounter rooms (salas ARPG). Only the upper door is placed by the
 # compositor: it never changes, so baking it gives the real art plus its occlusion. The chests and
 # the travel altar keep the software-fixture path (source/encounters_act1.c) because their state
@@ -44,6 +48,9 @@ PIECE_IDS = {
     "sacos": 11, "verja": 12, "columna": 13, "banco_grupo4_roto": 14,
     "sacos_b": 15, "sacos_remate": 16, "sacos_remate_der": 17, "alambre": 18,
     "santo_der": 19,
+    "banco_roto": 20, "banco_volcado": 21, "capullo": 22, "cepo": 23, "lapida_pie": 24, "candelabro_pie": 25,
+    "calaveras_pila": 26, "huesos_monton": 27, "reclinatorio": 28, "catre": 29, "biombo": 30, "palangana": 31,
+    "osario_estante": 32, "osario_lado": 33, "sarcofago": 34, "brasero": 35,
     "puerta": 200, "cofre_cerrado": 201, "cofre_abierto": 202, "altar": 203,
 }
 LAPIDA_NAMES = ("lapida_3x2_cruz", "lapida_3x2_cab", "lapida_2x1_cruz", "lapida_2x1_cab")
@@ -599,13 +606,16 @@ CENTRAL_LEFT_PX, CENTRAL_RIGHT_PX = 112, 392
 BENCH_CANVAS_H_PX = 32       # alto del lienzo de un banco: caben 4 filas sin solapar tiles
 
 
-LAPIDAS_EN_KIT = True
+LAPIDAS_EN_KIT = False
 # Variantes de losa que se conservan por clase de celda del damero (ver reduce_floor_variants).
 # Con 2 el suelo pasa de 92 a 16 tiles y el kit cabe con las cuatro piezas de sala.
 FLOOR_VARIANTS_KEPT = 2
 ENC_FLOOR_X, ENC_FLOOR_W = 152, 208       # suelo util de las salas (include/encounters_act1.h)
 ENC_BLOCK_H = 384
 ENC_PLAN = ROOT / "tools/encuentros/acto1_v2.json"
+# Colocacion del poster por sala (la escribe tools/encuentros/gen_salas_rom.py con las posiciones ya legales). Si existe, manda
+# sobre las plantas: las salas del ARPG toman de ahi sus piezas y el kit solo hornea las fases que usan.
+SALAS_ROM = ROOT / "tools/encuentros/salas_rom_piezas.json"
 # El kit no tiene piezas espejadas: con la planta espejada el remate cambia de id (igual que enc_block_pieces).
 MIRROR_SWAP = {
     "sacos_remate": "sacos_remate_der", "sacos_remate_der": "sacos_remate",
@@ -618,6 +628,12 @@ def encounter_piece_uses():
     the six plants and of the corridor, with and without mirror. (verja is drawn with OBJ sprites)."""
     d = json.loads(ENC_PLAN.read_text(encoding="utf-8"))
     uses = []
+    if SALAS_ROM.is_file():
+        for pc in json.loads(SALAS_ROM.read_text(encoding="utf-8"))["piezas"]:
+            uses.append((pc["piece"], pc["lx"], pc["ly"], 0))
+        for pc in d["pasillo"]["pieces"]:
+            uses.append((pc["piece"], pc["x"], pc["y"], 0))
+        return uses
     groups = [pl["pieces"] for pl in d["plantas"].values()] + [d["pasillo"]["pieces"]]
     for pieces in groups:
         for pc in pieces:

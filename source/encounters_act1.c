@@ -58,6 +58,7 @@ volatile uint8_t g_relic_drop_debug;
 // block is black and solid. A room is always the same (seed = hash of its id).
 // ---------------------------------------------------------------------------
 #define ENC_STAGES 3                        // blocks of the biggest room
+#include "encounters_act1_salas.h"
 #define ENC_FIRST_BLOCK 3                   // strip block of block 0 of every room; the blocks below it are the entrance floor
 
 enum { DOOR_LEFT = 0, DOOR_RIGHT, DOOR_UP };
@@ -153,6 +154,11 @@ static int s_active_boss_k;                   // block of the boss fight of this
 static uint32_t s_seed;
 static uint8_t s_plant[ENC_STAGES];           // plant (props) of each block
 static uint8_t s_mirror[ENC_STAGES];
+// Placement of the poster (tools/encuentros/gen_salas_rom.py): when a block has one, it replaces the hashed plant and group.
+static const RoomLayout *layout_of(int k) {
+    if (s_room < 0 || s_room >= ENC_ROOM_COUNT || k < 0 || k >= ENC_STAGES) return 0;
+    return s_room_layouts[s_room][k].valid ? &s_room_layouts[s_room][k].l : 0;
+}
 static uint8_t s_tier[ENC_STAGES];            // plant tier of each block (stats only)
 
 // Persistence (g_arpg): what died stays dead until the hero sleeps. A boss or miniboss uses the boss bit of the room, a group
@@ -342,6 +348,7 @@ void enc_init(uint32_t seed) {
 #if ARPG_OJO_TEST
         s_mirror[k] = 0;             // arpg-ojo: the test columns always stand where ojo_test.c expects them
 #endif
+        if (layout_of(k)) s_mirror[k] = 0;     // the poster's placement is not mirrored
         s_plant[k] = 0;
         if (k >= room->blocks || is_boss_stage(k)) continue;
         const int range = ENC_PLANT_COUNT - (prev_plant >= 0 ? 1 : 0);
@@ -434,6 +441,8 @@ int enc_block_pieces(int32_t block, EncPiecePlan *out, int max) {
         defs = s_plants[b.plant].pieces;
         n = s_plants[b.plant].n_pieces;
         if (room_def()->chapel_gate) n = 0;           // the room of the reja has a clear floor (nothing between the gate and the entrance)
+        const RoomLayout *lay = layout_of(b.idx);
+        if (lay) { defs = lay->pieces; n = lay->n_pieces; }
 #if ARPG_OJO_TEST
         defs = s_ojo_test_pieces;
         n = (int)(sizeof(s_ojo_test_pieces) / sizeof(s_ojo_test_pieces[0]));
@@ -494,8 +503,11 @@ int enc_block_rects(int32_t block, EncRect *out, int max) {
     int n = 0;
     if (b.kind == ENC_BLOCK_ENCOUNTER && !ARPG_OJO_TEST) {      // arpg-ojo: no sacos / alambre, only the test columns
         const EncPlant *pl = &s_plants[b.plant];
-        for (int i = 0; i < (room_def()->chapel_gate ? 0 : pl->n_rects) && n < max; i++) {
-            const EncRectDef *r = &pl->rects[i];
+        const RoomLayout *lay = layout_of(b.idx);
+        const EncRectDef *rdefs = lay ? lay->rects : pl->rects;
+        const int nr = room_def()->chapel_gate ? 0 : lay ? lay->n_rects : pl->n_rects;
+        for (int i = 0; i < nr && n < max; i++) {
+            const EncRectDef *r = &rdefs[i];
             out[n].kind = r->kind;
             out[n].x = (int16_t)(ENC_FLOOR_X + (b.mirror ? ENC_FLOOR_W - (r->x + r->w) : r->x));
             out[n].y = r->y;
@@ -854,6 +866,12 @@ static void room_art_prepare_current(void) {
     int campanero = 0;
     const RoomDef *r = room_def();
     for (int k = 0; k < r->blocks; k++) {
+        const RoomLayout *lay = layout_of(k);
+        if (lay) {
+            for (int i = 0; i < lay->n_members; i++)
+                mask |= 1u << g_char_group[enemy_type_char_id(enemy_type_of(lay->members[i].type))];
+            continue;
+        }
         const int g = group_of_block(k);
         if (g < 0) continue;
         for (int p = 0; p < s_groups[g].n_parts; p++) {
@@ -1000,7 +1018,36 @@ static void bot_group_density(int8_t *kinds) {
 }
 #endif
 
+// Group of the poster: each member at its feet, its state turned into the kind of post (REPOSO_A_ESTADO of gen_salas_rom.py).
+static int spawn_layout_group(Enemy *enemies, int max_enemies, int k, const RoomLayout *lay) {
+    const int top = window_top(block_of_encounter(k));
+    int active = active_enemies(enemies, max_enemies);
+    int made = 0;
+    for (int i = 0; i < lay->n_members && active + made < MAX_GAMEPLAY_ENEMIES; i++) {
+        const RoomMember *m = &lay->members[i];
+        int slot = -1;
+        for (int s = 0; s < max_enemies; s++) if (!enemies[s].active) { slot = s; break; }
+        if (slot < 0) break;
+        RoomKind kind = { m->type, (uint8_t)(m->state == ENC_S_PRAY ? 2 : m->state == ENC_S_GUARD ? 1 : 0) };
+        if (m->state == ENC_S_PRAY && m->type != ENC_E_EXVOTO) kind.guard = 1;     // only the Exvoto has the praying pose
+        const int x = ENC_FLOOR_X + m->x, y = top + m->y;
+        int placed = 0;
+        for (int t = 0; t < 4 && !placed; t++) {
+            int tx = x + (t == 1 ? 12 : t == 2 ? -12 : 0);
+            int ty = y + (t == 3 ? 12 : 0);
+            if (position_is_free(TO_FIXED(tx), TO_FIXED(ty))) {
+                place_room_enemy(&enemies[slot], &kind, tx, ty, i, k, 100, 0);
+                placed = 1;
+            }
+        }
+        if (placed) made++;
+    }
+    return made;
+}
+
 static int spawn_room_group(Enemy *enemies, int max_enemies, int k) {
+    const RoomLayout *lay = layout_of(k);
+    if (lay) return spawn_layout_group(enemies, max_enemies, k, lay);
     const int g = group_of_block(k);
     if (g < 0) return 0;
     int8_t kinds[12];
@@ -1249,7 +1296,7 @@ void enc_update(Enemy *enemies, int max_enemies, int px, int py) {
             spawn_group(enemies, max_enemies, s_boss_enemies,
                         (int)(sizeof(s_boss_enemies) / sizeof(s_boss_enemies[0])), 0, top, -1, k, 0);
 #endif
-        } else if (group_of_block(k) < 0) {
+        } else if (layout_of(k) ? layout_of(k)->n_members == 0 : group_of_block(k) < 0) {
             rt->spawned = rt->awake = rt->cleared = 1;     // a walk-in block: nothing to wake, nothing to remember
         } else if (spawn_room_group(enemies, max_enemies, k) > 0) {
             rt->spawned = 1;
