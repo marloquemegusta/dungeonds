@@ -279,7 +279,7 @@ Publicados a 2026-11-17: **01, 03 y 08**, nada más. Los MP4 de 02, 04-07, 09 y 
 | 06 Inés | ¿Encubridora… o madre? | | | |
 
 - **06 Inés** (lista 2026-11-25, sin publicar; el usuario la sube a mano): `assets/videos/lore01_06_ines.mp4` (clásico, estilo A, 56,9 s, con voz, sin cambios de planos).
-  - **Título (YouTube y portada):** «Inés · Códice».
+  - **Título (YouTube y portada):** «¿Encubridora o madre? · Códice». Alternativa: «Inés · Códice».
   - **TikTok e Instagram:**
     > ¿Encubridora… o madre?
     >
