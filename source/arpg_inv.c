@@ -548,7 +548,7 @@ int arpg_inv_scrap(int bag_index) {
     if ((unsigned)bag_index >= ARPG_INV_BAG) return 0;
     ArpgInvItem *b = &g_arpg.inv.bag[bag_index];
     if (b->kind == ARPG_ITEM_EMPTY) return 0;
-    g_arpg.inv.wax = (uint16_t)(g_arpg.inv.wax + s_wax_value[rarity_ok(b->rarity) ? b->rarity : 0]);
+    { unsigned w = (unsigned)g_arpg.inv.wax + s_wax_value[rarity_ok(b->rarity) ? b->rarity : 0]; g_arpg.inv.wax = (uint16_t)(w > 65535u ? 65535u : w); }
     item_clear(b);
     return 1;
 }
