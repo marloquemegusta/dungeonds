@@ -147,6 +147,7 @@ Estilo: A
 - [W] El Tribunal los encontró a los dos, y la condenó por dar refugio a un cobarde.
 - [N abajo>fuera-arriba] Hoy sube en procesión, nave arriba, siguiendo un latido que reconoce.
 > [cerca · S] Inés: «Le di pan sin saber quién era. Se lo volvería a dar sabiéndolo.»
+> Pregunta: «¿Encubridora… o madre?»
 
 ## 07 · CÓDICE · V — LOPE
 Estilo: A
@@ -275,7 +276,20 @@ Publicados a 2026-11-17: **01, 03 y 08**, nada más. Los MP4 de 02, 04-07, 09 y 
 | 05 Sor Leonor (Remotion) | ¿Mintió Leonor… o mintió el farol? | | | |
 | 11 El Campanero de Ánimas (clásico) | ¿Habrías tocado tú la campana por un condenado? | | | |
 | 11 El Campanero de Ánimas (Remotion) | ¿Habrías tocado tú la campana por un condenado? | | | |
+| 06 Inés | ¿Encubridora… o madre? | | | |
 
+- **06 Inés** (lista 2026-11-25, sin publicar; el usuario la sube a mano): `assets/videos/lore01_06_ines.mp4` (clásico, estilo A, 56,9 s, con voz, sin cambios de planos).
+  - **Título (YouTube y portada):** «Inés · Códice».
+  - **TikTok e Instagram:**
+    > ¿Encubridora… o madre?
+    >
+    > Inés Arce escondió en su desván a Bartolomé, el desertor por el que murió su hijo Martín. No lo supo hasta el juicio.
+    > La condenaron por dar refugio a un cobarde. Hoy sube nave arriba, siguiendo un latido que reconoce.
+    >
+    > Deja tu veredicto en los comentarios.
+    > Próximamente en tu Nintendo DS.
+    >
+    > #pixelart #nintendods #gamedev #indiedev #darkfantasy #gothic #lore #homebrew
 - **11 El Campanero de Ánimas** (lista 2026-11-24, sin publicar; el usuario la sube a mano): dos versiones, `assets/videos/lore01_11_el_campanero_de_animas.mp4` (clásica) y `lore01_11_el_campanero_de_animas_remotion.mp4` (composición `Lore11`). Voz de Simón con `archivo:` (`simon_cita.mp3`). Textos de los posts:
   - **Título (YouTube y portada):** «El Campanero de Ánimas · Códice». Alternativa: «Me quedaba la lengua · Códice».
   - **TikTok e Instagram:**
