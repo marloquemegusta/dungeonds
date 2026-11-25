@@ -74,10 +74,10 @@ void pickups_enemy_killed(const Enemy *enemy) {
         if (!s_pickups[i].active) { slot = i; break; }
     }
     if (slot < 0 && force) {
-        // Boss drop replaces the lowest (oldest/farthest behind) cross if all slots are occupied.
-        slot = 0;
-        for (int i = 1; i < HEAL_PICKUP_MAX_ACTIVE; i++) {
-            if (s_pickups[i].y > s_pickups[slot].y) slot = i;
+        // Boss drop replaces the lowest (oldest/farthest behind) non-relic orb if all slots are occupied.
+        for (int i = 0; i < HEAL_PICKUP_MAX_ACTIVE; i++) {
+            if (s_pickups[i].kind == PICKUP_KIND_RELIC) continue;
+            if (slot < 0 || s_pickups[i].y > s_pickups[slot].y) slot = i;
         }
     }
     if (slot < 0) return;
@@ -89,10 +89,16 @@ void pickups_enemy_killed(const Enemy *enemy) {
 }
 
 void pickups_spawn(int kind, fixed x, fixed y) {
-    int slot = 0;
+    int slot = -1;
     for (int i = 0; i < HEAL_PICKUP_MAX_ACTIVE; i++) {
         if (!s_pickups[i].active) { slot = i; break; }
     }
+    if (slot < 0) {                                     // full: replace an orb, never a relic
+        for (int i = 0; i < HEAL_PICKUP_MAX_ACTIVE; i++) {
+            if (s_pickups[i].kind != PICKUP_KIND_RELIC) { slot = i; break; }
+        }
+    }
+    if (slot < 0) return;
     s_pickups[slot].x = x;
     s_pickups[slot].y = y;
     s_pickups[slot].kind = kind;
@@ -119,6 +125,16 @@ void pickups_spawn_xp(fixed x, fixed y, int amount) {
     arpg_add_xp(amount);
 }
 
+void pickups_bank_relics(void) {
+    int any = 0;
+    for (int i = 0; i < HEAL_PICKUP_MAX_ACTIVE; i++) {
+        if (!s_pickups[i].active || s_pickups[i].kind != PICKUP_KIND_RELIC) continue;
+        if (arpg_inv_add(&s_pickups[i].relic) >= 0 || arpg_inv_stash_add(&s_pickups[i].relic) >= 0) any = 1;
+        s_pickups[i].active = 0;
+    }
+    if (any) arpg_progress_save();
+}
+
 void pickups_spawn_relic(fixed x, fixed y, const ArpgInvItem *item) {
     if (!item || item->kind == ARPG_ITEM_EMPTY) return;
     int slot = -1;
@@ -130,7 +146,10 @@ void pickups_spawn_relic(fixed x, fixed y, const ArpgInvItem *item) {
         for (int i = 0; i < HEAL_PICKUP_MAX_ACTIVE; i++) {
             if (s_pickups[i].kind != PICKUP_KIND_RELIC) { slot = i; break; }
         }
-        if (slot < 0) slot = 0;
+        if (slot < 0) {                                 // all relics: bank the new one instead of overwriting
+            if (arpg_inv_add(item) < 0) arpg_inv_stash_add(item);
+            return;
+        }
     }
     s_pickups[slot].x = x;
     s_pickups[slot].y = y;

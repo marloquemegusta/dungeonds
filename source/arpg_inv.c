@@ -289,6 +289,14 @@ int arpg_inv_add(const ArpgInvItem *item) {
     return add_item(&g_arpg.inv, item);
 }
 
+int arpg_inv_stash_add(const ArpgInvItem *item) {
+    if (!item || item->kind == ARPG_ITEM_EMPTY) return -1;
+    int s = arpg_inv_first_free_stash();
+    if (s < 0) return -1;
+    g_arpg.stash[s] = *item;
+    return s;
+}
+
 int arpg_inv_bag_count(void) {
     int n = 0;
     for (int i = 0; i < ARPG_INV_BAG; i++)
@@ -715,20 +723,16 @@ void arpg_inv_recalc(void) {
         else if (!was && now) upgrades_grant_relic(id);
     }
     if (g_player_state.max_hp > 0) {
-        int old_max_hp = g_player_state.max_hp;
         int full_hp = BAL(hero_hp_base, ARPG_HP_BASE) + (g_arpg_level - 1) * BAL(hero_hp_level, ARPG_HP_PER_LEVEL) + g_mods.max_hp;
         int new_max_hp = upgrades_has_relic(RELIC_LLAGA) ? (full_hp + 1) / 2 : full_hp;
         if (new_max_hp < 1) new_max_hp = 1;
         g_player_state.max_hp = new_max_hp;
-        if (new_max_hp > old_max_hp) g_player_state.hp += (new_max_hp - old_max_hp);
         if (g_player_state.hp > new_max_hp) g_player_state.hp = new_max_hp;
         if (g_player_state.hp < 1 && !g_player_state.is_dead) g_player_state.hp = 1;
 
-        int old_max_mana = g_player_state.max_mana;
         int new_max_mana = BAL(hero_mana_base, ARPG_MANA_BASE) + (g_arpg_level - 1) * BAL(hero_mana_level, ARPG_MANA_PER_LEVEL) + g_mods.max_mana;
         if (new_max_mana < 10) new_max_mana = 10;
         g_player_state.max_mana = new_max_mana;
-        if (new_max_mana > old_max_mana) g_player_state.mana += (new_max_mana - old_max_mana);
         if (g_player_state.mana > new_max_mana) g_player_state.mana = new_max_mana;
     }
     s_last = d;

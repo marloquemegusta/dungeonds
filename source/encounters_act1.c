@@ -176,6 +176,13 @@ static void prize_relic(const RoomDef *room, int level_bonus, int min_rar, int p
     uint32_t rng = (uint32_t)(s_room + 1) * 2246822519u ^ (uint32_t)(px * 73856093 ^ py * 19349663) ^ ((uint32_t)room->level * 3266489917u);
     ArpgInvItem it;
     arpg_relic_roll(&it, room->level + level_bonus, min_rar, &rng);
+    if (min_rar == ARPG_RAR_LEGENDARY) {                // the boss reward goes straight to the bag/stash: the hero leaves for the camp at once
+        if (arpg_inv_add(&it) >= 0 || arpg_inv_stash_add(&it) >= 0) {
+            pickups_toast("Reliquia legendaria", 180);
+            arpg_progress_save();
+            return;
+        }
+    }
     pickups_spawn_relic(TO_FIXED(px), TO_FIXED(py - 24), &it);
 }
 
@@ -588,6 +595,7 @@ int enc_block_has_door(int32_t block) {
 int enc_room_top_block(void) { return s_first_block - (room_def()->blocks - 1); }
 
 void enc_room_select(int room, int from_room) {
+    pickups_bank_relics();           // a relic left on the floor must not be lost with the room
     s_room = (room >= 0 && room < ENC_ROOM_COUNT) ? room : 0;
     s_from_room = from_room;
     if (!((g_arpg.rooms_seen >> s_room) & 1)) {      // first visit: the overlay map reveals it (kept in the save)
