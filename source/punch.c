@@ -47,7 +47,7 @@ static int s_punch_frame;
 static int s_punch_t;
 static int s_punch_chain;     // frames de ventana de encadenado que quedan
 static int s_punch_target = -1;    // enemigo elegido al arrancar; el golpe lo cobra en el fotograma de impacto
-static int s_punch_cone;           // 1 = andando (el objetivo debe seguir en el cono frontal), 0 = parado (soft-lock)
+static int s_punch_cone;           // siempre 0: parado o andando, el objetivo es el mas cercano en cualquier direccion
 static int s_punch_applied;        // el impacto de este golpe ya se ha aplicado (una vez por golpe)
 static int s_punch_queued;    // golpes guardados (0..2): cada L nuevo durante el golpe suma uno; se cobran cuando toca, sin cortar la animacion
 
@@ -159,9 +159,9 @@ int punch_start(Enemy *enemies, int max_enemies, fixed hero_x, fixed hero_y, int
     if (s_punch_active || g_player_state.is_dead || move < 0 || move >= PUNCH_NUM_MOVES) return 0;
     const int face = hero_dir & 7;
     int ex = 0, ey = 0;
-    const int idx = punch_target(enemies, max_enemies, hero_x, hero_y, face, !soft_lock, &ex, &ey);
+    const int idx = punch_target(enemies, max_enemies, hero_x, hero_y, face, 0, &ex, &ey);
     int dir = face;
-    if (soft_lock && idx >= 0) {
+    if (idx >= 0) {
         const int dx = ex - TO_INT(hero_x), dy = ey - TO_INT(hero_y);
         dir = dx * dx + GROUND_DY2(dy) < 16 ? face : enemy_dir_from_vector(TO_FIXED(dx), TO_FIXED(dy));
     }
@@ -174,7 +174,7 @@ int punch_start(Enemy *enemies, int max_enemies, fixed hero_x, fixed hero_y, int
     s_punch_t = 0;
     s_punch_chain = 0;
     s_punch_target = idx;
-    s_punch_cone = !soft_lock;
+    s_punch_cone = 0;
     s_punch_applied = 0;
     s_punch_active = 1;
     // Al arrancar solo suena el silbido: dano, sonido de golpe, paron y temblor llegan con el brazo

@@ -14,7 +14,7 @@
 #endif
 
 int g_lab_sfx_var[SND_COUNT];
-int g_lab_god = ARPG_BOXEO || SOUND_TEST;       /* boxeo / sound test: the hero starts invulnerable */
+int g_lab_god = (ARPG_BOXEO && !ARPG_BOXEO_MELEE) || SOUND_TEST;       /* boxeo / sound test: the hero starts invulnerable */
 int g_lab_punch_ticks = PUNCH_TICKS;
 int g_lab_punch_chain = PUNCH_CHAIN_FRAMES;
 int g_lab_punch_walk_pct = PUNCH_WALK_SPEED_PCT;
@@ -28,7 +28,7 @@ int g_lab_punch_hook_push = PUNCH_HOOK_PUSH;
 int g_lab_punch_hitstop = PUNCH_HITSTOP_FRAMES;
 int g_lab_punch_shake = PUNCH_SHAKE_LIGHT;
 #if ARPG_BOXEO
-int g_lab_saco_still = 1;
+int g_lab_saco_still = !ARPG_BOXEO_MELEE;
 int g_lab_saco_type = 0;
 #endif
 

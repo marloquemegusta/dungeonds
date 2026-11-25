@@ -62,7 +62,43 @@ static void pick_anchor(int hx, int hy) {
     s_have_anchor = 1;
 }
 
+
+#if ARPG_BOXEO_MELEE
+// Variante arpg-boxeo-mele: en vez del saco, una tropa de monaguillos que persigue al heroe (vida normal); al caer uno entra otro.
+#define MELEE_COUNT 12
+#define MELEE_RING 90            // px del heroe a los que aparecen
+static int s_melee_wait;
+
+static void melee_update(Enemy *enemies, int max_enemies, int hero_x, int hero_y) {
+    static const int8_t dirs[12][2] = { {1,0}, {1,1}, {0,1}, {-1,1}, {-1,0}, {-1,-1}, {0,-1}, {1,-1}, {2,1}, {-2,1}, {2,-1}, {-2,-1} };
+    int live = 0;
+    for (int i = 0; i < max_enemies; i++) {
+        if (enemies[i].active && enemies[i].type == ENEMY_TYPE_MONAGUILLO) live++;
+    }
+    if (live >= MELEE_COUNT) return;
+    if (s_melee_wait > 0) { s_melee_wait--; return; }
+    int added = 0;
+    for (int k = 0; k < 12 && live + added < MELEE_COUNT; k++) {
+        const int x = hero_x + dirs[k][0] * MELEE_RING / 2;
+        const int y = hero_y + dirs[k][1] * MELEE_RING / 4;
+        if (!position_is_free(TO_FIXED(x), TO_FIXED(y))) continue;
+        for (int i = 0; i < max_enemies; i++) {
+            if (enemies[i].active) continue;
+            saco_place(&enemies[i], ENEMY_TYPE_MONAGUILLO, x, y);
+            enemies[i].max_hp = enemies[i].hp = g_enemy_tuning[ENEMY_TYPE_MONAGUILLO].max_hp;
+            added++;
+            break;
+        }
+    }
+    s_melee_wait = live == 0 ? 0 : 45;   // la tropa inicial de golpe; las reposiciones, a ritmo
+}
+#endif
+
 void boxeo_update(Enemy *enemies, int max_enemies, int hero_x, int hero_y) {
+#if ARPG_BOXEO_MELEE
+    melee_update(enemies, max_enemies, hero_x, hero_y);
+    return;
+#endif
     if (!s_have_anchor) pick_anchor(hero_x, hero_y);
     int want = g_lab_saco_type;
     if (want < 0 || want >= BOXEO_TYPE_COUNT) want = 0;
