@@ -1,0 +1,10 @@
+{
+  "name": "arpg_boxeo_mele",
+  "description": "Variante arpg-boxeo-mele: la tropa de monaguillos rodea al heroe; captura a los pocos segundos.",
+  "suite": false,
+  "evidence_only": true,
+  "steps": [
+    { "frames": 120, "capture": "01_cerco" },
+    { "frames": 120, "capture": "02_cerco_2" }
+  ]
+}

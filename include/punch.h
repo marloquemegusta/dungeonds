@@ -86,9 +86,8 @@ typedef struct {
     uint32_t run_off[PUNCH_NUM_FRAMES];
 } PunchBinHeader;
 
-// Empieza un golpe (PUNCH_MOVE_*). `soft_lock` 1 = parado: apunta al enemigo mas cercano a <= PUNCH_RANGE
-// (o hacia delante si no hay ninguno). 0 = andando: pega en `hero_dir` y solo alcanza en un cono frontal de
-// +-45 grados, para no girarse hacia un enemigo que queda detras. Aplica ya el dano y el empuje.
+// Empieza un golpe (PUNCH_MOVE_*): apunta al enemigo mas cercano a <= PUNCH_RANGE en cualquier direccion, parado
+// o andando (o hacia delante si no hay ninguno). `soft_lock` ya no cambia la eleccion. Aplica ya el dano y el empuje.
 int punch_start(Enemy *enemies, int max_enemies, fixed hero_x, fixed hero_y, int hero_dir, int move, int soft_lock);
 // Un L nuevo durante el golpe se guarda (1, sin cortar la animacion): el golpe siguiente arranca cuando el
 // actual ha mostrado su fotograma de contacto, o en cuanto termina. En la ventana de encadenado (hasta
