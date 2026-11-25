@@ -12,3 +12,17 @@ DROP = ['vela', 'altar', 'relicario']
 ADD = [("altar", 0, 40, 10), ("altar", 0, 148, 10)]
 ADD += [("reclinatorio", 0, 152, y) for y in (252, 308)] + [("reclinatorio", 0, 56, y) for y in (252, 308)]
 EXTRA = [("relicario", 0, 80, 0)]
+
+
+# Capilla con llave (Nave 4, 1 bloque): la reja cruza la sala en y=150; se lucha delante de ella, detras no hay nadie.
+# Un grupo de la lista de Nave 4: Cortejo (5 Bebes, 3 Monaguillos, 2 Monjas, 2 Ojos): fuego cruzado de dos Ojos en las esquinas
+# de la reja y muralla de monaguillos ante las monjas; la zona de entrada (y > 250) queda libre.
+GRUPOS = [
+    {"nombre": "Cortejo", "formacion": "cruzado", "k": 0,   # dos Ojos a lados opuestos: ninguna cobertura tapa de los dos; hay que romper la muralla o bajar a las monjas
+     "miembros": [("monja", 82, 168, "reza"), ("monja", 128, 161, "reza"),
+                  ("ojo", 26, 174, "barre"), ("ojo", 184, 178, "barre"),
+                  ("monaguillo", 64, 198, "vaiven"), ("monaguillo", 103, 204, "vaiven"), ("monaguillo", 142, 196, "vaiven"),
+                  ("bebe", 48, 228, "gatea"), ("bebe", 86, 236, "gatea"), ("bebe", 120, 224, "gatea"),
+                  ("bebe", 155, 240, "quieto"), ("bebe", 104, 246, "gatea")],
+     "ruta": None},
+]

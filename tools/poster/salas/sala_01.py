@@ -34,3 +34,43 @@ def _sala():
 
 
 ADD = _sala()
+
+
+# Encuentros colocados a mano (DESIGN-ARPG.md 12). Banda libre entre bancos: y 72..235 de cada bloque.
+GRUPOS = [
+    {"nombre": "Puesto", "formacion": "puesto", "k": 0,   # primer Ojo al fondo a la derecha dominando el pasillo; monaguillos y bebes obligan a acercarse bajo fuego
+     "miembros": [("ojo", 150, 92, "quieto"), ("monaguillo", 80, 140, "vaiven"), ("monaguillo", 130, 152, "vaiven"),
+                  ("bebe", 60, 190, "gatea"), ("bebe", 100, 200, "gatea"), ("bebe", 150, 205, "quieto"),
+                  ("bebe", 120, 172, "gatea")],
+     "ruta": None},
+    {"nombre": "Carga", "formacion": "embestida", "k": 1,   # primer Cireneo con linea libre por el pasillo; la monja reza al norte; esquivar la embestida
+     "miembros": [("cireneo", 104, 102, "pasea"), ("monja", 45, 90, "reza"), ("monaguillo", 80, 150, "vaiven"),
+                  ("monaguillo", 132, 160, "vaiven"), ("bebe", 60, 192, "gatea"), ("bebe", 96, 208, "gatea"),
+                  ("bebe", 140, 198, "quieto"), ("bebe", 172, 172, "gatea")],
+     "ruta": None},
+    {"nombre": "Guardia de la monja", "formacion": "muralla", "k": 2,   # dos monjas rezando tras dos monaguillos: el Rayo no pasa, rodear o Glifo
+     "miembros": [("monja", 70, 90, "reza"), ("monja", 135, 92, "reza"), ("monaguillo", 78, 138, "vaiven"),
+                  ("monaguillo", 128, 146, "vaiven"), ("bebe", 50, 190, "gatea"), ("bebe", 94, 200, "gatea"),
+                  ("bebe", 150, 192, "quieto"), ("bebe", 112, 224, "gatea")],
+     "ruta": None},
+]
+
+
+# Encuentros colocados a mano (DESIGN-ARPG.md 12). Banda libre entre bancos: y 72..235 de cada bloque.
+GRUPOS = [
+    {"nombre": "Puesto", "formacion": "puesto", "k": 0,   # primer Ojo al fondo a la derecha dominando el pasillo; un bebe gatea entre los bancos del norte
+     "miembros": [("ojo", 150, 92, "quieto"), ("monaguillo", 80, 140, "vaiven"), ("monaguillo", 130, 152, "vaiven"),
+                  ("bebe", 62, 186, "gatea"), ("bebe", 104, 208, "gatea"), ("bebe", 150, 200, "quieto"),
+                  ("bebe", 104, 50, "gatea")],
+     "ruta": None},
+    {"nombre": "Carga", "formacion": "embestida", "k": 1,   # primer Cireneo con linea libre; la monja reza en el hueco de la fila del NO; esquivar la embestida
+     "miembros": [("cireneo", 104, 102, "pasea"), ("monja", 46, 34, "reza"), ("monaguillo", 80, 150, "vaiven"),
+                  ("monaguillo", 132, 160, "vaiven"), ("bebe", 60, 192, "gatea"), ("bebe", 140, 198, "quieto"),
+                  ("bebe", 172, 172, "gatea"), ("bebe", 104, 258, "gatea")],
+     "ruta": None},
+    {"nombre": "Guardia de la monja", "formacion": "muralla", "k": 2,   # monjas rezando en la fila (hueco NO y banco NE) tras dos monaguillos: el Rayo no pasa, rodear o Glifo
+     "miembros": [("monja", 46, 34, "reza"), ("monja", 160, 79, "reza"), ("monaguillo", 78, 138, "vaiven"),
+                  ("monaguillo", 128, 146, "vaiven"), ("bebe", 50, 190, "gatea"), ("bebe", 94, 204, "gatea"),
+                  ("bebe", 150, 192, "quieto"), ("bebe", 104, 52, "gatea")],
+     "ruta": None},
+]

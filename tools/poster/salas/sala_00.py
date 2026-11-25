@@ -34,3 +34,41 @@ def _sala():
 
 
 ADD = _sala()
+
+
+# Encuentros colocados a mano (DESIGN-ARPG.md 12). Banda libre entre bancos: y 72..235 de cada bloque.
+GRUPOS = [
+    {"nombre": "Rebano", "formacion": "enjambre", "k": 0,   # 6 bebes dan la cara entre los bancos; la monja reza al norte, tras ellos (mata primero a la que cura)
+     "miembros": [("bebe", 62, 170, "gatea"), ("bebe", 88, 190, "gatea"), ("bebe", 118, 168, "gatea"),
+                  ("bebe", 140, 196, "quieto"), ("bebe", 76, 214, "gatea"), ("bebe", 108, 222, "gatea"),
+                  ("monja", 100, 100, "reza")],
+     "ruta": None},
+    {"nombre": "Corrillo", "formacion": "enjambre", "k": 1,   # primera monja con monaguillo cerca: el monaguillo se interpone; bebes de ruido
+     "miembros": [("monja", 150, 96, "reza"), ("monaguillo", 118, 132, "vaiven"), ("bebe", 60, 152, "gatea"),
+                  ("bebe", 84, 196, "gatea"), ("bebe", 132, 186, "quieto"), ("bebe", 165, 212, "gatea")],
+     "ruta": None},
+    {"nombre": "Procesion", "formacion": "puesto", "k": 2,   # 2 monaguillos al frente, bebes detras; ensena el golpe de remate contra monaguillos
+     "miembros": [("monaguillo", 70, 128, "vaiven"), ("monaguillo", 138, 152, "vaiven"), ("bebe", 48, 180, "gatea"),
+                  ("bebe", 96, 170, "gatea"), ("bebe", 118, 205, "quieto"), ("bebe", 160, 200, "gatea"),
+                  ("bebe", 80, 226, "gatea")],
+     "ruta": None},
+]
+
+
+# Encuentros colocados a mano (DESIGN-ARPG.md 12). Banda libre entre bancos: y 72..235 de cada bloque.
+GRUPOS = [
+    {"nombre": "Rebano", "formacion": "enjambre", "k": 0,   # bebes entre los bancos y en el pasillo, la monja reza ante el banco del NO; mata primero a la que cura
+     "miembros": [("bebe", 64, 160, "gatea"), ("bebe", 96, 190, "gatea"), ("bebe", 134, 168, "gatea"),
+                  ("bebe", 152, 214, "quieto"), ("bebe", 80, 222, "gatea"), ("bebe", 104, 50, "gatea"),
+                  ("monja", 46, 79, "reza")],
+     "ruta": None},
+    {"nombre": "Corrillo", "formacion": "enjambre", "k": 1,   # monja rezando ante el banco del NE con monaguillo cerca (se interpone); un bebe suelto en el pasillo sur
+     "miembros": [("monja", 160, 79, "reza"), ("monaguillo", 118, 110, "vaiven"), ("bebe", 62, 150, "gatea"),
+                  ("bebe", 112, 196, "gatea"), ("bebe", 150, 170, "quieto"), ("bebe", 104, 262, "gatea")],
+     "ruta": None},
+    {"nombre": "Procesion", "formacion": "procesion", "k": 2,   # columna irregular por el pasillo central: monaguillos delante rondan, bebes detras; ensena el remate
+     "miembros": [("monaguillo", 98, 100, "patrulla"), ("monaguillo", 112, 128, "patrulla"), ("bebe", 92, 160, "gatea"),
+                  ("bebe", 112, 184, "gatea"), ("bebe", 98, 208, "quieto"), ("bebe", 114, 232, "gatea"),
+                  ("bebe", 102, 262, "gatea")],
+     "ruta": [(96, 100), (112, 128), (98, 160), (112, 128)]},
+]

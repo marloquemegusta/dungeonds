@@ -34,3 +34,49 @@ def _sala():
 
 
 ADD = _sala()
+
+
+# Encuentros colocados a mano (DESIGN-ARPG.md 12). Banda libre entre bancos: y 72..235 de cada bloque.
+GRUPOS = [
+    {"nombre": "Guardia", "formacion": "puesto", "k": 0,   # de todo un poco: Ojo al norte, Cireneo en el flanco, monjas rezando; no hay respiro
+     "miembros": [("ojo", 104, 86, "quieto"), ("monja", 58, 92, "reza"), ("monja", 150, 90, "reza"),
+                  ("cireneo", 52, 150, "pasea"), ("monaguillo", 90, 140, "vaiven"), ("monaguillo", 120, 150, "vaiven"),
+                  ("monaguillo", 152, 136, "vaiven"), ("bebe", 60, 204, "gatea"), ("bebe", 100, 210, "gatea"),
+                  ("bebe", 140, 202, "quieto"), ("bebe", 170, 178, "gatea")],
+     "ruta": None},
+    {"nombre": "Cortejo", "formacion": "cruzado", "k": 1,   # dos Ojos cruzados con monaguillos de escudo; sin respiro
+     "miembros": [("ojo", 28, 122, "quieto"), ("ojo", 180, 128, "quieto"), ("monja", 60, 90, "reza"),
+                  ("monja", 148, 92, "reza"), ("monaguillo", 80, 150, "vaiven"), ("monaguillo", 110, 142, "vaiven"),
+                  ("monaguillo", 136, 156, "vaiven"), ("bebe", 50, 196, "gatea"), ("bebe", 90, 206, "gatea"),
+                  ("bebe", 130, 200, "quieto"), ("bebe", 160, 212, "gatea"), ("bebe", 170, 178, "gatea")],
+     "ruta": None},
+    {"nombre": "Asalto", "formacion": "embestida", "k": 2,   # dos Cireneos y un Ojo, monjas al norte y monaguillos de escudo; un bebe emboscado tras el banco roto del NO (pista: cera que cruje)
+     "miembros": [("ojo", 182, 112, "quieto"), ("monja", 84, 86, "reza"), ("monja", 128, 84, "reza"),
+                  ("cireneo", 50, 132, "pasea"), ("cireneo", 156, 152, "pasea"), ("monaguillo", 88, 168, "vaiven"),
+                  ("monaguillo", 118, 160, "vaiven"), ("monaguillo", 138, 188, "vaiven"), ("bebe", 60, 204, "gatea"),
+                  ("bebe", 104, 216, "gatea"), ("bebe", 150, 224, "quieto"), ("bebe", 46, 61, "escondido")],
+     "ruta": None},
+]
+
+
+# Encuentros colocados a mano (DESIGN-ARPG.md 12). Banda libre entre bancos: y 72..235 de cada bloque.
+GRUPOS = [
+    {"nombre": "Guardia", "formacion": "puesto", "k": 0,   # Ojo al norte, Cireneo en el flanco; monjas rezando en el hueco de la fila NE y ante el banco NO; sin respiro
+     "miembros": [("ojo", 104, 88, "quieto"), ("monja", 160, 64, "reza"), ("monja", 46, 79, "reza"),
+                  ("cireneo", 52, 150, "pasea"), ("monaguillo", 90, 140, "vaiven"), ("monaguillo", 120, 150, "vaiven"),
+                  ("monaguillo", 152, 136, "vaiven"), ("bebe", 60, 204, "gatea"), ("bebe", 140, 202, "quieto"),
+                  ("bebe", 170, 178, "gatea"), ("bebe", 104, 46, "gatea")],
+     "ruta": None},
+    {"nombre": "Cortejo", "formacion": "cruzado", "k": 1,   # dos Ojos cruzados con monaguillos de escudo; monjas en el hueco de la fila NO y ante el banco NE; sin respiro
+     "miembros": [("ojo", 28, 122, "quieto"), ("ojo", 180, 128, "quieto"), ("monja", 46, 64, "reza"),
+                  ("monja", 160, 79, "reza"), ("monaguillo", 80, 150, "vaiven"), ("monaguillo", 110, 142, "vaiven"),
+                  ("monaguillo", 136, 156, "vaiven"), ("bebe", 50, 196, "gatea"), ("bebe", 130, 200, "quieto"),
+                  ("bebe", 160, 212, "gatea"), ("bebe", 170, 178, "gatea"), ("bebe", 104, 270, "gatea")],
+     "ruta": None},
+    {"nombre": "Asalto", "formacion": "embestida", "k": 2,   # 2 Cireneos y 1 Ojo, monjas rezando al norte; un bebe emboscado tras el banco roto del NO (pista: cera que cruje; se prefiere a la del banco del sur porque despierta al grupo cuando el heroe esta ya cerca)
+     "miembros": [("ojo", 182, 112, "quieto"), ("monja", 46, 34, "reza"), ("monja", 150, 79, "reza"),
+                  ("cireneo", 50, 132, "pasea"), ("cireneo", 156, 152, "pasea"), ("monaguillo", 88, 168, "vaiven"),
+                  ("monaguillo", 118, 160, "vaiven"), ("monaguillo", 138, 188, "vaiven"), ("bebe", 60, 204, "gatea"),
+                  ("bebe", 104, 216, "gatea"), ("bebe", 150, 224, "quieto"), ("bebe", 46, 61, "escondido")],
+     "ruta": None},
+]

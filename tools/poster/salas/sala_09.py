@@ -27,3 +27,32 @@ def _osario():
 
 
 ADD = _osario()
+
+
+# Nave 3 junta dos amenazas por grupo (DESIGN-ARPG.md §10, §12). Sin luz: el miedo es no ver, pero cada escondite tiene su pista.
+# Franja libre entre estantes: y 56..190 de cada bloque (pasillo central x 48..160). Piezas altas para esconder: pila de calaveras
+# (k0 x168..207, y98..135; k1 x8..47, y98..135); un bebe con los pies ~18 px al norte de su base queda tapado entero.
+# Cofre de k2 (x72..136, y44..100) y entrada de k0 (y > 274) sin enemigos.
+GRUPOS = [
+    {"nombre": "Coro", "formacion": "muralla", "k": 0,   # 3 monaguillos en fila tapan a 3 monjas rezando; 2 bebes emboscados tras la pila de calaveras
+     # Emboscada: los dos bebes tras la pila de la derecha; pista = un craneo rueda y repiquetean huesos al pasar cerca.
+     "miembros": [("monja", 28, 70, "reza"), ("monja", 66, 62, "reza"), ("monja", 102, 72, "reza"),
+                  ("monaguillo", 34, 120, "vaiven"), ("monaguillo", 80, 126, "vaiven"), ("monaguillo", 126, 118, "vaiven"),
+                  ("bebe", 180, 113, "escondido"), ("bebe", 195, 116, "escondido"),
+                  ("bebe", 100, 168, "gatea"), ("bebe", 52, 178, "quieto")],
+     "ruta": None},
+    {"nombre": "Tiradores", "formacion": "cruzado", "k": 1,   # dos Ojos en lados opuestos del paso (la pila solo tapa a uno); bebes y monaguillos entre los huesos
+     # Emboscada: un bebe tras la pila de la izquierda; pista = su sombra asoma bajo la pila cuando el Ojo barre con la mirada.
+     "miembros": [("ojo", 30, 76, "barre"), ("ojo", 180, 150, "barre"),
+                  ("monja", 98, 66, "reza"),
+                  ("monaguillo", 72, 118, "vaiven"), ("monaguillo", 134, 104, "vaiven"),
+                  ("bebe", 27, 118, "escondido"), ("bebe", 138, 182, "quieto"),
+                  ("bebe", 62, 172, "gatea"), ("bebe", 112, 160, "gatea")],
+     "ruta": None},
+    {"nombre": "Carga doble", "formacion": "embestida", "k": 2,   # dos Cireneos pasean ante el cofre con linea recta libre hacia los estantes; monja y monaguillos al norte
+     "miembros": [("monja", 28, 90, "reza"),
+                  ("monaguillo", 52, 122, "vaiven"), ("monaguillo", 160, 112, "vaiven"),
+                  ("cireneo", 68, 164, "pasea"), ("cireneo", 142, 176, "pasea"),
+                  ("bebe", 100, 130, "quieto"), ("bebe", 120, 152, "gatea"), ("bebe", 178, 150, "gatea")],
+     "ruta": None},
+]

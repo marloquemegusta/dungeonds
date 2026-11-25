@@ -34,3 +34,29 @@ def _enfermeria():
 
 
 ADD = _enfermeria()
+
+
+# Nave 2 presenta al Ojo y al Cireneo, cada uno con bebes (DESIGN-ARPG.md §12). Franja libre entre filas de catres: y 70..228 de cada bloque;
+# pasillo central x 64..143. Entrada (k0, y > 274) vacia. Una sola emboscada: el bebe tras el biombo del final de k1.
+GRUPOS = [
+    {"nombre": "Guardia de la monja", "formacion": "muralla", "k": 0,   # 2 monjas curando junto al catre izq., 2 monaguillos delante: el Rayo no pasa; rodear por la derecha
+     "miembros": [("monja", 34, 82, "reza"), ("monja", 84, 74, "reza"),
+                  ("monaguillo", 26, 128, "vaiven"), ("monaguillo", 76, 132, "vaiven"),
+                  ("bebe", 152, 96, "quieto"), ("bebe", 178, 128, "gatea"),     # pacientes entre los catres de la derecha
+                  ("bebe", 118, 178, "gatea"), ("bebe", 58, 196, "quieto")],
+     "ruta": None},
+    {"nombre": "Puesto", "formacion": "puesto", "k": 1,   # el Ojo domina el pasillo desde el fondo; los bebes obligan a acercarse bajo su mirada
+     # Emboscada: bebe tras el biombo del sur; pista = crujido de cera tras el biombo al acercarse por el pasillo.
+     "miembros": [("ojo", 100, 80, "barre"),
+                  ("monaguillo", 60, 128, "vaiven"), ("monaguillo", 142, 122, "vaiven"),
+                  ("bebe", 50, 176, "gatea"), ("bebe", 112, 190, "quieto"), ("bebe", 150, 168, "gatea"),
+                  ("bebe", 162, 355, "escondido")],
+     "ruta": None},
+    {"nombre": "Carga", "formacion": "embestida", "k": 2,   # el Cireneo pasea con bebes; llevarlo contra un catre o la palangana lo frena; la monja reza al norte con sus monaguillos
+     "miembros": [("monja", 160, 82, "reza"),
+                  ("monaguillo", 138, 112, "vaiven"), ("monaguillo", 182, 120, "vaiven"),
+                  ("cireneo", 72, 158, "pasea"),
+                  ("bebe", 60, 100, "quieto"), ("bebe", 100, 130, "gatea"),
+                  ("bebe", 124, 194, "quieto"), ("bebe", 152, 204, "gatea")],
+     "ruta": None},
+]

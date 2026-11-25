@@ -230,3 +230,26 @@ Props colocados en el póster (`walkthroughs/poster-mapa/`); la luz definitiva d
 - **Galería del prisionero (12):** cepos, alambre y capullos; el cofre fijo choca con un enemigo.
 - **Galería de la Monjaraña (14):** capullos por todo el suelo, santos y columnas, calaveras y huesos.
 - **Cripta (15):** braseros, sarcófagos de frente y de lado, lápidas, calaveras y huesos; despejada para el jefe.
+
+## 12. Encuentros: grupos colocados, reposo y emboscadas (decidido 2026-11-24)
+Como en *Diablo*: cada sala tiene **grupos fijos colocados a mano** (mismo sitio y formación en cada partida), que deambulan cerca de su punto hasta que ven al héroe. No hay manadas que crucen el mapa. Las composiciones de cada nave son las de §10; esta sección añade formación, papel, reposo y progresión. Cifras `[TUNABLE-PLACEHOLDER]`, a ajustar jugando.
+- **Activación:** un grupo despierta entero cuando el héroe entra en su radio de aviso (~96 px de suelo) o golpea a cualquiera de sus miembros; una vez despierto no vuelve a su sitio.
+- **Reposo por papel (cada uno en un radio corto, ~40 px, de su punto):**
+  - **Bebé:** gatea en vueltas cortas y se para a ratos.
+  - **Monaguillo:** va y viene despacio en un tramo corto, cerca de la monja si la hay.
+  - **Monja de cera:** arrodillada rezando, quieta.
+  - **Ojo:** quieto, barre la sala con la mirada de un lado a otro.
+  - **Cireneo:** anda despacio de un lado a otro cargando la cruz, con pausas.
+  - **Párroco:** de pie ante el altar. **Súper Monja:** escondida (emboscada).
+- **Seis formaciones:**
+  1. **Enjambre:** bebés delante y una monja rezando detrás; enseña a matar primero a la que cura.
+  2. **Muralla:** monaguillos en fila delante de 2-3 monjas; el Rayo no pasa: rodear o Glifo detrás.
+  3. **Puesto de tiro:** un Ojo al fondo y bebés que obligan a acercarse bajo fuego.
+  4. **Embestida:** un Cireneo con bebés; se gana llevándolo contra una columna.
+  5. **Fuego cruzado:** dos Ojos a lados opuestos de un paso; ninguna columna tapa de los dos.
+  6. **Emboscada:** bebés o monaguillos quietos detrás de columnas, estatuas u otras piezas altas, en un punto que la pieza tapa entero; salen cuando el héroe pasa a su lado (~48 px) y ya puede recibir el golpe. Siempre con pista que se pueda aprender (ruido de cera, sombra que asoma o vela que tiembla): sorprende, pero no es trampa.
+- **Patrulla (excepción):** como mucho una o dos en la zona, por un recorrido fijo; p. ej. una procesión de monaguillos dando la vuelta al claustro.
+- **Reparto por ambiente (§11):** Naves, grupos abiertos (enjambre, embestida); Claustros, emboscadas tras la arcada y Ojos en los arcos; Enfermería, monjas curando; Osario (sin luz), sobre todo emboscadas, bebés entre los huesos; galerías del Tribunal, Ojos y fuego cruzado.
+- **Progresión (presentar, luego combinar):** Nave 1 enseña cada pieza sola (bebé, después monja, después monaguillo); Nave 2 presenta al Ojo y al Cireneo, cada uno con bebés; Nave 3 junta dos amenazas en un grupo; Nave 4 combina, mete emboscadas y deja menos respiro. La primera aparición de cada tipo es legible: pocos, en campo abierto.
+- **El Bebé dura toda la demo:** no se retira; cambia de papel, de amenaza al principio a ruido que distrae mientras dispara el Ojo o embiste el Cireneo.
+- **Diseño sala a sala:** cada sala lleva su lista de grupos con formación y posiciones a mano sobre la geometría real (columnas, estatuas, props y puertas); se revisa con capturas de la ROM.

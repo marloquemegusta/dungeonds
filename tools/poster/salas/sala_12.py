@@ -25,3 +25,18 @@ ADD = [
     ('cepo', 1, 140, 10),
 ]
 
+
+# Nave 3 junta dos amenazas (DESIGN-ARPG.md §10, §12). La puerta izquierda (y 206..244 del bloque 0) es la entrada; cepos y alambre
+# son el contexto del Cireneo (se aturde al chocar). El cofre esta al fondo del bloque 1 (x 90..125, y 66..89).
+GRUPOS = [
+    {"nombre": "Carga doble", "formacion": "embestida", "k": 0,   # dos Cireneos con linea recta libre hacia los cepos del sur: esquivar para que choquen
+     "miembros": [("monja", 104, 40, "reza"), ("monaguillo", 84, 80, "vaiven"), ("monaguillo", 128, 76, "vaiven"),
+                  ("cireneo", 140, 222, "pasea"), ("cireneo", 100, 148, "pasea"),
+                  ("bebe", 70, 118, "gatea"), ("bebe", 118, 106, "gatea"), ("bebe", 90, 170, "quieto")],
+     "ruta": None},
+    {"nombre": "Tiradores", "formacion": "cruzado", "k": 1,      # dos Ojos en las esquinas de los cepos cruzan fuego sobre el pasillo del cofre; la monja reza tras el cofre
+     "miembros": [("ojo", 30, 88, "barre"), ("ojo", 178, 92, "barre"), ("monja", 104, 30, "reza"),
+                  ("monaguillo", 68, 76, "vaiven"), ("monaguillo", 146, 70, "vaiven"),
+                  ("bebe", 80, 170, "gatea"), ("bebe", 112, 150, "gatea"), ("bebe", 142, 186, "quieto"), ("bebe", 70, 216, "gatea")],
+     "ruta": None},
+]

@@ -31,3 +31,15 @@ def _galeria():
 
 
 ADD = _galeria()
+
+
+# Monjarana (especial en k1; k0 es el pasillo de entrada, sin enemigos): G_MONJARANA = 1 Super Monja, 4 Monjas, 4 Monaguillos
+# Un solo grupo: todo despierta junto.
+GRUPOS = [
+    {"nombre": "La monjarana", "formacion": "emboscada", "k": 1,   # la Super Monja duerme tras el capullo central del nido; pista: el capullo vibra y su sombra es de mas
+     "miembros": [("smonja", 95, 44, "escondido"),                                    # tapada entera por el capullo central (x 82..109, y 4..55)
+                  ("monja", 38, 112, "reza"), ("monja", 99, 108, "reza"), ("monja", 158, 118, "reza"), ("monja", 66, 142, "reza"),   # la corte poseida reza en torno al nido
+                  ("monaguillo", 30, 178, "vaiven"), ("monaguillo", 152, 182, "vaiven"),
+                  ("monaguillo", 71, 285, "escondido"), ("monaguillo", 137, 288, "escondido")],   # emboscada: tapados por los capullos de la fila sur; pista, un capullo se mueve
+     "ruta": None},
+]

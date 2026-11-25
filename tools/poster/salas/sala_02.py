@@ -34,3 +34,45 @@ def _sala():
 
 
 ADD = _sala()
+
+
+# Encuentros colocados a mano (DESIGN-ARPG.md 12). Banda libre entre bancos: y 72..235 de cada bloque.
+GRUPOS = [
+    {"nombre": "Coro", "formacion": "muralla", "k": 0,   # tres monjas tras tres monaguillos y bebes; prioriza a las que curan
+     "miembros": [("monja", 60, 88, "reza"), ("monja", 104, 84, "reza"), ("monja", 148, 92, "reza"),
+                  ("monaguillo", 70, 136, "vaiven"), ("monaguillo", 110, 128, "vaiven"), ("monaguillo", 146, 140, "vaiven"),
+                  ("bebe", 48, 185, "gatea"), ("bebe", 90, 200, "gatea"), ("bebe", 128, 190, "quieto"),
+                  ("bebe", 160, 215, "gatea")],
+     "ruta": None},
+    {"nombre": "Tiradores", "formacion": "cruzado", "k": 1,   # dos Ojos en lados opuestos: ningun banco tapa de los dos; los bebes distraen
+     "miembros": [("ojo", 30, 104, "quieto"), ("ojo", 178, 108, "quieto"), ("monja", 104, 82, "reza"),
+                  ("monaguillo", 82, 150, "vaiven"), ("monaguillo", 130, 160, "vaiven"), ("bebe", 60, 200, "gatea"),
+                  ("bebe", 100, 186, "gatea"), ("bebe", 150, 206, "quieto"), ("bebe", 118, 226, "gatea")],
+     "ruta": None},
+    {"nombre": "Carga doble", "formacion": "embestida", "k": 2,   # dos Cireneos a los lados del pasillo: llevarlos a un lado y que choquen
+     "miembros": [("cireneo", 58, 112, "pasea"), ("cireneo", 150, 122, "pasea"), ("monja", 104, 84, "reza"),
+                  ("monaguillo", 92, 160, "vaiven"), ("monaguillo", 122, 172, "vaiven"), ("bebe", 70, 200, "gatea"),
+                  ("bebe", 110, 216, "gatea"), ("bebe", 160, 196, "quieto")],
+     "ruta": None},
+]
+
+
+# Encuentros colocados a mano (DESIGN-ARPG.md 12). Banda libre entre bancos: y 72..235 de cada bloque.
+GRUPOS = [
+    {"nombre": "Coro", "formacion": "muralla", "k": 0,   # tres monjas rezando ante los bancos del norte y el pasillo, tras tres monaguillos; prioriza a las que curan
+     "miembros": [("monja", 46, 79, "reza"), ("monja", 104, 34, "reza"), ("monja", 160, 79, "reza"),
+                  ("monaguillo", 70, 136, "vaiven"), ("monaguillo", 110, 128, "vaiven"), ("monaguillo", 146, 140, "vaiven"),
+                  ("bebe", 32, 176, "gatea"), ("bebe", 90, 200, "gatea"), ("bebe", 132, 190, "quieto"),
+                  ("bebe", 160, 215, "gatea")],
+     "ruta": None},
+    {"nombre": "Tiradores", "formacion": "cruzado", "k": 1,   # dos Ojos en lados opuestos: ningun banco tapa de los dos; la monja reza en el pasillo norte; un bebe suelto al sur
+     "miembros": [("ojo", 30, 104, "quieto"), ("ojo", 178, 108, "quieto"), ("monja", 104, 36, "reza"),
+                  ("monaguillo", 82, 150, "vaiven"), ("monaguillo", 130, 160, "vaiven"), ("bebe", 60, 200, "gatea"),
+                  ("bebe", 150, 206, "quieto"), ("bebe", 118, 226, "gatea"), ("bebe", 104, 264, "gatea")],
+     "ruta": None},
+    {"nombre": "Carga doble", "formacion": "embestida", "k": 2,   # dos Cireneos a los lados del pasillo: llevarlos a un lado y que choquen; monja en el hueco de la fila del NE
+     "miembros": [("cireneo", 58, 112, "pasea"), ("cireneo", 150, 122, "pasea"), ("monja", 160, 34, "reza"),
+                  ("monaguillo", 92, 160, "vaiven"), ("monaguillo", 122, 172, "vaiven"), ("bebe", 70, 200, "gatea"),
+                  ("bebe", 160, 196, "quieto"), ("bebe", 106, 266, "gatea")],
+     "ruta": None},
+]

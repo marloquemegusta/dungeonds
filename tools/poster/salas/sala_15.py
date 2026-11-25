@@ -25,3 +25,14 @@ def _cripta():
 
 
 ADD = _cripta()
+
+
+# Cripta (1 bloque, jefe): mismas piezas y sitios que s_boss_enemies de la ROM, con la irregularidad de un grupo vivo.
+# Todos despiertos desde el principio (es el jefe): el reposo solo marca como se pintan.
+GRUPOS = [
+    {"nombre": "Abanderado y escolta", "formacion": "puesto", "k": 0,   # el jefe ante su sarcofago, un Ojo en cada flanco (fuego cruzado) y el Cireneo de guardia al sur
+     "miembros": [("abanderado", 100, 92, "quieto"),
+                  ("ojo", 42, 36, "barre"), ("ojo", 168, 40, "barre"),
+                  ("cireneo", 112, 154, "quieto")],
+     "ruta": None},
+]

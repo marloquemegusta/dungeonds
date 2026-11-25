@@ -1,0 +1,91 @@
+<title>Encuentros de la catedral</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+SC:wght@600&family=Inter:wght@400;600&display=swap">
+<style>
+/* Columna estrecha para el móvil: una sala tras otra, imagen a lo ancho, interruptor limpia/radios */
+:root{--bg:#f3f1ee;--fg:#221e1c;--muted:#6b625c;--line:#d9d2cb;--accent:#8a3b2a;--chip:#e7e0d8;
+--display:"Cormorant SC",Georgia,serif;--body:Inter,system-ui,sans-serif}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#171413;--fg:#ece6e0;--muted:#a3978e;--line:#342d29;--accent:#d38a6f;--chip:#2a2421;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#171413;--fg:#ece6e0;--muted:#a3978e;--line:#342d29;--accent:#d38a6f;--chip:#2a2421;color-scheme:dark}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);line-height:1.5;
+padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:24px 48px}
+main{max-width:560px;margin:0 auto;display:flex;flex-direction:column;gap:36px}
+h1,h2{font-family:var(--display);font-weight:600;text-wrap:balance;margin:0}
+h1{font-size:2rem;line-height:1.1}
+h2{font-size:1.45rem}
+p{margin:0}
+.intro{display:flex;flex-direction:column;gap:10px;color:var(--muted)}
+.intro strong{color:var(--fg)}
+.zona{font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);font-weight:600;border-top:1px solid var(--line);padding-top:18px}
+section{display:flex;flex-direction:column;gap:10px}
+.head{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap}
+.toggle{display:flex;border:1px solid var(--line);border-radius:6px;overflow:hidden}
+.toggle button{font:600 .75rem var(--body);background:transparent;color:var(--muted);border:0;padding:5px 10px;cursor:pointer}
+.toggle button[aria-pressed="true"]{background:var(--chip);color:var(--fg)}
+.toggle button:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+ul{margin:0;padding-left:1.1em;display:flex;flex-direction:column;gap:4px}
+li::marker{color:var(--accent)}
+.img{background:#000;border-radius:4px;overflow:hidden}
+.img img{display:block;width:100%;image-rendering:pixelated}
+.aviso{font-size:.85rem;color:var(--accent)}
+.dudas{display:flex;flex-direction:column;gap:10px;border-top:1px solid var(--line);padding-top:18px}
+.leyenda{font-size:.85rem;color:var(--muted)}
+</style>
+
+<main>
+<div class="intro">
+<h1>Encuentros de la catedral</h1>
+<p>Las 16 salas de la zona 1 con sus grupos colocados a mano. Abajo la entrada; el héroe sube.</p>
+<p class="leyenda"><strong>Limpia</strong>: cómo se vería. <strong>Radios</strong>: círculo de aviso de cada grupo (se despierta entero), rutas de patrulla y escondidos marcados.</p>
+<p class="leyenda">El póster pinta a todos de pie mirando al sur: las monjas arrodilladas, el vaivén y el rondar aún no se ven.</p>
+</div>
+
+<div id="salas"></div>
+
+<div class="dudas">
+<h2>Dudas abiertas</h2>
+<ul>
+<li>En galerías de un solo tramo el radio de aviso puede despertar al grupo nada más entrar. Se ve jugando.</li>
+<li>Emboscadas del Osario a ~80 px del camino: si el escondido sale a ~48 px, no saltarían solas. Acercarlas o ampliar su radio.</li>
+<li>El Párroco tapa un poco el altar en su capilla.</li>
+<li>Faltan dos props: el osario lateral (ahora es un relleno) y el sarcófago de la Cripta.</li>
+</ul>
+</div>
+</main>
+
+<script>
+const Z={nave:"Naves",claustro:"Claustros y galerías",hosp:"Hospital",esp:"Salas especiales"};
+const S=[
+["nave","00_nave_1","Nave 1",["Rebaño: bebés gateando entre los bancos rotos, monja rezando detrás.","Corrillo: grupo suelto en el pasillo central.","Procesión: monaguillos patrullando el pasillo con bebés detrás."]],
+["nave","01_nave_2","Nave 2",["Puesto: el Ojo al fondo dominando el pasillo.","Carga: el Cireneo con recta libre para embestir.","Guardia de la monja: muralla de monaguillos delante de las monjas."]],
+["nave","02_nave_3","Nave 3",["Coro: muralla con monjas detrás.","Tiradores: dos Ojos en fuego cruzado.","Carga doble: dos Cireneos."]],
+["nave","03_nave_4","Nave 4",["Guardia (puesto), Cortejo (fuego cruzado), Asalto (embestida).","Primera emboscada: un bebé tras un banco roto en el Asalto."]],
+["claustro","04_galeria_del_cofre","Galería del cofre",["Rebaño en enjambre, lejos del cofre."]],
+["claustro","05_galeria_del_secreto","Galería del secreto",["Procesión en enjambre."]],
+["claustro","06_claustro_bajo","Claustro bajo",["Rebaño en racimos irregulares; la monja reza ante la lápida.","Procesión: la única patrulla de la zona; dos bebés escondidos tras las columnas del norte.","Corrillo arriba."]],
+["claustro","07_claustro_alto","Claustro alto",["Puesto y Carga.","Guardia de la monja en emboscada tras la columna noreste."]],
+["claustro","12_galeria_del_prisionero","Galería del prisionero",["Carga doble apuntando a los cepos.","Tiradores en fuego cruzado."]],
+["hosp","08_enfermeria","Enfermería",["Guardia de la monja en muralla.","Puesto: un bebé escondido tras el biombo sur.","Carga."]],
+["hosp","09_osario","Osario",["Coro, Tiradores y Carga doble.","Tres emboscadas tras las pilas de calaveras."],"Usa un osario lateral de relleno."],
+["hosp","10_capilla_del_parroco","Capilla del párroco",["Parroquia: 7 monjas en dos corros junto al cofre, el Párroco ante el altar, 4 monaguillos en muralla.","Reclinatorios vacíos en la entrada."]],
+["esp","11_galeria_de_la_misa","Galería de la misa",["Párrocos en el altar, monaguillos sueltos delante.","4 monjas arrodilladas en los reclinatorios.","2 Súper Monjas escondidas tras los relicarios."]],
+["esp","13_capilla_con_llave","Capilla con llave",["Cortejo delante de la reja."]],
+["esp","14_galeria_de_la_monjarana","Galería de la Monjaraña",["Súper Monja tras el capullo central, 2 monaguillos tras los capullos del sur."]],
+["esp","15_cripta","Cripta",["Abanderado y escolta ante los sarcófagos."],"Provisional: sarcófago sustituto, falta el prop real."]
+];
+const root=document.getElementById("salas");let last="";
+const frag=document.createDocumentFragment();
+S.forEach(([z,f,t,items,av],i)=>{
+ if(z!==last){const d=document.createElement("div");d.className="zona";d.textContent=Z[z];frag.appendChild(d);last=z;}
+ const s=document.createElement("section");
+ s.innerHTML=`<div class="head"><h2>${t}</h2><div class="toggle" role="group" aria-label="Vista de ${t}">
+<button type="button" id="b${i}l" aria-pressed="true">Limpia</button><button type="button" id="b${i}r" aria-pressed="false">Radios</button></div></div>
+<ul>${items.map(x=>`<li>${x}</li>`).join("")}</ul>${av?`<p class="aviso">${av}</p>`:""}
+<div class="img"><img loading="lazy" alt="${t}" src="limpia/${f}.png"></div>`;
+ const [bl,br]=s.querySelectorAll("button"),img=s.querySelector("img");
+ const set=r=>{img.src=(r?"revision/":"limpia/")+f+".png";bl.setAttribute("aria-pressed",!r);br.setAttribute("aria-pressed",r);};
+ bl.onclick=()=>set(false);br.onclick=()=>set(true);
+ frag.appendChild(s);
+});
+root.appendChild(frag);
+</script>

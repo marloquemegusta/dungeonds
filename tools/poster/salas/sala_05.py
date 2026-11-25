@@ -17,3 +17,12 @@ ADD = [
     ('sacos_b', 0, 0, 352),
 ]
 
+
+# La puerta (izquierda, y 206..244) es la entrada; el cofre esta al fondo (x 90..125, y 66..89), reservado x 72..136, y 44..100.
+GRUPOS = [
+    {"nombre": "Procesion", "formacion": "enjambre", "k": 0,   # dos monaguillos custodian el cofre desde el lado de la puerta cerrada; los bebes distraen en el centro
+     "miembros": [("monaguillo", 150, 98, "vaiven"), ("monaguillo", 150, 140, "vaiven"),
+                  ("bebe", 112, 138, "gatea"), ("bebe", 96, 162, "gatea"), ("bebe", 128, 170, "quieto"),
+                  ("bebe", 160, 178, "gatea"), ("bebe", 122, 112, "gatea")],
+     "ruta": None},
+]

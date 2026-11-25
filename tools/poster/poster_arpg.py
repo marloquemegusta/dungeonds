@@ -298,6 +298,9 @@ def main():
     ap.add_argument("--noche", action="store_true", help="con --v3: claustros de noche")
     ap.add_argument("--name", default="")
     ap.add_argument("--solo", default="", help="ids de sala a dibujar, p. ej. 0 o 0,4 (prueba rapida)")
+    ap.add_argument("--sala", type=int, default=None, help="una sala sola (rapido): escribe la imagen limpia de esa sala x3 en --out-sala/limpia")
+    ap.add_argument("--revision", action="store_true", help="con --sala: ademas la vista de revision de encuentros (avisos, deambular, ocultos, rutas)")
+    ap.add_argument("--out-sala", type=Path, default=ROOT / "walkthroughs/arpg-encuentros/assets", help="raiz de limpia/ y revision/")
     ap.add_argument("--bicubic", action="store_true")
     ap.add_argument("--movil-ancho", type=int, default=1400)
     ap.add_argument("--movil-lado", type=int, default=2000)
@@ -310,6 +313,9 @@ def main():
     rooms = parse_rooms()
     pos = map_walk(rooms)
     only = {int(x) for x in a.solo.split(",") if x} or set(range(len(rooms)))
+    if a.sala is not None:
+        only = {a.sala}
+        a.v3 = True
     if a.vista == "juego":
         import poster_arpg_juego
         return poster_arpg_juego.run(a, cfg, cfgs, plan, kit, rooms, pos, only)

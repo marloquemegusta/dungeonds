@@ -3,7 +3,18 @@ y = -Y), sprites tal cual salen de la ROM (sin cizalla ni giro), muros laterales
 
 Poblacion: portada de encounters_act1.c (grupos por bloque con hash(seed de sala), cuadricula 4x3, jefe de la Cripta).
 Las posiciones son deterministas (no hay azar que fijar). No se portan: lapidas (dependen de candidatos del strip)
-ni el empujon alrededor de props de position_is_free."""
+ni el empujon alrededor de props de position_is_free.
+
+COLOCACION A MANO (DESIGN-ARPG.md §12). Si salas/sala_NN.py define GRUPOS, la sala se pinta con esos grupos y no con la
+rejilla 4x3 de la ROM; los props no se apartan de nadie (solo se avisa por consola si un enemigo pisa un prop o columna):
+    GRUPOS = [{"nombre": "Rebano", "formacion": "enjambre", "k": 0,
+               "miembros": [("bebe", x, y, "gatea"), ("monja", x, y, "reza"), ...],
+               "ruta": None}]          # "ruta": lista de (x, y) solo si hay miembros en "patrulla"
+  x, y = pies del enemigo, mismo sistema que ADD (x de suelo 0..207; y local del bloque k, 0 = norte del bloque; k=0 es el tramo de entrada).
+  tipo: bebe, monaguillo, monja, ojo, cireneo, parroco, smonja, abanderado.
+  reposo: gatea, vaiven, reza, barre, pasea, quieto, escondido, patrulla.
+  formacion: enjambre, muralla, puesto, embestida, cruzado, emboscada, patrulla (texto libre; solo se rotula).
+Vista de revision: ver run() (poster_arpg.py --v3 --sala N --revision)."""
 import json, os, re
 from pathlib import Path
 
@@ -103,10 +114,54 @@ def group_slot(seed, k, i):
     return min(max(x, 12 - 0), P.FLOOR_W - 12), y
 
 
+TIPO_CHAR = {"bebe": 10, "monaguillo": 8, "monja": PRAY_STAND, "ojo": 2, "cireneo": 1, "parroco": 12, "smonja": 13,
+             "abanderado": 7}
+ESTATICOS = ("quieto", "reza", "escondido")
+
+
+_GCACHE = {}
+
+
+def load_groups(room):
+    if room not in _GCACHE:
+        _GCACHE[room] = _load_groups(room)
+    return _GCACHE[room]
+
+
+def _load_groups(room):
+    """GRUPOS de salas/sala_NN.py o None (entonces vale la poblacion de la ROM)."""
+    import importlib.util
+    f = Path(__file__).with_name("salas") / f"sala_{room:02d}.py"
+    if not f.exists():
+        return None
+    sp = importlib.util.spec_from_file_location(f"grupos_{room:02d}", f)
+    m = importlib.util.module_from_spec(sp)
+    sp.loader.exec_module(m)
+    return getattr(m, "GRUPOS", None)
+
+
+def hand_members(room):
+    """[(grupo, tipo, x, y, reposo, k, char_id)] de los GRUPOS a mano, o None."""
+    gr = load_groups(room)
+    if gr is None:
+        return None
+    out = []
+    for g in gr:
+        for tipo, x, y, rep in g["miembros"]:
+            cid = TIPO_CHAR[tipo]
+            if tipo == "monja" and rep == "reza":
+                cid = PRAY_KNEEL
+            out.append((g, tipo, x, y, rep, g["k"], cid))
+    return out
+
+
 def room_enemies(room, rd, tabs):
     """Lista de (char_id, x_local_suelo, y_local_bloque, bloque k, ordinal) de la sala."""
     rk, kinds, groups, boss = tabs
     out = []
+    hm = hand_members(room)
+    if hm is not None:
+        return [(cid, x, y, k, i) for i, (g, t, x, y, rep, k, cid) in enumerate(hm)]
     if rd["type"] == "CRIPTA":
         for enc, x, y in boss:
             out.append((CHAR[enc], x, y, rd["special"], 0))
@@ -127,6 +182,110 @@ def room_enemies(room, rd, tabs):
                 cid = PRAY_KNEEL if (i & 1) else PRAY_STAND
             out.append((cid, x, y, k, i))
     return out
+
+
+FOOT = (-13, -10, 13, 6)     # huella de un enemigo respecto a sus pies (la misma que usa pieces_for_block)
+
+
+def avisos_solape(r, rd, b, ens):
+    """Avisa por consola si un enemigo colocado a mano pisa la huella de un prop o columna (no se mueve nada)."""
+    nb, BH = rd["blocks"], P.BLOCK_H
+    for cid, lx, ly, k, i in ens:
+        fx, fy = P.WALL + lx, P.M + (nb - 1 - k) * BH + ly
+        er = (fx + FOOT[0], fy + FOOT[1], fx + FOOT[2], fy + FOOT[3])
+        for s in b["sprites"]:
+            ys, xs = np.nonzero(s["op"])
+            if not len(xs):
+                continue
+            pr = (s["x0"] + int(xs.min()), s["ay"] - 10, s["x0"] + int(xs.max()) + 1, s["ay"])
+            if er[0] < pr[2] and pr[0] < er[2] and er[1] < pr[3] and pr[1] < er[3]:
+                print(f"AVISO solape sala {r}: {NAMES.get(cid, cid)} k={k} en ({lx},{ly}) pisa {s.get('piece', '?').partition('@')[0]}")
+    if os.environ.get("POSTER_DEBUG"):
+        for s in b["sprites"]:
+            kk = nb - 1 - (int(s["ay"]) - P.M) // BH
+            ys, xs = np.nonzero(s["op"])
+            ry = P.M + (nb - 1 - kk) * BH
+            print(f"  prop {s.get('piece', '?').partition('@')[0]:18s} k={kk} visible x={s['x0'] + int(xs.min()) - P.WALL}..{s['x0'] + int(xs.max()) - P.WALL} y={s['y0'] + int(ys.min()) - ry}..{s['y0'] + int(ys.max()) - ry}")
+            continue
+            print(f"  prop {s.get('piece', '?').partition('@')[0]:18s} k={kk} pies x={int(s['ax']) - P.WALL} y={(int(s['ay']) - P.M) % BH}")
+
+
+GRUPO_COL = [(190, 120, 100), (110, 160, 190), (150, 190, 110), (190, 170, 100), (170, 120, 190)]
+
+
+def _ell(d, cx, cy, rx, ry, col, dash=False, w=1):
+    if not dash:
+        d.ellipse((cx - rx, cy - ry, cx + rx, cy + ry), outline=col, width=w)
+        return
+    n = 48
+    for j in range(0, n, 2):
+        a0, a1 = 2 * np.pi * j / n, 2 * np.pi * (j + 1) / n
+        d.line((cx + rx * np.cos(a0), cy + ry * np.sin(a0), cx + rx * np.cos(a1), cy + ry * np.sin(a1)), fill=col, width=w)
+
+
+def dibuja_revision(d, r, rd, bx, by):
+    """Capa de revision bajo los sprites (para que las piezas altas sigan tapando): aviso 96 px, deambular 40 px, revelado 48 px, rutas."""
+    nb, BH = rd["blocks"], P.BLOCK_H
+    def foot(k, x, y):
+        return bx + P.WALL + x, by + P.M + (nb - 1 - k) * BH + y
+    gs = []
+    for g, t, x, y, rep, k, cid in (hand_members(r) or []):
+        if g not in gs:
+            gs.append(g)
+    for gi, g in enumerate(gs):
+        col = GRUPO_COL[gi % len(GRUPO_COL)]
+        ms = [m for m in (hand_members(r) or []) if m[0] is g]
+        cx = sum(m[2] for m in ms) // len(ms)
+        cy = sum(m[3] for m in ms) // len(ms)
+        fx, fy = foot(g["k"], cx, cy)
+        _ell(d, fx, fy, 96, 48, col + (200,), dash=True)
+        for _, t, x, y, rep, k, cid in ms:
+            mx, my = foot(k, x, y)
+            if rep not in ESTATICOS:
+                _ell(d, mx, my, 40, 20, col + (150,))
+            if rep == "escondido":
+                _ell(d, mx, my, 48, 24, (220, 90, 90, 220))
+                d.rectangle((mx - 12, my - 36, mx + 12, my + 2), outline=(240, 240, 240, 255))
+        if g.get("ruta"):
+            pts = [foot(g["k"], x, y) for x, y in g["ruta"]]
+            d.line(pts + [pts[0]], fill=(240, 220, 120, 230), width=1)
+            for q in pts:
+                d.ellipse((q[0] - 2, q[1] - 2, q[0] + 2, q[1] + 2), fill=(240, 220, 120, 255))
+
+
+def salida_sala(a, canvas, ov, rects, ox, oy, only, rooms, geo):
+    """Recorta la unica sala dibujada, la amplia x3 NEAREST y la guarda (limpia y, con --revision, con rotulos)."""
+    import unicodedata
+    r = next(iter(only))
+    x0, y0, x1, y1 = rects[r]
+    box = (x0 + ox, y0 + oy - 100, x1 + ox, y1 + oy)
+    nm = unicodedata.normalize("NFKD", rooms[r]["name"]).encode("ascii", "ignore").decode().lower().replace(" ", "_")
+    fn = f"{r:02d}_{nm}.png"
+    S = 3
+    base = a.out_sala
+    for sub in ("limpia", "revision"):
+        (base / sub).mkdir(parents=True, exist_ok=True)
+    canvas.crop(box).resize(((box[2] - box[0]) * S, (box[3] - box[1]) * S), Image.NEAREST).convert("RGB").save(base / "limpia" / fn)
+    print("limpia   ->", base / "limpia" / fn)
+    if ov is not None:
+        im = ov.crop(box).resize(((box[2] - box[0]) * S, (box[3] - box[1]) * S), Image.NEAREST).convert("RGB")
+        d = ImageDraw.Draw(im)
+        f = P.font(16)
+        rd = rooms[r]
+        nb, BH = rd["blocks"], P.BLOCK_H
+        bx, by = geo[r][0] + ox - box[0], geo[r][1] + oy - box[1]
+        gs = []
+        for g, t, x, y, rep, k, cid in (hand_members(r) or []):
+            if g not in gs:
+                gs.append(g)
+        for gi, g in enumerate(gs):
+            ms = [m for m in (hand_members(r) or []) if m[0] is g]
+            cx = sum(m[2] for m in ms) // len(ms)
+            ty = min(m[3] for m in ms)
+            tx_, ty_ = (bx + P.WALL + cx) * S, (by + P.M + (nb - 1 - g["k"]) * BH + ty - 52) * S
+            d.text((tx_, ty_), f"{g['nombre']} - {g['formacion']}", fill=GRUPO_COL[gi % len(GRUPO_COL)], font=f, anchor="mm", stroke_width=2, stroke_fill=(0, 0, 0))
+        im.save(base / "revision" / fn)
+        print("revision ->", base / "revision" / fn)
 
 
 def verja_art():
@@ -184,6 +343,8 @@ def run(a, cfg, cfgs, plan, kit, rooms, pos, only):
         import poster_arpg_v3 as V3
         amb = True
     def en_list(r):
+        if hand_members(r) is not None:                  # colocacion a mano: los props no se apartan de nadie
+            return []
         e = [(WALLX + lx, ly, k) for _, lx, ly, k, _ in room_enemies(r, rooms[r], tabs)]
         return e + ([(P.FLOOR_W // 2, P.BLOCK_H - 40, 0)] if r == 0 else [])
     WALLX = 0
@@ -308,9 +469,23 @@ def run(a, cfg, cfgs, plan, kit, rooms, pos, only):
             vm = v.transpose(Image.FLIP_LEFT_RIGHT)
             items.append((gy, vm, base_x + P.WALL + P.FLOOR_W - vm.width, gy - vm.height))
         stats[r] = (cnt, len(ens))
+        if hand_members(r) is not None or os.environ.get("POSTER_DEBUG"):
+            avisos_solape(r, rd, b, ens)
     items.sort(key=lambda t: t[0])
+    ov = None
+    if getattr(a, "revision", False):
+        ov = canvas.copy()
+        layer = Image.new("RGBA", canvas.size, (0, 0, 0, 0))
+        for r, b in built.items():
+            if hand_members(r) is not None:
+                dibuja_revision(ImageDraw.Draw(layer), r, rooms[r], geo[r][0] + ox, geo[r][1] + oy)
+        ov = Image.alpha_composite(ov, layer)
     for _, img, x, y in items:
         canvas.paste(img, (x, y), img)
+        if ov is not None:
+            ov.paste(img, (x, y), img)
+    if getattr(a, "sala", None) is not None:
+        return salida_sala(a, canvas, ov, rects, ox, oy, only, rooms, geo)
 
     # etiquetas fuera del suelo: insignia sobre el muro del fondo, cartel en el margen con hilo fino
     d = ImageDraw.Draw(canvas)

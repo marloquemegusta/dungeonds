@@ -22,3 +22,13 @@ def _almacen():
 
 
 ADD = _almacen()
+
+
+# La puerta (derecha, y 206..244) es la entrada; el cofre esta al fondo (x 90..125, y 66..89), reservado x 72..136, y 44..100.
+GRUPOS = [
+    {"nombre": "Rebano", "formacion": "enjambre", "k": 0,      # la monja reza ante el cofre, racimo de 3 bebes al oeste, dos que avanzan al cofre y uno rezagado a la derecha: matar primero a la que cura
+     "miembros": [("monja", 60, 84, "reza"),
+                  ("bebe", 40, 140, "gatea"), ("bebe", 56, 154, "quieto"), ("bebe", 36, 166, "gatea"),
+                  ("bebe", 98, 122, "gatea"), ("bebe", 124, 144, "gatea"), ("bebe", 152, 126, "quieto")],
+     "ruta": None},
+]
