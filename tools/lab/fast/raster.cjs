@@ -187,13 +187,13 @@ function rasterTri(ax, ay, az, bx, by, bz, cx, cy, cz, W, H, cullFront, cullBack
 // Medido: el patron C (rejilla rotada 0.125/0.375/0.625/0.875) iguala la cobertura del alfa del lab (IoU ~0.998).
 const MSAA4 = [[0.125, 0.375], [0.375, 0.875], [0.625, 0.125], [0.875, 0.625]];
 // Rasterizador por muestras: cb(x, y, sampleIdx, z) por cada muestra cubierta.
-function rasterTriMS(ax, ay, az, bx, by, bz, cx, cy, cz, W, cullFront, cullBack, pattern, cb) {
+function rasterTriMS(ax, ay, az, bx, by, bz, cx, cy, cz, W, cullFront, cullBack, pattern, cb, H = W) {
   const area = (bx - ax) * (cy - ay) - (cx - ax) * (by - ay);
   if (area === 0) return;
   const ndcArea = -area;
   if (ndcArea > 0 ? cullFront : cullBack) return;
   const minx = Math.max(0, Math.floor(Math.min(ax, bx, cx) - 0.5)), maxx = Math.min(W - 1, Math.ceil(Math.max(ax, bx, cx) - 0.5));
-  const miny = Math.max(0, Math.floor(Math.min(ay, by, cy) - 0.5)), maxy = Math.min(W - 1, Math.ceil(Math.max(ay, by, cy) - 0.5));
+  const miny = Math.max(0, Math.floor(Math.min(ay, by, cy) - 0.5)), maxy = Math.min(H - 1, Math.ceil(Math.max(ay, by, cy) - 0.5));
   const inv = 1 / area;
   for (let y = miny; y <= maxy; y++) for (let x = minx; x <= maxx; x++) {
     for (let si = 0; si < pattern.length; si++) {
@@ -215,7 +215,7 @@ function texSlot(tex, deferTex) {
 }
 function prepareCfg(opts, deferTex) {
   // La v1 solo implementa NeutralToneMapping (c2): AgX y mapas de emision no estan; fallar es mejor que aproximar en silencio.
-  if (opts.toneMapping === 'agx') throw new Error('raster: AgX no implementado en la v1 (solo neutral)');
+  if (opts.toneMapping === 'agx' && !opts.allowAgx) throw new Error('raster: AgX solo con allowAgx (lo usa export_prop_fast, que reproduce el lab de mapas)');
   if (opts.materials.some(m => m.emissiveMap)) throw new Error('raster: emissiveMap no implementado en la v1');
   const L = opts.lighting || {};
   const normLight = (l) => {
@@ -225,6 +225,9 @@ function prepareCfg(opts, deferTex) {
   };
   return {
     W: opts.size * (opts.ss || 1),
+    // Lienzo rectangular opcional (props: 768 x alto); sin `height` el lienzo es cuadrado como siempre.
+    H: (opts.height || opts.size) * (opts.ss || 1),
+    noTone: !!opts.noTone,
     meshes: opts.meshes.map(m => ({ indices: m.indices, uvs: m.uvs || null, materialIndex: m.materialIndex || 0, doubleSided: !!m.doubleSided })),
     mats: opts.materials.map(m => ({
       color: m.color || [1, 1, 1], roughness: m.roughness ?? 0.85, metalness: m.metalness ?? 0.05,
@@ -241,13 +244,14 @@ function prepareCfg(opts, deferTex) {
     },
     castShadow: L.castShadow !== false && !(DEBUG.noShadow),
     exposure: opts.exposure ?? 1,
+    agx: opts.toneMapping === 'agx',
     debug: opts.debug || {},
   };
 }
 
 // Nucleo de render: cfg de prepareCfg -> { setFrames, renderJob(job, cam) }. Funciona en el hilo principal o en un worker.
 function makeCore(cfg) {
-  const W = cfg.W, meshes = cfg.meshes, mats = cfg.mats, lights = cfg.lights, castShadow = cfg.castShadow, exposure = cfg.exposure;
+  const W = cfg.W, H = cfg.H || cfg.W, meshes = cfg.meshes, mats = cfg.mats, lights = cfg.lights, castShadow = cfg.castShadow, exposure = cfg.exposure;
   for (const k of Object.keys(cfg.debug || {})) if (cfg.debug[k]) DEBUG[k] = cfg.debug[k];
   const noMap = !!DEBUG.noMap;
   const state = { frames: null };
@@ -282,10 +286,10 @@ function makeCore(cfg) {
 
   function shadeFrame(verts, mvp, view, shadowVP, job) {
     // Pasa 1: transformar a pantalla y visibilidad.
-    const H = W, SH = 512;
+    const SH = 512;
     const MS = DEBUG.msaaPattern || MSAA4;
-    const zs = new Float32Array(W * W * 4).fill(Infinity);
-    const tid = new Int32Array(W * W * 4).fill(-1);
+    const zs = new Float32Array(W * H * 4).fill(Infinity);
+    const tid = new Int32Array(W * H * 4).fill(-1);
     const screen = [];
     for (let m = 0; m < meshes.length; m++) {
       const { wp } = verts[m];
@@ -296,7 +300,7 @@ function makeCore(cfg) {
         const cx = mvp[0] * x + mvp[4] * y + mvp[8] * z + mvp[12];
         const cy = mvp[1] * x + mvp[5] * y + mvp[9] * z + mvp[13];
         const cz = mvp[2] * x + mvp[6] * y + mvp[10] * z + mvp[14];
-        sx[i] = (cx * 0.5 + 0.5) * W; sy[i] = (0.5 - cy * 0.5) * W; sz[i] = cz;
+        sx[i] = (cx * 0.5 + 0.5) * W; sy[i] = (0.5 - cy * 0.5) * H; sz[i] = cz;
       }
       screen.push({ sx, sy, sz });
     }
@@ -312,7 +316,7 @@ function makeCore(cfg) {
           (x, y, si, z) => {
             const q = (y * W + x) * 4 + si;
             if (z < zs[q]) { zs[q] = z; tid[q] = triId; }
-          });
+          }, H);
       }
     }
     // Pasa 2: sombra de la luz key (caras traseras para FrontSide).
@@ -343,13 +347,13 @@ function makeCore(cfg) {
       }
     }
     // Pasa 3: sombreado por pixel visible (escalar: sin asignaciones por pixel).
-    const img = new Uint8ClampedArray(W * W * 4);
+    const img = new Uint8ClampedArray(W * H * 4);
     const T4 = SCR.t4, FAB = SCR.fab, TONE = SCR.tone;
     const vx = view[2], vy = view[6], vz = view[10];
     const ambR = lights.ambient[0], ambG = lights.ambient[1], ambB = lights.ambient[2];
     const ambScale = DEBUG.ambientScale ?? 1;
     const LK = lights.key, LF = lights.fill, LR = lights.rim;
-    for (let py = 0; py < W; py++) for (let px = 0; px < W; px++) {
+    for (let py = 0; py < H; py++) for (let px = 0; px < W; px++) {
       const p = py * W + px;
       let cov = 0, best = -1, bestZ = Infinity;
       for (let si = 0; si < 4; si++) {
@@ -457,7 +461,7 @@ function makeCore(cfg) {
       const msR = DEBUG.noMsComp ? 1 : 1 + sbR * msC, msG = DEBUG.noMsComp ? 1 : 1 + sbG * msC, msB = DEBUG.noMsComp ? 1 : 1 + sbB * msC;
       // Sombra de la luz key
       let shadowFac = 1;
-      if (shadowMap) shadowFac = shadowAtS(pX, pY, pZ, shadowVP, shadowMap, SH, px, py, W);
+      if (shadowMap) shadowFac = shadowAtS(pX, pY, pZ, shadowVP, shadowMap, SH, px, py, H);
       let aR = 0, aG = 0, aB = 0;
       const alpha = rough * rough, a2 = alpha * alpha;
       // Luces direccionales (key con sombra, fill, rim): mismas formulas que la version de referencia.
@@ -500,10 +504,10 @@ function makeCore(cfg) {
       aR += mat.emissive[0] * em; aG += mat.emissive[1] * em; aB += mat.emissive[2] * em;
       // Neutral + sRGB, con cobertura MSAA (resolve premultiplicado como GL)
       const o = p * 4;
-      if (DEBUG.noTone) {
+      if (DEBUG.noTone || cfg.noTone) {
         img[o] = toSRGBf(aR) * coverage; img[o + 1] = toSRGBf(aG) * coverage; img[o + 2] = toSRGBf(aB) * coverage;
       } else {
-        neutralScalar(aR, aG, aB, exposure, TONE);
+        if (cfg.agx) agxScalar(aR, aG, aB, exposure, TONE); else neutralScalar(aR, aG, aB, exposure, TONE);
         img[o] = toSRGBf(TONE[0]) * coverage; img[o + 1] = toSRGBf(TONE[1]) * coverage; img[o + 2] = toSRGBf(TONE[2]) * coverage;
       }
       img[o + 3] = 255 * coverage;
@@ -689,6 +693,35 @@ function neutralScalar(r0, g0, b0, exposure, out) {
   const sc = newPeak / peak; r *= sc; g *= sc; b *= sc;
   const gg = 1 - 1 / (Desaturation * (peak - newPeak) + 1);
   out[0] = r * (1 - gg) + newPeak * gg; out[1] = g * (1 - gg) + newPeak * gg; out[2] = b * (1 - gg) + newPeak * gg;
+}
+// AgXToneMapping de Three r186 (matrices GLSL en columnas; salida lineal sRGB, el OETF va despues).
+function agxScalar(r0, g0, b0, exposure, out) {
+  let r = r0 * exposure, g = g0 * exposure, b = b0 * exposure;
+  // LINEAR_SRGB_TO_LINEAR_REC2020
+  let x = 0.6274 * r + 0.3293 * g + 0.0433 * b, y = 0.0691 * r + 0.9195 * g + 0.0113 * b, z = 0.0164 * r + 0.0880 * g + 0.8956 * b;
+  // AgXInsetMatrix
+  r = 0.856627153315983 * x + 0.0951212405381588 * y + 0.0482516061458583 * z;
+  g = 0.137318972929847 * x + 0.761241990602591 * y + 0.101439036467562 * z;
+  b = 0.11189821299995 * x + 0.0767994186031903 * y + 0.811302368396859 * z;
+  const MIN_EV = -12.47393, MAX_EV = 4.026069;
+  const enc = (c) => {
+    c = Math.log2(Math.max(c, 1e-10));
+    c = (c - MIN_EV) / (MAX_EV - MIN_EV);
+    c = c < 0 ? 0 : c > 1 ? 1 : c;
+    const c2 = c * c, c4 = c2 * c2;
+    return 15.5 * c4 * c2 - 40.14 * c4 * c + 31.96 * c4 - 6.868 * c2 * c + 0.4298 * c2 + 0.1191 * c - 0.00232;
+  };
+  r = enc(r); g = enc(g); b = enc(b);
+  // AgXOutsetMatrix
+  x = 1.1271005818144368 * r - 0.11060664309660323 * g - 0.016493938717834573 * b;
+  y = -0.1413297634984383 * r + 1.157823702216272 * g - 0.016493938717834257 * b;
+  z = -0.14132976349843826 * r - 0.11060664309660294 * g + 1.2519364065950405 * b;
+  x = Math.pow(Math.max(0, x), 2.2); y = Math.pow(Math.max(0, y), 2.2); z = Math.pow(Math.max(0, z), 2.2);
+  // LINEAR_REC2020_TO_LINEAR_SRGB
+  r = 1.6605 * x - 0.5876 * y - 0.0728 * z;
+  g = -0.1246 * x + 1.1329 * y - 0.0083 * z;
+  b = -0.0182 * x - 0.1006 * y + 1.1187 * z;
+  out[0] = r < 0 ? 0 : r > 1 ? 1 : r; out[1] = g < 0 ? 0 : g > 1 ? 1 : g; out[2] = b < 0 ? 0 : b > 1 ? 1 : b;
 }
 function dfgLookupInto(out, rough, dotNV) {
   const x = rough * 16 - 0.5, y = dotNV * 16 - 0.5;

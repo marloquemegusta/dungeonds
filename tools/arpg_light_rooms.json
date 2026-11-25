@@ -1,0 +1,327 @@
+{
+ "_doc": "Luz principal prerenderizada por sala (DESIGN-ARPG.md 11). desde_deg: direccion en pantalla desde la que llega la luz (0 = fondo/arriba, 90 = derecha, 180 = camara/abajo, 270 = izquierda); elevacion_deg: altura de la luz sobre el suelo (sombreado); sombra_elevacion_deg: la usada para proyectar la sombra dura al suelo (mas alta que la del sombreado cuando la real saldria del lienzo). key/fill/rim/world: intensidades del lab. floor_tint x floor_gain: tinte de suelo, muros y remates (no se vuelven a renderizar).",
+ "luces": [
+  {
+   "id": "nave_100",
+   "nombre": "Nave 100%",
+   "rooms": [
+    0
+   ],
+   "intensidad": 1.0,
+   "desde_deg": 305,
+   "elevacion_deg": 48,
+   "sombra_elevacion_deg": 40,
+   "keyColor": "#d5ddee",
+   "key": 3.6,
+   "fillColor": "#7f8eb0",
+   "fill": 0.65,
+   "rimColor": "#cfd8e8",
+   "rim": 0.4,
+   "world": 0.24,
+   "floor_tint": [
+    0.84,
+    0.9,
+    1.0
+   ],
+   "floor_gain": 1.0,
+   "sombras": "largas en diagonal"
+  },
+  {
+   "id": "nave_85",
+   "nombre": "Nave 85%",
+   "rooms": [
+    1
+   ],
+   "intensidad": 0.85,
+   "desde_deg": 305,
+   "elevacion_deg": 48,
+   "sombra_elevacion_deg": 40,
+   "keyColor": "#d5ddee",
+   "key": 3.06,
+   "fillColor": "#7f8eb0",
+   "fill": 0.6,
+   "rimColor": "#cfd8e8",
+   "rim": 0.35,
+   "world": 0.22,
+   "floor_tint": [
+    0.84,
+    0.9,
+    1.0
+   ],
+   "floor_gain": 0.9,
+   "sombras": "largas en diagonal"
+  },
+  {
+   "id": "nave_70",
+   "nombre": "Nave 70%",
+   "rooms": [
+    2
+   ],
+   "intensidad": 0.7,
+   "desde_deg": 305,
+   "elevacion_deg": 48,
+   "sombra_elevacion_deg": 40,
+   "keyColor": "#d5ddee",
+   "key": 2.52,
+   "fillColor": "#7f8eb0",
+   "fill": 0.54,
+   "rimColor": "#cfd8e8",
+   "rim": 0.31,
+   "world": 0.2,
+   "floor_tint": [
+    0.84,
+    0.9,
+    1.0
+   ],
+   "floor_gain": 0.79,
+   "sombras": "largas en diagonal"
+  },
+  {
+   "id": "nave_55",
+   "nombre": "Nave 55%",
+   "rooms": [
+    3
+   ],
+   "intensidad": 0.55,
+   "desde_deg": 305,
+   "elevacion_deg": 48,
+   "sombra_elevacion_deg": 40,
+   "keyColor": "#d5ddee",
+   "key": 1.98,
+   "fillColor": "#7f8eb0",
+   "fill": 0.49,
+   "rimColor": "#cfd8e8",
+   "rim": 0.27,
+   "world": 0.18,
+   "floor_tint": [
+    0.84,
+    0.9,
+    1.0
+   ],
+   "floor_gain": 0.69,
+   "sombras": "largas en diagonal"
+  },
+  {
+   "id": "galerias",
+   "nombre": "Galerias (polvo calido)",
+   "rooms": [
+    4,
+    5
+   ],
+   "intensidad": 0.6,
+   "desde_deg": 270,
+   "elevacion_deg": 20,
+   "sombra_elevacion_deg": 28,
+   "keyColor": "#e6c898",
+   "key": 2.16,
+   "fillColor": "#6c6678",
+   "fill": 0.51,
+   "rimColor": "#cfd8e8",
+   "rim": 0.28,
+   "world": 0.18,
+   "floor_tint": [
+    1.0,
+    0.88,
+    0.7
+   ],
+   "floor_gain": 0.72,
+   "sombras": "muy largas horizontales"
+  },
+  {
+   "id": "claustros",
+   "nombre": "Claustros (sol de dia)",
+   "rooms": [
+    6,
+    7
+   ],
+   "intensidad": 1.0,
+   "desde_deg": 330,
+   "elevacion_deg": 70,
+   "sombra_elevacion_deg": 64,
+   "keyColor": "#fff0cc",
+   "key": 3.6,
+   "fillColor": "#8aa0c8",
+   "fill": 0.65,
+   "rimColor": "#cfd8e8",
+   "rim": 0.4,
+   "world": 0.24,
+   "floor_tint": [
+    1.0,
+    0.97,
+    0.88
+   ],
+   "floor_gain": 1.0,
+   "sombras": "cortas y duras"
+  },
+  {
+   "id": "enfermeria",
+   "nombre": "Enfermeria (ambar suave)",
+   "rooms": [
+    8
+   ],
+   "intensidad": 0.7,
+   "desde_deg": 0,
+   "elevacion_deg": 80,
+   "sombra_elevacion_deg": 74,
+   "keyColor": "#f4cc8e",
+   "key": 2.52,
+   "fillColor": "#7a6458",
+   "fill": 0.54,
+   "rimColor": "#cfd8e8",
+   "rim": 0.31,
+   "world": 0.2,
+   "floor_tint": [
+    1.0,
+    0.86,
+    0.66
+   ],
+   "floor_gain": 0.79,
+   "sombras": "cortas, casi verticales"
+  },
+  {
+   "id": "osario",
+   "nombre": "Osario (frio)",
+   "rooms": [
+    9
+   ],
+   "intensidad": 0.35,
+   "desde_deg": 45,
+   "elevacion_deg": 22,
+   "sombra_elevacion_deg": 30,
+   "keyColor": "#9ab2e6",
+   "key": 1.26,
+   "fillColor": "#3e486c",
+   "fill": 0.42,
+   "rimColor": "#cfd8e8",
+   "rim": 0.21,
+   "world": 0.15,
+   "floor_tint": [
+    0.62,
+    0.72,
+    0.96
+   ],
+   "floor_gain": 0.54,
+   "sombras": "largas desde una esquina"
+  },
+  {
+   "id": "capillas",
+   "nombre": "Capillas (ambar del altar)",
+   "rooms": [
+    10,
+    11,
+    13
+   ],
+   "intensidad": 0.6,
+   "desde_deg": 0,
+   "elevacion_deg": 36,
+   "sombra_elevacion_deg": 38,
+   "keyColor": "#f2b668",
+   "key": 2.16,
+   "fillColor": "#5e4a46",
+   "fill": 0.51,
+   "rimColor": "#cfd8e8",
+   "rim": 0.28,
+   "world": 0.18,
+   "floor_tint": [
+    1.0,
+    0.82,
+    0.58
+   ],
+   "floor_gain": 0.72,
+   "sombras": "hacia la camara"
+  },
+  {
+   "id": "prisionero",
+   "nombre": "Prisionero (haz verdoso)",
+   "rooms": [
+    12
+   ],
+   "intensidad": 0.4,
+   "desde_deg": 90,
+   "elevacion_deg": 58,
+   "sombra_elevacion_deg": 54,
+   "keyColor": "#aacc9c",
+   "key": 1.44,
+   "fillColor": "#3e5a50",
+   "fill": 0.44,
+   "rimColor": "#cfd8e8",
+   "rim": 0.22,
+   "world": 0.16,
+   "floor_tint": [
+    0.74,
+    0.9,
+    0.76
+   ],
+   "floor_gain": 0.58,
+   "sombras": "un haz duro lateral"
+  },
+  {
+   "id": "monjarana",
+   "nombre": "Monjarana (verde enfermizo)",
+   "rooms": [
+    14
+   ],
+   "intensidad": 0.3,
+   "desde_deg": 180,
+   "elevacion_deg": 22,
+   "sombra_elevacion_deg": 30,
+   "keyColor": "#8fc27a",
+   "key": 1.08,
+   "fillColor": "#34503e",
+   "fill": 0.4,
+   "rimColor": "#cfd8e8",
+   "rim": 0.19,
+   "world": 0.14,
+   "floor_tint": [
+    0.64,
+    0.88,
+    0.58
+   ],
+   "floor_gain": 0.51,
+   "sombras": "largas hacia el fondo"
+  },
+  {
+   "id": "cripta",
+   "nombre": "Cripta (rojo brasa)",
+   "rooms": [
+    15
+   ],
+   "intensidad": 0.45,
+   "desde_deg": 180,
+   "elevacion_deg": 24,
+   "sombra_elevacion_deg": 30,
+   "keyColor": "#e0643c",
+   "key": 1.62,
+   "fillColor": "#4a2c30",
+   "fill": 0.46,
+   "rimColor": "#cfd8e8",
+   "rim": 0.24,
+   "world": 0.16,
+   "floor_tint": [
+    1.0,
+    0.5,
+    0.38
+   ],
+   "floor_gain": 0.61,
+   "sombras": "largas hacia el fondo"
+  }
+ ],
+ "sala_a_luz": {
+  "0": "nave_100",
+  "1": "nave_85",
+  "2": "nave_70",
+  "3": "nave_55",
+  "4": "galerias",
+  "5": "galerias",
+  "6": "claustros",
+  "7": "claustros",
+  "8": "enfermeria",
+  "9": "osario",
+  "10": "capillas",
+  "11": "capillas",
+  "13": "capillas",
+  "12": "prisionero",
+  "14": "monjarana",
+  "15": "cripta"
+ }
+}

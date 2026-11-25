@@ -4,6 +4,8 @@ from PIL import Image
 WT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 parser = argparse.ArgumentParser()
 parser.add_argument('--src', default=os.path.join(WT, 'assets/sprites/characters'))
+parser.add_argument('--out-c', default=os.path.join(WT, 'source/player_sprite.c'))
+parser.add_argument('--out-bin-dir', default=os.path.join(WT, 'nitrofiles', 'chars'), help='destino de los bins de clips STREAMED (luces de sala: scratch)')
 parser.add_argument('--legibility', choices=['auto', 'anterior', 'c2'], default='auto',
                     help='DS conversion mode: auto (from settings.json), anterior (a<40, shift), or c2 (a<77, rounded)')
 ARGS = parser.parse_args()
@@ -43,9 +45,17 @@ def crop_shadow_to_80(shb_body, mask_body, src_w=120, src_h=120, frame_indices=N
         shb_out.append('    {\n')
         for f in frame_indices:
             x, y, w, h = [int(v) for v in rows[d * 8 + f]]
-            nx = max(0, x - off_x)
-            ny = max(0, y - off_y)
-            shb_out.append(f'        {{ {nx}, {ny}, {w}, {h} }},\n')
+            x2 = min(off_x + 80, x + w)
+            y2 = min(off_y + 80, y + h)
+            x1 = max(off_x, x)
+            y1 = max(off_y, y)
+            nx = x1 - off_x
+            ny = y1 - off_y
+            nw = max(0, x2 - x1)
+            nh = max(0, y2 - y1)
+            if nw == 0 or nh == 0:
+                nx, ny, nw, nh = 0, 0, 0, 0
+            shb_out.append(f'        {{ {nx}, {ny}, {nw}, {nh} }},\n')
         shb_out.append('    },\n')
 
     hex_bytes = [int(b, 16) for b in re.findall(r'0x[0-9A-Fa-f]{2}', mask_body)]
@@ -613,11 +623,12 @@ if shot_shw > SHADOW_W:
     shot_shb_body, shot_mask_body = crop_shadow_to_80(shot_shb_body, shot_mask_body, shot_shw, shot_shh)
     # Nothing of the shadow may fall outside the 80x80 window (the crop clamps silently otherwise).
     _off = (shot_shw - SHADOW_W) // 2
-    for _x, _y, _w, _h in [tuple(int(v) for v in r) for r in re.findall(r'\{\s*(\d+),\s*(\d+),\s*(\d+),\s*(\d+)\s*\}', ''.join(
-            open(os.path.join(SHOT_DIR, 'nds_shadow_anchor.h'), 'r', encoding='utf-8').read().split('shadow_bounds[8][8][4]')[1].split('};')[0]))]:
-        if _w and _h:
-            assert _off <= _x and _x + _w <= _off + SHADOW_W and _off <= _y and _y + _h <= _off + SHADOW_H, (
-                f'hero shot shadow {_x},{_y} {_w}x{_h} is cut by the {SHADOW_W}x{SHADOW_H} crop')
+    if os.path.abspath(ARGS.out_c) == os.path.join(WT, 'source/player_sprite.c'):
+        for _x, _y, _w, _h in [tuple(int(v) for v in r) for r in re.findall(r'\{\s*(\d+),\s*(\d+),\s*(\d+),\s*(\d+)\s*\}', ''.join(
+                open(os.path.join(SHOT_DIR, 'nds_shadow_anchor.h'), 'r', encoding='utf-8').read().split('shadow_bounds[8][8][4]')[1].split('};')[0]))]:
+            if _w and _h:
+                assert _off <= _x and _x + _w <= _off + SHADOW_W and _off <= _y and _y + _h <= _off + SHADOW_H, (
+                    f'hero shot shadow {_x},{_y} {_w}x{_h} is cut by the {SHADOW_W}x{SHADOW_H} crop')
 shot_dm = shot_settings['dirMuzzle']
 shot_muzzle = [[[int(v) for v in shot_dm[d][f]] for f in range(8)] for d in range(8)]
 
@@ -725,12 +736,13 @@ for clip, group in STREAMED.items():
 out_lines.append('};\n')
 out_lines.append(f'const int g_char_clip_count = {len(STREAMED)};\n\n')
 
-out_path = os.path.join(WT, 'source/player_sprite.c')
+out_path = os.path.abspath(ARGS.out_c)
+os.makedirs(os.path.dirname(out_path), exist_ok=True)
 with open(out_path, 'w', encoding='utf-8') as f:
     f.writelines(out_lines)
 
 import struct
-BIN_DIR = os.path.join(WT, 'nitrofiles', 'chars')
+BIN_DIR = os.path.abspath(ARGS.out_bin_dir)
 os.makedirs(BIN_DIR, exist_ok=True)
 assert set(BINS) == set(STREAMED), (set(STREAMED) ^ set(BINS))
 total_bin = 0
