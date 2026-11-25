@@ -290,6 +290,14 @@ Publicados a 2026-11-17: **01, 03 y 08**, nada más. Los MP4 de 02, 04-07, 09 y 
     > Próximamente en tu Nintendo DS.
     >
     > #pixelart #nintendods #gamedev #indiedev #darkfantasy #gothic #lore #homebrew
+  - **Descripción de YouTube:**
+    > ¿Encubridora… o madre? Inés Arce era la madre de Martín, soldado de la Columna de Lázaro. Una noche llamó a su puerta un soldado empapado y temblando: Bartolomé, el desertor. Inés no preguntó; le dio pan, una manta y el desván. No supo hasta el juicio que su hijo había muerto cubriendo la huida de aquel muchacho. El Tribunal la condenó por dar refugio a un cobarde. Hoy sube en procesión, nave arriba, siguiendo un latido que reconoce. Le di pan sin saber quién era. Se lo volvería a dar sabiéndolo.
+    >
+    > Deja tu veredicto en los comentarios.
+    > Próximamente en tu Nintendo DS.
+    >
+    > #Shorts #pixelart #nintendods #gamedev #darkfantasy
+  - **Comentario fijado (en las tres redes):** «¿Encubridora… o madre?»
 - **11 El Campanero de Ánimas** (lista 2026-11-24, sin publicar; el usuario la sube a mano): dos versiones, `assets/videos/lore01_11_el_campanero_de_animas.mp4` (clásica) y `lore01_11_el_campanero_de_animas_remotion.mp4` (composición `Lore11`). Voz de Simón con `archivo:` (`simon_cita.mp3`). Textos de los posts:
   - **Título (YouTube y portada):** «El Campanero de Ánimas · Códice». Alternativa: «Me quedaba la lengua · Códice».
   - **TikTok e Instagram:**
