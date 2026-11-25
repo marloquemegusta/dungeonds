@@ -193,6 +193,8 @@ Banco de pruebas de combate ARPG: `build-project.ps1 -Variant arpg-lab` (defines
 
 `build-project.ps1 -Variant arpg-boxeo` = `arpg-lab` + `ARPG_BOXEO=1`. La sala inicial no se puebla (`enc_update` no hace nada) y `source/boxeo.c` mantiene un único enemigo, el «saco», 28 px al este del héroe: 2000 de vida que se rellena al bajar de la mitad, nunca entra en tambaleo ni remate, reaparece si se desactiva y vuelve a su sitio tras 1 s sin golpes. Héroe invulnerable (`g_lab_god = 1`). En el menú (SELECT), página «Pruebas»: «Saco quieto» (no anda ni ataca, sí recibe empuje) y «Saco tipo» (Exvoto, Cargador, Monaguillo, Bebé, Párroco, Monja, Ojo). Página «Puñetazo» (también en `arpg-lab`): velocidad, ventana de combo, % de andar pegando (0 = pies plantados), fotograma de inicio y de impacto de cada golpe, seguimiento antes de encadenar, corte de cintura al pegar andando, empuje ligero y del gancho, parón, temblor y alcance; el juego lee esas variables mediante macros `PUNCH_*_V` que fuera del lab son las constantes. Escenario `scenarios/arpg_boxeo.json` (`suite: false`, con aserciones de estado).
 
+`build-project.ps1 -Variant arpg-boxeo-mele` = `arpg-boxeo` + `ARPG_BOXEO_MELEE=1`: en vez del saco, 12 monaguillos que persiguen al héroe (invulnerable) y reaparecen al caer; sirve para probar el puñetazo cuerpo a cuerpo. Escenario `scenarios/arpg_boxeo_mele.json` (`suite: false`, evidencia).
+
 ### 5.3b. Variantes `arpg-exvotos` y `arpg-remates`
 
 `arpg-exvotos`: sala de prueba con los Exvotos de escalón 3 (Súper Monja, Párroco, guardaespaldas). `arpg-remates`: sala con los Exvotos quietos para probar remates y el tambaleo de los poseídos. `tools/trim_remate_smonja.py` recorta la cola quieta del remate de la Súper Monja (18 fotogramas).
