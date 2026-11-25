@@ -19,6 +19,14 @@ Estado para retomar la protodemo ARPG (código en la rama `proto/arpg`) y sus en
 **Fallos conocidos propios de la rama** (los comunes, en `STATUS.md`):
 - `test_cathedral_kit` falla en `proto/arpg` (23 piezas en el baker frente a 19 en el enum del header; sin diagnosticar, no lo toca el campamento).
 
+### Trabajo en ramas sin mergear
+- **Monja curandera** (`feat/monja-curandera`): **pendiente de mergear** tras las salas. No es redundante con los encuentros: la base ya tiene la Monja de cera que reza en su puesto y cura un 2 %/s hasta que llega el héroe, y los reposos solo actúan antes de despertar. Esta rama añade su papel en combate: reza y cura un 5 %/s a los Exvotos a 80 px, se aparta si se acerca el héroe y pelea sola si es la última. Hay riesgo de conflicto con `enemy_ai.c`.
+- **Luz por modos** (`feat/lighting-modes`): **no se mergea**. Es la referencia técnica para los ambientes de luz por sala de `DESIGN-ARPG.md` §11 (pre-renderizar los props con varias iluminaciones y elegir una según la sala), que siguen **pendientes**. El cambio con SELECT entre día, tarde y noche era solo una demo.
+- **Luz de velas** (`claude/luz-velas-caf7f2`): **pendiente**. Concepto aprobado, falta elegir 2-3 salas.
+- **Luz dinámica** (`claude/luz-dinamica-b793e3`): **abandonada**.
+- **Restos de `feat/arpg-remate-cura`, `feat/arpg-bot` y `proto/test-ejecuciones`**: **descartados**. La mecánica principal ya está en `proto/arpg`; quedan guardados en su rama solo como referencia.
+- **Salas temáticas y encuentros de la zona 1 en la ROM** (`feat/arpg-salas-rom`, `feat/arpg-reposos`): **en curso**. Diseñados en el póster; aún no están en la ROM.
+
 ## Entregas recientes (más nueva primero)
 
 - **Encuentros de la zona 1, diseño (`feat/arpg-encuentros`, 2026-11-25, en `proto/arpg`):** las 16 salas tienen grupos de enemigos colocados a mano (formaciones, reposo, emboscadas, progresión por naves), decididos en `DESIGN-ARPG.md` §12 y revisados en el póster (herramienta, la ROM no cambia). Pendiente: llevar posiciones y reposos a la ROM (vaivén, monja rezando, barrido del Ojo, Cireneo paseando, escondidos con pista, patrulla, despertar del grupo), regenerar los props `osario_lado` y `sarcofago_lado` (la Cripta es provisional), emboscadas del Osario a ~80 px del camino, radio de aviso en galerías de un tramo y el Párroco tapa algo el altar. Detalle: [`arpg-encuentros/`](walkthroughs/arpg-encuentros/walkthrough.md).

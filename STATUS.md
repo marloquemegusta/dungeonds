@@ -44,6 +44,9 @@ Primero el estado necesario para retomar el trabajo sin depender del chat; despu
 
 Deuda del motor sin prioridad: timestep y lo anotado en `TECHNICAL.md` §4.5.
 
+### Trabajo en ramas sin mergear
+- **Verja semitransparente** (`feat/verja-semitransparente`): **necesaria, mergear más adelante**. La verja de entrada se levanta al acercarse; la trasera queda a ~37 % de opacidad tras cruzarla.
+- **Muerte por rotura** (`feat/muerte-rotura`): **exploración pendiente**. El enemigo se rompe en 10-16 trozos con rebote.
+
 ### Ramas aparcadas
-- `feat/lighting-modes` (worktree `.worktrees/lighting-modes`, 2026-11-20): variante `lighting` con 3 modos re-renderizados (Día, Atardecer, Noche) y cambio de dirección de sombras en caliente con `SELECT` desde NitroFS (incluye sprites de remates). Sobre todo para probar y comparar diferentes iluminaciones; **pendiente de mergear**.
 - Solo existe `origin/feat/v03-mazmorra` (WIP de 2026-11-04/05, sin probar en la DS). Borrar el 2026-12-06 si no se ha usado.
