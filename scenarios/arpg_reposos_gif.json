@@ -1,0 +1,435 @@
+{
+ "name": "arpg_reposos_gif",
+ "description": "Reposos de los grupos (DESIGN-ARPG.md 12): Cireneo/Monaguillo/Bebe/Ojo en reposo, emboscada y patrulla; cada uno se mueve u oculta y despierta por radio o por golpe. H\u00e9roe lejos hasta que se acerca.",
+ "suite": false,
+ "state": {
+  "elf": "../.ds-game-dev/build/out/dungeonds-arpg-todo.elf",
+  "symbols": {
+   "pl": "s_player",
+   "dbg": "g_enc_debug",
+   "stats": "g_enc_stats",
+   "arpg": "g_arpg",
+   "en": "g_enemies"
+  },
+  "default_symbol": "pl",
+  "fields": {
+   "px": {
+    "symbol": "pl",
+    "offset": 0,
+    "type": "s32"
+   },
+   "py": {
+    "symbol": "pl",
+    "offset": 4,
+    "type": "s32"
+   },
+   "dbg_god": {
+    "symbol": "dbg",
+    "offset": 2,
+    "type": "u8"
+   },
+   "dbg_restart": {
+    "symbol": "dbg",
+    "offset": 12,
+    "type": "u8"
+   },
+   "dbg_start_room": {
+    "symbol": "dbg",
+    "offset": 20,
+    "type": "u8"
+   },
+   "room": {
+    "symbol": "stats",
+    "offset": 60,
+    "type": "u8"
+   },
+   "room_now": {
+    "symbol": "stats",
+    "offset": 60,
+    "type": "u8"
+   },
+   "dbg_rest_mode": {
+    "symbol": "dbg",
+    "offset": 22,
+    "type": "u8"
+   },
+   "dbg_force_group": {
+    "symbol": "dbg",
+    "offset": 23,
+    "type": "u8"
+   },
+   "e1_x": {
+    "symbol": "en",
+    "offset": 124,
+    "type": "s32"
+   },
+   "e2_x": {
+    "symbol": "en",
+    "offset": 248,
+    "type": "s32"
+   },
+   "e3_x": {
+    "symbol": "en",
+    "offset": 372,
+    "type": "s32"
+   },
+   "e4_x": {
+    "symbol": "en",
+    "offset": 496,
+    "type": "s32"
+   },
+   "e1_st": {
+    "symbol": "en",
+    "offset": 165,
+    "type": "u8"
+   },
+   "e2_st": {
+    "symbol": "en",
+    "offset": 289,
+    "type": "u8"
+   },
+   "e3_st": {
+    "symbol": "en",
+    "offset": 413,
+    "type": "u8"
+   },
+   "e4_st": {
+    "symbol": "en",
+    "offset": 537,
+    "type": "u8"
+   },
+   "e5_st": {
+    "symbol": "en",
+    "offset": 661,
+    "type": "u8"
+   },
+   "e6_st": {
+    "symbol": "en",
+    "offset": 785,
+    "type": "u8"
+   },
+   "e1_dir": {
+    "symbol": "en",
+    "offset": 132,
+    "type": "s32"
+   },
+   "e5_dir": {
+    "symbol": "en",
+    "offset": 628,
+    "type": "s32"
+   },
+   "e0_hf": {
+    "symbol": "en",
+    "offset": 43,
+    "type": "u8"
+   },
+   "e0_st": {
+    "symbol": "en",
+    "offset": 41,
+    "type": "u8"
+   },
+   "e1_hf": {
+    "symbol": "en",
+    "offset": 167,
+    "type": "u8"
+   },
+   "e2_hf": {
+    "symbol": "en",
+    "offset": 291,
+    "type": "u8"
+   },
+   "e3_hf": {
+    "symbol": "en",
+    "offset": 415,
+    "type": "u8"
+   },
+   "e4_hf": {
+    "symbol": "en",
+    "offset": 539,
+    "type": "u8"
+   },
+   "e5_hf": {
+    "symbol": "en",
+    "offset": 663,
+    "type": "u8"
+   },
+   "e3_y": {
+    "symbol": "en",
+    "offset": 376,
+    "type": "s32"
+   },
+   "e2_y": {
+    "symbol": "en",
+    "offset": 252,
+    "type": "s32"
+   },
+   "e0_hp": {
+    "symbol": "en",
+    "offset": 28,
+    "type": "s32"
+   }
+  }
+ },
+ "steps": [
+  {
+   "frames": 60
+  },
+  {
+   "tap": {
+    "x": 128,
+    "y": 66
+   },
+   "frames": 6
+  },
+  {
+   "release": true,
+   "frames": 40
+  },
+  {
+   "button_down": "START",
+   "frames": 4
+  },
+  {
+   "button_up": "START",
+   "frames": 90
+  },
+  {
+   "poke": [
+    {
+     "field": "px",
+     "value": 32768
+    },
+    {
+     "field": "py",
+     "value": 29696
+    }
+   ],
+   "frames": 20
+  },
+  {
+   "button_down": "A",
+   "frames": 4
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    },
+    {
+     "field": "dbg_force_group",
+     "value": 6
+    },
+    {
+     "field": "dbg_rest_mode",
+     "value": 1
+    },
+    {
+     "field": "dbg_start_room",
+     "value": 2
+    },
+    {
+     "field": "dbg_restart",
+     "value": 1
+    }
+   ],
+   "frames": 60
+  },
+  {
+   "poke": [
+    {
+     "field": "px",
+     "value": 59392
+    },
+    {
+     "field": "py",
+     "value": 371200
+    }
+   ],
+   "frames": 30
+  },
+  {
+   "frames": 216,
+   "capture": "carga_a",
+   "capture_sequence": "carga_a",
+   "capture_every": 4
+  },
+  {
+   "button_down": "UP",
+   "frames": 150,
+   "capture": "carga_b",
+   "capture_sequence": "carga_b",
+   "capture_every": 4
+  },
+  {
+   "button_up": "UP",
+   "frames": 2
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    },
+    {
+     "field": "dbg_force_group",
+     "value": 8
+    },
+    {
+     "field": "dbg_rest_mode",
+     "value": 1
+    },
+    {
+     "field": "dbg_start_room",
+     "value": 2
+    },
+    {
+     "field": "dbg_restart",
+     "value": 1
+    }
+   ],
+   "frames": 60
+  },
+  {
+   "poke": [
+    {
+     "field": "px",
+     "value": 59392
+    },
+    {
+     "field": "py",
+     "value": 371200
+    }
+   ],
+   "frames": 30
+  },
+  {
+   "frames": 216,
+   "capture": "ojo_a",
+   "capture_sequence": "ojo_a",
+   "capture_every": 4
+  },
+  {
+   "button_down": "UP",
+   "frames": 150,
+   "capture": "ojo_b",
+   "capture_sequence": "ojo_b",
+   "capture_every": 4
+  },
+  {
+   "button_up": "UP",
+   "frames": 2
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    },
+    {
+     "field": "dbg_force_group",
+     "value": 2
+    },
+    {
+     "field": "dbg_rest_mode",
+     "value": 2
+    },
+    {
+     "field": "dbg_start_room",
+     "value": 2
+    },
+    {
+     "field": "dbg_restart",
+     "value": 1
+    }
+   ],
+   "frames": 60
+  },
+  {
+   "poke": [
+    {
+     "field": "px",
+     "value": 59392
+    },
+    {
+     "field": "py",
+     "value": 371200
+    }
+   ],
+   "frames": 30
+  },
+  {
+   "frames": 216,
+   "capture": "embo_a",
+   "capture_sequence": "embo_a",
+   "capture_every": 4
+  },
+  {
+   "button_down": "UP",
+   "frames": 250,
+   "capture": "embo_b",
+   "capture_sequence": "embo_b",
+   "capture_every": 4
+  },
+  {
+   "button_up": "UP",
+   "frames": 2
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    },
+    {
+     "field": "dbg_force_group",
+     "value": 2
+    },
+    {
+     "field": "dbg_rest_mode",
+     "value": 3
+    },
+    {
+     "field": "dbg_start_room",
+     "value": 2
+    },
+    {
+     "field": "dbg_restart",
+     "value": 1
+    }
+   ],
+   "frames": 60
+  },
+  {
+   "poke": [
+    {
+     "field": "px",
+     "value": 59392
+    },
+    {
+     "field": "py",
+     "value": 371200
+    }
+   ],
+   "frames": 30
+  },
+  {
+   "frames": 216,
+   "capture": "patr_a",
+   "capture_sequence": "patr_a",
+   "capture_every": 4
+  },
+  {
+   "button_down": "UP",
+   "frames": 150,
+   "capture": "patr_b",
+   "capture_sequence": "patr_b",
+   "capture_every": 4
+  },
+  {
+   "button_up": "UP",
+   "frames": 2
+  }
+ ],
+ "evidence_only": true
+}

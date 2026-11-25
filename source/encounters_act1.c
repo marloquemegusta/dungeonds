@@ -728,6 +728,144 @@ int enc_room_take_exit(int *out_room) {
     return 1;
 }
 
+// ---------------------------------------------------------------------------
+// Rest behaviours (DESIGN-ARPG.md 12): a sleeping enemy (ENEMY_STATE_DORMANT, the AI skips it) wanders around its post until its
+// group wakes. The post is implicit: position minus offset (ox, oy), so the world shifting under the strip needs no fixing.
+// ---------------------------------------------------------------------------
+typedef struct { uint8_t mode, phase, aux; int16_t timer; fixed ox, oy; } RestRec;
+static RestRec s_rest[MAX_GAMEPLAY_ENEMIES];
+static uint32_t s_rest_group_mask;      // blocks with at least one resting enemy: their wake is by radius or hit, not by the room margin
+static uint32_t s_rest_wake_mask;       // blocks whose resting group has to wake now
+
+// 8.8 unit vectors per direction on the 2:1 ground (screen dy is half of ground dy), indexed by DIR_*.
+static const int16_t s_rest_vx[8] = { 0, -181, -256, -181, 0, 181, 256, 181 };
+static const int16_t s_rest_vy[8] = { 128, 91, 0, -91, -128, -91, 0, 91 };
+
+static void rest_assign(int slot, int mode, Enemy *e) {
+    if (slot < 0 || slot >= MAX_GAMEPLAY_ENEMIES) return;
+    RestRec *r = &s_rest[slot];
+    memset(r, 0, sizeof(*r));
+    if (mode < ENC_S_CRAWL || mode > ENC_S_PATROL) return;
+    r->mode = (uint8_t)mode;
+    r->aux = (uint8_t)(mode == ENC_S_SWEEP ? 0 : (slot & 1));
+    r->timer = (int16_t)(slot * 7 % 24);            // desynchronise the members of a group
+    if (mode == ENC_S_HIDDEN) e->home_flags |= ENEMY_HOME_HIDDEN;
+}
+
+// The rest every role gets when the debug mailbox asks for "as designed" (rest_mode 1), or the forced one.
+static int rest_mode_for(int enc_type, int guard) {
+    const int dbg = g_enc_debug.rest_mode;
+    if (!dbg || guard == 2) return 0;
+    if (dbg == 2) return ENC_S_HIDDEN;
+    if (dbg == 3) return ENC_S_PATROL;
+    switch (enc_type) {
+        case ENC_E_BEBE: return ENC_S_CRAWL;
+        case ENC_E_MONAGUILLO: return ENC_S_SWAY;
+        case ENC_E_OJO: return ENC_S_SWEEP;
+        case ENC_E_CIRENEO: return ENC_S_STROLL;
+        default: return 0;
+    }
+}
+
+static int rest_walk(Enemy *e, RestRec *r, int dir, int speed) {
+    fixed vx = (s_rest_vx[dir] * speed) >> 8;
+    fixed vy = (s_rest_vy[dir] * speed) >> 8;
+    const fixed x0 = e->x, y0 = e->y;
+    const int ok = sweep_position(&e->x, &e->y, vx, vy);
+    r->ox += e->x - x0;
+    r->oy += e->y - y0;
+    e->dir = dir;
+    return ok;
+}
+
+static void rest_anim(Enemy *e, int moving) {
+    if (!moving) { e->anim_timer = 0; e->frame = 0; return; }
+    int period = g_characters[e->char_id].anim_period;
+    if (period <= 0) period = 4;
+    if (++e->anim_timer >= period) { e->anim_timer = 0; e->frame = (e->frame + 1) % PLAYER_NUM_FRAMES; }
+}
+
+// Home direction from an offset (the rest zone is a small box around the post).
+static int rest_outside(const RestRec *r) {
+    const fixed ax = r->ox < 0 ? -r->ox : r->ox, ay = r->oy < 0 ? -r->oy : r->oy;
+    return ax > TO_FIXED(ENC_REST_STROLL_PX) || ay > TO_FIXED(ENC_REST_STROLL_PX / 2);
+}
+
+// One frame of rest. phase 0 = moving, 1 = paused; timer = frames left in the leg; aux = heading side / leg / gaze step.
+static void rest_step(Enemy *e, RestRec *r) {
+    int moving = 0;
+    switch (r->mode) {
+    case ENC_S_CRAWL:                      // 36 frames of crawl, 28 of pause, then a turn of 135 degrees (back home when too far)
+        if (r->timer > 0) {
+            r->timer--;
+            if (r->phase == 0) { rest_walk(e, r, e->dir, 100); moving = 1; }
+        } else if (r->phase == 0) {
+            r->phase = 1; r->timer = 28;
+        } else {
+            r->phase = 0; r->timer = 36;
+            e->dir = rest_outside(r) ? enemy_dir_from_vector(-r->ox, -r->oy) : (e->dir + 3) & 7;
+        }
+        break;
+    case ENC_S_SWAY:
+    case ENC_S_STROLL: {                   // along x, to one end, pause, to the other
+        const int sway = r->mode == ENC_S_SWAY;
+        const fixed half = TO_FIXED(sway ? ENC_REST_SWAY_PX : ENC_REST_STROLL_PX);
+        if (r->phase == 1) {
+            if (--r->timer <= 0) { r->phase = 0; r->aux ^= 1; }
+            break;
+        }
+        const int east = (r->aux & 1) == 0;
+        const int ok = rest_walk(e, r, east ? DIR_EAST : DIR_WEST, sway ? 64 : 80);
+        moving = 1;
+        if (!ok || (east ? r->ox >= half : r->ox <= -half)) { r->phase = 1; r->timer = sway ? 24 : 60; moving = 0; }
+        break;
+    }
+    case ENC_S_SWEEP: {                    // gaze: W, SW, S, SE, E and back, 40 frames per step
+        static const uint8_t seq[8] = { DIR_WEST, DIR_SOUTHWEST, DIR_SOUTH, DIR_SOUTHEAST, DIR_EAST, DIR_SOUTHEAST, DIR_SOUTH, DIR_SOUTHWEST };
+        if (--r->timer <= 0) { r->timer = 40; r->aux = (r->aux + 1) & 7; }
+        e->dir = seq[r->aux & 7];
+        break;
+    }
+    case ENC_S_PATROL: {                   // rectangle: east, south, west, north
+        static const uint8_t legs[4] = { DIR_EAST, DIR_SOUTH, DIR_WEST, DIR_NORTH };
+        const int leg = r->aux & 3;
+        const int ok = rest_walk(e, r, legs[leg], 96);
+        moving = 1;
+        const int done = leg == 0 ? r->ox >= TO_FIXED(ENC_REST_PATROL_W) : leg == 1 ? r->oy >= TO_FIXED(ENC_REST_PATROL_H)
+                       : leg == 2 ? r->ox <= 0 : r->oy <= 0;
+        if (!ok || done) r->aux = (uint8_t)((leg + 1) & 3);
+        break;
+    }
+    default: break;                        // HIDDEN: still
+    }
+    rest_anim(e, moving);
+}
+
+// Every frame, before the wake pass: moves the resting enemies and decides which resting groups wake (the hero inside the
+// warning radius of any member, or any member hit). Sets s_rest_group_mask / s_rest_wake_mask by block.
+static void rest_update(Enemy *enemies, int max_enemies, int px, int py) {
+    s_rest_group_mask = s_rest_wake_mask = 0;
+    for (int i = 0; i < max_enemies && i < MAX_GAMEPLAY_ENEMIES; i++) {
+        Enemy *e = &enemies[i];
+        RestRec *r = &s_rest[i];
+        if (!r->mode) continue;
+        if (!e->active || e->state != ENEMY_STATE_DORMANT) {       // woken, dead or recycled: the rest is over
+            e->home_flags &= (uint8_t)~ENEMY_HOME_HIDDEN;
+            r->mode = 0;
+            // Killed or hurt while it slept: the group wakes (a one-hit Bebe never shows as "hurt" otherwise).
+            if (e->active && e->pack >= 0 && e->pack < 32 && (e->hp < e->max_hp || e->hit_timer > 0)) s_rest_wake_mask |= 1u << e->pack;
+            continue;
+        }
+        if (e->pack < 0 || e->pack >= 32) continue;
+        s_rest_group_mask |= 1u << e->pack;
+        if (e->hp > 0) rest_step(e, r);
+        const int dx = px - TO_INT(e->x), dy = py - TO_INT(e->y);
+        const int rad = r->mode == ENC_S_HIDDEN ? ENC_REST_HIDDEN_WAKE_PX : ENC_REST_WAKE_PX;
+        if (e->hp > 0 && dx * dx + GROUND_DY2(dy) <= rad * rad) s_rest_wake_mask |= 1u << e->pack;
+        if (e->hit_timer > 0 || e->hp < e->max_hp) s_rest_wake_mask |= 1u << e->pack;
+    }
+}
+
 // Same field setup as encounters_spawn() / sandbox_place(); the owner encounter goes in `pack`.
 static void place_enemy(Enemy *e, const EncEnemyDef *d, int x, int y, int ordinal, int owner, int awake_now) {
     EnemyType type = enemy_type_of(d->type);
@@ -768,6 +906,7 @@ static int spawn_group(Enemy *enemies, int max_enemies, const EncEnemyDef *defs,
         int lx = mirror ? ENC_FLOOR_W - defs[i].x : defs[i].x;
         int ly = y_override >= 0 ? y_override : defs[i].y;
         place_enemy(&enemies[slot], &defs[i], ENC_FLOOR_X + lx, top + ly, i, owner, awake_now);
+        rest_assign(slot, awake_now ? 0 : defs[i].state, &enemies[slot]);      // ENC_S_CRAWL.. sleep and move around the post
         made++;
     }
     return made;
@@ -831,6 +970,7 @@ static const GroupDef s_groups[G_COUNT] = {
 static int group_of_block(int k) {
     const RoomDef *r = room_def();
     if (r->type == RT_CRIPTA) return -1;
+    if (g_enc_debug.force_group && g_enc_debug.force_group <= G_NORMAL_COUNT && r->type == RT_NORMAL) return g_enc_debug.force_group - 1;
     if (r->type == RT_MISA) return k == r->special_block ? G_MISA : -1;
     if (r->type == RT_MONJARANA) return k == r->special_block ? G_MONJARANA : -1;
     if (r->type == RT_PARROQUIA) return G_PARROQUIA;
@@ -1025,6 +1165,7 @@ static int spawn_room_group(Enemy *enemies, int max_enemies, int k) {
             int ty = y + (t == 3 ? 12 : 0);
             if (position_is_free(TO_FIXED(tx), TO_FIXED(ty))) {
                 place_room_enemy(&enemies[slot], kind, tx, ty, i, k, 100, tier2);
+                rest_assign(slot, rest_mode_for(kind->enc_type, kind->guard), &enemies[slot]);
                 placed = 1;
             }
         }
@@ -1051,6 +1192,7 @@ static void wake_owner(Enemy *enemies, int max_enemies, int owner) {
         if (!e->active || e->pack != owner || e->state != ENEMY_STATE_DORMANT) continue;
         e->state = (e->home_flags & ENEMY_HOME_GUARD) ? ENEMY_STATE_GUARD : ENEMY_INITIAL_STATE(e->type);
         e->state_timer = 0;
+        e->home_flags &= (uint8_t)~ENEMY_HOME_HIDDEN;
     }
 }
 
@@ -1259,6 +1401,7 @@ void enc_update(Enemy *enemies, int max_enemies, int px, int py) {
         }
     }
 
+    rest_update(enemies, max_enemies, px, py);
     // Wake the room the hero steps into, with at most ARPG_ROOM_MAX_AWAKE groups around him.
     for (int k = lo; k < hi; k++) {
         EncRuntime *rt = &s_rt[k];
@@ -1267,7 +1410,9 @@ void enc_update(Enemy *enemies, int max_enemies, int px, int py) {
         const int bottom = top + ENC_BLOCK_H;
         int hurt;
         (void)alive_of(enemies, max_enemies, k, &hurt);
-        if (py >= bottom - ENC_WAKE_MARGIN && !hurt) continue;
+        if (s_rest_group_mask & (1u << k)) {
+            if (!(s_rest_wake_mask & (1u << k))) continue;           // a resting group wakes by radius or hit, not by the room margin
+        } else if (py >= bottom - ENC_WAKE_MARGIN && !hurt) continue;
         if (k != hero_k) {
             int awake = 0;
             for (int j = lo; j < hi; j++) if (s_rt[j].awake && !s_rt[j].cleared) awake++;
