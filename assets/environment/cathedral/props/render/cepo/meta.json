@@ -1,21 +1,21 @@
 {
   "piece": "cepo",
   "size_px": [
-    56,
-    48
+    32,
+    32
   ],
   "content_px": [
-    52,
-    42
+    32,
+    26
   ],
-  "target_width": 52,
-  "scale_factor": 0.09683426443202979,
+  "target_width": 32,
+  "scale_factor": 0.0595903165735568,
   "source_render_px": [
     537,
     435
   ],
   "yaw": 45,
   "depth_units": "sprite_px",
-  "tiles_8x8_nonempty": 41,
-  "tiles_8x8_unique": 41
+  "tiles_8x8_nonempty": 16,
+  "tiles_8x8_unique": 16
 }

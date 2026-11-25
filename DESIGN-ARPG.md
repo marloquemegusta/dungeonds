@@ -220,6 +220,8 @@ Cada sala cuenta lo que fue: su función decide qué props lleva, colocados en c
 
 Props colocados en el póster (`walkthroughs/poster-mapa/`); la luz definitiva de cada sala y los enemigos están pendientes. El cofre fijo choca con un enemigo en las salas 5, 7 y 12 (pendiente de la revisión de enemigos).
 
+**Escala de los props (héroe 31 px = 2 m).** Los que usan los enemigos son de tamaño creíble: reclinatorio 28 px (madera oscura, cruz plateada, cojín carmesí), catre 48, palangana 24, cepo 32. Los exvotos siguen a 40 px pero **colgados en la pared del fondo** (pieza pintada con sombra de 2 px, sin sombra en el suelo). Osario: calaveras en pila 21, montón de huesos 34, estante 40 (sala 9: muro del fondo con 4 estantes cada 48 px). Las piezas grandes pueden ser dramáticas. El altar se queda a 16 px (pendiente).
+
 - **Naves 1-4 (salas 0-3):** filas simétricas de bancos a cada lado del pasillo, cada vez más rotos hacia el fondo.
 - **Galería del cofre (4):** cepos y sacos apilados junto al cofre.
 - **Galería del secreto (5):** capullos de araña, sacos y un cepo; el cofre fijo choca con un enemigo.

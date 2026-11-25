@@ -1,21 +1,21 @@
 {
   "piece": "catre",
   "size_px": [
-    64,
-    48
+    48,
+    40
   ],
   "content_px": [
-    64,
-    46
+    48,
+    35
   ],
-  "target_width": 64,
-  "scale_factor": 0.13559322033898305,
+  "target_width": 48,
+  "scale_factor": 0.1016949152542373,
   "source_render_px": [
     472,
     340
   ],
   "yaw": 45,
   "depth_units": "sprite_px",
-  "tiles_8x8_nonempty": 42,
-  "tiles_8x8_unique": 42
+  "tiles_8x8_nonempty": 25,
+  "tiles_8x8_unique": 25
 }

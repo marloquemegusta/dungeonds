@@ -96,6 +96,7 @@ En la DS todo lo que va dentro del programa (arrays `const` de C) se copia a EWR
   - El baker rechaza un `depth.png` cuyos valores se salgan del sprite y un prop físico sin huella. Ya no hay rectángulo de relleno.
   - Las piezas con `"footprint_from": "depth"` en `tools/props/props.json` (hoy los dos bancos) no usan `collision.png`. Su planta se construye a resolución cruda con dos fuentes: las superficies oclusoras, con su X y la Y de suelo que guarda la profundidad, y los píxeles bajos de la silueta, proyectados hacia abajo. Después se cierra, se rellena la envolvente convexa y se reduce por área (decisión en `DESIGN.md` §6.9.1b).
   - Sin los `.glb` de los props (no están en el repo), `--skip-lab` reprocesa desde la caché del lab en `%TEMP%\props_raw`.
+  - Escala de props del ARPG (2026-11-25): tamaños en `tools/props/props.json`; el reclinatorio se recolorea con `tools/props/recolor_reclinatorio.py`, que añade 4 rojos a la paleta compartida (171 → 175 de 256 colores). El altar sigue a 16 px porque a 28 px el horneado del kit falla («color.png does not fit in shadow canvas»). Los exvotos de pared son un mecanismo del póster (`COLGADOS` en `tools/poster/poster_arpg_v3.py`), no del kit. El colocador `place()` de `tools/poster/poster_acto1.py` descarta en silencio las piezas que se solapan.
   - Verificación: `tests/test_cathedral_kit_contract.py` y los escenarios `cathedral_props_depth_collision` y `cathedral_bench_collision`.
 
 ### 3.4. Efectos de armas, pase de suelo/luz y sandbox (2026-11-06, rama `proto/weapon-previews`)
