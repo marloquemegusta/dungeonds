@@ -592,8 +592,8 @@ void enc_room_select(int room, int from_room) {
     s_from_room = from_room;
     if (!((g_arpg.rooms_seen >> s_room) & 1)) {      // first visit: the overlay map reveals it (kept in the save)
         g_arpg.rooms_seen |= (uint16_t)(1u << s_room);
-        arpg_progress_save();
     }
+    arpg_progress_save();            // every room change: xp, kills and chests of the room just left survive a power-off
 }
 
 // ---------------------------------------------------------------------------

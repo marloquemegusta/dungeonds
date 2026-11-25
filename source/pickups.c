@@ -281,6 +281,7 @@ void pickups_update(fixed player_x, fixed player_y, PlayerState *player) {
                 if (arpg_tip_take(ARPG_TIP_RELIQUIA)) s_relic_tip_pending = 1;
                 sfx_play_pitched(SND_PICKUP_ORB, TO_INT(p->x), 1180);
                 p->active = 0;
+                arpg_progress_save();        // the relic is in the bag: do not lose it (nor the xp and kills) if the console is switched off
             } else if (s_loot_toast_t <= 0) {
                 snprintf(s_loot_toast, sizeof(s_loot_toast), "Bolsa llena");
                 s_loot_toast_t = 60;
