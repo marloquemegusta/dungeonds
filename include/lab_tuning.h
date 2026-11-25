@@ -29,6 +29,9 @@
 #define ARPG_BOXEO 0
 #endif
 /* Variant "arpg-exvotos": rooms stay empty; exvoto_test.c keeps a test encounter of tier-3 exvotos ahead of the hero. */
+#ifndef ARPG_MONJA_CURA_TEST
+#define ARPG_MONJA_CURA_TEST 0   // 1 = arpg-exvotos room with 3 Bebes + 1 Monja de cera (monja curandera check)
+#endif
 #ifndef ARPG_EXVOTO_TEST
 #define ARPG_EXVOTO_TEST 0
 #endif

@@ -1,0 +1,453 @@
+{
+ "name": "monja_curandera_gif",
+ "description": "Variante arpg-monja (3 Bebes + 1 Monja de cera, mismo pack, heroe invulnerable). Bebe herido -> la Monja lo cura (hp sube); el heroe sube hacia ella (60 px) y se aparta andando; mata a los Bebes y, sola, pasa a perseguir.",
+ "suite": false,
+ "state": {
+  "elf": "../.ds-game-dev/build/out/dungeonds-arpg-monja.elf",
+  "symbols": {
+   "pl": "s_player",
+   "gps": "g_player_state",
+   "en": "g_enemies"
+  },
+  "default_symbol": "en",
+  "fields": {
+   "god": {
+    "symbol": "gps",
+    "offset": 20,
+    "type": "s32"
+   },
+   "px": {
+    "symbol": "pl",
+    "offset": 0,
+    "type": "s32"
+   },
+   "py": {
+    "symbol": "pl",
+    "offset": 4,
+    "type": "s32"
+   },
+   "e0_x": {
+    "symbol": "en",
+    "offset": 0,
+    "type": "s32"
+   },
+   "e0_y": {
+    "symbol": "en",
+    "offset": 4,
+    "type": "s32"
+   },
+   "e0_hp": {
+    "symbol": "en",
+    "offset": 28,
+    "type": "s32"
+   },
+   "e0_active": {
+    "symbol": "en",
+    "offset": 24,
+    "type": "s32"
+   },
+   "e0_state": {
+    "symbol": "en",
+    "offset": 41,
+    "type": "u8"
+   },
+   "e0_char": {
+    "symbol": "en",
+    "offset": 20,
+    "type": "s32"
+   },
+   "e0_flee": {
+    "symbol": "en",
+    "offset": 96,
+    "type": "s32"
+   },
+   "e1_x": {
+    "symbol": "en",
+    "offset": 124,
+    "type": "s32"
+   },
+   "e1_y": {
+    "symbol": "en",
+    "offset": 128,
+    "type": "s32"
+   },
+   "e1_hp": {
+    "symbol": "en",
+    "offset": 152,
+    "type": "s32"
+   },
+   "e1_active": {
+    "symbol": "en",
+    "offset": 148,
+    "type": "s32"
+   },
+   "e1_state": {
+    "symbol": "en",
+    "offset": 165,
+    "type": "u8"
+   },
+   "e1_char": {
+    "symbol": "en",
+    "offset": 144,
+    "type": "s32"
+   },
+   "e1_flee": {
+    "symbol": "en",
+    "offset": 220,
+    "type": "s32"
+   },
+   "e2_x": {
+    "symbol": "en",
+    "offset": 248,
+    "type": "s32"
+   },
+   "e2_y": {
+    "symbol": "en",
+    "offset": 252,
+    "type": "s32"
+   },
+   "e2_hp": {
+    "symbol": "en",
+    "offset": 276,
+    "type": "s32"
+   },
+   "e2_active": {
+    "symbol": "en",
+    "offset": 272,
+    "type": "s32"
+   },
+   "e2_state": {
+    "symbol": "en",
+    "offset": 289,
+    "type": "u8"
+   },
+   "e2_char": {
+    "symbol": "en",
+    "offset": 268,
+    "type": "s32"
+   },
+   "e2_flee": {
+    "symbol": "en",
+    "offset": 344,
+    "type": "s32"
+   },
+   "e3_x": {
+    "symbol": "en",
+    "offset": 372,
+    "type": "s32"
+   },
+   "e3_y": {
+    "symbol": "en",
+    "offset": 376,
+    "type": "s32"
+   },
+   "e3_hp": {
+    "symbol": "en",
+    "offset": 400,
+    "type": "s32"
+   },
+   "e3_active": {
+    "symbol": "en",
+    "offset": 396,
+    "type": "s32"
+   },
+   "e3_state": {
+    "symbol": "en",
+    "offset": 413,
+    "type": "u8"
+   },
+   "e3_char": {
+    "symbol": "en",
+    "offset": 392,
+    "type": "s32"
+   },
+   "e3_flee": {
+    "symbol": "en",
+    "offset": 468,
+    "type": "s32"
+   }
+  }
+ },
+ "steps": [
+  {
+   "frames": 40,
+   "state_capture": "inicio"
+  },
+  {
+   "poke": [
+    {
+     "field": "god",
+     "value": 1
+    }
+   ],
+   "frames": 2
+  },
+  {
+   "button_down": "UP",
+   "frames": 30,
+   "capture_sequence": "g",
+   "capture_every": 3,
+   "state_capture": "sube0"
+  },
+  {
+   "button_down": "UP",
+   "frames": 30,
+   "capture_sequence": "g",
+   "capture_every": 3,
+   "state_capture": "sube1"
+  },
+  {
+   "button_down": "UP",
+   "frames": 30,
+   "capture_sequence": "g",
+   "capture_every": 3,
+   "state_capture": "sube2"
+  },
+  {
+   "button_down": "UP",
+   "frames": 30,
+   "capture_sequence": "g",
+   "capture_every": 3,
+   "state_capture": "sube3"
+  },
+  {
+   "button_up": "UP",
+   "frames": 1
+  },
+  {
+   "poke": [
+    {
+     "field": "e1_hp",
+     "value": 25
+    },
+    {
+     "field": "e2_hp",
+     "value": 25
+    },
+    {
+     "field": "e3_hp",
+     "value": 25
+    }
+   ],
+   "frames": 1,
+   "state_capture": "herido"
+  },
+  {
+   "frames": 75,
+   "capture_sequence": "g",
+   "capture_every": 3,
+   "state_capture": "curado"
+  },
+  {
+   "button_down": "UP",
+   "frames": 45,
+   "capture_sequence": "g",
+   "capture_every": 3,
+   "state_capture": "acerca"
+  },
+  {
+   "button_up": "UP",
+   "frames": 1
+  },
+  {
+   "button_down": "L",
+   "frames": 3
+  },
+  {
+   "button_up": "L",
+   "frames": 27,
+   "capture_sequence": "g",
+   "capture_every": 3,
+   "state_capture": "golpe0"
+  },
+  {
+   "button_down": "L",
+   "frames": 3
+  },
+  {
+   "button_up": "L",
+   "frames": 27,
+   "capture_sequence": "g",
+   "capture_every": 3,
+   "state_capture": "golpe1"
+  },
+  {
+   "button_down": "L",
+   "frames": 3
+  },
+  {
+   "button_up": "L",
+   "frames": 27,
+   "capture_sequence": "g",
+   "capture_every": 3,
+   "state_capture": "golpe2"
+  },
+  {
+   "button_down": "L",
+   "frames": 3
+  },
+  {
+   "button_up": "L",
+   "frames": 27,
+   "capture_sequence": "g",
+   "capture_every": 3,
+   "state_capture": "golpe3"
+  },
+  {
+   "button_down": "L",
+   "frames": 3
+  },
+  {
+   "button_up": "L",
+   "frames": 27,
+   "capture_sequence": "g",
+   "capture_every": 3,
+   "state_capture": "golpe4"
+  },
+  {
+   "button_down": "L",
+   "frames": 3
+  },
+  {
+   "button_up": "L",
+   "frames": 27,
+   "capture_sequence": "g",
+   "capture_every": 3,
+   "state_capture": "golpe5"
+  },
+  {
+   "button_down": "L",
+   "frames": 3
+  },
+  {
+   "button_up": "L",
+   "frames": 27,
+   "capture_sequence": "g",
+   "capture_every": 3,
+   "state_capture": "golpe6"
+  },
+  {
+   "button_down": "L",
+   "frames": 3
+  },
+  {
+   "button_up": "L",
+   "frames": 27,
+   "capture_sequence": "g",
+   "capture_every": 3,
+   "state_capture": "golpe7"
+  },
+  {
+   "button_down": "L",
+   "frames": 3
+  },
+  {
+   "button_up": "L",
+   "frames": 27,
+   "capture_sequence": "g",
+   "capture_every": 3,
+   "state_capture": "golpe8"
+  },
+  {
+   "button_down": "L",
+   "frames": 3
+  },
+  {
+   "button_up": "L",
+   "frames": 27,
+   "capture_sequence": "g",
+   "capture_every": 3,
+   "state_capture": "golpe9"
+  },
+  {
+   "button_down": "L",
+   "frames": 3
+  },
+  {
+   "button_up": "L",
+   "frames": 27,
+   "capture_sequence": "g",
+   "capture_every": 3,
+   "state_capture": "golpe10"
+  },
+  {
+   "button_down": "L",
+   "frames": 3
+  },
+  {
+   "button_up": "L",
+   "frames": 27,
+   "capture_sequence": "g",
+   "capture_every": 3,
+   "state_capture": "golpe11"
+  },
+  {
+   "button_down": "L",
+   "frames": 3
+  },
+  {
+   "button_up": "L",
+   "frames": 27,
+   "capture_sequence": "g",
+   "capture_every": 3,
+   "state_capture": "golpe12"
+  },
+  {
+   "button_down": "L",
+   "frames": 3
+  },
+  {
+   "button_up": "L",
+   "frames": 27,
+   "capture_sequence": "g",
+   "capture_every": 3,
+   "state_capture": "golpe13"
+  },
+  {
+   "frames": 150,
+   "capture_sequence": "g",
+   "capture_every": 3,
+   "state_capture": "final"
+  }
+ ],
+ "assertions": {
+  "state_changes": [
+   {
+    "at": "herido",
+    "field": "e1_hp",
+    "equals": 25
+   },
+   {
+    "at": "curado",
+    "field": "e1_hp",
+    "min_value": 26
+   },
+   {
+    "at": "inicio",
+    "field": "e0_state",
+    "equals": 15
+   },
+   {
+    "at": "acerca",
+    "field": "e0_state",
+    "equals": 15
+   },
+   {
+    "at": "acerca",
+    "field": "e0_flee",
+    "equals": 1
+   },
+   {
+    "from": "curado",
+    "to": "acerca",
+    "field": "e0_y",
+    "max_delta": -1
+   },
+   {
+    "at": "golpe4",
+    "field": "e0_state",
+    "equals": 0
+   }
+  ]
+ }
+}

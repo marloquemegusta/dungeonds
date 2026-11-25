@@ -4,11 +4,21 @@
 
 #include <string.h>
 #include "collision.h"
+#include "enemy_ai.h"
 
+#if ARPG_MONJA_CURA_TEST
+// Monja curandera (DESIGN-ARPG.md, 2026-11-24): 3 Bebes in front and one Monja de cera behind them, all of one pack.
+#define EXT_COUNT 4
+#else
 #define EXT_COUNT 7
+#endif
 #define EXT_DELAY_FRAMES 120    // ~2 s tras caer el ultimo antes de reponerlos
 #define EXT_PACK (-1)           // pack -1: ni el despertar de encounters ni enc_untouchable() los toca, y el Rayo les da
 
+#if ARPG_MONJA_CURA_TEST
+static const EnemyType s_types[EXT_COUNT] = { ENEMY_TYPE_EXVOTO, ENEMY_TYPE_BEBE, ENEMY_TYPE_BEBE, ENEMY_TYPE_BEBE };
+static const int8_t s_off[EXT_COUNT][2] = { {0, -110}, {-24, -74}, {24, -74}, {0, -84} };
+#else
 static const EnemyType s_types[EXT_COUNT] = {
     ENEMY_TYPE_MONJA, ENEMY_TYPE_EXVOTO, ENEMY_TYPE_EXVOTO, ENEMY_TYPE_MONAGUILLO, ENEMY_TYPE_MONAGUILLO,
     ENEMY_TYPE_PARROCO, ENEMY_TYPE_BEBE,
@@ -17,6 +27,7 @@ static const EnemyType s_types[EXT_COUNT] = {
 static const int8_t s_off[EXT_COUNT][2] = {
     {0, -80}, {-36, -66}, {36, -66}, {-56, -86}, {56, -86}, {-24, -108}, {26, -108},
 };
+#endif
 
 static int s_wait;      // frames con el encuentro entero muerto
 static int s_started;
@@ -40,6 +51,9 @@ static void ext_place(Enemy *e, EnemyType type, int x, int y, int ordinal) {
     e->dir = 4;
     e->strafe_dir = (ordinal & 1) ? 1 : -1;
     e->state = ENEMY_INITIAL_STATE(type);
+#if ARPG_MONJA_CURA_TEST
+    if (type == ENEMY_TYPE_EXVOTO) { e->home_flags = ENEMY_HOME_GUARD; enemy_exvoto_start_praying(e, 0, 4); }   // as place_room_enemy does
+#endif
 }
 
 static void spawn_all(Enemy *enemies, int max_enemies, int hx, int hy) {
