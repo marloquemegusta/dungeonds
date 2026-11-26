@@ -1,0 +1,274 @@
+{
+ "name": "arpg_campana_muerte",
+ "description": "Muerte en la mazmorra con 4 reliquias recogidas en la bajada y un objeto de misi\u00f3n encima: vuelve al campamento con la mitad (2), sin el objeto, con la experiencia intacta y los avisos 'Has perdido 2 objetos' y 'Se ha perdido Sello del Hospital'. Geometr\u00eda: el h\u00e9roe cruza la puerta del campamento (128,116) y entra en la Nave 1.",
+ "tags": [
+  "campana-ciclo"
+ ],
+ "state": {
+  "elf": "../.ds-game-dev/build/out/dungeonds.elf",
+  "symbols": {
+   "pl": "s_player",
+   "ps": "g_player_state",
+   "ga": "g_arpg",
+   "q": "g_quest"
+  },
+  "default_symbol": "pl",
+  "fields": {
+   "px": {
+    "symbol": "pl",
+    "offset": 0,
+    "type": "s32"
+   },
+   "py": {
+    "symbol": "pl",
+    "offset": 4,
+    "type": "s32"
+   },
+   "is_dead": {
+    "symbol": "ps",
+    "offset": 12,
+    "type": "s32"
+   },
+   "god": {
+    "symbol": "ps",
+    "offset": 20,
+    "type": "s32"
+   },
+   "carrying": {
+    "symbol": "q",
+    "offset": 1,
+    "type": "u8"
+   },
+   "delivered": {
+    "symbol": "q",
+    "offset": 0,
+    "type": "u8"
+   },
+   "offered": {
+    "symbol": "q",
+    "offset": 3,
+    "type": "u8"
+   },
+   "xp": {
+    "symbol": "ga",
+    "offset": 8,
+    "type": "u32"
+   },
+   "bag0": {
+    "symbol": "ga",
+    "offset": 28,
+    "type": "u8"
+   },
+   "bag0_mech": {
+    "symbol": "ga",
+    "offset": 31,
+    "type": "u8"
+   },
+   "bag1": {
+    "symbol": "ga",
+    "offset": 42,
+    "type": "u8"
+   },
+   "bag1_mech": {
+    "symbol": "ga",
+    "offset": 45,
+    "type": "u8"
+   },
+   "bag2": {
+    "symbol": "ga",
+    "offset": 56,
+    "type": "u8"
+   },
+   "bag2_mech": {
+    "symbol": "ga",
+    "offset": 59,
+    "type": "u8"
+   },
+   "bag3": {
+    "symbol": "ga",
+    "offset": 70,
+    "type": "u8"
+   },
+   "bag3_mech": {
+    "symbol": "ga",
+    "offset": 73,
+    "type": "u8"
+   },
+   "bag3_level": {
+    "symbol": "ga",
+    "offset": 82,
+    "type": "u8"
+   }
+  }
+ },
+ "steps": [
+  {
+   "frames": 90
+  },
+  {
+   "tap": {
+    "x": 128,
+    "y": 66
+   },
+   "frames": 6
+  },
+  {
+   "release": true,
+   "frames": 40
+  },
+  {
+   "button_down": "START",
+   "frames": 4
+  },
+  {
+   "button_up": "START",
+   "frames": 90,
+   "capture": "a01_campamento"
+  },
+  {
+   "poke": [
+    {
+     "field": "px",
+     "value": 32768
+    },
+    {
+     "field": "py",
+     "value": 29696
+    }
+   ],
+   "frames": 20
+  },
+  {
+   "button_down": "A",
+   "frames": 4
+  },
+  {
+   "button_up": "A",
+   "frames": 120,
+   "capture": "b01_mazmorra"
+  },
+  {
+   "poke": [
+    {
+     "field": "bag0",
+     "value": 1
+    },
+    {
+     "field": "bag0_mech",
+     "value": 255
+    },
+    {
+     "field": "bag1",
+     "value": 1
+    },
+    {
+     "field": "bag1_mech",
+     "value": 255
+    },
+    {
+     "field": "bag2",
+     "value": 1
+    },
+    {
+     "field": "bag2_mech",
+     "value": 255
+    },
+    {
+     "field": "bag3",
+     "value": 1
+    },
+    {
+     "field": "bag3_mech",
+     "value": 255
+    },
+    {
+     "field": "bag3_level",
+     "value": 129
+    },
+    {
+     "field": "carrying",
+     "value": 1
+    },
+    {
+     "field": "xp",
+     "value": 77
+    }
+   ],
+   "frames": 2,
+   "state_capture": "antes"
+  },
+  {
+   "poke": [
+    {
+     "field": "is_dead",
+     "value": 1
+    }
+   ],
+   "frames": 90,
+   "capture": "c01_has_caido"
+  },
+  {
+   "button_down": "A",
+   "frames": 4
+  },
+  {
+   "button_up": "A",
+   "frames": 40,
+   "capture": "d01_campamento_aviso",
+   "state_capture": "despues"
+  },
+  {
+   "frames": 160,
+   "capture": "d02_aviso_objeto_perdido"
+  }
+ ],
+ "assertions": {
+  "state_changes": [
+   {
+    "at": "antes",
+    "field": "bag3",
+    "equals": 1
+   },
+   {
+    "at": "antes",
+    "field": "carrying",
+    "equals": 1
+   },
+   {
+    "at": "despues",
+    "field": "bag0",
+    "equals": 1
+   },
+   {
+    "at": "despues",
+    "field": "bag1",
+    "equals": 1
+   },
+   {
+    "at": "despues",
+    "field": "bag2",
+    "equals": 0
+   },
+   {
+    "at": "despues",
+    "field": "bag3",
+    "equals": 1
+   },
+   {
+    "at": "despues",
+    "field": "carrying",
+    "equals": 0
+   },
+   {
+    "at": "despues",
+    "field": "xp",
+    "equals": 77
+   },
+   {
+    "at": "despues",
+    "field": "is_dead",
+    "equals": 0
+   }
+  ]
+ }
+}
