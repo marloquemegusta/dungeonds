@@ -1,0 +1,80 @@
+{
+  "name": "exvoto_bebe_walk",
+  "model": "exvoto_bebe_walk.fbx",
+  "animation": "exvoto_bebe_walk (1.47s)",
+  "directions": [
+    "S",
+    "SW",
+    "W",
+    "NW",
+    "N",
+    "NE",
+    "E",
+    "SE"
+  ],
+  "dirsRendered": [
+    "S",
+    "SW",
+    "W",
+    "NW",
+    "N",
+    "NE",
+    "E",
+    "SE"
+  ],
+  "framesPerDirection": 8,
+  "frameSize": "160x160",
+  "spritesheet": {
+    "columns": 8,
+    "rows": 8,
+    "width": 1280,
+    "height": 1280,
+    "alpha": true
+  },
+  "anchor": [
+    80,
+    137
+  ],
+  "dirGroundAnchors": [
+    137,
+    137,
+    137,
+    137,
+    137,
+    137,
+    137,
+    137
+  ],
+  "shadowSize": [
+    320,
+    320
+  ],
+  "stride3dMeters": 1.152,
+  "strideRatio": 0.672,
+  "ticksPerFrame": 11,
+  "stridePixels": 107.48,
+  "speedFixed8_8": 89,
+  "inPlace": true,
+  "rigScale": 1,
+  "cameraElevationDegrees": 30,
+  "contrast": 1,
+  "saturation": 1,
+  "neckPitchDegrees": 0,
+  "displace": 0,
+  "brightness": 1,
+  "webglShadowQuality": 16,
+  "normalStrength": 0.5,
+  "shadowSoftness": 2,
+  "supersample": 4,
+  "legibility": "c2",
+  "legibilityPivot": 0.6778007843137255,
+  "boneShader": false,
+  "renderEngine": "Three.js WebGL (browser)",
+  "lightPreset": "neutral",
+  "outlineMode": "none",
+  "fitZoom": 0.5346976744186046,
+  "measuredExtent": 1.9907272210903615,
+  "fitExtent": 2.0391720399643707,
+  "normScale": 0.018627107106441602,
+  "toneMapping": "neutral"
+}
