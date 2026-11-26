@@ -51,7 +51,7 @@
 #define ARPG_MONJA_KEEP_FLEE_STOP 90    // [TUNABLE-PLACEHOLDER] ground px: she stops fleeing (and prays) from this distance
 #define ARPG_MONJA_KEEP_FAR 115         // [TUNABLE-PLACEHOLDER] ground px: hero farther than this makes her walk closer
 #define ARPG_MONJA_KEEP_FAR_STOP 100    // [TUNABLE-PLACEHOLDER] ground px: she stops approaching (and prays) from this distance
-#define ARPG_EXVOTO_HEAL_PCT 2          // [TUNABLE-PLACEHOLDER] Monja de cera praying at a post (Capilla del parroco): % of max life healed per second to the Exvoto family around her
+#define ARPG_EXVOTO_HEAL_PCT 5          // [TUNABLE-PLACEHOLDER] Monja de cera praying at a post (Capilla del parroco): % of max life healed per second to the Exvoto family around her
 #define ARPG_EXVOTO_HEAL_RADIUS 80      // [TUNABLE-PLACEHOLDER] ground px of that heal
 #define ARPG_MONJA_PRAYS 0              // 1 = the old prayer (heal + haste + placement); 0 = Super Monja: circles, kites and charges (ARPG_SMONJA_*)
 // Super Monja (DESIGN-ARPG s5): circles at mid distance, kites at punching range, charges now and then.
