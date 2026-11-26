@@ -22,10 +22,11 @@ static void arpg_unlock_for_tests(void) {
 #endif
 }
 
-// round(110 * 1.45^(L-1)) for levels 1..20 (computed offline, hardcoded). Level 20 and up use the last value.
+// round(110 * 1.45^(L-1)) for levels 1..20 (computed offline, hardcoded), except the first three steps (60, 110, 200: the first
+// levels come within the first minutes, balance_log). Level 20 and up use the last value.
 #define ARPG_XP_TABLE_LEN 20
 static const int s_arpg_xp_needed[ARPG_XP_TABLE_LEN] = {
-    110, 160, 231, 335, 486, 705, 1022, 1482, 2149, 3117,
+    60, 110, 200, 335, 486, 705, 1022, 1482, 2149, 3117,
     4519, 6553, 9502, 13778, 19978, 28968, 42003, 60904, 88311, 128052
 };
 

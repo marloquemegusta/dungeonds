@@ -113,6 +113,7 @@ int  arpg_inv_first_free_bag(void);
 // Alijo del arcón (16 huecos). Mueven la reliquia entre bolsa y alijo; devuelven 0 si no cabe.
 const ArpgInvItem *arpg_inv_stash_item(int index);
 int  arpg_inv_first_free_stash(void);
+int  arpg_inv_stash_add(const ArpgInvItem *item);     // reliquia directa al alijo; indice o -1
 int  arpg_inv_stash_store(int bag_index);      // bolsa -> primer hueco libre del alijo
 int  arpg_inv_stash_take(int stash_index);     // alijo -> primer hueco libre de la bolsa
 int  arpg_inv_stash_move(int bag_index, int stash_index);   // intercambia (o mueve si el destino está vacío)

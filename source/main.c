@@ -3792,6 +3792,7 @@ static void leave_camp_to_dungeon(void) {
 
 // Leaves the dungeon for the camp (death or pause menu): saves the progress, stops the run.
 static void run_to_camp(void) {
+    pickups_bank_relics();
     arpg_progress_save();
     sfx_stop_bgm();
     enter_camp_scene();

@@ -12,7 +12,7 @@
 // Mana: spent by spells, regenerated slowly.
 #define ARPG_MANA_BASE 60           // [TUNABLE-PLACEHOLDER] mana at level 1
 #define ARPG_MANA_PER_LEVEL 10       // [TUNABLE-PLACEHOLDER] mana gained per level
-#define ARPG_MANA_REGEN_FRAMES 30   // [TUNABLE-PLACEHOLDER] 1 mana every N frames
+#define ARPG_MANA_REGEN_FRAMES 30   // [TUNABLE-PLACEHOLDER] 1 mana every N frames (slow on purpose: mana comes from executions, DESIGN-ARPG.md)
 
 // Damage the hero takes per hit, by enemy type.
 #define ARPG_DMG_EXVOTO 16          // [TUNABLE-PLACEHOLDER]
@@ -27,7 +27,7 @@
 #define ARPG_SMONJA_GLIFO_MARGIN 14 // [TUNABLE-PLACEHOLDER] ground px past the glifo's edge she keeps running to
 #define ARPG_DMG_MONJA 10           // [TUNABLE-PLACEHOLDER] support tier: her blow is weak when cornered
 #define ARPG_DMG_CIRENEO 36         // [TUNABLE-PLACEHOLDER] ENEMY_TYPE_CHARGER
-#define ARPG_DMG_OJO 30             // [TUNABLE-PLACEHOLDER] ENEMY_TYPE_SHOOTER
+#define ARPG_DMG_OJO 15             // [TUNABLE-PLACEHOLDER] ENEMY_TYPE_SHOOTER (was 30: killed a level 1 hero in 4 hits in the Nave 2)
 #define ARPG_DMG_ABANDERADO 25      // [TUNABLE-PLACEHOLDER]
 #define ARPG_DMG_CAMPANERO 25       // [TUNABLE-PLACEHOLDER] contact damage of the Campanero (DESIGN-ARPG.md 9)
 #define ARPG_DMG_CAMPANERO_TOQUE 30 // [TUNABLE-PLACEHOLDER] the major toll's ring on the hero
