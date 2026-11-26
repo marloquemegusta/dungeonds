@@ -262,24 +262,24 @@
    "rooms": [
     14
    ],
-   "intensidad": 0.3,
-   "desde_deg": 180,
-   "elevacion_deg": 22,
-   "sombra_elevacion_deg": 30,
+   "intensidad": 0.2,
+   "desde_deg": 140,
+   "elevacion_deg": 20,
+   "sombra_elevacion_deg": 36,
    "keyColor": "#8fc27a",
-   "key": 1.08,
+   "key": 0.8,
    "fillColor": "#34503e",
-   "fill": 0.4,
+   "fill": 0.3,
    "rimColor": "#cfd8e8",
    "rim": 0.19,
-   "world": 0.14,
+   "world": 0.1,
    "floor_tint": [
     0.64,
     0.88,
     0.58
    ],
-   "floor_gain": 0.51,
-   "sombras": "largas hacia el fondo"
+   "floor_gain": 0.27,
+   "sombras": "largas en diagonal desde la izquierda"
   },
   {
    "id": "cripta",
@@ -287,24 +287,24 @@
    "rooms": [
     15
    ],
-   "intensidad": 0.45,
-   "desde_deg": 180,
-   "elevacion_deg": 24,
-   "sombra_elevacion_deg": 30,
+   "intensidad": 0.22,
+   "desde_deg": 135,
+   "elevacion_deg": 22,
+   "sombra_elevacion_deg": 36,
    "keyColor": "#c98a6c",
-   "key": 1.62,
+   "key": 1.0,
    "fillColor": "#4a3a3a",
-   "fill": 0.46,
+   "fill": 0.32,
    "rimColor": "#cdbfb4",
    "rim": 0.24,
-   "world": 0.16,
+   "world": 0.1,
    "floor_tint": [
     0.92,
     0.68,
     0.58
    ],
-   "floor_gain": 0.61,
-   "sombras": "largas hacia el fondo"
+   "floor_gain": 0.31,
+   "sombras": "largas en diagonal desde la derecha"
   }
  ],
  "sala_a_luz": {

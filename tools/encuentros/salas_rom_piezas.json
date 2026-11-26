@@ -1762,14 +1762,7 @@
    {
     "piece": "capullo",
     "k": 0,
-    "lx": 48,
-    "ly": 144,
-    "mirror": 0
-   },
-   {
-    "piece": "capullo",
-    "k": 0,
-    "lx": 80,
+    "lx": 64,
     "ly": 152,
     "mirror": 0
    },
@@ -1860,43 +1853,8 @@
    {
     "piece": "capullo",
     "k": 1,
-    "lx": 112,
-    "ly": 0,
-    "mirror": 0
-   },
-   {
-    "piece": "capullo",
-    "k": 1,
-    "lx": 80,
-    "ly": 16,
-    "mirror": 0
-   },
-   {
-    "piece": "capullo",
-    "k": 1,
     "lx": 56,
     "ly": 64,
-    "mirror": 0
-   },
-   {
-    "piece": "capullo",
-    "k": 1,
-    "lx": 112,
-    "ly": 64,
-    "mirror": 0
-   },
-   {
-    "piece": "capullo",
-    "k": 1,
-    "lx": 120,
-    "ly": 216,
-    "mirror": 0
-   },
-   {
-    "piece": "capullo",
-    "k": 1,
-    "lx": 88,
-    "ly": 240,
     "mirror": 0
    },
    {
@@ -1909,15 +1867,8 @@
    {
     "piece": "capullo",
     "k": 1,
-    "lx": 72,
-    "ly": 304,
-    "mirror": 0
-   },
-   {
-    "piece": "capullo",
-    "k": 1,
-    "lx": 104,
-    "ly": 304,
+    "lx": 64,
+    "ly": 312,
     "mirror": 0
    },
    {
@@ -1988,7 +1939,7 @@
    {
     "piece": "huesos_monton",
     "k": 0,
-    "lx": 136,
+    "lx": 128,
     "ly": 280,
     "mirror": 0
    },
