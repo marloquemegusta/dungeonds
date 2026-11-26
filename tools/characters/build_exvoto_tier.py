@@ -9,6 +9,9 @@ Salidas: assets/models/characters/<personaje>/<personaje>_{pray_stand,pray_kneel
 
 Con --run-only (tercer argumento tras --) solo se construye <personaje>_run.fbx desde walk/running.fbx (Mixamo
 «Running»), sin tocar los otros cuatro: es el clip de correr del Parroco (CHAR_EXVOTO_PARROCO_RUN, NitroFS).
+
+Con --crawl-only solo se construye <personaje>_crawl.fbx desde crawl/crawling.fbx (Mixamo «Crawling», a gatas):
+es el gateo del Bebe para los videos de lore (no va a la ROM). Brazos del propio clip, sin pose de rezo.
 """
 import bpy, sys, os, math, glob
 import numpy as np
@@ -25,10 +28,15 @@ SRC_FILES = {
     'k2s': os.path.join(ANIM, 'pray/pray_kneel_to_stand.fbx'),
     'walk': os.path.join(ANIM, 'walk/walk_normal.fbx'),
     'run': os.path.join(ANIM, 'walk/running.fbx'),
+    'crawl': os.path.join(ANIM, 'crawl/crawling.fbx'),
 }
 RUN_ONLY = '--run-only' in sys.argv
-if RUN_ONLY:
-    SRC_FILES = {k: v for k, v in SRC_FILES.items() if k in ('walk', 'run')}  # 'walk' fija la orientacion de referencia
+CRAWL_ONLY = '--crawl-only' in sys.argv
+if RUN_ONLY or CRAWL_ONLY:
+    _solo = 'run' if RUN_ONLY else 'crawl'
+    SRC_FILES = {k: v for k, v in SRC_FILES.items() if k in ('walk', _solo)}  # 'walk' fija la orientacion de referencia
+else:
+    del SRC_FILES['crawl']
 FPS = 30
 P = 'mixamorig:'
 
@@ -44,6 +52,11 @@ WALK_LEAN = {'Spine': 7, 'Spine1': 7, 'Spine2': 7, 'Neck': 12, 'Head': 12}
 WALK_ARMS_FRAME = 1
 RUN_FRAMES = 33              # fotogramas del ciclo de correr a 30 fps (el cierre repite el primero); se muestrea a 8 en el lab
 RUN_LEAN = {}                # la inclinacion de la carrera ya viene en el clip de Mixamo
+# Gateo: grados extra por hueso (positivo = inclina hacia delante, negativo = levanta). El Bebe tiene los brazos
+# muy cortos: sin bajar el pecho las manos flotan. Hombros hacia abajo para apoyarlas y cabeza alzada para que
+# la camara (picada) le vea la cara. Se puede probar otra pose con la variable de entorno CRAWL_LEAN.
+CRAWL_LEAN = {'Spine': 22, 'Spine1': 12, 'LeftShoulder': -34, 'RightShoulder': -34, 'Neck': -56, 'Head': -50}
+CRAWL_LEAN.update({k: float(v) for k, v in (x.split('=') for x in os.environ.get('CRAWL_LEAN', '').split(',') if x)})
 HEAD_TILT = 0.0
 ARM_BONES_KEYS = ('Shoulder', 'Arm', 'ForeArm', 'Hand')
 
@@ -354,8 +367,24 @@ def build_run():
     return ground(res), '%d-%d -> %d frames' % (f0, f1, RUN_FRAMES + 1)
 
 
+def build_crawl():
+    """Ciclo de gateo: Crawling de Mixamo retargeteado entero (brazos incluidos), en el sitio y cerrado en bucle."""
+    src = SRC['crawl']
+    act = src.animation_data.action
+    f0, f1 = int(act.frame_range[0]), int(act.frame_range[1])
+    print('CRAWL source frames', f0, f1, 'fps', scene.render.fps)
+    res = anchor_hips_xy([retarget_frame(src, f) for f in range(f0, f1 + 1)])
+    print('LOOP crawl diff first vs last: %.4f m' % pose_diff(res[0], res[-1]))
+    if CRAWL_LEAN:
+        res = [apply_lean(b, CRAWL_LEAN) for b in res]
+    res[-1] = res[0]
+    return ground(res), '%d-%d' % (f0, f1)
+
+
 clips = {}
-if not RUN_ONLY:
+if CRAWL_ONLY:
+    clips['crawl'] = build_crawl()
+elif not RUN_ONLY:
 
     raw = clip_from(SRC['stand'], 1, 98)
     print('LOOP pray_stand diff f1 vs f98: %.4f m' % pose_diff(raw[0], raw[-1]))
@@ -433,10 +462,17 @@ else:
     clips["run"] = build_run()
 
 NAMES = {'pray_stand': PERSONAJE + '_pray_stand', 'pray_kneel': PERSONAJE + '_pray_kneel',
-         'stand_up': PERSONAJE + '_stand_up', 'walk': PERSONAJE + '_walk', 'run': PERSONAJE + '_run'}
+         'stand_up': PERSONAJE + '_stand_up', 'walk': PERSONAJE + '_walk', 'run': PERSONAJE + '_run',
+         'crawl': PERSONAJE + '_crawl'}
 made = {}
 for key, (poses, rng) in clips.items():
     report(key, poses, rng)
+if CRAWL_ONLY:
+    print('APOYOS (z en m de la articulacion) frame: caderas cabeza manoI manoD rodillaI rodillaD pieI pieD')
+    for i in range(0, len(clips['crawl'][0]), 4):
+        M = fk(clips['crawl'][0][i])
+        print('APOYO %2d ' % i + ' '.join('%.3f' % (A_W @ M[P + b].translation).z for b in (
+            'Hips', 'Head', 'LeftHand', 'RightHand', 'LeftLeg', 'RightLeg', 'LeftFoot', 'RightFoot')))
 for key, (poses, rng) in clips.items():
     made[key] = write_action(NAMES[key], poses)
 
