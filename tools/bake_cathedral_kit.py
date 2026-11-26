@@ -1284,12 +1284,25 @@ class RoomTiles(Tiles):
         return idx | (0x4000 if h else 0) | (0x8000 if v else 0)
 
 
+def mirror_shadow(shadow, foot_runs, w):
+    """La luz de la sala no se espeja con la pieza: la sombra conserva su direccion y solo acompana a la huella, que cambia de sitio
+    (centro de la huella x -> w - x). Sin huella se deja sin mover."""
+    n = sum(r[2] for r in foot_runs)
+    if n == 0: return shadow.copy()
+    cx4 = sum((x * 2 + m) * m for x, _, m in foot_runs)      # sum((2x + n) * n): centro de cada tramo ponderado
+    shift = w - (cx4 * 4) // n                               # w - 2 * centro (px): desplazamiento de la huella al espejar
+    out = np.zeros_like(shadow)
+    if shift >= 0: out[:, shift:] = shadow[:, :shadow.shape[1] - shift]
+    else: out[:, :shift] = shadow[:, -shift:]
+    return out
+
+
 def mirror_layout(lay):
     """La misma pieza en espejo (lienzo entero, como `pieza~` del poster): pixeles, sombra, huella y profundidad."""
     w = lay["w"]
     out = dict(lay)
     out["rgba"] = lay["rgba"][:, ::-1].copy()
-    out["shadow"] = None if lay["shadow"] is None else lay["shadow"][:, ::-1].copy()
+    out["shadow"] = None if lay["shadow"] is None else mirror_shadow(lay["shadow"], lay["foot_runs"], w)
     out["foot_runs"] = [(w // 4 - (x + n), y, n) for x, y, n in lay["foot_runs"]]
     out["depth_runs"] = [(w - (x + n), y, n, d) for x, y, n, d in lay["depth_runs"]]
     return out
