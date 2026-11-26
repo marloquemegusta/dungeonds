@@ -2,6 +2,17 @@
 
 Cada partida del usuario en la DS: qué ROM, qué notó, qué se hizo. La más reciente arriba.
 
+## Partida 3 — 2026-11-26
+
+**ROM:** `feat/pulido-final` d889f4d4 (monja que sigue al grupo, puño a un quinto, Párroco ×5). Valoración: «muchísimo más divertido».
+
+| # | Sala | Feedback del usuario | Tipo | Estado |
+|---|---|---|---|---|
+| 1 | Grupos con monja | Divertido: hasta matar a la monja no muere nada, y los Monaguillos tapan el Rayo. Pero cura demasiado: si te empeñas, deberías poder matar al Monaguillo con el Rayo, aunque sea muy ineficiente. Y la monja pide demasiados puñetazos. | Equilibrio | Arreglado: cura el 15 % de la vida por segundo (antes el 150 %). Con 4 Rayos seguidos un Monaguillo muere aunque ella viva; con 3, no. A puñetazos solo se le quitan unos 4 de vida por segundo, así que sin mejoras no se le puede matar. La monja tiene 120 de vida (los Exvotos normales siguen con 250): unos 7 golpes la tambalean (fix/pt3-monja) |
+| 2 | Grupos con monja | Las monjas no se quedan tambaleantes nunca. | Fallo | Arreglado: mientras rezaba no podía tambalearse. Ahora se tambalea al 25 % de vida, deja de curar y se la puede rematar (fix/pt3-monja) |
+| 3 | Claustro (por confirmar) | El puñetazo sale con una luz que no es la de la sala. | Fallo | Arreglado: el tinte del puño se calculaba con el color del suelo y no con el del héroe. Fallaba en todas las luces, sobre todo en los claustros (demasiado iluminado), el osario, el prisionero y la monjarana. Hoja con el puño en cada luz: `assets/puno_luz_salas.png` (fix/pt3-luz) |
+| 4 | — | Un objeto da «quemadura del 8 %» al puño, pero no parece funcionar. | Fallo | Arreglado: la línea solo subía el daño de quemaduras ajenas. Decidido (A): con ella equipada, cada puñetazo deja al enemigo ardiendo, y el % sube el daño del fuego. Era la única línea sin efecto (fix/pt3-quemadura) |
+
 ## Partida 2 — 2026-11-26
 
 **ROM:** `feat/pulido-final` 0ec5b4a9 (arreglos de la partida 1).
