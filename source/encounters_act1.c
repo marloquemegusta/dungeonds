@@ -1184,6 +1184,7 @@ static void place_room_enemy(Enemy *e, const RoomKind *kind, int x, int y, int o
     e->char_id = enemy_type_char_id(type);
     // Same life in every room; then the tier (x2 life) and the miniboss multiplier.
     e->max_hp = g_enemy_tuning[type].max_hp * BAL_AT(hp_pct, type, 100) / 100;
+    if (kind->guard == 2 && type == ENEMY_TYPE_EXVOTO) e->max_hp = ARPG_MONJA_HP * BAL_AT(hp_pct, type, 100) / 100;   // the praying nun has her own life
     if (tier2) e->max_hp = e->max_hp * BAL(tier2_hp_pct, ARPG_TIER2_HP_PCT) / 100;
     e->max_hp = e->max_hp * hp_pct / 100;
     e->hp = e->max_hp;
