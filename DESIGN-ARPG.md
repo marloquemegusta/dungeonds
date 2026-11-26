@@ -255,6 +255,7 @@ Props colocados en el póster (`walkthroughs/poster-mapa/`); la luz definitiva d
 
 - **Naves 1-4 (salas 0-3):** filas simétricas de bancos a cada lado del pasillo, cada vez más rotos hacia el fondo.
 - **Galería del cofre (4):** cepos y sacos apilados junto al cofre.
+- **Cepo (decisión 2026-11-26):** de frente y con contraste madera/agujeros (madera más clara, agujeros y herrajes más oscuros, colores apagados) para que se lea a 32 px.
 - **Galería del secreto (5):** capullos de araña, sacos y un cepo; el cofre fijo choca con un enemigo.
 - **Claustro bajo (6) y alto (7):** arcada de columnas enteras en los bordes, bancos rotos y una lápida; centro libre.
 - **Enfermería (8):** catres en dos filas, biombos, palangana, exvoto y candelabros de pie.
