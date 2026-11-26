@@ -241,6 +241,30 @@
   {
    "poke": [
     {
+     "field": "e1_x",
+     "value": 62464
+    },
+    {
+     "field": "e1_y",
+     "value": 435712
+    },
+    {
+     "field": "e2_x",
+     "value": 68608
+    },
+    {
+     "field": "e2_y",
+     "value": 435712
+    },
+    {
+     "field": "e3_x",
+     "value": 65536
+    },
+    {
+     "field": "e3_y",
+     "value": 435200
+    },
+    {
      "field": "e1_hp",
      "value": 25
     },
