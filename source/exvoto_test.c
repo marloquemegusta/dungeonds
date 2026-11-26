@@ -5,6 +5,7 @@
 #include <string.h>
 #include "collision.h"
 #include "enemy_ai.h"
+#include "arpg.h"
 
 #if ARPG_MONJA_CURA_TEST
 // Monja curandera (DESIGN-ARPG.md, 2026-11-24): 3 Bebes in front and one Monja de cera behind them, all of one pack.
@@ -52,7 +53,7 @@ static void ext_place(Enemy *e, EnemyType type, int x, int y, int ordinal) {
     e->strafe_dir = (ordinal & 1) ? 1 : -1;
     e->state = ENEMY_INITIAL_STATE(type);
 #if ARPG_MONJA_CURA_TEST
-    if (type == ENEMY_TYPE_EXVOTO) { e->home_flags = ENEMY_HOME_GUARD; enemy_exvoto_start_praying(e, 0, 4); }   // as place_room_enemy does
+    if (type == ENEMY_TYPE_EXVOTO) { e->home_flags = ENEMY_HOME_GUARD; enemy_exvoto_start_praying(e, 0, 4); e->max_hp = e->hp = ARPG_MONJA_HP; }   // as place_room_enemy does
 #endif
 }
 

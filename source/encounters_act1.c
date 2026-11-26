@@ -560,6 +560,16 @@ int enc_block_rects(int32_t block, EncRect *out, int max) {
         out[n].h = ENC_BARRIER_H;
         n++;
     }
+    // South edge of the room: the foot of the entrance block is a permanent wall for bodies and bullets (the strip keeps
+    // generating floor below it, so without this the hero walks out of the map).
+    if ((b.kind == ENC_BLOCK_ENCOUNTER || b.kind == ENC_BLOCK_BOSS) && b.idx == 0 && n < max) {
+        out[n].kind = ENC_R_BARRERA;
+        out[n].x = ENC_FLOOR_X;
+        out[n].y = ENC_BLOCK_H - ENC_BARRIER_H;
+        out[n].w = ENC_FLOOR_W;
+        out[n].h = ENC_BARRIER_H;
+        n++;
+    }
     return n;
 }
 
@@ -705,8 +715,43 @@ int enc_room_entry(void) {
 }
 
 int enc_room_current(void) { return s_room; }
+int enc_room_floor_bottom(void) { return window_top(block_of_encounter(0)) + ENC_BLOCK_H; }
 int enc_room_level(void) { return room_def()->level; }
 const char *enc_room_name(void) { return room_def()->name; }
+
+// True when a hero standing at (x, y) overlaps a blocking rect of any block of the room (margin = body half-size).
+static int arrival_blocked(const RoomDef *r, int x, int y) {
+    for (int k = 0; k < r->blocks; k++) {
+        const int32_t blk = block_of_encounter(k);
+        const int top = window_top(blk);
+        EncRect rc[ENC_MAX_RECTS];
+        const int n = enc_block_rects(blk, rc, ENC_MAX_RECTS);
+        const int ly = y - top;
+        for (int i = 0; i < n; i++)
+            if (x >= rc[i].x - 8 && x < rc[i].x + rc[i].w + 8 && ly >= rc[i].y - 8 && ly < rc[i].y + rc[i].h + 8) return 1;
+    }
+    return 0;
+}
+
+// Any arrival (foot or lateral door): a prop (the sacos) can sit on the landing spot and the hero would never move. Take the closest
+// free spot (rings of growing radius) inside the floor of the room.
+static void arrival_free(const RoomDef *r, int *x, int *y) {
+    if (!arrival_blocked(r, *x, *y)) return;
+    const int y_min = window_top(block_of_encounter(r->blocks - 1)) + 16;
+    const int y_max = window_top(block_of_encounter(0)) + ENC_BLOCK_H - 8;
+    for (int rad = 4; rad <= 160; rad += 4) {
+        for (int dy = -rad; dy <= rad; dy += 4) {
+            const int edge_row = (dy == -rad || dy == rad);
+            for (int dx = -rad; dx <= rad; dx += edge_row ? 4 : 2 * rad) {
+                const int cx = *x + dx, cy = *y + dy;
+                if (cx < ENC_FLOOR_X + 14 || cx > ENC_FLOOR_X + ENC_FLOOR_W - 14 || cy < y_min || cy > y_max) continue;
+                if (arrival_blocked(r, cx, cy)) continue;
+                *x = cx; *y = cy;
+                return;
+            }
+        }
+    }
+}
 
 int enc_room_arrival(int *out_x, int *out_y, int *out_dir) {
     const RoomDef *r = room_def();
@@ -719,6 +764,7 @@ int enc_room_arrival(int *out_x, int *out_y, int *out_dir) {
             *out_x = left ? ENC_FLOOR_X + 20 : ENC_FLOOR_X + ENC_FLOOR_W - 20;
             *out_y = top + door_hole_y(d) + ARPG_ROOM_HOLE_ARRIVE_PX;
             *out_dir = left ? DIR_EAST : DIR_WEST;       // facing into the room
+            arrival_free(r, out_x, out_y);
             return 1;
         }
     }
@@ -726,6 +772,7 @@ int enc_room_arrival(int *out_x, int *out_y, int *out_dir) {
     *out_x = ENC_FLOOR_X + ENC_FLOOR_W / 2;
     *out_y = window_top(block_of_encounter(0)) + ENC_BLOCK_H - (r->type == RT_CRIPTA ? 12 : ARPG_ROOM_FOOT_OFFSET_PX);
     *out_dir = DIR_NORTH;
+    arrival_free(r, out_x, out_y);
     return 0;
 }
 
@@ -887,12 +934,18 @@ static void rest_update(Enemy *enemies, int max_enemies, int px, int py) {
     for (int i = 0; i < max_enemies && i < MAX_GAMEPLAY_ENEMIES; i++) {
         Enemy *e = &enemies[i];
         RestRec *r = &s_rest[i];
-        if (!r->mode) continue;
+        if (!r->mode) {
+            // Members that do not rest (the Ojo, a garrison): hit or killed while asleep, they wake the group too.
+            if (e->pack >= 0 && e->pack < 32 && ((e->active && e->state == ENEMY_STATE_DORMANT && (e->hp < e->max_hp || e->hit_timer > 0)) ||
+                                                 (e->hp <= 0 && e->state == ENEMY_STATE_DEAD))) s_rest_wake_mask |= 1u << e->pack;
+            continue;
+        }
         if (!e->active || e->state != ENEMY_STATE_DORMANT) {       // woken, dead or recycled: the rest is over
             e->home_flags &= (uint8_t)~ENEMY_HOME_HIDDEN;
             r->mode = 0;
             // Killed or hurt while it slept: the group wakes (a one-hit Bebe never shows as "hurt" otherwise).
-            if (e->active && e->pack >= 0 && e->pack < 32 && (e->hp < e->max_hp || e->hit_timer > 0)) s_rest_wake_mask |= 1u << e->pack;
+            if (e->pack >= 0 && e->pack < 32 && ((e->active && (e->hp < e->max_hp || e->hit_timer > 0)) ||
+                                                 (e->hp <= 0 && e->state == ENEMY_STATE_DEAD))) s_rest_wake_mask |= 1u << e->pack;
             continue;
         }
         if (e->pack < 0 || e->pack >= 32) continue;
@@ -1131,6 +1184,7 @@ static void place_room_enemy(Enemy *e, const RoomKind *kind, int x, int y, int o
     e->char_id = enemy_type_char_id(type);
     // Same life in every room; then the tier (x2 life) and the miniboss multiplier.
     e->max_hp = g_enemy_tuning[type].max_hp * BAL_AT(hp_pct, type, 100) / 100;
+    if (kind->guard == 2 && type == ENEMY_TYPE_EXVOTO) e->max_hp = ARPG_MONJA_HP * BAL_AT(hp_pct, type, 100) / 100;   // the praying nun has her own life
     if (tier2) e->max_hp = e->max_hp * BAL(tier2_hp_pct, ARPG_TIER2_HP_PCT) / 100;
     e->max_hp = e->max_hp * hp_pct / 100;
     e->hp = e->max_hp;
@@ -1141,7 +1195,8 @@ static void place_room_enemy(Enemy *e, const RoomKind *kind, int x, int y, int o
         e->home_flags = ENEMY_HOME_GUARD;
         enemy_exvoto_start_praying(e, ordinal & 1, (ordinal * 2) % 8);
     } else if (type == ENEMY_TYPE_SHOOTER || kind->guard) {
-        e->home_flags = ENEMY_HOME_SET | (kind->guard ? ENEMY_HOME_GUARD : 0);
+        // The Ojo is never garrison (it would hold its post until the hero is within GUARD_RELEASE_DIST): it keeps only its post leash.
+        e->home_flags = ENEMY_HOME_SET | (kind->guard && type != ENEMY_TYPE_SHOOTER ? ENEMY_HOME_GUARD : 0);
         *enemy_home_x(e) = x;
         *enemy_home_y(e) = y;
     }
@@ -1728,7 +1783,8 @@ void enc_relic_hit(int damage) { (void)damage; }
 // corridor cannot hurt the next room before the hero steps in, whatever state the sleeper is in.
 int enc_untouchable(const Enemy *e) {
     int k = e->pack;
-    return k >= 0 && k < ENC_STAGES && s_rt[k].spawned && !s_rt[k].awake;
+    // A resting group (crawling, sweeping...) is hittable: the hit wakes it (rest_update), so the ray reaches it from afar.
+    return k >= 0 && k < ENC_STAGES && s_rt[k].spawned && !s_rt[k].awake && !(s_rest_group_mask & (1u << k));
 }
 
 void enc_note_beam_hit(const Enemy *e) {

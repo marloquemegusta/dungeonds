@@ -1,5 +1,7 @@
 #include "punch.h"
+#include "room_light.h"
 #include "arpg_balance.h"
+#include "arpg.h"
 #include "collision.h"
 #include "enemy_ai.h"
 #include "weapons.h"
@@ -35,6 +37,7 @@ static int punch_load_bin(int move, int dir) {
         s_punch_loaded_move = -1;
         return 0;
     }
+    room_light_tint_px((uint16_t *)(s_punch_bin_buf + sizeof(PunchBinHeader)), h->pix_bytes / 2);
     s_punch_loaded_move = move;
     s_punch_loaded_dir = dir;
     return 1;
@@ -56,6 +59,8 @@ int punch_move(void) { return s_punch_move; }
 int punch_dir(void) { return s_punch_dir; }
 int punch_frame(void) { return s_punch_frame; }
 int punch_chain_window(void) { return s_punch_chain; }
+
+void punch_light_changed(void) { s_punch_loaded_move = -1; }
 
 void punch_reset(void) {
     s_punch_active = 0;
@@ -139,10 +144,12 @@ static void punch_apply(Enemy *enemies, int idx, fixed hero_x, fixed hero_y, int
     const fixed push = (move == PUNCH_MOVE_HOOK) ? PUNCH_HOOK_PUSH_V : PUNCH_LIGHT_PUSH_V;
     const int base_dmg = (move == PUNCH_MOVE_HOOK) ? BAL(punch_hook, PUNCH_DAMAGE_HOOK)
                        : (move == PUNCH_MOVE_A)    ? BAL(punch_a, PUNCH_DAMAGE_A) : BAL(punch_b, PUNCH_DAMAGE_B);
-    const int dmg = upgrades_punch_damage(base_dmg);
+    int dmg = upgrades_punch_damage(base_dmg);
+    if (e->type == ENEMY_TYPE_PARROCO) dmg *= ARPG_PARROCO_PUNCH_MULT;
     fixed px = 0, py = 0;
     punch_push_vec(e, hero_x, hero_y, push, &px, &py);
     enemy_hit(e, dmg, px, py);
+    if (g_mods.punch_burn_pct > 0) burn_apply(e, 1);   // DESIGN-ARPG.md: Quemadura de Ejecución
     // enemy_hit solo usa el empuje al morir: al que sobrevive se le da aqui el retroceso y un hit-stun corto
     // (DESIGN.md 7.2), que enemy_ai mueve con deslizamiento mientras dura.
     if (e->active && e->hp > 0) {

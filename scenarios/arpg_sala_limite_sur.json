@@ -1,0 +1,272 @@
+{
+ "name": "arpg_sala_limite_sur",
+ "description": "Limite sur de toda sala: en una sala de la nave (Nave 1, id 0) y en una lateral (Galeria del secreto, id 5) el heroe cruza el borde sur caminando 360 frames y se queda en el pie del bloque 0; la camara no baja de ese borde.",
+ "suite": true,
+ "state": {
+  "elf": "../.ds-game-dev/build/out/dungeonds.elf",
+  "symbols": {
+   "pl": "s_player",
+   "dbg": "g_enc_debug",
+   "stats": "g_enc_stats",
+   "rl": "g_room_light",
+   "pm": "g_pool_misses",
+   "cam": "s_cam_y"
+  },
+  "default_symbol": "pl",
+  "fields": {
+   "px": {
+    "symbol": "pl",
+    "offset": 0,
+    "type": "s32"
+   },
+   "py": {
+    "symbol": "pl",
+    "offset": 4,
+    "type": "s32"
+   },
+   "dbg_god": {
+    "symbol": "dbg",
+    "offset": 2,
+    "type": "u8"
+   },
+   "dbg_restart": {
+    "symbol": "dbg",
+    "offset": 12,
+    "type": "u8"
+   },
+   "dbg_start_room": {
+    "symbol": "dbg",
+    "offset": 20,
+    "type": "u8"
+   },
+   "room": {
+    "symbol": "stats",
+    "offset": 60,
+    "type": "u8"
+   },
+   "block": {
+    "symbol": "stats",
+    "offset": 1,
+    "type": "u8"
+   },
+   "luz": {
+    "symbol": "rl",
+    "offset": 0,
+    "type": "u8"
+   },
+   "luz_room": {
+    "symbol": "rl",
+    "offset": 1,
+    "type": "u8"
+   },
+   "luz_ok": {
+    "symbol": "rl",
+    "offset": 2,
+    "type": "u8"
+   },
+   "luz_entries": {
+    "symbol": "rl",
+    "offset": 3,
+    "type": "u8"
+   },
+   "luz_loads": {
+    "symbol": "rl",
+    "offset": 4,
+    "type": "u32"
+   },
+   "luz_ticks": {
+    "symbol": "rl",
+    "offset": 12,
+    "type": "u32"
+   },
+   "force_group": {
+    "symbol": "dbg",
+    "offset": 23,
+    "type": "u8"
+   },
+   "luz_err": {
+    "symbol": "rl",
+    "offset": 16,
+    "type": "u32"
+   },
+   "pool_misses": {
+    "symbol": "pm",
+    "offset": 0,
+    "type": "u32"
+   },
+   "cam_y": {
+    "symbol": "cam",
+    "offset": 0,
+    "type": "s32"
+   }
+  }
+ },
+ "steps": [
+  {
+   "frames": 60
+  },
+  {
+   "tap": {
+    "x": 128,
+    "y": 66
+   },
+   "frames": 6
+  },
+  {
+   "release": true,
+   "frames": 40
+  },
+  {
+   "button_down": "START",
+   "frames": 4
+  },
+  {
+   "button_up": "START",
+   "frames": 90
+  },
+  {
+   "button_down": "LEFT",
+   "frames": 90
+  },
+  {
+   "button_up": "LEFT",
+   "frames": 10
+  },
+  {
+   "poke": [
+    {
+     "field": "px",
+     "value": 32768
+    },
+    {
+     "field": "py",
+     "value": 29696
+    }
+   ],
+   "frames": 20
+  },
+  {
+   "button_down": "A",
+   "frames": 4
+  },
+  {
+   "frames": 60,
+   "state_capture": "p0"
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    },
+    {
+     "field": "dbg_start_room",
+     "value": 5
+    },
+    {
+     "field": "dbg_restart",
+     "value": 1
+    }
+   ],
+   "frames": 120,
+   "capture": "g00_entrada",
+   "state_capture": "s0"
+  },
+  {
+   "button_up": "DOWN",
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    },
+    {
+     "field": "dbg_start_room",
+     "value": 1
+    },
+    {
+     "field": "dbg_restart",
+     "value": 1
+    }
+   ],
+   "frames": 120,
+   "state_capture": "nave0",
+   "capture": "nave_entrada"
+  },
+  {
+   "button_down": "DOWN",
+   "frames": 360,
+   "state_capture": "nave1",
+   "capture": "nave_sur"
+  },
+  {
+   "button_up": "DOWN",
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    },
+    {
+     "field": "dbg_start_room",
+     "value": 6
+    },
+    {
+     "field": "dbg_restart",
+     "value": 1
+    }
+   ],
+   "frames": 120,
+   "state_capture": "lat0",
+   "capture": "lat_entrada"
+  },
+  {
+   "button_down": "DOWN",
+   "frames": 360,
+   "state_capture": "lat1",
+   "capture": "lat_sur"
+  }
+ ],
+ "assertions": {
+  "state_changes": [
+   {
+    "at": "nave0",
+    "field": "py",
+    "max_value": 389000
+   },
+   {
+    "at": "nave1",
+    "field": "py",
+    "min_value": 389500
+   },
+   {
+    "at": "nave1",
+    "field": "py",
+    "max_value": 390500
+   },
+   {
+    "at": "nave1",
+    "field": "cam_y",
+    "max_value": 1344
+   },
+   {
+    "at": "lat0",
+    "field": "py",
+    "max_value": 389000
+   },
+   {
+    "at": "lat1",
+    "field": "py",
+    "min_value": 389500
+   },
+   {
+    "at": "lat1",
+    "field": "py",
+    "max_value": 390500
+   },
+   {
+    "at": "lat1",
+    "field": "cam_y",
+    "max_value": 1344
+   }
+  ]
+ }
+}

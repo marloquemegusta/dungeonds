@@ -1,0 +1,200 @@
+{
+ "name": "arpg_galeria_limite",
+ "description": "Galeria del cofre: caminar al sur se detiene en el borde de la sala (el heroe cruza el limite: 240 y 360 frames dan la misma y).",
+ "suite": true,
+ "state": {
+  "elf": "../.ds-game-dev/build/out/dungeonds.elf",
+  "symbols": {
+   "pl": "s_player",
+   "dbg": "g_enc_debug",
+   "stats": "g_enc_stats",
+   "rl": "g_room_light",
+   "pm": "g_pool_misses"
+  },
+  "default_symbol": "pl",
+  "fields": {
+   "px": {
+    "symbol": "pl",
+    "offset": 0,
+    "type": "s32"
+   },
+   "py": {
+    "symbol": "pl",
+    "offset": 4,
+    "type": "s32"
+   },
+   "dbg_god": {
+    "symbol": "dbg",
+    "offset": 2,
+    "type": "u8"
+   },
+   "dbg_restart": {
+    "symbol": "dbg",
+    "offset": 12,
+    "type": "u8"
+   },
+   "dbg_start_room": {
+    "symbol": "dbg",
+    "offset": 20,
+    "type": "u8"
+   },
+   "room": {
+    "symbol": "stats",
+    "offset": 60,
+    "type": "u8"
+   },
+   "block": {
+    "symbol": "stats",
+    "offset": 1,
+    "type": "u8"
+   },
+   "luz": {
+    "symbol": "rl",
+    "offset": 0,
+    "type": "u8"
+   },
+   "luz_room": {
+    "symbol": "rl",
+    "offset": 1,
+    "type": "u8"
+   },
+   "luz_ok": {
+    "symbol": "rl",
+    "offset": 2,
+    "type": "u8"
+   },
+   "luz_entries": {
+    "symbol": "rl",
+    "offset": 3,
+    "type": "u8"
+   },
+   "luz_loads": {
+    "symbol": "rl",
+    "offset": 4,
+    "type": "u32"
+   },
+   "luz_ticks": {
+    "symbol": "rl",
+    "offset": 12,
+    "type": "u32"
+   },
+   "force_group": {
+    "symbol": "dbg",
+    "offset": 23,
+    "type": "u8"
+   },
+   "luz_err": {
+    "symbol": "rl",
+    "offset": 16,
+    "type": "u32"
+   },
+   "pool_misses": {
+    "symbol": "pm",
+    "offset": 0,
+    "type": "u32"
+   }
+  }
+ },
+ "steps": [
+  {
+   "frames": 60
+  },
+  {
+   "tap": {
+    "x": 128,
+    "y": 66
+   },
+   "frames": 6
+  },
+  {
+   "release": true,
+   "frames": 40
+  },
+  {
+   "button_down": "START",
+   "frames": 4
+  },
+  {
+   "button_up": "START",
+   "frames": 90
+  },
+  {
+   "button_down": "LEFT",
+   "frames": 90
+  },
+  {
+   "button_up": "LEFT",
+   "frames": 10
+  },
+  {
+   "poke": [
+    {
+     "field": "px",
+     "value": 32768
+    },
+    {
+     "field": "py",
+     "value": 29696
+    }
+   ],
+   "frames": 20
+  },
+  {
+   "button_down": "A",
+   "frames": 4
+  },
+  {
+   "frames": 60,
+   "state_capture": "p0"
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    },
+    {
+     "field": "dbg_start_room",
+     "value": 5
+    },
+    {
+     "field": "dbg_restart",
+     "value": 1
+    }
+   ],
+   "frames": 120,
+   "capture": "g00_entrada",
+   "state_capture": "s0"
+  },
+  {
+   "button_down": "DOWN",
+   "frames": 240,
+   "capture": "g01_sur_240",
+   "state_capture": "s1"
+  },
+  {
+   "frames": 120,
+   "capture": "g02_sur_360",
+   "state_capture": "s2"
+  }
+ ],
+ "assertions": {
+  "state_changes": [
+   {
+    "at": "s0",
+    "field": "luz_room",
+    "equals": 4
+   },
+   {
+    "at": "s1",
+    "field": "py",
+    "equals": 390311
+   },
+   {
+    "at": "s2",
+    "field": "py",
+    "equals": 390311
+   }
+  ]
+ }
+}

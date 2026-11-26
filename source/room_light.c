@@ -4,6 +4,7 @@
 // sprites del heroe (arrays de source/player_sprite.c, que ya estaban en RAM); los clips de enemigo, los remates y los
 // props se quedan en el cartucho y se leen por indice (el indice son ~3 KB).
 #include "room_light.h"
+#include "punch.h"
 #include "strip_kit.h"
 #include "hwshadow.h"
 #include "room_pool.h"
@@ -82,6 +83,31 @@ static void entry_name(const char *name, char *out) {
     memset(out, 0, 24);
     size_t l = strlen(tmp);
     memcpy(out, tmp, l > 23 ? 23 : l);
+}
+
+// Tinte de cada luz para los bins de punetazo (nitro:/punch no viaja en el paquete: se tintan al leerlos), x256. Es el cociente
+// entre el color medio de los pixeles del heroe re-iluminado del paquete (slot g_player_frames) y el del heroe de dia: el heroe
+// se hornea con char_gain/char_tint_mix de tools/arpg_light_rooms.json, no con el tinte de suelo (floor_tint x floor_gain), que
+// sobreiluminaba el puño en claustros y lo apagaba en osario/prisionero/monjarana. Regenerar si cambian las luces del heroe.
+static const uint16_t k_light_tint[ROOM_LIGHT_COUNT][3] = {
+    { 230, 238, 275 }, { 210, 212, 242 }, { 188, 184, 205 }, { 164, 154, 165 }, { 189, 170, 120 }, { 291, 294, 276 },
+    { 213, 191, 134 }, { 85, 64, 85 }, { 199, 168, 91 }, { 109, 113, 58 }, { 76, 82, 24 }, { 104, 64, 24 }
+};
+
+void room_light_tint_px(uint16_t *px, uint32_t count) {
+    if (s_light < 0) return;
+    const uint16_t *t = k_light_tint[s_light];
+    for (uint32_t i = 0; i < count; i++) {
+        const uint16_t v = px[i];
+        if (!(v & 0x8000)) continue;
+        uint32_t r = ((uint32_t)(v & 31) * t[0] + 128) >> 8;
+        uint32_t g = ((uint32_t)((v >> 5) & 31) * t[1] + 128) >> 8;
+        uint32_t b = ((uint32_t)((v >> 10) & 31) * t[2] + 128) >> 8;
+        if (r > 31) r = 31;
+        if (g > 31) g = 31;
+        if (b > 31) b = 31;
+        px[i] = (uint16_t)(0x8000 | (b << 10) | (g << 5) | r);
+    }
 }
 
 FILE *room_light_open(uint32_t kind, const char *name, uint32_t *len) {
@@ -272,6 +298,7 @@ int room_light_load(int room) {
     g_room_light.ok = (uint8_t)ok;
     if (!ok) return 0;
     s_light = light;
+    punch_light_changed();   // los bins de punetazo en cache estaban tintados con la luz anterior
     g_room_light.id = (uint8_t)light;
     g_room_light.entries = (uint8_t)s_n_ent;
     g_room_light.loads++;

@@ -48,7 +48,7 @@
   "osario_estante": {"fbx": "tripo_convert_814fa953-b091-4ecb-8685-9cd41b3310e3.fbx", "yaw": 45, "target_width": 40, "footprint_from": "depth", "shadow_elevation": 45},
   "palangana": {"fbx": "tripo_convert_8434b898-bab5-4034-bb94-c5a05cabf390.fbx", "yaw": 45, "target_width": 24, "footprint_from": "depth", "shadow_elevation": 45},
   "brasero": {"fbx": "tripo_convert_c2e7d332-9b6d-4911-8568-f05e5194acea.fbx", "yaw": 45, "target_width": 40, "footprint_from": "depth", "shadow_elevation": 45},
-  "cepo": {"fbx": "tripo_convert_c6ca8709-46d6-441a-88ef-4c79817651d6.fbx", "yaw": 45, "target_width": 32, "footprint_from": "depth", "shadow_elevation": 45},
+  "cepo": {"fbx": "tripo_convert_c6ca8709-46d6-441a-88ef-4c79817651d6.fbx", "yaw": 45, "target_width": 32, "footprint_from": "depth", "shadow_elevation": 45, "tone": [1.55, 1.5, 1.4], "contrast": 2.6},
   "lapida_pie": {"fbx": "tripo_convert_d7bf8479-51b2-4e43-8b00-d7bc991d2a7f.fbx", "yaw": 45, "target_width": 32, "footprint_from": "depth", "shadow_elevation": 45},
   "reclinatorio": {"fbx": "tripo_convert_fa9d1256-6b3b-4b4a-861c-86230a90fa6d.fbx", "yaw": 45, "target_width": 28, "footprint_from": "depth", "shadow_elevation": 45},
   "osario_lado": {"fbx": "tripo_convert_814fa953-b091-4ecb-8685-9cd41b3310e3.fbx", "yaw": -60, "glb_from": "osario_estante", "target_width": 33, "footprint_from": "depth", "shadow_elevation": 45},

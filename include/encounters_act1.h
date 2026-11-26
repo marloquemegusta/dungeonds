@@ -97,6 +97,7 @@ uint32_t enc_room_seed(int room);
 // Room the next restart loads when coming from the camp: the last altar touched (Nave 1 without one) or the debug start.
 int enc_room_entry(void);
 int enc_room_current(void);
+int enc_room_floor_bottom(void);            // window y of the south edge of the room (foot of block 0): the camera never shows beyond it
 int enc_room_level(void);                   // fixed level of the current room (1..5)
 const char *enc_room_name(void);
 int enc_room_top_block(void);               // strip block of the last block of the room; everything above it is black and solid

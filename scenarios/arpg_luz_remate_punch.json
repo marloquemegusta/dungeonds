@@ -1,0 +1,350 @@
+{
+ "name": "arpg_luz_remate_punch",
+ "description": "Galeria (sala 5) y Nave 1 (sala 1): punetazo y remate con la luz de la sala; evidencia visual.",
+ "suite": false,
+ "state": {
+  "elf": "../.ds-game-dev/build/out/dungeonds.elf",
+  "symbols": {
+   "pl": "s_player",
+   "dbg": "g_enc_debug",
+   "stats": "g_enc_stats",
+   "rl": "g_room_light",
+   "pm": "g_pool_misses",
+   "en": "g_enemies"
+  },
+  "default_symbol": "pl",
+  "fields": {
+   "px": {
+    "symbol": "pl",
+    "offset": 0,
+    "type": "s32"
+   },
+   "py": {
+    "symbol": "pl",
+    "offset": 4,
+    "type": "s32"
+   },
+   "dbg_god": {
+    "symbol": "dbg",
+    "offset": 2,
+    "type": "u8"
+   },
+   "dbg_restart": {
+    "symbol": "dbg",
+    "offset": 12,
+    "type": "u8"
+   },
+   "dbg_start_room": {
+    "symbol": "dbg",
+    "offset": 20,
+    "type": "u8"
+   },
+   "room": {
+    "symbol": "stats",
+    "offset": 60,
+    "type": "u8"
+   },
+   "block": {
+    "symbol": "stats",
+    "offset": 1,
+    "type": "u8"
+   },
+   "luz": {
+    "symbol": "rl",
+    "offset": 0,
+    "type": "u8"
+   },
+   "luz_room": {
+    "symbol": "rl",
+    "offset": 1,
+    "type": "u8"
+   },
+   "luz_ok": {
+    "symbol": "rl",
+    "offset": 2,
+    "type": "u8"
+   },
+   "luz_entries": {
+    "symbol": "rl",
+    "offset": 3,
+    "type": "u8"
+   },
+   "luz_loads": {
+    "symbol": "rl",
+    "offset": 4,
+    "type": "u32"
+   },
+   "luz_ticks": {
+    "symbol": "rl",
+    "offset": 12,
+    "type": "u32"
+   },
+   "force_group": {
+    "symbol": "dbg",
+    "offset": 23,
+    "type": "u8"
+   },
+   "luz_err": {
+    "symbol": "rl",
+    "offset": 16,
+    "type": "u32"
+   },
+   "pool_misses": {
+    "symbol": "pm",
+    "offset": 0,
+    "type": "u32"
+   },
+   "en_x": {
+    "symbol": "en",
+    "offset": 0,
+    "type": "s32"
+   },
+   "en_y": {
+    "symbol": "en",
+    "offset": 4,
+    "type": "s32"
+   },
+   "en_hp": {
+    "symbol": "en",
+    "offset": 28,
+    "type": "s32"
+   },
+   "en_state": {
+    "symbol": "en",
+    "offset": 41,
+    "type": "u8"
+   },
+   "en_timer": {
+    "symbol": "en",
+    "offset": 44,
+    "type": "s32"
+   },
+   "en_active": {
+    "symbol": "en",
+    "offset": 24,
+    "type": "s32"
+   }
+  }
+ },
+ "steps": [
+  {
+   "frames": 60
+  },
+  {
+   "tap": {
+    "x": 128,
+    "y": 66
+   },
+   "frames": 6
+  },
+  {
+   "release": true,
+   "frames": 40
+  },
+  {
+   "button_down": "START",
+   "frames": 4
+  },
+  {
+   "button_up": "START",
+   "frames": 90,
+   "capture": "c01_campamento"
+  },
+  {
+   "button_down": "LEFT",
+   "frames": 90
+  },
+  {
+   "button_up": "LEFT",
+   "frames": 10,
+   "capture": "c02_lateral_izq"
+  },
+  {
+   "poke": [
+    {
+     "field": "px",
+     "value": 32768
+    },
+    {
+     "field": "py",
+     "value": 29696
+    }
+   ],
+   "frames": 20,
+   "capture": "c03_puerta"
+  },
+  {
+   "button_down": "A",
+   "frames": 4
+  },
+  {
+   "frames": 60,
+   "capture": "l00_entrada",
+   "state_capture": "p0"
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    },
+    {
+     "field": "dbg_start_room",
+     "value": 5
+    },
+    {
+     "field": "dbg_restart",
+     "value": 1
+    }
+   ],
+   "frames": 120,
+   "capture": "r5_ini",
+   "state_capture": "s5"
+  },
+  {
+   "poke": [
+    {
+     "field": "en_x",
+     "value": 69120
+    },
+    {
+     "field": "en_y",
+     "value": 382976
+    },
+    {
+     "field": "en_hp",
+     "value": 100
+    },
+    {
+     "field": "en_state",
+     "value": 18
+    },
+    {
+     "field": "en_timer",
+     "value": 400
+    }
+   ],
+   "frames": 20,
+   "capture": "r5_pre"
+  },
+  {
+   "button_down": "L",
+   "frames": 1,
+   "capture": "r5_L0"
+  },
+  {
+   "button_up": "L",
+   "frames": 8,
+   "capture": "r5_L1"
+  },
+  {
+   "frames": 6,
+   "capture": "r5_L2"
+  },
+  {
+   "frames": 6,
+   "capture": "r5_L3"
+  },
+  {
+   "frames": 6,
+   "capture": "r5_L4"
+  },
+  {
+   "frames": 6,
+   "capture": "r5_L5"
+  },
+  {
+   "frames": 6,
+   "capture": "r5_L6"
+  },
+  {
+   "frames": 6,
+   "capture": "r5_L7"
+  },
+  {
+   "frames": 6,
+   "capture": "r5_L8"
+  },
+  {
+   "frames": 6,
+   "capture": "r5_L9"
+  },
+  {
+   "frames": 6,
+   "capture": "r5_L10"
+  },
+  {
+   "frames": 6,
+   "capture": "r5_L11"
+  },
+  {
+   "frames": 6,
+   "capture": "r5_L12"
+  },
+  {
+   "frames": 6,
+   "capture": "r5_L13"
+  },
+  {
+   "frames": 6,
+   "capture": "r5_L14"
+  },
+  {
+   "frames": 6,
+   "capture": "r5_L15"
+  },
+  {
+   "poke": [
+    {
+     "field": "en_active",
+     "value": 0
+    },
+    {
+     "field": "px",
+     "value": 65536
+    },
+    {
+     "field": "py",
+     "value": 382976
+    }
+   ],
+   "frames": 40
+  },
+  {
+   "button_down": "L",
+   "frames": 3
+  },
+  {
+   "button_up": "L",
+   "frames": 5,
+   "capture": "r5_P1"
+  },
+  {
+   "frames": 5,
+   "capture": "r5_P2"
+  },
+  {
+   "frames": 5,
+   "capture": "r5_P3"
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    },
+    {
+     "field": "dbg_start_room",
+     "value": 1
+    },
+    {
+     "field": "dbg_restart",
+     "value": 1
+    }
+   ],
+   "frames": 120,
+   "capture": "n1_ini"
+  }
+ ],
+ "assertions": {}
+}

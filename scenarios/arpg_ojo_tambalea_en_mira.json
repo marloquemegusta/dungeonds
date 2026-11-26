@@ -1,0 +1,232 @@
+{
+ "name": "arpg_ojo_tambalea_en_mira",
+ "suite": true,
+ "description": "Sandbox real: Ojo (e0 tipo 2) pegado al heroe (12 px), IA congelada, en TRACK (7) con 80/300 de vida. Un punetazo de L lo deja <=25 % y debe pasar a WOBBLE (18). Antes del arreglo seguia en TRACK porque el tambaleo ignoraba TRACK/LOCK/SENTENCE/COOLDOWN.",
+ "state": {
+  "symbols": {
+   "sb": "g_sandbox",
+   "pl": "s_player",
+   "en": "g_enemies"
+  },
+  "default_symbol": "sb",
+  "fields": {
+   "seq": {
+    "symbol": "sb",
+    "offset": 0,
+    "type": "u32"
+   },
+   "ack": {
+    "symbol": "sb",
+    "offset": 4,
+    "type": "u32"
+   },
+   "player_x": {
+    "symbol": "sb",
+    "offset": 8,
+    "type": "s16"
+   },
+   "player_y": {
+    "symbol": "sb",
+    "offset": 10,
+    "type": "s16"
+   },
+   "weapon": {
+    "symbol": "sb",
+    "offset": 12,
+    "type": "u8"
+   },
+   "enemy_count": {
+    "symbol": "sb",
+    "offset": 14,
+    "type": "u8"
+   },
+   "flags": {
+    "symbol": "sb",
+    "offset": 15,
+    "type": "u8"
+   },
+   "e0_type": {
+    "symbol": "sb",
+    "offset": 16,
+    "type": "u8"
+   },
+   "e0_flags": {
+    "symbol": "sb",
+    "offset": 17,
+    "type": "u8"
+   },
+   "e0_x": {
+    "symbol": "sb",
+    "offset": 18,
+    "type": "s16"
+   },
+   "e0_y": {
+    "symbol": "sb",
+    "offset": 20,
+    "type": "s16"
+   },
+   "hero_x": {
+    "symbol": "pl",
+    "offset": 0,
+    "type": "s32"
+   },
+   "hero_y": {
+    "symbol": "pl",
+    "offset": 4,
+    "type": "s32"
+   },
+   "hero_dir": {
+    "symbol": "pl",
+    "offset": 8,
+    "type": "s32"
+   },
+   "hero_frame": {
+    "symbol": "pl",
+    "offset": 12,
+    "type": "s32"
+   },
+   "en_x": {
+    "symbol": "en",
+    "offset": 0,
+    "type": "s32"
+   },
+   "en_y": {
+    "symbol": "en",
+    "offset": 4,
+    "type": "s32"
+   },
+   "en_dir": {
+    "symbol": "en",
+    "offset": 8,
+    "type": "s32"
+   },
+   "en_active": {
+    "symbol": "en",
+    "offset": 24,
+    "type": "s32"
+   },
+   "en_hp": {
+    "symbol": "en",
+    "offset": 28,
+    "type": "s32"
+   },
+   "en_type": {
+    "symbol": "en",
+    "offset": 40,
+    "type": "u8"
+   },
+   "en_state": {
+    "symbol": "en",
+    "offset": 41,
+    "type": "u8"
+   },
+   "en_timer": {
+    "symbol": "en",
+    "offset": 44,
+    "type": "s32"
+   }
+  }
+ },
+ "steps": [
+  {
+   "frames": 6
+  },
+  {
+   "poke": [
+    {
+     "field": "player_x",
+     "value": 292
+    },
+    {
+     "field": "player_y",
+     "value": 1720
+    },
+    {
+     "field": "weapon",
+     "value": 0
+    },
+    {
+     "field": "flags",
+     "value": 39
+    },
+    {
+     "field": "enemy_count",
+     "value": 1
+    },
+    {
+     "field": "e0_type",
+     "value": 2
+    },
+    {
+     "field": "e0_flags",
+     "value": 0
+    },
+    {
+     "field": "e0_x",
+     "value": 304
+    },
+    {
+     "field": "e0_y",
+     "value": 1720
+    },
+    {
+     "field": "seq",
+     "value": 100
+    }
+   ],
+   "frames": 0
+  },
+  {
+   "wait_until": {
+    "field": "ack",
+    "equals": 100,
+    "timeout_frames": 60
+   }
+  },
+  {
+   "poke": [
+    {
+     "field": "en_hp",
+     "value": 80
+    },
+    {
+     "field": "en_state",
+     "value": 7
+    },
+    {
+     "field": "en_timer",
+     "value": 600
+    }
+   ],
+   "frames": 0
+  },
+  {
+   "frames": 10,
+   "state_capture": "before"
+  },
+  {
+   "button_down": "L",
+   "frames": 4
+  },
+  {
+   "button_up": "L",
+   "frames": 30,
+   "state_capture": "after",
+   "capture": "after"
+  }
+ ],
+ "assertions": {
+  "state_changes": [
+   {
+    "at": "before",
+    "field": "en_state",
+    "equals": 7
+   },
+   {
+    "at": "after",
+    "field": "en_state",
+    "equals": 18
+   }
+  ]
+ }
+}

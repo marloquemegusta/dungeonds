@@ -313,7 +313,17 @@ static void enemy_damage(Enemy *e, int damage, fixed hit_vx, fixed hit_vy, int q
             (e->state == ENEMY_STATE_CHASE || e->state == ENEMY_STATE_ATTACK ||
              e->state == ENEMY_STATE_TELEGRAPH || e->state == ENEMY_STATE_CHARGE ||
              e->state == ENEMY_STATE_RECOVER || e->state == ENEMY_STATE_STUNNED ||
-             e->state == ENEMY_STATE_WOBBLE)) {
+             e->state == ENEMY_STATE_TRACK || e->state == ENEMY_STATE_LOCK || e->state == ENEMY_STATE_SENTENCE ||
+             e->state == ENEMY_STATE_COOLDOWN || e->state == ENEMY_STATE_POSITION ||
+             e->state == ENEMY_STATE_WOBBLE ||
+             (e->type == ENEMY_TYPE_EXVOTO && e->state == ENEMY_STATE_PRAY && e->beam_len == 2))) {   // the praying nun reels too, once her pack is awake
+            if (e->state == ENEMY_STATE_PRAY) {                  // the praying nun gets up reeling: no prayer, no heal, walk sheet
+                e->char_id = enemy_type_char_id(e->type);
+                e->gesture = 0;
+                e->strafe_dir = 0;
+                e->frame = 0;
+                e->anim_timer = 0;
+            }
             if (e->state != ENEMY_STATE_WOBBLE) {
                 e->state_timer = REMATE_WOBBLE_FRAMES;   // low life: it reels
                 wobble_cue_schedule(e);

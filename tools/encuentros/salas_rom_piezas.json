@@ -630,35 +630,56 @@
     "piece": "cepo",
     "k": 0,
     "lx": 0,
-    "ly": 232,
+    "ly": 48,
     "mirror": 0
    },
    {
     "piece": "cepo",
     "k": 0,
     "lx": 0,
-    "ly": 280,
+    "ly": 96,
     "mirror": 0
    },
    {
     "piece": "cepo",
     "k": 0,
     "lx": 0,
-    "ly": 328,
+    "ly": 288,
+    "mirror": 0
+   },
+   {
+    "piece": "cepo",
+    "k": 0,
+    "lx": 0,
+    "ly": 336,
     "mirror": 0
    },
    {
     "piece": "sacos",
     "k": 0,
-    "lx": 144,
+    "lx": 136,
     "ly": 24,
     "mirror": 0
    },
    {
     "piece": "sacos",
     "k": 0,
+    "lx": 136,
+    "ly": 64,
+    "mirror": 0
+   },
+   {
+    "piece": "sacos",
+    "k": 0,
     "lx": 128,
-    "ly": 248,
+    "ly": 152,
+    "mirror": 0
+   },
+   {
+    "piece": "sacos",
+    "k": 0,
+    "lx": 128,
+    "ly": 256,
     "mirror": 0
    },
    {
@@ -669,16 +690,9 @@
     "mirror": 0
    },
    {
-    "piece": "sacos",
-    "k": 0,
-    "lx": 136,
-    "ly": 344,
-    "mirror": 0
-   },
-   {
     "piece": "sacos_b",
     "k": 0,
-    "lx": 144,
+    "lx": 128,
     "ly": 0,
     "mirror": 0
    },
@@ -686,7 +700,21 @@
     "piece": "sacos_b",
     "k": 0,
     "lx": 128,
+    "ly": 176,
+    "mirror": 0
+   },
+   {
+    "piece": "sacos_b",
+    "k": 0,
+    "lx": 128,
     "ly": 280,
+    "mirror": 0
+   },
+   {
+    "piece": "sacos_b",
+    "k": 0,
+    "lx": 128,
+    "ly": 328,
     "mirror": 0
    }
   ],

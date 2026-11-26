@@ -1,0 +1,41 @@
+# Registro de playtests del ARPG (acto I)
+
+Cada partida del usuario en la DS: qué ROM, qué notó, qué se hizo. La más reciente arriba.
+
+## Partida 3 — 2026-11-26
+
+**ROM:** `feat/pulido-final` d889f4d4 (monja que sigue al grupo, puño a un quinto, Párroco ×5). Valoración: «muchísimo más divertido».
+
+| # | Sala | Feedback del usuario | Tipo | Estado |
+|---|---|---|---|---|
+| 1 | Grupos con monja | Divertido: hasta matar a la monja no muere nada, y los Monaguillos tapan el Rayo. Pero cura demasiado: si te empeñas, deberías poder matar al Monaguillo con el Rayo, aunque sea muy ineficiente. Y la monja pide demasiados puñetazos. | Equilibrio | Arreglado: cura el 15 % de la vida por segundo (antes el 150 %). Con 4 Rayos seguidos un Monaguillo muere aunque ella viva; con 3, no. A puñetazos solo se le quitan unos 4 de vida por segundo, así que sin mejoras no se le puede matar. La monja tiene 120 de vida (los Exvotos normales siguen con 250): unos 7 golpes la tambalean (fix/pt3-monja) |
+| 2 | Grupos con monja | Las monjas no se quedan tambaleantes nunca. | Fallo | Arreglado: mientras rezaba no podía tambalearse. Ahora se tambalea al 25 % de vida, deja de curar y se la puede rematar (fix/pt3-monja) |
+| 3 | Claustro (por confirmar) | El puñetazo sale con una luz que no es la de la sala. | Fallo | Arreglado: el tinte del puño se calculaba con el color del suelo y no con el del héroe. Fallaba en todas las luces, sobre todo en los claustros (demasiado iluminado), el osario, el prisionero y la monjarana. Hoja con el puño en cada luz: `assets/puno_luz_salas.png` (fix/pt3-luz) |
+| 4 | — | Un objeto da «quemadura del 8 %» al puño, pero no parece funcionar. | Fallo | Arreglado: la línea solo subía el daño de quemaduras ajenas. Decidido (A): con ella equipada, cada puñetazo deja al enemigo ardiendo, y el % sube el daño del fuego. Era la única línea sin efecto (fix/pt3-quemadura) |
+
+## Partida 2 — 2026-11-26
+
+**ROM:** `feat/pulido-final` 0ec5b4a9 (arreglos de la partida 1).
+
+| # | Sala | Feedback del usuario | Tipo | Estado |
+|---|---|---|---|---|
+| 1 | Salas laterales (¿y todas?) | Se puede seguir caminando hacia abajo y la sala se extiende sin fin. | Fallo | Arreglado: en las pruebas el héroe ya se paraba en el borde, pero la cámara seguía bajando y enseñaba suelo de más. Ahora la cámara no baja del borde sur en ninguna sala (fix/pt2-sur) |
+| 2 | Galería del cofre | (Encontrado por el agente) Al entrar por la puerta desde la Nave 1, el héroe aparece encajado en un saco. | Fallo | Arreglado: tras cualquier llegada a una sala, si el héroe cae sobre un obstáculo se le recoloca en el hueco libre más cercano. Comprobadas las 22 puertas laterales (fix/pt2-saco) |
+| 3 | Grupos con monja | Los enemigos se lanzan a por el héroe y la monja se queda atrás: ya no los cura, se queda sola y se la mata fácil. | Diseño | Arreglado: sigue al grupo rezando mientras camina, sin meterse en melé. Radio de cura doble. Cura el 50 % de la vida máxima tres veces por segundo (antes, el 5 % una vez por segundo). Exvotos y Monaguillos ya no mueren mientras ella vive; un Bebé aún cae de un puñetazo (fix/pt2-monja) |
+| 4 | Todas | El puñetazo hace tanto daño que se puede pasar el juego casi sin Rayo. Debería ser como en Doom: un último recurso, para rematar o desgastar a los débiles. | Diseño | Arreglado: el puño hace un quinto del daño (combo de 38, antes 190). Las mejoras de Ejecución lo pueden volver viable. El maná no cambia. Un Bebé pide 6 golpes. Excepción: el Párroco, inmune al Rayo, recibe el puño ×5 (unos 12 golpes para tambalearlo, como antes) (fix/pt2-puno) |
+
+## Partida 1 — 2026-11-26
+
+**ROM:** `feat/pulido-final` e6280e9a (16 salas del póster, luz por sala, aviso antes del mordisco, monja curandera, arreglo de la Nave 3).
+
+| # | Sala | Feedback del usuario | Tipo | Estado |
+|---|---|---|---|---|
+| 1 | Galería del cofre | Los props parecen al azar: hay pocos de la entrada hacia arriba y casi todos están hacia abajo. Los sacos de arriba también parecen al azar. | Disposición | Arreglado: cepos a la izquierda y sacos a la derecha, repartidos de arriba abajo (fix/pt1-galeria) |
+| 2 | Galería del cofre | La sala parece infinita hacia abajo y te sales del mapa. | Fallo | Arreglado: muro invisible al sur en todas las salas. Al sur se sigue viendo suelo; falta decidir si se dibuja una pared (fix/pt1-galeria) |
+| 3 | Galería del cofre | Los cepos no se entienden: habría que rediseñarlos o recolorearlos. | Arte | Decidido: de frente y recoloreado. Ya se veía de frente; se le ha subido el contraste entre madera y agujeros. La mejora es moderada: verlo en la DS (fix/pt1-cepo) |
+| 4 | Galería del cofre | Las ejecuciones y el boxeo no usan la luz de la sala; parecen usar la de la nave principal. | Fallo | Arreglado el puñetazo, que ahora se tiñe con la luz de la sala. Los remates ya salían con la luz de la sala en las capturas: si en la DS se siguen viendo mal, decir con qué enemigo (fix/pt1-luz) |
+| 5 | Nave 1 | Las sombras de los bancos apuntan hacia el centro (unas a la derecha y otras a la izquierda), pero la del héroe siempre apunta a la derecha. | Fallo | Arreglado: las piezas espejadas ya no voltean su sombra. Se han regenerado las 7 salas que las tienen (fix/pt1-luz) |
+| 6 | Nave 2 y otras | Los enemigos no se activan o no son vulnerables hasta que estás cerca: el Ojo no ataca desde el principio, solo tras derrotar a los Monaguillos y acercarte. El rayo a los Bebés de lejos a menudo no hace nada. | Fallo o diseño | Arreglado en parte: los enemigos dormidos ya reciben daño, y golpear o matar a uno despierta a su grupo. El Ojo de la Nave 2 estaba de guardia y no se soltaba nunca; ya no. Rayo: el haz y el daño ya coincidían (en vertical el haz mide la mitad en pantalla por la perspectiva). Los fallos de lejos eran los Bebés dormidos. Quedan escenarios que lo vigilan (fix/pt1-rayo) |
+
+**ROM para la partida 2:** `feat/pulido-final` 2139a85a (todo lo anterior integrado; bot llega a la cripta).
+| 7 | — | Los Ojos no llegan a quedarse tambaleantes. | Fallo | Arreglado: solo tambaleaban mientras perseguían, no mientras apuntaban o disparaban (fix/pt1-ojo) |

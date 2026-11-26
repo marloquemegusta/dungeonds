@@ -1,0 +1,602 @@
+{
+ "name": "arpg_puno_luz_salas",
+ "description": "Una sala por luz: heroe parado y pu\u00f1etazo, evidencia visual.",
+ "suite": false,
+ "state": {
+  "elf": "../.ds-game-dev/build/out/dungeonds.elf",
+  "symbols": {
+   "pl": "s_player",
+   "dbg": "g_enc_debug",
+   "stats": "g_enc_stats",
+   "rl": "g_room_light",
+   "pm": "g_pool_misses",
+   "en": "g_enemies"
+  },
+  "default_symbol": "pl",
+  "fields": {
+   "px": {
+    "symbol": "pl",
+    "offset": 0,
+    "type": "s32"
+   },
+   "py": {
+    "symbol": "pl",
+    "offset": 4,
+    "type": "s32"
+   },
+   "dbg_god": {
+    "symbol": "dbg",
+    "offset": 2,
+    "type": "u8"
+   },
+   "dbg_restart": {
+    "symbol": "dbg",
+    "offset": 12,
+    "type": "u8"
+   },
+   "dbg_start_room": {
+    "symbol": "dbg",
+    "offset": 20,
+    "type": "u8"
+   },
+   "room": {
+    "symbol": "stats",
+    "offset": 60,
+    "type": "u8"
+   },
+   "block": {
+    "symbol": "stats",
+    "offset": 1,
+    "type": "u8"
+   },
+   "luz": {
+    "symbol": "rl",
+    "offset": 0,
+    "type": "u8"
+   },
+   "luz_room": {
+    "symbol": "rl",
+    "offset": 1,
+    "type": "u8"
+   },
+   "luz_ok": {
+    "symbol": "rl",
+    "offset": 2,
+    "type": "u8"
+   },
+   "luz_entries": {
+    "symbol": "rl",
+    "offset": 3,
+    "type": "u8"
+   },
+   "luz_loads": {
+    "symbol": "rl",
+    "offset": 4,
+    "type": "u32"
+   },
+   "luz_ticks": {
+    "symbol": "rl",
+    "offset": 12,
+    "type": "u32"
+   },
+   "force_group": {
+    "symbol": "dbg",
+    "offset": 23,
+    "type": "u8"
+   },
+   "luz_err": {
+    "symbol": "rl",
+    "offset": 16,
+    "type": "u32"
+   },
+   "pool_misses": {
+    "symbol": "pm",
+    "offset": 0,
+    "type": "u32"
+   },
+   "en_x": {
+    "symbol": "en",
+    "offset": 0,
+    "type": "s32"
+   },
+   "en_y": {
+    "symbol": "en",
+    "offset": 4,
+    "type": "s32"
+   },
+   "en_hp": {
+    "symbol": "en",
+    "offset": 28,
+    "type": "s32"
+   },
+   "en_state": {
+    "symbol": "en",
+    "offset": 41,
+    "type": "u8"
+   },
+   "en_timer": {
+    "symbol": "en",
+    "offset": 44,
+    "type": "s32"
+   },
+   "en_active": {
+    "symbol": "en",
+    "offset": 24,
+    "type": "s32"
+   }
+  }
+ },
+ "steps": [
+  {
+   "frames": 60
+  },
+  {
+   "tap": {
+    "x": 128,
+    "y": 66
+   },
+   "frames": 6
+  },
+  {
+   "release": true,
+   "frames": 40
+  },
+  {
+   "button_down": "START",
+   "frames": 4
+  },
+  {
+   "button_up": "START",
+   "frames": 90,
+   "capture": "c01_campamento"
+  },
+  {
+   "button_down": "LEFT",
+   "frames": 90
+  },
+  {
+   "button_up": "LEFT",
+   "frames": 10,
+   "capture": "c02_lateral_izq"
+  },
+  {
+   "poke": [
+    {
+     "field": "px",
+     "value": 32768
+    },
+    {
+     "field": "py",
+     "value": 29696
+    }
+   ],
+   "frames": 20,
+   "capture": "c03_puerta"
+  },
+  {
+   "button_down": "A",
+   "frames": 4
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    },
+    {
+     "field": "dbg_start_room",
+     "value": 1
+    },
+    {
+     "field": "dbg_restart",
+     "value": 1
+    }
+   ],
+   "frames": 150,
+   "capture": "s00_idle"
+  },
+  {
+   "button_down": "L",
+   "frames": 3
+  },
+  {
+   "button_up": "L",
+   "frames": 5,
+   "capture": "s00_p1"
+  },
+  {
+   "frames": 5,
+   "capture": "s00_p2"
+  },
+  {
+   "frames": 5,
+   "capture": "s00_p3"
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    },
+    {
+     "field": "dbg_start_room",
+     "value": 2
+    },
+    {
+     "field": "dbg_restart",
+     "value": 1
+    }
+   ],
+   "frames": 150,
+   "capture": "s01_idle"
+  },
+  {
+   "button_down": "L",
+   "frames": 3
+  },
+  {
+   "button_up": "L",
+   "frames": 5,
+   "capture": "s01_p1"
+  },
+  {
+   "frames": 5,
+   "capture": "s01_p2"
+  },
+  {
+   "frames": 5,
+   "capture": "s01_p3"
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    },
+    {
+     "field": "dbg_start_room",
+     "value": 3
+    },
+    {
+     "field": "dbg_restart",
+     "value": 1
+    }
+   ],
+   "frames": 150,
+   "capture": "s02_idle"
+  },
+  {
+   "button_down": "L",
+   "frames": 3
+  },
+  {
+   "button_up": "L",
+   "frames": 5,
+   "capture": "s02_p1"
+  },
+  {
+   "frames": 5,
+   "capture": "s02_p2"
+  },
+  {
+   "frames": 5,
+   "capture": "s02_p3"
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    },
+    {
+     "field": "dbg_start_room",
+     "value": 4
+    },
+    {
+     "field": "dbg_restart",
+     "value": 1
+    }
+   ],
+   "frames": 150,
+   "capture": "s03_idle"
+  },
+  {
+   "button_down": "L",
+   "frames": 3
+  },
+  {
+   "button_up": "L",
+   "frames": 5,
+   "capture": "s03_p1"
+  },
+  {
+   "frames": 5,
+   "capture": "s03_p2"
+  },
+  {
+   "frames": 5,
+   "capture": "s03_p3"
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    },
+    {
+     "field": "dbg_start_room",
+     "value": 5
+    },
+    {
+     "field": "dbg_restart",
+     "value": 1
+    }
+   ],
+   "frames": 150,
+   "capture": "s04_idle"
+  },
+  {
+   "button_down": "L",
+   "frames": 3
+  },
+  {
+   "button_up": "L",
+   "frames": 5,
+   "capture": "s04_p1"
+  },
+  {
+   "frames": 5,
+   "capture": "s04_p2"
+  },
+  {
+   "frames": 5,
+   "capture": "s04_p3"
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    },
+    {
+     "field": "dbg_start_room",
+     "value": 7
+    },
+    {
+     "field": "dbg_restart",
+     "value": 1
+    }
+   ],
+   "frames": 150,
+   "capture": "s06_idle"
+  },
+  {
+   "button_down": "L",
+   "frames": 3
+  },
+  {
+   "button_up": "L",
+   "frames": 5,
+   "capture": "s06_p1"
+  },
+  {
+   "frames": 5,
+   "capture": "s06_p2"
+  },
+  {
+   "frames": 5,
+   "capture": "s06_p3"
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    },
+    {
+     "field": "dbg_start_room",
+     "value": 9
+    },
+    {
+     "field": "dbg_restart",
+     "value": 1
+    }
+   ],
+   "frames": 150,
+   "capture": "s08_idle"
+  },
+  {
+   "button_down": "L",
+   "frames": 3
+  },
+  {
+   "button_up": "L",
+   "frames": 5,
+   "capture": "s08_p1"
+  },
+  {
+   "frames": 5,
+   "capture": "s08_p2"
+  },
+  {
+   "frames": 5,
+   "capture": "s08_p3"
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    },
+    {
+     "field": "dbg_start_room",
+     "value": 10
+    },
+    {
+     "field": "dbg_restart",
+     "value": 1
+    }
+   ],
+   "frames": 150,
+   "capture": "s09_idle"
+  },
+  {
+   "button_down": "L",
+   "frames": 3
+  },
+  {
+   "button_up": "L",
+   "frames": 5,
+   "capture": "s09_p1"
+  },
+  {
+   "frames": 5,
+   "capture": "s09_p2"
+  },
+  {
+   "frames": 5,
+   "capture": "s09_p3"
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    },
+    {
+     "field": "dbg_start_room",
+     "value": 11
+    },
+    {
+     "field": "dbg_restart",
+     "value": 1
+    }
+   ],
+   "frames": 150,
+   "capture": "s10_idle"
+  },
+  {
+   "button_down": "L",
+   "frames": 3
+  },
+  {
+   "button_up": "L",
+   "frames": 5,
+   "capture": "s10_p1"
+  },
+  {
+   "frames": 5,
+   "capture": "s10_p2"
+  },
+  {
+   "frames": 5,
+   "capture": "s10_p3"
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    },
+    {
+     "field": "dbg_start_room",
+     "value": 13
+    },
+    {
+     "field": "dbg_restart",
+     "value": 1
+    }
+   ],
+   "frames": 150,
+   "capture": "s12_idle"
+  },
+  {
+   "button_down": "L",
+   "frames": 3
+  },
+  {
+   "button_up": "L",
+   "frames": 5,
+   "capture": "s12_p1"
+  },
+  {
+   "frames": 5,
+   "capture": "s12_p2"
+  },
+  {
+   "frames": 5,
+   "capture": "s12_p3"
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    },
+    {
+     "field": "dbg_start_room",
+     "value": 15
+    },
+    {
+     "field": "dbg_restart",
+     "value": 1
+    }
+   ],
+   "frames": 150,
+   "capture": "s14_idle"
+  },
+  {
+   "button_down": "L",
+   "frames": 3
+  },
+  {
+   "button_up": "L",
+   "frames": 5,
+   "capture": "s14_p1"
+  },
+  {
+   "frames": 5,
+   "capture": "s14_p2"
+  },
+  {
+   "frames": 5,
+   "capture": "s14_p3"
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    },
+    {
+     "field": "dbg_start_room",
+     "value": 16
+    },
+    {
+     "field": "dbg_restart",
+     "value": 1
+    }
+   ],
+   "frames": 150,
+   "capture": "s15_idle"
+  },
+  {
+   "button_down": "L",
+   "frames": 3
+  },
+  {
+   "button_up": "L",
+   "frames": 5,
+   "capture": "s15_p1"
+  },
+  {
+   "frames": 5,
+   "capture": "s15_p2"
+  },
+  {
+   "frames": 5,
+   "capture": "s15_p3"
+  }
+ ],
+ "assertions": {}
+}

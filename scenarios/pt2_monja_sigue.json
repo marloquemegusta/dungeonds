@@ -1,0 +1,429 @@
+{
+ "name": "pt2_monja_sigue",
+ "description": "Variante arpg-monja (3 Bebes + 1 Monja de cera, heroe invulnerable). El heroe se aleja hacia abajo y el grupo lo persigue: la Monja camina tras el grupo (se desplaza, sigue rezando y curando mientras anda); un Bebe herido recupera vida mientras ella camina. Ritual del campamento antes de dbg_start_room (sin el, la sala no dibuja sprites). Al final el heroe la golpea hasta <=25 % de vida: se tambalea (no reza ni cura).",
+ "suite": true,
+ "state": {
+  "elf": "../.ds-game-dev/build/out/dungeonds-arpg-monja.elf",
+  "symbols": {
+   "pl": "s_player",
+   "gps": "g_player_state",
+   "en": "g_enemies",
+   "dbg": "g_enc_debug"
+  },
+  "default_symbol": "en",
+  "fields": {
+   "dbg_restart": {
+    "symbol": "dbg",
+    "offset": 12,
+    "type": "u8"
+   },
+   "dbg_start_room": {
+    "symbol": "dbg",
+    "offset": 20,
+    "type": "u8"
+   },
+   "god": {
+    "symbol": "gps",
+    "offset": 20,
+    "type": "s32"
+   },
+   "px": {
+    "symbol": "pl",
+    "offset": 0,
+    "type": "s32"
+   },
+   "py": {
+    "symbol": "pl",
+    "offset": 4,
+    "type": "s32"
+   },
+   "e0_x": {
+    "symbol": "en",
+    "offset": 0,
+    "type": "s32"
+   },
+   "e0_y": {
+    "symbol": "en",
+    "offset": 4,
+    "type": "s32"
+   },
+   "e0_hp": {
+    "symbol": "en",
+    "offset": 28,
+    "type": "s32"
+   },
+   "e0_active": {
+    "symbol": "en",
+    "offset": 24,
+    "type": "s32"
+   },
+   "e0_state": {
+    "symbol": "en",
+    "offset": 41,
+    "type": "u8"
+   },
+   "e0_char": {
+    "symbol": "en",
+    "offset": 20,
+    "type": "s32"
+   },
+   "e0_flee": {
+    "symbol": "en",
+    "offset": 96,
+    "type": "s32"
+   },
+   "e1_x": {
+    "symbol": "en",
+    "offset": 124,
+    "type": "s32"
+   },
+   "e1_y": {
+    "symbol": "en",
+    "offset": 128,
+    "type": "s32"
+   },
+   "e1_hp": {
+    "symbol": "en",
+    "offset": 152,
+    "type": "s32"
+   },
+   "e1_active": {
+    "symbol": "en",
+    "offset": 148,
+    "type": "s32"
+   },
+   "e1_state": {
+    "symbol": "en",
+    "offset": 165,
+    "type": "u8"
+   },
+   "e1_char": {
+    "symbol": "en",
+    "offset": 144,
+    "type": "s32"
+   },
+   "e1_flee": {
+    "symbol": "en",
+    "offset": 220,
+    "type": "s32"
+   },
+   "e2_x": {
+    "symbol": "en",
+    "offset": 248,
+    "type": "s32"
+   },
+   "e2_y": {
+    "symbol": "en",
+    "offset": 252,
+    "type": "s32"
+   },
+   "e2_hp": {
+    "symbol": "en",
+    "offset": 276,
+    "type": "s32"
+   },
+   "e2_active": {
+    "symbol": "en",
+    "offset": 272,
+    "type": "s32"
+   },
+   "e2_state": {
+    "symbol": "en",
+    "offset": 289,
+    "type": "u8"
+   },
+   "e2_char": {
+    "symbol": "en",
+    "offset": 268,
+    "type": "s32"
+   },
+   "e2_flee": {
+    "symbol": "en",
+    "offset": 344,
+    "type": "s32"
+   },
+   "e3_x": {
+    "symbol": "en",
+    "offset": 372,
+    "type": "s32"
+   },
+   "e3_y": {
+    "symbol": "en",
+    "offset": 376,
+    "type": "s32"
+   },
+   "e3_hp": {
+    "symbol": "en",
+    "offset": 400,
+    "type": "s32"
+   },
+   "e3_active": {
+    "symbol": "en",
+    "offset": 396,
+    "type": "s32"
+   },
+   "e3_state": {
+    "symbol": "en",
+    "offset": 413,
+    "type": "u8"
+   },
+   "e3_char": {
+    "symbol": "en",
+    "offset": 392,
+    "type": "s32"
+   },
+   "e3_flee": {
+    "symbol": "en",
+    "offset": 468,
+    "type": "s32"
+   },
+   "e0_gest": {
+    "symbol": "en",
+    "offset": 96,
+    "type": "s32"
+   },
+   "e0_maxhp": {
+    "symbol": "en",
+    "offset": 32,
+    "type": "s32"
+   }
+  }
+ },
+ "steps": [
+  {
+   "frames": 60
+  },
+  {
+   "tap": {
+    "x": 128,
+    "y": 66
+   },
+   "frames": 6
+  },
+  {
+   "release": true,
+   "frames": 40
+  },
+  {
+   "button_down": "START",
+   "frames": 4
+  },
+  {
+   "button_up": "START",
+   "frames": 90
+  },
+  {
+   "button_down": "LEFT",
+   "frames": 90
+  },
+  {
+   "button_up": "LEFT",
+   "frames": 10
+  },
+  {
+   "poke": [
+    {
+     "field": "px",
+     "value": 32768
+    },
+    {
+     "field": "py",
+     "value": 29696
+    }
+   ],
+   "frames": 20
+  },
+  {
+   "button_down": "A",
+   "frames": 4
+  },
+  {
+   "frames": 60,
+   "state_capture": "p0"
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_start_room",
+     "value": 1
+    },
+    {
+     "field": "dbg_restart",
+     "value": 1
+    }
+   ],
+   "frames": 90
+  },
+  {
+   "frames": 40,
+   "state_capture": "inicio"
+  },
+  {
+   "poke": [
+    {
+     "field": "god",
+     "value": 1
+    }
+   ],
+   "frames": 2
+  },
+  {
+   "button_down": "DOWN",
+   "frames": 90,
+   "state_capture": "huye0",
+   "capture_sequence": "s",
+   "capture_every": 6
+  },
+  {
+   "button_down": "DOWN",
+   "frames": 90,
+   "state_capture": "huye1",
+   "capture_sequence": "s",
+   "capture_every": 6
+  },
+  {
+   "button_up": "DOWN",
+   "frames": 1
+  },
+  {
+   "poke": [
+    {
+     "field": "e1_hp",
+     "value": 20
+    },
+    {
+     "field": "e2_hp",
+     "value": 20
+    },
+    {
+     "field": "e3_hp",
+     "value": 20
+    }
+   ],
+   "frames": 1,
+   "state_capture": "herido"
+  },
+  {
+   "frames": 25,
+   "state_capture": "curado",
+   "capture_sequence": "s",
+   "capture_every": 5
+  },
+  {
+   "poke": [
+    {
+     "field": "e0_hp",
+     "value": 35
+    },
+    {
+     "field": "e0_x",
+     "value": 65536
+    },
+    {
+     "field": "e0_y",
+     "value": 394400
+    }
+   ],
+   "frames": 1,
+   "state_capture": "antes_golpe"
+  },
+  {
+   "button_down": "DOWN",
+   "frames": 2
+  },
+  {
+   "poke": [
+    {
+     "field": "e0_x",
+     "value": 65536
+    },
+    {
+     "field": "e0_y",
+     "value": 394400
+    }
+   ],
+   "frames": 1
+  },
+  {
+   "button_down": "L",
+   "frames": 2
+  },
+  {
+   "button_up": "L",
+   "frames": 8
+  },
+  {
+   "poke": [
+    {
+     "field": "e0_x",
+     "value": 65536
+    },
+    {
+     "field": "e0_y",
+     "value": 394400
+    }
+   ],
+   "frames": 1
+  },
+  {
+   "button_down": "L",
+   "frames": 2
+  },
+  {
+   "button_up": "L",
+   "frames": 4
+  },
+  {
+   "button_up": "DOWN",
+   "frames": 2,
+   "state_capture": "tras_golpe",
+   "capture": "monja_tambaleo"
+  },
+  {
+   "frames": 60,
+   "state_capture": "final",
+   "capture_sequence": "s",
+   "capture_every": 6
+  }
+ ],
+ "assertions": {
+  "state_changes": [
+   {
+    "at": "inicio",
+    "field": "e0_state",
+    "equals": 15
+   },
+   {
+    "from": "inicio",
+    "to": "huye1",
+    "field": "e0_y",
+    "min_delta": 5120
+   },
+   {
+    "at": "curado",
+    "field": "e0_flee",
+    "equals": 1
+   },
+   {
+    "at": "curado",
+    "field": "e3_hp",
+    "min_value": 22
+   },
+   {
+    "at": "final",
+    "field": "e0_y",
+    "min_value": 371200
+   },
+   {
+    "at": "antes_golpe",
+    "field": "e0_maxhp",
+    "equals": 120
+   },
+   {
+    "at": "tras_golpe",
+    "field": "e0_state",
+    "equals": 18
+   }
+  ]
+ }
+}

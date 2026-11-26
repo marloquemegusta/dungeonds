@@ -30,9 +30,9 @@
 #define PUNCH_START_HOOK 1
 #define PUNCH_FOLLOW 1              // [TUNABLE-PLACEHOLDER] fotogramas que se ven tras el impacto antes de encadenar el golpe guardado (0..3)
 #define PUNCH_RANGE 34              // [TUNABLE-PLACEHOLDER] alcance del punetazo (px de suelo)
-#define PUNCH_DAMAGE_A 50           // [TUNABLE-PLACEHOLDER] dano del directo
-#define PUNCH_DAMAGE_B 50           // [TUNABLE-PLACEHOLDER] dano del cruzado
-#define PUNCH_DAMAGE_HOOK 90        // [TUNABLE-PLACEHOLDER] dano del gancho
+#define PUNCH_DAMAGE_A 10           // [TUNABLE-PLACEHOLDER] dano del directo
+#define PUNCH_DAMAGE_B 10           // [TUNABLE-PLACEHOLDER] dano del cruzado
+#define PUNCH_DAMAGE_HOOK 18        // [TUNABLE-PLACEHOLDER] dano del gancho
 #define PUNCH_LIGHT_PUSH 96         // [TUNABLE-PLACEHOLDER] 8.8: empuje ligero de directo y cruzado (~0,375 px/frame)
 #define PUNCH_HOOK_PUSH 192         // [TUNABLE-PLACEHOLDER] 8.8: empuje del gancho (0,75 px/frame)
 #define PUNCH_MAX_BIN_BYTES 16384   // [TUNABLE-PLACEHOLDER] tamano del buffer; el bin mas grande ronda los 12 KB
@@ -104,6 +104,7 @@ int punch_frame(void);          // fotograma (0..PUNCH_NUM_FRAMES-1)
 int punch_dir(void);            // direccion del golpe (0..7)
 int punch_chain_window(void);   // frames de ventana que quedan (0 = combo terminado)
 void punch_reset(void);
+void punch_light_changed(void);   // invalida el bin de punetazo cargado (se tinta con la luz de la sala al leerlo)
 
 // Fotograma en curso para dibujar: pixeles BGR555 y bounds {x, y, w, h} dentro de la celda PUNCH_CELL,
 // sus tramos opacos por fila (blit_stride) y la fila de pies dentro de la celda (la del walk, para no saltar de
