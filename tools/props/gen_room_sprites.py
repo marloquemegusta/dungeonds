@@ -25,6 +25,9 @@ OUTPUT = ROOT / "include/enc_room_gfx.h"
 SPRITES = (("cofre_cerrado", "cofre_cerrado"), ("cofre_abierto", "cofre_abierto"), ("altar", "altar"))
 
 
+PX_CAP = 5632   # >= the largest tools/arpg_light_fix.py set (osario: 5513 px)
+
+
 def rgb555(v):
     return np.array([(v & 31) * 255 // 31, ((v >> 5) & 31) * 255 // 31, ((v >> 10) & 31) * 255 // 31],
                     dtype=np.float64)
@@ -76,18 +79,25 @@ def emit(specs):
            "#ifndef ENC_ROOM_GFX_H\n#define ENC_ROOM_GFX_H\n\n#include <stdint.h>\n\n",
            "// One fixture sprite: `anchor_y` is the local Y of its ground point, so it is drawn at\n",
            "// (world_y - anchor_y) and its feet sit on the hero's line.\n",
-           "typedef struct {\n    uint16_t w, h;\n    uint16_t anchor_y;\n",
-           "    const uint16_t *pixels;\n} EncRoomSprite;\n\n"]
+           "typedef struct {\n    int16_t left;      // X of the left edge relative to the fixture centre\n",
+           "    uint16_t w, h;\n    uint16_t anchor_y;\n",
+           "    uint16_t *pixels;  // 0 transparent, 1 shadow (halves the pixel below), else BGR555|0x8000\n} EncRoomSprite;\n\n"]
+    total = sum(s["w"] * s["h"] for s in specs)
+    out.append(f"#define ENC_ROOM_PX_CAP {PX_CAP}  // pixels: the largest light-baked set (tools/arpg_light_fix.py) fits\n")
+    out.append(f"#define ENC_ROOM_PX_DAY {total}\n")
+    out.append("// Writable: source/room_light.c overwrites the day art with the room's lit art (<luz>_fix.bin).\n")
+    out.append("static uint16_t s_enc_room_px[ENC_ROOM_PX_CAP] = {\n")
     for s in specs:
         flat = s["px"].reshape(-1)
-        out.append(f"static const uint16_t s_room_{s['name']}_px[{len(flat)}] = {{\n")
+        out.append(f"    // {s['name']}\n")
         for i in range(0, len(flat), 16):
             out.append("    " + ", ".join(f"0x{v:04x}" for v in flat[i:i + 16]) + ",\n")
-        out.append("};\n")
-    out.append("static const EncRoomSprite s_enc_room_sprites[] = {\n")
+    out.append("};\nstatic EncRoomSprite s_enc_room_sprites[] = {\n")
+    off = 0
     for s in specs:
-        out.append(f"    {{ {s['w']}, {s['h']}, {s['anchor']}, s_room_{s['name']}_px }},"
+        out.append(f"    {{ {-(s['w'] // 2)}, {s['w']}, {s['h']}, {s['anchor']}, s_enc_room_px + {off} }},"
                    f" // {s['name']}\n")
+        off += s["w"] * s["h"]
     out.append("};\n\nenum { ENC_SPR_COFRE_CERRADO = 0, ENC_SPR_COFRE_ABIERTO = 1, ENC_SPR_ALTAR = 2 };\n\n")
     out.append("#endif // ENC_ROOM_GFX_H\n")
     OUTPUT.parent.mkdir(parents=True, exist_ok=True)

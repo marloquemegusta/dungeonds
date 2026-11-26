@@ -40,6 +40,9 @@ extern volatile RoomLightState g_room_light;
 int room_light_load(int room);
 const char *room_light_id(void);
 
+// source/encounters_act1.c: re-apunta los sprites de cofre y altar a un bloque de pixeles; ver room_light.c.
+uint16_t *enc_room_gfx_begin(const int16_t meta[3][4]);
+
 // Abre el paquete residente posicionado en los datos de una entrada (kind RL_*), o NULL si no hay.
 FILE *room_light_open(uint32_t kind, const char *name, uint32_t *len);
 // Atajo para los clips de enemigo: `file` es la ruta relativa a NitroFS ("chars/exvoto.bin").
