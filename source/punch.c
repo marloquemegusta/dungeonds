@@ -1,6 +1,7 @@
 #include "punch.h"
 #include "room_light.h"
 #include "arpg_balance.h"
+#include "arpg.h"
 #include "collision.h"
 #include "enemy_ai.h"
 #include "weapons.h"
@@ -143,7 +144,8 @@ static void punch_apply(Enemy *enemies, int idx, fixed hero_x, fixed hero_y, int
     const fixed push = (move == PUNCH_MOVE_HOOK) ? PUNCH_HOOK_PUSH_V : PUNCH_LIGHT_PUSH_V;
     const int base_dmg = (move == PUNCH_MOVE_HOOK) ? BAL(punch_hook, PUNCH_DAMAGE_HOOK)
                        : (move == PUNCH_MOVE_A)    ? BAL(punch_a, PUNCH_DAMAGE_A) : BAL(punch_b, PUNCH_DAMAGE_B);
-    const int dmg = upgrades_punch_damage(base_dmg);
+    int dmg = upgrades_punch_damage(base_dmg);
+    if (e->type == ENEMY_TYPE_PARROCO) dmg *= ARPG_PARROCO_PUNCH_MULT;
     fixed px = 0, py = 0;
     punch_push_vec(e, hero_x, hero_y, push, &px, &py);
     enemy_hit(e, dmg, px, py);
