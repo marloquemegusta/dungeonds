@@ -560,6 +560,16 @@ int enc_block_rects(int32_t block, EncRect *out, int max) {
         out[n].h = ENC_BARRIER_H;
         n++;
     }
+    // South edge of the room: the foot of the entrance block is a permanent wall for bodies and bullets (the strip keeps
+    // generating floor below it, so without this the hero walks out of the map).
+    if ((b.kind == ENC_BLOCK_ENCOUNTER || b.kind == ENC_BLOCK_BOSS) && b.idx == 0 && n < max) {
+        out[n].kind = ENC_R_BARRERA;
+        out[n].x = ENC_FLOOR_X;
+        out[n].y = ENC_BLOCK_H - ENC_BARRIER_H;
+        out[n].w = ENC_FLOOR_W;
+        out[n].h = ENC_BARRIER_H;
+        n++;
+    }
     return n;
 }
 
