@@ -719,6 +719,40 @@ int enc_room_floor_bottom(void) { return window_top(block_of_encounter(0)) + ENC
 int enc_room_level(void) { return room_def()->level; }
 const char *enc_room_name(void) { return room_def()->name; }
 
+// True when a hero standing at (x, y) overlaps a blocking rect of any block of the room (margin = body half-size).
+static int arrival_blocked(const RoomDef *r, int x, int y) {
+    for (int k = 0; k < r->blocks; k++) {
+        const int32_t blk = block_of_encounter(k);
+        const int top = window_top(blk);
+        EncRect rc[ENC_MAX_RECTS];
+        const int n = enc_block_rects(blk, rc, ENC_MAX_RECTS);
+        const int ly = y - top;
+        for (int i = 0; i < n; i++)
+            if (x >= rc[i].x - 8 && x < rc[i].x + rc[i].w + 8 && ly >= rc[i].y - 8 && ly < rc[i].y + rc[i].h + 8) return 1;
+    }
+    return 0;
+}
+
+// Any arrival (foot or lateral door): a prop (the sacos) can sit on the landing spot and the hero would never move. Take the closest
+// free spot (rings of growing radius) inside the floor of the room.
+static void arrival_free(const RoomDef *r, int *x, int *y) {
+    if (!arrival_blocked(r, *x, *y)) return;
+    const int y_min = window_top(block_of_encounter(r->blocks - 1)) + 16;
+    const int y_max = window_top(block_of_encounter(0)) + ENC_BLOCK_H - 8;
+    for (int rad = 4; rad <= 160; rad += 4) {
+        for (int dy = -rad; dy <= rad; dy += 4) {
+            const int edge_row = (dy == -rad || dy == rad);
+            for (int dx = -rad; dx <= rad; dx += edge_row ? 4 : 2 * rad) {
+                const int cx = *x + dx, cy = *y + dy;
+                if (cx < ENC_FLOOR_X + 14 || cx > ENC_FLOOR_X + ENC_FLOOR_W - 14 || cy < y_min || cy > y_max) continue;
+                if (arrival_blocked(r, cx, cy)) continue;
+                *x = cx; *y = cy;
+                return;
+            }
+        }
+    }
+}
+
 int enc_room_arrival(int *out_x, int *out_y, int *out_dir) {
     const RoomDef *r = room_def();
     if (s_from_room >= 0) {
@@ -730,6 +764,7 @@ int enc_room_arrival(int *out_x, int *out_y, int *out_dir) {
             *out_x = left ? ENC_FLOOR_X + 20 : ENC_FLOOR_X + ENC_FLOOR_W - 20;
             *out_y = top + door_hole_y(d) + ARPG_ROOM_HOLE_ARRIVE_PX;
             *out_dir = left ? DIR_EAST : DIR_WEST;       // facing into the room
+            arrival_free(r, out_x, out_y);
             return 1;
         }
     }
@@ -737,23 +772,7 @@ int enc_room_arrival(int *out_x, int *out_y, int *out_dir) {
     *out_x = ENC_FLOOR_X + ENC_FLOOR_W / 2;
     *out_y = window_top(block_of_encounter(0)) + ENC_BLOCK_H - (r->type == RT_CRIPTA ? 12 : ARPG_ROOM_FOOT_OFFSET_PX);
     *out_dir = DIR_NORTH;
-    {   // A prop (the sacos of Nave 3) can sit exactly on the foot: the hero would land inside it and never move. Step north out of it.
-        const int32_t blk = block_of_encounter(0);
-        const int top = window_top(blk);
-        EncRect rc[16];
-        const int n = enc_block_rects(blk, rc, 16);
-        for (int pass = 0; pass < 4; pass++) {
-            int moved = 0;
-            for (int i = 0; i < n; i++) {
-                const int ly = *out_y - top;
-                if (*out_x >= rc[i].x - 6 && *out_x < rc[i].x + rc[i].w + 6 && ly >= rc[i].y - 6 && ly < rc[i].y + rc[i].h + 6) {
-                    *out_y = top + rc[i].y - 7;
-                    moved = 1;
-                }
-            }
-            if (!moved) break;
-        }
-    }
+    arrival_free(r, out_x, out_y);
     return 0;
 }
 
