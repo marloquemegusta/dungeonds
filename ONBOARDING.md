@@ -49,7 +49,7 @@ Actualiza los dos repos y baja los modelos nuevos. Si avisa de cambios sin guard
 ## 4. Cómo se trabaja
 
 - **Una rama por vídeo o lote** (`video/<nombre>`), en su worktree (`AGENTS.md`, «Protocolo de Sesiones»). Claude la crea.
-- **Al acabar, se sube la rama** (`git push -u origin video/<nombre>`) y se avisa para integrarla en `main`. No se trabaja directamente sobre `main`.
+- **Al acabar, se sube la rama** (`git push -u origin video/<nombre>`) y se avisa para integrarla en `arpg`. No se trabaja directamente sobre `arpg` ni `roguelike`.
 - **Vídeos de lore:** skill `codice-lore-video` (`.agents/skills/codice-lore-video/SKILL.md`), escritos contra `LORE.md`.
 - **Gameplay:** skill `ds-game-dev` (el repo `agentic-ds-dev`): compila la ROM y saca capturas y GIF de escenarios guionizados (`scenarios/*.json`). Para partidas jugadas de verdad, grabar DeSmuME con ventana.
 - **Cupo de LFS:** cada clon nuevo baja ~1 GB del cupo mensual de 10 GB de la cuenta. Clonar una vez y luego `sync.ps1`; no reclonar.

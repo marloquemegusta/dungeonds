@@ -8,7 +8,7 @@
 - **Bucle:** una subida de 15–18 min de 15 stages en tres actos, con jefe al final de cada uno (§6.13). Personaje = arma única. Hoy solo existe el Acto I y El Abanderado como jefe (repetido en los stages 10 y 15).
 - **Fantasía:** la Columna intentó llegar al Altar de una catedral que no termina y cayó por el camino; el jugador hace el mismo recorrido (`LORE.md`). Los personajes, enemigos y mapas actuales son una primera versión con la estética buena; el sistema debe aguantar cambiarlos.
 - **Fuera de la prueba, a propósito:** progresión entre partidas (equipo, desbloqueos), más de un personaje y más de un acto con contenido. La capa de equipo es el gancho a largo plazo (Diablo) y se diseña tras validar que una partida divierte.
-- El prototipo ARPG (rama `proto/arpg`) tiene su diseño en `DESIGN-ARPG.md`.
+- El ARPG (rama `arpg`) tiene su diseño en `DESIGN-ARPG.md`.
 
 ## 2. Dirección de Arte y Pipeline
 - **Técnica:** sprites 2D pre-renderizados a partir de modelos 3D con animación esquelética (FBX/GLB), **sin outline** en personajes, enemigos ni piezas de escenario.

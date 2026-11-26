@@ -22,6 +22,6 @@ function Sync-Repo([string]$Path, [string]$Branch, [switch]$Lfs) {
     if ($Lfs) { git -C $Path lfs pull }
 }
 
-Sync-Repo $GameRepo 'main' -Lfs
+Sync-Repo $GameRepo 'arpg' -Lfs
 Sync-Repo $SkillRepo 'main'
 Write-Host 'Listo.'
