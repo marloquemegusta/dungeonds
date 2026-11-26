@@ -26,6 +26,7 @@ Reposo por papel y aparición por proximidad (`DESIGN-ARPG.md` §12). Evidencia 
 - Compila sin avisos nuevos (ROM por defecto y `arpg-monja`).
 - Escenarios PASS: salas, luz por sala, proximidad, reposos (umbral del monaguillo bajado a 2048 de recorrido: demuestra que pasea; su paseo queda algo corto por las huellas de pieza de la sala).
 - `monja_curandera_gif` (sin suite, evidencia) arranca ya en sala con `dbg_start_room` + `dbg_restart`, pero la Monja no cura en esa partida (e0 queda en reposo sin huir ni curar); en la rama `feat/monja-curandera` pasa. Sin diagnosticar.
+- **Luces oscuras (2026-11-26):** salas 9, 12, 14 y 15 con luz más oscura (hojas `assets/rom_luces_oscuras_0912.png` y `assets/rom_luces_oscuras_1415.png`; `rom_salas_luz.png` regenerada).
 - **Falta medir en la DS:** FPS y tiempo de carga de sala. Margen de montón con la luz cargada ~12-16 KB (riesgo anotado en `TECHNICAL.md`).
 
 MDs revisados: `DESIGN-ARPG.md` (aparición por proximidad en §12), `STATUS-ARPG.md`, `STATUS-ARCHIVE.md`; `TECHNICAL.md` §3.3.1 y §5.7 ya recogían lo vigente. Sincronizados con `main`.
