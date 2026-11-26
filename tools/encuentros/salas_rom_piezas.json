@@ -4,176 +4,211 @@
    {
     "piece": "banco_entero",
     "k": 0,
-    "lx": 8,
+    "lx": 0,
     "ly": 8,
     "mirror": 0
    },
    {
     "piece": "banco_entero",
     "k": 0,
-    "lx": 112,
+    "lx": 120,
     "ly": 8,
     "mirror": 1
    },
    {
     "piece": "banco_entero",
     "k": 0,
-    "lx": 112,
-    "ly": 48,
+    "lx": 120,
+    "ly": 40,
     "mirror": 1
    },
    {
     "piece": "banco_entero",
     "k": 0,
-    "lx": 112,
+    "lx": 120,
     "ly": 240,
     "mirror": 1
    },
    {
     "piece": "banco_entero",
     "k": 0,
-    "lx": 112,
-    "ly": 280,
+    "lx": 120,
+    "ly": 272,
     "mirror": 1
    },
    {
     "piece": "banco_entero",
     "k": 0,
-    "lx": 112,
-    "ly": 320,
+    "lx": 120,
+    "ly": 304,
+    "mirror": 1
+   },
+   {
+    "piece": "banco_entero",
+    "k": 0,
+    "lx": 120,
+    "ly": 344,
     "mirror": 1
    },
    {
     "piece": "banco_entero",
     "k": 1,
-    "lx": 8,
+    "lx": 0,
     "ly": 8,
     "mirror": 0
    },
    {
     "piece": "banco_entero",
     "k": 1,
-    "lx": 8,
-    "ly": 48,
+    "lx": 0,
+    "ly": 40,
     "mirror": 0
    },
    {
     "piece": "banco_entero",
     "k": 1,
-    "lx": 8,
+    "lx": 0,
     "ly": 240,
     "mirror": 0
    },
    {
     "piece": "banco_entero",
     "k": 1,
-    "lx": 8,
-    "ly": 280,
+    "lx": 0,
+    "ly": 272,
     "mirror": 0
    },
    {
     "piece": "banco_entero",
     "k": 1,
-    "lx": 8,
-    "ly": 320,
+    "lx": 0,
+    "ly": 304,
     "mirror": 0
    },
    {
     "piece": "banco_entero",
     "k": 1,
-    "lx": 112,
+    "lx": 0,
+    "ly": 344,
+    "mirror": 0
+   },
+   {
+    "piece": "banco_entero",
+    "k": 1,
+    "lx": 120,
     "ly": 8,
     "mirror": 1
    },
    {
     "piece": "banco_entero",
     "k": 1,
-    "lx": 96,
-    "ly": 232,
+    "lx": 120,
+    "ly": 240,
     "mirror": 1
    },
    {
     "piece": "banco_entero",
     "k": 1,
-    "lx": 96,
+    "lx": 120,
     "ly": 272,
     "mirror": 1
    },
    {
     "piece": "banco_entero",
     "k": 1,
-    "lx": 96,
-    "ly": 312,
+    "lx": 120,
+    "ly": 304,
+    "mirror": 1
+   },
+   {
+    "piece": "banco_entero",
+    "k": 1,
+    "lx": 120,
+    "ly": 344,
     "mirror": 1
    },
    {
     "piece": "banco_entero",
     "k": 2,
-    "lx": 8,
+    "lx": 0,
     "ly": 8,
     "mirror": 0
    },
    {
     "piece": "banco_entero",
     "k": 2,
-    "lx": 8,
-    "ly": 48,
+    "lx": 0,
+    "ly": 40,
     "mirror": 0
    },
    {
     "piece": "banco_entero",
     "k": 2,
-    "lx": 8,
+    "lx": 0,
     "ly": 240,
     "mirror": 0
    },
    {
     "piece": "banco_entero",
     "k": 2,
-    "lx": 8,
-    "ly": 280,
+    "lx": 0,
+    "ly": 272,
     "mirror": 0
    },
    {
     "piece": "banco_entero",
     "k": 2,
-    "lx": 8,
-    "ly": 320,
+    "lx": 0,
+    "ly": 304,
     "mirror": 0
    },
    {
     "piece": "banco_entero",
     "k": 2,
-    "lx": 112,
+    "lx": 0,
+    "ly": 344,
+    "mirror": 0
+   },
+   {
+    "piece": "banco_entero",
+    "k": 2,
+    "lx": 120,
     "ly": 8,
     "mirror": 1
    },
    {
     "piece": "banco_entero",
     "k": 2,
-    "lx": 112,
-    "ly": 48,
+    "lx": 120,
+    "ly": 40,
     "mirror": 1
    },
    {
     "piece": "banco_entero",
     "k": 2,
-    "lx": 112,
+    "lx": 120,
     "ly": 240,
     "mirror": 1
    },
    {
     "piece": "banco_entero",
     "k": 2,
-    "lx": 112,
-    "ly": 280,
+    "lx": 120,
+    "ly": 272,
     "mirror": 1
    },
    {
     "piece": "banco_entero",
     "k": 2,
-    "lx": 112,
-    "ly": 320,
+    "lx": 120,
+    "ly": 304,
+    "mirror": 1
+   },
+   {
+    "piece": "banco_entero",
+    "k": 2,
+    "lx": 120,
+    "ly": 344,
     "mirror": 1
    }
   ],
@@ -181,43 +216,50 @@
    {
     "piece": "banco_entero",
     "k": 0,
-    "lx": 8,
+    "lx": 0,
     "ly": 8,
     "mirror": 0
    },
    {
     "piece": "banco_entero",
     "k": 0,
-    "lx": 8,
-    "ly": 48,
+    "lx": 0,
+    "ly": 40,
     "mirror": 0
    },
    {
     "piece": "banco_entero",
     "k": 0,
-    "lx": 112,
+    "lx": 120,
     "ly": 8,
     "mirror": 1
    },
    {
     "piece": "banco_entero",
     "k": 0,
-    "lx": 112,
-    "ly": 48,
+    "lx": 120,
+    "ly": 40,
     "mirror": 1
    },
    {
     "piece": "banco_entero",
     "k": 0,
-    "lx": 112,
+    "lx": 120,
     "ly": 240,
     "mirror": 1
    },
    {
     "piece": "banco_entero",
     "k": 0,
-    "lx": 112,
-    "ly": 280,
+    "lx": 120,
+    "ly": 272,
+    "mirror": 1
+   },
+   {
+    "piece": "banco_roto",
+    "k": 0,
+    "lx": 128,
+    "ly": 304,
     "mirror": 1
    },
    {
@@ -230,120 +272,148 @@
    {
     "piece": "banco_entero",
     "k": 1,
-    "lx": 8,
+    "lx": 0,
     "ly": 40,
     "mirror": 0
    },
    {
     "piece": "banco_entero",
     "k": 1,
-    "lx": 16,
+    "lx": 8,
     "ly": 240,
     "mirror": 0
    },
    {
     "piece": "banco_entero",
     "k": 1,
-    "lx": 16,
-    "ly": 280,
+    "lx": 8,
+    "ly": 272,
     "mirror": 0
    },
    {
     "piece": "banco_entero",
     "k": 1,
-    "lx": 112,
+    "lx": 0,
+    "ly": 344,
+    "mirror": 0
+   },
+   {
+    "piece": "banco_entero",
+    "k": 1,
+    "lx": 120,
     "ly": 8,
     "mirror": 1
    },
    {
     "piece": "banco_entero",
     "k": 1,
-    "lx": 96,
-    "ly": 256,
+    "lx": 120,
+    "ly": 240,
     "mirror": 1
    },
    {
     "piece": "banco_entero",
     "k": 1,
-    "lx": 96,
+    "lx": 120,
+    "ly": 272,
+    "mirror": 1
+   },
+   {
+    "piece": "banco_entero",
+    "k": 1,
+    "lx": 120,
     "ly": 304,
     "mirror": 1
    },
    {
     "piece": "banco_entero",
     "k": 1,
-    "lx": 112,
+    "lx": 120,
     "ly": 344,
     "mirror": 1
    },
    {
     "piece": "banco_roto",
     "k": 1,
-    "lx": 16,
-    "ly": 320,
+    "lx": 8,
+    "ly": 304,
     "mirror": 0
    },
    {
     "piece": "banco_roto",
     "k": 1,
-    "lx": 112,
-    "ly": 48,
+    "lx": 128,
+    "ly": 40,
     "mirror": 1
    },
    {
     "piece": "banco_entero",
     "k": 2,
-    "lx": 8,
+    "lx": 0,
     "ly": 40,
     "mirror": 0
    },
    {
     "piece": "banco_entero",
     "k": 2,
-    "lx": 8,
-    "ly": 320,
+    "lx": 0,
+    "ly": 304,
     "mirror": 0
    },
    {
     "piece": "banco_entero",
     "k": 2,
-    "lx": 112,
+    "lx": 0,
+    "ly": 344,
+    "mirror": 0
+   },
+   {
+    "piece": "banco_entero",
+    "k": 2,
+    "lx": 120,
     "ly": 8,
     "mirror": 1
    },
    {
     "piece": "banco_entero",
     "k": 2,
-    "lx": 112,
+    "lx": 120,
     "ly": 240,
     "mirror": 1
    },
    {
     "piece": "banco_entero",
     "k": 2,
-    "lx": 112,
-    "ly": 280,
+    "lx": 120,
+    "ly": 272,
     "mirror": 1
    },
    {
     "piece": "banco_entero",
     "k": 2,
-    "lx": 112,
-    "ly": 320,
+    "lx": 120,
+    "ly": 304,
+    "mirror": 1
+   },
+   {
+    "piece": "banco_entero",
+    "k": 2,
+    "lx": 120,
+    "ly": 344,
     "mirror": 1
    },
    {
     "piece": "banco_roto",
     "k": 2,
-    "lx": 8,
+    "lx": 0,
     "ly": 240,
     "mirror": 0
    },
    {
     "piece": "banco_roto",
     "k": 2,
-    "lx": 8,
-    "ly": 280,
+    "lx": 0,
+    "ly": 272,
     "mirror": 0
    }
   ],
@@ -351,7 +421,7 @@
    {
     "piece": "banco_entero",
     "k": 0,
-    "lx": 144,
+    "lx": 120,
     "ly": 8,
     "mirror": 1,
     "sin_sombra": 1
@@ -359,7 +429,7 @@
    {
     "piece": "banco_entero",
     "k": 0,
-    "lx": 144,
+    "lx": 120,
     "ly": 272,
     "mirror": 1,
     "sin_sombra": 1
@@ -367,7 +437,7 @@
    {
     "piece": "banco_roto",
     "k": 0,
-    "lx": 8,
+    "lx": 0,
     "ly": 8,
     "mirror": 0
    },
@@ -398,7 +468,7 @@
     "piece": "banco_entero",
     "k": 1,
     "lx": 16,
-    "ly": 312,
+    "ly": 304,
     "mirror": 0,
     "sin_sombra": 1
    },
@@ -413,28 +483,28 @@
    {
     "piece": "banco_roto",
     "k": 1,
-    "lx": 16,
+    "lx": 8,
     "ly": 272,
     "mirror": 0
    },
    {
     "piece": "banco_roto",
     "k": 1,
-    "lx": 112,
-    "ly": 56,
+    "lx": 128,
+    "ly": 48,
     "mirror": 1
    },
    {
     "piece": "banco_roto",
     "k": 1,
-    "lx": 112,
+    "lx": 128,
     "ly": 344,
     "mirror": 1
    },
    {
     "piece": "banco_volcado",
     "k": 1,
-    "lx": 112,
+    "lx": 120,
     "ly": 8,
     "mirror": 1
    },
@@ -464,35 +534,42 @@
    {
     "piece": "banco_roto",
     "k": 2,
-    "lx": 112,
+    "lx": 128,
     "ly": 40,
     "mirror": 1
    },
    {
     "piece": "banco_roto",
     "k": 2,
-    "lx": 112,
+    "lx": 128,
     "ly": 240,
     "mirror": 1
    },
    {
     "piece": "banco_roto",
     "k": 2,
-    "lx": 112,
-    "ly": 280,
+    "lx": 128,
+    "ly": 272,
     "mirror": 1
    },
    {
     "piece": "banco_roto",
     "k": 2,
-    "lx": 112,
-    "ly": 320,
+    "lx": 128,
+    "ly": 304,
+    "mirror": 1
+   },
+   {
+    "piece": "banco_roto",
+    "k": 2,
+    "lx": 128,
+    "ly": 344,
     "mirror": 1
    },
    {
     "piece": "banco_volcado",
     "k": 2,
-    "lx": 8,
+    "lx": 0,
     "ly": 240,
     "mirror": 0
    },
@@ -500,7 +577,7 @@
     "piece": "columna",
     "k": 2,
     "lx": 0,
-    "ly": 288,
+    "ly": 296,
     "mirror": 0
    }
   ],
@@ -515,14 +592,14 @@
    {
     "piece": "banco_roto",
     "k": 0,
-    "lx": 8,
+    "lx": 0,
     "ly": 8,
     "mirror": 0
    },
    {
     "piece": "banco_volcado",
     "k": 0,
-    "lx": 112,
+    "lx": 120,
     "ly": 8,
     "mirror": 1
    },
@@ -536,21 +613,21 @@
    {
     "piece": "banco_roto",
     "k": 1,
-    "lx": 112,
+    "lx": 128,
     "ly": 344,
     "mirror": 1
    },
    {
     "piece": "banco_volcado",
     "k": 1,
-    "lx": 8,
+    "lx": 0,
     "ly": 8,
     "mirror": 0
    },
    {
     "piece": "banco_volcado",
     "k": 1,
-    "lx": 112,
+    "lx": 120,
     "ly": 8,
     "mirror": 1
    },
@@ -578,7 +655,7 @@
    {
     "piece": "banco_entero",
     "k": 2,
-    "lx": 8,
+    "lx": 0,
     "ly": 240,
     "mirror": 0
    },
@@ -592,21 +669,21 @@
    {
     "piece": "banco_roto",
     "k": 2,
-    "lx": 8,
+    "lx": 0,
     "ly": 344,
     "mirror": 0
    },
    {
     "piece": "banco_volcado",
     "k": 2,
-    "lx": 8,
-    "ly": 296,
+    "lx": 0,
+    "ly": 304,
     "mirror": 0
    },
    {
     "piece": "banco_volcado",
     "k": 2,
-    "lx": 112,
+    "lx": 120,
     "ly": 8,
     "mirror": 1
    },
@@ -729,15 +806,22 @@
    {
     "piece": "capullo",
     "k": 0,
-    "lx": 48,
-    "ly": 232,
+    "lx": 16,
+    "ly": 248,
     "mirror": 0
    },
    {
     "piece": "capullo",
     "k": 0,
-    "lx": 16,
+    "lx": 48,
     "ly": 248,
+    "mirror": 0
+   },
+   {
+    "piece": "cepo",
+    "k": 0,
+    "lx": 168,
+    "ly": 288,
     "mirror": 0
    },
    {
@@ -773,85 +857,85 @@
    {
     "piece": "columna_entera",
     "k": 0,
-    "lx": 16,
-    "ly": 8,
-    "mirror": 0
-   },
-   {
-    "piece": "columna_entera",
-    "k": 0,
-    "lx": 128,
-    "ly": 8,
-    "mirror": 0
-   },
-   {
-    "piece": "columna_entera",
-    "k": 0,
-    "lx": 16,
-    "ly": 168,
-    "mirror": 0
-   },
-   {
-    "piece": "columna_entera",
-    "k": 0,
-    "lx": 128,
-    "ly": 168,
-    "mirror": 0
-   },
-   {
-    "piece": "columna_entera",
-    "k": 1,
     "lx": 8,
     "ly": 8,
     "mirror": 0
    },
    {
     "piece": "columna_entera",
-    "k": 1,
-    "lx": 128,
-    "ly": 8,
-    "mirror": 0
-   },
-   {
-    "piece": "columna_entera",
-    "k": 1,
-    "lx": 8,
-    "ly": 168,
-    "mirror": 0
-   },
-   {
-    "piece": "columna_entera",
-    "k": 1,
-    "lx": 128,
-    "ly": 168,
-    "mirror": 0
-   },
-   {
-    "piece": "columna_entera",
-    "k": 2,
-    "lx": 8,
-    "ly": 8,
-    "mirror": 0
-   },
-   {
-    "piece": "columna_entera",
-    "k": 2,
+    "k": 0,
     "lx": 120,
+    "ly": 8,
+    "mirror": 0
+   },
+   {
+    "piece": "columna_entera",
+    "k": 0,
+    "lx": 8,
+    "ly": 168,
+    "mirror": 0
+   },
+   {
+    "piece": "columna_entera",
+    "k": 0,
+    "lx": 120,
+    "ly": 168,
+    "mirror": 0
+   },
+   {
+    "piece": "columna_entera",
+    "k": 1,
+    "lx": 0,
+    "ly": 8,
+    "mirror": 0
+   },
+   {
+    "piece": "columna_entera",
+    "k": 1,
+    "lx": 120,
+    "ly": 8,
+    "mirror": 0
+   },
+   {
+    "piece": "columna_entera",
+    "k": 1,
+    "lx": 0,
+    "ly": 168,
+    "mirror": 0
+   },
+   {
+    "piece": "columna_entera",
+    "k": 1,
+    "lx": 120,
+    "ly": 168,
+    "mirror": 0
+   },
+   {
+    "piece": "columna_entera",
+    "k": 2,
+    "lx": 0,
+    "ly": 8,
+    "mirror": 0
+   },
+   {
+    "piece": "columna_entera",
+    "k": 2,
+    "lx": 112,
     "ly": 24,
     "mirror": 0
    },
    {
     "piece": "columna_entera",
     "k": 2,
-    "lx": 8,
+    "lx": 0,
     "ly": 168,
     "mirror": 0
    },
    {
     "piece": "columna_entera",
     "k": 2,
-    "lx": 128,
-    "ly": 176,
+    "lx": 120,
+    "ly": 168,
     "mirror": 0
    }
   ],
@@ -859,63 +943,63 @@
    {
     "piece": "banco_roto",
     "k": 0,
-    "lx": 72,
+    "lx": 64,
     "ly": 336,
     "mirror": 0
    },
    {
     "piece": "columna_entera",
     "k": 0,
-    "lx": 16,
-    "ly": 8,
-    "mirror": 0
-   },
-   {
-    "piece": "columna_entera",
-    "k": 0,
-    "lx": 128,
-    "ly": 8,
-    "mirror": 0
-   },
-   {
-    "piece": "columna_entera",
-    "k": 0,
-    "lx": 16,
-    "ly": 168,
-    "mirror": 0
-   },
-   {
-    "piece": "columna_entera",
-    "k": 0,
-    "lx": 128,
-    "ly": 168,
-    "mirror": 0
-   },
-   {
-    "piece": "columna_entera",
-    "k": 1,
     "lx": 8,
     "ly": 8,
     "mirror": 0
    },
    {
     "piece": "columna_entera",
-    "k": 1,
-    "lx": 128,
+    "k": 0,
+    "lx": 120,
     "ly": 8,
     "mirror": 0
    },
    {
     "piece": "columna_entera",
-    "k": 1,
+    "k": 0,
     "lx": 8,
     "ly": 168,
     "mirror": 0
    },
    {
     "piece": "columna_entera",
+    "k": 0,
+    "lx": 120,
+    "ly": 168,
+    "mirror": 0
+   },
+   {
+    "piece": "columna_entera",
     "k": 1,
-    "lx": 128,
+    "lx": 0,
+    "ly": 8,
+    "mirror": 0
+   },
+   {
+    "piece": "columna_entera",
+    "k": 1,
+    "lx": 120,
+    "ly": 8,
+    "mirror": 0
+   },
+   {
+    "piece": "columna_entera",
+    "k": 1,
+    "lx": 0,
+    "ly": 168,
+    "mirror": 0
+   },
+   {
+    "piece": "columna_entera",
+    "k": 1,
+    "lx": 120,
     "ly": 168,
     "mirror": 0
    },
@@ -929,28 +1013,28 @@
    {
     "piece": "columna_entera",
     "k": 2,
-    "lx": 8,
+    "lx": 0,
     "ly": 8,
     "mirror": 0
    },
    {
     "piece": "columna_entera",
     "k": 2,
-    "lx": 120,
+    "lx": 112,
     "ly": 16,
     "mirror": 0
    },
    {
     "piece": "columna_entera",
     "k": 2,
-    "lx": 8,
+    "lx": 0,
     "ly": 168,
     "mirror": 0
    },
    {
     "piece": "columna_entera",
     "k": 2,
-    "lx": 128,
+    "lx": 120,
     "ly": 168,
     "mirror": 0
    }
@@ -1016,7 +1100,7 @@
     "piece": "catre",
     "k": 0,
     "lx": 160,
-    "ly": 336,
+    "ly": 328,
     "mirror": 1
    },
    {
@@ -1404,7 +1488,7 @@
    {
     "piece": "altar_pie",
     "k": 0,
-    "lx": 96,
+    "lx": 88,
     "ly": 8,
     "mirror": 0
    },
@@ -1453,14 +1537,14 @@
    {
     "piece": "relicario",
     "k": 0,
-    "lx": 16,
+    "lx": 8,
     "ly": 16,
     "mirror": 0
    },
    {
     "piece": "relicario",
     "k": 0,
-    "lx": 152,
+    "lx": 144,
     "ly": 16,
     "mirror": 0
    }
@@ -1567,7 +1651,7 @@
    {
     "piece": "altar_pie",
     "k": 1,
-    "lx": 96,
+    "lx": 88,
     "ly": 8,
     "mirror": 0
    },
@@ -1732,14 +1816,14 @@
    {
     "piece": "altar_pie",
     "k": 0,
-    "lx": 40,
+    "lx": 32,
     "ly": 8,
     "mirror": 0
    },
    {
     "piece": "altar_pie",
     "k": 0,
-    "lx": 152,
+    "lx": 144,
     "ly": 8,
     "mirror": 0
    },
@@ -1774,7 +1858,7 @@
    {
     "piece": "relicario",
     "k": 0,
-    "lx": 80,
+    "lx": 72,
     "ly": 0,
     "mirror": 0
    }
@@ -1783,14 +1867,14 @@
    {
     "piece": "calaveras_pila",
     "k": 0,
-    "lx": 88,
+    "lx": 80,
     "ly": 208,
     "mirror": 0
    },
    {
     "piece": "capullo",
     "k": 0,
-    "lx": 64,
+    "lx": 48,
     "ly": 152,
     "mirror": 0
    },
@@ -1812,14 +1896,14 @@
     "piece": "columna_entera",
     "k": 0,
     "lx": 56,
-    "ly": 256,
+    "ly": 264,
     "mirror": 0
    },
    {
     "piece": "columna_entera",
     "k": 0,
     "lx": 112,
-    "ly": 256,
+    "ly": 264,
     "mirror": 0
    },
    {
@@ -1874,29 +1958,36 @@
    {
     "piece": "capullo",
     "k": 1,
-    "lx": 48,
+    "lx": 16,
     "ly": 0,
     "mirror": 0
    },
    {
     "piece": "capullo",
     "k": 1,
-    "lx": 56,
+    "lx": 80,
+    "ly": 0,
+    "mirror": 0
+   },
+   {
+    "piece": "capullo",
+    "k": 1,
+    "lx": 24,
     "ly": 64,
     "mirror": 0
    },
    {
     "piece": "capullo",
     "k": 1,
-    "lx": 48,
-    "ly": 256,
+    "lx": 56,
+    "ly": 240,
     "mirror": 0
    },
    {
     "piece": "capullo",
     "k": 1,
-    "lx": 64,
-    "ly": 312,
+    "lx": 40,
+    "ly": 304,
     "mirror": 0
    },
    {
@@ -1946,28 +2037,28 @@
    {
     "piece": "brasero",
     "k": 0,
-    "lx": 16,
+    "lx": 0,
     "ly": 336,
     "mirror": 0
    },
    {
     "piece": "brasero",
     "k": 0,
-    "lx": 152,
+    "lx": 128,
     "ly": 336,
     "mirror": 0
    },
    {
     "piece": "calaveras_pila",
     "k": 0,
-    "lx": 48,
+    "lx": 40,
     "ly": 120,
     "mirror": 0
    },
    {
     "piece": "huesos_monton",
     "k": 0,
-    "lx": 128,
+    "lx": 136,
     "ly": 280,
     "mirror": 0
    },
@@ -2002,42 +2093,42 @@
    {
     "piece": "sarcofago",
     "k": 0,
-    "lx": 72,
+    "lx": 40,
     "ly": 0,
     "mirror": 0
    },
    {
     "piece": "sarcofago_lado",
     "k": 0,
-    "lx": 160,
+    "lx": 144,
     "ly": 80,
     "mirror": 0
    },
    {
     "piece": "sarcofago_lado",
     "k": 0,
-    "lx": 160,
+    "lx": 144,
     "ly": 112,
     "mirror": 0
    },
    {
     "piece": "sarcofago_lado",
     "k": 0,
-    "lx": 160,
+    "lx": 144,
     "ly": 192,
     "mirror": 0
    },
    {
     "piece": "sarcofago_lado",
     "k": 0,
-    "lx": 160,
+    "lx": 144,
     "ly": 224,
     "mirror": 0
    },
    {
     "piece": "sarcofago_lado",
     "k": 0,
-    "lx": 160,
+    "lx": 144,
     "ly": 304,
     "mirror": 0
    },
