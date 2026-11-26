@@ -21,7 +21,10 @@ def exported_anchors():
 
 
 def _brace_block(symbol_decl):
-    start = SPRITES.index(symbol_decl)
+    # the luz-por-sala loader writes the offsets of some clips, so they may be declared without const
+    start = SPRITES.find(symbol_decl)
+    if start < 0:
+        start = SPRITES.index(symbol_decl.replace("const ", "", 1))
     opening = SPRITES.index("{", SPRITES.index("=", start))
     depth = 0
     for end in range(opening, len(SPRITES)):

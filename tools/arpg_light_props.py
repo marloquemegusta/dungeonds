@@ -46,6 +46,8 @@ def load_props():
     props = json.loads((ROOT / "tools/props/props.json").read_text(encoding="utf-8"))
     for f in sorted((ROOT / "tools/poster/salas").glob("props_*.json")):
         props.update(json.loads(f.read_text(encoding="utf-8")))
+    # altar_pie (estampa de sala de pie, tools/encuentros/gen_salas_rom.py PIEZA_ALIAS) es el altar del poster con otro nombre
+    props["altar_pie"] = {**props["altar"], "glb": "altar"}
     return props
 
 

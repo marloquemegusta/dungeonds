@@ -1,0 +1,835 @@
+{
+ "name": "arpg_salas_luz_hoja",
+ "description": "Hoja de contacto de las 16 salas con su luz (piezas .rmk horneadas por luz): entrada y dos estaciones por sala; la cripta con la camara subida. Solo evidencia.",
+ "suite": false,
+ "evidence_only": true,
+ "state": {
+  "elf": "../.ds-game-dev/build/out/dungeonds.elf",
+  "symbols": {
+   "pl": "s_player",
+   "dbg": "g_enc_debug",
+   "stats": "g_enc_stats"
+  },
+  "default_symbol": "pl",
+  "fields": {
+   "px": {
+    "symbol": "pl",
+    "offset": 0,
+    "type": "s32"
+   },
+   "py": {
+    "symbol": "pl",
+    "offset": 4,
+    "type": "s32"
+   },
+   "dbg_god": {
+    "symbol": "dbg",
+    "offset": 2,
+    "type": "u8"
+   },
+   "dbg_restart": {
+    "symbol": "dbg",
+    "offset": 12,
+    "type": "u8"
+   },
+   "dbg_start_room": {
+    "symbol": "dbg",
+    "offset": 20,
+    "type": "u8"
+   },
+   "room": {
+    "symbol": "stats",
+    "offset": 60,
+    "type": "u8"
+   },
+   "block": {
+    "symbol": "stats",
+    "offset": 1,
+    "type": "u8"
+   },
+   "alive": {
+    "symbol": "stats",
+    "offset": 61,
+    "type": "u8"
+   },
+   "dbg_cam_up": {
+    "symbol": "dbg",
+    "offset": 13,
+    "type": "u8"
+   }
+  }
+ },
+ "steps": [
+  {
+   "frames": 60
+  },
+  {
+   "tap": {
+    "x": 128,
+    "y": 66
+   },
+   "frames": 6
+  },
+  {
+   "release": true,
+   "frames": 40
+  },
+  {
+   "button_down": "START",
+   "frames": 4
+  },
+  {
+   "button_up": "START",
+   "frames": 90
+  },
+  {
+   "button_down": "LEFT",
+   "frames": 90
+  },
+  {
+   "button_up": "LEFT",
+   "frames": 10
+  },
+  {
+   "poke": [
+    {
+     "field": "px",
+     "value": 32768
+    },
+    {
+     "field": "py",
+     "value": 29696
+    }
+   ],
+   "frames": 20
+  },
+  {
+   "button_down": "A",
+   "frames": 4
+  },
+  {
+   "button_up": "A",
+   "frames": 6
+  },
+  {
+   "frames": 8
+  },
+  {
+   "frames": 20
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    }
+   ],
+   "frames": 60
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    },
+    {
+     "field": "dbg_start_room",
+     "value": 1
+    },
+    {
+     "field": "dbg_restart",
+     "value": 1
+    }
+   ],
+   "frames": 70,
+   "capture": "s00_e0",
+   "state_capture": "s00_e0"
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    },
+    {
+     "field": "py",
+     "value": 260096
+    }
+   ],
+   "frames": 10,
+   "capture": "s00_e3",
+   "state_capture": "s00_e3"
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    },
+    {
+     "field": "py",
+     "value": 137216
+    }
+   ],
+   "frames": 10,
+   "capture": "s00_e6",
+   "state_capture": "s00_e6"
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    },
+    {
+     "field": "dbg_start_room",
+     "value": 2
+    },
+    {
+     "field": "dbg_restart",
+     "value": 1
+    }
+   ],
+   "frames": 70,
+   "capture": "s01_e0",
+   "state_capture": "s01_e0"
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    },
+    {
+     "field": "py",
+     "value": 260096
+    }
+   ],
+   "frames": 10,
+   "capture": "s01_e3",
+   "state_capture": "s01_e3"
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    },
+    {
+     "field": "py",
+     "value": 137216
+    }
+   ],
+   "frames": 10,
+   "capture": "s01_e6",
+   "state_capture": "s01_e6"
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    },
+    {
+     "field": "dbg_start_room",
+     "value": 3
+    },
+    {
+     "field": "dbg_restart",
+     "value": 1
+    }
+   ],
+   "frames": 70,
+   "capture": "s02_e0",
+   "state_capture": "s02_e0"
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    },
+    {
+     "field": "py",
+     "value": 260096
+    }
+   ],
+   "frames": 10,
+   "capture": "s02_e3",
+   "state_capture": "s02_e3"
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    },
+    {
+     "field": "py",
+     "value": 137216
+    }
+   ],
+   "frames": 10,
+   "capture": "s02_e6",
+   "state_capture": "s02_e6"
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    },
+    {
+     "field": "dbg_start_room",
+     "value": 4
+    },
+    {
+     "field": "dbg_restart",
+     "value": 1
+    }
+   ],
+   "frames": 70,
+   "capture": "s03_e0",
+   "state_capture": "s03_e0"
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    },
+    {
+     "field": "py",
+     "value": 260096
+    }
+   ],
+   "frames": 10,
+   "capture": "s03_e3",
+   "state_capture": "s03_e3"
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    },
+    {
+     "field": "py",
+     "value": 137216
+    }
+   ],
+   "frames": 10,
+   "capture": "s03_e6",
+   "state_capture": "s03_e6"
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    },
+    {
+     "field": "dbg_start_room",
+     "value": 5
+    },
+    {
+     "field": "dbg_restart",
+     "value": 1
+    }
+   ],
+   "frames": 70,
+   "capture": "s04_e0",
+   "state_capture": "s04_e0"
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    },
+    {
+     "field": "py",
+     "value": 260096
+    }
+   ],
+   "frames": 10,
+   "capture": "s04_e3",
+   "state_capture": "s04_e3"
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    },
+    {
+     "field": "dbg_start_room",
+     "value": 6
+    },
+    {
+     "field": "dbg_restart",
+     "value": 1
+    }
+   ],
+   "frames": 70,
+   "capture": "s05_e0",
+   "state_capture": "s05_e0"
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    },
+    {
+     "field": "py",
+     "value": 260096
+    }
+   ],
+   "frames": 10,
+   "capture": "s05_e3",
+   "state_capture": "s05_e3"
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    },
+    {
+     "field": "dbg_start_room",
+     "value": 7
+    },
+    {
+     "field": "dbg_restart",
+     "value": 1
+    }
+   ],
+   "frames": 70,
+   "capture": "s06_e0",
+   "state_capture": "s06_e0"
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    },
+    {
+     "field": "py",
+     "value": 260096
+    }
+   ],
+   "frames": 10,
+   "capture": "s06_e3",
+   "state_capture": "s06_e3"
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    },
+    {
+     "field": "py",
+     "value": 137216
+    }
+   ],
+   "frames": 10,
+   "capture": "s06_e6",
+   "state_capture": "s06_e6"
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    },
+    {
+     "field": "dbg_start_room",
+     "value": 8
+    },
+    {
+     "field": "dbg_restart",
+     "value": 1
+    }
+   ],
+   "frames": 70,
+   "capture": "s07_e0",
+   "state_capture": "s07_e0"
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    },
+    {
+     "field": "py",
+     "value": 260096
+    }
+   ],
+   "frames": 10,
+   "capture": "s07_e3",
+   "state_capture": "s07_e3"
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    },
+    {
+     "field": "py",
+     "value": 137216
+    }
+   ],
+   "frames": 10,
+   "capture": "s07_e6",
+   "state_capture": "s07_e6"
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    },
+    {
+     "field": "dbg_start_room",
+     "value": 9
+    },
+    {
+     "field": "dbg_restart",
+     "value": 1
+    }
+   ],
+   "frames": 70,
+   "capture": "s08_e0",
+   "state_capture": "s08_e0"
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    },
+    {
+     "field": "py",
+     "value": 260096
+    }
+   ],
+   "frames": 10,
+   "capture": "s08_e3",
+   "state_capture": "s08_e3"
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    },
+    {
+     "field": "py",
+     "value": 137216
+    }
+   ],
+   "frames": 10,
+   "capture": "s08_e6",
+   "state_capture": "s08_e6"
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    },
+    {
+     "field": "dbg_start_room",
+     "value": 10
+    },
+    {
+     "field": "dbg_restart",
+     "value": 1
+    }
+   ],
+   "frames": 70,
+   "capture": "s09_e0",
+   "state_capture": "s09_e0"
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    },
+    {
+     "field": "py",
+     "value": 260096
+    }
+   ],
+   "frames": 10,
+   "capture": "s09_e3",
+   "state_capture": "s09_e3"
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    },
+    {
+     "field": "py",
+     "value": 137216
+    }
+   ],
+   "frames": 10,
+   "capture": "s09_e6",
+   "state_capture": "s09_e6"
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    },
+    {
+     "field": "dbg_start_room",
+     "value": 11
+    },
+    {
+     "field": "dbg_restart",
+     "value": 1
+    }
+   ],
+   "frames": 70,
+   "capture": "s10_e0",
+   "state_capture": "s10_e0"
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    },
+    {
+     "field": "py",
+     "value": 260096
+    }
+   ],
+   "frames": 10,
+   "capture": "s10_e3",
+   "state_capture": "s10_e3"
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    },
+    {
+     "field": "dbg_start_room",
+     "value": 12
+    },
+    {
+     "field": "dbg_restart",
+     "value": 1
+    }
+   ],
+   "frames": 70,
+   "capture": "s11_e0",
+   "state_capture": "s11_e0"
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    },
+    {
+     "field": "py",
+     "value": 260096
+    }
+   ],
+   "frames": 10,
+   "capture": "s11_e3",
+   "state_capture": "s11_e3"
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    },
+    {
+     "field": "py",
+     "value": 137216
+    }
+   ],
+   "frames": 10,
+   "capture": "s11_e6",
+   "state_capture": "s11_e6"
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    },
+    {
+     "field": "dbg_start_room",
+     "value": 13
+    },
+    {
+     "field": "dbg_restart",
+     "value": 1
+    }
+   ],
+   "frames": 70,
+   "capture": "s12_e0",
+   "state_capture": "s12_e0"
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    },
+    {
+     "field": "py",
+     "value": 260096
+    }
+   ],
+   "frames": 10,
+   "capture": "s12_e3",
+   "state_capture": "s12_e3"
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    },
+    {
+     "field": "py",
+     "value": 137216
+    }
+   ],
+   "frames": 10,
+   "capture": "s12_e6",
+   "state_capture": "s12_e6"
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    },
+    {
+     "field": "dbg_start_room",
+     "value": 14
+    },
+    {
+     "field": "dbg_restart",
+     "value": 1
+    }
+   ],
+   "frames": 70,
+   "capture": "s13_e0",
+   "state_capture": "s13_e0"
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    },
+    {
+     "field": "py",
+     "value": 260096
+    }
+   ],
+   "frames": 10,
+   "capture": "s13_e3",
+   "state_capture": "s13_e3"
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    },
+    {
+     "field": "dbg_start_room",
+     "value": 15
+    },
+    {
+     "field": "dbg_restart",
+     "value": 1
+    }
+   ],
+   "frames": 70,
+   "capture": "s14_e0",
+   "state_capture": "s14_e0"
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    },
+    {
+     "field": "py",
+     "value": 260096
+    }
+   ],
+   "frames": 10,
+   "capture": "s14_e3",
+   "state_capture": "s14_e3"
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    },
+    {
+     "field": "py",
+     "value": 137216
+    }
+   ],
+   "frames": 10,
+   "capture": "s14_e6",
+   "state_capture": "s14_e6"
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    },
+    {
+     "field": "dbg_start_room",
+     "value": 16
+    },
+    {
+     "field": "dbg_restart",
+     "value": 1
+    }
+   ],
+   "frames": 70,
+   "capture": "s15_e0",
+   "state_capture": "s15_e0"
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_cam_up",
+     "value": 200
+    }
+   ],
+   "frames": 20,
+   "capture": "s15_e1",
+   "state_capture": "s15_e1"
+  }
+ ]
+}

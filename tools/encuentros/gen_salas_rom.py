@@ -65,6 +65,12 @@ PIEZA_ENUM = {
     "palangana": "PALANGANA", "osario_estante": "OSARIO_ESTANTE", "osario_lado": "OSARIO_LADO", "sarcofago": "SARCOFAGO",
     "brasero": "BRASERO", "sarcofago_lado": "SARCOFAGO_LADO", "altar_pie": "ALTAR_PIE",
 }
+# Cada sala se compone con los renders de SU luz (scratch/arpg_luz/<luz>/kit_props, tools/arpg_light_rooms.json): la sombra proyectada
+# cambia el recorte del lienzo de la estampa (`ox`, `oy`, tamano), asi que la esquina que se escribe en la ROM y la huella dependen de la luz.
+# SIN_SOMBRA: piezas que una sala hornea sin su sombra proyectada porque con ella no caben sus tiles en el almacen (el baker avisa:
+# sala 2 de nave_70, banco_entero). Se anota aqui y viaja en el json (`sin_sombra`) para que baker y colocacion usen el mismo lienzo.
+SALA_A_LUZ = {int(k): v for k, v in json.loads((ROOT / "tools/arpg_light_rooms.json").read_text(encoding="utf-8"))["sala_a_luz"].items()}
+SIN_SOMBRA = {2: {"banco_entero"}}
 ESPEJO = {"santo": "santo_der", "santo_der": "santo", "sacos_remate": "sacos_remate_der", "sacos_remate_der": "sacos_remate"}
 DECOR = {"sacos": "ENC_R_SACOS", "sacos_b": "ENC_R_SACOS", "sacos_remate": "ENC_R_SACOS", "sacos_remate_der": "ENC_R_SACOS",
          "alambre": "ENC_R_ALAMBRE"}
@@ -134,14 +140,23 @@ def hit(a, b):
 
 
 _LAY = {}
+_PROP_DIA = B.PROP_DIR
 
 
-def layout(name, mirror=0):
-    """Geometria de la estampa de sala (la misma que hornea el baker: espejo y recorte): mascara de tiles ocupados, bbox opaca
-    y huella en su lienzo, y `ox`, `oy` = donde queda la esquina del color.png respecto de la esquina del lienzo."""
-    key = (name, mirror)
+def usar_luz(sala):
+    """Apunta el baker a los renders de la luz de la sala (o a los de dia si esa luz no tiene carpeta)."""
+    d = ROOT / "scratch/arpg_luz" / SALA_A_LUZ.get(sala, "") / "kit_props"
+    B.PROP_DIR = d if sala in SALA_A_LUZ and d.is_dir() else _PROP_DIA
+
+
+def layout(name, mirror=0, sala=-1):
+    """Geometria de la estampa de sala (la misma que hornea el baker: luz de la sala, espejo y recorte): mascara de tiles ocupados,
+    bbox opaca y huella en su lienzo, y `ox`, `oy` = donde queda la esquina del color.png respecto de la esquina del lienzo."""
+    sin = name in SIN_SOMBRA.get(sala, ())
+    key = (SALA_A_LUZ.get(sala), name, mirror, sin)
     if key not in _LAY:
-        lay = B.room_layout(name, mirror)
+        usar_luz(sala)
+        lay = B.room_layout(name, mirror, shadow=not sin)
         W, H = lay["w"], lay["h"]
         op = lay["rgba"][:, :, 3] >= 128
         occ = op | (lay["shadow"] if lay["shadow"] is not None else False)
@@ -151,9 +166,10 @@ def layout(name, mirror=0):
             mask[y // 2, x // 2:(x + n - 1) // 2 + 1] = True
         for x, y, n, _ in lay["depth_runs"]:
             mask[y // 8, x // 8:(x + n - 1) // 8 + 1] = True
-        ch = H + lay["ty0"] * 8 - lay["oy"] if name in B.COMPOSITE_NAMES else Image.open(RENDER / name / "color.png").size[1]
+        ch = H + lay["ty0"] * 8 - lay["oy"] if name in B.COMPOSITE_NAMES else Image.open(B.PROP_DIR / name / "color.png").size[1]
         _LAY[key] = {"w": W, "h": H, "ox": lay["ox"], "oy": lay["oy"], "ch": ch, "bx0": int(xs.min()), "bx1": int(xs.max()) + 1,
                      "by1": int(ys.max()) + 1, "mask": mask, "foot_runs": list(lay["foot_runs"]), "value": lay["value"]}
+        B.PROP_DIR = _PROP_DIA
     return _LAY[key]
 
 
@@ -170,7 +186,7 @@ def poster_composicion(rd, add, groups, sobre_pasos=(), sala=-1):
         for (piece, mir, kk, x0, y0) in add:
             if kk != k:
                 continue
-            lay = layout(piece, mir)
+            lay = layout(piece, mir, sala)
             h = lay["ch"]
             base = 14 if piece != "vela" else h
             for dx, dy in SHIFTS:
@@ -239,7 +255,7 @@ def main():
         ocupado = defaultdict(set)                      # k -> tiles (x, y) con pixeles de pieza
         ordenadas = sorted(enumerate(comp[n]), key=lambda t: (-peso(t[1][0]), t[0]))
         for _, (p, mir, k, cx, cy) in ordenadas:
-            lay = layout(p, mir)
+            lay = layout(p, mir, n)
             wt, ht = lay["w"] // 8, lay["h"] // 8
             tiles = [(x, y) for y in range(ht) for x in range(wt) if lay["mask"][y, x]]
             ens = [(m[1], m[2]) for g in grupos[n] if g["k"] == k for m in g["miembros"]]
@@ -299,9 +315,9 @@ def main():
             ps = sorted(final[(n, k)], key=lambda t: (t[0], t[1], t[3], t[2]))
             rects = []
             for (p, mir, lx, ly) in ps:
-                lista.append({"piece": p, "k": k, "lx": lx, "ly": ly, "mirror": mir})
+                lista.append({"piece": p, "k": k, "lx": lx, "ly": ly, "mirror": mir, **({"sin_sombra": 1} if p in SIN_SOMBRA.get(n, ()) else {})})
                 if p in DECOR:
-                    fr = layout(p, mir)["foot_runs"]
+                    fr = layout(p, mir, n)["foot_runs"]
                     x0 = min(x for x, y, c in fr) * 4
                     x1 = max(x + c for x, y, c in fr) * 4
                     y0 = min(y for x, y, c in fr) * 4

@@ -15,7 +15,7 @@
 
 #define PACK_MAGIC 0x444F4D4Cu    // 'LMOD'
 #define LEXT_MAGIC 0x5458454Cu    // 'LEXT'
-#define MAX_TILES 960         // pack maximum 915
+#define MAX_TILES 1024        // tile store (BG1 limit): the pack's kit tiles + the free slots room_kit_load() fills with the room's own
 #define MAX_STAMPS 64
 #define MAX_STAMP_TILES 7424   // pack maximum 7248 (tools/room_light_slots.py)
 #define MAX_ENTRIES 96
@@ -214,6 +214,7 @@ done:
     g_strip_kit.palette = s_pal;
     g_strip_kit.tiles = (const uint8_t (*)[64])s_tiles;
     g_strip_kit.num_tiles = nt;
+    g_strip_kit.max_tiles = MAX_TILES;
     g_strip_kit.floor_map = s_floor;
     g_strip_kit.end_map[0] = s_end[0];
     g_strip_kit.end_map[1] = s_end[1];

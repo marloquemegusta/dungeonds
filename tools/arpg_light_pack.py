@@ -134,7 +134,13 @@ def prop_entry(pdir, name):
     return entry(name, K_PROP, data)
 
 
-def build(light_id, render):
+def room_pieces(rooms):
+    """Piezas propias de las salas de la luz (tools/encuentros/salas_rom_piezas.json): se hornean en sus .rmk con la luz de la sala."""
+    d = json.loads((ROOT / "tools/encuentros/salas_rom_piezas.json").read_text(encoding="utf-8"))["salas"]
+    return sorted({it["piece"] for r in rooms for it in d.get(str(r), [])})
+
+
+def build(light_id, render, solo_salas=False):
     doc = alc.load_lights()
     light = next(l for l in doc["luces"] if l["id"] == light_id)
     base = ROOT / "scratch/arpg_luz" / light_id
@@ -144,6 +150,11 @@ def build(light_id, render):
         run([py, ROOT / "tools/arpg_light_props.py", light_id, "--jobs", "4"])
         run([py, ROOT / "tools/arpg_light_chars.py", light_id, "--jobs", "4"])
     types = alc.room_enemies(light["rooms"])
+    # Piezas de sala con la luz de la sala (kit_props = renders sin banderas de poster, como los del dia): las que falten se renderizan.
+    pieces = room_pieces(light["rooms"])
+    missing = [n for n in pieces if not (base / "kit_props" / n / "color.png").exists()]
+    if missing:
+        run([py, ROOT / "tools/arpg_light_props.py", light_id, "--kit", "--only", ",".join(missing), "--jobs", "4"])
     tint = [a * light["floor_gain"] for a in light["floor_tint"]]
     tint_arg = ",".join(str(round(t, 4)) for t in tint)
 
@@ -152,11 +163,20 @@ def build(light_id, render):
     kit_imgs = [base / "kit_props" / p / "color.png" for p in
                 ("columna_entera", "banco_entero", "relicario", "santo", "vela", "verja", "sacos", "sacos_b", "sacos_remate",
                  "alambre", "columna", "banco_roto")]
+    # La paleta de la luz tambien cubre las piezas de sus salas: sus .rmk usan los mismos 256 colores que el kit.
+    kit_imgs += [base / "kit_props" / n / "color.png" for n in pieces if
+                 (base / "kit_props" / n / "color.png") not in kit_imgs]
     run([py, ROOT / "tools/palette/extract_palette.py", "--terrain-colors", "0", "--prop-colors", "190", "--native",
          "--out", pal_dir, *[i for i in kit_imgs if i.exists()]])
-    run([py, ROOT / "tools/bake_cathedral_kit.py", "--floor", ROOT / "assets/environment/cathedral/floor/rombos_tripo",
+    bake_log = run([py, ROOT / "tools/bake_cathedral_kit.py", "--floor", ROOT / "assets/environment/cathedral/floor/rombos_tripo",
          "--mode", "catedral", "--prop-dir", base / "kit_props", "--prop-palette", pal_dir / "palette.json",
-         "--tint", tint_arg, "--out-kit-npz", base / "kit.npz", "--preview", base / "kit_preview.png"])
+         "--tint", tint_arg, "--out-kit-npz", base / "kit.npz", "--preview", base / "kit_preview.png",
+         "--rooms", ",".join(str(r) for r in light["rooms"]), "--rooms-dir", ROOT / "nitrofiles/rooms"])
+    for ln in bake_log.splitlines():
+        if ln.startswith(("sala ", "tiles: base")):
+            print(f"[{light_id}] {ln}")
+    if solo_salas:      # tras cambiar la colocacion de las piezas (gen_salas_rom.py): solo vuelven a hornearse los .rmk de la luz
+        return
     kit = np.load(base / "kit.npz")
 
     # 2. personajes completos -> C + bins CHR1
@@ -226,5 +246,6 @@ def build(light_id, render):
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("light"); ap.add_argument("--render", action="store_true")
+    ap.add_argument("--solo-salas", action="store_true", help="solo hornea los .rmk de las salas de la luz (no reconstruye el paquete)")
     a = ap.parse_args()
-    build(a.light, a.render)
+    build(a.light, a.render, a.solo_salas)
