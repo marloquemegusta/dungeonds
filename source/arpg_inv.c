@@ -4,6 +4,7 @@
 #include "gameplay.h"
 #include "modifiers.h"
 #include "upgrades.h"
+#include "remate.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -23,22 +24,31 @@ static const char *const s_mech_desc[] = {
     "Sello arcano: se abre, espera y detona.",
     "Abrevia la plegaria de carga del Rayo.",
     "Abatir aviva la siguiente carga; errar la pesa.",
-    "El Rayo atraviesa a todos (+%d%% de daño).",
-    "Al cargar, la mira prende a quien toca (%d pts/s).",
-    "Aviva el ardor de las llamas (+%d%% de daño).",
-    "Consume el fuego del enemigo (+%d%% de daño).",
-    "Espera: prende 1 Quemado cada 0,5 s; +2 al detonar.",
-    "Aro de brasas a tus pies que quema (%d pts/s).",
-    "Todo ardiente estalla al morir (%d pts de daño).",
+    "Atraviesa a todos los enemigos",
+    "Al cargar, la mira prende a quien toca",
+    "Aviva el ardor de las llamas",
+    "Consume el fuego del enemigo",
+    "Prende Quemado al esperar y detonar",
+    "Aro de brasas a tus pies que quema",
+    "Todo ardiente estalla al morir",
     "Liturgia de los caídos en cera.",
     "Paso lento mientras cargas la plegaria.",
     "Letanía sellada.",
-    "Al abatir de cerca, restituye %d pts de vida.",
-    "Al sufrir daño: onda de %d pts y Rayo cargado.",
-    "Rematar a un ardiente lo hace estallar (%d pts).",
-    "Media vida máx.; +%d%% daño por quinto herido.",
-    "Espera: arrastra a todos hacia el centro.",
+    "Al abatir de cerca, restituye vida",
+    "Al sufrir daño: onda y Rayo cargado",
+    "Rematar a un ardiente lo hace estallar",
+    "Media vida máx.; más daño por quinto herido",
+    "Arrastra a todos hacia el centro",
     "Tras detonar, el sello se reabre una vez gratis."
+};
+// Cifra propia del aura, en línea aparte: nombre de la línea y formato (%d = mech_val). NULL = sin cifra.
+static const char *const s_mech_stat_name[] = {
+    0, 0, 0, "Daño", "Quemadura", "Daño", "Daño", 0, "Quemadura", "Explosión", 0, 0, 0,
+    "Vida", "Onda", "Explosión", "Daño", 0, 0
+};
+static const char *const s_mech_stat_fmt[] = {
+    0, 0, 0, "+%d %%", "%d pts/s", "+%d %%", "+%d %%", 0, "%d pts/s", "%d pts", 0, 0, 0,
+    "+%d pts", "%d pts", "%d pts", "+%d %% por quinto", 0, 0
 };
 static const char *const s_line_name[ARPG_LINE_COUNT] = {
     "Daño", "Carga", "Alcance", "Quemadura", "Vida máx.", "Velocidad", "Maná máx.", "Regen. maná", "Cura remate", "Radio", "Espera", "Coste"
@@ -651,6 +661,17 @@ static int mech_relic_bit(int mech) {
     }
 }
 
+static int calc_max_hp(void) {
+    int full_hp = BAL(hero_hp_base, ARPG_HP_BASE) + (g_arpg_level - 1) * BAL(hero_hp_level, ARPG_HP_PER_LEVEL) + g_mods.max_hp;
+    int hp = upgrades_has_relic(RELIC_LLAGA) ? (full_hp + 1) / 2 : full_hp;
+    return hp < 1 ? 1 : hp;
+}
+
+static int calc_max_mana(void) {
+    int m = BAL(hero_mana_base, ARPG_MANA_BASE) + (g_arpg_level - 1) * BAL(hero_mana_level, ARPG_MANA_PER_LEVEL) + g_mods.max_mana;
+    return m < 10 ? 10 : m;
+}
+
 static void compute_delta(InvModDelta *d) {
     memset(d, 0, sizeof(*d));
     for (int s = 0; s < ARPG_INV_SCHOOLS; s++) {
@@ -696,6 +717,10 @@ void arpg_inv_apply(void) {
     s_have_last = 1;
 }
 
+void arpg_inv_ensure_applied(void) {
+    if (!s_have_last) arpg_inv_recalc();
+}
+
 // En vivo: aplica solo la diferencia de líneas, actualiza reliquias por mecánica y recalcula
 // Vida máx. y Maná máx. de g_player_state al instante.
 void arpg_inv_recalc(void) {
@@ -729,15 +754,12 @@ void arpg_inv_recalc(void) {
         else if (!was && now) upgrades_grant_relic(id);
     }
     if (g_player_state.max_hp > 0) {
-        int full_hp = BAL(hero_hp_base, ARPG_HP_BASE) + (g_arpg_level - 1) * BAL(hero_hp_level, ARPG_HP_PER_LEVEL) + g_mods.max_hp;
-        int new_max_hp = upgrades_has_relic(RELIC_LLAGA) ? (full_hp + 1) / 2 : full_hp;
-        if (new_max_hp < 1) new_max_hp = 1;
+        int new_max_hp = calc_max_hp();
         g_player_state.max_hp = new_max_hp;
         if (g_player_state.hp > new_max_hp) g_player_state.hp = new_max_hp;
         if (g_player_state.hp < 1 && !g_player_state.is_dead) g_player_state.hp = 1;
 
-        int new_max_mana = BAL(hero_mana_base, ARPG_MANA_BASE) + (g_arpg_level - 1) * BAL(hero_mana_level, ARPG_MANA_PER_LEVEL) + g_mods.max_mana;
-        if (new_max_mana < 10) new_max_mana = 10;
+        int new_max_mana = calc_max_mana();
         g_player_state.max_mana = new_max_mana;
         if (g_player_state.mana > new_max_mana) g_player_state.mana = new_max_mana;
     }
@@ -816,9 +838,15 @@ void arpg_inv_mechanic_format(const ArpgInvItem *it, char *buf, int n) {
     if (!buf || n <= 0) return;
     buf[0] = 0;
     if (!it || it->mech == ARPG_MECH_NONE) return;
-    const char *fmt = arpg_inv_mechanic_desc(it->mech);
+    snprintf(buf, (size_t)n, "%s", arpg_inv_mechanic_desc(it->mech));
+}
+
+int arpg_inv_mechanic_stat(const ArpgInvItem *it, char *name, int nn, char *val, int nv) {
+    if (!it || (unsigned)it->mech >= (unsigned)MECH_COUNT || !s_mech_stat_name[it->mech]) return 0;
     int v = it->mech_val > 0 ? (int)it->mech_val : default_mech_val(it->mech);
-    snprintf(buf, (size_t)n, fmt, v);
+    snprintf(name, (size_t)nn, "%s", s_mech_stat_name[it->mech]);
+    snprintf(val, (size_t)nv, s_mech_stat_fmt[it->mech], v);
+    return 1;
 }
 
 const char *arpg_inv_line_name(int kind) {
@@ -844,7 +872,7 @@ int arpg_inv_line_is_pct(int kind) {
 
 void arpg_inv_line_format(int kind, int val, char *buf, int n) {
     if (!buf || n <= 0) return;
-    if (arpg_inv_line_is_pct(kind)) snprintf(buf, (size_t)n, "%+d%%", val);
+    if (arpg_inv_line_is_pct(kind)) snprintf(buf, (size_t)n, "%+d %%", val);
     else snprintf(buf, (size_t)n, "%+d pts", val);
 }
 
@@ -852,6 +880,150 @@ void arpg_inv_line_format_delta(int kind, int before, int after, char *buf, int 
     if (!buf || n <= 0) return;
     if (arpg_inv_line_is_pct(kind)) snprintf(buf, (size_t)n, "%d->%d%%", before, after);
     else snprintf(buf, (size_t)n, "%d->%d pts", before, after);
+}
+
+// Base real de una línea porcentual en esa escuela (px, pts o décimas de segundo) para dar el valor real
+// entre paréntesis. unit: 1 = px, 2 = pts, 3 = décimas de segundo (negativo = más rápido). 0 = sin base.
+static int line_real(int school, int kind, int val, int *unit) {
+    *unit = 0;
+    if (school == ARPG_SCHOOL_RAYO) {
+        if (kind == ARPG_LINE_RANGE) { *unit = 1; return (110 * val + (val < 0 ? -50 : 50)) / 100; }
+        if (kind == ARPG_LINE_CHARGE) {
+            int cp = val > 75 ? 75 : val;
+            *unit = 3;
+            return -(((48 * cp + 50) / 100) * 10 + 30) / 60;
+        }
+    } else if (school == ARPG_SCHOOL_EJECUCION) {
+        if (kind == ARPG_LINE_RANGE) { *unit = 1; return (REMATE_RANGE * val + 50) / 100; }
+        if (kind == ARPG_LINE_DAMAGE) { *unit = 2; return (ARPG_PUNCH_DAMAGE * val + 50) / 100; }
+    } else if (school == ARPG_SCHOOL_GLIFO) {
+        if (kind == ARPG_LINE_RADIUS) { *unit = 1; return (ARPG_GLIFO_RADIUS * val + 50) / 100; }
+        if (kind == ARPG_LINE_DAMAGE) { *unit = 2; return (ARPG_GLIFO_DAMAGE * val + 50) / 100; }
+    }
+    return 0;
+}
+
+static void fmt_tenths(char *buf, int n, int t) {      // décimas de segundo con signo -> "0,8" / "-0,1"
+    int neg = t < 0;
+    if (neg) t = -t;
+    if (t > 999) t = 999;
+    snprintf(buf, (size_t)n, "%s%d,%d", neg ? "-" : "", t / 10, t % 10);
+}
+
+void arpg_inv_line_format_real(int school, int kind, int val, char *buf, int n) {
+    if (!buf || n <= 0) return;
+    arpg_inv_line_format(kind, val, buf, n);
+    int unit;
+    int real = line_real(school, kind, val, &unit);
+    if (!unit || real == 0) return;
+    size_t len = strlen(buf);
+    if (len + 2 >= (size_t)n) return;
+    char *p = buf + len;
+    int left = n - (int)len;
+    if (unit == 1) snprintf(p, (size_t)left, " (%+d px)", real);
+    else if (unit == 2) snprintf(p, (size_t)left, " (%+d)", real);
+    else {
+        char t[12];
+        fmt_tenths(t, sizeof(t), real);
+        if (real > 0) snprintf(p, (size_t)left, " (+%s s)", t);
+        else snprintf(p, (size_t)left, " (%s s)", t);
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Ficha de la escuela: totales reales con la base. Lee g_mods (lo que ya aplica arpg_inv_apply) y las
+// mismas constantes que usan weapons.c, punch.c, remate.c, glifo.c y gameplay.c.
+// ---------------------------------------------------------------------------
+
+static ArpgSheetRow *sheet_next(ArpgSheetRow *rows, int *n, int max, int group, const char *name) {
+    if (*n >= max) return 0;
+    ArpgSheetRow *r = &rows[(*n)++];
+    r->group = (uint8_t)group;
+    snprintf(r->name, sizeof(r->name), "%s", name);
+    r->val[0] = 0;
+    return r;
+}
+
+// base -> total con unidad; si no cambia, solo el total.
+static void put_arrow(ArpgSheetRow *rows, int *n, int max, const char *name, int base, int total, const char *unit) {
+    ArpgSheetRow *r = sheet_next(rows, n, max, 0, name);
+    if (!r) return;
+    if (base == total) snprintf(r->val, sizeof(r->val), "%d%s%s", total, unit[0] ? " " : "", unit);
+    else snprintf(r->val, sizeof(r->val), "%d -> %d%s%s", base, total, unit[0] ? " " : "", unit);
+}
+
+static void put_secs(ArpgSheetRow *rows, int *n, int max, const char *name, int base_t, int total_t) {
+    ArpgSheetRow *r = sheet_next(rows, n, max, 0, name);
+    if (!r) return;
+    char a[10], b[10];
+    fmt_tenths(a, sizeof(a), base_t);
+    fmt_tenths(b, sizeof(b), total_t);
+    if (base_t == total_t) snprintf(r->val, sizeof(r->val), "%s s", a);
+    else snprintf(r->val, sizeof(r->val), "%s -> %s s", a, b);
+}
+
+static int rayo_damage_total(void) {
+    int pct = g_mods.sniper_damage_pct + arpg_inv_mechanic_value(ARPG_MECH_LANZA);
+    return ARPG_RAY_DAMAGE * pct / 100;
+}
+static int rayo_range_total(void) { return 110 + g_mods.sniper_range; }
+static int rayo_charge_frames(void) { return 48 + g_mods.sniper_aim; }
+static int ejec_damage_total(void) { return ARPG_PUNCH_DAMAGE * g_mods.punch_damage_pct / 100; }
+static int ejec_range_total(void) { return REMATE_RANGE * (100 + g_mods.remate_range_bonus) / 100; }
+static int glifo_damage_total(void) { return ARPG_GLIFO_DAMAGE * (100 + arpg_inv_glifo_line(ARPG_LINE_DAMAGE)) / 100; }
+static int glifo_radius_total(void) { return ARPG_GLIFO_RADIUS * (100 + arpg_inv_glifo_line(ARPG_LINE_RADIUS)) / 100; }
+static int glifo_wait_k(void) {
+    int k = 100 - arpg_inv_glifo_line(ARPG_LINE_WAIT);
+    return k < ARPG_GLIFO_WAIT_MIN_PCT ? ARPG_GLIFO_WAIT_MIN_PCT : k;
+}
+static int glifo_cost_total(void) {
+    int c = ARPG_GLIFO_COST * (100 - arpg_inv_glifo_line(ARPG_LINE_COST)) / 100;
+    return c < ARPG_GLIFO_COST_MIN ? ARPG_GLIFO_COST_MIN : c;
+}
+static int tenths_of_frames(int frames) { return (frames * 10 + 30) / 60; }
+
+int arpg_inv_sheet(int school, ArpgSheetRow *rows, int max) {
+    int n = 0;
+    ArpgSheetRow *r;
+    if (!rows || max <= 0) return 0;
+    switch (school) {
+    case ARPG_SCHOOL_RAYO:
+        put_arrow(rows, &n, max, "Daño", ARPG_RAY_DAMAGE, rayo_damage_total(), "");
+        put_arrow(rows, &n, max, "Alcance", 110, rayo_range_total(), "px");
+        put_secs(rows, &n, max, "Carga", tenths_of_frames(48), tenths_of_frames(rayo_charge_frames()));
+        put_arrow(rows, &n, max, "Maná", ARPG_RAY_COST, ARPG_RAY_COST, "");
+        if (g_mods.fire_dmg_pct != 100) put_arrow(rows, &n, max, "Quemadura", 100, g_mods.fire_dmg_pct, "%");
+        break;
+    case ARPG_SCHOOL_EJECUCION:
+        put_arrow(rows, &n, max, "Daño", ARPG_PUNCH_DAMAGE, ejec_damage_total(), "");
+        put_arrow(rows, &n, max, "Alcance", REMATE_RANGE, ejec_range_total(), "px");
+        if (g_mods.punch_burn_pct > 0 && (r = sheet_next(rows, &n, max, 0, "Quemadura")) != 0)
+            snprintf(r->val, sizeof(r->val), "+%d %%", g_mods.punch_burn_pct);
+        if (g_mods.remate_heal_bonus > 0 && (r = sheet_next(rows, &n, max, 0, "Cura remate")) != 0)
+            snprintf(r->val, sizeof(r->val), "+%d pts", g_mods.remate_heal_bonus);
+        break;
+    case ARPG_SCHOOL_GLIFO:
+        put_arrow(rows, &n, max, "Daño", ARPG_GLIFO_DAMAGE, glifo_damage_total(), "");
+        put_arrow(rows, &n, max, "Radio", ARPG_GLIFO_RADIUS, glifo_radius_total(), "px");
+        put_secs(rows, &n, max, "Espera",
+                 tenths_of_frames(ARPG_GLIFO_OPEN_FRAMES + ARPG_GLIFO_WAIT_FRAMES),
+                 tenths_of_frames((ARPG_GLIFO_OPEN_FRAMES + ARPG_GLIFO_WAIT_FRAMES) * glifo_wait_k() / 100));
+        put_arrow(rows, &n, max, "Maná", ARPG_GLIFO_COST, glifo_cost_total(), "");
+        break;
+    case ARPG_SCHOOL_PECHO: {
+        int period = (BAL(mana_regen_frames, ARPG_MANA_REGEN_FRAMES) * 100) / (100 + g_mods.mana_regen_pct);
+        char t[10];
+        put_arrow(rows, &n, max, "Nivel", g_arpg_level, g_arpg_level, "");
+        put_arrow(rows, &n, max, "Vida", calc_max_hp(), calc_max_hp(), "");
+        put_arrow(rows, &n, max, "Maná", calc_max_mana(), calc_max_mana(), "");
+        fmt_tenths(t, sizeof(t), tenths_of_frames(period));
+        if ((r = sheet_next(rows, &n, max, 0, "Regen. maná")) != 0) snprintf(r->val, sizeof(r->val), "1 pt / %s s", t);
+        put_arrow(rows, &n, max, "Velocidad", g_mods.speed_pct, g_mods.speed_pct, "%");
+        break;
+    }
+    default: break;
+    }
+    return n;
 }
 
 const char *arpg_inv_item_name(const ArpgInvItem *it) {
