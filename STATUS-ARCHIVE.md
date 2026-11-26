@@ -1459,3 +1459,7 @@ Entregas del 2026-11-14 al 2026-11-18, notas de estado técnico y ramas aparcada
 ## Entrega archivada desde STATUS-ARPG.md (2026-11-26)
 
 - **Arcón: alijo sin pisar la filigrana (`fix/arpg-inv-alijo`, 2026-11-24, en `proto/arpg`):** maquetación B «Respiro» elegida en ronda A/B/C: alijo y bolsa 4x4 de 26 px alineadas, margen de 5 px, títulos «Alijo» y «Bolsa», fila inferior con ayuda y cera; las espadas caben en sus casillas; pestañas repartidas con hueco igual y centradas en todos los modos. La cabecera de la pantalla superior muestra el icono del viril de la escuela (Pecho sigue con rombo). Verificado: builds 0 avisos y escenario `arpg_inv_alijo`; no probado en la DS (menú); sin revisar a ojo las pestañas en pausa y Crisol. [Walkthrough](walkthroughs/arpg-inv-alijo/walkthrough.md).
+
+## Entrega archivada desde STATUS-ARPG.md (2026-11-26, 2)
+
+- **Póster del mapa ARPG, versión preliminar (`docs/poster-arpg`, 2026-11-24, en `proto/arpg`):** póster de las 16 salas con la composición de props de cada una (cada sala cuenta lo que fue), sombras bajo luz de techo, flechas a la sala real y visor con zoom (teselas HD). Es solo documentación y herramientas (`tools/poster/`); el juego no cambia. Verificado visualmente en el póster. **Falta:** luces definitivas por sala y enemigos; el cofre fijo choca con un enemigo en las salas 5, 7 y 12. [`walkthrough`](walkthroughs/poster-mapa/walkthrough.md).
