@@ -8,14 +8,16 @@ LUZ = dict(L=0.45, tint=(0.92, 0.88, 0.8))   # polvo
 DROP = ['santo_der', 'columna_entera', 'santo', 'columna', 'alambre', 'sacos', 'sacos_b', 'banco_roto']
 
 
-# Almacen del Tribunal: los cepos en fila contra el muro izquierdo (pegados, 48 px de paso), los sacos apilados en tramos
-# continuos contra el derecho (salvo la puerta), el cofre al fondo entre la pila de sacos y el primer cepo; centro y franja de
-# enemigos (y 70..228) libres.
+# Almacen del Tribunal: los cepos en fila contra el muro izquierdo (pegados, 48 px de paso: tres arriba, dos abajo), los sacos
+# apilados en tramos continuos contra el derecho (tres pilas arriba y una abajo, la puerta queda libre), el cofre al fondo entre
+# la pila de sacos y el primer cepo; centro y franja de enemigos (y 70..228) libres.
 def _almacen():
-    out = [("cepo", 0, 0, y) for y in (0, 228, 276, 324)]
-    out += [("sacos_b", 0, 144, 0), ("sacos", 0, 144, 16)]            # pila del fondo, sobre la puerta
-    y = 248                                                            # bajo la puerta derecha (y 206..244)
-    for p in ("sacos", "sacos_b", "sacos", "sacos_b", "sacos", "sacos_b"):
+    out = [("cepo", 0, 0, y) for y in (0, 48, 96, 284, 332)]
+    out += [("sacos_b", 0, 128, 0), ("sacos", 0, 120, 16)]            # pila del fondo, sobre la puerta
+    out += [("sacos", 0, 120, 64), ("sacos_b", 0, 128, 88)]           # pila media-alta
+    out += [("sacos", 0, 144, 152), ("sacos_b", 0, 144, 176)]         # pila sobre la puerta (y 206..244)
+    y = 252                                                            # bajo la puerta derecha
+    for p in ("sacos", "sacos_b", "sacos", "sacos_b"):
         out.append((p, 0, 144, y))
         y += 24 if p == "sacos" else 16
     return out
