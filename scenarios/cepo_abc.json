@@ -1,5 +1,5 @@
 {
- "name": "cepo_captura",
+ "name": "cepo_abc",
  "description": "Captura del cepo en la Galeria del cofre (sala 4).",
  "suite": false,
  "state": {
@@ -159,7 +159,7 @@
     },
     {
      "field": "dbg_start_room",
-     "value": 4
+     "value": 5
     },
     {
      "field": "dbg_restart",

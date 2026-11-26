@@ -198,3 +198,4 @@ Resúmenes acumulativos y auditables de cada entrega y avance de desarrollo en `
 | 180 | ARPG: las 16 salas de la zona 1 en la ROM con sus piezas y su luz principal por sala, grupos por proximidad, reposos y Monja curandera | [`arpg-salas-rom/`](arpg-salas-rom/walkthrough.md) | Builds 0 avisos; escenarios de salas, luz, reposos y proximidad PASS; sin medir en DS |
 | 156 | Los Bebés gatean: clips de gateo, rezo y andar para los vídeos de lore | [`bebe-gatear/`](bebe-gatear/walkthrough.md) | GIF y carga en el generador; no va a la ROM |
 | 181 | ARPG: el generador de sprites ya no rompe la luz por sala y se ajusta la sombra del Abanderado | [`fix-sprite-gen-luz-sala/`](fix-sprite-gen-luz-sala/walkthrough.md) | Build, `arpg_luz_sala`, 3 host tests PASS |
+| 182 | ARPG: cepo legible (vista 3/4 y madera oscura por material) en las salas 4, 5 y 12 | [`cepo-abc/`](cepo-abc/walkthrough.md) | Build -Clean PASS; capturas de la ROM salas 4 y 12; no medido en la DS |

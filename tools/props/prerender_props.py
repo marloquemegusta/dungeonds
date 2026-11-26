@@ -119,6 +119,35 @@ def footprint_from_depth(d, x0, x1, y0, y1, nw, nh, close_px=9, min_cover=0.35):
     cover = np.array(Image.fromarray(sub.astype(np.float32), mode="F").resize((nw, nh), Image.BOX))
     return Image.fromarray(((cover >= min_cover) * 255).astype(np.uint8), "L")
 
+def material_classes(rgb):
+    """rgb float (...,3) 0..255 -> (blood, metal) bool masks; the rest is wood."""
+    import colorsys
+    x = rgb / 255.0
+    mx = x.max(-1); mn = x.min(-1); d = mx - mn
+    sat = d / np.maximum(mx, 1e-3)
+    lum = x @ np.array([0.299, 0.587, 0.114])
+    r, g, b = x[..., 0], x[..., 1], x[..., 2]
+    hue = np.zeros_like(mx)
+    dd = np.maximum(d, 1e-6)
+    hue = np.where(mx == r, ((g - b) / dd) % 6, np.where(mx == g, (b - r) / dd + 2, (r - g) / dd + 4)) * 60.0
+    blood = ((hue >= 340) | (hue <= 18)) & (sat > 0.5) & (mx > 0.10) & (g < 0.56 * r) & (b < 0.55 * r)
+    metal = (~blood) & (lum > 0.45) & (sat < 0.5)
+    return blood, metal
+
+def material_grade_apply(world, m, g):
+    """Per-material brightness on the high-res render (cepo: dark wood vs pale metal vs blood)."""
+    blood, metal = material_classes(world)
+    out = world.copy()
+    wood = ~(blood | metal)
+    out[wood] *= float(g.get("wood", 1.0))
+    mt = out[metal]
+    lum = (mt @ np.array([0.299, 0.587, 0.114]))[:, None]
+    ds = float(g.get("metal_desat", 0.0))
+    silver = np.concatenate([lum * 1.04, lum * 1.0, lum * 0.92], axis=1)   # warm grey
+    out[metal] = (mt * (1 - ds) + silver * ds) * float(g.get("metal", 1.0))
+    out[blood] *= float(g.get("blood", 1.0))
+    return np.clip(out, 0, 255)
+
 def process(name, cfg, d, out_root, legibility="anterior"):
     mask = silhouette(d)
     ys, xs = np.nonzero(mask)
@@ -136,6 +165,8 @@ def process(name, cfg, d, out_root, legibility="anterior"):
 
     world = np.array(Image.open(os.path.join(d, "world.png")).convert("RGB"))[y0:y1, x0:x1].astype(np.float32)
     m = mask[y0:y1, x0:x1].astype(np.float32)
+    if "material_grade" in cfg:
+        world = material_grade_apply(world, m, cfg["material_grade"]) * m[..., None]
     # premultiplied resize so the black background does not bleed into edges
     chans = []
     for c in range(3):

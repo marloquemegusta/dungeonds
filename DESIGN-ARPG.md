@@ -251,11 +251,11 @@ Dirección artística a la que se quiere llegar cuando la luz por sala se pueda 
 
 Props colocados en el póster (`walkthroughs/poster-mapa/`); la luz definitiva de cada sala y los enemigos están pendientes. El cofre fijo choca con un enemigo en las salas 5, 7 y 12 (pendiente de la revisión de enemigos).
 
-**Escala de los props (héroe 31 px = 2 m).** Los que usan los enemigos son de tamaño creíble: reclinatorio 28 px (madera oscura, cruz plateada, cojín carmesí), catre 48, palangana 24, cepo 32. Los exvotos siguen a 40 px pero **colgados en la pared del fondo** (pieza pintada con sombra de 2 px, sin sombra en el suelo). Osario: calaveras en pila 21, montón de huesos 34, estante 40 (sala 9: muro del fondo con 4 estantes cada 48 px). Las piezas grandes pueden ser dramáticas. El altar se queda a 16 px (pendiente).
+**Escala de los props (héroe 31 px = 2 m).** Los que usan los enemigos son de tamaño creíble: reclinatorio 28 px (madera oscura, cruz plateada, cojín carmesí), catre 48, palangana 24, cepo 40. Los exvotos siguen a 40 px pero **colgados en la pared del fondo** (pieza pintada con sombra de 2 px, sin sombra en el suelo). Osario: calaveras en pila 21, montón de huesos 34, estante 40 (sala 9: muro del fondo con 4 estantes cada 48 px). Las piezas grandes pueden ser dramáticas. El altar se queda a 16 px (pendiente).
 
 - **Naves 1-4 (salas 0-3):** filas simétricas de bancos a cada lado del pasillo, cada vez más rotos hacia el fondo.
 - **Galería del cofre (4):** cepos y sacos apilados junto al cofre.
-- **Cepo (decisión 2026-11-26):** de frente y con contraste madera/agujeros (madera más clara, agujeros y herrajes más oscuros, colores apagados) para que se lea a 32 px.
+- **Cepo (decisión 2026-11-26, ronda A/B/C `walkthroughs/cepo-abc/`):** visto a 3/4 (de frente se ve plano y no se leen los agujeros), a 40 px y con contraste por material como el reclinatorio: madera oscura, herrajes claros hacia plata y sangre oscurecida, colores apagados.
 - **Galería del secreto (5):** capullos de araña, sacos y un cepo; el cofre fijo choca con un enemigo.
 - **Claustro bajo (6) y alto (7):** arcada de columnas enteras en los bordes, bancos rotos y una lápida; centro libre.
 - **Enfermería (8):** catres en dos filas, biombos, palangana, exvoto y candelabros de pie.
