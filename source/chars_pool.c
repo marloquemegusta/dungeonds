@@ -1,5 +1,6 @@
 #include "chars_pool.h"
 #include "room_pool.h"
+#include "room_light.h"
 #include "campanero_sprite.h"
 #include "gameplay.h"
 #include <stdio.h>
@@ -48,11 +49,18 @@ static void clip_publish(const CharClipDef *c, const uint16_t *fr, const uint16_
     }
 }
 
-static int clip_load(const CharClipDef *c) {
-    if (!room_pool_fs_ready()) return 0;
+// The clip of the room's light pack when it has one (room_light.h), else the day clip of nitrofiles/chars.
+static FILE *clip_open(const CharClipDef *c) {
+    FILE *f = room_light_open_clip(c->file);
+    if (f) return f;
     char path[48];
     snprintf(path, sizeof(path), "nitro:/%s", c->file);
-    FILE *f = fopen(path, "rb");
+    return fopen(path, "rb");
+}
+
+static int clip_load(const CharClipDef *c) {
+    if (!room_pool_fs_ready()) return 0;
+    FILE *f = clip_open(c);
     if (!f) return 0;
     uint32_t head[4];
     if (fread(head, 4, 4, f) != 4 || head[0] != CHR_MAGIC) { fclose(f); return 0; }
@@ -110,9 +118,7 @@ uint32_t chars_group_bytes(int group) {
     uint32_t total = 0;
     for (int i = 0; i < g_char_clip_count; i++) {
         if (g_char_clips[i].group != group) continue;
-        char path[48];
-        snprintf(path, sizeof(path), "nitro:/%s", g_char_clips[i].file);
-        FILE *f = fopen(path, "rb");
+        FILE *f = clip_open(&g_char_clips[i]);
         if (!f) continue;
         uint32_t head[4];
         if (fread(head, 4, 4, f) == 4 && head[0] == CHR_MAGIC) total += pad4(head[1]) + pad4(head[2]) + pad4(head[3]);

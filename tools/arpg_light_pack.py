@@ -108,7 +108,13 @@ def stage_chars(light, base, types):
     return full, relit, tint_dirs, [round(float(v), 3) for v in ratio]
 
 
+def short_name(name):
+    """El nombre del trailer son 24 bytes: los clips de la Super Monja (p. ej. exvoto_super_monja_pray_stand) chocarian al truncar."""
+    return name.replace("exvoto_super_monja", "smonja") if len(name) > 23 else name
+
+
 def entry(name, kind, data):
+    name = short_name(name)
     pad = (-len(data)) % 4
     return struct.pack("<24sII", name.encode(), kind, len(data)) + data + bytes(pad)
 

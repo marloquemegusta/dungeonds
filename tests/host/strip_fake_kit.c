@@ -28,7 +28,7 @@ static const StripStamp s_stamps[] = {
     {4, 4, 3, 8, 4, 1, STRIP_PIECE_BANCO_GRUPO4, s_stamp_tiles_bank, 4, s_stamp_foot_bank, 0, 0}
 };
 
-const StripKit g_strip_kit = {
+StripKit g_strip_kit = {
     .palette = s_palette,
     .tiles = s_tiles,
     .num_tiles = 4,

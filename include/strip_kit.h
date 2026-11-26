@@ -93,6 +93,6 @@ typedef struct {
     const StripStamp *stamps;
 } StripKit;
 
-extern const StripKit g_strip_kit;
+extern StripKit g_strip_kit;           // mutable: room_light.c swaps in the light pack of each room
 
 #endif // STRIP_KIT_H

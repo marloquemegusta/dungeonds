@@ -4,6 +4,7 @@
 #include "collision.h"
 #include "enemy_ai.h"
 #include "hwshadow.h"
+#include "room_light.h"
 #include "weapons.h"
 #include "sfx.h"
 #include "pickups.h"
@@ -23,6 +24,7 @@ typedef struct {
     uint32_t mask_bytes;
 } RemateBinHead;
 
+static uint32_t s_base;                                 // desplazamiento del bin dentro del fichero (paquete de luz de sala)
 static FILE *s_bin_f;                                   // abierto mientras dura la celda (streaming por fotograma)
 static uint8_t s_hdr[REMATE_HEADER_BYTES] __attribute__((aligned(4)));
 static uint8_t s_pix[REMATE_PIX_BYTES] __attribute__((aligned(4)));
@@ -66,7 +68,7 @@ static void remate_close_bin(void) {
 // Lee `n` bytes del fichero en `off` dentro del destino.
 static void read_at(uint32_t off, void *dst, uint32_t n) {
     if (!s_bin_f || n == 0) return;
-    fseek(s_bin_f, (long)off, SEEK_SET);
+    fseek(s_bin_f, (long)(s_base + off), SEEK_SET);
     fread(dst, 1, n, s_bin_f);
 }
 
@@ -76,7 +78,12 @@ static int remate_load_bin(int kind, int dir) {
     remate_close_bin();
     char path[48];
     snprintf(path, sizeof(path), "nitro:/remate/%s_d%d.bin", kind_slug(kind), dir);
-    FILE *f = fopen(path, "rb");
+    char name[32];
+    snprintf(name, sizeof(name), "%s_d%d", kind_slug(kind), dir);
+    FILE *f = room_light_open(RL_RMT1, name, NULL);        // tinted by the room's light pack when it has the bin
+    uint32_t base = 0;
+    if (f) base = (uint32_t)ftell(f);
+    else f = fopen(path, "rb");
     if (!f) return 0;
     const uint32_t hb = kind_header_bytes(kind);
     const uint32_t fr = g_remate_kind_info[kind].frames;
@@ -109,6 +116,7 @@ static int remate_load_bin(int kind, int dir) {
         return 0;
     }
     s_bin_f = f;
+    s_base = base;
     s_payload = hb;
     s_pix_bytes = h->pix_bytes;
     s_runs_bytes = h->runs_bytes;

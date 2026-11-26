@@ -32,6 +32,7 @@ typedef int encounters_act1_translation_unit_not_empty;
 #include "pickups.h"
 #include "enc_relic_gfx.h"
 #include "enc_room_gfx.h"
+#include "room_light.h"
 
 #include "encounters_act1_tables.h"
 #include "encounters_act1_hp.h"
@@ -590,6 +591,7 @@ int enc_room_top_block(void) { return s_first_block - (room_def()->blocks - 1); 
 void enc_room_select(int room, int from_room) {
     s_room = (room >= 0 && room < ENC_ROOM_COUNT) ? room : 0;
     s_from_room = from_room;
+    room_light_load(s_room);       // loading screen: the room's light pack (kit, hero, enemy tables); the clips and remates read from it
     if (!((g_arpg.rooms_seen >> s_room) & 1)) {      // first visit: the overlay map reveals it (kept in the save)
         g_arpg.rooms_seen |= (uint16_t)(1u << s_room);
         arpg_progress_save();
