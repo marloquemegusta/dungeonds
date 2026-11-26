@@ -85,11 +85,13 @@ static void entry_name(const char *name, char *out) {
     memcpy(out, tmp, l > 23 ? 23 : l);
 }
 
-// Tinte de suelo de cada luz (floor_tint * floor_gain de tools/arpg_light_rooms.json, x256): el mismo que tools/arpg_light_pack.py
-// aplica a los remates. Los bins de punetazo (nitro:/punch) no viajan en el paquete: se tintan al leerlos.
+// Tinte de cada luz para los bins de punetazo (nitro:/punch no viaja en el paquete: se tintan al leerlos), x256. Es el cociente
+// entre el color medio de los pixeles del heroe re-iluminado del paquete (slot g_player_frames) y el del heroe de dia: el heroe
+// se hornea con char_gain/char_tint_mix de tools/arpg_light_rooms.json, no con el tinte de suelo (floor_tint x floor_gain), que
+// sobreiluminaba el puño en claustros y lo apagaba en osario/prisionero/monjarana. Regenerar si cambian las luces del heroe.
 static const uint16_t k_light_tint[ROOM_LIGHT_COUNT][3] = {
-    { 215, 230, 256 }, { 194, 207, 230 }, { 170, 182, 202 }, { 148, 159, 177 }, { 184, 162, 129 }, { 358, 326, 269 },
-    { 202, 174, 133 }, { 64, 77, 115 }, { 184, 151, 107 }, { 77, 106, 83 }, { 44, 61, 40 }, { 73, 54, 46 }
+    { 230, 238, 275 }, { 210, 212, 242 }, { 188, 184, 205 }, { 164, 154, 165 }, { 189, 170, 120 }, { 291, 294, 276 },
+    { 213, 191, 134 }, { 85, 64, 85 }, { 199, 168, 91 }, { 109, 113, 58 }, { 76, 82, 24 }, { 104, 64, 24 }
 };
 
 void room_light_tint_px(uint16_t *px, uint32_t count) {
