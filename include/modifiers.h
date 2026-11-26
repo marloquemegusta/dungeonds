@@ -27,6 +27,7 @@ typedef struct {
     int mana_regen_pct;         // % extra de regeneración de maná (Pecho)
     int remate_heal_bonus;      // puntos extra de vida/maná al rematar (Ejecución)
     int remate_range_bonus;     // px extra de alcance en remate (Ejecución)
+    int punch_burn_pct;         // >0: cada golpe del puño aplica 1 capa de Quemado (línea Quemadura de Ejecución)
 } ModEffects;
 
 extern ModEffects g_mods;

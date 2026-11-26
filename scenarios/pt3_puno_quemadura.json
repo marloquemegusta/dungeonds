@@ -1,0 +1,165 @@
+{
+  "name": "pt3_puno_quemadura",
+  "description": "Variante arpg-boxeo: con punch_burn_pct forzado (linea Quemadura de Ejecucion equipada), el golpe prende al Parroco (e0) y su vida sigue bajando despues del impacto por los ticks de Quemado.",
+  "suite": true,
+  "state": {
+    "elf": "../.ds-game-dev/build/out/dungeonds-arpg-boxeo.elf",
+    "symbols": {
+      "en": "g_enemies",
+      "pl": "s_player",
+      "spa": "s_punch_active",
+      "gm": "g_mods"
+    },
+    "default_symbol": "en",
+    "fields": {
+      "e0_x": {
+        "offset": 0,
+        "type": "s32"
+      },
+      "e0_y": {
+        "offset": 4,
+        "type": "s32"
+      },
+      "e0_active": {
+        "offset": 24,
+        "type": "s32"
+      },
+      "e0_hp": {
+        "offset": 28,
+        "type": "s32"
+      },
+      "e0_max": {
+        "offset": 32,
+        "type": "s32"
+      },
+      "px": {
+        "symbol": "pl",
+        "offset": 0,
+        "type": "s32"
+      },
+      "py": {
+        "symbol": "pl",
+        "offset": 4,
+        "type": "s32"
+      },
+      "punch": {
+        "symbol": "spa",
+        "offset": 0,
+        "type": "s32"
+      },
+      "pdir": {
+        "symbol": "pl",
+        "offset": 8,
+        "type": "s32"
+      },
+      "moving": {
+        "symbol": "pl",
+        "offset": 16,
+        "type": "s32"
+      },
+      "e0_type": {
+        "offset": 40,
+        "type": "s32"
+      },
+      "burn_pct": {
+        "symbol": "gm",
+        "offset": 64,
+        "type": "s32"
+      }
+    }
+  },
+  "steps": [
+    {
+      "frames": 90
+    },
+    {
+      "poke": [
+        {
+          "field": "px",
+          "value": 65536
+        },
+        {
+          "field": "py",
+          "value": 458752
+        },
+        {
+          "field": "e0_x",
+          "value": 70656
+        },
+        {
+          "field": "e0_y",
+          "value": 458752
+        },
+        {
+          "field": "e0_type",
+          "value": 7
+        },
+        {
+          "field": "e0_max",
+          "value": 1000
+        },
+        {
+          "field": "e0_hp",
+          "value": 1000
+        },
+        {
+          "field": "burn_pct",
+          "value": 8
+        }
+      ],
+      "frames": 2,
+      "state_capture": "antes"
+    },
+    {
+      "button_down": "UP",
+      "frames": 3,
+      "state_capture": "andando"
+    },
+    {
+      "button_down": "L",
+      "frames": 2
+    },
+    {
+      "button_up": "L",
+      "frames": 1,
+      "state_capture": "golpe",
+      "capture": "01_golpe"
+    },
+    {
+      "frames": 6,
+      "capture_sequence": "punch_diag",
+      "capture_every": 1
+    },
+    {
+      "frames": 6,
+      "capture_sequence": "punch_diag",
+      "capture_every": 1,
+      "state_capture": "impacto"
+    },
+    {
+      "frames": 20,
+      "capture_sequence": "punch_diag",
+      "capture_every": 1,
+      "state_capture": "despues"
+    },
+    {
+      "button_up": "UP",
+      "frames": 2
+    }
+  ],
+  "assertions": {
+    "state_changes": [
+      {
+        "at": "golpe",
+        "field": "punch",
+        "equals": 1
+      },
+      {
+        "from": "impacto",
+        "to": "despues",
+        "field": "e0_hp",
+        "max_delta": -1
+      }
+    ]
+  }
+}
