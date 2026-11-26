@@ -66,6 +66,7 @@ typedef struct {
     int range_rayo;      // sniper_range (px)
     int range_ejec;      // remate_range_bonus (%)
     int burn;            // fire_dmg_pct (%)
+    int burn_ejec;       // punch_burn_pct (%)
     int life;            // max_hp (pts)
     int speed;           // speed_pct (%)
     int max_mana;        // max_mana (pts)
@@ -618,7 +619,10 @@ static void line_add(InvModDelta *d, const ArpgInvItem *it, int kind, int val) {
         if (it->school == ARPG_SCHOOL_EJECUCION) d->range_ejec += val;
         else d->range_rayo_pct += val;
         break;
-    case ARPG_LINE_BURN:        d->burn += val; break;
+    case ARPG_LINE_BURN:
+        d->burn += val;
+        if (it->school == ARPG_SCHOOL_EJECUCION) d->burn_ejec += val;
+        break;
     case ARPG_LINE_LIFE:        d->life += val; break;
     case ARPG_LINE_SPEED:       d->speed += val; break;
     case ARPG_LINE_MANA:        d->max_mana += val; break;
@@ -673,6 +677,7 @@ static void apply_delta(const InvModDelta *d) {
     g_mods.sniper_range += d->range_rayo;
     g_mods.remate_range_bonus += d->range_ejec;
     g_mods.fire_dmg_pct += d->burn;
+    g_mods.punch_burn_pct += d->burn_ejec;
     g_mods.max_hp += d->life;
     g_mods.speed_pct += d->speed;
     g_mods.max_mana += d->max_mana;
@@ -710,6 +715,7 @@ void arpg_inv_recalc(void) {
     diff.range_rayo = d.range_rayo - s_last.range_rayo;
     diff.range_ejec = d.range_ejec - s_last.range_ejec;
     diff.burn = d.burn - s_last.burn;
+    diff.burn_ejec = d.burn_ejec - s_last.burn_ejec;
     diff.life = d.life - s_last.life;
     diff.speed = d.speed - s_last.speed;
     diff.max_mana = d.max_mana - s_last.max_mana;

@@ -149,6 +149,7 @@ static void punch_apply(Enemy *enemies, int idx, fixed hero_x, fixed hero_y, int
     fixed px = 0, py = 0;
     punch_push_vec(e, hero_x, hero_y, push, &px, &py);
     enemy_hit(e, dmg, px, py);
+    if (g_mods.punch_burn_pct > 0) burn_apply(e, 1);   // DESIGN-ARPG.md: Quemadura de Ejecución
     // enemy_hit solo usa el empuje al morir: al que sobrevive se le da aqui el retroceso y un hit-stun corto
     // (DESIGN.md 7.2), que enemy_ai mueve con deslizamiento mientras dura.
     if (e->active && e->hp > 0) {
