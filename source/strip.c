@@ -242,6 +242,22 @@ static int stamp_tiles_overlap(const StripStamp *a, int ax, int ay,
     return 0;
 }
 
+// Stamps of the room that is loaded (nitrofiles/rooms/sala_NN.rmk, source/room_kit.c) come after the kit's own in one index space.
+static const StripStamp *s_room_stamps;
+static int s_room_stamp_n;
+static int s_room_extra_tiles;
+
+void strip_set_room_stamps(const StripStamp *stamps, int n, int extra_tiles) {
+    s_room_stamps = n > 0 ? stamps : 0;
+    s_room_stamp_n = s_room_stamps ? n : 0;
+    s_room_extra_tiles = s_room_stamps ? extra_tiles : 0;
+}
+
+static inline int stamp_total(void) { return (int)g_strip_kit.num_stamps + s_room_stamp_n; }
+static inline const StripStamp *stamp_at(int i) {
+    return i < (int)g_strip_kit.num_stamps ? &g_strip_kit.stamps[i] : &s_room_stamps[i - (int)g_strip_kit.num_stamps];
+}
+
 #if !ENCOUNTERS_PROTO
 static int piece_is_lapida(uint8_t piece_id) {
     return piece_id >= STRIP_PIECE_LAPIDA_3X2_CRUZ && piece_id <= STRIP_PIECE_LAPIDA_2X1_CAB;
@@ -254,8 +270,8 @@ static int piece_is_lapida(uint8_t piece_id) {
 // then follow the damero rule (DESIGN-ARCHIVE.md 6.9.1b). A position no phase fits gets no stamp.
 // `& 3` and `& 1` give the positive residue for negative differences too (two's complement).
 static const StripStamp *stamp_for_lapida(uint8_t piece_id, int x_tile, int y_tile) {
-    for (int i = 0; i < (int)g_strip_kit.num_stamps; i++) {
-        const StripStamp *stamp = &g_strip_kit.stamps[i];
+    for (int i = 0; i < stamp_total(); i++) {
+        const StripStamp *stamp = stamp_at(i);
         if (stamp->piece_id != piece_id) continue;
         if (((x_tile - (int)stamp->phase_col) & 3) == 0 && ((y_tile - (int)stamp->phase_row) & 1) == 0)
             return stamp;
@@ -267,8 +283,8 @@ static const StripStamp *find_stamp(uint8_t piece_id, int x_tile, int y_tile) {
     if (piece_is_lapida(piece_id)) return stamp_for_lapida(piece_id, x_tile, y_tile);
     uint8_t pc = (uint8_t)(x_tile & 15);
     uint8_t pr = (uint8_t)(y_tile & 15);
-    for (int i = 0; i < (int)g_strip_kit.num_stamps; i++) {
-        const StripStamp *stamp = &g_strip_kit.stamps[i];
+    for (int i = 0; i < stamp_total(); i++) {
+        const StripStamp *stamp = stamp_at(i);
         if (stamp->piece_id != piece_id) continue;
         if (stamp->phase_col == pc && stamp->phase_row == pr) return stamp;
     }
@@ -339,8 +355,8 @@ static void pick_velas(PlanItem *acc, int *n, int32_t sidx, uint32_t salt, uint3
 // its plant (encounter) or of the corridor. Each piece goes to the legal phase nearest to the design spot
 // (the kit only bakes a few phases per piece, so a spot can move by up to half a floor period).
 static const StripStamp *first_stamp_of(uint8_t piece_id) {
-    for (int i = 0; i < (int)g_strip_kit.num_stamps; i++)
-        if (g_strip_kit.stamps[i].piece_id == piece_id) return &g_strip_kit.stamps[i];
+    for (int i = 0; i < stamp_total(); i++)
+        if (stamp_at(i)->piece_id == piece_id) return stamp_at(i);
     return 0;
 }
 
@@ -369,9 +385,10 @@ static uint8_t resolve_room_placeholder(uint8_t piece) {
     }
 }
 
-// Central aisle of a room: the door line the hero walks between rooms. A blocking prop whose
-// footprint would stand there is not placed, so every room can be crossed straight from its bottom
-// to its upper door (the door placeholder itself is exempt: its collision is cleared separately).
+// Central aisle of a room with an exit upwards: the door line the hero walks between rooms. A blocking prop whose
+// footprint would stand there is not placed, so the room can be crossed straight from its bottom to its upper door
+// (the door placeholder itself is exempt: its collision is cleared separately). Rooms without an upper door
+// (chapels, galleries, the Cripta) have no such line: their props may stand on the axis (altar, relicario, big sarcophagus).
 static int stamp_blocks_aisle(const StripStamp *st, int x_tile) {
     if (st->foot_value == 0 || !st->num_foot_runs) return 0;
     int lo = 0x7fffffff, hi = -0x7fffffff;
@@ -401,6 +418,7 @@ static void enc_place_piece(PlanItem *acc, int *n, const EncPiecePlan *p) {
         (*n)++;
         return;
     }
+    const int s_aisle_rule = enc_block_has_door(enc_room_top_block());
     uint8_t piece = resolve_room_placeholder(p->piece);
     const StripStamp *any = first_stamp_of(piece);
     if (!any || *n >= STRIP_BLOCK_MAX_PIECES) return;
@@ -410,15 +428,15 @@ static void enc_place_piece(PlanItem *acc, int *n, const EncPiecePlan *p) {
     int ty = (p->ly + 4) / 8;
     const StripStamp *best = 0;
     int bx = 0, by = 0, best_cost = 0x7fffffff;
-    for (int i = 0; i < (int)g_strip_kit.num_stamps; i++) {
-        const StripStamp *stamp = &g_strip_kit.stamps[i];
+    for (int i = 0; i < stamp_total(); i++) {
+        const StripStamp *stamp = stamp_at(i);
         if (stamp->piece_id != piece) continue;
         int x_lo = tx - ((tx - (int)stamp->phase_col) & 15);
         int y_lo = ty - ((ty - (int)stamp->phase_row) & 15);
         for (int ix = 0; ix < 2; ix++) {
             for (int iy = 0; iy < 2; iy++) {
                 int x = x_lo + 16 * ix, y = y_lo + 16 * iy;
-                if (p->piece != STRIP_PIECE_PUERTA && stamp_blocks_aisle(stamp, x)) continue;
+                if (p->piece != STRIP_PIECE_PUERTA && s_aisle_rule && stamp_blocks_aisle(stamp, x)) continue;
                 if (!plan_fits(acc, *n, stamp, x, y)) continue;
                 int cost = (x - tx) * (x - tx) + (y - ty) * (y - ty);
                 if (cost < best_cost) { best_cost = cost; best = stamp; bx = x; by = y; }
@@ -474,8 +492,8 @@ static void enc_place_lapidas(PlanItem *acc, int *n_io, int32_t block) {
         int top = ((screen0 + i) & 1) * STRIP_SCREEN_TILES;    // one tomb per screen half at most
         uint8_t piece = ids[band_hash(block, S_ENC_LAP_PIECE + (uint32_t)i) % 4u];
         int ncand = 0;
-        for (int s = 0; s < (int)g_strip_kit.num_stamps; s++) {
-            const StripStamp *stamp = &g_strip_kit.stamps[s];
+        for (int s = 0; s < stamp_total(); s++) {
+            const StripStamp *stamp = stamp_at(s);
             if (stamp->piece_id != piece) continue;
             // The kit bakes each lápida at the phases that follow the damero rule: (x - phase_col) % 4
             // and (y - phase_row) % 2 have to be 0 or the joints of the floor break (DESIGN-ARCHIVE.md 6.9.1b).
@@ -1340,7 +1358,7 @@ void strip_start(uint32_t seed) {
 #if ENCOUNTERS_PROTO
     apply_room_openings(s_map, s_collision, 0);
 #endif
-    s_arena.num_tiles = g_strip_kit.num_tiles;
+    s_arena.num_tiles = g_strip_kit.num_tiles + s_room_extra_tiles;
     s_arena.palette = g_strip_kit.palette;
     s_arena.tiles = g_strip_kit.tiles;
 }

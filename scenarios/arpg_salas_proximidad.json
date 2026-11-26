@@ -1,0 +1,1434 @@
+{
+ "name": "arpg_salas_proximidad",
+ "description": "Aparicion por proximidad de los grupos de sala: cada miembro se pone cuando el heroe se acerca a su puesto (a menos de 288 px en Y). Cruza las salas de 3 bloques y las de 1 y 2 con el heroe en dios: los miembros puestos en total son los del poster (sala 3: 35) y nunca hay mas vivos que los del tope (24); ningun miembro se duplica.",
+ "suite": true,
+ "state": {
+  "elf": "../.ds-game-dev/build/out/dungeonds.elf",
+  "symbols": {
+   "pl": "s_player",
+   "dbg": "g_enc_debug",
+   "stats": "g_enc_stats"
+  },
+  "default_symbol": "pl",
+  "fields": {
+   "px": {
+    "symbol": "pl",
+    "offset": 0,
+    "type": "s32"
+   },
+   "py": {
+    "symbol": "pl",
+    "offset": 4,
+    "type": "s32"
+   },
+   "dbg_god": {
+    "symbol": "dbg",
+    "offset": 2,
+    "type": "u8"
+   },
+   "dbg_restart": {
+    "symbol": "dbg",
+    "offset": 12,
+    "type": "u8"
+   },
+   "dbg_start_room": {
+    "symbol": "dbg",
+    "offset": 20,
+    "type": "u8"
+   },
+   "room": {
+    "symbol": "stats",
+    "offset": 60,
+    "type": "u8"
+   },
+   "block": {
+    "symbol": "stats",
+    "offset": 1,
+    "type": "u8"
+   },
+   "alive": {
+    "symbol": "stats",
+    "offset": 61,
+    "type": "u8"
+   },
+   "members_placed": {
+    "symbol": "stats",
+    "offset": 191,
+    "type": "u8"
+   }
+  }
+ },
+ "steps": [
+  {
+   "frames": 60
+  },
+  {
+   "tap": {
+    "x": 128,
+    "y": 66
+   },
+   "frames": 6
+  },
+  {
+   "release": true,
+   "frames": 40
+  },
+  {
+   "button_down": "START",
+   "frames": 4
+  },
+  {
+   "button_up": "START",
+   "frames": 90
+  },
+  {
+   "button_down": "LEFT",
+   "frames": 90
+  },
+  {
+   "button_up": "LEFT",
+   "frames": 10
+  },
+  {
+   "poke": [
+    {
+     "field": "px",
+     "value": 32768
+    },
+    {
+     "field": "py",
+     "value": 29696
+    }
+   ],
+   "frames": 20
+  },
+  {
+   "button_down": "A",
+   "frames": 4
+  },
+  {
+   "button_up": "A",
+   "frames": 6
+  },
+  {
+   "frames": 8
+  },
+  {
+   "frames": 20
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    }
+   ],
+   "frames": 60
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    },
+    {
+     "field": "dbg_start_room",
+     "value": 4
+    },
+    {
+     "field": "dbg_restart",
+     "value": 1
+    }
+   ],
+   "frames": 70,
+   "capture": "r03_e0",
+   "state_capture": "r03_e0"
+  },
+  {
+   "poke": [
+    {
+     "field": "py",
+     "value": 357376
+    }
+   ],
+   "frames": 8,
+   "state_capture": "r03_e1"
+  },
+  {
+   "poke": [
+    {
+     "field": "py",
+     "value": 331776
+    }
+   ],
+   "frames": 8,
+   "state_capture": "r03_e2"
+  },
+  {
+   "poke": [
+    {
+     "field": "py",
+     "value": 306176
+    }
+   ],
+   "frames": 8,
+   "state_capture": "r03_e3"
+  },
+  {
+   "poke": [
+    {
+     "field": "py",
+     "value": 280576
+    }
+   ],
+   "frames": 8,
+   "state_capture": "r03_e4"
+  },
+  {
+   "poke": [
+    {
+     "field": "py",
+     "value": 254976
+    }
+   ],
+   "frames": 8,
+   "state_capture": "r03_e5"
+  },
+  {
+   "poke": [
+    {
+     "field": "py",
+     "value": 229376
+    }
+   ],
+   "frames": 8,
+   "state_capture": "r03_e6"
+  },
+  {
+   "poke": [
+    {
+     "field": "py",
+     "value": 203776
+    }
+   ],
+   "frames": 8,
+   "state_capture": "r03_e7"
+  },
+  {
+   "poke": [
+    {
+     "field": "py",
+     "value": 178176
+    }
+   ],
+   "frames": 8,
+   "state_capture": "r03_e8"
+  },
+  {
+   "poke": [
+    {
+     "field": "py",
+     "value": 152576
+    }
+   ],
+   "frames": 8,
+   "state_capture": "r03_e9"
+  },
+  {
+   "poke": [
+    {
+     "field": "py",
+     "value": 126976
+    }
+   ],
+   "frames": 8,
+   "state_capture": "r03_e10"
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    },
+    {
+     "field": "dbg_start_room",
+     "value": 3
+    },
+    {
+     "field": "dbg_restart",
+     "value": 1
+    }
+   ],
+   "frames": 70,
+   "capture": "r02_e0",
+   "state_capture": "r02_e0"
+  },
+  {
+   "poke": [
+    {
+     "field": "py",
+     "value": 357376
+    }
+   ],
+   "frames": 8,
+   "state_capture": "r02_e1"
+  },
+  {
+   "poke": [
+    {
+     "field": "py",
+     "value": 331776
+    }
+   ],
+   "frames": 8,
+   "state_capture": "r02_e2"
+  },
+  {
+   "poke": [
+    {
+     "field": "py",
+     "value": 306176
+    }
+   ],
+   "frames": 8,
+   "state_capture": "r02_e3"
+  },
+  {
+   "poke": [
+    {
+     "field": "py",
+     "value": 280576
+    }
+   ],
+   "frames": 8,
+   "state_capture": "r02_e4"
+  },
+  {
+   "poke": [
+    {
+     "field": "py",
+     "value": 254976
+    }
+   ],
+   "frames": 8,
+   "state_capture": "r02_e5"
+  },
+  {
+   "poke": [
+    {
+     "field": "py",
+     "value": 229376
+    }
+   ],
+   "frames": 8,
+   "state_capture": "r02_e6"
+  },
+  {
+   "poke": [
+    {
+     "field": "py",
+     "value": 203776
+    }
+   ],
+   "frames": 8,
+   "state_capture": "r02_e7"
+  },
+  {
+   "poke": [
+    {
+     "field": "py",
+     "value": 178176
+    }
+   ],
+   "frames": 8,
+   "state_capture": "r02_e8"
+  },
+  {
+   "poke": [
+    {
+     "field": "py",
+     "value": 152576
+    }
+   ],
+   "frames": 8,
+   "state_capture": "r02_e9"
+  },
+  {
+   "poke": [
+    {
+     "field": "py",
+     "value": 126976
+    }
+   ],
+   "frames": 8,
+   "state_capture": "r02_e10"
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    },
+    {
+     "field": "dbg_start_room",
+     "value": 10
+    },
+    {
+     "field": "dbg_restart",
+     "value": 1
+    }
+   ],
+   "frames": 70,
+   "capture": "r09_e0",
+   "state_capture": "r09_e0"
+  },
+  {
+   "poke": [
+    {
+     "field": "py",
+     "value": 357376
+    }
+   ],
+   "frames": 8,
+   "state_capture": "r09_e1"
+  },
+  {
+   "poke": [
+    {
+     "field": "py",
+     "value": 331776
+    }
+   ],
+   "frames": 8,
+   "state_capture": "r09_e2"
+  },
+  {
+   "poke": [
+    {
+     "field": "py",
+     "value": 306176
+    }
+   ],
+   "frames": 8,
+   "state_capture": "r09_e3"
+  },
+  {
+   "poke": [
+    {
+     "field": "py",
+     "value": 280576
+    }
+   ],
+   "frames": 8,
+   "state_capture": "r09_e4"
+  },
+  {
+   "poke": [
+    {
+     "field": "py",
+     "value": 254976
+    }
+   ],
+   "frames": 8,
+   "state_capture": "r09_e5"
+  },
+  {
+   "poke": [
+    {
+     "field": "py",
+     "value": 229376
+    }
+   ],
+   "frames": 8,
+   "state_capture": "r09_e6"
+  },
+  {
+   "poke": [
+    {
+     "field": "py",
+     "value": 203776
+    }
+   ],
+   "frames": 8,
+   "state_capture": "r09_e7"
+  },
+  {
+   "poke": [
+    {
+     "field": "py",
+     "value": 178176
+    }
+   ],
+   "frames": 8,
+   "state_capture": "r09_e8"
+  },
+  {
+   "poke": [
+    {
+     "field": "py",
+     "value": 152576
+    }
+   ],
+   "frames": 8,
+   "state_capture": "r09_e9"
+  },
+  {
+   "poke": [
+    {
+     "field": "py",
+     "value": 126976
+    }
+   ],
+   "frames": 8,
+   "state_capture": "r09_e10"
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    },
+    {
+     "field": "dbg_start_room",
+     "value": 1
+    },
+    {
+     "field": "dbg_restart",
+     "value": 1
+    }
+   ],
+   "frames": 70,
+   "capture": "r00_e0",
+   "state_capture": "r00_e0"
+  },
+  {
+   "poke": [
+    {
+     "field": "py",
+     "value": 357376
+    }
+   ],
+   "frames": 8,
+   "state_capture": "r00_e1"
+  },
+  {
+   "poke": [
+    {
+     "field": "py",
+     "value": 331776
+    }
+   ],
+   "frames": 8,
+   "state_capture": "r00_e2"
+  },
+  {
+   "poke": [
+    {
+     "field": "py",
+     "value": 306176
+    }
+   ],
+   "frames": 8,
+   "state_capture": "r00_e3"
+  },
+  {
+   "poke": [
+    {
+     "field": "py",
+     "value": 280576
+    }
+   ],
+   "frames": 8,
+   "state_capture": "r00_e4"
+  },
+  {
+   "poke": [
+    {
+     "field": "py",
+     "value": 254976
+    }
+   ],
+   "frames": 8,
+   "state_capture": "r00_e5"
+  },
+  {
+   "poke": [
+    {
+     "field": "py",
+     "value": 229376
+    }
+   ],
+   "frames": 8,
+   "state_capture": "r00_e6"
+  },
+  {
+   "poke": [
+    {
+     "field": "py",
+     "value": 203776
+    }
+   ],
+   "frames": 8,
+   "state_capture": "r00_e7"
+  },
+  {
+   "poke": [
+    {
+     "field": "py",
+     "value": 178176
+    }
+   ],
+   "frames": 8,
+   "state_capture": "r00_e8"
+  },
+  {
+   "poke": [
+    {
+     "field": "py",
+     "value": 152576
+    }
+   ],
+   "frames": 8,
+   "state_capture": "r00_e9"
+  },
+  {
+   "poke": [
+    {
+     "field": "py",
+     "value": 126976
+    }
+   ],
+   "frames": 8,
+   "state_capture": "r00_e10"
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    },
+    {
+     "field": "dbg_start_room",
+     "value": 2
+    },
+    {
+     "field": "dbg_restart",
+     "value": 1
+    }
+   ],
+   "frames": 70,
+   "capture": "r01_e0",
+   "state_capture": "r01_e0"
+  },
+  {
+   "poke": [
+    {
+     "field": "py",
+     "value": 357376
+    }
+   ],
+   "frames": 8,
+   "state_capture": "r01_e1"
+  },
+  {
+   "poke": [
+    {
+     "field": "py",
+     "value": 331776
+    }
+   ],
+   "frames": 8,
+   "state_capture": "r01_e2"
+  },
+  {
+   "poke": [
+    {
+     "field": "py",
+     "value": 306176
+    }
+   ],
+   "frames": 8,
+   "state_capture": "r01_e3"
+  },
+  {
+   "poke": [
+    {
+     "field": "py",
+     "value": 280576
+    }
+   ],
+   "frames": 8,
+   "state_capture": "r01_e4"
+  },
+  {
+   "poke": [
+    {
+     "field": "py",
+     "value": 254976
+    }
+   ],
+   "frames": 8,
+   "state_capture": "r01_e5"
+  },
+  {
+   "poke": [
+    {
+     "field": "py",
+     "value": 229376
+    }
+   ],
+   "frames": 8,
+   "state_capture": "r01_e6"
+  },
+  {
+   "poke": [
+    {
+     "field": "py",
+     "value": 203776
+    }
+   ],
+   "frames": 8,
+   "state_capture": "r01_e7"
+  },
+  {
+   "poke": [
+    {
+     "field": "py",
+     "value": 178176
+    }
+   ],
+   "frames": 8,
+   "state_capture": "r01_e8"
+  },
+  {
+   "poke": [
+    {
+     "field": "py",
+     "value": 152576
+    }
+   ],
+   "frames": 8,
+   "state_capture": "r01_e9"
+  },
+  {
+   "poke": [
+    {
+     "field": "py",
+     "value": 126976
+    }
+   ],
+   "frames": 8,
+   "state_capture": "r01_e10"
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    },
+    {
+     "field": "dbg_start_room",
+     "value": 7
+    },
+    {
+     "field": "dbg_restart",
+     "value": 1
+    }
+   ],
+   "frames": 70,
+   "capture": "r06_e0",
+   "state_capture": "r06_e0"
+  },
+  {
+   "poke": [
+    {
+     "field": "py",
+     "value": 357376
+    }
+   ],
+   "frames": 8,
+   "state_capture": "r06_e1"
+  },
+  {
+   "poke": [
+    {
+     "field": "py",
+     "value": 331776
+    }
+   ],
+   "frames": 8,
+   "state_capture": "r06_e2"
+  },
+  {
+   "poke": [
+    {
+     "field": "py",
+     "value": 306176
+    }
+   ],
+   "frames": 8,
+   "state_capture": "r06_e3"
+  },
+  {
+   "poke": [
+    {
+     "field": "py",
+     "value": 280576
+    }
+   ],
+   "frames": 8,
+   "state_capture": "r06_e4"
+  },
+  {
+   "poke": [
+    {
+     "field": "py",
+     "value": 254976
+    }
+   ],
+   "frames": 8,
+   "state_capture": "r06_e5"
+  },
+  {
+   "poke": [
+    {
+     "field": "py",
+     "value": 229376
+    }
+   ],
+   "frames": 8,
+   "state_capture": "r06_e6"
+  },
+  {
+   "poke": [
+    {
+     "field": "py",
+     "value": 203776
+    }
+   ],
+   "frames": 8,
+   "state_capture": "r06_e7"
+  },
+  {
+   "poke": [
+    {
+     "field": "py",
+     "value": 178176
+    }
+   ],
+   "frames": 8,
+   "state_capture": "r06_e8"
+  },
+  {
+   "poke": [
+    {
+     "field": "py",
+     "value": 152576
+    }
+   ],
+   "frames": 8,
+   "state_capture": "r06_e9"
+  },
+  {
+   "poke": [
+    {
+     "field": "py",
+     "value": 126976
+    }
+   ],
+   "frames": 8,
+   "state_capture": "r06_e10"
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    },
+    {
+     "field": "dbg_start_room",
+     "value": 8
+    },
+    {
+     "field": "dbg_restart",
+     "value": 1
+    }
+   ],
+   "frames": 70,
+   "capture": "r07_e0",
+   "state_capture": "r07_e0"
+  },
+  {
+   "poke": [
+    {
+     "field": "py",
+     "value": 357376
+    }
+   ],
+   "frames": 8,
+   "state_capture": "r07_e1"
+  },
+  {
+   "poke": [
+    {
+     "field": "py",
+     "value": 331776
+    }
+   ],
+   "frames": 8,
+   "state_capture": "r07_e2"
+  },
+  {
+   "poke": [
+    {
+     "field": "py",
+     "value": 306176
+    }
+   ],
+   "frames": 8,
+   "state_capture": "r07_e3"
+  },
+  {
+   "poke": [
+    {
+     "field": "py",
+     "value": 280576
+    }
+   ],
+   "frames": 8,
+   "state_capture": "r07_e4"
+  },
+  {
+   "poke": [
+    {
+     "field": "py",
+     "value": 254976
+    }
+   ],
+   "frames": 8,
+   "state_capture": "r07_e5"
+  },
+  {
+   "poke": [
+    {
+     "field": "py",
+     "value": 229376
+    }
+   ],
+   "frames": 8,
+   "state_capture": "r07_e6"
+  },
+  {
+   "poke": [
+    {
+     "field": "py",
+     "value": 203776
+    }
+   ],
+   "frames": 8,
+   "state_capture": "r07_e7"
+  },
+  {
+   "poke": [
+    {
+     "field": "py",
+     "value": 178176
+    }
+   ],
+   "frames": 8,
+   "state_capture": "r07_e8"
+  },
+  {
+   "poke": [
+    {
+     "field": "py",
+     "value": 152576
+    }
+   ],
+   "frames": 8,
+   "state_capture": "r07_e9"
+  },
+  {
+   "poke": [
+    {
+     "field": "py",
+     "value": 126976
+    }
+   ],
+   "frames": 8,
+   "state_capture": "r07_e10"
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    },
+    {
+     "field": "dbg_start_room",
+     "value": 9
+    },
+    {
+     "field": "dbg_restart",
+     "value": 1
+    }
+   ],
+   "frames": 70,
+   "capture": "r08_e0",
+   "state_capture": "r08_e0"
+  },
+  {
+   "poke": [
+    {
+     "field": "py",
+     "value": 357376
+    }
+   ],
+   "frames": 8,
+   "state_capture": "r08_e1"
+  },
+  {
+   "poke": [
+    {
+     "field": "py",
+     "value": 331776
+    }
+   ],
+   "frames": 8,
+   "state_capture": "r08_e2"
+  },
+  {
+   "poke": [
+    {
+     "field": "py",
+     "value": 306176
+    }
+   ],
+   "frames": 8,
+   "state_capture": "r08_e3"
+  },
+  {
+   "poke": [
+    {
+     "field": "py",
+     "value": 280576
+    }
+   ],
+   "frames": 8,
+   "state_capture": "r08_e4"
+  },
+  {
+   "poke": [
+    {
+     "field": "py",
+     "value": 254976
+    }
+   ],
+   "frames": 8,
+   "state_capture": "r08_e5"
+  },
+  {
+   "poke": [
+    {
+     "field": "py",
+     "value": 229376
+    }
+   ],
+   "frames": 8,
+   "state_capture": "r08_e6"
+  },
+  {
+   "poke": [
+    {
+     "field": "py",
+     "value": 203776
+    }
+   ],
+   "frames": 8,
+   "state_capture": "r08_e7"
+  },
+  {
+   "poke": [
+    {
+     "field": "py",
+     "value": 178176
+    }
+   ],
+   "frames": 8,
+   "state_capture": "r08_e8"
+  },
+  {
+   "poke": [
+    {
+     "field": "py",
+     "value": 152576
+    }
+   ],
+   "frames": 8,
+   "state_capture": "r08_e9"
+  },
+  {
+   "poke": [
+    {
+     "field": "py",
+     "value": 126976
+    }
+   ],
+   "frames": 8,
+   "state_capture": "r08_e10"
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    },
+    {
+     "field": "dbg_start_room",
+     "value": 13
+    },
+    {
+     "field": "dbg_restart",
+     "value": 1
+    }
+   ],
+   "frames": 70,
+   "capture": "r12_e0",
+   "state_capture": "r12_e0"
+  },
+  {
+   "poke": [
+    {
+     "field": "py",
+     "value": 357376
+    }
+   ],
+   "frames": 8,
+   "state_capture": "r12_e1"
+  },
+  {
+   "poke": [
+    {
+     "field": "py",
+     "value": 331776
+    }
+   ],
+   "frames": 8,
+   "state_capture": "r12_e2"
+  },
+  {
+   "poke": [
+    {
+     "field": "py",
+     "value": 306176
+    }
+   ],
+   "frames": 8,
+   "state_capture": "r12_e3"
+  },
+  {
+   "poke": [
+    {
+     "field": "py",
+     "value": 280576
+    }
+   ],
+   "frames": 8,
+   "state_capture": "r12_e4"
+  },
+  {
+   "poke": [
+    {
+     "field": "py",
+     "value": 254976
+    }
+   ],
+   "frames": 8,
+   "state_capture": "r12_e5"
+  },
+  {
+   "poke": [
+    {
+     "field": "py",
+     "value": 229376
+    }
+   ],
+   "frames": 8,
+   "state_capture": "r12_e6"
+  }
+ ],
+ "assertions": {
+  "state_changes": [
+   {
+    "at": "r03_e10",
+    "field": "members_placed",
+    "equals": 35
+   },
+   {
+    "at": "r03_e10",
+    "field": "alive",
+    "max_value": 24
+   },
+   {
+    "at": "r03_e0",
+    "field": "alive",
+    "equals": 10
+   },
+   {
+    "at": "r03_e1",
+    "field": "alive",
+    "equals": 11
+   },
+   {
+    "at": "r03_e2",
+    "field": "alive",
+    "equals": 12
+   },
+   {
+    "at": "r03_e3",
+    "field": "alive",
+    "equals": 19
+   },
+   {
+    "at": "r02_e10",
+    "field": "members_placed",
+    "equals": 27
+   },
+   {
+    "at": "r02_e10",
+    "field": "alive",
+    "max_value": 24
+   },
+   {
+    "at": "r02_e0",
+    "field": "alive",
+    "equals": 9
+   },
+   {
+    "at": "r02_e1",
+    "field": "alive",
+    "equals": 10
+   },
+   {
+    "at": "r02_e2",
+    "field": "alive",
+    "equals": 11
+   },
+   {
+    "at": "r02_e3",
+    "field": "alive",
+    "equals": 16
+   },
+   {
+    "at": "r09_e10",
+    "field": "members_placed",
+    "equals": 27
+   },
+   {
+    "at": "r09_e10",
+    "field": "alive",
+    "max_value": 24
+   },
+   {
+    "at": "r09_e0",
+    "field": "alive",
+    "equals": 10
+   },
+   {
+    "at": "r09_e1",
+    "field": "alive",
+    "equals": 10
+   },
+   {
+    "at": "r09_e2",
+    "field": "alive",
+    "equals": 10
+   },
+   {
+    "at": "r09_e3",
+    "field": "alive",
+    "equals": 14
+   },
+   {
+    "at": "r00_e10",
+    "field": "members_placed",
+    "equals": 20
+   },
+   {
+    "at": "r00_e10",
+    "field": "alive",
+    "max_value": 24
+   },
+   {
+    "at": "r00_e0",
+    "field": "alive",
+    "equals": 6
+   },
+   {
+    "at": "r00_e1",
+    "field": "alive",
+    "equals": 7
+   },
+   {
+    "at": "r00_e2",
+    "field": "alive",
+    "equals": 8
+   },
+   {
+    "at": "r00_e3",
+    "field": "alive",
+    "equals": 11
+   },
+   {
+    "at": "r01_e10",
+    "field": "members_placed",
+    "equals": 23
+   },
+   {
+    "at": "r01_e10",
+    "field": "alive",
+    "max_value": 24
+   },
+   {
+    "at": "r01_e0",
+    "field": "alive",
+    "equals": 6
+   },
+   {
+    "at": "r01_e1",
+    "field": "alive",
+    "equals": 7
+   },
+   {
+    "at": "r01_e2",
+    "field": "alive",
+    "equals": 8
+   },
+   {
+    "at": "r01_e3",
+    "field": "alive",
+    "equals": 13
+   },
+   {
+    "at": "r06_e10",
+    "field": "members_placed",
+    "equals": 21
+   },
+   {
+    "at": "r06_e10",
+    "field": "alive",
+    "max_value": 24
+   },
+   {
+    "at": "r06_e0",
+    "field": "alive",
+    "equals": 7
+   },
+   {
+    "at": "r06_e1",
+    "field": "alive",
+    "equals": 8
+   },
+   {
+    "at": "r06_e2",
+    "field": "alive",
+    "equals": 10
+   },
+   {
+    "at": "r06_e3",
+    "field": "alive",
+    "equals": 13
+   },
+   {
+    "at": "r07_e10",
+    "field": "members_placed",
+    "equals": 23
+   },
+   {
+    "at": "r07_e10",
+    "field": "alive",
+    "max_value": 24
+   },
+   {
+    "at": "r07_e0",
+    "field": "alive",
+    "equals": 7
+   },
+   {
+    "at": "r07_e1",
+    "field": "alive",
+    "equals": 7
+   },
+   {
+    "at": "r07_e2",
+    "field": "alive",
+    "equals": 7
+   },
+   {
+    "at": "r07_e3",
+    "field": "alive",
+    "equals": 12
+   },
+   {
+    "at": "r08_e10",
+    "field": "members_placed",
+    "equals": 23
+   },
+   {
+    "at": "r08_e10",
+    "field": "alive",
+    "max_value": 24
+   },
+   {
+    "at": "r08_e0",
+    "field": "alive",
+    "equals": 8
+   },
+   {
+    "at": "r08_e1",
+    "field": "alive",
+    "equals": 9
+   },
+   {
+    "at": "r08_e2",
+    "field": "alive",
+    "equals": 9
+   },
+   {
+    "at": "r08_e3",
+    "field": "alive",
+    "equals": 12
+   },
+   {
+    "at": "r12_e6",
+    "field": "members_placed",
+    "equals": 17
+   },
+   {
+    "at": "r12_e6",
+    "field": "alive",
+    "max_value": 24
+   },
+   {
+    "at": "r12_e0",
+    "field": "alive",
+    "equals": 7
+   },
+   {
+    "at": "r12_e1",
+    "field": "alive",
+    "equals": 8
+   },
+   {
+    "at": "r12_e2",
+    "field": "alive",
+    "equals": 8
+   },
+   {
+    "at": "r12_e3",
+    "field": "alive",
+    "equals": 12
+   }
+  ]
+ }
+}

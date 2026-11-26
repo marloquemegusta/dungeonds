@@ -153,8 +153,9 @@
 #define ARPG_ROOM_HOLE_H_PX 256           // [TUNABLE-PLACEHOLDER] lateral opening height: two modules of the wall (128 px each), on the ground
 #define ARPG_ROOM_HOLE_Y_PX 96            // [TUNABLE-PLACEHOLDER] top of a lateral opening, from the block top (a module joint of the wall art)
 #define ARPG_ROOM_HOLE_ARRIVE_PX 80       // [TUNABLE-PLACEHOLDER] where the hero lands, from the top of the opening (inside its visible part)
-#define ARPG_ROOM_SPAWN_AHEAD_PX 640      // [TUNABLE-PLACEHOLDER] a room's group is placed this far before the hero reaches it
-#define ARPG_ROOM_DESPAWN_BEHIND_PX 760   // [TUNABLE-PLACEHOLDER] enemies this far below the hero are recycled
+#define ARPG_ROOM_SPAWN_AHEAD_PX 640      // [TUNABLE-PLACEHOLDER] boss rooms: the group is placed this far before the hero reaches it
+#define ARPG_ROOM_DESPAWN_BEHIND_PX 400   // [TUNABLE-PLACEHOLDER] enemies this far below the hero are recycled (their post is placed again if he comes back)
+#define ARPG_ROOM_SPAWN_NEAR_PX 288       // [TUNABLE-PLACEHOLDER] each member of a room is placed when the hero is this close in Y (1.5 screens); the cap of 24 never grows
 #define ARPG_ROOM_GROUP_MIN 4             // [TUNABLE-PLACEHOLDER] smallest group of a room
 #define ARPG_ROOM_GROUP_MAX 12            // [TUNABLE-PLACEHOLDER] largest group of a room
 #define ARPG_ROOM_MAX_AWAKE 2             // [TUNABLE-PLACEHOLDER] groups awake at once around the hero

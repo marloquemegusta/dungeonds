@@ -1854,7 +1854,7 @@ ITCM_CODE static void render_screen(uint16_t *buffer, DirtySpan *spans, int cam_
         } else if (sp <= -2 - MAX_ENEMIES) {
             int chunk_idx = -2 - MAX_ENEMIES - sp;
             draw_death_chunk(buffer, &s_death_chunks[chunk_idx], cam_x, cam_y);
-        } else {
+        } else if (!(g_enemies[-2 - sp].home_flags & ENEMY_HOME_HIDDEN)) {      // ambush at rest: only its shadow shows on the floor
             draw_enemy(buffer, &g_enemies[-2 - sp], cam_x, cam_y);
         }
     }

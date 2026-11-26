@@ -1,0 +1,829 @@
+{
+ "name": "arpg_reposos",
+ "description": "Reposos de los grupos (DESIGN-ARPG.md 12): Cireneo/Monaguillo/Bebe/Ojo en reposo, emboscada y patrulla; cada uno se mueve u oculta y despierta por radio o por golpe. H\u00e9roe lejos hasta que se acerca.",
+ "suite": true,
+ "state": {
+  "elf": "../.ds-game-dev/build/out/dungeonds.elf",
+  "symbols": {
+   "pl": "s_player",
+   "dbg": "g_enc_debug",
+   "stats": "g_enc_stats",
+   "arpg": "g_arpg",
+   "en": "g_enemies"
+  },
+  "default_symbol": "pl",
+  "fields": {
+   "px": {
+    "symbol": "pl",
+    "offset": 0,
+    "type": "s32"
+   },
+   "py": {
+    "symbol": "pl",
+    "offset": 4,
+    "type": "s32"
+   },
+   "dbg_god": {
+    "symbol": "dbg",
+    "offset": 2,
+    "type": "u8"
+   },
+   "dbg_restart": {
+    "symbol": "dbg",
+    "offset": 12,
+    "type": "u8"
+   },
+   "dbg_start_room": {
+    "symbol": "dbg",
+    "offset": 20,
+    "type": "u8"
+   },
+   "room": {
+    "symbol": "stats",
+    "offset": 60,
+    "type": "u8"
+   },
+   "room_now": {
+    "symbol": "stats",
+    "offset": 60,
+    "type": "u8"
+   },
+   "dbg_rest_mode": {
+    "symbol": "dbg",
+    "offset": 22,
+    "type": "u8"
+   },
+   "dbg_force_group": {
+    "symbol": "dbg",
+    "offset": 23,
+    "type": "u8"
+   },
+   "e1_x": {
+    "symbol": "en",
+    "offset": 124,
+    "type": "s32"
+   },
+   "e2_x": {
+    "symbol": "en",
+    "offset": 248,
+    "type": "s32"
+   },
+   "e3_x": {
+    "symbol": "en",
+    "offset": 372,
+    "type": "s32"
+   },
+   "e4_x": {
+    "symbol": "en",
+    "offset": 496,
+    "type": "s32"
+   },
+   "e1_st": {
+    "symbol": "en",
+    "offset": 165,
+    "type": "u8"
+   },
+   "e2_st": {
+    "symbol": "en",
+    "offset": 289,
+    "type": "u8"
+   },
+   "e3_st": {
+    "symbol": "en",
+    "offset": 413,
+    "type": "u8"
+   },
+   "e4_st": {
+    "symbol": "en",
+    "offset": 537,
+    "type": "u8"
+   },
+   "e5_st": {
+    "symbol": "en",
+    "offset": 661,
+    "type": "u8"
+   },
+   "e6_st": {
+    "symbol": "en",
+    "offset": 785,
+    "type": "u8"
+   },
+   "e1_dir": {
+    "symbol": "en",
+    "offset": 132,
+    "type": "s32"
+   },
+   "e5_dir": {
+    "symbol": "en",
+    "offset": 628,
+    "type": "s32"
+   },
+   "e0_hf": {
+    "symbol": "en",
+    "offset": 43,
+    "type": "u8"
+   },
+   "e0_st": {
+    "symbol": "en",
+    "offset": 41,
+    "type": "u8"
+   },
+   "e1_hf": {
+    "symbol": "en",
+    "offset": 167,
+    "type": "u8"
+   },
+   "e2_hf": {
+    "symbol": "en",
+    "offset": 291,
+    "type": "u8"
+   },
+   "e3_hf": {
+    "symbol": "en",
+    "offset": 415,
+    "type": "u8"
+   },
+   "e4_hf": {
+    "symbol": "en",
+    "offset": 539,
+    "type": "u8"
+   },
+   "e5_hf": {
+    "symbol": "en",
+    "offset": 663,
+    "type": "u8"
+   },
+   "e3_y": {
+    "symbol": "en",
+    "offset": 376,
+    "type": "s32"
+   },
+   "e2_y": {
+    "symbol": "en",
+    "offset": 252,
+    "type": "s32"
+   },
+   "e1_y": {
+    "symbol": "en",
+    "offset": 128,
+    "type": "s32"
+   },
+   "e0_hp": {
+    "symbol": "en",
+    "offset": 28,
+    "type": "s32"
+   }
+  }
+ },
+ "steps": [
+  {
+   "frames": 60
+  },
+  {
+   "tap": {
+    "x": 128,
+    "y": 66
+   },
+   "frames": 6
+  },
+  {
+   "release": true,
+   "frames": 40
+  },
+  {
+   "button_down": "START",
+   "frames": 4
+  },
+  {
+   "button_up": "START",
+   "frames": 90
+  },
+  {
+   "button_down": "LEFT",
+   "frames": 90
+  },
+  {
+   "button_up": "LEFT",
+   "frames": 10
+  },
+  {
+   "poke": [
+    {
+     "field": "px",
+     "value": 32768
+    },
+    {
+     "field": "py",
+     "value": 29696
+    }
+   ],
+   "frames": 20
+  },
+  {
+   "button_down": "A",
+   "frames": 4
+  },
+  {
+   "button_up": "A",
+   "frames": 6
+  },
+  {
+   "frames": 28
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    }
+   ],
+   "frames": 60
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    },
+    {
+     "field": "dbg_force_group",
+     "value": 6
+    },
+    {
+     "field": "dbg_rest_mode",
+     "value": 1
+    },
+    {
+     "field": "dbg_start_room",
+     "value": 2
+    },
+    {
+     "field": "dbg_restart",
+     "value": 1
+    }
+   ],
+   "frames": 90,
+   "capture": "a0",
+   "state_capture": "a0"
+  },
+  {
+   "frames": 60,
+   "capture": "a1",
+   "state_capture": "a1"
+  },
+  {
+   "frames": 60,
+   "capture": "a2",
+   "state_capture": "a2"
+  },
+  {
+   "poke": [
+    {
+     "field": "px",
+     "value": 59392
+    },
+    {
+     "field": "py",
+     "value": 339968
+    }
+   ],
+   "frames": 30,
+   "state_capture": "a3"
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    },
+    {
+     "field": "dbg_force_group",
+     "value": 8
+    },
+    {
+     "field": "dbg_rest_mode",
+     "value": 1
+    },
+    {
+     "field": "dbg_start_room",
+     "value": 2
+    },
+    {
+     "field": "dbg_restart",
+     "value": 1
+    }
+   ],
+   "frames": 90,
+   "capture": "b0",
+   "state_capture": "b0"
+  },
+  {
+   "frames": 60,
+   "capture": "b1",
+   "state_capture": "b1"
+  },
+  {
+   "frames": 60,
+   "capture": "b2",
+   "state_capture": "b2"
+  },
+  {
+   "poke": [
+    {
+     "field": "px",
+     "value": 59136
+    },
+    {
+     "field": "py",
+     "value": 323840
+    }
+   ],
+   "frames": 30,
+   "state_capture": "b3"
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    },
+    {
+     "field": "dbg_force_group",
+     "value": 2
+    },
+    {
+     "field": "dbg_rest_mode",
+     "value": 2
+    },
+    {
+     "field": "dbg_start_room",
+     "value": 2
+    },
+    {
+     "field": "dbg_restart",
+     "value": 1
+    }
+   ],
+   "frames": 90,
+   "capture": "c0",
+   "state_capture": "c0"
+  },
+  {
+   "frames": 60,
+   "capture": "c1",
+   "state_capture": "c1"
+  },
+  {
+   "frames": 60,
+   "capture": "c2",
+   "state_capture": "c2"
+  },
+  {
+   "poke": [
+    {
+     "field": "px",
+     "value": 59392
+    },
+    {
+     "field": "py",
+     "value": 341248
+    }
+   ],
+   "frames": 30,
+   "state_capture": "c3"
+  },
+  {
+   "poke": [
+    {
+     "field": "px",
+     "value": 59392
+    },
+    {
+     "field": "py",
+     "value": 336128
+    }
+   ],
+   "frames": 30,
+   "state_capture": "c4",
+   "capture": "c4"
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    },
+    {
+     "field": "dbg_force_group",
+     "value": 2
+    },
+    {
+     "field": "dbg_rest_mode",
+     "value": 3
+    },
+    {
+     "field": "dbg_start_room",
+     "value": 2
+    },
+    {
+     "field": "dbg_restart",
+     "value": 1
+    }
+   ],
+   "frames": 90,
+   "capture": "d0",
+   "state_capture": "d0"
+  },
+  {
+   "frames": 60,
+   "capture": "d1",
+   "state_capture": "d1"
+  },
+  {
+   "frames": 60,
+   "capture": "d2",
+   "state_capture": "d2"
+  },
+  {
+   "poke": [
+    {
+     "field": "px",
+     "value": 59392
+    },
+    {
+     "field": "py",
+     "value": 339968
+    }
+   ],
+   "frames": 30,
+   "state_capture": "d3"
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    },
+    {
+     "field": "dbg_force_group",
+     "value": 2
+    },
+    {
+     "field": "dbg_rest_mode",
+     "value": 1
+    },
+    {
+     "field": "dbg_start_room",
+     "value": 2
+    },
+    {
+     "field": "dbg_restart",
+     "value": 1
+    }
+   ],
+   "frames": 90,
+   "capture": "e0",
+   "state_capture": "e0"
+  },
+  {
+   "frames": 60,
+   "capture": "e1",
+   "state_capture": "e1"
+  },
+  {
+   "frames": 60,
+   "capture": "e2",
+   "state_capture": "e2"
+  },
+  {
+   "poke": [
+    {
+     "field": "e0_hp",
+     "value": 1
+    }
+   ],
+   "frames": 20,
+   "state_capture": "e3"
+  }
+ ],
+ "assertions": {
+  "state_changes": [
+   {
+    "from": "a0",
+    "to": "a2",
+    "field": "e1_x",
+    "min_abs_delta": 2560
+   },
+   {
+    "from": "a0",
+    "to": "a2",
+    "field": "e2_x",
+    "min_abs_delta": 2560
+   },
+   {
+    "from": "a0",
+    "to": "a2",
+    "field": "e3_x",
+    "min_abs_delta": 1024
+   },
+   {
+    "from": "a0",
+    "to": "a2",
+    "field": "e4_x",
+    "min_abs_delta": 1024
+   },
+   {
+    "at": "a2",
+    "field": "e1_st",
+    "equals": 14
+   },
+   {
+    "at": "a2",
+    "field": "e2_st",
+    "equals": 14
+   },
+   {
+    "at": "a2",
+    "field": "e3_st",
+    "equals": 14
+   },
+   {
+    "at": "a2",
+    "field": "e4_st",
+    "equals": 14
+   },
+   {
+    "at": "a2",
+    "field": "e5_st",
+    "equals": 14
+   },
+   {
+    "at": "a2",
+    "field": "e6_st",
+    "equals": 14
+   },
+   {
+    "at": "a3",
+    "field": "e1_st",
+    "not_equals": 14
+   },
+   {
+    "at": "a3",
+    "field": "e2_st",
+    "not_equals": 14
+   },
+   {
+    "at": "a3",
+    "field": "e3_st",
+    "not_equals": 14
+   },
+   {
+    "at": "a3",
+    "field": "e4_st",
+    "not_equals": 14
+   },
+   {
+    "at": "a3",
+    "field": "e5_st",
+    "not_equals": 14
+   },
+   {
+    "at": "a3",
+    "field": "e6_st",
+    "not_equals": 14
+   },
+   {
+    "from": "b0",
+    "to": "b2",
+    "field": "e1_dir",
+    "min_abs_delta": 1
+   },
+   {
+    "from": "b0",
+    "to": "b2",
+    "field": "e5_dir",
+    "min_abs_delta": 1
+   },
+   {
+    "from": "b0",
+    "to": "b2",
+    "field": "e1_x",
+    "max_abs_delta": 0
+   },
+   {
+    "at": "b2",
+    "field": "e1_st",
+    "equals": 14
+   },
+   {
+    "at": "b3",
+    "field": "e1_st",
+    "not_equals": 14
+   },
+   {
+    "at": "c2",
+    "field": "e0_hf",
+    "equals": 8
+   },
+   {
+    "at": "c2",
+    "field": "e0_st",
+    "equals": 14
+   },
+   {
+    "at": "c2",
+    "field": "e1_hf",
+    "equals": 8
+   },
+   {
+    "at": "c2",
+    "field": "e1_st",
+    "equals": 14
+   },
+   {
+    "at": "c2",
+    "field": "e2_hf",
+    "equals": 8
+   },
+   {
+    "at": "c2",
+    "field": "e2_st",
+    "equals": 14
+   },
+   {
+    "at": "c2",
+    "field": "e3_hf",
+    "equals": 8
+   },
+   {
+    "at": "c2",
+    "field": "e3_st",
+    "equals": 14
+   },
+   {
+    "at": "c2",
+    "field": "e4_hf",
+    "equals": 8
+   },
+   {
+    "at": "c2",
+    "field": "e4_st",
+    "equals": 14
+   },
+   {
+    "at": "c2",
+    "field": "e5_hf",
+    "equals": 8
+   },
+   {
+    "at": "c2",
+    "field": "e5_st",
+    "equals": 14
+   },
+   {
+    "from": "c0",
+    "to": "c2",
+    "field": "e3_x",
+    "max_abs_delta": 0
+   },
+   {
+    "from": "c0",
+    "to": "c2",
+    "field": "e3_y",
+    "max_abs_delta": 0
+   },
+   {
+    "at": "c3",
+    "field": "e0_hf",
+    "equals": 8
+   },
+   {
+    "at": "c3",
+    "field": "e1_hf",
+    "equals": 8
+   },
+   {
+    "at": "c3",
+    "field": "e2_hf",
+    "equals": 8
+   },
+   {
+    "at": "c3",
+    "field": "e3_hf",
+    "equals": 8
+   },
+   {
+    "at": "c3",
+    "field": "e4_hf",
+    "equals": 8
+   },
+   {
+    "at": "c3",
+    "field": "e5_hf",
+    "equals": 8
+   },
+   {
+    "at": "c4",
+    "field": "e0_hf",
+    "equals": 0
+   },
+   {
+    "at": "c4",
+    "field": "e0_st",
+    "not_equals": 14
+   },
+   {
+    "at": "c4",
+    "field": "e1_hf",
+    "equals": 0
+   },
+   {
+    "at": "c4",
+    "field": "e1_st",
+    "not_equals": 14
+   },
+   {
+    "at": "c4",
+    "field": "e2_hf",
+    "equals": 0
+   },
+   {
+    "at": "c4",
+    "field": "e2_st",
+    "not_equals": 14
+   },
+   {
+    "at": "c4",
+    "field": "e3_hf",
+    "equals": 0
+   },
+   {
+    "at": "c4",
+    "field": "e3_st",
+    "not_equals": 14
+   },
+   {
+    "at": "c4",
+    "field": "e4_hf",
+    "equals": 0
+   },
+   {
+    "at": "c4",
+    "field": "e4_st",
+    "not_equals": 14
+   },
+   {
+    "at": "c4",
+    "field": "e5_hf",
+    "equals": 0
+   },
+   {
+    "at": "c4",
+    "field": "e5_st",
+    "not_equals": 14
+   },
+   {
+    "from": "d0",
+    "to": "d2",
+    "field": "e1_y",
+    "min_abs_delta": 1024
+   },
+   {
+    "from": "d0",
+    "to": "d2",
+    "field": "e2_y",
+    "min_abs_delta": 1536
+   },
+   {
+    "at": "d2",
+    "field": "e1_st",
+    "equals": 14
+   },
+   {
+    "at": "d3",
+    "field": "e1_st",
+    "not_equals": 14
+   },
+   {
+    "at": "d3",
+    "field": "e3_st",
+    "not_equals": 14
+   },
+   {
+    "at": "e2",
+    "field": "e3_st",
+    "equals": 14
+   },
+   {
+    "at": "e3",
+    "field": "e3_st",
+    "not_equals": 14
+   },
+   {
+    "at": "e3",
+    "field": "e5_st",
+    "not_equals": 14
+   }
+  ]
+ }
+}
