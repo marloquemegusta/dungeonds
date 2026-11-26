@@ -381,6 +381,7 @@ static const RoomMember s_r06_b2_m[] = {
     { ENC_E_BEBE, ENC_S_CRAWL, 86, 142 },
 };
 static const EncPieceDef s_r07_b0_p[] = {
+    { STRIP_PIECE_BANCO_ROTO, 64, 336 },
     { STRIP_PIECE_COLUMNA_ENTERA, 8, 8 },
     { STRIP_PIECE_COLUMNA_ENTERA, 120, 8 },
     { STRIP_PIECE_COLUMNA_ENTERA, 8, 168 },
@@ -400,6 +401,7 @@ static const EncPieceDef s_r07_b1_p[] = {
     { STRIP_PIECE_COLUMNA_ENTERA, 120, 8 },
     { STRIP_PIECE_COLUMNA_ENTERA, 0, 168 },
     { STRIP_PIECE_COLUMNA_ENTERA, 120, 168 },
+    { STRIP_PIECE_LAPIDA_PIE, 88, 336 },
 };
 static const RoomMember s_r07_b1_m[] = {
     { ENC_E_EXVOTO, ENC_S_PRAY, 96, 52 },
@@ -542,9 +544,9 @@ static const EncPieceDef s_r09_b2_p[] = {
     { STRIP_PIECE_CALAVERAS_PILA, 40, 40 },
     { STRIP_PIECE_CALAVERAS_PILA, 144, 40 },
     { STRIP_PIECE_OSARIO_ESTANTE, 8, 0 },
-    { STRIP_PIECE_OSARIO_ESTANTE, 48, 0 },
-    { STRIP_PIECE_OSARIO_ESTANTE, 120, 0 },
-    { STRIP_PIECE_OSARIO_ESTANTE, 160, 0 },
+    { STRIP_PIECE_OSARIO_ESTANTE, 56, 0 },
+    { STRIP_PIECE_OSARIO_ESTANTE, 104, 0 },
+    { STRIP_PIECE_OSARIO_ESTANTE, 152, 0 },
     { STRIP_PIECE_OSARIO_LADO, 160, 192 },
     { STRIP_PIECE_OSARIO_LADO, 160, 240 },
     { STRIP_PIECE_OSARIO_LADO, 160, 288 },
@@ -565,12 +567,15 @@ static const RoomMember s_r09_b2_m[] = {
     { ENC_E_BEBE, ENC_S_CRAWL, 178, 150 },
 };
 static const EncPieceDef s_r10_b0_p[] = {
+    { STRIP_PIECE_ALTAR_PIE, 88, 8 },
     { STRIP_PIECE_CANDELABRO_PIE, 56, 8 },
     { STRIP_PIECE_CANDELABRO_PIE, 120, 8 },
     { STRIP_PIECE_RECLINATORIO, 8, 248 },
     { STRIP_PIECE_RECLINATORIO, 160, 248 },
     { STRIP_PIECE_RECLINATORIO, 8, 296 },
     { STRIP_PIECE_RECLINATORIO, 160, 296 },
+    { STRIP_PIECE_RELICARIO, 8, 16 },
+    { STRIP_PIECE_RELICARIO, 144, 16 },
 };
 static const RoomMember s_r10_b0_m[] = {
     { ENC_E_EXVOTO, ENC_S_PRAY, 26, 106 },
@@ -603,6 +608,7 @@ static const EncPieceDef s_r11_b0_p[] = {
     { STRIP_PIECE_RECLINATORIO, 168, 336 },
 };
 static const EncPieceDef s_r11_b1_p[] = {
+    { STRIP_PIECE_ALTAR_PIE, 88, 8 },
     { STRIP_PIECE_CANDELABRO_PIE, 56, 8 },
     { STRIP_PIECE_CANDELABRO_PIE, 120, 8 },
     { STRIP_PIECE_RECLINATORIO, 8, 240 },
@@ -677,11 +683,13 @@ static const RoomMember s_r12_b1_m[] = {
     { ENC_E_BEBE, ENC_S_CRAWL, 70, 216 },
 };
 static const EncPieceDef s_r13_b0_p[] = {
+    { STRIP_PIECE_ALTAR_PIE, 32, 8 },
+    { STRIP_PIECE_ALTAR_PIE, 144, 8 },
     { STRIP_PIECE_RECLINATORIO, 56, 256 },
     { STRIP_PIECE_RECLINATORIO, 168, 256 },
     { STRIP_PIECE_RECLINATORIO, 56, 296 },
     { STRIP_PIECE_RECLINATORIO, 168, 296 },
-    { STRIP_PIECE_RELICARIO, 24, 0 },
+    { STRIP_PIECE_RELICARIO, 72, 0 },
 };
 static const RoomMember s_r13_b0_m[] = {
     { ENC_E_EXVOTO, ENC_S_PRAY, 82, 168 },
@@ -698,11 +706,13 @@ static const RoomMember s_r13_b0_m[] = {
     { ENC_E_BEBE, ENC_S_CRAWL, 104, 246 },
 };
 static const EncPieceDef s_r14_b0_p[] = {
+    { STRIP_PIECE_CALAVERAS_PILA, 88, 208 },
     { STRIP_PIECE_CAPULLO, 48, 144 },
-    { STRIP_PIECE_COLUMNA_ENTERA, 112, 0 },
-    { STRIP_PIECE_COLUMNA_ENTERA, 40, 16 },
-    { STRIP_PIECE_COLUMNA_ENTERA, 40, 256 },
-    { STRIP_PIECE_COLUMNA_ENTERA, 112, 256 },
+    { STRIP_PIECE_CAPULLO, 80, 152 },
+    { STRIP_PIECE_COLUMNA_ENTERA, 48, 0 },
+    { STRIP_PIECE_COLUMNA_ENTERA, 104, 0 },
+    { STRIP_PIECE_COLUMNA_ENTERA, 48, 256 },
+    { STRIP_PIECE_COLUMNA_ENTERA, 104, 256 },
     { STRIP_PIECE_SANTO, 0, 8 },
     { STRIP_PIECE_SANTO, 8, 80 },
     { STRIP_PIECE_SANTO, 8, 264 },
@@ -713,12 +723,16 @@ static const EncPieceDef s_r14_b0_p[] = {
 };
 static const EncPieceDef s_r14_b1_p[] = {
     { STRIP_PIECE_CAPULLO, 48, 0 },
-    { STRIP_PIECE_CAPULLO, 120, 0 },
+    { STRIP_PIECE_CAPULLO, 112, 0 },
+    { STRIP_PIECE_CAPULLO, 80, 16 },
     { STRIP_PIECE_CAPULLO, 56, 64 },
+    { STRIP_PIECE_CAPULLO, 112, 64 },
     { STRIP_PIECE_CAPULLO, 120, 216 },
+    { STRIP_PIECE_CAPULLO, 88, 240 },
     { STRIP_PIECE_CAPULLO, 48, 256 },
-    { STRIP_PIECE_CAPULLO, 120, 304 },
-    { STRIP_PIECE_CAPULLO, 56, 312 },
+    { STRIP_PIECE_CAPULLO, 72, 304 },
+    { STRIP_PIECE_CAPULLO, 104, 304 },
+    { STRIP_PIECE_HUESOS_MONTON, 88, 184 },
     { STRIP_PIECE_SANTO, 0, 240 },
     { STRIP_PIECE_SANTO, 0, 312 },
     { STRIP_PIECE_SANTO_DER, 160, 0 },
@@ -745,6 +759,7 @@ static const EncPieceDef s_r15_b0_p[] = {
     { STRIP_PIECE_LAPIDA_PIE, 176, 144 },
     { STRIP_PIECE_LAPIDA_PIE, 8, 256 },
     { STRIP_PIECE_LAPIDA_PIE, 176, 256 },
+    { STRIP_PIECE_SARCOFAGO, 72, 0 },
     { STRIP_PIECE_SARCOFAGO_LADO, 160, 80 },
     { STRIP_PIECE_SARCOFAGO_LADO, 160, 112 },
     { STRIP_PIECE_SARCOFAGO_LADO, 160, 192 },

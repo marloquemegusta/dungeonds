@@ -25,7 +25,9 @@ from PIL import Image
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "tools"))
+sys.path.insert(0, str(ROOT / "tools" / "poster"))
 import bake_cathedral_kit as B  # noqa: E402
+import gen_ambientes_arpg as GA  # noqa: E402
 
 SALAS_DIR = ROOT / "tools/poster/salas"
 ROM_C = ROOT / "source/encounters_act1.c"
@@ -61,11 +63,24 @@ PIEZA_ENUM = {
     "lapida_pie": "LAPIDA_PIE", "candelabro_pie": "CANDELABRO_PIE", "calaveras_pila": "CALAVERAS_PILA",
     "huesos_monton": "HUESOS_MONTON", "reclinatorio": "RECLINATORIO", "catre": "CATRE", "biombo": "BIOMBO",
     "palangana": "PALANGANA", "osario_estante": "OSARIO_ESTANTE", "osario_lado": "OSARIO_LADO", "sarcofago": "SARCOFAGO",
-    "brasero": "BRASERO", "sarcofago_lado": "SARCOFAGO_LADO",
+    "brasero": "BRASERO", "sarcofago_lado": "SARCOFAGO_LADO", "altar_pie": "ALTAR_PIE",
 }
 ESPEJO = {"santo": "santo_der", "santo_der": "santo", "sacos_remate": "sacos_remate_der", "sacos_remate_der": "sacos_remate"}
 DECOR = {"sacos": "ENC_R_SACOS", "sacos_b": "ENC_R_SACOS", "sacos_remate": "ENC_R_SACOS", "sacos_remate_der": "ENC_R_SACOS",
          "alambre": "ENC_R_ALAMBRE"}
+# el altar del poster (decorado de pie) no es el altar de viaje de la ROM (fixture): su estampa se llama altar_pie
+PIEZA_ALIAS = {"altar": "altar_pie"}
+
+
+def _salas_con_puerta_arriba():
+    """Ids de las salas con una puerta DU(...) en la tabla s_rooms de encounters_act1.c (el pasillo central solo rige en ellas)."""
+    src = (ROOT / "source" / "encounters_act1.c").read_text(encoding="utf-8")
+    tabla = src.split("static const RoomDef s_rooms[ENC_ROOM_COUNT] = {", 1)[1].split("\n};", 1)[0]
+    fichas = tabla.split("{ .name =")[1:]
+    return {i for i, f in enumerate(fichas) if "DU(" in f}
+
+
+SALAS_CON_PUERTA_ARRIBA = _salas_con_puerta_arriba()
 PESO_BAJO = {"banco_entero": 0.5, "banco_roto": 0.5, "banco_volcado": 0.5}
 FLOOR_X, FLOOR_W, BLOCK_H = 152, 208, 384
 X0_T, X1_T, BLOCK_T = 19, 45, 48          # tiles de suelo util y alto del bloque
@@ -142,7 +157,7 @@ def layout(name, mirror=0):
     return _LAY[key]
 
 
-def poster_composicion(rd, add, groups):
+def poster_composicion(rd, add, groups, sobre_pasos=(), sala=-1):
     """Replica pieces_for_block del poster: desplaza o quita lo que choca con enemigos, puertas, cofre, altar y otras piezas.
     add = [(pieza, espejo, k, x, y)] con x, y = esquina del color.png. Devuelve [(pieza, espejo, k, cx, cy)] con (cx, cy) la
     esquina del LIENZO de la estampa, en px locales del bloque."""
@@ -164,7 +179,8 @@ def poster_composicion(rd, add, groups):
                 if cx + lay["bx0"] < 0 or cx + lay["bx1"] > FLOOR_W or y < 0 or y + h > BLOCK_H:
                     continue
                 rect = (cx + lay["bx0"], cy + lay["by1"] - base, cx + lay["bx1"], cy + lay["by1"])
-                if any(hit(rect, r) for r in rk) or any(hit(rect, (ex - 13, ey - 10, ex + 13, ey + 6)) for ex, ey in ens):
+                libre = (sala, piece, mir, k) in sobre_pasos
+                if (not libre and any(hit(rect, r) for r in rk)) or any(hit(rect, (ex - 13, ey - 10, ex + 13, ey + 6)) for ex, ey in ens):
                     continue
                 if any(hit(rect, t) for t in taken):
                     continue
@@ -181,7 +197,9 @@ SNAP = sorted(((dx, dy) for dx in range(-2, 3) for dy in range(-2, 3)), key=lamb
 def main():
     rooms = parse_rooms()
     assert len(rooms) == 16, len(rooms)
+    V2 = {n: s["comp"] for n, s in GA.build().items()}
 
+    sobre_pasos = set()       # (sala, pieza, espejo, k) de las EXTRA: pueden ir sobre los pasos reservados (el cofre)
     comp, grupos = {}, {}
     informe = defaultdict(lambda: defaultdict(int))
     for n in range(16):
@@ -189,9 +207,15 @@ def main():
         rd = rooms[n]
         grupos[n] = list(m.GRUPOS)
         add = []
-        for (p, k, x, y) in list(m.ADD) + list(getattr(m, "EXTRA", [])):
+        # lo que la composicion v2 deja sin quitar (DROP) tambien es poster: sala 10, relicarios del fondo
+        drop = set(getattr(m, "DROP", []))
+        v2 = [(i["piece"], i["k"], i["x"], i["y"]) for i in V2[n] if i["piece"] not in drop and i["piece"] != "altar"]
+        extra = set((PIEZA_ALIAS.get(p.rstrip("~"), p.rstrip("~")), int(p.endswith("~")), k, x, y)
+                    for (p, k, x, y) in getattr(m, "EXTRA", []))
+        for (p, k, x, y) in list(m.ADD) + list(getattr(m, "EXTRA", [])) + v2:
             mir = int(p.endswith("~"))
             p = p.rstrip("~")
+            p = PIEZA_ALIAS.get(p, p)
             if mir and p in ESPEJO:                       # el kit ya trae su pareja (santo_der...): no hace falta estampa en espejo
                 p, mir = ESPEJO[p], 0
             if p not in PIEZA_ENUM:
@@ -201,7 +225,9 @@ def main():
                 informe[n]["sin_render:" + p] += 1
                 continue
             add.append((p, mir, k, x, y))
-        comp[n] = poster_composicion(rd, add, grupos[n])
+            if (p, mir, k, x, y) in extra:
+                sobre_pasos.add((n, p, mir, k))
+        comp[n] = poster_composicion(rd, add, grupos[n], sobre_pasos, n)
         informe[n]["poster"] = len(add)
         informe[n]["tras_poster"] = len(comp[n])
 
@@ -226,14 +252,14 @@ def main():
                     continue
                 lx, ly = xt * 8 - FLOOR_X, yt * 8
                 rect = (lx + lay["bx0"], ly + lay["by1"] - base, lx + lay["bx1"], ly + lay["by1"])
-                if any(hit(rect, r[1:]) for r in res if r[0] == k) or \
+                if ((n, p, mir, k) not in sobre_pasos and any(hit(rect, r[1:]) for r in res if r[0] == k)) or \
                         any(hit(rect, (ex - 13, ey - 10, ex + 13, ey + 6)) for ex, ey in ens):
                     motivo = motivo or "tapa_puerta_o_enemigo"
                     continue
                 if any((xt + x, yt + y) in ocupado[k] for x, y in tiles):
                     motivo = motivo or "solapa"
                     continue
-                if lay["value"] != 0 and lay["foot_runs"]:       # pasillo central (stamp_blocks_aisle)
+                if lay["value"] != 0 and lay["foot_runs"] and n in SALAS_CON_PUERTA_ARRIBA:       # pasillo central (stamp_blocks_aisle): solo en las salas con salida hacia arriba
                     lo = min(lx + x * 4 for x, y, c in lay["foot_runs"])
                     hi = max(lx + (x + c) * 4 for x, y, c in lay["foot_runs"])
                     if hi > FLOOR_W // 2 - 16 and lo < FLOOR_W // 2 + 16:

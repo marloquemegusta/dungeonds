@@ -241,7 +241,7 @@ typedef struct {
     uint8_t blocked_asleep;             // 188 sleeping enemies standing where a body cannot (inside a piece or obstacle)
     uint8_t boss_state;                 // 189 BOSS_* of boss.h (0 inactive, 1 intro, 2 combat, 3 phase change, 4 victory, 5 rest)
     uint8_t boss_phase;                 // 190 phase the boss is in (1..3)
-    uint8_t pad4;                       // 191
+    uint8_t members_placed;             // 191 members of the salas ARPG placed so far on this visit, each counted once (scenarios: a whole room crossed = its poster count)
 } EncStats;
 _Static_assert(sizeof(EncStats) == 192, "EncStats layout is read by scenarios by offset");
 _Static_assert(offsetof(EncStats, wake_frames) == 8 && offsetof(EncStats, relicarios) == 10 &&

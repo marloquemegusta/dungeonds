@@ -385,9 +385,10 @@ static uint8_t resolve_room_placeholder(uint8_t piece) {
     }
 }
 
-// Central aisle of a room: the door line the hero walks between rooms. A blocking prop whose
-// footprint would stand there is not placed, so every room can be crossed straight from its bottom
-// to its upper door (the door placeholder itself is exempt: its collision is cleared separately).
+// Central aisle of a room with an exit upwards: the door line the hero walks between rooms. A blocking prop whose
+// footprint would stand there is not placed, so the room can be crossed straight from its bottom to its upper door
+// (the door placeholder itself is exempt: its collision is cleared separately). Rooms without an upper door
+// (chapels, galleries, the Cripta) have no such line: their props may stand on the axis (altar, relicario, big sarcophagus).
 static int stamp_blocks_aisle(const StripStamp *st, int x_tile) {
     if (st->foot_value == 0 || !st->num_foot_runs) return 0;
     int lo = 0x7fffffff, hi = -0x7fffffff;
@@ -417,6 +418,7 @@ static void enc_place_piece(PlanItem *acc, int *n, const EncPiecePlan *p) {
         (*n)++;
         return;
     }
+    const int s_aisle_rule = enc_block_has_door(enc_room_top_block());
     uint8_t piece = resolve_room_placeholder(p->piece);
     const StripStamp *any = first_stamp_of(piece);
     if (!any || *n >= STRIP_BLOCK_MAX_PIECES) return;
@@ -434,7 +436,7 @@ static void enc_place_piece(PlanItem *acc, int *n, const EncPiecePlan *p) {
         for (int ix = 0; ix < 2; ix++) {
             for (int iy = 0; iy < 2; iy++) {
                 int x = x_lo + 16 * ix, y = y_lo + 16 * iy;
-                if (p->piece != STRIP_PIECE_PUERTA && stamp_blocks_aisle(stamp, x)) continue;
+                if (p->piece != STRIP_PIECE_PUERTA && s_aisle_rule && stamp_blocks_aisle(stamp, x)) continue;
                 if (!plan_fits(acc, *n, stamp, x, y)) continue;
                 int cost = (x - tx) * (x - tx) + (y - ty) * (y - ty);
                 if (cost < best_cost) { best_cost = cost; best = stamp; bx = x; by = y; }

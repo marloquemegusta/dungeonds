@@ -1,6 +1,6 @@
 {
  "name": "arpg_salas_barrido",
- "description": "Barrido completo de las 16 salas de la zona 1: captura de entrada y estaciones cada 160 px hacia el norte (el heroe se coloca por poke con dios activo). Solo evidencia.",
+ "description": "Barrido completo de las 16 salas de la zona 1: captura de entrada y estaciones cada 160 px hacia el norte (el heroe se coloca por poke con dios activo). Solo evidencia. Sala 15 (jefe: al pasar el umbral la sala se cierra y se oscurece) se ve con la camara subida 200 px (dbg_cam_up) desde el pie.",
  "suite": false,
  "evidence_only": true,
  "state": {
@@ -50,6 +50,11 @@
    "alive": {
     "symbol": "stats",
     "offset": 61,
+    "type": "u8"
+   },
+   "dbg_cam_up": {
+    "symbol": "dbg",
+    "offset": 13,
     "type": "u8"
    }
   }
@@ -2243,107 +2248,13 @@
   {
    "poke": [
     {
-     "field": "dbg_god",
-     "value": 1
-    },
-    {
-     "field": "py",
-     "value": 349184
+     "field": "dbg_cam_up",
+     "value": 200
     }
    ],
-   "frames": 10,
+   "frames": 20,
    "capture": "s15_e1",
    "state_capture": "s15_e1"
-  },
-  {
-   "poke": [
-    {
-     "field": "dbg_god",
-     "value": 1
-    },
-    {
-     "field": "py",
-     "value": 308224
-    }
-   ],
-   "frames": 10,
-   "capture": "s15_e2",
-   "state_capture": "s15_e2"
-  },
-  {
-   "poke": [
-    {
-     "field": "dbg_god",
-     "value": 1
-    },
-    {
-     "field": "py",
-     "value": 267264
-    }
-   ],
-   "frames": 10,
-   "capture": "s15_e3",
-   "state_capture": "s15_e3"
-  },
-  {
-   "poke": [
-    {
-     "field": "dbg_god",
-     "value": 1
-    },
-    {
-     "field": "py",
-     "value": 226304
-    }
-   ],
-   "frames": 10,
-   "capture": "s15_e4",
-   "state_capture": "s15_e4"
-  },
-  {
-   "poke": [
-    {
-     "field": "dbg_god",
-     "value": 1
-    },
-    {
-     "field": "py",
-     "value": 185344
-    }
-   ],
-   "frames": 10,
-   "capture": "s15_e5",
-   "state_capture": "s15_e5"
-  },
-  {
-   "poke": [
-    {
-     "field": "dbg_god",
-     "value": 1
-    },
-    {
-     "field": "py",
-     "value": 144384
-    }
-   ],
-   "frames": 10,
-   "capture": "s15_e6",
-   "state_capture": "s15_e6"
-  },
-  {
-   "poke": [
-    {
-     "field": "dbg_god",
-     "value": 1
-    },
-    {
-     "field": "py",
-     "value": 103424
-    }
-   ],
-   "frames": 10,
-   "capture": "s15_e7",
-   "state_capture": "s15_e7"
   }
  ]
 }

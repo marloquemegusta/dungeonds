@@ -912,6 +912,13 @@
   ],
   "7": [
    {
+    "piece": "banco_roto",
+    "k": 0,
+    "lx": 64,
+    "ly": 336,
+    "mirror": 0
+   },
+   {
     "piece": "columna_entera",
     "k": 0,
     "lx": 8,
@@ -965,6 +972,13 @@
     "k": 1,
     "lx": 120,
     "ly": 168,
+    "mirror": 0
+   },
+   {
+    "piece": "lapida_pie",
+    "k": 1,
+    "lx": 88,
+    "ly": 336,
     "mirror": 0
    },
    {
@@ -1366,21 +1380,21 @@
    {
     "piece": "osario_estante",
     "k": 2,
-    "lx": 48,
+    "lx": 56,
     "ly": 0,
     "mirror": 0
    },
    {
     "piece": "osario_estante",
     "k": 2,
-    "lx": 120,
+    "lx": 104,
     "ly": 0,
     "mirror": 0
    },
    {
     "piece": "osario_estante",
     "k": 2,
-    "lx": 160,
+    "lx": 152,
     "ly": 0,
     "mirror": 0
    },
@@ -1443,6 +1457,13 @@
   ],
   "10": [
    {
+    "piece": "altar_pie",
+    "k": 0,
+    "lx": 88,
+    "ly": 8,
+    "mirror": 0
+   },
+   {
     "piece": "candelabro_pie",
     "k": 0,
     "lx": 56,
@@ -1482,6 +1503,20 @@
     "k": 0,
     "lx": 160,
     "ly": 296,
+    "mirror": 0
+   },
+   {
+    "piece": "relicario",
+    "k": 0,
+    "lx": 8,
+    "ly": 16,
+    "mirror": 0
+   },
+   {
+    "piece": "relicario",
+    "k": 0,
+    "lx": 144,
+    "ly": 16,
     "mirror": 0
    }
   ],
@@ -1582,6 +1617,13 @@
     "k": 0,
     "lx": 168,
     "ly": 336,
+    "mirror": 0
+   },
+   {
+    "piece": "altar_pie",
+    "k": 1,
+    "lx": 88,
+    "ly": 8,
     "mirror": 0
    },
    {
@@ -1743,6 +1785,20 @@
   ],
   "13": [
    {
+    "piece": "altar_pie",
+    "k": 0,
+    "lx": 32,
+    "ly": 8,
+    "mirror": 0
+   },
+   {
+    "piece": "altar_pie",
+    "k": 0,
+    "lx": 144,
+    "ly": 8,
+    "mirror": 0
+   },
+   {
     "piece": "reclinatorio",
     "k": 0,
     "lx": 56,
@@ -1773,12 +1829,19 @@
    {
     "piece": "relicario",
     "k": 0,
-    "lx": 24,
+    "lx": 72,
     "ly": 0,
     "mirror": 0
    }
   ],
   "14": [
+   {
+    "piece": "calaveras_pila",
+    "k": 0,
+    "lx": 88,
+    "ly": 208,
+    "mirror": 0
+   },
    {
     "piece": "capullo",
     "k": 0,
@@ -1787,30 +1850,37 @@
     "mirror": 0
    },
    {
+    "piece": "capullo",
+    "k": 0,
+    "lx": 80,
+    "ly": 152,
+    "mirror": 0
+   },
+   {
     "piece": "columna_entera",
     "k": 0,
-    "lx": 112,
+    "lx": 48,
     "ly": 0,
     "mirror": 0
    },
    {
     "piece": "columna_entera",
     "k": 0,
-    "lx": 40,
-    "ly": 16,
+    "lx": 104,
+    "ly": 0,
     "mirror": 0
    },
    {
     "piece": "columna_entera",
     "k": 0,
-    "lx": 40,
+    "lx": 48,
     "ly": 256,
     "mirror": 0
    },
    {
     "piece": "columna_entera",
     "k": 0,
-    "lx": 112,
+    "lx": 104,
     "ly": 256,
     "mirror": 0
    },
@@ -1873,14 +1943,28 @@
    {
     "piece": "capullo",
     "k": 1,
-    "lx": 120,
+    "lx": 112,
     "ly": 0,
     "mirror": 0
    },
    {
     "piece": "capullo",
     "k": 1,
+    "lx": 80,
+    "ly": 16,
+    "mirror": 0
+   },
+   {
+    "piece": "capullo",
+    "k": 1,
     "lx": 56,
+    "ly": 64,
+    "mirror": 0
+   },
+   {
+    "piece": "capullo",
+    "k": 1,
+    "lx": 112,
     "ly": 64,
     "mirror": 0
    },
@@ -1894,6 +1978,13 @@
    {
     "piece": "capullo",
     "k": 1,
+    "lx": 88,
+    "ly": 240,
+    "mirror": 0
+   },
+   {
+    "piece": "capullo",
+    "k": 1,
     "lx": 48,
     "ly": 256,
     "mirror": 0
@@ -1901,15 +1992,22 @@
    {
     "piece": "capullo",
     "k": 1,
-    "lx": 120,
+    "lx": 72,
     "ly": 304,
     "mirror": 0
    },
    {
     "piece": "capullo",
     "k": 1,
-    "lx": 56,
-    "ly": 312,
+    "lx": 104,
+    "ly": 304,
+    "mirror": 0
+   },
+   {
+    "piece": "huesos_monton",
+    "k": 1,
+    "lx": 88,
+    "ly": 184,
     "mirror": 0
    },
    {
@@ -2003,6 +2101,13 @@
     "k": 0,
     "lx": 176,
     "ly": 256,
+    "mirror": 0
+   },
+   {
+    "piece": "sarcofago",
+    "k": 0,
+    "lx": 72,
+    "ly": 0,
     "mirror": 0
    },
    {

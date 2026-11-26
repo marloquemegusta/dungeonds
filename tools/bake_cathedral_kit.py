@@ -30,7 +30,7 @@ DEFAULT_PROPS = ("columna_entera", "banco_entero", "relicario", "vela",
                  # piezas tematicas de las salas del poster (tools/encuentros/gen_salas_rom.py)
                  "banco_roto", "banco_volcado", "capullo", "cepo", "lapida_pie", "candelabro_pie", "calaveras_pila",
                  "huesos_monton", "reclinatorio", "catre", "biombo", "palangana", "osario_estante", "osario_lado",
-                 "sarcofago", "brasero", "sarcofago_lado")
+                 "sarcofago", "brasero", "sarcofago_lado", "altar_pie")
 # Room furniture of the encounter rooms (salas ARPG). Only the upper door is placed by the
 # compositor: it never changes, so baking it gives the real art plus its occlusion. The chests and
 # the travel altar keep the software-fixture path (source/encounters_act1.c) because their state
@@ -51,7 +51,7 @@ PIECE_IDS = {
     "santo_der": 19,
     "banco_roto": 20, "banco_volcado": 21, "capullo": 22, "cepo": 23, "lapida_pie": 24, "candelabro_pie": 25,
     "calaveras_pila": 26, "huesos_monton": 27, "reclinatorio": 28, "catre": 29, "biombo": 30, "palangana": 31,
-    "osario_estante": 32, "osario_lado": 33, "sarcofago": 34, "brasero": 35, "sarcofago_lado": 36,
+    "osario_estante": 32, "osario_lado": 33, "sarcofago": 34, "brasero": 35, "sarcofago_lado": 36, "altar_pie": 37,
     "puerta": 200, "cofre_cerrado": 201, "cofre_abierto": 202, "altar": 203,
 }
 LAPIDA_NAMES = ("lapida_3x2_cruz", "lapida_3x2_cab", "lapida_2x1_cruz", "lapida_2x1_cab")
