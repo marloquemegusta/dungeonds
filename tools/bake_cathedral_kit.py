@@ -129,11 +129,33 @@ class Tiles:
         return idx | (0x4000 if h else 0) | (0x8000 if v else 0)
 
 
+_ACTIVE_LIGHT_TINT = None      # (r, g, b) por canal: luz de sala del ARPG (tools/arpg_light_rooms.json); solo suelo, muros y lapidas
+
+
+def _tint_bgr555(c, tint):
+    r = min(31, max(0, int(round((c & 31) * tint[0]))))
+    g = min(31, max(0, int(round(((c >> 5) & 31) * tint[1]))))
+    b = min(31, max(0, int(round(((c >> 10) & 31) * tint[2]))))
+    return (b << 10) | (g << 5) | r
+
+
+def _tint_rgba(arr):
+    """Tinta el RGB de un PNG (muros, lapidas) con la luz activa; el alfa no cambia."""
+    if _ACTIVE_LIGHT_TINT is None:
+        return arr
+    f = arr.astype(np.float32)
+    for k in range(3):
+        f[..., k] = np.clip(f[..., k] * _ACTIVE_LIGHT_TINT[k], 0, 255)
+    return f.astype(np.uint8)
+
+
 def read_floor(directory):
     src = json.loads((directory / "floor.json").read_text(encoding="utf-8"))
     if src.get("period_tiles") != [16, 16]:
         raise ValueError("period_tiles must be [16, 16]")
     colors = [color_value(c) for c in src["palette"]]
+    if _ACTIVE_LIGHT_TINT is not None:
+        colors = [_tint_bgr555(c, _ACTIVE_LIGHT_TINT) for c in colors]
     raw = src["tiles"]
     if not raw or any(len(t) != 64 for t in raw):
         raise ValueError("floor tiles must each contain 64 indices")
@@ -347,7 +369,7 @@ def lapida_layout(name):
     """Lapida v5: a flat stamp (no footprint, no occlusion) whose pixels are the stone where
     alpha >= 128 and the floor of its phase elsewhere; the baker fills the floor part."""
     meta = json.loads((LAPIDA_DIR / "lapidas_meta.json").read_text(encoding="utf-8"))[name]
-    rgba = np.asarray(Image.open(LAPIDA_DIR / f"{name}.png").convert("RGBA"))
+    rgba = _tint_rgba(np.asarray(Image.open(LAPIDA_DIR / f"{name}.png").convert("RGBA")))
     h, w = rgba.shape[:2]
     if [w, h] != meta["size_px"]: raise ValueError(f"{name}: png size does not match lapidas_meta.json")
     if w % 8 or h % 8: raise ValueError(f"{name}: dimensions must be multiples of 8")
@@ -1112,7 +1134,7 @@ def make_wall_map(floor_map, tiles, palette, props, prop_lab):
     """Left wall (muro_izq_128.png over the #1c1920 backdrop) in tile columns 0..5, its mirror with
     the H flip in 58..63, and the floor in the centre. The wall repeats every 128 px = 16 tile rows,
     so the map has 16 rows. Wall colours are quantised to the prop palette, like the pieces."""
-    src = np.asarray(Image.open(WALL_PNG).convert("RGBA"))
+    src = _tint_rgba(np.asarray(Image.open(WALL_PNG).convert("RGBA")))
     if src.shape != (128, WALL_TILE_COLS * 8, 4):
         raise ValueError(f"muro_izq_128.png must be 48x128, got {src.shape[1]}x{src.shape[0]}")
     if len(floor_map) != 16:
@@ -1150,7 +1172,7 @@ def make_end_maps(tiles, palette, props, prop_lab):
     transparentes se componen sobre el color del vacio del muro lateral; un tile entero transparente es el tile 0 (el vacio)."""
     out, new_total = [], 0
     for path in END_PNGS + (HOLE_PNG,):
-        src = np.asarray(Image.open(path).convert("RGBA"))
+        src = _tint_rgba(np.asarray(Image.open(path).convert("RGBA")))
         want = (HOLE_H_TILES * 8, 24, 4) if path == HOLE_PNG else (END_H_TILES * 8, END_W_TILES * 8, 4)
         if src.shape != want:
             raise ValueError(f"{path.name} must be {want[1]}x{want[0]}, got {src.shape[1]}x{src.shape[0]}")
@@ -1465,7 +1487,7 @@ def format_metrics(entries, stamps, label="catedral", bands=64, worst=0, worst_o
 
 
 def build(floor_dir, phases=4, output=OUTPUT, preview=None, prop_names=None,
-          mode="actual", metrics=None, dump_plan=None):
+          mode="actual", metrics=None, dump_plan=None, out_kit_npz=None):
     if phases != 4: raise ValueError("--phases supports the four specified offsets: 4")
     if prop_names is None:
         prop_names = DEFAULT_PROPS + ROOM_PROPS
@@ -1580,7 +1602,22 @@ def build(floor_dir, phases=4, output=OUTPUT, preview=None, prop_names=None,
             if n_win + worst >= 440:       # cota superior: el suelo y las piezas no comparten tiles
                 raise ValueError(f"sala {n}: ventana de 33x25 con hasta {n_win + worst} tiles distintos (limite 440)")
         print(f"tiles: base {len(tiles.data)} + sala mas grande {room_slots} = {len(tiles.data) + room_slots}/{TILE_SLOTS}")
-    emit(output, palette, tiles, map_map, end_maps, stamps, packed, floor_dir, worst, worst_occlusion, floor_n, props_n, mode, room_slots)
+    if out_kit_npz is not None:
+        out_kit_npz.parent.mkdir(parents=True, exist_ok=True)
+        np.savez_compressed(
+            out_kit_npz,
+            palette=np.array(palette + [0] * (256 - len(palette)), dtype=np.uint16),
+            tiles=np.array([np.frombuffer(t, dtype=np.uint8) for t in tiles.data], dtype=np.uint8),
+            floor_map=np.array(map_map, dtype=np.uint16),
+            end_map_0=np.array(end_maps[0], dtype=np.uint16),
+            end_map_1=np.array(end_maps[1], dtype=np.uint16),
+            hole_map=np.array(end_maps[2], dtype=np.uint16),
+            stamp_meta=np.array([[s["piece_id"], s["phase_col"], s["phase_row"], s["w"], s["h"], 0, s["foot_anchor_y_px"]] for s in stamps], dtype=np.int32),
+            stamp_tiles=np.concatenate([s["tiles"].astype(np.uint16).reshape(-1) for s in stamps]),
+        )
+        print(f"wrote kit npz: {out_kit_npz} ({len(tiles.data)} tiles)")
+    else:
+        emit(output, palette, tiles, map_map, end_maps, stamps, packed, floor_dir, worst, worst_occlusion, floor_n, props_n, mode, room_slots)
     if dump_plan is not None and mode == "catedral":
         dumped = [{"block": e["block"], "piece_id": stamps[e["idx"]]["piece_id"],
                    "phase_col": stamps[e["idx"]]["phase_col"],
@@ -1624,8 +1661,16 @@ def main():
                    help="write the catedral metrics Markdown table here")
     p.add_argument("--dump-plan", type=Path, default=None,
                    help="write the deterministic cathedral plan as JSON (parity test)")
+    p.add_argument("--prop-dir", type=Path, default=None, help="render de props alternativo (luz de sala)")
+    p.add_argument("--prop-palette", type=Path, default=None, help="palette.json alternativo (luz de sala)")
+    p.add_argument("--tint", default=None, help="r,g,b: tinte de suelo, muros y lapidas (luz de sala)")
+    p.add_argument("--out-kit-npz", type=Path, default=None, help="escribe el kit en un npz en vez de source/strip_kit.c")
     a = p.parse_args()
-    build(a.floor, a.phases, a.output, a.preview, a.props, a.mode, a.metrics, a.dump_plan)
+    global PROP_DIR, PROP_PALETTE, _ACTIVE_LIGHT_TINT
+    if a.prop_dir is not None: PROP_DIR = a.prop_dir
+    if a.prop_palette is not None: PROP_PALETTE = a.prop_palette
+    if a.tint is not None: _ACTIVE_LIGHT_TINT = [float(v) for v in a.tint.split(",")]
+    build(a.floor, a.phases, a.output, a.preview, a.props, a.mode, a.metrics, a.dump_plan, a.out_kit_npz)
 
 
 if __name__ == "__main__": main()

@@ -1271,7 +1271,7 @@ static const StripStamp s_hole_occ[2] = {
     { 3, 14, 0, 0, 0, 0, 0, s_hole_occ_tiles, 0, 0, (uint16_t)(sizeof(s_hole_occ_1_runs) / sizeof(s_hole_occ_1_runs[0])), s_hole_occ_1_runs },
 };
 
-const StripKit g_strip_kit = {
+StripKit g_strip_kit = {
     .palette = s_palette,
     .tiles = g_strip_tile_store,
     .num_tiles = 521,

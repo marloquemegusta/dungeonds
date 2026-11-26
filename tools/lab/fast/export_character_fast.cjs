@@ -7,6 +7,7 @@
 //          [--saturation N] [--muzzleBone <bone>] [--muzzleForward F] [--fitZoom Z] [--fitExtent E]
 //          [--normScale S] [--resolution N] [--legibility anterior|c2] [--tone agx|neutral]
 //          [--lightAzimuth 0..7 (world-fixed light from the bonfire; use with --light camp-fire)] [--shadowElevation DEG]
+//          [--lightJson file.json (lab light: key/fill/rim/world, *Color, fromDeg, elevation, shadowElevation)]
 //          [--supersample N] [--contrast N] [--frames N] [--pivot P] [--dirs S,SE,...]
 //          [--fixedGround] [--doubleSided] [--noCHeader] [--timing]
 // Delegated to the slow exporter (with a warning): a directory of fNN.glb, --list, JPEG textures, unknown flags.
@@ -20,7 +21,7 @@ const { Pool } = require('./pool.cjs');
 const SLOW = path.join(__dirname, '..', 'export_character_headless.cjs');
 const VALUE_FLAGS = new Set(['--template', '--anim', '--rigScale', '--light', '--outline', '--saturation', '--muzzleBone',
   '--muzzleForward', '--fitZoom', '--fitExtent', '--normScale', '--resolution', '--tone', '--supersample', '--contrast',
-  '--legibility', '--frames', '--dirs', '--pivot', '--lightAzimuth', '--shadowElevation']);
+  '--legibility', '--frames', '--dirs', '--pivot', '--lightAzimuth', '--shadowElevation', '--lightJson']);
 const BOOL_FLAGS = new Set(['--fixedGround', '--doubleSided', '--noCHeader', '--timing']);
 const DELEGATE_FLAGS = new Set(['--list']);
 
@@ -210,6 +211,7 @@ async function main() {
   const lightOverrides = {};
   if (lightAzOpt !== undefined) lightOverrides.azimuth = lightAzOpt;
   if (shadowElOpt !== undefined) lightOverrides.shadowElevation = shadowElOpt;
+  if (opt('--lightJson')) Object.assign(lightOverrides, JSON.parse(fs.readFileSync(opt('--lightJson'), 'utf8')));
   const lighting = pose.lightingFor(lightPreset, lightOverrides);
   const renderer = await createRenderer({
     size, ss, meshes: meshSpec,

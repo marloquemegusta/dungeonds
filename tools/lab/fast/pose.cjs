@@ -144,12 +144,18 @@ function lightingFor(preset, overrides = {}) {
   let keyPos = [0.4096 * 30, 0.5736 * 30, -0.7094 * 30];
   let fillPos = [-0.5318 * 30, 0.3746 * 30, 0.7595 * 30];
   let shadowLight = null;
-  if (typeof p.azimuth === 'number') {
-    const el = (p.elevation || 22) * PI / 180, h = lightAzimuthDir(p.azimuth);
-    keyPos = [h[0] * Math.cos(el) * 30, Math.sin(el) * 30, h[1] * Math.cos(el) * 30];
+  // p.fromDeg (ARPG light per room): screen direction the light comes from, 0 = up (back wall), 90 = right, 180 = down (camera), 270 = left.
+  const hasFrom = typeof p.fromDeg === 'number';
+  if (typeof p.azimuth === 'number' || hasFrom) {
+    const el = (p.elevation || 22) * PI / 180;
+    let h;
+    if (hasFrom) { const a = p.fromDeg * PI / 180, u = Math.sin(a), d = -Math.cos(a); h = [(d - u) / Math.SQRT2, -(u + d) / Math.SQRT2]; }
+    else h = lightAzimuthDir(p.azimuth);
+    // p.shadeDay: el sombreado del personaje conserva la direccion neutral del dia (se lee de frente); solo la sombra de suelo usa la luz de la sala
+    if (!p.shadeDay) keyPos = [h[0] * Math.cos(el) * 30, Math.sin(el) * 30, h[1] * Math.cos(el) * 30];
     // cold fill from the opposite side of the key, higher
     const fe = 35 * PI / 180;
-    fillPos = [-h[0] * Math.cos(fe) * 30, Math.sin(fe) * 30, -h[1] * Math.cos(fe) * 30];
+    if (!p.shadeDay) fillPos = [-h[0] * Math.cos(fe) * 30, Math.sin(fe) * 30, -h[1] * Math.cos(fe) * 30];
     // Ground shadow: horizontal offset per metre of height = -h / tan(shadowElevation) (the cell is finite, so the
     // shadow may use a higher angle than the shading light: p.shadowElevation).
     const se = (p.shadowElevation || p.elevation || 22) * PI / 180, cot = Math.cos(se) / Math.sin(se);

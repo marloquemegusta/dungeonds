@@ -116,7 +116,7 @@ typedef struct {
     const StripStamp *stamps;
 } StripKit;
 
-extern const StripKit g_strip_kit;
+extern StripKit g_strip_kit;           // mutable: room_light.c swaps in the light pack of each room
 
 // With per-room packs g_strip_kit.tiles points at a writable store of max_tiles tiles (emitted by the baker); the slots
 // [num_tiles, max_tiles) are free for the tiles of the room that is loaded (source/room_kit.c writes them).

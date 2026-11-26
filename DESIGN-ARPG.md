@@ -193,9 +193,39 @@ Cifras iniciales del modelo; el bot de pruebas (variante `arpg-bot`, `tools/arpg
 - **Objetivos que mide el bot:** la zona entera, la primera vez, entre 60 y 75 min con el perfil normal (§7: al menos 1 h); se llega a cada nave con el nivel de la sala y la demo acaba en el nivel 6; a nivel 1 se llega a la Nave 2 y no más allá; el perfil torpe acaba la zona en 1,5-2 veces el tiempo del normal.
 - **Engarces que se abren por nivel:** cada escuela (Rayo, Ejecución, Glifo y Pecho) empieza con **1 engarce**. El 2.º se abre a **nivel 5**, el nivel con el que se llega a la Cripta, justo antes del jefe de la demo. El 3.º se abrirá en la parte 2 de la catedral (nivel por decidir al diseñarla) y ahí se queda el tope; el Pecho, que tiene 2, se queda en 2. Los engarces cerrados se ven con candado y «Nv. X», y no admiten reliquias.
 
-## 11. Identidad visual por sala (decidido 2026-11-24; seis ambientes)
+## 11. Identidad visual por sala (decidido 2026-11-24; luz vigente decidida 2026-11-26)
 
-Cada sala cuenta lo que fue: su función decide qué props lleva, colocados en composición, y su ambiente de luz y sombra la distingue de las demás. Seis ambientes, con contraste fuerte entre ellos; colores apagados (§6.10 de `DESIGN.md`).
+Cada sala cuenta lo que fue: su función decide qué props lleva, colocados en composición, y su luz y sombra la distingue de las demás. Colores apagados (§6.10 de `DESIGN.md`).
+
+### Luz vigente: una luz principal por sala (decidido 2026-11-26)
+
+Cada sala tiene **una sola luz principal prerenderizada**, con su color, su intensidad y su dirección. **Todo lo de la sala se renderiza con ella**: suelo, muros, props, héroe, enemigos de la sala, remates y sombras. Es el mismo mecanismo que la demo del ciclo día/noche (rama `feat/lighting-modes`), pero con un modo por sala que se carga en la pantalla de carga. Las **sombras son duras** (la silueta proyectada sobre el suelo): sin sombras suaves, sin luz desde abajo y sin degradados por zonas. El espacio de cartucho no es un límite por ahora.
+
+Intensidad = potencia de la luz principal; «desde» = de dónde viene en pantalla (0 = arriba/pared del fondo, 90 = derecha, 180 = abajo/cámara, 270 = izquierda); «elev.» = altura de la luz sobre el suelo (las sombras son más largas cuanto más baja). Datos exactos en `tools/arpg_light_rooms.json`.
+
+| Luz | Salas | Color | Intens. | Desde | Elev. | Sombras |
+| :--- | :--- | :--- | ---: | ---: | ---: | :--- |
+| Nave 1 | 0 | gris azulado (ventanales altos) | 100 % | 305 | 48 | largas, en diagonal |
+| Nave 2 | 1 | ídem | 85 % | 305 | 48 | ídem |
+| Nave 3 | 2 | ídem | 70 % | 305 | 48 | ídem |
+| Nave 4 | 3 | ídem | 55 % | 305 | 48 | ídem |
+| Galerías | 4, 5 | polvo cálido | 60 % | 270 | 20 | muy largas, horizontales |
+| Claustros | 6, 7 | sol de día (la más clara y cálida de todas) | 100 % | 330 | 70 | cortas y duras |
+| Enfermería | 8 | ámbar suave | 70 % | 0 | 80 | cortas (casi vertical) |
+| Osario | 9 | frío | 35 % | 45 | 22 | largas, desde una esquina |
+| Capillas | 10, 11, 13 | ámbar | 60 % | 0 | 36 | hacia la cámara (luz desde el altar) |
+| Prisionero | 12 | verdoso (ventanuco alto lateral) | 40 % | 90 | 58 | un haz duro |
+| Monjaraña | 14 | verde enfermizo | 30 % | 180 | 22 | largas hacia el fondo |
+| Cripta | 15 | brasa apagada (rojizo desaturado) | 45 % | 180 | 24 | largas hacia el fondo |
+
+- **Relación con el póster:** los tintes de referencia son los del póster v3 (`tools/poster/salas/sala_NN.py`, `AM` de `tools/poster/poster_arpg_v3.py`); el contraste se dramatiza respecto a él.
+- **Pipeline:** `tools/arpg_light_props.py`, `tools/arpg_light_chars.py` y `tools/arpg_light_pack.py <luz>` generan el paquete `nitrofiles/arpg_luz/<luz>.bin` (formato en `TECHNICAL.md` §5.7). Hojas de contacto en `walkthroughs/arpg-luz-sala/`.
+- **Aproximaciones:** los remates (sin fuente 3D versionada) y los personajes sin modelo 3D utilizable (Super Monja, arañas) se oscurecen con el tinte de la luz; todo lo que tiene modelo se vuelve a renderizar con la luz.
+- **Personajes:** la intensidad escala todas sus luces (Nave 1 y Nave 4 se distinguen en el héroe y en los enemigos); el color de la sala llega a medias (mitad hacia el neutral del día) y el sombreado conserva la dirección del día, de modo que el peregrino se lee marrón como en la ROM en todas las salas. Solo la sombra de suelo usa la dirección de la sala. Las arañas no salen en ningún grupo de la monjaraña (sala 14), así que no entran en su pack.
+
+### Seis ambientes: objetivo, no vigente
+
+Dirección artística a la que se quiere llegar cuando la luz por sala se pueda enriquecer (halos, conos, luz de velas). **No es lo vigente:** lo vigente es la tabla de arriba. Seis ambientes, con contraste fuerte entre ellos.
 
 | Ambiente | Salas | Luz | Sombras | Motivo |
 | :--- | :--- | :--- | :--- | :--- |
