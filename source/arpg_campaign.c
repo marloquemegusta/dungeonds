@@ -1,0 +1,183 @@
+#include "arpg_campaign.h"
+#include "arpg_quest.h"
+#include "arpg_progress.h"
+#include "arpg_inv.h"
+#include <string.h>
+
+// One row per penance (QUEST_*): the object's name, the fixed relic its delivery pays (ARPG_MECH_*, ARPG_MECH_NONE = none)
+// and what the voice says in the confessional (lines of at most ~44 characters: the camp toast is one line wide).
+// Tone: LORE.md 2 (the voice speaks like the dogma; it calls penance what the player sees as a theft; no modern words).
+typedef struct {
+    const char *name;
+    int reward_mech;
+    const char *text[3];
+} QuestInfo;
+
+static const QuestInfo s_quest[QUEST_COUNT] = {
+    { "Sello del Hospital", ARPG_MECH_LLAMA_VOTIVA,
+      { "El Hospital sella a quien curó sin licencia.", "Rompe ese sello y vuelve andando.", 0 } },
+    { "Sello del Claustro", ARPG_MECH_REDIL,
+      { "El Claustro sella lo que las monjas supieron.", "Tráelo: el cielo lo llama penitencia.", 0 } },
+    { "Llave de la capilla", ARPG_MECH_LANZA,
+      { "Un prisionero reza tras la reja de la nave.", "Su llave abre la capilla. Tráela a pie.", 0 } },
+    { "Llave de la cripta", ARPG_MECH_PIRA,
+      { "Una monja teje en lo hondo con alambre y cera.", "Quítale la llave de la cripta: lo pide Dios.", 0 } },
+    { "Estandarte", ARPG_MECH_NONE,
+      { "El Abanderado guarda aún su estandarte.", "Tráelo a pie. Será lo último que se te pida.", 0 } },
+};
+
+// Missions 1 and 2 are offered together (both undelivered).
+static const char *const s_pair_text[3] = {
+    "Dos sellos guardan lo que se calló:", "el del Hospital y el del Claustro.", "Tráelos a pie y serás perdonado."
+};
+static const char *const s_done_text[3] = {
+    "No queda penitencia que cumplir.", "La voz calla. Rezar ya no la mueve.", 0
+};
+
+// ---- Notices ----
+#define NOTICE_MAX 6
+#define NOTICE_LEN 56
+static char s_notice[NOTICE_MAX][NOTICE_LEN];
+static int s_notice_n = 0;
+
+static void notice_clear(void) { s_notice_n = 0; }
+static void notice_push(const char *s) {
+    if (s_notice_n >= NOTICE_MAX) return;
+    size_t l = strlen(s);
+    if (l > NOTICE_LEN - 1) l = NOTICE_LEN - 1;
+    memcpy(s_notice[s_notice_n], s, l);
+    s_notice[s_notice_n][l] = 0;
+    s_notice_n++;
+}
+static void notice_push2(const char *a, const char *b) {
+    char buf[NOTICE_LEN];
+    size_t la = strlen(a);
+    if (la > NOTICE_LEN - 1) la = NOTICE_LEN - 1;
+    memcpy(buf, a, la);
+    size_t lb = strlen(b);
+    if (la + lb > NOTICE_LEN - 1) lb = NOTICE_LEN - 1 - la;
+    memcpy(buf + la, b, lb);
+    buf[la + lb] = 0;
+    notice_push(buf);
+}
+
+const char *arpg_campaign_next_notice(void) {
+    static char out[NOTICE_LEN];
+    if (s_notice_n <= 0) return 0;
+    memcpy(out, s_notice[0], NOTICE_LEN);
+    for (int i = 1; i < s_notice_n; i++) memcpy(s_notice[i - 1], s_notice[i], NOTICE_LEN);
+    s_notice_n--;
+    return out;
+}
+
+// ---- Loot of the descent (half of it is lost on death) ----
+// The bag, the sockets and the spell slots at the moment of leaving the camp, as one hash per object. After the
+// descent, a bag relic with no equal object in that list was picked up down there. Equal objects are matched one to one.
+#define SNAP_MAX (ARPG_INV_BAG + ARPG_INV_SCHOOLS * ARPG_INV_SOCKETS + ARPG_INV_SPELLS)
+static uint32_t s_snap[SNAP_MAX];
+static int s_snap_n = 0;
+static int s_snap_valid = 0;
+
+static uint32_t item_hash(const ArpgInvItem *it) {
+    const uint8_t *p = (const uint8_t *)it;
+    uint32_t h = 2166136261u;
+    for (unsigned i = 0; i < sizeof(*it); i++) h = (h ^ p[i]) * 16777619u;
+    return h;
+}
+
+void arpg_campaign_descent_begin(void) {
+    const ArpgInventory *inv = &g_arpg.inv;
+    s_snap_n = 0;
+    for (int i = 0; i < ARPG_INV_BAG; i++)
+        if (inv->bag[i].kind != ARPG_ITEM_EMPTY) s_snap[s_snap_n++] = item_hash(&inv->bag[i]);
+    for (int s = 0; s < ARPG_INV_SCHOOLS; s++)
+        for (int k = 0; k < ARPG_INV_SOCKETS; k++)
+            if (inv->socket[s][k].kind != ARPG_ITEM_EMPTY) s_snap[s_snap_n++] = item_hash(&inv->socket[s][k]);
+    for (int i = 0; i < ARPG_INV_SPELLS; i++)
+        if (inv->spell[i].kind != ARPG_ITEM_EMPTY) s_snap[s_snap_n++] = item_hash(&inv->spell[i]);
+    s_snap_valid = 1;
+    arpg_world_rest();      // entering from the camp: everything is alive again (sleeping no longer does it)
+}
+
+// Half (rounded down) of the relics picked up this descent and still in the bag; the last slots go first. Returns how many.
+static int lose_half_of_loot(void) {
+    if (!s_snap_valid) return 0;
+    uint8_t used[SNAP_MAX];
+    memset(used, 0, sizeof(used));
+    int fresh[ARPG_INV_BAG];
+    int n = 0;
+    for (int i = 0; i < ARPG_INV_BAG; i++) {
+        const ArpgInvItem *it = &g_arpg.inv.bag[i];
+        if (it->kind == ARPG_ITEM_EMPTY) continue;
+        uint32_t h = item_hash(it);
+        int found = 0;
+        for (int j = 0; j < s_snap_n && !found; j++)
+            if (!used[j] && s_snap[j] == h) { used[j] = 1; found = 1; }
+        if (!found && it->kind == ARPG_ITEM_RELIC && !(it->level & ARPG_ITEM_FIXED)) fresh[n++] = i;   // tomes and fixed prizes are never lost
+    }
+    int lose = n / 2;
+    for (int k = 0; k < lose; k++) arpg_inv_bag_discard(fresh[n - 1 - k]);
+    return lose;
+}
+
+// ---- Carried object ----
+static void lose_carried(void) {
+    for (int q = 0; q < QUEST_COUNT; q++)
+        if (arpg_quest_carrying(q)) notice_push2("Se ha perdido ", s_quest[q].name);
+    arpg_quest_drop_carried();
+}
+
+void arpg_campaign_on_death(void) {
+    notice_clear();
+    int lost = lose_half_of_loot();
+    if (lost > 0) {
+        char num[4];
+        num[0] = (char)('0' + (lost > 9 ? 9 : lost));
+        num[1] = 0;
+        char buf[NOTICE_LEN];
+        strcpy(buf, "Has perdido ");
+        strcat(buf, num);
+        strcat(buf, lost == 1 ? " objeto" : " objetos");
+        notice_push(buf);
+    }
+    lose_carried();
+    s_snap_valid = 0;
+    arpg_world_rest();      // the cathedral fills up again (it also does when entering from the camp)
+}
+
+void arpg_campaign_on_retreat(void) {
+    notice_clear();
+    lose_carried();
+    s_snap_valid = 0;
+}
+
+// ---- Arrival on foot ----
+void arpg_campaign_arrive_on_foot(void) {
+    int now = arpg_quest_deliver_all();
+    for (int q = 0; q < QUEST_COUNT; q++) {
+        if (!((now >> q) & 1)) continue;
+        notice_push2("La voz acepta ", s_quest[q].name);
+        if (s_quest[q].reward_mech == ARPG_MECH_NONE) continue;
+        ArpgInvItem it;
+        arpg_inv_make_reward(&it, s_quest[q].reward_mech);
+        if (it.kind == ARPG_ITEM_EMPTY) continue;
+        if (arpg_inv_add(&it) >= 0 || arpg_inv_stash_add(&it) >= 0) notice_push2("Recibes ", arpg_inv_item_name(&it));
+    }
+}
+
+// ---- Confessional ----
+void arpg_campaign_confess(void) {
+    int q = 0;
+    while (q < QUEST_COUNT && arpg_quest_delivered(q)) q++;
+    const char *const *text;
+    if (q >= QUEST_COUNT) text = s_done_text;
+    else if (q == QUEST_SELLO_HOSPITAL && !arpg_quest_delivered(QUEST_SELLO_CLAUSTRO)) text = s_pair_text;   // 1 and 2 are offered together
+    else text = s_quest[q].text;
+    if (q < QUEST_COUNT) {
+        int given = q < 2 ? 2 : q + 1;
+        if (given > g_quest.offered) g_quest.offered = (uint8_t)given;
+    }
+    notice_clear();
+    for (int i = 0; i < 3; i++)
+        if (text[i]) notice_push(text[i]);
+}

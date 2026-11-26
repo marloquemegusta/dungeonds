@@ -49,7 +49,8 @@ typedef struct {
 
 // Disposition (world px, y down): the door up top and centred (shown on the top screen), the camp
 // itself on the bottom screen â€” bonfire with the bedroll beside it, table and chest on the left,
-// lectern on the right (DESIGN.md: the camp as its own room).
+// lectern on the right (DESIGN.md: the camp as its own room). The bonfire is also the confessional: kneeling by it the
+// voice gives the next penance (CAMP_ACT_CONFESS; there is no confessional or kneeler prop in the camp).
 static CampProp s_props[] = {
     // The door is the gate panel of the wall frame (tools/camp/marco_build.py): no sprite and no shadow, only
     // the interaction point. w/h is the hole of the gate (touch area), x/y the threshold.
@@ -64,7 +65,7 @@ static CampProp s_props[] = {
     { NULL,   CAMP_ATRIL_W,   CAMP_ATRIL_H,    198, 296, "Atril",        CAMP_ACT_CODEX,
       NULL,   CAMP_ATRIL_SHADOW_W,   CAMP_ATRIL_SHADOW_H,
       CAMP_ATRIL_SHADOW_OX,   CAMP_ATRIL_SHADOW_OY   },
-    { NULL, CAMP_HOGUERA_W, CAMP_HOGUERA_H,  128, 300, "Hoguera",      CAMP_ACT_NONE,
+    { NULL, CAMP_HOGUERA_W, CAMP_HOGUERA_H,  128, 300, "Hoguera",      CAMP_ACT_CONFESS,
       NULL, CAMP_HOGUERA_SHADOW_W, CAMP_HOGUERA_SHADOW_H,
       CAMP_HOGUERA_SHADOW_OX, CAMP_HOGUERA_SHADOW_OY },
     { NULL,  CAMP_JERGON_W,  CAMP_JERGON_H,   196, 346, "JergÃ³n",       CAMP_ACT_SLEEP,
@@ -80,7 +81,7 @@ static uint32_t s_camp_occ_rows[CAMP_ROOM_H + 1];
 static int s_built = 0;
 static int s_active = 0;
 static int s_focus = -1;             // prop the hero is next to (-1 none)
-static char s_toast[48];
+static char s_toast[64];
 static int s_toast_frames = 0;
 static int s_altar_open = 0;       // altar travel list open (see altar_list_*)
 static int s_anim = 0;
@@ -226,6 +227,8 @@ void camp_toast(const char *msg) {
     s_toast_frames = 150;
 }
 
+int camp_toast_busy(void) { return s_toast_frames > 0; }
+
 static int prop_focus(const Player *p) {
     int px = TO_INT(p->x), py = TO_INT(p->y);
     int best = -1, best_d = CAMP_REACH_PX * CAMP_REACH_PX;
@@ -248,9 +251,10 @@ static int prop_hit(int i, int tx, int ty) {
 }
 
 // Altar travel list (DESIGN-ARPG.md 7, "Viaje entre altares"): with several altars touched, the door opens a small
-// menu on the bottom screen instead of walking straight in. Rooms 0..3 (the naves) are the only ones with an altar.
+// menu on the bottom screen instead of walking straight in. Rooms 0 and 2 (Nave 1 and Nave 3) are the only ones listed.
 static void draw_centered(uint16_t *buffer, int cx, int y, const char *s, uint16_t ink);
 #define CAMP_ALTAR_ROOMS 4
+#define CAMP_ALTAR_MASK 0x5u        // only the Nave 1 (room 0) and the Nave 3 (room 2) have a travel altar in the demo
 static int s_altar_n = 0;
 static int s_altar_sel = 0;
 static uint8_t s_altar_room[CAMP_ALTAR_ROOMS];
@@ -265,7 +269,7 @@ static void altar_list_try_open(void) {
     s_altar_n = 0;
     s_altar_sel = 0;
     for (int r = 0; r < CAMP_ALTAR_ROOMS; r++) {
-        if (g_arpg.altars_lo & (1u << r)) {
+        if ((g_arpg.altars_lo & (1u << r)) && ((CAMP_ALTAR_MASK >> r) & 1u)) {
             if (r == g_arpg.last_altar) s_altar_sel = s_altar_n;
             s_altar_room[s_altar_n++] = (uint8_t)r;
         }

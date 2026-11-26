@@ -47,6 +47,7 @@
 #include "bestiary_font.h"
 #include "arpg.h"
 #include "arpg_progress.h"
+#include "arpg_campaign.h"
 #include "arpg_map.h"
 #include "arpg_inv.h"
 #include "arpg_bot.h"
@@ -3635,6 +3636,8 @@ static void room_reload_light(void) {
     memset(g_enemies, 0, sizeof(g_enemies));
 }
 
+static void run_to_camp(void);
+
 static void room_transition_update(void) {
     if (s_transition == TRANSITION_NONE) {
         int k;
@@ -3650,6 +3653,12 @@ static void room_transition_update(void) {
         if (s_fade_level >= 16) {
             s_fade_level = 16;
             setBrightness(3, -16);                 // fully black before the teleport
+            if (s_room_dest == ARPG_EXIT_TO_CAMP) {     // walked out of the Nave 1 to the camp: the objects are delivered
+                s_room_dest = -1;
+                arpg_campaign_arrive_on_foot();
+                run_to_camp();
+                return;
+            }
             if (s_room_dest >= 0) {
                 enc_room_select(s_room_dest, enc_room_current());
                 room_reload_light();
@@ -3786,6 +3795,7 @@ static void leave_camp_to_dungeon(void) {
     camp_hero_release();
     camp_unload_gfx();
     g_arena = strip_arena();
+    arpg_campaign_descent_begin();      // remembers the bag (what is lost on death) and repopulates the cathedral
     arpg_progress_save();
     s_run_started = 1;
     arena_restart();
@@ -3800,6 +3810,18 @@ static void run_to_camp(void) {
     arpg_progress_save();
     sfx_stop_bgm();
     enter_camp_scene();
+}
+
+// Death (campaign): the xp stays, the carried object and half of the loot of this descent are lost, the cathedral refills.
+static void run_to_camp_after_death(void) {
+    arpg_campaign_on_death();
+    run_to_camp();
+}
+
+// Retreat from the pause menu: everything is kept except the carried object.
+static void run_to_camp_retreat(void) {
+    arpg_campaign_on_retreat();
+    run_to_camp();
 }
 
 // End of the demo (DESIGN-ARPG.md 7): the full-screen card after the Cripta boss falls for the first time, then the camp.
@@ -4195,7 +4217,7 @@ int main(void) {
                 enter_camp_scene();
             } else if (act == MENU_ACT_TO_CAMP) {
                 menu_close();
-                run_to_camp();
+                run_to_camp_retreat();
             }
             if (act == MENU_ACT_CONTINUE || act == MENU_ACT_TO_CAMP || act == MENU_ACT_START_INTRO) {
                 s_keys_down_latch = 0;
@@ -4266,13 +4288,16 @@ int main(void) {
                 arpg_tip_take(ARPG_TIP_DORMIR);
                 camp_toast("Duerme para subir de nivel");
             }
+            if (!camp_toast_busy()) {            // arrival, death and confessional notices, one after another
+                const char *notice = arpg_campaign_next_notice();
+                if (notice) camp_toast(notice);
+            }
             if (!menu_is_open()) {
                 int act = camp_update(&s_player, keys_held, s_keys_down_latch,
                                       menu_touch_pressed && !s_menu_ignore_held_touch, touch.px, touch.py);
                 s_keys_down_latch = 0;
                 if (act == CAMP_ACT_SLEEP) {
                     int gained = arpg_sleep();
-                    arpg_world_rest();      // the dead of the cathedral come back; chests, altars and "beaten once" stay
                     arpg_progress_save();
                     char msg[48];
                     if (gained > 0) {
@@ -4287,6 +4312,9 @@ int main(void) {
                     menu_open_inventory(INV_MODE_ARCON);
                 } else if (act == CAMP_ACT_CRISOL) {
                     menu_open_inventory(INV_MODE_CRISOL);
+                } else if (act == CAMP_ACT_CONFESS) {
+                    arpg_campaign_confess();
+                    arpg_progress_save();
                 } else if (act == CAMP_ACT_CODEX) {
                     menu_open_codex();
                 } else if (act == CAMP_ACT_DOOR) {
@@ -4489,7 +4517,7 @@ int main(void) {
                 if (s_death_screen_frames >= STRIP_DEATH_SCREEN_FRAMES && s_death_restart_armed &&
                     ((keys_down & restart_keys) || touch_pressed)) {
 #if ENCOUNTERS_PROTO
-                    run_to_camp();          // the death screen ends at the camp; the banked xp is kept
+                    run_to_camp_after_death();      // the death screen ends at the camp; the banked xp is kept
 #else
                     arena_restart();
 #endif
