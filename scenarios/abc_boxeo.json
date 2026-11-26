@@ -1,0 +1,246 @@
+{
+ "name": "abc_boxeo",
+ "description": "Duelo de boxeo: heroe anda hacia un Exvoto (a 60 px) y encadena pu\u00f1etazos ~3 s; lee la vida del heroe al final. Variante boxeo-duelo.",
+ "suite": false,
+ "evidence_only": true,
+ "state": {
+  "elf": "../.ds-game-dev/build/out/dungeonds-boxeo-duelo.elf",
+  "symbols": {
+   "p": "g_player_state"
+  },
+  "default_symbol": "p",
+  "fields": {
+   "hp": {
+    "symbol": "p",
+    "offset": 0,
+    "type": "s32"
+   },
+   "max_hp": {
+    "symbol": "p",
+    "offset": 4,
+    "type": "s32"
+   }
+  }
+ },
+ "steps": [
+  {
+   "frames": 70,
+   "capture": "00_inicio",
+   "state_capture": "inicio"
+  },
+  {
+   "button_down": "RIGHT",
+   "frames": 14,
+   "capture_sequence": "f",
+   "capture_every": 1,
+   "state_capture": "cerca"
+  },
+  {
+   "button_up": "RIGHT",
+   "frames": 1,
+   "capture_sequence": "f",
+   "capture_every": 1,
+   "state_capture": "s02"
+  },
+  {
+   "button_down": "L",
+   "frames": 2,
+   "capture_sequence": "f",
+   "capture_every": 1,
+   "state_capture": "s03"
+  },
+  {
+   "button_up": "L",
+   "frames": 10,
+   "capture_sequence": "f",
+   "capture_every": 1,
+   "state_capture": "s04"
+  },
+  {
+   "button_down": "L",
+   "frames": 2,
+   "capture_sequence": "f",
+   "capture_every": 1,
+   "state_capture": "s05"
+  },
+  {
+   "button_up": "L",
+   "frames": 10,
+   "capture_sequence": "f",
+   "capture_every": 1,
+   "state_capture": "s06"
+  },
+  {
+   "button_down": "L",
+   "frames": 2,
+   "capture_sequence": "f",
+   "capture_every": 1,
+   "state_capture": "s07"
+  },
+  {
+   "button_up": "L",
+   "frames": 10,
+   "capture_sequence": "f",
+   "capture_every": 1,
+   "state_capture": "s08"
+  },
+  {
+   "button_down": "L",
+   "frames": 2,
+   "capture_sequence": "f",
+   "capture_every": 1,
+   "state_capture": "s09"
+  },
+  {
+   "button_up": "L",
+   "frames": 10,
+   "capture_sequence": "f",
+   "capture_every": 1,
+   "state_capture": "s10"
+  },
+  {
+   "button_down": "L",
+   "frames": 2,
+   "capture_sequence": "f",
+   "capture_every": 1,
+   "state_capture": "s11"
+  },
+  {
+   "button_up": "L",
+   "frames": 10,
+   "capture_sequence": "f",
+   "capture_every": 1,
+   "state_capture": "s12"
+  },
+  {
+   "button_down": "L",
+   "frames": 2,
+   "capture_sequence": "f",
+   "capture_every": 1,
+   "state_capture": "s13"
+  },
+  {
+   "button_up": "L",
+   "frames": 10,
+   "capture_sequence": "f",
+   "capture_every": 1,
+   "state_capture": "s14"
+  },
+  {
+   "button_down": "L",
+   "frames": 2,
+   "capture_sequence": "f",
+   "capture_every": 1,
+   "state_capture": "s15"
+  },
+  {
+   "button_up": "L",
+   "frames": 10,
+   "capture_sequence": "f",
+   "capture_every": 1,
+   "state_capture": "s16"
+  },
+  {
+   "button_down": "L",
+   "frames": 2,
+   "capture_sequence": "f",
+   "capture_every": 1,
+   "state_capture": "s17"
+  },
+  {
+   "button_up": "L",
+   "frames": 10,
+   "capture_sequence": "f",
+   "capture_every": 1,
+   "state_capture": "s18"
+  },
+  {
+   "button_down": "L",
+   "frames": 2,
+   "capture_sequence": "f",
+   "capture_every": 1,
+   "state_capture": "s19"
+  },
+  {
+   "button_up": "L",
+   "frames": 10,
+   "capture_sequence": "f",
+   "capture_every": 1,
+   "state_capture": "s20"
+  },
+  {
+   "button_down": "L",
+   "frames": 2,
+   "capture_sequence": "f",
+   "capture_every": 1,
+   "state_capture": "s21"
+  },
+  {
+   "button_up": "L",
+   "frames": 10,
+   "capture_sequence": "f",
+   "capture_every": 1,
+   "state_capture": "s22"
+  },
+  {
+   "button_down": "L",
+   "frames": 2,
+   "capture_sequence": "f",
+   "capture_every": 1,
+   "state_capture": "s23"
+  },
+  {
+   "button_up": "L",
+   "frames": 10,
+   "capture_sequence": "f",
+   "capture_every": 1,
+   "state_capture": "s24"
+  },
+  {
+   "button_down": "L",
+   "frames": 2,
+   "capture_sequence": "f",
+   "capture_every": 1,
+   "state_capture": "s25"
+  },
+  {
+   "button_up": "L",
+   "frames": 10,
+   "capture_sequence": "f",
+   "capture_every": 1,
+   "state_capture": "s26"
+  },
+  {
+   "button_down": "L",
+   "frames": 2,
+   "capture_sequence": "f",
+   "capture_every": 1,
+   "state_capture": "s27"
+  },
+  {
+   "button_up": "L",
+   "frames": 10,
+   "capture_sequence": "f",
+   "capture_every": 1,
+   "state_capture": "s28"
+  },
+  {
+   "button_down": "L",
+   "frames": 2,
+   "capture_sequence": "f",
+   "capture_every": 1,
+   "state_capture": "s29"
+  },
+  {
+   "button_up": "L",
+   "frames": 10,
+   "capture_sequence": "f",
+   "capture_every": 1,
+   "state_capture": "s30"
+  },
+  {
+   "frames": 1,
+   "state_capture": "fin"
+  }
+ ]
+}
