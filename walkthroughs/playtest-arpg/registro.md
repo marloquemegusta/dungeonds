@@ -2,6 +2,15 @@
 
 Cada partida del usuario en la DS: qué ROM, qué notó, qué se hizo. La más reciente arriba.
 
+## Partida 2 — 2026-11-26
+
+**ROM:** `feat/pulido-final` 0ec5b4a9 (arreglos de la partida 1).
+
+| # | Sala | Feedback del usuario | Tipo | Estado |
+|---|---|---|---|---|
+| 1 | Salas laterales (¿y todas?) | Se puede seguir caminando hacia abajo y la sala se extiende sin fin. | Fallo | Arreglado: en las pruebas el héroe ya se paraba en el borde, pero la cámara seguía bajando y enseñaba suelo de más. Ahora la cámara no baja del borde sur en ninguna sala (fix/pt2-sur) |
+| 2 | Galería del cofre | (Encontrado por el agente) Al entrar por la puerta desde la Nave 1, el héroe aparece encajado en un saco. | Fallo | Arreglado: tras cualquier llegada a una sala, si el héroe cae sobre un obstáculo se le recoloca en el hueco libre más cercano. Comprobadas las 22 puertas laterales (fix/pt2-saco) |
+
 ## Partida 1 — 2026-11-26
 
 **ROM:** `feat/pulido-final` e6280e9a (16 salas del póster, luz por sala, aviso antes del mordisco, monja curandera, arreglo de la Nave 3).
