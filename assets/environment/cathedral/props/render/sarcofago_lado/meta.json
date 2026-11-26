@@ -1,0 +1,21 @@
+{
+  "piece": "sarcofago_lado",
+  "size_px": [
+    40,
+    32
+  ],
+  "content_px": [
+    36,
+    32
+  ],
+  "target_width": 36,
+  "scale_factor": 0.06315789473684211,
+  "source_render_px": [
+    570,
+    501
+  ],
+  "yaw": -60,
+  "depth_units": "sprite_px",
+  "tiles_8x8_nonempty": 18,
+  "tiles_8x8_unique": 18
+}

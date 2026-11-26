@@ -1,0 +1,552 @@
+{
+ "name": "arpg_salas_rom",
+ "description": "Capturas de las 16 salas de la zona 1 con la colocacion del poster (encounters_act1_salas.h), heroe en la entrada. Solo evidencia.",
+ "suite": false,
+ "evidence_only": true,
+ "state": {
+  "elf": "../.ds-game-dev/build/out/dungeonds.elf",
+  "symbols": {
+   "pl": "s_player",
+   "dbg": "g_enc_debug",
+   "stats": "g_enc_stats"
+  },
+  "default_symbol": "pl",
+  "fields": {
+   "px": {
+    "symbol": "pl",
+    "offset": 0,
+    "type": "s32"
+   },
+   "py": {
+    "symbol": "pl",
+    "offset": 4,
+    "type": "s32"
+   },
+   "dbg_god": {
+    "symbol": "dbg",
+    "offset": 2,
+    "type": "u8"
+   },
+   "dbg_restart": {
+    "symbol": "dbg",
+    "offset": 12,
+    "type": "u8"
+   },
+   "dbg_start_room": {
+    "symbol": "dbg",
+    "offset": 20,
+    "type": "u8"
+   },
+   "room": {
+    "symbol": "stats",
+    "offset": 60,
+    "type": "u8"
+   },
+   "block": {
+    "symbol": "stats",
+    "offset": 1,
+    "type": "u8"
+   }
+  }
+ },
+ "steps": [
+  {
+   "frames": 60
+  },
+  {
+   "tap": {
+    "x": 128,
+    "y": 66
+   },
+   "frames": 6
+  },
+  {
+   "release": true,
+   "frames": 40
+  },
+  {
+   "button_down": "START",
+   "frames": 4
+  },
+  {
+   "button_up": "START",
+   "frames": 90
+  },
+  {
+   "button_down": "LEFT",
+   "frames": 90
+  },
+  {
+   "button_up": "LEFT",
+   "frames": 10
+  },
+  {
+   "poke": [
+    {
+     "field": "px",
+     "value": 32768
+    },
+    {
+     "field": "py",
+     "value": 29696
+    }
+   ],
+   "frames": 20
+  },
+  {
+   "button_down": "A",
+   "frames": 4
+  },
+  {
+   "button_up": "A",
+   "frames": 6
+  },
+  {
+   "frames": 8
+  },
+  {
+   "frames": 20
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    }
+   ],
+   "frames": 60
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    },
+    {
+     "field": "dbg_start_room",
+     "value": 1
+    },
+    {
+     "field": "dbg_restart",
+     "value": 1
+    }
+   ],
+   "frames": 70,
+   "capture": "s00_entrada"
+  },
+  {
+   "button_down": "UP",
+   "frames": 110,
+   "capture": "s00_arriba"
+  },
+  {
+   "button_up": "UP",
+   "frames": 2
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    },
+    {
+     "field": "dbg_start_room",
+     "value": 2
+    },
+    {
+     "field": "dbg_restart",
+     "value": 1
+    }
+   ],
+   "frames": 70,
+   "capture": "s01_entrada"
+  },
+  {
+   "button_down": "UP",
+   "frames": 110,
+   "capture": "s01_arriba"
+  },
+  {
+   "button_up": "UP",
+   "frames": 2
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    },
+    {
+     "field": "dbg_start_room",
+     "value": 3
+    },
+    {
+     "field": "dbg_restart",
+     "value": 1
+    }
+   ],
+   "frames": 70,
+   "capture": "s02_entrada"
+  },
+  {
+   "button_down": "UP",
+   "frames": 110,
+   "capture": "s02_arriba"
+  },
+  {
+   "button_up": "UP",
+   "frames": 2
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    },
+    {
+     "field": "dbg_start_room",
+     "value": 4
+    },
+    {
+     "field": "dbg_restart",
+     "value": 1
+    }
+   ],
+   "frames": 70,
+   "capture": "s03_entrada"
+  },
+  {
+   "button_down": "UP",
+   "frames": 110,
+   "capture": "s03_arriba"
+  },
+  {
+   "button_up": "UP",
+   "frames": 2
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    },
+    {
+     "field": "dbg_start_room",
+     "value": 5
+    },
+    {
+     "field": "dbg_restart",
+     "value": 1
+    }
+   ],
+   "frames": 70,
+   "capture": "s04_entrada"
+  },
+  {
+   "button_down": "UP",
+   "frames": 110,
+   "capture": "s04_arriba"
+  },
+  {
+   "button_up": "UP",
+   "frames": 2
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    },
+    {
+     "field": "dbg_start_room",
+     "value": 6
+    },
+    {
+     "field": "dbg_restart",
+     "value": 1
+    }
+   ],
+   "frames": 70,
+   "capture": "s05_entrada"
+  },
+  {
+   "button_down": "UP",
+   "frames": 110,
+   "capture": "s05_arriba"
+  },
+  {
+   "button_up": "UP",
+   "frames": 2
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    },
+    {
+     "field": "dbg_start_room",
+     "value": 7
+    },
+    {
+     "field": "dbg_restart",
+     "value": 1
+    }
+   ],
+   "frames": 70,
+   "capture": "s06_entrada"
+  },
+  {
+   "button_down": "UP",
+   "frames": 110,
+   "capture": "s06_arriba"
+  },
+  {
+   "button_up": "UP",
+   "frames": 2
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    },
+    {
+     "field": "dbg_start_room",
+     "value": 8
+    },
+    {
+     "field": "dbg_restart",
+     "value": 1
+    }
+   ],
+   "frames": 70,
+   "capture": "s07_entrada"
+  },
+  {
+   "button_down": "UP",
+   "frames": 110,
+   "capture": "s07_arriba"
+  },
+  {
+   "button_up": "UP",
+   "frames": 2
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    },
+    {
+     "field": "dbg_start_room",
+     "value": 9
+    },
+    {
+     "field": "dbg_restart",
+     "value": 1
+    }
+   ],
+   "frames": 70,
+   "capture": "s08_entrada"
+  },
+  {
+   "button_down": "UP",
+   "frames": 110,
+   "capture": "s08_arriba"
+  },
+  {
+   "button_up": "UP",
+   "frames": 2
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    },
+    {
+     "field": "dbg_start_room",
+     "value": 10
+    },
+    {
+     "field": "dbg_restart",
+     "value": 1
+    }
+   ],
+   "frames": 70,
+   "capture": "s09_entrada"
+  },
+  {
+   "button_down": "UP",
+   "frames": 110,
+   "capture": "s09_arriba"
+  },
+  {
+   "button_up": "UP",
+   "frames": 2
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    },
+    {
+     "field": "dbg_start_room",
+     "value": 11
+    },
+    {
+     "field": "dbg_restart",
+     "value": 1
+    }
+   ],
+   "frames": 70,
+   "capture": "s10_entrada"
+  },
+  {
+   "button_down": "UP",
+   "frames": 110,
+   "capture": "s10_arriba"
+  },
+  {
+   "button_up": "UP",
+   "frames": 2
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    },
+    {
+     "field": "dbg_start_room",
+     "value": 12
+    },
+    {
+     "field": "dbg_restart",
+     "value": 1
+    }
+   ],
+   "frames": 70,
+   "capture": "s11_entrada"
+  },
+  {
+   "button_down": "UP",
+   "frames": 110,
+   "capture": "s11_arriba"
+  },
+  {
+   "button_up": "UP",
+   "frames": 2
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    },
+    {
+     "field": "dbg_start_room",
+     "value": 13
+    },
+    {
+     "field": "dbg_restart",
+     "value": 1
+    }
+   ],
+   "frames": 70,
+   "capture": "s12_entrada"
+  },
+  {
+   "button_down": "UP",
+   "frames": 110,
+   "capture": "s12_arriba"
+  },
+  {
+   "button_up": "UP",
+   "frames": 2
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    },
+    {
+     "field": "dbg_start_room",
+     "value": 14
+    },
+    {
+     "field": "dbg_restart",
+     "value": 1
+    }
+   ],
+   "frames": 70,
+   "capture": "s13_entrada"
+  },
+  {
+   "button_down": "UP",
+   "frames": 110,
+   "capture": "s13_arriba"
+  },
+  {
+   "button_up": "UP",
+   "frames": 2
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    },
+    {
+     "field": "dbg_start_room",
+     "value": 15
+    },
+    {
+     "field": "dbg_restart",
+     "value": 1
+    }
+   ],
+   "frames": 70,
+   "capture": "s14_entrada"
+  },
+  {
+   "button_down": "UP",
+   "frames": 110,
+   "capture": "s14_arriba"
+  },
+  {
+   "button_up": "UP",
+   "frames": 2
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    },
+    {
+     "field": "dbg_start_room",
+     "value": 16
+    },
+    {
+     "field": "dbg_restart",
+     "value": 1
+    }
+   ],
+   "frames": 70,
+   "capture": "s15_entrada"
+  },
+  {
+   "button_down": "UP",
+   "frames": 110,
+   "capture": "s15_arriba"
+  },
+  {
+   "button_up": "UP",
+   "frames": 2
+  }
+ ]
+}

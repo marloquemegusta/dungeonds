@@ -3,6 +3,7 @@
 import argparse
 import json
 import os
+import struct
 from collections import Counter
 from pathlib import Path
 
@@ -25,7 +26,11 @@ OUTPUT = ROOT / "source/strip_kit.c"
 DEFAULT_PROPS = ("columna_entera", "banco_entero", "relicario", "vela",
                  "lapida_3x2_cruz", "lapida_3x2_cab", "lapida_2x1_cruz", "lapida_2x1_cab",
                  "banco_grupo4", "santo", "sacos", "verja", "columna", "banco_grupo4_roto",
-                 "sacos_b", "sacos_remate", "sacos_remate_der", "alambre", "santo_der")
+                 "sacos_b", "sacos_remate", "sacos_remate_der", "alambre", "santo_der",
+                 # piezas tematicas de las salas del poster (tools/encuentros/gen_salas_rom.py)
+                 "banco_roto", "banco_volcado", "capullo", "cepo", "lapida_pie", "candelabro_pie", "calaveras_pila",
+                 "huesos_monton", "reclinatorio", "catre", "biombo", "palangana", "osario_estante", "osario_lado",
+                 "sarcofago", "brasero", "sarcofago_lado", "altar_pie")
 # Room furniture of the encounter rooms (salas ARPG). Only the upper door is placed by the
 # compositor: it never changes, so baking it gives the real art plus its occlusion. The chests and
 # the travel altar keep the software-fixture path (source/encounters_act1.c) because their state
@@ -44,6 +49,9 @@ PIECE_IDS = {
     "sacos": 11, "verja": 12, "columna": 13, "banco_grupo4_roto": 14,
     "sacos_b": 15, "sacos_remate": 16, "sacos_remate_der": 17, "alambre": 18,
     "santo_der": 19,
+    "banco_roto": 20, "banco_volcado": 21, "capullo": 22, "cepo": 23, "lapida_pie": 24, "candelabro_pie": 25,
+    "calaveras_pila": 26, "huesos_monton": 27, "reclinatorio": 28, "catre": 29, "biombo": 30, "palangana": 31,
+    "osario_estante": 32, "osario_lado": 33, "sarcofago": 34, "brasero": 35, "sarcofago_lado": 36, "altar_pie": 37,
     "puerta": 200, "cofre_cerrado": 201, "cofre_abierto": 202, "altar": 203,
 }
 LAPIDA_NAMES = ("lapida_3x2_cruz", "lapida_3x2_cab", "lapida_2x1_cruz", "lapida_2x1_cab")
@@ -121,11 +129,33 @@ class Tiles:
         return idx | (0x4000 if h else 0) | (0x8000 if v else 0)
 
 
+_ACTIVE_LIGHT_TINT = None      # (r, g, b) por canal: luz de sala del ARPG (tools/arpg_light_rooms.json); solo suelo, muros y lapidas
+
+
+def _tint_bgr555(c, tint):
+    r = min(31, max(0, int(round((c & 31) * tint[0]))))
+    g = min(31, max(0, int(round(((c >> 5) & 31) * tint[1]))))
+    b = min(31, max(0, int(round(((c >> 10) & 31) * tint[2]))))
+    return (b << 10) | (g << 5) | r
+
+
+def _tint_rgba(arr):
+    """Tinta el RGB de un PNG (muros, lapidas) con la luz activa; el alfa no cambia."""
+    if _ACTIVE_LIGHT_TINT is None:
+        return arr
+    f = arr.astype(np.float32)
+    for k in range(3):
+        f[..., k] = np.clip(f[..., k] * _ACTIVE_LIGHT_TINT[k], 0, 255)
+    return f.astype(np.uint8)
+
+
 def read_floor(directory):
     src = json.loads((directory / "floor.json").read_text(encoding="utf-8"))
     if src.get("period_tiles") != [16, 16]:
         raise ValueError("period_tiles must be [16, 16]")
     colors = [color_value(c) for c in src["palette"]]
+    if _ACTIVE_LIGHT_TINT is not None:
+        colors = [_tint_bgr555(c, _ACTIVE_LIGHT_TINT) for c in colors]
     raw = src["tiles"]
     if not raw or any(len(t) != 64 for t in raw):
         raise ValueError("floor tiles must each contain 64 indices")
@@ -339,7 +369,7 @@ def lapida_layout(name):
     """Lapida v5: a flat stamp (no footprint, no occlusion) whose pixels are the stone where
     alpha >= 128 and the floor of its phase elsewhere; the baker fills the floor part."""
     meta = json.loads((LAPIDA_DIR / "lapidas_meta.json").read_text(encoding="utf-8"))[name]
-    rgba = np.asarray(Image.open(LAPIDA_DIR / f"{name}.png").convert("RGBA"))
+    rgba = _tint_rgba(np.asarray(Image.open(LAPIDA_DIR / f"{name}.png").convert("RGBA")))
     h, w = rgba.shape[:2]
     if [w, h] != meta["size_px"]: raise ValueError(f"{name}: png size does not match lapidas_meta.json")
     if w % 8 or h % 8: raise ValueError(f"{name}: dimensions must be multiples of 8")
@@ -444,7 +474,46 @@ def has_art(name):
     return (PROP_DIR / name / "color.png").is_file()
 
 
-def load_pieces(names, phases, floor_pixels, floor_grid, floor_palette, prop_lab, tiles, phase_map=None, props=None):
+def shadow_colors_for_all_floor(floor_palette):
+    """Cualquier pixel de suelo puede quedar bajo una sombra segun la fase donde se estampe la pieza: las salas con piezas
+    propias (tools/encuentros/gen_salas_rom.py) hornean sus estampas en fases arbitrarias, asi que el kit base reserva el
+    oscurecido de TODOS los colores de suelo."""
+    out = []
+    for c in list(floor_palette[1:]):
+        sc = shadow_color(c)
+        if sc not in floor_palette and sc not in out: out.append(sc)
+    return out
+
+
+def bake_stamp_tiles(lay, q, pc, pr, floor_pixels, floor_palette, floor_grid, floor_count, final_idx, tiles):
+    """Tilemap (h/8 x w/8, entradas internas de Tiles.add) de la pieza `lay` estampada con su esquina en la fase (pc, pr) del suelo."""
+    w, h, rgba, shadow = lay["w"], lay["h"], lay["rgba"], lay["shadow"]
+    stamp_tiles = np.zeros((h // 8, w // 8), dtype=np.uint16)
+    for ty in range(h // 8):
+        for tx in range(w // 8):
+            sl = rgba[ty*8:ty*8+8, tx*8:tx*8+8]
+            opaque = sl[:, :, 3] >= 128
+            shade = shadow[ty*8:ty*8+8, tx*8:tx*8+8] if shadow is not None else np.zeros((8, 8), bool)
+            if not opaque.any() and not shade.any(): continue
+            pix = np.empty((8, 8), dtype=np.uint8)
+            for py in range(8):
+                for px in range(8):
+                    if opaque[py, px]:
+                        qi = int(q[ty*8+py, tx*8+px])
+                        pix[py, px] = floor_count + 1 + qi if final_idx is None else final_idx[qi]
+                    else:
+                        fi = floor_color(floor_pixels, floor_palette, floor_grid,
+                                         pc * 8 + tx*8 + px, pr * 8 + ty*8 + py)
+                        if shade[py, px]:
+                            pix[py, px] = floor_palette.index(shadow_color(floor_palette[fi]))
+                        else:
+                            pix[py, px] = fi
+            stamp_tiles[ty, tx] = tiles.add(pix.tobytes())
+    return stamp_tiles
+
+
+def load_pieces(names, phases, floor_pixels, floor_grid, floor_palette, prop_lab, tiles, phase_map=None, props=None,
+                shadows_for_all_floor=False):
     layouts = [source_layout(name) for name in names]
 
     def phases_for(name):
@@ -461,6 +530,9 @@ def load_pieces(names, phases, floor_pixels, floor_grid, floor_palette, prop_lab
             for y, x in zip(ys, xs):
                 c = shadow_color(floor_palette[floor_color(floor_pixels, floor_palette, floor_grid, pc * 8 + int(x), pr * 8 + int(y))])
                 if c not in floor_palette and c not in shadow_colors: shadow_colors.append(c)
+    if shadows_for_all_floor:
+        for c in shadow_colors_for_all_floor(floor_palette):
+            if c not in shadow_colors: shadow_colors.append(c)
     floor_palette.extend(shadow_colors)
     floor_count = len(floor_palette) - 1
     # Con `props`, los pixeles de pieza se escriben ya con su indice FINAL de paleta (los colores de
@@ -475,37 +547,16 @@ def load_pieces(names, phases, floor_pixels, floor_grid, floor_palette, prop_lab
             final_idx.append(pal_final.index(c))
     result = []
     for lay in layouts:
-        name, w, h, rgba, shadow = lay["name"], lay["w"], lay["h"], lay["rgba"], lay["shadow"]
-        value = lay["value"]
-        q = quantize_props(Image.fromarray(rgba), prop_lab)
-        foot_runs = lay["foot_runs"]
+        name = lay["name"]
+        q = quantize_props(Image.fromarray(lay["rgba"]), prop_lab)
         for pc, pr in phases_for(name):
-            stamp_tiles = np.zeros((h // 8, w // 8), dtype=np.uint16)
-            for ty in range(h // 8):
-                for tx in range(w // 8):
-                    sl = rgba[ty*8:ty*8+8, tx*8:tx*8+8]
-                    opaque = sl[:, :, 3] >= 128
-                    shade = shadow[ty*8:ty*8+8, tx*8:tx*8+8] if shadow is not None else np.zeros((8, 8), bool)
-                    if not opaque.any() and not shade.any(): continue
-                    pix = np.empty((8, 8), dtype=np.uint8)
-                    for py in range(8):
-                        for px in range(8):
-                            if opaque[py, px]:
-                                qi = int(q[ty*8+py, tx*8+px])
-                                pix[py, px] = floor_count + 1 + qi if final_idx is None else final_idx[qi]
-                            else:
-                                fi = floor_color(floor_pixels, floor_palette, floor_grid,
-                                                 pc * 8 + tx*8 + px, pr * 8 + ty*8 + py)
-                                if shade[py, px]:
-                                    pix[py, px] = floor_palette.index(shadow_color(floor_palette[fi]))
-                                else:
-                                    pix[py, px] = fi
-                    stamp_tiles[ty, tx] = tiles.add(pix.tobytes())
-            result.append({"name": name, "piece_id": PIECE_IDS.get(name, 0), "w": w//8, "h": h//8,
+            stamp_tiles = bake_stamp_tiles(lay, q, pc, pr, floor_pixels, floor_palette, floor_grid, floor_count,
+                                           final_idx, tiles)
+            result.append({"name": name, "piece_id": PIECE_IDS.get(name, 0), "w": lay["w"]//8, "h": lay["h"]//8,
                            "phase_col": pc, "phase_row": pr,
-                           "foot_runs": foot_runs,
+                           "foot_runs": lay["foot_runs"],
                            "foot_anchor_y_px": lay["foot_anchor_y_px"],
-                           "foot_value": value, "tiles": stamp_tiles,
+                           "foot_value": lay["value"], "tiles": stamp_tiles,
                            "depth_runs": lay["depth_runs"]})
     return result, shadow_colors
 
@@ -606,6 +657,16 @@ FLOOR_VARIANTS_KEPT = 2
 ENC_FLOOR_X, ENC_FLOOR_W = 152, 208       # suelo util de las salas (include/encounters_act1.h)
 ENC_BLOCK_H = 384
 ENC_PLAN = ROOT / "tools/encuentros/acto1_v2.json"
+# Colocacion del poster por sala (la escribe tools/encuentros/gen_salas_rom.py con las posiciones ya legales). Si existe, manda
+# sobre las plantas: las salas del ARPG toman de ahi sus piezas y el kit solo hornea las fases que usan.
+SALAS_ROM = ROOT / "tools/encuentros/salas_rom_piezas.json"
+ROOMS_DIR = ROOT / "nitrofiles/rooms"      # un archivo por sala (RMK1): sus piezas propias, cargadas en la pantalla de carga
+# Los archivos que lleva la ROM son los de la LUZ de cada sala (tools/arpg_light_pack.py pasa --rooms y --rooms-dir con --out-kit-npz):
+# sus tiles y colores salen del kit iluminado de esa luz, y base_tiles es el numero de tiles de ESE kit. El horneado del kit de dia
+# solo comprueba el presupuesto y deja sus archivos en scratch/ (no se empaquetan: pisarian a los de la luz).
+ROOMS_DIR_DAY = ROOT / "scratch/rooms_dia"
+PIECE_MIRROR = 0x40                         # bit de piece_id de una estampa horneada en espejo (STRIP_PIECE_MIRROR en strip_kit.h)
+TILE_SLOTS = 1024                           # tiles del BG1 de la pantalla inferior (banco D)
 # El kit no tiene piezas espejadas: con la planta espejada el remate cambia de id (igual que enc_block_pieces).
 MIRROR_SWAP = {
     "sacos_remate": "sacos_remate_der", "sacos_remate_der": "sacos_remate",
@@ -618,6 +679,12 @@ def encounter_piece_uses():
     the six plants and of the corridor, with and without mirror. (verja is drawn with OBJ sprites)."""
     d = json.loads(ENC_PLAN.read_text(encoding="utf-8"))
     uses = []
+    if SALAS_ROM.is_file():
+        # Las piezas propias de cada sala NO van al kit base: se hornean en un archivo por sala (bake_room_packs). El kit
+        # solo lleva las del pasillo, que son comunes a todas las salas.
+        for pc in d["pasillo"]["pieces"]:
+            uses.append((pc["piece"], pc["x"], pc["y"], 0))
+        return uses
     groups = [pl["pieces"] for pl in d["plantas"].values()] + [d["pasillo"]["pieces"]]
     for pieces in groups:
         for pc in pieces:
@@ -1071,7 +1138,7 @@ def make_wall_map(floor_map, tiles, palette, props, prop_lab):
     """Left wall (muro_izq_128.png over the #1c1920 backdrop) in tile columns 0..5, its mirror with
     the H flip in 58..63, and the floor in the centre. The wall repeats every 128 px = 16 tile rows,
     so the map has 16 rows. Wall colours are quantised to the prop palette, like the pieces."""
-    src = np.asarray(Image.open(WALL_PNG).convert("RGBA"))
+    src = _tint_rgba(np.asarray(Image.open(WALL_PNG).convert("RGBA")))
     if src.shape != (128, WALL_TILE_COLS * 8, 4):
         raise ValueError(f"muro_izq_128.png must be 48x128, got {src.shape[1]}x{src.shape[0]}")
     if len(floor_map) != 16:
@@ -1109,7 +1176,7 @@ def make_end_maps(tiles, palette, props, prop_lab):
     transparentes se componen sobre el color del vacio del muro lateral; un tile entero transparente es el tile 0 (el vacio)."""
     out, new_total = [], 0
     for path in END_PNGS + (HOLE_PNG,):
-        src = np.asarray(Image.open(path).convert("RGBA"))
+        src = _tint_rgba(np.asarray(Image.open(path).convert("RGBA")))
         want = (HOLE_H_TILES * 8, 24, 4) if path == HOLE_PNG else (END_H_TILES * 8, END_W_TILES * 8, 4)
         if src.shape != want:
             raise ValueError(f"{path.name} must be {want[1]}x{want[0]}, got {src.shape[1]}x{src.shape[0]}")
@@ -1166,15 +1233,224 @@ def hole_occluder_c():
     return out
 
 
+# ---------------------------------------------------------------------------------------------------------------------------
+# Archivos de sala (RMK1). Las piezas que solo usa una sala no caben en el kit unico de 1024 tiles: cada sala lleva las suyas en
+# nitrofiles/rooms/sala_NN.rmk, que la pantalla de carga copia a los huecos libres [base, base + n) de la VRAM / RAM.
+#
+# Formato (little endian; cada bloque alineado a 4 bytes; lo lee source/room_kit.c):
+#   cabecera 24 B : "RMK1", u16 version (1), u16 flags, u16 base_tiles, u16 n_tiles, u16 n_stamps, u16 n_map, u16 n_foot,
+#                   u16 n_depth, u16 n_pal, u16 reservado
+#                   flags bit0: hay bloque de paleta propia de la sala (n_pal x u16 BGR555 tras la cabecera). El juego la
+#                   aplicara a la sala entera (luz por sala); el baker aun no la emite.
+#   [paleta]      : n_pal x u16
+#   tiles         : n_tiles x 64 B (8 bpp, indices de la paleta compartida); ids globales base_tiles .. base_tiles + n_tiles - 1
+#   estampas      : n_stamps x 20 B = w, h, phase_col, phase_row, foot_anchor_y, foot_value, piece_id, 0 (u8 cada uno),
+#                   u16 map_off (entradas), foot_off, num_foot, depth_off, num_depth, 0
+#   tilemap       : n_map x u16 (ids globales con bits de volteo DS 10 / 11)
+#   huella        : n_foot x 3 B (x_cell, y_cell, length_cells)
+#   profundidad   : n_depth x 6 B (x, y, length, 0, i16 depth_delta)
+# ---------------------------------------------------------------------------------------------------------------------------
+RMK_HEADER_BYTES = 24
+
+
+class RoomTiles(Tiles):
+    """Tiles del kit base (ids fijos) mas los propios de la sala, con el mismo dedupe bajo volteo que Tiles."""
+    def __init__(self, base):
+        self.data = list(base)
+        self.index = {}
+        self.base_flip = {}
+        for i, b in enumerate(base):
+            canonical = min(flip_bytes(b, h, v) for v in (0, 1) for h in (0, 1))
+            self.base_flip.setdefault(canonical, (i, b == canonical))
+        self.base_n = len(base)
+
+    def add(self, data):
+        options = [(flip_bytes(data, h, v), h, v) for v in (0, 1) for h in (0, 1)]
+        canonical, h, v = min(options, key=lambda x: x[0])
+        hit = self.base_flip.get(canonical)
+        if hit is not None:
+            # el tile base i es `canonical` volteado como lo indique su propia entrada: lo recuperamos probando los 4 volteos
+            i = hit[0]
+            base = self.data[i]
+            for bv in (0, 1):
+                for bh in (0, 1):
+                    if flip_bytes(base, bh, bv) == canonical:
+                        return i | (0x4000 if h ^ bh else 0) | (0x8000 if v ^ bv else 0)
+        idx = self.index.get(canonical)
+        if idx is None:
+            idx = len(self.data)
+            self.index[canonical] = idx
+            self.data.append(canonical)
+        return idx | (0x4000 if h else 0) | (0x8000 if v else 0)
+
+
+def mirror_layout(lay):
+    """La misma pieza en espejo (lienzo entero, como `pieza~` del poster): pixeles, sombra, huella y profundidad."""
+    w = lay["w"]
+    out = dict(lay)
+    out["rgba"] = lay["rgba"][:, ::-1].copy()
+    out["shadow"] = None if lay["shadow"] is None else lay["shadow"][:, ::-1].copy()
+    out["foot_runs"] = [(w // 4 - (x + n), y, n) for x, y, n in lay["foot_runs"]]
+    out["depth_runs"] = [(w - (x + n), y, n, d) for x, y, n, d in lay["depth_runs"]]
+    return out
+
+
+def trim_layout(lay):
+    """Recorta el lienzo a los tiles con pixeles de pieza, sombra, huella o profundidad: una estampa de sala no ocupa (ni exige
+    suelo para) los margenes vacios del lienzo. Devuelve la pieza recortada con `tx0`, `ty0` (tiles quitados por la izquierda / arriba)."""
+    W, H = lay["w"], lay["h"]
+    occ = lay["rgba"][:, :, 3] >= 128
+    if lay["shadow"] is not None: occ = occ | lay["shadow"]
+    occ = occ.reshape(H // 8, 8, W // 8, 8).any(axis=(1, 3))
+    for x, y, n in lay["foot_runs"]:
+        occ[y // 2, x // 2:(x + n - 1) // 2 + 1] = True
+    for x, y, n, _ in lay["depth_runs"]:
+        occ[y // 8, x // 8:(x + n - 1) // 8 + 1] = True
+    ys, xs = np.nonzero(occ)
+    ty0, ty1, tx0, tx1 = int(ys.min()), int(ys.max()) + 1, int(xs.min()), int(xs.max()) + 1
+    out = dict(lay)
+    out["rgba"] = lay["rgba"][ty0 * 8:ty1 * 8, tx0 * 8:tx1 * 8].copy()
+    out["shadow"] = None if lay["shadow"] is None else lay["shadow"][ty0 * 8:ty1 * 8, tx0 * 8:tx1 * 8].copy()
+    out["w"], out["h"] = (tx1 - tx0) * 8, (ty1 - ty0) * 8
+    out["foot_runs"] = [(x - tx0 * 2, y - ty0 * 2, n) for x, y, n in lay["foot_runs"]]
+    out["foot_anchor_y_px"] = lay["foot_anchor_y_px"] - ty0 * 8
+    out["depth_runs"] = [(x - tx0 * 8, y - ty0 * 8, n, d) for x, y, n, d in lay["depth_runs"]]
+    out["ox"], out["oy"] = lay["ox"] - tx0 * 8, lay["oy"] - ty0 * 8
+    out["tx0"], out["ty0"] = tx0, ty0
+    return out
+
+
+def room_layout(name, mirror=0, shadow=True):
+    """La pieza tal como la hornea una sala: lienzo del baker, en espejo si hace falta, recortado a sus tiles ocupados.
+    Con shadow=False la pieza va sin su sombra proyectada (presupuesto de tiles de la sala, ver bake_room_packs)."""
+    lay = source_layout(name)
+    if not shadow and lay["shadow"] is not None: lay = dict(lay, shadow=None)
+    if mirror: lay = mirror_layout(lay)
+    return trim_layout(lay)
+
+
+def room_stamp_key(item):
+    """(pieza, espejo, fase de suelo) de una pieza colocada: la fase sale de su esquina en tiles, como enc_place_piece()."""
+    tx = (ENC_FLOOR_X + item["lx"] + 4) // 8
+    ty = (item["ly"] + 4) // 8
+    return (item["piece"], int(item.get("mirror", 0)), tx & 15, ty & 15)
+
+
+def bake_room_pack(items, base_tiles, palette, floor_pixels, grid, props, prop_lab, cache, no_shadow=frozenset()):
+    """Estampas y tiles propios de una sala. `palette` ya es la final del kit (suelo + sombras + props).
+    `no_shadow`: piezas que esta sala hornea sin sombra proyectada."""
+    final_idx = [palette.index(c) for c in props]
+    rt = RoomTiles(base_tiles)
+    keys = sorted({room_stamp_key(it) for it in items})
+    stamps = []
+    for name, mirror, pc, pr in keys:
+        ck = (name, mirror, name in no_shadow)
+        if ck not in cache:
+            lay = room_layout(name, mirror, name not in no_shadow)
+            cache[ck] = (lay, quantize_props(Image.fromarray(lay["rgba"]), prop_lab))
+        lay, q = cache[ck]
+        tl = bake_stamp_tiles(lay, q, pc, pr, floor_pixels, palette, grid, len(palette) - 1, final_idx, rt)
+        stamps.append({"name": name, "piece_id": PIECE_IDS[name] | (PIECE_MIRROR if mirror else 0),
+                       "w": lay["w"] // 8, "h": lay["h"] // 8, "phase_col": pc, "phase_row": pr,
+                       "foot_runs": lay["foot_runs"], "foot_anchor_y_px": lay["foot_anchor_y_px"],
+                       "foot_value": lay["value"], "tiles": tl, "depth_runs": lay["depth_runs"]})
+    new_tiles = rt.data[len(base_tiles):]
+    conv = lambda v: 0 if not int(v) else (int(v) & 0x3fff) | ((int(v) & 0xc000) >> 4)
+    for st in stamps:
+        st["tiles"] = np.vectorize(conv, otypes=[np.uint16])(st["tiles"])
+    return stamps, new_tiles
+
+
+def rmk_bytes(stamps, new_tiles, base_n, palette=None):
+    def pad4(b): return bytes(b) + bytes((-len(b)) % 4)
+    tmap, foot, depth, recs = bytearray(), bytearray(), bytearray(), bytearray()
+    for st in stamps:
+        m_off, f_off, d_off = len(tmap) // 2, len(foot) // 3, len(depth) // 6
+        for v in st["tiles"].reshape(-1): tmap += struct.pack("<H", int(v))
+        for x, y, n in st["foot_runs"]: foot += struct.pack("<BBB", x, y, n)
+        for x, y, n, d in st["depth_runs"]: depth += struct.pack("<BBBBh", x, y, n, 0, d)
+        recs += struct.pack("<8B6H", st["w"], st["h"], st["phase_col"], st["phase_row"], st["foot_anchor_y_px"],
+                            st["foot_value"], st["piece_id"], 0, m_off, f_off, len(st["foot_runs"]), d_off,
+                            len(st["depth_runs"]), 0)
+    n_pal = len(palette) if palette else 0
+    head = struct.pack("<4s10H", b"RMK1", 1, 1 if n_pal else 0, base_n, len(new_tiles), len(stamps),
+                       len(tmap) // 2, len(foot) // 3, len(depth) // 6, n_pal, 0)
+    assert len(head) == RMK_HEADER_BYTES, len(head)
+    out = head
+    if n_pal: out += pad4(b"".join(struct.pack("<H", c) for c in palette))
+    out += pad4(b"".join(new_tiles)) + pad4(recs) + pad4(tmap) + pad4(foot) + pad4(depth)
+    return out
+
+
+def load_salas_rom():
+    """[[{piece, k, lx, ly, mirror}] por sala] de tools/encuentros/salas_rom_piezas.json, o None."""
+    if not SALAS_ROM.is_file(): return None
+    d = json.loads(SALAS_ROM.read_text(encoding="utf-8"))
+    return [d["salas"].get(str(n), []) for n in range(16)]
+
+
+def bake_room_packs(salas, base_tiles, palette, floor_pixels, grid, props, prop_lab, only=None, out_dir=None):
+    """Hornea los archivos de sala (todas, o las de `only`); devuelve (max de tiles propios de una sala, informe por sala)."""
+    out_dir = out_dir or ROOMS_DIR
+    out_dir.mkdir(parents=True, exist_ok=True)
+    cache, report, worst = {}, [], 0
+    for n, items in enumerate(salas):
+        if only is not None and n not in only: continue
+        # Piezas sin sombra proyectada: las que declara la colocacion (`sin_sombra` en salas_rom_piezas.json, SIN_SOMBRA de
+        # tools/encuentros/gen_salas_rom.py). Con luz de sala las sombras son mas anchas que las del dia y una sala puede no caber en
+        # los tiles que deja el kit; quitar la sombra cambia el lienzo de la estampa, asi que lo decide la colocacion, no el baker.
+        dropped = frozenset(it["piece"] for it in items if it.get("sin_sombra"))
+        stamps, new_tiles = bake_room_pack(items, base_tiles, palette, floor_pixels, grid, props, prop_lab, cache, dropped)
+        room_cap = TILE_SLOTS - len(base_tiles)
+        if len(new_tiles) > room_cap:
+            cands = sorted({it["piece"] for it in items} - dropped)
+            tries = sorted((len(bake_room_pack(items, base_tiles, palette, floor_pixels, grid, props, prop_lab, cache,
+                                               dropped | {c})[1]), c) for c in cands)
+            raise ValueError(f"sala {n}: {len(new_tiles)} tiles propios > {room_cap} libres tras el kit base ({len(base_tiles)}). "
+                             f"Anade una pieza a SIN_SOMBRA[{n}] en tools/encuentros/gen_salas_rom.py y regenera "
+                             f"(tiles que quedarian sin la sombra de cada una: {tries[:4]})")
+        if dropped: print(f"sala {n:02d}: sin sombra proyectada en {', '.join(sorted(dropped))} ({len(new_tiles)} tiles propios, libres {room_cap})")
+        data = rmk_bytes(stamps, new_tiles, len(base_tiles))
+        (out_dir / f"sala_{n:02d}.rmk").write_bytes(data)
+        report.append((n, len(items), len(stamps), len(new_tiles), len(data), room_prop_window(items, stamps)))
+        worst = max(worst, len(new_tiles))
+    return worst, report
+
+
+def room_prop_window(items, stamps):
+    """Peor ventana de 33x25 tiles de una sala por tiles DISTINTOS de las estampas colocadas (sin el suelo: se suma aparte)."""
+    by_key = dict(zip(sorted({room_stamp_key(it) for it in items}), stamps))
+    worst = 0
+    for k in sorted({it["k"] for it in items}):
+        grid = {}
+        for it in items:
+            if it["k"] != k: continue
+            st = by_key[room_stamp_key(it)]
+            tx, ty = (ENC_FLOOR_X + it["lx"] + 4) // 8, (it["ly"] + 4) // 8
+            for (y, x), v in np.ndenumerate(st["tiles"]):
+                if v: grid[(tx + x, ty + y)] = int(v) & 0x3ff
+        if not grid: continue
+        xs, ys = [c[0] for c in grid], [c[1] for c in grid]
+        for wy in range(min(ys) - 24, max(ys) + 1):
+            for wx in range(min(xs) - 32, max(xs) + 1):
+                n = len({v for (x, y), v in grid.items() if wx <= x < wx + 33 and wy <= y < wy + 25})
+                worst = max(worst, n)
+    return worst
+
+
 def emit(output, palette, tiles, floor_map, end_maps, stamps, packed, floor_source, worst,
-         worst_occlusion, floor_n, props_n, mode="actual"):
+         worst_occlusion, floor_n, props_n, mode="actual", room_slots=0):
     floor_path = str(floor_source).replace("\\", "/")
     out = [f"// Generated by tools/bake_cathedral_kit.py from floor {floor_path}, assets/environment/cathedral/props/render and assets/environment/cathedral/lapidas; floor={floor_n}, props={props_n}, shared={len(palette)}, tiles={len(tiles.data)}, worst_window={worst}, worst_occlusion_window={worst_occlusion}. Do not edit.\n",
            '#include "strip_kit.h"\n\n', '// cathedral wall (muro_izq_128) on the floor, lapidas v5 and composed props\n',
            f"static const uint16_t s_palette[256] __attribute__((aligned(4))) = {{\n"]
     palette = palette + [0] * (256-len(palette))
     for i in range(0, 256, 16): out.append("    " + ", ".join(f"0x{c:04X}" for c in palette[i:i+16]) + ",\n")
-    out += ["};\n\n", f"static const uint8_t s_tiles[{len(tiles.data)}][64] __attribute__((aligned(4))) = {{\n"]
+    # El kit de dia es de solo lectura y no deja huecos: las piezas de cada sala (.rmk) se hornean contra el kit de SU luz
+    # (nitrofiles/arpg_luz/*.bin, tiles escribibles en source/room_light.c), no contra este. Un almacen escribible de dia
+    # costaba ~27 KB del monton, que con la luz cargada queda en ~0 (fopen falla con ENOMEM).
+    store = f"{len(tiles.data)}"
+    out += ["};\n\n", f"static const uint8_t s_tiles[{store}][64] __attribute__((aligned(4))) = {{\n"]
     for t in tiles.data: out.append("    { " + ", ".join(map(str, t)) + " },\n")
     out += ["};\n\n", f"static const uint16_t s_floor_map[{len(floor_map)*64}] __attribute__((aligned(4))) = {{\n"]
     for r in floor_map: out.append("    " + ", ".join(map(str, r)) + ",\n")
@@ -1205,8 +1481,8 @@ def emit(output, palette, tiles, floor_map, end_maps, stamps, packed, floor_sour
         dr = f"{len(s['depth_runs'])}, s_stamp_{i}_depth" if s["depth_runs"] else "0, 0"
         pid = s["piece_id"] if mode == "catedral" else 0
         out.append(f"    {{ {s['w']}, {s['h']}, {s['phase_col']}, {s['phase_row']}, {s['foot_anchor_y_px']}, {s['foot_value']}, {pid}, s_stamp_{i}_tiles, {fr}, {dr} }}, // {s['name']}\n")
-    out += ["};\n\n"] + hole_occluder_c() + ["const StripKit g_strip_kit = {\n", "    .palette = s_palette,\n", "    .tiles = s_tiles,\n",
-            f"    .num_tiles = {len(tiles.data)},\n", f"    .map_h_tiles = {len(floor_map)},\n",
+    out += ["};\n\n"] + hole_occluder_c() + ["StripKit g_strip_kit = {\n", "    .palette = s_palette,\n", "    .tiles = s_tiles,\n",
+            f"    .num_tiles = {len(tiles.data)},\n", f"    .max_tiles = {len(tiles.data)},\n", f"    .map_h_tiles = {len(floor_map)},\n",
             "    .floor_h_tiles = 16,\n", "    .floor_map = s_floor_map,\n",
             "    .floor_collision = s_floor_collision,\n",
             f"    .end_w_tiles = {END_W_TILES},\n", f"    .end_h_tiles = {END_H_TILES},\n",
@@ -1234,7 +1510,7 @@ def format_metrics(entries, stamps, label="catedral", bands=64, worst=0, worst_o
 
 
 def build(floor_dir, phases=4, output=OUTPUT, preview=None, prop_names=None,
-          mode="actual", metrics=None, dump_plan=None):
+          mode="actual", metrics=None, dump_plan=None, out_kit_npz=None, rooms=None, rooms_dir=None):
     if phases != 4: raise ValueError("--phases supports the four specified offsets: 4")
     if prop_names is None:
         prop_names = DEFAULT_PROPS + ROOM_PROPS
@@ -1267,7 +1543,8 @@ def build(floor_dir, phases=4, output=OUTPUT, preview=None, prop_names=None,
     palette, floor_pixels, floor_map = make_floor_tiles(floor_colors, raw_floor, grid, tiles)
     props, prop_lab = read_prop_palette()
     stamps, shadow_colors = load_pieces(prop_names, all_phases, floor_pixels, grid, palette,
-                                        prop_lab, tiles, phase_map=phase_map, props=props)
+                                        prop_lab, tiles, phase_map=phase_map, props=props,
+                                        shadows_for_all_floor=(mode == "catedral" and SALAS_ROM.is_file()))
     prop_remap = {}
     prop_temp_base = len(palette)
     for i, c in enumerate(props):
@@ -1304,46 +1581,6 @@ def build(floor_dir, phases=4, output=OUTPUT, preview=None, prop_names=None,
     end_maps, end_new = make_end_maps(tiles, palette, props, prop_lab)
     wall_new += end_new
     if len(palette) > 256: raise ValueError(f"shared palette requires {len(palette)} entries including transparent")
-    # Merge nearly-identical tiles (same approach as bake_arena.py) when > 980 tiles so lapidas fit with margin.
-    if len(tiles.data) > 950:
-        pal_rgb = np.zeros((256, 3), dtype=np.float32)
-        for i, c in enumerate(palette):
-            pal_rgb[i] = ((c & 31) * 255.0 / 31.0, ((c >> 5) & 31) * 255.0 / 31.0, ((c >> 10) & 31) * 255.0 / 31.0)
-        arr = np.array([np.frombuffer(t, dtype=np.uint8) for t in tiles.data])
-        rgb = pal_rgb[arr].reshape(len(tiles.data), -1)
-        void = (arr == 0)
-        counts = np.zeros(len(tiles.data), dtype=np.int64)
-        for row in map_map:
-            for v in row: counts[int(v) & 0x3fff] += 10
-        for rows in end_maps:
-            for row in rows:
-                for v in row: counts[int(v) & 0x3fff] += 10
-        for st in stamps:
-            for v in st["tiles"].flat:
-                if int(v): counts[int(v) & 0x3fff] += 1
-        order_m = [0] + [int(t) for t in np.argsort(-counts, kind="stable") if t != 0]
-        for thr in (1.0, 1.5, 2.0, 2.5, 3.0, 4.0, 6.0):
-            kept, kept_rgb, kept_void = [], np.zeros((len(tiles.data), rgb.shape[1]), dtype=np.float32), np.zeros((len(tiles.data), arr.shape[1]), dtype=bool)
-            m_remap = np.zeros(len(tiles.data), dtype=np.int64)
-            for t in order_m:
-                k = len(kept)
-                if k:
-                    diff = np.abs(kept_rgb[:k] - rgb[t])
-                    mean = diff.mean(axis=1)
-                    ok = (mean <= thr) & (diff.max(axis=1) <= 96) & (kept_void[:k] == void[t]).all(axis=1)
-                    if ok.any():
-                        m_remap[t] = int(np.argmin(np.where(ok, mean, 1e9)))
-                        continue
-                kept_rgb[k] = rgb[t]; kept_void[k] = void[t]; m_remap[t] = k; kept.append(t)
-            if len(kept) <= 950:
-                print(f"merged tiles at threshold {thr}: {len(tiles.data)} -> {len(kept)}")
-                tiles.data = [tiles.data[t] for t in kept]
-                tiles.index = {t: i for i, t in enumerate(tiles.data)}
-                map_map = [[(int(m_remap[int(v) & 0x3fff]) | (int(v) & 0xc000)) if int(v) else 0 for v in row] for row in map_map]
-                end_maps = [[[(int(m_remap[int(v) & 0x3fff]) | (int(v) & 0xc000)) if int(v) else 0 for v in row] for row in rows] for rows in end_maps]
-                for st in stamps:
-                    st["tiles"] = np.vectorize(lambda v: (int(m_remap[int(v) & 0x3fff]) | (int(v) & 0xc000)) if int(v) else 0, otypes=[np.uint16])(st["tiles"])
-                break
     collision = np.zeros((32, 128), np.uint8)
     collision[:, :12] = 3; collision[:, 116:] = 3
     flat = collision.reshape(-1)
@@ -1377,7 +1614,36 @@ def build(floor_dir, phases=4, output=OUTPUT, preview=None, prop_names=None,
         im = Image.fromarray(sample, "P"); im.putpalette(rgb_palette)
         preview.parent.mkdir(parents=True, exist_ok=True); im.convert("RGB").save(preview)
     floor_n = len(set(floor_colors)); props_n = len(set(props))
-    emit(output, palette, tiles, map_map, end_maps, stamps, packed, floor_dir, worst, worst_occlusion, floor_n, props_n, mode)
+    room_slots = 0
+    if mode == "catedral" and SALAS_ROM.is_file():
+        salas = load_salas_rom()
+        light_mode = out_kit_npz is not None
+        room_slots, room_report = bake_room_packs(salas, tiles.data, palette, floor_pixels, grid, props, prop_lab,
+                                                  only=rooms if light_mode else None,
+                                                  out_dir=(rooms_dir or ROOMS_DIR) if light_mode else (rooms_dir or ROOMS_DIR_DAY))
+        if len(tiles.data) + room_slots > TILE_SLOTS:
+            raise ValueError(f"base kit {len(tiles.data)} tiles + {room_slots} of the largest room > {TILE_SLOTS}")
+        for n, n_items, n_stamps, n_tiles, n_bytes, n_win in room_report:
+            print(f"sala {n:02d}: {n_items} piezas, {n_stamps} estampas, {n_tiles} tiles propios, {n_bytes} B, ventana de piezas {n_win} (+ suelo {worst})")
+            if n_win + worst >= 440:       # cota superior: el suelo y las piezas no comparten tiles
+                raise ValueError(f"sala {n}: ventana de 33x25 con hasta {n_win + worst} tiles distintos (limite 440)")
+        print(f"tiles: base {len(tiles.data)} + sala mas grande {room_slots} = {len(tiles.data) + room_slots}/{TILE_SLOTS}")
+    if out_kit_npz is not None:
+        out_kit_npz.parent.mkdir(parents=True, exist_ok=True)
+        np.savez_compressed(
+            out_kit_npz,
+            palette=np.array(palette + [0] * (256 - len(palette)), dtype=np.uint16),
+            tiles=np.array([np.frombuffer(t, dtype=np.uint8) for t in tiles.data], dtype=np.uint8),
+            floor_map=np.array(map_map, dtype=np.uint16),
+            end_map_0=np.array(end_maps[0], dtype=np.uint16),
+            end_map_1=np.array(end_maps[1], dtype=np.uint16),
+            hole_map=np.array(end_maps[2], dtype=np.uint16),
+            stamp_meta=np.array([[s["piece_id"], s["phase_col"], s["phase_row"], s["w"], s["h"], 0, s["foot_anchor_y_px"]] for s in stamps], dtype=np.int32),
+            stamp_tiles=np.concatenate([s["tiles"].astype(np.uint16).reshape(-1) for s in stamps]),
+        )
+        print(f"wrote kit npz: {out_kit_npz} ({len(tiles.data)} tiles)")
+    else:
+        emit(output, palette, tiles, map_map, end_maps, stamps, packed, floor_dir, worst, worst_occlusion, floor_n, props_n, mode, room_slots)
     if dump_plan is not None and mode == "catedral":
         dumped = [{"block": e["block"], "piece_id": stamps[e["idx"]]["piece_id"],
                    "phase_col": stamps[e["idx"]]["phase_col"],
@@ -1421,8 +1687,19 @@ def main():
                    help="write the catedral metrics Markdown table here")
     p.add_argument("--dump-plan", type=Path, default=None,
                    help="write the deterministic cathedral plan as JSON (parity test)")
+    p.add_argument("--prop-dir", type=Path, default=None, help="render de props alternativo (luz de sala)")
+    p.add_argument("--prop-palette", type=Path, default=None, help="palette.json alternativo (luz de sala)")
+    p.add_argument("--tint", default=None, help="r,g,b: tinte de suelo, muros y lapidas (luz de sala)")
+    p.add_argument("--out-kit-npz", type=Path, default=None, help="escribe el kit en un npz en vez de source/strip_kit.c")
+    p.add_argument("--rooms", default=None, help="salas (0..15, separadas por comas) cuyo .rmk se hornea con este kit (luz de sala)")
+    p.add_argument("--rooms-dir", type=Path, default=None, help="carpeta de salida de los .rmk (luz: nitrofiles/rooms; dia: scratch/rooms_dia)")
     a = p.parse_args()
-    build(a.floor, a.phases, a.output, a.preview, a.props, a.mode, a.metrics, a.dump_plan)
+    global PROP_DIR, PROP_PALETTE, _ACTIVE_LIGHT_TINT
+    if a.prop_dir is not None: PROP_DIR = a.prop_dir
+    if a.prop_palette is not None: PROP_PALETTE = a.prop_palette
+    if a.tint is not None: _ACTIVE_LIGHT_TINT = [float(v) for v in a.tint.split(",")]
+    rooms = None if a.rooms is None else {int(v) for v in a.rooms.split(",") if v.strip()}
+    build(a.floor, a.phases, a.output, a.preview, a.props, a.mode, a.metrics, a.dump_plan, a.out_kit_npz, rooms, a.rooms_dir)
 
 
 if __name__ == "__main__": main()

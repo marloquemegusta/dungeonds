@@ -14,6 +14,7 @@ typedef int encounters_act1_translation_unit_not_empty;
 #include "arpg_progress.h"
 #include "boss.h"
 #include "chars_pool.h"
+#include "room_kit.h"
 #include "arpg_inv.h"
 
 // Life in points (ARPG) can exceed a byte; the stats keep it clamped to 255.
@@ -32,6 +33,7 @@ typedef int encounters_act1_translation_unit_not_empty;
 #include "pickups.h"
 #include "enc_relic_gfx.h"
 #include "enc_room_gfx.h"
+#include "room_light.h"
 
 #include "encounters_act1_tables.h"
 #include "encounters_act1_hp.h"
@@ -58,6 +60,7 @@ volatile uint8_t g_relic_drop_debug;
 // block is black and solid. A room is always the same (seed = hash of its id).
 // ---------------------------------------------------------------------------
 #define ENC_STAGES 3                        // blocks of the biggest room
+#include "encounters_act1_salas.h"
 #define ENC_FIRST_BLOCK 3                   // strip block of block 0 of every room; the blocks below it are the entrance floor
 
 enum { DOOR_LEFT = 0, DOOR_RIGHT, DOOR_UP };
@@ -153,6 +156,12 @@ static int s_active_boss_k;                   // block of the boss fight of this
 static uint32_t s_seed;
 static uint8_t s_plant[ENC_STAGES];           // plant (props) of each block
 static uint8_t s_mirror[ENC_STAGES];
+// Placement of the poster (tools/encuentros/gen_salas_rom.py): when a block has one, it replaces the hashed plant and group.
+static const RoomLayout *layout_of(int k) {
+    if (s_room < 0 || s_room >= ENC_ROOM_COUNT || k < 0 || k >= ENC_STAGES) return 0;
+    if (g_enc_debug.force_group) return 0;               // debug: a forced group of the generic table replaces the poster's
+    return s_room_layouts[s_room][k].valid ? &s_room_layouts[s_room][k].l : 0;
+}
 static uint8_t s_tier[ENC_STAGES];            // plant tier of each block (stats only)
 
 // Persistence (g_arpg): what died stays dead until the hero sleeps. A boss or miniboss uses the boss bit of the room, a group
@@ -176,6 +185,13 @@ static void prize_relic(const RoomDef *room, int level_bonus, int min_rar, int p
     uint32_t rng = (uint32_t)(s_room + 1) * 2246822519u ^ (uint32_t)(px * 73856093 ^ py * 19349663) ^ ((uint32_t)room->level * 3266489917u);
     ArpgInvItem it;
     arpg_relic_roll(&it, room->level + level_bonus, min_rar, &rng);
+    if (min_rar == ARPG_RAR_LEGENDARY) {                // the boss reward goes straight to the bag/stash: the hero leaves for the camp at once
+        if (arpg_inv_add(&it) >= 0 || arpg_inv_stash_add(&it) >= 0) {
+            pickups_toast("Reliquia legendaria", 180);
+            arpg_progress_save();
+            return;
+        }
+    }
     pickups_spawn_relic(TO_FIXED(px), TO_FIXED(py - 24), &it);
 }
 
@@ -204,6 +220,11 @@ typedef struct {
     uint8_t chest_open, altar_touched;
 } EncRuntime;
 static EncRuntime s_rt[ENC_STAGES];
+// Members of each block placed so far (bit = ordinal in the group): a member is placed when the hero comes close to its post,
+// so a room of 35 never needs more than the 24 slots. s_member_full is the mask of the whole group, s_member_seen the ones already
+// counted in EncStats.members_placed, s_slot_member the ordinal of the member living in each pool slot (0xFF: not a placed member).
+static uint16_t s_member_mask[ENC_STAGES], s_member_full[ENC_STAGES], s_member_seen[ENC_STAGES];
+static uint8_t s_slot_member[64];
 static int s_exit_room = -1;                  // crossing requested by enc_update(), consumed by main.c
 static int s_victory;                         // never set: the dungeon has no victory (enc_victory stays for the HUD)
 // Reja de la llave (sala con chapel_gate): cruza la sala de pared a pared entre la entrada y el cofre.
@@ -342,6 +363,7 @@ void enc_init(uint32_t seed) {
 #if ARPG_OJO_TEST
         s_mirror[k] = 0;             // arpg-ojo: the test columns always stand where ojo_test.c expects them
 #endif
+        if (layout_of(k)) s_mirror[k] = 0;     // the poster's placement is not mirrored
         s_plant[k] = 0;
         if (k >= room->blocks || is_boss_stage(k)) continue;
         const int range = ENC_PLANT_COUNT - (prev_plant >= 0 ? 1 : 0);
@@ -356,6 +378,11 @@ void enc_init(uint32_t seed) {
         if (g_enc_debug.force_tier > 0 && g_enc_debug.force_tier <= 3) s_tier[0] = (uint8_t)(g_enc_debug.force_tier - 1);
     }
     memset(s_rt, 0, sizeof(s_rt));
+    memset(s_member_mask, 0, sizeof(s_member_mask));
+    memset(s_member_full, 0, sizeof(s_member_full));
+    memset(s_member_seen, 0, sizeof(s_member_seen));
+    memset(s_slot_member, 0xFF, sizeof(s_slot_member));
+    g_enc_stats.members_placed = 0;
     // Rooms have no gates (salas ARPG): both lifts start raised, so no rastrillo is drawn anywhere.
     for (int i = 0; i < ENC_STAGES; i++) { s_rt[i].back_lift = ENC_VERJA_H; s_rt[i].verja_lift = ENC_VERJA_H; }
     s_exit_room = -1;
@@ -434,6 +461,8 @@ int enc_block_pieces(int32_t block, EncPiecePlan *out, int max) {
         defs = s_plants[b.plant].pieces;
         n = s_plants[b.plant].n_pieces;
         if (room_def()->chapel_gate) n = 0;           // the room of the reja has a clear floor (nothing between the gate and the entrance)
+        const RoomLayout *lay = layout_of(b.idx);
+        if (lay) { defs = lay->pieces; n = lay->n_pieces; }
 #if ARPG_OJO_TEST
         defs = s_ojo_test_pieces;
         n = (int)(sizeof(s_ojo_test_pieces) / sizeof(s_ojo_test_pieces[0]));
@@ -446,6 +475,11 @@ int enc_block_pieces(int32_t block, EncPiecePlan *out, int max) {
     else if (b.kind == ENC_BLOCK_BOSS) {
         defs = s_campanero_pieces;
         n = (int)(sizeof(s_campanero_pieces) / sizeof(s_campanero_pieces[0]));
+    }
+#else
+    else if (b.kind == ENC_BLOCK_BOSS) {        // the crypt of the poster: its props (the fight itself is the boss's)
+        const RoomLayout *lay = layout_of(b.idx);
+        if (lay) { defs = lay->pieces; n = lay->n_pieces; }
     }
 #endif
     int m = 0;
@@ -469,7 +503,7 @@ int enc_block_pieces(int32_t block, EncPiecePlan *out, int max) {
         uint8_t piece = defs[i].piece;
         // One bench group in four is the variant with the broken bench, picked by (block, piece index). Only the
         // groups on tile row 0 of the kit phases have it baked (tile budget; tools/bake_cathedral_kit.py).
-        if (piece == STRIP_PIECE_BANCO_GRUPO4 && ((((defs[i].y + 4) >> 3) & 15) == 0) &&
+        if (piece == STRIP_PIECE_BANCO_GRUPO4 && !layout_of(b.idx) && ((((defs[i].y + 4) >> 3) & 15) == 0) &&
             (hash32(((uint32_t)block * 0x9e3779b9u) ^ ((uint32_t)i * 0x85ebca6bu) ^ 0x42524b4eu) & 3u) == 0)
             piece = STRIP_PIECE_BANCO_GRUPO4_ROTO;
         // The kit has no mirrored piece: the barricade end that opens to the right is the other id when the plan is mirrored.
@@ -494,8 +528,11 @@ int enc_block_rects(int32_t block, EncRect *out, int max) {
     int n = 0;
     if (b.kind == ENC_BLOCK_ENCOUNTER && !ARPG_OJO_TEST) {      // arpg-ojo: no sacos / alambre, only the test columns
         const EncPlant *pl = &s_plants[b.plant];
-        for (int i = 0; i < (room_def()->chapel_gate ? 0 : pl->n_rects) && n < max; i++) {
-            const EncRectDef *r = &pl->rects[i];
+        const RoomLayout *lay = layout_of(b.idx);
+        const EncRectDef *rdefs = lay ? lay->rects : pl->rects;
+        const int nr = room_def()->chapel_gate ? 0 : lay ? lay->n_rects : pl->n_rects;
+        for (int i = 0; i < nr && n < max; i++) {
+            const EncRectDef *r = &rdefs[i];
             out[n].kind = r->kind;
             out[n].x = (int16_t)(ENC_FLOOR_X + (b.mirror ? ENC_FLOOR_W - (r->x + r->w) : r->x));
             out[n].y = r->y;
@@ -588,12 +625,14 @@ int enc_block_has_door(int32_t block) {
 int enc_room_top_block(void) { return s_first_block - (room_def()->blocks - 1); }
 
 void enc_room_select(int room, int from_room) {
+    pickups_bank_relics();           // a relic left on the floor must not be lost with the room
     s_room = (room >= 0 && room < ENC_ROOM_COUNT) ? room : 0;
     s_from_room = from_room;
+    room_light_load(s_room);       // loading screen: the room's light pack (kit, hero, enemy tables); the clips and remates read from it
     if (!((g_arpg.rooms_seen >> s_room) & 1)) {      // first visit: the overlay map reveals it (kept in the save)
         g_arpg.rooms_seen |= (uint16_t)(1u << s_room);
-        arpg_progress_save();
     }
+    arpg_progress_save();            // every room change: xp, kills and chests of the room just left survive a power-off
 }
 
 // ---------------------------------------------------------------------------
@@ -728,6 +767,144 @@ int enc_room_take_exit(int *out_room) {
     return 1;
 }
 
+// ---------------------------------------------------------------------------
+// Rest behaviours (DESIGN-ARPG.md 12): a sleeping enemy (ENEMY_STATE_DORMANT, the AI skips it) wanders around its post until its
+// group wakes. The post is implicit: position minus offset (ox, oy), so the world shifting under the strip needs no fixing.
+// ---------------------------------------------------------------------------
+typedef struct { uint8_t mode, phase, aux; int16_t timer; fixed ox, oy; } RestRec;
+static RestRec s_rest[MAX_GAMEPLAY_ENEMIES];
+static uint32_t s_rest_group_mask;      // blocks with at least one resting enemy: their wake is by radius or hit, not by the room margin
+static uint32_t s_rest_wake_mask;       // blocks whose resting group has to wake now
+
+// 8.8 unit vectors per direction on the 2:1 ground (screen dy is half of ground dy), indexed by DIR_*.
+static const int16_t s_rest_vx[8] = { 0, -181, -256, -181, 0, 181, 256, 181 };
+static const int16_t s_rest_vy[8] = { 128, 91, 0, -91, -128, -91, 0, 91 };
+
+static void rest_assign(int slot, int mode, Enemy *e) {
+    if (slot < 0 || slot >= MAX_GAMEPLAY_ENEMIES) return;
+    RestRec *r = &s_rest[slot];
+    memset(r, 0, sizeof(*r));
+    if (mode < ENC_S_CRAWL || mode > ENC_S_PATROL) return;
+    r->mode = (uint8_t)mode;
+    r->aux = (uint8_t)(mode == ENC_S_SWEEP ? 0 : (slot & 1));
+    r->timer = (int16_t)(slot * 7 % 24);            // desynchronise the members of a group
+    if (mode == ENC_S_HIDDEN) e->home_flags |= ENEMY_HOME_HIDDEN;
+}
+
+// The rest every role gets when the debug mailbox asks for "as designed" (rest_mode 1), or the forced one.
+static int rest_mode_for(int enc_type, int guard) {
+    const int dbg = g_enc_debug.rest_mode;
+    if (!dbg || guard == 2) return 0;
+    if (dbg == 2) return ENC_S_HIDDEN;
+    if (dbg == 3) return ENC_S_PATROL;
+    switch (enc_type) {
+        case ENC_E_BEBE: return ENC_S_CRAWL;
+        case ENC_E_MONAGUILLO: return ENC_S_SWAY;
+        case ENC_E_OJO: return ENC_S_SWEEP;
+        case ENC_E_CIRENEO: return ENC_S_STROLL;
+        default: return 0;
+    }
+}
+
+static int rest_walk(Enemy *e, RestRec *r, int dir, int speed) {
+    fixed vx = (s_rest_vx[dir] * speed) >> 8;
+    fixed vy = (s_rest_vy[dir] * speed) >> 8;
+    const fixed x0 = e->x, y0 = e->y;
+    const int ok = sweep_position(&e->x, &e->y, vx, vy);
+    r->ox += e->x - x0;
+    r->oy += e->y - y0;
+    e->dir = dir;
+    return ok;
+}
+
+static void rest_anim(Enemy *e, int moving) {
+    if (!moving) { e->anim_timer = 0; e->frame = 0; return; }
+    int period = g_characters[e->char_id].anim_period;
+    if (period <= 0) period = 4;
+    if (++e->anim_timer >= period) { e->anim_timer = 0; e->frame = (e->frame + 1) % PLAYER_NUM_FRAMES; }
+}
+
+// Home direction from an offset (the rest zone is a small box around the post).
+static int rest_outside(const RestRec *r) {
+    const fixed ax = r->ox < 0 ? -r->ox : r->ox, ay = r->oy < 0 ? -r->oy : r->oy;
+    return ax > TO_FIXED(ENC_REST_STROLL_PX) || ay > TO_FIXED(ENC_REST_STROLL_PX / 2);
+}
+
+// One frame of rest. phase 0 = moving, 1 = paused; timer = frames left in the leg; aux = heading side / leg / gaze step.
+static void rest_step(Enemy *e, RestRec *r) {
+    int moving = 0;
+    switch (r->mode) {
+    case ENC_S_CRAWL:                      // 36 frames of crawl, 28 of pause, then a turn of 135 degrees (back home when too far)
+        if (r->timer > 0) {
+            r->timer--;
+            if (r->phase == 0) { rest_walk(e, r, e->dir, 100); moving = 1; }
+        } else if (r->phase == 0) {
+            r->phase = 1; r->timer = 28;
+        } else {
+            r->phase = 0; r->timer = 36;
+            e->dir = rest_outside(r) ? enemy_dir_from_vector(-r->ox, -r->oy) : (e->dir + 3) & 7;
+        }
+        break;
+    case ENC_S_SWAY:
+    case ENC_S_STROLL: {                   // along x, to one end, pause, to the other
+        const int sway = r->mode == ENC_S_SWAY;
+        const fixed half = TO_FIXED(sway ? ENC_REST_SWAY_PX : ENC_REST_STROLL_PX);
+        if (r->phase == 1) {
+            if (--r->timer <= 0) { r->phase = 0; r->aux ^= 1; }
+            break;
+        }
+        const int east = (r->aux & 1) == 0;
+        const int ok = rest_walk(e, r, east ? DIR_EAST : DIR_WEST, sway ? 64 : 80);
+        moving = 1;
+        if (!ok || (east ? r->ox >= half : r->ox <= -half)) { r->phase = 1; r->timer = sway ? 24 : 60; moving = 0; }
+        break;
+    }
+    case ENC_S_SWEEP: {                    // gaze: W, SW, S, SE, E and back, 40 frames per step
+        static const uint8_t seq[8] = { DIR_WEST, DIR_SOUTHWEST, DIR_SOUTH, DIR_SOUTHEAST, DIR_EAST, DIR_SOUTHEAST, DIR_SOUTH, DIR_SOUTHWEST };
+        if (--r->timer <= 0) { r->timer = 40; r->aux = (r->aux + 1) & 7; }
+        e->dir = seq[r->aux & 7];
+        break;
+    }
+    case ENC_S_PATROL: {                   // rectangle: east, south, west, north
+        static const uint8_t legs[4] = { DIR_EAST, DIR_SOUTH, DIR_WEST, DIR_NORTH };
+        const int leg = r->aux & 3;
+        const int ok = rest_walk(e, r, legs[leg], 96);
+        moving = 1;
+        const int done = leg == 0 ? r->ox >= TO_FIXED(ENC_REST_PATROL_W) : leg == 1 ? r->oy >= TO_FIXED(ENC_REST_PATROL_H)
+                       : leg == 2 ? r->ox <= 0 : r->oy <= 0;
+        if (!ok || done) r->aux = (uint8_t)((leg + 1) & 3);
+        break;
+    }
+    default: break;                        // HIDDEN: still
+    }
+    rest_anim(e, moving);
+}
+
+// Every frame, before the wake pass: moves the resting enemies and decides which resting groups wake (the hero inside the
+// warning radius of any member, or any member hit). Sets s_rest_group_mask / s_rest_wake_mask by block.
+static void rest_update(Enemy *enemies, int max_enemies, int px, int py) {
+    s_rest_group_mask = s_rest_wake_mask = 0;
+    for (int i = 0; i < max_enemies && i < MAX_GAMEPLAY_ENEMIES; i++) {
+        Enemy *e = &enemies[i];
+        RestRec *r = &s_rest[i];
+        if (!r->mode) continue;
+        if (!e->active || e->state != ENEMY_STATE_DORMANT) {       // woken, dead or recycled: the rest is over
+            e->home_flags &= (uint8_t)~ENEMY_HOME_HIDDEN;
+            r->mode = 0;
+            // Killed or hurt while it slept: the group wakes (a one-hit Bebe never shows as "hurt" otherwise).
+            if (e->active && e->pack >= 0 && e->pack < 32 && (e->hp < e->max_hp || e->hit_timer > 0)) s_rest_wake_mask |= 1u << e->pack;
+            continue;
+        }
+        if (e->pack < 0 || e->pack >= 32) continue;
+        s_rest_group_mask |= 1u << e->pack;
+        if (e->hp > 0) rest_step(e, r);
+        const int dx = px - TO_INT(e->x), dy = py - TO_INT(e->y);
+        const int rad = r->mode == ENC_S_HIDDEN ? ENC_REST_HIDDEN_WAKE_PX : ENC_REST_WAKE_PX;
+        if (e->hp > 0 && dx * dx + GROUND_DY2(dy) <= rad * rad) s_rest_wake_mask |= 1u << e->pack;
+        if (e->hit_timer > 0 || e->hp < e->max_hp) s_rest_wake_mask |= 1u << e->pack;
+    }
+}
+
 // Same field setup as encounters_spawn() / sandbox_place(); the owner encounter goes in `pack`.
 static void place_enemy(Enemy *e, const EncEnemyDef *d, int x, int y, int ordinal, int owner, int awake_now) {
     EnemyType type = enemy_type_of(d->type);
@@ -768,6 +945,7 @@ static int spawn_group(Enemy *enemies, int max_enemies, const EncEnemyDef *defs,
         int lx = mirror ? ENC_FLOOR_W - defs[i].x : defs[i].x;
         int ly = y_override >= 0 ? y_override : defs[i].y;
         place_enemy(&enemies[slot], &defs[i], ENC_FLOOR_X + lx, top + ly, i, owner, awake_now);
+        rest_assign(slot, awake_now ? 0 : defs[i].state, &enemies[slot]);      // ENC_S_CRAWL.. sleep and move around the post
         made++;
     }
     return made;
@@ -831,6 +1009,7 @@ static const GroupDef s_groups[G_COUNT] = {
 static int group_of_block(int k) {
     const RoomDef *r = room_def();
     if (r->type == RT_CRIPTA) return -1;
+    if (g_enc_debug.force_group && g_enc_debug.force_group <= G_NORMAL_COUNT && r->type == RT_NORMAL) return g_enc_debug.force_group - 1;
     if (r->type == RT_MISA) return k == r->special_block ? G_MISA : -1;
     if (r->type == RT_MONJARANA) return k == r->special_block ? G_MONJARANA : -1;
     if (r->type == RT_PARROQUIA) return G_PARROQUIA;
@@ -854,6 +1033,12 @@ static void room_art_prepare_current(void) {
     int campanero = 0;
     const RoomDef *r = room_def();
     for (int k = 0; k < r->blocks; k++) {
+        const RoomLayout *lay = layout_of(k);
+        if (lay) {
+            for (int i = 0; i < lay->n_members; i++)
+                mask |= 1u << g_char_group[enemy_type_char_id(enemy_type_of(lay->members[i].type))];
+            continue;
+        }
         const int g = group_of_block(k);
         if (g < 0) continue;
         for (int p = 0; p < s_groups[g].n_parts; p++) {
@@ -890,6 +1075,7 @@ static void room_art_prepare_current(void) {
         if (mask & (1u << CG_MONAGUILLO)) mask |= 1u << CG_ARANA_MONA;
     }
     room_art_prepare(mask, campanero);
+    room_kit_load(s_room);                      // the props only this room uses (nitrofiles/rooms/sala_NN.rmk) after its enemy art
 }
 
 // Slot of each member in the 4 x 3 grid of the block: kinds[slot] = RK_*, -1 = empty. Ojos take spread-out slots.
@@ -1000,7 +1186,63 @@ static void bot_group_density(int8_t *kinds) {
 }
 #endif
 
-static int spawn_room_group(Enemy *enemies, int max_enemies, int k) {
+// Group of the poster: each member at its feet, its state turned into the kind of post (REPOSO_A_ESTADO of gen_salas_rom.py).
+// A member is placed when the hero is within ARPG_ROOM_SPAWN_NEAR_PX of its post and it was not placed yet (members_note).
+static int member_near(int y, int py) { return y >= py - ARPG_ROOM_SPAWN_NEAR_PX && y <= py + ARPG_ROOM_SPAWN_NEAR_PX; }
+
+static void member_note(int k, int i, int slot) {
+    s_member_mask[k] |= (uint16_t)(1u << i);
+    if (slot >= 0 && slot < (int)sizeof(s_slot_member)) s_slot_member[slot] = (uint8_t)i;
+    if (!(s_member_seen[k] & (1u << i))) {
+        s_member_seen[k] |= (uint16_t)(1u << i);
+        if (g_enc_stats.members_placed < 255) g_enc_stats.members_placed++;
+    }
+}
+
+static int spawn_layout_group(Enemy *enemies, int max_enemies, int k, const RoomLayout *lay, int py) {
+    const int top = window_top(block_of_encounter(k));
+    int active = active_enemies(enemies, max_enemies);
+    int made = 0;
+    s_member_full[k] = (uint16_t)((1u << lay->n_members) - 1u);
+    for (int i = 0; i < lay->n_members && active + made < MAX_GAMEPLAY_ENEMIES; i++) {
+        const RoomMember *m = &lay->members[i];
+        if ((s_member_mask[k] >> i) & 1u) continue;
+        if (!member_near(top + m->y, py)) continue;
+        int slot = -1;
+        for (int s = 0; s < max_enemies; s++) if (!enemies[s].active) { slot = s; break; }
+        if (slot < 0) break;
+        RoomKind kind = { m->type, (uint8_t)(m->state == ENC_S_PRAY ? 2 : m->state == ENC_S_GUARD ? 1 : 0) };
+        if (m->state == ENC_S_PRAY && m->type != ENC_E_EXVOTO) kind.guard = 1;     // only the Exvoto has the praying pose
+        int mx = m->x, my = m->y, state = m->state;
+        if (m->type == ENC_E_MONAGUILLO) {                  // group with a wax nun: the acolyte rests at her side (16-24 px), not at its own post
+            for (int j = 0; j < lay->n_members; j++) {
+                const RoomMember *nun = &lay->members[j];
+                if (nun->type != ENC_E_EXVOTO || nun->state != ENC_S_PRAY) continue;
+                mx = nun->x + ((i & 1) ? -20 : 20);
+                my = nun->y + 4;
+                state = ENC_S_DORMANT;
+                break;
+            }
+        }
+        const int x = ENC_FLOOR_X + mx, y = top + my;
+        int placed = 0;
+        for (int t = 0; t < 4 && !placed; t++) {
+            int tx = x + (t == 1 ? 12 : t == 2 ? -12 : 0);
+            int ty = y + (t == 3 ? 12 : 0);
+            if (position_is_free(TO_FIXED(tx), TO_FIXED(ty))) {
+                place_room_enemy(&enemies[slot], &kind, tx, ty, i, k, 100, 0);
+                rest_assign(slot, state, &enemies[slot]);          // ENC_S_CRAWL.. sleep and move around the post (0 for the others)
+                placed = 1;
+            }
+        }
+        if (placed) { made++; member_note(k, i, slot); }
+    }
+    return made;
+}
+
+static int spawn_room_group(Enemy *enemies, int max_enemies, int k, int py) {
+    const RoomLayout *lay = layout_of(k);
+    if (lay) return spawn_layout_group(enemies, max_enemies, k, lay, py);
     const int g = group_of_block(k);
     if (g < 0) return 0;
     int8_t kinds[12];
@@ -1010,13 +1252,16 @@ static int spawn_room_group(Enemy *enemies, int max_enemies, int k) {
 #endif
     int active = active_enemies(enemies, max_enemies);
     int made = 0;
+    s_member_full[k] = 0;
+    for (int i = 0; i < 12; i++) if (kinds[i] >= 0) s_member_full[k] |= (uint16_t)(1u << i);
     for (int i = 0; i < 12 && active + made < MAX_GAMEPLAY_ENEMIES; i++) {
-        if (kinds[i] < 0) continue;
+        if (kinds[i] < 0 || ((s_member_mask[k] >> i) & 1u)) continue;
         int slot = -1;
         for (int s = 0; s < max_enemies; s++) if (!enemies[s].active) { slot = s; break; }
         if (slot < 0) break;
         int x, y;
         room_group_slot(k, i, &x, &y);
+        if (!member_near(y, py)) continue;
         const RoomKind *kind = &s_room_kinds[kinds[i]];
         const int tier2 = (kinds[i] == RK_OJO || kinds[i] == RK_CIRENEO) ? tier2_of(k, i) : 0;
         int placed = 0;
@@ -1025,10 +1270,11 @@ static int spawn_room_group(Enemy *enemies, int max_enemies, int k) {
             int ty = y + (t == 3 ? 12 : 0);
             if (position_is_free(TO_FIXED(tx), TO_FIXED(ty))) {
                 place_room_enemy(&enemies[slot], kind, tx, ty, i, k, 100, tier2);
+                rest_assign(slot, rest_mode_for(kind->enc_type, kind->guard), &enemies[slot]);
                 placed = 1;
             }
         }
-        if (placed) made++;
+        if (placed) { made++; member_note(k, i, slot); }
     }
     return made;
 }
@@ -1051,6 +1297,7 @@ static void wake_owner(Enemy *enemies, int max_enemies, int owner) {
         if (!e->active || e->pack != owner || e->state != ENEMY_STATE_DORMANT) continue;
         e->state = (e->home_flags & ENEMY_HOME_GUARD) ? ENEMY_STATE_GUARD : ENEMY_INITIAL_STATE(e->type);
         e->state_timer = 0;
+        e->home_flags &= (uint8_t)~ENEMY_HOME_HIDDEN;
     }
 }
 
@@ -1209,17 +1456,19 @@ void enc_update(Enemy *enemies, int max_enemies, int px, int py) {
     int lo = hero_k - 1; if (lo < 0) lo = 0;
     int hi = hero_k + 2; if (hi > nblocks) hi = nblocks;
 
-    // Recycle enemies far below the hero (rooms already behind him).
+    // Recycle enemies far below the hero (rooms already behind him). Only that member goes: the rest of its group
+    // keeps its own life, and its post is placed again (a fresh one) if the hero comes back to it.
     for (int i = 0; i < max_enemies; i++) {
         Enemy *e = &enemies[i];
-        if (!e->active || e->hp <= 0) continue;
+        if (!e->active) { if (i < (int)sizeof(s_slot_member)) s_slot_member[i] = 0xFF; continue; }
+        if (e->hp <= 0) continue;
         if (TO_INT(e->y) <= py + ARPG_ROOM_DESPAWN_BEHIND_PX) continue;
         int pk = e->pack;
         e->active = 0;
         if (pk >= 0 && pk < nblocks && !is_boss_stage(pk) && !s_rt[pk].cleared) {
-            s_rt[pk].spawned = 0;      // the room may be repopulated if the hero comes back to it
-            s_rt[pk].awake = 0;
+            if (i < (int)sizeof(s_slot_member) && s_slot_member[i] != 0xFF) s_member_mask[pk] &= (uint16_t)~(1u << s_slot_member[i]);
         }
+        if (i < (int)sizeof(s_slot_member)) s_slot_member[i] = 0xFF;
     }
 
     // Place the groups ahead (asleep). spawn_room_group respects the pool cap: with no slots the room
@@ -1232,11 +1481,15 @@ void enc_update(Enemy *enemies, int max_enemies, int px, int py) {
 #if SOUND_TEST
         if (sound_test_rooms_empty()) continue;     // prueba-sonidos: a scene (1..7) owns the enemies; scene 0 is the normal map
 #endif
-        if (rt->spawned) continue;
+        if (is_boss_stage(k) ? rt->spawned : rt->cleared) continue;
         const int top = window_top(block_of_encounter(k));
         const int bottom = top + ENC_BLOCK_H;
-        if (bottom < py - ARPG_ROOM_DESPAWN_BEHIND_PX) continue;      // far below: wait
-        if (py > bottom + ARPG_ROOM_SPAWN_AHEAD_PX) continue;         // not close yet
+        if (is_boss_stage(k)) {
+            if (bottom < py - ARPG_ROOM_DESPAWN_BEHIND_PX) continue;      // far below: wait
+            if (py > bottom + ARPG_ROOM_SPAWN_AHEAD_PX) continue;         // not close yet
+        } else if (bottom < py - ARPG_ROOM_SPAWN_NEAR_PX || top > py + ARPG_ROOM_SPAWN_NEAR_PX) {
+            continue;                                                     // no post of this block is near the hero
+        }
         if (is_boss_stage(k)) {
             rt->spawned = 1;
             s_active_boss_k = k;
@@ -1249,16 +1502,22 @@ void enc_update(Enemy *enemies, int max_enemies, int px, int py) {
             spawn_group(enemies, max_enemies, s_boss_enemies,
                         (int)(sizeof(s_boss_enemies) / sizeof(s_boss_enemies[0])), 0, top, -1, k, 0);
 #endif
-        } else if (group_of_block(k) < 0) {
+        } else if (layout_of(k) ? layout_of(k)->n_members == 0 : group_of_block(k) < 0) {
             rt->spawned = rt->awake = rt->cleared = 1;     // a walk-in block: nothing to wake, nothing to remember
-        } else if (spawn_room_group(enemies, max_enemies, k) > 0) {
-            rt->spawned = 1;
-            rt->awake = 0;
+        } else if (s_member_mask[k] == s_member_full[k] && rt->spawned) {
+            continue;                                      // every member of the group is already out
         } else {
-            break;      // pool full: do not mark the room, try again once something behind is recycled
+            // Members come out as the hero gets close to their post (spawn_room_group). Those that join a room already awake
+            // wake at once; the pool cap of 24 waits for the group behind to be recycled.
+            if (spawn_room_group(enemies, max_enemies, k, py) > 0) {
+                if (!rt->spawned) rt->awake = 0;
+                rt->spawned = 1;
+                if (rt->awake) wake_owner(enemies, max_enemies, k);
+            }
         }
     }
 
+    rest_update(enemies, max_enemies, px, py);
     // Wake the room the hero steps into, with at most ARPG_ROOM_MAX_AWAKE groups around him.
     for (int k = lo; k < hi; k++) {
         EncRuntime *rt = &s_rt[k];
@@ -1267,7 +1526,9 @@ void enc_update(Enemy *enemies, int max_enemies, int px, int py) {
         const int bottom = top + ENC_BLOCK_H;
         int hurt;
         (void)alive_of(enemies, max_enemies, k, &hurt);
-        if (py >= bottom - ENC_WAKE_MARGIN && !hurt) continue;
+        if (s_rest_group_mask & (1u << k)) {
+            if (!(s_rest_wake_mask & (1u << k))) continue;           // a resting group wakes by radius or hit, not by the room margin
+        } else if (py >= bottom - ENC_WAKE_MARGIN && !hurt) continue;
         if (k != hero_k) {
             int awake = 0;
             for (int j = lo; j < hi; j++) if (s_rt[j].awake && !s_rt[j].cleared) awake++;
@@ -1297,7 +1558,7 @@ void enc_update(Enemy *enemies, int max_enemies, int px, int py) {
                     alive = 0;
                 }
             }
-            if (alive == 0 && (is_boss || hurt == 0)) {
+            if (alive == 0 && (is_boss || (hurt == 0 && s_member_mask[k] == s_member_full[k]))) {
                 if (!rt->cleared) {
                     rt->cleared = 1;
                     const int first_time = !((g_arpg.boss_ever >> s_room) & 1);   // read before block_mark_dead sets it

@@ -81,6 +81,9 @@
         "arpg-exvotos": {
             "defines": ["ARPG_EXVOTO_TEST=1", "SKIP_TITLE=1", "ARPG_ALL_UNLOCKED=1", "PERF_PROFILE=1"]
         },
+        "arpg-monja": {
+            "defines": ["ARPG_EXVOTO_TEST=1", "ARPG_MONJA_CURA_TEST=1", "SKIP_TITLE=1", "ARPG_ALL_UNLOCKED=1"]
+        },
         "arpg-ojo": {
             "defines": ["ARPG_OJO_TEST=1", "SKIP_TITLE=1", "ARPG_ALL_UNLOCKED=1", "PERF_PROFILE=1"]
         },

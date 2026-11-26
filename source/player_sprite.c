@@ -25,7 +25,7 @@ const CharacterConfig g_characters[NUM_CHARACTERS] = {
 };
 
 // 40x40 BGR555 frames for Corazon Abierto Hero, 8 directions x 8 frames (cropped to bounds)
-const uint16_t g_player_frames[] __attribute__((aligned(4))) = {
+uint16_t g_player_frames[32052] __attribute__((aligned(4))) = {
     0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0xDB1B, 0xE77D, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
     0xB18E, 0xEBBF, 0xEFBF, 0xCEB8, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x9D2A, 0xD2FB, 0xE79F, 0xBE54,
     0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x9D0A, 0xBE55, 0xC698, 0xBA34, 0x0000, 0x0000, 0x0000, 0x0000,
@@ -2026,7 +2026,7 @@ const uint16_t g_player_frames[] __attribute__((aligned(4))) = {
     0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x8042, 0x950A, 0x90C8, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
 };
 
-const uint32_t g_player_frame_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
+uint32_t g_player_frame_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
     { 0, 372, 834, 1296, 1758, 2142, 2604, 3066 },
     { 3462, 3910, 4386, 4930, 5406, 5802, 6378, 7060 },
     { 7680, 8076, 8538, 9158, 9734, 10182, 10694, 11398 },
@@ -2037,7 +2037,7 @@ const uint32_t g_player_frame_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
     { 27894, 28290, 28866, 29486, 30106, 30540, 31016, 31492 },
 };
 
-const uint8_t g_player_frame_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4] = {
+uint8_t g_player_frame_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4] = {
     { { 14, 3, 12, 31 }, { 13, 3, 13, 33 }, { 13, 3, 13, 33 }, { 13, 3, 13, 33 }, { 14, 3, 12, 32 }, { 13, 3, 13, 33 }, { 13, 3, 14, 33 }, { 14, 3, 12, 33 } },
     { { 13, 3, 13, 32 }, { 12, 3, 14, 34 }, { 11, 3, 15, 34 }, { 12, 3, 14, 34 }, { 13, 3, 12, 33 }, { 10, 3, 17, 32 }, { 9, 3, 21, 31 }, { 12, 3, 19, 31 } },
     { { 14, 3, 11, 33 }, { 12, 3, 14, 33 }, { 10, 4, 20, 31 }, { 13, 4, 18, 32 }, { 13, 4, 13, 32 }, { 11, 4, 16, 32 }, { 10, 3, 21, 32 }, { 12, 4, 18, 31 } },
@@ -2049,7 +2049,7 @@ const uint8_t g_player_frame_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4] = {
 };
 
 // Opaque runs per row of Corazon Abierto Hero frames (blit_stride): block = (bh+1) row offsets in halfwords, then x | len << 8
-const uint16_t g_player_runs[] __attribute__((aligned(4))) = {
+uint16_t g_player_runs[4444] __attribute__((aligned(4))) = {
     32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47,
     48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 61, 63, 65, 66,
     517, 1028, 1028, 1028, 1794, 2305, 2561, 3072, 3072, 3072, 3072, 3072, 3072, 3072, 3072, 3072,
@@ -2330,7 +2330,7 @@ const uint16_t g_player_runs[] __attribute__((aligned(4))) = {
     2306, 2051, 2051, 2051, 2051, 1539, 772, 1027, 1027, 772, 772, 0,
 };
 
-const uint32_t g_player_run_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
+uint32_t g_player_run_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
     { 0, 66, 138, 208, 280, 348, 420, 490 },
     { 560, 630, 702, 780, 850, 920, 990, 1062 },
     { 1132, 1200, 1270, 1338, 1406, 1472, 1542, 1616 },
@@ -2342,7 +2342,7 @@ const uint32_t g_player_run_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
 };
 
 // 1 bpp packed animated crisp 3D shadow masks for Corazon Abierto Hero (8 dirs x 8 frames, cropped to bounds)
-const uint8_t g_player_shadow_masks[] __attribute__((aligned(4))) = {
+uint8_t g_player_shadow_masks[9263] __attribute__((aligned(4))) = {
     0x38, 0x00, 0x00, 0x7C, 0x00, 0x00, 0xFC, 0x00, 0x00, 0xFC, 0x01, 0x00, 0xFE, 0x07, 0x00, 0xFE,
     0x1F, 0x00, 0xFE, 0x3F, 0x00, 0xFF, 0x3F, 0x00, 0xFE, 0x7F, 0x00, 0xFC, 0xFF, 0x00, 0xFC, 0xFF,
     0x00, 0xFC, 0xFF, 0x01, 0xF8, 0xFF, 0x01, 0xF8, 0xFF, 0x01, 0xF0, 0xFF, 0x03, 0xF0, 0xFF, 0x03,
@@ -2670,7 +2670,7 @@ const uint8_t g_player_shadow_masks[] __attribute__((aligned(4))) = {
     0x00, 0x3E, 0x00, 0xE0, 0x03, 0x00, 0x18,
 };
 
-const uint32_t g_player_shadow_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
+uint32_t g_player_shadow_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
     { 0, 81, 168, 248, 332, 409, 493, 577 },
     { 657, 734, 806, 893, 968, 1041, 1122, 1207 },
     { 1295, 1372, 1456, 1544, 1632, 1702, 1783, 1881 },
@@ -2681,7 +2681,7 @@ const uint32_t g_player_shadow_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
     { 4554, 4631, 4719, 4807, 4888, 4966, 5041, 5116 },
 };
 
-const uint8_t g_player_shadow_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4] = {
+uint8_t g_player_shadow_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4] = {
 
     {
         { 23, 15, 24, 27 },
@@ -2767,7 +2767,7 @@ const uint8_t g_player_shadow_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4] = {
 
 // 60x60 BGR555 frames for Enemy Charger (Knocker), 8 directions x 8 frames (cropped to bounds)
 const uint16_t *g_charger_frames;   // NitroFS chars/charger.bin
-const uint32_t g_charger_frame_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
+uint32_t g_charger_frame_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
     { 0, 1872, 3848, 5876, 7904, 9828, 11804, 13754 },
     { 15730, 17098, 18698, 20420, 22142, 23582, 24874, 26154 },
     { 27480, 28856, 30200, 31544, 32720, 34010, 35300, 36644 },
@@ -2778,7 +2778,7 @@ const uint32_t g_charger_frame_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
     { 96022, 97582, 98914, 100240, 101644, 103164, 105050, 106890 },
 };
 
-const uint8_t g_charger_frame_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4] = {
+uint8_t g_charger_frame_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4] = {
     { { 4, 15, 52, 36 }, { 4, 15, 52, 38 }, { 4, 15, 52, 39 }, { 4, 14, 52, 39 }, { 4, 14, 52, 37 }, { 4, 15, 51, 38 }, { 5, 15, 50, 39 }, { 4, 15, 51, 38 } },
     { { 9, 13, 36, 38 }, { 8, 14, 39, 40 }, { 6, 13, 42, 41 }, { 7, 12, 41, 41 }, { 10, 12, 36, 40 }, { 12, 12, 33, 38 }, { 13, 11, 32, 40 }, { 12, 12, 33, 39 } },
     { { 16, 9, 31, 43 }, { 16, 10, 31, 42 }, { 16, 10, 31, 42 }, { 18, 10, 28, 42 }, { 17, 9, 29, 43 }, { 16, 9, 30, 43 }, { 16, 9, 31, 42 }, { 16, 9, 30, 41 } },
@@ -2791,7 +2791,7 @@ const uint8_t g_charger_frame_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4] = {
 
 // Opaque runs per row of Enemy Charger (Knocker) frames (blit_stride): block = (bh+1) row offsets in halfwords, then x | len << 8
 const uint16_t *g_charger_runs;   // NitroFS chars/charger.bin
-const uint32_t g_charger_run_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
+uint32_t g_charger_run_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
     { 0, 90, 182, 272, 362, 454, 550, 648 },
     { 738, 830, 922, 1018, 1114, 1210, 1308, 1400 },
     { 1490, 1594, 1698, 1792, 1888, 1990, 2104, 2206 },
@@ -2804,7 +2804,7 @@ const uint32_t g_charger_run_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
 
 // 1 bpp packed animated crisp 3D shadow masks for Enemy Charger (Knocker) (8 dirs x 8 frames, cropped to bounds)
 const uint8_t *g_charger_shadow_masks;   // NitroFS chars/charger.bin
-const uint32_t g_charger_shadow_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
+uint32_t g_charger_shadow_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
     { 0, 203, 419, 642, 865, 1079, 1298, 1517 },
     { 1729, 1921, 2128, 2330, 2527, 2725, 2912, 3106 },
     { 3293, 3517, 3736, 3955, 4164, 4373, 4587, 4796 },
@@ -2815,7 +2815,7 @@ const uint32_t g_charger_shadow_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
     { 11614, 11797, 11953, 12111, 12273, 12449, 12655, 12870 },
 };
 
-const uint8_t g_charger_shadow_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4] = {
+uint8_t g_charger_shadow_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4] = {
     {
         { 2, 12, 54, 30 },
         { 3, 12, 54, 32 },
@@ -2900,7 +2900,7 @@ const uint8_t g_charger_shadow_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4] = {
 
 // 56x56 BGR555 frames for El Ojo del Tribunal, 8 directions x 8 frames (cropped to bounds)
 const uint16_t *g_ojo_frames;   // NitroFS chars/ojo.bin
-const uint32_t g_ojo_frame_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
+uint32_t g_ojo_frame_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
     { 0, 760, 1560, 2360, 3160, 3920, 4720, 5540 },
     { 6340, 7302, 8368, 9516, 10556, 11492, 12454, 13518 },
     { 14582, 15518, 16506, 17616, 18786, 19746, 20706, 21826 },
@@ -2911,7 +2911,7 @@ const uint32_t g_ojo_frame_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
     { 52618, 53320, 54156, 55044, 55902, 56604, 57342, 58062 },
 };
 
-const uint8_t g_ojo_frame_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4] = {
+uint8_t g_ojo_frame_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4] = {
     { { 19, 9, 20, 38 }, { 19, 9, 19, 40 }, { 19, 10, 19, 40 }, { 19, 9, 20, 40 }, { 19, 9, 19, 38 }, { 19, 9, 19, 40 }, { 19, 9, 19, 41 }, { 19, 9, 19, 40 } },
     { { 11, 10, 25, 37 }, { 11, 9, 26, 41 }, { 11, 9, 27, 41 }, { 11, 9, 26, 40 }, { 12, 9, 23, 39 }, { 12, 10, 25, 37 }, { 12, 9, 27, 38 }, { 12, 9, 27, 38 } },
     { { 11, 9, 23, 39 }, { 10, 9, 25, 38 }, { 9, 10, 30, 37 }, { 10, 9, 30, 39 }, { 11, 8, 24, 40 }, { 12, 8, 24, 40 }, { 12, 7, 28, 40 }, { 12, 8, 28, 38 } },
@@ -2924,7 +2924,7 @@ const uint8_t g_ojo_frame_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4] = {
 
 // Opaque runs per row of El Ojo del Tribunal frames (blit_stride): block = (bh+1) row offsets in halfwords, then x | len << 8
 const uint16_t *g_ojo_runs;   // NitroFS chars/ojo.bin
-const uint32_t g_ojo_run_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
+uint32_t g_ojo_run_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
     { 0, 88, 178, 264, 350, 434, 522, 612 },
     { 698, 786, 878, 968, 1058, 1148, 1240, 1332 },
     { 1424, 1508, 1594, 1678, 1768, 1852, 1946, 2038 },
@@ -2937,7 +2937,7 @@ const uint32_t g_ojo_run_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
 
 // 1 bpp packed animated crisp 3D shadow masks for El Ojo del Tribunal (8 dirs x 8 frames, cropped to bounds)
 const uint8_t *g_ojo_shadow_masks;   // NitroFS chars/ojo.bin
-const uint32_t g_ojo_shadow_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
+uint32_t g_ojo_shadow_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
     { 0, 112, 227, 346, 465, 577, 692, 806 },
     { 921, 1057, 1206, 1364, 1509, 1650, 1799, 1956 },
     { 2117, 2266, 2423, 2593, 2758, 2895, 3044, 3210 },
@@ -2948,7 +2948,7 @@ const uint32_t g_ojo_shadow_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
     { 7323, 7427, 7555, 7687, 7807, 7915, 8025, 8139 },
 };
 
-const uint8_t g_ojo_shadow_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4] = {
+uint8_t g_ojo_shadow_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4] = {
     {
         { 18, 11, 28, 32 },
         { 19, 11, 27, 34 },
@@ -3033,7 +3033,7 @@ const uint8_t g_ojo_shadow_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4] = {
 
 // 40x40 BGR555 frames for Exvoto Walker Enemy, 8 directions x 8 frames (cropped to bounds)
 const uint16_t *g_exvoto_frames;   // NitroFS chars/exvoto.bin
-const uint32_t g_exvoto_frame_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
+uint32_t g_exvoto_frame_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
     { 0, 260, 572, 896, 1208, 1520, 1844, 2114 },
     { 2374, 2686, 2956, 3292, 3616, 3928, 4292, 4656 },
     { 5020, 5412, 5818, 6266, 6658, 7064, 7470, 7902 },
@@ -3044,7 +3044,7 @@ const uint32_t g_exvoto_frame_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
     { 20346, 20670, 21034, 21450, 21814, 22138, 22408, 22732 },
 };
 
-const uint8_t g_exvoto_frame_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4] = {
+uint8_t g_exvoto_frame_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4] = {
     { { 15, 9, 10, 26 }, { 15, 10, 11, 26 }, { 14, 10, 12, 27 }, { 14, 10, 11, 26 }, { 14, 9, 11, 26 }, { 14, 10, 11, 27 }, { 15, 10, 10, 27 }, { 15, 10, 10, 26 } },
     { { 13, 8, 12, 26 }, { 13, 9, 10, 27 }, { 13, 9, 11, 28 }, { 14, 9, 11, 27 }, { 13, 9, 12, 26 }, { 11, 9, 14, 26 }, { 12, 9, 14, 26 }, { 13, 9, 13, 26 } },
     { { 11, 6, 14, 28 }, { 9, 6, 14, 29 }, { 9, 7, 16, 28 }, { 11, 7, 14, 28 }, { 11, 6, 13, 29 }, { 10, 6, 14, 29 }, { 10, 7, 16, 27 }, { 11, 7, 14, 26 } },
@@ -3057,7 +3057,7 @@ const uint8_t g_exvoto_frame_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4] = {
 
 // Opaque runs per row of Exvoto Walker Enemy frames (blit_stride): block = (bh+1) row offsets in halfwords, then x | len << 8
 const uint16_t *g_exvoto_runs;   // NitroFS chars/exvoto.bin
-const uint32_t g_exvoto_run_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
+uint32_t g_exvoto_run_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
     { 0, 58, 116, 176, 230, 286, 344, 402 },
     { 456, 512, 570, 632, 690, 748, 804, 860 },
     { 916, 974, 1034, 1092, 1152, 1212, 1274, 1334 },
@@ -3070,7 +3070,7 @@ const uint32_t g_exvoto_run_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
 
 // 1 bpp packed animated crisp 3D shadow masks for Exvoto Walker Enemy (8 dirs x 8 frames, cropped to bounds)
 const uint8_t *g_exvoto_shadow_masks;   // NitroFS chars/exvoto.bin
-const uint32_t g_exvoto_shadow_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
+uint32_t g_exvoto_shadow_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
     { 0, 55, 115, 175, 233, 288, 348, 408 },
     { 463, 527, 593, 665, 734, 801, 868, 937 },
     { 1006, 1088, 1167, 1249, 1328, 1403, 1478, 1556 },
@@ -3081,7 +3081,7 @@ const uint32_t g_exvoto_shadow_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
     { 3785, 3831, 3892, 3953, 4008, 4057, 4111, 4165 },
 };
 
-const uint8_t g_exvoto_shadow_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4] = {
+uint8_t g_exvoto_shadow_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4] = {
 
     {
         { 26, 21, 20, 22 },
@@ -3167,7 +3167,7 @@ const uint8_t g_exvoto_shadow_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4] = {
 
 // 40x40 BGR555 frames for Exvoto praying standing, 8 directions x 8 frames (cropped to bounds)
 const uint16_t *g_exvoto_pray_stand_frames;   // NitroFS chars/exvoto_pray_stand.bin
-const uint32_t g_exvoto_pray_stand_frame_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
+uint32_t g_exvoto_pray_stand_frame_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
     { 0, 348, 696, 1044, 1392, 1740, 2088, 2436 },
     { 2784, 3132, 3480, 3770, 4130, 4478, 4826, 5174 },
     { 5522, 5870, 6218, 6566, 6914, 7262, 7610, 7958 },
@@ -3178,7 +3178,7 @@ const uint32_t g_exvoto_pray_stand_frame_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRA
     { 18968, 19316, 19664, 20012, 20302, 20592, 20940, 21288 },
 };
 
-const uint8_t g_exvoto_pray_stand_frame_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4] = {
+uint8_t g_exvoto_pray_stand_frame_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4] = {
     { { 15, 6, 11, 29 }, { 15, 6, 11, 29 }, { 15, 6, 11, 29 }, { 15, 6, 11, 29 }, { 15, 6, 11, 29 }, { 15, 6, 11, 29 }, { 15, 6, 11, 29 }, { 15, 6, 11, 29 } },
     { { 15, 6, 11, 29 }, { 15, 6, 11, 29 }, { 15, 6, 10, 29 }, { 14, 6, 11, 30 }, { 14, 6, 11, 29 }, { 14, 6, 11, 29 }, { 14, 6, 11, 29 }, { 15, 6, 11, 29 } },
     { { 13, 6, 12, 29 }, { 13, 6, 12, 29 }, { 13, 6, 12, 29 }, { 13, 6, 11, 29 }, { 13, 6, 11, 29 }, { 13, 6, 11, 29 }, { 13, 6, 12, 29 }, { 14, 6, 11, 29 } },
@@ -3191,7 +3191,7 @@ const uint8_t g_exvoto_pray_stand_frame_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAME
 
 // Opaque runs per row of Exvoto praying standing frames (blit_stride): block = (bh+1) row offsets in halfwords, then x | len << 8
 const uint16_t *g_exvoto_pray_stand_runs;   // NitroFS chars/exvoto_pray_stand.bin
-const uint32_t g_exvoto_pray_stand_run_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
+uint32_t g_exvoto_pray_stand_run_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
     { 0, 66, 132, 196, 262, 326, 390, 454 },
     { 520, 580, 642, 706, 770, 832, 894, 956 },
     { 1018, 1078, 1138, 1198, 1258, 1318, 1378, 1438 },
@@ -3204,7 +3204,7 @@ const uint32_t g_exvoto_pray_stand_run_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAME
 
 // 1 bpp packed animated crisp 3D shadow masks for Exvoto praying standing (8 dirs x 8 frames, cropped to bounds)
 const uint8_t *g_exvoto_pray_stand_shadow_masks;   // NitroFS chars/exvoto_pray_stand.bin
-const uint32_t g_exvoto_pray_stand_shadow_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
+uint32_t g_exvoto_pray_stand_shadow_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
     { 0, 63, 129, 195, 264, 333, 402, 471 },
     { 540, 606, 672, 738, 803, 865, 930, 995 },
     { 1060, 1132, 1201, 1270, 1335, 1397, 1462, 1527 },
@@ -3215,7 +3215,7 @@ const uint32_t g_exvoto_pray_stand_shadow_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FR
     { 3613, 3675, 3735, 3797, 3862, 3931, 4000, 4065 },
 };
 
-const uint8_t g_exvoto_pray_stand_shadow_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4] = {
+uint8_t g_exvoto_pray_stand_shadow_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4] = {
 
     {
         { 26, 18, 21, 24 },
@@ -3301,7 +3301,7 @@ const uint8_t g_exvoto_pray_stand_shadow_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAM
 
 // 40x40 BGR555 frames for Exvoto praying kneeling, 8 directions x 8 frames (cropped to bounds)
 const uint16_t *g_exvoto_pray_kneel_frames;   // NitroFS chars/exvoto_pray_kneel.bin
-const uint32_t g_exvoto_pray_kneel_frame_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
+uint32_t g_exvoto_pray_kneel_frame_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
     { 0, 252, 504, 756, 1008, 1260, 1512, 1764 },
     { 2016, 2324, 2632, 2940, 3248, 3556, 3864, 4172 },
     { 4480, 4788, 5096, 5404, 5712, 6020, 6328, 6636 },
@@ -3312,7 +3312,7 @@ const uint32_t g_exvoto_pray_kneel_frame_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRA
     { 16512, 16820, 17128, 17436, 17744, 18052, 18360, 18668 },
 };
 
-const uint8_t g_exvoto_pray_kneel_frame_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4] = {
+uint8_t g_exvoto_pray_kneel_frame_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4] = {
     { { 15, 12, 11, 21 }, { 15, 12, 11, 21 }, { 15, 12, 11, 21 }, { 15, 12, 11, 21 }, { 15, 12, 11, 21 }, { 15, 12, 11, 21 }, { 15, 12, 11, 21 }, { 15, 12, 11, 21 } },
     { { 13, 11, 13, 22 }, { 13, 11, 13, 22 }, { 13, 11, 13, 22 }, { 13, 11, 13, 22 }, { 13, 11, 13, 22 }, { 13, 11, 13, 22 }, { 13, 11, 13, 22 }, { 13, 11, 13, 22 } },
     { { 10, 10, 13, 22 }, { 10, 10, 13, 22 }, { 10, 10, 13, 22 }, { 10, 10, 13, 22 }, { 10, 10, 13, 22 }, { 10, 10, 13, 22 }, { 10, 10, 13, 22 }, { 10, 10, 13, 22 } },
@@ -3325,7 +3325,7 @@ const uint8_t g_exvoto_pray_kneel_frame_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAME
 
 // Opaque runs per row of Exvoto praying kneeling frames (blit_stride): block = (bh+1) row offsets in halfwords, then x | len << 8
 const uint16_t *g_exvoto_pray_kneel_runs;   // NitroFS chars/exvoto_pray_kneel.bin
-const uint32_t g_exvoto_pray_kneel_run_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
+uint32_t g_exvoto_pray_kneel_run_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
     { 0, 44, 88, 132, 176, 220, 264, 308 },
     { 352, 398, 444, 490, 536, 582, 628, 674 },
     { 720, 770, 822, 874, 924, 974, 1024, 1074 },
@@ -3338,7 +3338,7 @@ const uint32_t g_exvoto_pray_kneel_run_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAME
 
 // 1 bpp packed animated crisp 3D shadow masks for Exvoto praying kneeling (8 dirs x 8 frames, cropped to bounds)
 const uint8_t *g_exvoto_pray_kneel_shadow_masks;   // NitroFS chars/exvoto_pray_kneel.bin
-const uint32_t g_exvoto_pray_kneel_shadow_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
+uint32_t g_exvoto_pray_kneel_shadow_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
     { 0, 38, 76, 114, 152, 190, 228, 266 },
     { 304, 352, 400, 448, 496, 542, 590, 638 },
     { 686, 739, 792, 845, 898, 951, 1004, 1057 },
@@ -3349,7 +3349,7 @@ const uint32_t g_exvoto_pray_kneel_shadow_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FR
     { 2538, 2581, 2624, 2667, 2710, 2753, 2796, 2839 },
 };
 
-const uint8_t g_exvoto_pray_kneel_shadow_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4] = {
+uint8_t g_exvoto_pray_kneel_shadow_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4] = {
 
     {
         { 30, 24, 16, 19 },
@@ -3435,7 +3435,7 @@ const uint8_t g_exvoto_pray_kneel_shadow_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAM
 
 // 40x40 BGR555 frames for Exvoto standing up, 8 directions x 8 frames (cropped to bounds)
 const uint16_t *g_exvoto_stand_up_frames;   // NitroFS chars/exvoto_stand_up.bin
-const uint32_t g_exvoto_stand_up_frame_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
+uint32_t g_exvoto_stand_up_frame_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
     { 0, 264, 558, 838, 1132, 1432, 1756, 2036 },
     { 2372, 2680, 2974, 3238, 3502, 3802, 4082, 4372 },
     { 4732, 5040, 5316, 5624, 5932, 6332, 6668, 6958 },
@@ -3446,7 +3446,7 @@ const uint32_t g_exvoto_stand_up_frame_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAME
     { 18114, 18422, 18716, 19052, 19412, 19796, 20174, 20522 },
 };
 
-const uint8_t g_exvoto_stand_up_frame_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4] = {
+uint8_t g_exvoto_stand_up_frame_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4] = {
     { { 15, 13, 11, 22 }, { 15, 15, 13, 21 }, { 15, 17, 14, 20 }, { 15, 16, 13, 21 }, { 14, 12, 12, 25 }, { 15, 9, 11, 27 }, { 16, 8, 9, 28 }, { 16, 8, 11, 28 } },
     { { 13, 13, 13, 22 }, { 13, 15, 13, 21 }, { 12, 16, 12, 22 }, { 12, 16, 11, 22 }, { 13, 12, 11, 25 }, { 13, 9, 10, 28 }, { 13, 8, 10, 29 }, { 13, 7, 11, 30 } },
     { { 10, 12, 13, 22 }, { 10, 13, 12, 23 }, { 8, 14, 13, 22 }, { 8, 13, 14, 22 }, { 9, 10, 15, 25 }, { 11, 7, 12, 28 }, { 11, 6, 10, 29 }, { 9, 6, 13, 29 } },
@@ -3459,7 +3459,7 @@ const uint8_t g_exvoto_stand_up_frame_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES]
 
 // Opaque runs per row of Exvoto standing up frames (blit_stride): block = (bh+1) row offsets in halfwords, then x | len << 8
 const uint16_t *g_exvoto_stand_up_runs;   // NitroFS chars/exvoto_stand_up.bin
-const uint32_t g_exvoto_stand_up_run_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
+uint32_t g_exvoto_stand_up_run_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
     { 0, 46, 90, 136, 180, 232, 290, 352 },
     { 412, 458, 504, 552, 598, 650, 710, 772 },
     { 838, 890, 944, 994, 1044, 1098, 1156, 1216 },
@@ -3472,7 +3472,7 @@ const uint32_t g_exvoto_stand_up_run_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES]
 
 // 1 bpp packed animated crisp 3D shadow masks for Exvoto standing up (8 dirs x 8 frames, cropped to bounds)
 const uint8_t *g_exvoto_stand_up_shadow_masks;   // NitroFS chars/exvoto_stand_up.bin
-const uint32_t g_exvoto_stand_up_shadow_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
+uint32_t g_exvoto_stand_up_shadow_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
     { 0, 38, 81, 126, 167, 214, 268, 328 },
     { 391, 441, 489, 537, 582, 637, 700, 766 },
     { 835, 888, 941, 994, 1049, 1121, 1196, 1268 },
@@ -3483,7 +3483,7 @@ const uint32_t g_exvoto_stand_up_shadow_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAM
     { 3096, 3137, 3180, 3230, 3273, 3321, 3373, 3432 },
 };
 
-const uint8_t g_exvoto_stand_up_shadow_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4] = {
+uint8_t g_exvoto_stand_up_shadow_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4] = {
 
     {
         { 30, 25, 16, 19 },
@@ -3569,7 +3569,7 @@ const uint8_t g_exvoto_stand_up_shadow_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES
 
 // 60x60 BGR555 frames for El Abanderado, 8 directions x 8 frames (cropped to bounds)
 const uint16_t *g_abanderado_frames;   // NitroFS chars/abanderado.bin
-const uint32_t g_abanderado_frame_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
+uint32_t g_abanderado_frame_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
     { 0, 984, 2102, 3110, 4094, 5078, 6086, 7094 },
     { 8102, 9194, 10274, 11444, 12588, 13706, 14772, 15838 },
     { 16930, 18190, 19540, 20890, 22178, 23558, 24818, 26078 },
@@ -3580,7 +3580,7 @@ const uint32_t g_abanderado_frame_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = 
     { 65900, 66890, 67970, 69050, 70106, 71162, 72218, 73186 },
 };
 
-const uint8_t g_abanderado_frame_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4] = {
+uint8_t g_abanderado_frame_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4] = {
     { { 12, 14, 24, 41 }, { 12, 14, 25, 43 }, { 13, 15, 23, 42 }, { 13, 14, 24, 41 }, { 12, 14, 24, 41 }, { 12, 14, 24, 42 }, { 12, 15, 23, 42 }, { 12, 14, 24, 42 } },
     { { 12, 12, 25, 42 }, { 12, 12, 24, 45 }, { 12, 12, 25, 45 }, { 12, 11, 26, 44 }, { 12, 11, 25, 43 }, { 12, 12, 25, 41 }, { 12, 12, 25, 41 }, { 12, 11, 26, 42 } },
     { { 10, 8, 28, 45 }, { 9, 8, 29, 45 }, { 9, 8, 29, 45 }, { 9, 7, 28, 46 }, { 9, 7, 29, 46 }, { 9, 8, 28, 45 }, { 9, 8, 28, 45 }, { 9, 7, 28, 46 } },
@@ -3593,7 +3593,7 @@ const uint8_t g_abanderado_frame_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4] =
 
 // Opaque runs per row of El Abanderado frames (blit_stride): block = (bh+1) row offsets in halfwords, then x | len << 8
 const uint16_t *g_abanderado_runs;   // NitroFS chars/abanderado.bin
-const uint32_t g_abanderado_run_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
+uint32_t g_abanderado_run_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
     { 0, 112, 230, 342, 450, 568, 684, 800 },
     { 914, 1028, 1146, 1264, 1380, 1494, 1602, 1714 },
     { 1830, 1932, 2040, 2152, 2262, 2368, 2480, 2594 },
@@ -3606,7 +3606,7 @@ const uint32_t g_abanderado_run_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
 
 // 1 bpp packed animated crisp 3D shadow masks for El Abanderado (8 dirs x 8 frames, cropped to bounds)
 const uint8_t *g_abanderado_shadow_masks;   // NitroFS chars/abanderado.bin
-const uint32_t g_abanderado_shadow_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
+uint32_t g_abanderado_shadow_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
     { 0, 171, 347, 519, 691, 858, 1030, 1202 },
     { 1373, 1577, 1787, 2007, 2212, 2411, 2614, 2836 },
     { 3052, 3277, 3507, 3752, 3992, 4217, 4447, 4697 },
@@ -3617,7 +3617,7 @@ const uint32_t g_abanderado_shadow_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] =
     { 10975, 11117, 11288, 11454, 11610, 11757, 11895, 12033 },
 };
 
-const uint8_t g_abanderado_shadow_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4] = {
+uint8_t g_abanderado_shadow_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4] = {
     {
         { 8, 9, 38, 36 },
         { 8, 9, 38, 37 },
@@ -3702,7 +3702,7 @@ const uint8_t g_abanderado_shadow_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4] 
 
 // 40x40 BGR555 frames for Exvoto Monaguillo, 8 directions x 8 frames (cropped to bounds)
 const uint16_t *g_monaguillo_frames;   // NitroFS chars/monaguillo.bin
-const uint32_t g_monaguillo_frame_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
+uint32_t g_monaguillo_frame_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
     { 0, 600, 1180, 1800, 2380, 3084, 3624, 4204 },
     { 4824, 5568, 6228, 6848, 7388, 7892, 8564, 9284 },
     { 9904, 10564, 11140, 11800, 12440, 12998, 13830, 14556 },
@@ -3713,7 +3713,7 @@ const uint32_t g_monaguillo_frame_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = 
     { 38400, 39040, 39722, 40442, 41162, 41792, 42350, 43010 },
 };
 
-const uint8_t g_monaguillo_frame_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4] = {
+uint8_t g_monaguillo_frame_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4] = {
     { { 12, 7, 19, 30 }, { 10, 7, 20, 29 }, { 11, 9, 19, 31 }, { 12, 9, 20, 29 }, { 12, 8, 21, 32 }, { 14, 9, 18, 30 }, { 11, 8, 20, 29 }, { 11, 9, 20, 31 } },
     { { 6, 7, 23, 31 }, { 6, 6, 22, 30 }, { 7, 9, 20, 31 }, { 9, 8, 18, 30 }, { 9, 9, 18, 28 }, { 7, 9, 23, 28 }, { 5, 7, 24, 30 }, { 6, 9, 20, 31 } },
     { { 8, 5, 19, 33 }, { 10, 4, 17, 32 }, { 8, 5, 19, 33 }, { 8, 5, 19, 32 }, { 7, 7, 18, 31 }, { 4, 6, 25, 32 }, { 7, 4, 21, 33 }, { 9, 6, 18, 32 } },
@@ -3726,7 +3726,7 @@ const uint8_t g_monaguillo_frame_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4] =
 
 // Opaque runs per row of Exvoto Monaguillo frames (blit_stride): block = (bh+1) row offsets in halfwords, then x | len << 8
 const uint16_t *g_monaguillo_runs;   // NitroFS chars/monaguillo.bin
-const uint32_t g_monaguillo_run_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
+uint32_t g_monaguillo_run_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
     { 0, 72, 142, 212, 284, 356, 424, 496 },
     { 570, 640, 708, 774, 838, 904, 970, 1040 },
     { 1106, 1176, 1244, 1312, 1378, 1442, 1512, 1580 },
@@ -3739,7 +3739,7 @@ const uint32_t g_monaguillo_run_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
 
 // 1 bpp packed animated crisp 3D shadow masks for Exvoto Monaguillo (8 dirs x 8 frames, cropped to bounds)
 const uint8_t *g_monaguillo_shadow_masks;   // NitroFS chars/monaguillo.bin
-const uint32_t g_monaguillo_shadow_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
+uint32_t g_monaguillo_shadow_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
     { 0, 91, 182, 277, 356, 437, 515, 600 },
     { 691, 802, 910, 1022, 1120, 1210, 1310, 1424 },
     { 1536, 1649, 1751, 1864, 1969, 2081, 2200, 2309 },
@@ -3750,7 +3750,7 @@ const uint32_t g_monaguillo_shadow_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] =
     { 5487, 5557, 5628, 5710, 5782, 5848, 5906, 5968 },
 };
 
-const uint8_t g_monaguillo_shadow_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4] = {
+uint8_t g_monaguillo_shadow_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4] = {
 
     {
         { 21, 17, 28, 26 },
@@ -3835,7 +3835,7 @@ const uint8_t g_monaguillo_shadow_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4] 
 };
 
 // 40x40 BGR555 frames for Hero crouched walking, 8 directions x 8 frames (cropped to bounds)
-const uint16_t g_hero_crouch_walk_frames[] __attribute__((aligned(4))) = {
+uint16_t g_hero_crouch_walk_frames[23536] __attribute__((aligned(4))) = {
     0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0xA109, 0x94C8, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
     0x0000, 0x0000, 0xA52C, 0xAD70, 0xA970, 0xA970, 0x94C8, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
     0x0000, 0x0000, 0x8C87, 0xA94F, 0xB1B1, 0xA970, 0xAD91, 0xA94F, 0x9CEA, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
@@ -5309,7 +5309,7 @@ const uint16_t g_hero_crouch_walk_frames[] __attribute__((aligned(4))) = {
     0x0000, 0x0000, 0x8885, 0x9D6E, 0x8CA6, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
 };
 
-const uint32_t g_hero_crouch_walk_frame_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
+uint32_t g_hero_crouch_walk_frame_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
     { 0, 288, 568, 848, 1100, 1352, 1656, 1936 },
     { 2224, 2584, 2962, 3402, 3802, 4106, 4466, 4886 },
     { 5306, 5674, 6088, 6594, 7078, 7538, 7906, 8274 },
@@ -5320,7 +5320,7 @@ const uint32_t g_hero_crouch_walk_frame_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAM
     { 20916, 21172, 21460, 21820, 22172, 22492, 22834, 23212 },
 };
 
-const uint8_t g_hero_crouch_walk_frame_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4] = {
+uint8_t g_hero_crouch_walk_frame_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4] = {
     { { 13, 13, 15, 18 }, { 13, 13, 14, 20 }, { 13, 14, 13, 20 }, { 13, 15, 14, 18 }, { 13, 14, 14, 18 }, { 12, 11, 15, 19 }, { 13, 11, 14, 20 }, { 13, 12, 15, 18 } },
     { { 9, 12, 17, 20 }, { 8, 12, 18, 21 }, { 9, 12, 19, 22 }, { 8, 13, 20, 20 }, { 9, 13, 16, 19 }, { 9, 11, 17, 20 }, { 9, 10, 19, 21 }, { 9, 11, 19, 21 } },
     { { 10, 9, 16, 23 }, { 9, 9, 17, 23 }, { 8, 9, 21, 23 }, { 9, 10, 22, 22 }, { 9, 9, 19, 23 }, { 9, 8, 16, 23 }, { 10, 8, 16, 23 }, { 10, 8, 17, 24 } },
@@ -5332,7 +5332,7 @@ const uint8_t g_hero_crouch_walk_frame_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES
 };
 
 // Opaque runs per row of Hero crouched walking frames (blit_stride): block = (bh+1) row offsets in halfwords, then x | len << 8
-const uint16_t g_hero_crouch_walk_runs[] __attribute__((aligned(4))) = {
+uint16_t g_hero_crouch_walk_runs[2976] __attribute__((aligned(4))) = {
     19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 35,
     36, 38, 40, 517, 1282, 1794, 2816, 3072, 3072, 3328, 2818, 2818, 3073, 3584, 3584, 3840,
     3840, 257, 3075, 3075, 1028, 1035, 517, 269, 21, 22, 23, 24, 25, 26, 27, 28,
@@ -5521,7 +5521,7 @@ const uint16_t g_hero_crouch_walk_runs[] __attribute__((aligned(4))) = {
     3076, 768, 3076, 4352, 256, 3842, 2818, 782, 4097, 3841, 3330, 3330, 2309, 1028, 779, 772,
 };
 
-const uint32_t g_hero_crouch_walk_run_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
+uint32_t g_hero_crouch_walk_run_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
     { 0, 40, 84, 128, 166, 204, 244, 286 },
     { 326, 370, 416, 462, 506, 546, 588, 634 },
     { 682, 732, 786, 836, 884, 932, 982, 1038 },
@@ -5533,7 +5533,7 @@ const uint32_t g_hero_crouch_walk_run_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES
 };
 
 // 1 bpp packed animated crisp 3D shadow masks for Hero crouched walking (8 dirs x 8 frames, cropped to bounds)
-const uint8_t g_hero_crouch_walk_shadow_masks[] __attribute__((aligned(4))) = {
+uint8_t g_hero_crouch_walk_shadow_masks[4959] __attribute__((aligned(4))) = {
     0xC0, 0x01, 0x00, 0xFC, 0x01, 0x00, 0xFE, 0x03, 0x80, 0xFF, 0x07, 0xE0, 0xFF, 0x07, 0xF8, 0xFF,
     0x0F, 0xFC, 0xFF, 0x0F, 0xFC, 0xFF, 0x0F, 0xFC, 0xFF, 0x07, 0xF0, 0xFF, 0x0F, 0xF0, 0xFF, 0x0F,
     0xF8, 0xFF, 0x07, 0xFC, 0xFF, 0x07, 0xFE, 0xFF, 0x03, 0xF0, 0xFF, 0x01, 0xFC, 0xFF, 0x00, 0x7C,
@@ -5746,7 +5746,7 @@ const uint8_t g_hero_crouch_walk_shadow_masks[] __attribute__((aligned(4))) = {
     0x87, 0xFF, 0x7F, 0xF0, 0xFF, 0x07, 0xFE, 0x7F, 0x80, 0xFF, 0x03, 0x70, 0x0E,
 };
 
-const uint32_t g_hero_crouch_walk_shadow_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
+uint32_t g_hero_crouch_walk_shadow_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
     { 0, 49, 104, 157, 200, 245, 290, 340 },
     { 392, 452, 515, 583, 642, 696, 758, 820 },
     { 885, 946, 1015, 1090, 1163, 1229, 1287, 1350 },
@@ -5757,7 +5757,7 @@ const uint32_t g_hero_crouch_walk_shadow_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRA
     { 3020, 3060, 3104, 3150, 3194, 3226, 3271, 3317 },
 };
 
-const uint8_t g_hero_crouch_walk_shadow_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4] = {
+uint8_t g_hero_crouch_walk_shadow_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4] = {
 
     {
         { 25, 26, 23, 17 },
@@ -5843,7 +5843,7 @@ const uint8_t g_hero_crouch_walk_shadow_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAME
 
 // 40x40 BGR555 frames for Exvoto Bebe walking, 8 directions x 8 frames (cropped to bounds)
 const uint16_t *g_exvoto_bebe_frames;   // NitroFS chars/exvoto_bebe.bin
-const uint32_t g_exvoto_bebe_frame_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
+uint32_t g_exvoto_bebe_frame_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
     { 0, 104, 224, 344, 456, 560, 680, 792 },
     { 904, 1024, 1114, 1242, 1362, 1482, 1622, 1762 },
     { 1902, 2062, 2222, 2382, 2542, 2670, 2830, 2990 },
@@ -5854,7 +5854,7 @@ const uint32_t g_exvoto_bebe_frame_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] =
     { 7756, 7876, 8016, 8156, 8296, 8408, 8504, 8632 },
 };
 
-const uint8_t g_exvoto_bebe_frame_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4] = {
+uint8_t g_exvoto_bebe_frame_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4] = {
     { { 16, 15, 8, 13 }, { 16, 14, 8, 15 }, { 16, 14, 8, 15 }, { 16, 15, 7, 14 }, { 16, 15, 8, 13 }, { 16, 14, 8, 15 }, { 16, 15, 8, 14 }, { 16, 15, 8, 14 } },
     { { 16, 14, 8, 15 }, { 16, 14, 6, 15 }, { 16, 14, 7, 16 }, { 16, 14, 7, 15 }, { 16, 14, 8, 15 }, { 15, 14, 9, 14 }, { 15, 14, 10, 14 }, { 16, 14, 9, 14 } },
     { { 14, 13, 9, 16 }, { 14, 13, 9, 16 }, { 15, 13, 9, 16 }, { 15, 13, 9, 16 }, { 15, 13, 8, 16 }, { 14, 13, 9, 16 }, { 14, 13, 10, 16 }, { 15, 13, 9, 15 } },
@@ -5867,7 +5867,7 @@ const uint8_t g_exvoto_bebe_frame_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4] 
 
 // Opaque runs per row of Exvoto Bebe walking frames (blit_stride): block = (bh+1) row offsets in halfwords, then x | len << 8
 const uint16_t *g_exvoto_bebe_runs;   // NitroFS chars/exvoto_bebe.bin
-const uint32_t g_exvoto_bebe_run_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
+uint32_t g_exvoto_bebe_run_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
     { 0, 28, 60, 92, 122, 150, 182, 212 },
     { 242, 274, 306, 340, 372, 404, 436, 466 },
     { 496, 530, 564, 598, 632, 666, 700, 734 },
@@ -5880,7 +5880,7 @@ const uint32_t g_exvoto_bebe_run_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
 
 // 1 bpp packed animated crisp 3D shadow masks for Exvoto Bebe walking (8 dirs x 8 frames, cropped to bounds)
 const uint8_t *g_exvoto_bebe_shadow_masks;   // NitroFS chars/exvoto_bebe.bin
-const uint32_t g_exvoto_bebe_shadow_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
+uint32_t g_exvoto_bebe_shadow_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
     { 0, 20, 43, 66, 88, 108, 129, 151 },
     { 171, 196, 221, 246, 273, 300, 326, 354 },
     { 380, 410, 440, 470, 500, 529, 559, 591 },
@@ -5891,7 +5891,7 @@ const uint32_t g_exvoto_bebe_shadow_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] 
     { 1449, 1469, 1491, 1513, 1533, 1551, 1570, 1589 },
 };
 
-const uint8_t g_exvoto_bebe_shadow_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4] = {
+uint8_t g_exvoto_bebe_shadow_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4] = {
 
     {
         { 32, 30, 13, 12 },
@@ -5976,8 +5976,8 @@ const uint8_t g_exvoto_bebe_shadow_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4]
 };
 
 // El Campanero de Animas: slot sin pixeles en la EWRAM (los fotogramas se leen de NitroFS, source/campanero_sprite.c)
-const uint16_t g_campanero_frames[] __attribute__((aligned(4))) = { 0 };
-const uint32_t g_campanero_frame_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
+uint16_t g_campanero_frames[1] __attribute__((aligned(4))) = { 0 };
+uint32_t g_campanero_frame_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
     { 0, 0, 0, 0, 0, 0, 0, 0 },
     { 0, 0, 0, 0, 0, 0, 0, 0 },
     { 0, 0, 0, 0, 0, 0, 0, 0 },
@@ -5987,7 +5987,7 @@ const uint32_t g_campanero_frame_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
     { 0, 0, 0, 0, 0, 0, 0, 0 },
     { 0, 0, 0, 0, 0, 0, 0, 0 },
 };
-const uint8_t g_campanero_frame_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4] = {
+uint8_t g_campanero_frame_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4] = {
     { { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 } },
     { { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 } },
     { { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 } },
@@ -5997,8 +5997,8 @@ const uint8_t g_campanero_frame_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4] = 
     { { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 } },
     { { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 } },
 };
-const uint16_t g_campanero_runs[] __attribute__((aligned(4))) = { 0 };
-const uint32_t g_campanero_run_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
+uint16_t g_campanero_runs[1] __attribute__((aligned(4))) = { 0 };
+uint32_t g_campanero_run_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
     { 0, 0, 0, 0, 0, 0, 0, 0 },
     { 0, 0, 0, 0, 0, 0, 0, 0 },
     { 0, 0, 0, 0, 0, 0, 0, 0 },
@@ -6008,8 +6008,8 @@ const uint32_t g_campanero_run_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
     { 0, 0, 0, 0, 0, 0, 0, 0 },
     { 0, 0, 0, 0, 0, 0, 0, 0 },
 };
-const uint8_t g_campanero_shadow_masks[] __attribute__((aligned(4))) = { 0 };
-const uint32_t g_campanero_shadow_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
+uint8_t g_campanero_shadow_masks[1] __attribute__((aligned(4))) = { 0 };
+uint32_t g_campanero_shadow_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
     { 0, 0, 0, 0, 0, 0, 0, 0 },
     { 0, 0, 0, 0, 0, 0, 0, 0 },
     { 0, 0, 0, 0, 0, 0, 0, 0 },
@@ -6019,7 +6019,7 @@ const uint32_t g_campanero_shadow_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = 
     { 0, 0, 0, 0, 0, 0, 0, 0 },
     { 0, 0, 0, 0, 0, 0, 0, 0 },
 };
-const uint8_t g_campanero_shadow_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4] = {
+uint8_t g_campanero_shadow_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4] = {
     { { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 } },
     { { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 } },
     { { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 } },
@@ -6032,7 +6032,7 @@ const uint8_t g_campanero_shadow_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4] =
 
 // 48x48 BGR555 frames for Exvoto Parroco running, 8 directions x 8 frames (cropped to bounds)
 const uint16_t *g_exvoto_parroco_run_frames;   // NitroFS chars/exvoto_parroco_run.bin
-const uint32_t g_exvoto_parroco_run_frame_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
+uint32_t g_exvoto_parroco_run_frame_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
     { 0, 990, 1860, 3012, 3964, 4894, 5764, 6942 },
     { 7986, 9040, 9968, 10928, 11888, 13004, 13990, 15046 },
     { 15946, 17134, 18154, 19242, 20138, 21326, 22346, 23536 },
@@ -6043,7 +6043,7 @@ const uint32_t g_exvoto_parroco_run_frame_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FR
     { 62522, 63610, 64538, 65582, 66500, 67554, 68482, 69622 },
 };
 
-const uint8_t g_exvoto_parroco_run_frame_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4] = {
+uint8_t g_exvoto_parroco_run_frame_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4] = {
     { { 7, 13, 29, 33 }, { 9, 15, 29, 29 }, { 10, 14, 36, 32 }, { 9, 15, 33, 28 }, { 5, 14, 30, 31 }, { 7, 15, 30, 29 }, { 9, 14, 37, 31 }, { 8, 15, 36, 29 } },
     { { 2, 12, 34, 31 }, { 1, 14, 32, 29 }, { 3, 14, 29, 32 }, { 1, 14, 31, 30 }, { 1, 12, 35, 31 }, { 1, 14, 33, 29 }, { 2, 13, 32, 33 }, { 2, 14, 30, 30 } },
     { { 0, 10, 35, 33 }, { 1, 8, 30, 34 }, { 2, 11, 31, 34 }, { 4, 13, 27, 32 }, { 0, 9, 35, 33 }, { 1, 8, 30, 34 }, { 2, 10, 33, 35 }, { 4, 12, 26, 32 } },
@@ -6056,7 +6056,7 @@ const uint8_t g_exvoto_parroco_run_frame_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAM
 
 // Opaque runs per row of Exvoto Parroco running frames (blit_stride): block = (bh+1) row offsets in halfwords, then x | len << 8
 const uint16_t *g_exvoto_parroco_run_runs;   // NitroFS chars/exvoto_parroco_run.bin
-const uint32_t g_exvoto_parroco_run_run_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
+uint32_t g_exvoto_parroco_run_run_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
     { 0, 88, 166, 246, 320, 394, 474, 560 },
     { 634, 710, 776, 850, 924, 1000, 1070, 1152 },
     { 1224, 1304, 1380, 1462, 1540, 1618, 1694, 1776 },
@@ -6069,7 +6069,7 @@ const uint32_t g_exvoto_parroco_run_run_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAM
 
 // 1 bpp packed animated crisp 3D shadow masks for Exvoto Parroco running (8 dirs x 8 frames, cropped to bounds)
 const uint8_t *g_exvoto_parroco_run_shadow_masks;   // NitroFS chars/exvoto_parroco_run.bin
-const uint32_t g_exvoto_parroco_run_shadow_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
+uint32_t g_exvoto_parroco_run_shadow_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
     { 0, 124, 235, 372, 471, 597, 707, 847 },
     { 958, 1104, 1238, 1376, 1503, 1652, 1787, 1929 },
     { 2058, 2227, 2366, 2520, 2651, 2830, 2970, 3137 },
@@ -6080,7 +6080,7 @@ const uint32_t g_exvoto_parroco_run_shadow_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_F
     { 7909, 8033, 8150, 8271, 8366, 8482, 8595, 8717 },
 };
 
-const uint8_t g_exvoto_parroco_run_shadow_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4] = {
+uint8_t g_exvoto_parroco_run_shadow_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4] = {
     {
         { 13, 17, 34, 29 },
         { 14, 18, 34, 26 },
@@ -6165,7 +6165,7 @@ const uint8_t g_exvoto_parroco_run_shadow_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRA
 
 // 64x64 BGR555 frames for Super Monja walking, 8 directions x 8 frames (cropped to bounds)
 const uint16_t *g_exvoto_super_monja_frames;   // NitroFS chars/exvoto_super_monja.bin
-const uint32_t g_exvoto_super_monja_frame_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
+uint32_t g_exvoto_super_monja_frame_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
     { 0, 1480, 3080, 4640, 6120, 7720, 9280, 10840 },
     { 12400, 14452, 16338, 18178, 20230, 22116, 23956, 25796 },
     { 27636, 29292, 30964, 32524, 34180, 35852, 37412, 38972 },
@@ -6176,7 +6176,7 @@ const uint32_t g_exvoto_super_monja_frame_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FR
     { 97672, 99520, 101600, 103348, 105196, 107276, 109024, 110772 },
 };
 
-const uint8_t g_exvoto_super_monja_frame_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4] = {
+uint8_t g_exvoto_super_monja_frame_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4] = {
     { { 13, 16, 39, 37 }, { 13, 15, 39, 40 }, { 13, 15, 39, 39 }, { 13, 16, 39, 37 }, { 13, 15, 39, 40 }, { 13, 15, 39, 39 }, { 13, 15, 39, 39 }, { 13, 15, 39, 39 } },
     { { 5, 15, 54, 38 }, { 11, 16, 45, 41 }, { 7, 13, 45, 40 }, { 5, 15, 54, 38 }, { 11, 16, 45, 41 }, { 7, 13, 45, 40 }, { 7, 13, 45, 40 }, { 7, 13, 45, 40 } },
     { { 6, 13, 46, 36 }, { 4, 14, 44, 38 }, { 10, 14, 39, 39 }, { 6, 13, 46, 36 }, { 4, 14, 44, 38 }, { 10, 14, 39, 39 }, { 10, 14, 39, 39 }, { 10, 14, 39, 39 } },
@@ -6189,7 +6189,7 @@ const uint8_t g_exvoto_super_monja_frame_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAM
 
 // Opaque runs per row of Super Monja walking frames (blit_stride): block = (bh+1) row offsets in halfwords, then x | len << 8
 const uint16_t *g_exvoto_super_monja_runs;   // NitroFS chars/exvoto_super_monja.bin
-const uint32_t g_exvoto_super_monja_run_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
+uint32_t g_exvoto_super_monja_run_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
     { 0, 94, 194, 292, 386, 486, 584, 682 },
     { 780, 882, 994, 1108, 1210, 1322, 1436, 1550 },
     { 1664, 1770, 1878, 1988, 2094, 2202, 2312, 2422 },
@@ -6202,7 +6202,7 @@ const uint32_t g_exvoto_super_monja_run_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAM
 
 // 1 bpp packed animated crisp 3D shadow masks for Super Monja walking (8 dirs x 8 frames, cropped to bounds)
 const uint8_t *g_exvoto_super_monja_shadow_masks;   // NitroFS chars/exvoto_super_monja.bin
-const uint32_t g_exvoto_super_monja_shadow_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
+uint32_t g_exvoto_super_monja_shadow_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
     { 0, 170, 350, 543, 713, 893, 1086, 1279 },
     { 1472, 1706, 1938, 2160, 2394, 2626, 2848, 3070 },
     { 3292, 3488, 3688, 3900, 4096, 4296, 4508, 4720 },
@@ -6213,7 +6213,7 @@ const uint32_t g_exvoto_super_monja_shadow_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_F
     { 11898, 12128, 12374, 12601, 12831, 13077, 13304, 13531 },
 };
 
-const uint8_t g_exvoto_super_monja_shadow_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4] = {
+uint8_t g_exvoto_super_monja_shadow_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4] = {
     {
         { 17, 16, 40, 34 },
         { 18, 16, 40, 36 },
@@ -6298,7 +6298,7 @@ const uint8_t g_exvoto_super_monja_shadow_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRA
 
 // 56x56 BGR555 frames for Super Monja praying standing, 8 directions x 8 frames (cropped to bounds)
 const uint16_t *g_exvoto_super_monja_pray_stand_frames;   // NitroFS chars/exvoto_super_monja_pray_stand.bin
-const uint32_t g_exvoto_super_monja_pray_stand_frame_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
+uint32_t g_exvoto_super_monja_pray_stand_frame_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
     { 0, 492, 984, 1500, 2016, 2532, 3048, 3564 },
     { 4068, 4572, 5076, 5592, 6108, 6538, 7054, 7570 },
     { 8086, 8688, 9376, 9978, 10494, 11010, 11526, 12042 },
@@ -6309,7 +6309,7 @@ const uint32_t g_exvoto_super_monja_pray_stand_frame_offsets[PLAYER_NUM_DIRS][PL
     { 30554, 31242, 31930, 32532, 33134, 33822, 34510, 35112 },
 };
 
-const uint8_t g_exvoto_super_monja_pray_stand_frame_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4] = {
+uint8_t g_exvoto_super_monja_pray_stand_frame_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4] = {
     { { 23, 8, 12, 41 }, { 23, 8, 12, 41 }, { 23, 7, 12, 43 }, { 23, 7, 12, 43 }, { 23, 7, 12, 43 }, { 23, 7, 12, 43 }, { 23, 7, 12, 43 }, { 23, 7, 12, 42 } },
     { { 22, 8, 12, 42 }, { 22, 8, 12, 42 }, { 22, 7, 12, 43 }, { 22, 7, 11, 43 }, { 23, 7, 10, 43 }, { 23, 7, 11, 43 }, { 22, 7, 12, 43 }, { 22, 7, 12, 43 } },
     { { 19, 7, 14, 43 }, { 18, 7, 15, 43 }, { 19, 7, 13, 43 }, { 20, 7, 11, 43 }, { 20, 7, 11, 43 }, { 20, 7, 12, 43 }, { 20, 7, 12, 43 }, { 19, 7, 14, 43 } },
@@ -6322,7 +6322,7 @@ const uint8_t g_exvoto_super_monja_pray_stand_frame_bounds[PLAYER_NUM_DIRS][PLAY
 
 // Opaque runs per row of Super Monja praying standing frames (blit_stride): block = (bh+1) row offsets in halfwords, then x | len << 8
 const uint16_t *g_exvoto_super_monja_pray_stand_runs;   // NitroFS chars/exvoto_super_monja_pray_stand.bin
-const uint32_t g_exvoto_super_monja_pray_stand_run_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
+uint32_t g_exvoto_super_monja_pray_stand_run_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
     { 0, 88, 176, 268, 360, 452, 546, 640 },
     { 730, 818, 904, 994, 1084, 1174, 1262, 1352 },
     { 1442, 1530, 1620, 1710, 1798, 1888, 1978, 2068 },
@@ -6335,7 +6335,7 @@ const uint32_t g_exvoto_super_monja_pray_stand_run_offsets[PLAYER_NUM_DIRS][PLAY
 
 // 1 bpp packed animated crisp 3D shadow masks for Super Monja praying standing (8 dirs x 8 frames, cropped to bounds)
 const uint8_t *g_exvoto_super_monja_pray_stand_shadow_masks;   // NitroFS chars/exvoto_super_monja_pray_stand.bin
-const uint32_t g_exvoto_super_monja_pray_stand_shadow_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
+uint32_t g_exvoto_super_monja_pray_stand_shadow_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
     { 0, 110, 220, 333, 446, 562, 678, 794 },
     { 904, 1026, 1152, 1269, 1386, 1507, 1628, 1749 },
     { 1871, 2002, 2137, 2267, 2393, 2519, 2641, 2767 },
@@ -6346,7 +6346,7 @@ const uint32_t g_exvoto_super_monja_pray_stand_shadow_offsets[PLAYER_NUM_DIRS][P
     { 6681, 6782, 6886, 6994, 7105, 7221, 7337, 7453 },
 };
 
-const uint8_t g_exvoto_super_monja_pray_stand_shadow_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4] = {
+uint8_t g_exvoto_super_monja_pray_stand_shadow_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4] = {
     {
         { 21, 7, 25, 35 },
         { 21, 7, 25, 35 },
@@ -6431,7 +6431,7 @@ const uint8_t g_exvoto_super_monja_pray_stand_shadow_bounds[PLAYER_NUM_DIRS][PLA
 
 // 56x56 BGR555 frames for Super Monja praying kneeling, 8 directions x 8 frames (cropped to bounds)
 const uint16_t *g_exvoto_super_monja_pray_kneel_frames;   // NitroFS chars/exvoto_super_monja_pray_kneel.bin
-const uint32_t g_exvoto_super_monja_pray_kneel_frame_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
+uint32_t g_exvoto_super_monja_pray_kneel_frame_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
     { 0, 360, 720, 1080, 1440, 1800, 2160, 2520 },
     { 2880, 3376, 3872, 4368, 4864, 5360, 5856, 6352 },
     { 6848, 7488, 8064, 8640, 9216, 9792, 10368, 10944 },
@@ -6442,7 +6442,7 @@ const uint32_t g_exvoto_super_monja_pray_kneel_frame_offsets[PLAYER_NUM_DIRS][PL
     { 28800, 29420, 30040, 30660, 31218, 31838, 32396, 33016 },
 };
 
-const uint8_t g_exvoto_super_monja_pray_kneel_frame_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4] = {
+uint8_t g_exvoto_super_monja_pray_kneel_frame_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4] = {
     { { 24, 16, 12, 30 }, { 24, 16, 12, 30 }, { 24, 16, 12, 30 }, { 24, 16, 12, 30 }, { 24, 16, 12, 30 }, { 24, 16, 12, 30 }, { 24, 16, 12, 30 }, { 24, 16, 12, 30 } },
     { { 20, 15, 15, 31 }, { 20, 15, 15, 31 }, { 20, 15, 15, 31 }, { 20, 15, 15, 31 }, { 20, 15, 15, 31 }, { 20, 15, 15, 31 }, { 20, 15, 15, 31 }, { 20, 15, 15, 31 } },
     { { 14, 13, 19, 32 }, { 16, 13, 17, 32 }, { 16, 13, 17, 32 }, { 15, 13, 18, 32 }, { 15, 13, 18, 32 }, { 15, 13, 18, 32 }, { 16, 13, 17, 32 }, { 16, 13, 17, 32 } },
@@ -6455,7 +6455,7 @@ const uint8_t g_exvoto_super_monja_pray_kneel_frame_bounds[PLAYER_NUM_DIRS][PLAY
 
 // Opaque runs per row of Super Monja praying kneeling frames (blit_stride): block = (bh+1) row offsets in halfwords, then x | len << 8
 const uint16_t *g_exvoto_super_monja_pray_kneel_runs;   // NitroFS chars/exvoto_super_monja_pray_kneel.bin
-const uint32_t g_exvoto_super_monja_pray_kneel_run_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
+uint32_t g_exvoto_super_monja_pray_kneel_run_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
     { 0, 62, 124, 186, 248, 310, 372, 434 },
     { 496, 562, 628, 694, 760, 826, 892, 958 },
     { 1024, 1100, 1174, 1248, 1322, 1396, 1470, 1544 },
@@ -6468,7 +6468,7 @@ const uint32_t g_exvoto_super_monja_pray_kneel_run_offsets[PLAYER_NUM_DIRS][PLAY
 
 // 1 bpp packed animated crisp 3D shadow masks for Super Monja praying kneeling (8 dirs x 8 frames, cropped to bounds)
 const uint8_t *g_exvoto_super_monja_pray_kneel_shadow_masks;   // NitroFS chars/exvoto_super_monja_pray_kneel.bin
-const uint32_t g_exvoto_super_monja_pray_kneel_shadow_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
+uint32_t g_exvoto_super_monja_pray_kneel_shadow_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
     { 0, 62, 124, 186, 248, 310, 372, 434 },
     { 496, 578, 660, 742, 824, 902, 984, 1062 },
     { 1144, 1242, 1340, 1438, 1536, 1634, 1732, 1830 },
@@ -6479,7 +6479,7 @@ const uint32_t g_exvoto_super_monja_pray_kneel_shadow_offsets[PLAYER_NUM_DIRS][P
     { 4424, 4485, 4546, 4607, 4668, 4729, 4790, 4851 },
 };
 
-const uint8_t g_exvoto_super_monja_pray_kneel_shadow_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4] = {
+uint8_t g_exvoto_super_monja_pray_kneel_shadow_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4] = {
     {
         { 26, 17, 19, 26 },
         { 26, 17, 19, 26 },
@@ -6564,7 +6564,7 @@ const uint8_t g_exvoto_super_monja_pray_kneel_shadow_bounds[PLAYER_NUM_DIRS][PLA
 
 // 56x56 BGR555 frames for Super Monja standing up, 8 directions x 8 frames (cropped to bounds)
 const uint16_t *g_exvoto_super_monja_stand_up_frames;   // NitroFS chars/exvoto_super_monja_stand_up.bin
-const uint32_t g_exvoto_super_monja_stand_up_frame_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
+uint32_t g_exvoto_super_monja_stand_up_frame_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
     { 0, 360, 824, 1328, 1734, 2278, 2902, 3476 },
     { 3968, 4464, 4912, 5332, 5680, 6088, 6478, 6888 },
     { 7392, 7968, 8416, 8912, 9470, 10118, 10692, 11122 },
@@ -6575,7 +6575,7 @@ const uint32_t g_exvoto_super_monja_stand_up_frame_offsets[PLAYER_NUM_DIRS][PLAY
     { 29860, 30480, 30960, 31408, 31930, 32630, 33332, 33920 },
 };
 
-const uint8_t g_exvoto_super_monja_stand_up_frame_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4] = {
+uint8_t g_exvoto_super_monja_stand_up_frame_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4] = {
     { { 24, 20, 12, 30 }, { 23, 22, 16, 29 }, { 22, 24, 17, 28 }, { 23, 23, 14, 29 }, { 23, 17, 15, 34 }, { 23, 12, 15, 39 }, { 24, 10, 14, 41 }, { 24, 10, 12, 41 } },
     { { 20, 19, 15, 31 }, { 20, 22, 15, 28 }, { 19, 23, 14, 30 }, { 19, 23, 12, 29 }, { 20, 17, 11, 34 }, { 21, 12, 10, 39 }, { 21, 10, 10, 41 }, { 20, 9, 12, 42 } },
     { { 15, 17, 18, 32 }, { 17, 19, 14, 32 }, { 15, 20, 15, 31 }, { 15, 19, 17, 31 }, { 16, 14, 18, 36 }, { 17, 9, 13, 41 }, { 18, 7, 10, 43 }, { 14, 7, 15, 43 } },
@@ -6588,7 +6588,7 @@ const uint8_t g_exvoto_super_monja_stand_up_frame_bounds[PLAYER_NUM_DIRS][PLAYER
 
 // Opaque runs per row of Super Monja standing up frames (blit_stride): block = (bh+1) row offsets in halfwords, then x | len << 8
 const uint16_t *g_exvoto_super_monja_stand_up_runs;   // NitroFS chars/exvoto_super_monja_stand_up.bin
-const uint32_t g_exvoto_super_monja_stand_up_run_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
+uint32_t g_exvoto_super_monja_stand_up_run_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
     { 0, 62, 134, 206, 276, 360, 458, 550 },
     { 638, 702, 762, 834, 900, 976, 1058, 1144 },
     { 1232, 1308, 1378, 1446, 1512, 1590, 1674, 1762 },
@@ -6601,7 +6601,7 @@ const uint32_t g_exvoto_super_monja_stand_up_run_offsets[PLAYER_NUM_DIRS][PLAYER
 
 // 1 bpp packed animated crisp 3D shadow masks for Super Monja standing up (8 dirs x 8 frames, cropped to bounds)
 const uint8_t *g_exvoto_super_monja_stand_up_shadow_masks;   // NitroFS chars/exvoto_super_monja_stand_up.bin
-const uint32_t g_exvoto_super_monja_stand_up_shadow_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
+uint32_t g_exvoto_super_monja_stand_up_shadow_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
     { 0, 62, 134, 200, 263, 343, 442, 544 },
     { 654, 739, 814, 892, 964, 1055, 1167, 1290 },
     { 1409, 1511, 1606, 1701, 1799, 1923, 2055, 2181 },
@@ -6612,7 +6612,7 @@ const uint32_t g_exvoto_super_monja_stand_up_shadow_offsets[PLAYER_NUM_DIRS][PLA
     { 5279, 5338, 5403, 5466, 5529, 5602, 5689, 5790 },
 };
 
-const uint8_t g_exvoto_super_monja_stand_up_shadow_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4] = {
+uint8_t g_exvoto_super_monja_stand_up_shadow_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4] = {
     {
         { 26, 18, 19, 26 },
         { 26, 20, 23, 25 },
@@ -6697,7 +6697,7 @@ const uint8_t g_exvoto_super_monja_stand_up_shadow_bounds[PLAYER_NUM_DIRS][PLAYE
 
 // 40x40 BGR555 frames for Exvoto spider walking, 8 directions x 8 frames (cropped to bounds)
 const uint16_t *g_exvoto_arana_walk_frames;   // NitroFS chars/exvoto_arana_walk.bin
-const uint32_t g_exvoto_arana_walk_frame_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
+uint32_t g_exvoto_arana_walk_frame_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
     { 0, 432, 888, 1344, 1776, 2232, 2688, 3144 },
     { 3600, 4208, 4796, 5356, 5964, 6552, 7112, 7672 },
     { 8232, 8708, 9176, 9656, 10132, 10600, 11080, 11560 },
@@ -6708,7 +6708,7 @@ const uint32_t g_exvoto_arana_walk_frame_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRA
     { 29140, 29660, 30300, 30820, 31340, 31980, 32500, 33020 },
 };
 
-const uint8_t g_exvoto_arana_walk_frame_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4] = {
+uint8_t g_exvoto_arana_walk_frame_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4] = {
     { { 8, 13, 24, 18 }, { 9, 12, 23, 19 }, { 8, 13, 24, 19 }, { 8, 13, 24, 18 }, { 9, 12, 23, 19 }, { 8, 13, 24, 19 }, { 8, 13, 24, 19 }, { 8, 13, 24, 19 } },
     { { 4, 12, 31, 19 }, { 7, 12, 27, 21 }, { 5, 11, 27, 20 }, { 4, 12, 31, 19 }, { 7, 12, 27, 21 }, { 5, 11, 27, 20 }, { 5, 11, 27, 20 }, { 5, 11, 27, 20 } },
     { { 4, 11, 27, 17 }, { 3, 11, 26, 18 }, { 6, 11, 23, 20 }, { 4, 11, 27, 17 }, { 3, 11, 26, 18 }, { 6, 11, 23, 20 }, { 6, 11, 23, 20 }, { 6, 11, 23, 20 } },
@@ -6721,7 +6721,7 @@ const uint8_t g_exvoto_arana_walk_frame_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAME
 
 // Opaque runs per row of Exvoto spider walking frames (blit_stride): block = (bh+1) row offsets in halfwords, then x | len << 8
 const uint16_t *g_exvoto_arana_walk_runs;   // NitroFS chars/exvoto_arana_walk.bin
-const uint32_t g_exvoto_arana_walk_run_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
+uint32_t g_exvoto_arana_walk_run_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
     { 0, 50, 100, 150, 200, 250, 300, 350 },
     { 400, 454, 508, 562, 616, 670, 724, 778 },
     { 832, 880, 928, 982, 1030, 1078, 1132, 1186 },
@@ -6734,7 +6734,7 @@ const uint32_t g_exvoto_arana_walk_run_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAME
 
 // 1 bpp packed animated crisp 3D shadow masks for Exvoto spider walking (8 dirs x 8 frames, cropped to bounds)
 const uint8_t *g_exvoto_arana_walk_shadow_masks;   // NitroFS chars/exvoto_arana_walk.bin
-const uint32_t g_exvoto_arana_walk_shadow_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
+uint32_t g_exvoto_arana_walk_shadow_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
     { 0, 57, 111, 173, 230, 284, 346, 408 },
     { 470, 549, 626, 699, 778, 855, 928, 1001 },
     { 1074, 1136, 1202, 1267, 1329, 1395, 1460, 1527 },
@@ -6745,7 +6745,7 @@ const uint32_t g_exvoto_arana_walk_shadow_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FR
     { 3852, 3922, 3998, 4071, 4141, 4217, 4290, 4363 },
 };
 
-const uint8_t g_exvoto_arana_walk_shadow_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4] = {
+uint8_t g_exvoto_arana_walk_shadow_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4] = {
 
     {
         { 27, 28, 24, 19 },
@@ -6831,7 +6831,7 @@ const uint8_t g_exvoto_arana_walk_shadow_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAM
 
 // 40x40 BGR555 frames for Exvoto lying down into the spider, 8 directions x 8 frames (cropped to bounds)
 const uint16_t *g_exvoto_arana_trans_frames;   // NitroFS chars/exvoto_arana_trans.bin
-const uint32_t g_exvoto_arana_trans_frame_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
+uint32_t g_exvoto_arana_trans_frame_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
     { 0, 312, 718, 1066, 1378, 1682, 1934, 2286 },
     { 2694, 3006, 3330, 3678, 4002, 4464, 4848, 5316 },
     { 5784, 6176, 6476, 6812, 7218, 7818, 8250, 8646 },
@@ -6842,7 +6842,7 @@ const uint32_t g_exvoto_arana_trans_frame_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FR
     { 22982, 23306, 23666, 24014, 24338, 24778, 25138, 25580 },
 };
 
-const uint8_t g_exvoto_arana_trans_frame_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4] = {
+uint8_t g_exvoto_arana_trans_frame_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4] = {
     { { 14, 9, 11, 26 }, { 13, 7, 14, 29 }, { 15, 6, 11, 29 }, { 14, 9, 12, 26 }, { 13, 15, 15, 19 }, { 12, 19, 17, 14 }, { 10, 19, 21, 16 }, { 8, 20, 24, 17 } },
     { { 13, 8, 12, 26 }, { 12, 8, 12, 27 }, { 12, 6, 11, 29 }, { 12, 8, 12, 27 }, { 8, 13, 21, 21 }, { 8, 18, 23, 16 }, { 7, 18, 26, 18 }, { 7, 19, 26, 18 } },
     { { 11, 6, 14, 28 }, { 12, 8, 11, 25 }, { 11, 6, 12, 28 }, { 9, 6, 14, 29 }, { 4, 10, 23, 25 }, { 5, 17, 23, 18 }, { 6, 18, 22, 18 }, { 6, 19, 22, 18 } },
@@ -6855,7 +6855,7 @@ const uint8_t g_exvoto_arana_trans_frame_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAM
 
 // Opaque runs per row of Exvoto lying down into the spider frames (blit_stride): block = (bh+1) row offsets in halfwords, then x | len << 8
 const uint16_t *g_exvoto_arana_trans_runs;   // NitroFS chars/exvoto_arana_trans.bin
-const uint32_t g_exvoto_arana_trans_run_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
+uint32_t g_exvoto_arana_trans_run_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
     { 0, 60, 122, 184, 238, 284, 314, 352 },
     { 398, 454, 512, 572, 630, 676, 714, 758 },
     { 804, 864, 922, 982, 1044, 1096, 1142, 1188 },
@@ -6868,7 +6868,7 @@ const uint32_t g_exvoto_arana_trans_run_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAM
 
 // 1 bpp packed animated crisp 3D shadow masks for Exvoto lying down into the spider (8 dirs x 8 frames, cropped to bounds)
 const uint8_t *g_exvoto_arana_trans_shadow_masks;   // NitroFS chars/exvoto_arana_trans.bin
-const uint32_t g_exvoto_arana_trans_shadow_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
+uint32_t g_exvoto_arana_trans_shadow_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
     { 0, 55, 109, 174, 238, 287, 324, 372 },
     { 426, 493, 539, 601, 673, 742, 797, 859 },
     { 925, 1004, 1057, 1111, 1196, 1286, 1348, 1406 },
@@ -6879,7 +6879,7 @@ const uint32_t g_exvoto_arana_trans_shadow_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_F
     { 3585, 3631, 3690, 3762, 3819, 3865, 3907, 3963 },
 };
 
-const uint8_t g_exvoto_arana_trans_shadow_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4] = {
+uint8_t g_exvoto_arana_trans_shadow_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4] = {
 
     {
         { 26, 21, 20, 22 },
@@ -6965,7 +6965,7 @@ const uint8_t g_exvoto_arana_trans_shadow_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRA
 
 // 48x48 BGR555 frames for Monaguillo spider walking, 8 directions x 8 frames (cropped to bounds)
 const uint16_t *g_monaguillo_arana_walk_frames;   // NitroFS chars/monaguillo_arana_walk.bin
-const uint32_t g_monaguillo_arana_walk_frame_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
+uint32_t g_monaguillo_arana_walk_frame_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
     { 0, 572, 1144, 1742, 2314, 2886, 3484, 4082 },
     { 4680, 5544, 6312, 7062, 7926, 8694, 9444, 10194 },
     { 10944, 11574, 12174, 12850, 13480, 14080, 14756, 15432 },
@@ -6976,7 +6976,7 @@ const uint32_t g_monaguillo_arana_walk_frame_offsets[PLAYER_NUM_DIRS][PLAYER_NUM
     { 38132, 38852, 39680, 40370, 41090, 41918, 42608, 43298 },
 };
 
-const uint8_t g_monaguillo_arana_walk_frame_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4] = {
+uint8_t g_monaguillo_arana_walk_frame_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4] = {
     { { 11, 15, 26, 22 }, { 11, 15, 26, 22 }, { 11, 14, 26, 23 }, { 11, 15, 26, 22 }, { 11, 15, 26, 22 }, { 11, 14, 26, 23 }, { 11, 14, 26, 23 }, { 11, 14, 26, 23 } },
     { { 6, 13, 35, 24 }, { 9, 14, 31, 24 }, { 7, 12, 30, 25 }, { 6, 13, 35, 24 }, { 9, 14, 31, 24 }, { 7, 12, 30, 25 }, { 7, 12, 30, 25 }, { 7, 12, 30, 25 } },
     { { 6, 13, 30, 21 }, { 4, 14, 30, 20 }, { 9, 11, 26, 26 }, { 6, 13, 30, 21 }, { 4, 14, 30, 20 }, { 9, 11, 26, 26 }, { 9, 11, 26, 26 }, { 8, 11, 27, 26 } },
@@ -6989,7 +6989,7 @@ const uint8_t g_monaguillo_arana_walk_frame_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_F
 
 // Opaque runs per row of Monaguillo spider walking frames (blit_stride): block = (bh+1) row offsets in halfwords, then x | len << 8
 const uint16_t *g_monaguillo_arana_walk_runs;   // NitroFS chars/monaguillo_arana_walk.bin
-const uint32_t g_monaguillo_arana_walk_run_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
+uint32_t g_monaguillo_arana_walk_run_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
     { 0, 64, 124, 186, 250, 310, 372, 434 },
     { 496, 562, 622, 688, 754, 814, 880, 946 },
     { 1012, 1072, 1128, 1198, 1258, 1314, 1384, 1454 },
@@ -7002,7 +7002,7 @@ const uint32_t g_monaguillo_arana_walk_run_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_F
 
 // 1 bpp packed animated crisp 3D shadow masks for Monaguillo spider walking (8 dirs x 8 frames, cropped to bounds)
 const uint8_t *g_monaguillo_arana_walk_shadow_masks;   // NitroFS chars/monaguillo_arana_walk.bin
-const uint32_t g_monaguillo_arana_walk_shadow_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
+uint32_t g_monaguillo_arana_walk_shadow_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
     { 0, 77, 154, 237, 314, 391, 474, 557 },
     { 640, 750, 857, 956, 1066, 1173, 1272, 1371 },
     { 1470, 1553, 1633, 1723, 1806, 1886, 1976, 2066 },
@@ -7013,7 +7013,7 @@ const uint32_t g_monaguillo_arana_walk_shadow_offsets[PLAYER_NUM_DIRS][PLAYER_NU
     { 5012, 5104, 5211, 5302, 5394, 5501, 5592, 5683 },
 };
 
-const uint8_t g_monaguillo_arana_walk_shadow_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4] = {
+uint8_t g_monaguillo_arana_walk_shadow_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4] = {
     {
         { 24, 27, 29, 21 },
         { 25, 26, 28, 22 },
@@ -7098,7 +7098,7 @@ const uint8_t g_monaguillo_arana_walk_shadow_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_
 
 // 48x48 BGR555 frames for Monaguillo lying down into the spider, 8 directions x 8 frames (cropped to bounds)
 const uint16_t *g_monaguillo_arana_trans_frames;   // NitroFS chars/monaguillo_arana_trans.bin
-const uint32_t g_monaguillo_arana_trans_frame_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
+uint32_t g_monaguillo_arana_trans_frame_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
     { 0, 600, 1280, 2020, 2660, 3144, 3518, 3998 },
     { 4518, 5238, 5878, 6598, 7246, 7922, 8482, 9142 },
     { 9832, 10472, 11072, 11702, 12326, 13194, 13810, 14382 },
@@ -7109,7 +7109,7 @@ const uint32_t g_monaguillo_arana_trans_frame_offsets[PLAYER_NUM_DIRS][PLAYER_NU
     { 37996, 38636, 39500, 40358, 41038, 41742, 42318, 42958 },
 };
 
-const uint8_t g_monaguillo_arana_trans_frame_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4] = {
+uint8_t g_monaguillo_arana_trans_frame_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4] = {
     { { 16, 13, 19, 30 }, { 15, 10, 19, 34 }, { 13, 7, 19, 37 }, { 13, 12, 20, 32 }, { 13, 20, 22, 22 }, { 13, 24, 21, 17 }, { 12, 24, 24, 20 }, { 11, 25, 26, 20 } },
     { { 10, 13, 23, 30 }, { 15, 11, 20, 32 }, { 12, 8, 20, 36 }, { 12, 8, 18, 36 }, { 8, 16, 26, 26 }, { 9, 22, 28, 20 }, { 9, 23, 30, 22 }, { 9, 23, 30, 23 } },
     { { 12, 11, 19, 32 }, { 14, 12, 19, 30 }, { 13, 8, 17, 35 }, { 12, 4, 16, 39 }, { 4, 12, 28, 31 }, { 6, 22, 28, 22 }, { 9, 23, 25, 22 }, { 9, 23, 24, 22 } },
@@ -7122,7 +7122,7 @@ const uint8_t g_monaguillo_arana_trans_frame_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_
 
 // Opaque runs per row of Monaguillo lying down into the spider frames (blit_stride): block = (bh+1) row offsets in halfwords, then x | len << 8
 const uint16_t *g_monaguillo_arana_trans_runs;   // NitroFS chars/monaguillo_arana_trans.bin
-const uint32_t g_monaguillo_arana_trans_run_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
+uint32_t g_monaguillo_arana_trans_run_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
     { 0, 74, 146, 232, 306, 356, 398, 450 },
     { 506, 574, 646, 728, 804, 860, 912, 966 },
     { 1024, 1092, 1166, 1242, 1326, 1392, 1448, 1506 },
@@ -7135,7 +7135,7 @@ const uint32_t g_monaguillo_arana_trans_run_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_
 
 // 1 bpp packed animated crisp 3D shadow masks for Monaguillo lying down into the spider (8 dirs x 8 frames, cropped to bounds)
 const uint8_t *g_monaguillo_arana_trans_shadow_masks;   // NitroFS chars/monaguillo_arana_trans.bin
-const uint32_t g_monaguillo_arana_trans_shadow_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
+uint32_t g_monaguillo_arana_trans_shadow_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
     { 0, 88, 152, 272, 384, 453, 507, 572 },
     { 639, 750, 818, 905, 1033, 1143, 1228, 1322 },
     { 1413, 1522, 1613, 1687, 1819, 1949, 2036, 2118 },
@@ -7146,7 +7146,7 @@ const uint32_t g_monaguillo_arana_trans_shadow_offsets[PLAYER_NUM_DIRS][PLAYER_N
     { 5428, 5498, 5582, 5731, 5826, 5895, 5963, 6043 },
 };
 
-const uint8_t g_monaguillo_arana_trans_shadow_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4] = {
+uint8_t g_monaguillo_arana_trans_shadow_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4] = {
     {
         { 21, 18, 28, 25 },
         { 27, 15, 17, 30 },
@@ -7231,7 +7231,7 @@ const uint8_t g_monaguillo_arana_trans_shadow_bounds[PLAYER_NUM_DIRS][PLAYER_NUM
 
 // 60x60 BGR555 charge clip of the charger (CHAR_CHARGER), 8 directions x 4 frames (cropped to bounds)
 const uint16_t *g_charger_charge_frames;   // NitroFS chars/charger_charge.bin
-const uint32_t g_charger_charge_frame_offsets[PLAYER_NUM_DIRS][CHARGER_CHARGE_NUM_FRAMES] = {
+uint32_t g_charger_charge_frame_offsets[PLAYER_NUM_DIRS][CHARGER_CHARGE_NUM_FRAMES] = {
     { 0, 2200, 4350, 6638 },
     { 8926, 10858, 12496, 14432 },
     { 16154, 17750, 19422, 21124 },
@@ -7242,7 +7242,7 @@ const uint32_t g_charger_charge_frame_offsets[PLAYER_NUM_DIRS][CHARGER_CHARGE_NU
     { 47696, 49064, 50576, 52172 },
 };
 
-const uint8_t g_charger_charge_frame_bounds[PLAYER_NUM_DIRS][CHARGER_CHARGE_NUM_FRAMES][4] = {
+uint8_t g_charger_charge_frame_bounds[PLAYER_NUM_DIRS][CHARGER_CHARGE_NUM_FRAMES][4] = {
     { { 6, 9, 50, 44 }, { 5, 7, 50, 43 }, { 6, 8, 51, 44 }, { 3, 8, 52, 44 } },
     { { 2, 9, 45, 42 }, { 4, 10, 42, 39 }, { 4, 9, 43, 44 }, { 4, 10, 42, 41 } },
     { { 4, 13, 42, 38 }, { 4, 12, 44, 38 }, { 4, 15, 46, 37 }, { 5, 11, 48, 38 } },
@@ -7255,7 +7255,7 @@ const uint8_t g_charger_charge_frame_bounds[PLAYER_NUM_DIRS][CHARGER_CHARGE_NUM_
 
 // Opaque runs of the charger charge clip
 const uint16_t *g_charger_charge_runs;   // NitroFS chars/charger_charge.bin
-const uint32_t g_charger_charge_run_offsets[PLAYER_NUM_DIRS][CHARGER_CHARGE_NUM_FRAMES] = {
+uint32_t g_charger_charge_run_offsets[PLAYER_NUM_DIRS][CHARGER_CHARGE_NUM_FRAMES] = {
     { 0, 96, 192, 288 },
     { 384, 486, 590, 700 },
     { 806, 910, 1020, 1116 },
@@ -7268,7 +7268,7 @@ const uint32_t g_charger_charge_run_offsets[PLAYER_NUM_DIRS][CHARGER_CHARGE_NUM_
 
 // 1 bpp packed shadow masks of the charger charge clip (8 dirs x 4 frames, cropped to bounds)
 const uint8_t *g_charger_charge_shadow_masks;   // NitroFS chars/charger_charge.bin
-const uint32_t g_charger_charge_shadow_offsets[PLAYER_NUM_DIRS][CHARGER_CHARGE_NUM_FRAMES] = {
+uint32_t g_charger_charge_shadow_offsets[PLAYER_NUM_DIRS][CHARGER_CHARGE_NUM_FRAMES] = {
     { 0, 265, 550, 804 },
     { 1084, 1318, 1521, 1741 },
     { 1945, 2123, 2312, 2498 },
@@ -7279,7 +7279,7 @@ const uint32_t g_charger_charge_shadow_offsets[PLAYER_NUM_DIRS][CHARGER_CHARGE_N
     { 5723, 5933, 6142, 6340 },
 };
 
-const uint8_t g_charger_charge_shadow_bounds[PLAYER_NUM_DIRS][CHARGER_CHARGE_NUM_FRAMES][4] = {
+uint8_t g_charger_charge_shadow_bounds[PLAYER_NUM_DIRS][CHARGER_CHARGE_NUM_FRAMES][4] = {
     {
         { 8, 5, 53, 40 },
         { 3, 3, 57, 40 },
@@ -7332,7 +7332,7 @@ const uint8_t g_charger_charge_shadow_bounds[PLAYER_NUM_DIRS][CHARGER_CHARGE_NUM
 
 // 60x60 BGR555 telegraph keyframe of the charger (CHAR_CHARGER), 8 directions x 1 frame (cropped to bounds)
 const uint16_t *g_charger_telegraph_frames;   // NitroFS chars/charger_telegraph.bin
-const uint32_t g_charger_telegraph_frame_offsets[PLAYER_NUM_DIRS][CHARGER_TELEGRAPH_NUM_FRAMES] = {
+uint32_t g_charger_telegraph_frame_offsets[PLAYER_NUM_DIRS][CHARGER_TELEGRAPH_NUM_FRAMES] = {
     { 0 },
     { 1820 },
     { 3290 },
@@ -7343,7 +7343,7 @@ const uint32_t g_charger_telegraph_frame_offsets[PLAYER_NUM_DIRS][CHARGER_TELEGR
     { 11994 },
 };
 
-const uint8_t g_charger_telegraph_frame_bounds[PLAYER_NUM_DIRS][CHARGER_TELEGRAPH_NUM_FRAMES][4] = {
+uint8_t g_charger_telegraph_frame_bounds[PLAYER_NUM_DIRS][CHARGER_TELEGRAPH_NUM_FRAMES][4] = {
     { { 4, 16, 52, 35 } },
     { { 6, 19, 42, 35 } },
     { { 4, 15, 48, 39 } },
@@ -7356,7 +7356,7 @@ const uint8_t g_charger_telegraph_frame_bounds[PLAYER_NUM_DIRS][CHARGER_TELEGRAP
 
 // Opaque runs of the charger telegraph keyframe
 const uint16_t *g_charger_telegraph_runs;   // NitroFS chars/charger_telegraph.bin
-const uint32_t g_charger_telegraph_run_offsets[PLAYER_NUM_DIRS][CHARGER_TELEGRAPH_NUM_FRAMES] = {
+uint32_t g_charger_telegraph_run_offsets[PLAYER_NUM_DIRS][CHARGER_TELEGRAPH_NUM_FRAMES] = {
     { 0 },
     { 84 },
     { 174 },
@@ -7369,7 +7369,7 @@ const uint32_t g_charger_telegraph_run_offsets[PLAYER_NUM_DIRS][CHARGER_TELEGRAP
 
 // 56x56 BGR555 Ojo look (breathing loop) clip of the Ojo (CHAR_OJO), 8 directions x 4 frames (cropped to bounds)
 const uint16_t *g_ojo_look_frames;   // NitroFS chars/ojo_look.bin
-const uint32_t g_ojo_look_frame_offsets[PLAYER_NUM_DIRS][OJO_LOOK_NUM_FRAMES] = {
+uint32_t g_ojo_look_frame_offsets[PLAYER_NUM_DIRS][OJO_LOOK_NUM_FRAMES] = {
     { 0, 760, 1500, 2260 },
     { 3020, 4034, 5048, 6062 },
     { 7076, 8012, 8972, 9908 },
@@ -7380,7 +7380,7 @@ const uint32_t g_ojo_look_frame_offsets[PLAYER_NUM_DIRS][OJO_LOOK_NUM_FRAMES] = 
     { 25176, 25878, 26580, 27282 },
 };
 
-const uint8_t g_ojo_look_frame_bounds[PLAYER_NUM_DIRS][OJO_LOOK_NUM_FRAMES][4] = {
+uint8_t g_ojo_look_frame_bounds[PLAYER_NUM_DIRS][OJO_LOOK_NUM_FRAMES][4] = {
     { { 19, 10, 20, 38 }, { 19, 11, 20, 37 }, { 19, 10, 20, 38 }, { 19, 10, 20, 38 } },
     { { 11, 10, 25, 39 }, { 11, 10, 25, 39 }, { 11, 10, 25, 39 }, { 11, 10, 25, 39 } },
     { { 10, 10, 24, 39 }, { 10, 9, 24, 40 }, { 10, 10, 24, 39 }, { 10, 9, 24, 40 } },
@@ -7393,7 +7393,7 @@ const uint8_t g_ojo_look_frame_bounds[PLAYER_NUM_DIRS][OJO_LOOK_NUM_FRAMES][4] =
 
 // Opaque runs of the Ojo look (breathing loop) clip
 const uint16_t *g_ojo_look_runs;   // NitroFS chars/ojo_look.bin
-const uint32_t g_ojo_look_run_offsets[PLAYER_NUM_DIRS][OJO_LOOK_NUM_FRAMES] = {
+uint32_t g_ojo_look_run_offsets[PLAYER_NUM_DIRS][OJO_LOOK_NUM_FRAMES] = {
     { 0, 88, 174, 262 },
     { 350, 442, 534, 626 },
     { 716, 798, 884, 968 },
@@ -7406,7 +7406,7 @@ const uint32_t g_ojo_look_run_offsets[PLAYER_NUM_DIRS][OJO_LOOK_NUM_FRAMES] = {
 
 // 1 bpp packed shadow masks of the Ojo look (breathing loop) clip (8 dirs x 4 frames, cropped to bounds)
 const uint8_t *g_ojo_look_shadow_masks;   // NitroFS chars/ojo_look.bin
-const uint32_t g_ojo_look_shadow_offsets[PLAYER_NUM_DIRS][OJO_LOOK_NUM_FRAMES] = {
+uint32_t g_ojo_look_shadow_offsets[PLAYER_NUM_DIRS][OJO_LOOK_NUM_FRAMES] = {
     { 0, 108, 217, 329 },
     { 437, 578, 723, 868 },
     { 1013, 1158, 1307, 1456 },
@@ -7417,7 +7417,7 @@ const uint32_t g_ojo_look_shadow_offsets[PLAYER_NUM_DIRS][OJO_LOOK_NUM_FRAMES] =
     { 3512, 3616, 3720, 3824 },
 };
 
-const uint8_t g_ojo_look_shadow_bounds[PLAYER_NUM_DIRS][OJO_LOOK_NUM_FRAMES][4] = {
+uint8_t g_ojo_look_shadow_bounds[PLAYER_NUM_DIRS][OJO_LOOK_NUM_FRAMES][4] = {
     {
         { 19, 10, 27, 32 },
         { 18, 11, 28, 31 },
@@ -7482,7 +7482,7 @@ const int8_t g_ojo_look_muzzle[PLAYER_NUM_DIRS][OJO_LOOK_NUM_FRAMES][3] = {
 
 // 56x56 BGR555 Ojo sentence (gesture) clip of the Ojo (CHAR_OJO), 8 directions x 6 frames (cropped to bounds)
 const uint16_t *g_ojo_sentence_frames;   // NitroFS chars/ojo_sentence.bin
-const uint32_t g_ojo_sentence_frame_offsets[PLAYER_NUM_DIRS][OJO_SENTENCE_NUM_FRAMES] = {
+uint32_t g_ojo_sentence_frame_offsets[PLAYER_NUM_DIRS][OJO_SENTENCE_NUM_FRAMES] = {
     { 0, 740, 1520, 2300, 3080, 3840 },
     { 4600, 5614, 6654, 7614, 8574, 9614 },
     { 10628, 11588, 12596, 13628, 14660, 15644 },
@@ -7493,7 +7493,7 @@ const uint32_t g_ojo_sentence_frame_offsets[PLAYER_NUM_DIRS][OJO_SENTENCE_NUM_FR
     { 38444, 39146, 39866, 40586, 41306, 42026 },
 };
 
-const uint8_t g_ojo_sentence_frame_bounds[PLAYER_NUM_DIRS][OJO_SENTENCE_NUM_FRAMES][4] = {
+uint8_t g_ojo_sentence_frame_bounds[PLAYER_NUM_DIRS][OJO_SENTENCE_NUM_FRAMES][4] = {
     { { 19, 11, 20, 37 }, { 19, 9, 20, 39 }, { 19, 9, 20, 39 }, { 19, 9, 20, 39 }, { 19, 10, 20, 38 }, { 19, 10, 20, 38 } },
     { { 11, 10, 25, 39 }, { 11, 9, 25, 40 }, { 12, 9, 24, 40 }, { 12, 9, 24, 40 }, { 11, 9, 25, 40 }, { 11, 10, 25, 39 } },
     { { 10, 9, 24, 40 }, { 11, 7, 24, 42 }, { 12, 6, 23, 43 }, { 12, 6, 23, 43 }, { 10, 8, 24, 41 }, { 10, 10, 24, 39 } },
@@ -7506,7 +7506,7 @@ const uint8_t g_ojo_sentence_frame_bounds[PLAYER_NUM_DIRS][OJO_SENTENCE_NUM_FRAM
 
 // Opaque runs of the Ojo sentence (gesture) clip
 const uint16_t *g_ojo_sentence_runs;   // NitroFS chars/ojo_sentence.bin
-const uint32_t g_ojo_sentence_run_offsets[PLAYER_NUM_DIRS][OJO_SENTENCE_NUM_FRAMES] = {
+uint32_t g_ojo_sentence_run_offsets[PLAYER_NUM_DIRS][OJO_SENTENCE_NUM_FRAMES] = {
     { 0, 84, 172, 264, 356, 442 },
     { 528, 618, 708, 798, 888, 978 },
     { 1068, 1154, 1242, 1330, 1418, 1504 },
@@ -7519,7 +7519,7 @@ const uint32_t g_ojo_sentence_run_offsets[PLAYER_NUM_DIRS][OJO_SENTENCE_NUM_FRAM
 
 // 1 bpp packed shadow masks of the Ojo sentence (gesture) clip (8 dirs x 6 frames, cropped to bounds)
 const uint8_t *g_ojo_sentence_shadow_masks;   // NitroFS chars/ojo_sentence.bin
-const uint32_t g_ojo_sentence_shadow_offsets[PLAYER_NUM_DIRS][OJO_SENTENCE_NUM_FRAMES] = {
+uint32_t g_ojo_sentence_shadow_offsets[PLAYER_NUM_DIRS][OJO_SENTENCE_NUM_FRAMES] = {
     { 0, 112, 240, 368, 496, 616 },
     { 728, 869, 1022, 1175, 1328, 1481 },
     { 1626, 1771, 1933, 2100, 2267, 2425 },
@@ -7530,7 +7530,7 @@ const uint32_t g_ojo_sentence_shadow_offsets[PLAYER_NUM_DIRS][OJO_SENTENCE_NUM_F
     { 5500, 5608, 5719, 5830, 5941, 6052 },
 };
 
-const uint8_t g_ojo_sentence_shadow_bounds[PLAYER_NUM_DIRS][OJO_SENTENCE_NUM_FRAMES][4] = {
+uint8_t g_ojo_sentence_shadow_bounds[PLAYER_NUM_DIRS][OJO_SENTENCE_NUM_FRAMES][4] = {
     {
         { 18, 10, 28, 32 },
         { 15, 9, 31, 33 },
@@ -7610,7 +7610,7 @@ const int8_t g_ojo_sentence_muzzle[PLAYER_NUM_DIRS][OJO_SENTENCE_NUM_FRAMES][3] 
 };
 
 // 48x48 BGR555 shot clip of the hero (CHAR_HERO only), 8 directions x 8 frames: f0 arms crossed, f7 collapsed (cropped to bounds)
-const uint16_t g_player_shot_frames[] __attribute__((aligned(4))) = {
+uint16_t g_player_shot_frames[44884] __attribute__((aligned(4))) = {
     0x0000, 0xCAB8, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
     0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
     0x0000, 0x0000, 0x0000, 0x0000, 0xB1D1, 0xADD1, 0xA9AF, 0xCAB8, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
@@ -10419,7 +10419,7 @@ const uint16_t g_player_shot_frames[] __attribute__((aligned(4))) = {
     0x0000, 0x0000, 0x0000, 0x0000,
 };
 
-const uint32_t g_player_shot_frame_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
+uint32_t g_player_shot_frame_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
     { 0, 1224, 2448, 3636, 4532, 5192, 5750, 6230 },
     { 6710, 7776, 8816, 9728, 10476, 11070, 11598, 12126 },
     { 12638, 13212, 13772, 14332, 14764, 15292, 15820, 16332 },
@@ -10430,7 +10430,7 @@ const uint32_t g_player_shot_frame_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] =
     { 38864, 39878, 40892, 41854, 42670, 43330, 43924, 44436 },
 };
 
-const uint8_t g_player_shot_frame_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4] = {
+uint8_t g_player_shot_frame_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4] = {
     { { 7, 8, 36, 34 }, { 7, 8, 35, 34 }, { 7, 9, 35, 33 }, { 10, 10, 28, 32 }, { 14, 10, 20, 33 }, { 15, 12, 17, 31 }, { 16, 13, 15, 30 }, { 16, 13, 15, 30 } },
     { { 15, 3, 26, 41 }, { 16, 4, 25, 40 }, { 14, 6, 24, 38 }, { 11, 10, 22, 34 }, { 13, 11, 17, 33 }, { 14, 12, 15, 33 }, { 14, 12, 15, 33 }, { 14, 13, 15, 32 } },
     { { 19, 3, 14, 41 }, { 19, 4, 13, 40 }, { 19, 4, 13, 40 }, { 18, 8, 12, 36 }, { 14, 11, 15, 33 }, { 12, 11, 16, 33 }, { 11, 12, 16, 32 }, { 12, 12, 15, 32 } },
@@ -10445,7 +10445,7 @@ const uint8_t g_player_shot_frame_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4] 
 const uint8_t g_player_shot_ground_anchors[PLAYER_NUM_DIRS] = { 41, 41, 41, 41, 41, 41, 41, 41 };
 
 // Opaque runs of the hero shot clip
-const uint16_t g_player_shot_runs[] __attribute__((aligned(4))) = {
+uint16_t g_player_shot_runs[4924] __attribute__((aligned(4))) = {
     35, 36, 38, 40, 43, 46, 50, 52, 54, 56, 57, 58, 59, 60, 61, 62,
     63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 77, 79, 81,
     83, 85, 87, 257, 1024, 274, 1024, 785, 1024, 785, 801, 1026, 1296, 1311, 1283, 1295,
@@ -10756,7 +10756,7 @@ const uint16_t g_player_shot_runs[] __attribute__((aligned(4))) = {
     1536, 1799, 1024, 778, 1024, 1025, 770, 0,
 };
 
-const uint32_t g_player_shot_run_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
+uint32_t g_player_shot_run_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
     { 0, 88, 176, 262, 338, 414, 484, 554 },
     { 624, 716, 810, 896, 974, 1044, 1112, 1184 },
     { 1254, 1340, 1424, 1506, 1580, 1652, 1726, 1796 },
@@ -10768,7 +10768,7 @@ const uint32_t g_player_shot_run_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
 };
 
 // 1 bpp packed shadow masks of the hero shot clip (8 dirs x 8 frames, cropped to bounds)
-const uint8_t g_player_shot_shadow_masks[] __attribute__((aligned(4))) = {
+uint8_t g_player_shot_shadow_masks[10201] __attribute__((aligned(4))) = {
     0x02, 0x00, 0x00, 0x00, 0xC0, 0x03, 0x00, 0x06, 0x00, 0xF0, 0x01, 0xC0, 0x03, 0x80, 0xFC, 0x00,
     0xF8, 0x01, 0xF8, 0xFE, 0x03, 0x7C, 0xC0, 0x3F, 0xFE, 0xFF, 0xFF, 0xFF, 0x0F, 0xFF, 0xFF, 0xFF,
     0xFF, 0xC0, 0xFD, 0xFF, 0xFF, 0x37, 0x00, 0xF8, 0xFF, 0x7F, 0x0C, 0x00, 0xFE, 0xFF, 0x1F, 0x00,
@@ -11189,7 +11189,7 @@ const uint8_t g_player_shot_shadow_masks[] __attribute__((aligned(4))) = {
     0xFF, 0x00, 0xFE, 0x63, 0x00, 0x7E, 0x00, 0x00, 0xF8, 0x00, 0x00, 0x78, 0x00,
 };
 
-const uint32_t g_player_shot_shadow_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
+uint32_t g_player_shot_shadow_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] = {
     { 0, 143, 286, 421, 541, 639, 731, 816 },
     { 898, 1029, 1155, 1287, 1404, 1506, 1601, 1688 },
     { 1769, 1862, 1957, 2052, 2147, 2242, 2333, 2421 },
@@ -11200,7 +11200,7 @@ const uint32_t g_player_shot_shadow_offsets[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES] 
     { 5791, 5944, 6097, 6238, 6336, 6430, 6517, 6601 },
 };
 
-const uint8_t g_player_shot_shadow_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4] = {
+uint8_t g_player_shot_shadow_bounds[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][4] = {
     {
         { 10, 12, 38, 30 },
         { 10, 12, 38, 30 },
@@ -11297,7 +11297,7 @@ const int8_t g_hero_shot_muzzle[PLAYER_NUM_DIRS][PLAYER_NUM_FRAMES][3] = {
 
 // 60x60 BGR555 point clip of El Abanderado (CHAR_ABANDERADO), 8 directions x 8 frames (cropped to bounds)
 const uint16_t *g_abanderado_point_frames;   // NitroFS chars/abanderado_point.bin
-const uint32_t g_abanderado_point_frame_offsets[PLAYER_NUM_DIRS][ABANDERADO_POINT_NUM_FRAMES] = {
+uint32_t g_abanderado_point_frame_offsets[PLAYER_NUM_DIRS][ABANDERADO_POINT_NUM_FRAMES] = {
     { 0, 984, 1968, 2976, 4008, 5064, 6208, 7264 },
     { 8320, 9438, 10586, 11876, 13284, 14780, 16310, 17840 },
     { 19370, 20630, 21890, 23034, 24294, 25734, 27298, 28828 },
@@ -11308,7 +11308,7 @@ const uint32_t g_abanderado_point_frame_offsets[PLAYER_NUM_DIRS][ABANDERADO_POIN
     { 70826, 71882, 72742, 73516, 74396, 75364, 76444, 77500 },
 };
 
-const uint8_t g_abanderado_point_frame_bounds[PLAYER_NUM_DIRS][ABANDERADO_POINT_NUM_FRAMES][4] = {
+uint8_t g_abanderado_point_frame_bounds[PLAYER_NUM_DIRS][ABANDERADO_POINT_NUM_FRAMES][4] = {
     { { 13, 14, 24, 41 }, { 13, 13, 24, 41 }, { 13, 12, 23, 42 }, { 13, 11, 24, 43 }, { 13, 10, 24, 44 }, { 12, 10, 25, 44 }, { 13, 10, 23, 44 }, { 12, 10, 24, 44 } },
     { { 13, 11, 25, 43 }, { 10, 13, 27, 41 }, { 7, 11, 30, 43 }, { 5, 10, 32, 44 }, { 4, 10, 33, 44 }, { 3, 9, 33, 45 }, { 2, 9, 34, 45 }, { 2, 9, 34, 45 } },
     { { 9, 7, 28, 45 }, { 10, 7, 28, 45 }, { 12, 8, 25, 44 }, { 8, 7, 28, 45 }, { 5, 7, 31, 45 }, { 3, 6, 33, 46 }, { 2, 7, 33, 45 }, { 1, 6, 34, 46 } },
@@ -11321,7 +11321,7 @@ const uint8_t g_abanderado_point_frame_bounds[PLAYER_NUM_DIRS][ABANDERADO_POINT_
 
 // Opaque runs of the Abanderado point clip
 const uint16_t *g_abanderado_point_runs;   // NitroFS chars/abanderado_point.bin
-const uint32_t g_abanderado_point_run_offsets[PLAYER_NUM_DIRS][ABANDERADO_POINT_NUM_FRAMES] = {
+uint32_t g_abanderado_point_run_offsets[PLAYER_NUM_DIRS][ABANDERADO_POINT_NUM_FRAMES] = {
     { 0, 116, 226, 334, 444, 556, 664, 770 },
     { 878, 984, 1090, 1214, 1334, 1456, 1578, 1698 },
     { 1818, 1920, 2022, 2126, 2246, 2374, 2502, 2634 },
@@ -11334,7 +11334,7 @@ const uint32_t g_abanderado_point_run_offsets[PLAYER_NUM_DIRS][ABANDERADO_POINT_
 
 // 1 bpp packed shadow masks of the Abanderado point clip (8 dirs x 8 frames, cropped to bounds)
 const uint8_t *g_abanderado_point_shadow_masks;   // NitroFS chars/abanderado_point.bin
-const uint32_t g_abanderado_point_shadow_offsets[PLAYER_NUM_DIRS][ABANDERADO_POINT_NUM_FRAMES] = {
+uint32_t g_abanderado_point_shadow_offsets[PLAYER_NUM_DIRS][ABANDERADO_POINT_NUM_FRAMES] = {
     { 0, 167, 334, 501, 672, 843, 1014, 1185 },
     { 1356, 1555, 1754, 1953, 2152, 2357, 2562, 2767 },
     { 2976, 3196, 3416, 3630, 3844, 4064, 4289, 4519 },
@@ -11345,7 +11345,7 @@ const uint32_t g_abanderado_point_shadow_offsets[PLAYER_NUM_DIRS][ABANDERADO_POI
     { 10709, 10856, 10996, 11136, 11280, 11427, 11580, 11733 },
 };
 
-const uint8_t g_abanderado_point_shadow_bounds[PLAYER_NUM_DIRS][ABANDERADO_POINT_NUM_FRAMES][4] = {
+uint8_t g_abanderado_point_shadow_bounds[PLAYER_NUM_DIRS][ABANDERADO_POINT_NUM_FRAMES][4] = {
     {
         { 8, 8, 36, 37 },
         { 8, 8, 36, 37 },

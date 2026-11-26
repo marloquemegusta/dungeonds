@@ -1,0 +1,2102 @@
+{
+ "salas": {
+  "0": [
+   {
+    "piece": "banco_entero",
+    "k": 0,
+    "lx": 8,
+    "ly": 8,
+    "mirror": 0
+   },
+   {
+    "piece": "banco_entero",
+    "k": 0,
+    "lx": 112,
+    "ly": 8,
+    "mirror": 1
+   },
+   {
+    "piece": "banco_entero",
+    "k": 0,
+    "lx": 112,
+    "ly": 48,
+    "mirror": 1
+   },
+   {
+    "piece": "banco_entero",
+    "k": 0,
+    "lx": 112,
+    "ly": 240,
+    "mirror": 1
+   },
+   {
+    "piece": "banco_entero",
+    "k": 0,
+    "lx": 112,
+    "ly": 280,
+    "mirror": 1
+   },
+   {
+    "piece": "banco_entero",
+    "k": 0,
+    "lx": 112,
+    "ly": 320,
+    "mirror": 1
+   },
+   {
+    "piece": "banco_entero",
+    "k": 1,
+    "lx": 8,
+    "ly": 8,
+    "mirror": 0
+   },
+   {
+    "piece": "banco_entero",
+    "k": 1,
+    "lx": 8,
+    "ly": 48,
+    "mirror": 0
+   },
+   {
+    "piece": "banco_entero",
+    "k": 1,
+    "lx": 8,
+    "ly": 240,
+    "mirror": 0
+   },
+   {
+    "piece": "banco_entero",
+    "k": 1,
+    "lx": 8,
+    "ly": 280,
+    "mirror": 0
+   },
+   {
+    "piece": "banco_entero",
+    "k": 1,
+    "lx": 8,
+    "ly": 320,
+    "mirror": 0
+   },
+   {
+    "piece": "banco_entero",
+    "k": 1,
+    "lx": 112,
+    "ly": 8,
+    "mirror": 1
+   },
+   {
+    "piece": "banco_entero",
+    "k": 1,
+    "lx": 96,
+    "ly": 232,
+    "mirror": 1
+   },
+   {
+    "piece": "banco_entero",
+    "k": 1,
+    "lx": 96,
+    "ly": 272,
+    "mirror": 1
+   },
+   {
+    "piece": "banco_entero",
+    "k": 1,
+    "lx": 96,
+    "ly": 312,
+    "mirror": 1
+   },
+   {
+    "piece": "banco_entero",
+    "k": 2,
+    "lx": 8,
+    "ly": 8,
+    "mirror": 0
+   },
+   {
+    "piece": "banco_entero",
+    "k": 2,
+    "lx": 8,
+    "ly": 48,
+    "mirror": 0
+   },
+   {
+    "piece": "banco_entero",
+    "k": 2,
+    "lx": 8,
+    "ly": 240,
+    "mirror": 0
+   },
+   {
+    "piece": "banco_entero",
+    "k": 2,
+    "lx": 8,
+    "ly": 280,
+    "mirror": 0
+   },
+   {
+    "piece": "banco_entero",
+    "k": 2,
+    "lx": 8,
+    "ly": 320,
+    "mirror": 0
+   },
+   {
+    "piece": "banco_entero",
+    "k": 2,
+    "lx": 112,
+    "ly": 8,
+    "mirror": 1
+   },
+   {
+    "piece": "banco_entero",
+    "k": 2,
+    "lx": 112,
+    "ly": 48,
+    "mirror": 1
+   },
+   {
+    "piece": "banco_entero",
+    "k": 2,
+    "lx": 112,
+    "ly": 240,
+    "mirror": 1
+   },
+   {
+    "piece": "banco_entero",
+    "k": 2,
+    "lx": 112,
+    "ly": 280,
+    "mirror": 1
+   },
+   {
+    "piece": "banco_entero",
+    "k": 2,
+    "lx": 112,
+    "ly": 320,
+    "mirror": 1
+   }
+  ],
+  "1": [
+   {
+    "piece": "banco_entero",
+    "k": 0,
+    "lx": 8,
+    "ly": 8,
+    "mirror": 0
+   },
+   {
+    "piece": "banco_entero",
+    "k": 0,
+    "lx": 8,
+    "ly": 48,
+    "mirror": 0
+   },
+   {
+    "piece": "banco_entero",
+    "k": 0,
+    "lx": 112,
+    "ly": 8,
+    "mirror": 1
+   },
+   {
+    "piece": "banco_entero",
+    "k": 0,
+    "lx": 112,
+    "ly": 48,
+    "mirror": 1
+   },
+   {
+    "piece": "banco_entero",
+    "k": 0,
+    "lx": 112,
+    "ly": 240,
+    "mirror": 1
+   },
+   {
+    "piece": "banco_entero",
+    "k": 0,
+    "lx": 112,
+    "ly": 280,
+    "mirror": 1
+   },
+   {
+    "piece": "sacos_b",
+    "k": 0,
+    "lx": 72,
+    "ly": 352,
+    "mirror": 0
+   },
+   {
+    "piece": "banco_entero",
+    "k": 1,
+    "lx": 8,
+    "ly": 40,
+    "mirror": 0
+   },
+   {
+    "piece": "banco_entero",
+    "k": 1,
+    "lx": 16,
+    "ly": 240,
+    "mirror": 0
+   },
+   {
+    "piece": "banco_entero",
+    "k": 1,
+    "lx": 16,
+    "ly": 280,
+    "mirror": 0
+   },
+   {
+    "piece": "banco_entero",
+    "k": 1,
+    "lx": 112,
+    "ly": 8,
+    "mirror": 1
+   },
+   {
+    "piece": "banco_entero",
+    "k": 1,
+    "lx": 96,
+    "ly": 256,
+    "mirror": 1
+   },
+   {
+    "piece": "banco_entero",
+    "k": 1,
+    "lx": 96,
+    "ly": 304,
+    "mirror": 1
+   },
+   {
+    "piece": "banco_entero",
+    "k": 1,
+    "lx": 112,
+    "ly": 344,
+    "mirror": 1
+   },
+   {
+    "piece": "banco_roto",
+    "k": 1,
+    "lx": 16,
+    "ly": 320,
+    "mirror": 0
+   },
+   {
+    "piece": "banco_roto",
+    "k": 1,
+    "lx": 112,
+    "ly": 48,
+    "mirror": 1
+   },
+   {
+    "piece": "banco_entero",
+    "k": 2,
+    "lx": 8,
+    "ly": 40,
+    "mirror": 0
+   },
+   {
+    "piece": "banco_entero",
+    "k": 2,
+    "lx": 8,
+    "ly": 320,
+    "mirror": 0
+   },
+   {
+    "piece": "banco_entero",
+    "k": 2,
+    "lx": 112,
+    "ly": 8,
+    "mirror": 1
+   },
+   {
+    "piece": "banco_entero",
+    "k": 2,
+    "lx": 112,
+    "ly": 240,
+    "mirror": 1
+   },
+   {
+    "piece": "banco_entero",
+    "k": 2,
+    "lx": 112,
+    "ly": 280,
+    "mirror": 1
+   },
+   {
+    "piece": "banco_entero",
+    "k": 2,
+    "lx": 112,
+    "ly": 320,
+    "mirror": 1
+   },
+   {
+    "piece": "banco_roto",
+    "k": 2,
+    "lx": 8,
+    "ly": 240,
+    "mirror": 0
+   },
+   {
+    "piece": "banco_roto",
+    "k": 2,
+    "lx": 8,
+    "ly": 280,
+    "mirror": 0
+   }
+  ],
+  "2": [
+   {
+    "piece": "banco_entero",
+    "k": 0,
+    "lx": 144,
+    "ly": 8,
+    "mirror": 1,
+    "sin_sombra": 1
+   },
+   {
+    "piece": "banco_entero",
+    "k": 0,
+    "lx": 144,
+    "ly": 272,
+    "mirror": 1,
+    "sin_sombra": 1
+   },
+   {
+    "piece": "banco_roto",
+    "k": 0,
+    "lx": 8,
+    "ly": 8,
+    "mirror": 0
+   },
+   {
+    "piece": "sacos_b",
+    "k": 0,
+    "lx": 80,
+    "ly": 336,
+    "mirror": 0
+   },
+   {
+    "piece": "banco_entero",
+    "k": 1,
+    "lx": 8,
+    "ly": 8,
+    "mirror": 0,
+    "sin_sombra": 1
+   },
+   {
+    "piece": "banco_entero",
+    "k": 1,
+    "lx": 8,
+    "ly": 40,
+    "mirror": 0,
+    "sin_sombra": 1
+   },
+   {
+    "piece": "banco_entero",
+    "k": 1,
+    "lx": 16,
+    "ly": 312,
+    "mirror": 0,
+    "sin_sombra": 1
+   },
+   {
+    "piece": "banco_entero",
+    "k": 1,
+    "lx": 8,
+    "ly": 344,
+    "mirror": 0,
+    "sin_sombra": 1
+   },
+   {
+    "piece": "banco_roto",
+    "k": 1,
+    "lx": 16,
+    "ly": 272,
+    "mirror": 0
+   },
+   {
+    "piece": "banco_roto",
+    "k": 1,
+    "lx": 112,
+    "ly": 56,
+    "mirror": 1
+   },
+   {
+    "piece": "banco_roto",
+    "k": 1,
+    "lx": 112,
+    "ly": 344,
+    "mirror": 1
+   },
+   {
+    "piece": "banco_volcado",
+    "k": 1,
+    "lx": 112,
+    "ly": 8,
+    "mirror": 1
+   },
+   {
+    "piece": "sacos",
+    "k": 1,
+    "lx": 128,
+    "ly": 248,
+    "mirror": 0
+   },
+   {
+    "piece": "banco_entero",
+    "k": 2,
+    "lx": 8,
+    "ly": 8,
+    "mirror": 0,
+    "sin_sombra": 1
+   },
+   {
+    "piece": "banco_entero",
+    "k": 2,
+    "lx": 8,
+    "ly": 40,
+    "mirror": 0,
+    "sin_sombra": 1
+   },
+   {
+    "piece": "banco_roto",
+    "k": 2,
+    "lx": 112,
+    "ly": 40,
+    "mirror": 1
+   },
+   {
+    "piece": "banco_roto",
+    "k": 2,
+    "lx": 112,
+    "ly": 240,
+    "mirror": 1
+   },
+   {
+    "piece": "banco_roto",
+    "k": 2,
+    "lx": 112,
+    "ly": 280,
+    "mirror": 1
+   },
+   {
+    "piece": "banco_roto",
+    "k": 2,
+    "lx": 112,
+    "ly": 320,
+    "mirror": 1
+   },
+   {
+    "piece": "banco_volcado",
+    "k": 2,
+    "lx": 8,
+    "ly": 240,
+    "mirror": 0
+   },
+   {
+    "piece": "columna",
+    "k": 2,
+    "lx": 0,
+    "ly": 288,
+    "mirror": 0
+   }
+  ],
+  "3": [
+   {
+    "piece": "alambre",
+    "k": 0,
+    "lx": 104,
+    "ly": 232,
+    "mirror": 0
+   },
+   {
+    "piece": "banco_roto",
+    "k": 0,
+    "lx": 8,
+    "ly": 8,
+    "mirror": 0
+   },
+   {
+    "piece": "banco_volcado",
+    "k": 0,
+    "lx": 112,
+    "ly": 8,
+    "mirror": 1
+   },
+   {
+    "piece": "sacos",
+    "k": 0,
+    "lx": 96,
+    "ly": 336,
+    "mirror": 0
+   },
+   {
+    "piece": "banco_roto",
+    "k": 1,
+    "lx": 112,
+    "ly": 344,
+    "mirror": 1
+   },
+   {
+    "piece": "banco_volcado",
+    "k": 1,
+    "lx": 8,
+    "ly": 8,
+    "mirror": 0
+   },
+   {
+    "piece": "banco_volcado",
+    "k": 1,
+    "lx": 112,
+    "ly": 8,
+    "mirror": 1
+   },
+   {
+    "piece": "columna",
+    "k": 1,
+    "lx": 0,
+    "ly": 232,
+    "mirror": 0
+   },
+   {
+    "piece": "sacos",
+    "k": 1,
+    "lx": 72,
+    "ly": 232,
+    "mirror": 0
+   },
+   {
+    "piece": "alambre",
+    "k": 2,
+    "lx": 96,
+    "ly": 344,
+    "mirror": 0
+   },
+   {
+    "piece": "banco_entero",
+    "k": 2,
+    "lx": 8,
+    "ly": 240,
+    "mirror": 0
+   },
+   {
+    "piece": "banco_roto",
+    "k": 2,
+    "lx": 0,
+    "ly": 56,
+    "mirror": 0
+   },
+   {
+    "piece": "banco_roto",
+    "k": 2,
+    "lx": 8,
+    "ly": 344,
+    "mirror": 0
+   },
+   {
+    "piece": "banco_volcado",
+    "k": 2,
+    "lx": 8,
+    "ly": 296,
+    "mirror": 0
+   },
+   {
+    "piece": "banco_volcado",
+    "k": 2,
+    "lx": 112,
+    "ly": 8,
+    "mirror": 1
+   },
+   {
+    "piece": "sacos_b",
+    "k": 2,
+    "lx": 128,
+    "ly": 232,
+    "mirror": 0
+   }
+  ],
+  "4": [
+   {
+    "piece": "cepo",
+    "k": 0,
+    "lx": 0,
+    "ly": 0,
+    "mirror": 0
+   },
+   {
+    "piece": "cepo",
+    "k": 0,
+    "lx": 0,
+    "ly": 232,
+    "mirror": 0
+   },
+   {
+    "piece": "cepo",
+    "k": 0,
+    "lx": 0,
+    "ly": 280,
+    "mirror": 0
+   },
+   {
+    "piece": "cepo",
+    "k": 0,
+    "lx": 0,
+    "ly": 328,
+    "mirror": 0
+   },
+   {
+    "piece": "sacos",
+    "k": 0,
+    "lx": 144,
+    "ly": 24,
+    "mirror": 0
+   },
+   {
+    "piece": "sacos",
+    "k": 0,
+    "lx": 128,
+    "ly": 248,
+    "mirror": 0
+   },
+   {
+    "piece": "sacos",
+    "k": 0,
+    "lx": 128,
+    "ly": 304,
+    "mirror": 0
+   },
+   {
+    "piece": "sacos",
+    "k": 0,
+    "lx": 136,
+    "ly": 344,
+    "mirror": 0
+   },
+   {
+    "piece": "sacos_b",
+    "k": 0,
+    "lx": 144,
+    "ly": 0,
+    "mirror": 0
+   },
+   {
+    "piece": "sacos_b",
+    "k": 0,
+    "lx": 128,
+    "ly": 280,
+    "mirror": 0
+   }
+  ],
+  "5": [
+   {
+    "piece": "capullo",
+    "k": 0,
+    "lx": 0,
+    "ly": 0,
+    "mirror": 0
+   },
+   {
+    "piece": "capullo",
+    "k": 0,
+    "lx": 48,
+    "ly": 232,
+    "mirror": 0
+   },
+   {
+    "piece": "capullo",
+    "k": 0,
+    "lx": 16,
+    "ly": 248,
+    "mirror": 0
+   },
+   {
+    "piece": "sacos",
+    "k": 0,
+    "lx": 16,
+    "ly": 312,
+    "mirror": 0
+   },
+   {
+    "piece": "sacos_b",
+    "k": 0,
+    "lx": 80,
+    "ly": 312,
+    "mirror": 0
+   },
+   {
+    "piece": "sacos_b",
+    "k": 0,
+    "lx": 0,
+    "ly": 352,
+    "mirror": 0
+   },
+   {
+    "piece": "sacos_remate",
+    "k": 0,
+    "lx": 144,
+    "ly": 352,
+    "mirror": 0
+   }
+  ],
+  "6": [
+   {
+    "piece": "columna_entera",
+    "k": 0,
+    "lx": 16,
+    "ly": 8,
+    "mirror": 0
+   },
+   {
+    "piece": "columna_entera",
+    "k": 0,
+    "lx": 128,
+    "ly": 8,
+    "mirror": 0
+   },
+   {
+    "piece": "columna_entera",
+    "k": 0,
+    "lx": 16,
+    "ly": 168,
+    "mirror": 0
+   },
+   {
+    "piece": "columna_entera",
+    "k": 0,
+    "lx": 128,
+    "ly": 168,
+    "mirror": 0
+   },
+   {
+    "piece": "columna_entera",
+    "k": 1,
+    "lx": 8,
+    "ly": 8,
+    "mirror": 0
+   },
+   {
+    "piece": "columna_entera",
+    "k": 1,
+    "lx": 128,
+    "ly": 8,
+    "mirror": 0
+   },
+   {
+    "piece": "columna_entera",
+    "k": 1,
+    "lx": 8,
+    "ly": 168,
+    "mirror": 0
+   },
+   {
+    "piece": "columna_entera",
+    "k": 1,
+    "lx": 128,
+    "ly": 168,
+    "mirror": 0
+   },
+   {
+    "piece": "columna_entera",
+    "k": 2,
+    "lx": 8,
+    "ly": 8,
+    "mirror": 0
+   },
+   {
+    "piece": "columna_entera",
+    "k": 2,
+    "lx": 120,
+    "ly": 24,
+    "mirror": 0
+   },
+   {
+    "piece": "columna_entera",
+    "k": 2,
+    "lx": 8,
+    "ly": 168,
+    "mirror": 0
+   },
+   {
+    "piece": "columna_entera",
+    "k": 2,
+    "lx": 128,
+    "ly": 176,
+    "mirror": 0
+   }
+  ],
+  "7": [
+   {
+    "piece": "banco_roto",
+    "k": 0,
+    "lx": 72,
+    "ly": 336,
+    "mirror": 0
+   },
+   {
+    "piece": "columna_entera",
+    "k": 0,
+    "lx": 16,
+    "ly": 8,
+    "mirror": 0
+   },
+   {
+    "piece": "columna_entera",
+    "k": 0,
+    "lx": 128,
+    "ly": 8,
+    "mirror": 0
+   },
+   {
+    "piece": "columna_entera",
+    "k": 0,
+    "lx": 16,
+    "ly": 168,
+    "mirror": 0
+   },
+   {
+    "piece": "columna_entera",
+    "k": 0,
+    "lx": 128,
+    "ly": 168,
+    "mirror": 0
+   },
+   {
+    "piece": "columna_entera",
+    "k": 1,
+    "lx": 8,
+    "ly": 8,
+    "mirror": 0
+   },
+   {
+    "piece": "columna_entera",
+    "k": 1,
+    "lx": 128,
+    "ly": 8,
+    "mirror": 0
+   },
+   {
+    "piece": "columna_entera",
+    "k": 1,
+    "lx": 8,
+    "ly": 168,
+    "mirror": 0
+   },
+   {
+    "piece": "columna_entera",
+    "k": 1,
+    "lx": 128,
+    "ly": 168,
+    "mirror": 0
+   },
+   {
+    "piece": "lapida_pie",
+    "k": 1,
+    "lx": 88,
+    "ly": 336,
+    "mirror": 0
+   },
+   {
+    "piece": "columna_entera",
+    "k": 2,
+    "lx": 8,
+    "ly": 8,
+    "mirror": 0
+   },
+   {
+    "piece": "columna_entera",
+    "k": 2,
+    "lx": 120,
+    "ly": 16,
+    "mirror": 0
+   },
+   {
+    "piece": "columna_entera",
+    "k": 2,
+    "lx": 8,
+    "ly": 168,
+    "mirror": 0
+   },
+   {
+    "piece": "columna_entera",
+    "k": 2,
+    "lx": 128,
+    "ly": 168,
+    "mirror": 0
+   }
+  ],
+  "8": [
+   {
+    "piece": "biombo",
+    "k": 0,
+    "lx": 0,
+    "ly": 328,
+    "mirror": 0
+   },
+   {
+    "piece": "candelabro_pie",
+    "k": 0,
+    "lx": 56,
+    "ly": 24,
+    "mirror": 0
+   },
+   {
+    "piece": "catre",
+    "k": 0,
+    "lx": 0,
+    "ly": 16,
+    "mirror": 0
+   },
+   {
+    "piece": "catre",
+    "k": 0,
+    "lx": 0,
+    "ly": 232,
+    "mirror": 0
+   },
+   {
+    "piece": "catre",
+    "k": 0,
+    "lx": 0,
+    "ly": 280,
+    "mirror": 0
+   },
+   {
+    "piece": "catre",
+    "k": 0,
+    "lx": 160,
+    "ly": 16,
+    "mirror": 1
+   },
+   {
+    "piece": "catre",
+    "k": 0,
+    "lx": 144,
+    "ly": 248,
+    "mirror": 1
+   },
+   {
+    "piece": "catre",
+    "k": 0,
+    "lx": 144,
+    "ly": 296,
+    "mirror": 1
+   },
+   {
+    "piece": "catre",
+    "k": 0,
+    "lx": 160,
+    "ly": 336,
+    "mirror": 1
+   },
+   {
+    "piece": "palangana",
+    "k": 0,
+    "lx": 48,
+    "ly": 248,
+    "mirror": 0
+   },
+   {
+    "piece": "biombo",
+    "k": 1,
+    "lx": 152,
+    "ly": 328,
+    "mirror": 1
+   },
+   {
+    "piece": "candelabro_pie",
+    "k": 1,
+    "lx": 120,
+    "ly": 16,
+    "mirror": 0
+   },
+   {
+    "piece": "catre",
+    "k": 1,
+    "lx": 0,
+    "ly": 16,
+    "mirror": 0
+   },
+   {
+    "piece": "catre",
+    "k": 1,
+    "lx": 0,
+    "ly": 232,
+    "mirror": 0
+   },
+   {
+    "piece": "catre",
+    "k": 1,
+    "lx": 0,
+    "ly": 280,
+    "mirror": 0
+   },
+   {
+    "piece": "catre",
+    "k": 1,
+    "lx": 0,
+    "ly": 328,
+    "mirror": 0
+   },
+   {
+    "piece": "catre",
+    "k": 1,
+    "lx": 160,
+    "ly": 16,
+    "mirror": 1
+   },
+   {
+    "piece": "catre",
+    "k": 1,
+    "lx": 160,
+    "ly": 232,
+    "mirror": 1
+   },
+   {
+    "piece": "catre",
+    "k": 1,
+    "lx": 160,
+    "ly": 280,
+    "mirror": 1
+   },
+   {
+    "piece": "palangana",
+    "k": 1,
+    "lx": 48,
+    "ly": 248,
+    "mirror": 0
+   },
+   {
+    "piece": "catre",
+    "k": 2,
+    "lx": 0,
+    "ly": 16,
+    "mirror": 0
+   },
+   {
+    "piece": "catre",
+    "k": 2,
+    "lx": 16,
+    "ly": 248,
+    "mirror": 0
+   },
+   {
+    "piece": "catre",
+    "k": 2,
+    "lx": 16,
+    "ly": 296,
+    "mirror": 0
+   },
+   {
+    "piece": "catre",
+    "k": 2,
+    "lx": 160,
+    "ly": 16,
+    "mirror": 1
+   },
+   {
+    "piece": "catre",
+    "k": 2,
+    "lx": 160,
+    "ly": 232,
+    "mirror": 1
+   },
+   {
+    "piece": "catre",
+    "k": 2,
+    "lx": 160,
+    "ly": 280,
+    "mirror": 1
+   }
+  ],
+  "9": [
+   {
+    "piece": "calaveras_pila",
+    "k": 0,
+    "lx": 168,
+    "ly": 112,
+    "mirror": 0
+   },
+   {
+    "piece": "calaveras_pila",
+    "k": 0,
+    "lx": 136,
+    "ly": 344,
+    "mirror": 0
+   },
+   {
+    "piece": "huesos_monton",
+    "k": 0,
+    "lx": 40,
+    "ly": 304,
+    "mirror": 0
+   },
+   {
+    "piece": "osario_lado",
+    "k": 0,
+    "lx": 160,
+    "ly": 0,
+    "mirror": 0
+   },
+   {
+    "piece": "osario_lado",
+    "k": 0,
+    "lx": 160,
+    "ly": 240,
+    "mirror": 0
+   },
+   {
+    "piece": "osario_lado",
+    "k": 0,
+    "lx": 160,
+    "ly": 288,
+    "mirror": 0
+   },
+   {
+    "piece": "osario_lado",
+    "k": 0,
+    "lx": 160,
+    "ly": 336,
+    "mirror": 0
+   },
+   {
+    "piece": "osario_lado",
+    "k": 0,
+    "lx": 0,
+    "ly": 0,
+    "mirror": 1
+   },
+   {
+    "piece": "osario_lado",
+    "k": 0,
+    "lx": 0,
+    "ly": 192,
+    "mirror": 1
+   },
+   {
+    "piece": "osario_lado",
+    "k": 0,
+    "lx": 0,
+    "ly": 240,
+    "mirror": 1
+   },
+   {
+    "piece": "osario_lado",
+    "k": 0,
+    "lx": 0,
+    "ly": 288,
+    "mirror": 1
+   },
+   {
+    "piece": "osario_lado",
+    "k": 0,
+    "lx": 0,
+    "ly": 336,
+    "mirror": 1
+   },
+   {
+    "piece": "calaveras_pila",
+    "k": 1,
+    "lx": 16,
+    "ly": 80,
+    "mirror": 0
+   },
+   {
+    "piece": "huesos_monton",
+    "k": 1,
+    "lx": 168,
+    "ly": 160,
+    "mirror": 0
+   },
+   {
+    "piece": "osario_lado",
+    "k": 1,
+    "lx": 160,
+    "ly": 0,
+    "mirror": 0
+   },
+   {
+    "piece": "osario_lado",
+    "k": 1,
+    "lx": 160,
+    "ly": 192,
+    "mirror": 0
+   },
+   {
+    "piece": "osario_lado",
+    "k": 1,
+    "lx": 160,
+    "ly": 240,
+    "mirror": 0
+   },
+   {
+    "piece": "osario_lado",
+    "k": 1,
+    "lx": 160,
+    "ly": 288,
+    "mirror": 0
+   },
+   {
+    "piece": "osario_lado",
+    "k": 1,
+    "lx": 160,
+    "ly": 336,
+    "mirror": 0
+   },
+   {
+    "piece": "osario_lado",
+    "k": 1,
+    "lx": 0,
+    "ly": 0,
+    "mirror": 1
+   },
+   {
+    "piece": "osario_lado",
+    "k": 1,
+    "lx": 8,
+    "ly": 240,
+    "mirror": 1
+   },
+   {
+    "piece": "osario_lado",
+    "k": 1,
+    "lx": 8,
+    "ly": 288,
+    "mirror": 1
+   },
+   {
+    "piece": "osario_lado",
+    "k": 1,
+    "lx": 0,
+    "ly": 336,
+    "mirror": 1
+   },
+   {
+    "piece": "calaveras_pila",
+    "k": 2,
+    "lx": 40,
+    "ly": 40,
+    "mirror": 0
+   },
+   {
+    "piece": "calaveras_pila",
+    "k": 2,
+    "lx": 144,
+    "ly": 40,
+    "mirror": 0
+   },
+   {
+    "piece": "osario_estante",
+    "k": 2,
+    "lx": 8,
+    "ly": 0,
+    "mirror": 0
+   },
+   {
+    "piece": "osario_estante",
+    "k": 2,
+    "lx": 56,
+    "ly": 0,
+    "mirror": 0
+   },
+   {
+    "piece": "osario_estante",
+    "k": 2,
+    "lx": 104,
+    "ly": 0,
+    "mirror": 0
+   },
+   {
+    "piece": "osario_estante",
+    "k": 2,
+    "lx": 152,
+    "ly": 0,
+    "mirror": 0
+   },
+   {
+    "piece": "osario_lado",
+    "k": 2,
+    "lx": 160,
+    "ly": 192,
+    "mirror": 0
+   },
+   {
+    "piece": "osario_lado",
+    "k": 2,
+    "lx": 160,
+    "ly": 240,
+    "mirror": 0
+   },
+   {
+    "piece": "osario_lado",
+    "k": 2,
+    "lx": 160,
+    "ly": 288,
+    "mirror": 0
+   },
+   {
+    "piece": "osario_lado",
+    "k": 2,
+    "lx": 160,
+    "ly": 336,
+    "mirror": 0
+   },
+   {
+    "piece": "osario_lado",
+    "k": 2,
+    "lx": 0,
+    "ly": 192,
+    "mirror": 1
+   },
+   {
+    "piece": "osario_lado",
+    "k": 2,
+    "lx": 0,
+    "ly": 240,
+    "mirror": 1
+   },
+   {
+    "piece": "osario_lado",
+    "k": 2,
+    "lx": 0,
+    "ly": 288,
+    "mirror": 1
+   },
+   {
+    "piece": "osario_lado",
+    "k": 2,
+    "lx": 0,
+    "ly": 336,
+    "mirror": 1
+   }
+  ],
+  "10": [
+   {
+    "piece": "altar_pie",
+    "k": 0,
+    "lx": 96,
+    "ly": 8,
+    "mirror": 0
+   },
+   {
+    "piece": "candelabro_pie",
+    "k": 0,
+    "lx": 56,
+    "ly": 8,
+    "mirror": 0
+   },
+   {
+    "piece": "candelabro_pie",
+    "k": 0,
+    "lx": 120,
+    "ly": 8,
+    "mirror": 0
+   },
+   {
+    "piece": "reclinatorio",
+    "k": 0,
+    "lx": 8,
+    "ly": 248,
+    "mirror": 0
+   },
+   {
+    "piece": "reclinatorio",
+    "k": 0,
+    "lx": 160,
+    "ly": 248,
+    "mirror": 0
+   },
+   {
+    "piece": "reclinatorio",
+    "k": 0,
+    "lx": 8,
+    "ly": 296,
+    "mirror": 0
+   },
+   {
+    "piece": "reclinatorio",
+    "k": 0,
+    "lx": 160,
+    "ly": 296,
+    "mirror": 0
+   },
+   {
+    "piece": "relicario",
+    "k": 0,
+    "lx": 16,
+    "ly": 16,
+    "mirror": 0
+   },
+   {
+    "piece": "relicario",
+    "k": 0,
+    "lx": 152,
+    "ly": 16,
+    "mirror": 0
+   }
+  ],
+  "11": [
+   {
+    "piece": "reclinatorio",
+    "k": 0,
+    "lx": 8,
+    "ly": 48,
+    "mirror": 0
+   },
+   {
+    "piece": "reclinatorio",
+    "k": 0,
+    "lx": 168,
+    "ly": 48,
+    "mirror": 0
+   },
+   {
+    "piece": "reclinatorio",
+    "k": 0,
+    "lx": 8,
+    "ly": 88,
+    "mirror": 0
+   },
+   {
+    "piece": "reclinatorio",
+    "k": 0,
+    "lx": 160,
+    "ly": 88,
+    "mirror": 0
+   },
+   {
+    "piece": "reclinatorio",
+    "k": 0,
+    "lx": 8,
+    "ly": 128,
+    "mirror": 0
+   },
+   {
+    "piece": "reclinatorio",
+    "k": 0,
+    "lx": 160,
+    "ly": 128,
+    "mirror": 0
+   },
+   {
+    "piece": "reclinatorio",
+    "k": 0,
+    "lx": 8,
+    "ly": 168,
+    "mirror": 0
+   },
+   {
+    "piece": "reclinatorio",
+    "k": 0,
+    "lx": 160,
+    "ly": 168,
+    "mirror": 0
+   },
+   {
+    "piece": "reclinatorio",
+    "k": 0,
+    "lx": 8,
+    "ly": 256,
+    "mirror": 0
+   },
+   {
+    "piece": "reclinatorio",
+    "k": 0,
+    "lx": 160,
+    "ly": 256,
+    "mirror": 0
+   },
+   {
+    "piece": "reclinatorio",
+    "k": 0,
+    "lx": 8,
+    "ly": 296,
+    "mirror": 0
+   },
+   {
+    "piece": "reclinatorio",
+    "k": 0,
+    "lx": 160,
+    "ly": 296,
+    "mirror": 0
+   },
+   {
+    "piece": "reclinatorio",
+    "k": 0,
+    "lx": 8,
+    "ly": 336,
+    "mirror": 0
+   },
+   {
+    "piece": "reclinatorio",
+    "k": 0,
+    "lx": 168,
+    "ly": 336,
+    "mirror": 0
+   },
+   {
+    "piece": "altar_pie",
+    "k": 1,
+    "lx": 96,
+    "ly": 8,
+    "mirror": 0
+   },
+   {
+    "piece": "candelabro_pie",
+    "k": 1,
+    "lx": 56,
+    "ly": 8,
+    "mirror": 0
+   },
+   {
+    "piece": "candelabro_pie",
+    "k": 1,
+    "lx": 120,
+    "ly": 8,
+    "mirror": 0
+   },
+   {
+    "piece": "reclinatorio",
+    "k": 1,
+    "lx": 8,
+    "ly": 240,
+    "mirror": 0
+   },
+   {
+    "piece": "reclinatorio",
+    "k": 1,
+    "lx": 168,
+    "ly": 240,
+    "mirror": 0
+   },
+   {
+    "piece": "reclinatorio",
+    "k": 1,
+    "lx": 8,
+    "ly": 296,
+    "mirror": 0
+   },
+   {
+    "piece": "reclinatorio",
+    "k": 1,
+    "lx": 160,
+    "ly": 296,
+    "mirror": 0
+   }
+  ],
+  "12": [
+   {
+    "piece": "alambre",
+    "k": 0,
+    "lx": 0,
+    "ly": 344,
+    "mirror": 0
+   },
+   {
+    "piece": "alambre",
+    "k": 0,
+    "lx": 32,
+    "ly": 344,
+    "mirror": 0
+   },
+   {
+    "piece": "alambre",
+    "k": 0,
+    "lx": 144,
+    "ly": 344,
+    "mirror": 0
+   },
+   {
+    "piece": "alambre",
+    "k": 0,
+    "lx": 176,
+    "ly": 344,
+    "mirror": 0
+   },
+   {
+    "piece": "capullo",
+    "k": 0,
+    "lx": 24,
+    "ly": 8,
+    "mirror": 0
+   },
+   {
+    "piece": "capullo",
+    "k": 0,
+    "lx": 152,
+    "ly": 8,
+    "mirror": 0
+   },
+   {
+    "piece": "cepo",
+    "k": 0,
+    "lx": 16,
+    "ly": 288,
+    "mirror": 0
+   },
+   {
+    "piece": "cepo",
+    "k": 0,
+    "lx": 168,
+    "ly": 288,
+    "mirror": 0
+   },
+   {
+    "piece": "alambre",
+    "k": 1,
+    "lx": 0,
+    "ly": 352,
+    "mirror": 0
+   },
+   {
+    "piece": "alambre",
+    "k": 1,
+    "lx": 32,
+    "ly": 352,
+    "mirror": 0
+   },
+   {
+    "piece": "alambre",
+    "k": 1,
+    "lx": 144,
+    "ly": 352,
+    "mirror": 0
+   },
+   {
+    "piece": "alambre",
+    "k": 1,
+    "lx": 176,
+    "ly": 352,
+    "mirror": 0
+   },
+   {
+    "piece": "capullo",
+    "k": 1,
+    "lx": 24,
+    "ly": 296,
+    "mirror": 0
+   },
+   {
+    "piece": "capullo",
+    "k": 1,
+    "lx": 168,
+    "ly": 296,
+    "mirror": 0
+   },
+   {
+    "piece": "cepo",
+    "k": 1,
+    "lx": 8,
+    "ly": 8,
+    "mirror": 0
+   },
+   {
+    "piece": "cepo",
+    "k": 1,
+    "lx": 168,
+    "ly": 8,
+    "mirror": 0
+   }
+  ],
+  "13": [
+   {
+    "piece": "altar_pie",
+    "k": 0,
+    "lx": 40,
+    "ly": 8,
+    "mirror": 0
+   },
+   {
+    "piece": "altar_pie",
+    "k": 0,
+    "lx": 152,
+    "ly": 8,
+    "mirror": 0
+   },
+   {
+    "piece": "reclinatorio",
+    "k": 0,
+    "lx": 56,
+    "ly": 256,
+    "mirror": 0
+   },
+   {
+    "piece": "reclinatorio",
+    "k": 0,
+    "lx": 168,
+    "ly": 256,
+    "mirror": 0
+   },
+   {
+    "piece": "reclinatorio",
+    "k": 0,
+    "lx": 56,
+    "ly": 296,
+    "mirror": 0
+   },
+   {
+    "piece": "reclinatorio",
+    "k": 0,
+    "lx": 168,
+    "ly": 296,
+    "mirror": 0
+   },
+   {
+    "piece": "relicario",
+    "k": 0,
+    "lx": 80,
+    "ly": 0,
+    "mirror": 0
+   }
+  ],
+  "14": [
+   {
+    "piece": "calaveras_pila",
+    "k": 0,
+    "lx": 88,
+    "ly": 208,
+    "mirror": 0
+   },
+   {
+    "piece": "capullo",
+    "k": 0,
+    "lx": 48,
+    "ly": 144,
+    "mirror": 0
+   },
+   {
+    "piece": "capullo",
+    "k": 0,
+    "lx": 80,
+    "ly": 152,
+    "mirror": 0
+   },
+   {
+    "piece": "columna_entera",
+    "k": 0,
+    "lx": 56,
+    "ly": 0,
+    "mirror": 0
+   },
+   {
+    "piece": "columna_entera",
+    "k": 0,
+    "lx": 112,
+    "ly": 0,
+    "mirror": 0
+   },
+   {
+    "piece": "columna_entera",
+    "k": 0,
+    "lx": 56,
+    "ly": 256,
+    "mirror": 0
+   },
+   {
+    "piece": "columna_entera",
+    "k": 0,
+    "lx": 112,
+    "ly": 256,
+    "mirror": 0
+   },
+   {
+    "piece": "santo",
+    "k": 0,
+    "lx": 8,
+    "ly": 8,
+    "mirror": 0
+   },
+   {
+    "piece": "santo",
+    "k": 0,
+    "lx": 16,
+    "ly": 80,
+    "mirror": 0
+   },
+   {
+    "piece": "santo",
+    "k": 0,
+    "lx": 16,
+    "ly": 264,
+    "mirror": 0
+   },
+   {
+    "piece": "santo_der",
+    "k": 0,
+    "lx": 168,
+    "ly": 8,
+    "mirror": 0
+   },
+   {
+    "piece": "santo_der",
+    "k": 0,
+    "lx": 168,
+    "ly": 80,
+    "mirror": 0
+   },
+   {
+    "piece": "santo_der",
+    "k": 0,
+    "lx": 168,
+    "ly": 152,
+    "mirror": 0
+   },
+   {
+    "piece": "santo_der",
+    "k": 0,
+    "lx": 168,
+    "ly": 264,
+    "mirror": 0
+   },
+   {
+    "piece": "capullo",
+    "k": 1,
+    "lx": 48,
+    "ly": 0,
+    "mirror": 0
+   },
+   {
+    "piece": "capullo",
+    "k": 1,
+    "lx": 112,
+    "ly": 0,
+    "mirror": 0
+   },
+   {
+    "piece": "capullo",
+    "k": 1,
+    "lx": 80,
+    "ly": 16,
+    "mirror": 0
+   },
+   {
+    "piece": "capullo",
+    "k": 1,
+    "lx": 56,
+    "ly": 64,
+    "mirror": 0
+   },
+   {
+    "piece": "capullo",
+    "k": 1,
+    "lx": 112,
+    "ly": 64,
+    "mirror": 0
+   },
+   {
+    "piece": "capullo",
+    "k": 1,
+    "lx": 120,
+    "ly": 216,
+    "mirror": 0
+   },
+   {
+    "piece": "capullo",
+    "k": 1,
+    "lx": 88,
+    "ly": 240,
+    "mirror": 0
+   },
+   {
+    "piece": "capullo",
+    "k": 1,
+    "lx": 48,
+    "ly": 256,
+    "mirror": 0
+   },
+   {
+    "piece": "capullo",
+    "k": 1,
+    "lx": 72,
+    "ly": 304,
+    "mirror": 0
+   },
+   {
+    "piece": "capullo",
+    "k": 1,
+    "lx": 104,
+    "ly": 304,
+    "mirror": 0
+   },
+   {
+    "piece": "huesos_monton",
+    "k": 1,
+    "lx": 88,
+    "ly": 184,
+    "mirror": 0
+   },
+   {
+    "piece": "santo",
+    "k": 1,
+    "lx": 8,
+    "ly": 240,
+    "mirror": 0
+   },
+   {
+    "piece": "santo",
+    "k": 1,
+    "lx": 8,
+    "ly": 312,
+    "mirror": 0
+   },
+   {
+    "piece": "santo_der",
+    "k": 1,
+    "lx": 168,
+    "ly": 0,
+    "mirror": 0
+   },
+   {
+    "piece": "santo_der",
+    "k": 1,
+    "lx": 168,
+    "ly": 240,
+    "mirror": 0
+   },
+   {
+    "piece": "santo_der",
+    "k": 1,
+    "lx": 168,
+    "ly": 312,
+    "mirror": 0
+   }
+  ],
+  "15": [
+   {
+    "piece": "brasero",
+    "k": 0,
+    "lx": 16,
+    "ly": 336,
+    "mirror": 0
+   },
+   {
+    "piece": "brasero",
+    "k": 0,
+    "lx": 152,
+    "ly": 336,
+    "mirror": 0
+   },
+   {
+    "piece": "calaveras_pila",
+    "k": 0,
+    "lx": 48,
+    "ly": 120,
+    "mirror": 0
+   },
+   {
+    "piece": "huesos_monton",
+    "k": 0,
+    "lx": 136,
+    "ly": 280,
+    "mirror": 0
+   },
+   {
+    "piece": "lapida_pie",
+    "k": 0,
+    "lx": 8,
+    "ly": 144,
+    "mirror": 0
+   },
+   {
+    "piece": "lapida_pie",
+    "k": 0,
+    "lx": 176,
+    "ly": 144,
+    "mirror": 0
+   },
+   {
+    "piece": "lapida_pie",
+    "k": 0,
+    "lx": 8,
+    "ly": 256,
+    "mirror": 0
+   },
+   {
+    "piece": "lapida_pie",
+    "k": 0,
+    "lx": 176,
+    "ly": 256,
+    "mirror": 0
+   },
+   {
+    "piece": "sarcofago",
+    "k": 0,
+    "lx": 72,
+    "ly": 0,
+    "mirror": 0
+   },
+   {
+    "piece": "sarcofago_lado",
+    "k": 0,
+    "lx": 160,
+    "ly": 80,
+    "mirror": 0
+   },
+   {
+    "piece": "sarcofago_lado",
+    "k": 0,
+    "lx": 160,
+    "ly": 112,
+    "mirror": 0
+   },
+   {
+    "piece": "sarcofago_lado",
+    "k": 0,
+    "lx": 160,
+    "ly": 192,
+    "mirror": 0
+   },
+   {
+    "piece": "sarcofago_lado",
+    "k": 0,
+    "lx": 160,
+    "ly": 224,
+    "mirror": 0
+   },
+   {
+    "piece": "sarcofago_lado",
+    "k": 0,
+    "lx": 160,
+    "ly": 304,
+    "mirror": 0
+   },
+   {
+    "piece": "sarcofago_lado",
+    "k": 0,
+    "lx": 0,
+    "ly": 80,
+    "mirror": 1
+   },
+   {
+    "piece": "sarcofago_lado",
+    "k": 0,
+    "lx": 0,
+    "ly": 112,
+    "mirror": 1
+   },
+   {
+    "piece": "sarcofago_lado",
+    "k": 0,
+    "lx": 0,
+    "ly": 192,
+    "mirror": 1
+   },
+   {
+    "piece": "sarcofago_lado",
+    "k": 0,
+    "lx": 0,
+    "ly": 224,
+    "mirror": 1
+   },
+   {
+    "piece": "sarcofago_lado",
+    "k": 0,
+    "lx": 0,
+    "ly": 304,
+    "mirror": 1
+   }
+  ]
+ }
+}

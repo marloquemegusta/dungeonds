@@ -174,6 +174,11 @@ def process(name, dry_run=False):
         hx, hz = fire_dir_xz(*cfg["camp_pos"])
         e = math.radians(elevation)
         light_override = np.array([hx * math.sin(e), math.cos(e), hz * math.sin(e)])
+    if "light_xz" in cfg:
+        # Luz de sala del ARPG: direccion horizontal (x, z) unitaria hacia la luz; `shadow_elevation` es el angulo respecto a la vertical.
+        hx, hz = cfg["light_xz"]
+        e = math.radians(elevation)
+        light_override = np.array([hx * math.sin(e), math.cos(e), hz * math.sin(e)])
     shadow_xy = project_shadow(verts, tris, right, up, canvas, elevation, light_override)
 
     x_min, y_min = shadow_xy.min(0)

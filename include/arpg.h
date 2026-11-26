@@ -12,7 +12,7 @@
 // Mana: spent by spells, regenerated slowly.
 #define ARPG_MANA_BASE 60           // [TUNABLE-PLACEHOLDER] mana at level 1
 #define ARPG_MANA_PER_LEVEL 10       // [TUNABLE-PLACEHOLDER] mana gained per level
-#define ARPG_MANA_REGEN_FRAMES 30   // [TUNABLE-PLACEHOLDER] 1 mana every N frames
+#define ARPG_MANA_REGEN_FRAMES 30   // [TUNABLE-PLACEHOLDER] 1 mana every N frames (slow on purpose: mana comes from executions, DESIGN-ARPG.md)
 
 // Damage the hero takes per hit, by enemy type.
 #define ARPG_DMG_EXVOTO 16          // [TUNABLE-PLACEHOLDER]
@@ -27,7 +27,7 @@
 #define ARPG_SMONJA_GLIFO_MARGIN 14 // [TUNABLE-PLACEHOLDER] ground px past the glifo's edge she keeps running to
 #define ARPG_DMG_MONJA 10           // [TUNABLE-PLACEHOLDER] support tier: her blow is weak when cornered
 #define ARPG_DMG_CIRENEO 36         // [TUNABLE-PLACEHOLDER] ENEMY_TYPE_CHARGER
-#define ARPG_DMG_OJO 30             // [TUNABLE-PLACEHOLDER] ENEMY_TYPE_SHOOTER
+#define ARPG_DMG_OJO 15             // [TUNABLE-PLACEHOLDER] ENEMY_TYPE_SHOOTER (was 30: killed a level 1 hero in 4 hits in the Nave 2)
 #define ARPG_DMG_ABANDERADO 25      // [TUNABLE-PLACEHOLDER]
 #define ARPG_DMG_CAMPANERO 25       // [TUNABLE-PLACEHOLDER] contact damage of the Campanero (DESIGN-ARPG.md 9)
 #define ARPG_DMG_CAMPANERO_TOQUE 30 // [TUNABLE-PLACEHOLDER] the major toll's ring on the hero
@@ -51,7 +51,7 @@
 #define ARPG_MONJA_KEEP_FLEE_STOP 90    // [TUNABLE-PLACEHOLDER] ground px: she stops fleeing (and prays) from this distance
 #define ARPG_MONJA_KEEP_FAR 115         // [TUNABLE-PLACEHOLDER] ground px: hero farther than this makes her walk closer
 #define ARPG_MONJA_KEEP_FAR_STOP 100    // [TUNABLE-PLACEHOLDER] ground px: she stops approaching (and prays) from this distance
-#define ARPG_EXVOTO_HEAL_PCT 2          // [TUNABLE-PLACEHOLDER] Monja de cera praying at a post (Capilla del parroco): % of max life healed per second to the Exvoto family around her
+#define ARPG_EXVOTO_HEAL_PCT 5          // [TUNABLE-PLACEHOLDER] Monja de cera praying at a post (Capilla del parroco): % of max life healed per second to the Exvoto family around her
 #define ARPG_EXVOTO_HEAL_RADIUS 80      // [TUNABLE-PLACEHOLDER] ground px of that heal
 #define ARPG_MONJA_PRAYS 0              // 1 = the old prayer (heal + haste + placement); 0 = Super Monja: circles, kites and charges (ARPG_SMONJA_*)
 // Super Monja (DESIGN-ARPG s5): circles at mid distance, kites at punching range, charges now and then.
@@ -153,8 +153,9 @@
 #define ARPG_ROOM_HOLE_H_PX 256           // [TUNABLE-PLACEHOLDER] lateral opening height: two modules of the wall (128 px each), on the ground
 #define ARPG_ROOM_HOLE_Y_PX 96            // [TUNABLE-PLACEHOLDER] top of a lateral opening, from the block top (a module joint of the wall art)
 #define ARPG_ROOM_HOLE_ARRIVE_PX 80       // [TUNABLE-PLACEHOLDER] where the hero lands, from the top of the opening (inside its visible part)
-#define ARPG_ROOM_SPAWN_AHEAD_PX 640      // [TUNABLE-PLACEHOLDER] a room's group is placed this far before the hero reaches it
-#define ARPG_ROOM_DESPAWN_BEHIND_PX 760   // [TUNABLE-PLACEHOLDER] enemies this far below the hero are recycled
+#define ARPG_ROOM_SPAWN_AHEAD_PX 640      // [TUNABLE-PLACEHOLDER] boss rooms: the group is placed this far before the hero reaches it
+#define ARPG_ROOM_DESPAWN_BEHIND_PX 400   // [TUNABLE-PLACEHOLDER] enemies this far below the hero are recycled (their post is placed again if he comes back)
+#define ARPG_ROOM_SPAWN_NEAR_PX 288       // [TUNABLE-PLACEHOLDER] each member of a room is placed when the hero is this close in Y (1.5 screens); the cap of 24 never grows
 #define ARPG_ROOM_GROUP_MIN 4             // [TUNABLE-PLACEHOLDER] smallest group of a room
 #define ARPG_ROOM_GROUP_MAX 12            // [TUNABLE-PLACEHOLDER] largest group of a room
 #define ARPG_ROOM_MAX_AWAKE 2             // [TUNABLE-PLACEHOLDER] groups awake at once around the hero
