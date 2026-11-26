@@ -157,6 +157,7 @@ void arpg_inv_sanitize(void);
 // upgrades_reset); arpg_inv_recalc() tras equipar/desequipar y aplica solo el delta.
 void arpg_inv_apply(void);
 void arpg_inv_recalc(void);
+void arpg_inv_ensure_applied(void);   /* si nunca se aplico el inventario (campamento tras arrancar), lo aplica */
 
 // Vista previa de engarce para la pantalla superior: totales de cada línea en los engarces de
 // `school` antes y después de poner la reliquia de la bolsa en `socket` (intercambio incluido).
@@ -186,5 +187,19 @@ int         arpg_inv_line_is_pct(int kind);
 void        arpg_inv_line_format(int kind, int val, char *buf, int n);
 void        arpg_inv_line_format_delta(int kind, int before, int after, char *buf, int n);
 const char *arpg_inv_item_name(const ArpgInvItem *it);
+// Cifra propia del aura en linea aparte (p. ej. "Dano" / "+23 %"). 0 si el aura no lleva cifra.
+int         arpg_inv_mechanic_stat(const ArpgInvItem *it, char *name, int nn, char *val, int nv);
+// Como arpg_inv_line_format, con el valor real entre parentesis si hay base conocida ("+14 % (+15 px)").
+void        arpg_inv_line_format_real(int school, int kind, int val, char *buf, int n);
+// Parte idx (0..) de lo que aporta una reliquia: primero la cifra del aura, luego sus lineas. 0 si no hay mas.
+
+// Ficha de la escuela (pantalla superior): filas nombre/valor con la base y el resultado, calculadas con
+// los mismos g_mods y constantes que el juego. group 1 = resumen de un hechizo (pestana Pecho).
+typedef struct {
+    uint8_t group;
+    char name[16];
+    char val[48];
+} ArpgSheetRow;
+int arpg_inv_sheet(int school, ArpgSheetRow *rows, int max);
 
 #endif // ARPG_INV_H

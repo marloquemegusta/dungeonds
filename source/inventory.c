@@ -128,6 +128,7 @@ static int s_hover_stash = -1;
 static int s_confirm = -1;
 static int s_top_dirty = 1;
 static int s_top_rot_dirty = 0;
+static int s_ficha = 0;               // 1 = la pantalla superior muestra la ficha de la escuela (al cambiar o tocar la pestaña)
 
 static int s_rot_fd = -1;
 static int s_rot_frames = 0;
@@ -809,6 +810,7 @@ static void select_tab(int tab) {
     if (s_socket_sel >= arpg_inv_socket_count(s_inv_tab)) s_socket_sel = 0;
     if (!school_defined(s_inv_tab)) s_inv_focus = INV_FOCUS_BAG;
     s_confirm = -1;
+    s_ficha = 1;
     s_top_slab_drawn = 0;
     s_top_dirty = 1;
     sfx_play(SND_UI_CLICK, -1);
@@ -943,6 +945,8 @@ void inventory_open(void) {
     s_confirm = -1;
     s_top_dirty = 1;
     s_top_rot_dirty = 0;
+    s_ficha = 1;                      // al abrir: la ficha de la pestaña activa
+    arpg_inv_ensure_applied();        // los totales leen g_mods: que incluyan lo ya engarzado
     s_top_bg_saved = 0;
     s_top_slab_drawn = 0;
     s_drag_bag = -1;
@@ -983,6 +987,8 @@ int inventory_top_redraw_pending(void) {
 
 static int inventory_handle_input(uint32_t keys_down, int touch_pressed, int touch_x, int touch_y) {
     if (keys_down || touch_pressed) s_top_dirty = 1;
+    // Cualquier otra pulsación (cruceta, A/X/Y, toque en bolsa o engarce) vuelve a la ficha del objeto; L/R y la pestaña la reponen.
+    if ((keys_down & (KEY_UP | KEY_DOWN | KEY_LEFT | KEY_RIGHT | KEY_A | KEY_X | KEY_Y)) || touch_pressed) s_ficha = 0;
 
     if (touch_pressed) {
         if (touch_y >= INV_TAB_Y && touch_y < INV_TAB_Y + INV_TAB_H) {
@@ -1417,12 +1423,20 @@ static int render_card_header_and_mech(uint16_t *buf, int x, int y, int w, const
 
     int row_y = hline_y + 3;
     if (it->mech != ARPG_MECH_NONE) {
-        text_fit(buf, x + 6, row_y, w - 12, arpg_inv_mechanic_name(it->mech), INV_GOLD);
-        row_y += 11;
+        if (strcmp(arpg_inv_mechanic_name(it->mech), arpg_inv_item_name(it)) != 0) {   // sin repetir el nombre de la reliquia
+            text_fit(buf, x + 6, row_y, w - 12, arpg_inv_mechanic_name(it->mech), INV_GOLD);
+            row_y += 11;
+        }
         char desc[96];
         arpg_inv_mechanic_format(it, desc, sizeof(desc));
         if (desc[0]) {
             row_y += text_wrapped(buf, x + 6, row_y, w - 12, 9, desc, INV_TXT);
+        }
+        char sn[20], sv[24];
+        if (arpg_inv_mechanic_stat(it, sn, sizeof(sn), sv, sizeof(sv))) {
+            text_at(buf, x + 6, row_y, sn, INV_DIM);
+            text_right(buf, x + w - 6, row_y, sv, INV_TXT);
+            row_y += 11;
         }
         row_y += 2;
     }
@@ -1436,8 +1450,10 @@ static void render_item_card(uint16_t *buf, int x, int y, int w, int h, const ch
     if (row_y < 0) return;
 
     for (int i = 0; i < it->nlines && i < 2 && row_y <= y + TOP_CARD_H - 16; i++) {
-        char val[20];
-        arpg_inv_line_format(it->line_kind[i], (int)it->line_val[i], val, sizeof(val));
+        char val[28];
+        arpg_inv_line_format_real((int)it->school, it->line_kind[i], (int)it->line_val[i], val, sizeof(val));
+        if (inv_font_measure_utf8(val) + inv_font_measure_utf8(arpg_inv_line_name(it->line_kind[i])) + 12 > w - 8)
+            arpg_inv_line_format(it->line_kind[i], (int)it->line_val[i], val, sizeof(val));   // en la tarjeta estrecha, sin el valor real
         d2_stat_box(buf, x + 4, row_y, w - 8,
                     arpg_inv_line_name(it->line_kind[i]), val, INV_TXT);
         row_y += 15;
@@ -1547,6 +1563,43 @@ static void draw_hint(uint16_t *buf, const ArpgInvItem *view) {
     text_fit(buf, 56, 35, 140, h, tome_equipped(s_inv_tab) && !view ? INV_GOLD : INV_DIM);
 }
 
+// Ficha de la escuela (DESIGN-ARPG.md 3): totales con base y resultado, efectos de las auras equipadas y, en
+// pequeño, lo que aporta cada reliquia. Prioridad si no cabe: totales > efectos > aportes.
+static void render_ficha(uint16_t *buf) {
+    ArpgSheetRow rows[8];
+    int n = arpg_inv_sheet(s_inv_tab, rows, 8);
+    const int fx = 14, fw = SCREEN_W - 28, ymax = 177;
+    int y = 58;
+    int prev_group = 0;
+    for (int i = 0; i < n; i++) {
+        if (rows[i].group && !prev_group) {
+            hline(buf, fx, y + 1, fw, INV_EDGE);
+            y += 5;
+        }
+        prev_group = rows[i].group;
+        d2_stat_box(buf, fx, y, fw, rows[i].name, rows[i].val, INV_TXT);
+        y += 14;
+    }
+    y += 2;
+    // Auras activas: solo el nombre de cada reliquia con mecanica, en el color de su rareza.
+    int first = 1;
+    for (int k = 0; k < arpg_inv_socket_count(s_inv_tab); k++) {
+        const ArpgInvItem *it = arpg_inv_socket_item(s_inv_tab, k);
+        if (!it || it->mech == ARPG_MECH_NONE) continue;
+        if (first) {
+            if (y + 13 > ymax) break;
+            hline(buf, fx, y, fw, INV_EDGE);
+            y += 3;
+            first = 0;
+        }
+        if (y + 10 > ymax) break;
+        char nm_buf[40];
+        item_display_name(it, nm_buf, sizeof(nm_buf));
+        text_fit(buf, fx + 2, y, fw - 4, nm_buf, s_rar_bdr[it->rarity]);
+        y += 11;
+    }
+}
+
 void inventory_render_top(uint16_t *buf) {
     if (!buf) return;
     if (!s_top_bg_saved) {
@@ -1557,8 +1610,10 @@ void inventory_render_top(uint16_t *buf) {
 
     const ArpgInvItem *sel_it = view_item();
     int from_sock = (s_inv_focus == INV_FOCUS_SOCK || s_inv_focus == INV_FOCUS_ALIJO);        // se muestra el objeto engarzado, sin vista previa ni Cera
-    int show_sel = sel_it && (school_defined(s_inv_tab) || (int)sel_it->school == s_inv_tab);
     int in_cmp = (s_drag_active && s_drag_bag >= 0 && s_hover_socket >= 0 && school_defined(s_inv_tab));
+    // Ficha de la escuela: al cambiar/tocar la pestaña, o si la casilla elegida (bolsa, engarce o alijo) está vacía.
+    int ficha = school_defined(s_inv_tab) && !in_cmp && !s_drag_active && (s_ficha || !sel_it) && s_inv_focus != INV_FOCUS_ALIJO;
+    int show_sel = !ficha && sel_it && (school_defined(s_inv_tab) || (int)sel_it->school == s_inv_tab);
 
     // Ruta rápida VBlank: si el texto no cambió, actualizar solo el giro si aplica
     // y evitar repintar la losa/comparativa cada 3 frames (evita desbordar VBlank).
@@ -1611,6 +1666,13 @@ void inventory_render_top(uint16_t *buf) {
 
     if (in_cmp) {
         render_top_comparison(buf, s_drag_bag, s_hover_socket);
+        s_top_dirty = 0;
+        s_top_rot_dirty = 0;
+        return;
+    }
+
+    if (ficha) {
+        render_ficha(buf);
         s_top_dirty = 0;
         s_top_rot_dirty = 0;
         return;
@@ -1672,12 +1734,20 @@ void inventory_render_top(uint16_t *buf) {
         hline(buf, TOP_RX, ycur, TOP_RW, INV_EDGE);
         ycur += 3;
     } else if (sel_it->mech != ARPG_MECH_NONE) {
-        text_fit(buf, TOP_RX, ycur, TOP_RW, arpg_inv_mechanic_name(sel_it->mech), INV_GOLD);
-        ycur += 11;
+        if (strcmp(arpg_inv_mechanic_name(sel_it->mech), arpg_inv_item_name(sel_it)) != 0) {
+            text_fit(buf, TOP_RX, ycur, TOP_RW, arpg_inv_mechanic_name(sel_it->mech), INV_GOLD);
+            ycur += 11;
+        }
         char desc[96];
         arpg_inv_mechanic_format(sel_it, desc, sizeof(desc));
         if (desc[0]) {
             ycur += text_wrapped(buf, TOP_RX, ycur, TOP_RW, 10, desc, INV_TXT);
+        }
+        char sn[20], sv[24];
+        if (arpg_inv_mechanic_stat(sel_it, sn, sizeof(sn), sv, sizeof(sv))) {
+            ycur += 1;
+            d2_stat_box(buf, TOP_RX, ycur, TOP_RW, sn, sv, INV_TXT);
+            ycur += 15;
         }
         ycur += 2;
         hline(buf, TOP_RX, ycur, TOP_RW, INV_EDGE);
@@ -1685,8 +1755,8 @@ void inventory_render_top(uint16_t *buf) {
     }
 
     for (int i = 0; i < sel_it->nlines && i < 2 && ycur <= 167; i++) {
-        char val[20];
-        arpg_inv_line_format(sel_it->line_kind[i], (int)sel_it->line_val[i], val, sizeof(val));
+        char val[28];
+        arpg_inv_line_format_real((int)sel_it->school, sel_it->line_kind[i], (int)sel_it->line_val[i], val, sizeof(val));
         d2_stat_box(buf, TOP_RX, ycur, TOP_RW,
                     arpg_inv_line_name(sel_it->line_kind[i]), val, INV_TXT);
         ycur += 15;

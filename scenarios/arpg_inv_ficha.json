@@ -1,0 +1,204 @@
+{
+  "name": "arpg_inv_ficha",
+  "description": "Variante arpg-todo: ficha de la escuela en la pantalla superior del inventario (Pecho, Rayo con Longinos/Llama/Auto de Fe, Ejecucion), ficha de reliquia de Longinos y comparacion; cifras de aura en linea propia (DESIGN-ARPG.md 3 y 5).",
+  "suite": false,
+  "evidence_only": true,
+  "state": {
+    "elf": "../.ds-game-dev/build/out/dungeonds-arpg-todo.elf",
+    "symbols": {
+      "pl": "s_player"
+    },
+    "default_symbol": "pl",
+    "fields": {
+      "px": {
+        "symbol": "pl",
+        "offset": 0,
+        "type": "s32"
+      },
+      "py": {
+        "symbol": "pl",
+        "offset": 4,
+        "type": "s32"
+      }
+    }
+  },
+  "steps": [
+    {
+      "frames": 60
+    },
+    {
+      "tap": {
+        "x": 128,
+        "y": 66
+      },
+      "frames": 6
+    },
+    {
+      "release": true,
+      "frames": 40
+    },
+    {
+      "button_down": "START",
+      "frames": 4
+    },
+    {
+      "button_up": "START",
+      "frames": 50
+    },
+    {
+      "poke": [
+        {
+          "field": "px",
+          "value": 15872
+        },
+        {
+          "field": "py",
+          "value": 75776
+        }
+      ],
+      "frames": 15
+    },
+    {
+      "button_down": "A",
+      "frames": 8
+    },
+    {
+      "button_down": "A",
+      "frames": 4
+    },
+    {
+      "button_up": "A",
+      "frames": 25
+    },
+    {
+      "button_down": "B",
+      "frames": 4
+    },
+    {
+      "button_up": "B",
+      "frames": 20
+    },
+    {
+      "button_down": "SELECT",
+      "frames": 6
+    },
+    {
+      "button_up": "SELECT",
+      "frames": 15
+    },
+    {
+      "button_down": "R",
+      "frames": 6
+    },
+    {
+      "button_up": "R",
+      "frames": 15
+    },
+    {
+      "button_down": "R",
+      "frames": 6
+    },
+    {
+      "button_up": "R",
+      "frames": 15
+    },
+    {
+      "button_down": "R",
+      "frames": 6
+    },
+    {
+      "button_up": "R",
+      "frames": 15
+    },
+    {
+      "button_down": "R",
+      "frames": 6
+    },
+    {
+      "button_up": "R",
+      "frames": 15,
+      "capture": "01_ficha_pecho"
+    },
+    {
+      "button_down": "R",
+      "frames": 6
+    },
+    {
+      "button_up": "R",
+      "frames": 15,
+      "capture": "02_ficha_rayo"
+    },
+    {
+      "button_down": "LEFT",
+      "frames": 6
+    },
+    {
+      "button_up": "LEFT",
+      "frames": 15,
+      "capture": "03_reliquia_longinos"
+    },
+    {
+      "button_down": "R",
+      "frames": 6
+    },
+    {
+      "button_up": "R",
+      "frames": 15,
+      "capture": "04_ficha_ejecucion"
+    },
+    {
+      "button_down": "R",
+      "frames": 6
+    },
+    {
+      "button_up": "R",
+      "frames": 15,
+      "capture": "04b_ficha_glifo"
+    },
+    {
+      "button_down": "L",
+      "frames": 6
+    },
+    {
+      "button_up": "L",
+      "frames": 15
+    },
+    {
+      "button_down": "L",
+      "frames": 6
+    },
+    {
+      "button_up": "L",
+      "frames": 15
+    },
+    {
+      "touch": {
+        "x": 184,
+        "y": 45
+      },
+      "frames": 6
+    },
+    {
+      "drag": {
+        "from": {
+          "x": 184,
+          "y": 45
+        },
+        "to": {
+          "x": 44,
+          "y": 44
+        },
+        "frames": 10
+      },
+      "frames": 4
+    },
+    {
+      "frames": 20,
+      "capture": "05_comparacion"
+    },
+    {
+      "release": true,
+      "frames": 20
+    }
+  ]
+}
