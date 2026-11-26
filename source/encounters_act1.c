@@ -726,6 +726,23 @@ int enc_room_arrival(int *out_x, int *out_y, int *out_dir) {
     *out_x = ENC_FLOOR_X + ENC_FLOOR_W / 2;
     *out_y = window_top(block_of_encounter(0)) + ENC_BLOCK_H - (r->type == RT_CRIPTA ? 12 : ARPG_ROOM_FOOT_OFFSET_PX);
     *out_dir = DIR_NORTH;
+    {   // A prop (the sacos of Nave 3) can sit exactly on the foot: the hero would land inside it and never move. Step north out of it.
+        const int32_t blk = block_of_encounter(0);
+        const int top = window_top(blk);
+        EncRect rc[16];
+        const int n = enc_block_rects(blk, rc, 16);
+        for (int pass = 0; pass < 4; pass++) {
+            int moved = 0;
+            for (int i = 0; i < n; i++) {
+                const int ly = *out_y - top;
+                if (*out_x >= rc[i].x - 6 && *out_x < rc[i].x + rc[i].w + 6 && ly >= rc[i].y - 6 && ly < rc[i].y + rc[i].h + 6) {
+                    *out_y = top + rc[i].y - 7;
+                    moved = 1;
+                }
+            }
+            if (!moved) break;
+        }
+    }
     return 0;
 }
 
