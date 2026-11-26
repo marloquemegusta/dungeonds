@@ -51,5 +51,6 @@
   "cepo": {"fbx": "tripo_convert_c6ca8709-46d6-441a-88ef-4c79817651d6.fbx", "yaw": 45, "target_width": 32, "footprint_from": "depth", "shadow_elevation": 45},
   "lapida_pie": {"fbx": "tripo_convert_d7bf8479-51b2-4e43-8b00-d7bc991d2a7f.fbx", "yaw": 45, "target_width": 32, "footprint_from": "depth", "shadow_elevation": 45},
   "reclinatorio": {"fbx": "tripo_convert_fa9d1256-6b3b-4b4a-861c-86230a90fa6d.fbx", "yaw": 45, "target_width": 28, "footprint_from": "depth", "shadow_elevation": 45},
-  "osario_lado": {"fbx": "tripo_convert_814fa953-b091-4ecb-8685-9cd41b3310e3.fbx", "yaw": -60, "glb_from": "osario_estante", "target_width": 33, "footprint_from": "depth", "shadow_elevation": 45}
+  "osario_lado": {"fbx": "tripo_convert_814fa953-b091-4ecb-8685-9cd41b3310e3.fbx", "yaw": -60, "glb_from": "osario_estante", "target_width": 33, "footprint_from": "depth", "shadow_elevation": 45},
+  "sarcofago_lado": {"fbx": "tripo_convert_1d8d5cf1-3e4c-4e20-9cfe-a8d2a001845c.fbx", "yaw": -60, "glb_from": "sarcofago", "target_width": 36, "footprint_from": "depth", "shadow_elevation": 56}
 }

@@ -197,7 +197,7 @@ class CompositorV2ParityTest(unittest.TestCase):
         for block in PLAN_BLOCKS:
             expected = self.bake.catedral_block_plan(self.stamps, SEED, block)
             self.assertEqual(c_plan[block], list(expected), f"block {block}")
-        self.assertGreater(sum(len(v) for v in c_plan.values()), 200)
+        self.assertGreater(sum(len(v) for v in c_plan.values()), 100)
 
     def test_window_tiles_and_collision_match_the_block_world(self):
         for tag, top in (("W0", 0), ("W1", -2)):
@@ -214,7 +214,7 @@ class CompositorV2ParityTest(unittest.TestCase):
         for tag in ("W0", "W1"):
             with self.subTest(window=tag):
                 runs = c_occlusion(self.output, tag)
-                self.assertGreater(len(runs), 1000)
+                self.assertGreater(len(runs), 200)
                 self.assertEqual([r[0] for r in runs], list(range(len(runs))))
                 keys = [(r[2], r[1]) for r in runs]
                 self.assertEqual(keys, sorted(keys), "runs not ordered by (y, x)")

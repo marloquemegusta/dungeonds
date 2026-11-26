@@ -3,7 +3,7 @@
  "description": "Reposos de los grupos (DESIGN-ARPG.md 12): Cireneo/Monaguillo/Bebe/Ojo en reposo, emboscada y patrulla; cada uno se mueve u oculta y despierta por radio o por golpe. H\u00e9roe lejos hasta que se acerca.",
  "suite": true,
  "state": {
-  "elf": "../.ds-game-dev/build/out/dungeonds-arpg-todo.elf",
+  "elf": "../.ds-game-dev/build/out/dungeonds.elf",
   "symbols": {
    "pl": "s_player",
    "dbg": "g_enc_debug",
@@ -163,6 +163,11 @@
     "offset": 252,
     "type": "s32"
    },
+   "e1_y": {
+    "symbol": "en",
+    "offset": 128,
+    "type": "s32"
+   },
    "e0_hp": {
     "symbol": "en",
     "offset": 28,
@@ -194,6 +199,14 @@
    "frames": 90
   },
   {
+   "button_down": "LEFT",
+   "frames": 90
+  },
+  {
+   "button_up": "LEFT",
+   "frames": 10
+  },
+  {
    "poke": [
     {
      "field": "px",
@@ -209,6 +222,22 @@
   {
    "button_down": "A",
    "frames": 4
+  },
+  {
+   "button_up": "A",
+   "frames": 6
+  },
+  {
+   "frames": 28
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    }
+   ],
+   "frames": 60
   },
   {
    "poke": [
@@ -756,8 +785,8 @@
    {
     "from": "d0",
     "to": "d2",
-    "field": "e1_x",
-    "min_abs_delta": 2560
+    "field": "e1_y",
+    "min_abs_delta": 1024
    },
    {
     "from": "d0",

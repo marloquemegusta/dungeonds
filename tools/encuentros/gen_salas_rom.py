@@ -2,15 +2,15 @@
 
 Lee ADD (props) y GRUPOS (enemigos) de las 16 salas y escribe:
   - source/encounters_act1_salas.h        (piezas, rects de colision y miembros de cada bloque de cada sala)
-  - tools/encuentros/salas_rom_piezas.json (piezas con su posicion legal: el baker de kit deriva de ahi las fases)
+  - tools/encuentros/salas_rom_piezas.json (piezas de cada sala con su posicion exacta; el baker de kit hornea de ahi un
+                                            archivo por sala, nitrofiles/rooms/sala_NN.rmk, con las estampas en esa fase)
 
-Uso: python tools/encuentros/gen_salas_rom.py [--presupuesto N] [--tol PX]
+Uso: python tools/encuentros/gen_salas_rom.py
 Despues: python tools/bake_cathedral_kit.py --floor assets/environment/cathedral/floor/rombos_tripo --mode catedral
 
-El kit solo hornea unas pocas fases de suelo por pieza (una estampa vale en x_tile = fase + 16 n, y_tile = fase + 16 m), asi que
-cada pieza del poster se acerca a la fase legal mas cercana. Se eligen las fases (con un presupuesto de tiles) que mas piezas
-del poster sirven; lo que queda lejos de toda fase elegida, tapa una puerta, un enemigo o el pasillo central, o ya no cabe, se
-descarta y se cuenta en el informe.
+Cada pieza del poster se coloca con su esquina de lienzo en el tile mas cercano (la estampa se hornea en la fase de suelo de ese
+tile, asi que no hay aproximacion de fase). Solo se descarta lo que la ROM no admite: pieza que tapa una puerta, un enemigo, el
+cofre o el altar, que cruza el pasillo central, que solapa los tiles de otra o que no tiene render. Lo descartado se cuenta.
 """
 import argparse
 import importlib.util
@@ -34,18 +34,17 @@ OUT_JSON = ROOT / "tools/encuentros/salas_rom_piezas.json"
 RENDER = ROOT / "assets/environment/cathedral/props/render"
 
 # ---------------------------------------------------------------------------------------------------------------------------
-# TABLA DE TRADUCCION: reposo del poster -> estado de la ROM (ENC_S_*). Es el unico sitio donde cambiarla cuando el otro agente
-# programe vaiven / barrido / paseo / escondido / patrulla. PRAY = la monja de cera reza y cura; GUARD = se queda en su puesto
-# hasta que el heroe se acerca o le pegan (se suelta solo); AWAKE = despierta con la sala y ataca; DORMANT = como AWAKE al despertar.
+# TABLA DE TRADUCCION: reposo del poster -> estado de la ROM (ENC_S_*). PRAY = la monja de cera reza y cura; GUARD = de guardia
+# en su puesto; los demas son los reposos de feat/arpg-reposos (rest_assign): el grupo nace dormido y despierta por radio o golpe.
 REPOSO_A_ESTADO = {
     "reza": "ENC_S_PRAY",
-    "gatea": "ENC_S_AWAKE",       # el bebe gatea hacia el heroe en cuanto despierta la sala
     "quieto": "ENC_S_GUARD",
-    "vaiven": "ENC_S_GUARD",      # sin vaiven todavia: de guardia en su sitio
-    "patrulla": "ENC_S_AWAKE",    # sin patrulla todavia: ataca al despertar
-    "pasea": "ENC_S_AWAKE",       # Cireneo paseando: sin paseo todavia, ataca al despertar
-    "barre": "ENC_S_AWAKE",       # barrido del Ojo: sin barrido todavia (el Ojo ya se queda en su puesto por ser tirador)
-    "escondido": "ENC_S_DORMANT",
+    "gatea": "ENC_S_CRAWL",
+    "vaiven": "ENC_S_SWAY",
+    "barre": "ENC_S_SWEEP",
+    "pasea": "ENC_S_STROLL",
+    "escondido": "ENC_S_HIDDEN",
+    "patrulla": "ENC_S_PATROL",
 }
 # Tipo del poster -> ENC_E_* de la ROM (None = no se lleva: el jefe de la Cripta sigue siendo el de la ROM).
 TIPO_A_ENC = {"bebe": "ENC_E_BEBE", "monaguillo": "ENC_E_MONAGUILLO", "monja": "ENC_E_EXVOTO", "ojo": "ENC_E_OJO",
@@ -53,7 +52,7 @@ TIPO_A_ENC = {"bebe": "ENC_E_BEBE", "monaguillo": "ENC_E_MONAGUILLO", "monja": "
 # ---------------------------------------------------------------------------------------------------------------------------
 
 # pieza del poster -> id del kit (STRIP_PIECE_*). Las que no estan, no se llevan (altar: es el fixture de viaje de la ROM;
-# sarcofago_lado: sin render).
+# nada mas: todas las piezas de las 16 salas ya tienen render).
 PIEZA_ENUM = {
     "columna_entera": "COLUMNA_ENTERA", "banco_entero": "BANCO_ENTERO", "relicario": "RELICARIO", "vela": "VELA",
     "santo": "SANTO", "santo_der": "SANTO_DER", "sacos": "SACOS", "sacos_b": "SACOS_B", "sacos_remate": "SACOS_REMATE",
@@ -62,7 +61,7 @@ PIEZA_ENUM = {
     "lapida_pie": "LAPIDA_PIE", "candelabro_pie": "CANDELABRO_PIE", "calaveras_pila": "CALAVERAS_PILA",
     "huesos_monton": "HUESOS_MONTON", "reclinatorio": "RECLINATORIO", "catre": "CATRE", "biombo": "BIOMBO",
     "palangana": "PALANGANA", "osario_estante": "OSARIO_ESTANTE", "osario_lado": "OSARIO_LADO", "sarcofago": "SARCOFAGO",
-    "brasero": "BRASERO",
+    "brasero": "BRASERO", "sarcofago_lado": "SARCOFAGO_LADO",
 }
 ESPEJO = {"santo": "santo_der", "santo_der": "santo", "sacos_remate": "sacos_remate_der", "sacos_remate_der": "sacos_remate"}
 DECOR = {"sacos": "ENC_R_SACOS", "sacos_b": "ENC_R_SACOS", "sacos_remate": "ENC_R_SACOS", "sacos_remate_der": "ENC_R_SACOS",
@@ -70,7 +69,8 @@ DECOR = {"sacos": "ENC_R_SACOS", "sacos_b": "ENC_R_SACOS", "sacos_remate": "ENC_
 PESO_BAJO = {"banco_entero": 0.5, "banco_roto": 0.5, "banco_volcado": 0.5}
 FLOOR_X, FLOOR_W, BLOCK_H = 152, 208, 384
 X0_T, X1_T, BLOCK_T = 19, 45, 48          # tiles de suelo util y alto del bloque
-MAX_POR_BLOQUE = 16
+MAX_POR_BLOQUE = 40
+DEBUG = "--debug" in sys.argv
 SHIFTS = [(0, 0)] + [(dx, dy) for dx in (-8, 8, -16, 16, -24, 24, -32, 32, -48, 48) for dy in (0, -8, 8, -16, 16)]
 
 
@@ -121,74 +121,67 @@ def hit(a, b):
 _LAY = {}
 
 
-def layout(name):
-    if name not in _LAY:
-        lay = B.piece_layout(name)
-        col = np.asarray(Image.open(RENDER / name / "color.png").convert("RGBA"))
-        op = col[:, :, 3] >= 128
+def layout(name, mirror=0):
+    """Geometria de la estampa de sala (la misma que hornea el baker: espejo y recorte): mascara de tiles ocupados, bbox opaca
+    y huella en su lienzo, y `ox`, `oy` = donde queda la esquina del color.png respecto de la esquina del lienzo."""
+    key = (name, mirror)
+    if key not in _LAY:
+        lay = B.room_layout(name, mirror)
+        W, H = lay["w"], lay["h"]
+        op = lay["rgba"][:, :, 3] >= 128
+        occ = op | (lay["shadow"] if lay["shadow"] is not None else False)
         ys, xs = np.nonzero(op)
-        lay["bx0"], lay["bx1"], lay["by1"] = int(xs.min()), int(xs.max()) + 1, int(ys.max()) + 1
-        lay["cw"], lay["ch"] = col.shape[1], col.shape[0]      # color.png (el lienzo del baker puede ser mayor por la sombra)
-        _LAY[name] = lay
-    return _LAY[name]
+        mask = occ.reshape(H // 8, 8, W // 8, 8).any(axis=(1, 3))
+        for x, y, n in lay["foot_runs"]:
+            mask[y // 2, x // 2:(x + n - 1) // 2 + 1] = True
+        for x, y, n, _ in lay["depth_runs"]:
+            mask[y // 8, x // 8:(x + n - 1) // 8 + 1] = True
+        ch = H + lay["ty0"] * 8 - lay["oy"] if name in B.COMPOSITE_NAMES else Image.open(RENDER / name / "color.png").size[1]
+        _LAY[key] = {"w": W, "h": H, "ox": lay["ox"], "oy": lay["oy"], "ch": ch, "bx0": int(xs.min()), "bx1": int(xs.max()) + 1,
+                     "by1": int(ys.max()) + 1, "mask": mask, "foot_runs": list(lay["foot_runs"]), "value": lay["value"]}
+    return _LAY[key]
 
 
 def poster_composicion(rd, add, groups):
     """Replica pieces_for_block del poster: desplaza o quita lo que choca con enemigos, puertas, cofre, altar y otras piezas.
-    Devuelve [(pieza, k, x, y)] con x,y = esquina del color.png, en px locales del bloque."""
+    add = [(pieza, espejo, k, x, y)] con x, y = esquina del color.png. Devuelve [(pieza, espejo, k, cx, cy)] con (cx, cy) la
+    esquina del LIENZO de la estampa, en px locales del bloque."""
     res = reserved(rd)
     out = []
     for k in range(rd["blocks"]):
         ens = [(m[1], m[2]) for g in groups if g["k"] == k for m in g["miembros"]]
         rk = [r[1:] for r in res if r[0] == k]
         taken = []
-        for (piece, kk, x0, y0) in add:
+        for (piece, mir, kk, x0, y0) in add:
             if kk != k:
                 continue
-            lay = layout(piece)
+            lay = layout(piece, mir)
             h = lay["ch"]
             base = 14 if piece != "vela" else h
             for dx, dy in SHIFTS:
                 x, y = x0 + dx, y0 + dy
-                if x + lay["bx0"] < 0 or x + lay["bx1"] > FLOOR_W or y < 0 or y + h > BLOCK_H:
+                cx, cy = x - lay["ox"], y - lay["oy"]
+                if cx + lay["bx0"] < 0 or cx + lay["bx1"] > FLOOR_W or y < 0 or y + h > BLOCK_H:
                     continue
-                rect = (x + lay["bx0"], y + lay["by1"] - base, x + lay["bx1"], y + lay["by1"])
+                rect = (cx + lay["bx0"], cy + lay["by1"] - base, cx + lay["bx1"], cy + lay["by1"])
                 if any(hit(rect, r) for r in rk) or any(hit(rect, (ex - 13, ey - 10, ex + 13, ey + 6)) for ex, ey in ens):
                     continue
                 if any(hit(rect, t) for t in taken):
                     continue
                 taken.append(rect)
-                out.append((piece, k, x, y))
+                out.append((piece, mir, k, cx, cy))
                 break
     return out
 
 
-def legal_pos(piece, cx, cy, pc, pr):
-    """(error^2, x_tile, y_tile) de la estampa (lienzo) de `piece` en la fase (pc, pr) mas cercana a (cx, cy) px locales."""
-    lay = layout(piece)
-    wt, ht = lay["w"] // 8, lay["h"] // 8
-    best = None
-    for xt in range(X0_T, X1_T - wt + 1):
-        if (xt - pc) % 16:
-            continue
-        for yt in range(0, BLOCK_T - ht + 1):
-            if (yt - pr) % 16:
-                continue
-            e = (xt * 8 - FLOOR_X - cx) ** 2 + (yt * 8 - cy) ** 2
-            if best is None or e < best[0]:
-                best = (e, xt, yt)
-    return best
+# tiles de desplazamiento a probar alrededor del tile mas cercano al lienzo del poster (de menos a mas)
+SNAP = sorted(((dx, dy) for dx in range(-2, 3) for dy in range(-2, 3)), key=lambda d: (d[0] ** 2 + d[1] ** 2, abs(d[0]), d[1]))
 
 
 def main():
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--presupuesto", type=int, default=520, help="tiles de kit para las fases de las piezas")
-    ap.add_argument("--tol", type=int, default=24, help="distancia maxima (px) a la fase legal mas cercana")
-    a = ap.parse_args()
     rooms = parse_rooms()
     assert len(rooms) == 16, len(rooms)
 
-    # 1. composicion del poster por sala
     comp, grupos = {}, {}
     informe = defaultdict(lambda: defaultdict(int))
     for n in range(16):
@@ -197,106 +190,74 @@ def main():
         grupos[n] = list(m.GRUPOS)
         add = []
         for (p, k, x, y) in list(m.ADD) + list(getattr(m, "EXTRA", [])):
-            mir = p.endswith("~")
+            mir = int(p.endswith("~"))
             p = p.rstrip("~")
-            if mir and p in ESPEJO:
-                p = ESPEJO[p]
+            if mir and p in ESPEJO:                       # el kit ya trae su pareja (santo_der...): no hace falta estampa en espejo
+                p, mir = ESPEJO[p], 0
             if p not in PIEZA_ENUM:
-                informe[n]["sin_pieza:" + p] += 1
+                informe[n]["sin_pieza_en_la_ROM:" + p] += 1
                 continue
-            add.append((p, k, x, y))
+            if not B.has_art(p):
+                informe[n]["sin_render:" + p] += 1
+                continue
+            add.append((p, mir, k, x, y))
         comp[n] = poster_composicion(rd, add, grupos[n])
         informe[n]["poster"] = len(add)
         informe[n]["tras_poster"] = len(comp[n])
-        if rd["crypt"]:
-            informe[n]["cripta_sin_props"] = len(comp[n])
-            comp[n] = []
 
-    # 2. fases: greedy por (pieza, fase) con presupuesto de tiles
-    place = []
-    for n in comp:
-        for (p, k, x, y) in comp[n]:
-            lay = layout(p)
-            place.append((n, k, p, x - lay["ox"], y - lay["oy"]))          # esquina del lienzo
-    cand = defaultdict(lambda: defaultdict(list))        # pieza -> fase -> idx de place servidos
-    for i, (n, k, p, cx, cy) in enumerate(place):
-        for pc in range(16):
-            for pr in range(16):
-                b = legal_pos(p, cx, cy, pc, pr)
-                if b and b[0] ** 0.5 <= a.tol:
-                    cand[p][(pc, pr)].append(i)
-    elegidas = defaultdict(list)
-    servido = set()
-    gastado = 0
-    while True:
-        best = None
-        for p, fases in cand.items():
-            coste = (layout(p)["w"] // 8) * (layout(p)["h"] // 8)
-            for ph, idxs in fases.items():
-                if ph in elegidas[p]:
-                    continue
-                g = sum(peso(place[i][2]) for i in idxs if i not in servido)
-                if g <= 0 or gastado + coste > a.presupuesto:
-                    continue
-                s = g / coste
-                if best is None or s > best[0]:
-                    best = (s, p, ph, coste)
-        if best is None:
-            break
-        _, p, ph, coste = best
-        elegidas[p].append(ph)
-        gastado += coste
-        servido |= set(cand[p][ph])
-
-    # 3. posicion final por pieza: la fase elegida mas cercana; sin solapes ni enemigos ni puertas
-    final = defaultdict(list)       # (n, k) -> [(pieza, lx, ly)]
-    for n in comp:
+    # posicion exacta por pieza: el tile mas cercano que cumple las reglas de la ROM
+    final = defaultdict(list)       # (n, k) -> [(pieza, espejo, lx, ly)]
+    for n in range(16):
         rd = rooms[n]
         res = reserved(rd)
-        ocupado = defaultdict(list)
-        ordenadas = sorted(((i, pl) for i, pl in enumerate(place) if pl[0] == n), key=lambda t: (-peso(t[1][2]), t[0]))
-        for i, (_, k, p, cx, cy) in ordenadas:
-            lay = layout(p)
-            mejor = None
-            for ph in elegidas.get(p, []):
-                b = legal_pos(p, cx, cy, *ph)
-                if b and (mejor is None or b[0] < mejor[0]):
-                    mejor = b
-            if not mejor or mejor[0] ** 0.5 > a.tol:
-                informe[n]["lejos_de_fase:" + p] += 1
-                continue
-            _, xt, yt = mejor
+        ocupado = defaultdict(set)                      # k -> tiles (x, y) con pixeles de pieza
+        ordenadas = sorted(enumerate(comp[n]), key=lambda t: (-peso(t[1][0]), t[0]))
+        for _, (p, mir, k, cx, cy) in ordenadas:
+            lay = layout(p, mir)
             wt, ht = lay["w"] // 8, lay["h"] // 8
-            box = (xt, yt, xt + wt, yt + ht)
-            lx, ly = xt * 8 - FLOOR_X, yt * 8
-            col_x, col_y = lx + lay["ox"], ly + lay["oy"]
-            rect = (col_x + lay["bx0"], col_y + lay["by1"] - 14, col_x + lay["bx1"], col_y + lay["by1"])
+            tiles = [(x, y) for y in range(ht) for x in range(wt) if lay["mask"][y, x]]
             ens = [(m[1], m[2]) for g in grupos[n] if g["k"] == k for m in g["miembros"]]
-            if any(hit(rect, r[1:]) for r in res if r[0] == k) or any(hit(rect, (ex - 13, ey - 10, ex + 13, ey + 6)) for ex, ey in ens):
-                informe[n]["tapa_puerta_o_enemigo:" + p] += 1
-                continue
-            if any(hit(box, o) for o in ocupado[k]):
-                informe[n]["solapa:" + p] += 1
-                continue
-            if len(final[(n, k)]) >= MAX_POR_BLOQUE:
-                informe[n]["tope_bloque:" + p] += 1
-                continue
-            # pasillo central: una pieza con colision que cruce el eje (+-16 px) no se coloca (stamp_blocks_aisle)
-            if lay["value"] != 0 and lay["foot_runs"]:
-                lo = min(lx + x * 4 for x, y, c in lay["foot_runs"])
-                hi = max(lx + (x + c) * 4 for x, y, c in lay["foot_runs"])
-                if hi > FLOOR_W // 2 - 16 and lo < FLOOR_W // 2 + 16:
-                    informe[n]["cruza_pasillo:" + p] += 1
+            base = 14 if p != "vela" else lay["ch"]
+            motivo, puesto = "", None
+            for dx, dy in SNAP:
+                xt, yt = (cx + FLOOR_X + 4) // 8 + dx, (cy + 4) // 8 + dy
+                if xt < X0_T or xt + wt > X1_T or yt < 0 or yt + ht > BLOCK_T:
+                    motivo = motivo or "fuera_del_suelo"
                     continue
-            ocupado[k].append(box)
-            final[(n, k)].append((p, lx, ly))
+                lx, ly = xt * 8 - FLOOR_X, yt * 8
+                rect = (lx + lay["bx0"], ly + lay["by1"] - base, lx + lay["bx1"], ly + lay["by1"])
+                if any(hit(rect, r[1:]) for r in res if r[0] == k) or \
+                        any(hit(rect, (ex - 13, ey - 10, ex + 13, ey + 6)) for ex, ey in ens):
+                    motivo = motivo or "tapa_puerta_o_enemigo"
+                    continue
+                if any((xt + x, yt + y) in ocupado[k] for x, y in tiles):
+                    motivo = motivo or "solapa"
+                    continue
+                if lay["value"] != 0 and lay["foot_runs"]:       # pasillo central (stamp_blocks_aisle)
+                    lo = min(lx + x * 4 for x, y, c in lay["foot_runs"])
+                    hi = max(lx + (x + c) * 4 for x, y, c in lay["foot_runs"])
+                    if hi > FLOOR_W // 2 - 16 and lo < FLOOR_W // 2 + 16:
+                        motivo = motivo or "cruza_pasillo"
+                        continue
+                if len(final[(n, k)]) >= MAX_POR_BLOQUE:
+                    motivo = "tope_bloque"
+                    break
+                puesto = (xt, yt, lx, ly)
+                break
+            if puesto is None:
+                informe[n][motivo + ":" + p] += 1
+                if DEBUG: print("  descartada", n, k, p, mir, motivo, "lienzo", cx, cy)
+                continue
+            xt, yt, lx, ly = puesto
+            ocupado[k] |= {(xt + x, yt + y) for x, y in tiles}
+            final[(n, k)].append((p, mir, lx, ly))
         informe[n]["colocadas"] = sum(len(v) for (nn, _), v in final.items() if nn == n)
 
-    # 4. escritura
-    piezas_json = []
+    # escritura
+    salas_json = {}
     L = ["// Generado por tools/encuentros/gen_salas_rom.py desde tools/poster/salas/sala_NN.py. No editar a mano.",
-         "// Colocacion del poster por sala y bloque: piezas (ya en posicion legal del kit), rects de colision de sacos / alambre",
-         "// y miembros de cada grupo. Se incluye desde encounters_act1.c tras encounters_act1_tables.h.", "",
+         "// Colocacion del poster por sala y bloque: piezas (en el tile exacto; sus estampas van en nitrofiles/rooms/sala_NN.rmk),",
+         "// rects de colision de sacos / alambre y miembros de cada grupo. Se incluye desde encounters_act1.c tras encounters_act1_tables.h.", "",
          "typedef struct { uint8_t type, state; int16_t x, y; } RoomMember;     // ENC_E_*, ENC_S_*; x, y = pies, locales al bloque",
          "typedef struct {",
          "    const EncPieceDef *pieces; uint8_t n_pieces;",
@@ -307,34 +268,34 @@ def main():
     miembros_total = 0
     for n in range(16):
         rd = rooms[n]
+        lista = []
         for k in range(rd["blocks"]):
-            if rd["crypt"]:
-                continue
-            ps = sorted(final[(n, k)], key=lambda t: (t[2], t[1]))
+            ps = sorted(final[(n, k)], key=lambda t: (t[0], t[1], t[3], t[2]))
             rects = []
-            for (p, lx, ly) in ps:
-                piezas_json.append({"piece": p, "lx": lx, "ly": ly})
+            for (p, mir, lx, ly) in ps:
+                lista.append({"piece": p, "k": k, "lx": lx, "ly": ly, "mirror": mir})
                 if p in DECOR:
-                    fr = layout(p)["foot_runs"]
+                    fr = layout(p, mir)["foot_runs"]
                     x0 = min(x for x, y, c in fr) * 4
                     x1 = max(x + c for x, y, c in fr) * 4
                     y0 = min(y for x, y, c in fr) * 4
                     y1 = (max(y for x, y, c in fr) + 1) * 4
                     rects.append((DECOR[p], lx + x0, ly + y0, x1 - x0, y1 - y0))
             mem = []
-            for g in grupos[n]:
-                if g["k"] != k:
-                    continue
-                for (tipo, x, y, rep) in g["miembros"]:
-                    enc = TIPO_A_ENC[tipo]
-                    if enc is None:
+            if not rd["crypt"]:                         # la cripta: el jefe y su escolta salen de la definicion del jefe
+                for g in grupos[n]:
+                    if g["k"] != k:
                         continue
-                    mem.append((enc, REPOSO_A_ESTADO[rep], x, y))
+                    for (tipo, x, y, rep) in g["miembros"]:
+                        enc = TIPO_A_ENC[tipo]
+                        if enc is None:
+                            continue
+                        mem.append((enc, REPOSO_A_ESTADO[rep], x, y))
             tag = "s_r%02d_b%d" % (n, k)
             if ps:
                 L.append("static const EncPieceDef %s_p[] = {" % tag)
-                for (p, lx, ly) in ps:
-                    L.append("    { STRIP_PIECE_%s, %d, %d }," % (PIEZA_ENUM[p], lx, ly))
+                for (p, mir, lx, ly) in ps:
+                    L.append("    { STRIP_PIECE_%s%s, %d, %d }," % (PIEZA_ENUM[p], " | STRIP_PIECE_MIRROR" if mir else "", lx, ly))
                 L.append("};")
             if rects:
                 L.append("static const EncRectDef %s_r[] = {" % tag)
@@ -348,6 +309,7 @@ def main():
                 L.append("};")
             miembros_total += len(mem)
             celdas[(n, k)] = (bool(ps), bool(rects), bool(mem))
+        salas_json[str(n)] = lista
     L.append("")
     L.append("#define ENC_ARR_OR_0(a) (a), (uint8_t)(sizeof(a) / sizeof((a)[0]))")
     L.append("// [sala][bloque]: valid = 1 cuando el poster manda en ese bloque (piezas y rects aunque esten vacios; miembros si los hay)")
@@ -367,15 +329,12 @@ def main():
     L.append("};")
     L.append("")
     OUT_H.write_text("\n".join(L), encoding="utf-8", newline="\n")
-    OUT_JSON.write_text(json.dumps({"piezas": piezas_json, "fases": {p: v for p, v in elegidas.items()}}, indent=1),
-                        encoding="utf-8", newline="\n")
+    OUT_JSON.write_text(json.dumps({"salas": salas_json}, indent=1), encoding="utf-8", newline="\n")
 
-    print("fases elegidas (%d tiles de %d):" % (gastado, a.presupuesto))
-    for p, v in sorted(elegidas.items()):
-        print("  %-16s %s" % (p, v))
     for n in range(16):
         print("sala %02d" % n, dict(informe[n]))
-    print("miembros llevados:", miembros_total, "piezas:", len(piezas_json))
+    por_bloque = max(len(v) for v in final.values())
+    print("miembros llevados:", miembros_total, "piezas:", sum(len(v) for v in salas_json.values()), "max por bloque:", por_bloque)
 
 
 if __name__ == "__main__":

@@ -65,8 +65,13 @@ enum {
     STRIP_PIECE_OSARIO_LADO,
     STRIP_PIECE_SARCOFAGO,
     STRIP_PIECE_BRASERO,
+    STRIP_PIECE_SARCOFAGO_LADO,
     STRIP_PIECE_COUNT
 };
+
+// Bit of a piece id that marks the stamp baked mirrored (the whole sprite canvas flipped, like `piece~` in the poster).
+// Only the per-room packs (nitrofiles/rooms/sala_NN.rmk, source/room_kit.c) carry mirrored stamps.
+#define STRIP_PIECE_MIRROR 0x40
 
 // Placeholders of the room furniture (salas ARPG). The kit does not bake them yet: the encounters
 // composer falls back to an existing stamp (resolve_room_placeholder() in source/strip.c) while the
@@ -94,7 +99,8 @@ typedef struct {
 typedef struct {
     const uint16_t *palette;      // 256 BGR555 entries, shared by floor and stamps
     const uint8_t (*tiles)[64];   // 8bpp tiles; id 0 is the blank tile
-    uint16_t num_tiles;
+    uint16_t num_tiles;           // tiles of the base kit (ids 0 .. num_tiles - 1)
+    uint16_t max_tiles;           // size of the tile store: base kit + the free slots the loading screen fills with the room's own tiles
     uint16_t map_h_tiles;         // vertical visual-map period, in tiles
     uint16_t floor_h_tiles;       // vertical period of the floor pattern, in tiles (divides 16)
     const uint16_t *floor_map;    // STRIP_W_TILES * map_h_tiles entries, including DS H/V flip bits
@@ -110,5 +116,12 @@ typedef struct {
 } StripKit;
 
 extern const StripKit g_strip_kit;
+
+// With per-room packs g_strip_kit.tiles points at a writable store of max_tiles tiles (emitted by the baker); the slots
+// [num_tiles, max_tiles) are free for the tiles of the room that is loaded (source/room_kit.c writes them).
+
+// Per-room stamps (piece art that only one room uses) consulted by the composer next to the kit's own. `stamps` must stay valid
+// until the next call; n = 0 or NULL removes them. `extra_tiles` = how many store slots the room's tiles take past num_tiles.
+void strip_set_room_stamps(const StripStamp *stamps, int n, int extra_tiles);
 
 #endif // STRIP_KIT_H

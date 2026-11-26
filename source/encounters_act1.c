@@ -14,6 +14,7 @@ typedef int encounters_act1_translation_unit_not_empty;
 #include "arpg_progress.h"
 #include "boss.h"
 #include "chars_pool.h"
+#include "room_kit.h"
 #include "arpg_inv.h"
 
 // Life in points (ARPG) can exceed a byte; the stats keep it clamped to 255.
@@ -157,6 +158,7 @@ static uint8_t s_mirror[ENC_STAGES];
 // Placement of the poster (tools/encuentros/gen_salas_rom.py): when a block has one, it replaces the hashed plant and group.
 static const RoomLayout *layout_of(int k) {
     if (s_room < 0 || s_room >= ENC_ROOM_COUNT || k < 0 || k >= ENC_STAGES) return 0;
+    if (g_enc_debug.force_group) return 0;               // debug: a forced group of the generic table replaces the poster's
     return s_room_layouts[s_room][k].valid ? &s_room_layouts[s_room][k].l : 0;
 }
 static uint8_t s_tier[ENC_STAGES];            // plant tier of each block (stats only)
@@ -456,6 +458,11 @@ int enc_block_pieces(int32_t block, EncPiecePlan *out, int max) {
         defs = s_campanero_pieces;
         n = (int)(sizeof(s_campanero_pieces) / sizeof(s_campanero_pieces[0]));
     }
+#else
+    else if (b.kind == ENC_BLOCK_BOSS) {        // the crypt of the poster: its props (the fight itself is the boss's)
+        const RoomLayout *lay = layout_of(b.idx);
+        if (lay) { defs = lay->pieces; n = lay->n_pieces; }
+    }
 #endif
     int m = 0;
     // The upper door is not a piece: it is the central arch of the back wall (source/strip.c, apply_room_openings).
@@ -478,7 +485,7 @@ int enc_block_pieces(int32_t block, EncPiecePlan *out, int max) {
         uint8_t piece = defs[i].piece;
         // One bench group in four is the variant with the broken bench, picked by (block, piece index). Only the
         // groups on tile row 0 of the kit phases have it baked (tile budget; tools/bake_cathedral_kit.py).
-        if (piece == STRIP_PIECE_BANCO_GRUPO4 && ((((defs[i].y + 4) >> 3) & 15) == 0) &&
+        if (piece == STRIP_PIECE_BANCO_GRUPO4 && !layout_of(b.idx) && ((((defs[i].y + 4) >> 3) & 15) == 0) &&
             (hash32(((uint32_t)block * 0x9e3779b9u) ^ ((uint32_t)i * 0x85ebca6bu) ^ 0x42524b4eu) & 3u) == 0)
             piece = STRIP_PIECE_BANCO_GRUPO4_ROTO;
         // The kit has no mirrored piece: the barricade end that opens to the right is the other id when the plan is mirrored.
@@ -1048,6 +1055,7 @@ static void room_art_prepare_current(void) {
         if (mask & (1u << CG_MONAGUILLO)) mask |= 1u << CG_ARANA_MONA;
     }
     room_art_prepare(mask, campanero);
+    room_kit_load(s_room);                      // the props only this room uses (nitrofiles/rooms/sala_NN.rmk) after its enemy art
 }
 
 // Slot of each member in the 4 x 3 grid of the block: kinds[slot] = RK_*, -1 = empty. Ojos take spread-out slots.
@@ -1170,13 +1178,25 @@ static int spawn_layout_group(Enemy *enemies, int max_enemies, int k, const Room
         if (slot < 0) break;
         RoomKind kind = { m->type, (uint8_t)(m->state == ENC_S_PRAY ? 2 : m->state == ENC_S_GUARD ? 1 : 0) };
         if (m->state == ENC_S_PRAY && m->type != ENC_E_EXVOTO) kind.guard = 1;     // only the Exvoto has the praying pose
-        const int x = ENC_FLOOR_X + m->x, y = top + m->y;
+        int mx = m->x, my = m->y, state = m->state;
+        if (m->type == ENC_E_MONAGUILLO) {                  // group with a wax nun: the acolyte rests at her side (16-24 px), not at its own post
+            for (int j = 0; j < lay->n_members; j++) {
+                const RoomMember *nun = &lay->members[j];
+                if (nun->type != ENC_E_EXVOTO || nun->state != ENC_S_PRAY) continue;
+                mx = nun->x + ((i & 1) ? -20 : 20);
+                my = nun->y + 4;
+                state = ENC_S_DORMANT;
+                break;
+            }
+        }
+        const int x = ENC_FLOOR_X + mx, y = top + my;
         int placed = 0;
         for (int t = 0; t < 4 && !placed; t++) {
             int tx = x + (t == 1 ? 12 : t == 2 ? -12 : 0);
             int ty = y + (t == 3 ? 12 : 0);
             if (position_is_free(TO_FIXED(tx), TO_FIXED(ty))) {
                 place_room_enemy(&enemies[slot], &kind, tx, ty, i, k, 100, 0);
+                rest_assign(slot, state, &enemies[slot]);          // ENC_S_CRAWL.. sleep and move around the post (0 for the others)
                 placed = 1;
             }
         }

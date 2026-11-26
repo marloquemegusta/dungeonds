@@ -24,7 +24,7 @@
 #define ENC_WAKE_MARGIN 36       // the encounter wakes when the hero is this far inside its bottom edge (the rear barrier closes behind the body)
 #define ENC_SPAWN_AHEAD 420      // enemies of an encounter appear (asleep) when the hero is this close to its entrance
 #define ENC_MAX_RECTS 16
-#define ENC_MAX_PIECES 24
+#define ENC_MAX_PIECES 44            // up to STRIP_BLOCK_MAX_PIECES (48) minus the lateral-opening occluders and the lapidas
 
 enum { ENC_E_EXVOTO = 0, ENC_E_CIRENEO, ENC_E_OJO, ENC_E_ABANDERADO, ENC_E_MONAGUILLO,
        ENC_E_BEBE, ENC_E_PARROCO, ENC_E_MONJA,   // BEBE, PARROCO, MONJA: Exvoto tiers (v3)
