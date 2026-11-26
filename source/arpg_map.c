@@ -20,7 +20,6 @@
 #define C_ALTAR_LAST COL(29, 23, 11)
 #define C_CHEST      COL(21, 15, 8)
 #define C_CHEST_OPEN COL(11, 9, 6)
-#define C_KEY        COL(25, 24, 13)
 #define C_HERO       COL(31, 31, 27)
 #define C_HALO       COL(2, 2, 3)
 #define C_HERO_DIM   COL(22, 20, 15)
@@ -134,10 +133,6 @@ static void draw_room(int room, int is_now) {
     if (m.chest) {
         if ((g_arpg.chests_open >> room) & 1) dot3(m.chest_x, m.chest_y, C_CHEST_OPEN, 0);
         else dot3(m.chest_x, m.chest_y, C_CHEST, 1);
-    }
-    if (m.key && !g_arpg.key_have) {
-        const int kx = proj_x(m.chest_x, m.chest_y) + 4, ky = proj_y(m.chest_x, m.chest_y);
-        plot(kx, ky, C_KEY); plot(kx + 1, ky, C_KEY); plot(kx + 2, ky, C_KEY); plot(kx + 2, ky + 1, C_KEY);
     }
 }
 

@@ -13,6 +13,7 @@ typedef int encounters_act1_translation_unit_not_empty;
 #include "arpg.h"
 #include "arpg_progress.h"
 #include "arpg_quest.h"
+#include "arpg_campaign.h"
 #include "boss.h"
 #include "chars_pool.h"
 #include "room_kit.h"
@@ -222,25 +223,6 @@ static void prize_relic(const RoomDef *room, int level_bonus, int min_rar, int p
     pickups_spawn_relic(TO_FIXED(px), TO_FIXED(py - 24), &it);
 }
 
-// TEMPORAL: la rama campana-ciclo trae arpg_inv_make_fixed_prize() en arpg_inv.c/.h (mismas reliquias, sin perderse al morir).
-// En la integracion se BORRA esta definicion (y se usa la suya); mientras tanto deja compilar esta rama.
-void arpg_inv_make_fixed_prize(ArpgInvItem *it, int mech) {
-    memset(it, 0, sizeof(*it));
-    it->kind = ARPG_ITEM_RELIC;
-    it->mech = (uint8_t)mech;
-    it->level = 1;
-    if (mech == ARPG_MECH_CILICIO) {            // Pecho epica: vida y velocidad
-        it->school = ARPG_SCHOOL_PECHO; it->rarity = ARPG_RAR_EPIC; it->mech_val = 26;
-        it->nlines = 2; it->line_kind[0] = ARPG_LINE_LIFE; it->line_val[0] = 25; it->line_kind[1] = ARPG_LINE_SPEED; it->line_val[1] = 6;
-    } else if (mech == ARPG_MECH_LLAGA) {       // Pecho rara: mas dano cuanta menos vida
-        it->school = ARPG_SCHOOL_PECHO; it->rarity = ARPG_RAR_RARE; it->mech_val = 20;
-        it->nlines = 1; it->line_kind[0] = ARPG_LINE_MANA; it->line_val[0] = 18;
-    } else {                                    // Zarza Ardiente (Glifo rara)
-        it->school = ARPG_SCHOOL_GLIFO; it->rarity = ARPG_RAR_RARE;
-        it->nlines = 1; it->line_kind[0] = ARPG_LINE_DAMAGE; it->line_val[0] = 15;
-    }
-}
-
 // Fixed relic of a room (RoomDef.prize_mech): goes to the floor above the hero, like any other drop.
 static void prize_fixed(const RoomDef *room, int px, int py) {
     ArpgInvItem it;
@@ -304,7 +286,6 @@ static int s_victory;                         // never set: the dungeon has no v
 #define ENC_GATE_LOCAL_Y 150        // block-local y of the base of the reja of the capilla (the chest stands at 90, out of reach through the bars)
 #define ENC_GATE_UP_LOCAL_Y 64      // block-local y of the base of a reja that closes the upper door
 #define ENC_ELITE_HP 2500           // life of the elite Cireneo (the Prisionero): no boss of the campaign is easy the first time
-#define ENC_EXIT_TO_CAMP 99         // enc_room_take_exit() answer that main.c takes as "walk to the camp" (ARPG_EXIT_TO_CAMP of include/arpg_campaign.h)
 #define ENC_CAMP_EXIT_PX 14         // the hero leaves Nave 1 for the camp this far above the bottom edge of its first block
 #define ENC_GATE_NEAR_PX 40         // with the key, the reja rises when the hero is this close to its line
 static uint8_t s_gate_lift, s_gate_opening, s_gate_open;
@@ -1774,7 +1755,7 @@ void enc_update(Enemy *enemies, int max_enemies, int px, int py) {
 
     // Nave 1 opens onto the camp at its foot: walking past the bottom edge of its first block leaves the cathedral on foot.
     if (room->camp_exit && s_exit_room < 0 &&
-        py >= window_top(block_of_encounter(0)) + ENC_BLOCK_H - ENC_CAMP_EXIT_PX) s_exit_room = ENC_EXIT_TO_CAMP;
+        py >= window_top(block_of_encounter(0)) + ENC_BLOCK_H - ENC_CAMP_EXIT_PX) s_exit_room = ARPG_EXIT_TO_CAMP;
 
     // The reja: rises when the hero carries what it asks for and comes close; without it, a toast on touching it.
     if (room->gate && !s_gate_open) {
