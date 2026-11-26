@@ -1924,7 +1924,12 @@ void enc_dynamic_relic_draw(uint16_t *buffer, int cam_x, int cam_y, int depth) {
             if (sx < 0 || sx >= SCREEN_W) continue;
             if (world_pixel_hidden(wx0 + i, wy, depth)) continue;
             // 1 = cast shadow of the lit art: halve what is already on screen (same darkening as apply_shadow_fast).
-            row[sx] = c == 1 ? (uint16_t)(((row[sx] & 0x7BDE) >> 1) | BIT(15)) : c;
+            if (c == 1) {  // the buffer is empty (0) over the floor: read the floor, like draw_shadow_mask
+                const uint16_t under = row[sx] ? row[sx] : world_floor_color_at(wx0 + i, wy);
+                row[sx] = (uint16_t)(((under & 0x7BDE) >> 1) | BIT(15));
+            } else {
+                row[sx] = c;
+            }
             if (sx < min_x) min_x = sx;
             if (sx > max_x) max_x = sx;
         }
@@ -2040,7 +2045,12 @@ void enc_dynamic_fixture_draw(int index, uint16_t *buffer, int cam_x, int cam_y,
             if (sx < 0 || sx >= SCREEN_W) continue;
             if (world_pixel_hidden(wx0 + i, wy, depth)) continue;
             // 1 = cast shadow of the lit art: halve what is already on screen (same darkening as apply_shadow_fast).
-            row[sx] = c == 1 ? (uint16_t)(((row[sx] & 0x7BDE) >> 1) | BIT(15)) : c;
+            if (c == 1) {  // the buffer is empty (0) over the floor: read the floor, like draw_shadow_mask
+                const uint16_t under = row[sx] ? row[sx] : world_floor_color_at(wx0 + i, wy);
+                row[sx] = (uint16_t)(((under & 0x7BDE) >> 1) | BIT(15));
+            } else {
+                row[sx] = c;
+            }
             if (sx < min_x) min_x = sx;
             if (sx > max_x) max_x = sx;
         }
