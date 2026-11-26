@@ -3056,6 +3056,10 @@ static void update_camera(void) {
 #if ENCOUNTERS_PROTO
     x = ENC_CAM_X;                    // one screen wide: the view never scrolls sideways (DESIGN.md 6.13.6)
     y -= g_enc_debug.cam_up;          // debug (the plant guide): look further up
+    if (!camp_active()) {              // the room ends at its south edge (barrier): the view never shows floor beyond it
+        const int max_south = enc_room_floor_bottom() - SCREEN_H;
+        if (y > max_south) y = max_south;
+    }
 #endif
     s_cam_x = x;
     s_cam_y = y;

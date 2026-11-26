@@ -715,6 +715,7 @@ int enc_room_entry(void) {
 }
 
 int enc_room_current(void) { return s_room; }
+int enc_room_floor_bottom(void) { return window_top(block_of_encounter(0)) + ENC_BLOCK_H; }
 int enc_room_level(void) { return room_def()->level; }
 const char *enc_room_name(void) { return room_def()->name; }
 
