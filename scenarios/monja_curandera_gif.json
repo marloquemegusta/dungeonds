@@ -7,10 +7,21 @@
   "symbols": {
    "pl": "s_player",
    "gps": "g_player_state",
-   "en": "g_enemies"
+   "en": "g_enemies",
+   "dbg": "g_enc_debug"
   },
   "default_symbol": "en",
   "fields": {
+   "dbg_restart": {
+    "symbol": "dbg",
+    "offset": 12,
+    "type": "u8"
+   },
+   "dbg_start_room": {
+    "symbol": "dbg",
+    "offset": 20,
+    "type": "u8"
+   },
    "god": {
     "symbol": "gps",
     "offset": 20,
@@ -169,6 +180,19 @@
   }
  },
  "steps": [
+  {
+   "poke": [
+    {
+     "field": "dbg_start_room",
+     "value": 1
+    },
+    {
+     "field": "dbg_restart",
+     "value": 1
+    }
+   ],
+   "frames": 90
+  },
   {
    "frames": 40,
    "state_capture": "inicio"

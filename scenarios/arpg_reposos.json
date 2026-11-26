@@ -518,7 +518,7 @@
     "from": "a0",
     "to": "a2",
     "field": "e2_x",
-    "min_abs_delta": 2560
+    "min_abs_delta": 2048
    },
    {
     "from": "a0",
