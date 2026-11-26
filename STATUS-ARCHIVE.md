@@ -1463,3 +1463,7 @@ Entregas del 2026-11-14 al 2026-11-18, notas de estado técnico y ramas aparcada
 ## Entrega archivada desde STATUS-ARPG.md (2026-11-26, 2)
 
 - **Póster del mapa ARPG, versión preliminar (`docs/poster-arpg`, 2026-11-24, en `proto/arpg`):** póster de las 16 salas con la composición de props de cada una (cada sala cuenta lo que fue), sombras bajo luz de techo, flechas a la sala real y visor con zoom (teselas HD). Es solo documentación y herramientas (`tools/poster/`); el juego no cambia. Verificado visualmente en el póster. **Falta:** luces definitivas por sala y enemigos; el cofre fijo choca con un enemigo en las salas 5, 7 y 12. [`walkthrough`](walkthroughs/poster-mapa/walkthrough.md).
+
+## Entrega archivada desde STATUS-ARPG.md (2026-11-26, 3)
+
+- **Escala de props del mapa (`proto/props-escala`, 2026-11-25, en `proto/arpg`):** los props de los enemigos pasan a escala creíble (reclinatorio 28 px recoloreado, catre 48, palangana 24, cepo 32; osario: calaveras 21, huesos 34, estante 40) y los exvotos (40 px) se cuelgan de la pared del fondo; paleta compartida 171 → 175 colores. Verificado: test_guardrails, test_strip_kit y test_cathedral_kit_contract PASS; ROM sin avisos nuevos; sin DS. **Falta:** el altar sigue a 16 px (a 28 rompe el horneado del kit); `osario_lado` sin revisar; `place()` del póster descarta en silencio piezas solapadas; `test_cathedral_kit` falla en 2 casos previos (IDs de puerta y de pieza); imagen `salas/15_cripta.png` sin actualizar. [`walkthrough`](walkthroughs/props-escala/walkthrough.md).
