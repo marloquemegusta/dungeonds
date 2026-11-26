@@ -94,7 +94,26 @@ static void melee_update(Enemy *enemies, int max_enemies, int hero_x, int hero_y
 }
 #endif
 
+#if ARPG_BOXEO_DUELO
+// Duelo: un solo Exvoto de vida normal que persigue al heroe; al caer, otro a 60 px. Sirve de evidencia del aviso del mordisco.
+static int s_duelo_wait;
+static void duelo_update(Enemy *enemies, int max_enemies, int hero_x, int hero_y) {
+    for (int i = 0; i < max_enemies; i++) {
+        if (enemies[i].active) { s_duelo_wait = 30; return; }
+    }
+    if (s_duelo_wait > 0) { s_duelo_wait--; return; }
+    saco_place(&enemies[0], ENEMY_TYPE_EXVOTO, hero_x + 60, hero_y);
+    enemies[0].max_hp = enemies[0].hp = g_enemy_tuning[ENEMY_TYPE_EXVOTO].max_hp;
+    enemies[0].state = ENEMY_STATE_CHASE;
+    enemies[0].dir = 0;
+}
+#endif
+
 void boxeo_update(Enemy *enemies, int max_enemies, int hero_x, int hero_y) {
+#if ARPG_BOXEO_DUELO
+    duelo_update(enemies, max_enemies, hero_x, hero_y);
+    return;
+#endif
 #if ARPG_BOXEO_MELEE
     melee_update(enemies, max_enemies, hero_x, hero_y);
     return;

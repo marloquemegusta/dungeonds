@@ -47,6 +47,7 @@
 // into spiders (transition, then the scuttling walk, hasted) and get up again (transition played backwards) when they leave.
 #define ARPG_SMONJA_POSSESS_RADIUS 96   // [TUNABLE-PLACEHOLDER] ground px (dy counts double): they are possessed inside this circle
 #define ARPG_SMONJA_POSSESS_HYST 16     // [TUNABLE-PLACEHOLDER] ground px: they are released only beyond RADIUS + this (no flicker at the edge)
+#define ARPG_BITE_WARN_FRAMES 14        // [TUNABLE-PLACEHOLDER] frames a melee enemy trembles before biting; a hit cancels the bite
 #define ARPG_MONJA_KEEP_FLEE 60         // [TUNABLE-PLACEHOLDER] ground px: hero closer than this makes her walk away
 #define ARPG_MONJA_KEEP_FLEE_STOP 90    // [TUNABLE-PLACEHOLDER] ground px: she stops fleeing (and prays) from this distance
 #define ARPG_MONJA_KEEP_FAR 115         // [TUNABLE-PLACEHOLDER] ground px: hero farther than this makes her walk closer

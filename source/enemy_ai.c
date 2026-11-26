@@ -637,6 +637,15 @@ static void update_exvoto(Enemy *e, Enemy *enemies, int num_enemies, int idx,
             int melee_range = tuning->preferred_dist_max;
             if (ground_dist_sq <= melee_range * melee_range &&
                 los_has_line_of_sight(wx, wy, px, py, 0) && line_is_walkable(wx, wy, px, py)) {
+                if (e->type != ENEMY_TYPE_PARROCO) {
+                    if (e->gesture == 0) e->gesture = ARPG_BITE_WARN_FRAMES + 1;
+                    if (--e->gesture > 0) {              // warning: stops and trembles before the bite; a hit cancels it
+                        e->x += (e->gesture & 1) ? TO_FIXED(1) : -TO_FIXED(1);
+                        e->dir = dir_from_vector(player_x - e->x, player_y - e->y);
+                        update_animation(e, 0);
+                        break;
+                    }
+                }
                 player_take_damage(&g_player_state, arpg_enemy_damage_of(e));
                 e->state = ENEMY_STATE_ATTACK;
                 e->state_timer = tuning->attack_cooldown;
@@ -644,6 +653,7 @@ static void update_exvoto(Enemy *e, Enemy *enemies, int num_enemies, int idx,
                 update_animation(e, 0);
                 break;
             }
+            if (e->type != ENEMY_TYPE_PARROCO) e->gesture = 0;   // out of reach: no warning in progress
 
             refresh_view(e, idx, wx, wy, px, py, ground_dist_sq, CHASE_DIRECT_RANGE);
 #if ENCOUNTERS_PROTO
@@ -2125,6 +2135,9 @@ ITCM_CODE void enemy_ai_update(Enemy *enemies, int num_enemies, fixed player_x, 
             }
             if (e->type == ENEMY_TYPE_EXVOTO && e->state == ENEMY_STATE_PRAY && !ENCOUNTERS_PROTO)
                 exvoto_wake_chain(enemies, num_enemies, i);   // hurt but alive: it wakes (and the others with it)
+            if (e->state == ENEMY_STATE_CHASE &&
+                (e->type == ENEMY_TYPE_EXVOTO || e->type == ENEMY_TYPE_BEBE || e->type == ENEMY_TYPE_MONAGUILLO))
+                e->gesture = 0;                      // a hit cancels the bite warning
             e->stun_timer--;
             move_with_slide(&e->x, &e->y, e->knock_vx, e->knock_vy);
             e->knock_vx = (e->knock_vx * 224) >> 8;
