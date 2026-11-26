@@ -1,0 +1,27 @@
+{
+  "descripcion": "Concepto -> archivos de nitrofiles/ que lo componen. Los contratos (*.txt de esta carpeta) listan conceptos. 'con' = el patron solo entra si el contrato tambien tiene ese concepto; 'opcional' = el juego tiene respaldo si falta (no cuenta como ausente). Todo archivo de nitrofiles/ debe aparecer aqui.",
+  "conceptos": {
+    "golpes":     { "archivos": ["punch/gancho_*", "punch/punch_*"] },
+    "glifo":      { "archivos": ["punch/pray_*"] },
+    "remates":    { "archivos": [] },
+    "salas":      { "archivos": ["rooms/"] },
+    "musica":     { "archivos": ["bgm.raw", "boss.raw"] },
+    "luz":        { "opcional": true, "archivos": ["arpg_luz/"] },
+    "monaguillo": { "archivos": ["chars/monaguillo.bin", { "patron": "remate/monaguillo_*", "con": "remates" }] },
+    "exvoto":     { "archivos": ["chars/exvoto.bin", "chars/exvoto_pray_*", "chars/exvoto_stand_up.bin", { "patron": "remate/exvoto_d*", "con": "remates" }] },
+    "bebe":       { "archivos": ["chars/exvoto_bebe.bin", { "patron": "remate/exvoto_bebe_*", "con": "remates" }] },
+    "parroco":    { "archivos": ["chars/exvoto_parroco_run.bin", { "patron": "remate/parroco_*", "con": "remates" }] },
+    "smonja":     { "archivos": ["chars/exvoto_super_monja*", { "patron": "remate/smonja_*", "con": "remates" }] },
+    "ojo":        { "archivos": ["chars/ojo*", { "patron": "remate/ojo_*", "con": "remates" }] },
+    "charger":    { "archivos": ["chars/charger*"] },
+    "abanderado": { "archivos": ["chars/abanderado*"] },
+    "cireneo":    { "archivos": [{ "patron": "remate/cireneo_*", "con": "remates" }] },
+    "aranas":     { "archivos": ["chars/exvoto_arana_*", "chars/monaguillo_arana_*"] },
+    "campanero":  { "archivos": ["campanero/"] },
+    "bestiario":  { "archivos": ["bestiary/"] },
+    "campamento": { "archivos": ["camp/"] },
+    "intro":      { "archivos": ["intro/"] },
+    "cartas":     { "archivos": ["levelup/"] },
+    "inventario": { "archivos": ["items/"] }
+  }
+}

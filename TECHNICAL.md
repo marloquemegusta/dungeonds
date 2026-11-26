@@ -125,6 +125,12 @@ En la DS todo lo que va dentro del programa (arrays `const` de C) se copia a EWR
 ### 3.6b. Audio
 - SFX: 16.384 Hz mono 8-bit PCM en `soundbank.bin` (horneado en `assets/sfx/baked/`; proceso en `AGENTS.md`, «Audio»). Música de combate en streaming desde NitroFS (11.025 Hz mono 8-bit, `mmStreamOpen` con buffer de 2 KB).
 
+### 3.6c. ROM parcial por contrato (depurar una mecánica sin subir 56 MB)
+- Un **contrato** `.ds-game-dev/partial/<nombre>.txt` lista **conceptos** (`golpes remates salas monaguillo parroco ...`), no rutas; `#` comenta. `.ds-game-dev/partial/catalogo.json` dice qué archivos de `nitrofiles/` forma cada concepto (`con`: solo entra si el contrato tiene también otro concepto, p. ej. los remates de cada enemigo; `opcional`: el juego tiene respaldo, como `luz`). Concepto desconocido: error con la lista de válidos. El código va siempre entero; el contrato solo elige el arte y los datos del cartucho.
+- **Cobertura:** todo archivo de `nitrofiles/` debe pertenecer a algún concepto del catálogo; si no, la build falla nombrándolo. Un asset nuevo se añade al catálogo.
+- **Garantía:** la ROM parcial lleva una sonda (de la skill, no del juego) que anota lo que el juego intenta abrir y no encuentra. `build-partial-rom.ps1 -Variant <v> -Contract <c> -Scenarios <escenarios>` compila `dungeonds-<v>-<c>.nds`, juega los escenarios y da `PARTIAL_VERIFY=PASS/FAIL`; el FAIL lista los archivos ausentes y qué concepto añadir. Solo prueba lo que los escenarios abren: se pasan los que juegan todo lo que la ROM debe hacer. `-Record` sugiere conceptos a partir de un escenario. Detalle en la skill, `references/partial-rom.md`.
+- Contratos actuales: `rodaje` (rodaje de boxeo, 8,7 MB) y `boxeo-monaguillo`. Hay que añadir a mano los conceptos que la carga de sala pide aunque no se vean (en `rodaje`: `bebe ojo charger`).
+
 ### 3.7. Vídeos verticales
 - Carpeta, nombres y pipeline en `AGENTS.md`, «Vídeos de Redes y Códice Lore».
 

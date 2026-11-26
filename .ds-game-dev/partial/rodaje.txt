@@ -1,0 +1,5 @@
+# Contrato: rodaje de boxeo (variante rodaje-boxeo, salas de sparring). Conceptos de catalogo.json.
+golpes remates salas musica
+monaguillo exvoto parroco smonja
+# la carga de la sala los pide aunque el rodaje no los saque (lo detecto la verificacion)
+bebe ojo charger

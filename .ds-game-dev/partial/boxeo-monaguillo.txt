@@ -1,0 +1,2 @@
+# Contrato: boxeo y remate contra monaguillos. Conceptos de catalogo.json.
+golpes remates salas monaguillo
