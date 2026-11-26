@@ -77,6 +77,8 @@ def stage_glbs(stage, names, props):
         dst = gdir / (n + ".glb")
         if "glb_from" in props[n] and props[n]["yaw"] and n != base:
             glb_yaw.main(str(src), str(dst), props[n]["yaw"])
+        elif props[n].get("yaw_extra"):       # giro sobre el GLB ya horneado a "yaw" (sin Blender)
+            glb_yaw.main(str(src), str(dst), props[n]["yaw_extra"])
         else:
             dst.write_bytes(src.read_bytes())
     return missing

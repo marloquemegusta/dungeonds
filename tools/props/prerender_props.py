@@ -156,6 +156,9 @@ def process(name, cfg, d, out_root, legibility="anterior"):
         # Per-piece brightness: the lab light lifts dark metal (verja negra) to mid grey.
         # A list [r, g, b] also tints (sacos: burlap tierra instead of pale grey).
         rgba[..., :3] = np.clip(rgba[..., :3].astype(float) * np.asarray(cfg["tone"], float), 0, 255).astype(np.uint8)
+    if "contrast" in cfg and a.any():
+        # Per-piece contrast (cepo: madera clara contra agujeros y herrajes oscuros); pivot = median luminance.
+        rgba[..., :3][a] = soft_contrast(rgba[..., :3][a].astype(float)[None], float(cfg["contrast"]))[0].astype(np.uint8)
     color = Image.new("RGBA", (cw, ch), (0, 0, 0, 0)); color.paste(Image.fromarray(rgba), (ox, oy))
 
     def nearest(fn, mode):
