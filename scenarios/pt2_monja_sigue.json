@@ -1,6 +1,6 @@
 {
  "name": "pt2_monja_sigue",
- "description": "Variante arpg-monja (3 Bebes + 1 Monja de cera, heroe invulnerable). El heroe se aleja hacia abajo y el grupo lo persigue: la Monja camina tras el grupo (se desplaza, sigue rezando y curando mientras anda); un Bebe herido recupera vida mientras ella camina. Ritual del campamento antes de dbg_start_room (sin el, la sala no dibuja sprites).",
+ "description": "Variante arpg-monja (3 Bebes + 1 Monja de cera, heroe invulnerable). El heroe se aleja hacia abajo y el grupo lo persigue: la Monja camina tras el grupo (se desplaza, sigue rezando y curando mientras anda); un Bebe herido recupera vida mientras ella camina. Ritual del campamento antes de dbg_start_room (sin el, la sala no dibuja sprites). Al final el heroe la golpea hasta <=25 % de vida: se tambalea (no reza ni cura).",
  "suite": true,
  "state": {
   "elf": "../.ds-game-dev/build/out/dungeonds-arpg-monja.elf",
@@ -181,6 +181,11 @@
     "symbol": "en",
     "offset": 96,
     "type": "s32"
+   },
+   "e0_maxhp": {
+    "symbol": "en",
+    "offset": 32,
+    "type": "s32"
    }
   }
  },
@@ -284,15 +289,15 @@
    "poke": [
     {
      "field": "e1_hp",
-     "value": 10
+     "value": 20
     },
     {
      "field": "e2_hp",
-     "value": 10
+     "value": 20
     },
     {
      "field": "e3_hp",
-     "value": 10
+     "value": 20
     }
    ],
    "frames": 1,
@@ -303,6 +308,76 @@
    "state_capture": "curado",
    "capture_sequence": "s",
    "capture_every": 5
+  },
+  {
+   "poke": [
+    {
+     "field": "e0_hp",
+     "value": 35
+    },
+    {
+     "field": "e0_x",
+     "value": 65536
+    },
+    {
+     "field": "e0_y",
+     "value": 394400
+    }
+   ],
+   "frames": 1,
+   "state_capture": "antes_golpe"
+  },
+  {
+   "button_down": "DOWN",
+   "frames": 2
+  },
+  {
+   "poke": [
+    {
+     "field": "e0_x",
+     "value": 65536
+    },
+    {
+     "field": "e0_y",
+     "value": 394400
+    }
+   ],
+   "frames": 1
+  },
+  {
+   "button_down": "L",
+   "frames": 2
+  },
+  {
+   "button_up": "L",
+   "frames": 8
+  },
+  {
+   "poke": [
+    {
+     "field": "e0_x",
+     "value": 65536
+    },
+    {
+     "field": "e0_y",
+     "value": 394400
+    }
+   ],
+   "frames": 1
+  },
+  {
+   "button_down": "L",
+   "frames": 2
+  },
+  {
+   "button_up": "L",
+   "frames": 4
+  },
+  {
+   "button_up": "DOWN",
+   "frames": 2,
+   "state_capture": "tras_golpe",
+   "capture": "monja_tambaleo"
   },
   {
    "frames": 60,
@@ -332,17 +407,22 @@
    {
     "at": "curado",
     "field": "e3_hp",
-    "min_value": 30
-   },
-   {
-    "at": "final",
-    "field": "e3_hp",
-    "equals": 50
+    "min_value": 22
    },
    {
     "at": "final",
     "field": "e0_y",
     "min_value": 371200
+   },
+   {
+    "at": "antes_golpe",
+    "field": "e0_maxhp",
+    "equals": 120
+   },
+   {
+    "at": "tras_golpe",
+    "field": "e0_state",
+    "equals": 18
    }
   ]
  }
