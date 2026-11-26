@@ -39,6 +39,8 @@ extern volatile RoomLightState g_room_light;
 // Carga la luz de la sala `room` si no es ya la residente. Devuelve 1 si queda cargada una luz de sala.
 int room_light_load(int room);
 const char *room_light_id(void);
+// Tinta con la luz de la sala `count` pixeles BGR555 con bit 15 (opacos); sin luz de sala no hace nada.
+void room_light_tint_px(uint16_t *px, uint32_t count);
 
 // source/encounters_act1.c: re-apunta los sprites de cofre y altar a un bloque de pixeles; ver room_light.c.
 uint16_t *enc_room_gfx_begin(const int16_t meta[3][4]);

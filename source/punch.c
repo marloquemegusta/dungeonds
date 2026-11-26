@@ -1,4 +1,5 @@
 #include "punch.h"
+#include "room_light.h"
 #include "arpg_balance.h"
 #include "collision.h"
 #include "enemy_ai.h"
@@ -35,6 +36,7 @@ static int punch_load_bin(int move, int dir) {
         s_punch_loaded_move = -1;
         return 0;
     }
+    room_light_tint_px((uint16_t *)(s_punch_bin_buf + sizeof(PunchBinHeader)), h->pix_bytes / 2);
     s_punch_loaded_move = move;
     s_punch_loaded_dir = dir;
     return 1;
@@ -56,6 +58,8 @@ int punch_move(void) { return s_punch_move; }
 int punch_dir(void) { return s_punch_dir; }
 int punch_frame(void) { return s_punch_frame; }
 int punch_chain_window(void) { return s_punch_chain; }
+
+void punch_light_changed(void) { s_punch_loaded_move = -1; }
 
 void punch_reset(void) {
     s_punch_active = 0;

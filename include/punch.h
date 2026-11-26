@@ -104,6 +104,7 @@ int punch_frame(void);          // fotograma (0..PUNCH_NUM_FRAMES-1)
 int punch_dir(void);            // direccion del golpe (0..7)
 int punch_chain_window(void);   // frames de ventana que quedan (0 = combo terminado)
 void punch_reset(void);
+void punch_light_changed(void);   // invalida el bin de punetazo cargado (se tinta con la luz de la sala al leerlo)
 
 // Fotograma en curso para dibujar: pixeles BGR555 y bounds {x, y, w, h} dentro de la celda PUNCH_CELL,
 // sus tramos opacos por fila (blit_stride) y la fila de pies dentro de la celda (la del walk, para no saltar de
