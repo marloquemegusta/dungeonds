@@ -35,6 +35,7 @@
 
 // Exvoto tiers (v3, walkthroughs/arpg-predemo Â§10).
 #define ARPG_BEBE_SPEED_BONUS_PCT 23    // [TUNABLE-PLACEHOLDER] % faster than the Exvoto (130 -> ~160 in 8.8)
+#define ARPG_PARROCO_PUNCH_MULT 5       // [TUNABLE-PLACEHOLDER] punch damage x this against the Parroco only (immune to the Ray; DESIGN-ARPG.md)
 #define ARPG_PARROCO_HP_X 4             // [TUNABLE-PLACEHOLDER] life multiplier over the Exvoto base
 #define ARPG_MONJA_HP_X 2               // [TUNABLE-PLACEHOLDER] life multiplier over the Exvoto base
 // Super Monja (ENEMY_TYPE_MONJA): stays behind her group praying; while she prays the Exvoto family around her
