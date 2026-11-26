@@ -313,6 +313,8 @@ static void enemy_damage(Enemy *e, int damage, fixed hit_vx, fixed hit_vy, int q
             (e->state == ENEMY_STATE_CHASE || e->state == ENEMY_STATE_ATTACK ||
              e->state == ENEMY_STATE_TELEGRAPH || e->state == ENEMY_STATE_CHARGE ||
              e->state == ENEMY_STATE_RECOVER || e->state == ENEMY_STATE_STUNNED ||
+             e->state == ENEMY_STATE_TRACK || e->state == ENEMY_STATE_LOCK || e->state == ENEMY_STATE_SENTENCE ||
+             e->state == ENEMY_STATE_COOLDOWN || e->state == ENEMY_STATE_POSITION ||
              e->state == ENEMY_STATE_WOBBLE)) {
             if (e->state != ENEMY_STATE_WOBBLE) {
                 e->state_timer = REMATE_WOBBLE_FRAMES;   // low life: it reels
