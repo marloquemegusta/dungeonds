@@ -904,12 +904,18 @@ static void rest_update(Enemy *enemies, int max_enemies, int px, int py) {
     for (int i = 0; i < max_enemies && i < MAX_GAMEPLAY_ENEMIES; i++) {
         Enemy *e = &enemies[i];
         RestRec *r = &s_rest[i];
-        if (!r->mode) continue;
+        if (!r->mode) {
+            // Members that do not rest (the Ojo, a garrison): hit or killed while asleep, they wake the group too.
+            if (e->pack >= 0 && e->pack < 32 && ((e->active && e->state == ENEMY_STATE_DORMANT && (e->hp < e->max_hp || e->hit_timer > 0)) ||
+                                                 (e->hp <= 0 && e->state == ENEMY_STATE_DEAD))) s_rest_wake_mask |= 1u << e->pack;
+            continue;
+        }
         if (!e->active || e->state != ENEMY_STATE_DORMANT) {       // woken, dead or recycled: the rest is over
             e->home_flags &= (uint8_t)~ENEMY_HOME_HIDDEN;
             r->mode = 0;
             // Killed or hurt while it slept: the group wakes (a one-hit Bebe never shows as "hurt" otherwise).
-            if (e->active && e->pack >= 0 && e->pack < 32 && (e->hp < e->max_hp || e->hit_timer > 0)) s_rest_wake_mask |= 1u << e->pack;
+            if (e->pack >= 0 && e->pack < 32 && ((e->active && (e->hp < e->max_hp || e->hit_timer > 0)) ||
+                                                 (e->hp <= 0 && e->state == ENEMY_STATE_DEAD))) s_rest_wake_mask |= 1u << e->pack;
             continue;
         }
         if (e->pack < 0 || e->pack >= 32) continue;
@@ -1158,7 +1164,8 @@ static void place_room_enemy(Enemy *e, const RoomKind *kind, int x, int y, int o
         e->home_flags = ENEMY_HOME_GUARD;
         enemy_exvoto_start_praying(e, ordinal & 1, (ordinal * 2) % 8);
     } else if (type == ENEMY_TYPE_SHOOTER || kind->guard) {
-        e->home_flags = ENEMY_HOME_SET | (kind->guard ? ENEMY_HOME_GUARD : 0);
+        // The Ojo is never garrison (it would hold its post until the hero is within GUARD_RELEASE_DIST): it keeps only its post leash.
+        e->home_flags = ENEMY_HOME_SET | (kind->guard && type != ENEMY_TYPE_SHOOTER ? ENEMY_HOME_GUARD : 0);
         *enemy_home_x(e) = x;
         *enemy_home_y(e) = y;
     }
@@ -1745,7 +1752,8 @@ void enc_relic_hit(int damage) { (void)damage; }
 // corridor cannot hurt the next room before the hero steps in, whatever state the sleeper is in.
 int enc_untouchable(const Enemy *e) {
     int k = e->pack;
-    return k >= 0 && k < ENC_STAGES && s_rt[k].spawned && !s_rt[k].awake;
+    // A resting group (crawling, sweeping...) is hittable: the hit wakes it (rest_update), so the ray reaches it from afar.
+    return k >= 0 && k < ENC_STAGES && s_rt[k].spawned && !s_rt[k].awake && !(s_rest_group_mask & (1u << k));
 }
 
 void enc_note_beam_hit(const Enemy *e) {
