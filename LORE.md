@@ -34,7 +34,7 @@ Orden de los hechos, de más antiguo a más reciente.
 
 1. **La sequía del cielo.** Valdenoche es un pueblo pobre al pie de una colina. Llevan años de hambre y malas cosechas y la gente siente que Dios ha dejado de responder. *Qué pasó exactamente, o si fue algo más que hambre: [ABIERTO].*
 2. **La Catedral.** La Iglesia levanta una catedral en lo alto de la colina para que el cielo vuelva a responder. Con ella llega el **Tribunal de la Luz**, la inquisición local, que se instala en la sacristía (la Sacristía de los Faroles).
-3. **Los años del Tribunal.** El Tribunal impone su orden en Valdenoche. Condena a quien se sale del dogma: a Remedios, a Jimena y Aldonza, a Lope, a Sor Leonor, a los monaguillos, a Simón el campanero. La condena habitual es la **penitencia perpetua**: entrar en la Catedral a rezar sin salir nunca. En esta época Elías, capellán, bendice en secreto a las parejas que el Tribunal persigue.
+3. **Los años del Tribunal.** El Tribunal impone su orden en Valdenoche. Condena a quien se sale del dogma: a Remedios, a Jimena y Aldonza, a Lope, a Sor Leonor, a los monaguillos, a don Tomás el párroco, a Simón el campanero. La condena habitual es la **penitencia perpetua**: entrar en la Catedral a rezar sin salir nunca. En esta época Elías, capellán, bendice en secreto a las parejas que el Tribunal persigue.
 4. **La nave se alarga.** Un día el altar empieza a alejarse: la nave crece sin fin hacia dentro y quien está dentro ya no puede morir del todo. Los penitentes que el Tribunal había metido allí empiezan a transformarse según su condena (ver §5). La Iglesia lo declara un milagro y una prueba: quien llegue al Altar devolverá la voz al cielo. *Por qué ocurre: [ABIERTO].*
 5. **La Marcha.** La Iglesia proclama una cruzada para llegar al Altar. Se forma la **Columna de Lázaro** con los hombres de Valdenoche, al mando del capitán Íñigo Albar, con Elías como capellán y con inquisidores del Tribunal acompañándola. Entran en la Catedral armados.
 6. **La guerra dentro.** Entre la Columna y el Altar están los penitentes transformados: los vecinos condenados de Valdenoche. La Iglesia los declara herejes y la Columna los combate. **La cruzada es una guerra de la Iglesia contra su propio pueblo condenado.**
@@ -77,10 +77,14 @@ Confesor de la Sacristía de los Faroles. Le gustaban demasiado los muchachos de
 ### Los Exvotos (`CÓDICE · II`)
 Penitentes de Valdenoche que rezaron hasta volverse cera. Siguen en procesión con las manos en rezo.
 *Ficha oficial:* «Pidieron no estar solos. Les fue concedido.»
-- **Remedios, la cerera.** Mujer trans; eligió su nombre ella misma y el pueblo acabó respetándolo. Hacía las velas y los exvotos de la Catedral, y repartía entre los pobres el pan y la cera de los diezmos. El Tribunal la condenó por robar a Dios y por vestir de mujer y renegar del nombre que Dios le dio (la bautizaron con nombre de varón). Fue la primera en volverse cera, y las figuras que había hecho echaron a andar detrás de ella.
+- **Remedios, la cerera.** Mujer trans; eligió su nombre ella misma y el pueblo acabó respetándolo. Hacía las velas y los exvotos de la Catedral, y repartía entre los pobres el pan y la cera de los diezmos. El Tribunal la condenó por robar a Dios y por vestir de mujer y renegar del nombre que Dios le dio (la bautizaron con nombre de varón). Fue la primera en volverse cera, y las figuras que había hecho echaron a andar detrás de ella (los Bebés).
+- **Los Bebés.** Los niños de Valdenoche que murieron sin bautizar en los años de hambre. La Iglesia no les dio nombre ni los dejó enterrar en sagrado. Sus madres le pidieron a Remedios un exvoto de cera por cada uno, y ella los hizo. Cuando Remedios se volvió cera, echaron a andar detrás de ella. Son el primer escalón de las dos familias de Exvotos.
+  - *Ficha oficial:* «No les dieron nombre. Les dieron cera.»
 - **Jimena y Aldonza.** Dos mujeres de Valdenoche que se amaban. El Tribunal las condenó y ordenó separarlas, una a cada extremo de la nave. Rezaron la misma noche para no estar solas. Se lo concedieron: caminan juntas, unidas por la cera.
 - **Inés Arce.** Madre de Martín. Escondió a Bartolomé después de la Quiebra sin saber que su hijo había muerto por él. La condenaron por dar refugio a un desertor. Sube en procesión, nave arriba, hacia un latido que reconoce.
 - **Los monaguillos (los jóvenes suplicantes).** Los muchachos del coro que se negaron al padre Anselmo. Para silenciarlos, el Tribunal los condenó a rezar para siempre. Son los exvotos jóvenes que hoy siguen el estandarte del Abanderado: Íñigo los recogió porque nadie más lo hizo.
+- **El Párroco — don Tomás Ayuso.** Cura de la parroquia de Valdenoche desde antes de la Catedral y del Tribunal; los monaguillos del coro eran muchachos de su parroquia. Cuando el Tribunal fue a por los que se habían negado al padre Anselmo, don Tomás se plantó en la puerta de su iglesia y no los entregó (lo contrario de Íñigo, que calló ante Lope). Lo sacaron de allí y lo condenaron por desacato. Rezó para que nada pudiera alcanzar a sus muchachos a través de él, y le fue concedido: ningún milagro le atraviesa (en el juego, el Rayo se rompe contra él) y se pone delante de los suyos. Es el escalón 3 de la familia chico de los Exvotos.
+  - *Ficha oficial:* «Se puso delante. Todavía no se ha apartado.»
 - **Sor Leonor, la Súper Monja.** La novicia que denunció al padre Anselmo (su juicio, en el `CÓDICE · IV`). Entró en la Catedral como monja de cera; después del exorcismo se volvió lo que hoy es: negra, bocarriba y arqueada, andando a cuatro patas como una araña. Es el escalón 3 de la familia chica de los Exvotos. No es un jefe.
   - **La forma de su sentencia.** La condenaron por poseída, y la Catedral se lo cumplió: ahora lo está, y su aura posee a los que tiene cerca. Los monaguillos a los que defendió corren con ella. Las monjas de cera dejan de rezar y de curar a su lado, porque en aquella sacristía rezar no salvó a nadie.
   - **Lo que muestra cómo se mueve.** Retrocede sin dar nunca la espalda, porque no volvió a dársela a un cura. Esquiva la grieta del Glifo porque ya la juzgaron una vez desde el suelo.
@@ -120,6 +124,9 @@ Campanero de Valdenoche. Cuando moría alguien en el pueblo, tocaba la campana p
 | Gaspar | Leonor | La condenó por calumnia y la exorcizó. |
 | Gaspar | Todos los condenados | Firmó las sentencias. |
 | Íñigo | Lope, monaguillos | Calló ante uno; recoge a los otros. |
+| Remedios | Bebés | Les hizo la cera; la siguen desde que ella se volvió cera. |
+| Tomás | Monaguillos, Anselmo | No los entregó al Tribunal; se puso delante. |
+| Tomás | Íñigo | Uno se plantó y el otro calló. |
 | Simón | Lope, Íñigo | Tocó la campana por Lope mientras Íñigo callaba. |
 | Gaspar | Simón | Le quitó el badajo a la campana. |
 | Elías | Parejas condenadas | Las bendecía en secreto. |
