@@ -1,0 +1,651 @@
+{
+ "name": "arpg_campana_rejas",
+ "description": "Rejas de la campana. Nave 1 (bloque 3, py de la reja 448 px): sin sellos, con uno solo, la reja no deja subir; con los dos, si. Nave 4: sin llave de la cripta ni con la de la capilla, no; con la de la cripta, si. El heroe se pone justo debajo de la reja y empuja hacia arriba 150 frames, en dios. Capilla con llave (reja a 150 px del bloque): sin llave no se sube; con la llave pero sin haber abierto la reja, la puerta del atajo (derecha) no cede; con la reja abierta, la puerta lleva a la Nave 1.",
+ "suite": true,
+ "state": {
+  "elf": "../.ds-game-dev/build/out/dungeonds.elf",
+  "symbols": {
+   "pl": "s_player",
+   "dbg": "g_enc_debug",
+   "stats": "g_enc_stats",
+   "q": "g_quest"
+  },
+  "default_symbol": "pl",
+  "fields": {
+   "px": {
+    "symbol": "pl",
+    "offset": 0,
+    "type": "s32"
+   },
+   "py": {
+    "symbol": "pl",
+    "offset": 4,
+    "type": "s32"
+   },
+   "dbg_god": {
+    "symbol": "dbg",
+    "offset": 2,
+    "type": "u8"
+   },
+   "dbg_restart": {
+    "symbol": "dbg",
+    "offset": 12,
+    "type": "u8"
+   },
+   "dbg_start_room": {
+    "symbol": "dbg",
+    "offset": 20,
+    "type": "u8"
+   },
+   "room": {
+    "symbol": "stats",
+    "offset": 60,
+    "type": "u8"
+   },
+   "block": {
+    "symbol": "stats",
+    "offset": 1,
+    "type": "u8"
+   },
+   "alive": {
+    "symbol": "stats",
+    "offset": 61,
+    "type": "u8"
+   },
+   "members_placed": {
+    "symbol": "stats",
+    "offset": 191,
+    "type": "u8"
+   },
+   "q_carrying": {
+    "symbol": "q",
+    "offset": 1,
+    "type": "u8"
+   }
+  }
+ },
+ "steps": [
+  {
+   "frames": 60
+  },
+  {
+   "tap": {
+    "x": 128,
+    "y": 66
+   },
+   "frames": 6
+  },
+  {
+   "release": true,
+   "frames": 40
+  },
+  {
+   "button_down": "START",
+   "frames": 4
+  },
+  {
+   "button_up": "START",
+   "frames": 90
+  },
+  {
+   "button_down": "LEFT",
+   "frames": 90
+  },
+  {
+   "button_up": "LEFT",
+   "frames": 10
+  },
+  {
+   "poke": [
+    {
+     "field": "px",
+     "value": 32768
+    },
+    {
+     "field": "py",
+     "value": 29696
+    }
+   ],
+   "frames": 20
+  },
+  {
+   "button_down": "A",
+   "frames": 4
+  },
+  {
+   "button_up": "A",
+   "frames": 6
+  },
+  {
+   "frames": 8
+  },
+  {
+   "frames": 20
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    }
+   ],
+   "frames": 60
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    },
+    {
+     "field": "dbg_start_room",
+     "value": 1
+    },
+    {
+     "field": "dbg_restart",
+     "value": 1
+    },
+    {
+     "field": "q_carrying",
+     "value": 0
+    }
+   ],
+   "frames": 80
+  },
+  {
+   "poke": [
+    {
+     "field": "q_carrying",
+     "value": 0
+    },
+    {
+     "field": "px",
+     "value": 65536
+    },
+    {
+     "field": "py",
+     "value": 122368
+    }
+   ],
+   "frames": 10
+  },
+  {
+   "button_down": "UP",
+   "frames": 150,
+   "state_capture": "n1_sin",
+   "capture": "n1_sin"
+  },
+  {
+   "button_up": "UP",
+   "frames": 5
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    },
+    {
+     "field": "dbg_start_room",
+     "value": 1
+    },
+    {
+     "field": "dbg_restart",
+     "value": 1
+    },
+    {
+     "field": "q_carrying",
+     "value": 1
+    }
+   ],
+   "frames": 80
+  },
+  {
+   "poke": [
+    {
+     "field": "q_carrying",
+     "value": 1
+    },
+    {
+     "field": "px",
+     "value": 65536
+    },
+    {
+     "field": "py",
+     "value": 122368
+    }
+   ],
+   "frames": 10
+  },
+  {
+   "button_down": "UP",
+   "frames": 150,
+   "state_capture": "n1_uno",
+   "capture": "n1_uno"
+  },
+  {
+   "button_up": "UP",
+   "frames": 5
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    },
+    {
+     "field": "dbg_start_room",
+     "value": 1
+    },
+    {
+     "field": "dbg_restart",
+     "value": 1
+    },
+    {
+     "field": "q_carrying",
+     "value": 3
+    }
+   ],
+   "frames": 80
+  },
+  {
+   "poke": [
+    {
+     "field": "q_carrying",
+     "value": 3
+    },
+    {
+     "field": "px",
+     "value": 65536
+    },
+    {
+     "field": "py",
+     "value": 122368
+    }
+   ],
+   "frames": 10
+  },
+  {
+   "button_down": "UP",
+   "frames": 150,
+   "state_capture": "n1_dos",
+   "capture": "n1_dos"
+  },
+  {
+   "button_up": "UP",
+   "frames": 5
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    },
+    {
+     "field": "dbg_start_room",
+     "value": 4
+    },
+    {
+     "field": "dbg_restart",
+     "value": 1
+    },
+    {
+     "field": "q_carrying",
+     "value": 0
+    }
+   ],
+   "frames": 80
+  },
+  {
+   "poke": [
+    {
+     "field": "q_carrying",
+     "value": 0
+    },
+    {
+     "field": "px",
+     "value": 65536
+    },
+    {
+     "field": "py",
+     "value": 122368
+    }
+   ],
+   "frames": 10
+  },
+  {
+   "button_down": "UP",
+   "frames": 150,
+   "state_capture": "n4_sin",
+   "capture": "n4_sin"
+  },
+  {
+   "button_up": "UP",
+   "frames": 5
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    },
+    {
+     "field": "dbg_start_room",
+     "value": 4
+    },
+    {
+     "field": "dbg_restart",
+     "value": 1
+    },
+    {
+     "field": "q_carrying",
+     "value": 4
+    }
+   ],
+   "frames": 80
+  },
+  {
+   "poke": [
+    {
+     "field": "q_carrying",
+     "value": 4
+    },
+    {
+     "field": "px",
+     "value": 65536
+    },
+    {
+     "field": "py",
+     "value": 122368
+    }
+   ],
+   "frames": 10
+  },
+  {
+   "button_down": "UP",
+   "frames": 150,
+   "state_capture": "n4_capilla",
+   "capture": "n4_capilla"
+  },
+  {
+   "button_up": "UP",
+   "frames": 5
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    },
+    {
+     "field": "dbg_start_room",
+     "value": 4
+    },
+    {
+     "field": "dbg_restart",
+     "value": 1
+    },
+    {
+     "field": "q_carrying",
+     "value": 8
+    }
+   ],
+   "frames": 80
+  },
+  {
+   "poke": [
+    {
+     "field": "q_carrying",
+     "value": 8
+    },
+    {
+     "field": "px",
+     "value": 65536
+    },
+    {
+     "field": "py",
+     "value": 122368
+    }
+   ],
+   "frames": 10
+  },
+  {
+   "button_down": "UP",
+   "frames": 150,
+   "state_capture": "n4_cripta",
+   "capture": "n4_cripta"
+  },
+  {
+   "button_up": "UP",
+   "frames": 5
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    },
+    {
+     "field": "dbg_start_room",
+     "value": 14
+    },
+    {
+     "field": "dbg_restart",
+     "value": 1
+    },
+    {
+     "field": "q_carrying",
+     "value": 0
+    }
+   ],
+   "frames": 80
+  },
+  {
+   "button_down": "UP",
+   "frames": 1
+  },
+  {
+   "poke": [
+    {
+     "field": "px",
+     "value": 65536
+    },
+    {
+     "field": "py",
+     "value": 340992
+    }
+   ],
+   "frames": 10
+  },
+  {
+   "button_down": "UP",
+   "frames": 150,
+   "state_capture": "cap_sin",
+   "capture": "cap_sin"
+  },
+  {
+   "button_up": "UP",
+   "frames": 5
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    },
+    {
+     "field": "dbg_start_room",
+     "value": 14
+    },
+    {
+     "field": "dbg_restart",
+     "value": 1
+    },
+    {
+     "field": "q_carrying",
+     "value": 4
+    }
+   ],
+   "frames": 80
+  },
+  {
+   "poke": [
+    {
+     "field": "px",
+     "value": 95232
+    },
+    {
+     "field": "py",
+     "value": 371200
+    }
+   ],
+   "frames": 20
+  },
+  {
+   "button_down": "RIGHT",
+   "frames": 60,
+   "state_capture": "cap_puerta_cerrada"
+  },
+  {
+   "button_up": "RIGHT",
+   "frames": 5
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    },
+    {
+     "field": "dbg_start_room",
+     "value": 14
+    },
+    {
+     "field": "dbg_restart",
+     "value": 1
+    },
+    {
+     "field": "q_carrying",
+     "value": 4
+    }
+   ],
+   "frames": 80
+  },
+  {
+   "poke": [
+    {
+     "field": "px",
+     "value": 65536
+    },
+    {
+     "field": "py",
+     "value": 340992
+    }
+   ],
+   "frames": 150,
+   "state_capture": "cap_reja_arriba",
+   "capture": "cap_reja_arriba"
+  },
+  {
+   "poke": [
+    {
+     "field": "px",
+     "value": 95232
+    },
+    {
+     "field": "py",
+     "value": 371200
+    }
+   ],
+   "frames": 20
+  },
+  {
+   "button_down": "RIGHT",
+   "frames": 60,
+   "state_capture": "cap_atajo"
+  },
+  {
+   "button_up": "RIGHT",
+   "frames": 5
+  }
+ ],
+ "assertions": {
+  "state_changes": [
+   {
+    "at": "n1_sin",
+    "field": "py",
+    "min_value": 114432
+   },
+   {
+    "at": "n1_uno",
+    "field": "py",
+    "min_value": 114432
+   },
+   {
+    "at": "n4_sin",
+    "field": "py",
+    "min_value": 114432
+   },
+   {
+    "at": "n4_capilla",
+    "field": "py",
+    "min_value": 114432
+   },
+   {
+    "at": "n1_sin",
+    "field": "room",
+    "equals": 0
+   },
+   {
+    "at": "n1_uno",
+    "field": "room",
+    "equals": 0
+   },
+   {
+    "at": "n1_dos",
+    "field": "room",
+    "equals": 1
+   },
+   {
+    "at": "n4_sin",
+    "field": "room",
+    "equals": 3
+   },
+   {
+    "at": "n4_capilla",
+    "field": "room",
+    "equals": 3
+   },
+   {
+    "at": "n4_cripta",
+    "field": "room",
+    "equals": 15
+   },
+   {
+    "at": "cap_sin",
+    "field": "py",
+    "min_value": 333056
+   },
+   {
+    "at": "cap_sin",
+    "field": "room",
+    "equals": 13
+   },
+   {
+    "at": "cap_puerta_cerrada",
+    "field": "room",
+    "equals": 13
+   },
+   {
+    "at": "cap_reja_arriba",
+    "field": "room",
+    "equals": 13
+   },
+   {
+    "at": "cap_atajo",
+    "field": "room",
+    "equals": 0
+   }
+  ]
+ }
+}
