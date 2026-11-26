@@ -287,6 +287,8 @@ Se ajustan con la lista que salga de la partida de prueba en la DS. Frames a 60 
 
 **Rayo base:** daño 150 (`source/weapons.c`). **Carga 48 frames (0,8 s). Alcance 110.** Con el rayo inicial lento y corto las primeras salas empiezan justas y el poder se gana con los Dones. **No hay recuperación tras disparar:** al volver a pulsar, la carga empieza de cero al instante; el ritmo lo marca solo la carga. **Prisa llega rápido al tope y se acepta:** el techo es estilo metralleta (carga 8), el principio es lento.
 
+**Todo el haz visible daña** (decidido 2026-11-26): la longitud dibujada y la de daño son la misma (también con Alcance); el cuerpo del enemigo cuenta con su elipse, así que el daño nunca queda por debajo de lo que se ve. En vertical el haz dibuja la mitad de píxeles de pantalla que en horizontal (suelo 2:1).
+
 **Dones (7 rangos cada uno):** el efecto total se reparte en 7 pasos (`rank_step` en `source/upgrades.c`). Con 14 Dones por partida y 7 Dones de 7 rangos (49 plazas), no se pueden llevar todos al máximo. **Descartado: limitar a 4 el número de Dones distintos** (estilo Vampire Survivors): cualquier Don puede subirse. **Riesgo a vigilar jugando:** con ofertas aleatorias de igual peso los picks se reparten y las builds pueden quedar planas; palancas: pesos por Don, rechazar una carta o sesgar la oferta hacia lo que ya tienes.
 
 | Don | Por rango | Al máximo |
