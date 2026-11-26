@@ -30,9 +30,9 @@
 #define PUNCH_START_HOOK 1
 #define PUNCH_FOLLOW 1              // [TUNABLE-PLACEHOLDER] fotogramas que se ven tras el impacto antes de encadenar el golpe guardado (0..3)
 #define PUNCH_RANGE 34              // [TUNABLE-PLACEHOLDER] alcance del punetazo (px de suelo)
-#define PUNCH_DAMAGE_A 50           // [TUNABLE-PLACEHOLDER] dano del directo
-#define PUNCH_DAMAGE_B 50           // [TUNABLE-PLACEHOLDER] dano del cruzado
-#define PUNCH_DAMAGE_HOOK 90        // [TUNABLE-PLACEHOLDER] dano del gancho
+#define PUNCH_DAMAGE_A 10           // [TUNABLE-PLACEHOLDER] dano del directo
+#define PUNCH_DAMAGE_B 10           // [TUNABLE-PLACEHOLDER] dano del cruzado
+#define PUNCH_DAMAGE_HOOK 18        // [TUNABLE-PLACEHOLDER] dano del gancho
 #define PUNCH_LIGHT_PUSH 96         // [TUNABLE-PLACEHOLDER] 8.8: empuje ligero de directo y cruzado (~0,375 px/frame)
 #define PUNCH_HOOK_PUSH 192         // [TUNABLE-PLACEHOLDER] 8.8: empuje del gancho (0,75 px/frame)
 #define PUNCH_MAX_BIN_BYTES 16384   // [TUNABLE-PLACEHOLDER] tamano del buffer; el bin mas grande ronda los 12 KB
