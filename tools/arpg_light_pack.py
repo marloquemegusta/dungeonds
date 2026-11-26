@@ -33,7 +33,6 @@ CLIP_OF_DIR = {"cireneo": "charger", "cireneo_charge": "charger_charge", "cirene
 REMATE_OF = {"monja": "exvoto", "bebe": "exvoto_bebe", "monaguillo": "monaguillo", "cireneo": "cireneo",
              "ojo": "ojo", "parroco": "parroco", "smonja": "smonja"}
 SMONJA_DIRS = ["exvoto_super_monja", "exvoto_super_monja_pray_stand", "exvoto_super_monja_pray_kneel", "exvoto_super_monja_stand_up"]
-ARANA_DIRS = ["exvoto_arana_walk", "exvoto_arana_trans", "monaguillo_arana_walk", "monaguillo_arana_trans"]
 CHARS_DAY = ROOT / "assets/sprites/characters"
 
 
@@ -90,8 +89,6 @@ def stage_chars(light, base, types):
     tint_dirs = []
     if "smonja" in types:
         tint_dirs += SMONJA_DIRS
-    if light["id"] == "monjarana":
-        tint_dirs += ARANA_DIRS
     for d in sorted(p.name for p in CHARS_DAY.iterdir() if p.is_dir()):
         if d in relit:
             junction(full / d, base / "chars" / d)

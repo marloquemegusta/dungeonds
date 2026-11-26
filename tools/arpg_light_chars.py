@@ -35,9 +35,25 @@ def load_lights():
     return json.loads((ROOT / "tools/arpg_light_rooms.json").read_text(encoding="utf-8"))
 
 
+NEUTRO = {"key": "#fff0d9", "fill": "#cbd8ff", "rim": "#dce8ff"}
+
+
+def mezcla(a, b, t):
+    ca = [int(a[i:i + 2], 16) for i in (1, 3, 5)]
+    cb = [int(b[i:i + 2], 16) for i in (1, 3, 5)]
+    return "#%02x%02x%02x" % tuple(round(x + (y - x) * t) for x, y in zip(ca, cb))
+
+
 def lab_light(l):
-    return {k: l[k] for k in ("key", "fill", "rim", "world", "keyColor", "fillColor", "rimColor")} | {
-        "fromDeg": l["desde_deg"], "elevation": l["elevacion_deg"], "shadowElevation": l["sombra_elevacion_deg"]}
+    """Personajes: la intensidad escala TODAS las luces (key/fill/rim/world del preset neutral del dia) y la luz de la sala
+    solo pone color y direccion de la sombra de suelo; el sombreado conserva la direccion del dia (shadeDay) para que
+    el peregrino se lea de frente. char_gain (opcional) sustituye a la intensidad (claustros: sol por encima del dia)."""
+    g = l.get("char_gain", l["intensidad"])
+    mx = l.get("char_tint_mix", 0.5)  # cuanto del color de la sala pasa al personaje (0 = neutral del dia)
+    return {"key": round(3.2 * g, 3), "fill": round(0.65 * g, 3), "rim": round(0.4 * g, 3), "world": round(0.25 * g, 3),
+            "keyColor": mezcla(NEUTRO["key"], l["keyColor"], mx), "fillColor": mezcla(NEUTRO["fill"], l["fillColor"], mx),
+            "rimColor": mezcla(NEUTRO["rim"], l["rimColor"], mx), "shadeDay": True,
+            "fromDeg": l["desde_deg"], "elevation": l["elevacion_deg"], "shadowElevation": l["sombra_elevacion_deg"]}
 
 
 def room_enemies(rooms):

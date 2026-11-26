@@ -151,10 +151,11 @@ function lightingFor(preset, overrides = {}) {
     let h;
     if (hasFrom) { const a = p.fromDeg * PI / 180, u = Math.sin(a), d = -Math.cos(a); h = [(d - u) / Math.SQRT2, -(u + d) / Math.SQRT2]; }
     else h = lightAzimuthDir(p.azimuth);
-    keyPos = [h[0] * Math.cos(el) * 30, Math.sin(el) * 30, h[1] * Math.cos(el) * 30];
+    // p.shadeDay: el sombreado del personaje conserva la direccion neutral del dia (se lee de frente); solo la sombra de suelo usa la luz de la sala
+    if (!p.shadeDay) keyPos = [h[0] * Math.cos(el) * 30, Math.sin(el) * 30, h[1] * Math.cos(el) * 30];
     // cold fill from the opposite side of the key, higher
     const fe = 35 * PI / 180;
-    fillPos = [-h[0] * Math.cos(fe) * 30, Math.sin(fe) * 30, -h[1] * Math.cos(fe) * 30];
+    if (!p.shadeDay) fillPos = [-h[0] * Math.cos(fe) * 30, Math.sin(fe) * 30, -h[1] * Math.cos(fe) * 30];
     // Ground shadow: horizontal offset per metre of height = -h / tan(shadowElevation) (the cell is finite, so the
     // shadow may use a higher angle than the shading light: p.shadowElevation).
     const se = (p.shadowElevation || p.elevation || 22) * PI / 180, cot = Math.cos(se) / Math.sin(se);

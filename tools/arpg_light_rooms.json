@@ -138,20 +138,21 @@
    "desde_deg": 330,
    "elevacion_deg": 70,
    "sombra_elevacion_deg": 64,
-   "keyColor": "#fff0cc",
-   "key": 3.6,
-   "fillColor": "#8aa0c8",
+   "keyColor": "#ffe9b8",
+   "key": 4.5,
+   "fillColor": "#b8b4a8",
    "fill": 0.65,
    "rimColor": "#cfd8e8",
    "rim": 0.4,
    "world": 0.24,
    "floor_tint": [
-    1.0,
-    0.97,
-    0.88
+    1.12,
+    1.02,
+    0.84
    ],
-   "floor_gain": 1.0,
-   "sombras": "cortas y duras"
+   "floor_gain": 1.25,
+   "sombras": "cortas y duras",
+   "char_gain": 1.3
   },
   {
    "id": "enfermeria",
@@ -290,17 +291,17 @@
    "desde_deg": 180,
    "elevacion_deg": 24,
    "sombra_elevacion_deg": 30,
-   "keyColor": "#e0643c",
+   "keyColor": "#c98a6c",
    "key": 1.62,
-   "fillColor": "#4a2c30",
+   "fillColor": "#4a3a3a",
    "fill": 0.46,
-   "rimColor": "#cfd8e8",
+   "rimColor": "#cdbfb4",
    "rim": 0.24,
    "world": 0.16,
    "floor_tint": [
-    1.0,
-    0.5,
-    0.38
+    0.92,
+    0.68,
+    0.58
    ],
    "floor_gain": 0.61,
    "sombras": "largas hacia el fondo"

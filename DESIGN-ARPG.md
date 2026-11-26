@@ -210,17 +210,18 @@ Intensidad = potencia de la luz principal; «desde» = de dónde viene en pantal
 | Nave 3 | 2 | ídem | 70 % | 305 | 48 | ídem |
 | Nave 4 | 3 | ídem | 55 % | 305 | 48 | ídem |
 | Galerías | 4, 5 | polvo cálido | 60 % | 270 | 20 | muy largas, horizontales |
-| Claustros | 6, 7 | sol de día | 100 % | 330 | 70 | cortas y duras |
+| Claustros | 6, 7 | sol de día (la más clara y cálida de todas) | 100 % | 330 | 70 | cortas y duras |
 | Enfermería | 8 | ámbar suave | 70 % | 0 | 80 | cortas (casi vertical) |
 | Osario | 9 | frío | 35 % | 45 | 22 | largas, desde una esquina |
 | Capillas | 10, 11, 13 | ámbar | 60 % | 0 | 36 | hacia la cámara (luz desde el altar) |
 | Prisionero | 12 | verdoso (ventanuco alto lateral) | 40 % | 90 | 58 | un haz duro |
 | Monjaraña | 14 | verde enfermizo | 30 % | 180 | 22 | largas hacia el fondo |
-| Cripta | 15 | rojo brasa | 45 % | 180 | 24 | largas hacia el fondo |
+| Cripta | 15 | brasa apagada (rojizo desaturado) | 45 % | 180 | 24 | largas hacia el fondo |
 
 - **Relación con el póster:** los tintes de referencia son los del póster v3 (`tools/poster/salas/sala_NN.py`, `AM` de `tools/poster/poster_arpg_v3.py`); el contraste se dramatiza respecto a él.
 - **Pipeline:** `tools/arpg_light_props.py`, `tools/arpg_light_chars.py` y `tools/arpg_light_pack.py <luz>` generan el paquete `nitrofiles/arpg_luz/<luz>.bin` (formato en `TECHNICAL.md` §5.7). Hojas de contacto en `walkthroughs/arpg-luz-sala/`.
 - **Aproximaciones:** los remates (sin fuente 3D versionada) y los personajes sin modelo 3D utilizable (Super Monja, arañas) se oscurecen con el tinte de la luz; todo lo que tiene modelo se vuelve a renderizar con la luz.
+- **Personajes:** la intensidad escala todas sus luces (Nave 1 y Nave 4 se distinguen en el héroe y en los enemigos); el color de la sala llega a medias (mitad hacia el neutral del día) y el sombreado conserva la dirección del día, de modo que el peregrino se lee marrón como en la ROM en todas las salas. Solo la sombra de suelo usa la dirección de la sala. Las arañas no salen en ningún grupo de la monjaraña (sala 14), así que no entran en su pack.
 
 ### Seis ambientes: objetivo, no vigente
 

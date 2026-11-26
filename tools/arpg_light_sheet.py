@@ -80,7 +80,7 @@ def main():
     props = [(sub, n) for _, sub, n in sorted(cand, reverse=True)[:2]]
 
     items = []      # (baseline_y, sprite, ox, oy, shadow, sox, soy)
-    spr, (ax, ay), shd, (cx, cy) = char_frame(base, "corazon", 0, 0)
+    spr, (ax, ay), shd, (cx, cy) = char_frame(base, "corazon", 4, 0)
     items.append((108, spr, 100 - ax, 108 - ay, shd, 100 - cx, 108 - cy))
     spr, (ax, ay), shd, (cx, cy) = char_frame(base, enemy, 0, 0)
     items.append((108, spr, 156 - ax, 108 - ay, shd, 156 - cx, 108 - cy))
