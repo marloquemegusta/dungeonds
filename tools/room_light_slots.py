@@ -33,7 +33,7 @@ def main():
     decls = [m for m in DECL.finditer(text)
              if any(m.group(3).endswith(s) for s in SUF) and not m.group(3).startswith("g_character_")]
     names = [m.group(3) for m in decls]
-    packs = sorted((ROOT / "nitrofiles/arpg_luz").glob("*.bin"))
+    packs = sorted(p for p in (ROOT / "nitrofiles/arpg_luz").glob("*.bin") if not p.stem.endswith("_fix"))
     maxl = None; max_tiles = 0; max_st = 0
     for pk in packs:
         lens, nt, nst = pack_slot_lens(pk)
@@ -75,7 +75,6 @@ def main():
         out.append(f"    {{ {n}, {b} }},\n")
     out.append("};\n")
     out.append(f"const uint32_t g_room_light_slot_count = {len(rows)};\n")
-    out.append(f"#define ROOM_LIGHT_MAX_TILES_GEN {max_tiles}\n#define ROOM_LIGHT_MAX_STAMP_TILES_GEN {max_st}\n")
     (ROOT / "source/room_light_slots.c").write_bytes("".join(out).encode("ascii"))
     print("slots", len(rows), "max tiles", max_tiles, "max stamp tiles", max_st)
 

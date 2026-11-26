@@ -758,3 +758,14 @@ for clip, blocks in sorted(BINS.items()):
 print('Streamed enemy clips: %d bins, %d bytes in nitrofiles/chars/' % (len(BINS), total_bin))
 print('Opaque-run tables: %d bytes (runs + offsets)' % sum(RUN_STATS))
 print('Generated source/player_sprite.c successfully! Size:', os.path.getsize(out_path), 'bytes')
+
+# Luz por sala (fddb9938): el cargador de source/room_light.c sobrescribe las tablas del heroe y los enemigos, asi que
+# deben salir sin `const` y con el tamano maximo de los paquetes nitrofiles/arpg_luz/*.bin. tools/room_light_slots.py
+# lo aplica (idempotente) sobre source/player_sprite.c, include/player_sprite.h y source/room_light_slots.c; si no se
+# encadena aqui, regenerar revierte esas ediciones y rompe la luz por sala.
+_repo = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if out_path == os.path.join(_repo, 'source', 'player_sprite.c'):
+    import sys
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    import room_light_slots
+    room_light_slots.main()
