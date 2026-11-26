@@ -111,8 +111,12 @@ def main():
     cfgs = {}
     for n in names:
         c = dict(props[n]); c["glb"] = n
-        if not a.kit:
+        # Con la luz rasante de las salas oscuras (cripta, monjarana) la sombra no cabe en el margen de 8 px: sin esto se
+        # descartaba en silencio y las piezas sueltas de la sala salian sin sombra. Las del kit (estatuas, columnas) siguen
+        # con el margen de 8 px: con sombra larga la monjarana pasa del limite de 440 tiles por ventana.
+        if n not in KIT_PIECES:
             c["shadow_free_margin"] = True
+        if not a.kit:
             c["poster_shadow"] = True
         c["light_xz"] = light_xz(light["desde_deg"])
         c["shadow_elevation"] = sel

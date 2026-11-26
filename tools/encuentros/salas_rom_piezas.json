@@ -1755,14 +1755,14 @@
    {
     "piece": "calaveras_pila",
     "k": 0,
-    "lx": 88,
+    "lx": 80,
     "ly": 208,
     "mirror": 0
    },
    {
     "piece": "capullo",
     "k": 0,
-    "lx": 64,
+    "lx": 48,
     "ly": 152,
     "mirror": 0
    },
@@ -1784,14 +1784,14 @@
     "piece": "columna_entera",
     "k": 0,
     "lx": 56,
-    "ly": 256,
+    "ly": 264,
     "mirror": 0
    },
    {
     "piece": "columna_entera",
     "k": 0,
     "lx": 112,
-    "ly": 256,
+    "ly": 264,
     "mirror": 0
    },
    {
@@ -1846,29 +1846,36 @@
    {
     "piece": "capullo",
     "k": 1,
-    "lx": 48,
+    "lx": 16,
     "ly": 0,
     "mirror": 0
    },
    {
     "piece": "capullo",
     "k": 1,
-    "lx": 56,
+    "lx": 80,
+    "ly": 0,
+    "mirror": 0
+   },
+   {
+    "piece": "capullo",
+    "k": 1,
+    "lx": 24,
     "ly": 64,
     "mirror": 0
    },
    {
     "piece": "capullo",
     "k": 1,
-    "lx": 48,
-    "ly": 256,
+    "lx": 56,
+    "ly": 240,
     "mirror": 0
    },
    {
     "piece": "capullo",
     "k": 1,
-    "lx": 64,
-    "ly": 312,
+    "lx": 40,
+    "ly": 304,
     "mirror": 0
    },
    {
@@ -1918,28 +1925,28 @@
    {
     "piece": "brasero",
     "k": 0,
-    "lx": 16,
+    "lx": 0,
     "ly": 336,
     "mirror": 0
    },
    {
     "piece": "brasero",
     "k": 0,
-    "lx": 152,
+    "lx": 128,
     "ly": 336,
     "mirror": 0
    },
    {
     "piece": "calaveras_pila",
     "k": 0,
-    "lx": 48,
-    "ly": 120,
+    "lx": 40,
+    "ly": 128,
     "mirror": 0
    },
    {
     "piece": "huesos_monton",
     "k": 0,
-    "lx": 128,
+    "lx": 136,
     "ly": 280,
     "mirror": 0
    },
@@ -1974,42 +1981,42 @@
    {
     "piece": "sarcofago",
     "k": 0,
-    "lx": 72,
+    "lx": 40,
     "ly": 0,
     "mirror": 0
    },
    {
     "piece": "sarcofago_lado",
     "k": 0,
-    "lx": 160,
+    "lx": 144,
     "ly": 80,
     "mirror": 0
    },
    {
     "piece": "sarcofago_lado",
     "k": 0,
-    "lx": 160,
+    "lx": 144,
     "ly": 112,
     "mirror": 0
    },
    {
     "piece": "sarcofago_lado",
     "k": 0,
-    "lx": 160,
+    "lx": 144,
     "ly": 192,
     "mirror": 0
    },
    {
     "piece": "sarcofago_lado",
     "k": 0,
-    "lx": 160,
+    "lx": 144,
     "ly": 224,
     "mirror": 0
    },
    {
     "piece": "sarcofago_lado",
     "k": 0,
-    "lx": 160,
+    "lx": 144,
     "ly": 304,
     "mirror": 0
    },
