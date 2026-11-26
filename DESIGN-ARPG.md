@@ -212,9 +212,9 @@ Intensidad = potencia de la luz principal; «desde» = de dónde viene en pantal
 | Galerías | 4, 5 | polvo cálido | 60 % | 270 | 20 | muy largas, horizontales |
 | Claustros | 6, 7 | sol de día (la más clara y cálida de todas) | 100 % | 330 | 70 | cortas y duras |
 | Enfermería | 8 | ámbar suave | 70 % | 0 | 80 | cortas (casi vertical) |
-| Osario | 9 | frío | 35 % | 45 | 22 | largas, desde una esquina |
+| Osario | 9 | frío (a nivel de la noche de la demo) | 28 % | 45 | 22 | largas, desde una esquina |
 | Capillas | 10, 11, 13 | ámbar | 60 % | 0 | 36 | hacia la cámara (luz desde el altar) |
-| Prisionero | 12 | verdoso (ventanuco alto lateral) | 40 % | 90 | 58 | un haz duro |
+| Prisionero | 12 | verdoso oscuro (ventanuco alto lateral) | 32 % | 90 | 58 | un haz duro |
 | Monjaraña | 14 | verde enfermizo | 30 % | 180 | 22 | largas hacia el fondo |
 | Cripta | 15 | brasa apagada (rojizo desaturado) | 45 % | 180 | 24 | largas hacia el fondo |
 

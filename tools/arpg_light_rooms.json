@@ -185,23 +185,23 @@
    "rooms": [
     9
    ],
-   "intensidad": 0.35,
+   "intensidad": 0.28,
    "desde_deg": 45,
    "elevacion_deg": 22,
    "sombra_elevacion_deg": 30,
    "keyColor": "#9ab2e6",
-   "key": 1.26,
+   "key": 1.0,
    "fillColor": "#3e486c",
-   "fill": 0.42,
+   "fill": 0.34,
    "rimColor": "#cfd8e8",
-   "rim": 0.21,
-   "world": 0.15,
+   "rim": 0.18,
+   "world": 0.11,
    "floor_tint": [
-    0.62,
-    0.72,
-    0.96
+    0.5,
+    0.6,
+    0.9
    ],
-   "floor_gain": 0.54,
+   "floor_gain": 0.5,
    "sombras": "largas desde una esquina"
   },
   {
@@ -237,23 +237,23 @@
    "rooms": [
     12
    ],
-   "intensidad": 0.4,
+   "intensidad": 0.32,
    "desde_deg": 90,
    "elevacion_deg": 58,
    "sombra_elevacion_deg": 54,
    "keyColor": "#aacc9c",
-   "key": 1.44,
+   "key": 1.2,
    "fillColor": "#3e5a50",
-   "fill": 0.44,
+   "fill": 0.36,
    "rimColor": "#cfd8e8",
-   "rim": 0.22,
-   "world": 0.16,
+   "rim": 0.18,
+   "world": 0.12,
    "floor_tint": [
-    0.74,
-    0.9,
-    0.76
+    0.58,
+    0.8,
+    0.62
    ],
-   "floor_gain": 0.58,
+   "floor_gain": 0.52,
    "sombras": "un haz duro lateral"
   },
   {
