@@ -231,6 +231,28 @@ done:
     return 1;
 }
 
+// Arte de los fixtures (cofre cerrado, cofre abierto, altar) iluminado con la luz de la sala: <luz>_fix.bin, formato en
+// tools/arpg_light_fix.py. Se lee directo sobre los pixeles de dia de include/enc_room_gfx.h (sin buffers). Si falta o
+// no es valido se queda el arte que hubiera (el de dia hasta que cargue uno).
+#define FIX_MAGIC 0x5849464Cu    // 'LFIX'
+static void load_fix(int light) {
+    char path[48];
+    snprintf(path, sizeof(path), "nitro:/arpg_luz/%s_fix.bin", k_light_ids[light]);
+    FILE *f = fopen(path, "rb");
+    if (!f) return;
+    uint32_t h[2];
+    int16_t meta[3][4];
+    if (rd(f, h, 8) && h[0] == FIX_MAGIC && h[1] == 3 && rd(f, meta, sizeof(meta))) {
+        uint16_t *px = enc_room_gfx_begin(meta);
+        if (px) {
+            int total = 0;
+            for (int i = 0; i < 3; i++) total += (int)(uint16_t)meta[i][1] * (uint16_t)meta[i][2];
+            rd(f, px, (size_t)total * 2);
+        }
+    }
+    fclose(f);
+}
+
 int room_light_load(int room) {
     if (room < 0 || room >= 16) return 0;
     const int light = k_room_light[room];
@@ -246,6 +268,7 @@ int room_light_load(int room) {
 #endif
     // Si el paquete falta o no es valido se queda lo que hubiera: el arte de dia mientras no haya cargado ninguno.
     const int ok = load_pack(light);
+    if (ok) load_fix(light);
     g_room_light.ok = (uint8_t)ok;
     if (!ok) return 0;
     s_light = light;

@@ -1923,7 +1923,8 @@ void enc_dynamic_relic_draw(uint16_t *buffer, int cam_x, int cam_y, int depth) {
             int sx = sx0 + i;
             if (sx < 0 || sx >= SCREEN_W) continue;
             if (world_pixel_hidden(wx0 + i, wy, depth)) continue;
-            row[sx] = c;
+            // 1 = cast shadow of the lit art: halve what is already on screen (same darkening as apply_shadow_fast).
+            row[sx] = c == 1 ? (uint16_t)(((row[sx] & 0x7BDE) >> 1) | BIT(15)) : c;
             if (sx < min_x) min_x = sx;
             if (sx > max_x) max_x = sx;
         }
@@ -1979,10 +1980,30 @@ int enc_dynamic_fixture_count(int cam_x, int cam_y) {
     return s_fixture_n;
 }
 
+// Lit art of the room (nitro:/arpg_luz/<luz>_fix.bin, source/room_light.c): `meta` is 3 x {left, w, h, anchor_y}.
+// Re-points the three fixture sprites at consecutive spans of the shared pixel buffer and returns it, or NULL if
+// the set does not fit. The caller then reads the pixels straight into it.
+uint16_t *enc_room_gfx_begin(const int16_t meta[3][4]) {
+    int total = 0;
+    for (int i = 0; i < 3; i++) total += (int)(uint16_t)meta[i][1] * (uint16_t)meta[i][2];
+    if (total <= 0 || total > ENC_ROOM_PX_CAP) return NULL;
+    int off = 0;
+    for (int i = 0; i < 3; i++) {
+        EncRoomSprite *sp = &s_enc_room_sprites[i];
+        sp->left = meta[i][0];
+        sp->w = (uint16_t)meta[i][1];
+        sp->h = (uint16_t)meta[i][2];
+        sp->anchor_y = (uint16_t)meta[i][3];
+        sp->pixels = s_enc_room_px + off;
+        off += sp->w * sp->h;
+    }
+    return s_enc_room_px;
+}
+
 // Top-left of a fixture sprite in world px: its ground anchor lands on the fixture's Y.
 static void fixture_origin(const EncFixture *f, int *out_x, int *out_y) {
     const EncRoomSprite *s = &s_enc_room_sprites[f->sprite];
-    *out_x = f->x - s->w / 2;
+    *out_x = f->x + s->left;
     *out_y = f->y - s->anchor_y;
 }
 
@@ -2018,7 +2039,8 @@ void enc_dynamic_fixture_draw(int index, uint16_t *buffer, int cam_x, int cam_y,
             int sx = sx0 + i;
             if (sx < 0 || sx >= SCREEN_W) continue;
             if (world_pixel_hidden(wx0 + i, wy, depth)) continue;
-            row[sx] = c;
+            // 1 = cast shadow of the lit art: halve what is already on screen (same darkening as apply_shadow_fast).
+            row[sx] = c == 1 ? (uint16_t)(((row[sx] & 0x7BDE) >> 1) | BIT(15)) : c;
             if (sx < min_x) min_x = sx;
             if (sx > max_x) max_x = sx;
         }
