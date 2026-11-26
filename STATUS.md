@@ -1,6 +1,6 @@
 # STATUS.md - Estado Actual e Historial Reciente de DungeonDS
 
-Primero el estado necesario para retomar el trabajo sin depender del chat; después, las entregas recientes verificadas (más nueva primero, como mucho ~6; las anteriores pasan a `STATUS-ARCHIVE.md`). Es el estado del juego de `main` (Acto I por encuentros); el prototipo ARPG tiene el suyo en `STATUS-ARPG.md`. Este archivo es idéntico en `main` y `proto/arpg`.
+Primero el estado necesario para retomar el trabajo sin depender del chat; después, las entregas recientes verificadas (más nueva primero, como mucho ~6; las anteriores pasan a `STATUS-ARCHIVE.md`). Es el estado del juego de `roguelike` (Acto I por encuentros); el prototipo ARPG tiene el suyo en `STATUS-ARPG.md`. Este archivo es idéntico en `arpg` y `roguelike`.
 
 
 ## Estado actual (2026-11-22)

@@ -1,6 +1,6 @@
 # DESIGN-ARPG.md - Diseño del prototipo ARPG
 
-Diseño de la protodemo ARPG (código en la rama `proto/arpg`). Este archivo es idéntico en `main` y `proto/arpg`; lo común del juego (mundo, enemigos, remates, arte, efectos desaturados) está en `DESIGN.md` y aquí solo va lo propio del ARPG. El diseño objetivo del juego final se itera en `walkthroughs/arpg-predemo/diseno_juego_final.md` (rama `proto/arpg`) y manda sobre lo de aquí que lo contradiga.
+Diseño de la protodemo ARPG (código en la rama `arpg`). Este archivo es idéntico en `arpg` y `roguelike`; lo común del juego (mundo, enemigos, remates, arte, efectos desaturados) está en `DESIGN.md` y aquí solo va lo propio del ARPG. El diseño objetivo del juego final se itera en `walkthroughs/arpg-predemo/diseno_juego_final.md` (rama `arpg`) y manda sobre lo de aquí que lo contradiga.
 
 Hasta el 2026-11-22 este texto era `DESIGN.md` §7; las referencias antiguas se traducen así: §7.1 → §1, §7.2 → §2, §7.4 → §3, §7.5 → §4, §7.6 → §5, §7.7 → §6 (§7.3, el árbol de habilidades, se retiró a `DESIGN-ARCHIVE.md`).
 

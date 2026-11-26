@@ -1,6 +1,6 @@
 # STATUS-ARPG.md - Estado del prototipo ARPG
 
-Estado para retomar la protodemo ARPG (código en la rama `proto/arpg`) y sus entregas recientes (más nueva primero). Este archivo es idéntico en `main` y `proto/arpg`; los enlaces a walkthroughs solo resuelven en `proto/arpg`. Diseño en `DESIGN-ARPG.md`; detalle técnico en `TECHNICAL.md` §5. El estado del juego de `main` (Acto I por encuentros) está en `STATUS.md`.
+Estado para retomar la protodemo ARPG (código en la rama `proto/arpg`) y sus entregas recientes (más nueva primero). Este archivo es idéntico en `main` y `proto/arpg`; los enlaces a walkthroughs solo resuelven en `arpg`. Diseño en `DESIGN-ARPG.md`; detalle técnico en `TECHNICAL.md` §5. El estado del juego de `roguelike` (Acto I por encuentros) está en `STATUS.md`.
 
 ## Estado actual (2026-11-24)
 

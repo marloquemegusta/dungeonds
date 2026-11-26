@@ -6,13 +6,13 @@ El repositorio cuenta con fuentes de verdad canónicas sin duplicación:
 
 | Documento | Ámbito | Contenido |
 | :--- | :--- | :--- |
-| `DESIGN.md` | Producto y Arte | Diseño vigente del juego de `main` (roguelike por encuentros): visión, controles, mecánicas, dirección visual y decisiones abiertas. Solo lo vigente; la historia de cada decisión va a `DESIGN-ARCHIVE.md`. |
-| `DESIGN-ARPG.md` | Producto (ARPG) | Diseño del prototipo ARPG (`proto/arpg`): solo lo propio del ARPG; lo común (mundo, enemigos, arte) está en `DESIGN.md`. |
+| `DESIGN.md` | Producto y Arte | Diseño vigente del juego de `roguelike` (roguelike por encuentros): visión, controles, mecánicas, dirección visual y decisiones abiertas. Solo lo vigente; la historia de cada decisión va a `DESIGN-ARCHIVE.md`. |
+| `DESIGN-ARPG.md` | Producto (ARPG) | Diseño del ARPG (rama `arpg`): solo lo propio del ARPG; lo común (mundo, enemigos, arte) está en `DESIGN.md`. |
 | `LORE.md` | Lore | Biblia del mundo: eje temático, nombres, lugares, cronología y reglas de escritura. Todo texto de lore (Códice, vídeos) se escribe contra ella. |
 | `DESIGN-ARCHIVE.md` | Historia del diseño | Texto retirado de `DESIGN.md` (v0.1, v0.2, franja infinita, marea, gemas). No es fuente de verdad; se consulta solo por el porqué de una decisión pasada. |
 | `TECHNICAL.md` | Arquitectura C / NDS | Toolchain, presupuestos, pipeline de assets y render, dependencias de host y deuda técnica. Lo propio del ARPG, en su §5. |
 | `AGENTS.md` | Proceso y Reglas | Protocolo de trabajo, workflow de desarrollo para Nintendo DS y verificación de cambios. |
-| `STATUS.md` | Estado y Registro | Estado de `main` para retomar el trabajo y sus ~6 últimas entregas verificadas; las anteriores pasan a `STATUS-ARCHIVE.md`. |
+| `STATUS.md` | Estado y Registro | Estado de `roguelike` para retomar el trabajo y sus ~6 últimas entregas verificadas; las anteriores pasan a `STATUS-ARCHIVE.md`. |
 | `STATUS-ARPG.md` | Estado (ARPG) | Lo mismo para el prototipo ARPG. |
 | `assets/MANIFEST.md` | Catálogo de assets | Qué asset alimenta qué parte del juego, con qué script se genera y dónde se guarda. Ciclo de vida de los assets: su §0. |
 | `walkthroughs/` | Documentación por sesión | Un `walkthrough.md` por entrega, con su evidencia en `assets/`. Índice en `walkthroughs/README.md`. |
@@ -23,14 +23,14 @@ El repositorio cuenta con fuentes de verdad canónicas sin duplicación:
 
 Si una regla o cifra aparece en dos documentos, uno de ellos sobra: dejarla en su fuente canónica y referenciarla desde el otro.
 
-**MDs idénticos en las dos ramas principales.** Todos los documentos de la tabla de arriba (salvo `walkthroughs/`, que viaja con su rama) son iguales byte a byte en `main` y `proto/arpg`; solo diverge el código. Al cerrar una entrega en una de las dos ramas, en el mismo cierre se llevan a la otra:
+**MDs idénticos en las dos ramas principales.** Todos los documentos de la tabla de arriba (salvo `walkthroughs/`, que viaja con su rama) son iguales byte a byte en `arpg` y `roguelike`; solo diverge el código. Al cerrar una entrega en una de las dos ramas, en el mismo cierre se llevan a la otra:
 ```bash
 # desde un worktree de la otra rama principal
 git diff --stat <sync-anterior> <rama-destino> -- '*.md'   # si la otra rama también los tocó, fusionar a mano
 git checkout <rama-origen> -- AGENTS.md ONBOARDING.md DESIGN.md DESIGN-ARPG.md DESIGN-ARCHIVE.md TECHNICAL.md LORE.md STATUS.md STATUS-ARPG.md STATUS-ARCHIVE.md assets/MANIFEST.md
 git commit -m "docs: sincroniza MDs desde <rama-origen>"
 ```
-Comprobación rápida: `git diff --stat main proto/arpg -- AGENTS.md ONBOARDING.md DESIGN*.md TECHNICAL.md LORE.md STATUS*.md assets/MANIFEST.md` debe salir vacío.
+Comprobación rápida: `git diff --stat arpg roguelike -- AGENTS.md ONBOARDING.md DESIGN*.md TECHNICAL.md LORE.md STATUS*.md assets/MANIFEST.md` debe salir vacío.
 
 ---
 
@@ -42,13 +42,13 @@ Comprobación rápida: `git diff --stat main proto/arpg -- AGENTS.md ONBOARDING.
 3a. **Reparto RAM / cartucho:** solo el héroe y la interfaz van dentro del programa; todo enemigo o jefe nuevo va a `nitrofiles/chars/`, a un grupo de `source/chars_pool.c` y a la declaración de su sala, y se carga en la pantalla de carga; sombras siempre a 1 bpp; nada se lee del cartucho en combate salvo como respaldo. Detalle y cifras en `TECHNICAL.md` §3.3.1.
 4. **Verificación en dos fases (primera versión rápida vs cierre)**:
    - **Fase 1 — Primera versión e iteración:** prioridad absoluta a entregar algo compilado y visible/jugable cuanto antes. **Prohibido** ejecutar `pytest` o `run-scenario.ps1` en bucle tras cada micro-cambio o como "línea base" antes de editar (salvo petición expresa del usuario o depuración de lógica pura). Evitar subagentes si la tarea se resuelve leyendo 2-3 archivos directamente con `rg`. Ciclo rápido: leer lo mínimo → editar → compilar ROM (`build-project.ps1`, sin warnings nuevos) → enseñar captura/GIF o preparar subida a la DS.
-   - **Fase 2 — Cierre (solo cuando el usuario apruebe la versión para mergear a `main`), una sola pasada:** compilar sin warnings nuevos; los escenarios de la feature (`run-scenarios.ps1 -Tag <feature>` o `-Filter`); `run-host-tests.ps1` (una vez, con `-Filter` si basta) **solo si el cambio toca lo que vigilan**: pipeline de assets y bakers, kit/compositor de la catedral, navegación y marea, blitter, volumen de impacto, tabla de armas o vida de enemigos, o si añade `float` o colores de efectos; la batería completa de escenarios **solo en los hitos de versión** (`DESIGN.md` §6.9) o cuando el usuario la pida; evidencia visual en `walkthroughs/`, `STATUS.md` y rendimiento en DS si aplica (regla 6). Si algo falla, se arregla y se repite solo lo que falló. En `STATUS.md` basta «tests y escenarios PASS»; no se apuntan recuentos.
+   - **Fase 2 — Cierre (solo cuando el usuario apruebe la versión para mergear a su rama base), una sola pasada:** compilar sin warnings nuevos; los escenarios de la feature (`run-scenarios.ps1 -Tag <feature>` o `-Filter`); `run-host-tests.ps1` (una vez, con `-Filter` si basta) **solo si el cambio toca lo que vigilan**: pipeline de assets y bakers, kit/compositor de la catedral, navegación y marea, blitter, volumen de impacto, tabla de armas o vida de enemigos, o si añade `float` o colores de efectos; la batería completa de escenarios **solo en los hitos de versión** (`DESIGN.md` §6.9) o cuando el usuario la pida; evidencia visual en `walkthroughs/`, `STATUS.md` y rendimiento en DS si aplica (regla 6). Si algo falla, se arregla y se repite solo lo que falló. En `STATUS.md` basta «tests y escenarios PASS»; no se apuntan recuentos.
 4a. **Navegador solo headless:** toda validación con navegador usa Chromium/Playwright en modo headless explícito.
 4b. **Qué tests se escriben** (detalle en la skill `ds-game-dev`, `references/verification-levels.md` y `host-tests.md`):
    - Un test nuevo solo si detecta un fallo real que ni un escenario ni la vista detectarían: lógica pura (compilando el C en el host), presupuestos (tiles, VRAM, ROM), datos generados por el pipeline o paridad Python/C.
    - **Prohibidos los contratos de texto:** tests que abren `source/*.c` y buscan nombres, `#define`, llamadas o cifras copiadas. Se rompen con un renombrado y no detectan que el juego falle. Las normas globales (sin `float`/`double`, paletas de efectos desaturadas) viven solo en `tests/test_guardrails.py`; se amplía ese archivo en vez de crear otro.
    - Un escenario de la batería debe comprobar estado (`state_changes`). Los que solo generan capturas o comparan variantes de arte llevan `"suite": false` (y `"evidence_only": true` si no tienen aserciones); los de rendimiento en DeSmuME, también `"suite": false` (regla 6).
-   - Todo test de `tests/` está declarado en `hostTests` de `.ds-game-dev/project.json` y pasa en `main`; si deja de tener sentido, se borra.
+   - Todo test de `tests/` está declarado en `hostTests` de `.ds-game-dev/project.json` y pasa en su rama principal; si deja de tener sentido, se borra.
 5. **Escenarios de prueba headless**:
    - **Precondición geométrica obligatoria:** al escribir o modificar un escenario (`scenarios/*.json`), verificar que las coordenadas del actor crucen de verdad la entidad o volumen a probar (muro, oclusión, proyectil). Nunca probar oclusión o colisión en suelo abierto.
    - **Nomenclatura verídica:** prohibido nombrar eventos o capturas como `behind_wall_occluded` o similar si la geometría en esas coordenadas no produce lo que el nombre dice.
@@ -107,17 +107,17 @@ Comprobación rápida: `git diff --stat main proto/arpg -- AGENTS.md ONBOARDING.
 ## Protocolo de Sesiones Atómicas, Ramas y Worktrees
 
 1. **Un Chat = Una Sesión Atómica:** cada conversación se dedica a una feature, fix u optimización concreta.
-2. **Ramas:** dos ramas principales en paralelo: `main` (roguelike) y `proto/arpg` (ARPG). Cada una integra sus propias entregas. `feat/<nombre>`, `fix/<nombre>`, `perf/<nombre>`, `docs/<nombre>` o `proto/<nombre>` para el trabajo aislado.
-3. **Worktrees obligatorios** para cada tarea sustancial, bajo `.worktrees/` (ignorado por git), **tanto si se parte de `main` como de `proto/arpg`** (nunca trabajar ni compilar en paralelo sobre `.worktrees/arpg` directamente):
+2. **Ramas:** dos ramas principales en paralelo: `arpg` (ARPG, la principal y rama por defecto en GitHub) y `roguelike` (roguelike por encuentros, congelado). No hay rama `main` (renombradas el 2026-11-26). Cada una integra sus propias entregas. `feat/<nombre>`, `fix/<nombre>`, `perf/<nombre>`, `docs/<nombre>` o `proto/<nombre>` para el trabajo aislado.
+3. **Worktrees obligatorios** para cada tarea sustancial, bajo `.worktrees/` (ignorado por git), **tanto si se parte de `arpg` como de `roguelike`** (nunca trabajar ni compilar en paralelo sobre `.worktrees/arpg` directamente):
    ```bash
-   git worktree add .worktrees/<nombre> -b feat/<nombre> <main|proto/arpg>
+   git worktree add .worktrees/<nombre> -b feat/<nombre> <arpg|roguelike>
    ```
-   - Todo el trabajo y las compilaciones de la sesión se hacen en ese worktree propio, y al cerrar se fusiona de vuelta a su rama base (`main` o `proto/arpg`) antes de borrarlo. Las ROMs `dungeonds*.nds` de la raíz del repo principal no son la versión de trabajo.
+   - Todo el trabajo y las compilaciones de la sesión se hacen en ese worktree propio, y al cerrar se fusiona de vuelta a su rama base (`arpg` o `roguelike`) antes de borrarlo. Las ROMs `dungeonds*.nds` de la raíz del repo principal no son la versión de trabajo.
    - **Grafo graphify:** ver la sección graphify, abajo.
 4. **Commits:**
    - Añadir archivos por ruta (`git add <rutas>`); nunca `git add -A`, `git add .` ni `git commit -a`. Revisar `git status --short` antes de cada commit.
    - Commit, merge y push solo cuando el usuario lo pida o lo apruebe para esa entrega.
-5. **Cierre:** al terminar, fusionar a `main` y limpiar:
+5. **Cierre:** al terminar, fusionar a su rama base y limpiar:
    - **Revisar los MDs antes de cerrar (obligatorio):** repasar lo que cambió la sesión (comportamiento, cifras, controles, enemigos, assets, variantes, toolchain, reglas de proceso) y actualizar en la misma entrega cada documento afectado según la taxonomía de arriba (`DESIGN.md` o `DESIGN-ARPG.md` sin parches «corrige lo de arriba» ni historia de la decisión; lo retirado va a `DESIGN-ARCHIVE.md`). `STATUS.md`/`STATUS-ARPG.md` guardan ~6 entregas: al añadir una, la más vieja pasa a `STATUS-ARCHIVE.md`. Después, sincronizar los MDs con la otra rama principal (arriba, «MDs idénticos»). Si ninguno cambia, decirlo en una línea en el walkthrough. Un texto obsoleto es peor que ninguno: se corrige o se mueve al archivo, no se deja.
    - Mover los archivos ya usados de `assets/inbox/` a `assets/inbox/processed/` en el repo principal y confirmar que no quedan zips/fbx procesados huérfanos en `inbox/`.
    - Si el usuario pidió cerrar o consolidar la sesión, commitear también `DESIGN.md`, `STATUS.md`, `TECHNICAL.md` y `walkthroughs/` sin pedir una segunda confirmación.
@@ -136,11 +136,11 @@ Comprobación rápida: `git diff --stat main proto/arpg -- AGENTS.md ONBOARDING.
 7. **Título del chat con sentido:** el título automático copia las primeras palabras del usuario («Hola, mira…», «Vale, escucha…») y no sirve. En cuanto quede claro de qué va la tarea (puede ser en el primer mensaje o en el tercero), el agente pone a su sesión un título corto que la describa (3-7 palabras, en castellano, p. ej. «Vídeo de lore del Liebre», «ARPG: menú de inventario»): en Claude Code con `set_session_title` sobre `self`. Si la tarea cambia de rumbo, se actualiza. **Al cerrar la sesión** (entrega mergeada o trabajo descartado), el agente antepone `CERRADO ` en mayúsculas al título (p. ej. «CERRADO Vídeo de lore del Liebre»), con la misma herramienta.
 8. **Etiqueta de estado del chat (Antigravity):**
    - Al iniciar una sesión en Antigravity (en cuanto exista título en `C:\Users\malfonso\.gemini\antigravity\annotations\<conversation-id>.pbtxt`), añadir el prefijo `[EN CURSO] ` al título si no tiene ya un tag de estado (`[EN CURSO]`, `[MERGEADO]` o `[ABANDONADO]`).
-   - Al acabar la sesión (al mergear a `main` o descartar el trabajo), actualizar el prefijo a `[MERGEADO] ` o `[ABANDONADO] ` según corresponda, tanto en `annotations\<conversation-id>.pbtxt` como en la columna `title` de `conversation_summaries.db`.
+   - Al acabar la sesión (al mergear a su rama base o descartar el trabajo), actualizar el prefijo a `[MERGEADO] ` o `[ABANDONADO] ` según corresponda, tanto en `annotations\<conversation-id>.pbtxt` como en la columna `title` de `conversation_summaries.db`.
 
 ## graphify
 
-El grafo `graphify-out/` (no versionado) sirve para dudas arquitectónicas amplias: `graphify query "<pregunta>"`, `graphify path "<A>" "<B>"`, `graphify explain "<concepto>"` (o MCP `query_graph` con `project_path`). Si ya sabes el archivo o símbolo, usa `rg`. Si existe `graphify-out/wiki/index.md`, úsalo para navegar; `GRAPH_REPORT.md` solo para revisiones amplias. El worktree nace sin grafo: no lo copies al arrancar salvo que vayas a consultarlo. **Al mergear en `main`**, ejecutar `graphify update .` (AST-only, sin API); los archivos sucios de `graphify-out/` son normales. Ejecutable: `$env:GRAPHIFY_EXE` o `C:/Users/malfonso/AppData/Local/Packages/PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0/LocalCache/local-packages/Python313/Scripts/graphify.exe`.
+El grafo `graphify-out/` (no versionado) sirve para dudas arquitectónicas amplias: `graphify query "<pregunta>"`, `graphify path "<A>" "<B>"`, `graphify explain "<concepto>"` (o MCP `query_graph` con `project_path`). Si ya sabes el archivo o símbolo, usa `rg`. Si existe `graphify-out/wiki/index.md`, úsalo para navegar; `GRAPH_REPORT.md` solo para revisiones amplias. El worktree nace sin grafo: no lo copies al arrancar salvo que vayas a consultarlo. **Al mergear en `arpg` o `roguelike`**, ejecutar `graphify update .` (AST-only, sin API); los archivos sucios de `graphify-out/` son normales. Ejecutable: `$env:GRAPHIFY_EXE` o `C:/Users/malfonso/AppData/Local/Packages/PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0/LocalCache/local-packages/Python313/Scripts/graphify.exe`.
 - Copiar y actualizar en un worktree: `cp -r graphify-out .worktrees/<nombre>/ && (cd .worktrees/<nombre> && "$GRAPHIFY_EXE" update .)` (sin `&`).
 - Con `/graphify`, usar la skill instalada antes de nada.
 
