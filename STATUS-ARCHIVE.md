@@ -1455,3 +1455,7 @@ Entregas del 2026-11-14 al 2026-11-18, notas de estado técnico y ramas aparcada
 ## Entrega archivada desde STATUS.md (2026-11-26)
 
 - **Ojo del Tribunal: sentencia escrita en el suelo (`feat/ojo-sentencia`, 2026-11-23, en `main` y `proto/arpg`):** el Ojo ya no apunta con banda verde ni dispara un haz: escribe en el suelo una grieta con ojos que te sigue, se fija hasta el muro, cuenta atrás con sus ojos y estalla toda a la vez en llamas verdes; la cabeza solo abre la boca. El daño es esa franja desde sus pies. Builds por defecto y `perf` sin avisos, guardrails PASS, captura de la ROM. **Pendiente:** medir `perf` en la DS (rendimiento sin certificar); los escenarios `ojo-tribunal` ya fallaban antes por aserciones desfasadas. [`walkthrough`](walkthroughs/ojo-sentencia/walkthrough.md)
+
+## Entrega archivada desde STATUS-ARPG.md (2026-11-26)
+
+- **Arcón: alijo sin pisar la filigrana (`fix/arpg-inv-alijo`, 2026-11-24, en `proto/arpg`):** maquetación B «Respiro» elegida en ronda A/B/C: alijo y bolsa 4x4 de 26 px alineadas, margen de 5 px, títulos «Alijo» y «Bolsa», fila inferior con ayuda y cera; las espadas caben en sus casillas; pestañas repartidas con hueco igual y centradas en todos los modos. La cabecera de la pantalla superior muestra el icono del viril de la escuela (Pecho sigue con rombo). Verificado: builds 0 avisos y escenario `arpg_inv_alijo`; no probado en la DS (menú); sin revisar a ojo las pestañas en pausa y Crisol. [Walkthrough](walkthroughs/arpg-inv-alijo/walkthrough.md).
