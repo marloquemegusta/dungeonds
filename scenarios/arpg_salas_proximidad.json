@@ -1,6 +1,6 @@
 {
  "name": "arpg_salas_proximidad",
- "description": "Aparicion por proximidad de los grupos de sala: cada miembro se pone cuando el heroe se acerca a su puesto (a menos de 288 px en Y). Cruza las salas de 3 bloques y las de 1 y 2 con el heroe en dios: los miembros puestos en total son los del poster (sala 3: 35) y nunca hay mas vivos que los del tope (24); ningun miembro se duplica.",
+ "description": "Aparicion por proximidad de los grupos de sala: cada miembro se pone cuando el heroe se acerca a su puesto (a menos de 288 px en Y). Cruza las salas de 3 bloques y las de 1 y 2 con el heroe en dios: los miembros puestos en total son los de los grupos de s_groups (sala 3, Nave 3: 18) y nunca hay mas vivos que los del tope (24); ningun miembro se duplica.",
  "suite": true,
  "state": {
   "elf": "../.ds-game-dev/build/out/dungeonds.elf",
@@ -1162,7 +1162,7 @@
    {
     "at": "r03_e10",
     "field": "members_placed",
-    "equals": 35
+    "equals": 18
    },
    {
     "at": "r03_e10",
@@ -1172,27 +1172,27 @@
    {
     "at": "r03_e0",
     "field": "alive",
-    "equals": 10
+    "equals": 6
    },
    {
     "at": "r03_e1",
     "field": "alive",
-    "equals": 11
+    "equals": 6
    },
    {
     "at": "r03_e2",
     "field": "alive",
-    "equals": 12
+    "equals": 6
    },
    {
     "at": "r03_e3",
     "field": "alive",
-    "equals": 19
+    "equals": 8
    },
    {
     "at": "r02_e10",
     "field": "members_placed",
-    "equals": 27
+    "equals": 20
    },
    {
     "at": "r02_e10",
@@ -1202,27 +1202,27 @@
    {
     "at": "r02_e0",
     "field": "alive",
-    "equals": 9
+    "equals": 6
    },
    {
     "at": "r02_e1",
     "field": "alive",
-    "equals": 10
+    "equals": 6
    },
    {
     "at": "r02_e2",
     "field": "alive",
-    "equals": 11
+    "equals": 6
    },
    {
     "at": "r02_e3",
     "field": "alive",
-    "equals": 16
+    "equals": 8
    },
    {
     "at": "r09_e10",
     "field": "members_placed",
-    "equals": 27
+    "equals": 18
    },
    {
     "at": "r09_e10",
@@ -1232,27 +1232,27 @@
    {
     "at": "r09_e0",
     "field": "alive",
-    "equals": 10
+    "equals": 6
    },
    {
     "at": "r09_e1",
     "field": "alive",
-    "equals": 10
+    "equals": 6
    },
    {
     "at": "r09_e2",
     "field": "alive",
-    "equals": 10
+    "equals": 6
    },
    {
     "at": "r09_e3",
     "field": "alive",
-    "equals": 14
+    "equals": 8
    },
    {
     "at": "r00_e10",
     "field": "members_placed",
-    "equals": 20
+    "equals": 12
    },
    {
     "at": "r00_e10",
@@ -1262,27 +1262,27 @@
    {
     "at": "r00_e0",
     "field": "alive",
-    "equals": 6
+    "equals": 4
    },
    {
     "at": "r00_e1",
     "field": "alive",
-    "equals": 7
+    "equals": 4
    },
    {
     "at": "r00_e2",
     "field": "alive",
-    "equals": 8
+    "equals": 4
    },
    {
     "at": "r00_e3",
     "field": "alive",
-    "equals": 11
+    "equals": 4
    },
    {
     "at": "r01_e10",
     "field": "members_placed",
-    "equals": 23
+    "equals": 15
    },
    {
     "at": "r01_e10",
@@ -1292,27 +1292,27 @@
    {
     "at": "r01_e0",
     "field": "alive",
-    "equals": 6
+    "equals": 5
    },
    {
     "at": "r01_e1",
     "field": "alive",
-    "equals": 7
+    "equals": 5
    },
    {
     "at": "r01_e2",
     "field": "alive",
-    "equals": 8
+    "equals": 5
    },
    {
     "at": "r01_e3",
     "field": "alive",
-    "equals": 13
+    "equals": 6
    },
    {
     "at": "r06_e10",
     "field": "members_placed",
-    "equals": 21
+    "equals": 13
    },
    {
     "at": "r06_e10",
@@ -1322,27 +1322,27 @@
    {
     "at": "r06_e0",
     "field": "alive",
-    "equals": 7
+    "equals": 4
    },
    {
     "at": "r06_e1",
     "field": "alive",
-    "equals": 8
+    "equals": 4
    },
    {
     "at": "r06_e2",
     "field": "alive",
-    "equals": 10
+    "equals": 4
    },
    {
     "at": "r06_e3",
     "field": "alive",
-    "equals": 13
+    "equals": 5
    },
    {
     "at": "r07_e10",
     "field": "members_placed",
-    "equals": 23
+    "equals": 15
    },
    {
     "at": "r07_e10",
@@ -1352,27 +1352,27 @@
    {
     "at": "r07_e0",
     "field": "alive",
-    "equals": 7
+    "equals": 5
    },
    {
     "at": "r07_e1",
     "field": "alive",
-    "equals": 7
+    "equals": 5
    },
    {
     "at": "r07_e2",
     "field": "alive",
-    "equals": 7
+    "equals": 5
    },
    {
     "at": "r07_e3",
     "field": "alive",
-    "equals": 12
+    "equals": 6
    },
    {
     "at": "r08_e10",
     "field": "members_placed",
-    "equals": 23
+    "equals": 15
    },
    {
     "at": "r08_e10",
@@ -1382,27 +1382,27 @@
    {
     "at": "r08_e0",
     "field": "alive",
-    "equals": 8
+    "equals": 5
    },
    {
     "at": "r08_e1",
     "field": "alive",
-    "equals": 9
+    "equals": 5
    },
    {
     "at": "r08_e2",
     "field": "alive",
-    "equals": 9
+    "equals": 5
    },
    {
     "at": "r08_e3",
     "field": "alive",
-    "equals": 12
+    "equals": 6
    },
    {
     "at": "r12_e6",
     "field": "members_placed",
-    "equals": 17
+    "equals": 12
    },
    {
     "at": "r12_e6",
@@ -1412,22 +1412,22 @@
    {
     "at": "r12_e0",
     "field": "alive",
-    "equals": 7
+    "equals": 6
    },
    {
     "at": "r12_e1",
     "field": "alive",
-    "equals": 8
+    "equals": 6
    },
    {
     "at": "r12_e2",
     "field": "alive",
-    "equals": 8
+    "equals": 6
    },
    {
     "at": "r12_e3",
     "field": "alive",
-    "equals": 12
+    "equals": 8
    }
   ]
  }

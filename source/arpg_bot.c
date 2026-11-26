@@ -1,3 +1,4 @@
+#include "arpg_quest.h"
 #include "arpg_bot.h"
 
 // Translation unit never empty (ISO C) when ARPG_BOT=0.
@@ -443,7 +444,7 @@ static int script_door(const ArpgBotRoom *ri, int cur, int count) {
         }
         if (t->kind == K_E) {
             if (((s_cleared_ever >> t->dest) & 1) || ((s_b_visited >> t->dest) & 1) || s_fail[t->dest] >= 2) continue;
-            if (t->dest == 13 && !g_arpg.key_have) {                               // the chapel with the reja: no key, no way in
+            if (t->dest == 13 && !arpg_quest_has(QUEST_LLAVE_CAPILLA)) {                               // the chapel with the reja: no key, no way in
                 if (count && g_arpg_bot_stats.script_skips < 0xFFFF) g_arpg_bot_stats.script_skips++;
                 continue;
             }
