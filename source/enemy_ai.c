@@ -445,10 +445,10 @@ static int bodyguard_step(Enemy *e, Enemy *enemies, int num_enemies, int idx, in
 }
 
 #if ENCOUNTERS_PROTO
-// Monja de cera praying at her post (ENEMY_HOME_GUARD + PRAY, Capilla del parroco): once a second she heals ARPG_EXVOTO_HEAL_PCT %
+// Monja de cera praying (also walking after her pack): every ARPG_EXVOTO_HEAL_PERIOD frames she heals ARPG_EXVOTO_HEAL_PCT %
 // of the life of the Exvoto family within ARPG_EXVOTO_HEAL_RADIUS ground px (green numbers, like the Monja's heal).
 static void exvoto_pray_heal(Enemy *e, Enemy *enemies, int num_enemies, int idx) {
-    if (++e->state_timer % ARPG_MONJA_HEAL_PERIOD != (idx % ARPG_MONJA_HEAL_PERIOD)) return;
+    if (++e->state_timer % ARPG_EXVOTO_HEAL_PERIOD != (idx % ARPG_EXVOTO_HEAL_PERIOD)) return;
     if (num_enemies > MAX_GAMEPLAY_ENEMIES) num_enemies = MAX_GAMEPLAY_ENEMIES;
     int healed_any = 0;
     for (int j = 0; j < num_enemies; j++) {
@@ -470,16 +470,21 @@ static void exvoto_pray_heal(Enemy *e, Enemy *enemies, int num_enemies, int idx)
 }
 // Her pack as she sees it: 0 = she is the last living enemy of it (not counting allies or other praying Monjas de cera),
 // 1 = the others are all still asleep (DORMANT), 2 = at least one is awake.
-static int monja_pack_view(const Enemy *m, const Enemy *enemies, int num_enemies, int idx) {
+static int monja_pack_view(const Enemy *m, const Enemy *enemies, int num_enemies, int idx, int *cx, int *cy) {
     if (num_enemies > MAX_GAMEPLAY_ENEMIES) num_enemies = MAX_GAMEPLAY_ENEMIES;
-    int view = 0;
+    int view = 0, n = 0, sx = 0, sy = 0;
     for (int j = 0; j < num_enemies; j++) {
         const Enemy *o = &enemies[j];
         if (j == idx || !o->active || o->hp <= 0 || o->pack != m->pack || g_enemy_ally[j]) continue;
         if (o->type == ENEMY_TYPE_EXVOTO && o->state == ENEMY_STATE_PRAY) continue;
-        if (o->state != ENEMY_STATE_DORMANT) return 2;
-        view = 1;
+        if (o->state != ENEMY_STATE_DORMANT) {
+            view = 2;
+            sx += TO_INT(o->x);
+            sy += TO_INT(o->y);
+            n++;
+        } else if (view == 0) view = 1;
     }
+    if (n > 0) { *cx = div32(sx, n); *cy = div32(sy, n); }   // centre of her awake, living pack (where she walks to)
     return view;
 }
 #endif
@@ -518,7 +523,7 @@ static void update_exvoto(Enemy *e, Enemy *enemies, int num_enemies, int idx,
                 // and fights as a normal Exvoto only when she is the last living enemy of her pack. A hit only staggers her.
                 // beam_len (Ojo-only field) caches her view of the pack: 0 = alone, 1 = asleep, 2 = awake; refreshed every 16 frames.
                 if (((s_ai_tick + (uint32_t)idx) & 15u) == 0) {
-                    e->beam_len = monja_pack_view(e, enemies, num_enemies, idx);
+                    e->beam_len = monja_pack_view(e, enemies, num_enemies, idx, &e->beam_ux, &e->beam_uy);
                     if (e->beam_len == 0) {
                         exvoto_wake_one(e);
                         break;
@@ -533,34 +538,50 @@ static void update_exvoto(Enemy *e, Enemy *enemies, int num_enemies, int idx,
                     }
                     break;
                 }
-                if (e->gesture) {                                   // fleeing: normal walk, away from the hero
-                    if (ground_dist_sq >= ARPG_MONJA_KEEP_FLEE_STOP * ARPG_MONJA_KEEP_FLEE_STOP) {
-                        e->gesture = 0;
-                        e->char_id = exvoto_pose_char(e->type, e->kneel ? EXVOTO_POSE_PRAY_KNEEL : EXVOTO_POSE_PRAY_STAND);
+                // Placement (decided 2026-11-26): she walks slowly after the centre of her awake pack (beam_ux / beam_uy) while she
+                // keeps praying (the heal runs on every frame, walking or not), never closer than KEEP_FLEE_STOP to the hero and
+                // flees from him under KEEP_FLEE. strafe_dir remembers the last mode (-1 flee, +1 follow); gesture = she is walking.
+                int mode = 0;
+                if (ground_dist_sq < ARPG_MONJA_KEEP_FLEE * ARPG_MONJA_KEEP_FLEE) mode = -1;
+                else if (e->gesture && e->strafe_dir < 0 && ground_dist_sq < ARPG_MONJA_KEEP_FLEE_STOP * ARPG_MONJA_KEEP_FLEE_STOP) mode = -1;
+                else if (ground_dist_sq >= ARPG_MONJA_KEEP_FLEE_STOP * ARPG_MONJA_KEEP_FLEE_STOP) {
+                    const int cdx = e->beam_ux - wx;
+                    const int cdy = e->beam_uy - wy;
+                    const int lim = e->gesture ? ARPG_EXVOTO_FOLLOW_STOP : ARPG_EXVOTO_FOLLOW_START;
+                    if (cdx * cdx + GROUND_DY2(cdy) > lim * lim) mode = 1;
+                }
+                if (mode != 0) {
+                    if (!e->gesture) {
+                        e->gesture = 1;
+                        e->char_id = exvoto_up_char(e);
                         e->frame = 0;
                         e->anim_timer = 0;
-                        break;
                     }
+                    e->strafe_dir = mode;
                     int ux, uy;
-                    if (!aim_vector(px, py, wx, wy, &ux, &uy)) { ux = 0; uy = 128; }   // from the hero toward her
-                    fixed spd = burn_slow(e, tuning->speed);
+                    const int ok = (mode < 0) ? aim_vector(px, py, wx, wy, &ux, &uy)          // from the hero toward her
+                                              : aim_vector(wx, wy, e->beam_ux, e->beam_uy, &ux, &uy);   // toward her pack
+                    if (!ok) { ux = 0; uy = 128; }
+                    fixed spd = burn_slow(e, mode < 0 ? tuning->speed : (tuning->speed * ARPG_EXVOTO_FOLLOW_PCT) / 100);
                     fixed vx = (fixed)((ux * (int32_t)spd) >> 8);
                     fixed vy = (fixed)((uy * (int32_t)spd) >> 8);
-                    const int moved = move_with_slide(&e->x, &e->y, vx, vy);
-                    (void)moved;
-                    e->dir = dir_from_vector(player_x - e->x, player_y - e->y);   // backs away without turning her back: walk played in reverse
+                    (void)move_with_slide(&e->x, &e->y, vx, vy);
+                    e->dir = dir_from_vector(player_x - e->x, player_y - e->y);   // she never turns her back on the hero
+                    const int away = (mode < 0) || (ux * dx + 4 * uy * dy < 0);   // walking away from him: the walk plays in reverse
                     int fp = g_characters[e->char_id].anim_period;
                     if (fp <= 0) fp = 4;
                     e->anim_timer++;
-                    e->frame = (PLAYER_NUM_FRAMES - 1) - ((e->anim_timer / fp) % PLAYER_NUM_FRAMES);
+                    const int step = (e->anim_timer / fp) % PLAYER_NUM_FRAMES;
+                    e->frame = away ? (PLAYER_NUM_FRAMES - 1) - step : step;
+                    exvoto_pray_heal(e, enemies, num_enemies, idx);
                     break;
                 }
-                if (ground_dist_sq < ARPG_MONJA_KEEP_FLEE * ARPG_MONJA_KEEP_FLEE) {
-                    e->gesture = 1;
-                    e->char_id = exvoto_up_char(e);
+                if (e->gesture) {                                   // stands again: back to the praying pose
+                    e->gesture = 0;
+                    e->strafe_dir = 0;
+                    e->char_id = exvoto_pose_char(e->type, e->kneel ? EXVOTO_POSE_PRAY_KNEEL : EXVOTO_POSE_PRAY_STAND);
                     e->frame = 0;
                     e->anim_timer = 0;
-                    break;
                 }
                 exvoto_pray_heal(e, enemies, num_enemies, idx);
                 int period = g_characters[e->char_id].anim_period;
