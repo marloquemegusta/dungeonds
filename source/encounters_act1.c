@@ -1,5 +1,6 @@
 #include "campanero_boss_text.h"
 #include "encounters_act1.h"
+#include "allies.h"
 #include "lab_tuning.h"
 #include "sound_test.h"
 
@@ -1539,6 +1540,37 @@ static int altar_pos(int *x, int *y) { (void)x; (void)y; return 0; }
 // and already wounded, in the current room so the Monja's green heals show on them. Clears the request.
 static void tier_debug_spawn(Enemy *enemies, int max_enemies, int px, int py) {
     static const EnemyType types[3] = { ENEMY_TYPE_BEBE, ENEMY_TYPE_PARROCO, ENEMY_TYPE_MONJA };
+    if (g_tier_debug.spawn == 2) {     // bodyguard scene: a Monja 100 px north (200 ground px) and a Monaguillo 50 px west of the line, so he must run to the line
+        for (int t = 0; t < 2; t++) {
+            int slot = -1;
+            for (int s = 0; s < max_enemies; s++) if (!enemies[s].active) { slot = s; break; }
+            if (slot < 0) break;
+            g_enemy_ally[slot] = 0;
+            Enemy *e = &enemies[slot];
+            const EnemyType ty = t ? ENEMY_TYPE_MONJA : ENEMY_TYPE_MONAGUILLO;
+            memset(e, 0, sizeof(*e));
+            e->x = TO_FIXED(px + (t ? 0 : -50));
+            e->y = TO_FIXED(py - (t ? 100 : 80));
+            e->active = 1;
+            e->type = ty;
+            e->pack = stage_at_py(py);
+            e->char_id = enemy_type_char_id(ty);
+            e->max_hp = g_enemy_tuning[ty].max_hp;
+            e->hp = e->max_hp;
+            e->strafe_dir = 1;
+            if (t) {
+                e->state = ENEMY_STATE_PRAY;
+                e->char_id = CHAR_EXVOTO_PRAY_STAND;
+                *enemy_home_x(e) = TO_INT(e->x);
+                *enemy_home_y(e) = TO_INT(e->y);
+                e->home_flags = ENEMY_HOME_SET | ENEMY_HOME_GUARD;
+            } else {
+                e->state = ENEMY_INITIAL_STATE(ty);
+            }
+        }
+        g_tier_debug.spawn = 0;
+        return;
+    }
     // Tight formation: the two fighters stay within the Monja's ARPG_MONJA_PRAY_RADIUS (48 ground px) so her
     // heals land, and she stands a little above the hero (just out of her own brawl range).
     static const int offs[3][2] = { { 16, -14 }, { -16, -16 }, { 0, -30 } };
