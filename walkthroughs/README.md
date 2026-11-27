@@ -207,3 +207,4 @@ Resúmenes acumulativos y auditables de cada entrega y avance de desarrollo en `
 | 188 | ARPG: aviso de grupos a 200 px (antes 96 px) | [`arpg-aviso-grupos/`](arpg-aviso-grupos/walkthrough.md) | `arpg_aviso_grupos` PASS y verificador aparte; jefe sin cubrir en emulador; sin DS |
 | 189 | ARPG: el Monaguillo guardaespaldas avanza hacia el héroe mientras carga el Rayo | [`monaguillo-avanza/`](monaguillo-avanza/walkthrough.md) | Build, 6/6 PASS con verificador aparte en la ROM; no medido en la DS |
 | 190 | ARPG: mini ROM genérica desde un JSON (`tools/minirom.py`) | [`mini-rom/`](mini-rom/walkthrough.md) | Abanderado y pruebas-ojo PASS; probada en la DS (Abanderado); reinicio tras matar al jefe sin probar en DS |
+| 191 | ARPG: rayo cargado con halo de carga y disparo Gloria (por capas) | [`laser-gloria/`](laser-gloria/walkthrough.md) | Build, guardrails y sniper PASS (hit_sweep ya fallaban en la base); 60 FPS sin medir en la DS |
