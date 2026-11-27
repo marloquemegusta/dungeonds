@@ -158,7 +158,7 @@ def gen_scenario(spec):
         "error": {"offset": 14, "type": "u8"}, "room_ok": {"offset": 15, "type": "u8"},
         "frames": {"offset": 20, "type": "u32"}, "boss_hp": {"offset": 16, "type": "s32"}, "frozen": {"offset": 24, "type": "u8"},
         "hero_hp": {"symbol": "gps", "offset": 0, "type": "s32"},
-        "tp_boss": {"offset": 25, "type": "u8"}, "hero_x": {"offset": 68, "type": "s16"}, "hero_y": {"offset": 70, "type": "s16"},
+        "tp_boss": {"offset": 25, "type": "u8"}, "mech_mask": {"offset": 72, "type": "u32"}, "hits": {"offset": 76, "type": "u16"}, "hero_x": {"offset": 68, "type": "s16"}, "hero_y": {"offset": 70, "type": "s16"},
     }
     # Walk towards the first listed enemy (screen dy < 0 is north); towards the north otherwise.
     for i in range(min(4, len(en)) if listed else 0):
@@ -182,10 +182,10 @@ def gen_scenario(spec):
     for i in range(4):                                       # Rayo: hold the stylus towards the enemy, release to fire
         steps.append({"touch": {"x": tx, "y": ty}, "frames": 60})
         steps.append({"release": True, "frames": 20})
-    if p["reaparecen"] and listed:        # kill the listed enemies by emptying their life (slots 0..n-1 after a fresh start)
+    if p["reaparecen"] and listed and len(en) > 0:        # kill the listed enemies by emptying their life (slots 0..n-1 after a fresh start)
         steps.append({"poke": [{"symbol": "en", "offset": 124 * i + 28, "type": "s32", "value": 0} for i in range(len(en))], "frames": 30})
     steps.append({"frames": 20, "capture": "04_golpes", "state_capture": "04_golpes"})
-    if p["reaparecen"] and listed:
+    if p["reaparecen"] and listed and len(en) > 0:
         steps.append({"frames": 5, "wait_until": {"field": "enemies", "equals": len(en), "timeout_frames": 1500},      # 120 game frames after each death
                       "capture": "05_reaparecen", "state_capture": "05_reaparecen"})
     steps.append({"poke": [{"field": "hero_hp", "value": 0}], "frames": 60, "capture": "06_muerte", "state_capture": "06_muerte"})
@@ -196,21 +196,34 @@ def gen_scenario(spec):
         early += [{"at": "00a_colocados", "field": "e%d_alive" % i, "equals": 1},
                   {"at": "00a_colocados", "field": "e%d_shift" % i, "max_value": 24},    # free spot near the requested one
                   {"at": "00a_colocados", "field": "e%d_drift" % i, "max_value": 24}]    # has not wandered off yet
+    boss = spec["sala"].lower() == "cripta" or (listed and any(e["tipo"].lower() in ("abanderado", "campanero") for e in en))
+    can_hit = boss or (listed and len(en) > 0)      # the scenario stands next to the boss / first listed enemy and hits it
     changes = early + [
         {"at": "00_arranque", "field": "error", "equals": 0},
         {"at": "00_arranque", "field": "room_ok", "equals": 1},
-        {"at": "00_arranque", "field": "enemies", "equals": len(en)} if listed else
-        {"at": "00_arranque", "field": "enemies", "min_value": 1},
-        {"from": "00_arranque", "to": "04_golpes", "field": "enemy_hp", "max_delta": -1},
         {"at": "07_reinicio", "field": "room_ok", "equals": 1},
         {"at": "07_reinicio", "field": "restarts", "min_value": 1},
     ]
-    # Boss rooms (the Cripta, or a listed Abanderado/Campanero): the boss itself must lose life (the scenario stands next to it).
-    boss = spec["sala"].lower() == "cripta" or (listed and any(e["tipo"].lower() in ("abanderado", "campanero") for e in en))
+    if listed:
+        changes.append({"at": "00_arranque", "field": "enemies", "equals": len(en)})
+    elif boss:
+        changes.append({"at": "00_arranque", "field": "enemies", "min_value": 1})
+    if can_hit:
+        # Hits landed on the enemies are always counted; their life goes down, or (inmortales) stays full.
+        changes.append({"from": "00_arranque", "to": "04_golpes", "field": "hits", "min_delta": 1})
+        if p["enemigos_inmortales"]:
+            changes.append({"from": "00_arranque", "to": "04_golpes", "field": "enemy_hp", "min_delta": 0})
+        else:
+            changes.append({"from": "00_arranque", "to": "04_golpes", "field": "enemy_hp", "max_delta": -1})
     if boss:
         changes.append({"at": "00_arranque", "field": "boss_hp", "min_value": 1})
-        changes.append({"from": "00_arranque", "to": "04_golpes", "field": "boss_hp", "max_delta": -1})
-    if p["reaparecen"] and listed:
+        if p["enemigos_inmortales"]:
+            changes.append({"from": "00_arranque", "to": "04_golpes", "field": "boss_hp", "min_delta": 0})
+        else:
+            changes.append({"from": "00_arranque", "to": "04_golpes", "field": "boss_hp", "max_delta": -1})
+    if spec["heroe"]["mecanicas"]:
+        changes.append({"at": "00_arranque", "field": "mech_mask", "equals": (1 << len(spec["heroe"]["mecanicas"])) - 1})
+    if p["reaparecen"] and listed and len(en) > 0:
         changes.append({"at": "04_golpes", "field": "enemies", "max_value": len(en) - 1})       # something died first
         changes.append({"at": "05_reaparecen", "field": "enemies", "equals": len(en)})
     return {

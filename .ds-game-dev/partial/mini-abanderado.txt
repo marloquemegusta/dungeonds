@@ -10,8 +10,8 @@ archivo: chars/exvoto_pray_kneel.bin
 archivo: chars/exvoto_pray_stand.bin
 archivo: chars/exvoto_stand_up.bin
 archivo: chars/monaguillo.bin
+archivo: punch/gancho_d2.bin
 archivo: punch/gancho_d3.bin
-archivo: punch/gancho_d5.bin
 archivo: punch/punch_a_d4.bin
 archivo: punch/punch_a_d5.bin
 archivo: punch/punch_b_d4.bin

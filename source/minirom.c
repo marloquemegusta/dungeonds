@@ -28,6 +28,7 @@ static uint8_t s_type[MR_MAX_LIST];            // its EnemyType, to tell it from
 static int16_t s_px[MR_MAX_LIST], s_py[MR_MAX_LIST];   // where it was placed (respawn goes back there)
 static uint16_t s_dead_for[MR_MAX_LIST];
 static int16_t s_shift[MR_MAX_LIST];           // requested spot -> placed spot
+static int16_t s_prev_hp[64];                  // life of each slot last frame, to count hits
 static int s_dead_frames;
 static int s_booted;
 
@@ -69,6 +70,7 @@ void minirom_on_restart(void) {
     s_spawned = 0;
     s_dead_frames = 0;
     for (int i = 0; i < MR_MAX_LIST; i++) { s_slot[i] = -1; s_dead_for[i] = 0; }
+    memset(s_prev_hp, 0, sizeof(s_prev_hp));
     if (s_booted) g_minirom_dbg.restarts++;
 }
 
@@ -91,7 +93,7 @@ static void place_at(Enemy *enemies, int max_enemies, int i, int x, int y) {
     s_dead_for[i] = 0;
 }
 
-static int s_boss_x, s_boss_y, s_boss_seen;
+static int s_boss_x, s_boss_y, s_boss_seen;   // target of tp_boss: the boss, else the first listed enemy, else any enemy
 
 int minirom_teleport(int *x, int *y) {
     if (!g_minirom_dbg.tp_boss) return 0;
@@ -135,13 +137,19 @@ int minirom_frame(int hero_x, int hero_y, Enemy *enemies, int max_enemies) {
 
     int alive = 0, boss = 0;
     s_boss_seen = 0;
+    int any_x = 0, any_y = 0, any_seen = 0;
     int32_t hp_sum = 0;
     for (int i = 0; i < max_enemies; i++) {
         Enemy *e = &enemies[i];
-        if (!e->active) continue;
+        if (!e->active) { if (i < 64) s_prev_hp[i] = 0; continue; }
+        if (i < 64) {
+            if (s_prev_hp[i] > 0 && e->hp < s_prev_hp[i] && g_minirom_dbg.hits < 0xFFFF) g_minirom_dbg.hits++;
+            s_prev_hp[i] = (int16_t)(MR_INMORTALES && e->hp > 0 ? e->max_hp : e->hp);
+        }
         if (MR_INMORTALES && e->hp > 0) e->hp = e->max_hp;
         if (e->hp <= 0) continue;
         alive++;
+        if (!any_seen && e->hp > 0) { any_x = TO_INT(e->x); any_y = TO_INT(e->y); any_seen = 1; }
         hp_sum += e->hp;
         if (!boss && (e->type == ENEMY_TYPE_ABANDERADO || e->type == ENEMY_TYPE_CAMPANERO)) {
             boss = e->hp;
@@ -156,6 +164,16 @@ int minirom_frame(int hero_x, int hero_y, Enemy *enemies, int max_enemies) {
     g_minirom_dbg.enemy_hp = hp_sum;
     g_minirom_dbg.boss_hp = boss;
     g_minirom_dbg.hero_hp = g_player_state.hp;
+    if (!s_boss_seen) {
+        const int s0 = list_n() > 0 ? s_slot[0] : -1;
+        if (s0 >= 0 && enemies[s0].active && enemies[s0].hp > 0) { s_boss_x = TO_INT(enemies[s0].x); s_boss_y = TO_INT(enemies[s0].y); s_boss_seen = 1; }
+        else if (any_seen) { s_boss_x = any_x; s_boss_y = any_y; s_boss_seen = 1; }
+    }
+    {
+        uint32_t mm = 0;
+        for (int k = 0; k < MR_N_MECANICAS && k < 32; k++) if (arpg_inv_has_mechanic(MR_MECANICAS[k])) mm |= 1u << k;
+        g_minirom_dbg.mech_mask = mm;
+    }
     g_minirom_dbg.hero_x = (int16_t)hero_x;
     g_minirom_dbg.hero_y = (int16_t)hero_y;
     for (int i = 0; i < 4 && i < list_n(); i++) {

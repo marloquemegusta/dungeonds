@@ -29,7 +29,7 @@ typedef struct {
     int32_t boss_hp;       // 16 s32 life of the Abanderado / Campanero if one is alive, else 0
     uint32_t frames;       // 20 u32 frames since boot
     uint8_t frozen;        // 24 u8  1 while the boss intro freezes the game (main.c); minirom_frame() clears it
-    uint8_t tp_boss;       // 25 u8  scenarios write 1: the hero is put just south of the boss (if one is alive); cleared by the game
+    uint8_t tp_boss;       // 25 u8  scenarios write 1: the hero is put just south of the boss, else of the first listed enemy, else of any enemy; cleared by the game
     uint8_t pad2[2];       // 26
     struct {               // 28 + 10*i: the first 4 enemies of the "enemigos" list
         int16_t x, y;      //  +0 +2  s16 current position (px)
@@ -39,6 +39,8 @@ typedef struct {
         int16_t shift;     //  +8     s16 max(|dx|,|dy|) from the requested spot (hero + dx,dy) to the spot placed (free-spot search)
     } list[4];
     int16_t hero_x, hero_y;   // 68 70 s16 hero position (px)
+    uint32_t mech_mask;       // 72 u32 bit i = the i-th "mecanicas" of the JSON is equipped
+    uint16_t hits;            // 76 u16 times an enemy lost life since boot (counted before "inmortales" refills it)
 } MiniromDbg;
 extern volatile MiniromDbg g_minirom_dbg;
 

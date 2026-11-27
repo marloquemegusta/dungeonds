@@ -56,6 +56,14 @@
         "offset": 25,
         "type": "u8"
       },
+      "mech_mask": {
+        "offset": 72,
+        "type": "u32"
+      },
+      "hits": {
+        "offset": 76,
+        "type": "u16"
+      },
       "hero_x": {
         "offset": 68,
         "type": "s16"
@@ -422,17 +430,6 @@
         "equals": 1
       },
       {
-        "at": "00_arranque",
-        "field": "enemies",
-        "equals": 2
-      },
-      {
-        "from": "00_arranque",
-        "to": "04_golpes",
-        "field": "enemy_hp",
-        "max_delta": -1
-      },
-      {
         "at": "07_reinicio",
         "field": "room_ok",
         "equals": 1
@@ -441,6 +438,23 @@
         "at": "07_reinicio",
         "field": "restarts",
         "min_value": 1
+      },
+      {
+        "at": "00_arranque",
+        "field": "enemies",
+        "equals": 2
+      },
+      {
+        "from": "00_arranque",
+        "to": "04_golpes",
+        "field": "hits",
+        "min_delta": 1
+      },
+      {
+        "from": "00_arranque",
+        "to": "04_golpes",
+        "field": "enemy_hp",
+        "max_delta": -1
       },
       {
         "at": "04_golpes",
