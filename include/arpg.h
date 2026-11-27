@@ -54,7 +54,7 @@
 #define ARPG_MONJA_KEEP_FAR 115         // [TUNABLE-PLACEHOLDER] ground px: hero farther than this makes her walk closer
 #define ARPG_MONJA_KEEP_FAR_STOP 100    // [TUNABLE-PLACEHOLDER] ground px: she stops approaching (and prays) from this distance
 #define ARPG_EXVOTO_HEAL_PCT 5          // [TUNABLE-PLACEHOLDER] Monja de cera praying at a post (Capilla del parroco): % of max life healed per pulse (ARPG_EXVOTO_HEAL_PERIOD) to the Exvoto family around her
-#define ARPG_MONJA_HP 120               // [TUNABLE-PLACEHOLDER] praying wax nun (Monja curandera) life; the plain Exvoto keeps ENC_HP_EXVOTO
+#define ARPG_MONJA_HP 60                // [TUNABLE-PLACEHOLDER] praying wax nun (Monja curandera) life; the plain Exvoto keeps ENC_HP_EXVOTO
 #define ARPG_EXVOTO_HEAL_RADIUS 160     // [TUNABLE-PLACEHOLDER] ground px of that heal (dy counts double; was 80)
 #define ARPG_EXVOTO_HEAL_PERIOD 20      // [TUNABLE-PLACEHOLDER] frames between her heals (3 a second; was 60)
 #define ARPG_EXVOTO_FOLLOW_PCT 80       // [TUNABLE-PLACEHOLDER] % of the Exvoto's speed at which she walks after her pack while praying

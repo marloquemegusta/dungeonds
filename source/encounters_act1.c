@@ -1144,12 +1144,12 @@ typedef struct {
 // Mixed groups. The Monja de cera (RK_EXVOTO_PRAY) comes first: she takes the back slots and prays there; the Monaguillos
 // stand in front of her and the Bebes at the very front (slots fill from the back of the block).
 static const GroupDef s_groups[G_COUNT] = {
-    [G_REBANO]        = { "Rebaño",           1, 3, { { RK_EXVOTO_PRAY, 1 }, { RK_MONAGUILLO, 2 }, { RK_BEBE, 1 } } },
-    [G_PROCESION]     = { "Procesión",        1, 2, { { RK_MONAGUILLO, 3 }, { RK_BEBE, 1 } } },
-    [G_CORRILLO]      = { "Corrillo",         1, 3, { { RK_EXVOTO_PRAY, 1 }, { RK_MONAGUILLO, 2 }, { RK_BEBE, 2 } } },
-    [G_GUARDIA_MONJA] = { "Guardia de la monja", 2, 4, { { RK_EXVOTO_PRAY, 2 }, { RK_OJO, 1 }, { RK_MONAGUILLO, 1 }, { RK_BEBE, 1 } } },
+    [G_REBANO]        = { "Rebaño",           1, 2, { { RK_EXVOTO_PRAY, 1 }, { RK_BEBE, 4 } } },
+    [G_PROCESION]     = { "Procesión",        1, 1, { { RK_BEBE, 5 } } },
+    [G_CORRILLO]      = { "Corrillo",         1, 2, { { RK_EXVOTO_PRAY, 1 }, { RK_BEBE, 3 } } },
+    [G_GUARDIA_MONJA] = { "Guardia de la monja", 2, 4, { { RK_EXVOTO_PRAY, 1 }, { RK_OJO, 1 }, { RK_MONAGUILLO, 1 }, { RK_BEBE, 1 } } },
     [G_PUESTO]        = { "Puesto",           2, 3, { { RK_OJO, 1 }, { RK_MONAGUILLO, 3 }, { RK_BEBE, 1 } } },
-    [G_CARGA]         = { "Carga",            2, 3, { { RK_EXVOTO_PRAY, 2 }, { RK_MONAGUILLO, 2 }, { RK_BEBE, 1 } } },
+    [G_CARGA]         = { "Carga",            2, 3, { { RK_EXVOTO_PRAY, 1 }, { RK_MONAGUILLO, 2 }, { RK_BEBE, 2 } } },
     [G_CORO]          = { "Coro",             3, 4, { { RK_EXVOTO_PRAY, 2 }, { RK_OJO, 1 }, { RK_MONAGUILLO, 2 }, { RK_BEBE, 1 } } },
     [G_TIRADORES]     = { "Tiradores",        3, 4, { { RK_EXVOTO_PRAY, 1 }, { RK_OJO, 2 }, { RK_MONAGUILLO, 2 }, { RK_BEBE, 1 } } },
     [G_CARGA_DOBLE]   = { "Carga doble",      3, 5, { { RK_EXVOTO_PRAY, 1 }, { RK_CIRENEO, 1 }, { RK_OJO, 1 }, { RK_MONAGUILLO, 2 }, { RK_BEBE, 1 } } },

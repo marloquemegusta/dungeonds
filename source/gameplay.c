@@ -304,12 +304,14 @@ static void enemy_damage(Enemy *e, int damage, fixed hit_vx, fixed hit_vy, int q
         nocashMessage(msg);
 #endif
     } else if (!quiet) {
+        // The praying nun (Monja de cera) is frail: any hit cuts the prayer and the heal and makes her reel (DESIGN-ARPG.md).
+        const int nun_praying = e->type == ENEMY_TYPE_EXVOTO && e->state == ENEMY_STATE_PRAY && e->beam_len == 2;
         // Tambaleo solo por vida baja (DESIGN.md 7.2): ningun golpe lo provoca por si solo; el enemigo se
         // tambalea al quedarle un 25 % de vida o menos, le de lo que le de (rayo, punetazo, zona/quemadura).
         if ((e->type == ENEMY_TYPE_EXVOTO || e->type == ENEMY_TYPE_CHARGER || e->type == ENEMY_TYPE_SHOOTER ||
              e->type == ENEMY_TYPE_BEBE || e->type == ENEMY_TYPE_PARROCO ||
              e->type == ENEMY_TYPE_MONJA || e->type == ENEMY_TYPE_MONAGUILLO) &&
-            e->hp * 4 <= e->max_hp &&
+            (e->hp * 4 <= e->max_hp || nun_praying) &&
             (e->state == ENEMY_STATE_CHASE || e->state == ENEMY_STATE_ATTACK ||
              e->state == ENEMY_STATE_TELEGRAPH || e->state == ENEMY_STATE_CHARGE ||
              e->state == ENEMY_STATE_RECOVER || e->state == ENEMY_STATE_STUNNED ||
