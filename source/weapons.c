@@ -42,6 +42,10 @@ char weapons_fx_style_letter(void) {
 // frame from the relics in weapons_update. The sandbox can force extra bits through g_aura_debug_mask.
 int g_aura_debug_mask = 0;
 static int s_aura_mask = 0;
+// Laser looks (see the block before render_fx): 0 = the original, 1..3 = A / B / C. Set by the sandbox scenes.
+volatile uint8_t g_laser_look = 0;
+static const uint8_t s_lk_life[4] = { 6, 15, 21, 17 };      // frames the shot lives, per look (index 0 = the old trail)
+static inline int lk_look(void) { int l = g_laser_look; return (l >= 1 && l <= 3) ? l : 0; }
 
 // The one place that maps relics to their look (DESIGN.md 6.12.6, column "Como se ve"). Auras: Cilicio = E (thorn
 // ring), Sed de Ceniza = H (ash), Viatico = G (glow). Corazon Flagelado = L (flames) only while its instant charge
@@ -92,6 +96,8 @@ typedef struct {
 
 typedef struct {
     int life;
+    int max;              // frames it was started with (laser looks age the shot with max - life)
+    int h;                // muzzle height: the floor line of the shot is y + h
     int x0, y0, x1, y1;   // world px, height applied
 } SniperTrail;
 
@@ -510,6 +516,7 @@ static void spawn_flash(const WeaponInput *in, fixed dir_x, fixed dir_y) {
 // Sniper shot (fire palette, DESIGN.md 6.10): a cross at the muzzle and, when the shot ends at a wall,
 // another one there. Hits: sniper_hit_fx.
 static void sniper_shot_fx(const WeaponInput *in, fixed end_x, fixed end_y, int end_blocked) {
+    if (lk_look() == 1) return;                       // A draws its own column of fire, no impact crosses
     FxPart *p = fx_spawn(FXP_CROSS, 4, in->muzzle_x, in->muzzle_y);
     if (p) {
         p->h = TO_FIXED(in->muzzle_h);
@@ -525,6 +532,7 @@ static void sniper_shot_fx(const WeaponInput *in, fixed end_x, fixed end_y, int 
 
 // Sniper hit on an enemy along the ray: a cross (fire palette).
 static void sniper_hit_fx(const WeaponInput *in, fixed x, fixed y) {
+    if (lk_look() == 1) return;
     FxPart *p = fx_spawn(FXP_CROSS, 4, x, y);
     if (p) {
         p->h = TO_FIXED(in->muzzle_h);
@@ -767,7 +775,8 @@ static void fire_sniper(const WeaponTuning *tuning, const WeaponInput *in, fixed
         s_next_charge_pct = 0;
     }
 
-    s_trail.life = 6;
+    s_trail.life = s_trail.max = s_lk_life[lk_look()];
+    s_trail.h = in->muzzle_h;
     s_trail.x0 = TO_INT(in->muzzle_x);
     s_trail.y0 = TO_INT(in->muzzle_y) - in->muzzle_h;
     s_trail.x1 = TO_INT(cur_x);
@@ -1534,7 +1543,7 @@ void weapons_update(Enemy *enemies, int max_enemies) {
         if (cmd & 64) s_burn_force = 0;                       // burn drawn as A / B whatever the variant (Auto de Fe B / C start from them)
         if (cmd & 128) s_burn_force = 1;
         if (cmd & 32) {                                       // 32 plain trail, drawn up and to the right
-            s_trail.life = 6;
+            s_trail.life = s_trail.max = s_lk_life[lk_look()]; s_trail.h = 24;
             s_trail.x0 = s_hero_x; s_trail.y0 = s_hero_y - 24;
             s_trail.x1 = s_hero_x + 44; s_trail.y1 = s_hero_y - 24 - 70;
             s_last_dir_x = 110; s_last_dir_y = -231;
@@ -1732,12 +1741,14 @@ static void votive_sparks(const FxTarget *t, int cam_x, int cam_y, int clumpy) {
 
 // Sniper fuego (DESIGN.md 6.10): desaturated sacred-fire collimated band (deep crimson/terracotta glow
 // narrowing to a warm ivory/gold filament when armed), with rising ember motes.
+static void lk_aim(const FxTarget *t, int cam_x, int cam_y);   // laser looks, below
 static void render_aim_line(const FxTarget *t, int cam_x, int cam_y) {
     if (s_aim_state != AIM_AIMING && s_aim_state != AIM_READY) return;
     int ready = s_aim_state == AIM_READY;
     int w = (6 * (256 - s_aim_prog)) >> 8;          // lateral half-width in px (6 at 0 %, 0 when armed)
     const int votive = upgrades_has_relic(RELIC_LLAMA_VOTIVA);
     if (votive) votive_sparks(t, cam_x, cam_y, 0);        // B chosen (DESIGN.md 6.12.12); A and C render like B
+    if (lk_look()) { lk_aim(t, cam_x, cam_y); return; }
     if (ready) {
         for (int d = 1; d <= s_aim_len; d++) {
             int px, py;
@@ -1861,10 +1872,394 @@ static void render_flash(const FxTarget *t, int cam_x, int cam_y) {
     put_px(t, x, y + 1, FX_HOT);
 }
 
+// ---------------------------------------------------------------------------
+// Laser looks (ronda A/B/C del rayo cargado). g_laser_look: 0 = the look above (unchanged), 1 = A "Llama que se cierra",
+// 2 = B "Latido", 3 = C "Aureola". Set by the sandbox scenes (scenarios/abc_laser.json). Each look changes the charge,
+// the READY signal, the aim line and the shot. Integer only; every effect is a pure function of (frame, index), so
+// there is no pool: the cost is the pixels drawn (about 300-900 a frame for the beam, under 150 for the rest).
+//   A: flame band that closes, ring of embers + lit heart at READY, column of fire that falls to ash.
+//   B: the chest dot beats three times (4th beat = cross of light), a fuse lights the aim line, fat flash + ground flames.
+//   C: halo over the head that draws itself like a clock, glory of rays at READY, wavy beam ending in a fan of flames.
+// ---------------------------------------------------------------------------
+
+static const uint8_t s_lk_noise[64] = {
+    165, 77, 202, 24, 37, 48, 187, 29, 109, 19, 44, 222, 214, 35, 123, 46, 217, 30, 63, 114, 31, 203, 25, 113, 23, 68,
+    148, 214, 73, 60, 157, 92, 52, 96, 190, 49, 32, 30, 105, 254, 218, 160, 238, 232, 185, 153, 127, 92, 124, 41, 153,
+    253, 175, 229, 147, 37, 60, 214, 84, 175, 77, 250, 215, 20
+};
+#define LKN(i) ((int)s_lk_noise[(i) & 63])
+// Fire ramp, hot to cold (muted FX_SH_* only).
+static const uint8_t s_lk_ramp[8] = { FX_SH_IVORY, FX_SH_GOLD, FX_SH_AMBER, FX_SH_EMBER, FX_SH_CRIMSON, FX_SH_DEEP, FX_SH_ASH_A, FX_SH_ASH_B };
+static inline int lk_col(int lvl) { return s_lk_ramp[lvl < 0 ? 0 : lvl > 7 ? 7 : lvl]; }
+
+// The shot drawn as a ray of steps: n = longest screen axis; vert = the beam is more horizontal than vertical, so
+// its width runs along y (otherwise along x).
+typedef struct { int x0, y0, n, sx, sy, vert; } LkRay;
+static void lk_ray(LkRay *r, int x0, int y0, int x1, int y1) {
+    int dx = x1 - x0, dy = y1 - y0;
+    int adx = abs_int(dx), ady = abs_int(dy);
+    int n = adx > ady ? adx : ady;
+    if (n < 1) n = 1;
+    r->x0 = x0; r->y0 = y0; r->n = n; r->vert = adx >= ady;
+    r->sx = (dx << 8) / n; r->sy = (dy << 8) / n;
+}
+static inline void lk_ray_pt(const LkRay *r, int i, int *x, int *y) {
+    *x = r->x0 + ((r->sx * i + 128) >> 8);
+    *y = r->y0 + ((r->sy * i + 128) >> 8);
+}
+
+// Beam body: half-width hw0 (+- wobble), core colour lvl on the ramp, edges two steps colder; `wave` bends the
+// centre line with a sine table (C); dth = 0..256 chance (out of 256) that a pixel has already turned to ash.
+static void lk_beam(const FxTarget *t, const LkRay *r, int age, int hw0, int lvl, int wob, int wave, int dth) {
+    for (int i = 0; i <= r->n; i++) {
+        int px, py;
+        lk_ray_pt(r, i, &px, &py);
+        int hw = hw0;
+        if (wob) {
+            int s = s_ell_sin[((i >> 2) + age * 3) & 31] + (s_ell_sin[(i + age * 5) & 31] >> 1);
+            hw += (s * wob + 128) >> 8;
+            if (hw < 0) hw = 0;
+        }
+        int sh = 0;
+        if (wave) {
+            int env = i < r->n - i ? i : r->n - i;
+            if (env > 8) env = 8;
+            sh = (s_ell_sin[(((i * 3) >> 2) - age * 3) & 31] * wave * env) >> 11;
+        }
+        for (int o = -hw; o <= hw; o++) {
+            int ao = o < 0 ? -o : o;
+            if (hw >= 2 && ao == hw && (LKN(i + age * 11) & 1)) continue;          // ragged outer edge
+            if (dth && LKN(i * 7 + o * 13 + age * 3) < dth) continue;              // already ash
+            int c = lvl + (hw == 0 ? 0 : ao * 3 >= hw * 2 ? 2 : ao * 3 >= hw ? 1 : 0);
+            if (r->vert) put_px(t, px, py + o + sh, lk_col(c));
+            else put_px(t, px + o + sh, py, lk_col(c));
+        }
+    }
+}
+
+// A: embers thrown sideways and rising, then ash specks, along the whole column.
+static void lk_fx_embers(const FxTarget *t, const LkRay *r, int age) {
+    for (int k = 0; k < 12; k++) {
+        if (age + (k & 3) >= 13) continue;
+        int px, py;
+        lk_ray_pt(r, (LKN(k * 5 + 1) * r->n) >> 8, &px, &py);
+        int off = (k & 1 ? 1 : -1) * (3 + ((age * (1 + (k & 3))) >> 1));
+        int c = lk_col(1 + ((age + (k & 3)) >> 2));
+        if (r->vert) put_px(t, px, py + off - (age >> 1), c);
+        else put_px(t, px + off, py - (age >> 1), c);
+    }
+    if (age < 8) return;
+    for (int k = 0; k < 10; k++) {
+        if (((age + k) & 3) == 0) continue;
+        int px, py;
+        lk_ray_pt(r, (LKN(k * 9 + 3) * r->n) >> 8, &px, &py);
+        int off = (LKN(k + 20) & 7) - 3;
+        int dy = -((age - 8) >> 1) - (k & 1);
+        if (r->vert) put_px(t, px, py + off + dy, lk_col(6 + (k & 1)));
+        else put_px(t, px + off, py + dy, lk_col(6 + (k & 1)));
+    }
+}
+
+// B: small flames left on the ground along the path; they light as a wave from the muzzle and die down by age 20.
+static void lk_fx_floor_flames(const FxTarget *t, const LkRay *r, int age, int cam_x, int cam_y) {
+    for (int k = 0; k < 12; k++) {
+        int i = ((k * r->n * 21846) >> 18) + (LKN(k * 3) & 3);
+        if (i > r->n) i = r->n;
+        int start = 1 + (i >> 4);
+        if (age < start) continue;
+        int remaining = 20 - age;
+        if (remaining < 1) continue;
+        int h = ((remaining * 5) >> 4) + (LKN(k * 3 + (age >> 1)) & 1);
+        if (h > 4) h = 4;
+        if (h < 1) h = 1;
+        int px, py;
+        lk_ray_pt(r, i, &px, &py);
+        py += s_trail.h;                                          // down to the floor
+        occ_begin(cam_x, cam_y, py + cam_y);
+        flame_stack(t, px, py, h, k + age);
+        occ_end();
+    }
+}
+
+// C: fan of flames bursting upward where the beam ends (a wall or its last px), ~12 px long, gone by age 12.
+static void lk_fx_fan(const FxTarget *t, int x, int y, int age) {
+    static const int16_t fdx[5] = { -190, -100, 0, 100, 190 }, fdy[5] = { -170, -225, -256, -225, -170 };
+    int len = 14 - age;
+    if (len < 2) return;
+    if (age < 2) {                                                // the flash at the root
+        put_px(t, x, y, FX_SH_IVORY);
+        put_px(t, x - 1, y, FX_SH_GOLD); put_px(t, x + 1, y, FX_SH_GOLD);
+        put_px(t, x, y - 1, FX_SH_GOLD); put_px(t, x, y + 1, FX_SH_GOLD);
+    }
+    for (int k = 0; k < 5; k++) {
+        int l = len - ((k == 0 || k == 4) ? 3 : 0) + (LKN(k * 7 + (age >> 1) * 5) & 1);
+        for (int j = 1; j <= l; j++) {
+            int lvl = (j * 3 < l ? 1 : j * 3 < l * 2 ? 2 : 3) + (age >> 2);
+            if (j == l && (LKN(k + age) & 1)) continue;           // the tip flickers
+            int px = x + ((fdx[k] * j) >> 8), py = y + ((fdy[k] * j) >> 8);
+            put_px(t, px, py, lk_col(lvl));
+            if (j <= 3) put_px(t, px + 1, py, lk_col(lvl + 1));
+        }
+    }
+}
+
+// C: sparks beside the wavy beam.
+static void lk_fx_sparks(const FxTarget *t, const LkRay *r, int age) {
+    for (int k = 0; k < 14; k++) {
+        if (((age + k) & 3) == 0) continue;
+        int px, py;
+        lk_ray_pt(r, (LKN(k * 5 + 2) * r->n) >> 8, &px, &py);
+        int off = (k & 1 ? 1 : -1) * (3 + (LKN(k + 9) & 3) + (age >> 1));
+        int c = lk_col(((age + k) & 7) == 1 ? 0 : 1 + (age >> 3));
+        if (r->vert) put_px(t, px, py + off, c);
+        else put_px(t, px + off, py, c);
+    }
+}
+
+// A: the shot as a column of fire. Width wanders along the length and from frame to frame, tongues lick up from the
+// upper edge, ivory only in the centre, amber/terracotta edges, and the whole thing cools along the ash ramp.
+static void lk_fx_column(const FxTarget *t, const LkRay *r, int age) {
+    static const uint8_t hwb[14] = { 4, 4, 4, 3, 3, 3, 2, 2, 2, 2, 1, 1, 1, 0 };
+    const int hb = hwb[age];
+    const int cool = age >> 2;                                    // 0..3 steps colder
+    const int dth = age >= 6 ? (age - 5) * 30 : 0;                // ash dropouts
+    for (int i = 0; i <= r->n; i++) {
+        int px, py;
+        lk_ray_pt(r, i, &px, &py);
+        int hw = hb + ((((LKN((i >> 1) + age * 3) - 128) * (hb + 3)) >> 7)) + ((LKN(i + age * 11) & 1) ? 0 : -(hb > 1));
+        if (hw < 0) hw = 0;
+        for (int o = -hw; o <= hw; o++) {
+            int ao = o < 0 ? -o : o;
+            if (dth && LKN(i * 7 + o * 13 + age * 3) < dth) continue;
+            int nz = LKN(i * 3 + o * 5 + age * 9) & 3;
+            int c = (hw == 0 || ao * 3 <= hw) ? (age < 5 && nz > 0 ? 0 : 1) : ao * 3 < hw * 2 ? 2 : 3;
+            c += cool + (nz == 0 && c > 1 ? 1 : 0);
+            if (r->vert) put_px(t, px, py + o, lk_col(c));
+            else put_px(t, px + o, py, lk_col(c));
+        }
+        int tg = LKN(i * 5 + age * 7) & 7;                       // tongues up the screen from the top edge
+        if (tg >= 3 && age < 12) {
+            int h = ((tg - 2) * (hb + 2) + 3) >> 2;
+            if (h > 4) h = 4;
+            int top = r->vert ? -hw : 0;
+            for (int j = 1; j <= h; j++) {
+                int c = (j * 2 > h ? 3 : 2) + cool;
+                if (r->vert) put_px(t, px, py + top - j, lk_col(c));
+                else put_px(t, px + (i & 1 ? hw : -hw), py - j, lk_col(c));
+            }
+        }
+    }
+}
+
+static void lk_trail(const FxTarget *t, int cam_x, int cam_y) {
+    const int look = lk_look();
+    int x0 = s_trail.x0 - cam_x, y0 = s_trail.y0 - cam_y;
+    int x1 = s_trail.x1 - cam_x, y1 = s_trail.y1 - cam_y;
+    if ((x0 < 0 && x1 < 0) || (x0 >= SCREEN_W && x1 >= SCREEN_W) ||
+        (y0 < -20 && y1 < -20) || (y0 >= SCREEN_H + 20 && y1 >= SCREEN_H + 20)) return;
+    int age = s_trail.max - s_trail.life - 1;
+    if (age < 0) age = 0;
+    LkRay r;
+    lk_ray(&r, x0, y0, x1, y1);
+    if (look == 1) {
+        if (age > 13) return;
+        lk_fx_column(t, &r, age);
+        lk_fx_embers(t, &r, age);
+    } else if (look == 2) {
+        static const uint8_t hw[13] = { 4, 4, 4, 4, 3, 3, 2, 2, 1, 1, 1, 0, 0 };
+        static const uint8_t lv[13] = { 0, 0, 0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 4 };
+        if (age <= 12) lk_beam(t, &r, age, hw[age], lv[age], 1, 0, age >= 8 ? (age - 7) * 45 : 0);
+        lk_fx_floor_flames(t, &r, age, cam_x, cam_y);
+    } else {
+        static const uint8_t lv[16] = { 0, 0, 0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4, 5 };
+        if (age > 15) return;
+        lk_beam(t, &r, age, age < 6 ? 1 : 0, lv[age], 0, age < 4 ? 4 : age < 8 ? 3 : age < 12 ? 2 : 1, age >= 8 ? (age - 7) * 28 : 0);
+        lk_fx_sparks(t, &r, age);
+        lk_fx_fan(t, x1, y1, age);
+    }
+}
+
+// Filled diamond of radius r; centre colour lvl, the rim two steps colder.
+static void lk_diamond(const FxTarget *t, int cx, int cy, int r, int lvl) {
+    for (int dy = -r; dy <= r; dy++) {
+        for (int dx = -r; dx <= r; dx++) {
+            int d = (dx < 0 ? -dx : dx) + (dy < 0 ? -dy : dy);
+            if (d > r) continue;
+            put_px(t, cx + dx, cy + dy, lk_col(lvl + (d * 3 > r * 2 ? 2 : d * 3 > r ? 1 : 0)));
+        }
+    }
+}
+
+// Thin star: arms of `len` px with a 3 px thick root; ivory centre, gold, amber, ember tip.
+static void lk_cross(const FxTarget *t, int cx, int cy, int len, int diag) {
+    for (int o = -1; o <= 1; o++)
+        for (int p = -1; p <= 1; p++) put_px(t, cx + p, cy + o, (o | p) == 0 ? FX_SH_IVORY : FX_SH_GOLD);
+    for (int j = 2; j <= len; j++) {
+        int c = j <= 4 ? 0 : j <= 7 ? 1 : j < len ? 2 : 3;
+        int th = j <= 3 ? 1 : 0;
+        for (int o = -th; o <= th; o++) {
+            int cc = lk_col(c + (o != 0));
+            put_px(t, cx + j, cy + o, cc); put_px(t, cx - j, cy + o, cc);
+            put_px(t, cx + o, cy + j, cc); put_px(t, cx + o, cy - j, cc);
+        }
+    }
+    for (int j = 2; j <= diag; j++) {
+        int cc = lk_col(1 + (j > 3));
+        put_px(t, cx + j, cy + j, cc); put_px(t, cx - j, cy + j, cc);
+        put_px(t, cx + j, cy - j, cc); put_px(t, cx - j, cy - j, cc);
+    }
+}
+
+// C: the halo, 12x6 px, a 2:1 ellipse over the head. steps = 0..32 of its 32 points, drawn clockwise from the top.
+#define LK_HALO_UP 27                              // px above the chest
+static void lk_halo(const FxTarget *t, int hx, int hy, int steps, int lvl_body, int lvl_tip) {
+    for (int k = 0; k < steps; k++) {
+        int a = (24 + k) & 31;
+        int px = hx + ((s_ell_cos[a] * 6 + 128) >> 8), py = hy + ((s_ell_sin[a] * 3 + 128) >> 8);
+        int lvl = (steps < 32 && k >= steps - 3) ? lvl_tip : lvl_body;
+        put_px(t, px, py, lk_col(lvl));
+        put_px(t, px, py + 1, lk_col(lvl + 2));
+    }
+}
+
+// C: glory of radial rays round the halo, like the one behind a saint. Rays that point down at the head are skipped.
+static void lk_glory(const FxTarget *t, int hx, int hy, int age) {
+    static const uint8_t step[12] = { 0, 3, 5, 8, 11, 13, 16, 19, 21, 24, 27, 29 };
+    for (int i = 0; i < 12; i++) {
+        int a = step[i];
+        if (s_ell_sin[a] > 150) continue;
+        int l = ((i & 1) ? 6 : 9) + (age < 4 ? 3 : 0) + (s_ell_sin[(age * 2) & 31] >> 7);
+        for (int tt = 1; tt <= l; tt++) {
+            if (tt == l && (age & 1)) continue;
+            int px = hx + ((s_ell_cos[a] * (6 + tt) + 128) >> 8);
+            int py = hy + ((s_ell_sin[a] * (3 + tt) + 128) >> 8);
+            put_px(t, px, py, lk_col(tt * 3 <= l ? 1 : tt * 3 <= l * 2 ? 2 : 3));
+        }
+    }
+}
+
+// Chest signals and aim line of the three looks (drawn while AIMING or READY).
+static void lk_aim(const FxTarget *t, int cam_x, int cam_y) {
+    const int look = lk_look();
+    const int cx = s_aura_cx - cam_x, cy = s_aura_cy - cam_y;
+    const int ready = s_aim_state == AIM_READY;
+    const int tm = s_aim_timer, prog = s_aim_prog, len = s_aim_len;
+    const int age = ready ? tm - s_charge_frames : -1;      // frames since READY (0 on its first frame)
+    int px, py;
+
+    if (look == 1) {
+        if (!ready) {
+            const int amp = 3 + ((3 * (256 - prog)) >> 8);       // tallest tongue: 6 px at 0 %, 2 px when armed: the fire closes
+            const int base = 5 - ((4 * prog) >> 8);              // colour: deep crimson (5) at the start, gold (1) almost ready
+            for (int d = 1; d <= len; d++) {
+                aim_point(d, cam_x, cam_y, &px, &py);
+                int m = (LKN((d >> 1) + tm * 5) * 3 + LKN(d * 3 + tm * 7 + 11)) >> 2;   // lumps of 2 columns, new every frame
+                int up = ((m * amp) >> 8) + (LKN(d + tm * 13) > 200 ? 1 : 0) - (LKN(d * 7 + tm * 5) < 70 ? 1 : 0);
+                if (up < 0) continue;                           // gaps: loose tongues, no continuous rail
+                int dn = (LKN(d * 5 + tm * 3) % 3) == 0 ? 1 : 0;
+                for (int o = -up; o <= dn; o++) {
+                    int c;
+                    if (o >= 0) c = base + dn;
+                    else { int dp = -o; c = base + (dp * 3 > up * 2 ? 2 : dp * 3 > up ? 1 : 0); }
+                    if (o == 0 && prog >= 200 && (LKN(d + tm * 9) & 1)) c = 0;
+                    put_px(t, px, py + o, lk_col(c));
+                }
+            }
+        } else {
+            for (int d = 3; d <= len; d += 5) {                  // a row of fixed little flames, 2-3 px, flickering
+                aim_point(d, cam_x, cam_y, &px, &py);
+                int fl = LKN(d + tm * 3) & 3;
+                put_px(t, px, py + 1, FX_SH_EMBER);
+                put_px(t, px, py, fl == 0 ? FX_SH_AMBER : FX_SH_GOLD);
+                put_px(t, px, py - 1, fl == 3 ? FX_SH_EMBER : FX_SH_AMBER);
+                if (fl != 0) put_px(t, px + (fl == 2 ? 1 : 0), py - 2, fl == 1 ? FX_SH_EMBER : FX_SH_CRIMSON);
+            }
+            if (age < 16) {                                      // crown of embers from the chest out to ~20 px wide (2:1 ellipse)
+                int rr = age < 11 ? 8 + (age * 12) / 11 : 20 + ((age - 11) >> 2);
+                int lvl = age < 3 ? 0 : age < 7 ? 1 : age < 11 ? 2 : age < 14 ? 3 : 4;
+                int fat = age < 11;
+                for (int a = 0; a < 32; a++) {
+                    int a2 = (a + 1) & 31;
+                    for (int m = 0; m < 2; m++) {                // 64 points: the ring has no holes at 20 px
+                        int ca = m ? (s_ell_cos[a] + s_ell_cos[a2]) >> 1 : s_ell_cos[a];
+                        int sa = m ? (s_ell_sin[a] + s_ell_sin[a2]) >> 1 : s_ell_sin[a];
+                        int ex = cx + ((ca * rr + 128) >> 8), ey = cy + ((sa * rr + 256) >> 9);
+                        if (age >= 11 && ((a + m + age) & 3) == 0) continue;   // it crackles once open
+                        put_px(t, ex, ey, lk_col(lvl));
+                        if (fat) { put_px(t, ex + 1, ey, lk_col(lvl + 1)); put_px(t, ex, ey + 1, lk_col(lvl + 1)); put_px(t, ex + 1, ey + 1, lk_col(lvl + 1)); }
+                    }
+                }
+                if (age >= 2 && age < 14) {                      // second, thinner ring chasing the first
+                    int r2 = rr - 4 < 2 ? 2 : rr - 4;
+                    for (int a = 0; a < 32; a += 2)
+                        put_px(t, cx + ((s_ell_cos[a] * r2 + 128) >> 8), cy + ((s_ell_sin[a] * r2 + 256) >> 9), lk_col(lvl + 1));
+                }
+            }
+            if (age >= 0) {                                      // the heart: big point that beats while held
+                int big = ((age >> 2) & 1) == 0;
+                lk_diamond(t, cx, cy, big ? 3 : 2, big ? 0 : 1);
+                put_px(t, cx, cy, FX_SH_IVORY);
+            }
+        }
+    } else if (look == 2) {
+        const int F = s_charge_frames;
+        if (!ready) {
+            for (int d = 2; d <= len; d += 4) {                  // faint dotted line of embers
+                aim_point(d, cam_x, cam_y, &px, &py);
+                put_px(t, px, py, lk_col(prog >= 192 ? 2 : 3 + (LKN(d) & 1)));
+            }
+            put_px(t, cx, cy, FX_SH_EMBER);                      // the chest dot, between beats
+            for (int k = 1; k <= 3; k++) {                       // three beats at 1/4, 2/4 and 3/4 of the charge: big, then small
+                int dd = tm - ((F * k) >> 2);
+                if (dd >= 0 && dd <= 2) lk_diamond(t, cx, cy, 1 + k, 3 - k);
+                else if (dd >= 4 && dd <= 6) lk_diamond(t, cx, cy, k, 3 - k);
+            }
+        } else {
+            int front = age >= 8 ? len : (len * (age + 1)) >> 3;   // the fuse: fire runs along the line in 8 frames
+            for (int d = 1; d <= len; d++) {
+                aim_point(d, cam_x, cam_y, &px, &py);
+                if (d <= front) {
+                    int fl = LKN(d * 3 + tm) & 3;
+                    put_px(t, px, py, lk_col(fl == 0 ? 0 : fl < 3 ? 1 : 2));
+                    if (fl == 3) put_px(t, px, py - 1, FX_SH_EMBER);
+                } else if ((d & 3) == 2) {
+                    put_px(t, px, py, FX_SH_CRIMSON);
+                }
+            }
+            if (age < 8) {
+                aim_point(front, cam_x, cam_y, &px, &py);
+                put_px(t, px, py, FX_SH_IVORY); put_px(t, px, py - 1, FX_SH_GOLD); put_px(t, px, py - 2, FX_SH_AMBER);
+                put_px(t, px - 1, py, FX_SH_GOLD); put_px(t, px + 1, py, FX_SH_GOLD); put_px(t, px, py + 1, FX_SH_AMBER);
+            }
+            int arm = age < 3 ? 13 : 10 + (LKN(age >> 1) % 3);   // the 4th beat: a cross that keeps shining and twinkles
+            lk_cross(t, cx, cy, arm, age < 4 ? 4 : 0);
+        }
+    } else {
+        const int hx = cx, hy = cy - LK_HALO_UP;
+        if (!ready) {
+            lk_halo(t, hx, hy, (prog * 32) >> 8, 2, 0);          // the arc grows with the charge
+            for (int d = 1; d <= len; d++) {                     // thin old-gold line with heat shimmer
+                aim_point(d, cam_x, cam_y, &px, &py);
+                int w = (s_ell_sin[((d >> 1) + tm) & 31] + 128) >> 8;
+                put_px(t, px, py + w, lk_col(prog >= 128 ? 1 : 2));
+                if (((d + tm * 2) & 15) == 0) { put_px(t, px, py + w, FX_SH_IVORY); put_px(t, px, py + w - 1, FX_SH_GOLD); }
+            }
+        } else {
+            lk_halo(t, hx, hy, 32, age < 2 ? 0 : 1, 0);          // the halo closes
+            lk_glory(t, hx, hy, age);
+            for (int d = 1; d <= len; d++) {
+                aim_point(d, cam_x, cam_y, &px, &py);
+                int w = (s_ell_sin[((d >> 1) + tm) & 31] + 128) >> 8;
+                put_px(t, px, py + w, ((d + tm * 2) & 15) < 2 ? FX_SH_IVORY : FX_SH_GOLD);
+            }
+        }
+    }
+}
+
 static void render_fx(const FxTarget *t, int cam_x, int cam_y) {
     render_aim_line(t, cam_x, cam_y);
 
-    if (s_trail.life > 0) render_trail(t, cam_x, cam_y);
+    if (s_trail.life > 0) { if (lk_look()) lk_trail(t, cam_x, cam_y); else render_trail(t, cam_x, cam_y); }
     render_fx_parts(t, cam_x, cam_y);
     render_flash(t, cam_x, cam_y);
 
@@ -2376,7 +2771,7 @@ void weapons_render_floor(uint16_t *buffer, int cam_x, int cam_y) {
     GroundTarget ground = { buffer, cam_x, cam_y };
     burn_rings_draw(&ground);
     // READY flash: a dashed 2:1 warm glow ring on the floor around the feet, under the actors.
-    if (s_aura_flash > 0 && s_aim_state == AIM_READY) {
+    if (s_aura_flash > 0 && s_aim_state == AIM_READY && !g_laser_look) {
         int ring = s_aura_flash == AURA_FLASH_FRAMES ? FX_SH_IVORY : FX_SH_GOLD;
         gfx_ground_ring(&ground, s_aura_x, s_aura_y, 12, s_fx_rgb[ring], 2);
     }

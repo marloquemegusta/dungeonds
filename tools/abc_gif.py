@@ -35,8 +35,13 @@ CROPS = {
     "llaga": (0, 0, 256, 192),           # whole bottom screen: the vignette (C) lives on its border
     "llaga_hero": (88, 66, 80, 76),      # same scene, zoomed on the hero (A ring, B tint and drops)
     "viatico": (100, 60, 112, 84),
+    "laser": (96, 30, 160, 92),          # hero, the three enemies in line and the wall behind them
+    "laser_actual": (96, 30, 160, 92),
 }
-SCENARIO = {"llaga_hero": "llaga"}      # elements that reuse another element's scenario / frames
+# The laser round lives in its own walkthrough folder (and file names).
+LASER_OUT = ROOT / "walkthroughs" / "laser-abc" / "assets"
+OUT_PATH = {"laser": LASER_OUT / "laser_A.gif", "laser_actual": LASER_OUT / "laser_actual.gif"}
+SCENARIO = {"llaga_hero": "llaga", "laser_actual": "laser"}      # elements that reuse another element's scenario / frames
 SCALES = {"llaga": 2}
 TITLES = {
     "burn": ("A  brasas y lengua", "B  anillo de llamas"),
@@ -47,9 +52,12 @@ TITLES = {
     "llaga": ("B  gotea y asciende", "C  vineta roja"),
     "llaga_hero": ("B  gotea y asciende", "C  vineta roja"),
     "viatico": ("A  hilo de sangre", "C  alma palida"),
+    "laser": ("A llama que se cierra",),
+    "laser_actual": ("actual (g_laser_look = 0)",),
 }
 # Variant ids shown per element (left to right); default A | B | C.
-VARIANTS = {"autofe": (0, 2), "burn": (0, 1), "llaga": (1, 2), "llaga_hero": (1, 2), "viatico": (0, 2)}
+VARIANTS = {"autofe": (0, 2), "burn": (0, 1), "llaga": (1, 2), "llaga_hero": (1, 2), "viatico": (0, 2),
+            "laser": (1,), "laser_actual": (0,)}
 
 
 def run_scenario(el, runs):
@@ -122,8 +130,8 @@ def compose(el, run_dir):
     alt = min((i for i in range(96) if i != bg), key=dist)
     for i, f in enumerate(q):
         f.putpixel((total_w - 1, 0), alt if i & 1 else bg)
-    OUT.mkdir(parents=True, exist_ok=True)
-    path = OUT / f"abc_{el}.gif"
+    path = OUT_PATH.get(el, OUT / f"abc_{el}.gif")
+    path.parent.mkdir(parents=True, exist_ok=True)
     n = len(frames)
     q[0].save(path, save_all=True, append_images=q[1:], duration=FRAME_MS, loop=0, optimize=True, disposal=1)
     print(f"{path}  {n} frames  {path.stat().st_size / 1024:.0f} KB")
