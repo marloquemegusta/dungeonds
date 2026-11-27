@@ -3,6 +3,7 @@
 #if HW_SHADOWS
 
 #include <nds.h>
+#include <string.h>
 #include "game.h"
 #include "verja_gfx.h"
 
@@ -155,6 +156,50 @@ void hwshadow_add_verja(int sub, int x, int y, int lift_px, int in_front) {
         a[0] = (uint16_t)((y & 0xFF) | ATTR0_NORMAL | ATTR0_TYPE_NORMAL | ATTR0_COLOR_16);
         a[1] = (uint16_t)((px & 0x1FF) | ATTR1_SIZE_64);
         a[2] = (uint16_t)(k_tile[i] | prio);
+    }
+}
+
+// Ground shadow of the gate (light of the room, tools/arpg_light_verja.py). A 1 bpp mask of the gate's width split in two halves
+// (56 and 48 px, so each half's rows are whole bytes) that goes through the regular shadow cache: the OBJ window darkens the floor
+// only, so actors (BG2) stand over it. Raising the gate cuts the rows nearest to the wall (the part cast by what has left the
+// floor): the cut is just a different mask pointer and height, so the cache keeps one entry per cut.
+#define VSH_ROWS_MAX 40
+#define VSH_SPLIT 56
+static uint8_t s_vsh_bits[VSH_ROWS_MAX * 13];   // rows x 7 B (left half) then rows x 6 B (right half)
+static uint8_t s_vsh_r0, s_vsh_rows, s_vsh_dir;
+
+void hwshadow_verja_set(const uint16_t *palette, const uint8_t *shadow, int r0, int rows, int dir) {
+    for (int i = 0; i < 16; i++) {
+        SPRITE_PALETTE[i] = palette[i];
+        SPRITE_PALETTE_SUB[i] = palette[i];
+    }
+    hwshadow_invalidate_range(s_vsh_bits, s_vsh_bits + sizeof(s_vsh_bits));
+    if (rows > VSH_ROWS_MAX) rows = VSH_ROWS_MAX;
+    if (rows < 0) rows = 0;
+    if (rows) memcpy(s_vsh_bits, shadow, (size_t)rows * 13);
+    s_vsh_r0 = (uint8_t)r0;
+    s_vsh_rows = (uint8_t)rows;
+    s_vsh_dir = (uint8_t)dir;
+    s_verja_lift[0] = s_verja_lift[1] = -1;          // the art in OBJ VRAM is the old one: upload again on next use
+}
+
+// x, y: top-left corner of the gate pair (as hwshadow_add_verja); one shadow per 104 px copy.
+void hwshadow_add_verja_shadow(int sub, int x, int y, int lift_px) {
+    const int rows = s_vsh_rows;
+    if (!rows) return;
+    if (lift_px < 0) lift_px = 0;
+    const int cut = rows * lift_px / VERJA_H;
+    const int bh = rows - cut;
+    if (bh <= 0) return;
+    const int from_top = s_vsh_dir == 0;
+    const int by = s_vsh_r0 + (from_top ? cut : 0);
+    const uint8_t *left = s_vsh_bits + (from_top ? cut * 7 : 0);
+    const uint8_t *right = s_vsh_bits + rows * 7 + (from_top ? cut * 6 : 0);
+    const uint8_t bl[4] = { 0, (uint8_t)by, VSH_SPLIT, (uint8_t)bh };
+    const uint8_t br[4] = { VSH_SPLIT, (uint8_t)by, VERJA_W - VSH_SPLIT, (uint8_t)bh };
+    for (int c = 0; c < 2; c++) {
+        hwshadow_add(sub, left, bl, x + c * VERJA_W, y);
+        hwshadow_add(sub, right, br, x + c * VERJA_W, y);
     }
 }
 

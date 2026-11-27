@@ -8,6 +8,7 @@
 #include "strip_kit.h"
 #include "hwshadow.h"
 #include "room_pool.h"
+#include "verja_gfx.h"
 #include <stdio.h>
 #include <string.h>
 #ifdef ARM9
@@ -279,6 +280,39 @@ static void load_fix(int light) {
     fclose(f);
 }
 
+// Reja (rastrillo) con la luz de la sala: <luz>_verja.bin, formato en tools/arpg_light_verja.py. Sobrescribe en sitio la paleta y
+// los pixeles de dia de source/verja_gfx.c (sin buffers) y entrega la sombra a source/hwshadow.c. `dia_verja.bin` restituye el
+// arte de dia si el de la luz falta o no es valido. Devuelve 1 si queda cargado un fichero valido.
+#define VJA_MAGIC 0x414A564Cu    // 'LVJA'
+static int s_verja_light = -2;   // luz de la reja residente: -2 = el arte compilado (dia), -1 = dia_verja.bin
+static int load_verja_file(const char *path) {
+    FILE *f = fopen(path, "rb");
+    if (!f) return 0;
+    uint32_t magic = 0;
+    uint8_t m[4], shadow[40 * 13];
+    uint16_t pal[16];
+    int ok = rd(f, &magic, 4) && magic == VJA_MAGIC && rd(f, m, 4) && m[1] <= 40 && rd(f, pal, sizeof(pal));
+    if (ok) {
+        s_verja_light = -3;   // from here the resident pixels may be half overwritten: the caller falls back to dia_verja.bin
+        ok = rd(f, g_verja_pixels, sizeof(g_verja_pixels)) && (!m[1] || rd(f, shadow, (size_t)m[1] * 13));
+    }
+    fclose(f);
+    if (!ok) return 0;
+    memcpy(g_verja_palette, pal, sizeof(pal));
+    hwshadow_verja_set(g_verja_palette, shadow, m[0], m[1], m[2]);
+    enc_verja_gfx_changed();
+    return 1;
+}
+static void load_verja(int light) {
+    if (s_verja_light == light) return;
+    char path[48];
+    if (light >= 0) {
+        snprintf(path, sizeof(path), "nitro:/arpg_luz/%s_verja.bin", k_light_ids[light]);
+        if (load_verja_file(path)) { s_verja_light = light; return; }
+    }
+    if (s_verja_light != -2 && s_verja_light != -1 && load_verja_file("nitro:/arpg_luz/dia_verja.bin")) s_verja_light = -1;
+}
+
 int room_light_load(int room) {
     if (room < 0 || room >= 16) return 0;
     const int light = k_room_light[room];
@@ -295,6 +329,7 @@ int room_light_load(int room) {
     // Si el paquete falta o no es valido se queda lo que hubiera: el arte de dia mientras no haya cargado ninguno.
     const int ok = load_pack(light);
     if (ok) load_fix(light);
+    load_verja(ok ? light : -1);
     g_room_light.ok = (uint8_t)ok;
     if (!ok) return 0;
     s_light = light;

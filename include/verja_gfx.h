@@ -9,7 +9,8 @@
 #define VERJA_W 104
 #define VERJA_H 56
 
-extern const uint16_t g_verja_palette[16];
-extern const uint8_t g_verja_pixels[VERJA_H][VERJA_W];
+// Mutable: source/room_light.c overwrites them in place with the room's light (tools/arpg_light_verja.py).
+extern uint16_t g_verja_palette[16];
+extern uint8_t g_verja_pixels[VERJA_H][VERJA_W];
 
 #endif

@@ -226,6 +226,7 @@ Intensidad = potencia de la luz principal; «desde» = de dónde viene en pantal
 
 - **Relación con el póster:** los tintes de referencia son los del póster v3 (`tools/poster/salas/sala_NN.py`, `AM` de `tools/poster/poster_arpg_v3.py`); el contraste se dramatiza respecto a él.
 - **Pipeline:** `tools/arpg_light_props.py`, `tools/arpg_light_chars.py` y `tools/arpg_light_pack.py <luz>` generan el paquete `nitrofiles/arpg_luz/<luz>.bin` (formato en `TECHNICAL.md` §5.7). Hojas de contacto en `walkthroughs/arpg-luz-sala/`.
+- **La reja** es un prop más: se ve con la luz de su sala (color y sombra proyectada al suelo, bajo los personajes) y la sombra sube con ella hasta desaparecer.
 - **Aproximaciones:** los remates (sin fuente 3D versionada) y los personajes sin modelo 3D utilizable (Super Monja, arañas) se oscurecen con el tinte de la luz; todo lo que tiene modelo se vuelve a renderizar con la luz.
 - **Personajes:** la intensidad escala todas sus luces (Nave 1 y Nave 4 se distinguen en el héroe y en los enemigos); el color de la sala llega a medias (mitad hacia el neutral del día) y el sombreado conserva la dirección del día, de modo que el peregrino se lee marrón como en la ROM en todas las salas. Solo la sombra de suelo usa la dirección de la sala. Las arañas no salen en ningún grupo de la monjaraña (sala 14), así que no entran en su pack.
 

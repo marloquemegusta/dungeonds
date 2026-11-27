@@ -2335,6 +2335,9 @@ static uint8_t s_vj_run_n[VERJA_H];
 static uint8_t s_vj_run[VERJA_H][VERJA_RUNS_MAX][2];   // {start, length}
 static uint8_t s_vj_ready;
 
+// The gate art (g_verja_pixels / g_verja_palette) was overwritten with the room's light: bake the runs again.
+void enc_verja_gfx_changed(void) { s_vj_ready = 0; }
+
 static void verja_bake_runs(void) {
     for (int r = 0; r < VERJA_H; r++) {
         int n = 0, i = 0;
@@ -2410,6 +2413,11 @@ void enc_verja_end(int sub, int cam_x, int cam_y) {
 #if HW_SHADOWS
     for (int i = 0; i < ENC_VERJA_N; i++) {
         if (!s_vj_on[i]) continue;
+        {   // ground shadow of the gate (light of the room), whichever way the gate itself is drawn
+            int sfy, slift;
+            verja_params(i, &sfy, &slift);
+            hwshadow_add_verja_shadow(sub, ENC_FLOOR_X - cam_x, sfy - ENC_VERJA_H - cam_y, slift);
+        }
         // Above the page would cover the HUD band of the bottom screen: there the gate stays below (old behaviour).
         const int hud_clash = sub == 0 && s_vj_fy[i] - cam_y > 136;
         if (s_vj_front[i] && s_vj_back[i] && !hud_clash) { s_vj_sw[i] = 1; continue; }

@@ -44,6 +44,8 @@ void room_light_tint_px(uint16_t *px, uint32_t count);
 
 // source/encounters_act1.c: re-apunta los sprites de cofre y altar a un bloque de pixeles; ver room_light.c.
 uint16_t *enc_room_gfx_begin(const int16_t meta[3][4]);
+// source/encounters_act1.c: la reja de dia se sobrescribio con la de la luz de la sala: rehacer su dibujo por software.
+void enc_verja_gfx_changed(void);
 
 // Abre el paquete residente posicionado en los datos de una entrada (kind RL_*), o NULL si no hay.
 FILE *room_light_open(uint32_t kind, const char *name, uint32_t *len);
