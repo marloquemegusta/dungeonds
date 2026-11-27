@@ -622,6 +622,21 @@ static int ray_length(const WeaponInput *in, fixed dir_x, fixed dir_y, int range
     return d;
 }
 
+// Ray test: is this enemy a live target whose hit ellipse contains the ray point (cur_x, cur_y)?
+static int sniper_touches(const Enemy *e, int i, uint32_t hit_mask, fixed cur_x, fixed cur_y, const WeaponInput *in) {
+    if (!e->active || e->hp <= 0 || e->state == ENEMY_STATE_EMERGE || (hit_mask & (1u << i))) return 0;
+#if ENCOUNTERS_PROTO
+    if (enc_untouchable(e)) return 0;      // asleep: the ray goes through (DESIGN.md 6.13.6)
+#endif
+    int edx = TO_INT(cur_x - e->x);
+    int edy = TO_INT(cur_y - e->y);
+    return (e->char_id == CHAR_CHARGER || e->char_id == CHAR_ABANDERADO)
+        ? body_hit_test_ex(edx, edy, in->muzzle_h, CHARGER_BODY_HIT_CY, CHARGER_BODY_HIT_RX, CHARGER_BODY_HIT_RY)
+        : (e->char_id == CHAR_OJO)
+        ? body_hit_test_ex(edx, edy, in->muzzle_h, OJO_BODY_HIT_CY, OJO_BODY_HIT_RX, OJO_BODY_HIT_RY)
+        : body_hit_test(edx, edy, in->muzzle_h);
+}
+
 // Ray (DESIGN.md 6.12.2): pierces the enemies it kills and stops at the first one that survives the hit
 // (Lanza de Longinos: pierces them all) and at the first wall. Beam damage goes through upgrades.c.
 static void fire_sniper(const WeaponTuning *tuning, const WeaponInput *in, fixed dir_x, fixed dir_y,
@@ -649,19 +664,21 @@ static void fire_sniper(const WeaponTuning *tuning, const WeaponInput *in, fixed
         cur_x = nx;
         cur_y = ny;
 
+        // Without the Lanza the ray works only on the touched enemy nearest to the shot origin: packed enemies
+        // behind a survivor are not hit in the same step (nor from the advanced point).
+        int best = -1;
+        if (!pierce_all) {
+            int best_proj = 0;
+            for (int i = 0; i < max_enemies; i++) {
+                if (!sniper_touches(&enemies[i], i, hit_mask, cur_x, cur_y, in)) continue;
+                int proj = TO_INT(enemies[i].x - in->muzzle_x) * dir_x + TO_INT(enemies[i].y - in->muzzle_y) * dir_y;
+                if (best < 0 || proj < best_proj) { best = i; best_proj = proj; }
+            }
+        }
         for (int i = 0; i < max_enemies; i++) {
             Enemy *e = &enemies[i];
-            if (!e->active || e->hp <= 0 || e->state == ENEMY_STATE_EMERGE || (hit_mask & (1u << i))) continue;
-#if ENCOUNTERS_PROTO
-            if (enc_untouchable(e)) continue;      // asleep: the ray goes through (DESIGN.md 6.13.6)
-#endif
-            int edx = TO_INT(cur_x - e->x);
-            int edy = TO_INT(cur_y - e->y);
-            int hit = (e->char_id == CHAR_CHARGER || e->char_id == CHAR_ABANDERADO)
-                ? body_hit_test_ex(edx, edy, in->muzzle_h, CHARGER_BODY_HIT_CY, CHARGER_BODY_HIT_RX, CHARGER_BODY_HIT_RY)
-                : (e->char_id == CHAR_OJO)
-                ? body_hit_test_ex(edx, edy, in->muzzle_h, OJO_BODY_HIT_CY, OJO_BODY_HIT_RX, OJO_BODY_HIT_RY)
-                : body_hit_test(edx, edy, in->muzzle_h);
+            if (!pierce_all && i != best) continue;
+            int hit = sniper_touches(e, i, hit_mask, cur_x, cur_y, in);
             if (hit) {
                 hit_mask |= 1u << i;
 #if ENCOUNTERS_PROTO
@@ -722,7 +739,7 @@ static void fire_sniper(const WeaponTuning *tuning, const WeaponInput *in, fixed
             }
         }
 #if ENCOUNTERS_PROTO
-        if (!relic_done) {                 // the relicario of the corridor is a target too
+        if (!relic_done && (pierce_all || !survivor)) {   // the relicario of the corridor is a target too
             int rx, ry;
             if (enc_relic_target(&rx, &ry) && body_hit_test(TO_INT(cur_x) - rx, TO_INT(cur_y) - ry, in->muzzle_h)) {
                 relic_done = 1;
