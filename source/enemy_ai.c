@@ -406,7 +406,7 @@ static void exvoto_weave(const Enemy *e, int idx, int dx, int dy) {
 // Bodyguard (DESIGN-ARPG s5, Monaguillo and Parroco): while the hero charges the Ray, the guard runs to the point of the
 // line hero -> nearest ally (the Súper Monja first, else the ally nearest the hero; never the Bebé or another guard) that is ARPG_GUARD_DIST ground px from the hero, and waits there
 // facing him. Returns 1 when it spent the frame on that (no walk, no bite); 0 when there is nothing to guard.
-static int bodyguard_step(Enemy *e, Enemy *enemies, int num_enemies, int idx, int px, int py, fixed speed) {
+static int bodyguard_step(Enemy *e, Enemy *enemies, int num_enemies, int idx, int px, int py, fixed speed, int retreat) {
     if (!weapons_aim_charging()) return 0;
     if (num_enemies > MAX_GAMEPLAY_ENEMIES) num_enemies = MAX_GAMEPLAY_ENEMIES;
     int best = -1, best_d = 0, best_monja = 0;
@@ -428,13 +428,32 @@ static int bodyguard_step(Enemy *e, Enemy *enemies, int num_enemies, int idx, in
     int gd = len / 2 < ARPG_GUARD_DIST ? len / 2 : ARPG_GUARD_DIST;
     const int gx = px + div32(tx * gd, len), gy = py + div32(ty * gd, len);     // the guard post on the line
     const int wx = TO_INT(e->x), wy = TO_INT(e->y);
-    const int ex = gx - wx, ey = gy - wy;
+    int tgx = gx, tgy = gy, mult = ARPG_GUARD_SPEED_X;
+    if (e->type == ENEMY_TYPE_MONAGUILLO) {
+        // The Monaguillo does not wait on the line: once on it he walks down it toward the hero and bites at melee range.
+        // Position relative to the hero in ground metric (y doubled): s = distance along the line, lat = sideways offset.
+        const int rx = wx - px, ry = 2 * (wy - py), lx = tx, ly = 2 * ty;
+        const int s_al = div32(rx * lx + ry * ly, len);
+        const int lat = div32(rx * ly - ry * lx, len);
+        const int mr = g_enemy_tuning[ENEMY_TYPE_MONAGUILLO].preferred_dist_max;
+        if (lat >= -ARPG_GUARD_LINE_TOL && lat <= ARPG_GUARD_LINE_TOL && s_al <= gd + ARPG_GUARD_LINE_TOL) {
+            if (retreat || s_al <= mr) return 0;       // bite cooldown (retreat) or in bite range: the bite / pause (CHASE / ATTACK) takes over
+            int st = s_al - 1;                          // aim a little ahead on the line, walking pace
+            if (st < mr) st = mr;
+            tgx = px + div32(tx * st, len); tgy = py + div32(ty * st, len);
+            mult = 1;
+        } else {
+            int sd = s_al > 0 && s_al < gd ? s_al : gd;   // off the line: run to the line (not farther out than he is)
+            tgx = px + div32(tx * sd, len); tgy = py + div32(ty * sd, len);
+        }
+    }
+    const int ex = tgx - wx, ey = tgy - wy;
     const int d2 = ex * ex + GROUND_DY2(ey);
     e->dir = dir_from_vector(TO_FIXED(px) - e->x, TO_FIXED(py) - e->y);
-    if (d2 <= 3 * 3) { update_animation(e, 0); return 1; }
+    if (d2 <= 3 * 3 && mult != 1) { update_animation(e, 0); return 1; }
     int ux, uy;
-    if (!aim_vector(wx, wy, gx, gy, &ux, &uy)) { update_animation(e, 0); return 1; }
-    const int sp = (int)burn_slow(e, haste_speed(e, speed)) * ARPG_GUARD_SPEED_X;
+    if (!aim_vector(wx, wy, tgx, tgy, &ux, &uy)) { update_animation(e, 0); return 1; }
+    const int sp = (int)burn_slow(e, haste_speed(e, speed)) * mult;
     fixed vx = (fixed)((ux * sp) >> 8);
     fixed vy = (fixed)((uy * sp) >> 8);
     if (d2 < 256 && vx * vx + 4 * vy * vy > d2 * 65536) { vx = TO_FIXED(ex); vy = TO_FIXED(ey); }                   // do not overshoot the post
@@ -631,8 +650,9 @@ static void update_exvoto(Enemy *e, Enemy *enemies, int num_enemies, int idx,
 
         case ENEMY_STATE_ATTACK: {
             if ((e->type == ENEMY_TYPE_PARROCO || e->type == ENEMY_TYPE_MONAGUILLO) && weapons_aim_charging()) {
-                e->state = ENEMY_STATE_CHASE;      // a guard leaves the bite cooldown to cover the hero's Ray charge
-                if (bodyguard_step(e, enemies, num_enemies, idx, px, py, tuning->speed)) break;
+                // a guard leaves the bite cooldown to cover the hero's Ray charge; a Monaguillo already on the line keeps his pause
+                if (bodyguard_step(e, enemies, num_enemies, idx, px, py, tuning->speed, 1)) { e->state = ENEMY_STATE_CHASE; break; }
+                if (e->type == ENEMY_TYPE_PARROCO) e->state = ENEMY_STATE_CHASE;
             }
             e->dir = dir_from_vector(player_x - e->x, player_y - e->y);
             if (--e->state_timer <= 0) e->state = ENEMY_STATE_CHASE;
@@ -652,7 +672,7 @@ static void update_exvoto(Enemy *e, Enemy *enemies, int num_enemies, int idx,
 
             // Bodyguards (Monaguillo, Párroco): while the hero charges the Ray they run to stand in the line of fire (before the bite: covering beats biting).
             if ((e->type == ENEMY_TYPE_PARROCO || e->type == ENEMY_TYPE_MONAGUILLO) &&
-                bodyguard_step(e, enemies, num_enemies, idx, px, py, tuning->speed)) break;
+                bodyguard_step(e, enemies, num_enemies, idx, px, py, tuning->speed, 0)) break;
 
             // Bite when in melee range and nothing solid is in between.
             int melee_range = tuning->preferred_dist_max;

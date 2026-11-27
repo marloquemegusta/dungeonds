@@ -21,6 +21,7 @@
 #define ARPG_DMG_PARROCO 70         // [TUNABLE-PLACEHOLDER] tank tier: hits harder than the Exvoto (15)
 #define ARPG_GUARD_DIST 70          // [TUNABLE-PLACEHOLDER] ground px from the hero where a bodyguard (Monaguillo, PÃ¡rroco) stands in the line of fire
 #define ARPG_GUARD_SPEED_X 6        // [TUNABLE-PLACEHOLDER] a bodyguard runs to the line at this multiple of its walking speed
+#define ARPG_GUARD_LINE_TOL 6       // [TUNABLE-PLACEHOLDER] ground px of sideways slack that count as "on the line" for the advancing Monaguillo
 #define ARPG_PARROCO_FLASH_FRAMES 5 // [TUNABLE-PLACEHOLDER] frames the PÃ¡rroco's body flashes wax-white when the ray breaks on it
 #define ARPG_SMONJA_GLIFO_SPEED 768 // [TUNABLE-PLACEHOLDER] 8.8 ground px/frame of the SÃºper Monja's dash out of a glifo (3 px/frame)
 #define ARPG_SMONJA_GLIFO_REACT 10  // [TUNABLE-PLACEHOLDER] frames she stays still after the glifo lands, before dashing out

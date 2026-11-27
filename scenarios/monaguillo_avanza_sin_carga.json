@@ -1,0 +1,2901 @@
+{
+ "name": "v_sin_carga_def",
+ "description": "verif: sin carga, el Monaguillo persigue y muerde",
+ "suite": false,
+ "state": {
+  "elf": "../.ds-game-dev/build/out/dungeonds.elf",
+  "symbols": {
+   "gps": "g_player_state",
+   "tiers": "g_tier_debug",
+   "pl": "s_player",
+   "en": "g_enemies",
+   "dbg": "g_enc_debug",
+   "stats": "g_enc_stats"
+  },
+  "default_symbol": "gps",
+  "fields": {
+   "god": {
+    "symbol": "gps",
+    "offset": 20,
+    "type": "s32"
+   },
+   "tier_spawn": {
+    "symbol": "tiers",
+    "offset": 0,
+    "type": "u8"
+   },
+   "px": {
+    "symbol": "pl",
+    "offset": 0,
+    "type": "s32"
+   },
+   "py": {
+    "symbol": "pl",
+    "offset": 4,
+    "type": "s32"
+   },
+   "x0": {
+    "symbol": "en",
+    "offset": 0,
+    "type": "s32"
+   },
+   "y0": {
+    "symbol": "en",
+    "offset": 4,
+    "type": "s32"
+   },
+   "x1": {
+    "symbol": "en",
+    "offset": 124,
+    "type": "s32"
+   },
+   "y1": {
+    "symbol": "en",
+    "offset": 128,
+    "type": "s32"
+   },
+   "hp0": {
+    "symbol": "en",
+    "offset": 28,
+    "type": "s32"
+   },
+   "dbg_god": {
+    "symbol": "dbg",
+    "offset": 2,
+    "type": "u8"
+   },
+   "dbg_restart": {
+    "symbol": "dbg",
+    "offset": 12,
+    "type": "u8"
+   },
+   "dbg_start_room": {
+    "symbol": "dbg",
+    "offset": 20,
+    "type": "u8"
+   },
+   "room": {
+    "symbol": "stats",
+    "offset": 60,
+    "type": "u8"
+   },
+   "a0": {
+    "symbol": "en",
+    "offset": 24,
+    "type": "s32"
+   },
+   "a1": {
+    "symbol": "en",
+    "offset": 148,
+    "type": "s32"
+   },
+   "a2": {
+    "symbol": "en",
+    "offset": 272,
+    "type": "s32"
+   },
+   "a3": {
+    "symbol": "en",
+    "offset": 396,
+    "type": "s32"
+   },
+   "a4": {
+    "symbol": "en",
+    "offset": 520,
+    "type": "s32"
+   },
+   "a5": {
+    "symbol": "en",
+    "offset": 644,
+    "type": "s32"
+   },
+   "a6": {
+    "symbol": "en",
+    "offset": 768,
+    "type": "s32"
+   },
+   "a7": {
+    "symbol": "en",
+    "offset": 892,
+    "type": "s32"
+   },
+   "a8": {
+    "symbol": "en",
+    "offset": 1016,
+    "type": "s32"
+   },
+   "a9": {
+    "symbol": "en",
+    "offset": 1140,
+    "type": "s32"
+   },
+   "type0": {
+    "symbol": "en",
+    "offset": 40,
+    "type": "s32"
+   },
+   "state0": {
+    "symbol": "en",
+    "offset": 44,
+    "type": "s32"
+   },
+   "type1": {
+    "symbol": "en",
+    "offset": 164,
+    "type": "s32"
+   },
+   "state1": {
+    "symbol": "en",
+    "offset": 168,
+    "type": "s32"
+   },
+   "hp1": {
+    "symbol": "en",
+    "offset": 152,
+    "type": "s32"
+   },
+   "hit0": {
+    "symbol": "en",
+    "offset": 36,
+    "type": "s32"
+   },
+   "ts0": {
+    "symbol": "en",
+    "offset": 40,
+    "type": "u16"
+   },
+   "st0": {
+    "symbol": "en",
+    "offset": 41,
+    "type": "u8"
+   },
+   "gest0": {
+    "symbol": "en",
+    "offset": 96,
+    "type": "s32"
+   },
+   "burnl0": {
+    "symbol": "en",
+    "offset": 116,
+    "type": "u8"
+   },
+   "burnt0": {
+    "symbol": "en",
+    "offset": 120,
+    "type": "u16"
+   },
+   "x2": {
+    "symbol": "en",
+    "offset": 248,
+    "type": "s32"
+   },
+   "y2": {
+    "symbol": "en",
+    "offset": 252,
+    "type": "s32"
+   },
+   "st1": {
+    "symbol": "en",
+    "offset": 165,
+    "type": "u8"
+   },
+   "st2": {
+    "symbol": "en",
+    "offset": 289,
+    "type": "u8"
+   },
+   "hp2": {
+    "symbol": "en",
+    "offset": 276,
+    "type": "s32"
+   },
+   "hit1": {
+    "symbol": "en",
+    "offset": 160,
+    "type": "s32"
+   },
+   "type2": {
+    "symbol": "en",
+    "offset": 288,
+    "type": "u8"
+   }
+  }
+ },
+ "steps": [
+  {
+   "frames": 60
+  },
+  {
+   "tap": {
+    "x": 128,
+    "y": 66
+   },
+   "frames": 6
+  },
+  {
+   "release": true,
+   "frames": 40
+  },
+  {
+   "button_down": "START",
+   "frames": 4
+  },
+  {
+   "button_up": "START",
+   "frames": 90
+  },
+  {
+   "poke": [
+    {
+     "field": "px",
+     "value": 32768
+    },
+    {
+     "field": "py",
+     "value": 29696
+    }
+   ],
+   "frames": 20
+  },
+  {
+   "button_down": "A",
+   "frames": 4
+  },
+  {
+   "button_up": "A",
+   "frames": 40
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    },
+    {
+     "field": "dbg_start_room",
+     "value": 1
+    },
+    {
+     "field": "dbg_restart",
+     "value": 1
+    }
+   ],
+   "frames": 120,
+   "state_capture": "room"
+  },
+  {
+   "poke": [
+    {
+     "field": "a0",
+     "value": 0
+    },
+    {
+     "field": "a1",
+     "value": 0
+    },
+    {
+     "field": "a2",
+     "value": 0
+    },
+    {
+     "field": "a3",
+     "value": 0
+    },
+    {
+     "field": "a4",
+     "value": 0
+    },
+    {
+     "field": "a5",
+     "value": 0
+    },
+    {
+     "field": "a6",
+     "value": 0
+    },
+    {
+     "field": "a7",
+     "value": 0
+    },
+    {
+     "field": "a8",
+     "value": 0
+    },
+    {
+     "field": "a9",
+     "value": 0
+    }
+   ],
+   "frames": 1
+  },
+  {
+   "poke": [
+    {
+     "field": "tier_spawn",
+     "value": 2
+    }
+   ],
+   "frames": 2,
+   "state_capture": "spawn"
+  },
+  {
+   "poke": [
+    {
+     "field": "hp0",
+     "value": 20000
+    },
+    {
+     "field": "hp1",
+     "value": 20000
+    }
+   ],
+   "frames": 1
+  },
+  {
+   "frames": 2,
+   "capture": "c0"
+  },
+  {
+   "frames": 4,
+   "state_capture": "t1",
+   "poke": [
+    {
+     "field": "x1",
+     "value": 65536
+    },
+    {
+     "field": "y1",
+     "value": 357376
+    },
+    {
+     "field": "burnl0",
+     "value": 0
+    },
+    {
+     "field": "burnt0",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "frames": 4,
+   "state_capture": "t2",
+   "poke": [
+    {
+     "field": "x1",
+     "value": 65536
+    },
+    {
+     "field": "y1",
+     "value": 357376
+    },
+    {
+     "field": "burnl0",
+     "value": 0
+    },
+    {
+     "field": "burnt0",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "frames": 4,
+   "state_capture": "t3",
+   "poke": [
+    {
+     "field": "x1",
+     "value": 65536
+    },
+    {
+     "field": "y1",
+     "value": 357376
+    },
+    {
+     "field": "burnl0",
+     "value": 0
+    },
+    {
+     "field": "burnt0",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "frames": 4,
+   "state_capture": "t4",
+   "poke": [
+    {
+     "field": "x1",
+     "value": 65536
+    },
+    {
+     "field": "y1",
+     "value": 357376
+    },
+    {
+     "field": "burnl0",
+     "value": 0
+    },
+    {
+     "field": "burnt0",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "frames": 4,
+   "state_capture": "t5",
+   "poke": [
+    {
+     "field": "x1",
+     "value": 65536
+    },
+    {
+     "field": "y1",
+     "value": 357376
+    },
+    {
+     "field": "burnl0",
+     "value": 0
+    },
+    {
+     "field": "burnt0",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "frames": 4,
+   "state_capture": "t6",
+   "poke": [
+    {
+     "field": "x1",
+     "value": 65536
+    },
+    {
+     "field": "y1",
+     "value": 357376
+    },
+    {
+     "field": "burnl0",
+     "value": 0
+    },
+    {
+     "field": "burnt0",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "frames": 4,
+   "state_capture": "t7",
+   "poke": [
+    {
+     "field": "x1",
+     "value": 65536
+    },
+    {
+     "field": "y1",
+     "value": 357376
+    },
+    {
+     "field": "burnl0",
+     "value": 0
+    },
+    {
+     "field": "burnt0",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "frames": 4,
+   "state_capture": "t8",
+   "poke": [
+    {
+     "field": "x1",
+     "value": 65536
+    },
+    {
+     "field": "y1",
+     "value": 357376
+    },
+    {
+     "field": "burnl0",
+     "value": 0
+    },
+    {
+     "field": "burnt0",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "frames": 4,
+   "state_capture": "t9",
+   "poke": [
+    {
+     "field": "x1",
+     "value": 65536
+    },
+    {
+     "field": "y1",
+     "value": 357376
+    },
+    {
+     "field": "burnl0",
+     "value": 0
+    },
+    {
+     "field": "burnt0",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "frames": 4,
+   "state_capture": "t10",
+   "poke": [
+    {
+     "field": "x1",
+     "value": 65536
+    },
+    {
+     "field": "y1",
+     "value": 357376
+    },
+    {
+     "field": "burnl0",
+     "value": 0
+    },
+    {
+     "field": "burnt0",
+     "value": 0
+    }
+   ],
+   "capture": "c10"
+  },
+  {
+   "frames": 4,
+   "state_capture": "t11",
+   "poke": [
+    {
+     "field": "x1",
+     "value": 65536
+    },
+    {
+     "field": "y1",
+     "value": 357376
+    },
+    {
+     "field": "burnl0",
+     "value": 0
+    },
+    {
+     "field": "burnt0",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "frames": 4,
+   "state_capture": "t12",
+   "poke": [
+    {
+     "field": "x1",
+     "value": 65536
+    },
+    {
+     "field": "y1",
+     "value": 357376
+    },
+    {
+     "field": "burnl0",
+     "value": 0
+    },
+    {
+     "field": "burnt0",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "frames": 4,
+   "state_capture": "t13",
+   "poke": [
+    {
+     "field": "x1",
+     "value": 65536
+    },
+    {
+     "field": "y1",
+     "value": 357376
+    },
+    {
+     "field": "burnl0",
+     "value": 0
+    },
+    {
+     "field": "burnt0",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "frames": 4,
+   "state_capture": "t14",
+   "poke": [
+    {
+     "field": "x1",
+     "value": 65536
+    },
+    {
+     "field": "y1",
+     "value": 357376
+    },
+    {
+     "field": "burnl0",
+     "value": 0
+    },
+    {
+     "field": "burnt0",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "frames": 4,
+   "state_capture": "t15",
+   "poke": [
+    {
+     "field": "x1",
+     "value": 65536
+    },
+    {
+     "field": "y1",
+     "value": 357376
+    },
+    {
+     "field": "burnl0",
+     "value": 0
+    },
+    {
+     "field": "burnt0",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "frames": 4,
+   "state_capture": "t16",
+   "poke": [
+    {
+     "field": "x1",
+     "value": 65536
+    },
+    {
+     "field": "y1",
+     "value": 357376
+    },
+    {
+     "field": "burnl0",
+     "value": 0
+    },
+    {
+     "field": "burnt0",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "frames": 4,
+   "state_capture": "t17",
+   "poke": [
+    {
+     "field": "x1",
+     "value": 65536
+    },
+    {
+     "field": "y1",
+     "value": 357376
+    },
+    {
+     "field": "burnl0",
+     "value": 0
+    },
+    {
+     "field": "burnt0",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "frames": 4,
+   "state_capture": "t18",
+   "poke": [
+    {
+     "field": "x1",
+     "value": 65536
+    },
+    {
+     "field": "y1",
+     "value": 357376
+    },
+    {
+     "field": "burnl0",
+     "value": 0
+    },
+    {
+     "field": "burnt0",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "frames": 4,
+   "state_capture": "t19",
+   "poke": [
+    {
+     "field": "x1",
+     "value": 65536
+    },
+    {
+     "field": "y1",
+     "value": 357376
+    },
+    {
+     "field": "burnl0",
+     "value": 0
+    },
+    {
+     "field": "burnt0",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "frames": 4,
+   "state_capture": "t20",
+   "poke": [
+    {
+     "field": "x1",
+     "value": 65536
+    },
+    {
+     "field": "y1",
+     "value": 357376
+    },
+    {
+     "field": "burnl0",
+     "value": 0
+    },
+    {
+     "field": "burnt0",
+     "value": 0
+    }
+   ],
+   "capture": "c20"
+  },
+  {
+   "frames": 4,
+   "state_capture": "t21",
+   "poke": [
+    {
+     "field": "x1",
+     "value": 65536
+    },
+    {
+     "field": "y1",
+     "value": 357376
+    },
+    {
+     "field": "burnl0",
+     "value": 0
+    },
+    {
+     "field": "burnt0",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "frames": 4,
+   "state_capture": "t22",
+   "poke": [
+    {
+     "field": "x1",
+     "value": 65536
+    },
+    {
+     "field": "y1",
+     "value": 357376
+    },
+    {
+     "field": "burnl0",
+     "value": 0
+    },
+    {
+     "field": "burnt0",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "frames": 4,
+   "state_capture": "t23",
+   "poke": [
+    {
+     "field": "x1",
+     "value": 65536
+    },
+    {
+     "field": "y1",
+     "value": 357376
+    },
+    {
+     "field": "burnl0",
+     "value": 0
+    },
+    {
+     "field": "burnt0",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "frames": 4,
+   "state_capture": "t24",
+   "poke": [
+    {
+     "field": "x1",
+     "value": 65536
+    },
+    {
+     "field": "y1",
+     "value": 357376
+    },
+    {
+     "field": "burnl0",
+     "value": 0
+    },
+    {
+     "field": "burnt0",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "frames": 4,
+   "state_capture": "t25",
+   "poke": [
+    {
+     "field": "x1",
+     "value": 65536
+    },
+    {
+     "field": "y1",
+     "value": 357376
+    },
+    {
+     "field": "burnl0",
+     "value": 0
+    },
+    {
+     "field": "burnt0",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "frames": 4,
+   "state_capture": "t26",
+   "poke": [
+    {
+     "field": "x1",
+     "value": 65536
+    },
+    {
+     "field": "y1",
+     "value": 357376
+    },
+    {
+     "field": "burnl0",
+     "value": 0
+    },
+    {
+     "field": "burnt0",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "frames": 4,
+   "state_capture": "t27",
+   "poke": [
+    {
+     "field": "x1",
+     "value": 65536
+    },
+    {
+     "field": "y1",
+     "value": 357376
+    },
+    {
+     "field": "burnl0",
+     "value": 0
+    },
+    {
+     "field": "burnt0",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "frames": 4,
+   "state_capture": "t28",
+   "poke": [
+    {
+     "field": "x1",
+     "value": 65536
+    },
+    {
+     "field": "y1",
+     "value": 357376
+    },
+    {
+     "field": "burnl0",
+     "value": 0
+    },
+    {
+     "field": "burnt0",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "frames": 4,
+   "state_capture": "t29",
+   "poke": [
+    {
+     "field": "x1",
+     "value": 65536
+    },
+    {
+     "field": "y1",
+     "value": 357376
+    },
+    {
+     "field": "burnl0",
+     "value": 0
+    },
+    {
+     "field": "burnt0",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "frames": 4,
+   "state_capture": "t30",
+   "poke": [
+    {
+     "field": "x1",
+     "value": 65536
+    },
+    {
+     "field": "y1",
+     "value": 357376
+    },
+    {
+     "field": "burnl0",
+     "value": 0
+    },
+    {
+     "field": "burnt0",
+     "value": 0
+    }
+   ],
+   "capture": "c30"
+  },
+  {
+   "frames": 4,
+   "state_capture": "t31",
+   "poke": [
+    {
+     "field": "x1",
+     "value": 65536
+    },
+    {
+     "field": "y1",
+     "value": 357376
+    },
+    {
+     "field": "burnl0",
+     "value": 0
+    },
+    {
+     "field": "burnt0",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "frames": 4,
+   "state_capture": "t32",
+   "poke": [
+    {
+     "field": "x1",
+     "value": 65536
+    },
+    {
+     "field": "y1",
+     "value": 357376
+    },
+    {
+     "field": "burnl0",
+     "value": 0
+    },
+    {
+     "field": "burnt0",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "frames": 4,
+   "state_capture": "t33",
+   "poke": [
+    {
+     "field": "x1",
+     "value": 65536
+    },
+    {
+     "field": "y1",
+     "value": 357376
+    },
+    {
+     "field": "burnl0",
+     "value": 0
+    },
+    {
+     "field": "burnt0",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "frames": 4,
+   "state_capture": "t34",
+   "poke": [
+    {
+     "field": "x1",
+     "value": 65536
+    },
+    {
+     "field": "y1",
+     "value": 357376
+    },
+    {
+     "field": "burnl0",
+     "value": 0
+    },
+    {
+     "field": "burnt0",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "frames": 4,
+   "state_capture": "t35",
+   "poke": [
+    {
+     "field": "x1",
+     "value": 65536
+    },
+    {
+     "field": "y1",
+     "value": 357376
+    },
+    {
+     "field": "burnl0",
+     "value": 0
+    },
+    {
+     "field": "burnt0",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "frames": 4,
+   "state_capture": "t36",
+   "poke": [
+    {
+     "field": "x1",
+     "value": 65536
+    },
+    {
+     "field": "y1",
+     "value": 357376
+    },
+    {
+     "field": "burnl0",
+     "value": 0
+    },
+    {
+     "field": "burnt0",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "frames": 4,
+   "state_capture": "t37",
+   "poke": [
+    {
+     "field": "x1",
+     "value": 65536
+    },
+    {
+     "field": "y1",
+     "value": 357376
+    },
+    {
+     "field": "burnl0",
+     "value": 0
+    },
+    {
+     "field": "burnt0",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "frames": 4,
+   "state_capture": "t38",
+   "poke": [
+    {
+     "field": "x1",
+     "value": 65536
+    },
+    {
+     "field": "y1",
+     "value": 357376
+    },
+    {
+     "field": "burnl0",
+     "value": 0
+    },
+    {
+     "field": "burnt0",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "frames": 4,
+   "state_capture": "t39",
+   "poke": [
+    {
+     "field": "x1",
+     "value": 65536
+    },
+    {
+     "field": "y1",
+     "value": 357376
+    },
+    {
+     "field": "burnl0",
+     "value": 0
+    },
+    {
+     "field": "burnt0",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "frames": 4,
+   "state_capture": "t40",
+   "poke": [
+    {
+     "field": "x1",
+     "value": 65536
+    },
+    {
+     "field": "y1",
+     "value": 357376
+    },
+    {
+     "field": "burnl0",
+     "value": 0
+    },
+    {
+     "field": "burnt0",
+     "value": 0
+    }
+   ],
+   "capture": "c40"
+  },
+  {
+   "frames": 4,
+   "state_capture": "t41",
+   "poke": [
+    {
+     "field": "x1",
+     "value": 65536
+    },
+    {
+     "field": "y1",
+     "value": 357376
+    },
+    {
+     "field": "burnl0",
+     "value": 0
+    },
+    {
+     "field": "burnt0",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "frames": 4,
+   "state_capture": "t42",
+   "poke": [
+    {
+     "field": "x1",
+     "value": 65536
+    },
+    {
+     "field": "y1",
+     "value": 357376
+    },
+    {
+     "field": "burnl0",
+     "value": 0
+    },
+    {
+     "field": "burnt0",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "frames": 4,
+   "state_capture": "t43",
+   "poke": [
+    {
+     "field": "x1",
+     "value": 65536
+    },
+    {
+     "field": "y1",
+     "value": 357376
+    },
+    {
+     "field": "burnl0",
+     "value": 0
+    },
+    {
+     "field": "burnt0",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "frames": 4,
+   "state_capture": "t44",
+   "poke": [
+    {
+     "field": "x1",
+     "value": 65536
+    },
+    {
+     "field": "y1",
+     "value": 357376
+    },
+    {
+     "field": "burnl0",
+     "value": 0
+    },
+    {
+     "field": "burnt0",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "frames": 4,
+   "state_capture": "t45",
+   "poke": [
+    {
+     "field": "x1",
+     "value": 65536
+    },
+    {
+     "field": "y1",
+     "value": 357376
+    },
+    {
+     "field": "burnl0",
+     "value": 0
+    },
+    {
+     "field": "burnt0",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "frames": 4,
+   "state_capture": "t46",
+   "poke": [
+    {
+     "field": "x1",
+     "value": 65536
+    },
+    {
+     "field": "y1",
+     "value": 357376
+    },
+    {
+     "field": "burnl0",
+     "value": 0
+    },
+    {
+     "field": "burnt0",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "frames": 4,
+   "state_capture": "t47",
+   "poke": [
+    {
+     "field": "x1",
+     "value": 65536
+    },
+    {
+     "field": "y1",
+     "value": 357376
+    },
+    {
+     "field": "burnl0",
+     "value": 0
+    },
+    {
+     "field": "burnt0",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "frames": 4,
+   "state_capture": "t48",
+   "poke": [
+    {
+     "field": "x1",
+     "value": 65536
+    },
+    {
+     "field": "y1",
+     "value": 357376
+    },
+    {
+     "field": "burnl0",
+     "value": 0
+    },
+    {
+     "field": "burnt0",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "frames": 4,
+   "state_capture": "t49",
+   "poke": [
+    {
+     "field": "x1",
+     "value": 65536
+    },
+    {
+     "field": "y1",
+     "value": 357376
+    },
+    {
+     "field": "burnl0",
+     "value": 0
+    },
+    {
+     "field": "burnt0",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "frames": 4,
+   "state_capture": "t50",
+   "poke": [
+    {
+     "field": "x1",
+     "value": 65536
+    },
+    {
+     "field": "y1",
+     "value": 357376
+    },
+    {
+     "field": "burnl0",
+     "value": 0
+    },
+    {
+     "field": "burnt0",
+     "value": 0
+    }
+   ],
+   "capture": "c50"
+  },
+  {
+   "frames": 4,
+   "state_capture": "t51",
+   "poke": [
+    {
+     "field": "x1",
+     "value": 65536
+    },
+    {
+     "field": "y1",
+     "value": 357376
+    },
+    {
+     "field": "burnl0",
+     "value": 0
+    },
+    {
+     "field": "burnt0",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "frames": 4,
+   "state_capture": "t52",
+   "poke": [
+    {
+     "field": "x1",
+     "value": 65536
+    },
+    {
+     "field": "y1",
+     "value": 357376
+    },
+    {
+     "field": "burnl0",
+     "value": 0
+    },
+    {
+     "field": "burnt0",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "frames": 4,
+   "state_capture": "t53",
+   "poke": [
+    {
+     "field": "x1",
+     "value": 65536
+    },
+    {
+     "field": "y1",
+     "value": 357376
+    },
+    {
+     "field": "burnl0",
+     "value": 0
+    },
+    {
+     "field": "burnt0",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "frames": 4,
+   "state_capture": "t54",
+   "poke": [
+    {
+     "field": "x1",
+     "value": 65536
+    },
+    {
+     "field": "y1",
+     "value": 357376
+    },
+    {
+     "field": "burnl0",
+     "value": 0
+    },
+    {
+     "field": "burnt0",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "frames": 4,
+   "state_capture": "t55",
+   "poke": [
+    {
+     "field": "x1",
+     "value": 65536
+    },
+    {
+     "field": "y1",
+     "value": 357376
+    },
+    {
+     "field": "burnl0",
+     "value": 0
+    },
+    {
+     "field": "burnt0",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "frames": 4,
+   "state_capture": "t56",
+   "poke": [
+    {
+     "field": "x1",
+     "value": 65536
+    },
+    {
+     "field": "y1",
+     "value": 357376
+    },
+    {
+     "field": "burnl0",
+     "value": 0
+    },
+    {
+     "field": "burnt0",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "frames": 4,
+   "state_capture": "t57",
+   "poke": [
+    {
+     "field": "x1",
+     "value": 65536
+    },
+    {
+     "field": "y1",
+     "value": 357376
+    },
+    {
+     "field": "burnl0",
+     "value": 0
+    },
+    {
+     "field": "burnt0",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "frames": 4,
+   "state_capture": "t58",
+   "poke": [
+    {
+     "field": "x1",
+     "value": 65536
+    },
+    {
+     "field": "y1",
+     "value": 357376
+    },
+    {
+     "field": "burnl0",
+     "value": 0
+    },
+    {
+     "field": "burnt0",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "frames": 4,
+   "state_capture": "t59",
+   "poke": [
+    {
+     "field": "x1",
+     "value": 65536
+    },
+    {
+     "field": "y1",
+     "value": 357376
+    },
+    {
+     "field": "burnl0",
+     "value": 0
+    },
+    {
+     "field": "burnt0",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "frames": 4,
+   "state_capture": "t60",
+   "poke": [
+    {
+     "field": "x1",
+     "value": 65536
+    },
+    {
+     "field": "y1",
+     "value": 357376
+    },
+    {
+     "field": "burnl0",
+     "value": 0
+    },
+    {
+     "field": "burnt0",
+     "value": 0
+    }
+   ],
+   "capture": "c60"
+  },
+  {
+   "frames": 4,
+   "state_capture": "t61",
+   "poke": [
+    {
+     "field": "x1",
+     "value": 65536
+    },
+    {
+     "field": "y1",
+     "value": 357376
+    },
+    {
+     "field": "burnl0",
+     "value": 0
+    },
+    {
+     "field": "burnt0",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "frames": 4,
+   "state_capture": "t62",
+   "poke": [
+    {
+     "field": "x1",
+     "value": 65536
+    },
+    {
+     "field": "y1",
+     "value": 357376
+    },
+    {
+     "field": "burnl0",
+     "value": 0
+    },
+    {
+     "field": "burnt0",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "frames": 4,
+   "state_capture": "t63",
+   "poke": [
+    {
+     "field": "x1",
+     "value": 65536
+    },
+    {
+     "field": "y1",
+     "value": 357376
+    },
+    {
+     "field": "burnl0",
+     "value": 0
+    },
+    {
+     "field": "burnt0",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "frames": 4,
+   "state_capture": "t64",
+   "poke": [
+    {
+     "field": "x1",
+     "value": 65536
+    },
+    {
+     "field": "y1",
+     "value": 357376
+    },
+    {
+     "field": "burnl0",
+     "value": 0
+    },
+    {
+     "field": "burnt0",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "frames": 4,
+   "state_capture": "t65",
+   "poke": [
+    {
+     "field": "x1",
+     "value": 65536
+    },
+    {
+     "field": "y1",
+     "value": 357376
+    },
+    {
+     "field": "burnl0",
+     "value": 0
+    },
+    {
+     "field": "burnt0",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "frames": 4,
+   "state_capture": "t66",
+   "poke": [
+    {
+     "field": "x1",
+     "value": 65536
+    },
+    {
+     "field": "y1",
+     "value": 357376
+    },
+    {
+     "field": "burnl0",
+     "value": 0
+    },
+    {
+     "field": "burnt0",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "frames": 4,
+   "state_capture": "t67",
+   "poke": [
+    {
+     "field": "x1",
+     "value": 65536
+    },
+    {
+     "field": "y1",
+     "value": 357376
+    },
+    {
+     "field": "burnl0",
+     "value": 0
+    },
+    {
+     "field": "burnt0",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "frames": 4,
+   "state_capture": "t68",
+   "poke": [
+    {
+     "field": "x1",
+     "value": 65536
+    },
+    {
+     "field": "y1",
+     "value": 357376
+    },
+    {
+     "field": "burnl0",
+     "value": 0
+    },
+    {
+     "field": "burnt0",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "frames": 4,
+   "state_capture": "t69",
+   "poke": [
+    {
+     "field": "x1",
+     "value": 65536
+    },
+    {
+     "field": "y1",
+     "value": 357376
+    },
+    {
+     "field": "burnl0",
+     "value": 0
+    },
+    {
+     "field": "burnt0",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "frames": 4,
+   "state_capture": "t70",
+   "poke": [
+    {
+     "field": "x1",
+     "value": 65536
+    },
+    {
+     "field": "y1",
+     "value": 357376
+    },
+    {
+     "field": "burnl0",
+     "value": 0
+    },
+    {
+     "field": "burnt0",
+     "value": 0
+    }
+   ],
+   "capture": "c70"
+  },
+  {
+   "frames": 4,
+   "state_capture": "t71",
+   "poke": [
+    {
+     "field": "x1",
+     "value": 65536
+    },
+    {
+     "field": "y1",
+     "value": 357376
+    },
+    {
+     "field": "burnl0",
+     "value": 0
+    },
+    {
+     "field": "burnt0",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "frames": 4,
+   "state_capture": "t72",
+   "poke": [
+    {
+     "field": "x1",
+     "value": 65536
+    },
+    {
+     "field": "y1",
+     "value": 357376
+    },
+    {
+     "field": "burnl0",
+     "value": 0
+    },
+    {
+     "field": "burnt0",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "frames": 4,
+   "state_capture": "t73",
+   "poke": [
+    {
+     "field": "x1",
+     "value": 65536
+    },
+    {
+     "field": "y1",
+     "value": 357376
+    },
+    {
+     "field": "burnl0",
+     "value": 0
+    },
+    {
+     "field": "burnt0",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "frames": 4,
+   "state_capture": "t74",
+   "poke": [
+    {
+     "field": "x1",
+     "value": 65536
+    },
+    {
+     "field": "y1",
+     "value": 357376
+    },
+    {
+     "field": "burnl0",
+     "value": 0
+    },
+    {
+     "field": "burnt0",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "frames": 4,
+   "state_capture": "t75",
+   "poke": [
+    {
+     "field": "x1",
+     "value": 65536
+    },
+    {
+     "field": "y1",
+     "value": 357376
+    },
+    {
+     "field": "burnl0",
+     "value": 0
+    },
+    {
+     "field": "burnt0",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "frames": 4,
+   "state_capture": "t76",
+   "poke": [
+    {
+     "field": "x1",
+     "value": 65536
+    },
+    {
+     "field": "y1",
+     "value": 357376
+    },
+    {
+     "field": "burnl0",
+     "value": 0
+    },
+    {
+     "field": "burnt0",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "frames": 4,
+   "state_capture": "t77",
+   "poke": [
+    {
+     "field": "x1",
+     "value": 65536
+    },
+    {
+     "field": "y1",
+     "value": 357376
+    },
+    {
+     "field": "burnl0",
+     "value": 0
+    },
+    {
+     "field": "burnt0",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "frames": 4,
+   "state_capture": "t78",
+   "poke": [
+    {
+     "field": "x1",
+     "value": 65536
+    },
+    {
+     "field": "y1",
+     "value": 357376
+    },
+    {
+     "field": "burnl0",
+     "value": 0
+    },
+    {
+     "field": "burnt0",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "frames": 4,
+   "state_capture": "t79",
+   "poke": [
+    {
+     "field": "x1",
+     "value": 65536
+    },
+    {
+     "field": "y1",
+     "value": 357376
+    },
+    {
+     "field": "burnl0",
+     "value": 0
+    },
+    {
+     "field": "burnt0",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "frames": 4,
+   "state_capture": "t80",
+   "poke": [
+    {
+     "field": "x1",
+     "value": 65536
+    },
+    {
+     "field": "y1",
+     "value": 357376
+    },
+    {
+     "field": "burnl0",
+     "value": 0
+    },
+    {
+     "field": "burnt0",
+     "value": 0
+    }
+   ],
+   "capture": "c80"
+  },
+  {
+   "frames": 4,
+   "state_capture": "t81",
+   "poke": [
+    {
+     "field": "x1",
+     "value": 65536
+    },
+    {
+     "field": "y1",
+     "value": 357376
+    },
+    {
+     "field": "burnl0",
+     "value": 0
+    },
+    {
+     "field": "burnt0",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "frames": 4,
+   "state_capture": "t82",
+   "poke": [
+    {
+     "field": "x1",
+     "value": 65536
+    },
+    {
+     "field": "y1",
+     "value": 357376
+    },
+    {
+     "field": "burnl0",
+     "value": 0
+    },
+    {
+     "field": "burnt0",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "frames": 4,
+   "state_capture": "t83",
+   "poke": [
+    {
+     "field": "x1",
+     "value": 65536
+    },
+    {
+     "field": "y1",
+     "value": 357376
+    },
+    {
+     "field": "burnl0",
+     "value": 0
+    },
+    {
+     "field": "burnt0",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "frames": 4,
+   "state_capture": "t84",
+   "poke": [
+    {
+     "field": "x1",
+     "value": 65536
+    },
+    {
+     "field": "y1",
+     "value": 357376
+    },
+    {
+     "field": "burnl0",
+     "value": 0
+    },
+    {
+     "field": "burnt0",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "frames": 4,
+   "state_capture": "t85",
+   "poke": [
+    {
+     "field": "x1",
+     "value": 65536
+    },
+    {
+     "field": "y1",
+     "value": 357376
+    },
+    {
+     "field": "burnl0",
+     "value": 0
+    },
+    {
+     "field": "burnt0",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "frames": 4,
+   "state_capture": "t86",
+   "poke": [
+    {
+     "field": "x1",
+     "value": 65536
+    },
+    {
+     "field": "y1",
+     "value": 357376
+    },
+    {
+     "field": "burnl0",
+     "value": 0
+    },
+    {
+     "field": "burnt0",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "frames": 4,
+   "state_capture": "t87",
+   "poke": [
+    {
+     "field": "x1",
+     "value": 65536
+    },
+    {
+     "field": "y1",
+     "value": 357376
+    },
+    {
+     "field": "burnl0",
+     "value": 0
+    },
+    {
+     "field": "burnt0",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "frames": 4,
+   "state_capture": "t88",
+   "poke": [
+    {
+     "field": "x1",
+     "value": 65536
+    },
+    {
+     "field": "y1",
+     "value": 357376
+    },
+    {
+     "field": "burnl0",
+     "value": 0
+    },
+    {
+     "field": "burnt0",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "frames": 4,
+   "state_capture": "t89",
+   "poke": [
+    {
+     "field": "x1",
+     "value": 65536
+    },
+    {
+     "field": "y1",
+     "value": 357376
+    },
+    {
+     "field": "burnl0",
+     "value": 0
+    },
+    {
+     "field": "burnt0",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "frames": 4,
+   "state_capture": "t90",
+   "poke": [
+    {
+     "field": "x1",
+     "value": 65536
+    },
+    {
+     "field": "y1",
+     "value": 357376
+    },
+    {
+     "field": "burnl0",
+     "value": 0
+    },
+    {
+     "field": "burnt0",
+     "value": 0
+    }
+   ],
+   "capture": "c90"
+  },
+  {
+   "frames": 4,
+   "state_capture": "t91",
+   "poke": [
+    {
+     "field": "x1",
+     "value": 65536
+    },
+    {
+     "field": "y1",
+     "value": 357376
+    },
+    {
+     "field": "burnl0",
+     "value": 0
+    },
+    {
+     "field": "burnt0",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "frames": 4,
+   "state_capture": "t92",
+   "poke": [
+    {
+     "field": "x1",
+     "value": 65536
+    },
+    {
+     "field": "y1",
+     "value": 357376
+    },
+    {
+     "field": "burnl0",
+     "value": 0
+    },
+    {
+     "field": "burnt0",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "frames": 4,
+   "state_capture": "t93",
+   "poke": [
+    {
+     "field": "x1",
+     "value": 65536
+    },
+    {
+     "field": "y1",
+     "value": 357376
+    },
+    {
+     "field": "burnl0",
+     "value": 0
+    },
+    {
+     "field": "burnt0",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "frames": 4,
+   "state_capture": "t94",
+   "poke": [
+    {
+     "field": "x1",
+     "value": 65536
+    },
+    {
+     "field": "y1",
+     "value": 357376
+    },
+    {
+     "field": "burnl0",
+     "value": 0
+    },
+    {
+     "field": "burnt0",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "frames": 4,
+   "state_capture": "t95",
+   "poke": [
+    {
+     "field": "x1",
+     "value": 65536
+    },
+    {
+     "field": "y1",
+     "value": 357376
+    },
+    {
+     "field": "burnl0",
+     "value": 0
+    },
+    {
+     "field": "burnt0",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "frames": 4,
+   "state_capture": "t96",
+   "poke": [
+    {
+     "field": "x1",
+     "value": 65536
+    },
+    {
+     "field": "y1",
+     "value": 357376
+    },
+    {
+     "field": "burnl0",
+     "value": 0
+    },
+    {
+     "field": "burnt0",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "frames": 4,
+   "state_capture": "t97",
+   "poke": [
+    {
+     "field": "x1",
+     "value": 65536
+    },
+    {
+     "field": "y1",
+     "value": 357376
+    },
+    {
+     "field": "burnl0",
+     "value": 0
+    },
+    {
+     "field": "burnt0",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "frames": 4,
+   "state_capture": "t98",
+   "poke": [
+    {
+     "field": "x1",
+     "value": 65536
+    },
+    {
+     "field": "y1",
+     "value": 357376
+    },
+    {
+     "field": "burnl0",
+     "value": 0
+    },
+    {
+     "field": "burnt0",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "frames": 4,
+   "state_capture": "t99",
+   "poke": [
+    {
+     "field": "x1",
+     "value": 65536
+    },
+    {
+     "field": "y1",
+     "value": 357376
+    },
+    {
+     "field": "burnl0",
+     "value": 0
+    },
+    {
+     "field": "burnt0",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "frames": 4,
+   "state_capture": "t100",
+   "poke": [
+    {
+     "field": "x1",
+     "value": 65536
+    },
+    {
+     "field": "y1",
+     "value": 357376
+    },
+    {
+     "field": "burnl0",
+     "value": 0
+    },
+    {
+     "field": "burnt0",
+     "value": 0
+    }
+   ],
+   "capture": "c100"
+  },
+  {
+   "frames": 4,
+   "state_capture": "t101",
+   "poke": [
+    {
+     "field": "x1",
+     "value": 65536
+    },
+    {
+     "field": "y1",
+     "value": 357376
+    },
+    {
+     "field": "burnl0",
+     "value": 0
+    },
+    {
+     "field": "burnt0",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "frames": 4,
+   "state_capture": "t102",
+   "poke": [
+    {
+     "field": "x1",
+     "value": 65536
+    },
+    {
+     "field": "y1",
+     "value": 357376
+    },
+    {
+     "field": "burnl0",
+     "value": 0
+    },
+    {
+     "field": "burnt0",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "frames": 4,
+   "state_capture": "t103",
+   "poke": [
+    {
+     "field": "x1",
+     "value": 65536
+    },
+    {
+     "field": "y1",
+     "value": 357376
+    },
+    {
+     "field": "burnl0",
+     "value": 0
+    },
+    {
+     "field": "burnt0",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "frames": 4,
+   "state_capture": "t104",
+   "poke": [
+    {
+     "field": "x1",
+     "value": 65536
+    },
+    {
+     "field": "y1",
+     "value": 357376
+    },
+    {
+     "field": "burnl0",
+     "value": 0
+    },
+    {
+     "field": "burnt0",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "frames": 4,
+   "state_capture": "t105",
+   "poke": [
+    {
+     "field": "x1",
+     "value": 65536
+    },
+    {
+     "field": "y1",
+     "value": 357376
+    },
+    {
+     "field": "burnl0",
+     "value": 0
+    },
+    {
+     "field": "burnt0",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "frames": 4,
+   "state_capture": "t106",
+   "poke": [
+    {
+     "field": "x1",
+     "value": 65536
+    },
+    {
+     "field": "y1",
+     "value": 357376
+    },
+    {
+     "field": "burnl0",
+     "value": 0
+    },
+    {
+     "field": "burnt0",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "frames": 4,
+   "state_capture": "t107",
+   "poke": [
+    {
+     "field": "x1",
+     "value": 65536
+    },
+    {
+     "field": "y1",
+     "value": 357376
+    },
+    {
+     "field": "burnl0",
+     "value": 0
+    },
+    {
+     "field": "burnt0",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "frames": 4,
+   "state_capture": "t108",
+   "poke": [
+    {
+     "field": "x1",
+     "value": 65536
+    },
+    {
+     "field": "y1",
+     "value": 357376
+    },
+    {
+     "field": "burnl0",
+     "value": 0
+    },
+    {
+     "field": "burnt0",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "frames": 4,
+   "state_capture": "t109",
+   "poke": [
+    {
+     "field": "x1",
+     "value": 65536
+    },
+    {
+     "field": "y1",
+     "value": 357376
+    },
+    {
+     "field": "burnl0",
+     "value": 0
+    },
+    {
+     "field": "burnt0",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "frames": 4,
+   "state_capture": "t110",
+   "poke": [
+    {
+     "field": "x1",
+     "value": 65536
+    },
+    {
+     "field": "y1",
+     "value": 357376
+    },
+    {
+     "field": "burnl0",
+     "value": 0
+    },
+    {
+     "field": "burnt0",
+     "value": 0
+    }
+   ],
+   "capture": "c110"
+  },
+  {
+   "frames": 4,
+   "state_capture": "t111",
+   "poke": [
+    {
+     "field": "x1",
+     "value": 65536
+    },
+    {
+     "field": "y1",
+     "value": 357376
+    },
+    {
+     "field": "burnl0",
+     "value": 0
+    },
+    {
+     "field": "burnt0",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "frames": 4,
+   "state_capture": "t112",
+   "poke": [
+    {
+     "field": "x1",
+     "value": 65536
+    },
+    {
+     "field": "y1",
+     "value": 357376
+    },
+    {
+     "field": "burnl0",
+     "value": 0
+    },
+    {
+     "field": "burnt0",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "frames": 4,
+   "state_capture": "t113",
+   "poke": [
+    {
+     "field": "x1",
+     "value": 65536
+    },
+    {
+     "field": "y1",
+     "value": 357376
+    },
+    {
+     "field": "burnl0",
+     "value": 0
+    },
+    {
+     "field": "burnt0",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "frames": 4,
+   "state_capture": "t114",
+   "poke": [
+    {
+     "field": "x1",
+     "value": 65536
+    },
+    {
+     "field": "y1",
+     "value": 357376
+    },
+    {
+     "field": "burnl0",
+     "value": 0
+    },
+    {
+     "field": "burnt0",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "frames": 4,
+   "state_capture": "t115",
+   "poke": [
+    {
+     "field": "x1",
+     "value": 65536
+    },
+    {
+     "field": "y1",
+     "value": 357376
+    },
+    {
+     "field": "burnl0",
+     "value": 0
+    },
+    {
+     "field": "burnt0",
+     "value": 0
+    }
+   ]
+  }
+ ],
+ "assertions": {}
+}
