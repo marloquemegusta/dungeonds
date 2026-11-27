@@ -32,6 +32,7 @@ FIELDS = {
     "owned": {"symbol": "u", "offset": 22, "type": "u16"},
     "hp": {"symbol": "p", "offset": 0, "type": "s32"},
     "dbg": {"symbol": "a", "offset": 0, "type": "u8"},
+    "lk": {"symbol": "lk", "offset": 0, "type": "u8"},        # g_laser_look (weapons.c): 0 = current laser, 1..3 = A / B / C
 }
 for i in range(16):
     b = 16 + 6 * i
@@ -55,12 +56,13 @@ def pokes(**kw):
     return [{"field": k, "value": v} for k, v in kw.items()]
 
 
-def stage(vi, relics, enemies, hero_hp=None, extra=(), flags=39, hero=None):
+def stage(vi, relics, enemies, hero_hp=None, extra=(), flags=39, hero=None, dv=None):
     """Variant switch + clean restage of the whole scene (the mailbox clears every enemy and effect)."""
-    p = [{"field": "relic_mask", "value": relics}, {"field": "dv", "value": vi}, {"field": "apply_seq", "value": vi + 1}]
+    dvv = vi if dv is None else dv           # design variant (laser: always 0, the look is g_laser_look)
+    p = [{"field": "relic_mask", "value": relics}, {"field": "dv", "value": dvv}, {"field": "apply_seq", "value": vi + 1}]
     s = [{"poke": p, "frames": 3}]
     hx, hy = hero if hero else (HX, HY)
-    q = pokes(player_x=hx, player_y=hy, weapon=1, style=vi, flags=flags, enemy_count=len(enemies))
+    q = pokes(player_x=hx, player_y=hy, weapon=1, style=dvv, flags=flags, enemy_count=len(enemies))
     for i, (t, x, y) in enumerate(enemies):
         q += pokes(**{f"e{i}_type": t, f"e{i}_flags": 0, f"e{i}_x": x, f"e{i}_y": y})
     q.append({"field": "seq", "value": vi + 1})
@@ -102,6 +104,18 @@ def build(el):
             en = [(EXVOTO, 234, HY), (MONAGUILLO, 258, HY), (EXVOTO, 282, HY)]
             body = [{"tap": touch(292), "frames": 4}, seq(vi, "1charge", 56)]
             steps += sw(vi, RELIC["LLAMA_VOTIVA"], en, extra=tough(3), body=body)
+        elif el == "laser":
+            # Charged ray looks (g_laser_look): vi 0 = the current look, 1 / 2 / 3 = A / B / C. The hero stands at x = LHX and
+            # shoots east along y = HY; the east wall of the cathedral strip starts at x ~ 467 (94 px away, inside the 110 px
+            # range). Lanza de Longinos makes the beam pierce the three quiet enemies in line on that row (x + 30 / 52 / 74)
+            # so it reaches the wall. Rest 0.3 s, press and hold 0.8 s to charge, hold 0.8 s armed, release, 0.8 s of shot.
+            en = [(EXVOTO, LHX + 30, HY), (MONAGUILLO, LHX + 52, HY), (EXVOTO, LHX + 74, HY)]
+            aim = {"x": LHX + 100 - min(LHX - 128, 258), "y": LASER_AIM_Y}      # camera x clamps at 258 (world 514 wide)
+            body = [{"poke": pokes(lk=vi), "frames": 1}, seq(vi, "1rest", 18),
+                    {"tap": aim, "frames": 2}, seq(vi, "2charge", 40), seq(vi, "3ready", 20, every=1),
+                    seq(vi, "4hold", 40), {"release": True, "frames": 1, "capture_sequence": f"v{vi}_5shot", "capture_every": 1},
+                    seq(vi, "6shot", 23, every=1), seq(vi, "7fade", 30)]
+            steps += stage(vi, RELIC["LANZA"], en, extra=tough(3), dv=0, hero=(LHX, HY)) + body + [{"release": True, "frames": 12}]
         elif el == "flagelado":
             en = [(EXVOTO, 160, 1760), (MONAGUILLO, 240, 1760), (EXVOTO, 176, 1778), (MONAGUILLO, 224, 1778)]
             body = [seq(vi, "1pre", 6), {"poke": pokes(dbg=2), "frames": 2, "capture_sequence": f"v{vi}_2wave", "capture_every": 1},
@@ -144,15 +158,16 @@ def build(el):
     return {
         "name": f"abc_{el}", "suite": False, "evidence_only": True,
         "description": f"Design variants A/B/C of '{el}' on a staged scene (cathedral-sandbox ROM; see tools/abc_scenes.py).",
-        "state": {"symbols": {"sb": "g_sandbox", "u": "g_upg_debug", "p": "g_player_state", "a": "g_abc_debug", "en": "g_enemies"},
+        "state": {"symbols": {"sb": "g_sandbox", "u": "g_upg_debug", "p": "g_player_state", "a": "g_abc_debug", "en": "g_enemies", "lk": "g_laser_look"},
                   "default_symbol": "sb", "fields": FIELDS},
         "steps": steps,
     }
 
 
 # Variants shot per element (the others were dropped in DESIGN.md 6.12.12).
-VARIANTS = {"autofe": (0, 2), "burn": (0, 1), "llaga": (1, 2), "viatico": (0, 2)}
-ELEMENTS = ["burn", "votiva", "flagelado", "martirio", "autofe", "llaga", "viatico"]
+LHX, LASER_AIM_Y = 370, 78           # laser scene: hero x; stylus row = muzzle row on the lower screen (hero feet at y 99, chest 21 up)
+VARIANTS = {"autofe": (0, 2), "burn": (0, 1), "llaga": (1, 2), "viatico": (0, 2), "laser": (0, 1, 2, 3)}
+ELEMENTS = ["burn", "votiva", "flagelado", "martirio", "autofe", "llaga", "viatico", "laser"]
 
 if __name__ == "__main__":
     for el in ELEMENTS:
