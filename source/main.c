@@ -48,6 +48,7 @@
 #include "arpg.h"
 #include "arpg_progress.h"
 #include "arpg_campaign.h"
+#include "arpg_log.h"
 #include "arpg_map.h"
 #include "arpg_inv.h"
 #include "arpg_bot.h"
@@ -3736,6 +3737,7 @@ static void on_vblank_irq(void) {
 // The camp is its own playable room (camp.c): one screen wide and two tall, shown whole across both
 // screens. Entering it swaps g_arena to the camp, places the hero by the bonfire and stops the run.
 static void enter_camp_scene(void) {
+    arpg_log_room(-1, 0);
     camp_set_active(1);
     g_arena = camp_arena();
     apply_arena_palette();
@@ -3795,6 +3797,7 @@ static void leave_camp_to_dungeon(void) {
     camp_hero_release();
     camp_unload_gfx();
     g_arena = strip_arena();
+    arpg_log_event(CLOG_SALIDA, 0);
     arpg_campaign_descent_begin();      // remembers the bag (what is lost on death) and repopulates the cathedral
     arpg_progress_save();
     s_run_started = 1;
@@ -3998,6 +4001,7 @@ int main(void) {
 #endif
         uint32_t frame_start_ticks = cpuGetTiming();
         uint32_t start_vblank = s_vblank_count;
+        arpg_log_frame(s_vblank_count);
         s_frame_index++;
 
         scanKeys();
@@ -4159,6 +4163,7 @@ int main(void) {
             if (act == MENU_ACT_START_INTRO) {
                 arpg_progress_reset();      // a new game: the save file is overwritten with the empty one
                 arpg_progress_save();
+                arpg_log_event(CLOG_INICIO, "partida nueva");
             }
 #endif
             if (act == MENU_ACT_START_INTRO) {
@@ -4213,6 +4218,7 @@ int main(void) {
                 enter_camp_scene();         // the intro is over: the camp scene, not the dungeon
             } else if (act == MENU_ACT_CONTINUE) {
                 if (!arpg_progress_load()) arpg_progress_reset();
+                arpg_log_event(CLOG_INICIO, "continuar");
                 menu_close();
                 enter_camp_scene();
             } else if (act == MENU_ACT_TO_CAMP) {
@@ -4298,6 +4304,7 @@ int main(void) {
                 s_keys_down_latch = 0;
                 if (act == CAMP_ACT_SLEEP) {
                     int gained = arpg_sleep();
+                    if (gained > 0) { char lv[16]; snprintf(lv, sizeof(lv), "nivel=%d", g_arpg.level); arpg_log_event(CLOG_NIVEL, lv); }
                     arpg_progress_save();
                     char msg[48];
                     if (gained > 0) {

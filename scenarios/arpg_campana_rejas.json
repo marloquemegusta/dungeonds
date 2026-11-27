@@ -1,6 +1,6 @@
 {
  "name": "arpg_campana_rejas",
- "description": "Rejas de la campana. Nave 1 (bloque 3, py de la reja 448 px): sin sellos, con uno solo, la reja no deja subir; con los dos, si. Nave 4: sin llave de la cripta ni con la de la capilla, no; con la de la cripta, si. El heroe se pone justo debajo de la reja y empuja hacia arriba 150 frames, en dios. Capilla con llave (reja a 150 px del bloque): sin llave no se sube; con la llave pero sin haber abierto la reja, la puerta del atajo (derecha) no cede; con la reja abierta, la puerta lleva a la Nave 1.",
+ "description": "Rejas de la campana (version B). Nave 1 (bloque 3): sin nada y solo con la llave de la capilla no sube; con la lista del coro, si. Nave 4: sin nada, y con la lista y la llave de la capilla, no; con la denuncia de Sor Leonor, si. El heroe se pone justo debajo de la reja y empuja hacia arriba 150 frames, en dios. Capilla con llave (reja a 150 px del bloque): sin llave no se sube; con la llave pero sin haber abierto la reja, la puerta del atajo (derecha) no cede; con la reja abierta, la puerta lleva a la Nave 1.",
  "suite": true,
  "state": {
   "elf": "../.ds-game-dev/build/out/dungeonds.elf",
@@ -195,7 +195,7 @@
     },
     {
      "field": "q_carrying",
-     "value": 1
+     "value": 2
     }
    ],
    "frames": 80
@@ -204,7 +204,7 @@
    "poke": [
     {
      "field": "q_carrying",
-     "value": 1
+     "value": 2
     },
     {
      "field": "px",
@@ -220,8 +220,8 @@
   {
    "button_down": "UP",
    "frames": 150,
-   "state_capture": "n1_uno",
-   "capture": "n1_uno"
+   "state_capture": "n1_misa",
+   "capture": "n1_misa"
   },
   {
    "button_up": "UP",
@@ -243,7 +243,7 @@
     },
     {
      "field": "q_carrying",
-     "value": 3
+     "value": 1
     }
    ],
    "frames": 80
@@ -252,7 +252,7 @@
    "poke": [
     {
      "field": "q_carrying",
-     "value": 3
+     "value": 1
     },
     {
      "field": "px",
@@ -268,8 +268,8 @@
   {
    "button_down": "UP",
    "frames": 150,
-   "state_capture": "n1_dos",
-   "capture": "n1_dos"
+   "state_capture": "n1_lista",
+   "capture": "n1_lista"
   },
   {
    "button_up": "UP",
@@ -339,7 +339,7 @@
     },
     {
      "field": "q_carrying",
-     "value": 4
+     "value": 3
     }
    ],
    "frames": 80
@@ -348,7 +348,7 @@
    "poke": [
     {
      "field": "q_carrying",
-     "value": 4
+     "value": 3
     },
     {
      "field": "px",
@@ -364,8 +364,8 @@
   {
    "button_down": "UP",
    "frames": 150,
-   "state_capture": "n4_capilla",
-   "capture": "n4_capilla"
+   "state_capture": "n4_lista_y_misa",
+   "capture": "n4_lista_y_misa"
   },
   {
    "button_up": "UP",
@@ -387,7 +387,7 @@
     },
     {
      "field": "q_carrying",
-     "value": 8
+     "value": 4
     }
    ],
    "frames": 80
@@ -396,7 +396,7 @@
    "poke": [
     {
      "field": "q_carrying",
-     "value": 8
+     "value": 4
     },
     {
      "field": "px",
@@ -412,8 +412,8 @@
   {
    "button_down": "UP",
    "frames": 150,
-   "state_capture": "n4_cripta",
-   "capture": "n4_cripta"
+   "state_capture": "n4_denuncia",
+   "capture": "n4_denuncia"
   },
   {
    "button_up": "UP",
@@ -483,7 +483,7 @@
     },
     {
      "field": "q_carrying",
-     "value": 4
+     "value": 2
     }
    ],
    "frames": 80
@@ -526,7 +526,7 @@
     },
     {
      "field": "q_carrying",
-     "value": 4
+     "value": 2
     }
    ],
    "frames": 80
@@ -577,7 +577,7 @@
     "min_value": 114432
    },
    {
-    "at": "n1_uno",
+    "at": "n1_misa",
     "field": "py",
     "min_value": 114432
    },
@@ -587,7 +587,7 @@
     "min_value": 114432
    },
    {
-    "at": "n4_capilla",
+    "at": "n4_lista_y_misa",
     "field": "py",
     "min_value": 114432
    },
@@ -597,12 +597,12 @@
     "equals": 0
    },
    {
-    "at": "n1_uno",
+    "at": "n1_misa",
     "field": "room",
     "equals": 0
    },
    {
-    "at": "n1_dos",
+    "at": "n1_lista",
     "field": "room",
     "equals": 1
    },
@@ -612,12 +612,12 @@
     "equals": 3
    },
    {
-    "at": "n4_capilla",
+    "at": "n4_lista_y_misa",
     "field": "room",
     "equals": 3
    },
    {
-    "at": "n4_cripta",
+    "at": "n4_denuncia",
     "field": "room",
     "equals": 15
    },

@@ -406,7 +406,7 @@ static int s_altar_frames, s_entry_x, s_entry_y;
 // encounters_act1.c) to `dest`. kind E = excursion into a side room (its next step is the way back), F = forward, R = way back.
 // Nave 1 -> Galeria del cofre -> back -> Claustro bajo -> Galeria del secreto -> back -> up to Claustro alto -> Nave 2 ->
 // Enfermeria -> Capilla del parroco (key) -> back -> up to Osario -> Galeria de la Misa -> back -> Nave 3 ->
-// Galeria del prisionero -> back -> Nave 4 -> Capilla con llave -> back -> Galeria de la monjarana -> back -> Cripta.
+// Galeria de bajada -> back -> Nave 4 -> Capilla con llave -> back -> Galeria de la monjarana -> back -> Cripta.
 typedef struct { uint8_t room, door, dest, kind; } BotStep;
 enum { K_E = 0, K_F = 1, K_R = 2 };
 static const BotStep s_script[] = {
@@ -444,7 +444,7 @@ static int script_door(const ArpgBotRoom *ri, int cur, int count) {
         }
         if (t->kind == K_E) {
             if (((s_cleared_ever >> t->dest) & 1) || ((s_b_visited >> t->dest) & 1) || s_fail[t->dest] >= 2) continue;
-            if (t->dest == 13 && !arpg_quest_has(QUEST_LLAVE_CAPILLA)) {                               // the chapel with the reja: no key, no way in
+            if (t->dest == 13 && !arpg_quest_has(QUEST_MISA)) {                               // the chapel with the reja: no key, no way in
                 if (count && g_arpg_bot_stats.script_skips < 0xFFFF) g_arpg_bot_stats.script_skips++;
                 continue;
             }

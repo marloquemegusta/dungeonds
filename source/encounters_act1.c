@@ -13,6 +13,7 @@ typedef int encounters_act1_translation_unit_not_empty;
 #include "arpg.h"
 #include "arpg_progress.h"
 #include "arpg_quest.h"
+#include "arpg_log.h"
 #include "arpg_campaign.h"
 #include "boss.h"
 #include "chars_pool.h"
@@ -92,9 +93,8 @@ typedef struct {
     uint8_t fixed_group;        // 1 + G_*: the group of block fixed_block is this one (not the poster's, not drawn)
     uint8_t fixed_block;
     uint8_t camp_exit;          // 1 = walking out of the foot of the room leaves for the camp (Nave 1)
-    uint8_t elite;              // 1 = that fixed group is an elite encounter (special xp and prize, tough Cireneo)
 } RoomDef;
-enum { GATE_NONE = 0, GATE_SELLOS, GATE_CAPILLA, GATE_CRIPTA };
+enum { GATE_NONE = 0, GATE_LISTA, GATE_CAPILLA, GATE_CRIPTA };
 
 enum { G_REBANO = 0, G_PROCESION, G_CORRILLO,                 // Nave 1 (peldaño 1)
        G_GUARDIA_MONJA, G_PUESTO, G_CARGA,                    // Nave 2 (peldaño 2)
@@ -102,35 +102,34 @@ enum { G_REBANO = 0, G_PROCESION, G_CORRILLO,                 // Nave 1 (peldañ
        G_GUARDIA, G_CORTEJO, G_ASALTO,                        // Nave 4 (peldaño 4)
        G_CABILDO, G_CLAUSURA, G_VIGILIA,                      // peldaño 5: escalon 3 (Parroco, Super Monja) in normal groups
        G_NORMAL_COUNT,   // the ones above are drawn by hash from the list of their peldaño
-       G_PARROQUIA = G_NORMAL_COUNT, G_MISA, G_MONJARANA, G_PRISIONERO, G_GUARDIA_SECRETO, G_COUNT };   // fixed groups, never drawn
+       G_PARROQUIA = G_NORMAL_COUNT, G_MISA, G_MONJARANA, G_GUARDIA_SECRETO, G_COUNT };   // fixed groups, never drawn
 
 #define DL(p, d) { DOOR_LEFT, (p), (d) }
 #define DR(p, d) { DOOR_RIGHT, (p), (d) }
 #define DU(d) { DOOR_UP, 0, (d) }
 // pN = screen N counted from the bottom of the room; block = (N-1)/2, the lower screen of the block when N is odd.
 // Ids: 0..3 Naves, 4 Galeria del cofre, 5 del secreto, 6 Claustro bajo, 7 Claustro alto, 8 Enfermeria, 9 Osario, 10 Capilla del parroco,
-// 11 Galeria de la Misa, 12 Galeria del prisionero, 13 Capilla con llave, 14 Galeria de la monjarana, 15 Cripta.
+// 11 Galeria de la Misa, 12 Galeria de bajada, 13 Capilla con llave, 14 Galeria de la monjarana, 15 Cripta.
 // Doors come in pairs (the arrival looks for the door that leads back). Doors that leave upwards have no pair below: nothing
 // walks down. The way back on foot is therefore lateral (Enfermeria/Osario/Capilla, Claustros, Nave 3 -> Capilla con llave) or
-// a one-way door (Capilla con llave -> Nave 1, Galeria del prisionero -> Nave 3), which lands at the foot of its destination.
+// a one-way door (Capilla con llave -> Nave 1, Galeria de bajada -> Nave 3), which lands at the foot of its destination.
 // Map C (DESIGN-ARPG.md, campaign): Nave 1 branches to the Claustro bajo (right) and the Enfermeria (left) and climbs to Nave 2
-// behind the reja of the two seals; Nave 2 only climbs; Nave 3 has the Misa (left) and the Capilla con llave (right, reja of its
-// key, shortcut to Nave 1) and climbs to Nave 4; Nave 4 has the monjarana (right), the Galeria del prisionero (left, the way back
-// down) and the Cripta behind the reja of the crypt key.
+// behind the reja of the choir list; Nave 2 only climbs; Nave 3 has the Misa (left) and the Capilla con llave (right, reja of the
+// Misa's key, shortcut to Nave 1) and climbs to Nave 4; Nave 4 has the monjarana (right), the Galeria de bajada (left, the way back
+// down) and the Cripta behind the reja of Sor Leonor's denunciation.
 static const RoomDef s_rooms[ENC_ROOM_COUNT] = {
-    { .name = "Nave 1", .blocks = 3, .level = 1, .nave = 1, .type = RT_NORMAL, .altar = 1, .gate = GATE_SELLOS, .camp_exit = 1,
+    { .name = "Nave 1", .blocks = 3, .level = 1, .nave = 1, .type = RT_NORMAL, .altar = 1, .gate = GATE_LISTA, .camp_exit = 1,
       .n_doors = 3, .doors = { DL(2, 8), DR(4, 6), DU(1) } },
     { .name = "Nave 2", .blocks = 3, .level = 2, .nave = 2, .type = RT_NORMAL,
       .n_doors = 1, .doors = { DU(2) } },
     { .name = "Nave 3", .blocks = 3, .level = 3, .nave = 3, .type = RT_NORMAL, .altar = 1,
-      .fixed_group = 1 + G_PRISIONERO, .fixed_block = 2, .elite = 1, .quest = 1 + QUEST_LLAVE_CAPILLA, .quest_block = 2,
       .n_doors = 3, .doors = { DL(4, 11), DR(4, 13), DU(3) } },
     { .name = "Nave 4", .blocks = 3, .level = 4, .nave = 4, .type = RT_NORMAL, .gate = GATE_CRIPTA,
       .n_doors = 3, .doors = { DR(2, 14), DL(2, 12), DU(15) } },
     { .name = "Galería del cofre", .blocks = 1, .level = 1, .nave = 1, .type = RT_NORMAL, .chest = 1, .prize_mech = 1 + ARPG_MECH_CILICIO,
       .n_doors = 1, .doors = { DL(1, 6) } },
     { .name = "Galería del secreto", .blocks = 1, .level = 1, .nave = 1, .type = RT_NORMAL, .chest = 1,
-      .fixed_group = 1 + G_GUARDIA_SECRETO, .fixed_block = 0, .quest = 1 + QUEST_SELLO_CLAUSTRO, .quest_block = 0,
+      .prize_mech = 1 + ARPG_MECH_REDIL, .fixed_group = 1 + G_GUARDIA_SECRETO, .fixed_block = 0,
       .n_doors = 1, .doors = { DL(1, 7) } },
     { .name = "Claustro bajo", .blocks = 3, .level = 1, .nave = 1, .type = RT_NORMAL,
       .n_doors = 3, .doors = { DL(1, 0), DR(2, 4), DR(4, 7) } },
@@ -141,18 +140,19 @@ static const RoomDef s_rooms[ENC_ROOM_COUNT] = {
     { .name = "Osario", .blocks = 3, .level = 3, .nave = 3, .type = RT_NORMAL, .chest = 1,
       .n_doors = 2, .doors = { DR(1, 8), DL(4, 10) } },
     { .name = "Capilla del párroco", .blocks = 1, .level = 3, .nave = 3, .type = RT_PARROQUIA, .chest = 1,
-      .prize_min_rar = ARPG_RAR_RARE, .quest = 1 + QUEST_SELLO_HOSPITAL, .quest_block = 0,
+      .prize_min_rar = ARPG_RAR_RARE, .quest = 1 + QUEST_TOMAS, .quest_block = 0,
       .n_doors = 1, .doors = { DR(1, 9) } },
     { .name = "Galería de la Misa", .blocks = 2, .level = 3, .nave = 3, .type = RT_MISA, .special_block = 1,
       .prize_min_rar = ARPG_RAR_EPIC, .prize_mech = 1 + ARPG_MECH_ZARZA,
+      .quest = 1 + QUEST_MISA, .quest_block = 1,
       .n_doors = 1, .doors = { DR(1, 2) } },
-    { .name = "Galería del prisionero", .blocks = 2, .level = 3, .nave = 3, .type = RT_NORMAL, .chest = 1,
+    { .name = "Galería de bajada", .blocks = 2, .level = 3, .nave = 3, .type = RT_NORMAL, .chest = 1,
       .n_doors = 2, .doors = { DR(1, 3), DL(2, 2) } },
     { .name = "Capilla con llave", .blocks = 1, .level = 4, .nave = 4, .type = RT_NORMAL, .chest = 1,
       .prize_min_rar = ARPG_RAR_LEGENDARY, .prize_mech = 1 + ARPG_MECH_LLAGA, .gate = GATE_CAPILLA, .locked_door = 2,
       .n_doors = 2, .doors = { DL(1, 2), DR(1, 0) } },
     { .name = "Galería de la monjaraña", .blocks = 2, .level = 4, .nave = 4, .type = RT_MONJARANA, .special_block = 1,
-      .prize_min_rar = ARPG_RAR_EPIC, .quest = 1 + QUEST_LLAVE_CRIPTA, .quest_block = 1,
+      .prize_min_rar = ARPG_RAR_EPIC, .quest = 1 + QUEST_LEONOR, .quest_block = 1,
       .n_doors = 1, .doors = { DL(1, 3) } },
     { .name = "Cripta", .blocks = 1, .level = 5, .nave = 4, .type = RT_CRIPTA, .special_block = 0,
       .prize_min_rar = ARPG_RAR_LEGENDARY, .quest = 1 + QUEST_ABANDERADO, .quest_block = 0, .n_doors = 0 },
@@ -173,7 +173,7 @@ static int is_boss_stage(int k) {             // block k holds the boss machiner
 // block k holds the fixed group of a special encounter of two blocks (la Misa, la monjarana)
 static int is_special_stage(int k) {
     const RoomDef *r = room_def();
-    return ((r->type == RT_MISA || r->type == RT_MONJARANA) && k == r->special_block) || (r->elite && k == r->fixed_block);
+    return (r->type == RT_MISA || r->type == RT_MONJARANA) && k == r->special_block;
 }
 static int boss_number(int k) { (void)k; return 0; }   // life: ARPG_BOSS_HP_PCT(n); the Abanderado of the Cripta is the only one
 static int tier_of_stage(int k) { (void)k; const int l = room_def()->level; return l <= 2 ? 0 : l <= 4 ? 1 : 2; }
@@ -233,7 +233,7 @@ static void prize_fixed(const RoomDef *room, int px, int py) {
 // Mission objects (arpg_quest.h): handed once, when the block that guards them falls. Taking one repopulates every other room
 // (the world rest of arpg_world_rest, the groups part), one peldaño harder when the hero walks back; the room of the boss stays as it is.
 static const char *const s_quest_names[QUEST_COUNT] = {
-    "Sello del Hospital", "Sello del Claustro", "Llave de la capilla", "Llave de la cripta", "Estandarte del Abanderado"
+    "Lista del coro", "Llave de la capilla", "Denuncia de Sor Leonor", "Estandarte del Abanderado"
 };
 static void quest_revive_others(void) {
     for (int r = 0; r < ENC_ROOM_COUNT; r++) {
@@ -247,6 +247,7 @@ static void quest_pick(const RoomDef *room, int k) {
     const int q = room->quest - 1;
     if (arpg_quest_has(q)) return;                                  // never handed twice
     arpg_quest_pick(q);
+    arpg_log_event(CLOG_COGE, s_quest_names[q]);
     quest_revive_others();
     sfx_play(SND_PICKUP_ORB, -1);
     pickups_toast(s_quest_names[q], 180);
@@ -255,9 +256,10 @@ static void quest_pick(const RoomDef *room, int k) {
 // Guaranteed rewards when a group, a miniboss or the boss of the room falls (DESIGN-ARPG.md 7). The relic drops a little above the hero.
 static void clear_rewards(const RoomDef *room, int k, int first_time, int px, int py) {
     if (room->type == RT_PARROQUIA || is_special_stage(k)) arpg_add_xp(ARPG_XP_SPECIAL);   // a special encounter fell whole
+    if (is_special_stage(k) || (room->type == RT_CRIPTA && is_boss_stage(k))) arpg_log_event(CLOG_VENCE, room->name);
     if (is_special_stage(k)) {
         if (room->prize_mech && first_time) prize_fixed(room, px, py);   // la Misa: Zarza, the first time
-        else if (!room->elite || first_time) prize_relic(room, 1, ARPG_RAR_EPIC, px, py);   // the elite of the road drops once
+        else prize_relic(room, 1, ARPG_RAR_EPIC, px, py);
     } else if (room->type == RT_CRIPTA && is_boss_stage(k)) {
         if (first_time) {                                           // later visits give loot and xp only
             prize_relic(room, 1, ARPG_RAR_LEGENDARY, px, py);
@@ -285,7 +287,6 @@ static int s_victory;                         // never set: the dungeon has no v
 // va entre la entrada y el cofre; las de las naves 1 y 4 tapan el arco de la puerta de arriba.
 #define ENC_GATE_LOCAL_Y 150        // block-local y of the base of the reja of the capilla (the chest stands at 90, out of reach through the bars)
 #define ENC_GATE_UP_LOCAL_Y 64      // block-local y of the base of a reja that closes the upper door
-#define ENC_ELITE_HP 2500           // life of the elite Cireneo (the Prisionero): no boss of the campaign is easy the first time
 #define ENC_CAMP_EXIT_PX 14         // the hero leaves Nave 1 for the camp this far above the bottom edge of its first block
 #define ENC_GATE_NEAR_PX 40         // with the key, the reja rises when the hero is this close to its line
 static uint8_t s_gate_lift, s_gate_opening, s_gate_open;
@@ -294,17 +295,17 @@ static int gate_local_y(void) { return room_def()->gate == GATE_CAPILLA ? ENC_GA
 // What the reja of this room asks for (DESIGN-ARPG.md, campaign): carrying counts, so the hero walks through with the object in hand.
 static int gate_satisfied(void) {
     switch (room_def()->gate) {
-    case GATE_SELLOS:  return arpg_quest_has(QUEST_SELLO_HOSPITAL) && arpg_quest_has(QUEST_SELLO_CLAUSTRO);
-    case GATE_CAPILLA: return arpg_quest_has(QUEST_LLAVE_CAPILLA);
-    case GATE_CRIPTA:  return arpg_quest_has(QUEST_LLAVE_CRIPTA);
+    case GATE_LISTA:   return arpg_quest_has(QUEST_TOMAS);
+    case GATE_CAPILLA: return arpg_quest_has(QUEST_MISA);
+    case GATE_CRIPTA:  return arpg_quest_has(QUEST_LEONOR);
     default:           return 1;
     }
 }
 static const char *gate_hint(void) {
     switch (room_def()->gate) {
-    case GATE_SELLOS:  return "La reja pide los dos sellos";
+    case GATE_LISTA:   return "La reja pide la lista del coro";
     case GATE_CAPILLA: return "La reja pide la llave de la capilla";
-    default:           return "La reja pide la llave de la cripta";
+    default:           return "La reja pide la denuncia de Sor Leonor";
     }
 }
 static int s_boss_locked;                     // the bottom barrier of the boss room is closed (boss mode)
@@ -718,6 +719,8 @@ void enc_room_select(int room, int from_room) {
     if (!((g_arpg.rooms_seen >> s_room) & 1)) {      // first visit: the overlay map reveals it (kept in the save)
         g_arpg.rooms_seen |= (uint16_t)(1u << s_room);
     }
+    arpg_log_room(s_room, room_def()->name);
+    arpg_log_event(CLOG_SALA, 0);
     arpg_progress_save();            // every room change: xp, kills and chests of the room just left survive a power-off
 }
 
@@ -736,7 +739,7 @@ static void map_place(int room, int x, int y) {
     const RoomDef *r = &s_rooms[room];
     EncMapRoom *m = &s_map[room];
     m->x = (int16_t)x; m->y = (int16_t)y; m->w = ENC_FLOOR_W; m->h = (int16_t)(r->blocks * ENC_BLOCK_H);
-    m->n_doors = r->n_doors; m->altar = r->altar; m->chest = r->chest; m->key = r->quest == 1 + QUEST_SELLO_HOSPITAL && !arpg_quest_has(QUEST_SELLO_HOSPITAL);      // the map marks the Capilla del parroco (its group hands the first seal)
+    m->n_doors = r->n_doors; m->altar = r->altar; m->chest = r->chest; m->key = r->quest == 1 + QUEST_TOMAS && !arpg_quest_has(QUEST_TOMAS);      // the map marks the Capilla del parroco (its group hands the choir list)
     m->altar_x = (int16_t)(x + ENC_FLOOR_W / 2); m->altar_y = (int16_t)(y + ARPG_ROOM_FOOT_OFFSET_PX);
     m->chest_x = m->altar_x; m->chest_y = (int16_t)(y + (r->blocks - 1) * ENC_BLOCK_H + ENC_BLOCK_H - 90);
     for (int i = 0; i < r->n_doors; i++) {
@@ -1115,7 +1118,7 @@ static const GroupDef s_groups[G_COUNT] = {
     [G_CORRILLO]      = { "Corrillo",         1, 3, { { RK_EXVOTO_PRAY, 1 }, { RK_MONAGUILLO, 2 }, { RK_BEBE, 2 } } },
     [G_GUARDIA_MONJA] = { "Guardia de la monja", 2, 4, { { RK_EXVOTO_PRAY, 2 }, { RK_OJO, 1 }, { RK_MONAGUILLO, 1 }, { RK_BEBE, 1 } } },
     [G_PUESTO]        = { "Puesto",           2, 3, { { RK_OJO, 1 }, { RK_MONAGUILLO, 3 }, { RK_BEBE, 1 } } },
-    [G_CARGA]         = { "Carga",            2, 4, { { RK_EXVOTO_PRAY, 1 }, { RK_CIRENEO, 1 }, { RK_MONAGUILLO, 2 }, { RK_BEBE, 1 } } },
+    [G_CARGA]         = { "Carga",            2, 3, { { RK_EXVOTO_PRAY, 2 }, { RK_MONAGUILLO, 2 }, { RK_BEBE, 1 } } },
     [G_CORO]          = { "Coro",             3, 4, { { RK_EXVOTO_PRAY, 2 }, { RK_OJO, 1 }, { RK_MONAGUILLO, 2 }, { RK_BEBE, 1 } } },
     [G_TIRADORES]     = { "Tiradores",        3, 4, { { RK_EXVOTO_PRAY, 1 }, { RK_OJO, 2 }, { RK_MONAGUILLO, 2 }, { RK_BEBE, 1 } } },
     [G_CARGA_DOBLE]   = { "Carga doble",      3, 5, { { RK_EXVOTO_PRAY, 1 }, { RK_CIRENEO, 1 }, { RK_OJO, 1 }, { RK_MONAGUILLO, 2 }, { RK_BEBE, 1 } } },
@@ -1130,9 +1133,7 @@ static const GroupDef s_groups[G_COUNT] = {
     [G_PARROQUIA]  = { "Parroquia",  99, 3, { { RK_EXVOTO_PRAY, 7 }, { RK_MONAGUILLO, 4 }, { RK_PARROCO, 1 } } },
     [G_MISA]       = { "La Misa",    99, 4, { { RK_EXVOTO, 4 }, { RK_MONAGUILLO, 3 }, { RK_PARROCO, 2 }, { RK_MONJA, 2 } } },
     [G_MONJARANA]  = { "La monjaraña", 99, 5, { { RK_MONJA, 2 }, { RK_EXVOTO, 3 }, { RK_PARROCO, 1 }, { RK_OJO, 1 }, { RK_MONAGUILLO, 4 } } },
-    // El Prisionero (last block of Nave 3, mission 3): an elite Cireneo with his guard. Guardian of the Galeria del secreto
-    // (mission 2): a peldaño 2 group fixed in place, the first Ojo of the way.
-    [G_PRISIONERO]       = { "El Prisionero",    99, 5, { { RK_CIRENEO, 1 }, { RK_EXVOTO_PRAY, 1 }, { RK_OJO, 2 }, { RK_MONAGUILLO, 3 }, { RK_BEBE, 1 } } },
+    // Guardian of the Galeria del secreto: a peldaño 2 group fixed in place, the first Ojo of the way.
     [G_GUARDIA_SECRETO]  = { "Guardia del secreto", 99, 4, { { RK_EXVOTO_PRAY, 1 }, { RK_OJO, 1 }, { RK_MONAGUILLO, 3 }, { RK_BEBE, 3 } } },
 };
 
@@ -1415,10 +1416,6 @@ static int spawn_room_group(Enemy *enemies, int max_enemies, int k, int py) {
             int ty = y + (t == 3 ? 12 : 0);
             if (position_is_free(TO_FIXED(tx), TO_FIXED(ty))) {
                 place_room_enemy(&enemies[slot], kind, tx, ty, i, k, 100, tier2);
-                if (kinds[i] == RK_CIRENEO && room_def()->elite && k == room_def()->fixed_block) {   // the Prisionero: elite life
-                    enemies[slot].max_hp = ENC_ELITE_HP;
-                    enemies[slot].hp = ENC_ELITE_HP;
-                }
                 rest_assign(slot, rest_mode_for(kind->enc_type, kind->guard), &enemies[slot]);
                 placed = 1;
             }

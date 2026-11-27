@@ -1,6 +1,6 @@
 {
  "name": "arpg_confesionario",
- "description": "Confesionario (la hoguera del campamento): la voz da las penitencias 1 y 2 juntas. Solo capturas. El heroe se coloca junto a la hoguera (128,306; alcance 34 px en suelo 2:1).",
+ "description": "Confesionario (la hoguera del campamento), version B: partida nueva, la voz ofrece a Don Tomas (lista del coro); con la lista entregada, ofrece a Sor Leonor y la Misa a la vez. Solo capturas. El heroe se coloca junto a la hoguera (128,306; alcance 34 px en suelo 2:1).",
  "suite": false,
  "evidence_only": true,
  "state": {
@@ -148,6 +148,40 @@
   {
    "frames": 150,
    "capture": "b03_penitencia_3"
+  },
+  {
+   "poke": [
+    {
+     "field": "delivered",
+     "value": 1
+    },
+    {
+     "field": "px",
+     "value": 32768
+    },
+    {
+     "field": "py",
+     "value": 78336
+    }
+   ],
+   "frames": 200
+  },
+  {
+   "button_down": "A",
+   "frames": 4
+  },
+  {
+   "button_up": "A",
+   "frames": 30,
+   "capture": "d01_leonor_1"
+  },
+  {
+   "frames": 150,
+   "capture": "d02_leonor_2"
+  },
+  {
+   "frames": 150,
+   "capture": "d03_misa"
   }
  ]
 }

@@ -1,6 +1,6 @@
 {
  "name": "arpg_campana_muerte",
- "description": "Muerte en la mazmorra con 4 reliquias recogidas en la bajada y un objeto de misi\u00f3n encima: vuelve al campamento con la mitad (2), sin el objeto, con la experiencia intacta y los avisos 'Has perdido 2 objetos' y 'Se ha perdido Sello del Hospital'. Geometr\u00eda: el h\u00e9roe cruza la puerta del campamento (128,116) y entra en la Nave 1.",
+ "description": "Muerte en la mazmorra con 4 reliquias recogidas en la bajada y un objeto de misión encima: vuelve al campamento con la mitad (2), sin el objeto, con la experiencia intacta y los avisos 'Has perdido 2 objetos' y 'Se ha perdido Lista del coro'. Geometría: el héroe cruza la puerta del campamento (128,116) y entra en la Nave 1.",
  "tags": [
   "campana-ciclo"
  ],

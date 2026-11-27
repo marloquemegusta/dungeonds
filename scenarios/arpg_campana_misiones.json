@@ -1,6 +1,6 @@
 {
  "name": "arpg_campana_misiones",
- "description": "Objetos de mision: al caer el grupo que los guarda, el heroe los lleva (Capilla del parroco: sello del Hospital; Galeria del secreto: sello del Claustro; Prisionero de la Nave 3, Cireneo de elite de 2500 de vida: llave de la capilla; monjarana: llave de la cripta). Un objeto ya entregado no se da otra vez. El heroe esta en dios y los enemigos mueren con hp 0. (el Prisionero ocupa el hueco 4 de los enemigos en esa carga).",
+ "description": "Objetos de mision (version B, Tres penitencias): al caer el grupo que los guarda, el heroe los lleva. Capilla del parroco: la lista del coro (Don Tomas); Galeria de la Misa: la llave de la capilla; monjarana: la denuncia de Sor Leonor; Galeria del secreto y Nave 3 ya no dan objeto (sin Prisionero ni Cireneo de elite). Un objeto ya entregado no se da otra vez. El heroe esta en dios y los enemigos mueren con hp 0.",
  "suite": true,
  "state": {
   "elf": "../.ds-game-dev/build/out/dungeonds.elf",
@@ -404,8 +404,8 @@
     }
    ],
    "frames": 40,
-   "state_capture": "m1_hospital",
-   "capture": "m1_hospital"
+   "state_capture": "m1_lista",
+   "capture": "m1_lista"
   },
   {
    "poke": [
@@ -549,8 +549,8 @@
     }
    ],
    "frames": 40,
-   "state_capture": "m2_claustro",
-   "capture": "m2_claustro"
+   "state_capture": "m2_secreto",
+   "capture": "m2_secreto"
   },
   {
    "poke": [
@@ -596,7 +596,7 @@
   },
   {
    "frames": 20,
-   "state_capture": "m3_elite"
+   "state_capture": "m3_nave3"
   },
   {
    "poke": [
@@ -698,8 +698,8 @@
     }
    ],
    "frames": 40,
-   "state_capture": "m3_prisionero",
-   "capture": "m3_prisionero"
+   "state_capture": "m3_nave3_vencida",
+   "capture": "m3_nave3_vencida"
   },
   {
    "poke": [
@@ -843,8 +843,153 @@
     }
    ],
    "frames": 40,
-   "state_capture": "m4_cripta",
-   "capture": "m4_cripta"
+   "state_capture": "m4_monjarana",
+   "capture": "m4_monjarana"
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    },
+    {
+     "field": "dbg_start_room",
+     "value": 12
+    },
+    {
+     "field": "dbg_restart",
+     "value": 1
+    },
+    {
+     "field": "q_carrying",
+     "value": 0
+    },
+    {
+     "field": "q_delivered",
+     "value": 0
+    },
+    {
+     "field": "q_boss",
+     "value": 0
+    }
+   ],
+   "frames": 80
+  },
+  {
+   "poke": [
+    {
+     "field": "px",
+     "value": 65536
+    },
+    {
+     "field": "py",
+     "value": 245248
+    }
+   ],
+   "frames": 50
+  },
+  {
+   "poke": [
+    {
+     "field": "e0_hp",
+     "value": 0
+    },
+    {
+     "field": "e1_hp",
+     "value": 0
+    },
+    {
+     "field": "e2_hp",
+     "value": 0
+    },
+    {
+     "field": "e3_hp",
+     "value": 0
+    },
+    {
+     "field": "e4_hp",
+     "value": 0
+    },
+    {
+     "field": "e5_hp",
+     "value": 0
+    },
+    {
+     "field": "e6_hp",
+     "value": 0
+    },
+    {
+     "field": "e7_hp",
+     "value": 0
+    },
+    {
+     "field": "e8_hp",
+     "value": 0
+    },
+    {
+     "field": "e9_hp",
+     "value": 0
+    },
+    {
+     "field": "e10_hp",
+     "value": 0
+    },
+    {
+     "field": "e11_hp",
+     "value": 0
+    },
+    {
+     "field": "e12_hp",
+     "value": 0
+    },
+    {
+     "field": "e13_hp",
+     "value": 0
+    },
+    {
+     "field": "e14_hp",
+     "value": 0
+    },
+    {
+     "field": "e15_hp",
+     "value": 0
+    },
+    {
+     "field": "e16_hp",
+     "value": 0
+    },
+    {
+     "field": "e17_hp",
+     "value": 0
+    },
+    {
+     "field": "e18_hp",
+     "value": 0
+    },
+    {
+     "field": "e19_hp",
+     "value": 0
+    },
+    {
+     "field": "e20_hp",
+     "value": 0
+    },
+    {
+     "field": "e21_hp",
+     "value": 0
+    },
+    {
+     "field": "e22_hp",
+     "value": 0
+    },
+    {
+     "field": "e23_hp",
+     "value": 0
+    }
+   ],
+   "frames": 40,
+   "state_capture": "m5_misa",
+   "capture": "m5_misa"
   },
   {
    "poke": [
@@ -988,49 +1133,54 @@
     }
    ],
    "frames": 40,
-   "state_capture": "m5_ya_entregado",
-   "capture": "m5_ya_entregado"
+   "state_capture": "m7_ya_entregado",
+   "capture": "m7_ya_entregado"
   }
  ],
  "assertions": {
   "state_changes": [
    {
-    "at": "m1_hospital",
+    "at": "m1_lista",
     "field": "q_carrying",
     "equals": 1
    },
    {
-    "at": "m1_hospital",
+    "at": "m1_lista",
     "field": "q_boss",
     "equals": 1
    },
    {
-    "at": "m2_claustro",
-    "field": "q_carrying",
-    "equals": 2
-   },
-   {
-    "at": "m3_elite",
-    "field": "e4_hp",
-    "equals": 2500
-   },
-   {
-    "at": "m3_prisionero",
-    "field": "q_carrying",
-    "equals": 4
-   },
-   {
-    "at": "m4_cripta",
-    "field": "q_carrying",
-    "equals": 8
-   },
-   {
-    "at": "m5_ya_entregado",
+    "at": "m2_secreto",
     "field": "q_carrying",
     "equals": 0
    },
    {
-    "at": "m5_ya_entregado",
+    "at": "m3_nave3",
+    "field": "e4_hp",
+    "max_value": 2000
+   },
+   {
+    "at": "m3_nave3_vencida",
+    "field": "q_carrying",
+    "equals": 0
+   },
+   {
+    "at": "m4_monjarana",
+    "field": "q_carrying",
+    "equals": 4
+   },
+   {
+    "at": "m5_misa",
+    "field": "q_carrying",
+    "equals": 2
+   },
+   {
+    "at": "m7_ya_entregado",
+    "field": "q_carrying",
+    "equals": 0
+   },
+   {
+    "at": "m7_ya_entregado",
     "field": "q_boss",
     "equals": 0
    }

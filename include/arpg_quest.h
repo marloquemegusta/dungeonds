@@ -4,12 +4,11 @@
 #include <stdint.h>
 
 enum {
-    QUEST_SELLO_HOSPITAL = 0,
-    QUEST_SELLO_CLAUSTRO = 1,
-    QUEST_LLAVE_CAPILLA  = 2,
-    QUEST_LLAVE_CRIPTA   = 3,
-    QUEST_ABANDERADO     = 4,
-    QUEST_COUNT          = 5
+    QUEST_TOMAS      = 0,   // Don Tomas: the choir list (Capilla del parroco)
+    QUEST_MISA       = 1,   // optional: the chapel key (Galeria de la Misa)
+    QUEST_LEONOR     = 2,   // Sor Leonor: her denunciation (Galeria de la monjarana)
+    QUEST_ABANDERADO = 3,
+    QUEST_COUNT      = 4
 };
 
 typedef struct {

@@ -2,6 +2,7 @@
 #include "arpg_quest.h"
 #include "arpg_progress.h"
 #include "arpg_inv.h"
+#include "arpg_log.h"
 #include <string.h>
 
 // One row per penance (QUEST_*): the object's name, the fixed relic its delivery pays (ARPG_MECH_*, ARPG_MECH_NONE = none)
@@ -14,21 +15,19 @@ typedef struct {
 } QuestInfo;
 
 static const QuestInfo s_quest[QUEST_COUNT] = {
-    { "Sello del Hospital", ARPG_MECH_LLAMA_VOTIVA,
-      { "El Hospital sella a quien curó sin licencia.", "Rompe ese sello y vuelve andando.", 0 } },
-    { "Sello del Claustro", ARPG_MECH_REDIL,
-      { "El Claustro sella lo que las monjas supieron.", "Tráelo: el cielo lo llama penitencia.", 0 } },
+    { "Lista del coro", ARPG_MECH_LLAMA_VOTIVA,
+      { "Don Tomás no entregó a sus muchachos.", "Trae la lista del coro de su capilla.", 0 } },
     { "Llave de la capilla", ARPG_MECH_LANZA,
-      { "Un prisionero reza tras la reja de la nave.", "Su llave abre la capilla. Tráela a pie.", 0 } },
-    { "Llave de la cripta", ARPG_MECH_PIRA,
-      { "Una monja teje en lo hondo con alambre y cera.", "Quítale la llave de la cripta: lo pide Dios.", 0 } },
+      { "La Misa guarda la llave de la capilla.", 0, 0 } },
+    { "Denuncia de Sor Leonor", ARPG_MECH_PIRA,
+      { "Sor Leonor denunció al padre Anselmo.", "Trae su denuncia de la Nave 4.", 0 } },
     { "Estandarte", ARPG_MECH_NONE,
-      { "El Abanderado guarda aún su estandarte.", "Tráelo a pie. Será lo último que se te pida.", 0 } },
+      { "La Cripta está abierta. Te espera el estandarte.", 0, 0 } },
 };
 
-// Missions 1 and 2 are offered together (both undelivered).
+// Sor Leonor (obligatory) and la Misa (optional) are offered together once Don Tomas has been served.
 static const char *const s_pair_text[3] = {
-    "Dos sellos guardan lo que se calló:", "el del Hospital y el del Claustro.", "Tráelos a pie y serás perdonado."
+    "Sor Leonor denunció al padre Anselmo.", "Trae su denuncia de la Nave 4.", "La Misa guarda la llave de la capilla."
 };
 static const char *const s_done_text[3] = {
     "No queda penitencia que cumplir.", "La voz calla. Rezar ya no la mueve.", 0
@@ -128,6 +127,7 @@ static void lose_carried(void) {
 }
 
 void arpg_campaign_on_death(void) {
+    arpg_log_event(CLOG_MUERTE, 0);
     notice_clear();
     int lost = lose_half_of_loot();
     if (lost > 0) {
@@ -157,6 +157,7 @@ void arpg_campaign_arrive_on_foot(void) {
     for (int q = 0; q < QUEST_COUNT; q++) {
         if (!((now >> q) & 1)) continue;
         notice_push2("La voz acepta ", s_quest[q].name);
+        arpg_log_event(CLOG_ENTREGA, s_quest[q].name);
         if (s_quest[q].reward_mech == ARPG_MECH_NONE) continue;
         ArpgInvItem it;
         arpg_inv_make_reward(&it, s_quest[q].reward_mech);
@@ -167,14 +168,18 @@ void arpg_campaign_arrive_on_foot(void) {
 
 // ---- Confessional ----
 void arpg_campaign_confess(void) {
-    int q = 0;
-    while (q < QUEST_COUNT && arpg_quest_delivered(q)) q++;
+    // Order: Tomas, then Leonor (+ the optional Misa), then the Abanderado. q = the penance the voice speaks of now.
+    int q;
+    if (!arpg_quest_delivered(QUEST_TOMAS)) q = QUEST_TOMAS;
+    else if (!arpg_quest_delivered(QUEST_LEONOR)) q = QUEST_LEONOR;
+    else if (!arpg_quest_delivered(QUEST_ABANDERADO)) q = QUEST_ABANDERADO;
+    else q = QUEST_COUNT;
     const char *const *text;
     if (q >= QUEST_COUNT) text = s_done_text;
-    else if (q == QUEST_SELLO_HOSPITAL && !arpg_quest_delivered(QUEST_SELLO_CLAUSTRO)) text = s_pair_text;   // 1 and 2 are offered together
+    else if (q == QUEST_LEONOR && !arpg_quest_delivered(QUEST_MISA)) text = s_pair_text;   // Leonor and the Misa are offered together
     else text = s_quest[q].text;
     if (q < QUEST_COUNT) {
-        int given = q < 2 ? 2 : q + 1;
+        int given = q == QUEST_TOMAS ? 1 : q == QUEST_LEONOR ? 3 : 4;   // offered = how many penances the voice has named
         if (given > g_quest.offered) g_quest.offered = (uint8_t)given;
     }
     notice_clear();
