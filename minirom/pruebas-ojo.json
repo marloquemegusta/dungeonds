@@ -1,0 +1,13 @@
+{
+  "nombre": "pruebas-ojo",
+  "sala": "pruebas",
+  "enemigos": [
+    { "tipo": "ojo", "dx": 60, "dy": -60, "estado": "awake" },
+    { "tipo": "monaguillo", "dx": -20, "dy": -50, "estado": "awake" }
+  ],
+  "heroe": { "equipo": "inicial", "mecanicas": [] },
+  "pruebas": { "invulnerable": true, "enemigos_inmortales": false, "reaparecen": true, "vida_jefe": 0 },
+  "depuracion": [],
+  "animaciones": "auto",
+  "extra_archivos": []
+}

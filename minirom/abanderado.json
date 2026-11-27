@@ -1,0 +1,10 @@
+{
+  "nombre": "abanderado",
+  "sala": "Cripta",
+  "enemigos": "como_en_el_juego",
+  "heroe": { "equipo": "todo", "mecanicas": [] },
+  "pruebas": { "invulnerable": false, "enemigos_inmortales": false, "reaparecen": false, "vida_jefe": 0 },
+  "depuracion": [],
+  "animaciones": "auto",
+  "extra_archivos": []
+}

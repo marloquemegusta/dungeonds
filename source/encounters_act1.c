@@ -3,6 +3,7 @@
 #include "allies.h"
 #include "lab_tuning.h"
 #include "sound_test.h"
+#include "minirom.h"
 
 // Translation unit never empty (ISO C) when ENCOUNTERS_PROTO=0.
 typedef int encounters_act1_translation_unit_not_empty;
@@ -1250,6 +1251,9 @@ static void room_art_prepare_current(void) {
     // Test variants: the rooms are empty and the test code spawns the whole Exvoto family around the hero.
     mask |= (1u << CG_EXVOTO) | (1u << CG_MONAGUILLO) | (1u << CG_PARROCO) | (1u << CG_SMONJA);
 #endif
+#if MINIROM
+    mask |= minirom_art_mask();      // mini ROM: the art of the enemies listed in its JSON
+#endif
     // Implied art: the Párroco prays with the Exvoto poses; under a Súper Monja's aura the Exvotos and Monaguillos of the
     // room turn into spiders (their spider clips are only loaded in her rooms).
     if (mask & (1u << CG_PARROCO)) mask |= 1u << CG_EXVOTO;
@@ -1693,6 +1697,9 @@ void enc_update(Enemy *enemies, int max_enemies, int px, int py) {
         EncRuntime *rt = &s_rt[k];
 #if ARPG_BOXEO || ARPG_EXVOTO_TEST || ARPG_REMATE_TEST || ARPG_OJO_TEST
         continue;               // boxeo: no room ever populates; the only enemy is the dummy of boxeo.c
+#endif
+#if MINIROM
+        if (minirom_skip_population()) continue;    // mini ROM: "pruebas" or an explicit list (minirom.c places it)
 #endif
 #if SOUND_TEST
         if (sound_test_rooms_empty()) continue;     // prueba-sonidos: a scene (1..7) owns the enemies; scene 0 is the normal map
@@ -2533,4 +2540,28 @@ void arpg_bot_room(ArpgBotRoom *o) {
         }
     }
 }
+#endif
+
+#if MINIROM
+// Mini ROM (minirom.c): room lookup by name and the public face of place_enemy() for the enemies of its JSON.
+int enc_room_find(const char *name) {
+    for (int i = 0; i < ENC_ROOM_COUNT; i++)
+        if (strcmp(s_rooms[i].name, name) == 0) return i;
+    return -1;
+}
+
+// "awake": pack -1 (no wake-up logic of the room touches it); any other state sleeps in pack 0 and wakes with the room.
+int enc_minirom_place(Enemy *enemies, int max_enemies, const EncEnemyDef *d, int x, int y, int ordinal) {
+    int slot = -1;
+    for (int s = 0; s < max_enemies; s++) {
+        if (!enemies[s].active) { slot = s; break; }
+    }
+    if (slot < 0) return -1;
+    const int awake = d->state == ENC_S_AWAKE;
+    place_enemy(&enemies[slot], d, x, y, ordinal, awake ? -1 : 0, awake);
+    rest_assign(slot, awake ? 0 : d->state, &enemies[slot]);
+    return slot;
+}
+
+uint32_t enc_minirom_art(const EncEnemyDef *d) { return 1u << g_char_group[enemy_type_char_id(enemy_type_of(d->type))]; }
 #endif

@@ -1,0 +1,23 @@
+# Contrato AUTOGENERADO por build-partial-rom.ps1 -Record (variante mini-abanderado): archivos que abrieron los escenarios. No es de conceptos; regenerar en vez de editar.
+archivo: arpg_luz/cripta.bin
+archivo: arpg_luz/cripta_fix.bin
+archivo: arpg_luz/cripta_verja.bin
+archivo: bgm.raw
+archivo: boss.raw
+archivo: chars/exvoto.bin
+archivo: chars/exvoto_bebe.bin
+archivo: chars/exvoto_pray_kneel.bin
+archivo: chars/exvoto_pray_stand.bin
+archivo: chars/exvoto_stand_up.bin
+archivo: chars/monaguillo.bin
+archivo: punch/gancho_d4.bin
+archivo: punch/punch_a_d4.bin
+archivo: punch/punch_a_d6.bin
+archivo: punch/punch_a_d7.bin
+archivo: punch/punch_b_d0.bin
+archivo: punch/punch_b_d4.bin
+archivo: rooms/sala_00.rmk
+archivo: rooms/sala_15.rmk
+archivo: punch/gancho_*
+archivo: punch/punch_*
+archivo: punch/pray_*

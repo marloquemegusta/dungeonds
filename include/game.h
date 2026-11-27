@@ -19,6 +19,10 @@
 #ifndef SKIP_TITLE
 #define SKIP_TITLE 0
 #endif
+// Mini ROM (minirom/<nombre>.json, tools/minirom.py): the game boots straight into one encounter. See include/minirom.h.
+#ifndef MINIROM
+#define MINIROM 0
+#endif
 #ifndef ENC_BOT
 #define ENC_BOT 0
 #endif

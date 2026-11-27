@@ -110,6 +110,8 @@ void arpg_world_rest(void) {
 #define ARPG_SAVE_MAGIC   0x41525047u
 #if ARPG_ALL_UNLOCKED
 #define ARPG_SAVE_NAME    "dungeonds_arpg_todo.sav"   // the test build never overwrites the player's save
+#elif MINIROM
+#define ARPG_SAVE_NAME    "dungeonds_arpg_mini.sav"    // a mini ROM never overwrites the player's save
 #else
 #define ARPG_SAVE_NAME    "dungeonds_arpg.sav"
 #endif
