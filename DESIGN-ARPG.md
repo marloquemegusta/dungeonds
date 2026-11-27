@@ -120,7 +120,7 @@ Propuesta, mockups y cuentas: `walkthroughs/glifo-diseno/`. Sustituye a la Maldi
 - **Alcance de la demo (2026-11-23):** la demo es ~1/10 del juego final: con 3 biomas, un tercio del primero (la catedral), y dura **al menos 1 h** la primera vez. Propuesta con mapa a escala y simulación de niveles: `walkthroughs/arpg-zona1-jugable/propuesta_zona1.html`.
 - **Mapa ampliado con ramas (2026-11-23, sustituye a la variante D de 12 salas):** 16 salas fijas, 70 pantallas: las 4 naves de 6 pantallas apiladas y la Cripta, más dos **rodeos con naves propias** que salen de una nave y vuelven a la siguiente: el **Claustro** (bajo y alto, de la Nave 1 a la Nave 2) y el **Hospital** (Enfermería y Osario, de la Nave 2 a la Nave 3). Como las naves solo se suben, toda sala a la que se llega por abajo tiene salida lateral. Tabla de salas, puertas, niveles y premios en `diseno_juego_final.md` §11. Se quitan la Galería del relicario y el atajo.
 - **Se puede bajar andando (2026-11-27):** el borde inferior de las Naves 2, 3 y 4 lleva a la nave de abajo y el de la Cripta a la Nave 4 (solo si no hay combate de jefe: la reja de abajo está cerrada); el héroe aparece bajo la puerta de arriba de esa sala, mirando al sur. Los grupos caídos siguen caídos. Así se puede volver al campamento sin la llave de la Misa. El borde inferior de la Nave 1 sigue llevando al campamento.
-- **Llave:** la suelta el grupo de la Capilla del párroco (Hospital) al morir; se guarda y se marca en el mapa.
+- **Campaña de la demo (decidido 2026-11-26, versión B «Tres penitencias»; ver «Campaña» abajo).** La llave de la capilla ya no la suelta la Capilla del párroco: es el objeto de la Misa.
 - **Reja = hace falta llave:** todo lo que pida llave se separa con el rastrillo de hierro, de pared a pared, con el premio visible detrás. En la Capilla con llave cruza la sala delante del cofre: sin llave se lucha delante y no se pasa (aviso «Necesitas la llave de la capilla»); con ella, la reja sube al acercarse.
 - **Premios garantizados:** el cofre de la Capilla del párroco da rara; la Misa y la monjaraña dan épica al caer enteras; el jefe de la Cripta da legendaria la primera vez; la Capilla con llave guarda la legendaria fija de la zona.
 - **Fin de la demo:** al vencer al jefe de la Cripta por primera vez, tras su secuencia de victoria sale una tarjeta «Fin de la demo» (has vencido al Abanderado; gracias por jugar) y, con A o un toque, se vuelve al campamento. Las siguientes veces solo da botín y experiencia.
@@ -144,6 +144,18 @@ Propuesta, mockups y cuentas: `walkthroughs/glifo-diseno/`. Sustituye a la Maldi
 - **Mapa con SELECT:** superpuesto en la pantalla de arriba, sin pausar, isométrico al estilo del automapa de *Diablo* (contornos de tiza, girado 45° y aplastado 2:1); el escenario de detrás se oscurece. Solo salas vistas; marca héroe, altares, cofres y llave, y las puertas a salas no vistas como un trazo corto.
 - **El mapa se abre también en el campamento (decidido 2026-11-27).** SELECT lo abre en la pantalla de arriba allí igual que en la catedral (sin punto del héroe). Se ve siempre el objetivo actual: una **marca** (rombo ámbar que parpadea) sobre la sala objetivo y una **línea de misión** abajo («Trae la lista del coro»). El mapa **no se revela**: solo se dibujan la Nave 1 (la salida del campamento) y las salas ya visitadas; la marca flota en su posición aunque la sala no se haya pisado, así que hay que explorar para llegar. Con el objeto de la penitencia en la mano la marca pasa al pie de la Nave 1 y la línea dice «Vuelve al campamento». Leonor y la Misa dan dos marcas y dos líneas a la vez. Antes de rezar por primera vez no hay marca y la línea manda rezar en la hoguera.
 - **La misión se da clara (decidido 2026-11-27).** La hoguera (la voz) dice la penitencia entera, **en orden, un aviso por frase** (máx. ~46 caracteres, una línea): qué se pide, a quién, y **la ruta en texto** hasta la sala (p. ej. Don Tomás: «Sube a la Nave 1 y sal por la izquierda» / «Enfermería y Osario: siempre a la izquierda» / «La capilla del párroco está al fondo»). Cada aviso dura ~3,5 s y **A lo pasa al siguiente**. Leonor se da con la Misa (opcional) en la misma tanda; el Abanderado, con la Cripta ya abierta.
+### Campaña de la demo (decidido 2026-11-26)
+- **Ciclo de una misión:** en el campamento la hoguera (la voz) da la penitencia siguiente; se puede ignorar y explorar, las **rejas** no se saltan. Se mata y se recoge el objeto en su sala; **el objeto no se teletransporta**: hay que llegar a pie al campamento, donde se entrega solo (aviso y recompensa). Llevar el objeto en la mano ya abre la reja correspondiente. Se puede volver al campamento en cualquier momento; con el objeto encima, solo cuenta si llegas a pie.
+- **Tres penitencias, en orden (versión B):**
+  1. **Don Tomás** (obligatoria): *la lista del coro*, en la Capilla del párroco. Abre la reja de la Nave 1. Entrega: aura **Llama Votiva**.
+  2. **Sor Leonor** (obligatoria): *la denuncia de Sor Leonor* contra el padre Anselmo, al vencer su grupo en la Galería de la monjaraña. Abre la reja de la Nave 4 a la Cripta. Entrega: **Pira**. Se ofrece a la vez **la Misa** (opcional): *la llave de la capilla*, al vencer el grupo de la Galería de la Misa; abre la reja de la Capilla con llave (Llaga y atajo a la Nave 1). Entrega: **Lanza de Longinos**; la Misa conserva su premio fijo (Zarza).
+  3. **El Abanderado** (Cripta): fin de la demo.
+- **El Claustro es opcional:** Redil en la Galería del secreto y Cilicio en la del cofre, como premios fijos.
+- **Muerte:** experiencia intacta; se pierde la mitad de lo recogido en esa bajada que no esté equipado y el objeto de misión; el jefe revive. **Retirada** (volver desde el menú): se conserva todo menos el objeto. **Repoblación:** al entrar desde el campamento revive todo; dormir no repuebla.
+- **La catedral se endurece con cada robo:** peldaño de un grupo = nave de la sala + objetos entregados + 1 si llevas un objeto encima, tope 5; más cantidad y peor mezcla, nunca más vida ni daño por enemigo. Cireneo no sale antes de la Nave 3.
+- **Niveles:** curva ×2 (nivel 2 pide 60 y cada nivel el doble). Objetivo a ritmo normal: Tomás a nivel 2-3, la Misa 4, Sor Leonor 5 (abre el 2.º engarce), Abanderado pensado para 6. Jefes muy difíciles al primer intento; grindear se permite pero no renta.
+- **Registro de partida:** la ROM normal escribe `/dungeonds_campana.log` en la SD (una línea por evento con segundos y sala) para comparar el ritmo real con el simulador (`tools/campaign/`).
+- **Abiertos:** historia mínima de cada penitente contra `LORE.md`; la tabla minuto a minuto del reloj de novedades (una cada ~5 min); encajar los peldaños en los tramos del mapa C.
 - **Fuera de la demo:** dificultades (Pesadilla, Infierno), atajos y santuarios.
 
 ## 8. Arranque, tutorial y menús (decidido 2026-11-22)
@@ -222,7 +234,7 @@ Intensidad = potencia de la luz principal; «desde» = de dónde viene en pantal
 | Enfermería | 8 | ámbar suave | 70 % | 0 | 80 | cortas (casi vertical) |
 | Osario | 9 | frío (a nivel de la noche de la demo) | 28 % | 45 | 22 | largas, desde una esquina |
 | Capillas | 10, 11, 13 | ámbar | 60 % | 0 | 36 | hacia la cámara (luz desde el altar) |
-| Prisionero | 12 | verdoso oscuro (ventanuco alto lateral) | 32 % | 90 | 58 | un haz duro |
+| Galería de bajada | 12 | verdoso oscuro (ventanuco alto lateral) | 32 % | 90 | 58 | un haz duro |
 | Monjaraña | 14 | verde enfermizo, muy oscuro (por debajo de la noche de la demo) | 20 % | 140 | 20 | largas, en diagonal sobre el suelo |
 | Cripta | 15 | brasa apagada, muy oscura (por debajo de la noche de la demo) | 22 % | 135 | 22 | largas, en diagonal sobre el suelo |
 
@@ -241,7 +253,7 @@ Dirección artística a la que se quiere llegar cuando la luz por sala se pueda 
 | **Cielo mudo** | Naves 1-4 | Gris apagada de ventanas altas; se apaga hacia el fondo (Nave 1 la más clara, Nave 4 notablemente más oscura) | Largas y suaves, todas en la misma dirección (luz alta en diagonal) | El cielo dejó de responder y la nave crece alejándose de la luz |
 | **Intemperie** | Claustros | Las únicas salas con cielo: día (sol) o noche (luna fría) | Día: cortas y duras. Noche: casi ninguna | Lo de fuera sigue su curso; lo de dentro no |
 | **Cera** | Capillas, Misa, Enfermería | Oscuridad cálida; solo se ve cerca de las velas | Cortas y tenues, se abren al alejarse de cada grupo de velas | Las velas son de Remedios la cerera |
-| **Faroles del Tribunal** | Prisionero, galerías del cofre y del secreto | Oscuro con conos de luz blanca y dura, de interrogatorio | Largas y duras, salen del farol | El Tribunal de la Luz juzga con lámparas |
+| **Faroles del Tribunal** | Galería de bajada, galerías del cofre y del secreto | Oscuro con conos de luz blanca y dura, de interrogatorio | Largas y duras, salen del farol | El Tribunal de la Luz juzga con lámparas |
 | **Sin luz** | Osario, Monjaraña | Casi negro y frío, sin fuente propia; solo un halo débil alrededor del héroe | Ninguna | Aquí rezar no salvó a nadie (osario y sacristía de Leonor) |
 | **Hogueras de la Columna** | Cripta | Técnica del campamento nocturno: negro alrededor de una hoguera | Las de la hoguera (cálidas, desde el fuego) | La Columna acampa dentro |
 
@@ -269,7 +281,7 @@ Props colocados en el póster (`walkthroughs/poster-mapa/`); la luz definitiva d
 - **Enfermería (8):** catres en dos filas, biombos, palangana, exvoto y candelabros de pie.
 - **Osario (9):** pilas de calaveras, montones de huesos y estantes osario a los lados.
 - **Capilla del párroco (10), Galería de la Misa (11) y Capilla con llave (13):** altar al fondo, reclinatorios, exvotos y candelabros de pie (la de la llave añade el relicario).
-- **Galería del prisionero (12):** cepos, alambre y capullos; el cofre fijo choca con un enemigo.
+- **Galería de bajada (12):** cepos, alambre y capullos; el cofre fijo choca con un enemigo.
 - **Galería de la Monjaraña (14):** capullos por todo el suelo, santos y columnas, calaveras y huesos.
 - **Cripta (15):** braseros, sarcófagos de frente y de lado, lápidas, calaveras y huesos; despejada para el jefe.
 
