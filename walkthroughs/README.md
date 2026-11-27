@@ -173,3 +173,4 @@ Resúmenes acumulativos y auditables de cada entrega y avance de desarrollo en `
 | 155 | Devlog 2: antes/después del Ojo del Tribunal (vídeo vertical de 36 s con planos de la ROM en sala de rodaje) | [`devlog-02/`](devlog-02/walkthrough.md) | Hojas de contacto revisadas; sin cambios de código en `main` |
 | 156 | Los Bebés gatean: clips de gateo, rezo y andar para los vídeos de lore | [`bebe-gatear/`](bebe-gatear/walkthrough.md) | GIF y carga en el generador; no va a la ROM |
 | 157 | Lote 02 de lore: 02 Gaspar y montaje definitivo en Remotion con la plantilla (composición genérica) | [`lore-lote-02/`](lore-lote-02/walkthrough.md) | Vídeo con voz (69,3 s) listo para publicar; fotogramas revisados |
+| 158 | Galería de efectos del roguelike: 15 GIFs de los efectos finales (variantes elegidas en A/B/C) | [`galeria-vfx/`](galeria-vfx/walkthrough.md) | GIFs capturados de la ROM `cathedral-sandbox`; sin cambios de código |

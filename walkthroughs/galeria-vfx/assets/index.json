@@ -1,0 +1,122 @@
+[
+ {
+  "archivo": "01_enemigo_quemado_A.gif",
+  "nombre": "enemigo_quemado_A",
+  "reliquia": "(estado quemado)",
+  "variante": "A",
+  "que_se_ve": "Brasas y lenguas sobre tres enemigos con 1, 2 y 4 capas de quemadura.",
+  "escenario": "scenarios/abc_burn.json (dv=0)"
+ },
+ {
+  "archivo": "02_enemigo_quemado_B.gif",
+  "nombre": "enemigo_quemado_B",
+  "reliquia": "(estado quemado)",
+  "variante": "B",
+  "que_se_ve": "Corona de llamas a los pies de tres enemigos con 1, 2 y 4 capas.",
+  "escenario": "scenarios/abc_burn.json (dv=1)"
+ },
+ {
+  "archivo": "03_auto_de_fe_A.gif",
+  "nombre": "auto_de_fe_A",
+  "reliquia": "Auto de Fe",
+  "variante": "A",
+  "que_se_ve": "Carga, disparo sobre enemigo quemado y chispas al impactar.",
+  "escenario": "scenarios/galeria_abc_autofe.json (dv=0)"
+ },
+ {
+  "archivo": "04_auto_de_fe_C.gif",
+  "nombre": "auto_de_fe_C",
+  "reliquia": "Auto de Fe",
+  "variante": "C",
+  "que_se_ve": "Corona de llamas a los pies; el disparo la consume y sube evaporandose.",
+  "escenario": "scenarios/galeria_abc_autofe.json (dv=2)"
+ },
+ {
+  "archivo": "05_llama_votiva_B.gif",
+  "nombre": "llama_votiva_B",
+  "reliquia": "Llama Votiva",
+  "variante": "B",
+  "que_se_ve": "Chispas que giran irregulares en la linea de apuntado durante la carga.",
+  "escenario": "scenarios/galeria_abc_votiva.json (dv=1)"
+ },
+ {
+  "archivo": "06_corazon_flagelado_A.gif",
+  "nombre": "corazon_flagelado_A",
+  "reliquia": "Corazon Flagelado",
+  "variante": "A",
+  "que_se_ve": "Onda en anillo grande alrededor del heroe que alcanza a los enemigos.",
+  "escenario": "scenarios/abc_flagelado.json (dv=0)"
+ },
+ {
+  "archivo": "07_martirio_contagioso_A.gif",
+  "nombre": "martirio_contagioso_A",
+  "reliquia": "Martirio Contagioso",
+  "variante": "A",
+  "que_se_ve": "Disparo a un enemigo quemado: estalla y el anillo contagia a los vecinos.",
+  "escenario": "scenarios/galeria_abc_martirio.json (dv=0)"
+ },
+ {
+  "archivo": "08_llaga_abierta_B.gif",
+  "nombre": "llaga_abierta_B",
+  "reliquia": "Llaga Abierta",
+  "variante": "B",
+  "que_se_ve": "Heroe teñido de dorado palido con sangre que gotea, a 4, 3, 2 y 1 corazones.",
+  "escenario": "scenarios/abc_llaga.json (dv=1)"
+ },
+ {
+  "archivo": "09_viatico_A.gif",
+  "nombre": "viatico_A",
+  "reliquia": "Viatico",
+  "variante": "A",
+  "que_se_ve": "Hilo de sangre que sale del enemigo muerto y fluye al pecho del heroe.",
+  "escenario": "scenarios/galeria_abc_viatico.json (dv=0)"
+ },
+ {
+  "archivo": "10_viatico_C.gif",
+  "nombre": "viatico_C",
+  "reliquia": "Viatico",
+  "variante": "C",
+  "que_se_ve": "Alma palida que sale del enemigo muerto y entra en el heroe.",
+  "escenario": "scenarios/galeria_abc_viatico.json (dv=2)"
+ },
+ {
+  "archivo": "11_aura_E_cilicio.gif",
+  "nombre": "aura_E_cilicio",
+  "reliquia": "Aura de Cilicio",
+  "variante": "-",
+  "que_se_ve": "Corona de espinas en el suelo durante la carga; el aro quema al enemigo; disparo.",
+  "escenario": "scenarios/galeria_aura_E.json"
+ },
+ {
+  "archivo": "12_aura_H_ceniza.gif",
+  "nombre": "aura_H_ceniza",
+  "reliquia": "Sed de Ceniza",
+  "variante": "-",
+  "que_se_ve": "Ceniza alrededor del heroe durante la carga y disparo.",
+  "escenario": "scenarios/galeria_aura_H.json"
+ },
+ {
+  "archivo": "13_aura_G_gloria.gif",
+  "nombre": "aura_G_gloria",
+  "reliquia": "Viatico",
+  "variante": "-",
+  "que_se_ve": "Gloria (halo) durante la carga y disparo.",
+  "escenario": "scenarios/galeria_aura_G.json"
+ },
+ {
+  "archivo": "14_aura_L_llamas.gif",
+  "nombre": "aura_L_llamas",
+  "reliquia": "Corazon Flagelado",
+  "variante": "-",
+  "que_se_ve": "Llamas alrededor del heroe durante la carga y disparo.",
+  "escenario": "scenarios/galeria_aura_L.json"
+ },
+ {
+  "archivo": "15_rayo_base.gif",
+  "nombre": "rayo_base",
+  "reliquia": "(ninguna)",
+  "variante": "-",
+  "que_se_ve": "Carga y disparo del rayo base (haz fuego) sin reliquias.",
+  "escenario": "scenarios/galeria_rayo_base.json"
+ }
+]

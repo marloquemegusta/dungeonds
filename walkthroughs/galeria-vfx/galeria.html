@@ -1,0 +1,71 @@
+<title>Galería de efectos del roguelike</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+SC:wght@500;700&family=Alegreya+Sans:wght@400;500;700&display=swap">
+<style>
+/* Diseño: relicario oscuro de una sola cara; GIFs en rejilla, píxel nítido. Tema único deliberado (como la ROM). */
+:root{
+  --bg:#17130f; --panel:#211b15; --line:#3a2f24; --fg:#e9dfcd; --muted:#a8987f; --gold:#c9a45c; --ember:#c96a3a;
+  --display:"Cormorant SC", Georgia, serif; --body:"Alegreya Sans", system-ui, sans-serif;
+  color-scheme:dark;
+}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:16px;line-height:1.5}
+.wrap{max-width:1180px;margin:0 auto;padding-block:32px 64px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+h1{font-family:var(--display);font-weight:700;font-size:clamp(2rem,5vw,3rem);margin:0;letter-spacing:.02em;color:var(--gold);text-wrap:balance}
+.lede{color:var(--muted);max-width:65ch;margin:.5rem 0 0}
+h2{font-family:var(--display);font-weight:500;font-size:1.6rem;margin:48px 0 4px;color:var(--fg);border-bottom:1px solid var(--line);padding-bottom:6px}
+.sec{color:var(--muted);margin:0 0 18px;max-width:65ch}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,340px),1fr));gap:20px}
+figure{margin:0;background:var(--panel);border:1px solid var(--line);display:flex;flex-direction:column}
+.shot{background:#0d0b09;display:flex;align-items:center;justify-content:center;min-height:180px;overflow:hidden}
+.shot img{image-rendering:pixelated;width:100%;height:auto;display:block}
+figcaption{padding:12px 14px 14px;display:flex;flex-direction:column;gap:4px;min-width:0}
+.name{font-weight:700;font-size:1.05rem}
+.tag{font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--gold)}
+.tag.alt{color:var(--muted)}
+.what{color:var(--fg);opacity:.85;font-size:.95rem}
+.note{color:var(--ember);font-size:.88rem}
+footer{margin-top:48px;color:var(--muted);font-size:.9rem;max-width:65ch}
+@media (prefers-reduced-motion:reduce){.shot img{animation:none}}
+</style>
+
+<div class="wrap">
+<h1>Galería de efectos del roguelike</h1>
+<p class="lede">Los efectos que quedaron como finales en las rondas A/B/C, cada uno solo y capturado de la ROM real (sala de pruebas, enemigos quietos, 4×). Sirven de catálogo para decidir qué llevar al ARPG.</p>
+
+<h2>Auras de carga</h2>
+<p class="sec">Salen alrededor del héroe mientras carga el rayo. Cada una iba ligada a una reliquia y se podían apilar.</p>
+<div class="grid">
+<figure><div class="shot"><img loading="lazy" src="assets/14_aura_L_llamas.gif" alt="Aura de llamas durante la carga"></div><figcaption><span class="tag">Corazón Flagelado</span><span class="name">Llamas</span><span class="what">Lenguas de fuego alrededor del cuerpo mientras carga; luego dispara.</span><span class="note">En el juego solo salía con el disparo instantáneo pendiente; aquí está forzada para verla.</span></figcaption></figure>
+<figure><div class="shot"><img loading="lazy" src="assets/13_aura_G_gloria.gif" alt="Aura de gloria durante la carga"></div><figcaption><span class="tag">Viático</span><span class="name">Gloria</span><span class="what">Halo luminoso que crece con la carga.</span></figcaption></figure>
+<figure><div class="shot"><img loading="lazy" src="assets/11_aura_E_cilicio.gif" alt="Corona de espinas en el suelo"></div><figcaption><span class="tag">Aura de Cilicio</span><span class="name">Corona de espinas</span><span class="what">Aro de brasas a los pies que se ensancha con la carga y quema a quien entra.</span></figcaption></figure>
+<figure><div class="shot"><img loading="lazy" src="assets/12_aura_H_ceniza.gif" alt="Aura de ceniza durante la carga"></div><figcaption><span class="tag">Sed de Ceniza</span><span class="name">Ceniza</span><span class="what">Motas de ceniza alrededor del héroe.</span><span class="note">Muy sutil: apenas se distingue de cargar sin aura.</span></figcaption></figure>
+</div>
+
+<h2>El rayo</h2>
+<p class="sec">El arma del héroe: se carga y se suelta. Base sin reliquias y la línea de apuntado en llamas.</p>
+<div class="grid">
+<figure><div class="shot"><img loading="lazy" src="assets/15_rayo_base.gif" alt="Carga y disparo del rayo base"></div><figcaption><span class="tag alt">Sin reliquia</span><span class="name">Rayo base</span><span class="what">La línea de apuntado se estrecha mientras carga y sale el haz de fuego.</span></figcaption></figure>
+<figure><div class="shot"><img loading="lazy" src="assets/05_llama_votiva_B.gif" alt="Línea de apuntado con chispas"></div><figcaption><span class="tag">Llama Votiva · B</span><span class="name">Línea que arde</span><span class="what">Chispas que giran irregulares sobre la línea de apuntado y queman lo que toca.</span></figcaption></figure>
+</div>
+
+<h2>Fuego en los enemigos</h2>
+<p class="sec">El estado de quemado y lo que pasa cuando el rayo o la muerte lo consumen.</p>
+<div class="grid">
+<figure><div class="shot"><img loading="lazy" src="assets/02_enemigo_quemado_B.gif" alt="Corona de llamas a los pies"></div><figcaption><span class="tag">Quemado · B</span><span class="name">Llamas a los pies</span><span class="what">Corona de llamitas en el suelo; más capas, más llamas (1, 2 y 4 capas).</span></figcaption></figure>
+<figure><div class="shot"><img loading="lazy" src="assets/01_enemigo_quemado_A.gif" alt="Brasas sobre el cuerpo"></div><figcaption><span class="tag">Quemado · A</span><span class="name">Brasas y lenguas</span><span class="what">Brasas que suben por el cuerpo y una lengua de fuego al tope de capas.</span></figcaption></figure>
+<figure><div class="shot"><img loading="lazy" src="assets/04_auto_de_fe_C.gif" alt="La corona sube y se evapora"></div><figcaption><span class="tag">Auto de Fe · C</span><span class="name">La llama se evapora</span><span class="what">El rayo golpea al quemado: hace el doble y la corona de los pies sube y se desvanece.</span></figcaption></figure>
+<figure><div class="shot"><img loading="lazy" src="assets/03_auto_de_fe_A.gif" alt="Chispas al impactar"></div><figcaption><span class="tag">Auto de Fe · A</span><span class="name">Chispas de impacto</span><span class="what">Estallido corto de chispas donde el rayo consume la quemadura.</span></figcaption></figure>
+<figure><div class="shot"><img loading="lazy" src="assets/07_martirio_contagioso_A.gif" alt="Explosión que contagia"></div><figcaption><span class="tag">Martirio Contagioso · A</span><span class="name">Estallido contagioso</span><span class="what">El quemado muere, explota y el anillo prende a los de alrededor.</span></figcaption></figure>
+<figure><div class="shot"><img loading="lazy" src="assets/06_corazon_flagelado_A.gif" alt="Onda de fuego alrededor del héroe"></div><figcaption><span class="tag">Corazón Flagelado · A</span><span class="name">Onda al recibir un golpe</span><span class="what">Anillo grande de fuego que sale del héroe y alcanza a los enemigos cercanos.</span></figcaption></figure>
+</div>
+
+<h2>Sangre y vida</h2>
+<p class="sec">Reliquias del arquetipo Mártir: vivir con poca vida y robarla.</p>
+<div class="grid">
+<figure><div class="shot"><img loading="lazy" src="assets/08_llaga_abierta_B.gif" alt="Héroe dorado que gotea sangre"></div><figcaption><span class="tag">Llaga Abierta · B</span><span class="name">Ascendido que sangra</span><span class="what">Brillo pálido dorado y sangre que gotea; más fuerte cuantos menos corazones (de 4 a 1).</span></figcaption></figure>
+<figure><div class="shot"><img loading="lazy" src="assets/09_viatico_A.gif" alt="Hilo de sangre hasta el héroe"></div><figcaption><span class="tag">Viático · A</span><span class="name">Hilo de sangre</span><span class="what">Al matar, un hilo rojo viaja en arco desde la víctima al pecho del héroe.</span></figcaption></figure>
+<figure><div class="shot"><img loading="lazy" src="assets/10_viatico_C.gif" alt="Alma pálida hasta el héroe"></div><figcaption><span class="tag alt">Viático · C (alternativa)</span><span class="name">Alma pálida</span><span class="what">La misma idea con un alma clara en lugar de sangre.</span></figcaption></figure>
+</div>
+
+<footer>Los números que flotan sobre los enemigos son el daño del juego, no parte del efecto. Las animaciones se ven algo más lentas que en la consola (se captura uno de cada dos frames). Todos los efectos usan la paleta apagada del juego.</footer>
+</div>
