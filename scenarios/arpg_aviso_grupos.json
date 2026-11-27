@@ -1,0 +1,278 @@
+{
+ "name": "arpg_aviso_grupos",
+ "suite": true,
+ "description": "Aviso de grupos: todo grupo despierta cuando el héroe está a 200 px de suelo de cualquiera de sus miembros. Nave 1, primer grupo (5 miembros sobre y=1235..1304, x=176..320; el más cercano al héroe: el de x~185,y~1299). El héroe entra por la puerta del campamento (128,116) y aparece en (256,1470); se le coloca a ~237 px de suelo del miembro más cercano (py 1415: dx 71, dy 116 -> 71^2+4*116^2 = 59k > 40000) y el grupo sigue dormido; luego a ~175 px (py 1380: dx 71, dy 81 -> 31k < 40000) y despierta entero y avanza hacia él sin que el héroe entre en su bloque ni dispare. Dios activo.",
+ "state": {
+  "elf": "../.ds-game-dev/build/out/dungeonds.elf",
+  "symbols": {
+   "pl": "s_player",
+   "dbg": "g_enc_debug",
+   "stats": "g_enc_stats",
+   "en": "g_enemies"
+  },
+  "default_symbol": "pl",
+  "fields": {
+   "px": {
+    "symbol": "pl",
+    "offset": 0,
+    "type": "s32"
+   },
+   "py": {
+    "symbol": "pl",
+    "offset": 4,
+    "type": "s32"
+   },
+   "dbg_god": {
+    "symbol": "dbg",
+    "offset": 2,
+    "type": "u8"
+   },
+   "dbg_restart": {
+    "symbol": "dbg",
+    "offset": 12,
+    "type": "u8"
+   },
+   "dbg_start_room": {
+    "symbol": "dbg",
+    "offset": 20,
+    "type": "u8"
+   },
+   "room": {
+    "symbol": "stats",
+    "offset": 60,
+    "type": "u8"
+   },
+   "woken": {
+    "symbol": "stats",
+    "offset": 4,
+    "type": "u8"
+   },
+   "e0_x": {
+    "symbol": "en",
+    "offset": 0,
+    "type": "s32"
+   },
+   "e0_y": {
+    "symbol": "en",
+    "offset": 4,
+    "type": "s32"
+   },
+   "e0_st": {
+    "symbol": "en",
+    "offset": 44,
+    "type": "s32"
+   },
+   "e0_pk": {
+    "symbol": "en",
+    "offset": 88,
+    "type": "s32"
+   },
+   "e1_x": {
+    "symbol": "en",
+    "offset": 124,
+    "type": "s32"
+   },
+   "e1_y": {
+    "symbol": "en",
+    "offset": 128,
+    "type": "s32"
+   },
+   "e1_st": {
+    "symbol": "en",
+    "offset": 168,
+    "type": "s32"
+   },
+   "e1_pk": {
+    "symbol": "en",
+    "offset": 212,
+    "type": "s32"
+   },
+   "e2_x": {
+    "symbol": "en",
+    "offset": 248,
+    "type": "s32"
+   },
+   "e2_y": {
+    "symbol": "en",
+    "offset": 252,
+    "type": "s32"
+   },
+   "e2_st": {
+    "symbol": "en",
+    "offset": 292,
+    "type": "s32"
+   },
+   "e2_pk": {
+    "symbol": "en",
+    "offset": 336,
+    "type": "s32"
+   },
+   "e3_x": {
+    "symbol": "en",
+    "offset": 372,
+    "type": "s32"
+   },
+   "e3_y": {
+    "symbol": "en",
+    "offset": 376,
+    "type": "s32"
+   },
+   "e3_st": {
+    "symbol": "en",
+    "offset": 416,
+    "type": "s32"
+   },
+   "e3_pk": {
+    "symbol": "en",
+    "offset": 460,
+    "type": "s32"
+   },
+   "e4_x": {
+    "symbol": "en",
+    "offset": 496,
+    "type": "s32"
+   },
+   "e4_y": {
+    "symbol": "en",
+    "offset": 500,
+    "type": "s32"
+   },
+   "e4_st": {
+    "symbol": "en",
+    "offset": 540,
+    "type": "s32"
+   },
+   "e4_pk": {
+    "symbol": "en",
+    "offset": 584,
+    "type": "s32"
+   },
+   "placed": {
+    "symbol": "stats",
+    "offset": 191,
+    "type": "u8"
+   },
+   "alive": {
+    "symbol": "stats",
+    "offset": 61,
+    "type": "u8"
+   }
+  }
+ },
+ "steps": [
+  {
+   "frames": 90
+  },
+  {
+   "tap": {
+    "x": 128,
+    "y": 66
+   },
+   "frames": 6
+  },
+  {
+   "release": true,
+   "frames": 40
+  },
+  {
+   "button_down": "START",
+   "frames": 4
+  },
+  {
+   "button_up": "START",
+   "frames": 90
+  },
+  {
+   "poke": [
+    {
+     "field": "px",
+     "value": 32768
+    },
+    {
+     "field": "py",
+     "value": 29696
+    }
+   ],
+   "frames": 20
+  },
+  {
+   "button_down": "A",
+   "frames": 4
+  },
+  {
+   "button_up": "A",
+   "frames": 120
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    }
+   ],
+   "frames": 2
+  },
+  {
+   "poke": [
+    {
+     "field": "py",
+     "value": 362240
+    }
+   ],
+   "frames": 90,
+   "capture": "a_220px_dormido",
+   "state_capture": "lejos"
+  },
+  {
+   "poke": [
+    {
+     "field": "py",
+     "value": 362240
+    }
+   ],
+   "frames": 60,
+   "state_capture": "lejos2"
+  },
+  {
+   "poke": [
+    {
+     "field": "py",
+     "value": 353280
+    }
+   ],
+   "frames": 20,
+   "capture": "b_180px_despierta",
+   "state_capture": "cerca"
+  },
+  {
+   "poke": [
+    {
+     "field": "py",
+     "value": 353280
+    }
+   ],
+   "frames": 100,
+   "capture": "c_vienen_hacia_el",
+   "state_capture": "despues"
+  }
+ ],
+ "assertions": {
+  "state_changes": [
+   {
+    "at": "lejos2",
+    "field": "woken",
+    "equals": 0
+   },
+   {
+    "at": "cerca",
+    "field": "woken",
+    "equals": 1
+   },
+   {
+    "at": "despues",
+    "field": "woken",
+    "equals": 1
+   }
+  ]
+ }
+}

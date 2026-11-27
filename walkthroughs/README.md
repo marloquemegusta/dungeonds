@@ -203,3 +203,4 @@ Resúmenes acumulativos y auditables de cada entrega y avance de desarrollo en `
 | 184 | ARPG: ficha de la escuela en la pantalla superior del inventario y textos de aura separados | [`arpg-inventario-ficha/`](arpg-inventario-ficha/walkthrough.md) | Build, `arpg_inv_ficha` PASS; probado en la DS; sin medir rendimiento |
 | 185 | ARPG: ROM parcial por contrato (compilar solo lo que pide un contrato de conceptos) | [`rom-parcial/`](rom-parcial/walkthrough.md) | Contrato `rodaje` PASS (8,7 MB); FAIL sin párroco/monja; probado en la DS |
 | 186 | ARPG: campaña B «Tres penitencias» (rejas con objeto, misión clara, bajar andando, bebés que gatean) | [`arpg-campana-b/`](arpg-campana-b/walkthrough.md) | Build, `arpg_campana_*` PASS y verificador aparte; sin medir en la DS |
+| 187 | ARPG: aviso de grupos a 200 px (antes 96 px) | [`arpg-aviso-grupos/`](arpg-aviso-grupos/walkthrough.md) | `arpg_aviso_grupos` PASS y verificador aparte; jefe sin cubrir en emulador; sin DS |

@@ -287,7 +287,7 @@ Props colocados en el póster (`walkthroughs/poster-mapa/`); la luz definitiva d
 
 ## 12. Encuentros: grupos colocados, reposo y emboscadas (decidido 2026-11-24)
 Como en *Diablo*: cada sala tiene **grupos fijos colocados a mano** (mismo sitio y formación en cada partida), que deambulan cerca de su punto hasta que ven al héroe. No hay manadas que crucen el mapa. Las composiciones de cada nave son las de §10; esta sección añade formación, papel, reposo y progresión. Cifras `[TUNABLE-PLACEHOLDER]`, a ajustar jugando.
-- **Activación:** un grupo despierta entero cuando el héroe entra en su radio de aviso (~96 px de suelo) o golpea a cualquiera de sus miembros; una vez despierto no vuelve a su sitio.
+- **Activación:** un grupo despierta entero cuando el héroe entra en su radio de aviso (200 px de suelo, unas tres cuartas partes del ancho de pantalla) de cualquiera de sus miembros o lo golpea; las emboscadas salen a 48 px; el jefe se activa al entrar en su sala; una vez despierto un grupo no vuelve a su sitio.
 - **Aparición por proximidad:** cada miembro de un grupo aparece cuando el héroe está a ~1,5 pantallas de su puesto y se retira cuando queda muy atrás (se vuelve a poner en su puesto si regresa); el jugador no ve nacer al grupo. Cifras en `TECHNICAL.md` §3.3.1.
 - **Reposo por papel (cada uno en un radio corto, ~40 px, de su punto):**
   - **Bebé:** gatea en vueltas cortas y se para a ratos. Su andar es siempre a gatas (en reposo y persiguiendo; decidido 2026-11-27). El reposo del Bebé está activo en la ROM; el del resto de papeles, todavía no.
