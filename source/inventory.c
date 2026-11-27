@@ -1390,7 +1390,7 @@ static int render_card_header_and_mech(uint16_t *buf, int x, int y, int w, const
     fill_rect(buf, x + 1, y + 1, w - 2, 13, INV_SLATE2);
     if (it) {
         char hdr[32];
-        int ilvl = it->level ? (int)it->level : 1;
+        int ilvl = (it->level & ARPG_ITEM_LEVEL_MASK) ? (int)(it->level & ARPG_ITEM_LEVEL_MASK) : 1;
         if (!arpg_inv_can_equip(it)) {
             snprintf(hdr, sizeof(hdr), "REQ. NV.%d", ilvl);
             text_center(buf, x + w / 2, y + 1, hdr, INV_RED);
@@ -1705,7 +1705,7 @@ void inventory_render_top(uint16_t *buf) {
     char name[40];
     item_display_name(sel_it, name, sizeof(name));
     text_fit(buf, TOP_RX, 56, TOP_RW, name, s_rar_bdr[sel_it->rarity]);
-    int ilvl = sel_it->level ? (int)sel_it->level : 1;
+    int ilvl = (sel_it->level & ARPG_ITEM_LEVEL_MASK) ? (int)(sel_it->level & ARPG_ITEM_LEVEL_MASK) : 1;
     if (!from_sock && !arpg_inv_can_equip(sel_it)) {
         text_at(buf, TOP_RX, 67, arpg_inv_rarity_name(sel_it->rarity), INV_DIM);
         snprintf(line, sizeof(line), "Req. Nv.%d", ilvl);

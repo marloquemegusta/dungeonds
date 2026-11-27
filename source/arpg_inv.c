@@ -198,6 +198,9 @@ void arpg_inv_make_fixed_prize(ArpgInvItem *it, int mech) {
         item_make(it, ARPG_ITEM_RELIC, ARPG_SCHOOL_PECHO, ARPG_RAR_RARE, ARPG_MECH_LLAGA);
         it->mech_val = 20;
         item_line(it, ARPG_LINE_MANA, 18);
+    } else if (mech == ARPG_MECH_REDIL) {
+        item_make(it, ARPG_ITEM_RELIC, ARPG_SCHOOL_GLIFO, ARPG_RAR_RARE, ARPG_MECH_REDIL);
+        item_line(it, ARPG_LINE_RADIUS, 12);
     }
     if (it->kind != ARPG_ITEM_EMPTY) it->level |= ARPG_ITEM_FIXED;
 }
@@ -205,6 +208,11 @@ void arpg_inv_make_fixed_prize(ArpgInvItem *it, int mech) {
 // Death: the bag slot is emptied (no wax; the object is simply lost).
 void arpg_inv_bag_discard(int index) {
     if ((unsigned)index < ARPG_INV_BAG) item_clear(&g_arpg.inv.bag[index]);
+}
+
+// Death: a socketed relic of this descent is lost too.
+void arpg_inv_socket_discard(int school, int socket) {
+    if ((unsigned)school < ARPG_INV_SCHOOLS && (unsigned)socket < ARPG_INV_SOCKETS) item_clear(&g_arpg.inv.socket[school][socket]);
 }
 
 // Bolsa de ejemplo de la variante arpg-todo: reliquias de Rayo, Ejecución, Pecho y Glifo y los dos tomos.

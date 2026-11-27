@@ -3819,6 +3819,7 @@ static void run_to_camp(void) {
 
 // Death (campaign): the xp stays, the carried object and half of the loot of this descent are lost, the cathedral refills.
 static void run_to_camp_after_death(void) {
+    pickups_bank_relics();      // what lay on the floor enters the bag first, so it counts as loot of this descent
     arpg_campaign_on_death();
     arpg_log_room(-1);
     arpg_log_event(CLOG_CAMP_IN, "muerte");
@@ -3857,6 +3858,9 @@ static void end_demo_card_then_camp(void) {
     s_bot_map_ready = 0;
     memset(s_dirty, 0, sizeof(s_dirty));
     memset(s_dirty_top, 0, sizeof(s_dirty_top));
+    arpg_campaign_arrive_on_foot();     // the Abanderado's standard is delivered with the demo; boss_tier goes to 0 (delivered counts now)
+    arpg_log_room(-1);
+    arpg_log_event(CLOG_CAMP_IN, "demo");
     run_to_camp();
     s_keys_down_latch = 0;
     touch_track(0, 0, 0);

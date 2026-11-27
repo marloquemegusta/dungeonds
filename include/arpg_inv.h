@@ -106,6 +106,7 @@ void arpg_inv_init(ArpgInventory *inv);
 void arpg_inv_new_game(void);
 void arpg_inv_make_reward(ArpgInvItem *it, int mech);   /* reliquia fija de una penitencia entregada (ARPG_MECH_*) */
 void arpg_inv_make_fixed_prize(ArpgInvItem *it, int mech); /* Cilicio / Zarza / Llaga de cofre, marcada ARPG_ITEM_FIXED (no se pierde) */
+void arpg_inv_socket_discard(int school, int socket);     /* idem para una reliquia engarzada */
 void arpg_inv_bag_discard(int index);                   /* vacia un hueco de bolsa sin cera (perdido al morir) */
 void arpg_inv_make_tome(ArpgInvItem *it, int school);   /* tomo de hechizo (ARPG_SCHOOL_GLIFO...) */
 int  arpg_inv_has_tome(int school);                     /* en la bolsa o en un hueco de hechizo */

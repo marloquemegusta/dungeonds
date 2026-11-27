@@ -628,6 +628,20 @@ int enc_block_rects(int32_t block, EncRect *out, int max) {
         out[n].h = ENC_BARRIER_H;
         n++;
     }
+    // The one-way shortcut door of a room with a reja stays walled off while the reja is down: its opening is cut in the wall
+    // (the void behind it is drawn), so a body barrier at the floor edge keeps the hero from walking into it.
+    if (b.kind == ENC_BLOCK_ENCOUNTER && !s_gate_open && room_def()->locked_door && n < max) {
+        const RoomDef *rd = room_def();
+        const RoomDoor *ld = &rd->doors[rd->locked_door - 1];
+        if (ld->side != DOOR_UP && b.idx == door_block(rd, ld)) {
+            out[n].kind = ENC_R_BARRERA;
+            out[n].x = (int16_t)(ld->side == DOOR_RIGHT ? ENC_FLOOR_X + ENC_FLOOR_W - ENC_BARRIER_H : ENC_FLOOR_X);
+            out[n].y = (int16_t)door_hole_y(ld);
+            out[n].w = ENC_BARRIER_H;
+            out[n].h = ARPG_ROOM_HOLE_H_PX;
+            n++;
+        }
+    }
     // Rooms have no gates (salas ARPG): no top barrier and nothing closes behind the hero. Only the
     // boss lock keeps the bottom edge of its own room closed while the fight lasts.
     if (b.kind == ENC_BLOCK_BOSS && s_boss_locked && b.idx == s_active_boss_k && n < max) {
@@ -723,6 +737,7 @@ void enc_room_select(int room, int from_room) {
     }
     arpg_log_room(s_room);
     arpg_log_event(CLOG_ROOM, 0);
+    arpg_log_flush();                // loading screen: no combat now, the SD may be written
     arpg_progress_save();            // every room change: xp, kills and chests of the room just left survive a power-off
 }
 
@@ -741,7 +756,7 @@ static void map_place(int room, int x, int y) {
     const RoomDef *r = &s_rooms[room];
     EncMapRoom *m = &s_map[room];
     m->x = (int16_t)x; m->y = (int16_t)y; m->w = ENC_FLOOR_W; m->h = (int16_t)(r->blocks * ENC_BLOCK_H);
-    m->n_doors = r->n_doors; m->altar = r->altar; m->chest = r->chest; m->key = r->quest == 1 + QUEST_TOMAS && !arpg_quest_has(QUEST_TOMAS);      // the map marks the Capilla del parroco (its group hands the choir list)
+    m->n_doors = r->n_doors; m->altar = r->altar; m->chest = r->chest;
     m->altar_x = (int16_t)(x + ENC_FLOOR_W / 2); m->altar_y = (int16_t)(y + ARPG_ROOM_FOOT_OFFSET_PX);
     m->chest_x = m->altar_x; m->chest_y = (int16_t)(y + (r->blocks - 1) * ENC_BLOCK_H + ENC_BLOCK_H - 90);
     for (int i = 0; i < r->n_doors; i++) {
@@ -1776,6 +1791,12 @@ void enc_update(Enemy *enemies, int max_enemies, int px, int py) {
                 s_gate_opening = 0;
                 s_gate_open = 1;
                 strip_collision_fill_win(ENC_FLOOR_X, gy - ENC_BARRIER_H / 2, ENC_FLOOR_W, ENC_BARRIER_H, 0);
+                if (room->locked_door) {         // the shortcut door opens with the reja
+                    const RoomDoor *ld = &room->doors[room->locked_door - 1];
+                    const int ly = window_top(block_of_encounter(door_block(room, ld))) + door_hole_y(ld);
+                    strip_collision_fill_win(ld->side == DOOR_RIGHT ? ENC_FLOOR_X + ENC_FLOOR_W - ENC_BARRIER_H : ENC_FLOOR_X, ly,
+                                             ENC_BARRIER_H, ARPG_ROOM_HOLE_H_PX, 0);
+                }
                 nav_refresh_begin(px, py);
             }
         }

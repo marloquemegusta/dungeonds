@@ -95,27 +95,35 @@ void arpg_campaign_descent_begin(void) {
     for (int i = 0; i < ARPG_INV_SPELLS; i++)
         if (inv->spell[i].kind != ARPG_ITEM_EMPTY) s_snap[s_snap_n++] = item_hash(&inv->spell[i]);
     s_snap_valid = 1;
+    notice_clear();         // the notices of the last visit were shown already
     arpg_world_rest();      // entering from the camp: everything is alive again (sleeping no longer does it)
 }
 
-// Half (rounded down) of the relics picked up this descent and still in the bag; the last slots go first. Returns how many.
+// Half (rounded down) of the relics picked up this descent, in the bag or socketed; the last ones go first (bag slots, then
+// sockets). Same "lost" criterion as the snapshot: no equal object at the camp exit, not fixed. Returns how many.
 static int lose_half_of_loot(void) {
     if (!s_snap_valid) return 0;
     uint8_t used[SNAP_MAX];
     memset(used, 0, sizeof(used));
-    int fresh[ARPG_INV_BAG];
+    // Candidate code: < ARPG_INV_BAG is a bag slot, else ARPG_INV_BAG + school * ARPG_INV_SOCKETS + socket.
+    uint8_t fresh[ARPG_INV_BAG + ARPG_INV_SCHOOLS * ARPG_INV_SOCKETS];
     int n = 0;
-    for (int i = 0; i < ARPG_INV_BAG; i++) {
-        const ArpgInvItem *it = &g_arpg.inv.bag[i];
+    for (int c = 0; c < ARPG_INV_BAG + ARPG_INV_SCHOOLS * ARPG_INV_SOCKETS; c++) {
+        const ArpgInvItem *it = c < ARPG_INV_BAG ? &g_arpg.inv.bag[c]
+                                                 : &g_arpg.inv.socket[(c - ARPG_INV_BAG) / ARPG_INV_SOCKETS][(c - ARPG_INV_BAG) % ARPG_INV_SOCKETS];
         if (it->kind == ARPG_ITEM_EMPTY) continue;
         uint32_t h = item_hash(it);
         int found = 0;
         for (int j = 0; j < s_snap_n && !found; j++)
             if (!used[j] && s_snap[j] == h) { used[j] = 1; found = 1; }
-        if (!found && it->kind == ARPG_ITEM_RELIC && !(it->level & ARPG_ITEM_FIXED)) fresh[n++] = i;   // tomes and fixed prizes are never lost
+        if (!found && it->kind == ARPG_ITEM_RELIC && !(it->level & ARPG_ITEM_FIXED)) fresh[n++] = (uint8_t)c;   // tomes and fixed prizes are never lost
     }
     int lose = n / 2;
-    for (int k = 0; k < lose; k++) arpg_inv_bag_discard(fresh[n - 1 - k]);
+    for (int k = 0; k < lose; k++) {
+        int c = fresh[n - 1 - k];
+        if (c < ARPG_INV_BAG) arpg_inv_bag_discard(c);
+        else arpg_inv_socket_discard((c - ARPG_INV_BAG) / ARPG_INV_SOCKETS, (c - ARPG_INV_BAG) % ARPG_INV_SOCKETS);
+    }
     return lose;
 }
 
@@ -153,6 +161,7 @@ void arpg_campaign_on_retreat(void) {
 
 // ---- Arrival on foot ----
 void arpg_campaign_arrive_on_foot(void) {
+    notice_clear();
     int now = arpg_quest_deliver_all();
     for (int q = 0; q < QUEST_COUNT; q++) {
         if (!((now >> q) & 1)) continue;

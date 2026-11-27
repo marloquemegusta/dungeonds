@@ -1,6 +1,7 @@
 #include "arpg_progress.h"
 #include "arpg.h"
 #include "arpg_quest.h"
+#include "arpg_log.h"
 #include <fat.h>
 #include <stdio.h>
 #include <string.h>
@@ -132,7 +133,7 @@ static int s_arpg_fat_tried = 0;
 static int s_arpg_fat_ok = 0;
 
 // Mounts the card once; the first save/load/has_save call does it. Without a card every call is a no-op.
-static int arpg_fat_ready(void) {
+int arpg_fat_ready(void) {
     if (!s_arpg_fat_tried) {
         s_arpg_fat_tried = 1;
         s_arpg_fat_ok = fatInitDefault();
@@ -150,8 +151,9 @@ int arpg_progress_save(void) {
         if (!f) continue;
         int ok = fwrite(&g_arpg, sizeof(g_arpg), 1, f) == 1;
         if (fclose(f) != 0) ok = 0;
-        if (ok) return 1;
+        if (ok) { arpg_log_flush(); return 1; }
     }
+    arpg_log_flush();
     return 0;
 }
 
@@ -214,7 +216,7 @@ int arpg_progress_load(void) {
             tmp.version = ARPG_SAVE_VERSION;
         }
         if (ok && tmp.magic == ARPG_SAVE_MAGIC && tmp.version == 7 && tmp.level >= 1) {
-            // v7 -> v8: same layout. A v7 key (key_have) does not turn into seals: no penance is delivered.
+            // v7 -> v8: same layout. The old key (key_have) is ignored: no penance is delivered.
             tmp.quest_delivered = 0;
             tmp.quest_offered = 0;
             tmp.version = ARPG_SAVE_VERSION;

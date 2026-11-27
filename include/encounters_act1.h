@@ -118,7 +118,7 @@ void enc_camp_spot(uint32_t r, int *x, int *y);
 typedef struct { uint8_t side, dest; int16_t cx, cy; } EncMapDoor;    // side: 0 left, 1 right, 2 up; (cx, cy) on the wall
 typedef struct {
     int16_t x, y, w, h;
-    uint8_t n_doors, altar, chest, key;       // key: the group of this room drops the key of the zone
+    uint8_t n_doors, altar, chest;
     int16_t altar_x, altar_y, chest_x, chest_y;
     EncMapDoor door[3];
 } EncMapRoom;
