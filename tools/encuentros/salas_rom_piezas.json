@@ -4,42 +4,42 @@
    {
     "piece": "banco_entero",
     "k": 0,
-    "lx": 8,
+    "lx": 0,
     "ly": 8,
     "mirror": 0
    },
    {
     "piece": "banco_entero",
     "k": 0,
-    "lx": 112,
+    "lx": 144,
     "ly": 8,
     "mirror": 1
    },
    {
     "piece": "banco_entero",
     "k": 0,
-    "lx": 112,
+    "lx": 144,
     "ly": 48,
     "mirror": 1
    },
    {
     "piece": "banco_entero",
     "k": 0,
-    "lx": 112,
+    "lx": 144,
     "ly": 240,
     "mirror": 1
    },
    {
     "piece": "banco_entero",
     "k": 0,
-    "lx": 112,
+    "lx": 144,
     "ly": 280,
     "mirror": 1
    },
    {
     "piece": "banco_entero",
     "k": 0,
-    "lx": 112,
+    "lx": 144,
     "ly": 320,
     "mirror": 1
    },
@@ -181,51 +181,44 @@
    {
     "piece": "banco_entero",
     "k": 0,
-    "lx": 8,
+    "lx": 0,
     "ly": 8,
     "mirror": 0
    },
    {
     "piece": "banco_entero",
     "k": 0,
-    "lx": 8,
+    "lx": 0,
     "ly": 48,
     "mirror": 0
    },
    {
     "piece": "banco_entero",
     "k": 0,
-    "lx": 112,
+    "lx": 144,
     "ly": 8,
     "mirror": 1
    },
    {
     "piece": "banco_entero",
     "k": 0,
-    "lx": 112,
+    "lx": 144,
     "ly": 48,
     "mirror": 1
    },
    {
     "piece": "banco_entero",
     "k": 0,
-    "lx": 112,
+    "lx": 144,
     "ly": 240,
     "mirror": 1
    },
    {
     "piece": "banco_entero",
     "k": 0,
-    "lx": 112,
+    "lx": 144,
     "ly": 280,
     "mirror": 1
-   },
-   {
-    "piece": "sacos_b",
-    "k": 0,
-    "lx": 72,
-    "ly": 352,
-    "mirror": 0
    },
    {
     "piece": "banco_entero",
@@ -367,15 +360,8 @@
    {
     "piece": "banco_roto",
     "k": 0,
-    "lx": 8,
+    "lx": 0,
     "ly": 8,
-    "mirror": 0
-   },
-   {
-    "piece": "sacos_b",
-    "k": 0,
-    "lx": 80,
-    "ly": 336,
     "mirror": 0
    },
    {
@@ -506,32 +492,18 @@
   ],
   "3": [
    {
-    "piece": "alambre",
-    "k": 0,
-    "lx": 104,
-    "ly": 232,
-    "mirror": 0
-   },
-   {
     "piece": "banco_roto",
     "k": 0,
-    "lx": 8,
+    "lx": 0,
     "ly": 8,
     "mirror": 0
    },
    {
     "piece": "banco_volcado",
     "k": 0,
-    "lx": 112,
+    "lx": 136,
     "ly": 8,
     "mirror": 1
-   },
-   {
-    "piece": "sacos",
-    "k": 0,
-    "lx": 96,
-    "ly": 336,
-    "mirror": 0
    },
    {
     "piece": "banco_roto",
