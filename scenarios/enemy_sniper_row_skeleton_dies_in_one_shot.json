@@ -1,6 +1,6 @@
 {
   "name": "enemy_sniper_row_skeleton_dies_in_one_shot",
-  "description": "Frozen skeleton (100 hp), Ojo (shooter type, 300) and charger (300) in a row along the sniper ray, 70 px apart on open floor. One sniper shot (150) must kill the skeleton and leave 150 on both of the others.",
+  "description": "Frozen skeleton (100 hp), Ojo (shooter type, 300) and charger (300) in a row along the sniper ray, at x 110, 130 and 190 on open floor. One sniper shot (150 in the roguelike sandbox) kills the skeleton, the ray pierces it and stops at the first survivor: the Ojo ends at 150 and the charger behind it stays at 300 (DESIGN.md 6.12.2).",
   "tags": [
     "enemy-tiers"
   ],
@@ -129,72 +129,72 @@
       },
       "en1_x": {
         "symbol": "enemies",
-        "offset": 104,
+        "offset": 124,
         "type": "s32"
       },
       "en1_y": {
         "symbol": "enemies",
-        "offset": 108,
+        "offset": 128,
         "type": "s32"
       },
       "en1_active": {
         "symbol": "enemies",
-        "offset": 136,
+        "offset": 148,
         "type": "s32"
       },
       "en1_hp": {
         "symbol": "enemies",
-        "offset": 140,
+        "offset": 152,
         "type": "s32"
       },
       "en1_type": {
         "symbol": "enemies",
-        "offset": 152,
+        "offset": 164,
         "type": "u8"
       },
       "en1_state": {
         "symbol": "enemies",
-        "offset": 153,
+        "offset": 165,
         "type": "u8"
       },
       "en1_timer": {
         "symbol": "enemies",
-        "offset": 156,
+        "offset": 168,
         "type": "s32"
       },
       "en2_x": {
         "symbol": "enemies",
-        "offset": 216,
+        "offset": 248,
         "type": "s32"
       },
       "en2_y": {
         "symbol": "enemies",
-        "offset": 220,
+        "offset": 252,
         "type": "s32"
       },
       "en2_active": {
         "symbol": "enemies",
-        "offset": 248,
+        "offset": 272,
         "type": "s32"
       },
       "en2_hp": {
         "symbol": "enemies",
-        "offset": 252,
+        "offset": 276,
         "type": "s32"
       },
       "en2_type": {
         "symbol": "enemies",
-        "offset": 264,
+        "offset": 288,
         "type": "u8"
       },
       "en2_state": {
         "symbol": "enemies",
-        "offset": 265,
+        "offset": 289,
         "type": "u8"
       },
       "en2_timer": {
         "symbol": "enemies",
-        "offset": 268,
+        "offset": 292,
         "type": "s32"
       },
       "player_hp": {
@@ -265,7 +265,7 @@
         },
         {
           "field": "e1_x",
-          "value": 170
+          "value": 130
         },
         {
           "field": "e1_y",
@@ -281,7 +281,7 @@
         },
         {
           "field": "e2_x",
-          "value": 230
+          "value": 190
         },
         {
           "field": "e2_y",
@@ -311,7 +311,7 @@
         "x": 110,
         "y": 79
       },
-      "frames": 40
+      "frames": 70
     },
     {
       "release": true,
@@ -372,7 +372,7 @@
       {
         "at": "after",
         "field": "en2_hp",
-        "equals": 150
+        "equals": 300
       }
     ]
   }
