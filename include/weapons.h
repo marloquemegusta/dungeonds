@@ -46,6 +46,7 @@ char weapons_fx_style_letter(void);
 enum { AURA_STYLE_L = 0, AURA_STYLE_G = 1, AURA_STYLE_E = 2, AURA_STYLE_H = 3 };
 extern int g_aura_debug_mask;
 extern int g_aura_force_mask;   // gameplay bits raised by relics (Corazon Flagelado: AURA_STYLE_L while its instant charge is pending)
+extern volatile uint8_t g_laser_look;   // sandbox evidence hook: 0 = current laser look, 1..3 = A / B / C (laser round)
 char weapons_aura_style_letter(void);
 
 // One frame of touch / button state for the weapon system.
