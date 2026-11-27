@@ -29,6 +29,7 @@
 #include "sfx.h"
 #include "lab_tuning.h"
 #include "boxeo.h"
+#include "minirom.h"
 #include "exvoto_test.h"
 #include "remate_test.h"
 #include "ojo_test.h"
@@ -3576,6 +3577,9 @@ static void arena_restart(void) {
 #if SOUND_TEST
     sound_test_reset();
 #endif
+#if MINIROM
+    minirom_on_restart();
+#endif
     radial_close();
     s_pending_head = s_pending_count = 0;
     if (s_strip_mode) memset(g_enemies, 0, sizeof(g_enemies));
@@ -3831,7 +3835,7 @@ static void run_to_camp(void) {
 }
 
 // Death (campaign): the xp stays, the carried object and half of the loot of this descent are lost, the cathedral refills.
-static void run_to_camp_after_death(void) {
+__attribute__((unused)) static void run_to_camp_after_death(void) {   // unused in a mini ROM
     const int floor_extra = pickups_bank_relics_death();    // what lay on the floor enters the bag first, so it counts as loot of this descent
     arpg_campaign_on_death(floor_extra);
     arpg_log_room(-1);
@@ -3848,7 +3852,7 @@ static void run_to_camp_retreat(void) {
 }
 
 // End of the demo (DESIGN-ARPG.md 7): the full-screen card after the Cripta boss falls for the first time, then the camp.
-static void end_demo_card_then_camp(void) {
+__attribute__((unused)) static void end_demo_card_then_camp(void) {   // unused in a mini ROM
 #if HW_SHADOWS
     hwshadow_regs_off();
 #endif
@@ -4006,6 +4010,15 @@ int main(void) {
     sfx_stop_bgm();
 #else
     s_run_started = 1;
+#if MINIROM
+    // Mini ROM: straight into the room of the JSON (normal load, light and arrival; no camp, title or map).
+    if (!minirom_boot()) {
+        hud_text(s_top_page, 8, 8, "MINIROM: la sala del JSON no existe", 0xFFFF);
+        while (1) swiWaitForVBlank();
+    }
+    arena_restart();
+    minirom_boot_done();
+#endif
 #endif
 
     render_screen(s_top_page, s_dirty_top, s_cam_x, s_cam_y - SCREEN_H, 1, NULL, NULL, NULL);
@@ -4293,7 +4306,11 @@ int main(void) {
 #endif
 #if ENCOUNTERS_PROTO
         if (!menu_is_open() && s_strip_mode && !camp_active() && enc_end_demo_take()) {
+#if MINIROM
+            arena_restart();                // the boss fell: the same room starts again (no demo, no camp)
+#else
             end_demo_card_then_camp();
+#endif
             s_menu_ignore_held_touch = touch_down;
         }
         if (boss_frozen() && !menu_is_open()) {
@@ -4303,6 +4320,9 @@ int main(void) {
             boss_frozen_bottom(bot_page_ptr(s_bot_back_page));
             present_vblank_begin();
             boss_frozen_top(s_top_page);
+#if MINIROM
+            g_minirom_dbg.frozen = 1;           // the scenarios wait for the boss intro to end
+#endif
             if (!s_boss_frozen_on) boss_freeze_begin();         // the floor layers go off once the new pages are in
             continue;
         }
@@ -4401,6 +4421,13 @@ int main(void) {
         PP_T0(pp_wp);
         if (simulate) weapons_and_effects_update();
         if (g_player_state.is_dead && !s_strip_mode) arena_restart();
+#if MINIROM
+        if (minirom_frame(TO_INT(s_player.x), TO_INT(s_player.y), g_enemies, MAX_ENEMIES)) arena_restart();
+        {
+            int tx, ty;
+            if (minirom_teleport(&tx, &ty)) { s_player.x = TO_FIXED(tx); s_player.y = TO_FIXED(ty); }   // scenarios: stand next to the boss
+        }
+#endif
         PP_ADD(PP_WEAPONS, pp_wp);
         CRASH_MARK(CL_WEAPONS_DONE, 0, 0);
         uint32_t logic_ticks = cpuGetTiming() - t0;
@@ -4552,7 +4579,7 @@ int main(void) {
                 if (!(keys_held & restart_keys) && !touch_down) s_death_restart_armed = 1;
                 if (s_death_screen_frames >= STRIP_DEATH_SCREEN_FRAMES && s_death_restart_armed &&
                     ((keys_down & restart_keys) || touch_pressed)) {
-#if ENCOUNTERS_PROTO
+#if ENCOUNTERS_PROTO && !MINIROM
                     run_to_camp_after_death();      // the death screen ends at the camp; the banked xp is kept
 #else
                     arena_restart();

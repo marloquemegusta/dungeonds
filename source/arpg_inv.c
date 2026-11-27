@@ -1260,3 +1260,40 @@ void arpg_relic_roll(ArpgInvItem *out, int floor, int min_rarity, uint32_t *rng)
     int school = active_schools[roll_u32(rng) % 4u];
     arpg_relic_roll_school(out, school, floor, min_rarity, rng);
 }
+
+#if MINIROM
+#include "minirom.h"
+// Mini ROM ("mecanicas" of the JSON): a relic of that mechanic goes to the first free socket of its school (the known
+// recipes when there is one, a plain Rare otherwise) and the tome of Glifo / Levantar is equipped so the school is usable.
+void arpg_inv_minirom_equip(int mech) {
+    int school;
+    switch (mech) {
+    case ARPG_MECH_PRISA: case ARPG_MECH_SED_CENIZA: case ARPG_MECH_LANZA: case ARPG_MECH_LLAMA_VOTIVA:
+    case ARPG_MECH_BRASA: case ARPG_MECH_AUTO_FE: school = ARPG_SCHOOL_RAYO; break;
+    case ARPG_MECH_GLIFO: case ARPG_MECH_ZARZA: case ARPG_MECH_REDIL: case ARPG_MECH_DOBLE_SELLO: school = ARPG_SCHOOL_GLIFO; break;
+    case ARPG_MECH_LEVANTAR: case ARPG_MECH_PROCESION: case ARPG_MECH_OFRENDA: school = ARPG_SCHOOL_LEVANTAR; break;
+    case ARPG_MECH_VIATICO: case ARPG_MECH_FLAGELADO: case ARPG_MECH_PIRA: school = ARPG_SCHOOL_EJECUCION; break;
+    case ARPG_MECH_CILICIO: case ARPG_MECH_MARTIRIO: case ARPG_MECH_LLAGA: school = ARPG_SCHOOL_PECHO; break;
+    default: return;
+    }
+    ArpgInventory *inv = &g_arpg.inv;
+    for (int k = 0; k < ARPG_INV_SOCKETS; k++)
+        if (inv->socket[school][k].kind == ARPG_ITEM_RELIC && inv->socket[school][k].mech == mech) return;   // already there
+    int k = 0;
+    while (k < ARPG_INV_SOCKETS && inv->socket[school][k].kind != ARPG_ITEM_EMPTY) k++;
+    if (k >= arpg_inv_socket_count(school)) return;
+    ArpgInvItem *it = &inv->socket[school][k];
+    arpg_inv_make_reward(it, mech);
+    if (it->kind == ARPG_ITEM_EMPTY) arpg_inv_make_fixed_prize(it, mech);
+    if (it->kind == ARPG_ITEM_EMPTY) { item_make(it, ARPG_ITEM_RELIC, (uint8_t)school, ARPG_RAR_RARE, (uint8_t)mech); it->mech_val = 60; }
+    it->level &= (uint8_t)ARPG_ITEM_LEVEL_MASK;
+    if (school == ARPG_SCHOOL_GLIFO || school == ARPG_SCHOOL_LEVANTAR) {
+        int have = 0, free_slot = -1;
+        for (int s = 1; s < ARPG_INV_SPELLS; s++) {
+            if (inv->spell[s].kind == ARPG_ITEM_TOME && inv->spell[s].school == school) have = 1;
+            else if (inv->spell[s].kind == ARPG_ITEM_EMPTY && free_slot < 0) free_slot = s;
+        }
+        if (!have && free_slot > 0) arpg_inv_make_tome(&inv->spell[free_slot], school);
+    }
+}
+#endif
