@@ -1041,10 +1041,15 @@ static void rest_step(Enemy *e, RestRec *r) {
 
 // Every frame, before the wake pass: moves the resting enemies and decides which resting groups wake (the hero inside the
 // warning radius of any member, or any member hit). Sets s_rest_group_mask / s_rest_wake_mask by block.
+static uint32_t s_near_mask;   // groups with a living member within ENC_WAKE_PX of the hero (set by rest_update)
 static void rest_update(Enemy *enemies, int max_enemies, int px, int py) {
-    s_rest_group_mask = s_rest_wake_mask = 0;
+    s_rest_group_mask = s_rest_wake_mask = s_near_mask = 0;
     for (int i = 0; i < max_enemies && i < MAX_GAMEPLAY_ENEMIES; i++) {
         Enemy *e = &enemies[i];
+        if (e->active && e->hp > 0 && e->pack >= 0 && e->pack < 32) {
+            const int ndx = px - TO_INT(e->x), ndy = py - TO_INT(e->y);
+            if (ndx * ndx + GROUND_DY2(ndy) <= ENC_WAKE_PX * ENC_WAKE_PX) s_near_mask |= 1u << e->pack;
+        }
         RestRec *r = &s_rest[i];
         if (!r->mode) {
             // Members that do not rest (the Ojo, a garrison): hit or killed while asleep, they wake the group too.
@@ -1064,7 +1069,7 @@ static void rest_update(Enemy *enemies, int max_enemies, int px, int py) {
         s_rest_group_mask |= 1u << e->pack;
         if (e->hp > 0) rest_step(e, r);
         const int dx = px - TO_INT(e->x), dy = py - TO_INT(e->y);
-        const int rad = r->mode == ENC_S_HIDDEN ? ENC_REST_HIDDEN_WAKE_PX : ENC_REST_WAKE_PX;
+        const int rad = r->mode == ENC_S_HIDDEN ? ENC_REST_HIDDEN_WAKE_PX : ENC_WAKE_PX;
         if (e->hp > 0 && dx * dx + GROUND_DY2(dy) <= rad * rad) s_rest_wake_mask |= 1u << e->pack;
         if (e->hit_timer > 0 || e->hp < e->max_hp) s_rest_wake_mask |= 1u << e->pack;
     }
@@ -1707,7 +1712,9 @@ void enc_update(Enemy *enemies, int max_enemies, int px, int py) {
         (void)alive_of(enemies, max_enemies, k, &hurt);
         if (s_rest_group_mask & (1u << k)) {
             if (!(s_rest_wake_mask & (1u << k))) continue;           // a resting group wakes by radius or hit, not by the room margin
-        } else if (py >= bottom - ENC_WAKE_MARGIN && !hurt) continue;
+        } else if (is_boss_stage(k)) {
+            if (py >= bottom - ENC_BOSS_WAKE_MARGIN && !hurt) continue;   // the boss room closes behind the hero: only once he is inside
+        } else if (!(s_near_mask & (1u << k)) && !hurt) continue;        // a group wakes when the hero is within ENC_WAKE_PX of any member
         if (k != hero_k) {
             int awake = 0;
             for (int j = lo; j < hi; j++) if (s_rt[j].awake && !s_rt[j].cleared) awake++;

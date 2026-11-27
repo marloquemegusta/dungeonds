@@ -21,7 +21,8 @@
 #define ENC_PLANT_COUNT 6
 #define ENC_VERJA_H 56           // rastrillo piece height: stands at the foot of the corridor, base on the barrier line
 #define ENC_BARRIER_H 8          // closed barrier: the top 8 px of the encounter block
-#define ENC_WAKE_MARGIN 36       // the encounter wakes when the hero is this far inside its bottom edge (the rear barrier closes behind the body)
+#define ENC_BOSS_WAKE_MARGIN 36  // the boss room wakes when the hero is this far inside its bottom edge (the rear barrier closes behind the body)
+#define ENC_WAKE_PX 200          // ground px: warning radius of every group (any member; or a hit on one)
 #define ENC_SPAWN_AHEAD 420      // enemies of an encounter appear (asleep) when the hero is this close to its entrance
 #define ENC_MAX_RECTS 16
 #define ENC_MAX_PIECES 44            // up to STRIP_BLOCK_MAX_PIECES (48) minus the lateral-opening occluders and the lapidas
@@ -31,14 +32,13 @@ enum { ENC_E_EXVOTO = 0, ENC_E_CIRENEO, ENC_E_OJO, ENC_E_ABANDERADO, ENC_E_MONAG
        ENC_E_CAMPANERO };                         // boss of the ARPG (DESIGN-ARPG.md 9)
 enum { ENC_S_PRAY = 0, ENC_S_DORMANT, ENC_S_AWAKE, ENC_S_GUARD,    // GUARD: wakes with the room but stays at its post (6.13.9)
        // Rest behaviours (DESIGN-ARPG.md 12): the enemy is asleep (untouched by the AI) and moves around its post until the
-       // group wakes (hero inside ENC_REST_WAKE_PX of any member, or a hit on one).
+       // group wakes (hero inside ENC_WAKE_PX of any member, or a hit on one).
        ENC_S_CRAWL,     // Bebe: short crawling turns with pauses
        ENC_S_SWAY,      // Monaguillo: slow back and forth along a short stretch (ENC_REST_SWAY_PX each side)
        ENC_S_SWEEP,     // Ojo: still, its gaze sweeps from side to side
        ENC_S_STROLL,    // Cireneo: slow walk from side to side (ENC_REST_STROLL_PX each side) with long pauses
        ENC_S_HIDDEN,    // ambush: invisible and still at its post; comes out when the hero is within ENC_REST_HIDDEN_WAKE_PX
        ENC_S_PATROL };  // fixed loop: ENC_REST_PATROL_W x ENC_REST_PATROL_H px rectangle starting at its post
-#define ENC_REST_WAKE_PX 96          // ground px: warning radius of a resting group
 #define ENC_REST_HIDDEN_WAKE_PX 48   // ground px: an ambush comes out when the hero passes this close
 #define ENC_REST_SWAY_PX 24
 #define ENC_REST_STROLL_PX 40
