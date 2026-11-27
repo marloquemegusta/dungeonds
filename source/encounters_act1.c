@@ -36,6 +36,7 @@ typedef int encounters_act1_translation_unit_not_empty;
 #include "pickups.h"
 #include "enc_relic_gfx.h"
 #include "enc_room_gfx.h"
+#include "verja_gfx.h"
 #include "room_light.h"
 
 #include "encounters_act1_tables.h"
@@ -2141,7 +2142,13 @@ void enc_dynamic_relic_draw(uint16_t *buffer, int cam_x, int cam_y, int depth) {
 // of assets/environment/cathedral/props/render, baked into include/enc_room_gfx.h.
 // ---------------------------------------------------------------------------
 #define ENC_FIXTURE_MAX 12
-enum { ENC_FIX_CHEST = 0, ENC_FIX_ALTAR = 1 };
+enum { ENC_FIX_CHEST = 0, ENC_FIX_ALTAR = 1, ENC_FIX_VERJA = 2 };
+static int verja_visible(int index, int cam_y, int *floor_y);
+static void verja_draw(int index, uint16_t *buffer, int cam_x, int cam_y);
+#define ENC_VERJA_N (1 + 2 * ENC_STAGES)
+// Per gate and screen: shown at all / painted in software / an actor stands in front of it / behind it.
+static uint8_t s_vj_on[ENC_VERJA_N], s_vj_sw[ENC_VERJA_N], s_vj_front[ENC_VERJA_N], s_vj_back[ENC_VERJA_N];
+static int16_t s_vj_fy[ENC_VERJA_N];
 typedef struct { int16_t x, y; uint8_t k, kind, sprite; } EncFixture;
 static EncFixture s_fixtures[ENC_FIXTURE_MAX];
 static int s_fixture_n;
@@ -2180,6 +2187,17 @@ int enc_dynamic_fixture_count(int cam_x, int cam_y) {
             s_fixture_n++;
         }
     }
+    // Rastrillo gates join the list so the software path can sort them with the actors (their floor line is the depth).
+    for (int i = 0; i < ENC_VERJA_N && s_fixture_n < ENC_FIXTURE_MAX; i++) {
+        int fy = 0;
+        if (!verja_visible(i, cam_y, &fy)) continue;
+        s_fixtures[s_fixture_n].x = 0;
+        s_fixtures[s_fixture_n].y = (int16_t)fy;
+        s_fixtures[s_fixture_n].k = (uint8_t)i;
+        s_fixtures[s_fixture_n].kind = ENC_FIX_VERJA;
+        s_fixtures[s_fixture_n].sprite = 0;
+        s_fixture_n++;
+    }
     return s_fixture_n;
 }
 
@@ -2213,6 +2231,7 @@ static void fixture_origin(const EncFixture *f, int *out_x, int *out_y) {
 int enc_dynamic_fixture_item(int index, int cam_x, int cam_y, int *out_depth) {
     if (index < 0 || index >= s_fixture_n) return 0;
     const EncFixture *f = &s_fixtures[index];
+    if (f->kind == ENC_FIX_VERJA) { if (out_depth) *out_depth = f->y; return 1; }
     const EncRoomSprite *s = &s_enc_room_sprites[f->sprite];
     int wx0, wy0;
     fixture_origin(f, &wx0, &wy0);
@@ -2225,6 +2244,7 @@ int enc_dynamic_fixture_item(int index, int cam_x, int cam_y, int *out_depth) {
 void enc_dynamic_fixture_draw(int index, uint16_t *buffer, int cam_x, int cam_y, int depth) {
     if (index < 0 || index >= s_fixture_n) return;
     const EncFixture *f = &s_fixtures[index];
+    if (f->kind == ENC_FIX_VERJA) { verja_draw(f->k, buffer, cam_x, cam_y); return; }
     const EncRoomSprite *s = &s_enc_room_sprites[f->sprite];
     int wx0, wy0;
     fixture_origin(f, &wx0, &wy0);
@@ -2275,30 +2295,132 @@ void enc_dynamic_fixture_draw(int index, uint16_t *buffer, int cam_x, int cam_y,
     }
 }
 
-void enc_verja_draw(int sub, int cam_x, int cam_y) {
-#if HW_SHADOWS
-    if (room_def()->gate && s_gate_lift < ENC_VERJA_H) {
-        const int sy = window_top(block_of_encounter(room_chest_block())) + gate_local_y() - ENC_VERJA_H - cam_y;
-        if (!(sub == 0 && sy + ENC_VERJA_H > 136) && sy + ENC_VERJA_H > 0 && sy < 192)
-            hwshadow_add_verja(sub, ENC_FLOOR_X - cam_x, sy, s_gate_lift, 0);
+// Rastrillo gates. Index 0 = chapel gate; 1 + 2k = front gate of stage k; 2 + 2k = back gate of stage k.
+// Fills the gate's floor line (world y) and lift; returns 0 when it is fully raised or absent.
+static int verja_params(int index, int *floor_y, int *lift) {
+    if (index == 0) {
+        if (!room_def()->gate || s_gate_lift >= ENC_VERJA_H) return 0;
+        *floor_y = window_top(block_of_encounter(room_chest_block())) + gate_local_y();
+        *lift = s_gate_lift;
+        return 1;
     }
-    for (int k = 0; k < ENC_STAGES; k++) {
-        const int block_top = window_top(block_of_encounter(k));
-        if (s_rt[k].verja_lift < ENC_VERJA_H) {
-            const int sy = block_top - ENC_VERJA_H - cam_y;
-            if (sy + ENC_VERJA_H > 0 && sy < 192)
-                hwshadow_add_verja(sub, ENC_FLOOR_X - cam_x, sy, s_rt[k].verja_lift, 0);
+    const int k = (index - 1) >> 1;
+    if (k >= ENC_STAGES) return 0;
+    const int block_top = window_top(block_of_encounter(k));
+    if ((index - 1) & 1) {
+        if (s_rt[k].back_lift >= ENC_VERJA_H) return 0;
+        *floor_y = block_top + ENC_BLOCK_H;
+        *lift = s_rt[k].back_lift;
+    } else {
+        if (s_rt[k].verja_lift >= ENC_VERJA_H) return 0;
+        *floor_y = block_top;
+        *lift = s_rt[k].verja_lift;
+    }
+    return 1;
+}
+
+static int verja_visible(int index, int cam_y, int *floor_y) {
+    int lift;
+    if (!verja_params(index, floor_y, &lift)) return 0;
+    const int bottom = *floor_y - lift - cam_y;
+    return bottom > 0 && bottom - (ENC_VERJA_H - lift) < SCREEN_H;
+}
+
+// Software path (only when actors stand both in front of and behind the same gate): the same art painted into
+// the page at its depth, so the bars cover what is behind and are covered by what is in front. The art is
+// kept as RGB555 plus a run list per row (opaque spans), so a row costs a few copies instead of a test per pixel.
+#define VERJA_RUNS_MAX 16
+static uint16_t s_vj_px[VERJA_H][VERJA_W];
+static uint8_t s_vj_run_n[VERJA_H];
+static uint8_t s_vj_run[VERJA_H][VERJA_RUNS_MAX][2];   // {start, length}
+static uint8_t s_vj_ready;
+
+static void verja_bake_runs(void) {
+    for (int r = 0; r < VERJA_H; r++) {
+        int n = 0, i = 0;
+        while (i < VERJA_W) {
+            if (!g_verja_pixels[r][i]) { i++; continue; }
+            const int st = i;
+            while (i < VERJA_W && g_verja_pixels[r][i]) { s_vj_px[r][i] = (uint16_t)(g_verja_palette[g_verja_pixels[r][i]] | BIT(15)); i++; }
+            if (n < VERJA_RUNS_MAX) { s_vj_run[r][n][0] = (uint8_t)st; s_vj_run[r][n][1] = (uint8_t)(i - st); n++; }
         }
-        if (s_rt[k].back_lift < ENC_VERJA_H) {
-            const int sy = block_top + ENC_BLOCK_H - ENC_VERJA_H - cam_y;
-            // sub 0 is the bottom screen: a hardware sprite there would cover the HUD band (rows from 136 down).
-            if (sub == 0 && sy + ENC_VERJA_H > 136) continue;
-            if (sy + ENC_VERJA_H > 0 && sy < 192)
-                hwshadow_add_verja(sub, ENC_FLOOR_X - cam_x, sy, s_rt[k].back_lift, 1);
+        s_vj_run_n[r] = (uint8_t)n;
+    }
+    s_vj_ready = 1;
+}
+
+static void verja_draw(int index, uint16_t *buffer, int cam_x, int cam_y) {
+    if (!s_vj_sw[index]) return;
+    int fy, lift;
+    if (!verja_params(index, &fy, &lift)) return;
+    if (!s_vj_ready) verja_bake_runs();
+    const int x0 = ENC_FLOOR_X - cam_x;
+    const int top = fy - ENC_VERJA_H - cam_y;   // the art rises with the lift: source row `lift` lands on `top`
+    int r0 = lift, r1 = ENC_VERJA_H;
+    if (top + (r0 - lift) < 0) r0 = lift - top;
+    if (top + (r1 - lift) > SCREEN_H) r1 = lift + SCREEN_H - top;
+    int lo_x = x0 < 0 ? 0 : x0, hi_x = x0 + 2 * VERJA_W > SCREEN_W ? SCREEN_W : x0 + 2 * VERJA_W;
+    for (int r = r0; r < r1; r++) {
+        const int sy = top + (r - lift);
+        uint16_t *row = buffer + sy * SCREEN_W;
+        const uint16_t *src = s_vj_px[r];
+        for (int c = 0; c < 2; c++) {
+            const int xc = x0 + c * VERJA_W;
+            for (int k = 0; k < s_vj_run_n[r]; k++) {
+                int st = s_vj_run[r][k][0], len = s_vj_run[r][k][1];
+                int dx = xc + st;
+                if (dx < 0) { st -= dx; len += dx; dx = 0; }
+                if (dx + len > SCREEN_W) len = SCREEN_W - dx;
+                if (len <= 0) continue;
+                uint16_t *dst = row + dx;
+                const uint16_t *sp = src + st;
+                for (int i = 0; i < len; i++) dst[i] = sp[i];
+            }
         }
+        if (hi_x > lo_x) dirty_row(sy, lo_x, hi_x);
+    }
+}
+
+// Per-screen routing. The gate is a hardware sprite (free). Its priority decides the occlusion: above the page
+// (in_front) it covers everyone behind it; below the page everyone covers it. With actors on one side only, the
+// right priority gives the right result; with actors on both sides it is painted in software.
+// Call enc_verja_begin, enc_verja_note once per actor depth, then enc_verja_end.
+#define VERJA_FRONT_REACH 80   // an actor whose feet are this far below the line (or less) can reach up over the bars
+void enc_verja_begin(int sub, int cam_y) {
+    for (int i = 0; i < ENC_VERJA_N; i++) {
+        int fy = 0;
+        s_vj_sw[i] = s_vj_front[i] = s_vj_back[i] = 0;
+        s_vj_on[i] = (uint8_t)verja_visible(i, cam_y, &fy);
+        s_vj_fy[i] = (int16_t)fy;
+        // sub 0 is the bottom screen: the chapel and back gates would sit over the HUD band (rows from 136 down) and are not shown there.
+        if (s_vj_on[i] && sub == 0 && fy - cam_y > 136 && (i == 0 || ((i - 1) & 1))) s_vj_on[i] = 0;
+    }
+}
+
+void enc_verja_note(int depth) {
+    for (int i = 0; i < ENC_VERJA_N; i++) {
+        if (!s_vj_on[i]) continue;
+        const int d = depth - s_vj_fy[i];
+        if (d >= 0 && d < VERJA_FRONT_REACH) s_vj_front[i] = 1;
+        else if (d < 0 && d > -(ENC_VERJA_H + 8)) s_vj_back[i] = 1;
+    }
+}
+
+void enc_verja_end(int sub, int cam_x, int cam_y) {
+#if HW_SHADOWS
+    for (int i = 0; i < ENC_VERJA_N; i++) {
+        if (!s_vj_on[i]) continue;
+        // Above the page would cover the HUD band of the bottom screen: there the gate stays below (old behaviour).
+        const int hud_clash = sub == 0 && s_vj_fy[i] - cam_y > 136;
+        if (s_vj_front[i] && s_vj_back[i] && !hud_clash) { s_vj_sw[i] = 1; continue; }
+        const int above = !s_vj_front[i] && !hud_clash;
+        int fy, lift;
+        verja_params(i, &fy, &lift);
+        hwshadow_add_verja(sub, ENC_FLOOR_X - cam_x, fy - ENC_VERJA_H - cam_y, lift, above);
     }
 #else
     (void)sub; (void)cam_x; (void)cam_y;
+    for (int i = 0; i < ENC_VERJA_N; i++) s_vj_sw[i] = s_vj_on[i];
 #endif
 }
 

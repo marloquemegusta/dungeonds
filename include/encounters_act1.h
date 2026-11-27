@@ -137,8 +137,10 @@ void enc_dynamic_relic_draw(uint16_t *buffer, int cam_x, int cam_y, int depth);
 int enc_dynamic_fixture_count(int cam_x, int cam_y);
 int enc_dynamic_fixture_item(int index, int cam_x, int cam_y, int *out_depth);
 void enc_dynamic_fixture_draw(int index, uint16_t *buffer, int cam_x, int cam_y, int depth);
-// Hardware OBJ sprites for the rastrillo gates (called per screen during render_screen).
-void enc_verja_draw(int sub, int cam_x, int cam_y);
+// Rastrillo gates: hardware sprite unless an actor is near (then software, sorted with the actors).
+void enc_verja_begin(int sub, int cam_y);
+void enc_verja_note(int depth);
+void enc_verja_end(int sub, int cam_x, int cam_y);
 // The sniper ray asks for the relicario target in front of the hero: ground point in window px.
 int enc_relic_target(int *x, int *y);
 void enc_relic_hit(int damage);

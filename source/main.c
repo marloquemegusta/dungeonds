@@ -1610,6 +1610,19 @@ static void render_camp_screen(uint16_t *buffer, DirtySpan *spans, int cam_x, in
 }
 #endif
 
+#if ENCOUNTERS_PROTO
+// Tells the rastrillo gates which actors are near (they switch from hardware sprite to depth-sorted software).
+static void gates_route(const DrawItem *items, int count, int sub_screen, int cam_x, int cam_y) {
+    enc_verja_begin(sub_screen, cam_y);
+    for (int i = 0; i < count; i++) {
+        const int r = items[i].ref;
+        if (r <= ENC_FIXTURE_REF_BASE && r > ENC_FIXTURE_REF_BASE - 16) continue;   // furniture and gates themselves
+        enc_verja_note(items[i].depth);
+    }
+    enc_verja_end(sub_screen, cam_x, cam_y);
+}
+#endif
+
 ITCM_CODE static void render_screen(uint16_t *buffer, DirtySpan *spans, int cam_x, int cam_y, int sub_screen,
                           uint32_t *out_floor, uint32_t *out_shadow, uint32_t *out_blit) {
 #if CAMP_SCENE
@@ -1795,7 +1808,7 @@ ITCM_CODE static void render_screen(uint16_t *buffer, DirtySpan *spans, int cam_
 #if HW_SHADOWS
     hwshadow_begin(sub_screen);
 #if ENCOUNTERS_PROTO
-    if (s_strip_mode) enc_verja_draw(sub_screen, cam_x, cam_y);
+    if (s_strip_mode) gates_route(items, count, sub_screen, cam_x, cam_y);
 #endif
     const int hw_shadows = g_hw_shadows_on;
 #endif
