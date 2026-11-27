@@ -948,10 +948,12 @@ static void rest_assign(int slot, int mode, Enemy *e) {
     if (mode == ENC_S_HIDDEN) e->home_flags |= ENEMY_HOME_HIDDEN;
 }
 
-// The rest every role gets when the debug mailbox asks for "as designed" (rest_mode 1), or the forced one.
+// The rest of each role. By default (rest_mode 0) only the Bebe has one: it crawls in short loops around its post. The debug mailbox
+// asks for the rest of every role (rest_mode 1) or a forced one (2 hidden, 3 patrol).
 static int rest_mode_for(int enc_type, int guard) {
     const int dbg = g_enc_debug.rest_mode;
-    if (!dbg || guard == 2) return 0;
+    if (guard == 2) return 0;
+    if (!dbg) return enc_type == ENC_E_BEBE ? ENC_S_CRAWL : 0;
     if (dbg == 2) return ENC_S_HIDDEN;
     if (dbg == 3) return ENC_S_PATROL;
     switch (enc_type) {

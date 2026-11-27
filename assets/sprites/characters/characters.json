@@ -140,8 +140,8 @@
       "ticksPerFrame": 9
     },
     "exvoto_bebe": {
-      "model": "assets/models/characters/exvoto_bebe/exvoto_bebe_walk.fbx",
-      "anim": "exvoto_bebe_walk (1.47s)",
+      "model": "assets/models/characters/exvoto_bebe/exvoto_bebe_crawl.fbx",
+      "anim": "exvoto_bebe_crawl (1.80s)",
       "resolution": 40,
       "fitZoom": 0.479,
       "template": "assets/sprites/characters/skeleton/settings.json",

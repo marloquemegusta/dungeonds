@@ -33,7 +33,7 @@ def main():
     decls = [m for m in DECL.finditer(text)
              if any(m.group(3).endswith(s) for s in SUF) and not m.group(3).startswith("g_character_")]
     names = [m.group(3) for m in decls]
-    packs = sorted(p for p in (ROOT / "nitrofiles/arpg_luz").glob("*.bin") if not p.stem.endswith("_fix"))
+    packs = sorted(p for p in (ROOT / "nitrofiles/arpg_luz").glob("*.bin") if not p.stem.endswith(("_fix", "_verja")))
     maxl = None; max_tiles = 0; max_st = 0
     for pk in packs:
         lens, nt, nst = pack_slot_lens(pk)
