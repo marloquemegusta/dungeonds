@@ -3657,6 +3657,8 @@ static void room_transition_update(void) {
             if (s_room_dest == ARPG_EXIT_TO_CAMP) {     // walked out of the Nave 1 to the camp: the objects are delivered
                 s_room_dest = -1;
                 arpg_campaign_arrive_on_foot();
+                arpg_log_room(-1);
+                arpg_log_event(CLOG_CAMP_IN, "pie");
                 run_to_camp();
                 return;
             }
@@ -3737,7 +3739,6 @@ static void on_vblank_irq(void) {
 // The camp is its own playable room (camp.c): one screen wide and two tall, shown whole across both
 // screens. Entering it swaps g_arena to the camp, places the hero by the bonfire and stops the run.
 static void enter_camp_scene(void) {
-    arpg_log_room(-1, 0);
     camp_set_active(1);
     g_arena = camp_arena();
     apply_arena_palette();
@@ -3797,7 +3798,7 @@ static void leave_camp_to_dungeon(void) {
     camp_hero_release();
     camp_unload_gfx();
     g_arena = strip_arena();
-    arpg_log_event(CLOG_SALIDA, 0);
+    arpg_log_event(CLOG_CAMP_OUT, 0);
     arpg_campaign_descent_begin();      // remembers the bag (what is lost on death) and repopulates the cathedral
     arpg_progress_save();
     s_run_started = 1;
@@ -3809,6 +3810,7 @@ static void leave_camp_to_dungeon(void) {
 
 // Leaves the dungeon for the camp (death or pause menu): saves the progress, stops the run.
 static void run_to_camp(void) {
+    arpg_log_room(-1);
     pickups_bank_relics();
     arpg_progress_save();
     sfx_stop_bgm();
@@ -3818,12 +3820,16 @@ static void run_to_camp(void) {
 // Death (campaign): the xp stays, the carried object and half of the loot of this descent are lost, the cathedral refills.
 static void run_to_camp_after_death(void) {
     arpg_campaign_on_death();
+    arpg_log_room(-1);
+    arpg_log_event(CLOG_CAMP_IN, "muerte");
     run_to_camp();
 }
 
 // Retreat from the pause menu: everything is kept except the carried object.
 static void run_to_camp_retreat(void) {
     arpg_campaign_on_retreat();
+    arpg_log_room(-1);
+    arpg_log_event(CLOG_CAMP_IN, "retirada");
     run_to_camp();
 }
 
@@ -4163,7 +4169,7 @@ int main(void) {
             if (act == MENU_ACT_START_INTRO) {
                 arpg_progress_reset();      // a new game: the save file is overwritten with the empty one
                 arpg_progress_save();
-                arpg_log_event(CLOG_INICIO, "partida nueva");
+                arpg_log_event(CLOG_START, 0);
             }
 #endif
             if (act == MENU_ACT_START_INTRO) {
@@ -4218,7 +4224,7 @@ int main(void) {
                 enter_camp_scene();         // the intro is over: the camp scene, not the dungeon
             } else if (act == MENU_ACT_CONTINUE) {
                 if (!arpg_progress_load()) arpg_progress_reset();
-                arpg_log_event(CLOG_INICIO, "continuar");
+                arpg_log_event(CLOG_START, 0);
                 menu_close();
                 enter_camp_scene();
             } else if (act == MENU_ACT_TO_CAMP) {
@@ -4304,7 +4310,7 @@ int main(void) {
                 s_keys_down_latch = 0;
                 if (act == CAMP_ACT_SLEEP) {
                     int gained = arpg_sleep();
-                    if (gained > 0) { char lv[16]; snprintf(lv, sizeof(lv), "nivel=%d", g_arpg.level); arpg_log_event(CLOG_NIVEL, lv); }
+                    if (gained > 0) { char lv[8]; snprintf(lv, sizeof(lv), "%d", g_arpg.level); arpg_log_event(CLOG_LEVEL, lv); }
                     arpg_progress_save();
                     char msg[48];
                     if (gained > 0) {

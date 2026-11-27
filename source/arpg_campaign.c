@@ -127,7 +127,7 @@ static void lose_carried(void) {
 }
 
 void arpg_campaign_on_death(void) {
-    arpg_log_event(CLOG_MUERTE, 0);
+    arpg_log_event(CLOG_DEATH, 0);
     notice_clear();
     int lost = lose_half_of_loot();
     if (lost > 0) {
@@ -157,7 +157,7 @@ void arpg_campaign_arrive_on_foot(void) {
     for (int q = 0; q < QUEST_COUNT; q++) {
         if (!((now >> q) & 1)) continue;
         notice_push2("La voz acepta ", s_quest[q].name);
-        arpg_log_event(CLOG_ENTREGA, s_quest[q].name);
+        arpg_log_event(CLOG_DELIVER, q == QUEST_TOMAS ? "tomas" : q == QUEST_MISA ? "misa" : q == QUEST_LEONOR ? "leonor" : "abanderado");
         if (s_quest[q].reward_mech == ARPG_MECH_NONE) continue;
         ArpgInvItem it;
         arpg_inv_make_reward(&it, s_quest[q].reward_mech);

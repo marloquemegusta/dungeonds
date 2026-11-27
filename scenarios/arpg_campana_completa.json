@@ -1,6 +1,6 @@
 {
  "name": "arpg_campana_completa",
- "description": "Campana B (Tres penitencias) de punta a punta. Partida nueva, confesionario (Don Tomas), caer el grupo de la Capilla del parroco (lista del coro en la mano), salida a pie por el pie de la Nave 1 (entrega, Llama Votiva), confesionario (Sor Leonor y la Misa), caer la Misa (llave de la capilla; Lanza al entregar), caer la monjarana (denuncia; Pira al entregar), confesionario (Abanderado), la reja de la Nave 4 sube con la denuncia entregada y el atajo de la Capilla con llave lleva a la Nave 1 sin disparar la salida al campamento. Lee ademas el registro de partida en RAM (g_clog).",
+ "description": "Campana B (Tres penitencias) de punta a punta. Partida nueva, confesionario (Don Tomas), caer el grupo de la Capilla del parroco (lista del coro en la mano), salida a pie por el pie de la Nave 1 (entrega, Llama Votiva), confesionario (Sor Leonor y la Misa), caer la Misa (llave de la capilla; Lanza al entregar), caer la monjarana (denuncia; Pira al entregar), confesionario (Abanderado), la reja de la Nave 4 sube con la denuncia entregada y el atajo de la Capilla con llave lleva a la Nave 1 sin disparar la salida al campamento. Lee ademas el registro de partida en RAM (g_clog). Formato del log: t=<s> ev=<EVENTO> sala=<id> [arg=<x>].",
  "suite": true,
  "state": {
   "elf": "../.ds-game-dev/build/out/dungeonds.elf",
@@ -1843,12 +1843,12 @@
    },
    {
     "at": "c06_misa_vencida",
-    "field": "clog_ev10",
+    "field": "clog_ev11",
     "equals": 8
    },
    {
     "at": "c06_misa_vencida",
-    "field": "clog_ev11",
+    "field": "clog_ev12",
     "equals": 4
    },
    {
@@ -1878,12 +1878,12 @@
    },
    {
     "at": "c09_leonor_vencida",
-    "field": "clog_ev17",
+    "field": "clog_ev19",
     "equals": 8
    },
    {
     "at": "c09_leonor_vencida",
-    "field": "clog_ev18",
+    "field": "clog_ev20",
     "equals": 4
    },
    {
@@ -1930,6 +1930,16 @@
     "at": "c14_atajo_300",
     "field": "delivered",
     "equals": 7
+   },
+   {
+    "at": "c04_lista_entregada",
+    "field": "clog_ev7",
+    "equals": 10
+   },
+   {
+    "at": "c04_lista_entregada",
+    "field": "clog_room7",
+    "equals": 255
    }
   ]
  }

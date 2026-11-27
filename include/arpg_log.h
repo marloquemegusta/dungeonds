@@ -1,11 +1,12 @@
 #ifndef ARPG_LOG_H
 #define ARPG_LOG_H
-// Campaign play log: one line per event in /dungeonds_campana.log on the SD (append, closed after each line), to compare the
+// Campaign play log: one line per event in /dungeonds_campana.log on the SD (append, closed after each line; format
+// `t=<s> ev=<EVENT> sala=<room> [arg=<value>]`, read by an external tool: do not change it), to compare the
 // real pace of a playthrough with the simulator. Active in the normal ROM. If the SD is missing the game goes on without a file.
 // The last events are also kept in RAM (g_clog) so that scenarios can read them without an SD.
 #include <stdint.h>
 
-enum { CLOG_INICIO = 1, CLOG_SALIDA, CLOG_SALA, CLOG_COGE, CLOG_ENTREGA, CLOG_MUERTE, CLOG_NIVEL, CLOG_VENCE };
+enum { CLOG_START = 1, CLOG_CAMP_OUT, CLOG_ROOM, CLOG_PICK, CLOG_DELIVER, CLOG_DEATH, CLOG_LEVEL, CLOG_MINIBOSS, CLOG_BOSS, CLOG_CAMP_IN };
 
 #define CLOG_RAM_MAX 64
 typedef struct {
@@ -17,6 +18,6 @@ typedef struct {
 extern ArpgCampaignLog g_clog;
 
 void arpg_log_frame(uint32_t vblanks);                       // once per main-loop pass: the game clock
-void arpg_log_room(int room, const char *name);              // the room the hero is in (-1 = camp)
+void arpg_log_room(int room);                                // the room the hero is in (-1 = camp)
 void arpg_log_event(int ev, const char *detail);             // detail may be NULL
 #endif

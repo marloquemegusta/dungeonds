@@ -235,6 +235,7 @@ static void prize_fixed(const RoomDef *room, int px, int py) {
 static const char *const s_quest_names[QUEST_COUNT] = {
     "Lista del coro", "Llave de la capilla", "Denuncia de Sor Leonor", "Estandarte del Abanderado"
 };
+static const char *const s_quest_logname[QUEST_COUNT] = { "tomas", "misa", "leonor", "abanderado" };
 static void quest_revive_others(void) {
     for (int r = 0; r < ENC_ROOM_COUNT; r++) {
         if (r == s_room) continue;
@@ -247,7 +248,7 @@ static void quest_pick(const RoomDef *room, int k) {
     const int q = room->quest - 1;
     if (arpg_quest_has(q)) return;                                  // never handed twice
     arpg_quest_pick(q);
-    arpg_log_event(CLOG_COGE, s_quest_names[q]);
+    arpg_log_event(CLOG_PICK, s_quest_logname[q]);
     quest_revive_others();
     sfx_play(SND_PICKUP_ORB, -1);
     pickups_toast(s_quest_names[q], 180);
@@ -256,7 +257,8 @@ static void quest_pick(const RoomDef *room, int k) {
 // Guaranteed rewards when a group, a miniboss or the boss of the room falls (DESIGN-ARPG.md 7). The relic drops a little above the hero.
 static void clear_rewards(const RoomDef *room, int k, int first_time, int px, int py) {
     if (room->type == RT_PARROQUIA || is_special_stage(k)) arpg_add_xp(ARPG_XP_SPECIAL);   // a special encounter fell whole
-    if (is_special_stage(k) || (room->type == RT_CRIPTA && is_boss_stage(k))) arpg_log_event(CLOG_VENCE, room->name);
+    if (is_special_stage(k)) arpg_log_event(CLOG_MINIBOSS, room->type == RT_MISA ? "misa" : "leonor");
+    else if (room->type == RT_CRIPTA && is_boss_stage(k)) arpg_log_event(CLOG_BOSS, 0);
     if (is_special_stage(k)) {
         if (room->prize_mech && first_time) prize_fixed(room, px, py);   // la Misa: Zarza, the first time
         else prize_relic(room, 1, ARPG_RAR_EPIC, px, py);
@@ -719,8 +721,8 @@ void enc_room_select(int room, int from_room) {
     if (!((g_arpg.rooms_seen >> s_room) & 1)) {      // first visit: the overlay map reveals it (kept in the save)
         g_arpg.rooms_seen |= (uint16_t)(1u << s_room);
     }
-    arpg_log_room(s_room, room_def()->name);
-    arpg_log_event(CLOG_SALA, 0);
+    arpg_log_room(s_room);
+    arpg_log_event(CLOG_ROOM, 0);
     arpg_progress_save();            // every room change: xp, kills and chests of the room just left survive a power-off
 }
 
