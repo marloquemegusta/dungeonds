@@ -1,0 +1,3 @@
+# Contrato: mini ROM rayos-test (tres disparos del rayo cargado contra monaguillos). Conceptos de catalogo.json.
+# campamento, exvoto, bebe y musica: la carga del arranque (campamento -> sala) los pide aunque no se vean.
+golpes remates salas monaguillo campamento exvoto bebe musica

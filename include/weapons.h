@@ -46,6 +46,10 @@ char weapons_fx_style_letter(void);
 enum { AURA_STYLE_L = 0, AURA_STYLE_G = 1, AURA_STYLE_E = 2, AURA_STYLE_H = 3 };
 extern int g_aura_debug_mask;
 extern int g_aura_force_mask;   // gameplay bits raised by relics (Corazon Flagelado: AURA_STYLE_L while its instant charge is pending)
+#ifndef LASER_LOOK_TEST
+#define LASER_LOOK_TEST 0   // 1 = mini ROM "rayos-test": three laser shots, SELECT cycles them
+#endif
+extern volatile uint8_t g_laser_look;   // laser look: 3 = Gloria (default), 0 = old line, 1 = Saeta, 2 = Grieta (rayos-test only)
 char weapons_aura_style_letter(void);
 
 // One frame of touch / button state for the weapon system.

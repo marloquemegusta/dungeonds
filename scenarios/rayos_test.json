@@ -1,0 +1,391 @@
+{
+  "name": "rayos_test",
+  "suite": false,
+  "description": "Variante rayos-test: el heroe carga el rayo hasta LISTO (halo), dispara a los monaguillos del este y del oeste (la linea de tiro cruza el cuerpo: sus hp bajan de 2000) con Saeta, pulsa SELECT (aparece el nombre), repite con Grieta y Gloria, y vuelve a Saeta.",
+  "state": {
+    "elf": "../.ds-game-dev/build/out/dungeonds-rayos-test.elf",
+    "symbols": {
+      "en": "g_enemies",
+      "lk": "g_laser_look",
+      "aim": "s_aim_state"
+    },
+    "default_symbol": "en",
+    "fields": {
+      "look": {
+        "symbol": "lk",
+        "offset": 0,
+        "type": "u8"
+      },
+      "aim": {
+        "symbol": "aim",
+        "offset": 0,
+        "type": "s32"
+      },
+      "e0_act": {
+        "symbol": "en",
+        "offset": 24,
+        "type": "s32"
+      },
+      "e0_hp": {
+        "symbol": "en",
+        "offset": 28,
+        "type": "s32"
+      },
+      "e1_act": {
+        "symbol": "en",
+        "offset": 148,
+        "type": "s32"
+      },
+      "e1_hp": {
+        "symbol": "en",
+        "offset": 152,
+        "type": "s32"
+      },
+      "e2_act": {
+        "symbol": "en",
+        "offset": 272,
+        "type": "s32"
+      },
+      "e2_hp": {
+        "symbol": "en",
+        "offset": 276,
+        "type": "s32"
+      }
+    }
+  },
+  "steps": [
+    {
+      "frames": 100,
+      "capture": "00_inicio",
+      "state_capture": "inicio"
+    },
+    {
+      "touch": {
+        "x": 196,
+        "y": 122
+      },
+      "frames": 28,
+      "capture": "l1_saeta_a_carga",
+      "state_capture": "l1_saeta_a_carga"
+    },
+    {
+      "frames": 30,
+      "capture": "l1_saeta_a_listo",
+      "state_capture": "l1_saeta_a_listo"
+    },
+    {
+      "release": true,
+      "frames": 2,
+      "capture": "l1_saeta_a_disparo2",
+      "state_capture": "l1_saeta_a_disparo2"
+    },
+    {
+      "frames": 5,
+      "capture": "l1_saeta_a_disparo7",
+      "state_capture": "l1_saeta_a_disparo7"
+    },
+    {
+      "frames": 5,
+      "capture": "l1_saeta_a_disparo12"
+    },
+    {
+      "frames": 40,
+      "capture": "l1_saeta_a_despues",
+      "state_capture": "l1_saeta_a_despues"
+    },
+    {
+      "touch": {
+        "x": 58,
+        "y": 122
+      },
+      "frames": 28,
+      "capture": "l1_saeta_b_carga",
+      "state_capture": "l1_saeta_b_carga"
+    },
+    {
+      "frames": 30,
+      "capture": "l1_saeta_b_listo",
+      "state_capture": "l1_saeta_b_listo"
+    },
+    {
+      "release": true,
+      "frames": 2,
+      "capture": "l1_saeta_b_disparo2",
+      "state_capture": "l1_saeta_b_disparo2"
+    },
+    {
+      "frames": 5,
+      "capture": "l1_saeta_b_disparo7",
+      "state_capture": "l1_saeta_b_disparo7"
+    },
+    {
+      "frames": 5,
+      "capture": "l1_saeta_b_disparo12"
+    },
+    {
+      "frames": 40,
+      "capture": "l1_saeta_b_despues",
+      "state_capture": "l1_saeta_b_despues"
+    },
+    {
+      "button_down": "SELECT",
+      "frames": 2
+    },
+    {
+      "button_up": "SELECT",
+      "frames": 10,
+      "capture": "sel1_a_grieta",
+      "state_capture": "sel1"
+    },
+    {
+      "touch": {
+        "x": 196,
+        "y": 122
+      },
+      "frames": 28,
+      "capture": "l2_grieta_a_carga",
+      "state_capture": "l2_grieta_a_carga"
+    },
+    {
+      "frames": 30,
+      "capture": "l2_grieta_a_listo",
+      "state_capture": "l2_grieta_a_listo"
+    },
+    {
+      "release": true,
+      "frames": 2,
+      "capture": "l2_grieta_a_disparo2",
+      "state_capture": "l2_grieta_a_disparo2"
+    },
+    {
+      "frames": 5,
+      "capture": "l2_grieta_a_disparo7",
+      "state_capture": "l2_grieta_a_disparo7"
+    },
+    {
+      "frames": 5,
+      "capture": "l2_grieta_a_disparo12"
+    },
+    {
+      "frames": 40,
+      "capture": "l2_grieta_a_despues",
+      "state_capture": "l2_grieta_a_despues"
+    },
+    {
+      "touch": {
+        "x": 58,
+        "y": 122
+      },
+      "frames": 28,
+      "capture": "l2_grieta_b_carga",
+      "state_capture": "l2_grieta_b_carga"
+    },
+    {
+      "frames": 30,
+      "capture": "l2_grieta_b_listo",
+      "state_capture": "l2_grieta_b_listo"
+    },
+    {
+      "release": true,
+      "frames": 2,
+      "capture": "l2_grieta_b_disparo2",
+      "state_capture": "l2_grieta_b_disparo2"
+    },
+    {
+      "frames": 5,
+      "capture": "l2_grieta_b_disparo7",
+      "state_capture": "l2_grieta_b_disparo7"
+    },
+    {
+      "frames": 5,
+      "capture": "l2_grieta_b_disparo12"
+    },
+    {
+      "frames": 40,
+      "capture": "l2_grieta_b_despues",
+      "state_capture": "l2_grieta_b_despues"
+    },
+    {
+      "button_down": "SELECT",
+      "frames": 2
+    },
+    {
+      "button_up": "SELECT",
+      "frames": 10,
+      "capture": "sel2_a_gloria",
+      "state_capture": "sel2"
+    },
+    {
+      "touch": {
+        "x": 196,
+        "y": 122
+      },
+      "frames": 28,
+      "capture": "l3_gloria_a_carga",
+      "state_capture": "l3_gloria_a_carga"
+    },
+    {
+      "frames": 30,
+      "capture": "l3_gloria_a_listo",
+      "state_capture": "l3_gloria_a_listo"
+    },
+    {
+      "release": true,
+      "frames": 2,
+      "capture": "l3_gloria_a_disparo2",
+      "state_capture": "l3_gloria_a_disparo2"
+    },
+    {
+      "frames": 5,
+      "capture": "l3_gloria_a_disparo7",
+      "state_capture": "l3_gloria_a_disparo7"
+    },
+    {
+      "frames": 5,
+      "capture": "l3_gloria_a_disparo12"
+    },
+    {
+      "frames": 40,
+      "capture": "l3_gloria_a_despues",
+      "state_capture": "l3_gloria_a_despues"
+    },
+    {
+      "touch": {
+        "x": 58,
+        "y": 122
+      },
+      "frames": 28,
+      "capture": "l3_gloria_b_carga",
+      "state_capture": "l3_gloria_b_carga"
+    },
+    {
+      "frames": 30,
+      "capture": "l3_gloria_b_listo",
+      "state_capture": "l3_gloria_b_listo"
+    },
+    {
+      "release": true,
+      "frames": 2,
+      "capture": "l3_gloria_b_disparo2",
+      "state_capture": "l3_gloria_b_disparo2"
+    },
+    {
+      "frames": 5,
+      "capture": "l3_gloria_b_disparo7",
+      "state_capture": "l3_gloria_b_disparo7"
+    },
+    {
+      "frames": 5,
+      "capture": "l3_gloria_b_disparo12"
+    },
+    {
+      "frames": 40,
+      "capture": "l3_gloria_b_despues",
+      "state_capture": "l3_gloria_b_despues"
+    },
+    {
+      "button_down": "SELECT",
+      "frames": 2
+    },
+    {
+      "button_up": "SELECT",
+      "frames": 10,
+      "capture": "sel3_a_saeta",
+      "state_capture": "sel3"
+    }
+  ],
+  "assertions": {
+    "state_changes": [
+      {
+        "at": "inicio",
+        "field": "look",
+        "equals": 1
+      },
+      {
+        "at": "inicio",
+        "field": "e0_act",
+        "equals": 1
+      },
+      {
+        "at": "inicio",
+        "field": "e2_act",
+        "equals": 1
+      },
+      {
+        "at": "l1_saeta_a_listo",
+        "field": "aim",
+        "equals": 2
+      },
+      {
+        "at": "l1_saeta_a_disparo7",
+        "field": "e0_hp",
+        "max_value": 1999
+      },
+      {
+        "at": "l1_saeta_b_listo",
+        "field": "aim",
+        "equals": 2
+      },
+      {
+        "at": "l1_saeta_b_disparo7",
+        "field": "e2_hp",
+        "max_value": 1999
+      },
+      {
+        "at": "sel1",
+        "field": "look",
+        "equals": 2
+      },
+      {
+        "at": "l2_grieta_a_listo",
+        "field": "aim",
+        "equals": 2
+      },
+      {
+        "at": "l2_grieta_a_disparo7",
+        "field": "e0_hp",
+        "max_value": 1999
+      },
+      {
+        "at": "l2_grieta_b_listo",
+        "field": "aim",
+        "equals": 2
+      },
+      {
+        "at": "l2_grieta_b_disparo7",
+        "field": "e2_hp",
+        "max_value": 1999
+      },
+      {
+        "at": "sel2",
+        "field": "look",
+        "equals": 3
+      },
+      {
+        "at": "l3_gloria_a_listo",
+        "field": "aim",
+        "equals": 2
+      },
+      {
+        "at": "l3_gloria_a_disparo7",
+        "field": "e0_hp",
+        "max_value": 1999
+      },
+      {
+        "at": "l3_gloria_b_listo",
+        "field": "aim",
+        "equals": 2
+      },
+      {
+        "at": "l3_gloria_b_disparo7",
+        "field": "e2_hp",
+        "max_value": 1999
+      },
+      {
+        "at": "sel3",
+        "field": "look",
+        "equals": 1
+      }
+    ]
+  }
+}

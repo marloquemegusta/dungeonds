@@ -42,6 +42,10 @@ char weapons_fx_style_letter(void) {
 // frame from the relics in weapons_update. The sandbox can force extra bits through g_aura_debug_mask.
 int g_aura_debug_mask = 0;
 static int s_aura_mask = 0;
+// Laser looks (see the block before render_fx): 3 = Gloria + halo is the shipped look; 0 = the old line, 1 = Saeta, 2 = Grieta are kept (mini ROM LASER_LOOK_TEST selects them).
+volatile uint8_t g_laser_look = LASER_LOOK_TEST ? 1 : 3;   // the game ships Gloria + halo; 0 (old line), 1 Saeta, 2 Grieta stay as catalogue looks, chosen only in rayos-test
+static const uint8_t s_lk_life[4] = { 6, 36, 21, 18 };      // frames the shot lives, per look (index 0 = the old trail)
+static inline int lk_look(void) { int l = g_laser_look; return (l >= 1 && l <= 3) ? l : 0; }
 
 // The one place that maps relics to their look (DESIGN.md 6.12.6, column "Como se ve"). Auras: Cilicio = E (thorn
 // ring), Sed de Ceniza = H (ash), Viatico = G (glow). Corazon Flagelado = L (flames) only while its instant charge
@@ -92,6 +96,8 @@ typedef struct {
 
 typedef struct {
     int life;
+    int max;              // frames it was started with (laser looks age the shot with max - life)
+    int h;                // muzzle height: the floor line of the shot is y + h
     int x0, y0, x1, y1;   // world px, height applied
 } SniperTrail;
 
@@ -510,6 +516,7 @@ static void spawn_flash(const WeaponInput *in, fixed dir_x, fixed dir_y) {
 // Sniper shot (fire palette, DESIGN.md 6.10): a cross at the muzzle and, when the shot ends at a wall,
 // another one there. Hits: sniper_hit_fx.
 static void sniper_shot_fx(const WeaponInput *in, fixed end_x, fixed end_y, int end_blocked) {
+    if (g_laser_look) return;   // laser looks draw their own muzzle and impact
     FxPart *p = fx_spawn(FXP_CROSS, 4, in->muzzle_x, in->muzzle_y);
     if (p) {
         p->h = TO_FIXED(in->muzzle_h);
@@ -525,6 +532,7 @@ static void sniper_shot_fx(const WeaponInput *in, fixed end_x, fixed end_y, int 
 
 // Sniper hit on an enemy along the ray: a cross (fire palette).
 static void sniper_hit_fx(const WeaponInput *in, fixed x, fixed y) {
+    if (g_laser_look) return;
     FxPart *p = fx_spawn(FXP_CROSS, 4, x, y);
     if (p) {
         p->h = TO_FIXED(in->muzzle_h);
@@ -784,7 +792,8 @@ static void fire_sniper(const WeaponTuning *tuning, const WeaponInput *in, fixed
         s_next_charge_pct = 0;
     }
 
-    s_trail.life = 6;
+    s_trail.life = s_trail.max = s_lk_life[lk_look()];
+    s_trail.h = in->muzzle_h;
     s_trail.x0 = TO_INT(in->muzzle_x);
     s_trail.y0 = TO_INT(in->muzzle_y) - in->muzzle_h;
     s_trail.x1 = TO_INT(cur_x);
@@ -1551,7 +1560,7 @@ void weapons_update(Enemy *enemies, int max_enemies) {
         if (cmd & 64) s_burn_force = 0;                       // burn drawn as A / B whatever the variant (Auto de Fe B / C start from them)
         if (cmd & 128) s_burn_force = 1;
         if (cmd & 32) {                                       // 32 plain trail, drawn up and to the right
-            s_trail.life = 6;
+            s_trail.life = s_trail.max = s_lk_life[lk_look()]; s_trail.h = 24;
             s_trail.x0 = s_hero_x; s_trail.y0 = s_hero_y - 24;
             s_trail.x1 = s_hero_x + 44; s_trail.y1 = s_hero_y - 24 - 70;
             s_last_dir_x = 110; s_last_dir_y = -231;
@@ -1749,12 +1758,14 @@ static void votive_sparks(const FxTarget *t, int cam_x, int cam_y, int clumpy) {
 
 // Sniper fuego (DESIGN.md 6.10): desaturated sacred-fire collimated band (deep crimson/terracotta glow
 // narrowing to a warm ivory/gold filament when armed), with rising ember motes.
+static void lk_aim(const FxTarget *t, int cam_x, int cam_y);   // laser looks, below
 static void render_aim_line(const FxTarget *t, int cam_x, int cam_y) {
     if (s_aim_state != AIM_AIMING && s_aim_state != AIM_READY) return;
     int ready = s_aim_state == AIM_READY;
     int w = (6 * (256 - s_aim_prog)) >> 8;          // lateral half-width in px (6 at 0 %, 0 when armed)
     const int votive = upgrades_has_relic(RELIC_LLAMA_VOTIVA);
     if (votive) votive_sparks(t, cam_x, cam_y, 0);        // B chosen (DESIGN.md 6.12.12); A and C render like B
+    if (lk_look()) { lk_aim(t, cam_x, cam_y); return; }
     if (ready) {
         for (int d = 1; d <= s_aim_len; d++) {
             int px, py;
@@ -1878,10 +1889,445 @@ static void render_flash(const FxTarget *t, int cam_x, int cam_y) {
     put_px(t, x, y + 1, FX_HOT);
 }
 
+// ---------------------------------------------------------------------------
+// Laser looks (mini ROM LASER_LOOK_TEST). g_laser_look: 0 = the original shot, 1 = Saeta, 2 = Grieta, 3 = Gloria.
+// All three share the charge (halo over the head that draws itself like a clock, glory of rays at READY) and differ in
+// the aim line and in the shot. Integer only; every effect is a pure function of (frame, index), so there is no pool:
+// the cost is the pixels drawn (under ~900 a frame).
+//   Saeta : pale dart with fletching and a flaming head, thin gold trail, small burst at the wall.
+//   Grieta: a fissure opened in the floor from the feet to the wall, with flames sprouting from it.
+//   Gloria: five parallel rays fanning from the chest, tongues of fire, fan of glory at the wall.
+// ---------------------------------------------------------------------------
+
+static const uint8_t s_lk_noise[64] = {
+    165, 77, 202, 24, 37, 48, 187, 29, 109, 19, 44, 222, 214, 35, 123, 46, 217, 30, 63, 114, 31, 203, 25, 113, 23, 68,
+    148, 214, 73, 60, 157, 92, 52, 96, 190, 49, 32, 30, 105, 254, 218, 160, 238, 232, 185, 153, 127, 92, 124, 41, 153,
+    253, 175, 229, 147, 37, 60, 214, 84, 175, 77, 250, 215, 20
+};
+#define LKN(i) ((int)s_lk_noise[(i) & 63])
+// Fire ramp, hot to cold (muted FX_SH_* only).
+static const uint8_t s_lk_ramp[8] = { FX_SH_IVORY, FX_SH_GOLD, FX_SH_AMBER, FX_SH_EMBER, FX_SH_CRIMSON, FX_SH_DEEP, FX_SH_ASH_A, FX_SH_ASH_B };
+static inline int lk_col(int lvl) { return s_lk_ramp[lvl < 0 ? 0 : lvl > 7 ? 7 : lvl]; }
+
+// The shot drawn as a ray of steps: n = longest screen axis; vert = the beam is more horizontal than vertical, so
+// its width runs along y (otherwise along x).
+typedef struct { int x0, y0, n, sx, sy, vert; } LkRay;
+static void lk_ray(LkRay *r, int x0, int y0, int x1, int y1) {
+    int dx = x1 - x0, dy = y1 - y0;
+    int adx = abs_int(dx), ady = abs_int(dy);
+    int n = adx > ady ? adx : ady;
+    if (n < 1) n = 1;
+    r->x0 = x0; r->y0 = y0; r->n = n; r->vert = adx >= ady;
+    r->sx = (dx << 8) / n; r->sy = (dy << 8) / n;
+}
+static inline void lk_ray_pt(const LkRay *r, int i, int *x, int *y) {
+    *x = r->x0 + ((r->sx * i + 128) >> 8);
+    *y = r->y0 + ((r->sy * i + 128) >> 8);
+}
+
+static void lk_pt_off(const LkRay *r, int i, int o, int *x, int *y) {
+    lk_ray_pt(r, i, x, y);
+    if (r->vert) *y += o; else *x += o;
+}
+
+// Filled diamond of radius r; centre colour lvl, the rim two steps colder.
+static void lk_diamond(const FxTarget *t, int cx, int cy, int r, int lvl) {
+    for (int dy = -r; dy <= r; dy++) {
+        for (int dx = -r; dx <= r; dx++) {
+            int d = (dx < 0 ? -dx : dx) + (dy < 0 ? -dy : dy);
+            if (d > r) continue;
+            put_px(t, cx + dx, cy + dy, lk_col(lvl + (d * 3 > r * 2 ? 2 : d * 3 > r ? 1 : 0)));
+        }
+    }
+}
+
+// Thin star: arms of `len` px with a 3 px thick root; ivory centre, gold, amber, ember tip.
+static void lk_cross(const FxTarget *t, int cx, int cy, int len, int diag) {
+    for (int o = -1; o <= 1; o++)
+        for (int p = -1; p <= 1; p++) put_px(t, cx + p, cy + o, (o | p) == 0 ? FX_SH_IVORY : FX_SH_GOLD);
+    for (int j = 2; j <= len; j++) {
+        int c = j <= 4 ? 0 : j <= 7 ? 1 : j < len ? 2 : 3;
+        int th = j <= 3 ? 1 : 0;
+        for (int o = -th; o <= th; o++) {
+            int cc = lk_col(c + (o != 0));
+            put_px(t, cx + j, cy + o, cc); put_px(t, cx - j, cy + o, cc);
+            put_px(t, cx + o, cy + j, cc); put_px(t, cx + o, cy - j, cc);
+        }
+    }
+    for (int j = 2; j <= diag; j++) {
+        int cc = lk_col(1 + (j > 3));
+        put_px(t, cx + j, cy + j, cc); put_px(t, cx - j, cy + j, cc);
+        put_px(t, cx + j, cy - j, cc); put_px(t, cx - j, cy - j, cc);
+    }
+}
+
+// C: the "Saeta del serafin". Three separate pieces so a future passive can swap exactly one:
+//   lk_saeta_tip    the dart itself: pale shaft, fletching, arrowhead with flames licking it and a glow in front
+//   lk_saeta_estela the thin golden fire left along the path; each point cools to ash by its own age
+//   lk_saeta_impacto the small burst of flames where it sticks in the wall
+// The dart flies for lk_saeta_t() frames (6 for a short shot up to 12 for a long one, ~ n / 32 + 5), then sticks in the
+// wall (land = frames since it landed: 0..3 stuck, shaft fades by land 7).
+static inline int lk_saeta_t(const LkRay *r) { int t = 5 + (r->n >> 5); return t < 6 ? 6 : t > 12 ? 12 : t; }
+static inline int lk_saeta_head(const LkRay *r, int age) {
+    const int t = lk_saeta_t(r);
+    return age >= t - 1 ? r->n : r->n * (age + 1) / t;      // once per call, not per pixel
+}
+
+static void lk_saeta_tip(const FxTarget *t, const LkRay *r, int age) {
+    static const uint8_t hw[12] = { 0, 1, 2, 2, 3, 3, 3, 3, 3, 3, 3, 1 };
+    const int land = age - (lk_saeta_t(r) - 1);
+    if (land > 7) return;
+    const int head = lk_saeta_head(r, age);
+    int tail = head - 20;
+    if (land >= 4) tail += (land - 3) * 6;              // stuck in the wall a few frames, then the shaft fades
+    if (tail < 0) tail = 0;
+    int x, y;
+    for (int i = tail; i <= head - 12; i++) {                      // pale shaft, 2 px
+        if (i < 0) continue;
+        lk_pt_off(r, i, 0, &x, &y);
+        put_px(t, x, y, (i - tail) < 3 ? FX_SH_GOLD : FX_SH_IVORY);
+        lk_pt_off(r, i, 1, &x, &y);
+        put_px(t, x, y, (i - tail) < 3 ? FX_SH_AMBER : FX_SH_GOLD);
+    }
+    if (tail > 0 || land < 4) {                                     // fletching at the tail
+        for (int k = 0; k < 3; k++) {
+            int i = tail + k;
+            if (i > head - 12) break;
+            lk_pt_off(r, i, -1 - (k == 1), &x, &y); put_px(t, x, y, FX_SH_AMBER);
+            lk_pt_off(r, i, 1 + (k == 1), &x, &y); put_px(t, x, y, FX_SH_AMBER);
+        }
+    }
+    for (int j = 0; j < 12; j++) {                                 // arrowhead, solid, 12 px long, 7 px high, dark rim for contrast
+        int i = head - j;
+        if (i < 0) break;
+        for (int o = -hw[j]; o <= hw[j]; o++) {
+            int ao = o < 0 ? -o : o;
+            int c = (ao <= 1 && j < 10) ? FX_SH_IVORY : ao == hw[j] && hw[j] > 1 ? FX_SH_AMBER : FX_SH_GOLD;
+            lk_pt_off(r, i, o, &x, &y); put_px(t, x, y, c);
+        }
+    }
+    for (int k = 0; k < 6; k++) {                                  // flames licking the head
+        if (LKN(k * 5 + age * 7) & 2) continue;
+        int i = head - 4 - k, o = (k & 1 ? 1 : -1) * (3 + (k >> 2));
+        if (i < 0) continue;
+        lk_pt_off(r, i, o, &x, &y);
+        put_px(t, x, y - (k & 1), (k & 1) ? FX_SH_EMBER : FX_SH_CRIMSON);
+    }
+    lk_pt_off(r, head + 1, 0, &x, &y); put_px(t, x, y, FX_SH_GOLD);   // glow around the point
+    lk_pt_off(r, head + 2, 0, &x, &y); put_px(t, x, y, FX_SH_EMBER);
+    lk_pt_off(r, head + 3, 0, &x, &y); put_px(t, x, y, FX_SH_CRIMSON);
+    lk_pt_off(r, head - 5, 4, &x, &y); put_px(t, x, y, FX_SH_EMBER);
+    lk_pt_off(r, head + 1, 2, &x, &y); put_px(t, x, y, FX_SH_AMBER);
+    lk_pt_off(r, head + 1, -2, &x, &y); put_px(t, x, y, FX_SH_AMBER);
+    lk_pt_off(r, head - 5, -4, &x, &y); put_px(t, x, y, FX_SH_EMBER);
+}
+
+static void lk_saeta_estela(const FxTarget *t, const LkRay *r, int age) {
+    const int head = lk_saeta_head(r, age);
+    const int inv_n = 65536 / r->n, T = lk_saeta_t(r);
+    int x, y;
+    for (int i = 0; i <= head - 4; i++) {
+        int born = (i * T * inv_n) >> 16;                          // frame in which the dart passed
+        int ca = age - (born > T - 1 ? T - 1 : born);              // age of this point of the trail
+        if (ca < 0 || ca > 18) continue;
+        if (LKN(i * 7 + ca * 3) < 30 + ca * 11) continue;               // dissolves piece by piece
+        int lvl = 2 + (ca >> 1);                                   // gold -> amber -> ember -> ... -> ash
+        lk_pt_off(r, i, 0, &x, &y);
+        if (LKN(i + (ca >> 1)) & 3) put_px(t, x, y, lk_col(lvl));            // thin and broken: 1 px
+
+        if ((LKN(i * 3 + 1) & 7) < 2 && ca < 14) {                 // a spark / ember rises, then an ash speck falls
+            int rise = ca < 8 ? -(1 + (ca >> 1) + (LKN(i + 9) & 1)) : (ca - 6) >> 1;
+            lk_pt_off(r, i, rise, &x, &y);
+            put_px(t, x + (LKN(i + 2) & 1), y, lk_col(ca < 8 ? lvl - 1 : 6 + (ca & 1)));
+        }
+    }
+}
+
+static void lk_saeta_impacto(const FxTarget *t, int x, int y, int age, int flight) {
+    int a = age - (flight - 1);                                               // starts when the dart lands
+    if (a < 0 || a > 9) return;
+    if (a < 2) {
+        put_px(t, x, y, FX_SH_IVORY);
+        put_px(t, x - 1, y, FX_SH_GOLD); put_px(t, x + 1, y, FX_SH_GOLD);
+        put_px(t, x, y - 1, FX_SH_GOLD); put_px(t, x, y + 1, FX_SH_GOLD);
+        put_px(t, x - 2, y, FX_SH_AMBER); put_px(t, x + 2, y, FX_SH_AMBER);
+    }
+    static const int8_t fdx[5] = { -3, -1, 0, 1, 3 };
+    for (int k = 0; k < 5; k++) {                                  // five small tongues
+        int len = 6 - (a >> 1) - ((k == 0 || k == 4) ? 2 : 0) + (LKN(k * 5 + a) & 1);
+        for (int j = 1; j <= len; j++) {
+            int px = x + ((fdx[k] * j) >> 2), py = y - j;
+            put_px(t, px, py, lk_col((j * 3 < len ? 1 : j * 3 < len * 2 ? 2 : 3) + (a >> 2)));
+        }
+    }
+}
+// C "Grieta ardiente": the shot is a fissure opened in the FLOOR (feet to wall), not a ray in the air. Three
+// separate pieces so a passive can swap just one: lk_grieta_crack (the fissure), lk_grieta_flames (what sprouts from
+// it) and lk_grieta_impact (the burst at the wall). `r` runs along the floor line; age 0..20.
+#define LK_GRIETA_ARRIVE 3                                   // frames the fissure takes to reach the wall
+static inline int lk_grieta_arrival(const LkRay *r, int i, int inv_n) { (void)r; return (i * LK_GRIETA_ARRIVE * inv_n) >> 16; }
+// Zigzag offset (px, across the line) at step i: piecewise-linear between noise points every 7 px, +-3, tapered at the ends.
+static int lk_grieta_zig(const LkRay *r, int i) {
+    int seg = (i * 37) >> 8, fr = i - seg * 7;               // i / 7 without a divide (i < 256)
+    if (fr < 0) fr = 0; else if (fr > 6) fr = 6;
+    int a = (LKN(seg * 5 + 3) & 7) - 3, b = (LKN(seg * 5 + 8) & 7) - 3;
+    int o = a + (((b - a) * fr * 37) >> 8);
+    int env = i < r->n - i ? i : r->n - i;
+    if (env < 4) o = (o * env) >> 2;
+    return o;
+}
+// The fissure: dark core with a glowing edge that goes amber -> ember -> crimson -> ash, then closes (age 14..20).
+static void lk_grieta_crack(const FxTarget *t, const LkRay *r, int age) {
+    const int inv_n = 65536 / r->n;
+    for (int i = 0; i <= r->n; i++) {
+        int tc = age - lk_grieta_arrival(r, i, inv_n);
+        if (tc < 0) continue;                                 // the front has not got here yet
+        if (age >= 14 && LKN(i * 7 + age * 3) < (age - 13) * 40) continue;   // closing: sealed bit by bit
+        int px, py;
+        lk_ray_pt(r, i, &px, &py);
+        int z = lk_grieta_zig(r, i);
+        if (r->vert) py += z; else px += z;
+        int heat = tc < 2 ? 1 : tc < 6 ? 2 : tc < 10 ? 3 : tc < 13 ? 4 : 6;
+        int w = tc < 2 ? 2 : 1;                               // the front is a little wider
+        int ex = r->vert ? 0 : 1, ey = r->vert ? 1 : 0;
+        for (int o = 1; o <= w; o++) {
+            put_px(t, px + ex * o, py + ey * o, lk_col(heat + (o > 1)));
+            put_px(t, px - ex * o, py - ey * o, lk_col(heat + (o > 1)));
+        }
+        if (LKN(i + age) & 1) put_px(t, px, py, lk_col(tc < 4 ? 4 : 5));       // dark core, flickering ember
+        else put_px(t, px, py, lk_col(tc < 10 ? 5 : 6));
+    }
+}
+// What sprouts from the fissure: short flame tongues as the front passes, taller (up to 10 px) every 4th one; they
+// die down by tc 11.
+static void lk_grieta_flames(const FxTarget *t, const LkRay *r, int age, int cam_x, int cam_y) {
+    const int inv_n = 65536 / r->n;
+    int k = 0;
+    for (int i = 3; i < r->n; i += 5 + (LKN(k) & 3), k++) {
+        int tc = age - lk_grieta_arrival(r, i, inv_n);
+        if (tc < 0 || tc > 11) continue;
+        int h = ((k & 3) == 1 ? 10 : 5 + (LKN(k + 11) & 1)) - (tc >> 1);
+        if (h < 1) continue;
+        int px, py;
+        lk_ray_pt(r, i, &px, &py);
+        int z = lk_grieta_zig(r, i);
+        if (r->vert) py += z; else px += z;
+        flame_stack(t, px, py - 1, h, k + age);     // no occlusion filter: it hid the whole floor line
+    }
+}
+// The burst against the wall: flash, then a row of flames climbing the wall that settles by age 16.
+static void lk_grieta_impact(const FxTarget *t, int x, int y, int age, int cam_x, int cam_y) {
+    int a = age - LK_GRIETA_ARRIVE;
+    if (a < 0 || a > 12) return;
+    if (a < 2) {
+        put_px(t, x, y, FX_SH_IVORY);
+        put_px(t, x - 1, y, FX_SH_GOLD); put_px(t, x + 1, y, FX_SH_GOLD); put_px(t, x, y - 1, FX_SH_GOLD);
+    }
+    for (int k = -3; k <= 3; k++) {
+        int ak = k < 0 ? -k : k;
+        int h = 11 - ak * 2 - a + (LKN(k + 5 + (a >> 1)) & 1);
+        if (h < 1) continue;
+        occ_begin(cam_x, cam_y, y + cam_y);
+        flame_stack(t, x + k * 2, y - (ak >> 1), h, k + a);
+        occ_end();
+    }
+}
+
+// C: the shot, "Rompimiento de gloria". Three separate pieces so a passive can swap just one:
+//   lk_gl_rays   - 5 parallel 1 px rays fanning out from the chest (gaps between them), outer ones die first
+//   lk_gl_flames - short tongues of divine fire that rise from the rays and between them
+//   lk_gl_impact - the fan of glory where the beam meets the wall
+static void lk_gl_rays(const FxTarget *t, const LkRay *r, int age) {
+    const int life[5] = { 8, 13, 18, 13, 8 };                  // outer rays go out first, the beam closes on its centre
+    const int spread = (1600 << 4) / r->n;                       // +-6 px at the wall in the first frame (one division per shot)
+    const int sc = 256 - age * 11;                              // the fan narrows with age
+    const int cs = age >> 2;
+    const int dth = age >= 7 ? (age - 6) * 22 : 0;
+    for (int k = 0; k < 5; k++) {
+        if (age >= life[k]) continue;
+        const int kk = k - 2, ak = kk < 0 ? -kk : kk;
+        for (int i = 0; i <= r->n; i++) {
+            if (ak && (LKN((i >> 2) + k * 5 + age) & 3) == 0) continue;   // outer rays are broken, glints of light
+            if (dth && LKN(i * 7 + k * 13 + age * 3) < dth) continue;
+            int px, py;
+            lk_ray_pt(r, i, &px, &py);
+            int off = (kk * ((i * spread) >> 12) * sc) >> 8;
+            int c = cs + ak + (age < 3 && ak == 0 ? 0 : 1) - (age < 3 ? 1 : 0);
+            if (r->vert) { put_px(t, px, py + off, lk_col(c)); if (!ak && age < 6) put_px(t, px, py + off + 1, lk_col(c + 1)); }
+            else { put_px(t, px + off, py, lk_col(c)); if (!ak && age < 6) put_px(t, px + off + 1, py, lk_col(c + 1)); }
+        }
+    }
+}
+
+static void lk_gl_flames(const FxTarget *t, const LkRay *r, int age) {
+    const int spread = (1600 << 4) / r->n, sc = 256 - age * 11;
+    for (int f = 0; f < 20; f++) {
+        if (((age + f) & 3) == 0) continue;                     // tongues flicker on and off
+        int i = (LKN(f * 5 + 2) * r->n) >> 8;
+        int kk = (LKN(f * 3 + 11) % 5) - 2;
+        int px, py;
+        lk_ray_pt(r, i, &px, &py);
+        int off = (kk * ((i * spread) >> 12) * sc) >> 8;
+        if (r->vert) py += off; else px += off;
+        int h = 3 + (LKN(f + age * 3) & 3) - (age >> 3);       // short tongues, shorter as the fire dies
+        for (int j = 1; j <= h; j++) {
+            int c = (j * 2 <= h ? 1 : j < h ? 2 : 3) + (age >> 2);
+            if (j == h && (LKN(f + age) & 1)) continue;
+            put_px(t, px + ((j * (kk + (f & 1))) >> 2), py - j, lk_col(c));
+        }
+    }
+}
+
+static void lk_gl_impact(const FxTarget *t, int x, int y, int age) {
+    if (age > 14) return;
+    const int len = 11 - ((age * 3) >> 2);
+    if (len < 2) return;
+    if (age < 3) { put_px(t, x, y, FX_SH_IVORY); for (int j = -3; j <= 3; j++) put_px(t, x + j, y, lk_col(1 + (j != 0))); }
+    for (int k = 0; k < 7; k++) {                               // half-open fan of spokes, spread from the wall
+        static const int16_t fdx[7] = { -240, -180, -90, 0, 90, 180, 240 }, fdy[7] = { -80, -170, -235, -256, -235, -170, -80 };
+        int l = len - ((k == 0 || k == 6) ? 4 : (k == 1 || k == 5) ? 2 : 0);
+        for (int j = 2; j <= l; j++) {
+            if (((j + k + age) & 3) == 0) continue;
+            put_px(t, x + ((fdx[k] * j) >> 8), y + ((fdy[k] * j) >> 8), lk_col((j * 3 < l ? 1 : 2) + (age >> 2)));
+        }
+    }
+}
+
+// Burst of light at the chest, where the glory breaks out (first frames only).
+static void lk_gl_flash(const FxTarget *t, int x, int y, int age) {
+    if (age > 4) return;
+    lk_diamond(t, x, y, age < 2 ? 6 : age < 4 ? 4 : 2, 0);
+    lk_cross(t, x, y, age < 2 ? 14 : age < 4 ? 10 : 6, age < 3 ? 6 : 0);
+}
+
+static void lk_trail(const FxTarget *t, int cam_x, int cam_y) {
+    const int look = lk_look();
+    int x0 = s_trail.x0 - cam_x, y0 = s_trail.y0 - cam_y;
+    int x1 = s_trail.x1 - cam_x, y1 = s_trail.y1 - cam_y;
+    if ((x0 < 0 && x1 < 0) || (x0 >= SCREEN_W && x1 >= SCREEN_W) ||
+        (y0 < -20 && y1 < -20) || (y0 >= SCREEN_H + 20 && y1 >= SCREEN_H + 20)) return;
+    int age = s_trail.max - s_trail.life - 1;
+    if (age < 0) age = 0;
+    if (look == 1) {                                               // hit-stop freezes the simulation: keep the dart flying on screen
+        static int s_prev_life, s_extra;
+        if (s_trail.life > s_prev_life) s_extra = 0;
+        else if (s_trail.life == s_prev_life && s_extra < 6) s_extra++;
+        s_prev_life = s_trail.life;
+        age += s_extra;
+    }
+    LkRay r;
+    lk_ray(&r, x0, y0, x1, y1);
+    if (look == 1) {
+        lk_saeta_estela(t, &r, age);
+        lk_saeta_tip(t, &r, age);
+        lk_saeta_impacto(t, x1, y1, age, lk_saeta_t(&r));
+    } else if (look == 2) {
+        if (age > 20) return;
+        const int fy = s_trail.h;                                 // chest -> floor
+        LkRay fr;
+        lk_ray(&fr, x0, y0 + fy, x1, y1 + fy);
+        lk_grieta_crack(t, &fr, age);
+        lk_grieta_flames(t, &fr, age, cam_x, cam_y);
+        lk_grieta_impact(t, x1, y1 + fy, age, cam_x, cam_y);
+    } else {
+        if (age > 17) return;
+        lk_gl_rays(t, &r, age);
+        lk_gl_flames(t, &r, age);
+        lk_gl_impact(t, x1, y1, age);
+        lk_gl_flash(t, x0, y0, age);
+    }
+}
+
+// C: the halo, 12x6 px, a 2:1 ellipse over the head. steps = 0..32 of its 32 points, drawn clockwise from the top.
+#define LK_HALO_UP 19                              // px above the chest
+static void lk_halo(const FxTarget *t, int hx, int hy, int steps, int lvl_body, int lvl_tip) {
+    for (int k = 0; k < steps; k++) {
+        int a = (24 + k) & 31;
+        int px = hx + ((s_ell_cos[a] * 6 + 128) >> 8), py = hy + ((s_ell_sin[a] * 3 + 128) >> 8);
+        int lvl = (steps < 32 && k >= steps - 4) ? (k >= steps - 2 ? lvl_tip : lvl_tip + 1) : lvl_body;
+        put_px(t, px, py, lk_col(lvl));
+        put_px(t, px, py + 1, lk_col(lvl + 2));
+    }
+}
+
+// C: glory of radial rays round the halo, like the one behind a saint. Rays that point down at the head are skipped.
+static void lk_glory(const FxTarget *t, int hx, int hy, int age) {
+    static const uint8_t step[12] = { 0, 3, 5, 8, 11, 13, 16, 19, 21, 24, 27, 29 };
+    for (int i = 0; i < 12; i++) {
+        int a = step[i];
+        if (s_ell_sin[a] > 150) continue;
+        int l = age < 3 ? ((i & 1) ? 10 : 12) : ((i & 1) ? 6 : 8) + (age < 6 ? 2 : 0) + (s_ell_sin[(age * 2) & 31] >> 7);
+        for (int tt = 1; tt <= l; tt++) {
+            if (tt == l && (age & 1)) continue;
+            int px = hx + ((s_ell_cos[a] * (6 + tt) + 128) >> 8);
+            int py = hy + ((s_ell_sin[a] * (3 + tt) + 128) >> 8);
+            put_px(t, px, py, lk_col(tt * 3 <= l ? 1 : tt * 3 <= l * 2 ? 2 : 3));
+        }
+    }
+}
+
+// Chest signals and aim line (drawn while AIMING or READY). Same charge for the three looks; the dotted line differs.
+static void lk_aim(const FxTarget *t, int cam_x, int cam_y) {
+    const int look = lk_look();
+    const int cx = s_aura_cx - cam_x, cy = s_aura_cy - cam_y;
+    const int ready = s_aim_state == AIM_READY;
+    const int tm = s_aim_timer, prog = s_aim_prog, len = s_aim_len;
+    const int age = ready ? tm - s_charge_frames : -1;      // frames since READY (0 on its first frame)
+    const int hx = cx, hy = cy - LK_HALO_UP;
+    int px, py;
+
+    if (!ready) {
+        lk_halo(t, hx, hy, (prog * 32) >> 8, 2, 0);          // the arc grows with the charge
+        if (look == 1) {
+            for (int d = 4; d <= len; d += 6) {              // faint golden dots: where the dart will fly
+                aim_point(d, cam_x, cam_y, &px, &py);
+                put_px(t, px, py, lk_col(prog >= 128 ? 1 : 2));
+            }
+        } else if (look == 2) {
+            for (int d = 2; d <= len; d += 4) {              // dotted ember line on the floor: where the fissure will run
+                aim_point(d, cam_x, cam_y, &px, &py);
+                put_px(t, px, py + s_aim_muzzle_h, lk_col(prog >= 128 ? 2 : 3 + (LKN(d) & 1)));
+            }
+        } else {
+            for (int d = 1; d <= len; d++) {                 // thin old-gold line with heat shimmer
+                aim_point(d, cam_x, cam_y, &px, &py);
+                int w = (s_ell_sin[((d >> 1) + tm) & 31] + 128) >> 8;
+                put_px(t, px, py + w, lk_col(prog >= 128 ? 1 : 2));
+                if (((d - tm * 3) & 31) < 2) { put_px(t, px, py + w, FX_SH_IVORY); put_px(t, px, py + w - 1, FX_SH_GOLD); }
+            }
+        }
+    } else {
+        lk_halo(t, hx, hy, 32, age < 2 ? 0 : 1, 0);          // the halo closes
+        lk_glory(t, hx, hy, age);
+        if (age < 4) {                                       // flash at the chest, where the ray is born
+            lk_diamond(t, cx, cy, age < 2 ? 4 : 2, 0);
+            lk_cross(t, cx, cy, age < 2 ? 9 : 6, 0);
+        }
+        if (look == 1) {
+            for (int d = 4; d <= len; d += 6) {              // dots, one twinkling
+                aim_point(d, cam_x, cam_y, &px, &py);
+                put_px(t, px, py, ((d + tm) & 7) < 2 ? FX_SH_IVORY : FX_SH_GOLD);
+            }
+        } else if (look == 2) {
+            for (int d = 2; d <= len; d += 3) {              // brighter dots on the floor, flickering
+                aim_point(d, cam_x, cam_y, &px, &py);
+                put_px(t, px, py + s_aim_muzzle_h, ((d + tm) & 7) < 2 ? FX_SH_GOLD : FX_SH_AMBER);
+            }
+        } else {
+            for (int d = 1; d <= len; d++) {
+                aim_point(d, cam_x, cam_y, &px, &py);
+                int w = (s_ell_sin[((d >> 1) + tm) & 31] + 128) >> 8;
+                put_px(t, px, py + w, ((d - tm * 3) & 31) < 3 ? FX_SH_IVORY : FX_SH_GOLD);
+                if (((d - tm * 3) & 31) == 1) put_px(t, px, py + w - 1, FX_SH_AMBER);
+            }
+        }
+    }
+}
+
 static void render_fx(const FxTarget *t, int cam_x, int cam_y) {
     render_aim_line(t, cam_x, cam_y);
 
-    if (s_trail.life > 0) render_trail(t, cam_x, cam_y);
+    if (s_trail.life > 0) { if (lk_look()) lk_trail(t, cam_x, cam_y); else render_trail(t, cam_x, cam_y); }
     render_fx_parts(t, cam_x, cam_y);
     render_flash(t, cam_x, cam_y);
 
@@ -2393,7 +2839,7 @@ void weapons_render_floor(uint16_t *buffer, int cam_x, int cam_y) {
     GroundTarget ground = { buffer, cam_x, cam_y };
     burn_rings_draw(&ground);
     // READY flash: a dashed 2:1 warm glow ring on the floor around the feet, under the actors.
-    if (s_aura_flash > 0 && s_aim_state == AIM_READY) {
+    if (s_aura_flash > 0 && s_aim_state == AIM_READY && !g_laser_look) {
         int ring = s_aura_flash == AURA_FLASH_FRAMES ? FX_SH_IVORY : FX_SH_GOLD;
         gfx_ground_ring(&ground, s_aura_x, s_aura_y, 12, s_fx_rgb[ring], 2);
     }

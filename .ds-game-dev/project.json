@@ -75,6 +75,9 @@
         "arpg-boxeo": {
             "defines": ["ARPG_LAB=1", "ARPG_BOXEO=1", "SKIP_TITLE=1", "ARPG_ALL_UNLOCKED=1"]
         },
+        "rayos-test": {
+            "defines": ["ARPG_LAB=1", "ARPG_BOXEO=1", "LASER_LOOK_TEST=1", "SKIP_TITLE=1", "ARPG_ALL_UNLOCKED=1"]
+        },
         "boxeo-duelo": {
             "defines": ["ARPG_LAB=1", "ARPG_BOXEO=1", "ARPG_BOXEO_DUELO=1", "SKIP_TITLE=1", "ARPG_ALL_UNLOCKED=1"]
         },

@@ -3884,6 +3884,16 @@ __attribute__((unused)) static void end_demo_card_then_camp(void) {   // unused 
 }
 #endif
 
+#if LASER_LOOK_TEST
+static int s_laser_name_frames = 240;   // the first name (Saeta) shows at boot
+static void draw_laser_name(uint16_t *buffer) {
+    static const char *const names[4] = { "", "SAETA", "GRIETA", "GLORIA" };
+    if (s_laser_name_frames <= 0 || g_laser_look < 1 || g_laser_look > 3) return;
+    const char *n = names[g_laser_look];
+    hud_text(buffer, (SCREEN_W - hud_text_width(n)) / 2, 24, n, RGB15(31, 27, 14) | BIT(15));
+}
+#endif
+
 #if ARPG_LAB
 #define LAB_PAUSED() lab_tuning_is_open()
 #else
@@ -4024,6 +4034,9 @@ int main(void) {
     render_screen(s_top_page, s_dirty_top, s_cam_x, s_cam_y - SCREEN_H, 1, NULL, NULL, NULL);
     render_screen(bot_page_ptr(s_bot_active_page), s_dirty[s_bot_active_page == 24], s_cam_x, s_cam_y, 0, NULL, NULL, NULL);
     if (s_run_started) draw_run_hud(bot_page_ptr(s_bot_active_page));
+#if LASER_LOOK_TEST
+    draw_laser_name(bot_page_ptr(s_bot_active_page));
+#endif
     if (menu_is_open()) menu_render_bottom(bot_page_ptr(s_bot_active_page));
     if (g_perf.show_hud != 0) draw_fps_hud(bot_page_ptr(s_bot_active_page));
     update_screen_hardware_bg(0, s_bot_map_ptr, s_cam_x, s_cam_y);
@@ -4045,6 +4058,15 @@ int main(void) {
         uint32_t keys_down = keysDown();
         touchPosition touch;
         touchRead(&touch);
+#if LASER_LOOK_TEST
+        // Variant rayos-test: SELECT cycles the three laser shots (Saeta, Grieta, Gloria) and shows the name for ~1.5 s.
+        if (keys_down & KEY_SELECT) {
+            g_laser_look = g_laser_look >= 3 ? 1 : (uint8_t)(g_laser_look + 1);
+            s_laser_name_frames = 90;
+            keys_down &= ~(uint32_t)KEY_SELECT;
+        }
+        if (s_laser_name_frames > 0) s_laser_name_frames--;
+#endif
 #if ARPG_LAB
         // Lab build: SELECT opens the tuning menu; while it is open the game neither simulates nor sees the keys.
         if (lab_tuning_update(keys_down, keys_held)) {
@@ -4330,6 +4352,12 @@ int main(void) {
 #endif
         int simulate = 0;
 #if CAMP_SCENE
+#if LASER_LOOK_TEST
+        {   // rayos-test: straight from the boot camp into the room with the targets (once; dying later goes to the camp as usual)
+            static int s_left_camp = 0;
+            if (camp_active() && !s_left_camp) { s_left_camp = 1; leave_camp_to_dungeon(); }
+        }
+#endif
         if (camp_active()) {
             // The camp: walk, focus a prop, interact. The dungeon systems stay off.
             camp_floor_light_tick((int)s_vblank_count);
@@ -4460,6 +4488,9 @@ int main(void) {
         if (g_perf.show_hud != 0) {
             draw_fps_hud(bot_page_ptr(s_bot_back_page));
         }
+#if LASER_LOOK_TEST
+        draw_laser_name(bot_page_ptr(s_bot_back_page));
+#endif
         PP_ADD(PP_HUD, pp_hud);
         uint32_t bot_ticks = cpuGetTiming() - t2;
 

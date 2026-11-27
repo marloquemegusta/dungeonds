@@ -244,6 +244,9 @@ static int rank_step(int total, int rank) {
 }
 
 static void apply_don(int id) {
+#if LASER_LOOK_TEST
+    (void)id; return;       // rayos-test: the hero carries no Don, only the base ray
+#endif
     if (s_rank[id] >= UPG_MAX_RANK) return;
     s_rank[id]++;
     switch (id) {
@@ -302,6 +305,9 @@ static int llaga_pct(void) {
 }
 
 static void grant_relic(int id) {
+#if LASER_LOOK_TEST
+    (void)id; return;       // rayos-test: the hero carries no relic (a loaded save must not bring burn / auras)
+#endif
     if (id >= UPG_RELIC_COUNT || (s_relic_mask & (1u << id))) return;
     s_relic_mask |= (uint16_t)(1u << id);   // behaviour lives in the weapon / fire / hit code
     if (id == RELIC_LLAGA) apply_llaga();
