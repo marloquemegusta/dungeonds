@@ -3270,7 +3270,7 @@ static void player_update(uint32_t keys, uint32_t keys_down) {
     // Debug: SELECT cycles the upgrade design variant and g_fx_style.
     if (keys_down & KEY_SELECT) {
 #if ENCOUNTERS_PROTO
-        if (s_strip_mode && s_run_started && !camp_active()) arpg_map_toggle();   // overlay map on the upper screen
+        if (s_strip_mode && (s_run_started || camp_active())) arpg_map_toggle();   // overlay map on the upper screen
 #else
         upgrades_cycle_design_variant();   // also advances g_fx_style
 #endif
@@ -4317,10 +4317,16 @@ int main(void) {
                 arpg_tip_take(ARPG_TIP_DORMIR);
                 camp_toast("Duerme para subir de nivel");
             }
-            if (!camp_toast_busy()) {            // arrival, death and confessional notices, one after another
-                const char *notice = arpg_campaign_next_notice();
-                if (notice) camp_toast(notice);
+            // Arrival, death and confessional notices, one after another: each stays long enough to read and A passes to the next while the hero is at the bonfire (elsewhere A keeps its use).
+            if (camp_toast_busy() && arpg_campaign_notice_pending() && camp_focus_act() == CAMP_ACT_CONFESS && (s_keys_down_latch & KEY_A) && !menu_is_open()) {
+                camp_toast_skip();
+                s_keys_down_latch &= ~(uint32_t)KEY_A;
             }
+            if (!camp_toast_busy()) {
+                const char *notice = arpg_campaign_next_notice();
+                if (notice) camp_toast_for(notice, 210);
+            }
+            if (!menu_is_open() && (s_keys_down_latch & KEY_SELECT) && s_strip_mode) arpg_map_toggle();   // the map also opens in the camp
             if (!menu_is_open()) {
                 int act = camp_update(&s_player, keys_held, s_keys_down_latch,
                                       menu_touch_pressed && !s_menu_ignore_held_touch, touch.px, touch.py);
@@ -4443,7 +4449,7 @@ int main(void) {
         uint32_t post_vwait_start = cpuGetTiming();
         present_screen_effects();
 #if ENCOUNTERS_PROTO
-        if (arpg_map_is_open() && s_strip_mode && s_run_started && !camp_active() && menu_state() != MENU_INVENTORY) {
+        if (arpg_map_is_open() && s_strip_mode && (s_run_started || camp_active()) && menu_state() != MENU_INVENTORY) {
             // Overlay map: dim the floor/walls of the upper screen (BG0 only; the map and actors live on BG2). Set here, before
             // the top render, so the fade covers every scanline; the shadows' sprite window is off meanwhile.
             REG_DISPCNT_SUB &= ~DISPLAY_SPR_WIN_ON;
@@ -4475,9 +4481,9 @@ int main(void) {
             }
             if (!BOT_FAST()) render_screen(s_top_page, s_dirty_top, view_x, view_y - SCREEN_H, 1, &top_floor, &top_sh, &top_bl);
 #if ENCOUNTERS_PROTO
-            if (arpg_map_is_open() && s_strip_mode && s_run_started && !camp_active()) {
+            if (arpg_map_is_open() && s_strip_mode && (s_run_started || camp_active())) {
                 g_dirty_cur = s_dirty_top;      // the next render_screen of this page clears the lines
-                arpg_map_draw(s_top_page, TO_INT(s_player.x), TO_INT(s_player.y), (int)s_frame_index);
+                arpg_map_draw(s_top_page, TO_INT(s_player.x), TO_INT(s_player.y), (int)s_frame_index, camp_active());
             }
 #endif
         }

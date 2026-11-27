@@ -5,36 +5,42 @@
 #include "arpg_log.h"
 #include <string.h>
 
-// One row per penance (QUEST_*): the object's name, the fixed relic its delivery pays (ARPG_MECH_*, ARPG_MECH_NONE = none)
-// and what the voice says in the confessional (lines of at most ~44 characters: the camp toast is one line wide).
+// One row per penance (QUEST_*): the object's name, the fixed relic its delivery pays (ARPG_MECH_*, ARPG_MECH_NONE = none),
+// the room where the object waits (ids of encounters_act1.c) and what the voice says in the confessional: every line comes out
+// in order, one notice each (the camp toast is one line wide, so at most ~46 characters), and the last ones say how to get there.
 // Tone: LORE.md 2 (the voice speaks like the dogma; it calls penance what the player sees as a theft; no modern words).
+#define QUEST_LINES 6
 typedef struct {
     const char *name;
     int reward_mech;
-    const char *text[3];
+    int room;
+    const char *goal;          // the mission line of the map
+    const char *text[QUEST_LINES];
 } QuestInfo;
 
+enum { ROOM_CAPILLA = 10, ROOM_MISA = 11, ROOM_MONJARANA = 14, ROOM_CRIPTA = 15 };
+
 static const QuestInfo s_quest[QUEST_COUNT] = {
-    { "Lista del coro", ARPG_MECH_LLAMA_VOTIVA,
-      { "Don Tomás no entregó a sus muchachos.", "Trae la lista del coro de su capilla.", 0 } },
-    { "Llave de la capilla", ARPG_MECH_LANZA,
-      { "La Misa guarda la llave de la capilla.", 0, 0 } },
-    { "Denuncia de Sor Leonor", ARPG_MECH_PIRA,
-      { "Sor Leonor denunció al padre Anselmo.", "Trae su denuncia de la Nave 4.", 0 } },
-    { "Estandarte", ARPG_MECH_NONE,
-      { "La Cripta está abierta. Te espera el estandarte.", 0, 0 } },
+    { "Lista del coro", ARPG_MECH_LLAMA_VOTIVA, ROOM_CAPILLA, "Trae la lista del coro",
+      { "Don Tomás no entregó a sus muchachos.", "Trae la lista del coro de su capilla.",
+        "Sube a la Nave 1 y sal por la izquierda.", "Enfermería y Osario: siempre a la izquierda.",
+        "La capilla del párroco está al fondo.", 0 } },
+    { "Llave de la capilla", ARPG_MECH_LANZA, ROOM_MISA, "Trae la llave de la Misa",
+      { "La Misa guarda la llave de la capilla.", "En la Nave 3, sal por la izquierda.",
+        "Esta penitencia es opcional.", 0, 0, 0 } },
+    { "Denuncia de Sor Leonor", ARPG_MECH_PIRA, ROOM_MONJARANA, "Trae la denuncia de Sor Leonor",
+      { "Sor Leonor denunció al padre Anselmo.", "Trae su denuncia de la Nave 4.",
+        "Sube por las Naves 2 y 3 hasta la Nave 4.", "A la derecha: la Galería de la monjaraña.", 0, 0 } },
+    { "Estandarte", ARPG_MECH_NONE, ROOM_CRIPTA, "Trae el estandarte de la Cripta",
+      { "La Cripta está abierta. Te espera el estandarte.", "Está en la Nave 4, por la puerta de arriba.", 0, 0, 0, 0 } },
 };
 
-// Sor Leonor (obligatory) and la Misa (optional) are offered together once Don Tomas has been served.
-static const char *const s_pair_text[3] = {
-    "Sor Leonor denunció al padre Anselmo.", "Trae su denuncia de la Nave 4.", "La Misa guarda la llave de la capilla."
-};
 static const char *const s_done_text[3] = {
     "No queda penitencia que cumplir.", "La voz calla. Rezar ya no la mueve.", 0
 };
 
 // ---- Notices ----
-#define NOTICE_MAX 6
+#define NOTICE_MAX 12
 #define NOTICE_LEN 56
 static char s_notice[NOTICE_MAX][NOTICE_LEN];
 static int s_notice_n = 0;
@@ -59,6 +65,8 @@ static void notice_push2(const char *a, const char *b) {
     buf[la + lb] = 0;
     notice_push(buf);
 }
+
+int arpg_campaign_notice_pending(void) { return s_notice_n; }
 
 const char *arpg_campaign_next_notice(void) {
     static char out[NOTICE_LEN];
@@ -188,15 +196,43 @@ void arpg_campaign_confess(void) {
     else if (!arpg_quest_delivered(QUEST_LEONOR)) q = QUEST_LEONOR;
     else if (!arpg_quest_delivered(QUEST_ABANDERADO)) q = QUEST_ABANDERADO;
     else q = QUEST_COUNT;
-    const char *const *text;
-    if (q >= QUEST_COUNT) text = s_done_text;
-    else if (q == QUEST_LEONOR && !arpg_quest_delivered(QUEST_MISA)) text = s_pair_text;   // Leonor and the Misa are offered together
-    else text = s_quest[q].text;
     if (q < QUEST_COUNT) {
         int given = q == QUEST_TOMAS ? 1 : q == QUEST_LEONOR ? 3 : 4;   // offered = how many penances the voice has named
         if (given > g_quest.offered) g_quest.offered = (uint8_t)given;
     }
     notice_clear();
-    for (int i = 0; i < 3; i++)
-        if (text[i]) notice_push(text[i]);
+    if (q >= QUEST_COUNT) {
+        for (int i = 0; i < 3; i++)
+            if (s_done_text[i]) notice_push(s_done_text[i]);
+        return;
+    }
+    for (int i = 0; i < QUEST_LINES && s_quest[q].text[i]; i++) notice_push(s_quest[q].text[i]);
+    // Leonor and the Misa are offered together: the optional one follows.
+    if (q == QUEST_LEONOR && !arpg_quest_delivered(QUEST_MISA))
+        for (int i = 0; i < QUEST_LINES && s_quest[QUEST_MISA].text[i]; i++) notice_push(s_quest[QUEST_MISA].text[i]);
+}
+
+// ---- Objective of the map (SELECT) ----
+int arpg_campaign_objectives(ArpgObjective *out) {
+    int n = 0;
+    if (g_quest.carrying) {      // an object in the hand: the way is back to the camp
+        out[0].room = ARPG_EXIT_TO_CAMP;
+        out[0].line = "Vuelve al campamento";
+        return 1;
+    }
+    if (g_quest.offered == 0) {
+        out[0].room = -1;
+        out[0].line = "Reza en la hoguera: la voz te dará penitencia.";
+        return 1;
+    }
+    for (int q = 0; q < QUEST_COUNT; q++) {
+        int given = q == QUEST_TOMAS ? 1 : q == QUEST_ABANDERADO ? 4 : 3;
+        if (g_quest.offered < given || arpg_quest_delivered(q)) continue;
+        if (q == QUEST_ABANDERADO && !arpg_quest_delivered(QUEST_LEONOR)) continue;
+        out[n].room = s_quest[q].room;
+        out[n].line = s_quest[q].goal;
+        n++;
+    }
+    if (n == 0) { out[0].room = -1; out[0].line = "No queda penitencia que cumplir."; n = 1; }
+    return n;
 }

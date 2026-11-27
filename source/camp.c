@@ -220,12 +220,16 @@ void camp_set_active(int on) {
     s_toast[0] = 0;
 }
 
-void camp_toast(const char *msg) {
+void camp_toast_for(const char *msg, int frames) {
     if (!msg) msg = "";
     strncpy(s_toast, msg, sizeof(s_toast) - 1);
     s_toast[sizeof(s_toast) - 1] = 0;
-    s_toast_frames = 150;
+    s_toast_frames = frames;
 }
+
+void camp_toast(const char *msg) { camp_toast_for(msg, 150); }
+
+void camp_toast_skip(void) { s_toast_frames = 0; }
 
 int camp_toast_busy(void) { return s_toast_frames > 0; }
 
@@ -325,9 +329,7 @@ static void altar_list_draw(uint16_t *buf) {
     }
 }
 
-#if ARPG_BOT
 int camp_focus_act(void) { return s_focus >= 0 ? s_props[s_focus].act : CAMP_ACT_NONE; }
-#endif
 
 int camp_update(Player *p, uint32_t keys_held, uint32_t keys_down, int touch_pressed, int touch_x, int touch_y) {
     s_anim++;

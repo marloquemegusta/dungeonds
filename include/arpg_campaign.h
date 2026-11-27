@@ -14,6 +14,12 @@ void arpg_campaign_on_retreat(void);      // pause menu "volver al campamento": 
 void arpg_campaign_arrive_on_foot(void);  // back in the camp walking: delivers the carried objects and pays the rewards
 void arpg_campaign_confess(void);         // confessional: queues the text of the next penance (or the closing line)
 
+// Objective of the overlay map (SELECT): up to 2 entries (Leonor and the optional Misa come together). room = id of the room that
+// holds the object, ARPG_EXIT_TO_CAMP when an object is carried (the way back), -1 when there is no place to point at. Returns the count.
+typedef struct { int room; const char *line; } ArpgObjective;
+int arpg_campaign_objectives(ArpgObjective *out);   // out has room for 4
+
 // Next pending camp notice (one line, fits the camp toast), or NULL. The camp loop shows one at a time.
 const char *arpg_campaign_next_notice(void);
+int arpg_campaign_notice_pending(void);     // how many notices wait in the queue (A skips the one on screen when > 0)
 #endif
