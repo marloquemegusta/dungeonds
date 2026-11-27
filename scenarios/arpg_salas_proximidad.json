@@ -1252,7 +1252,7 @@
    {
     "at": "r00_e10",
     "field": "members_placed",
-    "equals": 12
+    "equals": 15
    },
    {
     "at": "r00_e10",
@@ -1262,27 +1262,27 @@
    {
     "at": "r00_e0",
     "field": "alive",
-    "equals": 4
+    "equals": 5
    },
    {
     "at": "r00_e1",
     "field": "alive",
-    "equals": 4
+    "equals": 5
    },
    {
     "at": "r00_e2",
     "field": "alive",
-    "equals": 4
+    "equals": 5
    },
    {
     "at": "r00_e3",
     "field": "alive",
-    "equals": 4
+    "equals": 6
    },
    {
     "at": "r01_e10",
     "field": "members_placed",
-    "equals": 15
+    "equals": 13
    },
    {
     "at": "r01_e10",
@@ -1292,27 +1292,27 @@
    {
     "at": "r01_e0",
     "field": "alive",
-    "equals": 5
+    "equals": 4
    },
    {
     "at": "r01_e1",
     "field": "alive",
-    "equals": 5
+    "equals": 4
    },
    {
     "at": "r01_e2",
     "field": "alive",
-    "equals": 5
+    "equals": 4
    },
    {
     "at": "r01_e3",
     "field": "alive",
-    "equals": 6
+    "equals": 5
    },
    {
     "at": "r06_e10",
     "field": "members_placed",
-    "equals": 13
+    "equals": 14
    },
    {
     "at": "r06_e10",
@@ -1322,17 +1322,17 @@
    {
     "at": "r06_e0",
     "field": "alive",
-    "equals": 4
+    "equals": 5
    },
    {
     "at": "r06_e1",
     "field": "alive",
-    "equals": 4
+    "equals": 5
    },
    {
     "at": "r06_e2",
     "field": "alive",
-    "equals": 4
+    "equals": 5
    },
    {
     "at": "r06_e3",
@@ -1342,7 +1342,7 @@
    {
     "at": "r07_e10",
     "field": "members_placed",
-    "equals": 15
+    "equals": 14
    },
    {
     "at": "r07_e10",
@@ -1352,27 +1352,27 @@
    {
     "at": "r07_e0",
     "field": "alive",
-    "equals": 5
+    "equals": 4
    },
    {
     "at": "r07_e1",
     "field": "alive",
-    "equals": 5
+    "equals": 4
    },
    {
     "at": "r07_e2",
     "field": "alive",
-    "equals": 5
+    "equals": 4
    },
    {
     "at": "r07_e3",
     "field": "alive",
-    "equals": 6
+    "equals": 5
    },
    {
     "at": "r08_e10",
     "field": "members_placed",
-    "equals": 15
+    "equals": 14
    },
    {
     "at": "r08_e10",
@@ -1382,22 +1382,22 @@
    {
     "at": "r08_e0",
     "field": "alive",
-    "equals": 5
+    "equals": 4
    },
    {
     "at": "r08_e1",
     "field": "alive",
-    "equals": 5
+    "equals": 4
    },
    {
     "at": "r08_e2",
     "field": "alive",
-    "equals": 5
+    "equals": 4
    },
    {
     "at": "r08_e3",
     "field": "alive",
-    "equals": 6
+    "equals": 5
    },
    {
     "at": "r12_e6",

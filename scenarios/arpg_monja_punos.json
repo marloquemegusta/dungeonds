@@ -683,6 +683,46 @@
     {
      "field": "py",
      "value": 322560
+    },
+    {
+     "field": "e1_x",
+     "value": 120000
+    },
+    {
+     "field": "e1_y",
+     "value": 316000
+    },
+    {
+     "field": "e2_x",
+     "value": 120000
+    },
+    {
+     "field": "e2_y",
+     "value": 316000
+    },
+    {
+     "field": "e3_x",
+     "value": 120000
+    },
+    {
+     "field": "e3_y",
+     "value": 316000
+    },
+    {
+     "field": "e4_x",
+     "value": 120000
+    },
+    {
+     "field": "e4_y",
+     "value": 316000
+    },
+    {
+     "field": "e0_x",
+     "value": 48900
+    },
+    {
+     "field": "e0_y",
+     "value": 318300
     }
    ],
    "frames": 2
