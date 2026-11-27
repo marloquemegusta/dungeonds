@@ -18,7 +18,7 @@
 #define CAMP_START_Y 322
 
 // Action a prop triggers when the hero is next to it and touches it (or presses A).
-enum { CAMP_ACT_NONE = 0, CAMP_ACT_SLEEP, CAMP_ACT_INVENTORY, CAMP_ACT_CODEX, CAMP_ACT_DOOR, CAMP_ACT_CRISOL };
+enum { CAMP_ACT_NONE = 0, CAMP_ACT_SLEEP, CAMP_ACT_INVENTORY, CAMP_ACT_CODEX, CAMP_ACT_DOOR, CAMP_ACT_CRISOL, CAMP_ACT_CONFESS };
 
 #if CAMP_SCENE
 const Arena *camp_arena(void);   // the static camp room (built once on first call)
@@ -29,13 +29,14 @@ void camp_set_active(int on);
 // Movement, prop focus and interaction. Returns a CAMP_ACT_* to be handled by the caller.
 int camp_update(Player *p, uint32_t keys_held, uint32_t keys_down, int touch_pressed, int touch_x, int touch_y);
 
-#if ARPG_BOT
-// Autopilot: CAMP_ACT_* of the prop the hero is next to (CAMP_ACT_NONE when none): A would trigger it.
+// CAMP_ACT_* of the prop the hero is next to (CAMP_ACT_NONE when none): A would trigger it (autopilot, notices).
 int  camp_focus_act(void);
-#endif
 
 // A short line shown in the middle of the camp (e.g. the result of sleeping).
 void camp_toast(const char *msg);
+void camp_toast_for(const char *msg, int frames);   // same, on screen for `frames`
+void camp_toast_skip(void);                         // takes the toast off now (A passes a notice)
+int  camp_toast_busy(void);      // 1 while the last toast is still on screen
 
 // 1 while the altar travel list is open (the hero is frozen; START must not open the pause).
 int camp_altar_list_open(void);

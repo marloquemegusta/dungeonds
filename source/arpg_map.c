@@ -2,6 +2,8 @@
 #include "game.h"
 #include "encounters_act1.h"
 #include "arpg_progress.h"
+#include "arpg_campaign.h"
+#include "bestiary_font.h"
 
 #if ENCOUNTERS_PROTO
 
@@ -9,7 +11,7 @@
 // turned 45 degrees and squashed 2:1: sx = (X + Y) * K, sy = (Y - X) * K / 2, so the way up the cathedral climbs to the right.
 #define MAP_K_MAX 80              // /256: zoom when only a room or two are known; it shrinks to fit the revealed rooms
 #define MAP_FIT_W 232             // px the revealed rooms may span
-#define MAP_FIT_H 164
+#define MAP_FIT_H 140
 
 // Muted chalk on dark (no pure primaries): BGR555 | alpha.
 #define COL(r, g, b) ((uint16_t)(BIT(15) | ((b) << 10) | ((g) << 5) | (r)))
@@ -20,30 +22,58 @@
 #define C_ALTAR_LAST COL(29, 23, 11)
 #define C_CHEST      COL(21, 15, 8)
 #define C_CHEST_OPEN COL(11, 9, 6)
-#define C_KEY        COL(25, 24, 13)
 #define C_HERO       COL(31, 31, 27)
 #define C_HALO       COL(2, 2, 3)
 #define C_HERO_DIM   COL(22, 20, 15)
+#define C_GOAL       COL(30, 23, 9)
+#define C_GOAL_DIM   COL(22, 16, 7)
+#define C_TEXT       COL(29, 25, 17)
+#define C_TEXT_SH    COL(1, 1, 2)
 
-static int s_open;
+static int s_map_open;
+static ArpgObjective s_obj[4];
+static int s_obj_n;
+#define KNOWN(r) ((((g_arpg.rooms_seen | 1u) >> (r)) & 1) != 0)     // Nave 1 is always known: it is where the camp door leads
 static uint16_t *s_page;
 
-void arpg_map_toggle(void) { s_open ^= 1; }
-int arpg_map_is_open(void) { return s_open; }
+void arpg_map_toggle(void) { s_map_open ^= 1; }
+int arpg_map_is_open(void) { return s_map_open; }
 
 static int s_k = 11, s_uc, s_vc;     // zoom (/256) and centre of the revealed rooms in (X+Y, Y-X) units
 
 static inline int proj_x(int x, int y) { return 128 + (((x + y - s_uc) * s_k) >> 8); }
-static inline int proj_y(int x, int y) { return 96 - (((y - x - s_vc) * s_k) >> 9); }
+static inline int proj_y(int x, int y) { return 84 - (((y - x - s_vc) * s_k) >> 9); }
 
 // Fits the zoom and the centre to the revealed rooms (plus the stubs of their doors).
+static void goal_point(const ArpgObjective *o, int *mx, int *my) {
+    EncMapRoom m;
+    if (o->room == ARPG_EXIT_TO_CAMP) {            // the way back: just below the foot of Nave 1, where its door leads out
+        enc_map_room(ENC_ROOM_NAVE1, &m);
+        *mx = m.x + m.w / 2;
+        *my = m.y - 50;
+    } else {
+        enc_map_room(o->room, &m);
+        *mx = m.x + m.w / 2;
+        *my = m.y + m.h / 2;
+    }
+}
+
 static void fit_view(void) {
     int umin = 1 << 20, umax = -(1 << 20), vmin = 1 << 20, vmax = -(1 << 20);
-    for (int r = 0; r < ENC_ROOM_COUNT; r++) {
-        if (!((g_arpg.rooms_seen >> r) & 1)) continue;
-        EncMapRoom m;
-        enc_map_room(r, &m);
-        const int x0 = m.x - 60, x1 = m.x + m.w + 60, y0 = m.y - 60, y1 = m.y + m.h + 60;
+    for (int r = -1; r < ENC_ROOM_COUNT + s_obj_n; r++) {
+        int x0, x1, y0, y1;
+        if (r >= 0 && r < ENC_ROOM_COUNT) {
+            if (!KNOWN(r)) continue;
+            EncMapRoom m;
+            enc_map_room(r, &m);
+            x0 = m.x - 60; x1 = m.x + m.w + 60; y0 = m.y - 60; y1 = m.y + m.h + 60;
+        } else if (r >= ENC_ROOM_COUNT) {          // the mark of an objective counts for the zoom: it floats where its room is
+            const ArpgObjective *o = &s_obj[r - ENC_ROOM_COUNT];
+            if (o->room < 0) continue;
+            int gx, gy;
+            goal_point(o, &gx, &gy);
+            x0 = gx - 60; x1 = gx + 60; y0 = gy - 60; y1 = gy + 60;
+        } else continue;
         const int us[2] = { x0 + y0, x1 + y1 }, vs[2] = { y0 - x1, y1 - x0 };
         if (us[0] < umin) umin = us[0];
         if (us[1] > umax) umax = us[1];
@@ -125,7 +155,7 @@ static void draw_room(int room, int is_now) {
     // Doors toward rooms not seen yet: a short dotted stub out of the opening.
     for (int i = 0; i < m.n_doors; i++) {
         const EncMapDoor *d = &m.door[i];
-        if ((g_arpg.rooms_seen >> d->dest) & 1) continue;
+        if (KNOWN(d->dest)) continue;
         if (d->side == 0) seg(d->cx, d->cy, d->cx - 140, d->cy, C_DOOR, 0);
         else if (d->side == 1) seg(d->cx, d->cy, d->cx + 140, d->cy, C_DOOR, 0);
         else seg(d->cx, d->cy, d->cx, d->cy + 140, C_DOOR, 0);
@@ -135,30 +165,60 @@ static void draw_room(int room, int is_now) {
         if ((g_arpg.chests_open >> room) & 1) dot3(m.chest_x, m.chest_y, C_CHEST_OPEN, 0);
         else dot3(m.chest_x, m.chest_y, C_CHEST, 1);
     }
-    if (m.key && !g_arpg.key_have) {
-        const int kx = proj_x(m.chest_x, m.chest_y) + 4, ky = proj_y(m.chest_x, m.chest_y);
-        plot(kx, ky, C_KEY); plot(kx + 1, ky, C_KEY); plot(kx + 2, ky, C_KEY); plot(kx + 2, ky + 1, C_KEY);
+}
+
+static void draw_goal(const ArpgObjective *o, int frame) {
+    if (o->room < 0) return;
+    int gx, gy;
+    goal_point(o, &gx, &gy);
+    const int sx = proj_x(gx, gy), sy = proj_y(gx, gy);
+    const uint16_t c = (frame & 16) ? C_GOAL_DIM : C_GOAL;
+    const int r = 5;                                // a diamond with a dot: it reads as "go here" on any floor
+    line(sx, sy - r, sx + r, sy, c, 0);
+    line(sx + r, sy, sx, sy + r, c, 0);
+    line(sx, sy + r, sx - r, sy, c, 0);
+    line(sx - r, sy, sx, sy - r, c, 0);
+    plot(sx, sy, c);
+}
+
+static void draw_goal_text(int n) {
+    const int lh = bestiary_font_line_height() + 2;
+    int y = SCREEN_H - 6 - lh * n;
+    for (int i = 0; i < n; i++, y += lh) {
+        const char *t = s_obj[i].line;
+        const int w = bestiary_font_measure_utf8(t), x = (SCREEN_W - w) / 2;
+        for (int row = 0; row < bestiary_font_line_height() + 2; row++) {
+            if (y + row < 0 || y + row >= SCREEN_H) continue;
+            dirty_row(y + row, x, x + w + 2);
+        }
+        bestiary_font_draw_utf8(s_page, x + 1, y + 1, t, C_TEXT_SH);
+        bestiary_font_draw_utf8(s_page, x, y, t, C_TEXT);
     }
 }
 
-void arpg_map_draw(uint16_t *page, int px, int py, int frame) {
+void arpg_map_draw(uint16_t *page, int px, int py, int frame, int in_camp) {
     s_page = page;
-    int hx, hy;
-    const int now = enc_map_hero(px, py, &hx, &hy);
-    g_arpg.rooms_seen |= (uint16_t)(1u << now);
+    int hx = 0, hy = 0, now = -1;
+    if (!in_camp) {
+        now = enc_map_hero(px, py, &hx, &hy);
+        g_arpg.rooms_seen |= (uint16_t)(1u << now);
+    }
+    s_obj_n = arpg_campaign_objectives(s_obj);
     fit_view();
     for (int y = 0; y < SCREEN_H; y++) { s_rx0[y] = SCREEN_W; s_rx1[y] = 0; }
     for (s_pass = 0; s_pass < 2; s_pass++) {
         for (int r = 0; r < ENC_ROOM_COUNT; r++)
-            if (r != now && ((g_arpg.rooms_seen >> r) & 1)) draw_room(r, 0);
-        draw_room(now, 1);
-        dot3(hx, hy, (frame & 16) ? C_HERO_DIM : C_HERO, 1);
+            if (r != now && KNOWN(r)) draw_room(r, 0);
+        if (now >= 0) draw_room(now, 1);
+        for (int i = 0; i < s_obj_n; i++) draw_goal(&s_obj[i], frame);
+        if (now >= 0) dot3(hx, hy, (frame & 16) ? C_HERO_DIM : C_HERO, 1);
     }
     for (int y = 0; y < SCREEN_H; y++) dirty_row(y, s_rx0[y], s_rx1[y]);
+    draw_goal_text(s_obj_n);
 }
 
 #else
 void arpg_map_toggle(void) {}
 int arpg_map_is_open(void) { return 0; }
-void arpg_map_draw(uint16_t *page, int px, int py, int frame) { (void)page; (void)px; (void)py; (void)frame; }
+void arpg_map_draw(uint16_t *page, int px, int py, int frame, int in_camp) { (void)page; (void)px; (void)py; (void)frame; (void)in_camp; }
 #endif

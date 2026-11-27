@@ -42,6 +42,14 @@ void hwshadow_invalidate_range(const void *lo, const void *hi);
 // in_front: 0 = behind actors (top gate), 1 = in front of actors (rear gate, occludes hero inside).
 void hwshadow_add_verja(int sub, int x, int y, int lift_px, int in_front);
 
+// Light of the room for the gate (source/room_light.c): OBJ palette (16 BGR555) and ground shadow (rows x 13 B: left half
+// 56 px, rows x 7 B, then right half 48 px, rows x 6 B; r0 = first row of the shadow in the 104x56 gate canvas; dir 0 = it falls
+// towards the camera, 1 = towards the back). rows = 0: no shadow. The tile art itself is g_verja_pixels, re-uploaded on next use.
+void hwshadow_verja_set(const uint16_t *palette, const uint8_t *shadow, int r0, int rows, int dir);
+// The shadow of the gate on the floor (x, y as hwshadow_add_verja). Raising the gate (lift_px) shortens it.
+void hwshadow_add_verja_shadow(int sub, int x, int y, int lift_px);
+extern volatile uint8_t g_verja_shadow_off;   // scenarios only: 1 hides it
+
 // Programs window/blend registers of one engine for this frame.
 void hwshadow_screen_regs(int sub);
 // Software shadows selected: no OBJ window.

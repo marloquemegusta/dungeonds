@@ -10,12 +10,12 @@ typedef struct {
 } RoomLayout;
 
 static const EncPieceDef s_r00_b0_p[] = {
-    { STRIP_PIECE_BANCO_ENTERO, 8, 8 },
-    { STRIP_PIECE_BANCO_ENTERO | STRIP_PIECE_MIRROR, 112, 8 },
-    { STRIP_PIECE_BANCO_ENTERO | STRIP_PIECE_MIRROR, 112, 48 },
-    { STRIP_PIECE_BANCO_ENTERO | STRIP_PIECE_MIRROR, 112, 240 },
-    { STRIP_PIECE_BANCO_ENTERO | STRIP_PIECE_MIRROR, 112, 280 },
-    { STRIP_PIECE_BANCO_ENTERO | STRIP_PIECE_MIRROR, 112, 320 },
+    { STRIP_PIECE_BANCO_ENTERO, 0, 8 },
+    { STRIP_PIECE_BANCO_ENTERO | STRIP_PIECE_MIRROR, 144, 8 },
+    { STRIP_PIECE_BANCO_ENTERO | STRIP_PIECE_MIRROR, 144, 48 },
+    { STRIP_PIECE_BANCO_ENTERO | STRIP_PIECE_MIRROR, 144, 240 },
+    { STRIP_PIECE_BANCO_ENTERO | STRIP_PIECE_MIRROR, 144, 280 },
+    { STRIP_PIECE_BANCO_ENTERO | STRIP_PIECE_MIRROR, 144, 320 },
 };
 static const RoomMember s_r00_b0_m[] = {
     { ENC_E_BEBE, ENC_S_CRAWL, 64, 160 },
@@ -67,16 +67,12 @@ static const RoomMember s_r00_b2_m[] = {
     { ENC_E_BEBE, ENC_S_CRAWL, 102, 262 },
 };
 static const EncPieceDef s_r01_b0_p[] = {
-    { STRIP_PIECE_BANCO_ENTERO, 8, 8 },
-    { STRIP_PIECE_BANCO_ENTERO, 8, 48 },
-    { STRIP_PIECE_BANCO_ENTERO | STRIP_PIECE_MIRROR, 112, 8 },
-    { STRIP_PIECE_BANCO_ENTERO | STRIP_PIECE_MIRROR, 112, 48 },
-    { STRIP_PIECE_BANCO_ENTERO | STRIP_PIECE_MIRROR, 112, 240 },
-    { STRIP_PIECE_BANCO_ENTERO | STRIP_PIECE_MIRROR, 112, 280 },
-    { STRIP_PIECE_SACOS_B, 72, 352 },
-};
-static const EncRectDef s_r01_b0_r[] = {
-    { ENC_R_SACOS, 72, 360, 64, 8 },
+    { STRIP_PIECE_BANCO_ENTERO, 0, 8 },
+    { STRIP_PIECE_BANCO_ENTERO, 0, 48 },
+    { STRIP_PIECE_BANCO_ENTERO | STRIP_PIECE_MIRROR, 144, 8 },
+    { STRIP_PIECE_BANCO_ENTERO | STRIP_PIECE_MIRROR, 144, 48 },
+    { STRIP_PIECE_BANCO_ENTERO | STRIP_PIECE_MIRROR, 144, 240 },
+    { STRIP_PIECE_BANCO_ENTERO | STRIP_PIECE_MIRROR, 144, 280 },
 };
 static const RoomMember s_r01_b0_m[] = {
     { ENC_E_OJO, ENC_S_GUARD, 150, 92 },
@@ -131,11 +127,7 @@ static const RoomMember s_r01_b2_m[] = {
 static const EncPieceDef s_r02_b0_p[] = {
     { STRIP_PIECE_BANCO_ENTERO | STRIP_PIECE_MIRROR, 144, 8 },
     { STRIP_PIECE_BANCO_ENTERO | STRIP_PIECE_MIRROR, 144, 272 },
-    { STRIP_PIECE_BANCO_ROTO, 8, 8 },
-    { STRIP_PIECE_SACOS_B, 80, 336 },
-};
-static const EncRectDef s_r02_b0_r[] = {
-    { ENC_R_SACOS, 80, 344, 64, 8 },
+    { STRIP_PIECE_BANCO_ROTO, 0, 8 },
 };
 static const RoomMember s_r02_b0_m[] = {
     { ENC_E_EXVOTO, ENC_S_PRAY, 46, 79 },
@@ -195,14 +187,8 @@ static const RoomMember s_r02_b2_m[] = {
     { ENC_E_BEBE, ENC_S_CRAWL, 106, 266 },
 };
 static const EncPieceDef s_r03_b0_p[] = {
-    { STRIP_PIECE_ALAMBRE, 104, 232 },
-    { STRIP_PIECE_BANCO_ROTO, 8, 8 },
-    { STRIP_PIECE_BANCO_VOLCADO | STRIP_PIECE_MIRROR, 112, 8 },
-    { STRIP_PIECE_SACOS, 96, 336 },
-};
-static const EncRectDef s_r03_b0_r[] = {
-    { ENC_R_ALAMBRE, 104, 240, 32, 16 },
-    { ENC_R_SACOS, 96, 356, 64, 4 },
+    { STRIP_PIECE_BANCO_ROTO, 0, 8 },
+    { STRIP_PIECE_BANCO_VOLCADO | STRIP_PIECE_MIRROR, 136, 8 },
 };
 static const RoomMember s_r03_b0_m[] = {
     { ENC_E_OJO, ENC_S_GUARD, 104, 88 },
@@ -768,17 +754,17 @@ static const struct { uint8_t valid; RoomLayout l; } s_room_layouts[ENC_ROOM_COU
         { 1, { ENC_ARR_OR_0(s_r00_b2_p), 0, 0, ENC_ARR_OR_0(s_r00_b2_m) } },
     },
     { // sala 1
-        { 1, { ENC_ARR_OR_0(s_r01_b0_p), ENC_ARR_OR_0(s_r01_b0_r), ENC_ARR_OR_0(s_r01_b0_m) } },
+        { 1, { ENC_ARR_OR_0(s_r01_b0_p), 0, 0, ENC_ARR_OR_0(s_r01_b0_m) } },
         { 1, { ENC_ARR_OR_0(s_r01_b1_p), 0, 0, ENC_ARR_OR_0(s_r01_b1_m) } },
         { 1, { ENC_ARR_OR_0(s_r01_b2_p), 0, 0, ENC_ARR_OR_0(s_r01_b2_m) } },
     },
     { // sala 2
-        { 1, { ENC_ARR_OR_0(s_r02_b0_p), ENC_ARR_OR_0(s_r02_b0_r), ENC_ARR_OR_0(s_r02_b0_m) } },
+        { 1, { ENC_ARR_OR_0(s_r02_b0_p), 0, 0, ENC_ARR_OR_0(s_r02_b0_m) } },
         { 1, { ENC_ARR_OR_0(s_r02_b1_p), ENC_ARR_OR_0(s_r02_b1_r), ENC_ARR_OR_0(s_r02_b1_m) } },
         { 1, { ENC_ARR_OR_0(s_r02_b2_p), 0, 0, ENC_ARR_OR_0(s_r02_b2_m) } },
     },
     { // sala 3
-        { 1, { ENC_ARR_OR_0(s_r03_b0_p), ENC_ARR_OR_0(s_r03_b0_r), ENC_ARR_OR_0(s_r03_b0_m) } },
+        { 1, { ENC_ARR_OR_0(s_r03_b0_p), 0, 0, ENC_ARR_OR_0(s_r03_b0_m) } },
         { 1, { ENC_ARR_OR_0(s_r03_b1_p), ENC_ARR_OR_0(s_r03_b1_r), ENC_ARR_OR_0(s_r03_b1_m) } },
         { 1, { ENC_ARR_OR_0(s_r03_b2_p), ENC_ARR_OR_0(s_r03_b2_r), ENC_ARR_OR_0(s_r03_b2_m) } },
     },

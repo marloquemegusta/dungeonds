@@ -9,6 +9,9 @@ void arpg_map_toggle(void);
 int  arpg_map_is_open(void);
 // Paints the map into the upper actor page (call right after render_screen of that page, with g_dirty_cur = its spans, so the
 // next render_screen clears it). px, py: hero ground point in window px. frame: any increasing counter (blinks the hero).
-void arpg_map_draw(uint16_t *page, int px, int py, int frame);
+// in_camp: the map is opened from the camp (no hero dot, no room becomes "seen").
+// The map shows only the rooms already visited (and Nave 1, the way out of the camp), plus the mark of the current objective
+// (arpg_campaign_objectives) floating where its room is even if it was never visited, and one mission line per objective.
+void arpg_map_draw(uint16_t *page, int px, int py, int frame, int in_camp);
 
 #endif

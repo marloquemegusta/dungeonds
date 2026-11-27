@@ -76,6 +76,10 @@ enum {
 #define ARPG_MECH_DOBLE_SELLO 18         // Glifo legendaria (Ampolla del Santo Óleo): el sello se reabre una vez
 #define ARPG_MECH_COUNT     19
 
+// Bit 7 de ArpgInvItem.level: premio fijo o de penitencia; no se pierde al morir. El nivel es level & MASK.
+#define ARPG_ITEM_FIXED      0x80
+#define ARPG_ITEM_LEVEL_MASK 0x7F
+
 typedef struct {
     uint8_t kind;                 // ARPG_ITEM_*
     uint8_t school;               // ARPG_SCHOOL_*
@@ -85,7 +89,7 @@ typedef struct {
     uint8_t line_kind[2];         // ARPG_LINE_*
     uint8_t mech_val;             // cifra propia del aura/mecánica (para comparar dos con la misma aura)
     int16_t line_val[2];          // valor entero (con signo)
-    uint8_t level;                // nivel de objeto (1..99; 0 = 1)
+    uint8_t level;                // nivel de objeto (1..99; 0 = 1) | ARPG_ITEM_FIXED (bit 7)
     uint8_t name_id;              // 0 = genérico, >0 = nombre propio legendario
 } ArpgInvItem;
 
@@ -100,6 +104,10 @@ typedef struct {
 void arpg_inv_init(ArpgInventory *inv);
 // Partida nueva: bolsa con reliquias y tomos de ejemplo (fase 2).
 void arpg_inv_new_game(void);
+void arpg_inv_make_reward(ArpgInvItem *it, int mech);   /* reliquia fija de una penitencia entregada (ARPG_MECH_*) */
+void arpg_inv_make_fixed_prize(ArpgInvItem *it, int mech); /* Cilicio / Zarza / Llaga de cofre, marcada ARPG_ITEM_FIXED (no se pierde) */
+void arpg_inv_socket_discard(int school, int socket);     /* idem para una reliquia engarzada */
+void arpg_inv_bag_discard(int index);                   /* vacia un hueco de bolsa sin cera (perdido al morir) */
 void arpg_inv_make_tome(ArpgInvItem *it, int school);   /* tomo de hechizo (ARPG_SCHOOL_GLIFO...) */
 int  arpg_inv_has_tome(int school);                     /* en la bolsa o en un hueco de hechizo */
 // Variante arpg-todo: equipa todos los tomos y reparte reliquias por escuela.

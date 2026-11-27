@@ -1,3 +1,4 @@
+#include "arpg_quest.h"
 #include "arpg_bot.h"
 
 // Translation unit never empty (ISO C) when ARPG_BOT=0.
@@ -401,55 +402,57 @@ static int s_wp;                                      // camp walk: waypoint ind
 static int s_kite, s_kite_frames, s_kite_rest, s_kite_ref_x, s_kite_ref_y, s_kite_ref_t;
 static int s_altar_frames, s_entry_x, s_entry_y;
 
-// Scripted route of zone 1 (how a person would walk it). Each step: in room `room`, take door `door` (index in the room table of
-// encounters_act1.c) to `dest`. kind E = excursion into a side room (its next step is the way back), F = forward, R = way back.
-// Nave 1 -> Galeria del cofre -> back -> Claustro bajo -> Galeria del secreto -> back -> up to Claustro alto -> Nave 2 ->
-// Enfermeria -> Capilla del parroco (key) -> back -> up to Osario -> Galeria de la Misa -> back -> Nave 3 ->
-// Galeria del prisionero -> back -> Nave 4 -> Capilla con llave -> back -> Galeria de la monjarana -> back -> Cripta.
-typedef struct { uint8_t room, door, dest, kind; } BotStep;
-enum { K_E = 0, K_F = 1, K_R = 2 };
-static const BotStep s_script[] = {
-    { 0, 0, 4, K_E },   { 4, 0, 0, K_R },
-    { 0, 1, 6, K_F },
-    { 6, 1, 5, K_E },   { 5, 0, 6, K_R },
-    { 6, 2, 7, K_F },   { 7, 0, 1, K_F },
-    { 1, 0, 8, K_F },
-    { 8, 1, 10, K_E },  { 10, 0, 8, K_R },
-    { 8, 2, 9, K_F },
-    { 9, 1, 11, K_E },  { 11, 0, 9, K_R },
-    { 9, 0, 2, K_F },
-    { 2, 1, 12, K_E },  { 12, 0, 2, K_R },
-    { 2, 2, 3, K_F },
-    { 3, 0, 13, K_E },  { 13, 0, 3, K_R },
-    { 3, 1, 14, K_E },  { 14, 0, 3, K_R },
-    { 3, 2, 15, K_F },
-};
-#define BOT_SCRIPT_LEN ((int)(sizeof(s_script) / sizeof(s_script[0])))
-
+// Scripted route of campaign B (how a person would walk it), decided by the state of the penances, not by a fixed list:
+//   1st descent: Nave 1 -> Enfermeria -> Osario -> Capilla del parroco (choir list), back on foot the same way to Nave 1 and out to the camp.
+//   2nd descent: Nave 1 -> 2 -> 3 (Misa for the key if still missing) -> 4 -> Galeria de la monjarana (denunciation), back: down on foot
+//                Nave 4 -> 3 and, with the Misa key, the Capilla con llave shortcut to Nave 1 (without it, down Nave 3 -> 2 -> 1) -> camp.
+//                A closed reja is never the goal: without the choir list Nave 1 leaves for the camp, without the denunciation Nave 4 goes down.
+//   3rd descent: Nave 1 -> 2 -> 3 -> 4 -> Cripta.
+// Room ids: encounters_act1.c (s_rooms). BOT_TO_CAMP = walk out of the foot of Nave 1.
+#define BOT_TO_CAMP 99
+#define BOT_DOWN 98          // walk out of the foot of the room: down to the room below (Naves 2..4)
 static uint16_t s_cleared_ever;                       // rooms left with nothing alive, in this run (the "already cleared" rooms)
+                       // rooms left with nothing alive, in this run (the "already cleared" rooms)
 static uint16_t s_b_visited;                          // rooms entered in this bajada
 static uint8_t s_fail[ARPG_BOT_ROOMS];                // bajadas ended (death, retreat) in each room since the last level up
 static int s_visit_first, s_last_alive, s_visit_frames;
 
-// Door of the current room the script says to take, -1 = none. An excursion is skipped when its room is already cleared, was
-// entered in this bajada, beat the hero twice, needs the key it does not have, or its door does not lead where the script says.
-static int script_door(const ArpgBotRoom *ri, int cur, int count) {
-    for (int i = 0; i < BOT_SCRIPT_LEN; i++) {
-        const BotStep *t = &s_script[i];
-        if (t->room != cur) continue;
-        if (t->door >= ri->n_door || ri->door_dest[t->door] != t->dest) {         // the table does not match the real door: log and skip
-            if (count && g_arpg_bot_stats.script_skips < 0xFFFF) g_arpg_bot_stats.script_skips++;
-            continue;
-        }
-        if (t->kind == K_E) {
-            if (((s_cleared_ever >> t->dest) & 1) || ((s_b_visited >> t->dest) & 1) || s_fail[t->dest] >= 2) continue;
-            if (t->dest == 13 && !g_arpg.key_have) {                               // the chapel with the reja: no key, no way in
-                if (count && g_arpg_bot_stats.script_skips < 0xFFFF) g_arpg_bot_stats.script_skips++;
-                continue;
-            }
-        }
-        return t->door;
+// Room (or BOT_TO_CAMP) the script wants to reach from `cur`, -1 = none. An excursion is skipped when its room was already
+// entered in this bajada or beat the hero twice.
+static int script_dest(int cur) {
+    const int tomas = arpg_quest_carrying(QUEST_TOMAS), leonor = arpg_quest_carrying(QUEST_LEONOR);
+    switch (cur) {
+    case 0:  // Nave 1
+        if (tomas || leonor) return BOT_TO_CAMP;
+        if (!arpg_quest_delivered(QUEST_TOMAS) && !((s_b_visited >> 8) & 1) && s_fail[8] < 2) return 8;
+        return arpg_quest_has(QUEST_TOMAS) ? 1 : BOT_TO_CAMP;   // without the list the reja above stays shut
+    case 8:  return tomas ? 0 : 9;                    // Enfermeria
+    case 9:  return tomas ? 8 : 10;                   // Osario
+    case 10: return 9;                                // Capilla del parroco
+    case 1: return leonor ? BOT_DOWN : 2;             // Nave 2
+    case 2:                                           // Nave 3
+        if (leonor) return arpg_quest_has(QUEST_MISA) ? 13 : BOT_DOWN;   // the shortcut needs the key
+        if (!arpg_quest_has(QUEST_MISA) && !((s_b_visited >> 11) & 1) && s_fail[11] < 2) return 11;
+        return 3;
+    case 11: return 2;                                // Galeria de la Misa
+    case 13: return 0;                                // Capilla con llave: the shortcut to Nave 1
+    case 3:                                           // Nave 4
+        if (leonor) return BOT_DOWN;
+        if (!arpg_quest_has(QUEST_LEONOR) && !((s_b_visited >> 14) & 1) && s_fail[14] < 2) return 14;
+        return arpg_quest_has(QUEST_LEONOR) ? 15 : BOT_DOWN;     // the Cripta reja asks for the denunciation
+    case 12: return 2;                                // Galeria de bajada: the one-way door to Nave 3
+    case 14: return 3;                                // Galeria de la monjarana
+    default: return -1;
     }
+}
+
+// Door of the current room the script says to take, -1 = none (or the camp exit: see script_dest).
+static int script_door(const ArpgBotRoom *ri, int cur, int count) {
+    const int dest = script_dest(cur);
+    if (dest < 0 || dest == BOT_TO_CAMP || dest == BOT_DOWN) return -1;
+    for (int i = 0; i < ri->n_door; i++)
+        if (ri->door_dest[i] == dest) return i;
+    if (count && g_arpg_bot_stats.script_skips < 0xFFFF) g_arpg_bot_stats.script_skips++;     // the table does not match the real doors
     return -1;
 }
 
@@ -499,7 +502,8 @@ static void start_run(void) {
     g_arpg.altars_lo = g_arpg.altars_hi = 0;
     g_arpg.chests_open = 0;
     g_arpg.boss_dead = g_arpg.boss_ever = 0;
-    for (int i = 0; i < 12; i++) g_arpg.dead_groups[i] = 0;
+    for (unsigned i = 0; i < sizeof(g_arpg.dead_groups); i++) ((uint8_t *)g_arpg.dead_groups)[i] = 0;
+    arpg_quest_reset();
     g_enc_debug.restart = 1;                           // the game restarts the run at the top of the next frame
     s_prev_level = lvl;
     s_cleared_ever = 0;
@@ -665,6 +669,7 @@ static void dungeon_step(const ArpgBotView *v, Enemy *en, int n, ArpgBotInput *o
     const int explore = mode != 0 && goal_room == 0 && room != ENC_ROOM_CRIPTA;
     const int tdoor = explore ? script_door(&ri, room, 0) : -1;       // the door the script says to take
     const int tside = tdoor >= 0 ? ri.door_side_k[tdoor] : -1;
+    const int tcamp = explore && (script_dest(room) == BOT_TO_CAMP || script_dest(room) == BOT_DOWN);      // out of the foot of the room (camp from Nave 1, else down)
     s_nside = 0;                                        // the mouths of the side doors are off limits (kiting dragged it in), except the one it takes
     for (int i = 0; i < ri.n_side; i++) {
         if (explore && tdoor >= 0 ? i == tside : (!ri.has_up)) continue;
@@ -1115,6 +1120,10 @@ static void dungeon_step(const ArpgBotView *v, Enemy *en, int n, ArpgBotInput *o
             have_goal = 1;
             rule = 12;
             s_altar_frames++;
+        } else if (tcamp) {
+            gx = 256;                                             // the exit is the bottom edge of the first block
+            gy = ri.foot_y - 4;
+            have_goal = 1;
         } else if (tdoor >= 0 && ri.chest && !ri.chest_open && !s_give_up && s_visit_frames < BOT_VISIT_CAP) {
             gx = ri.chest_x;
             gy = ri.chest_y;

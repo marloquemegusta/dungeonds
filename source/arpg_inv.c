@@ -158,6 +158,63 @@ void arpg_inv_make_tome(ArpgInvItem *it, int school) {
     item_make(it, ARPG_ITEM_TOME, (uint8_t)school, ARPG_RAR_UNCOMMON, ARPG_MECH_NONE);
 }
 
+// Fixed relic a delivered penance pays (arpg_campaign.c): Llama Votiva, Redil, Lanza de Longinos or Pira.
+// Same recipes as the sample bag below. Anything else leaves `it` empty.
+void arpg_inv_make_reward(ArpgInvItem *it, int mech) {
+    item_clear(it);
+    if (mech == ARPG_MECH_LLAMA_VOTIVA) {
+        item_make(it, ARPG_ITEM_RELIC, ARPG_SCHOOL_RAYO, ARPG_RAR_RARE, ARPG_MECH_LLAMA_VOTIVA);
+        it->mech_val = 24;
+        item_line(it, ARPG_LINE_BURN, 12);
+    } else if (mech == ARPG_MECH_REDIL) {
+        item_make(it, ARPG_ITEM_RELIC, ARPG_SCHOOL_GLIFO, ARPG_RAR_RARE, ARPG_MECH_REDIL);
+        item_line(it, ARPG_LINE_RADIUS, 12);
+    } else if (mech == ARPG_MECH_LANZA) {
+        item_make(it, ARPG_ITEM_RELIC, ARPG_SCHOOL_RAYO, ARPG_RAR_EPIC, ARPG_MECH_LANZA);
+        it->mech_val = 28;
+        item_line(it, ARPG_LINE_CHARGE, 12);
+        item_line(it, ARPG_LINE_RANGE, 16);
+    } else if (mech == ARPG_MECH_PIRA) {
+        item_make(it, ARPG_ITEM_RELIC, ARPG_SCHOOL_EJECUCION, ARPG_RAR_RARE, ARPG_MECH_PIRA);
+        it->mech_val = 75;
+        item_line(it, ARPG_LINE_DAMAGE, 14);
+    }
+    if (it->kind != ARPG_ITEM_EMPTY) it->level |= ARPG_ITEM_FIXED;   // never lost on death
+}
+
+// Fixed chest prize of the act I (Cilicio, Zarza Ardiente, Llaga Abierta): same recipes as the sample bag,
+// marked ARPG_ITEM_FIXED so dying never takes it. Any other mech leaves `it` empty.
+void arpg_inv_make_fixed_prize(ArpgInvItem *it, int mech) {
+    item_clear(it);
+    if (mech == ARPG_MECH_CILICIO) {
+        item_make(it, ARPG_ITEM_RELIC, ARPG_SCHOOL_PECHO, ARPG_RAR_EPIC, ARPG_MECH_CILICIO);
+        it->mech_val = 26;
+        item_line(it, ARPG_LINE_LIFE, 25);
+        item_line(it, ARPG_LINE_SPEED, 6);
+    } else if (mech == ARPG_MECH_ZARZA) {
+        item_make(it, ARPG_ITEM_RELIC, ARPG_SCHOOL_GLIFO, ARPG_RAR_RARE, ARPG_MECH_ZARZA);
+        item_line(it, ARPG_LINE_DAMAGE, 15);
+    } else if (mech == ARPG_MECH_LLAGA) {
+        item_make(it, ARPG_ITEM_RELIC, ARPG_SCHOOL_PECHO, ARPG_RAR_RARE, ARPG_MECH_LLAGA);
+        it->mech_val = 20;
+        item_line(it, ARPG_LINE_MANA, 18);
+    } else if (mech == ARPG_MECH_REDIL) {
+        item_make(it, ARPG_ITEM_RELIC, ARPG_SCHOOL_GLIFO, ARPG_RAR_RARE, ARPG_MECH_REDIL);
+        item_line(it, ARPG_LINE_RADIUS, 12);
+    }
+    if (it->kind != ARPG_ITEM_EMPTY) it->level |= ARPG_ITEM_FIXED;
+}
+
+// Death: the bag slot is emptied (no wax; the object is simply lost).
+void arpg_inv_bag_discard(int index) {
+    if ((unsigned)index < ARPG_INV_BAG) item_clear(&g_arpg.inv.bag[index]);
+}
+
+// Death: a socketed relic of this descent is lost too.
+void arpg_inv_socket_discard(int school, int socket) {
+    if ((unsigned)school < ARPG_INV_SCHOOLS && (unsigned)socket < ARPG_INV_SOCKETS) item_clear(&g_arpg.inv.socket[school][socket]);
+}
+
 // Bolsa de ejemplo de la variante arpg-todo: reliquias de Rayo, Ejecución, Pecho y Glifo y los dos tomos.
 static void add_sample_bag(void) {
     ArpgInventory *inv = &g_arpg.inv;
@@ -418,7 +475,7 @@ static int socket_accepts(const ArpgInvItem *item, int school) {
 
 int arpg_inv_can_equip(const ArpgInvItem *it) {
     if (!it || it->kind == ARPG_ITEM_EMPTY) return 0;
-    int req = it->level ? (int)it->level : 1;
+    int req = (it->level & ARPG_ITEM_LEVEL_MASK) ? (int)(it->level & ARPG_ITEM_LEVEL_MASK) : 1;
     int hero = g_arpg.level ? (int)g_arpg.level : 1;
     return hero >= req;
 }

@@ -8,7 +8,7 @@
 
 typedef struct {
     uint32_t magic;      // set by arpg_progress_reset to 0x41525047 ("ARPG")
-    uint16_t version;    // 7 (v6: 12 salas con alijo; v5: 12 salas; v4: sin mapa; v1: inventario nuevo; v3: se conserva y se le añade el Glifo)
+    uint16_t version;    // 8 (v7: 16 salas; v6: 12 salas con alijo; v5: 12 salas; v4: sin mapa; v1: inventario nuevo; v3: se conserva y se le añade el Glifo)
     uint16_t level;      // starts at 1
     uint32_t xp;         // banked xp not yet converted into levels
     uint16_t points;     // retired with the skill tree; kept so the save layout (and scenarios) do not move
@@ -23,10 +23,11 @@ typedef struct {
     uint16_t boss_ever;      // bosses and minibosses beaten at least once (kept forever)
     uint16_t boss_dead;      // bosses and minibosses dead since the last sleep (they come back when sleeping)
     uint8_t  last_altar;     // room id of the last altar touched (the camp door leads there); 0 = Nave 1
-    uint8_t  key_have;       // the key of the zone (dropped by the Capilla del parroco)
+    uint8_t  key_have;       // unused since campaign B (was the old zone key); kept so the save size does not change
     uint8_t  dead_groups[16];// per room: bit b = group of block b dead since the last sleep
     uint16_t rooms_seen;     // bit r = room r visited at least once (the overlay map of SELECT shows only those)
-    uint8_t  reserved[2];
+    uint8_t  quest_delivered; // v8: penitencias entregadas (g_quest.delivered); 0 in v7 files (their reserved bytes were zero)
+    uint8_t  quest_offered;   // v8: next penance the voice has given (g_quest.offered)
     // v6+: alijo del arcón del campamento (reliquias que no se llevan ni se funden)
     ArpgInvItem stash[ARPG_INV_STASH];
 } ArpgProgress;
@@ -53,6 +54,8 @@ int  arpg_enemy_xp(int enemy_type, int floor); // xp a kill is worth (floor = fi
 void arpg_world_rest(void);              // sleeping: groups and bosses killed come back; chests, altars and "beaten once" stay
 
 // Save file on the SD card (fat:/dungeonds_arpg.sav, falling back to sd:/). Silent no-op when there is no card.
+int  arpg_fat_ready(void);               // mounts the card once (shared with the play log); 0 without a card
+int  arpg_progress_save_quiet(void);     // same, without dumping the game log (mid-combat saves: one SD write less in that frame)
 int  arpg_progress_save(void);           // writes g_arpg; returns 1 on success
 int  arpg_progress_load(void);           // reads a valid save (magic match) into g_arpg; returns 1 if it did
 int  arpg_progress_has_save(void);       // 1 if a save file exists on the card

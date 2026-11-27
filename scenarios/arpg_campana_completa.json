@@ -1,0 +1,1946 @@
+{
+ "name": "arpg_campana_completa",
+ "description": "Campana B (Tres penitencias) de punta a punta. Partida nueva, confesionario (Don Tomas), caer el grupo de la Capilla del parroco (lista del coro en la mano), salida a pie por el pie de la Nave 1 (entrega, Llama Votiva), confesionario (Sor Leonor y la Misa), caer la Misa (llave de la capilla; Lanza al entregar), caer la monjarana (denuncia; Pira al entregar), confesionario (Abanderado), la reja de la Nave 4 sube con la denuncia entregada y el atajo de la Capilla con llave lleva a la Nave 1 sin disparar la salida al campamento. Lee ademas el registro de partida en RAM (g_clog). Formato del log: t=<s> ev=<EVENTO> sala=<id> [arg=<x>].",
+ "suite": true,
+ "state": {
+  "elf": "../.ds-game-dev/build/out/dungeonds.elf",
+  "symbols": {
+   "pl": "s_player",
+   "dbg": "g_enc_debug",
+   "stats": "g_enc_stats",
+   "q": "g_quest",
+   "ga": "g_arpg",
+   "clog": "g_clog",
+   "en": "g_enemies"
+  },
+  "default_symbol": "pl",
+  "fields": {
+   "px": {
+    "symbol": "pl",
+    "offset": 0,
+    "type": "s32"
+   },
+   "py": {
+    "symbol": "pl",
+    "offset": 4,
+    "type": "s32"
+   },
+   "dbg_god": {
+    "symbol": "dbg",
+    "offset": 2,
+    "type": "u8"
+   },
+   "dbg_restart": {
+    "symbol": "dbg",
+    "offset": 12,
+    "type": "u8"
+   },
+   "dbg_start_room": {
+    "symbol": "dbg",
+    "offset": 20,
+    "type": "u8"
+   },
+   "room": {
+    "symbol": "stats",
+    "offset": 60,
+    "type": "u8"
+   },
+   "block": {
+    "symbol": "stats",
+    "offset": 1,
+    "type": "u8"
+   },
+   "alive": {
+    "symbol": "stats",
+    "offset": 61,
+    "type": "u8"
+   },
+   "members_placed": {
+    "symbol": "stats",
+    "offset": 191,
+    "type": "u8"
+   },
+   "q_carrying": {
+    "symbol": "q",
+    "offset": 1,
+    "type": "u8"
+   },
+   "carrying": {
+    "symbol": "q",
+    "offset": 1,
+    "type": "u8"
+   },
+   "delivered": {
+    "symbol": "q",
+    "offset": 0,
+    "type": "u8"
+   },
+   "offered": {
+    "symbol": "q",
+    "offset": 3,
+    "type": "u8"
+   },
+   "bag0": {
+    "symbol": "ga",
+    "offset": 28,
+    "type": "u8"
+   },
+   "bag0_mech": {
+    "symbol": "ga",
+    "offset": 31,
+    "type": "u8"
+   },
+   "bag1": {
+    "symbol": "ga",
+    "offset": 42,
+    "type": "u8"
+   },
+   "bag1_mech": {
+    "symbol": "ga",
+    "offset": 45,
+    "type": "u8"
+   },
+   "bag2": {
+    "symbol": "ga",
+    "offset": 56,
+    "type": "u8"
+   },
+   "bag2_mech": {
+    "symbol": "ga",
+    "offset": 59,
+    "type": "u8"
+   },
+   "bag3": {
+    "symbol": "ga",
+    "offset": 70,
+    "type": "u8"
+   },
+   "bag3_mech": {
+    "symbol": "ga",
+    "offset": 73,
+    "type": "u8"
+   },
+   "q_delivered": {
+    "symbol": "q",
+    "offset": 0,
+    "type": "u8"
+   },
+   "q_offered": {
+    "symbol": "q",
+    "offset": 3,
+    "type": "u8"
+   },
+   "e0_hp": {
+    "symbol": "en",
+    "offset": 28,
+    "type": "s32"
+   },
+   "e1_hp": {
+    "symbol": "en",
+    "offset": 152,
+    "type": "s32"
+   },
+   "e2_hp": {
+    "symbol": "en",
+    "offset": 276,
+    "type": "s32"
+   },
+   "e3_hp": {
+    "symbol": "en",
+    "offset": 400,
+    "type": "s32"
+   },
+   "e4_hp": {
+    "symbol": "en",
+    "offset": 524,
+    "type": "s32"
+   },
+   "e5_hp": {
+    "symbol": "en",
+    "offset": 648,
+    "type": "s32"
+   },
+   "e6_hp": {
+    "symbol": "en",
+    "offset": 772,
+    "type": "s32"
+   },
+   "e7_hp": {
+    "symbol": "en",
+    "offset": 896,
+    "type": "s32"
+   },
+   "e8_hp": {
+    "symbol": "en",
+    "offset": 1020,
+    "type": "s32"
+   },
+   "e9_hp": {
+    "symbol": "en",
+    "offset": 1144,
+    "type": "s32"
+   },
+   "e10_hp": {
+    "symbol": "en",
+    "offset": 1268,
+    "type": "s32"
+   },
+   "e11_hp": {
+    "symbol": "en",
+    "offset": 1392,
+    "type": "s32"
+   },
+   "e12_hp": {
+    "symbol": "en",
+    "offset": 1516,
+    "type": "s32"
+   },
+   "e13_hp": {
+    "symbol": "en",
+    "offset": 1640,
+    "type": "s32"
+   },
+   "e14_hp": {
+    "symbol": "en",
+    "offset": 1764,
+    "type": "s32"
+   },
+   "e15_hp": {
+    "symbol": "en",
+    "offset": 1888,
+    "type": "s32"
+   },
+   "e16_hp": {
+    "symbol": "en",
+    "offset": 2012,
+    "type": "s32"
+   },
+   "e17_hp": {
+    "symbol": "en",
+    "offset": 2136,
+    "type": "s32"
+   },
+   "e18_hp": {
+    "symbol": "en",
+    "offset": 2260,
+    "type": "s32"
+   },
+   "e19_hp": {
+    "symbol": "en",
+    "offset": 2384,
+    "type": "s32"
+   },
+   "e20_hp": {
+    "symbol": "en",
+    "offset": 2508,
+    "type": "s32"
+   },
+   "e21_hp": {
+    "symbol": "en",
+    "offset": 2632,
+    "type": "s32"
+   },
+   "e22_hp": {
+    "symbol": "en",
+    "offset": 2756,
+    "type": "s32"
+   },
+   "e23_hp": {
+    "symbol": "en",
+    "offset": 2880,
+    "type": "s32"
+   },
+   "q_boss": {
+    "symbol": "q",
+    "offset": 2,
+    "type": "u8"
+   },
+   "bag4_mech": {
+    "symbol": "ga",
+    "offset": 87,
+    "type": "u8"
+   },
+   "bag5_mech": {
+    "symbol": "ga",
+    "offset": 101,
+    "type": "u8"
+   },
+   "bag6_mech": {
+    "symbol": "ga",
+    "offset": 115,
+    "type": "u8"
+   },
+   "bag7_mech": {
+    "symbol": "ga",
+    "offset": 129,
+    "type": "u8"
+   },
+   "bag8_mech": {
+    "symbol": "ga",
+    "offset": 143,
+    "type": "u8"
+   },
+   "bag9_mech": {
+    "symbol": "ga",
+    "offset": 157,
+    "type": "u8"
+   },
+   "clog_n": {
+    "symbol": "clog",
+    "offset": 384,
+    "type": "u8"
+   },
+   "clog_ev0": {
+    "symbol": "clog",
+    "offset": 256,
+    "type": "u8"
+   },
+   "clog_room0": {
+    "symbol": "clog",
+    "offset": 320,
+    "type": "u8"
+   },
+   "clog_sec0": {
+    "symbol": "clog",
+    "offset": 0,
+    "type": "u32"
+   },
+   "clog_ev1": {
+    "symbol": "clog",
+    "offset": 257,
+    "type": "u8"
+   },
+   "clog_room1": {
+    "symbol": "clog",
+    "offset": 321,
+    "type": "u8"
+   },
+   "clog_sec1": {
+    "symbol": "clog",
+    "offset": 4,
+    "type": "u32"
+   },
+   "clog_ev2": {
+    "symbol": "clog",
+    "offset": 258,
+    "type": "u8"
+   },
+   "clog_room2": {
+    "symbol": "clog",
+    "offset": 322,
+    "type": "u8"
+   },
+   "clog_sec2": {
+    "symbol": "clog",
+    "offset": 8,
+    "type": "u32"
+   },
+   "clog_ev3": {
+    "symbol": "clog",
+    "offset": 259,
+    "type": "u8"
+   },
+   "clog_room3": {
+    "symbol": "clog",
+    "offset": 323,
+    "type": "u8"
+   },
+   "clog_sec3": {
+    "symbol": "clog",
+    "offset": 12,
+    "type": "u32"
+   },
+   "clog_ev4": {
+    "symbol": "clog",
+    "offset": 260,
+    "type": "u8"
+   },
+   "clog_room4": {
+    "symbol": "clog",
+    "offset": 324,
+    "type": "u8"
+   },
+   "clog_sec4": {
+    "symbol": "clog",
+    "offset": 16,
+    "type": "u32"
+   },
+   "clog_ev5": {
+    "symbol": "clog",
+    "offset": 261,
+    "type": "u8"
+   },
+   "clog_room5": {
+    "symbol": "clog",
+    "offset": 325,
+    "type": "u8"
+   },
+   "clog_sec5": {
+    "symbol": "clog",
+    "offset": 20,
+    "type": "u32"
+   },
+   "clog_ev6": {
+    "symbol": "clog",
+    "offset": 262,
+    "type": "u8"
+   },
+   "clog_room6": {
+    "symbol": "clog",
+    "offset": 326,
+    "type": "u8"
+   },
+   "clog_sec6": {
+    "symbol": "clog",
+    "offset": 24,
+    "type": "u32"
+   },
+   "clog_ev7": {
+    "symbol": "clog",
+    "offset": 263,
+    "type": "u8"
+   },
+   "clog_room7": {
+    "symbol": "clog",
+    "offset": 327,
+    "type": "u8"
+   },
+   "clog_sec7": {
+    "symbol": "clog",
+    "offset": 28,
+    "type": "u32"
+   },
+   "clog_ev8": {
+    "symbol": "clog",
+    "offset": 264,
+    "type": "u8"
+   },
+   "clog_room8": {
+    "symbol": "clog",
+    "offset": 328,
+    "type": "u8"
+   },
+   "clog_sec8": {
+    "symbol": "clog",
+    "offset": 32,
+    "type": "u32"
+   },
+   "clog_ev9": {
+    "symbol": "clog",
+    "offset": 265,
+    "type": "u8"
+   },
+   "clog_room9": {
+    "symbol": "clog",
+    "offset": 329,
+    "type": "u8"
+   },
+   "clog_sec9": {
+    "symbol": "clog",
+    "offset": 36,
+    "type": "u32"
+   },
+   "clog_ev10": {
+    "symbol": "clog",
+    "offset": 266,
+    "type": "u8"
+   },
+   "clog_room10": {
+    "symbol": "clog",
+    "offset": 330,
+    "type": "u8"
+   },
+   "clog_sec10": {
+    "symbol": "clog",
+    "offset": 40,
+    "type": "u32"
+   },
+   "clog_ev11": {
+    "symbol": "clog",
+    "offset": 267,
+    "type": "u8"
+   },
+   "clog_room11": {
+    "symbol": "clog",
+    "offset": 331,
+    "type": "u8"
+   },
+   "clog_sec11": {
+    "symbol": "clog",
+    "offset": 44,
+    "type": "u32"
+   },
+   "clog_ev12": {
+    "symbol": "clog",
+    "offset": 268,
+    "type": "u8"
+   },
+   "clog_room12": {
+    "symbol": "clog",
+    "offset": 332,
+    "type": "u8"
+   },
+   "clog_sec12": {
+    "symbol": "clog",
+    "offset": 48,
+    "type": "u32"
+   },
+   "clog_ev13": {
+    "symbol": "clog",
+    "offset": 269,
+    "type": "u8"
+   },
+   "clog_room13": {
+    "symbol": "clog",
+    "offset": 333,
+    "type": "u8"
+   },
+   "clog_sec13": {
+    "symbol": "clog",
+    "offset": 52,
+    "type": "u32"
+   },
+   "clog_ev14": {
+    "symbol": "clog",
+    "offset": 270,
+    "type": "u8"
+   },
+   "clog_room14": {
+    "symbol": "clog",
+    "offset": 334,
+    "type": "u8"
+   },
+   "clog_sec14": {
+    "symbol": "clog",
+    "offset": 56,
+    "type": "u32"
+   },
+   "clog_ev15": {
+    "symbol": "clog",
+    "offset": 271,
+    "type": "u8"
+   },
+   "clog_room15": {
+    "symbol": "clog",
+    "offset": 335,
+    "type": "u8"
+   },
+   "clog_sec15": {
+    "symbol": "clog",
+    "offset": 60,
+    "type": "u32"
+   },
+   "clog_ev16": {
+    "symbol": "clog",
+    "offset": 272,
+    "type": "u8"
+   },
+   "clog_room16": {
+    "symbol": "clog",
+    "offset": 336,
+    "type": "u8"
+   },
+   "clog_sec16": {
+    "symbol": "clog",
+    "offset": 64,
+    "type": "u32"
+   },
+   "clog_ev17": {
+    "symbol": "clog",
+    "offset": 273,
+    "type": "u8"
+   },
+   "clog_room17": {
+    "symbol": "clog",
+    "offset": 337,
+    "type": "u8"
+   },
+   "clog_sec17": {
+    "symbol": "clog",
+    "offset": 68,
+    "type": "u32"
+   },
+   "clog_ev18": {
+    "symbol": "clog",
+    "offset": 274,
+    "type": "u8"
+   },
+   "clog_room18": {
+    "symbol": "clog",
+    "offset": 338,
+    "type": "u8"
+   },
+   "clog_sec18": {
+    "symbol": "clog",
+    "offset": 72,
+    "type": "u32"
+   },
+   "clog_ev19": {
+    "symbol": "clog",
+    "offset": 275,
+    "type": "u8"
+   },
+   "clog_room19": {
+    "symbol": "clog",
+    "offset": 339,
+    "type": "u8"
+   },
+   "clog_sec19": {
+    "symbol": "clog",
+    "offset": 76,
+    "type": "u32"
+   },
+   "clog_ev20": {
+    "symbol": "clog",
+    "offset": 276,
+    "type": "u8"
+   },
+   "clog_room20": {
+    "symbol": "clog",
+    "offset": 340,
+    "type": "u8"
+   },
+   "clog_sec20": {
+    "symbol": "clog",
+    "offset": 80,
+    "type": "u32"
+   },
+   "clog_ev21": {
+    "symbol": "clog",
+    "offset": 277,
+    "type": "u8"
+   },
+   "clog_room21": {
+    "symbol": "clog",
+    "offset": 341,
+    "type": "u8"
+   },
+   "clog_sec21": {
+    "symbol": "clog",
+    "offset": 84,
+    "type": "u32"
+   },
+   "clog_ev22": {
+    "symbol": "clog",
+    "offset": 278,
+    "type": "u8"
+   },
+   "clog_room22": {
+    "symbol": "clog",
+    "offset": 342,
+    "type": "u8"
+   },
+   "clog_sec22": {
+    "symbol": "clog",
+    "offset": 88,
+    "type": "u32"
+   },
+   "clog_ev23": {
+    "symbol": "clog",
+    "offset": 279,
+    "type": "u8"
+   },
+   "clog_room23": {
+    "symbol": "clog",
+    "offset": 343,
+    "type": "u8"
+   },
+   "clog_sec23": {
+    "symbol": "clog",
+    "offset": 92,
+    "type": "u32"
+   },
+   "clog_ev24": {
+    "symbol": "clog",
+    "offset": 280,
+    "type": "u8"
+   },
+   "clog_room24": {
+    "symbol": "clog",
+    "offset": 344,
+    "type": "u8"
+   },
+   "clog_sec24": {
+    "symbol": "clog",
+    "offset": 96,
+    "type": "u32"
+   },
+   "clog_ev25": {
+    "symbol": "clog",
+    "offset": 281,
+    "type": "u8"
+   },
+   "clog_room25": {
+    "symbol": "clog",
+    "offset": 345,
+    "type": "u8"
+   },
+   "clog_sec25": {
+    "symbol": "clog",
+    "offset": 100,
+    "type": "u32"
+   },
+   "clog_ev26": {
+    "symbol": "clog",
+    "offset": 282,
+    "type": "u8"
+   },
+   "clog_room26": {
+    "symbol": "clog",
+    "offset": 346,
+    "type": "u8"
+   },
+   "clog_sec26": {
+    "symbol": "clog",
+    "offset": 104,
+    "type": "u32"
+   },
+   "clog_ev27": {
+    "symbol": "clog",
+    "offset": 283,
+    "type": "u8"
+   },
+   "clog_room27": {
+    "symbol": "clog",
+    "offset": 347,
+    "type": "u8"
+   },
+   "clog_sec27": {
+    "symbol": "clog",
+    "offset": 108,
+    "type": "u32"
+   },
+   "clog_ev28": {
+    "symbol": "clog",
+    "offset": 284,
+    "type": "u8"
+   },
+   "clog_room28": {
+    "symbol": "clog",
+    "offset": 348,
+    "type": "u8"
+   },
+   "clog_sec28": {
+    "symbol": "clog",
+    "offset": 112,
+    "type": "u32"
+   },
+   "clog_ev29": {
+    "symbol": "clog",
+    "offset": 285,
+    "type": "u8"
+   },
+   "clog_room29": {
+    "symbol": "clog",
+    "offset": 349,
+    "type": "u8"
+   },
+   "clog_sec29": {
+    "symbol": "clog",
+    "offset": 116,
+    "type": "u32"
+   },
+   "clog_ev30": {
+    "symbol": "clog",
+    "offset": 286,
+    "type": "u8"
+   },
+   "clog_room30": {
+    "symbol": "clog",
+    "offset": 350,
+    "type": "u8"
+   },
+   "clog_sec30": {
+    "symbol": "clog",
+    "offset": 120,
+    "type": "u32"
+   },
+   "clog_ev31": {
+    "symbol": "clog",
+    "offset": 287,
+    "type": "u8"
+   },
+   "clog_room31": {
+    "symbol": "clog",
+    "offset": 351,
+    "type": "u8"
+   },
+   "clog_sec31": {
+    "symbol": "clog",
+    "offset": 124,
+    "type": "u32"
+   },
+   "clog_ev32": {
+    "symbol": "clog",
+    "offset": 288,
+    "type": "u8"
+   },
+   "clog_room32": {
+    "symbol": "clog",
+    "offset": 352,
+    "type": "u8"
+   },
+   "clog_sec32": {
+    "symbol": "clog",
+    "offset": 128,
+    "type": "u32"
+   },
+   "clog_ev33": {
+    "symbol": "clog",
+    "offset": 289,
+    "type": "u8"
+   },
+   "clog_room33": {
+    "symbol": "clog",
+    "offset": 353,
+    "type": "u8"
+   },
+   "clog_sec33": {
+    "symbol": "clog",
+    "offset": 132,
+    "type": "u32"
+   },
+   "clog_ev34": {
+    "symbol": "clog",
+    "offset": 290,
+    "type": "u8"
+   },
+   "clog_room34": {
+    "symbol": "clog",
+    "offset": 354,
+    "type": "u8"
+   },
+   "clog_sec34": {
+    "symbol": "clog",
+    "offset": 136,
+    "type": "u32"
+   },
+   "clog_ev35": {
+    "symbol": "clog",
+    "offset": 291,
+    "type": "u8"
+   },
+   "clog_room35": {
+    "symbol": "clog",
+    "offset": 355,
+    "type": "u8"
+   },
+   "clog_sec35": {
+    "symbol": "clog",
+    "offset": 140,
+    "type": "u32"
+   },
+   "clog_ev36": {
+    "symbol": "clog",
+    "offset": 292,
+    "type": "u8"
+   },
+   "clog_room36": {
+    "symbol": "clog",
+    "offset": 356,
+    "type": "u8"
+   },
+   "clog_sec36": {
+    "symbol": "clog",
+    "offset": 144,
+    "type": "u32"
+   },
+   "clog_ev37": {
+    "symbol": "clog",
+    "offset": 293,
+    "type": "u8"
+   },
+   "clog_room37": {
+    "symbol": "clog",
+    "offset": 357,
+    "type": "u8"
+   },
+   "clog_sec37": {
+    "symbol": "clog",
+    "offset": 148,
+    "type": "u32"
+   },
+   "clog_ev38": {
+    "symbol": "clog",
+    "offset": 294,
+    "type": "u8"
+   },
+   "clog_room38": {
+    "symbol": "clog",
+    "offset": 358,
+    "type": "u8"
+   },
+   "clog_sec38": {
+    "symbol": "clog",
+    "offset": 152,
+    "type": "u32"
+   },
+   "clog_ev39": {
+    "symbol": "clog",
+    "offset": 295,
+    "type": "u8"
+   },
+   "clog_room39": {
+    "symbol": "clog",
+    "offset": 359,
+    "type": "u8"
+   },
+   "clog_sec39": {
+    "symbol": "clog",
+    "offset": 156,
+    "type": "u32"
+   }
+  }
+ },
+ "steps": [
+  {
+   "frames": 60
+  },
+  {
+   "tap": {
+    "x": 128,
+    "y": 66
+   },
+   "frames": 6
+  },
+  {
+   "release": true,
+   "frames": 40
+  },
+  {
+   "button_down": "START",
+   "frames": 4
+  },
+  {
+   "button_up": "START",
+   "frames": 90,
+   "state_capture": "c00_campamento",
+   "capture": "c00_campamento"
+  },
+  {
+   "poke": [
+    {
+     "field": "px",
+     "value": 32768
+    },
+    {
+     "field": "py",
+     "value": 78336
+    }
+   ],
+   "frames": 20
+  },
+  {
+   "button_down": "A",
+   "frames": 4
+  },
+  {
+   "button_up": "A",
+   "frames": 60,
+   "state_capture": "c01_confesion",
+   "capture": "c01_confesion"
+  },
+  {
+   "poke": [
+    {
+     "field": "px",
+     "value": 32768
+    },
+    {
+     "field": "py",
+     "value": 29696
+    }
+   ],
+   "frames": 20
+  },
+  {
+   "button_down": "A",
+   "frames": 4
+  },
+  {
+   "button_up": "A",
+   "frames": 6
+  },
+  {
+   "frames": 8
+  },
+  {
+   "frames": 20,
+   "state_capture": "c02_nave1",
+   "capture": "c02_nave1"
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    },
+    {
+     "field": "dbg_start_room",
+     "value": 11
+    },
+    {
+     "field": "dbg_restart",
+     "value": 1
+    },
+    {
+     "field": "q_carrying",
+     "value": 0
+    },
+    {
+     "field": "q_delivered",
+     "value": 0
+    }
+   ],
+   "frames": 80
+  },
+  {
+   "poke": [
+    {
+     "field": "px",
+     "value": 65536
+    },
+    {
+     "field": "py",
+     "value": 343552
+    }
+   ],
+   "frames": 50
+  },
+  {
+   "poke": [
+    {
+     "field": "e0_hp",
+     "value": 0
+    },
+    {
+     "field": "e1_hp",
+     "value": 0
+    },
+    {
+     "field": "e2_hp",
+     "value": 0
+    },
+    {
+     "field": "e3_hp",
+     "value": 0
+    },
+    {
+     "field": "e4_hp",
+     "value": 0
+    },
+    {
+     "field": "e5_hp",
+     "value": 0
+    },
+    {
+     "field": "e6_hp",
+     "value": 0
+    },
+    {
+     "field": "e7_hp",
+     "value": 0
+    },
+    {
+     "field": "e8_hp",
+     "value": 0
+    },
+    {
+     "field": "e9_hp",
+     "value": 0
+    },
+    {
+     "field": "e10_hp",
+     "value": 0
+    },
+    {
+     "field": "e11_hp",
+     "value": 0
+    },
+    {
+     "field": "e12_hp",
+     "value": 0
+    },
+    {
+     "field": "e13_hp",
+     "value": 0
+    },
+    {
+     "field": "e14_hp",
+     "value": 0
+    },
+    {
+     "field": "e15_hp",
+     "value": 0
+    },
+    {
+     "field": "e16_hp",
+     "value": 0
+    },
+    {
+     "field": "e17_hp",
+     "value": 0
+    },
+    {
+     "field": "e18_hp",
+     "value": 0
+    },
+    {
+     "field": "e19_hp",
+     "value": 0
+    },
+    {
+     "field": "e20_hp",
+     "value": 0
+    },
+    {
+     "field": "e21_hp",
+     "value": 0
+    },
+    {
+     "field": "e22_hp",
+     "value": 0
+    },
+    {
+     "field": "e23_hp",
+     "value": 0
+    }
+   ],
+   "frames": 40,
+   "state_capture": "c03_lista_cogida",
+   "capture": "c03_lista_cogida"
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    },
+    {
+     "field": "dbg_start_room",
+     "value": 1
+    },
+    {
+     "field": "dbg_restart",
+     "value": 1
+    }
+   ],
+   "frames": 80
+  },
+  {
+   "button_down": "DOWN",
+   "frames": 400
+  },
+  {
+   "button_up": "DOWN",
+   "frames": 120,
+   "state_capture": "c04_lista_entregada",
+   "capture": "c04_lista_entregada"
+  },
+  {
+   "poke": [
+    {
+     "field": "px",
+     "value": 32768
+    },
+    {
+     "field": "py",
+     "value": 78336
+    }
+   ],
+   "frames": 20
+  },
+  {
+   "button_down": "A",
+   "frames": 4
+  },
+  {
+   "button_up": "A",
+   "frames": 60,
+   "state_capture": "c05_confesion_2",
+   "capture": "c05_confesion_2"
+  },
+  {
+   "poke": [
+    {
+     "field": "px",
+     "value": 32768
+    },
+    {
+     "field": "py",
+     "value": 29696
+    }
+   ],
+   "frames": 20
+  },
+  {
+   "button_down": "A",
+   "frames": 4
+  },
+  {
+   "button_up": "A",
+   "frames": 6
+  },
+  {
+   "frames": 8
+  },
+  {
+   "frames": 20
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    }
+   ],
+   "frames": 100
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    },
+    {
+     "field": "dbg_start_room",
+     "value": 12
+    },
+    {
+     "field": "dbg_restart",
+     "value": 1
+    }
+   ],
+   "frames": 80
+  },
+  {
+   "poke": [
+    {
+     "field": "px",
+     "value": 65536
+    },
+    {
+     "field": "py",
+     "value": 245248
+    }
+   ],
+   "frames": 50
+  },
+  {
+   "poke": [
+    {
+     "field": "e0_hp",
+     "value": 0
+    },
+    {
+     "field": "e1_hp",
+     "value": 0
+    },
+    {
+     "field": "e2_hp",
+     "value": 0
+    },
+    {
+     "field": "e3_hp",
+     "value": 0
+    },
+    {
+     "field": "e4_hp",
+     "value": 0
+    },
+    {
+     "field": "e5_hp",
+     "value": 0
+    },
+    {
+     "field": "e6_hp",
+     "value": 0
+    },
+    {
+     "field": "e7_hp",
+     "value": 0
+    },
+    {
+     "field": "e8_hp",
+     "value": 0
+    },
+    {
+     "field": "e9_hp",
+     "value": 0
+    },
+    {
+     "field": "e10_hp",
+     "value": 0
+    },
+    {
+     "field": "e11_hp",
+     "value": 0
+    },
+    {
+     "field": "e12_hp",
+     "value": 0
+    },
+    {
+     "field": "e13_hp",
+     "value": 0
+    },
+    {
+     "field": "e14_hp",
+     "value": 0
+    },
+    {
+     "field": "e15_hp",
+     "value": 0
+    },
+    {
+     "field": "e16_hp",
+     "value": 0
+    },
+    {
+     "field": "e17_hp",
+     "value": 0
+    },
+    {
+     "field": "e18_hp",
+     "value": 0
+    },
+    {
+     "field": "e19_hp",
+     "value": 0
+    },
+    {
+     "field": "e20_hp",
+     "value": 0
+    },
+    {
+     "field": "e21_hp",
+     "value": 0
+    },
+    {
+     "field": "e22_hp",
+     "value": 0
+    },
+    {
+     "field": "e23_hp",
+     "value": 0
+    }
+   ],
+   "frames": 40,
+   "state_capture": "c06_misa_vencida",
+   "capture": "c06_misa_vencida"
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    },
+    {
+     "field": "dbg_start_room",
+     "value": 1
+    },
+    {
+     "field": "dbg_restart",
+     "value": 1
+    }
+   ],
+   "frames": 80
+  },
+  {
+   "button_down": "DOWN",
+   "frames": 400
+  },
+  {
+   "button_up": "DOWN",
+   "frames": 120,
+   "state_capture": "c07_llave_entregada",
+   "capture": "c07_llave_entregada"
+  },
+  {
+   "poke": [
+    {
+     "field": "px",
+     "value": 32768
+    },
+    {
+     "field": "py",
+     "value": 78336
+    }
+   ],
+   "frames": 20
+  },
+  {
+   "button_down": "A",
+   "frames": 4
+  },
+  {
+   "button_up": "A",
+   "frames": 60,
+   "state_capture": "c08_confesion_3",
+   "capture": "c08_confesion_3"
+  },
+  {
+   "poke": [
+    {
+     "field": "px",
+     "value": 32768
+    },
+    {
+     "field": "py",
+     "value": 29696
+    }
+   ],
+   "frames": 20
+  },
+  {
+   "button_down": "A",
+   "frames": 4
+  },
+  {
+   "button_up": "A",
+   "frames": 6
+  },
+  {
+   "frames": 8
+  },
+  {
+   "frames": 20
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    }
+   ],
+   "frames": 100
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    },
+    {
+     "field": "dbg_start_room",
+     "value": 15
+    },
+    {
+     "field": "dbg_restart",
+     "value": 1
+    }
+   ],
+   "frames": 80
+  },
+  {
+   "poke": [
+    {
+     "field": "px",
+     "value": 65536
+    },
+    {
+     "field": "py",
+     "value": 245248
+    }
+   ],
+   "frames": 50
+  },
+  {
+   "poke": [
+    {
+     "field": "e0_hp",
+     "value": 0
+    },
+    {
+     "field": "e1_hp",
+     "value": 0
+    },
+    {
+     "field": "e2_hp",
+     "value": 0
+    },
+    {
+     "field": "e3_hp",
+     "value": 0
+    },
+    {
+     "field": "e4_hp",
+     "value": 0
+    },
+    {
+     "field": "e5_hp",
+     "value": 0
+    },
+    {
+     "field": "e6_hp",
+     "value": 0
+    },
+    {
+     "field": "e7_hp",
+     "value": 0
+    },
+    {
+     "field": "e8_hp",
+     "value": 0
+    },
+    {
+     "field": "e9_hp",
+     "value": 0
+    },
+    {
+     "field": "e10_hp",
+     "value": 0
+    },
+    {
+     "field": "e11_hp",
+     "value": 0
+    },
+    {
+     "field": "e12_hp",
+     "value": 0
+    },
+    {
+     "field": "e13_hp",
+     "value": 0
+    },
+    {
+     "field": "e14_hp",
+     "value": 0
+    },
+    {
+     "field": "e15_hp",
+     "value": 0
+    },
+    {
+     "field": "e16_hp",
+     "value": 0
+    },
+    {
+     "field": "e17_hp",
+     "value": 0
+    },
+    {
+     "field": "e18_hp",
+     "value": 0
+    },
+    {
+     "field": "e19_hp",
+     "value": 0
+    },
+    {
+     "field": "e20_hp",
+     "value": 0
+    },
+    {
+     "field": "e21_hp",
+     "value": 0
+    },
+    {
+     "field": "e22_hp",
+     "value": 0
+    },
+    {
+     "field": "e23_hp",
+     "value": 0
+    }
+   ],
+   "frames": 40,
+   "state_capture": "c09_leonor_vencida",
+   "capture": "c09_leonor_vencida"
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    },
+    {
+     "field": "dbg_start_room",
+     "value": 1
+    },
+    {
+     "field": "dbg_restart",
+     "value": 1
+    }
+   ],
+   "frames": 80
+  },
+  {
+   "button_down": "DOWN",
+   "frames": 400
+  },
+  {
+   "button_up": "DOWN",
+   "frames": 120,
+   "state_capture": "c10_denuncia_entregada",
+   "capture": "c10_denuncia_entregada"
+  },
+  {
+   "poke": [
+    {
+     "field": "px",
+     "value": 32768
+    },
+    {
+     "field": "py",
+     "value": 78336
+    }
+   ],
+   "frames": 20
+  },
+  {
+   "button_down": "A",
+   "frames": 4
+  },
+  {
+   "button_up": "A",
+   "frames": 60,
+   "state_capture": "c11_confesion_4",
+   "capture": "c11_confesion_4"
+  },
+  {
+   "poke": [
+    {
+     "field": "px",
+     "value": 32768
+    },
+    {
+     "field": "py",
+     "value": 29696
+    }
+   ],
+   "frames": 20
+  },
+  {
+   "button_down": "A",
+   "frames": 4
+  },
+  {
+   "button_up": "A",
+   "frames": 6
+  },
+  {
+   "frames": 8
+  },
+  {
+   "frames": 20
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    }
+   ],
+   "frames": 100
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    },
+    {
+     "field": "dbg_start_room",
+     "value": 4
+    },
+    {
+     "field": "dbg_restart",
+     "value": 1
+    },
+    {
+     "field": "q_carrying",
+     "value": 0
+    }
+   ],
+   "frames": 80
+  },
+  {
+   "poke": [
+    {
+     "field": "px",
+     "value": 65536
+    },
+    {
+     "field": "py",
+     "value": 122368
+    }
+   ],
+   "frames": 10
+  },
+  {
+   "button_down": "UP",
+   "frames": 200,
+   "state_capture": "c12_reja_cripta"
+  },
+  {
+   "button_up": "UP",
+   "frames": 5,
+   "capture": "c12_reja_cripta"
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    },
+    {
+     "field": "dbg_start_room",
+     "value": 14
+    },
+    {
+     "field": "dbg_restart",
+     "value": 1
+    },
+    {
+     "field": "q_carrying",
+     "value": 0
+    }
+   ],
+   "frames": 80
+  },
+  {
+   "poke": [
+    {
+     "field": "px",
+     "value": 65536
+    },
+    {
+     "field": "py",
+     "value": 340992
+    }
+   ],
+   "frames": 150,
+   "state_capture": "c13_reja_arriba",
+   "capture": "c13_reja_arriba"
+  },
+  {
+   "poke": [
+    {
+     "field": "px",
+     "value": 95232
+    },
+    {
+     "field": "py",
+     "value": 371200
+    }
+   ],
+   "frames": 20
+  },
+  {
+   "button_down": "RIGHT",
+   "frames": 60,
+   "state_capture": "c13b_atajo_llegada"
+  },
+  {
+   "button_up": "RIGHT",
+   "frames": 300,
+   "state_capture": "c14_atajo_300",
+   "capture": "c14_atajo_300"
+  }
+ ],
+ "assertions": {
+  "state_changes": [
+   {
+    "at": "c00_campamento",
+    "field": "offered",
+    "equals": 0
+   },
+   {
+    "at": "c00_campamento",
+    "field": "clog_n",
+    "equals": 1
+   },
+   {
+    "at": "c00_campamento",
+    "field": "clog_ev0",
+    "equals": 1
+   },
+   {
+    "at": "c01_confesion",
+    "field": "offered",
+    "equals": 1
+   },
+   {
+    "at": "c02_nave1",
+    "field": "room",
+    "equals": 0
+   },
+   {
+    "at": "c02_nave1",
+    "field": "delivered",
+    "equals": 0
+   },
+   {
+    "at": "c02_nave1",
+    "field": "clog_ev1",
+    "equals": 2
+   },
+   {
+    "at": "c02_nave1",
+    "field": "clog_ev2",
+    "equals": 3
+   },
+   {
+    "at": "c03_lista_cogida",
+    "field": "room",
+    "equals": 10
+   },
+   {
+    "at": "c03_lista_cogida",
+    "field": "carrying",
+    "equals": 1
+   },
+   {
+    "at": "c03_lista_cogida",
+    "field": "delivered",
+    "equals": 0
+   },
+   {
+    "at": "c03_lista_cogida",
+    "field": "clog_ev4",
+    "equals": 4
+   },
+   {
+    "at": "c04_lista_entregada",
+    "field": "room",
+    "equals": 0
+   },
+   {
+    "at": "c04_lista_entregada",
+    "field": "carrying",
+    "equals": 0
+   },
+   {
+    "at": "c04_lista_entregada",
+    "field": "delivered",
+    "equals": 1
+   },
+   {
+    "at": "c04_lista_entregada",
+    "field": "bag0_mech",
+    "equals": 4
+   },
+   {
+    "at": "c04_lista_entregada",
+    "field": "clog_ev6",
+    "equals": 5
+   },
+   {
+    "at": "c05_confesion_2",
+    "field": "offered",
+    "equals": 3
+   },
+   {
+    "at": "c06_misa_vencida",
+    "field": "room",
+    "equals": 11
+   },
+   {
+    "at": "c06_misa_vencida",
+    "field": "carrying",
+    "equals": 2
+   },
+   {
+    "at": "c06_misa_vencida",
+    "field": "clog_ev11",
+    "equals": 8
+   },
+   {
+    "at": "c06_misa_vencida",
+    "field": "clog_ev12",
+    "equals": 4
+   },
+   {
+    "at": "c07_llave_entregada",
+    "field": "delivered",
+    "equals": 3
+   },
+   {
+    "at": "c07_llave_entregada",
+    "field": "carrying",
+    "equals": 0
+   },
+   {
+    "at": "c07_llave_entregada",
+    "field": "bag2_mech",
+    "equals": 3
+   },
+   {
+    "at": "c09_leonor_vencida",
+    "field": "room",
+    "equals": 14
+   },
+   {
+    "at": "c09_leonor_vencida",
+    "field": "carrying",
+    "equals": 4
+   },
+   {
+    "at": "c09_leonor_vencida",
+    "field": "clog_ev19",
+    "equals": 8
+   },
+   {
+    "at": "c09_leonor_vencida",
+    "field": "clog_ev20",
+    "equals": 4
+   },
+   {
+    "at": "c10_denuncia_entregada",
+    "field": "delivered",
+    "equals": 7
+   },
+   {
+    "at": "c10_denuncia_entregada",
+    "field": "carrying",
+    "equals": 0
+   },
+   {
+    "at": "c10_denuncia_entregada",
+    "field": "bag3_mech",
+    "equals": 15
+   },
+   {
+    "at": "c11_confesion_4",
+    "field": "offered",
+    "equals": 4
+   },
+   {
+    "at": "c12_reja_cripta",
+    "field": "room",
+    "equals": 15
+   },
+   {
+    "at": "c13_reja_arriba",
+    "field": "room",
+    "equals": 13
+   },
+   {
+    "at": "c13b_atajo_llegada",
+    "field": "room",
+    "equals": 0
+   },
+   {
+    "at": "c14_atajo_300",
+    "field": "room",
+    "equals": 0
+   },
+   {
+    "at": "c14_atajo_300",
+    "field": "delivered",
+    "equals": 7
+   },
+   {
+    "at": "c04_lista_entregada",
+    "field": "clog_ev7",
+    "equals": 10
+   },
+   {
+    "at": "c04_lista_entregada",
+    "field": "clog_room7",
+    "equals": 255
+   }
+  ]
+ }
+}

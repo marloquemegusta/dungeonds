@@ -1,4 +1,4 @@
-# exvoto_bebe_walk
+# exvoto_bebe_crawl
 
 Spritesheet PNG: 8 columnas (frames), 8 filas (direcciones), 40x40px por celda, RGBA transparente.
 

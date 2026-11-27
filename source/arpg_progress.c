@@ -1,12 +1,14 @@
 #include "arpg_progress.h"
 #include "arpg.h"
+#include "arpg_quest.h"
+#include "arpg_log.h"
 #include <fat.h>
 #include <stdio.h>
 #include <string.h>
 
 ArpgProgress g_arpg;
 
-#define ARPG_SAVE_VERSION 7      // v7: 16 rooms + camp stash. v6 (12 rooms + stash) keeps its stash; v3-v6 keep level, xp, inventory, tips and spell; the map progress restarts
+#define ARPG_SAVE_VERSION 8      // v8: quest bits in the old reserved bytes (a v7 file loads as is, with no penance delivered). v7: 16 rooms + camp stash. v6 (12 rooms + stash) keeps its stash; v3-v6 keep level, xp, inventory, tips and spell; the map progress restarts
 
 // Test build (variant arpg-todo, project.json): every save and every fresh start has level 10 and every relic and tome equipped.
 #ifndef ARPG_ALL_UNLOCKED
@@ -22,12 +24,12 @@ static void arpg_unlock_for_tests(void) {
 #endif
 }
 
-// round(110 * 1.45^(L-1)) for levels 1..20 (computed offline, hardcoded), except the first three steps (60, 110, 200: the first
-// levels come within the first minutes, balance_log). Level 20 and up use the last value.
+// Curve x2 (DESIGN-ARPG.md 7, campaign): level 1 asks 60 and every level the double of the previous one, 60 * 2^(L-1) for
+// levels 1..20 (the last is 31457280, still inside int32). Level 20 and up use the last value.
 #define ARPG_XP_TABLE_LEN 20
 static const int s_arpg_xp_needed[ARPG_XP_TABLE_LEN] = {
-    60, 110, 200, 335, 486, 705, 1022, 1482, 2149, 3117,
-    4519, 6553, 9502, 13778, 19978, 28968, 42003, 60904, 88311, 128052
+    60, 120, 240, 480, 960, 1920, 3840, 7680, 15360, 30720,
+    61440, 122880, 245760, 491520, 983040, 1966080, 3932160, 7864320, 15728640, 31457280
 };
 
 void arpg_progress_reset(void) {
@@ -42,6 +44,7 @@ void arpg_progress_reset(void) {
     g_arpg.spell = 0;
     g_arpg.altars_lo = 0;
     g_arpg.altars_hi = 0;
+    arpg_quest_reset();
     arpg_inv_new_game();          // Rayo equipado, bolsa vacía
     g_arpg_level = g_arpg.level;
     arpg_unlock_for_tests();
@@ -130,7 +133,7 @@ static int s_arpg_fat_tried = 0;
 static int s_arpg_fat_ok = 0;
 
 // Mounts the card once; the first save/load/has_save call does it. Without a card every call is a no-op.
-static int arpg_fat_ready(void) {
+int arpg_fat_ready(void) {
     if (!s_arpg_fat_tried) {
         s_arpg_fat_tried = 1;
         s_arpg_fat_ok = fatInitDefault();
@@ -138,18 +141,24 @@ static int arpg_fat_ready(void) {
     return s_arpg_fat_ok;
 }
 
-int arpg_progress_save(void) {
+static int progress_save(int flush_log) {
     if (!arpg_fat_ready()) return 0;
+    g_arpg.quest_delivered = g_quest.delivered;     // carrying and boss_tier are not saved: they are 0 after loading
+    g_arpg.quest_offered = g_quest.offered;
     for (int i = 0; i < 2; i++) {
         // libnds FAT only commits the file size on fclose, so write and close in one go.
         FILE *f = fopen(s_arpg_save_paths[i], "wb");
         if (!f) continue;
         int ok = fwrite(&g_arpg, sizeof(g_arpg), 1, f) == 1;
         if (fclose(f) != 0) ok = 0;
-        if (ok) return 1;
+        if (ok) { if (flush_log) arpg_log_flush(); return 1; }
     }
+    if (flush_log) arpg_log_flush();
     return 0;
 }
+
+int arpg_progress_save(void) { return progress_save(1); }
+int arpg_progress_save_quiet(void) { return progress_save(0); }
 
 // Reads `size` bytes of an old v1 save and rebuilds a v2 progress with a fresh inventory.
 static int arpg_load_v1(FILE *f) {
@@ -166,6 +175,7 @@ static int arpg_load_v1(FILE *f) {
     g_arpg.altars_lo = old.altars_lo;
     g_arpg.altars_hi = old.altars_hi;
     arpg_inv_new_game();          // the old tree is gone: fresh bag, level and xp kept
+    arpg_quest_reset();
     g_arpg_level = g_arpg.level;
     arpg_unlock_for_tests();
     return 1;
@@ -208,8 +218,18 @@ int arpg_progress_load(void) {
             tmp.deepest = 0;
             tmp.version = ARPG_SAVE_VERSION;
         }
+        if (ok && tmp.magic == ARPG_SAVE_MAGIC && tmp.version == 7 && tmp.level >= 1) {
+            // v7 -> v8: same layout. The old key (key_have) is ignored: no penance is delivered.
+            tmp.quest_delivered = 0;
+            tmp.quest_offered = 0;
+            tmp.version = ARPG_SAVE_VERSION;
+        }
         if (ok && tmp.magic == ARPG_SAVE_MAGIC && tmp.version == ARPG_SAVE_VERSION && tmp.level >= 1) {
             g_arpg = tmp;
+            g_quest.delivered = (uint8_t)(g_arpg.quest_delivered & ((1u << QUEST_COUNT) - 1u));
+            g_quest.carrying = 0;
+            g_quest.boss_tier = 0;
+            g_quest.offered = g_arpg.quest_offered > QUEST_COUNT ? QUEST_COUNT : g_arpg.quest_offered;
             arpg_inv_sanitize();
             if (old3) arpg_inv_migrate_glifo();
             g_arpg_level = g_arpg.level;

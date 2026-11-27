@@ -47,6 +47,8 @@
 #include "bestiary_font.h"
 #include "arpg.h"
 #include "arpg_progress.h"
+#include "arpg_campaign.h"
+#include "arpg_log.h"
 #include "arpg_map.h"
 #include "arpg_inv.h"
 #include "arpg_bot.h"
@@ -1608,6 +1610,19 @@ static void render_camp_screen(uint16_t *buffer, DirtySpan *spans, int cam_x, in
 }
 #endif
 
+#if ENCOUNTERS_PROTO
+// Tells the rastrillo gates which actors are near (they switch from hardware sprite to depth-sorted software).
+static void gates_route(const DrawItem *items, int count, int sub_screen, int cam_x, int cam_y) {
+    enc_verja_begin(sub_screen, cam_y);
+    for (int i = 0; i < count; i++) {
+        const int r = items[i].ref;
+        if (r <= ENC_FIXTURE_REF_BASE && r > ENC_FIXTURE_REF_BASE - 16) continue;   // furniture and gates themselves
+        enc_verja_note(items[i].depth);
+    }
+    enc_verja_end(sub_screen, cam_x, cam_y);
+}
+#endif
+
 ITCM_CODE static void render_screen(uint16_t *buffer, DirtySpan *spans, int cam_x, int cam_y, int sub_screen,
                           uint32_t *out_floor, uint32_t *out_shadow, uint32_t *out_blit) {
 #if CAMP_SCENE
@@ -1793,7 +1808,7 @@ ITCM_CODE static void render_screen(uint16_t *buffer, DirtySpan *spans, int cam_
 #if HW_SHADOWS
     hwshadow_begin(sub_screen);
 #if ENCOUNTERS_PROTO
-    if (s_strip_mode) enc_verja_draw(sub_screen, cam_x, cam_y);
+    if (s_strip_mode) gates_route(items, count, sub_screen, cam_x, cam_y);
 #endif
     const int hw_shadows = g_hw_shadows_on;
 #endif
@@ -3255,7 +3270,7 @@ static void player_update(uint32_t keys, uint32_t keys_down) {
     // Debug: SELECT cycles the upgrade design variant and g_fx_style.
     if (keys_down & KEY_SELECT) {
 #if ENCOUNTERS_PROTO
-        if (s_strip_mode && s_run_started && !camp_active()) arpg_map_toggle();   // overlay map on the upper screen
+        if (s_strip_mode && (s_run_started || camp_active())) arpg_map_toggle();   // overlay map on the upper screen
 #else
         upgrades_cycle_design_variant();   // also advances g_fx_style
 #endif
@@ -3635,6 +3650,8 @@ static void room_reload_light(void) {
     memset(g_enemies, 0, sizeof(g_enemies));
 }
 
+static void run_to_camp(void);
+
 static void room_transition_update(void) {
     if (s_transition == TRANSITION_NONE) {
         int k;
@@ -3650,6 +3667,14 @@ static void room_transition_update(void) {
         if (s_fade_level >= 16) {
             s_fade_level = 16;
             setBrightness(3, -16);                 // fully black before the teleport
+            if (s_room_dest == ARPG_EXIT_TO_CAMP) {     // walked out of the Nave 1 to the camp: the objects are delivered
+                s_room_dest = -1;
+                arpg_log_room(-1);                  // DELIVER is logged from the camp (sala=-1)
+                arpg_campaign_arrive_on_foot();
+                arpg_log_event(CLOG_CAMP_IN, "pie");
+                run_to_camp();
+                return;
+            }
             if (s_room_dest >= 0) {
                 enc_room_select(s_room_dest, enc_room_current());
                 room_reload_light();
@@ -3786,6 +3811,8 @@ static void leave_camp_to_dungeon(void) {
     camp_hero_release();
     camp_unload_gfx();
     g_arena = strip_arena();
+    arpg_log_event(CLOG_CAMP_OUT, 0);
+    arpg_campaign_descent_begin();      // remembers the bag (what is lost on death) and repopulates the cathedral
     arpg_progress_save();
     s_run_started = 1;
     arena_restart();
@@ -3796,10 +3823,28 @@ static void leave_camp_to_dungeon(void) {
 
 // Leaves the dungeon for the camp (death or pause menu): saves the progress, stops the run.
 static void run_to_camp(void) {
+    arpg_log_room(-1);
     pickups_bank_relics();
     arpg_progress_save();
     sfx_stop_bgm();
     enter_camp_scene();
+}
+
+// Death (campaign): the xp stays, the carried object and half of the loot of this descent are lost, the cathedral refills.
+static void run_to_camp_after_death(void) {
+    const int floor_extra = pickups_bank_relics_death();    // what lay on the floor enters the bag first, so it counts as loot of this descent
+    arpg_campaign_on_death(floor_extra);
+    arpg_log_room(-1);
+    arpg_log_event(CLOG_CAMP_IN, "muerte");
+    run_to_camp();
+}
+
+// Retreat from the pause menu: everything is kept except the carried object.
+static void run_to_camp_retreat(void) {
+    arpg_campaign_on_retreat();
+    arpg_log_room(-1);
+    arpg_log_event(CLOG_CAMP_IN, "retirada");
+    run_to_camp();
 }
 
 // End of the demo (DESIGN-ARPG.md 7): the full-screen card after the Cripta boss falls for the first time, then the camp.
@@ -3826,6 +3871,9 @@ static void end_demo_card_then_camp(void) {
     s_bot_map_ready = 0;
     memset(s_dirty, 0, sizeof(s_dirty));
     memset(s_dirty_top, 0, sizeof(s_dirty_top));
+    arpg_log_room(-1);
+    arpg_campaign_arrive_on_foot();     // the Abanderado's standard is delivered with the demo; boss_tier goes to 0 (delivered counts now)
+    arpg_log_event(CLOG_CAMP_IN, "demo");
     run_to_camp();
     s_keys_down_latch = 0;
     touch_track(0, 0, 0);
@@ -3976,6 +4024,7 @@ int main(void) {
 #endif
         uint32_t frame_start_ticks = cpuGetTiming();
         uint32_t start_vblank = s_vblank_count;
+        arpg_log_frame(s_vblank_count);
         s_frame_index++;
 
         scanKeys();
@@ -4137,6 +4186,7 @@ int main(void) {
             if (act == MENU_ACT_START_INTRO) {
                 arpg_progress_reset();      // a new game: the save file is overwritten with the empty one
                 arpg_progress_save();
+                arpg_log_event(CLOG_START, 0);
             }
 #endif
             if (act == MENU_ACT_START_INTRO) {
@@ -4191,11 +4241,12 @@ int main(void) {
                 enter_camp_scene();         // the intro is over: the camp scene, not the dungeon
             } else if (act == MENU_ACT_CONTINUE) {
                 if (!arpg_progress_load()) arpg_progress_reset();
+                arpg_log_event(CLOG_START, 0);
                 menu_close();
                 enter_camp_scene();
             } else if (act == MENU_ACT_TO_CAMP) {
                 menu_close();
-                run_to_camp();
+                run_to_camp_retreat();
             }
             if (act == MENU_ACT_CONTINUE || act == MENU_ACT_TO_CAMP || act == MENU_ACT_START_INTRO) {
                 s_keys_down_latch = 0;
@@ -4266,13 +4317,23 @@ int main(void) {
                 arpg_tip_take(ARPG_TIP_DORMIR);
                 camp_toast("Duerme para subir de nivel");
             }
+            // Arrival, death and confessional notices, one after another: each stays long enough to read and A passes to the next while the hero is at the bonfire (elsewhere A keeps its use).
+            if (camp_toast_busy() && arpg_campaign_notice_pending() && camp_focus_act() == CAMP_ACT_CONFESS && (s_keys_down_latch & KEY_A) && !menu_is_open()) {
+                camp_toast_skip();
+                s_keys_down_latch &= ~(uint32_t)KEY_A;
+            }
+            if (!camp_toast_busy()) {
+                const char *notice = arpg_campaign_next_notice();
+                if (notice) camp_toast_for(notice, 210);
+            }
+            if (!menu_is_open() && (s_keys_down_latch & KEY_SELECT) && s_strip_mode) arpg_map_toggle();   // the map also opens in the camp
             if (!menu_is_open()) {
                 int act = camp_update(&s_player, keys_held, s_keys_down_latch,
                                       menu_touch_pressed && !s_menu_ignore_held_touch, touch.px, touch.py);
                 s_keys_down_latch = 0;
                 if (act == CAMP_ACT_SLEEP) {
                     int gained = arpg_sleep();
-                    arpg_world_rest();      // the dead of the cathedral come back; chests, altars and "beaten once" stay
+                    if (gained > 0) { char lv[8]; snprintf(lv, sizeof(lv), "%d", g_arpg.level); arpg_log_event(CLOG_LEVEL, lv); }
                     arpg_progress_save();
                     char msg[48];
                     if (gained > 0) {
@@ -4287,6 +4348,9 @@ int main(void) {
                     menu_open_inventory(INV_MODE_ARCON);
                 } else if (act == CAMP_ACT_CRISOL) {
                     menu_open_inventory(INV_MODE_CRISOL);
+                } else if (act == CAMP_ACT_CONFESS) {
+                    arpg_campaign_confess();
+                    arpg_progress_save();
                 } else if (act == CAMP_ACT_CODEX) {
                     menu_open_codex();
                 } else if (act == CAMP_ACT_DOOR) {
@@ -4385,7 +4449,7 @@ int main(void) {
         uint32_t post_vwait_start = cpuGetTiming();
         present_screen_effects();
 #if ENCOUNTERS_PROTO
-        if (arpg_map_is_open() && s_strip_mode && s_run_started && !camp_active() && menu_state() != MENU_INVENTORY) {
+        if (arpg_map_is_open() && s_strip_mode && (s_run_started || camp_active()) && menu_state() != MENU_INVENTORY) {
             // Overlay map: dim the floor/walls of the upper screen (BG0 only; the map and actors live on BG2). Set here, before
             // the top render, so the fade covers every scanline; the shadows' sprite window is off meanwhile.
             REG_DISPCNT_SUB &= ~DISPLAY_SPR_WIN_ON;
@@ -4417,9 +4481,9 @@ int main(void) {
             }
             if (!BOT_FAST()) render_screen(s_top_page, s_dirty_top, view_x, view_y - SCREEN_H, 1, &top_floor, &top_sh, &top_bl);
 #if ENCOUNTERS_PROTO
-            if (arpg_map_is_open() && s_strip_mode && s_run_started && !camp_active()) {
+            if (arpg_map_is_open() && s_strip_mode && (s_run_started || camp_active())) {
                 g_dirty_cur = s_dirty_top;      // the next render_screen of this page clears the lines
-                arpg_map_draw(s_top_page, TO_INT(s_player.x), TO_INT(s_player.y), (int)s_frame_index);
+                arpg_map_draw(s_top_page, TO_INT(s_player.x), TO_INT(s_player.y), (int)s_frame_index, camp_active());
             }
 #endif
         }
@@ -4489,7 +4553,7 @@ int main(void) {
                 if (s_death_screen_frames >= STRIP_DEATH_SCREEN_FRAMES && s_death_restart_armed &&
                     ((keys_down & restart_keys) || touch_pressed)) {
 #if ENCOUNTERS_PROTO
-                    run_to_camp();          // the death screen ends at the camp; the banked xp is kept
+                    run_to_camp_after_death();      // the death screen ends at the camp; the banked xp is kept
 #else
                     arena_restart();
 #endif

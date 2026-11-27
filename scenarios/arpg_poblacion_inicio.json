@@ -1,0 +1,776 @@
+{
+ "name": "arpg_poblacion_inicio",
+ "description": "Pelda\u00f1o 1: partida nueva, Nave 1 y Claustro bajo (sala lateral). No hay Monaguillos (tipo 5) en ninguna ranura; las capturas de estado dejan el tipo/hp de cada ranura para contar Beb\u00e9s (6) y Monjas de cera (3).",
+ "suite": true,
+ "state": {
+  "elf": "../.ds-game-dev/build/out/dungeonds.elf",
+  "symbols": {
+   "pl": "s_player",
+   "dbg": "g_enc_debug",
+   "stats": "g_enc_stats",
+   "en": "g_enemies"
+  },
+  "default_symbol": "pl",
+  "fields": {
+   "px": {
+    "symbol": "pl",
+    "offset": 0,
+    "type": "s32"
+   },
+   "py": {
+    "symbol": "pl",
+    "offset": 4,
+    "type": "s32"
+   },
+   "dbg_god": {
+    "symbol": "dbg",
+    "offset": 2,
+    "type": "u8"
+   },
+   "dbg_restart": {
+    "symbol": "dbg",
+    "offset": 12,
+    "type": "u8"
+   },
+   "dbg_start_room": {
+    "symbol": "dbg",
+    "offset": 20,
+    "type": "u8"
+   },
+   "room": {
+    "symbol": "stats",
+    "offset": 60,
+    "type": "u8"
+   },
+   "alive": {
+    "symbol": "stats",
+    "offset": 61,
+    "type": "u8"
+   },
+   "e0_t": {
+    "symbol": "en",
+    "offset": 40,
+    "type": "u8"
+   },
+   "e0_a": {
+    "symbol": "en",
+    "offset": 24,
+    "type": "s32"
+   },
+   "e0_hp": {
+    "symbol": "en",
+    "offset": 28,
+    "type": "s32"
+   },
+   "e1_t": {
+    "symbol": "en",
+    "offset": 164,
+    "type": "u8"
+   },
+   "e1_a": {
+    "symbol": "en",
+    "offset": 148,
+    "type": "s32"
+   },
+   "e1_hp": {
+    "symbol": "en",
+    "offset": 152,
+    "type": "s32"
+   },
+   "e2_t": {
+    "symbol": "en",
+    "offset": 288,
+    "type": "u8"
+   },
+   "e2_a": {
+    "symbol": "en",
+    "offset": 272,
+    "type": "s32"
+   },
+   "e2_hp": {
+    "symbol": "en",
+    "offset": 276,
+    "type": "s32"
+   },
+   "e3_t": {
+    "symbol": "en",
+    "offset": 412,
+    "type": "u8"
+   },
+   "e3_a": {
+    "symbol": "en",
+    "offset": 396,
+    "type": "s32"
+   },
+   "e3_hp": {
+    "symbol": "en",
+    "offset": 400,
+    "type": "s32"
+   },
+   "e4_t": {
+    "symbol": "en",
+    "offset": 536,
+    "type": "u8"
+   },
+   "e4_a": {
+    "symbol": "en",
+    "offset": 520,
+    "type": "s32"
+   },
+   "e4_hp": {
+    "symbol": "en",
+    "offset": 524,
+    "type": "s32"
+   },
+   "e5_t": {
+    "symbol": "en",
+    "offset": 660,
+    "type": "u8"
+   },
+   "e5_a": {
+    "symbol": "en",
+    "offset": 644,
+    "type": "s32"
+   },
+   "e5_hp": {
+    "symbol": "en",
+    "offset": 648,
+    "type": "s32"
+   },
+   "e6_t": {
+    "symbol": "en",
+    "offset": 784,
+    "type": "u8"
+   },
+   "e6_a": {
+    "symbol": "en",
+    "offset": 768,
+    "type": "s32"
+   },
+   "e6_hp": {
+    "symbol": "en",
+    "offset": 772,
+    "type": "s32"
+   },
+   "e7_t": {
+    "symbol": "en",
+    "offset": 908,
+    "type": "u8"
+   },
+   "e7_a": {
+    "symbol": "en",
+    "offset": 892,
+    "type": "s32"
+   },
+   "e7_hp": {
+    "symbol": "en",
+    "offset": 896,
+    "type": "s32"
+   },
+   "e8_t": {
+    "symbol": "en",
+    "offset": 1032,
+    "type": "u8"
+   },
+   "e8_a": {
+    "symbol": "en",
+    "offset": 1016,
+    "type": "s32"
+   },
+   "e8_hp": {
+    "symbol": "en",
+    "offset": 1020,
+    "type": "s32"
+   },
+   "e9_t": {
+    "symbol": "en",
+    "offset": 1156,
+    "type": "u8"
+   },
+   "e9_a": {
+    "symbol": "en",
+    "offset": 1140,
+    "type": "s32"
+   },
+   "e9_hp": {
+    "symbol": "en",
+    "offset": 1144,
+    "type": "s32"
+   },
+   "e10_t": {
+    "symbol": "en",
+    "offset": 1280,
+    "type": "u8"
+   },
+   "e10_a": {
+    "symbol": "en",
+    "offset": 1264,
+    "type": "s32"
+   },
+   "e10_hp": {
+    "symbol": "en",
+    "offset": 1268,
+    "type": "s32"
+   },
+   "e11_t": {
+    "symbol": "en",
+    "offset": 1404,
+    "type": "u8"
+   },
+   "e11_a": {
+    "symbol": "en",
+    "offset": 1388,
+    "type": "s32"
+   },
+   "e11_hp": {
+    "symbol": "en",
+    "offset": 1392,
+    "type": "s32"
+   },
+   "e12_t": {
+    "symbol": "en",
+    "offset": 1528,
+    "type": "u8"
+   },
+   "e12_a": {
+    "symbol": "en",
+    "offset": 1512,
+    "type": "s32"
+   },
+   "e12_hp": {
+    "symbol": "en",
+    "offset": 1516,
+    "type": "s32"
+   },
+   "e13_t": {
+    "symbol": "en",
+    "offset": 1652,
+    "type": "u8"
+   },
+   "e13_a": {
+    "symbol": "en",
+    "offset": 1636,
+    "type": "s32"
+   },
+   "e13_hp": {
+    "symbol": "en",
+    "offset": 1640,
+    "type": "s32"
+   },
+   "e14_t": {
+    "symbol": "en",
+    "offset": 1776,
+    "type": "u8"
+   },
+   "e14_a": {
+    "symbol": "en",
+    "offset": 1760,
+    "type": "s32"
+   },
+   "e14_hp": {
+    "symbol": "en",
+    "offset": 1764,
+    "type": "s32"
+   },
+   "e15_t": {
+    "symbol": "en",
+    "offset": 1900,
+    "type": "u8"
+   },
+   "e15_a": {
+    "symbol": "en",
+    "offset": 1884,
+    "type": "s32"
+   },
+   "e15_hp": {
+    "symbol": "en",
+    "offset": 1888,
+    "type": "s32"
+   },
+   "e16_t": {
+    "symbol": "en",
+    "offset": 2024,
+    "type": "u8"
+   },
+   "e16_a": {
+    "symbol": "en",
+    "offset": 2008,
+    "type": "s32"
+   },
+   "e16_hp": {
+    "symbol": "en",
+    "offset": 2012,
+    "type": "s32"
+   },
+   "e17_t": {
+    "symbol": "en",
+    "offset": 2148,
+    "type": "u8"
+   },
+   "e17_a": {
+    "symbol": "en",
+    "offset": 2132,
+    "type": "s32"
+   },
+   "e17_hp": {
+    "symbol": "en",
+    "offset": 2136,
+    "type": "s32"
+   },
+   "e18_t": {
+    "symbol": "en",
+    "offset": 2272,
+    "type": "u8"
+   },
+   "e18_a": {
+    "symbol": "en",
+    "offset": 2256,
+    "type": "s32"
+   },
+   "e18_hp": {
+    "symbol": "en",
+    "offset": 2260,
+    "type": "s32"
+   },
+   "e19_t": {
+    "symbol": "en",
+    "offset": 2396,
+    "type": "u8"
+   },
+   "e19_a": {
+    "symbol": "en",
+    "offset": 2380,
+    "type": "s32"
+   },
+   "e19_hp": {
+    "symbol": "en",
+    "offset": 2384,
+    "type": "s32"
+   },
+   "e20_t": {
+    "symbol": "en",
+    "offset": 2520,
+    "type": "u8"
+   },
+   "e20_a": {
+    "symbol": "en",
+    "offset": 2504,
+    "type": "s32"
+   },
+   "e20_hp": {
+    "symbol": "en",
+    "offset": 2508,
+    "type": "s32"
+   },
+   "e21_t": {
+    "symbol": "en",
+    "offset": 2644,
+    "type": "u8"
+   },
+   "e21_a": {
+    "symbol": "en",
+    "offset": 2628,
+    "type": "s32"
+   },
+   "e21_hp": {
+    "symbol": "en",
+    "offset": 2632,
+    "type": "s32"
+   },
+   "e22_t": {
+    "symbol": "en",
+    "offset": 2768,
+    "type": "u8"
+   },
+   "e22_a": {
+    "symbol": "en",
+    "offset": 2752,
+    "type": "s32"
+   },
+   "e22_hp": {
+    "symbol": "en",
+    "offset": 2756,
+    "type": "s32"
+   },
+   "e23_t": {
+    "symbol": "en",
+    "offset": 2892,
+    "type": "u8"
+   },
+   "e23_a": {
+    "symbol": "en",
+    "offset": 2876,
+    "type": "s32"
+   },
+   "e23_hp": {
+    "symbol": "en",
+    "offset": 2880,
+    "type": "s32"
+   }
+  }
+ },
+ "steps": [
+  {
+   "frames": 60
+  },
+  {
+   "tap": {
+    "x": 128,
+    "y": 66
+   },
+   "frames": 6
+  },
+  {
+   "release": true,
+   "frames": 40
+  },
+  {
+   "button_down": "START",
+   "frames": 4
+  },
+  {
+   "button_up": "START",
+   "frames": 90
+  },
+  {
+   "poke": [
+    {
+     "field": "px",
+     "value": 32768
+    },
+    {
+     "field": "py",
+     "value": 78336
+    }
+   ],
+   "frames": 20
+  },
+  {
+   "button_down": "A",
+   "frames": 4
+  },
+  {
+   "button_up": "A",
+   "frames": 60
+  },
+  {
+   "poke": [
+    {
+     "field": "px",
+     "value": 32768
+    },
+    {
+     "field": "py",
+     "value": 29696
+    }
+   ],
+   "frames": 20
+  },
+  {
+   "button_down": "A",
+   "frames": 4
+  },
+  {
+   "button_up": "A",
+   "frames": 60
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    },
+    {
+     "field": "dbg_start_room",
+     "value": 1
+    },
+    {
+     "field": "dbg_restart",
+     "value": 1
+    }
+   ],
+   "frames": 100
+  },
+  {
+   "frames": 40,
+   "state_capture": "nave1",
+   "capture": "nave1"
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    },
+    {
+     "field": "dbg_start_room",
+     "value": 7
+    },
+    {
+     "field": "dbg_restart",
+     "value": 1
+    }
+   ],
+   "frames": 100
+  },
+  {
+   "frames": 40,
+   "state_capture": "claustro_bajo",
+   "capture": "claustro_bajo"
+  }
+ ],
+ "assertions": {
+  "state_changes": [
+   {
+    "at": "nave1",
+    "field": "e0_t",
+    "not_equals": 5
+   },
+   {
+    "at": "nave1",
+    "field": "e1_t",
+    "not_equals": 5
+   },
+   {
+    "at": "nave1",
+    "field": "e2_t",
+    "not_equals": 5
+   },
+   {
+    "at": "nave1",
+    "field": "e3_t",
+    "not_equals": 5
+   },
+   {
+    "at": "nave1",
+    "field": "e4_t",
+    "not_equals": 5
+   },
+   {
+    "at": "nave1",
+    "field": "e5_t",
+    "not_equals": 5
+   },
+   {
+    "at": "nave1",
+    "field": "e6_t",
+    "not_equals": 5
+   },
+   {
+    "at": "nave1",
+    "field": "e7_t",
+    "not_equals": 5
+   },
+   {
+    "at": "nave1",
+    "field": "e8_t",
+    "not_equals": 5
+   },
+   {
+    "at": "nave1",
+    "field": "e9_t",
+    "not_equals": 5
+   },
+   {
+    "at": "nave1",
+    "field": "e10_t",
+    "not_equals": 5
+   },
+   {
+    "at": "nave1",
+    "field": "e11_t",
+    "not_equals": 5
+   },
+   {
+    "at": "nave1",
+    "field": "e12_t",
+    "not_equals": 5
+   },
+   {
+    "at": "nave1",
+    "field": "e13_t",
+    "not_equals": 5
+   },
+   {
+    "at": "nave1",
+    "field": "e14_t",
+    "not_equals": 5
+   },
+   {
+    "at": "nave1",
+    "field": "e15_t",
+    "not_equals": 5
+   },
+   {
+    "at": "nave1",
+    "field": "e16_t",
+    "not_equals": 5
+   },
+   {
+    "at": "nave1",
+    "field": "e17_t",
+    "not_equals": 5
+   },
+   {
+    "at": "nave1",
+    "field": "e18_t",
+    "not_equals": 5
+   },
+   {
+    "at": "nave1",
+    "field": "e19_t",
+    "not_equals": 5
+   },
+   {
+    "at": "nave1",
+    "field": "e20_t",
+    "not_equals": 5
+   },
+   {
+    "at": "nave1",
+    "field": "e21_t",
+    "not_equals": 5
+   },
+   {
+    "at": "nave1",
+    "field": "e22_t",
+    "not_equals": 5
+   },
+   {
+    "at": "nave1",
+    "field": "e23_t",
+    "not_equals": 5
+   },
+   {
+    "at": "claustro_bajo",
+    "field": "e0_t",
+    "not_equals": 5
+   },
+   {
+    "at": "claustro_bajo",
+    "field": "e1_t",
+    "not_equals": 5
+   },
+   {
+    "at": "claustro_bajo",
+    "field": "e2_t",
+    "not_equals": 5
+   },
+   {
+    "at": "claustro_bajo",
+    "field": "e3_t",
+    "not_equals": 5
+   },
+   {
+    "at": "claustro_bajo",
+    "field": "e4_t",
+    "not_equals": 5
+   },
+   {
+    "at": "claustro_bajo",
+    "field": "e5_t",
+    "not_equals": 5
+   },
+   {
+    "at": "claustro_bajo",
+    "field": "e6_t",
+    "not_equals": 5
+   },
+   {
+    "at": "claustro_bajo",
+    "field": "e7_t",
+    "not_equals": 5
+   },
+   {
+    "at": "claustro_bajo",
+    "field": "e8_t",
+    "not_equals": 5
+   },
+   {
+    "at": "claustro_bajo",
+    "field": "e9_t",
+    "not_equals": 5
+   },
+   {
+    "at": "claustro_bajo",
+    "field": "e10_t",
+    "not_equals": 5
+   },
+   {
+    "at": "claustro_bajo",
+    "field": "e11_t",
+    "not_equals": 5
+   },
+   {
+    "at": "claustro_bajo",
+    "field": "e12_t",
+    "not_equals": 5
+   },
+   {
+    "at": "claustro_bajo",
+    "field": "e13_t",
+    "not_equals": 5
+   },
+   {
+    "at": "claustro_bajo",
+    "field": "e14_t",
+    "not_equals": 5
+   },
+   {
+    "at": "claustro_bajo",
+    "field": "e15_t",
+    "not_equals": 5
+   },
+   {
+    "at": "claustro_bajo",
+    "field": "e16_t",
+    "not_equals": 5
+   },
+   {
+    "at": "claustro_bajo",
+    "field": "e17_t",
+    "not_equals": 5
+   },
+   {
+    "at": "claustro_bajo",
+    "field": "e18_t",
+    "not_equals": 5
+   },
+   {
+    "at": "claustro_bajo",
+    "field": "e19_t",
+    "not_equals": 5
+   },
+   {
+    "at": "claustro_bajo",
+    "field": "e20_t",
+    "not_equals": 5
+   },
+   {
+    "at": "claustro_bajo",
+    "field": "e21_t",
+    "not_equals": 5
+   },
+   {
+    "at": "claustro_bajo",
+    "field": "e22_t",
+    "not_equals": 5
+   },
+   {
+    "at": "claustro_bajo",
+    "field": "e23_t",
+    "not_equals": 5
+   },
+   {
+    "at": "nave1",
+    "field": "e1_t",
+    "equals": 6
+   },
+   {
+    "at": "claustro_bajo",
+    "field": "e1_t",
+    "equals": 6
+   }
+  ]
+ }
+}

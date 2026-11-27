@@ -1,0 +1,1189 @@
+{
+ "name": "arpg_campana_misiones",
+ "description": "Objetos de mision (version B, Tres penitencias): al caer el grupo que los guarda, el heroe los lleva. Capilla del parroco: la lista del coro (Don Tomas); Galeria de la Misa: la llave de la capilla; monjarana: la denuncia de Sor Leonor; Galeria del secreto y Nave 3 ya no dan objeto (sin Prisionero ni Cireneo de elite). Un objeto ya entregado no se da otra vez. El heroe esta en dios y los enemigos mueren con hp 0.",
+ "suite": true,
+ "state": {
+  "elf": "../.ds-game-dev/build/out/dungeonds.elf",
+  "symbols": {
+   "pl": "s_player",
+   "dbg": "g_enc_debug",
+   "stats": "g_enc_stats",
+   "q": "g_quest",
+   "en": "g_enemies"
+  },
+  "default_symbol": "pl",
+  "fields": {
+   "px": {
+    "symbol": "pl",
+    "offset": 0,
+    "type": "s32"
+   },
+   "py": {
+    "symbol": "pl",
+    "offset": 4,
+    "type": "s32"
+   },
+   "dbg_god": {
+    "symbol": "dbg",
+    "offset": 2,
+    "type": "u8"
+   },
+   "dbg_restart": {
+    "symbol": "dbg",
+    "offset": 12,
+    "type": "u8"
+   },
+   "dbg_start_room": {
+    "symbol": "dbg",
+    "offset": 20,
+    "type": "u8"
+   },
+   "room": {
+    "symbol": "stats",
+    "offset": 60,
+    "type": "u8"
+   },
+   "block": {
+    "symbol": "stats",
+    "offset": 1,
+    "type": "u8"
+   },
+   "alive": {
+    "symbol": "stats",
+    "offset": 61,
+    "type": "u8"
+   },
+   "members_placed": {
+    "symbol": "stats",
+    "offset": 191,
+    "type": "u8"
+   },
+   "q_carrying": {
+    "symbol": "q",
+    "offset": 1,
+    "type": "u8"
+   },
+   "e0_hp": {
+    "symbol": "en",
+    "offset": 28,
+    "type": "s32"
+   },
+   "e1_hp": {
+    "symbol": "en",
+    "offset": 152,
+    "type": "s32"
+   },
+   "e2_hp": {
+    "symbol": "en",
+    "offset": 276,
+    "type": "s32"
+   },
+   "e3_hp": {
+    "symbol": "en",
+    "offset": 400,
+    "type": "s32"
+   },
+   "e4_hp": {
+    "symbol": "en",
+    "offset": 524,
+    "type": "s32"
+   },
+   "e5_hp": {
+    "symbol": "en",
+    "offset": 648,
+    "type": "s32"
+   },
+   "e6_hp": {
+    "symbol": "en",
+    "offset": 772,
+    "type": "s32"
+   },
+   "e7_hp": {
+    "symbol": "en",
+    "offset": 896,
+    "type": "s32"
+   },
+   "e8_hp": {
+    "symbol": "en",
+    "offset": 1020,
+    "type": "s32"
+   },
+   "e9_hp": {
+    "symbol": "en",
+    "offset": 1144,
+    "type": "s32"
+   },
+   "e10_hp": {
+    "symbol": "en",
+    "offset": 1268,
+    "type": "s32"
+   },
+   "e11_hp": {
+    "symbol": "en",
+    "offset": 1392,
+    "type": "s32"
+   },
+   "e12_hp": {
+    "symbol": "en",
+    "offset": 1516,
+    "type": "s32"
+   },
+   "e13_hp": {
+    "symbol": "en",
+    "offset": 1640,
+    "type": "s32"
+   },
+   "e14_hp": {
+    "symbol": "en",
+    "offset": 1764,
+    "type": "s32"
+   },
+   "e15_hp": {
+    "symbol": "en",
+    "offset": 1888,
+    "type": "s32"
+   },
+   "e16_hp": {
+    "symbol": "en",
+    "offset": 2012,
+    "type": "s32"
+   },
+   "e17_hp": {
+    "symbol": "en",
+    "offset": 2136,
+    "type": "s32"
+   },
+   "e18_hp": {
+    "symbol": "en",
+    "offset": 2260,
+    "type": "s32"
+   },
+   "e19_hp": {
+    "symbol": "en",
+    "offset": 2384,
+    "type": "s32"
+   },
+   "e20_hp": {
+    "symbol": "en",
+    "offset": 2508,
+    "type": "s32"
+   },
+   "e21_hp": {
+    "symbol": "en",
+    "offset": 2632,
+    "type": "s32"
+   },
+   "e22_hp": {
+    "symbol": "en",
+    "offset": 2756,
+    "type": "s32"
+   },
+   "e23_hp": {
+    "symbol": "en",
+    "offset": 2880,
+    "type": "s32"
+   },
+   "q_delivered": {
+    "symbol": "q",
+    "offset": 0,
+    "type": "u8"
+   },
+   "q_boss": {
+    "symbol": "q",
+    "offset": 2,
+    "type": "u8"
+   }
+  }
+ },
+ "steps": [
+  {
+   "frames": 60
+  },
+  {
+   "tap": {
+    "x": 128,
+    "y": 66
+   },
+   "frames": 6
+  },
+  {
+   "release": true,
+   "frames": 40
+  },
+  {
+   "button_down": "START",
+   "frames": 4
+  },
+  {
+   "button_up": "START",
+   "frames": 90
+  },
+  {
+   "button_down": "LEFT",
+   "frames": 90
+  },
+  {
+   "button_up": "LEFT",
+   "frames": 10
+  },
+  {
+   "poke": [
+    {
+     "field": "px",
+     "value": 32768
+    },
+    {
+     "field": "py",
+     "value": 29696
+    }
+   ],
+   "frames": 20
+  },
+  {
+   "button_down": "A",
+   "frames": 4
+  },
+  {
+   "button_up": "A",
+   "frames": 6
+  },
+  {
+   "frames": 8
+  },
+  {
+   "frames": 20
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    }
+   ],
+   "frames": 60
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    },
+    {
+     "field": "dbg_start_room",
+     "value": 11
+    },
+    {
+     "field": "dbg_restart",
+     "value": 1
+    },
+    {
+     "field": "q_carrying",
+     "value": 0
+    },
+    {
+     "field": "q_delivered",
+     "value": 0
+    },
+    {
+     "field": "q_boss",
+     "value": 0
+    }
+   ],
+   "frames": 80
+  },
+  {
+   "poke": [
+    {
+     "field": "px",
+     "value": 65536
+    },
+    {
+     "field": "py",
+     "value": 343552
+    }
+   ],
+   "frames": 50
+  },
+  {
+   "poke": [
+    {
+     "field": "e0_hp",
+     "value": 0
+    },
+    {
+     "field": "e1_hp",
+     "value": 0
+    },
+    {
+     "field": "e2_hp",
+     "value": 0
+    },
+    {
+     "field": "e3_hp",
+     "value": 0
+    },
+    {
+     "field": "e4_hp",
+     "value": 0
+    },
+    {
+     "field": "e5_hp",
+     "value": 0
+    },
+    {
+     "field": "e6_hp",
+     "value": 0
+    },
+    {
+     "field": "e7_hp",
+     "value": 0
+    },
+    {
+     "field": "e8_hp",
+     "value": 0
+    },
+    {
+     "field": "e9_hp",
+     "value": 0
+    },
+    {
+     "field": "e10_hp",
+     "value": 0
+    },
+    {
+     "field": "e11_hp",
+     "value": 0
+    },
+    {
+     "field": "e12_hp",
+     "value": 0
+    },
+    {
+     "field": "e13_hp",
+     "value": 0
+    },
+    {
+     "field": "e14_hp",
+     "value": 0
+    },
+    {
+     "field": "e15_hp",
+     "value": 0
+    },
+    {
+     "field": "e16_hp",
+     "value": 0
+    },
+    {
+     "field": "e17_hp",
+     "value": 0
+    },
+    {
+     "field": "e18_hp",
+     "value": 0
+    },
+    {
+     "field": "e19_hp",
+     "value": 0
+    },
+    {
+     "field": "e20_hp",
+     "value": 0
+    },
+    {
+     "field": "e21_hp",
+     "value": 0
+    },
+    {
+     "field": "e22_hp",
+     "value": 0
+    },
+    {
+     "field": "e23_hp",
+     "value": 0
+    }
+   ],
+   "frames": 40,
+   "state_capture": "m1_lista",
+   "capture": "m1_lista"
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    },
+    {
+     "field": "dbg_start_room",
+     "value": 6
+    },
+    {
+     "field": "dbg_restart",
+     "value": 1
+    },
+    {
+     "field": "q_carrying",
+     "value": 0
+    },
+    {
+     "field": "q_delivered",
+     "value": 0
+    },
+    {
+     "field": "q_boss",
+     "value": 0
+    }
+   ],
+   "frames": 80
+  },
+  {
+   "poke": [
+    {
+     "field": "px",
+     "value": 65536
+    },
+    {
+     "field": "py",
+     "value": 343552
+    }
+   ],
+   "frames": 50
+  },
+  {
+   "poke": [
+    {
+     "field": "e0_hp",
+     "value": 0
+    },
+    {
+     "field": "e1_hp",
+     "value": 0
+    },
+    {
+     "field": "e2_hp",
+     "value": 0
+    },
+    {
+     "field": "e3_hp",
+     "value": 0
+    },
+    {
+     "field": "e4_hp",
+     "value": 0
+    },
+    {
+     "field": "e5_hp",
+     "value": 0
+    },
+    {
+     "field": "e6_hp",
+     "value": 0
+    },
+    {
+     "field": "e7_hp",
+     "value": 0
+    },
+    {
+     "field": "e8_hp",
+     "value": 0
+    },
+    {
+     "field": "e9_hp",
+     "value": 0
+    },
+    {
+     "field": "e10_hp",
+     "value": 0
+    },
+    {
+     "field": "e11_hp",
+     "value": 0
+    },
+    {
+     "field": "e12_hp",
+     "value": 0
+    },
+    {
+     "field": "e13_hp",
+     "value": 0
+    },
+    {
+     "field": "e14_hp",
+     "value": 0
+    },
+    {
+     "field": "e15_hp",
+     "value": 0
+    },
+    {
+     "field": "e16_hp",
+     "value": 0
+    },
+    {
+     "field": "e17_hp",
+     "value": 0
+    },
+    {
+     "field": "e18_hp",
+     "value": 0
+    },
+    {
+     "field": "e19_hp",
+     "value": 0
+    },
+    {
+     "field": "e20_hp",
+     "value": 0
+    },
+    {
+     "field": "e21_hp",
+     "value": 0
+    },
+    {
+     "field": "e22_hp",
+     "value": 0
+    },
+    {
+     "field": "e23_hp",
+     "value": 0
+    }
+   ],
+   "frames": 40,
+   "state_capture": "m2_secreto",
+   "capture": "m2_secreto"
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    },
+    {
+     "field": "dbg_start_room",
+     "value": 3
+    },
+    {
+     "field": "dbg_restart",
+     "value": 1
+    },
+    {
+     "field": "q_carrying",
+     "value": 0
+    },
+    {
+     "field": "q_delivered",
+     "value": 0
+    },
+    {
+     "field": "q_boss",
+     "value": 0
+    }
+   ],
+   "frames": 80
+  },
+  {
+   "poke": [
+    {
+     "field": "px",
+     "value": 65536
+    },
+    {
+     "field": "py",
+     "value": 146944
+    }
+   ],
+   "frames": 50
+  },
+  {
+   "frames": 20,
+   "state_capture": "m3_nave3"
+  },
+  {
+   "poke": [
+    {
+     "field": "e0_hp",
+     "value": 0
+    },
+    {
+     "field": "e1_hp",
+     "value": 0
+    },
+    {
+     "field": "e2_hp",
+     "value": 0
+    },
+    {
+     "field": "e3_hp",
+     "value": 0
+    },
+    {
+     "field": "e4_hp",
+     "value": 0
+    },
+    {
+     "field": "e5_hp",
+     "value": 0
+    },
+    {
+     "field": "e6_hp",
+     "value": 0
+    },
+    {
+     "field": "e7_hp",
+     "value": 0
+    },
+    {
+     "field": "e8_hp",
+     "value": 0
+    },
+    {
+     "field": "e9_hp",
+     "value": 0
+    },
+    {
+     "field": "e10_hp",
+     "value": 0
+    },
+    {
+     "field": "e11_hp",
+     "value": 0
+    },
+    {
+     "field": "e12_hp",
+     "value": 0
+    },
+    {
+     "field": "e13_hp",
+     "value": 0
+    },
+    {
+     "field": "e14_hp",
+     "value": 0
+    },
+    {
+     "field": "e15_hp",
+     "value": 0
+    },
+    {
+     "field": "e16_hp",
+     "value": 0
+    },
+    {
+     "field": "e17_hp",
+     "value": 0
+    },
+    {
+     "field": "e18_hp",
+     "value": 0
+    },
+    {
+     "field": "e19_hp",
+     "value": 0
+    },
+    {
+     "field": "e20_hp",
+     "value": 0
+    },
+    {
+     "field": "e21_hp",
+     "value": 0
+    },
+    {
+     "field": "e22_hp",
+     "value": 0
+    },
+    {
+     "field": "e23_hp",
+     "value": 0
+    }
+   ],
+   "frames": 40,
+   "state_capture": "m3_nave3_vencida",
+   "capture": "m3_nave3_vencida"
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    },
+    {
+     "field": "dbg_start_room",
+     "value": 15
+    },
+    {
+     "field": "dbg_restart",
+     "value": 1
+    },
+    {
+     "field": "q_carrying",
+     "value": 0
+    },
+    {
+     "field": "q_delivered",
+     "value": 0
+    },
+    {
+     "field": "q_boss",
+     "value": 0
+    }
+   ],
+   "frames": 80
+  },
+  {
+   "poke": [
+    {
+     "field": "px",
+     "value": 65536
+    },
+    {
+     "field": "py",
+     "value": 245248
+    }
+   ],
+   "frames": 50
+  },
+  {
+   "poke": [
+    {
+     "field": "e0_hp",
+     "value": 0
+    },
+    {
+     "field": "e1_hp",
+     "value": 0
+    },
+    {
+     "field": "e2_hp",
+     "value": 0
+    },
+    {
+     "field": "e3_hp",
+     "value": 0
+    },
+    {
+     "field": "e4_hp",
+     "value": 0
+    },
+    {
+     "field": "e5_hp",
+     "value": 0
+    },
+    {
+     "field": "e6_hp",
+     "value": 0
+    },
+    {
+     "field": "e7_hp",
+     "value": 0
+    },
+    {
+     "field": "e8_hp",
+     "value": 0
+    },
+    {
+     "field": "e9_hp",
+     "value": 0
+    },
+    {
+     "field": "e10_hp",
+     "value": 0
+    },
+    {
+     "field": "e11_hp",
+     "value": 0
+    },
+    {
+     "field": "e12_hp",
+     "value": 0
+    },
+    {
+     "field": "e13_hp",
+     "value": 0
+    },
+    {
+     "field": "e14_hp",
+     "value": 0
+    },
+    {
+     "field": "e15_hp",
+     "value": 0
+    },
+    {
+     "field": "e16_hp",
+     "value": 0
+    },
+    {
+     "field": "e17_hp",
+     "value": 0
+    },
+    {
+     "field": "e18_hp",
+     "value": 0
+    },
+    {
+     "field": "e19_hp",
+     "value": 0
+    },
+    {
+     "field": "e20_hp",
+     "value": 0
+    },
+    {
+     "field": "e21_hp",
+     "value": 0
+    },
+    {
+     "field": "e22_hp",
+     "value": 0
+    },
+    {
+     "field": "e23_hp",
+     "value": 0
+    }
+   ],
+   "frames": 40,
+   "state_capture": "m4_monjarana",
+   "capture": "m4_monjarana"
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    },
+    {
+     "field": "dbg_start_room",
+     "value": 12
+    },
+    {
+     "field": "dbg_restart",
+     "value": 1
+    },
+    {
+     "field": "q_carrying",
+     "value": 0
+    },
+    {
+     "field": "q_delivered",
+     "value": 0
+    },
+    {
+     "field": "q_boss",
+     "value": 0
+    }
+   ],
+   "frames": 80
+  },
+  {
+   "poke": [
+    {
+     "field": "px",
+     "value": 65536
+    },
+    {
+     "field": "py",
+     "value": 245248
+    }
+   ],
+   "frames": 50
+  },
+  {
+   "poke": [
+    {
+     "field": "e0_hp",
+     "value": 0
+    },
+    {
+     "field": "e1_hp",
+     "value": 0
+    },
+    {
+     "field": "e2_hp",
+     "value": 0
+    },
+    {
+     "field": "e3_hp",
+     "value": 0
+    },
+    {
+     "field": "e4_hp",
+     "value": 0
+    },
+    {
+     "field": "e5_hp",
+     "value": 0
+    },
+    {
+     "field": "e6_hp",
+     "value": 0
+    },
+    {
+     "field": "e7_hp",
+     "value": 0
+    },
+    {
+     "field": "e8_hp",
+     "value": 0
+    },
+    {
+     "field": "e9_hp",
+     "value": 0
+    },
+    {
+     "field": "e10_hp",
+     "value": 0
+    },
+    {
+     "field": "e11_hp",
+     "value": 0
+    },
+    {
+     "field": "e12_hp",
+     "value": 0
+    },
+    {
+     "field": "e13_hp",
+     "value": 0
+    },
+    {
+     "field": "e14_hp",
+     "value": 0
+    },
+    {
+     "field": "e15_hp",
+     "value": 0
+    },
+    {
+     "field": "e16_hp",
+     "value": 0
+    },
+    {
+     "field": "e17_hp",
+     "value": 0
+    },
+    {
+     "field": "e18_hp",
+     "value": 0
+    },
+    {
+     "field": "e19_hp",
+     "value": 0
+    },
+    {
+     "field": "e20_hp",
+     "value": 0
+    },
+    {
+     "field": "e21_hp",
+     "value": 0
+    },
+    {
+     "field": "e22_hp",
+     "value": 0
+    },
+    {
+     "field": "e23_hp",
+     "value": 0
+    }
+   ],
+   "frames": 40,
+   "state_capture": "m5_misa",
+   "capture": "m5_misa"
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    },
+    {
+     "field": "dbg_start_room",
+     "value": 11
+    },
+    {
+     "field": "dbg_restart",
+     "value": 1
+    },
+    {
+     "field": "q_carrying",
+     "value": 0
+    },
+    {
+     "field": "q_delivered",
+     "value": 1
+    },
+    {
+     "field": "q_boss",
+     "value": 0
+    }
+   ],
+   "frames": 80
+  },
+  {
+   "poke": [
+    {
+     "field": "px",
+     "value": 65536
+    },
+    {
+     "field": "py",
+     "value": 343552
+    }
+   ],
+   "frames": 50
+  },
+  {
+   "poke": [
+    {
+     "field": "e0_hp",
+     "value": 0
+    },
+    {
+     "field": "e1_hp",
+     "value": 0
+    },
+    {
+     "field": "e2_hp",
+     "value": 0
+    },
+    {
+     "field": "e3_hp",
+     "value": 0
+    },
+    {
+     "field": "e4_hp",
+     "value": 0
+    },
+    {
+     "field": "e5_hp",
+     "value": 0
+    },
+    {
+     "field": "e6_hp",
+     "value": 0
+    },
+    {
+     "field": "e7_hp",
+     "value": 0
+    },
+    {
+     "field": "e8_hp",
+     "value": 0
+    },
+    {
+     "field": "e9_hp",
+     "value": 0
+    },
+    {
+     "field": "e10_hp",
+     "value": 0
+    },
+    {
+     "field": "e11_hp",
+     "value": 0
+    },
+    {
+     "field": "e12_hp",
+     "value": 0
+    },
+    {
+     "field": "e13_hp",
+     "value": 0
+    },
+    {
+     "field": "e14_hp",
+     "value": 0
+    },
+    {
+     "field": "e15_hp",
+     "value": 0
+    },
+    {
+     "field": "e16_hp",
+     "value": 0
+    },
+    {
+     "field": "e17_hp",
+     "value": 0
+    },
+    {
+     "field": "e18_hp",
+     "value": 0
+    },
+    {
+     "field": "e19_hp",
+     "value": 0
+    },
+    {
+     "field": "e20_hp",
+     "value": 0
+    },
+    {
+     "field": "e21_hp",
+     "value": 0
+    },
+    {
+     "field": "e22_hp",
+     "value": 0
+    },
+    {
+     "field": "e23_hp",
+     "value": 0
+    }
+   ],
+   "frames": 40,
+   "state_capture": "m7_ya_entregado",
+   "capture": "m7_ya_entregado"
+  }
+ ],
+ "assertions": {
+  "state_changes": [
+   {
+    "at": "m1_lista",
+    "field": "q_carrying",
+    "equals": 1
+   },
+   {
+    "at": "m1_lista",
+    "field": "q_boss",
+    "equals": 1
+   },
+   {
+    "at": "m2_secreto",
+    "field": "q_carrying",
+    "equals": 0
+   },
+   {
+    "at": "m3_nave3",
+    "field": "e4_hp",
+    "max_value": 2000
+   },
+   {
+    "at": "m3_nave3_vencida",
+    "field": "q_carrying",
+    "equals": 0
+   },
+   {
+    "at": "m4_monjarana",
+    "field": "q_carrying",
+    "equals": 4
+   },
+   {
+    "at": "m5_misa",
+    "field": "q_carrying",
+    "equals": 2
+   },
+   {
+    "at": "m7_ya_entregado",
+    "field": "q_carrying",
+    "equals": 0
+   },
+   {
+    "at": "m7_ya_entregado",
+    "field": "q_boss",
+    "equals": 0
+   }
+  ]
+ }
+}

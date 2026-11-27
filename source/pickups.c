@@ -135,6 +135,19 @@ void pickups_bank_relics(void) {
     if (any) arpg_progress_save();
 }
 
+// Death: the relics on the floor enter the bag; the ones that do not fit are not sent to the stash (that would dodge the loss):
+// they count as loot of this descent and are lost. Returns how many did not fit.
+int pickups_bank_relics_death(void) {
+    int extra = 0;
+    for (int i = 0; i < HEAL_PICKUP_MAX_ACTIVE; i++) {
+        if (!s_pickups[i].active || s_pickups[i].kind != PICKUP_KIND_RELIC) continue;
+        if (arpg_inv_add(&s_pickups[i].relic) < 0 && !(s_pickups[i].relic.level & ARPG_ITEM_FIXED)) extra++;
+        else if (s_pickups[i].relic.level & ARPG_ITEM_FIXED) arpg_inv_stash_add(&s_pickups[i].relic);   // fixed prizes are never lost
+        s_pickups[i].active = 0;
+    }
+    return extra;
+}
+
 void pickups_spawn_relic(fixed x, fixed y, const ArpgInvItem *item) {
     if (!item || item->kind == ARPG_ITEM_EMPTY) return;
     int slot = -1;
@@ -300,7 +313,7 @@ void pickups_update(fixed player_x, fixed player_y, PlayerState *player) {
                 if (arpg_tip_take(ARPG_TIP_RELIQUIA)) s_relic_tip_pending = 1;
                 sfx_play_pitched(SND_PICKUP_ORB, TO_INT(p->x), 1180);
                 p->active = 0;
-                arpg_progress_save();        // the relic is in the bag: do not lose it (nor the xp and kills) if the console is switched off
+                arpg_progress_save_quiet();  // the relic is in the bag: do not lose it (nor the xp and kills) if the console is switched off
             } else if (s_loot_toast_t <= 0) {
                 snprintf(s_loot_toast, sizeof(s_loot_toast), "Bolsa llena");
                 s_loot_toast_t = 60;
