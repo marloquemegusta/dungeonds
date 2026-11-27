@@ -1484,6 +1484,18 @@ def render_video(video, prefijo, sin_voz, md_dir, voices, estilo=None, tiras_dir
         segments = new
         q_png, (qw, qh) = box_png("pq.png", theme_wrap(pregunta, 186))
 
+    # plan de montaje para Remotion (devlog/src/lore/prepare_lore.py): mismos planos y tiempos que este MP4
+    with open(os.path.join(wdir, "remotion.json"), "w", encoding="utf8") as fh:
+        json.dump({
+            "header": [h if isinstance(h, str) else [list(x) for x in h] for h in hdr_lines],
+            "pregunta": theme_wrap(pregunta, 186) if pregunta else None,
+            "t_q": t_q if pregunta else None,
+            "segments": [{"fn": sg["fn"], "ss": round(sg.get("ss", 0.0), 3), "d": round(sg["d"], 3),
+                          "wide": bool(sg.get("wide", sg["p"].get("anim_b"))), "cut": sg["cut"],
+                          "una_vez": bool(sg["p"].get("mods", {}).get("una_vez")),
+                          "outro": sg["p"]["type"] == "outro"} for sg in segments],
+        }, fh, ensure_ascii=False, indent=1)
+
     def hold(p):
         return "tpad=stop_mode=clone:stop_duration=120," if p.get("mods", {}).get("una_vez") else ""
 

@@ -8,7 +8,7 @@ description: >-
 
 # Códice Lore Video (`codice-lore-video`)
 
-Flujo estandarizado para crear vídeos verticales de lore estilo *Blasphemous* para redes sociales, usando **ElevenLabs CLI** (`elevenlabs`) + **FFmpeg** + **Pillow**. Generar un vídeo debe costar escribir el guion y ejecutar un comando.
+Flujo estandarizado para crear vídeos verticales de lore estilo *Blasphemous* para redes sociales, usando **ElevenLabs CLI** (`elevenlabs`) + **FFmpeg** + **Pillow** para voz y planos, y **Remotion** con la plantilla del tema para el montaje final (regla 11). Generar un vídeo debe costar escribir el guion y ejecutar tres comandos.
 
 ---
 
@@ -62,7 +62,7 @@ Flujo estandarizado para crear vídeos verticales de lore estilo *Blasphemous* p
    - **Si la voz de un personaje sobreactúa:** generar 3 tomas planas (estabilidad 0,95, estilo 0, velocidad 0,85, con variantes del texto), que el usuario elija y usar la elegida con `archivo:`. Las `(pausa N)` dentro de una frase corta pueden romper la entonación.
    - **Exportador del lab:** `--dirs S,SE` renderiza solo las direcciones que usa el guion (resultado idéntico al render completo); `LAB_GL=gpu` gana poco (~30 %) y da píxeles distintos de la CPU, así que no se mezcla dentro de un clip.
 
-11. **Montaje dinámico con Remotion (A/B en curso desde 2026-11-23, 05 Sor Leonor):** misma voz y planos que el render clásico, más subtítulo palabra a palabra (palabra activa en dorado apagado), zoom por plano y golpes en las frases clave. Composición `Lore05` en `C:\codexlocal\devlog\src\lore\` (fuera del repo): toma el audio y los planos de `scratch/codice-video/<prefijo>_NN/` y del MP4 clásico, así que primero se renderiza el clásico. Pendiente de ver qué versión retiene mejor (tabla de `## Publicado` en `lote-01.md`); si gana, integrarlo en el generador para que siga siendo un comando.
+11. **Estilo definitivo: Remotion + la plantilla del tema (decisión del usuario, 2026-11-27).** Lo que se publica es el montaje de Remotion: misma voz y planos que el render clásico, más subtítulo palabra a palabra (palabra activa en dorado apagado), zoom por plano, golpe y destello en la cita, todo con `GameBox` (`devlog/src/theme/`). El render clásico ya no se publica: es el paso que genera voz, planos y el plan de montaje (`scratch/codice-video/<prefijo>/remotion.json`). Flujo en «Flujo recomendado», abajo. Composición genérica `LoreVideo` en `C:\codexlocal\devlog\src\lore\` (fuera del repo); `Lore05`, `Lore11` y `Lore0201` son las versiones a mano anteriores y no se copian.
 12. **Aprendizajes del 11 (Campanero, 2026-11-24):**
     - **Props en el plano:** nada de PNG pegado; si un objeto sale, va renderizado como parte del mundo (la vela delante del Campanero se quitó por eso).
     - **Antes de modificar un modelo, mirar qué trae:** la campana ya tenía una lengua de badajo y se usó tal cual (`campana_lengua`, `tools/props/build_campana_lengua.py`). Un plano de objeto solo es una animación más en `assets/sprites/bestiary/<nombre>/` con celda 320.
@@ -116,7 +116,18 @@ python .agents/skills/codice-lore-video/scripts/render_guiones.py --guiones <lot
 python .agents/skills/codice-lore-video/scripts/render_guiones.py --guiones <lote.md> [--solo 01,03] [--prefijo prueba]
 ```
 
-Salida: `assets/videos/loreXX_NN_<titulo>.mp4` y una tira de 6 fotogramas en `walkthroughs/lore-lote-XX/assets/` (`--tiras` lo cambia). Antes de entregar, mirar fotogramas de cada plano (arranque, cortes, trayectos), no solo la tira.
+Salida: `assets/videos/loreXX_NN_<titulo>.mp4` (clásico, intermedio) y una tira de 6 fotogramas en `walkthroughs/lore-lote-XX/assets/` (`--tiras` lo cambia).
+
+**Montaje final en Remotion** (después del render real con voz):
+
+```bash
+cd C:\codexlocal\devlog
+python src/lore/prepare_lore.py lote-02.md 02 lore02_02        # public/lore0202/ y src/lore/lore0202.json
+# una línea en src/Root.tsx: <Composition id="Lore0202" component={LoreVideo} … defaultProps={{ info: lore0202 }} />
+npx remotion render Lore0202 C:\codexlocal\dungeonds\assets\videos\lore02_02_<titulo>_remotion.mp4
+```
+
+Lo que se publica es el `_remotion.mp4`. Antes de entregar, mirar fotogramas de cada plano (arranque, cortes, cita, pregunta, cierre), no solo la tira.
 
 ---
 

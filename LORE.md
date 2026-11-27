@@ -96,7 +96,7 @@ Soldado de la Columna. En la Quiebra le ordenaron abrir fuego sobre una procesi�
 *Ficha oficial:* «Ayudó a cargar una cruz. Ahora la cruz le carga a él.»
 
 ### El Ojo del Tribunal — Gaspar Valcárcel y sus inquisidores (`CÓDICE · IV`)
-Se arrancaron los ojos porque la mirada humana era propensa al perdón, y alzaron un farol de juicio. Gaspar firmó todas las condenas de este documento.
+Se arrancaron los ojos porque la mirada humana era propensa al perdón, y alzaron un farol de juicio. Gaspar firmó todas las condenas de este documento. La primera fue la de Remedios: la miró a la cara, vio a quien repartía el pan de los diezmos entre los pobres, y dudó. Firmó igual, y esa noche se arrancó los ojos para que no volviera a pasar; sus inquisidores hicieron lo mismo. Desde entonces el farol no ha absuelto a nadie.
 - **Sor Leonor.** Novicia adulta de la Sacristía. Vio lo que el padre Anselmo hacía con los monaguillos, le dijo que no cuando fue a por ella y le denunció ante el Tribunal. El farol de Gaspar examinó al confesor y no encontró culpa; la examinó a ella y la encontró. La condenaron por calumnia. El Tribunal dictó además que una novicia que acusa a su confesor solo puede tener el demonio dentro, y la exorcizó durante días sobre la mesa de la Sacristía, atada bocarriba y arqueada. Lo que fue de ella después, en los Exvotos (Súper Monja).
 *Ficha oficial:* «La linterna no ve culpables. Los fabrica.»
 
