@@ -52,8 +52,39 @@ def rgb15(c):
     return (r >> 3) | ((g >> 3) << 5) | ((b >> 3) << 10)
 
 
-def quantize(path):
-    """color.png (104x56 RGBA) -> (palette de 16 RGB15, indice 0 transparente; pixels (H, W) uint8 0..15)."""
+def median_cut_unique(cols, weights, n):
+    """Median cut sobre los colores unicos (ponderados por sqrt de su cuenta) para no aplastar los brillos de una reja casi negra."""
+    boxes = [(cols, weights)]
+    while len(boxes) < n:
+        best, best_score = -1, 0
+        for i, (c, w) in enumerate(boxes):
+            if len(c) < 2:
+                continue
+            score = int((c.max(0) - c.min(0)).max()) * float(w.sum())
+            if score > best_score:
+                best_score, best = score, i
+        if best < 0:
+            break
+        c, w = boxes.pop(best)
+        ch = int((c.max(0) - c.min(0)).argmax())
+        o = np.argsort(c[:, ch], kind="stable")
+        c, w = c[o], w[o]
+        k = int(np.searchsorted(np.cumsum(w), w.sum() / 2))
+        k = min(max(k, 1), len(c) - 1)
+        boxes += [(c[:k], w[:k]), (c[k:], w[k:])]
+    return [(c * w[:, None]).sum(0) / w.sum() for c, w in boxes]
+
+
+def rgb15_round(c):
+    r, g, b = (min(31, (int(round(v)) + 4) >> 3) for v in c)
+    return r | (g << 5) | (b << 10)
+
+
+def quantize(path, lit=False):
+    """color.png (104x56 RGBA) -> (palette de 16 RGB15, indice 0 transparente; pixels (H, W) uint8 0..15).
+
+    lit=True (reja con luz de sala, tools/arpg_light_verja.py): paleta sobre los colores unicos ponderados y redondeo a 5 bits,
+    para que los brillos de un render oscuro no se pierdan; el arte de dia (verja_gfx.c) sigue con el corte por mediana original."""
     im = Image.open(path).convert("RGBA")
     if im.size != (W, H):
         raise ValueError(f"{path}: expected {W}x{H}, got {im.size}")
@@ -62,14 +93,20 @@ def quantize(path):
     opaque = a[:, :, 3] >= ALPHA_MIN
 
     px = rgb[opaque]
-    means = median_cut(px, PAL_N)
+    if lit and len(px):
+        u, cnt = np.unique(px, axis=0, return_counts=True)
+        means = median_cut_unique(u, np.sqrt(cnt.astype(np.float64)), PAL_N)
+        conv = rgb15_round
+    else:
+        means = median_cut(px, PAL_N)
+        conv = rgb15
     if len(means) < PAL_N:                      # fewer unique colours than the palette: pad with black
         means += [np.zeros(3)] * (PAL_N - len(means))
     pal = np.array(means, dtype=np.float64)     # (PAL_N, 3)
 
     palette = [0] * 16
     for i in range(PAL_N):
-        palette[i + 1] = rgb15(pal[i])
+        palette[i + 1] = conv(pal[i])
 
     pixels = np.zeros((H, W), dtype=np.uint8)
     if len(px):

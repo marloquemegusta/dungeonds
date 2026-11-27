@@ -48,6 +48,7 @@ void hwshadow_add_verja(int sub, int x, int y, int lift_px, int in_front);
 void hwshadow_verja_set(const uint16_t *palette, const uint8_t *shadow, int r0, int rows, int dir);
 // The shadow of the gate on the floor (x, y as hwshadow_add_verja). Raising the gate (lift_px) shortens it.
 void hwshadow_add_verja_shadow(int sub, int x, int y, int lift_px);
+extern volatile uint8_t g_verja_shadow_off;   // scenarios only: 1 hides it
 
 // Programs window/blend registers of one engine for this frame.
 void hwshadow_screen_regs(int sub);

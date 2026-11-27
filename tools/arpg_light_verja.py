@@ -48,7 +48,7 @@ def shadow_block(path):
 
 
 def bake(name, color_png, shadow_png):
-    palette, pixels = bv.quantize(color_png)
+    palette, pixels = bv.quantize(color_png, lit=shadow_png is not None)
     r0, rows, d, left, right = shadow_block(shadow_png) if shadow_png else (0, 0, 0, b"", b"")
     blob = b"LVJA" + struct.pack("<BBBB", r0, rows, d, 0)
     blob += struct.pack("<16H", *palette) + pixels.tobytes() + left + right

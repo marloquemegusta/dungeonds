@@ -167,6 +167,7 @@ void hwshadow_add_verja(int sub, int x, int y, int lift_px, int in_front) {
 #define VSH_SPLIT 56
 static uint8_t s_vsh_bits[VSH_ROWS_MAX * 13];   // rows x 7 B (left half) then rows x 6 B (right half)
 static uint8_t s_vsh_r0, s_vsh_rows, s_vsh_dir;
+volatile uint8_t g_verja_shadow_off;   // scenarios only (poke 1): hides the gate shadow to compare frames; 0 in the game
 
 void hwshadow_verja_set(const uint16_t *palette, const uint8_t *shadow, int r0, int rows, int dir) {
     for (int i = 0; i < 16; i++) {
@@ -186,7 +187,7 @@ void hwshadow_verja_set(const uint16_t *palette, const uint8_t *shadow, int r0, 
 // x, y: top-left corner of the gate pair (as hwshadow_add_verja); one shadow per 104 px copy.
 void hwshadow_add_verja_shadow(int sub, int x, int y, int lift_px) {
     const int rows = s_vsh_rows;
-    if (!rows) return;
+    if (!rows || g_verja_shadow_off) return;
     if (lift_px < 0) lift_px = 0;
     const int cut = rows * lift_px / VERJA_H;
     const int bh = rows - cut;
