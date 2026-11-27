@@ -55,6 +55,7 @@ void arpg_world_rest(void);              // sleeping: groups and bosses killed c
 
 // Save file on the SD card (fat:/dungeonds_arpg.sav, falling back to sd:/). Silent no-op when there is no card.
 int  arpg_fat_ready(void);               // mounts the card once (shared with the play log); 0 without a card
+int  arpg_progress_save_quiet(void);     // same, without dumping the game log (mid-combat saves: one SD write less in that frame)
 int  arpg_progress_save(void);           // writes g_arpg; returns 1 on success
 int  arpg_progress_load(void);           // reads a valid save (magic match) into g_arpg; returns 1 if it did
 int  arpg_progress_has_save(void);       // 1 if a save file exists on the card

@@ -1,0 +1,9779 @@
+{
+ "name": "arpg_campana_bajar",
+ "description": "Bajar andando entre naves (la sala cambia siempre andando; solo se teletransporta para colocarse al empezar y, en cada nave, para pasar a un carril libre del pie, porque los muebles del pie de la nave cierran el centro; los enemigos se ponen a 0 de vida para que no cierren el paso). Cripta, sin jefe activo: tras alejarse unos pasos del borde, el borde inferior lleva a la Nave 4; pegado al borde al aterrizar no dispara; con el combate del jefe en marcha (reja de abajo cerrada) no se puede bajar. Con la denuncia en la mano (carrying=4) y sin la llave de la Misa, desde la Galeria de la monjarana (sala 15): puerta izquierda a la Nave 4 y borde inferior de cada nave: Nave 4 -> 3 -> 2 -> 1 -> campamento, donde se entrega (delivered=4) y Pira cae en la bolsa. Dios activo.",
+ "suite": true,
+ "state": {
+  "elf": "../.ds-game-dev/build/out/dungeonds.elf",
+  "symbols": {
+   "pl": "s_player",
+   "dbg": "g_enc_debug",
+   "stats": "g_enc_stats",
+   "q": "g_quest",
+   "ga": "g_arpg",
+   "en": "g_enemies"
+  },
+  "default_symbol": "pl",
+  "fields": {
+   "px": {
+    "symbol": "pl",
+    "offset": 0,
+    "type": "s32"
+   },
+   "py": {
+    "symbol": "pl",
+    "offset": 4,
+    "type": "s32"
+   },
+   "dbg_god": {
+    "symbol": "dbg",
+    "offset": 2,
+    "type": "u8"
+   },
+   "dbg_restart": {
+    "symbol": "dbg",
+    "offset": 12,
+    "type": "u8"
+   },
+   "dbg_start_room": {
+    "symbol": "dbg",
+    "offset": 20,
+    "type": "u8"
+   },
+   "room": {
+    "symbol": "stats",
+    "offset": 60,
+    "type": "u8"
+   },
+   "block": {
+    "symbol": "stats",
+    "offset": 1,
+    "type": "u8"
+   },
+   "alive": {
+    "symbol": "stats",
+    "offset": 61,
+    "type": "u8"
+   },
+   "members_placed": {
+    "symbol": "stats",
+    "offset": 191,
+    "type": "u8"
+   },
+   "q_carrying": {
+    "symbol": "q",
+    "offset": 1,
+    "type": "u8"
+   },
+   "e0_hp": {
+    "symbol": "en",
+    "offset": 28,
+    "type": "s32"
+   },
+   "e1_hp": {
+    "symbol": "en",
+    "offset": 152,
+    "type": "s32"
+   },
+   "e2_hp": {
+    "symbol": "en",
+    "offset": 276,
+    "type": "s32"
+   },
+   "e3_hp": {
+    "symbol": "en",
+    "offset": 400,
+    "type": "s32"
+   },
+   "e4_hp": {
+    "symbol": "en",
+    "offset": 524,
+    "type": "s32"
+   },
+   "e5_hp": {
+    "symbol": "en",
+    "offset": 648,
+    "type": "s32"
+   },
+   "e6_hp": {
+    "symbol": "en",
+    "offset": 772,
+    "type": "s32"
+   },
+   "e7_hp": {
+    "symbol": "en",
+    "offset": 896,
+    "type": "s32"
+   },
+   "e8_hp": {
+    "symbol": "en",
+    "offset": 1020,
+    "type": "s32"
+   },
+   "e9_hp": {
+    "symbol": "en",
+    "offset": 1144,
+    "type": "s32"
+   },
+   "e10_hp": {
+    "symbol": "en",
+    "offset": 1268,
+    "type": "s32"
+   },
+   "e11_hp": {
+    "symbol": "en",
+    "offset": 1392,
+    "type": "s32"
+   },
+   "e12_hp": {
+    "symbol": "en",
+    "offset": 1516,
+    "type": "s32"
+   },
+   "e13_hp": {
+    "symbol": "en",
+    "offset": 1640,
+    "type": "s32"
+   },
+   "e14_hp": {
+    "symbol": "en",
+    "offset": 1764,
+    "type": "s32"
+   },
+   "e15_hp": {
+    "symbol": "en",
+    "offset": 1888,
+    "type": "s32"
+   },
+   "e16_hp": {
+    "symbol": "en",
+    "offset": 2012,
+    "type": "s32"
+   },
+   "e17_hp": {
+    "symbol": "en",
+    "offset": 2136,
+    "type": "s32"
+   },
+   "e18_hp": {
+    "symbol": "en",
+    "offset": 2260,
+    "type": "s32"
+   },
+   "e19_hp": {
+    "symbol": "en",
+    "offset": 2384,
+    "type": "s32"
+   },
+   "e20_hp": {
+    "symbol": "en",
+    "offset": 2508,
+    "type": "s32"
+   },
+   "e21_hp": {
+    "symbol": "en",
+    "offset": 2632,
+    "type": "s32"
+   },
+   "e22_hp": {
+    "symbol": "en",
+    "offset": 2756,
+    "type": "s32"
+   },
+   "e23_hp": {
+    "symbol": "en",
+    "offset": 2880,
+    "type": "s32"
+   },
+   "delivered": {
+    "symbol": "q",
+    "offset": 0,
+    "type": "u8"
+   },
+   "carrying": {
+    "symbol": "q",
+    "offset": 1,
+    "type": "u8"
+   },
+   "bag0_mech": {
+    "symbol": "ga",
+    "offset": 31,
+    "type": "u8"
+   }
+  }
+ },
+ "steps": [
+  {
+   "frames": 60
+  },
+  {
+   "tap": {
+    "x": 128,
+    "y": 66
+   },
+   "frames": 6
+  },
+  {
+   "release": true,
+   "frames": 40
+  },
+  {
+   "button_down": "START",
+   "frames": 4
+  },
+  {
+   "button_up": "START",
+   "frames": 90
+  },
+  {
+   "button_down": "LEFT",
+   "frames": 90
+  },
+  {
+   "button_up": "LEFT",
+   "frames": 10
+  },
+  {
+   "poke": [
+    {
+     "field": "px",
+     "value": 32768
+    },
+    {
+     "field": "py",
+     "value": 29696
+    }
+   ],
+   "frames": 20
+  },
+  {
+   "button_down": "A",
+   "frames": 4
+  },
+  {
+   "button_up": "A",
+   "frames": 6
+  },
+  {
+   "frames": 8
+  },
+  {
+   "frames": 20
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    }
+   ],
+   "frames": 60
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    },
+    {
+     "field": "dbg_start_room",
+     "value": 16
+    },
+    {
+     "field": "dbg_restart",
+     "value": 1
+    },
+    {
+     "field": "q_carrying",
+     "value": 4
+    }
+   ],
+   "frames": 80
+  },
+  {
+   "frames": 10,
+   "state_capture": "c00_cripta",
+   "capture": "c00_cripta"
+  },
+  {
+   "button_down": "DOWN",
+   "frames": 30
+  },
+  {
+   "button_down": "DOWN",
+   "frames": 30,
+   "state_capture": "c01_sin_subir",
+   "capture": "c01_sin_subir"
+  },
+  {
+   "button_up": "DOWN",
+   "frames": 4
+  },
+  {
+   "button_down": "UP",
+   "frames": 20
+  },
+  {
+   "button_up": "UP",
+   "frames": 4
+  },
+  {
+   "button_down": "DOWN",
+   "frames": 30
+  },
+  {
+   "button_down": "DOWN",
+   "frames": 30
+  },
+  {
+   "button_down": "DOWN",
+   "frames": 30,
+   "state_capture": "c02_cripta_a_nave4",
+   "capture": "c02_cripta_a_nave4"
+  },
+  {
+   "button_up": "DOWN",
+   "frames": 4
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    },
+    {
+     "field": "dbg_start_room",
+     "value": 16
+    },
+    {
+     "field": "dbg_restart",
+     "value": 1
+    },
+    {
+     "field": "q_carrying",
+     "value": 4
+    }
+   ],
+   "frames": 80
+  },
+  {
+   "button_down": "UP",
+   "frames": 30
+  },
+  {
+   "button_down": "UP",
+   "frames": 30
+  },
+  {
+   "button_down": "UP",
+   "frames": 30
+  },
+  {
+   "button_down": "UP",
+   "frames": 30
+  },
+  {
+   "button_down": "UP",
+   "frames": 30,
+   "state_capture": "c03_jefe_activo",
+   "capture": "c03_jefe_activo"
+  },
+  {
+   "button_up": "UP",
+   "frames": 4
+  },
+  {
+   "button_down": "DOWN",
+   "frames": 30
+  },
+  {
+   "button_down": "DOWN",
+   "frames": 30
+  },
+  {
+   "button_down": "DOWN",
+   "frames": 30
+  },
+  {
+   "button_down": "DOWN",
+   "frames": 30
+  },
+  {
+   "button_down": "DOWN",
+   "frames": 30
+  },
+  {
+   "button_down": "DOWN",
+   "frames": 30
+  },
+  {
+   "button_down": "DOWN",
+   "frames": 30
+  },
+  {
+   "button_down": "DOWN",
+   "frames": 30
+  },
+  {
+   "button_down": "DOWN",
+   "frames": 30
+  },
+  {
+   "button_down": "DOWN",
+   "frames": 30,
+   "state_capture": "c04_con_jefe",
+   "capture": "c04_con_jefe"
+  },
+  {
+   "button_up": "DOWN",
+   "frames": 4
+  },
+  {
+   "poke": [
+    {
+     "field": "dbg_god",
+     "value": 1
+    },
+    {
+     "field": "dbg_start_room",
+     "value": 15
+    },
+    {
+     "field": "dbg_restart",
+     "value": 1
+    },
+    {
+     "field": "q_carrying",
+     "value": 4
+    }
+   ],
+   "frames": 80
+  },
+  {
+   "frames": 10,
+   "state_capture": "b00_monjarana",
+   "capture": "b00_monjarana"
+  },
+  {
+   "button_down": "LEFT",
+   "frames": 30,
+   "poke": [
+    {
+     "field": "e0_hp",
+     "value": 0
+    },
+    {
+     "field": "e1_hp",
+     "value": 0
+    },
+    {
+     "field": "e2_hp",
+     "value": 0
+    },
+    {
+     "field": "e3_hp",
+     "value": 0
+    },
+    {
+     "field": "e4_hp",
+     "value": 0
+    },
+    {
+     "field": "e5_hp",
+     "value": 0
+    },
+    {
+     "field": "e6_hp",
+     "value": 0
+    },
+    {
+     "field": "e7_hp",
+     "value": 0
+    },
+    {
+     "field": "e8_hp",
+     "value": 0
+    },
+    {
+     "field": "e9_hp",
+     "value": 0
+    },
+    {
+     "field": "e10_hp",
+     "value": 0
+    },
+    {
+     "field": "e11_hp",
+     "value": 0
+    },
+    {
+     "field": "e12_hp",
+     "value": 0
+    },
+    {
+     "field": "e13_hp",
+     "value": 0
+    },
+    {
+     "field": "e14_hp",
+     "value": 0
+    },
+    {
+     "field": "e15_hp",
+     "value": 0
+    },
+    {
+     "field": "e16_hp",
+     "value": 0
+    },
+    {
+     "field": "e17_hp",
+     "value": 0
+    },
+    {
+     "field": "e18_hp",
+     "value": 0
+    },
+    {
+     "field": "e19_hp",
+     "value": 0
+    },
+    {
+     "field": "e20_hp",
+     "value": 0
+    },
+    {
+     "field": "e21_hp",
+     "value": 0
+    },
+    {
+     "field": "e22_hp",
+     "value": 0
+    },
+    {
+     "field": "e23_hp",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "button_down": "LEFT",
+   "frames": 30,
+   "poke": [
+    {
+     "field": "e0_hp",
+     "value": 0
+    },
+    {
+     "field": "e1_hp",
+     "value": 0
+    },
+    {
+     "field": "e2_hp",
+     "value": 0
+    },
+    {
+     "field": "e3_hp",
+     "value": 0
+    },
+    {
+     "field": "e4_hp",
+     "value": 0
+    },
+    {
+     "field": "e5_hp",
+     "value": 0
+    },
+    {
+     "field": "e6_hp",
+     "value": 0
+    },
+    {
+     "field": "e7_hp",
+     "value": 0
+    },
+    {
+     "field": "e8_hp",
+     "value": 0
+    },
+    {
+     "field": "e9_hp",
+     "value": 0
+    },
+    {
+     "field": "e10_hp",
+     "value": 0
+    },
+    {
+     "field": "e11_hp",
+     "value": 0
+    },
+    {
+     "field": "e12_hp",
+     "value": 0
+    },
+    {
+     "field": "e13_hp",
+     "value": 0
+    },
+    {
+     "field": "e14_hp",
+     "value": 0
+    },
+    {
+     "field": "e15_hp",
+     "value": 0
+    },
+    {
+     "field": "e16_hp",
+     "value": 0
+    },
+    {
+     "field": "e17_hp",
+     "value": 0
+    },
+    {
+     "field": "e18_hp",
+     "value": 0
+    },
+    {
+     "field": "e19_hp",
+     "value": 0
+    },
+    {
+     "field": "e20_hp",
+     "value": 0
+    },
+    {
+     "field": "e21_hp",
+     "value": 0
+    },
+    {
+     "field": "e22_hp",
+     "value": 0
+    },
+    {
+     "field": "e23_hp",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "button_down": "LEFT",
+   "frames": 30,
+   "poke": [
+    {
+     "field": "e0_hp",
+     "value": 0
+    },
+    {
+     "field": "e1_hp",
+     "value": 0
+    },
+    {
+     "field": "e2_hp",
+     "value": 0
+    },
+    {
+     "field": "e3_hp",
+     "value": 0
+    },
+    {
+     "field": "e4_hp",
+     "value": 0
+    },
+    {
+     "field": "e5_hp",
+     "value": 0
+    },
+    {
+     "field": "e6_hp",
+     "value": 0
+    },
+    {
+     "field": "e7_hp",
+     "value": 0
+    },
+    {
+     "field": "e8_hp",
+     "value": 0
+    },
+    {
+     "field": "e9_hp",
+     "value": 0
+    },
+    {
+     "field": "e10_hp",
+     "value": 0
+    },
+    {
+     "field": "e11_hp",
+     "value": 0
+    },
+    {
+     "field": "e12_hp",
+     "value": 0
+    },
+    {
+     "field": "e13_hp",
+     "value": 0
+    },
+    {
+     "field": "e14_hp",
+     "value": 0
+    },
+    {
+     "field": "e15_hp",
+     "value": 0
+    },
+    {
+     "field": "e16_hp",
+     "value": 0
+    },
+    {
+     "field": "e17_hp",
+     "value": 0
+    },
+    {
+     "field": "e18_hp",
+     "value": 0
+    },
+    {
+     "field": "e19_hp",
+     "value": 0
+    },
+    {
+     "field": "e20_hp",
+     "value": 0
+    },
+    {
+     "field": "e21_hp",
+     "value": 0
+    },
+    {
+     "field": "e22_hp",
+     "value": 0
+    },
+    {
+     "field": "e23_hp",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "button_down": "LEFT",
+   "frames": 30,
+   "poke": [
+    {
+     "field": "e0_hp",
+     "value": 0
+    },
+    {
+     "field": "e1_hp",
+     "value": 0
+    },
+    {
+     "field": "e2_hp",
+     "value": 0
+    },
+    {
+     "field": "e3_hp",
+     "value": 0
+    },
+    {
+     "field": "e4_hp",
+     "value": 0
+    },
+    {
+     "field": "e5_hp",
+     "value": 0
+    },
+    {
+     "field": "e6_hp",
+     "value": 0
+    },
+    {
+     "field": "e7_hp",
+     "value": 0
+    },
+    {
+     "field": "e8_hp",
+     "value": 0
+    },
+    {
+     "field": "e9_hp",
+     "value": 0
+    },
+    {
+     "field": "e10_hp",
+     "value": 0
+    },
+    {
+     "field": "e11_hp",
+     "value": 0
+    },
+    {
+     "field": "e12_hp",
+     "value": 0
+    },
+    {
+     "field": "e13_hp",
+     "value": 0
+    },
+    {
+     "field": "e14_hp",
+     "value": 0
+    },
+    {
+     "field": "e15_hp",
+     "value": 0
+    },
+    {
+     "field": "e16_hp",
+     "value": 0
+    },
+    {
+     "field": "e17_hp",
+     "value": 0
+    },
+    {
+     "field": "e18_hp",
+     "value": 0
+    },
+    {
+     "field": "e19_hp",
+     "value": 0
+    },
+    {
+     "field": "e20_hp",
+     "value": 0
+    },
+    {
+     "field": "e21_hp",
+     "value": 0
+    },
+    {
+     "field": "e22_hp",
+     "value": 0
+    },
+    {
+     "field": "e23_hp",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "button_down": "LEFT",
+   "frames": 20,
+   "poke": [
+    {
+     "field": "e0_hp",
+     "value": 0
+    },
+    {
+     "field": "e1_hp",
+     "value": 0
+    },
+    {
+     "field": "e2_hp",
+     "value": 0
+    },
+    {
+     "field": "e3_hp",
+     "value": 0
+    },
+    {
+     "field": "e4_hp",
+     "value": 0
+    },
+    {
+     "field": "e5_hp",
+     "value": 0
+    },
+    {
+     "field": "e6_hp",
+     "value": 0
+    },
+    {
+     "field": "e7_hp",
+     "value": 0
+    },
+    {
+     "field": "e8_hp",
+     "value": 0
+    },
+    {
+     "field": "e9_hp",
+     "value": 0
+    },
+    {
+     "field": "e10_hp",
+     "value": 0
+    },
+    {
+     "field": "e11_hp",
+     "value": 0
+    },
+    {
+     "field": "e12_hp",
+     "value": 0
+    },
+    {
+     "field": "e13_hp",
+     "value": 0
+    },
+    {
+     "field": "e14_hp",
+     "value": 0
+    },
+    {
+     "field": "e15_hp",
+     "value": 0
+    },
+    {
+     "field": "e16_hp",
+     "value": 0
+    },
+    {
+     "field": "e17_hp",
+     "value": 0
+    },
+    {
+     "field": "e18_hp",
+     "value": 0
+    },
+    {
+     "field": "e19_hp",
+     "value": 0
+    },
+    {
+     "field": "e20_hp",
+     "value": 0
+    },
+    {
+     "field": "e21_hp",
+     "value": 0
+    },
+    {
+     "field": "e22_hp",
+     "value": 0
+    },
+    {
+     "field": "e23_hp",
+     "value": 0
+    }
+   ],
+   "state_capture": "b01_nave4",
+   "capture": "b01_nave4"
+  },
+  {
+   "button_up": "LEFT",
+   "frames": 4
+  },
+  {
+   "button_down": "DOWN",
+   "frames": 30,
+   "poke": [
+    {
+     "field": "e0_hp",
+     "value": 0
+    },
+    {
+     "field": "e1_hp",
+     "value": 0
+    },
+    {
+     "field": "e2_hp",
+     "value": 0
+    },
+    {
+     "field": "e3_hp",
+     "value": 0
+    },
+    {
+     "field": "e4_hp",
+     "value": 0
+    },
+    {
+     "field": "e5_hp",
+     "value": 0
+    },
+    {
+     "field": "e6_hp",
+     "value": 0
+    },
+    {
+     "field": "e7_hp",
+     "value": 0
+    },
+    {
+     "field": "e8_hp",
+     "value": 0
+    },
+    {
+     "field": "e9_hp",
+     "value": 0
+    },
+    {
+     "field": "e10_hp",
+     "value": 0
+    },
+    {
+     "field": "e11_hp",
+     "value": 0
+    },
+    {
+     "field": "e12_hp",
+     "value": 0
+    },
+    {
+     "field": "e13_hp",
+     "value": 0
+    },
+    {
+     "field": "e14_hp",
+     "value": 0
+    },
+    {
+     "field": "e15_hp",
+     "value": 0
+    },
+    {
+     "field": "e16_hp",
+     "value": 0
+    },
+    {
+     "field": "e17_hp",
+     "value": 0
+    },
+    {
+     "field": "e18_hp",
+     "value": 0
+    },
+    {
+     "field": "e19_hp",
+     "value": 0
+    },
+    {
+     "field": "e20_hp",
+     "value": 0
+    },
+    {
+     "field": "e21_hp",
+     "value": 0
+    },
+    {
+     "field": "e22_hp",
+     "value": 0
+    },
+    {
+     "field": "e23_hp",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "button_down": "DOWN",
+   "frames": 30,
+   "poke": [
+    {
+     "field": "e0_hp",
+     "value": 0
+    },
+    {
+     "field": "e1_hp",
+     "value": 0
+    },
+    {
+     "field": "e2_hp",
+     "value": 0
+    },
+    {
+     "field": "e3_hp",
+     "value": 0
+    },
+    {
+     "field": "e4_hp",
+     "value": 0
+    },
+    {
+     "field": "e5_hp",
+     "value": 0
+    },
+    {
+     "field": "e6_hp",
+     "value": 0
+    },
+    {
+     "field": "e7_hp",
+     "value": 0
+    },
+    {
+     "field": "e8_hp",
+     "value": 0
+    },
+    {
+     "field": "e9_hp",
+     "value": 0
+    },
+    {
+     "field": "e10_hp",
+     "value": 0
+    },
+    {
+     "field": "e11_hp",
+     "value": 0
+    },
+    {
+     "field": "e12_hp",
+     "value": 0
+    },
+    {
+     "field": "e13_hp",
+     "value": 0
+    },
+    {
+     "field": "e14_hp",
+     "value": 0
+    },
+    {
+     "field": "e15_hp",
+     "value": 0
+    },
+    {
+     "field": "e16_hp",
+     "value": 0
+    },
+    {
+     "field": "e17_hp",
+     "value": 0
+    },
+    {
+     "field": "e18_hp",
+     "value": 0
+    },
+    {
+     "field": "e19_hp",
+     "value": 0
+    },
+    {
+     "field": "e20_hp",
+     "value": 0
+    },
+    {
+     "field": "e21_hp",
+     "value": 0
+    },
+    {
+     "field": "e22_hp",
+     "value": 0
+    },
+    {
+     "field": "e23_hp",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "button_down": "DOWN",
+   "frames": 30,
+   "poke": [
+    {
+     "field": "e0_hp",
+     "value": 0
+    },
+    {
+     "field": "e1_hp",
+     "value": 0
+    },
+    {
+     "field": "e2_hp",
+     "value": 0
+    },
+    {
+     "field": "e3_hp",
+     "value": 0
+    },
+    {
+     "field": "e4_hp",
+     "value": 0
+    },
+    {
+     "field": "e5_hp",
+     "value": 0
+    },
+    {
+     "field": "e6_hp",
+     "value": 0
+    },
+    {
+     "field": "e7_hp",
+     "value": 0
+    },
+    {
+     "field": "e8_hp",
+     "value": 0
+    },
+    {
+     "field": "e9_hp",
+     "value": 0
+    },
+    {
+     "field": "e10_hp",
+     "value": 0
+    },
+    {
+     "field": "e11_hp",
+     "value": 0
+    },
+    {
+     "field": "e12_hp",
+     "value": 0
+    },
+    {
+     "field": "e13_hp",
+     "value": 0
+    },
+    {
+     "field": "e14_hp",
+     "value": 0
+    },
+    {
+     "field": "e15_hp",
+     "value": 0
+    },
+    {
+     "field": "e16_hp",
+     "value": 0
+    },
+    {
+     "field": "e17_hp",
+     "value": 0
+    },
+    {
+     "field": "e18_hp",
+     "value": 0
+    },
+    {
+     "field": "e19_hp",
+     "value": 0
+    },
+    {
+     "field": "e20_hp",
+     "value": 0
+    },
+    {
+     "field": "e21_hp",
+     "value": 0
+    },
+    {
+     "field": "e22_hp",
+     "value": 0
+    },
+    {
+     "field": "e23_hp",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "button_down": "DOWN",
+   "frames": 30,
+   "poke": [
+    {
+     "field": "e0_hp",
+     "value": 0
+    },
+    {
+     "field": "e1_hp",
+     "value": 0
+    },
+    {
+     "field": "e2_hp",
+     "value": 0
+    },
+    {
+     "field": "e3_hp",
+     "value": 0
+    },
+    {
+     "field": "e4_hp",
+     "value": 0
+    },
+    {
+     "field": "e5_hp",
+     "value": 0
+    },
+    {
+     "field": "e6_hp",
+     "value": 0
+    },
+    {
+     "field": "e7_hp",
+     "value": 0
+    },
+    {
+     "field": "e8_hp",
+     "value": 0
+    },
+    {
+     "field": "e9_hp",
+     "value": 0
+    },
+    {
+     "field": "e10_hp",
+     "value": 0
+    },
+    {
+     "field": "e11_hp",
+     "value": 0
+    },
+    {
+     "field": "e12_hp",
+     "value": 0
+    },
+    {
+     "field": "e13_hp",
+     "value": 0
+    },
+    {
+     "field": "e14_hp",
+     "value": 0
+    },
+    {
+     "field": "e15_hp",
+     "value": 0
+    },
+    {
+     "field": "e16_hp",
+     "value": 0
+    },
+    {
+     "field": "e17_hp",
+     "value": 0
+    },
+    {
+     "field": "e18_hp",
+     "value": 0
+    },
+    {
+     "field": "e19_hp",
+     "value": 0
+    },
+    {
+     "field": "e20_hp",
+     "value": 0
+    },
+    {
+     "field": "e21_hp",
+     "value": 0
+    },
+    {
+     "field": "e22_hp",
+     "value": 0
+    },
+    {
+     "field": "e23_hp",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "button_down": "DOWN",
+   "frames": 30,
+   "poke": [
+    {
+     "field": "e0_hp",
+     "value": 0
+    },
+    {
+     "field": "e1_hp",
+     "value": 0
+    },
+    {
+     "field": "e2_hp",
+     "value": 0
+    },
+    {
+     "field": "e3_hp",
+     "value": 0
+    },
+    {
+     "field": "e4_hp",
+     "value": 0
+    },
+    {
+     "field": "e5_hp",
+     "value": 0
+    },
+    {
+     "field": "e6_hp",
+     "value": 0
+    },
+    {
+     "field": "e7_hp",
+     "value": 0
+    },
+    {
+     "field": "e8_hp",
+     "value": 0
+    },
+    {
+     "field": "e9_hp",
+     "value": 0
+    },
+    {
+     "field": "e10_hp",
+     "value": 0
+    },
+    {
+     "field": "e11_hp",
+     "value": 0
+    },
+    {
+     "field": "e12_hp",
+     "value": 0
+    },
+    {
+     "field": "e13_hp",
+     "value": 0
+    },
+    {
+     "field": "e14_hp",
+     "value": 0
+    },
+    {
+     "field": "e15_hp",
+     "value": 0
+    },
+    {
+     "field": "e16_hp",
+     "value": 0
+    },
+    {
+     "field": "e17_hp",
+     "value": 0
+    },
+    {
+     "field": "e18_hp",
+     "value": 0
+    },
+    {
+     "field": "e19_hp",
+     "value": 0
+    },
+    {
+     "field": "e20_hp",
+     "value": 0
+    },
+    {
+     "field": "e21_hp",
+     "value": 0
+    },
+    {
+     "field": "e22_hp",
+     "value": 0
+    },
+    {
+     "field": "e23_hp",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "button_down": "DOWN",
+   "frames": 30,
+   "poke": [
+    {
+     "field": "e0_hp",
+     "value": 0
+    },
+    {
+     "field": "e1_hp",
+     "value": 0
+    },
+    {
+     "field": "e2_hp",
+     "value": 0
+    },
+    {
+     "field": "e3_hp",
+     "value": 0
+    },
+    {
+     "field": "e4_hp",
+     "value": 0
+    },
+    {
+     "field": "e5_hp",
+     "value": 0
+    },
+    {
+     "field": "e6_hp",
+     "value": 0
+    },
+    {
+     "field": "e7_hp",
+     "value": 0
+    },
+    {
+     "field": "e8_hp",
+     "value": 0
+    },
+    {
+     "field": "e9_hp",
+     "value": 0
+    },
+    {
+     "field": "e10_hp",
+     "value": 0
+    },
+    {
+     "field": "e11_hp",
+     "value": 0
+    },
+    {
+     "field": "e12_hp",
+     "value": 0
+    },
+    {
+     "field": "e13_hp",
+     "value": 0
+    },
+    {
+     "field": "e14_hp",
+     "value": 0
+    },
+    {
+     "field": "e15_hp",
+     "value": 0
+    },
+    {
+     "field": "e16_hp",
+     "value": 0
+    },
+    {
+     "field": "e17_hp",
+     "value": 0
+    },
+    {
+     "field": "e18_hp",
+     "value": 0
+    },
+    {
+     "field": "e19_hp",
+     "value": 0
+    },
+    {
+     "field": "e20_hp",
+     "value": 0
+    },
+    {
+     "field": "e21_hp",
+     "value": 0
+    },
+    {
+     "field": "e22_hp",
+     "value": 0
+    },
+    {
+     "field": "e23_hp",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "button_down": "DOWN",
+   "frames": 30,
+   "poke": [
+    {
+     "field": "e0_hp",
+     "value": 0
+    },
+    {
+     "field": "e1_hp",
+     "value": 0
+    },
+    {
+     "field": "e2_hp",
+     "value": 0
+    },
+    {
+     "field": "e3_hp",
+     "value": 0
+    },
+    {
+     "field": "e4_hp",
+     "value": 0
+    },
+    {
+     "field": "e5_hp",
+     "value": 0
+    },
+    {
+     "field": "e6_hp",
+     "value": 0
+    },
+    {
+     "field": "e7_hp",
+     "value": 0
+    },
+    {
+     "field": "e8_hp",
+     "value": 0
+    },
+    {
+     "field": "e9_hp",
+     "value": 0
+    },
+    {
+     "field": "e10_hp",
+     "value": 0
+    },
+    {
+     "field": "e11_hp",
+     "value": 0
+    },
+    {
+     "field": "e12_hp",
+     "value": 0
+    },
+    {
+     "field": "e13_hp",
+     "value": 0
+    },
+    {
+     "field": "e14_hp",
+     "value": 0
+    },
+    {
+     "field": "e15_hp",
+     "value": 0
+    },
+    {
+     "field": "e16_hp",
+     "value": 0
+    },
+    {
+     "field": "e17_hp",
+     "value": 0
+    },
+    {
+     "field": "e18_hp",
+     "value": 0
+    },
+    {
+     "field": "e19_hp",
+     "value": 0
+    },
+    {
+     "field": "e20_hp",
+     "value": 0
+    },
+    {
+     "field": "e21_hp",
+     "value": 0
+    },
+    {
+     "field": "e22_hp",
+     "value": 0
+    },
+    {
+     "field": "e23_hp",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "button_down": "DOWN",
+   "frames": 30,
+   "poke": [
+    {
+     "field": "e0_hp",
+     "value": 0
+    },
+    {
+     "field": "e1_hp",
+     "value": 0
+    },
+    {
+     "field": "e2_hp",
+     "value": 0
+    },
+    {
+     "field": "e3_hp",
+     "value": 0
+    },
+    {
+     "field": "e4_hp",
+     "value": 0
+    },
+    {
+     "field": "e5_hp",
+     "value": 0
+    },
+    {
+     "field": "e6_hp",
+     "value": 0
+    },
+    {
+     "field": "e7_hp",
+     "value": 0
+    },
+    {
+     "field": "e8_hp",
+     "value": 0
+    },
+    {
+     "field": "e9_hp",
+     "value": 0
+    },
+    {
+     "field": "e10_hp",
+     "value": 0
+    },
+    {
+     "field": "e11_hp",
+     "value": 0
+    },
+    {
+     "field": "e12_hp",
+     "value": 0
+    },
+    {
+     "field": "e13_hp",
+     "value": 0
+    },
+    {
+     "field": "e14_hp",
+     "value": 0
+    },
+    {
+     "field": "e15_hp",
+     "value": 0
+    },
+    {
+     "field": "e16_hp",
+     "value": 0
+    },
+    {
+     "field": "e17_hp",
+     "value": 0
+    },
+    {
+     "field": "e18_hp",
+     "value": 0
+    },
+    {
+     "field": "e19_hp",
+     "value": 0
+    },
+    {
+     "field": "e20_hp",
+     "value": 0
+    },
+    {
+     "field": "e21_hp",
+     "value": 0
+    },
+    {
+     "field": "e22_hp",
+     "value": 0
+    },
+    {
+     "field": "e23_hp",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "button_down": "DOWN",
+   "frames": 30,
+   "poke": [
+    {
+     "field": "e0_hp",
+     "value": 0
+    },
+    {
+     "field": "e1_hp",
+     "value": 0
+    },
+    {
+     "field": "e2_hp",
+     "value": 0
+    },
+    {
+     "field": "e3_hp",
+     "value": 0
+    },
+    {
+     "field": "e4_hp",
+     "value": 0
+    },
+    {
+     "field": "e5_hp",
+     "value": 0
+    },
+    {
+     "field": "e6_hp",
+     "value": 0
+    },
+    {
+     "field": "e7_hp",
+     "value": 0
+    },
+    {
+     "field": "e8_hp",
+     "value": 0
+    },
+    {
+     "field": "e9_hp",
+     "value": 0
+    },
+    {
+     "field": "e10_hp",
+     "value": 0
+    },
+    {
+     "field": "e11_hp",
+     "value": 0
+    },
+    {
+     "field": "e12_hp",
+     "value": 0
+    },
+    {
+     "field": "e13_hp",
+     "value": 0
+    },
+    {
+     "field": "e14_hp",
+     "value": 0
+    },
+    {
+     "field": "e15_hp",
+     "value": 0
+    },
+    {
+     "field": "e16_hp",
+     "value": 0
+    },
+    {
+     "field": "e17_hp",
+     "value": 0
+    },
+    {
+     "field": "e18_hp",
+     "value": 0
+    },
+    {
+     "field": "e19_hp",
+     "value": 0
+    },
+    {
+     "field": "e20_hp",
+     "value": 0
+    },
+    {
+     "field": "e21_hp",
+     "value": 0
+    },
+    {
+     "field": "e22_hp",
+     "value": 0
+    },
+    {
+     "field": "e23_hp",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "button_down": "DOWN",
+   "frames": 30,
+   "poke": [
+    {
+     "field": "e0_hp",
+     "value": 0
+    },
+    {
+     "field": "e1_hp",
+     "value": 0
+    },
+    {
+     "field": "e2_hp",
+     "value": 0
+    },
+    {
+     "field": "e3_hp",
+     "value": 0
+    },
+    {
+     "field": "e4_hp",
+     "value": 0
+    },
+    {
+     "field": "e5_hp",
+     "value": 0
+    },
+    {
+     "field": "e6_hp",
+     "value": 0
+    },
+    {
+     "field": "e7_hp",
+     "value": 0
+    },
+    {
+     "field": "e8_hp",
+     "value": 0
+    },
+    {
+     "field": "e9_hp",
+     "value": 0
+    },
+    {
+     "field": "e10_hp",
+     "value": 0
+    },
+    {
+     "field": "e11_hp",
+     "value": 0
+    },
+    {
+     "field": "e12_hp",
+     "value": 0
+    },
+    {
+     "field": "e13_hp",
+     "value": 0
+    },
+    {
+     "field": "e14_hp",
+     "value": 0
+    },
+    {
+     "field": "e15_hp",
+     "value": 0
+    },
+    {
+     "field": "e16_hp",
+     "value": 0
+    },
+    {
+     "field": "e17_hp",
+     "value": 0
+    },
+    {
+     "field": "e18_hp",
+     "value": 0
+    },
+    {
+     "field": "e19_hp",
+     "value": 0
+    },
+    {
+     "field": "e20_hp",
+     "value": 0
+    },
+    {
+     "field": "e21_hp",
+     "value": 0
+    },
+    {
+     "field": "e22_hp",
+     "value": 0
+    },
+    {
+     "field": "e23_hp",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "button_down": "DOWN",
+   "frames": 30,
+   "poke": [
+    {
+     "field": "e0_hp",
+     "value": 0
+    },
+    {
+     "field": "e1_hp",
+     "value": 0
+    },
+    {
+     "field": "e2_hp",
+     "value": 0
+    },
+    {
+     "field": "e3_hp",
+     "value": 0
+    },
+    {
+     "field": "e4_hp",
+     "value": 0
+    },
+    {
+     "field": "e5_hp",
+     "value": 0
+    },
+    {
+     "field": "e6_hp",
+     "value": 0
+    },
+    {
+     "field": "e7_hp",
+     "value": 0
+    },
+    {
+     "field": "e8_hp",
+     "value": 0
+    },
+    {
+     "field": "e9_hp",
+     "value": 0
+    },
+    {
+     "field": "e10_hp",
+     "value": 0
+    },
+    {
+     "field": "e11_hp",
+     "value": 0
+    },
+    {
+     "field": "e12_hp",
+     "value": 0
+    },
+    {
+     "field": "e13_hp",
+     "value": 0
+    },
+    {
+     "field": "e14_hp",
+     "value": 0
+    },
+    {
+     "field": "e15_hp",
+     "value": 0
+    },
+    {
+     "field": "e16_hp",
+     "value": 0
+    },
+    {
+     "field": "e17_hp",
+     "value": 0
+    },
+    {
+     "field": "e18_hp",
+     "value": 0
+    },
+    {
+     "field": "e19_hp",
+     "value": 0
+    },
+    {
+     "field": "e20_hp",
+     "value": 0
+    },
+    {
+     "field": "e21_hp",
+     "value": 0
+    },
+    {
+     "field": "e22_hp",
+     "value": 0
+    },
+    {
+     "field": "e23_hp",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "button_down": "DOWN",
+   "frames": 30,
+   "poke": [
+    {
+     "field": "e0_hp",
+     "value": 0
+    },
+    {
+     "field": "e1_hp",
+     "value": 0
+    },
+    {
+     "field": "e2_hp",
+     "value": 0
+    },
+    {
+     "field": "e3_hp",
+     "value": 0
+    },
+    {
+     "field": "e4_hp",
+     "value": 0
+    },
+    {
+     "field": "e5_hp",
+     "value": 0
+    },
+    {
+     "field": "e6_hp",
+     "value": 0
+    },
+    {
+     "field": "e7_hp",
+     "value": 0
+    },
+    {
+     "field": "e8_hp",
+     "value": 0
+    },
+    {
+     "field": "e9_hp",
+     "value": 0
+    },
+    {
+     "field": "e10_hp",
+     "value": 0
+    },
+    {
+     "field": "e11_hp",
+     "value": 0
+    },
+    {
+     "field": "e12_hp",
+     "value": 0
+    },
+    {
+     "field": "e13_hp",
+     "value": 0
+    },
+    {
+     "field": "e14_hp",
+     "value": 0
+    },
+    {
+     "field": "e15_hp",
+     "value": 0
+    },
+    {
+     "field": "e16_hp",
+     "value": 0
+    },
+    {
+     "field": "e17_hp",
+     "value": 0
+    },
+    {
+     "field": "e18_hp",
+     "value": 0
+    },
+    {
+     "field": "e19_hp",
+     "value": 0
+    },
+    {
+     "field": "e20_hp",
+     "value": 0
+    },
+    {
+     "field": "e21_hp",
+     "value": 0
+    },
+    {
+     "field": "e22_hp",
+     "value": 0
+    },
+    {
+     "field": "e23_hp",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "button_down": "DOWN",
+   "frames": 30,
+   "poke": [
+    {
+     "field": "e0_hp",
+     "value": 0
+    },
+    {
+     "field": "e1_hp",
+     "value": 0
+    },
+    {
+     "field": "e2_hp",
+     "value": 0
+    },
+    {
+     "field": "e3_hp",
+     "value": 0
+    },
+    {
+     "field": "e4_hp",
+     "value": 0
+    },
+    {
+     "field": "e5_hp",
+     "value": 0
+    },
+    {
+     "field": "e6_hp",
+     "value": 0
+    },
+    {
+     "field": "e7_hp",
+     "value": 0
+    },
+    {
+     "field": "e8_hp",
+     "value": 0
+    },
+    {
+     "field": "e9_hp",
+     "value": 0
+    },
+    {
+     "field": "e10_hp",
+     "value": 0
+    },
+    {
+     "field": "e11_hp",
+     "value": 0
+    },
+    {
+     "field": "e12_hp",
+     "value": 0
+    },
+    {
+     "field": "e13_hp",
+     "value": 0
+    },
+    {
+     "field": "e14_hp",
+     "value": 0
+    },
+    {
+     "field": "e15_hp",
+     "value": 0
+    },
+    {
+     "field": "e16_hp",
+     "value": 0
+    },
+    {
+     "field": "e17_hp",
+     "value": 0
+    },
+    {
+     "field": "e18_hp",
+     "value": 0
+    },
+    {
+     "field": "e19_hp",
+     "value": 0
+    },
+    {
+     "field": "e20_hp",
+     "value": 0
+    },
+    {
+     "field": "e21_hp",
+     "value": 0
+    },
+    {
+     "field": "e22_hp",
+     "value": 0
+    },
+    {
+     "field": "e23_hp",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "button_down": "DOWN",
+   "frames": 30,
+   "poke": [
+    {
+     "field": "e0_hp",
+     "value": 0
+    },
+    {
+     "field": "e1_hp",
+     "value": 0
+    },
+    {
+     "field": "e2_hp",
+     "value": 0
+    },
+    {
+     "field": "e3_hp",
+     "value": 0
+    },
+    {
+     "field": "e4_hp",
+     "value": 0
+    },
+    {
+     "field": "e5_hp",
+     "value": 0
+    },
+    {
+     "field": "e6_hp",
+     "value": 0
+    },
+    {
+     "field": "e7_hp",
+     "value": 0
+    },
+    {
+     "field": "e8_hp",
+     "value": 0
+    },
+    {
+     "field": "e9_hp",
+     "value": 0
+    },
+    {
+     "field": "e10_hp",
+     "value": 0
+    },
+    {
+     "field": "e11_hp",
+     "value": 0
+    },
+    {
+     "field": "e12_hp",
+     "value": 0
+    },
+    {
+     "field": "e13_hp",
+     "value": 0
+    },
+    {
+     "field": "e14_hp",
+     "value": 0
+    },
+    {
+     "field": "e15_hp",
+     "value": 0
+    },
+    {
+     "field": "e16_hp",
+     "value": 0
+    },
+    {
+     "field": "e17_hp",
+     "value": 0
+    },
+    {
+     "field": "e18_hp",
+     "value": 0
+    },
+    {
+     "field": "e19_hp",
+     "value": 0
+    },
+    {
+     "field": "e20_hp",
+     "value": 0
+    },
+    {
+     "field": "e21_hp",
+     "value": 0
+    },
+    {
+     "field": "e22_hp",
+     "value": 0
+    },
+    {
+     "field": "e23_hp",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "button_down": "DOWN",
+   "frames": 30,
+   "poke": [
+    {
+     "field": "e0_hp",
+     "value": 0
+    },
+    {
+     "field": "e1_hp",
+     "value": 0
+    },
+    {
+     "field": "e2_hp",
+     "value": 0
+    },
+    {
+     "field": "e3_hp",
+     "value": 0
+    },
+    {
+     "field": "e4_hp",
+     "value": 0
+    },
+    {
+     "field": "e5_hp",
+     "value": 0
+    },
+    {
+     "field": "e6_hp",
+     "value": 0
+    },
+    {
+     "field": "e7_hp",
+     "value": 0
+    },
+    {
+     "field": "e8_hp",
+     "value": 0
+    },
+    {
+     "field": "e9_hp",
+     "value": 0
+    },
+    {
+     "field": "e10_hp",
+     "value": 0
+    },
+    {
+     "field": "e11_hp",
+     "value": 0
+    },
+    {
+     "field": "e12_hp",
+     "value": 0
+    },
+    {
+     "field": "e13_hp",
+     "value": 0
+    },
+    {
+     "field": "e14_hp",
+     "value": 0
+    },
+    {
+     "field": "e15_hp",
+     "value": 0
+    },
+    {
+     "field": "e16_hp",
+     "value": 0
+    },
+    {
+     "field": "e17_hp",
+     "value": 0
+    },
+    {
+     "field": "e18_hp",
+     "value": 0
+    },
+    {
+     "field": "e19_hp",
+     "value": 0
+    },
+    {
+     "field": "e20_hp",
+     "value": 0
+    },
+    {
+     "field": "e21_hp",
+     "value": 0
+    },
+    {
+     "field": "e22_hp",
+     "value": 0
+    },
+    {
+     "field": "e23_hp",
+     "value": 0
+    }
+   ],
+   "state_capture": "b02_nave3",
+   "capture": "b02_nave3"
+  },
+  {
+   "button_up": "DOWN",
+   "frames": 4
+  },
+  {
+   "button_down": "DOWN",
+   "frames": 30,
+   "poke": [
+    {
+     "field": "e0_hp",
+     "value": 0
+    },
+    {
+     "field": "e1_hp",
+     "value": 0
+    },
+    {
+     "field": "e2_hp",
+     "value": 0
+    },
+    {
+     "field": "e3_hp",
+     "value": 0
+    },
+    {
+     "field": "e4_hp",
+     "value": 0
+    },
+    {
+     "field": "e5_hp",
+     "value": 0
+    },
+    {
+     "field": "e6_hp",
+     "value": 0
+    },
+    {
+     "field": "e7_hp",
+     "value": 0
+    },
+    {
+     "field": "e8_hp",
+     "value": 0
+    },
+    {
+     "field": "e9_hp",
+     "value": 0
+    },
+    {
+     "field": "e10_hp",
+     "value": 0
+    },
+    {
+     "field": "e11_hp",
+     "value": 0
+    },
+    {
+     "field": "e12_hp",
+     "value": 0
+    },
+    {
+     "field": "e13_hp",
+     "value": 0
+    },
+    {
+     "field": "e14_hp",
+     "value": 0
+    },
+    {
+     "field": "e15_hp",
+     "value": 0
+    },
+    {
+     "field": "e16_hp",
+     "value": 0
+    },
+    {
+     "field": "e17_hp",
+     "value": 0
+    },
+    {
+     "field": "e18_hp",
+     "value": 0
+    },
+    {
+     "field": "e19_hp",
+     "value": 0
+    },
+    {
+     "field": "e20_hp",
+     "value": 0
+    },
+    {
+     "field": "e21_hp",
+     "value": 0
+    },
+    {
+     "field": "e22_hp",
+     "value": 0
+    },
+    {
+     "field": "e23_hp",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "button_down": "DOWN",
+   "frames": 30,
+   "poke": [
+    {
+     "field": "e0_hp",
+     "value": 0
+    },
+    {
+     "field": "e1_hp",
+     "value": 0
+    },
+    {
+     "field": "e2_hp",
+     "value": 0
+    },
+    {
+     "field": "e3_hp",
+     "value": 0
+    },
+    {
+     "field": "e4_hp",
+     "value": 0
+    },
+    {
+     "field": "e5_hp",
+     "value": 0
+    },
+    {
+     "field": "e6_hp",
+     "value": 0
+    },
+    {
+     "field": "e7_hp",
+     "value": 0
+    },
+    {
+     "field": "e8_hp",
+     "value": 0
+    },
+    {
+     "field": "e9_hp",
+     "value": 0
+    },
+    {
+     "field": "e10_hp",
+     "value": 0
+    },
+    {
+     "field": "e11_hp",
+     "value": 0
+    },
+    {
+     "field": "e12_hp",
+     "value": 0
+    },
+    {
+     "field": "e13_hp",
+     "value": 0
+    },
+    {
+     "field": "e14_hp",
+     "value": 0
+    },
+    {
+     "field": "e15_hp",
+     "value": 0
+    },
+    {
+     "field": "e16_hp",
+     "value": 0
+    },
+    {
+     "field": "e17_hp",
+     "value": 0
+    },
+    {
+     "field": "e18_hp",
+     "value": 0
+    },
+    {
+     "field": "e19_hp",
+     "value": 0
+    },
+    {
+     "field": "e20_hp",
+     "value": 0
+    },
+    {
+     "field": "e21_hp",
+     "value": 0
+    },
+    {
+     "field": "e22_hp",
+     "value": 0
+    },
+    {
+     "field": "e23_hp",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "button_down": "DOWN",
+   "frames": 30,
+   "poke": [
+    {
+     "field": "e0_hp",
+     "value": 0
+    },
+    {
+     "field": "e1_hp",
+     "value": 0
+    },
+    {
+     "field": "e2_hp",
+     "value": 0
+    },
+    {
+     "field": "e3_hp",
+     "value": 0
+    },
+    {
+     "field": "e4_hp",
+     "value": 0
+    },
+    {
+     "field": "e5_hp",
+     "value": 0
+    },
+    {
+     "field": "e6_hp",
+     "value": 0
+    },
+    {
+     "field": "e7_hp",
+     "value": 0
+    },
+    {
+     "field": "e8_hp",
+     "value": 0
+    },
+    {
+     "field": "e9_hp",
+     "value": 0
+    },
+    {
+     "field": "e10_hp",
+     "value": 0
+    },
+    {
+     "field": "e11_hp",
+     "value": 0
+    },
+    {
+     "field": "e12_hp",
+     "value": 0
+    },
+    {
+     "field": "e13_hp",
+     "value": 0
+    },
+    {
+     "field": "e14_hp",
+     "value": 0
+    },
+    {
+     "field": "e15_hp",
+     "value": 0
+    },
+    {
+     "field": "e16_hp",
+     "value": 0
+    },
+    {
+     "field": "e17_hp",
+     "value": 0
+    },
+    {
+     "field": "e18_hp",
+     "value": 0
+    },
+    {
+     "field": "e19_hp",
+     "value": 0
+    },
+    {
+     "field": "e20_hp",
+     "value": 0
+    },
+    {
+     "field": "e21_hp",
+     "value": 0
+    },
+    {
+     "field": "e22_hp",
+     "value": 0
+    },
+    {
+     "field": "e23_hp",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "button_down": "DOWN",
+   "frames": 30,
+   "poke": [
+    {
+     "field": "e0_hp",
+     "value": 0
+    },
+    {
+     "field": "e1_hp",
+     "value": 0
+    },
+    {
+     "field": "e2_hp",
+     "value": 0
+    },
+    {
+     "field": "e3_hp",
+     "value": 0
+    },
+    {
+     "field": "e4_hp",
+     "value": 0
+    },
+    {
+     "field": "e5_hp",
+     "value": 0
+    },
+    {
+     "field": "e6_hp",
+     "value": 0
+    },
+    {
+     "field": "e7_hp",
+     "value": 0
+    },
+    {
+     "field": "e8_hp",
+     "value": 0
+    },
+    {
+     "field": "e9_hp",
+     "value": 0
+    },
+    {
+     "field": "e10_hp",
+     "value": 0
+    },
+    {
+     "field": "e11_hp",
+     "value": 0
+    },
+    {
+     "field": "e12_hp",
+     "value": 0
+    },
+    {
+     "field": "e13_hp",
+     "value": 0
+    },
+    {
+     "field": "e14_hp",
+     "value": 0
+    },
+    {
+     "field": "e15_hp",
+     "value": 0
+    },
+    {
+     "field": "e16_hp",
+     "value": 0
+    },
+    {
+     "field": "e17_hp",
+     "value": 0
+    },
+    {
+     "field": "e18_hp",
+     "value": 0
+    },
+    {
+     "field": "e19_hp",
+     "value": 0
+    },
+    {
+     "field": "e20_hp",
+     "value": 0
+    },
+    {
+     "field": "e21_hp",
+     "value": 0
+    },
+    {
+     "field": "e22_hp",
+     "value": 0
+    },
+    {
+     "field": "e23_hp",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "button_down": "DOWN",
+   "frames": 30,
+   "poke": [
+    {
+     "field": "e0_hp",
+     "value": 0
+    },
+    {
+     "field": "e1_hp",
+     "value": 0
+    },
+    {
+     "field": "e2_hp",
+     "value": 0
+    },
+    {
+     "field": "e3_hp",
+     "value": 0
+    },
+    {
+     "field": "e4_hp",
+     "value": 0
+    },
+    {
+     "field": "e5_hp",
+     "value": 0
+    },
+    {
+     "field": "e6_hp",
+     "value": 0
+    },
+    {
+     "field": "e7_hp",
+     "value": 0
+    },
+    {
+     "field": "e8_hp",
+     "value": 0
+    },
+    {
+     "field": "e9_hp",
+     "value": 0
+    },
+    {
+     "field": "e10_hp",
+     "value": 0
+    },
+    {
+     "field": "e11_hp",
+     "value": 0
+    },
+    {
+     "field": "e12_hp",
+     "value": 0
+    },
+    {
+     "field": "e13_hp",
+     "value": 0
+    },
+    {
+     "field": "e14_hp",
+     "value": 0
+    },
+    {
+     "field": "e15_hp",
+     "value": 0
+    },
+    {
+     "field": "e16_hp",
+     "value": 0
+    },
+    {
+     "field": "e17_hp",
+     "value": 0
+    },
+    {
+     "field": "e18_hp",
+     "value": 0
+    },
+    {
+     "field": "e19_hp",
+     "value": 0
+    },
+    {
+     "field": "e20_hp",
+     "value": 0
+    },
+    {
+     "field": "e21_hp",
+     "value": 0
+    },
+    {
+     "field": "e22_hp",
+     "value": 0
+    },
+    {
+     "field": "e23_hp",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "button_down": "DOWN",
+   "frames": 30,
+   "poke": [
+    {
+     "field": "e0_hp",
+     "value": 0
+    },
+    {
+     "field": "e1_hp",
+     "value": 0
+    },
+    {
+     "field": "e2_hp",
+     "value": 0
+    },
+    {
+     "field": "e3_hp",
+     "value": 0
+    },
+    {
+     "field": "e4_hp",
+     "value": 0
+    },
+    {
+     "field": "e5_hp",
+     "value": 0
+    },
+    {
+     "field": "e6_hp",
+     "value": 0
+    },
+    {
+     "field": "e7_hp",
+     "value": 0
+    },
+    {
+     "field": "e8_hp",
+     "value": 0
+    },
+    {
+     "field": "e9_hp",
+     "value": 0
+    },
+    {
+     "field": "e10_hp",
+     "value": 0
+    },
+    {
+     "field": "e11_hp",
+     "value": 0
+    },
+    {
+     "field": "e12_hp",
+     "value": 0
+    },
+    {
+     "field": "e13_hp",
+     "value": 0
+    },
+    {
+     "field": "e14_hp",
+     "value": 0
+    },
+    {
+     "field": "e15_hp",
+     "value": 0
+    },
+    {
+     "field": "e16_hp",
+     "value": 0
+    },
+    {
+     "field": "e17_hp",
+     "value": 0
+    },
+    {
+     "field": "e18_hp",
+     "value": 0
+    },
+    {
+     "field": "e19_hp",
+     "value": 0
+    },
+    {
+     "field": "e20_hp",
+     "value": 0
+    },
+    {
+     "field": "e21_hp",
+     "value": 0
+    },
+    {
+     "field": "e22_hp",
+     "value": 0
+    },
+    {
+     "field": "e23_hp",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "button_down": "DOWN",
+   "frames": 30,
+   "poke": [
+    {
+     "field": "e0_hp",
+     "value": 0
+    },
+    {
+     "field": "e1_hp",
+     "value": 0
+    },
+    {
+     "field": "e2_hp",
+     "value": 0
+    },
+    {
+     "field": "e3_hp",
+     "value": 0
+    },
+    {
+     "field": "e4_hp",
+     "value": 0
+    },
+    {
+     "field": "e5_hp",
+     "value": 0
+    },
+    {
+     "field": "e6_hp",
+     "value": 0
+    },
+    {
+     "field": "e7_hp",
+     "value": 0
+    },
+    {
+     "field": "e8_hp",
+     "value": 0
+    },
+    {
+     "field": "e9_hp",
+     "value": 0
+    },
+    {
+     "field": "e10_hp",
+     "value": 0
+    },
+    {
+     "field": "e11_hp",
+     "value": 0
+    },
+    {
+     "field": "e12_hp",
+     "value": 0
+    },
+    {
+     "field": "e13_hp",
+     "value": 0
+    },
+    {
+     "field": "e14_hp",
+     "value": 0
+    },
+    {
+     "field": "e15_hp",
+     "value": 0
+    },
+    {
+     "field": "e16_hp",
+     "value": 0
+    },
+    {
+     "field": "e17_hp",
+     "value": 0
+    },
+    {
+     "field": "e18_hp",
+     "value": 0
+    },
+    {
+     "field": "e19_hp",
+     "value": 0
+    },
+    {
+     "field": "e20_hp",
+     "value": 0
+    },
+    {
+     "field": "e21_hp",
+     "value": 0
+    },
+    {
+     "field": "e22_hp",
+     "value": 0
+    },
+    {
+     "field": "e23_hp",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "button_down": "DOWN",
+   "frames": 30,
+   "poke": [
+    {
+     "field": "e0_hp",
+     "value": 0
+    },
+    {
+     "field": "e1_hp",
+     "value": 0
+    },
+    {
+     "field": "e2_hp",
+     "value": 0
+    },
+    {
+     "field": "e3_hp",
+     "value": 0
+    },
+    {
+     "field": "e4_hp",
+     "value": 0
+    },
+    {
+     "field": "e5_hp",
+     "value": 0
+    },
+    {
+     "field": "e6_hp",
+     "value": 0
+    },
+    {
+     "field": "e7_hp",
+     "value": 0
+    },
+    {
+     "field": "e8_hp",
+     "value": 0
+    },
+    {
+     "field": "e9_hp",
+     "value": 0
+    },
+    {
+     "field": "e10_hp",
+     "value": 0
+    },
+    {
+     "field": "e11_hp",
+     "value": 0
+    },
+    {
+     "field": "e12_hp",
+     "value": 0
+    },
+    {
+     "field": "e13_hp",
+     "value": 0
+    },
+    {
+     "field": "e14_hp",
+     "value": 0
+    },
+    {
+     "field": "e15_hp",
+     "value": 0
+    },
+    {
+     "field": "e16_hp",
+     "value": 0
+    },
+    {
+     "field": "e17_hp",
+     "value": 0
+    },
+    {
+     "field": "e18_hp",
+     "value": 0
+    },
+    {
+     "field": "e19_hp",
+     "value": 0
+    },
+    {
+     "field": "e20_hp",
+     "value": 0
+    },
+    {
+     "field": "e21_hp",
+     "value": 0
+    },
+    {
+     "field": "e22_hp",
+     "value": 0
+    },
+    {
+     "field": "e23_hp",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "button_down": "DOWN",
+   "frames": 30,
+   "poke": [
+    {
+     "field": "e0_hp",
+     "value": 0
+    },
+    {
+     "field": "e1_hp",
+     "value": 0
+    },
+    {
+     "field": "e2_hp",
+     "value": 0
+    },
+    {
+     "field": "e3_hp",
+     "value": 0
+    },
+    {
+     "field": "e4_hp",
+     "value": 0
+    },
+    {
+     "field": "e5_hp",
+     "value": 0
+    },
+    {
+     "field": "e6_hp",
+     "value": 0
+    },
+    {
+     "field": "e7_hp",
+     "value": 0
+    },
+    {
+     "field": "e8_hp",
+     "value": 0
+    },
+    {
+     "field": "e9_hp",
+     "value": 0
+    },
+    {
+     "field": "e10_hp",
+     "value": 0
+    },
+    {
+     "field": "e11_hp",
+     "value": 0
+    },
+    {
+     "field": "e12_hp",
+     "value": 0
+    },
+    {
+     "field": "e13_hp",
+     "value": 0
+    },
+    {
+     "field": "e14_hp",
+     "value": 0
+    },
+    {
+     "field": "e15_hp",
+     "value": 0
+    },
+    {
+     "field": "e16_hp",
+     "value": 0
+    },
+    {
+     "field": "e17_hp",
+     "value": 0
+    },
+    {
+     "field": "e18_hp",
+     "value": 0
+    },
+    {
+     "field": "e19_hp",
+     "value": 0
+    },
+    {
+     "field": "e20_hp",
+     "value": 0
+    },
+    {
+     "field": "e21_hp",
+     "value": 0
+    },
+    {
+     "field": "e22_hp",
+     "value": 0
+    },
+    {
+     "field": "e23_hp",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "button_down": "DOWN",
+   "frames": 30,
+   "poke": [
+    {
+     "field": "e0_hp",
+     "value": 0
+    },
+    {
+     "field": "e1_hp",
+     "value": 0
+    },
+    {
+     "field": "e2_hp",
+     "value": 0
+    },
+    {
+     "field": "e3_hp",
+     "value": 0
+    },
+    {
+     "field": "e4_hp",
+     "value": 0
+    },
+    {
+     "field": "e5_hp",
+     "value": 0
+    },
+    {
+     "field": "e6_hp",
+     "value": 0
+    },
+    {
+     "field": "e7_hp",
+     "value": 0
+    },
+    {
+     "field": "e8_hp",
+     "value": 0
+    },
+    {
+     "field": "e9_hp",
+     "value": 0
+    },
+    {
+     "field": "e10_hp",
+     "value": 0
+    },
+    {
+     "field": "e11_hp",
+     "value": 0
+    },
+    {
+     "field": "e12_hp",
+     "value": 0
+    },
+    {
+     "field": "e13_hp",
+     "value": 0
+    },
+    {
+     "field": "e14_hp",
+     "value": 0
+    },
+    {
+     "field": "e15_hp",
+     "value": 0
+    },
+    {
+     "field": "e16_hp",
+     "value": 0
+    },
+    {
+     "field": "e17_hp",
+     "value": 0
+    },
+    {
+     "field": "e18_hp",
+     "value": 0
+    },
+    {
+     "field": "e19_hp",
+     "value": 0
+    },
+    {
+     "field": "e20_hp",
+     "value": 0
+    },
+    {
+     "field": "e21_hp",
+     "value": 0
+    },
+    {
+     "field": "e22_hp",
+     "value": 0
+    },
+    {
+     "field": "e23_hp",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "button_down": "DOWN",
+   "frames": 30,
+   "poke": [
+    {
+     "field": "e0_hp",
+     "value": 0
+    },
+    {
+     "field": "e1_hp",
+     "value": 0
+    },
+    {
+     "field": "e2_hp",
+     "value": 0
+    },
+    {
+     "field": "e3_hp",
+     "value": 0
+    },
+    {
+     "field": "e4_hp",
+     "value": 0
+    },
+    {
+     "field": "e5_hp",
+     "value": 0
+    },
+    {
+     "field": "e6_hp",
+     "value": 0
+    },
+    {
+     "field": "e7_hp",
+     "value": 0
+    },
+    {
+     "field": "e8_hp",
+     "value": 0
+    },
+    {
+     "field": "e9_hp",
+     "value": 0
+    },
+    {
+     "field": "e10_hp",
+     "value": 0
+    },
+    {
+     "field": "e11_hp",
+     "value": 0
+    },
+    {
+     "field": "e12_hp",
+     "value": 0
+    },
+    {
+     "field": "e13_hp",
+     "value": 0
+    },
+    {
+     "field": "e14_hp",
+     "value": 0
+    },
+    {
+     "field": "e15_hp",
+     "value": 0
+    },
+    {
+     "field": "e16_hp",
+     "value": 0
+    },
+    {
+     "field": "e17_hp",
+     "value": 0
+    },
+    {
+     "field": "e18_hp",
+     "value": 0
+    },
+    {
+     "field": "e19_hp",
+     "value": 0
+    },
+    {
+     "field": "e20_hp",
+     "value": 0
+    },
+    {
+     "field": "e21_hp",
+     "value": 0
+    },
+    {
+     "field": "e22_hp",
+     "value": 0
+    },
+    {
+     "field": "e23_hp",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "button_down": "DOWN",
+   "frames": 30,
+   "poke": [
+    {
+     "field": "e0_hp",
+     "value": 0
+    },
+    {
+     "field": "e1_hp",
+     "value": 0
+    },
+    {
+     "field": "e2_hp",
+     "value": 0
+    },
+    {
+     "field": "e3_hp",
+     "value": 0
+    },
+    {
+     "field": "e4_hp",
+     "value": 0
+    },
+    {
+     "field": "e5_hp",
+     "value": 0
+    },
+    {
+     "field": "e6_hp",
+     "value": 0
+    },
+    {
+     "field": "e7_hp",
+     "value": 0
+    },
+    {
+     "field": "e8_hp",
+     "value": 0
+    },
+    {
+     "field": "e9_hp",
+     "value": 0
+    },
+    {
+     "field": "e10_hp",
+     "value": 0
+    },
+    {
+     "field": "e11_hp",
+     "value": 0
+    },
+    {
+     "field": "e12_hp",
+     "value": 0
+    },
+    {
+     "field": "e13_hp",
+     "value": 0
+    },
+    {
+     "field": "e14_hp",
+     "value": 0
+    },
+    {
+     "field": "e15_hp",
+     "value": 0
+    },
+    {
+     "field": "e16_hp",
+     "value": 0
+    },
+    {
+     "field": "e17_hp",
+     "value": 0
+    },
+    {
+     "field": "e18_hp",
+     "value": 0
+    },
+    {
+     "field": "e19_hp",
+     "value": 0
+    },
+    {
+     "field": "e20_hp",
+     "value": 0
+    },
+    {
+     "field": "e21_hp",
+     "value": 0
+    },
+    {
+     "field": "e22_hp",
+     "value": 0
+    },
+    {
+     "field": "e23_hp",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "button_down": "DOWN",
+   "frames": 30,
+   "poke": [
+    {
+     "field": "e0_hp",
+     "value": 0
+    },
+    {
+     "field": "e1_hp",
+     "value": 0
+    },
+    {
+     "field": "e2_hp",
+     "value": 0
+    },
+    {
+     "field": "e3_hp",
+     "value": 0
+    },
+    {
+     "field": "e4_hp",
+     "value": 0
+    },
+    {
+     "field": "e5_hp",
+     "value": 0
+    },
+    {
+     "field": "e6_hp",
+     "value": 0
+    },
+    {
+     "field": "e7_hp",
+     "value": 0
+    },
+    {
+     "field": "e8_hp",
+     "value": 0
+    },
+    {
+     "field": "e9_hp",
+     "value": 0
+    },
+    {
+     "field": "e10_hp",
+     "value": 0
+    },
+    {
+     "field": "e11_hp",
+     "value": 0
+    },
+    {
+     "field": "e12_hp",
+     "value": 0
+    },
+    {
+     "field": "e13_hp",
+     "value": 0
+    },
+    {
+     "field": "e14_hp",
+     "value": 0
+    },
+    {
+     "field": "e15_hp",
+     "value": 0
+    },
+    {
+     "field": "e16_hp",
+     "value": 0
+    },
+    {
+     "field": "e17_hp",
+     "value": 0
+    },
+    {
+     "field": "e18_hp",
+     "value": 0
+    },
+    {
+     "field": "e19_hp",
+     "value": 0
+    },
+    {
+     "field": "e20_hp",
+     "value": 0
+    },
+    {
+     "field": "e21_hp",
+     "value": 0
+    },
+    {
+     "field": "e22_hp",
+     "value": 0
+    },
+    {
+     "field": "e23_hp",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "button_down": "DOWN",
+   "frames": 10,
+   "poke": [
+    {
+     "field": "e0_hp",
+     "value": 0
+    },
+    {
+     "field": "e1_hp",
+     "value": 0
+    },
+    {
+     "field": "e2_hp",
+     "value": 0
+    },
+    {
+     "field": "e3_hp",
+     "value": 0
+    },
+    {
+     "field": "e4_hp",
+     "value": 0
+    },
+    {
+     "field": "e5_hp",
+     "value": 0
+    },
+    {
+     "field": "e6_hp",
+     "value": 0
+    },
+    {
+     "field": "e7_hp",
+     "value": 0
+    },
+    {
+     "field": "e8_hp",
+     "value": 0
+    },
+    {
+     "field": "e9_hp",
+     "value": 0
+    },
+    {
+     "field": "e10_hp",
+     "value": 0
+    },
+    {
+     "field": "e11_hp",
+     "value": 0
+    },
+    {
+     "field": "e12_hp",
+     "value": 0
+    },
+    {
+     "field": "e13_hp",
+     "value": 0
+    },
+    {
+     "field": "e14_hp",
+     "value": 0
+    },
+    {
+     "field": "e15_hp",
+     "value": 0
+    },
+    {
+     "field": "e16_hp",
+     "value": 0
+    },
+    {
+     "field": "e17_hp",
+     "value": 0
+    },
+    {
+     "field": "e18_hp",
+     "value": 0
+    },
+    {
+     "field": "e19_hp",
+     "value": 0
+    },
+    {
+     "field": "e20_hp",
+     "value": 0
+    },
+    {
+     "field": "e21_hp",
+     "value": 0
+    },
+    {
+     "field": "e22_hp",
+     "value": 0
+    },
+    {
+     "field": "e23_hp",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "button_up": "DOWN",
+   "frames": 4
+  },
+  {
+   "poke": [
+    {
+     "field": "px",
+     "value": 43520
+    },
+    {
+     "field": "py",
+     "value": 363520
+    },
+    {
+     "field": "e0_hp",
+     "value": 0
+    },
+    {
+     "field": "e1_hp",
+     "value": 0
+    },
+    {
+     "field": "e2_hp",
+     "value": 0
+    },
+    {
+     "field": "e3_hp",
+     "value": 0
+    },
+    {
+     "field": "e4_hp",
+     "value": 0
+    },
+    {
+     "field": "e5_hp",
+     "value": 0
+    },
+    {
+     "field": "e6_hp",
+     "value": 0
+    },
+    {
+     "field": "e7_hp",
+     "value": 0
+    },
+    {
+     "field": "e8_hp",
+     "value": 0
+    },
+    {
+     "field": "e9_hp",
+     "value": 0
+    },
+    {
+     "field": "e10_hp",
+     "value": 0
+    },
+    {
+     "field": "e11_hp",
+     "value": 0
+    },
+    {
+     "field": "e12_hp",
+     "value": 0
+    },
+    {
+     "field": "e13_hp",
+     "value": 0
+    },
+    {
+     "field": "e14_hp",
+     "value": 0
+    },
+    {
+     "field": "e15_hp",
+     "value": 0
+    },
+    {
+     "field": "e16_hp",
+     "value": 0
+    },
+    {
+     "field": "e17_hp",
+     "value": 0
+    },
+    {
+     "field": "e18_hp",
+     "value": 0
+    },
+    {
+     "field": "e19_hp",
+     "value": 0
+    },
+    {
+     "field": "e20_hp",
+     "value": 0
+    },
+    {
+     "field": "e21_hp",
+     "value": 0
+    },
+    {
+     "field": "e22_hp",
+     "value": 0
+    },
+    {
+     "field": "e23_hp",
+     "value": 0
+    }
+   ],
+   "frames": 2
+  },
+  {
+   "button_down": "DOWN",
+   "frames": 30,
+   "poke": [
+    {
+     "field": "e0_hp",
+     "value": 0
+    },
+    {
+     "field": "e1_hp",
+     "value": 0
+    },
+    {
+     "field": "e2_hp",
+     "value": 0
+    },
+    {
+     "field": "e3_hp",
+     "value": 0
+    },
+    {
+     "field": "e4_hp",
+     "value": 0
+    },
+    {
+     "field": "e5_hp",
+     "value": 0
+    },
+    {
+     "field": "e6_hp",
+     "value": 0
+    },
+    {
+     "field": "e7_hp",
+     "value": 0
+    },
+    {
+     "field": "e8_hp",
+     "value": 0
+    },
+    {
+     "field": "e9_hp",
+     "value": 0
+    },
+    {
+     "field": "e10_hp",
+     "value": 0
+    },
+    {
+     "field": "e11_hp",
+     "value": 0
+    },
+    {
+     "field": "e12_hp",
+     "value": 0
+    },
+    {
+     "field": "e13_hp",
+     "value": 0
+    },
+    {
+     "field": "e14_hp",
+     "value": 0
+    },
+    {
+     "field": "e15_hp",
+     "value": 0
+    },
+    {
+     "field": "e16_hp",
+     "value": 0
+    },
+    {
+     "field": "e17_hp",
+     "value": 0
+    },
+    {
+     "field": "e18_hp",
+     "value": 0
+    },
+    {
+     "field": "e19_hp",
+     "value": 0
+    },
+    {
+     "field": "e20_hp",
+     "value": 0
+    },
+    {
+     "field": "e21_hp",
+     "value": 0
+    },
+    {
+     "field": "e22_hp",
+     "value": 0
+    },
+    {
+     "field": "e23_hp",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "button_down": "DOWN",
+   "frames": 30,
+   "poke": [
+    {
+     "field": "e0_hp",
+     "value": 0
+    },
+    {
+     "field": "e1_hp",
+     "value": 0
+    },
+    {
+     "field": "e2_hp",
+     "value": 0
+    },
+    {
+     "field": "e3_hp",
+     "value": 0
+    },
+    {
+     "field": "e4_hp",
+     "value": 0
+    },
+    {
+     "field": "e5_hp",
+     "value": 0
+    },
+    {
+     "field": "e6_hp",
+     "value": 0
+    },
+    {
+     "field": "e7_hp",
+     "value": 0
+    },
+    {
+     "field": "e8_hp",
+     "value": 0
+    },
+    {
+     "field": "e9_hp",
+     "value": 0
+    },
+    {
+     "field": "e10_hp",
+     "value": 0
+    },
+    {
+     "field": "e11_hp",
+     "value": 0
+    },
+    {
+     "field": "e12_hp",
+     "value": 0
+    },
+    {
+     "field": "e13_hp",
+     "value": 0
+    },
+    {
+     "field": "e14_hp",
+     "value": 0
+    },
+    {
+     "field": "e15_hp",
+     "value": 0
+    },
+    {
+     "field": "e16_hp",
+     "value": 0
+    },
+    {
+     "field": "e17_hp",
+     "value": 0
+    },
+    {
+     "field": "e18_hp",
+     "value": 0
+    },
+    {
+     "field": "e19_hp",
+     "value": 0
+    },
+    {
+     "field": "e20_hp",
+     "value": 0
+    },
+    {
+     "field": "e21_hp",
+     "value": 0
+    },
+    {
+     "field": "e22_hp",
+     "value": 0
+    },
+    {
+     "field": "e23_hp",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "button_down": "DOWN",
+   "frames": 30,
+   "poke": [
+    {
+     "field": "e0_hp",
+     "value": 0
+    },
+    {
+     "field": "e1_hp",
+     "value": 0
+    },
+    {
+     "field": "e2_hp",
+     "value": 0
+    },
+    {
+     "field": "e3_hp",
+     "value": 0
+    },
+    {
+     "field": "e4_hp",
+     "value": 0
+    },
+    {
+     "field": "e5_hp",
+     "value": 0
+    },
+    {
+     "field": "e6_hp",
+     "value": 0
+    },
+    {
+     "field": "e7_hp",
+     "value": 0
+    },
+    {
+     "field": "e8_hp",
+     "value": 0
+    },
+    {
+     "field": "e9_hp",
+     "value": 0
+    },
+    {
+     "field": "e10_hp",
+     "value": 0
+    },
+    {
+     "field": "e11_hp",
+     "value": 0
+    },
+    {
+     "field": "e12_hp",
+     "value": 0
+    },
+    {
+     "field": "e13_hp",
+     "value": 0
+    },
+    {
+     "field": "e14_hp",
+     "value": 0
+    },
+    {
+     "field": "e15_hp",
+     "value": 0
+    },
+    {
+     "field": "e16_hp",
+     "value": 0
+    },
+    {
+     "field": "e17_hp",
+     "value": 0
+    },
+    {
+     "field": "e18_hp",
+     "value": 0
+    },
+    {
+     "field": "e19_hp",
+     "value": 0
+    },
+    {
+     "field": "e20_hp",
+     "value": 0
+    },
+    {
+     "field": "e21_hp",
+     "value": 0
+    },
+    {
+     "field": "e22_hp",
+     "value": 0
+    },
+    {
+     "field": "e23_hp",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "button_down": "DOWN",
+   "frames": 30,
+   "poke": [
+    {
+     "field": "e0_hp",
+     "value": 0
+    },
+    {
+     "field": "e1_hp",
+     "value": 0
+    },
+    {
+     "field": "e2_hp",
+     "value": 0
+    },
+    {
+     "field": "e3_hp",
+     "value": 0
+    },
+    {
+     "field": "e4_hp",
+     "value": 0
+    },
+    {
+     "field": "e5_hp",
+     "value": 0
+    },
+    {
+     "field": "e6_hp",
+     "value": 0
+    },
+    {
+     "field": "e7_hp",
+     "value": 0
+    },
+    {
+     "field": "e8_hp",
+     "value": 0
+    },
+    {
+     "field": "e9_hp",
+     "value": 0
+    },
+    {
+     "field": "e10_hp",
+     "value": 0
+    },
+    {
+     "field": "e11_hp",
+     "value": 0
+    },
+    {
+     "field": "e12_hp",
+     "value": 0
+    },
+    {
+     "field": "e13_hp",
+     "value": 0
+    },
+    {
+     "field": "e14_hp",
+     "value": 0
+    },
+    {
+     "field": "e15_hp",
+     "value": 0
+    },
+    {
+     "field": "e16_hp",
+     "value": 0
+    },
+    {
+     "field": "e17_hp",
+     "value": 0
+    },
+    {
+     "field": "e18_hp",
+     "value": 0
+    },
+    {
+     "field": "e19_hp",
+     "value": 0
+    },
+    {
+     "field": "e20_hp",
+     "value": 0
+    },
+    {
+     "field": "e21_hp",
+     "value": 0
+    },
+    {
+     "field": "e22_hp",
+     "value": 0
+    },
+    {
+     "field": "e23_hp",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "button_down": "DOWN",
+   "frames": 30,
+   "poke": [
+    {
+     "field": "e0_hp",
+     "value": 0
+    },
+    {
+     "field": "e1_hp",
+     "value": 0
+    },
+    {
+     "field": "e2_hp",
+     "value": 0
+    },
+    {
+     "field": "e3_hp",
+     "value": 0
+    },
+    {
+     "field": "e4_hp",
+     "value": 0
+    },
+    {
+     "field": "e5_hp",
+     "value": 0
+    },
+    {
+     "field": "e6_hp",
+     "value": 0
+    },
+    {
+     "field": "e7_hp",
+     "value": 0
+    },
+    {
+     "field": "e8_hp",
+     "value": 0
+    },
+    {
+     "field": "e9_hp",
+     "value": 0
+    },
+    {
+     "field": "e10_hp",
+     "value": 0
+    },
+    {
+     "field": "e11_hp",
+     "value": 0
+    },
+    {
+     "field": "e12_hp",
+     "value": 0
+    },
+    {
+     "field": "e13_hp",
+     "value": 0
+    },
+    {
+     "field": "e14_hp",
+     "value": 0
+    },
+    {
+     "field": "e15_hp",
+     "value": 0
+    },
+    {
+     "field": "e16_hp",
+     "value": 0
+    },
+    {
+     "field": "e17_hp",
+     "value": 0
+    },
+    {
+     "field": "e18_hp",
+     "value": 0
+    },
+    {
+     "field": "e19_hp",
+     "value": 0
+    },
+    {
+     "field": "e20_hp",
+     "value": 0
+    },
+    {
+     "field": "e21_hp",
+     "value": 0
+    },
+    {
+     "field": "e22_hp",
+     "value": 0
+    },
+    {
+     "field": "e23_hp",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "button_down": "DOWN",
+   "frames": 30,
+   "poke": [
+    {
+     "field": "e0_hp",
+     "value": 0
+    },
+    {
+     "field": "e1_hp",
+     "value": 0
+    },
+    {
+     "field": "e2_hp",
+     "value": 0
+    },
+    {
+     "field": "e3_hp",
+     "value": 0
+    },
+    {
+     "field": "e4_hp",
+     "value": 0
+    },
+    {
+     "field": "e5_hp",
+     "value": 0
+    },
+    {
+     "field": "e6_hp",
+     "value": 0
+    },
+    {
+     "field": "e7_hp",
+     "value": 0
+    },
+    {
+     "field": "e8_hp",
+     "value": 0
+    },
+    {
+     "field": "e9_hp",
+     "value": 0
+    },
+    {
+     "field": "e10_hp",
+     "value": 0
+    },
+    {
+     "field": "e11_hp",
+     "value": 0
+    },
+    {
+     "field": "e12_hp",
+     "value": 0
+    },
+    {
+     "field": "e13_hp",
+     "value": 0
+    },
+    {
+     "field": "e14_hp",
+     "value": 0
+    },
+    {
+     "field": "e15_hp",
+     "value": 0
+    },
+    {
+     "field": "e16_hp",
+     "value": 0
+    },
+    {
+     "field": "e17_hp",
+     "value": 0
+    },
+    {
+     "field": "e18_hp",
+     "value": 0
+    },
+    {
+     "field": "e19_hp",
+     "value": 0
+    },
+    {
+     "field": "e20_hp",
+     "value": 0
+    },
+    {
+     "field": "e21_hp",
+     "value": 0
+    },
+    {
+     "field": "e22_hp",
+     "value": 0
+    },
+    {
+     "field": "e23_hp",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "button_down": "DOWN",
+   "frames": 30,
+   "poke": [
+    {
+     "field": "e0_hp",
+     "value": 0
+    },
+    {
+     "field": "e1_hp",
+     "value": 0
+    },
+    {
+     "field": "e2_hp",
+     "value": 0
+    },
+    {
+     "field": "e3_hp",
+     "value": 0
+    },
+    {
+     "field": "e4_hp",
+     "value": 0
+    },
+    {
+     "field": "e5_hp",
+     "value": 0
+    },
+    {
+     "field": "e6_hp",
+     "value": 0
+    },
+    {
+     "field": "e7_hp",
+     "value": 0
+    },
+    {
+     "field": "e8_hp",
+     "value": 0
+    },
+    {
+     "field": "e9_hp",
+     "value": 0
+    },
+    {
+     "field": "e10_hp",
+     "value": 0
+    },
+    {
+     "field": "e11_hp",
+     "value": 0
+    },
+    {
+     "field": "e12_hp",
+     "value": 0
+    },
+    {
+     "field": "e13_hp",
+     "value": 0
+    },
+    {
+     "field": "e14_hp",
+     "value": 0
+    },
+    {
+     "field": "e15_hp",
+     "value": 0
+    },
+    {
+     "field": "e16_hp",
+     "value": 0
+    },
+    {
+     "field": "e17_hp",
+     "value": 0
+    },
+    {
+     "field": "e18_hp",
+     "value": 0
+    },
+    {
+     "field": "e19_hp",
+     "value": 0
+    },
+    {
+     "field": "e20_hp",
+     "value": 0
+    },
+    {
+     "field": "e21_hp",
+     "value": 0
+    },
+    {
+     "field": "e22_hp",
+     "value": 0
+    },
+    {
+     "field": "e23_hp",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "button_down": "DOWN",
+   "frames": 20,
+   "poke": [
+    {
+     "field": "e0_hp",
+     "value": 0
+    },
+    {
+     "field": "e1_hp",
+     "value": 0
+    },
+    {
+     "field": "e2_hp",
+     "value": 0
+    },
+    {
+     "field": "e3_hp",
+     "value": 0
+    },
+    {
+     "field": "e4_hp",
+     "value": 0
+    },
+    {
+     "field": "e5_hp",
+     "value": 0
+    },
+    {
+     "field": "e6_hp",
+     "value": 0
+    },
+    {
+     "field": "e7_hp",
+     "value": 0
+    },
+    {
+     "field": "e8_hp",
+     "value": 0
+    },
+    {
+     "field": "e9_hp",
+     "value": 0
+    },
+    {
+     "field": "e10_hp",
+     "value": 0
+    },
+    {
+     "field": "e11_hp",
+     "value": 0
+    },
+    {
+     "field": "e12_hp",
+     "value": 0
+    },
+    {
+     "field": "e13_hp",
+     "value": 0
+    },
+    {
+     "field": "e14_hp",
+     "value": 0
+    },
+    {
+     "field": "e15_hp",
+     "value": 0
+    },
+    {
+     "field": "e16_hp",
+     "value": 0
+    },
+    {
+     "field": "e17_hp",
+     "value": 0
+    },
+    {
+     "field": "e18_hp",
+     "value": 0
+    },
+    {
+     "field": "e19_hp",
+     "value": 0
+    },
+    {
+     "field": "e20_hp",
+     "value": 0
+    },
+    {
+     "field": "e21_hp",
+     "value": 0
+    },
+    {
+     "field": "e22_hp",
+     "value": 0
+    },
+    {
+     "field": "e23_hp",
+     "value": 0
+    }
+   ],
+   "state_capture": "b03_nave2",
+   "capture": "b03_nave2"
+  },
+  {
+   "button_up": "DOWN",
+   "frames": 4
+  },
+  {
+   "button_down": "DOWN",
+   "frames": 30,
+   "poke": [
+    {
+     "field": "e0_hp",
+     "value": 0
+    },
+    {
+     "field": "e1_hp",
+     "value": 0
+    },
+    {
+     "field": "e2_hp",
+     "value": 0
+    },
+    {
+     "field": "e3_hp",
+     "value": 0
+    },
+    {
+     "field": "e4_hp",
+     "value": 0
+    },
+    {
+     "field": "e5_hp",
+     "value": 0
+    },
+    {
+     "field": "e6_hp",
+     "value": 0
+    },
+    {
+     "field": "e7_hp",
+     "value": 0
+    },
+    {
+     "field": "e8_hp",
+     "value": 0
+    },
+    {
+     "field": "e9_hp",
+     "value": 0
+    },
+    {
+     "field": "e10_hp",
+     "value": 0
+    },
+    {
+     "field": "e11_hp",
+     "value": 0
+    },
+    {
+     "field": "e12_hp",
+     "value": 0
+    },
+    {
+     "field": "e13_hp",
+     "value": 0
+    },
+    {
+     "field": "e14_hp",
+     "value": 0
+    },
+    {
+     "field": "e15_hp",
+     "value": 0
+    },
+    {
+     "field": "e16_hp",
+     "value": 0
+    },
+    {
+     "field": "e17_hp",
+     "value": 0
+    },
+    {
+     "field": "e18_hp",
+     "value": 0
+    },
+    {
+     "field": "e19_hp",
+     "value": 0
+    },
+    {
+     "field": "e20_hp",
+     "value": 0
+    },
+    {
+     "field": "e21_hp",
+     "value": 0
+    },
+    {
+     "field": "e22_hp",
+     "value": 0
+    },
+    {
+     "field": "e23_hp",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "button_down": "DOWN",
+   "frames": 30,
+   "poke": [
+    {
+     "field": "e0_hp",
+     "value": 0
+    },
+    {
+     "field": "e1_hp",
+     "value": 0
+    },
+    {
+     "field": "e2_hp",
+     "value": 0
+    },
+    {
+     "field": "e3_hp",
+     "value": 0
+    },
+    {
+     "field": "e4_hp",
+     "value": 0
+    },
+    {
+     "field": "e5_hp",
+     "value": 0
+    },
+    {
+     "field": "e6_hp",
+     "value": 0
+    },
+    {
+     "field": "e7_hp",
+     "value": 0
+    },
+    {
+     "field": "e8_hp",
+     "value": 0
+    },
+    {
+     "field": "e9_hp",
+     "value": 0
+    },
+    {
+     "field": "e10_hp",
+     "value": 0
+    },
+    {
+     "field": "e11_hp",
+     "value": 0
+    },
+    {
+     "field": "e12_hp",
+     "value": 0
+    },
+    {
+     "field": "e13_hp",
+     "value": 0
+    },
+    {
+     "field": "e14_hp",
+     "value": 0
+    },
+    {
+     "field": "e15_hp",
+     "value": 0
+    },
+    {
+     "field": "e16_hp",
+     "value": 0
+    },
+    {
+     "field": "e17_hp",
+     "value": 0
+    },
+    {
+     "field": "e18_hp",
+     "value": 0
+    },
+    {
+     "field": "e19_hp",
+     "value": 0
+    },
+    {
+     "field": "e20_hp",
+     "value": 0
+    },
+    {
+     "field": "e21_hp",
+     "value": 0
+    },
+    {
+     "field": "e22_hp",
+     "value": 0
+    },
+    {
+     "field": "e23_hp",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "button_down": "DOWN",
+   "frames": 30,
+   "poke": [
+    {
+     "field": "e0_hp",
+     "value": 0
+    },
+    {
+     "field": "e1_hp",
+     "value": 0
+    },
+    {
+     "field": "e2_hp",
+     "value": 0
+    },
+    {
+     "field": "e3_hp",
+     "value": 0
+    },
+    {
+     "field": "e4_hp",
+     "value": 0
+    },
+    {
+     "field": "e5_hp",
+     "value": 0
+    },
+    {
+     "field": "e6_hp",
+     "value": 0
+    },
+    {
+     "field": "e7_hp",
+     "value": 0
+    },
+    {
+     "field": "e8_hp",
+     "value": 0
+    },
+    {
+     "field": "e9_hp",
+     "value": 0
+    },
+    {
+     "field": "e10_hp",
+     "value": 0
+    },
+    {
+     "field": "e11_hp",
+     "value": 0
+    },
+    {
+     "field": "e12_hp",
+     "value": 0
+    },
+    {
+     "field": "e13_hp",
+     "value": 0
+    },
+    {
+     "field": "e14_hp",
+     "value": 0
+    },
+    {
+     "field": "e15_hp",
+     "value": 0
+    },
+    {
+     "field": "e16_hp",
+     "value": 0
+    },
+    {
+     "field": "e17_hp",
+     "value": 0
+    },
+    {
+     "field": "e18_hp",
+     "value": 0
+    },
+    {
+     "field": "e19_hp",
+     "value": 0
+    },
+    {
+     "field": "e20_hp",
+     "value": 0
+    },
+    {
+     "field": "e21_hp",
+     "value": 0
+    },
+    {
+     "field": "e22_hp",
+     "value": 0
+    },
+    {
+     "field": "e23_hp",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "button_down": "DOWN",
+   "frames": 30,
+   "poke": [
+    {
+     "field": "e0_hp",
+     "value": 0
+    },
+    {
+     "field": "e1_hp",
+     "value": 0
+    },
+    {
+     "field": "e2_hp",
+     "value": 0
+    },
+    {
+     "field": "e3_hp",
+     "value": 0
+    },
+    {
+     "field": "e4_hp",
+     "value": 0
+    },
+    {
+     "field": "e5_hp",
+     "value": 0
+    },
+    {
+     "field": "e6_hp",
+     "value": 0
+    },
+    {
+     "field": "e7_hp",
+     "value": 0
+    },
+    {
+     "field": "e8_hp",
+     "value": 0
+    },
+    {
+     "field": "e9_hp",
+     "value": 0
+    },
+    {
+     "field": "e10_hp",
+     "value": 0
+    },
+    {
+     "field": "e11_hp",
+     "value": 0
+    },
+    {
+     "field": "e12_hp",
+     "value": 0
+    },
+    {
+     "field": "e13_hp",
+     "value": 0
+    },
+    {
+     "field": "e14_hp",
+     "value": 0
+    },
+    {
+     "field": "e15_hp",
+     "value": 0
+    },
+    {
+     "field": "e16_hp",
+     "value": 0
+    },
+    {
+     "field": "e17_hp",
+     "value": 0
+    },
+    {
+     "field": "e18_hp",
+     "value": 0
+    },
+    {
+     "field": "e19_hp",
+     "value": 0
+    },
+    {
+     "field": "e20_hp",
+     "value": 0
+    },
+    {
+     "field": "e21_hp",
+     "value": 0
+    },
+    {
+     "field": "e22_hp",
+     "value": 0
+    },
+    {
+     "field": "e23_hp",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "button_down": "DOWN",
+   "frames": 30,
+   "poke": [
+    {
+     "field": "e0_hp",
+     "value": 0
+    },
+    {
+     "field": "e1_hp",
+     "value": 0
+    },
+    {
+     "field": "e2_hp",
+     "value": 0
+    },
+    {
+     "field": "e3_hp",
+     "value": 0
+    },
+    {
+     "field": "e4_hp",
+     "value": 0
+    },
+    {
+     "field": "e5_hp",
+     "value": 0
+    },
+    {
+     "field": "e6_hp",
+     "value": 0
+    },
+    {
+     "field": "e7_hp",
+     "value": 0
+    },
+    {
+     "field": "e8_hp",
+     "value": 0
+    },
+    {
+     "field": "e9_hp",
+     "value": 0
+    },
+    {
+     "field": "e10_hp",
+     "value": 0
+    },
+    {
+     "field": "e11_hp",
+     "value": 0
+    },
+    {
+     "field": "e12_hp",
+     "value": 0
+    },
+    {
+     "field": "e13_hp",
+     "value": 0
+    },
+    {
+     "field": "e14_hp",
+     "value": 0
+    },
+    {
+     "field": "e15_hp",
+     "value": 0
+    },
+    {
+     "field": "e16_hp",
+     "value": 0
+    },
+    {
+     "field": "e17_hp",
+     "value": 0
+    },
+    {
+     "field": "e18_hp",
+     "value": 0
+    },
+    {
+     "field": "e19_hp",
+     "value": 0
+    },
+    {
+     "field": "e20_hp",
+     "value": 0
+    },
+    {
+     "field": "e21_hp",
+     "value": 0
+    },
+    {
+     "field": "e22_hp",
+     "value": 0
+    },
+    {
+     "field": "e23_hp",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "button_down": "DOWN",
+   "frames": 30,
+   "poke": [
+    {
+     "field": "e0_hp",
+     "value": 0
+    },
+    {
+     "field": "e1_hp",
+     "value": 0
+    },
+    {
+     "field": "e2_hp",
+     "value": 0
+    },
+    {
+     "field": "e3_hp",
+     "value": 0
+    },
+    {
+     "field": "e4_hp",
+     "value": 0
+    },
+    {
+     "field": "e5_hp",
+     "value": 0
+    },
+    {
+     "field": "e6_hp",
+     "value": 0
+    },
+    {
+     "field": "e7_hp",
+     "value": 0
+    },
+    {
+     "field": "e8_hp",
+     "value": 0
+    },
+    {
+     "field": "e9_hp",
+     "value": 0
+    },
+    {
+     "field": "e10_hp",
+     "value": 0
+    },
+    {
+     "field": "e11_hp",
+     "value": 0
+    },
+    {
+     "field": "e12_hp",
+     "value": 0
+    },
+    {
+     "field": "e13_hp",
+     "value": 0
+    },
+    {
+     "field": "e14_hp",
+     "value": 0
+    },
+    {
+     "field": "e15_hp",
+     "value": 0
+    },
+    {
+     "field": "e16_hp",
+     "value": 0
+    },
+    {
+     "field": "e17_hp",
+     "value": 0
+    },
+    {
+     "field": "e18_hp",
+     "value": 0
+    },
+    {
+     "field": "e19_hp",
+     "value": 0
+    },
+    {
+     "field": "e20_hp",
+     "value": 0
+    },
+    {
+     "field": "e21_hp",
+     "value": 0
+    },
+    {
+     "field": "e22_hp",
+     "value": 0
+    },
+    {
+     "field": "e23_hp",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "button_down": "DOWN",
+   "frames": 30,
+   "poke": [
+    {
+     "field": "e0_hp",
+     "value": 0
+    },
+    {
+     "field": "e1_hp",
+     "value": 0
+    },
+    {
+     "field": "e2_hp",
+     "value": 0
+    },
+    {
+     "field": "e3_hp",
+     "value": 0
+    },
+    {
+     "field": "e4_hp",
+     "value": 0
+    },
+    {
+     "field": "e5_hp",
+     "value": 0
+    },
+    {
+     "field": "e6_hp",
+     "value": 0
+    },
+    {
+     "field": "e7_hp",
+     "value": 0
+    },
+    {
+     "field": "e8_hp",
+     "value": 0
+    },
+    {
+     "field": "e9_hp",
+     "value": 0
+    },
+    {
+     "field": "e10_hp",
+     "value": 0
+    },
+    {
+     "field": "e11_hp",
+     "value": 0
+    },
+    {
+     "field": "e12_hp",
+     "value": 0
+    },
+    {
+     "field": "e13_hp",
+     "value": 0
+    },
+    {
+     "field": "e14_hp",
+     "value": 0
+    },
+    {
+     "field": "e15_hp",
+     "value": 0
+    },
+    {
+     "field": "e16_hp",
+     "value": 0
+    },
+    {
+     "field": "e17_hp",
+     "value": 0
+    },
+    {
+     "field": "e18_hp",
+     "value": 0
+    },
+    {
+     "field": "e19_hp",
+     "value": 0
+    },
+    {
+     "field": "e20_hp",
+     "value": 0
+    },
+    {
+     "field": "e21_hp",
+     "value": 0
+    },
+    {
+     "field": "e22_hp",
+     "value": 0
+    },
+    {
+     "field": "e23_hp",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "button_down": "DOWN",
+   "frames": 30,
+   "poke": [
+    {
+     "field": "e0_hp",
+     "value": 0
+    },
+    {
+     "field": "e1_hp",
+     "value": 0
+    },
+    {
+     "field": "e2_hp",
+     "value": 0
+    },
+    {
+     "field": "e3_hp",
+     "value": 0
+    },
+    {
+     "field": "e4_hp",
+     "value": 0
+    },
+    {
+     "field": "e5_hp",
+     "value": 0
+    },
+    {
+     "field": "e6_hp",
+     "value": 0
+    },
+    {
+     "field": "e7_hp",
+     "value": 0
+    },
+    {
+     "field": "e8_hp",
+     "value": 0
+    },
+    {
+     "field": "e9_hp",
+     "value": 0
+    },
+    {
+     "field": "e10_hp",
+     "value": 0
+    },
+    {
+     "field": "e11_hp",
+     "value": 0
+    },
+    {
+     "field": "e12_hp",
+     "value": 0
+    },
+    {
+     "field": "e13_hp",
+     "value": 0
+    },
+    {
+     "field": "e14_hp",
+     "value": 0
+    },
+    {
+     "field": "e15_hp",
+     "value": 0
+    },
+    {
+     "field": "e16_hp",
+     "value": 0
+    },
+    {
+     "field": "e17_hp",
+     "value": 0
+    },
+    {
+     "field": "e18_hp",
+     "value": 0
+    },
+    {
+     "field": "e19_hp",
+     "value": 0
+    },
+    {
+     "field": "e20_hp",
+     "value": 0
+    },
+    {
+     "field": "e21_hp",
+     "value": 0
+    },
+    {
+     "field": "e22_hp",
+     "value": 0
+    },
+    {
+     "field": "e23_hp",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "button_down": "DOWN",
+   "frames": 30,
+   "poke": [
+    {
+     "field": "e0_hp",
+     "value": 0
+    },
+    {
+     "field": "e1_hp",
+     "value": 0
+    },
+    {
+     "field": "e2_hp",
+     "value": 0
+    },
+    {
+     "field": "e3_hp",
+     "value": 0
+    },
+    {
+     "field": "e4_hp",
+     "value": 0
+    },
+    {
+     "field": "e5_hp",
+     "value": 0
+    },
+    {
+     "field": "e6_hp",
+     "value": 0
+    },
+    {
+     "field": "e7_hp",
+     "value": 0
+    },
+    {
+     "field": "e8_hp",
+     "value": 0
+    },
+    {
+     "field": "e9_hp",
+     "value": 0
+    },
+    {
+     "field": "e10_hp",
+     "value": 0
+    },
+    {
+     "field": "e11_hp",
+     "value": 0
+    },
+    {
+     "field": "e12_hp",
+     "value": 0
+    },
+    {
+     "field": "e13_hp",
+     "value": 0
+    },
+    {
+     "field": "e14_hp",
+     "value": 0
+    },
+    {
+     "field": "e15_hp",
+     "value": 0
+    },
+    {
+     "field": "e16_hp",
+     "value": 0
+    },
+    {
+     "field": "e17_hp",
+     "value": 0
+    },
+    {
+     "field": "e18_hp",
+     "value": 0
+    },
+    {
+     "field": "e19_hp",
+     "value": 0
+    },
+    {
+     "field": "e20_hp",
+     "value": 0
+    },
+    {
+     "field": "e21_hp",
+     "value": 0
+    },
+    {
+     "field": "e22_hp",
+     "value": 0
+    },
+    {
+     "field": "e23_hp",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "button_down": "DOWN",
+   "frames": 30,
+   "poke": [
+    {
+     "field": "e0_hp",
+     "value": 0
+    },
+    {
+     "field": "e1_hp",
+     "value": 0
+    },
+    {
+     "field": "e2_hp",
+     "value": 0
+    },
+    {
+     "field": "e3_hp",
+     "value": 0
+    },
+    {
+     "field": "e4_hp",
+     "value": 0
+    },
+    {
+     "field": "e5_hp",
+     "value": 0
+    },
+    {
+     "field": "e6_hp",
+     "value": 0
+    },
+    {
+     "field": "e7_hp",
+     "value": 0
+    },
+    {
+     "field": "e8_hp",
+     "value": 0
+    },
+    {
+     "field": "e9_hp",
+     "value": 0
+    },
+    {
+     "field": "e10_hp",
+     "value": 0
+    },
+    {
+     "field": "e11_hp",
+     "value": 0
+    },
+    {
+     "field": "e12_hp",
+     "value": 0
+    },
+    {
+     "field": "e13_hp",
+     "value": 0
+    },
+    {
+     "field": "e14_hp",
+     "value": 0
+    },
+    {
+     "field": "e15_hp",
+     "value": 0
+    },
+    {
+     "field": "e16_hp",
+     "value": 0
+    },
+    {
+     "field": "e17_hp",
+     "value": 0
+    },
+    {
+     "field": "e18_hp",
+     "value": 0
+    },
+    {
+     "field": "e19_hp",
+     "value": 0
+    },
+    {
+     "field": "e20_hp",
+     "value": 0
+    },
+    {
+     "field": "e21_hp",
+     "value": 0
+    },
+    {
+     "field": "e22_hp",
+     "value": 0
+    },
+    {
+     "field": "e23_hp",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "button_down": "DOWN",
+   "frames": 30,
+   "poke": [
+    {
+     "field": "e0_hp",
+     "value": 0
+    },
+    {
+     "field": "e1_hp",
+     "value": 0
+    },
+    {
+     "field": "e2_hp",
+     "value": 0
+    },
+    {
+     "field": "e3_hp",
+     "value": 0
+    },
+    {
+     "field": "e4_hp",
+     "value": 0
+    },
+    {
+     "field": "e5_hp",
+     "value": 0
+    },
+    {
+     "field": "e6_hp",
+     "value": 0
+    },
+    {
+     "field": "e7_hp",
+     "value": 0
+    },
+    {
+     "field": "e8_hp",
+     "value": 0
+    },
+    {
+     "field": "e9_hp",
+     "value": 0
+    },
+    {
+     "field": "e10_hp",
+     "value": 0
+    },
+    {
+     "field": "e11_hp",
+     "value": 0
+    },
+    {
+     "field": "e12_hp",
+     "value": 0
+    },
+    {
+     "field": "e13_hp",
+     "value": 0
+    },
+    {
+     "field": "e14_hp",
+     "value": 0
+    },
+    {
+     "field": "e15_hp",
+     "value": 0
+    },
+    {
+     "field": "e16_hp",
+     "value": 0
+    },
+    {
+     "field": "e17_hp",
+     "value": 0
+    },
+    {
+     "field": "e18_hp",
+     "value": 0
+    },
+    {
+     "field": "e19_hp",
+     "value": 0
+    },
+    {
+     "field": "e20_hp",
+     "value": 0
+    },
+    {
+     "field": "e21_hp",
+     "value": 0
+    },
+    {
+     "field": "e22_hp",
+     "value": 0
+    },
+    {
+     "field": "e23_hp",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "button_down": "DOWN",
+   "frames": 30,
+   "poke": [
+    {
+     "field": "e0_hp",
+     "value": 0
+    },
+    {
+     "field": "e1_hp",
+     "value": 0
+    },
+    {
+     "field": "e2_hp",
+     "value": 0
+    },
+    {
+     "field": "e3_hp",
+     "value": 0
+    },
+    {
+     "field": "e4_hp",
+     "value": 0
+    },
+    {
+     "field": "e5_hp",
+     "value": 0
+    },
+    {
+     "field": "e6_hp",
+     "value": 0
+    },
+    {
+     "field": "e7_hp",
+     "value": 0
+    },
+    {
+     "field": "e8_hp",
+     "value": 0
+    },
+    {
+     "field": "e9_hp",
+     "value": 0
+    },
+    {
+     "field": "e10_hp",
+     "value": 0
+    },
+    {
+     "field": "e11_hp",
+     "value": 0
+    },
+    {
+     "field": "e12_hp",
+     "value": 0
+    },
+    {
+     "field": "e13_hp",
+     "value": 0
+    },
+    {
+     "field": "e14_hp",
+     "value": 0
+    },
+    {
+     "field": "e15_hp",
+     "value": 0
+    },
+    {
+     "field": "e16_hp",
+     "value": 0
+    },
+    {
+     "field": "e17_hp",
+     "value": 0
+    },
+    {
+     "field": "e18_hp",
+     "value": 0
+    },
+    {
+     "field": "e19_hp",
+     "value": 0
+    },
+    {
+     "field": "e20_hp",
+     "value": 0
+    },
+    {
+     "field": "e21_hp",
+     "value": 0
+    },
+    {
+     "field": "e22_hp",
+     "value": 0
+    },
+    {
+     "field": "e23_hp",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "button_down": "DOWN",
+   "frames": 30,
+   "poke": [
+    {
+     "field": "e0_hp",
+     "value": 0
+    },
+    {
+     "field": "e1_hp",
+     "value": 0
+    },
+    {
+     "field": "e2_hp",
+     "value": 0
+    },
+    {
+     "field": "e3_hp",
+     "value": 0
+    },
+    {
+     "field": "e4_hp",
+     "value": 0
+    },
+    {
+     "field": "e5_hp",
+     "value": 0
+    },
+    {
+     "field": "e6_hp",
+     "value": 0
+    },
+    {
+     "field": "e7_hp",
+     "value": 0
+    },
+    {
+     "field": "e8_hp",
+     "value": 0
+    },
+    {
+     "field": "e9_hp",
+     "value": 0
+    },
+    {
+     "field": "e10_hp",
+     "value": 0
+    },
+    {
+     "field": "e11_hp",
+     "value": 0
+    },
+    {
+     "field": "e12_hp",
+     "value": 0
+    },
+    {
+     "field": "e13_hp",
+     "value": 0
+    },
+    {
+     "field": "e14_hp",
+     "value": 0
+    },
+    {
+     "field": "e15_hp",
+     "value": 0
+    },
+    {
+     "field": "e16_hp",
+     "value": 0
+    },
+    {
+     "field": "e17_hp",
+     "value": 0
+    },
+    {
+     "field": "e18_hp",
+     "value": 0
+    },
+    {
+     "field": "e19_hp",
+     "value": 0
+    },
+    {
+     "field": "e20_hp",
+     "value": 0
+    },
+    {
+     "field": "e21_hp",
+     "value": 0
+    },
+    {
+     "field": "e22_hp",
+     "value": 0
+    },
+    {
+     "field": "e23_hp",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "button_down": "DOWN",
+   "frames": 10,
+   "poke": [
+    {
+     "field": "e0_hp",
+     "value": 0
+    },
+    {
+     "field": "e1_hp",
+     "value": 0
+    },
+    {
+     "field": "e2_hp",
+     "value": 0
+    },
+    {
+     "field": "e3_hp",
+     "value": 0
+    },
+    {
+     "field": "e4_hp",
+     "value": 0
+    },
+    {
+     "field": "e5_hp",
+     "value": 0
+    },
+    {
+     "field": "e6_hp",
+     "value": 0
+    },
+    {
+     "field": "e7_hp",
+     "value": 0
+    },
+    {
+     "field": "e8_hp",
+     "value": 0
+    },
+    {
+     "field": "e9_hp",
+     "value": 0
+    },
+    {
+     "field": "e10_hp",
+     "value": 0
+    },
+    {
+     "field": "e11_hp",
+     "value": 0
+    },
+    {
+     "field": "e12_hp",
+     "value": 0
+    },
+    {
+     "field": "e13_hp",
+     "value": 0
+    },
+    {
+     "field": "e14_hp",
+     "value": 0
+    },
+    {
+     "field": "e15_hp",
+     "value": 0
+    },
+    {
+     "field": "e16_hp",
+     "value": 0
+    },
+    {
+     "field": "e17_hp",
+     "value": 0
+    },
+    {
+     "field": "e18_hp",
+     "value": 0
+    },
+    {
+     "field": "e19_hp",
+     "value": 0
+    },
+    {
+     "field": "e20_hp",
+     "value": 0
+    },
+    {
+     "field": "e21_hp",
+     "value": 0
+    },
+    {
+     "field": "e22_hp",
+     "value": 0
+    },
+    {
+     "field": "e23_hp",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "button_up": "DOWN",
+   "frames": 4
+  },
+  {
+   "poke": [
+    {
+     "field": "px",
+     "value": 40960
+    },
+    {
+     "field": "py",
+     "value": 363520
+    },
+    {
+     "field": "e0_hp",
+     "value": 0
+    },
+    {
+     "field": "e1_hp",
+     "value": 0
+    },
+    {
+     "field": "e2_hp",
+     "value": 0
+    },
+    {
+     "field": "e3_hp",
+     "value": 0
+    },
+    {
+     "field": "e4_hp",
+     "value": 0
+    },
+    {
+     "field": "e5_hp",
+     "value": 0
+    },
+    {
+     "field": "e6_hp",
+     "value": 0
+    },
+    {
+     "field": "e7_hp",
+     "value": 0
+    },
+    {
+     "field": "e8_hp",
+     "value": 0
+    },
+    {
+     "field": "e9_hp",
+     "value": 0
+    },
+    {
+     "field": "e10_hp",
+     "value": 0
+    },
+    {
+     "field": "e11_hp",
+     "value": 0
+    },
+    {
+     "field": "e12_hp",
+     "value": 0
+    },
+    {
+     "field": "e13_hp",
+     "value": 0
+    },
+    {
+     "field": "e14_hp",
+     "value": 0
+    },
+    {
+     "field": "e15_hp",
+     "value": 0
+    },
+    {
+     "field": "e16_hp",
+     "value": 0
+    },
+    {
+     "field": "e17_hp",
+     "value": 0
+    },
+    {
+     "field": "e18_hp",
+     "value": 0
+    },
+    {
+     "field": "e19_hp",
+     "value": 0
+    },
+    {
+     "field": "e20_hp",
+     "value": 0
+    },
+    {
+     "field": "e21_hp",
+     "value": 0
+    },
+    {
+     "field": "e22_hp",
+     "value": 0
+    },
+    {
+     "field": "e23_hp",
+     "value": 0
+    }
+   ],
+   "frames": 2
+  },
+  {
+   "button_down": "DOWN",
+   "frames": 30,
+   "poke": [
+    {
+     "field": "e0_hp",
+     "value": 0
+    },
+    {
+     "field": "e1_hp",
+     "value": 0
+    },
+    {
+     "field": "e2_hp",
+     "value": 0
+    },
+    {
+     "field": "e3_hp",
+     "value": 0
+    },
+    {
+     "field": "e4_hp",
+     "value": 0
+    },
+    {
+     "field": "e5_hp",
+     "value": 0
+    },
+    {
+     "field": "e6_hp",
+     "value": 0
+    },
+    {
+     "field": "e7_hp",
+     "value": 0
+    },
+    {
+     "field": "e8_hp",
+     "value": 0
+    },
+    {
+     "field": "e9_hp",
+     "value": 0
+    },
+    {
+     "field": "e10_hp",
+     "value": 0
+    },
+    {
+     "field": "e11_hp",
+     "value": 0
+    },
+    {
+     "field": "e12_hp",
+     "value": 0
+    },
+    {
+     "field": "e13_hp",
+     "value": 0
+    },
+    {
+     "field": "e14_hp",
+     "value": 0
+    },
+    {
+     "field": "e15_hp",
+     "value": 0
+    },
+    {
+     "field": "e16_hp",
+     "value": 0
+    },
+    {
+     "field": "e17_hp",
+     "value": 0
+    },
+    {
+     "field": "e18_hp",
+     "value": 0
+    },
+    {
+     "field": "e19_hp",
+     "value": 0
+    },
+    {
+     "field": "e20_hp",
+     "value": 0
+    },
+    {
+     "field": "e21_hp",
+     "value": 0
+    },
+    {
+     "field": "e22_hp",
+     "value": 0
+    },
+    {
+     "field": "e23_hp",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "button_down": "DOWN",
+   "frames": 30,
+   "poke": [
+    {
+     "field": "e0_hp",
+     "value": 0
+    },
+    {
+     "field": "e1_hp",
+     "value": 0
+    },
+    {
+     "field": "e2_hp",
+     "value": 0
+    },
+    {
+     "field": "e3_hp",
+     "value": 0
+    },
+    {
+     "field": "e4_hp",
+     "value": 0
+    },
+    {
+     "field": "e5_hp",
+     "value": 0
+    },
+    {
+     "field": "e6_hp",
+     "value": 0
+    },
+    {
+     "field": "e7_hp",
+     "value": 0
+    },
+    {
+     "field": "e8_hp",
+     "value": 0
+    },
+    {
+     "field": "e9_hp",
+     "value": 0
+    },
+    {
+     "field": "e10_hp",
+     "value": 0
+    },
+    {
+     "field": "e11_hp",
+     "value": 0
+    },
+    {
+     "field": "e12_hp",
+     "value": 0
+    },
+    {
+     "field": "e13_hp",
+     "value": 0
+    },
+    {
+     "field": "e14_hp",
+     "value": 0
+    },
+    {
+     "field": "e15_hp",
+     "value": 0
+    },
+    {
+     "field": "e16_hp",
+     "value": 0
+    },
+    {
+     "field": "e17_hp",
+     "value": 0
+    },
+    {
+     "field": "e18_hp",
+     "value": 0
+    },
+    {
+     "field": "e19_hp",
+     "value": 0
+    },
+    {
+     "field": "e20_hp",
+     "value": 0
+    },
+    {
+     "field": "e21_hp",
+     "value": 0
+    },
+    {
+     "field": "e22_hp",
+     "value": 0
+    },
+    {
+     "field": "e23_hp",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "button_down": "DOWN",
+   "frames": 30,
+   "poke": [
+    {
+     "field": "e0_hp",
+     "value": 0
+    },
+    {
+     "field": "e1_hp",
+     "value": 0
+    },
+    {
+     "field": "e2_hp",
+     "value": 0
+    },
+    {
+     "field": "e3_hp",
+     "value": 0
+    },
+    {
+     "field": "e4_hp",
+     "value": 0
+    },
+    {
+     "field": "e5_hp",
+     "value": 0
+    },
+    {
+     "field": "e6_hp",
+     "value": 0
+    },
+    {
+     "field": "e7_hp",
+     "value": 0
+    },
+    {
+     "field": "e8_hp",
+     "value": 0
+    },
+    {
+     "field": "e9_hp",
+     "value": 0
+    },
+    {
+     "field": "e10_hp",
+     "value": 0
+    },
+    {
+     "field": "e11_hp",
+     "value": 0
+    },
+    {
+     "field": "e12_hp",
+     "value": 0
+    },
+    {
+     "field": "e13_hp",
+     "value": 0
+    },
+    {
+     "field": "e14_hp",
+     "value": 0
+    },
+    {
+     "field": "e15_hp",
+     "value": 0
+    },
+    {
+     "field": "e16_hp",
+     "value": 0
+    },
+    {
+     "field": "e17_hp",
+     "value": 0
+    },
+    {
+     "field": "e18_hp",
+     "value": 0
+    },
+    {
+     "field": "e19_hp",
+     "value": 0
+    },
+    {
+     "field": "e20_hp",
+     "value": 0
+    },
+    {
+     "field": "e21_hp",
+     "value": 0
+    },
+    {
+     "field": "e22_hp",
+     "value": 0
+    },
+    {
+     "field": "e23_hp",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "button_down": "DOWN",
+   "frames": 30,
+   "poke": [
+    {
+     "field": "e0_hp",
+     "value": 0
+    },
+    {
+     "field": "e1_hp",
+     "value": 0
+    },
+    {
+     "field": "e2_hp",
+     "value": 0
+    },
+    {
+     "field": "e3_hp",
+     "value": 0
+    },
+    {
+     "field": "e4_hp",
+     "value": 0
+    },
+    {
+     "field": "e5_hp",
+     "value": 0
+    },
+    {
+     "field": "e6_hp",
+     "value": 0
+    },
+    {
+     "field": "e7_hp",
+     "value": 0
+    },
+    {
+     "field": "e8_hp",
+     "value": 0
+    },
+    {
+     "field": "e9_hp",
+     "value": 0
+    },
+    {
+     "field": "e10_hp",
+     "value": 0
+    },
+    {
+     "field": "e11_hp",
+     "value": 0
+    },
+    {
+     "field": "e12_hp",
+     "value": 0
+    },
+    {
+     "field": "e13_hp",
+     "value": 0
+    },
+    {
+     "field": "e14_hp",
+     "value": 0
+    },
+    {
+     "field": "e15_hp",
+     "value": 0
+    },
+    {
+     "field": "e16_hp",
+     "value": 0
+    },
+    {
+     "field": "e17_hp",
+     "value": 0
+    },
+    {
+     "field": "e18_hp",
+     "value": 0
+    },
+    {
+     "field": "e19_hp",
+     "value": 0
+    },
+    {
+     "field": "e20_hp",
+     "value": 0
+    },
+    {
+     "field": "e21_hp",
+     "value": 0
+    },
+    {
+     "field": "e22_hp",
+     "value": 0
+    },
+    {
+     "field": "e23_hp",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "button_down": "DOWN",
+   "frames": 30,
+   "poke": [
+    {
+     "field": "e0_hp",
+     "value": 0
+    },
+    {
+     "field": "e1_hp",
+     "value": 0
+    },
+    {
+     "field": "e2_hp",
+     "value": 0
+    },
+    {
+     "field": "e3_hp",
+     "value": 0
+    },
+    {
+     "field": "e4_hp",
+     "value": 0
+    },
+    {
+     "field": "e5_hp",
+     "value": 0
+    },
+    {
+     "field": "e6_hp",
+     "value": 0
+    },
+    {
+     "field": "e7_hp",
+     "value": 0
+    },
+    {
+     "field": "e8_hp",
+     "value": 0
+    },
+    {
+     "field": "e9_hp",
+     "value": 0
+    },
+    {
+     "field": "e10_hp",
+     "value": 0
+    },
+    {
+     "field": "e11_hp",
+     "value": 0
+    },
+    {
+     "field": "e12_hp",
+     "value": 0
+    },
+    {
+     "field": "e13_hp",
+     "value": 0
+    },
+    {
+     "field": "e14_hp",
+     "value": 0
+    },
+    {
+     "field": "e15_hp",
+     "value": 0
+    },
+    {
+     "field": "e16_hp",
+     "value": 0
+    },
+    {
+     "field": "e17_hp",
+     "value": 0
+    },
+    {
+     "field": "e18_hp",
+     "value": 0
+    },
+    {
+     "field": "e19_hp",
+     "value": 0
+    },
+    {
+     "field": "e20_hp",
+     "value": 0
+    },
+    {
+     "field": "e21_hp",
+     "value": 0
+    },
+    {
+     "field": "e22_hp",
+     "value": 0
+    },
+    {
+     "field": "e23_hp",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "button_down": "DOWN",
+   "frames": 30,
+   "poke": [
+    {
+     "field": "e0_hp",
+     "value": 0
+    },
+    {
+     "field": "e1_hp",
+     "value": 0
+    },
+    {
+     "field": "e2_hp",
+     "value": 0
+    },
+    {
+     "field": "e3_hp",
+     "value": 0
+    },
+    {
+     "field": "e4_hp",
+     "value": 0
+    },
+    {
+     "field": "e5_hp",
+     "value": 0
+    },
+    {
+     "field": "e6_hp",
+     "value": 0
+    },
+    {
+     "field": "e7_hp",
+     "value": 0
+    },
+    {
+     "field": "e8_hp",
+     "value": 0
+    },
+    {
+     "field": "e9_hp",
+     "value": 0
+    },
+    {
+     "field": "e10_hp",
+     "value": 0
+    },
+    {
+     "field": "e11_hp",
+     "value": 0
+    },
+    {
+     "field": "e12_hp",
+     "value": 0
+    },
+    {
+     "field": "e13_hp",
+     "value": 0
+    },
+    {
+     "field": "e14_hp",
+     "value": 0
+    },
+    {
+     "field": "e15_hp",
+     "value": 0
+    },
+    {
+     "field": "e16_hp",
+     "value": 0
+    },
+    {
+     "field": "e17_hp",
+     "value": 0
+    },
+    {
+     "field": "e18_hp",
+     "value": 0
+    },
+    {
+     "field": "e19_hp",
+     "value": 0
+    },
+    {
+     "field": "e20_hp",
+     "value": 0
+    },
+    {
+     "field": "e21_hp",
+     "value": 0
+    },
+    {
+     "field": "e22_hp",
+     "value": 0
+    },
+    {
+     "field": "e23_hp",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "button_down": "DOWN",
+   "frames": 30,
+   "poke": [
+    {
+     "field": "e0_hp",
+     "value": 0
+    },
+    {
+     "field": "e1_hp",
+     "value": 0
+    },
+    {
+     "field": "e2_hp",
+     "value": 0
+    },
+    {
+     "field": "e3_hp",
+     "value": 0
+    },
+    {
+     "field": "e4_hp",
+     "value": 0
+    },
+    {
+     "field": "e5_hp",
+     "value": 0
+    },
+    {
+     "field": "e6_hp",
+     "value": 0
+    },
+    {
+     "field": "e7_hp",
+     "value": 0
+    },
+    {
+     "field": "e8_hp",
+     "value": 0
+    },
+    {
+     "field": "e9_hp",
+     "value": 0
+    },
+    {
+     "field": "e10_hp",
+     "value": 0
+    },
+    {
+     "field": "e11_hp",
+     "value": 0
+    },
+    {
+     "field": "e12_hp",
+     "value": 0
+    },
+    {
+     "field": "e13_hp",
+     "value": 0
+    },
+    {
+     "field": "e14_hp",
+     "value": 0
+    },
+    {
+     "field": "e15_hp",
+     "value": 0
+    },
+    {
+     "field": "e16_hp",
+     "value": 0
+    },
+    {
+     "field": "e17_hp",
+     "value": 0
+    },
+    {
+     "field": "e18_hp",
+     "value": 0
+    },
+    {
+     "field": "e19_hp",
+     "value": 0
+    },
+    {
+     "field": "e20_hp",
+     "value": 0
+    },
+    {
+     "field": "e21_hp",
+     "value": 0
+    },
+    {
+     "field": "e22_hp",
+     "value": 0
+    },
+    {
+     "field": "e23_hp",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "button_down": "DOWN",
+   "frames": 20,
+   "poke": [
+    {
+     "field": "e0_hp",
+     "value": 0
+    },
+    {
+     "field": "e1_hp",
+     "value": 0
+    },
+    {
+     "field": "e2_hp",
+     "value": 0
+    },
+    {
+     "field": "e3_hp",
+     "value": 0
+    },
+    {
+     "field": "e4_hp",
+     "value": 0
+    },
+    {
+     "field": "e5_hp",
+     "value": 0
+    },
+    {
+     "field": "e6_hp",
+     "value": 0
+    },
+    {
+     "field": "e7_hp",
+     "value": 0
+    },
+    {
+     "field": "e8_hp",
+     "value": 0
+    },
+    {
+     "field": "e9_hp",
+     "value": 0
+    },
+    {
+     "field": "e10_hp",
+     "value": 0
+    },
+    {
+     "field": "e11_hp",
+     "value": 0
+    },
+    {
+     "field": "e12_hp",
+     "value": 0
+    },
+    {
+     "field": "e13_hp",
+     "value": 0
+    },
+    {
+     "field": "e14_hp",
+     "value": 0
+    },
+    {
+     "field": "e15_hp",
+     "value": 0
+    },
+    {
+     "field": "e16_hp",
+     "value": 0
+    },
+    {
+     "field": "e17_hp",
+     "value": 0
+    },
+    {
+     "field": "e18_hp",
+     "value": 0
+    },
+    {
+     "field": "e19_hp",
+     "value": 0
+    },
+    {
+     "field": "e20_hp",
+     "value": 0
+    },
+    {
+     "field": "e21_hp",
+     "value": 0
+    },
+    {
+     "field": "e22_hp",
+     "value": 0
+    },
+    {
+     "field": "e23_hp",
+     "value": 0
+    }
+   ],
+   "state_capture": "b04_nave1",
+   "capture": "b04_nave1"
+  },
+  {
+   "button_up": "DOWN",
+   "frames": 4
+  },
+  {
+   "button_down": "DOWN",
+   "frames": 30,
+   "poke": [
+    {
+     "field": "e0_hp",
+     "value": 0
+    },
+    {
+     "field": "e1_hp",
+     "value": 0
+    },
+    {
+     "field": "e2_hp",
+     "value": 0
+    },
+    {
+     "field": "e3_hp",
+     "value": 0
+    },
+    {
+     "field": "e4_hp",
+     "value": 0
+    },
+    {
+     "field": "e5_hp",
+     "value": 0
+    },
+    {
+     "field": "e6_hp",
+     "value": 0
+    },
+    {
+     "field": "e7_hp",
+     "value": 0
+    },
+    {
+     "field": "e8_hp",
+     "value": 0
+    },
+    {
+     "field": "e9_hp",
+     "value": 0
+    },
+    {
+     "field": "e10_hp",
+     "value": 0
+    },
+    {
+     "field": "e11_hp",
+     "value": 0
+    },
+    {
+     "field": "e12_hp",
+     "value": 0
+    },
+    {
+     "field": "e13_hp",
+     "value": 0
+    },
+    {
+     "field": "e14_hp",
+     "value": 0
+    },
+    {
+     "field": "e15_hp",
+     "value": 0
+    },
+    {
+     "field": "e16_hp",
+     "value": 0
+    },
+    {
+     "field": "e17_hp",
+     "value": 0
+    },
+    {
+     "field": "e18_hp",
+     "value": 0
+    },
+    {
+     "field": "e19_hp",
+     "value": 0
+    },
+    {
+     "field": "e20_hp",
+     "value": 0
+    },
+    {
+     "field": "e21_hp",
+     "value": 0
+    },
+    {
+     "field": "e22_hp",
+     "value": 0
+    },
+    {
+     "field": "e23_hp",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "button_down": "DOWN",
+   "frames": 30,
+   "poke": [
+    {
+     "field": "e0_hp",
+     "value": 0
+    },
+    {
+     "field": "e1_hp",
+     "value": 0
+    },
+    {
+     "field": "e2_hp",
+     "value": 0
+    },
+    {
+     "field": "e3_hp",
+     "value": 0
+    },
+    {
+     "field": "e4_hp",
+     "value": 0
+    },
+    {
+     "field": "e5_hp",
+     "value": 0
+    },
+    {
+     "field": "e6_hp",
+     "value": 0
+    },
+    {
+     "field": "e7_hp",
+     "value": 0
+    },
+    {
+     "field": "e8_hp",
+     "value": 0
+    },
+    {
+     "field": "e9_hp",
+     "value": 0
+    },
+    {
+     "field": "e10_hp",
+     "value": 0
+    },
+    {
+     "field": "e11_hp",
+     "value": 0
+    },
+    {
+     "field": "e12_hp",
+     "value": 0
+    },
+    {
+     "field": "e13_hp",
+     "value": 0
+    },
+    {
+     "field": "e14_hp",
+     "value": 0
+    },
+    {
+     "field": "e15_hp",
+     "value": 0
+    },
+    {
+     "field": "e16_hp",
+     "value": 0
+    },
+    {
+     "field": "e17_hp",
+     "value": 0
+    },
+    {
+     "field": "e18_hp",
+     "value": 0
+    },
+    {
+     "field": "e19_hp",
+     "value": 0
+    },
+    {
+     "field": "e20_hp",
+     "value": 0
+    },
+    {
+     "field": "e21_hp",
+     "value": 0
+    },
+    {
+     "field": "e22_hp",
+     "value": 0
+    },
+    {
+     "field": "e23_hp",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "button_down": "DOWN",
+   "frames": 30,
+   "poke": [
+    {
+     "field": "e0_hp",
+     "value": 0
+    },
+    {
+     "field": "e1_hp",
+     "value": 0
+    },
+    {
+     "field": "e2_hp",
+     "value": 0
+    },
+    {
+     "field": "e3_hp",
+     "value": 0
+    },
+    {
+     "field": "e4_hp",
+     "value": 0
+    },
+    {
+     "field": "e5_hp",
+     "value": 0
+    },
+    {
+     "field": "e6_hp",
+     "value": 0
+    },
+    {
+     "field": "e7_hp",
+     "value": 0
+    },
+    {
+     "field": "e8_hp",
+     "value": 0
+    },
+    {
+     "field": "e9_hp",
+     "value": 0
+    },
+    {
+     "field": "e10_hp",
+     "value": 0
+    },
+    {
+     "field": "e11_hp",
+     "value": 0
+    },
+    {
+     "field": "e12_hp",
+     "value": 0
+    },
+    {
+     "field": "e13_hp",
+     "value": 0
+    },
+    {
+     "field": "e14_hp",
+     "value": 0
+    },
+    {
+     "field": "e15_hp",
+     "value": 0
+    },
+    {
+     "field": "e16_hp",
+     "value": 0
+    },
+    {
+     "field": "e17_hp",
+     "value": 0
+    },
+    {
+     "field": "e18_hp",
+     "value": 0
+    },
+    {
+     "field": "e19_hp",
+     "value": 0
+    },
+    {
+     "field": "e20_hp",
+     "value": 0
+    },
+    {
+     "field": "e21_hp",
+     "value": 0
+    },
+    {
+     "field": "e22_hp",
+     "value": 0
+    },
+    {
+     "field": "e23_hp",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "button_down": "DOWN",
+   "frames": 30,
+   "poke": [
+    {
+     "field": "e0_hp",
+     "value": 0
+    },
+    {
+     "field": "e1_hp",
+     "value": 0
+    },
+    {
+     "field": "e2_hp",
+     "value": 0
+    },
+    {
+     "field": "e3_hp",
+     "value": 0
+    },
+    {
+     "field": "e4_hp",
+     "value": 0
+    },
+    {
+     "field": "e5_hp",
+     "value": 0
+    },
+    {
+     "field": "e6_hp",
+     "value": 0
+    },
+    {
+     "field": "e7_hp",
+     "value": 0
+    },
+    {
+     "field": "e8_hp",
+     "value": 0
+    },
+    {
+     "field": "e9_hp",
+     "value": 0
+    },
+    {
+     "field": "e10_hp",
+     "value": 0
+    },
+    {
+     "field": "e11_hp",
+     "value": 0
+    },
+    {
+     "field": "e12_hp",
+     "value": 0
+    },
+    {
+     "field": "e13_hp",
+     "value": 0
+    },
+    {
+     "field": "e14_hp",
+     "value": 0
+    },
+    {
+     "field": "e15_hp",
+     "value": 0
+    },
+    {
+     "field": "e16_hp",
+     "value": 0
+    },
+    {
+     "field": "e17_hp",
+     "value": 0
+    },
+    {
+     "field": "e18_hp",
+     "value": 0
+    },
+    {
+     "field": "e19_hp",
+     "value": 0
+    },
+    {
+     "field": "e20_hp",
+     "value": 0
+    },
+    {
+     "field": "e21_hp",
+     "value": 0
+    },
+    {
+     "field": "e22_hp",
+     "value": 0
+    },
+    {
+     "field": "e23_hp",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "button_down": "DOWN",
+   "frames": 30,
+   "poke": [
+    {
+     "field": "e0_hp",
+     "value": 0
+    },
+    {
+     "field": "e1_hp",
+     "value": 0
+    },
+    {
+     "field": "e2_hp",
+     "value": 0
+    },
+    {
+     "field": "e3_hp",
+     "value": 0
+    },
+    {
+     "field": "e4_hp",
+     "value": 0
+    },
+    {
+     "field": "e5_hp",
+     "value": 0
+    },
+    {
+     "field": "e6_hp",
+     "value": 0
+    },
+    {
+     "field": "e7_hp",
+     "value": 0
+    },
+    {
+     "field": "e8_hp",
+     "value": 0
+    },
+    {
+     "field": "e9_hp",
+     "value": 0
+    },
+    {
+     "field": "e10_hp",
+     "value": 0
+    },
+    {
+     "field": "e11_hp",
+     "value": 0
+    },
+    {
+     "field": "e12_hp",
+     "value": 0
+    },
+    {
+     "field": "e13_hp",
+     "value": 0
+    },
+    {
+     "field": "e14_hp",
+     "value": 0
+    },
+    {
+     "field": "e15_hp",
+     "value": 0
+    },
+    {
+     "field": "e16_hp",
+     "value": 0
+    },
+    {
+     "field": "e17_hp",
+     "value": 0
+    },
+    {
+     "field": "e18_hp",
+     "value": 0
+    },
+    {
+     "field": "e19_hp",
+     "value": 0
+    },
+    {
+     "field": "e20_hp",
+     "value": 0
+    },
+    {
+     "field": "e21_hp",
+     "value": 0
+    },
+    {
+     "field": "e22_hp",
+     "value": 0
+    },
+    {
+     "field": "e23_hp",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "button_down": "DOWN",
+   "frames": 30,
+   "poke": [
+    {
+     "field": "e0_hp",
+     "value": 0
+    },
+    {
+     "field": "e1_hp",
+     "value": 0
+    },
+    {
+     "field": "e2_hp",
+     "value": 0
+    },
+    {
+     "field": "e3_hp",
+     "value": 0
+    },
+    {
+     "field": "e4_hp",
+     "value": 0
+    },
+    {
+     "field": "e5_hp",
+     "value": 0
+    },
+    {
+     "field": "e6_hp",
+     "value": 0
+    },
+    {
+     "field": "e7_hp",
+     "value": 0
+    },
+    {
+     "field": "e8_hp",
+     "value": 0
+    },
+    {
+     "field": "e9_hp",
+     "value": 0
+    },
+    {
+     "field": "e10_hp",
+     "value": 0
+    },
+    {
+     "field": "e11_hp",
+     "value": 0
+    },
+    {
+     "field": "e12_hp",
+     "value": 0
+    },
+    {
+     "field": "e13_hp",
+     "value": 0
+    },
+    {
+     "field": "e14_hp",
+     "value": 0
+    },
+    {
+     "field": "e15_hp",
+     "value": 0
+    },
+    {
+     "field": "e16_hp",
+     "value": 0
+    },
+    {
+     "field": "e17_hp",
+     "value": 0
+    },
+    {
+     "field": "e18_hp",
+     "value": 0
+    },
+    {
+     "field": "e19_hp",
+     "value": 0
+    },
+    {
+     "field": "e20_hp",
+     "value": 0
+    },
+    {
+     "field": "e21_hp",
+     "value": 0
+    },
+    {
+     "field": "e22_hp",
+     "value": 0
+    },
+    {
+     "field": "e23_hp",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "button_down": "DOWN",
+   "frames": 30,
+   "poke": [
+    {
+     "field": "e0_hp",
+     "value": 0
+    },
+    {
+     "field": "e1_hp",
+     "value": 0
+    },
+    {
+     "field": "e2_hp",
+     "value": 0
+    },
+    {
+     "field": "e3_hp",
+     "value": 0
+    },
+    {
+     "field": "e4_hp",
+     "value": 0
+    },
+    {
+     "field": "e5_hp",
+     "value": 0
+    },
+    {
+     "field": "e6_hp",
+     "value": 0
+    },
+    {
+     "field": "e7_hp",
+     "value": 0
+    },
+    {
+     "field": "e8_hp",
+     "value": 0
+    },
+    {
+     "field": "e9_hp",
+     "value": 0
+    },
+    {
+     "field": "e10_hp",
+     "value": 0
+    },
+    {
+     "field": "e11_hp",
+     "value": 0
+    },
+    {
+     "field": "e12_hp",
+     "value": 0
+    },
+    {
+     "field": "e13_hp",
+     "value": 0
+    },
+    {
+     "field": "e14_hp",
+     "value": 0
+    },
+    {
+     "field": "e15_hp",
+     "value": 0
+    },
+    {
+     "field": "e16_hp",
+     "value": 0
+    },
+    {
+     "field": "e17_hp",
+     "value": 0
+    },
+    {
+     "field": "e18_hp",
+     "value": 0
+    },
+    {
+     "field": "e19_hp",
+     "value": 0
+    },
+    {
+     "field": "e20_hp",
+     "value": 0
+    },
+    {
+     "field": "e21_hp",
+     "value": 0
+    },
+    {
+     "field": "e22_hp",
+     "value": 0
+    },
+    {
+     "field": "e23_hp",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "button_down": "DOWN",
+   "frames": 30,
+   "poke": [
+    {
+     "field": "e0_hp",
+     "value": 0
+    },
+    {
+     "field": "e1_hp",
+     "value": 0
+    },
+    {
+     "field": "e2_hp",
+     "value": 0
+    },
+    {
+     "field": "e3_hp",
+     "value": 0
+    },
+    {
+     "field": "e4_hp",
+     "value": 0
+    },
+    {
+     "field": "e5_hp",
+     "value": 0
+    },
+    {
+     "field": "e6_hp",
+     "value": 0
+    },
+    {
+     "field": "e7_hp",
+     "value": 0
+    },
+    {
+     "field": "e8_hp",
+     "value": 0
+    },
+    {
+     "field": "e9_hp",
+     "value": 0
+    },
+    {
+     "field": "e10_hp",
+     "value": 0
+    },
+    {
+     "field": "e11_hp",
+     "value": 0
+    },
+    {
+     "field": "e12_hp",
+     "value": 0
+    },
+    {
+     "field": "e13_hp",
+     "value": 0
+    },
+    {
+     "field": "e14_hp",
+     "value": 0
+    },
+    {
+     "field": "e15_hp",
+     "value": 0
+    },
+    {
+     "field": "e16_hp",
+     "value": 0
+    },
+    {
+     "field": "e17_hp",
+     "value": 0
+    },
+    {
+     "field": "e18_hp",
+     "value": 0
+    },
+    {
+     "field": "e19_hp",
+     "value": 0
+    },
+    {
+     "field": "e20_hp",
+     "value": 0
+    },
+    {
+     "field": "e21_hp",
+     "value": 0
+    },
+    {
+     "field": "e22_hp",
+     "value": 0
+    },
+    {
+     "field": "e23_hp",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "button_down": "DOWN",
+   "frames": 30,
+   "poke": [
+    {
+     "field": "e0_hp",
+     "value": 0
+    },
+    {
+     "field": "e1_hp",
+     "value": 0
+    },
+    {
+     "field": "e2_hp",
+     "value": 0
+    },
+    {
+     "field": "e3_hp",
+     "value": 0
+    },
+    {
+     "field": "e4_hp",
+     "value": 0
+    },
+    {
+     "field": "e5_hp",
+     "value": 0
+    },
+    {
+     "field": "e6_hp",
+     "value": 0
+    },
+    {
+     "field": "e7_hp",
+     "value": 0
+    },
+    {
+     "field": "e8_hp",
+     "value": 0
+    },
+    {
+     "field": "e9_hp",
+     "value": 0
+    },
+    {
+     "field": "e10_hp",
+     "value": 0
+    },
+    {
+     "field": "e11_hp",
+     "value": 0
+    },
+    {
+     "field": "e12_hp",
+     "value": 0
+    },
+    {
+     "field": "e13_hp",
+     "value": 0
+    },
+    {
+     "field": "e14_hp",
+     "value": 0
+    },
+    {
+     "field": "e15_hp",
+     "value": 0
+    },
+    {
+     "field": "e16_hp",
+     "value": 0
+    },
+    {
+     "field": "e17_hp",
+     "value": 0
+    },
+    {
+     "field": "e18_hp",
+     "value": 0
+    },
+    {
+     "field": "e19_hp",
+     "value": 0
+    },
+    {
+     "field": "e20_hp",
+     "value": 0
+    },
+    {
+     "field": "e21_hp",
+     "value": 0
+    },
+    {
+     "field": "e22_hp",
+     "value": 0
+    },
+    {
+     "field": "e23_hp",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "button_down": "DOWN",
+   "frames": 30,
+   "poke": [
+    {
+     "field": "e0_hp",
+     "value": 0
+    },
+    {
+     "field": "e1_hp",
+     "value": 0
+    },
+    {
+     "field": "e2_hp",
+     "value": 0
+    },
+    {
+     "field": "e3_hp",
+     "value": 0
+    },
+    {
+     "field": "e4_hp",
+     "value": 0
+    },
+    {
+     "field": "e5_hp",
+     "value": 0
+    },
+    {
+     "field": "e6_hp",
+     "value": 0
+    },
+    {
+     "field": "e7_hp",
+     "value": 0
+    },
+    {
+     "field": "e8_hp",
+     "value": 0
+    },
+    {
+     "field": "e9_hp",
+     "value": 0
+    },
+    {
+     "field": "e10_hp",
+     "value": 0
+    },
+    {
+     "field": "e11_hp",
+     "value": 0
+    },
+    {
+     "field": "e12_hp",
+     "value": 0
+    },
+    {
+     "field": "e13_hp",
+     "value": 0
+    },
+    {
+     "field": "e14_hp",
+     "value": 0
+    },
+    {
+     "field": "e15_hp",
+     "value": 0
+    },
+    {
+     "field": "e16_hp",
+     "value": 0
+    },
+    {
+     "field": "e17_hp",
+     "value": 0
+    },
+    {
+     "field": "e18_hp",
+     "value": 0
+    },
+    {
+     "field": "e19_hp",
+     "value": 0
+    },
+    {
+     "field": "e20_hp",
+     "value": 0
+    },
+    {
+     "field": "e21_hp",
+     "value": 0
+    },
+    {
+     "field": "e22_hp",
+     "value": 0
+    },
+    {
+     "field": "e23_hp",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "button_down": "DOWN",
+   "frames": 30,
+   "poke": [
+    {
+     "field": "e0_hp",
+     "value": 0
+    },
+    {
+     "field": "e1_hp",
+     "value": 0
+    },
+    {
+     "field": "e2_hp",
+     "value": 0
+    },
+    {
+     "field": "e3_hp",
+     "value": 0
+    },
+    {
+     "field": "e4_hp",
+     "value": 0
+    },
+    {
+     "field": "e5_hp",
+     "value": 0
+    },
+    {
+     "field": "e6_hp",
+     "value": 0
+    },
+    {
+     "field": "e7_hp",
+     "value": 0
+    },
+    {
+     "field": "e8_hp",
+     "value": 0
+    },
+    {
+     "field": "e9_hp",
+     "value": 0
+    },
+    {
+     "field": "e10_hp",
+     "value": 0
+    },
+    {
+     "field": "e11_hp",
+     "value": 0
+    },
+    {
+     "field": "e12_hp",
+     "value": 0
+    },
+    {
+     "field": "e13_hp",
+     "value": 0
+    },
+    {
+     "field": "e14_hp",
+     "value": 0
+    },
+    {
+     "field": "e15_hp",
+     "value": 0
+    },
+    {
+     "field": "e16_hp",
+     "value": 0
+    },
+    {
+     "field": "e17_hp",
+     "value": 0
+    },
+    {
+     "field": "e18_hp",
+     "value": 0
+    },
+    {
+     "field": "e19_hp",
+     "value": 0
+    },
+    {
+     "field": "e20_hp",
+     "value": 0
+    },
+    {
+     "field": "e21_hp",
+     "value": 0
+    },
+    {
+     "field": "e22_hp",
+     "value": 0
+    },
+    {
+     "field": "e23_hp",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "button_down": "DOWN",
+   "frames": 30,
+   "poke": [
+    {
+     "field": "e0_hp",
+     "value": 0
+    },
+    {
+     "field": "e1_hp",
+     "value": 0
+    },
+    {
+     "field": "e2_hp",
+     "value": 0
+    },
+    {
+     "field": "e3_hp",
+     "value": 0
+    },
+    {
+     "field": "e4_hp",
+     "value": 0
+    },
+    {
+     "field": "e5_hp",
+     "value": 0
+    },
+    {
+     "field": "e6_hp",
+     "value": 0
+    },
+    {
+     "field": "e7_hp",
+     "value": 0
+    },
+    {
+     "field": "e8_hp",
+     "value": 0
+    },
+    {
+     "field": "e9_hp",
+     "value": 0
+    },
+    {
+     "field": "e10_hp",
+     "value": 0
+    },
+    {
+     "field": "e11_hp",
+     "value": 0
+    },
+    {
+     "field": "e12_hp",
+     "value": 0
+    },
+    {
+     "field": "e13_hp",
+     "value": 0
+    },
+    {
+     "field": "e14_hp",
+     "value": 0
+    },
+    {
+     "field": "e15_hp",
+     "value": 0
+    },
+    {
+     "field": "e16_hp",
+     "value": 0
+    },
+    {
+     "field": "e17_hp",
+     "value": 0
+    },
+    {
+     "field": "e18_hp",
+     "value": 0
+    },
+    {
+     "field": "e19_hp",
+     "value": 0
+    },
+    {
+     "field": "e20_hp",
+     "value": 0
+    },
+    {
+     "field": "e21_hp",
+     "value": 0
+    },
+    {
+     "field": "e22_hp",
+     "value": 0
+    },
+    {
+     "field": "e23_hp",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "button_down": "DOWN",
+   "frames": 30,
+   "poke": [
+    {
+     "field": "e0_hp",
+     "value": 0
+    },
+    {
+     "field": "e1_hp",
+     "value": 0
+    },
+    {
+     "field": "e2_hp",
+     "value": 0
+    },
+    {
+     "field": "e3_hp",
+     "value": 0
+    },
+    {
+     "field": "e4_hp",
+     "value": 0
+    },
+    {
+     "field": "e5_hp",
+     "value": 0
+    },
+    {
+     "field": "e6_hp",
+     "value": 0
+    },
+    {
+     "field": "e7_hp",
+     "value": 0
+    },
+    {
+     "field": "e8_hp",
+     "value": 0
+    },
+    {
+     "field": "e9_hp",
+     "value": 0
+    },
+    {
+     "field": "e10_hp",
+     "value": 0
+    },
+    {
+     "field": "e11_hp",
+     "value": 0
+    },
+    {
+     "field": "e12_hp",
+     "value": 0
+    },
+    {
+     "field": "e13_hp",
+     "value": 0
+    },
+    {
+     "field": "e14_hp",
+     "value": 0
+    },
+    {
+     "field": "e15_hp",
+     "value": 0
+    },
+    {
+     "field": "e16_hp",
+     "value": 0
+    },
+    {
+     "field": "e17_hp",
+     "value": 0
+    },
+    {
+     "field": "e18_hp",
+     "value": 0
+    },
+    {
+     "field": "e19_hp",
+     "value": 0
+    },
+    {
+     "field": "e20_hp",
+     "value": 0
+    },
+    {
+     "field": "e21_hp",
+     "value": 0
+    },
+    {
+     "field": "e22_hp",
+     "value": 0
+    },
+    {
+     "field": "e23_hp",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "button_down": "DOWN",
+   "frames": 10,
+   "poke": [
+    {
+     "field": "e0_hp",
+     "value": 0
+    },
+    {
+     "field": "e1_hp",
+     "value": 0
+    },
+    {
+     "field": "e2_hp",
+     "value": 0
+    },
+    {
+     "field": "e3_hp",
+     "value": 0
+    },
+    {
+     "field": "e4_hp",
+     "value": 0
+    },
+    {
+     "field": "e5_hp",
+     "value": 0
+    },
+    {
+     "field": "e6_hp",
+     "value": 0
+    },
+    {
+     "field": "e7_hp",
+     "value": 0
+    },
+    {
+     "field": "e8_hp",
+     "value": 0
+    },
+    {
+     "field": "e9_hp",
+     "value": 0
+    },
+    {
+     "field": "e10_hp",
+     "value": 0
+    },
+    {
+     "field": "e11_hp",
+     "value": 0
+    },
+    {
+     "field": "e12_hp",
+     "value": 0
+    },
+    {
+     "field": "e13_hp",
+     "value": 0
+    },
+    {
+     "field": "e14_hp",
+     "value": 0
+    },
+    {
+     "field": "e15_hp",
+     "value": 0
+    },
+    {
+     "field": "e16_hp",
+     "value": 0
+    },
+    {
+     "field": "e17_hp",
+     "value": 0
+    },
+    {
+     "field": "e18_hp",
+     "value": 0
+    },
+    {
+     "field": "e19_hp",
+     "value": 0
+    },
+    {
+     "field": "e20_hp",
+     "value": 0
+    },
+    {
+     "field": "e21_hp",
+     "value": 0
+    },
+    {
+     "field": "e22_hp",
+     "value": 0
+    },
+    {
+     "field": "e23_hp",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "button_up": "DOWN",
+   "frames": 4
+  },
+  {
+   "poke": [
+    {
+     "field": "px",
+     "value": 43520
+    },
+    {
+     "field": "py",
+     "value": 363520
+    },
+    {
+     "field": "e0_hp",
+     "value": 0
+    },
+    {
+     "field": "e1_hp",
+     "value": 0
+    },
+    {
+     "field": "e2_hp",
+     "value": 0
+    },
+    {
+     "field": "e3_hp",
+     "value": 0
+    },
+    {
+     "field": "e4_hp",
+     "value": 0
+    },
+    {
+     "field": "e5_hp",
+     "value": 0
+    },
+    {
+     "field": "e6_hp",
+     "value": 0
+    },
+    {
+     "field": "e7_hp",
+     "value": 0
+    },
+    {
+     "field": "e8_hp",
+     "value": 0
+    },
+    {
+     "field": "e9_hp",
+     "value": 0
+    },
+    {
+     "field": "e10_hp",
+     "value": 0
+    },
+    {
+     "field": "e11_hp",
+     "value": 0
+    },
+    {
+     "field": "e12_hp",
+     "value": 0
+    },
+    {
+     "field": "e13_hp",
+     "value": 0
+    },
+    {
+     "field": "e14_hp",
+     "value": 0
+    },
+    {
+     "field": "e15_hp",
+     "value": 0
+    },
+    {
+     "field": "e16_hp",
+     "value": 0
+    },
+    {
+     "field": "e17_hp",
+     "value": 0
+    },
+    {
+     "field": "e18_hp",
+     "value": 0
+    },
+    {
+     "field": "e19_hp",
+     "value": 0
+    },
+    {
+     "field": "e20_hp",
+     "value": 0
+    },
+    {
+     "field": "e21_hp",
+     "value": 0
+    },
+    {
+     "field": "e22_hp",
+     "value": 0
+    },
+    {
+     "field": "e23_hp",
+     "value": 0
+    }
+   ],
+   "frames": 2
+  },
+  {
+   "button_down": "DOWN",
+   "frames": 30,
+   "poke": [
+    {
+     "field": "e0_hp",
+     "value": 0
+    },
+    {
+     "field": "e1_hp",
+     "value": 0
+    },
+    {
+     "field": "e2_hp",
+     "value": 0
+    },
+    {
+     "field": "e3_hp",
+     "value": 0
+    },
+    {
+     "field": "e4_hp",
+     "value": 0
+    },
+    {
+     "field": "e5_hp",
+     "value": 0
+    },
+    {
+     "field": "e6_hp",
+     "value": 0
+    },
+    {
+     "field": "e7_hp",
+     "value": 0
+    },
+    {
+     "field": "e8_hp",
+     "value": 0
+    },
+    {
+     "field": "e9_hp",
+     "value": 0
+    },
+    {
+     "field": "e10_hp",
+     "value": 0
+    },
+    {
+     "field": "e11_hp",
+     "value": 0
+    },
+    {
+     "field": "e12_hp",
+     "value": 0
+    },
+    {
+     "field": "e13_hp",
+     "value": 0
+    },
+    {
+     "field": "e14_hp",
+     "value": 0
+    },
+    {
+     "field": "e15_hp",
+     "value": 0
+    },
+    {
+     "field": "e16_hp",
+     "value": 0
+    },
+    {
+     "field": "e17_hp",
+     "value": 0
+    },
+    {
+     "field": "e18_hp",
+     "value": 0
+    },
+    {
+     "field": "e19_hp",
+     "value": 0
+    },
+    {
+     "field": "e20_hp",
+     "value": 0
+    },
+    {
+     "field": "e21_hp",
+     "value": 0
+    },
+    {
+     "field": "e22_hp",
+     "value": 0
+    },
+    {
+     "field": "e23_hp",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "button_down": "DOWN",
+   "frames": 30,
+   "poke": [
+    {
+     "field": "e0_hp",
+     "value": 0
+    },
+    {
+     "field": "e1_hp",
+     "value": 0
+    },
+    {
+     "field": "e2_hp",
+     "value": 0
+    },
+    {
+     "field": "e3_hp",
+     "value": 0
+    },
+    {
+     "field": "e4_hp",
+     "value": 0
+    },
+    {
+     "field": "e5_hp",
+     "value": 0
+    },
+    {
+     "field": "e6_hp",
+     "value": 0
+    },
+    {
+     "field": "e7_hp",
+     "value": 0
+    },
+    {
+     "field": "e8_hp",
+     "value": 0
+    },
+    {
+     "field": "e9_hp",
+     "value": 0
+    },
+    {
+     "field": "e10_hp",
+     "value": 0
+    },
+    {
+     "field": "e11_hp",
+     "value": 0
+    },
+    {
+     "field": "e12_hp",
+     "value": 0
+    },
+    {
+     "field": "e13_hp",
+     "value": 0
+    },
+    {
+     "field": "e14_hp",
+     "value": 0
+    },
+    {
+     "field": "e15_hp",
+     "value": 0
+    },
+    {
+     "field": "e16_hp",
+     "value": 0
+    },
+    {
+     "field": "e17_hp",
+     "value": 0
+    },
+    {
+     "field": "e18_hp",
+     "value": 0
+    },
+    {
+     "field": "e19_hp",
+     "value": 0
+    },
+    {
+     "field": "e20_hp",
+     "value": 0
+    },
+    {
+     "field": "e21_hp",
+     "value": 0
+    },
+    {
+     "field": "e22_hp",
+     "value": 0
+    },
+    {
+     "field": "e23_hp",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "button_down": "DOWN",
+   "frames": 30,
+   "poke": [
+    {
+     "field": "e0_hp",
+     "value": 0
+    },
+    {
+     "field": "e1_hp",
+     "value": 0
+    },
+    {
+     "field": "e2_hp",
+     "value": 0
+    },
+    {
+     "field": "e3_hp",
+     "value": 0
+    },
+    {
+     "field": "e4_hp",
+     "value": 0
+    },
+    {
+     "field": "e5_hp",
+     "value": 0
+    },
+    {
+     "field": "e6_hp",
+     "value": 0
+    },
+    {
+     "field": "e7_hp",
+     "value": 0
+    },
+    {
+     "field": "e8_hp",
+     "value": 0
+    },
+    {
+     "field": "e9_hp",
+     "value": 0
+    },
+    {
+     "field": "e10_hp",
+     "value": 0
+    },
+    {
+     "field": "e11_hp",
+     "value": 0
+    },
+    {
+     "field": "e12_hp",
+     "value": 0
+    },
+    {
+     "field": "e13_hp",
+     "value": 0
+    },
+    {
+     "field": "e14_hp",
+     "value": 0
+    },
+    {
+     "field": "e15_hp",
+     "value": 0
+    },
+    {
+     "field": "e16_hp",
+     "value": 0
+    },
+    {
+     "field": "e17_hp",
+     "value": 0
+    },
+    {
+     "field": "e18_hp",
+     "value": 0
+    },
+    {
+     "field": "e19_hp",
+     "value": 0
+    },
+    {
+     "field": "e20_hp",
+     "value": 0
+    },
+    {
+     "field": "e21_hp",
+     "value": 0
+    },
+    {
+     "field": "e22_hp",
+     "value": 0
+    },
+    {
+     "field": "e23_hp",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "button_down": "DOWN",
+   "frames": 30,
+   "poke": [
+    {
+     "field": "e0_hp",
+     "value": 0
+    },
+    {
+     "field": "e1_hp",
+     "value": 0
+    },
+    {
+     "field": "e2_hp",
+     "value": 0
+    },
+    {
+     "field": "e3_hp",
+     "value": 0
+    },
+    {
+     "field": "e4_hp",
+     "value": 0
+    },
+    {
+     "field": "e5_hp",
+     "value": 0
+    },
+    {
+     "field": "e6_hp",
+     "value": 0
+    },
+    {
+     "field": "e7_hp",
+     "value": 0
+    },
+    {
+     "field": "e8_hp",
+     "value": 0
+    },
+    {
+     "field": "e9_hp",
+     "value": 0
+    },
+    {
+     "field": "e10_hp",
+     "value": 0
+    },
+    {
+     "field": "e11_hp",
+     "value": 0
+    },
+    {
+     "field": "e12_hp",
+     "value": 0
+    },
+    {
+     "field": "e13_hp",
+     "value": 0
+    },
+    {
+     "field": "e14_hp",
+     "value": 0
+    },
+    {
+     "field": "e15_hp",
+     "value": 0
+    },
+    {
+     "field": "e16_hp",
+     "value": 0
+    },
+    {
+     "field": "e17_hp",
+     "value": 0
+    },
+    {
+     "field": "e18_hp",
+     "value": 0
+    },
+    {
+     "field": "e19_hp",
+     "value": 0
+    },
+    {
+     "field": "e20_hp",
+     "value": 0
+    },
+    {
+     "field": "e21_hp",
+     "value": 0
+    },
+    {
+     "field": "e22_hp",
+     "value": 0
+    },
+    {
+     "field": "e23_hp",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "button_down": "DOWN",
+   "frames": 30,
+   "poke": [
+    {
+     "field": "e0_hp",
+     "value": 0
+    },
+    {
+     "field": "e1_hp",
+     "value": 0
+    },
+    {
+     "field": "e2_hp",
+     "value": 0
+    },
+    {
+     "field": "e3_hp",
+     "value": 0
+    },
+    {
+     "field": "e4_hp",
+     "value": 0
+    },
+    {
+     "field": "e5_hp",
+     "value": 0
+    },
+    {
+     "field": "e6_hp",
+     "value": 0
+    },
+    {
+     "field": "e7_hp",
+     "value": 0
+    },
+    {
+     "field": "e8_hp",
+     "value": 0
+    },
+    {
+     "field": "e9_hp",
+     "value": 0
+    },
+    {
+     "field": "e10_hp",
+     "value": 0
+    },
+    {
+     "field": "e11_hp",
+     "value": 0
+    },
+    {
+     "field": "e12_hp",
+     "value": 0
+    },
+    {
+     "field": "e13_hp",
+     "value": 0
+    },
+    {
+     "field": "e14_hp",
+     "value": 0
+    },
+    {
+     "field": "e15_hp",
+     "value": 0
+    },
+    {
+     "field": "e16_hp",
+     "value": 0
+    },
+    {
+     "field": "e17_hp",
+     "value": 0
+    },
+    {
+     "field": "e18_hp",
+     "value": 0
+    },
+    {
+     "field": "e19_hp",
+     "value": 0
+    },
+    {
+     "field": "e20_hp",
+     "value": 0
+    },
+    {
+     "field": "e21_hp",
+     "value": 0
+    },
+    {
+     "field": "e22_hp",
+     "value": 0
+    },
+    {
+     "field": "e23_hp",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "button_down": "DOWN",
+   "frames": 30,
+   "poke": [
+    {
+     "field": "e0_hp",
+     "value": 0
+    },
+    {
+     "field": "e1_hp",
+     "value": 0
+    },
+    {
+     "field": "e2_hp",
+     "value": 0
+    },
+    {
+     "field": "e3_hp",
+     "value": 0
+    },
+    {
+     "field": "e4_hp",
+     "value": 0
+    },
+    {
+     "field": "e5_hp",
+     "value": 0
+    },
+    {
+     "field": "e6_hp",
+     "value": 0
+    },
+    {
+     "field": "e7_hp",
+     "value": 0
+    },
+    {
+     "field": "e8_hp",
+     "value": 0
+    },
+    {
+     "field": "e9_hp",
+     "value": 0
+    },
+    {
+     "field": "e10_hp",
+     "value": 0
+    },
+    {
+     "field": "e11_hp",
+     "value": 0
+    },
+    {
+     "field": "e12_hp",
+     "value": 0
+    },
+    {
+     "field": "e13_hp",
+     "value": 0
+    },
+    {
+     "field": "e14_hp",
+     "value": 0
+    },
+    {
+     "field": "e15_hp",
+     "value": 0
+    },
+    {
+     "field": "e16_hp",
+     "value": 0
+    },
+    {
+     "field": "e17_hp",
+     "value": 0
+    },
+    {
+     "field": "e18_hp",
+     "value": 0
+    },
+    {
+     "field": "e19_hp",
+     "value": 0
+    },
+    {
+     "field": "e20_hp",
+     "value": 0
+    },
+    {
+     "field": "e21_hp",
+     "value": 0
+    },
+    {
+     "field": "e22_hp",
+     "value": 0
+    },
+    {
+     "field": "e23_hp",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "button_down": "DOWN",
+   "frames": 30,
+   "poke": [
+    {
+     "field": "e0_hp",
+     "value": 0
+    },
+    {
+     "field": "e1_hp",
+     "value": 0
+    },
+    {
+     "field": "e2_hp",
+     "value": 0
+    },
+    {
+     "field": "e3_hp",
+     "value": 0
+    },
+    {
+     "field": "e4_hp",
+     "value": 0
+    },
+    {
+     "field": "e5_hp",
+     "value": 0
+    },
+    {
+     "field": "e6_hp",
+     "value": 0
+    },
+    {
+     "field": "e7_hp",
+     "value": 0
+    },
+    {
+     "field": "e8_hp",
+     "value": 0
+    },
+    {
+     "field": "e9_hp",
+     "value": 0
+    },
+    {
+     "field": "e10_hp",
+     "value": 0
+    },
+    {
+     "field": "e11_hp",
+     "value": 0
+    },
+    {
+     "field": "e12_hp",
+     "value": 0
+    },
+    {
+     "field": "e13_hp",
+     "value": 0
+    },
+    {
+     "field": "e14_hp",
+     "value": 0
+    },
+    {
+     "field": "e15_hp",
+     "value": 0
+    },
+    {
+     "field": "e16_hp",
+     "value": 0
+    },
+    {
+     "field": "e17_hp",
+     "value": 0
+    },
+    {
+     "field": "e18_hp",
+     "value": 0
+    },
+    {
+     "field": "e19_hp",
+     "value": 0
+    },
+    {
+     "field": "e20_hp",
+     "value": 0
+    },
+    {
+     "field": "e21_hp",
+     "value": 0
+    },
+    {
+     "field": "e22_hp",
+     "value": 0
+    },
+    {
+     "field": "e23_hp",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "button_down": "DOWN",
+   "frames": 30,
+   "poke": [
+    {
+     "field": "e0_hp",
+     "value": 0
+    },
+    {
+     "field": "e1_hp",
+     "value": 0
+    },
+    {
+     "field": "e2_hp",
+     "value": 0
+    },
+    {
+     "field": "e3_hp",
+     "value": 0
+    },
+    {
+     "field": "e4_hp",
+     "value": 0
+    },
+    {
+     "field": "e5_hp",
+     "value": 0
+    },
+    {
+     "field": "e6_hp",
+     "value": 0
+    },
+    {
+     "field": "e7_hp",
+     "value": 0
+    },
+    {
+     "field": "e8_hp",
+     "value": 0
+    },
+    {
+     "field": "e9_hp",
+     "value": 0
+    },
+    {
+     "field": "e10_hp",
+     "value": 0
+    },
+    {
+     "field": "e11_hp",
+     "value": 0
+    },
+    {
+     "field": "e12_hp",
+     "value": 0
+    },
+    {
+     "field": "e13_hp",
+     "value": 0
+    },
+    {
+     "field": "e14_hp",
+     "value": 0
+    },
+    {
+     "field": "e15_hp",
+     "value": 0
+    },
+    {
+     "field": "e16_hp",
+     "value": 0
+    },
+    {
+     "field": "e17_hp",
+     "value": 0
+    },
+    {
+     "field": "e18_hp",
+     "value": 0
+    },
+    {
+     "field": "e19_hp",
+     "value": 0
+    },
+    {
+     "field": "e20_hp",
+     "value": 0
+    },
+    {
+     "field": "e21_hp",
+     "value": 0
+    },
+    {
+     "field": "e22_hp",
+     "value": 0
+    },
+    {
+     "field": "e23_hp",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "button_down": "DOWN",
+   "frames": 20,
+   "poke": [
+    {
+     "field": "e0_hp",
+     "value": 0
+    },
+    {
+     "field": "e1_hp",
+     "value": 0
+    },
+    {
+     "field": "e2_hp",
+     "value": 0
+    },
+    {
+     "field": "e3_hp",
+     "value": 0
+    },
+    {
+     "field": "e4_hp",
+     "value": 0
+    },
+    {
+     "field": "e5_hp",
+     "value": 0
+    },
+    {
+     "field": "e6_hp",
+     "value": 0
+    },
+    {
+     "field": "e7_hp",
+     "value": 0
+    },
+    {
+     "field": "e8_hp",
+     "value": 0
+    },
+    {
+     "field": "e9_hp",
+     "value": 0
+    },
+    {
+     "field": "e10_hp",
+     "value": 0
+    },
+    {
+     "field": "e11_hp",
+     "value": 0
+    },
+    {
+     "field": "e12_hp",
+     "value": 0
+    },
+    {
+     "field": "e13_hp",
+     "value": 0
+    },
+    {
+     "field": "e14_hp",
+     "value": 0
+    },
+    {
+     "field": "e15_hp",
+     "value": 0
+    },
+    {
+     "field": "e16_hp",
+     "value": 0
+    },
+    {
+     "field": "e17_hp",
+     "value": 0
+    },
+    {
+     "field": "e18_hp",
+     "value": 0
+    },
+    {
+     "field": "e19_hp",
+     "value": 0
+    },
+    {
+     "field": "e20_hp",
+     "value": 0
+    },
+    {
+     "field": "e21_hp",
+     "value": 0
+    },
+    {
+     "field": "e22_hp",
+     "value": 0
+    },
+    {
+     "field": "e23_hp",
+     "value": 0
+    }
+   ],
+   "state_capture": "b05_camp",
+   "capture": "b05_camp"
+  },
+  {
+   "button_up": "DOWN",
+   "frames": 4
+  }
+ ],
+ "assertions": {
+  "state_changes": [
+   {
+    "at": "c00_cripta",
+    "field": "room",
+    "equals": 15
+   },
+   {
+    "at": "c01_sin_subir",
+    "field": "room",
+    "equals": 15
+   },
+   {
+    "at": "c02_cripta_a_nave4",
+    "field": "room",
+    "equals": 3
+   },
+   {
+    "at": "c03_jefe_activo",
+    "field": "room",
+    "equals": 15
+   },
+   {
+    "at": "c04_con_jefe",
+    "field": "room",
+    "equals": 15
+   },
+   {
+    "at": "b00_monjarana",
+    "field": "room",
+    "equals": 14
+   },
+   {
+    "at": "b00_monjarana",
+    "field": "carrying",
+    "equals": 4
+   },
+   {
+    "at": "b01_nave4",
+    "field": "room",
+    "equals": 3
+   },
+   {
+    "at": "b02_nave3",
+    "field": "room",
+    "equals": 2
+   },
+   {
+    "at": "b03_nave2",
+    "field": "room",
+    "equals": 1
+   },
+   {
+    "at": "b04_nave1",
+    "field": "room",
+    "equals": 0
+   },
+   {
+    "at": "b04_nave1",
+    "field": "delivered",
+    "equals": 0
+   },
+   {
+    "at": "b05_camp",
+    "field": "carrying",
+    "equals": 0
+   },
+   {
+    "at": "b05_camp",
+    "field": "delivered",
+    "equals": 4
+   },
+   {
+    "at": "b05_camp",
+    "field": "bag0_mech",
+    "equals": 15
+   }
+  ]
+ }
+}

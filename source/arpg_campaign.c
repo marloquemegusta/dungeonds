@@ -101,8 +101,8 @@ void arpg_campaign_descent_begin(void) {
 
 // Half (rounded down) of the relics picked up this descent, in the bag or socketed; the last ones go first (bag slots, then
 // sockets). Same "lost" criterion as the snapshot: no equal object at the camp exit, not fixed. Returns how many.
-static int lose_half_of_loot(void) {
-    if (!s_snap_valid) return 0;
+static int lose_half_of_loot(int floor_extra) {
+    if (!s_snap_valid) return floor_extra;
     uint8_t used[SNAP_MAX];
     memset(used, 0, sizeof(used));
     // Candidate code: < ARPG_INV_BAG is a bag slot, else ARPG_INV_BAG + school * ARPG_INV_SOCKETS + socket.
@@ -118,13 +118,17 @@ static int lose_half_of_loot(void) {
             if (!used[j] && s_snap[j] == h) { used[j] = 1; found = 1; }
         if (!found && it->kind == ARPG_ITEM_RELIC && !(it->level & ARPG_ITEM_FIXED)) fresh[n++] = (uint8_t)c;   // tomes and fixed prizes are never lost
     }
-    int lose = n / 2;
-    for (int k = 0; k < lose; k++) {
+    // The relics of the floor that did not fit (floor_extra) are the last ones: they go first, and all of them are lost.
+    int lose = (n + floor_extra) / 2;
+    int from_bag = lose > floor_extra ? lose - floor_extra : 0;
+    if (from_bag > n) from_bag = n;
+    for (int k = 0; k < from_bag; k++) {
         int c = fresh[n - 1 - k];
         if (c < ARPG_INV_BAG) arpg_inv_bag_discard(c);
         else arpg_inv_socket_discard((c - ARPG_INV_BAG) / ARPG_INV_SOCKETS, (c - ARPG_INV_BAG) % ARPG_INV_SOCKETS);
     }
-    return lose;
+    if (from_bag > 0) arpg_inv_recalc();      // a socketed relic may have gone: its bonuses go with it
+    return from_bag + floor_extra;
 }
 
 // ---- Carried object ----
@@ -134,14 +138,15 @@ static void lose_carried(void) {
     arpg_quest_drop_carried();
 }
 
-void arpg_campaign_on_death(void) {
+void arpg_campaign_on_death(int floor_extra) {
     arpg_log_event(CLOG_DEATH, 0);
     notice_clear();
-    int lost = lose_half_of_loot();
+    int lost = lose_half_of_loot(floor_extra);
     if (lost > 0) {
         char num[4];
-        num[0] = (char)('0' + (lost > 9 ? 9 : lost));
-        num[1] = 0;
+        if (lost > 99) lost = 99;
+        if (lost >= 10) { num[0] = (char)('0' + lost / 10); num[1] = (char)('0' + lost % 10); num[2] = 0; }
+        else { num[0] = (char)('0' + lost); num[1] = 0; }
         char buf[NOTICE_LEN];
         strcpy(buf, "Has perdido ");
         strcat(buf, num);

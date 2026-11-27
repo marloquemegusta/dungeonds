@@ -35,6 +35,7 @@ void pickups_fx_draw(uint16_t *buffer, int cam_x, int cam_y);   // remate heal s
 void pickups_spawn_xp(fixed x, fixed y, int amount);
 // Spawns a rolled relic drop on the floor.
 void pickups_spawn_relic(fixed x, fixed y, const ArpgInvItem *item);
+int  pickups_bank_relics_death(void);   // like the above on death: what does not fit in the bag is lost; returns how many
 void pickups_bank_relics(void);     // reliquias en el suelo -> bolsa o alijo (cambio de sala, volver al campamento)
 // Rolls and drops loot on enemy death (normal, elite, boss).
 void pickups_drop_enemy_loot(int enemy_type, int floor, fixed x, fixed y);

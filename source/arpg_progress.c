@@ -141,7 +141,7 @@ int arpg_fat_ready(void) {
     return s_arpg_fat_ok;
 }
 
-int arpg_progress_save(void) {
+static int progress_save(int flush_log) {
     if (!arpg_fat_ready()) return 0;
     g_arpg.quest_delivered = g_quest.delivered;     // carrying and boss_tier are not saved: they are 0 after loading
     g_arpg.quest_offered = g_quest.offered;
@@ -151,11 +151,14 @@ int arpg_progress_save(void) {
         if (!f) continue;
         int ok = fwrite(&g_arpg, sizeof(g_arpg), 1, f) == 1;
         if (fclose(f) != 0) ok = 0;
-        if (ok) { arpg_log_flush(); return 1; }
+        if (ok) { if (flush_log) arpg_log_flush(); return 1; }
     }
-    arpg_log_flush();
+    if (flush_log) arpg_log_flush();
     return 0;
 }
+
+int arpg_progress_save(void) { return progress_save(1); }
+int arpg_progress_save_quiet(void) { return progress_save(0); }
 
 // Reads `size` bytes of an old v1 save and rebuilds a v2 progress with a fresh inventory.
 static int arpg_load_v1(FILE *f) {

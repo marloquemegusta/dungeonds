@@ -9,7 +9,7 @@
 #define ARPG_EXIT_TO_CAMP 99
 
 void arpg_campaign_descent_begin(void);   // leaving the camp: remember the bag and repopulate the cathedral
-void arpg_campaign_on_death(void);        // death: carried object lost, half of the loot of this descent lost, repopulate
+void arpg_campaign_on_death(int floor_extra);        // death: carried object lost, half of the loot of this descent lost, repopulate
 void arpg_campaign_on_retreat(void);      // pause menu "volver al campamento": only the carried object is lost
 void arpg_campaign_arrive_on_foot(void);  // back in the camp walking: delivers the carried objects and pays the rewards
 void arpg_campaign_confess(void);         // confessional: queues the text of the next penance (or the closing line)

@@ -93,6 +93,7 @@ typedef struct {
     uint8_t fixed_group;        // 1 + G_*: the group of block fixed_block is this one (not the poster's, not drawn)
     uint8_t fixed_block;
     uint8_t camp_exit;          // 1 = walking out of the foot of the room leaves for the camp (Nave 1)
+    uint8_t down_exit;          // 1 + room: walking out of the foot of the room goes down to that room (lands under its upper door)
 } RoomDef;
 enum { GATE_NONE = 0, GATE_LISTA, GATE_CAPILLA, GATE_CRIPTA };
 
@@ -110,9 +111,9 @@ enum { G_REBANO = 0, G_PROCESION, G_CORRILLO,                 // Nave 1 (peldañ
 // pN = screen N counted from the bottom of the room; block = (N-1)/2, the lower screen of the block when N is odd.
 // Ids: 0..3 Naves, 4 Galeria del cofre, 5 del secreto, 6 Claustro bajo, 7 Claustro alto, 8 Enfermeria, 9 Osario, 10 Capilla del parroco,
 // 11 Galeria de la Misa, 12 Galeria de bajada, 13 Capilla con llave, 14 Galeria de la monjarana, 15 Cripta.
-// Doors come in pairs (the arrival looks for the door that leads back). Doors that leave upwards have no pair below: nothing
-// walks down. The way back on foot is therefore lateral (Enfermeria/Osario/Capilla, Claustros, Nave 3 -> Capilla con llave) or
-// a one-way door (Capilla con llave -> Nave 1, Galeria de bajada -> Nave 3), which lands at the foot of its destination.
+// Doors come in pairs (the arrival looks for the door that leads back). Doors that leave upwards have no pair below: the way down
+// is the foot of the room (down_exit: Nave 2 -> 1, 3 -> 2, 4 -> 3, Cripta -> Nave 4, which lands under the upper door), the lateral
+// doors (Enfermeria/Osario/Capilla, Claustros) or a one-way door (Capilla con llave -> Nave 1, Galeria de bajada -> Nave 3).
 // Map C (DESIGN-ARPG.md, campaign): Nave 1 branches to the Claustro bajo (right) and the Enfermeria (left) and climbs to Nave 2
 // behind the reja of the choir list; Nave 2 only climbs; Nave 3 has the Misa (left) and the Capilla con llave (right, reja of the
 // Misa's key, shortcut to Nave 1) and climbs to Nave 4; Nave 4 has the monjarana (right), the Galeria de bajada (left, the way back
@@ -120,11 +121,11 @@ enum { G_REBANO = 0, G_PROCESION, G_CORRILLO,                 // Nave 1 (peldañ
 static const RoomDef s_rooms[ENC_ROOM_COUNT] = {
     { .name = "Nave 1", .blocks = 3, .level = 1, .nave = 1, .type = RT_NORMAL, .altar = 1, .gate = GATE_LISTA, .camp_exit = 1,
       .n_doors = 3, .doors = { DL(2, 8), DR(4, 6), DU(1) } },
-    { .name = "Nave 2", .blocks = 3, .level = 2, .nave = 2, .type = RT_NORMAL,
+    { .name = "Nave 2", .blocks = 3, .level = 2, .nave = 2, .type = RT_NORMAL, .down_exit = 1 + 0,
       .n_doors = 1, .doors = { DU(2) } },
-    { .name = "Nave 3", .blocks = 3, .level = 3, .nave = 3, .type = RT_NORMAL, .altar = 1,
+    { .name = "Nave 3", .blocks = 3, .level = 3, .nave = 3, .type = RT_NORMAL, .altar = 1, .down_exit = 1 + 1,
       .n_doors = 3, .doors = { DL(4, 11), DR(4, 13), DU(3) } },
-    { .name = "Nave 4", .blocks = 3, .level = 4, .nave = 4, .type = RT_NORMAL, .gate = GATE_CRIPTA,
+    { .name = "Nave 4", .blocks = 3, .level = 4, .nave = 4, .type = RT_NORMAL, .gate = GATE_CRIPTA, .down_exit = 1 + 2,
       .n_doors = 3, .doors = { DR(2, 14), DL(2, 12), DU(15) } },
     { .name = "Galería del cofre", .blocks = 1, .level = 1, .nave = 1, .type = RT_NORMAL, .chest = 1, .prize_mech = 1 + ARPG_MECH_CILICIO,
       .n_doors = 1, .doors = { DL(1, 6) } },
@@ -155,7 +156,7 @@ static const RoomDef s_rooms[ENC_ROOM_COUNT] = {
       .prize_min_rar = ARPG_RAR_EPIC, .quest = 1 + QUEST_LEONOR, .quest_block = 1,
       .n_doors = 1, .doors = { DL(1, 3) } },
     { .name = "Cripta", .blocks = 1, .level = 5, .nave = 4, .type = RT_CRIPTA, .special_block = 0,
-      .prize_min_rar = ARPG_RAR_LEGENDARY, .quest = 1 + QUEST_ABANDERADO, .quest_block = 0, .n_doors = 0 },
+      .prize_min_rar = ARPG_RAR_LEGENDARY, .quest = 1 + QUEST_ABANDERADO, .quest_block = 0, .down_exit = 1 + 3, .n_doors = 0 },
 };
 
 #if ENC_START_CAMPANERO
@@ -269,7 +270,7 @@ static void clear_rewards(const RoomDef *room, int k, int first_time, int px, in
         }
     }
     quest_pick(room, k);
-    if (room->type == RT_PARROQUIA) arpg_progress_save();
+    if (room->type == RT_PARROQUIA) arpg_progress_save_quiet();
 }
 
 typedef struct {
@@ -290,6 +291,8 @@ static int s_victory;                         // never set: the dungeon has no v
 #define ENC_GATE_LOCAL_Y 150        // block-local y of the base of the reja of the capilla (the chest stands at 90, out of reach through the bars)
 #define ENC_GATE_UP_LOCAL_Y 64      // block-local y of the base of a reja that closes the upper door
 #define ENC_CAMP_EXIT_PX 14         // the hero leaves Nave 1 for the camp this far above the bottom edge of its first block
+#define ENC_DOWN_ARRIVE_PX 128      // block-local y where the hero lands under the upper door after walking down (below the reja, out of reach of the door)
+static uint8_t s_down_armed;  // the foot exit only fires once the hero has been above it (the Cripta lands a few px from the edge)
 #define ENC_GATE_NEAR_PX 40         // with the key, the reja rises when the hero is this close to its line
 static uint8_t s_gate_lift, s_gate_opening, s_gate_open;
 static uint16_t s_gate_toast_cd;
@@ -464,6 +467,7 @@ void enc_init(uint32_t seed) {
     // Rooms have no gates (salas ARPG): both lifts start raised, so no rastrillo is drawn anywhere.
     for (int i = 0; i < ENC_STAGES; i++) { s_rt[i].back_lift = ENC_VERJA_H; s_rt[i].verja_lift = ENC_VERJA_H; }
     s_exit_room = -1;
+    s_down_armed = 0;
     s_gate_open = room->gate ? 0 : 1;                      // closed until the hero comes close carrying what it asks for
     s_gate_opening = 0;
     s_gate_lift = room->gate ? 0 : ENC_VERJA_H;
@@ -863,6 +867,15 @@ int enc_room_arrival(int *out_x, int *out_y, int *out_dir) {
             arrival_free(r, out_x, out_y);
             return 1;
         }
+    }
+    for (int i = 0; i < r->n_doors && s_from_room >= 0; i++) {   // came down: lands under the upper door that leads to the room above
+        const RoomDoor *d = &r->doors[i];
+        if (d->dest != s_from_room || d->side != DOOR_UP) continue;
+        *out_x = ENC_FLOOR_X + ENC_FLOOR_W / 2;
+        *out_y = window_top(block_of_encounter(door_block(r, d))) + ENC_DOWN_ARRIVE_PX;
+        *out_dir = DIR_SOUTH;
+        arrival_free(r, out_x, out_y);
+        return 1;
     }
     // The foot of the room (the Cripta: a few steps from the bottom edge so the boss does not wake on arrival).
     *out_x = ENC_FLOOR_X + ENC_FLOOR_W / 2;
@@ -1771,6 +1784,13 @@ void enc_update(Enemy *enemies, int max_enemies, int px, int py) {
     if (room->camp_exit && s_exit_room < 0 &&
         py >= window_top(block_of_encounter(0)) + ENC_BLOCK_H - ENC_CAMP_EXIT_PX) s_exit_room = ARPG_EXIT_TO_CAMP;
 
+    // Walking down: the foot of Naves 2..4 and the Cripta (not while the boss barrier is closed) leads to the room below.
+    if (room->down_exit && s_exit_room < 0) {
+        const int line = window_top(block_of_encounter(0)) + ENC_BLOCK_H - ENC_CAMP_EXIT_PX;
+        if (py < line - 8) s_down_armed = 1;
+        else if (py >= line && s_down_armed && !s_boss_locked) s_exit_room = room->down_exit - 1;
+    }
+
     // The reja: rises when the hero carries what it asks for and comes close; without it, a toast on touching it.
     if (room->gate && !s_gate_open) {
         const int gy = window_top(block_of_encounter(room_chest_block())) + gate_local_y();
@@ -1835,7 +1855,7 @@ void enc_update(Enemy *enemies, int max_enemies, int px, int py) {
             g_arpg.altars_lo |= (1u << s_room);
             if (g_arpg.last_altar != s_room) {          // the next run enters here; saved at once
                 g_arpg.last_altar = (uint8_t)s_room;
-                arpg_progress_save();
+                arpg_progress_save_quiet();
             }
         }
     }
@@ -1983,6 +2003,7 @@ int enc_victory(void) { return s_victory; }
 
 int enc_end_demo_take(void) {
     if (!s_end_demo_pending || boss_state() != BOSS_REST) return 0;
+    if (g_player_state.is_dead) { s_end_demo_pending = 0; return 0; }     // died during the victory: it counts as a death (the camp run follows)
     s_end_demo_pending = 0;
     return 1;
 }
