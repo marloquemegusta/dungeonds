@@ -206,3 +206,4 @@ Resúmenes acumulativos y auditables de cada entrega y avance de desarrollo en `
 | 187 | ARPG y roguelike: el Rayo ya no daña en área (solo al más cercano; matar atraviesa) | [`rayo-perfora/`](rayo-perfora/walkthrough.md) | Build x3, escenarios `sniper_packed_*` y `enemy_sniper_row_skeleton` PASS; no medido en la DS |
 | 188 | ARPG: aviso de grupos a 200 px (antes 96 px) | [`arpg-aviso-grupos/`](arpg-aviso-grupos/walkthrough.md) | `arpg_aviso_grupos` PASS y verificador aparte; jefe sin cubrir en emulador; sin DS |
 | 189 | ARPG: el Monaguillo guardaespaldas avanza hacia el héroe mientras carga el Rayo | [`monaguillo-avanza/`](monaguillo-avanza/walkthrough.md) | Build, 6/6 PASS con verificador aparte en la ROM; no medido en la DS |
+| 190 | ARPG: mini ROM genérica desde un JSON (`tools/minirom.py`) | [`mini-rom/`](mini-rom/walkthrough.md) | Abanderado y pruebas-ojo PASS; probada en la DS (Abanderado); reinicio tras matar al jefe sin probar en DS |
