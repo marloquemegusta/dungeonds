@@ -158,16 +158,22 @@ def gen_scenario(spec):
         "error": {"offset": 14, "type": "u8"}, "room_ok": {"offset": 15, "type": "u8"},
         "frames": {"offset": 20, "type": "u32"}, "boss_hp": {"offset": 16, "type": "s32"}, "frozen": {"offset": 24, "type": "u8"},
         "hero_hp": {"symbol": "gps", "offset": 0, "type": "s32"},
+        "tp_boss": {"offset": 25, "type": "u8"}, "hero_x": {"offset": 68, "type": "s16"}, "hero_y": {"offset": 70, "type": "s16"},
     }
     # Walk towards the first listed enemy (screen dy < 0 is north); towards the north otherwise.
+    for i in range(min(4, len(en)) if listed else 0):
+        for k, off, t in (("x", 0, "s16"), ("y", 2, "s16"), ("alive", 5, "u8"), ("drift", 6, "s16"), ("shift", 8, "s16")):
+            fields["e%d_%s" % (i, k)] = {"offset": 28 + 10 * i + off, "type": t}
     key = "UP"
     if listed and en:
         dx, dy = en[0]["dx"], en[0]["dy"]
         key = ("UP" if dy < 0 else "DOWN") if abs(dy) >= abs(dx) else ("LEFT" if dx < 0 else "RIGHT")
-    steps = [{"frames": 240, "capture": "00_arranque", "state_capture": "00_arranque"},
+    steps = [{"wait_until": {"field": "frames", "min_value": 12, "timeout_frames": 900}, "capture": "00a_colocados", "state_capture": "00a_colocados"},
+             {"wait_until": {"field": "frames", "min_value": 150, "timeout_frames": 900}, "capture": "00_arranque", "state_capture": "00_arranque"},
              {"button_down": key, "frames": 150 if not listed else 40, "capture": "01_andando", "state_capture": "01_andando"},
              {"frames": 5, "wait_until": {"field": "frozen", "equals": 0, "timeout_frames": 1500}},     # boss intro
-             {"frames": 1200 if not listed else 60, "capture": "02_cerca", "state_capture": "02_cerca"},
+             {"frames": 200 if not listed else 60, "capture": "02_cerca", "state_capture": "02_cerca"},
+             {"poke": [{"field": "tp_boss", "value": 1}], "frames": 20},        # next to the boss, if the room has one
              {"button_up": key, "frames": 30, "capture": "03_junto", "state_capture": "03_junto"}]
     for i in range(14):                                               # basic attack: L
         steps.append({"button_down": "L", "frames": 2})
@@ -185,7 +191,12 @@ def gen_scenario(spec):
     steps.append({"poke": [{"field": "hero_hp", "value": 0}], "frames": 60, "capture": "06_muerte", "state_capture": "06_muerte"})
     steps.append({"frames": 5, "wait_until": {"field": "restarts", "min_value": 1, "timeout_frames": 900}})     # the room restarts by itself
     steps.append({"frames": 120, "capture": "07_reinicio", "state_capture": "07_reinicio"})
-    changes = [
+    early = []
+    for i in range(min(4, len(en)) if listed else 0):
+        early += [{"at": "00a_colocados", "field": "e%d_alive" % i, "equals": 1},
+                  {"at": "00a_colocados", "field": "e%d_shift" % i, "max_value": 24},    # free spot near the requested one
+                  {"at": "00a_colocados", "field": "e%d_drift" % i, "max_value": 24}]    # has not wandered off yet
+    changes = early + [
         {"at": "00_arranque", "field": "error", "equals": 0},
         {"at": "00_arranque", "field": "room_ok", "equals": 1},
         {"at": "00_arranque", "field": "enemies", "equals": len(en)} if listed else
@@ -194,6 +205,11 @@ def gen_scenario(spec):
         {"at": "07_reinicio", "field": "room_ok", "equals": 1},
         {"at": "07_reinicio", "field": "restarts", "min_value": 1},
     ]
+    # Boss rooms (the Cripta, or a listed Abanderado/Campanero): the boss itself must lose life (the scenario stands next to it).
+    boss = spec["sala"].lower() == "cripta" or (listed and any(e["tipo"].lower() in ("abanderado", "campanero") for e in en))
+    if boss:
+        changes.append({"at": "00_arranque", "field": "boss_hp", "min_value": 1})
+        changes.append({"from": "00_arranque", "to": "04_golpes", "field": "boss_hp", "max_delta": -1})
     if p["reaparecen"] and listed:
         changes.append({"at": "04_golpes", "field": "enemies", "max_value": len(en) - 1})       # something died first
         changes.append({"at": "05_reaparecen", "field": "enemies", "equals": len(en)})

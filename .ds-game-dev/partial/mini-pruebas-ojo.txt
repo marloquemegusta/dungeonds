@@ -12,12 +12,10 @@ archivo: chars/monaguillo.bin
 archivo: chars/ojo.bin
 archivo: chars/ojo_look.bin
 archivo: chars/ojo_sentence.bin
-archivo: punch/gancho_d0.bin
 archivo: punch/gancho_d1.bin
 archivo: punch/gancho_d4.bin
 archivo: punch/punch_a_d1.bin
 archivo: punch/punch_a_d4.bin
-archivo: punch/punch_b_d0.bin
 archivo: punch/punch_b_d1.bin
 archivo: punch/punch_b_d4.bin
 archivo: rooms/sala_00.rmk

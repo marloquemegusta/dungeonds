@@ -29,6 +29,16 @@ typedef struct {
     int32_t boss_hp;       // 16 s32 life of the Abanderado / Campanero if one is alive, else 0
     uint32_t frames;       // 20 u32 frames since boot
     uint8_t frozen;        // 24 u8  1 while the boss intro freezes the game (main.c); minirom_frame() clears it
+    uint8_t tp_boss;       // 25 u8  scenarios write 1: the hero is put just south of the boss (if one is alive); cleared by the game
+    uint8_t pad2[2];       // 26
+    struct {               // 28 + 10*i: the first 4 enemies of the "enemigos" list
+        int16_t x, y;      //  +0 +2  s16 current position (px)
+        uint8_t type;      //  +4     u8  EnemyType
+        uint8_t alive;     //  +5     u8  1 = active with life left
+        int16_t drift;     //  +6     s16 max(|dx|,|dy|) from the spot where it was placed
+        int16_t shift;     //  +8     s16 max(|dx|,|dy|) from the requested spot (hero + dx,dy) to the spot placed (free-spot search)
+    } list[4];
+    int16_t hero_x, hero_y;   // 68 70 s16 hero position (px)
 } MiniromDbg;
 extern volatile MiniromDbg g_minirom_dbg;
 
@@ -37,6 +47,8 @@ void minirom_boot_done(void);          // after that first arena_restart()
 void minirom_on_restart(void);         // called by arena_restart(): the list of enemies is placed again
 // Once per frame; 1 = restart the room (hero dead for ~2.5 s).
 int minirom_frame(int hero_x, int hero_y, Enemy *enemies, int max_enemies);
+// Spot (px) where g_minirom_dbg.tp_boss wants the hero this frame, 0 = none.
+int minirom_teleport(int *x, int *y);
 
 int minirom_skip_population(void);     // 1 = encounters_act1.c does not populate the room (list given, or "pruebas")
 uint32_t minirom_art_mask(void);       // character groups of the listed enemies (room_art_prepare)

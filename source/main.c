@@ -4423,6 +4423,10 @@ int main(void) {
         if (g_player_state.is_dead && !s_strip_mode) arena_restart();
 #if MINIROM
         if (minirom_frame(TO_INT(s_player.x), TO_INT(s_player.y), g_enemies, MAX_ENEMIES)) arena_restart();
+        {
+            int tx, ty;
+            if (minirom_teleport(&tx, &ty)) { s_player.x = TO_FIXED(tx); s_player.y = TO_FIXED(ty); }   // scenarios: stand next to the boss
+        }
 #endif
         PP_ADD(PP_WEAPONS, pp_wp);
         CRASH_MARK(CL_WEAPONS_DONE, 0, 0);
